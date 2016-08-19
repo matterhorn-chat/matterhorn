@@ -1,0 +1,6 @@
+{ "user": "<username>",
+  "host": "<hostname>",
+  "team": "<team name>",
+  "port": 443,
+  "passcmd": "<command to fetch password>"
+}
