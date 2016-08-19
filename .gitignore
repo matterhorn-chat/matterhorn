@@ -1,0 +1,5 @@
+config.json
+cabal.project.local
+dist
+dist-newstyle
+*~
