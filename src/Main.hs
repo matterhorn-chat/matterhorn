@@ -24,7 +24,7 @@ editMessage new stRef = modifyIORef stRef $ \ st ->
 
 addMessage :: Post -> StateRef -> IO ()
 addMessage new stRef = modifyIORef stRef $ \ st ->
-  st & msgMap . ix (postChannelId new) . postsPostsL . ix (getId new) .~ new
+  st & msgMap . ix (postChannelId new) . postsPostsL . at (getId new) .~ Just new
      & msgMap . ix (postChannelId new) . postsOrderL %~ (getId new :)
 
 getMessageListing :: ChannelId -> StateRef -> IO [(String, String)]
