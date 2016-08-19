@@ -11,7 +11,7 @@ copyright:        ©2016 Getty Ritter
 build-type:       Simple
 cabal-version:    >= 1.12
 
-executable mm-track
+executable mattermost-demo-client
   hs-source-dirs:      src
   main-is:             Main.hs
   other-modules:       Config
