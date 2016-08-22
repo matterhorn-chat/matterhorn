@@ -18,7 +18,7 @@ executable mattermost-demo-client
                        State
   default-extensions:  OverloadedStrings,
                        ScopedTypeVariables
-  ghc-options:         -Wall
+  ghc-options:         -Wall -threaded
   build-depends:       base >=4.7 && <4.9
                      , mattermost-api
                      , unordered-containers
@@ -28,4 +28,8 @@ executable mattermost-demo-client
                      , process
                      , connection
                      , microlens-platform
+                     , brick
+                     , data-default
+                     , vty
+                     , transformers
   default-language:    Haskell2010

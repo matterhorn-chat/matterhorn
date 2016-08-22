@@ -2,96 +2,85 @@
 
 module Main where
 
-import           Control.Monad (join, forM, forM_)
-import           Data.HashMap.Strict ((!))
-import qualified Data.HashMap.Strict as HM
-import           Data.IORef
-import qualified Data.Text as T
+import           Brick
+import           Brick.Widgets.Border
+import           Brick.Widgets.Edit (editor, renderEditor)
+import qualified Control.Concurrent.Chan as Chan
+import           Control.Monad (void)
+import           Control.Monad.IO.Class (liftIO)
+import           Data.Default (def)
+import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform
 
-import           Network.Connection
 import           Network.Mattermost
-import           Network.Mattermost.Lenses
+-- import           Network.Mattermost.Lenses
 import           Network.Mattermost.WebSocket
 import           Network.Mattermost.WebSocket.Types
 
 import           Config
 import           State
 
-editMessage :: Post -> StateRef -> IO ()
-editMessage new stRef = modifyIORef stRef $ \ st ->
-  st & msgMap . ix (postChannelId new) . postsPostsL . ix (getId new) .~ new
-
-addMessage :: Post -> StateRef -> IO ()
-addMessage new stRef = modifyIORef stRef $ \ st ->
-  st & msgMap . ix (postChannelId new) . postsPostsL . at (getId new) .~ Just new
-     & msgMap . ix (postChannelId new) . postsOrderL %~ (getId new :)
-
-getMessageListing :: ChannelId -> StateRef -> IO [(String, String)]
-getMessageListing cId stRef = do
-  st <- readIORef stRef
-  let us = st ^. usrMap
-  let ps = st ^. msgMap . ix cId . postsPostsL
-  let is = st ^. msgMap . ix cId . postsOrderL
-  return $ reverse
-    [ ( userProfileUsername (us ! postUserId p), postMessage p)
-    | i <- is
-    , let p = ps ! i
-    ]
+data Event
+  = VtyEvent Vty.Event
+  | WSEvent WebsocketEvent
 
 main :: IO ()
 main = do
   config <- getConfig
-  ctx <- initConnectionContext
-  let cd = mkConnectionData (T.unpack (configHost config))
-                            (fromIntegral (configPort config))
-                            ctx
-      Right pass = configPass config
-      login = Login { username = configUser config
-                    , password = pass
-                    , teamname = configTeam config
-                    }
+  st <- setupState config
 
-  (token, myUser) <- join (hoistE <$> mmLogin cd login)
+  eventChan <- Chan.newChan
+  let shunt e = Chan.writeChan eventChan (WSEvent e)
 
-  teamMap <- mmGetTeams cd token
-  let [myTeam] = [ t | t <- HM.elems teamMap
-                     , teamName t == T.unpack (configTeam config)
-                     ]
+  mmWithWebSocket (st^.csConn) (st^.csTok) shunt $ \c -> do
+    void $ customMain (Vty.mkVty def) eventChan app st
 
-  Channels chans _ <- mmGetChannels cd token (getId myTeam)
+app :: App ChatState Event Int
+app = App
+  { appDraw = chatDraw
+  , appChooseCursor = \ _ _ -> Nothing
+  , appHandleEvent = onEvent
+  , appStartEvent = \ s -> return (nextChannel id s)
+  , appAttrMap = \ _ -> def
+  , appLiftVtyEvent = VtyEvent
+  }
 
-  msgs <- fmap HM.fromList $ forM chans $ \c -> do
-    posts <- mmGetPosts cd token (getId myTeam) (getId c) 0 30
-    return (getId c, posts)
+chatDraw :: ChatState -> [Widget Int]
+chatDraw st
+  | Just cId <- st^.csFocus =
+      let chnName = getChannelName cId st
+          msgs = getMessageListing cId st
+          chatText = vBox [ str (u ++ ": " ++ m)
+                          | (u, m) <- msgs
+                          ]
+          userCmd  = renderEditor False (editor 1 (vBox . map str) (Just 1) "> ")
+      in [ border (padRight Max (str ("#" ++ chnName))) <=>
+           border (viewport 0 Vertical chatText) <=>
+           border userCmd ]
+  | otherwise = [ str "whoo" ]
 
-  users <- mmGetProfiles cd token (getId myTeam)
-
-  st <- newIORef $ newState & chnMap .~ HM.fromList [ (getId c, c)
-                                                    | c <- chans
-                                                    ]
-                            & usrMap .~ users
-                            & msgMap .~ msgs
-
-  putStrLn "Ready."
-  mmWithWebSocket cd token (onEvent st)
-                           (handleInput st)
-
-onEvent :: StateRef -> WebsocketEvent -> IO ()
-onEvent st we = do
+onEvent :: ChatState -> Event -> EventM Int (Next ChatState)
+onEvent st (VtyEvent (Vty.EvKey Vty.KEsc [])) = halt st
+onEvent st (VtyEvent (Vty.EvKey Vty.KRight [])) =
+  continue (nextChannel (+1) st)
+onEvent st (VtyEvent (Vty.EvKey Vty.KLeft [])) =
+  continue (nextChannel (\ x -> x - 1) st)
+onEvent st (VtyEvent e) = do
+  continue st
+onEvent st (WSEvent we) = do
   case weAction we of
     WMPosted -> case wepPost (weProps we) of
-      Just p  -> addMessage p st
-      Nothing -> return ()
+      Just p  -> continue $ addMessage p st
+      Nothing -> continue st
     WMPostEdited -> case wepPost (weProps we) of
-      Just p  -> editMessage p st
-      Nothing -> return ()
+      Just p  -> continue $ editMessage p st
+      Nothing -> continue st
     WMPostDeleted -> case wepPost (weProps we) of
-      Just p  -> editMessage p { postMessage = "[deleted]" } st
-      Nothing -> return ()
-    _ -> return ()
+      Just p  -> continue $ editMessage p { postMessage = "[deleted]" } st
+      Nothing -> continue st
+    _ -> continue st
 
-
+{-
 handleInput :: StateRef -> MMWebSocket -> IO ()
 handleInput st ws = do
   ln <- getLine
@@ -112,3 +101,4 @@ handleInput st ws = do
     cmd -> do
       putStrLn ("I don't know how to " ++ unwords cmd)
       handleInput st ws
+-}
