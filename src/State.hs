@@ -4,10 +4,11 @@ module State where
 
 import           Brick (str, vBox)
 import           Brick.Widgets.Edit (Editor, editor)
-import           Control.Monad (join, forM, when)
+import           Control.Monad (join, forM)
 import           Data.HashMap.Strict (HashMap, (!))
 import qualified Data.HashMap.Strict as HM
 import           Data.List (sort)
+import           Data.Maybe (listToMaybe)
 import           Data.Monoid ((<>))
 import qualified Data.Text as T
 import           Lens.Micro.Platform
@@ -108,31 +109,33 @@ setupState config = do
       Right pass = configPass config
       login = Login { username = configUser config
                     , password = pass
-                    , teamname = configTeam config
                     }
 
   (token, myUser) <- join (hoistE <$> mmLogin cd login)
 
-  teamMap <- mmGetTeams cd token
-  let myTeams = [ t | t <- HM.elems teamMap
-                    , teamName t == T.unpack (configTeam config)
-                    ]
+  initialLoad <- mmGetInitialLoad cd token
 
-  when (null myTeams) $ do
-      putStrLn $ "No team named " <> (show (configTeam config)) <> " found.  Available teams:"
-      mapM_ putStrLn (show <$> teamName <$> HM.elems teamMap)
-      exitFailure
+  -- XXX Give the user an interactive choice if the config doesn't have
+  -- a team name set.
+  let matchingTeam = listToMaybe $ filter matchesConfig $ initialLoadTeams initialLoad
+      matchesConfig t = teamName t == (T.unpack $ configTeam config)
 
-  -- XXX Give the user a choice!
-  let (myTeam:_) = myTeams
+  myTeam <- case matchingTeam of
+      Nothing -> do
+          putStrLn $ "No team named " <> (show (configTeam config)) <> " found.  Available teams:"
+          mapM_ putStrLn (show <$> teamName <$> initialLoadTeams initialLoad)
+          exitFailure
+      Just t -> return t
 
-  Channels chans _ <- mmGetChannels cd token (getId myTeam)
+  let myTeamId = getId myTeam
+
+  Channels chans _ <- mmGetChannels cd token myTeamId
 
   msgs <- fmap HM.fromList $ forM chans $ \c -> do
-    posts <- mmGetPosts cd token (getId myTeam) (getId c) 0 30
+    posts <- mmGetPosts cd token myTeamId (getId c) 0 30
     return (getId c, posts)
 
-  users <- mmGetProfiles cd token (getId myTeam)
+  users <- mmGetProfiles cd token myTeamId
 
   let chanNames = MMNames
         { _cnChans = sort
