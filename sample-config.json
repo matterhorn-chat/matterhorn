@@ -2,5 +2,5 @@
   "host": "<hostname>",
   "team": "<team name>",
   "port": 443,
-  "passcmd": "<command to fetch password>"
+  "passcmd": "security find-generic-password -s <password name> -w"
 }
