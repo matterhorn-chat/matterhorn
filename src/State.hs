@@ -8,8 +8,10 @@ import           Control.Monad (join, forM, when)
 import           Data.HashMap.Strict (HashMap, (!))
 import qualified Data.HashMap.Strict as HM
 import           Data.List (sort)
+import           Data.Monoid ((<>))
 import qualified Data.Text as T
 import           Lens.Micro.Platform
+import           System.Exit (exitFailure)
 
 import           Network.Connection
 import           Network.Mattermost
@@ -116,7 +118,10 @@ setupState config = do
                     , teamName t == T.unpack (configTeam config)
                     ]
 
-  when (null myTeams) $ error "no teams available, exiting"
+  when (null myTeams) $ do
+      putStrLn $ "No team named " <> (show (configTeam config)) <> " found.  Available teams:"
+      mapM_ putStrLn (show <$> teamName <$> HM.elems teamMap)
+      exitFailure
 
   -- XXX Give the user a choice!
   let (myTeam:_) = myTeams
