@@ -16,6 +16,7 @@ executable mattermost-demo-client
   main-is:             Main.hs
   other-modules:       Config
                        State
+                       Zipper
   default-extensions:  OverloadedStrings,
                        ScopedTypeVariables
   ghc-options:         -Wall -threaded
@@ -32,4 +33,5 @@ executable mattermost-demo-client
                      , data-default
                      , vty
                      , transformers
+                     , text-zipper
   default-language:    Haskell2010

@@ -2,10 +2,12 @@
 
 module State where
 
+import           Brick (str, vBox)
+import           Brick.Widgets.Edit (Editor, editor)
 import           Control.Monad (join, forM)
 import           Data.HashMap.Strict (HashMap, (!))
 import qualified Data.HashMap.Strict as HM
-import           Data.List (elemIndex)
+import           Data.List (sort)
 import qualified Data.Text as T
 import           Lens.Micro.Platform
 
@@ -14,30 +16,62 @@ import           Network.Mattermost
 import           Network.Mattermost.Lenses
 
 import           Config
+import           Zipper (Zipper)
+import qualified Zipper as Z
+
+data MMNames = MMNames
+  { _cnChans    :: [String]
+  , _cnDMs      :: [String]
+  , _cnToChanId :: HashMap String ChannelId
+  , _cnUsers    :: [String]
+  , _cnToUserId :: HashMap String UserId
+  }
+
+makeLenses ''MMNames
 
 data ChatState = ChatState
   { _csTok    :: Token
   , _csConn   :: ConnectionData
-  , _csFocus  :: Maybe ChannelId
+  , _csFocus  :: Zipper String
+  , _csNames  :: MMNames
+  , _csMe     :: User
+  , _csMyTeam :: Team
   , _chnMap   :: HashMap ChannelId Channel
   , _msgMap   :: HashMap ChannelId Posts
   , _usrMap   :: HashMap UserId UserProfile
+  , _cmdLine  :: Editor Int
   }
 
-newState :: Token -> ConnectionData -> ChatState
-newState t c = ChatState t c Nothing HM.empty HM.empty HM.empty
+newState :: Token -> ConnectionData -> Zipper String -> User -> Team -> ChatState
+newState t c i u m = ChatState
+  { _csTok   = t
+  , _csConn  = c
+  , _csFocus = i
+  , _csMe    = u
+  , _csMyTeam = m
+  , _csNames = MMNames [] [] HM.empty [] HM.empty
+  , _chnMap  = HM.empty
+  , _msgMap  = HM.empty
+  , _usrMap  = HM.empty
+  , _cmdLine = editor 1 (vBox . map str) (Just 1) ""
+  }
 
 makeLenses ''ChatState
 
-nextChannel :: (Int -> Int) -> ChatState -> ChatState
-nextChannel nxt st =
-  let keyList = HM.keys (st ^. chnMap) in
-  case st ^. csFocus of
-  Nothing -> st & csFocus .~ Just (head keyList)
-  Just i  ->
-    let Just idx = elemIndex i keyList
-        nextKey  = keyList !! (nxt idx `mod` length keyList)
-    in st & csFocus .~ Just nextKey
+nextChannel :: ChatState -> ChatState
+nextChannel st = st & csFocus %~ Z.right
+
+prevChannel :: ChatState -> ChatState
+prevChannel st = st & csFocus %~ Z.left
+
+currChannel :: ChatState -> ChannelId
+currChannel st = (st ^. csNames . cnToChanId) ! Z.focus (st ^. csFocus)
+
+channelExists :: ChatState -> String -> Bool
+channelExists st n = n `elem` st ^. csNames . cnChans
+
+setFocus :: String -> ChatState -> ChatState
+setFocus n st = st & csFocus %~ Z.findRight (==n)
 
 editMessage :: Post -> ChatState -> ChatState
 editMessage new st =
@@ -90,10 +124,34 @@ setupState config = do
 
   users <- mmGetProfiles cd token (getId myTeam)
 
-  let st = newState token cd
+  let chanNames = MMNames
+        { _cnChans = sort
+                     [ channelName c
+                     | c <- chans
+                     , channelType c == "O"
+                     ]
+        , _cnDMs = sort
+                   [ channelName c
+                   | c <- chans
+                   , channelType c == "D"
+                   ]
+        , _cnToChanId = HM.fromList
+                          [ (channelName c, channelId c)
+                          | c <- chans
+                          ]
+        , _cnUsers = sort (map userProfileUsername (HM.elems users))
+        , _cnToUserId = HM.fromList
+                          [ (userProfileUsername u, getId u)
+                          | u <- HM.elems users
+                          ]
+        }
+      chanZip = Z.findRight (== "town-square") (Z.fromList (chanNames ^. cnChans))
+      st = newState token cd chanZip myUser myTeam
              & chnMap .~ HM.fromList [ (getId c, c)
                                      | c <- chans
                                      ]
              & usrMap .~ users
              & msgMap .~ msgs
+             & csNames .~ chanNames
+
   return st

@@ -4,16 +4,21 @@ module Main where
 
 import           Brick
 import           Brick.Widgets.Border
-import           Brick.Widgets.Edit (editor, renderEditor)
+import           Brick.Widgets.Edit ( renderEditor
+                                    , getEditContents
+                                    , handleEditorEvent
+                                    , applyEdit
+                                    )
 import qualified Control.Concurrent.Chan as Chan
 import           Control.Monad (void)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Default (def)
+import           Data.Text.Zipper (clearZipper)
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform
 
 import           Network.Mattermost
--- import           Network.Mattermost.Lenses
+import           Network.Mattermost.Lenses
 import           Network.Mattermost.WebSocket
 import           Network.Mattermost.WebSocket.Types
 
@@ -38,35 +43,56 @@ main = do
 app :: App ChatState Event Int
 app = App
   { appDraw = chatDraw
-  , appChooseCursor = \ _ _ -> Nothing
+  , appChooseCursor = \ _ (l:_) -> Just l
   , appHandleEvent = onEvent
-  , appStartEvent = \ s -> return (nextChannel id s)
+  , appStartEvent = \ s -> return s
   , appAttrMap = \ _ -> def
   , appLiftVtyEvent = VtyEvent
   }
 
 chatDraw :: ChatState -> [Widget Int]
-chatDraw st
-  | Just cId <- st^.csFocus =
-      let chnName = getChannelName cId st
-          msgs = getMessageListing cId st
-          chatText = vBox [ str (u ++ ": " ++ m)
-                          | (u, m) <- msgs
-                          ]
-          userCmd  = renderEditor False (editor 1 (vBox . map str) (Just 1) "> ")
-      in [ border (padRight Max (str ("#" ++ chnName))) <=>
-           border (viewport 0 Vertical chatText) <=>
-           border userCmd ]
-  | otherwise = [ str "whoo" ]
+chatDraw st =
+  let cId = currChannel st
+      chnName = getChannelName cId st
+      msgs = getMessageListing cId st
+      chatText = vBox [ str (u ++ ": " ++ m)
+                      | (u, m) <- msgs
+                      ]
+      userCmd  = (str "> " <+> renderEditor True (st^.cmdLine))
+      chanList = vBox $
+        [ str (i ++ "#" ++ n)
+        | n <- (st ^. csNames . cnChans)
+        , let i = if n == chnName then "+" else " "
+        ] ++
+        [ str (" @" ++ n)
+        | n <- (st ^. csNames . cnUsers)
+        ]
+  in [ (border chanList <+> (border (padRight Max (str ("#" ++ chnName)))
+                             <=> border (viewport 0 Vertical chatText)))
+        <=> border userCmd
+     ]
+--  in [ border (padRight Max (str ("#" ++ chnName))) <=>
+--       (border chanList <+> border (viewport 0 Vertical chatText)) <=>
+--       border userCmd
+--     ]
 
 onEvent :: ChatState -> Event -> EventM Int (Next ChatState)
 onEvent st (VtyEvent (Vty.EvKey Vty.KEsc [])) = halt st
 onEvent st (VtyEvent (Vty.EvKey Vty.KRight [])) =
-  continue (nextChannel (+1) st)
+  continue (nextChannel st)
 onEvent st (VtyEvent (Vty.EvKey Vty.KLeft [])) =
-  continue (nextChannel (\ x -> x - 1) st)
+  continue (prevChannel st)
+onEvent st (VtyEvent (Vty.EvKey Vty.KEnter [])) = do
+  let (line:_) = getEditContents (st^.cmdLine)
+  let st' = st & cmdLine %~ applyEdit clearZipper
+  case line of
+    ('/':cmd) -> handleCmd cmd st'
+    _         -> do
+      liftIO (sendMessage st' line)
+      continue st'
 onEvent st (VtyEvent e) = do
-  continue st
+  editor <- handleEditorEvent e (st^.cmdLine)
+  continue (st & cmdLine .~ editor)
 onEvent st (WSEvent we) = do
   case weAction we of
     WMPosted -> case wepPost (weProps we) of
@@ -79,6 +105,23 @@ onEvent st (WSEvent we) = do
       Just p  -> continue $ editMessage p { postMessage = "[deleted]" } st
       Nothing -> continue st
     _ -> continue st
+
+sendMessage :: ChatState -> String -> IO ()
+sendMessage st msg = do
+  let myId   = st^.csMe.userIdL
+      chanId = currChannel st
+      teamId = st^.csMyTeam.teamIdL
+  pendingPost <- mkPendingPost msg myId chanId
+  _ <- mmPost (st^.csConn) (st^.csTok) teamId pendingPost
+  return ()
+
+handleCmd :: String -> ChatState -> EventM Int (Next ChatState)
+handleCmd cmd st = case words cmd of
+  ["quit"] -> halt st
+  ["right"] -> continue (nextChannel st)
+  ["left"] -> continue (prevChannel st)
+  ["chan", ch] -> continue (setFocus ch st)
+  _ -> continue st
 
 {-
 handleInput :: StateRef -> MMWebSocket -> IO ()
