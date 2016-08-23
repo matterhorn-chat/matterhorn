@@ -1,3 +1,6 @@
+.cabal-sandbox
+cabal.sandbox.config
+deps
 config.json
 cabal.project.local
 dist
