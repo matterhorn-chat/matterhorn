@@ -4,7 +4,7 @@ module State where
 
 import           Brick (str, vBox)
 import           Brick.Widgets.Edit (Editor, editor)
-import           Control.Monad (join, forM)
+import           Control.Monad (join, forM, when)
 import           Data.HashMap.Strict (HashMap, (!))
 import qualified Data.HashMap.Strict as HM
 import           Data.List (sort)
@@ -112,9 +112,14 @@ setupState config = do
   (token, myUser) <- join (hoistE <$> mmLogin cd login)
 
   teamMap <- mmGetTeams cd token
-  let [myTeam] = [ t | t <- HM.elems teamMap
-                     , teamName t == T.unpack (configTeam config)
-                     ]
+  let myTeams = [ t | t <- HM.elems teamMap
+                    , teamName t == T.unpack (configTeam config)
+                    ]
+
+  when (null myTeams) $ error "no teams available, exiting"
+
+  -- XXX Give the user a choice!
+  let (myTeam:_) = myTeams
 
   Channels chans _ <- mmGetChannels cd token (getId myTeam)
 
