@@ -1,3 +1,4 @@
+.*.swp
 .cabal-sandbox
 cabal.sandbox.config
 deps
