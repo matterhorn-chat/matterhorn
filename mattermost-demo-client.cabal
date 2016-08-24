@@ -34,4 +34,5 @@ executable mattermost-demo-client
                      , vty
                      , transformers
                      , text-zipper
+                     , time
   default-language:    Haskell2010

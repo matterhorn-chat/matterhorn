@@ -10,6 +10,8 @@ import qualified Data.HashMap.Strict as HM
 import           Data.List (sort)
 import           Data.Maybe (listToMaybe)
 import           Data.Monoid ((<>))
+import           Data.Time.Clock ( UTCTime )
+import           Data.Time.LocalTime ( TimeZone(..), getCurrentTimeZone )
 import qualified Data.Text as T
 import           Lens.Micro.Platform
 import           System.Exit (exitFailure)
@@ -43,20 +45,22 @@ data ChatState = ChatState
   , _msgMap   :: HashMap ChannelId Posts
   , _usrMap   :: HashMap UserId UserProfile
   , _cmdLine  :: Editor Int
+  , _timeZone :: TimeZone
   }
 
-newState :: Token -> ConnectionData -> Zipper String -> User -> Team -> ChatState
-newState t c i u m = ChatState
-  { _csTok   = t
-  , _csConn  = c
-  , _csFocus = i
-  , _csMe    = u
+newState :: Token -> ConnectionData -> Zipper String -> User -> Team -> TimeZone -> ChatState
+newState t c i u m tz = ChatState
+  { _csTok    = t
+  , _csConn   = c
+  , _csFocus  = i
+  , _csMe     = u
   , _csMyTeam = m
-  , _csNames = MMNames [] [] HM.empty [] HM.empty
-  , _chnMap  = HM.empty
-  , _msgMap  = HM.empty
-  , _usrMap  = HM.empty
-  , _cmdLine = editor 1 (vBox . map str) (Just 1) ""
+  , _csNames  = MMNames [] [] HM.empty [] HM.empty
+  , _chnMap   = HM.empty
+  , _msgMap   = HM.empty
+  , _usrMap   = HM.empty
+  , _cmdLine  = editor 1 (vBox . map str) (Just 1) ""
+  , _timeZone = tz
   }
 
 makeLenses ''ChatState
@@ -85,13 +89,13 @@ addMessage new st =
   st & msgMap . ix (postChannelId new) . postsPostsL . at (getId new) .~ Just new
      & msgMap . ix (postChannelId new) . postsOrderL %~ (getId new :)
 
-getMessageListing :: ChannelId -> ChatState -> [(String, String)]
+getMessageListing :: ChannelId -> ChatState -> [(UTCTime, String, String)]
 getMessageListing cId st =
   let us = st ^. usrMap
       ps = st ^. msgMap . ix cId . postsPostsL
       is = st ^. msgMap . ix cId . postsOrderL
   in reverse
-    [ ( userProfileUsername (us ! postUserId p), postMessage p)
+    [ ( postCreateAt p, userProfileUsername (us ! postUserId p), postMessage p)
     | i <- is
     , let p = ps ! i
     ]
@@ -136,6 +140,7 @@ setupState config = do
     return (getId c, posts)
 
   users <- mmGetProfiles cd token myTeamId
+  tz    <- getCurrentTimeZone
 
   let chanNames = MMNames
         { _cnChans = sort
@@ -159,7 +164,7 @@ setupState config = do
                           ]
         }
       chanZip = Z.findRight (== "town-square") (Z.fromList (chanNames ^. cnChans))
-      st = newState token cd chanZip myUser myTeam
+      st = newState token cd chanZip myUser myTeam tz
              & chnMap .~ HM.fromList [ (getId c, c)
                                      | c <- chans
                                      ]

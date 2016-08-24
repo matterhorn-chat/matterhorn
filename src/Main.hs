@@ -14,6 +14,9 @@ import           Control.Monad (void)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Default (def)
 import           Data.Text.Zipper (clearZipper)
+import           Data.Time.Format ( formatTime
+                                  , defaultTimeLocale )
+import           Data.Time.LocalTime ( utcToLocalTime )
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform
 
@@ -37,26 +40,29 @@ main = do
   eventChan <- Chan.newChan
   let shunt e = Chan.writeChan eventChan (WSEvent e)
 
-  mmWithWebSocket (st^.csConn) (st^.csTok) shunt $ \c -> do
+  mmWithWebSocket (st^.csConn) (st^.csTok) shunt $ \_ -> do
     void $ customMain (Vty.mkVty def) eventChan app st
 
 app :: App ChatState Event Int
 app = App
-  { appDraw = chatDraw
+  { appDraw         = chatDraw
   , appChooseCursor = \ _ (l:_) -> Just l
-  , appHandleEvent = onEvent
-  , appStartEvent = \ s -> return s
-  , appAttrMap = \ _ -> def
+  , appHandleEvent  = onEvent
+  , appStartEvent   = \ s -> return s
+  , appAttrMap      = \ _ -> def
   , appLiftVtyEvent = VtyEvent
   }
 
 chatDraw :: ChatState -> [Widget Int]
 chatDraw st =
-  let cId = currChannel st
-      chnName = getChannelName cId st
-      msgs = getMessageListing cId st
-      chatText = vBox [ str (u ++ ": " ++ m)
-                      | (u, m) <- msgs
+  let cId      = currChannel st
+      chnName  = getChannelName    cId st
+      msgs     = getMessageListing cId st
+      time t   = formatTime defaultTimeLocale
+                            "%R" -- gives HH:MM in 24 hour time
+                            (utcToLocalTime (st ^. timeZone) t)
+      chatText = vBox [ str ("[" ++ time t ++ "] " ++ u ++ ": " ++ m)
+                      | (t, u, m) <- msgs
                       ]
       userCmd  = (str "> " <+> renderEditor True (st^.cmdLine))
       chanList = vBox $
