@@ -27,6 +27,7 @@ import           Network.Mattermost.Lenses
 import           Network.Mattermost.WebSocket
 import           Network.Mattermost.WebSocket.Types
 
+import           Command
 import           Config
 import           State
 
@@ -101,7 +102,7 @@ onEvent st (VtyEvent (Vty.EvKey Vty.KEnter [])) = do
   let (line:_) = getEditContents (st^.cmdLine)
   let st' = st & cmdLine %~ applyEdit clearZipper
   case line of
-    ('/':cmd) -> handleCmd cmd st'
+    ('/':cmd) -> dispatchCommand cmd st'
     _         -> do
       liftIO (sendMessage st' line)
       continue st'
@@ -129,34 +130,3 @@ sendMessage st msg = do
   pendingPost <- mkPendingPost msg myId chanId
   _ <- mmPost (st^.csConn) (st^.csTok) teamId pendingPost
   return ()
-
-handleCmd :: String -> ChatState -> EventM Int (Next ChatState)
-handleCmd cmd st = case words cmd of
-  ["quit"] -> halt st
-  ["right"] -> continue (nextChannel st)
-  ["left"] -> continue (prevChannel st)
-  ["chan", ch] -> continue (setFocus ch st)
-  _ -> continue st
-
-{-
-handleInput :: StateRef -> MMWebSocket -> IO ()
-handleInput st ws = do
-  ln <- getLine
-  case words ln of
-    ["show", chan] -> do
-      ChatState { _chnMap = cs } <- readIORef st
-      case [ c | c <- HM.elems cs, channelName c == chan ] of
-        c:_ -> do
-          ms <- getMessageListing (channelId c) st
-          forM_ ms $ \ (u, m) -> do
-            putStrLn ("@" ++ u ++ ":  " ++ m)
-          handleInput st ws
-        _ -> do
-          putStrLn ("cannot find " ++ chan)
-          handleInput st ws
-    ["quit"] -> do
-      mmCloseWebSocket ws
-    cmd -> do
-      putStrLn ("I don't know how to " ++ unwords cmd)
-      handleInput st ws
--}
