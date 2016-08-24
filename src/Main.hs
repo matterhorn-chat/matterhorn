@@ -13,12 +13,14 @@ import qualified Control.Concurrent.Chan as Chan
 import           Control.Monad (void)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Default (def)
+import           Data.List ( intercalate )
 import           Data.Text.Zipper (clearZipper)
 import           Data.Time.Format ( formatTime
                                   , defaultTimeLocale )
 import           Data.Time.LocalTime ( utcToLocalTime )
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform
+import           Text.LineBreak (breakStringLn, BreakFormat(..))
 
 import           Network.Mattermost
 import           Network.Mattermost.Lenses
@@ -61,7 +63,14 @@ chatDraw st =
       time t   = formatTime defaultTimeLocale
                             "%R" -- gives HH:MM in 24 hour time
                             (utcToLocalTime (st ^. timeZone) t)
-      chatText = vBox [ str ("[" ++ time t ++ "] " ++ u ++ ": " ++ m)
+      split xs k n = case breakStringLn (BreakFormat (n + k) 8 {- 8 for tab width -} '-' Nothing) xs of
+        []    -> ""
+        (y:_) -> let ls = breakStringLn (BreakFormat n 8 {- 8 for tab width -} '-' Nothing)
+                                        (drop ((length y)+1) xs)
+                 in intercalate padding (y:ls)
+        where
+        padding = "\n" ++ replicate k ' '
+      chatText = vBox [ str (split ("[" ++ time t ++ "] " ++ u ++ ": " ++ m) 8 {- length of padding -} 72)
                       | (t, u, m) <- msgs
                       ]
       userCmd  = (str "> " <+> renderEditor True (st^.cmdLine))
