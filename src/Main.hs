@@ -91,9 +91,13 @@ renderChannelList st = hLimit channelListWidth $
     header label = hBorderWithLabel $
                    withDefAttr channelListHeaderAttr $
                    str label
-    channelNames = [ str (i ++ mkChannelName n)
+    channelNames = [ attr $ str (indicator ++ mkChannelName n)
                    | n <- (st ^. csNames . cnChans)
-                   , let i = if n == currentChannelName then "+" else " "
+                   , let indicator = if current then "+" else " "
+                         attr = if current
+                                then withDefAttr currentChannelNameAttr
+                                else id
+                         current = n == currentChannelName
                    ]
     dmChannelNames = [ str (" " ++ mkDMChannelName n)
                      | n <- (st ^. csNames . cnUsers)
