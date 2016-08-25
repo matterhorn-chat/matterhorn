@@ -61,8 +61,15 @@ renderChannelList st = hLimit channelListWidth $
                                 else id
                          current = n == currentChannelName
                    ]
-    dmChannelNames = [ str (" " ++ mkDMChannelName n)
-                     | n <- (st ^. csNames . cnUsers)
+    dmChannelNames = [ attr $ str (indicator ++ mkDMChannelName (u^.userProfileUsernameL))
+                     | u <- (st ^. usrMap & HM.elems)
+                     , let indicator = if current then "+" else " "
+                           attr = if current
+                                  then withDefAttr currentChannelNameAttr
+                                  else id
+                           cname = getDMChannelName (st^.csMe^.userIdL)
+                                                    (u^.userProfileIdL)
+                           current = cname == currentChannelName
                      ]
 
 renderUserCommandBox :: ChatState -> Widget Name
@@ -94,16 +101,17 @@ renderCurrentChannelDisplay st = header <=> hBorder <=> messages
     chnName = chan^.channelNameL
     chnType = chan^.channelTypeL
     purposeStr = chan^.channelPurposeL
-    findUserByDMChannelName :: HashMap UserId UserProfile
-                            -> String -- ^ the dm channel name
-                            -> UserId -- ^ me
-                            -> Maybe UserProfile -- ^ you
-    findUserByDMChannelName userMap dmchan me = listToMaybe
-      [ user
-      | u <- HM.keys userMap
-      , getDMChannelName me u == dmchan
-      , user <- maybeToList (HM.lookup u userMap)
-      ]
+
+findUserByDMChannelName :: HashMap UserId UserProfile
+                        -> String -- ^ the dm channel name
+                        -> UserId -- ^ me
+                        -> Maybe UserProfile -- ^ you
+findUserByDMChannelName userMap dmchan me = listToMaybe
+  [ user
+  | u <- HM.keys userMap
+  , getDMChannelName me u == dmchan
+  , user <- maybeToList (HM.lookup u userMap)
+  ]
 
 chatDraw :: ChatState -> [Widget Name]
 chatDraw st =
