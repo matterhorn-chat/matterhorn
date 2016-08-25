@@ -7,7 +7,7 @@ import State
 data Cmd = Cmd
   { commandName   :: String
   , commandDescr  :: String
-  , commandAction :: [String] -> ChatState -> EventM Int (Next ChatState)
+  , commandAction :: [String] -> ChatState -> EventM Name (Next ChatState)
   }
 
 commandList :: [Cmd]
@@ -23,7 +23,7 @@ commandList =
       continue st
   ]
 
-dispatchCommand :: String -> ChatState -> EventM Int (Next ChatState)
+dispatchCommand :: String -> ChatState -> EventM Name (Next ChatState)
 dispatchCommand cmd st =
   case words cmd of
     (x:xs) | [ c ] <- [ c | c <- commandList

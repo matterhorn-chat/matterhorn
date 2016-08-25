@@ -47,7 +47,7 @@ main = do
   mmWithWebSocket (st^.csConn) (st^.csTok) shunt $ \_ -> do
     void $ customMain (Vty.mkVty def) eventChan app st
 
-app :: App ChatState Event Int
+app :: App ChatState Event Name
 app = App
   { appDraw         = chatDraw
   , appChooseCursor = \ _ (l:_) -> Just l
@@ -57,7 +57,7 @@ app = App
   , appLiftVtyEvent = VtyEvent
   }
 
-wrappedText :: String -> Widget Int
+wrappedText :: String -> Widget Name
 wrappedText msg = Widget Fixed Fixed $ do
   ctx <- getContext
   let w = ctx ^. availWidthL
@@ -69,7 +69,7 @@ renderTime tz t =
     let timeStr = formatTime defaultTimeLocale "%R" (utcToLocalTime tz t)
     in "[" ++ timeStr ++ "]"
 
-renderChatMessage :: TimeZone -> (UTCTime, String, String) -> Widget Int
+renderChatMessage :: TimeZone -> (UTCTime, String, String) -> Widget Name
 renderChatMessage tz (t, u, m) =
     str (renderTime tz t ++ " ") <+> wrappedText (u ++ ": " ++ m)
 
@@ -79,7 +79,7 @@ mkChannelName = ('#':)
 mkDMChannelName :: String -> String
 mkDMChannelName = ('@':)
 
-renderChannelList :: ChatState -> Widget Int
+renderChannelList :: ChatState -> Widget Name
 renderChannelList st = hLimit channelListWidth $
                        vBox $ (hBorderWithLabel $ str "Channels") : channelNames <>
                               ((hBorderWithLabel $ str "Users") : dmChannelNames)
@@ -95,30 +95,30 @@ renderChannelList st = hLimit channelListWidth $
                      | n <- (st ^. csNames . cnUsers)
                      ]
 
-renderUserCommandBox :: ChatState -> Widget Int
+renderUserCommandBox :: ChatState -> Widget Name
 renderUserCommandBox st = prompt <+> inputBox
     where
     prompt = str "> "
     inputBox = renderEditor True (st^.cmdLine)
 
-renderCurrentChannelDisplay :: ChatState -> Widget Int
+renderCurrentChannelDisplay :: ChatState -> Widget Name
 renderCurrentChannelDisplay st = header <=> hBorder <=> messages
     where
     header = padRight Max (str $ mkChannelName chnName)
-    messages = viewport 0 Vertical chatText <+> str " "
+    messages = viewport ChannelMessages Vertical chatText <+> str " "
     chatText = vBox $ renderChatMessage (st ^. timeZone) <$> channelMessages
     channelMessages = getMessageListing cId st
     cId = currChannel st
     chnName = getChannelName cId st
 
-chatDraw :: ChatState -> [Widget Int]
+chatDraw :: ChatState -> [Widget Name]
 chatDraw st =
     [ (renderChannelList st <+> vBorder <+> renderCurrentChannelDisplay st)
       <=> hBorder
       <=> renderUserCommandBox st
     ]
 
-onEvent :: ChatState -> Event -> EventM Int (Next ChatState)
+onEvent :: ChatState -> Event -> EventM Name (Next ChatState)
 onEvent st (VtyEvent (Vty.EvKey Vty.KEsc [])) = halt st
 onEvent st (VtyEvent (Vty.EvKey Vty.KRight [])) =
   continue (nextChannel st)

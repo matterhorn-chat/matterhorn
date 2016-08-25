@@ -34,6 +34,10 @@ data MMNames = MMNames
 
 makeLenses ''MMNames
 
+data Name = ChannelMessages
+          | MessageInput
+          deriving (Eq, Show, Ord)
+
 data ChatState = ChatState
   { _csTok    :: Token
   , _csConn   :: ConnectionData
@@ -44,7 +48,7 @@ data ChatState = ChatState
   , _chnMap   :: HashMap ChannelId Channel
   , _msgMap   :: HashMap ChannelId Posts
   , _usrMap   :: HashMap UserId UserProfile
-  , _cmdLine  :: Editor Int
+  , _cmdLine  :: Editor Name
   , _timeZone :: TimeZone
   }
 
@@ -59,7 +63,7 @@ newState t c i u m tz = ChatState
   , _chnMap   = HM.empty
   , _msgMap   = HM.empty
   , _usrMap   = HM.empty
-  , _cmdLine  = editor 1 (vBox . map str) (Just 1) ""
+  , _cmdLine  = editor MessageInput (vBox . map str) (Just 1) ""
   , _timeZone = tz
   }
 
