@@ -2,15 +2,16 @@
 
 module State where
 
-import           Brick (str, vBox)
+import           Brick (EventM, str, vBox)
 import           Brick.Widgets.Edit (Editor, editor)
 import           Control.Monad (join, forM)
+import           Control.Monad.IO.Class (liftIO)
 import           Data.HashMap.Strict (HashMap, (!))
 import qualified Data.HashMap.Strict as HM
 import           Data.List (sort)
 import           Data.Maybe (listToMaybe, maybeToList)
 import           Data.Monoid ((<>))
-import           Data.Time.Clock ( UTCTime )
+import           Data.Time.Clock ( UTCTime, getCurrentTime )
 import           Data.Time.LocalTime ( TimeZone(..), getCurrentTimeZone )
 import qualified Data.Text as T
 import           Lens.Micro.Platform
@@ -36,7 +37,44 @@ makeLenses ''MMNames
 
 data Name = ChannelMessages
           | MessageInput
+          | NormalChannelList
+          | DMChannelList
           deriving (Eq, Show, Ord)
+
+-- We want to continue referring to posts by their IDs, but we don't want to
+-- have to synthesize new valid IDs for messages from the client itself. To
+-- that end, a PostRef can be either a PostId or a newly-generated client ID
+data PostRef
+  = MMId PostId
+  | CLId Int
+    deriving (Eq, Show)
+
+-- A ClientMessage is a message given to us by our client, like help text
+-- or an error message.
+data ClientMessage = ClientMessage
+  { _cmText :: String
+  , _cmDate :: UTCTime
+  }
+
+makeLenses ''ClientMessage
+
+-- Our ChannelData is roughly equivalent to the Post structure we get from
+-- the MM API, but we also map integers to ClientMessage values, which are
+-- bits out debug output from the client itself.
+data ChannelData = ChannelData
+  { _cdOrder :: [PostRef]
+  , _cdPosts :: HashMap PostId Post
+  , _cdCMsgs :: HashMap Int ClientMessage
+  }
+
+fromPosts :: Posts -> ChannelData
+fromPosts p = ChannelData
+  { _cdOrder = map MMId (p ^. postsOrderL)
+  , _cdPosts = (p ^. postsPostsL)
+  , _cdCMsgs = HM.empty
+  }
+
+makeLenses ''ChannelData
 
 data ChatState = ChatState
   { _csTok    :: Token
@@ -46,7 +84,7 @@ data ChatState = ChatState
   , _csMe     :: User
   , _csMyTeam :: Team
   , _chnMap   :: HashMap ChannelId Channel
-  , _msgMap   :: HashMap ChannelId Posts
+  , _msgMap   :: HashMap ChannelId ChannelData
   , _usrMap   :: HashMap UserId UserProfile
   , _cmdLine  :: Editor Name
   , _timeZone :: TimeZone
@@ -81,6 +119,9 @@ currentChannelId st = Z.focus (st ^. csFocus)
 channelExists :: ChatState -> String -> Bool
 channelExists st n = n `elem` st ^. csNames . cnChans
 
+userExists :: ChatState -> String -> Bool
+userExists st n = n `elem` st ^. csNames . cnUsers
+
 setFocus :: String -> ChatState -> ChatState
 setFocus n st = st & csFocus %~ Z.findRight (==n')
   where
@@ -93,22 +134,50 @@ setDMFocus n st = st & csFocus %~ Z.findRight (==n')
 
 editMessage :: Post -> ChatState -> ChatState
 editMessage new st =
-  st & msgMap . ix (postChannelId new) . postsPostsL . ix (getId new) .~ new
+  st & msgMap . ix (postChannelId new) . cdPosts . ix (getId new) .~ new
 
 addMessage :: Post -> ChatState -> ChatState
 addMessage new st =
-  st & msgMap . ix (postChannelId new) . postsPostsL . at (getId new) .~ Just new
-     & msgMap . ix (postChannelId new) . postsOrderL %~ (getId new :)
+  st & msgMap . ix (postChannelId new) . cdPosts . at (getId new) .~ Just new
+     & msgMap . ix (postChannelId new) . cdOrder %~ (MMId (getId new) :)
+
+-- XXX: Right now, our new ID is based on the size of the map containing all
+-- the ClientMessages, which only makes sense if we never delete ClientMessages.
+-- We should probably figure out a better way of choosing IDs.
+addClientMessage :: ClientMessage -> ChatState -> ChatState
+addClientMessage msg st =
+  let n = HM.size (st ^. msgMap . ix cid . cdCMsgs) + 1
+      cid = currentChannelId st
+  in st & msgMap . ix cid . cdCMsgs . at n .~ Just msg
+        & msgMap . ix cid . cdOrder %~ (CLId n :)
+
+mmMessageDigest :: ChannelId -> PostId -> ChatState -> (UTCTime, String, String)
+mmMessageDigest cId ref st =
+  ( postCreateAt p, userProfileUsername (us ! postUserId p), postMessage p )
+  where p = ((ms ! cId) ^. cdPosts) ! ref
+        ms = st ^. msgMap
+        us = st ^. usrMap
+
+newClientMessage :: String -> EventM a ClientMessage
+newClientMessage msg = do
+  now <- liftIO getCurrentTime
+  return (ClientMessage msg now)
+
+clientMessageDigest :: ChannelId -> Int -> ChatState -> (UTCTime, String, String)
+clientMessageDigest cId ref st =
+  ( m ^. cmDate, "*matterhorn", m ^. cmText )
+  where m = ((ms ! cId) ^. cdCMsgs) ! ref
+        ms = st ^. msgMap
 
 getMessageListing :: ChannelId -> ChatState -> [(UTCTime, String, String)]
 getMessageListing cId st =
-  let us = st ^. usrMap
-      ps = st ^. msgMap . ix cId . postsPostsL
-      is = st ^. msgMap . ix cId . postsOrderL
+  let is = st ^. msgMap . ix cId . cdOrder
   in reverse
-    [ ( postCreateAt p, userProfileUsername (us ! postUserId p), postMessage p)
+    [ msg
     | i <- is
-    , let p = ps ! i
+    , let msg = case i of
+                  CLId c -> clientMessageDigest cId c st
+                  MMId p -> mmMessageDigest cId p st
     ]
 
 getChannelName :: ChannelId -> ChatState -> String
@@ -162,7 +231,7 @@ setupState config = do
 
   msgs <- fmap HM.fromList $ forM chans $ \c -> do
     posts <- mmGetPosts cd token myTeamId (getId c) 0 30
-    return (getId c, posts)
+    return (getId c, fromPosts posts)
 
   users <- mmGetProfiles cd token myTeamId
   tz    <- getCurrentTimeZone

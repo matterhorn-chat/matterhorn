@@ -9,6 +9,8 @@ import           Data.Time.Format ( formatTime
 import           Data.Time.LocalTime ( TimeZone, utcToLocalTime )
 import qualified Data.HashMap.Strict as HM
 import           Data.HashMap.Strict ( HashMap )
+import           Data.List (sortBy)
+import           Data.Ord (comparing)
 import           Data.Maybe ( listToMaybe, maybeToList )
 import           Data.Monoid ((<>))
 import           Lens.Micro.Platform
@@ -32,9 +34,12 @@ renderTime tz t =
     let timeStr = formatTime defaultTimeLocale "%R" (utcToLocalTime tz t)
     in str "[" <+> withDefAttr timeAttr (str timeStr) <+> str "]"
 
-renderChatMessage :: TimeZone -> (UTCTime, String, String) -> Widget Name
-renderChatMessage tz (t, u, m) =
-    renderTime tz t <+> str " " <+> wrappedText (u ++ ": " ++ m)
+renderChatMessage :: TimeZone -> Int -> (Int, (UTCTime, String, String)) -> Widget Name
+renderChatMessage tz lastIdx (i, (t, u, m)) =
+    let f = if i == lastIdx
+            then visible
+            else id
+    in f $ renderTime tz t <+> str " " <+> wrappedText (u ++ ": " ++ m)
 
 mkChannelName :: String -> String
 mkChannelName = ('#':)
@@ -43,9 +48,12 @@ mkDMChannelName :: String -> String
 mkDMChannelName = ('@':)
 
 renderChannelList :: ChatState -> Widget Name
-renderChannelList st = hLimit channelListWidth $
-                       vBox $ header "Channels" : channelNames <>
-                              (header "Users" : dmChannelNames)
+renderChannelList st = hLimit channelListWidth $ vBox
+                       [ header "Channels"
+                       , vLimit 10 $ viewport NormalChannelList Vertical $ vBox channelNames
+                       , header "Users"
+                       , viewport DMChannelList Vertical $ vBox dmChannelNames
+                       ]
     where
     channelListWidth = 20
     cId = currentChannelId st
@@ -57,15 +65,15 @@ renderChannelList st = hLimit channelListWidth $
                    | n <- (st ^. csNames . cnChans)
                    , let indicator = if current then "+" else " "
                          attr = if current
-                                then withDefAttr currentChannelNameAttr
+                                then visible . withDefAttr currentChannelNameAttr
                                 else id
                          current = n == currentChannelName
                    ]
     dmChannelNames = [ attr $ str (indicator ++ mkDMChannelName (u^.userProfileUsernameL))
-                     | u <- (st ^. usrMap & HM.elems)
+                     | u <- sortBy (comparing userProfileUsername) (st ^. usrMap & HM.elems)
                      , let indicator = if current then "+" else " "
                            attr = if current
-                                  then withDefAttr currentChannelNameAttr
+                                  then visible . withDefAttr currentChannelNameAttr
                                   else id
                            cname = getDMChannelName (st^.csMe^.userIdL)
                                                     (u^.userProfileIdL)
@@ -94,7 +102,8 @@ renderCurrentChannelDisplay st = header <=> hBorder <=> messages
                    _        -> mkChannelName   chnName
                  False -> wrappedText $ mkChannelName chnName <> " - " <> purposeStr
     messages = viewport ChannelMessages Vertical chatText <+> str " "
-    chatText = vBox $ renderChatMessage (st ^. timeZone) <$> channelMessages
+    chatText = vBox $ renderChatMessage (st ^. timeZone) (length channelMessages - 1) <$>
+                      zip [0..] channelMessages
     channelMessages = getMessageListing cId st
     cId = currentChannelId st
     Just chan = getChannel cId st

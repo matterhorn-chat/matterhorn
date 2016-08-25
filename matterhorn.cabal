@@ -41,4 +41,7 @@ executable matterhorn
                      , text-zipper
                      , time
                      , linebreak
+                     , xdg-basedir
+                     , filepath
+                     , directory
   default-language:    Haskell2010
