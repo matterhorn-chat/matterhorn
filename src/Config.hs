@@ -6,9 +6,8 @@ module Config
   , findConfig
   ) where
 
-import           Control.Applicative ((<|>))
-import           Data.Aeson
-import qualified Data.ByteString.Lazy as BS
+import qualified Data.HashMap.Strict as HM
+import           Data.Ini
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           System.Directory (doesFileExist)
@@ -29,25 +28,34 @@ data Config = Config
   , configPass     :: PasswordSource
   } deriving (Eq, Show)
 
-instance FromJSON Config where
-  parseJSON = withObject "config" $ \o -> do
-    configUser <- o .: "user"
-    configHost <- o .: "host"
-    configTeam <- o .: "team"
-    configPort <- o .: "port"
+(??) :: Maybe a -> String -> Either String a
+(Just x) ?? _ = Right x
+Nothing  ?? s = Left ("Missing field: `" ++ s ++ "`")
 
-    passCmd    <- (PasswordCommand <$>) <$> o .:? "passcmd"
-    pass       <- (PasswordString <$>)  <$> o .:? "pass"
-    let failPasswordRequired = fail "Configuration needs either `pass` or `passcmd`"
-    configPass <- maybe failPasswordRequired return $ passCmd <|> pass
+readT :: Read a => Text -> a
+readT = read . T.unpack
 
-    return Config { .. }
+fromIni :: Ini -> Either String Config
+fromIni (Ini ini) = do
+  cS <- HM.lookup "mattermost" ini ?? "mattermost"
+  configUser <- HM.lookup "user" cS ?? "user"
+  configHost <- HM.lookup "host" cS ?? "host"
+  configTeam <- HM.lookup "team" cS ?? "team"
+  configPort <- readT `fmap` (HM.lookup "port" cS ?? "port")
+  let passCmd = HM.lookup "passcmd" cS
+  let pass    = HM.lookup "pass" cS
+  configPass <- case passCmd of
+    Nothing -> case pass of
+      Nothing -> fail "Either `pass` or `passcmd` is needed."
+      Just p -> return (PasswordString p)
+    Just c -> return (PasswordCommand (T.unpack c))
+  return Config { .. }
 
 findConfig :: IO Config
 findConfig = do
-  xdgLocations <- getAllConfigFiles "matterhorn" "config.json"
-  let confLocations = ["./config.json"] ++ xdgLocations
-                                        ++ ["/etc/matterhorn/config.json"]
+  xdgLocations <- getAllConfigFiles "matterhorn" "config.ini"
+  let confLocations = ["./config.ini"] ++ xdgLocations
+                                       ++ ["/etc/matterhorn/config.ini"]
   loop confLocations
   where loop [] = do
           putStrLn "No matterhorn configuration found"
@@ -60,12 +68,13 @@ findConfig = do
 
 getConfig :: FilePath -> IO Config
 getConfig fp = do
-  bs <- BS.readFile fp
-  case decode bs of
-    Nothing   -> do
-      putStrLn ("Unable to parse " ++ fp)
+  t <- readIniFile fp
+  case t >>= fromIni of
+    Left err -> do
+      putStrLn ("Unable to parse " ++ fp ++ ":")
+      putStrLn ("  " ++ err)
       exitFailure
-    Just conf -> do
+    Right conf -> do
       actualPass <- case configPass conf of
         PasswordCommand cmdString -> do
           let (cmd:rest) = words cmdString

@@ -30,7 +30,7 @@ executable matterhorn
                      , unordered-containers
                      , text
                      , bytestring
-                     , aeson
+                     , ini
                      , process
                      , connection
                      , microlens-platform
