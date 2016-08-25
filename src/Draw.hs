@@ -34,9 +34,12 @@ renderTime tz t =
     let timeStr = formatTime defaultTimeLocale "%R" (utcToLocalTime tz t)
     in str "[" <+> withDefAttr timeAttr (str timeStr) <+> str "]"
 
-renderChatMessage :: TimeZone -> (UTCTime, String, String) -> Widget Name
-renderChatMessage tz (t, u, m) =
-    renderTime tz t <+> str " " <+> wrappedText (u ++ ": " ++ m)
+renderChatMessage :: TimeZone -> Int -> (Int, (UTCTime, String, String)) -> Widget Name
+renderChatMessage tz lastIdx (i, (t, u, m)) =
+    let f = if i == lastIdx
+            then visible
+            else id
+    in f $ renderTime tz t <+> str " " <+> wrappedText (u ++ ": " ++ m)
 
 mkChannelName :: String -> String
 mkChannelName = ('#':)
@@ -96,7 +99,8 @@ renderCurrentChannelDisplay st = header <=> hBorder <=> messages
                    _        -> mkChannelName   chnName
                  False -> wrappedText $ mkChannelName chnName <> " - " <> purposeStr
     messages = viewport ChannelMessages Vertical chatText <+> str " "
-    chatText = vBox $ renderChatMessage (st ^. timeZone) <$> channelMessages
+    chatText = vBox $ renderChatMessage (st ^. timeZone) (length channelMessages - 1) <$>
+                      zip [0..] channelMessages
     channelMessages = getMessageListing cId st
     cId = currentChannelId st
     Just chan = getChannel cId st
