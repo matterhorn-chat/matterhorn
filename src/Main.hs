@@ -94,10 +94,12 @@ chatDraw st =
       chatText = vBox $ renderChatMessage (st ^. timeZone) <$> msgs
       prompt = str "> "
       userCmd  = (prompt <+> renderEditor True (st^.cmdLine))
-  in [ (border (renderChannelList st) <+> (border (padRight Max (str ("#" ++ chnName)))
-                             <=> border (viewport 0 Vertical chatText <+>
-                                        str " ")))
-        <=> border userCmd
+  in [ (renderChannelList st <+> vBorder <+>
+         (padRight Max (str ("#" ++ chnName))
+           <=> hBorder
+           <=> viewport 0 Vertical chatText <+> str " "))
+       <=> hBorder
+       <=> userCmd
      ]
 
 onEvent :: ChatState -> Event -> EventM Int (Next ChatState)
