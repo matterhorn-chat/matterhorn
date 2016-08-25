@@ -6,6 +6,7 @@ module Config
   , getConfig
   ) where
 
+import           Control.Applicative ((<|>))
 import           Data.Aeson
 import qualified Data.ByteString.Lazy as BS
 import           Data.Text (Text)
@@ -32,13 +33,11 @@ instance FromJSON Config where
     configHost <- o .:  "host"
     configTeam <- o .:  "team"
     configPort <- o .:  "port"
-    passCmd    <- o .:? "passcmd"
-    pass       <- o .:? "pass"
-    configPass <- case passCmd of
-      Nothing -> case pass of
-        Nothing     -> fail "Configuration needs either `pass` or `passcmd`"
-        Just passwd -> return (PasswordString passwd)
-      Just cmd -> return (PasswordCommand cmd)
+    passCmd    <- (PasswordCommand <$>) <$> o .:? "passcmd"
+    pass       <- (PasswordString <$>) <$> o .:? "pass"
+    configPass <- case passCmd <|> pass of
+      Nothing -> fail "Configuration needs either `pass` or `passcmd`"
+      Just val -> return val
     return Config { .. }
 
 getConfig :: IO Config
