@@ -1,5 +1,6 @@
 module Command where
 
+import Control.Monad.IO.Class (liftIO)
 import Brick (EventM, Next, continue, halt)
 
 import State
@@ -21,9 +22,16 @@ commandList =
       continue (setFocus ch st)
   , Cmd "dm" "Focus on a direct message channel" $ \ [dm] st ->
       continue (setDMFocus dm st)
-  , Cmd "help" "Print the help dialogue [broken]" $ \ _ st ->
-      continue st
+  , Cmd "help" "Print the help dialogue" $ \ _ st -> do
+        msg <- liftIO (newClientMessage (mkHelpText commandList))
+        continue (addClientMessage msg st)
   ]
+
+mkHelpText :: [Cmd] -> String
+mkHelpText cs = "\n" ++
+  unlines [ "  /" ++ cmd ++ ": " ++ desc
+          | Cmd { commandName = cmd, commandDescr = desc } <- cs
+          ]
 
 dispatchCommand :: String -> ChatState -> EventM Name (Next ChatState)
 dispatchCommand cmd st =
