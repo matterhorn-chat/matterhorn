@@ -14,9 +14,10 @@ import           Control.Monad (void)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Default (def)
 import           Data.Text.Zipper (clearZipper)
+import           Data.Time.Clock (UTCTime)
 import           Data.Time.Format ( formatTime
                                   , defaultTimeLocale )
-import           Data.Time.LocalTime ( utcToLocalTime )
+import           Data.Time.LocalTime ( TimeZone, utcToLocalTime )
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform
 import           Text.LineBreak (breakString, BreakFormat(..))
@@ -55,25 +56,30 @@ app = App
   , appLiftVtyEvent = VtyEvent
   }
 
+wrappedText :: String -> Widget Int
+wrappedText msg = Widget Fixed Fixed $ do
+  ctx <- getContext
+  let w = ctx ^. availWidthL
+  render (str (breakString (BreakFormat w 8 '-' Nothing) msg))
+
+renderTime :: TimeZone -> UTCTime -> String
+renderTime tz t =
+    -- %R gives HH:MM in 24 hour time
+    let timeStr = formatTime defaultTimeLocale "%R" (utcToLocalTime tz t)
+    in "[" ++ timeStr ++ "]"
+
+renderChatMessage :: TimeZone -> (UTCTime, String, String) -> Widget Int
+renderChatMessage tz (t, u, m) =
+    str (renderTime tz t ++ " ") <+> wrappedText (u ++ ": " ++ m)
+
 chatDraw :: ChatState -> [Widget Int]
 chatDraw st =
   let cId      = currChannel st
       chnName  = getChannelName    cId st
       msgs     = getMessageListing cId st
-      time t   = "[" ++ formatTime defaultTimeLocale
-                                   "%R" -- gives HH:MM in 24 hour time
-                                   (utcToLocalTime (st ^. timeZone) t) ++
-                 "] "
-      wrappedText :: String -> Widget Int
-      wrappedText msg = Widget Fixed Fixed $ do
-        ctx <- getContext
-        let w = ctx ^. availWidthL
-        render (str (breakString (BreakFormat w 8 '-' Nothing) msg))
-      renderChatM u m = wrappedText (u ++ ": " ++ m)
-      chatText = vBox [ str (time t) <+> renderChatM u m
-                      | (t, u, m) <- msgs
-                      ]
-      userCmd  = (str "> " <+> renderEditor True (st^.cmdLine))
+      chatText = vBox $ renderChatMessage (st ^. timeZone) <$> msgs
+      prompt = str "> "
+      userCmd  = (prompt <+> renderEditor True (st^.cmdLine))
       chanList = vBox $
         [ str (i ++ "#" ++ n)
         | n <- (st ^. csNames . cnChans)
