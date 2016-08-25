@@ -74,8 +74,11 @@ renderChatMessage tz (t, u, m) =
     str (renderTime tz t ++ " ") <+> wrappedText (u ++ ": " ++ m)
 
 renderChannelList :: ChatState -> Widget Int
-renderChannelList st = vBox $ channelNames <> dmChannelNames
+renderChannelList st = hLimit channelListWidth $
+                       vBox $ (hBorderWithLabel $ str "Channels") : channelNames <>
+                              ((hBorderWithLabel $ str "Users") : dmChannelNames)
     where
+    channelListWidth = 20
     cId = currChannel st
     currentChannelName = getChannelName cId st
     channelNames = [ str (i ++ "#" ++ n)
