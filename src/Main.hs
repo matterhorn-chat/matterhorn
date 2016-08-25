@@ -114,12 +114,16 @@ renderCurrentChannelDisplay st = header <=> hBorder <=> messages
     where
     header = padRight Max $
              withDefAttr channelHeaderAttr $
-             str $ mkChannelName chnName
+             case null purposeStr of
+                 True -> str $ mkChannelName chnName
+                 False -> wrappedText $ mkChannelName chnName <> " - " <> purposeStr
     messages = viewport ChannelMessages Vertical chatText <+> str " "
     chatText = vBox $ renderChatMessage (st ^. timeZone) <$> channelMessages
     channelMessages = getMessageListing cId st
     cId = currentChannelId st
-    chnName = getChannelName cId st
+    Just chan = getChannel cId st
+    chnName = chan^.channelNameL
+    purposeStr = chan^.channelPurposeL
 
 chatDraw :: ChatState -> [Widget Name]
 chatDraw st =

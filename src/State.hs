@@ -108,6 +108,10 @@ getChannelName :: ChannelId -> ChatState -> String
 getChannelName cId st =
   (st ^. chnMap . ix cId . channelNameL)
 
+getChannel :: ChannelId -> ChatState -> Maybe Channel
+getChannel cId st =
+  (st ^. chnMap . at cId)
+
 setupState :: Config -> IO ChatState
 setupState config = do
   ctx <- initConnectionContext
