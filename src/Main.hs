@@ -86,20 +86,24 @@ renderChannelList st = vBox $ channelNames <> dmChannelNames
                      | n <- (st ^. csNames . cnUsers)
                      ]
 
+renderUserCommandBox :: ChatState -> Widget Int
+renderUserCommandBox st = prompt <+> inputBox
+    where
+    prompt = str "> "
+    inputBox = renderEditor True (st^.cmdLine)
+
 chatDraw :: ChatState -> [Widget Int]
 chatDraw st =
   let cId      = currChannel st
       chnName  = getChannelName    cId st
       msgs     = getMessageListing cId st
       chatText = vBox $ renderChatMessage (st ^. timeZone) <$> msgs
-      prompt = str "> "
-      userCmd  = (prompt <+> renderEditor True (st^.cmdLine))
   in [ (renderChannelList st <+> vBorder <+>
          (padRight Max (str ("#" ++ chnName))
            <=> hBorder
            <=> viewport 0 Vertical chatText <+> str " "))
        <=> hBorder
-       <=> userCmd
+       <=> renderUserCommandBox st
      ]
 
 onEvent :: ChatState -> Event -> EventM Int (Next ChatState)
