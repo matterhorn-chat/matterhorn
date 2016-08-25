@@ -18,6 +18,7 @@ import           Data.Time.Clock (UTCTime)
 import           Data.Time.Format ( formatTime
                                   , defaultTimeLocale )
 import           Data.Time.LocalTime ( TimeZone, utcToLocalTime )
+import           Data.Monoid ((<>))
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform
 import           Text.LineBreak (breakString, BreakFormat(..))
@@ -72,6 +73,19 @@ renderChatMessage :: TimeZone -> (UTCTime, String, String) -> Widget Int
 renderChatMessage tz (t, u, m) =
     str (renderTime tz t ++ " ") <+> wrappedText (u ++ ": " ++ m)
 
+renderChannelList :: ChatState -> Widget Int
+renderChannelList st = vBox $ channelNames <> dmChannelNames
+    where
+    cId = currChannel st
+    currentChannelName = getChannelName cId st
+    channelNames = [ str (i ++ "#" ++ n)
+                   | n <- (st ^. csNames . cnChans)
+                   , let i = if n == currentChannelName then "+" else " "
+                   ]
+    dmChannelNames = [ str (" @" ++ n)
+                     | n <- (st ^. csNames . cnUsers)
+                     ]
+
 chatDraw :: ChatState -> [Widget Int]
 chatDraw st =
   let cId      = currChannel st
@@ -80,15 +94,7 @@ chatDraw st =
       chatText = vBox $ renderChatMessage (st ^. timeZone) <$> msgs
       prompt = str "> "
       userCmd  = (prompt <+> renderEditor True (st^.cmdLine))
-      chanList = vBox $
-        [ str (i ++ "#" ++ n)
-        | n <- (st ^. csNames . cnChans)
-        , let i = if n == chnName then "+" else " "
-        ] ++
-        [ str (" @" ++ n)
-        | n <- (st ^. csNames . cnUsers)
-        ]
-  in [ (border chanList <+> (border (padRight Max (str ("#" ++ chnName)))
+  in [ (border (renderChannelList st) <+> (border (padRight Max (str ("#" ++ chnName)))
                              <=> border (viewport 0 Vertical chatText <+>
                                         str " ")))
         <=> border userCmd
