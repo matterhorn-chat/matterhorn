@@ -29,13 +29,13 @@ data Config = Config
 
 instance FromJSON Config where
   parseJSON = withObject "config" $ \o -> do
-    configUser <- o .:  "user"
-    configHost <- o .:  "host"
-    configTeam <- o .:  "team"
-    configPort <- o .:  "port"
+    configUser <- o .: "user"
+    configHost <- o .: "host"
+    configTeam <- o .: "team"
+    configPort <- o .: "port"
 
     passCmd    <- (PasswordCommand <$>) <$> o .:? "passcmd"
-    pass       <- (PasswordString <$>) <$> o .:? "pass"
+    pass       <- (PasswordString <$>)  <$> o .:? "pass"
     let failPasswordRequired = fail "Configuration needs either `pass` or `passcmd`"
     configPass <- maybe failPasswordRequired return $ passCmd <|> pass
 
