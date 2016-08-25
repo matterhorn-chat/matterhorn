@@ -133,12 +133,21 @@ chatDraw st =
     ]
 
 onEvent :: ChatState -> Event -> EventM Name (Next ChatState)
-onEvent st (VtyEvent (Vty.EvKey Vty.KEsc [])) = halt st
+onEvent st (VtyEvent (Vty.EvKey Vty.KEsc [])) =
+  halt st
 onEvent st (VtyEvent (Vty.EvKey Vty.KRight [Vty.MCtrl])) =
   continue (nextChannel st)
 onEvent st (VtyEvent (Vty.EvKey Vty.KLeft [Vty.MCtrl])) =
   continue (prevChannel st)
-onEvent st (VtyEvent (Vty.EvKey Vty.KEnter [])) = do
+onEvent st (VtyEvent (Vty.EvKey Vty.KEnter [])) =
+  handleInputSubmission st
+onEvent st (VtyEvent e) =
+  continue =<< handleEventLensed st cmdLine handleEditorEvent e
+onEvent st (WSEvent we) =
+  handleWSEvent st we
+
+handleInputSubmission :: ChatState -> EventM Name (Next ChatState)
+handleInputSubmission st = do
   let (line:_) = getEditContents (st^.cmdLine)
   let st' = st & cmdLine %~ applyEdit clearZipper
   case line of
@@ -146,10 +155,9 @@ onEvent st (VtyEvent (Vty.EvKey Vty.KEnter [])) = do
     _         -> do
       liftIO (sendMessage st' line)
       continue st'
-onEvent st (VtyEvent e) = do
-  editor <- handleEditorEvent e (st^.cmdLine)
-  continue (st & cmdLine .~ editor)
-onEvent st (WSEvent we) = do
+
+handleWSEvent :: ChatState -> WebsocketEvent -> EventM Name (Next ChatState)
+handleWSEvent st we =
   case weAction we of
     WMPosted -> case wepPost (weProps we) of
       Just p  -> continue $ addMessage p st
