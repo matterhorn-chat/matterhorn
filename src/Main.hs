@@ -73,6 +73,12 @@ renderChatMessage :: TimeZone -> (UTCTime, String, String) -> Widget Int
 renderChatMessage tz (t, u, m) =
     str (renderTime tz t ++ " ") <+> wrappedText (u ++ ": " ++ m)
 
+mkChannelName :: String -> String
+mkChannelName = ('#':)
+
+mkDMChannelName :: String -> String
+mkDMChannelName = ('@':)
+
 renderChannelList :: ChatState -> Widget Int
 renderChannelList st = hLimit channelListWidth $
                        vBox $ (hBorderWithLabel $ str "Channels") : channelNames <>
@@ -81,11 +87,11 @@ renderChannelList st = hLimit channelListWidth $
     channelListWidth = 20
     cId = currChannel st
     currentChannelName = getChannelName cId st
-    channelNames = [ str (i ++ "#" ++ n)
+    channelNames = [ str (i ++ mkChannelName n)
                    | n <- (st ^. csNames . cnChans)
                    , let i = if n == currentChannelName then "+" else " "
                    ]
-    dmChannelNames = [ str (" @" ++ n)
+    dmChannelNames = [ str (" " ++ mkDMChannelName n)
                      | n <- (st ^. csNames . cnUsers)
                      ]
 
@@ -98,7 +104,7 @@ renderUserCommandBox st = prompt <+> inputBox
 renderCurrentChannelDisplay :: ChatState -> Widget Int
 renderCurrentChannelDisplay st = header <=> hBorder <=> messages
     where
-    header = padRight Max (str ("#" ++ chnName))
+    header = padRight Max (str $ mkChannelName chnName)
     messages = viewport 0 Vertical chatText <+> str " "
     chatText = vBox $ renderChatMessage (st ^. timeZone) <$> channelMessages
     channelMessages = getMessageListing cId st
