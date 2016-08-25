@@ -20,7 +20,7 @@ import           Types
 
 main :: IO ()
 main = do
-  config <- getConfig
+  config <- findConfig
   st <- setupState config
 
   eventChan <- Chan.newChan

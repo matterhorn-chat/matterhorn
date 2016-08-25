@@ -3,7 +3,7 @@
 module Config
   ( Config(..)
   , PasswordSource(..)
-  , getConfig
+  , findConfig
   ) where
 
 import           Control.Applicative ((<|>))
@@ -11,6 +11,8 @@ import           Data.Aeson
 import qualified Data.ByteString.Lazy as BS
 import           Data.Text (Text)
 import qualified Data.Text as T
+import           System.Directory (doesFileExist)
+import           System.Environment.XDG.BaseDir (getAllConfigFiles)
 import           System.Exit (exitFailure)
 import           System.Process (readProcess)
 
@@ -41,12 +43,27 @@ instance FromJSON Config where
 
     return Config { .. }
 
-getConfig :: IO Config
-getConfig = do
-  bs <- BS.readFile "config.json"
+findConfig :: IO Config
+findConfig = do
+  xdgLocations <- getAllConfigFiles "matterhorn" "config.json"
+  let confLocations = ["./config.json"] ++ xdgLocations
+                                        ++ ["/etc/matterhorn/config.json"]
+  loop confLocations
+  where loop [] = do
+          putStrLn "No matterhorn configuration found"
+          exitFailure
+        loop (c:cs) = do
+          ex <- doesFileExist c
+          if ex
+            then getConfig c
+            else loop cs
+
+getConfig :: FilePath -> IO Config
+getConfig fp = do
+  bs <- BS.readFile fp
   case decode bs of
     Nothing   -> do
-      putStrLn "No config.json found"
+      putStrLn ("Unable to parse " ++ fp)
       exitFailure
     Just conf -> do
       actualPass <- case configPass conf of
