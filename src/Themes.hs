@@ -13,9 +13,6 @@ import Graphics.Vty
 import Brick.AttrMap
 import Brick.Util (fg, bg)
 
-defaultAttr :: Attr
-defaultAttr = bg black
-
 timeAttr :: AttrName
 timeAttr = "time"
 
@@ -29,7 +26,7 @@ currentChannelNameAttr :: AttrName
 currentChannelNameAttr = "currentChannelName"
 
 colorTheme :: AttrMap
-colorTheme = attrMap defaultAttr
+colorTheme = attrMap (bg black)
   [ (timeAttr,                fg white)
   , (channelHeaderAttr,       fg white)
   , (channelListHeaderAttr,   fg cyan)
