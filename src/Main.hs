@@ -31,6 +31,7 @@ import           Network.Mattermost.WebSocket.Types
 import           Command
 import           Config
 import           State
+import           Themes
 
 data Event
   = VtyEvent Vty.Event
@@ -53,7 +54,7 @@ app = App
   , appChooseCursor = \ _ (l:_) -> Just l
   , appHandleEvent  = onEvent
   , appStartEvent   = \ s -> return s
-  , appAttrMap      = \ _ -> def
+  , appAttrMap      = const colorTheme
   , appLiftVtyEvent = VtyEvent
   }
 
@@ -63,15 +64,15 @@ wrappedText msg = Widget Fixed Fixed $ do
   let w = ctx ^. availWidthL
   render (str (breakString (BreakFormat w 8 '-' Nothing) msg))
 
-renderTime :: TimeZone -> UTCTime -> String
+renderTime :: TimeZone -> UTCTime -> Widget Name
 renderTime tz t =
     -- %R gives HH:MM in 24 hour time
     let timeStr = formatTime defaultTimeLocale "%R" (utcToLocalTime tz t)
-    in "[" ++ timeStr ++ "]"
+    in str "[" <+> withDefAttr timeAttr (str timeStr) <+> str "]"
 
 renderChatMessage :: TimeZone -> (UTCTime, String, String) -> Widget Name
 renderChatMessage tz (t, u, m) =
-    str (renderTime tz t ++ " ") <+> wrappedText (u ++ ": " ++ m)
+    renderTime tz t <+> str " " <+> wrappedText (u ++ ": " ++ m)
 
 mkChannelName :: String -> String
 mkChannelName = ('#':)
@@ -81,12 +82,15 @@ mkDMChannelName = ('@':)
 
 renderChannelList :: ChatState -> Widget Name
 renderChannelList st = hLimit channelListWidth $
-                       vBox $ (hBorderWithLabel $ str "Channels") : channelNames <>
-                              ((hBorderWithLabel $ str "Users") : dmChannelNames)
+                       vBox $ header "Channels" : channelNames <>
+                              (header "Users" : dmChannelNames)
     where
     channelListWidth = 20
     cId = currChannel st
     currentChannelName = getChannelName cId st
+    header label = hBorderWithLabel $
+                   withDefAttr channelListHeaderAttr $
+                   str label
     channelNames = [ str (i ++ mkChannelName n)
                    | n <- (st ^. csNames . cnChans)
                    , let i = if n == currentChannelName then "+" else " "
@@ -104,7 +108,9 @@ renderUserCommandBox st = prompt <+> inputBox
 renderCurrentChannelDisplay :: ChatState -> Widget Name
 renderCurrentChannelDisplay st = header <=> hBorder <=> messages
     where
-    header = padRight Max (str $ mkChannelName chnName)
+    header = padRight Max $
+             withDefAttr channelHeaderAttr $
+             str $ mkChannelName chnName
     messages = viewport ChannelMessages Vertical chatText <+> str " "
     chatText = vBox $ renderChatMessage (st ^. timeZone) <$> channelMessages
     channelMessages = getMessageListing cId st

@@ -18,6 +18,7 @@ executable matterhorn
                        Command
                        State
                        Zipper
+                       Themes
   default-extensions:  OverloadedStrings,
                        ScopedTypeVariables
   ghc-options:         -Wall -threaded
