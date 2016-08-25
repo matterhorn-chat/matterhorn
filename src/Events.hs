@@ -21,9 +21,9 @@ import           Types
 onEvent :: ChatState -> Event -> EventM Name (Next ChatState)
 onEvent st (VtyEvent (Vty.EvKey Vty.KEsc [])) =
   halt st
-onEvent st (VtyEvent (Vty.EvKey Vty.KRight [Vty.MCtrl])) =
+onEvent st (VtyEvent (Vty.EvKey (Vty.KChar 'n') [Vty.MCtrl])) =
   continue (nextChannel st)
-onEvent st (VtyEvent (Vty.EvKey Vty.KLeft [Vty.MCtrl])) =
+onEvent st (VtyEvent (Vty.EvKey (Vty.KChar 'p') [Vty.MCtrl])) =
   continue (prevChannel st)
 onEvent st (VtyEvent (Vty.EvKey Vty.KEnter [])) =
   handleInputSubmission st
