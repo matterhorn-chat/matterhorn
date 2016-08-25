@@ -134,9 +134,9 @@ chatDraw st =
 
 onEvent :: ChatState -> Event -> EventM Name (Next ChatState)
 onEvent st (VtyEvent (Vty.EvKey Vty.KEsc [])) = halt st
-onEvent st (VtyEvent (Vty.EvKey Vty.KRight [])) =
+onEvent st (VtyEvent (Vty.EvKey Vty.KRight [Vty.MCtrl])) =
   continue (nextChannel st)
-onEvent st (VtyEvent (Vty.EvKey Vty.KLeft [])) =
+onEvent st (VtyEvent (Vty.EvKey Vty.KLeft [Vty.MCtrl])) =
   continue (prevChannel st)
 onEvent st (VtyEvent (Vty.EvKey Vty.KEnter [])) = do
   let (line:_) = getEditContents (st^.cmdLine)
