@@ -9,6 +9,8 @@ import           Data.Time.Format ( formatTime
 import           Data.Time.LocalTime ( TimeZone, utcToLocalTime )
 import qualified Data.HashMap.Strict as HM
 import           Data.HashMap.Strict ( HashMap )
+import           Data.List (sortBy)
+import           Data.Ord (comparing)
 import           Data.Maybe ( listToMaybe, maybeToList )
 import           Data.Monoid ((<>))
 import           Lens.Micro.Platform
@@ -62,7 +64,7 @@ renderChannelList st = hLimit channelListWidth $
                          current = n == currentChannelName
                    ]
     dmChannelNames = [ attr $ str (indicator ++ mkDMChannelName (u^.userProfileUsernameL))
-                     | u <- (st ^. usrMap & HM.elems)
+                     | u <- sortBy (comparing userProfileUsername) (st ^. usrMap & HM.elems)
                      , let indicator = if current then "+" else " "
                            attr = if current
                                   then withDefAttr currentChannelNameAttr
