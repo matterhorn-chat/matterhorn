@@ -2,9 +2,10 @@
 
 module State where
 
-import           Brick (str, vBox)
+import           Brick (EventM, str, vBox)
 import           Brick.Widgets.Edit (Editor, editor)
 import           Control.Monad (join, forM)
+import           Control.Monad.IO.Class (liftIO)
 import           Data.HashMap.Strict (HashMap, (!))
 import qualified Data.HashMap.Strict as HM
 import           Data.List (sort)
@@ -152,14 +153,14 @@ mmMessageDigest cId ref st =
         ms = st ^. msgMap
         us = st ^. usrMap
 
-newClientMessage :: String -> IO ClientMessage
+newClientMessage :: String -> EventM a ClientMessage
 newClientMessage msg = do
-  now <- getCurrentTime
+  now <- liftIO getCurrentTime
   return (ClientMessage msg now)
 
 clientMessageDigest :: ChannelId -> Int -> ChatState -> (UTCTime, String, String)
 clientMessageDigest cId ref st =
-  ( m ^. cmDate, "matterhorn", m ^. cmText )
+  ( m ^. cmDate, "*matterhorn", m ^. cmText )
   where m = ((ms ! cId) ^. cdCMsgs) ! ref
         ms = st ^. msgMap
 
