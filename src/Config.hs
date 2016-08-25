@@ -33,11 +33,12 @@ instance FromJSON Config where
     configHost <- o .:  "host"
     configTeam <- o .:  "team"
     configPort <- o .:  "port"
+
     passCmd    <- (PasswordCommand <$>) <$> o .:? "passcmd"
     pass       <- (PasswordString <$>) <$> o .:? "pass"
-    configPass <- case passCmd <|> pass of
-      Nothing -> fail "Configuration needs either `pass` or `passcmd`"
-      Just val -> return val
+    let failPasswordRequired = fail "Configuration needs either `pass` or `passcmd`"
+    configPass <- maybe failPasswordRequired return $ passCmd <|> pass
+
     return Config { .. }
 
 getConfig :: IO Config
