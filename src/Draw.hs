@@ -7,10 +7,14 @@ import           Data.Time.Clock (UTCTime)
 import           Data.Time.Format ( formatTime
                                   , defaultTimeLocale )
 import           Data.Time.LocalTime ( TimeZone, utcToLocalTime )
+import qualified Data.HashMap.Strict as HM
+import           Data.HashMap.Strict ( HashMap )
+import           Data.Maybe ( listToMaybe, maybeToList )
 import           Data.Monoid ((<>))
 import           Lens.Micro.Platform
 import           Text.LineBreak (breakString, BreakFormat(..))
 
+import           Network.Mattermost
 import           Network.Mattermost.Lenses
 
 import           State
@@ -73,7 +77,14 @@ renderCurrentChannelDisplay st = header <=> hBorder <=> messages
     header = padRight Max $
              withDefAttr channelHeaderAttr $
              case null purposeStr of
-                 True -> str $ mkChannelName chnName
+                 True -> str $ case chnType of
+                   Type "D" ->
+                     case findUserByDMChannelName (st^.usrMap)
+                                                  chnName
+                                                  (st^.csMe^.userIdL) of
+                       Nothing -> mkChannelName chnName
+                       Just u  -> mkDMChannelName (u^.userProfileUsernameL)
+                   _        -> mkChannelName   chnName
                  False -> wrappedText $ mkChannelName chnName <> " - " <> purposeStr
     messages = viewport ChannelMessages Vertical chatText <+> str " "
     chatText = vBox $ renderChatMessage (st ^. timeZone) <$> channelMessages
@@ -81,7 +92,18 @@ renderCurrentChannelDisplay st = header <=> hBorder <=> messages
     cId = currentChannelId st
     Just chan = getChannel cId st
     chnName = chan^.channelNameL
+    chnType = chan^.channelTypeL
     purposeStr = chan^.channelPurposeL
+    findUserByDMChannelName :: HashMap UserId UserProfile
+                            -> String -- ^ the dm channel name
+                            -> UserId -- ^ me
+                            -> Maybe UserProfile -- ^ you
+    findUserByDMChannelName userMap dmchan me = listToMaybe
+      [ user
+      | u <- HM.keys userMap
+      , getDMChannelName me u == dmchan
+      , user <- maybeToList (HM.lookup u userMap)
+      ]
 
 chatDraw :: ChatState -> [Widget Name]
 chatDraw st =

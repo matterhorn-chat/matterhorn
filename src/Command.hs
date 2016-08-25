@@ -19,6 +19,8 @@ commandList =
       continue (prevChannel st)
   , Cmd "chan" "Focus on a named channel" $ \ [ch] st ->
       continue (setFocus ch st)
+  , Cmd "dm" "Focus on a direct message channel" $ \ [dm] st ->
+      continue (setDMFocus dm st)
   , Cmd "help" "Print the help dialogue [broken]" $ \ _ st ->
       continue st
   ]

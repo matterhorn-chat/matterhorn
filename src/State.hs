@@ -8,7 +8,7 @@ import           Control.Monad (join, forM)
 import           Data.HashMap.Strict (HashMap, (!))
 import qualified Data.HashMap.Strict as HM
 import           Data.List (sort)
-import           Data.Maybe (listToMaybe)
+import           Data.Maybe (listToMaybe, maybeToList)
 import           Data.Monoid ((<>))
 import           Data.Time.Clock ( UTCTime )
 import           Data.Time.LocalTime ( TimeZone(..), getCurrentTimeZone )
@@ -41,7 +41,7 @@ data Name = ChannelMessages
 data ChatState = ChatState
   { _csTok    :: Token
   , _csConn   :: ConnectionData
-  , _csFocus  :: Zipper String
+  , _csFocus  :: Zipper ChannelId
   , _csNames  :: MMNames
   , _csMe     :: User
   , _csMyTeam :: Team
@@ -52,7 +52,7 @@ data ChatState = ChatState
   , _timeZone :: TimeZone
   }
 
-newState :: Token -> ConnectionData -> Zipper String -> User -> Team -> TimeZone -> ChatState
+newState :: Token -> ConnectionData -> Zipper ChannelId -> User -> Team -> TimeZone -> ChatState
 newState t c i u m tz = ChatState
   { _csTok    = t
   , _csConn   = c
@@ -76,13 +76,20 @@ prevChannel :: ChatState -> ChatState
 prevChannel st = st & csFocus %~ Z.left
 
 currentChannelId :: ChatState -> ChannelId
-currentChannelId st = (st ^. csNames . cnToChanId) ! Z.focus (st ^. csFocus)
+currentChannelId st = Z.focus (st ^. csFocus)
 
 channelExists :: ChatState -> String -> Bool
 channelExists st n = n `elem` st ^. csNames . cnChans
 
 setFocus :: String -> ChatState -> ChatState
-setFocus n st = st & csFocus %~ Z.findRight (==n)
+setFocus n st = st & csFocus %~ Z.findRight (==n')
+  where
+  Just n' = st ^. csNames . cnToChanId . at n
+
+setDMFocus :: String -> ChatState -> ChatState
+setDMFocus n st = st & csFocus %~ Z.findRight (==n')
+  where
+  Just n' = st ^. csNames . cnToChanId . at n
 
 editMessage :: Post -> ChatState -> ChatState
 editMessage new st =
@@ -107,6 +114,12 @@ getMessageListing cId st =
 getChannelName :: ChannelId -> ChatState -> String
 getChannelName cId st =
   (st ^. chnMap . ix cId . channelNameL)
+
+getDMChannelName :: UserId -> UserId -> String
+getDMChannelName me you = cname
+  where
+  [loUser, hiUser] = sort [ you, me ]
+  cname = idString loUser ++ "__" ++ idString hiUser
 
 getChannel :: ChannelId -> ChatState -> Maybe Channel
 getChannel cId st =
@@ -143,6 +156,10 @@ setupState config = do
 
   Channels chans _ <- mmGetChannels cd token myTeamId
 
+  let lookupChan n = [ c ^. channelIdL
+                     | c <- chans
+                     , c ^. channelNameL == n ]
+
   msgs <- fmap HM.fromList $ forM chans $ \c -> do
     posts <- mmGetPosts cd token myTeamId (getId c) 0 30
     return (getId c, posts)
@@ -161,9 +178,13 @@ setupState config = do
                    | c <- chans
                    , channelType c == "D"
                    ]
-        , _cnToChanId = HM.fromList
+        , _cnToChanId = HM.fromList $
                           [ (channelName c, channelId c)
                           | c <- chans
+                          ] ++
+                          [ (userProfileUsername u, c)
+                          | u <- HM.elems users
+                          , c <- lookupChan (getDMChannelName (getId myUser) (getId u))
                           ]
         , _cnUsers = sort (map userProfileUsername (HM.elems users))
         , _cnToUserId = HM.fromList
@@ -171,7 +192,13 @@ setupState config = do
                           | u <- HM.elems users
                           ]
         }
-      chanZip = Z.findRight (== "town-square") (Z.fromList (chanNames ^. cnChans))
+      Just townSqId = chanNames ^. cnToChanId . at "town-square"
+      chanIds = [ (chanNames ^. cnToChanId) HM.! i
+                | i <- chanNames ^. cnChans ] ++
+                [ c
+                | i <- chanNames ^. cnUsers
+                , c <- maybeToList (HM.lookup i (chanNames ^. cnToChanId)) ]
+      chanZip = Z.findRight (== townSqId) (Z.fromList chanIds)
       st = newState token cd chanZip myUser myTeam tz
              & chnMap .~ HM.fromList [ (getId c, c)
                                      | c <- chans
