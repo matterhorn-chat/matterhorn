@@ -19,6 +19,9 @@ executable matterhorn
                        State
                        Zipper
                        Themes
+                       Draw
+                       Events
+                       Types
   default-extensions:  OverloadedStrings,
                        ScopedTypeVariables
   ghc-options:         -Wall -threaded
