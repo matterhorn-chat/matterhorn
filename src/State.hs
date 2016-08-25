@@ -37,6 +37,8 @@ makeLenses ''MMNames
 
 data Name = ChannelMessages
           | MessageInput
+          | NormalChannelList
+          | DMChannelList
           deriving (Eq, Show, Ord)
 
 -- We want to continue referring to posts by their IDs, but we don't want to

@@ -48,9 +48,12 @@ mkDMChannelName :: String -> String
 mkDMChannelName = ('@':)
 
 renderChannelList :: ChatState -> Widget Name
-renderChannelList st = hLimit channelListWidth $
-                       vBox $ header "Channels" : channelNames <>
-                              (header "Users" : dmChannelNames)
+renderChannelList st = hLimit channelListWidth $ vBox
+                       [ header "Channels"
+                       , vLimit 10 $ viewport NormalChannelList Vertical $ vBox channelNames
+                       , header "Users"
+                       , viewport DMChannelList Vertical $ vBox dmChannelNames
+                       ]
     where
     channelListWidth = 20
     cId = currentChannelId st
@@ -62,7 +65,7 @@ renderChannelList st = hLimit channelListWidth $
                    | n <- (st ^. csNames . cnChans)
                    , let indicator = if current then "+" else " "
                          attr = if current
-                                then withDefAttr currentChannelNameAttr
+                                then visible . withDefAttr currentChannelNameAttr
                                 else id
                          current = n == currentChannelName
                    ]
@@ -70,7 +73,7 @@ renderChannelList st = hLimit channelListWidth $
                      | u <- sortBy (comparing userProfileUsername) (st ^. usrMap & HM.elems)
                      , let indicator = if current then "+" else " "
                            attr = if current
-                                  then withDefAttr currentChannelNameAttr
+                                  then visible . withDefAttr currentChannelNameAttr
                                   else id
                            cname = getDMChannelName (st^.csMe^.userIdL)
                                                     (u^.userProfileIdL)
