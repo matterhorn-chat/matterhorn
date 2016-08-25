@@ -92,19 +92,22 @@ renderUserCommandBox st = prompt <+> inputBox
     prompt = str "> "
     inputBox = renderEditor True (st^.cmdLine)
 
+renderCurrentChannelDisplay :: ChatState -> Widget Int
+renderCurrentChannelDisplay st = header <=> hBorder <=> messages
+    where
+    header = padRight Max (str ("#" ++ chnName))
+    messages = viewport 0 Vertical chatText <+> str " "
+    chatText = vBox $ renderChatMessage (st ^. timeZone) <$> channelMessages
+    channelMessages = getMessageListing cId st
+    cId = currChannel st
+    chnName = getChannelName cId st
+
 chatDraw :: ChatState -> [Widget Int]
 chatDraw st =
-  let cId      = currChannel st
-      chnName  = getChannelName    cId st
-      msgs     = getMessageListing cId st
-      chatText = vBox $ renderChatMessage (st ^. timeZone) <$> msgs
-  in [ (renderChannelList st <+> vBorder <+>
-         (padRight Max (str ("#" ++ chnName))
-           <=> hBorder
-           <=> viewport 0 Vertical chatText <+> str " "))
-       <=> hBorder
-       <=> renderUserCommandBox st
-     ]
+    [ (renderChannelList st <+> vBorder <+> renderCurrentChannelDisplay st)
+      <=> hBorder
+      <=> renderUserCommandBox st
+    ]
 
 onEvent :: ChatState -> Event -> EventM Int (Next ChatState)
 onEvent st (VtyEvent (Vty.EvKey Vty.KEsc [])) = halt st
