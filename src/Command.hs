@@ -18,9 +18,17 @@ commandList =
   , Cmd "left" "Focus on the previous channel" $ \ _ st ->
       continue (prevChannel st)
   , Cmd "chan" "Focus on a named channel" $ \ [ch] st ->
-      continue (setFocus ch st)
+      if channelExists st ch
+        then continue (setFocus ch st)
+        else do
+          msg <- newClientMessage ("No channel named #" ++ ch)
+          continue (addClientMessage msg st)
   , Cmd "dm" "Focus on a direct message channel" $ \ [dm] st ->
-      continue (setDMFocus dm st)
+      if userExists st dm
+        then continue (setDMFocus dm st)
+        else do
+          msg <- newClientMessage ("No user named @" ++ dm)
+          continue (addClientMessage msg st)
   , Cmd "help" "Print the help dialogue" $ \ _ st -> do
         msg <- newClientMessage (mkHelpText commandList)
         continue (addClientMessage msg st)
@@ -38,5 +46,10 @@ dispatchCommand cmd st =
     (x:xs) | [ c ] <- [ c | c <- commandList
                           , commandName c == x
                           ] -> commandAction c xs st
-           | otherwise -> continue st
+           | otherwise -> do
+               let s = unlines [ "\nUnknown command: `/" ++ x ++ "`"
+                               , "Type /help for more information"
+                               ]
+               msg <- newClientMessage s
+               continue (addClientMessage msg st)
     _ -> continue st

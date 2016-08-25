@@ -117,6 +117,9 @@ currentChannelId st = Z.focus (st ^. csFocus)
 channelExists :: ChatState -> String -> Bool
 channelExists st n = n `elem` st ^. csNames . cnChans
 
+userExists :: ChatState -> String -> Bool
+userExists st n = n `elem` st ^. csNames . cnUsers
+
 setFocus :: String -> ChatState -> ChatState
 setFocus n st = st & csFocus %~ Z.findRight (==n')
   where
