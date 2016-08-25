@@ -75,8 +75,8 @@ nextChannel st = st & csFocus %~ Z.right
 prevChannel :: ChatState -> ChatState
 prevChannel st = st & csFocus %~ Z.left
 
-currChannel :: ChatState -> ChannelId
-currChannel st = (st ^. csNames . cnToChanId) ! Z.focus (st ^. csFocus)
+currentChannelId :: ChatState -> ChannelId
+currentChannelId st = (st ^. csNames . cnToChanId) ! Z.focus (st ^. csFocus)
 
 channelExists :: ChatState -> String -> Bool
 channelExists st n = n `elem` st ^. csNames . cnChans

@@ -86,7 +86,7 @@ renderChannelList st = hLimit channelListWidth $
                               (header "Users" : dmChannelNames)
     where
     channelListWidth = 20
-    cId = currChannel st
+    cId = currentChannelId st
     currentChannelName = getChannelName cId st
     header label = hBorderWithLabel $
                    withDefAttr channelListHeaderAttr $
@@ -118,7 +118,7 @@ renderCurrentChannelDisplay st = header <=> hBorder <=> messages
     messages = viewport ChannelMessages Vertical chatText <+> str " "
     chatText = vBox $ renderChatMessage (st ^. timeZone) <$> channelMessages
     channelMessages = getMessageListing cId st
-    cId = currChannel st
+    cId = currentChannelId st
     chnName = getChannelName cId st
 
 chatDraw :: ChatState -> [Widget Name]
@@ -161,7 +161,7 @@ onEvent st (WSEvent we) = do
 sendMessage :: ChatState -> String -> IO ()
 sendMessage st msg = do
   let myId   = st^.csMe.userIdL
-      chanId = currChannel st
+      chanId = currentChannelId st
       teamId = st^.csMyTeam.teamIdL
   pendingPost <- mkPendingPost msg myId chanId
   _ <- mmPost (st^.csConn) (st^.csTok) teamId pendingPost
