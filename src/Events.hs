@@ -44,14 +44,14 @@ handleInputSubmission st = do
 
 handleWSEvent :: ChatState -> WebsocketEvent -> EventM Name (Next ChatState)
 handleWSEvent st we =
-  case weAction we of
-    WMPosted -> case wepPost (weProps we) of
+  case weEvent we of
+    WMPosted -> case wepPost (weData we) of
       Just p  -> continue $ addMessage p st
       Nothing -> continue st
-    WMPostEdited -> case wepPost (weProps we) of
+    WMPostEdited -> case wepPost (weData we) of
       Just p  -> continue $ editMessage p st
       Nothing -> continue st
-    WMPostDeleted -> case wepPost (weProps we) of
+    WMPostDeleted -> case wepPost (weData we) of
       Just p  -> continue $ editMessage p { postMessage = "[deleted]" } st
       Nothing -> continue st
     _ -> continue st
