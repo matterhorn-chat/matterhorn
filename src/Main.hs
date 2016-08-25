@@ -13,14 +13,13 @@ import qualified Control.Concurrent.Chan as Chan
 import           Control.Monad (void)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Default (def)
-import           Data.List ( intercalate )
 import           Data.Text.Zipper (clearZipper)
 import           Data.Time.Format ( formatTime
                                   , defaultTimeLocale )
 import           Data.Time.LocalTime ( utcToLocalTime )
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform
-import           Text.LineBreak (breakStringLn, BreakFormat(..))
+import           Text.LineBreak (breakString, BreakFormat(..))
 
 import           Network.Mattermost
 import           Network.Mattermost.Lenses
@@ -61,17 +60,17 @@ chatDraw st =
   let cId      = currChannel st
       chnName  = getChannelName    cId st
       msgs     = getMessageListing cId st
-      time t   = formatTime defaultTimeLocale
-                            "%R" -- gives HH:MM in 24 hour time
-                            (utcToLocalTime (st ^. timeZone) t)
-      split xs k n = case breakStringLn (BreakFormat (n + k) 8 {- 8 for tab width -} '-' Nothing) xs of
-        []    -> ""
-        (y:_) -> let ls = breakStringLn (BreakFormat n 8 {- 8 for tab width -} '-' Nothing)
-                                        (drop ((length y)+1) xs)
-                 in intercalate padding (y:ls)
-        where
-        padding = "\n" ++ replicate k ' '
-      chatText = vBox [ str (split ("[" ++ time t ++ "] " ++ u ++ ": " ++ m) 8 {- length of padding -} 72)
+      time t   = "[" ++ formatTime defaultTimeLocale
+                                   "%R" -- gives HH:MM in 24 hour time
+                                   (utcToLocalTime (st ^. timeZone) t) ++
+                 "] "
+      wrappedText :: String -> Widget Int
+      wrappedText msg = Widget Fixed Fixed $ do
+        ctx <- getContext
+        let w = ctx ^. availWidthL
+        render (str (breakString (BreakFormat w 8 '-' Nothing) msg))
+      renderChatM u m = wrappedText (u ++ ": " ++ m)
+      chatText = vBox [ str (time t) <+> renderChatM u m
                       | (t, u, m) <- msgs
                       ]
       userCmd  = (str "> " <+> renderEditor True (st^.cmdLine))
@@ -84,7 +83,8 @@ chatDraw st =
         | n <- (st ^. csNames . cnUsers)
         ]
   in [ (border chanList <+> (border (padRight Max (str ("#" ++ chnName)))
-                             <=> border (viewport 0 Vertical chatText)))
+                             <=> border (viewport 0 Vertical chatText <+>
+                                        str " ")))
         <=> border userCmd
      ]
 --  in [ border (padRight Max (str ("#" ++ chnName))) <=>
