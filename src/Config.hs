@@ -1,6 +1,10 @@
 {-# LANGUAGE RecordWildCards #-}
 
-module Config (Config(..), getConfig) where
+module Config
+  ( Config(..)
+  , PasswordSource(..)
+  , getConfig
+  ) where
 
 import           Data.Aeson
 import qualified Data.ByteString.Lazy as BS
@@ -9,12 +13,17 @@ import qualified Data.Text as T
 import           System.Exit (exitFailure)
 import           System.Process (readProcess)
 
+data PasswordSource =
+    PasswordString Text
+    | PasswordCommand String
+    deriving (Eq, Read, Show)
+
 data Config = Config
   { configUser     :: Text
   , configHost     :: Text
   , configTeam     :: Text
   , configPort     :: Int
-  , configPass     :: Either String Text
+  , configPass     :: PasswordSource
   } deriving (Eq, Show)
 
 instance FromJSON Config where
@@ -28,8 +37,8 @@ instance FromJSON Config where
     configPass <- case passCmd of
       Nothing -> case pass of
         Nothing     -> fail "Configuration needs either `pass` or `passcmd`"
-        Just passwd -> return (Right passwd)
-      Just cmd -> return (Left cmd)
+        Just passwd -> return (PasswordString passwd)
+      Just cmd -> return (PasswordCommand cmd)
     return Config { .. }
 
 getConfig :: IO Config
@@ -41,9 +50,9 @@ getConfig = do
       exitFailure
     Just conf -> do
       actualPass <- case configPass conf of
-        Left cmdString -> do
+        PasswordCommand cmdString -> do
           let (cmd:rest) = words cmdString
           r <- readProcess cmd rest ""
           return (T.pack (takeWhile (/= '\n') r))
-        Right pass -> return pass
-      return conf { configPass = Right actualPass }
+        PasswordString pass -> return pass
+      return conf { configPass = PasswordString actualPass }
