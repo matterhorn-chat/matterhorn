@@ -1,6 +1,0 @@
-{ "user": "<username>",
-  "host": "<hostname>",
-  "team": "<team name>",
-  "port": 443,
-  "passcmd": "security find-generic-password -s <password name> -w"
-}
