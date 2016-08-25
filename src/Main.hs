@@ -87,10 +87,6 @@ chatDraw st =
                                         str " ")))
         <=> border userCmd
      ]
---  in [ border (padRight Max (str ("#" ++ chnName))) <=>
---       (border chanList <+> border (viewport 0 Vertical chatText)) <=>
---       border userCmd
---     ]
 
 onEvent :: ChatState -> Event -> EventM Int (Next ChatState)
 onEvent st (VtyEvent (Vty.EvKey Vty.KEsc [])) = halt st
