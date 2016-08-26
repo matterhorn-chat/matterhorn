@@ -72,7 +72,8 @@ renderChannelList st = hLimit channelListWidth $ vBox
                                 then visible . withDefAttr currentChannelNameAttr
                                 else id
                          current = n == currentChannelName
-                         unread = hasUnread st cId
+                         Just chan = st ^. csNames . cnToChanId . at n
+                         unread = hasUnread st chan
                    ]
     dmChannelNames = [ attr $ str (indicator ++ mkDMChannelName (u^.userProfileUsernameL))
                      | u <- sortBy (comparing userProfileUsername) (st ^. usrMap & HM.elems)
