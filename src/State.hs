@@ -35,7 +35,7 @@ data MMNames = MMNames
 
 makeLenses ''MMNames
 
-data Name = ChannelMessages
+data Name = ChannelMessages ChannelId
           | MessageInput
           | NormalChannelList
           | DMChannelList

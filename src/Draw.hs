@@ -111,7 +111,7 @@ renderCurrentChannelDisplay st = header <=> hBorder <=> messages
                        Just u  -> mkDMChannelName (u^.userProfileUsernameL)
                    _        -> mkChannelName   chnName
                  False -> wrappedText $ mkChannelName chnName <> " - " <> purposeStr
-    messages = viewport ChannelMessages Vertical chatText <+> str " "
+    messages = viewport (ChannelMessages cId) Vertical chatText <+> str " "
     chatText = vBox $ renderChatMessage (st ^. timeZone) (length channelMessages - 1) <$>
                       zip [0..] channelMessages
     channelMessages = getMessageListing cId st
