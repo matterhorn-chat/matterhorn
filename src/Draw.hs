@@ -1,3 +1,5 @@
+{-# LANGUAGE MultiWayIf #-}
+
 module Draw where
 
 import           Brick
@@ -63,21 +65,27 @@ renderChannelList st = hLimit channelListWidth $ vBox
                    str label
     channelNames = [ attr $ str (indicator ++ mkChannelName n)
                    | n <- (st ^. csNames . cnChans)
-                   , let indicator = if current then "+" else " "
+                   , let indicator = if | current   -> "+"
+                                        | unread    -> "!"
+                                        | otherwise -> " "
                          attr = if current
                                 then visible . withDefAttr currentChannelNameAttr
                                 else id
                          current = n == currentChannelName
+                         unread = hasUnread st cId
                    ]
     dmChannelNames = [ attr $ str (indicator ++ mkDMChannelName (u^.userProfileUsernameL))
                      | u <- sortBy (comparing userProfileUsername) (st ^. usrMap & HM.elems)
-                     , let indicator = if current then "+" else " "
+                     , let indicator = if | current   -> "+"
+                                          | unread    -> "!"
+                                          | otherwise -> " "
                            attr = if current
                                   then visible . withDefAttr currentChannelNameAttr
                                   else id
                            cname = getDMChannelName (st^.csMe^.userIdL)
                                                     (u^.userProfileIdL)
                            current = cname == currentChannelName
+                           unread = hasUnread st cId
                      ]
 
 renderUserCommandBox :: ChatState -> Widget Name

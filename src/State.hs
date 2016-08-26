@@ -58,23 +58,27 @@ data ClientMessage = ClientMessage
 
 makeLenses ''ClientMessage
 
--- Our ChannelData is roughly equivalent to the Post structure we get from
+-- Our ChannelContents is roughly equivalent to the Post structure we get from
 -- the MM API, but we also map integers to ClientMessage values, which are
 -- bits out debug output from the client itself.
-data ChannelData = ChannelData
-  { _cdOrder :: [PostRef]
-  , _cdPosts :: HashMap PostId Post
-  , _cdCMsgs :: HashMap Int ClientMessage
+data ChannelContents = ChannelContents
+  { _cdOrder   :: [PostRef]
+  , _cdPosts   :: HashMap PostId Post
+  , _cdCMsgs   :: HashMap Int ClientMessage
+  , _cdViewed  :: UTCTime
+  , _cdUpdated :: UTCTime
   }
 
-fromPosts :: Posts -> ChannelData
-fromPosts p = ChannelData
-  { _cdOrder = map MMId (p ^. postsOrderL)
-  , _cdPosts = (p ^. postsPostsL)
-  , _cdCMsgs = HM.empty
+fromPosts :: UTCTime -> UTCTime -> Posts -> ChannelContents
+fromPosts viewed updated p = ChannelContents
+  { _cdOrder   = map MMId (p ^. postsOrderL)
+  , _cdPosts   = (p ^. postsPostsL)
+  , _cdCMsgs   = HM.empty
+  , _cdViewed  = viewed
+  , _cdUpdated = updated
   }
 
-makeLenses ''ChannelData
+makeLenses ''ChannelContents
 
 data ChatState = ChatState
   { _csTok    :: Token
@@ -84,7 +88,7 @@ data ChatState = ChatState
   , _csMe     :: User
   , _csMyTeam :: Team
   , _chnMap   :: HashMap ChannelId Channel
-  , _msgMap   :: HashMap ChannelId ChannelData
+  , _msgMap   :: HashMap ChannelId ChannelContents
   , _usrMap   :: HashMap UserId UserProfile
   , _cmdLine  :: Editor Name
   , _timeZone :: TimeZone
@@ -107,11 +111,29 @@ newState t c i u m tz = ChatState
 
 makeLenses ''ChatState
 
-nextChannel :: ChatState -> ChatState
-nextChannel st = st & csFocus %~ Z.right
+hasUnread :: ChatState -> ChannelId -> Bool
+hasUnread st cId = maybe False id $ do
+  chan <- st^.msgMap.at(cId)
+  let u = chan^.cdViewed
+      v = chan^.cdUpdated
+  return (v > u)
 
-prevChannel :: ChatState -> ChatState
-prevChannel st = st & csFocus %~ Z.left
+updateViewed :: ChatState -> EventM a ChatState
+updateViewed st = do
+  now <- liftIO getCurrentTime
+  let cId = currentChannelId st
+  liftIO $ mmUpdateLastViewedAt
+    (st^.csConn)
+    (st^.csTok)
+    (getId (st^.csMyTeam))
+    cId
+  return (st & msgMap . ix cId . cdViewed .~ now)
+
+nextChannel :: ChatState -> EventM a ChatState
+nextChannel st = updateViewed (st & csFocus %~ Z.right)
+
+prevChannel :: ChatState -> EventM a ChatState
+prevChannel st = updateViewed (st & csFocus %~ Z.left)
 
 currentChannelId :: ChatState -> ChannelId
 currentChannelId st = Z.focus (st ^. csFocus)
@@ -122,24 +144,35 @@ channelExists st n = n `elem` st ^. csNames . cnChans
 userExists :: ChatState -> String -> Bool
 userExists st n = n `elem` st ^. csNames . cnUsers
 
-setFocus :: String -> ChatState -> ChatState
-setFocus n st = st & csFocus %~ Z.findRight (==n')
+setFocus :: String -> ChatState -> EventM a ChatState
+setFocus n st = updateViewed (st & csFocus %~ Z.findRight (==n'))
   where
   Just n' = st ^. csNames . cnToChanId . at n
 
-setDMFocus :: String -> ChatState -> ChatState
-setDMFocus n st = st & csFocus %~ Z.findRight (==n')
+setDMFocus :: String -> ChatState -> EventM a ChatState
+setDMFocus n st = updateViewed (st & csFocus %~ Z.findRight (==n'))
   where
   Just n' = st ^. csNames . cnToChanId . at n
 
-editMessage :: Post -> ChatState -> ChatState
-editMessage new st =
-  st & msgMap . ix (postChannelId new) . cdPosts . ix (getId new) .~ new
+editMessage :: Post -> ChatState -> EventM a ChatState
+editMessage new st = do
+  now <- liftIO getCurrentTime
+  let chan = msgMap . ix (postChannelId new)
+      rs = st & chan . cdPosts . ix (getId new) .~ new
+              & chan . cdUpdated .~ now
+  return rs
 
-addMessage :: Post -> ChatState -> ChatState
-addMessage new st =
-  st & msgMap . ix (postChannelId new) . cdPosts . at (getId new) .~ Just new
-     & msgMap . ix (postChannelId new) . cdOrder %~ (MMId (getId new) :)
+addMessage :: Post -> ChatState -> EventM a ChatState
+addMessage new st = do
+  now <- liftIO getCurrentTime
+  let chan = msgMap . ix (postChannelId new)
+      rs = st & chan . cdPosts . at (getId new) .~ Just new
+              & chan . cdOrder %~ (MMId (getId new) :)
+              & chan . cdUpdated .~ now
+  return rs
+--  if postChannelId new == currentChannelId st
+--    then updateViewed rs
+--    else return rs
 
 -- XXX: Right now, our new ID is based on the size of the map containing all
 -- the ClientMessages, which only makes sense if we never delete ClientMessages.
@@ -223,7 +256,7 @@ setupState config = do
 
   let myTeamId = getId myTeam
 
-  Channels chans _ <- mmGetChannels cd token myTeamId
+  Channels chans cm <- mmGetChannels cd token myTeamId
 
   let lookupChan n = [ c ^. channelIdL
                      | c <- chans
@@ -231,7 +264,10 @@ setupState config = do
 
   msgs <- fmap HM.fromList $ forM chans $ \c -> do
     posts <- mmGetPosts cd token myTeamId (getId c) 0 30
-    return (getId c, fromPosts posts)
+    let chanData = cm ! getId c
+        viewed   = chanData ^. channelDataLastViewedAtL
+        updated  = chanData ^. channelDataLastUpdateAtL
+    return (getId c, fromPosts viewed updated posts)
 
   users <- mmGetProfiles cd token myTeamId
   tz    <- getCurrentTimeZone

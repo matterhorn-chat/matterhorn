@@ -22,9 +22,9 @@ onEvent :: ChatState -> Event -> EventM Name (Next ChatState)
 onEvent st (VtyEvent (Vty.EvKey Vty.KEsc [])) =
   halt st
 onEvent st (VtyEvent (Vty.EvKey (Vty.KChar 'n') [Vty.MCtrl])) =
-  continue (nextChannel st)
+  continue =<< nextChannel st
 onEvent st (VtyEvent (Vty.EvKey (Vty.KChar 'p') [Vty.MCtrl])) =
-  continue (prevChannel st)
+  continue =<< prevChannel st
 onEvent st (VtyEvent (Vty.EvKey Vty.KEnter [])) =
   handleInputSubmission st
 onEvent st (VtyEvent e) =
@@ -46,13 +46,13 @@ handleWSEvent :: ChatState -> WebsocketEvent -> EventM Name (Next ChatState)
 handleWSEvent st we =
   case weEvent we of
     WMPosted -> case wepPost (weData we) of
-      Just p  -> continue $ addMessage p st
+      Just p  -> addMessage p st >>= continue
       Nothing -> continue st
     WMPostEdited -> case wepPost (weData we) of
-      Just p  -> continue $ editMessage p st
+      Just p  -> editMessage p st >>= continue
       Nothing -> continue st
     WMPostDeleted -> case wepPost (weData we) of
-      Just p  -> continue $ editMessage p { postMessage = "[deleted]" } st
+      Just p  -> editMessage p { postMessage = "[deleted]" } st >>= continue
       Nothing -> continue st
     _ -> continue st
 

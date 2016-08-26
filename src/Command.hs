@@ -14,18 +14,18 @@ commandList :: [Cmd]
 commandList =
   [ Cmd "quit" "Exit Matterhorn" $ \ _ st -> halt st
   , Cmd "right" "Focus on the next channel" $ \ _ st ->
-      continue (nextChannel st)
+      nextChannel st >>= continue
   , Cmd "left" "Focus on the previous channel" $ \ _ st ->
-      continue (prevChannel st)
+      prevChannel st >>= continue
   , Cmd "chan" "Focus on a named channel" $ \ [ch] st ->
       if channelExists st ch
-        then continue (setFocus ch st)
+        then setFocus ch st >>= continue
         else do
           msg <- newClientMessage ("No channel named #" ++ ch)
           continue (addClientMessage msg st)
   , Cmd "dm" "Focus on a direct message channel" $ \ [dm] st ->
       if userExists st dm
-        then continue (setDMFocus dm st)
+        then setDMFocus dm st >>= continue
         else do
           msg <- newClientMessage ("No user named @" ++ dm)
           continue (addClientMessage msg st)
