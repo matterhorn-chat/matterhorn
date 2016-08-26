@@ -1,15 +1,20 @@
 name:             matterhorn
 version:          0.1.0.0
--- synopsis:
--- description:
+synopsis:         Terminal client for MatterMost chat system
+description:      This is a basic terminal-based client for the MatterMost chat system.
+                  More description coming soon.
 license:          BSD3
 license-file:     LICENSE
 author:           Getty Ritter <gdritter@galois.com>
 maintainer:       Getty Ritter <gdritter@galois.com>
 copyright:        ©2016 Getty Ritter
--- category:
+category:         Chat
 build-type:       Simple
 cabal-version:    >= 1.12
+tested-with:         GHC == 7.10.3, GHC == 8.0.1
+source-repository    head
+  type: git
+  location: https://github.com/aisamanra/matterhorn.git
 
 executable matterhorn
   hs-source-dirs:      src
