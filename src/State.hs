@@ -117,6 +117,7 @@ hasUnread st cId = maybe False id $ do
   let u = chan^.cdViewed
       v = chan^.cdUpdated
   return (v > u)
+  where
 
 updateViewed :: ChatState -> EventM a ChatState
 updateViewed st = do
@@ -313,3 +314,14 @@ setupState config = do
              & csNames .~ chanNames
 
   return st
+
+
+debugPrintTimes :: ChatState -> String -> EventM a ChatState
+debugPrintTimes st cn = do
+  let Just cId = st^.csNames.cnToChanId.at(cn)
+      Just ch = st^.msgMap.at(cId)
+      viewed = ch^.cdViewed
+      updated = ch^.cdUpdated
+  m1 <- newClientMessage ("Viewed: " ++ show viewed)
+  m2 <- newClientMessage ("Updated: " ++ show updated)
+  return (st & addClientMessage m1 & addClientMessage m2)
