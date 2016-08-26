@@ -25,7 +25,7 @@ executable matterhorn
   default-extensions:  OverloadedStrings,
                        ScopedTypeVariables
   ghc-options:         -Wall -threaded
-  build-depends:       base >=4.7 && <4.9
+  build-depends:       base >=4.7 && <5
                      , mattermost-api
                      , unordered-containers
                      , text
