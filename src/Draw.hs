@@ -86,7 +86,8 @@ renderChannelList st = hLimit channelListWidth $ vBox
                            cname = getDMChannelName (st^.csMe^.userIdL)
                                                     (u^.userProfileIdL)
                            current = cname == currentChannelName
-                           unread = hasUnread st cId
+                           m_chanId = st^.csNames.cnToChanId.at (userProfileUsername u)
+                           unread = maybe False (hasUnread st) m_chanId
                      ]
 
 renderUserCommandBox :: ChatState -> Widget Name
