@@ -267,7 +267,7 @@ setupState config = do
     posts <- mmGetPosts cd token myTeamId (getId c) 0 30
     let chanData = cm ! getId c
         viewed   = chanData ^. channelDataLastViewedAtL
-        updated  = chanData ^. channelDataLastUpdateAtL
+        updated  = c ^. channelLastPostAtL
     return (getId c, fromPosts viewed updated posts)
 
   users <- mmGetProfiles cd token myTeamId
