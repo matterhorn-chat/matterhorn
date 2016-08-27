@@ -2,6 +2,7 @@ module State where
 
 import           Brick (EventM, str, vBox)
 import           Brick.Widgets.Edit (editor)
+import qualified Control.Concurrent.Chan as Chan
 import           Control.Monad (join, forM)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.HashMap.Strict ((!))
@@ -56,6 +57,14 @@ newState t c i u m tz rq = ChatState
   , _csRequestQueue = rq
   }
 
+runAsync :: ChatState -> IO (ChatState -> ChatState) -> IO ()
+runAsync st thunk =
+  Chan.writeChan (st^.csRequestQueue) thunk
+
+doAsync :: ChatState -> IO () -> IO ()
+doAsync st thunk =
+  Chan.writeChan (st^.csRequestQueue) (thunk >> return id)
+
 hasUnread :: ChatState -> ChannelId -> Bool
 hasUnread st cId = maybe False id $ do
   chan <- st^.msgMap.at(cId)
@@ -68,12 +77,14 @@ updateViewed :: ChatState -> EventM a ChatState
 updateViewed st = do
   now <- liftIO getCurrentTime
   let cId = currentChannelId st
-  liftIO $ mmUpdateLastViewedAt
-    (st^.csConn)
-    (st^.csTok)
-    (getId (st^.csMyTeam))
-    cId
-  return (st & msgMap . ix cId . cdViewed .~ now)
+  liftIO $ runAsync st $ do
+    mmUpdateLastViewedAt
+      (st^.csConn)
+      (st^.csTok)
+      (getId (st^.csMyTeam))
+      cId
+    return (msgMap . ix cId . cdViewed .~ now)
+  return st
 
 nextChannel :: ChatState -> EventM a ChatState
 nextChannel st = updateViewed (st & csFocus %~ Z.right)
