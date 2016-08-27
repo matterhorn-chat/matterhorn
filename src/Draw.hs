@@ -16,19 +16,13 @@ import           Data.Ord (comparing)
 import           Data.Maybe ( listToMaybe, maybeToList )
 import           Data.Monoid ((<>))
 import           Lens.Micro.Platform
-import           Text.LineBreak (breakString, BreakFormat(..))
 
 import           Network.Mattermost
 import           Network.Mattermost.Lenses
 
 import           State
 import           Themes
-
-wrappedText :: String -> Widget Name
-wrappedText msg = Widget Fixed Fixed $ do
-  ctx <- getContext
-  let w = ctx ^. availWidthL
-  render (str (breakString (BreakFormat w 8 '-' Nothing) msg))
+import           DrawUtil
 
 -- If the config's date format is not set.
 defaultDateFormat :: String

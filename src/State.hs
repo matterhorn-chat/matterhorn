@@ -4,7 +4,7 @@ module State where
 
 import           Brick (EventM, str, vBox)
 import           Brick.Widgets.Edit (Editor, editor)
-import           Control.Monad (join, forM)
+import           Control.Monad (join, forM, when)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.HashMap.Strict (HashMap, (!))
 import qualified Data.HashMap.Strict as HM
@@ -22,6 +22,7 @@ import           Network.Mattermost
 import           Network.Mattermost.Lenses
 
 import           Config
+import           TeamSelect
 import           Zipper (Zipper)
 import qualified Zipper as Z
 
@@ -235,6 +236,8 @@ getChannel cId st =
 
 setupState :: Config -> IO ChatState
 setupState config = do
+  putStrLn "Authenticating..."
+
   ctx <- initConnectionContext
   let cd = mkConnectionData (T.unpack (configHost config))
                             (fromIntegral (configPort config))
@@ -247,20 +250,27 @@ setupState config = do
   (token, myUser) <- join (hoistE <$> mmLogin cd login)
 
   initialLoad <- mmGetInitialLoad cd token
+  when (null $ initialLoadTeams initialLoad) $ do
+      putStrLn "Error: your account is not a member of any teams"
+      exitFailure
 
-  -- XXX Give the user an interactive choice if the config doesn't have
-  -- a team name set.
-  let matchingTeam = listToMaybe $ filter matchesConfig $ initialLoadTeams initialLoad
-      matchesConfig t = teamName t == (T.unpack $ configTeam config)
-
-  myTeam <- case matchingTeam of
+  myTeam <- case configTeam config of
       Nothing -> do
-          putStrLn $ "No team named " <> (show (configTeam config)) <> " found.  Available teams:"
-          mapM_ putStrLn (show <$> teamName <$> initialLoadTeams initialLoad)
-          exitFailure
-      Just t -> return t
+          interactiveTeamSelection (initialLoadTeams initialLoad)
+      Just tName -> do
+          let matchingTeam = listToMaybe $ filter matches $ initialLoadTeams initialLoad
+              matches t = teamName t == (T.unpack tName)
+
+          case matchingTeam of
+              Nothing -> do
+                  putStrLn $ "No team named " <> (show (configTeam config)) <> " found.  Available teams:"
+                  mapM_ putStrLn (show <$> teamName <$> initialLoadTeams initialLoad)
+                  exitFailure
+              Just t -> return t
 
   let myTeamId = getId myTeam
+
+  putStrLn $ "Loading channels for team " <> show (teamName myTeam) <> "..."
 
   Channels chans cm <- mmGetChannels cd token myTeamId
 

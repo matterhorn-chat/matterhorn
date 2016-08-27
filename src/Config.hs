@@ -27,7 +27,7 @@ data PasswordSource =
 data Config = Config
   { configUser        :: Text
   , configHost        :: Text
-  , configTeam        :: Text
+  , configTeam        :: Maybe Text
   , configPort        :: Int
   , configPass        :: PasswordSource
   , configTimeFormat  :: Maybe String
@@ -45,8 +45,8 @@ fromIni (Ini ini) = do
   cS <- HM.lookup "mattermost" ini ?? "mattermost"
   configUser <- HM.lookup "user" cS ?? "user"
   configHost <- HM.lookup "host" cS ?? "host"
-  configTeam <- HM.lookup "team" cS ?? "team"
   let configTimeFormat = T.unpack <$> HM.lookup "timeFormat" cS
+      configTeam = HM.lookup "team" cS
   configPort <- readT `fmap` (HM.lookup "port" cS ?? "port")
   let passCmd = HM.lookup "passcmd" cS
   let pass    = HM.lookup "pass" cS
