@@ -170,10 +170,10 @@ addMessage new st = do
       rs = st & chan . cdPosts . at (getId new) .~ Just new
               & chan . cdOrder %~ (MMId (getId new) :)
               & chan . cdUpdated .~ now
-  return rs
---  if postChannelId new == currentChannelId st
---    then updateViewed rs
---    else return rs
+--  return rs
+  if postChannelId new == currentChannelId st
+    then updateViewed rs
+    else return rs
 
 -- XXX: Right now, our new ID is based on the size of the map containing all
 -- the ClientMessages, which only makes sense if we never delete ClientMessages.
