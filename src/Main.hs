@@ -6,8 +6,10 @@ import           Brick
 import qualified Control.Concurrent.Chan as Chan
 import           Control.Monad (void)
 import           Data.Default (def)
+import           Data.Monoid ((<>))
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform
+import           System.Exit (exitFailure)
 
 import           Network.Mattermost.WebSocket
 
@@ -20,7 +22,13 @@ import           Types
 
 main :: IO ()
 main = do
-  config <- findConfig
+  configResult <- findConfig
+  config <- case configResult of
+      Left err -> do
+          putStrLn $ "Error loading config: " <> err
+          exitFailure
+      Right c -> return c
+
   st <- setupState config
 
   eventChan <- Chan.newChan

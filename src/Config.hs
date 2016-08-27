@@ -6,13 +6,17 @@ module Config
   , findConfig
   ) where
 
+import           Control.Exception
+import           Control.Monad.Trans.Except
+import           Control.Monad.IO.Class
 import qualified Data.HashMap.Strict as HM
 import           Data.Ini
 import           Data.Text (Text)
 import qualified Data.Text as T
+import           Data.Monoid ((<>))
 import           System.Directory (doesFileExist)
 import           System.Environment.XDG.BaseDir (getAllConfigFiles)
-import           System.Exit (exitFailure)
+import           System.IO.Error (ioeGetErrorString)
 import           System.Process (readProcess)
 
 data PasswordSource =
@@ -51,34 +55,39 @@ fromIni (Ini ini) = do
     Just c -> return (PasswordCommand (T.unpack c))
   return Config { .. }
 
-findConfig :: IO Config
+findConfig :: IO (Either String Config)
 findConfig = do
   xdgLocations <- getAllConfigFiles "matterhorn" "config.ini"
   let confLocations = ["./config.ini"] ++ xdgLocations
                                        ++ ["/etc/matterhorn/config.ini"]
   loop confLocations
-  where loop [] = do
-          putStrLn "No matterhorn configuration found"
-          exitFailure
+  where loop [] = return $ Left "No matterhorn configuration found"
         loop (c:cs) = do
           ex <- doesFileExist c
           if ex
             then getConfig c
             else loop cs
 
-getConfig :: FilePath -> IO Config
-getConfig fp = do
-  t <- readIniFile fp
+getConfig :: FilePath -> IO (Either String Config)
+getConfig fp = runExceptT $ do
+  t <- liftIO $ readIniFile fp
   case t >>= fromIni of
     Left err -> do
-      putStrLn ("Unable to parse " ++ fp ++ ":")
-      putStrLn ("  " ++ err)
-      exitFailure
+      throwE $ "Unable to parse " ++ fp ++ ":" ++ err
     Right conf -> do
       actualPass <- case configPass conf of
         PasswordCommand cmdString -> do
           let (cmd:rest) = words cmdString
-          r <- readProcess cmd rest ""
-          return (T.pack (takeWhile (/= '\n') r))
+          output <- convertIOException (readProcess cmd rest "") `catchE`
+                    (\e -> throwE $ "Could not execute password command: " <> e)
+          return $ T.pack (takeWhile (/= '\n') output)
         PasswordString pass -> return pass
       return conf { configPass = PasswordString actualPass }
+
+convertIOException :: IO a -> ExceptT String IO a
+convertIOException act = do
+    result <- liftIO $ (Right <$> act) `catch`
+                       (\(e::IOError) -> return $ Left $ ioeGetErrorString e)
+    case result of
+        Left e -> throwE e
+        Right v -> return v
