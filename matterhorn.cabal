@@ -26,6 +26,7 @@ executable matterhorn
                        Themes
                        Draw
                        DrawUtil
+                       IOUtil
                        Events
                        Types
                        TeamSelect

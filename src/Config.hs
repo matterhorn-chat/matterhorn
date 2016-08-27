@@ -6,9 +6,7 @@ module Config
   , findConfig
   ) where
 
-import           Control.Exception
 import           Control.Monad.Trans.Except
-import           Control.Monad.IO.Class
 import qualified Data.HashMap.Strict as HM
 import           Data.Ini
 import           Data.Text (Text)
@@ -16,8 +14,9 @@ import qualified Data.Text as T
 import           Data.Monoid ((<>))
 import           System.Directory (doesFileExist)
 import           System.Environment.XDG.BaseDir (getAllConfigFiles)
-import           System.IO.Error (ioeGetErrorString)
 import           System.Process (readProcess)
+
+import           IOUtil
 
 data PasswordSource =
     PasswordString Text
@@ -86,11 +85,3 @@ getConfig fp = runExceptT $ do
           return $ T.pack (takeWhile (/= '\n') output)
         PasswordString pass -> return pass
       return conf { configPass = PasswordString actualPass }
-
-convertIOException :: IO a -> ExceptT String IO a
-convertIOException act = do
-    result <- liftIO $ (Right <$> act) `catch`
-                       (\(e::IOError) -> return $ Left $ ioeGetErrorString e)
-    case result of
-        Left e -> throwE e
-        Right v -> return v
