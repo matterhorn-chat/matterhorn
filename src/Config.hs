@@ -1,4 +1,5 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TupleSections #-}
 
 module Config
   ( Config(..)
@@ -7,10 +8,12 @@ module Config
   ) where
 
 import           Control.Monad.Trans.Except
+import           Control.Monad (forM)
 import qualified Data.HashMap.Strict as HM
 import           Data.Ini
 import           Data.Text (Text)
 import qualified Data.Text as T
+import           Data.Maybe (listToMaybe)
 import           Data.Monoid ((<>))
 import           System.Directory (doesFileExist)
 import           System.Environment.XDG.BaseDir (getAllConfigFiles)
@@ -56,18 +59,24 @@ fromIni (Ini ini) = do
     Just c -> return (PasswordCommand (T.unpack c))
   return Config { .. }
 
+-- | Find a specified configuration file by looking in all of the
+-- supported locations.
+locateConfig :: FilePath -> IO (Maybe FilePath)
+locateConfig filename = do
+  xdgLocations <- getAllConfigFiles "matterhorn" filename
+  let confLocations = ["./" <> filename] ++
+                      xdgLocations ++
+                      ["/etc/matterhorn/" <> filename]
+  results <- forM confLocations $ \fp -> (fp,) <$> doesFileExist fp
+  return $ listToMaybe $ fst <$> filter snd results
+
+mainConfigFilename :: FilePath
+mainConfigFilename = "config.ini"
+
 findConfig :: IO (Either String Config)
 findConfig = do
-  xdgLocations <- getAllConfigFiles "matterhorn" "config.ini"
-  let confLocations = ["./config.ini"] ++ xdgLocations
-                                       ++ ["/etc/matterhorn/config.ini"]
-  loop confLocations
-  where loop [] = return $ Left "No matterhorn configuration found"
-        loop (c:cs) = do
-          ex <- doesFileExist c
-          if ex
-            then getConfig c
-            else loop cs
+    let err = "Configuration file " <> show mainConfigFilename <> " not found"
+    maybe (return $ Left err) getConfig =<< locateConfig mainConfigFilename
 
 getConfig :: FilePath -> IO (Either String Config)
 getConfig fp = runExceptT $ do
