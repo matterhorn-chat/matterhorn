@@ -23,13 +23,14 @@ $ git clone git@github.com:aisamanra/matterhorn.git
 ~~~
 
 Move into the `matterhorn` directory, create a new sandbox, add
-the `mattermost-api` package as an extra dependency, and build the
-package:
+the `mattermost-api` package as an extra dependency, install the
+dependencies, and build the package:
 
 ~~~
 $ cd matterhorn
 $ cabal sandbox init
-$ cabal add-source ../mattermost-api/mattermost-api.cabal
+$ cabal sandbox add-source ../mattermost-api
+$ cabal install
 $ cabal build
 ~~~
 
