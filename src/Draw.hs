@@ -23,6 +23,7 @@ import           Network.Mattermost.Lenses
 
 import           State
 import           Themes
+import           Types
 
 wrappedText :: String -> Widget Name
 wrappedText msg = Widget Fixed Fixed $ do

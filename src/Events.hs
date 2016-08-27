@@ -31,6 +31,8 @@ onEvent st (VtyEvent e) =
   continue =<< handleEventLensed st cmdLine handleEditorEvent e
 onEvent st (WSEvent we) =
   handleWSEvent st we
+onEvent st (RespEvent f) =
+  continue (f st)
 
 handleInputSubmission :: ChatState -> EventM Name (Next ChatState)
 handleInputSubmission st = do
