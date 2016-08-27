@@ -19,12 +19,22 @@ import           State
 import           Types
 
 onEvent :: ChatState -> Event -> EventM Name (Next ChatState)
+onEvent st (VtyEvent (Vty.EvResize _ _)) = do
+  -- On resize we need to update the current channel message area so
+  -- that the most recent message is at the bottom. We have to do this
+  -- on a resize because brick only guarantees that the message is
+  -- visible, not that it is at the bottom, so after a resize we can end
+  -- up with lots of whitespace at the bottom of the message area. This
+  -- whitespace is created when the window gets bigger. We only need to
+  -- worry about the current channel's viewport because that's the one
+  -- that is about to be redrawn.
+  continue =<< updateChannelScrollState st
 onEvent st (VtyEvent (Vty.EvKey Vty.KEsc [])) =
   halt st
 onEvent st (VtyEvent (Vty.EvKey (Vty.KChar 'n') [Vty.MCtrl])) =
-  continue =<< nextChannel st
+  continue =<< updateChannelScrollState =<< nextChannel st
 onEvent st (VtyEvent (Vty.EvKey (Vty.KChar 'p') [Vty.MCtrl])) =
-  continue =<< prevChannel st
+  continue =<< updateChannelScrollState =<< prevChannel st
 onEvent st (VtyEvent (Vty.EvKey Vty.KEnter [])) =
   handleInputSubmission st
 onEvent st (VtyEvent e) =

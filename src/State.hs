@@ -3,6 +3,7 @@
 module State where
 
 import           Brick (EventM, str, vBox)
+import           Brick.Main (viewportScroll, vScrollToEnd)
 import           Brick.Widgets.Edit (Editor, editor)
 import           Control.Monad (join, forM, when)
 import           Control.Monad.IO.Class (liftIO)
@@ -138,6 +139,12 @@ nextChannel st = updateViewed (st & csFocus %~ Z.right)
 
 prevChannel :: ChatState -> EventM a ChatState
 prevChannel st = updateViewed (st & csFocus %~ Z.left)
+
+updateChannelScrollState :: ChatState -> EventM Name ChatState
+updateChannelScrollState st = do
+  let cId = currentChannelId st
+  vScrollToEnd $ viewportScroll (ChannelMessages cId)
+  return st
 
 currentChannelId :: ChatState -> ChannelId
 currentChannelId st = Z.focus (st ^. csFocus)
