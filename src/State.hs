@@ -151,9 +151,12 @@ setFocus n st = updateViewed (st & csFocus %~ Z.findRight (==n'))
   Just n' = st ^. csNames . cnToChanId . at n
 
 setDMFocus :: String -> ChatState -> EventM a ChatState
-setDMFocus n st = updateViewed (st & csFocus %~ Z.findRight (==n'))
+setDMFocus n st =
+    case n' of
+        Nothing -> return st
+        Just dmName -> updateViewed (st & csFocus %~ Z.findRight (==dmName))
   where
-  Just n' = st ^. csNames . cnToChanId . at n
+  n' = st ^. csNames . cnToChanId . at n
 
 editMessage :: Post -> ChatState -> EventM a ChatState
 editMessage new st = do
