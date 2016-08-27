@@ -81,21 +81,22 @@ fromPosts viewed updated p = ChannelContents
 makeLenses ''ChannelContents
 
 data ChatState = ChatState
-  { _csTok    :: Token
-  , _csConn   :: ConnectionData
-  , _csFocus  :: Zipper ChannelId
-  , _csNames  :: MMNames
-  , _csMe     :: User
-  , _csMyTeam :: Team
-  , _chnMap   :: HashMap ChannelId Channel
-  , _msgMap   :: HashMap ChannelId ChannelContents
-  , _usrMap   :: HashMap UserId UserProfile
-  , _cmdLine  :: Editor Name
-  , _timeZone :: TimeZone
+  { _csTok      :: Token
+  , _csConn     :: ConnectionData
+  , _csFocus    :: Zipper ChannelId
+  , _csNames    :: MMNames
+  , _csMe       :: User
+  , _csMyTeam   :: Team
+  , _chnMap     :: HashMap ChannelId Channel
+  , _msgMap     :: HashMap ChannelId ChannelContents
+  , _usrMap     :: HashMap UserId UserProfile
+  , _cmdLine    :: Editor Name
+  , _timeZone   :: TimeZone
+  , _timeFormat :: Maybe String
   }
 
-newState :: Token -> ConnectionData -> Zipper ChannelId -> User -> Team -> TimeZone -> ChatState
-newState t c i u m tz = ChatState
+newState :: Token -> ConnectionData -> Zipper ChannelId -> User -> Team -> TimeZone -> Maybe String -> ChatState
+newState t c i u m tz fmt = ChatState
   { _csTok    = t
   , _csConn   = c
   , _csFocus  = i
@@ -107,6 +108,7 @@ newState t c i u m tz = ChatState
   , _usrMap   = HM.empty
   , _cmdLine  = editor MessageInput (vBox . map str) (Just 1) ""
   , _timeZone = tz
+  , _timeFormat = fmt
   }
 
 makeLenses ''ChatState
@@ -308,7 +310,7 @@ setupState config = do
                 | i <- chanNames ^. cnUsers
                 , c <- maybeToList (HM.lookup i (chanNames ^. cnToChanId)) ]
       chanZip = Z.findRight (== townSqId) (Z.fromList chanIds)
-      st = newState token cd chanZip myUser myTeam tz
+      st = newState token cd chanZip myUser myTeam tz (configTimeFormat config)
              & chnMap .~ HM.fromList [ (getId c, c)
                                      | c <- chans
                                      ]

@@ -25,11 +25,12 @@ data PasswordSource =
     deriving (Eq, Read, Show)
 
 data Config = Config
-  { configUser     :: Text
-  , configHost     :: Text
-  , configTeam     :: Text
-  , configPort     :: Int
-  , configPass     :: PasswordSource
+  { configUser        :: Text
+  , configHost        :: Text
+  , configTeam        :: Text
+  , configPort        :: Int
+  , configPass        :: PasswordSource
+  , configTimeFormat  :: Maybe String
   } deriving (Eq, Show)
 
 (??) :: Maybe a -> String -> Either String a
@@ -45,6 +46,7 @@ fromIni (Ini ini) = do
   configUser <- HM.lookup "user" cS ?? "user"
   configHost <- HM.lookup "host" cS ?? "host"
   configTeam <- HM.lookup "team" cS ?? "team"
+  let configTimeFormat = T.unpack <$> HM.lookup "timeFormat" cS
   configPort <- readT `fmap` (HM.lookup "port" cS ?? "port")
   let passCmd = HM.lookup "passcmd" cS
   let pass    = HM.lookup "pass" cS
