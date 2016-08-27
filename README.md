@@ -1,5 +1,6 @@
 [![Build
 Status](https://travis-ci.org/aisamanra/matterhorn.svg?branch=master)](https://travis-ci.org/aisamanra/matterhorn)
+
 ![](logo.png)
 
 This is a basic terminal-based client for the MatterMost chat system.
