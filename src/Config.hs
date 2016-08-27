@@ -72,7 +72,8 @@ findConfig = do
 
 getConfig :: FilePath -> IO (Either String Config)
 getConfig fp = runExceptT $ do
-  t <- liftIO $ readIniFile fp
+  t <- (convertIOException $ readIniFile fp) `catchE`
+       (\e -> throwE $ "Could not read " <> show fp <> ": " <> e)
   case t >>= fromIni of
     Left err -> do
       throwE $ "Unable to parse " ++ fp ++ ":" ++ err
