@@ -267,12 +267,8 @@ setupState config = do
       Just tName -> do
           let matchingTeam = listToMaybe $ filter matches $ initialLoadTeams initialLoad
               matches t = teamName t == (T.unpack tName)
-
           case matchingTeam of
-              Nothing -> do
-                  putStrLn $ "No team named " <> (show (configTeam config)) <> " found.  Available teams:"
-                  mapM_ putStrLn (show <$> teamName <$> initialLoadTeams initialLoad)
-                  exitFailure
+              Nothing -> interactiveTeamSelection (initialLoadTeams initialLoad)
               Just t -> return t
 
   let myTeamId = getId myTeam
