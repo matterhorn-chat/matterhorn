@@ -49,8 +49,8 @@ You can often use built-in keybindings or `/cmd`-style commands:
 ~~~
 Command		Keybinding		Effect
 -------		----------		-------------------------------
-/right		Ctrl-n                          Go to the next chat channel
-/left		Ctrl-p                          Go to the previous chat channel
+/right		Ctrl-n			Go to the next chat channel
+/left		Ctrl-p			Go to the previous chat channel
 /quit		Esc				Quit the editor
 /chan [c]					Go to channel c
 /dm [u]						Go to direct message channel with user u
