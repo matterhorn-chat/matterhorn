@@ -3,9 +3,12 @@ module State where
 import           Brick (EventM, str, vBox)
 import           Brick.Widgets.Edit (editor)
 import qualified Control.Concurrent.Chan as Chan
-import           Control.Monad (join, forM)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.HashMap.Strict ((!))
+import           Brick.Main (viewportScroll, vScrollToEnd)
+import           Brick.Widgets.Edit (applyEdit)
+import           Control.Monad (join, forM, when)
+import           Data.Text.Zipper (clearZipper)
 import qualified Data.HashMap.Strict as HM
 import           Data.List (sort)
 import           Data.Maybe (listToMaybe, maybeToList)
@@ -22,6 +25,8 @@ import           Network.Mattermost.Lenses
 
 import           Config
 import           Types
+import           TeamSelect
+import           InputHistory
 import           Zipper (Zipper)
 import qualified Zipper as Z
 
@@ -40,9 +45,11 @@ newState :: Token
          -> User
          -> Team
          -> TimeZone
+         -> Maybe String
+         -> InputHistory
          -> RequestChan
          -> ChatState
-newState t c i u m tz rq = ChatState
+newState t c i u m tz fmt hist rq = ChatState
   { _csTok    = t
   , _csConn   = c
   , _csFocus  = i
@@ -55,6 +62,9 @@ newState t c i u m tz rq = ChatState
   , _cmdLine  = editor MessageInput (vBox . map str) (Just 1) ""
   , _timeZone = tz
   , _csRequestQueue = rq
+  , _timeFormat = fmt
+  , _csInputHistory = hist
+  , _csInputHistoryPosition = mempty
   }
 
 runAsync :: ChatState -> IO (ChatState -> ChatState) -> IO ()
@@ -86,11 +96,32 @@ updateViewed st = do
     return (msgMap . ix cId . cdViewed .~ now)
   return st
 
+resetHistoryPosition :: ChatState -> EventM a ChatState
+resetHistoryPosition st =
+    let cId = currentChannelId st
+    in return $ st & csInputHistoryPosition.at cId .~ Just Nothing
+
+clearEditor :: ChatState -> EventM a ChatState
+clearEditor st = return $ st & cmdLine %~ applyEdit clearZipper
+
+changeChannelCommon :: ChatState -> EventM a ChatState
+changeChannelCommon st =
+    clearEditor =<<
+    resetHistoryPosition st
+
 nextChannel :: ChatState -> EventM a ChatState
-nextChannel st = updateViewed (st & csFocus %~ Z.right)
+nextChannel st = changeChannelCommon =<<
+                 updateViewed (st & csFocus %~ Z.right)
 
 prevChannel :: ChatState -> EventM a ChatState
-prevChannel st = updateViewed (st & csFocus %~ Z.left)
+prevChannel st = changeChannelCommon =<<
+                 updateViewed (st & csFocus %~ Z.left)
+
+updateChannelScrollState :: ChatState -> EventM Name ChatState
+updateChannelScrollState st = do
+  let cId = currentChannelId st
+  vScrollToEnd $ viewportScroll (ChannelMessages cId)
+  return st
 
 currentChannelId :: ChatState -> ChannelId
 currentChannelId st = Z.focus (st ^. csFocus)
@@ -107,9 +138,12 @@ setFocus n st = updateViewed (st & csFocus %~ Z.findRight (==n'))
   Just n' = st ^. csNames . cnToChanId . at n
 
 setDMFocus :: String -> ChatState -> EventM a ChatState
-setDMFocus n st = updateViewed (st & csFocus %~ Z.findRight (==n'))
+setDMFocus n st =
+    case n' of
+        Nothing -> return st
+        Just dmName -> updateViewed (st & csFocus %~ Z.findRight (==dmName))
   where
-  Just n' = st ^. csNames . cnToChanId . at n
+  n' = st ^. csNames . cnToChanId . at n
 
 editMessage :: Post -> ChatState -> EventM a ChatState
 editMessage new st = do
@@ -186,6 +220,8 @@ getChannel cId st =
 
 setupState :: Config -> RequestChan -> IO ChatState
 setupState config requestChan = do
+  putStrLn "Authenticating..."
+
   ctx <- initConnectionContext
   let cd = mkConnectionData (T.unpack (configHost config))
                             (fromIntegral (configPort config))
@@ -198,20 +234,23 @@ setupState config requestChan = do
   (token, myUser) <- join (hoistE <$> mmLogin cd login)
 
   initialLoad <- mmGetInitialLoad cd token
+  when (null $ initialLoadTeams initialLoad) $ do
+      putStrLn "Error: your account is not a member of any teams"
+      exitFailure
 
-  -- XXX Give the user an interactive choice if the config doesn't have
-  -- a team name set.
-  let matchingTeam = listToMaybe $ filter matchesConfig $ initialLoadTeams initialLoad
-      matchesConfig t = teamName t == (T.unpack $ configTeam config)
-
-  myTeam <- case matchingTeam of
+  myTeam <- case configTeam config of
       Nothing -> do
-          putStrLn $ "No team named " <> (show (configTeam config)) <> " found.  Available teams:"
-          mapM_ putStrLn (show <$> teamName <$> initialLoadTeams initialLoad)
-          exitFailure
-      Just t -> return t
+          interactiveTeamSelection (initialLoadTeams initialLoad)
+      Just tName -> do
+          let matchingTeam = listToMaybe $ filter matches $ initialLoadTeams initialLoad
+              matches t = teamName t == (T.unpack tName)
+          case matchingTeam of
+              Nothing -> interactiveTeamSelection (initialLoadTeams initialLoad)
+              Just t -> return t
 
   let myTeamId = getId myTeam
+
+  putStrLn $ "Loading channels for team " <> show (teamName myTeam) <> "..."
 
   Channels chans cm <- mmGetChannels cd token myTeamId
 
@@ -228,6 +267,11 @@ setupState config requestChan = do
 
   users <- mmGetProfiles cd token myTeamId
   tz    <- getCurrentTimeZone
+  hist  <- do
+      result <- readHistory
+      case result of
+          Left _ -> return newHistory
+          Right h -> return h
 
   let chanNames = MMNames
         { _cnChans = sort
@@ -261,7 +305,7 @@ setupState config requestChan = do
                 | i <- chanNames ^. cnUsers
                 , c <- maybeToList (HM.lookup i (chanNames ^. cnToChanId)) ]
       chanZip = Z.findRight (== townSqId) (Z.fromList chanIds)
-      st = newState token cd chanZip myUser myTeam tz requestChan
+      st = newState token cd chanZip myUser myTeam tz (configTimeFormat config) hist requestChan
              & chnMap .~ HM.fromList [ (getId c, c)
                                      | c <- chans
                                      ]

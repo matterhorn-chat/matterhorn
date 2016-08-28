@@ -5,10 +5,12 @@ module Main where
 import           Brick
 import           Control.Concurrent (forkIO)
 import qualified Control.Concurrent.Chan as Chan
-import           Control.Monad (forever, void)
+import           Control.Monad (forever)
 import           Data.Default (def)
+import           Data.Monoid ((<>))
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform
+import           System.Exit (exitFailure)
 
 import           Network.Mattermost.WebSocket
 
@@ -18,10 +20,16 @@ import           Themes
 import           Events
 import           Draw
 import           Types
+import           InputHistory
 
 main :: IO ()
 main = do
-  config <- findConfig
+  configResult <- findConfig
+  config <- case configResult of
+      Left err -> do
+          putStrLn $ "Error loading config: " <> err
+          exitFailure
+      Right c -> return c
 
   eventChan <- Chan.newChan
   let shunt e = Chan.writeChan eventChan (WSEvent e)
@@ -35,7 +43,8 @@ main = do
   st <- setupState config requestChan
 
   mmWithWebSocket (st^.csConn) (st^.csTok) shunt $ \_ -> do
-    void $ customMain (Vty.mkVty def) eventChan app st
+    finalSt <- customMain (Vty.mkVty def) eventChan app st
+    writeHistory (finalSt^.csInputHistory)
 
 app :: App ChatState Event Name
 app = App

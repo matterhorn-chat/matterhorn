@@ -6,14 +6,16 @@ module Config
   , findConfig
   ) where
 
+import           Control.Monad.Trans.Except
 import qualified Data.HashMap.Strict as HM
 import           Data.Ini
 import           Data.Text (Text)
 import qualified Data.Text as T
-import           System.Directory (doesFileExist)
-import           System.Environment.XDG.BaseDir (getAllConfigFiles)
-import           System.Exit (exitFailure)
+import           Data.Monoid ((<>))
 import           System.Process (readProcess)
+
+import           IOUtil
+import           FilePaths
 
 data PasswordSource =
     PasswordString Text
@@ -21,11 +23,12 @@ data PasswordSource =
     deriving (Eq, Read, Show)
 
 data Config = Config
-  { configUser     :: Text
-  , configHost     :: Text
-  , configTeam     :: Text
-  , configPort     :: Int
-  , configPass     :: PasswordSource
+  { configUser        :: Text
+  , configHost        :: Text
+  , configTeam        :: Maybe Text
+  , configPort        :: Int
+  , configPass        :: PasswordSource
+  , configTimeFormat  :: Maybe String
   } deriving (Eq, Show)
 
 (??) :: Maybe a -> String -> Either String a
@@ -40,7 +43,8 @@ fromIni (Ini ini) = do
   cS <- HM.lookup "mattermost" ini ?? "mattermost"
   configUser <- HM.lookup "user" cS ?? "user"
   configHost <- HM.lookup "host" cS ?? "host"
-  configTeam <- HM.lookup "team" cS ?? "team"
+  let configTimeFormat = T.unpack <$> HM.lookup "timeFormat" cS
+      configTeam = HM.lookup "team" cS
   configPort <- readT `fmap` (HM.lookup "port" cS ?? "port")
   let passCmd = HM.lookup "passcmd" cS
   let pass    = HM.lookup "pass" cS
@@ -51,34 +55,24 @@ fromIni (Ini ini) = do
     Just c -> return (PasswordCommand (T.unpack c))
   return Config { .. }
 
-findConfig :: IO Config
+findConfig :: IO (Either String Config)
 findConfig = do
-  xdgLocations <- getAllConfigFiles "matterhorn" "config.ini"
-  let confLocations = ["./config.ini"] ++ xdgLocations
-                                       ++ ["/etc/matterhorn/config.ini"]
-  loop confLocations
-  where loop [] = do
-          putStrLn "No matterhorn configuration found"
-          exitFailure
-        loop (c:cs) = do
-          ex <- doesFileExist c
-          if ex
-            then getConfig c
-            else loop cs
+    let err = "Configuration file " <> show configFileName <> " not found"
+    maybe (return $ Left err) getConfig =<< locateConfig configFileName
 
-getConfig :: FilePath -> IO Config
-getConfig fp = do
-  t <- readIniFile fp
+getConfig :: FilePath -> IO (Either String Config)
+getConfig fp = runExceptT $ do
+  t <- (convertIOException $ readIniFile fp) `catchE`
+       (\e -> throwE $ "Could not read " <> show fp <> ": " <> e)
   case t >>= fromIni of
     Left err -> do
-      putStrLn ("Unable to parse " ++ fp ++ ":")
-      putStrLn ("  " ++ err)
-      exitFailure
+      throwE $ "Unable to parse " ++ fp ++ ":" ++ err
     Right conf -> do
       actualPass <- case configPass conf of
         PasswordCommand cmdString -> do
           let (cmd:rest) = words cmdString
-          r <- readProcess cmd rest ""
-          return (T.pack (takeWhile (/= '\n') r))
+          output <- convertIOException (readProcess cmd rest "") `catchE`
+                    (\e -> throwE $ "Could not execute password command: " <> e)
+          return $ T.pack (takeWhile (/= '\n') output)
         PasswordString pass -> return pass
       return conf { configPass = PasswordString actualPass }

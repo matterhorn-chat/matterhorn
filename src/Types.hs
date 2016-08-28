@@ -7,12 +7,15 @@ import           Control.Concurrent.Chan (Chan)
 import           Data.HashMap.Strict (HashMap)
 import           Data.Time.Clock (UTCTime)
 import           Data.Time.LocalTime (TimeZone)
+import qualified Data.HashMap.Strict as HM
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform (makeLenses)
 import           Network.Mattermost
 import           Network.Mattermost.WebSocket.Types
 
 import           Zipper (Zipper)
+
+import           InputHistory
 
 data MMNames = MMNames
   { _cnChans    :: [String]
@@ -73,6 +76,9 @@ data ChatState = ChatState
   , _cmdLine        :: Editor Name
   , _timeZone       :: TimeZone
   , _csRequestQueue :: Chan (IO (ChatState -> ChatState))
+  , _timeFormat     :: Maybe String
+  , _csInputHistory :: InputHistory
+  , _csInputHistoryPosition :: HM.HashMap ChannelId (Maybe Int)
   }
 
 type RequestChan = Chan (IO (ChatState -> ChatState))

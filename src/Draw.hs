@@ -16,7 +16,6 @@ import           Data.Ord (comparing)
 import           Data.Maybe ( listToMaybe, maybeToList )
 import           Data.Monoid ((<>))
 import           Lens.Micro.Platform
-import           Text.LineBreak (breakString, BreakFormat(..))
 
 import           Network.Mattermost
 import           Network.Mattermost.Lenses
@@ -24,25 +23,27 @@ import           Network.Mattermost.Lenses
 import           State
 import           Themes
 import           Types
+import           DrawUtil
 
-wrappedText :: String -> Widget Name
-wrappedText msg = Widget Fixed Fixed $ do
-  ctx <- getContext
-  let w = ctx ^. availWidthL
-  render (str (breakString (BreakFormat w 8 '-' Nothing) msg))
+-- If the config's date format is not set.
+defaultDateFormat :: String
+defaultDateFormat = "%R"
 
-renderTime :: TimeZone -> UTCTime -> Widget Name
-renderTime tz t =
-    -- %R gives HH:MM in 24 hour time
-    let timeStr = formatTime defaultTimeLocale "%R" (utcToLocalTime tz t)
+renderTime :: String -> TimeZone -> UTCTime -> Widget Name
+renderTime fmt tz t =
+    let timeStr = formatTime defaultTimeLocale fmt (utcToLocalTime tz t)
     in str "[" <+> withDefAttr timeAttr (str timeStr) <+> str "]"
 
-renderChatMessage :: TimeZone -> Int -> (Int, (UTCTime, String, String)) -> Widget Name
-renderChatMessage tz lastIdx (i, (t, u, m)) =
+renderChatMessage :: Maybe String -> TimeZone -> Int -> (Int, (UTCTime, String, String)) -> Widget Name
+renderChatMessage mFormat tz lastIdx (i, (t, u, m)) =
     let f = if i == lastIdx
             then visible
             else id
-    in f $ renderTime tz t <+> str " " <+> wrappedText (u ++ ": " ++ m)
+        msg = wrappedText (u ++ ": " ++ m)
+    in f $ case mFormat of
+        Just ""     -> msg
+        Just format -> renderTime format tz t            <+> str " " <+> msg
+        Nothing     -> renderTime defaultDateFormat tz t <+> str " " <+> msg
 
 mkChannelName :: String -> String
 mkChannelName = ('#':)
@@ -113,7 +114,7 @@ renderCurrentChannelDisplay st = header <=> hBorder <=> messages
                    _        -> mkChannelName   chnName
                  False -> wrappedText $ mkChannelName chnName <> " - " <> purposeStr
     messages = viewport (ChannelMessages cId) Vertical chatText <+> str " "
-    chatText = vBox $ renderChatMessage (st ^. timeZone) (length channelMessages - 1) <$>
+    chatText = vBox $ renderChatMessage (st ^. timeFormat) (st ^. timeZone) (length channelMessages - 1) <$>
                       zip [0..] channelMessages
     channelMessages = getMessageListing cId st
     cId = currentChannelId st
