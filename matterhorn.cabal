@@ -21,6 +21,7 @@ executable matterhorn
   main-is:             Main.hs
   other-modules:       Config
                        Command
+                       Completion
                        State
                        Zipper
                        Themes
@@ -37,6 +38,7 @@ executable matterhorn
   build-depends:       base >=4.7 && <5
                      , mattermost-api
                      , unordered-containers
+                     , containers
                      , text
                      , bytestring
                      , ini
