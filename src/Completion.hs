@@ -24,7 +24,7 @@ search direction prefix current options
 
   | otherwise = case direction of
     Backwards -> find (prefix `isPrefixOf`)
-                      (reverse (Set.toList options))
+                      (Set.toDescList options)
     Forwards  -> do x <- Set.lookupGE prefix options
                     guard (prefix `isPrefixOf` x)
                     Just x
