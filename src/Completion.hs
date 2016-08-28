@@ -4,6 +4,7 @@ module Completion where
 
 import           Control.Applicative ( (<|>) )
 import           Control.Monad ( guard )
+import           Data.Char ( isSpace )
 import           Data.List ( find
                            , isPrefixOf )
 import qualified Data.Set as Set
@@ -51,5 +52,9 @@ wordComplete direction hints options prompt previous = do
 -- | trim whitespace and do any other edits we need
 -- to focus on the current word
 currentWord :: String -> String
-currentWord = id -- XXX: fixme
-
+currentWord line
+  = reverse
+  $ takeWhile (not . isSpace)
+  $ dropWhile (\x -> x==' ' || x==':')
+  $ reverse
+  $ line

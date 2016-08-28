@@ -5,9 +5,15 @@ import           Brick.Widgets.Edit ( getEditContents
                                     , handleEditorEvent
                                     , applyEdit
                                     , editContentsL
+                                    , editContents
                                     )
 import           Control.Monad.IO.Class (liftIO)
-import           Data.Text.Zipper (stringZipper, clearZipper, gotoEOL)
+import qualified Data.Set as Set
+import           Data.Text.Zipper ( stringZipper
+                                  , clearZipper
+                                  , gotoEOL
+                                  , insertChar
+                                  , deletePrevChar )
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform
 
@@ -16,6 +22,7 @@ import           Network.Mattermost.Lenses
 import           Network.Mattermost.WebSocket.Types
 
 import           Command
+import           Completion
 import           State
 import           Types
 import           InputHistory
@@ -33,6 +40,10 @@ onEvent st (VtyEvent (Vty.EvResize _ _)) = do
   continue =<< updateChannelScrollState st
 onEvent st (VtyEvent (Vty.EvKey Vty.KEsc [])) =
   halt st
+onEvent st (VtyEvent (Vty.EvKey (Vty.KChar '\t') [])) =
+  tabComplete Forwards st
+onEvent st (VtyEvent (Vty.EvKey (Vty.KBackTab) [])) =
+  tabComplete Backwards st
 onEvent st (VtyEvent (Vty.EvKey Vty.KUp [])) =
   continue $ channelHistoryBackward st
 onEvent st (VtyEvent (Vty.EvKey Vty.KDown [])) =
@@ -41,10 +52,18 @@ onEvent st (VtyEvent (Vty.EvKey (Vty.KChar 'n') [Vty.MCtrl])) =
   continue =<< updateChannelScrollState =<< nextChannel st
 onEvent st (VtyEvent (Vty.EvKey (Vty.KChar 'p') [Vty.MCtrl])) =
   continue =<< updateChannelScrollState =<< prevChannel st
-onEvent st (VtyEvent (Vty.EvKey Vty.KEnter [])) =
-  handleInputSubmission st
-onEvent st (VtyEvent e) =
-  continue =<< handleEventLensed st cmdLine handleEditorEvent e
+onEvent st (VtyEvent (Vty.EvKey Vty.KEnter [])) = do
+  let st' = st & csCurrentCompletion .~ Nothing
+  handleInputSubmission st'
+onEvent st (VtyEvent e) = do
+  let st' = case e of
+            -- XXX: not 100% certain we need to special case these
+            -- the intention is to notice when the user has finished word completion
+            -- and moved on. Needs more testing.
+            Vty.EvKey (Vty.KChar ' ') [] -> st & csCurrentCompletion .~ Nothing
+            Vty.EvKey Vty.KBS         [] -> st & csCurrentCompletion .~ Nothing
+            _ -> st
+  continue =<< handleEventLensed st' cmdLine handleEditorEvent e
 onEvent st (WSEvent we) =
   handleWSEvent st we
 
@@ -82,6 +101,50 @@ channelHistoryBackward st =
               Just entry ->
                   st & cmdLine.editContentsL .~ (gotoEOL $ stringZipper [entry] (Just 1))
                      & csInputHistoryPosition.at cId .~ (Just $ Just newI)
+
+tabComplete :: Completion.Direction
+            -> ChatState -> EventM Name (Next ChatState)
+tabComplete dir st = do
+  -- XXX: insert, killWordBackward, and delete could probably all
+  -- be moved to the text zipper package (after some generalization and cleanup)
+  -- for example, we should look up the standard unix word break characters
+  -- and use those in killWordBackward.
+  let insert  = foldl (flip insertChar)
+      killWordBackward z =
+        let n = length
+              $ takeWhile (/= ' ')
+              $ reverse
+              $ line
+        in delete n z
+      delete n z | n <= 0 = z
+      delete n z = delete (n-1) (deletePrevChar z)
+
+      priorities  = [] :: [String]-- XXX: add recent completions to this
+      completions = Set.fromList (st^.csNames.cnUsers ++
+                                  st^.csNames.cnChans ++
+                                  map ("@" ++) (st^.csNames.cnUsers) ++
+                                  map ("#" ++) (st^.csNames.cnChans) ++
+                                  map ("/" ++) (map commandName commandList))
+
+      (line:_)    = getEditContents (st^.cmdLine)
+      curComp     = st^.csCurrentCompletion
+      nextComp    = case curComp of
+                    Nothing -> Just (currentWord line)
+                    _       -> curComp
+
+      mb_word     = wordComplete dir priorities completions line curComp
+
+      st'         = st & csCurrentCompletion .~ nextComp
+      st''        = case mb_word of
+                      Nothing -> st'
+                      Just w  ->
+                        -- JED: my lens-fu is not so great, but I know this could be
+                        -- more succinct.
+                        let contents  = editContents (st' ^. cmdLine)
+                            backup    = st' & cmdLine.editContentsL .~ killWordBackward contents
+                            contents' = editContents (backup ^. cmdLine)
+                        in backup & cmdLine.editContentsL .~ insert contents' w
+  continue st''
 
 handleInputSubmission :: ChatState -> EventM Name (Next ChatState)
 handleInputSubmission st = do

@@ -99,6 +99,7 @@ data ChatState = ChatState
   , _timeFormat :: Maybe String
   , _csInputHistory :: InputHistory
   , _csInputHistoryPosition :: HM.HashMap ChannelId (Maybe Int)
+  , _csCurrentCompletion :: Maybe String
   }
 
 newState :: Token
@@ -125,6 +126,7 @@ newState t c i u m tz fmt hist = ChatState
   , _timeFormat = fmt
   , _csInputHistory = hist
   , _csInputHistoryPosition = mempty
+  , _csCurrentCompletion = Nothing
   }
 
 makeLenses ''ChatState
