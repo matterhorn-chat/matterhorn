@@ -29,6 +29,7 @@ executable matterhorn
                        IOUtil
                        Events
                        Types
+                       FilePaths
                        TeamSelect
   default-extensions:  OverloadedStrings,
                        ScopedTypeVariables
@@ -53,4 +54,5 @@ executable matterhorn
                      , filepath
                      , directory
                      , vector
+                     , strict
   default-language:    Haskell2010

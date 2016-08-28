@@ -4,9 +4,10 @@ module State where
 
 import           Brick (EventM, str, vBox)
 import           Brick.Main (viewportScroll, vScrollToEnd)
-import           Brick.Widgets.Edit (Editor, editor)
+import           Brick.Widgets.Edit (Editor, editor, applyEdit)
 import           Control.Monad (join, forM, when)
 import           Control.Monad.IO.Class (liftIO)
+import           Data.Text.Zipper (clearZipper)
 import           Data.HashMap.Strict (HashMap, (!))
 import qualified Data.HashMap.Strict as HM
 import           Data.List (sort)
@@ -24,6 +25,7 @@ import           Network.Mattermost.Lenses
 
 import           Config
 import           TeamSelect
+import           InputHistory
 import           Zipper (Zipper)
 import qualified Zipper as Z
 
@@ -95,10 +97,20 @@ data ChatState = ChatState
   , _cmdLine    :: Editor Name
   , _timeZone   :: TimeZone
   , _timeFormat :: Maybe String
+  , _csInputHistory :: InputHistory
+  , _csInputHistoryPosition :: HM.HashMap ChannelId (Maybe Int)
   }
 
-newState :: Token -> ConnectionData -> Zipper ChannelId -> User -> Team -> TimeZone -> Maybe String -> ChatState
-newState t c i u m tz fmt = ChatState
+newState :: Token
+         -> ConnectionData
+         -> Zipper ChannelId
+         -> User
+         -> Team
+         -> TimeZone
+         -> Maybe String
+         -> InputHistory
+         -> ChatState
+newState t c i u m tz fmt hist = ChatState
   { _csTok    = t
   , _csConn   = c
   , _csFocus  = i
@@ -111,6 +123,8 @@ newState t c i u m tz fmt = ChatState
   , _cmdLine  = editor MessageInput (vBox . map str) (Just 1) ""
   , _timeZone = tz
   , _timeFormat = fmt
+  , _csInputHistory = hist
+  , _csInputHistoryPosition = mempty
   }
 
 makeLenses ''ChatState
@@ -134,11 +148,26 @@ updateViewed st = do
     cId
   return (st & msgMap . ix cId . cdViewed .~ now)
 
+resetHistoryPosition :: ChatState -> EventM a ChatState
+resetHistoryPosition st =
+    let cId = currentChannelId st
+    in return $ st & csInputHistoryPosition.at cId .~ Just Nothing
+
+clearEditor :: ChatState -> EventM a ChatState
+clearEditor st = return $ st & cmdLine %~ applyEdit clearZipper
+
+changeChannelCommon :: ChatState -> EventM a ChatState
+changeChannelCommon st =
+    clearEditor =<<
+    resetHistoryPosition st
+
 nextChannel :: ChatState -> EventM a ChatState
-nextChannel st = updateViewed (st & csFocus %~ Z.right)
+nextChannel st = changeChannelCommon =<<
+                 updateViewed (st & csFocus %~ Z.right)
 
 prevChannel :: ChatState -> EventM a ChatState
-prevChannel st = updateViewed (st & csFocus %~ Z.left)
+prevChannel st = changeChannelCommon =<<
+                 updateViewed (st & csFocus %~ Z.left)
 
 updateChannelScrollState :: ChatState -> EventM Name ChatState
 updateChannelScrollState st = do
@@ -290,6 +319,11 @@ setupState config = do
 
   users <- mmGetProfiles cd token myTeamId
   tz    <- getCurrentTimeZone
+  hist  <- do
+      result <- readHistory
+      case result of
+          Left _ -> return newHistory
+          Right h -> return h
 
   let chanNames = MMNames
         { _cnChans = sort
@@ -323,7 +357,7 @@ setupState config = do
                 | i <- chanNames ^. cnUsers
                 , c <- maybeToList (HM.lookup i (chanNames ^. cnToChanId)) ]
       chanZip = Z.findRight (== townSqId) (Z.fromList chanIds)
-      st = newState token cd chanZip myUser myTeam tz (configTimeFormat config)
+      st = newState token cd chanZip myUser myTeam tz (configTimeFormat config) hist
              & chnMap .~ HM.fromList [ (getId c, c)
                                      | c <- chans
                                      ]

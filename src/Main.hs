@@ -4,7 +4,6 @@ module Main where
 
 import           Brick
 import qualified Control.Concurrent.Chan as Chan
-import           Control.Monad (void)
 import           Data.Default (def)
 import           Data.Monoid ((<>))
 import qualified Graphics.Vty as Vty
@@ -19,6 +18,7 @@ import           Themes
 import           Events
 import           Draw
 import           Types
+import           InputHistory
 
 main :: IO ()
 main = do
@@ -35,7 +35,8 @@ main = do
   let shunt e = Chan.writeChan eventChan (WSEvent e)
 
   mmWithWebSocket (st^.csConn) (st^.csTok) shunt $ \_ -> do
-    void $ customMain (Vty.mkVty def) eventChan app st
+    finalSt <- customMain (Vty.mkVty def) eventChan app st
+    writeHistory (finalSt^.csInputHistory)
 
 app :: App ChatState Event Name
 app = App
