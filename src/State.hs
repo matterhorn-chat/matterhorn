@@ -249,15 +249,17 @@ clientMessageDigest cId ref st =
   where m = ((ms ! cId) ^. cdCMsgs) ! ref
         ms = st ^. msgMap
 
-getMessageListing :: ChannelId -> ChatState -> [(UTCTime, String, String)]
+getMessageListing :: ChannelId -> ChatState -> [((UTCTime, String, String), Maybe Post)]
 getMessageListing cId st =
-  let is = st ^. msgMap . ix cId . cdOrder
+  let is    = st ^. msgMap . ix cId . cdOrder
+      posts = st ^. msgMap . ix cId . cdPosts
   in reverse
-    [ msg
+    [ (msg, mp)
     | i <- is
-    , let msg = case i of
-                  CLId c -> clientMessageDigest cId c st
-                  MMId p -> mmMessageDigest cId p st
+    , let (msg, mp) = case i of
+                        CLId c -> (clientMessageDigest cId c st, Nothing)
+                        MMId pId -> let post = posts ! pId
+                                    in (mmMessageDigest cId pId st, Just post)
     ]
 
 getChannelName :: ChannelId -> ChatState -> String

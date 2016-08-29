@@ -12,7 +12,7 @@ import           Data.Time.Format ( formatTime
 import           Data.Time.LocalTime ( TimeZone, utcToLocalTime )
 import qualified Data.HashMap.Strict as HM
 import           Data.HashMap.Strict ( HashMap )
-import           Data.List (sortBy)
+import           Data.List (sortBy, isSuffixOf, isPrefixOf)
 import           Data.Ord (comparing)
 import           Data.Maybe ( listToMaybe, maybeToList )
 import           Data.Monoid ((<>))
@@ -34,18 +34,34 @@ renderTime fmt tz t =
     let timeStr = formatTime defaultTimeLocale fmt (utcToLocalTime tz t)
     in str "[" <+> withDefAttr timeAttr (str timeStr) <+> str "]"
 
-renderChatMessage :: Maybe String -> TimeZone -> Int -> (Int, (UTCTime, String, String)) -> Widget Name
-renderChatMessage mFormat tz lastIdx (i, (t, u, m)) =
+postIsEmote :: Post -> Bool
+postIsEmote p =
+    and [ HM.lookup "override_icon_url" (postProps p) == Just (""::String)
+        , HM.lookup "override_username" (postProps p) == Just ("webhook"::String)
+        , ("*" `isPrefixOf` postMessage p)
+        , ("*" `isSuffixOf` postMessage p)
+        ]
+
+renderChatMessage :: Maybe String -> TimeZone -> Int -> (Int, ((UTCTime, String, String), (Maybe Post))) -> Widget Name
+renderChatMessage mFormat tz lastIdx (i, ((t, u, m), mp)) =
     let f = if i == lastIdx
             then visible
             else id
-        msg = wrappedText doFormat (u ++ ": " ++ m)
-        doFormat wrapped = let suffix = drop (length u) wrapped
-                               (first:rest) = lines suffix
-                               firstLine = colorUsername u <+> str first
-                           in case rest of
-                                [] -> firstLine
-                                _ -> vBox $ firstLine : (str <$> rest)
+        doFormat prefix wrapped =
+            let suffix = drop (length u + length prefix) wrapped
+                (first, rest) = case lines suffix of
+                    [] -> ("", [])
+                    (fl:r) -> (fl, r)
+                firstLine = str prefix <+> colorUsername u <+> str first
+            in case rest of
+                 [] -> firstLine
+                 _ -> vBox $ firstLine : (str <$> rest)
+        isEmotePost = case mp of
+            Nothing -> False
+            Just p -> postIsEmote p
+        msg = case isEmotePost of
+               True -> wrappedText (doFormat "*") ("*" ++ u ++ " " ++ (init $ tail m))
+               False -> wrappedText (doFormat "")  (u ++ ": " ++ m)
     in f $ case mFormat of
         Just ""     -> msg
         Just format -> renderTime format tz t            <+> str " " <+> msg
