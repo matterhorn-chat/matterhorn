@@ -34,7 +34,7 @@ colorTheme = attrMap (bg black) $
   [ (timeAttr,                fg white)
   , (channelHeaderAttr,       fg white `withStyle` underline)
   , (channelListHeaderAttr,   fg cyan)
-  , (currentChannelNameAttr,  fg white `withStyle` bold)
+  , (currentChannelNameAttr,  black `on` yellow `withStyle` bold)
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 

@@ -76,10 +76,9 @@ renderChannelList st = hLimit channelListWidth $ vBox
     header label = hBorderWithLabel $
                    withDefAttr channelListHeaderAttr $
                    str label
-    channelNames = [ attr $ str (indicator ++ mkChannelName n)
+    channelNames = [ attr $ padRight Max $ str (indicator ++ mkChannelName n)
                    | n <- (st ^. csNames . cnChans)
-                   , let indicator = if | current   -> "+"
-                                        | unread    -> "!"
+                   , let indicator = if | unread    -> "!"
                                         | otherwise -> " "
                          attr = if current
                                 then visible . withDefAttr currentChannelNameAttr
@@ -88,10 +87,9 @@ renderChannelList st = hLimit channelListWidth $ vBox
                          Just chan = st ^. csNames . cnToChanId . at n
                          unread = hasUnread st chan
                    ]
-    dmChannelNames = [ attr $ str indicator <+> colorUsername (mkDMChannelName (u^.userProfileUsernameL))
+    dmChannelNames = [ attr $ padRight Max $ str indicator <+> colorUsername (mkDMChannelName (u^.userProfileUsernameL))
                      | u <- sortBy (comparing userProfileUsername) (st ^. usrMap & HM.elems)
-                     , let indicator = if | current   -> "+"
-                                          | unread    -> "!"
+                     , let indicator = if | unread    -> "!"
                                           | otherwise -> " "
                            attr = if current
                                   then visible . forceAttr currentChannelNameAttr
