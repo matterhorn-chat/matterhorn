@@ -38,7 +38,13 @@ renderChatMessage mFormat tz lastIdx (i, (t, u, m)) =
     let f = if i == lastIdx
             then visible
             else id
-        msg = wrappedText (u ++ ": " ++ m)
+        msg = wrappedText doFormat (u ++ ": " ++ m)
+        doFormat wrapped = let suffix = drop (length u) wrapped
+                               (first:rest) = lines suffix
+                               firstLine = colorUsername u <+> str first
+                           in case rest of
+                                [] -> firstLine
+                                _ -> vBox $ firstLine : (str <$> rest)
     in f $ case mFormat of
         Just ""     -> msg
         Just format -> renderTime format tz t            <+> str " " <+> msg
@@ -76,13 +82,13 @@ renderChannelList st = hLimit channelListWidth $ vBox
                          Just chan = st ^. csNames . cnToChanId . at n
                          unread = hasUnread st chan
                    ]
-    dmChannelNames = [ attr $ str (indicator ++ mkDMChannelName (u^.userProfileUsernameL))
+    dmChannelNames = [ attr $ str indicator <+> colorUsername (mkDMChannelName (u^.userProfileUsernameL))
                      | u <- sortBy (comparing userProfileUsername) (st ^. usrMap & HM.elems)
                      , let indicator = if | current   -> "+"
                                           | unread    -> "!"
                                           | otherwise -> " "
                            attr = if current
-                                  then visible . withDefAttr currentChannelNameAttr
+                                  then visible . forceAttr currentChannelNameAttr
                                   else id
                            cname = getDMChannelName (st^.csMe^.userIdL)
                                                     (u^.userProfileIdL)
@@ -103,15 +109,15 @@ renderCurrentChannelDisplay st = header <=> hBorder <=> messages
     header = padRight Max $
              withDefAttr channelHeaderAttr $
              case null purposeStr of
-                 True -> str $ case chnType of
+                 True -> case chnType of
                    Type "D" ->
                      case findUserByDMChannelName (st^.usrMap)
                                                   chnName
                                                   (st^.csMe^.userIdL) of
-                       Nothing -> mkChannelName chnName
-                       Just u  -> mkDMChannelName (u^.userProfileUsernameL)
-                   _        -> mkChannelName   chnName
-                 False -> wrappedText $ mkChannelName chnName <> " - " <> purposeStr
+                       Nothing -> str $ mkChannelName chnName
+                       Just u  -> colorUsername $ mkDMChannelName (u^.userProfileUsernameL)
+                   _        -> str $ mkChannelName chnName
+                 False -> wrappedText str $ mkChannelName chnName <> " - " <> purposeStr
     messages = viewport (ChannelMessages cId) Vertical chatText <+> str " "
     chatText = vBox $ renderChatMessage (st ^. timeFormat) (st ^. timeZone) (length channelMessages - 1) <$>
                       zip [0..] channelMessages

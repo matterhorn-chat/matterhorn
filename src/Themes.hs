@@ -7,11 +7,15 @@ module Themes
   , channelHeaderAttr
   , channelListHeaderAttr
   , currentChannelNameAttr
+
+  -- * Username formatting
+  , colorUsername
   ) where
 
+import Data.Hashable (hash)
+import Data.Monoid ((<>))
 import Graphics.Vty
-import Brick.AttrMap
-import Brick.Util (fg, bg)
+import Brick
 
 timeAttr :: AttrName
 timeAttr = "time"
@@ -26,9 +30,38 @@ currentChannelNameAttr :: AttrName
 currentChannelNameAttr = "currentChannelName"
 
 colorTheme :: AttrMap
-colorTheme = attrMap (bg black)
+colorTheme = attrMap (bg black) $
   [ (timeAttr,                fg white)
   , (channelHeaderAttr,       fg white)
   , (channelListHeaderAttr,   fg cyan)
   , (currentChannelNameAttr,  fg white `withStyle` bold)
-  ]
+  ] <>
+  ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
+
+usernameAttr :: Int -> AttrName
+usernameAttr i = "username" <> (attrName $ show i)
+
+colorUsername :: String -> Widget a
+colorUsername s = withDefAttr (attrForUsername s) $ str s
+
+attrForUsername :: String -> AttrName
+attrForUsername ('@':s) = usernameAttr $ hash s `mod` (length usernameColors)
+attrForUsername s = usernameAttr $ hash s `mod` (length usernameColors)
+
+usernameColors :: [Attr]
+usernameColors =
+    [ fg red
+    , fg green
+    , fg yellow
+    , fg blue
+    , fg magenta
+    , fg cyan
+    , fg white
+    , fg brightRed
+    , fg brightGreen
+    , fg brightYellow
+    , fg brightBlue
+    , fg brightMagenta
+    , fg brightCyan
+    , fg brightWhite
+    ]

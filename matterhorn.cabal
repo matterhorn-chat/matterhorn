@@ -57,4 +57,5 @@ executable matterhorn
                      , directory
                      , vector
                      , strict
+                     , hashable
   default-language:    Haskell2010
