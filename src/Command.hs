@@ -48,7 +48,6 @@ dispatchCommand cmd st =
     (x:xs) | [ c ] <- [ c | c <- commandList
                           , commandName c == x
                           ] -> commandAction c xs st
-           | otherwise -> do
-               execMMCommand cmd st
-               continue st
+           | otherwise ->
+             execMMCommand cmd st >>= continue
     _ -> continue st
