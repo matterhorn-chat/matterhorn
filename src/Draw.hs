@@ -4,6 +4,7 @@ module Draw where
 
 import           Brick
 import           Brick.Widgets.Border
+import           Brick.Widgets.Border.Style
 import           Brick.Widgets.Edit (renderEditor)
 import           Data.Time.Clock (UTCTime)
 import           Data.Time.Format ( formatTime
@@ -56,15 +57,20 @@ mkChannelName = ('#':)
 mkDMChannelName :: String -> String
 mkDMChannelName = ('@':)
 
+channelListWidth :: Int
+channelListWidth = 20
+
+normalChannelListHeight :: Int
+normalChannelListHeight = 10
+
 renderChannelList :: ChatState -> Widget Name
 renderChannelList st = hLimit channelListWidth $ vBox
                        [ header "Channels"
-                       , vLimit 10 $ viewport NormalChannelList Vertical $ vBox channelNames
+                       , vLimit normalChannelListHeight $ viewport NormalChannelList Vertical $ vBox channelNames
                        , header "Users"
                        , viewport DMChannelList Vertical $ vBox dmChannelNames
                        ]
     where
-    channelListWidth = 20
     cId = currentChannelId st
     currentChannelName = getChannelName cId st
     header label = hBorderWithLabel $
@@ -104,10 +110,10 @@ renderUserCommandBox st = prompt <+> inputBox
     inputBox = renderEditor True (st^.cmdLine)
 
 renderCurrentChannelDisplay :: ChatState -> Widget Name
-renderCurrentChannelDisplay st = header <=> hBorder <=> messages
+renderCurrentChannelDisplay st = header <=> messages
     where
-    header = padRight Max $
-             withDefAttr channelHeaderAttr $
+    header = withDefAttr channelHeaderAttr $
+             padRight Max $
              case null purposeStr of
                  True -> case chnType of
                    Type "D" ->
@@ -141,7 +147,10 @@ findUserByDMChannelName userMap dmchan me = listToMaybe
 
 chatDraw :: ChatState -> [Widget Name]
 chatDraw st =
-    [ (renderChannelList st <+> vBorder <+> renderCurrentChannelDisplay st)
-      <=> hBorder
+    [ (renderChannelList st <+> (borderElem bsIntersectR <=>
+                                 vLimit normalChannelListHeight vBorder <=>
+                                 borderElem bsIntersectR <=> vBorder)
+                            <+> renderCurrentChannelDisplay st)
+      <=> (hLimit channelListWidth hBorder <+> borderElem bsIntersectB <+> hBorder)
       <=> renderUserCommandBox st
     ]

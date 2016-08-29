@@ -32,7 +32,7 @@ currentChannelNameAttr = "currentChannelName"
 colorTheme :: AttrMap
 colorTheme = attrMap (bg black) $
   [ (timeAttr,                fg white)
-  , (channelHeaderAttr,       fg white)
+  , (channelHeaderAttr,       fg white `withStyle` underline)
   , (channelListHeaderAttr,   fg cyan)
   , (currentChannelNameAttr,  fg white `withStyle` bold)
   ] <>
