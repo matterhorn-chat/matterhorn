@@ -272,6 +272,20 @@ getChannel :: ChannelId -> ChatState -> Maybe Channel
 getChannel cId st =
   (st ^. chnMap . at cId)
 
+execMMCommand :: String -> ChatState -> EventM a ()
+execMMCommand cmd st = do
+  let mc = MinCommand
+        { minComChannelId = currentChannelId st
+        , minComCommand   = "/" ++ cmd
+        , minComSuggest   = False
+        }
+  _ <- liftIO $ mmExecute
+         (st^.csConn)
+         (st^.csTok)
+         (st^.csMyTeam.teamIdL)
+         mc
+  return ()
+
 setupState :: Config -> IO ChatState
 setupState config = do
   putStrLn "Authenticating..."

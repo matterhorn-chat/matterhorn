@@ -49,9 +49,6 @@ dispatchCommand cmd st =
                           , commandName c == x
                           ] -> commandAction c xs st
            | otherwise -> do
-               let s = unlines [ "\nUnknown command: `/" ++ x ++ "`"
-                               , "Type /help for more information"
-                               ]
-               msg <- newClientMessage s
-               continue (addClientMessage msg st)
+               execMMCommand cmd st
+               continue st
     _ -> continue st
