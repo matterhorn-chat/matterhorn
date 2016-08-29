@@ -173,11 +173,18 @@ handleWSEvent st we =
       Nothing -> continue st
     _ -> continue st
 
+shouldSkipMessage :: String -> Bool
+shouldSkipMessage "" = True
+shouldSkipMessage s = and $ (`elem` (" \t"::String)) <$> s
+
 sendMessage :: ChatState -> String -> IO ()
-sendMessage st msg = do
-  let myId   = st^.csMe.userIdL
-      chanId = currentChannelId st
-      theTeamId = st^.csMyTeam.teamIdL
-  pendingPost <- mkPendingPost msg myId chanId
-  _ <- mmPost (st^.csConn) (st^.csTok) theTeamId pendingPost
-  return ()
+sendMessage st msg =
+    case shouldSkipMessage msg of
+        True -> return ()
+        False -> do
+            let myId   = st^.csMe.userIdL
+                chanId = currentChannelId st
+                theTeamId = st^.csMyTeam.teamIdL
+            pendingPost <- mkPendingPost msg myId chanId
+            _ <- mmPost (st^.csConn) (st^.csTok) theTeamId pendingPost
+            return ()
