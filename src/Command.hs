@@ -38,9 +38,11 @@ commandList =
 
 mkHelpText :: [Cmd] -> String
 mkHelpText cs = "\n" ++
-  unlines [ "  /" ++ cmd ++ ": " ++ desc
-          | Cmd { commandName = cmd, commandDescr = desc } <- cs
-          ]
+  let commandNameWidth = 4 + (maximum $ length <$> commandName <$> cs)
+      padTo n s = s ++ replicate (n - length s) ' '
+  in unlines [ "  " ++ padTo commandNameWidth ('/':cmd) ++ desc
+             | Cmd { commandName = cmd, commandDescr = desc } <- cs
+             ]
 
 dispatchCommand :: String -> ChatState -> EventM Name (Next ChatState)
 dispatchCommand cmd st =
