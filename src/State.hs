@@ -142,8 +142,11 @@ hasUnread st cId = maybe False id $ do
   where
 
 updateViewed :: ChatState -> EventM a ChatState
-updateViewed st = do
-  now <- liftIO getCurrentTime
+updateViewed st = liftIO (updateViewedIO st)
+
+updateViewedIO :: ChatState -> IO ChatState
+updateViewedIO st = do
+  now <- getCurrentTime
   let cId = currentChannelId st
   liftIO $ mmUpdateLastViewedAt
     (st^.csConn)
@@ -391,7 +394,7 @@ setupState config = do
              & msgMap .~ msgs
              & csNames .~ chanNames
 
-  return st
+  updateViewedIO st
 
 
 debugPrintTimes :: ChatState -> String -> EventM a ChatState
