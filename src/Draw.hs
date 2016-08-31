@@ -7,6 +7,7 @@ import           Brick
 import           Brick.Markup (markup, (@?))
 import           Brick.Widgets.Border
 import           Brick.Widgets.Border.Style
+import           Brick.Widgets.Center (center)
 import           Brick.Widgets.Edit (renderEditor)
 import qualified Data.Text as T
 import qualified Data.Array as A
@@ -16,7 +17,7 @@ import           Data.Time.Format ( formatTime
 import           Data.Time.LocalTime ( TimeZone, utcToLocalTime )
 import qualified Data.HashMap.Strict as HM
 import           Data.HashMap.Strict ( HashMap )
-import           Data.List (sortBy, isSuffixOf, isPrefixOf, intercalate)
+import           Data.List (sortBy, intercalate)
 import           Data.Ord (comparing)
 import           Data.Maybe ( listToMaybe, maybeToList )
 import           Data.Monoid ((<>))
@@ -31,6 +32,7 @@ import           Network.Mattermost.Lenses
 
 import           State
 import           Themes
+import           Types
 import           DrawUtil
 
 -- If the config's date format is not set.
@@ -41,14 +43,6 @@ renderTime :: String -> TimeZone -> UTCTime -> Widget Name
 renderTime fmt tz t =
     let timeStr = formatTime defaultTimeLocale fmt (utcToLocalTime tz t)
     in str "[" <+> withDefAttr timeAttr (str timeStr) <+> str "]"
-
-postIsEmote :: Post -> Bool
-postIsEmote p =
-    and [ HM.lookup "override_icon_url" (postProps p) == Just (""::String)
-        , HM.lookup "override_username" (postProps p) == Just ("webhook"::String)
-        , ("*" `isPrefixOf` postMessage p)
-        , ("*" `isSuffixOf` postMessage p)
-        ]
 
 emailPattern :: Regex
 emailPattern = makeRegex ("[[:alnum:]\\+]+@([[:alnum:]]+\\.)+([[:alnum:]]+)"::String)
@@ -92,8 +86,8 @@ doMessageMarkup usernamePattern msg =
                              toMarkup msg ""
     in markup $ mconcat $ (uncurry (@?)) <$> pairs
 
-renderChatMessage :: Regex -> Maybe String -> TimeZone -> Int -> (Int, ((UTCTime, String, String), (Maybe Post))) -> Widget Name
-renderChatMessage uPattern mFormat tz lastIdx (i, ((t, u, m), mp)) =
+renderChatMessage :: Regex -> Maybe String -> TimeZone -> Int -> (Int, (UTCTime, String, String, Bool)) -> Widget Name
+renderChatMessage uPattern mFormat tz lastIdx (i, (t, u, m, isEmotePost)) =
     let f = if i == lastIdx
             then visible
             else id
@@ -106,9 +100,6 @@ renderChatMessage uPattern mFormat tz lastIdx (i, ((t, u, m), mp)) =
             in case rest of
                  [] -> firstLine
                  _ -> vBox $ firstLine : (doMessageMarkup uPattern <$> T.pack <$> rest)
-        isEmotePost = case mp of
-            Nothing -> False
-            Just p -> postIsEmote p
         msg = case isEmotePost of
                True -> wrappedText (doFormat "*") ("*" ++ u ++ " " ++ (init $ tail m))
                False -> wrappedText (doFormat "")  (u ++ ": " ++ m)
@@ -188,16 +179,18 @@ renderCurrentChannelDisplay st = header <=> messages
                        Just u  -> colorUsername $ mkDMChannelName (u^.userProfileUsernameL)
                    _        -> str $ mkChannelName chnName
                  False -> wrappedText str $ mkChannelName chnName <> " - " <> purposeStr
-    messages = viewport (ChannelMessages cId) Vertical chatText <+> str " "
+    messages = if chan^.ccInfo.cdLoaded
+               then viewport (ChannelMessages cId) Vertical chatText <+> str " "
+               else center $ str "[loading channel scrollback]"
     uPattern = mkUsernamePattern st
     chatText = vBox $ renderChatMessage uPattern (st ^. timeFormat) (st ^. timeZone) (length channelMessages - 1) <$>
                       zip [0..] channelMessages
     channelMessages = getMessageListing cId st
     cId = currentChannelId st
     Just chan = getChannel cId st
-    chnName = chan^.channelNameL
-    chnType = chan^.channelTypeL
-    purposeStr = chan^.channelPurposeL
+    chnName = chan^.ccInfo.cdName
+    chnType = chan^.ccInfo.cdType
+    purposeStr = chan^.ccInfo.cdPurpose
 
 findUserByDMChannelName :: HashMap UserId UserProfile
                         -> String -- ^ the dm channel name

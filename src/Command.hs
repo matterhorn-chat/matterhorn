@@ -3,6 +3,7 @@ module Command where
 import Brick (EventM, Next, continue, halt)
 
 import State
+import Types
 
 data Cmd = Cmd
   { commandName   :: String

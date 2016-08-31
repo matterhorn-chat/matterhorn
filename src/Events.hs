@@ -66,6 +66,8 @@ onEvent st (VtyEvent e) = do
   continue =<< handleEventLensed st' cmdLine handleEditorEvent e
 onEvent st (WSEvent we) =
   handleWSEvent st we
+onEvent st (RespEvent f) =
+  continue (f st)
 
 channelHistoryForward :: ChatState -> ChatState
 channelHistoryForward st =
@@ -185,6 +187,8 @@ sendMessage st msg =
             let myId   = st^.csMe.userIdL
                 chanId = currentChannelId st
                 theTeamId = st^.csMyTeam.teamIdL
-            pendingPost <- mkPendingPost msg myId chanId
-            _ <- mmPost (st^.csConn) (st^.csTok) theTeamId pendingPost
-            return ()
+            doAsync st $ do
+              pendingPost <- mkPendingPost msg myId chanId
+              doAsync st $ do
+                _ <- mmPost (st^.csConn) (st^.csTok) theTeamId pendingPost
+                return ()
