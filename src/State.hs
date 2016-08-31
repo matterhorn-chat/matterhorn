@@ -7,6 +7,7 @@ import           Control.Monad.IO.Class (liftIO)
 import           Data.HashMap.Strict ((!))
 import           Brick.Main (viewportScroll, vScrollToEnd)
 import           Brick.Widgets.Edit (applyEdit)
+import           Control.Exception (catch)
 import           Control.Monad (join, forM, when)
 import           Data.Text.Zipper (clearZipper)
 import qualified Data.HashMap.Strict as HM
@@ -21,6 +22,7 @@ import           System.Exit (exitFailure)
 
 import           Network.Connection
 import           Network.Mattermost
+import           Network.Mattermost.Exceptions
 import           Network.Mattermost.Lenses
 
 import           Config
@@ -65,6 +67,7 @@ newState t c i u m tz fmt hist rq = ChatState
   , _timeFormat = fmt
   , _csInputHistory = hist
   , _csInputHistoryPosition = mempty
+  , _csCurrentCompletion = Nothing
   }
 
 runAsync :: ChatState -> IO (ChatState -> ChatState) -> IO ()
@@ -84,8 +87,11 @@ hasUnread st cId = maybe False id $ do
   where
 
 updateViewed :: ChatState -> EventM a ChatState
-updateViewed st = do
-  now <- liftIO getCurrentTime
+updateViewed st = liftIO (updateViewedIO st)
+
+updateViewedIO :: ChatState -> IO ChatState
+updateViewedIO st = do
+  now <- getCurrentTime
   let cId = currentChannelId st
   liftIO $ runAsync st $ do
     mmUpdateLastViewedAt
@@ -193,15 +199,17 @@ clientMessageDigest cId ref st =
   where m = ((ms ! cId) ^. cdCMsgs) ! ref
         ms = st ^. msgMap
 
-getMessageListing :: ChannelId -> ChatState -> [(UTCTime, String, String)]
+getMessageListing :: ChannelId -> ChatState -> [((UTCTime, String, String), Maybe Post)]
 getMessageListing cId st =
-  let is = st ^. msgMap . ix cId . cdOrder
+  let is    = st ^. msgMap . ix cId . cdOrder
+      posts = st ^. msgMap . ix cId . cdPosts
   in reverse
-    [ msg
+    [ (msg, mp)
     | i <- is
-    , let msg = case i of
-                  CLId c -> clientMessageDigest cId c st
-                  MMId p -> mmMessageDigest cId p st
+    , let (msg, mp) = case i of
+                        CLId c -> (clientMessageDigest cId c st, Nothing)
+                        MMId pId -> let post = posts ! pId
+                                    in (mmMessageDigest cId pId st, Just post)
     ]
 
 getChannelName :: ChannelId -> ChatState -> String
@@ -217,6 +225,26 @@ getDMChannelName me you = cname
 getChannel :: ChannelId -> ChatState -> Maybe Channel
 getChannel cId st =
   (st ^. chnMap . at cId)
+
+execMMCommand :: String -> ChatState -> EventM a ChatState
+execMMCommand cmd st = liftIO (runCmd `catch` handler)
+  where
+  mc = MinCommand
+        { minComChannelId = currentChannelId st
+        , minComCommand   = "/" ++ cmd
+        , minComSuggest   = False
+        }
+  runCmd = do
+    _ <- mmExecute
+      (st^.csConn)
+      (st^.csTok)
+      (st^.csMyTeam.teamIdL)
+      mc
+    return st
+  handler (HTTPResponseException err) = do
+    now <- liftIO getCurrentTime
+    let msg = ClientMessage ("Error running command: " ++ err) now
+    return (addClientMessage msg st)
 
 setupState :: Config -> RequestChan -> IO ChatState
 setupState config requestChan = do
@@ -313,7 +341,7 @@ setupState config requestChan = do
              & msgMap .~ msgs
              & csNames .~ chanNames
 
-  return st
+  updateViewedIO st
 
 
 debugPrintTimes :: ChatState -> String -> EventM a ChatState

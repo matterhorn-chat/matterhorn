@@ -63,25 +63,26 @@ data ChannelContents = ChannelContents
 
 makeLenses ''ChannelContents
 
+type RequestChan = Chan (IO (ChatState -> ChatState))
+
 data ChatState = ChatState
-  { _csTok          :: Token
-  , _csConn         :: ConnectionData
-  , _csFocus        :: Zipper ChannelId
-  , _csNames        :: MMNames
-  , _csMe           :: User
-  , _csMyTeam       :: Team
-  , _chnMap         :: HashMap ChannelId Channel
-  , _msgMap         :: HashMap ChannelId ChannelContents
-  , _usrMap         :: HashMap UserId UserProfile
-  , _cmdLine        :: Editor Name
-  , _timeZone       :: TimeZone
-  , _csRequestQueue :: Chan (IO (ChatState -> ChatState))
-  , _timeFormat     :: Maybe String
+  { _csTok      :: Token
+  , _csConn     :: ConnectionData
+  , _csFocus    :: Zipper ChannelId
+  , _csNames    :: MMNames
+  , _csMe       :: User
+  , _csMyTeam   :: Team
+  , _chnMap     :: HashMap ChannelId Channel
+  , _msgMap     :: HashMap ChannelId ChannelContents
+  , _usrMap     :: HashMap UserId UserProfile
+  , _cmdLine    :: Editor Name
+  , _timeZone   :: TimeZone
+  , _timeFormat :: Maybe String
   , _csInputHistory :: InputHistory
   , _csInputHistoryPosition :: HM.HashMap ChannelId (Maybe Int)
+  , _csCurrentCompletion :: Maybe String
+  , _csRequestQueue :: RequestChan
   }
-
-type RequestChan = Chan (IO (ChatState -> ChatState))
 
 makeLenses ''ChatState
 

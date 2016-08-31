@@ -6,8 +6,8 @@ import Brick
 import Lens.Micro.Platform
 import Text.LineBreak (breakString, BreakFormat(..))
 
-wrappedText :: String -> Widget a
-wrappedText msg = Widget Fixed Fixed $ do
+wrappedText :: (String -> Widget a) -> String -> Widget a
+wrappedText mkWidget msg = Widget Fixed Fixed $ do
   ctx <- getContext
   let w = ctx ^. availWidthL
       s = breakString (BreakFormat w 8 '-' Nothing) trimmed
@@ -18,4 +18,4 @@ wrappedText msg = Widget Fixed Fixed $ do
       trimmed = case last msg `elem` bad of
           True -> init msg
           False -> msg
-  render (str s)
+  render (mkWidget s)

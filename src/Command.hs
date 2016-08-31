@@ -39,9 +39,11 @@ commandList =
 
 mkHelpText :: [Cmd] -> String
 mkHelpText cs = "\n" ++
-  unlines [ "  /" ++ cmd ++ ": " ++ desc
-          | Cmd { commandName = cmd, commandDescr = desc } <- cs
-          ]
+  let commandNameWidth = 4 + (maximum $ length <$> commandName <$> cs)
+      padTo n s = s ++ replicate (n - length s) ' '
+  in unlines [ "  " ++ padTo commandNameWidth ('/':cmd) ++ desc
+             | Cmd { commandName = cmd, commandDescr = desc } <- cs
+             ]
 
 dispatchCommand :: String -> ChatState -> EventM Name (Next ChatState)
 dispatchCommand cmd st =
@@ -49,10 +51,6 @@ dispatchCommand cmd st =
     (x:xs) | [ c ] <- [ c | c <- commandList
                           , commandName c == x
                           ] -> commandAction c xs st
-           | otherwise -> do
-               let s = unlines [ "\nUnknown command: `/" ++ x ++ "`"
-                               , "Type /help for more information"
-                               ]
-               msg <- newClientMessage s
-               continue (addClientMessage msg st)
+           | otherwise ->
+             execMMCommand cmd st >>= continue
     _ -> continue st

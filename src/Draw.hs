@@ -1,21 +1,30 @@
 {-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE PackageImports #-}
 
 module Draw where
 
 import           Brick
+import           Brick.Markup (markup, (@?))
 import           Brick.Widgets.Border
+import           Brick.Widgets.Border.Style
 import           Brick.Widgets.Edit (renderEditor)
+import qualified Data.Text as T
+import qualified Data.Array as A
 import           Data.Time.Clock (UTCTime)
 import           Data.Time.Format ( formatTime
                                   , defaultTimeLocale )
 import           Data.Time.LocalTime ( TimeZone, utcToLocalTime )
 import qualified Data.HashMap.Strict as HM
 import           Data.HashMap.Strict ( HashMap )
-import           Data.List (sortBy)
+import           Data.List (sortBy, isSuffixOf, isPrefixOf, intercalate)
 import           Data.Ord (comparing)
 import           Data.Maybe ( listToMaybe, maybeToList )
 import           Data.Monoid ((<>))
 import           Lens.Micro.Platform
+
+import "text-markup" Data.Text.Markup
+import           Text.Regex.Base.RegexLike (makeRegex, matchAll)
+import           Text.Regex.TDFA.String
 
 import           Network.Mattermost
 import           Network.Mattermost.Lenses
@@ -34,12 +43,71 @@ renderTime fmt tz t =
     let timeStr = formatTime defaultTimeLocale fmt (utcToLocalTime tz t)
     in str "[" <+> withDefAttr timeAttr (str timeStr) <+> str "]"
 
-renderChatMessage :: Maybe String -> TimeZone -> Int -> (Int, (UTCTime, String, String)) -> Widget Name
-renderChatMessage mFormat tz lastIdx (i, (t, u, m)) =
+postIsEmote :: Post -> Bool
+postIsEmote p =
+    and [ HM.lookup "override_icon_url" (postProps p) == Just (""::String)
+        , HM.lookup "override_username" (postProps p) == Just ("webhook"::String)
+        , ("*" `isPrefixOf` postMessage p)
+        , ("*" `isSuffixOf` postMessage p)
+        ]
+
+emailPattern :: Regex
+emailPattern = makeRegex ("[[:alnum:]\\+]+@([[:alnum:]]+\\.)+([[:alnum:]]+)"::String)
+
+urlPattern :: Regex
+urlPattern = makeRegex ("https?://([[:alnum:]]+\\.)*([[:alnum:]]+)(:[[:digit:]]+)?(/[^[:space:]]*)"::String)
+
+markdownPattern :: Regex
+markdownPattern = makeRegex ("`[^`]+`"::String)
+
+mkUsernamePattern :: ChatState -> Regex
+mkUsernamePattern cs =
+    let users = cs ^. usrMap & HM.elems
+    in makeRegex $ "(@|\\b)(" ++ intercalate "|" ((^.userProfileUsernameL) <$> users) ++ ")\\b"
+
+findRegex :: T.Text -> Regex -> [(Int, Int)]
+findRegex t r = concat $ A.elems <$> matchAll r (T.unpack t)
+
+doMessageMarkup :: Regex -> T.Text -> Widget a
+doMessageMarkup usernamePattern msg =
+    let emailMatches    = findRegex msg emailPattern
+        urlMatches      = findRegex msg urlPattern
+        markdownMatches = findRegex msg markdownPattern
+        usernameMatches = findRegex msg usernamePattern
+        substr pos len s = T.take len $ T.drop pos s
+        applyUsernameMatches mkup = foldr markUsername mkup usernameMatches
+        markUsername (pos,len) m =
+            let tag = attrForUsername (T.unpack $ substr pos len msg)
+            in markRegion pos len tag m
+        applyMatches matches tag mkup = foldr (\(pos,len) -> markRegion pos len tag) mkup matches
+
+        pairs = fromMarkup $ applyMatches emailMatches    emailAttr    $
+                             applyMatches markdownMatches markdownAttr $
+                             applyMatches urlMatches      urlAttr      $
+                             applyUsernameMatches                      $
+                             toMarkup msg ""
+    in markup $ mconcat $ (uncurry (@?)) <$> pairs
+
+renderChatMessage :: Regex -> Maybe String -> TimeZone -> Int -> (Int, ((UTCTime, String, String), (Maybe Post))) -> Widget Name
+renderChatMessage uPattern mFormat tz lastIdx (i, ((t, u, m), mp)) =
     let f = if i == lastIdx
             then visible
             else id
-        msg = wrappedText (u ++ ": " ++ m)
+        doFormat prefix wrapped =
+            let suffix = drop (length u + length prefix) wrapped
+                (first, rest) = case lines suffix of
+                    [] -> ("", [])
+                    (fl:r) -> (fl, r)
+                firstLine = str prefix <+> colorUsername u <+> doMessageMarkup uPattern (T.pack first)
+            in case rest of
+                 [] -> firstLine
+                 _ -> vBox $ firstLine : (doMessageMarkup uPattern <$> T.pack <$> rest)
+        isEmotePost = case mp of
+            Nothing -> False
+            Just p -> postIsEmote p
+        msg = case isEmotePost of
+               True -> wrappedText (doFormat "*") ("*" ++ u ++ " " ++ (init $ tail m))
+               False -> wrappedText (doFormat "")  (u ++ ": " ++ m)
     in f $ case mFormat of
         Just ""     -> msg
         Just format -> renderTime format tz t            <+> str " " <+> msg
@@ -51,24 +119,28 @@ mkChannelName = ('#':)
 mkDMChannelName :: String -> String
 mkDMChannelName = ('@':)
 
+channelListWidth :: Int
+channelListWidth = 20
+
+normalChannelListHeight :: Int
+normalChannelListHeight = 10
+
 renderChannelList :: ChatState -> Widget Name
 renderChannelList st = hLimit channelListWidth $ vBox
                        [ header "Channels"
-                       , vLimit 10 $ viewport NormalChannelList Vertical $ vBox channelNames
+                       , vLimit normalChannelListHeight $ viewport NormalChannelList Vertical $ vBox channelNames
                        , header "Users"
                        , viewport DMChannelList Vertical $ vBox dmChannelNames
                        ]
     where
-    channelListWidth = 20
     cId = currentChannelId st
     currentChannelName = getChannelName cId st
     header label = hBorderWithLabel $
                    withDefAttr channelListHeaderAttr $
                    str label
-    channelNames = [ attr $ str (indicator ++ mkChannelName n)
+    channelNames = [ attr $ padRight Max $ str (indicator ++ mkChannelName n)
                    | n <- (st ^. csNames . cnChans)
-                   , let indicator = if | current   -> "+"
-                                        | unread    -> "!"
+                   , let indicator = if | unread    -> "!"
                                         | otherwise -> " "
                          attr = if current
                                 then visible . withDefAttr currentChannelNameAttr
@@ -77,13 +149,12 @@ renderChannelList st = hLimit channelListWidth $ vBox
                          Just chan = st ^. csNames . cnToChanId . at n
                          unread = hasUnread st chan
                    ]
-    dmChannelNames = [ attr $ str (indicator ++ mkDMChannelName (u^.userProfileUsernameL))
+    dmChannelNames = [ attr $ padRight Max $ str indicator <+> colorUsername (mkDMChannelName (u^.userProfileUsernameL))
                      | u <- sortBy (comparing userProfileUsername) (st ^. usrMap & HM.elems)
-                     , let indicator = if | current   -> "+"
-                                          | unread    -> "!"
+                     , let indicator = if | unread    -> "!"
                                           | otherwise -> " "
                            attr = if current
-                                  then visible . withDefAttr currentChannelNameAttr
+                                  then visible . forceAttr currentChannelNameAttr
                                   else id
                            cname = getDMChannelName (st^.csMe^.userIdL)
                                                     (u^.userProfileIdL)
@@ -99,22 +170,23 @@ renderUserCommandBox st = prompt <+> inputBox
     inputBox = renderEditor True (st^.cmdLine)
 
 renderCurrentChannelDisplay :: ChatState -> Widget Name
-renderCurrentChannelDisplay st = header <=> hBorder <=> messages
+renderCurrentChannelDisplay st = header <=> messages
     where
-    header = padRight Max $
-             withDefAttr channelHeaderAttr $
+    header = withDefAttr channelHeaderAttr $
+             padRight Max $
              case null purposeStr of
-                 True -> str $ case chnType of
+                 True -> case chnType of
                    Type "D" ->
                      case findUserByDMChannelName (st^.usrMap)
                                                   chnName
                                                   (st^.csMe^.userIdL) of
-                       Nothing -> mkChannelName chnName
-                       Just u  -> mkDMChannelName (u^.userProfileUsernameL)
-                   _        -> mkChannelName   chnName
-                 False -> wrappedText $ mkChannelName chnName <> " - " <> purposeStr
+                       Nothing -> str $ mkChannelName chnName
+                       Just u  -> colorUsername $ mkDMChannelName (u^.userProfileUsernameL)
+                   _        -> str $ mkChannelName chnName
+                 False -> wrappedText str $ mkChannelName chnName <> " - " <> purposeStr
     messages = viewport (ChannelMessages cId) Vertical chatText <+> str " "
-    chatText = vBox $ renderChatMessage (st ^. timeFormat) (st ^. timeZone) (length channelMessages - 1) <$>
+    uPattern = mkUsernamePattern st
+    chatText = vBox $ renderChatMessage uPattern (st ^. timeFormat) (st ^. timeZone) (length channelMessages - 1) <$>
                       zip [0..] channelMessages
     channelMessages = getMessageListing cId st
     cId = currentChannelId st
@@ -136,7 +208,10 @@ findUserByDMChannelName userMap dmchan me = listToMaybe
 
 chatDraw :: ChatState -> [Widget Name]
 chatDraw st =
-    [ (renderChannelList st <+> vBorder <+> renderCurrentChannelDisplay st)
-      <=> hBorder
+    [ (renderChannelList st <+> (borderElem bsIntersectR <=>
+                                 vLimit normalChannelListHeight vBorder <=>
+                                 borderElem bsIntersectR <=> vBorder)
+                            <+> renderCurrentChannelDisplay st)
+      <=> (hLimit channelListWidth hBorder <+> borderElem bsIntersectB <+> hBorder)
       <=> renderUserCommandBox st
     ]
