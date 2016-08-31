@@ -281,7 +281,6 @@ setupState config requestChan = do
                      , c ^. channelNameL == n ]
 
   msgs <- fmap HM.fromList $ forM chans $ \c -> do
-    posts <- mmGetPosts cd token myTeamId (getId c) 0 30
     let chanData = cm ! getId c
         viewed   = chanData ^. channelDataLastViewedAtL
         updated  = c ^. channelLastPostAtL
@@ -291,11 +290,16 @@ setupState config requestChan = do
                      , _cdName    = c^.channelNameL
                      , _cdPurpose = c^.channelPurposeL
                      , _cdType    = c^.channelTypeL
+                     , _cdLoaded  = False
                      }
         cChannel = ClientChannel
-                     { _ccContents = fromPosts posts
+                     { _ccContents = emptyChannelContents
                      , _ccInfo     = cInfo
                      }
+    Chan.writeChan requestChan $ do
+      posts <- mmGetPosts cd token myTeamId (getId c) 0 30
+      return $ \ st -> st & msgMap.ix(getId c).ccContents .~ fromPosts posts
+                          & msgMap.ix(getId c).ccInfo.cdLoaded .~ True
     return (getId c, cChannel)
 
   users <- mmGetProfiles cd token myTeamId

@@ -87,6 +87,13 @@ data ChannelContents = ChannelContents
   , _cdCMsgs   :: HashMap Int ClientMessage
   }
 
+emptyChannelContents :: ChannelContents
+emptyChannelContents = ChannelContents
+  { _cdOrder = []
+  , _cdPosts = HM.empty
+  , _cdCMsgs = HM.empty
+  }
+
 makeLenses ''ChannelContents
 
 data ChannelInfo = ChannelInfo
@@ -95,6 +102,7 @@ data ChannelInfo = ChannelInfo
   , _cdName    :: String
   , _cdPurpose :: String
   , _cdType    :: Type
+  , _cdLoaded  :: Bool
   }
 
 makeLenses ''ChannelInfo

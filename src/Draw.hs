@@ -7,6 +7,7 @@ import           Brick
 import           Brick.Markup (markup, (@?))
 import           Brick.Widgets.Border
 import           Brick.Widgets.Border.Style
+import           Brick.Widgets.Center (center)
 import           Brick.Widgets.Edit (renderEditor)
 import qualified Data.Text as T
 import qualified Data.Array as A
@@ -173,7 +174,9 @@ renderCurrentChannelDisplay st = header <=> messages
                        Just u  -> colorUsername $ mkDMChannelName (u^.userProfileUsernameL)
                    _        -> str $ mkChannelName chnName
                  False -> wrappedText str $ mkChannelName chnName <> " - " <> purposeStr
-    messages = viewport (ChannelMessages cId) Vertical chatText <+> str " "
+    messages = if chan^.ccInfo.cdLoaded
+               then viewport (ChannelMessages cId) Vertical chatText <+> str " "
+               else center $ str "[loading channel scrollback]"
     uPattern = mkUsernamePattern st
     chatText = vBox $ renderChatMessage uPattern (st ^. timeFormat) (st ^. timeZone) (length channelMessages - 1) <$>
                       zip [0..] channelMessages
