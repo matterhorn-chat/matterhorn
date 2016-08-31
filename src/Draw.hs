@@ -57,7 +57,7 @@ urlPattern :: Regex
 urlPattern = makeRegex ("https?://([[:alnum:]]+\\.)*([[:alnum:]]+)(:[[:digit:]]+)?(/[^[:space:]]*)"::String)
 
 markdownPattern :: Regex
-markdownPattern = makeRegex ("`[^`]*`"::String)
+markdownPattern = makeRegex ("`[^`]+`"::String)
 
 mkUsernamePattern :: ChatState -> Regex
 mkUsernamePattern cs =
@@ -80,10 +80,10 @@ doMessageMarkup usernamePattern msg =
             in markRegion pos len tag m
         applyMatches matches tag mkup = foldr (\(pos,len) -> markRegion pos len tag) mkup matches
 
-        pairs = fromMarkup $ applyUsernameMatches                      $
-                             applyMatches emailMatches    emailAttr    $
-                             applyMatches urlMatches      urlAttr      $
+        pairs = fromMarkup $ applyMatches emailMatches    emailAttr    $
                              applyMatches markdownMatches markdownAttr $
+                             applyMatches urlMatches      urlAttr      $
+                             applyUsernameMatches                      $
                              toMarkup msg ""
     in markup $ mconcat $ (uncurry (@?)) <$> pairs
 
