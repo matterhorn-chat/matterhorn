@@ -5,6 +5,7 @@ module Types where
 import           Brick.Widgets.Edit (Editor)
 import           Control.Concurrent.Chan (Chan)
 import           Data.HashMap.Strict (HashMap)
+import           Data.List (isPrefixOf, isSuffixOf)
 import           Data.Time.Clock (UTCTime)
 import           Data.Time.LocalTime (TimeZone)
 import qualified Data.HashMap.Strict as HM
@@ -50,12 +51,39 @@ data ClientMessage = ClientMessage
 
 makeLenses ''ClientMessage
 
+data ClientPost = ClientPost
+  { _cpText    :: String
+  , _cpUser    :: UserId
+  , _cpDate    :: UTCTime
+  , _cpIsEmote :: Bool
+  , _cpPending :: Bool
+  } deriving (Eq, Show)
+
+makeLenses ''ClientPost
+
+postIsEmote :: Post -> Bool
+postIsEmote p =
+    and [ HM.lookup "override_icon_url" (postProps p) == Just (""::String)
+        , HM.lookup "override_username" (postProps p) == Just ("webhook"::String)
+        , ("*" `isPrefixOf` postMessage p)
+        , ("*" `isSuffixOf` postMessage p)
+        ]
+
+toClientPost :: Post -> ClientPost
+toClientPost p = ClientPost
+  { _cpText    = postMessage p
+  , _cpUser    = postUserId p
+  , _cpDate    = postCreateAt p
+  , _cpIsEmote = postIsEmote p
+  , _cpPending = False
+  }
+
 -- Our ChannelContents is roughly equivalent to the Post structure we get from
 -- the MM API, but we also map integers to ClientMessage values, which are
 -- bits out debug output from the client itself.
 data ChannelContents = ChannelContents
   { _cdOrder   :: [PostRef]
-  , _cdPosts   :: HashMap PostId Post
+  , _cdPosts   :: HashMap PostId ClientPost
   , _cdCMsgs   :: HashMap Int ClientMessage
   , _cdViewed  :: UTCTime
   , _cdUpdated :: UTCTime

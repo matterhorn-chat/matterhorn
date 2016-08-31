@@ -35,7 +35,7 @@ import qualified Zipper as Z
 fromPosts :: UTCTime -> UTCTime -> Posts -> ChannelContents
 fromPosts viewed updated p = ChannelContents
   { _cdOrder   = map MMId (p ^. postsOrderL)
-  , _cdPosts   = (p ^. postsPostsL)
+  , _cdPosts   = fmap toClientPost (p ^. postsPostsL)
   , _cdCMsgs   = HM.empty
   , _cdViewed  = viewed
   , _cdUpdated = updated
@@ -93,7 +93,7 @@ updateViewedIO :: ChatState -> IO ChatState
 updateViewedIO st = do
   now <- getCurrentTime
   let cId = currentChannelId st
-  liftIO $ runAsync st $ do
+  runAsync st $ do
     mmUpdateLastViewedAt
       (st^.csConn)
       (st^.csTok)
@@ -155,18 +155,18 @@ editMessage :: Post -> ChatState -> EventM a ChatState
 editMessage new st = do
   now <- liftIO getCurrentTime
   let chan = msgMap . ix (postChannelId new)
-      rs = st & chan . cdPosts . ix (getId new) .~ new
+      rs = st & chan . cdPosts . ix (getId new) . cpText .~ postMessage new
               & chan . cdUpdated .~ now
   return rs
 
 addMessage :: Post -> ChatState -> EventM a ChatState
 addMessage new st = do
   now <- liftIO getCurrentTime
+  let cp = toClientPost new
   let chan = msgMap . ix (postChannelId new)
-      rs = st & chan . cdPosts . at (getId new) .~ Just new
+      rs = st & chan . cdPosts . at (getId new) .~ Just cp
               & chan . cdOrder %~ (MMId (getId new) :)
               & chan . cdUpdated .~ now
---  return rs
   if postChannelId new == currentChannelId st
     then updateViewed rs
     else return rs
@@ -181,9 +181,9 @@ addClientMessage msg st =
   in st & msgMap . ix cid . cdCMsgs . at n .~ Just msg
         & msgMap . ix cid . cdOrder %~ (CLId n :)
 
-mmMessageDigest :: ChannelId -> PostId -> ChatState -> (UTCTime, String, String)
+mmMessageDigest :: ChannelId -> PostId -> ChatState -> (UTCTime, String, String, Bool)
 mmMessageDigest cId ref st =
-  ( postCreateAt p, userProfileUsername (us ! postUserId p), postMessage p )
+  ( p^.cpDate, userProfileUsername (us ! (p^.cpUser)), p^.cpText, p^.cpIsEmote )
   where p = ((ms ! cId) ^. cdPosts) ! ref
         ms = st ^. msgMap
         us = st ^. usrMap
@@ -193,23 +193,21 @@ newClientMessage msg = do
   now <- liftIO getCurrentTime
   return (ClientMessage msg now)
 
-clientMessageDigest :: ChannelId -> Int -> ChatState -> (UTCTime, String, String)
+clientMessageDigest :: ChannelId -> Int -> ChatState -> (UTCTime, String, String, Bool)
 clientMessageDigest cId ref st =
-  ( m ^. cmDate, "*matterhorn", m ^. cmText )
+  ( m ^. cmDate, "*matterhorn", m ^. cmText, False )
   where m = ((ms ! cId) ^. cdCMsgs) ! ref
         ms = st ^. msgMap
 
-getMessageListing :: ChannelId -> ChatState -> [((UTCTime, String, String), Maybe Post)]
+getMessageListing :: ChannelId -> ChatState -> [(UTCTime, String, String, Bool)]
 getMessageListing cId st =
   let is    = st ^. msgMap . ix cId . cdOrder
-      posts = st ^. msgMap . ix cId . cdPosts
   in reverse
-    [ (msg, mp)
+    [ msg
     | i <- is
-    , let (msg, mp) = case i of
-                        CLId c -> (clientMessageDigest cId c st, Nothing)
-                        MMId pId -> let post = posts ! pId
-                                    in (mmMessageDigest cId pId st, Just post)
+    , let msg = case i of
+                  CLId c -> clientMessageDigest cId c st
+                  MMId pId -> mmMessageDigest cId pId st
     ]
 
 getChannelName :: ChannelId -> ChatState -> String

@@ -16,7 +16,7 @@ import           Data.Time.Format ( formatTime
 import           Data.Time.LocalTime ( TimeZone, utcToLocalTime )
 import qualified Data.HashMap.Strict as HM
 import           Data.HashMap.Strict ( HashMap )
-import           Data.List (sortBy, isSuffixOf, isPrefixOf, intercalate)
+import           Data.List (sortBy, intercalate)
 import           Data.Ord (comparing)
 import           Data.Maybe ( listToMaybe, maybeToList )
 import           Data.Monoid ((<>))
@@ -42,14 +42,6 @@ renderTime :: String -> TimeZone -> UTCTime -> Widget Name
 renderTime fmt tz t =
     let timeStr = formatTime defaultTimeLocale fmt (utcToLocalTime tz t)
     in str "[" <+> withDefAttr timeAttr (str timeStr) <+> str "]"
-
-postIsEmote :: Post -> Bool
-postIsEmote p =
-    and [ HM.lookup "override_icon_url" (postProps p) == Just (""::String)
-        , HM.lookup "override_username" (postProps p) == Just ("webhook"::String)
-        , ("*" `isPrefixOf` postMessage p)
-        , ("*" `isSuffixOf` postMessage p)
-        ]
 
 emailPattern :: Regex
 emailPattern = makeRegex ("[[:alnum:]\\+]+@([[:alnum:]]+\\.)+([[:alnum:]]+)"::String)
@@ -88,8 +80,8 @@ doMessageMarkup usernamePattern msg =
                              toMarkup msg ""
     in markup $ mconcat $ (uncurry (@?)) <$> pairs
 
-renderChatMessage :: Regex -> Maybe String -> TimeZone -> Int -> (Int, ((UTCTime, String, String), (Maybe Post))) -> Widget Name
-renderChatMessage uPattern mFormat tz lastIdx (i, ((t, u, m), mp)) =
+renderChatMessage :: Regex -> Maybe String -> TimeZone -> Int -> (Int, (UTCTime, String, String, Bool)) -> Widget Name
+renderChatMessage uPattern mFormat tz lastIdx (i, (t, u, m, isEmotePost)) =
     let f = if i == lastIdx
             then visible
             else id
@@ -102,9 +94,6 @@ renderChatMessage uPattern mFormat tz lastIdx (i, ((t, u, m), mp)) =
             in case rest of
                  [] -> firstLine
                  _ -> vBox $ firstLine : (doMessageMarkup uPattern <$> T.pack <$> rest)
-        isEmotePost = case mp of
-            Nothing -> False
-            Just p -> postIsEmote p
         msg = case isEmotePost of
                True -> wrappedText (doFormat "*") ("*" ++ u ++ " " ++ (init $ tail m))
                False -> wrappedText (doFormat "")  (u ++ ": " ++ m)
