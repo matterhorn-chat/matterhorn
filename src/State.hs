@@ -32,13 +32,11 @@ import           InputHistory
 import           Zipper (Zipper)
 import qualified Zipper as Z
 
-fromPosts :: UTCTime -> UTCTime -> Posts -> ChannelContents
-fromPosts viewed updated p = ChannelContents
+fromPosts :: Posts -> ChannelContents
+fromPosts p = ChannelContents
   { _cdOrder   = map MMId (p ^. postsOrderL)
   , _cdPosts   = fmap toClientPost (p ^. postsPostsL)
   , _cdCMsgs   = HM.empty
-  , _cdViewed  = viewed
-  , _cdUpdated = updated
   }
 
 newState :: Token
@@ -58,7 +56,6 @@ newState t c i u m tz fmt hist rq = ChatState
   , _csMe     = u
   , _csMyTeam = m
   , _csNames  = MMNames [] [] HM.empty [] HM.empty
-  , _chnMap   = HM.empty
   , _msgMap   = HM.empty
   , _usrMap   = HM.empty
   , _cmdLine  = editor MessageInput (vBox . map str) (Just 1) ""
@@ -81,8 +78,8 @@ doAsync st thunk =
 hasUnread :: ChatState -> ChannelId -> Bool
 hasUnread st cId = maybe False id $ do
   chan <- st^.msgMap.at(cId)
-  let u = chan^.cdViewed
-      v = chan^.cdUpdated
+  let u = chan^.ccInfo.cdViewed
+      v = chan^.ccInfo.cdUpdated
   return (v > u)
   where
 
@@ -99,7 +96,7 @@ updateViewedIO st = do
       (st^.csTok)
       (getId (st^.csMyTeam))
       cId
-    return (msgMap . ix cId . cdViewed .~ now)
+    return (msgMap . ix cId . ccInfo . cdViewed .~ now)
   return st
 
 resetHistoryPosition :: ChatState -> EventM a ChatState
@@ -155,8 +152,8 @@ editMessage :: Post -> ChatState -> EventM a ChatState
 editMessage new st = do
   now <- liftIO getCurrentTime
   let chan = msgMap . ix (postChannelId new)
-      rs = st & chan . cdPosts . ix (getId new) . cpText .~ postMessage new
-              & chan . cdUpdated .~ now
+      rs = st & chan . ccContents . cdPosts . ix (getId new) . cpText .~ postMessage new
+              & chan . ccInfo . cdUpdated .~ now
   return rs
 
 addMessage :: Post -> ChatState -> EventM a ChatState
@@ -164,9 +161,9 @@ addMessage new st = do
   now <- liftIO getCurrentTime
   let cp = toClientPost new
   let chan = msgMap . ix (postChannelId new)
-      rs = st & chan . cdPosts . at (getId new) .~ Just cp
-              & chan . cdOrder %~ (MMId (getId new) :)
-              & chan . cdUpdated .~ now
+      rs = st & chan . ccContents . cdPosts . at (getId new) .~ Just cp
+              & chan . ccContents . cdOrder %~ (MMId (getId new) :)
+              & chan . ccInfo . cdUpdated .~ now
   if postChannelId new == currentChannelId st
     then updateViewed rs
     else return rs
@@ -176,15 +173,15 @@ addMessage new st = do
 -- We should probably figure out a better way of choosing IDs.
 addClientMessage :: ClientMessage -> ChatState -> ChatState
 addClientMessage msg st =
-  let n = HM.size (st ^. msgMap . ix cid . cdCMsgs) + 1
+  let n = HM.size (st ^. msgMap . ix cid . ccContents . cdCMsgs) + 1
       cid = currentChannelId st
-  in st & msgMap . ix cid . cdCMsgs . at n .~ Just msg
-        & msgMap . ix cid . cdOrder %~ (CLId n :)
+  in st & msgMap . ix cid . ccContents . cdCMsgs . at n .~ Just msg
+        & msgMap . ix cid . ccContents . cdOrder %~ (CLId n :)
 
 mmMessageDigest :: ChannelId -> PostId -> ChatState -> (UTCTime, String, String, Bool)
 mmMessageDigest cId ref st =
   ( p^.cpDate, userProfileUsername (us ! (p^.cpUser)), p^.cpText, p^.cpIsEmote )
-  where p = ((ms ! cId) ^. cdPosts) ! ref
+  where p = ((ms ! cId) ^. ccContents . cdPosts) ! ref
         ms = st ^. msgMap
         us = st ^. usrMap
 
@@ -196,12 +193,12 @@ newClientMessage msg = do
 clientMessageDigest :: ChannelId -> Int -> ChatState -> (UTCTime, String, String, Bool)
 clientMessageDigest cId ref st =
   ( m ^. cmDate, "*matterhorn", m ^. cmText, False )
-  where m = ((ms ! cId) ^. cdCMsgs) ! ref
+  where m = ((ms ! cId) ^. ccContents . cdCMsgs) ! ref
         ms = st ^. msgMap
 
 getMessageListing :: ChannelId -> ChatState -> [(UTCTime, String, String, Bool)]
 getMessageListing cId st =
-  let is    = st ^. msgMap . ix cId . cdOrder
+  let is    = st ^. msgMap . ix cId . ccContents . cdOrder
   in reverse
     [ msg
     | i <- is
@@ -212,7 +209,7 @@ getMessageListing cId st =
 
 getChannelName :: ChannelId -> ChatState -> String
 getChannelName cId st =
-  (st ^. chnMap . ix cId . channelNameL)
+  st ^. msgMap . ix cId . ccInfo . cdName
 
 getDMChannelName :: UserId -> UserId -> String
 getDMChannelName me you = cname
@@ -220,9 +217,8 @@ getDMChannelName me you = cname
   [loUser, hiUser] = sort [ you, me ]
   cname = idString loUser ++ "__" ++ idString hiUser
 
-getChannel :: ChannelId -> ChatState -> Maybe Channel
-getChannel cId st =
-  (st ^. chnMap . at cId)
+getChannel :: ChannelId -> ChatState -> Maybe ClientChannel
+getChannel cId st = st ^. msgMap . at cId
 
 execMMCommand :: String -> ChatState -> EventM a ChatState
 execMMCommand cmd st = liftIO (runCmd `catch` handler)
@@ -289,7 +285,18 @@ setupState config requestChan = do
     let chanData = cm ! getId c
         viewed   = chanData ^. channelDataLastViewedAtL
         updated  = c ^. channelLastPostAtL
-    return (getId c, fromPosts viewed updated posts)
+        cInfo    = ChannelInfo
+                     { _cdViewed  = viewed
+                     , _cdUpdated = updated
+                     , _cdName    = c^.channelNameL
+                     , _cdPurpose = c^.channelPurposeL
+                     , _cdType    = c^.channelTypeL
+                     }
+        cChannel = ClientChannel
+                     { _ccContents = fromPosts posts
+                     , _ccInfo     = cInfo
+                     }
+    return (getId c, cChannel)
 
   users <- mmGetProfiles cd token myTeamId
   tz    <- getCurrentTimeZone
@@ -332,9 +339,6 @@ setupState config requestChan = do
                 , c <- maybeToList (HM.lookup i (chanNames ^. cnToChanId)) ]
       chanZip = Z.findRight (== townSqId) (Z.fromList chanIds)
       st = newState token cd chanZip myUser myTeam tz (configTimeFormat config) hist requestChan
-             & chnMap .~ HM.fromList [ (getId c, c)
-                                     | c <- chans
-                                     ]
              & usrMap .~ users
              & msgMap .~ msgs
              & csNames .~ chanNames
@@ -346,8 +350,8 @@ debugPrintTimes :: ChatState -> String -> EventM a ChatState
 debugPrintTimes st cn = do
   let Just cId = st^.csNames.cnToChanId.at(cn)
       Just ch = st^.msgMap.at(cId)
-      viewed = ch^.cdViewed
-      updated = ch^.cdUpdated
+      viewed = ch^.ccInfo.cdViewed
+      updated = ch^.ccInfo.cdUpdated
   m1 <- newClientMessage ("Viewed: " ++ show viewed)
   m2 <- newClientMessage ("Updated: " ++ show updated)
   return (st & addClientMessage m1 & addClientMessage m2)

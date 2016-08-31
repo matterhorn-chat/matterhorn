@@ -85,11 +85,26 @@ data ChannelContents = ChannelContents
   { _cdOrder   :: [PostRef]
   , _cdPosts   :: HashMap PostId ClientPost
   , _cdCMsgs   :: HashMap Int ClientMessage
-  , _cdViewed  :: UTCTime
-  , _cdUpdated :: UTCTime
   }
 
 makeLenses ''ChannelContents
+
+data ChannelInfo = ChannelInfo
+  { _cdViewed  :: UTCTime
+  , _cdUpdated :: UTCTime
+  , _cdName    :: String
+  , _cdPurpose :: String
+  , _cdType    :: Type
+  }
+
+makeLenses ''ChannelInfo
+
+data ClientChannel = ClientChannel
+  { _ccContents :: ChannelContents
+  , _ccInfo     :: ChannelInfo
+  }
+
+makeLenses ''ClientChannel
 
 type RequestChan = Chan (IO (ChatState -> ChatState))
 
@@ -100,8 +115,7 @@ data ChatState = ChatState
   , _csNames    :: MMNames
   , _csMe       :: User
   , _csMyTeam   :: Team
-  , _chnMap     :: HashMap ChannelId Channel
-  , _msgMap     :: HashMap ChannelId ChannelContents
+  , _msgMap     :: HashMap ChannelId ClientChannel
   , _usrMap     :: HashMap UserId UserProfile
   , _cmdLine    :: Editor Name
   , _timeZone   :: TimeZone

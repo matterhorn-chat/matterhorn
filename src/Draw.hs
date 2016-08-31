@@ -180,9 +180,9 @@ renderCurrentChannelDisplay st = header <=> messages
     channelMessages = getMessageListing cId st
     cId = currentChannelId st
     Just chan = getChannel cId st
-    chnName = chan^.channelNameL
-    chnType = chan^.channelTypeL
-    purposeStr = chan^.channelPurposeL
+    chnName = chan^.ccInfo.cdName
+    chnType = chan^.ccInfo.cdType
+    purposeStr = chan^.ccInfo.cdPurpose
 
 findUserByDMChannelName :: HashMap UserId UserProfile
                         -> String -- ^ the dm channel name
