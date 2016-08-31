@@ -296,7 +296,7 @@ setupState config requestChan = do
                      { _ccContents = emptyChannelContents
                      , _ccInfo     = cInfo
                      }
-    Chan.writeChan requestChan $ do
+    when (c^.channelNameL /= "town-square") $ Chan.writeChan requestChan $ do
       posts <- mmGetPosts cd token myTeamId (getId c) 0 30
       return $ \ st -> st & msgMap.ix(getId c).ccContents .~ fromPosts posts
                           & msgMap.ix(getId c).ccInfo.cdLoaded .~ True
@@ -347,7 +347,11 @@ setupState config requestChan = do
              & msgMap .~ msgs
              & csNames .~ chanNames
 
-  updateViewedIO st
+  townSquarePosts <- mmGetPosts cd token myTeamId townSqId 0 30
+  let st' = st & msgMap.ix(townSqId).ccContents .~ fromPosts townSquarePosts
+               & msgMap.ix(townSqId).ccInfo.cdLoaded .~ True
+
+  updateViewedIO st'
 
 
 debugPrintTimes :: ChatState -> String -> EventM a ChatState
