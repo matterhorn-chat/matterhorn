@@ -62,7 +62,7 @@ markdownPattern = makeRegex ("`[^`]*`"::String)
 mkUsernamePattern :: ChatState -> Regex
 mkUsernamePattern cs =
     let users = cs ^. usrMap & HM.elems
-    in makeRegex $ "@?(" ++ intercalate "|" ((^.userProfileUsernameL) <$> users) ++ ")"
+    in makeRegex $ "(@|\\b)(" ++ intercalate "|" ((^.userProfileUsernameL) <$> users) ++ ")\\b"
 
 findRegex :: T.Text -> Regex -> [(Int, Int)]
 findRegex t r = concat $ A.elems <$> matchAll r (T.unpack t)
