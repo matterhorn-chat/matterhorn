@@ -133,24 +133,27 @@ renderChannelList st = hLimit channelListWidth $ vBox
     header label = hBorderWithLabel $
                    withDefAttr channelListHeaderAttr $
                    str label
-    channelNames = [ attr $ padRight Max $ str (indicator ++ mkChannelName n)
+    channelNames = [ attr $ padRight Max $ str (mkChannelName n)
                    | n <- (st ^. csNames . cnChans)
-                   , let indicator = if | unread    -> "!"
-                                        | otherwise -> " "
-                         attr = if current
+                   , let attr = if current
                                 then visible . withDefAttr currentChannelNameAttr
-                                else id
+                                else if unread
+                                       then visible . withDefAttr unreadChannelAttr
+                                       else id
                          current = n == currentChannelName
                          Just chan = st ^. csNames . cnToChanId . at n
                          unread = hasUnread st chan
                    ]
-    dmChannelNames = [ attr $ padRight Max $ str indicator <+> colorUsername (mkDMChannelName (u^.userProfileUsernameL))
+    dmChannelNames = [ attr $ padRight Max $ colorUsername' (mkDMChannelName (u^.userProfileUsernameL))
                      | u <- sortBy (comparing userProfileUsername) (st ^. usrMap & HM.elems)
-                     , let indicator = if | unread    -> "!"
-                                          | otherwise -> " "
-                           attr = if current
+                     , let attr = if current
                                   then visible . forceAttr currentChannelNameAttr
-                                  else id
+                                  else if unread
+                                         then visible . withDefAttr unreadChannelAttr
+                                         else id
+                           colorUsername' = case unread of
+                             True -> str
+                             _    -> colorUsername
                            cname = getDMChannelName (st^.csMe^.userIdL)
                                                     (u^.userProfileIdL)
                            current = cname == currentChannelName

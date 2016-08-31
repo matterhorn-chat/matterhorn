@@ -7,6 +7,7 @@ module Themes
   , channelHeaderAttr
   , channelListHeaderAttr
   , currentChannelNameAttr
+  , unreadChannelAttr
   , urlAttr
   , markdownAttr
   , emailAttr
@@ -34,6 +35,9 @@ channelListHeaderAttr = "channelListHeader"
 currentChannelNameAttr :: AttrName
 currentChannelNameAttr = "currentChannelName"
 
+unreadChannelAttr :: AttrName
+unreadChannelAttr = "unreadChannel"
+
 urlAttr :: AttrName
 urlAttr = "url"
 
@@ -52,6 +56,7 @@ colorTheme = attrMap (bg black) $
   , (channelHeaderAttr,       fg white `withStyle` underline)
   , (channelListHeaderAttr,   fg cyan)
   , (currentChannelNameAttr,  black `on` yellow `withStyle` bold)
+  , (unreadChannelAttr,       black `on` cyan   `withStyle` bold)
   , (urlAttr,                 fg yellow)
   , (emailAttr,               fg yellow)
   , (markdownAttr,            fg magenta)
