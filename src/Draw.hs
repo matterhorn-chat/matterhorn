@@ -59,6 +59,9 @@ urlPattern = makeRegex ("https?://([[:alnum:]]+\\.)*([[:alnum:]]+)(:[[:digit:]]+
 markdownPattern :: Regex
 markdownPattern = makeRegex ("`[^`]+`"::String)
 
+emojiPattern :: Regex
+emojiPattern = makeRegex (":[^[:space:]:]+:"::String)
+
 mkUsernamePattern :: ChatState -> Regex
 mkUsernamePattern cs =
     let users = cs ^. usrMap & HM.elems
@@ -73,6 +76,7 @@ doMessageMarkup usernamePattern msg =
         urlMatches      = findRegex msg urlPattern
         markdownMatches = findRegex msg markdownPattern
         usernameMatches = findRegex msg usernamePattern
+        emojiMatches    = findRegex msg emojiPattern
         substr pos len s = T.take len $ T.drop pos s
         applyUsernameMatches mkup = foldr markUsername mkup usernameMatches
         markUsername (pos,len) m =
@@ -83,6 +87,7 @@ doMessageMarkup usernamePattern msg =
         pairs = fromMarkup $ applyMatches emailMatches    emailAttr    $
                              applyMatches markdownMatches markdownAttr $
                              applyMatches urlMatches      urlAttr      $
+                             applyMatches emojiMatches    emojiAttr    $
                              applyUsernameMatches                      $
                              toMarkup msg ""
     in markup $ mconcat $ (uncurry (@?)) <$> pairs

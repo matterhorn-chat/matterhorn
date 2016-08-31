@@ -10,6 +10,7 @@ module Themes
   , urlAttr
   , markdownAttr
   , emailAttr
+  , emojiAttr
 
   -- * Username formatting
   , colorUsername
@@ -42,6 +43,9 @@ markdownAttr = "markdown"
 emailAttr :: AttrName
 emailAttr = "email"
 
+emojiAttr :: AttrName
+emojiAttr = "emoji"
+
 colorTheme :: AttrMap
 colorTheme = attrMap (bg black) $
   [ (timeAttr,                fg white)
@@ -51,6 +55,7 @@ colorTheme = attrMap (bg black) $
   , (urlAttr,                 fg yellow)
   , (emailAttr,               fg yellow)
   , (markdownAttr,            fg magenta)
+  , (emojiAttr,               fg yellow)
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 
