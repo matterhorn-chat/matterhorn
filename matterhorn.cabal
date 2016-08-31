@@ -50,6 +50,10 @@ executable matterhorn
                      , vty
                      , transformers
                      , text-zipper
+                     , text-markup
+                     , regex-tdfa
+                     , regex-base
+                     , array
                      , time
                      , linebreak
                      , xdg-basedir

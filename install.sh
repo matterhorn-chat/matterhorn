@@ -17,9 +17,13 @@ SANDBOX=$HERE/.cabal-sandbox
 
 # The source for the mattermost API package
 MATTERMOST_API_REPO=https://github.com/dagit/mattermost-api.git
+# And text-markup
+TEXT_MARKUP_REPO=https://github.com/jtdaugherty/text-markup.git
 
 # Where to clone the mattermost API package
 MATTERMOST_DIR=$DEPS/mattermost-api
+# Where to clone the text-markup API package
+TEXT_MARKUP_DIR=$DEPS/text-markup
 
 # Whether this is a first-time install (see below)
 FIRST_TIME=0
@@ -44,7 +48,8 @@ function clone_or_update_repo {
     if [ ! -d "$destdir" ]
     then
         git clone $repo $destdir
-        cabal sandbox --sandbox=$SANDBOX add-source $destdir
+        cd $HERE && \
+            cabal sandbox --sandbox=$SANDBOX add-source $destdir
     else
         cd $destdir && git pull
     fi
@@ -52,6 +57,7 @@ function clone_or_update_repo {
 
 function install_deps {
     clone_or_update_repo $MATTERMOST_API_REPO $MATTERMOST_DIR
+    clone_or_update_repo $TEXT_MARKUP_REPO $TEXT_MARKUP_DIR
 }
 
 function build {

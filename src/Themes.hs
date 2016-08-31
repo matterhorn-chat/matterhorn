@@ -7,9 +7,13 @@ module Themes
   , channelHeaderAttr
   , channelListHeaderAttr
   , currentChannelNameAttr
+  , urlAttr
+  , markdownAttr
+  , emailAttr
 
   -- * Username formatting
   , colorUsername
+  , attrForUsername
   ) where
 
 import Data.Hashable (hash)
@@ -29,12 +33,24 @@ channelListHeaderAttr = "channelListHeader"
 currentChannelNameAttr :: AttrName
 currentChannelNameAttr = "currentChannelName"
 
+urlAttr :: AttrName
+urlAttr = "url"
+
+markdownAttr :: AttrName
+markdownAttr = "markdown"
+
+emailAttr :: AttrName
+emailAttr = "email"
+
 colorTheme :: AttrMap
 colorTheme = attrMap (bg black) $
   [ (timeAttr,                fg white)
   , (channelHeaderAttr,       fg white `withStyle` underline)
   , (channelListHeaderAttr,   fg cyan)
   , (currentChannelNameAttr,  black `on` yellow `withStyle` bold)
+  , (urlAttr,                 fg yellow)
+  , (emailAttr,               fg yellow)
+  , (markdownAttr,            fg magenta)
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 

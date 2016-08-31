@@ -1,22 +1,30 @@
 {-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE PackageImports #-}
 
 module Draw where
 
 import           Brick
+import           Brick.Markup (markup, (@?))
 import           Brick.Widgets.Border
 import           Brick.Widgets.Border.Style
 import           Brick.Widgets.Edit (renderEditor)
+import qualified Data.Text as T
+import qualified Data.Array as A
 import           Data.Time.Clock (UTCTime)
 import           Data.Time.Format ( formatTime
                                   , defaultTimeLocale )
 import           Data.Time.LocalTime ( TimeZone, utcToLocalTime )
 import qualified Data.HashMap.Strict as HM
 import           Data.HashMap.Strict ( HashMap )
-import           Data.List (sortBy, isSuffixOf, isPrefixOf)
+import           Data.List (sortBy, isSuffixOf, isPrefixOf, intercalate)
 import           Data.Ord (comparing)
 import           Data.Maybe ( listToMaybe, maybeToList )
 import           Data.Monoid ((<>))
 import           Lens.Micro.Platform
+
+import "text-markup" Data.Text.Markup
+import           Text.Regex.Base.RegexLike (makeRegex, matchAll)
+import           Text.Regex.TDFA.String
 
 import           Network.Mattermost
 import           Network.Mattermost.Lenses
@@ -42,8 +50,45 @@ postIsEmote p =
         , ("*" `isSuffixOf` postMessage p)
         ]
 
-renderChatMessage :: Maybe String -> TimeZone -> Int -> (Int, ((UTCTime, String, String), (Maybe Post))) -> Widget Name
-renderChatMessage mFormat tz lastIdx (i, ((t, u, m), mp)) =
+emailPattern :: Regex
+emailPattern = makeRegex ("[[:alnum:]\\+]+@([[:alnum:]]+\\.)+([[:alnum:]]+)"::String)
+
+urlPattern :: Regex
+urlPattern = makeRegex ("https?://([[:alnum:]]+\\.)*([[:alnum:]]+)(:[[:digit:]]+)?(/[^[:space:]]*)"::String)
+
+markdownPattern :: Regex
+markdownPattern = makeRegex ("`[^`]*`"::String)
+
+mkUsernamePattern :: ChatState -> Regex
+mkUsernamePattern cs =
+    let users = cs ^. usrMap & HM.elems
+    in makeRegex $ "@?(" ++ intercalate "|" ((^.userProfileUsernameL) <$> users) ++ ")"
+
+findRegex :: T.Text -> Regex -> [(Int, Int)]
+findRegex t r = concat $ A.elems <$> matchAll r (T.unpack t)
+
+doMessageMarkup :: Regex -> T.Text -> Widget a
+doMessageMarkup usernamePattern msg =
+    let emailMatches    = findRegex msg emailPattern
+        urlMatches      = findRegex msg urlPattern
+        markdownMatches = findRegex msg markdownPattern
+        usernameMatches = findRegex msg usernamePattern
+        substr pos len s = T.take len $ T.drop pos s
+        applyUsernameMatches mkup = foldr markUsername mkup usernameMatches
+        markUsername (pos,len) m =
+            let tag = attrForUsername (T.unpack $ substr pos len msg)
+            in markRegion pos len tag m
+        applyMatches matches tag mkup = foldr (\(pos,len) -> markRegion pos len tag) mkup matches
+
+        pairs = fromMarkup $ applyUsernameMatches                      $
+                             applyMatches emailMatches    emailAttr    $
+                             applyMatches urlMatches      urlAttr      $
+                             applyMatches markdownMatches markdownAttr $
+                             toMarkup msg ""
+    in markup $ mconcat $ (uncurry (@?)) <$> pairs
+
+renderChatMessage :: Regex -> Maybe String -> TimeZone -> Int -> (Int, ((UTCTime, String, String), (Maybe Post))) -> Widget Name
+renderChatMessage uPattern mFormat tz lastIdx (i, ((t, u, m), mp)) =
     let f = if i == lastIdx
             then visible
             else id
@@ -52,10 +97,10 @@ renderChatMessage mFormat tz lastIdx (i, ((t, u, m), mp)) =
                 (first, rest) = case lines suffix of
                     [] -> ("", [])
                     (fl:r) -> (fl, r)
-                firstLine = str prefix <+> colorUsername u <+> str first
+                firstLine = str prefix <+> colorUsername u <+> doMessageMarkup uPattern (T.pack first)
             in case rest of
                  [] -> firstLine
-                 _ -> vBox $ firstLine : (str <$> rest)
+                 _ -> vBox $ firstLine : (doMessageMarkup uPattern <$> T.pack <$> rest)
         isEmotePost = case mp of
             Nothing -> False
             Just p -> postIsEmote p
@@ -139,7 +184,8 @@ renderCurrentChannelDisplay st = header <=> messages
                    _        -> str $ mkChannelName chnName
                  False -> wrappedText str $ mkChannelName chnName <> " - " <> purposeStr
     messages = viewport (ChannelMessages cId) Vertical chatText <+> str " "
-    chatText = vBox $ renderChatMessage (st ^. timeFormat) (st ^. timeZone) (length channelMessages - 1) <$>
+    uPattern = mkUsernamePattern st
+    chatText = vBox $ renderChatMessage uPattern (st ^. timeFormat) (st ^. timeZone) (length channelMessages - 1) <$>
                       zip [0..] channelMessages
     channelMessages = getMessageListing cId st
     cId = currentChannelId st
