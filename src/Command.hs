@@ -35,8 +35,6 @@ commandList =
         else do
           msg <- newClientMessage ("No user named @" ++ dm)
           continue (addClientMessage msg st)
-  , Cmd "debug-times" "Print the updated/viewed times" $ \ [ch] st -> do
-      debugPrintTimes st ch >>= continue
   , Cmd "help" "Print the help dialogue" $ \ _ st -> do
         msg <- newClientMessage (mkHelpText commandList)
         continue (addClientMessage msg st)
