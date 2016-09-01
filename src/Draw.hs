@@ -133,24 +133,20 @@ renderChannelList st = hLimit channelListWidth $ vBox
     header label = hBorderWithLabel $
                    withDefAttr channelListHeaderAttr $
                    str label
-    channelNames = [ attr $ padRight Max $ str (mkChannelName n)
+    channelNames = [ decorate $ padRight Max $ str (mkChannelName n)
                    | n <- (st ^. csNames . cnChans)
-                   , let attr = if current
-                                then visible . withDefAttr currentChannelNameAttr
-                                else if unread
-                                       then visible . withDefAttr unreadChannelAttr
-                                       else id
+                   , let decorate = if | current   -> visible . withDefAttr currentChannelNameAttr
+                                       | unread    -> withDefAttr unreadChannelAttr
+                                       | otherwise -> id
                          current = n == currentChannelName
                          Just chan = st ^. csNames . cnToChanId . at n
                          unread = hasUnread st chan
                    ]
-    dmChannelNames = [ attr $ padRight Max $ colorUsername' (mkDMChannelName (u^.userProfileUsernameL))
+    dmChannelNames = [ decorate $ padRight Max $ colorUsername' (mkDMChannelName (u^.userProfileUsernameL))
                      | u <- sortBy (comparing userProfileUsername) (st ^. usrMap & HM.elems)
-                     , let attr = if current
-                                  then visible . forceAttr currentChannelNameAttr
-                                  else if unread
-                                         then visible . withDefAttr unreadChannelAttr
-                                         else id
+                     , let decorate = if | current   -> visible . forceAttr currentChannelNameAttr
+                                         | unread    -> withDefAttr unreadChannelAttr
+                                         | otherwise -> id
                            colorUsername' = case unread of
                              True -> str
                              _    -> colorUsername
