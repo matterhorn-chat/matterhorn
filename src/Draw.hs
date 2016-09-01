@@ -17,7 +17,7 @@ import           Data.Time.Format ( formatTime
 import           Data.Time.LocalTime ( TimeZone, utcToLocalTime )
 import qualified Data.HashMap.Strict as HM
 import           Data.HashMap.Strict ( HashMap )
-import           Data.List (sortBy, intercalate)
+import           Data.List (sortBy, intercalate, isInfixOf)
 import           Data.Ord (comparing)
 import           Data.Maybe ( listToMaybe, maybeToList )
 import           Data.Monoid ((<>))
@@ -100,9 +100,14 @@ renderChatMessage uPattern mFormat tz lastIdx (i, (t, u, m, isEmotePost)) =
             in case rest of
                  [] -> firstLine
                  _ -> vBox $ firstLine : (doMessageMarkup uPattern <$> T.pack <$> rest)
+        -- A gross hack because MatterMost abuses normal messages to
+        -- announce joins (and probably parts?)
+        isJoinPost = "joined the channel" `isInfixOf` m
         msg = case isEmotePost of
                True -> wrappedText (doFormat "*") ("*" ++ u ++ " " ++ (init $ tail m))
-               False -> wrappedText (doFormat "")  (u ++ ": " ++ m)
+               False -> case isJoinPost of
+                   True -> str m
+                   False -> wrappedText (doFormat "")  (u ++ ": " ++ m)
     in f $ case mFormat of
         Just ""     -> msg
         Just format -> renderTime format tz t            <+> str " " <+> msg
