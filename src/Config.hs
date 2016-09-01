@@ -7,15 +7,55 @@ module Config
   ) where
 
 import           Control.Monad.Trans.Except
+import           Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM
 import           Data.Ini
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           Data.Monoid ((<>))
 import           System.Process (readProcess)
+import           Text.Read (readMaybe)
 
 import           IOUtil
 import           FilePaths
+
+-- These helper functions make our Ini parsing a LOT nicer
+type IniParser s a = ExceptT String ((->) (Text, s)) a
+type Section = HashMap Text Text
+
+-- Run the parser over an Ini file
+runParse :: IniParser Ini a -> Ini -> Either String a
+runParse mote ini = runExceptT mote ("", ini)
+
+-- Run parsing within a named section
+section :: Text -> IniParser Section a -> IniParser Ini a
+section name thunk = ExceptT $ \(_, Ini ini) ->
+  case HM.lookup name ini of
+    Nothing  -> Left ("No section named" ++ show name)
+    Just sec -> runExceptT thunk (name, sec)
+
+-- Retrieve a field, returning Nothing if it doesn't exist
+fieldM :: Text -> IniParser Section (Maybe Text)
+fieldM name = ExceptT $ \(_,m) ->
+  return (HM.lookup name m)
+
+-- Retrieve a field, failing to parse if it doesn't exist
+field :: Text -> IniParser Section Text
+field name = ExceptT $ \(sec,m) ->
+  case HM.lookup name m of
+    Nothing -> Left ("Missing field " ++ show name ++
+                     " in section " ++ show sec)
+    Just x  -> return x
+
+-- Retrieve a field and try to 'Read' it to a value, failing
+-- to parse if it doesn't exist or if the 'Read' operation
+-- fails.
+fieldR :: Read a => Text -> IniParser Section a
+fieldR name = do
+  str <- field name
+  case readMaybe (T.unpack str) of
+    Just x  -> return x
+    Nothing -> fail ("Unable to read field " ++ show name)
 
 data PasswordSource =
     PasswordString Text
@@ -32,30 +72,23 @@ data Config = Config
   , configTheme       :: Maybe String
   } deriving (Eq, Show)
 
-(??) :: Maybe a -> String -> Either String a
-(Just x) ?? _ = Right x
-Nothing  ?? s = Left ("Missing field: `" ++ s ++ "`")
-
-readT :: Read a => Text -> a
-readT = read . T.unpack
-
 fromIni :: Ini -> Either String Config
-fromIni (Ini ini) = do
-  cS <- HM.lookup "mattermost" ini ?? "mattermost"
-  let configUser = HM.lookup "user" cS
-  configHost <- HM.lookup "host" cS ?? "host"
-  let configTimeFormat = T.unpack <$> HM.lookup "timeFormat" cS
-      configTeam = HM.lookup "team" cS
-  configPort <- readT `fmap` (HM.lookup "port" cS ?? "port")
-  let passCmd = HM.lookup "passcmd" cS
-      configTheme = T.unpack <$> HM.lookup "theme" cS
-  let pass    = HM.lookup "pass" cS
-  configPass <- case passCmd of
-    Nothing -> case pass of
-      Nothing -> return Nothing
-      Just p -> return $ Just (PasswordString p)
-    Just c -> return $ Just (PasswordCommand (T.unpack c))
-  return Config { .. }
+fromIni = runParse $ do
+  section "mattermost" $ do
+    configUser       <-                   fieldM "user"
+    configHost       <-                   field  "host"
+    configTeam       <-                   fieldM "team"
+    configPort       <-                   fieldR "port"
+    configTimeFormat <- fmap T.unpack <$> fieldM "timeFormat"
+    configTheme      <- fmap T.unpack <$> fieldM "theme"
+    pass             <-                   fieldM "pass"
+    passCmd          <-                   fieldM "passcmd"
+    let configPass = case passCmd of
+          Nothing -> case pass of
+            Nothing -> Nothing
+            Just p  -> Just (PasswordString p)
+          Just c -> Just (PasswordCommand (T.unpack c))
+    return Config { .. }
 
 findConfig :: IO (Either String Config)
 findConfig = do
