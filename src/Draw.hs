@@ -17,7 +17,7 @@ import           Data.Time.Format ( formatTime
 import           Data.Time.LocalTime ( TimeZone, utcToLocalTime )
 import qualified Data.HashMap.Strict as HM
 import           Data.HashMap.Strict ( HashMap )
-import           Data.List (sortBy, intercalate, isInfixOf)
+import           Data.List (sortBy, intercalate)
 import           Data.Ord (comparing)
 import           Data.Maybe ( listToMaybe, maybeToList )
 import           Data.Monoid ((<>))
@@ -86,12 +86,14 @@ doMessageMarkup usernamePattern msg =
                              toMarkup msg ""
     in markup $ mconcat $ (uncurry (@?)) <$> pairs
 
-renderChatMessage :: Regex -> Maybe String -> TimeZone -> Int -> (Int, (UTCTime, String, String, Bool)) -> Widget Name
-renderChatMessage uPattern mFormat tz lastIdx (i, (t, u, m, isEmotePost)) =
+renderChatMessage :: Regex -> Maybe String -> TimeZone -> Int -> (Int, Message) -> Widget Name
+renderChatMessage uPattern mFormat tz lastIdx (i, msg) =
     let f = if i == lastIdx
             then visible
             else id
-        doFormat prefix wrapped =
+        t = msg^.mDate
+        m = msg^.mText
+        doFormat u prefix wrapped =
             let suffix = drop (length u + length prefix) wrapped
                 (first, rest) = case lines suffix of
                     [] -> ("", [])
@@ -102,16 +104,23 @@ renderChatMessage uPattern mFormat tz lastIdx (i, (t, u, m, isEmotePost)) =
                  _ -> vBox $ firstLine : (doMessageMarkup uPattern <$> T.pack <$> rest)
         -- A gross hack because MatterMost abuses normal messages to
         -- announce joins (and probably parts?)
-        isJoinPost = "joined the channel" `isInfixOf` m
-        msg = case isEmotePost of
-               True -> wrappedText (doFormat "*") ("*" ++ u ++ " " ++ (init $ tail m))
-               False -> case isJoinPost of
-                   True -> str m
-                   False -> wrappedText (doFormat "")  (u ++ ": " ++ m)
+        msgTxt =
+          case msg^.mUserName of
+            Just u
+              | msg^.mIsEmote ->
+                  wrappedText (doFormat u "*") ("*" ++ u ++ " " ++ (init $ tail m))
+              | msg^.mIsJoin ->
+                  str m
+              | msg^.mDeleted ->
+                  withDefAttr clientMessageAttr
+                    (wrappedText (doFormat u "") (u ++ " [deleted this message]"))
+              | otherwise ->
+                  wrappedText (doFormat u "") (u ++ ": " ++ m)
+            Nothing -> withDefAttr clientMessageAttr (str m)
     in f $ case mFormat of
-        Just ""     -> msg
-        Just format -> renderTime format tz t            <+> str " " <+> msg
-        Nothing     -> renderTime defaultDateFormat tz t <+> str " " <+> msg
+        Just ""     -> msgTxt
+        Just format -> renderTime format tz t            <+> str " " <+> msgTxt
+        Nothing     -> renderTime defaultDateFormat tz t <+> str " " <+> msgTxt
 
 mkChannelName :: String -> String
 mkChannelName = ('#':)

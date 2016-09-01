@@ -171,7 +171,7 @@ handleWSEvent st we =
       Just p  -> editMessage p st >>= continue
       Nothing -> continue st
     WMPostDeleted -> case wepPost (weData we) of
-      Just p  -> editMessage p { postMessage = "[deleted]" } st >>= continue
+      Just p  -> deleteMessage p st >>= continue
       Nothing -> continue st
     _ -> continue st
 

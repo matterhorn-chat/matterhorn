@@ -15,7 +15,7 @@ import qualified Data.HashMap.Strict as HM
 import           Data.List (sort)
 import           Data.Maybe (listToMaybe, maybeToList, fromJust)
 import           Data.Monoid ((<>))
-import           Data.Time.Clock ( UTCTime, getCurrentTime )
+import           Data.Time.Clock ( getCurrentTime )
 import           Data.Time.LocalTime ( TimeZone(..), getCurrentTimeZone )
 import qualified Data.Text as T
 import           Lens.Micro.Platform
@@ -175,6 +175,14 @@ editMessage new st = do
               & chan . ccInfo . cdUpdated .~ now
   return rs
 
+deleteMessage :: Post -> ChatState -> EventM a ChatState
+deleteMessage new st = do
+  now <- liftIO getCurrentTime
+  let chan = msgMap . ix (postChannelId new)
+      rs = st & chan . ccContents . cdPosts . ix (getId new) . cpDeleted .~ True
+              & chan . ccInfo . cdUpdated .~ now
+  return rs
+
 addMessage :: Post -> ChatState -> EventM a ChatState
 addMessage new st = do
   now <- liftIO getCurrentTime
@@ -197,25 +205,23 @@ addClientMessage msg st =
   in st & msgMap . ix cid . ccContents . cdCMsgs . at n .~ Just msg
         & msgMap . ix cid . ccContents . cdOrder %~ (CLId n :)
 
-mmMessageDigest :: ChannelId -> PostId -> ChatState -> (UTCTime, String, String, Bool)
-mmMessageDigest cId ref st =
-  ( p^.cpDate, userProfileUsername (us ! (p^.cpUser)), p^.cpText, p^.cpIsEmote )
+mmMessageDigest :: ChannelId -> PostId -> ChatState -> Message
+mmMessageDigest cId ref st = clientPostToMessage p usr
   where p = ((ms ! cId) ^. ccContents . cdPosts) ! ref
         ms = st ^. msgMap
-        us = st ^. usrMap
+        usr = ((st^.usrMap) ! (p^.cpUser)) ^. userProfileUsernameL
 
 newClientMessage :: String -> EventM a ClientMessage
 newClientMessage msg = do
   now <- liftIO getCurrentTime
   return (ClientMessage msg now)
 
-clientMessageDigest :: ChannelId -> Int -> ChatState -> (UTCTime, String, String, Bool)
-clientMessageDigest cId ref st =
-  ( m ^. cmDate, "*matterhorn", m ^. cmText, False )
+clientMessageDigest :: ChannelId -> Int -> ChatState -> Message
+clientMessageDigest cId ref st = clientMessageToMessage m
   where m = ((ms ! cId) ^. ccContents . cdCMsgs) ! ref
         ms = st ^. msgMap
 
-getMessageListing :: ChannelId -> ChatState -> [(UTCTime, String, String, Bool)]
+getMessageListing :: ChannelId -> ChatState -> [Message]
 getMessageListing cId st =
   let is    = st ^. msgMap . ix cId . ccContents . cdOrder
   in reverse

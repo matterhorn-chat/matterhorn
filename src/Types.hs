@@ -6,7 +6,7 @@ import           Brick.AttrMap (AttrMap)
 import           Brick.Widgets.Edit (Editor)
 import           Control.Concurrent.Chan (Chan)
 import           Data.HashMap.Strict (HashMap)
-import           Data.List (isPrefixOf, isSuffixOf)
+import           Data.List (isInfixOf, isPrefixOf, isSuffixOf)
 import           Data.Time.Clock (UTCTime)
 import           Data.Time.LocalTime (TimeZone)
 import qualified Data.HashMap.Strict as HM
@@ -48,7 +48,7 @@ data PostRef
 data ClientMessage = ClientMessage
   { _cmText :: String
   , _cmDate :: UTCTime
-  }
+  } deriving (Eq, Show)
 
 makeLenses ''ClientMessage
 
@@ -57,10 +57,47 @@ data ClientPost = ClientPost
   , _cpUser    :: UserId
   , _cpDate    :: UTCTime
   , _cpIsEmote :: Bool
+  , _cpIsJoin  :: Bool
   , _cpPending :: Bool
+  , _cpDeleted :: Bool
   } deriving (Eq, Show)
 
 makeLenses ''ClientPost
+
+-- This represents any message we might want to render.
+data Message = Message
+  { _mText     :: String
+  , _mUserName :: Maybe String
+  , _mDate     :: UTCTime
+  , _mIsEmote  :: Bool
+  , _mIsJoin   :: Bool
+  , _mPending  :: Bool
+  , _mDeleted  :: Bool
+  } deriving (Eq, Show)
+
+makeLenses ''Message
+
+clientPostToMessage :: ClientPost -> String -> Message
+clientPostToMessage cp user = Message
+  { _mText     = _cpText cp
+  , _mUserName = Just user
+  , _mDate     = _cpDate cp
+  , _mIsEmote  = _cpIsEmote cp
+  , _mIsJoin   = _cpIsJoin cp
+  , _mPending  = _cpPending cp
+  , _mDeleted  = _cpDeleted cp
+  }
+
+clientMessageToMessage :: ClientMessage -> Message
+clientMessageToMessage cm = Message
+  { _mText     = _cmText cm
+  , _mUserName = Nothing
+  , _mDate     = _cmDate cm
+  , _mIsEmote  = False
+  , _mIsJoin   = False
+  , _mPending  = False
+  , _mDeleted  = False
+  }
 
 postIsEmote :: Post -> Bool
 postIsEmote p =
@@ -70,13 +107,18 @@ postIsEmote p =
         , ("*" `isSuffixOf` postMessage p)
         ]
 
+postIsJoin :: Post -> Bool
+postIsJoin p = "joined the channel" `isInfixOf` postMessage p
+
 toClientPost :: Post -> ClientPost
 toClientPost p = ClientPost
   { _cpText    = postMessage p
   , _cpUser    = postUserId p
   , _cpDate    = postCreateAt p
   , _cpIsEmote = postIsEmote p
+  , _cpIsJoin  = postIsJoin p
   , _cpPending = False
+  , _cpDeleted = False
   }
 
 -- Our ChannelContents is roughly equivalent to the Post structure we get from
