@@ -142,8 +142,13 @@ renderChannelList st = hLimit channelListWidth $ vBox
                          Just chan = st ^. csNames . cnToChanId . at n
                          unread = hasUnread st chan
                    ]
+
+    isSelf :: UserProfile -> Bool
+    isSelf u = (st^.csMe.userIdL) == (u^.userProfileIdL)
+    usersToList = filter (not . isSelf) $ st ^. usrMap & HM.elems
+
     dmChannelNames = [ decorate $ padRight Max $ colorUsername' (mkDMChannelName (u^.userProfileUsernameL))
-                     | u <- sortBy (comparing userProfileUsername) (st ^. usrMap & HM.elems)
+                     | u <- sortBy (comparing userProfileUsername) usersToList
                      , let decorate = if | current   -> visible . forceAttr currentChannelNameAttr
                                          | unread    -> withDefAttr unreadChannelAttr
                                          | otherwise -> id
