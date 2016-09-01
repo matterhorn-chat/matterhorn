@@ -58,6 +58,7 @@ data ClientPost = ClientPost
   , _cpDate    :: UTCTime
   , _cpIsEmote :: Bool
   , _cpIsJoin  :: Bool
+  , _cpIsLeave :: Bool
   , _cpPending :: Bool
   , _cpDeleted :: Bool
   } deriving (Eq, Show)
@@ -71,6 +72,7 @@ data Message = Message
   , _mDate     :: UTCTime
   , _mIsEmote  :: Bool
   , _mIsJoin   :: Bool
+  , _mIsLeave  :: Bool
   , _mPending  :: Bool
   , _mDeleted  :: Bool
   } deriving (Eq, Show)
@@ -84,6 +86,7 @@ clientPostToMessage cp user = Message
   , _mDate     = _cpDate cp
   , _mIsEmote  = _cpIsEmote cp
   , _mIsJoin   = _cpIsJoin cp
+  , _mIsLeave  = _cpIsLeave cp
   , _mPending  = _cpPending cp
   , _mDeleted  = _cpDeleted cp
   }
@@ -95,6 +98,7 @@ clientMessageToMessage cm = Message
   , _mDate     = _cmDate cm
   , _mIsEmote  = False
   , _mIsJoin   = False
+  , _mIsLeave  = False
   , _mPending  = False
   , _mDeleted  = False
   }
@@ -108,7 +112,10 @@ postIsEmote p =
         ]
 
 postIsJoin :: Post -> Bool
-postIsJoin p = "joined the channel" `isInfixOf` postMessage p
+postIsJoin p = "has left the channel" `isInfixOf` postMessage p
+
+postIsLeave :: Post -> Bool
+postIsLeave p = "has left the channel" `isInfixOf` postMessage p
 
 toClientPost :: Post -> ClientPost
 toClientPost p = ClientPost
@@ -117,6 +124,7 @@ toClientPost p = ClientPost
   , _cpDate    = postCreateAt p
   , _cpIsEmote = postIsEmote p
   , _cpIsJoin  = postIsJoin p
+  , _cpIsLeave = postIsLeave p
   , _cpPending = False
   , _cpDeleted = False
   }

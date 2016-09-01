@@ -109,8 +109,8 @@ renderChatMessage uPattern mFormat tz lastIdx (i, msg) =
             Just u
               | msg^.mIsEmote ->
                   wrappedText (doFormat u "*") ("*" ++ u ++ " " ++ (init $ tail m))
-              | msg^.mIsJoin ->
-                  str m
+              | msg^.mIsJoin || msg^.mIsLeave ->
+                  withDefAttr clientMessageAttr (str m)
               | msg^.mDeleted ->
                   withDefAttr clientMessageAttr
                     (wrappedText (doFormat u "") (u ++ " [deleted this message]"))
