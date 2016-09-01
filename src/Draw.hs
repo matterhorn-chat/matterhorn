@@ -48,7 +48,7 @@ emailPattern :: Regex
 emailPattern = makeRegex ("[[:alnum:]\\+]+@([[:alnum:]]+\\.)+([[:alnum:]]+)"::String)
 
 urlPattern :: Regex
-urlPattern = makeRegex ("https?://([[:alnum:]]+\\.)*([[:alnum:]]+)(:[[:digit:]]+)?(/[^[:space:]]*)"::String)
+urlPattern = makeRegex ("https?://([[:alnum:]-]+\\.)*([[:alnum:]-]+)(:[[:digit:]]+)?(/[^[:space:]]*)"::String)
 
 markdownPattern :: Regex
 markdownPattern = makeRegex ("`[^`]+`"::String)
