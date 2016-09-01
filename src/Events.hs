@@ -38,8 +38,6 @@ onEvent st (VtyEvent (Vty.EvResize _ _)) = do
   -- worry about the current channel's viewport because that's the one
   -- that is about to be redrawn.
   continue =<< updateChannelScrollState st
-onEvent st (VtyEvent (Vty.EvKey Vty.KEsc [])) =
-  halt st
 onEvent st (VtyEvent (Vty.EvKey (Vty.KChar '\t') [])) =
   tabComplete Forwards st
 onEvent st (VtyEvent (Vty.EvKey (Vty.KBackTab) [])) =
