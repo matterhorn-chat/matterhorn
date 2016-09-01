@@ -23,11 +23,11 @@ data PasswordSource =
     deriving (Eq, Read, Show)
 
 data Config = Config
-  { configUser        :: Text
+  { configUser        :: Maybe Text
   , configHost        :: Text
   , configTeam        :: Maybe Text
   , configPort        :: Int
-  , configPass        :: PasswordSource
+  , configPass        :: Maybe PasswordSource
   , configTimeFormat  :: Maybe String
   , configTheme       :: Maybe String
   } deriving (Eq, Show)
@@ -42,7 +42,7 @@ readT = read . T.unpack
 fromIni :: Ini -> Either String Config
 fromIni (Ini ini) = do
   cS <- HM.lookup "mattermost" ini ?? "mattermost"
-  configUser <- HM.lookup "user" cS ?? "user"
+  let configUser = HM.lookup "user" cS
   configHost <- HM.lookup "host" cS ?? "host"
   let configTimeFormat = T.unpack <$> HM.lookup "timeFormat" cS
       configTeam = HM.lookup "team" cS
@@ -52,9 +52,9 @@ fromIni (Ini ini) = do
   let pass    = HM.lookup "pass" cS
   configPass <- case passCmd of
     Nothing -> case pass of
-      Nothing -> fail "Either `pass` or `passcmd` is needed."
-      Just p -> return (PasswordString p)
-    Just c -> return (PasswordCommand (T.unpack c))
+      Nothing -> return Nothing
+      Just p -> return $ Just (PasswordString p)
+    Just c -> return $ Just (PasswordCommand (T.unpack c))
   return Config { .. }
 
 findConfig :: IO (Either String Config)
@@ -71,10 +71,11 @@ getConfig fp = runExceptT $ do
       throwE $ "Unable to parse " ++ fp ++ ":" ++ err
     Right conf -> do
       actualPass <- case configPass conf of
-        PasswordCommand cmdString -> do
+        Just (PasswordCommand cmdString) -> do
           let (cmd:rest) = words cmdString
           output <- convertIOException (readProcess cmd rest "") `catchE`
                     (\e -> throwE $ "Could not execute password command: " <> e)
-          return $ T.pack (takeWhile (/= '\n') output)
-        PasswordString pass -> return pass
-      return conf { configPass = PasswordString actualPass }
+          return $ Just $ T.pack (takeWhile (/= '\n') output)
+        Just (PasswordString pass) -> return $ Just pass
+        _ -> return Nothing
+      return conf { configPass = PasswordString <$> actualPass }

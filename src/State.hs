@@ -8,8 +8,8 @@ import           Control.Monad.IO.Class (liftIO)
 import           Data.HashMap.Strict ((!))
 import           Brick.Main (viewportScroll, vScrollToEnd)
 import           Brick.Widgets.Edit (applyEdit)
-import           Control.Exception (catch)
-import           Control.Monad (join, forM, when)
+import           Control.Exception (SomeException, catch)
+import           Control.Monad (forM, when)
 import           Data.Text.Zipper (clearZipper)
 import qualified Data.HashMap.Strict as HM
 import           Data.List (sort)
@@ -31,6 +31,7 @@ import           Types
 import           TeamSelect
 import           InputHistory
 import           Themes
+import           Login
 import           Zipper (Zipper)
 import qualified Zipper as Z
 
@@ -260,18 +261,30 @@ execMMCommand cmd st = liftIO (runCmd `catch` handler)
 
 setupState :: Config -> RequestChan -> IO ChatState
 setupState config requestChan = do
-  putStrLn "Authenticating..."
+  -- If we don't have enough credentials, ask for them.
+  (uStr, pStr) <- case (,) <$> configUser config <*> configPass config of
+      Nothing -> interactiveGatherCredentials config
+      Just (u, PasswordString p) -> return (u, p)
+      _ -> error $ "BUG: unexpected password state: " <> show (configPass config)
 
   ctx <- initConnectionContext
   let cd = mkConnectionData (T.unpack (configHost config))
                             (fromIntegral (configPort config))
                             ctx
-      PasswordString pass = configPass config
-      login = Login { username = configUser config
-                    , password = pass
-                    }
 
-  (token, myUser) <- join (hoistE <$> mmLogin cd login)
+  let loginLoop (u, p) = do
+        putStrLn "Authenticating..."
+
+        let login = Login { username = u
+                          , password = p
+                          }
+        result <- (Just <$> mmLogin cd login) `catch`
+                  (\(_::SomeException) -> return Nothing)
+        case result of
+            Just (Right values) -> return values
+            _ -> interactiveGatherCredentials config >>= loginLoop
+
+  (token, myUser) <- loginLoop (uStr, pStr)
 
   initialLoad <- mmGetInitialLoad cd token
   when (null $ initialLoadTeams initialLoad) $ do

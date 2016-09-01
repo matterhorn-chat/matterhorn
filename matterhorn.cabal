@@ -32,6 +32,7 @@ executable matterhorn
                        Types
                        FilePaths
                        TeamSelect
+                       Login
   default-extensions:  OverloadedStrings,
                        ScopedTypeVariables
   ghc-options:         -Wall -threaded
