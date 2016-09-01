@@ -81,7 +81,7 @@ lightColorTheme = attrMap (black `on` white) $
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 
 darkColorTheme :: AttrMap
-darkColorTheme = attrMap (white `on` black) $
+darkColorTheme = attrMap (bg black) $
   [ (timeAttr,                fg white)
   , (channelHeaderAttr,       fg white `withStyle` underline)
   , (channelListHeaderAttr,   fg cyan)
