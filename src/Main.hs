@@ -16,7 +16,6 @@ import           Network.Mattermost.WebSocket
 
 import           Config
 import           State
-import           Themes
 import           Events
 import           Draw
 import           Types
@@ -52,6 +51,6 @@ app = App
   , appChooseCursor = \ _ (l:_) -> Just l
   , appHandleEvent  = onEvent
   , appStartEvent   = \ s -> return s
-  , appAttrMap      = const colorTheme
+  , appAttrMap      = (^.csTheme)
   , appLiftVtyEvent = VtyEvent
   }

@@ -1,6 +1,7 @@
 module State where
 
 import           Brick (EventM, str, vBox)
+import           Brick.AttrMap (AttrMap)
 import           Brick.Widgets.Edit (editor)
 import qualified Control.Concurrent.Chan as Chan
 import           Control.Monad.IO.Class (liftIO)
@@ -12,7 +13,7 @@ import           Control.Monad (join, forM, when)
 import           Data.Text.Zipper (clearZipper)
 import qualified Data.HashMap.Strict as HM
 import           Data.List (sort)
-import           Data.Maybe (listToMaybe, maybeToList)
+import           Data.Maybe (listToMaybe, maybeToList, fromJust)
 import           Data.Monoid ((<>))
 import           Data.Time.Clock ( UTCTime, getCurrentTime )
 import           Data.Time.LocalTime ( TimeZone(..), getCurrentTimeZone )
@@ -29,6 +30,7 @@ import           Config
 import           Types
 import           TeamSelect
 import           InputHistory
+import           Themes
 import           Zipper (Zipper)
 import qualified Zipper as Z
 
@@ -48,8 +50,9 @@ newState :: Token
          -> Maybe String
          -> InputHistory
          -> RequestChan
+         -> AttrMap
          -> ChatState
-newState t c i u m tz fmt hist rq = ChatState
+newState t c i u m tz fmt hist rq theme = ChatState
   { _csTok    = t
   , _csConn   = c
   , _csFocus  = i
@@ -65,6 +68,7 @@ newState t c i u m tz fmt hist rq = ChatState
   , _csInputHistory = hist
   , _csInputHistoryPosition = mempty
   , _csCurrentCompletion = Nothing
+  , _csTheme = theme
   }
 
 runAsync :: ChatState -> IO (ChatState -> ChatState) -> IO ()
@@ -115,6 +119,20 @@ changeChannelCommon st =
 nextChannel :: ChatState -> EventM a ChatState
 nextChannel st = changeChannelCommon =<<
                  updateViewed (st & csFocus %~ Z.right)
+
+listThemes :: ChatState -> EventM a ChatState
+listThemes cs = do
+    let mkThemeList _ = unlines $
+                        "Available built-in themes:" :
+                        (("  " ++) <$> fst <$> themes)
+    msg <- newClientMessage (mkThemeList themes)
+    return (addClientMessage msg cs)
+
+setTheme :: ChatState -> String -> EventM a ChatState
+setTheme cs name =
+    case lookup name themes of
+        Nothing -> listThemes cs
+        Just t -> return $ cs & csTheme .~ t
 
 prevChannel :: ChatState -> EventM a ChatState
 prevChannel st = changeChannelCommon =<<
@@ -342,7 +360,13 @@ setupState config requestChan = do
                 | i <- chanNames ^. cnUsers
                 , c <- maybeToList (HM.lookup i (chanNames ^. cnToChanId)) ]
       chanZip = Z.findRight (== townSqId) (Z.fromList chanIds)
-      st = newState token cd chanZip myUser myTeam tz (configTimeFormat config) hist requestChan
+      themeName = case configTheme config of
+          Nothing -> defaultThemeName
+          Just t -> t
+      theme = case lookup themeName themes of
+          Nothing -> fromJust $ lookup defaultThemeName themes
+          Just t -> t
+      st = newState token cd chanZip myUser myTeam tz (configTimeFormat config) hist requestChan theme
              & usrMap .~ users
              & msgMap .~ msgs
              & csNames .~ chanNames

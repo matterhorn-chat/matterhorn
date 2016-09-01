@@ -2,6 +2,7 @@
 
 module Types where
 
+import           Brick.AttrMap (AttrMap)
 import           Brick.Widgets.Edit (Editor)
 import           Control.Concurrent.Chan (Chan)
 import           Data.HashMap.Strict (HashMap)
@@ -132,6 +133,7 @@ data ChatState = ChatState
   , _csInputHistoryPosition :: HM.HashMap ChannelId (Maybe Int)
   , _csCurrentCompletion :: Maybe String
   , _csRequestQueue :: RequestChan
+  , _csTheme    :: AttrMap
   }
 
 makeLenses ''ChatState

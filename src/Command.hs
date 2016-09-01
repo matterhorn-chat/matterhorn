@@ -18,6 +18,11 @@ commandList =
       nextChannel st >>= continue
   , Cmd "left" "Focus on the previous channel" $ \ _ st ->
       prevChannel st >>= continue
+  , Cmd "theme" "Set the color theme" $ \ args st ->
+      case args of
+          []          -> listThemes st >>= continue
+          [themeName] -> setTheme st themeName >>= continue
+          _           -> continue st
   , Cmd "chan" "Focus on a named channel" $ \ [ch] st ->
       if channelExists st ch
         then setFocus ch st >>= continue

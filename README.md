@@ -58,4 +58,6 @@ Command		Keybinding		Effect
 /chan [c]					Go to channel c
 /dm [u]						Go to direct message channel with user u
 /help						Show a help dialogue
+/theme                      List available built-in color themes
+/theme [n]                  Change to built-in theme n
 ~~~

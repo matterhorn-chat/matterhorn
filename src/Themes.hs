@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Themes
-  ( colorTheme
+  ( defaultThemeName
+  , themes
 
   -- * Attribute names
   , timeAttr
@@ -22,6 +23,15 @@ import Data.Hashable (hash)
 import Data.Monoid ((<>))
 import Graphics.Vty
 import Brick
+
+defaultThemeName :: String
+defaultThemeName = darkColorThemeName
+
+darkColorThemeName :: String
+darkColorThemeName = "builtin:dark"
+
+lightColorThemeName :: String
+lightColorThemeName = "builtin:light"
 
 timeAttr :: AttrName
 timeAttr = "time"
@@ -50,8 +60,28 @@ emailAttr = "email"
 emojiAttr :: AttrName
 emojiAttr = "emoji"
 
-colorTheme :: AttrMap
-colorTheme = attrMap (bg black) $
+themes :: [(String, AttrMap)]
+themes =
+    [ (darkColorThemeName,  darkColorTheme)
+    , (lightColorThemeName, lightColorTheme)
+    ]
+
+lightColorTheme :: AttrMap
+lightColorTheme = attrMap (black `on` white) $
+  [ (timeAttr,                fg black)
+  , (channelHeaderAttr,       fg black `withStyle` underline)
+  , (channelListHeaderAttr,   fg cyan)
+  , (currentChannelNameAttr,  black `on` yellow `withStyle` bold)
+  , (unreadChannelAttr,       black `on` cyan   `withStyle` bold)
+  , (urlAttr,                 fg brightYellow)
+  , (emailAttr,               fg yellow)
+  , (markdownAttr,            fg magenta)
+  , (emojiAttr,               fg yellow)
+  ] <>
+  ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
+
+darkColorTheme :: AttrMap
+darkColorTheme = attrMap (white `on` black) $
   [ (timeAttr,                fg white)
   , (channelHeaderAttr,       fg white `withStyle` underline)
   , (channelListHeaderAttr,   fg cyan)
@@ -82,12 +112,10 @@ usernameColors =
     , fg blue
     , fg magenta
     , fg cyan
-    , fg white
     , fg brightRed
     , fg brightGreen
     , fg brightYellow
     , fg brightBlue
     , fg brightMagenta
     , fg brightCyan
-    , fg brightWhite
     ]

@@ -29,6 +29,7 @@ data Config = Config
   , configPort        :: Int
   , configPass        :: PasswordSource
   , configTimeFormat  :: Maybe String
+  , configTheme       :: Maybe String
   } deriving (Eq, Show)
 
 (??) :: Maybe a -> String -> Either String a
@@ -47,6 +48,7 @@ fromIni (Ini ini) = do
       configTeam = HM.lookup "team" cS
   configPort <- readT `fmap` (HM.lookup "port" cS ?? "port")
   let passCmd = HM.lookup "passcmd" cS
+      configTheme = T.unpack <$> HM.lookup "theme" cS
   let pass    = HM.lookup "pass" cS
   configPass <- case passCmd of
     Nothing -> case pass of
