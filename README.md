@@ -53,8 +53,8 @@ You can often use built-in keybindings or `/cmd`-style commands:
 Command         Keybinding              Effect
 -----------------------------------------------------------------------
 /right          Ctrl-n                  Go to the next chat channel
-/left		Ctrl-p                  Go to the previous chat channel
-/quit		Esc                     Quit the editor
+/left           Ctrl-p                  Go to the previous chat channel
+/quit           Esc                     Quit the editor
 /focus chan                             Go to normal (or user) channel
                                         named 'chan'
 /help                                   Show a help dialogue
