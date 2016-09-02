@@ -33,6 +33,7 @@ executable matterhorn
                        FilePaths
                        TeamSelect
                        Login
+                       Markdown
   default-extensions:  OverloadedStrings,
                        ScopedTypeVariables
   ghc-options:         -Wall -threaded
@@ -63,4 +64,5 @@ executable matterhorn
                      , vector
                      , strict
                      , hashable
+                     , cheapskate
   default-language:    Haskell2010

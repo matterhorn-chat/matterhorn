@@ -2,6 +2,7 @@
 
 module Types where
 
+import           Brick (Widget)
 import           Brick.AttrMap (AttrMap)
 import           Brick.Widgets.Edit (Editor)
 import           Control.Concurrent.Chan (Chan)
@@ -15,6 +16,7 @@ import           Lens.Micro.Platform (makeLenses)
 import           Network.Mattermost
 import           Network.Mattermost.WebSocket.Types
 
+import           Markdown
 import           Zipper (Zipper)
 
 import           InputHistory
@@ -67,7 +69,7 @@ makeLenses ''ClientPost
 
 -- This represents any message we might want to render.
 data Message = Message
-  { _mText     :: String
+  { _mText     :: Widget Name
   , _mUserName :: Maybe String
   , _mDate     :: UTCTime
   , _mIsEmote  :: Bool
@@ -75,13 +77,13 @@ data Message = Message
   , _mIsLeave  :: Bool
   , _mPending  :: Bool
   , _mDeleted  :: Bool
-  } deriving (Eq, Show)
+  }
 
 makeLenses ''Message
 
 clientPostToMessage :: ClientPost -> String -> Message
 clientPostToMessage cp user = Message
-  { _mText     = _cpText cp
+  { _mText     = renderMessage (_cpText cp)
   , _mUserName = Just user
   , _mDate     = _cpDate cp
   , _mIsEmote  = _cpIsEmote cp
@@ -93,7 +95,7 @@ clientPostToMessage cp user = Message
 
 clientMessageToMessage :: ClientMessage -> Message
 clientMessageToMessage cm = Message
-  { _mText     = _cmText cm
+  { _mText     = renderMessage (_cmText cm)
   , _mUserName = Nothing
   , _mDate     = _cmDate cm
   , _mIsEmote  = False

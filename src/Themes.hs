@@ -14,6 +14,9 @@ module Themes
   , emailAttr
   , emojiAttr
   , clientMessageAttr
+  , clientHeaderAttr
+  , clientEmphAttr
+  , clientStrongAttr
 
   -- * Username formatting
   , colorUsername
@@ -64,6 +67,15 @@ emojiAttr = "emoji"
 clientMessageAttr :: AttrName
 clientMessageAttr = "clientMessage"
 
+clientHeaderAttr :: AttrName
+clientHeaderAttr = "clientHeader"
+
+clientEmphAttr :: AttrName
+clientEmphAttr = "clientEmph"
+
+clientStrongAttr :: AttrName
+clientStrongAttr = "clientStrong"
+
 themes :: [(String, AttrMap)]
 themes =
     [ (darkColorThemeName,  darkColorTheme)
@@ -82,6 +94,8 @@ lightColorTheme = attrMap (black `on` white) $
   , (markdownAttr,            fg magenta)
   , (emojiAttr,               fg yellow)
   , (clientMessageAttr,       fg white)
+  , (clientEmphAttr,          fg cyan)
+  , (clientStrongAttr,        fg cyan `withStyle` bold)
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 
@@ -97,6 +111,8 @@ darkColorTheme = attrMap (bg black) $
   , (markdownAttr,            fg magenta)
   , (emojiAttr,               fg yellow)
   , (clientMessageAttr,       fg white)
+  , (clientEmphAttr,          fg cyan)
+  , (clientStrongAttr,        fg cyan `withStyle` bold)
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 

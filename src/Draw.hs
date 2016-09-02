@@ -107,16 +107,14 @@ renderChatMessage uPattern mFormat tz lastIdx (i, msg) =
         msgTxt =
           case msg^.mUserName of
             Just u
-              | msg^.mIsEmote ->
-                  wrappedText (doFormat u "*") ("*" ++ u ++ " " ++ (init $ tail m))
+              | msg^.mIsEmote -> m
               | msg^.mIsJoin || msg^.mIsLeave ->
-                  withDefAttr clientMessageAttr (str m)
+                  withDefAttr clientMessageAttr m
               | msg^.mDeleted ->
-                  withDefAttr clientMessageAttr
-                    (wrappedText (doFormat u "") (u ++ " [deleted this message]"))
-              | otherwise ->
-                  wrappedText (doFormat u "") (u ++ ": " ++ m)
-            Nothing -> withDefAttr clientMessageAttr (str m)
+                  withDefAttr clientMessageAttr m
+--                    (wrappedText (doFormat u "") (u ++ " [deleted this message]"))
+              | otherwise -> m
+            Nothing -> withDefAttr clientMessageAttr m
     in f $ case mFormat of
         Just ""     -> msgTxt
         Just format -> renderTime format tz t            <+> str " " <+> msgTxt
