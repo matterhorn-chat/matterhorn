@@ -5,7 +5,6 @@ import           Brick.Widgets.Edit ( getEditContents
                                     , handleEditorEvent
                                     , applyEdit
                                     , editContentsL
-                                    , editContents
                                     )
 import           Control.Monad.IO.Class (liftIO)
 import qualified Data.Set as Set
@@ -142,18 +141,12 @@ tabComplete dir st = do
                     _       -> curComp
 
       mb_word     = wordComplete dir priorities completions line curComp
+      st' = st & csCurrentCompletion .~ nextComp
+      edit = case mb_word of
+          Nothing -> id
+          Just w -> insertMany w . killWordBackward
 
-      st'         = st & csCurrentCompletion .~ nextComp
-      st''        = case mb_word of
-                      Nothing -> st'
-                      Just w  ->
-                        -- JED: my lens-fu is not so great, but I know this could be
-                        -- more succinct.
-                        let contents  = editContents (st' ^. cmdLine)
-                            backup    = st' & cmdLine.editContentsL .~ killWordBackward contents
-                            contents' = editContents (backup ^. cmdLine)
-                        in backup & cmdLine.editContentsL .~ insertMany w contents'
-  continue st''
+  continue $ st' & cmdLine %~ (applyEdit edit)
 
 handleInputSubmission :: ChatState -> EventM Name (Next ChatState)
 handleInputSubmission st = do
