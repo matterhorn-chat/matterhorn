@@ -4,32 +4,29 @@
 module Draw where
 
 import           Brick
-import           Brick.Markup (markup, (@?))
 import           Brick.Widgets.Border
 import           Brick.Widgets.Border.Style
 import           Brick.Widgets.Center (center)
 import           Brick.Widgets.Edit (renderEditor)
-import qualified Data.Text as T
-import qualified Data.Array as A
 import           Data.Time.Clock (UTCTime)
 import           Data.Time.Format ( formatTime
                                   , defaultTimeLocale )
 import           Data.Time.LocalTime ( TimeZone, utcToLocalTime )
 import qualified Data.HashMap.Strict as HM
 import           Data.HashMap.Strict ( HashMap )
-import           Data.List (sortBy, intercalate)
+import           Data.List (sortBy)
 import           Data.Ord (comparing)
 import           Data.Maybe ( listToMaybe, maybeToList )
 import           Data.Monoid ((<>))
 import           Lens.Micro.Platform
 
-import "text-markup" Data.Text.Markup
-import           Text.Regex.Base.RegexLike (makeRegex, matchAll)
-import           Text.Regex.TDFA.String
+import           Text.Regex.TDFA.String (Regex)
 
 import           Network.Mattermost
 import           Network.Mattermost.Lenses
 
+import           Highlighting
+import           Markdown
 import           State
 import           Themes
 import           Types
@@ -44,80 +41,29 @@ renderTime fmt tz t =
     let timeStr = formatTime defaultTimeLocale fmt (utcToLocalTime tz t)
     in str "[" <+> withDefAttr timeAttr (str timeStr) <+> str "]"
 
-emailPattern :: Regex
-emailPattern = makeRegex ("[[:alnum:]\\+]+@([[:alnum:]]+\\.)+([[:alnum:]]+)"::String)
-
-urlPattern :: Regex
-urlPattern = makeRegex ("https?://([[:alnum:]-]+\\.)*([[:alnum:]-]+)(:[[:digit:]]+)?(/[^[:space:]]*)"::String)
-
-markdownPattern :: Regex
-markdownPattern = makeRegex ("`[^`]+`"::String)
-
-emojiPattern :: Regex
-emojiPattern = makeRegex (":[^[:space:]:]+:"::String)
-
-mkUsernamePattern :: ChatState -> Regex
-mkUsernamePattern cs =
-    let users = cs ^. usrMap & HM.elems
-    in makeRegex $ "(@|\\b)(" ++ intercalate "|" ((^.userProfileUsernameL) <$> users) ++ ")\\b"
-
-findRegex :: T.Text -> Regex -> [(Int, Int)]
-findRegex t r = concat $ A.elems <$> matchAll r (T.unpack t)
-
-doMessageMarkup :: Regex -> T.Text -> Widget a
-doMessageMarkup usernamePattern msg =
-    let emailMatches    = findRegex msg emailPattern
-        urlMatches      = findRegex msg urlPattern
-        markdownMatches = findRegex msg markdownPattern
-        usernameMatches = findRegex msg usernamePattern
-        emojiMatches    = findRegex msg emojiPattern
-        substr pos len s = T.take len $ T.drop pos s
-        applyUsernameMatches mkup = foldr markUsername mkup usernameMatches
-        markUsername (pos,len) m =
-            let tag = attrForUsername (T.unpack $ substr pos len msg)
-            in markRegion pos len tag m
-        applyMatches matches tag mkup = foldr (\(pos,len) -> markRegion pos len tag) mkup matches
-
-        pairs = fromMarkup $ applyMatches emailMatches    emailAttr    $
-                             applyMatches markdownMatches markdownAttr $
-                             applyMatches urlMatches      urlAttr      $
-                             applyMatches emojiMatches    emojiAttr    $
-                             applyUsernameMatches                      $
-                             toMarkup msg ""
-    in markup $ mconcat $ (uncurry (@?)) <$> pairs
-
 renderChatMessage :: Regex -> Maybe String -> TimeZone -> Int -> (Int, Message) -> Widget Name
 renderChatMessage uPattern mFormat tz lastIdx (i, msg) =
     let f = if i == lastIdx
             then visible
             else id
         t = msg^.mDate
-        m = msg^.mText
-        doFormat u prefix wrapped =
-            let suffix = drop (length u + length prefix) wrapped
-                (first, rest) = case lines suffix of
-                    [] -> ("", [])
-                    (fl:r) -> (fl, r)
-                firstLine = str prefix <+> colorUsername u <+> doMessageMarkup uPattern (T.pack first)
-            in case rest of
-                 [] -> firstLine
-                 _ -> vBox $ firstLine : (doMessageMarkup uPattern <$> T.pack <$> rest)
-
+        m = renderMessage (msg^.mText) (msg^.mUserName) uPattern
+        msgAtch = case msg^.mAttachments of
+          [] -> emptyWidget
+          _  -> withDefAttr clientMessageAttr
+                  (str "  [this message has an attachment]")
         msgTxt =
           case msg^.mUserName of
-            Just u
-              | msg^.mIsEmote -> m
-              | msg^.mIsJoin || msg^.mIsLeave ->
+            Just _
+              | msg^.mIsJoin || msg^.mIsLeave || msg^.mDeleted ->
                   withDefAttr clientMessageAttr m
-              | msg^.mDeleted ->
-                  withDefAttr clientMessageAttr m
---                    (wrappedText (doFormat u "") (u ++ " [deleted this message]"))
               | otherwise -> m
             Nothing -> withDefAttr clientMessageAttr m
+        fullMsg = msgTxt <=> msgAtch
     in f $ case mFormat of
-        Just ""     -> msgTxt
-        Just format -> renderTime format tz t            <+> str " " <+> msgTxt
-        Nothing     -> renderTime defaultDateFormat tz t <+> str " " <+> msgTxt
+        Just ""     -> fullMsg
+        Just format -> renderTime format tz t            <+> str " " <+> fullMsg
+        Nothing     -> renderTime defaultDateFormat tz t <+> str " " <+> fullMsg
 
 mkChannelName :: String -> String
 mkChannelName = ('#':)
@@ -197,7 +143,7 @@ renderCurrentChannelDisplay st = header <=> messages
     messages = if chan^.ccInfo.cdLoaded
                then viewport (ChannelMessages cId) Vertical chatText <+> str " "
                else center $ str "[loading channel scrollback]"
-    uPattern = mkUsernamePattern st
+    uPattern = mkUsernamePattern (HM.elems (st^.usrMap))
     chatText = vBox $ renderChatMessage uPattern (st ^. timeFormat) (st ^. timeZone) (length channelMessages - 1) <$>
                       zip [0..] channelMessages
     channelMessages = getMessageListing cId st

@@ -2,9 +2,9 @@
 
 module Types where
 
-import           Brick (Widget)
 import           Brick.AttrMap (AttrMap)
 import           Brick.Widgets.Edit (Editor)
+import           Cheapskate (Blocks)
 import           Control.Concurrent.Chan (Chan)
 import           Data.HashMap.Strict (HashMap)
 import           Data.List (isInfixOf, isPrefixOf, isSuffixOf)
@@ -55,38 +55,37 @@ data ClientMessage = ClientMessage
 makeLenses ''ClientMessage
 
 data ClientPost = ClientPost
-  { _cpText    :: String
-  , _cpUser    :: UserId
-  , _cpDate    :: UTCTime
-  , _cpIsEmote :: Bool
-  , _cpIsJoin  :: Bool
-  , _cpIsLeave :: Bool
-  , _cpPending :: Bool
-  , _cpDeleted :: Bool
+  { _cpText        :: String
+  , _cpUser        :: UserId
+  , _cpDate        :: UTCTime
+  , _cpIsEmote     :: Bool
+  , _cpIsJoin      :: Bool
+  , _cpIsLeave     :: Bool
+  , _cpPending     :: Bool
+  , _cpDeleted     :: Bool
+  , _cpAttachments :: [String]
   } deriving (Eq, Show)
 
 makeLenses ''ClientPost
 
 -- This represents any message we might want to render.
 data Message = Message
-  { _mText     :: Widget Name
-  , _mUserName :: Maybe String
-  , _mDate     :: UTCTime
-  , _mIsEmote  :: Bool
-  , _mIsJoin   :: Bool
-  , _mIsLeave  :: Bool
-  , _mPending  :: Bool
-  , _mDeleted  :: Bool
+  { _mText        :: Blocks
+  , _mUserName    :: Maybe String
+  , _mDate        :: UTCTime
+  , _mIsEmote     :: Bool
+  , _mIsJoin      :: Bool
+  , _mIsLeave     :: Bool
+  , _mPending     :: Bool
+  , _mDeleted     :: Bool
+  , _mAttachments :: [String]
   }
 
 makeLenses ''Message
 
 clientPostToMessage :: ClientPost -> String -> Message
 clientPostToMessage cp user = Message
-  { _mText     = renderMessage (_cpText cp) $
-                   if _cpIsJoin cp || _cpIsLeave cp
-                     then Nothing
-                     else Just user
+  { _mText     = getBlocks (_cpText cp)
   , _mUserName = Just user
   , _mDate     = _cpDate cp
   , _mIsEmote  = _cpIsEmote cp
@@ -94,18 +93,20 @@ clientPostToMessage cp user = Message
   , _mIsLeave  = _cpIsLeave cp
   , _mPending  = _cpPending cp
   , _mDeleted  = _cpDeleted cp
+  , _mAttachments = _cpAttachments cp
   }
 
 clientMessageToMessage :: ClientMessage -> Message
 clientMessageToMessage cm = Message
-  { _mText     = renderMessage (_cmText cm) Nothing
-  , _mUserName = Nothing
-  , _mDate     = _cmDate cm
-  , _mIsEmote  = False
-  , _mIsJoin   = False
-  , _mIsLeave  = False
-  , _mPending  = False
-  , _mDeleted  = False
+  { _mText        = getBlocks (_cmText cm)
+  , _mUserName    = Nothing
+  , _mDate        = _cmDate cm
+  , _mIsEmote     = False
+  , _mIsJoin      = False
+  , _mIsLeave     = False
+  , _mPending     = False
+  , _mDeleted     = False
+  , _mAttachments = []
   }
 
 postIsEmote :: Post -> Bool
@@ -124,14 +125,15 @@ postIsLeave p = "has left the channel" `isInfixOf` postMessage p
 
 toClientPost :: Post -> ClientPost
 toClientPost p = ClientPost
-  { _cpText    = postMessage p
-  , _cpUser    = postUserId p
-  , _cpDate    = postCreateAt p
-  , _cpIsEmote = postIsEmote p
-  , _cpIsJoin  = postIsJoin p
-  , _cpIsLeave = postIsLeave p
-  , _cpPending = False
-  , _cpDeleted = False
+  { _cpText        = postMessage p
+  , _cpUser        = postUserId p
+  , _cpDate        = postCreateAt p
+  , _cpIsEmote     = postIsEmote p
+  , _cpIsJoin      = postIsJoin p
+  , _cpIsLeave     = postIsLeave p
+  , _cpPending     = False
+  , _cpDeleted     = False
+  , _cpAttachments = postFilenames p
   }
 
 -- Our ChannelContents is roughly equivalent to the Post structure we get from

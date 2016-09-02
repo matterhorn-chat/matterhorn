@@ -1,7 +1,7 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE ParallelListComp #-}
 
-module Markdown where
+module Markdown (renderMessage, getBlocks) where
 
 import           Brick ( (<=>), (<+>), Widget )
 import qualified Brick as B
@@ -23,15 +23,19 @@ import           Data.Sequence ( Seq
                                , viewr)
 import qualified Data.Sequence as S
 import           Lens.Micro.Platform ((^.))
+import           Text.Regex.TDFA.String (Regex)
 
+import           Highlighting
 import           Themes
 
-renderMessage :: String -> Maybe String -> Widget a
-renderMessage s u =
+renderMessage :: Blocks -> Maybe String -> Regex -> Widget a
+renderMessage bs u uPat =
   case u of
-    Just un -> B.str (un ++ ": ") <+> vBox (fmap toWidget bs)
-    Nothing -> vBox (fmap toWidget bs)
-  where C.Doc _ bs = C.markdown C.def (T.pack s)
+    Just un -> colorUsername un <+> B.str ": " <+> vBox (fmap (toWidget uPat) bs)
+    Nothing -> vBox (fmap (toWidget uPat) bs)
+
+getBlocks :: String -> Blocks
+getBlocks s = bs where C.Doc _ bs = C.markdown C.def (T.pack s)
 
 vBox :: Foldable f => f (Widget a) -> Widget a
 vBox = foldr (<=>) B.emptyWidget
@@ -39,37 +43,39 @@ vBox = foldr (<=>) B.emptyWidget
 hBox :: Foldable f => f (Widget a) -> Widget a
 hBox = foldr (<+>) B.emptyWidget
 
+--
+
 class ToWidget t where
-  toWidget :: t -> Widget a
+  toWidget :: Regex -> t -> Widget a
 
 header :: Int -> Widget a
 header n = B.str $ (take n $ repeat '#')
 
 instance ToWidget Block where
-  toWidget (C.Para is) = toInlineChunk is
-  toWidget (C.Header n is) =
+  toWidget uPat (C.Para is) = toInlineChunk is uPat
+  toWidget uPat (C.Header n is) =
     B.withDefAttr clientHeaderAttr
-      (header n <+> B.str " " <+> toInlineChunk is)
-  toWidget (C.Blockquote is) =
-    B.padLeft (B.Pad 4) (vBox $ fmap toWidget is)
-  toWidget (C.List _ l bs) = toList l bs
-  toWidget (C.CodeBlock _ tx) =
+      (header n <+> B.str " " <+> toInlineChunk is uPat)
+  toWidget uPat (C.Blockquote is) =
+    B.padLeft (B.Pad 4) (vBox $ fmap (toWidget uPat) is)
+  toWidget uPat (C.List _ l bs) = toList l bs uPat
+  toWidget _ (C.CodeBlock _ tx) =
     B.withDefAttr markdownAttr $
       B.vBox [ B.str " | " <+> B.txt ln | ln <- T.lines tx ]
-  toWidget (C.HtmlBlock txt) = B.txt txt
-  toWidget (C.HRule) = B.vLimit 1 (B.fill '*')
+  toWidget _ (C.HtmlBlock txt) = B.txt txt
+  toWidget _ (C.HRule) = B.vLimit 1 (B.fill '*')
 
-toInlineChunk :: Inlines -> Widget a
-toInlineChunk is = B.Widget B.Fixed B.Fixed $ do
+toInlineChunk :: Inlines -> Regex -> Widget a
+toInlineChunk is uPat = B.Widget B.Fixed B.Fixed $ do
   ctx <- B.getContext
   let width = ctx^.B.availWidthL
       fs    = toFragments is
-      ws    = fmap (fmap toWidget) (split width fs)
+      ws    = fmap (fmap (toWidget uPat)) (split width fs)
   B.render (vBox (fmap hBox ws))
 
-toList :: ListType -> [Blocks] -> Widget a
-toList lt bs = vBox
-  [ B.str i <+> (vBox (fmap toWidget b))
+toList :: ListType -> [Blocks] -> Regex -> Widget a
+toList lt bs uPat = vBox
+  [ B.str i <+> (vBox (fmap (toWidget uPat) b))
   | b <- bs | i <- is ]
   where is = case lt of
           C.Bullet c -> repeat (c:" ")
@@ -160,9 +166,9 @@ fragmentSize f = case fTextual f of
   _          -> 1
 
 instance ToWidget Fragment where
-  toWidget fragment =
+  toWidget uPat fragment =
     style $ case fTextual fragment of
-      TStr t       -> B.txt t
+      TStr t       -> doMessageMarkup uPat t
       TSpace       -> B.str " "
       TSoftBreak   -> B.emptyWidget
       TLineBreak   -> B.emptyWidget

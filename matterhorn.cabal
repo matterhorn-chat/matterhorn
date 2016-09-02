@@ -34,6 +34,7 @@ executable matterhorn
                        TeamSelect
                        Login
                        Markdown
+                       Highlighting
   default-extensions:  OverloadedStrings,
                        ScopedTypeVariables
   ghc-options:         -Wall -threaded
