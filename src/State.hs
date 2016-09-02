@@ -173,15 +173,6 @@ setFocus n st = changeChannelCommon =<<
   where
   Just n' = st ^. csNames . cnToChanId . at n
 
-setDMFocus :: String -> ChatState -> EventM Name ChatState
-setDMFocus n st =
-    case n' of
-        Nothing -> return st
-        Just dmName -> changeChannelCommon =<<
-                       updateViewed (st & csFocus %~ Z.findRight (==dmName))
-  where
-  n' = st ^. csNames . cnToChanId . at n
-
 editMessage :: Post -> ChatState -> EventM a ChatState
 editMessage new st = do
   now <- liftIO getCurrentTime
