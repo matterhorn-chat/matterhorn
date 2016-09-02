@@ -2,6 +2,7 @@
 
 module Types where
 
+import           Brick (EventM)
 import           Brick.AttrMap (AttrMap)
 import           Brick.Widgets.Edit (Editor)
 import           Control.Concurrent.Chan (Chan)
@@ -165,7 +166,7 @@ data ClientChannel = ClientChannel
 
 makeLenses ''ClientChannel
 
-type RequestChan = Chan (IO (ChatState -> ChatState))
+type RequestChan = Chan (IO (ChatState -> EventM Name ChatState))
 
 data ChatState = ChatState
   { _csTok      :: Token
@@ -189,7 +190,9 @@ data ChatState = ChatState
 makeLenses ''ChatState
 
 data Event
-  = VtyEvent Vty.Event -- ^ For events that arise from VTY
-  | WSEvent WebsocketEvent -- ^ For events that arise from the websocket
-  | RespEvent (ChatState -> ChatState) -- ^ For the result values of async
-                                       -- IO operations
+  = VtyEvent Vty.Event
+    -- ^ For events that arise from VTY
+  | WSEvent WebsocketEvent
+    -- ^ For events that arise from the websocket
+  | RespEvent (ChatState -> EventM Name ChatState)
+    -- ^ For the result values of async IO operations

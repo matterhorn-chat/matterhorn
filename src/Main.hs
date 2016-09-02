@@ -56,7 +56,9 @@ app = App
   { appDraw         = chatDraw
   , appChooseCursor = \ _ (l:_) -> Just l
   , appHandleEvent  = onEvent
-  , appStartEvent   = \ s -> return s
+  , appStartEvent   = updateChannelScrollState
+                      -- ^ Critical to ensure that we scroll to the
+                      -- bottom of the initially-viewed channel.
   , appAttrMap      = (^.csTheme)
   , appLiftVtyEvent = VtyEvent
   }

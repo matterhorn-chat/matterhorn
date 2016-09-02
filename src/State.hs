@@ -1,12 +1,12 @@
 module State where
 
-import           Brick (EventM, str, vBox)
+import           Brick (EventM, str, vBox, Direction(..))
 import           Brick.AttrMap (AttrMap)
 import           Brick.Widgets.Edit (editor)
 import qualified Control.Concurrent.Chan as Chan
 import           Control.Monad.IO.Class (liftIO)
 import           Data.HashMap.Strict ((!))
-import           Brick.Main (viewportScroll, vScrollToEnd)
+import           Brick.Main (viewportScroll, vScrollToEnd, vScrollPage)
 import           Brick.Widgets.Edit (applyEdit)
 import           Control.Exception (SomeException, catch)
 import           Control.Monad (forM, when)
@@ -72,13 +72,13 @@ newState t c i u m tz fmt hist rq theme = ChatState
   , _csTheme = theme
   }
 
-runAsync :: ChatState -> IO (ChatState -> ChatState) -> IO ()
+runAsync :: ChatState -> IO (ChatState -> EventM Name ChatState) -> IO ()
 runAsync st thunk =
   Chan.writeChan (st^.csRequestQueue) thunk
 
 doAsync :: ChatState -> IO () -> IO ()
 doAsync st thunk =
-  Chan.writeChan (st^.csRequestQueue) (thunk >> return id)
+  Chan.writeChan (st^.csRequestQueue) (thunk >> return return)
 
 hasUnread :: ChatState -> ChannelId -> Bool
 hasUnread st cId = maybe False id $ do
@@ -88,7 +88,7 @@ hasUnread st cId = maybe False id $ do
   return (v > u)
   where
 
-updateViewed :: ChatState -> EventM a ChatState
+updateViewed :: ChatState -> EventM Name ChatState
 updateViewed st = liftIO (updateViewedIO st)
 
 updateViewedIO :: ChatState -> IO ChatState
@@ -101,7 +101,7 @@ updateViewedIO st = do
       (st^.csTok)
       (getId (st^.csMyTeam))
       cId
-    return (msgMap . ix cId . ccInfo . cdViewed .~ now)
+    return (\s -> return (s & msgMap . ix cId . ccInfo . cdViewed .~ now))
   return st
 
 resetHistoryPosition :: ChatState -> EventM a ChatState
@@ -112,12 +112,13 @@ resetHistoryPosition st =
 clearEditor :: ChatState -> EventM a ChatState
 clearEditor st = return $ st & cmdLine %~ applyEdit clearZipper
 
-changeChannelCommon :: ChatState -> EventM a ChatState
+changeChannelCommon :: ChatState -> EventM Name ChatState
 changeChannelCommon st =
     clearEditor =<<
+    updateChannelScrollState =<<
     resetHistoryPosition st
 
-nextChannel :: ChatState -> EventM a ChatState
+nextChannel :: ChatState -> EventM Name ChatState
 nextChannel st = changeChannelCommon =<<
                  updateViewed (st & csFocus %~ Z.right)
 
@@ -135,7 +136,7 @@ setTheme cs name =
         Nothing -> listThemes cs
         Just t -> return $ cs & csTheme .~ t
 
-prevChannel :: ChatState -> EventM a ChatState
+prevChannel :: ChatState -> EventM Name ChatState
 prevChannel st = changeChannelCommon =<<
                  updateViewed (st & csFocus %~ Z.left)
 
@@ -143,6 +144,18 @@ updateChannelScrollState :: ChatState -> EventM Name ChatState
 updateChannelScrollState st = do
   let cId = currentChannelId st
   vScrollToEnd $ viewportScroll (ChannelMessages cId)
+  return st
+
+channelPageUp :: ChatState -> EventM Name ChatState
+channelPageUp st = do
+  let cId = currentChannelId st
+  vScrollPage (viewportScroll (ChannelMessages cId)) Up
+  return st
+
+channelPageDown :: ChatState -> EventM Name ChatState
+channelPageDown st = do
+  let cId = currentChannelId st
+  vScrollPage (viewportScroll (ChannelMessages cId)) Down
   return st
 
 currentChannelId :: ChatState -> ChannelId
@@ -154,16 +167,18 @@ channelExists st n = n `elem` st ^. csNames . cnChans
 userExists :: ChatState -> String -> Bool
 userExists st n = n `elem` st ^. csNames . cnUsers
 
-setFocus :: String -> ChatState -> EventM a ChatState
-setFocus n st = updateViewed (st & csFocus %~ Z.findRight (==n'))
+setFocus :: String -> ChatState -> EventM Name ChatState
+setFocus n st = changeChannelCommon =<<
+                updateViewed (st & csFocus %~ Z.findRight (==n'))
   where
   Just n' = st ^. csNames . cnToChanId . at n
 
-setDMFocus :: String -> ChatState -> EventM a ChatState
+setDMFocus :: String -> ChatState -> EventM Name ChatState
 setDMFocus n st =
     case n' of
         Nothing -> return st
-        Just dmName -> updateViewed (st & csFocus %~ Z.findRight (==dmName))
+        Just dmName -> changeChannelCommon =<<
+                       updateViewed (st & csFocus %~ Z.findRight (==dmName))
   where
   n' = st ^. csNames . cnToChanId . at n
 
@@ -183,7 +198,7 @@ deleteMessage new st = do
               & chan . ccInfo . cdUpdated .~ now
   return rs
 
-addMessage :: Post -> ChatState -> EventM a ChatState
+addMessage :: Post -> ChatState -> EventM Name ChatState
 addMessage new st = do
   now <- liftIO getCurrentTime
   let cp = toClientPost new
@@ -192,7 +207,7 @@ addMessage new st = do
               & chan . ccContents . cdOrder %~ (MMId (getId new) :)
               & chan . ccInfo . cdUpdated .~ now
   if postChannelId new == currentChannelId st
-    then updateViewed rs
+    then updateChannelScrollState rs >>= updateViewed
     else return rs
 
 -- XXX: Right now, our new ID is based on the size of the map containing all
@@ -335,8 +350,10 @@ setupState config requestChan = do
                      }
     when (c^.channelNameL /= "town-square") $ Chan.writeChan requestChan $ do
       posts <- mmGetPosts cd token myTeamId (getId c) 0 30
-      return $ \ st -> st & msgMap.ix(getId c).ccContents .~ fromPosts posts
-                          & msgMap.ix(getId c).ccInfo.cdLoaded .~ True
+      return $ \ st -> do
+          let st' = st & msgMap.ix(getId c).ccContents .~ fromPosts posts
+                       & msgMap.ix(getId c).ccInfo.cdLoaded .~ True
+          updateChannelScrollState st'
     return (getId c, cChannel)
 
   users <- mmGetProfiles cd token myTeamId

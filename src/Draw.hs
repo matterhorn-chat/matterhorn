@@ -86,12 +86,9 @@ doMessageMarkup usernamePattern msg =
                              toMarkup msg ""
     in markup $ mconcat $ (uncurry (@?)) <$> pairs
 
-renderChatMessage :: Regex -> Maybe String -> TimeZone -> Int -> (Int, Message) -> Widget Name
-renderChatMessage uPattern mFormat tz lastIdx (i, msg) =
-    let f = if i == lastIdx
-            then visible
-            else id
-        t = msg^.mDate
+renderChatMessage :: Regex -> Maybe String -> TimeZone -> Message -> Widget Name
+renderChatMessage uPattern mFormat tz msg =
+    let t = msg^.mDate
         m = msg^.mText
         doFormat u prefix wrapped =
             let suffix = drop (length u + length prefix) wrapped
@@ -117,7 +114,7 @@ renderChatMessage uPattern mFormat tz lastIdx (i, msg) =
               | otherwise ->
                   wrappedText (doFormat u "") (u ++ ": " ++ m)
             Nothing -> withDefAttr clientMessageAttr (str m)
-    in f $ case mFormat of
+    in case mFormat of
         Just ""     -> msgTxt
         Just format -> renderTime format tz t            <+> str " " <+> msgTxt
         Nothing     -> renderTime defaultDateFormat tz t <+> str " " <+> msgTxt
@@ -201,8 +198,8 @@ renderCurrentChannelDisplay st = header <=> messages
                then viewport (ChannelMessages cId) Vertical chatText <+> str " "
                else center $ str "[loading channel scrollback]"
     uPattern = mkUsernamePattern st
-    chatText = vBox $ renderChatMessage uPattern (st ^. timeFormat) (st ^. timeZone) (length channelMessages - 1) <$>
-                      zip [0..] channelMessages
+    chatText = vBox $ renderChatMessage uPattern (st ^. timeFormat) (st ^. timeZone) <$>
+                      channelMessages
     channelMessages = getMessageListing cId st
     cId = currentChannelId st
     Just chan = getChannel cId st

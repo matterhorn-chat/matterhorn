@@ -48,6 +48,10 @@ onEvent st (VtyEvent (Vty.EvKey Vty.KUp [])) =
   continue $ channelHistoryBackward st
 onEvent st (VtyEvent (Vty.EvKey Vty.KDown [])) =
   continue $ channelHistoryForward st
+onEvent st (VtyEvent (Vty.EvKey Vty.KPageUp [])) =
+  continue =<< channelPageUp st
+onEvent st (VtyEvent (Vty.EvKey Vty.KPageDown [])) =
+  continue =<< channelPageDown st
 onEvent st (VtyEvent (Vty.EvKey (Vty.KChar 'n') [Vty.MCtrl])) =
   continue =<< updateChannelScrollState =<< nextChannel st
 onEvent st (VtyEvent (Vty.EvKey (Vty.KChar 'p') [Vty.MCtrl])) =
@@ -74,7 +78,7 @@ onEvent st (VtyEvent e) = do
 onEvent st (WSEvent we) =
   handleWSEvent st we
 onEvent st (RespEvent f) =
-  continue (f st)
+  continue =<< f st
 
 channelHistoryForward :: ChatState -> ChatState
 channelHistoryForward st =
