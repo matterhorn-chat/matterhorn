@@ -83,7 +83,10 @@ makeLenses ''Message
 
 clientPostToMessage :: ClientPost -> String -> Message
 clientPostToMessage cp user = Message
-  { _mText     = renderMessage (_cpText cp)
+  { _mText     = renderMessage (_cpText cp) $
+                   if _cpIsJoin cp || _cpIsLeave cp
+                     then Nothing
+                     else Just user
   , _mUserName = Just user
   , _mDate     = _cpDate cp
   , _mIsEmote  = _cpIsEmote cp
@@ -95,7 +98,7 @@ clientPostToMessage cp user = Message
 
 clientMessageToMessage :: ClientMessage -> Message
 clientMessageToMessage cm = Message
-  { _mText     = renderMessage (_cmText cm)
+  { _mText     = renderMessage (_cmText cm) Nothing
   , _mUserName = Nothing
   , _mDate     = _cmDate cm
   , _mIsEmote  = False

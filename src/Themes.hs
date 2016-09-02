@@ -96,6 +96,7 @@ lightColorTheme = attrMap (black `on` white) $
   , (clientMessageAttr,       fg white)
   , (clientEmphAttr,          fg cyan)
   , (clientStrongAttr,        fg cyan `withStyle` bold)
+  , (clientHeaderAttr,        fg red `withStyle` bold)
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 
@@ -113,6 +114,7 @@ darkColorTheme = attrMap (bg black) $
   , (clientMessageAttr,       fg white)
   , (clientEmphAttr,          fg cyan)
   , (clientStrongAttr,        fg cyan `withStyle` bold)
+  , (clientHeaderAttr,        fg red `withStyle` bold)
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 

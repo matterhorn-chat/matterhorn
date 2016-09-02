@@ -102,8 +102,7 @@ renderChatMessage uPattern mFormat tz lastIdx (i, msg) =
             in case rest of
                  [] -> firstLine
                  _ -> vBox $ firstLine : (doMessageMarkup uPattern <$> T.pack <$> rest)
-        -- A gross hack because MatterMost abuses normal messages to
-        -- announce joins (and probably parts?)
+
         msgTxt =
           case msg^.mUserName of
             Just u

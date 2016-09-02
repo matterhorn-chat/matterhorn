@@ -1,4 +1,5 @@
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE ParallelListComp #-}
 
 module Markdown where
 
@@ -25,8 +26,11 @@ import           Lens.Micro.Platform ((^.))
 
 import           Themes
 
-renderMessage :: String -> Widget a
-renderMessage s = vBox (fmap toWidget bs)
+renderMessage :: String -> Maybe String -> Widget a
+renderMessage s u =
+  case u of
+    Just un -> B.str (un ++ ": ") <+> vBox (fmap toWidget bs)
+    Nothing -> vBox (fmap toWidget bs)
   where C.Doc _ bs = C.markdown C.def (T.pack s)
 
 vBox :: Foldable f => f (Widget a) -> Widget a
@@ -38,10 +42,14 @@ hBox = foldr (<+>) B.emptyWidget
 class ToWidget t where
   toWidget :: t -> Widget a
 
+header :: Int -> Widget a
+header n = B.str $ (take n $ repeat '#')
+
 instance ToWidget Block where
   toWidget (C.Para is) = toInlineChunk is
-  toWidget (C.Header _ is) =
-    B.withDefAttr clientHeaderAttr (toInlineChunk is)
+  toWidget (C.Header n is) =
+    B.withDefAttr clientHeaderAttr
+      (header n <+> B.str " " <+> toInlineChunk is)
   toWidget (C.Blockquote is) =
     B.padLeft (B.Pad 4) (vBox $ fmap toWidget is)
   toWidget (C.List _ l bs) = toList l bs
@@ -60,7 +68,13 @@ toInlineChunk is = B.Widget B.Fixed B.Fixed $ do
   B.render (vBox (fmap hBox ws))
 
 toList :: ListType -> [Blocks] -> Widget a
-toList = undefined
+toList lt bs = vBox
+  [ B.str i <+> (vBox (fmap toWidget b))
+  | b <- bs | i <- is ]
+  where is = case lt of
+          C.Bullet c -> repeat (c:" ")
+          C.Numbered _ _ -> [ show (n :: Int) ++ ". "
+                            | n <- [1..] ]
 
 -- We want to do word-wrapping, but for that we want a linear
 -- sequence of chunks we can break up. The typical Markdown
