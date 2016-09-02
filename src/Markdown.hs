@@ -28,10 +28,13 @@ import           Text.Regex.TDFA.String (Regex)
 import           Highlighting
 import           Themes
 
-renderMessage :: Blocks -> Maybe String -> Regex -> Widget a
-renderMessage bs u uPat =
+renderMessage :: Blocks -> Maybe String -> Bool -> Regex -> Widget a
+renderMessage bs u isEmote uPat =
   case u of
-    Just un -> colorUsername un <+> B.str ": " <+> vBox (fmap (toWidget uPat) bs)
+    Just un
+      | isEmote   -> B.str "*" <+> colorUsername un
+                       <+> B.str " " <+> vBox (fmap (toWidget uPat) bs)
+      | otherwise -> colorUsername un <+> B.str ": " <+> vBox (fmap (toWidget uPat) bs)
     Nothing -> vBox (fmap (toWidget uPat) bs)
 
 getBlocks :: String -> Blocks

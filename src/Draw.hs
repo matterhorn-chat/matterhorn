@@ -47,7 +47,7 @@ renderChatMessage uPattern mFormat tz lastIdx (i, msg) =
             then visible
             else id
         t = msg^.mDate
-        m = renderMessage (msg^.mText) (msg^.mUserName) uPattern
+        m = renderMessage (msg^.mText) (msg^.mUserName) (msg^.mIsEmote) uPattern
         msgAtch = case msg^.mAttachments of
           [] -> emptyWidget
           _  -> withDefAttr clientMessageAttr
