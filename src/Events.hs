@@ -12,10 +12,11 @@ import qualified Data.Set as Set
 import           Data.Text.Zipper ( stringZipper
                                   , clearZipper
                                   , gotoEOL
-                                  , insertChar
+                                  , insertMany
                                   , deletePrevChar )
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform
+import qualified Codec.Binary.UTF8.Generic as UTF8
 
 import           Network.Mattermost
 import           Network.Mattermost.Lenses
@@ -55,6 +56,9 @@ onEvent st (VtyEvent (Vty.EvKey (Vty.KChar 'p') [Vty.MCtrl])) =
 onEvent st (VtyEvent (Vty.EvKey Vty.KEnter [])) = do
   let st' = st & csCurrentCompletion .~ Nothing
   handleInputSubmission st'
+onEvent st (VtyEvent (Vty.EvPaste bytes)) = do
+  let pasteStr = UTF8.toString bytes
+  continue $ st & cmdLine %~ applyEdit (insertMany pasteStr)
 onEvent st (VtyEvent e) = do
   let st' = case e of
             -- XXX: not 100% certain we need to special case these
@@ -107,12 +111,11 @@ channelHistoryBackward st =
 tabComplete :: Completion.Direction
             -> ChatState -> EventM Name (Next ChatState)
 tabComplete dir st = do
-  -- XXX: insert, killWordBackward, and delete could probably all
+  -- XXX: killWordBackward, and delete could probably all
   -- be moved to the text zipper package (after some generalization and cleanup)
   -- for example, we should look up the standard unix word break characters
   -- and use those in killWordBackward.
-  let insert  = foldl (flip insertChar)
-      killWordBackward z =
+  let killWordBackward z =
         let n = length
               $ takeWhile (/= ' ')
               $ reverse
@@ -145,7 +148,7 @@ tabComplete dir st = do
                         let contents  = editContents (st' ^. cmdLine)
                             backup    = st' & cmdLine.editContentsL .~ killWordBackward contents
                             contents' = editContents (backup ^. cmdLine)
-                        in backup & cmdLine.editContentsL .~ insert contents' w
+                        in backup & cmdLine.editContentsL .~ insertMany w contents'
   continue st''
 
 handleInputSubmission :: ChatState -> EventM Name (Next ChatState)

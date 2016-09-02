@@ -50,7 +50,7 @@ executable matterhorn
                      , data-default
                      , vty
                      , transformers
-                     , text-zipper
+                     , text-zipper >= 0.6
                      , text-markup
                      , regex-tdfa
                      , regex-base
@@ -63,4 +63,5 @@ executable matterhorn
                      , vector
                      , strict
                      , hashable
+                     , utf8-string
   default-language:    Haskell2010
