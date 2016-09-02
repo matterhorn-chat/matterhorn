@@ -122,15 +122,15 @@ nextChannel :: ChatState -> EventM Name ChatState
 nextChannel st = changeChannelCommon =<<
                  updateViewed (st & csFocus %~ Z.right)
 
-listThemes :: ChatState -> EventM a ChatState
+listThemes :: ChatState -> EventM Name ChatState
 listThemes cs = do
     let mkThemeList _ = unlines $
                         "Available built-in themes:" :
                         (("  " ++) <$> fst <$> themes)
     msg <- newClientMessage (mkThemeList themes)
-    return (addClientMessage msg cs)
+    addClientMessage msg cs
 
-setTheme :: ChatState -> String -> EventM a ChatState
+setTheme :: ChatState -> String -> EventM Name ChatState
 setTheme cs name =
     case lookup name themes of
         Nothing -> listThemes cs
@@ -204,12 +204,13 @@ addMessage new st = do
 -- XXX: Right now, our new ID is based on the size of the map containing all
 -- the ClientMessages, which only makes sense if we never delete ClientMessages.
 -- We should probably figure out a better way of choosing IDs.
-addClientMessage :: ClientMessage -> ChatState -> ChatState
-addClientMessage msg st =
+addClientMessage :: ClientMessage -> ChatState -> EventM Name ChatState
+addClientMessage msg st = do
   let n = HM.size (st ^. msgMap . ix cid . ccContents . cdCMsgs) + 1
       cid = currentChannelId st
-  in st & msgMap . ix cid . ccContents . cdCMsgs . at n .~ Just msg
-        & msgMap . ix cid . ccContents . cdOrder %~ (CLId n :)
+      st' = st & msgMap . ix cid . ccContents . cdCMsgs . at n .~ Just msg
+               & msgMap . ix cid . ccContents . cdOrder %~ (CLId n :)
+  updateChannelScrollState st'
 
 mmMessageDigest :: ChannelId -> PostId -> ChatState -> Message
 mmMessageDigest cId ref st = clientPostToMessage p usr
@@ -251,7 +252,7 @@ getDMChannelName me you = cname
 getChannel :: ChannelId -> ChatState -> Maybe ClientChannel
 getChannel cId st = st ^. msgMap . at cId
 
-execMMCommand :: String -> ChatState -> EventM a ChatState
+execMMCommand :: String -> ChatState -> EventM Name ChatState
 execMMCommand cmd st = liftIO (runCmd `catch` handler)
   where
   mc = MinCommand
@@ -269,7 +270,8 @@ execMMCommand cmd st = liftIO (runCmd `catch` handler)
   handler (HTTPResponseException err) = do
     now <- liftIO getCurrentTime
     let msg = ClientMessage ("Error running command: " ++ err) now
-    return (addClientMessage msg st)
+    runAsync st (return $ addClientMessage msg)
+    return st
 
 setupState :: Config -> RequestChan -> IO ChatState
 setupState config requestChan = do
@@ -405,7 +407,7 @@ setupState config requestChan = do
   updateViewedIO st'
 
 
-debugPrintTimes :: ChatState -> String -> EventM a ChatState
+debugPrintTimes :: ChatState -> String -> EventM Name ChatState
 debugPrintTimes st cn = do
   let Just cId = st^.csNames.cnToChanId.at(cn)
       Just ch = st^.msgMap.at(cId)
@@ -413,4 +415,4 @@ debugPrintTimes st cn = do
       updated = ch^.ccInfo.cdUpdated
   m1 <- newClientMessage ("Viewed: " ++ show viewed)
   m2 <- newClientMessage ("Updated: " ++ show updated)
-  return (st & addClientMessage m1 & addClientMessage m2)
+  addClientMessage m1 st >>= addClientMessage m2

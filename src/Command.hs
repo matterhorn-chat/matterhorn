@@ -28,10 +28,10 @@ commandList =
         then setFocus ch st >>= continue
         else do
           msg <- newClientMessage ("No channel or user named " ++ ch)
-          continue (addClientMessage msg st)
+          continue =<< addClientMessage msg st
   , Cmd "help" "Print the help dialogue" $ \ _ st -> do
         msg <- newClientMessage (mkHelpText commandList)
-        continue (addClientMessage msg st)
+        continue =<< addClientMessage msg st
   ]
 
 mkHelpText :: [Cmd] -> String
