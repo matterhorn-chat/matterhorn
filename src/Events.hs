@@ -57,14 +57,12 @@ onEvent st (VtyEvent (Vty.EvKey Vty.KEnter [])) = do
   let st' = st & csCurrentCompletion .~ Nothing
   handleInputSubmission st'
 onEvent st (VtyEvent (Vty.EvPaste bytes)) = do
-  -- For now, only support single-line pastes. If you paste a multi-line
-  -- thing, it'll only insert up to the first line ending. Once we add
-  -- support for multi-line editing, this should change the editing mode
-  -- to multi-line editing so you can adjust the paste before submitting
-  -- it.
+  -- If you paste a multi-line thing, it'll only insert up to the first
+  -- line ending because the zipper will respect the line limit when
+  -- inserting the paste. Once we add support for multi-line editing,
+  -- this will Just Work once the editor's line limit is set to Nothing.
   let pasteStr = UTF8.toString bytes
-      ls = lines pasteStr
-  continue $ st & cmdLine %~ applyEdit (insertMany $ head ls)
+  continue $ st & cmdLine %~ applyEdit (insertMany pasteStr)
 onEvent st (VtyEvent e) = do
   let st' = case e of
             -- XXX: not 100% certain we need to special case these

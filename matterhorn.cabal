@@ -50,7 +50,7 @@ executable matterhorn
                      , data-default
                      , vty
                      , transformers
-                     , text-zipper >= 0.6
+                     , text-zipper >= 0.6.1
                      , text-markup
                      , regex-tdfa
                      , regex-base
