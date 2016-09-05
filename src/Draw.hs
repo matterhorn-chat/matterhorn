@@ -11,7 +11,7 @@ import           Brick.Widgets.Center (center)
 import           Brick.Widgets.Edit (renderEditor)
 import qualified Data.Text as T
 import qualified Data.Array as A
-import           Data.Time.Clock (UTCTime)
+import           Data.Time.Clock (UTCTime, utctDay)
 import           Data.Time.Format ( formatTime
                                   , defaultTimeLocale )
 import           Data.Time.LocalTime ( TimeZone, utcToLocalTime )
@@ -200,12 +200,30 @@ renderCurrentChannelDisplay st = header <=> messages
     uPattern = mkUsernamePattern st
     chatText = vBox $ renderChatMessage uPattern (st ^. timeFormat) (st ^. timeZone) <$>
                       channelMessages
-    channelMessages = getMessageListing cId st
+    channelMessages = insertDateBoundaries $ getMessageListing cId st
     cId = currentChannelId st
     Just chan = getChannel cId st
     chnName = chan^.ccInfo.cdName
     chnType = chan^.ccInfo.cdType
     purposeStr = chan^.ccInfo.cdPurpose
+
+dateTransitionFormat :: String
+dateTransitionFormat = "%Y-%m-%d"
+
+insertDateBoundaries :: [Message] -> [Message]
+insertDateBoundaries ms = fst $ foldr nextMsg initState ms
+    where
+        initState :: ([Message], Maybe Message)
+        initState = ([], Nothing)
+
+        nextMsg :: Message -> ([Message], Maybe Message) -> ([Message], Maybe Message)
+        nextMsg msg (rest, Nothing) = (rest ++ [msg], Just msg)
+        nextMsg msg (rest, Just prevMsg) =
+            let dateMsg = Message (formatTime defaultTimeLocale dateTransitionFormat $ msg^.mDate)
+                                  Nothing (msg^.mDate) False False False False False
+            in if utctDay (msg^.mDate) /= utctDay (prevMsg^.mDate)
+               then (rest ++ [dateMsg, msg], Just msg)
+               else (rest ++ [msg], Just msg)
 
 findUserByDMChannelName :: HashMap UserId UserProfile
                         -> String -- ^ the dm channel name
