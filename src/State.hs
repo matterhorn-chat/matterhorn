@@ -2,7 +2,7 @@ module State where
 
 import           Brick (EventM, str, vBox, Direction(..))
 import           Brick.AttrMap (AttrMap)
-import           Brick.Widgets.Edit (editor)
+import           Brick.Widgets.Edit (editor, getEditContents)
 import qualified Control.Concurrent.Chan as Chan
 import           Control.Monad.IO.Class (liftIO)
 import           Data.HashMap.Strict ((!))
@@ -10,9 +10,9 @@ import           Brick.Main (viewportScroll, vScrollToEnd, vScrollPage)
 import           Brick.Widgets.Edit (applyEdit)
 import           Control.Exception (SomeException, catch)
 import           Control.Monad (forM, when)
-import           Data.Text.Zipper (clearZipper)
+import           Data.Text.Zipper (clearZipper, insertMany)
 import qualified Data.HashMap.Strict as HM
-import           Data.List (sort)
+import           Data.List (sort, intercalate)
 import           Data.Maybe (listToMaybe, maybeToList, fromJust)
 import           Data.Monoid ((<>))
 import           Data.Time.Clock ( getCurrentTime )
@@ -68,6 +68,7 @@ newState t c i u m tz fmt hist rq theme = ChatState
   , _timeFormat = fmt
   , _csInputHistory = hist
   , _csInputHistoryPosition = mempty
+  , _csLastChannelInput = mempty
   , _csCurrentCompletion = Nothing
   , _csTheme = theme
   }
@@ -112,15 +113,31 @@ resetHistoryPosition st =
 clearEditor :: ChatState -> EventM a ChatState
 clearEditor st = return $ st & cmdLine %~ applyEdit clearZipper
 
+loadLastEdit :: ChatState -> EventM a ChatState
+loadLastEdit st =
+    let cId = currentChannelId st
+    in return $ case st^.csLastChannelInput.at cId of
+        Nothing -> st
+        Just lastEdit -> st & cmdLine %~ (applyEdit $ insertMany lastEdit)
+
 changeChannelCommon :: ChatState -> EventM Name ChatState
 changeChannelCommon st =
+    loadLastEdit =<<
     clearEditor =<<
     updateChannelScrollState =<<
     resetHistoryPosition st
 
+preChangeChannelCommon :: ChatState -> EventM Name ChatState
+preChangeChannelCommon st = do
+    let curEdit = intercalate "\n" $ getEditContents $ st^.cmdLine
+        cId = currentChannelId st
+    return $ st & csLastChannelInput.at cId .~ Just curEdit
+
 nextChannel :: ChatState -> EventM Name ChatState
-nextChannel st = changeChannelCommon =<<
-                 updateViewed (st & csFocus %~ Z.right)
+nextChannel st = setFocusWith st Z.right
+
+prevChannel :: ChatState -> EventM Name ChatState
+prevChannel st = setFocusWith st Z.left
 
 listThemes :: ChatState -> EventM Name ChatState
 listThemes cs = do
@@ -135,10 +152,6 @@ setTheme cs name =
     case lookup name themes of
         Nothing -> listThemes cs
         Just t -> return $ cs & csTheme .~ t
-
-prevChannel :: ChatState -> EventM Name ChatState
-prevChannel st = changeChannelCommon =<<
-                 updateViewed (st & csFocus %~ Z.left)
 
 updateChannelScrollState :: ChatState -> EventM Name ChatState
 updateChannelScrollState st = do
@@ -168,10 +181,14 @@ userExists :: ChatState -> String -> Bool
 userExists st n = n `elem` st ^. csNames . cnUsers
 
 setFocus :: String -> ChatState -> EventM Name ChatState
-setFocus n st = changeChannelCommon =<<
-                updateViewed (st & csFocus %~ Z.findRight (==n'))
+setFocus n st = setFocusWith st (Z.findRight (== n'))
   where
   Just n' = st ^. csNames . cnToChanId . at n
+
+setFocusWith :: ChatState -> (Zipper ChannelId -> Zipper ChannelId) -> EventM Name ChatState
+setFocusWith st f = changeChannelCommon =<<
+                (\st' -> updateViewed (st' & csFocus %~ f)) =<<
+                preChangeChannelCommon st
 
 editMessage :: Post -> ChatState -> EventM a ChatState
 editMessage new st = do

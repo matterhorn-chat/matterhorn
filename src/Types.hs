@@ -182,6 +182,7 @@ data ChatState = ChatState
   , _timeFormat :: Maybe String
   , _csInputHistory :: InputHistory
   , _csInputHistoryPosition :: HM.HashMap ChannelId (Maybe Int)
+  , _csLastChannelInput :: HM.HashMap ChannelId String
   , _csCurrentCompletion :: Maybe String
   , _csRequestQueue :: RequestChan
   , _csTheme    :: AttrMap
