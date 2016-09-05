@@ -15,6 +15,7 @@ module Themes
   , emojiAttr
   , clientMessageAttr
   , dateTransitionAttr
+  , errorMessageAttr
 
   -- * Username formatting
   , colorUsername
@@ -68,6 +69,9 @@ emojiAttr = "emoji"
 clientMessageAttr :: AttrName
 clientMessageAttr = "clientMessage"
 
+errorMessageAttr :: AttrName
+errorMessageAttr = "errorMessage"
+
 themes :: [(String, AttrMap)]
 themes =
     [ (darkColorThemeName,  darkColorTheme)
@@ -87,6 +91,7 @@ lightColorTheme = attrMap (black `on` white) $
   , (emojiAttr,               fg yellow)
   , (clientMessageAttr,       fg white)
   , (dateTransitionAttr,      fg green)
+  , (errorMessageAttr,        fg red)
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 
@@ -103,6 +108,7 @@ darkColorTheme = attrMap (bg black) $
   , (emojiAttr,               fg yellow)
   , (clientMessageAttr,       fg white)
   , (dateTransitionAttr,      fg green)
+  , (errorMessageAttr,        fg red)
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 

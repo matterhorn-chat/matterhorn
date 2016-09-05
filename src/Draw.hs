@@ -117,6 +117,7 @@ renderChatMessage uPattern mFormat tz msg =
             Nothing ->
                 case msg^.mType of
                     C DateTransition -> withDefAttr dateTransitionAttr (hBorderWithLabel (str m))
+                    C Error -> withDefAttr errorMessageAttr (str m)
                     _ -> withDefAttr clientMessageAttr (str m)
         maybeRenderTime = case mFormat of
             Just ""     -> id
