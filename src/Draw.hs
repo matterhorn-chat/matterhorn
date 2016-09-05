@@ -17,7 +17,7 @@ import           Data.Time.Format ( formatTime
 import           Data.Time.LocalTime ( TimeZone, utcToLocalTime )
 import qualified Data.HashMap.Strict as HM
 import           Data.HashMap.Strict ( HashMap )
-import           Data.List (sortBy, intercalate)
+import           Data.List (sortBy, intercalate, foldl')
 import           Data.Ord (comparing)
 import           Data.Maybe ( listToMaybe, maybeToList )
 import           Data.Monoid ((<>))
@@ -211,19 +211,20 @@ dateTransitionFormat :: String
 dateTransitionFormat = "%Y-%m-%d"
 
 insertDateBoundaries :: [Message] -> [Message]
-insertDateBoundaries ms = fst $ foldr nextMsg initState ms
+insertDateBoundaries ms = fst $ foldl' nextMsg initState ms
     where
         initState :: ([Message], Maybe Message)
         initState = ([], Nothing)
 
-        nextMsg :: Message -> ([Message], Maybe Message) -> ([Message], Maybe Message)
-        nextMsg msg (rest, Nothing) = (rest ++ [msg], Just msg)
-        nextMsg msg (rest, Just prevMsg) =
-            let dateMsg = Message (formatTime defaultTimeLocale dateTransitionFormat $ msg^.mDate)
-                                  Nothing (msg^.mDate) False False False False False
-            in if utctDay (msg^.mDate) /= utctDay (prevMsg^.mDate)
-               then (rest ++ [dateMsg, msg], Just msg)
-               else (rest ++ [msg], Just msg)
+        dateMsg d = Message (formatTime defaultTimeLocale dateTransitionFormat d)
+                            Nothing d False False False False False
+
+        nextMsg :: ([Message], Maybe Message) -> Message -> ([Message], Maybe Message)
+        nextMsg (rest, Nothing) msg = (rest <> [msg], Just msg)
+        nextMsg (rest, Just prevMsg) msg =
+            if utctDay (msg^.mDate) /= utctDay (prevMsg^.mDate)
+            then (rest <> [dateMsg (msg^.mDate), msg], Just msg)
+            else (rest <> [msg], Just msg)
 
 findUserByDMChannelName :: HashMap UserId UserProfile
                         -> String -- ^ the dm channel name
