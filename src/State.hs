@@ -144,7 +144,7 @@ listThemes cs = do
     let mkThemeList _ = unlines $
                         "Available built-in themes:" :
                         (("  " ++) <$> fst <$> themes)
-    msg <- newClientMessage (mkThemeList themes)
+    msg <- newClientMessage Informative (mkThemeList themes)
     addClientMessage msg cs
 
 setTheme :: ChatState -> String -> EventM Name ChatState
@@ -235,10 +235,10 @@ mmMessageDigest cId ref st = clientPostToMessage p usr
         ms = st ^. msgMap
         usr = ((st^.usrMap) ! (p^.cpUser)) ^. userProfileUsernameL
 
-newClientMessage :: String -> EventM a ClientMessage
-newClientMessage msg = do
+newClientMessage :: ClientMessageType -> String -> EventM a ClientMessage
+newClientMessage ty msg = do
   now <- liftIO getCurrentTime
-  return (ClientMessage msg now)
+  return (ClientMessage msg now ty)
 
 clientMessageDigest :: ChannelId -> Int -> ChatState -> Message
 clientMessageDigest cId ref st = clientMessageToMessage m
@@ -286,7 +286,7 @@ execMMCommand cmd st = liftIO (runCmd `catch` handler)
     return st
   handler (HTTPResponseException err) = do
     now <- liftIO getCurrentTime
-    let msg = ClientMessage ("Error running command: " ++ err) now
+    let msg = ClientMessage ("Error running command: " ++ err) now Error
     runAsync st (return $ addClientMessage msg)
     return st
 
@@ -430,6 +430,6 @@ debugPrintTimes st cn = do
       Just ch = st^.msgMap.at(cId)
       viewed = ch^.ccInfo.cdViewed
       updated = ch^.ccInfo.cdUpdated
-  m1 <- newClientMessage ("Viewed: " ++ show viewed)
-  m2 <- newClientMessage ("Updated: " ++ show updated)
+  m1 <- newClientMessage Informative ("Viewed: " ++ show viewed)
+  m2 <- newClientMessage Informative ("Updated: " ++ show updated)
   addClientMessage m1 st >>= addClientMessage m2

@@ -14,6 +14,7 @@ module Themes
   , emailAttr
   , emojiAttr
   , clientMessageAttr
+  , dateTransitionAttr
 
   -- * Username formatting
   , colorUsername
@@ -49,6 +50,9 @@ currentChannelNameAttr = "currentChannelName"
 unreadChannelAttr :: AttrName
 unreadChannelAttr = "unreadChannel"
 
+dateTransitionAttr :: AttrName
+dateTransitionAttr = "dateTransition"
+
 urlAttr :: AttrName
 urlAttr = "url"
 
@@ -82,6 +86,7 @@ lightColorTheme = attrMap (black `on` white) $
   , (markdownAttr,            fg magenta)
   , (emojiAttr,               fg yellow)
   , (clientMessageAttr,       fg white)
+  , (dateTransitionAttr,      fg green)
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 
@@ -97,6 +102,7 @@ darkColorTheme = attrMap (bg black) $
   , (markdownAttr,            fg magenta)
   , (emojiAttr,               fg yellow)
   , (clientMessageAttr,       fg white)
+  , (dateTransitionAttr,      fg green)
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 

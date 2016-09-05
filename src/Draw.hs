@@ -104,20 +104,28 @@ renderChatMessage uPattern mFormat tz msg =
         msgTxt =
           case msg^.mUserName of
             Just u
-              | msg^.mIsEmote ->
+              | msg^.mType == CP Emote ->
                   wrappedText (doFormat u "*") ("*" ++ u ++ " " ++ (init $ tail m))
-              | msg^.mIsJoin || msg^.mIsLeave ->
+              | msg^.mType == CP Leave ||
+                msg^.mType == CP Join ->
                   withDefAttr clientMessageAttr (str m)
               | msg^.mDeleted ->
                   withDefAttr clientMessageAttr
                     (wrappedText (doFormat u "") (u ++ " [deleted this message]"))
               | otherwise ->
                   wrappedText (doFormat u "") (u ++ ": " ++ m)
-            Nothing -> withDefAttr clientMessageAttr (str m)
-    in case mFormat of
-        Just ""     -> msgTxt
-        Just format -> renderTime format tz t            <+> str " " <+> msgTxt
-        Nothing     -> renderTime defaultDateFormat tz t <+> str " " <+> msgTxt
+            Nothing ->
+                case msg^.mType of
+                    C DateTransition -> withDefAttr dateTransitionAttr (hBorderWithLabel (str m))
+                    _ -> withDefAttr clientMessageAttr (str m)
+        maybeRenderTime = case mFormat of
+            Just ""     -> id
+            Just format -> \w -> renderTime format tz t            <+> str " " <+> w
+            Nothing     -> \w -> renderTime defaultDateFormat tz t <+> str " " <+> w
+        maybeRenderTimeWith f = case msg^.mType of
+            C DateTransition -> id
+            _ -> f
+    in maybeRenderTimeWith maybeRenderTime msgTxt
 
 mkChannelName :: String -> String
 mkChannelName = ('#':)
@@ -217,7 +225,7 @@ insertDateBoundaries ms = fst $ foldl' nextMsg initState ms
         initState = ([], Nothing)
 
         dateMsg d = Message (formatTime defaultTimeLocale dateTransitionFormat d)
-                            Nothing d False False False False False
+                            Nothing d (C DateTransition) False False
 
         nextMsg :: ([Message], Maybe Message) -> Message -> ([Message], Maybe Message)
         nextMsg (rest, Nothing) msg = (rest <> [msg], Just msg)

@@ -1,4 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE MultiWayIf #-}
 
 module Types where
 
@@ -44,36 +45,50 @@ data PostRef
   | CLId Int
     deriving (Eq, Show)
 
+data ClientMessageType =
+    Informative
+    | Error
+    | DateTransition
+    deriving (Eq, Show)
+
 -- A ClientMessage is a message given to us by our client, like help text
 -- or an error message.
 data ClientMessage = ClientMessage
   { _cmText :: String
   , _cmDate :: UTCTime
+  , _cmType :: ClientMessageType
   } deriving (Eq, Show)
 
 makeLenses ''ClientMessage
+
+data PostType =
+    Normal
+    | Emote
+    | Join
+    | Leave
+    deriving (Eq, Show)
 
 data ClientPost = ClientPost
   { _cpText    :: String
   , _cpUser    :: UserId
   , _cpDate    :: UTCTime
-  , _cpIsEmote :: Bool
-  , _cpIsJoin  :: Bool
-  , _cpIsLeave :: Bool
+  , _cpType    :: PostType
   , _cpPending :: Bool
   , _cpDeleted :: Bool
   } deriving (Eq, Show)
 
 makeLenses ''ClientPost
 
+data MessageType = C ClientMessageType
+                 | CP PostType
+                 deriving (Eq, Show)
+
 -- This represents any message we might want to render.
 data Message = Message
   { _mText     :: String
   , _mUserName :: Maybe String
   , _mDate     :: UTCTime
-  , _mIsEmote  :: Bool
-  , _mIsJoin   :: Bool
-  , _mIsLeave  :: Bool
+  , _mType     :: MessageType
   , _mPending  :: Bool
   , _mDeleted  :: Bool
   } deriving (Eq, Show)
@@ -85,9 +100,7 @@ clientPostToMessage cp user = Message
   { _mText     = _cpText cp
   , _mUserName = Just user
   , _mDate     = _cpDate cp
-  , _mIsEmote  = _cpIsEmote cp
-  , _mIsJoin   = _cpIsJoin cp
-  , _mIsLeave  = _cpIsLeave cp
+  , _mType     = CP $ _cpType cp
   , _mPending  = _cpPending cp
   , _mDeleted  = _cpDeleted cp
   }
@@ -97,12 +110,17 @@ clientMessageToMessage cm = Message
   { _mText     = _cmText cm
   , _mUserName = Nothing
   , _mDate     = _cmDate cm
-  , _mIsEmote  = False
-  , _mIsJoin   = False
-  , _mIsLeave  = False
+  , _mType     = C $ _cmType cm
   , _mPending  = False
   , _mDeleted  = False
   }
+
+postClientPostType :: Post -> PostType
+postClientPostType cp =
+    if | postIsEmote cp -> Emote
+       | postIsJoin  cp -> Join
+       | postIsLeave cp -> Leave
+       | otherwise      -> Normal
 
 postIsEmote :: Post -> Bool
 postIsEmote p =
@@ -123,9 +141,7 @@ toClientPost p = ClientPost
   { _cpText    = postMessage p
   , _cpUser    = postUserId p
   , _cpDate    = postCreateAt p
-  , _cpIsEmote = postIsEmote p
-  , _cpIsJoin  = postIsJoin p
-  , _cpIsLeave = postIsLeave p
+  , _cpType    = postClientPostType p
   , _cpPending = False
   , _cpDeleted = False
   }
