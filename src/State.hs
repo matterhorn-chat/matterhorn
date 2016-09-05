@@ -207,10 +207,13 @@ addMessage :: Post -> ChatState -> EventM Name ChatState
 addMessage new st = do
   now <- liftIO getCurrentTime
   let cp = toClientPost new
+      updateTime = if cp^.cpUser == getId (st^.csMe)
+                   then id
+                   else const now
   let chan = msgMap . ix (postChannelId new)
       rs = st & chan . ccContents . cdPosts . at (getId new) .~ Just cp
               & chan . ccContents . cdOrder %~ (MMId (getId new) :)
-              & chan . ccInfo . cdUpdated .~ now
+              & chan . ccInfo . cdUpdated %~ updateTime
   if postChannelId new == currentChannelId st
     then updateChannelScrollState rs >>= updateViewed
     else return rs
