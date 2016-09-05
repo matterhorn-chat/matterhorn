@@ -174,16 +174,13 @@ channelPageDown st = do
 currentChannelId :: ChatState -> ChannelId
 currentChannelId st = Z.focus (st ^. csFocus)
 
-channelExists :: ChatState -> String -> Bool
-channelExists st n = n `elem` st ^. csNames . cnChans
+channelByName :: ChatState -> String -> Maybe ChannelId
+channelByName st ('#':n) = st ^. csNames . cnToChanId . at n
+channelByName st ('@':n) = st ^. csNames . cnToChanId . at n
+channelByName st      n  = st ^. csNames . cnToChanId . at n
 
-userExists :: ChatState -> String -> Bool
-userExists st n = n `elem` st ^. csNames . cnUsers
-
-setFocus :: String -> ChatState -> EventM Name ChatState
-setFocus n st = setFocusWith st (Z.findRight (== n'))
-  where
-  Just n' = st ^. csNames . cnToChanId . at n
+setFocus :: ChannelId -> ChatState -> EventM Name ChatState
+setFocus cId st = setFocusWith st (Z.findRight (== cId))
 
 setFocusWith :: ChatState -> (Zipper ChannelId -> Zipper ChannelId) -> EventM Name ChatState
 setFocusWith st f = changeChannelCommon =<<

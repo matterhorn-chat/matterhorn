@@ -23,11 +23,11 @@ commandList =
           []          -> listThemes st >>= continue
           [themeName] -> setTheme st themeName >>= continue
           _           -> continue st
-  , Cmd "focus" "Focus on a named channel" $ \ [ch] st ->
-      if channelExists st ch || userExists st ch
-        then setFocus ch st >>= continue
-        else do
-          msg <- newClientMessage Error ("No channel or user named " ++ ch)
+  , Cmd "focus" "Focus on a named channel" $ \ [name] st ->
+      case channelByName st name of
+        Just cId -> setFocus cId st >>= continue
+        Nothing -> do
+          msg <- newClientMessage Error ("No channel or user named " ++ name)
           continue =<< addClientMessage msg st
   , Cmd "help" "Print the help dialogue" $ \ _ st -> do
         msg <- newClientMessage Informative (mkHelpText commandList)
