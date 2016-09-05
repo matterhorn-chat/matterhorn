@@ -248,13 +248,13 @@ clientMessageDigest cId ref st = clientMessageToMessage m
 getMessageListing :: ChannelId -> ChatState -> [Message]
 getMessageListing cId st =
   let is    = st ^. msgMap . ix cId . ccContents . cdOrder
-  in reverse
-    [ msg
-    | i <- is
-    , let msg = case i of
-                  CLId c -> clientMessageDigest cId c st
-                  MMId pId -> mmMessageDigest cId pId st
-    ]
+  in reverse [ getMessageDigest st cId i | i <- is ]
+
+getMessageDigest :: ChatState -> ChannelId -> PostRef -> Message
+getMessageDigest st cId ref =
+    case ref of
+      CLId c -> clientMessageDigest cId c st
+      MMId pId -> mmMessageDigest cId pId st
 
 getChannelName :: ChannelId -> ChatState -> String
 getChannelName cId st =
