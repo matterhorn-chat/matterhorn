@@ -38,7 +38,7 @@ mkHelpText :: [Cmd] -> String
 mkHelpText cs =
   let commandNameWidth = 4 + (maximum $ length <$> commandName <$> cs)
       padTo n s = s ++ replicate (n - length s) ' '
-  in unlines [ "  " ++ padTo commandNameWidth ('/':cmd) ++ desc
+  in unlines [ padTo commandNameWidth ('/':cmd) ++ desc
              | Cmd { commandName = cmd, commandDescr = desc } <- cs
              ]
 
