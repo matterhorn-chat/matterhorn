@@ -19,7 +19,6 @@ an appropriate place:
 
 ~~~
 $ git clone git@github.com:dagit/mattermost-api.git
-$ git clone git@github.com:jtdaugherty/text-markup.git
 $ git clone git@github.com:aisamanra/matterhorn.git
 ~~~
 
@@ -31,7 +30,6 @@ dependencies, and build the package:
 $ cd matterhorn
 $ cabal sandbox init
 $ cabal sandbox add-source ../mattermost-api
-$ cabal sandbox add-source ../text-markup
 $ cabal install
 $ cabal build
 ~~~
