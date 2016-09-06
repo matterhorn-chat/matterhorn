@@ -42,6 +42,9 @@ fromPosts p = ChannelContents
   , _cdCMsgs   = HM.empty
   }
 
+numScrollbackPosts :: Int
+numScrollbackPosts = 60
+
 newState :: Token
          -> ConnectionData
          -> Zipper ChannelId
@@ -362,7 +365,7 @@ setupState config requestChan = do
                      , _ccInfo     = cInfo
                      }
     when (c^.channelNameL /= "town-square") $ Chan.writeChan requestChan $ do
-      posts <- mmGetPosts cd token myTeamId (getId c) 0 30
+      posts <- mmGetPosts cd token myTeamId (getId c) 0 numScrollbackPosts
       return $ \ st -> do
           let st' = st & msgMap.ix(getId c).ccContents .~ fromPosts posts
                        & msgMap.ix(getId c).ccInfo.cdLoaded .~ True
@@ -420,7 +423,7 @@ setupState config requestChan = do
              & msgMap .~ msgs
              & csNames .~ chanNames
 
-  townSquarePosts <- mmGetPosts cd token myTeamId townSqId 0 30
+  townSquarePosts <- mmGetPosts cd token myTeamId townSqId 0 numScrollbackPosts
   let st' = st & msgMap.ix(townSqId).ccContents .~ fromPosts townSquarePosts
                & msgMap.ix(townSqId).ccInfo.cdLoaded .~ True
 
