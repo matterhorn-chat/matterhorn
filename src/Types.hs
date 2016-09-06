@@ -180,7 +180,7 @@ data ChannelInfo = ChannelInfo
   { _cdViewed  :: UTCTime
   , _cdUpdated :: UTCTime
   , _cdName    :: String
-  , _cdPurpose :: String
+  , _cdHeader  :: String
   , _cdType    :: Type
   , _cdLoaded  :: Bool
   }

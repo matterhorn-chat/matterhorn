@@ -1,8 +1,13 @@
 module Command where
 
 import Brick (EventM, Next, continue, halt)
+import Control.Monad (void, when)
+import Control.Monad.IO.Class (liftIO)
 
 import Lens.Micro.Platform
+
+import Network.Mattermost
+import Network.Mattermost.Lenses
 
 import State
 import Types
@@ -25,6 +30,11 @@ commandList =
           []          -> listThemes st >>= continue
           [themeName] -> setTheme st themeName >>= continue
           _           -> continue st
+  , Cmd "topic" "Set the current channel's topic" $ \ args st -> do
+      when (not $ null args) $ do
+          let p = unwords args
+          liftIO $ setChannelTopic st p
+      continue st
   , Cmd "focus" "Focus on a named channel" $ \ [name] st ->
       case channelByName st name of
         Just cId -> setFocus cId st >>= continue
@@ -44,3 +54,12 @@ dispatchCommand cmd st =
            | otherwise ->
              execMMCommand cmd st >>= continue
     _ -> continue st
+
+setChannelTopic :: ChatState -> String -> IO ()
+setChannelTopic st msg = do
+    let chanId = currentChannelId st
+        theTeamId = st^.csMyTeam.teamIdL
+    doAsyncWith st $ do
+        void $ mmSetChannelHeader (st^.csConn) (st^.csTok) theTeamId chanId msg
+        return $ \st' -> do
+            return $ st' & msgMap.at chanId.each.ccInfo.cdHeader .~ msg

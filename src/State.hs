@@ -79,8 +79,11 @@ runAsync st thunk =
   Chan.writeChan (st^.csRequestQueue) thunk
 
 doAsync :: ChatState -> IO () -> IO ()
-doAsync st thunk =
-  Chan.writeChan (st^.csRequestQueue) (thunk >> return return)
+doAsync st thunk = doAsyncWith st (thunk >> return return)
+
+doAsyncWith :: ChatState -> IO (ChatState -> EventM Name ChatState) -> IO ()
+doAsyncWith st thunk =
+  Chan.writeChan (st^.csRequestQueue) thunk
 
 hasUnread :: ChatState -> ChannelId -> Bool
 hasUnread st cId = maybe False id $ do
@@ -350,7 +353,7 @@ setupState config requestChan = do
                      { _cdViewed  = viewed
                      , _cdUpdated = updated
                      , _cdName    = c^.channelNameL
-                     , _cdPurpose = c^.channelPurposeL
+                     , _cdHeader  = c^.channelHeaderL
                      , _cdType    = c^.channelTypeL
                      , _cdLoaded  = False
                      }

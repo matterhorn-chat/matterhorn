@@ -138,7 +138,7 @@ renderCurrentChannelDisplay st = header <=> messages
     where
     header = withDefAttr channelHeaderAttr $
              padRight Max $
-             case null purposeStr of
+             case null topicStr of
                  True -> case chnType of
                    Type "D" ->
                      case findUserByDMChannelName (st^.usrMap)
@@ -147,7 +147,7 @@ renderCurrentChannelDisplay st = header <=> messages
                        Nothing -> str $ mkChannelName chnName
                        Just u  -> colorUsername $ mkDMChannelName (u^.userProfileUsernameL)
                    _        -> str $ mkChannelName chnName
-                 False -> wrappedText str $ mkChannelName chnName <> " - " <> purposeStr
+                 False -> wrappedText str $ mkChannelName chnName <> " - " <> topicStr
     messages = if chan^.ccInfo.cdLoaded
                then viewport (ChannelMessages cId) Vertical chatText <+> str " "
                else center $ str "[loading channel scrollback]"
@@ -159,7 +159,7 @@ renderCurrentChannelDisplay st = header <=> messages
     Just chan = getChannel cId st
     chnName = chan^.ccInfo.cdName
     chnType = chan^.ccInfo.cdType
-    purposeStr = chan^.ccInfo.cdPurpose
+    topicStr = chan^.ccInfo.cdHeader
 
 dateTransitionFormat :: String
 dateTransitionFormat = "%Y-%m-%d"
