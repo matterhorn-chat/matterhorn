@@ -54,7 +54,7 @@ main = do
 app :: App ChatState Event Name
 app = App
   { appDraw         = chatDraw
-  , appChooseCursor = \ _ (l:_) -> Just l
+  , appChooseCursor = showFirstCursor
   , appHandleEvent  = onEvent
   , appStartEvent   = updateChannelScrollState
                       -- ^ Critical to ensure that we scroll to the
