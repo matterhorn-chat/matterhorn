@@ -3,7 +3,7 @@
 
 module Markdown (renderMessage) where
 
-import           Brick ( (<=>), (<+>), Widget )
+import           Brick ( (<+>), Widget )
 import qualified Brick as B
 import           Cheapskate.Types ( Block
                                   , Blocks
@@ -13,6 +13,7 @@ import           Cheapskate.Types ( Block
 import qualified Cheapskate as C
 import           Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Foldable as F
 import           Data.Sequence ( Seq
                                , ViewL(..)
                                , ViewR(..)
@@ -39,10 +40,10 @@ renderMessage bs u mTy uPat =
     Nothing -> vBox (fmap (toWidget uPat) bs)
 
 vBox :: Foldable f => f (Widget a) -> Widget a
-vBox = foldr (<=>) B.emptyWidget
+vBox = B.vBox . F.toList
 
 hBox :: Foldable f => f (Widget a) -> Widget a
-hBox = foldr (<+>) B.emptyWidget
+hBox = B.hBox . F.toList
 
 --
 
