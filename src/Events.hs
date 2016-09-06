@@ -8,7 +8,9 @@ import           Brick.Widgets.Edit ( getEditContents
                                     )
 import           Control.Monad.IO.Class (liftIO)
 import qualified Data.Set as Set
-import           Data.Text.Zipper ( stringZipper
+import           Data.Text.Zipper ( TextZipper
+                                  , getText
+                                  , stringZipper
                                   , clearZipper
                                   , gotoEOL
                                   , insertMany
@@ -149,23 +151,24 @@ channelHistoryBackward st =
                   st & cmdLine.editContentsL .~ (gotoEOL $ stringZipper [entry] (Just 1))
                      & csInputHistoryPosition.at cId .~ (Just $ Just newI)
 
+-- XXX: killWordBackward, and delete could probably all
+-- be moved to the text zipper package (after some generalization and cleanup)
+-- for example, we should look up the standard unix word break characters
+-- and use those in killWordBackward.
+killWordBackward :: TextZipper String -> TextZipper String
+killWordBackward z =
+    let n = length
+          $ takeWhile (/= ' ')
+          $ reverse line
+        delete n' z' | n' <= 0 = z'
+        delete n' z' = delete (n'-1) (deletePrevChar z')
+        (line:_) = getText z
+    in delete n z
+
 tabComplete :: Completion.Direction
             -> ChatState -> EventM Name (Next ChatState)
 tabComplete dir st = do
-  -- XXX: killWordBackward, and delete could probably all
-  -- be moved to the text zipper package (after some generalization and cleanup)
-  -- for example, we should look up the standard unix word break characters
-  -- and use those in killWordBackward.
-  let killWordBackward z =
-        let n = length
-              $ takeWhile (/= ' ')
-              $ reverse
-              $ line
-        in delete n z
-      delete n z | n <= 0 = z
-      delete n z = delete (n-1) (deletePrevChar z)
-
-      priorities  = [] :: [String]-- XXX: add recent completions to this
+  let priorities  = [] :: [String]-- XXX: add recent completions to this
       completions = Set.fromList (st^.csNames.cnUsers ++
                                   st^.csNames.cnChans ++
                                   map ("@" ++) (st^.csNames.cnUsers) ++
