@@ -22,8 +22,8 @@ emailPattern = makeRegex ("[[:alnum:]\\+]+@([[:alnum:]]+\\.)+([[:alnum:]]+)"::St
 urlPattern :: Regex
 urlPattern = makeRegex ("https?://([[:alnum:]-]+\\.)*([[:alnum:]-]+)(:[[:digit:]]+)?(/[^[:space:]]*)"::String)
 
-markdownPattern :: Regex
-markdownPattern = makeRegex ("`[^`]+`"::String)
+codePattern :: Regex
+codePattern = makeRegex ("`[^`]+`"::String)
 
 emojiPattern :: Regex
 emojiPattern = makeRegex (":[^[:space:]:]+:"::String)
@@ -39,7 +39,7 @@ doMessageMarkup :: Regex -> T.Text -> Widget a
 doMessageMarkup usernamePattern msg =
     let emailMatches    = findRegex msg emailPattern
         urlMatches      = findRegex msg urlPattern
-        markdownMatches = findRegex msg markdownPattern
+        codeMatches     = findRegex msg codePattern
         usernameMatches = findRegex msg usernamePattern
         emojiMatches    = findRegex msg emojiPattern
         substr pos len s = T.take len $ T.drop pos s
@@ -50,7 +50,7 @@ doMessageMarkup usernamePattern msg =
         applyMatches matches tag mkup = foldr (\(pos,len) -> markRegion pos len tag) mkup matches
 
         pairs = fromMarkup $ applyMatches emailMatches    emailAttr    $
-                             applyMatches markdownMatches markdownAttr $
+                             applyMatches codeMatches     codeAttr     $
                              applyMatches urlMatches      urlAttr      $
                              applyMatches emojiMatches    emojiAttr    $
                              applyUsernameMatches                      $

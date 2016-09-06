@@ -62,7 +62,7 @@ instance ToWidget Block where
     B.padLeft (B.Pad 4) (vBox $ fmap (toWidget uPat) is)
   toWidget uPat (C.List _ l bs) = toList l bs uPat
   toWidget _ (C.CodeBlock _ tx) =
-    B.withDefAttr markdownAttr $
+    B.withDefAttr codeAttr $
       B.vBox [ B.str " | " <+> B.txt ln | ln <- T.lines tx ]
   toWidget _ (C.HtmlBlock txt) = B.txt txt
   toWidget _ (C.HRule) = B.vLimit 1 (B.fill '*')
@@ -174,7 +174,7 @@ instance ToWidget Fragment where
       TSpace       -> B.str " "
       TSoftBreak   -> B.emptyWidget
       TLineBreak   -> B.emptyWidget
-      TCode txt    -> B.withDefAttr markdownAttr (B.txt txt)
+      TCode txt    -> B.withDefAttr codeAttr (B.txt txt)
       TLink txt    -> B.txt txt
       TRawHtml txt -> B.txt txt
     where style = case fStyle fragment of

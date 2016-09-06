@@ -10,7 +10,7 @@ module Themes
   , currentChannelNameAttr
   , unreadChannelAttr
   , urlAttr
-  , markdownAttr
+  , codeAttr
   , emailAttr
   , emojiAttr
   , clientMessageAttr
@@ -60,8 +60,8 @@ dateTransitionAttr = "dateTransition"
 urlAttr :: AttrName
 urlAttr = "url"
 
-markdownAttr :: AttrName
-markdownAttr = "markdown"
+codeAttr :: AttrName
+codeAttr = "code"
 
 emailAttr :: AttrName
 emailAttr = "email"
@@ -99,7 +99,7 @@ lightColorTheme = attrMap (black `on` white) $
   , (unreadChannelAttr,       black `on` cyan   `withStyle` bold)
   , (urlAttr,                 fg brightYellow)
   , (emailAttr,               fg yellow)
-  , (markdownAttr,            fg magenta)
+  , (codeAttr,                fg magenta)
   , (emojiAttr,               fg yellow)
   , (clientMessageAttr,       fg black)
   , (clientEmphAttr,          fg black `withStyle` bold)
@@ -119,7 +119,7 @@ darkColorTheme = attrMap (bg black) $
   , (unreadChannelAttr,       black `on` cyan   `withStyle` bold)
   , (urlAttr,                 fg yellow)
   , (emailAttr,               fg yellow)
-  , (markdownAttr,            fg magenta)
+  , (codeAttr,                fg magenta)
   , (emojiAttr,               fg yellow)
   , (clientMessageAttr,       fg white)
   , (clientEmphAttr,          fg white `withStyle` bold)
