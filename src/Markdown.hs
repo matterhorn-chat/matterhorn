@@ -1,7 +1,7 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE ParallelListComp #-}
 
-module Markdown (renderMessage, getBlocks) where
+module Markdown (renderMessage) where
 
 import           Brick ( (<=>), (<+>), Widget )
 import qualified Brick as B
@@ -27,18 +27,16 @@ import           Text.Regex.TDFA.String (Regex)
 
 import           Highlighting
 import           Themes
+import           Types (MessageType(..), PostType(..))
 
-renderMessage :: Blocks -> Maybe String -> Bool -> Regex -> Widget a
-renderMessage bs u isEmote uPat =
+renderMessage :: Blocks -> Maybe String -> MessageType -> Regex -> Widget a
+renderMessage bs u mTy uPat =
   case u of
     Just un
-      | isEmote   -> B.str "*" <+> colorUsername un
+      | mTy == CP Emote -> B.str "*" <+> colorUsername un
                        <+> B.str " " <+> vBox (fmap (toWidget uPat) bs)
       | otherwise -> colorUsername un <+> B.str ": " <+> vBox (fmap (toWidget uPat) bs)
     Nothing -> vBox (fmap (toWidget uPat) bs)
-
-getBlocks :: String -> Blocks
-getBlocks s = bs where C.Doc _ bs = C.markdown C.def (T.pack s)
 
 vBox :: Foldable f => f (Widget a) -> Widget a
 vBox = foldr (<=>) B.emptyWidget

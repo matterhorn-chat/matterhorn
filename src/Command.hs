@@ -23,28 +23,22 @@ commandList =
           []          -> listThemes st >>= continue
           [themeName] -> setTheme st themeName >>= continue
           _           -> continue st
-  , Cmd "chan" "Focus on a named channel" $ \ [ch] st ->
-      if channelExists st ch
-        then setFocus ch st >>= continue
-        else do
-          msg <- newClientMessage ("No channel named #" ++ ch)
-          continue (addClientMessage msg st)
-  , Cmd "dm" "Focus on a direct message channel" $ \ [dm] st ->
-      if userExists st dm
-        then setDMFocus dm st >>= continue
-        else do
-          msg <- newClientMessage ("No user named @" ++ dm)
-          continue (addClientMessage msg st)
+  , Cmd "focus" "Focus on a named channel" $ \ [name] st ->
+      case channelByName st name of
+        Just cId -> setFocus cId st >>= continue
+        Nothing -> do
+          msg <- newClientMessage Error ("No channel or user named " ++ name)
+          continue =<< addClientMessage msg st
   , Cmd "help" "Print the help dialogue" $ \ _ st -> do
-        msg <- newClientMessage (mkHelpText commandList)
-        continue (addClientMessage msg st)
+        msg <- newClientMessage Informative (mkHelpText commandList)
+        continue =<< addClientMessage msg st
   ]
 
 mkHelpText :: [Cmd] -> String
 mkHelpText cs =
   let commandNameWidth = 4 + (maximum $ length <$> commandName <$> cs)
       padTo n s = s ++ replicate (n - length s) ' '
-  in unlines [ "  " ++ padTo commandNameWidth ('/':cmd) ++ desc
+  in unlines [ padTo commandNameWidth ('/':cmd) ++ desc
              | Cmd { commandName = cmd, commandDescr = desc } <- cs
              ]
 

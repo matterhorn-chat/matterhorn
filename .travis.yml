@@ -36,10 +36,6 @@ install:
    fi
  - travis_retry cabal update -v
  - sed -i 's/^jobs:/-- jobs:/' ${HOME}/.cabal/config
- - git clone https://github.com/jtdaugherty/text-markup
- - cd text-markup
- - cabal install
- - cd ..
  - git clone https://github.com/dagit/mattermost-api
  - cd mattermost-api
  - cabal install

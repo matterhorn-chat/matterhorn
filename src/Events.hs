@@ -5,17 +5,17 @@ import           Brick.Widgets.Edit ( getEditContents
                                     , handleEditorEvent
                                     , applyEdit
                                     , editContentsL
-                                    , editContents
                                     )
 import           Control.Monad.IO.Class (liftIO)
 import qualified Data.Set as Set
 import           Data.Text.Zipper ( stringZipper
                                   , clearZipper
                                   , gotoEOL
-                                  , insertChar
+                                  , insertMany
                                   , deletePrevChar )
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform
+import qualified Codec.Binary.UTF8.Generic as UTF8
 
 import           Network.Mattermost
 import           Network.Mattermost.Lenses
@@ -48,6 +48,10 @@ onEvent st (VtyEvent (Vty.EvKey Vty.KUp [])) =
   continue $ channelHistoryBackward st
 onEvent st (VtyEvent (Vty.EvKey Vty.KDown [])) =
   continue $ channelHistoryForward st
+onEvent st (VtyEvent (Vty.EvKey Vty.KPageUp [])) =
+  continue =<< channelPageUp st
+onEvent st (VtyEvent (Vty.EvKey Vty.KPageDown [])) =
+  continue =<< channelPageDown st
 onEvent st (VtyEvent (Vty.EvKey (Vty.KChar 'n') [Vty.MCtrl])) =
   continue =<< updateChannelScrollState =<< nextChannel st
 onEvent st (VtyEvent (Vty.EvKey (Vty.KChar 'p') [Vty.MCtrl])) =
@@ -55,6 +59,13 @@ onEvent st (VtyEvent (Vty.EvKey (Vty.KChar 'p') [Vty.MCtrl])) =
 onEvent st (VtyEvent (Vty.EvKey Vty.KEnter [])) = do
   let st' = st & csCurrentCompletion .~ Nothing
   handleInputSubmission st'
+onEvent st (VtyEvent (Vty.EvPaste bytes)) = do
+  -- If you paste a multi-line thing, it'll only insert up to the first
+  -- line ending because the zipper will respect the line limit when
+  -- inserting the paste. Once we add support for multi-line editing,
+  -- this will Just Work once the editor's line limit is set to Nothing.
+  let pasteStr = UTF8.toString bytes
+  continue $ st & cmdLine %~ applyEdit (insertMany pasteStr)
 onEvent st (VtyEvent e) = do
   let st' = case e of
             -- XXX: not 100% certain we need to special case these
@@ -67,7 +78,7 @@ onEvent st (VtyEvent e) = do
 onEvent st (WSEvent we) =
   handleWSEvent st we
 onEvent st (RespEvent f) =
-  continue (f st)
+  continue =<< f st
 
 channelHistoryForward :: ChatState -> ChatState
 channelHistoryForward st =
@@ -107,12 +118,11 @@ channelHistoryBackward st =
 tabComplete :: Completion.Direction
             -> ChatState -> EventM Name (Next ChatState)
 tabComplete dir st = do
-  -- XXX: insert, killWordBackward, and delete could probably all
+  -- XXX: killWordBackward, and delete could probably all
   -- be moved to the text zipper package (after some generalization and cleanup)
   -- for example, we should look up the standard unix word break characters
   -- and use those in killWordBackward.
-  let insert  = foldl (flip insertChar)
-      killWordBackward z =
+  let killWordBackward z =
         let n = length
               $ takeWhile (/= ' ')
               $ reverse
@@ -135,18 +145,12 @@ tabComplete dir st = do
                     _       -> curComp
 
       mb_word     = wordComplete dir priorities completions line curComp
+      st' = st & csCurrentCompletion .~ nextComp
+      edit = case mb_word of
+          Nothing -> id
+          Just w -> insertMany w . killWordBackward
 
-      st'         = st & csCurrentCompletion .~ nextComp
-      st''        = case mb_word of
-                      Nothing -> st'
-                      Just w  ->
-                        -- JED: my lens-fu is not so great, but I know this could be
-                        -- more succinct.
-                        let contents  = editContents (st' ^. cmdLine)
-                            backup    = st' & cmdLine.editContentsL .~ killWordBackward contents
-                            contents' = editContents (backup ^. cmdLine)
-                        in backup & cmdLine.editContentsL .~ insert contents' w
-  continue st''
+  continue $ st' & cmdLine %~ (applyEdit edit)
 
 handleInputSubmission :: ChatState -> EventM Name (Next ChatState)
 handleInputSubmission st = do

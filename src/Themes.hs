@@ -17,6 +17,8 @@ module Themes
   , clientHeaderAttr
   , clientEmphAttr
   , clientStrongAttr
+  , dateTransitionAttr
+  , errorMessageAttr
 
   -- * Username formatting
   , colorUsername
@@ -52,6 +54,9 @@ currentChannelNameAttr = "currentChannelName"
 unreadChannelAttr :: AttrName
 unreadChannelAttr = "unreadChannel"
 
+dateTransitionAttr :: AttrName
+dateTransitionAttr = "dateTransition"
+
 urlAttr :: AttrName
 urlAttr = "url"
 
@@ -76,6 +81,9 @@ clientEmphAttr = "clientEmph"
 clientStrongAttr :: AttrName
 clientStrongAttr = "clientStrong"
 
+errorMessageAttr :: AttrName
+errorMessageAttr = "errorMessage"
+
 themes :: [(String, AttrMap)]
 themes =
     [ (darkColorThemeName,  darkColorTheme)
@@ -97,6 +105,8 @@ lightColorTheme = attrMap (black `on` white) $
   , (clientEmphAttr,          fg cyan)
   , (clientStrongAttr,        fg cyan `withStyle` bold)
   , (clientHeaderAttr,        fg red `withStyle` bold)
+  , (dateTransitionAttr,      fg green)
+  , (errorMessageAttr,        fg red)
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 
@@ -115,6 +125,8 @@ darkColorTheme = attrMap (bg black) $
   , (clientEmphAttr,          fg cyan)
   , (clientStrongAttr,        fg cyan `withStyle` bold)
   , (clientHeaderAttr,        fg red `withStyle` bold)
+  , (dateTransitionAttr,      fg green)
+  , (errorMessageAttr,        fg red)
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 

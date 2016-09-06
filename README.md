@@ -19,7 +19,6 @@ an appropriate place:
 
 ~~~
 $ git clone git@github.com:dagit/mattermost-api.git
-$ git clone git@github.com:jtdaugherty/text-markup.git
 $ git clone git@github.com:aisamanra/matterhorn.git
 ~~~
 
@@ -31,7 +30,6 @@ dependencies, and build the package:
 $ cd matterhorn
 $ cabal sandbox init
 $ cabal sandbox add-source ../mattermost-api
-$ cabal sandbox add-source ../text-markup
 $ cabal install
 $ cabal build
 ~~~
@@ -50,14 +48,14 @@ for a globally-accessible `/etc/matterhorn/config.ini`.
 You can often use built-in keybindings or `/cmd`-style commands:
 
 ~~~
-Command		Keybinding		Effect
--------		----------		-------------------------------
-/right		Ctrl-n			Go to the next chat channel
-/left		Ctrl-p			Go to the previous chat channel
-/quit		Esc				Quit the editor
-/chan [c]					Go to channel c
-/dm [u]						Go to direct message channel with user u
-/help						Show a help dialogue
-/theme                      List available built-in color themes
-/theme [n]                  Change to built-in theme n
+Command         Keybinding              Effect
+-----------------------------------------------------------------------
+/right          Ctrl-n                  Go to the next chat channel
+/left           Ctrl-p                  Go to the previous chat channel
+/quit           Esc                     Quit the editor
+/focus chan                             Go to normal (or user) channel
+                                        named 'chan'
+/help                                   Show a help dialogue
+/theme [name]                           Change to built-in theme named 'name'
+                                        (or list themes)
 ~~~

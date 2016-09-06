@@ -8,13 +8,13 @@ import           Brick.Widgets.Border
 import           Brick.Widgets.Border.Style
 import           Brick.Widgets.Center (center)
 import           Brick.Widgets.Edit (renderEditor)
-import           Data.Time.Clock (UTCTime)
+import           Data.Time.Clock (UTCTime, utctDay)
 import           Data.Time.Format ( formatTime
                                   , defaultTimeLocale )
 import           Data.Time.LocalTime ( TimeZone, utcToLocalTime )
 import qualified Data.HashMap.Strict as HM
 import           Data.HashMap.Strict ( HashMap )
-import           Data.List (sortBy)
+import           Data.List (sortBy, foldl')
 import           Data.Ord (comparing)
 import           Data.Maybe ( listToMaybe, maybeToList )
 import           Data.Monoid ((<>))
@@ -41,13 +41,10 @@ renderTime fmt tz t =
     let timeStr = formatTime defaultTimeLocale fmt (utcToLocalTime tz t)
     in str "[" <+> withDefAttr timeAttr (str timeStr) <+> str "]"
 
-renderChatMessage :: Regex -> Maybe String -> TimeZone -> Int -> (Int, Message) -> Widget Name
-renderChatMessage uPattern mFormat tz lastIdx (i, msg) =
-    let f = if i == lastIdx
-            then visible
-            else id
-        t = msg^.mDate
-        m = renderMessage (msg^.mText) (msg^.mUserName) (msg^.mIsEmote) uPattern
+renderChatMessage :: Regex -> Maybe String -> TimeZone -> Message -> Widget Name
+renderChatMessage uPattern mFormat tz msg =
+    let t = msg^.mDate
+        m = renderMessage (msg^.mText) (msg^.mUserName) (msg^.mType) uPattern
         msgAtch = case msg^.mAttachments of
           [] -> emptyWidget
           _  -> withDefAttr clientMessageAttr
@@ -55,15 +52,23 @@ renderChatMessage uPattern mFormat tz lastIdx (i, msg) =
         msgTxt =
           case msg^.mUserName of
             Just _
-              | msg^.mIsJoin || msg^.mIsLeave || msg^.mDeleted ->
+              | msg^.mType == CP Join || msg^.mType == CP Leave || msg^.mDeleted ->
                   withDefAttr clientMessageAttr m
               | otherwise -> m
-            Nothing -> withDefAttr clientMessageAttr m
+            Nothing ->
+                case msg^.mType of
+                    C DateTransition -> withDefAttr dateTransitionAttr (hBorderWithLabel m)
+                    C Error -> withDefAttr errorMessageAttr m
+                    _ -> withDefAttr clientMessageAttr m
         fullMsg = msgTxt <=> msgAtch
-    in f $ case mFormat of
-        Just ""     -> fullMsg
-        Just format -> renderTime format tz t            <+> str " " <+> fullMsg
-        Nothing     -> renderTime defaultDateFormat tz t <+> str " " <+> fullMsg
+        maybeRenderTime = case mFormat of
+            Just ""     -> id
+            Just format -> \w -> renderTime format tz t            <+> str " " <+> w
+            Nothing     -> \w -> renderTime defaultDateFormat tz t <+> str " " <+> w
+        maybeRenderTimeWith f = case msg^.mType of
+            C DateTransition -> id
+            _ -> f
+    in maybeRenderTimeWith maybeRenderTime fullMsg
 
 mkChannelName :: String -> String
 mkChannelName = ('#':)
@@ -144,14 +149,33 @@ renderCurrentChannelDisplay st = header <=> messages
                then viewport (ChannelMessages cId) Vertical chatText <+> str " "
                else center $ str "[loading channel scrollback]"
     uPattern = mkUsernamePattern (HM.elems (st^.usrMap))
-    chatText = vBox $ renderChatMessage uPattern (st ^. timeFormat) (st ^. timeZone) (length channelMessages - 1) <$>
-                      zip [0..] channelMessages
-    channelMessages = getMessageListing cId st
+    chatText = vBox $ renderChatMessage uPattern (st ^. timeFormat) (st ^. timeZone) <$>
+                      channelMessages
+    channelMessages = insertDateBoundaries $ getMessageListing cId st
     cId = currentChannelId st
     Just chan = getChannel cId st
     chnName = chan^.ccInfo.cdName
     chnType = chan^.ccInfo.cdType
     purposeStr = chan^.ccInfo.cdPurpose
+
+dateTransitionFormat :: String
+dateTransitionFormat = "%Y-%m-%d"
+
+insertDateBoundaries :: [Message] -> [Message]
+insertDateBoundaries ms = fst $ foldl' nextMsg initState ms
+    where
+        initState :: ([Message], Maybe Message)
+        initState = ([], Nothing)
+
+        dateMsg d = Message (getBlocks (formatTime defaultTimeLocale dateTransitionFormat d))
+                            Nothing d (C DateTransition) False False []
+
+        nextMsg :: ([Message], Maybe Message) -> Message -> ([Message], Maybe Message)
+        nextMsg (rest, Nothing) msg = (rest <> [msg], Just msg)
+        nextMsg (rest, Just prevMsg) msg =
+            if utctDay (msg^.mDate) /= utctDay (prevMsg^.mDate)
+            then (rest <> [dateMsg (msg^.mDate), msg], Just msg)
+            else (rest <> [msg], Just msg)
 
 findUserByDMChannelName :: HashMap UserId UserProfile
                         -> String -- ^ the dm channel name

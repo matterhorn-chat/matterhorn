@@ -1,7 +1,9 @@
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE MultiWayIf #-}
 
 module Types where
 
+import           Brick (EventM)
 import           Brick.AttrMap (AttrMap)
 import           Brick.Widgets.Edit (Editor)
 import           Cheapskate (Blocks)
@@ -15,8 +17,9 @@ import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform (makeLenses)
 import           Network.Mattermost
 import           Network.Mattermost.WebSocket.Types
+import qualified Cheapskate as C
+import qualified Data.Text as T
 
-import           Markdown
 import           Zipper (Zipper)
 
 import           InputHistory
@@ -45,22 +48,34 @@ data PostRef
   | CLId Int
     deriving (Eq, Show)
 
+data ClientMessageType =
+    Informative
+    | Error
+    | DateTransition
+    deriving (Eq, Show)
+
 -- A ClientMessage is a message given to us by our client, like help text
 -- or an error message.
 data ClientMessage = ClientMessage
   { _cmText :: String
   , _cmDate :: UTCTime
+  , _cmType :: ClientMessageType
   } deriving (Eq, Show)
 
 makeLenses ''ClientMessage
+
+data PostType =
+    NormalPost
+    | Emote
+    | Join
+    | Leave
+    deriving (Eq, Show)
 
 data ClientPost = ClientPost
   { _cpText        :: String
   , _cpUser        :: UserId
   , _cpDate        :: UTCTime
-  , _cpIsEmote     :: Bool
-  , _cpIsJoin      :: Bool
-  , _cpIsLeave     :: Bool
+  , _cpType        :: PostType
   , _cpPending     :: Bool
   , _cpDeleted     :: Bool
   , _cpAttachments :: [String]
@@ -68,29 +83,32 @@ data ClientPost = ClientPost
 
 makeLenses ''ClientPost
 
+data MessageType = C ClientMessageType
+                 | CP PostType
+                 deriving (Eq, Show)
+
 -- This represents any message we might want to render.
 data Message = Message
   { _mText        :: Blocks
   , _mUserName    :: Maybe String
   , _mDate        :: UTCTime
-  , _mIsEmote     :: Bool
-  , _mIsJoin      :: Bool
-  , _mIsLeave     :: Bool
+  , _mType        :: MessageType
   , _mPending     :: Bool
   , _mDeleted     :: Bool
   , _mAttachments :: [String]
-  }
+  } deriving (Show)
 
 makeLenses ''Message
+
+getBlocks :: String -> Blocks
+getBlocks s = bs where C.Doc _ bs = C.markdown C.def (T.pack s)
 
 clientPostToMessage :: ClientPost -> String -> Message
 clientPostToMessage cp user = Message
   { _mText     = getBlocks (_cpText cp)
   , _mUserName = Just user
   , _mDate     = _cpDate cp
-  , _mIsEmote  = _cpIsEmote cp
-  , _mIsJoin   = _cpIsJoin cp
-  , _mIsLeave  = _cpIsLeave cp
+  , _mType     = CP $ _cpType cp
   , _mPending  = _cpPending cp
   , _mDeleted  = _cpDeleted cp
   , _mAttachments = _cpAttachments cp
@@ -101,13 +119,18 @@ clientMessageToMessage cm = Message
   { _mText        = getBlocks (_cmText cm)
   , _mUserName    = Nothing
   , _mDate        = _cmDate cm
-  , _mIsEmote     = False
-  , _mIsJoin      = False
-  , _mIsLeave     = False
+  , _mType        = C $ _cmType cm
   , _mPending     = False
   , _mDeleted     = False
   , _mAttachments = []
   }
+
+postClientPostType :: Post -> PostType
+postClientPostType cp =
+    if | postIsEmote cp -> Emote
+       | postIsJoin  cp -> Join
+       | postIsLeave cp -> Leave
+       | otherwise      -> NormalPost
 
 postIsEmote :: Post -> Bool
 postIsEmote p =
@@ -128,9 +151,7 @@ toClientPost p = ClientPost
   { _cpText        = postMessage p
   , _cpUser        = postUserId p
   , _cpDate        = postCreateAt p
-  , _cpIsEmote     = postIsEmote p
-  , _cpIsJoin      = postIsJoin p
-  , _cpIsLeave     = postIsLeave p
+  , _cpType        = postClientPostType p
   , _cpPending     = False
   , _cpDeleted     = False
   , _cpAttachments = postFilenames p
@@ -172,7 +193,7 @@ data ClientChannel = ClientChannel
 
 makeLenses ''ClientChannel
 
-type RequestChan = Chan (IO (ChatState -> ChatState))
+type RequestChan = Chan (IO (ChatState -> EventM Name ChatState))
 
 data ChatState = ChatState
   { _csTok      :: Token
@@ -188,6 +209,7 @@ data ChatState = ChatState
   , _timeFormat :: Maybe String
   , _csInputHistory :: InputHistory
   , _csInputHistoryPosition :: HM.HashMap ChannelId (Maybe Int)
+  , _csLastChannelInput :: HM.HashMap ChannelId String
   , _csCurrentCompletion :: Maybe String
   , _csRequestQueue :: RequestChan
   , _csTheme    :: AttrMap
@@ -196,7 +218,9 @@ data ChatState = ChatState
 makeLenses ''ChatState
 
 data Event
-  = VtyEvent Vty.Event -- ^ For events that arise from VTY
-  | WSEvent WebsocketEvent -- ^ For events that arise from the websocket
-  | RespEvent (ChatState -> ChatState) -- ^ For the result values of async
-                                       -- IO operations
+  = VtyEvent Vty.Event
+    -- ^ For events that arise from VTY
+  | WSEvent WebsocketEvent
+    -- ^ For events that arise from the websocket
+  | RespEvent (ChatState -> EventM Name ChatState)
+    -- ^ For the result values of async IO operations

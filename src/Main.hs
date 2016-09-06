@@ -41,8 +41,14 @@ main = do
 
   st <- setupState config requestChan
 
+  let mkVty = do
+        vty <- Vty.mkVty def
+        let output = Vty.outputIface vty
+        Vty.setMode output Vty.BracketedPaste True
+        return vty
+
   mmWithWebSocket (st^.csConn) (st^.csTok) shunt $ \_ -> do
-    finalSt <- customMain (Vty.mkVty def) eventChan app st
+    finalSt <- customMain mkVty eventChan app st
     writeHistory (finalSt^.csInputHistory)
 
 app :: App ChatState Event Name
@@ -50,7 +56,9 @@ app = App
   { appDraw         = chatDraw
   , appChooseCursor = \ _ (l:_) -> Just l
   , appHandleEvent  = onEvent
-  , appStartEvent   = \ s -> return s
+  , appStartEvent   = updateChannelScrollState
+                      -- ^ Critical to ensure that we scroll to the
+                      -- bottom of the initially-viewed channel.
   , appAttrMap      = (^.csTheme)
   , appLiftVtyEvent = VtyEvent
   }
