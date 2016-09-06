@@ -94,9 +94,11 @@ renderChannelList st = hLimit channelListWidth $ vBox
     header label = hBorderWithLabel $
                    withDefAttr channelListHeaderAttr $
                    str label
-    channelNames = [ decorate $ padRight Max $ str (mkChannelName n)
+    channelNames = [ decorate $ str (mkChannelName n)
                    | n <- (st ^. csNames . cnChans)
-                   , let decorate = if | current   -> visible . withDefAttr currentChannelNameAttr
+                   , let decorate = if | current   -> visible .
+                                                      withDefAttr currentChannelNameAttr .
+                                                      padRight Max
                                        | unread    -> withDefAttr unreadChannelAttr
                                        | otherwise -> id
                          current = n == currentChannelName
@@ -108,9 +110,11 @@ renderChannelList st = hLimit channelListWidth $ vBox
     isSelf u = (st^.csMe.userIdL) == (u^.userProfileIdL)
     usersToList = filter (not . isSelf) $ st ^. usrMap & HM.elems
 
-    dmChannelNames = [ decorate $ padRight Max $ colorUsername' (mkDMChannelName (u^.userProfileUsernameL))
+    dmChannelNames = [ decorate $ colorUsername' (mkDMChannelName (u^.userProfileUsernameL))
                      | u <- sortBy (comparing userProfileUsername) usersToList
-                     , let decorate = if | current   -> visible . forceAttr currentChannelNameAttr
+                     , let decorate = if | current   -> visible .
+                                                        forceAttr currentChannelNameAttr .
+                                                        padRight Max
                                          | unread    -> withDefAttr unreadChannelAttr
                                          | otherwise -> id
                            colorUsername' = case unread of
