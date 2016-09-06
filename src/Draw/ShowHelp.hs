@@ -10,7 +10,7 @@ import Types
 import Command
 
 drawShowHelp :: ChatState -> [Widget Name]
-drawShowHelp = const [helpBox]
+drawShowHelp = const [helpBox, fill ' ']
 
 withMargins :: (Int, Int) -> Widget a -> Widget a
 withMargins (hMargin, vMargin) w =
