@@ -11,7 +11,7 @@ import qualified Data.Text as T
 import Graphics.Vty hiding (Config)
 import System.Exit (exitSuccess)
 
-import DrawUtil
+import Draw.Util
 import Config
 
 data Name = Username | Password deriving (Ord, Eq, Show)

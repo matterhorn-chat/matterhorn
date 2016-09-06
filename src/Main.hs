@@ -53,7 +53,7 @@ main = do
 
 app :: App ChatState Event Name
 app = App
-  { appDraw         = chatDraw
+  { appDraw         = draw
   , appChooseCursor = showFirstCursor
   , appHandleEvent  = onEvent
   , appStartEvent   = updateChannelScrollState

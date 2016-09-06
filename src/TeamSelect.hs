@@ -13,7 +13,7 @@ import System.Exit (exitSuccess)
 
 import Network.Mattermost
 
-import DrawUtil
+import Draw.Util
 
 type State = List () Team
 

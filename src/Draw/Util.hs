@@ -1,4 +1,4 @@
-module DrawUtil
+module Draw.Util
   ( wrappedText
   ) where
 
