@@ -88,7 +88,6 @@ hasUnread st cId = maybe False id $ do
   let u = chan^.ccInfo.cdViewed
       v = chan^.ccInfo.cdUpdated
   return (v > u)
-  where
 
 updateViewed :: ChatState -> EventM Name ChatState
 updateViewed st = liftIO (updateViewedIO st)
