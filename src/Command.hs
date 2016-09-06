@@ -2,6 +2,8 @@ module Command where
 
 import Brick (EventM, Next, continue, halt)
 
+import Lens.Micro.Platform
+
 import State
 import Types
 
@@ -30,17 +32,8 @@ commandList =
           msg <- newClientMessage Error ("No channel or user named " ++ name)
           continue =<< addClientMessage msg st
   , Cmd "help" "Print the help dialogue" $ \ _ st -> do
-        msg <- newClientMessage Informative (mkHelpText commandList)
-        continue =<< addClientMessage msg st
+          continue $ st & csMode .~ ShowHelp
   ]
-
-mkHelpText :: [Cmd] -> String
-mkHelpText cs =
-  let commandNameWidth = 4 + (maximum $ length <$> commandName <$> cs)
-      padTo n s = s ++ replicate (n - length s) ' '
-  in unlines [ padTo commandNameWidth ('/':cmd) ++ desc
-             | Cmd { commandName = cmd, commandDescr = desc } <- cs
-             ]
 
 dispatchCommand :: String -> ChatState -> EventM Name (Next ChatState)
 dispatchCommand cmd st =

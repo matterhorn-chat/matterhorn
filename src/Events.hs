@@ -28,7 +28,39 @@ import           Types
 import           InputHistory
 
 onEvent :: ChatState -> Event -> EventM Name (Next ChatState)
-onEvent st (VtyEvent (Vty.EvResize _ _)) = do
+onEvent st e =
+    case st^.csMode of
+        Main     -> onEventMain st e
+        ShowHelp -> onEventShowHelp st e
+
+onEventShowHelp :: ChatState -> Event -> EventM Name (Next ChatState)
+onEventShowHelp st (VtyEvent (Vty.EvKey Vty.KLeft [])) = do
+  hScrollBy (viewportScroll HelpViewport) (-1)
+  continue st
+onEventShowHelp st (VtyEvent (Vty.EvKey Vty.KRight [])) = do
+  hScrollBy (viewportScroll HelpViewport) 1
+  continue st
+onEventShowHelp st (VtyEvent (Vty.EvKey Vty.KUp [])) = do
+  vScrollBy (viewportScroll HelpViewport) (-1)
+  continue st
+onEventShowHelp st (VtyEvent (Vty.EvKey Vty.KDown [])) = do
+  vScrollBy (viewportScroll HelpViewport) 1
+  continue st
+onEventShowHelp st (VtyEvent (Vty.EvKey Vty.KPageUp [])) = do
+  vScrollPage (viewportScroll HelpViewport) Up
+  continue st
+onEventShowHelp st (VtyEvent (Vty.EvKey Vty.KPageDown [])) = do
+  vScrollPage (viewportScroll HelpViewport) Down
+  continue st
+onEventShowHelp st (VtyEvent (Vty.EvKey (Vty.KChar ' ') [])) = do
+  vScrollPage (viewportScroll HelpViewport) Down
+  continue st
+onEventShowHelp st (VtyEvent (Vty.EvKey _ _)) = do
+  continue $ st & csMode .~ Main
+onEventShowHelp st _ = continue st
+
+onEventMain :: ChatState -> Event -> EventM Name (Next ChatState)
+onEventMain st (VtyEvent (Vty.EvResize _ _)) = do
   -- On resize we need to update the current channel message area so
   -- that the most recent message is at the bottom. We have to do this
   -- on a resize because brick only guarantees that the message is
@@ -38,35 +70,37 @@ onEvent st (VtyEvent (Vty.EvResize _ _)) = do
   -- worry about the current channel's viewport because that's the one
   -- that is about to be redrawn.
   continue =<< updateChannelScrollState st
-onEvent st (VtyEvent (Vty.EvKey (Vty.KChar 'q') [Vty.MCtrl])) =
+onEventMain st (VtyEvent (Vty.EvKey (Vty.KFun 1) [])) =
+  continue $ st & csMode .~ ShowHelp
+onEventMain st (VtyEvent (Vty.EvKey (Vty.KChar 'q') [Vty.MCtrl])) =
   halt st
-onEvent st (VtyEvent (Vty.EvKey (Vty.KChar '\t') [])) =
+onEventMain st (VtyEvent (Vty.EvKey (Vty.KChar '\t') [])) =
   tabComplete Forwards st
-onEvent st (VtyEvent (Vty.EvKey (Vty.KBackTab) [])) =
+onEventMain st (VtyEvent (Vty.EvKey (Vty.KBackTab) [])) =
   tabComplete Backwards st
-onEvent st (VtyEvent (Vty.EvKey Vty.KUp [])) =
+onEventMain st (VtyEvent (Vty.EvKey Vty.KUp [])) =
   continue $ channelHistoryBackward st
-onEvent st (VtyEvent (Vty.EvKey Vty.KDown [])) =
+onEventMain st (VtyEvent (Vty.EvKey Vty.KDown [])) =
   continue $ channelHistoryForward st
-onEvent st (VtyEvent (Vty.EvKey Vty.KPageUp [])) =
+onEventMain st (VtyEvent (Vty.EvKey Vty.KPageUp [])) =
   continue =<< channelPageUp st
-onEvent st (VtyEvent (Vty.EvKey Vty.KPageDown [])) =
+onEventMain st (VtyEvent (Vty.EvKey Vty.KPageDown [])) =
   continue =<< channelPageDown st
-onEvent st (VtyEvent (Vty.EvKey (Vty.KChar 'n') [Vty.MCtrl])) =
+onEventMain st (VtyEvent (Vty.EvKey (Vty.KChar 'n') [Vty.MCtrl])) =
   continue =<< updateChannelScrollState =<< nextChannel st
-onEvent st (VtyEvent (Vty.EvKey (Vty.KChar 'p') [Vty.MCtrl])) =
+onEventMain st (VtyEvent (Vty.EvKey (Vty.KChar 'p') [Vty.MCtrl])) =
   continue =<< updateChannelScrollState =<< prevChannel st
-onEvent st (VtyEvent (Vty.EvKey Vty.KEnter [])) = do
+onEventMain st (VtyEvent (Vty.EvKey Vty.KEnter [])) = do
   let st' = st & csCurrentCompletion .~ Nothing
   handleInputSubmission st'
-onEvent st (VtyEvent (Vty.EvPaste bytes)) = do
+onEventMain st (VtyEvent (Vty.EvPaste bytes)) = do
   -- If you paste a multi-line thing, it'll only insert up to the first
   -- line ending because the zipper will respect the line limit when
   -- inserting the paste. Once we add support for multi-line editing,
   -- this will Just Work once the editor's line limit is set to Nothing.
   let pasteStr = UTF8.toString bytes
   continue $ st & cmdLine %~ applyEdit (insertMany pasteStr)
-onEvent st (VtyEvent e) = do
+onEventMain st (VtyEvent e) = do
   let st' = case e of
             -- XXX: not 100% certain we need to special case these
             -- the intention is to notice when the user has finished word completion
@@ -75,9 +109,9 @@ onEvent st (VtyEvent e) = do
             Vty.EvKey Vty.KBS         [] -> st & csCurrentCompletion .~ Nothing
             _ -> st
   continue =<< handleEventLensed st' cmdLine handleEditorEvent e
-onEvent st (WSEvent we) =
+onEventMain st (WSEvent we) =
   handleWSEvent st we
-onEvent st (RespEvent f) =
+onEventMain st (RespEvent f) =
   continue =<< f st
 
 channelHistoryForward :: ChatState -> ChatState

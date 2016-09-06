@@ -6,7 +6,7 @@ module Draw where
 import           Brick
 import           Brick.Widgets.Border
 import           Brick.Widgets.Border.Style
-import           Brick.Widgets.Center (center)
+import           Brick.Widgets.Center (center, centerLayer)
 import           Brick.Widgets.Edit (renderEditor)
 import           Data.Time.Clock (UTCTime, utctDay)
 import           Data.Time.Format ( formatTime
@@ -31,6 +31,7 @@ import           State
 import           Themes
 import           Types
 import           DrawUtil
+import           Command
 
 -- If the config's date format is not set.
 defaultDateFormat :: String
@@ -190,6 +191,38 @@ findUserByDMChannelName userMap dmchan me = listToMaybe
 
 chatDraw :: ChatState -> [Widget Name]
 chatDraw st =
+    case st^.csMode of
+        Main -> chatDrawMain st
+        ShowHelp -> chatDrawHelp st
+
+chatDrawHelp :: ChatState -> [Widget Name]
+chatDrawHelp = const [helpBox]
+
+withMargins :: (Int, Int) -> Widget a -> Widget a
+withMargins (hMargin, vMargin) w =
+    Widget (hSize w) (vSize w) $ do
+        ctx <- getContext
+        let wl = ctx^.availWidthL - (2 * hMargin)
+            hl = ctx^.availHeightL - (2 * vMargin)
+        render $ hLimit wl $ vLimit hl w
+
+helpBox :: Widget Name
+helpBox =
+    centerLayer $ withMargins (5, 2) $ withDefAttr helpAttr $
+    borderWithLabel (str "Matterhorn Help") $ viewport HelpViewport Both helpText
+    where
+    helpText = str $ "Commands\n========\n" <> mkHelpText commandList
+
+    mkHelpText :: [Cmd] -> String
+    mkHelpText cs =
+      let commandNameWidth = 4 + (maximum $ length <$> commandName <$> cs)
+          padTo n s = s ++ replicate (n - length s) ' '
+      in unlines [ padTo commandNameWidth ('/':cmd) ++ desc
+                 | Cmd { commandName = cmd, commandDescr = desc } <- cs
+                 ]
+
+chatDrawMain :: ChatState -> [Widget Name]
+chatDrawMain st =
     [ (renderChannelList st <+> (borderElem bsIntersectR <=>
                                  vLimit normalChannelListHeight vBorder <=>
                                  borderElem bsIntersectR <=> vBorder)

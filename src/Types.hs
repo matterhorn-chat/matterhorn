@@ -38,6 +38,7 @@ data Name = ChannelMessages ChannelId
           | MessageInput
           | NormalChannelList
           | DMChannelList
+          | HelpViewport
           deriving (Eq, Show, Ord)
 
 -- We want to continue referring to posts by their IDs, but we don't want to
@@ -195,6 +196,11 @@ makeLenses ''ClientChannel
 
 type RequestChan = Chan (IO (ChatState -> EventM Name ChatState))
 
+data Mode =
+    Main
+    | ShowHelp
+    deriving (Eq)
+
 data ChatState = ChatState
   { _csTok      :: Token
   , _csConn     :: ConnectionData
@@ -213,6 +219,7 @@ data ChatState = ChatState
   , _csCurrentCompletion :: Maybe String
   , _csRequestQueue :: RequestChan
   , _csTheme    :: AttrMap
+  , _csMode     :: Mode
   }
 
 makeLenses ''ChatState

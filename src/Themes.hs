@@ -19,6 +19,7 @@ module Themes
   , clientStrongAttr
   , dateTransitionAttr
   , errorMessageAttr
+  , helpAttr
 
   -- * Username formatting
   , colorUsername
@@ -32,6 +33,9 @@ import Brick
 
 defaultThemeName :: String
 defaultThemeName = darkColorThemeName
+
+helpAttr :: AttrName
+helpAttr = "help"
 
 darkColorThemeName :: String
 darkColorThemeName = "builtin:dark"
@@ -107,6 +111,7 @@ lightColorTheme = attrMap (black `on` white) $
   , (clientHeaderAttr,        fg red `withStyle` bold)
   , (dateTransitionAttr,      fg green)
   , (errorMessageAttr,        fg red)
+  , (helpAttr,                black `on` cyan)
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 
@@ -127,6 +132,7 @@ darkColorTheme = attrMap (bg black) $
   , (clientHeaderAttr,        fg red `withStyle` bold)
   , (dateTransitionAttr,      fg green)
   , (errorMessageAttr,        fg red)
+  , (helpAttr,                black `on` cyan)
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 
