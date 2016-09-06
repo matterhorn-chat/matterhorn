@@ -20,6 +20,7 @@ module Themes
   , dateTransitionAttr
   , errorMessageAttr
   , helpAttr
+  , helpEmphAttr
 
   -- * Username formatting
   , colorUsername
@@ -36,6 +37,9 @@ defaultThemeName = darkColorThemeName
 
 helpAttr :: AttrName
 helpAttr = "help"
+
+helpEmphAttr :: AttrName
+helpEmphAttr = "helpEmphasis"
 
 darkColorThemeName :: String
 darkColorThemeName = "builtin:dark"
@@ -112,6 +116,7 @@ lightColorTheme = attrMap (black `on` white) $
   , (dateTransitionAttr,      fg green)
   , (errorMessageAttr,        fg red)
   , (helpAttr,                black `on` cyan)
+  , (helpEmphAttr,            fg white)
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 
@@ -133,6 +138,7 @@ darkColorTheme = attrMap (bg black) $
   , (dateTransitionAttr,      fg green)
   , (errorMessageAttr,        fg red)
   , (helpAttr,                black `on` cyan)
+  , (helpEmphAttr,            fg white)
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 

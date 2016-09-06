@@ -2,8 +2,7 @@ module Draw.ShowHelp (drawShowHelp) where
 
 import Brick
 import Brick.Widgets.Border
-import Brick.Widgets.Center (centerLayer)
-import Data.Monoid ((<>))
+import Brick.Widgets.Center (hCenter, centerLayer)
 import Lens.Micro.Platform
 
 import Themes
@@ -24,14 +23,20 @@ withMargins (hMargin, vMargin) w =
 helpBox :: Widget Name
 helpBox =
     centerLayer $ withMargins (5, 2) $ withDefAttr helpAttr $
-    borderWithLabel (str "Matterhorn Help") $ viewport HelpViewport Both helpText
+    borderWithLabel (withDefAttr helpEmphAttr $ str "Matterhorn Help") $
+    viewport HelpViewport Vertical helpText
     where
-    helpText = str $ "Commands\n========\n" <> mkHelpText commandList
+    helpText = commandHelp
 
-    mkHelpText :: [Cmd] -> String
+    commandHelp = vBox [ padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ str "Commands"
+                       , mkHelpText commandList
+                       ]
+
+    mkHelpText :: [Cmd] -> Widget Name
     mkHelpText cs =
       let commandNameWidth = 4 + (maximum $ length <$> commandName <$> cs)
           padTo n s = s ++ replicate (n - length s) ' '
-      in unlines [ padTo commandNameWidth ('/':cmd) ++ desc
-                 | Cmd { commandName = cmd, commandDescr = desc } <- cs
-                 ]
+      in hCenter $
+         vBox [ (withDefAttr helpEmphAttr $ str $ padTo commandNameWidth ('/':cmd)) <+> str desc
+              | Cmd { commandName = cmd, commandDescr = desc } <- cs
+              ]
