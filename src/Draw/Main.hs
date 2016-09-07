@@ -7,10 +7,10 @@ import           Brick.Widgets.Border
 import           Brick.Widgets.Border.Style
 import           Brick.Widgets.Center (center)
 import           Brick.Widgets.Edit (renderEditor)
-import           Data.Time.Clock (UTCTime, utctDay)
+import           Data.Time.Clock (UTCTime)
 import           Data.Time.Format ( formatTime
                                   , defaultTimeLocale )
-import           Data.Time.LocalTime ( TimeZone, utcToLocalTime )
+import           Data.Time.LocalTime ( TimeZone, utcToLocalTime, localDay )
 import qualified Data.HashMap.Strict as HM
 import           Data.HashMap.Strict ( HashMap )
 import           Data.List (sortBy, foldl')
@@ -152,7 +152,7 @@ renderCurrentChannelDisplay st = header <=> messages
     uPattern = mkUsernamePattern (HM.elems (st^.usrMap))
     chatText = vBox $ renderChatMessage uPattern (st ^. timeFormat) (st ^. timeZone) <$>
                       channelMessages
-    channelMessages = insertDateBoundaries $ getMessageListing cId st
+    channelMessages = insertDateBoundaries (st ^. timeZone) $ getMessageListing cId st
     cId = currentChannelId st
     Just chan = getChannel cId st
     chnName = chan^.ccInfo.cdName
@@ -162,8 +162,8 @@ renderCurrentChannelDisplay st = header <=> messages
 dateTransitionFormat :: String
 dateTransitionFormat = "%Y-%m-%d"
 
-insertDateBoundaries :: [Message] -> [Message]
-insertDateBoundaries ms = fst $ foldl' nextMsg initState ms
+insertDateBoundaries :: TimeZone -> [Message] -> [Message]
+insertDateBoundaries tz ms = fst $ foldl' nextMsg initState ms
     where
         initState :: ([Message], Maybe Message)
         initState = ([], Nothing)
@@ -174,7 +174,7 @@ insertDateBoundaries ms = fst $ foldl' nextMsg initState ms
         nextMsg :: ([Message], Maybe Message) -> Message -> ([Message], Maybe Message)
         nextMsg (rest, Nothing) msg = (rest <> [msg], Just msg)
         nextMsg (rest, Just prevMsg) msg =
-            if utctDay (msg^.mDate) /= utctDay (prevMsg^.mDate)
+            if localDay (utcToLocalTime tz (msg^.mDate)) /= localDay (utcToLocalTime tz (prevMsg^.mDate))
             then (rest <> [dateMsg (msg^.mDate), msg], Just msg)
             else (rest <> [msg], Just msg)
 
