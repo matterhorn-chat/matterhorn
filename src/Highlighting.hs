@@ -16,9 +16,6 @@ import               Text.Regex.TDFA.String
 
 import               Themes
 
-emailPattern :: Regex
-emailPattern = makeRegex ("[[:alnum:]\\+]+@([[:alnum:]]+\\.)+([[:alnum:]]+)"::String)
-
 urlPattern :: Regex
 urlPattern = makeRegex ("https?://([[:alnum:]-]+\\.)*([[:alnum:]-]+)(:[[:digit:]]+)?(/[^[:space:]]*)"::String)
 
@@ -37,8 +34,7 @@ findRegex t r = concat $ A.elems <$> matchAll r (T.unpack t)
 
 doMessageMarkup :: Regex -> T.Text -> Widget a
 doMessageMarkup usernamePattern msg =
-    let emailMatches    = findRegex msg emailPattern
-        urlMatches      = findRegex msg urlPattern
+    let urlMatches      = findRegex msg urlPattern
         codeMatches     = findRegex msg codePattern
         usernameMatches = findRegex msg usernamePattern
         emojiMatches    = findRegex msg emojiPattern
@@ -49,8 +45,7 @@ doMessageMarkup usernamePattern msg =
             in markRegion pos len tag m
         applyMatches matches tag mkup = foldr (\(pos,len) -> markRegion pos len tag) mkup matches
 
-        pairs = fromMarkup $ applyMatches emailMatches    emailAttr    $
-                             applyMatches codeMatches     codeAttr     $
+        pairs = fromMarkup $ applyMatches codeMatches     codeAttr     $
                              applyMatches urlMatches      urlAttr      $
                              applyMatches emojiMatches    emojiAttr    $
                              applyUsernameMatches                      $
