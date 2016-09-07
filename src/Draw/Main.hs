@@ -17,14 +17,15 @@ import           Data.List (sortBy, foldl')
 import           Data.Ord (comparing)
 import           Data.Maybe ( listToMaybe, maybeToList )
 import           Data.Monoid ((<>))
+import           Data.Set (Set)
+import qualified Data.Set as Set
+import           Data.Text (Text)
+import qualified Data.Text as T
 import           Lens.Micro.Platform
-
-import           Text.Regex.TDFA.String (Regex)
 
 import           Network.Mattermost
 import           Network.Mattermost.Lenses
 
-import           Highlighting
 import           Markdown
 import           State
 import           Themes
@@ -40,10 +41,10 @@ renderTime fmt tz t =
     let timeStr = formatTime defaultTimeLocale fmt (utcToLocalTime tz t)
     in str "[" <+> withDefAttr timeAttr (str timeStr) <+> str "]"
 
-renderChatMessage :: Regex -> Maybe String -> TimeZone -> Message -> Widget Name
-renderChatMessage uPattern mFormat tz msg =
+renderChatMessage :: Set Text -> Maybe String -> TimeZone -> Message -> Widget Name
+renderChatMessage uSet mFormat tz msg =
     let t = msg^.mDate
-        m = renderMessage (msg^.mText) (msg^.mUserName) (msg^.mType) uPattern
+        m = renderMessage (msg^.mText) (msg^.mUserName) (msg^.mType) uSet
         msgAtch = case msg^.mAttachments of
           [] -> emptyWidget
           _  -> withDefAttr clientMessageAttr
@@ -149,8 +150,9 @@ renderCurrentChannelDisplay st = header <=> messages
     messages = if chan^.ccInfo.cdLoaded
                then viewport (ChannelMessages cId) Vertical chatText <+> str " "
                else center $ str "[loading channel scrollback]"
-    uPattern = mkUsernamePattern (HM.elems (st^.usrMap))
-    chatText = vBox $ renderChatMessage uPattern (st ^. timeFormat) (st ^. timeZone) <$>
+    --uPattern = mkUsernamePattern (HM.elems (st^.usrMap))
+    uSet = Set.fromList (map (T.pack . userProfileUsername) (HM.elems (st^.usrMap)))
+    chatText = vBox $ renderChatMessage uSet (st ^. timeFormat) (st ^. timeZone) <$>
                       channelMessages
     channelMessages = insertDateBoundaries (st ^. timeZone) $ getMessageListing cId st
     cId = currentChannelId st

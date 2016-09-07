@@ -14,30 +14,32 @@ import qualified Cheapskate as C
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Foldable as F
+import           Data.Monoid ((<>))
 import           Data.Sequence ( Seq
                                , ViewL(..)
                                , ViewR(..)
-                               , (><)
                                , (<|)
                                , (|>)
                                , viewl
                                , viewr)
 import qualified Data.Sequence as S
+import           Data.Set (Set)
+import qualified Data.Set as Set
 import           Lens.Micro.Platform ((^.))
-import           Text.Regex.TDFA.String (Regex)
 
-import           Highlighting
 import           Themes
 import           Types (MessageType(..), PostType(..))
 
-renderMessage :: Blocks -> Maybe String -> MessageType -> Regex -> Widget a
-renderMessage bs u mTy uPat =
+type UserSet = Set Text
+
+renderMessage :: Blocks -> Maybe String -> MessageType -> UserSet -> Widget a
+renderMessage bs u mTy uSet =
   case u of
     Just un
       | mTy == CP Emote -> B.str "*" <+> colorUsername un
-                       <+> B.str " " <+> vBox (fmap (toWidget uPat) bs)
-      | otherwise -> colorUsername un <+> B.str ": " <+> vBox (fmap (toWidget uPat) bs)
-    Nothing -> vBox (fmap (toWidget uPat) bs)
+                       <+> B.str " " <+> vBox (fmap (toWidget uSet) bs)
+      | otherwise -> colorUsername un <+> B.str ": " <+> vBox (fmap (toWidget uSet) bs)
+    Nothing -> vBox (fmap (toWidget uSet) bs)
 
 vBox :: Foldable f => f (Widget a) -> Widget a
 vBox = B.vBox . F.toList
@@ -48,7 +50,7 @@ hBox = B.hBox . F.toList
 --
 
 class ToWidget t where
-  toWidget :: Regex -> t -> Widget a
+  toWidget :: UserSet -> t -> Widget a
 
 header :: Int -> Widget a
 header n = B.str (replicate n '#')
@@ -67,17 +69,17 @@ instance ToWidget Block where
   toWidget _ (C.HtmlBlock txt) = B.txt txt
   toWidget _ (C.HRule) = B.vLimit 1 (B.fill '*')
 
-toInlineChunk :: Inlines -> Regex -> Widget a
-toInlineChunk is uPat = B.Widget B.Fixed B.Fixed $ do
+toInlineChunk :: Inlines -> UserSet -> Widget a
+toInlineChunk is uSet = B.Widget B.Fixed B.Fixed $ do
   ctx <- B.getContext
   let width = ctx^.B.availWidthL
-      fs    = toFragments is
-      ws    = fmap (fmap (toWidget uPat)) (split width fs)
+      fs    = toFragments uSet is
+      ws    = fmap gatherWidgets (split width fs)
   B.render (vBox (fmap hBox ws))
 
-toList :: ListType -> [Blocks] -> Regex -> Widget a
-toList lt bs uPat = vBox
-  [ B.str i <+> (vBox (fmap (toWidget uPat) b))
+toList :: ListType -> [Blocks] -> UserSet -> Widget a
+toList lt bs uSet = vBox
+  [ B.str i <+> (vBox (fmap (toWidget uSet) b))
   | b <- bs | i <- is ]
   where is = case lt of
           C.Bullet c -> repeat (c:" ")
@@ -99,7 +101,6 @@ data TextFragment
   | TSpace
   | TSoftBreak
   | TLineBreak
-  | TCode Text
   | TLink Text
   | TRawHtml Text
     deriving (Show, Eq)
@@ -108,13 +109,22 @@ data FragmentStyle
   = Normal
   | Emph
   | Strong
-    deriving (Show)
+  | Code
+  | User
+    deriving (Eq, Show)
 
 -- We convert it pretty mechanically:
-toFragments :: Inlines -> Seq Fragment
-toFragments = go Normal
-  where go n (viewl-> C.Str t :< xs) =
-          Fragment (TStr t) n <| go n xs
+toFragments :: UserSet -> Inlines -> Seq Fragment
+toFragments uSet = go Normal
+  where go n (viewl-> C.Str "@" :<
+                      (viewl-> C.Str t :< xs))
+          | t `Set.member` uSet =
+            Fragment (TStr ("@" <> t)) User <| go n xs
+        go n (viewl-> C.Str t :< xs)
+          | t `Set.member` uSet =
+            Fragment (TStr t) User <| go n xs
+          | otherwise =
+            Fragment (TStr t) n <| go n xs
         go n (viewl-> C.Space :< xs) =
           Fragment TSpace n <| go n xs
         go n (viewl-> C.SoftBreak :< xs) =
@@ -126,11 +136,11 @@ toFragments = go Normal
         go n (viewl-> C.RawHtml t :< xs) =
           Fragment (TRawHtml t) n <| go n xs
         go n (viewl-> C.Code t :< xs) =
-          Fragment (TCode t) n <| go n xs
+          Fragment (TStr t) Code <| go n xs
         go n (viewl-> C.Emph is :< xs) =
-          go Emph is >< go n xs
+          go Emph is <> go n xs
         go n (viewl-> C.Strong is :< xs) =
-          go Strong is >< go n xs
+          go Strong is <> go n xs
         go _ _ = S.empty
 
 --
@@ -161,23 +171,33 @@ split maxCols = splitChunks . go (SplitState (S.singleton S.empty) 0)
 fragmentSize :: Fragment -> Int
 fragmentSize f = case fTextual f of
   TStr t     -> T.length t
-  TCode t    -> T.length t
   TLink t    -> T.length t
   TRawHtml t -> T.length t
   TLineBreak -> 0
   _          -> 1
 
-instance ToWidget Fragment where
-  toWidget uPat fragment =
-    style $ case fTextual fragment of
-      TStr t       -> doMessageMarkup uPat t
-      TSpace       -> B.str " "
-      TSoftBreak   -> B.emptyWidget
-      TLineBreak   -> B.emptyWidget
-      TCode txt    -> B.withDefAttr codeAttr (B.txt txt)
-      TLink txt    -> B.txt txt
-      TRawHtml txt -> B.txt txt
-    where style = case fStyle fragment of
-            Normal -> id
-            Emph   -> B.withDefAttr clientEmphAttr
-            Strong -> B.withDefAttr clientStrongAttr
+strOf :: TextFragment -> Text
+strOf f = case f of
+  TStr t     -> t
+  TLink t    -> t
+  TRawHtml t -> t
+  TSpace     -> " "
+  _          -> ""
+
+-- This finds adjacent string-ey fragments and concats them, so
+-- we can use fewer widgets
+gatherWidgets :: Seq Fragment -> Seq (Widget a)
+gatherWidgets (viewl-> (Fragment frag style :< rs)) = go style (strOf frag) rs
+  where go s t (viewl-> (Fragment f s' :< xs))
+          | s == s' = go s (t <> strOf f) xs
+        go s t xs =
+          let w = case s of
+                Normal -> B.txt t
+                Emph   -> B.withDefAttr clientEmphAttr (B.txt t)
+                Strong -> B.withDefAttr clientStrongAttr (B.txt t)
+                Code   -> B.withDefAttr codeAttr (B.txt t)
+                User   -> B.withDefAttr (attrForUsername (T.unpack t))
+                                        (B.txt t)
+          in w <| gatherWidgets xs
+gatherWidgets _ =
+  S.empty
