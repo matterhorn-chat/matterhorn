@@ -51,7 +51,7 @@ class ToWidget t where
   toWidget :: Regex -> t -> Widget a
 
 header :: Int -> Widget a
-header n = B.str $ (take n $ repeat '#')
+header n = B.str (replicate n '#')
 
 instance ToWidget Block where
   toWidget uPat (C.Para is) = toInlineChunk is uPat
