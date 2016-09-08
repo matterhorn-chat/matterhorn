@@ -106,7 +106,7 @@ renderChannelList st = hLimit channelListWidth $ vBox
     channelNames = [ decorate $ padRight Max $ txt (mkChannelName n)
                    | n <- (st ^. csNames . cnChans)
                    , let decorate = if | matches   -> const $
-                                                      (forceAttr channelSelectMatchAttr $ txt $ "#" <> st^.csChannelSelect) <+>
+                                                      (txt "#") <+> (forceAttr channelSelectMatchAttr $ txt $ st^.csChannelSelect) <+>
                                                       txt matchRemaining
                                        | st^.csMode == ChannelSelect &&
                                          (not $ T.null $ st^.csChannelSelect) -> const emptyWidget
@@ -135,7 +135,7 @@ renderChannelList st = hLimit channelListWidth $ vBox
     dmChannelNames = [ decorate $ padRight Max $ colorUsername' (mkDMChannelName u)
                      | u <- sort usersToList
                      , let decorate = if | matches   -> const $
-                                                        (forceAttr channelSelectMatchAttr $ txt $ T.cons (userSigil u) (st^.csChannelSelect)) <+>
+                                                        (txt $ T.singleton $ userSigil u) <+> (forceAttr channelSelectMatchAttr $ txt $ st^.csChannelSelect) <+>
                                                         txt matchRemaining
                                          | st^.csMode == ChannelSelect &&
                                            (not $ T.null $ st^.csChannelSelect) -> const emptyWidget
