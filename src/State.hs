@@ -14,6 +14,7 @@ import           Control.Exception (SomeException, catch)
 import           Control.Monad (forM, when, void)
 import           Data.Text.Zipper (clearZipper, insertMany)
 import qualified Data.HashMap.Strict as HM
+import qualified Data.Sequence as Seq
 import           Data.List (sort, intercalate)
 import           Data.Maybe (listToMaybe, maybeToList, fromJust)
 import           Data.Monoid ((<>))
@@ -40,11 +41,11 @@ import qualified Zipper as Z
 fromPosts :: ChatState -> Posts -> ChannelContents
 fromPosts st p = ChannelContents $ messagesFromPosts st p
 
-messagesFromPosts :: ChatState -> Posts -> [Message]
+messagesFromPosts :: ChatState -> Posts -> Seq.Seq Message
 messagesFromPosts st p = msgs
     where
         msgs = clientPostToMessage st <$> toClientPost <$> ps
-        ps   = findPost <$> postsOrder p
+        ps   = findPost <$> (Seq.reverse $ postsOrder p)
         findPost pId = case HM.lookup pId (postsPosts p) of
             Nothing -> error $ "BUG: could not find post for post ID " <> show pId
             Just post -> post
@@ -205,7 +206,7 @@ editMessage :: Post -> ChatState -> EventM a ChatState
 editMessage new st = do
   now <- liftIO getCurrentTime
   let chan = msgMap . ix (postChannelId new)
-      rs = st & chan . ccContents . cdMessages %~ ((clientPostToMessage st $ toClientPost new):)
+      rs = st & chan . ccContents . cdMessages %~ (Seq.|> (clientPostToMessage st $ toClientPost new))
               & chan . ccInfo . cdUpdated .~ now
   return rs
 
@@ -226,19 +227,16 @@ addMessage new st = do
                    then id
                    else const now
   let chan = msgMap . ix (postChannelId new)
-      rs = st & chan . ccContents . cdMessages %~ ((clientPostToMessage st $ toClientPost new):)
+      rs = st & chan . ccContents . cdMessages %~ (Seq.|> (clientPostToMessage st $ toClientPost new))
               & chan . ccInfo . cdUpdated %~ updateTime
   if postChannelId new == currentChannelId st
     then updateChannelScrollState rs >>= updateViewed
     else return rs
 
--- XXX: Right now, our new ID is based on the size of the map containing all
--- the ClientMessages, which only makes sense if we never delete ClientMessages.
--- We should probably figure out a better way of choosing IDs.
 addClientMessage :: ClientMessage -> ChatState -> EventM Name ChatState
 addClientMessage msg st = do
   let cid = currentChannelId st
-      st' = st & msgMap . ix cid . ccContents . cdMessages %~ (clientMessageToMessage msg:)
+      st' = st & msgMap . ix cid . ccContents . cdMessages %~ (Seq.|> clientMessageToMessage msg)
   updateChannelScrollState st'
 
 newClientMessage :: ClientMessageType -> T.Text -> EventM a ClientMessage

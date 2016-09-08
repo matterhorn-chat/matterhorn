@@ -12,8 +12,10 @@ import           Data.Time.Format ( formatTime
                                   , defaultTimeLocale )
 import           Data.Time.LocalTime ( TimeZone, utcToLocalTime, localDay )
 import qualified Data.HashMap.Strict as HM
+import qualified Data.Sequence as Seq
+import qualified Data.Foldable as F
 import           Data.HashMap.Strict ( HashMap )
-import           Data.List (sortBy, foldl')
+import           Data.List (sortBy)
 import           Data.Ord (comparing)
 import           Data.Maybe ( listToMaybe, maybeToList )
 import           Data.Monoid ((<>))
@@ -152,7 +154,8 @@ renderCurrentChannelDisplay st = header <=> messages
                else center $ str "[loading channel scrollback]"
     --uPattern = mkUsernamePattern (HM.elems (st^.usrMap))
     uSet = Set.fromList (map userProfileUsername (HM.elems (st^.usrMap)))
-    chatText = vBox $ renderChatMessage uSet (st ^. timeFormat) (st ^. timeZone) <$>
+    chatText = vBox $ F.toList $
+                      renderChatMessage uSet (st ^. timeFormat) (st ^. timeZone) <$>
                       channelMessages
     channelMessages = insertDateBoundaries (st ^. timeZone) $ getMessageListing cId st
     cId = currentChannelId st
@@ -161,28 +164,28 @@ renderCurrentChannelDisplay st = header <=> messages
     chnType = chan^.ccInfo.cdType
     topicStr = chan^.ccInfo.cdHeader
 
-getMessageListing :: ChannelId -> ChatState -> [Message]
+getMessageListing :: ChannelId -> ChatState -> Seq.Seq Message
 getMessageListing cId st =
     st ^. msgMap . ix cId . ccContents . cdMessages
 
 dateTransitionFormat :: String
 dateTransitionFormat = "%Y-%m-%d"
 
-insertDateBoundaries :: TimeZone -> [Message] -> [Message]
-insertDateBoundaries tz ms = fst $ foldl' nextMsg initState ms
+insertDateBoundaries :: TimeZone -> Seq.Seq Message -> Seq.Seq Message
+insertDateBoundaries tz ms = fst $ F.foldl' nextMsg initState ms
     where
-        initState :: ([Message], Maybe Message)
-        initState = ([], Nothing)
+        initState :: (Seq.Seq Message, Maybe Message)
+        initState = (mempty, Nothing)
 
         dateMsg d = Message (getBlocks (T.pack $ formatTime defaultTimeLocale dateTransitionFormat d))
                             Nothing d (C DateTransition) False False [] Nothing
 
-        nextMsg :: ([Message], Maybe Message) -> Message -> ([Message], Maybe Message)
-        nextMsg (rest, Nothing) msg = (rest <> [msg], Just msg)
+        nextMsg :: (Seq.Seq Message, Maybe Message) -> Message -> (Seq.Seq Message, Maybe Message)
+        nextMsg (rest, Nothing) msg = (rest Seq.|> msg, Just msg)
         nextMsg (rest, Just prevMsg) msg =
             if localDay (utcToLocalTime tz (msg^.mDate)) /= localDay (utcToLocalTime tz (prevMsg^.mDate))
-            then (rest <> [dateMsg (msg^.mDate), msg], Just msg)
-            else (rest <> [msg], Just msg)
+            then (rest Seq.|> (dateMsg (msg^.mDate)) Seq.|> msg, Just msg)
+            else (rest Seq.|> msg, Just msg)
 
 findUserByDMChannelName :: HashMap UserId UserProfile
                         -> T.Text -- ^ the dm channel name
