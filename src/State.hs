@@ -158,10 +158,19 @@ preChangeChannelCommon st = do
     return $ st & csLastChannelInput.at cId .~ Just (T.pack curEdit)
 
 nextChannel :: ChatState -> EventM Name ChatState
-nextChannel st = setFocusWith st Z.right
+nextChannel st = setFocusWith st (getNextChannel st Z.right)
 
 prevChannel :: ChatState -> EventM Name ChatState
-prevChannel st = setFocusWith st Z.left
+prevChannel st = setFocusWith st (getNextChannel st Z.left)
+
+getNextChannel :: ChatState
+               -> (Zipper ChannelId -> Zipper ChannelId)
+               -> (Zipper ChannelId -> Zipper ChannelId)
+getNextChannel st shift z = go (shift z)
+  where go z'
+          | (st^?msgMap.ix(Z.focus z').ccInfo.cdType) == Just "O" = z'
+          | otherwise = go (shift z')
+
 
 listThemes :: ChatState -> EventM Name ChatState
 listThemes cs = do
@@ -445,7 +454,10 @@ setupState config requestChan = do
         }
       Just townSqId = chanNames ^. cnToChanId . at "town-square"
       chanIds = [ (chanNames ^. cnToChanId) HM.! i
-                | i <- chanNames ^. cnChans ]
+                | i <- chanNames ^. cnChans ] ++
+                [ c
+                | i <- chanNames ^. cnUsers
+                , c <- maybeToList (HM.lookup i (chanNames ^. cnToChanId)) ]
       chanZip = Z.findRight (== townSqId) (Z.fromList chanIds)
       themeName = case configTheme config of
           Nothing -> defaultThemeName
