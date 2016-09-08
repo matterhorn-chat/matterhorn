@@ -74,8 +74,8 @@ toInlineChunk :: Inlines -> UserSet -> Widget a
 toInlineChunk is uSet = B.Widget B.Fixed B.Fixed $ do
   ctx <- B.getContext
   let width = ctx^.B.availWidthL
-      fs    = toFragments uSet is
-      ws    = fmap gatherWidgets (split width fs)
+      fs    = toFragments is
+      ws    = fmap gatherWidgets (split width uSet fs)
   B.render (vBox (fmap hBox ws))
 
 toList :: ListType -> [Blocks] -> UserSet -> Widget a
@@ -117,18 +117,11 @@ data FragmentStyle
     deriving (Eq, Show)
 
 -- We convert it pretty mechanically:
-toFragments :: UserSet -> Inlines -> Seq Fragment
-toFragments uSet = go Normal
+toFragments :: Inlines -> Seq Fragment
+toFragments = go Normal
   where go n c = case viewl c of
-          C.Str "@" :<
-            (viewl-> C.Str t :< xs)
-            | t `Set.member` uSet ->
-              Fragment (TStr ("@" <> t)) User <| go n xs
-          C.Str t :< xs
-            | t `Set.member` uSet ->
-              Fragment (TStr t) User <| go n xs
-            | otherwise ->
-              Fragment (TStr t) n <| go n xs
+          C.Str t :< xs ->
+            Fragment (TStr t) n <| go n xs
           C.Space :< xs ->
             Fragment TSpace n <| go n xs
           C.SoftBreak :< xs ->
@@ -164,23 +157,29 @@ data SplitState = SplitState
   , splitCurrCol :: Int
   }
 
-separate :: Seq Fragment -> Seq Fragment
-separate sq = case viewl sq of
+separate :: UserSet -> Seq Fragment -> Seq Fragment
+separate uSet sq = case viewl sq of
   Fragment (TStr s) n :< xs -> gatherStrings s n xs
-  Fragment x n :< xs        -> Fragment x n <| separate xs
+  Fragment x n :< xs        -> Fragment x n <| separate uSet xs
   EmptyL                    -> S.empty
   where gatherStrings s n rs = case viewl rs of
           Fragment (TStr s') n' :< xs
             | n == n' -> gatherStrings (s <> s') n xs
-          Fragment _ _ :< _ -> buildString s n <| separate rs
+          Fragment _ _ :< _ -> buildString s n <| separate uSet rs
           EmptyL -> S.singleton (buildString s n)
         buildString s n
           | ":" `T.isPrefixOf` s && ":" `T.isSuffixOf` s && T.length s > 2 =
             Fragment (TStr s) Emoji
+          | s `Set.member` uSet =
+            Fragment (TStr s) User
+          | "@" `T.isPrefixOf` s && (T.drop 1 s `Set.member` uSet) =
+            Fragment (TStr s) User
           | otherwise = Fragment (TStr s) n
 
-split :: Int -> Seq Fragment -> Seq (Seq Fragment)
-split maxCols = splitChunks . go (SplitState (S.singleton S.empty) 0) . separate
+split :: Int -> UserSet -> Seq Fragment -> Seq (Seq Fragment)
+split maxCols uSet = splitChunks
+                   . go (SplitState (S.singleton S.empty) 0)
+                   . separate uSet
   where go st (viewl-> f :< fs) = go st' fs
           where st' =
                   if | available >= fsize ->
