@@ -31,8 +31,9 @@ import Data.Hashable (hash)
 import Data.Monoid ((<>))
 import Graphics.Vty
 import Brick
+import qualified Data.Text as T
 
-defaultThemeName :: String
+defaultThemeName :: T.Text
 defaultThemeName = darkColorThemeName
 
 helpAttr :: AttrName
@@ -41,10 +42,10 @@ helpAttr = "help"
 helpEmphAttr :: AttrName
 helpEmphAttr = "helpEmphasis"
 
-darkColorThemeName :: String
+darkColorThemeName :: T.Text
 darkColorThemeName = "builtin:dark"
 
-lightColorThemeName :: String
+lightColorThemeName :: T.Text
 lightColorThemeName = "builtin:light"
 
 timeAttr :: AttrName
@@ -92,7 +93,7 @@ clientStrongAttr = "clientStrong"
 errorMessageAttr :: AttrName
 errorMessageAttr = "errorMessage"
 
-themes :: [(String, AttrMap)]
+themes :: [(T.Text, AttrMap)]
 themes =
     [ (darkColorThemeName,  darkColorTheme)
     , (lightColorThemeName, lightColorTheme)
@@ -145,12 +146,13 @@ darkColorTheme = attrMap (bg black) $
 usernameAttr :: Int -> AttrName
 usernameAttr i = "username" <> (attrName $ show i)
 
-colorUsername :: String -> Widget a
-colorUsername s = withDefAttr (attrForUsername s) $ str s
+colorUsername :: T.Text -> Widget a
+colorUsername s = withDefAttr (attrForUsername s) $ txt s
 
-attrForUsername :: String -> AttrName
-attrForUsername ('@':s) = usernameAttr $ hash s `mod` (length usernameColors)
-attrForUsername s = usernameAttr $ hash s `mod` (length usernameColors)
+attrForUsername :: T.Text -> AttrName
+attrForUsername s
+    | "@" `T.isPrefixOf` s = usernameAttr $ hash (T.tail s) `mod` (length usernameColors)
+    | otherwise            = usernameAttr $ hash s          `mod` (length usernameColors)
 
 usernameColors :: [Attr]
 usernameColors =

@@ -15,6 +15,8 @@ import           Data.Text.Zipper ( TextZipper
                                   , gotoEOL
                                   , insertMany
                                   , deletePrevChar )
+import qualified Data.Text as T
+import Data.Monoid ((<>))
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform
 import qualified Codec.Binary.UTF8.Generic as UTF8
@@ -168,14 +170,14 @@ killWordBackward z =
 tabComplete :: Completion.Direction
             -> ChatState -> EventM Name (Next ChatState)
 tabComplete dir st = do
-  let priorities  = [] :: [String]-- XXX: add recent completions to this
+  let priorities  = [] :: [T.Text]-- XXX: add recent completions to this
       completions = Set.fromList (st^.csNames.cnUsers ++
                                   st^.csNames.cnChans ++
-                                  map ("@" ++) (st^.csNames.cnUsers) ++
-                                  map ("#" ++) (st^.csNames.cnChans) ++
-                                  map ("/" ++) (map commandName commandList))
+                                  map ("@" <>) (st^.csNames.cnUsers) ++
+                                  map ("#" <>) (st^.csNames.cnChans) ++
+                                  map ("/" <>) (map commandName commandList))
 
-      (line:_)    = getEditContents (st^.cmdLine)
+      (line:_)    = T.pack <$> getEditContents (st^.cmdLine)
       curComp     = st^.csCurrentCompletion
       nextComp    = case curComp of
                     Nothing -> Just (currentWord line)
@@ -185,7 +187,7 @@ tabComplete dir st = do
       st' = st & csCurrentCompletion .~ nextComp
       edit = case mb_word of
           Nothing -> id
-          Just w -> insertMany w . killWordBackward
+          Just w -> insertMany (T.unpack w) . killWordBackward
 
   continue $ st' & cmdLine %~ (applyEdit edit)
 
@@ -197,9 +199,9 @@ handleInputSubmission st = do
                & csInputHistory %~ addHistoryEntry line cId
                & csInputHistoryPosition.at cId .~ Nothing
   case line of
-    ('/':cmd) -> dispatchCommand cmd st'
+    ('/':cmd) -> dispatchCommand (T.pack cmd) st'
     _         -> do
-      liftIO (sendMessage st' line)
+      liftIO (sendMessage st' $ T.pack line)
       continue st'
 
 handleWSEvent :: ChatState -> WebsocketEvent -> EventM Name (Next ChatState)
@@ -216,11 +218,11 @@ handleWSEvent st we =
       Nothing -> continue st
     _ -> continue st
 
-shouldSkipMessage :: String -> Bool
+shouldSkipMessage :: T.Text -> Bool
 shouldSkipMessage "" = True
-shouldSkipMessage s = and $ (`elem` (" \t"::String)) <$> s
+shouldSkipMessage s = T.all (`elem` (" \t"::String)) s
 
-sendMessage :: ChatState -> String -> IO ()
+sendMessage :: ChatState -> T.Text -> IO ()
 sendMessage st msg =
     case shouldSkipMessage msg of
         True -> return ()

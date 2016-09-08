@@ -32,7 +32,7 @@ import           Types (MessageType(..), PostType(..))
 
 type UserSet = Set Text
 
-renderMessage :: Blocks -> Maybe String -> MessageType -> UserSet -> Widget a
+renderMessage :: Blocks -> Maybe Text -> MessageType -> UserSet -> Widget a
 renderMessage bs u mTy uSet =
   case u of
     Just un
@@ -196,7 +196,7 @@ gatherWidgets (viewl-> (Fragment frag style :< rs)) = go style (strOf frag) rs
                 Emph   -> B.withDefAttr clientEmphAttr (B.txt t)
                 Strong -> B.withDefAttr clientStrongAttr (B.txt t)
                 Code   -> B.withDefAttr codeAttr (B.txt t)
-                User   -> B.withDefAttr (attrForUsername (T.unpack t))
+                User   -> B.withDefAttr (attrForUsername t)
                                         (B.txt t)
           in w <| gatherWidgets xs
 gatherWidgets _ =

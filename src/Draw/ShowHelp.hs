@@ -4,6 +4,8 @@ import Brick
 import Brick.Widgets.Border
 import Brick.Widgets.Center (hCenter, centerLayer)
 import Lens.Micro.Platform
+import qualified Data.Text as T
+import Data.Monoid ((<>))
 
 import Themes
 import Types
@@ -34,9 +36,9 @@ helpBox =
 
     mkHelpText :: [Cmd] -> Widget Name
     mkHelpText cs =
-      let commandNameWidth = 4 + (maximum $ length <$> commandName <$> cs)
-          padTo n s = s ++ replicate (n - length s) ' '
+      let commandNameWidth = 4 + (maximum $ T.length <$> commandName <$> cs)
+          padTo n s = s <> T.replicate (n - T.length s) " "
       in hCenter $
-         vBox [ (withDefAttr helpEmphAttr $ str $ padTo commandNameWidth ('/':cmd)) <+> str desc
+         vBox [ (withDefAttr helpEmphAttr $ txt $ padTo commandNameWidth (T.cons '/' cmd)) <+> txt desc
               | Cmd { commandName = cmd, commandDescr = desc } <- cs
               ]

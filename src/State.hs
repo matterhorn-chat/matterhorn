@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module State where
 
 import           Brick (EventM, str, vBox, Direction(..))
@@ -36,12 +37,17 @@ import           Login
 import           Zipper (Zipper)
 import qualified Zipper as Z
 
-fromPosts :: Posts -> ChannelContents
-fromPosts p = ChannelContents
-  { _cdOrder   = map MMId (p ^. postsOrderL)
-  , _cdPosts   = fmap toClientPost (p ^. postsPostsL)
-  , _cdCMsgs   = HM.empty
-  }
+fromPosts :: ChatState -> Posts -> ChannelContents
+fromPosts st p = ChannelContents $ messagesFromPosts st p
+
+messagesFromPosts :: ChatState -> Posts -> [Message]
+messagesFromPosts st p = msgs
+    where
+        msgs = clientPostToMessage st <$> toClientPost <$> ps
+        ps   = findPost <$> postsOrder p
+        findPost pId = case HM.lookup pId (postsPosts p) of
+            Nothing -> error $ "BUG: could not find post for post ID " <> show pId
+            Just post -> post
 
 numScrollbackPosts :: Int
 numScrollbackPosts = 60
@@ -52,7 +58,7 @@ newState :: Token
          -> User
          -> Team
          -> TimeZone
-         -> Maybe String
+         -> Maybe T.Text
          -> InputHistory
          -> RequestChan
          -> AttrMap
@@ -125,7 +131,7 @@ loadLastEdit st =
     let cId = currentChannelId st
     in return $ case st^.csLastChannelInput.at cId of
         Nothing -> st
-        Just lastEdit -> st & cmdLine %~ (applyEdit $ insertMany lastEdit)
+        Just lastEdit -> st & cmdLine %~ (applyEdit $ insertMany (T.unpack lastEdit))
 
 changeChannelCommon :: ChatState -> EventM Name ChatState
 changeChannelCommon st =
@@ -138,7 +144,7 @@ preChangeChannelCommon :: ChatState -> EventM Name ChatState
 preChangeChannelCommon st = do
     let curEdit = intercalate "\n" $ getEditContents $ st^.cmdLine
         cId = currentChannelId st
-    return $ st & csLastChannelInput.at cId .~ Just curEdit
+    return $ st & csLastChannelInput.at cId .~ Just (T.pack curEdit)
 
 nextChannel :: ChatState -> EventM Name ChatState
 nextChannel st = setFocusWith st Z.right
@@ -148,13 +154,13 @@ prevChannel st = setFocusWith st Z.left
 
 listThemes :: ChatState -> EventM Name ChatState
 listThemes cs = do
-    let mkThemeList _ = unlines $
+    let mkThemeList _ = T.unlines $
                         "Available built-in themes:" :
-                        (("  " ++) <$> fst <$> themes)
+                        (("  " <>) <$> fst <$> themes)
     msg <- newClientMessage Informative (mkThemeList themes)
     addClientMessage msg cs
 
-setTheme :: ChatState -> String -> EventM Name ChatState
+setTheme :: ChatState -> T.Text -> EventM Name ChatState
 setTheme cs name =
     case lookup name themes of
         Nothing -> listThemes cs
@@ -181,10 +187,11 @@ channelPageDown st = do
 currentChannelId :: ChatState -> ChannelId
 currentChannelId st = Z.focus (st ^. csFocus)
 
-channelByName :: ChatState -> String -> Maybe ChannelId
-channelByName st ('#':n) = st ^. csNames . cnToChanId . at n
-channelByName st ('@':n) = st ^. csNames . cnToChanId . at n
-channelByName st      n  = st ^. csNames . cnToChanId . at n
+channelByName :: ChatState -> T.Text -> Maybe ChannelId
+channelByName st n
+    | "#" `T.isPrefixOf` n = st ^. csNames . cnToChanId . at (T.tail n)
+    | "@" `T.isPrefixOf` n = st ^. csNames . cnToChanId . at (T.tail n)
+    | otherwise            = st ^. csNames . cnToChanId . at n
 
 setFocus :: ChannelId -> ChatState -> EventM Name ChatState
 setFocus cId st = setFocusWith st (Z.findRight (== cId))
@@ -198,15 +205,16 @@ editMessage :: Post -> ChatState -> EventM a ChatState
 editMessage new st = do
   now <- liftIO getCurrentTime
   let chan = msgMap . ix (postChannelId new)
-      rs = st & chan . ccContents . cdPosts . ix (getId new) . cpText .~ (getBlocks $ postMessage new)
+      rs = st & chan . ccContents . cdMessages %~ ((clientPostToMessage st $ toClientPost new):)
               & chan . ccInfo . cdUpdated .~ now
   return rs
 
 deleteMessage :: Post -> ChatState -> EventM a ChatState
 deleteMessage new st = do
   now <- liftIO getCurrentTime
-  let chan = msgMap . ix (postChannelId new)
-      rs = st & chan . ccContents . cdPosts . ix (getId new) . cpDeleted .~ True
+  let isDeletedMessage m = m^.mPostId == Just (new^.postIdL)
+      chan = msgMap . ix (postChannelId new)
+      rs = st & chan . ccContents . cdMessages . each . filtered isDeletedMessage %~ (& mDeleted .~ True)
               & chan . ccInfo . cdUpdated .~ now
   return rs
 
@@ -218,8 +226,7 @@ addMessage new st = do
                    then id
                    else const now
   let chan = msgMap . ix (postChannelId new)
-      rs = st & chan . ccContents . cdPosts . at (getId new) .~ Just cp
-              & chan . ccContents . cdOrder %~ (MMId (getId new) :)
+      rs = st & chan . ccContents . cdMessages %~ ((clientPostToMessage st $ toClientPost new):)
               & chan . ccInfo . cdUpdated %~ updateTime
   if postChannelId new == currentChannelId st
     then updateChannelScrollState rs >>= updateViewed
@@ -230,58 +237,34 @@ addMessage new st = do
 -- We should probably figure out a better way of choosing IDs.
 addClientMessage :: ClientMessage -> ChatState -> EventM Name ChatState
 addClientMessage msg st = do
-  let n = HM.size (st ^. msgMap . ix cid . ccContents . cdCMsgs) + 1
-      cid = currentChannelId st
-      st' = st & msgMap . ix cid . ccContents . cdCMsgs . at n .~ Just msg
-               & msgMap . ix cid . ccContents . cdOrder %~ (CLId n :)
+  let cid = currentChannelId st
+      st' = st & msgMap . ix cid . ccContents . cdMessages %~ (clientMessageToMessage msg:)
   updateChannelScrollState st'
 
-mmMessageDigest :: ChannelId -> PostId -> ChatState -> Message
-mmMessageDigest cId ref st = clientPostToMessage p usr
-  where p = ((ms ! cId) ^. ccContents . cdPosts) ! ref
-        ms = st ^. msgMap
-        usr = ((st^.usrMap) ! (p^.cpUser)) ^. userProfileUsernameL
-
-newClientMessage :: ClientMessageType -> String -> EventM a ClientMessage
+newClientMessage :: ClientMessageType -> T.Text -> EventM a ClientMessage
 newClientMessage ty msg = do
   now <- liftIO getCurrentTime
   return (ClientMessage msg now ty)
 
-clientMessageDigest :: ChannelId -> Int -> ChatState -> Message
-clientMessageDigest cId ref st = clientMessageToMessage m
-  where m = ((ms ! cId) ^. ccContents . cdCMsgs) ! ref
-        ms = st ^. msgMap
-
-getMessageListing :: ChannelId -> ChatState -> [Message]
-getMessageListing cId st =
-  let is    = st ^. msgMap . ix cId . ccContents . cdOrder
-  in reverse [ getMessageDigest st cId i | i <- is ]
-
-getMessageDigest :: ChatState -> ChannelId -> PostRef -> Message
-getMessageDigest st cId ref =
-    case ref of
-      CLId c -> clientMessageDigest cId c st
-      MMId pId -> mmMessageDigest cId pId st
-
-getChannelName :: ChannelId -> ChatState -> String
+getChannelName :: ChannelId -> ChatState -> T.Text
 getChannelName cId st =
   st ^. msgMap . ix cId . ccInfo . cdName
 
-getDMChannelName :: UserId -> UserId -> String
+getDMChannelName :: UserId -> UserId -> T.Text
 getDMChannelName me you = cname
   where
   [loUser, hiUser] = sort [ you, me ]
-  cname = idString loUser ++ "__" ++ idString hiUser
+  cname = idString loUser <> "__" <> idString hiUser
 
 getChannel :: ChannelId -> ChatState -> Maybe ClientChannel
 getChannel cId st = st ^. msgMap . at cId
 
-execMMCommand :: String -> ChatState -> EventM Name ChatState
+execMMCommand :: T.Text -> ChatState -> EventM Name ChatState
 execMMCommand cmd st = liftIO (runCmd `catch` handler)
   where
   mc = MinCommand
         { minComChannelId = currentChannelId st
-        , minComCommand   = "/" ++ cmd
+        , minComCommand   = "/" <> cmd
         , minComSuggest   = False
         }
   runCmd = do
@@ -293,7 +276,7 @@ execMMCommand cmd st = liftIO (runCmd `catch` handler)
     return st
   handler (HTTPResponseException err) = do
     now <- liftIO getCurrentTime
-    let msg = ClientMessage ("Error running command: " ++ err) now Error
+    let msg = ClientMessage ("Error running command: " <> (T.pack err)) now Error
     runAsync st (return $ addClientMessage msg)
     return st
 
@@ -352,7 +335,7 @@ setupState config requestChan = do
           interactiveTeamSelection (initialLoadTeams initialLoad)
       Just tName -> do
           let matchingTeam = listToMaybe $ filter matches $ initialLoadTeams initialLoad
-              matches t = teamName t == (T.unpack tName)
+              matches t = teamName t == tName
           case matchingTeam of
               Nothing -> interactiveTeamSelection (initialLoadTeams initialLoad)
               Just t -> return t
@@ -386,7 +369,7 @@ setupState config requestChan = do
     when (c^.channelNameL /= "town-square") $ Chan.writeChan requestChan $ do
       posts <- mmGetPosts cd token myTeamId (getId c) 0 numScrollbackPosts
       return $ \ st -> do
-          let st' = st & msgMap.ix(getId c).ccContents .~ fromPosts posts
+          let st' = st & msgMap.ix(getId c).ccContents .~ fromPosts st posts
                        & msgMap.ix(getId c).ccInfo.cdLoaded .~ True
           updateChannelScrollState st'
     return (getId c, cChannel)
@@ -445,18 +428,18 @@ setupState config requestChan = do
              & csNames .~ chanNames
 
   townSquarePosts <- mmGetPosts cd token myTeamId townSqId 0 numScrollbackPosts
-  let st' = st & msgMap.ix(townSqId).ccContents .~ fromPosts townSquarePosts
+  let st' = st & msgMap.ix(townSqId).ccContents .~ fromPosts st townSquarePosts
                & msgMap.ix(townSqId).ccInfo.cdLoaded .~ True
 
   updateViewedIO st'
 
 
-debugPrintTimes :: ChatState -> String -> EventM Name ChatState
+debugPrintTimes :: ChatState -> T.Text -> EventM Name ChatState
 debugPrintTimes st cn = do
   let Just cId = st^.csNames.cnToChanId.at(cn)
       Just ch = st^.msgMap.at(cId)
       viewed = ch^.ccInfo.cdViewed
       updated = ch^.ccInfo.cdUpdated
-  m1 <- newClientMessage Informative ("Viewed: " ++ show viewed)
-  m2 <- newClientMessage Informative ("Updated: " ++ show updated)
+  m1 <- newClientMessage Informative $ T.pack ("Viewed: " ++ show viewed)
+  m2 <- newClientMessage Informative $ T.pack ("Updated: " ++ show updated)
   addClientMessage m1 st >>= addClientMessage m2

@@ -3,6 +3,8 @@ module Command where
 import Brick (EventM, Next, continue, halt)
 import Control.Monad (void, when)
 import Control.Monad.IO.Class (liftIO)
+import Data.Monoid ((<>))
+import qualified Data.Text as T
 
 import Lens.Micro.Platform
 
@@ -13,9 +15,9 @@ import State
 import Types
 
 data Cmd = Cmd
-  { commandName   :: String
-  , commandDescr  :: String
-  , commandAction :: [String] -> ChatState -> EventM Name (Next ChatState)
+  { commandName   :: T.Text
+  , commandDescr  :: T.Text
+  , commandAction :: [T.Text] -> ChatState -> EventM Name (Next ChatState)
   }
 
 commandList :: [Cmd]
@@ -32,22 +34,22 @@ commandList =
           _           -> continue st
   , Cmd "topic" "Set the current channel's topic" $ \ args st -> do
       when (not $ null args) $ do
-          let p = unwords args
+          let p = T.unwords args
           liftIO $ setChannelTopic st p
       continue st
   , Cmd "focus" "Focus on a named channel" $ \ [name] st ->
       case channelByName st name of
         Just cId -> setFocus cId st >>= continue
         Nothing -> do
-          msg <- newClientMessage Error ("No channel or user named " ++ name)
+          msg <- newClientMessage Error ("No channel or user named " <> name)
           continue =<< addClientMessage msg st
   , Cmd "help" "Print the help dialogue" $ \ _ st -> do
           continue $ st & csMode .~ ShowHelp
   ]
 
-dispatchCommand :: String -> ChatState -> EventM Name (Next ChatState)
+dispatchCommand :: T.Text -> ChatState -> EventM Name (Next ChatState)
 dispatchCommand cmd st =
-  case words cmd of
+  case T.words cmd of
     (x:xs) | [ c ] <- [ c | c <- commandList
                           , commandName c == x
                           ] -> commandAction c xs st
@@ -55,7 +57,7 @@ dispatchCommand cmd st =
              execMMCommand cmd st >>= continue
     _ -> continue st
 
-setChannelTopic :: ChatState -> String -> IO ()
+setChannelTopic :: ChatState -> T.Text -> IO ()
 setChannelTopic st msg = do
     let chanId = currentChannelId st
         theTeamId = st^.csMyTeam.teamIdL

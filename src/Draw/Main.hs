@@ -33,15 +33,15 @@ import           Types
 import           Draw.Util
 
 -- If the config's date format is not set.
-defaultDateFormat :: String
+defaultDateFormat :: Text
 defaultDateFormat = "%R"
 
-renderTime :: String -> TimeZone -> UTCTime -> Widget Name
+renderTime :: Text -> TimeZone -> UTCTime -> Widget Name
 renderTime fmt tz t =
-    let timeStr = formatTime defaultTimeLocale fmt (utcToLocalTime tz t)
+    let timeStr = formatTime defaultTimeLocale (T.unpack fmt) (utcToLocalTime tz t)
     in str "[" <+> withDefAttr timeAttr (str timeStr) <+> str "]"
 
-renderChatMessage :: Set Text -> Maybe String -> TimeZone -> Message -> Widget Name
+renderChatMessage :: Set Text -> Maybe Text -> TimeZone -> Message -> Widget Name
 renderChatMessage uSet mFormat tz msg =
     let t = msg^.mDate
         m = renderMessage (msg^.mText) (msg^.mUserName) (msg^.mType) uSet
@@ -70,11 +70,11 @@ renderChatMessage uSet mFormat tz msg =
             _ -> f
     in maybeRenderTimeWith maybeRenderTime fullMsg
 
-mkChannelName :: String -> String
-mkChannelName = ('#':)
+mkChannelName :: Text -> Text
+mkChannelName = T.cons '#'
 
-mkDMChannelName :: String -> String
-mkDMChannelName = ('@':)
+mkDMChannelName :: Text -> Text
+mkDMChannelName = T.cons '@'
 
 channelListWidth :: Int
 channelListWidth = 20
@@ -95,7 +95,7 @@ renderChannelList st = hLimit channelListWidth $ vBox
     header label = hBorderWithLabel $
                    withDefAttr channelListHeaderAttr $
                    str label
-    channelNames = [ decorate $ padRight Max $ str (mkChannelName n)
+    channelNames = [ decorate $ padRight Max $ txt (mkChannelName n)
                    | n <- (st ^. csNames . cnChans)
                    , let decorate = if | current   -> visible .
                                                       withDefAttr currentChannelNameAttr
@@ -117,7 +117,7 @@ renderChannelList st = hLimit channelListWidth $ vBox
                                          | unread    -> withDefAttr unreadChannelAttr
                                          | otherwise -> id
                            colorUsername' = case unread of
-                             True -> str
+                             True -> txt
                              _    -> colorUsername
                            cname = getDMChannelName (st^.csMe^.userIdL)
                                                     (u^.userProfileIdL)
@@ -137,21 +137,21 @@ renderCurrentChannelDisplay st = header <=> messages
     where
     header = withDefAttr channelHeaderAttr $
              padRight Max $
-             case null topicStr of
+             case T.null topicStr of
                  True -> case chnType of
                    Type "D" ->
                      case findUserByDMChannelName (st^.usrMap)
                                                   chnName
                                                   (st^.csMe^.userIdL) of
-                       Nothing -> str $ mkChannelName chnName
+                       Nothing -> txt $ mkChannelName chnName
                        Just u  -> colorUsername $ mkDMChannelName (u^.userProfileUsernameL)
-                   _        -> str $ mkChannelName chnName
-                 False -> wrappedText str $ mkChannelName chnName <> " - " <> topicStr
+                   _        -> txt $ mkChannelName chnName
+                 False -> wrappedText txt $ mkChannelName chnName <> " - " <> topicStr
     messages = if chan^.ccInfo.cdLoaded
                then viewport (ChannelMessages cId) Vertical chatText <+> str " "
                else center $ str "[loading channel scrollback]"
     --uPattern = mkUsernamePattern (HM.elems (st^.usrMap))
-    uSet = Set.fromList (map (T.pack . userProfileUsername) (HM.elems (st^.usrMap)))
+    uSet = Set.fromList (map userProfileUsername (HM.elems (st^.usrMap)))
     chatText = vBox $ renderChatMessage uSet (st ^. timeFormat) (st ^. timeZone) <$>
                       channelMessages
     channelMessages = insertDateBoundaries (st ^. timeZone) $ getMessageListing cId st
@@ -160,6 +160,10 @@ renderCurrentChannelDisplay st = header <=> messages
     chnName = chan^.ccInfo.cdName
     chnType = chan^.ccInfo.cdType
     topicStr = chan^.ccInfo.cdHeader
+
+getMessageListing :: ChannelId -> ChatState -> [Message]
+getMessageListing cId st =
+    st ^. msgMap . ix cId . ccContents . cdMessages
 
 dateTransitionFormat :: String
 dateTransitionFormat = "%Y-%m-%d"
@@ -170,8 +174,8 @@ insertDateBoundaries tz ms = fst $ foldl' nextMsg initState ms
         initState :: ([Message], Maybe Message)
         initState = ([], Nothing)
 
-        dateMsg d = Message (getBlocks (formatTime defaultTimeLocale dateTransitionFormat d))
-                            Nothing d (C DateTransition) False False []
+        dateMsg d = Message (getBlocks (T.pack $ formatTime defaultTimeLocale dateTransitionFormat d))
+                            Nothing d (C DateTransition) False False [] Nothing
 
         nextMsg :: ([Message], Maybe Message) -> Message -> ([Message], Maybe Message)
         nextMsg (rest, Nothing) msg = (rest <> [msg], Just msg)
@@ -181,7 +185,7 @@ insertDateBoundaries tz ms = fst $ foldl' nextMsg initState ms
             else (rest <> [msg], Just msg)
 
 findUserByDMChannelName :: HashMap UserId UserProfile
-                        -> String -- ^ the dm channel name
+                        -> T.Text -- ^ the dm channel name
                         -> UserId -- ^ me
                         -> Maybe UserProfile -- ^ you
 findUserByDMChannelName userMap dmchan me = listToMaybe

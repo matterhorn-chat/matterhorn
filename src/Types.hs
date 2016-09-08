@@ -9,13 +9,13 @@ import           Brick.Widgets.Edit (Editor)
 import           Cheapskate (Blocks)
 import           Control.Concurrent.Chan (Chan)
 import           Data.HashMap.Strict (HashMap)
-import           Data.List (isInfixOf, isPrefixOf, isSuffixOf)
 import           Data.Time.Clock (UTCTime)
 import           Data.Time.LocalTime (TimeZone)
 import qualified Data.HashMap.Strict as HM
 import qualified Graphics.Vty as Vty
-import           Lens.Micro.Platform (makeLenses)
+import           Lens.Micro.Platform (makeLenses, (^.), (^?), ix)
 import           Network.Mattermost
+import           Network.Mattermost.Lenses
 import           Network.Mattermost.WebSocket.Types
 import qualified Cheapskate as C
 import qualified Data.Text as T
@@ -25,11 +25,11 @@ import           Zipper (Zipper)
 import           InputHistory
 
 data MMNames = MMNames
-  { _cnChans    :: [String]
-  , _cnDMs      :: [String]
-  , _cnToChanId :: HashMap String ChannelId
-  , _cnUsers    :: [String]
-  , _cnToUserId :: HashMap String UserId
+  { _cnChans    :: [T.Text]
+  , _cnDMs      :: [T.Text]
+  , _cnToChanId :: HashMap T.Text ChannelId
+  , _cnUsers    :: [T.Text]
+  , _cnToUserId :: HashMap T.Text UserId
   }
 
 makeLenses ''MMNames
@@ -58,7 +58,7 @@ data ClientMessageType =
 -- A ClientMessage is a message given to us by our client, like help text
 -- or an error message.
 data ClientMessage = ClientMessage
-  { _cmText :: String
+  { _cmText :: T.Text
   , _cmDate :: UTCTime
   , _cmType :: ClientMessageType
   } deriving (Eq, Show)
@@ -79,7 +79,8 @@ data ClientPost = ClientPost
   , _cpType        :: PostType
   , _cpPending     :: Bool
   , _cpDeleted     :: Bool
-  , _cpAttachments :: [String]
+  , _cpAttachments :: [T.Text]
+  , _cpPostId      :: PostId
   } deriving (Show)
 
 makeLenses ''ClientPost
@@ -91,40 +92,19 @@ data MessageType = C ClientMessageType
 -- This represents any message we might want to render.
 data Message = Message
   { _mText        :: Blocks
-  , _mUserName    :: Maybe String
+  , _mUserName    :: Maybe T.Text
   , _mDate        :: UTCTime
   , _mType        :: MessageType
   , _mPending     :: Bool
   , _mDeleted     :: Bool
-  , _mAttachments :: [String]
+  , _mAttachments :: [T.Text]
+  , _mPostId      :: Maybe PostId
   } deriving (Show)
 
 makeLenses ''Message
 
-getBlocks :: String -> Blocks
-getBlocks s = bs where C.Doc _ bs = C.markdown C.def (T.pack s)
-
-clientPostToMessage :: ClientPost -> String -> Message
-clientPostToMessage cp user = Message
-  { _mText     = _cpText cp
-  , _mUserName = Just user
-  , _mDate     = _cpDate cp
-  , _mType     = CP $ _cpType cp
-  , _mPending  = _cpPending cp
-  , _mDeleted  = _cpDeleted cp
-  , _mAttachments = _cpAttachments cp
-  }
-
-clientMessageToMessage :: ClientMessage -> Message
-clientMessageToMessage cm = Message
-  { _mText        = getBlocks (_cmText cm)
-  , _mUserName    = Nothing
-  , _mDate        = _cmDate cm
-  , _mType        = C $ _cmType cm
-  , _mPending     = False
-  , _mDeleted     = False
-  , _mAttachments = []
-  }
+getBlocks :: T.Text -> Blocks
+getBlocks s = bs where C.Doc _ bs = C.markdown C.def s
 
 postClientPostType :: Post -> PostType
 postClientPostType cp =
@@ -135,17 +115,17 @@ postClientPostType cp =
 
 postIsEmote :: Post -> Bool
 postIsEmote p =
-    and [ HM.lookup "override_icon_url" (postProps p) == Just (""::String)
-        , HM.lookup "override_username" (postProps p) == Just ("webhook"::String)
-        , ("*" `isPrefixOf` postMessage p)
-        , ("*" `isSuffixOf` postMessage p)
+    and [ HM.lookup "override_icon_url" (postProps p) == Just (""::T.Text)
+        , HM.lookup "override_username" (postProps p) == Just ("webhook"::T.Text)
+        , ("*" `T.isPrefixOf` postMessage p)
+        , ("*" `T.isSuffixOf` postMessage p)
         ]
 
 postIsJoin :: Post -> Bool
-postIsJoin p = "has left the channel" `isInfixOf` postMessage p
+postIsJoin p = "has left the channel" `T.isInfixOf` postMessage p
 
 postIsLeave :: Post -> Bool
-postIsLeave p = "has left the channel" `isInfixOf` postMessage p
+postIsLeave p = "has left the channel" `T.isInfixOf` postMessage p
 
 toClientPost :: Post -> ClientPost
 toClientPost p = ClientPost
@@ -156,22 +136,16 @@ toClientPost p = ClientPost
   , _cpPending     = False
   , _cpDeleted     = False
   , _cpAttachments = postFilenames p
+  , _cpPostId      = p^.postIdL
   }
 
--- Our ChannelContents is roughly equivalent to the Post structure we get from
--- the MM API, but we also map integers to ClientMessage values, which are
--- bits out debug output from the client itself.
 data ChannelContents = ChannelContents
-  { _cdOrder   :: [PostRef]
-  , _cdPosts   :: HashMap PostId ClientPost
-  , _cdCMsgs   :: HashMap Int ClientMessage
+  { _cdMessages :: [Message]
   }
 
 emptyChannelContents :: ChannelContents
 emptyChannelContents = ChannelContents
-  { _cdOrder = []
-  , _cdPosts = HM.empty
-  , _cdCMsgs = HM.empty
+  { _cdMessages = []
   }
 
 makeLenses ''ChannelContents
@@ -179,8 +153,8 @@ makeLenses ''ChannelContents
 data ChannelInfo = ChannelInfo
   { _cdViewed  :: UTCTime
   , _cdUpdated :: UTCTime
-  , _cdName    :: String
-  , _cdHeader  :: String
+  , _cdName    :: T.Text
+  , _cdHeader  :: T.Text
   , _cdType    :: Type
   , _cdLoaded  :: Bool
   }
@@ -212,17 +186,44 @@ data ChatState = ChatState
   , _usrMap                 :: HashMap UserId UserProfile
   , _cmdLine                :: Editor Name
   , _timeZone               :: TimeZone
-  , _timeFormat             :: Maybe String
+  , _timeFormat             :: Maybe T.Text
   , _csInputHistory         :: InputHistory
   , _csInputHistoryPosition :: HM.HashMap ChannelId (Maybe Int)
-  , _csLastChannelInput     :: HM.HashMap ChannelId String
-  , _csCurrentCompletion    :: Maybe String
+  , _csLastChannelInput     :: HM.HashMap ChannelId T.Text
+  , _csCurrentCompletion    :: Maybe T.Text
   , _csRequestQueue         :: RequestChan
   , _csTheme                :: AttrMap
   , _csMode                 :: Mode
   }
 
 makeLenses ''ChatState
+
+getUsernameForUserId :: ChatState -> UserId -> Maybe T.Text
+getUsernameForUserId st uId = st^.usrMap ^? ix uId.userProfileUsernameL
+
+clientPostToMessage :: ChatState -> ClientPost -> Message
+clientPostToMessage st cp = Message
+  { _mText     = _cpText cp
+  , _mUserName = getUsernameForUserId st (_cpUser cp)
+  , _mDate     = _cpDate cp
+  , _mType     = CP $ _cpType cp
+  , _mPending  = _cpPending cp
+  , _mDeleted  = _cpDeleted cp
+  , _mAttachments = _cpAttachments cp
+  , _mPostId   = Just $ cp^.cpPostId
+  }
+
+clientMessageToMessage :: ClientMessage -> Message
+clientMessageToMessage cm = Message
+  { _mText        = getBlocks (_cmText cm)
+  , _mUserName    = Nothing
+  , _mDate        = _cmDate cm
+  , _mType        = C $ _cmType cm
+  , _mPending     = False
+  , _mDeleted     = False
+  , _mAttachments = []
+  , _mPostId      = Nothing
+  }
 
 data Event
   = VtyEvent Vty.Event

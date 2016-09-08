@@ -68,13 +68,13 @@ credentialsForm :: State -> Widget Name
 credentialsForm st =
     center $ hLimit 50 $ vLimit 15 $
     border $
-    vBox [ wrappedText str "Please enter your MatterMost credentials to log in."
+    vBox [ wrappedText txt "Please enter your MatterMost credentials to log in."
          , str " "
          , str "Username:" <+> renderEditor (focus st == Username) (usernameEdit st)
          , str " "
          , str "Password:" <+> renderEditor (focus st == Password) (passwordEdit st)
          , str " "
-         , wrappedText str "Press Enter to log in or Esc to exit."
+         , wrappedText txt "Press Enter to log in or Esc to exit."
          ]
 
 onEvent :: State -> Event -> EventM Name (Next State)

@@ -51,14 +51,14 @@ teamSelect st =
          , str " "
          , border theList
          , str " "
-         , wrappedText str "Press Enter to select a team and connect or Esc to exit."
+         , wrappedText txt "Press Enter to select a team and connect or Esc to exit."
          ]
     where
     theList = renderList renderTeamItem True st
 
 renderTeamItem :: Bool -> Team -> Widget ()
 renderTeamItem _ t =
-    padRight Max $ str $ teamName t
+    padRight Max $ txt $ teamName t
 
 onEvent :: State -> Event -> EventM () (Next State)
 onEvent _  (EvKey KEsc []) = liftIO exitSuccess

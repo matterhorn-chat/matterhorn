@@ -59,7 +59,7 @@ fieldR name = do
 
 data PasswordSource =
     PasswordString Text
-    | PasswordCommand String
+    | PasswordCommand Text
     deriving (Eq, Read, Show)
 
 data Config = Config
@@ -68,26 +68,26 @@ data Config = Config
   , configTeam        :: Maybe Text
   , configPort        :: Int
   , configPass        :: Maybe PasswordSource
-  , configTimeFormat  :: Maybe String
-  , configTheme       :: Maybe String
+  , configTimeFormat  :: Maybe Text
+  , configTheme       :: Maybe Text
   } deriving (Eq, Show)
 
 fromIni :: Ini -> Either String Config
 fromIni = runParse $ do
   section "mattermost" $ do
-    configUser       <-                   fieldM "user"
-    configHost       <-                   field  "host"
-    configTeam       <-                   fieldM "team"
-    configPort       <-                   fieldR "port"
-    configTimeFormat <- fmap T.unpack <$> fieldM "timeFormat"
-    configTheme      <- fmap T.unpack <$> fieldM "theme"
-    pass             <-                   fieldM "pass"
-    passCmd          <-                   fieldM "passcmd"
+    configUser       <- fieldM "user"
+    configHost       <- field  "host"
+    configTeam       <- fieldM "team"
+    configPort       <- fieldR "port"
+    configTimeFormat <- fieldM "timeFormat"
+    configTheme      <- fieldM "theme"
+    pass             <- fieldM "pass"
+    passCmd          <- fieldM "passcmd"
     let configPass = case passCmd of
           Nothing -> case pass of
             Nothing -> Nothing
             Just p  -> Just (PasswordString p)
-          Just c -> Just (PasswordCommand (T.unpack c))
+          Just c -> Just (PasswordCommand c)
     return Config { .. }
 
 findConfig :: IO (Either String Config)
@@ -105,7 +105,7 @@ getConfig fp = runExceptT $ do
     Right conf -> do
       actualPass <- case configPass conf of
         Just (PasswordCommand cmdString) -> do
-          let (cmd:rest) = words cmdString
+          let (cmd:rest) = T.unpack <$> T.words cmdString
           output <- convertIOException (readProcess cmd rest "") `catchE`
                     (\e -> throwE $ "Could not execute password command: " <> e)
           return $ Just $ T.pack (takeWhile (/= '\n') output)
