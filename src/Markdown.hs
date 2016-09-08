@@ -1,4 +1,5 @@
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE ParallelListComp #-}
 
 module Markdown (renderMessage) where
@@ -123,9 +124,6 @@ toFragments uSet = go Normal
             (viewl-> C.Str t :< xs)
             | t `Set.member` uSet ->
               Fragment (TStr ("@" <> t)) User <| go n xs
-          C.Str ":" :< (viewl-> C.Str t :<
-                                (viewl-> C.Str ":" :< xs)) ->
-            Fragment (TStr (":" <> t <> ":")) Emoji <| go n xs
           C.Str t :< xs
             | t `Set.member` uSet ->
               Fragment (TStr t) User <| go n xs
@@ -160,30 +158,45 @@ toFragments uSet = go Normal
           EmptyL -> S.empty
 
 --
+
 data SplitState = SplitState
   { splitChunks  :: Seq (Seq Fragment)
   , splitCurrCol :: Int
   }
 
+separate :: Seq Fragment -> Seq Fragment
+separate sq = case viewl sq of
+  Fragment (TStr s) n :< xs -> gatherStrings s n xs
+  Fragment x n :< xs        -> Fragment x n <| separate xs
+  EmptyL                    -> S.empty
+  where gatherStrings s n rs = case viewl rs of
+          Fragment (TStr s') n' :< xs
+            | n == n' -> gatherStrings (s <> s') n xs
+          Fragment _ _ :< _ -> buildString s n <| separate rs
+          EmptyL -> S.singleton (buildString s n)
+        buildString s n
+          | ":" `T.isPrefixOf` s && ":" `T.isSuffixOf` s =
+            Fragment (TStr s) Emoji
+          | otherwise = Fragment (TStr s) n
+
 split :: Int -> Seq Fragment -> Seq (Seq Fragment)
-split maxCols = splitChunks . go (SplitState (S.singleton S.empty) 0)
+split maxCols = splitChunks . go (SplitState (S.singleton S.empty) 0) . separate
   where go st (viewl-> f :< fs) = go st' fs
           where st' =
-                  if available >= fsize && fTextual f /= TLineBreak
-                                        && fTextual f /= TSoftBreak
-                    then st { splitChunks  = addFragment f (splitChunks st)
+                  if | available >= fsize ->
+                         st { splitChunks  = addFragment f (splitChunks st)
                             , splitCurrCol = splitCurrCol st + fsize
                             }
-                    else if fTextual f == TSpace
-                           then st { splitChunks  = splitChunks st
-                                   , splitCurrCol = 0
-                                   }
-                           else st { splitChunks  = splitChunks st |> S.singleton f
-                                   , splitCurrCol = fsize
-                                   }
+                     | fTextual f == TSpace ->
+                         st { splitChunks = splitChunks st |> S.empty
+                            , splitCurrCol = 0
+                            }
+                     | otherwise ->
+                         st { splitChunks  = splitChunks st |> S.singleton f
+                            , splitCurrCol = fsize
+                            }
                 available = maxCols - splitCurrCol st
                 fsize = fragmentSize f
-                addFragment :: Fragment -> Seq (Seq Fragment) -> Seq (Seq Fragment)
                 addFragment x (viewr-> ls :> l) = ( ls |> (l |> x))
                 addFragment _ _ = error "[unreachable]"
         go st _                 = st
@@ -193,8 +206,9 @@ fragmentSize f = case fTextual f of
   TStr t     -> T.length t
   TLink t    -> T.length t
   TRawHtml t -> T.length t
+  TSpace     -> 1
   TLineBreak -> 0
-  _          -> 1
+  TSoftBreak -> 0
 
 strOf :: TextFragment -> Text
 strOf f = case f of
