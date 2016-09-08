@@ -168,9 +168,13 @@ split maxCols = splitChunks . go (SplitState (S.singleton S.empty) 0)
                     then st { splitChunks  = addFragment f (splitChunks st)
                             , splitCurrCol = splitCurrCol st + fsize
                             }
-                    else st { splitChunks  = splitChunks st |> S.singleton f
-                            , splitCurrCol = fsize
-                            }
+                    else if fTextual f == TSpace
+                           then st { splitChunks  = splitChunks st
+                                   , splitCurrCol = 0
+                                   }
+                           else st { splitChunks  = splitChunks st |> S.singleton f
+                                   , splitCurrCol = fsize
+                                   }
                 available = maxCols - splitCurrCol st
                 fsize = fragmentSize f
                 addFragment :: Fragment -> Seq (Seq Fragment) -> Seq (Seq Fragment)
