@@ -174,6 +174,7 @@ type RequestChan = Chan (IO (ChatState -> EventM Name ChatState))
 data Mode =
     Main
     | ShowHelp
+    | ChannelSelect
     deriving (Eq)
 
 data ChatState = ChatState
@@ -195,6 +196,7 @@ data ChatState = ChatState
   , _csRequestQueue         :: RequestChan
   , _csTheme                :: AttrMap
   , _csMode                 :: Mode
+  , _csChannelSelect        :: T.Text
   }
 
 makeLenses ''ChatState

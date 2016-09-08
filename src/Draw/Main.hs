@@ -99,10 +99,24 @@ renderChannelList st = hLimit channelListWidth $ vBox
                    str label
     channelNames = [ decorate $ padRight Max $ txt (mkChannelName n)
                    | n <- (st ^. csNames . cnChans)
-                   , let decorate = if | current   -> visible .
-                                                      withDefAttr currentChannelNameAttr
-                                       | unread    -> withDefAttr unreadChannelAttr
+                   , let decorate = if | matches   -> const $
+                                                      (forceAttr channelSelectCurrentAttr $ txt $ "#" <> st^.csChannelSelect) <+>
+                                                      txt matchRemaining
+                                       | st^.csMode == ChannelSelect &&
+                                         (not $ T.null $ st^.csChannelSelect) -> const emptyWidget
+                                       | current   -> if st^.csMode == ChannelSelect
+                                                      then withDefAttr channelSelectCurrentAttr
+                                                      else visible .
+                                                           withDefAttr currentChannelNameAttr
+                                       | unread   -> if st^.csMode == ChannelSelect
+                                                     then withDefAttr channelSelectCurrentAttr
+                                                     else visible .
+                                                          withDefAttr unreadChannelAttr
                                        | otherwise -> id
+                         matches = st^.csMode == ChannelSelect &&
+                                   (st^.csChannelSelect) `T.isPrefixOf` n &&
+                                   (not $ T.null $ st^.csChannelSelect)
+                         matchRemaining = T.drop (T.length $ st^.csChannelSelect) n
                          current = n == currentChannelName
                          Just chan = st ^. csNames . cnToChanId . at n
                          unread = hasUnread st chan
@@ -114,13 +128,30 @@ renderChannelList st = hLimit channelListWidth $ vBox
 
     dmChannelNames = [ decorate $ padRight Max $ colorUsername' (mkDMChannelName (u^.userProfileUsernameL))
                      | u <- sortBy (comparing userProfileUsername) usersToList
-                     , let decorate = if | current   -> visible .
-                                                        forceAttr currentChannelNameAttr
-                                         | unread    -> withDefAttr unreadChannelAttr
+                     , let decorate = if | matches   -> const $
+                                                        (forceAttr channelSelectCurrentAttr $ txt $ "@" <> st^.csChannelSelect) <+>
+                                                        txt matchRemaining
+                                         | st^.csMode == ChannelSelect &&
+                                           (not $ T.null $ st^.csChannelSelect) -> const emptyWidget
+                                         | current   -> if st^.csMode == ChannelSelect
+                                                        then withDefAttr channelSelectCurrentAttr
+                                                        else visible .
+                                                             withDefAttr currentChannelNameAttr
+                                         | unread   -> if st^.csMode == ChannelSelect
+                                                       then withDefAttr channelSelectCurrentAttr
+                                                       else visible .
+                                                            withDefAttr unreadChannelAttr
                                          | otherwise -> id
                            colorUsername' = case unread of
                              True -> txt
-                             _    -> colorUsername
+                             _    -> case st^.csMode == ChannelSelect of
+                                 True -> txt
+                                 False -> colorUsername
+                           matches = st^.csMode == ChannelSelect &&
+                                     (st^.csChannelSelect) `T.isPrefixOf` uname &&
+                                     (not $ T.null $ st^.csChannelSelect)
+                           matchRemaining = T.drop (T.length $ st^.csChannelSelect) uname
+                           uname = u^.userProfileUsernameL
                            cname = getDMChannelName (st^.csMe^.userIdL)
                                                     (u^.userProfileIdL)
                            current = cname == currentChannelName
@@ -198,12 +229,17 @@ findUserByDMChannelName userMap dmchan me = listToMaybe
   , user <- maybeToList (HM.lookup u userMap)
   ]
 
+subdue :: ChatState -> Widget a -> Widget a
+subdue st = if st^.csMode == ChannelSelect
+            then forceAttr ""
+            else id
+
 drawMain :: ChatState -> [Widget Name]
 drawMain st =
-    [ (renderChannelList st <+> (borderElem bsIntersectR <=>
-                                 vLimit normalChannelListHeight vBorder <=>
-                                 borderElem bsIntersectR <=> vBorder)
-                            <+> renderCurrentChannelDisplay st)
-      <=> (hLimit channelListWidth hBorder <+> borderElem bsIntersectB <+> hBorder)
-      <=> renderUserCommandBox st
+    [ (renderChannelList st <+> (subdue st (borderElem bsIntersectR <=>
+                                            vLimit normalChannelListHeight vBorder <=>
+                                            borderElem bsIntersectR <=> vBorder))
+                            <+> (subdue st $ renderCurrentChannelDisplay st))
+      <=> (subdue st $ hLimit channelListWidth hBorder <+> borderElem bsIntersectB <+> hBorder)
+      <=> (subdue st $ renderUserCommandBox st)
     ]

@@ -84,6 +84,7 @@ newState t c i u m tz fmt hist rq theme = ChatState
   , _csCurrentCompletion    = Nothing
   , _csTheme                = theme
   , _csMode                 = Main
+  , _csChannelSelect        = ""
   }
 
 runAsync :: ChatState -> IO (ChatState -> EventM Name ChatState) -> IO ()

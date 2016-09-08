@@ -34,8 +34,9 @@ import           InputHistory
 onEvent :: ChatState -> Event -> EventM Name (Next ChatState)
 onEvent st e =
     case st^.csMode of
-        Main     -> onEventMain st e
-        ShowHelp -> onEventShowHelp st e
+        Main          -> onEventMain st e
+        ShowHelp      -> onEventShowHelp st e
+        ChannelSelect -> onEventChannelSelect st e
 
 onEventShowHelp :: ChatState -> Event -> EventM Name (Next ChatState)
 onEventShowHelp st (VtyEvent (Vty.EvKey Vty.KLeft [])) = do
@@ -76,6 +77,9 @@ onEventMain st (VtyEvent (Vty.EvResize _ _)) = do
   continue =<< updateChannelScrollState st
 onEventMain st (VtyEvent (Vty.EvKey (Vty.KFun 1) [])) =
   continue $ st & csMode .~ ShowHelp
+onEventMain st (VtyEvent (Vty.EvKey (Vty.KChar 'g') [Vty.MCtrl])) =
+  continue $ st & csMode          .~ ChannelSelect
+                & csChannelSelect .~ ""
 onEventMain st (VtyEvent (Vty.EvKey (Vty.KChar 'q') [Vty.MCtrl])) =
   halt st
 onEventMain st (VtyEvent (Vty.EvKey (Vty.KChar '\t') [])) =
@@ -117,6 +121,27 @@ onEventMain st (WSEvent we) =
   handleWSEvent st we
 onEventMain st (RespEvent f) =
   continue =<< f st
+
+onEventChannelSelect :: ChatState -> Event -> EventM Name (Next ChatState)
+onEventChannelSelect st (VtyEvent (Vty.EvKey Vty.KEnter [])) = do
+    -- If the text entered matches only one channel, switch to it
+    let matches = filter (s `T.isPrefixOf`) $ (st^.csNames.cnChans <> st^.csNames.cnUsers)
+        s = st^.csChannelSelect
+    case matches of
+        [single] ->
+            case channelByName st single of
+              Just cId -> continue =<< (setFocus cId $ st & csMode .~ Main)
+              Nothing  -> continue st
+        _ -> continue st
+
+onEventChannelSelect st (VtyEvent (Vty.EvKey Vty.KBS [])) = do
+    continue $ st & csChannelSelect %~ (\s -> if T.null s then s else T.init s)
+onEventChannelSelect st (VtyEvent (Vty.EvKey (Vty.KChar c) [])) = do
+    continue $ st & csChannelSelect %~ (flip T.snoc c)
+onEventChannelSelect st (VtyEvent (Vty.EvKey Vty.KEsc [])) = do
+    continue $ st & csMode .~ Main
+onEventChannelSelect st _ = do
+    continue st
 
 channelHistoryForward :: ChatState -> ChatState
 channelHistoryForward st =

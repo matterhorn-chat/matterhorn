@@ -12,5 +12,6 @@ import Draw.ShowHelp
 draw :: ChatState -> [Widget Name]
 draw st =
     case st^.csMode of
-        Main     -> drawMain st
-        ShowHelp -> drawShowHelp st
+        Main          -> drawMain st
+        ShowHelp      -> drawShowHelp st
+        ChannelSelect -> drawMain st
