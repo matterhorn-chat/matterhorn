@@ -52,6 +52,7 @@ Command         Keybinding              Effect
 -----------------------------------------------------------------------
 /right          Ctrl-n                  Go to the next chat channel
 /left           Ctrl-p                  Go to the previous chat channel
+                Ctrl-g                  Enter fast channel selection mode
 /quit           Esc                     Quit the editor
 /focus chan                             Go to normal (or user) channel
                                         named 'chan'
