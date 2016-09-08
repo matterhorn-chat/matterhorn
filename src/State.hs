@@ -65,24 +65,24 @@ newState :: Token
          -> AttrMap
          -> ChatState
 newState t c i u m tz fmt hist rq theme = ChatState
-  { _csTok    = t
-  , _csConn   = c
-  , _csFocus  = i
-  , _csMe     = u
-  , _csMyTeam = m
-  , _csNames  = MMNames [] [] HM.empty [] HM.empty
-  , _msgMap   = HM.empty
-  , _usrMap   = HM.empty
-  , _cmdLine  = editor MessageInput (vBox . map str) (Just 1) ""
-  , _timeZone = tz
-  , _csRequestQueue = rq
-  , _timeFormat = fmt
-  , _csInputHistory = hist
+  { _csTok                  = t
+  , _csConn                 = c
+  , _csFocus                = i
+  , _csMe                   = u
+  , _csMyTeam               = m
+  , _csNames                = MMNames [] [] HM.empty [] HM.empty
+  , _msgMap                 = HM.empty
+  , _usrMap                 = HM.empty
+  , _cmdLine                = editor MessageInput (vBox . map str) (Just 1) ""
+  , _timeZone               = tz
+  , _csRequestQueue         = rq
+  , _timeFormat             = fmt
+  , _csInputHistory         = hist
   , _csInputHistoryPosition = mempty
-  , _csLastChannelInput = mempty
-  , _csCurrentCompletion = Nothing
-  , _csTheme = theme
-  , _csMode = Main
+  , _csLastChannelInput     = mempty
+  , _csCurrentCompletion    = Nothing
+  , _csTheme                = theme
+  , _csMode                 = Main
   }
 
 runAsync :: ChatState -> IO (ChatState -> EventM Name ChatState) -> IO ()
