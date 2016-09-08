@@ -15,8 +15,7 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
 import qualified Data.Foldable as F
 import           Data.HashMap.Strict ( HashMap )
-import           Data.List (sortBy)
-import           Data.Ord (comparing)
+import           Data.List (sort)
 import           Data.Maybe ( listToMaybe, maybeToList )
 import           Data.Monoid ((<>))
 import           Data.Set (Set)
@@ -134,7 +133,7 @@ renderChannelList st = hLimit channelListWidth $ vBox
     usersToList = filter (not . isSelf) $ st ^. usrMap & HM.elems
 
     dmChannelNames = [ decorate $ padRight Max $ colorUsername' (mkDMChannelName u)
-                     | u <- sortBy (comparing _uiName) usersToList
+                     | u <- sort usersToList
                      , let decorate = if | matches   -> const $
                                                         (forceAttr channelSelectMatchAttr $ txt $ T.cons (userSigil u) (st^.csChannelSelect)) <+>
                                                         txt matchRemaining

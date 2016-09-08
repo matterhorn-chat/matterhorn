@@ -191,6 +191,9 @@ data UserInfo = UserInfo
 
 makeLenses ''UserInfo
 
+instance Ord UserInfo where
+  u1 `compare` u2 = (u1^.uiName) `compare` (u2^.uiName)
+
 userInfoFromProfile :: UserProfile -> UserInfo
 userInfoFromProfile up = UserInfo
   { _uiName   = userProfileUsername up
