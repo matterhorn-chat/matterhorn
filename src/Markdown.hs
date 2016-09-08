@@ -112,6 +112,7 @@ data FragmentStyle
   | Code
   | User
   | Link
+  | Emoji
     deriving (Eq, Show)
 
 -- We convert it pretty mechanically:
@@ -121,6 +122,8 @@ toFragments uSet = go Normal
                       (viewl-> C.Str t :< xs))
           | t `Set.member` uSet =
             Fragment (TStr ("@" <> t)) User <| go n xs
+        go n (viewl-> C.Str ":" :< (viewl-> C.Str t :< (viewl-> C.Str ":" :< xs))) =
+            Fragment (TStr (":" <> t <> ":")) Emoji <| go n xs
         go n (viewl-> C.Str t :< xs)
           | t `Set.member` uSet =
             Fragment (TStr t) User <| go n xs
@@ -204,6 +207,7 @@ gatherWidgets (viewl-> (Fragment frag style :< rs)) = go style (strOf frag) rs
                 Strong -> B.withDefAttr clientStrongAttr (B.txt t)
                 Code   -> B.withDefAttr codeAttr (B.txt t)
                 Link   -> B.withDefAttr urlAttr (B.txt t)
+                Emoji  -> B.withDefAttr emojiAttr (B.txt t)
                 User   -> B.withDefAttr (attrForUsername t)
                                         (B.txt t)
           in w <| gatherWidgets xs
