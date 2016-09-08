@@ -216,6 +216,9 @@ handleWSEvent st we =
     WMPostDeleted -> case wepPost (weData we) of
       Just p  -> deleteMessage p st >>= continue
       Nothing -> continue st
+    WMStatusChange -> case wepStatus (weData we) of
+      Just status -> updateStatus (weUserId we) status st >>= continue
+      Nothing -> continue st
     _ -> continue st
 
 shouldSkipMessage :: T.Text -> Bool
