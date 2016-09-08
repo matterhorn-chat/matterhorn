@@ -148,6 +148,7 @@ changeChannelCommon st =
     loadLastEdit =<<
     clearEditor =<<
     updateChannelScrollState =<<
+    fetchCurrentScrollback =<<
     resetHistoryPosition st
 
 preChangeChannelCommon :: ChatState -> EventM Name ChatState
@@ -305,6 +306,23 @@ startTimezoneMonitor tz requestChan = do
 
   void $ forkIO (timezoneMonitor tz)
 
+fetchCurrentScrollback :: ChatState -> EventM a ChatState
+fetchCurrentScrollback st = do
+  let cId = currentChannelId st
+  when (maybe False not (st^?msgMap.ix(cId).ccInfo.cdLoaded)) $
+    liftIO $ doAsyncWith st $ do
+      posts <- mmGetPosts (st^.csConn)
+                 (st^.csTok)
+                 (st^.csMyTeam.teamIdL)
+                 cId
+                 0
+                 numScrollbackPosts
+      return $ \ st' -> do
+        let st'' = st' & msgMap.ix(cId).ccContents .~ fromPosts st' posts
+                       & msgMap.ix(cId).ccInfo.cdLoaded .~ True
+        updateChannelScrollState st''
+  return st
+
 setupState :: Config -> RequestChan -> IO ChatState
 setupState config requestChan = do
   -- If we don't have enough credentials, ask for them.
@@ -382,7 +400,7 @@ setupState config requestChan = do
                      { _ccContents = emptyChannelContents
                      , _ccInfo     = cInfo
                      }
-    when (c^.channelNameL /= "town-square") $ Chan.writeChan requestChan $ do
+    when (c^.channelNameL /= "town-square" && c^.channelTypeL == "O") $ Chan.writeChan requestChan $ do
       posts <- mmGetPosts cd token myTeamId (getId c) 0 numScrollbackPosts
       return $ \ st -> do
           let st' = st & msgMap.ix(getId c).ccContents .~ fromPosts st posts
