@@ -16,7 +16,6 @@ import qualified Data.Sequence as Seq
 import qualified Data.Foldable as F
 import           Data.HashMap.Strict ( HashMap )
 import           Data.List (sort)
-import           Data.Ord (comparing)
 import           Data.Maybe ( listToMaybe, maybeToList )
 import           Data.Monoid ((<>))
 import           Data.Set (Set)
