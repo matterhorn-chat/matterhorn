@@ -126,6 +126,10 @@ resetHistoryPosition st =
     let cId = currentChannelId st
     in return $ st & csInputHistoryPosition.at cId .~ Just Nothing
 
+updateStatus :: UserId -> T.Text -> ChatState -> EventM a ChatState
+updateStatus uId t st =
+  return (st & usrMap.ix(uId).uiStatus .~ statusFromText t)
+
 clearEditor :: ChatState -> EventM a ChatState
 clearEditor st = return $ st & cmdLine %~ applyEdit clearZipper
 
