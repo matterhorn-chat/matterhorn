@@ -169,6 +169,35 @@ data ClientChannel = ClientChannel
 
 makeLenses ''ClientChannel
 
+data UserStatus
+  = Online
+  | Away
+  | Offline
+  | Other T.Text
+    deriving (Eq, Show)
+
+statusFromText :: T.Text -> UserStatus
+statusFromText t = case t of
+  "online"  -> Online
+  "offline" -> Offline
+  "away"    -> Away
+  _         -> Other t
+
+data UserInfo = UserInfo
+  { _uiName   :: T.Text
+  , _uiId     :: UserId
+  , _uiStatus :: UserStatus
+  } deriving (Eq, Show)
+
+makeLenses ''UserInfo
+
+userInfoFromProfile :: UserProfile -> UserInfo
+userInfoFromProfile up = UserInfo
+  { _uiName   = userProfileUsername up
+  , _uiId     = userProfileId up
+  , _uiStatus = Offline
+  }
+
 type RequestChan = Chan (IO (ChatState -> EventM Name ChatState))
 
 data Mode =
@@ -184,7 +213,7 @@ data ChatState = ChatState
   , _csMe                   :: User
   , _csMyTeam               :: Team
   , _msgMap                 :: HashMap ChannelId ClientChannel
-  , _usrMap                 :: HashMap UserId UserProfile
+  , _usrMap                 :: HashMap UserId UserInfo
   , _cmdLine                :: Editor Name
   , _timeZone               :: TimeZone
   , _timeFormat             :: Maybe T.Text
@@ -200,7 +229,7 @@ data ChatState = ChatState
 makeLenses ''ChatState
 
 getUsernameForUserId :: ChatState -> UserId -> Maybe T.Text
-getUsernameForUserId st uId = st^.usrMap ^? ix uId.userProfileUsernameL
+getUsernameForUserId st uId = st^.usrMap ^? ix uId.uiName
 
 clientPostToMessage :: ChatState -> ClientPost -> Message
 clientPostToMessage st cp = Message
