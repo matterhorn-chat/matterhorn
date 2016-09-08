@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module State where
 
-import           Brick (EventM, str, vBox)
+import           Brick (EventM, txt, vBox)
 import           Brick.AttrMap (AttrMap)
 import           Brick.Widgets.Edit (editor, getEditContents)
 import           Control.Concurrent (threadDelay, forkIO)
@@ -16,7 +16,7 @@ import           Data.Text.Zipper (clearZipper, insertMany)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
 import           Data.Foldable (toList)
-import           Data.List (sort, intercalate)
+import           Data.List (sort)
 import           Data.Maybe (listToMaybe, maybeToList, fromJust)
 import           Data.Monoid ((<>))
 import           Data.Time.Clock ( getCurrentTime )
@@ -77,7 +77,7 @@ newState t c i u m tz fmt hist rq theme = ChatState
   , _csNames                = MMNames [] [] HM.empty [] HM.empty
   , _msgMap                 = HM.empty
   , _usrMap                 = HM.empty
-  , _cmdLine                = editor MessageInput (vBox . map str) (Just 1) ""
+  , _cmdLine                = editor MessageInput (vBox . map txt) (Just 1) ""
   , _timeZone               = tz
   , _csRequestQueue         = rq
   , _timeFormat             = fmt
@@ -141,7 +141,7 @@ loadLastEdit st =
     let cId = currentChannelId st
     in return $ case st^.csLastChannelInput.at cId of
         Nothing -> st
-        Just lastEdit -> st & cmdLine %~ (applyEdit $ insertMany (T.unpack lastEdit))
+        Just lastEdit -> st & cmdLine %~ (applyEdit $ insertMany (lastEdit))
 
 changeChannelCommon :: ChatState -> EventM Name ChatState
 changeChannelCommon st =
@@ -153,9 +153,9 @@ changeChannelCommon st =
 
 preChangeChannelCommon :: ChatState -> EventM Name ChatState
 preChangeChannelCommon st = do
-    let curEdit = intercalate "\n" $ getEditContents $ st^.cmdLine
+    let curEdit = T.intercalate "\n" $ getEditContents $ st^.cmdLine
         cId = currentChannelId st
-    return $ st & csLastChannelInput.at cId .~ Just (T.pack curEdit)
+    return $ st & csLastChannelInput.at cId .~ Just curEdit
 
 nextChannel :: ChatState -> EventM Name ChatState
 nextChannel st = setFocusWith st Z.right

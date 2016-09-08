@@ -10,11 +10,11 @@ import           Control.Monad.IO.Class (liftIO)
 import qualified Data.Set as Set
 import           Data.Text.Zipper ( TextZipper
                                   , getText
-                                  , stringZipper
                                   , clearZipper
                                   , gotoEOL
                                   , insertMany
                                   , deletePrevChar )
+import           Data.Text.Zipper.Generic ( textZipper )
 import qualified Data.Text as T
 import Data.Monoid ((<>))
 import qualified Graphics.Vty as Vty
@@ -110,7 +110,7 @@ onEventMain st (Vty.EvPaste bytes) = do
   -- line ending because the zipper will respect the line limit when
   -- inserting the paste. Once we add support for multi-line editing,
   -- this will Just Work once the editor's line limit is set to Nothing.
-  let pasteStr = UTF8.toString bytes
+  let pasteStr = T.pack (UTF8.toString bytes)
   continue $ st & cmdLine %~ applyEdit (insertMany pasteStr)
 onEventMain st e = do
   let st' = case e of
@@ -155,7 +155,7 @@ channelHistoryForward st =
         | otherwise ->
           let Just entry = getHistoryEntry cId newI (st^.csInputHistory)
               newI = i - 1
-          in st & cmdLine.editContentsL .~ (gotoEOL $ stringZipper [entry] (Just 1))
+          in st & cmdLine.editContentsL .~ (gotoEOL $ textZipper [entry] (Just 1))
                 & csInputHistoryPosition.at cId .~ (Just $ Just newI)
       _ -> st
 
@@ -168,25 +168,25 @@ channelHistoryBackward st =
           in case getHistoryEntry cId newI (st^.csInputHistory) of
               Nothing -> st
               Just entry ->
-                  st & cmdLine.editContentsL .~ (gotoEOL $ stringZipper [entry] (Just 1))
+                  st & cmdLine.editContentsL .~ (gotoEOL $ textZipper [entry] (Just 1))
                      & csInputHistoryPosition.at cId .~ (Just $ Just newI)
       _ ->
           let newI = 0
           in case getHistoryEntry cId newI (st^.csInputHistory) of
               Nothing -> st
               Just entry ->
-                  st & cmdLine.editContentsL .~ (gotoEOL $ stringZipper [entry] (Just 1))
+                  st & cmdLine.editContentsL .~ (gotoEOL $ textZipper [entry] (Just 1))
                      & csInputHistoryPosition.at cId .~ (Just $ Just newI)
 
 -- XXX: killWordBackward, and delete could probably all
 -- be moved to the text zipper package (after some generalization and cleanup)
 -- for example, we should look up the standard unix word break characters
 -- and use those in killWordBackward.
-killWordBackward :: TextZipper String -> TextZipper String
+killWordBackward :: TextZipper T.Text -> TextZipper T.Text
 killWordBackward z =
-    let n = length
-          $ takeWhile (/= ' ')
-          $ reverse line
+    let n = T.length
+          $ T.takeWhile (/= ' ')
+          $ T.reverse line
         delete n' z' | n' <= 0 = z'
         delete n' z' = delete (n'-1) (deletePrevChar z')
         (line:_) = getText z
@@ -202,7 +202,7 @@ tabComplete dir st = do
                                   map ("#" <>) (st^.csNames.cnChans) ++
                                   map ("/" <>) (map commandName commandList))
 
-      (line:_)    = T.pack <$> getEditContents (st^.cmdLine)
+      (line:_)    = getEditContents (st^.cmdLine)
       curComp     = st^.csCurrentCompletion
       nextComp    = case curComp of
                     Nothing -> Just (currentWord line)
@@ -212,7 +212,7 @@ tabComplete dir st = do
       st' = st & csCurrentCompletion .~ nextComp
       edit = case mb_word of
           Nothing -> id
-          Just w -> insertMany (T.unpack w) . killWordBackward
+          Just w -> insertMany w . killWordBackward
 
   continue $ st' & cmdLine %~ (applyEdit edit)
 
@@ -223,10 +223,10 @@ handleInputSubmission st = do
       st' = st & cmdLine %~ applyEdit clearZipper
                & csInputHistory %~ addHistoryEntry line cId
                & csInputHistoryPosition.at cId .~ Nothing
-  case line of
-    ('/':cmd) -> dispatchCommand (T.pack cmd) st'
-    _         -> do
-      liftIO (sendMessage st' $ T.pack line)
+  case T.uncons line of
+    Just ('/',cmd) -> dispatchCommand cmd st'
+    _              -> do
+      liftIO (sendMessage st' line)
       continue st'
 
 handleWSEvent :: ChatState -> WebsocketEvent -> EventM Name (Next ChatState)

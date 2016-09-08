@@ -15,13 +15,14 @@ import System.Directory (createDirectoryIfMissing)
 import System.FilePath (dropFileName)
 import qualified System.IO.Strict as S
 import qualified Data.Vector as V
+import           Data.Text ( Text )
 
 import IOUtil
 import FilePaths
 import Network.Mattermost (ChannelId)
 
 data InputHistory =
-    InputHistory { _historyEntries :: HM.HashMap ChannelId (V.Vector String)
+    InputHistory { _historyEntries :: HM.HashMap ChannelId (V.Vector Text)
                  }
                  deriving (Show)
 
@@ -49,13 +50,13 @@ readHistory = runExceptT $ do
             return $ InputHistory $ HM.fromList entries
         _ -> throwE "Failed to parse history file"
 
-addHistoryEntry :: String -> ChannelId -> InputHistory -> InputHistory
+addHistoryEntry :: Text -> ChannelId -> InputHistory -> InputHistory
 addHistoryEntry e cId ih = ih & historyEntries.at cId %~ insertEntry
     where
     insertEntry Nothing  = Just $ V.singleton e
     insertEntry (Just v) = Just $ V.cons e v
 
-getHistoryEntry :: ChannelId -> Int -> InputHistory -> Maybe String
+getHistoryEntry :: ChannelId -> Int -> InputHistory -> Maybe Text
 getHistoryEntry cId i ih = do
     es <- ih^.historyEntries.at cId
     es ^? ix i
