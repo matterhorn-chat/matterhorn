@@ -118,40 +118,46 @@ data FragmentStyle
 -- We convert it pretty mechanically:
 toFragments :: UserSet -> Inlines -> Seq Fragment
 toFragments uSet = go Normal
-  where go n (viewl-> C.Str "@" :<
-                      (viewl-> C.Str t :< xs))
-          | t `Set.member` uSet =
-            Fragment (TStr ("@" <> t)) User <| go n xs
-        go n (viewl-> C.Str ":" :< (viewl-> C.Str t :< (viewl-> C.Str ":" :< xs))) =
+  where go n c = case viewl c of
+          C.Str "@" :<
+            (viewl-> C.Str t :< xs)
+            | t `Set.member` uSet ->
+              Fragment (TStr ("@" <> t)) User <| go n xs
+          C.Str ":" :< (viewl-> C.Str t :<
+                                (viewl-> C.Str ":" :< xs)) ->
             Fragment (TStr (":" <> t <> ":")) Emoji <| go n xs
-        go n (viewl-> C.Str t :< xs)
-          | t `Set.member` uSet =
-            Fragment (TStr t) User <| go n xs
-          | otherwise =
-            Fragment (TStr t) n <| go n xs
-        go n (viewl-> C.Space :< xs) =
-          Fragment TSpace n <| go n xs
-        go n (viewl-> C.SoftBreak :< xs) =
-          Fragment TSoftBreak n <| go n xs
-        go n (viewl-> C.LineBreak :< xs) =
-          Fragment TLineBreak n <| go n xs
-        go n (viewl-> C.Link label url _ :< xs) =
-          let urlFrags = [ Fragment (TStr " (")  n
-                         , Fragment (TLink url) Link
-                         , Fragment (TStr ")")  n
-                         ]
-          in case F.toList label of
+          C.Str t :< xs
+            | t `Set.member` uSet ->
+              Fragment (TStr t) User <| go n xs
+            | otherwise ->
+              Fragment (TStr t) n <| go n xs
+          C.Space :< xs ->
+            Fragment TSpace n <| go n xs
+          C.SoftBreak :< xs ->
+            Fragment TSoftBreak n <| go n xs
+          C.LineBreak :< xs ->
+            Fragment TLineBreak n <| go n xs
+          C.Link label url _ :< xs ->
+            let urlFrags = [ Fragment (TStr " (")  n
+                           , Fragment (TLink url) Link
+                           , Fragment (TStr ")")  n
+                           ]
+            in case F.toList label of
               [C.Str s] | s == url -> Fragment (TLink url) Link <| go n xs
               _                    -> go n label <> S.fromList urlFrags <> go n xs
-        go n (viewl-> C.RawHtml t :< xs) =
-          Fragment (TRawHtml t) n <| go n xs
-        go n (viewl-> C.Code t :< xs) =
-          Fragment (TStr t) Code <| go n xs
-        go n (viewl-> C.Emph is :< xs) =
-          go Emph is <> go n xs
-        go n (viewl-> C.Strong is :< xs) =
-          go Strong is <> go n xs
-        go _ _ = S.empty
+          C.RawHtml t :< xs ->
+            Fragment (TRawHtml t) n <| go n xs
+          C.Code t :< xs ->
+            Fragment (TStr t) Code <| go n xs
+          C.Emph is :< xs ->
+            go Emph is <> go n xs
+          C.Strong is :< xs ->
+            go Strong is <> go n xs
+          C.Image _ url _ :< xs ->
+            Fragment (TLink url) Link <| go n xs
+          C.Entity t :< xs ->
+            Fragment (TStr t) Link <| go n xs
+          EmptyL -> S.empty
 
 --
 data SplitState = SplitState
