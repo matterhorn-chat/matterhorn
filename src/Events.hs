@@ -136,7 +136,7 @@ onEventChannelSelect st (VtyEvent (Vty.EvKey Vty.KEnter [])) = do
 
 onEventChannelSelect st (VtyEvent (Vty.EvKey Vty.KBS [])) = do
     continue $ st & csChannelSelect %~ (\s -> if T.null s then s else T.init s)
-onEventChannelSelect st (VtyEvent (Vty.EvKey (Vty.KChar c) [])) = do
+onEventChannelSelect st (VtyEvent (Vty.EvKey (Vty.KChar c) [])) | c /= '\t' = do
     continue $ st & csChannelSelect %~ (flip T.snoc c)
 onEventChannelSelect st (VtyEvent (Vty.EvKey Vty.KEsc [])) = do
     continue $ st & csMode .~ Main
