@@ -36,7 +36,6 @@ executable matterhorn
                        TeamSelect
                        Login
                        Markdown
-                       Highlighting
   default-extensions:  OverloadedStrings,
                        ScopedTypeVariables
   ghc-options:         -Wall -threaded
@@ -55,9 +54,6 @@ executable matterhorn
                      , vty
                      , transformers
                      , text-zipper >= 0.6.1
-                     , text-markup
-                     , regex-tdfa
-                     , regex-base
                      , array
                      , time
                      , linebreak
