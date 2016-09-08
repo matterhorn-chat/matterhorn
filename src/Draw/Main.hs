@@ -148,11 +148,13 @@ renderChannelList st = hLimit channelListWidth $ vBox
                                                        else visible .
                                                             withDefAttr unreadChannelAttr
                                          | otherwise -> id
-                           colorUsername' = case unread || current of
-                             True -> txt
-                             _    -> case st^.csMode == ChannelSelect of
-                                 True -> txt
-                                 False -> colorUsername
+                           colorUsername' =
+                             if | unread || current -> txt
+                                | st^.csMode == ChannelSelect -> txt
+                                | u^.uiStatus == Offline ->
+                                  withDefAttr clientMessageAttr . txt
+                                | otherwise ->
+                                  colorUsername
                            matches = st^.csMode == ChannelSelect &&
                                      (st^.csChannelSelect) `T.isPrefixOf` uname &&
                                      (not $ T.null $ st^.csChannelSelect)

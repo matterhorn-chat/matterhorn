@@ -445,10 +445,7 @@ setupState config requestChan = do
         }
       Just townSqId = chanNames ^. cnToChanId . at "town-square"
       chanIds = [ (chanNames ^. cnToChanId) HM.! i
-                | i <- chanNames ^. cnChans ] ++
-                [ c
-                | i <- chanNames ^. cnUsers
-                , c <- maybeToList (HM.lookup i (chanNames ^. cnToChanId)) ]
+                | i <- chanNames ^. cnChans ]
       chanZip = Z.findRight (== townSqId) (Z.fromList chanIds)
       themeName = case configTheme config of
           Nothing -> defaultThemeName
