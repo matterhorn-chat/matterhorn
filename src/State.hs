@@ -350,6 +350,15 @@ setupState config requestChan = do
                      | c <- toList chans
                      , c ^. channelNameL == n ]
 
+  Chan.writeChan requestChan $ do
+    statusMap <- mmGetStatuses cd token
+    return $ \ appState ->
+      return $ HM.foldrWithKey
+                 (\ uId status st ->
+                    st & usrMap.ix(uId).uiStatus .~ statusFromText status)
+                 appState
+                 statusMap
+
   msgs <- fmap (HM.fromList . toList) $ forM chans $ \c -> do
     let chanData = cm ! getId c
         viewed   = chanData ^. channelDataLastViewedAtL
@@ -423,7 +432,7 @@ setupState config requestChan = do
           Nothing -> fromJust $ lookup defaultThemeName themes
           Just t -> t
       st = newState token cd chanZip myUser myTeam tz (configTimeFormat config) hist requestChan theme
-             & usrMap .~ users
+             & usrMap .~ fmap userInfoFromProfile users
              & msgMap .~ msgs
              & csNames .~ chanNames
 

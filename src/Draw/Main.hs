@@ -75,8 +75,15 @@ renderChatMessage uSet mFormat tz msg =
 mkChannelName :: Text -> Text
 mkChannelName = T.cons '#'
 
-mkDMChannelName :: Text -> Text
-mkDMChannelName = T.cons '@'
+mkDMChannelName :: UserInfo -> Text
+mkDMChannelName u = T.cons (userSigil u) (u^.uiName)
+
+userSigil :: UserInfo -> Char
+userSigil u = case u^.uiStatus of
+    Offline -> ' '
+    Online  -> '+'
+    Away    -> '-'
+    Other _ -> '?'
 
 channelListWidth :: Int
 channelListWidth = 20
@@ -122,14 +129,14 @@ renderChannelList st = hLimit channelListWidth $ vBox
                          unread = hasUnread st chan
                    ]
 
-    isSelf :: UserProfile -> Bool
-    isSelf u = (st^.csMe.userIdL) == (u^.userProfileIdL)
+    isSelf :: UserInfo -> Bool
+    isSelf u = (st^.csMe.userIdL) == (u^.uiId)
     usersToList = filter (not . isSelf) $ st ^. usrMap & HM.elems
 
-    dmChannelNames = [ decorate $ padRight Max $ colorUsername' (mkDMChannelName (u^.userProfileUsernameL))
-                     | u <- sortBy (comparing userProfileUsername) usersToList
+    dmChannelNames = [ decorate $ padRight Max $ colorUsername' (mkDMChannelName u)
+                     | u <- sortBy (comparing _uiName) usersToList
                      , let decorate = if | matches   -> const $
-                                                        (forceAttr channelSelectCurrentAttr $ txt $ "@" <> st^.csChannelSelect) <+>
+                                                        (forceAttr channelSelectCurrentAttr $ txt $ T.cons (userSigil u) (st^.csChannelSelect)) <+>
                                                         txt matchRemaining
                                          | st^.csMode == ChannelSelect &&
                                            (not $ T.null $ st^.csChannelSelect) -> const emptyWidget
@@ -151,11 +158,11 @@ renderChannelList st = hLimit channelListWidth $ vBox
                                      (st^.csChannelSelect) `T.isPrefixOf` uname &&
                                      (not $ T.null $ st^.csChannelSelect)
                            matchRemaining = T.drop (T.length $ st^.csChannelSelect) uname
-                           uname = u^.userProfileUsernameL
+                           uname = u^.uiName
                            cname = getDMChannelName (st^.csMe^.userIdL)
-                                                    (u^.userProfileIdL)
+                                                    (u^.uiId)
                            current = cname == currentChannelName
-                           m_chanId = st^.csNames.cnToChanId.at (userProfileUsername u)
+                           m_chanId = st^.csNames.cnToChanId.at (u^.uiName)
                            unread = maybe False (hasUnread st) m_chanId
                      ]
 
@@ -177,14 +184,14 @@ renderCurrentChannelDisplay st = header <=> messages
                                                   chnName
                                                   (st^.csMe^.userIdL) of
                        Nothing -> txt $ mkChannelName chnName
-                       Just u  -> colorUsername $ mkDMChannelName (u^.userProfileUsernameL)
+                       Just u  -> colorUsername $ mkDMChannelName u
                    _        -> txt $ mkChannelName chnName
                  False -> wrappedText txt $ mkChannelName chnName <> " - " <> topicStr
     messages = if chan^.ccInfo.cdLoaded
                then viewport (ChannelMessages cId) Vertical chatText <+> str " "
                else center $ str "[loading channel scrollback]"
     --uPattern = mkUsernamePattern (HM.elems (st^.usrMap))
-    uSet = Set.fromList (map userProfileUsername (HM.elems (st^.usrMap)))
+    uSet = Set.fromList (map _uiName (HM.elems (st^.usrMap)))
     chatText = vBox $ F.toList $
                       renderChatMessage uSet (st ^. timeFormat) (st ^. timeZone) <$>
                       channelMessages
@@ -218,10 +225,10 @@ insertDateBoundaries tz ms = fst $ F.foldl' nextMsg initState ms
             then (rest Seq.|> (dateMsg (msg^.mDate)) Seq.|> msg, Just msg)
             else (rest Seq.|> msg, Just msg)
 
-findUserByDMChannelName :: HashMap UserId UserProfile
+findUserByDMChannelName :: HashMap UserId UserInfo
                         -> T.Text -- ^ the dm channel name
                         -> UserId -- ^ me
-                        -> Maybe UserProfile -- ^ you
+                        -> Maybe UserInfo -- ^ you
 findUserByDMChannelName userMap dmchan me = listToMaybe
   [ user
   | u <- HM.keys userMap
