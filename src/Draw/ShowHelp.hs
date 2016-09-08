@@ -24,11 +24,14 @@ withMargins (hMargin, vMargin) w =
 
 helpBox :: Widget Name
 helpBox =
-    centerLayer $ withMargins (5, 2) $ withDefAttr helpAttr $
-    borderWithLabel (withDefAttr helpEmphAttr $ str "Matterhorn Help") $
-    viewport HelpViewport Vertical helpText
+    centerLayer $ withMargins (5, 3) $
+      (withDefAttr helpAttr $ borderWithLabel (withDefAttr helpEmphAttr $ str "Matterhorn Help") $
+       (viewport HelpViewport Vertical helpText)) <=>
+      quitMessage
     where
     helpText = commandHelp
+
+    quitMessage = padTop (Pad 1) $ hCenter $ txt "Press Esc to exit the help screen."
 
     commandHelp = vBox [ padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ str "Commands"
                        , mkHelpText commandList
