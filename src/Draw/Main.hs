@@ -5,7 +5,7 @@ module Draw.Main (drawMain) where
 import           Brick
 import           Brick.Widgets.Border
 import           Brick.Widgets.Border.Style
-import           Brick.Widgets.Center (center, hCenter)
+import           Brick.Widgets.Center (center)
 import           Brick.Widgets.Edit (renderEditor)
 import           Data.Time.Clock (UTCTime)
 import           Data.Time.Format ( formatTime
@@ -106,7 +106,7 @@ renderChannelList st = hLimit channelListWidth $ vBox
     channelNames = [ decorate $ padRight Max $ txt (mkChannelName n)
                    | n <- (st ^. csNames . cnChans)
                    , let decorate = if | matches   -> const $
-                                                      (forceAttr channelSelectMatchAttr $ txt $ "#" <> st^.csChannelSelect) <+>
+                                                      (txt "#") <+> (forceAttr channelSelectMatchAttr $ txt $ st^.csChannelSelect) <+>
                                                       txt matchRemaining
                                        | st^.csMode == ChannelSelect &&
                                          (not $ T.null $ st^.csChannelSelect) -> const emptyWidget
@@ -135,7 +135,7 @@ renderChannelList st = hLimit channelListWidth $ vBox
     dmChannelNames = [ decorate $ padRight Max $ colorUsername' (mkDMChannelName u)
                      | u <- sort usersToList
                      , let decorate = if | matches   -> const $
-                                                        (forceAttr channelSelectMatchAttr $ txt $ T.cons (userSigil u) (st^.csChannelSelect)) <+>
+                                                        (txt $ T.singleton $ userSigil u) <+> (forceAttr channelSelectMatchAttr $ txt $ st^.csChannelSelect) <+>
                                                         txt matchRemaining
                                          | st^.csMode == ChannelSelect &&
                                            (not $ T.null $ st^.csChannelSelect) -> const emptyWidget
@@ -148,11 +148,13 @@ renderChannelList st = hLimit channelListWidth $ vBox
                                                        else visible .
                                                             withDefAttr unreadChannelAttr
                                          | otherwise -> id
-                           colorUsername' = case unread || current of
-                             True -> txt
-                             _    -> case st^.csMode == ChannelSelect of
-                                 True -> txt
-                                 False -> colorUsername
+                           colorUsername' =
+                             if | unread || current -> txt
+                                | st^.csMode == ChannelSelect -> txt
+                                | u^.uiStatus == Offline ->
+                                  withDefAttr clientMessageAttr . txt
+                                | otherwise ->
+                                  colorUsername
                            matches = st^.csMode == ChannelSelect &&
                                      (st^.csChannelSelect) `T.isPrefixOf` uname &&
                                      (not $ T.null $ st^.csChannelSelect)
