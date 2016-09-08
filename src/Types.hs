@@ -73,14 +73,14 @@ data PostType =
     deriving (Eq, Show)
 
 data ClientPost = ClientPost
-  { _cpText        :: String
+  { _cpText        :: Blocks
   , _cpUser        :: UserId
   , _cpDate        :: UTCTime
   , _cpType        :: PostType
   , _cpPending     :: Bool
   , _cpDeleted     :: Bool
   , _cpAttachments :: [String]
-  } deriving (Eq, Show)
+  } deriving (Show)
 
 makeLenses ''ClientPost
 
@@ -106,7 +106,7 @@ getBlocks s = bs where C.Doc _ bs = C.markdown C.def (T.pack s)
 
 clientPostToMessage :: ClientPost -> String -> Message
 clientPostToMessage cp user = Message
-  { _mText     = getBlocks (_cpText cp)
+  { _mText     = _cpText cp
   , _mUserName = Just user
   , _mDate     = _cpDate cp
   , _mType     = CP $ _cpType cp
@@ -149,7 +149,7 @@ postIsLeave p = "has left the channel" `isInfixOf` postMessage p
 
 toClientPost :: Post -> ClientPost
 toClientPost p = ClientPost
-  { _cpText        = postMessage p
+  { _cpText        = getBlocks $ postMessage p
   , _cpUser        = postUserId p
   , _cpDate        = postCreateAt p
   , _cpType        = postClientPostType p
