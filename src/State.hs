@@ -51,7 +51,7 @@ messagesFromPosts st p = msgs
             Just post -> post
 
 numScrollbackPosts :: Int
-numScrollbackPosts = 60
+numScrollbackPosts = 100
 
 newState :: Token
          -> ConnectionData
