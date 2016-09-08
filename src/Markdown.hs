@@ -163,6 +163,9 @@ separate uSet sq = case viewl sq of
   Fragment x n :< xs        -> Fragment x n <| separate uSet xs
   EmptyL                    -> S.empty
   where gatherStrings s n rs = case viewl rs of
+          _ | s `Set.member` uSet ||
+              ("@" `T.isPrefixOf` s && (T.drop 1 s `Set.member` uSet)) ->
+              buildString s n <| separate uSet rs
           Fragment (TStr s') n' :< xs
             | n == n' -> gatherStrings (s <> s') n xs
           Fragment _ _ :< _ -> buildString s n <| separate uSet rs
