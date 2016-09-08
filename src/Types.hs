@@ -40,6 +40,7 @@ data Name = ChannelMessages ChannelId
           | NormalChannelList
           | DMChannelList
           | HelpViewport
+          | ChannelSelectString
           deriving (Eq, Show, Ord)
 
 -- We want to continue referring to posts by their IDs, but we don't want to
