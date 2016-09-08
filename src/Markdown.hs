@@ -111,6 +111,7 @@ data FragmentStyle
   | Strong
   | Code
   | User
+  | Link
     deriving (Eq, Show)
 
 -- We convert it pretty mechanically:
@@ -131,8 +132,14 @@ toFragments uSet = go Normal
           Fragment TSoftBreak n <| go n xs
         go n (viewl-> C.LineBreak :< xs) =
           Fragment TLineBreak n <| go n xs
-        go n (viewl-> C.Link _ t _ :< xs) =
-          Fragment (TLink t) n <| go n xs
+        go n (viewl-> C.Link label url _ :< xs) =
+          let urlFrags = [ Fragment (TStr " (")  n
+                         , Fragment (TLink url) Link
+                         , Fragment (TStr ")")  n
+                         ]
+          in case F.toList label of
+              [C.Str s] | s == url -> Fragment (TLink url) Link <| go n xs
+              _                    -> go n label <> S.fromList urlFrags <> go n xs
         go n (viewl-> C.RawHtml t :< xs) =
           Fragment (TRawHtml t) n <| go n xs
         go n (viewl-> C.Code t :< xs) =
@@ -196,6 +203,7 @@ gatherWidgets (viewl-> (Fragment frag style :< rs)) = go style (strOf frag) rs
                 Emph   -> B.withDefAttr clientEmphAttr (B.txt t)
                 Strong -> B.withDefAttr clientStrongAttr (B.txt t)
                 Code   -> B.withDefAttr codeAttr (B.txt t)
+                Link   -> B.withDefAttr urlAttr (B.txt t)
                 User   -> B.withDefAttr (attrForUsername t)
                                         (B.txt t)
           in w <| gatherWidgets xs
