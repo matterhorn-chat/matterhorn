@@ -202,24 +202,24 @@ data Mode =
     deriving (Eq)
 
 data ChatState = ChatState
-  { _csTok      :: Token
-  , _csConn     :: ConnectionData
-  , _csFocus    :: Zipper ChannelId
-  , _csNames    :: MMNames
-  , _csMe       :: User
-  , _csMyTeam   :: Team
-  , _msgMap     :: HashMap ChannelId ClientChannel
-  , _usrMap     :: HashMap UserId UserProfile
-  , _cmdLine    :: Editor Name
-  , _timeZone   :: TimeZone
-  , _timeFormat :: Maybe String
-  , _csInputHistory :: InputHistory
+  { _csTok                  :: Token
+  , _csConn                 :: ConnectionData
+  , _csFocus                :: Zipper ChannelId
+  , _csNames                :: MMNames
+  , _csMe                   :: User
+  , _csMyTeam               :: Team
+  , _msgMap                 :: HashMap ChannelId ClientChannel
+  , _usrMap                 :: HashMap UserId UserProfile
+  , _cmdLine                :: Editor Name
+  , _timeZone               :: TimeZone
+  , _timeFormat             :: Maybe String
+  , _csInputHistory         :: InputHistory
   , _csInputHistoryPosition :: HM.HashMap ChannelId (Maybe Int)
-  , _csLastChannelInput :: HM.HashMap ChannelId String
-  , _csCurrentCompletion :: Maybe String
-  , _csRequestQueue :: RequestChan
-  , _csTheme    :: AttrMap
-  , _csMode     :: Mode
+  , _csLastChannelInput     :: HM.HashMap ChannelId String
+  , _csCurrentCompletion    :: Maybe String
+  , _csRequestQueue         :: RequestChan
+  , _csTheme                :: AttrMap
+  , _csMode                 :: Mode
   }
 
 makeLenses ''ChatState
