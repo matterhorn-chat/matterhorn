@@ -175,7 +175,7 @@ separate sq = case viewl sq of
           Fragment _ _ :< _ -> buildString s n <| separate rs
           EmptyL -> S.singleton (buildString s n)
         buildString s n
-          | ":" `T.isPrefixOf` s && ":" `T.isSuffixOf` s =
+          | ":" `T.isPrefixOf` s && ":" `T.isSuffixOf` s && T.length s > 2 =
             Fragment (TStr s) Emoji
           | otherwise = Fragment (TStr s) n
 
