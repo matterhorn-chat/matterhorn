@@ -3,13 +3,14 @@ module State where
 import           Brick (EventM, str, vBox, Direction(..))
 import           Brick.AttrMap (AttrMap)
 import           Brick.Widgets.Edit (editor, getEditContents)
+import           Control.Concurrent (threadDelay, forkIO)
 import qualified Control.Concurrent.Chan as Chan
 import           Control.Monad.IO.Class (liftIO)
 import           Data.HashMap.Strict ((!))
 import           Brick.Main (viewportScroll, vScrollToEnd, vScrollPage)
 import           Brick.Widgets.Edit (applyEdit)
 import           Control.Exception (SomeException, catch)
-import           Control.Monad (forM, when)
+import           Control.Monad (forM, when, void)
 import           Data.Text.Zipper (clearZipper, insertMany)
 import qualified Data.HashMap.Strict as HM
 import           Data.List (sort, intercalate)
@@ -296,6 +297,24 @@ execMMCommand cmd st = liftIO (runCmd `catch` handler)
     runAsync st (return $ addClientMessage msg)
     return st
 
+startTimezoneMonitor :: TimeZone -> RequestChan -> IO ()
+startTimezoneMonitor tz requestChan = do
+  -- Start the timezone monitor thread
+  let timezoneMonitorSleepInterval = minutes 5
+      minutes = (* (seconds 60))
+      seconds = (* (1000 * 1000))
+      timezoneMonitor prevTz = do
+        threadDelay timezoneMonitorSleepInterval
+
+        newTz <- getCurrentTimeZone
+        when (newTz /= prevTz) $
+            Chan.writeChan requestChan $ do
+                return $ (return . (& timeZone .~ newTz))
+
+        timezoneMonitor newTz
+
+  void $ forkIO (timezoneMonitor tz)
+
 setupState :: Config -> RequestChan -> IO ChatState
 setupState config requestChan = do
   -- If we don't have enough credentials, ask for them.
@@ -379,6 +398,8 @@ setupState config requestChan = do
       case result of
           Left _ -> return newHistory
           Right h -> return h
+
+  startTimezoneMonitor tz requestChan
 
   let chanNames = MMNames
         { _cnChans = sort
