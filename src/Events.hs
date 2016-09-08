@@ -125,7 +125,7 @@ onEventMain st e = do
 onEventChannelSelect :: ChatState -> Vty.Event -> EventM Name (Next ChatState)
 onEventChannelSelect st (Vty.EvKey Vty.KEnter []) = do
     -- If the text entered matches only one channel, switch to it
-    let matches = filter (s `T.isPrefixOf`) $ (st^.csNames.cnChans <> st^.csNames.cnUsers)
+    let matches = filter (s `T.isInfixOf`) $ (st^.csNames.cnChans <> st^.csNames.cnUsers)
         s = st^.csChannelSelect
     case matches of
         [single] ->
