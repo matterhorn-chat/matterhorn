@@ -15,6 +15,7 @@ import           Control.Monad (forM, when, void)
 import           Data.Text.Zipper (clearZipper, insertMany)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
+import           Data.Foldable (toList)
 import           Data.List (sort, intercalate)
 import           Data.Maybe (listToMaybe, maybeToList, fromJust)
 import           Data.Monoid ((<>))
@@ -330,12 +331,12 @@ setupState config requestChan = do
 
   myTeam <- case configTeam config of
       Nothing -> do
-          interactiveTeamSelection (initialLoadTeams initialLoad)
+          interactiveTeamSelection $ toList $ initialLoadTeams initialLoad
       Just tName -> do
-          let matchingTeam = listToMaybe $ filter matches $ initialLoadTeams initialLoad
+          let matchingTeam = listToMaybe $ filter matches $ toList $ initialLoadTeams initialLoad
               matches t = teamName t == tName
           case matchingTeam of
-              Nothing -> interactiveTeamSelection (initialLoadTeams initialLoad)
+              Nothing -> interactiveTeamSelection (toList (initialLoadTeams initialLoad))
               Just t -> return t
 
   let myTeamId = getId myTeam
@@ -345,10 +346,10 @@ setupState config requestChan = do
   Channels chans cm <- mmGetChannels cd token myTeamId
 
   let lookupChan n = [ c ^. channelIdL
-                     | c <- chans
+                     | c <- toList chans
                      , c ^. channelNameL == n ]
 
-  msgs <- fmap HM.fromList $ forM chans $ \c -> do
+  msgs <- fmap (HM.fromList . toList) $ forM chans $ \c -> do
     let chanData = cm ! getId c
         viewed   = chanData ^. channelDataLastViewedAtL
         updated  = c ^. channelLastPostAtL
@@ -385,17 +386,17 @@ setupState config requestChan = do
   let chanNames = MMNames
         { _cnChans = sort
                      [ channelName c
-                     | c <- chans
+                     | c <- toList chans
                      , channelType c == "O"
                      ]
         , _cnDMs = sort
                    [ channelName c
-                   | c <- chans
+                   | c <- toList chans
                    , channelType c == "D"
                    ]
         , _cnToChanId = HM.fromList $
                           [ (channelName c, channelId c)
-                          | c <- chans
+                          | c <- toList chans
                           ] ++
                           [ (userProfileUsername u, c)
                           | u <- HM.elems users

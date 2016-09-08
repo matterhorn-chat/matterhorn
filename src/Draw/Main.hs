@@ -47,9 +47,9 @@ renderChatMessage :: Set Text -> Maybe Text -> TimeZone -> Message -> Widget Nam
 renderChatMessage uSet mFormat tz msg =
     let t = msg^.mDate
         m = renderMessage (msg^.mText) (msg^.mUserName) (msg^.mType) uSet
-        msgAtch = case msg^.mAttachments of
-          [] -> emptyWidget
-          _  -> withDefAttr clientMessageAttr
+        msgAtch = if Seq.null (msg^.mAttachments)
+          then emptyWidget
+          else withDefAttr clientMessageAttr
                   (str "  [this message has an attachment]")
         msgTxt =
           case msg^.mUserName of
@@ -178,7 +178,7 @@ insertDateBoundaries tz ms = fst $ F.foldl' nextMsg initState ms
         initState = (mempty, Nothing)
 
         dateMsg d = Message (getBlocks (T.pack $ formatTime defaultTimeLocale dateTransitionFormat d))
-                            Nothing d (C DateTransition) False False [] Nothing
+                            Nothing d (C DateTransition) False False Seq.empty Nothing
 
         nextMsg :: (Seq.Seq Message, Maybe Message) -> Message -> (Seq.Seq Message, Maybe Message)
         nextMsg (rest, Nothing) msg = (rest Seq.|> msg, Just msg)

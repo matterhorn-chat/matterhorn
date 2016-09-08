@@ -80,7 +80,7 @@ data ClientPost = ClientPost
   , _cpType        :: PostType
   , _cpPending     :: Bool
   , _cpDeleted     :: Bool
-  , _cpAttachments :: [T.Text]
+  , _cpAttachments :: Seq.Seq T.Text
   , _cpPostId      :: PostId
   } deriving (Show)
 
@@ -98,7 +98,7 @@ data Message = Message
   , _mType        :: MessageType
   , _mPending     :: Bool
   , _mDeleted     :: Bool
-  , _mAttachments :: [T.Text]
+  , _mAttachments :: Seq.Seq T.Text
   , _mPostId      :: Maybe PostId
   } deriving (Show)
 
@@ -222,7 +222,7 @@ clientMessageToMessage cm = Message
   , _mType        = C $ _cmType cm
   , _mPending     = False
   , _mDeleted     = False
-  , _mAttachments = []
+  , _mAttachments = Seq.empty
   , _mPostId      = Nothing
   }
 
