@@ -5,7 +5,7 @@ module Draw.Main (drawMain) where
 import           Brick
 import           Brick.Widgets.Border
 import           Brick.Widgets.Border.Style
-import           Brick.Widgets.Center (center, hCenter)
+import           Brick.Widgets.Center (center)
 import           Brick.Widgets.Edit (renderEditor)
 import           Data.Time.Clock (UTCTime)
 import           Data.Time.Format ( formatTime
