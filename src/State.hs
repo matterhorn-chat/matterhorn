@@ -1,14 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 module State where
 
-import           Brick (EventM, str, vBox, Direction(..))
+import           Brick (EventM, str, vBox)
 import           Brick.AttrMap (AttrMap)
 import           Brick.Widgets.Edit (editor, getEditContents)
 import           Control.Concurrent (threadDelay, forkIO)
 import qualified Control.Concurrent.Chan as Chan
 import           Control.Monad.IO.Class (liftIO)
 import           Data.HashMap.Strict ((!))
-import           Brick.Main (viewportScroll, vScrollToEnd, vScrollPage)
+import           Brick.Main (viewportScroll, vScrollToEnd, vScrollBy)
 import           Brick.Widgets.Edit (applyEdit)
 import           Control.Exception (SomeException, catch)
 import           Control.Monad (forM, when, void)
@@ -38,6 +38,9 @@ import           Themes
 import           Login
 import           Zipper (Zipper)
 import qualified Zipper as Z
+
+pageAmount :: Int
+pageAmount = 15
 
 fromPosts :: ChatState -> Posts -> ChannelContents
 fromPosts st p = ChannelContents $ messagesFromPosts st p
@@ -182,13 +185,13 @@ updateChannelScrollState st = do
 channelPageUp :: ChatState -> EventM Name ChatState
 channelPageUp st = do
   let cId = currentChannelId st
-  vScrollPage (viewportScroll (ChannelMessages cId)) Up
+  vScrollBy (viewportScroll (ChannelMessages cId)) (-1 * pageAmount)
   return st
 
 channelPageDown :: ChatState -> EventM Name ChatState
 channelPageDown st = do
   let cId = currentChannelId st
-  vScrollPage (viewportScroll (ChannelMessages cId)) Down
+  vScrollBy (viewportScroll (ChannelMessages cId)) pageAmount
   return st
 
 currentChannelId :: ChatState -> ChannelId

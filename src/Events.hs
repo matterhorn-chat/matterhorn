@@ -52,10 +52,10 @@ onEventShowHelp st (VtyEvent (Vty.EvKey Vty.KDown [])) = do
   vScrollBy (viewportScroll HelpViewport) 1
   continue st
 onEventShowHelp st (VtyEvent (Vty.EvKey Vty.KPageUp [])) = do
-  vScrollPage (viewportScroll HelpViewport) Up
+  vScrollBy (viewportScroll HelpViewport) (-1 * pageAmount)
   continue st
 onEventShowHelp st (VtyEvent (Vty.EvKey Vty.KPageDown [])) = do
-  vScrollPage (viewportScroll HelpViewport) Down
+  vScrollBy (viewportScroll HelpViewport) pageAmount
   continue st
 onEventShowHelp st (VtyEvent (Vty.EvKey (Vty.KChar ' ') [])) = do
   vScrollPage (viewportScroll HelpViewport) Down
