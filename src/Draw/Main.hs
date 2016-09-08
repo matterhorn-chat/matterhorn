@@ -5,7 +5,7 @@ module Draw.Main (drawMain) where
 import           Brick
 import           Brick.Widgets.Border
 import           Brick.Widgets.Border.Style
-import           Brick.Widgets.Center (center)
+import           Brick.Widgets.Center (center, hCenter)
 import           Brick.Widgets.Edit (renderEditor)
 import           Data.Time.Clock (UTCTime)
 import           Data.Time.Format ( formatTime
@@ -240,6 +240,16 @@ subdue st = if st^.csMode == ChannelSelect
             then forceAttr ""
             else id
 
+renderChannelSelect :: ChatState -> Widget Name
+renderChannelSelect st =
+    withDefAttr channelSelectPromptAttr $
+    (txt "Switch to channel: ") <+>
+     (showCursor ChannelSelectString (Location (T.length $ st^.csChannelSelect, 0)) $
+      txt $
+      (if T.null $ st^.csChannelSelect
+       then " "
+       else st^.csChannelSelect))
+
 drawMain :: ChatState -> [Widget Name]
 drawMain st =
     [ (renderChannelList st <+> (subdue st (borderElem bsIntersectR <=>
@@ -247,5 +257,7 @@ drawMain st =
                                             borderElem bsIntersectR <=> vBorder))
                             <+> (subdue st $ renderCurrentChannelDisplay st))
       <=> (subdue st $ hLimit channelListWidth hBorder <+> borderElem bsIntersectB <+> hBorder)
-      <=> (subdue st $ renderUserCommandBox st)
+      <=> (if st^.csMode == ChannelSelect
+           then renderChannelSelect st
+           else renderUserCommandBox st)
     ]
