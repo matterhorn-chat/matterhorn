@@ -107,16 +107,16 @@ renderChannelList st = hLimit channelListWidth $ vBox
     channelNames = [ decorate $ padRight Max $ txt (mkChannelName n)
                    | n <- (st ^. csNames . cnChans)
                    , let decorate = if | matches   -> const $
-                                                      (forceAttr channelSelectCurrentAttr $ txt $ "#" <> st^.csChannelSelect) <+>
+                                                      (forceAttr channelSelectMatchAttr $ txt $ "#" <> st^.csChannelSelect) <+>
                                                       txt matchRemaining
                                        | st^.csMode == ChannelSelect &&
                                          (not $ T.null $ st^.csChannelSelect) -> const emptyWidget
                                        | current   -> if st^.csMode == ChannelSelect
-                                                      then withDefAttr channelSelectCurrentAttr
+                                                      then withDefAttr currentChannelNameAttr
                                                       else visible .
                                                            withDefAttr currentChannelNameAttr
                                        | unread   -> if st^.csMode == ChannelSelect
-                                                     then withDefAttr channelSelectCurrentAttr
+                                                     then withDefAttr unreadChannelAttr
                                                      else visible .
                                                           withDefAttr unreadChannelAttr
                                        | otherwise -> id
@@ -136,16 +136,16 @@ renderChannelList st = hLimit channelListWidth $ vBox
     dmChannelNames = [ decorate $ padRight Max $ colorUsername' (mkDMChannelName u)
                      | u <- sortBy (comparing _uiName) usersToList
                      , let decorate = if | matches   -> const $
-                                                        (forceAttr channelSelectCurrentAttr $ txt $ T.cons (userSigil u) (st^.csChannelSelect)) <+>
+                                                        (forceAttr channelSelectMatchAttr $ txt $ T.cons (userSigil u) (st^.csChannelSelect)) <+>
                                                         txt matchRemaining
                                          | st^.csMode == ChannelSelect &&
                                            (not $ T.null $ st^.csChannelSelect) -> const emptyWidget
                                          | current   -> if st^.csMode == ChannelSelect
-                                                        then withDefAttr channelSelectCurrentAttr
+                                                        then withDefAttr currentChannelNameAttr
                                                         else visible .
                                                              withDefAttr currentChannelNameAttr
                                          | unread   -> if st^.csMode == ChannelSelect
-                                                       then withDefAttr channelSelectCurrentAttr
+                                                       then withDefAttr unreadChannelAttr
                                                        else visible .
                                                             withDefAttr unreadChannelAttr
                                          | otherwise -> id

@@ -21,7 +21,7 @@ module Themes
   , errorMessageAttr
   , helpAttr
   , helpEmphAttr
-  , channelSelectCurrentAttr
+  , channelSelectMatchAttr
 
   -- * Username formatting
   , colorUsername
@@ -43,8 +43,8 @@ helpAttr = "help"
 helpEmphAttr :: AttrName
 helpEmphAttr = "helpEmphasis"
 
-channelSelectCurrentAttr :: AttrName
-channelSelectCurrentAttr = "channelSelectCurrent"
+channelSelectMatchAttr :: AttrName
+channelSelectMatchAttr = "channelSelectMatch"
 
 darkColorThemeName :: T.Text
 darkColorThemeName = "builtin:dark"
@@ -122,7 +122,7 @@ lightColorTheme = attrMap (black `on` white) $
   , (errorMessageAttr,        fg red)
   , (helpAttr,                black `on` cyan)
   , (helpEmphAttr,            fg white)
-  , (channelSelectCurrentAttr, defAttr `withStyle` reverseVideo)
+  , (channelSelectMatchAttr, black `on` magenta)
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 
@@ -145,7 +145,7 @@ darkColorTheme = attrMap (bg black) $
   , (errorMessageAttr,        fg red)
   , (helpAttr,                black `on` cyan)
   , (helpEmphAttr,            fg white)
-  , (channelSelectCurrentAttr, defAttr `withStyle` reverseVideo)
+  , (channelSelectMatchAttr,  black `on` magenta)
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 
