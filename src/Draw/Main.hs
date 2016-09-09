@@ -45,7 +45,12 @@ renderTime fmt tz t =
 renderChatMessage :: Set Text -> Maybe Text -> TimeZone -> Message -> Widget Name
 renderChatMessage uSet mFormat tz msg =
     let t = msg^.mDate
-        m = renderMessage (msg^.mText) (msg^.mUserName) (msg^.mType) uSet
+        m = renderMessage (msg^.mText) msgUsr (msg^.mType) uSet
+        msgUsr = case msg^.mUserName of
+          Just u
+            | msg^.mType == CP Join || msg^.mType == CP Leave -> Nothing
+            | otherwise -> Just u
+          Nothing -> Nothing
         msgAtch = if Seq.null (msg^.mAttachments)
           then emptyWidget
           else withDefAttr clientMessageAttr

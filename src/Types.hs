@@ -124,7 +124,7 @@ postIsEmote p =
         ]
 
 postIsJoin :: Post -> Bool
-postIsJoin p = "has left the channel" `T.isInfixOf` postMessage p
+postIsJoin p = "has joined the channel" `T.isInfixOf` postMessage p
 
 postIsLeave :: Post -> Bool
 postIsLeave p = "has left the channel" `T.isInfixOf` postMessage p
