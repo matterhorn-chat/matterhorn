@@ -17,31 +17,31 @@ import Config
 data Name = Username | Password deriving (Ord, Eq, Show)
 
 data State =
-    State { usernameEdit :: Editor Name
-          , passwordEdit :: Editor Name
+    State { usernameEdit :: Editor T.Text Name
+          , passwordEdit :: Editor T.Text Name
           , focus    :: Name
           }
 
-toPassword :: [String] -> Widget a
-toPassword s = str $ replicate (length $ concat s) '*'
+toPassword :: [T.Text] -> Widget a
+toPassword s = txt $ T.replicate (T.length $ T.concat s) "*"
 
 interactiveGatherCredentials :: Config -> IO (T.Text, T.Text)
 interactiveGatherCredentials config = do
-    let state = State { usernameEdit = editor Username (str . concat) (Just 1) uStr
+    let state = State { usernameEdit = editor Username (txt . T.concat) (Just 1) uStr
                       , passwordEdit = editor Password toPassword     (Just 1) pStr
                       , focus = initialFocus
                       }
         uStr = case configUser config of
             Nothing -> ""
-            Just s  -> T.unpack s
+            Just s  -> s
         pStr = case configPass config of
-            Just (PasswordString s) -> T.unpack s
+            Just (PasswordString s) -> s
             _                       -> ""
-        initialFocus = if null uStr then Username else Password
+        initialFocus = if T.null uStr then Username else Password
     finalSt <- defaultMain app state
-    let finalU = concat $ getEditContents $ usernameEdit finalSt
-        finalP = concat $ getEditContents $ passwordEdit finalSt
-    return (T.pack finalU, T.pack finalP)
+    let finalU = T.concat $ getEditContents $ usernameEdit finalSt
+        finalP = T.concat $ getEditContents $ passwordEdit finalSt
+    return (finalU, finalP)
 
 app :: App State Event Name
 app = App
@@ -86,9 +86,9 @@ onEvent st (EvKey (KChar '\t') []) =
                   }
 onEvent st (EvKey KEnter []) =
     -- check for valid (non-empty) contents
-    let u = concat $ getEditContents $ usernameEdit st
-        p = concat $ getEditContents $ passwordEdit st
-    in case null u || null p of
+    let u = T.concat $ getEditContents $ usernameEdit st
+        p = T.concat $ getEditContents $ passwordEdit st
+    in case T.null u || T.null p of
         True -> continue st
         False -> halt st
 onEvent st e =
