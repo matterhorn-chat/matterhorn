@@ -183,7 +183,7 @@ getNextChannel :: ChatState
                -> (Zipper ChannelId -> Zipper ChannelId)
 getNextChannel st shift z = go (shift z)
   where go z'
-          | (st^?msgMap.ix(Z.focus z').ccInfo.cdType) == Just "O" = z'
+          | (st^?msgMap.ix(Z.focus z').ccInfo.cdType) /= Just "D" = z'
           | otherwise = go (shift z')
 
 getNextUnreadChannel :: ChatState
@@ -427,7 +427,7 @@ setupState config requestChan = do
                      { _ccContents = emptyChannelContents
                      , _ccInfo     = cInfo
                      }
-    when (c^.channelNameL /= "town-square" && c^.channelTypeL == "O") $ Chan.writeChan requestChan $ do
+    when (c^.channelNameL /= "town-square" && c^.channelTypeL /= "D") $ Chan.writeChan requestChan $ do
       posts <- mmGetPosts cd token myTeamId (getId c) 0 numScrollbackPosts
       return $ \ st -> do
           let st' = st & msgMap.ix(getId c).ccContents .~ fromPosts st posts
@@ -450,6 +450,7 @@ setupState config requestChan = do
                      [ channelName c
                      | c <- toList chans
                      , channelType c == "O"
+                       || channelType c == "P"
                      ]
         , _cnDMs = sort
                    [ channelName c

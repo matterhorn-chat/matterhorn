@@ -71,8 +71,11 @@ renderChatMessage uSet mFormat tz msg =
             _ -> f
     in maybeRenderTimeWith maybeRenderTime fullMsg
 
-mkChannelName :: Text -> Text
-mkChannelName = T.cons '#'
+mkChannelName :: ChannelInfo -> Text
+mkChannelName c = T.cons sigil (c^.cdName)
+  where sigil =  case c^.cdType of
+          Type "P" -> '?'
+          _        -> '#'
 
 mkDMChannelName :: UserInfo -> Text
 mkDMChannelName u = T.cons (userSigil u) (u^.uiName)
@@ -103,7 +106,7 @@ renderChannelList st = hLimit channelListWidth $ vBox
     header label = hBorderWithLabel $
                    withDefAttr channelListHeaderAttr $
                    str label
-    channelNames = [ decorate $ padRight Max $ txt (mkChannelName n)
+    channelNames = [ decorate $ padRight Max $ txt (mkChannelName cInfo)
                    | n <- (st ^. csNames . cnChans)
                    , let decorate = if | matches   -> const $
                                                       (txt "#") <+> txt preMatch
@@ -128,6 +131,7 @@ renderChannelList st = hLimit channelListWidth $ vBox
                          current = n == currentChannelName
                          Just chan = st ^. csNames . cnToChanId . at n
                          unread = hasUnread st chan
+                         Just cInfo = st^?msgMap.at(chan).each.ccInfo
                    ]
 
     isSelf :: UserInfo -> Bool
@@ -188,10 +192,10 @@ renderCurrentChannelDisplay st = header <=> messages
                      case findUserByDMChannelName (st^.usrMap)
                                                   chnName
                                                   (st^.csMe^.userIdL) of
-                       Nothing -> txt $ mkChannelName chnName
+                       Nothing -> txt $ mkChannelName (chan^.ccInfo)
                        Just u  -> colorUsername $ mkDMChannelName u
-                   _        -> txt $ mkChannelName chnName
-                 False -> wrappedText txt $ mkChannelName chnName <> " - " <> topicStr
+                   _        -> txt $ mkChannelName (chan^.ccInfo)
+                 False -> wrappedText txt $ mkChannelName (chan^.ccInfo) <> " - " <> topicStr
     messages = if chan^.ccInfo.cdLoaded
                then viewport (ChannelMessages cId) Vertical chatText <+> str " "
                else center $ str "[loading channel scrollback]"
