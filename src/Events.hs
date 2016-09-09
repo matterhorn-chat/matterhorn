@@ -135,7 +135,9 @@ onEventChannelSelect st (Vty.EvKey Vty.KEnter []) = do
         [single] ->
             case channelByName st single of
               Just cId -> continue =<< (setFocus cId $ st & csMode .~ Main)
-              Nothing  -> continue st
+              Nothing  -> attemptCreateChannel single st        >>=
+                          \st' -> return (st' & csMode .~ Main) >>=
+                          continue
         _ -> continue st
 
 onEventChannelSelect st (Vty.EvKey Vty.KBS []) = do
