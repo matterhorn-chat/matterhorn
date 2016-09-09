@@ -1,8 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 module State where
 
-import           Brick (EventM, txt, vBox)
-import           Brick.Widgets.Edit (editor, getEditContents)
+import           Brick (EventM)
+import           Brick.Widgets.Edit (getEditContents)
 import           Control.Concurrent (threadDelay, forkIO)
 import qualified Control.Concurrent.Chan as Chan
 import           Control.Monad.IO.Class (liftIO)
@@ -68,15 +68,11 @@ newState rs i u m tz hist = ChatState
   , _csFocus                = i
   , _csMe                   = u
   , _csMyTeam               = m
-  , _csNames                = MMNames [] [] HM.empty [] HM.empty
+  , _csNames                = emptyMMNames
   , _msgMap                 = HM.empty
   , _usrMap                 = HM.empty
-  , _cmdLine                = editor MessageInput (vBox . map txt) (Just 1) ""
   , _timeZone               = tz
-  , _csInputHistory         = hist
-  , _csInputHistoryPosition = mempty
-  , _csLastChannelInput     = mempty
-  , _csCurrentCompletion    = Nothing
+  , _csEditState            = emptyEditState hist
   , _csMode                 = Main
   , _csChannelSelect        = ""
   , _csRecentChannel        = Nothing

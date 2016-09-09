@@ -3,9 +3,9 @@
 
 module Types where
 
-import           Brick (EventM)
+import           Brick (EventM, txt, vBox)
 import           Brick.AttrMap (AttrMap)
-import           Brick.Widgets.Edit (Editor)
+import           Brick.Widgets.Edit (Editor, editor)
 import           Cheapskate (Blocks)
 import           Control.Concurrent.Chan (Chan)
 import           Data.HashMap.Strict (HashMap)
@@ -32,6 +32,9 @@ data MMNames = MMNames
   , _cnUsers    :: [T.Text]
   , _cnToUserId :: HashMap T.Text UserId
   }
+
+emptyMMNames :: MMNames
+emptyMMNames = MMNames mempty mempty mempty mempty mempty
 
 makeLenses ''MMNames
 
@@ -218,6 +221,23 @@ data ChatResources = ChatResources
   , _crTimeFormat   :: Maybe T.Text
   }
 
+data ChatEditState = ChatEditState
+  { _cedEditor               :: Editor T.Text Name
+  , _cedInputHistory         :: InputHistory
+  , _cedInputHistoryPosition :: HM.HashMap ChannelId (Maybe Int)
+  , _cedLastChannelInput     :: HM.HashMap ChannelId T.Text
+  , _cedCurrentCompletion    :: Maybe T.Text
+  }
+
+emptyEditState :: InputHistory -> ChatEditState
+emptyEditState hist = ChatEditState
+  { _cedEditor               = editor MessageInput (vBox . map txt) (Just 1) ""
+  , _cedInputHistory         = hist
+  , _cedInputHistoryPosition = mempty
+  , _cedLastChannelInput     = mempty
+  , _cedCurrentCompletion    = Nothing
+  }
+
 type RequestChan = Chan (IO (ChatState -> EventM Name ChatState))
 
 data Mode =
@@ -236,12 +256,13 @@ data ChatState = ChatState
   , _csMyTeam               :: Team
   , _msgMap                 :: HashMap ChannelId ClientChannel
   , _usrMap                 :: HashMap UserId UserInfo
-  , _cmdLine                :: Editor T.Text Name
   , _timeZone               :: TimeZone
-  , _csInputHistory         :: InputHistory
-  , _csInputHistoryPosition :: HM.HashMap ChannelId (Maybe Int)
-  , _csLastChannelInput     :: HM.HashMap ChannelId T.Text
-  , _csCurrentCompletion    :: Maybe T.Text
+  , _csEditState            :: ChatEditState
+--  , _cmdLine                :: Editor T.Text Name
+--  , _csInputHistory         :: InputHistory
+--  , _csInputHistoryPosition :: HM.HashMap ChannelId (Maybe Int)
+--  , _csLastChannelInput     :: HM.HashMap ChannelId T.Text
+--  , _csCurrentCompletion    :: Maybe T.Text
   , _csMode                 :: Mode
   , _csChannelSelect        :: T.Text
   , _csRecentChannel        :: Maybe ChannelId
@@ -249,7 +270,9 @@ data ChatState = ChatState
 
 makeLenses ''ChatResources
 makeLenses ''ChatState
+makeLenses ''ChatEditState
 
+-- interim lenses
 csTheme :: Lens' ChatState AttrMap
 csTheme = csResources . crTheme
 
@@ -261,6 +284,21 @@ csConn = csResources . crConn
 
 csRequestQueue :: Lens' ChatState RequestChan
 csRequestQueue = csResources . crRequestQueue
+
+cmdLine :: Lens' ChatState (Editor T.Text Name)
+cmdLine = csEditState . cedEditor
+
+csInputHistory :: Lens' ChatState InputHistory
+csInputHistory = csEditState . cedInputHistory
+
+csInputHistoryPosition :: Lens' ChatState (HM.HashMap ChannelId (Maybe Int))
+csInputHistoryPosition = csEditState . cedInputHistoryPosition
+
+csLastChannelInput :: Lens' ChatState (HM.HashMap ChannelId T.Text)
+csLastChannelInput = csEditState . cedLastChannelInput
+
+csCurrentCompletion :: Lens' ChatState (Maybe T.Text)
+csCurrentCompletion = csEditState . cedCurrentCompletion
 
 timeFormat :: Lens' ChatState (Maybe T.Text)
 timeFormat = csResources . crTimeFormat
