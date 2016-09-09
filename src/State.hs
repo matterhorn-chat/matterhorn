@@ -231,6 +231,14 @@ channelByName st n
     | "@" `T.isPrefixOf` n = st ^. csNames . cnToChanId . at (T.tail n)
     | otherwise            = st ^. csNames . cnToChanId . at n
 
+-- | This switches to the named channel or creates it if it is a missing
+-- but valid user channel.
+changeChannel :: T.Text -> ChatState -> EventM Name ChatState
+changeChannel name st =
+    case channelByName st name of
+      Just cId -> setFocus cId st
+      Nothing -> attemptCreateChannel name st
+
 setFocus :: ChannelId -> ChatState -> EventM Name ChatState
 setFocus cId st = setFocusWith st (Z.findRight (== cId))
 

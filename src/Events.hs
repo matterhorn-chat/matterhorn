@@ -131,14 +131,9 @@ onEventChannelSelect st (Vty.EvKey Vty.KEnter []) = do
     -- If the text entered matches only one channel, switch to it
     let matches = filter (s `T.isInfixOf`) $ (st^.csNames.cnChans <> st^.csNames.cnUsers)
         s = st^.csChannelSelect
-    case matches of
-        [single] ->
-            case channelByName st single of
-              Just cId -> continue =<< (setFocus cId $ st & csMode .~ Main)
-              Nothing  -> attemptCreateChannel single st        >>=
-                          \st' -> return (st' & csMode .~ Main) >>=
-                          continue
-        _ -> continue st
+    continue =<< case matches of
+        [single] -> changeChannel single $ st & csMode .~ Main
+        _        -> return st
 
 onEventChannelSelect st (Vty.EvKey Vty.KBS []) = do
     continue $ st & csChannelSelect %~ (\s -> if T.null s then s else T.init s)

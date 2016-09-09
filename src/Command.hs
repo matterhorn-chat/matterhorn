@@ -68,9 +68,7 @@ commandList =
       continue st
   , Cmd "focus" "Focus on a named channel"
     (TokenArg "channel" NoArg) $ \ (name, ()) st ->
-      case channelByName st name of
-        Just cId -> setFocus cId st >>= continue
-        Nothing -> attemptCreateChannel name st >>= continue
+        changeChannel name st >>= continue
   , Cmd "help" "Print the help dialogue" NoArg $ \ _ st -> do
           continue $ st & csMode .~ ShowHelp
   ]
