@@ -48,7 +48,8 @@ renderChatMessage uSet mFormat tz msg =
         m = renderMessage (msg^.mText) msgUsr (msg^.mType) uSet
         msgUsr = case msg^.mUserName of
           Just u
-            | msg^.mType == CP Join || msg^.mType == CP Leave -> Nothing
+            | msg^.mType == CP Join
+              || msg^.mType == CP Leave -> Nothing
             | otherwise -> Just u
           Nothing -> Nothing
         msgAtch = if Seq.null (msg^.mAttachments)

@@ -39,9 +39,14 @@ helpBox =
 
     mkHelpText :: [Cmd] -> Widget Name
     mkHelpText cs =
-      let commandNameWidth = 4 + (maximum $ T.length <$> commandName <$> cs)
+      let helpInfo = [ (info, desc)
+                     | Cmd cmd desc args _ <- cs
+                     , let argSpec = printArgSpec args
+                           info = T.cons '/' cmd <> " " <> argSpec
+                     ]
+          commandNameWidth = 4 + (maximum $ T.length <$> fst <$> helpInfo)
           padTo n s = s <> T.replicate (n - T.length s) " "
       in hCenter $
-         vBox [ (withDefAttr helpEmphAttr $ txt $ padTo commandNameWidth (T.cons '/' cmd)) <+> txt desc
-              | Cmd { commandName = cmd, commandDescr = desc } <- cs
+         vBox [ (withDefAttr helpEmphAttr $ txt $ padTo commandNameWidth info) <+> txt desc
+              | (info, desc) <- helpInfo
               ]
