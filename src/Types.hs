@@ -225,7 +225,7 @@ data ChatState = ChatState
   , _csMyTeam               :: Team
   , _msgMap                 :: HashMap ChannelId ClientChannel
   , _usrMap                 :: HashMap UserId UserInfo
-  , _cmdLine                :: Editor Name
+  , _cmdLine                :: Editor T.Text Name
   , _timeZone               :: TimeZone
   , _timeFormat             :: Maybe T.Text
   , _csInputHistory         :: InputHistory
