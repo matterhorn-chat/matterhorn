@@ -88,6 +88,7 @@ newState t c i u m tz fmt hist rq theme = ChatState
   , _csTheme                = theme
   , _csMode                 = Main
   , _csChannelSelect        = ""
+  , _csRecentChannel        = Nothing
   }
 
 runAsync :: ChatState -> IO (ChatState -> EventM Name ChatState) -> IO ()
@@ -161,12 +162,21 @@ preChangeChannelCommon st = do
     let curEdit = intercalate "\n" $ getEditContents $ st^.cmdLine
         cId = currentChannelId st
     return $ st & csLastChannelInput.at cId .~ Just (T.pack curEdit)
+                & csRecentChannel .~ Just cId
 
 nextChannel :: ChatState -> EventM Name ChatState
 nextChannel st = setFocusWith st (getNextChannel st Z.right)
 
 prevChannel :: ChatState -> EventM Name ChatState
 prevChannel st = setFocusWith st (getNextChannel st Z.left)
+
+recentChannel :: ChatState -> EventM Name ChatState
+recentChannel st = case st ^. csRecentChannel of
+  Nothing  -> return st
+  Just cId -> setFocus cId st
+
+nextUnreadChannel :: ChatState -> EventM Name ChatState
+nextUnreadChannel st = setFocusWith st (getNextUnreadChannel st)
 
 getNextChannel :: ChatState
                -> (Zipper ChannelId -> Zipper ChannelId)
@@ -176,6 +186,9 @@ getNextChannel st shift z = go (shift z)
           | (st^?msgMap.ix(Z.focus z').ccInfo.cdType) == Just "O" = z'
           | otherwise = go (shift z')
 
+getNextUnreadChannel :: ChatState
+                     -> (Zipper ChannelId -> Zipper ChannelId)
+getNextUnreadChannel st = Z.findRight (hasUnread st)
 
 listThemes :: ChatState -> EventM Name ChatState
 listThemes cs = do

@@ -102,6 +102,10 @@ onEventMain st (Vty.EvKey (Vty.KChar 'n') [Vty.MCtrl]) =
   continue =<< updateChannelScrollState =<< nextChannel st
 onEventMain st (Vty.EvKey (Vty.KChar 'p') [Vty.MCtrl]) =
   continue =<< updateChannelScrollState =<< prevChannel st
+onEventMain st (Vty.EvKey (Vty.KChar 'a') [Vty.MMeta]) =
+  continue =<< updateChannelScrollState =<< nextUnreadChannel st
+onEventMain st (Vty.EvKey (Vty.KChar 's') [Vty.MMeta]) =
+  continue =<< updateChannelScrollState =<< recentChannel st
 onEventMain st (Vty.EvKey Vty.KEnter []) = do
   let st' = st & csCurrentCompletion .~ Nothing
   handleInputSubmission st'

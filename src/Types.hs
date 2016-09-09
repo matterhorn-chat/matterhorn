@@ -236,6 +236,7 @@ data ChatState = ChatState
   , _csTheme                :: AttrMap
   , _csMode                 :: Mode
   , _csChannelSelect        :: T.Text
+  , _csRecentChannel        :: Maybe ChannelId
   }
 
 makeLenses ''ChatState
