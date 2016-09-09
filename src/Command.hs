@@ -70,9 +70,7 @@ commandList =
     (TokenArg "channel" NoArg) $ \ (name, ()) st ->
       case channelByName st name of
         Just cId -> setFocus cId st >>= continue
-        Nothing -> do
-          msg <- newClientMessage Error ("No channel or user named " <> name)
-          continue =<< addClientMessage msg st
+        Nothing -> attemptCreateChannel name st >>= continue
   , Cmd "help" "Print the help dialogue" NoArg $ \ _ st -> do
           continue $ st & csMode .~ ShowHelp
   ]
