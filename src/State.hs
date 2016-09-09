@@ -7,6 +7,7 @@ import           Brick.Widgets.Edit (editor, getEditContents)
 import           Control.Concurrent (threadDelay, forkIO)
 import qualified Control.Concurrent.Chan as Chan
 import           Control.Monad.IO.Class (liftIO)
+import           Data.Char (isAlphaNum)
 import           Data.HashMap.Strict ((!))
 import           Brick.Main (viewportScroll, vScrollToEnd, vScrollBy)
 import           Brick.Widgets.Edit (applyEdit)
@@ -256,37 +257,56 @@ attemptCreateChannel name st
       liftIO $ runAsync st $ do
         -- create a new channel
         nc <- mmCreateDirect (st^.csConn) (st^.csTok) tId uId
-        return $ \st' -> do
-          -- and when we get it back, time to do a lot of state updating:
-          -- create a new ClientChannel structure
-          now <- liftIO getCurrentTime
-          let cChannel = ClientChannel
-                { _ccContents = emptyChannelContents
-                , _ccInfo     = ChannelInfo
-                                  { _cdViewed  = now
-                                  , _cdUpdated = now
-                                  , _cdName    = nc^.channelNameL
-                                  , _cdHeader  = nc^.channelHeaderL
-                                  , _cdType    = nc^.channelTypeL
-                                  , _cdLoaded  = True
-                                  }
-                }
-          -- add it to the message map, and to the map so we can look
-          -- it up by user name
-          let st'' = st' & csNames.cnToChanId.at(name) .~ Just (getId nc)
-                         & msgMap.at(getId nc) .~ Just cChannel
-              -- we should figure out how to do this better: this adds it to
-              -- the channel zipper in such a way that we don't ever change
-              -- our focus to something else, which is kind of silly
-              newZip = Z.updateList (st''^.csFocus) (mkChannelZipperList (st''^.csNames))
-              st''' = st'' & csFocus .~ newZip
-          -- and we finally set our focus to the newly created channel
-          setFocus (getId nc) st'''
+        return $ handleNewChannel name nc
       return st
   | otherwise = do
     msg <- newClientMessage Error ("No channel or user named " <> name)
     addClientMessage msg st
 
+createChannel :: T.Text -> ChatState -> EventM Name ChatState
+createChannel name st = do
+  let tId = st^.csMyTeam.teamIdL
+  liftIO $ runAsync st $ do
+    -- create a new chat channel
+    let slug = T.map (\ c -> if isAlphaNum c then c else '-') (T.toLower name)
+        minChannel = MinChannel
+          { minChannelName        = slug
+          , minChannelDisplayName = name
+          , minChannelPurpose     = Nothing
+          , minChannelHeader      = Nothing
+          , minChannelType        = Type "O"
+          }
+    nc <- mmCreateChannel (st^.csConn) (st^.csTok) tId minChannel
+    return $ (handleNewChannel name nc . (csNames.cnChans %~ (name:)))
+  return st
+
+handleNewChannel :: T.Text -> Channel -> ChatState -> EventM Name ChatState
+handleNewChannel name nc st = do
+  -- time to do a lot of state updating:
+  -- create a new ClientChannel structure
+  now <- liftIO getCurrentTime
+  let cChannel = ClientChannel
+        { _ccContents = emptyChannelContents
+        , _ccInfo     = ChannelInfo
+                          { _cdViewed  = now
+                          , _cdUpdated = now
+                          , _cdName    = nc^.channelNameL
+                          , _cdHeader  = nc^.channelHeaderL
+                          , _cdType    = nc^.channelTypeL
+                          , _cdLoaded  = True
+                          }
+        }
+      -- add it to the message map, and to the map so we can look
+      -- it up by user name
+      st' = st & csNames.cnToChanId.at(name) .~ Just (getId nc)
+               & msgMap.at(getId nc) .~ Just cChannel
+      -- we should figure out how to do this better: this adds it to
+      -- the channel zipper in such a way that we don't ever change
+      -- our focus to something else, which is kind of silly
+      newZip = Z.updateList (st'^.csFocus) (mkChannelZipperList (st'^.csNames))
+      st'' = st' & csFocus .~ newZip
+          -- and we finally set our focus to the newly created channel
+  setFocus (getId nc) st''
 
 editMessage :: Post -> ChatState -> EventM a ChatState
 editMessage new st = do

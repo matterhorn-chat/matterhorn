@@ -58,6 +58,9 @@ commandList =
       prevChannel st >>= continue
   , Cmd "list-themes" "List the available themes" NoArg $ \ () st ->
       listThemes st >>= continue
+  , Cmd "create-channel" "Create a new channel"
+    (LineArg "channel name") $ \ name st ->
+      createChannel name st >>= continue
   , Cmd "set-theme" "Set the color theme"
     (TokenArg "theme" NoArg) $ \ (themeName, ()) st ->
       setTheme st themeName >>= continue
