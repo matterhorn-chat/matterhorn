@@ -4,6 +4,7 @@ module Config
   ( Config(..)
   , PasswordSource(..)
   , findConfig
+  , getCredentials
   ) where
 
 import           Control.Monad.Trans.Except
@@ -112,3 +113,9 @@ getConfig fp = runExceptT $ do
         Just (PasswordString pass) -> return $ Just pass
         _ -> return Nothing
       return conf { configPass = PasswordString <$> actualPass }
+
+getCredentials :: Config -> Maybe (Text, Text)
+getCredentials config = case (,) <$> configUser config <*> configPass config of
+  Nothing                    -> Nothing
+  Just (u, PasswordString p) -> Just (u, p)
+  _ -> error $ "BUG: unexpected password state: " <> show (configPass config)

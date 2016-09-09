@@ -2,7 +2,6 @@
 module State where
 
 import           Brick (EventM, txt, vBox)
-import           Brick.AttrMap (AttrMap)
 import           Brick.Widgets.Edit (editor, getEditContents)
 import           Control.Concurrent (threadDelay, forkIO)
 import qualified Control.Concurrent.Chan as Chan
@@ -57,20 +56,15 @@ messagesFromPosts st p = msgs
 numScrollbackPosts :: Int
 numScrollbackPosts = 100
 
-newState :: Token
-         -> ConnectionData
+newState :: ChatResources
          -> Zipper ChannelId
          -> User
          -> Team
          -> TimeZone
-         -> Maybe T.Text
          -> InputHistory
-         -> RequestChan
-         -> AttrMap
          -> ChatState
-newState t c i u m tz fmt hist rq theme = ChatState
-  { _csTok                  = t
-  , _csConn                 = c
+newState rs i u m tz hist = ChatState
+  { _csResources            = rs
   , _csFocus                = i
   , _csMe                   = u
   , _csMyTeam               = m
@@ -79,13 +73,10 @@ newState t c i u m tz fmt hist rq theme = ChatState
   , _usrMap                 = HM.empty
   , _cmdLine                = editor MessageInput (vBox . map txt) (Just 1) ""
   , _timeZone               = tz
-  , _csRequestQueue         = rq
-  , _timeFormat             = fmt
   , _csInputHistory         = hist
   , _csInputHistoryPosition = mempty
   , _csLastChannelInput     = mempty
   , _csCurrentCompletion    = Nothing
-  , _csTheme                = theme
   , _csMode                 = Main
   , _csChannelSelect        = ""
   , _csRecentChannel        = Nothing
@@ -427,13 +418,45 @@ mkChannelZipperList chanNames =
   | i <- chanNames ^. cnUsers
   , c <- maybeToList (HM.lookup i (chanNames ^. cnToChanId)) ]
 
+mkChanNames :: User -> HM.HashMap UserId UserProfile -> Seq.Seq Channel -> MMNames
+mkChanNames myUser users chans = MMNames
+  { _cnChans = sort
+               [ channelName c
+               | c <- toList chans, channelType c /= "D" ]
+  , _cnDMs = sort
+             [ channelName c
+             | c <- toList chans, channelType c == "D" ]
+  , _cnToChanId = HM.fromList $
+                  [ (channelName c, channelId c) | c <- toList chans ] ++
+                  [ (userProfileUsername u, c)
+                  | u <- HM.elems users
+                  , c <- lookupChan (getDMChannelName (getId myUser) (getId u))
+                  ]
+  , _cnUsers = sort (map userProfileUsername (HM.elems users))
+  , _cnToUserId = HM.fromList
+                  [ (userProfileUsername u, getId u) | u <- HM.elems users ]
+  }
+  where lookupChan n = [ c^.channelIdL
+                       | c <- toList chans, c^.channelNameL == n
+                       ]
+
+fetchUserStatuses :: ConnectionData -> Token
+                  -> IO (ChatState -> EventM Name ChatState)
+fetchUserStatuses cd token = do
+  statusMap <- mmGetStatuses cd token
+  return $ \ appState ->
+    return $ HM.foldrWithKey
+      (\ uId status st ->
+          st & usrMap.ix(uId).uiStatus .~ statusFromText status)
+      appState
+      statusMap
+
 setupState :: Config -> RequestChan -> IO ChatState
 setupState config requestChan = do
   -- If we don't have enough credentials, ask for them.
-  (uStr, pStr) <- case (,) <$> configUser config <*> configPass config of
+  (uStr, pStr) <- case getCredentials config of
       Nothing -> interactiveGatherCredentials config
-      Just (u, PasswordString p) -> return (u, p)
-      _ -> error $ "BUG: unexpected password state: " <> show (configPass config)
+      Just (u, p) -> return (u, p)
 
   cd <- initConnectionData (T.unpack (configHost config))
                            (fromIntegral (configPort config))
@@ -441,9 +464,7 @@ setupState config requestChan = do
   let loginLoop (u, p) = do
         putStrLn "Authenticating..."
 
-        let login = Login { username = u
-                          , password = p
-                          }
+        let login = Login { username = u, password = p }
         result <- (Just <$> mmLogin cd login) `catch`
                   (\(_::SomeException) -> return Nothing)
         case result of
@@ -467,24 +488,30 @@ setupState config requestChan = do
               Nothing -> interactiveTeamSelection (toList (initialLoadTeams initialLoad))
               Just t -> return t
 
+  let themeName = case configTheme config of
+          Nothing -> defaultThemeName
+          Just t -> t
+      theme = case lookup themeName themes of
+          Nothing -> fromJust $ lookup defaultThemeName themes
+          Just t -> t
+      cr = ChatResources
+             { _crTok          = token
+             , _crConn         = cd
+             , _crRequestQueue = requestChan
+             , _crTheme        = theme
+             , _crTimeFormat   = configTimeFormat config
+             }
+  initializeState cr myTeam myUser
+
+initializeState :: ChatResources -> Team -> User -> IO ChatState
+initializeState cr myTeam myUser = do
+  let ChatResources token cd requestChan _ _ = cr
   let myTeamId = getId myTeam
 
+  Chan.writeChan requestChan $ fetchUserStatuses cd token
+
   putStrLn $ "Loading channels for team " <> show (teamName myTeam) <> "..."
-
   Channels chans cm <- mmGetChannels cd token myTeamId
-
-  let lookupChan n = [ c ^. channelIdL
-                     | c <- toList chans
-                     , c ^. channelNameL == n ]
-
-  Chan.writeChan requestChan $ do
-    statusMap <- mmGetStatuses cd token
-    return $ \ appState ->
-      return $ HM.foldrWithKey
-                 (\ uId status st ->
-                    st & usrMap.ix(uId).uiStatus .~ statusFromText status)
-                 appState
-                 statusMap
 
   msgs <- fmap (HM.fromList . toList) $ forM chans $ \c -> do
     let chanData = cm ! getId c
@@ -520,32 +547,7 @@ setupState config requestChan = do
 
   startTimezoneMonitor tz requestChan
 
-  let chanNames = MMNames
-        { _cnChans = sort
-                     [ channelName c
-                     | c <- toList chans
-                     , channelType c == "O"
-                       || channelType c == "P"
-                     ]
-        , _cnDMs = sort
-                   [ channelName c
-                   | c <- toList chans
-                   , channelType c == "D"
-                   ]
-        , _cnToChanId = HM.fromList $
-                          [ (channelName c, channelId c)
-                          | c <- toList chans
-                          ] ++
-                          [ (userProfileUsername u, c)
-                          | u <- HM.elems users
-                          , c <- lookupChan (getDMChannelName (getId myUser) (getId u))
-                          ]
-        , _cnUsers = sort (map userProfileUsername (HM.elems users))
-        , _cnToUserId = HM.fromList
-                          [ (userProfileUsername u, getId u)
-                          | u <- HM.elems users
-                          ]
-        }
+  let chanNames = mkChanNames myUser users chans
       Just townSqId = chanNames ^. cnToChanId . at "town-square"
       chanIds = [ (chanNames ^. cnToChanId) HM.! i
                 | i <- chanNames ^. cnChans ] ++
@@ -553,13 +555,7 @@ setupState config requestChan = do
                 | i <- chanNames ^. cnUsers
                 , c <- maybeToList (HM.lookup i (chanNames ^. cnToChanId)) ]
       chanZip = Z.findRight (== townSqId) (Z.fromList chanIds)
-      themeName = case configTheme config of
-          Nothing -> defaultThemeName
-          Just t -> t
-      theme = case lookup themeName themes of
-          Nothing -> fromJust $ lookup defaultThemeName themes
-          Just t -> t
-      st = newState token cd chanZip myUser myTeam tz (configTimeFormat config) hist requestChan theme
+      st = newState cr chanZip myUser myTeam tz hist
              & usrMap .~ fmap userInfoFromProfile users
              & msgMap .~ msgs
              & csNames .~ chanNames
@@ -569,14 +565,3 @@ setupState config requestChan = do
                & msgMap.ix(townSqId).ccInfo.cdLoaded .~ True
 
   updateViewedIO st'
-
-
-debugPrintTimes :: ChatState -> T.Text -> EventM Name ChatState
-debugPrintTimes st cn = do
-  let Just cId = st^.csNames.cnToChanId.at(cn)
-      Just ch = st^.msgMap.at(cId)
-      viewed = ch^.ccInfo.cdViewed
-      updated = ch^.ccInfo.cdUpdated
-  m1 <- newClientMessage Informative $ T.pack ("Viewed: " ++ show viewed)
-  m2 <- newClientMessage Informative $ T.pack ("Updated: " ++ show updated)
-  addClientMessage m1 st >>= addClientMessage m2

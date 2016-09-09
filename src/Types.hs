@@ -208,6 +208,16 @@ userInfoFromProfile up = UserInfo
   , _uiStatus = Offline
   }
 
+-- 'ChatResources' represents configuration and connection-related
+-- information, as opposed to current model or view information.
+data ChatResources = ChatResources
+  { _crTok          :: Token
+  , _crConn         :: ConnectionData
+  , _crRequestQueue :: RequestChan
+  , _crTheme        :: AttrMap
+  , _crTimeFormat   :: Maybe T.Text
+  }
+
 type RequestChan = Chan (IO (ChatState -> EventM Name ChatState))
 
 data Mode =
@@ -216,9 +226,10 @@ data Mode =
     | ChannelSelect
     deriving (Eq)
 
+-- This is the giant bundle of fields that represents the current
+-- state of our application at any given time.
 data ChatState = ChatState
-  { _csTok                  :: Token
-  , _csConn                 :: ConnectionData
+  { _csResources            :: ChatResources
   , _csFocus                :: Zipper ChannelId
   , _csNames                :: MMNames
   , _csMe                   :: User
@@ -227,19 +238,32 @@ data ChatState = ChatState
   , _usrMap                 :: HashMap UserId UserInfo
   , _cmdLine                :: Editor T.Text Name
   , _timeZone               :: TimeZone
-  , _timeFormat             :: Maybe T.Text
   , _csInputHistory         :: InputHistory
   , _csInputHistoryPosition :: HM.HashMap ChannelId (Maybe Int)
   , _csLastChannelInput     :: HM.HashMap ChannelId T.Text
   , _csCurrentCompletion    :: Maybe T.Text
-  , _csRequestQueue         :: RequestChan
-  , _csTheme                :: AttrMap
   , _csMode                 :: Mode
   , _csChannelSelect        :: T.Text
   , _csRecentChannel        :: Maybe ChannelId
   }
 
+makeLenses ''ChatResources
 makeLenses ''ChatState
+
+csTheme :: Lens' ChatState AttrMap
+csTheme = csResources . crTheme
+
+csTok :: Lens' ChatState Token
+csTok = csResources . crTok
+
+csConn :: Lens' ChatState ConnectionData
+csConn = csResources . crConn
+
+csRequestQueue :: Lens' ChatState RequestChan
+csRequestQueue = csResources . crRequestQueue
+
+timeFormat :: Lens' ChatState (Maybe T.Text)
+timeFormat = csResources . crTimeFormat
 
 getUsernameForUserId :: ChatState -> UserId -> Maybe T.Text
 getUsernameForUserId st uId = st^.usrMap ^? ix uId.uiName
