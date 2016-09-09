@@ -25,7 +25,6 @@ import qualified Data.Text as T
 import           Lens.Micro.Platform
 import           System.Exit (exitFailure)
 
-import           Network.Connection
 import           Network.Mattermost
 import           Network.Mattermost.Exceptions
 import           Network.Mattermost.Lenses
@@ -416,10 +415,8 @@ setupState config requestChan = do
       Just (u, PasswordString p) -> return (u, p)
       _ -> error $ "BUG: unexpected password state: " <> show (configPass config)
 
-  ctx <- initConnectionContext
-  let cd = mkConnectionData (T.unpack (configHost config))
-                            (fromIntegral (configPort config))
-                            ctx
+  cd <- initConnectionData (T.unpack (configHost config))
+                           (fromIntegral (configPort config))
 
   let loginLoop (u, p) = do
         putStrLn "Authenticating..."

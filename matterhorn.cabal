@@ -47,9 +47,8 @@ executable matterhorn
                      , bytestring
                      , ini
                      , process
-                     , connection
                      , microlens-platform
-                     , brick
+                     , brick == 0.8
                      , data-default
                      , vty
                      , transformers
