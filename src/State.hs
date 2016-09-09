@@ -266,13 +266,13 @@ attemptCreateChannel name st
                 }
           -- add it to the message map, and to the map so we can look
           -- it up by user name
-          let st'' = st & csNames.cnToChanId.at(name) .~ Just (getId nc)
-                        & msgMap.at(getId nc) .~ Just cChannel
+          let st'' = st' & csNames.cnToChanId.at(name) .~ Just (getId nc)
+                         & msgMap.at(getId nc) .~ Just cChannel
               -- we should figure out how to do this better: this adds it to
               -- the channel zipper in such a way that we don't ever change
               -- our focus to something else, which is kind of silly
-              newZip = Z.updateList (st^.csFocus) (mkChannelZipperList (st''^.csNames))
-              st''' = st' & csFocus .~ newZip
+              newZip = Z.updateList (st''^.csFocus) (mkChannelZipperList (st''^.csNames))
+              st''' = st'' & csFocus .~ newZip
           -- and we finally set our focus to the newly created channel
           setFocus (getId nc) st'''
       return st
