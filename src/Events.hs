@@ -244,6 +244,9 @@ handleWSEvent st we =
     WMStatusChange -> case wepStatus (weData we) of
       Just status -> updateStatus (weUserId we) status st >>= continue
       Nothing -> continue st
+    WMChannelViewed -> case wepChannelId (weData we) of
+      Just cId -> setLastViewedFor st cId >>= continue
+      Nothing -> continue st
     _ -> continue st
 
 shouldSkipMessage :: T.Text -> Bool
