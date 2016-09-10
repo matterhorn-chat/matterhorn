@@ -47,10 +47,10 @@ teamSelectDraw st =
 teamSelect :: State -> Widget ()
 teamSelect st =
     center $ hLimit 50 $ vLimit 15 $
-    vBox [ hCenter $ str "Welcome to MatterMost. Please select a team:"
-         , str " "
+    vBox [ hCenter $ txt "Welcome to MatterMost. Please select a team:"
+         , txt " "
          , border theList
-         , str " "
+         , txt " "
          , wrappedText txt "Press Enter to select a team and connect or Esc to exit."
          ]
     where

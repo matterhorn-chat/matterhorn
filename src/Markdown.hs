@@ -37,9 +37,9 @@ renderMessage :: Blocks -> Maybe Text -> MessageType -> UserSet -> Widget a
 renderMessage bs u mTy uSet =
   case u of
     Just un
-      | mTy == CP Emote -> B.str "*" <+> colorUsername un
-                       <+> B.str " " <+> vBox (fmap (toWidget uSet) bs)
-      | otherwise -> colorUsername un <+> B.str ": " <+> vBox (fmap (toWidget uSet) bs)
+      | mTy == CP Emote -> B.txt "*" <+> colorUsername un
+                       <+> B.txt " " <+> vBox (fmap (toWidget uSet) bs)
+      | otherwise -> colorUsername un <+> B.txt ": " <+> vBox (fmap (toWidget uSet) bs)
     Nothing -> vBox (fmap (toWidget uSet) bs)
 
 vBox :: Foldable f => f (Widget a) -> Widget a
@@ -54,19 +54,19 @@ class ToWidget t where
   toWidget :: UserSet -> t -> Widget a
 
 header :: Int -> Widget a
-header n = B.str (replicate n '#')
+header n = B.txt (T.replicate n "#")
 
 instance ToWidget Block where
   toWidget uPat (C.Para is) = toInlineChunk is uPat
   toWidget uPat (C.Header n is) =
     B.withDefAttr clientHeaderAttr
-      (header n <+> B.str " " <+> toInlineChunk is uPat)
+      (header n <+> B.txt " " <+> toInlineChunk is uPat)
   toWidget uPat (C.Blockquote is) =
     B.padLeft (B.Pad 4) (vBox $ fmap (toWidget uPat) is)
   toWidget uPat (C.List _ l bs) = toList l bs uPat
   toWidget _ (C.CodeBlock _ tx) =
     B.withDefAttr codeAttr $
-      B.vBox [ B.str " | " <+> B.txt ln | ln <- T.lines tx ]
+      B.vBox [ B.txt " | " <+> B.txt ln | ln <- T.lines tx ]
   toWidget _ (C.HtmlBlock txt) = B.txt txt
   toWidget _ (C.HRule) = B.vLimit 1 (B.fill '*')
 
@@ -80,11 +80,11 @@ toInlineChunk is uSet = B.Widget B.Fixed B.Fixed $ do
 
 toList :: ListType -> [Blocks] -> UserSet -> Widget a
 toList lt bs uSet = vBox
-  [ B.str i <+> (vBox (fmap (toWidget uSet) b))
+  [ B.txt i <+> (vBox (fmap (toWidget uSet) b))
   | b <- bs | i <- is ]
   where is = case lt of
-          C.Bullet c -> repeat (c:" ")
-          C.Numbered _ _ -> [ show (n :: Int) ++ ". "
+          C.Bullet c -> repeat (c `T.cons` " ")
+          C.Numbered _ _ -> [ T.pack (show (n :: Int)) <> ". "
                             | n <- [1..] ]
 
 -- We want to do word-wrapping, but for that we want a linear

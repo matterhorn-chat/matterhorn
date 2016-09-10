@@ -39,8 +39,8 @@ defaultDateFormat = "%R"
 
 renderTime :: Text -> TimeZone -> UTCTime -> Widget Name
 renderTime fmt tz t =
-    let timeStr = formatTime defaultTimeLocale (T.unpack fmt) (utcToLocalTime tz t)
-    in str "[" <+> withDefAttr timeAttr (str timeStr) <+> str "]"
+    let timeStr = T.pack $ formatTime defaultTimeLocale (T.unpack fmt) (utcToLocalTime tz t)
+    in txt "[" <+> withDefAttr timeAttr (txt timeStr) <+> txt "]"
 
 renderChatMessage :: Set Text -> Maybe Text -> TimeZone -> Message -> Widget Name
 renderChatMessage uSet mFormat tz msg =
@@ -55,7 +55,7 @@ renderChatMessage uSet mFormat tz msg =
         msgAtch = if Seq.null (msg^.mAttachments)
           then emptyWidget
           else withDefAttr clientMessageAttr
-                  (str "  [this message has an attachment]")
+                  (txt "  [this message has an attachment]")
         msgTxt =
           case msg^.mUserName of
             Just _
@@ -70,8 +70,8 @@ renderChatMessage uSet mFormat tz msg =
         fullMsg = msgTxt <=> msgAtch
         maybeRenderTime = case mFormat of
             Just ""     -> id
-            Just format -> \w -> renderTime format tz t            <+> str " " <+> w
-            Nothing     -> \w -> renderTime defaultDateFormat tz t <+> str " " <+> w
+            Just format -> \w -> renderTime format tz t            <+> txt " " <+> w
+            Nothing     -> \w -> renderTime defaultDateFormat tz t <+> txt " " <+> w
         maybeRenderTimeWith f = case msg^.mType of
             C DateTransition -> id
             _ -> f
@@ -111,7 +111,7 @@ renderChannelList st = hLimit channelListWidth $ vBox
     currentChannelName = getChannelName cId st
     header label = hBorderWithLabel $
                    withDefAttr channelListHeaderAttr $
-                   str label
+                   txt label
     channelNames = [ decorate $ padRight Max $ txt (mkChannelName cInfo)
                    | n <- (st ^. csNames . cnChans)
                    , let decorate = if | matches   -> const $
@@ -184,7 +184,7 @@ renderChannelList st = hLimit channelListWidth $ vBox
 renderUserCommandBox :: ChatState -> Widget Name
 renderUserCommandBox st = prompt <+> inputBox
     where
-    prompt = str "> "
+    prompt = txt "> "
     inputBox = renderEditor True (st^.cmdLine)
 
 renderCurrentChannelDisplay :: ChatState -> Widget Name
@@ -203,8 +203,8 @@ renderCurrentChannelDisplay st = header <=> messages
                    _        -> txt $ mkChannelName (chan^.ccInfo)
                  False -> wrappedText txt $ mkChannelName (chan^.ccInfo) <> " - " <> topicStr
     messages = if chan^.ccInfo.cdLoaded
-               then viewport (ChannelMessages cId) Vertical chatText <+> str " "
-               else center $ str "[loading channel scrollback]"
+               then viewport (ChannelMessages cId) Vertical chatText <+> txt " "
+               else center $ txt "[loading channel scrollback]"
     --uPattern = mkUsernamePattern (HM.elems (st^.usrMap))
     uSet = Set.fromList (map _uiName (HM.elems (st^.usrMap)))
     chatText = vBox $ F.toList $
