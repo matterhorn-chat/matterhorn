@@ -26,7 +26,8 @@ withMargins (hMargin, vMargin) w =
 
 keybindSections :: [(T.Text, [Keybinding])]
 keybindSections =
-    [ ("Main Interface", mainKeybindings)
+    [ ("This Help Page", helpKeybindings)
+    , ("Main Interface", mainKeybindings)
     ]
 
 helpBox :: Widget Name
@@ -92,6 +93,7 @@ ppKey _               = "???"
 
 ppChar :: Char -> T.Text
 ppChar '\t' = "Tab"
+ppChar ' '  = "Space"
 ppChar c    = T.singleton c
 
 ppMod :: Vty.Modifier -> T.Text
