@@ -197,7 +197,7 @@ mainKeybindings :: [Keybinding]
 mainKeybindings =
     [ KB "Show this help screen"
          (Vty.EvKey (Vty.KFun 1) []) $
-         \st -> continue $ st & csMode .~ ShowHelp
+         showHelpScreen >=> continue
 
     , KB "Enter fast channel selection mode"
          (Vty.EvKey (Vty.KChar 'g') [Vty.MCtrl]) $

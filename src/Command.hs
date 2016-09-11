@@ -7,8 +7,6 @@ import Control.Monad.IO.Class (liftIO)
 import Data.Monoid ((<>))
 import qualified Data.Text as T
 
-import Lens.Micro.Platform
-
 import State
 import Types
 
@@ -50,8 +48,8 @@ commandList =
   , Cmd "focus" "Focus on a named channel"
     (TokenArg "channel" NoArg) $ \ (name, ()) st ->
         changeChannel name st >>= continue
-  , Cmd "help" "Print the help dialogue" NoArg $ \ _ st -> do
-          continue $ st & csMode .~ ShowHelp
+  , Cmd "help" "Print the help dialogue" NoArg $ \ _ st ->
+        showHelpScreen st >>= continue
   ]
 
 dispatchCommand :: T.Text -> ChatState -> EventM Name (Next ChatState)

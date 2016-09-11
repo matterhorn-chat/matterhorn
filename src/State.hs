@@ -8,7 +8,7 @@ import qualified Control.Concurrent.Chan as Chan
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Char (isAlphaNum)
 import           Data.HashMap.Strict ((!))
-import           Brick.Main (viewportScroll, vScrollToEnd, vScrollBy)
+import           Brick.Main (viewportScroll, vScrollToEnd, vScrollToBeginning, vScrollBy)
 import           Brick.Widgets.Edit (applyEdit)
 import           Control.Exception (SomeException, catch)
 import           Control.Monad (forM, when, void)
@@ -605,3 +605,8 @@ channelHistoryBackward st =
               Just entry ->
                   st & cmdLine.editContentsL .~ (gotoEOL $ textZipper [entry] (Just 1))
                      & csInputHistoryPosition.at cId .~ (Just $ Just newI)
+
+showHelpScreen :: ChatState -> EventM Name ChatState
+showHelpScreen st = do
+    vScrollToBeginning (viewportScroll HelpViewport)
+    return $ st & csMode .~ ShowHelp
