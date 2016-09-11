@@ -45,26 +45,6 @@ for a globally-accessible `/etc/matterhorn/config.ini`.
 
 # Using
 
-You can often use built-in keybindings or `/cmd`-style commands:
-
-~~~
-Command         Keybinding              Effect
------------------------------------------------------------------------
-/quit           Ctrl-q                  Quit Matterhorn
-/right          Ctrl-n                  Go to the next channel\*
-/left           Ctrl-p                  Go to the previous channel\*
-                Ctrl-g                  Enter fast channel selection mode
-                Meta-a                  Go to the next channel with unread
-                                        messages
-                Meta-s                  Go to the most recently focused channel
-/focus [chan]                           Go to normal or user channel
-                                        named [chan]
-/theme [name]                           Change to built-in theme named 'name'
-                                        (or list themes)
-/topic                                  Change the channel topic
-/help                                   Show a help dialogue
-
-* /right and /left only cycle between chat channels, and not direct
-  message channels. To access direct message channels, use the /focus
-  command instead.
-~~~
+You can often use built-in keybindings or `/cmd`-style commands. To
+see available keybindings and commands, pres `F1` or run the `/help`
+command.
