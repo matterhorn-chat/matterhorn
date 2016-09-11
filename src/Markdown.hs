@@ -94,7 +94,7 @@ toList lt bs uSet = vBox
 -- more amenable to splitting up those bits.
 data Fragment = Fragment
   { fTextual :: TextFragment
-  , fStyle   :: FragmentStyle
+  , _fStyle  :: FragmentStyle
   } deriving (Show)
 
 data TextFragment
