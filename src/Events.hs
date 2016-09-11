@@ -201,9 +201,7 @@ mainKeybindings =
 
     , KB "Enter fast channel selection mode"
          (Vty.EvKey (Vty.KChar 'g') [Vty.MCtrl]) $
-         \st -> do
-           continue $ st & csMode          .~ ChannelSelect
-                         & csChannelSelect .~ ""
+         beginChannelSelect >=> continue
 
     , KB "Quit"
          (Vty.EvKey (Vty.KChar 'q') [Vty.MCtrl]) halt

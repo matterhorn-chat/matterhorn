@@ -610,3 +610,8 @@ showHelpScreen :: ChatState -> EventM Name ChatState
 showHelpScreen st = do
     vScrollToBeginning (viewportScroll HelpViewport)
     return $ st & csMode .~ ShowHelp
+
+beginChannelSelect :: ChatState -> EventM Name ChatState
+beginChannelSelect st =
+    return $ st & csMode          .~ ChannelSelect
+                & csChannelSelect .~ ""
