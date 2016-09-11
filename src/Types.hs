@@ -258,11 +258,6 @@ data ChatState = ChatState
   , _usrMap                 :: HashMap UserId UserInfo
   , _timeZone               :: TimeZone
   , _csEditState            :: ChatEditState
---  , _cmdLine                :: Editor T.Text Name
---  , _csInputHistory         :: InputHistory
---  , _csInputHistoryPosition :: HM.HashMap ChannelId (Maybe Int)
---  , _csLastChannelInput     :: HM.HashMap ChannelId T.Text
---  , _csCurrentCompletion    :: Maybe T.Text
   , _csMode                 :: Mode
   , _csChannelSelect        :: T.Text
   , _csRecentChannel        :: Maybe ChannelId
