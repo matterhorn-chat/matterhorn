@@ -33,7 +33,7 @@ keybindSections =
 
 helpBox :: Widget Name
 helpBox =
-    centerLayer $ withMargins (5, 3) $
+    centerLayer $ withMargins (2, 1) $
       (withDefAttr helpAttr $ borderWithLabel (withDefAttr helpEmphAttr $ txt "Matterhorn Help") $
        (viewport HelpViewport Vertical helpText)) <=>
       quitMessage
@@ -60,6 +60,12 @@ helpBox =
               | (info, desc) <- helpInfo
               ]
 
+kbColumnWidth :: Int
+kbColumnWidth = 10
+
+kbDescColumnWidth :: Int
+kbDescColumnWidth = 60
+
 mkKeybindingHelp :: (T.Text, [Keybinding]) -> Widget Name
 mkKeybindingHelp (sectionName, kbs) =
     (hCenter $ padTop (Pad 1) $ withDefAttr helpEmphAttr $ txt $ "Keybindings: " <> sectionName) <=>
@@ -67,7 +73,8 @@ mkKeybindingHelp (sectionName, kbs) =
 
 mkKeybindHelp :: Keybinding -> Widget Name
 mkKeybindHelp (KB desc ev _) =
-    (withDefAttr helpEmphAttr $ txt $ padTo 10 $ ppKbEvent ev) <+> txt desc
+    (withDefAttr helpEmphAttr $ txt $ padTo kbColumnWidth $ ppKbEvent ev) <+>
+    (hLimit kbDescColumnWidth $ txt $ padTo kbDescColumnWidth desc)
 
 ppKbEvent :: Vty.Event -> T.Text
 ppKbEvent (Vty.EvKey k mods) =
