@@ -1,38 +1,16 @@
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE KindSignatures #-}
-
 module Command where
 
 import Brick (EventM, Next, continue, halt)
-import Control.Monad (void, when)
+import Control.Monad (when)
 import Control.Monad.IO.Class (liftIO)
 import Data.Monoid ((<>))
 import qualified Data.Text as T
 
 import Lens.Micro.Platform
 
-import Network.Mattermost
-import Network.Mattermost.Lenses
-
 import State
 import Types
-
-data CmdArgs :: * -> * where
-  NoArg    :: CmdArgs ()
-  LineArg  :: T.Text -> CmdArgs T.Text
-  TokenArg :: T.Text -> CmdArgs rest -> CmdArgs (T.Text, rest)
-
-type CmdExec a = a -> ChatState -> EventM Name (Next ChatState)
-
-data Cmd = forall a. Cmd
-  { cmdName    :: T.Text
-  , cmdDescr   :: T.Text
-  , cmdArgSpec :: CmdArgs a
-  , cmdAction  :: CmdExec a
-  }
-
-commandName :: Cmd -> T.Text
-commandName (Cmd name _ _ _ ) = name
 
 printArgSpec :: CmdArgs a -> T.Text
 printArgSpec NoArg = ""
@@ -92,12 +70,3 @@ dispatchCommand cmd st =
            | otherwise ->
              execMMCommand cmd st >>= continue
     _ -> continue st
-
-setChannelTopic :: ChatState -> T.Text -> IO ()
-setChannelTopic st msg = do
-    let chanId = currentChannelId st
-        theTeamId = st^.csMyTeam.teamIdL
-    doAsyncWith st $ do
-        void $ mmSetChannelHeader (st^.csConn) (st^.csTok) theTeamId chanId msg
-        return $ \st' -> do
-            return $ st' & msgMap.at chanId.each.ccInfo.cdHeader .~ msg

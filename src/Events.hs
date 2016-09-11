@@ -6,7 +6,9 @@ import           Brick.Widgets.Edit ( getEditContents
                                     , applyEdit
                                     , editContentsL
                                     )
+import           Control.Monad ((>=>))
 import           Control.Monad.IO.Class (liftIO)
+import           Data.Maybe (listToMaybe)
 import qualified Data.Set as Set
 import           Data.Text.Zipper ( TextZipper
                                   , getText
@@ -79,36 +81,7 @@ onEventMain st (Vty.EvResize _ _) = do
   -- worry about the current channel's viewport because that's the one
   -- that is about to be redrawn.
   continue =<< updateChannelScrollState st
-onEventMain st (Vty.EvKey (Vty.KFun 1) []) =
-  continue $ st & csMode .~ ShowHelp
-onEventMain st (Vty.EvKey (Vty.KChar 'g') [Vty.MCtrl]) =
-  continue $ st & csMode          .~ ChannelSelect
-                & csChannelSelect .~ ""
-onEventMain st (Vty.EvKey (Vty.KChar 'q') [Vty.MCtrl]) =
-  halt st
-onEventMain st (Vty.EvKey (Vty.KChar '\t') []) =
-  tabComplete Forwards st
-onEventMain st (Vty.EvKey (Vty.KBackTab) []) =
-  tabComplete Backwards st
-onEventMain st (Vty.EvKey Vty.KUp []) =
-  continue $ channelHistoryBackward st
-onEventMain st (Vty.EvKey Vty.KDown []) =
-  continue $ channelHistoryForward st
-onEventMain st (Vty.EvKey Vty.KPageUp []) =
-  continue =<< channelPageUp st
-onEventMain st (Vty.EvKey Vty.KPageDown []) =
-  continue =<< channelPageDown st
-onEventMain st (Vty.EvKey (Vty.KChar 'n') [Vty.MCtrl]) =
-  continue =<< updateChannelScrollState =<< nextChannel st
-onEventMain st (Vty.EvKey (Vty.KChar 'p') [Vty.MCtrl]) =
-  continue =<< updateChannelScrollState =<< prevChannel st
-onEventMain st (Vty.EvKey (Vty.KChar 'a') [Vty.MMeta]) =
-  continue =<< updateChannelScrollState =<< nextUnreadChannel st
-onEventMain st (Vty.EvKey (Vty.KChar 's') [Vty.MMeta]) =
-  continue =<< updateChannelScrollState =<< recentChannel st
-onEventMain st (Vty.EvKey Vty.KEnter []) = do
-  let st' = st & csCurrentCompletion .~ Nothing
-  handleInputSubmission st'
+onEventMain st e | Just kb <- lookupKeybinding e mainKeybindings = kbAction kb st
 onEventMain st (Vty.EvPaste bytes) = do
   -- If you paste a multi-line thing, it'll only insert up to the first
   -- line ending because the zipper will respect the line limit when
@@ -217,19 +190,6 @@ tabComplete dir st = do
 
   continue $ st' & cmdLine %~ (applyEdit edit)
 
-handleInputSubmission :: ChatState -> EventM Name (Next ChatState)
-handleInputSubmission st = do
-  let (line:_) = getEditContents (st^.cmdLine)
-      cId = currentChannelId st
-      st' = st & cmdLine %~ applyEdit clearZipper
-               & csInputHistory %~ addHistoryEntry line cId
-               & csInputHistoryPosition.at cId .~ Nothing
-  case T.uncons line of
-    Just ('/',cmd) -> dispatchCommand cmd st'
-    _              -> do
-      liftIO (sendMessage st' line)
-      continue st'
-
 handleWSEvent :: ChatState -> WebsocketEvent -> EventM Name (Next ChatState)
 handleWSEvent st we =
   case weEvent we of
@@ -249,6 +209,82 @@ handleWSEvent st we =
       Just cId -> setLastViewedFor st cId >>= continue
       Nothing -> continue st
     _ -> continue st
+
+lookupKeybinding :: Vty.Event -> [Keybinding] -> Maybe Keybinding
+lookupKeybinding e kbs = listToMaybe $ filter ((== e) . kbEvent) kbs
+
+mainKeybindings :: [Keybinding]
+mainKeybindings =
+    [ KB "Show this help screen"
+         (Vty.EvKey (Vty.KFun 1) []) $
+         \st -> continue $ st & csMode .~ ShowHelp
+
+    , KB "Enter fast channel selection mode"
+         (Vty.EvKey (Vty.KChar 'g') [Vty.MCtrl]) $
+         \st -> do
+           continue $ st & csMode          .~ ChannelSelect
+                         & csChannelSelect .~ ""
+
+    , KB "Quit"
+         (Vty.EvKey (Vty.KChar 'q') [Vty.MCtrl]) halt
+
+    , KB "Tab-complete forward"
+         (Vty.EvKey (Vty.KChar '\t') []) $
+         tabComplete Forwards
+
+    , KB "Tab-complete backward"
+         (Vty.EvKey (Vty.KBackTab) []) $
+         tabComplete Backwards
+
+    , KB "Scroll up in the channel input history"
+         (Vty.EvKey Vty.KUp []) $
+         continue . channelHistoryBackward
+
+    , KB "Scroll down in the channel input history"
+         (Vty.EvKey Vty.KDown []) $
+         continue . channelHistoryForward
+
+    , KB "Page up in the channel message list"
+         (Vty.EvKey Vty.KPageUp []) $
+         channelPageUp >=> continue
+
+    , KB "Page down in the channel message list"
+         (Vty.EvKey Vty.KPageDown []) $
+         channelPageDown >=> continue
+
+    , KB "Change to the next channel in the channel list"
+         (Vty.EvKey (Vty.KChar 'n') [Vty.MCtrl]) $
+         nextChannel >=> updateChannelScrollState >=> continue
+
+    , KB "Change to the previous channel in the channel list"
+         (Vty.EvKey (Vty.KChar 'p') [Vty.MCtrl]) $
+         prevChannel >=> updateChannelScrollState >=> continue
+
+    , KB "Change to the next channel with unread messages"
+         (Vty.EvKey (Vty.KChar 'a') [Vty.MMeta]) $
+         nextUnreadChannel >=> updateChannelScrollState >=> continue
+
+    , KB "Change to the most recently-focused channel"
+         (Vty.EvKey (Vty.KChar 's') [Vty.MMeta]) $
+         recentChannel >=> updateChannelScrollState >=> continue
+
+    , KB "Send the current message"
+         (Vty.EvKey Vty.KEnter []) $ \st -> do
+           handleInputSubmission $ st & csCurrentCompletion .~ Nothing
+    ]
+
+handleInputSubmission :: ChatState -> EventM Name (Next ChatState)
+handleInputSubmission st = do
+  let (line:_) = getEditContents (st^.cmdLine)
+      cId = currentChannelId st
+      st' = st & cmdLine %~ applyEdit clearZipper
+               & csInputHistory %~ addHistoryEntry line cId
+               & csInputHistoryPosition.at cId .~ Nothing
+  case T.uncons line of
+    Just ('/',cmd) -> dispatchCommand cmd st'
+    _              -> do
+      liftIO (sendMessage st' line)
+      continue st'
 
 shouldSkipMessage :: T.Text -> Bool
 shouldSkipMessage "" = True

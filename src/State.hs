@@ -561,3 +561,12 @@ initializeState cr myTeam myUser = do
                & msgMap.ix(townSqId).ccInfo.cdLoaded .~ True
 
   updateViewedIO st'
+
+setChannelTopic :: ChatState -> T.Text -> IO ()
+setChannelTopic st msg = do
+    let chanId = currentChannelId st
+        theTeamId = st^.csMyTeam.teamIdL
+    doAsyncWith st $ do
+        void $ mmSetChannelHeader (st^.csConn) (st^.csTok) theTeamId chanId msg
+        return $ \st' -> do
+            return $ st' & msgMap.at chanId.each.ccInfo.cdHeader .~ msg

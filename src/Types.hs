@@ -1,9 +1,11 @@
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE MultiWayIf #-}
 
 module Types where
 
-import           Brick (EventM, txt, vBox)
+import           Brick (EventM, txt, vBox, Next)
 import           Brick.AttrMap (AttrMap)
 import           Brick.Widgets.Edit (Editor, editor)
 import           Cheapskate (Blocks)
@@ -332,3 +334,26 @@ data Event
     -- ^ For events that arise from the websocket
   | RespEvent (ChatState -> EventM Name ChatState)
     -- ^ For the result values of async IO operations
+
+data CmdArgs :: * -> * where
+  NoArg    :: CmdArgs ()
+  LineArg  :: T.Text -> CmdArgs T.Text
+  TokenArg :: T.Text -> CmdArgs rest -> CmdArgs (T.Text, rest)
+
+type CmdExec a = a -> ChatState -> EventM Name (Next ChatState)
+
+data Cmd = forall a. Cmd
+  { cmdName    :: T.Text
+  , cmdDescr   :: T.Text
+  , cmdArgSpec :: CmdArgs a
+  , cmdAction  :: CmdExec a
+  }
+
+commandName :: Cmd -> T.Text
+commandName (Cmd name _ _ _ ) = name
+
+data Keybinding =
+    KB { kbDescription :: T.Text
+       , kbEvent :: Vty.Event
+       , kbAction :: ChatState -> EventM Name (Next ChatState)
+       }

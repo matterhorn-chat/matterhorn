@@ -6,10 +6,12 @@ import Brick.Widgets.Center (hCenter, centerLayer)
 import Lens.Micro.Platform
 import qualified Data.Text as T
 import Data.Monoid ((<>))
+import qualified Graphics.Vty as Vty
 
 import Themes
 import Types
 import Command
+import Events
 
 drawShowHelp :: ChatState -> [Widget Name]
 drawShowHelp = const [helpBox, fill ' ']
@@ -22,6 +24,11 @@ withMargins (hMargin, vMargin) w =
             hl = ctx^.availHeightL - (2 * vMargin)
         render $ hLimit wl $ vLimit hl w
 
+keybindSections :: [(T.Text, [Keybinding])]
+keybindSections =
+    [ ("Main Interface", mainKeybindings)
+    ]
+
 helpBox :: Widget Name
 helpBox =
     centerLayer $ withMargins (5, 3) $
@@ -33,20 +40,65 @@ helpBox =
 
     quitMessage = padTop (Pad 1) $ hCenter $ txt "Press Esc to exit the help screen."
 
-    commandHelp = vBox [ padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Commands"
-                       , mkHelpText commandList
-                       ]
+    commandHelp = vBox $ [ padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Commands"
+                         , mkCommandHelpText commandList
+                         ] <>
+                         (mkKeybindingHelp <$> keybindSections)
 
-    mkHelpText :: [Cmd] -> Widget Name
-    mkHelpText cs =
+    mkCommandHelpText :: [Cmd] -> Widget Name
+    mkCommandHelpText cs =
       let helpInfo = [ (info, desc)
                      | Cmd cmd desc args _ <- cs
                      , let argSpec = printArgSpec args
                            info = T.cons '/' cmd <> " " <> argSpec
                      ]
           commandNameWidth = 4 + (maximum $ T.length <$> fst <$> helpInfo)
-          padTo n s = s <> T.replicate (n - T.length s) " "
       in hCenter $
          vBox [ (withDefAttr helpEmphAttr $ txt $ padTo commandNameWidth info) <+> txt desc
               | (info, desc) <- helpInfo
               ]
+
+mkKeybindingHelp :: (T.Text, [Keybinding]) -> Widget Name
+mkKeybindingHelp (sectionName, kbs) =
+    (hCenter $ padTop (Pad 1) $ withDefAttr helpEmphAttr $ txt $ "Keybindings: " <> sectionName) <=>
+    (hCenter $ vBox $ mkKeybindHelp <$> kbs)
+
+mkKeybindHelp :: Keybinding -> Widget Name
+mkKeybindHelp (KB desc ev _) =
+    (withDefAttr helpEmphAttr $ txt $ padTo 10 $ ppKbEvent ev) <+> txt desc
+
+ppKbEvent :: Vty.Event -> T.Text
+ppKbEvent (Vty.EvKey k mods) =
+    T.intercalate "-" $ (ppMod <$> mods) <> [ppKey k]
+ppKbEvent _ = "<????>"
+
+ppKey :: Vty.Key -> T.Text
+ppKey (Vty.KChar c)   = ppChar c
+ppKey (Vty.KFun n)    = "F" <> (T.pack $ show n)
+ppKey Vty.KBackTab    = "S-Tab"
+ppKey Vty.KEsc        = "Esc"
+ppKey Vty.KBS         = "Backspace"
+ppKey Vty.KEnter      = "Enter"
+ppKey Vty.KUp         = "Up"
+ppKey Vty.KDown       = "Down"
+ppKey Vty.KLeft       = "Left"
+ppKey Vty.KRight      = "Right"
+ppKey Vty.KHome       = "Home"
+ppKey Vty.KEnd        = "End"
+ppKey Vty.KPageUp     = "PgUp"
+ppKey Vty.KPageDown   = "PgDown"
+ppKey Vty.KDel        = "Del"
+ppKey _               = "???"
+
+ppChar :: Char -> T.Text
+ppChar '\t' = "Tab"
+ppChar c    = T.singleton c
+
+ppMod :: Vty.Modifier -> T.Text
+ppMod Vty.MMeta  = "M"
+ppMod Vty.MAlt   = "A"
+ppMod Vty.MCtrl  = "C"
+ppMod Vty.MShift = "S"
+
+padTo :: Int -> T.Text -> T.Text
+padTo n s = s <> T.replicate (n - T.length s) " "
