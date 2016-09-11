@@ -46,5 +46,5 @@ for a globally-accessible `/etc/matterhorn/config.ini`.
 # Using
 
 You can often use built-in keybindings or `/cmd`-style commands. To
-see available keybindings and commands, pres `F1` or run the `/help`
+see available keybindings and commands, press `F1` or run the `/help`
 command.
