@@ -4,7 +4,6 @@ import           Brick
 import           Brick.Widgets.Edit ( getEditContents
                                     , handleEditorEvent
                                     , applyEdit
-                                    , editContentsL
                                     )
 import           Control.Monad ((>=>))
 import           Control.Monad.IO.Class (liftIO)
@@ -13,10 +12,8 @@ import qualified Data.Set as Set
 import           Data.Text.Zipper ( TextZipper
                                   , getText
                                   , clearZipper
-                                  , gotoEOL
                                   , insertMany
                                   , deletePrevChar )
-import           Data.Text.Zipper.Generic ( textZipper )
 import qualified Data.Text as T
 import Data.Monoid ((<>))
 import qualified Graphics.Vty as Vty
@@ -96,41 +93,6 @@ onEventChannelSelect st (Vty.EvKey Vty.KEsc []) = do
     continue $ st & csMode .~ Main
 onEventChannelSelect st _ = do
     continue st
-
-channelHistoryForward :: ChatState -> ChatState
-channelHistoryForward st =
-  let cId = currentChannelId st
-  in case st^.csInputHistoryPosition.at cId of
-      Just (Just i)
-        | i == 0 ->
-          -- Transition out of history navigation
-          st & cmdLine %~ applyEdit clearZipper
-             & csInputHistoryPosition.at cId .~ Just Nothing
-        | otherwise ->
-          let Just entry = getHistoryEntry cId newI (st^.csInputHistory)
-              newI = i - 1
-          in st & cmdLine.editContentsL .~ (gotoEOL $ textZipper [entry] (Just 1))
-                & csInputHistoryPosition.at cId .~ (Just $ Just newI)
-      _ -> st
-
-channelHistoryBackward :: ChatState -> ChatState
-channelHistoryBackward st =
-  let cId = currentChannelId st
-  in case st^.csInputHistoryPosition.at cId of
-      Just (Just i) ->
-          let newI = i + 1
-          in case getHistoryEntry cId newI (st^.csInputHistory) of
-              Nothing -> st
-              Just entry ->
-                  st & cmdLine.editContentsL .~ (gotoEOL $ textZipper [entry] (Just 1))
-                     & csInputHistoryPosition.at cId .~ (Just $ Just newI)
-      _ ->
-          let newI = 0
-          in case getHistoryEntry cId newI (st^.csInputHistory) of
-              Nothing -> st
-              Just entry ->
-                  st & cmdLine.editContentsL .~ (gotoEOL $ textZipper [entry] (Just 1))
-                     & csInputHistoryPosition.at cId .~ (Just $ Just newI)
 
 -- XXX: killWordBackward, and delete could probably all
 -- be moved to the text zipper package (after some generalization and cleanup)

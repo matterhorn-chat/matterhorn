@@ -2,7 +2,7 @@
 module State where
 
 import           Brick (EventM)
-import           Brick.Widgets.Edit (getEditContents)
+import           Brick.Widgets.Edit (getEditContents, editContentsL)
 import           Control.Concurrent (threadDelay, forkIO)
 import qualified Control.Concurrent.Chan as Chan
 import           Control.Monad.IO.Class (liftIO)
@@ -12,7 +12,7 @@ import           Brick.Main (viewportScroll, vScrollToEnd, vScrollBy)
 import           Brick.Widgets.Edit (applyEdit)
 import           Control.Exception (SomeException, catch)
 import           Control.Monad (forM, when, void)
-import           Data.Text.Zipper (clearZipper, insertMany)
+import           Data.Text.Zipper (textZipper, clearZipper, insertMany, gotoEOL)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
 import           Data.Foldable (toList)
@@ -570,3 +570,38 @@ setChannelTopic st msg = do
         void $ mmSetChannelHeader (st^.csConn) (st^.csTok) theTeamId chanId msg
         return $ \st' -> do
             return $ st' & msgMap.at chanId.each.ccInfo.cdHeader .~ msg
+
+channelHistoryForward :: ChatState -> ChatState
+channelHistoryForward st =
+  let cId = currentChannelId st
+  in case st^.csInputHistoryPosition.at cId of
+      Just (Just i)
+        | i == 0 ->
+          -- Transition out of history navigation
+          st & cmdLine %~ applyEdit clearZipper
+             & csInputHistoryPosition.at cId .~ Just Nothing
+        | otherwise ->
+          let Just entry = getHistoryEntry cId newI (st^.csInputHistory)
+              newI = i - 1
+          in st & cmdLine.editContentsL .~ (gotoEOL $ textZipper [entry] (Just 1))
+                & csInputHistoryPosition.at cId .~ (Just $ Just newI)
+      _ -> st
+
+channelHistoryBackward :: ChatState -> ChatState
+channelHistoryBackward st =
+  let cId = currentChannelId st
+  in case st^.csInputHistoryPosition.at cId of
+      Just (Just i) ->
+          let newI = i + 1
+          in case getHistoryEntry cId newI (st^.csInputHistory) of
+              Nothing -> st
+              Just entry ->
+                  st & cmdLine.editContentsL .~ (gotoEOL $ textZipper [entry] (Just 1))
+                     & csInputHistoryPosition.at cId .~ (Just $ Just newI)
+      _ ->
+          let newI = 0
+          in case getHistoryEntry cId newI (st^.csInputHistory) of
+              Nothing -> st
+              Just entry ->
+                  st & cmdLine.editContentsL .~ (gotoEOL $ textZipper [entry] (Just 1))
+                     & csInputHistoryPosition.at cId .~ (Just $ Just newI)
