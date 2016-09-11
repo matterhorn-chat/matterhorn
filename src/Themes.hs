@@ -23,6 +23,8 @@ module Themes
   , helpEmphAttr
   , channelSelectPromptAttr
   , channelSelectMatchAttr
+  , completionAlternativeListAttr
+  , completionAlternativeCurrentAttr
 
   -- * Username formatting
   , colorUsername
@@ -49,6 +51,12 @@ channelSelectMatchAttr = "channelSelectMatch"
 
 channelSelectPromptAttr :: AttrName
 channelSelectPromptAttr = "channelSelectPrompt"
+
+completionAlternativeListAttr :: AttrName
+completionAlternativeListAttr = "completionAlternativeList"
+
+completionAlternativeCurrentAttr :: AttrName
+completionAlternativeCurrentAttr = "completionAlternativeCurrent"
 
 darkColorThemeName :: T.Text
 darkColorThemeName = "builtin:dark"
@@ -128,6 +136,8 @@ lightColorTheme = attrMap (black `on` white) $
   , (helpEmphAttr,            fg white)
   , (channelSelectMatchAttr,  black `on` magenta)
   , (channelSelectPromptAttr, fg black)
+  , (completionAlternativeListAttr, white `on` blue)
+  , (completionAlternativeCurrentAttr, black `on` yellow)
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 
@@ -152,6 +162,8 @@ darkColorTheme = attrMap (bg black) $
   , (helpEmphAttr,            fg white)
   , (channelSelectMatchAttr,  black `on` magenta)
   , (channelSelectPromptAttr, fg white)
+  , (completionAlternativeListAttr, white `on` blue)
+  , (completionAlternativeCurrentAttr, black `on` yellow)
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 

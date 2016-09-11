@@ -67,14 +67,7 @@ onEventMain st (Vty.EvPaste bytes) = do
   let pasteStr = T.pack (UTF8.toString bytes)
   continue $ st & cmdLine %~ applyEdit (insertMany pasteStr)
 onEventMain st e = do
-  let st' = case e of
-            -- XXX: not 100% certain we need to special case these
-            -- the intention is to notice when the user has finished word completion
-            -- and moved on. Needs more testing.
-            Vty.EvKey (Vty.KChar ' ') [] -> st & csCurrentCompletion .~ Nothing
-            Vty.EvKey Vty.KBS         [] -> st & csCurrentCompletion .~ Nothing
-            _ -> st
-  continue =<< handleEventLensed st' cmdLine handleEditorEvent e
+  continue =<< handleEventLensed (st & csCurrentCompletion .~ Nothing) cmdLine handleEditorEvent e
 
 onEventChannelSelect :: ChatState -> Vty.Event -> EventM Name (Next ChatState)
 onEventChannelSelect st e | Just kb <- lookupKeybinding e channelSelectKeybindings = kbAction kb st
@@ -111,17 +104,20 @@ tabComplete dir st = do
 
       (line:_)    = getEditContents (st^.cmdLine)
       curComp     = st^.csCurrentCompletion
-      nextComp    = case curComp of
-                    Nothing -> Just (currentWord line)
-                    _       -> curComp
+      (nextComp, alts) = case curComp of
+          Nothing -> let cw = currentWord line
+                     in (Just cw, filter (cw `T.isPrefixOf`) $ Set.toList completions)
+          Just cw -> (Just cw, filter (cw `T.isPrefixOf`) $ Set.toList completions)
 
       mb_word     = wordComplete dir priorities completions line curComp
       st' = st & csCurrentCompletion .~ nextComp
-      edit = case mb_word of
-          Nothing -> id
-          Just w -> insertMany w . killWordBackward
+               & csEditState.cedCompletionAlternatives .~ alts
+      (edit, curAlternative) = case mb_word of
+          Nothing -> (id, "")
+          Just w -> (insertMany w . killWordBackward, w)
 
   continue $ st' & cmdLine %~ (applyEdit edit)
+                 & csEditState.cedCurrentAlternative .~ curAlternative
 
 handleWSEvent :: ChatState -> WebsocketEvent -> EventM Name (Next ChatState)
 handleWSEvent st we =

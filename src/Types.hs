@@ -46,6 +46,7 @@ data Name = ChannelMessages ChannelId
           | DMChannelList
           | HelpViewport
           | ChannelSelectString
+          | CompletionAlternatives
           deriving (Eq, Show, Ord)
 
 -- We want to continue referring to posts by their IDs, but we don't want to
@@ -229,6 +230,8 @@ data ChatEditState = ChatEditState
   , _cedInputHistoryPosition :: HM.HashMap ChannelId (Maybe Int)
   , _cedLastChannelInput     :: HM.HashMap ChannelId T.Text
   , _cedCurrentCompletion    :: Maybe T.Text
+  , _cedCurrentAlternative   :: T.Text
+  , _cedCompletionAlternatives :: [T.Text]
   }
 
 emptyEditState :: InputHistory -> ChatEditState
@@ -238,6 +241,8 @@ emptyEditState hist = ChatEditState
   , _cedInputHistoryPosition = mempty
   , _cedLastChannelInput     = mempty
   , _cedCurrentCompletion    = Nothing
+  , _cedCompletionAlternatives = []
+  , _cedCurrentAlternative   = ""
   }
 
 type RequestChan = Chan (IO (ChatState -> EventM Name ChatState))

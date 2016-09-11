@@ -15,7 +15,7 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
 import qualified Data.Foldable as F
 import           Data.HashMap.Strict ( HashMap )
-import           Data.List (sort)
+import           Data.List (sort, intersperse)
 import           Data.Maybe ( listToMaybe, maybeToList )
 import           Data.Monoid ((<>))
 import           Data.Set (Set)
@@ -267,13 +267,34 @@ renderChannelSelect st =
        else st^.csChannelSelect))
 
 drawMain :: ChatState -> [Widget Name]
-drawMain st =
-    [ (renderChannelList st <+> (subdue st (borderElem bsIntersectR <=>
+drawMain st = [mainInterface st]
+
+completionAlternatives :: ChatState -> Widget Name
+completionAlternatives st =
+    let alternatives = intersperse (txt " ") $ mkAlternative <$> st^.csEditState.cedCompletionAlternatives
+        mkAlternative val = let format = if val == st^.csEditState.cedCurrentAlternative
+                                         then visible . withDefAttr completionAlternativeCurrentAttr
+                                         else id
+                            in format $ txt val
+    in hBox [ borderElem bsHorizontal
+            , txt "["
+            , withDefAttr completionAlternativeListAttr $
+              vLimit 1 $ viewport CompletionAlternatives Horizontal $ hBox alternatives
+            , txt "]"
+            , borderElem bsHorizontal
+            ]
+
+mainInterface :: ChatState -> Widget Name
+mainInterface st =
+    (renderChannelList st <+> (subdue st (borderElem bsIntersectR <=>
                                             vLimit normalChannelListHeight vBorder <=>
                                             borderElem bsIntersectR <=> vBorder))
                             <+> (subdue st $ renderCurrentChannelDisplay st))
-      <=> (subdue st $ hLimit channelListWidth hBorder <+> borderElem bsIntersectB <+> hBorder)
+      <=> bottomBorder
       <=> (if st^.csMode == ChannelSelect
            then renderChannelSelect st
            else renderUserCommandBox st)
-    ]
+    where
+    bottomBorder = case st^.csCurrentCompletion of
+        Just _ | length (st^.csEditState.cedCompletionAlternatives) > 1 -> completionAlternatives st
+        _ -> subdue st $ hLimit channelListWidth hBorder <+> borderElem bsIntersectB <+> hBorder
