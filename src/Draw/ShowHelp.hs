@@ -28,6 +28,7 @@ keybindSections :: [(T.Text, [Keybinding])]
 keybindSections =
     [ ("This Help Page", helpKeybindings)
     , ("Main Interface", mainKeybindings)
+    , ("Channel Select Mode", channelSelectKeybindings)
     ]
 
 helpBox :: Widget Name

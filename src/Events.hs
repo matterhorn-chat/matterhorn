@@ -77,20 +77,11 @@ onEventMain st e = do
   continue =<< handleEventLensed st' cmdLine handleEditorEvent e
 
 onEventChannelSelect :: ChatState -> Vty.Event -> EventM Name (Next ChatState)
-onEventChannelSelect st (Vty.EvKey Vty.KEnter []) = do
-    -- If the text entered matches only one channel, switch to it
-    let matches = filter (s `T.isInfixOf`) $ (st^.csNames.cnChans <> st^.csNames.cnUsers)
-        s = st^.csChannelSelect
-    continue =<< case matches of
-        [single] -> changeChannel single $ st & csMode .~ Main
-        _        -> return st
-
+onEventChannelSelect st e | Just kb <- lookupKeybinding e channelSelectKeybindings = kbAction kb st
 onEventChannelSelect st (Vty.EvKey Vty.KBS []) = do
     continue $ st & csChannelSelect %~ (\s -> if T.null s then s else T.init s)
 onEventChannelSelect st (Vty.EvKey (Vty.KChar c) []) | c /= '\t' = do
     continue $ st & csChannelSelect %~ (flip T.snoc c)
-onEventChannelSelect st (Vty.EvKey Vty.KEsc []) = do
-    continue $ st & csMode .~ Main
 onEventChannelSelect st _ = do
     continue st
 
@@ -154,6 +145,25 @@ handleWSEvent st we =
 
 lookupKeybinding :: Vty.Event -> [Keybinding] -> Maybe Keybinding
 lookupKeybinding e kbs = listToMaybe $ filter ((== e) . kbEvent) kbs
+
+channelSelectKeybindings :: [Keybinding]
+channelSelectKeybindings =
+    [ KB "Select matching channel"
+         (Vty.EvKey Vty.KEnter []) $
+         \st -> do
+             -- If the text entered matches only one channel, switch to
+             -- it
+             let matches = filter (s `T.isInfixOf`) $
+                                  (st^.csNames.cnChans <> st^.csNames.cnUsers)
+                 s = st^.csChannelSelect
+             continue =<< case matches of
+                 [single] -> changeChannel single $ st & csMode .~ Main
+                 _        -> return st
+
+    , KB "Cancel channel selection"
+         (Vty.EvKey Vty.KEsc []) $
+         \st -> continue $ st & csMode .~ Main
+    ]
 
 helpKeybindings :: [Keybinding]
 helpKeybindings =
