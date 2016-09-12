@@ -230,9 +230,19 @@ setFocus :: ChannelId -> ChatState -> EventM Name ChatState
 setFocus cId st = setFocusWith st (Z.findRight (== cId))
 
 setFocusWith :: ChatState -> (Zipper ChannelId -> Zipper ChannelId) -> EventM Name ChatState
-setFocusWith st f = changeChannelCommon =<<
-                (\st' -> updateViewed (st' & csFocus %~ f)) =<<
-                preChangeChannelCommon st
+setFocusWith st f = do
+    let newZipper = f oldZipper
+        oldZipper = st^.csFocus
+        newFocus = Z.focus newZipper
+        oldFocus = Z.focus oldZipper
+
+    -- If we aren't changing anything, skip all the book-keeping because
+    -- we'll end up clobbering things like csRecentChannel.
+    if (newFocus == oldFocus) then
+        return st else do
+          preChangeChannelCommon st >>=
+              (\st' -> updateViewed (st' & csFocus .~ newZipper)) >>=
+              changeChannelCommon
 
 attemptCreateChannel :: T.Text -> ChatState -> EventM Name ChatState
 attemptCreateChannel name st
