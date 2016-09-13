@@ -4,6 +4,8 @@ import Brick
 import Brick.Widgets.Border
 import Brick.Widgets.Center (hCenter, centerLayer)
 import Lens.Micro.Platform
+import Data.List (sortBy)
+import Data.Ord (comparing)
 import qualified Data.Text as T
 import Data.Monoid ((<>))
 import qualified Graphics.Vty as Vty
@@ -69,7 +71,7 @@ kbDescColumnWidth = 60
 mkKeybindingHelp :: (T.Text, [Keybinding]) -> Widget Name
 mkKeybindingHelp (sectionName, kbs) =
     (hCenter $ padTop (Pad 1) $ withDefAttr helpEmphAttr $ txt $ "Keybindings: " <> sectionName) <=>
-    (hCenter $ vBox $ mkKeybindHelp <$> kbs)
+    (hCenter $ vBox $ mkKeybindHelp <$> (sortBy (comparing (ppKbEvent.kbEvent)) kbs))
 
 mkKeybindHelp :: Keybinding -> Widget Name
 mkKeybindHelp (KB desc ev _) =
