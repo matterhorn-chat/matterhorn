@@ -112,7 +112,10 @@ renderChannelList st = hLimit channelListWidth $ vBox
     header label = hBorderWithLabel $
                    withDefAttr channelListHeaderAttr $
                    txt label
-    channelNames = [ decorate $ padRight Max $ txt (mkChannelName cInfo)
+    decorateRecent recent = if recent
+                            then (<+> str "<")
+                            else id
+    channelNames = [ decorate $ decorateRecent recent $ padRight Max $ txt (mkChannelName cInfo)
                    | n <- (st ^. csNames . cnChans)
                    , let decorate = if | matches   -> const $
                                                       (txt "#") <+> txt preMatch
@@ -135,6 +138,7 @@ renderChannelList st = hLimit channelListWidth $ vBox
                          (preMatch,postMatch) = case T.breakOn (st^.csChannelSelect) n of
                            (pre, post) -> (pre, T.drop (T.length $ st^.csChannelSelect) post)
                          current = n == currentChannelName
+                         recent = Just chan == st^.csRecentChannel
                          Just chan = st ^. csNames . cnToChanId . at n
                          unread = hasUnread st chan
                          Just cInfo = st^?msgMap.at(chan).each.ccInfo
@@ -144,7 +148,7 @@ renderChannelList st = hLimit channelListWidth $ vBox
     isSelf u = (st^.csMe.userIdL) == (u^.uiId)
     usersToList = filter (not . isSelf) $ st ^. usrMap & HM.elems
 
-    dmChannelNames = [ decorate $ padRight Max $ colorUsername' (mkDMChannelName u)
+    dmChannelNames = [ decorate $ decorateRecent recent $ padRight Max $ colorUsername' (mkDMChannelName u)
                      | u <- sort usersToList
                      , let decorate = if | matches   -> const $
                                                         (txt $ T.singleton $ userSigil u) <+> txt preMatch
@@ -177,6 +181,7 @@ renderChannelList st = hLimit channelListWidth $ vBox
                            cname = getDMChannelName (st^.csMe^.userIdL)
                                                     (u^.uiId)
                            current = cname == currentChannelName
+                           recent = maybe False ((== st^.csRecentChannel) . Just) m_chanId
                            m_chanId = st^.csNames.cnToChanId.at (u^.uiName)
                            unread = maybe False (hasUnread st) m_chanId
                      ]
