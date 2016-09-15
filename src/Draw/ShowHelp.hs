@@ -45,7 +45,7 @@ helpBox =
     quitMessage = padTop (Pad 1) $ hCenter $ txt "Press Esc to exit the help screen."
 
     commandHelp = vBox $ [ padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Commands"
-                         , mkCommandHelpText commandList
+                         , mkCommandHelpText $ sortBy (comparing commandName) commandList
                          ] <>
                          (mkKeybindingHelp <$> keybindSections)
 
