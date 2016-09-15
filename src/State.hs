@@ -335,8 +335,8 @@ attemptCreateChannel name st
     msg <- newClientMessage Error ("No channel or user named " <> name)
     addClientMessage msg st
 
-createChannel :: T.Text -> ChatState -> EventM Name ChatState
-createChannel name st = do
+createOrdinaryChannel :: T.Text -> ChatState -> EventM Name ChatState
+createOrdinaryChannel name st = do
   let tId = st^.csMyTeam.teamIdL
   liftIO $ runAsync st $ do
     -- create a new chat channel

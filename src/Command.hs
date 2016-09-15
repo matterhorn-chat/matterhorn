@@ -36,7 +36,7 @@ commandList =
       listThemes st >>= continue
   , Cmd "create-channel" "Create a new channel"
     (LineArg "channel name") $ \ name st ->
-      createChannel name st >>= continue
+      createOrdinaryChannel name st >>= continue
   , Cmd "leave" "Leave the current channel" NoArg $ \ () st ->
       startLeaveCurrentChannel st >>= continue
   , Cmd "join" "Join a channel" NoArg $ \ () st ->
