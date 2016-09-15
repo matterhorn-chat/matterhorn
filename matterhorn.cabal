@@ -29,6 +29,7 @@ executable matterhorn
                        Draw
                        Draw.Main
                        Draw.ShowHelp
+                       Draw.LeaveChannelConfirm
                        Draw.Util
                        IOUtil
                        Events

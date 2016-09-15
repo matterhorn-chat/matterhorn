@@ -25,6 +25,8 @@ module Themes
   , channelSelectMatchAttr
   , completionAlternativeListAttr
   , completionAlternativeCurrentAttr
+  , dialogAttr
+  , dialogEmphAttr
 
   -- * Username formatting
   , colorUsername
@@ -45,6 +47,12 @@ helpAttr = "help"
 
 helpEmphAttr :: AttrName
 helpEmphAttr = "helpEmphasis"
+
+dialogAttr :: AttrName
+dialogAttr = "dialog"
+
+dialogEmphAttr :: AttrName
+dialogEmphAttr = "dialogEmphasis"
 
 channelSelectMatchAttr :: AttrName
 channelSelectMatchAttr = "channelSelectMatch"
@@ -138,6 +146,8 @@ lightColorTheme = attrMap (black `on` white) $
   , (channelSelectPromptAttr,          fg black)
   , (completionAlternativeListAttr,    white `on` blue)
   , (completionAlternativeCurrentAttr, black `on` yellow)
+  , (dialogAttr,                       black `on` cyan)
+  , (dialogEmphAttr,                   fg white)
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 
@@ -164,6 +174,8 @@ darkColorTheme = attrMap (bg black) $
   , (channelSelectPromptAttr,          fg white)
   , (completionAlternativeListAttr,    white `on` blue)
   , (completionAlternativeCurrentAttr, black `on` yellow)
+  , (dialogAttr,                       black `on` cyan)
+  , (dialogEmphAttr,                   fg white)
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 

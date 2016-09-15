@@ -91,6 +91,45 @@ doAsyncWith :: ChatState -> IO (ChatState -> EventM Name ChatState) -> IO ()
 doAsyncWith st thunk =
   Chan.writeChan (st^.csRequestQueue) thunk
 
+startLeaveCurrentChannel :: ChatState -> EventM Name ChatState
+startLeaveCurrentChannel st = do
+    let cId = currentChannelId st
+        Just chanInfo = getChannel cId st
+        cName = chanInfo^.ccInfo.cdName
+    case cName `elem` st^.csNames.cnDMs of
+        True -> do
+            msg <- newClientMessage Error "The /leave command cannot be used with direct message channels."
+            addClientMessage msg st
+        False -> return $ st & csMode .~ LeaveChannelConfirm
+
+leaveCurrentChannel :: ChatState -> EventM Name ChatState
+leaveCurrentChannel st = do
+    let cId = currentChannelId st
+        Just chanInfo = getChannel cId st
+        cName = chanInfo^.ccInfo.cdName
+    -- Leave a normal channel.  If this is a DM channel, do nothing.
+    case cName `elem` st^.csNames.cnDMs of
+        True -> return st
+        False -> do
+            -- Issue API call to leave. Once that's done, clean up our state:
+            liftIO $ doAsyncWith st $ do
+                mmLeaveChannel (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId
+                return $ \ st' -> do
+                    let st'' = st' & csEditState.cedInputHistoryPosition       .at cId .~ Nothing
+                                   & csEditState.cedLastChannelInput           .at cId .~ Nothing
+                                   & csEditState.cedInputHistory               %~ removeChannelHistory cId
+                                     -- ^ Update input history
+                                   & csNames.cnToChanId                        .at cName .~ Nothing
+                                     -- ^ Flush cnToChanId
+                                   & csNames.cnChans                           %~ filter (/= cName)
+                                     -- ^ Flush cnChans
+                                   & msgMap                                    .at cId .~ Nothing
+                                     -- ^ Update msgMap
+                                   & csFocus                                   %~ Z.filterZipper (/= cId)
+                                     -- ^ Remove from focus zipper
+                    updateChannelScrollState st''
+            return st
+
 hasUnread :: ChatState -> ChannelId -> Bool
 hasUnread st cId = maybe False id $ do
   chan <- st^.msgMap.at(cId)

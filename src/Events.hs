@@ -44,9 +44,10 @@ onEvent st (RespEvent f) =
   continue =<< f st
 onEvent st (VtyEvent e) = do
     case st^.csMode of
-        Main          -> onEventMain st e
-        ShowHelp      -> onEventShowHelp st e
-        ChannelSelect -> onEventChannelSelect st e
+        Main                -> onEventMain st e
+        ShowHelp            -> onEventShowHelp st e
+        ChannelSelect       -> onEventChannelSelect st e
+        LeaveChannelConfirm -> onEventLeaveChannelConfirm st e
 
 onEventShowHelp :: ChatState -> Vty.Event -> EventM Name (Next ChatState)
 onEventShowHelp st e | Just kb <- lookupKeybinding e helpKeybindings = kbAction kb st
@@ -75,6 +76,16 @@ onEventMain st (Vty.EvPaste bytes) = do
   continue $ st & cmdLine %~ applyEdit (insertMany pasteStr)
 onEventMain st e = do
   continue =<< handleEventLensed (st & csCurrentCompletion .~ Nothing) cmdLine handleEditorEvent e
+
+onEventLeaveChannelConfirm :: ChatState -> Vty.Event -> EventM Name (Next ChatState)
+onEventLeaveChannelConfirm st (Vty.EvKey k []) = do
+    st' <- case k of
+        Vty.KChar c | c `elem` ("yY"::String) ->
+            leaveCurrentChannel st
+        _ -> return st
+    continue $ st' & csMode .~ Main
+onEventLeaveChannelConfirm st _ = do
+    continue st
 
 onEventChannelSelect :: ChatState -> Vty.Event -> EventM Name (Next ChatState)
 onEventChannelSelect st e | Just kb <- lookupKeybinding e channelSelectKeybindings = kbAction kb st

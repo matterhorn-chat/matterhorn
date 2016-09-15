@@ -6,6 +6,7 @@ module InputHistory
   , writeHistory
   , addHistoryEntry
   , getHistoryEntry
+  , removeChannelHistory
   ) where
 
 import Control.Monad.Trans.Except
@@ -30,6 +31,9 @@ makeLenses ''InputHistory
 
 newHistory :: InputHistory
 newHistory = InputHistory mempty
+
+removeChannelHistory :: ChannelId -> InputHistory -> InputHistory
+removeChannelHistory cId ih = ih & historyEntries.at cId .~ Nothing
 
 writeHistory :: InputHistory -> IO ()
 writeHistory ih = do

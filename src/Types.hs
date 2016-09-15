@@ -254,6 +254,7 @@ data Mode =
     Main
     | ShowHelp
     | ChannelSelect
+    | LeaveChannelConfirm
     deriving (Eq)
 
 data ConnectionStatus = Connected | Disconnected
