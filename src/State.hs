@@ -5,6 +5,7 @@ import           Brick (EventM)
 import           Brick.Widgets.Edit (getEditContents, editContentsL)
 import           Control.Concurrent (threadDelay, forkIO)
 import qualified Control.Concurrent.Chan as Chan
+import           Control.Concurrent.MVar (newEmptyMVar)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Char (isAlphaNum)
 import           Data.HashMap.Strict ((!))
@@ -76,6 +77,7 @@ newState rs i u m tz hist = ChatState
   , _csMode                 = Main
   , _csChannelSelect        = ""
   , _csRecentChannel        = Nothing
+  , _csConnectionStatus     = Disconnected
   }
 
 runAsync :: ChatState -> IO (ChatState -> EventM Name ChatState) -> IO ()
@@ -457,8 +459,8 @@ fetchUserStatuses cd token = do
       appState
       statusMap
 
-setupState :: Config -> RequestChan -> IO ChatState
-setupState config requestChan = do
+setupState :: Config -> RequestChan -> Chan.Chan Event -> IO ChatState
+setupState config requestChan eventChan = do
   -- If we don't have enough credentials, ask for them.
   (uStr, pStr) <- case getCredentials config of
       Nothing -> interactiveGatherCredentials config
@@ -494,6 +496,7 @@ setupState config requestChan = do
               Nothing -> interactiveTeamSelection (toList (initialLoadTeams initialLoad))
               Just t -> return t
 
+  quitCondition <- newEmptyMVar
   let themeName = case configTheme config of
           Nothing -> defaultThemeName
           Just t -> t
@@ -501,17 +504,19 @@ setupState config requestChan = do
           Nothing -> fromJust $ lookup defaultThemeName themes
           Just t -> t
       cr = ChatResources
-             { _crTok          = token
-             , _crConn         = cd
-             , _crRequestQueue = requestChan
-             , _crTheme        = theme
-             , _crTimeFormat   = configTimeFormat config
+             { _crTok           = token
+             , _crConn          = cd
+             , _crRequestQueue  = requestChan
+             , _crEventQueue    = eventChan
+             , _crTheme         = theme
+             , _crTimeFormat    = configTimeFormat config
+             , _crQuitCondition = quitCondition
              }
   initializeState cr myTeam myUser
 
 initializeState :: ChatResources -> Team -> User -> IO ChatState
 initializeState cr myTeam myUser = do
-  let ChatResources token cd requestChan _ _ = cr
+  let ChatResources token cd requestChan _ _ _ _ = cr
   let myTeamId = getId myTeam
 
   Chan.writeChan requestChan $ fetchUserStatuses cd token

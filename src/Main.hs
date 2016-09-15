@@ -12,8 +12,6 @@ import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform
 import           System.Exit (exitFailure)
 
-import           Network.Mattermost.WebSocket
-
 import           Config
 import           State
 import           Events
@@ -31,7 +29,7 @@ main = do
       Right c -> return c
 
   eventChan <- Chan.newChan
-  let shunt e = Chan.writeChan eventChan (WSEvent e)
+  Chan.writeChan eventChan RefreshWebsocketEvent
 
   requestChan <- Chan.newChan
   _ <- forkIO $ forever $ do
@@ -39,7 +37,7 @@ main = do
     upd <- req
     Chan.writeChan eventChan (RespEvent upd)
 
-  st <- setupState config requestChan
+  st <- setupState config requestChan eventChan
 
   let mkVty = do
         vty <- Vty.mkVty def
@@ -47,9 +45,8 @@ main = do
         Vty.setMode output Vty.BracketedPaste True
         return vty
 
-  mmWithWebSocket (st^.csConn) (st^.csTok) shunt $ \_ -> do
-    finalSt <- customMain mkVty eventChan app st
-    writeHistory (finalSt^.csInputHistory)
+  finalSt <- customMain mkVty eventChan app st
+  writeHistory (finalSt^.csInputHistory)
 
 app :: App ChatState Event Name
 app = App

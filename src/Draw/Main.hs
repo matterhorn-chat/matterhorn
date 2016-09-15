@@ -193,8 +193,11 @@ renderUserCommandBox st = prompt <+> inputBox
     inputBox = renderEditor True (st^.cmdLine)
 
 renderCurrentChannelDisplay :: ChatState -> Widget Name
-renderCurrentChannelDisplay st = header <=> messages
+renderCurrentChannelDisplay st = (header <+> conn) <=> messages
     where
+    conn = case st^.csConnectionStatus of
+      Connected -> emptyWidget
+      Disconnected -> withDefAttr errorMessageAttr (str "[NOT CONNECTED]")
     header = withDefAttr channelHeaderAttr $
              padRight Max $
              case T.null topicStr of

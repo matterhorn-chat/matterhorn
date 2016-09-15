@@ -10,6 +10,7 @@ import           Brick.AttrMap (AttrMap)
 import           Brick.Widgets.Edit (Editor, editor)
 import           Cheapskate (Blocks)
 import           Control.Concurrent.Chan (Chan)
+import           Control.Concurrent.MVar (MVar)
 import           Data.HashMap.Strict (HashMap)
 import           Data.Time.Clock (UTCTime)
 import           Data.Time.LocalTime (TimeZone)
@@ -217,11 +218,13 @@ userInfoFromProfile up = UserInfo
 -- 'ChatResources' represents configuration and connection-related
 -- information, as opposed to current model or view information.
 data ChatResources = ChatResources
-  { _crTok          :: Token
-  , _crConn         :: ConnectionData
-  , _crRequestQueue :: RequestChan
-  , _crTheme        :: AttrMap
-  , _crTimeFormat   :: Maybe T.Text
+  { _crTok           :: Token
+  , _crConn          :: ConnectionData
+  , _crRequestQueue  :: RequestChan
+  , _crEventQueue    :: Chan Event
+  , _crTheme         :: AttrMap
+  , _crTimeFormat    :: Maybe T.Text
+  , _crQuitCondition :: MVar ()
   }
 
 data ChatEditState = ChatEditState
@@ -253,6 +256,8 @@ data Mode =
     | ChannelSelect
     deriving (Eq)
 
+data ConnectionStatus = Connected | Disconnected
+
 -- This is the giant bundle of fields that represents the current
 -- state of our application at any given time.
 data ChatState = ChatState
@@ -268,7 +273,20 @@ data ChatState = ChatState
   , _csMode                 :: Mode
   , _csChannelSelect        :: T.Text
   , _csRecentChannel        :: Maybe ChannelId
+  , _csConnectionStatus     :: ConnectionStatus
   }
+
+data Event
+  = VtyEvent Vty.Event
+    -- ^ For events that arise from VTY
+  | WSEvent WebsocketEvent
+    -- ^ For events that arise from the websocket
+  | RespEvent (ChatState -> EventM Name ChatState)
+    -- ^ For the result values of async IO operations
+  | RefreshWebsocketEvent
+    -- ^ Tell our main loop to refresh the websocket connection
+  | WebsocketDisconnect
+  | WebsocketConnect
 
 makeLenses ''ChatResources
 makeLenses ''ChatState
@@ -331,14 +349,6 @@ clientMessageToMessage cm = Message
   , _mAttachments = Seq.empty
   , _mPostId      = Nothing
   }
-
-data Event
-  = VtyEvent Vty.Event
-    -- ^ For events that arise from VTY
-  | WSEvent WebsocketEvent
-    -- ^ For events that arise from the websocket
-  | RespEvent (ChatState -> EventM Name ChatState)
-    -- ^ For the result values of async IO operations
 
 data CmdArgs :: * -> * where
   NoArg    :: CmdArgs ()

@@ -21,6 +21,7 @@ executable matterhorn
   main-is:             Main.hs
   other-modules:       Config
                        Command
+                       Connection
                        Completion
                        State
                        Zipper

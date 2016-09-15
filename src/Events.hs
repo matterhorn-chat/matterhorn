@@ -25,12 +25,19 @@ import           Network.Mattermost.Lenses
 import           Network.Mattermost.WebSocket.Types
 
 import           Command
+import           Connection
 import           Completion
 import           State
 import           Types
 import           InputHistory
 
 onEvent :: ChatState -> Event -> EventM Name (Next ChatState)
+onEvent st RefreshWebsocketEvent = do
+  liftIO (connectWebsockets st) >> continue st
+onEvent st WebsocketDisconnect = do
+  continue (st & csConnectionStatus .~ Disconnected)
+onEvent st WebsocketConnect = do
+  continue (st & csConnectionStatus .~ Connected)
 onEvent st (WSEvent we) =
   handleWSEvent st we
 onEvent st (RespEvent f) =
