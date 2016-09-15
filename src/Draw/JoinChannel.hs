@@ -10,6 +10,7 @@ import Brick.Widgets.Center
 import Brick.Widgets.Border
 import Data.Monoid ((<>))
 import Lens.Micro.Platform ((^.))
+import qualified Data.Vector as V
 
 import Network.Mattermost (Channel)
 import Network.Mattermost.Lenses (channelDisplayNameL, channelNameL)
@@ -27,12 +28,15 @@ joinChannelBox st =
           Nothing -> center $ withDefAttr dialogEmphAttr $ txt "[Loading channel list]"
           Just chanList -> renderList renderJoinListItem True chanList
         highlight = withDefAttr dialogEmphAttr
+        cur = maybe 0 ((+1) . fst) (listSelectedElement =<< st^.csJoinChannelList)
+        len = maybe 0 (\l -> V.length $ l^.listElementsL) $ st^.csJoinChannelList
     in centerLayer $
        vLimit 20 $
        hLimit 60 $
        withDefAttr dialogAttr $
        borderWithLabel (txt "Join Channel") $
        vBox [ chList
+            , hBorderWithLabel (str $ (show cur) <> "/" <> (show len))
             , padTop (Pad 1) $
               hCenter $ txt "Use " <+> (highlight $ txt "arrow keys") <+> txt " and " <+>
                         (highlight $ txt "Enter") <+> txt " to select a team"
