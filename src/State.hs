@@ -103,6 +103,7 @@ startJoinChannel st = do
             return $ st' & csJoinChannelList .~ (Just $ list JoinChannelList (V.fromList $ F.toList chans) 1)
 
     return $ st & csMode .~ JoinChannel
+                & csJoinChannelList .~ Nothing
 
 joinChannel :: Channel -> ChatState -> EventM Name ChatState
 joinChannel chan st = do
