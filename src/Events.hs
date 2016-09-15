@@ -239,19 +239,19 @@ mainKeybindings =
 
     , KB "Change to the next channel in the channel list"
          (Vty.EvKey (Vty.KChar 'n') [Vty.MCtrl]) $
-         nextChannel >=> updateChannelScrollState >=> continue
+         nextChannel >=> continue
 
     , KB "Change to the previous channel in the channel list"
          (Vty.EvKey (Vty.KChar 'p') [Vty.MCtrl]) $
-         prevChannel >=> updateChannelScrollState >=> continue
+         prevChannel >=> continue
 
     , KB "Change to the next channel with unread messages"
          (Vty.EvKey (Vty.KChar 'a') [Vty.MMeta]) $
-         nextUnreadChannel >=> updateChannelScrollState >=> continue
+         nextUnreadChannel >=> continue
 
     , KB "Change to the most recently-focused channel"
          (Vty.EvKey (Vty.KChar 's') [Vty.MMeta]) $
-         recentChannel >=> updateChannelScrollState >=> continue
+         recentChannel >=> continue
 
     , KB "Send the current message"
          (Vty.EvKey Vty.KEnter []) $ \st -> do

@@ -154,18 +154,21 @@ preChangeChannelCommon st = do
                 & csRecentChannel .~ Just cId
 
 nextChannel :: ChatState -> EventM Name ChatState
-nextChannel st = setFocusWith st (getNextChannel st Z.right)
+nextChannel st =
+    setFocusWith st (getNextChannel st Z.right) >>= updateChannelScrollState
 
 prevChannel :: ChatState -> EventM Name ChatState
-prevChannel st = setFocusWith st (getNextChannel st Z.left)
+prevChannel st =
+    setFocusWith st (getNextChannel st Z.left) >>= updateChannelScrollState
 
 recentChannel :: ChatState -> EventM Name ChatState
 recentChannel st = case st ^. csRecentChannel of
   Nothing  -> return st
-  Just cId -> setFocus cId st
+  Just cId -> setFocus cId st >>= updateChannelScrollState
 
 nextUnreadChannel :: ChatState -> EventM Name ChatState
-nextUnreadChannel st = setFocusWith st (getNextUnreadChannel st)
+nextUnreadChannel st =
+    setFocusWith st (getNextUnreadChannel st) >>= updateChannelScrollState
 
 getNextChannel :: ChatState
                -> (Zipper ChannelId -> Zipper ChannelId)
