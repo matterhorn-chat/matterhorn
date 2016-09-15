@@ -305,8 +305,8 @@ handleNewChannel name nc st = do
       -- we should figure out how to do this better: this adds it to
       -- the channel zipper in such a way that we don't ever change
       -- our focus to something else, which is kind of silly
-      newZip = Z.updateList (st'^.csFocus) (mkChannelZipperList (st'^.csNames))
-      st'' = st' & csFocus .~ newZip
+      newZip = Z.updateList (mkChannelZipperList (st'^.csNames))
+      st'' = st' & csFocus %~ newZip
           -- and we finally set our focus to the newly created channel
   setFocus (getId nc) st''
 

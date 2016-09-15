@@ -43,7 +43,7 @@ findLeft f z
           | f (focus zC)   = zC
           | otherwise      = go (left zC) n
 
-updateList :: (Eq a) => Zipper a -> [a] -> Zipper a
-updateList oldZip newList = findLeft (== oldFocus) newZip
+updateList :: (Eq a) => [a] -> Zipper a -> Zipper a
+updateList newList oldZip = findLeft (== oldFocus) newZip
   where oldFocus = focus oldZip
         newZip   = oldZip { zElems = newList }
