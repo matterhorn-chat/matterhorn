@@ -5,6 +5,7 @@ import           Brick.Widgets.Edit ( getEditContents
                                     , handleEditorEvent
                                     , applyEdit
                                     )
+import           Brick.Widgets.List (handleListEvent, listSelectedElement)
 import           Control.Monad ((>=>))
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Maybe (listToMaybe)
@@ -48,6 +49,7 @@ onEvent st (VtyEvent e) = do
         ShowHelp            -> onEventShowHelp st e
         ChannelSelect       -> onEventChannelSelect st e
         LeaveChannelConfirm -> onEventLeaveChannelConfirm st e
+        JoinChannel         -> onEventJoinChannel st e
 
 onEventShowHelp :: ChatState -> Vty.Event -> EventM Name (Next ChatState)
 onEventShowHelp st e | Just kb <- lookupKeybinding e helpKeybindings = kbAction kb st
@@ -76,6 +78,28 @@ onEventMain st (Vty.EvPaste bytes) = do
   continue $ st & cmdLine %~ applyEdit (insertMany pasteStr)
 onEventMain st e = do
   continue =<< handleEventLensed (st & csCurrentCompletion .~ Nothing) cmdLine handleEditorEvent e
+
+onEventJoinChannel :: ChatState -> Vty.Event -> EventM Name (Next ChatState)
+onEventJoinChannel st e@(Vty.EvKey Vty.KUp []) = do
+    result <- case st^.csJoinChannelList of
+        Nothing -> return Nothing
+        Just l -> Just <$> handleListEvent e l
+    continue $ st & csJoinChannelList .~ result
+onEventJoinChannel st e@(Vty.EvKey Vty.KDown []) = do
+    result <- case st^.csJoinChannelList of
+        Nothing -> return Nothing
+        Just l -> Just <$> handleListEvent e l
+    continue $ st & csJoinChannelList .~ result
+onEventJoinChannel st (Vty.EvKey Vty.KEnter []) = do
+    case st^.csJoinChannelList of
+        Nothing -> continue st
+        Just l -> case listSelectedElement l of
+            Nothing -> continue st
+            Just (_, chan) -> joinChannel chan st >>= continue
+onEventJoinChannel st (Vty.EvKey Vty.KEsc []) = do
+    continue $ st & csMode .~ Main
+onEventJoinChannel st _ = do
+    continue st
 
 onEventLeaveChannelConfirm :: ChatState -> Vty.Event -> EventM Name (Next ChatState)
 onEventLeaveChannelConfirm st (Vty.EvKey k []) = do

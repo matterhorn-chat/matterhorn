@@ -8,6 +8,7 @@ module Types where
 import           Brick (EventM, txt, vBox, Next)
 import           Brick.AttrMap (AttrMap)
 import           Brick.Widgets.Edit (Editor, editor)
+import           Brick.Widgets.List (List)
 import           Cheapskate (Blocks)
 import           Control.Concurrent.Chan (Chan)
 import           Control.Concurrent.MVar (MVar)
@@ -48,6 +49,7 @@ data Name = ChannelMessages ChannelId
           | HelpViewport
           | ChannelSelectString
           | CompletionAlternatives
+          | JoinChannelList
           deriving (Eq, Show, Ord)
 
 -- We want to continue referring to posts by their IDs, but we don't want to
@@ -255,6 +257,7 @@ data Mode =
     | ShowHelp
     | ChannelSelect
     | LeaveChannelConfirm
+    | JoinChannel
     deriving (Eq)
 
 data ConnectionStatus = Connected | Disconnected
@@ -275,6 +278,7 @@ data ChatState = ChatState
   , _csChannelSelect        :: T.Text
   , _csRecentChannel        :: Maybe ChannelId
   , _csConnectionStatus     :: ConnectionStatus
+  , _csJoinChannelList      :: Maybe (List Name Channel)
   }
 
 data Event

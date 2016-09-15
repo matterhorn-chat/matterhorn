@@ -37,6 +37,7 @@ import Data.Hashable (hash)
 import Data.Monoid ((<>))
 import Graphics.Vty
 import Brick
+import Brick.Widgets.List
 import qualified Data.Text as T
 
 defaultThemeName :: T.Text
@@ -148,6 +149,7 @@ lightColorTheme = attrMap (black `on` white) $
   , (completionAlternativeCurrentAttr, black `on` yellow)
   , (dialogAttr,                       black `on` cyan)
   , (dialogEmphAttr,                   fg white)
+  , (listSelectedFocusedAttr,          black `on` yellow)
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 
@@ -176,6 +178,7 @@ darkColorTheme = attrMap (bg black) $
   , (completionAlternativeCurrentAttr, black `on` yellow)
   , (dialogAttr,                       black `on` cyan)
   , (dialogEmphAttr,                   fg white)
+  , (listSelectedFocusedAttr,          black `on` yellow)
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 

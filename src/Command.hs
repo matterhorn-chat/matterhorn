@@ -39,6 +39,8 @@ commandList =
       createChannel name st >>= continue
   , Cmd "leave" "Leave the current channel" NoArg $ \ () st ->
       startLeaveCurrentChannel st >>= continue
+  , Cmd "join" "Join a channel" NoArg $ \ () st ->
+      startJoinChannel st >>= continue
   , Cmd "set-theme" "Set the color theme"
     (TokenArg "theme" NoArg) $ \ (themeName, ()) st ->
       setTheme st themeName >>= continue

@@ -3,6 +3,7 @@ module State where
 
 import           Brick (EventM)
 import           Brick.Widgets.Edit (getEditContents, editContentsL)
+import           Brick.Widgets.List (list)
 import           Control.Concurrent (threadDelay, forkIO)
 import qualified Control.Concurrent.Chan as Chan
 import           Control.Concurrent.MVar (newEmptyMVar)
@@ -23,6 +24,8 @@ import           Data.Monoid ((<>))
 import           Data.Time.Clock ( getCurrentTime )
 import           Data.Time.LocalTime ( TimeZone(..), getCurrentTimeZone )
 import qualified Data.Text as T
+import qualified Data.Vector as V
+import qualified Data.Foldable as F
 import           Lens.Micro.Platform
 import           System.Exit (exitFailure)
 
@@ -78,6 +81,7 @@ newState rs i u m tz hist = ChatState
   , _csChannelSelect        = ""
   , _csRecentChannel        = Nothing
   , _csConnectionStatus     = Disconnected
+  , _csJoinChannelList      = Nothing
   }
 
 runAsync :: ChatState -> IO (ChatState -> EventM Name ChatState) -> IO ()
@@ -90,6 +94,26 @@ doAsync st thunk = doAsyncWith st (thunk >> return return)
 doAsyncWith :: ChatState -> IO (ChatState -> EventM Name ChatState) -> IO ()
 doAsyncWith st thunk =
   Chan.writeChan (st^.csRequestQueue) thunk
+
+startJoinChannel :: ChatState -> EventM Name ChatState
+startJoinChannel st = do
+    liftIO $ doAsyncWith st $ do
+        MoreChannels chans <- mmGetMoreChannels (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL)
+        return $ \ st' -> do
+            return $ st' & csJoinChannelList .~ (Just $ list JoinChannelList (V.fromList $ F.toList chans) 1)
+
+    return $ st & csMode .~ JoinChannel
+
+joinChannel :: Channel -> ChatState -> EventM Name ChatState
+joinChannel chan st = do
+    let cId = getId chan
+    liftIO $ do
+        mmJoinChannel (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId
+        doAsyncWith st $ do
+            posts <- mmGetPosts (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId 0 numScrollbackPosts
+            return $ \st' -> return $ st' & msgMap.ix cId.ccContents .~ fromPosts st' posts
+                                          & msgMap.ix cId.ccInfo.cdLoaded .~ True
+    handleNewChannel (chan^.channelNameL) chan $ st & csMode .~ Main
 
 startLeaveCurrentChannel :: ChatState -> EventM Name ChatState
 startLeaveCurrentChannel st = do
@@ -340,6 +364,7 @@ handleNewChannel name nc st = do
       -- add it to the message map, and to the map so we can look
       -- it up by user name
       st' = st & csNames.cnToChanId.at(name) .~ Just (getId nc)
+               & csNames.cnChans %~ (sort . (name:))
                & msgMap.at(getId nc) .~ Just cChannel
       -- we should figure out how to do this better: this adds it to
       -- the channel zipper in such a way that we don't ever change
