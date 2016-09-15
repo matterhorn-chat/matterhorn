@@ -13,12 +13,12 @@ import           Data.HashMap.Strict ((!))
 import           Brick.Main (viewportScroll, vScrollToEnd, vScrollToBeginning, vScrollBy)
 import           Brick.Widgets.Edit (applyEdit)
 import           Control.Exception (SomeException, catch)
-import           Control.Monad (forM, when, void)
+import           Control.Monad (forM, forM_, when, void)
 import           Data.Text.Zipper (textZipper, clearZipper, insertMany, gotoEOL)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
 import           Data.Foldable (toList)
-import           Data.List (sort)
+import           Data.List (sort, find)
 import           Data.Maybe (listToMaybe, maybeToList, fromJust)
 import           Data.Monoid ((<>))
 import           Data.Time.Clock ( getCurrentTime )
@@ -110,11 +110,17 @@ joinChannel chan st = do
     let cId = getId chan
     liftIO $ do
         mmJoinChannel (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId
-        doAsyncWith st $ do
-            posts <- mmGetPosts (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId 0 numScrollbackPosts
-            return $ \st' -> return $ st' & msgMap.ix cId.ccContents .~ fromPosts st' posts
-                                          & msgMap.ix cId.ccInfo.cdLoaded .~ True
+        asyncFetchScrollback st cId
     handleNewChannel (chan^.channelNameL) chan $ st & csMode .~ Main
+
+asyncFetchScrollback :: ChatState -> ChannelId -> IO ()
+asyncFetchScrollback st cId =
+    doAsyncWith st $ do
+        posts <- mmGetPosts (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId 0 numScrollbackPosts
+        return $ \st' ->
+            updateChannelScrollState $
+                st' & msgMap.ix cId.ccContents .~ fromPosts st' posts
+                    & msgMap.ix cId.ccInfo.cdLoaded .~ True
 
 startLeaveCurrentChannel :: ChatState -> EventM Name ChatState
 startLeaveCurrentChannel st = do
@@ -473,17 +479,7 @@ fetchCurrentScrollback :: ChatState -> EventM a ChatState
 fetchCurrentScrollback st = do
   let cId = currentChannelId st
   when (maybe False not (st^?msgMap.ix(cId).ccInfo.cdLoaded)) $
-    liftIO $ doAsyncWith st $ do
-      posts <- mmGetPosts (st^.csConn)
-                 (st^.csTok)
-                 (st^.csMyTeam.teamIdL)
-                 cId
-                 0
-                 numScrollbackPosts
-      return $ \ st' -> do
-        let st'' = st' & msgMap.ix(cId).ccContents .~ fromPosts st' posts
-                       & msgMap.ix(cId).ccInfo.cdLoaded .~ True
-        updateChannelScrollState st''
+      liftIO $ asyncFetchScrollback st cId
   return st
 
 mkChannelZipperList :: MMNames -> [ChannelId]
@@ -608,12 +604,6 @@ initializeState cr myTeam myUser = do
                      { _ccContents = emptyChannelContents
                      , _ccInfo     = cInfo
                      }
-    when (c^.channelNameL /= "town-square" && c^.channelTypeL /= "D") $ Chan.writeChan requestChan $ do
-      posts <- mmGetPosts cd token myTeamId (getId c) 0 numScrollbackPosts
-      return $ \ st -> do
-          let st' = st & msgMap.ix(getId c).ccContents .~ fromPosts st posts
-                       & msgMap.ix(getId c).ccInfo.cdLoaded .~ True
-          updateChannelScrollState st'
     return (getId c, cChannel)
 
   users <- mmGetProfiles cd token myTeamId
@@ -639,11 +629,16 @@ initializeState cr myTeam myUser = do
              & msgMap .~ msgs
              & csNames .~ chanNames
 
-  townSquarePosts <- mmGetPosts cd token myTeamId townSqId 0 numScrollbackPosts
-  let st' = st & msgMap.ix(townSqId).ccContents .~ fromPosts st townSquarePosts
-               & msgMap.ix(townSqId).ccInfo.cdLoaded .~ True
+  -- Fetch town-square asynchronously, but put it in the queue early.
+  case find ((== townSqId) . getId) chans of
+      Nothing -> return ()
+      Just _ -> doAsync st $ liftIO $ asyncFetchScrollback st townSqId
 
-  updateViewedIO st'
+  forM_ chans $ \c ->
+      when (getId c /= townSqId && c^.channelTypeL /= "D") $
+          doAsync st $ asyncFetchScrollback st (getId c)
+
+  updateViewedIO st
 
 setChannelTopic :: ChatState -> T.Text -> IO ()
 setChannelTopic st msg = do
