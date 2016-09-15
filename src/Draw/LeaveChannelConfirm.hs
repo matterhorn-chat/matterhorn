@@ -16,7 +16,7 @@ import Draw.Main
 
 drawLeaveChannelConfirm :: ChatState -> [Widget Name]
 drawLeaveChannelConfirm st =
-    confirmBox st : drawMain st
+    confirmBox st : (forceAttr "invalid" <$> drawMain st)
 
 confirmBox :: ChatState -> Widget Name
 confirmBox st =
