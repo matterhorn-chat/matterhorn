@@ -47,3 +47,8 @@ updateList :: (Eq a) => [a] -> Zipper a -> Zipper a
 updateList newList oldZip = findLeft (== oldFocus) newZip
   where oldFocus = focus oldZip
         newZip   = oldZip { zElems = newList }
+
+filterZipper :: (Eq a) => (a -> Bool) -> Zipper a -> Zipper a
+filterZipper f oldZip = findLeft (== oldFocus) newZip
+  where oldFocus = focus oldZip
+        newZip   = oldZip { zElems = filter f $ zElems oldZip }
