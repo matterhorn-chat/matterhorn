@@ -79,13 +79,18 @@ onEventMain st (Vty.EvPaste bytes) = do
 onEventMain st e = do
   continue =<< handleEventLensed (st & csCurrentCompletion .~ Nothing) cmdLine handleEditorEvent e
 
+joinChannelListKeys :: [Vty.Key]
+joinChannelListKeys =
+    [ Vty.KUp
+    , Vty.KDown
+    , Vty.KPageUp
+    , Vty.KPageDown
+    , Vty.KHome
+    , Vty.KEnd
+    ]
+
 onEventJoinChannel :: ChatState -> Vty.Event -> EventM Name (Next ChatState)
-onEventJoinChannel st e@(Vty.EvKey Vty.KUp []) = do
-    result <- case st^.csJoinChannelList of
-        Nothing -> return Nothing
-        Just l -> Just <$> handleListEvent e l
-    continue $ st & csJoinChannelList .~ result
-onEventJoinChannel st e@(Vty.EvKey Vty.KDown []) = do
+onEventJoinChannel st e@(Vty.EvKey k []) | k `elem` joinChannelListKeys = do
     result <- case st^.csJoinChannelList of
         Nothing -> return Nothing
         Just l -> Just <$> handleListEvent e l
