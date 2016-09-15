@@ -80,8 +80,10 @@ renderChatMessage uSet mFormat tz msg =
 mkChannelName :: ChannelInfo -> Text
 mkChannelName c = T.cons sigil (c^.cdName)
   where sigil =  case c^.cdType of
-          Type "P" -> '?'
-          _        -> '#'
+          Private   -> '?'
+          Ordinary  -> '#'
+          Direct    -> '@'
+          Unknown _ -> '!'
 
 mkDMChannelName :: UserInfo -> Text
 mkDMChannelName u = T.cons (userSigil u) (u^.uiName)
@@ -202,7 +204,7 @@ renderCurrentChannelDisplay st = (header <+> conn) <=> messages
              padRight Max $
              case T.null topicStr of
                  True -> case chnType of
-                   Type "D" ->
+                   Direct ->
                      case findUserByDMChannelName (st^.usrMap)
                                                   chnName
                                                   (st^.csMe^.userIdL) of

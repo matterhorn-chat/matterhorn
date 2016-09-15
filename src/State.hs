@@ -245,7 +245,7 @@ getNextChannel :: ChatState
                -> (Zipper ChannelId -> Zipper ChannelId)
 getNextChannel st shift z = go (shift z)
   where go z'
-          | (st^?msgMap.ix(Z.focus z').ccInfo.cdType) /= Just "D" = z'
+          | (st^?msgMap.ix(Z.focus z').ccInfo.cdType) /= Just Direct = z'
           | otherwise = go (shift z')
 
 getNextUnreadChannel :: ChatState
@@ -346,7 +346,7 @@ createOrdinaryChannel name st = do
           , minChannelDisplayName = name
           , minChannelPurpose     = Nothing
           , minChannelHeader      = Nothing
-          , minChannelType        = Type "O"
+          , minChannelType        = Ordinary
           }
     nc <- mmCreateChannel (st^.csConn) (st^.csTok) tId minChannel
     return $ (handleNewChannel name nc . (csNames.cnChans %~ (name:)))
@@ -494,10 +494,10 @@ mkChanNames :: User -> HM.HashMap UserId UserProfile -> Seq.Seq Channel -> MMNam
 mkChanNames myUser users chans = MMNames
   { _cnChans = sort
                [ channelName c
-               | c <- toList chans, channelType c /= "D" ]
+               | c <- toList chans, channelType c /= Direct ]
   , _cnDMs = sort
              [ channelName c
-             | c <- toList chans, channelType c == "D" ]
+             | c <- toList chans, channelType c == Direct ]
   , _cnToChanId = HM.fromList $
                   [ (channelName c, channelId c) | c <- toList chans ] ++
                   [ (userProfileUsername u, c)
@@ -635,7 +635,7 @@ initializeState cr myTeam myUser = do
       Just _ -> doAsync st $ liftIO $ asyncFetchScrollback st townSqId
 
   forM_ chans $ \c ->
-      when (getId c /= townSqId && c^.channelTypeL /= "D") $
+      when (getId c /= townSqId && c^.channelTypeL /= Direct) $
           doAsync st $ asyncFetchScrollback st (getId c)
 
   updateViewedIO st
