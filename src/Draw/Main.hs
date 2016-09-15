@@ -113,7 +113,7 @@ renderChannelList st = hLimit channelListWidth $ vBox
                    withDefAttr channelListHeaderAttr $
                    txt label
     decorateRecent recent = if recent
-                            then (<+> str "<")
+                            then (<+> (withDefAttr recentMarkerAttr $ str "<"))
                             else id
     channelNames = [ decorate $ decorateRecent recent $ padRight Max $ txt (mkChannelName cInfo)
                    | n <- (st ^. csNames . cnChans)

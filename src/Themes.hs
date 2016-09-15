@@ -27,6 +27,7 @@ module Themes
   , completionAlternativeCurrentAttr
   , dialogAttr
   , dialogEmphAttr
+  , recentMarkerAttr
 
   -- * Username formatting
   , colorUsername
@@ -48,6 +49,9 @@ helpAttr = "help"
 
 helpEmphAttr :: AttrName
 helpEmphAttr = "helpEmphasis"
+
+recentMarkerAttr :: AttrName
+recentMarkerAttr = "recentMarker"
 
 dialogAttr :: AttrName
 dialogAttr = "dialog"
@@ -150,6 +154,7 @@ lightColorTheme = attrMap (black `on` white) $
   , (dialogAttr,                       black `on` cyan)
   , (dialogEmphAttr,                   fg white)
   , (listSelectedFocusedAttr,          black `on` yellow)
+  , (recentMarkerAttr,                 fg black `withStyle` bold)
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 
@@ -179,6 +184,7 @@ darkColorTheme = attrMap (bg black) $
   , (dialogAttr,                       black `on` cyan)
   , (dialogEmphAttr,                   fg white)
   , (listSelectedFocusedAttr,          black `on` yellow)
+  , (recentMarkerAttr,                 fg yellow `withStyle` bold)
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 
