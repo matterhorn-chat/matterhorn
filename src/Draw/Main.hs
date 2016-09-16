@@ -44,8 +44,7 @@ renderTime fmt tz t =
 
 renderChatMessage :: Set Text -> Maybe Text -> TimeZone -> Message -> Widget Name
 renderChatMessage uSet mFormat tz msg =
-    let t = msg^.mDate
-        m = renderMessage (msg^.mText) msgUsr (msg^.mType) uSet
+    let m = renderMessage (msg^.mText) msgUsr (msg^.mType) uSet
         msgUsr = case msg^.mUserName of
           Just u
             | msg^.mType == CP Join
@@ -70,8 +69,8 @@ renderChatMessage uSet mFormat tz msg =
         fullMsg = msgTxt <=> msgAtch
         maybeRenderTime = case mFormat of
             Just ""     -> id
-            Just format -> \w -> renderTime format tz t            <+> txt " " <+> w
-            Nothing     -> \w -> renderTime defaultDateFormat tz t <+> txt " " <+> w
+            Just format -> \w -> renderTime format tz (msg^.mDate)            <+> txt " " <+> w
+            Nothing     -> \w -> renderTime defaultDateFormat tz (msg^.mDate) <+> txt " " <+> w
         maybeRenderTimeWith f = case msg^.mType of
             C DateTransition -> id
             _ -> f
