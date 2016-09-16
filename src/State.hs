@@ -254,7 +254,7 @@ getNextUnreadChannel st = Z.findRight (hasUnread st)
 
 listThemes :: ChatState -> EventM Name ChatState
 listThemes cs = do
-    let mkThemeList _ = T.unlines $
+    let mkThemeList _ = T.intercalate "\n\n" $
                         "Available built-in themes:" :
                         (("  " <>) <$> fst <$> themes)
     msg <- newClientMessage Informative (mkThemeList themes)
