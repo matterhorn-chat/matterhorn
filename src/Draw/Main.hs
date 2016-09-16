@@ -104,91 +104,91 @@ normalChannelListHeight :: Int
 normalChannelListHeight = 10
 
 renderChannelList :: ChatState -> Widget Name
-renderChannelList st = hLimit channelListWidth $ vBox
-                       [ header "Channels"
-                       , vLimit normalChannelListHeight $ viewport NormalChannelList Vertical $ vBox channelNames
-                       , header "Users"
-                       , viewport DMChannelList Vertical $ vBox dmChannelNames
-                       ]
+renderChannelList st = hLimit channelListWidth $ vBox $ renderChannelGroup st <$> channelGroups
     where
-    cId = currentChannelId st
+        channelGroups = [ ("Channels", NormalChannelList, Just normalChannelListHeight, getOrdinaryChannels st)
+                        , ("Users",    DMChannelList,     Nothing,                      getDmChannels st)
+                        ]
+
+renderChannelGroup :: ChatState -> (T.Text, Name, Maybe Int, [ChannelListEntry]) -> Widget Name
+renderChannelGroup st (groupName, vpName, heightLimit, entries) =
+    let limit = maybe id vLimit heightLimit
+        header label = hBorderWithLabel $ withDefAttr channelListHeaderAttr $ txt label
+    in header groupName <=>
+       (limit $ viewport vpName Vertical $ vBox $ renderChannelListEntry st <$> entries)
+
+data ChannelListEntry = ChannelListEntry { entryChannelName :: T.Text
+                                         , entrySigil :: T.Text
+                                         , entryLabel :: T.Text
+                                         , entryWidget :: Widget Name
+                                         , entryHasUnread :: Bool
+                                         , entryIsRecent :: Bool
+                                         }
+
+renderChannelListEntry :: ChatState -> ChannelListEntry -> Widget Name
+renderChannelListEntry st entry =
+    decorate $ decorateRecent $ padRight Max $ entryWidget entry
+    where
+    decorate = if | matches -> const $ (txt $ entrySigil entry)
+                        <+> txt preMatch
+                        <+> (forceAttr channelSelectMatchAttr $ txt $ st^.csChannelSelect)
+                        <+> txt postMatch
+                  | isChanSelect &&
+                    (not $ T.null $ st^.csChannelSelect) -> const emptyWidget
+                  | current ->
+                      if isChanSelect
+                      then forceAttr currentChannelNameAttr
+                      else visible . forceAttr currentChannelNameAttr
+                  | entryHasUnread entry ->
+                      if isChanSelect
+                      then forceAttr unreadChannelAttr
+                      else visible . forceAttr unreadChannelAttr
+                  | otherwise -> id
+
+    decorateRecent = if entryIsRecent entry
+                     then (<+> (withDefAttr recentMarkerAttr $ str "<"))
+                     else id
+
+    matches = isChanSelect &&
+              (st^.csChannelSelect) `T.isInfixOf` entryLabel entry &&
+              (not $ T.null $ st^.csChannelSelect)
+
+    isChanSelect = st^.csMode == ChannelSelect
+    (preMatch,postMatch) = case T.breakOn (st^.csChannelSelect) (entryLabel entry) of
+      (pre, post) -> (pre, T.drop (T.length $ st^.csChannelSelect) post)
+    current = entryChannelName entry == currentChannelName
     currentChannelName = getChannelName cId st
-    header label = hBorderWithLabel $
-                   withDefAttr channelListHeaderAttr $
-                   txt label
-    decorateRecent recent = if recent
-                            then (<+> (withDefAttr recentMarkerAttr $ str "<"))
-                            else id
-    channelNames = [ decorate $ decorateRecent recent $ padRight Max $ txt (mkChannelName cInfo)
-                   | n <- (st ^. csNames . cnChans)
-                   , let decorate = if | matches   -> const $
-                                                      (txt "#") <+> txt preMatch
-                                                                <+> (forceAttr channelSelectMatchAttr $ txt $ st^.csChannelSelect)
-                                                                <+> txt postMatch
-                                       | st^.csMode == ChannelSelect &&
-                                         (not $ T.null $ st^.csChannelSelect) -> const emptyWidget
-                                       | current   -> if st^.csMode == ChannelSelect
-                                                      then forceAttr currentChannelNameAttr
-                                                      else visible .
-                                                           forceAttr currentChannelNameAttr
-                                       | unread   -> if st^.csMode == ChannelSelect
-                                                     then forceAttr unreadChannelAttr
-                                                     else visible .
-                                                          forceAttr unreadChannelAttr
-                                       | otherwise -> id
-                         matches = st^.csMode == ChannelSelect &&
-                                   (st^.csChannelSelect) `T.isInfixOf` n &&
-                                   (not $ T.null $ st^.csChannelSelect)
-                         (preMatch,postMatch) = case T.breakOn (st^.csChannelSelect) n of
-                           (pre, post) -> (pre, T.drop (T.length $ st^.csChannelSelect) post)
-                         current = n == currentChannelName
-                         recent = Just chan == st^.csRecentChannel
-                         Just chan = st ^. csNames . cnToChanId . at n
-                         unread = hasUnread st chan
-                         Just cInfo = st^?msgMap.at(chan).each.ccInfo
-                   ]
+    cId = currentChannelId st
 
-    isSelf :: UserInfo -> Bool
-    isSelf u = (st^.csMe.userIdL) == (u^.uiId)
-    usersToList = filter (not . isSelf) $ st ^. usrMap & HM.elems
+getOrdinaryChannels :: ChatState -> [ChannelListEntry]
+getOrdinaryChannels st =
+    [ ChannelListEntry n "#" n (txt $ "#" <> n) unread recent
+    | n <- (st ^. csNames . cnChans)
+    , let Just chan = st ^. csNames . cnToChanId . at n
+          unread = hasUnread st chan
+          recent = Just chan == st^.csRecentChannel
+    ]
 
-    dmChannelNames = [ decorate $ decorateRecent recent $ padRight Max $ colorUsername' (mkDMChannelName u)
-                     | u <- sort usersToList
-                     , let decorate = if | matches   -> const $
-                                                        (txt $ T.singleton $ userSigil u) <+> txt preMatch
-                                                                                          <+> (forceAttr channelSelectMatchAttr $ txt $ st^.csChannelSelect)
-                                                                                          <+> txt postMatch
-                                         | st^.csMode == ChannelSelect &&
-                                           (not $ T.null $ st^.csChannelSelect) -> const emptyWidget
-                                         | current   -> if st^.csMode == ChannelSelect
-                                                        then forceAttr currentChannelNameAttr
-                                                        else visible .
-                                                             forceAttr currentChannelNameAttr
-                                         | unread   -> if st^.csMode == ChannelSelect
-                                                       then forceAttr unreadChannelAttr
-                                                       else visible .
-                                                            forceAttr unreadChannelAttr
-                                         | otherwise -> id
-                           colorUsername' =
-                             if | unread || current -> txt
-                                | st^.csMode == ChannelSelect -> txt
-                                | u^.uiStatus == Offline ->
-                                  withDefAttr clientMessageAttr . txt
-                                | otherwise ->
-                                  colorUsername
-                           matches = st^.csMode == ChannelSelect &&
-                                     (st^.csChannelSelect) `T.isInfixOf` uname &&
-                                     (not $ T.null $ st^.csChannelSelect)
-                           (preMatch,postMatch) = case T.breakOn (st^.csChannelSelect) uname of
-                             (pre, post) -> (pre, T.drop (T.length $ st^.csChannelSelect) post)
-                           uname = u^.uiName
-                           cname = getDMChannelName (st^.csMe^.userIdL)
-                                                    (u^.uiId)
-                           current = cname == currentChannelName
-                           recent = maybe False ((== st^.csRecentChannel) . Just) m_chanId
-                           m_chanId = st^.csNames.cnToChanId.at (u^.uiName)
-                           unread = maybe False (hasUnread st) m_chanId
-                     ]
+getDmChannels :: ChatState -> [ChannelListEntry]
+getDmChannels st =
+    let isSelf :: UserInfo -> Bool
+        isSelf u = (st^.csMe.userIdL) == (u^.uiId)
+        usersToList = filter (not . isSelf) $ st ^. usrMap & HM.elems
+
+    in [ ChannelListEntry cname sigil uname (colorUsername' $ sigil <> uname) unread recent
+       | u <- sort usersToList
+       , let colorUsername' =
+               if | u^.uiStatus == Offline ->
+                    withDefAttr clientMessageAttr . txt
+                  | otherwise ->
+                    colorUsername
+             sigil = T.singleton $ userSigil u
+             uname = u^.uiName
+             cname = getDMChannelName (st^.csMe^.userIdL) (u^.uiId)
+             recent = maybe False ((== st^.csRecentChannel) . Just) m_chanId
+             m_chanId = st^.csNames.cnToChanId.at (u^.uiName)
+             unread = maybe False (hasUnread st) m_chanId
+       ]
 
 renderUserCommandBox :: ChatState -> Widget Name
 renderUserCommandBox st = prompt <+> inputBox
