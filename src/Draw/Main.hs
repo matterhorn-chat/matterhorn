@@ -126,13 +126,13 @@ renderChannelList st = hLimit channelListWidth $ vBox
                                        | st^.csMode == ChannelSelect &&
                                          (not $ T.null $ st^.csChannelSelect) -> const emptyWidget
                                        | current   -> if st^.csMode == ChannelSelect
-                                                      then withDefAttr currentChannelNameAttr
+                                                      then forceAttr currentChannelNameAttr
                                                       else visible .
-                                                           withDefAttr currentChannelNameAttr
+                                                           forceAttr currentChannelNameAttr
                                        | unread   -> if st^.csMode == ChannelSelect
-                                                     then withDefAttr unreadChannelAttr
+                                                     then forceAttr unreadChannelAttr
                                                      else visible .
-                                                          withDefAttr unreadChannelAttr
+                                                          forceAttr unreadChannelAttr
                                        | otherwise -> id
                          matches = st^.csMode == ChannelSelect &&
                                    (st^.csChannelSelect) `T.isInfixOf` n &&
@@ -159,13 +159,13 @@ renderChannelList st = hLimit channelListWidth $ vBox
                                          | st^.csMode == ChannelSelect &&
                                            (not $ T.null $ st^.csChannelSelect) -> const emptyWidget
                                          | current   -> if st^.csMode == ChannelSelect
-                                                        then withDefAttr currentChannelNameAttr
+                                                        then forceAttr currentChannelNameAttr
                                                         else visible .
-                                                             withDefAttr currentChannelNameAttr
+                                                             forceAttr currentChannelNameAttr
                                          | unread   -> if st^.csMode == ChannelSelect
-                                                       then withDefAttr unreadChannelAttr
+                                                       then forceAttr unreadChannelAttr
                                                        else visible .
-                                                            withDefAttr unreadChannelAttr
+                                                            forceAttr unreadChannelAttr
                                          | otherwise -> id
                            colorUsername' =
                              if | unread || current -> txt
