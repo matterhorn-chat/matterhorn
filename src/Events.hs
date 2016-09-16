@@ -34,11 +34,15 @@ import           InputHistory
 
 onEvent :: ChatState -> Event -> EventM Name (Next ChatState)
 onEvent st RefreshWebsocketEvent = do
-  liftIO (connectWebsockets st) >> continue st
+  liftIO $ connectWebsockets st
+  msg <- newClientMessage Informative "Websocket connecting..."
+  continue =<< addClientMessage msg st
 onEvent st WebsocketDisconnect = do
-  continue (st & csConnectionStatus .~ Disconnected)
+  msg <- newClientMessage Informative "Websocket disconnected."
+  continue =<< (addClientMessage msg $ st & csConnectionStatus .~ Disconnected)
 onEvent st WebsocketConnect = do
-  continue (st & csConnectionStatus .~ Connected)
+  msg <- newClientMessage Informative "Websocket reconnected."
+  continue =<< (addClientMessage msg $ st & csConnectionStatus .~ Connected)
 onEvent st (WSEvent we) =
   handleWSEvent st we
 onEvent st (RespEvent f) =
