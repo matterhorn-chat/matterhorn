@@ -81,6 +81,7 @@ data PostType =
     | Emote
     | Join
     | Leave
+    | TopicChange
     deriving (Eq, Show)
 
 data ClientPost = ClientPost
@@ -119,10 +120,15 @@ getBlocks s = bs where C.Doc _ bs = C.markdown C.def s
 
 postClientPostType :: Post -> PostType
 postClientPostType cp =
-    if | postIsEmote cp -> Emote
-       | postIsJoin  cp -> Join
-       | postIsLeave cp -> Leave
-       | otherwise      -> NormalPost
+    if | postIsEmote cp       -> Emote
+       | postIsJoin  cp       -> Join
+       | postIsLeave cp       -> Leave
+       | postIsTopicChange cp -> TopicChange
+       | otherwise            -> NormalPost
+
+postIsTopicChange :: Post -> Bool
+postIsTopicChange p =
+    "updated the channel header from:" `T.isInfixOf` postMessage p
 
 postIsEmote :: Post -> Bool
 postIsEmote p =

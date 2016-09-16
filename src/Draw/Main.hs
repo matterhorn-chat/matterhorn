@@ -45,10 +45,13 @@ renderTime fmt tz t =
 renderChatMessage :: Set Text -> Maybe Text -> TimeZone -> Message -> Widget Name
 renderChatMessage uSet mFormat tz msg =
     let m = renderMarkdown (msg^.mText) msgUsr (msg^.mType) uSet
+        omitUsernameTypes = [ CP Join
+                            , CP Leave
+                            , CP TopicChange
+                            ]
         msgUsr = case msg^.mUserName of
           Just u
-            | msg^.mType == CP Join
-              || msg^.mType == CP Leave -> Nothing
+            | msg^.mType `elem` omitUsernameTypes -> Nothing
             | otherwise -> Just u
           Nothing -> Nothing
         msgAtch = if Seq.null (msg^.mAttachments)
