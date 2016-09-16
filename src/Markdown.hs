@@ -2,7 +2,7 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE ParallelListComp #-}
 
-module Markdown (renderMessage) where
+module Markdown (renderMarkdown) where
 
 import           Brick ( (<+>), Widget )
 import qualified Brick as B
@@ -33,8 +33,8 @@ import           Types (MessageType(..), PostType(..))
 
 type UserSet = Set Text
 
-renderMessage :: Blocks -> Maybe Text -> MessageType -> UserSet -> Widget a
-renderMessage bs u mTy uSet =
+renderMarkdown :: Blocks -> Maybe Text -> MessageType -> UserSet -> Widget a
+renderMarkdown bs u mTy uSet =
   case u of
     Just un
       | mTy == CP Emote -> B.txt "*" <+> colorUsername un

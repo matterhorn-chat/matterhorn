@@ -44,7 +44,7 @@ renderTime fmt tz t =
 
 renderChatMessage :: Set Text -> Maybe Text -> TimeZone -> Message -> Widget Name
 renderChatMessage uSet mFormat tz msg =
-    let m = renderMessage (msg^.mText) msgUsr (msg^.mType) uSet
+    let m = renderMarkdown (msg^.mText) msgUsr (msg^.mType) uSet
         msgUsr = case msg^.mUserName of
           Just u
             | msg^.mType == CP Join
