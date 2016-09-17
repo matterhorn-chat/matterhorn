@@ -142,9 +142,7 @@ renderChannelListEntry st entry =
                       then forceAttr currentChannelNameAttr
                       else visible . forceAttr currentChannelNameAttr
                   | entryHasUnread entry ->
-                      if isChanSelect
-                      then forceAttr unreadChannelAttr
-                      else visible . forceAttr unreadChannelAttr
+                      forceAttr unreadChannelAttr
                   | otherwise -> id
 
     decorateRecent = if entryIsRecent entry
