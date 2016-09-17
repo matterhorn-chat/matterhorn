@@ -117,13 +117,14 @@ renderChannelGroup st (groupName, vpName, heightLimit, entries) =
     in header groupName <=>
        (limit $ viewport vpName Vertical $ vBox $ renderChannelListEntry st <$> entries)
 
-data ChannelListEntry = ChannelListEntry { entryChannelName :: T.Text
-                                         , entrySigil :: T.Text
-                                         , entryLabel :: T.Text
-                                         , entryMakeWidget :: T.Text -> Widget Name
-                                         , entryHasUnread :: Bool
-                                         , entryIsRecent :: Bool
-                                         }
+data ChannelListEntry =
+    ChannelListEntry { entryChannelName :: T.Text
+                     , entrySigil       :: T.Text
+                     , entryLabel       :: T.Text
+                     , entryMakeWidget  :: T.Text -> Widget Name
+                     , entryHasUnread   :: Bool
+                     , entryIsRecent    :: Bool
+                     }
 
 renderChannelListEntry :: ChatState -> ChannelListEntry -> Widget Name
 renderChannelListEntry st entry =
