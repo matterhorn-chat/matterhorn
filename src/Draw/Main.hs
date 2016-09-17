@@ -106,8 +106,16 @@ normalChannelListHeight = 10
 renderChannelList :: ChatState -> Widget Name
 renderChannelList st = hLimit channelListWidth $ vBox $ renderChannelGroup st <$> channelGroups
     where
-        channelGroups = [ ("Channels", NormalChannelList, Just normalChannelListHeight, getOrdinaryChannels st)
-                        , ("Users",    DMChannelList,     Nothing,                      getDmChannels st)
+        channelGroups = [ ( "Channels"
+                          , NormalChannelList
+                          , Just normalChannelListHeight
+                          , getOrdinaryChannels st
+                          )
+                        , ( "Users"
+                          , DMChannelList
+                          , Nothing
+                          , getDmChannels st
+                          )
                         ]
 
 renderChannelGroup :: ChatState -> (T.Text, Name, Maybe Int, [ChannelListEntry]) -> Widget Name
