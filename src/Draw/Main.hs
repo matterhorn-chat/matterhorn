@@ -120,14 +120,15 @@ renderChannelGroup st (groupName, vpName, heightLimit, entries) =
 data ChannelListEntry = ChannelListEntry { entryChannelName :: T.Text
                                          , entrySigil :: T.Text
                                          , entryLabel :: T.Text
-                                         , entryWidget :: Widget Name
+                                         , entryMakeWidget :: T.Text -> Widget Name
                                          , entryHasUnread :: Bool
                                          , entryIsRecent :: Bool
                                          }
 
 renderChannelListEntry :: ChatState -> ChannelListEntry -> Widget Name
 renderChannelListEntry st entry =
-    decorate $ decorateRecent $ padRight Max $ entryWidget entry
+    decorate $ decorateRecent $ padRight Max $
+    entryMakeWidget entry $ entrySigil entry <> entryLabel entry
     where
     decorate = if | matches -> const $ (txt $ entrySigil entry)
                         <+> txt preMatch
@@ -162,7 +163,7 @@ renderChannelListEntry st entry =
 
 getOrdinaryChannels :: ChatState -> [ChannelListEntry]
 getOrdinaryChannels st =
-    [ ChannelListEntry n "#" n (txt $ "#" <> n) unread recent
+    [ ChannelListEntry n "#" n txt unread recent
     | n <- (st ^. csNames . cnChans)
     , let Just chan = st ^. csNames . cnToChanId . at n
           unread = hasUnread st chan
@@ -175,7 +176,7 @@ getDmChannels st =
         isSelf u = (st^.csMe.userIdL) == (u^.uiId)
         usersToList = filter (not . isSelf) $ st ^. usrMap & HM.elems
 
-    in [ ChannelListEntry cname sigil uname (colorUsername' $ sigil <> uname) unread recent
+    in [ ChannelListEntry cname sigil uname colorUsername' unread recent
        | u <- sort usersToList
        , let colorUsername' =
                if | u^.uiStatus == Offline ->
