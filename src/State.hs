@@ -385,7 +385,9 @@ editMessage :: Post -> ChatState -> EventM a ChatState
 editMessage new st = do
   now <- liftIO getCurrentTime
   let chan = msgMap . ix (postChannelId new)
-      rs = st & chan . ccContents . cdMessages %~ (Seq.|> (clientPostToMessage st $ toClientPost new))
+      isEditedMessage m = m^.mPostId == Just (new^.postIdL)
+      msg = clientPostToMessage st (toClientPost new)
+      rs = st & chan . ccContents . cdMessages . each . filtered isEditedMessage .~ msg
               & chan . ccInfo . cdUpdated .~ now
   return rs
 
