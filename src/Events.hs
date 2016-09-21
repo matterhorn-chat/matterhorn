@@ -112,6 +112,7 @@ onEventJoinChannel st _ = do
     continue st
 
 onEventChannelScroll :: ChatState -> Vty.Event -> EventM Name (Next ChatState)
+onEventChannelScroll st (Vty.EvResize _ _) = invalidateCache >> continue st
 onEventChannelScroll st (Vty.EvKey Vty.KPageUp []) = channelPageUp st >>= continue
 onEventChannelScroll st (Vty.EvKey Vty.KPageDown []) = channelPageDown st >>= continue
 onEventChannelScroll st (Vty.EvKey Vty.KEsc []) = do
