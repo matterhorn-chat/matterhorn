@@ -299,7 +299,7 @@ changeChannel :: T.Text -> ChatState -> EventM Name ChatState
 changeChannel name st =
     case channelByName st name of
       Just cId -> setFocus cId st
-      Nothing -> attemptCreateChannel name st
+      Nothing -> attemptCreateDMChannel name st
 
 setFocus :: ChannelId -> ChatState -> EventM Name ChatState
 setFocus cId st = setFocusWith st (Z.findRight (== cId))
@@ -319,8 +319,8 @@ setFocusWith st f = do
               (\st' -> updateViewed (st' & csFocus .~ newZipper)) >>=
               changeChannelCommon
 
-attemptCreateChannel :: T.Text -> ChatState -> EventM Name ChatState
-attemptCreateChannel name st
+attemptCreateDMChannel :: T.Text -> ChatState -> EventM Name ChatState
+attemptCreateDMChannel name st
   | name `elem` (st^.csNames.cnUsers) &&
     not (name `HM.member` (st^.csNames.cnToChanId)) = do
       -- We have a user of that name but no channel. Time to make one!
