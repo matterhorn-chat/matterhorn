@@ -225,7 +225,6 @@ renderCurrentChannelDisplay st = (header <+> conn) <=> messages
     messages = if chan^.ccInfo.cdLoaded
                then viewport (ChannelMessages cId) Vertical chatText <+> txt " "
                else center $ txt "[loading channel scrollback]"
-    --uPattern = mkUsernamePattern (HM.elems (st^.usrMap))
     uSet = Set.fromList (map _uiName (HM.elems (st^.usrMap)))
     chatText = vBox $ F.toList $
                       renderChatMessage uSet (st ^. timeFormat) (st ^. timeZone) <$>
