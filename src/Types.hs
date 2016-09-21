@@ -264,6 +264,7 @@ data Mode =
     | ChannelSelect
     | LeaveChannelConfirm
     | JoinChannel
+    | ChannelScroll
     deriving (Eq)
 
 data ConnectionStatus = Connected | Disconnected

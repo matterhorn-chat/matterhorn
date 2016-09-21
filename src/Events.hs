@@ -54,6 +54,7 @@ onEvent st (VtyEvent e) = do
         ChannelSelect       -> onEventChannelSelect st e
         LeaveChannelConfirm -> onEventLeaveChannelConfirm st e
         JoinChannel         -> onEventJoinChannel st e
+        ChannelScroll       -> onEventChannelScroll st e
 
 onEventShowHelp :: ChatState -> Vty.Event -> EventM Name (Next ChatState)
 onEventShowHelp st e | Just kb <- lookupKeybinding e helpKeybindings = kbAction kb st
@@ -108,6 +109,14 @@ onEventJoinChannel st (Vty.EvKey Vty.KEnter []) = do
 onEventJoinChannel st (Vty.EvKey Vty.KEsc []) = do
     continue $ st & csMode .~ Main
 onEventJoinChannel st _ = do
+    continue st
+
+onEventChannelScroll :: ChatState -> Vty.Event -> EventM Name (Next ChatState)
+onEventChannelScroll st (Vty.EvKey Vty.KPageUp []) = channelPageUp st >>= continue
+onEventChannelScroll st (Vty.EvKey Vty.KPageDown []) = channelPageDown st >>= continue
+onEventChannelScroll st (Vty.EvKey Vty.KEsc []) = do
+    continue $ st & csMode .~ Main
+onEventChannelScroll st _ = do
     continue st
 
 onEventLeaveChannelConfirm :: ChatState -> Vty.Event -> EventM Name (Next ChatState)
@@ -274,12 +283,13 @@ mainKeybindings =
          continue . channelHistoryForward
 
     , KB "Page up in the channel message list"
-         (Vty.EvKey Vty.KPageUp []) $
-         channelPageUp >=> continue
-
-    , KB "Page down in the channel message list"
-         (Vty.EvKey Vty.KPageDown []) $
-         channelPageDown >=> continue
+         (Vty.EvKey Vty.KPageUp []) $ \st -> do
+             let cId = currentChannelId st
+                 vp = ChannelMessages cId
+             invalidateCacheEntry vp
+             vScrollToEnd $ viewportScroll vp
+             vScrollBy (viewportScroll vp) (-1 * pageAmount)
+             continue $ st & csMode .~ ChannelScroll
 
     , KB "Change to the next channel in the channel list"
          (Vty.EvKey (Vty.KChar 'n') [Vty.MCtrl]) $

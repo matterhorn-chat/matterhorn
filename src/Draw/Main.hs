@@ -5,12 +5,13 @@ module Draw.Main (drawMain) where
 import           Brick
 import           Brick.Widgets.Border
 import           Brick.Widgets.Border.Style
-import           Brick.Widgets.Center (center)
+import           Brick.Widgets.Center (hCenter, center)
 import           Brick.Widgets.Edit (renderEditor)
 import           Data.Time.Clock (UTCTime)
 import           Data.Time.Format ( formatTime
                                   , defaultTimeLocale )
 import           Data.Time.LocalTime ( TimeZone, utcToLocalTime, localDay )
+import           Data.Default (def)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
 import qualified Data.Foldable as F
@@ -26,6 +27,8 @@ import           Lens.Micro.Platform
 
 import           Network.Mattermost
 import           Network.Mattermost.Lenses
+
+import qualified Graphics.Vty as Vty
 
 import           Markdown
 import           State
@@ -223,13 +226,40 @@ renderCurrentChannelDisplay st = (header <+> conn) <=> messages
                    _        -> txt $ mkChannelName (chan^.ccInfo)
                  False -> wrappedText txt $ mkChannelName (chan^.ccInfo) <> " - " <> topicStr
     messages = if chan^.ccInfo.cdLoaded
-               then viewport (ChannelMessages cId) Vertical chatText <+> txt " "
+               then chatText <+> txt " "
                else center $ txt "[loading channel scrollback]"
     uSet = Set.fromList (map _uiName (HM.elems (st^.usrMap)))
-    chatText = vBox $ F.toList $
-                      renderChatMessage uSet (st ^. timeFormat) (st ^. timeZone) <$>
-                      channelMessages
+    chatText = case st^.csMode of
+        ChannelScroll ->
+            viewport (ChannelMessages cId) Vertical $
+            cached (ChannelMessages cId) $
+            vBox $ F.toList $ renderSingleMessage <$> channelMessages
+        _ -> renderLastMessages channelMessages
     channelMessages = insertDateBoundaries (st ^. timeZone) $ getMessageListing cId st
+    renderSingleMessage = renderChatMessage uSet (st ^. timeFormat) (st ^. timeZone)
+
+    renderLastMessages :: Seq.Seq Message -> Widget Name
+    renderLastMessages msgs =
+        Widget Greedy Greedy $ do
+            ctx <- getContext
+
+            let targetHeight = ctx^.availHeightL
+                go :: Seq.Seq Message -> Vty.Image -> RenderM Name Vty.Image
+                go ms img
+                    | Seq.null ms =
+                        return img
+                    | Vty.imageHeight img >= targetHeight =
+                        return $ Vty.cropTop targetHeight img
+                    | otherwise =
+                        case Seq.viewr ms of
+                            Seq.EmptyR -> return img
+                            ms' Seq.:> msg -> do
+                                result <- render $ padRight Max $ renderSingleMessage msg
+                                go ms' $ Vty.vertJoin (result^.imageL) img
+
+            img <- go msgs Vty.emptyImage
+            return $ def & imageL .~ img
+
     cId = currentChannelId st
     Just chan = getChannel cId st
     chnName = chan^.ccInfo.cdName
@@ -310,9 +340,13 @@ mainInterface st =
                                             borderElem bsIntersectR <=> vBorder))
                             <+> (subdue st $ renderCurrentChannelDisplay st))
       <=> bottomBorder
-      <=> (if st^.csMode == ChannelSelect
-           then renderChannelSelect st
-           else renderUserCommandBox st)
+      <=> case st^.csMode of
+              ChannelSelect -> renderChannelSelect st
+              ChannelScroll -> hCenter $ hBox [ txt "Press "
+                                              , withDefAttr clientEmphAttr $ txt "Escape"
+                                              , txt " to stop scrolling and resume chatting."
+                                              ]
+              _             -> renderUserCommandBox st
     where
     bottomBorder = case st^.csCurrentCompletion of
         Just _ | length (st^.csEditState.cedCompletionAlternatives) > 1 -> completionAlternatives st
