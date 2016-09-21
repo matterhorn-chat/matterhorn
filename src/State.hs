@@ -349,7 +349,7 @@ createOrdinaryChannel name st = do
           , minChannelType        = Ordinary
           }
     nc <- mmCreateChannel (st^.csConn) (st^.csTok) tId minChannel
-    return $ (handleNewChannel name nc . (csNames.cnChans %~ (name:)))
+    return $ handleNewChannel name nc
   return st
 
 handleNewChannel :: T.Text -> Channel -> ChatState -> EventM Name ChatState
@@ -371,7 +371,9 @@ handleNewChannel name nc st = do
       -- add it to the message map, and to the map so we can look
       -- it up by user name
       st' = st & csNames.cnToChanId.at(name) .~ Just (getId nc)
-               & csNames.cnChans %~ (sort . (name:))
+               & (if nc^.channelTypeL == Direct
+                  then csNames.cnUsers %~ (sort . (name:))
+                  else csNames.cnChans %~ (sort . (name:)))
                & msgMap.at(getId nc) .~ Just cChannel
       -- we should figure out how to do this better: this adds it to
       -- the channel zipper in such a way that we don't ever change
