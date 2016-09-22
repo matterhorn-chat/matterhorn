@@ -249,7 +249,7 @@ renderCurrentChannelDisplay st = (header <+> conn) <=> messages
                     | Seq.null ms =
                         return img
                     | Vty.imageHeight img >= targetHeight =
-                        return $ Vty.cropTop targetHeight img
+                        return img
                     | otherwise =
                         case Seq.viewr ms of
                             Seq.EmptyR -> return img
@@ -257,7 +257,7 @@ renderCurrentChannelDisplay st = (header <+> conn) <=> messages
                                 result <- render $ padRight Max $ renderSingleMessage msg
                                 go ms' $ Vty.vertJoin (result^.imageL) img
 
-            img <- go msgs Vty.emptyImage
+            img <- Vty.cropTop targetHeight <$> go msgs Vty.emptyImage
             return $ def & imageL .~ img
 
     cId = currentChannelId st
