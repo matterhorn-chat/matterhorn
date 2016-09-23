@@ -144,9 +144,15 @@ postIsJoin p = "has joined the channel" `T.isInfixOf` postMessage p
 postIsLeave :: Post -> Bool
 postIsLeave p = "has left the channel" `T.isInfixOf` postMessage p
 
+unEmote :: PostType -> T.Text -> T.Text
+unEmote Emote t = if "*" `T.isPrefixOf` t && "*" `T.isSuffixOf` t
+                  then T.init $ T.tail t
+                  else t
+unEmote _ t = t
+
 toClientPost :: Post -> ClientPost
 toClientPost p = ClientPost
-  { _cpText        = getBlocks $ postMessage p
+  { _cpText        = getBlocks $ unEmote (postClientPostType p) $ postMessage p
   , _cpUser        = postUserId p
   , _cpDate        = postCreateAt p
   , _cpType        = postClientPostType p
