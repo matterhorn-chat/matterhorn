@@ -139,7 +139,16 @@ toFragments = go Normal
           C.RawHtml t :< xs ->
             Fragment (TRawHtml t) n <| go n xs
           C.Code t :< xs ->
-            Fragment (TStr t) Code <| go n xs
+            let ts  = [ Fragment frag Code
+                      | wd <- T.split (== ' ') t
+                      , frag <- case wd of
+                          "" -> [TSpace]
+                          _  -> [TSpace, TStr wd]
+                      ]
+                ts' = case ts of
+                  (Fragment TSpace _:rs) -> rs
+                  _                      -> ts
+            in S.fromList ts' <> go n xs
           C.Emph is :< xs ->
             go Emph is <> go n xs
           C.Strong is :< xs ->
