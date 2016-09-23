@@ -14,18 +14,7 @@ import           Control.Monad.IO.Class (liftIO)
 import           Control.Arrow
 import           Data.Maybe (listToMaybe)
 import qualified Data.Set as Set
-import           Data.Text.Zipper ( TextZipper
-                                  , cursorPosition
-                                  , currentLine
-                                  , deleteChar
-                                  , insertChar
-                                  , getText
-                                  , clearZipper
-                                  , insertMany
-                                  , moveRight
-                                  , moveLeft
-                                  , transposeChars
-                                  , deletePrevChar )
+import qualified Data.Text.Zipper as Z
 import qualified Data.Text as T
 import Data.Monoid ((<>))
 import qualified Graphics.Vty as Vty
@@ -91,33 +80,33 @@ onEventMain st (Vty.EvPaste bytes) = do
   -- inserting the paste. Once we add support for multi-line editing,
   -- this will Just Work once the editor's line limit is set to Nothing.
   let pasteStr = T.pack (UTF8.toString bytes)
-  continue $ st & cmdLine %~ applyEdit (insertMany pasteStr)
+  continue $ st & cmdLine %~ applyEdit (Z.insertMany pasteStr)
 onEventMain st e = do
     st' <- case e of
         Vty.EvKey (Vty.KChar 't') [Vty.MCtrl] ->
-            return $ st & cmdLine %~ applyEdit transposeChars
+            return $ st & cmdLine %~ applyEdit Z.transposeChars
 
         Vty.EvKey Vty.KBS [] ->
             -- Smart backtick removal:
             if | (cursorAtBacktick $ st^.cmdLine) &&
-                 (cursorAtBacktick $ applyEdit moveLeft $ st^.cmdLine) &&
-                 (cursorIsAtEnd $ applyEdit moveRight $ st^.cmdLine) ->
-                   return $ st & cmdLine %~ applyEdit (deleteChar >>> deletePrevChar)
+                 (cursorAtBacktick $ applyEdit Z.moveLeft $ st^.cmdLine) &&
+                 (cursorIsAtEnd $ applyEdit Z.moveRight $ st^.cmdLine) ->
+                   return $ st & cmdLine %~ applyEdit (Z.deleteChar >>> Z.deletePrevChar)
                | otherwise ->
-                   return $ st & cmdLine %~ applyEdit deletePrevChar
+                   return $ st & cmdLine %~ applyEdit Z.deletePrevChar
 
         Vty.EvKey (Vty.KChar '`') [] ->
             -- Smart backtick insertion:
             if | (cursorIsAtEnd $ st^.cmdLine) ->
-                   return $ st & cmdLine %~ applyEdit (insertMany "``" >>> moveLeft)
+                   return $ st & cmdLine %~ applyEdit (Z.insertMany "``" >>> Z.moveLeft)
                -- Note that this behavior will have to improve once we
                -- support multi-line editing because in that context
                -- ```...``` is something people will want to type.
                | (cursorAtBacktick $ st^.cmdLine) &&
-                 (cursorIsAtEnd $ applyEdit moveRight $ st^.cmdLine) ->
-                   return $ st & cmdLine %~ applyEdit moveRight
+                 (cursorIsAtEnd $ applyEdit Z.moveRight $ st^.cmdLine) ->
+                   return $ st & cmdLine %~ applyEdit Z.moveRight
                | otherwise ->
-                   return $ st & cmdLine %~ applyEdit (insertChar '`')
+                   return $ st & cmdLine %~ applyEdit (Z.insertChar '`')
 
         _ -> handleEventLensed st cmdLine handleEditorEvent e
 
@@ -125,21 +114,21 @@ onEventMain st e = do
 
 cursorIsAtEnd :: Editor T.Text a -> Bool
 cursorIsAtEnd e =
-    let col = snd $ cursorPosition z
-        curLine = currentLine z
+    let col = snd $ Z.cursorPosition z
+        curLine = Z.currentLine z
         z = e^.editContentsL
     in col == T.length curLine
 
 lastIsBacktick :: Editor T.Text a -> Bool
 lastIsBacktick e =
-    let curLine = currentLine z
+    let curLine = Z.currentLine z
         z = e^.editContentsL
     in T.length curLine > 0 && T.last curLine == '`'
 
 cursorAtBacktick :: Editor T.Text a -> Bool
 cursorAtBacktick e =
-    let col = snd $ cursorPosition z
-        curLine = currentLine z
+    let col = snd $ Z.cursorPosition z
+        curLine = Z.currentLine z
         z = e^.editContentsL
     in "`" `T.isPrefixOf` T.drop col curLine
 
@@ -202,14 +191,14 @@ onEventChannelSelect st _ = do
 -- be moved to the text zipper package (after some generalization and cleanup)
 -- for example, we should look up the standard unix word break characters
 -- and use those in killWordBackward.
-killWordBackward :: TextZipper T.Text -> TextZipper T.Text
+killWordBackward :: Z.TextZipper T.Text -> Z.TextZipper T.Text
 killWordBackward z =
     let n = T.length
           $ T.takeWhile (/= ' ')
           $ T.reverse line
         delete n' z' | n' <= 0 = z'
-        delete n' z' = delete (n'-1) (deletePrevChar z')
-        (line:_) = getText z
+        delete n' z' = delete (n'-1) (Z.deletePrevChar z')
+        (line:_) = Z.getText z
     in delete n z
 
 tabComplete :: Completion.Direction
@@ -234,7 +223,7 @@ tabComplete dir st = do
                & csEditState.cedCompletionAlternatives .~ alts
       (edit, curAlternative) = case mb_word of
           Nothing -> (id, "")
-          Just w -> (insertMany w . killWordBackward, w)
+          Just w -> (Z.insertMany w . killWordBackward, w)
 
   continue $ st' & cmdLine %~ (applyEdit edit)
                  & csEditState.cedCurrentAlternative .~ curAlternative
@@ -376,7 +365,7 @@ handleInputSubmission :: ChatState -> EventM Name (Next ChatState)
 handleInputSubmission st = do
   let (line:_) = getEditContents (st^.cmdLine)
       cId = currentChannelId st
-      st' = st & cmdLine %~ applyEdit clearZipper
+      st' = st & cmdLine %~ applyEdit Z.clearZipper
                & csInputHistory %~ addHistoryEntry line cId
                & csInputHistoryPosition.at cId .~ Nothing
   case T.uncons line of
