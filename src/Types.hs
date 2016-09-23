@@ -239,6 +239,7 @@ data ChatResources = ChatResources
   , _crTheme         :: AttrMap
   , _crTimeFormat    :: Maybe T.Text
   , _crQuitCondition :: MVar ()
+  , _crSmartBacktick :: Bool
   }
 
 data ChatEditState = ChatEditState

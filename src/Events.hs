@@ -82,11 +82,12 @@ onEventMain st (Vty.EvPaste bytes) = do
   let pasteStr = T.pack (UTF8.toString bytes)
   continue $ st & cmdLine %~ applyEdit (Z.insertMany pasteStr)
 onEventMain st e = do
+    let smartBacktick = st^.csResources.crSmartBacktick
     st' <- case e of
         Vty.EvKey (Vty.KChar 't') [Vty.MCtrl] ->
             return $ st & cmdLine %~ applyEdit Z.transposeChars
 
-        Vty.EvKey Vty.KBS [] ->
+        Vty.EvKey Vty.KBS [] | smartBacktick ->
             -- Smart backtick removal:
             if | (cursorAtBacktick $ st^.cmdLine) &&
                  (cursorAtBacktick $ applyEdit Z.moveLeft $ st^.cmdLine) &&
@@ -95,7 +96,7 @@ onEventMain st e = do
                | otherwise ->
                    return $ st & cmdLine %~ applyEdit Z.deletePrevChar
 
-        Vty.EvKey (Vty.KChar '`') [] ->
+        Vty.EvKey (Vty.KChar '`') [] | smartBacktick ->
             -- Smart backtick insertion:
             if | (cursorIsAtEnd $ st^.cmdLine) ->
                    return $ st & cmdLine %~ applyEdit (Z.insertMany "``" >>> Z.moveLeft)

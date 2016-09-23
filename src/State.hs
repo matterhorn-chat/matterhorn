@@ -581,12 +581,13 @@ setupState config requestChan eventChan = do
              , _crTheme         = theme
              , _crTimeFormat    = configTimeFormat config
              , _crQuitCondition = quitCondition
+             , _crSmartBacktick = configSmartBacktick config
              }
   initializeState cr myTeam myUser
 
 initializeState :: ChatResources -> Team -> User -> IO ChatState
 initializeState cr myTeam myUser = do
-  let ChatResources token cd requestChan _ _ _ _ = cr
+  let ChatResources token cd requestChan _ _ _ _ _ = cr
   let myTeamId = getId myTeam
 
   Chan.writeChan requestChan $ fetchUserStatuses cd token

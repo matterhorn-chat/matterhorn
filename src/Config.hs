@@ -58,37 +58,49 @@ fieldR name = do
     Just x  -> return x
     Nothing -> fail ("Unable to read field " ++ show name)
 
+fieldMR :: Read a => Text -> IniParser Section (Maybe a)
+fieldMR name = do
+  mb <- fieldM name
+  return $ case mb of
+    Nothing  -> Nothing
+    Just str -> readMaybe (T.unpack str)
+
 data PasswordSource =
     PasswordString Text
     | PasswordCommand Text
     deriving (Eq, Read, Show)
 
 data Config = Config
-  { configUser        :: Maybe Text
-  , configHost        :: Text
-  , configTeam        :: Maybe Text
-  , configPort        :: Int
-  , configPass        :: Maybe PasswordSource
-  , configTimeFormat  :: Maybe Text
-  , configTheme       :: Maybe Text
+  { configUser          :: Maybe Text
+  , configHost          :: Text
+  , configTeam          :: Maybe Text
+  , configPort          :: Int
+  , configPass          :: Maybe PasswordSource
+  , configTimeFormat    :: Maybe Text
+  , configTheme         :: Maybe Text
+  , configSmartBacktick :: Bool
   } deriving (Eq, Show)
 
 fromIni :: Ini -> Either String Config
 fromIni = runParse $ do
   section "mattermost" $ do
-    configUser       <- fieldM "user"
-    configHost       <- field  "host"
-    configTeam       <- fieldM "team"
-    configPort       <- fieldR "port"
-    configTimeFormat <- fieldM "timeFormat"
-    configTheme      <- fieldM "theme"
-    pass             <- fieldM "pass"
-    passCmd          <- fieldM "passcmd"
+    configUser       <- fieldM  "user"
+    configHost       <- field   "host"
+    configTeam       <- fieldM  "team"
+    configPort       <- fieldR  "port"
+    configTimeFormat <- fieldM  "timeFormat"
+    configTheme      <- fieldM  "theme"
+    pass             <- fieldM  "pass"
+    passCmd          <- fieldM  "passcmd"
+    smartBacktick    <- fieldMR "smartbacktick"
     let configPass = case passCmd of
           Nothing -> case pass of
             Nothing -> Nothing
             Just p  -> Just (PasswordString p)
           Just c -> Just (PasswordCommand c)
+        configSmartBacktick = case smartBacktick of
+          Nothing -> True
+          Just b  -> b
     return Config { .. }
 
 findConfig :: IO (Either String Config)
