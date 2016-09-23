@@ -55,7 +55,7 @@ executable matterhorn
                      , data-default
                      , vty == 5.8
                      , transformers
-                     , text-zipper >= 0.7
+                     , text-zipper >= 0.8
                      , array
                      , time
                      , linebreak

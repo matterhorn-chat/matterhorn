@@ -24,6 +24,7 @@ import           Data.Text.Zipper ( TextZipper
                                   , insertMany
                                   , moveRight
                                   , moveLeft
+                                  , transposeChars
                                   , deletePrevChar )
 import qualified Data.Text as T
 import Data.Monoid ((<>))
@@ -93,6 +94,9 @@ onEventMain st (Vty.EvPaste bytes) = do
   continue $ st & cmdLine %~ applyEdit (insertMany pasteStr)
 onEventMain st e = do
     st' <- case e of
+        Vty.EvKey (Vty.KChar 't') [Vty.MCtrl] ->
+            return $ st & cmdLine %~ applyEdit transposeChars
+
         Vty.EvKey Vty.KBS [] ->
             -- Smart backtick removal:
             if | (cursorAtBacktick $ st^.cmdLine) &&
