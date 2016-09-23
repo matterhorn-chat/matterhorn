@@ -7,12 +7,12 @@ import           Brick.Widgets.List (list)
 import           Control.Concurrent (threadDelay, forkIO)
 import qualified Control.Concurrent.Chan as Chan
 import           Control.Concurrent.MVar (newEmptyMVar)
-import           Control.Monad.IO.Class (liftIO)
+import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Data.Char (isAlphaNum)
 import           Data.HashMap.Strict ((!))
 import           Brick.Main (viewportScroll, vScrollToEnd, vScrollToBeginning, vScrollBy)
 import           Brick.Widgets.Edit (applyEdit)
-import           Control.Exception (SomeException, catch)
+import           Control.Exception (SomeException, catch, try)
 import           Control.Monad (forM, forM_, when, void)
 import           Data.Text.Zipper (textZipper, clearZipper, insertMany, gotoEOL)
 import qualified Data.HashMap.Strict as HM
@@ -128,9 +128,7 @@ startLeaveCurrentChannel st = do
         Just chanInfo = getChannel cId st
         cName = chanInfo^.ccInfo.cdName
     case cName `elem` st^.csNames.cnDMs of
-        True -> do
-            msg <- newClientMessage Error "The /leave command cannot be used with direct message channels."
-            addClientMessage msg st
+        True -> postErrorMessage "The /leave command cannot be used with direct message channels." st
         False -> return $ st & csMode .~ LeaveChannelConfirm
 
 leaveCurrentChannel :: ChatState -> EventM Name ChatState
@@ -332,8 +330,7 @@ attemptCreateDMChannel name st
         return $ handleNewChannel name nc
       return st
   | otherwise = do
-    msg <- newClientMessage Error ("No channel or user named " <> name)
-    addClientMessage msg st
+    postErrorMessage ("No channel or user named " <> name) st
 
 createOrdinaryChannel :: T.Text -> ChatState -> EventM Name ChatState
 createOrdinaryChannel name st = do
@@ -348,8 +345,10 @@ createOrdinaryChannel name st = do
           , minChannelHeader      = Nothing
           , minChannelType        = Ordinary
           }
-    nc <- mmCreateChannel (st^.csConn) (st^.csTok) tId minChannel
-    return $ handleNewChannel name nc
+    ncResult <- try $ mmCreateChannel (st^.csConn) (st^.csTok) tId minChannel
+    case ncResult of
+        Left (MattermostServerError msg) -> return $ postErrorMessage msg
+        Right nc -> return $ handleNewChannel name nc
   return st
 
 handleNewChannel :: T.Text -> Channel -> ChatState -> EventM Name ChatState
@@ -422,7 +421,7 @@ addClientMessage msg st = do
       st' = st & msgMap . ix cid . ccContents . cdMessages %~ (Seq.|> clientMessageToMessage msg)
   updateChannelScrollState st'
 
-newClientMessage :: ClientMessageType -> T.Text -> EventM a ClientMessage
+newClientMessage :: (MonadIO m) => ClientMessageType -> T.Text -> m ClientMessage
 newClientMessage ty msg = do
   now <- liftIO getCurrentTime
   return (ClientMessage msg now ty)
@@ -456,9 +455,12 @@ execMMCommand cmd st = liftIO (runCmd `catch` handler)
       mc
     return st
   handler (HTTPResponseException err) = do
-    now <- liftIO getCurrentTime
-    let msg = ClientMessage ("Error running command: " <> (T.pack err)) now Error
-    runAsync st (return $ addClientMessage msg)
+    postErrorMessage ("Error running command: " <> (T.pack err)) st
+
+postErrorMessage :: (MonadIO m) => T.Text -> ChatState -> m ChatState
+postErrorMessage err st = do
+    msg <- newClientMessage Error err
+    liftIO $ runAsync st (return $ addClientMessage msg)
     return st
 
 startTimezoneMonitor :: TimeZone -> RequestChan -> IO ()
