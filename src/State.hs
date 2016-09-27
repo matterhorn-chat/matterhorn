@@ -332,6 +332,18 @@ attemptCreateDMChannel name st
   | otherwise = do
     postErrorMessage ("No channel or user named " <> name) st
 
+tryMM :: (MonadIO m)
+      => IO a
+      -- ^ The action to try (usually a MM API call)
+      -> (a -> IO (ChatState -> m ChatState))
+      -- ^ What to do on success
+      -> IO (ChatState -> m ChatState)
+tryMM act onSuccess = do
+    result <- liftIO $ try act
+    case result of
+        Left (MattermostServerError msg) -> return $ postErrorMessage msg
+        Right value                      -> liftIO $ onSuccess value
+
 createOrdinaryChannel :: T.Text -> ChatState -> EventM Name ChatState
 createOrdinaryChannel name st = do
   let tId = st^.csMyTeam.teamIdL
@@ -345,10 +357,8 @@ createOrdinaryChannel name st = do
           , minChannelHeader      = Nothing
           , minChannelType        = Ordinary
           }
-    ncResult <- try $ mmCreateChannel (st^.csConn) (st^.csTok) tId minChannel
-    case ncResult of
-        Left (MattermostServerError msg) -> return $ postErrorMessage msg
-        Right nc -> return $ handleNewChannel name nc
+    tryMM (mmCreateChannel (st^.csConn) (st^.csTok) tId minChannel)
+          (return . handleNewChannel name)
   return st
 
 handleNewChannel :: T.Text -> Channel -> ChatState -> EventM Name ChatState
