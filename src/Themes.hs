@@ -34,6 +34,7 @@ module Themes
   , attrForUsername
   ) where
 
+import Control.Applicative
 import Data.Hashable (hash)
 import Data.Monoid ((<>))
 import Graphics.Vty

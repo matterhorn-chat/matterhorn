@@ -2,6 +2,7 @@
 module Command where
 
 import Brick (EventM, Next, continue, halt)
+import Control.Applicative
 import Control.Monad (when)
 import Control.Monad.IO.Class (liftIO)
 import Data.Monoid ((<>))

@@ -7,6 +7,7 @@ import           Brick.Widgets.Border
 import           Brick.Widgets.Border.Style
 import           Brick.Widgets.Center (hCenter, center)
 import           Brick.Widgets.Edit (renderEditor)
+import           Control.Applicative
 import           Data.Time.Clock (UTCTime)
 import           Data.Time.Format ( formatTime
                                   , defaultTimeLocale )
@@ -18,7 +19,7 @@ import qualified Data.Foldable as F
 import           Data.HashMap.Strict ( HashMap )
 import           Data.List (sort, intersperse)
 import           Data.Maybe ( listToMaybe, maybeToList )
-import           Data.Monoid ((<>))
+import           Data.Monoid ((<>), mempty)
 import           Data.Set (Set)
 import qualified Data.Set as Set
 import           Data.Text (Text)

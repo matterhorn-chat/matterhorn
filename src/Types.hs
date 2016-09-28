@@ -17,6 +17,7 @@ import           Data.Time.Clock (UTCTime)
 import           Data.Time.LocalTime (TimeZone)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
+import           Data.Monoid
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform (makeLenses, (^.), (^?), ix)
 import           Network.Mattermost

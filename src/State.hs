@@ -4,6 +4,7 @@ module State where
 import           Brick (EventM)
 import           Brick.Widgets.Edit (getEditContents, editContentsL)
 import           Brick.Widgets.List (list)
+import           Control.Applicative
 import           Control.Concurrent (threadDelay, forkIO)
 import qualified Control.Concurrent.Chan as Chan
 import           Control.Concurrent.MVar (newEmptyMVar)
@@ -13,12 +14,11 @@ import           Data.HashMap.Strict ((!))
 import           Brick.Main (viewportScroll, vScrollToEnd, vScrollToBeginning, vScrollBy)
 import           Brick.Widgets.Edit (applyEdit)
 import           Control.Exception (SomeException, catch, try)
-import           Control.Monad (forM, forM_, when, void)
+import           Control.Monad (forM, when, void)
 import           Data.Text.Zipper (textZipper, clearZipper, insertMany, gotoEOL)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
-import           Data.Foldable (toList)
-import           Data.List (sort, find)
+import           Data.List (sort)
 import           Data.Maybe (listToMaybe, maybeToList, fromJust)
 import           Data.Monoid ((<>))
 import           Data.Time.Clock ( getCurrentTime )
@@ -510,12 +510,12 @@ mkChanNames :: User -> HM.HashMap UserId UserProfile -> Seq.Seq Channel -> MMNam
 mkChanNames myUser users chans = MMNames
   { _cnChans = sort
                [ channelName c
-               | c <- toList chans, channelType c /= Direct ]
+               | c <- F.toList chans, channelType c /= Direct ]
   , _cnDMs = sort
              [ channelName c
-             | c <- toList chans, channelType c == Direct ]
+             | c <- F.toList chans, channelType c == Direct ]
   , _cnToChanId = HM.fromList $
-                  [ (channelName c, channelId c) | c <- toList chans ] ++
+                  [ (channelName c, channelId c) | c <- F.toList chans ] ++
                   [ (userProfileUsername u, c)
                   | u <- HM.elems users
                   , c <- lookupChan (getDMChannelName (getId myUser) (getId u))
@@ -525,7 +525,7 @@ mkChanNames myUser users chans = MMNames
                   [ (userProfileUsername u, getId u) | u <- HM.elems users ]
   }
   where lookupChan n = [ c^.channelIdL
-                       | c <- toList chans, c^.channelNameL == n
+                       | c <- F.toList chans, c^.channelNameL == n
                        ]
 
 fetchUserStatuses :: ConnectionData -> Token
@@ -562,18 +562,18 @@ setupState config requestChan eventChan = do
   (token, myUser) <- loginLoop (uStr, pStr)
 
   initialLoad <- mmGetInitialLoad cd token
-  when (null $ initialLoadTeams initialLoad) $ do
+  when (Seq.null $ initialLoadTeams initialLoad) $ do
       putStrLn "Error: your account is not a member of any teams"
       exitFailure
 
   myTeam <- case configTeam config of
       Nothing -> do
-          interactiveTeamSelection $ toList $ initialLoadTeams initialLoad
+          interactiveTeamSelection $ F.toList $ initialLoadTeams initialLoad
       Just tName -> do
-          let matchingTeam = listToMaybe $ filter matches $ toList $ initialLoadTeams initialLoad
+          let matchingTeam = listToMaybe $ filter matches $ F.toList $ initialLoadTeams initialLoad
               matches t = teamName t == tName
           case matchingTeam of
-              Nothing -> interactiveTeamSelection (toList (initialLoadTeams initialLoad))
+              Nothing -> interactiveTeamSelection (F.toList (initialLoadTeams initialLoad))
               Just t -> return t
 
   quitCondition <- newEmptyMVar
@@ -605,7 +605,7 @@ initializeState cr myTeam myUser = do
   putStrLn $ "Loading channels for team " <> show (teamName myTeam) <> "..."
   Channels chans cm <- mmGetChannels cd token myTeamId
 
-  msgs <- fmap (HM.fromList . toList) $ forM chans $ \c -> do
+  msgs <- fmap (HM.fromList . F.toList) $ forM (F.toList chans) $ \c -> do
     let chanData = cm ! getId c
         viewed   = chanData ^. channelDataLastViewedAtL
         updated  = c ^. channelLastPostAtL
@@ -647,11 +647,11 @@ initializeState cr myTeam myUser = do
              & csNames .~ chanNames
 
   -- Fetch town-square asynchronously, but put it in the queue early.
-  case find ((== townSqId) . getId) chans of
+  case F.find ((== townSqId) . getId) chans of
       Nothing -> return ()
       Just _ -> doAsync st $ liftIO $ asyncFetchScrollback st townSqId
 
-  forM_ chans $ \c ->
+  F.forM_ chans $ \c ->
       when (getId c /= townSqId && c^.channelTypeL /= Direct) $
           doAsync st $ asyncFetchScrollback st (getId c)
 

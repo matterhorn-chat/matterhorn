@@ -9,6 +9,7 @@ module FilePaths
   , locateConfig
   ) where
 
+import Control.Applicative
 import Control.Monad (forM)
 import Data.Monoid ((<>))
 import Data.Maybe (listToMaybe)

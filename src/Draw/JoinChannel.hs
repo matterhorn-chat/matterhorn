@@ -8,6 +8,7 @@ import Brick
 import Brick.Widgets.List
 import Brick.Widgets.Center
 import Brick.Widgets.Border
+import Control.Applicative
 import Data.Monoid ((<>))
 import Lens.Micro.Platform ((^.))
 import qualified Data.Vector as V

@@ -9,7 +9,9 @@ module InputHistory
   , removeChannelHistory
   ) where
 
+import Control.Applicative
 import Control.Monad.Trans.Except
+import Data.Monoid
 import Lens.Micro.Platform
 import qualified Data.HashMap.Strict as HM
 import System.Directory (createDirectoryIfMissing)

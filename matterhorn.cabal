@@ -57,7 +57,7 @@ executable matterhorn
                      , transformers
                      , text-zipper >= 0.8
                      , array
-                     , time
+                     , time >= 1.6
                      , linebreak
                      , xdg-basedir
                      , filepath

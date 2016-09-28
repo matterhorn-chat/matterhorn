@@ -42,10 +42,10 @@ renderMarkdown bs u mTy uSet =
       | otherwise -> colorUsername un <+> B.txt ": " <+> vBox (fmap (toWidget uSet) bs)
     Nothing -> vBox (fmap (toWidget uSet) bs)
 
-vBox :: Foldable f => f (Widget a) -> Widget a
+vBox :: F.Foldable f => f (Widget a) -> Widget a
 vBox = B.vBox . F.toList
 
-hBox :: Foldable f => f (Widget a) -> Widget a
+hBox :: F.Foldable f => f (Widget a) -> Widget a
 hBox = B.hBox . F.toList
 
 --

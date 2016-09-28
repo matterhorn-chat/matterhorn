@@ -3,6 +3,7 @@ module Draw.ShowHelp (drawShowHelp) where
 import Brick
 import Brick.Widgets.Border
 import Brick.Widgets.Center (hCenter, centerLayer)
+import Control.Applicative
 import Lens.Micro.Platform
 import Data.List (sortBy)
 import Data.Ord (comparing)

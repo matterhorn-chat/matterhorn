@@ -9,6 +9,7 @@ import           Brick.Widgets.Edit ( Editor
                                     , editContentsL
                                     )
 import           Brick.Widgets.List (handleListEvent, listSelectedElement)
+import           Control.Applicative
 import           Control.Monad ((>=>))
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Arrow

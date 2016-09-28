@@ -7,6 +7,7 @@ module Config
   , getCredentials
   ) where
 
+import           Control.Applicative
 import           Control.Monad.Trans.Except
 import           Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM
