@@ -28,10 +28,12 @@ import qualified Data.Vector as V
 import qualified Data.Foldable as F
 import           Lens.Micro.Platform
 import           System.Exit (exitFailure)
+import           System.IO (Handle)
 
 import           Network.Mattermost
 import           Network.Mattermost.Exceptions
 import           Network.Mattermost.Lenses
+import           Network.Mattermost.Logging (mmLoggerDebug)
 
 import           Config
 import           Types
@@ -539,15 +541,20 @@ fetchUserStatuses cd token = do
       appState
       statusMap
 
-setupState :: Config -> RequestChan -> Chan.Chan Event -> IO ChatState
-setupState config requestChan eventChan = do
+setupState :: Maybe Handle -> Config -> RequestChan -> Chan.Chan Event -> IO ChatState
+setupState logFile config requestChan eventChan = do
   -- If we don't have enough credentials, ask for them.
   (uStr, pStr) <- case getCredentials config of
       Nothing -> interactiveGatherCredentials config
       Just (u, p) -> return (u, p)
 
-  cd <- initConnectionData (T.unpack (configHost config))
-                           (fromIntegral (configPort config))
+  let setLogger = case logFile of
+        Nothing -> id
+        Just f  -> \ cd -> cd `withLogger` mmLoggerDebug f
+
+  cd <- setLogger `fmap`
+          initConnectionData (T.unpack (configHost config))
+                             (fromIntegral (configPort config))
 
   let loginLoop (u, p) = do
         putStrLn "Authenticating..."

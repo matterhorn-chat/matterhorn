@@ -104,10 +104,11 @@ fromIni = runParse $ do
           Just b  -> b
     return Config { .. }
 
-findConfig :: IO (Either String Config)
-findConfig = do
+findConfig :: Maybe FilePath -> IO (Either String Config)
+findConfig Nothing = do
     let err = "Configuration file " <> show configFileName <> " not found"
     maybe (return $ Left err) getConfig =<< locateConfig configFileName
+findConfig (Just path) = getConfig path
 
 getConfig :: FilePath -> IO (Either String Config)
 getConfig fp = runExceptT $ do

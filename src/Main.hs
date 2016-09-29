@@ -11,8 +11,10 @@ import           Data.Monoid ((<>))
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform
 import           System.Exit (exitFailure)
+import           System.IO (IOMode(WriteMode), openFile, hClose)
 
 import           Config
+import           Options
 import           State
 import           Events
 import           Draw
@@ -21,7 +23,8 @@ import           InputHistory
 
 main :: IO ()
 main = do
-  configResult <- findConfig
+  opts <- grabOptions
+  configResult <- findConfig (optConfLocation opts)
   config <- case configResult of
       Left err -> do
           putStrLn $ "Error loading config: " <> err
@@ -37,7 +40,10 @@ main = do
     upd <- req
     Chan.writeChan eventChan (RespEvent upd)
 
-  st <- setupState config requestChan eventChan
+  logFile <- case optLogLocation opts of
+    Just path -> Just `fmap` openFile path WriteMode
+    Nothing   -> return Nothing
+  st <- setupState logFile config requestChan eventChan
 
   let mkVty = do
         vty <- Vty.mkVty def
@@ -46,6 +52,9 @@ main = do
         return vty
 
   finalSt <- customMain mkVty eventChan app st
+  case logFile of
+    Nothing -> return ()
+    Just h -> hClose h
   writeHistory (finalSt^.csInputHistory)
 
 app :: App ChatState Event Name
