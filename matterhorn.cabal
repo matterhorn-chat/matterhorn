@@ -46,7 +46,7 @@ executable matterhorn
   build-depends:       base >=4.7 && <5
                      , mattermost-api
                      , unordered-containers
-                     , containers
+                     , containers >= 0.5.8
                      , text
                      , bytestring
                      , ini

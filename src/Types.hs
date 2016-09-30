@@ -19,7 +19,7 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
 import           Data.Monoid
 import qualified Graphics.Vty as Vty
-import           Lens.Micro.Platform (makeLenses, (^.), (^?), ix)
+import           Lens.Micro.Platform (makeLenses, (^.), (^?), ix, to, SimpleGetter)
 import           Network.Mattermost
 import           Network.Mattermost.Lenses
 import           Network.Mattermost.WebSocket.Types
@@ -27,6 +27,7 @@ import qualified Cheapskate as C
 import qualified Data.Text as T
 
 import           Zipper (Zipper)
+import           Config
 
 import           InputHistory
 
@@ -238,9 +239,8 @@ data ChatResources = ChatResources
   , _crRequestQueue  :: RequestChan
   , _crEventQueue    :: Chan Event
   , _crTheme         :: AttrMap
-  , _crTimeFormat    :: Maybe T.Text
   , _crQuitCondition :: MVar ()
-  , _crSmartBacktick :: Bool
+  , _crConfiguration :: Config
   }
 
 data ChatEditState = ChatEditState
@@ -340,8 +340,8 @@ csLastChannelInput = csEditState . cedLastChannelInput
 csCurrentCompletion :: Lens' ChatState (Maybe T.Text)
 csCurrentCompletion = csEditState . cedCurrentCompletion
 
-timeFormat :: Lens' ChatState (Maybe T.Text)
-timeFormat = csResources . crTimeFormat
+timeFormat :: SimpleGetter ChatState (Maybe T.Text)
+timeFormat = csResources . crConfiguration . to configTimeFormat
 
 getUsernameForUserId :: ChatState -> UserId -> Maybe T.Text
 getUsernameForUserId st uId = st^.usrMap ^? ix uId.uiName

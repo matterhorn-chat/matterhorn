@@ -29,6 +29,8 @@ import qualified Data.Foldable as F
 import           Lens.Micro.Platform
 import           System.Exit (exitFailure)
 import           System.IO (Handle)
+import           System.Process (system)
+import           Cheapskate
 
 import           Network.Mattermost
 import           Network.Mattermost.Exceptions
@@ -596,15 +598,14 @@ setupState logFile config requestChan eventChan = do
              , _crRequestQueue  = requestChan
              , _crEventQueue    = eventChan
              , _crTheme         = theme
-             , _crTimeFormat    = configTimeFormat config
              , _crQuitCondition = quitCondition
-             , _crSmartBacktick = configSmartBacktick config
+             , _crConfiguration = config
              }
   initializeState cr myTeam myUser
 
 initializeState :: ChatResources -> Team -> User -> IO ChatState
 initializeState cr myTeam myUser = do
-  let ChatResources token cd requestChan _ _ _ _ _ = cr
+  let ChatResources token cd requestChan _ _ _ _ = cr
   let myTeamId = getId myTeam
 
   Chan.writeChan requestChan $ fetchUserStatuses cd token
@@ -717,3 +718,50 @@ beginChannelSelect :: ChatState -> EventM Name ChatState
 beginChannelSelect st =
     return $ st & csMode          .~ ChannelSelect
                 & csChannelSelect .~ ""
+
+openMostRecentURL :: ChatState -> EventM Name ChatState
+openMostRecentURL st =
+    case configURLOpenCommand $ st^.csResources.crConfiguration of
+        Nothing -> do
+            msg <- newClientMessage Informative "Config option 'urlOpenCommand' missing; cannot open URL."
+            addClientMessage msg st
+        Just urlOpenCommand -> do
+            -- Get the messages for the current channel
+            let cId = currentChannelId st
+                chan = msgMap . ix cId
+                msgs = st ^. chan . ccContents . cdMessages
+
+                msgURLs :: Message -> Seq.Seq T.Text
+                msgURLs msg = mconcat $ blockGetURLs <$> (F.toList $ msg^.mText)
+
+                blockGetURLs :: Block -> Seq.Seq T.Text
+                blockGetURLs (Para is) = mconcat $ inlineGetURLs <$> F.toList is
+                blockGetURLs (Header _ is) = mconcat $ inlineGetURLs <$> F.toList is
+                blockGetURLs (Blockquote bs) = mconcat $ blockGetURLs <$> F.toList bs
+                blockGetURLs (List _ _ bss) = mconcat $ mconcat $ (blockGetURLs <$>) <$> (F.toList <$> bss)
+                blockGetURLs _ = mempty
+
+                inlineGetURLs :: Inline -> Seq.Seq T.Text
+                inlineGetURLs (Emph is) = mconcat $ inlineGetURLs <$> F.toList is
+                inlineGetURLs (Strong is) = mconcat $ inlineGetURLs <$> F.toList is
+                inlineGetURLs (Link is url "") = url Seq.<| (mconcat $ inlineGetURLs <$> F.toList is)
+                inlineGetURLs (Link is _ url) = url Seq.<| (mconcat $ inlineGetURLs <$> F.toList is)
+                inlineGetURLs (Image is _ _) = mconcat $ inlineGetURLs <$> F.toList is
+                inlineGetURLs _ = mempty
+
+                -- Search from the most recent message backwards until we find
+                -- one with one or more URLs
+                recentIdx = Seq.findIndexR (not . Seq.null . msgURLs) msgs
+
+            case recentIdx of
+                Nothing -> return ()
+                Just i -> do
+                    -- For each URL in the message, invoke the configured "url
+                    -- open command" if we have one
+                    --
+                    -- If no open command is available, show an error message.
+                    let Just msg = msgs Seq.!? i
+                    F.forM_ (msgURLs msg) $ \url -> do
+                        liftIO $ void $ system $ (T.unpack urlOpenCommand) <> " " <> show url
+
+            return st

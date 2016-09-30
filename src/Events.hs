@@ -32,6 +32,7 @@ import           Completion
 import           State
 import           Types
 import           InputHistory
+import           Config
 
 onEvent :: ChatState -> Event -> EventM Name (Next ChatState)
 onEvent st RefreshWebsocketEvent = do
@@ -83,7 +84,7 @@ onEventMain st (Vty.EvPaste bytes) = do
   let pasteStr = T.pack (UTF8.toString bytes)
   continue $ st & cmdLine %~ applyEdit (Z.insertMany pasteStr)
 onEventMain st e = do
-    let smartBacktick = st^.csResources.crSmartBacktick
+    let smartBacktick = st^.csResources.crConfiguration.to configSmartBacktick
     st' <- case e of
         Vty.EvKey (Vty.KChar 't') [Vty.MCtrl] ->
             return $ st & cmdLine %~ applyEdit Z.transposeChars
@@ -361,6 +362,10 @@ mainKeybindings =
     , KB "Send the current message"
          (Vty.EvKey Vty.KEnter []) $ \st -> do
            handleInputSubmission $ st & csCurrentCompletion .~ Nothing
+
+    , KB "Open the most recently-posted URL"
+         (Vty.EvKey (Vty.KChar 'o') [Vty.MCtrl]) $
+           openMostRecentURL >=> continue
     ]
 
 handleInputSubmission :: ChatState -> EventM Name (Next ChatState)
