@@ -44,10 +44,14 @@ function clone_or_update_repo {
     if [ ! -d "$destdir" ]
     then
         git clone $repo $destdir
-        cd $HERE && \
-            cabal sandbox --sandbox=$SANDBOX add-source $destdir
     else
         cd $destdir && git pull
+    fi
+
+    if [ "$FIRST_TIME" == "1" ]
+    then
+        cd $HERE && \
+            cabal sandbox --sandbox=$SANDBOX add-source $destdir
     fi
 }
 
