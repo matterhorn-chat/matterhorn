@@ -194,7 +194,11 @@ split maxCols uSet = splitChunks
                    . separate uSet
   where go st (viewl-> f :< fs) = go st' fs
           where st' =
-                  if | available >= fsize ->
+                  if | fTextual f == TSoftBreak || fTextual f == TLineBreak ->
+                         st { splitChunks = splitChunks st |> S.empty
+                            , splitCurrCol = 0
+                            }
+                     | available >= fsize ->
                          st { splitChunks  = addFragment f (splitChunks st)
                             , splitCurrCol = splitCurrCol st + fsize
                             }
