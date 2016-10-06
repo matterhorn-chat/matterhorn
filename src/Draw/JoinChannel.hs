@@ -39,7 +39,7 @@ joinChannelBox st =
        vBox [ chList
             , hBorderWithLabel (str $ (show cur) <> "/" <> (show len))
             , hCenter $ txt "Use " <+> (highlight $ txt "arrow keys") <+> txt " and " <+>
-                        (highlight $ txt "Enter") <+> txt " to select a team"
+                        (highlight $ txt "Enter") <+> txt " to select a channel"
             , hCenter $ txt "to join or press " <+> (highlight $ txt "Esc") <+> txt " to cancel."
             ]
 
