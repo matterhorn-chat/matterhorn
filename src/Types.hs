@@ -26,6 +26,8 @@ import           Network.Mattermost.WebSocket.Types
 import qualified Cheapskate as C
 import qualified Data.Text as T
 
+import           Prelude
+
 import           Zipper (Zipper)
 import           Config
 

@@ -8,6 +8,8 @@ import Control.Monad.IO.Class
 import Control.Monad.Trans.Except
 import System.IO.Error (ioeGetErrorString)
 
+import Prelude
+
 convertIOException :: IO a -> ExceptT String IO a
 convertIOException act = do
     result <- liftIO $ (Right <$> act) `catch`

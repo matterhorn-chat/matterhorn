@@ -42,6 +42,8 @@ import Brick
 import Brick.Widgets.List
 import qualified Data.Text as T
 
+import Prelude
+
 defaultThemeName :: T.Text
 defaultThemeName = darkColorThemeName
 

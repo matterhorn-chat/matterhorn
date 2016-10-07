@@ -18,6 +18,8 @@ import           Data.Monoid ((<>))
 import           System.Process (readProcess)
 import           Text.Read (readMaybe)
 
+import           Prelude
+
 import           IOUtil
 import           FilePaths
 

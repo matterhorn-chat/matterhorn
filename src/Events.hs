@@ -22,6 +22,8 @@ import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform
 import qualified Codec.Binary.UTF8.Generic as UTF8
 
+import           Prelude
+
 import           Network.Mattermost
 import           Network.Mattermost.Lenses
 import           Network.Mattermost.WebSocket.Types

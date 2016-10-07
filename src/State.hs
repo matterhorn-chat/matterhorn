@@ -32,6 +32,8 @@ import           System.IO (Handle)
 import           System.Process (system)
 import           Cheapskate
 
+import           Prelude
+
 import           Network.Mattermost
 import           Network.Mattermost.Exceptions
 import           Network.Mattermost.Lenses

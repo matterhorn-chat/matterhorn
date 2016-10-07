@@ -16,6 +16,8 @@ import Data.Maybe (listToMaybe)
 import System.Directory (doesFileExist)
 import System.Environment.XDG.BaseDir (getUserConfigFile, getAllConfigFiles)
 
+import Prelude
+
 xdgName :: String
 xdgName = "matterhorn"
 
