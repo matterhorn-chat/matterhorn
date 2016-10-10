@@ -134,8 +134,8 @@ postIsTopicChange p =
 
 postIsEmote :: Post -> Bool
 postIsEmote p =
-    and [ HM.lookup "override_icon_url" (postProps p) == Just (""::T.Text)
-        , HM.lookup "override_username" (postProps p) == Just ("webhook"::T.Text)
+    and [ p^.postPropsL.postPropsOverrideIconUrlL == Just (""::T.Text)
+        , p^.postPropsL.postPropsOverrideUsernameL == Just ("webhook"::T.Text)
         , ("*" `T.isPrefixOf` postMessage p)
         , ("*" `T.isSuffixOf` postMessage p)
         ]
