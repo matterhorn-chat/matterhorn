@@ -11,7 +11,7 @@ import           Control.Concurrent.MVar (newEmptyMVar)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Data.Char (isAlphaNum)
 import           Data.HashMap.Strict ((!))
-import           Brick.Main (viewportScroll, vScrollToEnd, vScrollToBeginning, vScrollBy)
+import           Brick.Main (getVtyHandle, viewportScroll, vScrollToEnd, vScrollToBeginning, vScrollBy)
 import           Brick.Widgets.Edit (applyEdit)
 import           Control.Exception (SomeException, catch, try)
 import           Control.Monad (forM, when, void)
@@ -26,6 +26,8 @@ import           Data.Time.LocalTime ( TimeZone(..), getCurrentTimeZone )
 import qualified Data.Text as T
 import qualified Data.Vector as V
 import qualified Data.Foldable as F
+import           Graphics.Vty (outputIface)
+import           Graphics.Vty.Output.Interface (ringTerminalBell)
 import           Lens.Micro.Platform
 import           System.Exit (exitFailure)
 import           System.IO (Handle)
@@ -415,16 +417,23 @@ deleteMessage new st = do
               & chan . ccInfo . cdUpdated .~ now
   return rs
 
+maybeRingBell :: ChatState -> EventM Name ()
+maybeRingBell st = do
+    when (configActivityBell $ st^.csResources.crConfiguration) $ do
+        -- This is safe because we only get Nothing in appStartEvent.
+        Just vty <- getVtyHandle
+        liftIO $ ringTerminalBell $ outputIface vty
+
 addMessage :: Post -> ChatState -> EventM Name ChatState
 addMessage new st = do
   now <- liftIO getCurrentTime
   let cp = toClientPost new
-      updateTime = if cp^.cpUser == getId (st^.csMe)
-                   then id
-                   else const now
+      fromMe = cp^.cpUser == getId (st^.csMe)
+      updateTime = if fromMe then id else const now
   let chan = msgMap . ix (postChannelId new)
       rs = st & chan . ccContents . cdMessages %~ (Seq.|> (clientPostToMessage st $ toClientPost new))
               & chan . ccInfo . cdUpdated %~ updateTime
+  when (not fromMe) $ maybeRingBell st
   if postChannelId new == currentChannelId st
     then updateChannelScrollState rs >>= updateViewed
     else return rs

@@ -81,6 +81,7 @@ data Config = Config
   , configTheme          :: Maybe Text
   , configSmartBacktick  :: Bool
   , configURLOpenCommand :: Maybe Text
+  , configActivityBell   :: Bool
   } deriving (Eq, Show)
 
 fromIni :: Ini -> Either String Config
@@ -96,6 +97,7 @@ fromIni = runParse $ do
     pass                 <- fieldM  "pass"
     passCmd              <- fieldM  "passcmd"
     smartBacktick        <- fieldMR "smartbacktick"
+    ringBell             <- fieldMR "activityBell"
     let configPass = case passCmd of
           Nothing -> case pass of
             Nothing -> Nothing
@@ -103,6 +105,9 @@ fromIni = runParse $ do
           Just c -> Just (PasswordCommand c)
         configSmartBacktick = case smartBacktick of
           Nothing -> True
+          Just b  -> b
+        configActivityBell = case ringBell of
+          Nothing -> False
           Just b  -> b
     return Config { .. }
 
