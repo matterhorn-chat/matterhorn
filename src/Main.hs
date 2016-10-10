@@ -5,6 +5,7 @@ module Main where
 import           Brick
 import           Control.Concurrent (forkIO)
 import qualified Control.Concurrent.Chan as Chan
+import           Control.Exception (try)
 import           Control.Monad (forever)
 import           Data.Default (def)
 import           Data.Monoid ((<>))
@@ -37,8 +38,10 @@ main = do
   requestChan <- Chan.newChan
   _ <- forkIO $ forever $ do
     req <- Chan.readChan requestChan
-    upd <- req
-    Chan.writeChan eventChan (RespEvent upd)
+    res <- try req
+    case res of
+      Left e    -> Chan.writeChan eventChan (AsyncErrEvent e)
+      Right upd -> Chan.writeChan eventChan (RespEvent upd)
 
   logFile <- case optLogLocation opts of
     Just path -> Just `fmap` openFile path WriteMode

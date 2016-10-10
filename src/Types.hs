@@ -12,6 +12,7 @@ import           Brick.Widgets.List (List)
 import           Cheapskate (Blocks)
 import           Control.Concurrent.Chan (Chan)
 import           Control.Concurrent.MVar (MVar)
+import           Control.Exception (SomeException)
 import           Data.HashMap.Strict (HashMap)
 import           Data.Time.Clock (UTCTime)
 import           Data.Time.LocalTime (TimeZone)
@@ -303,6 +304,8 @@ data Event
     -- ^ For events that arise from the websocket
   | RespEvent (ChatState -> EventM Name ChatState)
     -- ^ For the result values of async IO operations
+  | AsyncErrEvent SomeException
+    -- ^ For errors that arise in the course of async IO operations
   | RefreshWebsocketEvent
     -- ^ Tell our main loop to refresh the websocket connection
   | WebsocketDisconnect

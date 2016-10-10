@@ -49,6 +49,12 @@ onEvent st (WSEvent we) =
   handleWSEvent st we
 onEvent st (RespEvent f) =
   continue =<< f st
+onEvent st (AsyncErrEvent e) = do
+  msg <- newClientMessage Error $
+    "An unexpected error has occurred! The exception encountered was:\n  " <>
+    T.pack (show e) <>
+    "\nPlease report this error at https://github.com/aisamanra/matterhorn/issues"
+  continue =<< addClientMessage msg st
 onEvent st (VtyEvent e) = do
     case st^.csMode of
         Main                -> onEventMain st e
