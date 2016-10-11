@@ -10,6 +10,8 @@ import Brick.Widgets.Border
 import Control.Applicative
 import Lens.Micro.Platform ((^.))
 
+import Prelude
+
 import State (currentChannelId, getChannel)
 import Types
 import Themes

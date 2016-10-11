@@ -11,6 +11,8 @@ import qualified Data.Text as T
 import Data.Monoid ((<>))
 import qualified Graphics.Vty as Vty
 
+import Prelude
+
 import Themes
 import Types
 import Command

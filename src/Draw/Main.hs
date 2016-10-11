@@ -26,6 +26,8 @@ import           Data.Text (Text)
 import qualified Data.Text as T
 import           Lens.Micro.Platform
 
+import           Prelude
+
 import           Network.Mattermost
 import           Network.Mattermost.Lenses
 

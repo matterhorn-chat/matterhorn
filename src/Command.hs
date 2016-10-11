@@ -8,6 +8,8 @@ import Control.Monad.IO.Class (liftIO)
 import Data.Monoid ((<>))
 import qualified Data.Text as T
 
+import Prelude
+
 import State
 import Types
 
