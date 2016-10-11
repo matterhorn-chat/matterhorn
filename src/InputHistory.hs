@@ -20,6 +20,8 @@ import qualified System.IO.Strict as S
 import qualified Data.Vector as V
 import           Data.Text ( Text )
 
+import           Prelude
+
 import IOUtil
 import FilePaths
 import Network.Mattermost (ChannelId)

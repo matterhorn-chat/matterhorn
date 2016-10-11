@@ -13,6 +13,8 @@ import Data.Monoid ((<>))
 import Lens.Micro.Platform ((^.))
 import qualified Data.Vector as V
 
+import Prelude
+
 import Network.Mattermost (Channel)
 import Network.Mattermost.Lenses (channelDisplayNameL, channelNameL)
 
