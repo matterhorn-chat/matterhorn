@@ -2,14 +2,14 @@
 language: c
 sudo: false
 
-cache:
-  directories:
-    - $HOME/.cabsnap
-    - $HOME/.cabal/packages
-
-before_cache:
-  - rm -fv $HOME/.cabal/packages/hackage.haskell.org/build-reports.log
-  - rm -fv $HOME/.cabal/packages/hackage.haskell.org/00-index.tar
+# cache:
+#   directories:
+#     - $HOME/.cabsnap
+#     - $HOME/.cabal/packages
+#
+# before_cache:
+#   - rm -fv $HOME/.cabal/packages/hackage.haskell.org/build-reports.log
+#   - rm -fv $HOME/.cabal/packages/hackage.haskell.org/00-index.tar
 
 matrix:
   include:
