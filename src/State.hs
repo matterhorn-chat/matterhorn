@@ -59,8 +59,18 @@ fromPosts st p = ChannelContents $ messagesFromPosts st p
 messagesFromPosts :: ChatState -> Posts -> Seq.Seq Message
 messagesFromPosts st p = msgs
     where
-        msgs = clientPostToMessage st <$> toClientPost <$> ps
+        postMap :: HM.HashMap PostId Message
+        postMap = HM.fromList [ ( pId
+                                , clientPostToMessage st (toClientPost x Nothing)
+                                )
+                              | (pId, x) <- HM.toList (p^.postsPostsL)
+                              ]
+        st' = st & csPostMap %~ (HM.union postMap)
+        msgs = clientPostToMessage st' <$> clientPost <$> ps
         ps   = findPost <$> (Seq.reverse $ postsOrder p)
+        clientPost :: Post -> ClientPost
+        clientPost x = toClientPost x (postId <$> parent x)
+        parent x = HM.lookup (x^.postParentIdL) (p^.postsPostsL)
         findPost pId = case HM.lookup pId (postsPosts p) of
             Nothing -> error $ "BUG: could not find post for post ID " <> show pId
             Just post -> post
@@ -82,6 +92,7 @@ newState rs i u m tz hist = ChatState
   , _csMyTeam               = m
   , _csNames                = emptyMMNames
   , _msgMap                 = HM.empty
+  , _csPostMap              = HM.empty
   , _usrMap                 = HM.empty
   , _timeZone               = tz
   , _csEditState            = emptyEditState hist
@@ -406,7 +417,7 @@ editMessage new st = do
   now <- liftIO getCurrentTime
   let chan = msgMap . ix (postChannelId new)
       isEditedMessage m = m^.mPostId == Just (new^.postIdL)
-      msg = clientPostToMessage st (toClientPost new)
+      msg = clientPostToMessage st (toClientPost new Nothing)
       rs = st & chan . ccContents . cdMessages . each . filtered isEditedMessage .~ msg
               & chan . ccInfo . cdUpdated .~ now
   return rs
@@ -430,12 +441,14 @@ maybeRingBell st = do
 addMessage :: Post -> ChatState -> EventM Name ChatState
 addMessage new st = do
   now <- liftIO getCurrentTime
-  let cp = toClientPost new
+  let cp = toClientPost new Nothing
       fromMe = cp^.cpUser == getId (st^.csMe)
       updateTime = if fromMe then id else const now
   let chan = msgMap . ix (postChannelId new)
-      rs = st & chan . ccContents . cdMessages %~ (Seq.|> (clientPostToMessage st $ toClientPost new))
-              & chan . ccInfo . cdUpdated %~ updateTime
+      st' = st & csPostMap.ix(postId new) .~ msg
+      msg = clientPostToMessage st' (toClientPost new (Just (new^.postParentIdL)))
+      rs = st' & chan . ccContents . cdMessages %~ (Seq.|> msg)
+               & chan . ccInfo . cdUpdated %~ updateTime
   when (not fromMe) $ maybeRingBell st
   if postChannelId new == currentChannelId st
     then updateChannelScrollState rs >>= updateViewed

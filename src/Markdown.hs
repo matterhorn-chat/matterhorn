@@ -40,7 +40,7 @@ renderMarkdown bs u repU mTy uSet =
       | mTy == CP Emote -> B.txt "*" <+> colorUsername un
                        <+> B.txt " " <+> vBox (fmap (toWidget uSet) bs)
       | Just rep <- repU ->
-        colorUsername un <+> B.txt " to " <+> colorUsername rep <+> B.txt ": " <+>
+        colorUsername un <+> B.txt "[→" <+> colorUsername rep <+> B.txt "]: " <+>
           vBox (fmap (toWidget uSet) bs)
       | otherwise -> colorUsername un <+> B.txt ": " <+> vBox (fmap (toWidget uSet) bs)
     Nothing -> vBox (fmap (toWidget uSet) bs)
