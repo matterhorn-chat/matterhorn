@@ -2,7 +2,7 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE ParallelListComp #-}
 
-module Markdown (renderMarkdown) where
+module Markdown (renderMessage, renderText) where
 
 import           Brick ( (<+>), Widget )
 import qualified Brick as B
@@ -33,17 +33,26 @@ import           Types (MessageType(..), PostType(..))
 
 type UserSet = Set Text
 
-renderMarkdown :: Blocks -> Maybe Text -> Maybe Text -> MessageType -> UserSet -> Widget a
-renderMarkdown bs u repU mTy uSet =
+renderMessage :: Blocks -> Maybe Text -> Maybe Text -> MessageType -> UserSet -> Widget a
+renderMessage bs u repU mTy uSet =
   case u of
     Just un
       | mTy == CP Emote -> B.txt "*" <+> colorUsername un
-                       <+> B.txt " " <+> vBox (fmap (toWidget uSet) bs)
+                       <+> B.txt " " <+> renderMarkdown uSet bs
       | Just rep <- repU ->
         colorUsername un <+> B.txt "[→" <+> colorUsername rep <+> B.txt "]: " <+>
-          vBox (fmap (toWidget uSet) bs)
-      | otherwise -> colorUsername un <+> B.txt ": " <+> vBox (fmap (toWidget uSet) bs)
-    Nothing -> vBox (fmap (toWidget uSet) bs)
+          renderMarkdown uSet bs
+      | otherwise -> colorUsername un <+> B.txt ": " <+> renderMarkdown uSet bs
+    Nothing -> renderMarkdown uSet bs
+
+-- Render markdown with username highlighting
+renderMarkdown :: UserSet -> Blocks -> Widget a
+renderMarkdown uSet bs = vBox (fmap (toWidget uSet) bs)
+
+-- Render text to markdown without username highlighting
+renderText :: Text -> Widget a
+renderText txt = renderMarkdown Set.empty bs
+  where C.Doc _ bs = C.markdown C.def txt
 
 vBox :: F.Foldable f => f (Widget a) -> Widget a
 vBox = B.vBox . F.toList

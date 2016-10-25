@@ -50,7 +50,7 @@ renderTime fmt tz t =
 
 renderChatMessage :: Set Text -> Maybe Text -> TimeZone -> Message -> Widget Name
 renderChatMessage uSet mFormat tz msg =
-    let m = renderMarkdown (msg^.mText) msgUsr (msg^.mInReplyToMsg >>= _mUserName) (msg^.mType) uSet
+    let m = renderMessage (msg^.mText) msgUsr (msg^.mInReplyToMsg >>= _mUserName) (msg^.mType) uSet
         omitUsernameTypes = [ CP Join
                             , CP Leave
                             , CP TopicChange
