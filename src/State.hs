@@ -464,8 +464,18 @@ getDMChannelName me you = cname
 getChannel :: ChannelId -> ChatState -> Maybe ClientChannel
 getChannel cId st = st ^. msgMap . at cId
 
+mmServerCommandWhitelist :: [T.Text]
+mmServerCommandWhitelist =
+    [ "me"
+    ]
+
 execMMCommand :: T.Text -> ChatState -> EventM Name ChatState
-execMMCommand cmd st = liftIO (runCmd `catch` handler)
+execMMCommand cmd st =
+    case T.words cmd of
+        (n:_) -> case n `elem` mmServerCommandWhitelist of
+            False -> postErrorMessage ("Unknown command: " <> n) st
+            True -> liftIO (runCmd `catch` handler)
+        _ -> postErrorMessage ("Invalid command: " <> cmd) st
   where
   mc = MinCommand
         { minComChannelId = currentChannelId st
