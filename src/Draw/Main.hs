@@ -19,7 +19,7 @@ import qualified Data.Foldable as F
 import           Data.HashMap.Strict ( HashMap )
 import           Data.List (sort, intersperse)
 import           Data.Maybe ( listToMaybe, maybeToList )
-import           Data.Monoid ((<>), mempty)
+import           Data.Monoid ((<>))
 import           Data.Set (Set)
 import qualified Data.Set as Set
 import           Data.Text (Text)
