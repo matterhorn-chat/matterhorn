@@ -20,7 +20,7 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
 import           Data.Monoid
 import qualified Graphics.Vty as Vty
-import           Lens.Micro.Platform (makeLenses, (^.), (^?), ix, to, SimpleGetter)
+import           Lens.Micro.Platform (at, makeLenses, (^.), (^?), ix, to, SimpleGetter)
 import           Network.Mattermost
 import           Network.Mattermost.Lenses
 import           Network.Mattermost.WebSocket.Types
@@ -117,7 +117,7 @@ data Message = Message
   , _mPending       :: Bool
   , _mDeleted       :: Bool
   , _mAttachments   :: Seq.Seq T.Text
-  , _mInReplyToUser :: Maybe T.Text
+  , _mInReplyToMsg  :: Maybe Message
   , _mPostId        :: Maybe PostId
   } deriving (Show)
 
@@ -158,8 +158,8 @@ unEmote Emote t = if "*" `T.isPrefixOf` t && "*" `T.isSuffixOf` t
                   else t
 unEmote _ t = t
 
-toClientPost :: Post -> ClientPost
-toClientPost p = ClientPost
+toClientPost :: Post -> Maybe PostId -> ClientPost
+toClientPost p parentId = ClientPost
   { _cpText          = getBlocks $ unEmote (postClientPostType p) $ postMessage p
   , _cpUser          = postUserId p
   , _cpDate          = postCreateAt p
@@ -167,7 +167,7 @@ toClientPost p = ClientPost
   , _cpPending       = False
   , _cpDeleted       = False
   , _cpAttachments   = postFilenames p
-  , _cpInReplyToPost = Just (p^.postParentIdL)
+  , _cpInReplyToPost = parentId
   , _cpPostId        = p^.postIdL
   , _cpChannelId     = p^.postChannelIdL
   }
@@ -304,6 +304,7 @@ data ChatState = ChatState
   , _csMe                          :: User
   , _csMyTeam                      :: Team
   , _msgMap                        :: HashMap ChannelId ClientChannel
+  , _csPostMap                     :: HashMap PostId Message
   , _usrMap                        :: HashMap UserId UserInfo
   , _timeZone                      :: TimeZone
   , _csEditState                   :: ChatEditState
@@ -365,6 +366,9 @@ csCurrentCompletion = csEditState . cedCurrentCompletion
 timeFormat :: SimpleGetter ChatState (Maybe T.Text)
 timeFormat = csResources . crConfiguration . to configTimeFormat
 
+getMessageForPostId :: ChatState -> PostId -> Maybe Message
+getMessageForPostId st pId = st^.csPostMap.at(pId)
+
 getUsernameForUserId :: ChatState -> UserId -> Maybe T.Text
 getUsernameForUserId st uId = st^.usrMap ^? ix uId.uiName
 
@@ -377,15 +381,10 @@ clientPostToMessage st cp = Message
   , _mPending       = _cpPending cp
   , _mDeleted       = _cpDeleted cp
   , _mAttachments   = _cpAttachments cp
-  , _mInReplyToUser =
+  , _mInReplyToMsg  =
     case cp^.cpInReplyToPost of
-      Just pId ->
-        let msgs = st^.msgMap.ix(_cpChannelId cp).ccContents.cdMessages
-            ss = Seq.filter (\ m -> m^.mPostId == Just pId) msgs
-        in case Seq.viewl ss of
-             Seq.EmptyL -> Nothing
-             m Seq.:< _ -> m^.mUserName
-      Nothing -> Nothing
+      Nothing  -> Nothing
+      Just pId -> getMessageForPostId st pId
   , _mPostId        = Just $ cp^.cpPostId
   }
 
@@ -398,7 +397,7 @@ clientMessageToMessage cm = Message
   , _mPending       = False
   , _mDeleted       = False
   , _mAttachments   = Seq.empty
-  , _mInReplyToUser = Nothing
+  , _mInReplyToMsg  = Nothing
   , _mPostId        = Nothing
   }
 
