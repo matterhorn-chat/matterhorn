@@ -389,7 +389,8 @@ handleNewChannel name nc st = do
       -- it up by user name
       st' = st & csNames.cnToChanId.at(name) .~ Just (getId nc)
                & (if nc^.channelTypeL == Direct
-                  then csNames.cnUsers %~ (sort . (name:))
+                  then id -- For direct channels the username is already
+                          -- in the user list so do nothing
                   else csNames.cnChans %~ (sort . (name:)))
                & msgMap.at(getId nc) .~ Just cChannel
       -- we should figure out how to do this better: this adds it to
