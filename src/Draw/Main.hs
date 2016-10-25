@@ -50,7 +50,7 @@ renderTime fmt tz t =
 
 renderChatMessage :: Set Text -> Maybe Text -> TimeZone -> Message -> Widget Name
 renderChatMessage uSet mFormat tz msg =
-    let m = renderMarkdown (msg^.mText) msgUsr (msg^.mType) uSet
+    let m = renderMarkdown (msg^.mText) msgUsr (msg^.mInReplyToUser) (msg^.mType) uSet
         omitUsernameTypes = [ CP Join
                             , CP Leave
                             , CP TopicChange
@@ -283,7 +283,7 @@ insertDateBoundaries tz ms = fst $ F.foldl' nextMsg initState ms
         initState = (mempty, Nothing)
 
         dateMsg d = Message (getBlocks (T.pack $ formatTime defaultTimeLocale dateTransitionFormat d))
-                            Nothing d (C DateTransition) False False Seq.empty Nothing
+                            Nothing d (C DateTransition) False False Seq.empty Nothing Nothing
 
         nextMsg :: (Seq.Seq Message, Maybe Message) -> Message -> (Seq.Seq Message, Maybe Message)
         nextMsg (rest, Nothing) msg = (rest Seq.|> msg, Just msg)

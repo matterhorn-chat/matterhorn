@@ -90,14 +90,16 @@ data PostType =
     deriving (Eq, Show)
 
 data ClientPost = ClientPost
-  { _cpText        :: Blocks
-  , _cpUser        :: UserId
-  , _cpDate        :: UTCTime
-  , _cpType        :: PostType
-  , _cpPending     :: Bool
-  , _cpDeleted     :: Bool
-  , _cpAttachments :: Seq.Seq T.Text
-  , _cpPostId      :: PostId
+  { _cpText          :: Blocks
+  , _cpUser          :: UserId
+  , _cpDate          :: UTCTime
+  , _cpType          :: PostType
+  , _cpPending       :: Bool
+  , _cpDeleted       :: Bool
+  , _cpAttachments   :: Seq.Seq T.Text
+  , _cpInReplyToPost :: Maybe PostId
+  , _cpPostId        :: PostId
+  , _cpChannelId     :: ChannelId
   } deriving (Show)
 
 makeLenses ''ClientPost
@@ -108,14 +110,15 @@ data MessageType = C ClientMessageType
 
 -- This represents any message we might want to render.
 data Message = Message
-  { _mText        :: Blocks
-  , _mUserName    :: Maybe T.Text
-  , _mDate        :: UTCTime
-  , _mType        :: MessageType
-  , _mPending     :: Bool
-  , _mDeleted     :: Bool
-  , _mAttachments :: Seq.Seq T.Text
-  , _mPostId      :: Maybe PostId
+  { _mText          :: Blocks
+  , _mUserName      :: Maybe T.Text
+  , _mDate          :: UTCTime
+  , _mType          :: MessageType
+  , _mPending       :: Bool
+  , _mDeleted       :: Bool
+  , _mAttachments   :: Seq.Seq T.Text
+  , _mInReplyToUser :: Maybe T.Text
+  , _mPostId        :: Maybe PostId
   } deriving (Show)
 
 makeLenses ''Message
@@ -157,14 +160,16 @@ unEmote _ t = t
 
 toClientPost :: Post -> ClientPost
 toClientPost p = ClientPost
-  { _cpText        = getBlocks $ unEmote (postClientPostType p) $ postMessage p
-  , _cpUser        = postUserId p
-  , _cpDate        = postCreateAt p
-  , _cpType        = postClientPostType p
-  , _cpPending     = False
-  , _cpDeleted     = False
-  , _cpAttachments = postFilenames p
-  , _cpPostId      = p^.postIdL
+  { _cpText          = getBlocks $ unEmote (postClientPostType p) $ postMessage p
+  , _cpUser          = postUserId p
+  , _cpDate          = postCreateAt p
+  , _cpType          = postClientPostType p
+  , _cpPending       = False
+  , _cpDeleted       = False
+  , _cpAttachments   = postFilenames p
+  , _cpInReplyToPost = Just (p^.postParentIdL)
+  , _cpPostId        = p^.postIdL
+  , _cpChannelId     = p^.postChannelIdL
   }
 
 data ChannelContents = ChannelContents
@@ -353,26 +358,36 @@ getUsernameForUserId st uId = st^.usrMap ^? ix uId.uiName
 
 clientPostToMessage :: ChatState -> ClientPost -> Message
 clientPostToMessage st cp = Message
-  { _mText     = _cpText cp
-  , _mUserName = getUsernameForUserId st (_cpUser cp)
-  , _mDate     = _cpDate cp
-  , _mType     = CP $ _cpType cp
-  , _mPending  = _cpPending cp
-  , _mDeleted  = _cpDeleted cp
-  , _mAttachments = _cpAttachments cp
-  , _mPostId   = Just $ cp^.cpPostId
+  { _mText          = _cpText cp
+  , _mUserName      = getUsernameForUserId st (_cpUser cp)
+  , _mDate          = _cpDate cp
+  , _mType          = CP $ _cpType cp
+  , _mPending       = _cpPending cp
+  , _mDeleted       = _cpDeleted cp
+  , _mAttachments   = _cpAttachments cp
+  , _mInReplyToUser =
+    case cp^.cpInReplyToPost of
+      Just pId ->
+        let msgs = st^.msgMap.ix(_cpChannelId cp).ccContents.cdMessages
+            ss = Seq.filter (\ m -> m^.mPostId == Just pId) msgs
+        in case Seq.viewl ss of
+             Seq.EmptyL -> Nothing
+             m Seq.:< _ -> m^.mUserName
+      Nothing -> Nothing
+  , _mPostId        = Just $ cp^.cpPostId
   }
 
 clientMessageToMessage :: ClientMessage -> Message
 clientMessageToMessage cm = Message
-  { _mText        = getBlocks (_cmText cm)
-  , _mUserName    = Nothing
-  , _mDate        = _cmDate cm
-  , _mType        = C $ _cmType cm
-  , _mPending     = False
-  , _mDeleted     = False
-  , _mAttachments = Seq.empty
-  , _mPostId      = Nothing
+  { _mText          = getBlocks (_cmText cm)
+  , _mUserName      = Nothing
+  , _mDate          = _cmDate cm
+  , _mType          = C $ _cmType cm
+  , _mPending       = False
+  , _mDeleted       = False
+  , _mAttachments   = Seq.empty
+  , _mInReplyToUser = Nothing
+  , _mPostId        = Nothing
   }
 
 data CmdArgs :: * -> * where

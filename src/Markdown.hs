@@ -33,12 +33,15 @@ import           Types (MessageType(..), PostType(..))
 
 type UserSet = Set Text
 
-renderMarkdown :: Blocks -> Maybe Text -> MessageType -> UserSet -> Widget a
-renderMarkdown bs u mTy uSet =
+renderMarkdown :: Blocks -> Maybe Text -> Maybe Text -> MessageType -> UserSet -> Widget a
+renderMarkdown bs u repU mTy uSet =
   case u of
     Just un
       | mTy == CP Emote -> B.txt "*" <+> colorUsername un
                        <+> B.txt " " <+> vBox (fmap (toWidget uSet) bs)
+      | Just rep <- repU ->
+        colorUsername un <+> B.txt " to " <+> colorUsername rep <+> B.txt ": " <+>
+          vBox (fmap (toWidget uSet) bs)
       | otherwise -> colorUsername un <+> B.txt ": " <+> vBox (fmap (toWidget uSet) bs)
     Nothing -> vBox (fmap (toWidget uSet) bs)
 
