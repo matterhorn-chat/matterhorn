@@ -211,6 +211,11 @@ data ChannelSelectMatch =
 channelNameFromMatch :: ChannelSelectMatch -> T.Text
 channelNameFromMatch (ChannelSelectMatch b m a) = b <> m <> a
 
+data ChannelSelectPattern = CSP MatchType T.Text
+                          deriving (Eq, Show)
+
+data MatchType = Prefix | Suffix | Infix | Equal deriving (Eq, Show)
+
 data UserStatus
   = Online
   | Away
