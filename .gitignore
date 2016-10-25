@@ -7,3 +7,4 @@ cabal.project.local
 dist
 dist-newstyle
 *~
+.DS_Store

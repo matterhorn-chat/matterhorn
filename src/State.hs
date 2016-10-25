@@ -770,12 +770,51 @@ updateChannelSelectMatches st =
           & csChannelSelectUserMatches    .~ mkMap userMatches
 
 channelNameMatch :: T.Text -> T.Text -> Maybe ChannelSelectMatch
-channelNameMatch pat chanName =
-    if T.null pat || (not $ pat `T.isInfixOf` chanName)
+channelNameMatch patStr chanName =
+    if T.null patStr
     then Nothing
-    else let (preMatch, postMatch) = case T.breakOn pat chanName of
-                                       (pre, post) -> (pre, T.drop (T.length pat) post)
-         in Just $ ChannelSelectMatch preMatch pat postMatch
+    else do
+        pat <- parseChannelSelectPattern patStr
+        applySelectPattern pat chanName
+
+applySelectPattern :: ChannelSelectPattern -> T.Text -> Maybe ChannelSelectMatch
+applySelectPattern (CSP ty pat) chanName = do
+    let applyType Infix  | pat `T.isInfixOf`  chanName =
+            case T.breakOn pat chanName of
+                (pre, post) -> return (pre, pat, T.drop (T.length pat) post)
+
+        applyType Prefix | pat `T.isPrefixOf` chanName = do
+            let (b, a) = T.splitAt (T.length pat) chanName
+            return ("", b, a)
+
+        applyType Suffix | pat `T.isSuffixOf` chanName = do
+            let (b, a) = T.splitAt (T.length chanName - T.length pat) chanName
+            return (b, a, "")
+
+        applyType Equal  | pat == chanName =
+            return ("", chanName, "")
+
+        applyType _ = Nothing
+
+    (pre, m, post) <- applyType ty
+    return $ ChannelSelectMatch pre m post
+
+parseChannelSelectPattern :: T.Text -> Maybe ChannelSelectPattern
+parseChannelSelectPattern pat = do
+    (pat1, pfx) <- case "^" `T.isPrefixOf` pat of
+        True  -> return (T.tail pat, Just Prefix)
+        False -> return (pat, Nothing)
+
+    (pat2, sfx) <- case "$" `T.isSuffixOf` pat1 of
+        True  -> return (T.init pat1, Just Suffix)
+        False -> return (pat1, Nothing)
+
+    case (pfx, sfx) of
+        (Nothing, Nothing)         -> return $ CSP Infix  pat2
+        (Just Prefix, Nothing)     -> return $ CSP Prefix pat2
+        (Nothing, Just Suffix)     -> return $ CSP Suffix pat2
+        (Just Prefix, Just Suffix) -> return $ CSP Equal  pat2
+        tys                        -> error $ "BUG: invalid channel select case: " <> show tys
 
 openMostRecentURL :: ChatState -> EventM Name ChatState
 openMostRecentURL st =
