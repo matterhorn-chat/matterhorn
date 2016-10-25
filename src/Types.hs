@@ -201,6 +201,16 @@ data ClientChannel = ClientChannel
 
 makeLenses ''ClientChannel
 
+data ChannelSelectMatch =
+    ChannelSelectMatch { nameBefore     :: T.Text
+                       , nameMatched    :: T.Text
+                       , nameAfter      :: T.Text
+                       }
+                       deriving (Eq, Show)
+
+channelNameFromMatch :: ChannelSelectMatch -> T.Text
+channelNameFromMatch (ChannelSelectMatch b m a) = b <> m <> a
+
 data UserStatus
   = Online
   | Away
@@ -288,20 +298,22 @@ data ConnectionStatus = Connected | Disconnected
 -- This is the giant bundle of fields that represents the current
 -- state of our application at any given time.
 data ChatState = ChatState
-  { _csResources            :: ChatResources
-  , _csFocus                :: Zipper ChannelId
-  , _csNames                :: MMNames
-  , _csMe                   :: User
-  , _csMyTeam               :: Team
-  , _msgMap                 :: HashMap ChannelId ClientChannel
-  , _usrMap                 :: HashMap UserId UserInfo
-  , _timeZone               :: TimeZone
-  , _csEditState            :: ChatEditState
-  , _csMode                 :: Mode
-  , _csChannelSelect        :: T.Text
-  , _csRecentChannel        :: Maybe ChannelId
-  , _csConnectionStatus     :: ConnectionStatus
-  , _csJoinChannelList      :: Maybe (List Name Channel)
+  { _csResources                   :: ChatResources
+  , _csFocus                       :: Zipper ChannelId
+  , _csNames                       :: MMNames
+  , _csMe                          :: User
+  , _csMyTeam                      :: Team
+  , _msgMap                        :: HashMap ChannelId ClientChannel
+  , _usrMap                        :: HashMap UserId UserInfo
+  , _timeZone                      :: TimeZone
+  , _csEditState                   :: ChatEditState
+  , _csMode                        :: Mode
+  , _csChannelSelectString         :: T.Text
+  , _csChannelSelectChannelMatches :: HashMap T.Text ChannelSelectMatch
+  , _csChannelSelectUserMatches    :: HashMap T.Text ChannelSelectMatch
+  , _csRecentChannel               :: Maybe ChannelId
+  , _csConnectionStatus            :: ConnectionStatus
+  , _csJoinChannelList             :: Maybe (List Name Channel)
   }
 
 data Event

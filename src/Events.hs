@@ -13,6 +13,7 @@ import           Control.Applicative
 import           Control.Monad ((>=>))
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Arrow
+import qualified Data.HashMap.Strict as HM
 import           Data.Maybe (listToMaybe)
 import qualified Data.Set as Set
 import qualified Data.Text.Zipper as Z
@@ -192,9 +193,9 @@ onEventLeaveChannelConfirm st _ = do
 onEventChannelSelect :: ChatState -> Vty.Event -> EventM Name (Next ChatState)
 onEventChannelSelect st e | Just kb <- lookupKeybinding e channelSelectKeybindings = kbAction kb st
 onEventChannelSelect st (Vty.EvKey Vty.KBS []) = do
-    continue $ st & csChannelSelect %~ (\s -> if T.null s then s else T.init s)
+    continue $ updateChannelSelectMatches $ st & csChannelSelectString %~ (\s -> if T.null s then s else T.init s)
 onEventChannelSelect st (Vty.EvKey (Vty.KChar c) []) | c /= '\t' = do
-    continue $ st & csChannelSelect %~ (flip T.snoc c)
+    continue $ updateChannelSelectMatches $ st & csChannelSelectString %~ (flip T.snoc c)
 onEventChannelSelect st _ = do
     continue st
 
@@ -267,13 +268,12 @@ channelSelectKeybindings =
     [ KB "Select matching channel"
          (Vty.EvKey Vty.KEnter []) $
          \st -> do
-             -- If the text entered matches only one channel, switch to
+             -- If there is only one channel selection match, switch to
              -- it
-             let matches = filter (s `T.isInfixOf`) $
-                                  (st^.csNames.cnChans <> st^.csNames.cnUsers)
-                 s = st^.csChannelSelect
-             continue =<< case matches of
-                 [single] -> changeChannel single $ st & csMode .~ Main
+             let allMatches = (HM.elems $ st^.csChannelSelectChannelMatches) <>
+                              (HM.elems $ st^.csChannelSelectUserMatches)
+             continue =<< case allMatches of
+                 [single] -> changeChannel (channelNameFromMatch single) $ st & csMode .~ Main
                  _        -> return st
 
     , KB "Cancel channel selection"

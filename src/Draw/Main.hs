@@ -116,20 +116,22 @@ renderChannelList st = hLimit channelListWidth $ vBox $ renderChannelGroup st <$
                           , NormalChannelList
                           , Just normalChannelListHeight
                           , getOrdinaryChannels st
+                          , st^.csChannelSelectChannelMatches
                           )
                         , ( "Users"
                           , DMChannelList
                           , Nothing
                           , getDmChannels st
+                          , st^.csChannelSelectUserMatches
                           )
                         ]
 
-renderChannelGroup :: ChatState -> (T.Text, Name, Maybe Int, [ChannelListEntry]) -> Widget Name
-renderChannelGroup st (groupName, vpName, heightLimit, entries) =
+renderChannelGroup :: ChatState -> (T.Text, Name, Maybe Int, [ChannelListEntry], HM.HashMap T.Text ChannelSelectMatch) -> Widget Name
+renderChannelGroup st (groupName, vpName, heightLimit, entries, csMatches) =
     let limit = maybe id vLimit heightLimit
         header label = hBorderWithLabel $ withDefAttr channelListHeaderAttr $ txt label
     in header groupName <=>
-       (limit $ viewport vpName Vertical $ vBox $ renderChannelListEntry st <$> entries)
+       (limit $ viewport vpName Vertical $ vBox $ renderChannelListEntry st csMatches <$> entries)
 
 data ChannelListEntry =
     ChannelListEntry { entryChannelName :: T.Text
@@ -140,17 +142,20 @@ data ChannelListEntry =
                      , entryIsRecent    :: Bool
                      }
 
-renderChannelListEntry :: ChatState -> ChannelListEntry -> Widget Name
-renderChannelListEntry st entry =
+renderChannelListEntry :: ChatState -> HM.HashMap T.Text ChannelSelectMatch -> ChannelListEntry -> Widget Name
+renderChannelListEntry st csMatches entry =
     decorate $ decorateRecent $ padRight Max $
     entryMakeWidget entry $ entrySigil entry <> entryLabel entry
     where
-    decorate = if | matches -> const $ (txt $ entrySigil entry)
-                        <+> txt preMatch
-                        <+> (forceAttr channelSelectMatchAttr $ txt $ st^.csChannelSelect)
-                        <+> txt postMatch
+    decorate = if | matches -> const $
+                      let Just (ChannelSelectMatch preMatch inMatch postMatch) =
+                                   HM.lookup (entryLabel entry) csMatches
+                      in (txt $ entrySigil entry)
+                          <+> txt preMatch
+                          <+> (forceAttr channelSelectMatchAttr $ txt inMatch)
+                          <+> txt postMatch
                   | isChanSelect &&
-                    (not $ T.null $ st^.csChannelSelect) -> const emptyWidget
+                    (not $ T.null $ st^.csChannelSelectString) -> const emptyWidget
                   | current ->
                       if isChanSelect
                       then forceAttr currentChannelNameAttr
@@ -163,13 +168,10 @@ renderChannelListEntry st entry =
                      then (<+> (withDefAttr recentMarkerAttr $ str "<"))
                      else id
 
-    matches = isChanSelect &&
-              (st^.csChannelSelect) `T.isInfixOf` entryLabel entry &&
-              (not $ T.null $ st^.csChannelSelect)
+    matches = isChanSelect && (HM.member (entryLabel entry) csMatches) &&
+              (not $ T.null $ st^.csChannelSelectString)
 
     isChanSelect = st^.csMode == ChannelSelect
-    (preMatch,postMatch) = case T.breakOn (st^.csChannelSelect) (entryLabel entry) of
-      (pre, post) -> (pre, T.drop (T.length $ st^.csChannelSelect) post)
     current = entryChannelName entry == currentChannelName
     currentChannelName = getChannelName cId st
     cId = currentChannelId st
@@ -312,11 +314,11 @@ renderChannelSelect :: ChatState -> Widget Name
 renderChannelSelect st =
     withDefAttr channelSelectPromptAttr $
     (txt "Switch to channel: ") <+>
-     (showCursor ChannelSelectString (Location (T.length $ st^.csChannelSelect, 0)) $
+     (showCursor ChannelSelectString (Location (T.length $ st^.csChannelSelectString, 0)) $
       txt $
-      (if T.null $ st^.csChannelSelect
+      (if T.null $ st^.csChannelSelectString
        then " "
-       else st^.csChannelSelect))
+       else st^.csChannelSelectString))
 
 drawMain :: ChatState -> [Widget Name]
 drawMain st = [mainInterface st]

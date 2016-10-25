@@ -19,7 +19,7 @@ import           Data.Text.Zipper (textZipper, clearZipper, insertMany, gotoEOL)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
 import           Data.List (sort)
-import           Data.Maybe (listToMaybe, maybeToList, fromJust)
+import           Data.Maybe (listToMaybe, maybeToList, fromJust, catMaybes)
 import           Data.Monoid ((<>))
 import           Data.Time.Clock ( getCurrentTime )
 import           Data.Time.LocalTime ( TimeZone(..), getCurrentTimeZone )
@@ -76,20 +76,22 @@ newState :: ChatResources
          -> InputHistory
          -> ChatState
 newState rs i u m tz hist = ChatState
-  { _csResources            = rs
-  , _csFocus                = i
-  , _csMe                   = u
-  , _csMyTeam               = m
-  , _csNames                = emptyMMNames
-  , _msgMap                 = HM.empty
-  , _usrMap                 = HM.empty
-  , _timeZone               = tz
-  , _csEditState            = emptyEditState hist
-  , _csMode                 = Main
-  , _csChannelSelect        = ""
-  , _csRecentChannel        = Nothing
-  , _csConnectionStatus     = Disconnected
-  , _csJoinChannelList      = Nothing
+  { _csResources                   = rs
+  , _csFocus                       = i
+  , _csMe                          = u
+  , _csMyTeam                      = m
+  , _csNames                       = emptyMMNames
+  , _msgMap                        = HM.empty
+  , _usrMap                        = HM.empty
+  , _timeZone                      = tz
+  , _csEditState                   = emptyEditState hist
+  , _csMode                        = Main
+  , _csChannelSelectString         = ""
+  , _csChannelSelectChannelMatches = mempty
+  , _csChannelSelectUserMatches    = mempty
+  , _csRecentChannel               = Nothing
+  , _csConnectionStatus            = Disconnected
+  , _csJoinChannelList             = Nothing
   }
 
 runAsync :: ChatState -> IO (ChatState -> EventM Name ChatState) -> IO ()
@@ -738,8 +740,29 @@ showHelpScreen st = do
 
 beginChannelSelect :: ChatState -> EventM Name ChatState
 beginChannelSelect st =
-    return $ st & csMode          .~ ChannelSelect
-                & csChannelSelect .~ ""
+    return $ st & csMode                        .~ ChannelSelect
+                & csChannelSelectString         .~ ""
+                & csChannelSelectChannelMatches .~ mempty
+                & csChannelSelectUserMatches    .~ mempty
+
+updateChannelSelectMatches :: ChatState -> ChatState
+updateChannelSelectMatches st =
+    -- Given the current channel select string, find all the channel and
+    -- user matches and then update the match lists.
+    let chanNameMatches = channelNameMatch (st^.csChannelSelectString)
+        chanMatches = catMaybes $ chanNameMatches <$> st^.csNames.cnChans
+        userMatches = catMaybes $ chanNameMatches <$> st^.csNames.cnUsers
+        mkMap ms = HM.fromList [(channelNameFromMatch m, m) | m <- ms]
+    in st & csChannelSelectChannelMatches .~ mkMap chanMatches
+          & csChannelSelectUserMatches    .~ mkMap userMatches
+
+channelNameMatch :: T.Text -> T.Text -> Maybe ChannelSelectMatch
+channelNameMatch pat chanName =
+    if T.null pat || (not $ pat `T.isInfixOf` chanName)
+    then Nothing
+    else let (preMatch, postMatch) = case T.breakOn pat chanName of
+                                       (pre, post) -> (pre, T.drop (T.length pat) post)
+         in Just $ ChannelSelectMatch preMatch pat postMatch
 
 openMostRecentURL :: ChatState -> EventM Name ChatState
 openMostRecentURL st =
