@@ -11,8 +11,8 @@ import qualified Data.Text as T
 import Graphics.Vty hiding (Config)
 import System.Exit (exitSuccess)
 
-import Draw.Util
 import Config
+import Markdown
 
 data Name = Username | Password deriving (Ord, Eq, Show)
 
@@ -68,13 +68,13 @@ credentialsForm :: State -> Widget Name
 credentialsForm st =
     center $ hLimit 50 $ vLimit 15 $
     border $
-    vBox [ wrappedText txt "Please enter your MatterMost credentials to log in."
+    vBox [ renderText "Please enter your MatterMost credentials to log in."
          , txt " "
          , txt "Username:" <+> renderEditor (focus st == Username) (usernameEdit st)
          , txt " "
          , txt "Password:" <+> renderEditor (focus st == Password) (passwordEdit st)
          , txt " "
-         , wrappedText txt "Press Enter to log in or Esc to exit."
+         , renderText "Press Enter to log in or Esc to exit."
          ]
 
 onEvent :: State -> Event -> EventM Name (Next State)

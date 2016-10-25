@@ -31,7 +31,6 @@ executable matterhorn
                        Draw.ShowHelp
                        Draw.LeaveChannelConfirm
                        Draw.JoinChannel
-                       Draw.Util
                        IOUtil
                        Events
                        Types
@@ -59,7 +58,6 @@ executable matterhorn
                      , text-zipper >= 0.8
                      , array
                      , time >= 1.6
-                     , linebreak
                      , xdg-basedir
                      , filepath
                      , directory

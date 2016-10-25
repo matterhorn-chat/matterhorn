@@ -13,7 +13,7 @@ import System.Exit (exitSuccess)
 
 import Network.Mattermost
 
-import Draw.Util
+import Markdown
 
 type State = List () Team
 
@@ -51,7 +51,7 @@ teamSelect st =
          , txt " "
          , border theList
          , txt " "
-         , wrappedText txt "Press Enter to select a team and connect or Esc to exit."
+         , renderText "Press Enter to select a team and connect or Esc to exit."
          ]
     where
     theList = renderList renderTeamItem True st

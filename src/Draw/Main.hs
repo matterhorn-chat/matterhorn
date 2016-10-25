@@ -37,7 +37,6 @@ import           Markdown
 import           State
 import           Themes
 import           Types
-import           Draw.Util
 
 -- If the config's date format is not set.
 defaultDateFormat :: Text
@@ -229,7 +228,7 @@ renderCurrentChannelDisplay st = (header <+> conn) <=> messages
                        Nothing -> txt $ mkChannelName (chan^.ccInfo)
                        Just u  -> colorUsername $ mkDMChannelName u
                    _        -> txt $ mkChannelName (chan^.ccInfo)
-                 False -> wrappedText txt $ mkChannelName (chan^.ccInfo) <> " - " <> topicStr
+                 False -> renderText $ mkChannelName (chan^.ccInfo) <> " - " <> topicStr
     messages = if chan^.ccInfo.cdLoaded
                then chatText <+> txt " "
                else center $ txt "[loading channel scrollback]"
