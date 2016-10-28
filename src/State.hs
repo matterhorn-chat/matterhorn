@@ -463,9 +463,9 @@ addMessage new st = do
           else return rs
 
   -- If the message is in reply to another message, try to find it in
-  -- the scrollback for the channel in post's channel. If the message
-  -- isn't there, fetch it. If we have to fetch it, don't post this
-  -- message to the channel until we have fetched the parent.
+  -- the scrollback for the post's channel. If the message isn't there,
+  -- fetch it. If we have to fetch it, don't post this message to the
+  -- channel until we have fetched the parent.
   case msg^.mInReplyToMsg of
       ParentNotLoaded parentId -> do
           liftIO $ doAsyncWith st $ do
