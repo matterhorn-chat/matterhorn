@@ -94,31 +94,34 @@ onEventMain st (Vty.EvPaste bytes) = do
   continue $ st & cmdLine %~ applyEdit (Z.insertMany pasteStr)
 onEventMain st e = do
     let smartBacktick = st^.csResources.crConfiguration.to configSmartBacktick
+        smartChars = "*`"
     st' <- case e of
         Vty.EvKey (Vty.KChar 't') [Vty.MCtrl] ->
             return $ st & cmdLine %~ applyEdit Z.transposeChars
 
         Vty.EvKey Vty.KBS [] | smartBacktick ->
-            -- Smart backtick removal:
-            if | (cursorAtBacktick $ st^.cmdLine) &&
-                 (cursorAtBacktick $ applyEdit Z.moveLeft $ st^.cmdLine) &&
-                 (cursorIsAtEnd $ applyEdit Z.moveRight $ st^.cmdLine) ->
-                   return $ st & cmdLine %~ applyEdit (Z.deleteChar >>> Z.deletePrevChar)
-               | otherwise ->
-                   return $ st & cmdLine %~ applyEdit Z.deletePrevChar
+            let backspace = return $ st & cmdLine %~ applyEdit Z.deletePrevChar
+            in case cursorAtOneOf smartChars (st^.cmdLine) of
+                Nothing -> backspace
+                Just ch ->
+                    -- Smart char removal:
+                    if | (cursorAtChar ch $ applyEdit Z.moveLeft $ st^.cmdLine) &&
+                         (cursorIsAtEnd $ applyEdit Z.moveRight $ st^.cmdLine) ->
+                           return $ st & cmdLine %~ applyEdit (Z.deleteChar >>> Z.deletePrevChar)
+                       | otherwise -> backspace
 
-        Vty.EvKey (Vty.KChar '`') [] | smartBacktick ->
+        Vty.EvKey (Vty.KChar ch) [] | smartBacktick && ch `elem` smartChars ->
             -- Smart backtick insertion:
             if | (cursorIsAtEnd $ st^.cmdLine) ->
-                   return $ st & cmdLine %~ applyEdit (Z.insertMany "``" >>> Z.moveLeft)
+                   return $ st & cmdLine %~ applyEdit (Z.insertMany (T.pack $ ch:ch:[]) >>> Z.moveLeft)
                -- Note that this behavior will have to improve once we
                -- support multi-line editing because in that context
                -- ```...``` is something people will want to type.
-               | (cursorAtBacktick $ st^.cmdLine) &&
+               | (cursorAtChar ch $ st^.cmdLine) &&
                  (cursorIsAtEnd $ applyEdit Z.moveRight $ st^.cmdLine) ->
                    return $ st & cmdLine %~ applyEdit Z.moveRight
                | otherwise ->
-                   return $ st & cmdLine %~ applyEdit (Z.insertChar '`')
+                   return $ st & cmdLine %~ applyEdit (Z.insertChar ch)
 
         _ -> handleEventLensed st cmdLine handleEditorEvent e
 
@@ -137,12 +140,19 @@ lastIsBacktick e =
         z = e^.editContentsL
     in T.length curLine > 0 && T.last curLine == '`'
 
-cursorAtBacktick :: Editor T.Text a -> Bool
-cursorAtBacktick e =
+cursorAtOneOf :: [Char] -> Editor T.Text a -> Maybe Char
+cursorAtOneOf [] _ = Nothing
+cursorAtOneOf (c:cs) e =
+    if cursorAtChar c e
+    then Just c
+    else cursorAtOneOf cs e
+
+cursorAtChar :: Char -> Editor T.Text a -> Bool
+cursorAtChar ch e =
     let col = snd $ Z.cursorPosition z
         curLine = Z.currentLine z
         z = e^.editContentsL
-    in "`" `T.isPrefixOf` T.drop col curLine
+    in (T.singleton ch) `T.isPrefixOf` T.drop col curLine
 
 joinChannelListKeys :: [Vty.Key]
 joinChannelListKeys =
