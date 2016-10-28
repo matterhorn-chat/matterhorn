@@ -70,7 +70,9 @@ messagesFromPosts st p = msgs
         ps   = findPost <$> (Seq.reverse $ postsOrder p)
         clientPost :: Post -> ClientPost
         clientPost x = toClientPost x (postId <$> parent x)
-        parent x = HM.lookup (x^.postParentIdL) (p^.postsPostsL)
+        parent x = do
+            parentId <- x^.postParentIdL
+            HM.lookup parentId (p^.postsPostsL)
         findPost pId = case HM.lookup pId (postsPosts p) of
             Nothing -> error $ "BUG: could not find post for post ID " <> show pId
             Just post -> post
@@ -448,7 +450,7 @@ addMessage new st = do
       updateTime = if fromMe then id else const now
   let chan = msgMap . ix (postChannelId new)
       st' = st & csPostMap.ix(postId new) .~ msg
-      msg = clientPostToMessage st' (toClientPost new (Just (new^.postParentIdL)))
+      msg = clientPostToMessage st' (toClientPost new (new^.postParentIdL))
       rs = st' & chan . ccContents . cdMessages %~ (Seq.|> msg)
                & chan . ccInfo . cdUpdated %~ updateTime
   when (not fromMe) $ maybeRingBell st
