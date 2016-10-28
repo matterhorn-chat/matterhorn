@@ -47,9 +47,15 @@ renderTime fmt tz t =
     let timeStr = T.pack $ formatTime defaultTimeLocale (T.unpack fmt) (utcToLocalTime tz t)
     in txt "[" <+> withDefAttr timeAttr (txt timeStr) <+> txt "]"
 
+getReplyToMessage :: Message -> Maybe Message
+getReplyToMessage m =
+    case m^.mInReplyToMsg of
+        ReplyLoaded _ parent -> Just parent
+        _ -> Nothing
+
 renderChatMessage :: Set Text -> Maybe Text -> TimeZone -> Message -> Widget Name
 renderChatMessage uSet mFormat tz msg =
-    let m = renderMessage (msg^.mText) msgUsr (msg^.mInReplyToMsg >>= _mUserName) (msg^.mType) uSet
+    let m = renderMessage (msg^.mText) msgUsr (getReplyToMessage msg >>= _mUserName) (msg^.mType) uSet
         omitUsernameTypes = [ CP Join
                             , CP Leave
                             , CP TopicChange
@@ -286,7 +292,7 @@ insertDateBoundaries tz ms = fst $ F.foldl' nextMsg initState ms
         initState = (mempty, Nothing)
 
         dateMsg d = Message (getBlocks (T.pack $ formatTime defaultTimeLocale dateTransitionFormat d))
-                            Nothing d (C DateTransition) False False Seq.empty Nothing Nothing
+                            Nothing d (C DateTransition) False False Seq.empty NotAReply Nothing
 
         nextMsg :: (Seq.Seq Message, Maybe Message) -> Message -> (Seq.Seq Message, Maybe Message)
         nextMsg (rest, Nothing) msg = (rest Seq.|> msg, Just msg)

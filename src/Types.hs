@@ -117,9 +117,15 @@ data Message = Message
   , _mPending       :: Bool
   , _mDeleted       :: Bool
   , _mAttachments   :: Seq.Seq T.Text
-  , _mInReplyToMsg  :: Maybe Message
+  , _mInReplyToMsg  :: ReplyState
   , _mPostId        :: Maybe PostId
   } deriving (Show)
+
+data ReplyState =
+    NotAReply
+    | ReplyLoaded PostId Message
+    | ReplyNotLoaded PostId
+    deriving (Show)
 
 makeLenses ''Message
 
@@ -371,8 +377,11 @@ csCurrentCompletion = csEditState . cedCurrentCompletion
 timeFormat :: SimpleGetter ChatState (Maybe T.Text)
 timeFormat = csResources . crConfiguration . to configTimeFormat
 
-getMessageForPostId :: ChatState -> PostId -> Maybe Message
-getMessageForPostId st pId = st^.csPostMap.at(pId)
+getMessageForPostId :: ChatState -> PostId -> ReplyState
+getMessageForPostId st pId =
+    case st^.csPostMap.at(pId) of
+        Nothing -> ReplyNotLoaded pId
+        Just m -> ReplyLoaded pId m
 
 getUsernameForUserId :: ChatState -> UserId -> Maybe T.Text
 getUsernameForUserId st uId = st^.usrMap ^? ix uId.uiName
@@ -388,7 +397,7 @@ clientPostToMessage st cp = Message
   , _mAttachments   = _cpAttachments cp
   , _mInReplyToMsg  =
     case cp^.cpInReplyToPost of
-      Nothing  -> Nothing
+      Nothing  -> NotAReply
       Just pId -> getMessageForPostId st pId
   , _mPostId        = Just $ cp^.cpPostId
   }
@@ -402,7 +411,7 @@ clientMessageToMessage cm = Message
   , _mPending       = False
   , _mDeleted       = False
   , _mAttachments   = Seq.empty
-  , _mInReplyToMsg  = Nothing
+  , _mInReplyToMsg  = NotAReply
   , _mPostId        = Nothing
   }
 
