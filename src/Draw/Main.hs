@@ -251,8 +251,12 @@ renderCurrentChannelDisplay st = (header <+> conn) <=> messages
                         case Seq.viewr ms of
                             Seq.EmptyR -> return img
                             ms' Seq.:> msg -> do
-                                result <- render $ padRight Max $ renderSingleMessage msg
-                                go ms' $ Vty.vertJoin (result^.imageL) img
+                                result <- case msg^.mDeleted of
+                                    True -> return Vty.emptyImage
+                                    False -> do
+                                        r <- render $ padRight Max $ renderSingleMessage msg
+                                        return $ r^.imageL
+                                go ms' $ Vty.vertJoin result img
 
             img <- Vty.cropTop targetHeight <$> go msgs Vty.emptyImage
             return $ def & imageL .~ img
