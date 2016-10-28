@@ -416,7 +416,7 @@ handleNewChannel name nc st = do
           -- and we finally set our focus to the newly created channel
   setFocus (getId nc) st''
 
-editMessage :: Post -> ChatState -> EventM a ChatState
+editMessage :: Post -> ChatState -> EventM Name ChatState
 editMessage new st = do
   now <- liftIO getCurrentTime
   let chan = msgMap . ix (postChannelId new)
@@ -424,16 +424,20 @@ editMessage new st = do
       msg = clientPostToMessage st (toClientPost new Nothing)
       rs = st & chan . ccContents . cdMessages . each . filtered isEditedMessage .~ msg
               & chan . ccInfo . cdUpdated .~ now
-  return rs
+  if postChannelId new == currentChannelId rs
+    then updateChannelScrollState rs >>= updateViewed
+    else return rs
 
-deleteMessage :: Post -> ChatState -> EventM a ChatState
+deleteMessage :: Post -> ChatState -> EventM Name ChatState
 deleteMessage new st = do
   now <- liftIO getCurrentTime
   let isDeletedMessage m = m^.mPostId == Just (new^.postIdL)
       chan = msgMap . ix (postChannelId new)
       rs = st & chan . ccContents . cdMessages . each . filtered isDeletedMessage %~ (& mDeleted .~ True)
               & chan . ccInfo . cdUpdated .~ now
-  return rs
+  if postChannelId new == currentChannelId rs
+    then updateChannelScrollState rs >>= updateViewed
+    else return rs
 
 maybeRingBell :: ChatState -> EventM Name ()
 maybeRingBell st = do
