@@ -47,24 +47,9 @@ renderTime fmt tz t =
     let timeStr = T.pack $ formatTime defaultTimeLocale (T.unpack fmt) (utcToLocalTime tz t)
     in txt "[" <+> withDefAttr timeAttr (txt timeStr) <+> txt "]"
 
-getReplyToMessage :: Message -> Maybe Message
-getReplyToMessage m =
-    case m^.mInReplyToMsg of
-        ParentLoaded _ parent -> Just parent
-        _ -> Nothing
-
 renderChatMessage :: Set Text -> Maybe Text -> TimeZone -> Message -> Widget Name
 renderChatMessage uSet mFormat tz msg =
-    let m = renderMessage (msg^.mText) msgUsr (getReplyToMessage msg) (msg^.mType) uSet
-        omitUsernameTypes = [ CP Join
-                            , CP Leave
-                            , CP TopicChange
-                            ]
-        msgUsr = case msg^.mUserName of
-          Just u
-            | msg^.mType `elem` omitUsernameTypes -> Nothing
-            | otherwise -> Just u
-          Nothing -> Nothing
+    let m = renderMessage msg True uSet
         msgAtch = if Seq.null (msg^.mAttachments)
           then emptyWidget
           else withDefAttr clientMessageAttr

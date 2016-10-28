@@ -28,6 +28,7 @@ module Themes
   , dialogAttr
   , dialogEmphAttr
   , recentMarkerAttr
+  , replyParentAttr
 
   -- * Username formatting
   , colorUsername
@@ -55,6 +56,9 @@ helpEmphAttr = "helpEmphasis"
 
 recentMarkerAttr :: AttrName
 recentMarkerAttr = "recentMarker"
+
+replyParentAttr :: AttrName
+replyParentAttr = "replyParent"
 
 dialogAttr :: AttrName
 dialogAttr = "dialog"

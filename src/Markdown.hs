@@ -5,6 +5,8 @@
 module Markdown (renderMessage, renderText) where
 
 import           Brick ( (<+>), Widget )
+import qualified Brick.Widgets.Border as B
+import qualified Brick.Widgets.Border.Style as B
 import qualified Brick as B
 import           Cheapskate.Types ( Block
                                   , Blocks
@@ -26,24 +28,60 @@ import           Data.Sequence ( Seq
 import qualified Data.Sequence as S
 import           Data.Set (Set)
 import qualified Data.Set as Set
+import qualified Graphics.Vty as V
 import           Lens.Micro.Platform ((^.))
 
 import           Themes
-import           Types (Message(_mUserName), MessageType(..), PostType(..))
+import           Types
 
 type UserSet = Set Text
 
-renderMessage :: Blocks -> Maybe Text -> Maybe Message -> MessageType -> UserSet -> Widget a
-renderMessage bs u repM mTy uSet =
-  case u of
-    Just un
-      | mTy == CP Emote -> B.txt "*" <+> colorUsername un
-                       <+> B.txt " " <+> renderMarkdown uSet bs
-      | Just rep <- _mUserName =<< repM ->
-        colorUsername un <+> B.txt "[→" <+> colorUsername rep <+> B.txt "]: " <+>
-          renderMarkdown uSet bs
-      | otherwise -> colorUsername un <+> B.txt ": " <+> renderMarkdown uSet bs
-    Nothing -> renderMarkdown uSet bs
+omitUsernameTypes :: [MessageType]
+omitUsernameTypes =
+    [ CP Join
+    , CP Leave
+    , CP TopicChange
+    ]
+
+getReplyToMessage :: Message -> Maybe Message
+getReplyToMessage m =
+    case m^.mInReplyToMsg of
+        ParentLoaded _ parent -> Just parent
+        _ -> Nothing
+
+renderMessage :: Message -> Bool -> UserSet -> Widget a
+renderMessage msg renderReplyParent uSet =
+    let msgUsr = case msg^.mUserName of
+          Just u
+            | msg^.mType `elem` omitUsernameTypes -> Nothing
+            | otherwise -> Just u
+          Nothing -> Nothing
+        mine = case msgUsr of
+          Just un
+            | msg^.mType == CP Emote -> B.txt "*" <+> colorUsername un
+                                    <+> B.txt " " <+> renderMarkdown uSet (msg^.mText)
+            | otherwise -> colorUsername un <+> B.txt ": " <+> renderMarkdown uSet (msg^.mText)
+          Nothing -> renderMarkdown uSet (msg^.mText)
+        parent = if not renderReplyParent
+                 then Nothing
+                 else getReplyToMessage msg
+    in case parent of
+        Nothing -> mine
+        Just m -> let parentMsg = renderMessage m False uSet
+                  in (B.borderElem B.bsCornerTL <+> B.str "▸" <+>
+                     (addEllipsis $ B.forceAttr replyParentAttr parentMsg))
+                      B.<=> mine
+
+addEllipsis :: Widget a -> Widget a
+addEllipsis w = B.Widget (B.hSize w) (B.vSize w) $ do
+    ctx <- B.getContext
+    let aw = ctx^.B.availWidthL
+    result <- B.render w
+    let withEllipsis = (B.hLimit (aw - 3) $ B.vLimit 1 $ (B.Widget B.Fixed B.Fixed $ return result)) <+>
+                       B.str "..."
+    if (V.imageHeight (result^.B.imageL) > 1) || (V.imageWidth (result^.B.imageL) == aw) then
+        B.render withEllipsis else
+        return result
 
 -- Render markdown with username highlighting
 renderMarkdown :: UserSet -> Blocks -> Widget a
