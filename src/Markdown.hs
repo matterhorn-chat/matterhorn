@@ -68,7 +68,7 @@ renderMessage msg renderReplyParent uSet =
     in case parent of
         Nothing -> mine
         Just m -> let parentMsg = renderMessage m False uSet
-                  in (B.borderElem B.bsCornerTL <+> B.str "▸" <+>
+                  in (B.str " " <+> B.borderElem B.bsCornerTL <+> B.str "▸" <+>
                      (addEllipsis $ B.forceAttr replyParentAttr parentMsg))
                       B.<=> mine
 
