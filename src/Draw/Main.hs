@@ -5,7 +5,7 @@ module Draw.Main (drawMain) where
 import           Brick
 import           Brick.Widgets.Border
 import           Brick.Widgets.Border.Style
-import           Brick.Widgets.Center (hCenter, center)
+import           Brick.Widgets.Center (hCenter)
 import           Brick.Widgets.Edit (renderEditor)
 import           Control.Applicative
 import           Data.Time.Clock (UTCTime)
@@ -229,9 +229,11 @@ renderCurrentChannelDisplay st = (header <+> conn) <=> messages
                        Just u  -> colorUsername $ mkDMChannelName u
                    _        -> txt $ mkChannelName (chan^.ccInfo)
                  False -> renderText $ mkChannelName (chan^.ccInfo) <> " - " <> topicStr
-    messages = if chan^.ccInfo.cdLoaded
-               then chatText <+> txt " "
-               else center $ txt "[loading channel scrollback]"
+    messages = body <+> txt " "
+    body = chatText <=> if chan^.ccInfo.cdLoaded
+                        then emptyWidget
+                        else withDefAttr clientMessageAttr $
+                             txt "[Loading channel scrollback...]"
     uSet = Set.fromList (map _uiName (HM.elems (st^.usrMap)))
     chatText = case st^.csMode of
         ChannelScroll ->
