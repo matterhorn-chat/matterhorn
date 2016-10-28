@@ -55,7 +55,7 @@ getReplyToMessage m =
 
 renderChatMessage :: Set Text -> Maybe Text -> TimeZone -> Message -> Widget Name
 renderChatMessage uSet mFormat tz msg =
-    let m = renderMessage (msg^.mText) msgUsr (getReplyToMessage msg >>= _mUserName) (msg^.mType) uSet
+    let m = renderMessage (msg^.mText) msgUsr (getReplyToMessage msg) (msg^.mType) uSet
         omitUsernameTypes = [ CP Join
                             , CP Leave
                             , CP TopicChange

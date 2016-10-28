@@ -29,17 +29,17 @@ import qualified Data.Set as Set
 import           Lens.Micro.Platform ((^.))
 
 import           Themes
-import           Types (MessageType(..), PostType(..))
+import           Types (Message(_mUserName), MessageType(..), PostType(..))
 
 type UserSet = Set Text
 
-renderMessage :: Blocks -> Maybe Text -> Maybe Text -> MessageType -> UserSet -> Widget a
-renderMessage bs u repU mTy uSet =
+renderMessage :: Blocks -> Maybe Text -> Maybe Message -> MessageType -> UserSet -> Widget a
+renderMessage bs u repM mTy uSet =
   case u of
     Just un
       | mTy == CP Emote -> B.txt "*" <+> colorUsername un
                        <+> B.txt " " <+> renderMarkdown uSet bs
-      | Just rep <- repU ->
+      | Just rep <- _mUserName =<< repM ->
         colorUsername un <+> B.txt "[→" <+> colorUsername rep <+> B.txt "]: " <+>
           renderMarkdown uSet bs
       | otherwise -> colorUsername un <+> B.txt ": " <+> renderMarkdown uSet bs
