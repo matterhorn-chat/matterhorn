@@ -445,18 +445,40 @@ maybeRingBell st = do
 addMessage :: Post -> ChatState -> EventM Name ChatState
 addMessage new st = do
   now <- liftIO getCurrentTime
-  let cp = toClientPost new Nothing
+  let cp = toClientPost new (new^.postParentIdL)
       fromMe = cp^.cpUser == getId (st^.csMe)
       updateTime = if fromMe then id else const now
-  let chan = msgMap . ix (postChannelId new)
-      st' = st & csPostMap.ix(postId new) .~ msg
-      msg = clientPostToMessage st' (toClientPost new (new^.postParentIdL))
-      rs = st' & chan . ccContents . cdMessages %~ (Seq.|> msg)
-               & chan . ccInfo . cdUpdated %~ updateTime
-  when (not fromMe) $ maybeRingBell st
-  if postChannelId new == currentChannelId st
-    then updateChannelScrollState rs >>= updateViewed
-    else return rs
+      msg = clientPostToMessage st cp
+      cId = postChannelId new
+
+      doAddMessage s = do
+        let chan = msgMap . ix cId
+            s' = s & csPostMap.ix(postId new) .~ msg
+            msg' = clientPostToMessage s (toClientPost new (new^.postParentIdL))
+            rs = s' & chan . ccContents . cdMessages %~ (Seq.|> msg')
+                    & chan . ccInfo . cdUpdated %~ updateTime
+        when (not fromMe) $ maybeRingBell s'
+        if postChannelId new == currentChannelId rs
+          then updateChannelScrollState rs >>= updateViewed
+          else return rs
+
+  -- If the message is in reply to another message, try to find it in
+  -- the scrollback for the channel in post's channel. If the message
+  -- isn't there, fetch it. If we have to fetch it, don't post this
+  -- message to the channel until we have fetched the parent.
+  case msg^.mInReplyToMsg of
+      ParentNotLoaded parentId -> do
+          liftIO $ doAsyncWith st $ do
+              let theTeamId = st^.csMyTeam.teamIdL
+              p <- mmGetPost (st^.csConn) (st^.csTok) theTeamId cId parentId
+              let postMap = HM.fromList [ ( pId
+                                          , clientPostToMessage st (toClientPost x (x^.postParentIdL))
+                                          )
+                                        | (pId, x) <- HM.toList (p^.postsPostsL)
+                                        ]
+              return $ \st'' -> doAddMessage $ st'' & csPostMap %~ (HM.union postMap)
+          return st
+      _ -> doAddMessage st
 
 addClientMessage :: ClientMessage -> ChatState -> EventM Name ChatState
 addClientMessage msg st = do
