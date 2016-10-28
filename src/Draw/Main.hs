@@ -50,7 +50,7 @@ renderTime fmt tz t =
 getReplyToMessage :: Message -> Maybe Message
 getReplyToMessage m =
     case m^.mInReplyToMsg of
-        ReplyLoaded _ parent -> Just parent
+        ParentLoaded _ parent -> Just parent
         _ -> Nothing
 
 renderChatMessage :: Set Text -> Maybe Text -> TimeZone -> Message -> Widget Name

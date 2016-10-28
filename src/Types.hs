@@ -123,8 +123,8 @@ data Message = Message
 
 data ReplyState =
     NotAReply
-    | ReplyLoaded PostId Message
-    | ReplyNotLoaded PostId
+    | ParentLoaded PostId Message
+    | ParentNotLoaded PostId
     deriving (Show)
 
 makeLenses ''Message
@@ -380,8 +380,8 @@ timeFormat = csResources . crConfiguration . to configTimeFormat
 getMessageForPostId :: ChatState -> PostId -> ReplyState
 getMessageForPostId st pId =
     case st^.csPostMap.at(pId) of
-        Nothing -> ReplyNotLoaded pId
-        Just m -> ReplyLoaded pId m
+        Nothing -> ParentNotLoaded pId
+        Just m -> ParentLoaded pId m
 
 getUsernameForUserId :: ChatState -> UserId -> Maybe T.Text
 getUsernameForUserId st uId = st^.usrMap ^? ix uId.uiName
