@@ -111,21 +111,27 @@ onEventMain st e = do
                        | otherwise -> backspace
 
         Vty.EvKey (Vty.KChar ch) [] | smartBacktick && ch `elem` smartChars ->
-            -- Smart backtick insertion:
-            if | (cursorIsAtEnd $ st^.cmdLine) ->
-                   return $ st & cmdLine %~ applyEdit (Z.insertMany (T.pack $ ch:ch:[]) >>> Z.moveLeft)
-               -- Note that this behavior will have to improve once we
-               -- support multi-line editing because in that context
-               -- ```...``` is something people will want to type.
-               | (cursorAtChar ch $ st^.cmdLine) &&
-                 (cursorIsAtEnd $ applyEdit Z.moveRight $ st^.cmdLine) ->
-                   return $ st & cmdLine %~ applyEdit Z.moveRight
-               | otherwise ->
-                   return $ st & cmdLine %~ applyEdit (Z.insertChar ch)
+            -- Smart char insertion:
+            let insertChar = return $ st & cmdLine %~ applyEdit (Z.insertChar ch)
+            in if | (editorEmpty $ st^.cmdLine) ||
+                       ((cursorAtChar ' ' (applyEdit Z.moveLeft $ st^.cmdLine)) &&
+                        (cursorIsAtEnd $ st^.cmdLine)) ->
+                      return $ st & cmdLine %~ applyEdit (Z.insertMany (T.pack $ ch:ch:[]) >>> Z.moveLeft)
+                  -- Note that this behavior will have to improve once we
+                  -- support multi-line editing because in that context
+                  -- ```...``` is something people will want to type.
+                  | (cursorAtChar ch $ st^.cmdLine) &&
+                    (cursorIsAtEnd $ applyEdit Z.moveRight $ st^.cmdLine) ->
+                      return $ st & cmdLine %~ applyEdit Z.moveRight
+                  | otherwise -> insertChar
 
         _ -> handleEventLensed st cmdLine handleEditorEvent e
 
     continue $ st' & csCurrentCompletion .~ Nothing
+
+editorEmpty :: Editor T.Text a -> Bool
+editorEmpty e = cursorIsAtEnd e &&
+                cursorIsAtBeginning e
 
 cursorIsAtEnd :: Editor T.Text a -> Bool
 cursorIsAtEnd e =
@@ -133,6 +139,12 @@ cursorIsAtEnd e =
         curLine = Z.currentLine z
         z = e^.editContentsL
     in col == T.length curLine
+
+cursorIsAtBeginning :: Editor T.Text a -> Bool
+cursorIsAtBeginning e =
+    let col = snd $ Z.cursorPosition z
+        z = e^.editContentsL
+    in col == 0
 
 lastIsBacktick :: Editor T.Text a -> Bool
 lastIsBacktick e =
