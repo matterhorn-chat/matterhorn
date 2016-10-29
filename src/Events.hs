@@ -94,7 +94,7 @@ onEventMain st (Vty.EvPaste bytes) = do
   continue $ st & cmdLine %~ applyEdit (Z.insertMany pasteStr)
 onEventMain st e = do
     let smartBacktick = st^.csResources.crConfiguration.to configSmartBacktick
-        smartChars = "*`"
+        smartChars = "*`_"
     st' <- case e of
         Vty.EvKey (Vty.KChar 't') [Vty.MCtrl] ->
             return $ st & cmdLine %~ applyEdit Z.transposeChars
