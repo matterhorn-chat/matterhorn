@@ -75,6 +75,7 @@ onVtyEvent st e = do
         ChannelScroll       -> onEventChannelScroll st e
 
 onEventShowHelp :: ChatState -> Vty.Event -> EventM Name (Next ChatState)
+onEventShowHelp st (Vty.EvResize _ _) = invalidateCacheEntry HelpText >> continue st
 onEventShowHelp st e | Just kb <- lookupKeybinding e helpKeybindings = kbAction kb st
 onEventShowHelp st (Vty.EvKey _ _) = do
   continue $ st & csMode .~ Main

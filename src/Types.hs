@@ -51,6 +51,7 @@ data Name = ChannelMessages ChannelId
           | MessageInput
           | ChannelList
           | HelpViewport
+          | HelpText
           | ChannelSelectString
           | CompletionAlternatives
           | JoinChannelList

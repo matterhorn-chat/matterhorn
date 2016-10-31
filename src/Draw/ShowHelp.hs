@@ -40,7 +40,7 @@ helpBox :: Widget Name
 helpBox =
     centerLayer $ withMargins (2, 1) $
       (withDefAttr helpAttr $ borderWithLabel (withDefAttr helpEmphAttr $ txt "Matterhorn Help") $
-       (viewport HelpViewport Vertical helpText)) <=>
+       (viewport HelpViewport Vertical $ cached HelpText helpText)) <=>
       quitMessage
     where
     helpText = commandHelp
