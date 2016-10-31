@@ -411,7 +411,7 @@ mainKeybindings =
                                            (Vty.EvKey Vty.KEnter [])
                  False -> handleInputSubmission $ st & csCurrentCompletion .~ Nothing
 
-    , KB "Delete the current a multi-line message"
+    , KB "Delete the current multi-line message, if any"
          (Vty.EvKey Vty.KBS []) $ \st -> do
              case st^.csEditState.cedMultiline of
                  True -> continue =<< handleEventLensed st cmdLine handleEditorEvent
