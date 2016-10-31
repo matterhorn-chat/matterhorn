@@ -49,8 +49,7 @@ makeLenses ''MMNames
 
 data Name = ChannelMessages ChannelId
           | MessageInput
-          | NormalChannelList
-          | DMChannelList
+          | ChannelList
           | HelpViewport
           | ChannelSelectString
           | CompletionAlternatives

@@ -97,32 +97,24 @@ userSigil u = case u^.uiStatus of
 channelListWidth :: Int
 channelListWidth = 20
 
-normalChannelListHeight :: Int
-normalChannelListHeight = 10
-
 renderChannelList :: ChatState -> Widget Name
-renderChannelList st = hLimit channelListWidth $ vBox $ renderChannelGroup st <$> channelGroups
+renderChannelList st = hLimit channelListWidth $ viewport ChannelList Vertical $
+                       vBox $ concat $ renderChannelGroup st <$> channelGroups
     where
         channelGroups = [ ( "Channels"
-                          , NormalChannelList
-                          , Just normalChannelListHeight
                           , getOrdinaryChannels st
                           , st^.csChannelSelectChannelMatches
                           )
                         , ( "Users"
-                          , DMChannelList
-                          , Nothing
                           , getDmChannels st
                           , st^.csChannelSelectUserMatches
                           )
                         ]
 
-renderChannelGroup :: ChatState -> (T.Text, Name, Maybe Int, [ChannelListEntry], HM.HashMap T.Text ChannelSelectMatch) -> Widget Name
-renderChannelGroup st (groupName, vpName, heightLimit, entries, csMatches) =
-    let limit = maybe id vLimit heightLimit
-        header label = hBorderWithLabel $ withDefAttr channelListHeaderAttr $ txt label
-    in header groupName <=>
-       (limit $ viewport vpName Vertical $ vBox $ renderChannelListEntry st csMatches <$> entries)
+renderChannelGroup :: ChatState -> (T.Text, [ChannelListEntry], HM.HashMap T.Text ChannelSelectMatch) -> [Widget Name]
+renderChannelGroup st (groupName, entries, csMatches) =
+    let header label = hBorderWithLabel $ withDefAttr channelListHeaderAttr $ txt label
+    in header groupName : (renderChannelListEntry st csMatches <$> entries)
 
 data ChannelListEntry =
     ChannelListEntry { entryChannelName :: T.Text
@@ -392,10 +384,7 @@ completionAlternatives st =
 
 mainInterface :: ChatState -> Widget Name
 mainInterface st =
-    (renderChannelList st <+> (subdue st (borderElem bsIntersectR <=>
-                                            vLimit normalChannelListHeight vBorder <=>
-                                            borderElem bsIntersectR <=> vBorder))
-                            <+> (subdue st $ renderCurrentChannelDisplay uSet st))
+    (renderChannelList st <+> vBorder <+> (subdue st $ renderCurrentChannelDisplay uSet st))
       <=> bottomBorder
       <=> case st^.csMode of
               ChannelSelect -> renderChannelSelect st
