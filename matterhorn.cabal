@@ -66,4 +66,5 @@ executable matterhorn
                      , hashable
                      , cheapskate
                      , utf8-string
+                     , temporary
   default-language:    Haskell2010

@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module State where
 
-import           Brick (EventM)
+import           Brick (EventM, Next, suspendAndResume)
 import           Brick.Widgets.Edit (getEditContents, editContentsL)
 import           Brick.Widgets.List (list)
 import           Control.Applicative
@@ -29,9 +29,11 @@ import qualified Data.Foldable as F
 import           Graphics.Vty (outputIface)
 import           Graphics.Vty.Output.Interface (ringTerminalBell)
 import           Lens.Micro.Platform
-import           System.Exit (exitFailure)
-import           System.IO (Handle)
-import           System.Process (system)
+import           System.Exit (ExitCode(..), exitFailure)
+import           System.IO (Handle, hPutStr, hClose)
+import           System.IO.Temp (withSystemTempFile)
+import           System.Process (system, rawSystem)
+import           System.Environment (lookupEnv)
 import           Cheapskate
 
 import           Prelude
@@ -904,3 +906,31 @@ openMostRecentURL st =
                         liftIO $ void $ system $ (T.unpack urlOpenCommand) <> " " <> show url
 
             return st
+
+invokeExternalEditor :: ChatState -> EventM Name (Next ChatState)
+invokeExternalEditor st = do
+    -- If EDITOR is in the environment, write the current message to a
+    -- temp file, invoke EDITOR on it, read the result, remove the temp
+    -- file, and update the program state.
+    --
+    -- If EDITOR is not present, fall back to 'vi'.
+    mEnv <- liftIO $ lookupEnv "EDITOR"
+    let editorProgram = maybe "vi" id mEnv
+
+    suspendAndResume $
+      withSystemTempFile "matterhorn_editor.tmp" $ \tmpFileName tmpFileHandle -> do
+        -- Write the current message to the temp file
+        hPutStr tmpFileHandle $ T.unpack $ T.intercalate "\n" $ getEditContents $ st^.cmdLine
+        hClose tmpFileHandle
+
+        -- Run the editor
+        status <- rawSystem editorProgram [tmpFileName]
+
+        -- On editor exit, if exited with zero status, read temp file.
+        -- If non-zero status, skip temp file read.
+        case status of
+            ExitSuccess -> do
+                tmpLines <- T.lines <$> T.pack <$> readFile tmpFileName
+                return $ st & cmdLine.editContentsL .~ (textZipper tmpLines Nothing)
+                            & csEditState.cedMultiline .~ (length tmpLines > 1)
+            ExitFailure _ -> return st

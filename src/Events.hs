@@ -350,6 +350,10 @@ mainKeybindings =
          (Vty.EvKey (Vty.KFun 1) []) $
          showHelpScreen >=> continue
 
+    , KB "Invoke $EDITOR to edit current message"
+         (Vty.EvKey (Vty.KChar 'k') [Vty.MMeta]) $
+         invokeExternalEditor
+
     , KB "Enter fast channel selection mode"
          (Vty.EvKey (Vty.KChar 'g') [Vty.MCtrl]) $
          beginChannelSelect >=> continue
