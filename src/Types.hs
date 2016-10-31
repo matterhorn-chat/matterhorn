@@ -17,6 +17,7 @@ import           Data.HashMap.Strict (HashMap)
 import           Data.Time.Clock (UTCTime)
 import           Data.Time.LocalTime (TimeZone)
 import qualified Data.HashMap.Strict as HM
+import           Data.Maybe
 import qualified Data.Sequence as Seq
 import           Data.Monoid
 import qualified Graphics.Vty as Vty
@@ -438,3 +439,6 @@ data Keybinding =
        , kbEvent :: Vty.Event
        , kbAction :: ChatState -> EventM Name (Next ChatState)
        }
+
+lookupKeybinding :: Vty.Event -> [Keybinding] -> Maybe Keybinding
+lookupKeybinding e kbs = listToMaybe $ filter ((== e) . kbEvent) kbs

@@ -16,7 +16,9 @@ import Prelude
 import Themes
 import Types
 import Command
-import Events
+import Events.ShowHelp
+import Events.ChannelSelect
+import Events.Main
 
 drawShowHelp :: ChatState -> [Widget Name]
 drawShowHelp = const [helpBox]

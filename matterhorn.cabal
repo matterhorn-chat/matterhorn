@@ -33,6 +33,12 @@ executable matterhorn
                        Draw.JoinChannel
                        IOUtil
                        Events
+                       Events.ShowHelp
+                       Events.Main
+                       Events.JoinChannel
+                       Events.ChannelScroll
+                       Events.ChannelSelect
+                       Events.LeaveChannelConfirm
                        Types
                        FilePaths
                        TeamSelect
