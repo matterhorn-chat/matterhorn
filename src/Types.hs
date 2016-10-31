@@ -91,7 +91,7 @@ data PostType =
 
 data ClientPost = ClientPost
   { _cpText          :: Blocks
-  , _cpUser          :: UserId
+  , _cpUser          :: Maybe UserId
   , _cpDate          :: UTCTime
   , _cpType          :: PostType
   , _cpPending       :: Bool
@@ -389,7 +389,7 @@ getUsernameForUserId st uId = st^.usrMap ^? ix uId.uiName
 clientPostToMessage :: ChatState -> ClientPost -> Message
 clientPostToMessage st cp = Message
   { _mText          = _cpText cp
-  , _mUserName      = getUsernameForUserId st (_cpUser cp)
+  , _mUserName      = getUsernameForUserId st =<< _cpUser cp
   , _mDate          = _cpDate cp
   , _mType          = CP $ _cpType cp
   , _mPending       = _cpPending cp

@@ -452,7 +452,7 @@ addMessage :: Post -> ChatState -> EventM Name ChatState
 addMessage new st = do
   now <- liftIO getCurrentTime
   let cp = toClientPost new (new^.postParentIdL)
-      fromMe = cp^.cpUser == getId (st^.csMe)
+      fromMe = cp^.cpUser == (Just $ getId (st^.csMe))
       updateTime = if fromMe then id else const now
       msg = clientPostToMessage st cp
       cId = postChannelId new
