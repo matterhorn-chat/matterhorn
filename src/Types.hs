@@ -322,6 +322,7 @@ data ChatState = ChatState
   , _timeZone                      :: TimeZone
   , _csEditState                   :: ChatEditState
   , _csMode                        :: Mode
+  , _csShowMessagePreview          :: Bool
   , _csChannelSelectString         :: T.Text
   , _csChannelSelectChannelMatches :: HashMap T.Text ChannelSelectMatch
   , _csChannelSelectUserMatches    :: HashMap T.Text ChannelSelectMatch

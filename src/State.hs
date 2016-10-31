@@ -101,6 +101,7 @@ newState rs i u m tz hist = ChatState
   , _timeZone                      = tz
   , _csEditState                   = emptyEditState hist
   , _csMode                        = Main
+  , _csShowMessagePreview          = configShowMessagePreview $ rs^.crConfiguration
   , _csChannelSelectString         = ""
   , _csChannelSelectChannelMatches = mempty
   , _csChannelSelectUserMatches    = mempty
@@ -934,3 +935,6 @@ invokeExternalEditor st = do
                 return $ st & cmdLine.editContentsL .~ (textZipper tmpLines Nothing)
                             & csEditState.cedMultiline .~ (length tmpLines > 1)
             ExitFailure _ -> return st
+
+toggleMessagePreview :: ChatState -> EventM Name ChatState
+toggleMessagePreview st = return $ st & csShowMessagePreview %~ not

@@ -197,8 +197,30 @@ getDmChannels st =
              unread = maybe False (hasUnread st) m_chanId
        ]
 
-renderUserCommandBox :: ChatState -> Widget Name
-renderUserCommandBox st =
+previewFromInput :: T.Text -> T.Text -> Maybe Message
+previewFromInput uname s =
+    -- If it starts with a slash but not /me, this has no preview
+    -- representation
+    let isCommand = "/" `T.isPrefixOf` s
+        isEmote = "/me" `T.isPrefixOf` s
+        content = if isEmote
+                  then T.stripStart $ T.drop 3 s
+                  else s
+    in if isCommand && not isEmote
+       then Nothing
+       else Just $ Message { _mText          = getBlocks content
+                           , _mUserName      = Just uname
+                           , _mDate          = undefined
+                           , _mType          = if isEmote then CP Emote else CP NormalPost
+                           , _mPending       = False
+                           , _mDeleted       = False
+                           , _mAttachments   = mempty
+                           , _mInReplyToMsg  = NotAReply
+                           , _mPostId        = Nothing
+                           }
+
+renderUserCommandBox :: Set Text -> ChatState -> Widget Name
+renderUserCommandBox uSet st =
     let prompt = txt "> "
         inputBox = renderEditor True (st^.cmdLine)
         curContents = getEditContents $ st^.cmdLine
@@ -209,24 +231,36 @@ renderUserCommandBox st =
               str "/" <+> (str $ (show $ length curContents) <> "]")) <+>
             (hBorderWithLabel $ withDefAttr clientEmphAttr $
              (str "In multi-line mode. Press Esc to finish."))
-    in case st^.csEditState.cedMultiline of
-        False ->
-            let linesStr = if numLines == 1
-                           then "line"
-                           else "lines"
-                numLines = length curContents
-            in vLimit 1 $
-               prompt <+> if multilineContent
-                          then ((withDefAttr clientEmphAttr $
-                                 str $ "[" <> show numLines <> " " <> linesStr <>
-                                       "; Enter: send, M-e: edit, Backspace: cancel] ")) <+>
-                               (txt $ head curContents) <+>
-                               (showCursor MessageInput (Location (0,0)) $ str " ")
-                          else inputBox
-        True -> vLimit 5 inputBox <=> multilineHints
+        uname = st^.csMe.userUsernameL
+        previewMsg = previewFromInput uname curStr
+        curStr = T.intercalate "\n" curContents
+        maybePreview = if not $ st^.csShowMessagePreview
+                       then emptyWidget
+                       else let noPreview = str "(No preview)"
+                                msgPreview = case previewMsg of
+                                  Nothing -> noPreview
+                                  Just pm -> if T.null curStr then noPreview else renderMessage pm True uSet
+                            in vLimit 5 msgPreview <=> hBorderWithLabel (withDefAttr clientEmphAttr $ str "[Preview ↑]")
 
-renderCurrentChannelDisplay :: ChatState -> Widget Name
-renderCurrentChannelDisplay st = (header <+> conn) <=> messages
+        commandBox = case st^.csEditState.cedMultiline of
+            False ->
+                let linesStr = if numLines == 1
+                               then "line"
+                               else "lines"
+                    numLines = length curContents
+                in vLimit 1 $
+                   prompt <+> if multilineContent
+                              then ((withDefAttr clientEmphAttr $
+                                     str $ "[" <> show numLines <> " " <> linesStr <>
+                                           "; Enter: send, M-e: edit, Backspace: cancel] ")) <+>
+                                   (txt $ head curContents) <+>
+                                   (showCursor MessageInput (Location (0,0)) $ str " ")
+                              else inputBox
+            True -> vLimit 5 inputBox <=> multilineHints
+    in maybePreview <=> commandBox
+
+renderCurrentChannelDisplay :: Set Text -> ChatState -> Widget Name
+renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
     where
     conn = case st^.csConnectionStatus of
       Connected -> emptyWidget
@@ -248,7 +282,6 @@ renderCurrentChannelDisplay st = (header <+> conn) <=> messages
                         then emptyWidget
                         else withDefAttr clientMessageAttr $
                              txt "[Loading channel scrollback...]"
-    uSet = Set.fromList (map _uiName (HM.elems (st^.usrMap)))
     chatText = case st^.csMode of
         ChannelScroll ->
             viewport (ChannelMessages cId) Vertical $
@@ -362,7 +395,7 @@ mainInterface st =
     (renderChannelList st <+> (subdue st (borderElem bsIntersectR <=>
                                             vLimit normalChannelListHeight vBorder <=>
                                             borderElem bsIntersectR <=> vBorder))
-                            <+> (subdue st $ renderCurrentChannelDisplay st))
+                            <+> (subdue st $ renderCurrentChannelDisplay uSet st))
       <=> bottomBorder
       <=> case st^.csMode of
               ChannelSelect -> renderChannelSelect st
@@ -370,8 +403,9 @@ mainInterface st =
                                               , withDefAttr clientEmphAttr $ txt "Escape"
                                               , txt " to stop scrolling and resume chatting."
                                               ]
-              _             -> renderUserCommandBox st
+              _             -> renderUserCommandBox uSet st
     where
+    uSet = Set.fromList (map _uiName (HM.elems (st^.usrMap)))
     bottomBorder = case st^.csCurrentCompletion of
         Just _ | length (st^.csEditState.cedCompletionAlternatives) > 1 -> completionAlternatives st
         _ -> subdue st $ hLimit channelListWidth hBorder <+> borderElem bsIntersectB <+> hBorder

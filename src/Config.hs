@@ -84,6 +84,7 @@ data Config = Config
   , configSmartBacktick  :: Bool
   , configURLOpenCommand :: Maybe Text
   , configActivityBell   :: Bool
+  , configShowMessagePreview :: Bool
   } deriving (Eq, Show)
 
 fromIni :: Ini -> Either String Config
@@ -99,6 +100,7 @@ fromIni = runParse $ do
     pass                 <- fieldM  "pass"
     passCmd              <- fieldM  "passcmd"
     smartBacktick        <- fieldMR "smartbacktick"
+    configShowMessagePreview <- fieldR "showMessagePreview"
     ringBell             <- fieldMR "activityBell"
     let configPass = case passCmd of
           Nothing -> case pass of

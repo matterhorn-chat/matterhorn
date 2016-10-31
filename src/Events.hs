@@ -350,6 +350,10 @@ mainKeybindings =
          (Vty.EvKey (Vty.KFun 1) []) $
          showHelpScreen >=> continue
 
+    , KB "Toggle message preview"
+         (Vty.EvKey (Vty.KChar 'p') [Vty.MMeta]) $
+         toggleMessagePreview >=> continue
+
     , KB "Invoke $EDITOR to edit current message"
          (Vty.EvKey (Vty.KChar 'k') [Vty.MMeta]) $
          invokeExternalEditor
