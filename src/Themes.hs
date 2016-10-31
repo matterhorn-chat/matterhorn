@@ -29,6 +29,7 @@ module Themes
   , dialogEmphAttr
   , recentMarkerAttr
   , replyParentAttr
+  , loadMoreAttr
 
   -- * Username formatting
   , colorUsername
@@ -59,6 +60,9 @@ recentMarkerAttr = "recentMarker"
 
 replyParentAttr :: AttrName
 replyParentAttr = "replyParent"
+
+loadMoreAttr :: AttrName
+loadMoreAttr = "loadMoreMessages"
 
 dialogAttr :: AttrName
 dialogAttr = "dialog"
@@ -166,6 +170,7 @@ lightColorTheme = attrMap (black `on` white) $
   , (dialogEmphAttr,                   fg white)
   , (listSelectedFocusedAttr,          black `on` yellow)
   , (recentMarkerAttr,                 fg black `withStyle` bold)
+  , (loadMoreAttr,                     black `on` cyan)
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 
@@ -196,6 +201,7 @@ darkAttrs =
   , (dialogEmphAttr,                   fg white)
   , (listSelectedFocusedAttr,          black `on` yellow)
   , (recentMarkerAttr,                 fg yellow `withStyle` bold)
+  , (loadMoreAttr,                     black `on` cyan)
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 

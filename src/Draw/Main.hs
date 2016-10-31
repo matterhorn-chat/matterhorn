@@ -277,8 +277,10 @@ renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
     chatText = case st^.csMode of
         ChannelScroll ->
             viewport (ChannelMessages cId) Vertical $
+            reportExtent (ChannelMessages cId) $
             cached (ChannelMessages cId) $
-            vBox $ F.toList $ renderSingleMessage <$> channelMessages
+            vBox $ (withDefAttr loadMoreAttr $ hCenter $ str "<< Press C-l to load more messages >>") :
+                   (F.toList $ renderSingleMessage <$> channelMessages)
         _ -> renderLastMessages channelMessages
     channelMessages = insertDateBoundaries (st ^. timeZone) $ getMessageListing cId st
     renderSingleMessage = renderChatMessage uSet (st ^. timeFormat) (st ^. timeZone)

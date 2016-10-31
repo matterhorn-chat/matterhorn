@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module State where
 
-import           Brick (EventM, Next, suspendAndResume)
+import           Brick (EventM, Next, suspendAndResume, invalidateCacheEntry)
 import           Brick.Widgets.Edit (getEditContents, editContentsL)
 import           Brick.Widgets.List (list)
 import           Control.Applicative
@@ -320,6 +320,25 @@ channelPageDown st = do
   let cId = currentChannelId st
   vScrollBy (viewportScroll (ChannelMessages cId)) pageAmount
   return st
+
+asyncFetchMoreMessages :: ChatState -> ChannelId -> IO ()
+asyncFetchMoreMessages st cId =
+    doAsyncWith st $ do
+        let offset = length $ st^.msgMap.ix cId.ccContents.cdMessages
+            numToFetch = 10
+        posts <- mmGetPosts (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId (offset - 1) numToFetch
+        return $ \st' -> do
+            let cc = fromPosts st' posts
+            invalidateCacheEntry (ChannelMessages $ currentChannelId st)
+            return $ st' & msgMap.ix cId.ccContents.cdMessages %~ (cc^.cdMessages Seq.><)
+
+loadMoreMessages :: ChatState -> EventM Name ChatState
+loadMoreMessages st = do
+    case st^.csMode of
+        ChannelScroll -> do
+            liftIO $ asyncFetchMoreMessages st (currentChannelId st)
+        _ -> return ()
+    return st
 
 currentChannelId :: ChatState -> ChannelId
 currentChannelId st = Z.focus (st ^. csFocus)
