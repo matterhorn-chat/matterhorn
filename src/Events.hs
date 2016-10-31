@@ -289,6 +289,11 @@ handleWSEvent st we =
     WMChannelViewed -> case wepChannelId (weData we) of
       Just cId -> setLastViewedFor st cId >>= continue
       Nothing -> continue st
+    WMUserAdded -> case weChannelId we of
+      Just cId -> if weUserId we == st^.csMe.userIdL
+                  then handleChannelInvite cId st >>= continue
+                  else continue st
+      Nothing -> continue st
     _ -> continue st
 
 lookupKeybinding :: Vty.Event -> [Keybinding] -> Maybe Keybinding

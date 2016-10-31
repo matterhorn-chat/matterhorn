@@ -52,6 +52,9 @@ commandList =
       when (not $ T.null p) $ do
           liftIO $ setChannelTopic st p
       continue st
+  , Cmd "add-user" "Add a user to the current channel"
+    (TokenArg "username" NoArg) $ \ (uname, ()) st ->
+        addUserToCurrentChannel uname st >>= continue
   , Cmd "focus" "Focus on a named channel"
     (TokenArg "channel" NoArg) $ \ (name, ()) st ->
         changeChannel name st >>= continue

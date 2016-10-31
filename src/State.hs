@@ -137,7 +137,20 @@ joinChannel chan st = do
     liftIO $ do
         mmJoinChannel (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId
         asyncFetchScrollback st cId
-    handleNewChannel (chan^.channelNameL) chan $ st & csMode .~ Main
+    handleNewChannel (chan^.channelNameL) True chan $ st & csMode .~ Main
+
+-- | When another user adds us to a channel, we need to fetch the
+-- channel info for that channel.
+handleChannelInvite :: ChannelId -> ChatState -> EventM Name ChatState
+handleChannelInvite cId st = do
+    liftIO $ doAsyncWith st $ do
+        tryMM (mmGetChannel (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId)
+              (\chan -> do
+                return $ \st' -> do
+                  st'' <- handleNewChannel (chan^.channelNameL) False chan st'
+                  liftIO $ asyncFetchScrollback st'' cId
+                  return st'')
+    return st
 
 asyncFetchScrollback :: ChatState -> ChannelId -> IO ()
 asyncFetchScrollback st cId =
@@ -353,7 +366,7 @@ attemptCreateDMChannel name st
       liftIO $ runAsync st $ do
         -- create a new channel
         nc <- mmCreateDirect (st^.csConn) (st^.csTok) tId uId
-        return $ handleNewChannel name nc
+        return $ handleNewChannel name True nc
       return st
   | otherwise = do
     postErrorMessage ("No channel or user named " <> name) st
@@ -384,11 +397,11 @@ createOrdinaryChannel name st = do
           , minChannelType        = Ordinary
           }
     tryMM (mmCreateChannel (st^.csConn) (st^.csTok) tId minChannel)
-          (return . handleNewChannel name)
+          (return . handleNewChannel name True)
   return st
 
-handleNewChannel :: T.Text -> Channel -> ChatState -> EventM Name ChatState
-handleNewChannel name nc st = do
+handleNewChannel :: T.Text -> Bool -> Channel -> ChatState -> EventM Name ChatState
+handleNewChannel name switch nc st = do
   -- time to do a lot of state updating:
   -- create a new ClientChannel structure
   now <- liftIO getCurrentTime
@@ -417,7 +430,7 @@ handleNewChannel name nc st = do
       newZip = Z.updateList (mkChannelZipperList (st'^.csNames))
       st'' = st' & csFocus %~ newZip
           -- and we finally set our focus to the newly created channel
-  setFocus (getId nc) st''
+  if switch then setFocus (getId nc) st'' else return st''
 
 editMessage :: Post -> ChatState -> EventM Name ChatState
 editMessage new st = do
@@ -938,3 +951,17 @@ invokeExternalEditor st = do
 
 toggleMessagePreview :: ChatState -> EventM Name ChatState
 toggleMessagePreview st = return $ st & csShowMessagePreview %~ not
+
+addUserToCurrentChannel :: T.Text -> ChatState -> EventM Name ChatState
+addUserToCurrentChannel uname st = do
+    -- First: is this a valid username?
+    let results = filter ((== uname) . _uiName . snd) $ HM.toList $ st^.usrMap
+    case results of
+        [(uid, _)] -> do
+            liftIO $ doAsyncWith st $ do
+                let cId = currentChannelId st
+                tryMM (void $ mmChannelAddUser (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId uid)
+                      (const $ return return)
+            return st
+        _ -> do
+            postErrorMessage ("No such user: " <> uname) st
