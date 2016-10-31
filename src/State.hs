@@ -608,7 +608,7 @@ fetchUserStatuses cd token = do
       appState
       statusMap
 
-setupState :: Maybe Handle -> Config -> RequestChan -> Chan.Chan Event -> IO ChatState
+setupState :: Maybe Handle -> Config -> RequestChan -> Chan.Chan MHEvent -> IO ChatState
 setupState logFile config requestChan eventChan = do
   -- If we don't have enough credentials, ask for them.
   (uStr, pStr) <- case getCredentials config of

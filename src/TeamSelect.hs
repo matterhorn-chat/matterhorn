@@ -24,14 +24,13 @@ interactiveTeamSelection teams = do
     let Just (_, t) = listSelectedElement finalSt
     return t
 
-app :: App State Event ()
+app :: App State e ()
 app = App
   { appDraw         = teamSelectDraw
   , appChooseCursor = neverShowCursor
   , appHandleEvent  = onEvent
   , appStartEvent   = return
   , appAttrMap      = const colorTheme
-  , appLiftVtyEvent = id
   }
 
 colorTheme :: AttrMap
@@ -60,7 +59,8 @@ renderTeamItem :: Bool -> Team -> Widget ()
 renderTeamItem _ t =
     padRight Max $ txt $ teamName t
 
-onEvent :: State -> Event -> EventM () (Next State)
-onEvent _  (EvKey KEsc []) = liftIO exitSuccess
-onEvent st (EvKey KEnter []) = halt st
-onEvent st e = continue =<< handleListEvent e st
+onEvent :: State -> BrickEvent () e -> EventM () (Next State)
+onEvent _  (VtyEvent (EvKey KEsc [])) = liftIO exitSuccess
+onEvent st (VtyEvent (EvKey KEnter [])) = halt st
+onEvent st (VtyEvent e) = continue =<< handleListEvent e st
+onEvent st _ = continue st

@@ -60,7 +60,7 @@ main = do
     Just h -> hClose h
   writeHistory (finalSt^.csInputHistory)
 
-app :: App ChatState Event Name
+app :: App ChatState MHEvent Name
 app = App
   { appDraw         = draw
   , appChooseCursor = showFirstCursor
@@ -69,5 +69,4 @@ app = App
                       -- ^ Critical to ensure that we scroll to the
                       -- bottom of the initially-viewed channel.
   , appAttrMap      = (^.csTheme)
-  , appLiftVtyEvent = VtyEvent
   }

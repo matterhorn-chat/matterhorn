@@ -37,28 +37,35 @@ import           Types
 import           InputHistory
 import           Config
 
-onEvent :: ChatState -> Event -> EventM Name (Next ChatState)
-onEvent st RefreshWebsocketEvent = do
+onEvent :: ChatState -> BrickEvent Name MHEvent -> EventM Name (Next ChatState)
+onEvent st (AppEvent e) = onAppEvent st e
+onEvent st (VtyEvent e) = onVtyEvent st e
+onEvent st _ = continue st
+
+onAppEvent :: ChatState -> MHEvent -> EventM Name (Next ChatState)
+onAppEvent st RefreshWebsocketEvent = do
   liftIO $ connectWebsockets st
   msg <- newClientMessage Informative "Websocket connecting..."
   continue =<< addClientMessage msg st
-onEvent st WebsocketDisconnect = do
+onAppEvent st WebsocketDisconnect = do
   msg <- newClientMessage Informative "Websocket disconnected."
   continue =<< (addClientMessage msg $ st & csConnectionStatus .~ Disconnected)
-onEvent st WebsocketConnect = do
+onAppEvent st WebsocketConnect = do
   msg <- newClientMessage Informative "Websocket reconnected."
   continue =<< (addClientMessage msg $ st & csConnectionStatus .~ Connected)
-onEvent st (WSEvent we) =
+onAppEvent st (WSEvent we) =
   handleWSEvent st we
-onEvent st (RespEvent f) =
+onAppEvent st (RespEvent f) =
   continue =<< f st
-onEvent st (AsyncErrEvent e) = do
+onAppEvent st (AsyncErrEvent e) = do
   msg <- newClientMessage Error $
     "An unexpected error has occurred! The exception encountered was:\n  " <>
     T.pack (show e) <>
     "\nPlease report this error at https://github.com/aisamanra/matterhorn/issues"
   continue =<< addClientMessage msg st
-onEvent st (VtyEvent e) = do
+
+onVtyEvent :: ChatState -> Vty.Event -> EventM Name (Next ChatState)
+onVtyEvent st e = do
     case st^.csMode of
         Main                -> onEventMain st e
         ShowHelp            -> onEventShowHelp st e

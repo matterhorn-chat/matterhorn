@@ -266,7 +266,7 @@ data ChatResources = ChatResources
   { _crTok           :: Token
   , _crConn          :: ConnectionData
   , _crRequestQueue  :: RequestChan
-  , _crEventQueue    :: Chan Event
+  , _crEventQueue    :: Chan MHEvent
   , _crTheme         :: AttrMap
   , _crQuitCondition :: MVar ()
   , _crConfiguration :: Config
@@ -328,10 +328,8 @@ data ChatState = ChatState
   , _csJoinChannelList             :: Maybe (List Name Channel)
   }
 
-data Event
-  = VtyEvent Vty.Event
-    -- ^ For events that arise from VTY
-  | WSEvent WebsocketEvent
+data MHEvent
+  = WSEvent WebsocketEvent
     -- ^ For events that arise from the websocket
   | RespEvent (ChatState -> EventM Name ChatState)
     -- ^ For the result values of async IO operations

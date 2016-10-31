@@ -43,14 +43,13 @@ interactiveGatherCredentials config = do
         finalP = T.concat $ getEditContents $ passwordEdit finalSt
     return (finalU, finalP)
 
-app :: App State Event Name
+app :: App State e Name
 app = App
   { appDraw         = credsDraw
   , appChooseCursor = showFirstCursor
   , appHandleEvent  = onEvent
   , appStartEvent   = return
   , appAttrMap      = const colorTheme
-  , appLiftVtyEvent = id
   }
 
 colorTheme :: AttrMap
@@ -77,21 +76,21 @@ credentialsForm st =
          , renderText "Press Enter to log in or Esc to exit."
          ]
 
-onEvent :: State -> Event -> EventM Name (Next State)
-onEvent _  (EvKey KEsc []) = liftIO exitSuccess
-onEvent st (EvKey (KChar '\t') []) =
+onEvent :: State -> BrickEvent Name e -> EventM Name (Next State)
+onEvent _  (VtyEvent (EvKey KEsc [])) = liftIO exitSuccess
+onEvent st (VtyEvent (EvKey (KChar '\t') [])) =
     continue $ st { focus = if focus st == Username
                             then Password
                             else Username
                   }
-onEvent st (EvKey KEnter []) =
+onEvent st (VtyEvent (EvKey KEnter [])) =
     -- check for valid (non-empty) contents
     let u = T.concat $ getEditContents $ usernameEdit st
         p = T.concat $ getEditContents $ passwordEdit st
     in case T.null u || T.null p of
         True -> continue st
         False -> halt st
-onEvent st e =
+onEvent st (VtyEvent e) =
     case focus st of
         Username -> do
             e' <- handleEditorEvent e (usernameEdit st)
@@ -99,3 +98,4 @@ onEvent st e =
         Password -> do
             e' <- handleEditorEvent e (passwordEdit st)
             continue $ st { passwordEdit = e' }
+onEvent st _ = continue st
