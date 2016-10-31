@@ -6,7 +6,7 @@ import           Brick
 import           Brick.Widgets.Border
 import           Brick.Widgets.Border.Style
 import           Brick.Widgets.Center (hCenter)
-import           Brick.Widgets.Edit (renderEditor, getEditContents)
+import           Brick.Widgets.Edit (editContentsL, renderEditor, getEditContents)
 import           Control.Applicative
 import           Data.Time.Clock (UTCTime)
 import           Data.Time.Format ( formatTime
@@ -24,6 +24,7 @@ import           Data.Set (Set)
 import qualified Data.Set as Set
 import           Data.Text (Text)
 import qualified Data.Text as T
+import           Data.Text.Zipper (cursorPosition)
 import           Lens.Micro.Platform
 
 import           Prelude
@@ -202,9 +203,12 @@ renderUserCommandBox st =
         inputBox = renderEditor True (st^.cmdLine)
         curContents = getEditContents $ st^.cmdLine
         multilineContent = length curContents > 1
-        multilineHints = hBorderWithLabel $
-                         withDefAttr clientEmphAttr $
-                         (str "In multi-line mode. Press Esc to finish.")
+        multilineHints =
+            (borderElem bsHorizontal) <+>
+            ((str $ "[" <> (show $ (+1) $ fst $ cursorPosition $ st^.cmdLine.editContentsL)) <+>
+              str "/" <+> (str $ (show $ length curContents) <> "]")) <+>
+            (hBorderWithLabel $ withDefAttr clientEmphAttr $
+             (str "In multi-line mode. Press Esc to finish."))
     in case st^.csEditState.cedMultiline of
         False ->
             let linesStr = if numLines == 1
