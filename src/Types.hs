@@ -5,7 +5,7 @@
 
 module Types where
 
-import           Brick (EventM, txt, vBox, Next)
+import           Brick (EventM, txt, Next)
 import           Brick.AttrMap (AttrMap)
 import           Brick.Widgets.Edit (Editor, editor)
 import           Brick.Widgets.List (List)
@@ -274,6 +274,7 @@ data ChatResources = ChatResources
 
 data ChatEditState = ChatEditState
   { _cedEditor               :: Editor T.Text Name
+  , _cedMultiline            :: Bool
   , _cedInputHistory         :: InputHistory
   , _cedInputHistoryPosition :: HM.HashMap ChannelId (Maybe Int)
   , _cedLastChannelInput     :: HM.HashMap ChannelId T.Text
@@ -284,7 +285,8 @@ data ChatEditState = ChatEditState
 
 emptyEditState :: InputHistory -> ChatEditState
 emptyEditState hist = ChatEditState
-  { _cedEditor               = editor MessageInput (vBox . map txt) (Just 1) ""
+  { _cedEditor               = editor MessageInput (txt . T.unlines) Nothing ""
+  , _cedMultiline            = False
   , _cedInputHistory         = hist
   , _cedInputHistoryPosition = mempty
   , _cedLastChannelInput     = mempty

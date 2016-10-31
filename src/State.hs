@@ -751,7 +751,9 @@ channelHistoryForward st =
         | otherwise ->
           let Just entry = getHistoryEntry cId newI (st^.csInputHistory)
               newI = i - 1
-          in st & cmdLine.editContentsL .~ (gotoEOL $ textZipper [entry] (Just 1))
+              eLines = T.lines entry
+              mv = if length eLines == 1 then gotoEOL else id
+          in st & cmdLine.editContentsL .~ (mv $ textZipper eLines Nothing)
                 & csInputHistoryPosition.at cId .~ (Just $ Just newI)
       _ -> st
 
@@ -764,15 +766,19 @@ channelHistoryBackward st =
           in case getHistoryEntry cId newI (st^.csInputHistory) of
               Nothing -> st
               Just entry ->
-                  st & cmdLine.editContentsL .~ (gotoEOL $ textZipper [entry] (Just 1))
-                     & csInputHistoryPosition.at cId .~ (Just $ Just newI)
+                  let eLines = T.lines entry
+                      mv = if length eLines == 1 then gotoEOL else id
+                  in st & cmdLine.editContentsL .~ (mv $ textZipper eLines Nothing)
+                        & csInputHistoryPosition.at cId .~ (Just $ Just newI)
       _ ->
           let newI = 0
           in case getHistoryEntry cId newI (st^.csInputHistory) of
               Nothing -> st
               Just entry ->
-                  st & cmdLine.editContentsL .~ (gotoEOL $ textZipper [entry] (Just 1))
-                     & csInputHistoryPosition.at cId .~ (Just $ Just newI)
+                  let eLines = T.lines entry
+                      mv = if length eLines == 1 then gotoEOL else id
+                  in st & cmdLine.editContentsL .~ (mv $ textZipper eLines Nothing)
+                        & csInputHistoryPosition.at cId .~ (Just $ Just newI)
 
 showHelpScreen :: ChatState -> EventM Name ChatState
 showHelpScreen st = do
@@ -843,6 +849,14 @@ parseChannelSelectPattern pat = do
         (Nothing, Just Suffix)     -> return $ CSP Suffix pat2
         (Just Prefix, Just Suffix) -> return $ CSP Equal  pat2
         tys                        -> error $ "BUG: invalid channel select case: " <> show tys
+
+startMultilineEditing :: ChatState -> EventM Name ChatState
+startMultilineEditing st =
+    return $ st & csEditState.cedMultiline .~ True
+
+stopMultilineEditing :: ChatState -> EventM Name ChatState
+stopMultilineEditing st =
+    return $ st & csEditState.cedMultiline .~ False
 
 openMostRecentURL :: ChatState -> EventM Name ChatState
 openMostRecentURL st =

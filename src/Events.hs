@@ -93,13 +93,14 @@ onEventMain st (Vty.EvResize _ _) = do
   continue =<< updateChannelScrollState st
 onEventMain st e | Just kb <- lookupKeybinding e mainKeybindings = kbAction kb st
 onEventMain st (Vty.EvPaste bytes) = do
-  -- If you paste a multi-line thing, it'll only insert up to the first
-  -- line ending because the zipper will respect the line limit when
-  -- inserting the paste. Once we add support for multi-line editing,
-  -- this will Just Work once the editor's line limit is set to Nothing.
   let pasteStr = T.pack (UTF8.toString bytes)
-  continue $ st & cmdLine %~ applyEdit (Z.insertMany pasteStr)
-onEventMain st e = do
+      st' = st & cmdLine %~ applyEdit (Z.insertMany pasteStr)
+  case length (getEditContents $ st'^.cmdLine) > 1 of
+      True -> continue =<< startMultilineEditing st'
+      False -> continue st'
+onEventMain st e
+  | (length (getEditContents $ st^.cmdLine) == 1) || st^.csEditState.cedMultiline = do
+
     let smartBacktick = st^.csResources.crConfiguration.to configSmartBacktick
         smartChars = "*`_"
     st' <- case e of
@@ -135,6 +136,7 @@ onEventMain st e = do
         _ -> handleEventLensed st cmdLine handleEditorEvent e
 
     continue $ st' & csCurrentCompletion .~ Nothing
+onEventMain st _ = continue st
 
 editorEmpty :: Editor T.Text a -> Bool
 editorEmpty e = cursorIsAtEnd e &&
@@ -364,12 +366,18 @@ mainKeybindings =
          tabComplete Backwards
 
     , KB "Scroll up in the channel input history"
-         (Vty.EvKey Vty.KUp []) $
-         continue . channelHistoryBackward
+         (Vty.EvKey Vty.KUp []) $ \st ->
+             case st^.csEditState.cedMultiline of
+                 True -> continue =<< handleEventLensed st cmdLine handleEditorEvent
+                                           (Vty.EvKey Vty.KUp [])
+                 False -> continue $ channelHistoryBackward st
 
     , KB "Scroll down in the channel input history"
-         (Vty.EvKey Vty.KDown []) $
-         continue . channelHistoryForward
+         (Vty.EvKey Vty.KDown []) $ \st ->
+             case st^.csEditState.cedMultiline of
+                 True -> continue =<< handleEventLensed st cmdLine handleEditorEvent
+                                           (Vty.EvKey Vty.KDown [])
+                 False -> continue $ channelHistoryForward st
 
     , KB "Page up in the channel message list"
          (Vty.EvKey Vty.KPageUp []) $ \st -> do
@@ -398,24 +406,50 @@ mainKeybindings =
 
     , KB "Send the current message"
          (Vty.EvKey Vty.KEnter []) $ \st -> do
-           handleInputSubmission $ st & csCurrentCompletion .~ Nothing
+             case st^.csEditState.cedMultiline of
+                 True -> continue =<< handleEventLensed st cmdLine handleEditorEvent
+                                           (Vty.EvKey Vty.KEnter [])
+                 False -> handleInputSubmission $ st & csCurrentCompletion .~ Nothing
+
+    , KB "Delete the current a multi-line message"
+         (Vty.EvKey Vty.KBS []) $ \st -> do
+             case st^.csEditState.cedMultiline of
+                 True -> continue =<< handleEventLensed st cmdLine handleEditorEvent
+                                           (Vty.EvKey Vty.KBS [])
+                 False ->
+                     -- If the current message has multipline lines, we
+                     -- don't permit editing it; backspace just deletes
+                     -- the whole thing.
+                     case length (getEditContents $ st^.cmdLine) == 1 of
+                         False -> continue $ st & cmdLine %~ applyEdit Z.clearZipper
+                         True -> continue =<< handleEventLensed st cmdLine handleEditorEvent
+                                           (Vty.EvKey Vty.KBS [])
 
     , KB "Open the most recently-posted URL"
          (Vty.EvKey (Vty.KChar 'o') [Vty.MCtrl]) $
            openMostRecentURL >=> continue
+
+    , KB "Switch to multi-line message compose mode"
+         (Vty.EvKey (Vty.KChar 'e') [Vty.MMeta]) $
+           startMultilineEditing >=> continue
+
+    , KB "Leave multi-line message compose mode"
+         (Vty.EvKey Vty.KEsc []) $
+           stopMultilineEditing >=> continue
     ]
 
 handleInputSubmission :: ChatState -> EventM Name (Next ChatState)
 handleInputSubmission st = do
-  let (line:_) = getEditContents (st^.cmdLine)
+  let (line:rest) = getEditContents (st^.cmdLine)
+      allLines = T.intercalate "\n" $ line : rest
       cId = currentChannelId st
       st' = st & cmdLine %~ applyEdit Z.clearZipper
-               & csInputHistory %~ addHistoryEntry line cId
+               & csInputHistory %~ addHistoryEntry allLines cId
                & csInputHistoryPosition.at cId .~ Nothing
   case T.uncons line of
     Just ('/',cmd) -> dispatchCommand cmd st'
     _              -> do
-      liftIO (sendMessage st' line)
+      liftIO (sendMessage st' allLines)
       continue st'
 
 shouldSkipMessage :: T.Text -> Bool

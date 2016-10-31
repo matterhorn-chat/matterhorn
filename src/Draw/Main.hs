@@ -6,7 +6,7 @@ import           Brick
 import           Brick.Widgets.Border
 import           Brick.Widgets.Border.Style
 import           Brick.Widgets.Center (hCenter)
-import           Brick.Widgets.Edit (renderEditor)
+import           Brick.Widgets.Edit (renderEditor, getEditContents)
 import           Control.Applicative
 import           Data.Time.Clock (UTCTime)
 import           Data.Time.Format ( formatTime
@@ -197,10 +197,29 @@ getDmChannels st =
        ]
 
 renderUserCommandBox :: ChatState -> Widget Name
-renderUserCommandBox st = prompt <+> inputBox
-    where
-    prompt = txt "> "
-    inputBox = renderEditor True (st^.cmdLine)
+renderUserCommandBox st =
+    let prompt = txt "> "
+        inputBox = renderEditor True (st^.cmdLine)
+        curContents = getEditContents $ st^.cmdLine
+        multilineContent = length curContents > 1
+        multilineHints = hBorderWithLabel $
+                         withDefAttr clientEmphAttr $
+                         (str "In multi-line mode. Press Esc to finish.")
+    in case st^.csEditState.cedMultiline of
+        False ->
+            let linesStr = if numLines == 1
+                           then "line"
+                           else "lines"
+                numLines = length curContents
+            in vLimit 1 $
+               prompt <+> if multilineContent
+                          then ((withDefAttr clientEmphAttr $
+                                 str $ "[" <> show numLines <> " " <> linesStr <>
+                                       "; Enter: send, M-e: edit, Backspace: cancel] ")) <+>
+                               (txt $ head curContents) <+>
+                               (showCursor MessageInput (Location (0,0)) $ str " ")
+                          else inputBox
+        True -> vLimit 5 inputBox <=> multilineHints
 
 renderCurrentChannelDisplay :: ChatState -> Widget Name
 renderCurrentChannelDisplay st = (header <+> conn) <=> messages
