@@ -68,6 +68,15 @@ fieldMR name = do
     Nothing  -> Nothing
     Just str -> readMaybe (T.unpack str)
 
+fieldFlag :: Text -> Bool -> IniParser Section Bool
+fieldFlag name def = do
+  mb <- fieldM name
+  case mb of
+    Nothing  -> return def
+    Just str -> case readMaybe (T.unpack str) of
+      Nothing -> fail ("Unable to read field " ++ show name)
+      Just b  -> return b
+
 data PasswordSource =
     PasswordString Text
     | PasswordCommand Text
@@ -100,7 +109,7 @@ fromIni = runParse $ do
     pass                 <- fieldM  "pass"
     passCmd              <- fieldM  "passcmd"
     smartBacktick        <- fieldMR "smartbacktick"
-    configShowMessagePreview <- fieldR "showMessagePreview"
+    configShowMessagePreview <- fieldFlag "showMessagePreview" False
     ringBell             <- fieldMR "activityBell"
     let configPass = case passCmd of
           Nothing -> case pass of
