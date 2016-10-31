@@ -367,6 +367,8 @@ mainKeybindings =
 
     , KB "Scroll up in the channel input history"
          (Vty.EvKey Vty.KUp []) $ \st ->
+             -- Up in multiline mode does the usual thing; otherwise we
+             -- navigate the history.
              case st^.csEditState.cedMultiline of
                  True -> continue =<< handleEventLensed st cmdLine handleEditorEvent
                                            (Vty.EvKey Vty.KUp [])
@@ -374,6 +376,8 @@ mainKeybindings =
 
     , KB "Scroll down in the channel input history"
          (Vty.EvKey Vty.KDown []) $ \st ->
+             -- Down in multiline mode does the usual thing; otherwise
+             -- we navigate the history.
              case st^.csEditState.cedMultiline of
                  True -> continue =<< handleEventLensed st cmdLine handleEditorEvent
                                            (Vty.EvKey Vty.KDown [])
@@ -407,6 +411,9 @@ mainKeybindings =
     , KB "Send the current message"
          (Vty.EvKey Vty.KEnter []) $ \st -> do
              case st^.csEditState.cedMultiline of
+                 -- Enter in multiline mode does the usual thing; we
+                 -- only send on Enter when we're outside of multiline
+                 -- mode.
                  True -> continue =<< handleEventLensed st cmdLine handleEditorEvent
                                            (Vty.EvKey Vty.KEnter [])
                  False -> handleInputSubmission $ st & csCurrentCompletion .~ Nothing
@@ -414,12 +421,13 @@ mainKeybindings =
     , KB "Delete the current multi-line message, if any"
          (Vty.EvKey Vty.KBS []) $ \st -> do
              case st^.csEditState.cedMultiline of
+                 -- Backspace in multiline mode does the usual thing.
                  True -> continue =<< handleEventLensed st cmdLine handleEditorEvent
                                            (Vty.EvKey Vty.KBS [])
                  False ->
-                     -- If the current message has multipline lines, we
-                     -- don't permit editing it; backspace just deletes
-                     -- the whole thing.
+                     -- Backspace outside multiline mode means delete
+                     -- the whole message if it has more than one line,
+                     -- or do the usual thing otherwise.
                      case length (getEditContents $ st^.cmdLine) == 1 of
                          False -> continue $ st & cmdLine %~ applyEdit Z.clearZipper
                          True -> continue =<< handleEventLensed st cmdLine handleEditorEvent
