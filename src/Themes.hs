@@ -84,6 +84,9 @@ darkColorThemeName = "builtin:dark"
 lightColorThemeName :: T.Text
 lightColorThemeName = "builtin:light"
 
+darkClearColorThemeName :: T.Text
+darkClearColorThemeName = "builtin:dark-clear"
+
 timeAttr :: AttrName
 timeAttr = "time"
 
@@ -131,8 +134,9 @@ errorMessageAttr = "errorMessage"
 
 themes :: [(T.Text, AttrMap)]
 themes =
-    [ (darkColorThemeName,  darkColorTheme)
-    , (lightColorThemeName, lightColorTheme)
+    [ (darkColorThemeName,      darkColorTheme)
+    , (lightColorThemeName,     lightColorTheme)
+    , (darkClearColorThemeName, darkClearColorTheme)
     ]
 
 lightColorTheme :: AttrMap
@@ -165,8 +169,8 @@ lightColorTheme = attrMap (black `on` white) $
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 
-darkColorTheme :: AttrMap
-darkColorTheme = attrMap (bg black) $
+darkAttrs :: [(AttrName, Attr)]
+darkAttrs =
   [ (timeAttr,                         fg white)
   , (channelHeaderAttr,                fg white `withStyle` underline)
   , (channelListHeaderAttr,            fg cyan)
@@ -194,6 +198,13 @@ darkColorTheme = attrMap (bg black) $
   , (recentMarkerAttr,                 fg yellow `withStyle` bold)
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
+
+
+darkColorTheme :: AttrMap
+darkColorTheme = attrMap (bg black) darkAttrs
+
+darkClearColorTheme :: AttrMap
+darkClearColorTheme = attrMap defAttr darkAttrs
 
 usernameAttr :: Int -> AttrName
 usernameAttr i = "username" <> (attrName $ show i)
