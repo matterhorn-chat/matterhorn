@@ -227,8 +227,8 @@ renderUserCommandBox uSet st =
         multilineContent = length curContents > 1
         multilineHints =
             (borderElem bsHorizontal) <+>
-            ((str $ "[" <> (show $ (+1) $ fst $ cursorPosition $ st^.cmdLine.editContentsL)) <+>
-              str "/" <+> (str $ (show $ length curContents) <> "]")) <+>
+            (str $ "[" <> (show $ (+1) $ fst $ cursorPosition $ st^.cmdLine.editContentsL) <>
+                   "/" <> (show $ length curContents) <> "]") <+>
             (hBorderWithLabel $ withDefAttr clientEmphAttr $
              (str "In multi-line mode. Press Esc to finish."))
         uname = st^.csMe.userUsernameL
