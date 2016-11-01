@@ -65,6 +65,7 @@ renderChatMessage uSet mFormat tz msg =
             Nothing ->
                 case msg^.mType of
                     C DateTransition -> withDefAttr dateTransitionAttr (hBorderWithLabel m)
+                    C NewMessagesTransition -> withDefAttr newMessageTransitionAttr (hBorderWithLabel m)
                     C Error -> withDefAttr errorMessageAttr m
                     _ -> withDefAttr clientMessageAttr m
         fullMsg = msgTxt <=> msgAtch
@@ -75,6 +76,7 @@ renderChatMessage uSet mFormat tz msg =
                 in renderTime fmt tz (msg^.mDate) <+> txt " " <+> w
         maybeRenderTimeWith f = case msg^.mType of
             C DateTransition -> id
+            C NewMessagesTransition -> id
             _ -> f
     in maybeRenderTimeWith maybeRenderTime fullMsg
 
@@ -291,7 +293,10 @@ renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
         _ -> renderLastMessages channelMessages
 
     dateTransitionFormat = maybe defaultDateFormat id (configDateFormat $ st^.csResources.crConfiguration)
-    channelMessages = insertDateBoundaries dateTransitionFormat (st ^. timeZone) $ getMessageListing cId st
+    channelMessages = insertTransitions dateTransitionFormat
+                                        (st ^. timeZone)
+                                        (getNewMessageCutoff cId st)
+                                        (getMessageListing cId st)
     renderSingleMessage = renderChatMessage uSet (st ^. timeFormat) (st ^. timeZone)
 
     renderLastMessages :: Seq.Seq Message -> Widget Name
@@ -333,21 +338,31 @@ getMessageListing cId st =
 defaultDateFormat :: T.Text
 defaultDateFormat = "%Y-%m-%d"
 
-insertDateBoundaries :: Text -> TimeZone -> Seq.Seq Message -> Seq.Seq Message
-insertDateBoundaries fmt tz ms = fst $ F.foldl' nextMsg initState ms
+insertTransitions :: Text -> TimeZone -> Maybe UTCTime -> Seq.Seq Message -> Seq.Seq Message
+insertTransitions fmt tz cutoff ms = fst $ F.foldl' nextMsg initState ms
     where
         initState :: (Seq.Seq Message, Maybe Message)
         initState = (mempty, Nothing)
 
         dateMsg d = Message (getBlocks (T.pack $ formatTime defaultTimeLocale (T.unpack fmt) d))
                             Nothing d (C DateTransition) False False Seq.empty NotAReply Nothing
+        newMessagesMsg d = Message (getBlocks (T.pack "New Messages"))
+                                   Nothing d (C NewMessagesTransition) False False Seq.empty NotAReply Nothing
 
         nextMsg :: (Seq.Seq Message, Maybe Message) -> Message -> (Seq.Seq Message, Maybe Message)
         nextMsg (rest, Nothing) msg = (rest Seq.|> msg, Just msg)
         nextMsg (rest, Just prevMsg) msg =
-            if localDay (utcToLocalTime tz (msg^.mDate)) /= localDay (utcToLocalTime tz (prevMsg^.mDate))
-            then (rest Seq.|> (dateMsg (msg^.mDate)) Seq.|> msg, Just msg)
-            else (rest Seq.|> msg, Just msg)
+            let toInsert = newMessageTransition cutoff <> dateTransition
+                dateTransition =
+                    if localDay (utcToLocalTime tz (msg^.mDate)) /= localDay (utcToLocalTime tz (prevMsg^.mDate))
+                    then Seq.singleton $ dateMsg (msg^.mDate)
+                    else mempty
+                newMessageTransition Nothing = mempty
+                newMessageTransition (Just cutoffTime) =
+                    if prevMsg^.mDate < cutoffTime && msg^.mDate >= cutoffTime
+                    then Seq.singleton $ newMessagesMsg cutoffTime
+                    else mempty
+            in ((rest Seq.>< toInsert) Seq.|> msg, Just msg)
 
 findUserByDMChannelName :: HashMap UserId UserInfo
                         -> T.Text -- ^ the dm channel name

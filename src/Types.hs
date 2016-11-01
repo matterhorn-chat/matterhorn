@@ -70,6 +70,7 @@ data ClientMessageType =
     Informative
     | Error
     | DateTransition
+    | NewMessagesTransition
     deriving (Eq, Show)
 
 -- A ClientMessage is a message given to us by our client, like help text
@@ -191,12 +192,13 @@ emptyChannelContents = ChannelContents
 makeLenses ''ChannelContents
 
 data ChannelInfo = ChannelInfo
-  { _cdViewed  :: UTCTime
-  , _cdUpdated :: UTCTime
-  , _cdName    :: T.Text
-  , _cdHeader  :: T.Text
-  , _cdType    :: Type
-  , _cdLoaded  :: Bool
+  { _cdViewed           :: UTCTime
+  , _cdUpdated          :: UTCTime
+  , _cdName             :: T.Text
+  , _cdHeader           :: T.Text
+  , _cdType             :: Type
+  , _cdLoaded           :: Bool
+  , _cdNewMessageCutoff :: Maybe UTCTime
   }
 
 makeLenses ''ChannelInfo
