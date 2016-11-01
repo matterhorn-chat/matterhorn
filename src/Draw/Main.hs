@@ -196,7 +196,7 @@ previewFromInput uname s =
     -- If it starts with a slash but not /me, this has no preview
     -- representation
     let isCommand = "/" `T.isPrefixOf` s
-        isEmote = "/me" `T.isPrefixOf` s
+        isEmote = "/me " `T.isPrefixOf` s
         content = if isEmote
                   then T.stripStart $ T.drop 3 s
                   else s
