@@ -57,7 +57,7 @@ executable matterhorn
                      , ini
                      , process
                      , microlens-platform
-                     , brick >= 0.12
+                     , brick >= 0.13
                      , data-default
                      , vty >= 5.11.1
                      , transformers
