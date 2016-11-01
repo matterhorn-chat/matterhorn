@@ -75,9 +75,6 @@ onEventMain st e
                        ((cursorAtChar ' ' (applyEdit Z.moveLeft $ st^.cmdLine)) &&
                         (cursorIsAtEnd $ st^.cmdLine)) ->
                       return $ st & cmdLine %~ applyEdit (Z.insertMany (T.pack $ ch:ch:[]) >>> Z.moveLeft)
-                  -- Note that this behavior will have to improve once we
-                  -- support multi-line editing because in that context
-                  -- ```...``` is something people will want to type.
                   | (cursorAtChar ch $ st^.cmdLine) &&
                     (cursorIsAtEnd $ applyEdit Z.moveRight $ st^.cmdLine) ->
                       return $ st & cmdLine %~ applyEdit Z.moveRight
