@@ -32,7 +32,7 @@ import           Lens.Micro.Platform
 import           System.Exit (ExitCode(..), exitFailure)
 import           System.IO (Handle, hPutStr, hClose)
 import           System.IO.Temp (withSystemTempFile)
-import           System.Process (system, rawSystem)
+import           System.Process (system)
 import           System.Environment (lookupEnv)
 import           Cheapskate
 
@@ -983,7 +983,7 @@ invokeExternalEditor st = do
         hClose tmpFileHandle
 
         -- Run the editor
-        status <- rawSystem editorProgram [tmpFileName]
+        status <- system (editorProgram <> " " <> tmpFileName)
 
         -- On editor exit, if exited with zero status, read temp file.
         -- If non-zero status, skip temp file read.
