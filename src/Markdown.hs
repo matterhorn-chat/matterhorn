@@ -133,7 +133,7 @@ toList lt bs uSet = vBox
   [ B.txt i <+> (vBox (fmap (toWidget uSet) b))
   | b <- bs | i <- is ]
   where is = case lt of
-          C.Bullet c -> repeat (c `T.cons` " ")
+          C.Bullet _ -> repeat ("• ")
           C.Numbered _ _ -> [ T.pack (show (n :: Int)) <> ". "
                             | n <- [1..] ]
 
