@@ -156,10 +156,20 @@ asyncFetchScrollback :: ChatState -> ChannelId -> IO ()
 asyncFetchScrollback st cId =
     doAsyncWith st $ do
         posts <- mmGetPosts (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId 0 numScrollbackPosts
-        return $ \st' ->
+        return $ \st' -> do
+            let contents = fromPosts st' posts
+                -- We need to set the new message cutoff only if there
+                -- are actually messages that came in after our last
+                -- view time.
+                Just viewTime = st'^?msgMap.ix cId.ccInfo.cdViewed
+                cutoff = if hasNew then Just viewTime else Nothing
+                hasNew = not $ Seq.null $
+                         Seq.filter (\m -> m^.mDate > viewTime) $
+                         contents^.cdMessages
             updateChannelScrollState $
-                st' & msgMap.ix cId.ccContents .~ fromPosts st' posts
+                st' & msgMap.ix cId.ccContents .~ contents
                     & msgMap.ix cId.ccInfo.cdLoaded .~ True
+                    & msgMap.ix cId.ccInfo.cdNewMessageCutoff .~ cutoff
 
 startLeaveCurrentChannel :: ChatState -> EventM Name ChatState
 startLeaveCurrentChannel st = do
@@ -741,7 +751,7 @@ initializeState cr myTeam myUser = do
                      , _cdHeader           = c^.channelHeaderL
                      , _cdType             = c^.channelTypeL
                      , _cdLoaded           = False
-                     , _cdNewMessageCutoff = Just viewed
+                     , _cdNewMessageCutoff = Nothing
                      }
         cChannel = ClientChannel
                      { _ccContents = emptyChannelContents
