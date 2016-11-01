@@ -406,18 +406,8 @@ completionAlternatives st =
             , borderElem bsHorizontal
             ]
 
-mainInterface :: ChatState -> Widget Name
-mainInterface st =
-    (renderChannelList st <+> vBorder <+> (subdue st $ renderCurrentChannelDisplay uSet st))
-      <=> bottomBorder
-      <=> maybePreview
-      <=> case st^.csMode of
-              ChannelSelect -> renderChannelSelect st
-              ChannelScroll -> hCenter $ hBox [ txt "Press "
-                                              , withDefAttr clientEmphAttr $ txt "Escape"
-                                              , txt " to stop scrolling and resume chatting."
-                                              ]
-              _             -> renderUserCommandBox st
+inputPreview :: Set T.Text -> ChatState -> Widget Name
+inputPreview uSet st = maybePreview
     where
     uname = st^.csMe.userUsernameL
     curContents = getEditContents $ st^.cmdLine
@@ -433,6 +423,20 @@ mainInterface st =
                                          else renderMessage pm True uSet
                         in vLimit 5 msgPreview <=>
                            hBorderWithLabel (withDefAttr clientEmphAttr $ str "[Preview ↑]")
+
+mainInterface :: ChatState -> Widget Name
+mainInterface st =
+    (renderChannelList st <+> vBorder <+> (subdue st $ renderCurrentChannelDisplay uSet st))
+      <=> bottomBorder
+      <=> inputPreview uSet st
+      <=> case st^.csMode of
+              ChannelSelect -> renderChannelSelect st
+              ChannelScroll -> hCenter $ hBox [ txt "Press "
+                                              , withDefAttr clientEmphAttr $ txt "Escape"
+                                              , txt " to stop scrolling and resume chatting."
+                                              ]
+              _             -> renderUserCommandBox st
+    where
     uSet = Set.fromList (map _uiName (HM.elems (st^.usrMap)))
     bottomBorder = case st^.csCurrentCompletion of
         Just _ | length (st^.csEditState.cedCompletionAlternatives) > 1 -> completionAlternatives st
