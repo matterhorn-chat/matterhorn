@@ -183,6 +183,10 @@ mainKeybindings =
          (Vty.EvKey (Vty.KChar 'o') [Vty.MCtrl]) $
            openMostRecentURL >=> continue
 
+    , KB "Clear the current channel's unread message indicator"
+         (Vty.EvKey (Vty.KChar 'l') [Vty.MCtrl]) $ \st ->
+           continue =<< clearNewMessageCutoff (currentChannelId st) st
+
     , KB "Switch to multi-line message compose mode"
          (Vty.EvKey (Vty.KChar 'e') [Vty.MMeta]) $
            continue . startMultilineEditing
