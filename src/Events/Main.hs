@@ -193,7 +193,7 @@ tabComplete dir st = do
                                   map ("#" <>) (st^.csNames.cnChans) ++
                                   map ("/" <>) (map commandName commandList))
 
-      (line:_)    = getEditContents (st^.cmdLine)
+      line        = Z.currentLine $ st^.cmdLine.editContentsL
       curComp     = st^.csCurrentCompletion
       (nextComp, alts) = case curComp of
           Nothing -> let cw = currentWord line
@@ -221,5 +221,5 @@ killWordBackward z =
           $ T.reverse line
         delete n' z' | n' <= 0 = z'
         delete n' z' = delete (n'-1) (Z.deletePrevChar z')
-        (line:_) = Z.getText z
+        line = Z.currentLine z
     in delete n z
