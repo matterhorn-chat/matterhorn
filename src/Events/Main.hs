@@ -34,8 +34,10 @@ onEventMain st (Vty.EvResize _ _) = do
   continue =<< updateChannelScrollState st
 onEventMain st e | Just kb <- lookupKeybinding e mainKeybindings = kbAction kb st
 onEventMain st (Vty.EvPaste bytes) = continue $ handlePaste bytes st
-onEventMain st e | editingPermitted st = continue =<< handleEditingInput e st
-onEventMain st _ = continue st
+onEventMain st e =
+    if editingPermitted st
+    then continue =<< handleEditingInput e st
+    else continue st
 
 mainKeybindings :: [Keybinding]
 mainKeybindings =
