@@ -8,7 +8,8 @@ import           Brick.Widgets.Border.Style
 import           Brick.Widgets.Center (hCenter)
 import           Brick.Widgets.Edit (editContentsL, renderEditor, getEditContents)
 import           Control.Applicative
-import           Data.Time.Clock (UTCTime)
+import           Data.Time.Clock (UTCTime(..))
+import           Data.Time.Calendar (fromGregorian)
 import           Data.Time.Format ( formatTime
                                   , defaultTimeLocale )
 import           Data.Time.LocalTime ( TimeZone, utcToLocalTime, localDay )
@@ -203,7 +204,11 @@ previewFromInput uname s =
        then Nothing
        else Just $ Message { _mText          = getBlocks content
                            , _mUserName      = Just uname
-                           , _mDate          = undefined
+                           , _mDate          = UTCTime (fromGregorian 1970 1 1) 0
+                           -- ^ The date is not used for preview
+                           -- rendering, but we need to provide one.
+                           -- Ideally we'd just today's date, but the
+                           -- rendering function is pure so we can't.
                            , _mType          = msgTy
                            , _mPending       = False
                            , _mDeleted       = False
