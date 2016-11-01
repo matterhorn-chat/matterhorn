@@ -235,8 +235,8 @@ updateStatus :: UserId -> T.Text -> ChatState -> EventM a ChatState
 updateStatus uId t st =
   return (st & usrMap.ix(uId).uiStatus .~ statusFromText t)
 
-clearEditor :: ChatState -> EventM a ChatState
-clearEditor st = return $ st & cmdLine %~ applyEdit clearZipper
+clearEditor :: ChatState -> ChatState
+clearEditor = cmdLine %~ applyEdit clearZipper
 
 loadLastEdit :: ChatState -> EventM a ChatState
 loadLastEdit st =
@@ -248,7 +248,7 @@ loadLastEdit st =
 changeChannelCommon :: ChatState -> EventM Name ChatState
 changeChannelCommon st =
     loadLastEdit =<<
-    clearEditor =<<
+    (return . clearEditor) =<<
     updateChannelScrollState =<<
     fetchCurrentScrollback =<<
     resetHistoryPosition st
@@ -820,12 +820,12 @@ showHelpScreen st = do
     vScrollToBeginning (viewportScroll HelpViewport)
     return $ st & csMode .~ ShowHelp
 
-beginChannelSelect :: ChatState -> EventM Name ChatState
+beginChannelSelect :: ChatState -> ChatState
 beginChannelSelect st =
-    return $ st & csMode                        .~ ChannelSelect
-                & csChannelSelectString         .~ ""
-                & csChannelSelectChannelMatches .~ mempty
-                & csChannelSelectUserMatches    .~ mempty
+    st & csMode                        .~ ChannelSelect
+       & csChannelSelectString         .~ ""
+       & csChannelSelectChannelMatches .~ mempty
+       & csChannelSelectUserMatches    .~ mempty
 
 updateChannelSelectMatches :: ChatState -> ChatState
 updateChannelSelectMatches st =
@@ -885,13 +885,11 @@ parseChannelSelectPattern pat = do
         (Just Prefix, Just Suffix) -> return $ CSP Equal  pat2
         tys                        -> error $ "BUG: invalid channel select case: " <> show tys
 
-startMultilineEditing :: ChatState -> EventM Name ChatState
-startMultilineEditing st =
-    return $ st & csEditState.cedMultiline .~ True
+startMultilineEditing :: ChatState -> ChatState
+startMultilineEditing = csEditState.cedMultiline .~ True
 
-stopMultilineEditing :: ChatState -> EventM Name ChatState
-stopMultilineEditing st =
-    return $ st & csEditState.cedMultiline .~ False
+stopMultilineEditing :: ChatState -> ChatState
+stopMultilineEditing = csEditState.cedMultiline .~ False
 
 openMostRecentURL :: ChatState -> EventM Name ChatState
 openMostRecentURL st =
@@ -968,8 +966,8 @@ invokeExternalEditor st = do
                             & csEditState.cedMultiline .~ (length tmpLines > 1)
             ExitFailure _ -> return st
 
-toggleMessagePreview :: ChatState -> EventM Name ChatState
-toggleMessagePreview st = return $ st & csShowMessagePreview %~ not
+toggleMessagePreview :: ChatState -> ChatState
+toggleMessagePreview = csShowMessagePreview %~ not
 
 addUserToCurrentChannel :: T.Text -> ChatState -> EventM Name ChatState
 addUserToCurrentChannel uname st = do

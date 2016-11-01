@@ -40,7 +40,7 @@ onEventMain st (Vty.EvPaste bytes) = do
   let pasteStr = T.pack (UTF8.toString bytes)
       st' = st & cmdLine %~ applyEdit (Z.insertMany pasteStr)
   case length (getEditContents $ st'^.cmdLine) > 1 of
-      True -> continue =<< startMultilineEditing st'
+      True -> continue $ startMultilineEditing st'
       False -> continue st'
 onEventMain st e
   | (length (getEditContents $ st^.cmdLine) == 1) || st^.csEditState.cedMultiline = do
@@ -90,7 +90,7 @@ mainKeybindings =
 
     , KB "Toggle message preview"
          (Vty.EvKey (Vty.KChar 'p') [Vty.MMeta]) $
-         toggleMessagePreview >=> continue
+         continue . toggleMessagePreview
 
     , KB "Invoke $EDITOR to edit current message"
          (Vty.EvKey (Vty.KChar 'k') [Vty.MMeta]) $
@@ -98,7 +98,7 @@ mainKeybindings =
 
     , KB "Enter fast channel selection mode"
          (Vty.EvKey (Vty.KChar 'g') [Vty.MCtrl]) $
-         beginChannelSelect >=> continue
+         continue . beginChannelSelect
 
     , KB "Quit"
          (Vty.EvKey (Vty.KChar 'q') [Vty.MCtrl]) halt
@@ -185,11 +185,11 @@ mainKeybindings =
 
     , KB "Switch to multi-line message compose mode"
          (Vty.EvKey (Vty.KChar 'e') [Vty.MMeta]) $
-           startMultilineEditing >=> continue
+           continue . startMultilineEditing
 
     , KB "Leave multi-line message compose mode"
          (Vty.EvKey Vty.KEsc []) $
-           stopMultilineEditing >=> continue
+           continue . stopMultilineEditing
     ]
 
 handleInputSubmission :: ChatState -> EventM Name (Next ChatState)
