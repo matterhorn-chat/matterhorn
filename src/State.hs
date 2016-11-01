@@ -4,6 +4,7 @@ module State where
 import           Brick (EventM, Next, suspendAndResume, invalidateCacheEntry)
 import           Brick.Widgets.Edit (getEditContents, editContentsL)
 import           Brick.Widgets.List (list)
+import qualified Codec.Binary.UTF8.Generic as UTF8
 import           Control.Applicative
 import           Control.Concurrent (threadDelay, forkIO)
 import qualified Control.Concurrent.Chan as Chan
@@ -11,6 +12,7 @@ import           Control.Concurrent.MVar (newEmptyMVar)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Data.Char (isAlphaNum)
 import           Data.HashMap.Strict ((!))
+import qualified Data.ByteString as BS
 import           Brick.Main (getVtyHandle, viewportScroll, vScrollToEnd, vScrollToBeginning, vScrollBy)
 import           Brick.Widgets.Edit (applyEdit)
 import           Control.Exception (SomeException, catch, try)
@@ -1010,3 +1012,11 @@ addUserToCurrentChannel uname st = do
             return st
         _ -> do
             postErrorMessage ("No such user: " <> uname) st
+
+handlePaste :: BS.ByteString -> ChatState -> ChatState
+handlePaste bytes st = do
+  let pasteStr = T.pack (UTF8.toString bytes)
+      st' = st & cmdLine %~ applyEdit (insertMany pasteStr)
+  case length (getEditContents $ st'^.cmdLine) > 1 of
+      True -> startMultilineEditing st'
+      False -> st'

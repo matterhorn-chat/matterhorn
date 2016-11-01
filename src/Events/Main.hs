@@ -3,7 +3,6 @@ module Events.Main where
 
 import Brick
 import Brick.Widgets.Edit
-import qualified Codec.Binary.UTF8.Generic as UTF8
 import Control.Arrow
 import Control.Monad ((>=>))
 import Control.Monad.IO.Class (liftIO)
@@ -36,12 +35,7 @@ onEventMain st (Vty.EvResize _ _) = do
   -- that is about to be redrawn.
   continue =<< updateChannelScrollState st
 onEventMain st e | Just kb <- lookupKeybinding e mainKeybindings = kbAction kb st
-onEventMain st (Vty.EvPaste bytes) = do
-  let pasteStr = T.pack (UTF8.toString bytes)
-      st' = st & cmdLine %~ applyEdit (Z.insertMany pasteStr)
-  case length (getEditContents $ st'^.cmdLine) > 1 of
-      True -> continue $ startMultilineEditing st'
-      False -> continue st'
+onEventMain st (Vty.EvPaste bytes) = continue $ handlePaste bytes st
 onEventMain st e
   | (length (getEditContents $ st^.cmdLine) == 1) || st^.csEditState.cedMultiline = do
     -- ^ Only handle input events to the editor if we permit editing:
