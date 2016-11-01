@@ -195,7 +195,7 @@ darkAttrs =
   , (clientStrongAttr,                 fg white `withStyle` bold `withStyle` underline)
   , (clientHeaderAttr,                 fg red `withStyle` bold)
   , (dateTransitionAttr,               fg green)
-  , (newMessageTransitionAttr,         black `on` yellow)
+  , (newMessageTransitionAttr,         fg yellow `withStyle` bold)
   , (errorMessageAttr,                 fg red)
   , (helpAttr,                         black `on` cyan)
   , (helpEmphAttr,                     fg white)
