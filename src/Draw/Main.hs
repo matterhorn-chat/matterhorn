@@ -228,7 +228,8 @@ renderUserCommandBox uSet st =
         multilineContent = length curContents > 1
         multilineHints =
             (borderElem bsHorizontal) <+>
-            (str $ "[" <> (show $ (+1) $ fst $ cursorPosition $ st^.cmdLine.editContentsL) <>
+            (str $ "[" <> (show $ (+1) $ fst $ cursorPosition $
+                                  st^.cmdLine.editContentsL) <>
                    "/" <> (show $ length curContents) <> "]") <+>
             (hBorderWithLabel $ withDefAttr clientEmphAttr $
              (str "In multi-line mode. Press Esc to finish."))
@@ -240,8 +241,11 @@ renderUserCommandBox uSet st =
                        else let noPreview = str "(No preview)"
                                 msgPreview = case previewMsg of
                                   Nothing -> noPreview
-                                  Just pm -> if T.null curStr then noPreview else renderMessage pm True uSet
-                            in vLimit 5 msgPreview <=> hBorderWithLabel (withDefAttr clientEmphAttr $ str "[Preview ↑]")
+                                  Just pm -> if T.null curStr
+                                             then noPreview
+                                             else renderMessage pm True uSet
+                            in vLimit 5 msgPreview <=>
+                               hBorderWithLabel (withDefAttr clientEmphAttr $ str "[Preview ↑]")
 
         commandBox = case st^.csEditState.cedMultiline of
             False ->
@@ -277,7 +281,8 @@ renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
                        Nothing -> txt $ mkChannelName (chan^.ccInfo)
                        Just u  -> colorUsername $ mkDMChannelName u
                    _        -> txt $ mkChannelName (chan^.ccInfo)
-                 False -> renderText $ mkChannelName (chan^.ccInfo) <> " - " <> topicStr
+                 False -> renderText $
+                          mkChannelName (chan^.ccInfo) <> " - " <> topicStr
     messages = body <+> txt " "
     body = chatText <=> if chan^.ccInfo.cdLoaded
                         then emptyWidget
@@ -288,16 +293,22 @@ renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
             viewport (ChannelMessages cId) Vertical $
             reportExtent (ChannelMessages cId) $
             cached (ChannelMessages cId) $
-            vBox $ (withDefAttr loadMoreAttr $ hCenter $ str "<< Press C-l to load more messages >>") :
+            vBox $ (withDefAttr loadMoreAttr $ hCenter $
+                    str "<< Press C-l to load more messages >>") :
                    (F.toList $ renderSingleMessage <$> channelMessages)
         _ -> renderLastMessages channelMessages
 
-    dateTransitionFormat = maybe defaultDateFormat id (configDateFormat $ st^.csResources.crConfiguration)
-    channelMessages = insertTransitions dateTransitionFormat
-                                        (st ^. timeZone)
-                                        (getNewMessageCutoff cId st)
-                                        (getMessageListing cId st)
-    renderSingleMessage = renderChatMessage uSet (st ^. timeFormat) (st ^. timeZone)
+    dateTransitionFormat = maybe defaultDateFormat id
+        (configDateFormat $ st^.csResources.crConfiguration)
+
+    channelMessages =
+        insertTransitions dateTransitionFormat
+                          (st ^. timeZone)
+                          (getNewMessageCutoff cId st)
+                          (getMessageListing cId st)
+
+    renderSingleMessage =
+        renderChatMessage uSet (st ^. timeFormat) (st ^. timeZone)
 
     renderLastMessages :: Seq.Seq Message -> Widget Name
     renderLastMessages msgs =
