@@ -220,8 +220,8 @@ previewFromInput uname s =
                            , _mPostId        = Nothing
                            }
 
-renderUserCommandBox :: Set Text -> ChatState -> Widget Name
-renderUserCommandBox uSet st =
+renderUserCommandBox :: ChatState -> Widget Name
+renderUserCommandBox st =
     let prompt = txt "> "
         inputBox = renderEditor True (st^.cmdLine)
         curContents = getEditContents $ st^.cmdLine
@@ -233,19 +233,6 @@ renderUserCommandBox uSet st =
                    "/" <> (show $ length curContents) <> "]") <+>
             (hBorderWithLabel $ withDefAttr clientEmphAttr $
              (str "In multi-line mode. Press Esc to finish."))
-        uname = st^.csMe.userUsernameL
-        previewMsg = previewFromInput uname curStr
-        curStr = T.intercalate "\n" curContents
-        maybePreview = if not $ st^.csShowMessagePreview
-                       then emptyWidget
-                       else let noPreview = str "(No preview)"
-                                msgPreview = case previewMsg of
-                                  Nothing -> noPreview
-                                  Just pm -> if T.null curStr
-                                             then noPreview
-                                             else renderMessage pm True uSet
-                            in vLimit 5 msgPreview <=>
-                               hBorderWithLabel (withDefAttr clientEmphAttr $ str "[Preview ↑]")
 
         commandBox = case st^.csEditState.cedMultiline of
             False ->
@@ -262,7 +249,7 @@ renderUserCommandBox uSet st =
                                    (showCursor MessageInput (Location (0,0)) $ str " ")
                               else inputBox
             True -> vLimit 5 inputBox <=> multilineHints
-    in maybePreview <=> commandBox
+    in commandBox
 
 renderCurrentChannelDisplay :: Set Text -> ChatState -> Widget Name
 renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
@@ -423,14 +410,29 @@ mainInterface :: ChatState -> Widget Name
 mainInterface st =
     (renderChannelList st <+> vBorder <+> (subdue st $ renderCurrentChannelDisplay uSet st))
       <=> bottomBorder
+      <=> maybePreview
       <=> case st^.csMode of
               ChannelSelect -> renderChannelSelect st
               ChannelScroll -> hCenter $ hBox [ txt "Press "
                                               , withDefAttr clientEmphAttr $ txt "Escape"
                                               , txt " to stop scrolling and resume chatting."
                                               ]
-              _             -> renderUserCommandBox uSet st
+              _             -> renderUserCommandBox st
     where
+    uname = st^.csMe.userUsernameL
+    curContents = getEditContents $ st^.cmdLine
+    curStr = T.intercalate "\n" curContents
+    previewMsg = previewFromInput uname curStr
+    maybePreview = if not $ st^.csShowMessagePreview
+                   then emptyWidget
+                   else let noPreview = str "(No preview)"
+                            msgPreview = case previewMsg of
+                              Nothing -> noPreview
+                              Just pm -> if T.null curStr
+                                         then noPreview
+                                         else renderMessage pm True uSet
+                        in vLimit 5 msgPreview <=>
+                           hBorderWithLabel (withDefAttr clientEmphAttr $ str "[Preview ↑]")
     uSet = Set.fromList (map _uiName (HM.elems (st^.usrMap)))
     bottomBorder = case st^.csCurrentCompletion of
         Just _ | length (st^.csEditState.cedCompletionAlternatives) > 1 -> completionAlternatives st
