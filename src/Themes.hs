@@ -18,6 +18,7 @@ module Themes
   , clientEmphAttr
   , clientStrongAttr
   , dateTransitionAttr
+  , newMessageTransitionAttr
   , errorMessageAttr
   , helpAttr
   , helpEmphAttr
@@ -109,6 +110,9 @@ unreadChannelAttr = "unreadChannel"
 dateTransitionAttr :: AttrName
 dateTransitionAttr = "dateTransition"
 
+newMessageTransitionAttr :: AttrName
+newMessageTransitionAttr = "newMessageTransition"
+
 urlAttr :: AttrName
 urlAttr = "url"
 
@@ -159,6 +163,7 @@ lightColorTheme = attrMap (black `on` white) $
   , (clientStrongAttr,                 fg black `withStyle` bold `withStyle` underline)
   , (clientHeaderAttr,                 fg red `withStyle` bold)
   , (dateTransitionAttr,               fg green)
+  , (newMessageTransitionAttr,         black `on` yellow)
   , (errorMessageAttr,                 fg red)
   , (helpAttr,                         black `on` cyan)
   , (helpEmphAttr,                     fg white)
@@ -190,6 +195,7 @@ darkAttrs =
   , (clientStrongAttr,                 fg white `withStyle` bold `withStyle` underline)
   , (clientHeaderAttr,                 fg red `withStyle` bold)
   , (dateTransitionAttr,               fg green)
+  , (newMessageTransitionAttr,         black `on` yellow)
   , (errorMessageAttr,                 fg red)
   , (helpAttr,                         black `on` cyan)
   , (helpEmphAttr,                     fg white)

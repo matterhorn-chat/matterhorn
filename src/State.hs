@@ -21,7 +21,7 @@ import qualified Data.Sequence as Seq
 import           Data.List (sort)
 import           Data.Maybe (listToMaybe, maybeToList, fromJust, catMaybes)
 import           Data.Monoid ((<>))
-import           Data.Time.Clock ( getCurrentTime )
+import           Data.Time.Clock (UTCTime, getCurrentTime)
 import           Data.Time.LocalTime ( TimeZone(..), getCurrentTimeZone )
 import qualified Data.Text as T
 import qualified Data.Vector as V
@@ -257,8 +257,9 @@ preChangeChannelCommon :: ChatState -> EventM Name ChatState
 preChangeChannelCommon st = do
     let curEdit = T.intercalate "\n" $ getEditContents $ st^.cmdLine
         cId = currentChannelId st
-    return $ st & csLastChannelInput.at cId .~ Just curEdit
-                & csRecentChannel .~ Just cId
+    clearNewMessageCutoff cId $
+      st & csLastChannelInput.at cId .~ Just curEdit
+         & csRecentChannel .~ Just cId
 
 nextChannel :: ChatState -> EventM Name ChatState
 nextChannel st =
@@ -427,12 +428,13 @@ handleNewChannel name switch nc st = do
   let cChannel = ClientChannel
         { _ccContents = emptyChannelContents
         , _ccInfo     = ChannelInfo
-                          { _cdViewed  = now
-                          , _cdUpdated = now
-                          , _cdName    = nc^.channelNameL
-                          , _cdHeader  = nc^.channelHeaderL
-                          , _cdType    = nc^.channelTypeL
-                          , _cdLoaded  = True
+                          { _cdViewed           = now
+                          , _cdUpdated          = now
+                          , _cdName             = nc^.channelNameL
+                          , _cdHeader           = nc^.channelHeaderL
+                          , _cdType             = nc^.channelTypeL
+                          , _cdLoaded           = True
+                          , _cdNewMessageCutoff = Nothing
                           }
         }
       -- add it to the message map, and to the map so we can look
@@ -499,7 +501,7 @@ addMessage new st = do
         when (not fromMe) $ maybeRingBell s'
         if postChannelId new == currentChannelId rs
           then updateChannelScrollState rs >>= updateViewed
-          else return rs
+          else setNewMessageCutoff rs cId msg
 
   -- If the message is in reply to another message, try to find it in
   -- the scrollback for the post's channel. If the message isn't there,
@@ -518,6 +520,21 @@ addMessage new st = do
               return $ \st'' -> doAddMessage $ st'' & csPostMap %~ (HM.union postMap)
           return st
       _ -> doAddMessage st
+
+setNewMessageCutoff :: ChatState -> ChannelId -> Message -> EventM Name ChatState
+setNewMessageCutoff st cId msg = do
+    let chan = msgMap.ix cId
+    return $ st & chan.ccInfo.cdNewMessageCutoff %~ (<|> Just (msg^.mDate))
+
+clearNewMessageCutoff :: ChannelId -> ChatState -> EventM Name ChatState
+clearNewMessageCutoff cId st = do
+    let chan = msgMap.ix cId
+    return $ st & chan.ccInfo.cdNewMessageCutoff .~ Nothing
+
+getNewMessageCutoff :: ChannelId -> ChatState -> Maybe UTCTime
+getNewMessageCutoff cId st = do
+    cc <- st^.msgMap.at cId
+    cc^.ccInfo.cdNewMessageCutoff
 
 addClientMessage :: ClientMessage -> ChatState -> EventM Name ChatState
 addClientMessage msg st = do
@@ -718,12 +735,13 @@ initializeState cr myTeam myUser = do
         viewed   = chanData ^. channelDataLastViewedAtL
         updated  = c ^. channelLastPostAtL
         cInfo    = ChannelInfo
-                     { _cdViewed  = viewed
-                     , _cdUpdated = updated
-                     , _cdName    = c^.channelNameL
-                     , _cdHeader  = c^.channelHeaderL
-                     , _cdType    = c^.channelTypeL
-                     , _cdLoaded  = False
+                     { _cdViewed           = viewed
+                     , _cdUpdated          = updated
+                     , _cdName             = c^.channelNameL
+                     , _cdHeader           = c^.channelHeaderL
+                     , _cdType             = c^.channelTypeL
+                     , _cdLoaded           = False
+                     , _cdNewMessageCutoff = Just viewed
                      }
         cChannel = ClientChannel
                      { _ccContents = emptyChannelContents
