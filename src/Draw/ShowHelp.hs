@@ -19,6 +19,7 @@ import Command
 import Events.ShowHelp
 import Events.ChannelSelect
 import Events.Main
+import Markdown (renderText)
 
 drawShowHelp :: ChatState -> [Widget Name]
 drawShowHelp = const [helpBox]
@@ -63,7 +64,7 @@ helpBox =
                      ]
           commandNameWidth = 4 + (maximum $ T.length <$> fst <$> helpInfo)
       in hCenter $
-         vBox [ (withDefAttr helpEmphAttr $ txt $ padTo commandNameWidth info) <+> txt desc
+         vBox [ (withDefAttr helpEmphAttr $ txt $ padTo commandNameWidth info) <+> renderText desc
               | (info, desc) <- helpInfo
               ]
 
@@ -81,7 +82,7 @@ mkKeybindingHelp (sectionName, kbs) =
 mkKeybindHelp :: Keybinding -> Widget Name
 mkKeybindHelp (KB desc ev _) =
     (withDefAttr helpEmphAttr $ txt $ padTo kbColumnWidth $ ppKbEvent ev) <+>
-    (hLimit kbDescColumnWidth $ txt $ padTo kbDescColumnWidth desc)
+    (vLimit 1 $ hLimit kbDescColumnWidth $ renderText desc <+> fill ' ')
 
 ppKbEvent :: Vty.Event -> T.Text
 ppKbEvent (Vty.EvKey k mods) =

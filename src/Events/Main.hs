@@ -49,7 +49,7 @@ mainKeybindings =
          (Vty.EvKey (Vty.KChar 'p') [Vty.MMeta]) $
          continue . toggleMessagePreview
 
-    , KB "Invoke $EDITOR to edit current message"
+    , KB "Invoke *$EDITOR* to edit the current message"
          (Vty.EvKey (Vty.KChar 'k') [Vty.MMeta]) $
          invokeExternalEditor
 
@@ -136,7 +136,7 @@ mainKeybindings =
                          True -> continue =<< handleEventLensed st cmdLine handleEditorEvent
                                            (Vty.EvKey Vty.KBS [])
 
-    , KB "Open the most recently-posted URL"
+    , KB "Open the current channel's most recently-posted URL"
          (Vty.EvKey (Vty.KChar 'o') [Vty.MCtrl]) $
            openMostRecentURL >=> continue
 
