@@ -3,7 +3,7 @@ module Events.Main where
 
 import Brick
 import Brick.Widgets.Edit
-import Control.Monad ((>=>))
+import Control.Monad ((>=>), void)
 import Control.Monad.IO.Class (liftIO)
 import Data.Monoid ((<>))
 import qualified Data.Set as Set
@@ -181,9 +181,8 @@ sendMessage st msg =
                 theTeamId = st^.csMyTeam.teamIdL
             doAsync st $ do
               pendingPost <- mkPendingPost msg myId chanId
-              doAsync st $ do
-                _ <- mmPost (st^.csConn) (st^.csTok) theTeamId pendingPost
-                return ()
+              doAsync st $
+                void $ mmPost (st^.csConn) (st^.csTok) theTeamId pendingPost
 
 tabComplete :: Completion.Direction
             -> ChatState -> EventM Name (Next ChatState)
