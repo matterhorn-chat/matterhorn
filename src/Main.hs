@@ -54,7 +54,7 @@ main = do
         Vty.setMode output Vty.BracketedPaste True
         return vty
 
-  finalSt <- customMain mkVty eventChan app st
+  finalSt <- customMain mkVty (Just eventChan) app st
   case logFile of
     Nothing -> return ()
     Just h -> hClose h
