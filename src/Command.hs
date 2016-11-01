@@ -58,7 +58,7 @@ commandList =
   , Cmd "focus" "Focus on a named channel"
     (TokenArg "channel" NoArg) $ \ (name, ()) st ->
         changeChannel name st >>= continue
-  , Cmd "help" "Print the help dialogue" NoArg $ \ _ st ->
+  , Cmd "help" "Show this help screen" NoArg $ \ _ st ->
         showHelpScreen st >>= continue
   ]
 
