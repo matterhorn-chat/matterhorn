@@ -373,11 +373,6 @@ findUserByDMChannelName userMap dmchan me = listToMaybe
   , user <- maybeToList (HM.lookup u userMap)
   ]
 
-subdue :: ChatState -> Widget a -> Widget a
-subdue st = if st^.csMode == ChannelSelect
-            then forceAttr ""
-            else id
-
 renderChannelSelect :: ChatState -> Widget Name
 renderChannelSelect st =
     withDefAttr channelSelectPromptAttr $
@@ -424,20 +419,29 @@ inputPreview uSet st = maybePreview
                         in vLimit 5 msgPreview <=>
                            hBorderWithLabel (withDefAttr clientEmphAttr $ str "[Preview ↑]")
 
+userInputArea :: ChatState -> Widget Name
+userInputArea st =
+    case st^.csMode of
+        ChannelSelect -> renderChannelSelect st
+        ChannelScroll -> hCenter $ hBox [ txt "Press "
+                                        , withDefAttr clientEmphAttr $ txt "Escape"
+                                        , txt " to stop scrolling and resume chatting."
+                                        ]
+        _             -> renderUserCommandBox st
+
 mainInterface :: ChatState -> Widget Name
 mainInterface st =
-    (renderChannelList st <+> vBorder <+> (subdue st $ renderCurrentChannelDisplay uSet st))
+    (renderChannelList st <+> vBorder <+> (maybeSubdue $ renderCurrentChannelDisplay uSet st))
       <=> bottomBorder
       <=> inputPreview uSet st
-      <=> case st^.csMode of
-              ChannelSelect -> renderChannelSelect st
-              ChannelScroll -> hCenter $ hBox [ txt "Press "
-                                              , withDefAttr clientEmphAttr $ txt "Escape"
-                                              , txt " to stop scrolling and resume chatting."
-                                              ]
-              _             -> renderUserCommandBox st
+      <=> userInputArea st
     where
     uSet = Set.fromList (map _uiName (HM.elems (st^.usrMap)))
+
     bottomBorder = case st^.csCurrentCompletion of
         Just _ | length (st^.csEditState.cedCompletionAlternatives) > 1 -> completionAlternatives st
-        _ -> subdue st $ hLimit channelListWidth hBorder <+> borderElem bsIntersectB <+> hBorder
+        _ -> maybeSubdue $ hLimit channelListWidth hBorder <+> borderElem bsIntersectB <+> hBorder
+
+    maybeSubdue = if st^.csMode == ChannelSelect
+                  then forceAttr ""
+                  else id
