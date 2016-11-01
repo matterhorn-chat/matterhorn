@@ -198,12 +198,13 @@ previewFromInput uname s =
         content = if isEmote
                   then T.stripStart $ T.drop 3 s
                   else s
+        msgTy = if isEmote then CP Emote else CP NormalPost
     in if isCommand && not isEmote
        then Nothing
        else Just $ Message { _mText          = getBlocks content
                            , _mUserName      = Just uname
                            , _mDate          = undefined
-                           , _mType          = if isEmote then CP Emote else CP NormalPost
+                           , _mType          = msgTy
                            , _mPending       = False
                            , _mDeleted       = False
                            , _mAttachments   = mempty
