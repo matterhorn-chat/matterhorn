@@ -3,7 +3,6 @@ module Events.Main where
 
 import Brick
 import Brick.Widgets.Edit
-import Control.Arrow
 import Control.Monad ((>=>))
 import Control.Monad.IO.Class (liftIO)
 import Data.Monoid ((<>))
@@ -16,7 +15,6 @@ import Lens.Micro.Platform
 import Network.Mattermost
 import Network.Mattermost.Lenses
 
-import Config
 import Types
 import State
 import Command
@@ -36,47 +34,7 @@ onEventMain st (Vty.EvResize _ _) = do
   continue =<< updateChannelScrollState st
 onEventMain st e | Just kb <- lookupKeybinding e mainKeybindings = kbAction kb st
 onEventMain st (Vty.EvPaste bytes) = continue $ handlePaste bytes st
-onEventMain st e
-  | (length (getEditContents $ st^.cmdLine) == 1) || st^.csEditState.cedMultiline = do
-    -- ^ Only handle input events to the editor if we permit editing:
-    -- if multiline mode is off, or if there is only one line of text
-    -- in the editor. This means we skip input this catch-all handler
-    -- if we're *not* in multiline mode *and* there are multiple lines,
-    -- i.e., we are showing the user the status message about the
-    -- current editor state and editing is not permitted.
-
-    let smartBacktick = st^.csResources.crConfiguration.to configSmartBacktick
-        smartChars = "*`_"
-    st' <- case e of
-        Vty.EvKey (Vty.KChar 't') [Vty.MCtrl] ->
-            return $ st & cmdLine %~ applyEdit Z.transposeChars
-
-        Vty.EvKey Vty.KBS [] | smartBacktick ->
-            let backspace = return $ st & cmdLine %~ applyEdit Z.deletePrevChar
-            in case cursorAtOneOf smartChars (st^.cmdLine) of
-                Nothing -> backspace
-                Just ch ->
-                    -- Smart char removal:
-                    if | (cursorAtChar ch $ applyEdit Z.moveLeft $ st^.cmdLine) &&
-                         (cursorIsAtEnd $ applyEdit Z.moveRight $ st^.cmdLine) ->
-                           return $ st & cmdLine %~ applyEdit (Z.deleteChar >>> Z.deletePrevChar)
-                       | otherwise -> backspace
-
-        Vty.EvKey (Vty.KChar ch) [] | smartBacktick && ch `elem` smartChars ->
-            -- Smart char insertion:
-            let insertChar = return $ st & cmdLine %~ applyEdit (Z.insertChar ch)
-            in if | (editorEmpty $ st^.cmdLine) ||
-                       ((cursorAtChar ' ' (applyEdit Z.moveLeft $ st^.cmdLine)) &&
-                        (cursorIsAtEnd $ st^.cmdLine)) ->
-                      return $ st & cmdLine %~ applyEdit (Z.insertMany (T.pack $ ch:ch:[]) >>> Z.moveLeft)
-                  | (cursorAtChar ch $ st^.cmdLine) &&
-                    (cursorIsAtEnd $ applyEdit Z.moveRight $ st^.cmdLine) ->
-                      return $ st & cmdLine %~ applyEdit Z.moveRight
-                  | otherwise -> insertChar
-
-        _ -> handleEventLensed st cmdLine handleEditorEvent e
-
-    continue $ st' & csCurrentCompletion .~ Nothing
+onEventMain st e | editingPermitted st = continue =<< handleEditingInput e st
 onEventMain st _ = continue st
 
 mainKeybindings :: [Keybinding]
@@ -224,43 +182,6 @@ sendMessage st msg =
               doAsync st $ do
                 _ <- mmPost (st^.csConn) (st^.csTok) theTeamId pendingPost
                 return ()
-
-editorEmpty :: Editor T.Text a -> Bool
-editorEmpty e = cursorIsAtEnd e &&
-                cursorIsAtBeginning e
-
-cursorIsAtEnd :: Editor T.Text a -> Bool
-cursorIsAtEnd e =
-    let col = snd $ Z.cursorPosition z
-        curLine = Z.currentLine z
-        z = e^.editContentsL
-    in col == T.length curLine
-
-cursorIsAtBeginning :: Editor T.Text a -> Bool
-cursorIsAtBeginning e =
-    let col = snd $ Z.cursorPosition z
-        z = e^.editContentsL
-    in col == 0
-
-lastIsBacktick :: Editor T.Text a -> Bool
-lastIsBacktick e =
-    let curLine = Z.currentLine z
-        z = e^.editContentsL
-    in T.length curLine > 0 && T.last curLine == '`'
-
-cursorAtOneOf :: [Char] -> Editor T.Text a -> Maybe Char
-cursorAtOneOf [] _ = Nothing
-cursorAtOneOf (c:cs) e =
-    if cursorAtChar c e
-    then Just c
-    else cursorAtOneOf cs e
-
-cursorAtChar :: Char -> Editor T.Text a -> Bool
-cursorAtChar ch e =
-    let col = snd $ Z.cursorPosition z
-        curLine = Z.currentLine z
-        z = e^.editContentsL
-    in (T.singleton ch) `T.isPrefixOf` T.drop col curLine
 
 tabComplete :: Completion.Direction
             -> ChatState -> EventM Name (Next ChatState)

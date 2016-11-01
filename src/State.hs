@@ -1,10 +1,13 @@
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE OverloadedStrings #-}
 module State where
 
-import           Brick (EventM, Next, suspendAndResume, invalidateCacheEntry)
-import           Brick.Widgets.Edit (getEditContents, editContentsL)
+import           Brick (EventM, Next, suspendAndResume, invalidateCacheEntry,
+                        handleEventLensed)
+import           Brick.Widgets.Edit (Editor, handleEditorEvent, getEditContents, editContentsL)
 import           Brick.Widgets.List (list)
 import qualified Codec.Binary.UTF8.Generic as UTF8
+import           Control.Arrow
 import           Control.Applicative
 import           Control.Concurrent (threadDelay, forkIO)
 import qualified Control.Concurrent.Chan as Chan
@@ -17,7 +20,10 @@ import           Brick.Main (getVtyHandle, viewportScroll, vScrollToEnd, vScroll
 import           Brick.Widgets.Edit (applyEdit)
 import           Control.Exception (SomeException, catch, try)
 import           Control.Monad (forM, when, void)
-import           Data.Text.Zipper (textZipper, clearZipper, insertMany, gotoEOL)
+import           Data.Text.Zipper (textZipper, clearZipper, insertMany, gotoEOL,
+                                   moveRight, moveLeft, cursorPosition, currentLine,
+                                   transposeChars, deleteChar, deletePrevChar,
+                                   insertChar)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
 import           Data.List (sort)
@@ -28,7 +34,7 @@ import           Data.Time.LocalTime ( TimeZone(..), getCurrentTimeZone )
 import qualified Data.Text as T
 import qualified Data.Vector as V
 import qualified Data.Foldable as F
-import           Graphics.Vty (outputIface)
+import           Graphics.Vty (Event(..), Key(..), Modifier(..), outputIface)
 import           Graphics.Vty.Output.Interface (ringTerminalBell)
 import           Lens.Micro.Platform
 import           System.Exit (ExitCode(..), exitFailure)
@@ -1020,3 +1026,81 @@ handlePaste bytes st = do
   case length (getEditContents $ st'^.cmdLine) > 1 of
       True -> startMultilineEditing st'
       False -> st'
+
+editingPermitted :: ChatState -> Bool
+editingPermitted st =
+    (length (getEditContents $ st^.cmdLine) == 1) ||
+    st^.csEditState.cedMultiline
+
+handleEditingInput :: Event -> ChatState -> EventM Name ChatState
+handleEditingInput e st = do
+    -- ^ Only handle input events to the editor if we permit editing:
+    -- if multiline mode is off, or if there is only one line of text
+    -- in the editor. This means we skip input this catch-all handler
+    -- if we're *not* in multiline mode *and* there are multiple lines,
+    -- i.e., we are showing the user the status message about the
+    -- current editor state and editing is not permitted.
+
+    let smartBacktick = st^.csResources.crConfiguration.to configSmartBacktick
+        smartChars = "*`_"
+    st' <- case e of
+        EvKey (KChar 't') [MCtrl] ->
+            return $ st & cmdLine %~ applyEdit transposeChars
+
+        EvKey KBS [] | smartBacktick ->
+            let backspace = return $ st & cmdLine %~ applyEdit deletePrevChar
+            in case cursorAtOneOf smartChars (st^.cmdLine) of
+                Nothing -> backspace
+                Just ch ->
+                    -- Smart char removal:
+                    if | (cursorAtChar ch $ applyEdit moveLeft $ st^.cmdLine) &&
+                         (cursorIsAtEnd $ applyEdit moveRight $ st^.cmdLine) ->
+                           return $ st & cmdLine %~ applyEdit (deleteChar >>> deletePrevChar)
+                       | otherwise -> backspace
+
+        EvKey (KChar ch) [] | smartBacktick && ch `elem` smartChars ->
+            -- Smart char insertion:
+            let doInsertChar = return $ st & cmdLine %~ applyEdit (insertChar ch)
+            in if | (editorEmpty $ st^.cmdLine) ||
+                       ((cursorAtChar ' ' (applyEdit moveLeft $ st^.cmdLine)) &&
+                        (cursorIsAtEnd $ st^.cmdLine)) ->
+                      return $ st & cmdLine %~ applyEdit (insertMany (T.pack $ ch:ch:[]) >>> moveLeft)
+                  | (cursorAtChar ch $ st^.cmdLine) &&
+                    (cursorIsAtEnd $ applyEdit moveRight $ st^.cmdLine) ->
+                      return $ st & cmdLine %~ applyEdit moveRight
+                  | otherwise -> doInsertChar
+
+        _ -> handleEventLensed st cmdLine handleEditorEvent e
+
+    return $ st' & csCurrentCompletion .~ Nothing
+
+editorEmpty :: Editor T.Text a -> Bool
+editorEmpty e = cursorIsAtEnd e &&
+                cursorIsAtBeginning e
+
+cursorIsAtEnd :: Editor T.Text a -> Bool
+cursorIsAtEnd e =
+    let col = snd $ cursorPosition z
+        curLine = currentLine z
+        z = e^.editContentsL
+    in col == T.length curLine
+
+cursorIsAtBeginning :: Editor T.Text a -> Bool
+cursorIsAtBeginning e =
+    let col = snd $ cursorPosition z
+        z = e^.editContentsL
+    in col == 0
+
+cursorAtOneOf :: [Char] -> Editor T.Text a -> Maybe Char
+cursorAtOneOf [] _ = Nothing
+cursorAtOneOf (c:cs) e =
+    if cursorAtChar c e
+    then Just c
+    else cursorAtOneOf cs e
+
+cursorAtChar :: Char -> Editor T.Text a -> Bool
+cursorAtChar ch e =
+    let col = snd $ cursorPosition z
+        curLine = currentLine z
+        z = e^.editContentsL
+    in (T.singleton ch) `T.isPrefixOf` T.drop col curLine
