@@ -1,5 +1,4 @@
 {-# LANGUAGE MultiWayIf #-}
-{-# LANGUAGE PackageImports #-}
 module Draw.Main (drawMain) where
 
 import           Brick
