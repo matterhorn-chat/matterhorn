@@ -61,6 +61,9 @@ fieldR name = do
     Just x  -> return x
     Nothing -> fail ("Unable to read field " ++ show name)
 
+-- Retrieve a field and try to 'Read' it to a value,
+-- returning Nothing if it doesn't exist or if the 'Read'
+-- operation fails
 fieldMR :: Read a => Text -> IniParser Section (Maybe a)
 fieldMR name = do
   mb <- fieldM name
@@ -68,14 +71,27 @@ fieldMR name = do
     Nothing  -> Nothing
     Just str -> readMaybe (T.unpack str)
 
+-- Retrieve a field and treat it as a boolean, subsituting
+-- a default value if it doesn't exist
 fieldFlag :: Text -> Bool -> IniParser Section Bool
 fieldFlag name def = do
   mb <- fieldM name
   case mb of
     Nothing  -> return def
-    Just str -> case readMaybe (T.unpack str) of
-      Nothing -> fail ("Unable to read field " ++ show name)
+    Just str -> case toBool str of
+      Nothing -> fail ("Unknown boolean value " ++ show str ++
+                       " for field " ++ show name)
       Just b  -> return b
+  where toBool s = case T.toLower s of
+          "true"  -> Just True
+          "yes"   -> Just True
+          "t"     -> Just True
+          "y"     -> Just True
+          "false" -> Just False
+          "no"    -> Just False
+          "f"     -> Just False
+          "n"     -> Just False
+          _       -> Nothing
 
 data PasswordSource =
     PasswordString Text
@@ -110,20 +126,14 @@ fromIni = runParse $ do
     configURLOpenCommand <- fieldM  "urlOpenCommand"
     pass                 <- fieldM  "pass"
     passCmd              <- fieldM  "passcmd"
-    smartBacktick        <- fieldMR "smartbacktick"
+    configSmartBacktick      <- fieldFlag "smartbacktick" True
     configShowMessagePreview <- fieldFlag "showMessagePreview" False
-    ringBell             <- fieldMR "activityBell"
+    configActivityBell       <- fieldFlag "activityBell" False
     let configPass = case passCmd of
           Nothing -> case pass of
             Nothing -> Nothing
             Just p  -> Just (PasswordString p)
           Just c -> Just (PasswordCommand c)
-        configSmartBacktick = case smartBacktick of
-          Nothing -> True
-          Just b  -> b
-        configActivityBell = case ringBell of
-          Nothing -> False
-          Just b  -> b
     return Config { .. }
 
 findConfig :: Maybe FilePath -> IO (Either String Config)
