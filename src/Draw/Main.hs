@@ -38,10 +38,11 @@ import           Markdown
 import           State
 import           Themes
 import           Types
+import           Config
 
--- If the config's date format is not set.
-defaultDateFormat :: Text
-defaultDateFormat = "%R"
+-- If the config's time format is not set.
+defaultTimeFormat :: Text
+defaultTimeFormat = "%R"
 
 renderTime :: Text -> TimeZone -> UTCTime -> Widget Name
 renderTime fmt tz t =
@@ -68,9 +69,10 @@ renderChatMessage uSet mFormat tz msg =
                     _ -> withDefAttr clientMessageAttr m
         fullMsg = msgTxt <=> msgAtch
         maybeRenderTime = case mFormat of
-            Just ""     -> id
-            Just format -> \w -> renderTime format tz (msg^.mDate)            <+> txt " " <+> w
-            Nothing     -> \w -> renderTime defaultDateFormat tz (msg^.mDate) <+> txt " " <+> w
+            Just "" -> id
+            _ -> \w ->
+                let fmt = maybe defaultTimeFormat id mFormat
+                in renderTime fmt tz (msg^.mDate) <+> txt " " <+> w
         maybeRenderTimeWith f = case msg^.mType of
             C DateTransition -> id
             _ -> f
@@ -287,7 +289,9 @@ renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
             vBox $ (withDefAttr loadMoreAttr $ hCenter $ str "<< Press C-l to load more messages >>") :
                    (F.toList $ renderSingleMessage <$> channelMessages)
         _ -> renderLastMessages channelMessages
-    channelMessages = insertDateBoundaries (st ^. timeZone) $ getMessageListing cId st
+
+    dateTransitionFormat = maybe defaultDateFormat id (configDateFormat $ st^.csResources.crConfiguration)
+    channelMessages = insertDateBoundaries dateTransitionFormat (st ^. timeZone) $ getMessageListing cId st
     renderSingleMessage = renderChatMessage uSet (st ^. timeFormat) (st ^. timeZone)
 
     renderLastMessages :: Seq.Seq Message -> Widget Name
@@ -326,16 +330,16 @@ getMessageListing :: ChannelId -> ChatState -> Seq.Seq Message
 getMessageListing cId st =
     st ^. msgMap . ix cId . ccContents . cdMessages
 
-dateTransitionFormat :: String
-dateTransitionFormat = "%Y-%m-%d"
+defaultDateFormat :: T.Text
+defaultDateFormat = "%Y-%m-%d"
 
-insertDateBoundaries :: TimeZone -> Seq.Seq Message -> Seq.Seq Message
-insertDateBoundaries tz ms = fst $ F.foldl' nextMsg initState ms
+insertDateBoundaries :: Text -> TimeZone -> Seq.Seq Message -> Seq.Seq Message
+insertDateBoundaries fmt tz ms = fst $ F.foldl' nextMsg initState ms
     where
         initState :: (Seq.Seq Message, Maybe Message)
         initState = (mempty, Nothing)
 
-        dateMsg d = Message (getBlocks (T.pack $ formatTime defaultTimeLocale dateTransitionFormat d))
+        dateMsg d = Message (getBlocks (T.pack $ formatTime defaultTimeLocale (T.unpack fmt) d))
                             Nothing d (C DateTransition) False False Seq.empty NotAReply Nothing
 
         nextMsg :: (Seq.Seq Message, Maybe Message) -> Message -> (Seq.Seq Message, Maybe Message)

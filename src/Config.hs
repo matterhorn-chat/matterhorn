@@ -89,6 +89,7 @@ data Config = Config
   , configPort           :: Int
   , configPass           :: Maybe PasswordSource
   , configTimeFormat     :: Maybe Text
+  , configDateFormat     :: Maybe Text
   , configTheme          :: Maybe Text
   , configSmartBacktick  :: Bool
   , configURLOpenCommand :: Maybe Text
@@ -104,6 +105,7 @@ fromIni = runParse $ do
     configTeam           <- fieldM  "team"
     configPort           <- fieldR  "port"
     configTimeFormat     <- fieldM  "timeFormat"
+    configDateFormat     <- fieldM  "dateFormat"
     configTheme          <- fieldM  "theme"
     configURLOpenCommand <- fieldM  "urlOpenCommand"
     pass                 <- fieldM  "pass"
