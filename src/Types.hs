@@ -191,13 +191,19 @@ emptyChannelContents = ChannelContents
 
 makeLenses ''ChannelContents
 
+data ChannelState
+  = ChanUnloaded
+  | ChanLoaded
+  | ChanRefreshing
+    deriving (Eq, Show)
+
 data ChannelInfo = ChannelInfo
   { _cdViewed           :: UTCTime
   , _cdUpdated          :: UTCTime
   , _cdName             :: T.Text
   , _cdHeader           :: T.Text
   , _cdType             :: Type
-  , _cdLoaded           :: Bool
+  , _cdCurrentState     :: ChannelState
   , _cdNewMessageCutoff :: Maybe UTCTime
   }
 

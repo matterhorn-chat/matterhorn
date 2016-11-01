@@ -32,14 +32,11 @@ onEvent st _ = continue st
 onAppEvent :: ChatState -> MHEvent -> EventM Name (Next ChatState)
 onAppEvent st RefreshWebsocketEvent = do
   liftIO $ connectWebsockets st
-  msg <- newClientMessage Informative "Websocket connecting..."
-  continue =<< addClientMessage msg st
-onAppEvent st WebsocketDisconnect = do
-  msg <- newClientMessage Informative "Websocket disconnected."
-  continue =<< (addClientMessage msg $ st & csConnectionStatus .~ Disconnected)
-onAppEvent st WebsocketConnect = do
-  msg <- newClientMessage Informative "Websocket reconnected."
-  continue =<< (addClientMessage msg $ st & csConnectionStatus .~ Connected)
+  continue st
+onAppEvent st WebsocketDisconnect =
+  continue (st & csConnectionStatus .~ Disconnected)
+onAppEvent st WebsocketConnect =
+  continue =<< refreshLoadedChannels (st & csConnectionStatus .~ Connected)
 onAppEvent st (WSEvent we) =
   handleWSEvent st we
 onAppEvent st (RespEvent f) =

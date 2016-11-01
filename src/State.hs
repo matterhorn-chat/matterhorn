@@ -27,7 +27,7 @@ import           Data.Text.Zipper (textZipper, clearZipper, insertMany, gotoEOL,
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
 import           Data.List (sort)
-import           Data.Maybe (listToMaybe, maybeToList, fromJust, catMaybes)
+import           Data.Maybe (listToMaybe, maybeToList, isJust, fromJust, catMaybes)
 import           Data.Monoid ((<>))
 import           Data.Time.Clock (UTCTime, getCurrentTime)
 import           Data.Time.LocalTime ( TimeZone(..), getCurrentTimeZone )
@@ -129,6 +129,32 @@ doAsyncWith :: ChatState -> IO (ChatState -> EventM Name ChatState) -> IO ()
 doAsyncWith st thunk =
   Chan.writeChan (st^.csRequestQueue) thunk
 
+-- Get all the new messages for a given channel
+refreshChannel :: ChannelId -> ChatState -> IO ()
+refreshChannel chan st = doAsyncWith st $
+  case F.find (\ p -> isJust (p^.mPostId)) (Seq.reverse (st^.msgMap.ix(chan).ccContents.cdMessages)) of
+    Just (Message { _mPostId = Just pId }) -> do
+      posts <- mmGetPostsAfter (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) chan pId 0 100
+      return $ \ st' -> do
+        res <- F.foldrM addMessage st' [ (posts^.postsPostsL) HM.! p
+                                       | p <- F.toList (posts^.postsOrderL)
+                                       ]
+        return (res & msgMap.ix(chan).ccInfo.cdCurrentState .~ ChanLoaded)
+    _ -> return return
+
+-- Find all the loaded channels and refresh their state, setting the state as dirty
+-- until we get a response
+refreshLoadedChannels :: ChatState -> EventM Name ChatState
+refreshLoadedChannels st = do
+  liftIO $ sequence_
+    [ refreshChannel cId st
+    | (cId, chan) <- HM.toList (st^.msgMap)
+    , chan^.ccInfo.cdCurrentState == ChanLoaded
+    ]
+  let upd ChanLoaded = ChanRefreshing
+      upd chanState  = chanState
+  return (st & msgMap.each.ccInfo.cdCurrentState %~ upd)
+
 startJoinChannel :: ChatState -> EventM Name ChatState
 startJoinChannel st = do
     liftIO $ doAsyncWith st $ do
@@ -176,7 +202,7 @@ asyncFetchScrollback st cId =
                          contents^.cdMessages
             updateChannelScrollState $
                 st' & msgMap.ix cId.ccContents .~ contents
-                    & msgMap.ix cId.ccInfo.cdLoaded .~ True
+                    & msgMap.ix cId.ccInfo.cdCurrentState .~ ChanLoaded
                     & msgMap.ix cId.ccInfo.cdNewMessageCutoff .~ cutoff
 
 startLeaveCurrentChannel :: ChatState -> EventM Name ChatState
@@ -451,7 +477,7 @@ handleNewChannel name switch nc st = do
                           , _cdName             = nc^.channelNameL
                           , _cdHeader           = nc^.channelHeaderL
                           , _cdType             = nc^.channelTypeL
-                          , _cdLoaded           = True
+                          , _cdCurrentState     = ChanLoaded
                           , _cdNewMessageCutoff = Nothing
                           }
         }
@@ -633,7 +659,7 @@ startTimezoneMonitor tz requestChan = do
 fetchCurrentScrollback :: ChatState -> EventM a ChatState
 fetchCurrentScrollback st = do
   let cId = currentChannelId st
-  when (maybe False not (st^?msgMap.ix(cId).ccInfo.cdLoaded)) $
+  when (maybe False (/= ChanLoaded) (st^?msgMap.ix(cId).ccInfo.cdCurrentState)) $
       liftIO $ asyncFetchScrollback st cId
   return st
 
@@ -758,7 +784,7 @@ initializeState cr myTeam myUser = do
                      , _cdName             = c^.channelNameL
                      , _cdHeader           = c^.channelHeaderL
                      , _cdType             = c^.channelTypeL
-                     , _cdLoaded           = False
+                     , _cdCurrentState     = ChanUnloaded
                      , _cdNewMessageCutoff = Nothing
                      }
         cChannel = ClientChannel
