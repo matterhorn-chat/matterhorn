@@ -160,8 +160,7 @@ renderChannelListEntry st csMatches entry =
 
     isChanSelect = st^.csMode == ChannelSelect
     current = entryChannelName entry == currentChannelName
-    currentChannelName = getChannelName cId st
-    cId = st^.csCurrentChannelId
+    currentChannelName = st^.csCurrentChannel.ccInfo.cdName
 
 getOrdinaryChannels :: ChatState -> [ChannelListEntry]
 getOrdinaryChannels st =
@@ -326,7 +325,7 @@ renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
             return $ def & imageL .~ img
 
     cId = st^.csCurrentChannelId
-    Just chan = getChannel cId st
+    chan = st^.csCurrentChannel
     chnName = chan^.ccInfo.cdName
     chnType = chan^.ccInfo.cdType
     topicStr = chan^.ccInfo.cdHeader

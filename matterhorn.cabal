@@ -24,6 +24,8 @@ executable matterhorn
                        Connection
                        Completion
                        State
+                       State.Common
+                       State.Editing
                        Zipper
                        Themes
                        Draw

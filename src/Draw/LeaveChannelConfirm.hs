@@ -12,7 +12,6 @@ import Lens.Micro.Platform ((^.))
 
 import Prelude
 
-import State (getChannel)
 import Types
 import Themes
 import Draw.Main
@@ -23,9 +22,7 @@ drawLeaveChannelConfirm st =
 
 confirmBox :: ChatState -> Widget Name
 confirmBox st =
-    let cId = st^.csCurrentChannelId
-        Just chanInfo = getChannel cId st
-        cName = chanInfo^.ccInfo.cdName
+    let cName = st^.csCurrentChannel.ccInfo.cdName
     in centerLayer $ hLimit 50 $ vLimit 15 $
        withDefAttr dialogAttr $
        borderWithLabel (txt "Confirm Leave Channel") $

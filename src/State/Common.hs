@@ -10,26 +10,17 @@ import qualified Data.Text as T
 import           Data.Time.Clock (getCurrentTime)
 import           Lens.Micro.Platform
 
-import           Network.Mattermost
 import           Network.Mattermost.Exceptions
 
 import           Types
-import qualified Zipper as Z
 
 
 doAsync :: ChatState -> IO () -> IO ()
 doAsync st thunk = doAsyncWith st (thunk >> return return)
 
-runAsync :: ChatState -> IO (ChatState -> EventM Name ChatState) -> IO ()
-runAsync st thunk =
-  Chan.writeChan (st^.csRequestQueue) thunk
-
 doAsyncWith :: ChatState -> IO (ChatState -> EventM Name ChatState) -> IO ()
 doAsyncWith st thunk =
   Chan.writeChan (st^.csRequestQueue) thunk
-
--- currentChannelId :: ChatState -> ChannelId
--- currentChannelId st = Z.focus (st ^. csFocus)
 
 tryMM :: (MonadIO m)
       => IO a
@@ -57,7 +48,7 @@ addClientMessage msg st = do
 postErrorMessage :: (MonadIO m) => T.Text -> ChatState -> m ChatState
 postErrorMessage err st = do
     msg <- newClientMessage Error err
-    liftIO $ runAsync st (return $ addClientMessage msg)
+    liftIO $ doAsyncWith st (return $ addClientMessage msg)
     return st
 
 updateChannelScrollState :: ChatState -> EventM Name ChatState

@@ -2,28 +2,21 @@
 {-# LANGUAGE OverloadedStrings #-}
 module State where
 
-import           Brick (EventM, Next, suspendAndResume, invalidateCacheEntry,
-                        handleEventLensed)
-import           Brick.Widgets.Edit (Editor, handleEditorEvent, getEditContents, editContentsL)
+import           Brick (EventM, invalidateCacheEntry)
+import           Brick.Widgets.Edit (getEditContents, editContentsL)
 import           Brick.Widgets.List (list)
-import qualified Codec.Binary.UTF8.Generic as UTF8
-import           Control.Arrow
 import           Control.Applicative
 import           Control.Concurrent (threadDelay, forkIO)
 import qualified Control.Concurrent.Chan as Chan
 import           Control.Concurrent.MVar (newEmptyMVar)
-import           Control.Monad.IO.Class (MonadIO, liftIO)
+import           Control.Exception (SomeException, catch)
+import           Control.Monad.IO.Class (liftIO)
 import           Data.Char (isAlphaNum)
 import           Data.HashMap.Strict ((!))
-import qualified Data.ByteString as BS
-import           Brick.Main (getVtyHandle, viewportScroll, vScrollToEnd, vScrollToBeginning, vScrollBy)
+import           Brick.Main (getVtyHandle, viewportScroll, vScrollToBeginning, vScrollBy)
 import           Brick.Widgets.Edit (applyEdit)
-import           Control.Exception (SomeException, catch, try)
 import           Control.Monad (forM, when, void)
-import           Data.Text.Zipper (textZipper, clearZipper, insertMany, gotoEOL,
-                                   moveRight, moveLeft, cursorPosition, currentLine,
-                                   transposeChars, deleteChar, deletePrevChar,
-                                   insertChar)
+import           Data.Text.Zipper (textZipper, clearZipper, insertMany, gotoEOL)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
 import           Data.List (sort)
@@ -34,10 +27,10 @@ import           Data.Time.LocalTime ( TimeZone(..), getCurrentTimeZone )
 import qualified Data.Text as T
 import qualified Data.Vector as V
 import qualified Data.Foldable as F
-import           Graphics.Vty (Event(..), Key(..), Modifier(..), outputIface)
+import           Graphics.Vty (outputIface)
 import           Graphics.Vty.Output.Interface (ringTerminalBell)
 import           Lens.Micro.Platform
-import           System.Exit (ExitCode(..), exitFailure)
+import           System.Exit (exitFailure)
 import           System.IO (Handle)
 import           System.Process (system)
 import           Cheapskate
@@ -59,7 +52,6 @@ import           Zipper (Zipper)
 import qualified Zipper as Z
 
 import           State.Common
-import           State.Editing
 
 pageAmount :: Int
 pageAmount = 15
@@ -122,14 +114,14 @@ newState rs i u m tz hist = ChatState
 -- Get all the new messages for a given channel
 refreshChannel :: ChannelId -> ChatState -> IO ()
 refreshChannel chan st = doAsyncWith st $
-  case F.find (\ p -> isJust (p^.mPostId)) (Seq.reverse (st^.msgMap.ix(chan).ccContents.cdMessages)) of
+  case F.find (\ p -> isJust (p^.mPostId)) (Seq.reverse (st^.csChannel(chan).ccContents.cdMessages)) of
     Just (Message { _mPostId = Just pId }) -> do
       posts <- mmGetPostsAfter (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) chan pId 0 100
       return $ \ st' -> do
         res <- F.foldrM addMessage st' [ (posts^.postsPostsL) HM.! p
                                        | p <- F.toList (posts^.postsOrderL)
                                        ]
-        return (res & msgMap.ix(chan).ccInfo.cdCurrentState .~ ChanLoaded)
+        return (res & csChannel(chan).ccInfo.cdCurrentState .~ ChanLoaded)
     _ -> return return
 
 -- Find all the loaded channels and refresh their state, setting the state as dirty
@@ -191,15 +183,13 @@ asyncFetchScrollback st cId =
                          Seq.filter (\m -> m^.mDate > viewTime) $
                          contents^.cdMessages
             updateChannelScrollState $
-                st' & msgMap.ix cId.ccContents .~ contents
-                    & msgMap.ix cId.ccInfo.cdCurrentState .~ ChanLoaded
-                    & msgMap.ix cId.ccInfo.cdNewMessageCutoff .~ cutoff
+                st' & csChannel(cId).ccContents .~ contents
+                    & csChannel(cId).ccInfo.cdCurrentState .~ ChanLoaded
+                    & csChannel(cId).ccInfo.cdNewMessageCutoff .~ cutoff
 
 startLeaveCurrentChannel :: ChatState -> EventM Name ChatState
 startLeaveCurrentChannel st = do
-    let cId = st^.csCurrentChannelId
-        Just chanInfo = getChannel cId st
-        cName = chanInfo^.ccInfo.cdName
+    let cName = st^.csCurrentChannel.ccInfo.cdName
     case cName `elem` st^.csNames.cnDMs of
         True -> postErrorMessage "The /leave command cannot be used with direct message channels." st
         False -> return $ st & csMode .~ LeaveChannelConfirm
@@ -207,8 +197,7 @@ startLeaveCurrentChannel st = do
 leaveCurrentChannel :: ChatState -> EventM Name ChatState
 leaveCurrentChannel st = do
     let cId = st^.csCurrentChannelId
-        Just chanInfo = getChannel cId st
-        cName = chanInfo^.ccInfo.cdName
+        cName = st^.csCurrentChannel.ccInfo.cdName
     -- Leave a normal channel.  If this is a DM channel, do nothing.
     case cName `elem` st^.csNames.cnDMs of
         True -> return st
@@ -242,7 +231,7 @@ hasUnread st cId = maybe False id $ do
 setLastViewedFor :: ChatState -> ChannelId -> EventM Name ChatState
 setLastViewedFor st cId = do
   now <- liftIO getCurrentTime
-  return (st & msgMap.ix(cId).ccInfo.cdViewed .~ now)
+  return (st & csChannel(cId).ccInfo.cdViewed .~ now)
 
 updateViewed :: ChatState -> EventM Name ChatState
 updateViewed st = liftIO (updateViewedIO st)
@@ -251,13 +240,13 @@ updateViewedIO :: ChatState -> IO ChatState
 updateViewedIO st = do
   now <- getCurrentTime
   let cId = st^.csCurrentChannelId
-  runAsync st $ do
+  doAsyncWith st $ do
     mmUpdateLastViewedAt
       (st^.csConn)
       (st^.csTok)
       (getId (st^.csMyTeam))
       cId
-    return (\s -> return (s & msgMap . ix cId . ccInfo . cdViewed .~ now))
+    return (\s -> return (s & csCurrentChannel.ccInfo.cdViewed .~ now))
   return st
 
 resetHistoryPosition :: ChatState -> EventM a ChatState
@@ -353,13 +342,13 @@ channelPageDown st = do
 asyncFetchMoreMessages :: ChatState -> ChannelId -> IO ()
 asyncFetchMoreMessages st cId =
     doAsyncWith st $ do
-        let offset = length $ st^.msgMap.ix cId.ccContents.cdMessages
+        let offset = length $ st^.csChannel(cId).ccContents.cdMessages
             numToFetch = 10
         posts <- mmGetPosts (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId (offset - 1) numToFetch
         return $ \st' -> do
             let cc = fromPosts st' posts
             invalidateCacheEntry (ChannelMessages $ st^.csCurrentChannelId)
-            return $ st' & msgMap.ix cId.ccContents.cdMessages %~ (cc^.cdMessages Seq.><)
+            return $ st' & csChannel(cId).ccContents.cdMessages %~ (cc^.cdMessages Seq.><)
 
 loadMoreMessages :: ChatState -> EventM Name ChatState
 loadMoreMessages st = do
@@ -408,7 +397,7 @@ attemptCreateDMChannel name st
       -- We have a user of that name but no channel. Time to make one!
       let tId = st^.csMyTeam.teamIdL
           Just uId = st^.csNames.cnToUserId.at(name)
-      liftIO $ runAsync st $ do
+      liftIO $ doAsyncWith st $ do
         -- create a new channel
         nc <- mmCreateDirect (st^.csConn) (st^.csTok) tId uId
         return $ handleNewChannel name True nc
@@ -419,7 +408,7 @@ attemptCreateDMChannel name st
 createOrdinaryChannel :: T.Text -> ChatState -> EventM Name ChatState
 createOrdinaryChannel name st = do
   let tId = st^.csMyTeam.teamIdL
-  liftIO $ runAsync st $ do
+  liftIO $ doAsyncWith st $ do
     -- create a new chat channel
     let slug = T.map (\ c -> if isAlphaNum c then c else '-') (T.toLower name)
         minChannel = MinChannel
@@ -469,7 +458,7 @@ handleNewChannel name switch nc st = do
 editMessage :: Post -> ChatState -> EventM Name ChatState
 editMessage new st = do
   now <- liftIO getCurrentTime
-  let chan = msgMap . ix (postChannelId new)
+  let chan = csChannel (postChannelId new)
       isEditedMessage m = m^.mPostId == Just (new^.postIdL)
       msg = clientPostToMessage st (toClientPost new Nothing)
       rs = st & chan . ccContents . cdMessages . each . filtered isEditedMessage .~ msg
@@ -482,7 +471,7 @@ deleteMessage :: Post -> ChatState -> EventM Name ChatState
 deleteMessage new st = do
   now <- liftIO getCurrentTime
   let isDeletedMessage m = m^.mPostId == Just (new^.postIdL)
-      chan = msgMap . ix (postChannelId new)
+      chan = csChannel (postChannelId new)
       rs = st & chan . ccContents . cdMessages . each . filtered isDeletedMessage %~ (& mDeleted .~ True)
               & chan . ccInfo . cdUpdated .~ now
   if postChannelId new == rs^.csCurrentChannelId
@@ -535,32 +524,23 @@ addMessage new st = do
       _ -> doAddMessage st
 
 setNewMessageCutoff :: ChatState -> ChannelId -> Message -> EventM Name ChatState
-setNewMessageCutoff st cId msg = do
-    let chan = msgMap.ix cId
-    return $ st & chan.ccInfo.cdNewMessageCutoff %~ (<|> Just (msg^.mDate))
+setNewMessageCutoff st cId msg =
+    return $ st & csChannel(cId).ccInfo.cdNewMessageCutoff %~ (<|> Just (msg^.mDate))
 
 clearNewMessageCutoff :: ChannelId -> ChatState -> EventM Name ChatState
 clearNewMessageCutoff cId st = do
-    let chan = msgMap.ix cId
-    return $ st & chan.ccInfo.cdNewMessageCutoff .~ Nothing
+    return $ st & csChannel(cId).ccInfo.cdNewMessageCutoff .~ Nothing
 
 getNewMessageCutoff :: ChannelId -> ChatState -> Maybe UTCTime
 getNewMessageCutoff cId st = do
     cc <- st^.msgMap.at cId
     cc^.ccInfo.cdNewMessageCutoff
 
-getChannelName :: ChannelId -> ChatState -> T.Text
-getChannelName cId st =
-  st ^. msgMap . ix cId . ccInfo . cdName
-
 getDMChannelName :: UserId -> UserId -> T.Text
 getDMChannelName me you = cname
   where
   [loUser, hiUser] = sort [ you, me ]
   cname = idString loUser <> "__" <> idString hiUser
-
-getChannel :: ChannelId -> ChatState -> Maybe ClientChannel
-getChannel cId st = st ^. msgMap . at cId
 
 mmServerCommandWhitelist :: [T.Text]
 mmServerCommandWhitelist =

@@ -2,6 +2,7 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE RankNTypes #-}
 
 module Types where
 
@@ -21,7 +22,7 @@ import           Data.Maybe
 import qualified Data.Sequence as Seq
 import           Data.Monoid
 import qualified Graphics.Vty as Vty
-import           Lens.Micro.Platform (at, makeLenses, (^.), (^?), ix, to, SimpleGetter)
+import           Lens.Micro.Platform (at, makeLenses, lens, (&), (^.), (^?), (%~), ix, to, SimpleGetter)
 import           Network.Mattermost
 import           Network.Mattermost.Lenses
 import           Network.Mattermost.WebSocket.Types
@@ -358,6 +359,21 @@ makeLenses ''ChatEditState
 
 csCurrentChannelId :: Lens' ChatState ChannelId
 csCurrentChannelId = csFocus.focusL
+
+csCurrentChannel :: Lens' ChatState ClientChannel
+csCurrentChannel =
+  lens (\ st -> (st^.msgMap) HM.! (st^.csCurrentChannelId))
+       (\ st n -> st & msgMap %~ HM.insert (st^.csCurrentChannelId) n)
+
+csChannel :: ChannelId -> Lens' ChatState ClientChannel
+csChannel cId =
+  lens (\ st -> (st^.msgMap) HM.! cId)
+       (\ st n -> st & msgMap %~ HM.insert cId n)
+
+csUser :: UserId -> Lens' ChatState UserInfo
+csUser uId =
+  lens (\ st -> (st^.usrMap) HM.! uId)
+       (\ st n -> st & usrMap %~ HM.insert uId n)
 
 -- interim lenses
 csTheme :: Lens' ChatState AttrMap
