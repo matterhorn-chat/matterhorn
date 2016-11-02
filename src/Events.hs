@@ -15,6 +15,7 @@ import           Network.Mattermost.WebSocket.Types
 
 import           Connection
 import           State
+import           State.Common
 import           Types
 
 import           Events.ShowHelp

@@ -11,6 +11,8 @@ import qualified Data.Text as T
 import Prelude
 
 import State
+import State.Common
+import State.Editing
 import Types
 
 printArgSpec :: CmdArgs a -> T.Text

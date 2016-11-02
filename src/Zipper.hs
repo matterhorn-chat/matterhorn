@@ -1,5 +1,7 @@
 module Zipper where
 
+import Lens.Micro.Platform (Lens, lens, ix, (&), (.~))
+
 data Zipper a = Zipper
   { zFocus :: Int
   , zElems :: [a]
@@ -9,13 +11,26 @@ data Zipper a = Zipper
 left :: Zipper a -> Zipper a
 left z = z { zFocus = (zFocus z - 1) `mod` length (zElems z) }
 
+-- A lens on the zipper moved to the left
+leftL :: Lens (Zipper a) (Zipper a) (Zipper a) (Zipper a)
+leftL = lens left (\ _ b -> right b)
+
 -- Move the focus one element to the right
 right :: Zipper a -> Zipper a
 right z = z { zFocus = (zFocus z + 1) `mod` length (zElems z) }
 
+-- A lens on the zipper moved to the right
+rightL :: Lens (Zipper a) (Zipper a) (Zipper a) (Zipper a)
+rightL = lens right (\ _ b -> left b)
+
 -- Return the focus element
 focus :: Zipper a -> a
 focus z = zElems z !! zFocus z
+
+-- A lens to return the focus element
+focusL :: Lens (Zipper a) (Zipper a) a a
+focusL = lens focus upd
+  where upd (Zipper n elems) x = Zipper n (elems & ix(n) .~ x)
 
 -- Turn a list into a wraparound zipper, focusing on the head
 fromList :: [a] -> Zipper a

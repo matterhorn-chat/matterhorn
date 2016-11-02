@@ -12,7 +12,7 @@ import Lens.Micro.Platform ((^.))
 
 import Prelude
 
-import State (currentChannelId, getChannel)
+import State (getChannel)
 import Types
 import Themes
 import Draw.Main
@@ -23,7 +23,7 @@ drawLeaveChannelConfirm st =
 
 confirmBox :: ChatState -> Widget Name
 confirmBox st =
-    let cId = currentChannelId st
+    let cId = st^.csCurrentChannelId
         Just chanInfo = getChannel cId st
         cName = chanInfo^.ccInfo.cdName
     in centerLayer $ hLimit 50 $ vLimit 15 $

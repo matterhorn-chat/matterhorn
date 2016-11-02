@@ -30,7 +30,7 @@ import qualified Data.Text as T
 
 import           Prelude
 
-import           Zipper (Zipper)
+import           Zipper (Zipper, focusL)
 import           Config
 
 import           InputHistory
@@ -355,6 +355,9 @@ data MHEvent
 makeLenses ''ChatResources
 makeLenses ''ChatState
 makeLenses ''ChatEditState
+
+csCurrentChannelId :: Lens' ChatState ChannelId
+csCurrentChannelId = csFocus.focusL
 
 -- interim lenses
 csTheme :: Lens' ChatState AttrMap

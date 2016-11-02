@@ -17,6 +17,8 @@ import Network.Mattermost.Lenses
 
 import Types
 import State
+import State.Common
+import State.Editing
 import Command
 import Completion
 import InputHistory
@@ -88,7 +90,7 @@ mainKeybindings =
 
     , KB "Page up in the channel message list"
          (Vty.EvKey Vty.KPageUp []) $ \st -> do
-             let cId = currentChannelId st
+             let cId = st^.csCurrentChannelId
                  vp = ChannelMessages cId
              invalidateCacheEntry vp
              vScrollToEnd $ viewportScroll vp
@@ -142,7 +144,7 @@ mainKeybindings =
 
     , KB "Clear the current channel's unread message indicator"
          (Vty.EvKey (Vty.KChar 'l') [Vty.MCtrl]) $ \st ->
-           continue =<< clearNewMessageCutoff (currentChannelId st) st
+           continue =<< clearNewMessageCutoff (st^.csCurrentChannelId) st
 
     , KB "Switch to multi-line message compose mode"
          (Vty.EvKey (Vty.KChar 'e') [Vty.MMeta]) $
@@ -157,7 +159,7 @@ handleInputSubmission :: ChatState -> EventM Name (Next ChatState)
 handleInputSubmission st = do
   let (line:rest) = getEditContents (st^.cmdLine)
       allLines = T.intercalate "\n" $ line : rest
-      cId = currentChannelId st
+      cId = st^.csCurrentChannelId
       st' = st & cmdLine %~ applyEdit Z.clearZipper
                & csInputHistory %~ addHistoryEntry allLines cId
                & csInputHistoryPosition.at cId .~ Nothing
@@ -177,7 +179,7 @@ sendMessage st msg =
         True -> return ()
         False -> do
             let myId   = st^.csMe.userIdL
-                chanId = currentChannelId st
+                chanId = st^.csCurrentChannelId
                 theTeamId = st^.csMyTeam.teamIdL
             doAsync st $ do
               pendingPost <- mkPendingPost msg myId chanId

@@ -38,10 +38,8 @@ import           Graphics.Vty (Event(..), Key(..), Modifier(..), outputIface)
 import           Graphics.Vty.Output.Interface (ringTerminalBell)
 import           Lens.Micro.Platform
 import           System.Exit (ExitCode(..), exitFailure)
-import           System.IO (Handle, hPutStr, hClose)
-import           System.IO.Temp (withSystemTempFile)
+import           System.IO (Handle)
 import           System.Process (system)
-import           System.Environment (lookupEnv)
 import           Cheapskate
 
 import           Prelude
@@ -59,6 +57,9 @@ import           Themes
 import           Login
 import           Zipper (Zipper)
 import qualified Zipper as Z
+
+import           State.Common
+import           State.Editing
 
 pageAmount :: Int
 pageAmount = 15
@@ -117,17 +118,6 @@ newState rs i u m tz hist = ChatState
   , _csConnectionStatus            = Disconnected
   , _csJoinChannelList             = Nothing
   }
-
-runAsync :: ChatState -> IO (ChatState -> EventM Name ChatState) -> IO ()
-runAsync st thunk =
-  Chan.writeChan (st^.csRequestQueue) thunk
-
-doAsync :: ChatState -> IO () -> IO ()
-doAsync st thunk = doAsyncWith st (thunk >> return return)
-
-doAsyncWith :: ChatState -> IO (ChatState -> EventM Name ChatState) -> IO ()
-doAsyncWith st thunk =
-  Chan.writeChan (st^.csRequestQueue) thunk
 
 -- Get all the new messages for a given channel
 refreshChannel :: ChannelId -> ChatState -> IO ()
@@ -207,7 +197,7 @@ asyncFetchScrollback st cId =
 
 startLeaveCurrentChannel :: ChatState -> EventM Name ChatState
 startLeaveCurrentChannel st = do
-    let cId = currentChannelId st
+    let cId = st^.csCurrentChannelId
         Just chanInfo = getChannel cId st
         cName = chanInfo^.ccInfo.cdName
     case cName `elem` st^.csNames.cnDMs of
@@ -216,7 +206,7 @@ startLeaveCurrentChannel st = do
 
 leaveCurrentChannel :: ChatState -> EventM Name ChatState
 leaveCurrentChannel st = do
-    let cId = currentChannelId st
+    let cId = st^.csCurrentChannelId
         Just chanInfo = getChannel cId st
         cName = chanInfo^.ccInfo.cdName
     -- Leave a normal channel.  If this is a DM channel, do nothing.
@@ -260,7 +250,7 @@ updateViewed st = liftIO (updateViewedIO st)
 updateViewedIO :: ChatState -> IO ChatState
 updateViewedIO st = do
   now <- getCurrentTime
-  let cId = currentChannelId st
+  let cId = st^.csCurrentChannelId
   runAsync st $ do
     mmUpdateLastViewedAt
       (st^.csConn)
@@ -272,7 +262,7 @@ updateViewedIO st = do
 
 resetHistoryPosition :: ChatState -> EventM a ChatState
 resetHistoryPosition st =
-    let cId = currentChannelId st
+    let cId = st^.csCurrentChannelId
     in return $ st & csInputHistoryPosition.at cId .~ Just Nothing
 
 updateStatus :: UserId -> T.Text -> ChatState -> EventM a ChatState
@@ -284,7 +274,7 @@ clearEditor = cmdLine %~ applyEdit clearZipper
 
 loadLastEdit :: ChatState -> EventM a ChatState
 loadLastEdit st =
-    let cId = currentChannelId st
+    let cId = st^.csCurrentChannelId
     in return $ case st^.csLastChannelInput.at cId of
         Nothing -> st
         Just lastEdit -> st & cmdLine %~ (applyEdit $ insertMany (lastEdit))
@@ -300,7 +290,7 @@ changeChannelCommon st =
 preChangeChannelCommon :: ChatState -> EventM Name ChatState
 preChangeChannelCommon st = do
     let curEdit = T.intercalate "\n" $ getEditContents $ st^.cmdLine
-        cId = currentChannelId st
+        cId = st^.csCurrentChannelId
     clearNewMessageCutoff cId $
       st & csLastChannelInput.at cId .~ Just curEdit
          & csRecentChannel .~ Just cId
@@ -348,21 +338,15 @@ setTheme cs name =
         Nothing -> listThemes cs
         Just t -> return $ cs & csTheme .~ t
 
-updateChannelScrollState :: ChatState -> EventM Name ChatState
-updateChannelScrollState st = do
-  let cId = currentChannelId st
-  vScrollToEnd $ viewportScroll (ChannelMessages cId)
-  return st
-
 channelPageUp :: ChatState -> EventM Name ChatState
 channelPageUp st = do
-  let cId = currentChannelId st
+  let cId = st^.csCurrentChannelId
   vScrollBy (viewportScroll (ChannelMessages cId)) (-1 * pageAmount)
   return st
 
 channelPageDown :: ChatState -> EventM Name ChatState
 channelPageDown st = do
-  let cId = currentChannelId st
+  let cId = st^.csCurrentChannelId
   vScrollBy (viewportScroll (ChannelMessages cId)) pageAmount
   return st
 
@@ -374,19 +358,16 @@ asyncFetchMoreMessages st cId =
         posts <- mmGetPosts (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId (offset - 1) numToFetch
         return $ \st' -> do
             let cc = fromPosts st' posts
-            invalidateCacheEntry (ChannelMessages $ currentChannelId st)
+            invalidateCacheEntry (ChannelMessages $ st^.csCurrentChannelId)
             return $ st' & msgMap.ix cId.ccContents.cdMessages %~ (cc^.cdMessages Seq.><)
 
 loadMoreMessages :: ChatState -> EventM Name ChatState
 loadMoreMessages st = do
     case st^.csMode of
         ChannelScroll -> do
-            liftIO $ asyncFetchMoreMessages st (currentChannelId st)
+            liftIO $ asyncFetchMoreMessages st (st^.csCurrentChannelId)
         _ -> return ()
     return st
-
-currentChannelId :: ChatState -> ChannelId
-currentChannelId st = Z.focus (st ^. csFocus)
 
 channelByName :: ChatState -> T.Text -> Maybe ChannelId
 channelByName st n
@@ -434,18 +415,6 @@ attemptCreateDMChannel name st
       return st
   | otherwise = do
     postErrorMessage ("No channel or user named " <> name) st
-
-tryMM :: (MonadIO m)
-      => IO a
-      -- ^ The action to try (usually a MM API call)
-      -> (a -> IO (ChatState -> m ChatState))
-      -- ^ What to do on success
-      -> IO (ChatState -> m ChatState)
-tryMM act onSuccess = do
-    result <- liftIO $ try act
-    case result of
-        Left (MattermostServerError msg) -> return $ postErrorMessage msg
-        Right value                      -> liftIO $ onSuccess value
 
 createOrdinaryChannel :: T.Text -> ChatState -> EventM Name ChatState
 createOrdinaryChannel name st = do
@@ -505,7 +474,7 @@ editMessage new st = do
       msg = clientPostToMessage st (toClientPost new Nothing)
       rs = st & chan . ccContents . cdMessages . each . filtered isEditedMessage .~ msg
               & chan . ccInfo . cdUpdated .~ now
-  if postChannelId new == currentChannelId rs
+  if postChannelId new == rs^.csCurrentChannelId
     then updateChannelScrollState rs >>= updateViewed
     else return rs
 
@@ -516,7 +485,7 @@ deleteMessage new st = do
       chan = msgMap . ix (postChannelId new)
       rs = st & chan . ccContents . cdMessages . each . filtered isDeletedMessage %~ (& mDeleted .~ True)
               & chan . ccInfo . cdUpdated .~ now
-  if postChannelId new == currentChannelId rs
+  if postChannelId new == rs^.csCurrentChannelId
     then updateChannelScrollState rs >>= updateViewed
     else return rs
 
@@ -543,7 +512,7 @@ addMessage new st = do
             rs = s' & chan . ccContents . cdMessages %~ (Seq.|> msg')
                     & chan . ccInfo . cdUpdated %~ updateTime
         when (not fromMe) $ maybeRingBell s'
-        if postChannelId new == currentChannelId rs
+        if postChannelId new == rs^.csCurrentChannelId
           then updateChannelScrollState rs >>= updateViewed
           else setNewMessageCutoff rs cId msg
 
@@ -580,17 +549,6 @@ getNewMessageCutoff cId st = do
     cc <- st^.msgMap.at cId
     cc^.ccInfo.cdNewMessageCutoff
 
-addClientMessage :: ClientMessage -> ChatState -> EventM Name ChatState
-addClientMessage msg st = do
-  let cid = currentChannelId st
-      st' = st & msgMap . ix cid . ccContents . cdMessages %~ (Seq.|> clientMessageToMessage msg)
-  updateChannelScrollState st'
-
-newClientMessage :: (MonadIO m) => ClientMessageType -> T.Text -> m ClientMessage
-newClientMessage ty msg = do
-  now <- liftIO getCurrentTime
-  return (ClientMessage msg now ty)
-
 getChannelName :: ChannelId -> ChatState -> T.Text
 getChannelName cId st =
   st ^. msgMap . ix cId . ccInfo . cdName
@@ -618,7 +576,7 @@ execMMCommand cmd st =
         _ -> postErrorMessage ("Invalid command: " <> cmd) st
   where
   mc = MinCommand
-        { minComChannelId = currentChannelId st
+        { minComChannelId = st^.csCurrentChannelId
         , minComCommand   = "/" <> cmd
         , minComSuggest   = False
         }
@@ -631,12 +589,6 @@ execMMCommand cmd st =
     return st
   handler (HTTPResponseException err) = do
     postErrorMessage ("Error running command: " <> (T.pack err)) st
-
-postErrorMessage :: (MonadIO m) => T.Text -> ChatState -> m ChatState
-postErrorMessage err st = do
-    msg <- newClientMessage Error err
-    liftIO $ runAsync st (return $ addClientMessage msg)
-    return st
 
 startTimezoneMonitor :: TimeZone -> RequestChan -> IO ()
 startTimezoneMonitor tz requestChan = do
@@ -658,7 +610,7 @@ startTimezoneMonitor tz requestChan = do
 
 fetchCurrentScrollback :: ChatState -> EventM a ChatState
 fetchCurrentScrollback st = do
-  let cId = currentChannelId st
+  let cId = st^.csCurrentChannelId
   when (maybe False (/= ChanLoaded) (st^?msgMap.ix(cId).ccInfo.cdCurrentState)) $
       liftIO $ asyncFetchScrollback st cId
   return st
@@ -829,7 +781,7 @@ initializeState cr myTeam myUser = do
 
 setChannelTopic :: ChatState -> T.Text -> IO ()
 setChannelTopic st msg = do
-    let chanId = currentChannelId st
+    let chanId = st^.csCurrentChannelId
         theTeamId = st^.csMyTeam.teamIdL
     doAsyncWith st $ do
         void $ mmSetChannelHeader (st^.csConn) (st^.csTok) theTeamId chanId msg
@@ -838,7 +790,7 @@ setChannelTopic st msg = do
 
 channelHistoryForward :: ChatState -> ChatState
 channelHistoryForward st =
-  let cId = currentChannelId st
+  let cId = st^.csCurrentChannelId
   in case st^.csInputHistoryPosition.at cId of
       Just (Just i)
         | i == 0 ->
@@ -856,7 +808,7 @@ channelHistoryForward st =
 
 channelHistoryBackward :: ChatState -> ChatState
 channelHistoryBackward st =
-  let cId = currentChannelId st
+  let cId = st^.csCurrentChannelId
   in case st^.csInputHistoryPosition.at cId of
       Just (Just i) ->
           let newI = i + 1
@@ -947,12 +899,6 @@ parseChannelSelectPattern pat = do
         (Just Prefix, Just Suffix) -> return $ CSP Equal  pat2
         tys                        -> error $ "BUG: invalid channel select case: " <> show tys
 
-startMultilineEditing :: ChatState -> ChatState
-startMultilineEditing = csEditState.cedMultiline .~ True
-
-stopMultilineEditing :: ChatState -> ChatState
-stopMultilineEditing = csEditState.cedMultiline .~ False
-
 openMostRecentURL :: ChatState -> EventM Name ChatState
 openMostRecentURL st =
     case configURLOpenCommand $ st^.csResources.crConfiguration of
@@ -961,7 +907,7 @@ openMostRecentURL st =
             addClientMessage msg st
         Just urlOpenCommand -> do
             -- Get the messages for the current channel
-            let cId = currentChannelId st
+            let cId = st^.csCurrentChannelId
                 chan = msgMap . ix cId
                 msgs = st ^. chan . ccContents . cdMessages
 
@@ -999,134 +945,3 @@ openMostRecentURL st =
                         liftIO $ void $ system $ (T.unpack urlOpenCommand) <> " " <> show url
 
             return st
-
-invokeExternalEditor :: ChatState -> EventM Name (Next ChatState)
-invokeExternalEditor st = do
-    -- If EDITOR is in the environment, write the current message to a
-    -- temp file, invoke EDITOR on it, read the result, remove the temp
-    -- file, and update the program state.
-    --
-    -- If EDITOR is not present, fall back to 'vi'.
-    mEnv <- liftIO $ lookupEnv "EDITOR"
-    let editorProgram = maybe "vi" id mEnv
-
-    suspendAndResume $
-      withSystemTempFile "matterhorn_editor.tmp" $ \tmpFileName tmpFileHandle -> do
-        -- Write the current message to the temp file
-        hPutStr tmpFileHandle $ T.unpack $ T.intercalate "\n" $ getEditContents $ st^.cmdLine
-        hClose tmpFileHandle
-
-        -- Run the editor
-        status <- system (editorProgram <> " " <> tmpFileName)
-
-        -- On editor exit, if exited with zero status, read temp file.
-        -- If non-zero status, skip temp file read.
-        case status of
-            ExitSuccess -> do
-                tmpLines <- T.lines <$> T.pack <$> readFile tmpFileName
-                return $ st & cmdLine.editContentsL .~ (textZipper tmpLines Nothing)
-                            & csEditState.cedMultiline .~ (length tmpLines > 1)
-            ExitFailure _ -> return st
-
-toggleMessagePreview :: ChatState -> ChatState
-toggleMessagePreview = csShowMessagePreview %~ not
-
-addUserToCurrentChannel :: T.Text -> ChatState -> EventM Name ChatState
-addUserToCurrentChannel uname st = do
-    -- First: is this a valid username?
-    let results = filter ((== uname) . _uiName . snd) $ HM.toList $ st^.usrMap
-    case results of
-        [(uid, _)] -> do
-            liftIO $ doAsyncWith st $ do
-                let cId = currentChannelId st
-                tryMM (void $ mmChannelAddUser (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId uid)
-                      (const $ return return)
-            return st
-        _ -> do
-            postErrorMessage ("No such user: " <> uname) st
-
-handlePaste :: BS.ByteString -> ChatState -> ChatState
-handlePaste bytes st = do
-  let pasteStr = T.pack (UTF8.toString bytes)
-      st' = st & cmdLine %~ applyEdit (insertMany pasteStr)
-  case length (getEditContents $ st'^.cmdLine) > 1 of
-      True -> startMultilineEditing st'
-      False -> st'
-
-editingPermitted :: ChatState -> Bool
-editingPermitted st =
-    (length (getEditContents $ st^.cmdLine) == 1) ||
-    st^.csEditState.cedMultiline
-
-handleEditingInput :: Event -> ChatState -> EventM Name ChatState
-handleEditingInput e st = do
-    -- ^ Only handle input events to the editor if we permit editing:
-    -- if multiline mode is off, or if there is only one line of text
-    -- in the editor. This means we skip input this catch-all handler
-    -- if we're *not* in multiline mode *and* there are multiple lines,
-    -- i.e., we are showing the user the status message about the
-    -- current editor state and editing is not permitted.
-
-    let smartBacktick = st^.csResources.crConfiguration.to configSmartBacktick
-        smartChars = "*`_"
-    st' <- case e of
-        EvKey (KChar 't') [MCtrl] ->
-            return $ st & cmdLine %~ applyEdit transposeChars
-
-        EvKey KBS [] | smartBacktick ->
-            let backspace = return $ st & cmdLine %~ applyEdit deletePrevChar
-            in case cursorAtOneOf smartChars (st^.cmdLine) of
-                Nothing -> backspace
-                Just ch ->
-                    -- Smart char removal:
-                    if | (cursorAtChar ch $ applyEdit moveLeft $ st^.cmdLine) &&
-                         (cursorIsAtEnd $ applyEdit moveRight $ st^.cmdLine) ->
-                           return $ st & cmdLine %~ applyEdit (deleteChar >>> deletePrevChar)
-                       | otherwise -> backspace
-
-        EvKey (KChar ch) [] | smartBacktick && ch `elem` smartChars ->
-            -- Smart char insertion:
-            let doInsertChar = return $ st & cmdLine %~ applyEdit (insertChar ch)
-            in if | (editorEmpty $ st^.cmdLine) ||
-                       ((cursorAtChar ' ' (applyEdit moveLeft $ st^.cmdLine)) &&
-                        (cursorIsAtEnd $ st^.cmdLine)) ->
-                      return $ st & cmdLine %~ applyEdit (insertMany (T.pack $ ch:ch:[]) >>> moveLeft)
-                  | (cursorAtChar ch $ st^.cmdLine) &&
-                    (cursorIsAtEnd $ applyEdit moveRight $ st^.cmdLine) ->
-                      return $ st & cmdLine %~ applyEdit moveRight
-                  | otherwise -> doInsertChar
-
-        _ -> handleEventLensed st cmdLine handleEditorEvent e
-
-    return $ st' & csCurrentCompletion .~ Nothing
-
-editorEmpty :: Editor T.Text a -> Bool
-editorEmpty e = cursorIsAtEnd e &&
-                cursorIsAtBeginning e
-
-cursorIsAtEnd :: Editor T.Text a -> Bool
-cursorIsAtEnd e =
-    let col = snd $ cursorPosition z
-        curLine = currentLine z
-        z = e^.editContentsL
-    in col == T.length curLine
-
-cursorIsAtBeginning :: Editor T.Text a -> Bool
-cursorIsAtBeginning e =
-    let col = snd $ cursorPosition z
-        z = e^.editContentsL
-    in col == 0
-
-cursorAtOneOf :: [Char] -> Editor T.Text a -> Maybe Char
-cursorAtOneOf [] _ = Nothing
-cursorAtOneOf (c:cs) e =
-    if cursorAtChar c e
-    then Just c
-    else cursorAtOneOf cs e
-
-cursorAtChar :: Char -> Editor T.Text a -> Bool
-cursorAtChar ch e =
-    let col = snd $ cursorPosition z
-        curLine = currentLine z
-        z = e^.editContentsL
-    in (T.singleton ch) `T.isPrefixOf` T.drop col curLine
