@@ -45,13 +45,29 @@ import           Config
 defaultTimeFormat :: Text
 defaultTimeFormat = "%R"
 
-renderTime :: Text -> TimeZone -> UTCTime -> Widget Name
-renderTime fmt tz t =
+renderTime :: ChatState -> UTCTime -> Widget Name
+renderTime st t =
     let timeStr = T.pack $ formatTime defaultTimeLocale (T.unpack fmt) (utcToLocalTime tz t)
-    in txt "[" <+> withDefAttr timeAttr (txt timeStr) <+> txt "]"
+        fmt = getTimeFormat st
+        tz = st^.timeZone
+    in if T.null fmt
+       then emptyWidget
+       else withDefAttr timeAttr (txt timeStr)
 
-renderChatMessage :: Set Text -> Maybe Text -> TimeZone -> Message -> Widget Name
-renderChatMessage uSet mFormat tz msg =
+renderDate :: ChatState -> UTCTime -> Widget Name
+renderDate st t =
+    let timeStr = T.pack $ formatTime defaultTimeLocale (T.unpack fmt) (utcToLocalTime tz t)
+        fmt = getDateFormat st
+        tz = st^.timeZone
+    in if T.null fmt
+       then emptyWidget
+       else withDefAttr timeAttr (txt timeStr)
+
+withBrackets :: Widget a -> Widget a
+withBrackets w = str "[" <+> w <+> str "]"
+
+renderChatMessage :: Set Text -> (UTCTime -> Widget Name) -> Message -> Widget Name
+renderChatMessage uSet renderTimeFunc msg =
     let m = renderMessage msg True uSet
         msgAtch = if Seq.null (msg^.mAttachments)
           then emptyWidget
@@ -70,11 +86,7 @@ renderChatMessage uSet mFormat tz msg =
                     C Error -> withDefAttr errorMessageAttr m
                     _ -> withDefAttr clientMessageAttr m
         fullMsg = msgTxt <=> msgAtch
-        maybeRenderTime = case mFormat of
-            Just "" -> id
-            _ -> \w ->
-                let fmt = maybe defaultTimeFormat id mFormat
-                in renderTime fmt tz (msg^.mDate) <+> txt " " <+> w
+        maybeRenderTime w = renderTimeFunc (msg^.mDate) <+> txt " " <+> w
         maybeRenderTimeWith f = case msg^.mType of
             C DateTransition -> id
             C NewMessagesTransition -> id
@@ -293,8 +305,7 @@ renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
                           (getNewMessageCutoff cId st)
                           (getMessageListing cId st)
 
-    renderSingleMessage =
-        renderChatMessage uSet (getTimeFormat st) (st ^. timeZone)
+    renderSingleMessage = renderChatMessage uSet (withBrackets . renderTime st)
 
     renderLastMessages :: Seq.Seq Message -> Widget Name
     renderLastMessages msgs =
@@ -478,8 +489,8 @@ renderUrlList st =
         renderItem sel (time, uname, url) = attr sel $ vLimit 2 $
             (vLimit 1 $
              (colorUsername uname <+> fill ' ' <+>
-             (renderTime (getDateFormat st) (st^.timeZone) time) <+> str " " <+>
-             (renderTime (getTimeFormat st) (st^.timeZone) time))) <=>
+             (renderDate st time) <+> str " " <+>
+             (renderTime st time))) <=>
             (vLimit 1 (withDefAttr urlAttr $ txt url))
 
         attr True = forceAttr "urlListSelectedAttr"
