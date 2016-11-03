@@ -6,6 +6,7 @@ import Data.Time.Clock (UTCTime(..))
 import Data.Time.Format (formatTime, defaultTimeLocale)
 import Data.Time.LocalTime (TimeZone, utcToLocalTime)
 import Lens.Micro.Platform
+import Network.Mattermost
 
 import Types
 import Themes
@@ -44,3 +45,14 @@ userSigil u = case u^.uiStatus of
     Online  -> '+'
     Away    -> '-'
     Other _ -> '?'
+
+mkChannelName :: ChannelInfo -> T.Text
+mkChannelName c = T.cons sigil (c^.cdName)
+  where sigil =  case c^.cdType of
+          Private   -> '?'
+          Ordinary  -> '#'
+          Direct    -> '@'
+          Unknown _ -> '!'
+
+mkDMChannelName :: UserInfo -> T.Text
+mkDMChannelName u = T.cons (userSigil u) (u^.uiName)

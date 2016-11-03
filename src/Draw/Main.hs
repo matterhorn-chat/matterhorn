@@ -68,17 +68,6 @@ renderChatMessage uSet renderTimeFunc msg =
             _ -> f
     in maybeRenderTimeWith maybeRenderTime fullMsg
 
-mkChannelName :: ChannelInfo -> Text
-mkChannelName c = T.cons sigil (c^.cdName)
-  where sigil =  case c^.cdType of
-          Private   -> '?'
-          Ordinary  -> '#'
-          Direct    -> '@'
-          Unknown _ -> '!'
-
-mkDMChannelName :: UserInfo -> Text
-mkDMChannelName u = T.cons (userSigil u) (u^.uiName)
-
 channelListWidth :: Int
 channelListWidth = 20
 
