@@ -366,22 +366,21 @@ completionAlternatives st =
             ]
 
 inputPreview :: Set T.Text -> ChatState -> Widget Name
-inputPreview uSet st = maybePreview
+inputPreview uSet st | not $ st^.csShowMessagePreview = emptyWidget
+                     | otherwise = thePreview
     where
     uname = st^.csMe.userUsernameL
     curContents = getEditContents $ st^.cmdLine
     curStr = T.intercalate "\n" curContents
     previewMsg = previewFromInput uname curStr
-    maybePreview = if not $ st^.csShowMessagePreview
-                   then emptyWidget
-                   else let noPreview = str "(No preview)"
-                            msgPreview = case previewMsg of
-                              Nothing -> noPreview
-                              Just pm -> if T.null curStr
-                                         then noPreview
-                                         else renderMessage pm True uSet
-                        in vLimit 5 msgPreview <=>
-                           hBorderWithLabel (withDefAttr clientEmphAttr $ str "[Preview ↑]")
+    thePreview = let noPreview = str "(No preview)"
+                     msgPreview = case previewMsg of
+                       Nothing -> noPreview
+                       Just pm -> if T.null curStr
+                                  then noPreview
+                                  else renderMessage pm True uSet
+                 in vLimit 5 msgPreview <=>
+                    hBorderWithLabel (withDefAttr clientEmphAttr $ str "[Preview ↑]")
 
 userInputArea :: ChatState -> Widget Name
 userInputArea st =
