@@ -16,6 +16,7 @@ draw st =
     case st^.csMode of
         Main                -> drawMain st
         ChannelScroll       -> drawMain st
+        UrlSelect           -> drawMain st
         ShowHelp            -> drawShowHelp st
         ChannelSelect       -> drawMain st
         LeaveChannelConfirm -> drawLeaveChannelConfirm st

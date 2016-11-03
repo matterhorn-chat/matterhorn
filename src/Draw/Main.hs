@@ -6,6 +6,7 @@ import           Brick.Widgets.Border
 import           Brick.Widgets.Border.Style
 import           Brick.Widgets.Center (hCenter)
 import           Brick.Widgets.Edit (editContentsL, renderEditor, getEditContents)
+import           Brick.Widgets.List (renderList)
 import           Control.Applicative
 import           Data.Time.Clock (UTCTime(..))
 import           Data.Time.Calendar (fromGregorian)
@@ -286,11 +287,8 @@ renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
                    (F.toList $ renderSingleMessage <$> channelMessages)
         _ -> renderLastMessages channelMessages
 
-    dateTransitionFormat = maybe defaultDateFormat id
-        (configDateFormat $ st^.csResources.crConfiguration)
-
     channelMessages =
-        insertTransitions dateTransitionFormat
+        insertTransitions (getDateFormat st)
                           (st ^. timeZone)
                           (getNewMessageCutoff cId st)
                           (getMessageListing cId st)
@@ -329,6 +327,10 @@ renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
     chnName = chan^.ccInfo.cdName
     chnType = chan^.ccInfo.cdType
     topicStr = chan^.ccInfo.cdHeader
+
+getDateFormat :: ChatState -> T.Text
+getDateFormat st = maybe defaultDateFormat id
+    (configDateFormat $ st^.csResources.crConfiguration)
 
 getMessageListing :: ChannelId -> ChatState -> Seq.Seq Message
 getMessageListing cId st =
@@ -424,6 +426,12 @@ userInputArea :: ChatState -> Widget Name
 userInputArea st =
     case st^.csMode of
         ChannelSelect -> renderChannelSelect st
+        UrlSelect     -> hCenter $ hBox [ txt "Press "
+                                        , withDefAttr clientEmphAttr $ txt "Enter"
+                                        , txt " to open the selected URL or "
+                                        , withDefAttr clientEmphAttr $ txt "Escape"
+                                        , txt " to cancel."
+                                        ]
         ChannelScroll -> hCenter $ hBox [ txt "Press "
                                         , withDefAttr clientEmphAttr $ txt "Escape"
                                         , txt " to stop scrolling and resume chatting."
@@ -432,11 +440,14 @@ userInputArea st =
 
 mainInterface :: ChatState -> Widget Name
 mainInterface st =
-    (renderChannelList st <+> vBorder <+> (maybeSubdue $ renderCurrentChannelDisplay uSet st))
+    (renderChannelList st <+> vBorder <+> mainDisplay)
       <=> bottomBorder
       <=> inputPreview uSet st
       <=> userInputArea st
     where
+    mainDisplay = case st^.csMode of
+        UrlSelect -> renderUrlList st
+        _         -> maybeSubdue $ renderCurrentChannelDisplay uSet st
     uSet = Set.fromList (map _uiName (HM.elems (st^.usrMap)))
 
     bottomBorder = case st^.csCurrentCompletion of
@@ -446,3 +457,24 @@ mainInterface st =
     maybeSubdue = if st^.csMode == ChannelSelect
                   then forceAttr ""
                   else id
+
+getTimeFormat :: ChatState -> T.Text
+getTimeFormat st = maybe defaultTimeFormat id (st^.timeFormat)
+
+renderUrlList :: ChatState -> Widget Name
+renderUrlList st =
+    if F.length urls == 0
+    then str "No URLs found in this channel."
+    else renderList renderItem True urls
+    where
+        urls = st^.csUrlList
+
+        renderItem sel (time, uname, url) = attr sel $ vLimit 2 $
+            (vLimit 1 $
+             (colorUsername uname <+> fill ' ' <+>
+             (renderTime (getDateFormat st) (st^.timeZone) time) <+> str " " <+>
+             (renderTime (getTimeFormat st) (st^.timeZone) time))) <=>
+            (vLimit 1 (withDefAttr urlAttr $ txt url))
+
+        attr True = forceAttr "..."
+        attr False = id

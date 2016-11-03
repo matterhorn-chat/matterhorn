@@ -2,7 +2,7 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE ParallelListComp #-}
 
-module Markdown (renderMessage, renderText) where
+module Markdown (renderMessage, renderText, blockGetURLs) where
 
 import           Brick ( (<+>), Widget )
 import qualified Brick.Widgets.Border as B
@@ -302,3 +302,18 @@ gatherWidgets (viewl-> (Fragment frag style :< rs)) = go style (strOf frag) rs
           in w <| gatherWidgets xs
 gatherWidgets _ =
   S.empty
+
+blockGetURLs :: C.Block -> S.Seq T.Text
+blockGetURLs (C.Para is) = mconcat $ inlineGetURLs <$> F.toList is
+blockGetURLs (C.Header _ is) = mconcat $ inlineGetURLs <$> F.toList is
+blockGetURLs (C.Blockquote bs) = mconcat $ blockGetURLs <$> F.toList bs
+blockGetURLs (C.List _ _ bss) = mconcat $ mconcat $ (blockGetURLs <$>) <$> (F.toList <$> bss)
+blockGetURLs _ = mempty
+
+inlineGetURLs :: C.Inline -> S.Seq T.Text
+inlineGetURLs (C.Emph is) = mconcat $ inlineGetURLs <$> F.toList is
+inlineGetURLs (C.Strong is) = mconcat $ inlineGetURLs <$> F.toList is
+inlineGetURLs (C.Link is url "") = url S.<| (mconcat $ inlineGetURLs <$> F.toList is)
+inlineGetURLs (C.Link is _ url) = url S.<| (mconcat $ inlineGetURLs <$> F.toList is)
+inlineGetURLs (C.Image is _ _) = mconcat $ inlineGetURLs <$> F.toList is
+inlineGetURLs _ = mempty

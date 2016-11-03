@@ -57,6 +57,7 @@ data Name = ChannelMessages ChannelId
           | ChannelSelectString
           | CompletionAlternatives
           | JoinChannelList
+          | UrlList
           deriving (Eq, Show, Ord)
 
 -- We want to continue referring to posts by their IDs, but we don't want to
@@ -311,6 +312,7 @@ data Mode =
     Main
     | ShowHelp
     | ChannelSelect
+    | UrlSelect
     | LeaveChannelConfirm
     | JoinChannel
     | ChannelScroll
@@ -337,6 +339,7 @@ data ChatState = ChatState
   , _csChannelSelectChannelMatches :: HashMap T.Text ChannelSelectMatch
   , _csChannelSelectUserMatches    :: HashMap T.Text ChannelSelectMatch
   , _csRecentChannel               :: Maybe ChannelId
+  , _csUrlList                     :: List Name (UTCTime, T.Text, T.Text)
   , _csConnectionStatus            :: ConnectionStatus
   , _csJoinChannelList             :: Maybe (List Name Channel)
   }

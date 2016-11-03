@@ -1,10 +1,11 @@
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE OverloadedStrings #-}
 module State where
 
 import           Brick (EventM, invalidateCacheEntry)
 import           Brick.Widgets.Edit (getEditContents, editContentsL)
-import           Brick.Widgets.List (list)
+import           Brick.Widgets.List (list, listMoveTo, listSelectedElement)
 import           Control.Applicative
 import           Control.Concurrent (threadDelay, forkIO)
 import qualified Control.Concurrent.Chan as Chan
@@ -33,7 +34,6 @@ import           Lens.Micro.Platform
 import           System.Exit (exitFailure)
 import           System.IO (Handle)
 import           System.Process (system)
-import           Cheapskate
 
 import           Prelude
 
@@ -50,6 +50,7 @@ import           Themes
 import           Login
 import           Zipper (Zipper)
 import qualified Zipper as Z
+import           Markdown (blockGetURLs)
 
 import           State.Common
 
@@ -107,6 +108,7 @@ newState rs i u m tz hist = ChatState
   , _csChannelSelectChannelMatches = mempty
   , _csChannelSelectUserMatches    = mempty
   , _csRecentChannel               = Nothing
+  , _csUrlList                     = list UrlList mempty 2
   , _csConnectionStatus            = Disconnected
   , _csJoinChannelList             = Nothing
   }
@@ -879,49 +881,35 @@ parseChannelSelectPattern pat = do
         (Just Prefix, Just Suffix) -> return $ CSP Equal  pat2
         tys                        -> error $ "BUG: invalid channel select case: " <> show tys
 
-openMostRecentURL :: ChatState -> EventM Name ChatState
-openMostRecentURL st =
+startUrlSelect :: ChatState -> ChatState
+startUrlSelect st =
+    let urls = V.fromList $ findUrls (st^.csCurrentChannel)
+    in st & csMode .~ UrlSelect
+          & csUrlList .~ (listMoveTo (length urls - 1) $ list UrlList urls 2)
+
+stopUrlSelect :: ChatState -> ChatState
+stopUrlSelect = csMode .~ Main
+
+findUrls :: ClientChannel -> [(UTCTime, T.Text, T.Text)]
+findUrls chan =
+    let msgs = chan^.ccContents.cdMessages
+    in concat $ F.toList $ F.toList <$> Seq.reverse <$> msgURLs <$> msgs
+
+msgURLs :: Message -> Seq.Seq (UTCTime, T.Text, T.Text)
+msgURLs msg | Just uname <- msg^.mUserName =
+    (msg^.mDate, uname,) <$> (mconcat $ blockGetURLs <$> (F.toList $ msg^.mText))
+msgURLs _ = mempty
+
+openSelectedURL :: ChatState -> EventM Name ChatState
+openSelectedURL st | st^.csMode == UrlSelect =
     case configURLOpenCommand $ st^.csResources.crConfiguration of
         Nothing -> do
             msg <- newClientMessage Informative "Config option 'urlOpenCommand' missing; cannot open URL."
-            addClientMessage msg st
+            addClientMessage msg $ st & csMode .~ Main
         Just urlOpenCommand -> do
-            -- Get the messages for the current channel
-            let cId = st^.csCurrentChannelId
-                chan = msgMap . ix cId
-                msgs = st ^. chan . ccContents . cdMessages
-
-                msgURLs :: Message -> Seq.Seq T.Text
-                msgURLs msg = mconcat $ blockGetURLs <$> (F.toList $ msg^.mText)
-
-                blockGetURLs :: Block -> Seq.Seq T.Text
-                blockGetURLs (Para is) = mconcat $ inlineGetURLs <$> F.toList is
-                blockGetURLs (Header _ is) = mconcat $ inlineGetURLs <$> F.toList is
-                blockGetURLs (Blockquote bs) = mconcat $ blockGetURLs <$> F.toList bs
-                blockGetURLs (List _ _ bss) = mconcat $ mconcat $ (blockGetURLs <$>) <$> (F.toList <$> bss)
-                blockGetURLs _ = mempty
-
-                inlineGetURLs :: Inline -> Seq.Seq T.Text
-                inlineGetURLs (Emph is) = mconcat $ inlineGetURLs <$> F.toList is
-                inlineGetURLs (Strong is) = mconcat $ inlineGetURLs <$> F.toList is
-                inlineGetURLs (Link is url "") = url Seq.<| (mconcat $ inlineGetURLs <$> F.toList is)
-                inlineGetURLs (Link is _ url) = url Seq.<| (mconcat $ inlineGetURLs <$> F.toList is)
-                inlineGetURLs (Image is _ _) = mconcat $ inlineGetURLs <$> F.toList is
-                inlineGetURLs _ = mempty
-
-                -- Search from the most recent message backwards until we find
-                -- one with one or more URLs
-                recentIdx = Seq.findIndexR (not . Seq.null . msgURLs) msgs
-
-            case recentIdx of
+            case listSelectedElement $ st^.csUrlList of
                 Nothing -> return ()
-                Just i -> do
-                    -- For each URL in the message, invoke the configured "url
-                    -- open command" if we have one
-                    --
-                    -- If no open command is available, show an error message.
-                    let Just msg = msgs Seq.!? i
-                    F.forM_ (msgURLs msg) $ \url -> do
-                        liftIO $ void $ system $ (T.unpack urlOpenCommand) <> " " <> show url
-
-            return st
+                Just (_, (_, _, url)) ->
+                    liftIO $ void $ system $ (T.unpack urlOpenCommand) <> " " <> show url
+            return $ st & csMode .~ Main
+openSelectedURL st = return st

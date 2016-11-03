@@ -31,6 +31,7 @@ module Themes
   , recentMarkerAttr
   , replyParentAttr
   , loadMoreAttr
+  , urlListSelectedAttr
 
   -- * Username formatting
   , colorUsername
@@ -64,6 +65,9 @@ replyParentAttr = "replyParent"
 
 loadMoreAttr :: AttrName
 loadMoreAttr = "loadMoreMessages"
+
+urlListSelectedAttr :: AttrName
+urlListSelectedAttr = "urlListSelectedAttr"
 
 dialogAttr :: AttrName
 dialogAttr = "dialog"
@@ -176,6 +180,7 @@ lightColorTheme = attrMap (black `on` white) $
   , (listSelectedFocusedAttr,          black `on` yellow)
   , (recentMarkerAttr,                 fg black `withStyle` bold)
   , (loadMoreAttr,                     black `on` cyan)
+  , (urlListSelectedAttr,              black `on` yellow)
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 
@@ -208,6 +213,7 @@ darkAttrs =
   , (listSelectedFocusedAttr,          black `on` yellow)
   , (recentMarkerAttr,                 fg yellow `withStyle` bold)
   , (loadMoreAttr,                     black `on` cyan)
+  , (urlListSelectedAttr,              black `on` yellow)
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 

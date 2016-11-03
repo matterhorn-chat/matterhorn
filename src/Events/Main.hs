@@ -138,9 +138,9 @@ mainKeybindings =
                          True -> continue =<< handleEventLensed st cmdLine handleEditorEvent
                                            (Vty.EvKey Vty.KBS [])
 
-    , KB "Open the current channel's most recently-posted URL"
+    , KB "Select and open a URL posted to the current channel"
          (Vty.EvKey (Vty.KChar 'o') [Vty.MCtrl]) $
-           openMostRecentURL >=> continue
+           continue . startUrlSelect
 
     , KB "Clear the current channel's unread message indicator"
          (Vty.EvKey (Vty.KChar 'l') [Vty.MCtrl]) $ \st ->

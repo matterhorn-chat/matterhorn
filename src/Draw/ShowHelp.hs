@@ -18,6 +18,7 @@ import Types
 import Command
 import Events.ShowHelp
 import Events.ChannelSelect
+import Events.UrlSelect
 import Events.Main
 import Markdown (renderText)
 
@@ -37,6 +38,7 @@ keybindSections =
     [ ("This Help Page", helpKeybindings)
     , ("Main Interface", mainKeybindings)
     , ("Channel Select Mode", channelSelectKeybindings)
+    , ("URL Select Mode", urlSelectKeybindings)
     ]
 
 helpBox :: Widget Name
