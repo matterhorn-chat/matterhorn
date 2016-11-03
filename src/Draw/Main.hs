@@ -482,5 +482,5 @@ renderUrlList st =
              (renderTime (getTimeFormat st) (st^.timeZone) time))) <=>
             (vLimit 1 (withDefAttr urlAttr $ txt url))
 
-        attr True = forceAttr "..."
+        attr True = forceAttr "urlListSelectedAttr"
         attr False = id
