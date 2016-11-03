@@ -51,7 +51,7 @@ renderChatMessage uSet renderTimeFunc msg =
         msgTxt =
           case msg^.mUserName of
             Just _
-              | msg^.mType == CP Join || msg^.mType == CP Leave || msg^.mDeleted ->
+              | msg^.mType == CP Join || msg^.mType == CP Leave ->
                   withDefAttr clientMessageAttr m
               | otherwise -> m
             Nothing ->
