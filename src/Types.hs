@@ -409,6 +409,9 @@ csCurrentCompletion = csEditState . cedCurrentCompletion
 timeFormat :: SimpleGetter ChatState (Maybe T.Text)
 timeFormat = csResources . crConfiguration . to configTimeFormat
 
+dateFormat :: SimpleGetter ChatState (Maybe T.Text)
+dateFormat = csResources . crConfiguration . to configDateFormat
+
 getMessageForPostId :: ChatState -> PostId -> ReplyState
 getMessageForPostId st pId =
     case st^.csPostMap.at(pId) of

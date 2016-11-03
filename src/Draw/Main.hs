@@ -39,11 +39,18 @@ import           Markdown
 import           State
 import           Themes
 import           Types
-import           Config
 
--- If the config's time format is not set.
 defaultTimeFormat :: Text
 defaultTimeFormat = "%R"
+
+defaultDateFormat :: T.Text
+defaultDateFormat = "%Y-%m-%d"
+
+getTimeFormat :: ChatState -> T.Text
+getTimeFormat st = maybe defaultTimeFormat id (st^.timeFormat)
+
+getDateFormat :: ChatState -> T.Text
+getDateFormat st = maybe defaultDateFormat id (st^.dateFormat)
 
 renderTime :: ChatState -> UTCTime -> Widget Name
 renderTime st = renderUTCTime (getTimeFormat st) (st^.timeZone)
@@ -334,19 +341,9 @@ renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
     chnType = chan^.ccInfo.cdType
     topicStr = chan^.ccInfo.cdHeader
 
-getTimeFormat :: ChatState -> T.Text
-getTimeFormat st = maybe defaultTimeFormat id (st^.timeFormat)
-
-getDateFormat :: ChatState -> T.Text
-getDateFormat st = maybe defaultDateFormat id
-    (configDateFormat $ st^.csResources.crConfiguration)
-
 getMessageListing :: ChannelId -> ChatState -> Seq.Seq Message
 getMessageListing cId st =
     st ^. msgMap . ix cId . ccContents . cdMessages
-
-defaultDateFormat :: T.Text
-defaultDateFormat = "%Y-%m-%d"
 
 insertTransitions :: Text -> TimeZone -> Maybe UTCTime -> Seq.Seq Message -> Seq.Seq Message
 insertTransitions fmt tz cutoff ms = fst $ F.foldl' nextMsg initState ms
