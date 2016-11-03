@@ -39,34 +39,7 @@ import           Markdown
 import           State
 import           Themes
 import           Types
-
-defaultTimeFormat :: Text
-defaultTimeFormat = "%R"
-
-defaultDateFormat :: T.Text
-defaultDateFormat = "%Y-%m-%d"
-
-getTimeFormat :: ChatState -> T.Text
-getTimeFormat st = maybe defaultTimeFormat id (st^.timeFormat)
-
-getDateFormat :: ChatState -> T.Text
-getDateFormat st = maybe defaultDateFormat id (st^.dateFormat)
-
-renderTime :: ChatState -> UTCTime -> Widget Name
-renderTime st = renderUTCTime (getTimeFormat st) (st^.timeZone)
-
-renderDate :: ChatState -> UTCTime -> Widget Name
-renderDate st = renderUTCTime (getDateFormat st) (st^.timeZone)
-
-renderUTCTime :: T.Text -> TimeZone -> UTCTime -> Widget a
-renderUTCTime fmt tz t =
-    let timeStr = T.pack $ formatTime defaultTimeLocale (T.unpack fmt) (utcToLocalTime tz t)
-    in if T.null fmt
-       then emptyWidget
-       else withDefAttr timeAttr (txt timeStr)
-
-withBrackets :: Widget a -> Widget a
-withBrackets w = str "[" <+> w <+> str "]"
+import           Draw.Util
 
 renderChatMessage :: Set Text -> (UTCTime -> Widget Name) -> Message -> Widget Name
 renderChatMessage uSet renderTimeFunc msg =
@@ -105,13 +78,6 @@ mkChannelName c = T.cons sigil (c^.cdName)
 
 mkDMChannelName :: UserInfo -> Text
 mkDMChannelName u = T.cons (userSigil u) (u^.uiName)
-
-userSigil :: UserInfo -> Char
-userSigil u = case u^.uiStatus of
-    Offline -> ' '
-    Online  -> '+'
-    Away    -> '-'
-    Other _ -> '?'
 
 channelListWidth :: Int
 channelListWidth = 20
