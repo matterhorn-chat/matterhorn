@@ -463,10 +463,16 @@ getTimeFormat st = maybe defaultTimeFormat id (st^.timeFormat)
 
 renderUrlList :: ChatState -> Widget Name
 renderUrlList st =
-    if F.length urls == 0
-    then str "No URLs found in this channel."
-    else renderList renderItem True urls
+    header <=> urlDisplay
     where
+        header = withDefAttr channelHeaderAttr $ vLimit 1 $
+                 (txt $ "URLs: " <> (st^.csCurrentChannel.ccInfo.cdName)) <+>
+                 fill ' '
+
+        urlDisplay = if F.length urls == 0
+                     then str "No URLs found in this channel."
+                     else renderList renderItem True urls
+
         urls = st^.csUrlList
 
         renderItem sel (time, uname, url) = attr sel $ vLimit 2 $
