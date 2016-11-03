@@ -46,19 +46,14 @@ defaultTimeFormat :: Text
 defaultTimeFormat = "%R"
 
 renderTime :: ChatState -> UTCTime -> Widget Name
-renderTime st t =
-    let timeStr = T.pack $ formatTime defaultTimeLocale (T.unpack fmt) (utcToLocalTime tz t)
-        fmt = getTimeFormat st
-        tz = st^.timeZone
-    in if T.null fmt
-       then emptyWidget
-       else withDefAttr timeAttr (txt timeStr)
+renderTime st = renderUTCTime (getTimeFormat st) (st^.timeZone)
 
 renderDate :: ChatState -> UTCTime -> Widget Name
-renderDate st t =
+renderDate st = renderUTCTime (getDateFormat st) (st^.timeZone)
+
+renderUTCTime :: T.Text -> TimeZone -> UTCTime -> Widget a
+renderUTCTime fmt tz t =
     let timeStr = T.pack $ formatTime defaultTimeLocale (T.unpack fmt) (utcToLocalTime tz t)
-        fmt = getDateFormat st
-        tz = st^.timeZone
     in if T.null fmt
        then emptyWidget
        else withDefAttr timeAttr (txt timeStr)
