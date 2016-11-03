@@ -294,7 +294,7 @@ renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
                           (getMessageListing cId st)
 
     renderSingleMessage =
-        renderChatMessage uSet (st ^. timeFormat) (st ^. timeZone)
+        renderChatMessage uSet (getTimeFormat st) (st ^. timeZone)
 
     renderLastMessages :: Seq.Seq Message -> Widget Name
     renderLastMessages msgs =
@@ -327,6 +327,9 @@ renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
     chnName = chan^.ccInfo.cdName
     chnType = chan^.ccInfo.cdType
     topicStr = chan^.ccInfo.cdHeader
+
+getTimeFormat :: ChatState -> T.Text
+getTimeFormat st = maybe defaultTimeFormat id (st^.timeFormat)
 
 getDateFormat :: ChatState -> T.Text
 getDateFormat st = maybe defaultDateFormat id
@@ -457,9 +460,6 @@ mainInterface st =
     maybeSubdue = if st^.csMode == ChannelSelect
                   then forceAttr ""
                   else id
-
-getTimeFormat :: ChatState -> T.Text
-getTimeFormat st = maybe defaultTimeFormat id (st^.timeFormat)
 
 renderUrlList :: ChatState -> Widget Name
 renderUrlList st =
