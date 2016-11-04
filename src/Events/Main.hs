@@ -36,10 +36,7 @@ onEventMain st (Vty.EvResize _ _) = do
   continue =<< updateChannelScrollState st
 onEventMain st e | Just kb <- lookupKeybinding e mainKeybindings = kbAction kb st
 onEventMain st (Vty.EvPaste bytes) = continue $ handlePaste bytes st
-onEventMain st e =
-    if editingPermitted st
-    then continue =<< handleEditingInput e st
-    else continue st
+onEventMain st e = continue =<< handleEditingInput e st
 
 mainKeybindings :: [Keybinding]
 mainKeybindings =
@@ -122,21 +119,6 @@ mainKeybindings =
                  True -> continue =<< handleEventLensed st cmdLine handleEditorEvent
                                            (Vty.EvKey Vty.KEnter [])
                  False -> handleInputSubmission $ st & csCurrentCompletion .~ Nothing
-
-    , KB "Delete the current multi-line message, if any"
-         (Vty.EvKey Vty.KBS []) $ \st -> do
-             case st^.csEditState.cedMultiline of
-                 -- Backspace in multiline mode does the usual thing.
-                 True -> continue =<< handleEventLensed st cmdLine handleEditorEvent
-                                           (Vty.EvKey Vty.KBS [])
-                 False ->
-                     -- Backspace outside multiline mode means delete
-                     -- the whole message if it has more than one line,
-                     -- or do the usual thing otherwise.
-                     case length (getEditContents $ st^.cmdLine) == 1 of
-                         False -> continue $ st & cmdLine %~ applyEdit Z.clearZipper
-                         True -> continue =<< handleEventLensed st cmdLine handleEditorEvent
-                                           (Vty.EvKey Vty.KBS [])
 
     , KB "Select and open a URL posted to the current channel"
          (Vty.EvKey (Vty.KChar 'o') [Vty.MCtrl]) $

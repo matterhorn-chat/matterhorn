@@ -16,7 +16,7 @@ import qualified Data.Text as T
 import           Data.Text.Zipper (textZipper, insertMany,
                                    moveRight, moveLeft, cursorPosition, currentLine,
                                    transposeChars, deleteChar, deletePrevChar,
-                                   insertChar)
+                                   insertChar, clearZipper)
 import           Graphics.Vty (Event(..), Key(..), Modifier(..))
 import           Lens.Micro.Platform
 import           System.Environment (lookupEnv)
@@ -33,13 +33,11 @@ import           Types
 
 import           State.Common
 
-
 startMultilineEditing :: ChatState -> ChatState
 startMultilineEditing = csEditState.cedMultiline .~ True
 
 stopMultilineEditing :: ChatState -> ChatState
 stopMultilineEditing = csEditState.cedMultiline .~ False
-
 
 invokeExternalEditor :: ChatState -> EventM Name (Next ChatState)
 invokeExternalEditor st = do
@@ -111,10 +109,17 @@ handleEditingInput e st = do
     let smartBacktick = st^.csResources.crConfiguration.to configSmartBacktick
         smartChars = "*`_"
     st' <- case e of
-        EvKey (KChar 't') [MCtrl] ->
+        EvKey (KChar 't') [MCtrl] | editingPermitted st ->
             return $ st & cmdLine %~ applyEdit transposeChars
 
-        EvKey KBS [] | smartBacktick ->
+        -- Not editing; backspace here means cancel multi-line message
+        -- composition
+        EvKey KBS [] | (not $ editingPermitted st) ->
+            return $ st & cmdLine %~ applyEdit clearZipper
+
+        -- Backspace in editing mode with smart pair insertion means
+        -- smart pair removal when possible
+        EvKey KBS [] | editingPermitted st && smartBacktick ->
             let backspace = return $ st & cmdLine %~ applyEdit deletePrevChar
             in case cursorAtOneOf smartChars (st^.cmdLine) of
                 Nothing -> backspace
@@ -125,7 +130,7 @@ handleEditingInput e st = do
                            return $ st & cmdLine %~ applyEdit (deleteChar >>> deletePrevChar)
                        | otherwise -> backspace
 
-        EvKey (KChar ch) [] | smartBacktick && ch `elem` smartChars ->
+        EvKey (KChar ch) [] | editingPermitted st && smartBacktick && ch `elem` smartChars ->
             -- Smart char insertion:
             let doInsertChar = return $ st & cmdLine %~ applyEdit (insertChar ch)
             in if | (editorEmpty $ st^.cmdLine) ||
@@ -137,7 +142,8 @@ handleEditingInput e st = do
                       return $ st & cmdLine %~ applyEdit moveRight
                   | otherwise -> doInsertChar
 
-        _ -> handleEventLensed st cmdLine handleEditorEvent e
+        _ | editingPermitted st -> handleEventLensed st cmdLine handleEditorEvent e
+          | otherwise -> return st
 
     return $ st' & csCurrentCompletion .~ Nothing
 
