@@ -152,10 +152,12 @@ startJoinChannel st = do
 joinChannel :: Channel -> ChatState -> EventM Name ChatState
 joinChannel chan st = do
     let cId = getId chan
-    liftIO $ do
-        mmJoinChannel (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId
-        asyncFetchScrollback st cId
-    handleNewChannel (chan^.channelNameL) True chan $ st & csMode .~ Main
+
+    liftIO $ doAsyncWith st $ do
+        void $ mmJoinChannel (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId
+        return return
+
+    return $ st & csMode .~ Main
 
 -- | When another user adds us to a channel, we need to fetch the
 -- channel info for that channel.
@@ -489,41 +491,54 @@ maybeRingBell st = do
 
 addMessage :: Post -> ChatState -> EventM Name ChatState
 addMessage new st = do
-  now <- liftIO getCurrentTime
-  let cp = toClientPost new (new^.postParentIdL)
-      fromMe = cp^.cpUser == (Just $ getId (st^.csMe))
-      updateTime = if fromMe then id else const now
-      msg = clientPostToMessage st cp
-      cId = postChannelId new
-
-      doAddMessage s = do
-        let chan = msgMap . ix cId
-            s' = s & csPostMap.ix(postId new) .~ msg
-            msg' = clientPostToMessage s (toClientPost new (new^.postParentIdL))
-            rs = s' & chan . ccContents . cdMessages %~ (Seq.|> msg')
-                    & chan . ccInfo . cdUpdated %~ updateTime
-        when (not fromMe) $ maybeRingBell s'
-        if postChannelId new == rs^.csCurrentChannelId
-          then updateChannelScrollState rs >>= updateViewed
-          else setNewMessageCutoff rs cId msg
-
-  -- If the message is in reply to another message, try to find it in
-  -- the scrollback for the post's channel. If the message isn't there,
-  -- fetch it. If we have to fetch it, don't post this message to the
-  -- channel until we have fetched the parent.
-  case msg^.mInReplyToMsg of
-      ParentNotLoaded parentId -> do
-          liftIO $ doAsyncWith st $ do
-              let theTeamId = st^.csMyTeam.teamIdL
-              p <- mmGetPost (st^.csConn) (st^.csTok) theTeamId cId parentId
-              let postMap = HM.fromList [ ( pId
-                                          , clientPostToMessage st (toClientPost x (x^.postParentIdL))
-                                          )
-                                        | (pId, x) <- HM.toList (p^.postsPostsL)
-                                        ]
-              return $ \st'' -> doAddMessage $ st'' & csPostMap %~ (HM.union postMap)
+  case st^.msgMap.at (postChannelId new) of
+      Nothing ->
+          -- When we join channels, sometimes we get the "user has
+          -- been added to channel" message here BEFORE we get the
+          -- websocket event that says we got added to a channel. This
+          -- means the message arriving here in addMessage can't be
+          -- added yet because we haven't fetched the channel metadata
+          -- in the websocket handler. So to be safe we just drop the
+          -- message here, but this is the only case of messages that we
+          -- *expect* to drop for this reason. Hence the check for the
+          -- msgMap channel ID key presence above.
           return st
-      _ -> doAddMessage st
+      Just _ -> do
+          now <- liftIO getCurrentTime
+          let cp = toClientPost new (new^.postParentIdL)
+              fromMe = cp^.cpUser == (Just $ getId (st^.csMe))
+              updateTime = if fromMe then id else const now
+              msg = clientPostToMessage st cp
+              cId = postChannelId new
+
+              doAddMessage s = do
+                let chan = msgMap . ix cId
+                    s' = s & csPostMap.ix(postId new) .~ msg
+                    msg' = clientPostToMessage s (toClientPost new (new^.postParentIdL))
+                    rs = s' & chan . ccContents . cdMessages %~ (Seq.|> msg')
+                            & chan . ccInfo . cdUpdated %~ updateTime
+                when (not fromMe) $ maybeRingBell s'
+                if postChannelId new == rs^.csCurrentChannelId
+                  then updateChannelScrollState rs >>= updateViewed
+                  else setNewMessageCutoff rs cId msg
+
+          -- If the message is in reply to another message, try to find it in
+          -- the scrollback for the post's channel. If the message isn't there,
+          -- fetch it. If we have to fetch it, don't post this message to the
+          -- channel until we have fetched the parent.
+          case msg^.mInReplyToMsg of
+              ParentNotLoaded parentId -> do
+                  liftIO $ doAsyncWith st $ do
+                      let theTeamId = st^.csMyTeam.teamIdL
+                      p <- mmGetPost (st^.csConn) (st^.csTok) theTeamId cId parentId
+                      let postMap = HM.fromList [ ( pId
+                                                  , clientPostToMessage st (toClientPost x (x^.postParentIdL))
+                                                  )
+                                                | (pId, x) <- HM.toList (p^.postsPostsL)
+                                                ]
+                      return $ \st'' -> doAddMessage $ st'' & csPostMap %~ (HM.union postMap)
+                  return st
+              _ -> doAddMessage st
 
 setNewMessageCutoff :: ChatState -> ChannelId -> Message -> EventM Name ChatState
 setNewMessageCutoff st cId msg =
