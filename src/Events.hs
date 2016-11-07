@@ -84,4 +84,35 @@ handleWSEvent st we =
                   then handleChannelInvite cId st >>= continue
                   else continue st
       Nothing -> continue st
-    _ -> continue st
+    WMNewUser -> -- XXX
+      continue st
+    WMUserRemoved -> -- XXX
+      continue st
+    WMChannelDeleted -> -- XXX
+      continue st
+    WMDirectAdded -> -- XXX
+      continue st
+    WMLeaveTeam -> -- XXX: How do we deal with this one?
+      continue st
+    -- An 'ephemeral message' is just MatterMost's version
+    -- of our 'client message'. This can be a little bit
+    -- wacky, e.g. if the user types '/shortcuts' in the
+    -- browser, we'll get an ephemeral message even in
+    -- MatterHorn with the browser shortcuts, but it's
+    -- probably a good idea to handle these messages anyway.
+    WMEphemeralMessage -> case wepPost (weData we) of
+      Just p  -> do
+        msg <- newClientMessage Informative (p^.postMessageL)
+        continue =<< addClientMessage msg st
+      Nothing -> continue st
+    -- Right now, we don't use any server preferences in
+    -- our client, but that might change
+    WMPreferenceChanged -> continue st
+    -- This happens whenever a user connects to the server
+    -- I think all the information we need (about being
+    -- online or away or what-have-you) gets represented
+    -- in StatusChanged messages, so we can ignore it.
+    WMHello -> continue st
+    -- right now we don't show typing notifications. maybe
+    -- we should? i dunno.
+    WMTyping -> continue st
