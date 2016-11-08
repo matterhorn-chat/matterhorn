@@ -47,7 +47,9 @@ import           State.Common
 pageAmount :: Int
 pageAmount = 15
 
--- Get all the new messages for a given channel
+-- * Refreshing Channel Data
+
+-- | Get all the new messages for a given channel
 refreshChannel :: ChannelId -> ChatState -> IO ()
 refreshChannel chan st = doAsyncWith st $
   case F.find (\ p -> isJust (p^.mPostId)) (Seq.reverse (st^.csChannel(chan).ccContents.cdMessages)) of
@@ -60,7 +62,7 @@ refreshChannel chan st = doAsyncWith st $
         return (res & csChannel(chan).ccInfo.cdCurrentState .~ ChanLoaded)
     _ -> return return
 
--- Find all the loaded channels and refresh their state, setting the state as dirty
+-- | Find all the loaded channels and refresh their state, setting the state as dirty
 -- until we get a response
 refreshLoadedChannels :: ChatState -> EventM Name ChatState
 refreshLoadedChannels st = do
@@ -72,6 +74,8 @@ refreshLoadedChannels st = do
   let upd ChanLoaded = ChanRefreshing
       upd chanState  = chanState
   return (st & msgMap.each.ccInfo.cdCurrentState %~ upd)
+
+-- * Joining, Leaving, and Inviting
 
 startJoinChannel :: ChatState -> EventM Name ChatState
 startJoinChannel st = do
@@ -139,6 +143,8 @@ leaveCurrentChannel st = do
                                      -- Remove from focus zipper
                     updateChannelScrollState st''
             return st
+
+-- *  Channel Updates and Notifications
 
 hasUnread :: ChatState -> ChannelId -> Bool
 hasUnread st cId = maybe False id $ do
@@ -498,17 +504,6 @@ mkChannelZipperList chanNames =
   [ c
   | i <- chanNames ^. cnUsers
   , c <- maybeToList (HM.lookup i (chanNames ^. cnToChanId)) ]
-
-fetchUserStatuses :: ConnectionData -> Token
-                  -> IO (ChatState -> EventM Name ChatState)
-fetchUserStatuses cd token = do
-  statusMap <- mmGetStatuses cd token
-  return $ \ appState ->
-    return $ HM.foldrWithKey
-      (\ uId status st ->
-          st & usrMap.ix(uId).uiStatus .~ statusFromText status)
-      appState
-      statusMap
 
 setChannelTopic :: ChatState -> T.Text -> IO ()
 setChannelTopic st msg = do
