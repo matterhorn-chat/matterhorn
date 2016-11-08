@@ -36,18 +36,29 @@ import           Config
 
 import           InputHistory
 
+-- * 'MMNames' structures
+
+-- | The 'MMNames' record is for listing human-readable
+--   names and mapping them back to internal IDs.
 data MMNames = MMNames
-  { _cnChans    :: [T.Text]
-  , _cnDMs      :: [T.Text]
+  { _cnChans    :: [T.Text] -- ^ All channel names
+  , _cnDMs      :: [T.Text] -- ^ All DM channel names
   , _cnToChanId :: HashMap T.Text ChannelId
-  , _cnUsers    :: [T.Text]
+      -- ^ Mapping from channel names to 'ChannelId' values
+  , _cnUsers    :: [T.Text] -- ^ All users
   , _cnToUserId :: HashMap T.Text UserId
+      -- ^ Mapping from user names to 'UserId' values
   }
 
+-- | An empty 'MMNames' record
 emptyMMNames :: MMNames
 emptyMMNames = MMNames mempty mempty mempty mempty mempty
 
+-- ** 'MMNames' Lenses
+
 makeLenses ''MMNames
+
+-- * Internal Names and References
 
 data Name = ChannelMessages ChannelId
           | MessageInput
@@ -60,7 +71,7 @@ data Name = ChannelMessages ChannelId
           | UrlList
           deriving (Eq, Show, Ord)
 
--- We want to continue referring to posts by their IDs, but we don't want to
+-- | We want to continue referring to posts by their IDs, but we don't want to
 -- have to synthesize new valid IDs for messages from the client itself. To
 -- that end, a PostRef can be either a PostId or a newly-generated client ID
 data PostRef
@@ -68,6 +79,18 @@ data PostRef
   | CLId Int
     deriving (Eq, Show)
 
+-- * Client Messages
+
+-- | A 'ClientMessage' is a message given to us by our client,
+--   like help text or an error message.
+data ClientMessage = ClientMessage
+  { _cmText :: T.Text
+  , _cmDate :: UTCTime
+  , _cmType :: ClientMessageType
+  } deriving (Eq, Show)
+
+-- | We format 'ClientMessage' values differently depending on
+--   their 'ClientMessageType'
 data ClientMessageType =
     Informative
     | Error
@@ -75,24 +98,15 @@ data ClientMessageType =
     | NewMessagesTransition
     deriving (Eq, Show)
 
--- A ClientMessage is a message given to us by our client, like help text
--- or an error message.
-data ClientMessage = ClientMessage
-  { _cmText :: T.Text
-  , _cmDate :: UTCTime
-  , _cmType :: ClientMessageType
-  } deriving (Eq, Show)
+-- ** 'ClientMessage' Lenses
 
 makeLenses ''ClientMessage
 
-data PostType =
-    NormalPost
-    | Emote
-    | Join
-    | Leave
-    | TopicChange
-    deriving (Eq, Show)
+-- * Mattermost Posts
 
+-- | A 'ClientPost' is a temporary interal representation of
+--   the Mattermost 'Post' type, with unnecessary information
+--   removed and some preprocessing done.
 data ClientPost = ClientPost
   { _cpText          :: Blocks
   , _cpUser          :: Maybe UserId
@@ -106,36 +120,23 @@ data ClientPost = ClientPost
   , _cpChannelId     :: ChannelId
   } deriving (Show)
 
-makeLenses ''ClientPost
+-- | A Mattermost 'Post' value can represent either a normal
+--   chat message or one of several special events.
+data PostType =
+    NormalPost
+    | Emote
+    | Join
+    | Leave
+    | TopicChange
+    deriving (Eq, Show)
 
-data MessageType = C ClientMessageType
-                 | CP PostType
-                 deriving (Eq, Show)
+-- ** Creating 'ClientPost' Values
 
--- This represents any message we might want to render.
-data Message = Message
-  { _mText          :: Blocks
-  , _mUserName      :: Maybe T.Text
-  , _mDate          :: UTCTime
-  , _mType          :: MessageType
-  , _mPending       :: Bool
-  , _mDeleted       :: Bool
-  , _mAttachments   :: Seq.Seq T.Text
-  , _mInReplyToMsg  :: ReplyState
-  , _mPostId        :: Maybe PostId
-  } deriving (Show)
-
-data ReplyState =
-    NotAReply
-    | ParentLoaded PostId Message
-    | ParentNotLoaded PostId
-    deriving (Show)
-
-makeLenses ''Message
-
+-- | Parse text as Markdown and extract the AST
 getBlocks :: T.Text -> Blocks
 getBlocks s = bs where C.Doc _ bs = C.markdown C.def s
 
+-- | Determine the internal 'PostType' based on a 'Post'
 postClientPostType :: Post -> PostType
 postClientPostType cp =
     if | postIsEmote cp       -> Emote
@@ -144,10 +145,12 @@ postClientPostType cp =
        | postIsTopicChange cp -> TopicChange
        | otherwise            -> NormalPost
 
+-- | Find out whether a 'Post' represents a topic change
 postIsTopicChange :: Post -> Bool
 postIsTopicChange p =
     "updated the channel header from:" `T.isInfixOf` postMessage p
 
+-- | Find out whether a 'Post' is from a @/me@ command
 postIsEmote :: Post -> Bool
 postIsEmote p =
     and [ p^.postPropsL.postPropsOverrideIconUrlL == Just (""::T.Text)
@@ -156,18 +159,23 @@ postIsEmote p =
         , ("*" `T.isSuffixOf` postMessage p)
         ]
 
+-- | Find out whether a 'Post' is a user joining a channel
 postIsJoin :: Post -> Bool
 postIsJoin p = "has joined the channel" `T.isInfixOf` postMessage p
 
+-- | Find out whether a 'Post' is a user leaving a channel
 postIsLeave :: Post -> Bool
 postIsLeave p = "has left the channel" `T.isInfixOf` postMessage p
 
+-- | Undo the automatic formatting of posts generated by @/me@-commands
 unEmote :: PostType -> T.Text -> T.Text
 unEmote Emote t = if "*" `T.isPrefixOf` t && "*" `T.isSuffixOf` t
                   then T.init $ T.tail t
                   else t
 unEmote _ t = t
 
+-- | Convert a Mattermost 'Post' to a 'ClientPost', passing in a
+--   'ParentId' if it has a known one.
 toClientPost :: Post -> Maybe PostId -> ClientPost
 toClientPost p parentId = ClientPost
   { _cpText          = getBlocks $ unEmote (postClientPostType p) $ postMessage p
@@ -182,41 +190,114 @@ toClientPost p parentId = ClientPost
   , _cpChannelId     = p^.postChannelIdL
   }
 
+-- ** 'ClientPost' Lenses
+
+makeLenses ''ClientPost
+
+-- * Messages
+
+-- | A 'Message' is any message we might want to render, either from
+--   Mattermost itself or from a client-internal source.
+data Message = Message
+  { _mText          :: Blocks
+  , _mUserName      :: Maybe T.Text
+  , _mDate          :: UTCTime
+  , _mType          :: MessageType
+  , _mPending       :: Bool
+  , _mDeleted       :: Bool
+  , _mAttachments   :: Seq.Seq T.Text
+  , _mInReplyToMsg  :: ReplyState
+  , _mPostId        :: Maybe PostId
+  } deriving (Show)
+
+-- | A 'Message' is the representation we use for storage and
+--   rendering, so it must be able to represent either a
+--   post from Mattermost or an internal message. This represents
+--   the union of both kinds of post types.
+data MessageType = C ClientMessageType
+                 | CP PostType
+                 deriving (Eq, Show)
+
+-- | The 'ReplyState' of a message represents whether a message
+--   is a reply, and if so, to what message
+data ReplyState =
+    NotAReply
+    | ParentLoaded PostId Message
+    | ParentNotLoaded PostId
+    deriving (Show)
+
+-- | Convert a 'ClientMessage' to a 'Message'
+clientMessageToMessage :: ClientMessage -> Message
+clientMessageToMessage cm = Message
+  { _mText          = getBlocks (_cmText cm)
+  , _mUserName      = Nothing
+  , _mDate          = _cmDate cm
+  , _mType          = C $ _cmType cm
+  , _mPending       = False
+  , _mDeleted       = False
+  , _mAttachments   = Seq.empty
+  , _mInReplyToMsg  = NotAReply
+  , _mPostId        = Nothing
+  }
+
+-- ** 'Message' Lenses
+
+makeLenses ''Message
+
+-- * Channel representations
+
+-- | A 'ClientChannel' contains both the message
+--   listing and the metadata about a channel
+data ClientChannel = ClientChannel
+  { _ccContents :: ChannelContents
+    -- ^ A list of 'Message's in the channel
+  , _ccInfo     :: ChannelInfo
+    -- ^ The 'ChannelInfo' for the channel
+  }
+
+-- | The 'ChannelContents' is a wrapper for a list of
+--   'Message' values
 data ChannelContents = ChannelContents
   { _cdMessages :: Seq.Seq Message
   }
 
+-- | An initial empty 'ChannelContents' value
 emptyChannelContents :: ChannelContents
 emptyChannelContents = ChannelContents
   { _cdMessages = mempty
   }
 
-makeLenses ''ChannelContents
-
+-- | The 'ChannelState' represents our internal state
+--   of the channel with respect to our knowledge (or
+--   lack thereof) about the server's information
+--   about the channel.
 data ChannelState
   = ChanUnloaded
   | ChanLoaded
   | ChanRefreshing
     deriving (Eq, Show)
 
+-- | The 'ChannelInfo' record represents metadata
+--   about a channel
 data ChannelInfo = ChannelInfo
   { _cdViewed           :: UTCTime
+    -- ^ The last time we looked at a channel
   , _cdUpdated          :: UTCTime
+    -- ^ The last time a message showed up in the channel
   , _cdName             :: T.Text
+    -- ^ The name of the channel
   , _cdHeader           :: T.Text
+    -- ^ The header text of a channel
   , _cdType             :: Type
+    -- ^ The type of a channel: public, private, or DM
   , _cdCurrentState     :: ChannelState
+    -- ^ The current state of the channel
   , _cdNewMessageCutoff :: Maybe UTCTime
+    -- ^ The last time we looked at the new messages in
+    --   this channel, if ever
   }
 
-makeLenses ''ChannelInfo
-
-data ClientChannel = ClientChannel
-  { _ccContents :: ChannelContents
-  , _ccInfo     :: ChannelInfo
-  }
-
-makeLenses ''ClientChannel
+-- ** Channel-matching types
 
 data ChannelSelectMatch =
     ChannelSelectMatch { nameBefore     :: T.Text
@@ -233,6 +314,33 @@ data ChannelSelectPattern = CSP MatchType T.Text
 
 data MatchType = Prefix | Suffix | Infix | Equal deriving (Eq, Show)
 
+
+-- ** Channel-related Lenses
+
+makeLenses ''ChannelContents
+makeLenses ''ChannelInfo
+makeLenses ''ClientChannel
+
+-- * 'UserInfo' Values
+
+-- | A 'UserInfo' value represents everything we need to know at
+--   runtime about a user
+data UserInfo = UserInfo
+  { _uiName   :: T.Text
+  , _uiId     :: UserId
+  , _uiStatus :: UserStatus
+  } deriving (Eq, Show)
+
+-- | Create a 'UserInfo' value from a Mattermost 'UserProfile' value
+userInfoFromProfile :: UserProfile -> UserInfo
+userInfoFromProfile up = UserInfo
+  { _uiName   = userProfileUsername up
+  , _uiId     = userProfileId up
+  , _uiStatus = Offline
+  }
+
+-- | The 'UserStatus' value represents possible current status for
+--   a user
 data UserStatus
   = Online
   | Away
@@ -247,11 +355,7 @@ statusFromText t = case t of
   "away"    -> Away
   _         -> Other t
 
-data UserInfo = UserInfo
-  { _uiName   :: T.Text
-  , _uiId     :: UserId
-  , _uiStatus :: UserStatus
-  } deriving (Eq, Show)
+-- ** 'UserInfo' lenses
 
 makeLenses ''UserInfo
 
@@ -264,15 +368,14 @@ instance Ord UserInfo where
     | otherwise =
       (u1^.uiName) `compare` (u2^.uiName)
 
-userInfoFromProfile :: UserProfile -> UserInfo
-userInfoFromProfile up = UserInfo
-  { _uiName   = userProfileUsername up
-  , _uiId     = userProfileId up
-  , _uiStatus = Offline
-  }
+-- * Application State Values
 
--- 'ChatResources' represents configuration and connection-related
--- information, as opposed to current model or view information.
+-- | 'ChatResources' represents configuration and
+-- connection-related information, as opposed to
+-- current model or view information. Information
+-- that goes in the 'ChatResources' value should be
+-- limited to information that we read or set up
+-- prior to setting up the bulk of the application state.
 data ChatResources = ChatResources
   { _crTok           :: Token
   , _crConn          :: ConnectionData
@@ -283,6 +386,9 @@ data ChatResources = ChatResources
   , _crConfiguration :: Config
   }
 
+-- | The 'ChatEditState' value contains the editor widget itself
+--   as well as history and metadata we need for editing-related
+--   operations.
 data ChatEditState = ChatEditState
   { _cedEditor               :: Editor T.Text Name
   , _cedMultiline            :: Bool
@@ -294,6 +400,8 @@ data ChatEditState = ChatEditState
   , _cedCompletionAlternatives :: [T.Text]
   }
 
+-- | We can initialize a new 'ChatEditState' value with just an
+--   edit history, which we save locally.
 emptyEditState :: InputHistory -> ChatEditState
 emptyEditState hist = ChatEditState
   { _cedEditor               = editor MessageInput (txt . T.unlines) Nothing ""
@@ -306,8 +414,11 @@ emptyEditState hist = ChatEditState
   , _cedCurrentAlternative   = ""
   }
 
+-- | A 'RequestChan' is a queue of operations we have to perform
+--   in the background to avoid blocking on the main loop
 type RequestChan = Chan (IO (ChatState -> EventM Name ChatState))
 
+-- | The 'Mode' represents the current dominant UI activity
 data Mode =
     Main
     | ShowHelp
@@ -318,10 +429,12 @@ data Mode =
     | ChannelScroll
     deriving (Eq)
 
+-- | We're either connected or we're not. yeop
 data ConnectionStatus = Connected | Disconnected
 
--- This is the giant bundle of fields that represents the current
--- state of our application at any given time.
+-- | This is the giant bundle of fields that represents the current
+--  state of our application at any given time. Some of this should
+--  be broken out further, but hasn't yet been.
 data ChatState = ChatState
   { _csResources                   :: ChatResources
   , _csFocus                       :: Zipper ChannelId
@@ -344,6 +457,8 @@ data ChatState = ChatState
   , _csJoinChannelList             :: Maybe (List Name Channel)
   }
 
+-- | This represents any event that we might care about in the
+--   main application loop
 data MHEvent
   = WSEvent WebsocketEvent
     -- ^ For events that arise from the websocket
@@ -356,10 +471,13 @@ data MHEvent
   | WebsocketDisconnect
   | WebsocketConnect
 
+-- ** Application State Lenses
+
 makeLenses ''ChatResources
 makeLenses ''ChatState
 makeLenses ''ChatEditState
 
+-- ** Utility Lenses
 csCurrentChannelId :: Lens' ChatState ChannelId
 csCurrentChannelId = csFocus.focusL
 
@@ -378,7 +496,8 @@ csUser uId =
   lens (\ st -> (st^.usrMap) HM.! uId)
        (\ st n -> st & usrMap %~ HM.insert uId n)
 
--- interim lenses
+-- ** Interim lenses for backwards compat
+
 csTheme :: Lens' ChatState AttrMap
 csTheme = csResources . crTheme
 
@@ -412,6 +531,8 @@ timeFormat = csResources . crConfiguration . to configTimeFormat
 dateFormat :: SimpleGetter ChatState (Maybe T.Text)
 dateFormat = csResources . crConfiguration . to configDateFormat
 
+-- ** 'ChatState' Helper Functions
+
 getMessageForPostId :: ChatState -> PostId -> ReplyState
 getMessageForPostId st pId =
     case st^.csPostMap.at(pId) of
@@ -437,26 +558,21 @@ clientPostToMessage st cp = Message
   , _mPostId        = Just $ cp^.cpPostId
   }
 
-clientMessageToMessage :: ClientMessage -> Message
-clientMessageToMessage cm = Message
-  { _mText          = getBlocks (_cmText cm)
-  , _mUserName      = Nothing
-  , _mDate          = _cmDate cm
-  , _mType          = C $ _cmType cm
-  , _mPending       = False
-  , _mDeleted       = False
-  , _mAttachments   = Seq.empty
-  , _mInReplyToMsg  = NotAReply
-  , _mPostId        = Nothing
-  }
+-- * Slash Commands
 
+-- | The 'CmdArgs' type represents the arguments to a slash-command;
+--   the type parameter represents the argument structure.
 data CmdArgs :: * -> * where
   NoArg    :: CmdArgs ()
   LineArg  :: T.Text -> CmdArgs T.Text
   TokenArg :: T.Text -> CmdArgs rest -> CmdArgs (T.Text, rest)
 
+-- | A 'CmdExec' value represents the implementation of a command
+--   when provided with its arguments
 type CmdExec a = a -> ChatState -> EventM Name (Next ChatState)
 
+-- | A 'Cmd' packages up a 'CmdArgs' specifier and the 'CmdExec'
+--   implementation with a name and a description.
 data Cmd = forall a. Cmd
   { cmdName    :: T.Text
   , cmdDescr   :: T.Text
@@ -464,14 +580,20 @@ data Cmd = forall a. Cmd
   , cmdAction  :: CmdExec a
   }
 
+-- | Helper function to extract the name out of a 'Cmd' value
 commandName :: Cmd -> T.Text
 commandName (Cmd name _ _ _ ) = name
 
+-- * Keybindings
+
+-- | A 'Keybinding' represents a keybinding along with its
+--   implementation
 data Keybinding =
     KB { kbDescription :: T.Text
        , kbEvent :: Vty.Event
        , kbAction :: ChatState -> EventM Name (Next ChatState)
        }
 
+-- | Find a keybinding that matches a Vty Event
 lookupKeybinding :: Vty.Event -> [Keybinding] -> Maybe Keybinding
 lookupKeybinding e kbs = listToMaybe $ filter ((== e) . kbEvent) kbs
