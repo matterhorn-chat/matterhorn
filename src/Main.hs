@@ -16,8 +16,8 @@ import           System.IO (IOMode(WriteMode), openFile, hClose)
 
 import           Config
 import           Options
-import           State
 import           State.Common
+import           State.Setup
 import           Events
 import           Draw
 import           Types

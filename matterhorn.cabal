@@ -26,6 +26,7 @@ executable matterhorn
                        State
                        State.Common
                        State.Editing
+                       State.Setup
                        Zipper
                        Themes
                        Draw

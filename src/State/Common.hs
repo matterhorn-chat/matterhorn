@@ -5,11 +5,16 @@ import           Brick.Main (viewportScroll, vScrollToEnd)
 import qualified Control.Concurrent.Chan as Chan
 import           Control.Exception (try)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
+import qualified Data.HashMap.Strict as HM
+import           Data.List (sort)
+import           Data.Monoid ((<>))
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Time.Clock (getCurrentTime)
 import           Lens.Micro.Platform
 
+import           Network.Mattermost
+import           Network.Mattermost.Lenses
 import           Network.Mattermost.Exceptions
 
 import           Types
@@ -45,6 +50,37 @@ doAsyncWith st thunk =
 
 -- * Client Messages
 
+-- | Create 'ChannelContents' from a 'Posts' value
+fromPosts :: ChatState -> Posts -> ChannelContents
+fromPosts st p = ChannelContents $ messagesFromPosts st p
+
+getDMChannelName :: UserId -> UserId -> T.Text
+getDMChannelName me you = cname
+  where
+  [loUser, hiUser] = sort [ you, me ]
+  cname = idString loUser <> "__" <> idString hiUser
+
+messagesFromPosts :: ChatState -> Posts -> Seq.Seq Message
+messagesFromPosts st p = msgs
+    where
+        postMap :: HM.HashMap PostId Message
+        postMap = HM.fromList [ ( pId
+                                , clientPostToMessage st (toClientPost x Nothing)
+                                )
+                              | (pId, x) <- HM.toList (p^.postsPostsL)
+                              ]
+        st' = st & csPostMap %~ (HM.union postMap)
+        msgs = clientPostToMessage st' <$> clientPost <$> ps
+        ps   = findPost <$> (Seq.reverse $ postsOrder p)
+        clientPost :: Post -> ClientPost
+        clientPost x = toClientPost x (postId <$> parent x)
+        parent x = do
+            parentId <- x^.postParentIdL
+            HM.lookup parentId (p^.postsPostsL)
+        findPost pId = case HM.lookup pId (postsPosts p) of
+            Nothing -> error $ "BUG: could not find post for post ID " <> show pId
+            Just post -> post
+
 -- | Create a new 'ClientMessage' value
 newClientMessage :: (MonadIO m) => ClientMessageType -> T.Text -> m ClientMessage
 newClientMessage ty msg = do
@@ -66,9 +102,45 @@ postErrorMessage err st = do
     liftIO $ doAsyncWith st (return $ addClientMessage msg)
     return st
 
+numScrollbackPosts :: Int
+numScrollbackPosts = 100
+
 -- | Scroll to the end of the current message list
 updateChannelScrollState :: ChatState -> EventM Name ChatState
 updateChannelScrollState st = do
   let cId = st^.csCurrentChannelId
   vScrollToEnd $ viewportScroll (ChannelMessages cId)
+  return st
+
+-- | Fetch scrollback for a channel in the background
+asyncFetchScrollback :: ChatState -> ChannelId -> IO ()
+asyncFetchScrollback st cId =
+    doAsyncWith st $ do
+        posts <- mmGetPosts (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId 0 numScrollbackPosts
+        return $ \st' -> do
+            let contents = fromPosts st' posts
+                -- We need to set the new message cutoff only if there
+                -- are actually messages that came in after our last
+                -- view time.
+                Just viewTime = st'^?msgMap.ix cId.ccInfo.cdViewed
+                cutoff = if hasNew then Just viewTime else Nothing
+                hasNew = not $ Seq.null $
+                         Seq.filter (\m -> m^.mDate > viewTime) $
+                         contents^.cdMessages
+            updateChannelScrollState $
+                st' & csChannel(cId).ccContents .~ contents
+                    & csChannel(cId).ccInfo.cdCurrentState .~ ChanLoaded
+                    & csChannel(cId).ccInfo.cdNewMessageCutoff .~ cutoff
+
+updateViewedIO :: ChatState -> IO ChatState
+updateViewedIO st = do
+  now <- getCurrentTime
+  let cId = st^.csCurrentChannelId
+  doAsyncWith st $ do
+    mmUpdateLastViewedAt
+      (st^.csConn)
+      (st^.csTok)
+      (getId (st^.csMyTeam))
+      cId
+    return (\s -> return (s & csCurrentChannel.ccInfo.cdViewed .~ now))
   return st

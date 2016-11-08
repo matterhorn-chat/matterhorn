@@ -37,6 +37,7 @@ import qualified Graphics.Vty as Vty
 
 import           Markdown
 import           State
+import           State.Common
 import           Themes
 import           Types
 import           Draw.Util
