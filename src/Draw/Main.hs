@@ -177,7 +177,7 @@ previewFromInput uname s =
        else Just $ Message { _mText          = getBlocks content
                            , _mUserName      = Just uname
                            , _mDate          = UTCTime (fromGregorian 1970 1 1) 0
-                           -- ^ The date is not used for preview
+                           -- The date is not used for preview
                            -- rendering, but we need to provide one.
                            -- Ideally we'd just today's date, but the
                            -- rendering function is pure so we can't.

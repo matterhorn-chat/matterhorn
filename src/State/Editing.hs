@@ -99,7 +99,7 @@ editingPermitted st =
 
 handleEditingInput :: Event -> ChatState -> EventM Name ChatState
 handleEditingInput e st = do
-    -- ^ Only handle input events to the editor if we permit editing:
+    -- Only handle input events to the editor if we permit editing:
     -- if multiline mode is off, or if there is only one line of text
     -- in the editor. This means we skip input this catch-all handler
     -- if we're *not* in multiline mode *and* there are multiple lines,

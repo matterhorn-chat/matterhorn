@@ -67,7 +67,7 @@ app = App
   , appChooseCursor = showFirstCursor
   , appHandleEvent  = onEvent
   , appStartEvent   = updateChannelScrollState
-                      -- ^ Critical to ensure that we scroll to the
+                      -- Critical to ensure that we scroll to the
                       -- bottom of the initially-viewed channel.
   , appAttrMap      = (^.csTheme)
   }

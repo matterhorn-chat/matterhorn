@@ -213,15 +213,15 @@ leaveCurrentChannel st = do
                     let st'' = st' & csEditState.cedInputHistoryPosition       .at cId .~ Nothing
                                    & csEditState.cedLastChannelInput           .at cId .~ Nothing
                                    & csEditState.cedInputHistory               %~ removeChannelHistory cId
-                                     -- ^ Update input history
+                                     -- Update input history
                                    & csNames.cnToChanId                        .at cName .~ Nothing
-                                     -- ^ Flush cnToChanId
+                                     -- Flush cnToChanId
                                    & csNames.cnChans                           %~ filter (/= cName)
-                                     -- ^ Flush cnChans
+                                     -- Flush cnChans
                                    & msgMap                                    .at cId .~ Nothing
-                                     -- ^ Update msgMap
+                                     -- Update msgMap
                                    & csFocus                                   %~ Z.filterZipper (/= cId)
-                                     -- ^ Remove from focus zipper
+                                     -- Remove from focus zipper
                     updateChannelScrollState st''
             return st
 
@@ -500,7 +500,7 @@ addMessage new st = do
           -- added yet because we haven't fetched the channel metadata
           -- in the websocket handler. So to be safe we just drop the
           -- message here, but this is the only case of messages that we
-          -- *expect* to drop for this reason. Hence the check for the
+          -- /expect/ to drop for this reason. Hence the check for the
           -- msgMap channel ID key presence above.
           return st
       Just _ -> do
