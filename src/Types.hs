@@ -548,8 +548,9 @@ clientPostToMessage :: ChatState -> ClientPost -> Message
 clientPostToMessage st cp = Message
   { _mText          = _cpText cp
   , _mUserName      = case _cpUserOverride cp of
-    Nothing -> getUsernameForUserId st =<< _cpUser cp
-    Just n  -> Just n
+    Just n
+      | _cpType cp == NormalPost -> Just n
+    _ -> getUsernameForUserId st =<< _cpUser cp
   , _mDate          = _cpDate cp
   , _mType          = CP $ _cpType cp
   , _mPending       = _cpPending cp
