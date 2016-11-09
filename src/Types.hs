@@ -110,6 +110,7 @@ makeLenses ''ClientMessage
 data ClientPost = ClientPost
   { _cpText          :: Blocks
   , _cpUser          :: Maybe UserId
+  , _cpUserOverride  :: Maybe T.Text
   , _cpDate          :: UTCTime
   , _cpType          :: PostType
   , _cpPending       :: Bool
@@ -180,6 +181,7 @@ toClientPost :: Post -> Maybe PostId -> ClientPost
 toClientPost p parentId = ClientPost
   { _cpText          = getBlocks $ unEmote (postClientPostType p) $ postMessage p
   , _cpUser          = postUserId p
+  , _cpUserOverride  = p^.postPropsL.postPropsOverrideUsernameL
   , _cpDate          = postCreateAt p
   , _cpType          = postClientPostType p
   , _cpPending       = False
@@ -545,7 +547,9 @@ getUsernameForUserId st uId = st^.usrMap ^? ix uId.uiName
 clientPostToMessage :: ChatState -> ClientPost -> Message
 clientPostToMessage st cp = Message
   { _mText          = _cpText cp
-  , _mUserName      = getUsernameForUserId st =<< _cpUser cp
+  , _mUserName      = case _cpUserOverride cp of
+    Nothing -> getUsernameForUserId st =<< _cpUser cp
+    Just n  -> Just n
   , _mDate          = _cpDate cp
   , _mType          = CP $ _cpType cp
   , _mPending       = _cpPending cp
