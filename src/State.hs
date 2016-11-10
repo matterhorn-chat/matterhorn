@@ -141,7 +141,7 @@ leaveCurrentChannel st = do
                                      -- Update msgMap
                                    & csFocus                                   %~ Z.filterZipper (/= cId)
                                      -- Remove from focus zipper
-                    updateChannelScrollState st''
+                    return st''
             return st
 
 -- *  Channel Updates and Notifications
@@ -184,7 +184,6 @@ changeChannelCommon :: ChatState -> EventM Name ChatState
 changeChannelCommon st =
     loadLastEdit =<<
     (return . clearEditor) =<<
-    updateChannelScrollState =<<
     fetchCurrentScrollback =<<
     resetHistoryPosition st
 
@@ -198,20 +197,20 @@ preChangeChannelCommon st = do
 
 nextChannel :: ChatState -> EventM Name ChatState
 nextChannel st =
-    setFocusWith st (getNextChannel st Z.right) >>= updateChannelScrollState
+    setFocusWith st (getNextChannel st Z.right)
 
 prevChannel :: ChatState -> EventM Name ChatState
 prevChannel st =
-    setFocusWith st (getNextChannel st Z.left) >>= updateChannelScrollState
+    setFocusWith st (getNextChannel st Z.left)
 
 recentChannel :: ChatState -> EventM Name ChatState
 recentChannel st = case st ^. csRecentChannel of
   Nothing  -> return st
-  Just cId -> setFocus cId st >>= updateChannelScrollState
+  Just cId -> setFocus cId st
 
 nextUnreadChannel :: ChatState -> EventM Name ChatState
 nextUnreadChannel st =
-    setFocusWith st (getNextUnreadChannel st) >>= updateChannelScrollState
+    setFocusWith st (getNextUnreadChannel st)
 
 getNextChannel :: ChatState
                -> (Zipper ChannelId -> Zipper ChannelId)
@@ -376,7 +375,7 @@ editMessage new st = do
       rs = st & chan . ccContents . cdMessages . each . filtered isEditedMessage .~ msg
               & chan . ccInfo . cdUpdated .~ now
   if postChannelId new == rs^.csCurrentChannelId
-    then updateChannelScrollState rs >>= updateViewed
+    then updateViewed rs
     else return rs
 
 deleteMessage :: Post -> ChatState -> EventM Name ChatState
@@ -387,7 +386,7 @@ deleteMessage new st = do
       rs = st & chan . ccContents . cdMessages . each . filtered isDeletedMessage %~ (& mDeleted .~ True)
               & chan . ccInfo . cdUpdated .~ now
   if postChannelId new == rs^.csCurrentChannelId
-    then updateChannelScrollState rs >>= updateViewed
+    then updateViewed rs
     else return rs
 
 maybeRingBell :: ChatState -> EventM Name ()
@@ -427,7 +426,7 @@ addMessage new st = do
                             & chan . ccInfo . cdUpdated %~ updateTime
                 when (not fromMe) $ maybeRingBell s'
                 if postChannelId new == rs^.csCurrentChannelId
-                  then updateChannelScrollState rs >>= updateViewed
+                  then updateViewed rs
                   else setNewMessageCutoff rs cId msg
 
           -- If the message is in reply to another message, try to find it in

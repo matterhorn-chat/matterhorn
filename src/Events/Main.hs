@@ -24,16 +24,6 @@ import Completion
 import InputHistory
 
 onEventMain :: ChatState -> Vty.Event -> EventM Name (Next ChatState)
-onEventMain st (Vty.EvResize _ _) = do
-  -- On resize we need to update the current channel message area so
-  -- that the most recent message is at the bottom. We have to do this
-  -- on a resize because brick only guarantees that the message is
-  -- visible, not that it is at the bottom, so after a resize we can end
-  -- up with lots of whitespace at the bottom of the message area. This
-  -- whitespace is created when the window gets bigger. We only need to
-  -- worry about the current channel's viewport because that's the one
-  -- that is about to be redrawn.
-  continue =<< updateChannelScrollState st
 onEventMain st e | Just kb <- lookupKeybinding e mainKeybindings = kbAction kb st
 onEventMain st (Vty.EvPaste bytes) = continue $ handlePaste bytes st
 onEventMain st e = continue =<< handleEditingInput e st

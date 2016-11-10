@@ -92,7 +92,7 @@ addClientMessage :: ClientMessage -> ChatState -> EventM Name ChatState
 addClientMessage msg st = do
   let cid = st^.csCurrentChannelId
       st' = st & msgMap . ix cid . ccContents . cdMessages %~ (Seq.|> clientMessageToMessage msg)
-  updateChannelScrollState st'
+  return st'
 
 -- | Add a new 'ClientMessage' representing an error message to
 --   the current channel's message list
@@ -104,13 +104,6 @@ postErrorMessage err st = do
 
 numScrollbackPosts :: Int
 numScrollbackPosts = 100
-
--- | Scroll to the end of the current message list
-updateChannelScrollState :: ChatState -> EventM Name ChatState
-updateChannelScrollState st = do
-  let cId = st^.csCurrentChannelId
-  vScrollToEnd $ viewportScroll (ChannelMessages cId)
-  return st
 
 -- | Fetch scrollback for a channel in the background
 asyncFetchScrollback :: ChatState -> ChannelId -> IO ()
@@ -127,7 +120,7 @@ asyncFetchScrollback st cId =
                 hasNew = not $ Seq.null $
                          Seq.filter (\m -> m^.mDate > viewTime) $
                          contents^.cdMessages
-            updateChannelScrollState $
+            return $
                 st' & csChannel(cId).ccContents .~ contents
                     & csChannel(cId).ccInfo.cdCurrentState .~ ChanLoaded
                     & csChannel(cId).ccInfo.cdNewMessageCutoff .~ cutoff

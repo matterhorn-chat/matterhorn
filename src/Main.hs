@@ -16,7 +16,6 @@ import           System.IO (IOMode(WriteMode), openFile, hClose)
 
 import           Config
 import           Options
-import           State.Common
 import           State.Setup
 import           Events
 import           Draw
@@ -66,8 +65,6 @@ app = App
   { appDraw         = draw
   , appChooseCursor = showFirstCursor
   , appHandleEvent  = onEvent
-  , appStartEvent   = updateChannelScrollState
-                      -- Critical to ensure that we scroll to the
-                      -- bottom of the initially-viewed channel.
+  , appStartEvent   = return
   , appAttrMap      = (^.csTheme)
   }
