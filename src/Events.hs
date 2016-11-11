@@ -28,6 +28,10 @@ import           Events.UrlSelect
 
 onEvent :: ChatState -> BrickEvent Name MHEvent -> EventM Name (Next ChatState)
 onEvent st (AppEvent e) = onAppEvent st e
+onEvent st (VtyEvent (Vty.EvKey (Vty.KChar 'l') [Vty.MCtrl])) = do
+    Just vty <- getVtyHandle
+    liftIO $ Vty.refresh vty
+    continue st
 onEvent st (VtyEvent e) = onVtyEvent st e
 onEvent st _ = continue st
 
