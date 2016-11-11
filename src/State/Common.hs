@@ -1,7 +1,6 @@
 module State.Common where
 
 import           Brick (EventM)
-import           Brick.Main (viewportScroll, vScrollToEnd)
 import qualified Control.Concurrent.Chan as Chan
 import           Control.Exception (try)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
