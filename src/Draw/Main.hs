@@ -325,7 +325,9 @@ insertTransitions fmt tz cutoff ms = fst $ F.foldl' nextMsg initState ms
                     if prevMsg^.mDate < cutoffTime && msg^.mDate >= cutoffTime
                     then Seq.singleton $ newMessagesMsg cutoffTime
                     else mempty
-            in ((rest Seq.>< toInsert) Seq.|> msg, Just msg)
+            in if msg^.mDeleted
+               then (rest, Just prevMsg)
+               else ((rest Seq.>< toInsert) Seq.|> msg, Just msg)
 
 findUserByDMChannelName :: HashMap UserId UserInfo
                         -> T.Text -- ^ the dm channel name
