@@ -115,7 +115,7 @@ mainKeybindings =
            continue . startUrlSelect
 
     , KB "Clear the current channel's unread message indicator"
-         (Vty.EvKey (Vty.KChar 'l') [Vty.MCtrl]) $ \st ->
+         (Vty.EvKey (Vty.KChar 'l') [Vty.MMeta]) $ \st ->
            continue =<< clearNewMessageCutoff (st^.csCurrentChannelId) st
 
     , KB "Switch to multi-line message compose mode"
