@@ -255,7 +255,7 @@ renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
             reportExtent (ChannelMessages cId) $
             cached (ChannelMessages cId) $
             vBox $ (withDefAttr loadMoreAttr $ hCenter $
-                    str "<< Press C-l to load more messages >>") :
+                    str "<< Press C-b to load more messages >>") :
                    (F.toList $ renderSingleMessage <$> channelMessages)
         _ -> renderLastMessages channelMessages
 
