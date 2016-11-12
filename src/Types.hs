@@ -590,7 +590,10 @@ mkAttachmentAbsolute :: ChatState -> Attachment -> Attachment
 mkAttachmentAbsolute cs a =
   let host = T.pack (cs^.csResources.crConn.cdHostnameL)
       team = idString (cs^.csMyTeam.teamIdL)
-      update url = host <> "/api/v3/teams/" <> team <> "/files/get" <> url
+      -- XXX This will have to come from the ChatState once the
+      -- application can be used with non-SSL servers.
+      scheme = "https://"
+      update url = scheme <> host <> "/api/v3/teams/" <> team <> "/files/get" <> url
   in a & attachmentURL %~ update
 
 -- * Slash Commands
