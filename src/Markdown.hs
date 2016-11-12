@@ -179,13 +179,9 @@ toFragments = go Normal
           C.LineBreak :< xs ->
             Fragment TLineBreak n <| go n xs
           C.Link label url _ :< xs ->
-            let urlFrags = [ Fragment (TStr " (")  n
-                           , Fragment (TLink url) Link
-                           , Fragment (TStr ")")  n
-                           ]
-            in case F.toList label of
+            case F.toList label of
               [C.Str s] | s == url -> Fragment (TLink url) Link <| go n xs
-              _                    -> go n label <> S.fromList urlFrags <> go n xs
+              _                    -> go Link label <> go n xs
           C.RawHtml t :< xs ->
             Fragment (TRawHtml t) n <| go n xs
           C.Code t :< xs ->
@@ -203,8 +199,8 @@ toFragments = go Normal
             go Emph is <> go n xs
           C.Strong is :< xs ->
             go Strong is <> go n xs
-          C.Image _ url _ :< xs ->
-            Fragment (TLink url) Link <| go n xs
+          C.Image _ _ _ :< xs ->
+            Fragment (TStr "[img]") Link <| go n xs
           C.Entity t :< xs ->
             Fragment (TStr t) Link <| go n xs
           EmptyL -> S.empty
