@@ -115,11 +115,32 @@ data ClientPost = ClientPost
   , _cpType          :: PostType
   , _cpPending       :: Bool
   , _cpDeleted       :: Bool
-  , _cpAttachments   :: Seq.Seq T.Text
+  , _cpAttachments   :: Seq.Seq Attachment
   , _cpInReplyToPost :: Maybe PostId
   , _cpPostId        :: PostId
   , _cpChannelId     :: ChannelId
   } deriving (Show)
+
+-- | An attachment has a very long URL associated, as well as
+--   an actual file URL
+data Attachment = Attachment
+  { _attachmentName :: T.Text
+  , _attachmentURL  :: T.Text
+  } deriving (Eq, Show)
+
+attachmentFromURL :: T.Text -> Attachment
+attachmentFromURL t = Attachment
+  { _attachmentName = last (T.splitOn "/" t)
+  , _attachmentURL  = t
+  }
+
+-- | For representing links to things in the 'open links' view
+data LinkChoice = LinkChoice
+  { _linkTime :: UTCTime
+  , _linkUser :: T.Text
+  , _linkName :: T.Text
+  , _linkURL  :: T.Text
+  } deriving (Eq, Show)
 
 -- | A Mattermost 'Post' value can represent either a normal
 --   chat message or one of several special events.
@@ -186,7 +207,7 @@ toClientPost p parentId = ClientPost
   , _cpType          = postClientPostType p
   , _cpPending       = False
   , _cpDeleted       = False
-  , _cpAttachments   = postFilenames p
+  , _cpAttachments   = fmap attachmentFromURL (postFilenames p)
   , _cpInReplyToPost = parentId
   , _cpPostId        = p^.postIdL
   , _cpChannelId     = p^.postChannelIdL
@@ -194,7 +215,9 @@ toClientPost p parentId = ClientPost
 
 -- ** 'ClientPost' Lenses
 
+makeLenses ''Attachment
 makeLenses ''ClientPost
+makeLenses ''LinkChoice
 
 -- * Messages
 
@@ -207,7 +230,7 @@ data Message = Message
   , _mType          :: MessageType
   , _mPending       :: Bool
   , _mDeleted       :: Bool
-  , _mAttachments   :: Seq.Seq T.Text
+  , _mAttachments   :: Seq.Seq Attachment
   , _mInReplyToMsg  :: ReplyState
   , _mPostId        :: Maybe PostId
   } deriving (Show)
@@ -454,7 +477,7 @@ data ChatState = ChatState
   , _csChannelSelectChannelMatches :: HashMap T.Text ChannelSelectMatch
   , _csChannelSelectUserMatches    :: HashMap T.Text ChannelSelectMatch
   , _csRecentChannel               :: Maybe ChannelId
-  , _csUrlList                     :: List Name (UTCTime, T.Text, T.Text)
+  , _csUrlList                     :: List Name LinkChoice
   , _csConnectionStatus            :: ConnectionStatus
   , _csJoinChannelList             :: Maybe (List Name Channel)
   }
@@ -555,13 +578,20 @@ clientPostToMessage st cp = Message
   , _mType          = CP $ _cpType cp
   , _mPending       = _cpPending cp
   , _mDeleted       = _cpDeleted cp
-  , _mAttachments   = _cpAttachments cp
+  , _mAttachments   = mkAttachmentAbsolute st <$> _cpAttachments cp
   , _mInReplyToMsg  =
     case cp^.cpInReplyToPost of
       Nothing  -> NotAReply
       Just pId -> getMessageForPostId st pId
   , _mPostId        = Just $ cp^.cpPostId
   }
+
+mkAttachmentAbsolute :: ChatState -> Attachment -> Attachment
+mkAttachmentAbsolute cs a =
+  let host = T.pack (cs^.csResources.crConn.cdHostnameL)
+      team = idString (cs^.csMyTeam.teamIdL)
+      update url = host <> "/api/v3/teams/" <> team <> "/files/get" <> url
+  in a & attachmentURL %~ update
 
 -- * Slash Commands
 

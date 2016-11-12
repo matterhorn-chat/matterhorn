@@ -633,14 +633,23 @@ startUrlSelect st =
 stopUrlSelect :: ChatState -> ChatState
 stopUrlSelect = csMode .~ Main
 
-findUrls :: ClientChannel -> [(UTCTime, T.Text, T.Text)]
+findUrls :: ClientChannel -> [LinkChoice]
 findUrls chan =
     let msgs = chan^.ccContents.cdMessages
     in concat $ F.toList $ F.toList <$> Seq.reverse <$> msgURLs <$> msgs
 
-msgURLs :: Message -> Seq.Seq (UTCTime, T.Text, T.Text)
+msgURLs :: Message -> Seq.Seq LinkChoice
 msgURLs msg | Just uname <- msg^.mUserName =
-    (msg^.mDate, uname,) <$> (mconcat $ blockGetURLs <$> (F.toList $ msg^.mText))
+  let msgUrls = (\ url -> LinkChoice (msg^.mDate) uname url url) <$>
+                  (mconcat $ blockGetURLs <$> (F.toList $ msg^.mText))
+      attachmentURLs = (\ a ->
+                          LinkChoice
+                            (msg^.mDate)
+                            uname
+                            ("attachment `" <> (a^.attachmentName) <> "`")
+                            (a^.attachmentURL))
+                       <$> (msg^.mAttachments)
+  in msgUrls <> attachmentURLs
 msgURLs _ = mempty
 
 openSelectedURL :: ChatState -> EventM Name ChatState
@@ -652,7 +661,7 @@ openSelectedURL st | st^.csMode == UrlSelect =
         Just urlOpenCommand -> do
             case listSelectedElement $ st^.csUrlList of
                 Nothing -> return ()
-                Just (_, (_, _, url)) ->
-                    liftIO $ void $ system $ (T.unpack urlOpenCommand) <> " " <> show url
+                Just (_, link) ->
+                    liftIO $ void $ system $ (T.unpack urlOpenCommand) <> " " <> show (link^.linkURL)
             return $ st & csMode .~ Main
 openSelectedURL st = return st

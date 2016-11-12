@@ -47,8 +47,10 @@ renderChatMessage uSet renderTimeFunc msg =
     let m = renderMessage msg True uSet
         msgAtch = if Seq.null (msg^.mAttachments)
           then emptyWidget
-          else withDefAttr clientMessageAttr
-                  (txt "  [this message has an attachment]")
+          else withDefAttr clientMessageAttr $ vBox
+                 [ txt ("  [attached: `" <> a^.attachmentName <> "`]")
+                 | a <- F.toList (msg^.mAttachments)
+                 ]
         msgTxt =
           case msg^.mUserName of
             Just _
@@ -435,12 +437,14 @@ renderUrlList st =
 
         urls = st^.csUrlList
 
-        renderItem sel (time, uname, url) = attr sel $ vLimit 2 $
+        renderItem sel link =
+          let time = link^.linkTime
+          in attr sel $ vLimit 2 $
             (vLimit 1 $
-             (colorUsername uname <+> fill ' ' <+>
+             (colorUsername (link^.linkUser) <+> fill ' ' <+>
              (renderDate st time) <+> str " " <+>
              (renderTime st time))) <=>
-            (vLimit 1 (withDefAttr urlAttr $ txt url))
+            (vLimit 1 (withDefAttr urlAttr $ txt (link^.linkName)))
 
         attr True = forceAttr "urlListSelectedAttr"
         attr False = id
