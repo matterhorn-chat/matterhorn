@@ -444,7 +444,7 @@ renderUrlList st =
              (colorUsername (link^.linkUser) <+> fill ' ' <+>
              (renderDate st time) <+> str " " <+>
              (renderTime st time))) <=>
-            (vLimit 1 (withDefAttr urlAttr $ txt (link^.linkName)))
+            (vLimit 1 (renderText $ link^.linkName))
 
         attr True = forceAttr "urlListSelectedAttr"
         attr False = id
