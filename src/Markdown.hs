@@ -83,7 +83,7 @@ addEllipsis w = B.Widget (B.hSize w) (B.vSize w) $ do
         B.render withEllipsis else
         return result
 
--- Cursor sentinel for showing a fake cursor in message previews.
+-- Cursor sentinel for tracking the user's cursor position in previews.
 cursorSentinel :: Char
 cursorSentinel = '‸'
 
