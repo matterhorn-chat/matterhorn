@@ -8,6 +8,7 @@ import           Brick.Widgets.Center (hCenter)
 import           Brick.Widgets.Edit (editContentsL, renderEditor, getEditContents)
 import           Brick.Widgets.List (renderList)
 import           Control.Applicative
+import           Control.Arrow ((>>>))
 import           Data.Time.Clock (UTCTime(..))
 import           Data.Time.Calendar (fromGregorian)
 import           Data.Time.Format ( formatTime
@@ -25,7 +26,7 @@ import           Data.Set (Set)
 import qualified Data.Set as Set
 import           Data.Text (Text)
 import qualified Data.Text as T
-import           Data.Text.Zipper (cursorPosition)
+import           Data.Text.Zipper (cursorPosition, insertChar, getText, gotoEOL)
 import           Lens.Micro.Platform
 
 import           Prelude
@@ -166,6 +167,7 @@ getDmChannels st =
        ]
 
 previewFromInput :: T.Text -> T.Text -> Maybe Message
+previewFromInput _ s | s == T.singleton cursorSentinel = Nothing
 previewFromInput uname s =
     -- If it starts with a slash but not /me, this has no preview
     -- representation
@@ -370,12 +372,35 @@ completionAlternatives st =
             , borderElem bsHorizontal
             ]
 
+previewMaxHeight :: Int
+previewMaxHeight = 5
+
+maybePreviewViewport :: Widget Name -> Widget Name
+maybePreviewViewport w =
+    Widget Greedy Fixed $ do
+        result <- render w
+        case (Vty.imageHeight $ result^.imageL) > previewMaxHeight of
+            False -> return result
+            True ->
+                render $ vLimit previewMaxHeight $ viewport MessagePreviewViewport Vertical $
+                         (Widget Fixed Fixed $ return result)
+
 inputPreview :: Set T.Text -> ChatState -> Widget Name
 inputPreview uSet st | not $ st^.csShowMessagePreview = emptyWidget
                      | otherwise = thePreview
     where
     uname = st^.csMe.userUsernameL
-    curContents = getEditContents $ st^.cmdLine
+    -- Insert a cursor sentinel into the input text just before
+    -- rendering the preview. We use the inserted sentinel (which is
+    -- not rendered) to get brick to ensure that the line the cursor is
+    -- on is visible in the preview viewport. We put the sentinel at
+    -- the *end* of the line because it will still influence markdown
+    -- parsing and can create undesirable/confusing churn in the
+    -- rendering while the cursor moves around. If the cursor is at the
+    -- end of whatever line the user is editing, that is very unlikely
+    -- to be a problem.
+    curContents = getText $ (gotoEOL >>> insertChar cursorSentinel) $
+                  st^.cmdLine.editContentsL
     curStr = T.intercalate "\n" curContents
     previewMsg = previewFromInput uname curStr
     thePreview = let noPreview = str "(No preview)"
@@ -384,7 +409,7 @@ inputPreview uSet st | not $ st^.csShowMessagePreview = emptyWidget
                        Just pm -> if T.null curStr
                                   then noPreview
                                   else renderMessage pm True uSet
-                 in vLimit 5 msgPreview <=>
+                 in (maybePreviewViewport msgPreview) <=>
                     hBorderWithLabel (withDefAttr clientEmphAttr $ str "[Preview ↑]")
 
 userInputArea :: ChatState -> Widget Name

@@ -2,7 +2,7 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE ParallelListComp #-}
 
-module Markdown (renderMessage, renderText, blockGetURLs) where
+module Markdown (renderMessage, renderText, blockGetURLs, cursorSentinel) where
 
 import           Brick ( (<+>), Widget, textWidth )
 import qualified Brick.Widgets.Border as B
@@ -83,6 +83,10 @@ addEllipsis w = B.Widget (B.hSize w) (B.vSize w) $ do
         B.render withEllipsis else
         return result
 
+-- Cursor sentinel for showing a fake cursor in message previews.
+cursorSentinel :: Char
+cursorSentinel = '‸'
+
 -- Render markdown with username highlighting
 renderMarkdown :: UserSet -> Blocks -> Widget a
 renderMarkdown uSet bs = vBox (fmap (toWidget uSet) bs)
@@ -116,8 +120,8 @@ instance ToWidget Block where
   toWidget uPat (C.List _ l bs) = toList l bs uPat
   toWidget _ (C.CodeBlock _ tx) =
     B.withDefAttr codeAttr $
-      B.vBox [ B.txt " | " <+> B.txt ln | ln <- T.lines tx ]
-  toWidget _ (C.HtmlBlock txt) = B.txt txt
+      B.vBox [ B.txt " | " <+> textWithCursor ln | ln <- T.lines tx ]
+  toWidget _ (C.HtmlBlock txt) = textWithCursor txt
   toWidget _ (C.HRule) = B.vLimit 1 (B.fill '*')
 
 toInlineChunk :: Inlines -> UserSet -> Widget a
@@ -217,22 +221,31 @@ separate uSet sq = case viewl sq of
   Fragment (TStr s) n :< xs -> gatherStrings s n xs
   Fragment x n :< xs        -> Fragment x n <| separate uSet xs
   EmptyL                    -> S.empty
-  where gatherStrings s n rs = case viewl rs of
-          _ | s `Set.member` uSet ||
-              ("@" `T.isPrefixOf` s && (T.drop 1 s `Set.member` uSet)) ->
-              buildString s n <| separate uSet rs
-          Fragment (TStr s') n' :< xs
-            | n == n' -> gatherStrings (s <> s') n xs
-          Fragment _ _ :< _ -> buildString s n <| separate uSet rs
-          EmptyL -> S.singleton (buildString s n)
-        buildString s n
-          | ":" `T.isPrefixOf` s && ":" `T.isSuffixOf` s && textWidth s > 2 =
-            Fragment (TStr s) Emoji
-          | s `Set.member` uSet =
-            Fragment (TStr s) User
-          | "@" `T.isPrefixOf` s && (T.drop 1 s `Set.member` uSet) =
-            Fragment (TStr s) User
-          | otherwise = Fragment (TStr s) n
+  where gatherStrings s n rs =
+          let s' = removeCursor s
+          in case viewl rs of
+            _ | s' `Set.member` uSet ||
+                ("@" `T.isPrefixOf` s' && (T.drop 1 s' `Set.member` uSet)) ->
+                buildString s n <| separate uSet rs
+            Fragment (TStr s'') n' :< xs
+              | n == n' -> gatherStrings (s <> s'') n xs
+            Fragment _ _ :< _ -> buildString s n <| separate uSet rs
+            EmptyL -> S.singleton (buildString s n)
+        buildString s n =
+            let s' = removeCursor s
+            in if | ":" `T.isPrefixOf` s' &&
+                    ":" `T.isSuffixOf` s' &&
+                    textWidth s' > 2 ->
+                      Fragment (TStr s) Emoji
+                  | s' `Set.member` uSet ->
+                      Fragment (TStr s) User
+                  | "@" `T.isPrefixOf` (removeCursor s) &&
+                    (T.drop 1 (removeCursor s) `Set.member` uSet) ->
+                      Fragment (TStr s) User
+                  | otherwise -> Fragment (TStr s) n
+
+removeCursor :: T.Text -> T.Text
+removeCursor = T.filter (/= cursorSentinel)
 
 split :: Int -> UserSet -> Seq Fragment -> Seq (Seq Fragment)
 split maxCols uSet = splitChunks
@@ -287,17 +300,22 @@ gatherWidgets (viewl-> (Fragment frag style :< rs)) = go style (strOf frag) rs
           | s == s' = go s (t <> strOf f) xs
         go s t xs =
           let w = case s of
-                Normal -> B.txt t
-                Emph   -> B.withDefAttr clientEmphAttr (B.txt t)
-                Strong -> B.withDefAttr clientStrongAttr (B.txt t)
-                Code   -> B.withDefAttr codeAttr (B.txt t)
-                Link   -> B.withDefAttr urlAttr (B.txt t)
-                Emoji  -> B.withDefAttr emojiAttr (B.txt t)
-                User   -> B.withDefAttr (attrForUsername t)
-                                        (B.txt t)
+                Normal -> textWithCursor t
+                Emph   -> B.withDefAttr clientEmphAttr (textWithCursor t)
+                Strong -> B.withDefAttr clientStrongAttr (textWithCursor t)
+                Code   -> B.withDefAttr codeAttr (textWithCursor t)
+                Link   -> B.withDefAttr urlAttr (textWithCursor t)
+                Emoji  -> B.withDefAttr emojiAttr (textWithCursor t)
+                User   -> B.withDefAttr (attrForUsername $ removeCursor t)
+                                        (textWithCursor t)
           in w <| gatherWidgets xs
 gatherWidgets _ =
   S.empty
+
+textWithCursor :: T.Text -> Widget a
+textWithCursor t
+    | T.any (== cursorSentinel) t = B.visible $ B.txt $ removeCursor t
+    | otherwise = B.txt t
 
 blockGetURLs :: C.Block -> S.Seq T.Text
 blockGetURLs (C.Para is) = mconcat $ inlineGetURLs <$> F.toList is
