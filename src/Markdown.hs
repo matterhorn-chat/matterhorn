@@ -4,7 +4,7 @@
 
 module Markdown (renderMessage, renderText, blockGetURLs) where
 
-import           Brick ( (<+>), Widget )
+import           Brick ( (<+>), Widget, textWidth )
 import qualified Brick.Widgets.Border as B
 import qualified Brick.Widgets.Border.Style as B
 import qualified Brick as B
@@ -226,7 +226,7 @@ separate uSet sq = case viewl sq of
           Fragment _ _ :< _ -> buildString s n <| separate uSet rs
           EmptyL -> S.singleton (buildString s n)
         buildString s n
-          | ":" `T.isPrefixOf` s && ":" `T.isSuffixOf` s && T.length s > 2 =
+          | ":" `T.isPrefixOf` s && ":" `T.isSuffixOf` s && textWidth s > 2 =
             Fragment (TStr s) Emoji
           | s `Set.member` uSet =
             Fragment (TStr s) User
@@ -264,9 +264,9 @@ split maxCols uSet = splitChunks
 
 fragmentSize :: Fragment -> Int
 fragmentSize f = case fTextual f of
-  TStr t     -> T.length t
-  TLink t    -> T.length t
-  TRawHtml t -> T.length t
+  TStr t     -> textWidth t
+  TLink t    -> textWidth t
+  TRawHtml t -> textWidth t
   TSpace     -> 1
   TLineBreak -> 0
   TSoftBreak -> 0
