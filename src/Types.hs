@@ -584,7 +584,7 @@ clientPostToMessage st cp = Message
   { _mText          = _cpText cp
   , _mUserName      = case _cpUserOverride cp of
     Just n
-      | _cpType cp == NormalPost -> Just n
+      | _cpType cp == NormalPost -> Just (n <> "[BOT]")
     _ -> getUsernameForUserId st =<< _cpUser cp
   , _mDate          = _cpDate cp
   , _mType          = CP $ _cpType cp
