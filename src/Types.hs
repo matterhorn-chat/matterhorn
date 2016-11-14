@@ -201,7 +201,8 @@ unEmote _ t = t
 --   'ParentId' if it has a known one.
 toClientPost :: Post -> Maybe PostId -> ClientPost
 toClientPost p parentId = ClientPost
-  { _cpText          = getBlocks $ unEmote (postClientPostType p) $ postMessage p
+  { _cpText          = (getBlocks $ unEmote (postClientPostType p) $ postMessage p)
+                       <> getAttachmentText p
   , _cpUser          = postUserId p
   , _cpUserOverride  = p^.postPropsL.postPropsOverrideUsernameL
   , _cpDate          = postCreateAt p
@@ -213,6 +214,16 @@ toClientPost p parentId = ClientPost
   , _cpPostId        = p^.postIdL
   , _cpChannelId     = p^.postChannelIdL
   }
+
+-- | Right now, instead of treating 'attachment' properties specially, we're
+--   just going to roll them directly into the message text
+getAttachmentText :: Post -> Blocks
+getAttachmentText p =
+  case p^.postPropsL.postPropsAttachmentsL of
+    Nothing -> Seq.empty
+    Just attachments ->
+      fmap (C.Blockquote . render) attachments
+  where render att = getBlocks (att^.ppaTextL)
 
 -- ** 'ClientPost' Lenses
 
