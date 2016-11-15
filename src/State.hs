@@ -17,7 +17,7 @@ import           Data.Text.Zipper (textZipper, clearZipper, insertMany, gotoEOL)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
 import           Data.List (sort)
-import           Data.Maybe (maybeToList, isJust, catMaybes)
+import           Data.Maybe (maybeToList, isJust, catMaybes, isNothing)
 import           Data.Monoid ((<>))
 import           Data.Time.Clock (UTCTime, getCurrentTime)
 import qualified Data.Set as Set
@@ -414,7 +414,8 @@ addMessage new st = do
       Just _ -> do
           now <- liftIO getCurrentTime
           let cp = toClientPost new (new^.postParentIdL)
-              fromMe = cp^.cpUser == (Just $ getId (st^.csMe))
+              fromMe = (cp^.cpUser == (Just $ getId (st^.csMe))) &&
+                       (isNothing $ cp^.cpUserOverride)
               updateTime = if fromMe then id else const now
               msg = clientPostToMessage st cp
               cId = postChannelId new
