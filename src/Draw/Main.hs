@@ -9,6 +9,7 @@ import           Brick.Widgets.Edit (editContentsL, renderEditor, getEditContent
 import           Brick.Widgets.List (renderList)
 import           Control.Applicative
 import           Control.Arrow ((>>>))
+import           Control.Monad.Trans.Reader (withReaderT)
 import           Data.Time.Clock (UTCTime(..))
 import           Data.Time.Calendar (fromGregorian)
 import           Data.Time.Format ( formatTime
@@ -225,6 +226,9 @@ renderUserCommandBox st =
             True -> vLimit 5 inputBox <=> multilineHints
     in commandBox
 
+maxMessageHeight :: Int
+maxMessageHeight = 200
+
 renderCurrentChannelDisplay :: Set Text -> ChatState -> Widget Name
 renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
     where
@@ -275,6 +279,7 @@ renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
             ctx <- getContext
 
             let targetHeight = ctx^.availHeightL
+                relaxHeight c = c & availHeightL .~ (max maxMessageHeight (c^.availHeightL))
                 go :: Seq.Seq Message -> Vty.Image -> RenderM Name Vty.Image
                 go ms img
                     | Seq.null ms =
@@ -288,7 +293,8 @@ renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
                                 result <- case msg^.mDeleted of
                                     True -> return Vty.emptyImage
                                     False -> do
-                                        r <- render $ padRight Max $ renderSingleMessage msg
+                                        r <- withReaderT relaxHeight $
+                                               render $ padRight Max $ renderSingleMessage msg
                                         return $ r^.imageL
                                 go ms' $ Vty.vertJoin result img
 
