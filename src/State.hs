@@ -20,6 +20,7 @@ import           Data.List (sort)
 import           Data.Maybe (maybeToList, isJust, catMaybes)
 import           Data.Monoid ((<>))
 import           Data.Time.Clock (UTCTime, getCurrentTime)
+import qualified Data.Set as Set
 import qualified Data.Text as T
 import qualified Data.Vector as V
 import qualified Data.Foldable as F
@@ -636,7 +637,16 @@ stopUrlSelect = csMode .~ Main
 findUrls :: ClientChannel -> [LinkChoice]
 findUrls chan =
     let msgs = chan^.ccContents.cdMessages
-    in concat $ F.toList $ F.toList <$> Seq.reverse <$> msgURLs <$> msgs
+    in removeDuplicates $ concat $ F.toList $ F.toList <$> Seq.reverse <$> msgURLs <$> msgs
+
+removeDuplicates :: [LinkChoice] -> [LinkChoice]
+removeDuplicates = snd . go Set.empty
+  where go before [] = (before, [])
+        go before (x:xs) =
+          let (before', xs') = go before xs in
+          if (x^.linkURL) `Set.member` before'
+            then (before', xs')
+            else (Set.insert (x^.linkURL) before', x : xs')
 
 msgURLs :: Message -> Seq.Seq LinkChoice
 msgURLs msg | Just uname <- msg^.mUserName =
