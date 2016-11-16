@@ -16,7 +16,7 @@ DEPS=$HERE/deps
 SANDBOX=$HERE/.cabal-sandbox
 
 # The source for the mattermost API package
-MATTERMOST_API_REPO=https://github.com/dagit/mattermost-api.git
+MATTERMOST_API_REPO=https://github.com/matterhorn-chat/mattermost-api.git
 
 # Where to clone the mattermost API package
 MATTERMOST_DIR=$DEPS/mattermost-api

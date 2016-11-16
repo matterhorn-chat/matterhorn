@@ -1,5 +1,5 @@
 [![Build
-Status](https://travis-ci.org/aisamanra/matterhorn.svg?branch=master)](https://travis-ci.org/aisamanra/matterhorn)
+Status](https://travis-ci.org/matterhorn-chat/matterhorn.svg?branch=master)](https://travis-ci.org/matterhorn-chat/matterhorn)
 
 ![](logo.png)
 
@@ -18,8 +18,8 @@ neither of which are currently in Hackage. Clone both of them to
 an appropriate place:
 
 ~~~
-$ git clone git@github.com:dagit/mattermost-api.git
-$ git clone git@github.com:aisamanra/matterhorn.git
+$ git clone git@github.com:matterhorn-chat/mattermost-api.git
+$ git clone git@github.com:matterhorn-chat/matterhorn.git
 ~~~
 
 Move into the `matterhorn` directory, create a new sandbox, add
