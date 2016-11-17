@@ -142,6 +142,12 @@ handleEditingInput e st = do
                       return $ st & cmdLine %~ applyEdit moveRight
                   | otherwise -> doInsertChar
 
+        EvKey (KChar 'f') [MCtrl] | editingPermitted st ->
+            return $ st & cmdLine %~ applyEdit moveRight
+
+        EvKey (KChar 'b') [MCtrl] | editingPermitted st ->
+            return $ st & cmdLine %~ applyEdit moveLeft
+
         _ | editingPermitted st -> handleEventLensed st cmdLine handleEditorEvent e
           | otherwise -> return st
 
