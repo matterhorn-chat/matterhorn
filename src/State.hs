@@ -174,27 +174,32 @@ updateStatus uId t st =
 clearEditor :: ChatState -> ChatState
 clearEditor = cmdLine %~ applyEdit clearZipper
 
-loadLastEdit :: ChatState -> EventM a ChatState
+loadLastEdit :: ChatState -> ChatState
 loadLastEdit st =
     let cId = st^.csCurrentChannelId
-    in return $ case st^.csLastChannelInput.at cId of
+    in case st^.csLastChannelInput.at cId of
         Nothing -> st
-        Just lastEdit -> st & cmdLine %~ (applyEdit $ insertMany (lastEdit))
+        Just lastEdit -> st & cmdLine %~ (applyEdit $ insertMany (lastEdit) . clearZipper)
+
+saveCurrentEdit :: ChatState -> ChatState
+saveCurrentEdit st =
+    let cId = st^.csCurrentChannelId
+    in st & csLastChannelInput.at cId .~
+      Just (T.intercalate "\n" $ getEditContents $ st^.cmdLine)
 
 changeChannelCommon :: ChatState -> EventM Name ChatState
 changeChannelCommon st =
-    loadLastEdit =<<
-    (return . clearEditor) =<<
-    fetchCurrentScrollback =<<
-    resetHistoryPosition st
+    loadLastEdit <$>
+    ((return . clearEditor) =<<
+     fetchCurrentScrollback =<<
+     resetHistoryPosition st)
 
 preChangeChannelCommon :: ChatState -> EventM Name ChatState
 preChangeChannelCommon st = do
-    let curEdit = T.intercalate "\n" $ getEditContents $ st^.cmdLine
-        cId = st^.csCurrentChannelId
+    let cId = st^.csCurrentChannelId
     clearNewMessageCutoff cId $
-      st & csLastChannelInput.at cId .~ Just curEdit
-         & csRecentChannel .~ Just cId
+        saveCurrentEdit $
+        st & csRecentChannel .~ Just cId
 
 nextChannel :: ChatState -> EventM Name ChatState
 nextChannel st =
@@ -522,8 +527,7 @@ channelHistoryForward st =
       Just (Just i)
         | i == 0 ->
           -- Transition out of history navigation
-          st & cmdLine %~ applyEdit clearZipper
-             & csInputHistoryPosition.at cId .~ Just Nothing
+          loadLastEdit $ st & csInputHistoryPosition.at cId .~ Just Nothing
         | otherwise ->
           let Just entry = getHistoryEntry cId newI (st^.csInputHistory)
               newI = i - 1
@@ -553,8 +557,9 @@ channelHistoryBackward st =
               Just entry ->
                   let eLines = T.lines entry
                       mv = if length eLines == 1 then gotoEOL else id
-                  in st & cmdLine.editContentsL .~ (mv $ textZipper eLines Nothing)
-                        & csInputHistoryPosition.at cId .~ (Just $ Just newI)
+                  in (saveCurrentEdit st)
+                         & cmdLine.editContentsL .~ (mv $ textZipper eLines Nothing)
+                         & csInputHistoryPosition.at cId .~ (Just $ Just newI)
 
 showHelpScreen :: ChatState -> EventM Name ChatState
 showHelpScreen st = do
