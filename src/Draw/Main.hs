@@ -475,10 +475,16 @@ renderUrlList st =
           let time = link^.linkTime
           in attr sel $ vLimit 2 $
             (vLimit 1 $
-             (colorUsername (link^.linkUser) <+> fill ' ' <+>
-             (renderDate st time) <+> str " " <+>
-             (renderTime st time))) <=>
-            (vLimit 1 (renderText $ link^.linkName))
+             hBox [ colorUsername (link^.linkUser)
+                  , if link^.linkName == link^.linkURL
+                      then emptyWidget
+                      else (txt ": " <+> (renderText $ link^.linkName))
+                  , fill ' '
+                  , renderDate st time
+                  , str " "
+                  , renderTime st time
+                  ] ) <=>
+            (vLimit 1 (renderText $ link^.linkURL))
 
         attr True = forceAttr "urlListSelectedAttr"
         attr False = id

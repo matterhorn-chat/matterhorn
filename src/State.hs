@@ -656,7 +656,7 @@ removeDuplicates = snd . go Set.empty
 
 msgURLs :: Message -> Seq.Seq LinkChoice
 msgURLs msg | Just uname <- msg^.mUserName =
-  let msgUrls = (\ url -> LinkChoice (msg^.mDate) uname url url) <$>
+  let msgUrls = (\ (url, text) -> LinkChoice (msg^.mDate) uname text url) <$>
                   (mconcat $ blockGetURLs <$> (F.toList $ msg^.mText))
       attachmentURLs = (\ a ->
                           LinkChoice
