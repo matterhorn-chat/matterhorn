@@ -78,4 +78,5 @@ executable matterhorn
                      , cheapskate
                      , utf8-string
                      , temporary
+                     , gitrev
   default-language:    Haskell2010
