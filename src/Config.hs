@@ -52,16 +52,12 @@ fromIni = do
     configDateFormat     <- fieldMb "dateFormat"
     configTheme          <- fieldMb "theme"
     configURLOpenCommand <- fieldMb "urlOpenCommand"
-    pass                 <- fieldMb "pass"
-    passCmd              <- fieldMb "passcmd"
     configSmartBacktick      <- fieldFlagDef "smartbacktick" True
     configShowMessagePreview <- fieldFlagDef "showMessagePreview" False
     configActivityBell       <- fieldFlagDef "activityBell" False
-    let configPass = case passCmd of
-          Nothing -> case pass of
-            Nothing -> Nothing
-            Just p  -> Just (PasswordString p)
-          Just c -> Just (PasswordCommand c)
+    configPass <- (Just . PasswordCommand <$> field "passcmd") <|>
+                  (Just . PasswordString  <$> field "pass") <|>
+                  pure Nothing
     return Config { .. }
 
 findConfig :: Maybe FilePath -> IO (Either String Config)
