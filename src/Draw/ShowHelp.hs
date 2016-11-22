@@ -21,6 +21,7 @@ import Events.ChannelSelect
 import Events.UrlSelect
 import Events.Main
 import Markdown (renderText)
+import Options (mhVersion)
 
 drawShowHelp :: ChatState -> [Widget Name]
 drawShowHelp = const [helpBox]
@@ -52,7 +53,8 @@ helpBox =
 
     quitMessage = padTop (Pad 1) $ hCenter $ txt "Press Esc to exit the help screen."
 
-    commandHelp = vBox $ [ padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Commands"
+    commandHelp = vBox $ [ padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ str mhVersion
+                         , padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Commands"
                          , mkCommandHelpText $ sortBy (comparing commandName) commandList
                          ] <>
                          (mkKeybindingHelp <$> keybindSections)
