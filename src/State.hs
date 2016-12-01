@@ -81,7 +81,7 @@ refreshLoadedChannels st = do
 startJoinChannel :: ChatState -> EventM Name ChatState
 startJoinChannel st = do
     liftIO $ doAsyncWith st $ do
-        MoreChannels chans <- mmGetMoreChannels (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL)
+        chans <- mmGetMoreChannels (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL)
         return $ \ st' -> do
             return $ st' & csJoinChannelList .~ (Just $ list JoinChannelList (V.fromList $ F.toList chans) 1)
 
@@ -104,7 +104,7 @@ handleChannelInvite :: ChannelId -> ChatState -> EventM Name ChatState
 handleChannelInvite cId st = do
     liftIO $ doAsyncWith st $ do
         tryMM (mmGetChannel (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId)
-              (\chan -> do
+              (\(ChannelWithData chan _) -> do
                 return $ \st' -> do
                   st'' <- handleNewChannel (chan^.channelNameL) False chan st'
                   liftIO $ asyncFetchScrollback st'' cId

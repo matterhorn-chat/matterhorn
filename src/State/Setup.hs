@@ -9,7 +9,6 @@ import           Control.Exception (SomeException, catch)
 import           Control.Monad (forM, when, void)
 import           Control.Monad.IO.Class (liftIO)
 import qualified Data.Foldable as F
-import           Data.HashMap.Strict ((!))
 import qualified Data.HashMap.Strict as HM
 import           Data.List (sort)
 import           Data.Maybe (listToMaybe, maybeToList, fromJust)
@@ -183,26 +182,28 @@ initializeState cr myTeam myUser = do
   Chan.writeChan requestChan $ fetchUserStatuses cd token
 
   putStrLn $ "Loading channels for team " <> show (teamName myTeam) <> "..."
-  Channels chans cm <- mmGetChannels cd token myTeamId
+  chans <- mmGetChannels cd token myTeamId
 
   msgs <- fmap (HM.fromList . F.toList) $ forM (F.toList chans) $ \c -> do
-    let chanData = cm ! getId c
-        viewed   = chanData ^. channelDataLastViewedAtL
-        updated  = c ^. channelLastPostAtL
-        cInfo    = ChannelInfo
-                     { _cdViewed           = viewed
-                     , _cdUpdated          = updated
-                     , _cdName             = c^.channelNameL
-                     , _cdHeader           = c^.channelHeaderL
-                     , _cdType             = c^.channelTypeL
-                     , _cdCurrentState     = ChanUnloaded
-                     , _cdNewMessageCutoff = Nothing
-                     }
-        cChannel = ClientChannel
-                     { _ccContents = emptyChannelContents
-                     , _ccInfo     = cInfo
-                     }
-    return (getId c, cChannel)
+      ChannelWithData _ chanData <- mmGetChannel cd token myTeamId (getId c)
+
+      let viewed   = chanData ^. channelDataLastViewedAtL
+          updated  = c ^. channelLastPostAtL
+          cInfo    = ChannelInfo
+                       { _cdViewed           = viewed
+                       , _cdUpdated          = updated
+                       , _cdName             = c^.channelNameL
+                       , _cdHeader           = c^.channelHeaderL
+                       , _cdType             = c^.channelTypeL
+                       , _cdCurrentState     = ChanUnloaded
+                       , _cdNewMessageCutoff = Nothing
+                       }
+          cChannel = ClientChannel
+                       { _ccContents = emptyChannelContents
+                       , _ccInfo     = cInfo
+                       }
+
+      return (getId c, cChannel)
 
   users <- mmGetProfiles cd token myTeamId
   tz    <- getCurrentTimeZone
