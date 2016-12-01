@@ -78,13 +78,15 @@ handleWSEvent st we =
       Just p  -> deleteMessage p st >>= continue
       Nothing -> continue st
     WMStatusChange -> case wepStatus (weData we) of
-      Just status -> updateStatus (weUserId we) status st >>= continue
+      Just status -> case weUserId we of
+          Just uId -> updateStatus uId status st >>= continue
+          Nothing -> continue st
       Nothing -> continue st
     WMChannelViewed -> case wepChannelId (weData we) of
       Just cId -> setLastViewedFor st cId >>= continue
       Nothing -> continue st
     WMUserAdded -> case weChannelId we of
-      Just cId -> if weUserId we == st^.csMe.userIdL
+      Just cId -> if weUserId we == (Just $ st^.csMe.userIdL)
                   then handleChannelInvite cId st >>= continue
                   else continue st
       Nothing -> continue st
