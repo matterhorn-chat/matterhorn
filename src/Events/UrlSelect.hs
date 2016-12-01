@@ -23,4 +23,16 @@ urlSelectKeybindings =
          (Vty.EvKey Vty.KEsc []) $
          continue . stopUrlSelect
 
+    , KB "Cancel URL selection"
+         (Vty.EvKey (Vty.KChar 'q') []) $
+         continue . stopUrlSelect
+
+    , KB "Move cursor down"
+         (Vty.EvKey (Vty.KChar 'j') []) $ \st ->
+         continue =<< handleEventLensed st csUrlList handleListEvent (Vty.EvKey Vty.KDown [])
+
+    , KB "Move cursor up"
+         (Vty.EvKey (Vty.KChar 'k') []) $ \st ->
+         continue =<< handleEventLensed st csUrlList handleListEvent (Vty.EvKey Vty.KUp [])
+
     ]
