@@ -93,9 +93,6 @@ darkColorThemeName = "builtin:dark"
 lightColorThemeName :: T.Text
 lightColorThemeName = "builtin:light"
 
-darkClearColorThemeName :: T.Text
-darkClearColorThemeName = "builtin:dark-clear"
-
 timeAttr :: AttrName
 timeAttr = "time"
 
@@ -148,7 +145,6 @@ themes :: [(T.Text, AttrMap)]
 themes =
     [ (darkColorThemeName,      darkColorTheme)
     , (lightColorThemeName,     lightColorTheme)
-    , (darkClearColorThemeName, darkClearColorTheme)
     ]
 
 lightColorTheme :: AttrMap
@@ -219,10 +215,7 @@ darkAttrs =
 
 
 darkColorTheme :: AttrMap
-darkColorTheme = attrMap (bg black) darkAttrs
-
-darkClearColorTheme :: AttrMap
-darkClearColorTheme = attrMap defAttr darkAttrs
+darkColorTheme = attrMap defAttr darkAttrs
 
 usernameAttr :: Int -> AttrName
 usernameAttr i = "username" <> (attrName $ show i)
