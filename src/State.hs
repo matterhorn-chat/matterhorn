@@ -130,17 +130,17 @@ leaveCurrentChannel st = do
             liftIO $ doAsyncWith st $ do
                 mmLeaveChannel (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId
                 return $ \ st' -> do
-                    let st'' = st' & csEditState.cedInputHistoryPosition       .at cId .~ Nothing
-                                   & csEditState.cedLastChannelInput           .at cId .~ Nothing
-                                   & csEditState.cedInputHistory               %~ removeChannelHistory cId
+                    let st'' = st' & csEditState.cedInputHistoryPosition .at cId .~ Nothing
+                                   & csEditState.cedLastChannelInput     .at cId .~ Nothing
+                                   & csEditState.cedInputHistory         %~ removeChannelHistory cId
                                      -- Update input history
-                                   & csNames.cnToChanId                        .at cName .~ Nothing
+                                   & csNames.cnToChanId                  .at cName .~ Nothing
                                      -- Flush cnToChanId
-                                   & csNames.cnChans                           %~ filter (/= cName)
+                                   & csNames.cnChans                     %~ filter (/= cName)
                                      -- Flush cnChans
-                                   & msgMap                                    .at cId .~ Nothing
+                                   & msgMap                              .at cId .~ Nothing
                                      -- Update msgMap
-                                   & csFocus                                   %~ Z.filterZipper (/= cId)
+                                   & csFocus                             %~ Z.filterZipper (/= cId)
                                      -- Remove from focus zipper
                     return st''
             return st
