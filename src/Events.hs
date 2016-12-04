@@ -90,6 +90,8 @@ handleWSEvent st we =
                   then handleChannelInvite cId st >>= continue
                   else continue st
       Nothing -> continue st
+    WMUserUpdated -> -- XXX
+      continue st
     WMNewUser -> -- XXX
       continue st
     WMUserRemoved -> -- XXX
