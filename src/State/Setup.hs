@@ -196,7 +196,7 @@ initializeState cr myTeam myUser = do
                        , _cdHeader           = c^.channelHeaderL
                        , _cdType             = c^.channelTypeL
                        , _cdCurrentState     = ChanUnloaded
-                       , _cdNewMessageCutoff = Nothing
+                       , _cdNewMessageCutoff = Just viewed
                        }
           cChannel = ClientChannel
                        { _ccContents = emptyChannelContents
