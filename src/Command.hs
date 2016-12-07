@@ -7,9 +7,11 @@ import Control.Monad (when)
 import Control.Monad.IO.Class (liftIO)
 import Data.Monoid ((<>))
 import qualified Data.Text as T
+import System.Process (readProcess)
 
 import Prelude
 
+import FilePaths (getAllScripts, locateScriptPath)
 import State
 import State.Common
 import State.Editing
@@ -62,6 +64,26 @@ commandList =
         changeChannel name st >>= continue
   , Cmd "help" "Show this help screen" NoArg $ \ _ st ->
         showHelpScreen st >>= continue
+  , Cmd "sh" "Run a prewritten shell script"
+    (TokenArg "script" (LineArg "message")) $ \ (script, text) st -> do
+      fpMb <- liftIO $ locateScriptPath (T.unpack script)
+      case fpMb of
+        Just scriptPath -> do
+          liftIO $ doAsyncWith st $ do
+            rs <- readProcess scriptPath [] (T.unpack text)
+            return $ \st' -> do
+              liftIO $ sendMessage st' (T.pack rs)
+              return st'
+          continue st
+        Nothing -> do
+          cmds <- liftIO getAllScripts
+          msg <- newClientMessage Error
+              ("No script found named `" <> script <> "`! " <>
+               "Currently available scripts include:\n" <>
+               mconcat [ "  - " <> T.pack cmd <> "\n"
+                       | cmd <- cmds
+                       ])
+          addClientMessage msg st >>= continue
   ]
 
 dispatchCommand :: T.Text -> ChatState -> EventM Name (Next ChatState)
