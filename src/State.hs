@@ -680,3 +680,20 @@ openSelectedURL st | st^.csMode == UrlSelect =
                     liftIO $ void $ system $ (T.unpack urlOpenCommand) <> " " <> show (link^.linkURL)
             return $ st & csMode .~ Main
 openSelectedURL st = return st
+
+shouldSkipMessage :: T.Text -> Bool
+shouldSkipMessage "" = True
+shouldSkipMessage s = T.all (`elem` (" \t"::String)) s
+
+sendMessage :: ChatState -> T.Text -> IO ()
+sendMessage st msg =
+    case shouldSkipMessage msg of
+        True -> return ()
+        False -> do
+            let myId   = st^.csMe.userIdL
+                chanId = st^.csCurrentChannelId
+                theTeamId = st^.csMyTeam.teamIdL
+            doAsync st $ do
+              pendingPost <- mkPendingPost msg myId chanId
+              doAsync st $
+                void $ mmPost (st^.csConn) (st^.csTok) theTeamId pendingPost
