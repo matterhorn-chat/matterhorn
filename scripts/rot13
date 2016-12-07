@@ -1,0 +1,4 @@
+#!/bin/bash -e
+
+# This should be a reasonably portable ROT-13-izer across Unixes
+tr '[A-Za-z]' '[N-ZA-Mn-za-m]'

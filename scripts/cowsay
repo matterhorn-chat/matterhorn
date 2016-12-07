@@ -1,0 +1,7 @@
+#!/bin/bash -e
+
+# We want the fences so that the cowsay block gets rendered
+# in Markdown as a code block. Otherwise, we just call cowsay.
+echo '~~~~~~~~~~'
+cowsay
+echo '~~~~~~~~~~'
