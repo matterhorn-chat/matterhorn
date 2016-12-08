@@ -39,8 +39,6 @@ commandList =
       nextChannel st >>= continue
   , Cmd "left" "Focus on the previous channel" NoArg $ \ () st ->
       prevChannel st >>= continue
-  , Cmd "list-themes" "List the available themes" NoArg $ \ () st ->
-      listThemes st >>= continue
   , Cmd "create-channel" "Create a new channel"
     (LineArg "channel name") $ \ name st ->
       createOrdinaryChannel name st >>= continue
@@ -48,7 +46,9 @@ commandList =
       startLeaveCurrentChannel st >>= continue
   , Cmd "join" "Join a channel" NoArg $ \ () st ->
       startJoinChannel st >>= continue
-  , Cmd "set-theme" "Set the color theme"
+  , Cmd "theme" "List the available themes" NoArg $ \ () st ->
+      listThemes st >>= continue
+  , Cmd "theme" "Set the color theme"
     (TokenArg "theme" NoArg) $ \ (themeName, ()) st ->
       setTheme st themeName >>= continue
   , Cmd "topic" "Set the current channel's topic"
@@ -64,6 +64,14 @@ commandList =
         changeChannel name st >>= continue
   , Cmd "help" "Show this help screen" NoArg $ \ _ st ->
         showHelpScreen st >>= continue
+  , Cmd "sh" "List the available shell scripts" NoArg $ \ () st -> do
+      cmds <- liftIO getAllScripts
+      msg <- newClientMessage Informative
+               ("Available scripts are:\n" <>
+               mconcat [ "  - " <> T.pack cmd <> "\n"
+                       | cmd <- cmds
+                       ])
+      addClientMessage msg st >>= continue
   , Cmd "sh" "Run a prewritten shell script"
     (TokenArg "script" (LineArg "message")) $ \ (script, text) st -> do
       fpMb <- liftIO $ locateScriptPath (T.unpack script)
@@ -89,16 +97,19 @@ commandList =
 dispatchCommand :: T.Text -> ChatState -> EventM Name (Next ChatState)
 dispatchCommand cmd st =
   case T.words cmd of
-    (x:xs) | [ c ] <- [ c | c@(Cmd name _ _ _) <- commandList
-                          , name == x
-                          ] ->
-             case c of
-               Cmd name _ spec exe ->
-                 case matchArgs spec xs of
-                  Left err   -> do
-                    msg <- newClientMessage Error ("/" <> name <> ": " <> err)
-                    addClientMessage msg st >>= continue
-                  Right args -> exe args st
-           | otherwise ->
-             execMMCommand cmd st >>= continue
+    (x:xs) | matchingCmds <- [ c | c@(Cmd name _ _ _) <- commandList
+                                 , name == x
+                                 ] ->
+             case matchingCmds of
+               [] -> execMMCommand cmd st >>= continue
+               cs -> go [] cs
+      where go errs [] = do
+              msg <- newClientMessage Error
+                     ("error running command /" <> x <> ":\n" <>
+                      mconcat [ "    " <> e | e <- errs ])
+              addClientMessage msg st >>= continue
+            go errs (Cmd _ _ spec exe : cs) =
+              case matchArgs spec xs of
+                Left e -> go (e:errs) cs
+                Right args -> exe args st
     _ -> continue st
