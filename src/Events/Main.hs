@@ -3,7 +3,7 @@ module Events.Main where
 
 import Brick
 import Brick.Widgets.Edit
-import Control.Monad ((>=>), void)
+import Control.Monad ((>=>))
 import Control.Monad.IO.Class (liftIO)
 import Data.Monoid ((<>))
 import qualified Data.Set as Set
@@ -12,12 +12,8 @@ import qualified Data.Text.Zipper as Z
 import qualified Graphics.Vty as Vty
 import Lens.Micro.Platform
 
-import Network.Mattermost
-import Network.Mattermost.Lenses
-
 import Types
 import State
-import State.Common
 import State.Editing
 import Command
 import Completion
