@@ -7,7 +7,8 @@ import Control.Monad (when)
 import Control.Monad.IO.Class (liftIO)
 import Data.Monoid ((<>))
 import qualified Data.Text as T
-import System.Process (readProcess)
+import System.Exit (ExitCode(..))
+import System.Process (readProcessWithExitCode)
 
 import Prelude
 
@@ -71,11 +72,7 @@ commandList =
       fpMb <- liftIO $ locateScriptPath (T.unpack script)
       case fpMb of
         ScriptPath scriptPath -> do
-          liftIO $ doAsyncWith st $ do
-            rs <- readProcess scriptPath [] (T.unpack text)
-            return $ \st' -> do
-              liftIO $ sendMessage st' (T.pack rs)
-              return st'
+          liftIO $ doAsyncWith st $ runScript scriptPath text
           continue st
         NonexecScriptPath scriptPath -> do
           msg <- newClientMessage Error
@@ -91,6 +88,24 @@ commandList =
             ("No script named " <> script <> " was found.")
           addClientMessage msg st >>= listScripts >>= continue
   ]
+
+runScript :: FilePath -> T.Text -> IO (ChatState -> EventM Name ChatState)
+runScript fp text = do
+  (code, stdout, stderr) <- readProcessWithExitCode fp [] (T.unpack text)
+  case code of
+    ExitSuccess -> return $ \st -> do
+      liftIO $ sendMessage st (T.pack stdout)
+      return st
+    ExitFailure _ -> return $ \st -> do
+      let msgText = "The script `" <> T.pack fp <> "` exited with a " <>
+                    "non-zero exit code."
+          msgText' = if stderr == ""
+                       then msgText
+                       else msgText <> " It also produced the " <>
+                            "following output on stderr:\n~~~~~\n" <>
+                            T.pack stderr <> "~~~~~\n"
+      msg <- newClientMessage Error msgText'
+      addClientMessage msg st
 
 listScripts :: ChatState -> EventM Name ChatState
 listScripts st = do
