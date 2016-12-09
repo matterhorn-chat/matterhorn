@@ -11,7 +11,7 @@ import System.Process (readProcess)
 
 import Prelude
 
-import FilePaths (getAllScripts, locateScriptPath)
+import FilePaths (Script(..), getAllScripts, locateScriptPath)
 import State
 import State.Common
 import State.Editing
@@ -64,35 +64,57 @@ commandList =
         changeChannel name st >>= continue
   , Cmd "help" "Show this help screen" NoArg $ \ _ st ->
         showHelpScreen st >>= continue
-  , Cmd "sh" "List the available shell scripts" NoArg $ \ () st -> do
-      cmds <- liftIO getAllScripts
-      msg <- newClientMessage Informative
-               ("Available scripts are:\n" <>
-               mconcat [ "  - " <> T.pack cmd <> "\n"
-                       | cmd <- cmds
-                       ])
-      addClientMessage msg st >>= continue
+  , Cmd "sh" "List the available shell scripts" NoArg $ \ () st ->
+      listScripts st >>= continue
   , Cmd "sh" "Run a prewritten shell script"
     (TokenArg "script" (LineArg "message")) $ \ (script, text) st -> do
       fpMb <- liftIO $ locateScriptPath (T.unpack script)
       case fpMb of
-        Just scriptPath -> do
+        ScriptPath scriptPath -> do
           liftIO $ doAsyncWith st $ do
             rs <- readProcess scriptPath [] (T.unpack text)
             return $ \st' -> do
               liftIO $ sendMessage st' (T.pack rs)
               return st'
           continue st
-        Nothing -> do
-          cmds <- liftIO getAllScripts
+        NonexecScriptPath scriptPath -> do
           msg <- newClientMessage Error
-              ("No script found named `" <> script <> "`! " <>
-               "Currently available scripts include:\n" <>
-               mconcat [ "  - " <> T.pack cmd <> "\n"
-                       | cmd <- cmds
-                       ])
+              ("The script `" <> T.pack scriptPath <> "` cannot be " <>
+               "executed. Try running\n" <>
+               "```\n" <>
+               "$ chmod 775 " <> T.pack scriptPath <> "\n" <>
+               "```\n" <>
+               "to correct this error.")
           addClientMessage msg st >>= continue
+        ScriptNotFound -> do
+          msg <- newClientMessage Error
+            ("No script named " <> script <> " was found.")
+          addClientMessage msg st >>= listScripts >>= continue
   ]
+
+listScripts :: ChatState -> EventM Name ChatState
+listScripts st = do
+  (execs, nonexecs) <- liftIO getAllScripts
+  msg <- newClientMessage Informative
+           ("Available scripts are:\n" <>
+            mconcat [ "  - " <> T.pack cmd <> "\n"
+                    | cmd <- execs
+                    ])
+  case nonexecs of
+    [] -> addClientMessage msg st
+    _  -> do
+      errMsg <- newClientMessage Error
+                  ("Some non-executable script files are also " <>
+                   "present. If you want to run these as scripts " <>
+                   "in Matterhorn, mark them executable with \n" <>
+                   "```\n" <>
+                   "$ chmod 775 [script path]\n" <>
+                   "```\n" <>
+                   "\n" <>
+                   mconcat [ "  - " <> T.pack cmd <> "\n"
+                           | cmd <- nonexecs
+                           ])
+      addClientMessage msg st >>=  addClientMessage errMsg
 
 dispatchCommand :: T.Text -> ChatState -> EventM Name (Next ChatState)
 dispatchCommand cmd st =

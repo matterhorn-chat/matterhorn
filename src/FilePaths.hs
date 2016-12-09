@@ -8,16 +8,23 @@ module FilePaths
   , xdgName
   , locateConfig
 
+  , Script(..)
   , locateScriptPath
   , getAllScripts
   ) where
 
 import Control.Applicative
-import Control.Monad (forM)
+import Control.Monad (forM, filterM)
 import Data.Monoid ((<>))
 import Data.Maybe (listToMaybe)
-import System.Directory (doesFileExist, doesDirectoryExist, getDirectoryContents)
+import System.Directory ( doesFileExist
+                        , doesDirectoryExist
+                        , getDirectoryContents
+                        , getPermissions
+                        , executable
+                        )
 import System.Environment.XDG.BaseDir (getUserConfigFile, getAllConfigFiles)
+import System.FilePath (takeBaseName)
 
 import Prelude
 
@@ -47,24 +54,56 @@ locateConfig filename = do
 scriptDirName :: FilePath
 scriptDirName = "scripts"
 
-locateScriptPath :: FilePath -> IO (Maybe FilePath)
+data Script
+  = ScriptPath FilePath
+  | NonexecScriptPath FilePath
+  | ScriptNotFound
+    deriving (Eq, Read, Show)
+
+toScript :: FilePath -> IO (Script)
+toScript fp = do
+  perm <- getPermissions fp
+  return $ if executable perm
+    then ScriptPath fp
+    else NonexecScriptPath fp
+
+isExecutable :: FilePath -> IO Bool
+isExecutable fp = do
+  perm <- getPermissions fp
+  return (executable perm)
+
+locateScriptPath :: FilePath -> IO Script
 locateScriptPath name
-  | head name == '.' = return Nothing
+  | head name == '.' = return ScriptNotFound
   | otherwise = do
     xdgLocations <- getAllConfigFiles "matterhorn" scriptDirName
     let cmdLocations = [ xdgLoc ++ "/" ++ name
                        | xdgLoc <- xdgLocations
                        ] ++ [ "/etc/matterhorn/scripts/" <> name ]
-    results <- forM cmdLocations $ \fp -> (fp,) <$> doesFileExist fp
-    return $ listToMaybe $ fst <$> filter snd results
+    existingFiles <- filterM doesFileExist cmdLocations
+    executables <- mapM toScript existingFiles
+    return $ case executables of
+      (path:_) -> path
+      _        -> ScriptNotFound
 
-getAllScripts :: IO [FilePath]
+-- | This returns a list of valid scripts, and a list of non-executable
+--   scripts.
+getAllScripts :: IO ([FilePath], [FilePath])
 getAllScripts = do
   xdgLocations <- getAllConfigFiles "matterhorn" scriptDirName
   let cmdLocations = xdgLocations ++ ["/etc/matterhorn/scripts"]
   let getCommands dir = do
         exists <- doesDirectoryExist dir
         if exists
-          then getDirectoryContents dir
+          then map ((dir ++ "/") ++) `fmap` getDirectoryContents dir
           else return []
-  fmap (filter (\s -> head s /= '.') . concat) $ mapM getCommands cmdLocations
+  let isNotHidden f = case f of
+        ('.':_) -> False
+        []      -> False
+        _       -> True
+  allScripts <- concat `fmap` mapM getCommands cmdLocations
+  execs <- filterM isExecutable allScripts
+  nonexecs <- filterM (fmap not . isExecutable) allScripts
+  return ( filter isNotHidden $ map takeBaseName execs
+         , filter isNotHidden $ map takeBaseName nonexecs
+         )
