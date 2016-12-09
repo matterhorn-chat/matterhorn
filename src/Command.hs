@@ -82,7 +82,7 @@ commandList =
               ("The script `" <> T.pack scriptPath <> "` cannot be " <>
                "executed. Try running\n" <>
                "```\n" <>
-               "$ chmod +x " <> T.pack scriptPath <> "\n" <>
+               "$ chmod u+x " <> T.pack scriptPath <> "\n" <>
                "```\n" <>
                "to correct this error.")
           addClientMessage msg st >>= continue
@@ -108,7 +108,7 @@ listScripts st = do
                    "present. If you want to run these as scripts " <>
                    "in Matterhorn, mark them executable with \n" <>
                    "```\n" <>
-                   "$ chmod +x [script path]\n" <>
+                   "$ chmod u+x [script path]\n" <>
                    "```\n" <>
                    "\n" <>
                    mconcat [ "  - " <> T.pack cmd <> "\n"
