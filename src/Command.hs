@@ -64,7 +64,17 @@ commandList =
     (TokenArg "channel" NoArg) $ \ (name, ()) st ->
         changeChannel name st >>= continue
   , Cmd "help" "Show this help screen" NoArg $ \ _ st ->
-        showHelpScreen st >>= continue
+        showHelpScreen MainHelp st >>= continue
+  , Cmd "help" "Show help about a particular topic"
+      (TokenArg "topic" NoArg) $ \ (topic, ()) st ->
+        case topic of
+          "main"    -> showHelpScreen MainHelp st >>= continue
+          "scripts" -> showHelpScreen ScriptHelp st >>= continue
+          _         -> do
+            msg <- newClientMessage Error
+                     ("Unknown help topic: `" <> topic <> "`. " <>
+                      "Available topics are:\n  - main\n  - scripts\n")
+            addClientMessage msg st >>= continue
   , Cmd "sh" "List the available shell scripts" NoArg $ \ () st ->
       listScripts st >>= continue
   , Cmd "sh" "Run a prewritten shell script"
@@ -81,13 +91,18 @@ commandList =
                "```\n" <>
                "$ chmod u+x " <> T.pack scriptPath <> "\n" <>
                "```\n" <>
-               "to correct this error.")
+               "to correct this error. " <> scriptHelpAddendum)
           addClientMessage msg st >>= continue
         ScriptNotFound -> do
           msg <- newClientMessage Error
             ("No script named " <> script <> " was found.")
           addClientMessage msg st >>= listScripts >>= continue
   ]
+
+scriptHelpAddendum :: T.Text
+scriptHelpAddendum =
+  "For more help with scripts, run the command\n" <>
+  "```\n/help scripts\n```\n"
 
 runScript :: FilePath -> T.Text -> IO (ChatState -> EventM Name ChatState)
 runScript fp text = do
@@ -103,7 +118,7 @@ runScript fp text = do
                        then msgText
                        else msgText <> " It also produced the " <>
                             "following output on stderr:\n~~~~~\n" <>
-                            T.pack stderr <> "~~~~~\n"
+                            T.pack stderr <> "~~~~~\n" <> scriptHelpAddendum
       msg <- newClientMessage Error msgText'
       addClientMessage msg st
 
@@ -128,7 +143,7 @@ listScripts st = do
                    "\n" <>
                    mconcat [ "  - " <> T.pack cmd <> "\n"
                            | cmd <- nonexecs
-                           ])
+                           ] <> "\n" <> scriptHelpAddendum)
       addClientMessage msg st >>=  addClientMessage errMsg
 
 dispatchCommand :: T.Text -> ChatState -> EventM Name (Next ChatState)

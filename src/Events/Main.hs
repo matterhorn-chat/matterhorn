@@ -28,7 +28,7 @@ mainKeybindings :: [Keybinding]
 mainKeybindings =
     [ KB "Show this help screen"
          (Vty.EvKey (Vty.KFun 1) []) $
-         showHelpScreen >=> continue
+         showHelpScreen MainHelp >=> continue
 
     , KB "Toggle message preview"
          (Vty.EvKey (Vty.KChar 'p') [Vty.MMeta]) $

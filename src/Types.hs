@@ -455,10 +455,17 @@ emptyEditState hist = ChatEditState
 --   in the background to avoid blocking on the main loop
 type RequestChan = Chan (IO (ChatState -> EventM Name ChatState))
 
+-- | The 'HelpScreen' type represents the set of possible 'Help'
+--   dialogues we have to choose from.
+data HelpScreen
+  = MainHelp
+  | ScriptHelp
+    deriving (Eq)
+
 -- | The 'Mode' represents the current dominant UI activity
 data Mode =
     Main
-    | ShowHelp
+    | ShowHelp HelpScreen
     | ChannelSelect
     | UrlSelect
     | LeaveChannelConfirm

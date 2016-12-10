@@ -17,7 +17,7 @@ draw st =
         Main                -> drawMain st
         ChannelScroll       -> drawMain st
         UrlSelect           -> drawMain st
-        ShowHelp            -> drawShowHelp st
+        ShowHelp screen     -> drawShowHelp screen st
         ChannelSelect       -> drawMain st
         LeaveChannelConfirm -> drawLeaveChannelConfirm st
         JoinChannel         -> drawJoinChannel st

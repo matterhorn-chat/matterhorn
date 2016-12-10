@@ -23,8 +23,11 @@ import Events.Main
 import Markdown (renderText)
 import Options (mhVersion)
 
-drawShowHelp :: ChatState -> [Widget Name]
-drawShowHelp = const [helpBox]
+drawShowHelp :: HelpScreen -> ChatState -> [Widget Name]
+drawShowHelp screen = const [helpBox widget]
+  where widget = case screen of
+          MainHelp   -> mainHelp
+          ScriptHelp -> scriptHelp
 
 withMargins :: (Int, Int) -> Widget a -> Widget a
 withMargins (hMargin, vMargin) w =
@@ -42,17 +45,18 @@ keybindSections =
     , ("URL Select Mode", urlSelectKeybindings)
     ]
 
-helpBox :: Widget Name
-helpBox =
+helpBox :: Widget Name -> Widget Name
+helpBox helpText =
     centerLayer $ withMargins (2, 1) $
       (withDefAttr helpAttr $ borderWithLabel (withDefAttr helpEmphAttr $ txt "Matterhorn Help") $
        (viewport HelpViewport Vertical $ cached HelpText helpText)) <=>
       quitMessage
     where
-    helpText = commandHelp
-
     quitMessage = padTop (Pad 1) $ hCenter $ txt "Press Esc to exit the help screen."
 
+mainHelp :: Widget Name
+mainHelp = commandHelp
+  where
     commandHelp = vBox $ [ padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ str mhVersion
                          , padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Commands"
                          , mkCommandHelpText $ sortBy (comparing commandName) commandList
@@ -124,3 +128,45 @@ ppMod Vty.MShift = "S"
 
 padTo :: Int -> T.Text -> T.Text
 padTo n s = s <> T.replicate (n - T.length s) " "
+
+scriptHelp :: Widget Name
+scriptHelp = vBox
+  [ padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Using Scripts"
+  , padTop (Pad 1) $ hCenter $ hLimit 100 $ vBox scriptHelpText
+  ]
+  where scriptHelpText = map (padTop (Pad 1) . renderText . mconcat)
+          [ [ "Matterhorn has a special feature that allows you to use "
+             , "prewritten shell scripts to preprocess messages. "
+             , "For example, this can allow you to run various filters over "
+             , "your written text, do certain kinds of automated formatting, "
+             , "or just automatically cowsay-ify a message.\n" ]
+           , [ "These scripts can be any kind of executable file, "
+             , "as long as the file lives in "
+             , "*~/.config/matterhorn/scripts* (unless you've explicitly "
+             , "moved your XDG configuration directory elsewhere). "
+             , "Those executables are given no arguments "
+             , "on the command line and are passed your typed message on "
+             , "*stdin*; whatever they produce on *stdout* is sent "
+             , "as a message. If the script exits successfully, then everything "
+             , "that appeared on *stderr* is discarded; if it instead exits with "
+             , "a failing exit code, your message is *not* sent, and you are "
+             , "presented with whatever was printed on stderr as a "
+             , "local error message.\n" ]
+           , [ "To run a script, simply type\n" ]
+           , [ "> *> /sh [script-name] [my-message]*\n" ]
+           , [ "And the script named *[script-name]* will be invoked with "
+             , "the text of *[my-message]*. If the script does not exist, "
+             , "or if it exists but is not marked as executable, you'll be "
+             , "presented with an appropriate error message.\n" ]
+           , [ "For example, if you want to use a basic script to "
+             , "automatically ROT13 your message, you can write a shell "
+             , "script using the standard Unix *tr* utility, like this:\n" ]
+           , [ "> *#!/bin/bash -e*\n"
+             , "> *tr '[A-Za-z]' '[N-ZA-Mn-za-m]'*\n\n" ]
+           , [ "Move this script to *~/.config/matterhorn/scripts/rot13* "
+             , "and be sure it's executable with\n" ]
+           , [ "> *$ chmod u+x ~/.config/matterhorn/scripts/rot13*\n\n" ]
+           , [ "after which you can send ROT13 messages with the "
+             , "Matterhorn command " ]
+           , [ "> *> /sh rot13 Hello, world!*\n" ]
+           ]

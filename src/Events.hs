@@ -58,7 +58,7 @@ onVtyEvent :: ChatState -> Vty.Event -> EventM Name (Next ChatState)
 onVtyEvent st e = do
     case st^.csMode of
         Main                -> onEventMain st e
-        ShowHelp            -> onEventShowHelp st e
+        ShowHelp _          -> onEventShowHelp st e
         ChannelSelect       -> onEventChannelSelect st e
         UrlSelect           -> onEventUrlSelect st e
         LeaveChannelConfirm -> onEventLeaveChannelConfirm st e

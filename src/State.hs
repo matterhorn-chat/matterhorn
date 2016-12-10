@@ -560,10 +560,10 @@ channelHistoryBackward st =
                          & cmdLine.editContentsL .~ (mv $ textZipper eLines Nothing)
                          & csInputHistoryPosition.at cId .~ (Just $ Just newI)
 
-showHelpScreen :: ChatState -> EventM Name ChatState
-showHelpScreen st = do
+showHelpScreen :: HelpScreen -> ChatState -> EventM Name ChatState
+showHelpScreen screen st = do
     vScrollToBeginning (viewportScroll HelpViewport)
-    return $ st & csMode .~ ShowHelp
+    return $ st & csMode .~ ShowHelp screen
 
 beginChannelSelect :: ChatState -> ChatState
 beginChannelSelect st =
