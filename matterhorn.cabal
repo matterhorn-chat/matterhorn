@@ -59,7 +59,7 @@ executable matterhorn
                      , containers >= 0.5.8
                      , text
                      , bytestring
-                     , config-ini >= 0.1.1
+                     , config-ini >= 0.1.2
                      , process
                      , microlens-platform
                      , brick >= 0.14
