@@ -62,9 +62,8 @@ addHistoryEntry :: Text -> ChannelId -> InputHistory -> InputHistory
 addHistoryEntry e cId ih = ih & historyEntries.at cId %~ insertEntry
     where
     insertEntry Nothing  = Just $ V.singleton e
-    insertEntry (Just v) = case e `V.elem` v of
-        True -> Just v
-        False -> Just $ V.cons e v
+    insertEntry (Just v) =
+      Just $ V.cons e (V.filter (/= e) v)
 
 getHistoryEntry :: ChannelId -> Int -> InputHistory -> Maybe Text
 getHistoryEntry cId i ih = do
