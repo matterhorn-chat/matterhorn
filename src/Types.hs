@@ -129,10 +129,10 @@ data Attachment = Attachment
   , _attachmentURL  :: T.Text
   } deriving (Eq, Show)
 
-attachmentFromURL :: T.Text -> Attachment
-attachmentFromURL t = Attachment
-  { _attachmentName = last (T.splitOn "/" t)
-  , _attachmentURL  = t
+attachmentFromURL :: FileId -> Attachment
+attachmentFromURL fId = Attachment
+  { _attachmentName = urlForFile fId
+  , _attachmentURL  = urlForFile fId
   }
 
 -- | For representing links to things in the 'open links' view
@@ -608,11 +608,10 @@ clientPostToMessage st cp = Message
 mkAttachmentAbsolute :: ChatState -> Attachment -> Attachment
 mkAttachmentAbsolute cs a =
   let host = T.pack (cs^.csResources.crConn.cdHostnameL)
-      team = idString (cs^.csMyTeam.teamIdL)
       -- XXX This will have to come from the ChatState once the
       -- application can be used with non-SSL servers.
       scheme = "https://"
-      update url = scheme <> host <> "/api/v3/teams/" <> team <> "/files/get" <> url
+      update url = scheme <> host <> url
   in a & attachmentURL %~ update
 
 -- * Slash Commands
