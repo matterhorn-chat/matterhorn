@@ -73,7 +73,7 @@ executable matterhorn
                      , xdg-basedir
                      , filepath
                      , directory
-                     , vector
+                     , vector < 0.12
                      , strict
                      , hashable
                      , cheapskate
