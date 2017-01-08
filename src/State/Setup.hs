@@ -1,6 +1,7 @@
 module State.Setup where
 
 import           Brick (EventM)
+import           Brick.BChan
 import           Brick.Widgets.List (list)
 import           Control.Concurrent (threadDelay, forkIO)
 import qualified Control.Concurrent.Chan as Chan
@@ -114,7 +115,7 @@ newState rs i u m tz hist = ChatState
   , _csJoinChannelList             = Nothing
   }
 
-setupState :: Maybe Handle -> Config -> RequestChan -> Chan.Chan MHEvent -> IO ChatState
+setupState :: Maybe Handle -> Config -> RequestChan -> BChan MHEvent -> IO ChatState
 setupState logFile config requestChan eventChan = do
   -- If we don't have enough credentials, ask for them.
   (uStr, pStr) <- case getCredentials config of

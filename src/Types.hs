@@ -7,6 +7,7 @@
 module Types where
 
 import           Brick (EventM, txt, Next)
+import           Brick.BChan
 import           Brick.AttrMap (AttrMap)
 import           Brick.Widgets.Edit (Editor, editor)
 import           Brick.Widgets.List (List)
@@ -417,7 +418,7 @@ data ChatResources = ChatResources
   { _crTok           :: Token
   , _crConn          :: ConnectionData
   , _crRequestQueue  :: RequestChan
-  , _crEventQueue    :: Chan MHEvent
+  , _crEventQueue    :: BChan MHEvent
   , _crTheme         :: AttrMap
   , _crQuitCondition :: MVar ()
   , _crConfiguration :: Config

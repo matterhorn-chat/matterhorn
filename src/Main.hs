@@ -3,6 +3,7 @@
 module Main where
 
 import           Brick
+import           Brick.BChan
 import           Control.Concurrent (forkIO)
 import qualified Control.Concurrent.Chan as Chan
 import           Control.Exception (try)
@@ -32,16 +33,16 @@ main = do
           exitFailure
       Right c -> return c
 
-  eventChan <- Chan.newChan
-  Chan.writeChan eventChan RefreshWebsocketEvent
+  eventChan <- newBChan 25
+  writeBChan eventChan RefreshWebsocketEvent
 
   requestChan <- Chan.newChan
   _ <- forkIO $ forever $ do
     req <- Chan.readChan requestChan
     res <- try req
     case res of
-      Left e    -> Chan.writeChan eventChan (AsyncErrEvent e)
-      Right upd -> Chan.writeChan eventChan (RespEvent upd)
+      Left e    -> writeBChan eventChan (AsyncErrEvent e)
+      Right upd -> writeBChan eventChan (RespEvent upd)
 
   logFile <- case optLogLocation opts of
     Just path -> Just `fmap` openFile path WriteMode
