@@ -51,6 +51,7 @@ executable matterhorn
                        Login
                        Markdown
                        Options
+                       Paths_matterhorn
   default-extensions:  OverloadedStrings,
                        ScopedTypeVariables
   ghc-options:         -Wall -threaded

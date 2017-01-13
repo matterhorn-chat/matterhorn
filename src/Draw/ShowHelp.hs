@@ -10,6 +10,7 @@ import Data.Ord (comparing)
 import qualified Data.Text as T
 import Data.Monoid ((<>))
 import qualified Graphics.Vty as Vty
+import Network.Mattermost.Version (mmApiVersion)
 
 import Prelude
 
@@ -58,6 +59,7 @@ mainHelp :: Widget Name
 mainHelp = commandHelp
   where
     commandHelp = vBox $ [ padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ str mhVersion
+                         , hCenter $ withDefAttr helpEmphAttr $ str mmApiVersion
                          , padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Commands"
                          , mkCommandHelpText $ sortBy (comparing commandName) commandList
                          ] <>

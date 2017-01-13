@@ -4,6 +4,7 @@ module Options where
 
 import Data.Version (showVersion)
 import Development.GitRev
+import Network.Mattermost.Version (mmApiVersion)
 import Paths_matterhorn (version)
 import System.Console.GetOpt
 import System.Environment (getArgs)
@@ -50,6 +51,9 @@ mhVersion
   | otherwise = "matterhorn " ++ showVersion version ++ " (" ++
                 $(gitBranch) ++ "@" ++ $(gitHash) ++ ")"
 
+fullVersionString :: String
+fullVersionString = mhVersion ++ "\n using " ++ mmApiVersion
+
 usage :: IO ()
 usage = putStr (usageInfo "matterhorn" optDescrs)
 
@@ -62,7 +66,7 @@ grabOptions = do
       case optBehaviour rs of
         Normal -> return rs
         ShowHelp -> usage >> exitSuccess
-        ShowVersion -> putStrLn mhVersion >> exitSuccess
+        ShowVersion -> putStrLn fullVersionString >> exitSuccess
     (_, _, []) -> do
       usage
       exitFailure
