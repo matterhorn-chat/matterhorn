@@ -49,7 +49,7 @@ mhVersion :: String
 mhVersion
   | $(gitHash) == ("UNKNOWN" :: String) = "matterhorn " ++ showVersion version
   | otherwise = "matterhorn " ++ showVersion version ++ " (" ++
-                $(gitBranch) ++ "@" ++ $(gitHash) ++ ")"
+                $(gitBranch) ++ "@" ++ take 7 $(gitHash) ++ ")"
 
 fullVersionString :: String
 fullVersionString = mhVersion ++ "\n using " ++ mmApiVersion
