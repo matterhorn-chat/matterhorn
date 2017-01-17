@@ -5,6 +5,8 @@ Status](https://travis-ci.org/matterhorn-chat/matterhorn.svg?branch=master)](htt
 
 This is a basic terminal-based client for the MatterMost chat system.
 
+![](screenshots/screenshot-00.png)
+
 # Building
 
 The easiest way to build it is to use the provided `install.sh`
