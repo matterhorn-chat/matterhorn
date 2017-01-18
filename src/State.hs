@@ -156,7 +156,9 @@ hasUnread st cId = maybe False id $ do
 setLastViewedFor :: ChatState -> ChannelId -> EventM Name ChatState
 setLastViewedFor st cId = do
   now <- liftIO getCurrentTime
-  return (st & csChannel(cId).ccInfo.cdViewed .~ now)
+  if cId `HM.member` (st^.msgMap)
+    then return (st & csChannel(cId).ccInfo.cdViewed .~ now)
+    else handleChannelInvite cId st
 
 updateViewed :: ChatState -> EventM Name ChatState
 updateViewed st = liftIO (updateViewedIO st)
