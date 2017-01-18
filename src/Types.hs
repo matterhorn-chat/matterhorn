@@ -19,6 +19,7 @@ import           Data.HashMap.Strict (HashMap)
 import           Data.Time.Clock (UTCTime)
 import           Data.Time.LocalTime (TimeZone)
 import qualified Data.HashMap.Strict as HM
+import qualified Data.Map.Strict as Map
 import           Data.Maybe
 import qualified Data.Sequence as Seq
 import           Data.Monoid
@@ -121,6 +122,7 @@ data ClientPost = ClientPost
   , _cpInReplyToPost :: Maybe PostId
   , _cpPostId        :: PostId
   , _cpChannelId     :: ChannelId
+  , _cpReactions     :: Map.Map T.Text Int
   } deriving (Show)
 
 -- | An attachment has a very long URL associated, as well as
@@ -214,6 +216,7 @@ toClientPost p parentId = ClientPost
   , _cpInReplyToPost = parentId
   , _cpPostId        = p^.postIdL
   , _cpChannelId     = p^.postChannelIdL
+  , _cpReactions     = Map.empty
   }
 
 -- | Right now, instead of treating 'attachment' properties specially, we're
@@ -246,6 +249,7 @@ data Message = Message
   , _mAttachments   :: Seq.Seq Attachment
   , _mInReplyToMsg  :: ReplyState
   , _mPostId        :: Maybe PostId
+  , _mReactions     :: Map.Map T.Text Int
   } deriving (Show)
 
 -- | A 'Message' is the representation we use for storage and
@@ -276,6 +280,7 @@ clientMessageToMessage cm = Message
   , _mAttachments   = Seq.empty
   , _mInReplyToMsg  = NotAReply
   , _mPostId        = Nothing
+  , _mReactions     = Map.empty
   }
 
 -- ** 'Message' Lenses
@@ -604,6 +609,7 @@ clientPostToMessage st cp = Message
       Nothing  -> NotAReply
       Just pId -> getMessageForPostId st pId
   , _mPostId        = Just $ cp^.cpPostId
+  , _mReactions     = _cpReactions cp
   }
 
 mkAttachmentAbsolute :: ChatState -> Attachment -> Attachment

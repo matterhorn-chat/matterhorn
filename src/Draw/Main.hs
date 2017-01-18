@@ -21,6 +21,7 @@ import qualified Data.Sequence as Seq
 import qualified Data.Foldable as F
 import           Data.HashMap.Strict ( HashMap )
 import           Data.List (sort, intersperse)
+import qualified Data.Map.Strict as Map
 import           Data.Maybe ( listToMaybe, maybeToList )
 import           Data.Monoid ((<>))
 import           Data.Set (Set)
@@ -53,6 +54,14 @@ renderChatMessage uSet renderTimeFunc msg =
                  [ txt ("  [attached: `" <> a^.attachmentName <> "`]")
                  | a <- F.toList (msg^.mAttachments)
                  ]
+        msgReac = if Map.null (msg^.mReactions)
+          then emptyWidget
+          else let renderR e 1 = " [" <> e <> "]"
+                   renderR e n
+                     | n > 1     = " [" <> e <> " " <> T.pack (show n) <> "]"
+                     | otherwise = ""
+                   reacMsg = Map.foldMapWithKey renderR (msg^.mReactions)
+               in withDefAttr emojiAttr $ txt ("   " <> reacMsg)
         msgTxt =
           case msg^.mUserName of
             Just _
@@ -65,7 +74,7 @@ renderChatMessage uSet renderTimeFunc msg =
                     C NewMessagesTransition -> withDefAttr newMessageTransitionAttr (hBorderWithLabel m)
                     C Error -> withDefAttr errorMessageAttr m
                     _ -> withDefAttr clientMessageAttr m
-        fullMsg = msgTxt <=> msgAtch
+        fullMsg = msgTxt <=> msgAtch <=> msgReac
         maybeRenderTime w = renderTimeFunc (msg^.mDate) <+> txt " " <+> w
         maybeRenderTimeWith f = case msg^.mType of
             C DateTransition -> id
@@ -193,6 +202,7 @@ previewFromInput uname s =
                            , _mAttachments   = mempty
                            , _mInReplyToMsg  = NotAReply
                            , _mPostId        = Nothing
+                           , _mReactions     = mempty
                            }
 
 renderUserCommandBox :: ChatState -> Widget Name
@@ -321,9 +331,9 @@ insertTransitions fmt tz cutoff ms = fst $ F.foldl' nextMsg initState ms
 
         dateMsg d = Message (getBlocks (T.pack $ formatTime defaultTimeLocale (T.unpack fmt)
                                                  (utcToLocalTime tz d)))
-                            Nothing d (C DateTransition) False False Seq.empty NotAReply Nothing
+                            Nothing d (C DateTransition) False False Seq.empty NotAReply Nothing mempty
         newMessagesMsg d = Message (getBlocks (T.pack "New Messages"))
-                                   Nothing d (C NewMessagesTransition) False False Seq.empty NotAReply Nothing
+                                   Nothing d (C NewMessagesTransition) False False Seq.empty NotAReply Nothing mempty
 
         nextMsg :: (Seq.Seq Message, Maybe Message) -> Message -> (Seq.Seq Message, Maybe Message)
         nextMsg (rest, Nothing) msg = (rest Seq.|> msg, Just msg)

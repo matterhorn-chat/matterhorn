@@ -124,3 +124,15 @@ handleWSEvent st we =
     -- right now we don't show typing notifications. maybe
     -- we should? i dunno.
     WMTyping -> continue st
+    -- Do we need to do anything with this?
+    WMUpdateTeam -> continue st
+    WMReactionAdded -> case wepReaction (weData we) of
+      Just r  -> case webChannelId (weBroadcast we) of
+        Just cId -> continue (addReaction st r cId)
+        Nothing -> continue st
+      Nothing -> continue st
+    WMReactionRemoved -> case wepReaction (weData we) of
+      Just r  -> case webChannelId (weBroadcast we) of
+        Just cId -> continue (removeReaction st r cId)
+        Nothing -> continue st
+      Nothing -> continue st

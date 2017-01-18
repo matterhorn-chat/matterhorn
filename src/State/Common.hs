@@ -6,6 +6,7 @@ import           Control.Exception (try)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Data.HashMap.Strict as HM
 import           Data.List (sort)
+import qualified Data.Map.Strict as Map
 import           Data.Monoid ((<>))
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
@@ -110,6 +111,7 @@ asyncFetchScrollback st cId =
     doAsyncWith st $ do
         posts <- mmGetPosts (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId 0 numScrollbackPosts
         return $ \st' -> do
+            liftIO $ mapM_ (asyncFetchReactionsForPost st cId) (posts^.postsPostsL)
             let contents = fromPosts st' posts
                 -- We need to set the new message cutoff only if there
                 -- are actually messages that came in after our last
@@ -123,6 +125,35 @@ asyncFetchScrollback st cId =
                 st' & csChannel(cId).ccContents .~ contents
                     & csChannel(cId).ccInfo.cdCurrentState .~ ChanLoaded
                     & csChannel(cId).ccInfo.cdNewMessageCutoff .~ cutoff
+
+
+asyncFetchReactionsForPost :: ChatState -> ChannelId -> Post -> IO ()
+asyncFetchReactionsForPost st cId p
+  | not (p^.postHasReactionsL) = return ()
+  | otherwise = doAsyncWith st $ do
+      reactions <- mmGetReactionsForPost
+                     (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL)
+                                              cId
+                                              (p^.postIdL)
+      return $ \st' -> do
+        let insert r = Map.insertWith (+) (r^.reactionEmojiNameL) 1
+            insertAll m = foldr insert m reactions
+            upd m | m^.mPostId == Just (p^.postIdL) =
+                      m & mReactions %~ insertAll
+                  | otherwise = m
+        return $ st' & csChannel(cId).ccContents.cdMessages %~ fmap upd
+
+addReaction :: ChatState -> Reaction -> ChannelId -> ChatState
+addReaction st r cId = st & csChannel(cId).ccContents.cdMessages %~ fmap upd
+  where upd m | m^.mPostId == Just (r^.reactionPostIdL) =
+                  m & mReactions %~ (Map.insertWith (+) (r^.reactionEmojiNameL) 1)
+              | otherwise = m
+
+removeReaction :: ChatState -> Reaction -> ChannelId -> ChatState
+removeReaction st r cId = st & csChannel(cId).ccContents.cdMessages %~ fmap upd
+  where upd m | m^.mPostId == Just (r^.reactionPostIdL) =
+                  m & mReactions %~ (Map.insertWith (+) (r^.reactionEmojiNameL) (-1))
+              | otherwise = m
 
 updateViewedIO :: ChatState -> IO ChatState
 updateViewedIO st = do
