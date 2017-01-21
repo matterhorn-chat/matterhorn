@@ -157,19 +157,19 @@ getOrdinaryChannels st =
 
 getDmChannels :: ChatState -> [ChannelListEntry]
 getDmChannels st =
-       [ ChannelListEntry cname sigil uname colorUsername' unread recent
-       | u <- sortedUserList st -- sort usersToList
-       , let colorUsername' =
-               if | u^.uiStatus == Offline ->
-                    withDefAttr clientMessageAttr . txt
-                  | otherwise ->
-                    colorUsername
-             sigil = T.singleton $ userSigil u
-             uname = u^.uiName
-             cname = getDMChannelName (st^.csMe^.userIdL) (u^.uiId)
-             recent = maybe False ((== st^.csRecentChannel) . Just) m_chanId
-             m_chanId = st^.csNames.cnToChanId.at (u^.uiName)
-             unread = maybe False (hasUnread st) m_chanId
+    [ ChannelListEntry cname sigil uname colorUsername' unread recent
+    | u <- sortedUserList st
+    , let colorUsername' =
+            if | u^.uiStatus == Offline ->
+                 withDefAttr clientMessageAttr . txt
+               | otherwise ->
+                 colorUsername
+          sigil = T.singleton $ userSigil u
+          uname = u^.uiName
+          cname = getDMChannelName (st^.csMe^.userIdL) (u^.uiId)
+          recent = maybe False ((== st^.csRecentChannel) . Just) m_chanId
+          m_chanId = st^.csNames.cnToChanId.at (u^.uiName)
+          unread = maybe False (hasUnread st) m_chanId
        ]
 
 previewFromInput :: T.Text -> T.Text -> Maybe Message
