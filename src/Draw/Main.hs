@@ -157,12 +157,8 @@ getOrdinaryChannels st =
 
 getDmChannels :: ChatState -> [ChannelListEntry]
 getDmChannels st =
-    let isSelf :: UserInfo -> Bool
-        isSelf u = (st^.csMe.userIdL) == (u^.uiId)
-        usersToList = filter (not . isSelf) $ st ^. usrMap & HM.elems
-
-    in [ ChannelListEntry cname sigil uname colorUsername' unread recent
-       | u <- sort usersToList
+       [ ChannelListEntry cname sigil uname colorUsername' unread recent
+       | u <- sortedUserList st -- sort usersToList
        , let colorUsername' =
                if | u^.uiStatus == Offline ->
                     withDefAttr clientMessageAttr . txt

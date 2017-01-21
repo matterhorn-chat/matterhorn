@@ -19,6 +19,7 @@ import           Data.HashMap.Strict (HashMap)
 import           Data.Time.Clock (UTCTime)
 import           Data.Time.LocalTime (TimeZone)
 import qualified Data.HashMap.Strict as HM
+import           Data.List (partition, sort)
 import qualified Data.Map.Strict as Map
 import           Data.Maybe
 import qualified Data.Sequence as Seq
@@ -660,3 +661,14 @@ data Keybinding =
 -- | Find a keybinding that matches a Vty Event
 lookupKeybinding :: Vty.Event -> [Keybinding] -> Maybe Keybinding
 lookupKeybinding e kbs = listToMaybe $ filter ((== e) . kbEvent) kbs
+
+sortedUserList :: ChatState -> [UserInfo]
+sortedUserList st = sort yes ++ sort no
+  where userList = filter (not . isSelf) (HM.elems(st^.usrMap))
+        isSelf u = (st^.csMe.userIdL) == (u^.uiId)
+        hasUnread u =
+          case st^.csNames.cnToChanId.at(u^.uiName) of
+            Nothing  -> False
+            Just cId -> let info = st^.csChannel(cId).ccInfo
+                        in info^.cdUpdated > info^.cdViewed
+        (yes, no) = partition hasUnread userList
