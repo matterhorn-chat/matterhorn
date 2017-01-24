@@ -669,6 +669,9 @@ sortedUserList st = sort yes ++ sort no
         hasUnread u =
           case st^.csNames.cnToChanId.at(u^.uiName) of
             Nothing  -> False
-            Just cId -> let info = st^.csChannel(cId).ccInfo
-                        in info^.cdUpdated > info^.cdViewed
+            Just cId
+              | (st^.csCurrentChannelId) == cId -> False
+              | otherwise ->
+                  let info = st^.csChannel(cId).ccInfo
+                  in info^.cdUpdated > info^.cdViewed
         (yes, no) = partition hasUnread userList
