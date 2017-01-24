@@ -8,7 +8,6 @@ import           Control.Concurrent (forkIO)
 import qualified Control.Concurrent.Chan as Chan
 import           Control.Exception (try)
 import           Control.Monad (forever)
-import           Data.Default (def)
 import           Data.Monoid ((<>))
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform
@@ -50,7 +49,7 @@ main = do
   st <- setupState logFile config requestChan eventChan
 
   let mkVty = do
-        vty <- Vty.mkVty def
+        vty <- Vty.mkVty Vty.defaultConfig
         let output = Vty.outputIface vty
         Vty.setMode output Vty.BracketedPaste True
         return vty

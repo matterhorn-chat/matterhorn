@@ -15,12 +15,11 @@ import           Data.Time.Calendar (fromGregorian)
 import           Data.Time.Format ( formatTime
                                   , defaultTimeLocale )
 import           Data.Time.LocalTime ( TimeZone, utcToLocalTime, localDay )
-import           Data.Default (def)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
 import qualified Data.Foldable as F
 import           Data.HashMap.Strict ( HashMap )
-import           Data.List (sort, intersperse)
+import           Data.List (intersperse)
 import qualified Data.Map.Strict as Map
 import           Data.Maybe ( listToMaybe, maybeToList )
 import           Data.Monoid ((<>))
@@ -307,7 +306,7 @@ renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
                                 go ms' $ Vty.vertJoin result img
 
             img <- Vty.cropTop targetHeight <$> go msgs Vty.emptyImage
-            return $ def & imageL .~ img
+            return $ emptyResult & imageL .~ img
 
     cId = st^.csCurrentChannelId
     chan = st^.csCurrentChannel

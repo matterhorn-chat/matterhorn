@@ -64,9 +64,9 @@ executable matterhorn
                      , config-ini >= 0.1.2
                      , process
                      , microlens-platform
-                     , brick >= 0.16
+                     , brick >= 0.17
                      , data-default
-                     , vty >= 5.12
+                     , vty >= 5.15
                      , transformers
                      , text-zipper >= 0.9
                      , array
