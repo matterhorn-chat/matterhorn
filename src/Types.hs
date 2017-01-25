@@ -615,7 +615,7 @@ clientPostToMessage st cp = Message
 
 mkAttachmentAbsolute :: ChatState -> Attachment -> Attachment
 mkAttachmentAbsolute cs a =
-  let host = T.pack (cs^.csResources.crConn.cdHostnameL)
+  let host = cs^.csResources.crConn.cdHostnameL
       -- XXX This will have to come from the ChatState once the
       -- application can be used with non-SSL servers.
       scheme = "https://"

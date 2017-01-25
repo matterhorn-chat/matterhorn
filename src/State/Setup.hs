@@ -16,7 +16,6 @@ import           Data.Maybe (listToMaybe, maybeToList, fromJust)
 import           Data.Monoid ((<>))
 import qualified Data.Sequence as Seq
 import           Data.Time.LocalTime ( TimeZone(..), getCurrentTimeZone )
-import qualified Data.Text as T
 import           Lens.Micro.Platform
 import           System.Exit (exitFailure)
 import           System.IO (Handle)
@@ -127,7 +126,7 @@ setupState logFile config requestChan eventChan = do
         Just f  -> \ cd -> cd `withLogger` mmLoggerDebug f
 
   cd <- setLogger `fmap`
-          initConnectionData (T.unpack (configHost config))
+          initConnectionData (configHost config)
                              (fromIntegral (configPort config))
 
   let loginLoop (u, p) = do
