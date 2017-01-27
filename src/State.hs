@@ -488,7 +488,7 @@ execMMCommand cmd st =
         , minComSuggest   = False
         }
   runCmd = do
-    _ <- mmExecute
+    void $ mmExecute
       (st^.csConn)
       (st^.csTok)
       (st^.csMyTeam.teamIdL)

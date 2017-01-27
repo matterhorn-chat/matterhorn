@@ -7,7 +7,7 @@ import           Brick.BChan
 import           Control.Concurrent (forkIO)
 import qualified Control.Concurrent.Chan as Chan
 import           Control.Exception (try)
-import           Control.Monad (forever)
+import           Control.Monad (forever, void)
 import           Data.Monoid ((<>))
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform
@@ -36,7 +36,7 @@ main = do
   writeBChan eventChan RefreshWebsocketEvent
 
   requestChan <- Chan.newChan
-  _ <- forkIO $ forever $ do
+  void $ forkIO $ forever $ do
     req <- Chan.readChan requestChan
     res <- try req
     case res of
