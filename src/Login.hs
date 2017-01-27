@@ -11,8 +11,11 @@ import qualified Data.Text as T
 import Graphics.Vty hiding (Config)
 import System.Exit (exitSuccess)
 
+import Network.Mattermost.Exceptions (LoginFailureException(..))
+
 import Config
 import Markdown
+import Types (AuthenticationException(..))
 
 data Name = Username | Password deriving (Ord, Eq, Show)
 
@@ -20,16 +23,20 @@ data State =
     State { usernameEdit :: Editor T.Text Name
           , passwordEdit :: Editor T.Text Name
           , focus    :: Name
+          , previousError :: Maybe AuthenticationException
           }
 
 toPassword :: [T.Text] -> Widget a
 toPassword s = txt $ T.replicate (T.length $ T.concat s) "*"
 
-interactiveGatherCredentials :: Config -> IO (T.Text, T.Text)
-interactiveGatherCredentials config = do
+interactiveGatherCredentials :: Config
+                             -> Maybe AuthenticationException
+                             -> IO (T.Text, T.Text)
+interactiveGatherCredentials config authError = do
     let state = State { usernameEdit = editor Username (txt . T.concat) (Just 1) uStr
                       , passwordEdit = editor Password toPassword     (Just 1) pStr
                       , focus = initialFocus
+                      , previousError = authError
                       }
         uStr = case configUser config of
             Nothing -> ""
@@ -52,20 +59,39 @@ app = App
   , appAttrMap      = const colorTheme
   }
 
+errorAttr :: AttrName
+errorAttr = "errorMessage"
+
 colorTheme :: AttrMap
 colorTheme = attrMap defAttr
   [ (editAttr, black `on` white)
   , (editFocusedAttr, black `on` yellow)
+  , (errorAttr, fg red)
   ]
 
 credsDraw :: State -> [Widget Name]
 credsDraw st =
-    [ credentialsForm st
+    [ center (credentialsForm st <=> errorMessageDisplay st)
     ]
+
+errorMessageDisplay :: State -> Widget Name
+errorMessageDisplay st = do
+    case previousError st of
+        Nothing -> emptyWidget
+        -- XXX
+        Just e -> txt " " <=>
+                  (withDefAttr errorAttr $
+                   hCenter (str "Error: " <+> renderAuthError e))
+
+renderAuthError :: AuthenticationException -> Widget Name
+renderAuthError (ConnectError _) = txt "Could not connect to server"
+renderAuthError (ResolveError _) = txt "Could not resolve server hostname"
+renderAuthError (OtherAuthError e) = str $ show e
+renderAuthError (LoginError (LoginFailureException msg)) = str msg
 
 credentialsForm :: State -> Widget Name
 credentialsForm st =
-    center $ hLimit 50 $ vLimit 15 $
+    hCenter $ hLimit 50 $ vLimit 15 $
     border $
     vBox [ renderText "Please enter your MatterMost credentials to log in."
          , txt " "

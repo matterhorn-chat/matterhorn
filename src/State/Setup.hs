@@ -6,7 +6,7 @@ import           Brick.Widgets.List (list)
 import           Control.Concurrent (threadDelay, forkIO)
 import qualified Control.Concurrent.Chan as Chan
 import           Control.Concurrent.MVar (newEmptyMVar)
-import           Control.Exception (SomeException, catch)
+import           Control.Exception (catch)
 import           Control.Monad (forM, when, void)
 import           Control.Monad.IO.Class (liftIO)
 import qualified Data.Foldable as F
@@ -118,7 +118,7 @@ setupState :: Maybe Handle -> Config -> RequestChan -> BChan MHEvent -> IO ChatS
 setupState logFile config requestChan eventChan = do
   -- If we don't have enough credentials, ask for them.
   (uStr, pStr) <- case getCredentials config of
-      Nothing -> interactiveGatherCredentials config
+      Nothing -> interactiveGatherCredentials config Nothing
       Just (u, p) -> return (u, p)
 
   let setLogger = case logFile of
@@ -133,11 +133,20 @@ setupState logFile config requestChan eventChan = do
         putStrLn "Authenticating..."
 
         let login = Login { username = u, password = p }
-        result <- (Just <$> mmLogin cd login) `catch`
-                  (\(_::SomeException) -> return Nothing)
+        result <- (Right <$> mmLogin cd login)
+                    `catch` (\e -> return $ Left $ ResolveError e)
+                    `catch` (\e -> return $ Left $ ConnectError e)
+                    `catch` (\e -> return $ Left $ OtherAuthError e)
+
         case result of
-            Just (Right values) -> return values
-            _ -> interactiveGatherCredentials config >>= loginLoop
+            Right (Right values) ->
+                return values
+            Right (Left e) ->
+                interactiveGatherCredentials config (Just $ LoginError e) >>=
+                    loginLoop
+            Left e ->
+                interactiveGatherCredentials config (Just e) >>=
+                    loginLoop
 
   (token, myUser) <- loginLoop (uStr, pStr)
 

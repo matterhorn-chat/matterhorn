@@ -27,8 +27,10 @@ import           Data.Monoid
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform (at, makeLenses, lens, (&), (^.), (^?), (%~), ix, to, SimpleGetter)
 import           Network.Mattermost
+import           Network.Mattermost.Exceptions
 import           Network.Mattermost.Lenses
 import           Network.Mattermost.WebSocket.Types
+import           Network.Connection (HostNotResolved, HostCannotConnect)
 import qualified Cheapskate as C
 import qualified Data.Text as T
 
@@ -74,6 +76,16 @@ data Name = ChannelMessages ChannelId
           | UrlList
           | MessagePreviewViewport
           deriving (Eq, Show, Ord)
+
+-- | The sum type of exceptions we expect to encounter on authentication
+-- failure. We encode them explicitly here so that we can print them in
+-- a more user-friendly manner than just 'show'.
+data AuthenticationException =
+    ConnectError HostCannotConnect
+    | ResolveError HostNotResolved
+    | LoginError LoginFailureException
+    | OtherAuthError SomeException
+    deriving (Show)
 
 -- | We want to continue referring to posts by their IDs, but we don't want to
 -- have to synthesize new valid IDs for messages from the client itself. To

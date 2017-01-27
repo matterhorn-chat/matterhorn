@@ -59,6 +59,7 @@ executable matterhorn
                      , mattermost-api
                      , unordered-containers
                      , containers >= 0.5.8
+                     , connection
                      , text
                      , bytestring
                      , config-ini >= 0.1.2
