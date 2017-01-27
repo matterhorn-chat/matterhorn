@@ -28,7 +28,7 @@ data PasswordSource =
 
 data Config = Config
   { configUser           :: Maybe Text
-  , configHost           :: Text
+  , configHost           :: Maybe Text
   , configTeam           :: Maybe Text
   , configPort           :: Int
   , configPass           :: Maybe PasswordSource
@@ -45,7 +45,7 @@ fromIni :: IniParser Config
 fromIni = do
   section "mattermost" $ do
     configUser           <- fieldMb "user"
-    configHost           <- field   "host"
+    configHost           <- fieldMb "host"
     configTeam           <- fieldMb "team"
     configPort           <- fieldOf "port" number
     configTimeFormat     <- fieldMb "timeFormat"
@@ -81,11 +81,20 @@ getConfig fp = runExceptT $ do
                     (\e -> throwE $ "Could not execute password command: " <> e)
           return $ Just $ T.pack (takeWhile (/= '\n') output)
         Just (PasswordString pass) -> return $ Just pass
-        _ -> return Nothing
+        Nothing -> return Nothing
+
       return conf { configPass = PasswordString <$> actualPass }
 
-getCredentials :: Config -> Maybe (Text, Text)
-getCredentials config = case (,) <$> configUser config <*> configPass config of
-  Nothing                    -> Nothing
-  Just (u, PasswordString p) -> Just (u, p)
-  _ -> error $ "BUG: unexpected password state: " <> show (configPass config)
+-- | Returns the hostname, username, and password from the config. Only
+-- returns Just if all three have been provided. The idea is that if
+-- this returns Nothing, we're missing at least some of these values.
+getCredentials :: Config -> Maybe (Text, Text, Text)
+getCredentials config =
+    case (,,) <$> configHost config <*> configUser config <*> configPass config of
+        Nothing ->
+            Nothing
+        Just (h, u, PasswordString p) ->
+            Just (h, u, p)
+        Just (_, _, PasswordCommand _) ->
+            error $ "BUG: unexpected credentials state: " <>
+                    show (configPass config)

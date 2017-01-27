@@ -117,19 +117,18 @@ newState rs i u m tz hist = ChatState
 setupState :: Maybe Handle -> Config -> RequestChan -> BChan MHEvent -> IO ChatState
 setupState logFile config requestChan eventChan = do
   -- If we don't have enough credentials, ask for them.
-  (uStr, pStr) <- case getCredentials config of
+  (hostname, uStr, pStr) <- case getCredentials config of
       Nothing -> interactiveGatherCredentials config Nothing
-      Just (u, p) -> return (u, p)
+      Just (h, u, p) -> return (h, u, p)
 
   let setLogger = case logFile of
         Nothing -> id
         Just f  -> \ cd -> cd `withLogger` mmLoggerDebug f
 
-  cd <- setLogger `fmap`
-          initConnectionData (configHost config)
-                             (fromIntegral (configPort config))
+  let loginLoop (hStr, u, p) = do
+        cd <- setLogger `fmap`
+                initConnectionData hStr (fromIntegral (configPort config))
 
-  let loginLoop (u, p) = do
         putStrLn "Authenticating..."
 
         let login = Login { username = u, password = p }
@@ -139,8 +138,8 @@ setupState logFile config requestChan eventChan = do
                     `catch` (\e -> return $ Left $ OtherAuthError e)
 
         case result of
-            Right (Right values) ->
-                return values
+            Right (Right (tok, user)) ->
+                return (tok, user, cd)
             Right (Left e) ->
                 interactiveGatherCredentials config (Just $ LoginError e) >>=
                     loginLoop
@@ -148,7 +147,7 @@ setupState logFile config requestChan eventChan = do
                 interactiveGatherCredentials config (Just e) >>=
                     loginLoop
 
-  (token, myUser) <- loginLoop (uStr, pStr)
+  (token, myUser, cd) <- loginLoop (hostname, uStr, pStr)
 
   initialLoad <- mmGetInitialLoad cd token
   when (Seq.null $ initialLoadTeams initialLoad) $ do

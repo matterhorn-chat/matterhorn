@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiWayIf #-}
 module Login
   ( interactiveGatherCredentials
   ) where
@@ -17,10 +18,11 @@ import Config
 import Markdown
 import Types (AuthenticationException(..))
 
-data Name = Username | Password deriving (Ord, Eq, Show)
+data Name = Hostname | Username | Password deriving (Ord, Eq, Show)
 
 data State =
-    State { usernameEdit :: Editor T.Text Name
+    State { hostnameEdit :: Editor T.Text Name
+          , usernameEdit :: Editor T.Text Name
           , passwordEdit :: Editor T.Text Name
           , focus    :: Name
           , previousError :: Maybe AuthenticationException
@@ -31,24 +33,27 @@ toPassword s = txt $ T.replicate (T.length $ T.concat s) "*"
 
 interactiveGatherCredentials :: Config
                              -> Maybe AuthenticationException
-                             -> IO (T.Text, T.Text)
+                             -> IO (T.Text, T.Text, T.Text)
 interactiveGatherCredentials config authError = do
-    let state = State { usernameEdit = editor Username (txt . T.concat) (Just 1) uStr
+    let state = State { hostnameEdit = editor Hostname (txt . T.concat) (Just 1) hStr
+                      , usernameEdit = editor Username (txt . T.concat) (Just 1) uStr
                       , passwordEdit = editor Password toPassword     (Just 1) pStr
                       , focus = initialFocus
                       , previousError = authError
                       }
-        uStr = case configUser config of
-            Nothing -> ""
-            Just s  -> s
+        hStr = maybe "" id $ configHost config
+        uStr = maybe "" id $ configUser config
         pStr = case configPass config of
             Just (PasswordString s) -> s
             _                       -> ""
-        initialFocus = if T.null uStr then Username else Password
+        initialFocus = if | T.null hStr -> Hostname
+                          | T.null uStr -> Username
+                          | T.null pStr -> Password
     finalSt <- defaultMain app state
-    let finalU = T.concat $ getEditContents $ usernameEdit finalSt
+    let finalH = T.concat $ getEditContents $ hostnameEdit finalSt
+        finalU = T.concat $ getEditContents $ usernameEdit finalSt
         finalP = T.concat $ getEditContents $ passwordEdit finalSt
-    return (finalU, finalP)
+    return (finalH, finalU, finalP)
 
 app :: App State e Name
 app = App
@@ -95,6 +100,8 @@ credentialsForm st =
     border $
     vBox [ renderText "Please enter your MatterMost credentials to log in."
          , txt " "
+         , txt "Hostname:" <+> renderEditor (focus st == Hostname) (hostnameEdit st)
+         , txt " "
          , txt "Username:" <+> renderEditor (focus st == Username) (usernameEdit st)
          , txt " "
          , txt "Password:" <+> renderEditor (focus st == Password) (passwordEdit st)
@@ -105,9 +112,9 @@ credentialsForm st =
 onEvent :: State -> BrickEvent Name e -> EventM Name (Next State)
 onEvent _  (VtyEvent (EvKey KEsc [])) = liftIO exitSuccess
 onEvent st (VtyEvent (EvKey (KChar '\t') [])) =
-    continue $ st { focus = if focus st == Username
-                            then Password
-                            else Username
+    continue $ st { focus = if | focus st == Hostname -> Username
+                               | focus st == Username -> Password
+                               | focus st == Password -> Hostname
                   }
 onEvent st (VtyEvent (EvKey KEnter [])) =
     -- check for valid (non-empty) contents
@@ -118,6 +125,9 @@ onEvent st (VtyEvent (EvKey KEnter [])) =
         False -> halt st
 onEvent st (VtyEvent e) =
     case focus st of
+        Hostname -> do
+            e' <- handleEditorEvent e (hostnameEdit st)
+            continue $ st { hostnameEdit = e' }
         Username -> do
             e' <- handleEditorEvent e (usernameEdit st)
             continue $ st { usernameEdit = e' }
