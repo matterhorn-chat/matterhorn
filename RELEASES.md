@@ -33,20 +33,20 @@ the platforms on which binary distributions will be built.
 
 3. Commit the changelog changes and `matterhorn.cabal` version change.
 
-5. Check for a passing Travis CI build.
+4. Check for a passing Travis CI build.
 
-6. If uploading to Hackage:
+5. If uploading to Hackage:
 
    * Generate a `cabal sdist`
    * Unpack the `sdist` archive
    * Perform a complete build on the unpacked archive
    * If any issues arise, repair and go to (2)
 
-7. Generate platform binary distributions using `mkrelease.sh` on the
+6. Generate platform binary distributions using `mkrelease.sh` on the
    relevant platforms.
 
-8. Make binary release available where appropriate.
+7. Make binary release available where appropriate.
 
-9. Tag the release commit using the package version as the tag string.
+8. Tag the release commit using the package version as the tag string.
 
-10. `git push --tags`
+9. `git push --tags`
