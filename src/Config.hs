@@ -5,6 +5,7 @@ module Config
   , PasswordSource(..)
   , findConfig
   , getCredentials
+  , defaultConfig
   ) where
 
 import           Control.Applicative
@@ -43,10 +44,28 @@ fromIni = do
                   pure Nothing
     return Config { .. }
 
+defaultConfig :: Config
+defaultConfig =
+    Config { configUser               = Nothing
+           , configHost               = Nothing
+           , configTeam               = Nothing
+           , configPort               = defaultPort
+           , configPass               = Nothing
+           , configTimeFormat         = Nothing
+           , configDateFormat         = Nothing
+           , configTheme              = Nothing
+           , configSmartBacktick      = True
+           , configURLOpenCommand     = Nothing
+           , configActivityBell       = False
+           , configShowMessagePreview = False
+           }
+
 findConfig :: Maybe FilePath -> IO (Either String Config)
 findConfig Nothing = do
-    let err = "Configuration file " <> show configFileName <> " not found"
-    maybe (return $ Left err) getConfig =<< locateConfig configFileName
+    cfg <- locateConfig configFileName
+    case cfg of
+        Nothing -> return $ Right defaultConfig
+        Just path -> getConfig path
 findConfig (Just path) = getConfig path
 
 getConfig :: FilePath -> IO (Either String Config)
