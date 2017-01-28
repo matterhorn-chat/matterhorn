@@ -31,14 +31,17 @@ fromIni = do
     configUser           <- fieldMb "user"
     configHost           <- fieldMb "host"
     configTeam           <- fieldMb "team"
-    configPort           <- fieldDefOf "port" number defaultPort
+    configPort           <- fieldDefOf "port" number (configPort defaultConfig)
     configTimeFormat     <- fieldMb "timeFormat"
     configDateFormat     <- fieldMb "dateFormat"
     configTheme          <- fieldMb "theme"
     configURLOpenCommand <- fieldMb "urlOpenCommand"
-    configSmartBacktick      <- fieldFlagDef "smartbacktick" True
-    configShowMessagePreview <- fieldFlagDef "showMessagePreview" False
-    configActivityBell       <- fieldFlagDef "activityBell" False
+    configSmartBacktick  <- fieldFlagDef "smartbacktick"
+      (configSmartBacktick defaultConfig)
+    configShowMessagePreview <- fieldFlagDef "showMessagePreview"
+      (configShowMessagePreview defaultConfig)
+    configActivityBell <- fieldFlagDef "activityBell"
+      (configActivityBell defaultConfig)
     configPass <- (Just . PasswordCommand <$> field "passcmd") <|>
                   (Just . PasswordString  <$> field "pass") <|>
                   pure Nothing
