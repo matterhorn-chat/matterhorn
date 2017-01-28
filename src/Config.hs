@@ -10,7 +10,6 @@ module Config
 import           Control.Applicative
 import           Control.Monad.Trans.Except
 import           Data.Ini.Config
-import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import           Data.Monoid ((<>))
@@ -20,26 +19,10 @@ import           Prelude
 
 import           IOUtil
 import           FilePaths
+import           Types
 
-data PasswordSource =
-    PasswordString Text
-    | PasswordCommand Text
-    deriving (Eq, Read, Show)
-
-data Config = Config
-  { configUser           :: Maybe Text
-  , configHost           :: Maybe Text
-  , configTeam           :: Maybe Text
-  , configPort           :: Int
-  , configPass           :: Maybe PasswordSource
-  , configTimeFormat     :: Maybe Text
-  , configDateFormat     :: Maybe Text
-  , configTheme          :: Maybe Text
-  , configSmartBacktick  :: Bool
-  , configURLOpenCommand :: Maybe Text
-  , configActivityBell   :: Bool
-  , configShowMessagePreview :: Bool
-  } deriving (Eq, Show)
+defaultPort :: Int
+defaultPort = 443
 
 fromIni :: IniParser Config
 fromIni = do
@@ -47,7 +30,7 @@ fromIni = do
     configUser           <- fieldMb "user"
     configHost           <- fieldMb "host"
     configTeam           <- fieldMb "team"
-    configPort           <- fieldOf "port" number
+    configPort           <- fieldDefOf "port" number defaultPort
     configTimeFormat     <- fieldMb "timeFormat"
     configDateFormat     <- fieldMb "dateFormat"
     configTheme          <- fieldMb "theme"
@@ -88,13 +71,16 @@ getConfig fp = runExceptT $ do
 -- | Returns the hostname, username, and password from the config. Only
 -- returns Just if all three have been provided. The idea is that if
 -- this returns Nothing, we're missing at least some of these values.
-getCredentials :: Config -> Maybe (Text, Text, Text)
-getCredentials config =
-    case (,,) <$> configHost config <*> configUser config <*> configPass config of
-        Nothing ->
-            Nothing
-        Just (h, u, PasswordString p) ->
-            Just (h, u, p)
-        Just (_, _, PasswordCommand _) ->
+getCredentials :: Config -> Maybe ConnectionInfo
+getCredentials config = do
+    pass <- configPass config
+    passStr <- case pass of
+        PasswordString p -> return p
+        PasswordCommand _ ->
             error $ "BUG: unexpected credentials state: " <>
                     show (configPass config)
+
+    ConnectionInfo <$> configHost config
+                   <*> (pure $ configPort config)
+                   <*> configUser config
+                   <*> (pure passStr)

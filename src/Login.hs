@@ -8,6 +8,8 @@ import Brick.Widgets.Edit
 import Brick.Widgets.Center
 import Brick.Widgets.Border
 import Control.Monad.IO.Class (liftIO)
+import Data.Maybe (isNothing)
+import Text.Read (readMaybe)
 import qualified Data.Text as T
 import Graphics.Vty hiding (Config)
 import System.Exit (exitSuccess)
@@ -16,12 +18,13 @@ import Network.Mattermost.Exceptions (LoginFailureException(..))
 
 import Config
 import Markdown
-import Types (AuthenticationException(..))
+import Types (ConnectionInfo(..), AuthenticationException(..))
 
-data Name = Hostname | Username | Password deriving (Ord, Eq, Show)
+data Name = Hostname | Port | Username | Password deriving (Ord, Eq, Show)
 
 data State =
     State { hostnameEdit :: Editor T.Text Name
+          , portEdit     :: Editor T.Text Name
           , usernameEdit :: Editor T.Text Name
           , passwordEdit :: Editor T.Text Name
           , focus    :: Name
@@ -33,9 +36,10 @@ toPassword s = txt $ T.replicate (T.length $ T.concat s) "*"
 
 interactiveGatherCredentials :: Config
                              -> Maybe AuthenticationException
-                             -> IO (T.Text, T.Text, T.Text)
+                             -> IO ConnectionInfo
 interactiveGatherCredentials config authError = do
     let state = State { hostnameEdit = editor Hostname (txt . T.concat) (Just 1) hStr
+                      , portEdit = editor Port (txt . T.concat) (Just 1) (T.pack $ show $ configPort config)
                       , usernameEdit = editor Username (txt . T.concat) (Just 1) uStr
                       , passwordEdit = editor Password toPassword     (Just 1) pStr
                       , focus = initialFocus
@@ -49,11 +53,13 @@ interactiveGatherCredentials config authError = do
         initialFocus = if | T.null hStr -> Hostname
                           | T.null uStr -> Username
                           | T.null pStr -> Password
+                          | otherwise   -> Hostname
     finalSt <- defaultMain app state
     let finalH = T.concat $ getEditContents $ hostnameEdit finalSt
+        finalPort = read $ T.unpack $ T.concat $ getEditContents $ portEdit finalSt
         finalU = T.concat $ getEditContents $ usernameEdit finalSt
-        finalP = T.concat $ getEditContents $ passwordEdit finalSt
-    return (finalH, finalU, finalP)
+        finalPass = T.concat $ getEditContents $ passwordEdit finalSt
+    return $ ConnectionInfo finalH finalPort finalU finalPass
 
 app :: App State e Name
 app = App
@@ -102,6 +108,8 @@ credentialsForm st =
          , txt " "
          , txt "Hostname:" <+> renderEditor (focus st == Hostname) (hostnameEdit st)
          , txt " "
+         , txt "Port:    " <+> renderEditor (focus st == Port) (portEdit st)
+         , txt " "
          , txt "Username:" <+> renderEditor (focus st == Username) (usernameEdit st)
          , txt " "
          , txt "Password:" <+> renderEditor (focus st == Password) (passwordEdit st)
@@ -112,15 +120,19 @@ credentialsForm st =
 onEvent :: State -> BrickEvent Name e -> EventM Name (Next State)
 onEvent _  (VtyEvent (EvKey KEsc [])) = liftIO exitSuccess
 onEvent st (VtyEvent (EvKey (KChar '\t') [])) =
-    continue $ st { focus = if | focus st == Hostname -> Username
+    continue $ st { focus = if | focus st == Hostname -> Port
+                               | focus st == Port     -> Username
                                | focus st == Username -> Password
                                | focus st == Password -> Hostname
                   }
 onEvent st (VtyEvent (EvKey KEnter [])) =
     -- check for valid (non-empty) contents
-    let u = T.concat $ getEditContents $ usernameEdit st
+    let h = T.concat $ getEditContents $ hostnameEdit st
+        u = T.concat $ getEditContents $ usernameEdit st
         p = T.concat $ getEditContents $ passwordEdit st
-    in case T.null u || T.null p of
+        port :: Maybe Int
+        port = readMaybe (T.unpack $ T.concat $ getEditContents $ portEdit st)
+    in case T.null h || T.null u || T.null p || isNothing port of
         True -> continue st
         False -> halt st
 onEvent st (VtyEvent e) =
@@ -128,6 +140,9 @@ onEvent st (VtyEvent e) =
         Hostname -> do
             e' <- handleEditorEvent e (hostnameEdit st)
             continue $ st { hostnameEdit = e' }
+        Port -> do
+            e' <- handleEditorEvent e (portEdit st)
+            continue $ st { portEdit = e' }
         Username -> do
             e' <- handleEditorEvent e (usernameEdit st)
             continue $ st { usernameEdit = e' }

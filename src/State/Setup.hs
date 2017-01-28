@@ -117,37 +117,50 @@ newState rs i u m tz hist = ChatState
 setupState :: Maybe Handle -> Config -> RequestChan -> BChan MHEvent -> IO ChatState
 setupState logFile config requestChan eventChan = do
   -- If we don't have enough credentials, ask for them.
-  (hostname, uStr, pStr) <- case getCredentials config of
+  connInfo <- case getCredentials config of
       Nothing -> interactiveGatherCredentials config Nothing
-      Just (h, u, p) -> return (h, u, p)
+      Just connInfo -> return connInfo
 
   let setLogger = case logFile of
         Nothing -> id
         Just f  -> \ cd -> cd `withLogger` mmLoggerDebug f
 
-  let loginLoop (hStr, u, p) = do
+  let loginLoop cInfo = do
         cd <- setLogger `fmap`
-                initConnectionData hStr (fromIntegral (configPort config))
+                initConnectionData (ciHostname cInfo)
+                                   (fromIntegral (ciPort cInfo))
 
         putStrLn "Authenticating..."
 
-        let login = Login { username = u, password = p }
+        let login = Login { username = ciUsername cInfo
+                          , password = ciPassword cInfo
+                          }
         result <- (Right <$> mmLogin cd login)
                     `catch` (\e -> return $ Left $ ResolveError e)
                     `catch` (\e -> return $ Left $ ConnectError e)
                     `catch` (\e -> return $ Left $ OtherAuthError e)
 
+        -- Update the config with the entered settings so we can let the
+        -- user adjust if something went wrong rather than enter them
+        -- all again.
+        let modifiedConfig =
+                config { configUser = Just $ ciUsername cInfo
+                       , configPass = Just $ PasswordString $ ciPassword cInfo
+                       , configPort = ciPort cInfo
+                       , configHost = Just $ ciHostname cInfo
+                       }
+
         case result of
             Right (Right (tok, user)) ->
                 return (tok, user, cd)
             Right (Left e) ->
-                interactiveGatherCredentials config (Just $ LoginError e) >>=
+                interactiveGatherCredentials modifiedConfig (Just $ LoginError e) >>=
                     loginLoop
             Left e ->
-                interactiveGatherCredentials config (Just e) >>=
+                interactiveGatherCredentials modifiedConfig (Just e) >>=
                     loginLoop
 
-  (token, myUser, cd) <- loginLoop (hostname, uStr, pStr)
+  (token, myUser, cd) <- loginLoop connInfo
 
   initialLoad <- mmGetInitialLoad cd token
   when (Seq.null $ initialLoadTeams initialLoad) $ do

@@ -37,9 +37,28 @@ import qualified Data.Text as T
 import           Prelude
 
 import           Zipper (Zipper, focusL)
-import           Config
 
 import           InputHistory
+
+data PasswordSource =
+    PasswordString T.Text
+    | PasswordCommand T.Text
+    deriving (Eq, Read, Show)
+
+data Config = Config
+  { configUser           :: Maybe T.Text
+  , configHost           :: Maybe T.Text
+  , configTeam           :: Maybe T.Text
+  , configPort           :: Int
+  , configPass           :: Maybe PasswordSource
+  , configTimeFormat     :: Maybe T.Text
+  , configDateFormat     :: Maybe T.Text
+  , configTheme          :: Maybe T.Text
+  , configSmartBacktick  :: Bool
+  , configURLOpenCommand :: Maybe T.Text
+  , configActivityBell   :: Bool
+  , configShowMessagePreview :: Bool
+  } deriving (Eq, Show)
 
 -- * 'MMNames' structures
 
@@ -86,6 +105,13 @@ data AuthenticationException =
     | LoginError LoginFailureException
     | OtherAuthError SomeException
     deriving (Show)
+
+data ConnectionInfo =
+    ConnectionInfo { ciHostname :: T.Text
+                   , ciPort     :: Int
+                   , ciUsername :: T.Text
+                   , ciPassword :: T.Text
+                   }
 
 -- | We want to continue referring to posts by their IDs, but we don't want to
 -- have to synthesize new valid IDs for messages from the client itself. To
