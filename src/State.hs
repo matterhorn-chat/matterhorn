@@ -472,6 +472,7 @@ getNewMessageCutoff cId st = do
 mmServerCommandWhitelist :: [T.Text]
 mmServerCommandWhitelist =
     [ "me"
+    , "shrug"
     ]
 
 execMMCommand :: T.Text -> ChatState -> EventM Name ChatState
