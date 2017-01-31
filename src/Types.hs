@@ -246,7 +246,9 @@ toClientPost p parentId = ClientPost
   { _cpText          = (getBlocks $ unEmote (postClientPostType p) $ postMessage p)
                        <> getAttachmentText p
   , _cpUser          = postUserId p
-  , _cpUserOverride  = p^.postPropsL.postPropsOverrideUsernameL
+  , _cpUserOverride  = case p^.postPropsL.postPropsOverrideIconUrlL of
+      Just _ -> Nothing
+      _      -> p^.postPropsL.postPropsOverrideUsernameL
   , _cpDate          = postCreateAt p
   , _cpType          = postClientPostType p
   , _cpPending       = False
