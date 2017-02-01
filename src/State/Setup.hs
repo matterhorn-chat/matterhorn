@@ -195,6 +195,14 @@ setupState logFile config requestChan eventChan = do
              }
   initializeState cr myTeam myUser
 
+loadAllProfiles :: ConnectionData -> Token -> IO (HM.HashMap UserId UserProfile)
+loadAllProfiles cd token = go HM.empty 0
+  where go users n = do
+          newUsers <- mmGetUsers cd token (n * 50) 50
+          if HM.null newUsers
+            then return users
+            else go (newUsers <> users) (n+1)
+
 initializeState :: ChatResources -> Team -> User -> IO ChatState
 initializeState cr myTeam myUser = do
   let ChatResources token cd requestChan _ _ _ _ = cr
@@ -226,7 +234,7 @@ initializeState cr myTeam myUser = do
 
       return (getId c, cChannel)
 
-  users <- mmGetProfiles cd token myTeamId
+  users <- loadAllProfiles cd token -- mmGetProfiles cd token myTeamId
   tz    <- getCurrentTimeZone
   hist  <- do
       result <- readHistory
