@@ -145,7 +145,7 @@ tabComplete dir st = do
                                   st^.csNames.cnChans ++
                                   map ("@" <>) (st^.csNames.cnUsers) ++
                                   map ("#" <>) (st^.csNames.cnChans) ++
-                                  map ("/" <>) (map commandName commandList))
+                                  map ("/" <>) (mmServerCommandWhitelist <> map commandName commandList))
 
       line        = Z.currentLine $ st^.cmdLine.editContentsL
       curComp     = st^.csCurrentCompletion
