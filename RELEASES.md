@@ -45,8 +45,10 @@ the platforms on which binary distributions will be built.
 6. Generate platform binary distributions using `mkrelease.sh` on the
    relevant platforms.
 
-7. Make binary release available where appropriate.
+7. Tag the release commit using the package version as the tag string.
 
-8. Tag the release commit using the package version as the tag string.
+8. `git push --tags`
 
-9. `git push --tags`
+9. Make binary release available on GitHub by editing the pushed tag and
+   uploading the release archives.
+
