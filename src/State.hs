@@ -486,7 +486,6 @@ execMMCommand cmd st =
   mc = MinCommand
         { minComChannelId = st^.csCurrentChannelId
         , minComCommand   = "/" <> cmd
-        , minComSuggest   = False
         }
   runCmd = do
     void $ mmExecute
