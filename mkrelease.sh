@@ -26,6 +26,7 @@ function prepare_dist {
     cp $HERE/dist-newstyle/build/matterhorn-$VERSION/build/matterhorn/matterhorn $dest
     cp $HERE/sample-config.ini $dest
     cp $HERE/README.md $dest
+    cp $HERE/CHANGELOG.md $dest
     echo $LONG_HEAD > $dest/COMMIT
 }
 
