@@ -18,7 +18,7 @@ ARCH=$(get_arch)
 PLATFORM=$(get_platform)
 LONG_HEAD=$(git log | head -1 | awk '{ print $2 }')
 SHORT_HEAD=${LONG_HEAD:0:8}
-DIRNAME=$BASENAME-$PLATFORM-$ARCH-$SHORT_HEAD
+DIRNAME=$BASENAME-$VERSION-$PLATFORM-$ARCH
 FILENAME=$DIRNAME.tar.gz
 
 function prepare_dist {
