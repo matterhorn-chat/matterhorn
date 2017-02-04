@@ -162,6 +162,7 @@ data ClientPost = ClientPost
   , _cpPostId        :: PostId
   , _cpChannelId     :: ChannelId
   , _cpReactions     :: Map.Map T.Text Int
+  , _cpOriginalPost  :: Post
   } deriving (Show)
 
 -- | An attachment has a very long URL associated, as well as
@@ -258,6 +259,7 @@ toClientPost p parentId = ClientPost
   , _cpPostId        = p^.postIdL
   , _cpChannelId     = p^.postChannelIdL
   , _cpReactions     = Map.empty
+  , _cpOriginalPost  = p
   }
 
 -- | Right now, instead of treating 'attachment' properties specially, we're
@@ -291,6 +293,7 @@ data Message = Message
   , _mInReplyToMsg  :: ReplyState
   , _mPostId        :: Maybe PostId
   , _mReactions     :: Map.Map T.Text Int
+  , _mOriginalPost  :: Maybe Post
   } deriving (Show)
 
 -- | A 'Message' is the representation we use for storage and
@@ -322,6 +325,7 @@ clientMessageToMessage cm = Message
   , _mInReplyToMsg  = NotAReply
   , _mPostId        = Nothing
   , _mReactions     = Map.empty
+  , _mOriginalPost  = Nothing
   }
 
 -- ** 'Message' Lenses
@@ -657,6 +661,7 @@ clientPostToMessage st cp = Message
       Just pId -> getMessageForPostId st pId
   , _mPostId        = Just $ cp^.cpPostId
   , _mReactions     = _cpReactions cp
+  , _mOriginalPost  = Just $ cp^.cpOriginalPost
   }
 
 mkAttachmentAbsolute :: ChatState -> Attachment -> Attachment

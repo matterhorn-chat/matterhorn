@@ -414,9 +414,12 @@ insertTransitions fmt tz cutoff ms = fst $ F.foldl' nextMsg initState ms
 
         dateMsg d = Message (getBlocks (T.pack $ formatTime defaultTimeLocale (T.unpack fmt)
                                                  (utcToLocalTime tz d)))
-                            Nothing d (C DateTransition) False False Seq.empty NotAReply Nothing mempty
+                            Nothing d (C DateTransition) False False
+                            Seq.empty NotAReply Nothing mempty Nothing
         newMessagesMsg d = Message (getBlocks (T.pack "New Messages"))
-                                   Nothing d (C NewMessagesTransition) False False Seq.empty NotAReply Nothing mempty
+                                   Nothing d (C NewMessagesTransition)
+                                   False False Seq.empty NotAReply
+                                   Nothing mempty Nothing
 
         nextMsg :: (Seq.Seq Message, Maybe Message) -> Message -> (Seq.Seq Message, Maybe Message)
         nextMsg (rest, Nothing) msg = (rest Seq.|> msg, Just msg)
