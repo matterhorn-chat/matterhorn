@@ -7,17 +7,20 @@ import Lens.Micro.Platform
 import Types
 import State
 
+messagesPerPageOperation :: Int
+messagesPerPageOperation = 10
+
 onEventMessageSelect :: ChatState -> Vty.Event -> EventM Name (Next ChatState)
 onEventMessageSelect st (Vty.EvKey Vty.KEsc []) =
     continue $ st & csMode .~ Main
 onEventMessageSelect st (Vty.EvKey Vty.KUp _) =
     messageSelectUp st >>= continue
 onEventMessageSelect st (Vty.EvKey Vty.KPageUp _) =
-    messageSelectUpBy pageAmount st >>= continue
+    messageSelectUpBy messagesPerPageOperation st >>= continue
 onEventMessageSelect st (Vty.EvKey Vty.KDown _) =
     messageSelectDown st >>= continue
 onEventMessageSelect st (Vty.EvKey Vty.KPageDown _) =
-    messageSelectDownBy pageAmount st >>= continue
+    messageSelectDownBy messagesPerPageOperation st >>= continue
 onEventMessageSelect st (Vty.EvKey (Vty.KChar 'o') []) =
     openSelectedMessageURLs st >>= continue
 onEventMessageSelect st (Vty.EvKey (Vty.KChar 'r') []) =
