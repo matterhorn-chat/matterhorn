@@ -116,6 +116,18 @@ beginMessageSelect st = do
             return $ st & csMode .~ MessageSelect
                         & csMessageSelect .~ MessageSelectState recentPost
 
+getSelectedMessage :: ChatState -> Maybe Message
+getSelectedMessage st
+    | st^.csMode /= MessageSelect = Nothing
+    | otherwise = do
+        selPostId <- selectMessagePostId $ st^.csMessageSelect
+
+        let cid = st^.csCurrentChannelId
+            chanMsgs = st ^. msgMap . ix cid . ccContents . cdMessages
+
+        idx <- Seq.findIndexR (\m -> m^.mPostId == Just selPostId) chanMsgs
+        Seq.lookup idx chanMsgs
+
 messageSelectUp :: ChatState -> EventM Name ChatState
 messageSelectUp st
     | st^.csMode /= MessageSelect = return st
@@ -747,17 +759,43 @@ msgURLs _ = mempty
 
 openSelectedURL :: ChatState -> EventM Name ChatState
 openSelectedURL st | st^.csMode == UrlSelect =
-    case configURLOpenCommand $ st^.csResources.crConfiguration of
-        Nothing -> do
-            msg <- newClientMessage Informative "Config option 'urlOpenCommand' missing; cannot open URL."
-            addClientMessage msg $ st & csMode .~ Main
-        Just urlOpenCommand -> do
-            case listSelectedElement $ st^.csUrlList of
-                Nothing -> return ()
-                Just (_, link) ->
-                    liftIO $ void $ system $ (T.unpack urlOpenCommand) <> " " <> show (link^.linkURL)
-            return $ st & csMode .~ Main
+    case listSelectedElement $ st^.csUrlList of
+        Nothing -> return st
+        Just (_, link) -> do
+            opened <- openURL st link
+            case opened of
+                True -> return st
+                False -> do
+                    msg <- newClientMessage Informative
+                      "Config option 'urlOpenCommand' missing; cannot open URL."
+                    addClientMessage msg $ st & csMode .~ Main
 openSelectedURL st = return st
+
+openURL :: ChatState -> LinkChoice -> EventM Name Bool
+openURL st link = do
+    case configURLOpenCommand $ st^.csResources.crConfiguration of
+        Nothing ->
+            return False
+        Just urlOpenCommand -> do
+            liftIO $ void $ system $ (T.unpack urlOpenCommand) <> " " <> show (link^.linkURL)
+            return True
+
+openSelectedMessageURLs :: ChatState -> EventM Name ChatState
+openSelectedMessageURLs st
+    | st^.csMode /= MessageSelect = return st
+    | otherwise = do
+        let Just curMsg = getSelectedMessage st
+            urls = msgURLs curMsg
+
+        openedAll <- and <$> mapM (openURL st) urls
+
+        let finalSt = st & csMode .~ Main
+        case openedAll of
+            True -> return finalSt
+            False -> do
+                msg <- newClientMessage Informative
+                  "Config option 'urlOpenCommand' missing; cannot open URL."
+                addClientMessage msg finalSt
 
 shouldSkipMessage :: T.Text -> Bool
 shouldSkipMessage "" = True

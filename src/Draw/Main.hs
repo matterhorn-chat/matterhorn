@@ -471,11 +471,7 @@ messageSelectBottomBar st =
                   , (isMine,     "d", "delete")
                   , (hasURLs,    "o", "open URL(s)")
                   ]
-        Just selPostId = selectMessagePostId $ st^.csMessageSelect
-        cid = st^.csCurrentChannelId
-        chanMsgs = st ^. msgMap . ix cid . ccContents . cdMessages
-        Just idx = Seq.findIndexR (\m -> m^.mPostId == Just selPostId) chanMsgs
-        Just postMsg = Seq.lookup idx chanMsgs
+        Just postMsg = getSelectedMessage st
 
     in hBox [ borderElem bsHorizontal
             , txt "["
