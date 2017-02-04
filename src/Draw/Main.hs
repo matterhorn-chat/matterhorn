@@ -463,9 +463,7 @@ messageSelectBottomBar st =
                                 then Just $ k <> ":" <> desc
                                 else Nothing
         isMine msg = (Just $ st^.csMe.userUsernameL) == msg^.mUserName
-        options = [ (const True,   "Esc",     "cancel")
-                  , (const True,   "Up/Down", "move")
-                  , (not . isMine, "r",       "reply")
+        options = [ (not . isMine, "r",       "reply")
                   , (isMine,       "e",       "edit")
                   , (isMine,       "d",       "delete")
                   ]
