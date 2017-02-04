@@ -479,6 +479,7 @@ data ChatResources = ChatResources
 --   operations.
 data ChatEditState = ChatEditState
   { _cedEditor               :: Editor T.Text Name
+  , _cedEditMode             :: EditMode
   , _cedMultiline            :: Bool
   , _cedInputHistory         :: InputHistory
   , _cedInputHistoryPosition :: HM.HashMap ChannelId (Maybe Int)
@@ -487,6 +488,11 @@ data ChatEditState = ChatEditState
   , _cedCurrentAlternative   :: T.Text
   , _cedCompletionAlternatives :: [T.Text]
   }
+
+data EditMode =
+    NewPost
+    | Editing Post
+    | Replying Message Post
 
 -- | We can initialize a new 'ChatEditState' value with just an
 --   edit history, which we save locally.
@@ -500,6 +506,7 @@ emptyEditState hist = ChatEditState
   , _cedCurrentCompletion    = Nothing
   , _cedCompletionAlternatives = []
   , _cedCurrentAlternative   = ""
+  , _cedEditMode             = NewPost
   }
 
 -- | A 'RequestChan' is a queue of operations we have to perform

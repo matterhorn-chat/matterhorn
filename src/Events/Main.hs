@@ -125,6 +125,10 @@ mainKeybindings =
     , KB "Leave multi-line message compose mode"
          (Vty.EvKey Vty.KEsc []) $
            continue . stopMultilineEditing
+
+    , KB "Cancel message reply or update"
+         (Vty.EvKey (Vty.KChar 'c') [Vty.MCtrl]) $
+         continue . cancelReplyOrEdit
     ]
 
 handleInputSubmission :: ChatState -> EventM Name (Next ChatState)
@@ -135,10 +139,11 @@ handleInputSubmission st = do
       st' = st & cmdLine %~ applyEdit Z.clearZipper
                & csInputHistory %~ addHistoryEntry allLines cId
                & csInputHistoryPosition.at cId .~ Nothing
+               & csEditState.cedEditMode .~ NewPost
   case T.uncons line of
     Just ('/',cmd) -> dispatchCommand cmd st'
     _              -> do
-      liftIO (sendMessage st' allLines)
+      liftIO (sendMessage st' (st^.csEditState.cedEditMode) allLines)
       continue st'
 
 tabComplete :: Completion.Direction

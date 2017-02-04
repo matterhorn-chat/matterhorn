@@ -13,6 +13,8 @@ import System.Process (readProcessWithExitCode)
 import Prelude
 
 import FilePaths (Script(..), getAllScripts, locateScriptPath)
+import Lens.Micro.Platform ((^.))
+
 import State
 import State.Common
 import State.Editing
@@ -109,7 +111,7 @@ runScript fp text = do
   (code, stdout, stderr) <- readProcessWithExitCode fp [] (T.unpack text)
   case code of
     ExitSuccess -> return $ \st -> do
-      liftIO $ sendMessage st (T.pack stdout)
+      liftIO $ sendMessage st (st^.csEditState.cedEditMode) (T.pack stdout)
       return st
     ExitFailure _ -> return $ \st -> do
       let msgText = "The script `" <> T.pack fp <> "` exited with a " <>

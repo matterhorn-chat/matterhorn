@@ -198,11 +198,15 @@ previewFromInput uname s =
                            , _mInReplyToMsg  = NotAReply
                            , _mPostId        = Nothing
                            , _mReactions     = mempty
+                           , _mOriginalPost  = Nothing
                            }
 
-renderUserCommandBox :: ChatState -> Widget Name
-renderUserCommandBox st =
-    let prompt = txt "> "
+renderUserCommandBox :: Set T.Text -> ChatState -> Widget Name
+renderUserCommandBox uSet st =
+    let prompt = txt $ case st^.csEditState.cedEditMode of
+            Replying _ _ -> "reply> "
+            Editing _    -> "edit> "
+            NewPost      -> "> "
         inputBox = renderEditor True (st^.cmdLine)
         curContents = getEditContents $ st^.cmdLine
         multilineContent = length curContents > 1
@@ -213,6 +217,14 @@ renderUserCommandBox st =
                    "/" <> (show $ length curContents) <> "]") <+>
             (hBorderWithLabel $ withDefAttr clientEmphAttr $
              (str "In multi-line mode. Press Esc to finish."))
+
+        replyDisplay = case st^.csEditState.cedEditMode of
+            Replying msg _ -> hBox [ str " "
+                                   , borderElem bsCornerTL
+                                   , str "▸"
+                                   , renderSingleMessage st uSet msg
+                                   ]
+            _ -> emptyWidget
 
         commandBox = case st^.csEditState.cedMultiline of
             False ->
@@ -229,7 +241,7 @@ renderUserCommandBox st =
                                    (showCursor MessageInput (Location (0,0)) $ str " ")
                               else inputBox
             True -> vLimit 5 inputBox <=> multilineHints
-    in commandBox
+    in replyDisplay <=> commandBox
 
 maxMessageHeight :: Int
 maxMessageHeight = 200

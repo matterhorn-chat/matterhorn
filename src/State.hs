@@ -164,6 +164,19 @@ messageSelectUpBy amt st
     | amt <= 0 = return st
     | otherwise = messageSelectUp st >>= messageSelectUpBy (amt - 1)
 
+beginReplyCompose :: ChatState -> EventM Name ChatState
+beginReplyCompose st =
+    case getSelectedMessage st of
+        Nothing -> return st
+        Just msg -> do
+            let Just p = msg^.mOriginalPost
+            return $ st & csMode .~ Main
+                        & csEditState.cedEditMode .~ Replying msg p
+
+cancelReplyOrEdit :: ChatState -> ChatState
+cancelReplyOrEdit st =
+    st & csEditState.cedEditMode .~ NewPost
+
 -- * Joining, Leaving, and Inviting
 
 startJoinChannel :: ChatState -> EventM Name ChatState
@@ -801,8 +814,8 @@ shouldSkipMessage :: T.Text -> Bool
 shouldSkipMessage "" = True
 shouldSkipMessage s = T.all (`elem` (" \t"::String)) s
 
-sendMessage :: ChatState -> T.Text -> IO ()
-sendMessage st msg =
+sendMessage :: ChatState -> EditMode -> T.Text -> IO ()
+sendMessage st mode msg =
     case shouldSkipMessage msg of
         True -> return ()
         False -> do
@@ -811,5 +824,11 @@ sendMessage st msg =
                 theTeamId = st^.csMyTeam.teamIdL
             doAsync st $ do
               pendingPost <- mkPendingPost msg myId chanId
+              let modifiedPost = case mode of
+                    Replying _ p ->
+                        pendingPost { pendingPostParentId = Just $ postId p
+                                    , pendingPostRootId = Just $ postId p
+                                    }
+                    _ -> pendingPost
               doAsync st $
-                void $ mmPost (st^.csConn) (st^.csTok) theTeamId pendingPost
+                void $ mmPost (st^.csConn) (st^.csTok) theTeamId modifiedPost
