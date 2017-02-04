@@ -167,6 +167,16 @@ messageSelectUpBy amt st
     | amt <= 0 = return st
     | otherwise = messageSelectUp st >>= messageSelectUpBy (amt - 1)
 
+beginUpdateMessage :: ChatState -> EventM Name ChatState
+beginUpdateMessage st =
+    case getSelectedMessage st of
+        Just msg | isMine st msg -> do
+            let Just p = msg^.mOriginalPost
+            return $ st & csMode .~ Main
+                        & csEditState.cedEditMode .~ Editing p
+                        & cmdLine %~ applyEdit (clearZipper >> (insertMany $ postMessage p))
+        _ -> return st
+
 beginReplyCompose :: ChatState -> EventM Name ChatState
 beginReplyCompose st =
     case getSelectedMessage st of
@@ -826,12 +836,21 @@ sendMessage st mode msg =
                 chanId = st^.csCurrentChannelId
                 theTeamId = st^.csMyTeam.teamIdL
             doAsync st $ do
-              pendingPost <- mkPendingPost msg myId chanId
-              let modifiedPost = case mode of
-                    Replying _ p ->
-                        pendingPost { pendingPostParentId = Just $ postId p
-                                    , pendingPostRootId = Just $ postId p
-                                    }
-                    _ -> pendingPost
-              doAsync st $
-                void $ mmPost (st^.csConn) (st^.csTok) theTeamId modifiedPost
+              case mode of
+                NewPost -> do
+                    pendingPost <- mkPendingPost msg myId chanId
+                    void $ mmPost (st^.csConn) (st^.csTok) theTeamId pendingPost
+                Replying _ p -> do
+                    pendingPost <- mkPendingPost msg myId chanId
+                    let modifiedPost =
+                            pendingPost { pendingPostParentId = Just $ postId p
+                                        , pendingPostRootId = Just $ postId p
+                                        }
+                    void $ mmPost (st^.csConn) (st^.csTok) theTeamId modifiedPost
+                Editing p -> do
+                    now <- getCurrentTime
+                    let modifiedPost = p { postMessage = msg
+                                         , postPendingPostId = Nothing
+                                         , postUpdateAt = now
+                                         }
+                    void $ mmUpdatePost (st^.csConn) (st^.csTok) theTeamId modifiedPost

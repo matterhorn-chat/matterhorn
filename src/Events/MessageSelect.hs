@@ -22,5 +22,7 @@ onEventMessageSelect st (Vty.EvKey (Vty.KChar 'o') []) =
     openSelectedMessageURLs st >>= continue
 onEventMessageSelect st (Vty.EvKey (Vty.KChar 'r') []) =
     beginReplyCompose st >>= continue
+onEventMessageSelect st (Vty.EvKey (Vty.KChar 'e') []) =
+    beginUpdateMessage st >>= continue
 onEventMessageSelect st _ =
     continue st
