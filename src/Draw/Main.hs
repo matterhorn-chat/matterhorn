@@ -222,7 +222,7 @@ renderUserCommandBox uSet st =
             Replying msg _ -> hBox [ str " "
                                    , borderElem bsCornerTL
                                    , str "▸"
-                                   , renderSingleMessage st uSet msg
+                                   , addEllipsis $ renderSingleMessage st uSet msg
                                    ]
             _ -> emptyWidget
 
