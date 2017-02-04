@@ -154,6 +154,9 @@ messageSelectDown st
 
         return $ st & csMessageSelect .~ MessageSelectState (nextPostId <|> oldPostId)
 
+isMine :: ChatState -> Message -> Bool
+isMine st msg = (Just $ st^.csMe.userUsernameL) == msg^.mUserName
+
 messageSelectDownBy :: Int -> ChatState -> EventM Name ChatState
 messageSelectDownBy amt st
     | amt <= 0 = return st

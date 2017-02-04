@@ -480,14 +480,13 @@ messageSelectBottomBar st =
         mkOption (f, k, desc) = if f postMsg
                                 then Just $ k <> ":" <> desc
                                 else Nothing
-        isMine msg = (Just $ st^.csMe.userUsernameL) == msg^.mUserName
         numURLs = Seq.length $ msgURLs postMsg
         s = if numURLs == 1 then "" else "s"
         hasURLs = numURLs > 0
         openUrlsMsg = "open " <> (T.pack $ show numURLs) <> " URL" <> s
         options = [ (const True,    "r", "reply")
-                  , (isMine,        "e", "edit")
-                  , (isMine,        "d", "delete")
+                  , (isMine st,     "e", "edit")
+                  , (isMine st,     "d", "delete")
                   , (const hasURLs, "o", openUrlsMsg)
                   ]
         Just postMsg = getSelectedMessage st
