@@ -814,15 +814,18 @@ openSelectedMessageURLs st
         let Just curMsg = getSelectedMessage st
             urls = msgURLs curMsg
 
-        openedAll <- and <$> mapM (openURL st) urls
-
-        let finalSt = st & csMode .~ Main
-        case openedAll of
-            True -> return finalSt
+        case null urls of
+            True -> return st
             False -> do
-                msg <- newClientMessage Informative
-                  "Config option 'urlOpenCommand' missing; cannot open URL."
-                addClientMessage msg finalSt
+                openedAll <- and <$> mapM (openURL st) urls
+
+                let finalSt = st & csMode .~ Main
+                case openedAll of
+                    True -> return finalSt
+                    False -> do
+                        msg <- newClientMessage Informative
+                          "Config option 'urlOpenCommand' missing; cannot open URL."
+                        addClientMessage msg finalSt
 
 shouldSkipMessage :: T.Text -> Bool
 shouldSkipMessage "" = True
