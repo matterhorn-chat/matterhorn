@@ -281,11 +281,13 @@ renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
     renderMessagesWithSelect (MessageSelectState (Just selPostId)) msgs =
         -- In this case, we want to fill the message list with messages
         -- but use the post ID as a cursor. To do this efficiently we
-        -- only want to render enough messages to fill the screen. But
-        -- to do that we need to render messages from the cursor down
-        -- until we use up half the available height, then from the
-        -- cursor up. If the final result isn't tall enough to fill the
-        -- screen, pad it on the top.
+        -- only want to render enough messages to fill the screen.
+        --
+        -- If the message area is H rows high, this actually renders at
+        -- most 2H rows' worth of messages and then does the appropriate
+        -- cropping. This way we can simplify the math needed to figure
+        -- out how to crop while bounding the number of messages we
+        -- render around the cursor.
         Widget Greedy Greedy $ do
             ctx <- getContext
 
