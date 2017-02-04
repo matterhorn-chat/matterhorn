@@ -30,7 +30,7 @@ mainKeybindings =
          (Vty.EvKey (Vty.KFun 1) []) $
          showHelpScreen MainHelp >=> continue
 
-    , KB "Select a message in the current channel"
+    , KB "Select a message to edit/reply/delete"
          (Vty.EvKey (Vty.KUp) [Vty.MCtrl]) $
          beginMessageSelect >=> continue
 
