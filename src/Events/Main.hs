@@ -34,6 +34,10 @@ mainKeybindings =
          (Vty.EvKey (Vty.KUp) [Vty.MCtrl]) $
          beginMessageSelect >=> continue
 
+    , KB "Reply to the most recent message"
+         (Vty.EvKey (Vty.KChar 'r') [Vty.MCtrl]) $
+         replyToLatestMessage >=> continue
+
     , KB "Toggle message preview"
          (Vty.EvKey (Vty.KChar 'p') [Vty.MMeta]) $
          continue . toggleMessagePreview

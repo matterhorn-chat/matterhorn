@@ -195,6 +195,30 @@ beginUpdateMessage st =
                         & cmdLine %~ applyEdit (clearZipper >> (insertMany $ postMessage p))
         _ -> return st
 
+replyToLatestMessage :: ChatState -> EventM Name ChatState
+replyToLatestMessage st =
+    case getLatestUserMessage st of
+        Nothing -> return st
+        Just msg -> do
+            let Just p = msg^.mOriginalPost
+            return $ st & csMode .~ Main
+                        & csEditState.cedEditMode .~ Replying msg p
+
+-- | Get the latest normal or emote post in the current channel.
+getLatestUserMessage :: ChatState -> Maybe Message
+getLatestUserMessage st =
+    let go msgs = case Seq.viewr msgs of
+            Seq.EmptyR -> Nothing
+            rest Seq.:> msg ->
+                (if msg^.mDeleted || not (msg^.mType `elem` [CP NormalPost, CP Emote])
+                 then Nothing
+                 else (Just msg <* msg^.mOriginalPost)) <|>
+                go rest
+
+        cid = st^.csCurrentChannelId
+        chanMsgs = st ^. msgMap . ix cid . ccContents . cdMessages
+    in go chanMsgs
+
 beginReplyCompose :: ChatState -> EventM Name ChatState
 beginReplyCompose st =
     case getSelectedMessage st of
