@@ -105,8 +105,7 @@ beginMessageSelect st = do
     --
     -- If we can't find one at all, we ignore the mode switch request
     -- and just return.
-    let cid = st^.csCurrentChannelId
-        chanMsgs = st ^. msgMap . ix cid . ccContents . cdMessages
+    let chanMsgs = st ^. csCurrentChannel . ccContents . cdMessages
         recentPost = getPrevPost (Seq.length chanMsgs - 1) chanMsgs
 
     case recentPost of
@@ -122,8 +121,7 @@ getSelectedMessage st
     | otherwise = do
         selPostId <- selectMessagePostId $ st^.csMessageSelect
 
-        let cid = st^.csCurrentChannelId
-            chanMsgs = st ^. msgMap . ix cid . ccContents . cdMessages
+        let chanMsgs = st ^. csCurrentChannel . ccContents . cdMessages
 
         idx <- Seq.findIndexR (\m -> m^.mPostId == Just selPostId) chanMsgs
         Seq.lookup idx chanMsgs
@@ -134,8 +132,7 @@ messageSelectUp st
     | isNothing $ selectMessagePostId $ st^.csMessageSelect = return st
     | otherwise = do
         let oldPostId@(Just selPostId) = selectMessagePostId $ st^.csMessageSelect
-            cid = st^.csCurrentChannelId
-            chanMsgs = st ^. msgMap . ix cid . ccContents . cdMessages
+            chanMsgs = st ^. csCurrentChannel . ccContents . cdMessages
             Just idx = Seq.findIndexR (\m -> m^.mPostId == Just selPostId) chanMsgs
             prevPostId = getPrevPost (idx - 1) chanMsgs
 
@@ -147,8 +144,7 @@ messageSelectDown st
     | isNothing $ selectMessagePostId $ st^.csMessageSelect = return st
     | otherwise = do
         let oldPostId@(Just selPostId) = selectMessagePostId $ st^.csMessageSelect
-            cid = st^.csCurrentChannelId
-            chanMsgs = st ^. msgMap . ix cid . ccContents . cdMessages
+            chanMsgs = st ^. csCurrentChannel . ccContents . cdMessages
             Just idx = Seq.findIndexR (\m -> m^.mPostId == Just selPostId) chanMsgs
             nextPostId = getNextPost (Seq.drop (idx + 1) chanMsgs)
 
@@ -215,8 +211,7 @@ getLatestUserMessage st =
                  else (Just msg <* msg^.mOriginalPost)) <|>
                 go rest
 
-        cid = st^.csCurrentChannelId
-        chanMsgs = st ^. msgMap . ix cid . ccContents . cdMessages
+        chanMsgs = st ^. csCurrentChannel . ccContents . cdMessages
     in go chanMsgs
 
 beginReplyCompose :: ChatState -> EventM Name ChatState
