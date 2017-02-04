@@ -297,7 +297,7 @@ renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
                 Just idx = Seq.findIndexR (\m -> m^.mPostId == Just selPostId) msgs
                 Just curMsg = Seq.lookup idx msgs
 
-            -- Render the message associated with the current index.
+            -- Render the message associated with the current post ID.
             curMsgResult <- withReaderT relaxHeight $ render $
                 forceAttr messageSelectAttr $
                 padRight Max $ renderSingleMessage curMsg
