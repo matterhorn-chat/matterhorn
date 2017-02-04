@@ -293,7 +293,7 @@ renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
 
     -- The first case here should never happen because if we're in
     -- MessageSelect mode, we should only get into that mode when the
-    -- index in the selection state is present.
+    -- selected message in the selection state is present (Just).
     renderMessagesWithSelect (MessageSelectState Nothing) msgs =
         renderLastMessages msgs
     renderMessagesWithSelect (MessageSelectState (Just selPostId)) msgs =
