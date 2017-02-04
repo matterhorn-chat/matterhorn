@@ -2,7 +2,14 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE ParallelListComp #-}
 
-module Markdown (renderMessage, renderText, blockGetURLs, cursorSentinel) where
+module Markdown
+  ( renderMessage
+  , renderText
+  , blockGetURLs
+  , cursorSentinel
+  , addEllipsis
+  )
+where
 
 import           Brick ( (<+>), Widget, textWidth )
 import qualified Brick.Widgets.Border as B
