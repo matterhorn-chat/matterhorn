@@ -234,6 +234,9 @@ renderUserCommandBox st =
 maxMessageHeight :: Int
 maxMessageHeight = 200
 
+renderSingleMessage :: ChatState -> Set T.Text -> Message -> Widget Name
+renderSingleMessage st uSet msg = renderChatMessage uSet (withBrackets . renderTime st) msg
+
 renderCurrentChannelDisplay :: Set Text -> ChatState -> Widget Name
 renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
     where
@@ -269,7 +272,7 @@ renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
             cached (ChannelMessages cId) $
             vBox $ (withDefAttr loadMoreAttr $ hCenter $
                     str "<< Press C-b to load more messages >>") :
-                   (F.toList $ renderSingleMessage <$> channelMessages)
+                   (F.toList $ renderSingleMessage st uSet <$> channelMessages)
         MessageSelect -> renderMessagesWithSelect (st^.csMessageSelect) channelMessages
         _ -> renderLastMessages channelMessages
 
@@ -300,7 +303,7 @@ renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
             -- Render the message associated with the current post ID.
             curMsgResult <- withReaderT relaxHeight $ render $
                 forceAttr messageSelectAttr $
-                padRight Max $ renderSingleMessage curMsg
+                padRight Max $ renderSingleMessage st uSet curMsg
 
             let targetHeight = ctx^.availHeightL
                 upperHeight = targetHeight `div` 2
@@ -320,7 +323,7 @@ renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
                                     True -> return Vty.emptyImage
                                     False -> do
                                         r <- withReaderT relaxHeight $
-                                               render $ padRight Max $ renderSingleMessage msg
+                                               render $ padRight Max $ renderSingleMessage st uSet msg
                                         return $ r^.imageL
                                 goDown ms' maxHeight (num + 1) (Vty.vertJoin img result)
 
@@ -338,7 +341,7 @@ renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
                                     True -> return Vty.emptyImage
                                     False -> do
                                         r <- withReaderT relaxHeight $
-                                               render $ padRight Max $ renderSingleMessage msg
+                                               render $ padRight Max $ renderSingleMessage st uSet msg
                                         return $ r^.imageL
                                 goUp ms' maxHeight $ Vty.vertJoin result img
 
@@ -365,8 +368,6 @@ renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
                           (getNewMessageCutoff cId st)
                           (getMessageListing cId st)
 
-    renderSingleMessage = renderChatMessage uSet (withBrackets . renderTime st)
-
     renderLastMessages :: Seq.Seq Message -> Widget Name
     renderLastMessages msgs =
         Widget Greedy Greedy $ do
@@ -388,7 +389,7 @@ renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
                                     True -> return Vty.emptyImage
                                     False -> do
                                         r <- withReaderT relaxHeight $
-                                               render $ padRight Max $ renderSingleMessage msg
+                                               render $ padRight Max $ renderSingleMessage st uSet msg
                                         return $ r^.imageL
                                 go ms' $ Vty.vertJoin result img
 
@@ -539,8 +540,8 @@ inputPreview uSet st | not $ st^.csShowMessagePreview = emptyWidget
                  in (maybePreviewViewport msgPreview) <=>
                     hBorderWithLabel (withDefAttr clientEmphAttr $ str "[Preview ↑]")
 
-userInputArea :: ChatState -> Widget Name
-userInputArea st =
+userInputArea :: Set T.Text -> ChatState -> Widget Name
+userInputArea uSet st =
     case st^.csMode of
         ChannelSelect -> renderChannelSelect st
         UrlSelect     -> hCenter $ hBox [ txt "Press "
@@ -553,14 +554,14 @@ userInputArea st =
                                         , withDefAttr clientEmphAttr $ txt "Escape"
                                         , txt " to stop scrolling and resume chatting."
                                         ]
-        _             -> renderUserCommandBox st
+        _             -> renderUserCommandBox uSet st
 
 mainInterface :: ChatState -> Widget Name
 mainInterface st =
     (renderChannelList st <+> vBorder <+> mainDisplay)
       <=> bottomBorder
       <=> inputPreview uSet st
-      <=> userInputArea st
+      <=> userInputArea uSet st
     where
     mainDisplay = case st^.csMode of
         UrlSelect -> renderUrlList st
