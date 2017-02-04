@@ -58,14 +58,15 @@ onAppEvent st (AsyncErrEvent e) = do
 onVtyEvent :: ChatState -> Vty.Event -> EventM Name (Next ChatState)
 onVtyEvent st e = do
     case st^.csMode of
-        Main                -> onEventMain st e
-        ShowHelp _          -> onEventShowHelp st e
-        ChannelSelect       -> onEventChannelSelect st e
-        UrlSelect           -> onEventUrlSelect st e
-        LeaveChannelConfirm -> onEventLeaveChannelConfirm st e
-        JoinChannel         -> onEventJoinChannel st e
-        ChannelScroll       -> onEventChannelScroll st e
-        MessageSelect       -> onEventMessageSelect st e
+        Main                       -> onEventMain st e
+        ShowHelp _                 -> onEventShowHelp st e
+        ChannelSelect              -> onEventChannelSelect st e
+        UrlSelect                  -> onEventUrlSelect st e
+        LeaveChannelConfirm        -> onEventLeaveChannelConfirm st e
+        JoinChannel                -> onEventJoinChannel st e
+        ChannelScroll              -> onEventChannelScroll st e
+        MessageSelect              -> onEventMessageSelect st e
+        MessageSelectDeleteConfirm -> onEventMessageSelectDeleteConfirm st e
 
 handleWSEvent :: ChatState -> WebsocketEvent -> EventM Name (Next ChatState)
 handleWSEvent st we =

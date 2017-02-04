@@ -34,7 +34,6 @@ executable matterhorn
                        Draw.ShowHelp
                        Draw.LeaveChannelConfirm
                        Draw.JoinChannel
-                       Draw.MessageSelect
                        Draw.Util
                        InputHistory
                        IOUtil

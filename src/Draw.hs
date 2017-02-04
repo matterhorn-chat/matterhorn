@@ -10,16 +10,16 @@ import Draw.Main
 import Draw.ShowHelp
 import Draw.LeaveChannelConfirm
 import Draw.JoinChannel
-import Draw.MessageSelect
 
 draw :: ChatState -> [Widget Name]
 draw st =
     case st^.csMode of
-        Main                -> drawMain st
-        ChannelScroll       -> drawMain st
-        UrlSelect           -> drawMain st
-        ShowHelp screen     -> drawShowHelp screen st
-        ChannelSelect       -> drawMain st
-        LeaveChannelConfirm -> drawLeaveChannelConfirm st
-        JoinChannel         -> drawJoinChannel st
-        MessageSelect       -> drawMessageSelect st
+        Main                       -> drawMain st
+        ChannelScroll              -> drawMain st
+        UrlSelect                  -> drawMain st
+        ShowHelp screen            -> drawShowHelp screen st
+        ChannelSelect              -> drawMain st
+        LeaveChannelConfirm        -> drawLeaveChannelConfirm st
+        JoinChannel                -> drawJoinChannel st
+        MessageSelect              -> drawMain st
+        MessageSelectDeleteConfirm -> drawMain st

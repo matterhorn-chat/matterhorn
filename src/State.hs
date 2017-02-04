@@ -118,7 +118,7 @@ beginMessageSelect st = do
 
 getSelectedMessage :: ChatState -> Maybe Message
 getSelectedMessage st
-    | st^.csMode /= MessageSelect = Nothing
+    | st^.csMode /= MessageSelect && st^.csMode /= MessageSelectDeleteConfirm = Nothing
     | otherwise = do
         selPostId <- selectMessagePostId $ st^.csMessageSelect
 
@@ -166,6 +166,24 @@ messageSelectUpBy :: Int -> ChatState -> EventM Name ChatState
 messageSelectUpBy amt st
     | amt <= 0 = return st
     | otherwise = messageSelectUp st >>= messageSelectUpBy (amt - 1)
+
+beginConfirmDeleteSelectedMessage :: ChatState -> EventM Name ChatState
+beginConfirmDeleteSelectedMessage st =
+    return $ st & csMode .~ MessageSelectDeleteConfirm
+
+deleteSelectedMessage :: ChatState -> EventM Name ChatState
+deleteSelectedMessage st = do
+    case getSelectedMessage st of
+        Just msg | isMine st msg -> do
+            liftIO $ doAsyncWith st $ do
+                let cId = st^.csCurrentChannelId
+                    Just p = msg^.mOriginalPost
+                mmDeletePost (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId (postId p)
+                return $ \st' ->
+                    return $ st' & csEditState.cedEditMode .~ NewPost
+                                 & csMode .~ Main
+        _ -> return ()
+    return st
 
 beginUpdateMessage :: ChatState -> EventM Name ChatState
 beginUpdateMessage st =

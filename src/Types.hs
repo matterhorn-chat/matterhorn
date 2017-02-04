@@ -530,6 +530,7 @@ data Mode =
     | JoinChannel
     | ChannelScroll
     | MessageSelect
+    | MessageSelectDeleteConfirm
     deriving (Eq)
 
 -- | We're either connected or we're not. yeop

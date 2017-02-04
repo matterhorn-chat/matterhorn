@@ -285,7 +285,10 @@ renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
             vBox $ (withDefAttr loadMoreAttr $ hCenter $
                     str "<< Press C-b to load more messages >>") :
                    (F.toList $ renderSingleMessage st uSet <$> channelMessages)
-        MessageSelect -> renderMessagesWithSelect (st^.csMessageSelect) channelMessages
+        MessageSelect ->
+            renderMessagesWithSelect (st^.csMessageSelect) channelMessages
+        MessageSelectDeleteConfirm ->
+            renderMessagesWithSelect (st^.csMessageSelect) channelMessages
         _ -> renderLastMessages channelMessages
 
     -- The first case here should never happen because if we're in
@@ -303,76 +306,83 @@ renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
         -- cropping. This way we can simplify the math needed to figure
         -- out how to crop while bounding the number of messages we
         -- render around the cursor.
-        Widget Greedy Greedy $ do
-            ctx <- getContext
+        --
+        -- First, we sanity-check the application state because under
+        -- some conditions, the selected message might be gone (e.g.
+        -- deleted).
+        case Seq.findIndexR (\m -> m^.mPostId == Just selPostId) msgs of
+            Nothing -> renderLastMessages msgs
+            Just idx ->
+                case Seq.lookup idx msgs of
+                    Nothing -> renderLastMessages msgs
+                    Just curMsg -> unsafeMessageSelectList msgs idx curMsg
 
-            let relaxHeight c = c & availHeightL .~ (max maxMessageHeight (c^.availHeightL))
-                -- XXX what if this becomes invalid due to a state
-                -- change such as a message deletion?
-                Just idx = Seq.findIndexR (\m -> m^.mPostId == Just selPostId) msgs
-                Just curMsg = Seq.lookup idx msgs
+    unsafeMessageSelectList msgs idx curMsg = Widget Greedy Greedy $ do
+        ctx <- getContext
 
-            -- Render the message associated with the current post ID.
-            curMsgResult <- withReaderT relaxHeight $ render $
-                forceAttr messageSelectAttr $
-                padRight Max $ renderSingleMessage st uSet curMsg
+        let relaxHeight c = c & availHeightL .~ (max maxMessageHeight (c^.availHeightL))
 
-            let targetHeight = ctx^.availHeightL
-                upperHeight = targetHeight `div` 2
-                lowerHeight = targetHeight - upperHeight
+        -- Render the message associated with the current post ID.
+        curMsgResult <- withReaderT relaxHeight $ render $
+            forceAttr messageSelectAttr $
+            padRight Max $ renderSingleMessage st uSet curMsg
 
-                goDown :: Seq.Seq Message -> Int -> Int -> Vty.Image -> RenderM Name (Int, Vty.Image)
-                goDown ms maxHeight num img
-                    | Seq.null ms =
-                        return (num, img)
-                    | Vty.imageHeight img >= maxHeight =
-                        return (num, img)
-                    | otherwise =
-                        case Seq.viewl ms of
-                            Seq.EmptyL -> return (num, img)
-                            msg Seq.:< ms' -> do
-                                result <- case msg^.mDeleted of
-                                    True -> return Vty.emptyImage
-                                    False -> do
-                                        r <- withReaderT relaxHeight $
-                                               render $ padRight Max $ renderSingleMessage st uSet msg
-                                        return $ r^.imageL
-                                goDown ms' maxHeight (num + 1) (Vty.vertJoin img result)
+        let targetHeight = ctx^.availHeightL
+            upperHeight = targetHeight `div` 2
+            lowerHeight = targetHeight - upperHeight
 
-                goUp :: Seq.Seq Message -> Int -> Vty.Image -> RenderM Name Vty.Image
-                goUp ms maxHeight img
-                    | Vty.imageHeight img >= maxHeight =
-                        return $ Vty.cropTop maxHeight img
-                    | Seq.null ms =
-                        return img
-                    | otherwise =
-                        case Seq.viewr ms of
-                            Seq.EmptyR -> return img
-                            ms' Seq.:> msg -> do
-                                result <- case msg^.mDeleted of
-                                    True -> return Vty.emptyImage
-                                    False -> do
-                                        r <- withReaderT relaxHeight $
-                                               render $ padRight Max $ renderSingleMessage st uSet msg
-                                        return $ r^.imageL
-                                goUp ms' maxHeight $ Vty.vertJoin result img
+            goDown :: Seq.Seq Message -> Int -> Int -> Vty.Image -> RenderM Name (Int, Vty.Image)
+            goDown ms maxHeight num img
+                | Seq.null ms =
+                    return (num, img)
+                | Vty.imageHeight img >= maxHeight =
+                    return (num, img)
+                | otherwise =
+                    case Seq.viewl ms of
+                        Seq.EmptyL -> return (num, img)
+                        msg Seq.:< ms' -> do
+                            result <- case msg^.mDeleted of
+                                True -> return Vty.emptyImage
+                                False -> do
+                                    r <- withReaderT relaxHeight $
+                                           render $ padRight Max $ renderSingleMessage st uSet msg
+                                    return $ r^.imageL
+                            goDown ms' maxHeight (num + 1) (Vty.vertJoin img result)
 
-            let (before, after) = Seq.splitAt idx msgs
+            goUp :: Seq.Seq Message -> Int -> Vty.Image -> RenderM Name Vty.Image
+            goUp ms maxHeight img
+                | Vty.imageHeight img >= maxHeight =
+                    return $ Vty.cropTop maxHeight img
+                | Seq.null ms =
+                    return img
+                | otherwise =
+                    case Seq.viewr ms of
+                        Seq.EmptyR -> return img
+                        ms' Seq.:> msg -> do
+                            result <- case msg^.mDeleted of
+                                True -> return Vty.emptyImage
+                                False -> do
+                                    r <- withReaderT relaxHeight $
+                                           render $ padRight Max $ renderSingleMessage st uSet msg
+                                    return $ r^.imageL
+                            goUp ms' maxHeight $ Vty.vertJoin result img
 
-            (_, lowerHalf) <- goDown (Seq.drop 1 after) targetHeight 0 Vty.emptyImage
-            upperHalf <- goUp before targetHeight Vty.emptyImage
+        let (before, after) = Seq.splitAt idx msgs
 
-            let curHeight = Vty.imageHeight $ curMsgResult^.imageL
-                uncropped = upperHalf Vty.<-> curMsgResult^.imageL Vty.<-> lowerHalf
-                img = if Vty.imageHeight lowerHalf < (lowerHeight - curHeight)
-                      then Vty.cropTop targetHeight uncropped
-                      else if Vty.imageHeight upperHalf < upperHeight
-                           then Vty.cropBottom targetHeight uncropped
-                           else Vty.cropTop upperHeight upperHalf Vty.<->
-                                curMsgResult^.imageL Vty.<->
-                                Vty.cropBottom (lowerHeight - curHeight) lowerHalf
+        (_, lowerHalf) <- goDown (Seq.drop 1 after) targetHeight 0 Vty.emptyImage
+        upperHalf <- goUp before targetHeight Vty.emptyImage
 
-            return $ emptyResult & imageL .~ img
+        let curHeight = Vty.imageHeight $ curMsgResult^.imageL
+            uncropped = upperHalf Vty.<-> curMsgResult^.imageL Vty.<-> lowerHalf
+            img = if Vty.imageHeight lowerHalf < (lowerHeight - curHeight)
+                  then Vty.cropTop targetHeight uncropped
+                  else if Vty.imageHeight upperHalf < upperHeight
+                       then Vty.cropBottom targetHeight uncropped
+                       else Vty.cropTop upperHeight upperHalf Vty.<->
+                            curMsgResult^.imageL Vty.<->
+                            Vty.cropBottom (lowerHeight - curHeight) lowerHalf
+
+        return $ emptyResult & imageL .~ img
 
     channelMessages =
         insertTransitions (getDateFormat st)
@@ -568,7 +578,12 @@ userInputArea uSet st =
                                         , withDefAttr clientEmphAttr $ txt "Escape"
                                         , txt " to stop scrolling and resume chatting."
                                         ]
+        MessageSelectDeleteConfirm -> renderDeleteConfirm
         _             -> renderUserCommandBox uSet st
+
+renderDeleteConfirm :: Widget Name
+renderDeleteConfirm =
+    hCenter $ txt "Are you sure you want to delete the selected message? (y/n)"
 
 mainInterface :: ChatState -> Widget Name
 mainInterface st =

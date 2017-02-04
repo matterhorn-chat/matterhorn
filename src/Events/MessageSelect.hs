@@ -24,5 +24,13 @@ onEventMessageSelect st (Vty.EvKey (Vty.KChar 'r') []) =
     beginReplyCompose st >>= continue
 onEventMessageSelect st (Vty.EvKey (Vty.KChar 'e') []) =
     beginUpdateMessage st >>= continue
+onEventMessageSelect st (Vty.EvKey (Vty.KChar 'd') []) =
+    beginConfirmDeleteSelectedMessage st >>= continue
 onEventMessageSelect st _ =
     continue st
+
+onEventMessageSelectDeleteConfirm :: ChatState -> Vty.Event -> EventM Name (Next ChatState)
+onEventMessageSelectDeleteConfirm st (Vty.EvKey (Vty.KChar 'y') []) =
+    deleteSelectedMessage st >>= continue
+onEventMessageSelectDeleteConfirm st _ =
+    continue $ st & csMode .~ Main
