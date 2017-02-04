@@ -142,6 +142,16 @@ messageSelectDown st
 
         return $ st & csMessageSelect .~ MessageSelectState (nextPostId <|> oldPostId)
 
+messageSelectDownBy :: Int -> ChatState -> EventM Name ChatState
+messageSelectDownBy amt st
+    | amt <= 0 = return st
+    | otherwise = messageSelectDown st >>= messageSelectDownBy (amt - 1)
+
+messageSelectUpBy :: Int -> ChatState -> EventM Name ChatState
+messageSelectUpBy amt st
+    | amt <= 0 = return st
+    | otherwise = messageSelectUp st >>= messageSelectUpBy (amt - 1)
+
 -- * Joining, Leaving, and Inviting
 
 startJoinChannel :: ChatState -> EventM Name ChatState

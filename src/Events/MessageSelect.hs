@@ -12,7 +12,11 @@ onEventMessageSelect st (Vty.EvKey Vty.KEsc []) =
     continue $ st & csMode .~ Main
 onEventMessageSelect st (Vty.EvKey Vty.KUp _) =
     messageSelectUp st >>= continue
+onEventMessageSelect st (Vty.EvKey Vty.KPageUp _) =
+    messageSelectUpBy pageAmount st >>= continue
 onEventMessageSelect st (Vty.EvKey Vty.KDown _) =
     messageSelectDown st >>= continue
+onEventMessageSelect st (Vty.EvKey Vty.KPageDown _) =
+    messageSelectDownBy pageAmount st >>= continue
 onEventMessageSelect st _ =
     continue st
