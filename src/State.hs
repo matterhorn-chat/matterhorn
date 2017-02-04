@@ -189,6 +189,7 @@ beginReplyCompose st =
 cancelReplyOrEdit :: ChatState -> ChatState
 cancelReplyOrEdit st =
     st & csEditState.cedEditMode .~ NewPost
+       & cmdLine %~ applyEdit clearZipper
 
 -- * Joining, Leaving, and Inviting
 
