@@ -76,6 +76,72 @@ refreshLoadedChannels st = do
       upd chanState  = chanState
   return (st & msgMap.each.ccInfo.cdCurrentState %~ upd)
 
+-- * Message selection mode
+
+-- | Starting from the current sequence index, look forward for a
+-- Message that corresponds to a user Post (i.e. has a post ID).
+getNextPost :: Seq.Seq Message -> Maybe PostId
+getNextPost msgs =
+    case Seq.viewl msgs of
+        Seq.EmptyL -> Nothing
+        msg Seq.:< rest ->
+            (if msg^.mDeleted then Nothing else msg^.mPostId) <|> getNextPost rest
+
+-- | Starting from the current sequence index, look backwards for a
+-- Message that corresponds to a user Post (i.e. has a post ID).
+getPrevPost :: Int -> Seq.Seq Message -> Maybe PostId
+getPrevPost i msgs =
+    case Seq.viewr (Seq.take (i+1) msgs) of
+        Seq.EmptyR -> Nothing
+        rest Seq.:> msg ->
+            (if msg^.mDeleted then Nothing else msg^.mPostId) <|> getPrevPost (i - 1) rest
+
+beginMessageSelect :: ChatState -> EventM Name ChatState
+beginMessageSelect st = do
+    -- Get the number of messages in the current channel and set the
+    -- currently selected message index to be the most recently received
+    -- message that corresponds to a Post (i.e. exclude informative
+    -- messages).
+    --
+    -- If we can't find one at all, we ignore the mode switch request
+    -- and just return.
+    let cid = st^.csCurrentChannelId
+        chanMsgs = st ^. msgMap . ix cid . ccContents . cdMessages
+        recentPost = getPrevPost (Seq.length chanMsgs - 1) chanMsgs
+
+    case recentPost of
+        Nothing ->
+            return st
+        Just _ ->
+            return $ st & csMode .~ MessageSelect
+                        & csMessageSelect .~ MessageSelectState recentPost
+
+messageSelectUp :: ChatState -> EventM Name ChatState
+messageSelectUp st
+    | st^.csMode /= MessageSelect = return st
+    | isNothing $ selectMessagePostId $ st^.csMessageSelect = return st
+    | otherwise = do
+        let oldPostId@(Just selPostId) = selectMessagePostId $ st^.csMessageSelect
+            cid = st^.csCurrentChannelId
+            chanMsgs = st ^. msgMap . ix cid . ccContents . cdMessages
+            Just idx = Seq.findIndexR (\m -> m^.mPostId == Just selPostId) chanMsgs
+            prevPostId = getPrevPost (idx - 1) chanMsgs
+
+        return $ st & csMessageSelect .~ MessageSelectState (prevPostId <|> oldPostId)
+
+messageSelectDown :: ChatState -> EventM Name ChatState
+messageSelectDown st
+    | st^.csMode /= MessageSelect = return st
+    | isNothing $ selectMessagePostId $ st^.csMessageSelect = return st
+    | otherwise = do
+        let oldPostId@(Just selPostId) = selectMessagePostId $ st^.csMessageSelect
+            cid = st^.csCurrentChannelId
+            chanMsgs = st ^. msgMap . ix cid . ccContents . cdMessages
+            Just idx = Seq.findIndexR (\m -> m^.mPostId == Just selPostId) chanMsgs
+            nextPostId = getNextPost (Seq.drop (idx + 1) chanMsgs)
+
+        return $ st & csMessageSelect .~ MessageSelectState (nextPostId <|> oldPostId)
+
 -- * Joining, Leaving, and Inviting
 
 startJoinChannel :: ChatState -> EventM Name ChatState

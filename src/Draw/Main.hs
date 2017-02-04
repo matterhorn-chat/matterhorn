@@ -21,7 +21,7 @@ import qualified Data.Foldable as F
 import           Data.HashMap.Strict ( HashMap )
 import           Data.List (intersperse)
 import qualified Data.Map.Strict as Map
-import           Data.Maybe ( listToMaybe, maybeToList )
+import           Data.Maybe (listToMaybe, maybeToList, catMaybes)
 import           Data.Monoid ((<>))
 import           Data.Set (Set)
 import qualified Data.Set as Set
@@ -270,7 +270,92 @@ renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
             vBox $ (withDefAttr loadMoreAttr $ hCenter $
                     str "<< Press C-b to load more messages >>") :
                    (F.toList $ renderSingleMessage <$> channelMessages)
+        MessageSelect -> renderMessagesWithSelect (st^.csMessageSelect) channelMessages
         _ -> renderLastMessages channelMessages
+
+    -- The first case here should never happen because if we're in
+    -- MessageSelect mode, we should only get into that mode when the
+    -- index in the selection state is present.
+    renderMessagesWithSelect (MessageSelectState Nothing) msgs =
+        renderLastMessages msgs
+    renderMessagesWithSelect (MessageSelectState (Just selPostId)) msgs =
+        -- In this case, we want to fill the message list with messages
+        -- but use the post ID as a cursor. To do this efficiently we
+        -- only want to render enough messages to fill the screen. But
+        -- to do that we need to render messages from the cursor down
+        -- until we use up half the available height, then from the
+        -- cursor up. If the final result isn't tall enough to fill the
+        -- screen, pad it on the top.
+        Widget Greedy Greedy $ do
+            ctx <- getContext
+
+            let relaxHeight c = c & availHeightL .~ (max maxMessageHeight (c^.availHeightL))
+                -- XXX what if this becomes invalid due to a state
+                -- change such as a message deletion?
+                Just idx = Seq.findIndexR (\m -> m^.mPostId == Just selPostId) msgs
+                Just curMsg = Seq.lookup idx msgs
+
+            -- Render the message associated with the current index.
+            curMsgResult <- withReaderT relaxHeight $ render $
+                forceAttr messageSelectAttr $
+                padRight Max $ renderSingleMessage curMsg
+
+            let targetHeight = ctx^.availHeightL
+                upperHeight = targetHeight `div` 2
+                lowerHeight = targetHeight - upperHeight
+
+                goDown :: Seq.Seq Message -> Int -> Int -> Vty.Image -> RenderM Name (Int, Vty.Image)
+                goDown ms maxHeight num img
+                    | Seq.null ms =
+                        return (num, img)
+                    | Vty.imageHeight img >= maxHeight =
+                        return (num, img)
+                    | otherwise =
+                        case Seq.viewl ms of
+                            Seq.EmptyL -> return (num, img)
+                            msg Seq.:< ms' -> do
+                                result <- case msg^.mDeleted of
+                                    True -> return Vty.emptyImage
+                                    False -> do
+                                        r <- withReaderT relaxHeight $
+                                               render $ padRight Max $ renderSingleMessage msg
+                                        return $ r^.imageL
+                                goDown ms' maxHeight (num + 1) (Vty.vertJoin img result)
+
+                goUp :: Seq.Seq Message -> Int -> Vty.Image -> RenderM Name Vty.Image
+                goUp ms maxHeight img
+                    | Vty.imageHeight img >= maxHeight =
+                        return $ Vty.cropTop maxHeight img
+                    | Seq.null ms =
+                        return img
+                    | otherwise =
+                        case Seq.viewr ms of
+                            Seq.EmptyR -> return img
+                            ms' Seq.:> msg -> do
+                                result <- case msg^.mDeleted of
+                                    True -> return Vty.emptyImage
+                                    False -> do
+                                        r <- withReaderT relaxHeight $
+                                               render $ padRight Max $ renderSingleMessage msg
+                                        return $ r^.imageL
+                                goUp ms' maxHeight $ Vty.vertJoin result img
+
+            let (before, after) = Seq.splitAt idx msgs
+
+            (_, lowerHalf) <- goDown (Seq.drop 1 after) targetHeight 0 Vty.emptyImage
+            upperHalf <- goUp before targetHeight Vty.emptyImage
+
+            let curHeight = Vty.imageHeight $ curMsgResult^.imageL
+                uncropped = upperHalf Vty.<-> curMsgResult^.imageL Vty.<-> lowerHalf
+                img = if Vty.imageHeight lowerHalf < (lowerHeight - curHeight)
+                      then Vty.cropTop targetHeight uncropped
+                      else if Vty.imageHeight upperHalf < upperHeight
+                           then Vty.cropBottom targetHeight uncropped
+                           else Vty.cropTop upperHeight upperHalf Vty.<->
+                                curMsgResult^.imageL Vty.<->
+                                Vty.cropBottom (lowerHeight - curHeight) lowerHalf
+
+            return $ emptyResult & imageL .~ img
 
     channelMessages =
         insertTransitions (getDateFormat st)
@@ -371,6 +456,33 @@ renderChannelSelect st =
 drawMain :: ChatState -> [Widget Name]
 drawMain st = [mainInterface st]
 
+messageSelectBottomBar :: ChatState -> Widget Name
+messageSelectBottomBar st =
+    let optionStr = T.intercalate " " $ catMaybes $ mkOption <$> options
+        mkOption (f, k, desc) = if f postMsg
+                                then Just $ k <> ":" <> desc
+                                else Nothing
+        isMine msg = (Just $ st^.csMe.userUsernameL) == msg^.mUserName
+        options = [ (const True,   "Esc",     "cancel")
+                  , (const True,   "Up/Down", "move")
+                  , (not . isMine, "r",       "reply")
+                  , (isMine,       "e",       "edit")
+                  , (isMine,       "d",       "delete")
+                  ]
+        Just selPostId = selectMessagePostId $ st^.csMessageSelect
+        cid = st^.csCurrentChannelId
+        chanMsgs = st ^. msgMap . ix cid . ccContents . cdMessages
+        Just idx = Seq.findIndexR (\m -> m^.mPostId == Just selPostId) chanMsgs
+        Just postMsg = Seq.lookup idx chanMsgs
+
+    in hBox [ borderElem bsHorizontal
+            , txt "["
+            , withDefAttr messageSelectStatusAttr $
+              txt $ "Message select: " <> optionStr
+            , txt "]"
+            , hBorder
+            ]
+
 completionAlternatives :: ChatState -> Widget Name
 completionAlternatives st =
     let alternatives = intersperse (txt " ") $ mkAlternative <$> st^.csEditState.cedCompletionAlternatives
@@ -454,9 +566,11 @@ mainInterface st =
         _         -> maybeSubdue $ renderCurrentChannelDisplay uSet st
     uSet = Set.fromList (map _uiName (HM.elems (st^.usrMap)))
 
-    bottomBorder = case st^.csCurrentCompletion of
-        Just _ | length (st^.csEditState.cedCompletionAlternatives) > 1 -> completionAlternatives st
-        _ -> maybeSubdue $ hLimit channelListWidth hBorder <+> borderElem bsIntersectB <+> hBorder
+    bottomBorder = case st^.csMode of
+        MessageSelect -> messageSelectBottomBar st
+        _ -> case st^.csCurrentCompletion of
+            Just _ | length (st^.csEditState.cedCompletionAlternatives) > 1 -> completionAlternatives st
+            _ -> maybeSubdue $ hLimit channelListWidth hBorder <+> borderElem bsIntersectB <+> hBorder
 
     maybeSubdue = if st^.csMode == ChannelSelect
                   then forceAttr ""

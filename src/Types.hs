@@ -518,6 +518,7 @@ data Mode =
     | LeaveChannelConfirm
     | JoinChannel
     | ChannelScroll
+    | MessageSelect
     deriving (Eq)
 
 -- | We're either connected or we're not. yeop
@@ -546,7 +547,12 @@ data ChatState = ChatState
   , _csUrlList                     :: List Name LinkChoice
   , _csConnectionStatus            :: ConnectionStatus
   , _csJoinChannelList             :: Maybe (List Name Channel)
+  , _csMessageSelect               :: MessageSelectState
   }
+
+data MessageSelectState =
+    MessageSelectState { selectMessagePostId :: Maybe PostId
+                       }
 
 -- | This represents any event that we might care about in the
 --   main application loop

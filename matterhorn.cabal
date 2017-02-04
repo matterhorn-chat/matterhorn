@@ -34,11 +34,13 @@ executable matterhorn
                        Draw.ShowHelp
                        Draw.LeaveChannelConfirm
                        Draw.JoinChannel
+                       Draw.MessageSelect
                        Draw.Util
                        InputHistory
                        IOUtil
                        Events
                        Events.ShowHelp
+                       Events.MessageSelect
                        Events.Main
                        Events.JoinChannel
                        Events.ChannelScroll

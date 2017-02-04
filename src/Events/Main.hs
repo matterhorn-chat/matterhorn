@@ -30,6 +30,10 @@ mainKeybindings =
          (Vty.EvKey (Vty.KFun 1) []) $
          showHelpScreen MainHelp >=> continue
 
+    , KB "Select a message in the current channel"
+         (Vty.EvKey (Vty.KUp) [Vty.MCtrl]) $
+         beginMessageSelect >=> continue
+
     , KB "Toggle message preview"
          (Vty.EvKey (Vty.KChar 'p') [Vty.MMeta]) $
          continue . toggleMessagePreview

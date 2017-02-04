@@ -25,6 +25,7 @@ import           Events.ChannelScroll
 import           Events.ChannelSelect
 import           Events.LeaveChannelConfirm
 import           Events.UrlSelect
+import           Events.MessageSelect
 
 onEvent :: ChatState -> BrickEvent Name MHEvent -> EventM Name (Next ChatState)
 onEvent st (AppEvent e) = onAppEvent st e
@@ -64,6 +65,7 @@ onVtyEvent st e = do
         LeaveChannelConfirm -> onEventLeaveChannelConfirm st e
         JoinChannel         -> onEventJoinChannel st e
         ChannelScroll       -> onEventChannelScroll st e
+        MessageSelect       -> onEventMessageSelect st e
 
 handleWSEvent :: ChatState -> WebsocketEvent -> EventM Name (Next ChatState)
 handleWSEvent st we =

@@ -112,6 +112,7 @@ newState rs i u m tz hist = ChatState
   , _csUrlList                     = list UrlList mempty 2
   , _csConnectionStatus            = Disconnected
   , _csJoinChannelList             = Nothing
+  , _csMessageSelect               = MessageSelectState Nothing
   }
 
 setupState :: Maybe Handle -> Config -> RequestChan -> BChan MHEvent -> IO ChatState

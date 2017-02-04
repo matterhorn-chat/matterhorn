@@ -32,6 +32,8 @@ module Themes
   , replyParentAttr
   , loadMoreAttr
   , urlListSelectedAttr
+  , messageSelectAttr
+  , messageSelectStatusAttr
 
   -- * Username formatting
   , colorUsername
@@ -68,6 +70,9 @@ loadMoreAttr = "loadMoreMessages"
 
 urlListSelectedAttr :: AttrName
 urlListSelectedAttr = "urlListSelectedAttr"
+
+messageSelectAttr :: AttrName
+messageSelectAttr = "messageSelectAttr"
 
 dialogAttr :: AttrName
 dialogAttr = "dialog"
@@ -141,6 +146,9 @@ clientStrongAttr = "clientStrong"
 errorMessageAttr :: AttrName
 errorMessageAttr = "errorMessage"
 
+messageSelectStatusAttr :: AttrName
+messageSelectStatusAttr = "messageSelectStatus"
+
 themes :: [(T.Text, AttrMap)]
 themes =
     [ (darkColorThemeName,      darkColorTheme)
@@ -177,6 +185,8 @@ lightColorTheme = attrMap (black `on` white) $
   , (recentMarkerAttr,                 fg black `withStyle` bold)
   , (loadMoreAttr,                     black `on` cyan)
   , (urlListSelectedAttr,              black `on` yellow)
+  , (messageSelectAttr,                black `on` yellow)
+  , (messageSelectStatusAttr,          fg black)
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 
@@ -210,6 +220,8 @@ darkAttrs =
   , (recentMarkerAttr,                 fg yellow `withStyle` bold)
   , (loadMoreAttr,                     black `on` cyan)
   , (urlListSelectedAttr,              black `on` yellow)
+  , (messageSelectAttr,                black `on` yellow)
+  , (messageSelectStatusAttr,          fg white)
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 
