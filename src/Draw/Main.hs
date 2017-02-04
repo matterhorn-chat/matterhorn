@@ -466,10 +466,10 @@ messageSelectBottomBar st =
                                 else Nothing
         isMine msg = (Just $ st^.csMe.userUsernameL) == msg^.mUserName
         hasURLs = not . Seq.null . msgURLs
-        options = [ (const True,   "r",       "reply")
-                  , (isMine,       "e",       "edit")
-                  , (isMine,       "d",       "delete")
-                  , (hasURLs,      "o",       "open URL(s)")
+        options = [ (const True, "r", "reply")
+                  , (isMine,     "e", "edit")
+                  , (isMine,     "d", "delete")
+                  , (hasURLs,    "o", "open URL(s)")
                   ]
         Just selPostId = selectMessagePostId $ st^.csMessageSelect
         cid = st^.csCurrentChannelId
