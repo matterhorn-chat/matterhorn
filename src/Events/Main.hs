@@ -31,7 +31,7 @@ mainKeybindings =
          showHelpScreen MainHelp >=> continue
 
     , KB "Select a message to edit/reply/delete"
-         (Vty.EvKey (Vty.KUp) [Vty.MCtrl]) $
+         (Vty.EvKey (Vty.KChar 's') [Vty.MCtrl]) $
          beginMessageSelect >=> continue
 
     , KB "Reply to the most recent message"

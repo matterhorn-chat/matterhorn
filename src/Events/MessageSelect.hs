@@ -13,10 +13,16 @@ messagesPerPageOperation = 10
 onEventMessageSelect :: ChatState -> Vty.Event -> EventM Name (Next ChatState)
 onEventMessageSelect st (Vty.EvKey Vty.KEsc []) =
     continue $ st & csMode .~ Main
+onEventMessageSelect st (Vty.EvKey (Vty.KChar 'c') [Vty.MCtrl]) =
+    continue $ st & csMode .~ Main
+onEventMessageSelect st (Vty.EvKey (Vty.KChar 'k') []) =
+    messageSelectUp st >>= continue
 onEventMessageSelect st (Vty.EvKey Vty.KUp _) =
     messageSelectUp st >>= continue
 onEventMessageSelect st (Vty.EvKey Vty.KPageUp _) =
     messageSelectUpBy messagesPerPageOperation st >>= continue
+onEventMessageSelect st (Vty.EvKey (Vty.KChar 'j') []) =
+    messageSelectDown st >>= continue
 onEventMessageSelect st (Vty.EvKey Vty.KDown _) =
     messageSelectDown st >>= continue
 onEventMessageSelect st (Vty.EvKey Vty.KPageDown _) =
