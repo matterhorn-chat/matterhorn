@@ -435,9 +435,9 @@ asyncFetchMoreMessages st cId =
             numToFetch = 10
         posts <- mmGetPosts (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId (offset - 1) numToFetch
         return $ \st' -> do
-            let cc = fromPosts st' posts
+            let (cc, st'') = fromPosts st' posts
             invalidateCacheEntry (ChannelMessages $ st^.csCurrentChannelId)
-            return $ st' & csChannel(cId).ccContents.cdMessages %~ (cc^.cdMessages Seq.><)
+            return $ st'' & csChannel(cId).ccContents.cdMessages %~ (cc^.cdMessages Seq.><)
 
 loadMoreMessages :: ChatState -> EventM Name ChatState
 loadMoreMessages st = do

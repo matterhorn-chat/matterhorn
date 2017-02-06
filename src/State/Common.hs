@@ -51,8 +51,9 @@ doAsyncWith st thunk =
 -- * Client Messages
 
 -- | Create 'ChannelContents' from a 'Posts' value
-fromPosts :: ChatState -> Posts -> ChannelContents
-fromPosts st p = ChannelContents $ messagesFromPosts st p
+fromPosts :: ChatState -> Posts -> (ChannelContents, ChatState)
+fromPosts st p = let (msgs, st') = messagesFromPosts st p
+                 in (ChannelContents msgs, st')
 
 getDMChannelName :: UserId -> UserId -> T.Text
 getDMChannelName me you = cname
@@ -60,8 +61,8 @@ getDMChannelName me you = cname
   [loUser, hiUser] = sort [ you, me ]
   cname = idString loUser <> "__" <> idString hiUser
 
-messagesFromPosts :: ChatState -> Posts -> Seq.Seq Message
-messagesFromPosts st p = msgs
+messagesFromPosts :: ChatState -> Posts -> (Seq.Seq Message, ChatState)
+messagesFromPosts st p = (msgs, st')
     where
         postMap :: HM.HashMap PostId Message
         postMap = HM.fromList [ ( pId
@@ -112,7 +113,7 @@ asyncFetchScrollback st cId =
         posts <- mmGetPosts (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId 0 numScrollbackPosts
         return $ \st' -> do
             liftIO $ mapM_ (asyncFetchReactionsForPost st cId) (posts^.postsPostsL)
-            let contents = fromPosts st' posts
+            let (contents, st'') = fromPosts st' posts
                 -- We need to set the new message cutoff only if there
                 -- are actually messages that came in after our last
                 -- view time.
@@ -122,9 +123,9 @@ asyncFetchScrollback st cId =
                          Seq.filter (\m -> m^.mDate > viewTime) $
                          contents^.cdMessages
             return $
-                st' & csChannel(cId).ccContents .~ contents
-                    & csChannel(cId).ccInfo.cdCurrentState .~ ChanLoaded
-                    & csChannel(cId).ccInfo.cdNewMessageCutoff .~ cutoff
+                st'' & csChannel(cId).ccContents .~ contents
+                     & csChannel(cId).ccInfo.cdCurrentState .~ ChanLoaded
+                     & csChannel(cId).ccInfo.cdNewMessageCutoff .~ cutoff
 
 
 asyncFetchReactionsForPost :: ChatState -> ChannelId -> Post -> IO ()
