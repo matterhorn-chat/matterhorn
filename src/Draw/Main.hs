@@ -98,7 +98,9 @@ renderChannelList st = hLimit channelListWidth $ viewport ChannelList Vertical $
                           )
                         ]
 
-renderChannelGroup :: ChatState -> (T.Text, [ChannelListEntry], HM.HashMap T.Text ChannelSelectMatch) -> [Widget Name]
+renderChannelGroup :: ChatState
+                   -> (T.Text, [ChannelListEntry], HM.HashMap T.Text ChannelSelectMatch)
+                   -> [Widget Name]
 renderChannelGroup st (groupName, entries, csMatches) =
     let header label = hBorderWithLabel $ withDefAttr channelListHeaderAttr $ txt label
     in header groupName : (renderChannelListEntry st csMatches <$> entries)
@@ -112,7 +114,10 @@ data ChannelListEntry =
                      , entryIsRecent    :: Bool
                      }
 
-renderChannelListEntry :: ChatState -> HM.HashMap T.Text ChannelSelectMatch -> ChannelListEntry -> Widget Name
+renderChannelListEntry :: ChatState
+                       -> HM.HashMap T.Text ChannelSelectMatch
+                       -> ChannelListEntry
+                       -> Widget Name
 renderChannelListEntry st csMatches entry =
     decorate $ decorateRecent $ padRight Max $
     entryMakeWidget entry $ entrySigil entry <> entryLabel entry
