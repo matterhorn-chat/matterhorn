@@ -332,20 +332,26 @@ loadLastEdit st =
     let cId = st^.csCurrentChannelId
     in case st^.csLastChannelInput.at cId of
         Nothing -> st
-        Just lastEdit -> st & cmdLine %~ (applyEdit $ insertMany (lastEdit) . clearZipper)
+        Just (lastEdit, lastEditMode) ->
+            st & cmdLine %~ (applyEdit $ insertMany (lastEdit) . clearZipper)
+               & csEditState.cedEditMode .~ lastEditMode
 
 saveCurrentEdit :: ChatState -> ChatState
 saveCurrentEdit st =
     let cId = st^.csCurrentChannelId
     in st & csLastChannelInput.at cId .~
-      Just (T.intercalate "\n" $ getEditContents $ st^.cmdLine)
+      Just (T.intercalate "\n" $ getEditContents $ st^.cmdLine, st^.csEditState.cedEditMode)
 
 changeChannelCommon :: ChatState -> EventM Name ChatState
 changeChannelCommon st =
     loadLastEdit <$>
-    ((return . clearEditor) =<<
+    (resetEditorState =<<
      fetchCurrentScrollback =<<
      resetHistoryPosition st)
+
+resetEditorState :: ChatState -> EventM Name ChatState
+resetEditorState st =
+    return $ clearEditor $ st & csEditState.cedEditMode .~ NewPost
 
 preChangeChannelCommon :: ChatState -> EventM Name ChatState
 preChangeChannelCommon st = do

@@ -483,7 +483,7 @@ data ChatEditState = ChatEditState
   , _cedMultiline            :: Bool
   , _cedInputHistory         :: InputHistory
   , _cedInputHistoryPosition :: HM.HashMap ChannelId (Maybe Int)
-  , _cedLastChannelInput     :: HM.HashMap ChannelId T.Text
+  , _cedLastChannelInput     :: HM.HashMap ChannelId (T.Text, EditMode)
   , _cedCurrentCompletion    :: Maybe T.Text
   , _cedCurrentAlternative   :: T.Text
   , _cedCompletionAlternatives :: [T.Text]
@@ -628,7 +628,7 @@ csInputHistory = csEditState . cedInputHistory
 csInputHistoryPosition :: Lens' ChatState (HM.HashMap ChannelId (Maybe Int))
 csInputHistoryPosition = csEditState . cedInputHistoryPosition
 
-csLastChannelInput :: Lens' ChatState (HM.HashMap ChannelId T.Text)
+csLastChannelInput :: Lens' ChatState (HM.HashMap ChannelId (T.Text, EditMode))
 csLastChannelInput = csEditState . cedLastChannelInput
 
 csCurrentCompletion :: Lens' ChatState (Maybe T.Text)
