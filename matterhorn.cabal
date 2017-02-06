@@ -83,5 +83,4 @@ executable matterhorn
                      , utf8-string
                      , temporary
                      , gitrev
-                     , Clipboard
   default-language:    Haskell2010

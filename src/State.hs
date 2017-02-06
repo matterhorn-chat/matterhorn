@@ -27,7 +27,6 @@ import qualified Data.Foldable as F
 import           Graphics.Vty (outputIface)
 import           Graphics.Vty.Output.Interface (ringTerminalBell)
 import           Lens.Micro.Platform
-import           System.Clipboard (setClipboardString)
 import           System.Process (system)
 
 import           Prelude
@@ -42,7 +41,7 @@ import           InputHistory
 import           Themes
 import           Zipper (Zipper)
 import qualified Zipper as Z
-import           Markdown (blockGetURLs, findVerbatimChunk)
+import           Markdown (blockGetURLs)
 
 import           State.Common
 
@@ -230,16 +229,6 @@ cancelReplyOrEdit st =
         NewPost -> st
         _ -> st & csEditState.cedEditMode .~ NewPost
                 & cmdLine %~ applyEdit clearZipper
-
-copyVerbatimToClipboard :: ChatState -> EventM Name ChatState
-copyVerbatimToClipboard st =
-    case getSelectedMessage st of
-        Nothing -> return st
-        Just m -> case findVerbatimChunk (m^.mText) of
-            Nothing -> return st
-            Just txt -> do
-                liftIO $ setClipboardString (T.unpack txt)
-                return (st & csMode .~ Main)
 
 -- * Joining, Leaving, and Inviting
 
