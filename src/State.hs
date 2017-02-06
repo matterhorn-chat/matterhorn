@@ -549,9 +549,10 @@ editMessage new st = do
   now <- liftIO getCurrentTime
   let chan = csChannel (postChannelId new)
       isEditedMessage m = m^.mPostId == Just (new^.postIdL)
-      msg = clientPostToMessage st (toClientPost new Nothing)
+      msg = clientPostToMessage st (toClientPost new (new^.postParentIdL))
       rs = st & chan . ccContents . cdMessages . each . filtered isEditedMessage .~ msg
               & chan . ccInfo . cdUpdated .~ now
+              & csPostMap.ix(postId new) .~ msg
   if postChannelId new == rs^.csCurrentChannelId
     then updateViewed rs
     else return rs
