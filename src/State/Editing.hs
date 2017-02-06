@@ -36,8 +36,8 @@ import           State.Common
 startMultilineEditing :: ChatState -> ChatState
 startMultilineEditing = csEditState.cedMultiline .~ True
 
-stopMultilineEditing :: ChatState -> ChatState
-stopMultilineEditing = csEditState.cedMultiline .~ False
+toggleMultilineEditing :: ChatState -> ChatState
+toggleMultilineEditing = csEditState.cedMultiline %~ not
 
 invokeExternalEditor :: ChatState -> EventM Name (Next ChatState)
 invokeExternalEditor st = do

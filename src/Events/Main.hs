@@ -122,13 +122,13 @@ mainKeybindings =
          (Vty.EvKey (Vty.KChar 'l') [Vty.MMeta]) $ \st ->
            continue =<< clearNewMessageCutoff (st^.csCurrentChannelId) st
 
-    , KB "Switch to multi-line message compose mode"
+    , KB "Toggle multi-line message compose mode"
          (Vty.EvKey (Vty.KChar 'e') [Vty.MMeta]) $
-           continue . startMultilineEditing
+           continue . toggleMultilineEditing
 
-    , KB "Leave multi-line message compose mode"
+    , KB "Cancel message reply or update"
          (Vty.EvKey Vty.KEsc []) $
-           continue . stopMultilineEditing
+         continue . cancelReplyOrEdit
 
     , KB "Cancel message reply or update"
          (Vty.EvKey (Vty.KChar 'c') [Vty.MCtrl]) $
