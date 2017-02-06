@@ -9,6 +9,7 @@ module Markdown
   , cursorSentinel
   , addEllipsis
   , replyArrow
+  , findVerbatimChunk
   )
 where
 
@@ -25,7 +26,7 @@ import qualified Cheapskate as C
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Foldable as F
-import           Data.Monoid ((<>))
+import           Data.Monoid (First(..), (<>))
 import           Data.Sequence ( Seq
                                , ViewL(..)
                                , ViewR(..)
@@ -363,3 +364,8 @@ replyArrow =
          , B.borderElem B.bsCornerTL
          , B.str "▸"
          ]
+
+findVerbatimChunk :: C.Blocks -> Maybe T.Text
+findVerbatimChunk = getFirst . F.foldMap go
+  where go (C.CodeBlock _ t) = First (Just t)
+        go _                 = First Nothing
