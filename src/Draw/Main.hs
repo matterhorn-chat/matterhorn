@@ -205,8 +205,8 @@ renderUserCommandBox :: Set T.Text -> ChatState -> Widget Name
 renderUserCommandBox uSet st =
     let prompt = txt $ case st^.csEditState.cedEditMode of
             Replying _ _ -> "reply> "
-            Editing _    -> "edit> "
-            NewPost      -> "> "
+            Editing _    ->  "edit> "
+            NewPost      ->      "> "
         inputBox = renderEditor True (st^.cmdLine)
         curContents = getEditContents $ st^.cmdLine
         multilineContent = length curContents > 1
