@@ -21,7 +21,7 @@ import qualified Data.Foldable as F
 import           Data.HashMap.Strict ( HashMap )
 import           Data.List (intersperse)
 import qualified Data.Map.Strict as Map
-import           Data.Maybe (listToMaybe, maybeToList, catMaybes)
+import           Data.Maybe (listToMaybe, maybeToList, catMaybes, isJust)
 import           Data.Monoid ((<>))
 import           Data.Set (Set)
 import qualified Data.Set as Set
@@ -499,10 +499,12 @@ messageSelectBottomBar st =
         s = if numURLs == 1 then "" else "s"
         hasURLs = numURLs > 0
         openUrlsMsg = "open " <> (T.pack $ show numURLs) <> " URL" <> s
+        hasVerb = isJust (findVerbatimChunk (postMsg^.mText))
         options = [ (const True,    "r", "reply")
                   , (isMine st,     "e", "edit")
                   , (isMine st,     "d", "delete")
                   , (const hasURLs, "o", openUrlsMsg)
+                  , (const hasVerb, "y", "yank")
                   ]
         Just postMsg = getSelectedMessage st
 
