@@ -216,7 +216,7 @@ renderUserCommandBox uSet st =
                                   st^.cmdLine.editContentsL) <>
                    "/" <> (show $ length curContents) <> "]") <+>
             (hBorderWithLabel $ withDefAttr clientEmphAttr $
-             (str "In multi-line mode. Press Esc to finish."))
+             (str "In multi-line mode. Press M-e to finish."))
 
         replyDisplay = case st^.csEditState.cedEditMode of
             Replying msg _ ->
