@@ -219,11 +219,13 @@ renderUserCommandBox uSet st =
              (str "In multi-line mode. Press Esc to finish."))
 
         replyDisplay = case st^.csEditState.cedEditMode of
-            Replying msg _ -> hBox [ str " "
-                                   , borderElem bsCornerTL
-                                   , str "▸"
-                                   , addEllipsis $ renderSingleMessage st uSet msg
-                                   ]
+            Replying msg _ ->
+                let msgWithoutParent = msg & mInReplyToMsg .~ NotAReply
+                in hBox [ str " "
+                        , borderElem bsCornerTL
+                        , str "▸"
+                        , addEllipsis $ renderMessage msgWithoutParent True uSet
+                        ]
             _ -> emptyWidget
 
         commandBox = case st^.csEditState.cedMultiline of
