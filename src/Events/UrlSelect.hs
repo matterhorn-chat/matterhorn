@@ -4,6 +4,7 @@ import Brick
 import Brick.Widgets.List
 import Control.Monad ((>=>))
 import qualified Graphics.Vty as Vty
+import Lens.Micro.Platform
 
 import Types
 import State
@@ -17,7 +18,7 @@ urlSelectKeybindings :: [Keybinding]
 urlSelectKeybindings =
     [ KB "Open the selected URL, if any"
          (Vty.EvKey Vty.KEnter []) $
-         openSelectedURL >=> continue
+         openSelectedURL >=> \ st -> continue (st & csMode .~ Main)
 
     , KB "Cancel URL selection"
          (Vty.EvKey Vty.KEsc []) $
