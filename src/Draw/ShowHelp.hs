@@ -21,6 +21,7 @@ import Events.ShowHelp
 import Events.ChannelSelect
 import Events.UrlSelect
 import Events.Main
+import Events.MessageSelect
 import Markdown (renderText)
 import Options (mhVersion)
 
@@ -44,6 +45,7 @@ keybindSections =
     , ("Main Interface", mainKeybindings)
     , ("Channel Select Mode", channelSelectKeybindings)
     , ("URL Select Mode", urlSelectKeybindings)
+    , ("Message Select Mode", messageSelectKeybindings)
     ]
 
 helpBox :: Widget Name -> Widget Name
