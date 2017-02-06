@@ -221,9 +221,7 @@ renderUserCommandBox uSet st =
         replyDisplay = case st^.csEditState.cedEditMode of
             Replying msg _ ->
                 let msgWithoutParent = msg & mInReplyToMsg .~ NotAReply
-                in hBox [ str " "
-                        , borderElem bsCornerTL
-                        , str "▸"
+                in hBox [ replyArrow
                         , addEllipsis $ renderMessage msgWithoutParent True uSet
                         ]
             _ -> emptyWidget

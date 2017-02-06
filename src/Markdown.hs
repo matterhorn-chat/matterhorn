@@ -8,6 +8,7 @@ module Markdown
   , blockGetURLs
   , cursorSentinel
   , addEllipsis
+  , replyArrow
   )
 where
 
@@ -75,7 +76,7 @@ renderMessage msg renderReplyParent uSet =
     in case parent of
         Nothing -> mine
         Just m -> let parentMsg = renderMessage m False uSet
-                  in (B.str " " <+> B.borderElem B.bsCornerTL <+> B.str "▸" <+>
+                  in (replyArrow <+>
                      (addEllipsis $ B.forceAttr replyParentAttr parentMsg))
                       B.<=> mine
 
@@ -355,3 +356,10 @@ inlineGetURLs (C.Link is url "") = (url, inlinesToText is) S.<| (mconcat $ inlin
 inlineGetURLs (C.Link is _ url) = (url, inlinesToText is) S.<| (mconcat $ inlineGetURLs <$> F.toList is)
 inlineGetURLs (C.Image is _ _) = mconcat $ inlineGetURLs <$> F.toList is
 inlineGetURLs _ = mempty
+
+replyArrow :: Widget a
+replyArrow =
+    hBox [ B.str " "
+         , B.borderElem B.bsCornerTL
+         , B.str "▸"
+         ]
