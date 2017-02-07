@@ -1,4 +1,11 @@
 
+30600.2.1
+=========
+
+* Fixed a bug that caused message selection mode to trigger a Vty crash
+  when a message being rendered was larger than half of the area
+  available for the message list.
+
 30600.2.0
 =========
 

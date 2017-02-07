@@ -1,5 +1,5 @@
 name:             matterhorn
-version:          30600.2.0
+version:          30600.2.1
 synopsis:         Terminal client for MatterMost chat system
 description:      This is a basic terminal-based client for the MatterMost chat system.
                   More description coming soon.
