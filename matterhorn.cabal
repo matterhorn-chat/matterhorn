@@ -1,5 +1,5 @@
 name:             matterhorn
-version:          30600.1.0
+version:          30600.2.0
 synopsis:         Terminal client for MatterMost chat system
 description:      This is a basic terminal-based client for the MatterMost chat system.
                   More description coming soon.
@@ -57,7 +57,7 @@ executable matterhorn
                        ScopedTypeVariables
   ghc-options:         -Wall -threaded
   build-depends:       base >=4.7 && <5
-                     , mattermost-api >= 30600.1.0
+                     , mattermost-api >= 30600.2.0
                      , unordered-containers
                      , containers >= 0.5.8
                      , connection
