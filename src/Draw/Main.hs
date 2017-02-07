@@ -385,7 +385,9 @@ renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
                        then Vty.cropBottom targetHeight uncropped
                        else Vty.cropTop upperHeight upperHalf Vty.<->
                             curMsgResult^.imageL Vty.<->
-                            Vty.cropBottom (lowerHeight - curHeight) lowerHalf
+                            (if curHeight < lowerHeight
+                             then Vty.cropBottom (lowerHeight - curHeight) lowerHalf
+                             else Vty.cropBottom lowerHeight lowerHalf)
 
         return $ emptyResult & imageL .~ img
 
