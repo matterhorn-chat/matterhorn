@@ -1,4 +1,12 @@
 
+30600.2.2
+=========
+
+* Improved formatting of message attachments so that their filenames
+  are shown. Previously only their hash identifiers were displayed. This
+  change also entails asynchronous fetching of attachment metadata.
+* Upgraded to mattermost-api 30600.2.2.
+
 30600.2.1
 =========
 
