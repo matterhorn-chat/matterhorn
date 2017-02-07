@@ -435,7 +435,7 @@ asyncFetchMoreMessages st cId =
             numToFetch = 10
         posts <- mmGetPosts (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId (offset - 1) numToFetch
         return $ \st' -> do
-            let (cc, st'') = fromPosts st' posts
+            (cc, st'') <- liftIO $ fromPosts st' posts
             invalidateCacheEntry (ChannelMessages $ st^.csCurrentChannelId)
             return $ st'' & csChannel(cId).ccContents.cdMessages %~ (cc^.cdMessages Seq.><)
 
@@ -577,6 +577,7 @@ maybeRingBell st = do
 
 addMessage :: Post -> ChatState -> EventM Name ChatState
 addMessage new st = do
+  liftIO $ asyncFetchAttachments new st
   case st^.msgMap.at (postChannelId new) of
       Nothing ->
           -- When we join channels, sometimes we get the "user has

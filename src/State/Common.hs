@@ -4,6 +4,7 @@ import           Brick (EventM)
 import qualified Control.Concurrent.Chan as Chan
 import           Control.Exception (try)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
+import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
 import           Data.List (sort)
 import qualified Data.Map.Strict as Map
@@ -51,9 +52,12 @@ doAsyncWith st thunk =
 -- * Client Messages
 
 -- | Create 'ChannelContents' from a 'Posts' value
-fromPosts :: ChatState -> Posts -> (ChannelContents, ChatState)
-fromPosts st p = let (msgs, st') = messagesFromPosts st p
-                 in (ChannelContents msgs, st')
+fromPosts :: ChatState -> Posts -> IO (ChannelContents, ChatState)
+fromPosts st ps = do
+  let (msgs, st') = messagesFromPosts st ps
+  F.forM_ (ps^.postsPostsL) $ \p ->
+    asyncFetchAttachments p st
+  return (ChannelContents msgs, st')
 
 getDMChannelName :: UserId -> UserId -> T.Text
 getDMChannelName me you = cname
@@ -81,6 +85,26 @@ messagesFromPosts st p = (msgs, st')
         findPost pId = case HM.lookup pId (postsPosts p) of
             Nothing -> error $ "BUG: could not find post for post ID " <> show pId
             Just post -> post
+
+asyncFetchAttachments :: Post -> ChatState -> IO ()
+asyncFetchAttachments p st = do
+  let cId = p^.postChannelIdL
+      pId = p^.postIdL
+  F.forM_ (p^.postFileIdsL) $ \fId -> doAsyncWith st $ do
+    info <- mmGetFileInfo (st^.csConn) (st^.csTok) fId
+    let scheme = "https://"
+        host = st^.csResources.crConn.cdHostnameL
+        attUrl = scheme <> host <> urlForFile fId
+        attachment = Attachment
+                       { _attachmentName = fileInfoName info
+                       , _attachmentURL  = attUrl
+                       }
+        addAttachment m
+          | m^.mPostId == Just pId =
+            m & mAttachments %~ (attachment Seq.<|)
+          | otherwise              = m
+    return $ \st' -> do
+      return (st' & csChannel(cId).ccContents.cdMessages.each %~ addAttachment)
 
 -- | Create a new 'ClientMessage' value
 newClientMessage :: (MonadIO m) => ClientMessageType -> T.Text -> m ClientMessage
@@ -113,11 +137,11 @@ asyncFetchScrollback st cId =
         posts <- mmGetPosts (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId 0 numScrollbackPosts
         return $ \st' -> do
             liftIO $ mapM_ (asyncFetchReactionsForPost st cId) (posts^.postsPostsL)
-            let (contents, st'') = fromPosts st' posts
+            (contents, st'') <- liftIO $ fromPosts st' posts
                 -- We need to set the new message cutoff only if there
                 -- are actually messages that came in after our last
                 -- view time.
-                Just viewTime = st'^?msgMap.ix cId.ccInfo.cdViewed
+            let Just viewTime = st'^?msgMap.ix cId.ccInfo.cdViewed
                 cutoff = if hasNew then Just viewTime else Nothing
                 hasNew = not $ Seq.null $
                          Seq.filter (\m -> m^.mDate > viewTime) $

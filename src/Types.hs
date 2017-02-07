@@ -254,7 +254,7 @@ toClientPost p parentId = ClientPost
   , _cpType          = postClientPostType p
   , _cpPending       = False
   , _cpDeleted       = False
-  , _cpAttachments   = fmap attachmentFromURL (postFileIds p)
+  , _cpAttachments   = Seq.empty
   , _cpInReplyToPost = parentId
   , _cpPostId        = p^.postIdL
   , _cpChannelId     = p^.postChannelIdL
@@ -662,7 +662,7 @@ clientPostToMessage st cp = Message
   , _mType          = CP $ _cpType cp
   , _mPending       = _cpPending cp
   , _mDeleted       = _cpDeleted cp
-  , _mAttachments   = mkAttachmentAbsolute st <$> _cpAttachments cp
+  , _mAttachments   = _cpAttachments cp
   , _mInReplyToMsg  =
     case cp^.cpInReplyToPost of
       Nothing  -> NotAReply
@@ -671,15 +671,6 @@ clientPostToMessage st cp = Message
   , _mReactions     = _cpReactions cp
   , _mOriginalPost  = Just $ cp^.cpOriginalPost
   }
-
-mkAttachmentAbsolute :: ChatState -> Attachment -> Attachment
-mkAttachmentAbsolute cs a =
-  let host = cs^.csResources.crConn.cdHostnameL
-      -- XXX This will have to come from the ChatState once the
-      -- application can be used with non-SSL servers.
-      scheme = "https://"
-      update url = scheme <> host <> url
-  in a & attachmentURL %~ update
 
 -- * Slash Commands
 
