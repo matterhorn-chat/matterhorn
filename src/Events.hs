@@ -52,7 +52,7 @@ onAppEvent st (AsyncErrEvent e) = do
   msg <- newClientMessage Error $
     "An unexpected error has occurred! The exception encountered was:\n  " <>
     T.pack (show e) <>
-    "\nPlease report this error at https://github.com/aisamanra/matterhorn/issues"
+    "\nPlease report this error at https://github.com/matterhorn-chat/matterhorn/issues"
   continue =<< addClientMessage msg st
 
 onVtyEvent :: ChatState -> Vty.Event -> EventM Name (Next ChatState)
