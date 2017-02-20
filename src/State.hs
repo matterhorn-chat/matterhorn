@@ -641,24 +641,13 @@ getNewMessageCutoff cId st = do
     cc <- st^.msgMap.at cId
     cc^.ccInfo.cdNewMessageCutoff
 
-
-mmServerCommandWhitelist :: [T.Text]
-mmServerCommandWhitelist =
-    [ "me"
-    , "shrug"
-    ]
-
-execMMCommand :: T.Text -> ChatState -> EventM Name ChatState
-execMMCommand cmd st =
-    case T.words cmd of
-        (n:_) -> case n `elem` mmServerCommandWhitelist of
-            False -> postErrorMessage ("Unknown command: " <> n) st
-            True -> liftIO (runCmd `catch` handler)
-        _ -> postErrorMessage ("Invalid command: " <> cmd) st
+execMMCommand :: T.Text -> T.Text -> ChatState -> EventM Name ChatState
+execMMCommand name rest st =
+  liftIO (runCmd `catch` handler)
   where
   mc = MinCommand
         { minComChannelId = st^.csCurrentChannelId
-        , minComCommand   = "/" <> cmd
+        , minComCommand   = "/" <> name <> " " <> rest
         }
   runCmd = do
     void $ mmExecute

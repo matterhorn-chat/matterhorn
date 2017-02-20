@@ -99,6 +99,14 @@ commandList =
           msg <- newClientMessage Error
             ("No script named " <> script <> " was found.")
           continue =<< (listScripts $ addClientMessage msg st)
+
+  , Cmd "me" "Send an emote message"
+    (LineArg "message") $
+    \msg st -> execMMCommand "me" msg st >>= continue
+
+  , Cmd "shrug" "Send a message followed by a shrug emoticon"
+    (LineArg "message") $
+    \msg st -> execMMCommand "shrug" msg st >>= continue
   ]
 
 scriptHelpAddendum :: T.Text
@@ -152,12 +160,14 @@ dispatchCommand :: T.Text -> ChatState -> EventM Name (Next ChatState)
 dispatchCommand cmd st =
   case T.words cmd of
     (x:xs) | matchingCmds <- [ c | c@(Cmd name _ _ _) <- commandList
-                                 , name == x
-                                 ] ->
-             case matchingCmds of
-               [] -> execMMCommand cmd st >>= continue
-               cs -> go [] cs
-      where go errs [] = do
+                             , name == x
+                             ] -> go [] matchingCmds
+      where go [] [] = do
+              msg <- newClientMessage Error
+                     ("error running command /" <> x <> ":\n" <>
+                      "no such command")
+              continue $ addClientMessage msg st
+            go errs [] = do
               msg <- newClientMessage Error
                      ("error running command /" <> x <> ":\n" <>
                       mconcat [ "    " <> e | e <- errs ])
