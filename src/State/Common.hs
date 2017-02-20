@@ -113,18 +113,17 @@ newClientMessage ty msg = do
   return (ClientMessage msg now ty)
 
 -- | Add a 'ClientMessage' to the current channel's message list
-addClientMessage :: ClientMessage -> ChatState -> EventM Name ChatState
-addClientMessage msg st = do
+addClientMessage :: ClientMessage -> ChatState -> ChatState
+addClientMessage msg st =
   let cid = st^.csCurrentChannelId
-      st' = st & msgMap . ix cid . ccContents . cdMessages %~ (Seq.|> clientMessageToMessage msg)
-  return st'
+  in st & msgMap . ix cid . ccContents . cdMessages %~ (Seq.|> clientMessageToMessage msg)
 
 -- | Add a new 'ClientMessage' representing an error message to
 --   the current channel's message list
 postErrorMessage :: (MonadIO m) => T.Text -> ChatState -> m ChatState
 postErrorMessage err st = do
     msg <- newClientMessage Error err
-    liftIO $ doAsyncWith st (return $ addClientMessage msg)
+    liftIO $ doAsyncWith st (return $ return . addClientMessage msg)
     return st
 
 numScrollbackPosts :: Int

@@ -408,7 +408,7 @@ listThemes cs = do
                         "Available built-in themes:" :
                         (("  " <>) <$> fst <$> themes)
     msg <- newClientMessage Informative (mkThemeList themes)
-    addClientMessage msg cs
+    return $ addClientMessage msg cs
 
 setTheme :: ChatState -> T.Text -> EventM Name ChatState
 setTheme cs name =
@@ -853,7 +853,7 @@ openSelectedURL st | st^.csMode == UrlSelect =
                 False -> do
                     msg <- newClientMessage Informative
                       "Config option 'urlOpenCommand' missing; cannot open URL."
-                    addClientMessage msg $ st & csMode .~ Main
+                    return $ addClientMessage msg $ st & csMode .~ Main
 openSelectedURL st = return st
 
 openURL :: ChatState -> LinkChoice -> EventM Name Bool
@@ -883,7 +883,7 @@ openSelectedMessageURLs st
                     False -> do
                         msg <- newClientMessage Informative
                           "Config option 'urlOpenCommand' missing; cannot open URL."
-                        addClientMessage msg finalSt
+                        return $ addClientMessage msg finalSt
 
 shouldSkipMessage :: T.Text -> Bool
 shouldSkipMessage "" = True

@@ -76,7 +76,7 @@ commandList =
             msg <- newClientMessage Error
                      ("Unknown help topic: `" <> topic <> "`. " <>
                       "Available topics are:\n  - main\n  - scripts\n")
-            addClientMessage msg st >>= continue
+            continue $ addClientMessage msg st
   , Cmd "sh" "List the available shell scripts" NoArg $ \ () st ->
       listScripts st >>= continue
   , Cmd "sh" "Run a prewritten shell script"
@@ -94,11 +94,11 @@ commandList =
                "$ chmod u+x " <> T.pack scriptPath <> "\n" <>
                "```\n" <>
                "to correct this error. " <> scriptHelpAddendum)
-          addClientMessage msg st >>= continue
+          continue $ addClientMessage msg st
         ScriptNotFound -> do
           msg <- newClientMessage Error
             ("No script named " <> script <> " was found.")
-          addClientMessage msg st >>= listScripts >>= continue
+          continue =<< (listScripts $ addClientMessage msg st)
   ]
 
 scriptHelpAddendum :: T.Text
@@ -122,7 +122,7 @@ runScript fp text = do
                             "following output on stderr:\n~~~~~\n" <>
                             T.pack stderr <> "~~~~~\n" <> scriptHelpAddendum
       msg <- newClientMessage Error msgText'
-      addClientMessage msg st
+      return $ addClientMessage msg st
 
 listScripts :: ChatState -> EventM Name ChatState
 listScripts st = do
@@ -133,7 +133,7 @@ listScripts st = do
                     | cmd <- execs
                     ])
   case nonexecs of
-    [] -> addClientMessage msg st
+    [] -> return $ addClientMessage msg st
     _  -> do
       errMsg <- newClientMessage Error
                   ("Some non-executable script files are also " <>
@@ -146,7 +146,7 @@ listScripts st = do
                    mconcat [ "  - " <> T.pack cmd <> "\n"
                            | cmd <- nonexecs
                            ] <> "\n" <> scriptHelpAddendum)
-      addClientMessage msg st >>=  addClientMessage errMsg
+      return $ addClientMessage errMsg $ addClientMessage msg st
 
 dispatchCommand :: T.Text -> ChatState -> EventM Name (Next ChatState)
 dispatchCommand cmd st =
@@ -161,7 +161,7 @@ dispatchCommand cmd st =
               msg <- newClientMessage Error
                      ("error running command /" <> x <> ":\n" <>
                       mconcat [ "    " <> e | e <- errs ])
-              addClientMessage msg st >>= continue
+              continue $ addClientMessage msg st
             go errs (Cmd _ _ spec exe : cs) =
               case matchArgs spec xs of
                 Left e -> go (e:errs) cs
