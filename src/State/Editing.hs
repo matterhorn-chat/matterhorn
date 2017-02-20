@@ -13,6 +13,7 @@ import qualified Data.ByteString as BS
 import qualified Data.HashMap.Strict as HM
 import           Data.Monoid ((<>))
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 import           Data.Text.Zipper (textZipper, insertMany,
                                    moveRight, moveLeft, cursorPosition, currentLine,
                                    transposeChars, deleteChar, deletePrevChar,
@@ -62,9 +63,15 @@ invokeExternalEditor st = do
         -- If non-zero status, skip temp file read.
         case status of
             ExitSuccess -> do
-                tmpLines <- T.lines <$> T.pack <$> readFile tmpFileName
-                return $ st & cmdLine.editContentsL .~ (textZipper tmpLines Nothing)
-                            & csEditState.cedMultiline .~ (length tmpLines > 1)
+                tmpBytes <- BS.readFile tmpFileName
+                case T.decodeUtf8' tmpBytes of
+                    Left _ -> do
+                        msg <- newClientMessage Error "Failed to decode file contents as UTF-8"
+                        return $ addClientMessage msg st
+                    Right t -> do
+                        let tmpLines = T.lines t
+                        return $ st & cmdLine.editContentsL .~ (textZipper tmpLines Nothing)
+                                    & csEditState.cedMultiline .~ (length tmpLines > 1)
             ExitFailure _ -> return st
 
 toggleMessagePreview :: ChatState -> ChatState
