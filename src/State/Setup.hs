@@ -247,7 +247,9 @@ initializeState cr myTeam myUser = do
 
       return (getId c, cChannel)
 
+  teamProfiles  <- mmGetProfiles cd token myTeamId
   users <- loadAllProfiles cd token -- mmGetProfiles cd token myTeamId
+  let mkProfile u = userInfoFromProfile u (HM.member (u^.userProfileIdL) teamProfiles)
   tz    <- getCurrentTimeZone
   hist  <- do
       result <- readHistory
@@ -266,7 +268,7 @@ initializeState cr myTeam myUser = do
                 , c <- maybeToList (HM.lookup i (chanNames ^. cnToChanId)) ]
       chanZip = Z.findRight (== townSqId) (Z.fromList chanIds)
       st = newState cr chanZip myUser myTeam tz hist
-             & usrMap .~ fmap userInfoFromProfile users
+             & usrMap .~ fmap mkProfile users
              & msgMap .~ msgs
              & csNames .~ chanNames
 

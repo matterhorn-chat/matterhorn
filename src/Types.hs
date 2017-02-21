@@ -417,14 +417,16 @@ data UserInfo = UserInfo
   { _uiName   :: T.Text
   , _uiId     :: UserId
   , _uiStatus :: UserStatus
+  , _uiInTeam :: Bool
   } deriving (Eq, Show)
 
 -- | Create a 'UserInfo' value from a Mattermost 'UserProfile' value
-userInfoFromProfile :: UserProfile -> UserInfo
-userInfoFromProfile up = UserInfo
+userInfoFromProfile :: UserProfile -> Bool -> UserInfo
+userInfoFromProfile up inTeam = UserInfo
   { _uiName   = userProfileUsername up
   , _uiId     = userProfileId up
   , _uiStatus = Offline
+  , _uiInTeam = inTeam
   }
 
 -- | The 'UserStatus' value represents possible current status for
@@ -714,7 +716,8 @@ lookupKeybinding e kbs = listToMaybe $ filter ((== e) . kbEvent) kbs
 
 sortedUserList :: ChatState -> [UserInfo]
 sortedUserList st = sort yes ++ sort no
-  where userList = filter (not . isSelf) (HM.elems(st^.usrMap))
+  where userList = filter showUser (HM.elems(st^.usrMap))
+        showUser u = not (isSelf u) && (u^.uiInTeam)
         isSelf u = (st^.csMe.userIdL) == (u^.uiId)
         hasUnread u =
           case st^.csNames.cnToChanId.at(u^.uiName) of
