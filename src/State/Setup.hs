@@ -6,8 +6,8 @@ import           Brick.Widgets.List (list)
 import           Control.Concurrent (threadDelay, forkIO)
 import qualified Control.Concurrent.Chan as Chan
 import           Control.Concurrent.MVar (newEmptyMVar)
-import           Control.Exception (catch)
-import           Control.Monad (forM, when, void)
+import           Control.Exception (SomeException, catch, try)
+import           Control.Monad (forM, forever, when, void)
 import           Control.Monad.IO.Class (liftIO)
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
@@ -38,12 +38,22 @@ fetchUserStatuses :: ConnectionData -> Token
                   -> IO (ChatState -> EventM Name ChatState)
 fetchUserStatuses cd token = do
   statusMap <- mmGetStatuses cd token
-  return $ \ appState ->
-    return $ HM.foldrWithKey
-      (\ uId status st ->
-          st & usrMap.ix(uId).uiStatus .~ statusFromText status)
-      appState
-      statusMap
+  return $ \ appState -> do
+    let updateUser u = u & uiStatus .~ (case HM.lookup (u^.uiId) statusMap of
+                                          Nothing -> Offline
+                                          Just t  -> statusFromText t)
+    return $ appState & usrMap.each %~ updateUser
+
+userRefresh :: ConnectionData -> Token -> RequestChan -> IO ()
+userRefresh cd token requestChan = void $ forkIO $ forever refresh
+  where refresh = do
+          let seconds = (* (1000 * 1000))
+          threadDelay (seconds 30)
+          Chan.writeChan requestChan $ do
+            rs <- try $ fetchUserStatuses cd token
+            case rs of
+              Left (_ :: SomeException) -> return return
+              Right upd -> return upd
 
 startTimezoneMonitor :: TimeZone -> RequestChan -> IO ()
 startTimezoneMonitor tz requestChan = do
@@ -210,6 +220,8 @@ initializeState cr myTeam myUser = do
   let myTeamId = getId myTeam
 
   Chan.writeChan requestChan $ fetchUserStatuses cd token
+
+  userRefresh cd token requestChan
 
   putStrLn $ "Loading channels for team " <> show (teamName myTeam) <> "..."
   chans <- mmGetChannels cd token myTeamId
