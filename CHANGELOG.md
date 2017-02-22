@@ -1,4 +1,19 @@
 
+30600.2.3
+=========
+
+Bug fixes:
+ * Message-yanking failures due to missing programs (e.g. xclip) no
+   longer trigger an unhandled exception (fixes #170)
+ * Users that are not members of the current team are now hidden from
+   the user list (fixes #161)
+ * User statues in the sidebar are now periodically refreshed
+ * Supported server commands now appear on the help screen (fixes #162)
+ * Files containing non-UTF-8 content no longer trigger unhandled
+   exceptions when being read by matterhorn (fixes #168)
+ * Updated repository URL in error message about reporting problems
+   (thanks @tommd)
+
 30600.2.2
 =========
 
