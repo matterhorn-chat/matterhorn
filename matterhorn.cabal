@@ -70,7 +70,7 @@ executable matterhorn
                      , data-default
                      , vty >= 5.15
                      , transformers
-                     , text-zipper >= 0.9
+                     , text-zipper >= 0.10
                      , array
                      , time >= 1.6
                      , xdg-basedir

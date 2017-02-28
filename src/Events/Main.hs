@@ -9,6 +9,7 @@ import Data.Monoid ((<>))
 import qualified Data.Set as Set
 import qualified Data.Text as T
 import qualified Data.Text.Zipper as Z
+import qualified Data.Text.Zipper.Generic.Words as Z
 import qualified Graphics.Vty as Vty
 import Lens.Micro.Platform
 
@@ -172,7 +173,7 @@ tabComplete dir st = do
                & csEditState.cedCompletionAlternatives .~ alts
       (edit, curAlternative) = case mb_word of
           Nothing -> (id, "")
-          Just w -> (Z.insertMany w . killWordBackward, w)
+          Just w -> (Z.insertMany w . Z.deletePrevWord, w)
 
   continue $ st' & cmdLine %~ (applyEdit edit)
                  & csEditState.cedCurrentAlternative .~ curAlternative
