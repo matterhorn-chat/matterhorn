@@ -14,6 +14,7 @@ import qualified Data.HashMap.Strict as HM
 import           Data.Monoid ((<>))
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
+import qualified Data.Text.Zipper as Z
 import           Data.Text.Zipper (textZipper, insertMany,
                                    moveRight, moveLeft, cursorPosition, currentLine,
                                    transposeChars, deleteChar, deletePrevChar,
@@ -155,6 +156,15 @@ handleEditingInput e st = do
         EvKey (KChar 'b') [MCtrl] | editingPermitted st ->
             return $ st & cmdLine %~ applyEdit moveLeft
 
+        EvKey (KChar 'f') [MMeta] | editingPermitted st ->
+            return $ st & cmdLine %~ applyEdit moveWordForward
+
+        EvKey (KChar 'b') [MMeta] | editingPermitted st ->
+            return $ st & cmdLine %~ applyEdit moveWordBackward
+
+        EvKey (KBS) [MMeta] | editingPermitted st ->
+            return $ st & cmdLine %~ applyEdit killWordBackward
+
         _ | editingPermitted st -> handleEventLensed st cmdLine handleEditorEvent e
           | otherwise -> return st
 
@@ -190,3 +200,41 @@ cursorAtChar ch e =
         curLine = currentLine z
         z = e^.editContentsL
     in (T.singleton ch) `T.isPrefixOf` T.drop col curLine
+
+-- XXX: killWordBackward, and delete could probably all
+-- be moved to the text zipper package (after some generalization and cleanup)
+-- for example, we should look up the standard unix word break characters
+-- and use those in killWordBackward.
+killWordBackward :: Z.TextZipper T.Text -> Z.TextZipper T.Text
+killWordBackward z =
+    let n = T.length ws + T.length wd
+        -- then kill the next word after the whistespace
+        wd = T.takeWhile (/= ' ') rs
+        -- kill the initial whitespace first, if any
+        (ws, rs) = T.span (== ' ') (T.reverse line)
+        delete n' z' | n' <= 0 = z'
+        delete n' z' = delete (n'-1) (Z.deletePrevChar z')
+        line = Z.currentLine z
+    in delete n z
+
+-- XXX same as killWordBackward
+moveWordForward :: Z.TextZipper T.Text -> Z.TextZipper T.Text
+moveWordForward zipper = skipWd (skipWs zipper)
+  where skipWs z
+          | Z.currentChar z == Just ' ' = skipWs (Z.moveRight z)
+          | otherwise = z
+        skipWd z
+          | Just c <- Z.currentChar z
+          , c /= ' ' = skipWd (Z.moveRight z)
+          | otherwise = z
+
+-- XXX same as killWordBackward
+moveWordBackward :: Z.TextZipper T.Text -> Z.TextZipper T.Text
+moveWordBackward zipper = skipWd (skipWs zipper)
+  where skipWs z
+          | Z.previousChar z == Just ' ' = skipWs (Z.moveLeft z)
+          | otherwise = z
+        skipWd z
+          | Just c <- Z.previousChar z
+          , c /= ' ' = skipWd (Z.moveLeft z)
+          | otherwise = z

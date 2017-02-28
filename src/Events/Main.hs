@@ -176,17 +176,3 @@ tabComplete dir st = do
 
   continue $ st' & cmdLine %~ (applyEdit edit)
                  & csEditState.cedCurrentAlternative .~ curAlternative
-
--- XXX: killWordBackward, and delete could probably all
--- be moved to the text zipper package (after some generalization and cleanup)
--- for example, we should look up the standard unix word break characters
--- and use those in killWordBackward.
-killWordBackward :: Z.TextZipper T.Text -> Z.TextZipper T.Text
-killWordBackward z =
-    let n = T.length
-          $ T.takeWhile (/= ' ')
-          $ T.reverse line
-        delete n' z' | n' <= 0 = z'
-        delete n' z' = delete (n'-1) (Z.deletePrevChar z')
-        line = Z.currentLine z
-    in delete n z
