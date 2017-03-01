@@ -57,6 +57,13 @@ onAppEvent st (AsyncErrEvent e) = do
 
 onVtyEvent :: ChatState -> Vty.Event -> EventM Name (Next ChatState)
 onVtyEvent st e = do
+    -- Even if we aren't showing the help UI when a resize occurs, we
+    -- need to invalidate its cache entry anyway in case the new size
+    -- differs from the cached size.
+    case e of
+        (Vty.EvResize _ _) -> invalidateCacheEntry HelpText
+        _ -> return ()
+
     case st^.csMode of
         Main                       -> onEventMain st e
         ShowHelp _                 -> onEventShowHelp st e
