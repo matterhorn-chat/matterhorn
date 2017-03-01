@@ -14,6 +14,7 @@ import qualified Data.HashMap.Strict as HM
 import           Data.Monoid ((<>))
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
+import qualified Data.Text.Zipper as Z
 import qualified Data.Text.Zipper.Generic.Words as Z
 import           Data.Text.Zipper (textZipper, insertMany,
                                    moveRight, moveLeft, cursorPosition, currentLine,
@@ -164,6 +165,19 @@ handleEditingInput e st = do
 
         EvKey (KBS) [MMeta] | editingPermitted st ->
             return $ st & cmdLine %~ applyEdit Z.deletePrevWord
+
+        EvKey (KChar 'd') [MMeta] | editingPermitted st ->
+            return $ st & cmdLine %~ applyEdit Z.deleteWord
+
+        EvKey (KChar 'k') [MCtrl] | editingPermitted st -> do
+            let z = st^.cmdLine.editContentsL
+                restOfLine = Z.currentLine (Z.killToBOL z)
+                st' = st & csEditState.cedYankBuffer .~ restOfLine
+            return $ st' & cmdLine %~ applyEdit Z.killToEOL
+
+        EvKey (KChar 'y') [MCtrl] | editingPermitted st -> do
+            let buf = st^.csEditState.cedYankBuffer
+            return $ st & cmdLine %~ applyEdit (Z.insertMany buf)
 
         _ | editingPermitted st -> handleEventLensed st cmdLine handleEditorEvent e
           | otherwise -> return st

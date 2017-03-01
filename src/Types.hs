@@ -489,6 +489,7 @@ data ChatEditState = ChatEditState
   , _cedCurrentCompletion    :: Maybe T.Text
   , _cedCurrentAlternative   :: T.Text
   , _cedCompletionAlternatives :: [T.Text]
+  , _cedYankBuffer           :: T.Text
   }
 
 data EditMode =
@@ -509,6 +510,7 @@ emptyEditState hist = ChatEditState
   , _cedCompletionAlternatives = []
   , _cedCurrentAlternative   = ""
   , _cedEditMode             = NewPost
+  , _cedYankBuffer           = ""
   }
 
 -- | A 'RequestChan' is a queue of operations we have to perform
