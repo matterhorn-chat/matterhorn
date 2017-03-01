@@ -83,7 +83,7 @@ mainHelp = commandHelp
               ]
 
 kbColumnWidth :: Int
-kbColumnWidth = 10
+kbColumnWidth = 12
 
 kbDescColumnWidth :: Int
 kbDescColumnWidth = 60
