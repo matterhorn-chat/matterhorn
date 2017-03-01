@@ -1,4 +1,21 @@
 
+30600.2.4
+=========
+
+New editing keybindings:
+ * C-w, M-Backspace now delete the word to the left of the cursor.
+ * M-d deletes the word to the right of the cursor.
+ * C-k now kills text from the cursor to the end of the line and copies
+   to an internal buffer; C-y pastes from said buffer.
+ * C-b, C-f move back and forward by one word, respectively.
+
+* Many editing keybindings are now present in their own Help page
+  section.
+
+Package changes:
+ * Upgraded text-zipper to 0.10.
+ * Upgraded mattermost-api to 30600.2.2.
+
 30600.2.3
 =========
 
@@ -20,7 +37,7 @@ Bug fixes:
 * Improved formatting of message attachments so that their filenames
   are shown. Previously only their hash identifiers were displayed. This
   change also entails asynchronous fetching of attachment metadata.
-* Upgraded to mattermost-api 30600.2.2.
+* Upgraded to mattermost-api 30600.2.1.
 
 30600.2.1
 =========
