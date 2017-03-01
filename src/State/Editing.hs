@@ -163,6 +163,9 @@ handleEditingInput e st = do
         EvKey (KBS) [MMeta] | editingPermitted st ->
             return $ st & cmdLine %~ applyEdit Z.deletePrevWord
 
+        EvKey (KChar 'w') [MCtrl] | editingPermitted st ->
+            return $ st & cmdLine %~ applyEdit Z.deletePrevWord
+
         EvKey (KChar 'd') [MMeta] | editingPermitted st ->
             return $ st & cmdLine %~ applyEdit Z.deleteWord
 
