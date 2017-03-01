@@ -16,10 +16,6 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Zipper as Z
 import qualified Data.Text.Zipper.Generic.Words as Z
-import           Data.Text.Zipper (textZipper, insertMany,
-                                   moveRight, moveLeft, cursorPosition, currentLine,
-                                   transposeChars, deleteChar, deletePrevChar,
-                                   insertChar, clearZipper)
 import           Graphics.Vty (Event(..), Key(..), Modifier(..))
 import           Lens.Micro.Platform
 import           System.Environment (lookupEnv)
@@ -72,7 +68,7 @@ invokeExternalEditor st = do
                         return $ addClientMessage msg st
                     Right t -> do
                         let tmpLines = T.lines t
-                        return $ st & cmdLine.editContentsL .~ (textZipper tmpLines Nothing)
+                        return $ st & cmdLine.editContentsL .~ (Z.textZipper tmpLines Nothing)
                                     & csEditState.cedMultiline .~ (length tmpLines > 1)
             ExitFailure _ -> return st
 
@@ -96,7 +92,7 @@ addUserToCurrentChannel uname st = do
 handlePaste :: BS.ByteString -> ChatState -> ChatState
 handlePaste bytes st = do
   let pasteStr = T.pack (UTF8.toString bytes)
-      st' = st & cmdLine %~ applyEdit (insertMany pasteStr)
+      st' = st & cmdLine %~ applyEdit (Z.insertMany pasteStr)
   case length (getEditContents $ st'^.cmdLine) > 1 of
       True -> startMultilineEditing st'
       False -> st'
@@ -119,43 +115,43 @@ handleEditingInput e st = do
         smartChars = "*`_"
     st' <- case e of
         EvKey (KChar 't') [MCtrl] | editingPermitted st ->
-            return $ st & cmdLine %~ applyEdit transposeChars
+            return $ st & cmdLine %~ applyEdit Z.transposeChars
 
         -- Not editing; backspace here means cancel multi-line message
         -- composition
         EvKey KBS [] | (not $ editingPermitted st) ->
-            return $ st & cmdLine %~ applyEdit clearZipper
+            return $ st & cmdLine %~ applyEdit Z.clearZipper
 
         -- Backspace in editing mode with smart pair insertion means
         -- smart pair removal when possible
         EvKey KBS [] | editingPermitted st && smartBacktick ->
-            let backspace = return $ st & cmdLine %~ applyEdit deletePrevChar
+            let backspace = return $ st & cmdLine %~ applyEdit Z.deletePrevChar
             in case cursorAtOneOf smartChars (st^.cmdLine) of
                 Nothing -> backspace
                 Just ch ->
                     -- Smart char removal:
-                    if | (cursorAtChar ch $ applyEdit moveLeft $ st^.cmdLine) &&
-                         (cursorIsAtEnd $ applyEdit moveRight $ st^.cmdLine) ->
-                           return $ st & cmdLine %~ applyEdit (deleteChar >>> deletePrevChar)
+                    if | (cursorAtChar ch $ applyEdit Z.moveLeft $ st^.cmdLine) &&
+                         (cursorIsAtEnd $ applyEdit Z.moveRight $ st^.cmdLine) ->
+                           return $ st & cmdLine %~ applyEdit (Z.deleteChar >>> Z.deletePrevChar)
                        | otherwise -> backspace
 
         EvKey (KChar ch) [] | editingPermitted st && smartBacktick && ch `elem` smartChars ->
             -- Smart char insertion:
-            let doInsertChar = return $ st & cmdLine %~ applyEdit (insertChar ch)
+            let doInsertChar = return $ st & cmdLine %~ applyEdit (Z.insertChar ch)
             in if | (editorEmpty $ st^.cmdLine) ||
-                       ((cursorAtChar ' ' (applyEdit moveLeft $ st^.cmdLine)) &&
+                       ((cursorAtChar ' ' (applyEdit Z.moveLeft $ st^.cmdLine)) &&
                         (cursorIsAtEnd $ st^.cmdLine)) ->
-                      return $ st & cmdLine %~ applyEdit (insertMany (T.pack $ ch:ch:[]) >>> moveLeft)
+                      return $ st & cmdLine %~ applyEdit (Z.insertMany (T.pack $ ch:ch:[]) >>> Z.moveLeft)
                   | (cursorAtChar ch $ st^.cmdLine) &&
-                    (cursorIsAtEnd $ applyEdit moveRight $ st^.cmdLine) ->
-                      return $ st & cmdLine %~ applyEdit moveRight
+                    (cursorIsAtEnd $ applyEdit Z.moveRight $ st^.cmdLine) ->
+                      return $ st & cmdLine %~ applyEdit Z.moveRight
                   | otherwise -> doInsertChar
 
         EvKey (KChar 'f') [MCtrl] | editingPermitted st ->
-            return $ st & cmdLine %~ applyEdit moveRight
+            return $ st & cmdLine %~ applyEdit Z.moveRight
 
         EvKey (KChar 'b') [MCtrl] | editingPermitted st ->
-            return $ st & cmdLine %~ applyEdit moveLeft
+            return $ st & cmdLine %~ applyEdit Z.moveLeft
 
         EvKey (KChar 'f') [MMeta] | editingPermitted st ->
             return $ st & cmdLine %~ applyEdit Z.moveWordRight
@@ -190,14 +186,14 @@ editorEmpty e = cursorIsAtEnd e &&
 
 cursorIsAtEnd :: Editor T.Text a -> Bool
 cursorIsAtEnd e =
-    let col = snd $ cursorPosition z
-        curLine = currentLine z
+    let col = snd $ Z.cursorPosition z
+        curLine = Z.currentLine z
         z = e^.editContentsL
     in col == T.length curLine
 
 cursorIsAtBeginning :: Editor T.Text a -> Bool
 cursorIsAtBeginning e =
-    let col = snd $ cursorPosition z
+    let col = snd $ Z.cursorPosition z
         z = e^.editContentsL
     in col == 0
 
@@ -210,7 +206,7 @@ cursorAtOneOf (c:cs) e =
 
 cursorAtChar :: Char -> Editor T.Text a -> Bool
 cursorAtChar ch e =
-    let col = snd $ cursorPosition z
-        curLine = currentLine z
+    let col = snd $ Z.cursorPosition z
+        curLine = Z.currentLine z
         z = e^.editContentsL
     in (T.singleton ch) `T.isPrefixOf` T.drop col curLine
