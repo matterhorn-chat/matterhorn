@@ -2,7 +2,7 @@
 
 module State.Editing where
 
-import           Brick (EventM, Next, suspendAndResume, handleEventLensed)
+import           Brick (EventM, Next, suspendAndResume, handleEventLensed, continue)
 import           Brick.Widgets.Edit (Editor, handleEditorEvent, getEditContents, editContentsL)
 import           Brick.Widgets.Edit (applyEdit)
 import qualified Codec.Binary.UTF8.Generic as UTF8
@@ -103,7 +103,45 @@ editingPermitted st =
     (length (getEditContents $ st^.cmdLine) == 1) ||
     st^.csEditState.cedMultiline
 
-handleEditingInput :: Event -> ChatState -> EventM Name ChatState
+editingKeybindings :: [Keybinding]
+editingKeybindings =
+  [ KB "Transpose the final two characters"
+    (EvKey (KChar 't') [MCtrl]) $ \ st ->
+    continue $ st & cmdLine %~ applyEdit Z.transposeChars
+  , KB "Move one character to the right"
+    (EvKey (KChar 'f') [MCtrl]) $ \ st ->
+    continue $ st & cmdLine %~ applyEdit Z.moveRight
+  , KB "Move one character to the left"
+    (EvKey (KChar 'b') [MCtrl]) $ \ st ->
+    continue $ st & cmdLine %~ applyEdit Z.moveLeft
+  , KB "Move one word to the right"
+    (EvKey (KChar 'f') [MMeta]) $ \ st ->
+    continue $ st & cmdLine %~ applyEdit Z.moveWordRight
+  , KB "Move one word to the left"
+    (EvKey (KChar 'b') [MMeta]) $ \ st ->
+    continue $ st & cmdLine %~ applyEdit Z.moveWordLeft
+  , KB "Delete the word to the left of the cursor"
+    (EvKey (KBS) [MMeta]) $ \ st ->
+    continue $ st & cmdLine %~ applyEdit Z.deletePrevWord
+  , KB "Delete the word to the left of the cursor"
+    (EvKey (KChar 'w') [MCtrl]) $ \ st ->
+    continue $ st & cmdLine %~ applyEdit Z.deletePrevWord
+  , KB "Delete the word to the right of the cursor"
+    (EvKey (KChar 'd') [MMeta]) $ \ st ->
+    continue $ st & cmdLine %~ applyEdit Z.deleteWord
+  , KB "Kill the line to the right of the current position and copy it"
+    (EvKey (KChar 'k') [MCtrl]) $ \ st -> do
+      let z = st^.cmdLine.editContentsL
+          restOfLine = Z.currentLine (Z.killToBOL z)
+          st' = st & csEditState.cedYankBuffer .~ restOfLine
+      continue $ st' & cmdLine %~ applyEdit Z.killToEOL
+  , KB "Paste the current buffer contents at the cursor"
+    (EvKey (KChar 'y') [MCtrl]) $ \ st -> do
+      let buf = st^.csEditState.cedYankBuffer
+      continue $ st & cmdLine %~ applyEdit (Z.insertMany buf)
+  ]
+
+handleEditingInput :: Event -> ChatState -> EventM Name (Next ChatState)
 handleEditingInput e st = do
     -- Only handle input events to the editor if we permit editing:
     -- if multiline mode is off, or if there is only one line of text
@@ -114,75 +152,44 @@ handleEditingInput e st = do
 
     let smartBacktick = st^.csResources.crConfiguration.to configSmartBacktick
         smartChars = "*`_"
-    st' <- case e of
-        EvKey (KChar 't') [MCtrl] | editingPermitted st ->
-            return $ st & cmdLine %~ applyEdit Z.transposeChars
-
-        -- Not editing; backspace here means cancel multi-line message
-        -- composition
-        EvKey KBS [] | (not $ editingPermitted st) ->
+    case lookupKeybinding e editingKeybindings of
+      Just kb | editingPermitted st -> kbAction kb st
+      _ -> do
+        st' <- case e of
+          -- Not editing; backspace here means cancel multi-line message
+          -- composition
+          EvKey KBS [] | (not $ editingPermitted st) ->
             return $ st & cmdLine %~ applyEdit Z.clearZipper
 
-        -- Backspace in editing mode with smart pair insertion means
-        -- smart pair removal when possible
-        EvKey KBS [] | editingPermitted st && smartBacktick ->
-            let backspace = return $ st & cmdLine %~ applyEdit Z.deletePrevChar
-            in case cursorAtOneOf smartChars (st^.cmdLine) of
-                Nothing -> backspace
-                Just ch ->
-                    -- Smart char removal:
-                    if | (cursorAtChar ch $ applyEdit Z.moveLeft $ st^.cmdLine) &&
-                         (cursorIsAtEnd $ applyEdit Z.moveRight $ st^.cmdLine) ->
-                           return $ st & cmdLine %~ applyEdit (Z.deleteChar >>> Z.deletePrevChar)
-                       | otherwise -> backspace
+          -- Backspace in editing mode with smart pair insertion means
+          -- smart pair removal when possible
+          EvKey KBS [] | editingPermitted st && smartBacktick ->
+              let backspace = return $ st & cmdLine %~ applyEdit Z.deletePrevChar
+              in case cursorAtOneOf smartChars (st^.cmdLine) of
+                  Nothing -> backspace
+                  Just ch ->
+                      -- Smart char removal:
+                      if | (cursorAtChar ch $ applyEdit Z.moveLeft $ st^.cmdLine) &&
+                           (cursorIsAtEnd $ applyEdit Z.moveRight $ st^.cmdLine) ->
+                             return $ st & cmdLine %~ applyEdit (Z.deleteChar >>> Z.deletePrevChar)
+                         | otherwise -> backspace
 
-        EvKey (KChar ch) [] | editingPermitted st && smartBacktick && ch `elem` smartChars ->
-            -- Smart char insertion:
-            let doInsertChar = return $ st & cmdLine %~ applyEdit (Z.insertChar ch)
-            in if | (editorEmpty $ st^.cmdLine) ||
-                       ((cursorAtChar ' ' (applyEdit Z.moveLeft $ st^.cmdLine)) &&
-                        (cursorIsAtEnd $ st^.cmdLine)) ->
-                      return $ st & cmdLine %~ applyEdit (Z.insertMany (T.pack $ ch:ch:[]) >>> Z.moveLeft)
-                  | (cursorAtChar ch $ st^.cmdLine) &&
-                    (cursorIsAtEnd $ applyEdit Z.moveRight $ st^.cmdLine) ->
-                      return $ st & cmdLine %~ applyEdit Z.moveRight
-                  | otherwise -> doInsertChar
+          EvKey (KChar ch) [] | editingPermitted st && smartBacktick && ch `elem` smartChars ->
+              -- Smart char insertion:
+              let doInsertChar = return $ st & cmdLine %~ applyEdit (Z.insertChar ch)
+              in if | (editorEmpty $ st^.cmdLine) ||
+                         ((cursorAtChar ' ' (applyEdit Z.moveLeft $ st^.cmdLine)) &&
+                          (cursorIsAtEnd $ st^.cmdLine)) ->
+                        return $ st & cmdLine %~ applyEdit (Z.insertMany (T.pack $ ch:ch:[]) >>> Z.moveLeft)
+                    | (cursorAtChar ch $ st^.cmdLine) &&
+                      (cursorIsAtEnd $ applyEdit Z.moveRight $ st^.cmdLine) ->
+                        return $ st & cmdLine %~ applyEdit Z.moveRight
+                    | otherwise -> doInsertChar
 
-        EvKey (KChar 'f') [MCtrl] | editingPermitted st ->
-            return $ st & cmdLine %~ applyEdit Z.moveRight
+          _ | editingPermitted st -> handleEventLensed st cmdLine handleEditorEvent e
+            | otherwise -> return st
 
-        EvKey (KChar 'b') [MCtrl] | editingPermitted st ->
-            return $ st & cmdLine %~ applyEdit Z.moveLeft
-
-        EvKey (KChar 'f') [MMeta] | editingPermitted st ->
-            return $ st & cmdLine %~ applyEdit Z.moveWordRight
-
-        EvKey (KChar 'b') [MMeta] | editingPermitted st ->
-            return $ st & cmdLine %~ applyEdit Z.moveWordLeft
-
-        EvKey (KBS) [MMeta] | editingPermitted st ->
-            return $ st & cmdLine %~ applyEdit Z.deletePrevWord
-
-        EvKey (KChar 'w') [MCtrl] | editingPermitted st ->
-            return $ st & cmdLine %~ applyEdit Z.deletePrevWord
-
-        EvKey (KChar 'd') [MMeta] | editingPermitted st ->
-            return $ st & cmdLine %~ applyEdit Z.deleteWord
-
-        EvKey (KChar 'k') [MCtrl] | editingPermitted st -> do
-            let z = st^.cmdLine.editContentsL
-                restOfLine = Z.currentLine (Z.killToBOL z)
-                st' = st & csEditState.cedYankBuffer .~ restOfLine
-            return $ st' & cmdLine %~ applyEdit Z.killToEOL
-
-        EvKey (KChar 'y') [MCtrl] | editingPermitted st -> do
-            let buf = st^.csEditState.cedYankBuffer
-            return $ st & cmdLine %~ applyEdit (Z.insertMany buf)
-
-        _ | editingPermitted st -> handleEventLensed st cmdLine handleEditorEvent e
-          | otherwise -> return st
-
-    return $ st' & csCurrentCompletion .~ Nothing
+        continue $ st' & csCurrentCompletion .~ Nothing
 
 editorEmpty :: Editor T.Text a -> Bool
 editorEmpty e = cursorIsAtEnd e &&

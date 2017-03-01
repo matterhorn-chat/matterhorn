@@ -23,7 +23,7 @@ import InputHistory
 onEventMain :: ChatState -> Vty.Event -> EventM Name (Next ChatState)
 onEventMain st e | Just kb <- lookupKeybinding e mainKeybindings = kbAction kb st
 onEventMain st (Vty.EvPaste bytes) = continue $ handlePaste bytes st
-onEventMain st e = continue =<< handleEditingInput e st
+onEventMain st e = handleEditingInput e st
 
 mainKeybindings :: [Keybinding]
 mainKeybindings =
