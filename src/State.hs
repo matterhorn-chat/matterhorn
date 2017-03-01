@@ -7,7 +7,7 @@ import           Brick (EventM, invalidateCacheEntry)
 import           Brick.Widgets.Edit (getEditContents, editContentsL)
 import           Brick.Widgets.List (list, listMoveTo, listSelectedElement)
 import           Control.Applicative
-import           Control.Exception (catch, try)
+import           Control.Exception (catch)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Char (isAlphaNum)
 import           Brick.Main (getVtyHandle, viewportScroll, vScrollToBeginning, vScrollBy)
@@ -27,7 +27,6 @@ import qualified Data.Foldable as F
 import           Graphics.Vty (outputIface)
 import           Graphics.Vty.Output.Interface (ringTerminalBell)
 import           Lens.Micro.Platform
-import           System.Hclip (setClipboard, ClipboardException(..))
 import           System.Process (system)
 
 import           Prelude
@@ -238,21 +237,8 @@ copyVerbatimToClipboard st =
         Just m -> case findVerbatimChunk (m^.mText) of
             Nothing -> return st
             Just txt -> do
-                result <- liftIO $ try (setClipboard (T.unpack txt))
-                case result of
-                    Left e -> do
-                        let errMsg = case e of
-                              UnsupportedOS _ ->
-                                  "Matterhorn does not support yanking on this operating system."
-                              NoTextualData ->
-                                  "Textual data is required to set the clipboard."
-                              MissingCommands cmds ->
-                                  "Could not set clipboard due to missing one of the " <>
-                                  "required program(s): " <> (T.pack $ show cmds)
-                        msg <- newClientMessage Error errMsg
-                        return $ addClientMessage msg $ st & csMode .~ Main
-                    Right () ->
-                        return (st & csMode .~ Main)
+              st' <- copyToClipboard txt st
+              return (st' & csMode .~ Main)
 
 -- * Joining, Leaving, and Inviting
 
