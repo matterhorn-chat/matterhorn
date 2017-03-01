@@ -18,11 +18,11 @@ import qualified Data.Text.Zipper as Z
 import qualified Data.Text.Zipper.Generic.Words as Z
 import           Graphics.Vty (Event(..), Key(..), Modifier(..))
 import           Lens.Micro.Platform
-import           System.Environment (lookupEnv)
-import           System.Exit (ExitCode(..))
-import           System.IO (hPutStr, hClose)
-import           System.IO.Temp (withSystemTempFile)
-import           System.Process (system)
+import qualified System.Environment as Sys
+import qualified System.Exit as Sys
+import qualified System.IO as Sys
+import qualified System.IO.Temp as Sys
+import qualified System.Process as Sys
 
 import           Network.Mattermost
 import           Network.Mattermost.Lenses
@@ -45,22 +45,23 @@ invokeExternalEditor st = do
     -- file, and update the program state.
     --
     -- If EDITOR is not present, fall back to 'vi'.
-    mEnv <- liftIO $ lookupEnv "EDITOR"
+    mEnv <- liftIO $ Sys.lookupEnv "EDITOR"
     let editorProgram = maybe "vi" id mEnv
 
     suspendAndResume $
-      withSystemTempFile "matterhorn_editor.tmp" $ \tmpFileName tmpFileHandle -> do
+      Sys.withSystemTempFile "matterhorn_editor.tmp" $ \tmpFileName tmpFileHandle -> do
         -- Write the current message to the temp file
-        hPutStr tmpFileHandle $ T.unpack $ T.intercalate "\n" $ getEditContents $ st^.cmdLine
-        hClose tmpFileHandle
+        Sys.hPutStr tmpFileHandle $ T.unpack $ T.intercalate "\n" $
+            getEditContents $ st^.cmdLine
+        Sys.hClose tmpFileHandle
 
         -- Run the editor
-        status <- system (editorProgram <> " " <> tmpFileName)
+        status <- Sys.system (editorProgram <> " " <> tmpFileName)
 
         -- On editor exit, if exited with zero status, read temp file.
         -- If non-zero status, skip temp file read.
         case status of
-            ExitSuccess -> do
+            Sys.ExitSuccess -> do
                 tmpBytes <- BS.readFile tmpFileName
                 case T.decodeUtf8' tmpBytes of
                     Left _ -> do
@@ -70,7 +71,7 @@ invokeExternalEditor st = do
                         let tmpLines = T.lines t
                         return $ st & cmdLine.editContentsL .~ (Z.textZipper tmpLines Nothing)
                                     & csEditState.cedMultiline .~ (length tmpLines > 1)
-            ExitFailure _ -> return st
+            Sys.ExitFailure _ -> return st
 
 toggleMessagePreview :: ChatState -> ChatState
 toggleMessagePreview = csShowMessagePreview %~ not
