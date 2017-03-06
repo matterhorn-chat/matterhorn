@@ -741,7 +741,7 @@ updateChannelSelectMatches st =
     -- user matches and then update the match lists.
     let chanNameMatches = channelNameMatch (st^.csChannelSelectString)
         chanMatches = catMaybes $ chanNameMatches <$> st^.csNames.cnChans
-        userMatches = catMaybes $ chanNameMatches <$> st^.csNames.cnUsers
+        userMatches = catMaybes $ chanNameMatches <$> (^.uiName) <$> sortedUserList st
         mkMap ms = HM.fromList [(channelNameFromMatch m, m) | m <- ms]
     in st & csChannelSelectChannelMatches .~ mkMap chanMatches
           & csChannelSelectUserMatches    .~ mkMap userMatches
