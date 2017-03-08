@@ -98,7 +98,30 @@ cursorSentinel = '‸'
 
 -- Render markdown with username highlighting
 renderMarkdown :: UserSet -> Blocks -> Widget a
-renderMarkdown uSet bs = vBox (fmap (toWidget uSet) bs)
+renderMarkdown uSet =
+  B.vBox . F.toList . fmap (toWidget uSet) . addBlankLines
+
+-- Add blank lines only between adjacent elements of the same type, to
+-- save space
+addBlankLines :: Seq Block -> Seq Block
+addBlankLines = go' . viewl
+  where go' EmptyL = S.empty
+        go' (x :< xs) = go x (viewl xs)
+        go a@C.Para {} (b@C.Para {} :< rs) =
+             a <| blank <| go b (viewl rs)
+        go a@C.Header {} (b@C.Header {} :< rs) =
+             a <| blank <| go b (viewl rs)
+        go a@C.Blockquote {} (b@C.Blockquote {} :< rs) =
+             a <| blank <| go b (viewl rs)
+        go a@C.List {} (b@C.List {} :< rs) =
+             a <| blank <| go b (viewl rs)
+        go a@C.CodeBlock {} (b@C.CodeBlock {} :< rs) =
+             a <| blank <| go b (viewl rs)
+        go a@C.HtmlBlock {} (b@C.HtmlBlock {} :< rs) =
+             a <| blank <| go b (viewl rs)
+        go x (y :< rs) = x <| go y (viewl rs)
+        go x (EmptyL) = S.singleton x
+        blank = C.Para (S.singleton (C.Str " "))
 
 -- Render text to markdown without username highlighting
 renderText :: Text -> Widget a
