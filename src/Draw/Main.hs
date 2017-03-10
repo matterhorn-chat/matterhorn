@@ -160,7 +160,7 @@ getOrdinaryChannels st =
           sigil = case st ^. csLastChannelInput . at chan of
             Nothing      -> "#"
             Just ("", _) -> "#"
-            _            -> "*"
+            _            -> "»"
     ]
 
 getDmChannels :: ChatState -> [ChannelListEntry]
@@ -176,7 +176,7 @@ getDmChannels st =
             case do { cId <- m_chanId; st^.csLastChannelInput.at cId } of
               Nothing      -> T.singleton $ userSigil u
               Just ("", _) -> T.singleton $ userSigil u
-              _            -> "*"
+              _            -> "»"
           uname = u^.uiName
           cname = getDMChannelName (st^.csMe^.userIdL) (u^.uiId)
           recent = maybe False ((== st^.csRecentChannel) . Just) m_chanId
