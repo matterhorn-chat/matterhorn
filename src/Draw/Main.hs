@@ -152,11 +152,15 @@ renderChannelListEntry st csMatches entry =
 
 getOrdinaryChannels :: ChatState -> [ChannelListEntry]
 getOrdinaryChannels st =
-    [ ChannelListEntry n "#" n txt unread recent
+    [ ChannelListEntry n sigil n txt unread recent
     | n <- (st ^. csNames . cnChans)
     , let Just chan = st ^. csNames . cnToChanId . at n
           unread = hasUnread st chan
           recent = Just chan == st^.csRecentChannel
+          sigil = case st ^. csLastChannelInput . at chan of
+            Nothing      -> "#"
+            Just ("", _) -> "#"
+            _            -> "W"
     ]
 
 getDmChannels :: ChatState -> [ChannelListEntry]
@@ -168,7 +172,11 @@ getDmChannels st =
                  withDefAttr clientMessageAttr . txt
                | otherwise ->
                  colorUsername
-          sigil = T.singleton $ userSigil u
+          sigil =
+            case do { cId <- m_chanId; st^.csLastChannelInput.at cId } of
+              Nothing      -> T.singleton $ userSigil u
+              Just ("", _) -> T.singleton $ userSigil u
+              _            -> "W"
           uname = u^.uiName
           cname = getDMChannelName (st^.csMe^.userIdL) (u^.uiId)
           recent = maybe False ((== st^.csRecentChannel) . Just) m_chanId
