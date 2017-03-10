@@ -354,8 +354,14 @@ saveCurrentEdit st =
     in st & csLastChannelInput.at cId .~
       Just (T.intercalate "\n" $ getEditContents $ st^.cmdLine, st^.csEditState.cedEditMode)
 
+resetCurrentEdit :: ChatState -> ChatState
+resetCurrentEdit st =
+    let cId = st^.csCurrentChannelId
+    in st & csLastChannelInput.at cId .~ Nothing
+
 changeChannelCommon :: ChatState -> EventM Name ChatState
 changeChannelCommon st =
+    resetCurrentEdit <$>
     loadLastEdit <$>
     (resetEditorState =<<
      fetchCurrentScrollback =<<
