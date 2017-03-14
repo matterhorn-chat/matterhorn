@@ -120,7 +120,6 @@ runScript fp text = do
   case code of
     ExitSuccess -> return $ \st -> do
       liftIO $ sendMessage st (st^.csEditState.cedEditMode) (T.pack stdout)
-      return st
     ExitFailure _ -> return $ \st -> do
       let msgText = "The script `" <> T.pack fp <> "` exited with a " <>
                     "non-zero exit code."

@@ -883,30 +883,37 @@ shouldSkipMessage :: T.Text -> Bool
 shouldSkipMessage "" = True
 shouldSkipMessage s = T.all (`elem` (" \t"::String)) s
 
-sendMessage :: ChatState -> EditMode -> T.Text -> IO ()
+sendMessage :: ChatState -> EditMode -> T.Text -> IO ChatState
 sendMessage st mode msg =
     case shouldSkipMessage msg of
-        True -> return ()
+        True -> return st
         False -> do
-            let myId   = st^.csMe.userIdL
-                chanId = st^.csCurrentChannelId
-                theTeamId = st^.csMyTeam.teamIdL
-            doAsync st $ do
-              case mode of
-                NewPost -> do
-                    pendingPost <- mkPendingPost msg myId chanId
-                    void $ mmPost (st^.csConn) (st^.csTok) theTeamId pendingPost
-                Replying _ p -> do
-                    pendingPost <- mkPendingPost msg myId chanId
-                    let modifiedPost =
-                            pendingPost { pendingPostParentId = Just $ postId p
-                                        , pendingPostRootId = Just $ postId p
-                                        }
-                    void $ mmPost (st^.csConn) (st^.csTok) theTeamId modifiedPost
-                Editing p -> do
-                    now <- getCurrentTime
-                    let modifiedPost = p { postMessage = msg
-                                         , postPendingPostId = Nothing
-                                         , postUpdateAt = now
-                                         }
-                    void $ mmUpdatePost (st^.csConn) (st^.csTok) theTeamId modifiedPost
+            case st^.csConnectionStatus of
+                Disconnected -> do
+                    let s = "Cannot send messages while disconnected."
+                    emsg <- newClientMessage Error s
+                    return $ addClientMessage emsg st
+                Connected -> do
+                    let myId   = st^.csMe.userIdL
+                        chanId = st^.csCurrentChannelId
+                        theTeamId = st^.csMyTeam.teamIdL
+                    doAsync st $ do
+                      case mode of
+                        NewPost -> do
+                            pendingPost <- mkPendingPost msg myId chanId
+                            void $ mmPost (st^.csConn) (st^.csTok) theTeamId pendingPost
+                        Replying _ p -> do
+                            pendingPost <- mkPendingPost msg myId chanId
+                            let modifiedPost =
+                                    pendingPost { pendingPostParentId = Just $ postId p
+                                                , pendingPostRootId = Just $ postId p
+                                                }
+                            void $ mmPost (st^.csConn) (st^.csTok) theTeamId modifiedPost
+                        Editing p -> do
+                            now <- getCurrentTime
+                            let modifiedPost = p { postMessage = msg
+                                                 , postPendingPostId = Nothing
+                                                 , postUpdateAt = now
+                                                 }
+                            void $ mmUpdatePost (st^.csConn) (st^.csTok) theTeamId modifiedPost
+                    return st

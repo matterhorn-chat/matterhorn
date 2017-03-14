@@ -148,8 +148,7 @@ handleInputSubmission st = do
   case T.uncons line of
     Just ('/',cmd) -> dispatchCommand cmd st'
     _              -> do
-      liftIO (sendMessage st' (st^.csEditState.cedEditMode) allLines)
-      continue st'
+      continue =<< liftIO (sendMessage st' (st^.csEditState.cedEditMode) allLines)
 
 tabComplete :: Completion.Direction
             -> ChatState -> EventM Name (Next ChatState)
