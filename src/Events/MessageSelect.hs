@@ -18,8 +18,9 @@ onEventMessageSelect st e | Just kb <- lookupKeybinding e messageSelectKeybindin
 onEventMessageSelect st _ = continue st
 
 onEventMessageSelectDeleteConfirm :: ChatState -> Vty.Event -> EventM Name (Next ChatState)
-onEventMessageSelectDeleteConfirm st (Vty.EvKey (Vty.KChar 'y') []) =
-    deleteSelectedMessage st >>= continue
+onEventMessageSelectDeleteConfirm st (Vty.EvKey (Vty.KChar 'y') []) = do
+    st' <- deleteSelectedMessage st
+    continue $ st' & csMode .~ Main
 onEventMessageSelectDeleteConfirm st _ =
     continue $ st & csMode .~ Main
 
