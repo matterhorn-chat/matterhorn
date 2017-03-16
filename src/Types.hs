@@ -220,7 +220,6 @@ postIsTopicChange p =
 postIsEmote :: Post -> Bool
 postIsEmote p =
     and [ p^.postPropsL.postPropsOverrideIconUrlL == Just (""::T.Text)
-        , p^.postPropsL.postPropsOverrideUsernameL == Just ("webhook"::T.Text)
         , ("*" `T.isPrefixOf` postMessage p)
         , ("*" `T.isSuffixOf` postMessage p)
         ]
