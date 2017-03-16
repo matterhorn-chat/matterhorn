@@ -110,6 +110,10 @@ handleWSEvent st we =
       continue st
     WMDirectAdded -> -- XXX
       continue st
+    WMChannelCreated -> -- XXX
+      continue st
+    WMGroupAdded -> -- XXX
+      continue st
     WMLeaveTeam -> -- XXX: How do we deal with this one?
       continue st
     -- An 'ephemeral message' is just MatterMost's version
