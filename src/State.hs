@@ -50,21 +50,31 @@ pageAmount = 15
 
 -- * Refreshing Channel Data
 
--- | Get all the new messages for a given channel
+-- | Get all the new messages for a given channel. In addition, load the
+-- channel metadata and update that, too.
 refreshChannel :: ChannelId -> ChatState -> IO ()
 refreshChannel chan st = doAsyncWith st $
   case F.find (\ p -> isJust (p^.mPostId)) (Seq.reverse (st^.csChannel(chan).ccContents.cdMessages)) of
     Just (Message { _mPostId = Just pId }) -> do
+      -- Get the latest channel metadata.
+      cwd <- mmGetChannel (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) chan
+
+      -- Load posts since the last post in this channel.
       posts <- mmGetPostsAfter (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) chan pId 0 100
       return $ \ st' -> do
         res <- F.foldrM addMessage st' [ (posts^.postsPostsL) HM.! p
                                        | p <- F.toList (posts^.postsOrderL)
                                        ]
-        return (res & csChannel(chan).ccInfo.cdCurrentState .~ ChanLoaded)
+        let newChanInfo = channelInfoFromChannelWithData cwd &
+                            cdCurrentState .~ ChanLoaded &
+                            cdNewMessageCutoff .~ (oldChanInfo^.cdNewMessageCutoff)
+            oldChanInfo = res^.csChannel(chan).ccInfo
+
+        return (res & csChannel(chan).ccInfo .~ newChanInfo)
     _ -> return return
 
--- | Find all the loaded channels and refresh their state, setting the state as dirty
--- until we get a response
+-- | Find all the loaded channels and refresh their state, setting the
+-- state as dirty until we get a response
 refreshLoadedChannels :: ChatState -> EventM Name ChatState
 refreshLoadedChannels st = do
   liftIO $ sequence_

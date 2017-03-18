@@ -343,6 +343,19 @@ data ClientChannel = ClientChannel
     -- ^ The 'ChannelInfo' for the channel
   }
 
+channelInfoFromChannelWithData :: ChannelWithData -> ChannelInfo
+channelInfoFromChannelWithData (ChannelWithData chan chanData) =
+    let viewed   = chanData ^. channelDataLastViewedAtL
+        updated  = chan ^. channelLastPostAtL
+    in ChannelInfo { _cdViewed           = viewed
+                   , _cdUpdated          = updated
+                   , _cdName             = chan^.channelNameL
+                   , _cdHeader           = chan^.channelHeaderL
+                   , _cdType             = chan^.channelTypeL
+                   , _cdCurrentState     = ChanUnloaded
+                   , _cdNewMessageCutoff = Just viewed
+                   }
+
 -- | The 'ChannelContents' is a wrapper for a list of
 --   'Message' values
 data ChannelContents = ChannelContents

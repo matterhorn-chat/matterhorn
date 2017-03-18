@@ -227,22 +227,11 @@ initializeState cr myTeam myUser = do
   chans <- mmGetChannels cd token myTeamId
 
   msgs <- fmap (HM.fromList . F.toList) $ forM (F.toList chans) $ \c -> do
-      ChannelWithData _ chanData <- mmGetChannel cd token myTeamId (getId c)
+      cwd <- mmGetChannel cd token myTeamId (getId c)
 
-      let viewed   = chanData ^. channelDataLastViewedAtL
-          updated  = c ^. channelLastPostAtL
-          cInfo    = ChannelInfo
-                       { _cdViewed           = viewed
-                       , _cdUpdated          = updated
-                       , _cdName             = c^.channelNameL
-                       , _cdHeader           = c^.channelHeaderL
-                       , _cdType             = c^.channelTypeL
-                       , _cdCurrentState     = ChanUnloaded
-                       , _cdNewMessageCutoff = Just viewed
-                       }
-          cChannel = ClientChannel
+      let cChannel = ClientChannel
                        { _ccContents = emptyChannelContents
-                       , _ccInfo     = cInfo
+                       , _ccInfo     = channelInfoFromChannelWithData cwd
                        }
 
       return (getId c, cChannel)
