@@ -359,11 +359,17 @@ resetCurrentEdit st =
     let cId = st^.csCurrentChannelId
     in st & csLastChannelInput.at cId .~ Nothing
 
+updateChannelListScroll :: ChatState -> EventM Name ChatState
+updateChannelListScroll st = do
+    vScrollToBeginning (viewportScroll ChannelList)
+    return st
+
 changeChannelCommon :: ChatState -> EventM Name ChatState
 changeChannelCommon st =
     resetCurrentEdit <$>
     loadLastEdit <$>
-    (resetEditorState =<<
+    (updateChannelListScroll =<<
+     resetEditorState =<<
      fetchCurrentScrollback =<<
      resetHistoryPosition st)
 
