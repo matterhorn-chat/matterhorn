@@ -73,7 +73,7 @@ startTimezoneMonitor tz requestChan = do
 
   void $ forkIO (timezoneMonitor tz)
 
-mkChanNames :: User -> HM.HashMap UserId UserProfile -> Seq.Seq Channel -> MMNames
+mkChanNames :: User -> HM.HashMap UserId User -> Seq.Seq Channel -> MMNames
 mkChanNames myUser users chans = MMNames
   { _cnChans = sort
                [ channelName c
@@ -83,13 +83,13 @@ mkChanNames myUser users chans = MMNames
              | c <- F.toList chans, channelType c == Direct ]
   , _cnToChanId = HM.fromList $
                   [ (channelName c, channelId c) | c <- F.toList chans ] ++
-                  [ (userProfileUsername u, c)
+                  [ (userUsername u, c)
                   | u <- HM.elems users
                   , c <- lookupChan (getDMChannelName (getId myUser) (getId u))
                   ]
-  , _cnUsers = sort (map userProfileUsername (HM.elems users))
+  , _cnUsers = sort (map userUsername (HM.elems users))
   , _cnToUserId = HM.fromList
-                  [ (userProfileUsername u, getId u) | u <- HM.elems users ]
+                  [ (userUsername u, getId u) | u <- HM.elems users ]
   }
   where lookupChan n = [ c^.channelIdL
                        | c <- F.toList chans, c^.channelNameL == n
@@ -206,8 +206,8 @@ setupState logFile config requestChan eventChan = do
              }
   initializeState cr myTeam myUser
 
-loadAllProfiles :: ConnectionData -> Token -> IO (HM.HashMap UserId UserProfile)
-loadAllProfiles cd token = go HM.empty 0
+loadAllUsers :: ConnectionData -> Token -> IO (HM.HashMap UserId User)
+loadAllUsers cd token = go HM.empty 0
   where go users n = do
           newUsers <- mmGetUsers cd token (n * 50) 50
           if HM.null newUsers
@@ -247,9 +247,9 @@ initializeState cr myTeam myUser = do
 
       return (getId c, cChannel)
 
-  teamProfiles  <- mmGetProfiles cd token myTeamId
-  users <- loadAllProfiles cd token -- mmGetProfiles cd token myTeamId
-  let mkProfile u = userInfoFromProfile u (HM.member (u^.userProfileIdL) teamProfiles)
+  teamUsers <- mmGetProfiles cd token myTeamId
+  users <- loadAllUsers cd token
+  let mkUser u = userInfoFromUser u (HM.member (u^.userIdL) teamUsers)
   tz    <- getCurrentTimeZone
   hist  <- do
       result <- readHistory
@@ -268,7 +268,7 @@ initializeState cr myTeam myUser = do
                 , c <- maybeToList (HM.lookup i (chanNames ^. cnToChanId)) ]
       chanZip = Z.findRight (== townSqId) (Z.fromList chanIds)
       st = newState cr chanZip myUser myTeam tz hist
-             & usrMap .~ fmap mkProfile users
+             & usrMap .~ fmap mkUser users
              & msgMap .~ msgs
              & csNames .~ chanNames
 

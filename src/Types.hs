@@ -420,11 +420,11 @@ data UserInfo = UserInfo
   , _uiInTeam :: Bool
   } deriving (Eq, Show)
 
--- | Create a 'UserInfo' value from a Mattermost 'UserProfile' value
-userInfoFromProfile :: UserProfile -> Bool -> UserInfo
-userInfoFromProfile up inTeam = UserInfo
-  { _uiName   = userProfileUsername up
-  , _uiId     = userProfileId up
+-- | Create a 'UserInfo' value from a Mattermost 'User' value
+userInfoFromUser :: User -> Bool -> UserInfo
+userInfoFromUser up inTeam = UserInfo
+  { _uiName   = userUsername up
+  , _uiId     = userId up
   , _uiStatus = Offline
   , _uiInTeam = inTeam
   }
