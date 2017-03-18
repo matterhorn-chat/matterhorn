@@ -386,11 +386,11 @@ preChangeChannelCommon st = do
 
 nextChannel :: ChatState -> EventM Name ChatState
 nextChannel st =
-    setFocusWith st (getNextChannel st Z.right)
+    setFocusWith st (getNextNonDMChannel st Z.right)
 
 prevChannel :: ChatState -> EventM Name ChatState
 prevChannel st =
-    setFocusWith st (getNextChannel st Z.left)
+    setFocusWith st (getNextNonDMChannel st Z.left)
 
 recentChannel :: ChatState -> EventM Name ChatState
 recentChannel st = case st ^. csRecentChannel of
@@ -401,10 +401,13 @@ nextUnreadChannel :: ChatState -> EventM Name ChatState
 nextUnreadChannel st =
     setFocusWith st (getNextUnreadChannel st)
 
-getNextChannel :: ChatState
-               -> (Zipper ChannelId -> Zipper ChannelId)
-               -> (Zipper ChannelId -> Zipper ChannelId)
-getNextChannel st shift z = go (shift z)
+getNextNonDMChannel :: ChatState
+                    -> (Zipper ChannelId -> Zipper ChannelId)
+                    -> (Zipper ChannelId -> Zipper ChannelId)
+getNextNonDMChannel st shift z =
+    if (st^?msgMap.ix(Z.focus z).ccInfo.cdType) == Just Direct
+    then z
+    else go (shift z)
   where go z'
           | (st^?msgMap.ix(Z.focus z').ccInfo.cdType) /= Just Direct = z'
           | otherwise = go (shift z')
