@@ -65,3 +65,15 @@ $ cabal sandbox add-source ../mattermost-api
 $ cabal install
 $ cabal build
 ~~~
+
+# Contributing
+
+If you decide to contribute, that's great! Here are some guidelines you
+should consider to make submitting patches easier for all concerned:
+
+ - If you want to take on big things, let's have a design/vision
+   discussion before you start coding. Create a GitHub issue and we can
+   use that as the place to hash things out. We'll be interested to
+   discuss any usability / UI, performance, or compatibility issues.
+ - Please make changes consistent with the conventions already used in
+   the codebase.
