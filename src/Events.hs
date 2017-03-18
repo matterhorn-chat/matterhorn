@@ -102,8 +102,9 @@ handleWSEvent st we =
       Nothing -> continue st
     WMUserUpdated -> -- XXX
       continue st
-    WMNewUser -> -- XXX
-      continue st
+    WMNewUser -> do
+      let Just newUserId = wepUserId $ weData we
+      handleNewUser newUserId st >>= continue
     WMUserRemoved -> -- XXX
       continue st
     WMChannelDeleted -> -- XXX

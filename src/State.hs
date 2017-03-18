@@ -923,3 +923,20 @@ sendMessage st mode msg =
                                                  }
                             void $ mmUpdatePost (st^.csConn) (st^.csTok) theTeamId modifiedPost
                     return st
+
+handleNewUser :: UserId -> ChatState -> EventM Name ChatState
+handleNewUser newUserId st = do
+    -- Fetch the new user record.
+    liftIO $ doAsyncWith st $ do
+        newUser <- mmGetUser (st^.csConn) (st^.csTok) newUserId
+        -- Also re-load the team members so we can tell whether the new
+        -- user is in the current user's team.
+        teamUsers <- mmGetProfiles (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL)
+        let uInfo = userInfoFromUser newUser (HM.member newUserId teamUsers)
+
+        return $ \st' ->
+            -- Update the name map and the list of known users
+            return $ st' & usrMap . ix newUserId .~ uInfo
+                         & csNames . cnUsers %~ (sort . ((newUser^.userUsernameL):))
+
+    return st
