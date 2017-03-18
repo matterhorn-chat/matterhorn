@@ -22,6 +22,18 @@ Run the `matterhorn` binary in the release archive. You'll be prompted
 for your server information. At present `matterhorn` supports only
 username/password authentication.
 
+# Our Versioning Scheme
+
+Matterhorn version strings will be of the form `ABBCC.X.Y` where ABBCC
+corresponds to the MatterMost server version supported by the release.
+For example, if a release supports MatterMost server version 1.2.3, the
+ABBCC portion of the `matterhorn` version will be `10203`. The `X.Y`
+portion of the version corresponds to our own version namespace for the
+package. If the server version changes, `X.Y` SHOULD be `0.0`. Otherwise
+the first component should increment if the package undergoes major code
+changes or functionality changes. The second component alone should
+change only if the package undergoes security fixes or other bug fixes.
+
 # Configuring
 
 Right now, configuration is manual. An example configuration file
