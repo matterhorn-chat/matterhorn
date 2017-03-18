@@ -2,7 +2,7 @@ module State.Common where
 
 import           Brick (EventM)
 import qualified Control.Concurrent.Chan as Chan
-import           Control.Exception (try)
+import           Control.Exception (try, SomeException)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
@@ -182,16 +182,22 @@ removeReaction st r cId = st & csChannel(cId).ccContents.cdMessages %~ fmap upd
 
 updateViewedIO :: ChatState -> IO ChatState
 updateViewedIO st = do
-  now <- getCurrentTime
-  let cId = st^.csCurrentChannelId
-  doAsyncWith st $ do
-    mmUpdateLastViewedAt
-      (st^.csConn)
-      (st^.csTok)
-      (getId (st^.csMyTeam))
-      cId
-    return (\s -> return (s & csCurrentChannel.ccInfo.cdViewed .~ now))
-  return st
+  -- Only do this if we're connected to avoid triggering noisy exceptions.
+  case st^.csConnectionStatus of
+      Connected -> do
+          now <- getCurrentTime
+          let cId = st^.csCurrentChannelId
+          doAsyncWith st $ do
+            result <- try $ mmUpdateLastViewedAt
+              (st^.csConn)
+              (st^.csTok)
+              (getId (st^.csMyTeam))
+              cId
+            case result of
+                Left (_::SomeException) -> return return
+                Right () -> return (\s -> return (s & csCurrentChannel.ccInfo.cdViewed .~ now))
+          return st
+      Disconnected -> return st
 
 copyToClipboard :: T.Text -> ChatState -> EventM Name ChatState
 copyToClipboard txt st = do
