@@ -24,6 +24,7 @@ import           Events.JoinChannel
 import           Events.ChannelScroll
 import           Events.ChannelSelect
 import           Events.LeaveChannelConfirm
+import           Events.DeleteChannelConfirm
 import           Events.UrlSelect
 import           Events.MessageSelect
 
@@ -74,6 +75,7 @@ onVtyEvent st e = do
         ChannelScroll              -> onEventChannelScroll st e
         MessageSelect              -> onEventMessageSelect st e
         MessageSelectDeleteConfirm -> onEventMessageSelectDeleteConfirm st e
+        DeleteChannelConfirm       -> onEventDeleteChannelConfirm st e
 
 handleWSEvent :: ChatState -> WebsocketEvent -> EventM Name (Next ChatState)
 handleWSEvent st we =

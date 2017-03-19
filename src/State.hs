@@ -191,6 +191,20 @@ deleteSelectedMessage st = do
         _ -> return ()
     return st
 
+beginCurrentChannelDeleteConfirm :: ChatState -> EventM Name ChatState
+beginCurrentChannelDeleteConfirm st =
+    return $ st & csMode .~ DeleteChannelConfirm
+
+deleteCurrentChannel :: ChatState -> EventM Name ChatState
+deleteCurrentChannel st = do
+    liftIO $ doAsyncWith st $ do
+        let cId = st^.csCurrentChannelId
+        mmDeleteChannel (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId
+        return $ \st' ->
+            leaveCurrentChannel $ st' & csMode .~ Main
+
+    return st
+
 beginUpdateMessage :: ChatState -> EventM Name ChatState
 beginUpdateMessage st =
     case getSelectedMessage st of
@@ -295,28 +309,35 @@ startLeaveCurrentChannel st = do
 leaveCurrentChannel :: ChatState -> EventM Name ChatState
 leaveCurrentChannel st = do
     let cId = st^.csCurrentChannelId
-        cName = st^.csCurrentChannel.ccInfo.cdName
-        isDirect = cName `elem` st^.csNames.cnDMs
-        isNormal = not isDirect
+        isNormal = st^.csChannel(cId).ccInfo.cdType /= Direct
 
     -- Leave a normal channel.  If this is a DM channel, do nothing.
     when isNormal $ liftIO $ doAsyncWith st $ do
         mmLeaveChannel (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId
-        return $ \ st' ->
-            return $ st' & csEditState.cedInputHistoryPosition .at cId .~ Nothing
-                         & csEditState.cedLastChannelInput     .at cId .~ Nothing
-                         & csEditState.cedInputHistory         %~ removeChannelHistory cId
-                           -- Update input history
-                         & csNames.cnToChanId                  .at cName .~ Nothing
-                           -- Flush cnToChanId
-                         & csNames.cnChans                     %~ filter (/= cName)
-                           -- Flush cnChans
-                         & msgMap                              .at cId .~ Nothing
-                           -- Update msgMap
-                         & csFocus                             %~ Z.filterZipper (/= cId)
-                           -- Remove from focus zipper
+        return (removeChannelFromState cId)
 
     return st
+
+removeChannelFromState :: ChannelId -> ChatState -> EventM Name ChatState
+removeChannelFromState cId st = do
+    let cName = st^.csChannel(cId).ccInfo.cdName
+        isNormal = st^.csChannel(cId).ccInfo.cdType /= Direct
+
+    case isNormal of
+        False -> return st
+        True ->
+            return $ st & csEditState.cedInputHistoryPosition .at cId .~ Nothing
+                        & csEditState.cedLastChannelInput     .at cId .~ Nothing
+                        & csEditState.cedInputHistory         %~ removeChannelHistory cId
+                          -- Update input history
+                        & csNames.cnToChanId                  .at cName .~ Nothing
+                          -- Flush cnToChanId
+                        & csNames.cnChans                     %~ filter (/= cName)
+                          -- Flush cnChans
+                        & msgMap                              .at cId .~ Nothing
+                          -- Update msgMap
+                        & csFocus                             %~ Z.filterZipper (/= cId)
+                          -- Remove from focus zipper
 
 -- *  Channel Updates and Notifications
 

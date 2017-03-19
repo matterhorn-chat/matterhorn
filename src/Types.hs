@@ -544,6 +544,7 @@ data Mode =
     | ChannelSelect
     | UrlSelect
     | LeaveChannelConfirm
+    | DeleteChannelConfirm
     | JoinChannel
     | ChannelScroll
     | MessageSelect

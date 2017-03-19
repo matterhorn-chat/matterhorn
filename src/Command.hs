@@ -45,6 +45,9 @@ commandList =
   , Cmd "create-channel" "Create a new channel"
     (LineArg "channel name") $ \ name st ->
       createOrdinaryChannel name st >>= continue
+  , Cmd "delete-channel" "Delete the current channel"
+    NoArg $ \ () st ->
+      beginCurrentChannelDeleteConfirm st >>= continue
   , Cmd "leave" "Leave the current channel" NoArg $ \ () st ->
       startLeaveCurrentChannel st >>= continue
   , Cmd "join" "Join a channel" NoArg $ \ () st ->

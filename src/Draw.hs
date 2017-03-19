@@ -9,6 +9,7 @@ import Types
 import Draw.Main
 import Draw.ShowHelp
 import Draw.LeaveChannelConfirm
+import Draw.DeleteChannelConfirm
 import Draw.JoinChannel
 
 draw :: ChatState -> [Widget Name]
@@ -23,3 +24,4 @@ draw st =
         JoinChannel                -> drawJoinChannel st
         MessageSelect              -> drawMain st
         MessageSelectDeleteConfirm -> drawMain st
+        DeleteChannelConfirm       -> drawDeleteChannelConfirm st
