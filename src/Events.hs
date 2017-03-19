@@ -10,6 +10,7 @@ import           Lens.Micro.Platform
 
 import           Prelude
 
+import           Network.Mattermost
 import           Network.Mattermost.Lenses
 import           Network.Mattermost.WebSocket.Types
 
@@ -81,7 +82,16 @@ handleWSEvent :: ChatState -> WebsocketEvent -> EventM Name (Next ChatState)
 handleWSEvent st we =
   case weEvent we of
     WMPosted -> case wepPost (weData we) of
-      Just p  -> addMessage p st >>= continue
+      Just p  -> do
+          -- If the message is a header change, also update the channel
+          -- metadata.
+          let updated = if postType p /= SystemHeaderChange
+                        then st
+                        else case postPropsNewHeader $ p^.postPropsL of
+                            Nothing -> st
+                            Just newHeader ->
+                                st & csChannel(postChannelId p).ccInfo.cdHeader .~ newHeader
+          addMessage p updated >>= continue
       Nothing -> continue st
     WMPostEdited -> case wepPost (weData we) of
       Just p  -> editMessage p st >>= continue

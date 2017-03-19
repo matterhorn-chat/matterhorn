@@ -213,8 +213,7 @@ postClientPostType cp =
 
 -- | Find out whether a 'Post' represents a topic change
 postIsTopicChange :: Post -> Bool
-postIsTopicChange p =
-    "updated the channel header from:" `T.isInfixOf` postMessage p
+postIsTopicChange p = postType p == SystemHeaderChange
 
 -- | Find out whether a 'Post' is from a @/me@ command
 postIsEmote :: Post -> Bool
