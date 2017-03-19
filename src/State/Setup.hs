@@ -227,11 +227,9 @@ initializeState cr myTeam myUser = do
   chans <- mmGetChannels cd token myTeamId
 
   msgs <- fmap (HM.fromList . F.toList) $ forM (F.toList chans) $ \c -> do
-      cwd <- mmGetChannel cd token myTeamId (getId c)
-
       let cChannel = ClientChannel
                        { _ccContents = emptyChannelContents
-                       , _ccInfo     = channelInfoFromChannelWithData cwd
+                       , _ccInfo     = initialChannelInfo c
                        }
 
       return (getId c, cChannel)
@@ -264,7 +262,22 @@ initializeState cr myTeam myUser = do
   -- Fetch town-square asynchronously, but put it in the queue early.
   case F.find ((== townSqId) . getId) chans of
       Nothing -> return ()
-      Just _ -> doAsync st $ liftIO $ asyncFetchScrollback st townSqId
+      Just c -> doAsyncWith st $ do
+          cwd <- liftIO $ mmGetChannel cd token myTeamId (getId c)
+          return $ \st' -> do
+              let st'' = st' & csChannel(getId c).ccInfo .~ channelInfoFromChannelWithData cwd
+              liftIO $ asyncFetchScrollback st'' (getId c)
+              return st''
+
+  -- It's important to queue up these channel metadata fetches first so
+  -- that by the time the scrollback requests are processed, we have the
+  -- latest metadata.
+  F.forM_ chans $ \c ->
+      when (getId c /= townSqId && c^.channelTypeL /= Direct) $
+          doAsyncWith st $ do
+              cwd <- liftIO $ mmGetChannel cd token myTeamId (getId c)
+              return $ \st' -> do
+                  return $ st' & csChannel(getId c).ccInfo .~ channelInfoFromChannelWithData cwd
 
   F.forM_ chans $ \c ->
       when (getId c /= townSqId && c^.channelTypeL /= Direct) $

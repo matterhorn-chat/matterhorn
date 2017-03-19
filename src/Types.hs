@@ -343,6 +343,18 @@ data ClientChannel = ClientChannel
     -- ^ The 'ChannelInfo' for the channel
   }
 
+initialChannelInfo :: Channel -> ChannelInfo
+initialChannelInfo chan =
+    let updated  = chan ^. channelLastPostAtL
+    in ChannelInfo { _cdViewed           = updated
+                   , _cdUpdated          = updated
+                   , _cdName             = chan^.channelNameL
+                   , _cdHeader           = chan^.channelHeaderL
+                   , _cdType             = chan^.channelTypeL
+                   , _cdCurrentState     = ChanUnloaded
+                   , _cdNewMessageCutoff = Nothing
+                   }
+
 channelInfoFromChannelWithData :: ChannelWithData -> ChannelInfo
 channelInfoFromChannelWithData (ChannelWithData chan chanData) =
     let viewed   = chanData ^. channelDataLastViewedAtL
