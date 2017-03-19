@@ -193,7 +193,11 @@ deleteSelectedMessage st = do
 
 beginCurrentChannelDeleteConfirm :: ChatState -> EventM Name ChatState
 beginCurrentChannelDeleteConfirm st =
-    return $ st & csMode .~ DeleteChannelConfirm
+    let isNormal = st^.csChannel(cId).ccInfo.cdType /= Direct
+        cId = st^.csCurrentChannelId
+    in if isNormal
+       then return $ st & csMode .~ DeleteChannelConfirm
+       else postErrorMessage "The /delete-channel command cannot be used with direct message channels." st
 
 deleteCurrentChannel :: ChatState -> EventM Name ChatState
 deleteCurrentChannel st = do
