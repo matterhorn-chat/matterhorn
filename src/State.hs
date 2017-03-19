@@ -408,8 +408,8 @@ updateChannelListScroll st = do
     vScrollToBeginning (viewportScroll ChannelList)
     return st
 
-changeChannelCommon :: ChatState -> EventM Name ChatState
-changeChannelCommon st =
+postChangeChannelCommon :: ChatState -> EventM Name ChatState
+postChangeChannelCommon st =
     resetCurrentEdit <$>
     loadLastEdit <$>
     (updateChannelListScroll =<<
@@ -535,7 +535,7 @@ setFocusWith st f = do
         return st else do
           preChangeChannelCommon st >>=
               (\st' -> updateViewed (st' & csFocus .~ newZipper)) >>=
-              changeChannelCommon
+              postChangeChannelCommon
 
 attemptCreateDMChannel :: T.Text -> ChatState -> EventM Name ChatState
 attemptCreateDMChannel name st
