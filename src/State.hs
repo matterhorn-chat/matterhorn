@@ -177,10 +177,19 @@ beginConfirmDeleteSelectedMessage :: ChatState -> EventM Name ChatState
 beginConfirmDeleteSelectedMessage st =
     return $ st & csMode .~ MessageSelectDeleteConfirm
 
+isDeletable :: Message -> Bool
+isDeletable m = m^.mType `elem` [CP NormalPost, CP Emote]
+
+isReplyable :: Message -> Bool
+isReplyable m = m^.mType `elem` [CP NormalPost, CP Emote]
+
+isEditable :: Message -> Bool
+isEditable m = m^.mType `elem` [CP NormalPost, CP Emote]
+
 deleteSelectedMessage :: ChatState -> EventM Name ChatState
 deleteSelectedMessage st = do
     case getSelectedMessage st of
-        Just msg | isMine st msg -> do
+        Just msg | isMine st msg && isDeletable msg -> do
             liftIO $ doAsyncWith st $ do
                 let cId = st^.csCurrentChannelId
                     Just p = msg^.mOriginalPost
@@ -212,7 +221,7 @@ deleteCurrentChannel st = do
 beginUpdateMessage :: ChatState -> EventM Name ChatState
 beginUpdateMessage st =
     case getSelectedMessage st of
-        Just msg | isMine st msg -> do
+        Just msg | isMine st msg && isEditable msg -> do
             let Just p = msg^.mOriginalPost
             return $ st & csMode .~ Main
                         & csEditState.cedEditMode .~ Editing p
@@ -222,11 +231,11 @@ beginUpdateMessage st =
 replyToLatestMessage :: ChatState -> EventM Name ChatState
 replyToLatestMessage st =
     case getLatestUserMessage st of
-        Nothing -> return st
-        Just msg -> do
+        Just msg | isReplyable msg -> do
             let Just p = msg^.mOriginalPost
             return $ st & csMode .~ Main
                         & csEditState.cedEditMode .~ Replying msg p
+        _ -> return st
 
 -- | Get the latest normal or emote post in the current channel.
 getLatestUserMessage :: ChatState -> Maybe Message
