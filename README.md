@@ -43,11 +43,64 @@ the typical XDG configuration directories (you'll probably want to
 use `$HOME/.config/matterhorn/config.ini`) and as a last resort look
 for a globally-accessible `/etc/matterhorn/config.ini`.
 
-# Using
+# Using the Client
 
-You can often use built-in keybindings or `/cmd`-style commands. To
-see available keybindings and commands, press `F1` or run the `/help`
-command.
+The user interface has three main areas:
+
+* Left: list of channels you're in, and list of uers in your team
+* Right: messages in the current channel
+* Bottom: editing area for writing, editing, and replying to messages
+
+You can use built-in keybindings or `/cmd`-style commands to operate
+the client. To see available keybindings and commands, use the default
+binding of `F1` or run the `/help` command.
+
+To join a channel, use the `/join` command to choose from a list of
+available channels. To create a channel, use `/create-channel`. To leave
+a channel, use `/leave-channel`.
+
+To send a message, type it into the editor and press Enter to send.
+To send a multi-line message, toggle multi-line mode with the default
+binding `M-e`. Markdown syntax is accepted.
+
+To edit your current message in an external editor (`$EDITOR`), use the
+default binding of `M-k`.
+
+To preview the message you're about to send (e.g. to check on how your
+Markdown syntax will be rendered), toggle preview mode with the default
+binding `M-p`.
+
+To change channels, use `/focus` or one of the default bindings `C-n`
+(next channel), `C-p` (previous channel), `C-g` (fast channel switch).
+
+To switch to the channel you were in prior to the current channel, use
+the default binding `M-s` (swap). The most recent channel is marked in
+the channel list with a "`<`" indicator.
+
+To switch to the next channel with unread messages, use the default
+binding `M-a`.
+
+To quickly show a list of URLs mentioned in the current channel and then
+open one in your local browser, use the default binding of `C-o` and
+configure the `urlOpenCommand` configuration setting.
+
+To edit, delete, or reply to a message, select a message with the
+default binding of `C-s`. Use the default binding of `C-c` to cancel
+these operations.
+
+# Features
+
+* Channel creation, deletion, and membership management commands
+* Optimized channel-switching modes: `M-a`, `M-s`, and `C-g`
+* Message posting, editing, replying, and deletion
+* Markdown rendering
+* Convenient URL-opening with local browser
+* Secure password entry via external command (e.g. OSX keychain)
+* Yank verbatim content from messages into the system clipboard
+* Preview message rendering before sending
+* Optional smart quoting for efficient Markdown entry
+* Edit messages with `$EDITOR`
+* Message editor with kill/yank buffer and readline-style keybindings
 
 # Building
 
