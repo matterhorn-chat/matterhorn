@@ -386,6 +386,7 @@ emptyChannelContents = ChannelContents
 data ChannelState
   = ChanUnloaded
   | ChanLoaded
+  | ChanLoadPending
   | ChanRefreshing
     deriving (Eq, Show)
 

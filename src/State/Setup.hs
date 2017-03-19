@@ -229,8 +229,11 @@ initializeState cr myTeam myUser = do
   msgs <- fmap (HM.fromList . F.toList) $ forM (F.toList chans) $ \c -> do
       let cChannel = ClientChannel
                        { _ccContents = emptyChannelContents
-                       , _ccInfo     = initialChannelInfo c
+                       , _ccInfo     = initialChannelInfo c & cdCurrentState .~ state
                        }
+          state = if c^.channelTypeL == Direct
+                  then ChanUnloaded
+                  else ChanLoadPending
 
       return (getId c, cChannel)
 

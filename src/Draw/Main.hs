@@ -284,11 +284,13 @@ renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
     messages = body <+> txt " "
 
     body = chatText <=> case chan^.ccInfo.cdCurrentState of
-      ChanUnloaded   -> withDefAttr clientMessageAttr $
-                          txt "[Loading channel scrollback...]"
-      ChanRefreshing -> withDefAttr clientMessageAttr $
-                          txt "[Refreshing scrollback...]"
-      _              -> emptyWidget
+      ChanUnloaded    -> withDefAttr clientMessageAttr $
+                           txt "[Loading channel...]"
+      ChanLoadPending -> withDefAttr clientMessageAttr $
+                          txt "[Loading channel...]"
+      ChanRefreshing  -> withDefAttr clientMessageAttr $
+                           txt "[Refreshing channel...]"
+      _               -> emptyWidget
 
     chatText = case st^.csMode of
         ChannelScroll ->

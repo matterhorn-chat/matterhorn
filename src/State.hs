@@ -720,9 +720,13 @@ execMMCommand name rest st =
 fetchCurrentScrollback :: ChatState -> EventM a ChatState
 fetchCurrentScrollback st = do
   let cId = st^.csCurrentChannelId
-  when (maybe False (/= ChanLoaded) (st^?msgMap.ix(cId).ccInfo.cdCurrentState)) $
-      liftIO $ asyncFetchScrollback st cId
-  return st
+  didQueue <- case maybe False (== ChanUnloaded) (st^?msgMap.ix(cId).ccInfo.cdCurrentState) of
+      True -> do
+          liftIO $ asyncFetchScrollback st cId
+          return True
+      False -> return False
+  return $ st & csChannel(cId).ccInfo.cdCurrentState %~
+                (if didQueue then const ChanLoadPending else id)
 
 mkChannelZipperList :: MMNames -> [ChannelId]
 mkChannelZipperList chanNames =
