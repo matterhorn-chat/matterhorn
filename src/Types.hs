@@ -355,18 +355,16 @@ initialChannelInfo chan =
                    , _cdNewMessageCutoff = Nothing
                    }
 
-channelInfoFromChannelWithData :: ChannelWithData -> ChannelInfo
-channelInfoFromChannelWithData (ChannelWithData chan chanData) =
+channelInfoFromChannelWithData :: ChannelWithData -> ChannelInfo -> ChannelInfo
+channelInfoFromChannelWithData (ChannelWithData chan chanData) ci =
     let viewed   = chanData ^. channelDataLastViewedAtL
         updated  = chan ^. channelLastPostAtL
-    in ChannelInfo { _cdViewed           = viewed
-                   , _cdUpdated          = updated
-                   , _cdName             = chan^.channelNameL
-                   , _cdHeader           = chan^.channelHeaderL
-                   , _cdType             = chan^.channelTypeL
-                   , _cdCurrentState     = ChanUnloaded
-                   , _cdNewMessageCutoff = Just viewed
-                   }
+    in ci { _cdViewed           = viewed
+          , _cdUpdated          = updated
+          , _cdName             = (chan^.channelNameL)
+          , _cdHeader           = (chan^.channelHeaderL)
+          , _cdType             = (chan^.channelTypeL)
+          }
 
 -- | The 'ChannelContents' is a wrapper for a list of
 --   'Message' values

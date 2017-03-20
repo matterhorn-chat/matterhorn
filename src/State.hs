@@ -68,12 +68,10 @@ refreshChannel chan st = doAsyncWith Normal st $
         res <- F.foldrM addMessage st' [ (posts^.postsPostsL) HM.! p
                                        | p <- F.toList (posts^.postsOrderL)
                                        ]
-        let newChanInfo = channelInfoFromChannelWithData cwd &
-                            cdCurrentState .~ ChanLoaded &
-                            cdNewMessageCutoff .~ (oldChanInfo^.cdNewMessageCutoff)
-            oldChanInfo = res^.csChannel(chan).ccInfo
+        let newChanInfo ci = channelInfoFromChannelWithData cwd ci &
+                               cdCurrentState .~ ChanLoaded
 
-        return (res & csChannel(chan).ccInfo .~ newChanInfo)
+        return (res & csChannel(chan).ccInfo %~ newChanInfo)
     _ -> return return
 
 -- | Find all the loaded channels and refresh their state, setting the

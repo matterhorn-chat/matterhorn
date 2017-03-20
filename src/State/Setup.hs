@@ -311,7 +311,7 @@ initializeState cr myTeam myUser = do
       Just c -> doAsyncWith Preempt st $ do
           cwd <- liftIO $ mmGetChannel cd token myTeamId (getId c)
           return $ \st' -> do
-              let st'' = st' & csChannel(getId c).ccInfo .~ channelInfoFromChannelWithData cwd
+              let st'' = st' & csChannel(getId c).ccInfo %~ channelInfoFromChannelWithData cwd
               liftIO $ asyncFetchScrollback Preempt st'' (getId c)
               return st''
 
@@ -323,7 +323,7 @@ initializeState cr myTeam myUser = do
           doAsyncWith Normal st $ do
               cwd <- liftIO $ mmGetChannel cd token myTeamId (getId c)
               return $ \st' -> do
-                  return $ st' & csChannel(getId c).ccInfo .~ channelInfoFromChannelWithData cwd
+                  return $ st' & csChannel(getId c).ccInfo %~ channelInfoFromChannelWithData cwd
 
   F.forM_ chans $ \c ->
       when (getId c /= townSqId && c^.channelTypeL /= Direct) $
