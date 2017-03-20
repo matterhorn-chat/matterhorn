@@ -933,7 +933,7 @@ openURL st link = do
         Nothing ->
             return False
         Just urlOpenCommand -> do
-            let opener = (proc (T.unpack urlOpenCommand) [show $ link^.linkURL])
+            let opener = (proc (T.unpack urlOpenCommand) [T.unpack $ link^.linkURL])
                          { std_in = NoStream
                          , std_out = CreatePipe
                          , std_err = CreatePipe
