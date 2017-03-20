@@ -9,6 +9,7 @@ import           Control.Concurrent.MVar (newEmptyMVar)
 import           Control.Exception (SomeException, catch, try)
 import           Control.Monad (forM, forever, when, void)
 import           Control.Monad.IO.Class (liftIO)
+import qualified Data.Text as T
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
 import           Data.List (sort)
@@ -18,7 +19,8 @@ import qualified Data.Sequence as Seq
 import           Data.Time.LocalTime ( TimeZone(..), getCurrentTimeZone )
 import           Lens.Micro.Platform
 import           System.Exit (exitFailure)
-import           System.IO (Handle)
+import           System.IO (Handle, hPutStrLn, hFlush)
+import           System.IO.Temp (withSystemTempFile)
 
 import           Network.Mattermost
 import           Network.Mattermost.Lenses
@@ -54,6 +56,41 @@ userRefresh cd token requestChan = void $ forkIO $ forever refresh
             case rs of
               Left (_ :: SomeException) -> return return
               Right upd -> return upd
+
+startSubprocessLogger :: STM.TChan ProgramOutput -> RequestChan -> IO ()
+startSubprocessLogger logChan requestChan = do
+    let logMonitor logPath logHandle = do
+          ProgramOutput progName out err ec <-
+              STM.atomically $ STM.readTChan logChan
+
+          -- If either stdout or stderr is non-empty, log it and
+          -- notify the user.
+          let emptyOutput s = null s || s == "\n"
+
+          case emptyOutput out && emptyOutput err of
+              True -> logMonitor logPath logHandle
+              False -> do
+                  hPutStrLn logHandle $
+                      unlines [ "Program: " <> progName
+                              , "Exit code: " <> show ec
+                              , "Stdout:"
+                              , out
+                              , "Stderr:"
+                              , err
+                              ]
+                  hFlush logHandle
+
+                  STM.atomically $ STM.writeTChan requestChan $ do
+                      return $ \st -> do
+                          msg <- newClientMessage Error
+                            (T.pack $ "Program " <> show progName <>
+                             " produced unexpected output; see " <>
+                             logPath <> " for details.")
+                          return $ addClientMessage msg st
+
+                  logMonitor logPath logHandle
+
+    void $ forkIO $ withSystemTempFile "matterhorn.log" logMonitor
 
 startTimezoneMonitor :: TimeZone -> RequestChan -> IO ()
 startTimezoneMonitor tz requestChan = do
@@ -189,6 +226,8 @@ setupState logFile config requestChan eventChan = do
               Just t -> return t
 
   quitCondition <- newEmptyMVar
+  slc <- STM.atomically STM.newTChan
+
   let themeName = case configTheme config of
           Nothing -> defaultThemeName
           Just t -> t
@@ -203,6 +242,7 @@ setupState logFile config requestChan eventChan = do
              , _crTheme         = theme
              , _crQuitCondition = quitCondition
              , _crConfiguration = config
+             , _crSubprocessLog = slc
              }
   initializeState cr myTeam myUser
 
@@ -216,7 +256,7 @@ loadAllUsers cd token = go HM.empty 0
 
 initializeState :: ChatResources -> Team -> User -> IO ChatState
 initializeState cr myTeam myUser = do
-  let ChatResources token cd requestChan _ _ _ _ = cr
+  let ChatResources token cd requestChan _ _ _ _ _ = cr
   let myTeamId = getId myTeam
 
   STM.atomically $ STM.writeTChan requestChan $ fetchUserStatuses cd token
@@ -248,6 +288,8 @@ initializeState cr myTeam myUser = do
           Right h -> return h
 
   startTimezoneMonitor tz requestChan
+
+  startSubprocessLogger (cr^.crSubprocessLog) requestChan
 
   let chanNames = mkChanNames myUser users chans
       Just townSqId = chanNames ^. cnToChanId . at "town-square"

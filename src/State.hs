@@ -9,6 +9,7 @@ import           Brick.Widgets.List (list, listMoveTo, listSelectedElement)
 import           Control.Applicative
 import           Control.Exception (catch)
 import           Control.Monad.IO.Class (liftIO)
+import qualified Control.Concurrent.STM as STM
 import           Data.Char (isAlphaNum)
 import           Brick.Main (getVtyHandle, viewportScroll, vScrollToBeginning, vScrollBy)
 import           Brick.Widgets.Edit (applyEdit)
@@ -27,7 +28,9 @@ import qualified Data.Foldable as F
 import           Graphics.Vty (outputIface)
 import           Graphics.Vty.Output.Interface (ringTerminalBell)
 import           Lens.Micro.Platform
-import           System.Process (system)
+import           System.Process (proc, std_in, std_out, std_err, StdStream(..),
+                                 createProcess, waitForProcess)
+import           System.IO (hGetContents)
 
 import           Prelude
 
@@ -930,7 +933,19 @@ openURL st link = do
         Nothing ->
             return False
         Just urlOpenCommand -> do
-            liftIO $ void $ system $ (T.unpack urlOpenCommand) <> " " <> show (link^.linkURL)
+            let opener = (proc (T.unpack urlOpenCommand) [show $ link^.linkURL])
+                         { std_in = NoStream
+                         , std_out = CreatePipe
+                         , std_err = CreatePipe
+                         }
+            liftIO $ do
+                (Nothing, Just outh, Just errh, ph) <- createProcess opener
+                ec <- waitForProcess ph
+                outResult <- hGetContents outh
+                errResult <- hGetContents errh
+                let po = ProgramOutput (T.unpack urlOpenCommand) outResult errResult ec
+                STM.atomically $ STM.writeTChan (st^.csResources.crSubprocessLog) po
+
             return True
 
 openSelectedMessageURLs :: ChatState -> EventM Name ChatState

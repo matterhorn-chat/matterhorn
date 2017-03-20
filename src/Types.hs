@@ -33,6 +33,7 @@ import           Network.Mattermost.WebSocket.Types
 import           Network.Connection (HostNotResolved, HostCannotConnect)
 import qualified Cheapskate as C
 import qualified Data.Text as T
+import           System.Exit (ExitCode)
 
 import           Prelude
 
@@ -485,6 +486,13 @@ instance Ord UserInfo where
 
 -- * Application State Values
 
+data ProgramOutput =
+    ProgramOutput { program :: FilePath
+                  , programStdout :: String
+                  , programStderr :: String
+                  , programExitCode :: ExitCode
+                  }
+
 -- | 'ChatResources' represents configuration and
 -- connection-related information, as opposed to
 -- current model or view information. Information
@@ -496,6 +504,7 @@ data ChatResources = ChatResources
   , _crConn          :: ConnectionData
   , _crRequestQueue  :: RequestChan
   , _crEventQueue    :: BChan MHEvent
+  , _crSubprocessLog :: STM.TChan ProgramOutput
   , _crTheme         :: AttrMap
   , _crQuitCondition :: MVar ()
   , _crConfiguration :: Config
