@@ -158,7 +158,7 @@ newState rs i u m tz hist = ChatState
   , _csChannelSelectUserMatches    = mempty
   , _csRecentChannel               = Nothing
   , _csUrlList                     = list UrlList mempty 2
-  , _csConnectionStatus            = Disconnected
+  , _csConnectionStatus            = Connected
   , _csJoinChannelList             = Nothing
   , _csMessageSelect               = MessageSelectState Nothing
   }
