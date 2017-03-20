@@ -47,7 +47,9 @@ for a globally-accessible `/etc/matterhorn/config.ini`.
 
 The user interface has three main areas:
 
-* Left: list of channels you're in, and list of uers in your team
+* Left: list of channels you're in, and list of users in your team and
+  their statuses (`+` means online, `-` means away, and an absent sigil
+  means offline)
 * Right: messages in the current channel
 * Bottom: editing area for writing, editing, and replying to messages
 
