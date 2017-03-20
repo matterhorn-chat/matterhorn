@@ -488,6 +488,7 @@ instance Ord UserInfo where
 
 data ProgramOutput =
     ProgramOutput { program :: FilePath
+                  , programArgs :: [String]
                   , programStdout :: String
                   , programStderr :: String
                   , programExitCode :: ExitCode

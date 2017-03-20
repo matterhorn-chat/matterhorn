@@ -60,7 +60,7 @@ userRefresh cd token requestChan = void $ forkIO $ forever refresh
 startSubprocessLogger :: STM.TChan ProgramOutput -> RequestChan -> IO ()
 startSubprocessLogger logChan requestChan = do
     let logMonitor logPath logHandle = do
-          ProgramOutput progName out err ec <-
+          ProgramOutput progName args out err ec <-
               STM.atomically $ STM.readTChan logChan
 
           -- If either stdout or stderr is non-empty, log it and
@@ -72,6 +72,7 @@ startSubprocessLogger logChan requestChan = do
               False -> do
                   hPutStrLn logHandle $
                       unlines [ "Program: " <> progName
+                              , "Arguments: " <> show args
                               , "Exit code: " <> show ec
                               , "Stdout:"
                               , out

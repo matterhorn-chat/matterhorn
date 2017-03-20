@@ -933,20 +933,21 @@ openURL st link = do
         Nothing ->
             return False
         Just urlOpenCommand -> do
-            let opener = (proc (T.unpack urlOpenCommand) [T.unpack $ link^.linkURL])
-                         { std_in = NoStream
-                         , std_out = CreatePipe
-                         , std_err = CreatePipe
-                         }
-            liftIO $ do
-                (Nothing, Just outh, Just errh, ph) <- createProcess opener
-                ec <- waitForProcess ph
-                outResult <- hGetContents outh
-                errResult <- hGetContents errh
-                let po = ProgramOutput (T.unpack urlOpenCommand) outResult errResult ec
-                STM.atomically $ STM.writeTChan (st^.csResources.crSubprocessLog) po
-
+            runLoggedCommand st (T.unpack urlOpenCommand) [T.unpack $ link^.linkURL]
             return True
+
+runLoggedCommand :: ChatState -> String -> [String] -> EventM Name ()
+runLoggedCommand st cmd args = liftIO $ do
+    let opener = (proc cmd args) { std_in = NoStream
+                                 , std_out = CreatePipe
+                                 , std_err = CreatePipe
+                                 }
+    (Nothing, Just outh, Just errh, ph) <- createProcess opener
+    ec <- waitForProcess ph
+    outResult <- hGetContents outh
+    errResult <- hGetContents errh
+    let po = ProgramOutput cmd args outResult errResult ec
+    STM.atomically $ STM.writeTChan (st^.csResources.crSubprocessLog) po
 
 openSelectedMessageURLs :: ChatState -> EventM Name ChatState
 openSelectedMessageURLs st
