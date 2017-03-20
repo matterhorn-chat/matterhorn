@@ -82,7 +82,7 @@ addUserToCurrentChannel uname st = do
     let results = filter ((== uname) . _uiName . snd) $ HM.toList $ st^.usrMap
     case results of
         [(uid, _)] -> do
-            liftIO $ doAsyncWith st $ do
+            liftIO $ doAsyncWith Normal st $ do
                 let cId = st^.csCurrentChannelId
                 tryMM (void $ mmChannelAddUser (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId uid)
                       (const $ return return)

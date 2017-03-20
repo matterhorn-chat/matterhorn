@@ -87,7 +87,7 @@ commandList =
       fpMb <- liftIO $ locateScriptPath (T.unpack script)
       case fpMb of
         ScriptPath scriptPath -> do
-          liftIO $ doAsyncWith st $ runScript scriptPath text
+          liftIO $ doAsyncWith Preempt st $ runScript scriptPath text
           continue st
         NonexecScriptPath scriptPath -> do
           msg <- newClientMessage Error

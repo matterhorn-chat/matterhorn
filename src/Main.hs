@@ -5,7 +5,7 @@ module Main where
 import           Brick
 import           Brick.BChan
 import           Control.Concurrent (forkIO)
-import qualified Control.Concurrent.Chan as Chan
+import qualified Control.Concurrent.STM as STM
 import           Control.Exception (try)
 import           Control.Monad (forever, void)
 import           Data.Monoid ((<>))
@@ -35,9 +35,9 @@ main = do
   eventChan <- newBChan 25
   writeBChan eventChan RefreshWebsocketEvent
 
-  requestChan <- Chan.newChan
+  requestChan <- STM.atomically STM.newTChan
   void $ forkIO $ forever $ do
-    req <- Chan.readChan requestChan
+    req <- STM.atomically $ STM.readTChan requestChan
     res <- try req
     case res of
       Left e    -> writeBChan eventChan (AsyncErrEvent e)

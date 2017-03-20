@@ -53,7 +53,7 @@ pageAmount = 15
 -- | Get all the new messages for a given channel. In addition, load the
 -- channel metadata and update that, too.
 refreshChannel :: ChannelId -> ChatState -> IO ()
-refreshChannel chan st = doAsyncWith st $
+refreshChannel chan st = doAsyncWith Normal st $
   case F.find (\ p -> isJust (p^.mPostId)) (Seq.reverse (st^.csChannel(chan).ccContents.cdMessages)) of
     Just (Message { _mPostId = Just pId }) -> do
       -- Get the latest channel metadata.
@@ -190,7 +190,7 @@ deleteSelectedMessage :: ChatState -> EventM Name ChatState
 deleteSelectedMessage st = do
     case getSelectedMessage st of
         Just msg | isMine st msg && isDeletable msg -> do
-            liftIO $ doAsyncWith st $ do
+            liftIO $ doAsyncWith Preempt st $ do
                 let cId = st^.csCurrentChannelId
                     Just p = msg^.mOriginalPost
                 mmDeletePost (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId (postId p)
@@ -210,7 +210,7 @@ beginCurrentChannelDeleteConfirm st =
 
 deleteCurrentChannel :: ChatState -> EventM Name ChatState
 deleteCurrentChannel st = do
-    liftIO $ doAsyncWith st $ do
+    liftIO $ doAsyncWith Preempt st $ do
         let cId = st^.csCurrentChannelId
         mmDeleteChannel (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId
         return $ \st' ->
@@ -281,7 +281,7 @@ copyVerbatimToClipboard st =
 
 startJoinChannel :: ChatState -> EventM Name ChatState
 startJoinChannel st = do
-    liftIO $ doAsyncWith st $ do
+    liftIO $ doAsyncWith Preempt st $ do
         chans <- mmGetMoreChannels (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL)
         return $ \ st' -> do
             return $ st' & csJoinChannelList .~ (Just $ list JoinChannelList (V.fromList $ F.toList chans) 1)
@@ -293,7 +293,7 @@ joinChannel :: Channel -> ChatState -> EventM Name ChatState
 joinChannel chan st = do
     let cId = getId chan
 
-    liftIO $ doAsyncWith st $ do
+    liftIO $ doAsyncWith Preempt st $ do
         void $ mmJoinChannel (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId
         return return
 
@@ -303,12 +303,12 @@ joinChannel chan st = do
 -- channel info for that channel.
 handleChannelInvite :: ChannelId -> ChatState -> EventM Name ChatState
 handleChannelInvite cId st = do
-    liftIO $ doAsyncWith st $ do
+    liftIO $ doAsyncWith Normal st $ do
         tryMM (mmGetChannel (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId)
               (\(ChannelWithData chan _) -> do
                 return $ \st' -> do
                   st'' <- handleNewChannel (chan^.channelNameL) False chan st'
-                  liftIO $ asyncFetchScrollback st'' cId
+                  liftIO $ asyncFetchScrollback Normal st'' cId
                   return st'')
     return st
 
@@ -325,7 +325,7 @@ leaveCurrentChannel st = do
         isNormal = st^.csChannel(cId).ccInfo.cdType /= Direct
 
     -- Leave a normal channel.  If this is a DM channel, do nothing.
-    when isNormal $ liftIO $ doAsyncWith st $ do
+    when isNormal $ liftIO $ doAsyncWith Preempt st $ do
         mmLeaveChannel (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId
         return (removeChannelFromState cId)
 
@@ -488,7 +488,7 @@ channelPageDown st = do
 
 asyncFetchMoreMessages :: ChatState -> ChannelId -> IO ()
 asyncFetchMoreMessages st cId =
-    doAsyncWith st $ do
+    doAsyncWith Preempt st $ do
         let offset = length $ st^.csChannel(cId).ccContents.cdMessages
             numToFetch = 10
         posts <- mmGetPosts (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId (offset - 1) numToFetch
@@ -544,7 +544,7 @@ attemptCreateDMChannel name st
       -- We have a user of that name but no channel. Time to make one!
       let tId = st^.csMyTeam.teamIdL
           Just uId = st^.csNames.cnToUserId.at(name)
-      liftIO $ doAsyncWith st $ do
+      liftIO $ doAsyncWith Normal st $ do
         -- create a new channel
         nc <- mmCreateDirect (st^.csConn) (st^.csTok) tId uId
         return $ handleNewChannel name True nc
@@ -555,7 +555,7 @@ attemptCreateDMChannel name st
 createOrdinaryChannel :: T.Text -> ChatState -> EventM Name ChatState
 createOrdinaryChannel name st = do
   let tId = st^.csMyTeam.teamIdL
-  liftIO $ doAsyncWith st $ do
+  liftIO $ doAsyncWith Preempt st $ do
     -- create a new chat channel
     let slug = T.map (\ c -> if isAlphaNum c then c else '-') (T.toLower name)
         minChannel = MinChannel
@@ -674,7 +674,7 @@ addMessage new st = do
           -- channel until we have fetched the parent.
           case msg^.mInReplyToMsg of
               ParentNotLoaded parentId -> do
-                  liftIO $ doAsyncWith st $ do
+                  liftIO $ doAsyncWith Normal st $ do
                       let theTeamId = st^.csMyTeam.teamIdL
                       p <- mmGetPost (st^.csConn) (st^.csTok) theTeamId cId parentId
                       let postMap = HM.fromList [ ( pId
@@ -722,7 +722,7 @@ fetchCurrentScrollback st = do
   let cId = st^.csCurrentChannelId
   didQueue <- case maybe False (== ChanUnloaded) (st^?msgMap.ix(cId).ccInfo.cdCurrentState) of
       True -> do
-          liftIO $ asyncFetchScrollback st cId
+          liftIO $ asyncFetchScrollback Preempt st cId
           return True
       False -> return False
   return $ st & csChannel(cId).ccInfo.cdCurrentState %~
@@ -740,7 +740,7 @@ setChannelTopic :: ChatState -> T.Text -> IO ()
 setChannelTopic st msg = do
     let chanId = st^.csCurrentChannelId
         theTeamId = st^.csMyTeam.teamIdL
-    doAsyncWith st $ do
+    doAsyncWith Normal st $ do
         void $ mmSetChannelHeader (st^.csConn) (st^.csTok) theTeamId chanId msg
         return $ \st' -> do
             return $ st' & msgMap.at chanId.each.ccInfo.cdHeader .~ msg
@@ -954,7 +954,7 @@ sendMessage st mode msg =
                     let myId   = st^.csMe.userIdL
                         chanId = st^.csCurrentChannelId
                         theTeamId = st^.csMyTeam.teamIdL
-                    doAsync st $ do
+                    doAsync Preempt st $ do
                       case mode of
                         NewPost -> do
                             pendingPost <- mkPendingPost msg myId chanId
@@ -978,7 +978,7 @@ sendMessage st mode msg =
 handleNewUser :: UserId -> ChatState -> EventM Name ChatState
 handleNewUser newUserId st = do
     -- Fetch the new user record.
-    liftIO $ doAsyncWith st $ do
+    liftIO $ doAsyncWith Normal st $ do
         newUser <- mmGetUser (st^.csConn) (st^.csTok) newUserId
         -- Also re-load the team members so we can tell whether the new
         -- user is in the current user's team.

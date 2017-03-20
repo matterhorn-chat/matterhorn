@@ -4,7 +4,7 @@ import           Brick (EventM)
 import           Brick.BChan
 import           Brick.Widgets.List (list)
 import           Control.Concurrent (threadDelay, forkIO)
-import qualified Control.Concurrent.Chan as Chan
+import qualified Control.Concurrent.STM as STM
 import           Control.Concurrent.MVar (newEmptyMVar)
 import           Control.Exception (SomeException, catch, try)
 import           Control.Monad (forM, forever, when, void)
@@ -49,7 +49,7 @@ userRefresh cd token requestChan = void $ forkIO $ forever refresh
   where refresh = do
           let seconds = (* (1000 * 1000))
           threadDelay (seconds 30)
-          Chan.writeChan requestChan $ do
+          STM.atomically $ STM.writeTChan requestChan $ do
             rs <- try $ fetchUserStatuses cd token
             case rs of
               Left (_ :: SomeException) -> return return
@@ -66,7 +66,7 @@ startTimezoneMonitor tz requestChan = do
 
         newTz <- getCurrentTimeZone
         when (newTz /= prevTz) $
-            Chan.writeChan requestChan $ do
+            STM.atomically $ STM.writeTChan requestChan $ do
                 return $ (return . (& timeZone .~ newTz))
 
         timezoneMonitor newTz
@@ -219,7 +219,7 @@ initializeState cr myTeam myUser = do
   let ChatResources token cd requestChan _ _ _ _ = cr
   let myTeamId = getId myTeam
 
-  Chan.writeChan requestChan $ fetchUserStatuses cd token
+  STM.atomically $ STM.writeTChan requestChan $ fetchUserStatuses cd token
 
   userRefresh cd token requestChan
 
@@ -265,11 +265,11 @@ initializeState cr myTeam myUser = do
   -- Fetch town-square asynchronously, but put it in the queue early.
   case F.find ((== townSqId) . getId) chans of
       Nothing -> return ()
-      Just c -> doAsyncWith st $ do
+      Just c -> doAsyncWith Preempt st $ do
           cwd <- liftIO $ mmGetChannel cd token myTeamId (getId c)
           return $ \st' -> do
               let st'' = st' & csChannel(getId c).ccInfo .~ channelInfoFromChannelWithData cwd
-              liftIO $ asyncFetchScrollback st'' (getId c)
+              liftIO $ asyncFetchScrollback Preempt st'' (getId c)
               return st''
 
   -- It's important to queue up these channel metadata fetches first so
@@ -277,13 +277,13 @@ initializeState cr myTeam myUser = do
   -- latest metadata.
   F.forM_ chans $ \c ->
       when (getId c /= townSqId && c^.channelTypeL /= Direct) $
-          doAsyncWith st $ do
+          doAsyncWith Normal st $ do
               cwd <- liftIO $ mmGetChannel cd token myTeamId (getId c)
               return $ \st' -> do
                   return $ st' & csChannel(getId c).ccInfo .~ channelInfoFromChannelWithData cwd
 
   F.forM_ chans $ \c ->
       when (getId c /= townSqId && c^.channelTypeL /= Direct) $
-          doAsync st $ asyncFetchScrollback st (getId c)
+          doAsync Normal st $ asyncFetchScrollback Normal st (getId c)
 
   updateViewedIO st

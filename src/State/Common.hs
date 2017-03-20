@@ -1,7 +1,7 @@
 module State.Common where
 
 import           Brick (EventM)
-import qualified Control.Concurrent.Chan as Chan
+import qualified Control.Concurrent.STM as STM
 import           Control.Exception (try, SomeException)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Data.Foldable as F
@@ -39,16 +39,24 @@ tryMM act onSuccess = do
 
 -- * Background Computation
 
+-- | Priority setting for asynchronous work items. Preempt means that
+-- the queued item will be the next work item begun (i.e. it goes to the
+-- front of the queue); normal means it will go last in the queue.
+data AsyncPriority = Preempt | Normal
+
 -- | Run a computation in the background, ignoring any results
 --   from it.
-doAsync :: ChatState -> IO () -> IO ()
-doAsync st thunk = doAsyncWith st (thunk >> return return)
+doAsync :: AsyncPriority -> ChatState -> IO () -> IO ()
+doAsync prio st thunk = doAsyncWith prio st (thunk >> return return)
 
 -- | Run a computation in the background, returning a computation
 --   to be called on the 'ChatState' value.
-doAsyncWith :: ChatState -> IO (ChatState -> EventM Name ChatState) -> IO ()
-doAsyncWith st thunk =
-  Chan.writeChan (st^.csRequestQueue) thunk
+doAsyncWith :: AsyncPriority -> ChatState -> IO (ChatState -> EventM Name ChatState) -> IO ()
+doAsyncWith prio st thunk = do
+    let putChan = case prio of
+          Preempt -> STM.unGetTChan
+          Normal  -> STM.writeTChan
+    STM.atomically $ putChan (st^.csRequestQueue) thunk
 
 -- * Client Messages
 
@@ -91,7 +99,7 @@ asyncFetchAttachments :: Post -> ChatState -> IO ()
 asyncFetchAttachments p st = do
   let cId = p^.postChannelIdL
       pId = p^.postIdL
-  F.forM_ (p^.postFileIdsL) $ \fId -> doAsyncWith st $ do
+  F.forM_ (p^.postFileIdsL) $ \fId -> doAsyncWith Normal st $ do
     info <- mmGetFileInfo (st^.csConn) (st^.csTok) fId
     let scheme = "https://"
         host = st^.csResources.crConn.cdHostnameL
@@ -124,16 +132,16 @@ addClientMessage msg st =
 postErrorMessage :: (MonadIO m) => T.Text -> ChatState -> m ChatState
 postErrorMessage err st = do
     msg <- newClientMessage Error err
-    liftIO $ doAsyncWith st (return $ return . addClientMessage msg)
+    liftIO $ doAsyncWith Normal st (return $ return . addClientMessage msg)
     return st
 
 numScrollbackPosts :: Int
 numScrollbackPosts = 100
 
 -- | Fetch scrollback for a channel in the background
-asyncFetchScrollback :: ChatState -> ChannelId -> IO ()
-asyncFetchScrollback st cId =
-    doAsyncWith st $ do
+asyncFetchScrollback :: AsyncPriority -> ChatState -> ChannelId -> IO ()
+asyncFetchScrollback prio st cId =
+    doAsyncWith prio st $ do
         posts <- mmGetPosts (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId 0 numScrollbackPosts
         return $ \st' -> do
             liftIO $ mapM_ (asyncFetchReactionsForPost st cId) (posts^.postsPostsL)
@@ -155,7 +163,7 @@ asyncFetchScrollback st cId =
 asyncFetchReactionsForPost :: ChatState -> ChannelId -> Post -> IO ()
 asyncFetchReactionsForPost st cId p
   | not (p^.postHasReactionsL) = return ()
-  | otherwise = doAsyncWith st $ do
+  | otherwise = doAsyncWith Normal st $ do
       reactions <- mmGetReactionsForPost
                      (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL)
                                               cId
@@ -187,7 +195,7 @@ updateViewedIO st = do
       Connected -> do
           now <- getCurrentTime
           let cId = st^.csCurrentChannelId
-          doAsyncWith st $ do
+          doAsyncWith Normal st $ do
             result <- try $ mmUpdateLastViewedAt
               (st^.csConn)
               (st^.csTok)

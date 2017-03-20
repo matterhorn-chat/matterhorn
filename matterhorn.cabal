@@ -65,6 +65,7 @@ executable matterhorn
                      , connection
                      , text
                      , bytestring
+                     , stm
                      , config-ini >= 0.1.2
                      , process
                      , microlens-platform

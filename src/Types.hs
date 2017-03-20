@@ -12,7 +12,7 @@ import           Brick.AttrMap (AttrMap)
 import           Brick.Widgets.Edit (Editor, editor)
 import           Brick.Widgets.List (List)
 import           Cheapskate (Blocks)
-import           Control.Concurrent.Chan (Chan)
+import qualified Control.Concurrent.STM as STM
 import           Control.Concurrent.MVar (MVar)
 import           Control.Exception (SomeException)
 import           Data.HashMap.Strict (HashMap)
@@ -540,7 +540,7 @@ emptyEditState hist = ChatEditState
 
 -- | A 'RequestChan' is a queue of operations we have to perform
 --   in the background to avoid blocking on the main loop
-type RequestChan = Chan (IO (ChatState -> EventM Name ChatState))
+type RequestChan = STM.TChan (IO (ChatState -> EventM Name ChatState))
 
 -- | The 'HelpScreen' type represents the set of possible 'Help'
 --   dialogues we have to choose from.
