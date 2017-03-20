@@ -9,7 +9,6 @@ import           Control.Concurrent.MVar (newEmptyMVar)
 import           Control.Exception (SomeException, catch, try)
 import           Control.Monad (forM, forever, when, void)
 import           Control.Monad.IO.Class (liftIO)
-import qualified Data.Text as T
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
 import           Data.List (sort)
@@ -73,11 +72,6 @@ startTimezoneMonitor tz requestChan = do
         timezoneMonitor newTz
 
   void $ forkIO (timezoneMonitor tz)
-
-preferredChannelName :: Channel -> T.Text
-preferredChannelName ch
-    | channelType ch == Group = channelDisplayName ch
-    | otherwise = channelName ch
 
 mkChanNames :: User -> HM.HashMap UserId UserProfile -> Seq.Seq Channel -> MMNames
 mkChanNames myUser users chans = MMNames

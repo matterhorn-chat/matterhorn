@@ -107,6 +107,12 @@ asyncFetchAttachments p st = do
     return $ \st' -> do
       return (st' & csChannel(cId).ccContents.cdMessages.each %~ addAttachment)
 
+-- Get a channel's name, depending on its type
+preferredChannelName :: Channel -> T.Text
+preferredChannelName ch
+    | channelType ch == Group = channelDisplayName ch
+    | otherwise = channelName ch
+
 -- | Create a new 'ClientMessage' value
 newClientMessage :: (MonadIO m) => ClientMessageType -> T.Text -> m ClientMessage
 newClientMessage ty msg = do

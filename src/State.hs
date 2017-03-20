@@ -270,27 +270,28 @@ handleChannelInvite cId st = do
         tryMM (mmGetChannel (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId)
               (\(ChannelWithData chan _) -> do
                 return $ \st' -> do
-                  st'' <- handleNewChannel (chan^.channelNameL) False chan st'
+                  st'' <- handleNewChannel (preferredChannelName chan) False chan st'
                   liftIO $ asyncFetchScrollback st'' cId
                   return st'')
     return st
 
 startLeaveCurrentChannel :: ChatState -> EventM Name ChatState
 startLeaveCurrentChannel st = do
-    let cName = st^.csCurrentChannel.ccInfo.cdName
-    case cName `elem` st^.csNames.cnDMs of
-        True -> postErrorMessage "The /leave command cannot be used with direct message channels." st
-        False -> return $ st & csMode .~ LeaveChannelConfirm
+    let cInfo = st^.csCurrentChannel.ccInfo
+    case canLeaveChannel cInfo of
+        True -> return $ st & csMode .~ LeaveChannelConfirm
+        False -> postErrorMessage "The /leave command cannot be used with this channel." st
+
+canLeaveChannel :: ChannelInfo -> Bool
+canLeaveChannel cInfo = not $ cInfo^.cdType `elem` [Direct, Group]
 
 leaveCurrentChannel :: ChatState -> EventM Name ChatState
 leaveCurrentChannel st = do
     let cId = st^.csCurrentChannelId
-        cName = st^.csCurrentChannel.ccInfo.cdName
-        isDirect = cName `elem` st^.csNames.cnDMs
-        isNormal = not isDirect
+        cInfo = st^.csCurrentChannel.ccInfo
+        cName = cInfo^.cdName
 
-    -- Leave a normal channel.  If this is a DM channel, do nothing.
-    when isNormal $ liftIO $ doAsyncWith st $ do
+    when (canLeaveChannel cInfo) $ liftIO $ doAsyncWith st $ do
         mmLeaveChannel (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId
         return $ \ st' ->
             return $ st' & csEditState.cedInputHistoryPosition .at cId .~ Nothing
