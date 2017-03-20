@@ -51,6 +51,7 @@ mkChannelName c = T.cons sigil (c^.cdName)
   where sigil =  case c^.cdType of
           Private   -> '?'
           Ordinary  -> '#'
+          Group     -> '#'
           Direct    -> '@'
           Unknown _ -> '!'
 

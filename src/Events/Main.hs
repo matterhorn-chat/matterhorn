@@ -5,6 +5,7 @@ import Brick
 import Brick.Widgets.Edit
 import Control.Monad ((>=>))
 import Control.Monad.IO.Class (liftIO)
+import Data.Maybe (catMaybes)
 import Data.Monoid ((<>))
 import qualified Data.Set as Set
 import qualified Data.Text as T
@@ -19,6 +20,8 @@ import State.Editing
 import Command
 import Completion
 import InputHistory
+
+import Network.Mattermost (Type(..))
 
 onEventMain :: ChatState -> Vty.Event -> EventM Name (Next ChatState)
 onEventMain st e | Just kb <- lookupKeybinding e mainKeybindings = kbAction kb st
@@ -153,11 +156,20 @@ handleInputSubmission st = do
 tabComplete :: Completion.Direction
             -> ChatState -> EventM Name (Next ChatState)
 tabComplete dir st = do
-  let priorities  = [] :: [T.Text]-- XXX: add recent completions to this
+  let completableChannels = catMaybes (flip map (st^.csNames.cnChans) $ \cname -> do
+          -- Only permit completion of channel names for non-Group channels
+          cId <- st^.csNames.cnToChanId.at cname
+          let cInfo = st^.csChannel(cId).ccInfo
+          case cInfo^.cdType /= Group of
+              True -> Just cname
+              False -> Nothing
+          )
+
+      priorities  = [] :: [T.Text]-- XXX: add recent completions to this
       completions = Set.fromList (st^.csNames.cnUsers ++
-                                  st^.csNames.cnChans ++
+                                  completableChannels ++
                                   map ("@" <>) (st^.csNames.cnUsers) ++
-                                  map ("#" <>) (st^.csNames.cnChans) ++
+                                  map ("#" <>) completableChannels ++
                                   map ("/" <>) (commandName <$> commandList))
 
       line        = Z.currentLine $ st^.cmdLine.editContentsL

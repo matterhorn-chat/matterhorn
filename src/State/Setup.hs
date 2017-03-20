@@ -9,6 +9,7 @@ import           Control.Concurrent.MVar (newEmptyMVar)
 import           Control.Exception (SomeException, catch, try)
 import           Control.Monad (forM, forever, when, void)
 import           Control.Monad.IO.Class (liftIO)
+import qualified Data.Text as T
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
 import           Data.List (sort)
@@ -73,16 +74,21 @@ startTimezoneMonitor tz requestChan = do
 
   void $ forkIO (timezoneMonitor tz)
 
+preferredChannelName :: Channel -> T.Text
+preferredChannelName ch
+    | channelType ch == Group = channelDisplayName ch
+    | otherwise = channelName ch
+
 mkChanNames :: User -> HM.HashMap UserId UserProfile -> Seq.Seq Channel -> MMNames
 mkChanNames myUser users chans = MMNames
   { _cnChans = sort
-               [ channelName c
+               [ preferredChannelName c
                | c <- F.toList chans, channelType c /= Direct ]
   , _cnDMs = sort
              [ channelName c
              | c <- F.toList chans, channelType c == Direct ]
   , _cnToChanId = HM.fromList $
-                  [ (channelName c, channelId c) | c <- F.toList chans ] ++
+                  [ (preferredChannelName c, channelId c) | c <- F.toList chans ] ++
                   [ (userProfileUsername u, c)
                   | u <- HM.elems users
                   , c <- lookupChan (getDMChannelName (getId myUser) (getId u))
@@ -234,7 +240,7 @@ initializeState cr myTeam myUser = do
           cInfo    = ChannelInfo
                        { _cdViewed           = viewed
                        , _cdUpdated          = updated
-                       , _cdName             = c^.channelNameL
+                       , _cdName             = preferredChannelName c
                        , _cdHeader           = c^.channelHeaderL
                        , _cdType             = c^.channelTypeL
                        , _cdCurrentState     = ChanUnloaded
