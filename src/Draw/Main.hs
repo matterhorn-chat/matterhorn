@@ -470,7 +470,7 @@ insertTransitions fmt tz cutoff ms = fst $ F.foldl' nextMsg initState ms
                     else mempty
                 newMessageTransition Nothing = mempty
                 newMessageTransition (Just cutoffTime) =
-                    if prevMsg^.mDate < cutoffTime && msg^.mDate >= cutoffTime
+                    if prevMsg^.mDate <= cutoffTime && msg^.mDate > cutoffTime
                     then Seq.singleton $ newMessagesMsg cutoffTime
                     else mempty
             in if msg^.mDeleted
