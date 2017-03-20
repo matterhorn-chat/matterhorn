@@ -159,7 +159,6 @@ asyncFetchScrollback prio st cId =
                      & csChannel(cId).ccInfo.cdCurrentState .~ ChanLoaded
                      & csChannel(cId).ccInfo.cdNewMessageCutoff .~ cutoff
 
-
 asyncFetchReactionsForPost :: ChatState -> ChannelId -> Post -> IO ()
 asyncFetchReactionsForPost st cId p
   | not (p^.postHasReactionsL) = return ()
