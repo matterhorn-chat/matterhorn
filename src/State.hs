@@ -352,6 +352,23 @@ removeChannelFromState cId st = do
                         & csFocus                             %~ Z.filterZipper (/= cId)
                           -- Remove from focus zipper
 
+fetchCurrentChannelMembers :: ChatState -> EventM Name ()
+fetchCurrentChannelMembers st = do
+    liftIO $ doAsyncWith Preempt st $ do
+        let cId = st^.csCurrentChannelId
+        chanUserMap <- liftIO $ mmGetChannelMembers (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId
+
+        -- Construct a message listing them all and post it to the
+        -- channel:
+        let msgStr = "Channel members (" <> (T.pack $ show $ length chanUsers) <> "):\n" <>
+                     T.intercalate ", " usernames
+            chanUsers = snd <$> HM.toList chanUserMap
+            usernames = sort $ userUsername <$> (F.toList chanUsers)
+
+        return $ \st' -> do
+            msg <- newClientMessage Informative msgStr
+            return $ addClientMessage msg st'
+
 -- *  Channel Updates and Notifications
 
 hasUnread :: ChatState -> ChannelId -> Bool

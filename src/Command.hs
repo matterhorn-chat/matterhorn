@@ -48,6 +48,9 @@ commandList =
   , Cmd "delete-channel" "Delete the current channel"
     NoArg $ \ () st ->
       beginCurrentChannelDeleteConfirm st >>= continue
+  , Cmd "members" "Show the current channel's members"
+    NoArg $ \ () st ->
+      fetchCurrentChannelMembers st >> continue st
   , Cmd "leave" "Leave the current channel" NoArg $ \ () st ->
       startLeaveCurrentChannel st >>= continue
   , Cmd "join" "Join a channel" NoArg $ \ () st ->

@@ -59,6 +59,8 @@ To join a channel, use the `/join` command to choose from a list of
 available channels. To create a channel, use `/create-channel`. To leave
 a channel, use `/leave-channel`.
 
+To see the members in the current channel, use the `/members` command.
+
 To send a message, type it into the editor and press Enter to send.
 To send a multi-line message, toggle multi-line mode with the default
 binding `M-e`. Markdown syntax is accepted.
