@@ -36,12 +36,21 @@ change only if the package undergoes security fixes or other bug fixes.
 
 # Configuring
 
-Right now, configuration is manual. An example configuration file
-can be found at `sample-config.ini`. Matterhorn will prefer
-`config.ini` in the current working directory, but will look in
-the typical XDG configuration directories (you'll probably want to
-use `$HOME/.config/matterhorn/config.ini`) and as a last resort look
-for a globally-accessible `/etc/matterhorn/config.ini`.
+For configuration options you have two choices:
+
+* Interactive configuration entered on each program run
+* Configuration via stored settings in a config file
+
+The first option is useful when trying out the program because you can
+get up and running without worrying about making a configuration. Once
+you're ready for that, an example configuration file can be found at
+`sample-config.ini`.
+
+When looking for configuration files, matterhorn will prefer
+`config.ini` in the current working directory, but will look in the
+typical XDG configuration directories (you'll probably want to use
+`$HOME/.config/matterhorn/config.ini`) and as a last resort look for a
+globally-accessible `/etc/matterhorn/config.ini`.
 
 # Using the Client
 
