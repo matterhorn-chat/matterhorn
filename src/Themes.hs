@@ -241,7 +241,7 @@ attrForUsername s
       "-" `T.isPrefixOf` s ||
       " " `T.isPrefixOf` s
       = usernameAttr $ hash (T.tail s) `mod` (length usernameColors)
-    | otherwise            = usernameAttr $ hash s          `mod` (length usernameColors)
+    | otherwise = usernameAttr $ hash s `mod` (length usernameColors)
 
 usernameColors :: [Attr]
 usernameColors =
