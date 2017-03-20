@@ -225,7 +225,6 @@ darkAttrs =
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 
-
 darkColorTheme :: AttrMap
 darkColorTheme = attrMap defAttr darkAttrs
 
