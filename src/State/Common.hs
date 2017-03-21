@@ -2,7 +2,7 @@ module State.Common where
 
 import           Brick (EventM)
 import qualified Control.Concurrent.STM as STM
-import           Control.Exception (try, SomeException)
+import           Control.Exception (try)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
@@ -195,14 +195,12 @@ updateViewedIO st = do
           now <- getCurrentTime
           let cId = st^.csCurrentChannelId
           doAsyncWith Normal st $ do
-            result <- try $ mmUpdateLastViewedAt
+            mmUpdateLastViewedAt
               (st^.csConn)
               (st^.csTok)
               (getId (st^.csMyTeam))
               cId
-            case result of
-                Left (_::SomeException) -> return return
-                Right () -> return (\s -> return (s & csCurrentChannel.ccInfo.cdViewed .~ now))
+            return (\s -> return (s & csCurrentChannel.ccInfo.cdViewed .~ now))
           return st
       Disconnected -> return st
 
