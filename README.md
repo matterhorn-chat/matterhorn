@@ -102,6 +102,7 @@ these operations.
 * Optional smart quoting for efficient Markdown entry
 * Edit messages with `$EDITOR`
 * Message editor with kill/yank buffer and readline-style keybindings
+* Tab-completion of usernames, channel names, and commands
 
 # Building
 
