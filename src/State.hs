@@ -68,8 +68,8 @@ refreshChannel chan st = doAsyncWith Normal st $
         res <- F.foldrM addMessage st' [ (posts^.postsPostsL) HM.! p
                                        | p <- F.toList (posts^.postsOrderL)
                                        ]
-        let newChanInfo ci = channelInfoFromChannelWithData cwd ci &
-                               cdCurrentState .~ ChanLoaded
+        let newChanInfo ci = channelInfoFromChannelWithData cwd ci
+                               & cdCurrentState     .~ ChanLoaded
 
         return (res & csChannel(chan).ccInfo %~ newChanInfo)
     _ -> return return

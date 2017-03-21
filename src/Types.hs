@@ -12,7 +12,6 @@ import           Brick.AttrMap (AttrMap)
 import           Brick.Widgets.Edit (Editor, editor)
 import           Brick.Widgets.List (List)
 import           Cheapskate (Blocks)
-import           Control.Applicative ((<|>))
 import qualified Control.Concurrent.STM as STM
 import           Control.Concurrent.MVar (MVar)
 import           Control.Exception (SomeException)
@@ -365,7 +364,6 @@ channelInfoFromChannelWithData (ChannelWithData chan chanData) ci =
           , _cdName             = (chan^.channelNameL)
           , _cdHeader           = (chan^.channelHeaderL)
           , _cdType             = (chan^.channelTypeL)
-          , _cdNewMessageCutoff = _cdNewMessageCutoff ci <|> Just viewed
           }
 
 -- | The 'ChannelContents' is a wrapper for a list of
