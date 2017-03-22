@@ -146,18 +146,19 @@ asyncFetchScrollback prio st cId =
         return $ \st' -> do
             liftIO $ mapM_ (asyncFetchReactionsForPost st cId) (posts^.postsPostsL)
             (contents, st'') <- liftIO $ fromPosts st' posts
-                -- We need to set the new message cutoff only if there
-                -- are actually messages that came in after our last
-                -- view time.
+            -- We need to set the new message cutoff only if there are
+            -- actually messages that came in after our last view time.
             let Just viewTime = st'^?msgMap.ix cId.ccInfo.cdViewed
-                cutoff = if hasNew then Just viewTime else Nothing
-                hasNew = not $ Seq.null $
-                         Seq.filter (\m -> m^.mDate > viewTime) $
-                         contents^.cdMessages
+                setCutoff = if hasNew
+                            then const $ Just $ minimum (_mDate <$> newMessages)
+                            else id
+                hasNew = not $ Seq.null newMessages
+                newMessages = Seq.filter (\m -> m^.mDate > viewTime) $
+                              contents^.cdMessages
             return $
                 st'' & csChannel(cId).ccContents .~ contents
                      & csChannel(cId).ccInfo.cdCurrentState .~ ChanLoaded
-                     & csChannel(cId).ccInfo.cdNewMessageCutoff .~ cutoff
+                     & csChannel(cId).ccInfo.cdNewMessageCutoff %~ setCutoff
 
 asyncFetchReactionsForPost :: ChatState -> ChannelId -> Post -> IO ()
 asyncFetchReactionsForPost st cId p
