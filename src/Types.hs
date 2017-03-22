@@ -366,7 +366,7 @@ channelInfoFromChannelWithData (ChannelWithData chan chanData) ci =
         updated  = chan ^. channelLastPostAtL
     in ci { _cdViewed           = viewed
           , _cdUpdated          = updated
-          , _cdName             = (chan^.channelNameL)
+          , _cdName             = preferredChannelName chan
           , _cdHeader           = (chan^.channelHeaderL)
           , _cdType             = (chan^.channelTypeL)
           }
