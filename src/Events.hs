@@ -1,14 +1,15 @@
 {-# LANGUAGE MultiWayIf #-}
 module Events where
 
+import           Prelude ()
+import           Prelude.Compat
+
 import           Brick
 import           Control.Monad.IO.Class (liftIO)
 import qualified Data.Text as T
-import Data.Monoid ((<>))
+import           Data.Monoid ((<>))
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform
-
-import           Prelude
 
 import           Network.Mattermost
 import           Network.Mattermost.Lenses

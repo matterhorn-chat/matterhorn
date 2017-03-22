@@ -1,5 +1,8 @@
 module Events.JoinChannel where
 
+import Prelude ()
+import Prelude.Compat
+
 import Brick
 import Brick.Widgets.List
 import qualified Graphics.Vty as Vty

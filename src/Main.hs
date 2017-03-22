@@ -2,6 +2,9 @@
 
 module Main where
 
+import           Prelude ()
+import           Prelude.Compat
+
 import           Brick
 import           Brick.BChan
 import           Control.Concurrent (forkIO)

@@ -1,5 +1,8 @@
 module Events.MessageSelect where
 
+import Prelude ()
+import Prelude.Compat
+
 import Brick
 import Control.Monad ((>=>))
 import Data.Monoid ((<>))

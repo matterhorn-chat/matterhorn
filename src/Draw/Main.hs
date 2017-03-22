@@ -1,13 +1,15 @@
 {-# LANGUAGE MultiWayIf #-}
 module Draw.Main (drawMain) where
 
+import           Prelude ()
+import           Prelude.Compat
+
 import           Brick
 import           Brick.Widgets.Border
 import           Brick.Widgets.Border.Style
 import           Brick.Widgets.Center (hCenter)
 import           Brick.Widgets.Edit (editContentsL, renderEditor, getEditContents)
 import           Brick.Widgets.List (renderList)
-import           Control.Applicative
 import           Control.Arrow ((>>>))
 import           Control.Monad.Trans.Reader (withReaderT)
 import           Data.Time.Clock (UTCTime(..))
@@ -29,8 +31,6 @@ import           Data.Text (Text)
 import qualified Data.Text as T
 import           Data.Text.Zipper (cursorPosition, insertChar, getText, gotoEOL)
 import           Lens.Micro.Platform
-
-import           Prelude
 
 import           Network.Mattermost
 import           Network.Mattermost.Lenses

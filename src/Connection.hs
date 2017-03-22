@@ -1,5 +1,8 @@
 module Connection where
 
+import           Prelude ()
+import           Prelude.Compat
+
 import           Brick.BChan
 import           Control.Concurrent (forkIO, threadDelay)
 import           Control.Concurrent.MVar

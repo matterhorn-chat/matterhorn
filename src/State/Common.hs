@@ -1,5 +1,8 @@
 module State.Common where
 
+import           Prelude ()
+import           Prelude.Compat
+
 import           Brick (EventM)
 import qualified Control.Concurrent.STM as STM
 import           Control.Exception (try)

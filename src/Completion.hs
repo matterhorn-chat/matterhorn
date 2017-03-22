@@ -2,6 +2,9 @@
 -- https://github.com/glguy/irc-core/blob/v2/src/Client/Commands/WordCompletion.hs
 module Completion where
 
+import           Prelude ()
+import           Prelude.Compat
+
 import           Control.Applicative ( (<|>) )
 import           Control.Monad ( guard )
 import           Data.Char ( isSpace )

@@ -1,5 +1,8 @@
 module Draw.Util where
 
+import Prelude ()
+import Prelude.Compat
+
 import Brick
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime(..))

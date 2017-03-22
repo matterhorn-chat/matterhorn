@@ -4,13 +4,13 @@ module Draw.LeaveChannelConfirm
     )
 where
 
+import Prelude ()
+import Prelude.Compat
+
 import Brick
 import Brick.Widgets.Center
 import Brick.Widgets.Border
-import Control.Applicative
 import Lens.Micro.Platform ((^.))
-
-import Prelude
 
 import Types
 import Themes

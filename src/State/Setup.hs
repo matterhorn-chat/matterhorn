@@ -1,5 +1,8 @@
 module State.Setup where
 
+import           Prelude ()
+import           Prelude.Compat
+
 import           Brick (EventM)
 import           Brick.BChan
 import           Brick.Widgets.List (list)

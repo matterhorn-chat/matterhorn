@@ -1,6 +1,9 @@
 {-# LANGUAGE MultiWayIf #-}
 module Events.Main where
 
+import Prelude ()
+import Prelude.Compat
+
 import Brick
 import Brick.Widgets.Edit
 import Control.Monad ((>=>))
