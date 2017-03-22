@@ -1,4 +1,57 @@
 
+30701.0.0
+=========
+
+This release supports server version 3.7.1.
+
+New features:
+ * Matterhorn now has basic support for 3.7's new "group channel"
+   feature. If other users add you to a group channel, it will appear in
+   the sidebar with the member usernames listed (e.g. "#bob, sue, ...").
+   Creation of group channels will be supported in a future release.
+ * When the `urlOpenCommand` program produces output on standard output
+   or standard error, this output is now logged and a message is posted
+   in the current channel with the path to the log file. This feature
+   prevents the URL open command from poisoning the terminal state with
+   unexpected output.
+ * Added a `/members` command to show current channel membership.
+ * Channel header changes from other users will now cause the channel
+   topic string to update.
+ * Added a `/delete-channel` command to delete the current channel.
+ * Markdown rendering now puts empty lines between adjacent block
+   elements of the same variety to improve readability.
+
+Bug fixes:
+ * Message selection now only supports reply/edit/delete on normal posts
+   (fixes #174)
+ * C-n/p now only change channels when a non-DM channel is selected
+   (fixes #82)
+ * We now handle new user events (fixed #111)
+ * On channel change we now always reset the channel list to scroll to
+   the top (fixes #138)
+ * When a draft message is left in the editor when changing channels, a
+   new sigil ("»") appears for the previous channel instead of the usual
+   "#" to indicate this.
+ * The help interface now resizes properly all the time.
+
+Performance improvements:
+ * On startup, all channel contents are fetched asynchronously. Town
+   Square fetches are prioritized. These changes drastically improve
+   startup time, even on fast connections.
+
+Documentation changes:
+ * The README now includes a feature list, a brief feature overview for
+   new users, and a section on how to contribute.
+
+Package changes:
+ * Upgraded mattermost-api to 30701.0.0.
+ * Binary releases now include the copyright and licensing information
+   for all dependencies.
+
+Internal changes:
+ * Added preemption support for asynchronous work queue processing.
+   `doAsync(With)` now both take an `AsyncPriority`.
+
 30600.2.4
 =========
 
