@@ -45,6 +45,12 @@ commandList =
   , Cmd "create-channel" "Create a new channel"
     (LineArg "channel name") $ \ name st ->
       createOrdinaryChannel name st >>= continue
+  , Cmd "delete-channel" "Delete the current channel"
+    NoArg $ \ () st ->
+      beginCurrentChannelDeleteConfirm st >>= continue
+  , Cmd "members" "Show the current channel's members"
+    NoArg $ \ () st ->
+      fetchCurrentChannelMembers st >> continue st
   , Cmd "leave" "Leave the current channel" NoArg $ \ () st ->
       startLeaveCurrentChannel st >>= continue
   , Cmd "join" "Join a channel" NoArg $ \ () st ->
@@ -84,7 +90,7 @@ commandList =
       fpMb <- liftIO $ locateScriptPath (T.unpack script)
       case fpMb of
         ScriptPath scriptPath -> do
-          liftIO $ doAsyncWith st $ runScript scriptPath text
+          liftIO $ doAsyncWith Preempt st $ runScript scriptPath text
           continue st
         NonexecScriptPath scriptPath -> do
           msg <- newClientMessage Error

@@ -12,7 +12,7 @@ import           Brick.AttrMap (AttrMap)
 import           Brick.Widgets.Edit (Editor, editor)
 import           Brick.Widgets.List (List)
 import           Cheapskate (Blocks)
-import           Control.Concurrent.Chan (Chan)
+import qualified Control.Concurrent.STM as STM
 import           Control.Concurrent.MVar (MVar)
 import           Control.Exception (SomeException)
 import           Data.HashMap.Strict (HashMap)
@@ -33,6 +33,7 @@ import           Network.Mattermost.WebSocket.Types
 import           Network.Connection (HostNotResolved, HostCannotConnect)
 import qualified Cheapskate as C
 import qualified Data.Text as T
+import           System.Exit (ExitCode)
 
 import           Prelude
 
@@ -213,8 +214,7 @@ postClientPostType cp =
 
 -- | Find out whether a 'Post' represents a topic change
 postIsTopicChange :: Post -> Bool
-postIsTopicChange p =
-    "updated the channel header from:" `T.isInfixOf` postMessage p
+postIsTopicChange p = postType p == SystemHeaderChange
 
 -- | Find out whether a 'Post' is from a @/me@ command
 postIsEmote :: Post -> Bool
@@ -342,6 +342,35 @@ data ClientChannel = ClientChannel
     -- ^ The 'ChannelInfo' for the channel
   }
 
+-- Get a channel's name, depending on its type
+preferredChannelName :: Channel -> T.Text
+preferredChannelName ch
+    | channelType ch == Group = channelDisplayName ch
+    | otherwise = channelName ch
+
+initialChannelInfo :: Channel -> ChannelInfo
+initialChannelInfo chan =
+    let updated  = chan ^. channelLastPostAtL
+    in ChannelInfo { _cdViewed           = updated
+                   , _cdUpdated          = updated
+                   , _cdName             = preferredChannelName chan
+                   , _cdHeader           = chan^.channelHeaderL
+                   , _cdType             = chan^.channelTypeL
+                   , _cdCurrentState     = ChanUnloaded
+                   , _cdNewMessageCutoff = Nothing
+                   }
+
+channelInfoFromChannelWithData :: ChannelWithData -> ChannelInfo -> ChannelInfo
+channelInfoFromChannelWithData (ChannelWithData chan chanData) ci =
+    let viewed   = chanData ^. channelDataLastViewedAtL
+        updated  = chan ^. channelLastPostAtL
+    in ci { _cdViewed           = viewed
+          , _cdUpdated          = updated
+          , _cdName             = (chan^.channelNameL)
+          , _cdHeader           = (chan^.channelHeaderL)
+          , _cdType             = (chan^.channelTypeL)
+          }
+
 -- | The 'ChannelContents' is a wrapper for a list of
 --   'Message' values
 data ChannelContents = ChannelContents
@@ -361,6 +390,7 @@ emptyChannelContents = ChannelContents
 data ChannelState
   = ChanUnloaded
   | ChanLoaded
+  | ChanLoadPending
   | ChanRefreshing
     deriving (Eq, Show)
 
@@ -419,11 +449,11 @@ data UserInfo = UserInfo
   , _uiInTeam :: Bool
   } deriving (Eq, Show)
 
--- | Create a 'UserInfo' value from a Mattermost 'UserProfile' value
-userInfoFromProfile :: UserProfile -> Bool -> UserInfo
-userInfoFromProfile up inTeam = UserInfo
-  { _uiName   = userProfileUsername up
-  , _uiId     = userProfileId up
+-- | Create a 'UserInfo' value from a Mattermost 'User' value
+userInfoFromUser :: User -> Bool -> UserInfo
+userInfoFromUser up inTeam = UserInfo
+  { _uiName   = userUsername up
+  , _uiId     = userId up
   , _uiStatus = Offline
   , _uiInTeam = inTeam
   }
@@ -459,6 +489,14 @@ instance Ord UserInfo where
 
 -- * Application State Values
 
+data ProgramOutput =
+    ProgramOutput { program :: FilePath
+                  , programArgs :: [String]
+                  , programStdout :: String
+                  , programStderr :: String
+                  , programExitCode :: ExitCode
+                  }
+
 -- | 'ChatResources' represents configuration and
 -- connection-related information, as opposed to
 -- current model or view information. Information
@@ -470,6 +508,7 @@ data ChatResources = ChatResources
   , _crConn          :: ConnectionData
   , _crRequestQueue  :: RequestChan
   , _crEventQueue    :: BChan MHEvent
+  , _crSubprocessLog :: STM.TChan ProgramOutput
   , _crTheme         :: AttrMap
   , _crQuitCondition :: MVar ()
   , _crConfiguration :: Config
@@ -514,7 +553,7 @@ emptyEditState hist = ChatEditState
 
 -- | A 'RequestChan' is a queue of operations we have to perform
 --   in the background to avoid blocking on the main loop
-type RequestChan = Chan (IO (ChatState -> EventM Name ChatState))
+type RequestChan = STM.TChan (IO (ChatState -> EventM Name ChatState))
 
 -- | The 'HelpScreen' type represents the set of possible 'Help'
 --   dialogues we have to choose from.
@@ -530,6 +569,7 @@ data Mode =
     | ChannelSelect
     | UrlSelect
     | LeaveChannelConfirm
+    | DeleteChannelConfirm
     | JoinChannel
     | ChannelScroll
     | MessageSelect

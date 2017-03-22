@@ -4,11 +4,12 @@ import           Brick (EventM)
 import           Brick.BChan
 import           Brick.Widgets.List (list)
 import           Control.Concurrent (threadDelay, forkIO)
-import qualified Control.Concurrent.Chan as Chan
+import qualified Control.Concurrent.STM as STM
 import           Control.Concurrent.MVar (newEmptyMVar)
 import           Control.Exception (SomeException, catch, try)
 import           Control.Monad (forM, forever, when, void)
 import           Control.Monad.IO.Class (liftIO)
+import qualified Data.Text as T
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
 import           Data.List (sort)
@@ -18,7 +19,8 @@ import qualified Data.Sequence as Seq
 import           Data.Time.LocalTime ( TimeZone(..), getCurrentTimeZone )
 import           Lens.Micro.Platform
 import           System.Exit (exitFailure)
-import           System.IO (Handle)
+import           System.IO (Handle, hPutStrLn, hFlush)
+import           System.IO.Temp (withSystemTempFile)
 
 import           Network.Mattermost
 import           Network.Mattermost.Lenses
@@ -49,11 +51,47 @@ userRefresh cd token requestChan = void $ forkIO $ forever refresh
   where refresh = do
           let seconds = (* (1000 * 1000))
           threadDelay (seconds 30)
-          Chan.writeChan requestChan $ do
+          STM.atomically $ STM.writeTChan requestChan $ do
             rs <- try $ fetchUserStatuses cd token
             case rs of
               Left (_ :: SomeException) -> return return
               Right upd -> return upd
+
+startSubprocessLogger :: STM.TChan ProgramOutput -> RequestChan -> IO ()
+startSubprocessLogger logChan requestChan = do
+    let logMonitor logPath logHandle = do
+          ProgramOutput progName args out err ec <-
+              STM.atomically $ STM.readTChan logChan
+
+          -- If either stdout or stderr is non-empty, log it and
+          -- notify the user.
+          let emptyOutput s = null s || s == "\n"
+
+          case emptyOutput out && emptyOutput err of
+              True -> logMonitor logPath logHandle
+              False -> do
+                  hPutStrLn logHandle $
+                      unlines [ "Program: " <> progName
+                              , "Arguments: " <> show args
+                              , "Exit code: " <> show ec
+                              , "Stdout:"
+                              , out
+                              , "Stderr:"
+                              , err
+                              ]
+                  hFlush logHandle
+
+                  STM.atomically $ STM.writeTChan requestChan $ do
+                      return $ \st -> do
+                          msg <- newClientMessage Error
+                            (T.pack $ "Program " <> show progName <>
+                             " produced unexpected output; see " <>
+                             logPath <> " for details.")
+                          return $ addClientMessage msg st
+
+                  logMonitor logPath logHandle
+
+    void $ forkIO $ withSystemTempFile "matterhorn.log" logMonitor
 
 startTimezoneMonitor :: TimeZone -> RequestChan -> IO ()
 startTimezoneMonitor tz requestChan = do
@@ -66,14 +104,14 @@ startTimezoneMonitor tz requestChan = do
 
         newTz <- getCurrentTimeZone
         when (newTz /= prevTz) $
-            Chan.writeChan requestChan $ do
+            STM.atomically $ STM.writeTChan requestChan $ do
                 return $ (return . (& timeZone .~ newTz))
 
         timezoneMonitor newTz
 
   void $ forkIO (timezoneMonitor tz)
 
-mkChanNames :: User -> HM.HashMap UserId UserProfile -> Seq.Seq Channel -> MMNames
+mkChanNames :: User -> HM.HashMap UserId User -> Seq.Seq Channel -> MMNames
 mkChanNames myUser users chans = MMNames
   { _cnChans = sort
                [ preferredChannelName c
@@ -83,13 +121,13 @@ mkChanNames myUser users chans = MMNames
              | c <- F.toList chans, channelType c == Direct ]
   , _cnToChanId = HM.fromList $
                   [ (preferredChannelName c, channelId c) | c <- F.toList chans ] ++
-                  [ (userProfileUsername u, c)
+                  [ (userUsername u, c)
                   | u <- HM.elems users
                   , c <- lookupChan (getDMChannelName (getId myUser) (getId u))
                   ]
-  , _cnUsers = sort (map userProfileUsername (HM.elems users))
+  , _cnUsers = sort (map userUsername (HM.elems users))
   , _cnToUserId = HM.fromList
-                  [ (userProfileUsername u, getId u) | u <- HM.elems users ]
+                  [ (userUsername u, getId u) | u <- HM.elems users ]
   }
   where lookupChan n = [ c^.channelIdL
                        | c <- F.toList chans, c^.channelNameL == n
@@ -120,7 +158,7 @@ newState rs i u m tz hist = ChatState
   , _csChannelSelectUserMatches    = mempty
   , _csRecentChannel               = Nothing
   , _csUrlList                     = list UrlList mempty 2
-  , _csConnectionStatus            = Disconnected
+  , _csConnectionStatus            = Connected
   , _csJoinChannelList             = Nothing
   , _csMessageSelect               = MessageSelectState Nothing
   }
@@ -189,6 +227,8 @@ setupState logFile config requestChan eventChan = do
               Just t -> return t
 
   quitCondition <- newEmptyMVar
+  slc <- STM.atomically STM.newTChan
+
   let themeName = case configTheme config of
           Nothing -> defaultThemeName
           Just t -> t
@@ -203,11 +243,12 @@ setupState logFile config requestChan eventChan = do
              , _crTheme         = theme
              , _crQuitCondition = quitCondition
              , _crConfiguration = config
+             , _crSubprocessLog = slc
              }
   initializeState cr myTeam myUser
 
-loadAllProfiles :: ConnectionData -> Token -> IO (HM.HashMap UserId UserProfile)
-loadAllProfiles cd token = go HM.empty 0
+loadAllUsers :: ConnectionData -> Token -> IO (HM.HashMap UserId User)
+loadAllUsers cd token = go HM.empty 0
   where go users n = do
           newUsers <- mmGetUsers cd token (n * 50) 50
           if HM.null newUsers
@@ -216,10 +257,10 @@ loadAllProfiles cd token = go HM.empty 0
 
 initializeState :: ChatResources -> Team -> User -> IO ChatState
 initializeState cr myTeam myUser = do
-  let ChatResources token cd requestChan _ _ _ _ = cr
+  let ChatResources token cd requestChan _ _ _ _ _ = cr
   let myTeamId = getId myTeam
 
-  Chan.writeChan requestChan $ fetchUserStatuses cd token
+  STM.atomically $ STM.writeTChan requestChan $ fetchUserStatuses cd token
 
   userRefresh cd token requestChan
 
@@ -227,29 +268,19 @@ initializeState cr myTeam myUser = do
   chans <- mmGetChannels cd token myTeamId
 
   msgs <- fmap (HM.fromList . F.toList) $ forM (F.toList chans) $ \c -> do
-      ChannelWithData _ chanData <- mmGetChannel cd token myTeamId (getId c)
-
-      let viewed   = chanData ^. channelDataLastViewedAtL
-          updated  = c ^. channelLastPostAtL
-          cInfo    = ChannelInfo
-                       { _cdViewed           = viewed
-                       , _cdUpdated          = updated
-                       , _cdName             = preferredChannelName c
-                       , _cdHeader           = c^.channelHeaderL
-                       , _cdType             = c^.channelTypeL
-                       , _cdCurrentState     = ChanUnloaded
-                       , _cdNewMessageCutoff = Just viewed
-                       }
-          cChannel = ClientChannel
+      let cChannel = ClientChannel
                        { _ccContents = emptyChannelContents
-                       , _ccInfo     = cInfo
+                       , _ccInfo     = initialChannelInfo c & cdCurrentState .~ state
                        }
+          state = if c^.channelTypeL == Direct
+                  then ChanUnloaded
+                  else ChanLoadPending
 
       return (getId c, cChannel)
 
-  teamProfiles  <- mmGetProfiles cd token myTeamId
-  users <- loadAllProfiles cd token -- mmGetProfiles cd token myTeamId
-  let mkProfile u = userInfoFromProfile u (HM.member (u^.userProfileIdL) teamProfiles)
+  teamUsers <- mmGetProfiles cd token myTeamId
+  users <- loadAllUsers cd token
+  let mkUser u = userInfoFromUser u (HM.member (u^.userIdL) teamUsers)
   tz    <- getCurrentTimeZone
   hist  <- do
       result <- readHistory
@@ -258,6 +289,8 @@ initializeState cr myTeam myUser = do
           Right h -> return h
 
   startTimezoneMonitor tz requestChan
+
+  startSubprocessLogger (cr^.crSubprocessLog) requestChan
 
   let chanNames = mkChanNames myUser users chans
       Just townSqId = chanNames ^. cnToChanId . at "town-square"
@@ -268,17 +301,32 @@ initializeState cr myTeam myUser = do
                 , c <- maybeToList (HM.lookup i (chanNames ^. cnToChanId)) ]
       chanZip = Z.findRight (== townSqId) (Z.fromList chanIds)
       st = newState cr chanZip myUser myTeam tz hist
-             & usrMap .~ fmap mkProfile users
+             & usrMap .~ fmap mkUser users
              & msgMap .~ msgs
              & csNames .~ chanNames
 
   -- Fetch town-square asynchronously, but put it in the queue early.
   case F.find ((== townSqId) . getId) chans of
       Nothing -> return ()
-      Just _ -> doAsync st $ liftIO $ asyncFetchScrollback st townSqId
+      Just c -> doAsyncWith Preempt st $ do
+          cwd <- liftIO $ mmGetChannel cd token myTeamId (getId c)
+          return $ \st' -> do
+              let st'' = st' & csChannel(getId c).ccInfo %~ channelInfoFromChannelWithData cwd
+              liftIO $ asyncFetchScrollback Preempt st'' (getId c)
+              return st''
+
+  -- It's important to queue up these channel metadata fetches first so
+  -- that by the time the scrollback requests are processed, we have the
+  -- latest metadata.
+  F.forM_ chans $ \c ->
+      when (getId c /= townSqId && c^.channelTypeL /= Direct) $
+          doAsyncWith Normal st $ do
+              cwd <- liftIO $ mmGetChannel cd token myTeamId (getId c)
+              return $ \st' -> do
+                  return $ st' & csChannel(getId c).ccInfo %~ channelInfoFromChannelWithData cwd
 
   F.forM_ chans $ \c ->
       when (getId c /= townSqId && c^.channelTypeL /= Direct) $
-          doAsync st $ asyncFetchScrollback st (getId c)
+          doAsync Normal st $ asyncFetchScrollback Normal st (getId c)
 
   updateViewedIO st

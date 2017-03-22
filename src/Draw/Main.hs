@@ -284,11 +284,13 @@ renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
     messages = body <+> txt " "
 
     body = chatText <=> case chan^.ccInfo.cdCurrentState of
-      ChanUnloaded   -> withDefAttr clientMessageAttr $
-                          txt "[Loading channel scrollback...]"
-      ChanRefreshing -> withDefAttr clientMessageAttr $
-                          txt "[Refreshing scrollback...]"
-      _              -> emptyWidget
+      ChanUnloaded    -> withDefAttr clientMessageAttr $
+                           txt "[Loading channel...]"
+      ChanLoadPending -> withDefAttr clientMessageAttr $
+                          txt "[Loading channel...]"
+      ChanRefreshing  -> withDefAttr clientMessageAttr $
+                           txt "[Refreshing channel...]"
+      _               -> emptyWidget
 
     chatText = case st^.csMode of
         ChannelScroll ->
@@ -501,7 +503,10 @@ drawMain st = [mainInterface st]
 
 messageSelectBottomBar :: ChatState -> Widget Name
 messageSelectBottomBar st =
-    let optionStr = T.intercalate " " $ catMaybes $ mkOption <$> options
+    let optionStr = if null usableOptions
+                    then "(no actions available for this message)"
+                    else T.intercalate " " usableOptions
+        usableOptions = catMaybes $ mkOption <$> options
         mkOption (f, k, desc) = if f postMsg
                                 then Just $ k <> ":" <> desc
                                 else Nothing
@@ -510,9 +515,9 @@ messageSelectBottomBar st =
         hasURLs = numURLs > 0
         openUrlsMsg = "open " <> (T.pack $ show numURLs) <> " URL" <> s
         hasVerb = isJust (findVerbatimChunk (postMsg^.mText))
-        options = [ (const True,    "r", "reply")
-                  , (isMine st,     "e", "edit")
-                  , (isMine st,     "d", "delete")
+        options = [ (isReplyable, "r", "reply")
+                  , (\m -> isMine st m && isEditable m, "e", "edit")
+                  , (\m -> isMine st m && isDeletable m, "d", "delete")
                   , (const hasURLs, "o", openUrlsMsg)
                   , (const hasVerb, "y", "yank")
                   ]

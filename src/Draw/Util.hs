@@ -53,7 +53,7 @@ mkChannelName c = T.cons sigil (c^.cdName)
           Ordinary  -> '#'
           Group     -> '#'
           Direct    -> '@'
-          Unknown _ -> '!'
+          _         -> '!'
 
 mkDMChannelName :: UserInfo -> T.Text
 mkDMChannelName u = T.cons (userSigil u) (u^.uiName)
