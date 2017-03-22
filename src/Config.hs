@@ -8,6 +8,9 @@ module Config
   , defaultConfig
   ) where
 
+import           Prelude ()
+import           Prelude.Compat
+
 import           Control.Applicative
 import           Control.Monad.Trans.Except
 import           Data.Ini.Config
@@ -15,8 +18,6 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import           Data.Monoid ((<>))
 import           System.Process (readProcess)
-
-import           Prelude
 
 import           IOUtil
 import           FilePaths

@@ -6,6 +6,9 @@
 
 module Types where
 
+import           Prelude ()
+import           Prelude.Compat
+
 import           Brick (EventM, txt, Next)
 import           Brick.BChan
 import           Brick.AttrMap (AttrMap)
@@ -34,8 +37,6 @@ import           Network.Connection (HostNotResolved, HostCannotConnect)
 import qualified Cheapskate as C
 import qualified Data.Text as T
 import           System.Exit (ExitCode)
-
-import           Prelude
 
 import           Zipper (Zipper, focusL)
 

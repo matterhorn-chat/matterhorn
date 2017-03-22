@@ -13,6 +13,9 @@ module Markdown
   )
 where
 
+import Prelude ()
+import Prelude.Compat
+
 import           Brick ( (<+>), Widget, textWidth )
 import qualified Brick.Widgets.Border as B
 import qualified Brick.Widgets.Border.Style as B

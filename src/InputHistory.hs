@@ -9,9 +9,10 @@ module InputHistory
   , removeChannelHistory
   ) where
 
-import Control.Applicative
+import Prelude ()
+import Prelude.Compat
+
 import Control.Monad.Trans.Except
-import Data.Monoid
 import Lens.Micro.Platform
 import qualified Data.HashMap.Strict as HM
 import System.Directory (createDirectoryIfMissing)
@@ -19,8 +20,6 @@ import System.FilePath (dropFileName)
 import qualified System.IO.Strict as S
 import qualified Data.Vector as V
 import           Data.Text ( Text )
-
-import           Prelude
 
 import IOUtil
 import FilePaths

@@ -1,5 +1,8 @@
 module Events.LeaveChannelConfirm where
 
+import Prelude ()
+import Prelude.Compat
+
 import Brick
 import qualified Graphics.Vty as Vty
 import Lens.Micro.Platform

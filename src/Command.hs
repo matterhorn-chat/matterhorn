@@ -1,16 +1,16 @@
 {-# LANGUAGE GADTs #-}
 module Command where
 
+import Prelude ()
+import Prelude.Compat
+
 import Brick (EventM, Next, continue, halt)
-import Control.Applicative
 import Control.Monad (when)
 import Control.Monad.IO.Class (liftIO)
 import Data.Monoid ((<>))
 import qualified Data.Text as T
 import System.Exit (ExitCode(..))
 import System.Process (readProcessWithExitCode)
-
-import Prelude
 
 import FilePaths (Script(..), getAllScripts, locateScriptPath)
 import Lens.Micro.Platform ((^.))

@@ -40,15 +40,15 @@ module Themes
   , attrForUsername
   ) where
 
-import Control.Applicative
+import Prelude ()
+import Prelude.Compat
+
 import Data.Hashable (hash)
 import Data.Monoid ((<>))
 import Graphics.Vty
 import Brick
 import Brick.Widgets.List
 import qualified Data.Text as T
-
-import Prelude
 
 defaultThemeName :: T.Text
 defaultThemeName = darkColorThemeName

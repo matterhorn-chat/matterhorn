@@ -1,5 +1,8 @@
 module Events.UrlSelect where
 
+import Prelude ()
+import Prelude.Compat
+
 import Brick
 import Brick.Widgets.List
 import Control.Monad ((>=>))

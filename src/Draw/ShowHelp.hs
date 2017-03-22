@@ -1,9 +1,11 @@
 module Draw.ShowHelp (drawShowHelp) where
 
+import Prelude ()
+import Prelude.Compat
+
 import Brick
 import Brick.Widgets.Border
 import Brick.Widgets.Center (hCenter, centerLayer)
-import Control.Applicative
 import Lens.Micro.Platform
 import Data.List (sortBy)
 import Data.Ord (comparing)
@@ -11,8 +13,6 @@ import qualified Data.Text as T
 import Data.Monoid ((<>))
 import qualified Graphics.Vty as Vty
 import Network.Mattermost.Version (mmApiVersion)
-
-import Prelude
 
 import Themes
 import Types

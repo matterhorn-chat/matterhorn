@@ -59,6 +59,7 @@ executable matterhorn
                        ScopedTypeVariables
   ghc-options:         -Wall -threaded
   build-depends:       base >=4.7 && <5
+                     , base-compat
                      , mattermost-api >= 30600.2.2
                      , unordered-containers
                      , containers >= 0.5.8

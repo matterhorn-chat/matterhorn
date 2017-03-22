@@ -2,6 +2,9 @@
 
 module State.Editing where
 
+import           Prelude ()
+import           Prelude.Compat
+
 import           Brick (EventM, Next, suspendAndResume, handleEventLensed, continue)
 import           Brick.Widgets.Edit (Editor, handleEditorEvent, getEditContents, editContentsL)
 import           Brick.Widgets.Edit (applyEdit)

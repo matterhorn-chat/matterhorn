@@ -1,5 +1,8 @@
 module Zipper where
 
+import Prelude ()
+import Prelude.Compat
+
 import Lens.Micro.Platform (Lens, lens, ix, (&), (.~))
 
 data Zipper a = Zipper

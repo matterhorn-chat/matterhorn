@@ -2,6 +2,9 @@ module TeamSelect
   ( interactiveTeamSelection
   ) where
 
+import Prelude ()
+import Prelude.Compat
+
 import Brick
 import Brick.Widgets.List
 import Brick.Widgets.Center

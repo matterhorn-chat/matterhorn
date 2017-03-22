@@ -3,6 +3,9 @@ module Login
   ( interactiveGatherCredentials
   ) where
 
+import Prelude ()
+import Prelude.Compat
+
 import Brick
 import Brick.Widgets.Edit
 import Brick.Widgets.Center

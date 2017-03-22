@@ -4,16 +4,16 @@ module Draw.JoinChannel
     )
 where
 
+import Prelude ()
+import Prelude.Compat
+
 import Brick
 import Brick.Widgets.List
 import Brick.Widgets.Center
 import Brick.Widgets.Border
-import Control.Applicative
 import Data.Monoid ((<>))
 import Lens.Micro.Platform ((^.))
 import qualified Data.Vector as V
-
-import Prelude
 
 import Network.Mattermost (Channel)
 import Network.Mattermost.Lenses (channelDisplayNameL, channelNameL)

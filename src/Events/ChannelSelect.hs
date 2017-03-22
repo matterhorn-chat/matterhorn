@@ -1,5 +1,8 @@
 module Events.ChannelSelect where
 
+import Prelude ()
+import Prelude.Compat
+
 import Brick
 import Data.Monoid ((<>))
 import qualified Data.Text as T

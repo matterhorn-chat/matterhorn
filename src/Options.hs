@@ -2,6 +2,9 @@
 
 module Options where
 
+import Prelude ()
+import Prelude.Compat
+
 import Data.Version (showVersion)
 import Development.GitRev
 import Network.Mattermost.Version (mmApiVersion)

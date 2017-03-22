@@ -13,7 +13,9 @@ module FilePaths
   , getAllScripts
   ) where
 
-import Control.Applicative
+import Prelude ()
+import Prelude.Compat
+
 import Control.Monad (forM, filterM)
 import Data.Monoid ((<>))
 import Data.Maybe (listToMaybe)
@@ -25,8 +27,6 @@ import System.Directory ( doesFileExist
                         )
 import System.Environment.XDG.BaseDir (getUserConfigFile, getAllConfigFiles)
 import System.FilePath (takeBaseName)
-
-import Prelude
 
 xdgName :: String
 xdgName = "matterhorn"

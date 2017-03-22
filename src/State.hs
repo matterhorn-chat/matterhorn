@@ -3,6 +3,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 module State where
 
+import           Prelude ()
+import           Prelude.Compat
+
 import           Brick (EventM, invalidateCacheEntry)
 import           Brick.Widgets.Edit (getEditContents, editContentsL)
 import           Brick.Widgets.List (list, listMoveTo, listSelectedElement)
@@ -31,8 +34,6 @@ import           Lens.Micro.Platform
 import           System.Process (proc, std_in, std_out, std_err, StdStream(..),
                                  createProcess, waitForProcess)
 import           System.IO (hGetContents)
-
-import           Prelude
 
 import           Network.Mattermost
 import           Network.Mattermost.Exceptions
