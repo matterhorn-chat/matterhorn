@@ -373,9 +373,7 @@ fetchCurrentChannelMembers st = do
             chanUsers = snd <$> HM.toList chanUserMap
             usernames = sort $ userUsername <$> (F.toList chanUsers)
 
-        return $ \st' -> do
-            msg <- newClientMessage Informative msgStr
-            return $ addClientMessage msg st'
+        return $ postInfoMessage msgStr
 
 -- *  Channel Updates and Notifications
 
@@ -490,8 +488,7 @@ listThemes cs = do
     let mkThemeList _ = T.intercalate "\n\n" $
                         "Available built-in themes:" :
                         (("  " <>) <$> fst <$> themes)
-    msg <- newClientMessage Informative (mkThemeList themes)
-    return $ addClientMessage msg cs
+    postInfoMessage (mkThemeList themes) cs
 
 setTheme :: ChatState -> T.Text -> EventM Name ChatState
 setTheme cs name =
@@ -927,9 +924,8 @@ openSelectedURL st | st^.csMode == UrlSelect =
             case opened of
                 True -> return st
                 False -> do
-                    msg <- newClientMessage Informative
-                      "Config option 'urlOpenCommand' missing; cannot open URL."
-                    return $ addClientMessage msg $ st & csMode .~ Main
+                    let msg = "Config option 'urlOpenCommand' missing; cannot open URL."
+                    postInfoMessage msg (st & csMode .~ Main)
 openSelectedURL st = return st
 
 openURL :: ChatState -> LinkChoice -> EventM Name Bool
@@ -970,9 +966,8 @@ openSelectedMessageURLs st
                 case openedAll of
                     True -> return finalSt
                     False -> do
-                        msg <- newClientMessage Informative
-                          "Config option 'urlOpenCommand' missing; cannot open URL."
-                        return $ addClientMessage msg finalSt
+                        let msg = "Config option 'urlOpenCommand' missing; cannot open URL."
+                        postInfoMessage msg finalSt
 
 shouldSkipMessage :: T.Text -> Bool
 shouldSkipMessage "" = True
@@ -985,9 +980,8 @@ sendMessage st mode msg =
         False -> do
             case st^.csConnectionStatus of
                 Disconnected -> do
-                    let s = "Cannot send messages while disconnected."
-                    emsg <- newClientMessage Error s
-                    return $ addClientMessage emsg st
+                    let m = "Cannot send messages while disconnected."
+                    postErrorMessage m st
                 Connected -> do
                     let myId   = st^.csMe.userIdL
                         chanId = st^.csCurrentChannelId
