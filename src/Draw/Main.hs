@@ -42,6 +42,7 @@ import           State
 import           State.Common
 import           Themes
 import           Types
+import           Types.Posts
 import           Draw.Util
 
 renderChatMessage :: Set Text -> (UTCTime -> Widget Name) -> Message -> Widget Name

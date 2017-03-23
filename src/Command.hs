@@ -79,10 +79,9 @@ commandList =
           "main"    -> showHelpScreen MainHelp st >>= continue
           "scripts" -> showHelpScreen ScriptHelp st >>= continue
           _         -> do
-            msg <- newClientMessage Error
-                     ("Unknown help topic: `" <> topic <> "`. " <>
+            let msg = ("Unknown help topic: `" <> topic <> "`. " <>
                       "Available topics are:\n  - main\n  - scripts\n")
-            continue $ addClientMessage msg st
+            postErrorMessage msg st >>= continue
   , Cmd "sh" "List the available shell scripts" NoArg $ \ () st ->
       listScripts st >>= continue
   , Cmd "sh" "Run a prewritten shell script"
@@ -93,19 +92,16 @@ commandList =
           liftIO $ doAsyncWith Preempt st $ runScript scriptPath text
           continue st
         NonexecScriptPath scriptPath -> do
-          msg <- newClientMessage Error
-              ("The script `" <> T.pack scriptPath <> "` cannot be " <>
+          let msg = ("The script `" <> T.pack scriptPath <> "` cannot be " <>
                "executed. Try running\n" <>
                "```\n" <>
                "$ chmod u+x " <> T.pack scriptPath <> "\n" <>
                "```\n" <>
                "to correct this error. " <> scriptHelpAddendum)
-          continue $ addClientMessage msg st
+          postErrorMessage msg st >>= continue
         ScriptNotFound -> do
-          msg <- newClientMessage Error
-            ("No script named " <> script <> " was found.")
-          continue =<< (listScripts $ addClientMessage msg st)
-
+          let msg = ("No script named " <> script <> " was found")
+          postErrorMessage msg st >>= continue
   , Cmd "me" "Send an emote message"
     (LineArg "message") $
     \msg st -> execMMCommand "me" msg st >>= continue
@@ -134,32 +130,30 @@ runScript fp text = do
                        else msgText <> " It also produced the " <>
                             "following output on stderr:\n~~~~~\n" <>
                             T.pack stderr <> "~~~~~\n" <> scriptHelpAddendum
-      msg <- newClientMessage Error msgText'
-      return $ addClientMessage msg st
+      postErrorMessage msgText' st
 
 listScripts :: ChatState -> EventM Name ChatState
 listScripts st = do
   (execs, nonexecs) <- liftIO getAllScripts
-  msg <- newClientMessage Informative
-           ("Available scripts are:\n" <>
-            mconcat [ "  - " <> T.pack cmd <> "\n"
-                    | cmd <- execs
-                    ])
+  let scripts = ("Available scripts are:\n" <>
+                 mconcat [ "  - " <> T.pack cmd <> "\n"
+                         | cmd <- execs
+                         ])
+  st' <- postInfoMessage scripts st
   case nonexecs of
-    [] -> return $ addClientMessage msg st
+    [] -> return st'
     _  -> do
-      errMsg <- newClientMessage Error
-                  ("Some non-executable script files are also " <>
-                   "present. If you want to run these as scripts " <>
-                   "in Matterhorn, mark them executable with \n" <>
-                   "```\n" <>
-                   "$ chmod u+x [script path]\n" <>
-                   "```\n" <>
-                   "\n" <>
-                   mconcat [ "  - " <> T.pack cmd <> "\n"
-                           | cmd <- nonexecs
-                           ] <> "\n" <> scriptHelpAddendum)
-      return $ addClientMessage errMsg $ addClientMessage msg st
+      let errMsg = ("Some non-executable script files are also " <>
+                    "present. If you want to run these as scripts " <>
+                    "in Matterhorn, mark them executable with \n" <>
+                    "```\n" <>
+                    "$ chmod u+x [script path]\n" <>
+                    "```\n" <>
+                    "\n" <>
+                    mconcat [ "  - " <> T.pack cmd <> "\n"
+                            | cmd <- nonexecs
+                            ] <> "\n" <> scriptHelpAddendum)
+      postErrorMessage errMsg st'
 
 dispatchCommand :: T.Text -> ChatState -> EventM Name (Next ChatState)
 dispatchCommand cmd st =
@@ -168,15 +162,13 @@ dispatchCommand cmd st =
                              , name == x
                              ] -> go [] matchingCmds
       where go [] [] = do
-              msg <- newClientMessage Error
-                     ("error running command /" <> x <> ":\n" <>
-                      "no such command")
-              continue $ addClientMessage msg st
+              let msg = ("error running command /" <> x <> ":\n" <>
+                         "no such command")
+              postErrorMessage msg st >>= continue
             go errs [] = do
-              msg <- newClientMessage Error
-                     ("error running command /" <> x <> ":\n" <>
-                      mconcat [ "    " <> e | e <- errs ])
-              continue $ addClientMessage msg st
+              let msg = ("error running command /" <> x <> ":\n" <>
+                         mconcat [ "    " <> e | e <- errs ])
+              postErrorMessage msg st >>= continue
             go errs (Cmd _ _ spec exe : cs) =
               case matchArgs spec xs of
                 Left e -> go (e:errs) cs

@@ -44,7 +44,7 @@ import qualified Graphics.Vty as V
 import           Lens.Micro.Platform ((^.))
 
 import           Themes
-import           Types
+import           Types.Posts
 
 type UserSet = Set Text
 

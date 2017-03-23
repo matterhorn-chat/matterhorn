@@ -68,8 +68,7 @@ invokeExternalEditor st = do
                 tmpBytes <- BS.readFile tmpFileName
                 case T.decodeUtf8' tmpBytes of
                     Left _ -> do
-                        msg <- newClientMessage Error "Failed to decode file contents as UTF-8"
-                        return $ addClientMessage msg st
+                        postErrorMessage "Failed to decode file contents as UTF-8" st
                     Right t -> do
                         let tmpLines = T.lines t
                         return $ st & cmdLine.editContentsL .~ (Z.textZipper tmpLines Nothing)

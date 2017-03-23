@@ -41,6 +41,7 @@ import           Network.Mattermost.Lenses
 
 import           Config
 import           Types
+import           Types.Posts
 import           InputHistory
 import           Themes
 import           Zipper (Zipper)
@@ -49,6 +50,9 @@ import           Markdown (blockGetURLs, findVerbatimChunk)
 
 import           State.Common
 
+-- * Hard-coded constants
+
+-- | The number of posts to include per page
 pageAmount :: Int
 pageAmount = 15
 

@@ -23,6 +23,7 @@ import           Network.Mattermost.Lenses
 import           Network.Mattermost.Exceptions
 
 import           Types
+import           Types.Posts
 
 -- * MatterMost API
 
@@ -129,6 +130,14 @@ addClientMessage :: ClientMessage -> ChatState -> ChatState
 addClientMessage msg st =
   let cid = st^.csCurrentChannelId
   in st & msgMap . ix cid . ccContents . cdMessages %~ (Seq.|> clientMessageToMessage msg)
+
+-- | Add a new 'ClientMessage' representing an error message to
+--   the current channel's message list
+postInfoMessage :: (MonadIO m) => T.Text -> ChatState -> m ChatState
+postInfoMessage err st = do
+    msg <- newClientMessage Informative err
+    liftIO $ doAsyncWith Normal st (return $ return . addClientMessage msg)
+    return st
 
 -- | Add a new 'ClientMessage' representing an error message to
 --   the current channel's message list

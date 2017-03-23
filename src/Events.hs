@@ -52,11 +52,10 @@ onAppEvent st (WSEvent we) =
 onAppEvent st (RespEvent f) =
   continue =<< f st
 onAppEvent st (AsyncErrEvent e) = do
-  msg <- newClientMessage Error $
-    "An unexpected error has occurred! The exception encountered was:\n  " <>
-    T.pack (show e) <>
-    "\nPlease report this error at https://github.com/matterhorn-chat/matterhorn/issues"
-  continue $ addClientMessage msg st
+  let msg = "An unexpected error has occurred! The exception encountered was:\n  " <>
+            T.pack (show e) <>
+            "\nPlease report this error at https://github.com/matterhorn-chat/matterhorn/issues"
+  continue =<< postErrorMessage msg st
 
 onVtyEvent :: ChatState -> Vty.Event -> EventM Name (Next ChatState)
 onVtyEvent st e = do
@@ -138,8 +137,7 @@ handleWSEvent st we =
     -- probably a good idea to handle these messages anyway.
     WMEphemeralMessage -> case wepPost (weData we) of
       Just p  -> do
-        msg <- newClientMessage Informative (p^.postMessageL)
-        continue $ addClientMessage msg st
+        postInfoMessage (p^.postMessageL) st >>= continue
       Nothing -> continue st
     -- Right now, we don't use any server preferences in
     -- our client, but that might change

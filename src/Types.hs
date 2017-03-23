@@ -14,7 +14,6 @@ import           Brick.BChan
 import           Brick.AttrMap (AttrMap)
 import           Brick.Widgets.Edit (Editor, editor)
 import           Brick.Widgets.List (List)
-import           Cheapskate (Blocks)
 import qualified Control.Concurrent.STM as STM
 import           Control.Concurrent.MVar (MVar)
 import           Control.Exception (SomeException)
@@ -23,7 +22,6 @@ import           Data.Time.Clock (UTCTime)
 import           Data.Time.LocalTime (TimeZone)
 import qualified Data.HashMap.Strict as HM
 import           Data.List (partition, sort)
-import qualified Data.Map.Strict as Map
 import           Data.Maybe
 import qualified Data.Sequence as Seq
 import           Data.Monoid
@@ -34,7 +32,6 @@ import           Network.Mattermost.Exceptions
 import           Network.Mattermost.Lenses
 import           Network.Mattermost.WebSocket.Types
 import           Network.Connection (HostNotResolved, HostCannotConnect)
-import qualified Cheapskate as C
 import qualified Data.Text as T
 import           System.Exit (ExitCode)
 
@@ -42,11 +39,20 @@ import           Zipper (Zipper, focusL)
 
 import           InputHistory
 
+import           Types.Posts
+
+
+-- * Configuration
+
+-- | A user password is either given to us directly, or a command
+-- which we execute to find the password.
 data PasswordSource =
     PasswordString T.Text
     | PasswordCommand T.Text
     deriving (Eq, Read, Show)
 
+-- | These are all the values that can be read in our configuration
+-- file.
 data Config = Config
   { configUser           :: Maybe T.Text
   , configHost           :: Maybe T.Text
@@ -86,6 +92,8 @@ makeLenses ''MMNames
 
 -- * Internal Names and References
 
+-- | This 'Name' type is the value used in `brick` to identify the
+-- currently focused widget or state.
 data Name = ChannelMessages ChannelId
           | MessageInput
           | ChannelList
@@ -108,6 +116,8 @@ data AuthenticationException =
     | OtherAuthError SomeException
     deriving (Show)
 
+-- | Our 'ConnectionInfo' contains exactly as much information as is
+-- necessary to start a connection with a MatterMost server
 data ConnectionInfo =
     ConnectionInfo { ciHostname :: T.Text
                    , ciPort     :: Int
@@ -116,69 +126,14 @@ data ConnectionInfo =
                    }
 
 -- | We want to continue referring to posts by their IDs, but we don't want to
--- have to synthesize new valid IDs for messages from the client itself. To
--- that end, a PostRef can be either a PostId or a newly-generated client ID
+-- have to synthesize new valid IDs for messages from the client
+-- itself (like error messages or informative client responses). To
+-- that end, a PostRef can be either a PostId or a newly-generated
+-- client ID
 data PostRef
   = MMId PostId
   | CLId Int
     deriving (Eq, Show)
-
--- * Client Messages
-
--- | A 'ClientMessage' is a message given to us by our client,
---   like help text or an error message.
-data ClientMessage = ClientMessage
-  { _cmText :: T.Text
-  , _cmDate :: UTCTime
-  , _cmType :: ClientMessageType
-  } deriving (Eq, Show)
-
--- | We format 'ClientMessage' values differently depending on
---   their 'ClientMessageType'
-data ClientMessageType =
-    Informative
-    | Error
-    | DateTransition
-    | NewMessagesTransition
-    deriving (Eq, Show)
-
--- ** 'ClientMessage' Lenses
-
-makeLenses ''ClientMessage
-
--- * Mattermost Posts
-
--- | A 'ClientPost' is a temporary interal representation of
---   the Mattermost 'Post' type, with unnecessary information
---   removed and some preprocessing done.
-data ClientPost = ClientPost
-  { _cpText          :: Blocks
-  , _cpUser          :: Maybe UserId
-  , _cpUserOverride  :: Maybe T.Text
-  , _cpDate          :: UTCTime
-  , _cpType          :: PostType
-  , _cpPending       :: Bool
-  , _cpDeleted       :: Bool
-  , _cpAttachments   :: Seq.Seq Attachment
-  , _cpInReplyToPost :: Maybe PostId
-  , _cpPostId        :: PostId
-  , _cpChannelId     :: ChannelId
-  , _cpReactions     :: Map.Map T.Text Int
-  , _cpOriginalPost  :: Post
-  } deriving (Show)
-
--- | An attachment has a very long URL associated, as well as
---   an actual file URL
-data Attachment = Attachment
-  { _attachmentName :: T.Text
-  , _attachmentURL  :: T.Text
-  } deriving (Eq, Show)
-
-attachmentFromURL :: FileId -> Attachment
-attachmentFromURL fId = Attachment
-  { _attachmentName = urlForFile fId
-  , _attachmentURL  = urlForFile fId
-  }
 
 -- | For representing links to things in the 'open links' view
 data LinkChoice = LinkChoice
@@ -188,149 +143,7 @@ data LinkChoice = LinkChoice
   , _linkURL  :: T.Text
   } deriving (Eq, Show)
 
--- | A Mattermost 'Post' value can represent either a normal
---   chat message or one of several special events.
-data PostType =
-    NormalPost
-    | Emote
-    | Join
-    | Leave
-    | TopicChange
-    deriving (Eq, Show)
-
--- ** Creating 'ClientPost' Values
-
--- | Parse text as Markdown and extract the AST
-getBlocks :: T.Text -> Blocks
-getBlocks s = bs where C.Doc _ bs = C.markdown C.def s
-
--- | Determine the internal 'PostType' based on a 'Post'
-postClientPostType :: Post -> PostType
-postClientPostType cp =
-    if | postIsEmote cp       -> Emote
-       | postIsJoin  cp       -> Join
-       | postIsLeave cp       -> Leave
-       | postIsTopicChange cp -> TopicChange
-       | otherwise            -> NormalPost
-
--- | Find out whether a 'Post' represents a topic change
-postIsTopicChange :: Post -> Bool
-postIsTopicChange p = postType p == SystemHeaderChange
-
--- | Find out whether a 'Post' is from a @/me@ command
-postIsEmote :: Post -> Bool
-postIsEmote p =
-    and [ p^.postPropsL.postPropsOverrideIconUrlL == Just (""::T.Text)
-        , ("*" `T.isPrefixOf` postMessage p)
-        , ("*" `T.isSuffixOf` postMessage p)
-        ]
-
--- | Find out whether a 'Post' is a user joining a channel
-postIsJoin :: Post -> Bool
-postIsJoin p = "has joined the channel" `T.isInfixOf` postMessage p
-
--- | Find out whether a 'Post' is a user leaving a channel
-postIsLeave :: Post -> Bool
-postIsLeave p = "has left the channel" `T.isInfixOf` postMessage p
-
--- | Undo the automatic formatting of posts generated by @/me@-commands
-unEmote :: PostType -> T.Text -> T.Text
-unEmote Emote t = if "*" `T.isPrefixOf` t && "*" `T.isSuffixOf` t
-                  then T.init $ T.tail t
-                  else t
-unEmote _ t = t
-
--- | Convert a Mattermost 'Post' to a 'ClientPost', passing in a
---   'ParentId' if it has a known one.
-toClientPost :: Post -> Maybe PostId -> ClientPost
-toClientPost p parentId = ClientPost
-  { _cpText          = (getBlocks $ unEmote (postClientPostType p) $ postMessage p)
-                       <> getAttachmentText p
-  , _cpUser          = postUserId p
-  , _cpUserOverride  = case p^.postPropsL.postPropsOverrideIconUrlL of
-      Just _ -> Nothing
-      _      -> p^.postPropsL.postPropsOverrideUsernameL
-  , _cpDate          = postCreateAt p
-  , _cpType          = postClientPostType p
-  , _cpPending       = False
-  , _cpDeleted       = False
-  , _cpAttachments   = Seq.empty
-  , _cpInReplyToPost = parentId
-  , _cpPostId        = p^.postIdL
-  , _cpChannelId     = p^.postChannelIdL
-  , _cpReactions     = Map.empty
-  , _cpOriginalPost  = p
-  }
-
--- | Right now, instead of treating 'attachment' properties specially, we're
---   just going to roll them directly into the message text
-getAttachmentText :: Post -> Blocks
-getAttachmentText p =
-  case p^.postPropsL.postPropsAttachmentsL of
-    Nothing -> Seq.empty
-    Just attachments ->
-      fmap (C.Blockquote . render) attachments
-  where render att = getBlocks (att^.ppaTextL)
-
--- ** 'ClientPost' Lenses
-
-makeLenses ''Attachment
-makeLenses ''ClientPost
 makeLenses ''LinkChoice
-
--- * Messages
-
--- | A 'Message' is any message we might want to render, either from
---   Mattermost itself or from a client-internal source.
-data Message = Message
-  { _mText          :: Blocks
-  , _mUserName      :: Maybe T.Text
-  , _mDate          :: UTCTime
-  , _mType          :: MessageType
-  , _mPending       :: Bool
-  , _mDeleted       :: Bool
-  , _mAttachments   :: Seq.Seq Attachment
-  , _mInReplyToMsg  :: ReplyState
-  , _mPostId        :: Maybe PostId
-  , _mReactions     :: Map.Map T.Text Int
-  , _mOriginalPost  :: Maybe Post
-  } deriving (Show)
-
--- | A 'Message' is the representation we use for storage and
---   rendering, so it must be able to represent either a
---   post from Mattermost or an internal message. This represents
---   the union of both kinds of post types.
-data MessageType = C ClientMessageType
-                 | CP PostType
-                 deriving (Eq, Show)
-
--- | The 'ReplyState' of a message represents whether a message
---   is a reply, and if so, to what message
-data ReplyState =
-    NotAReply
-    | ParentLoaded PostId Message
-    | ParentNotLoaded PostId
-    deriving (Show)
-
--- | Convert a 'ClientMessage' to a 'Message'
-clientMessageToMessage :: ClientMessage -> Message
-clientMessageToMessage cm = Message
-  { _mText          = getBlocks (_cmText cm)
-  , _mUserName      = Nothing
-  , _mDate          = _cmDate cm
-  , _mType          = C $ _cmType cm
-  , _mPending       = False
-  , _mDeleted       = False
-  , _mAttachments   = Seq.empty
-  , _mInReplyToMsg  = NotAReply
-  , _mPostId        = Nothing
-  , _mReactions     = Map.empty
-  , _mOriginalPost  = Nothing
-  }
-
--- ** 'Message' Lenses
-
-makeLenses ''Message
 
 -- * Channel representations
 

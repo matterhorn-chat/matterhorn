@@ -86,11 +86,10 @@ startSubprocessLogger logChan requestChan = do
 
                   STM.atomically $ STM.writeTChan requestChan $ do
                       return $ \st -> do
-                          msg <- newClientMessage Error
-                            (T.pack $ "Program " <> show progName <>
-                             " produced unexpected output; see " <>
-                             logPath <> " for details.")
-                          return $ addClientMessage msg st
+                          let msg = T.pack $ "Program " <> show progName <>
+                                             " produced unexpected output; see " <>
+                                             logPath <> " for details."
+                          postErrorMessage msg st
 
                   logMonitor logPath logHandle
 
