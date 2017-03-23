@@ -183,15 +183,6 @@ beginConfirmDeleteSelectedMessage :: ChatState -> EventM Name ChatState
 beginConfirmDeleteSelectedMessage st =
     return $ st & csMode .~ MessageSelectDeleteConfirm
 
-isDeletable :: Message -> Bool
-isDeletable m = m^.mType `elem` [CP NormalPost, CP Emote]
-
-isReplyable :: Message -> Bool
-isReplyable m = m^.mType `elem` [CP NormalPost, CP Emote]
-
-isEditable :: Message -> Bool
-isEditable m = m^.mType `elem` [CP NormalPost, CP Emote]
-
 deleteSelectedMessage :: ChatState -> EventM Name ChatState
 deleteSelectedMessage st = do
     case getSelectedMessage st of

@@ -10,7 +10,7 @@ import           Data.Monoid ((<>))
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Time.Clock (UTCTime)
-import           Lens.Micro.Platform -- (at, makeLenses, lens, (&), (^.), (^?), (%~), ix, to, SimpleGetter)
+import           Lens.Micro.Platform ((^.), makeLenses)
 import           Network.Mattermost
 import           Network.Mattermost.Lenses
 
@@ -171,6 +171,15 @@ data Message = Message
   , _mReactions     :: Map.Map T.Text Int
   , _mOriginalPost  :: Maybe Post
   } deriving (Show)
+
+isDeletable :: Message -> Bool
+isDeletable m = _mType m `elem` [CP NormalPost, CP Emote]
+
+isReplyable :: Message -> Bool
+isReplyable m = _mType m `elem` [CP NormalPost, CP Emote]
+
+isEditable :: Message -> Bool
+isEditable m = _mType m `elem` [CP NormalPost, CP Emote]
 
 -- | A 'Message' is the representation we use for storage and
 --   rendering, so it must be able to represent either a
