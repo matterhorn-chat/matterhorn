@@ -30,7 +30,7 @@ import           Lens.Micro.Platform (at, makeLenses, lens, (&), (^.), (^?), (%~
 import           Network.Mattermost
 import           Network.Mattermost.Exceptions
 import           Network.Mattermost.Lenses
-import           Network.Mattermost.WebSocket.Types
+import           Network.Mattermost.WebSocket
 import           Network.Connection (HostNotResolved, HostCannotConnect)
 import qualified Data.Text as T
 import           System.Exit (ExitCode)

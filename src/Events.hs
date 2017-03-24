@@ -13,7 +13,7 @@ import           Lens.Micro.Platform
 
 import           Network.Mattermost
 import           Network.Mattermost.Lenses
-import           Network.Mattermost.WebSocket.Types
+import           Network.Mattermost.WebSocket
 
 import           Connection
 import           State
