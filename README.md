@@ -3,7 +3,7 @@ Status](https://travis-ci.org/matterhorn-chat/matterhorn.svg?branch=master)](htt
 
 ![](logo.png)
 
-This is a basic terminal-based client for the MatterMost chat system.
+Matterhorn is a terminal-based client for the MatterMost chat system.
 
 ![](screenshots/screenshot-00.png)
 
