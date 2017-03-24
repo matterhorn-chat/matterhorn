@@ -69,5 +69,5 @@ app = App
   , appChooseCursor = showFirstCursor
   , appHandleEvent  = onEvent
   , appStartEvent   = return
-  , appAttrMap      = (^.csTheme)
+  , appAttrMap      = (^.csResources.crTheme)
   }

@@ -73,7 +73,7 @@ mainKeybindings =
              -- Up in multiline mode does the usual thing; otherwise we
              -- navigate the history.
              case st^.csEditState.cedMultiline of
-                 True -> continue =<< handleEventLensed st cmdLine handleEditorEvent
+                 True -> continue =<< handleEventLensed st csCmdLine handleEditorEvent
                                            (Vty.EvKey Vty.KUp [])
                  False -> continue $ channelHistoryBackward st
 
@@ -82,7 +82,7 @@ mainKeybindings =
              -- Down in multiline mode does the usual thing; otherwise
              -- we navigate the history.
              case st^.csEditState.cedMultiline of
-                 True -> continue =<< handleEventLensed st cmdLine handleEditorEvent
+                 True -> continue =<< handleEventLensed st csCmdLine handleEditorEvent
                                            (Vty.EvKey Vty.KDown [])
                  False -> continue $ channelHistoryForward st
 
@@ -117,7 +117,7 @@ mainKeybindings =
                  -- Enter in multiline mode does the usual thing; we
                  -- only send on Enter when we're outside of multiline
                  -- mode.
-                 True -> continue =<< handleEventLensed st cmdLine handleEditorEvent
+                 True -> continue =<< handleEventLensed st csCmdLine handleEditorEvent
                                            (Vty.EvKey Vty.KEnter [])
                  False -> handleInputSubmission $ st & csCurrentCompletion .~ Nothing
 
@@ -144,10 +144,10 @@ mainKeybindings =
 
 handleInputSubmission :: ChatState -> EventM Name (Next ChatState)
 handleInputSubmission st = do
-  let (line:rest) = getEditContents (st^.cmdLine)
+  let (line:rest) = getEditContents (st^.csCmdLine)
       allLines = T.intercalate "\n" $ line : rest
       cId = st^.csCurrentChannelId
-      st' = st & cmdLine %~ applyEdit Z.clearZipper
+      st' = st & csCmdLine %~ applyEdit Z.clearZipper
                & csInputHistory %~ addHistoryEntry allLines cId
                & csInputHistoryPosition.at cId .~ Nothing
                & csEditState.cedEditMode .~ NewPost
@@ -175,7 +175,7 @@ tabComplete dir st = do
                                   map ("#" <>) completableChannels ++
                                   map ("/" <>) (commandName <$> commandList))
 
-      line        = Z.currentLine $ st^.cmdLine.editContentsL
+      line        = Z.currentLine $ st^.csCmdLine.editContentsL
       curComp     = st^.csCurrentCompletion
       (nextComp, alts) = case curComp of
           Nothing -> let cw = currentWord line
@@ -189,5 +189,5 @@ tabComplete dir st = do
           Nothing -> (id, "")
           Just w -> (Z.insertMany w . Z.deletePrevWord, w)
 
-  continue $ st' & cmdLine %~ (applyEdit edit)
+  continue $ st' & csCmdLine %~ (applyEdit edit)
                  & csEditState.cedCurrentAlternative .~ curAlternative

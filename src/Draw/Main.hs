@@ -221,13 +221,13 @@ renderUserCommandBox uSet st =
             Replying _ _ -> "reply> "
             Editing _    ->  "edit> "
             NewPost      ->      "> "
-        inputBox = renderEditor True (st^.cmdLine)
-        curContents = getEditContents $ st^.cmdLine
+        inputBox = renderEditor True (st^.csCmdLine)
+        curContents = getEditContents $ st^.csCmdLine
         multilineContent = length curContents > 1
         multilineHints =
             (borderElem bsHorizontal) <+>
             (str $ "[" <> (show $ (+1) $ fst $ cursorPosition $
-                                  st^.cmdLine.editContentsL) <>
+                                  st^.csCmdLine.editContentsL) <>
                    "/" <> (show $ length curContents) <> "]") <+>
             (hBorderWithLabel $ withDefAttr clientEmphAttr $
              (str "In multi-line mode. Press M-e to finish."))
@@ -575,7 +575,7 @@ inputPreview uSet st | not $ st^.csShowMessagePreview = emptyWidget
     -- end of whatever line the user is editing, that is very unlikely
     -- to be a problem.
     curContents = getText $ (gotoEOL >>> insertChar cursorSentinel) $
-                  st^.cmdLine.editContentsL
+                  st^.csCmdLine.editContentsL
     curStr = T.intercalate "\n" curContents
     previewMsg = previewFromInput uname curStr
     thePreview = let noPreview = str "(No preview)"

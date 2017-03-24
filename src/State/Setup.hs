@@ -39,23 +39,22 @@ import           Types
 import           Zipper (Zipper)
 import qualified Zipper as Z
 
-fetchUserStatuses :: ConnectionData -> Token
-                  -> IO (ChatState -> EventM Name ChatState)
-fetchUserStatuses cd token = do
-  statusMap <- mmGetStatuses cd token
+fetchUserStatuses :: Session -> IO (ChatState -> EventM Name ChatState)
+fetchUserStatuses session = do
+  statusMap <- mmGetStatuses session
   return $ \ appState -> do
     let updateUser u = u & uiStatus .~ (case HM.lookup (u^.uiId) statusMap of
                                           Nothing -> Offline
                                           Just t  -> statusFromText t)
     return $ appState & usrMap.each %~ updateUser
 
-userRefresh :: ConnectionData -> Token -> RequestChan -> IO ()
-userRefresh cd token requestChan = void $ forkIO $ forever refresh
+userRefresh :: Session -> RequestChan -> IO ()
+userRefresh session requestChan = void $ forkIO $ forever refresh
   where refresh = do
           let seconds = (* (1000 * 1000))
           threadDelay (seconds 30)
           STM.atomically $ STM.writeTChan requestChan $ do
-            rs <- try $ fetchUserStatuses cd token
+            rs <- try $ fetchUserStatuses session
             case rs of
               Left (_ :: SomeException) -> return return
               Right upd -> return upd
@@ -202,8 +201,8 @@ setupState logFile config requestChan eventChan = do
                        }
 
         case result of
-            Right (Right (tok, user)) ->
-                return (tok, user, cd)
+            Right (Right (sess, user)) ->
+                return (sess, user, cd)
             Right (Left e) ->
                 interactiveGatherCredentials modifiedConfig (Just $ LoginError e) >>=
                     loginLoop
@@ -211,9 +210,9 @@ setupState logFile config requestChan eventChan = do
                 interactiveGatherCredentials modifiedConfig (Just e) >>=
                     loginLoop
 
-  (token, myUser, cd) <- loginLoop connInfo
+  (session, myUser, cd) <- loginLoop connInfo
 
-  initialLoad <- mmGetInitialLoad cd token
+  initialLoad <- mmGetInitialLoad session
   when (Seq.null $ initialLoadTeams initialLoad) $ do
       putStrLn "Error: your account is not a member of any teams"
       exitFailure
@@ -238,7 +237,7 @@ setupState logFile config requestChan eventChan = do
           Nothing -> fromJust $ lookup defaultThemeName themes
           Just t -> t
       cr = ChatResources
-             { _crTok           = token
+             { _crSession       = session
              , _crConn          = cd
              , _crRequestQueue  = requestChan
              , _crEventQueue    = eventChan
@@ -249,25 +248,25 @@ setupState logFile config requestChan eventChan = do
              }
   initializeState cr myTeam myUser
 
-loadAllUsers :: ConnectionData -> Token -> IO (HM.HashMap UserId User)
-loadAllUsers cd token = go HM.empty 0
+loadAllUsers :: Session -> IO (HM.HashMap UserId User)
+loadAllUsers session = go HM.empty 0
   where go users n = do
-          newUsers <- mmGetUsers cd token (n * 50) 50
+          newUsers <- mmGetUsers session (n * 50) 50
           if HM.null newUsers
             then return users
             else go (newUsers <> users) (n+1)
 
 initializeState :: ChatResources -> Team -> User -> IO ChatState
 initializeState cr myTeam myUser = do
-  let ChatResources token cd requestChan _ _ _ _ _ = cr
+  let ChatResources session _ requestChan _ _ _ _ _ = cr
   let myTeamId = getId myTeam
 
-  STM.atomically $ STM.writeTChan requestChan $ fetchUserStatuses cd token
+  STM.atomically $ STM.writeTChan requestChan $ fetchUserStatuses session
 
-  userRefresh cd token requestChan
+  userRefresh session requestChan
 
   putStrLn $ "Loading channels for team " <> show (teamName myTeam) <> "..."
-  chans <- mmGetChannels cd token myTeamId
+  chans <- mmGetChannels session myTeamId
 
   msgs <- fmap (HM.fromList . F.toList) $ forM (F.toList chans) $ \c -> do
       let cChannel = ClientChannel
@@ -280,8 +279,8 @@ initializeState cr myTeam myUser = do
 
       return (getId c, cChannel)
 
-  teamUsers <- mmGetProfiles cd token myTeamId
-  users <- loadAllUsers cd token
+  teamUsers <- mmGetProfiles session myTeamId
+  users <- loadAllUsers session
   let mkUser u = userInfoFromUser u (HM.member (u^.userIdL) teamUsers)
   tz    <- getCurrentTimeZone
   hist  <- do
@@ -311,7 +310,7 @@ initializeState cr myTeam myUser = do
   case F.find ((== townSqId) . getId) chans of
       Nothing -> return ()
       Just c -> doAsyncWith Preempt st $ do
-          cwd <- liftIO $ mmGetChannel cd token myTeamId (getId c)
+          cwd <- liftIO $ mmGetChannel session myTeamId (getId c)
           return $ \st' -> do
               let st'' = st' & csChannel(getId c).ccInfo %~ channelInfoFromChannelWithData cwd
               liftIO $ asyncFetchScrollback Preempt st'' (getId c)
@@ -323,7 +322,7 @@ initializeState cr myTeam myUser = do
   F.forM_ chans $ \c ->
       when (getId c /= townSqId && c^.channelTypeL /= Direct) $
           doAsyncWith Normal st $ do
-              cwd <- liftIO $ mmGetChannel cd token myTeamId (getId c)
+              cwd <- liftIO $ mmGetChannel session myTeamId (getId c)
               return $ \st' -> do
                   return $ st' & csChannel(getId c).ccInfo %~ channelInfoFromChannelWithData cwd
 

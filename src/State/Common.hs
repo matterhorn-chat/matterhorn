@@ -60,7 +60,7 @@ doAsyncWith prio st thunk = do
     let putChan = case prio of
           Preempt -> STM.unGetTChan
           Normal  -> STM.writeTChan
-    STM.atomically $ putChan (st^.csRequestQueue) thunk
+    STM.atomically $ putChan (st^.csResources.crRequestQueue) thunk
 
 -- * Client Messages
 
@@ -104,7 +104,7 @@ asyncFetchAttachments p st = do
   let cId = p^.postChannelIdL
       pId = p^.postIdL
   F.forM_ (p^.postFileIdsL) $ \fId -> doAsyncWith Normal st $ do
-    info <- mmGetFileInfo (st^.csConn) (st^.csTok) fId
+    info <- mmGetFileInfo (st^.csSession) fId
     let scheme = "https://"
         host = st^.csResources.crConn.cdHostnameL
         attUrl = scheme <> host <> urlForFile fId
@@ -154,7 +154,7 @@ numScrollbackPosts = 100
 asyncFetchScrollback :: AsyncPriority -> ChatState -> ChannelId -> IO ()
 asyncFetchScrollback prio st cId =
     doAsyncWith prio st $ do
-        posts <- mmGetPosts (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL) cId 0 numScrollbackPosts
+        posts <- mmGetPosts (st^.csSession) (st^.csMyTeam.teamIdL) cId 0 numScrollbackPosts
         return $ \st' -> do
             liftIO $ mapM_ (asyncFetchReactionsForPost st cId) (posts^.postsPostsL)
             (contents, st'') <- liftIO $ fromPosts st' posts
@@ -177,9 +177,9 @@ asyncFetchReactionsForPost st cId p
   | not (p^.postHasReactionsL) = return ()
   | otherwise = doAsyncWith Normal st $ do
       reactions <- mmGetReactionsForPost
-                     (st^.csConn) (st^.csTok) (st^.csMyTeam.teamIdL)
-                                              cId
-                                              (p^.postIdL)
+                     (st^.csSession) (st^.csMyTeam.teamIdL)
+                                     cId
+                                     (p^.postIdL)
       return $ \st' -> do
         let insert r = Map.insertWith (+) (r^.reactionEmojiNameL) 1
             insertAll m = foldr insert m reactions
@@ -209,8 +209,7 @@ updateViewedIO st = do
           let cId = st^.csCurrentChannelId
           doAsyncWith Normal st $ do
             mmUpdateLastViewedAt
-              (st^.csConn)
-              (st^.csTok)
+              (st^.csSession)
               (getId (st^.csMyTeam))
               cId
             return (\s -> return (s & csCurrentChannel.ccInfo.cdViewed .~ now))

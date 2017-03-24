@@ -318,7 +318,7 @@ data ProgramOutput =
 -- limited to information that we read or set up
 -- prior to setting up the bulk of the application state.
 data ChatResources = ChatResources
-  { _crTok           :: Token
+  { _crSession       :: Session
   , _crConn          :: ConnectionData
   , _crRequestQueue  :: RequestChan
   , _crEventQueue    :: BChan MHEvent
@@ -464,20 +464,11 @@ csUser uId =
 
 -- ** Interim lenses for backwards compat
 
-csTheme :: Lens' ChatState AttrMap
-csTheme = csResources . crTheme
+csSession :: Lens' ChatState Session
+csSession = csResources . crSession
 
-csTok :: Lens' ChatState Token
-csTok = csResources . crTok
-
-csConn :: Lens' ChatState ConnectionData
-csConn = csResources . crConn
-
-csRequestQueue :: Lens' ChatState RequestChan
-csRequestQueue = csResources . crRequestQueue
-
-cmdLine :: Lens' ChatState (Editor T.Text Name)
-cmdLine = csEditState . cedEditor
+csCmdLine :: Lens' ChatState (Editor T.Text Name)
+csCmdLine = csEditState . cedEditor
 
 csInputHistory :: Lens' ChatState InputHistory
 csInputHistory = csEditState . cedInputHistory
