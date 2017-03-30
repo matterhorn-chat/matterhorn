@@ -352,6 +352,7 @@ data EditMode =
     NewPost
     | Editing Post
     | Replying Message Post
+      deriving (Show)
 
 -- | We can initialize a new 'ChatEditState' value with just an
 --   edit history, which we save locally.

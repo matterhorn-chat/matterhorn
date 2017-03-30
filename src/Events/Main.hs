@@ -150,17 +150,20 @@ handleInputSubmission :: MH ()
 handleInputSubmission = do
   cmdLine <- use csCmdLine
   cId <- use csCurrentChannelId
+
+  -- send the relevant message
+  mode <- use (csEditState.cedEditMode)
   let (line:rest) = getEditContents cmdLine
       allLines = T.intercalate "\n" $ line : rest
+  case T.uncons line of
+    Just ('/',cmd) -> dispatchCommand cmd
+    _              -> do sendMessage mode allLines
+
+  -- now clear the state for the next message
   csCmdLine %= applyEdit Z.clearZipper
   csInputHistory %= addHistoryEntry allLines cId
   csInputHistoryPosition.at cId .= Nothing
   csEditState.cedEditMode .= NewPost
-  mode <- use (csEditState.cedEditMode)
-  case T.uncons line of
-    Just ('/',cmd) -> dispatchCommand cmd
-    _              -> do
-      sendMessage mode allLines
 
 tabComplete :: Completion.Direction -> MH ()
 tabComplete dir = do
