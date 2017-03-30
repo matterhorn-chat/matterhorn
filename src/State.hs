@@ -704,7 +704,7 @@ maybeRingBell = do
 addMessage :: Post -> MH ()
 addMessage new = do
   st <- use id
-  liftIO $ asyncFetchAttachments new st
+  asyncFetchAttachments new
   case st^.msgMap.at (postChannelId new) of
       Nothing ->
           -- When we join channels, sometimes we get the "user has

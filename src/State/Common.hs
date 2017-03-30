@@ -81,10 +81,8 @@ doAsyncWithIO prio st thunk = do
 fromPosts :: Posts -> MH ChannelContents
 fromPosts ps = do
   msgs <- messagesFromPosts ps
-  st <- use id
---  let (msgs, st') = messagesFromPosts st ps
-  F.forM_ (ps^.postsPostsL) $ \p ->
-    liftIO (asyncFetchAttachments p st)
+  F.forM_ (ps^.postsPostsL) $
+    asyncFetchAttachments
   return (ChannelContents msgs)
 
 getDMChannelName :: UserId -> UserId -> T.Text
@@ -119,14 +117,15 @@ messagesFromPosts p = do -- (msgs, st')
             Nothing -> error $ "BUG: could not find post for post ID " <> show pId
             Just post -> post
 
-asyncFetchAttachments :: Post -> ChatState -> IO ()
-asyncFetchAttachments p st = do
-  let cId = p^.postChannelIdL
-      pId = p^.postIdL
-  F.forM_ (p^.postFileIdsL) $ \fId -> doAsyncWithIO Normal st $ do
-    info <- mmGetFileInfo (st^.csSession) fId
+asyncFetchAttachments :: Post -> MH ()
+asyncFetchAttachments p = do
+  let cId = (p^.postChannelIdL)
+      pId = (p^.postIdL)
+  session <- use csSession
+  host    <- use (csResources.crConn.cdHostnameL)
+  F.forM_ (p^.postFileIdsL) $ \fId -> doAsyncWith Normal $ do
+    info <- mmGetFileInfo session fId
     let scheme = "https://"
-        host = st^.csResources.crConn.cdHostnameL
         attUrl = scheme <> host <> urlForFile fId
         attachment = Attachment
                        { _attachmentName = fileInfoName info
