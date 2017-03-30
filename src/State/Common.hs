@@ -59,7 +59,7 @@ doAsyncWith prio thunk = do
           Preempt -> STM.unGetTChan
           Normal  -> STM.writeTChan
     queue <- use (csResources.crRequestQueue)
-    io $ STM.atomically $ putChan queue $ thunk
+    liftIO $ STM.atomically $ putChan queue $ thunk
 
 doAsyncIO :: AsyncPriority -> ChatState -> IO () -> IO ()
 doAsyncIO prio st thunk =

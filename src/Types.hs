@@ -451,10 +451,6 @@ runMH st (MH mote) = do
 mh :: EventM Name a -> MH a
 mh = MH . St.lift
 
--- | Lift a computation in'IO' into 'MH'
-io :: IO a -> MH a
-io = mh . St.liftIO
-
 mhHandleEventLensed :: Lens' ChatState b -> (e -> b -> EventM Name b) -> e -> MH ()
 mhHandleEventLensed ln f event = MH $ do
   (st, b) <- St.get
@@ -483,7 +479,6 @@ instance Monad MH where
   return x = MH (return x)
   MH x >>= f = MH (x >>= \ x' -> fromMH (f x'))
 
--- do we actually need this instance?
 instance St.MonadState ChatState MH where
   get = fst `fmap` MH St.get
   put st = MH $ do

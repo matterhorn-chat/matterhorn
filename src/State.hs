@@ -412,7 +412,7 @@ setLastViewedFor cId = do
 updateViewed :: MH ()
 updateViewed = do
   st <- use id
-  st' <- io (updateViewedIO st)
+  st' <- liftIO (updateViewedIO st)
   St.put st'
 
 resetHistoryPosition :: MH ()
