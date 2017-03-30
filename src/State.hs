@@ -61,15 +61,19 @@ pageAmount = 15
 
 -- | Get all the new messages for a given channel. In addition, load the
 -- channel metadata and update that, too.
-refreshChannel :: ChannelId -> ChatState -> IO ()
-refreshChannel chan st = doAsyncWithIO Normal st $
-  case F.find (\ p -> isJust (p^.mPostId)) (Seq.reverse (st^.csChannel(chan).ccContents.cdMessages)) of
+refreshChannel :: ChannelId -> MH ()
+refreshChannel chan = do
+  msgs <- use (csChannel(chan).ccContents.cdMessages)
+  session <- use csSession
+  myTeamId <- use (csMyTeam.teamIdL)
+  doAsyncWith Normal $
+    case F.find (\ p -> isJust (p^.mPostId)) (Seq.reverse msgs) of
     Just (Message { _mPostId = Just pId }) -> do
       -- Get the latest channel metadata.
-      cwd <- mmGetChannel (st^.csSession) (st^.csMyTeam.teamIdL) chan
+      cwd <- mmGetChannel session myTeamId chan
 
       -- Load posts since the last post in this channel.
-      posts <- mmGetPostsAfter (st^.csSession) (st^.csMyTeam.teamIdL) chan pId 0 100
+      posts <- mmGetPostsAfter session myTeamId chan pId 0 100
       return $ do
         mapM_ addMessage [ (posts^.postsPostsL) HM.! p
                          | p <- F.toList (posts^.postsOrderL)
@@ -84,10 +88,10 @@ refreshChannel chan st = doAsyncWithIO Normal st $
 -- state as dirty until we get a response
 refreshLoadedChannels :: MH ()
 refreshLoadedChannels = do
-  st <- use id
-  liftIO $ sequence_
-    [ refreshChannel cId st
-    | (cId, chan) <- HM.toList (st^.msgMap)
+  msgs <- use msgMap
+  sequence_
+    [ refreshChannel cId
+    | (cId, chan) <- HM.toList msgs
     , chan^.ccInfo.cdCurrentState == ChanLoaded
     ]
   let upd ChanLoaded = ChanRefreshing
