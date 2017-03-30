@@ -155,7 +155,11 @@ instance ToWidget Block where
   toWidget uPat (C.List _ l bs) = toList l bs uPat
   toWidget _ (C.CodeBlock _ tx) =
     B.withDefAttr codeAttr $
-      B.vBox [ B.txt " | " <+> textWithCursor ln | ln <- T.lines tx ]
+        let padding = B.padLeftRight 1 (B.vLimit (length theLines) B.vBorder)
+            theLines = expandEmpty <$> T.lines tx
+            expandEmpty "" = " "
+            expandEmpty s  = s
+        in padding <+> (B.vBox $ textWithCursor <$> theLines)
   toWidget _ (C.HtmlBlock txt) = textWithCursor txt
   toWidget _ (C.HRule) = B.vLimit 1 (B.fill '*')
 
