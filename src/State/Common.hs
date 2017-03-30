@@ -175,18 +175,19 @@ numScrollbackPosts :: Int
 numScrollbackPosts = 100
 
 -- | Fetch scrollback for a channel in the background
--- XXX THIS IS WRONG
-asyncFetchScrollback :: AsyncPriority -> ChatState -> ChannelId -> IO ()
-asyncFetchScrollback prio st cId =
-    doAsyncWithIO prio st $ do
-        posts <- mmGetPosts (st^.csSession) (st^.csMyTeam.teamIdL) cId 0 numScrollbackPosts
+asyncFetchScrollback :: AsyncPriority -> ChannelId -> MH ()
+asyncFetchScrollback prio cId = do
+    session  <- use csSession
+    myTeamId <- use (csMyTeam.teamIdL)
+    Just viewTime <- preuse (msgMap.ix cId.ccInfo.cdViewed)
+    doAsyncWith prio $ do
+        posts <- mmGetPosts session myTeamId cId 0 numScrollbackPosts
         return $ do
-            st' <- use id
-            liftIO $ mapM_ (asyncFetchReactionsForPost st cId) (posts^.postsPostsL)
+            mapM_ (asyncFetchReactionsForPost cId) (posts^.postsPostsL)
             contents <- fromPosts posts
             -- We need to set the new message cutoff only if there are
             -- actually messages that came in after our last view time.
-            let Just viewTime = st'^?msgMap.ix cId.ccInfo.cdViewed
+            let -- Just viewTime = st'^?msgMap.ix cId.ccInfo.cdViewed
                 setCutoff = if hasNew
                             then const $ Just $ minimum (_mDate <$> newMessages)
                             else id
@@ -197,14 +198,14 @@ asyncFetchScrollback prio st cId =
             csChannel(cId).ccInfo.cdCurrentState .= ChanLoaded
             csChannel(cId).ccInfo.cdNewMessageCutoff %= setCutoff
 
-asyncFetchReactionsForPost :: ChatState -> ChannelId -> Post -> IO ()
-asyncFetchReactionsForPost st cId p
+asyncFetchReactionsForPost :: ChannelId -> Post -> MH ()
+asyncFetchReactionsForPost cId p
   | not (p^.postHasReactionsL) = return ()
-  | otherwise =
-      doAsyncWithIO Normal st $ do
-        reactions <- mmGetReactionsForPost
-                       (st^.csSession) (st^.csMyTeam.teamIdL) cId
-                       (p^.postIdL)
+  | otherwise = do
+      session <- use csSession
+      myTeamId <- use (csMyTeam.teamIdL)
+      doAsyncWith Normal $ do
+        reactions <- mmGetReactionsForPost session myTeamId cId (p^.postIdL)
         return $ do
           let insert r = Map.insertWith (+) (r^.reactionEmojiNameL) 1
               insertAll m = foldr insert m reactions

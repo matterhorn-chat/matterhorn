@@ -312,8 +312,7 @@ initializeState cr myTeam myUser = do
           cwd <- liftIO $ mmGetChannel session myTeamId (getId c)
           return $ do
               csChannel(getId c).ccInfo %= channelInfoFromChannelWithData cwd
-              st' <- use id
-              liftIO $ asyncFetchScrollback Preempt st' (getId c)
+              asyncFetchScrollback Preempt (getId c)
 
   -- It's important to queue up these channel metadata fetches first so
   -- that by the time the scrollback requests are processed, we have the
@@ -328,7 +327,6 @@ initializeState cr myTeam myUser = do
   F.forM_ chans $ \c ->
       when (getId c /= townSqId && c^.channelTypeL /= Direct) $
           doAsyncWithIO Normal st $ do
-            asyncFetchScrollback Normal st (getId c)
-            return (return ())
+            return $ asyncFetchScrollback Normal (getId c)
 
   updateViewedIO st

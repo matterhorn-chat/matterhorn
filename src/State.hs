@@ -337,8 +337,7 @@ handleChannelInvite cId = do
               (\(ChannelWithData chan _) -> do
                 return $ do
                   handleNewChannel (preferredChannelName chan) False chan
-                  st' <- use id
-                  liftIO $ asyncFetchScrollback Normal st' cId)
+                  asyncFetchScrollback Normal cId)
 
 startLeaveCurrentChannel :: MH ()
 startLeaveCurrentChannel = do
@@ -800,8 +799,7 @@ fetchCurrentScrollback = do
   currentState <- preuse (msgMap.ix(cId).ccInfo.cdCurrentState)
   didQueue <- case maybe False (== ChanUnloaded) currentState of
       True -> do
-          st <- use id
-          liftIO $ asyncFetchScrollback Preempt st cId
+          asyncFetchScrollback Preempt cId
           return True
       False -> return False
   csChannel(cId).ccInfo.cdCurrentState %=
