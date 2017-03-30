@@ -740,7 +740,7 @@ addMessage new = do
                 ccId <- use csCurrentChannelId
                 if postChannelId new == ccId
                   then updateViewed
-                  else setNewMessageCutoff ccId msg
+                  else setNewMessageCutoff cId msg
 
           -- If the message is in reply to another message, try to find it in
           -- the scrollback for the post's channel. If the message isn't there,
