@@ -4,7 +4,6 @@ module Command where
 import Prelude ()
 import Prelude.Compat
 
-import Brick (EventM, Next, continue, halt)
 import Control.Monad (when)
 import Control.Monad.IO.Class (liftIO)
 import Data.Monoid ((<>))
@@ -13,7 +12,7 @@ import System.Exit (ExitCode(..))
 import System.Process (readProcessWithExitCode)
 
 import FilePaths (Script(..), getAllScripts, locateScriptPath)
-import Lens.Micro.Platform ((^.))
+import Lens.Micro.Platform (use)
 
 import State
 import State.Common
@@ -37,60 +36,59 @@ matchArgs (TokenArg _ rs) (t:ts) = (,) <$> pure t <*> matchArgs rs ts
 
 commandList :: [Cmd]
 commandList =
-  [ Cmd "quit" "Exit Matterhorn" NoArg $ \ () st -> halt st
-  , Cmd "right" "Focus on the next channel" NoArg $ \ () st ->
-      nextChannel st >>= continue
-  , Cmd "left" "Focus on the previous channel" NoArg $ \ () st ->
-      prevChannel st >>= continue
+  [ Cmd "quit" "Exit Matterhorn" NoArg $ \ () -> requestQuit
+  , Cmd "right" "Focus on the next channel" NoArg $ \ () ->
+      nextChannel
+  , Cmd "left" "Focus on the previous channel" NoArg $ \ () ->
+      prevChannel
   , Cmd "create-channel" "Create a new channel"
-    (LineArg "channel name") $ \ name st ->
-      createOrdinaryChannel name st >>= continue
+    (LineArg "channel name") $ \ name ->
+      createOrdinaryChannel name
   , Cmd "delete-channel" "Delete the current channel"
-    NoArg $ \ () st ->
-      beginCurrentChannelDeleteConfirm st >>= continue
+    NoArg $ \ () ->
+      beginCurrentChannelDeleteConfirm
   , Cmd "members" "Show the current channel's members"
-    NoArg $ \ () st ->
-      fetchCurrentChannelMembers st >> continue st
-  , Cmd "leave" "Leave the current channel" NoArg $ \ () st ->
-      startLeaveCurrentChannel st >>= continue
-  , Cmd "join" "Join a channel" NoArg $ \ () st ->
-      startJoinChannel st >>= continue
-  , Cmd "theme" "List the available themes" NoArg $ \ () st ->
-      listThemes st >>= continue
+    NoArg $ \ () ->
+      fetchCurrentChannelMembers
+  , Cmd "leave" "Leave the current channel" NoArg $ \ () ->
+      startLeaveCurrentChannel
+  , Cmd "join" "Join a channel" NoArg $ \ () ->
+      startJoinChannel
+  , Cmd "theme" "List the available themes" NoArg $ \ () ->
+      listThemes
   , Cmd "theme" "Set the color theme"
-    (TokenArg "theme" NoArg) $ \ (themeName, ()) st ->
-      setTheme st themeName >>= continue
+    (TokenArg "theme" NoArg) $ \ (themeName, ()) ->
+      setTheme themeName
   , Cmd "topic" "Set the current channel's topic"
-    (LineArg "topic") $ \ p st -> do
+    (LineArg "topic") $ \ p -> do
       when (not $ T.null p) $ do
+          st <- use id
           liftIO $ setChannelTopic st p
-      continue st
   , Cmd "add-user" "Add a user to the current channel"
-    (TokenArg "username" NoArg) $ \ (uname, ()) st ->
-        addUserToCurrentChannel uname st >>= continue
+    (TokenArg "username" NoArg) $ \ (uname, ()) ->
+        addUserToCurrentChannel uname
   , Cmd "focus" "Focus on a named channel"
-    (TokenArg "channel" NoArg) $ \ (name, ()) st ->
-        changeChannel name st >>= continue
-  , Cmd "help" "Show this help screen" NoArg $ \ _ st ->
-        showHelpScreen MainHelp st >>= continue
+    (TokenArg "channel" NoArg) $ \ (name, ()) ->
+        changeChannel name
+  , Cmd "help" "Show this help screen" NoArg $ \ _ ->
+        showHelpScreen MainHelp
   , Cmd "help" "Show help about a particular topic"
-      (TokenArg "topic" NoArg) $ \ (topic, ()) st ->
+      (TokenArg "topic" NoArg) $ \ (topic, ()) ->
         case topic of
-          "main"    -> showHelpScreen MainHelp st >>= continue
-          "scripts" -> showHelpScreen ScriptHelp st >>= continue
+          "main"    -> showHelpScreen MainHelp
+          "scripts" -> showHelpScreen ScriptHelp
           _         -> do
             let msg = ("Unknown help topic: `" <> topic <> "`. " <>
                       "Available topics are:\n  - main\n  - scripts\n")
-            postErrorMessage msg st >>= continue
-  , Cmd "sh" "List the available shell scripts" NoArg $ \ () st ->
-      listScripts st >>= continue
+            postErrorMessage msg
+  , Cmd "sh" "List the available shell scripts" NoArg $ \ () ->
+      listScripts
   , Cmd "sh" "Run a prewritten shell script"
-    (TokenArg "script" (LineArg "message")) $ \ (script, text) st -> do
+    (TokenArg "script" (LineArg "message")) $ \ (script, text) -> do
       fpMb <- liftIO $ locateScriptPath (T.unpack script)
       case fpMb of
         ScriptPath scriptPath -> do
-          liftIO $ doAsyncWith Preempt st $ runScript scriptPath text
-          continue st
+          doAsyncWith Preempt $ runScript scriptPath text
         NonexecScriptPath scriptPath -> do
           let msg = ("The script `" <> T.pack scriptPath <> "` cannot be " <>
                "executed. Try running\n" <>
@@ -98,17 +96,17 @@ commandList =
                "$ chmod u+x " <> T.pack scriptPath <> "\n" <>
                "```\n" <>
                "to correct this error. " <> scriptHelpAddendum)
-          postErrorMessage msg st >>= continue
+          postErrorMessage msg
         ScriptNotFound -> do
           let msg = ("No script named " <> script <> " was found")
-          postErrorMessage msg st >>= continue
+          postErrorMessage msg
   , Cmd "me" "Send an emote message"
     (LineArg "message") $
-    \msg st -> execMMCommand "me" msg st >>= continue
+    \msg -> execMMCommand "me" msg
 
   , Cmd "shrug" "Send a message followed by a shrug emoticon"
     (LineArg "message") $
-    \msg st -> execMMCommand "shrug" msg st >>= continue
+    \msg -> execMMCommand "shrug" msg
   ]
 
 scriptHelpAddendum :: T.Text
@@ -116,13 +114,14 @@ scriptHelpAddendum =
   "For more help with scripts, run the command\n" <>
   "```\n/help scripts\n```\n"
 
-runScript :: FilePath -> T.Text -> IO (ChatState -> EventM Name ChatState)
+runScript :: FilePath -> T.Text -> IO (MH ())
 runScript fp text = do
   (code, stdout, stderr) <- readProcessWithExitCode fp [] (T.unpack text)
   case code of
-    ExitSuccess -> return $ \st -> do
-      liftIO $ sendMessage st (st^.csEditState.cedEditMode) (T.pack stdout)
-    ExitFailure _ -> return $ \st -> do
+    ExitSuccess -> return $ do
+      mode <- use (csEditState.cedEditMode)
+      sendMessage mode (T.pack stdout)
+    ExitFailure _ -> return $ do
       let msgText = "The script `" <> T.pack fp <> "` exited with a " <>
                     "non-zero exit code."
           msgText' = if stderr == ""
@@ -130,18 +129,18 @@ runScript fp text = do
                        else msgText <> " It also produced the " <>
                             "following output on stderr:\n~~~~~\n" <>
                             T.pack stderr <> "~~~~~\n" <> scriptHelpAddendum
-      postErrorMessage msgText' st
+      postErrorMessage msgText'
 
-listScripts :: ChatState -> EventM Name ChatState
-listScripts st = do
+listScripts :: MH ()
+listScripts = do
   (execs, nonexecs) <- liftIO getAllScripts
   let scripts = ("Available scripts are:\n" <>
                  mconcat [ "  - " <> T.pack cmd <> "\n"
                          | cmd <- execs
                          ])
-  st' <- postInfoMessage scripts st
+  postInfoMessage scripts
   case nonexecs of
-    [] -> return st'
+    [] -> return ()
     _  -> do
       let errMsg = ("Some non-executable script files are also " <>
                     "present. If you want to run these as scripts " <>
@@ -153,10 +152,10 @@ listScripts st = do
                     mconcat [ "  - " <> T.pack cmd <> "\n"
                             | cmd <- nonexecs
                             ] <> "\n" <> scriptHelpAddendum)
-      postErrorMessage errMsg st'
+      postErrorMessage errMsg
 
-dispatchCommand :: T.Text -> ChatState -> EventM Name (Next ChatState)
-dispatchCommand cmd st =
+dispatchCommand :: T.Text -> MH ()
+dispatchCommand cmd =
   case T.words cmd of
     (x:xs) | matchingCmds <- [ c | c@(Cmd name _ _ _) <- commandList
                              , name == x
@@ -164,13 +163,13 @@ dispatchCommand cmd st =
       where go [] [] = do
               let msg = ("error running command /" <> x <> ":\n" <>
                          "no such command")
-              postErrorMessage msg st >>= continue
+              postErrorMessage msg
             go errs [] = do
               let msg = ("error running command /" <> x <> ":\n" <>
                          mconcat [ "    " <> e | e <- errs ])
-              postErrorMessage msg st >>= continue
+              postErrorMessage msg
             go errs (Cmd _ _ spec exe : cs) =
               case matchArgs spec xs of
                 Left e -> go (e:errs) cs
-                Right args -> exe args st
-    _ -> continue st
+                Right args -> exe args
+    _ -> return ()

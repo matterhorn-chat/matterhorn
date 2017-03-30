@@ -3,7 +3,6 @@ module State.Setup where
 import           Prelude ()
 import           Prelude.Compat
 
-import           Brick (EventM)
 import           Brick.BChan
 import           Brick.Widgets.List (list)
 import           Control.Concurrent (threadDelay, forkIO)
@@ -39,14 +38,14 @@ import           Types
 import           Zipper (Zipper)
 import qualified Zipper as Z
 
-fetchUserStatuses :: Session -> IO (ChatState -> EventM Name ChatState)
+fetchUserStatuses :: Session -> IO (MH ())
 fetchUserStatuses session = do
   statusMap <- mmGetStatuses session
-  return $ \ appState -> do
+  return $ do
     let updateUser u = u & uiStatus .~ (case HM.lookup (u^.uiId) statusMap of
                                           Nothing -> Offline
                                           Just t  -> statusFromText t)
-    return $ appState & usrMap.each %~ updateUser
+    usrMap.each %= updateUser
 
 userRefresh :: Session -> RequestChan -> IO ()
 userRefresh session requestChan = void $ forkIO $ forever refresh
@@ -56,7 +55,7 @@ userRefresh session requestChan = void $ forkIO $ forever refresh
           STM.atomically $ STM.writeTChan requestChan $ do
             rs <- try $ fetchUserStatuses session
             case rs of
-              Left (_ :: SomeException) -> return return
+              Left (_ :: SomeException) -> return (return ())
               Right upd -> return upd
 
 startSubprocessLogger :: STM.TChan ProgramOutput -> RequestChan -> IO ()
@@ -84,11 +83,11 @@ startSubprocessLogger logChan requestChan = do
                   hFlush logHandle
 
                   STM.atomically $ STM.writeTChan requestChan $ do
-                      return $ \st -> do
+                      return $ do
                           let msg = T.pack $ "Program " <> show progName <>
                                              " produced unexpected output; see " <>
                                              logPath <> " for details."
-                          postErrorMessage msg st
+                          postErrorMessage msg
 
                   logMonitor logPath logHandle
 
@@ -106,7 +105,7 @@ startTimezoneMonitor tz requestChan = do
         newTz <- getCurrentTimeZone
         when (newTz /= prevTz) $
             STM.atomically $ STM.writeTChan requestChan $ do
-                return $ (return . (& timeZone .~ newTz))
+                return $ timeZone .= newTz
 
         timezoneMonitor newTz
 
@@ -309,25 +308,27 @@ initializeState cr myTeam myUser = do
   -- Fetch town-square asynchronously, but put it in the queue early.
   case F.find ((== townSqId) . getId) chans of
       Nothing -> return ()
-      Just c -> doAsyncWith Preempt st $ do
+      Just c -> doAsyncWithIO Preempt st $ do
           cwd <- liftIO $ mmGetChannel session myTeamId (getId c)
-          return $ \st' -> do
-              let st'' = st' & csChannel(getId c).ccInfo %~ channelInfoFromChannelWithData cwd
-              liftIO $ asyncFetchScrollback Preempt st'' (getId c)
-              return st''
+          return $ do
+              csChannel(getId c).ccInfo %= channelInfoFromChannelWithData cwd
+              st' <- use id
+              liftIO $ asyncFetchScrollback Preempt st' (getId c)
 
   -- It's important to queue up these channel metadata fetches first so
   -- that by the time the scrollback requests are processed, we have the
   -- latest metadata.
   F.forM_ chans $ \c ->
       when (getId c /= townSqId && c^.channelTypeL /= Direct) $
-          doAsyncWith Normal st $ do
+          doAsyncWithIO Normal st $ do
               cwd <- liftIO $ mmGetChannel session myTeamId (getId c)
-              return $ \st' -> do
-                  return $ st' & csChannel(getId c).ccInfo %~ channelInfoFromChannelWithData cwd
+              return $ do
+                  csChannel(getId c).ccInfo %= channelInfoFromChannelWithData cwd
 
   F.forM_ chans $ \c ->
       when (getId c /= townSqId && c^.channelTypeL /= Direct) $
-          doAsync Normal st $ asyncFetchScrollback Normal st (getId c)
+          doAsyncWithIO Normal st $ do
+            asyncFetchScrollback Normal st (getId c)
+            return (return ())
 
   updateViewedIO st

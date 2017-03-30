@@ -10,12 +10,16 @@ import Lens.Micro.Platform
 import Types
 import State
 
-onEventChannelScroll :: ChatState -> Vty.Event -> EventM Name (Next ChatState)
-onEventChannelScroll st (Vty.EvResize _ _) = invalidateCache >> continue st
-onEventChannelScroll st (Vty.EvKey Vty.KPageUp []) = channelPageUp st >>= continue
-onEventChannelScroll st (Vty.EvKey (Vty.KChar 'b') [Vty.MCtrl]) = loadMoreMessages st >>= continue
-onEventChannelScroll st (Vty.EvKey Vty.KPageDown []) = channelPageDown st >>= continue
-onEventChannelScroll st (Vty.EvKey Vty.KEsc []) = do
-    continue $ st & csMode .~ Main
-onEventChannelScroll st _ = do
-    continue st
+onEventChannelScroll :: Vty.Event -> MH ()
+onEventChannelScroll (Vty.EvResize _ _) =
+    mh invalidateCache
+onEventChannelScroll (Vty.EvKey Vty.KPageUp []) =
+    channelPageUp
+onEventChannelScroll (Vty.EvKey (Vty.KChar 'b') [Vty.MCtrl]) =
+    loadMoreMessages
+onEventChannelScroll (Vty.EvKey Vty.KPageDown []) =
+    channelPageDown
+onEventChannelScroll (Vty.EvKey Vty.KEsc []) = do
+    csMode .= Main
+onEventChannelScroll _ = do
+    return ()

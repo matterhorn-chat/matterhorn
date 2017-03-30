@@ -3,19 +3,17 @@ module Events.LeaveChannelConfirm where
 import Prelude ()
 import Prelude.Compat
 
-import Brick
 import qualified Graphics.Vty as Vty
 import Lens.Micro.Platform
 
 import Types
 import State
 
-onEventLeaveChannelConfirm :: ChatState -> Vty.Event -> EventM Name (Next ChatState)
-onEventLeaveChannelConfirm st (Vty.EvKey k []) = do
-    st' <- case k of
+onEventLeaveChannelConfirm :: Vty.Event -> MH ()
+onEventLeaveChannelConfirm (Vty.EvKey k []) = do
+    case k of
         Vty.KChar c | c `elem` ("yY"::String) ->
-            leaveCurrentChannel st
-        _ -> return st
-    continue $ st' & csMode .~ Main
-onEventLeaveChannelConfirm st _ = do
-    continue st
+            leaveCurrentChannel
+        _ -> return ()
+    csMode .= Main
+onEventLeaveChannelConfirm _ = return ()

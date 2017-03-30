@@ -89,4 +89,5 @@ executable matterhorn
                      , temporary
                      , gitrev
                      , Hclip
+                     , mtl
   default-language:    Haskell2010

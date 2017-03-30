@@ -3,7 +3,6 @@ module State.Common where
 import           Prelude ()
 import           Prelude.Compat
 
-import           Brick (EventM)
 import qualified Control.Concurrent.STM as STM
 import           Control.Exception (try)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
@@ -29,12 +28,11 @@ import           Types.Posts
 
 -- | Try to run a computation, posting an informative error
 --   message if it fails with a 'MattermostServerError'.
-tryMM :: (MonadIO m)
-      => IO a
+tryMM :: IO a
       -- ^ The action to try (usually a MM API call)
-      -> (a -> IO (ChatState -> m ChatState))
+      -> (a -> IO (MH ()))
       -- ^ What to do on success
-      -> IO (ChatState -> m ChatState)
+      -> IO (MH ())
 tryMM act onSuccess = do
     result <- liftIO $ try act
     case result of
@@ -50,27 +48,44 @@ data AsyncPriority = Preempt | Normal
 
 -- | Run a computation in the background, ignoring any results
 --   from it.
-doAsync :: AsyncPriority -> ChatState -> IO () -> IO ()
-doAsync prio st thunk = doAsyncWith prio st (thunk >> return return)
+doAsync :: AsyncPriority -> IO () -> MH ()
+doAsync prio thunk = doAsyncWith prio (thunk >> return (return ()))
 
 -- | Run a computation in the background, returning a computation
 --   to be called on the 'ChatState' value.
-doAsyncWith :: AsyncPriority -> ChatState -> IO (ChatState -> EventM Name ChatState) -> IO ()
-doAsyncWith prio st thunk = do
+doAsyncWith :: AsyncPriority -> IO (MH ()) -> MH ()
+doAsyncWith prio thunk = do
     let putChan = case prio of
           Preempt -> STM.unGetTChan
           Normal  -> STM.writeTChan
-    STM.atomically $ putChan (st^.csResources.crRequestQueue) thunk
+    queue <- use (csResources.crRequestQueue)
+    io $ STM.atomically $ putChan queue $ thunk
+
+doAsyncIO :: AsyncPriority -> ChatState -> IO () -> IO ()
+doAsyncIO prio st thunk =
+  doAsyncWithIO prio st (thunk >> return (return ()))
+
+-- | Run a computation in the background, returning a computation
+--   to be called on the 'ChatState' value.
+doAsyncWithIO :: AsyncPriority -> ChatState -> IO (MH ()) -> IO ()
+doAsyncWithIO prio st thunk = do
+    let putChan = case prio of
+          Preempt -> STM.unGetTChan
+          Normal  -> STM.writeTChan
+    let queue = st^.csResources.crRequestQueue
+    STM.atomically $ putChan queue $ thunk
 
 -- * Client Messages
 
 -- | Create 'ChannelContents' from a 'Posts' value
-fromPosts :: ChatState -> Posts -> IO (ChannelContents, ChatState)
-fromPosts st ps = do
-  let (msgs, st') = messagesFromPosts st ps
+fromPosts :: Posts -> MH ChannelContents
+fromPosts ps = do
+  msgs <- messagesFromPosts ps
+  st <- use id
+--  let (msgs, st') = messagesFromPosts st ps
   F.forM_ (ps^.postsPostsL) $ \p ->
-    asyncFetchAttachments p st
-  return (ChannelContents msgs, st')
+    liftIO (asyncFetchAttachments p st)
+  return (ChannelContents msgs)
 
 getDMChannelName :: UserId -> UserId -> T.Text
 getDMChannelName me you = cname
@@ -78,17 +93,22 @@ getDMChannelName me you = cname
   [loUser, hiUser] = sort [ you, me ]
   cname = idString loUser <> "__" <> idString hiUser
 
-messagesFromPosts :: ChatState -> Posts -> (Seq.Seq Message, ChatState)
-messagesFromPosts st p = (msgs, st')
+messagesFromPosts :: Posts -> MH (Seq.Seq Message)
+messagesFromPosts p = do -- (msgs, st')
+  st <- use id
+  csPostMap %= HM.union (postMap st)
+  st' <- use id
+  let msgs = fmap (clientPostToMessage st') (clientPost <$> ps)
+  return msgs
     where
-        postMap :: HM.HashMap PostId Message
-        postMap = HM.fromList [ ( pId
+        postMap :: ChatState -> HM.HashMap PostId Message
+        postMap st = HM.fromList [ ( pId
                                 , clientPostToMessage st (toClientPost x Nothing)
                                 )
                               | (pId, x) <- HM.toList (p^.postsPostsL)
                               ]
-        st' = st & csPostMap %~ (HM.union postMap)
-        msgs = clientPostToMessage st' <$> clientPost <$> ps
+--        st' = st & csPostMap %~ (HM.union postMap)
+--        msgs = clientPostToMessage st' <$> clientPost <$> ps
         ps   = findPost <$> (Seq.reverse $ postsOrder p)
         clientPost :: Post -> ClientPost
         clientPost x = toClientPost x (postId <$> parent x)
@@ -103,7 +123,7 @@ asyncFetchAttachments :: Post -> ChatState -> IO ()
 asyncFetchAttachments p st = do
   let cId = p^.postChannelIdL
       pId = p^.postIdL
-  F.forM_ (p^.postFileIdsL) $ \fId -> doAsyncWith Normal st $ do
+  F.forM_ (p^.postFileIdsL) $ \fId -> doAsyncWithIO Normal st $ do
     info <- mmGetFileInfo (st^.csSession) fId
     let scheme = "https://"
         host = st^.csResources.crConn.cdHostnameL
@@ -116,8 +136,8 @@ asyncFetchAttachments p st = do
           | m^.mPostId == Just pId =
             m & mAttachments %~ (attachment Seq.<|)
           | otherwise              = m
-    return $ \st' -> do
-      return (st' & csChannel(cId).ccContents.cdMessages.each %~ addAttachment)
+    return $
+      csChannel(cId).ccContents.cdMessages.each %= addAttachment
 
 -- | Create a new 'ClientMessage' value
 newClientMessage :: (MonadIO m) => ClientMessageType -> T.Text -> m ClientMessage
@@ -126,38 +146,45 @@ newClientMessage ty msg = do
   return (ClientMessage msg now ty)
 
 -- | Add a 'ClientMessage' to the current channel's message list
-addClientMessage :: ClientMessage -> ChatState -> ChatState
-addClientMessage msg st =
-  let cid = st^.csCurrentChannelId
-  in st & msgMap . ix cid . ccContents . cdMessages %~ (Seq.|> clientMessageToMessage msg)
+addClientMessage :: ClientMessage -> MH ()
+addClientMessage msg = do
+  cid <- use csCurrentChannelId
+  msgMap.ix cid.ccContents.cdMessages %= (Seq.|> clientMessageToMessage msg)
 
 -- | Add a new 'ClientMessage' representing an error message to
 --   the current channel's message list
-postInfoMessage :: (MonadIO m) => T.Text -> ChatState -> m ChatState
-postInfoMessage err st = do
+postInfoMessage :: T.Text -> MH ()
+postInfoMessage err = do
     msg <- newClientMessage Informative err
-    liftIO $ doAsyncWith Normal st (return $ return . addClientMessage msg)
-    return st
+    doAsyncWith Normal (return $ addClientMessage msg)
 
 -- | Add a new 'ClientMessage' representing an error message to
 --   the current channel's message list
-postErrorMessage :: (MonadIO m) => T.Text -> ChatState -> m ChatState
-postErrorMessage err st = do
+postErrorMessage :: T.Text -> MH ()
+postErrorMessage err = do
     msg <- newClientMessage Error err
-    liftIO $ doAsyncWith Normal st (return $ return . addClientMessage msg)
-    return st
+    doAsyncWith Normal (return $ addClientMessage msg)
+
+postErrorMessageIO :: T.Text -> ChatState -> IO ChatState
+postErrorMessageIO err st = do
+  now <- liftIO getCurrentTime
+  let msg = ClientMessage err now Error
+      cId = st ^. csCurrentChannelId
+  return $ st & msgMap.ix cId.ccContents.cdMessages %~ (Seq.|> clientMessageToMessage msg)
 
 numScrollbackPosts :: Int
 numScrollbackPosts = 100
 
 -- | Fetch scrollback for a channel in the background
+-- XXX THIS IS WRONG
 asyncFetchScrollback :: AsyncPriority -> ChatState -> ChannelId -> IO ()
 asyncFetchScrollback prio st cId =
-    doAsyncWith prio st $ do
+    doAsyncWithIO prio st $ do
         posts <- mmGetPosts (st^.csSession) (st^.csMyTeam.teamIdL) cId 0 numScrollbackPosts
-        return $ \st' -> do
+        return $ do
+            st' <- use id
             liftIO $ mapM_ (asyncFetchReactionsForPost st cId) (posts^.postsPostsL)
-            (contents, st'') <- liftIO $ fromPosts st' posts
+            contents <- fromPosts posts
             -- We need to set the new message cutoff only if there are
             -- actually messages that came in after our last view time.
             let Just viewTime = st'^?msgMap.ix cId.ccInfo.cdViewed
@@ -167,35 +194,34 @@ asyncFetchScrollback prio st cId =
                 hasNew = not $ Seq.null newMessages
                 newMessages = Seq.filter (\m -> m^.mDate > viewTime) $
                               contents^.cdMessages
-            return $
-                st'' & csChannel(cId).ccContents .~ contents
-                     & csChannel(cId).ccInfo.cdCurrentState .~ ChanLoaded
-                     & csChannel(cId).ccInfo.cdNewMessageCutoff %~ setCutoff
+            csChannel(cId).ccContents .= contents
+            csChannel(cId).ccInfo.cdCurrentState .= ChanLoaded
+            csChannel(cId).ccInfo.cdNewMessageCutoff %= setCutoff
 
 asyncFetchReactionsForPost :: ChatState -> ChannelId -> Post -> IO ()
 asyncFetchReactionsForPost st cId p
   | not (p^.postHasReactionsL) = return ()
-  | otherwise = doAsyncWith Normal st $ do
-      reactions <- mmGetReactionsForPost
-                     (st^.csSession) (st^.csMyTeam.teamIdL)
-                                     cId
-                                     (p^.postIdL)
-      return $ \st' -> do
-        let insert r = Map.insertWith (+) (r^.reactionEmojiNameL) 1
-            insertAll m = foldr insert m reactions
-            upd m | m^.mPostId == Just (p^.postIdL) =
-                      m & mReactions %~ insertAll
-                  | otherwise = m
-        return $ st' & csChannel(cId).ccContents.cdMessages %~ fmap upd
+  | otherwise =
+      doAsyncWithIO Normal st $ do
+        reactions <- mmGetReactionsForPost
+                       (st^.csSession) (st^.csMyTeam.teamIdL) cId
+                       (p^.postIdL)
+        return $ do
+          let insert r = Map.insertWith (+) (r^.reactionEmojiNameL) 1
+              insertAll m = foldr insert m reactions
+              upd m | m^.mPostId == Just (p^.postIdL) =
+                        m & mReactions %~ insertAll
+                    | otherwise = m
+          csChannel(cId).ccContents.cdMessages %= fmap upd
 
-addReaction :: ChatState -> Reaction -> ChannelId -> ChatState
-addReaction st r cId = st & csChannel(cId).ccContents.cdMessages %~ fmap upd
+addReaction :: Reaction -> ChannelId -> MH ()
+addReaction r cId = csChannel(cId).ccContents.cdMessages %= fmap upd
   where upd m | m^.mPostId == Just (r^.reactionPostIdL) =
                   m & mReactions %~ (Map.insertWith (+) (r^.reactionEmojiNameL) 1)
               | otherwise = m
 
-removeReaction :: ChatState -> Reaction -> ChannelId -> ChatState
-removeReaction st r cId = st & csChannel(cId).ccContents.cdMessages %~ fmap upd
+removeReaction :: Reaction -> ChannelId -> MH ()
+removeReaction r cId = csChannel(cId).ccContents.cdMessages %= fmap upd
   where upd m | m^.mPostId == Just (r^.reactionPostIdL) =
                   m & mReactions %~ (Map.insertWith (+) (r^.reactionEmojiNameL) (-1))
               | otherwise = m
@@ -207,17 +233,17 @@ updateViewedIO st = do
       Connected -> do
           now <- getCurrentTime
           let cId = st^.csCurrentChannelId
-          doAsyncWith Normal st $ do
+          doAsyncWithIO Normal st $ do
             mmUpdateLastViewedAt
               (st^.csSession)
               (getId (st^.csMyTeam))
               cId
-            return (\s -> return (s & csCurrentChannel.ccInfo.cdViewed .~ now))
+            return (csCurrentChannel.ccInfo.cdViewed .= now)
           return st
       Disconnected -> return st
 
-copyToClipboard :: T.Text -> ChatState -> EventM Name ChatState
-copyToClipboard txt st = do
+copyToClipboard :: T.Text -> MH ()
+copyToClipboard txt = do
   result <- liftIO (try (setClipboard (T.unpack txt)))
   case result of
     Left e -> do
@@ -229,7 +255,6 @@ copyToClipboard txt st = do
             MissingCommands cmds ->
               "Could not set clipboard due to missing one of the " <>
               "required program(s): " <> (T.pack $ show cmds)
-      msg <- newClientMessage Error errMsg
-      return $ addClientMessage msg st
+      postErrorMessage errMsg
     Right () ->
-      return st
+      return ()

@@ -6,8 +6,6 @@ import Prelude.Compat
 
 import Brick
 import Brick.Widgets.Edit
-import Control.Monad ((>=>))
-import Control.Monad.IO.Class (liftIO)
 import Data.Maybe (catMaybes)
 import Data.Monoid ((<>))
 import qualified Data.Set as Set
@@ -26,28 +24,28 @@ import InputHistory
 
 import Network.Mattermost (Type(..))
 
-onEventMain :: ChatState -> Vty.Event -> EventM Name (Next ChatState)
-onEventMain st e | Just kb <- lookupKeybinding e mainKeybindings = kbAction kb st
-onEventMain st (Vty.EvPaste bytes) = continue $ handlePaste bytes st
-onEventMain st e = handleEditingInput e st
+onEventMain :: Vty.Event -> MH ()
+onEventMain e | Just kb <- lookupKeybinding e mainKeybindings = kbAction kb
+onEventMain (Vty.EvPaste bytes) = handlePaste bytes
+onEventMain e = handleEditingInput e
 
 mainKeybindings :: [Keybinding]
 mainKeybindings =
     [ KB "Show this help screen"
          (Vty.EvKey (Vty.KFun 1) []) $
-         showHelpScreen MainHelp >=> continue
+         showHelpScreen MainHelp
 
     , KB "Select a message to edit/reply/delete"
          (Vty.EvKey (Vty.KChar 's') [Vty.MCtrl]) $
-         beginMessageSelect >=> continue
+         beginMessageSelect
 
     , KB "Reply to the most recent message"
          (Vty.EvKey (Vty.KChar 'r') [Vty.MCtrl]) $
-         replyToLatestMessage >=> continue
+         replyToLatestMessage
 
     , KB "Toggle message preview"
          (Vty.EvKey (Vty.KChar 'p') [Vty.MMeta]) $
-         continue . toggleMessagePreview
+         toggleMessagePreview
 
     , KB "Invoke *$EDITOR* to edit the current message"
          (Vty.EvKey (Vty.KChar 'k') [Vty.MMeta]) $
@@ -55,10 +53,10 @@ mainKeybindings =
 
     , KB "Enter fast channel selection mode"
          (Vty.EvKey (Vty.KChar 'g') [Vty.MCtrl]) $
-         continue . beginChannelSelect
+         beginChannelSelect
 
     , KB "Quit"
-         (Vty.EvKey (Vty.KChar 'q') [Vty.MCtrl]) halt
+         (Vty.EvKey (Vty.KChar 'q') [Vty.MCtrl]) $ requestQuit
 
     , KB "Tab-complete forward"
          (Vty.EvKey (Vty.KChar '\t') []) $
@@ -69,96 +67,104 @@ mainKeybindings =
          tabComplete Backwards
 
     , KB "Scroll up in the channel input history"
-         (Vty.EvKey Vty.KUp []) $ \st ->
+         (Vty.EvKey Vty.KUp []) $ do
              -- Up in multiline mode does the usual thing; otherwise we
              -- navigate the history.
-             case st^.csEditState.cedMultiline of
-                 True -> continue =<< handleEventLensed st csCmdLine handleEditorEvent
+             isMultiline <- use (csEditState.cedMultiline)
+             case isMultiline of
+                 True -> mhHandleEventLensed csCmdLine handleEditorEvent
                                            (Vty.EvKey Vty.KUp [])
-                 False -> continue $ channelHistoryBackward st
+                 False -> channelHistoryBackward
 
     , KB "Scroll down in the channel input history"
-         (Vty.EvKey Vty.KDown []) $ \st ->
+         (Vty.EvKey Vty.KDown []) $ do
              -- Down in multiline mode does the usual thing; otherwise
              -- we navigate the history.
-             case st^.csEditState.cedMultiline of
-                 True -> continue =<< handleEventLensed st csCmdLine handleEditorEvent
+             isMultiline <- use (csEditState.cedMultiline)
+             case isMultiline of
+                 True -> mhHandleEventLensed csCmdLine handleEditorEvent
                                            (Vty.EvKey Vty.KDown [])
-                 False -> continue $ channelHistoryForward st
+                 False -> channelHistoryForward
 
     , KB "Page up in the channel message list"
-         (Vty.EvKey Vty.KPageUp []) $ \st -> do
-             let cId = st^.csCurrentChannelId
-                 vp = ChannelMessages cId
-             invalidateCacheEntry vp
-             vScrollToEnd $ viewportScroll vp
-             vScrollBy (viewportScroll vp) (-1 * pageAmount)
-             continue $ st & csMode .~ ChannelScroll
+         (Vty.EvKey Vty.KPageUp []) $ do
+             cId <- use csCurrentChannelId
+             let vp = ChannelMessages cId
+             mh $ invalidateCacheEntry vp
+             mh $ vScrollToEnd $ viewportScroll vp
+             mh $ vScrollBy (viewportScroll vp) (-1 * pageAmount)
+             csMode .= ChannelScroll
 
     , KB "Change to the next channel in the channel list"
          (Vty.EvKey (Vty.KChar 'n') [Vty.MCtrl]) $
-         nextChannel >=> continue
+         nextChannel
 
     , KB "Change to the previous channel in the channel list"
          (Vty.EvKey (Vty.KChar 'p') [Vty.MCtrl]) $
-         prevChannel >=> continue
+         prevChannel
 
     , KB "Change to the next channel with unread messages"
          (Vty.EvKey (Vty.KChar 'a') [Vty.MMeta]) $
-         nextUnreadChannel >=> continue
+         nextUnreadChannel
 
     , KB "Change to the most recently-focused channel"
          (Vty.EvKey (Vty.KChar 's') [Vty.MMeta]) $
-         recentChannel >=> continue
+         recentChannel
 
     , KB "Send the current message"
-         (Vty.EvKey Vty.KEnter []) $ \st -> do
-             case st^.csEditState.cedMultiline of
+         (Vty.EvKey Vty.KEnter []) $ do
+             isMultiline <- use (csEditState.cedMultiline)
+             case isMultiline of
                  -- Enter in multiline mode does the usual thing; we
                  -- only send on Enter when we're outside of multiline
                  -- mode.
-                 True -> continue =<< handleEventLensed st csCmdLine handleEditorEvent
+                 True -> mhHandleEventLensed csCmdLine handleEditorEvent
                                            (Vty.EvKey Vty.KEnter [])
-                 False -> handleInputSubmission $ st & csCurrentCompletion .~ Nothing
+                 False -> do
+                   csCurrentCompletion .= Nothing
+                   handleInputSubmission
 
     , KB "Select and open a URL posted to the current channel"
          (Vty.EvKey (Vty.KChar 'o') [Vty.MCtrl]) $
-           continue . startUrlSelect
+           startUrlSelect
 
     , KB "Clear the current channel's unread message indicator"
-         (Vty.EvKey (Vty.KChar 'l') [Vty.MMeta]) $ \st ->
-           continue =<< clearNewMessageCutoff (st^.csCurrentChannelId) st
+         (Vty.EvKey (Vty.KChar 'l') [Vty.MMeta]) $ do
+           cId <- use csCurrentChannelId
+           clearNewMessageCutoff cId
 
     , KB "Toggle multi-line message compose mode"
          (Vty.EvKey (Vty.KChar 'e') [Vty.MMeta]) $
-           continue . toggleMultilineEditing
+           toggleMultilineEditing
 
     , KB "Cancel message reply or update"
          (Vty.EvKey Vty.KEsc []) $
-         continue . cancelReplyOrEdit
+         cancelReplyOrEdit
 
     , KB "Cancel message reply or update"
          (Vty.EvKey (Vty.KChar 'c') [Vty.MCtrl]) $
-         continue . cancelReplyOrEdit
+         cancelReplyOrEdit
     ]
 
-handleInputSubmission :: ChatState -> EventM Name (Next ChatState)
-handleInputSubmission st = do
-  let (line:rest) = getEditContents (st^.csCmdLine)
+handleInputSubmission :: MH ()
+handleInputSubmission = do
+  cmdLine <- use csCmdLine
+  cId <- use csCurrentChannelId
+  let (line:rest) = getEditContents cmdLine
       allLines = T.intercalate "\n" $ line : rest
-      cId = st^.csCurrentChannelId
-      st' = st & csCmdLine %~ applyEdit Z.clearZipper
-               & csInputHistory %~ addHistoryEntry allLines cId
-               & csInputHistoryPosition.at cId .~ Nothing
-               & csEditState.cedEditMode .~ NewPost
+  csCmdLine %= applyEdit Z.clearZipper
+  csInputHistory %= addHistoryEntry allLines cId
+  csInputHistoryPosition.at cId .= Nothing
+  csEditState.cedEditMode .= NewPost
+  mode <- use (csEditState.cedEditMode)
   case T.uncons line of
-    Just ('/',cmd) -> dispatchCommand cmd st'
+    Just ('/',cmd) -> dispatchCommand cmd
     _              -> do
-      continue =<< liftIO (sendMessage st' (st^.csEditState.cedEditMode) allLines)
+      sendMessage mode allLines
 
-tabComplete :: Completion.Direction
-            -> ChatState -> EventM Name (Next ChatState)
-tabComplete dir st = do
+tabComplete :: Completion.Direction -> MH ()
+tabComplete dir = do
+  st <- use id
   let completableChannels = catMaybes (flip map (st^.csNames.cnChans) $ \cname -> do
           -- Only permit completion of channel names for non-Group channels
           cId <- st^.csNames.cnToChanId.at cname
@@ -183,11 +189,11 @@ tabComplete dir st = do
           Just cw -> (Just cw, filter (cw `T.isPrefixOf`) $ Set.toList completions)
 
       mb_word     = wordComplete dir priorities completions line curComp
-      st' = st & csCurrentCompletion .~ nextComp
-               & csEditState.cedCompletionAlternatives .~ alts
-      (edit, curAlternative) = case mb_word of
+  csCurrentCompletion .= nextComp
+  csEditState.cedCompletionAlternatives .= alts
+  let (edit, curAlternative) = case mb_word of
           Nothing -> (id, "")
           Just w -> (Z.insertMany w . Z.deletePrevWord, w)
 
-  continue $ st' & csCmdLine %~ (applyEdit edit)
-                 & csEditState.cedCurrentAlternative .~ curAlternative
+  csCmdLine %= (applyEdit edit)
+  csEditState.cedCurrentAlternative .= curAlternative

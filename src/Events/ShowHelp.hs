@@ -10,40 +10,31 @@ import Lens.Micro.Platform
 import Types
 import State
 
-onEventShowHelp :: ChatState -> Vty.Event -> EventM Name (Next ChatState)
-onEventShowHelp st e | Just kb <- lookupKeybinding e helpKeybindings = kbAction kb st
-onEventShowHelp st (Vty.EvKey _ _) = do
-  continue $ st & csMode .~ Main
-onEventShowHelp st _ = continue st
+onEventShowHelp :: Vty.Event -> MH ()
+onEventShowHelp e | Just kb <- lookupKeybinding e helpKeybindings =
+  kbAction kb
+onEventShowHelp (Vty.EvKey _ _) = do
+  csMode .= Main
+onEventShowHelp _ = return ()
 
 helpKeybindings :: [Keybinding]
 helpKeybindings =
     [ KB "Scroll up"
-         (Vty.EvKey Vty.KUp []) $
-         \st -> do
-             vScrollBy (viewportScroll HelpViewport) (-1)
-             continue st
+         (Vty.EvKey Vty.KUp []) $ do
+             mh $ vScrollBy (viewportScroll HelpViewport) (-1)
     , KB "Scroll down"
-         (Vty.EvKey Vty.KDown []) $
-         \st -> do
-             vScrollBy (viewportScroll HelpViewport) 1
-             continue st
+         (Vty.EvKey Vty.KDown []) $ do
+             mh $ vScrollBy (viewportScroll HelpViewport) 1
     , KB "Page up"
-         (Vty.EvKey Vty.KPageUp []) $
-         \st -> do
-             vScrollBy (viewportScroll HelpViewport) (-1 * pageAmount)
-             continue st
+         (Vty.EvKey Vty.KPageUp []) $ do
+             mh $ vScrollBy (viewportScroll HelpViewport) (-1 * pageAmount)
     , KB "Page down"
-         (Vty.EvKey Vty.KPageDown []) $
-         \st -> do
-             vScrollBy (viewportScroll HelpViewport) pageAmount
-             continue st
+         (Vty.EvKey Vty.KPageDown []) $ do
+             mh $ vScrollBy (viewportScroll HelpViewport) pageAmount
     , KB "Page down"
-         (Vty.EvKey (Vty.KChar ' ') []) $
-         \st -> do
-             vScrollBy (viewportScroll HelpViewport) pageAmount
-             continue st
+         (Vty.EvKey (Vty.KChar ' ') []) $ do
+             mh $ vScrollBy (viewportScroll HelpViewport) pageAmount
     , KB "Return to the main interface"
-         (Vty.EvKey Vty.KEsc []) $
-         \st -> continue $ st & csMode .~ Main
+         (Vty.EvKey Vty.KEsc []) $ do
+           csMode .= Main
     ]

@@ -6,12 +6,13 @@ module State where
 import           Prelude ()
 import           Prelude.Compat
 
-import           Brick (EventM, invalidateCacheEntry)
+import           Brick (invalidateCacheEntry)
 import           Brick.Widgets.Edit (getEditContents, editContentsL)
 import           Brick.Widgets.List (list, listMoveTo, listSelectedElement)
 import           Control.Applicative
 import           Control.Exception (catch)
 import           Control.Monad.IO.Class (liftIO)
+import qualified Control.Monad.State as St
 import qualified Control.Concurrent.STM as STM
 import           Data.Char (isAlphaNum)
 import           Brick.Main (getVtyHandle, viewportScroll, vScrollToBeginning, vScrollBy)
@@ -61,7 +62,7 @@ pageAmount = 15
 -- | Get all the new messages for a given channel. In addition, load the
 -- channel metadata and update that, too.
 refreshChannel :: ChannelId -> ChatState -> IO ()
-refreshChannel chan st = doAsyncWith Normal st $
+refreshChannel chan st = doAsyncWithIO Normal st $
   case F.find (\ p -> isJust (p^.mPostId)) (Seq.reverse (st^.csChannel(chan).ccContents.cdMessages)) of
     Just (Message { _mPostId = Just pId }) -> do
       -- Get the latest channel metadata.
@@ -69,20 +70,21 @@ refreshChannel chan st = doAsyncWith Normal st $
 
       -- Load posts since the last post in this channel.
       posts <- mmGetPostsAfter (st^.csSession) (st^.csMyTeam.teamIdL) chan pId 0 100
-      return $ \ st' -> do
-        res <- F.foldrM addMessage st' [ (posts^.postsPostsL) HM.! p
-                                       | p <- F.toList (posts^.postsOrderL)
-                                       ]
+      return $ do
+        mapM_ addMessage [ (posts^.postsPostsL) HM.! p
+                         | p <- F.toList (posts^.postsOrderL)
+                         ]
         let newChanInfo ci = channelInfoFromChannelWithData cwd ci
                                & cdCurrentState     .~ ChanLoaded
 
-        return (res & csChannel(chan).ccInfo %~ newChanInfo)
-    _ -> return return
+        csChannel(chan).ccInfo %= newChanInfo
+    _ -> return (return ())
 
 -- | Find all the loaded channels and refresh their state, setting the
 -- state as dirty until we get a response
-refreshLoadedChannels :: ChatState -> EventM Name ChatState
-refreshLoadedChannels st = do
+refreshLoadedChannels :: MH ()
+refreshLoadedChannels = do
+  st <- use id
   liftIO $ sequence_
     [ refreshChannel cId st
     | (cId, chan) <- HM.toList (st^.msgMap)
@@ -90,7 +92,7 @@ refreshLoadedChannels st = do
     ]
   let upd ChanLoaded = ChanRefreshing
       upd chanState  = chanState
-  return (st & msgMap.each.ccInfo.cdCurrentState %~ upd)
+  msgMap.each.ccInfo.cdCurrentState %= upd
 
 -- * Message selection mode
 
@@ -112,8 +114,8 @@ getPrevPost i msgs =
         rest Seq.:> msg ->
             (if msg^.mDeleted then Nothing else msg^.mPostId) <|> getPrevPost (i - 1) rest
 
-beginMessageSelect :: ChatState -> EventM Name ChatState
-beginMessageSelect st = do
+beginMessageSelect :: MH ()
+beginMessageSelect = do
     -- Get the number of messages in the current channel and set the
     -- currently selected message index to be the most recently received
     -- message that corresponds to a Post (i.e. exclude informative
@@ -121,15 +123,12 @@ beginMessageSelect st = do
     --
     -- If we can't find one at all, we ignore the mode switch request
     -- and just return.
-    let chanMsgs = st ^. csCurrentChannel . ccContents . cdMessages
-        recentPost = getPrevPost (Seq.length chanMsgs - 1) chanMsgs
+    chanMsgs <- use(csCurrentChannel . ccContents . cdMessages)
+    let recentPost = getPrevPost (Seq.length chanMsgs - 1) chanMsgs
 
-    case recentPost of
-        Nothing ->
-            return st
-        Just _ ->
-            return $ st & csMode .~ MessageSelect
-                        & csMessageSelect .~ MessageSelectState recentPost
+    when (isJust recentPost) $ do
+        csMode .= MessageSelect
+        csMessageSelect .= MessageSelectState recentPost
 
 getSelectedMessage :: ChatState -> Maybe Message
 getSelectedMessage st
@@ -142,97 +141,118 @@ getSelectedMessage st
         idx <- Seq.findIndexR (\m -> m^.mPostId == Just selPostId) chanMsgs
         Seq.lookup idx chanMsgs
 
-messageSelectUp :: ChatState -> EventM Name ChatState
-messageSelectUp st
-    | st^.csMode /= MessageSelect = return st
-    | isNothing $ selectMessagePostId $ st^.csMessageSelect = return st
-    | otherwise = do
-        let oldPostId@(Just selPostId) = selectMessagePostId $ st^.csMessageSelect
-            chanMsgs = st ^. csCurrentChannel . ccContents . cdMessages
-            Just idx = Seq.findIndexR (\m -> m^.mPostId == Just selPostId) chanMsgs
-            prevPostId = getPrevPost (idx - 1) chanMsgs
+messageSelectUp :: MH ()
+messageSelectUp = do
+    mode <- use csMode
+    selected <- use (csMessageSelect.to selectMessagePostId)
+    case selected of
+        Just selPostId | mode == MessageSelect -> do
+            chanMsgs <- use (csCurrentChannel.ccContents.cdMessages)
+            let Just idx = Seq.findIndexR (\m -> m^.mPostId == Just selPostId) chanMsgs
+                nextPostId = getNextPost (Seq.drop (idx - 1) chanMsgs)
+            csMessageSelect .= MessageSelectState (nextPostId <|> selected)
+        _ -> return ()
 
-        return $ st & csMessageSelect .~ MessageSelectState (prevPostId <|> oldPostId)
+messageSelectDown :: MH ()
+messageSelectDown = do
+    mode <- use csMode
+    selected <- use (csMessageSelect.to selectMessagePostId)
+    case selected of
+        Just selPostId | mode == MessageSelect -> do
+            chanMsgs <- use (csCurrentChannel.ccContents.cdMessages)
+            let Just idx = Seq.findIndexR (\m -> m^.mPostId == Just selPostId) chanMsgs
+                nextPostId = getNextPost (Seq.drop (idx + 1) chanMsgs)
+            csMessageSelect .= MessageSelectState (nextPostId <|> selected)
+        _ -> return ()
+    -- when (mode == MessageSelect && isJust (selectMessagePostId selected)) $ do
+    --     oldPostId@(Just selPostId) <-
 
-messageSelectDown :: ChatState -> EventM Name ChatState
-messageSelectDown st
-    | st^.csMode /= MessageSelect = return st
-    | isNothing $ selectMessagePostId $ st^.csMessageSelect = return st
-    | otherwise = do
-        let oldPostId@(Just selPostId) = selectMessagePostId $ st^.csMessageSelect
-            chanMsgs = st ^. csCurrentChannel . ccContents . cdMessages
-            Just idx = Seq.findIndexR (\m -> m^.mPostId == Just selPostId) chanMsgs
-            nextPostId = getNextPost (Seq.drop (idx + 1) chanMsgs)
+    -- | st^.csMode /= MessageSelect = return st
+    -- | isNothing $ selectMessagePostId $ st^.csMessageSelect = return st
+    -- | otherwise = do
+    --     let oldPostId@(Just selPostId) = selectMessagePostId $ st^.csMessageSelect
+    --         chanMsgs = st ^. csCurrentChannel . ccContents . cdMessages
+    --         Just idx = Seq.findIndexR (\m -> m^.mPostId == Just selPostId) chanMsgs
+    --         nextPostId = getNextPost (Seq.drop (idx + 1) chanMsgs)
 
-        return $ st & csMessageSelect .~ MessageSelectState (nextPostId <|> oldPostId)
+    --     return $ st & csMessageSelect .~ MessageSelectState (nextPostId <|> oldPostId)
 
 isMine :: ChatState -> Message -> Bool
 isMine st msg = (Just $ st^.csMe.userUsernameL) == msg^.mUserName
 
-messageSelectDownBy :: Int -> ChatState -> EventM Name ChatState
-messageSelectDownBy amt st
-    | amt <= 0 = return st
-    | otherwise = messageSelectDown st >>= messageSelectDownBy (amt - 1)
+messageSelectDownBy :: Int -> MH ()
+messageSelectDownBy amt
+    | amt <= 0 = return ()
+    | otherwise =
+        messageSelectDown >> messageSelectDownBy (amt - 1)
 
-messageSelectUpBy :: Int -> ChatState -> EventM Name ChatState
-messageSelectUpBy amt st
-    | amt <= 0 = return st
-    | otherwise = messageSelectUp st >>= messageSelectUpBy (amt - 1)
+messageSelectUpBy :: Int -> MH ()
+messageSelectUpBy amt
+    | amt <= 0 = return ()
+    | otherwise =
+      messageSelectUp >> messageSelectUpBy (amt - 1)
 
-beginConfirmDeleteSelectedMessage :: ChatState -> EventM Name ChatState
-beginConfirmDeleteSelectedMessage st =
-    return $ st & csMode .~ MessageSelectDeleteConfirm
+beginConfirmDeleteSelectedMessage :: MH ()
+beginConfirmDeleteSelectedMessage =
+    csMode .= MessageSelectDeleteConfirm
 
-deleteSelectedMessage :: ChatState -> EventM Name ChatState
-deleteSelectedMessage st = do
-    case getSelectedMessage st of
+deleteSelectedMessage :: MH ()
+deleteSelectedMessage = do
+    selectedMessage <- use (to getSelectedMessage)
+    st <- use id
+    case selectedMessage of
         Just msg | isMine st msg && isDeletable msg -> do
-            liftIO $ doAsyncWith Preempt st $ do
-                let cId = st^.csCurrentChannelId
-                    Just p = msg^.mOriginalPost
-                mmDeletePost (st^.csSession) (st^.csMyTeam.teamIdL) cId (postId p)
-                return $ \st' ->
-                    return $ st' & csEditState.cedEditMode .~ NewPost
-                                 & csMode .~ Main
+            cId <- use csCurrentChannelId
+            session <- use csSession
+            myTeamId <- use (csMyTeam.teamIdL)
+            doAsyncWith Preempt $ do
+                let Just p = msg^.mOriginalPost
+                mmDeletePost session myTeamId cId (postId p)
+                return $ do
+                    csEditState.cedEditMode .= NewPost
+                    csMode .= Main
         _ -> return ()
-    return st
 
-beginCurrentChannelDeleteConfirm :: ChatState -> EventM Name ChatState
-beginCurrentChannelDeleteConfirm st =
-    let isNormal = st^.csChannel(cId).ccInfo.cdType /= Direct
-        cId = st^.csCurrentChannelId
-    in if isNormal
-       then return $ st & csMode .~ DeleteChannelConfirm
-       else postErrorMessage "The /delete-channel command cannot be used with direct message channels." st
+beginCurrentChannelDeleteConfirm :: MH ()
+beginCurrentChannelDeleteConfirm = do
+    cId <- use csCurrentChannelId
+    chType <- use (csChannel(cId).ccInfo.cdType)
+    if chType /= Direct
+       then csMode .= DeleteChannelConfirm
+       else postErrorMessage "The /delete-channel command cannot be used with direct message channels."
 
-deleteCurrentChannel :: ChatState -> EventM Name ChatState
-deleteCurrentChannel st = do
-    liftIO $ doAsyncWith Preempt st $ do
-        let cId = st^.csCurrentChannelId
-        mmDeleteChannel (st^.csSession) (st^.csMyTeam.teamIdL) cId
-        return $ \st' ->
-            leaveCurrentChannel $ st' & csMode .~ Main
+deleteCurrentChannel :: MH ()
+deleteCurrentChannel = do
+    cId <- use csCurrentChannelId
+    session <- use csSession
+    myTeamId <- use (csMyTeam.teamIdL)
+    doAsyncWith Preempt $ do
+        mmDeleteChannel session myTeamId cId
+        return $ do
+            csMode .= Main
+            leaveCurrentChannel
 
-    return st
-
-beginUpdateMessage :: ChatState -> EventM Name ChatState
-beginUpdateMessage st =
-    case getSelectedMessage st of
+beginUpdateMessage :: MH ()
+beginUpdateMessage = do
+    selected <- use (to getSelectedMessage)
+    st <- use id
+    case selected of
         Just msg | isMine st msg && isEditable msg -> do
             let Just p = msg^.mOriginalPost
-            return $ st & csMode .~ Main
-                        & csEditState.cedEditMode .~ Editing p
-                        & csCmdLine %~ applyEdit (clearZipper >> (insertMany $ postMessage p))
-        _ -> return st
+            csMode .= Main
+            csEditState.cedEditMode .= Editing p
+            csCmdLine %= applyEdit (clearZipper >> (insertMany $ postMessage p))
+        _ -> return ()
 
-replyToLatestMessage :: ChatState -> EventM Name ChatState
-replyToLatestMessage st =
-    case getLatestUserMessage st of
+replyToLatestMessage :: MH ()
+replyToLatestMessage = do
+    latest <- use (to getLatestUserMessage)
+    case latest of
         Just msg | isReplyable msg -> do
             let Just p = msg^.mOriginalPost
-            return $ st & csMode .~ Main
-                        & csEditState.cedEditMode .~ Replying msg p
-        _ -> return st
+            csMode .= Main
+            csEditState.cedEditMode .= Replying msg p
+        _ -> return ()
 
 -- | Get the latest normal or emote post in the current channel.
 getLatestUserMessage :: ChatState -> Maybe Message
@@ -248,114 +268,120 @@ getLatestUserMessage st =
         chanMsgs = st ^. csCurrentChannel . ccContents . cdMessages
     in go chanMsgs
 
-beginReplyCompose :: ChatState -> EventM Name ChatState
-beginReplyCompose st =
-    case getSelectedMessage st of
-        Nothing -> return st
+beginReplyCompose :: MH ()
+beginReplyCompose = do
+    selected <- use (to getSelectedMessage)
+    case selected of
+        Nothing -> return ()
         Just msg -> do
             let Just p = msg^.mOriginalPost
-            return $ st & csMode .~ Main
-                        & csEditState.cedEditMode .~ Replying msg p
+            csMode .= Main
+            csEditState.cedEditMode .= Replying msg p
 
-cancelReplyOrEdit :: ChatState -> ChatState
-cancelReplyOrEdit st =
-    case st^.csEditState.cedEditMode of
-        NewPost -> st
-        _ -> st & csEditState.cedEditMode .~ NewPost
-                & csCmdLine %~ applyEdit clearZipper
+cancelReplyOrEdit :: MH ()
+cancelReplyOrEdit = do
+    mode <- use (csEditState.cedEditMode)
+    case mode of
+        NewPost -> return ()
+        _ -> do
+            csEditState.cedEditMode .= NewPost
+            csCmdLine %= applyEdit clearZipper
 
-copyVerbatimToClipboard :: ChatState -> EventM Name ChatState
-copyVerbatimToClipboard st =
-    case getSelectedMessage st of
-        Nothing -> return st
+copyVerbatimToClipboard :: MH ()
+copyVerbatimToClipboard = do
+    selectedMessage <- use (to getSelectedMessage)
+    case selectedMessage of
+        Nothing -> return ()
         Just m -> case findVerbatimChunk (m^.mText) of
-            Nothing -> return st
+            Nothing -> return ()
             Just txt -> do
-              st' <- copyToClipboard txt st
-              return (st' & csMode .~ Main)
+              copyToClipboard txt
+              csMode .= Main
 
 -- * Joining, Leaving, and Inviting
 
-startJoinChannel :: ChatState -> EventM Name ChatState
-startJoinChannel st = do
-    liftIO $ doAsyncWith Preempt st $ do
-        chans <- mmGetMoreChannels (st^.csSession) (st^.csMyTeam.teamIdL)
-        return $ \ st' -> do
-            return $ st' & csJoinChannelList .~ (Just $ list JoinChannelList (V.fromList $ F.toList chans) 1)
+startJoinChannel :: MH ()
+startJoinChannel = do
+    session <- use csSession
+    myTeamId <- use (csMyTeam.teamIdL)
+    doAsyncWith Preempt $ do
+        chans <- mmGetMoreChannels session myTeamId
+        return $ do
+            csJoinChannelList .= (Just $ list JoinChannelList (V.fromList $ F.toList chans) 1)
 
-    return $ st & csMode .~ JoinChannel
-                & csJoinChannelList .~ Nothing
+    csMode .= JoinChannel
+    csJoinChannelList .= Nothing
 
-joinChannel :: Channel -> ChatState -> EventM Name ChatState
-joinChannel chan st = do
+joinChannel :: Channel -> MH ()
+joinChannel chan = do
     let cId = getId chan
+    session <- use csSession
+    myTeamId <- use (csMyTeam.teamIdL)
+    doAsyncWith Preempt $ do
+        void $ mmJoinChannel session myTeamId cId
+        return (return ())
 
-    liftIO $ doAsyncWith Preempt st $ do
-        void $ mmJoinChannel (st^.csSession) (st^.csMyTeam.teamIdL) cId
-        return return
-
-    return $ st & csMode .~ Main
+    csMode .= Main
 
 -- | When another user adds us to a channel, we need to fetch the
 -- channel info for that channel.
-handleChannelInvite :: ChannelId -> ChatState -> EventM Name ChatState
-handleChannelInvite cId st = do
-    liftIO $ doAsyncWith Normal st $ do
+handleChannelInvite :: ChannelId -> MH ()
+handleChannelInvite cId = do
+    st <- use id
+    doAsyncWith Normal $ do
         tryMM (mmGetChannel (st^.csSession) (st^.csMyTeam.teamIdL) cId)
               (\(ChannelWithData chan _) -> do
-                return $ \st' -> do
-                  st'' <- handleNewChannel (preferredChannelName chan) False chan st'
-                  liftIO $ asyncFetchScrollback Normal st'' cId
-                  return st'')
-    return st
+                return $ do
+                  handleNewChannel (preferredChannelName chan) False chan
+                  st' <- use id
+                  liftIO $ asyncFetchScrollback Normal st' cId)
 
-startLeaveCurrentChannel :: ChatState -> EventM Name ChatState
-startLeaveCurrentChannel st = do
-    let cInfo = st^.csCurrentChannel.ccInfo
+startLeaveCurrentChannel :: MH ()
+startLeaveCurrentChannel = do
+    cInfo <- use (csCurrentChannel.ccInfo)
     case canLeaveChannel cInfo of
-        True -> return $ st & csMode .~ LeaveChannelConfirm
-        False -> postErrorMessage "The /leave command cannot be used with this channel." st
+        True -> csMode .= LeaveChannelConfirm
+        False -> postErrorMessage "The /leave command cannot be used with this channel."
 
 canLeaveChannel :: ChannelInfo -> Bool
 canLeaveChannel cInfo = not $ cInfo^.cdType `elem` [Direct, Group]
 
-leaveCurrentChannel :: ChatState -> EventM Name ChatState
-leaveCurrentChannel st = do
-    let cId = st^.csCurrentChannelId
-        cInfo = st^.csCurrentChannel.ccInfo
+leaveCurrentChannel :: MH ()
+leaveCurrentChannel = do
+    cId <- use csCurrentChannelId
+    cInfo <- use (csCurrentChannel.ccInfo)
+    session <- use csSession
+    myTeamId <- use (csMyTeam.teamIdL)
 
-    when (canLeaveChannel cInfo) $ liftIO $ doAsyncWith Preempt st $ do
-        mmLeaveChannel (st^.csSession) (st^.csMyTeam.teamIdL) cId
+    when (canLeaveChannel cInfo) $ doAsyncWith Preempt $ do
+        mmLeaveChannel session myTeamId cId
         return (removeChannelFromState cId)
 
-    return st
-
-removeChannelFromState :: ChannelId -> ChatState -> EventM Name ChatState
-removeChannelFromState cId st = do
-    let cName = st^.csChannel(cId).ccInfo.cdName
-        isNormal = st^.csChannel(cId).ccInfo.cdType /= Direct
-
-    case isNormal of
-        False -> return st
-        True ->
-            return $ st & csEditState.cedInputHistoryPosition .at cId .~ Nothing
-                        & csEditState.cedLastChannelInput     .at cId .~ Nothing
-                        & csEditState.cedInputHistory         %~ removeChannelHistory cId
+removeChannelFromState :: ChannelId -> MH ()
+removeChannelFromState cId = do
+    cName <- use (csChannel(cId).ccInfo.cdName)
+    chType <- use (csChannel(cId).ccInfo.cdType)
+    when (chType /= Direct) $ do
+            csEditState.cedInputHistoryPosition .at cId .= Nothing
+            csEditState.cedLastChannelInput     .at cId .= Nothing
+            csEditState.cedInputHistory         %= removeChannelHistory cId
                           -- Update input history
-                        & csNames.cnToChanId                  .at cName .~ Nothing
+            csNames.cnToChanId                  .at cName .= Nothing
                           -- Flush cnToChanId
-                        & csNames.cnChans                     %~ filter (/= cName)
+            csNames.cnChans                     %= filter (/= cName)
                           -- Flush cnChans
-                        & msgMap                              .at cId .~ Nothing
+            msgMap                              .at cId .= Nothing
                           -- Update msgMap
-                        & csFocus                             %~ Z.filterZipper (/= cId)
+            csFocus                             %= Z.filterZipper (/= cId)
                           -- Remove from focus zipper
 
-fetchCurrentChannelMembers :: ChatState -> EventM Name ()
-fetchCurrentChannelMembers st = do
-    liftIO $ doAsyncWith Preempt st $ do
-        let cId = st^.csCurrentChannelId
-        chanUserMap <- liftIO $ mmGetChannelMembers (st^.csSession) (st^.csMyTeam.teamIdL) cId
+fetchCurrentChannelMembers :: MH ()
+fetchCurrentChannelMembers = do
+    cId <- use csCurrentChannelId
+    session <- use csSession
+    myTeamId <- use (csMyTeam.teamIdL)
+    doAsyncWith Preempt $ do
+        chanUserMap <- liftIO $ mmGetChannelMembers session myTeamId cId
 
         -- Construct a message listing them all and post it to the
         -- channel:
@@ -375,89 +401,110 @@ hasUnread st cId = maybe False id $ do
       v = chan^.ccInfo.cdUpdated
   return (v > u)
 
-setLastViewedFor :: ChatState -> ChannelId -> EventM Name ChatState
-setLastViewedFor st cId = do
+setLastViewedFor :: ChannelId -> MH ()
+setLastViewedFor cId = do
   now <- liftIO getCurrentTime
-  if cId `HM.member` (st^.msgMap)
-    then return (st & csChannel(cId).ccInfo.cdViewed .~ now)
-    else handleChannelInvite cId st
+  msgs <- use msgMap
+  if cId `HM.member` msgs
+    then csChannel(cId).ccInfo.cdViewed .= now
+    else handleChannelInvite cId
 
-updateViewed :: ChatState -> EventM Name ChatState
-updateViewed st = liftIO (updateViewedIO st)
+updateViewed :: MH ()
+updateViewed = do
+  st <- use id
+  st' <- io (updateViewedIO st)
+  St.put st'
 
-resetHistoryPosition :: ChatState -> EventM a ChatState
-resetHistoryPosition st =
-    let cId = st^.csCurrentChannelId
-    in return $ st & csInputHistoryPosition.at cId .~ Just Nothing
+resetHistoryPosition :: MH ()
+resetHistoryPosition = do
+    cId <- use csCurrentChannelId
+    csInputHistoryPosition.at cId .= Just Nothing
 
-updateStatus :: UserId -> T.Text -> ChatState -> EventM a ChatState
-updateStatus uId t st =
-  return (st & usrMap.ix(uId).uiStatus .~ statusFromText t)
+updateStatus :: UserId -> T.Text -> MH ()
+updateStatus uId t =
+  usrMap.ix(uId).uiStatus .= statusFromText t
 
-clearEditor :: ChatState -> ChatState
-clearEditor = csCmdLine %~ applyEdit clearZipper
+clearEditor :: MH ()
+clearEditor = csCmdLine %= applyEdit clearZipper
 
-loadLastEdit :: ChatState -> ChatState
-loadLastEdit st =
-    let cId = st^.csCurrentChannelId
-    in case st^.csLastChannelInput.at cId of
-        Nothing -> st
-        Just (lastEdit, lastEditMode) ->
-            st & csCmdLine %~ (applyEdit $ insertMany (lastEdit) . clearZipper)
-               & csEditState.cedEditMode .~ lastEditMode
+loadLastEdit :: MH ()
+loadLastEdit = do
+    cId <- use csCurrentChannelId
+    lastInput <- use (csLastChannelInput.at cId)
+    case lastInput of
+        Nothing -> return ()
+        Just (lastEdit, lastEditMode) -> do
+            csCmdLine %= (applyEdit $ insertMany (lastEdit) . clearZipper)
+            csEditState.cedEditMode .= lastEditMode
 
-saveCurrentEdit :: ChatState -> ChatState
-saveCurrentEdit st =
-    let cId = st^.csCurrentChannelId
-    in st & csLastChannelInput.at cId .~
-      Just (T.intercalate "\n" $ getEditContents $ st^.csCmdLine, st^.csEditState.cedEditMode)
+saveCurrentEdit :: MH ()
+saveCurrentEdit = do
+    cId <- use csCurrentChannelId
+    cmdLine <- use csCmdLine
+    mode <- use (csEditState.cedEditMode)
+    csLastChannelInput.at cId .=
+      Just (T.intercalate "\n" $ getEditContents $ cmdLine, mode)
 
-resetCurrentEdit :: ChatState -> ChatState
-resetCurrentEdit st =
-    let cId = st^.csCurrentChannelId
-    in st & csLastChannelInput.at cId .~ Nothing
+resetCurrentEdit :: MH ()
+resetCurrentEdit = do
+    cId <- use csCurrentChannelId
+    csLastChannelInput.at cId .= Nothing
 
-updateChannelListScroll :: ChatState -> EventM Name ChatState
-updateChannelListScroll st = do
-    vScrollToBeginning (viewportScroll ChannelList)
-    return st
+updateChannelListScroll :: MH ()
+updateChannelListScroll = do
+    mh $ vScrollToBeginning (viewportScroll ChannelList)
 
-postChangeChannelCommon :: ChatState -> EventM Name ChatState
-postChangeChannelCommon st =
-    resetCurrentEdit <$>
-    loadLastEdit <$>
-    (updateChannelListScroll =<<
-     resetEditorState =<<
-     fetchCurrentScrollback =<<
-     resetHistoryPosition st)
+postChangeChannelCommon :: MH ()
+postChangeChannelCommon = do
+    resetHistoryPosition
+    fetchCurrentScrollback
+    resetEditorState
+    updateChannelListScroll
+    loadLastEdit
+    resetCurrentEdit
+    -- resetCurrentEdit <$>
+    -- loadLastEdit <$>
+    -- (updateChannelListScroll =<<
+    --  resetEditorState =<<
+    --  fetchCurrentScrollback =<<
+    --  resetHistoryPosition st)
 
-resetEditorState :: ChatState -> EventM Name ChatState
-resetEditorState st =
-    return $ clearEditor $ st & csEditState.cedEditMode .~ NewPost
+resetEditorState :: MH ()
+resetEditorState = do
+    csEditState.cedEditMode .= NewPost
+    clearEditor
 
-preChangeChannelCommon :: ChatState -> EventM Name ChatState
-preChangeChannelCommon st = do
-    let cId = st^.csCurrentChannelId
-    clearNewMessageCutoff cId $
-        saveCurrentEdit $
-        st & csRecentChannel .~ Just cId
+preChangeChannelCommon :: MH ()
+preChangeChannelCommon = do
+    cId <- use csCurrentChannelId
+    csRecentChannel .= Just cId
+    saveCurrentEdit
+    clearNewMessageCutoff cId
+--    clearNewMessageCutoff cId $
+--        saveCurrentEdit $
+--        st & csRecentChannel .~ Just cId
 
-nextChannel :: ChatState -> EventM Name ChatState
-nextChannel st =
-    setFocusWith st (getNextNonDMChannel st Z.right)
+nextChannel :: MH ()
+nextChannel = do
+    st <- use id
+    setFocusWith (getNextNonDMChannel st Z.right)
 
-prevChannel :: ChatState -> EventM Name ChatState
-prevChannel st =
-    setFocusWith st (getNextNonDMChannel st Z.left)
+prevChannel :: MH ()
+prevChannel = do
+    st <- use id
+    setFocusWith (getNextNonDMChannel st Z.left)
 
-recentChannel :: ChatState -> EventM Name ChatState
-recentChannel st = case st ^. csRecentChannel of
-  Nothing  -> return st
-  Just cId -> setFocus cId st
+recentChannel :: MH ()
+recentChannel = do
+  recent <- use csRecentChannel
+  case recent of
+    Nothing  -> return ()
+    Just cId -> setFocus cId
 
-nextUnreadChannel :: ChatState -> EventM Name ChatState
-nextUnreadChannel st =
-    setFocusWith st (getNextUnreadChannel st)
+nextUnreadChannel :: MH ()
+nextUnreadChannel = do
+    st <- use id
+    setFocusWith (getNextUnreadChannel st)
 
 getNextNonDMChannel :: ChatState
                     -> (Zipper ChannelId -> Zipper ChannelId)
@@ -474,49 +521,50 @@ getNextUnreadChannel :: ChatState
                      -> (Zipper ChannelId -> Zipper ChannelId)
 getNextUnreadChannel st = Z.findRight (hasUnread st)
 
-listThemes :: ChatState -> EventM Name ChatState
-listThemes cs = do
+listThemes :: MH ()
+listThemes = do
     let mkThemeList _ = T.intercalate "\n\n" $
                         "Available built-in themes:" :
                         (("  " <>) <$> fst <$> themes)
-    postInfoMessage (mkThemeList themes) cs
+    postInfoMessage (mkThemeList themes)
 
-setTheme :: ChatState -> T.Text -> EventM Name ChatState
-setTheme cs name =
+setTheme :: T.Text -> MH ()
+setTheme name =
     case lookup name themes of
-        Nothing -> listThemes cs
-        Just t -> return $ cs & csResources.crTheme .~ t
+        Nothing -> listThemes
+        Just t -> csResources.crTheme .= t
 
-channelPageUp :: ChatState -> EventM Name ChatState
-channelPageUp st = do
-  let cId = st^.csCurrentChannelId
-  vScrollBy (viewportScroll (ChannelMessages cId)) (-1 * pageAmount)
-  return st
+channelPageUp :: MH ()
+channelPageUp = do
+  cId <- use csCurrentChannelId
+  mh $ vScrollBy (viewportScroll (ChannelMessages cId)) (-1 * pageAmount)
 
-channelPageDown :: ChatState -> EventM Name ChatState
-channelPageDown st = do
-  let cId = st^.csCurrentChannelId
-  vScrollBy (viewportScroll (ChannelMessages cId)) pageAmount
-  return st
+channelPageDown :: MH ()
+channelPageDown = do
+  cId <- use csCurrentChannelId
+  mh $ vScrollBy (viewportScroll (ChannelMessages cId)) pageAmount
 
 asyncFetchMoreMessages :: ChatState -> ChannelId -> IO ()
 asyncFetchMoreMessages st cId =
-    doAsyncWith Preempt st $ do
+    doAsyncWithIO Preempt st $ do
         let offset = length $ st^.csChannel(cId).ccContents.cdMessages
             numToFetch = 10
         posts <- mmGetPosts (st^.csSession) (st^.csMyTeam.teamIdL) cId (offset - 1) numToFetch
-        return $ \st' -> do
-            (cc, st'') <- liftIO $ fromPosts st' posts
-            invalidateCacheEntry (ChannelMessages $ st^.csCurrentChannelId)
-            return $ st'' & csChannel(cId).ccContents.cdMessages %~ (cc^.cdMessages Seq.><)
+        return $ do
+            cc <- fromPosts posts
+            ccId <- use csCurrentChannelId
+            mh $ invalidateCacheEntry (ChannelMessages ccId)
+            csChannel(ccId).ccContents.cdMessages %= (cc^.cdMessages Seq.><)
 
-loadMoreMessages :: ChatState -> EventM Name ChatState
-loadMoreMessages st = do
-    case st^.csMode of
+loadMoreMessages :: MH ()
+loadMoreMessages = do
+    mode <- use csMode
+    cId  <- use csCurrentChannelId
+    st   <- use id
+    case mode of
         ChannelScroll -> do
-            liftIO $ asyncFetchMoreMessages st (st^.csCurrentChannelId)
+            liftIO $ asyncFetchMoreMessages st cId
         _ -> return ()
-    return st
 
 channelByName :: ChatState -> T.Text -> Maybe ChannelId
 channelByName st n
@@ -526,49 +574,53 @@ channelByName st n
 
 -- | This switches to the named channel or creates it if it is a missing
 -- but valid user channel.
-changeChannel :: T.Text -> ChatState -> EventM Name ChatState
-changeChannel name st =
+changeChannel :: T.Text -> MH ()
+changeChannel name = do
+    st <- use id
     case channelByName st name of
-      Just cId -> setFocus cId st
-      Nothing -> attemptCreateDMChannel name st
+      Just cId -> setFocus cId
+      Nothing -> attemptCreateDMChannel name
 
-setFocus :: ChannelId -> ChatState -> EventM Name ChatState
-setFocus cId st = setFocusWith st (Z.findRight (== cId))
+setFocus :: ChannelId -> MH ()
+setFocus cId = setFocusWith (Z.findRight (== cId))
 
-setFocusWith :: ChatState -> (Zipper ChannelId -> Zipper ChannelId) -> EventM Name ChatState
-setFocusWith st f = do
+setFocusWith :: (Zipper ChannelId -> Zipper ChannelId) -> MH ()
+setFocusWith f = do
+    oldZipper <- use csFocus
     let newZipper = f oldZipper
-        oldZipper = st^.csFocus
         newFocus = Z.focus newZipper
         oldFocus = Z.focus oldZipper
 
     -- If we aren't changing anything, skip all the book-keeping because
     -- we'll end up clobbering things like csRecentChannel.
-    if (newFocus == oldFocus) then
-        return st else do
-          preChangeChannelCommon st >>=
-              (\st' -> updateViewed (st' & csFocus .~ newZipper)) >>=
-              postChangeChannelCommon
+    when (newFocus /= oldFocus) $ do
+        preChangeChannelCommon
+        csFocus .= newZipper
+        updateViewed
+        postChangeChannelCommon
 
-attemptCreateDMChannel :: T.Text -> ChatState -> EventM Name ChatState
-attemptCreateDMChannel name st
-  | name `elem` (st^.csNames.cnUsers) &&
-    not (name `HM.member` (st^.csNames.cnToChanId)) = do
+attemptCreateDMChannel :: T.Text -> MH ()
+attemptCreateDMChannel name = do
+  users <- use (csNames.cnUsers)
+  nameToChanId <- use (csNames.cnToChanId)
+  if name `elem` users && not (name `HM.member` nameToChanId)
+    then do
       -- We have a user of that name but no channel. Time to make one!
-      let tId = st^.csMyTeam.teamIdL
-          Just uId = st^.csNames.cnToUserId.at(name)
-      liftIO $ doAsyncWith Normal st $ do
+      tId <- use (csMyTeam.teamIdL)
+      Just uId <- use (csNames.cnToUserId.at(name))
+      session <- use csSession
+      doAsyncWith Normal $ do
         -- create a new channel
-        nc <- mmCreateDirect (st^.csSession) tId uId
+        nc <- mmCreateDirect session tId uId
         return $ handleNewChannel name True nc
-      return st
-  | otherwise = do
-    postErrorMessage ("No channel or user named " <> name) st
+    else
+      postErrorMessage ("No channel or user named " <> name)
 
-createOrdinaryChannel :: T.Text -> ChatState -> EventM Name ChatState
-createOrdinaryChannel name st = do
-  let tId = st^.csMyTeam.teamIdL
-  liftIO $ doAsyncWith Preempt st $ do
+createOrdinaryChannel :: T.Text -> MH ()
+createOrdinaryChannel name  = do
+  tId <- use (csMyTeam.teamIdL)
+  session <- use csSession
+  doAsyncWith Preempt $ do
     -- create a new chat channel
     let slug = T.map (\ c -> if isAlphaNum c then c else '-') (T.toLower name)
         minChannel = MinChannel
@@ -578,12 +630,11 @@ createOrdinaryChannel name st = do
           , minChannelHeader      = Nothing
           , minChannelType        = Ordinary
           }
-    tryMM (mmCreateChannel (st^.csSession) tId minChannel)
+    tryMM (mmCreateChannel session tId minChannel)
           (return . handleNewChannel name True)
-  return st
 
-handleNewChannel :: T.Text -> Bool -> Channel -> ChatState -> EventM Name ChatState
-handleNewChannel name switch nc st = do
+handleNewChannel :: T.Text -> Bool -> Channel -> MH ()
+handleNewChannel name switch nc = do
   -- time to do a lot of state updating:
   -- create a new ClientChannel structure
   now <- liftIO getCurrentTime
@@ -599,55 +650,60 @@ handleNewChannel name switch nc st = do
                           , _cdNewMessageCutoff = Nothing
                           }
         }
-      -- add it to the message map, and to the map so we can look
-      -- it up by user name
-      st' = st & csNames.cnToChanId.at(name) .~ Just (getId nc)
-               & (if nc^.channelTypeL == Direct
-                  then id -- For direct channels the username is already
-                          -- in the user list so do nothing
-                  else csNames.cnChans %~ (sort . (name:)))
-               & msgMap.at(getId nc) .~ Just cChannel
-      -- we should figure out how to do this better: this adds it to
-      -- the channel zipper in such a way that we don't ever change
-      -- our focus to something else, which is kind of silly
-      newZip = Z.updateList (mkChannelZipperList (st'^.csNames))
-      st'' = st' & csFocus %~ newZip
-          -- and we finally set our focus to the newly created channel
-  if switch then setFocus (getId nc) st'' else return st''
+  -- add it to the message map, and to the map so we can look it up by
+  -- user name
+  csNames.cnToChanId.at(name) .= Just (getId nc)
+  let chType = nc^.channelTypeL
+  -- For direct channels the username is already in the user list so
+  -- do nothing
+  when (chType /= Direct) $
+      csNames.cnChans %= (sort . (name:))
+  msgMap.at(getId nc) .= Just cChannel
+  -- we should figure out how to do this better: this adds it to the
+  -- channel zipper in such a way that we don't ever change our focus
+  -- to something else, which is kind of silly
+  names <- use csNames
+  let newZip = Z.updateList (mkChannelZipperList names)
+  csFocus %= newZip
+    -- and we finally set our focus to the newly created channel
+  when switch $ setFocus (getId nc)
 
-editMessage :: Post -> ChatState -> EventM Name ChatState
-editMessage new st = do
+editMessage :: Post -> MH ()
+editMessage new = do
   now <- liftIO getCurrentTime
+  st <- use id
   let chan = csChannel (postChannelId new)
       isEditedMessage m = m^.mPostId == Just (new^.postIdL)
       msg = clientPostToMessage st (toClientPost new (new^.postParentIdL))
-      rs = st & chan . ccContents . cdMessages . each . filtered isEditedMessage .~ msg
-              & chan . ccInfo . cdUpdated .~ now
-              & csPostMap.ix(postId new) .~ msg
-  if postChannelId new == rs^.csCurrentChannelId
-    then updateViewed rs
-    else return rs
+  chan . ccContents . cdMessages . each . filtered isEditedMessage .= msg
+  chan . ccInfo . cdUpdated .= now
+  csPostMap.ix(postId new) .= msg
+  cId <- use csCurrentChannelId
+  when (postChannelId new == cId) $
+    updateViewed
 
-deleteMessage :: Post -> ChatState -> EventM Name ChatState
-deleteMessage new st = do
+deleteMessage :: Post -> MH ()
+deleteMessage new = do
   now <- liftIO getCurrentTime
   let isDeletedMessage m = m^.mPostId == Just (new^.postIdL)
       chan = csChannel (postChannelId new)
-      rs = st & chan . ccContents . cdMessages . each . filtered isDeletedMessage %~ (& mDeleted .~ True)
-              & chan . ccInfo . cdUpdated .~ now
-  if postChannelId new == rs^.csCurrentChannelId
-    then updateViewed rs
-    else return rs
+  chan.ccContents.cdMessages.each.filtered isDeletedMessage %= (& mDeleted .~ True)
+  chan.ccInfo.cdUpdated .= now
+  cId <- use csCurrentChannelId
+  when (postChannelId new == cId) $
+    updateViewed
 
-maybeRingBell :: ChatState -> EventM Name ()
-maybeRingBell st = do
-    when (configActivityBell $ st^.csResources.crConfiguration) $ do
+maybeRingBell :: MH ()
+maybeRingBell = do
+    doBell <- use (csResources.crConfiguration.to configActivityBell)
+    when doBell $ do
         -- This is safe because we only get Nothing in appStartEvent.
-        Just vty <- getVtyHandle
+        Just vty <- mh getVtyHandle
         liftIO $ ringTerminalBell $ outputIface vty
 
-addMessage :: Post -> ChatState -> EventM Name ChatState
-addMessage new st = do
+addMessage :: Post -> MH ()
+addMessage new = do
+  st <- use id
   liftIO $ asyncFetchAttachments new st
   case st^.msgMap.at (postChannelId new) of
       Nothing ->
@@ -660,7 +716,7 @@ addMessage new st = do
           -- message here, but this is the only case of messages that we
           -- /expect/ to drop for this reason. Hence the check for the
           -- msgMap channel ID key presence above.
-          return st
+          return ()
       Just _ -> do
           now <- liftIO getCurrentTime
           let cp = toClientPost new (new^.postParentIdL)
@@ -670,16 +726,18 @@ addMessage new st = do
               msg = clientPostToMessage st cp
               cId = postChannelId new
 
-              doAddMessage s = do
+              doAddMessage = do
                 let chan = msgMap . ix cId
-                    s' = s & csPostMap.ix(postId new) .~ msg
-                    msg' = clientPostToMessage s (toClientPost new (new^.postParentIdL))
-                    rs = s' & chan . ccContents . cdMessages %~ (Seq.|> msg')
-                            & chan . ccInfo . cdUpdated %~ updateTime
-                when (not fromMe) $ maybeRingBell s'
-                if postChannelId new == rs^.csCurrentChannelId
-                  then updateViewed rs
-                  else setNewMessageCutoff rs cId msg
+                csPostMap.ix(postId new) .= msg
+                s <- use id
+                let msg' = clientPostToMessage s (toClientPost new (new^.postParentIdL))
+                chan.ccContents.cdMessages %= (Seq.|> msg')
+                chan.ccInfo.cdUpdated %= updateTime
+                when (not fromMe) $ maybeRingBell
+                ccId <- use csCurrentChannelId
+                if postChannelId new == ccId
+                  then updateViewed
+                  else setNewMessageCutoff ccId msg
 
           -- If the message is in reply to another message, try to find it in
           -- the scrollback for the post's channel. If the message isn't there,
@@ -687,7 +745,7 @@ addMessage new st = do
           -- channel until we have fetched the parent.
           case msg^.mInReplyToMsg of
               ParentNotLoaded parentId -> do
-                  liftIO $ doAsyncWith Normal st $ do
+                  doAsyncWith Normal $ do
                       let theTeamId = st^.csMyTeam.teamIdL
                       p <- mmGetPost (st^.csSession) theTeamId cId parentId
                       let postMap = HM.fromList [ ( pId
@@ -695,50 +753,55 @@ addMessage new st = do
                                                   )
                                                 | (pId, x) <- HM.toList (p^.postsPostsL)
                                                 ]
-                      return $ \st'' -> doAddMessage $ st'' & csPostMap %~ (HM.union postMap)
-                  return st
-              _ -> doAddMessage st
+                      return $ do
+                        csPostMap %= HM.union postMap
+                        doAddMessage
+              _ -> doAddMessage
 
-setNewMessageCutoff :: ChatState -> ChannelId -> Message -> EventM Name ChatState
-setNewMessageCutoff st cId msg =
-    return $ st & csChannel(cId).ccInfo.cdNewMessageCutoff %~ (<|> Just (msg^.mDate))
+setNewMessageCutoff :: ChannelId -> Message -> MH ()
+setNewMessageCutoff cId msg =
+    csChannel(cId).ccInfo.cdNewMessageCutoff %= (<|> Just (msg^.mDate))
 
-clearNewMessageCutoff :: ChannelId -> ChatState -> EventM Name ChatState
-clearNewMessageCutoff cId st = do
-    return $ st & csChannel(cId).ccInfo.cdNewMessageCutoff .~ Nothing
+clearNewMessageCutoff :: ChannelId -> MH ()
+clearNewMessageCutoff cId =
+    csChannel(cId).ccInfo.cdNewMessageCutoff .= Nothing
 
 getNewMessageCutoff :: ChannelId -> ChatState -> Maybe UTCTime
 getNewMessageCutoff cId st = do
     cc <- st^.msgMap.at cId
     cc^.ccInfo.cdNewMessageCutoff
 
-execMMCommand :: T.Text -> T.Text -> ChatState -> EventM Name ChatState
-execMMCommand name rest st =
-  liftIO (runCmd `catch` handler)
-  where
-  mc = MinCommand
-        { minComChannelId = st^.csCurrentChannelId
-        , minComCommand   = "/" <> name <> " " <> rest
-        }
-  runCmd = do
-    void $ mmExecute
-      (st^.csSession)
-      (st^.csMyTeam.teamIdL)
-      mc
-    return st
-  handler (HTTPResponseException err) = do
-    postErrorMessage ("Error running command: " <> (T.pack err)) st
+execMMCommand :: T.Text -> T.Text -> MH ()
+execMMCommand name rest = do
+  cId      <- use csCurrentChannelId
+  session  <- use csSession
+  myTeamId <- use (csMyTeam.teamIdL)
+  let mc = MinCommand
+             { minComChannelId = cId
+             , minComCommand   = "/" <> name <> " " <> rest
+             }
+      runCmd = liftIO $ do
+        void $ mmExecute session myTeamId mc
+      handler (HTTPResponseException err) = return (Just err)
+  errMsg <- liftIO $ (runCmd >> return Nothing) `catch` handler
+  case errMsg of
+    Nothing -> return ()
+    Just err ->
+      postErrorMessage ("Error running command: " <> (T.pack err))
 
-fetchCurrentScrollback :: ChatState -> EventM a ChatState
-fetchCurrentScrollback st = do
-  let cId = st^.csCurrentChannelId
-  didQueue <- case maybe False (== ChanUnloaded) (st^?msgMap.ix(cId).ccInfo.cdCurrentState) of
+fetchCurrentScrollback :: MH ()
+fetchCurrentScrollback = do
+  cId <- use csCurrentChannelId
+  -- XXX ???
+  currentState <- preuse (msgMap.ix(cId).ccInfo.cdCurrentState)
+  didQueue <- case maybe False (== ChanUnloaded) currentState of
       True -> do
+          st <- use id
           liftIO $ asyncFetchScrollback Preempt st cId
           return True
       False -> return False
-  return $ st & csChannel(cId).ccInfo.cdCurrentState %~
-                (if didQueue then const ChanLoadPending else id)
+  csChannel(cId).ccInfo.cdCurrentState %=
+    if didQueue then const ChanLoadPending else id
 
 mkChannelZipperList :: MMNames -> [ChannelId]
 mkChannelZipperList chanNames =
@@ -752,74 +815,86 @@ setChannelTopic :: ChatState -> T.Text -> IO ()
 setChannelTopic st msg = do
     let chanId = st^.csCurrentChannelId
         theTeamId = st^.csMyTeam.teamIdL
-    doAsyncWith Normal st $ do
+    doAsyncWithIO Normal st $ do
         void $ mmSetChannelHeader (st^.csSession) theTeamId chanId msg
-        return $ \st' -> do
-            return $ st' & msgMap.at chanId.each.ccInfo.cdHeader .~ msg
+        return $ msgMap.at chanId.each.ccInfo.cdHeader .= msg
 
-channelHistoryForward :: ChatState -> ChatState
-channelHistoryForward st =
-  let cId = st^.csCurrentChannelId
-  in case st^.csInputHistoryPosition.at cId of
+channelHistoryForward :: MH ()
+channelHistoryForward = do
+  cId <- use csCurrentChannelId
+  inputHistoryPos <- use (csInputHistoryPosition.at cId)
+  inputHistory <- use csInputHistory
+  case inputHistoryPos of
       Just (Just i)
-        | i == 0 ->
+        | i == 0 -> do
           -- Transition out of history navigation
-          loadLastEdit $ st & csInputHistoryPosition.at cId .~ Just Nothing
-        | otherwise ->
-          let Just entry = getHistoryEntry cId newI (st^.csInputHistory)
+          csInputHistoryPosition.at cId .= Just Nothing
+          loadLastEdit
+        | otherwise -> do
+          let Just entry = getHistoryEntry cId newI inputHistory
               newI = i - 1
               eLines = T.lines entry
               mv = if length eLines == 1 then gotoEOL else id
-          in st & csCmdLine.editContentsL .~ (mv $ textZipper eLines Nothing)
-                & csInputHistoryPosition.at cId .~ (Just $ Just newI)
-      _ -> st
+          csCmdLine.editContentsL .= (mv $ textZipper eLines Nothing)
+          csInputHistoryPosition.at cId .= (Just $ Just newI)
+      _ -> return ()
 
-channelHistoryBackward :: ChatState -> ChatState
-channelHistoryBackward st =
-  let cId = st^.csCurrentChannelId
-  in case st^.csInputHistoryPosition.at cId of
+channelHistoryBackward :: MH ()
+channelHistoryBackward = do
+  cId <- use csCurrentChannelId
+  inputHistoryPos <- use (csInputHistoryPosition.at cId)
+  inputHistory <- use csInputHistory
+  case inputHistoryPos of
       Just (Just i) ->
           let newI = i + 1
-          in case getHistoryEntry cId newI (st^.csInputHistory) of
-              Nothing -> st
-              Just entry ->
+          in case getHistoryEntry cId newI inputHistory of
+              Nothing -> return ()
+              Just entry -> do
                   let eLines = T.lines entry
                       mv = if length eLines == 1 then gotoEOL else id
-                  in st & csCmdLine.editContentsL .~ (mv $ textZipper eLines Nothing)
-                        & csInputHistoryPosition.at cId .~ (Just $ Just newI)
+                  csCmdLine.editContentsL .= (mv $ textZipper eLines Nothing)
+                  csInputHistoryPosition.at cId .= (Just $ Just newI)
       _ ->
           let newI = 0
-          in case getHistoryEntry cId newI (st^.csInputHistory) of
-              Nothing -> st
+          in case getHistoryEntry cId newI inputHistory of
+              Nothing -> return ()
               Just entry ->
                   let eLines = T.lines entry
                       mv = if length eLines == 1 then gotoEOL else id
-                  in (saveCurrentEdit st)
-                         & csCmdLine.editContentsL .~ (mv $ textZipper eLines Nothing)
-                         & csInputHistoryPosition.at cId .~ (Just $ Just newI)
+                  in do
+                    csCmdLine.editContentsL .= (mv $ textZipper eLines Nothing)
+                    csInputHistoryPosition.at cId .= (Just $ Just newI)
+                    saveCurrentEdit
 
-showHelpScreen :: HelpScreen -> ChatState -> EventM Name ChatState
-showHelpScreen screen st = do
-    vScrollToBeginning (viewportScroll HelpViewport)
-    return $ st & csMode .~ ShowHelp screen
+showHelpScreen :: HelpScreen -> MH ()
+showHelpScreen screen = do
+    mh $ vScrollToBeginning (viewportScroll HelpViewport)
+    csMode .= ShowHelp screen
 
-beginChannelSelect :: ChatState -> ChatState
-beginChannelSelect st =
-    st & csMode                        .~ ChannelSelect
-       & csChannelSelectString         .~ ""
-       & csChannelSelectChannelMatches .~ mempty
-       & csChannelSelectUserMatches    .~ mempty
+beginChannelSelect :: MH ()
+beginChannelSelect = do
+    csMode                        .= ChannelSelect
+    csChannelSelectString         .= ""
+    csChannelSelectChannelMatches .= mempty
+    csChannelSelectUserMatches    .= mempty
 
-updateChannelSelectMatches :: ChatState -> ChatState
-updateChannelSelectMatches st =
+updateChannelSelectMatches :: MH ()
+updateChannelSelectMatches = do
     -- Given the current channel select string, find all the channel and
     -- user matches and then update the match lists.
-    let chanNameMatches = channelNameMatch (st^.csChannelSelectString)
-        chanMatches = catMaybes $ chanNameMatches <$> st^.csNames.cnChans
-        userMatches = catMaybes $ chanNameMatches <$> (^.uiName) <$> sortedUserList st
-        mkMap ms = HM.fromList [(channelNameFromMatch m, m) | m <- ms]
-    in st & csChannelSelectChannelMatches .~ mkMap chanMatches
-          & csChannelSelectUserMatches    .~ mkMap userMatches
+    chanNameMatches <- use (csChannelSelectString.to channelNameMatch)
+    chanNames   <- use (csNames.cnChans)
+    userNames   <- use (to sortedUserList)
+    let chanMatches = catMaybes (fmap chanNameMatches chanNames)
+    let userMatches = catMaybes (fmap chanNameMatches (fmap _uiName userNames))
+--    chanMatches <- (catMaybes . fmap chanNameMatches) <$> use (csNames._)
+--    userMatches <- (catMaybes . fmap chanNameMatches) <$> use (to sortedUserList.each (to (^.uiName)))
+--    let chanNameMatches = channelNameMatch (st^.csChannelSelectString)
+--        chanMatches = catMaybes $ chanNameMatches <$> st^.csNames.cnChans
+--        userMatches = catMaybes $ chanNameMatches <$> (^.uiName) <$> sortedUserList st
+    let mkMap ms = HM.fromList [(channelNameFromMatch m, m) | m <- ms]
+    csChannelSelectChannelMatches .= mkMap chanMatches
+    csChannelSelectUserMatches    .= mkMap userMatches
 
 channelNameMatch :: T.Text -> T.Text -> Maybe ChannelSelectMatch
 channelNameMatch patStr chanName =
@@ -868,14 +943,14 @@ parseChannelSelectPattern pat = do
         (Just Prefix, Just Suffix) -> return $ CSP Equal  pat2
         tys                        -> error $ "BUG: invalid channel select case: " <> show tys
 
-startUrlSelect :: ChatState -> ChatState
-startUrlSelect st =
-    let urls = V.fromList $ findUrls (st^.csCurrentChannel)
-    in st & csMode .~ UrlSelect
-          & csUrlList .~ (listMoveTo (length urls - 1) $ list UrlList urls 2)
+startUrlSelect :: MH ()
+startUrlSelect = do
+    urls <- use (csCurrentChannel.to findUrls.to V.fromList)
+    csMode    .= UrlSelect
+    csUrlList .= (listMoveTo (length urls - 1) $ list UrlList urls 2)
 
-stopUrlSelect :: ChatState -> ChatState
-stopUrlSelect = csMode .~ Main
+stopUrlSelect :: MH ()
+stopUrlSelect = csMode .= Main
 
 findUrls :: ClientChannel -> [LinkChoice]
 findUrls chan =
@@ -905,30 +980,34 @@ msgURLs msg | Just uname <- msg^.mUserName =
   in msgUrls <> attachmentURLs
 msgURLs _ = mempty
 
-openSelectedURL :: ChatState -> EventM Name ChatState
-openSelectedURL st | st^.csMode == UrlSelect =
-    case listSelectedElement $ st^.csUrlList of
-        Nothing -> return st
+openSelectedURL :: MH ()
+openSelectedURL = do
+  mode <- use csMode
+  when (mode == UrlSelect) $ do
+    selected <- use (csUrlList.to listSelectedElement)
+    case selected of
+        Nothing -> return ()
         Just (_, link) -> do
-            opened <- openURL st link
-            case opened of
-                True -> return st
-                False -> do
-                    let msg = "Config option 'urlOpenCommand' missing; cannot open URL."
-                    postInfoMessage msg (st & csMode .~ Main)
-openSelectedURL st = return st
+            opened <- openURL link
+            when (not opened) $ do
+                let msg = "Config option 'urlOpenCommand' missing; cannot open URL."
+                postInfoMessage msg
+                csMode .= Main
 
-openURL :: ChatState -> LinkChoice -> EventM Name Bool
-openURL st link = do
-    case configURLOpenCommand $ st^.csResources.crConfiguration of
+openURL :: LinkChoice -> MH Bool
+openURL link = do
+    cmd <- use (csResources.crConfiguration.to configURLOpenCommand)
+    case cmd of
         Nothing ->
             return False
         Just urlOpenCommand -> do
-            runLoggedCommand st (T.unpack urlOpenCommand) [T.unpack $ link^.linkURL]
+            runLoggedCommand (T.unpack urlOpenCommand) [T.unpack $ link^.linkURL]
             return True
 
-runLoggedCommand :: ChatState -> String -> [String] -> EventM Name ()
-runLoggedCommand st cmd args = liftIO $ do
+runLoggedCommand :: String -> [String] -> MH ()
+runLoggedCommand cmd args = do
+  st <- use id
+  liftIO $ do
     let opener = (proc cmd args) { std_in = NoStream
                                  , std_out = CreatePipe
                                  , std_err = CreatePipe
@@ -940,43 +1019,40 @@ runLoggedCommand st cmd args = liftIO $ do
     let po = ProgramOutput cmd args outResult errResult ec
     STM.atomically $ STM.writeTChan (st^.csResources.crSubprocessLog) po
 
-openSelectedMessageURLs :: ChatState -> EventM Name ChatState
-openSelectedMessageURLs st
-    | st^.csMode /= MessageSelect = return st
-    | otherwise = do
-        let Just curMsg = getSelectedMessage st
-            urls = msgURLs curMsg
-
-        case null urls of
-            True -> return st
-            False -> do
-                openedAll <- and <$> mapM (openURL st) urls
-
-                let finalSt = st & csMode .~ Main
-                case openedAll of
-                    True -> return finalSt
-                    False -> do
-                        let msg = "Config option 'urlOpenCommand' missing; cannot open URL."
-                        postInfoMessage msg finalSt
+openSelectedMessageURLs :: MH ()
+openSelectedMessageURLs = do
+    mode <- use csMode
+    when (mode /= MessageSelect) $ do
+        Just curMsg <- use (to getSelectedMessage)
+        let urls = msgURLs curMsg
+        when (not (null urls)) $ do
+            openedAll <- and <$> mapM openURL urls
+            case openedAll of
+                True -> csMode .= Main
+                False -> do
+                    let msg = "Config option 'urlOpenCommand' missing; cannot open URL."
+                    postInfoMessage msg
 
 shouldSkipMessage :: T.Text -> Bool
 shouldSkipMessage "" = True
 shouldSkipMessage s = T.all (`elem` (" \t"::String)) s
 
-sendMessage :: ChatState -> EditMode -> T.Text -> IO ChatState
-sendMessage st mode msg =
+sendMessage :: EditMode -> T.Text -> MH ()
+sendMessage mode msg =
     case shouldSkipMessage msg of
-        True -> return st
+        True -> return ()
         False -> do
-            case st^.csConnectionStatus of
+            status <- use csConnectionStatus
+            st <- use id
+            case status of
                 Disconnected -> do
                     let m = "Cannot send messages while disconnected."
-                    postErrorMessage m st
+                    postErrorMessage m
                 Connected -> do
                     let myId   = st^.csMe.userIdL
                         chanId = st^.csCurrentChannelId
                         theTeamId = st^.csMyTeam.teamIdL
-                    doAsync Preempt st $ do
+                    doAsync Preempt $ do
                       case mode of
                         NewPost -> do
                             pendingPost <- mkPendingPost msg myId chanId
@@ -995,21 +1071,19 @@ sendMessage st mode msg =
                                                  , postUpdateAt = now
                                                  }
                             void $ mmUpdatePost (st^.csSession) theTeamId modifiedPost
-                    return st
 
-handleNewUser :: UserId -> ChatState -> EventM Name ChatState
-handleNewUser newUserId st = do
+handleNewUser :: UserId -> MH ()
+handleNewUser newUserId = do
     -- Fetch the new user record.
-    liftIO $ doAsyncWith Normal st $ do
+    st <- use id
+    doAsyncWith Normal $ do
         newUser <- mmGetUser (st^.csSession) newUserId
         -- Also re-load the team members so we can tell whether the new
         -- user is in the current user's team.
         teamUsers <- mmGetProfiles (st^.csSession) (st^.csMyTeam.teamIdL)
         let uInfo = userInfoFromUser newUser (HM.member newUserId teamUsers)
 
-        return $ \st' ->
+        return $ do
             -- Update the name map and the list of known users
-            return $ st' & usrMap . ix newUserId .~ uInfo
-                         & csNames . cnUsers %~ (sort . ((newUser^.userUsernameL):))
-
-    return st
+            usrMap . ix newUserId .= uInfo
+            csNames . cnUsers %= (sort . ((newUser^.userUsernameL):))

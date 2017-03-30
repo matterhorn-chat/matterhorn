@@ -3,6 +3,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Types where
 
@@ -10,6 +11,7 @@ import           Prelude ()
 import           Prelude.Compat
 
 import           Brick (EventM, txt, Next)
+import qualified Brick
 import           Brick.BChan
 import           Brick.AttrMap (AttrMap)
 import           Brick.Widgets.Edit (Editor, editor)
@@ -17,6 +19,7 @@ import           Brick.Widgets.List (List)
 import qualified Control.Concurrent.STM as STM
 import           Control.Concurrent.MVar (MVar)
 import           Control.Exception (SomeException)
+import qualified Control.Monad.State as St
 import           Data.HashMap.Strict (HashMap)
 import           Data.Time.Clock (UTCTime)
 import           Data.Time.LocalTime (TimeZone)
@@ -26,7 +29,7 @@ import           Data.Maybe
 import qualified Data.Sequence as Seq
 import           Data.Monoid
 import qualified Graphics.Vty as Vty
-import           Lens.Micro.Platform (at, makeLenses, lens, (&), (^.), (^?), (%~), ix, to, SimpleGetter)
+import           Lens.Micro.Platform (at, makeLenses, lens, (&), (^.), (^?), (%~), (.~), ix, to, SimpleGetter)
 import           Network.Mattermost
 import           Network.Mattermost.Exceptions
 import           Network.Mattermost.Lenses
@@ -367,7 +370,7 @@ emptyEditState hist = ChatEditState
 
 -- | A 'RequestChan' is a queue of operations we have to perform
 --   in the background to avoid blocking on the main loop
-type RequestChan = STM.TChan (IO (ChatState -> EventM Name ChatState))
+type RequestChan = STM.TChan (IO (MH ()))
 
 -- | The 'HelpScreen' type represents the set of possible 'Help'
 --   dialogues we have to choose from.
@@ -420,15 +423,82 @@ data ChatState = ChatState
   }
 
 data MessageSelectState =
-    MessageSelectState { selectMessagePostId :: Maybe PostId
-                       }
+    MessageSelectState { selectMessagePostId :: Maybe PostId }
+
+-- * MH Monad
+
+-- | A value of type 'MH' @a@ represents a computation that can
+-- manipulate the application state and also request that the
+-- application quit
+newtype MH a =
+  MH { fromMH :: St.StateT (ChatState, ChatState -> EventM Name (Next ChatState))
+                           (EventM Name) a }
+
+-- | Run an 'MM' computation, choosing whether to continue or halt
+--   based on the resulting
+runMHEvent :: ChatState -> MH () -> EventM Name (Next ChatState)
+runMHEvent st (MH mote) = do
+  ((), (st', rs)) <- St.runStateT mote (st, Brick.continue)
+  rs st'
+
+-- | Run an 'MM computation, ignoring any requests to quit
+runMH :: ChatState -> MH () -> EventM Name ChatState
+runMH st (MH mote) = do
+  ((), (st', _)) <- St.runStateT mote (st, Brick.continue)
+  return st'
+
+-- | lift a computatoin in 'EventM' into 'MH'
+mh :: EventM Name a -> MH a
+mh = MH . St.lift
+
+-- | Lift a computation in'IO' into 'MH'
+io :: IO a -> MH a
+io = mh . St.liftIO
+
+mhHandleEventLensed :: Lens' ChatState b -> (e -> b -> EventM Name b) -> e -> MH ()
+mhHandleEventLensed ln f event = MH $ do
+  (st, b) <- St.get
+  n <- St.lift $ f event (st ^. ln)
+  St.put (st & ln .~ n , b)
+
+mhSuspendAndResume :: (ChatState -> IO ChatState) -> MH ()
+mhSuspendAndResume mote = MH $ do
+  (st, _) <- St.get
+  St.put (st, \ _ -> Brick.suspendAndResume (mote st))
+
+-- | This will request that after this computation finishes the application should exit
+requestQuit :: MH ()
+requestQuit = MH $ do
+  (st, _) <- St.get
+  St.put (st, Brick.halt)
+
+instance Functor MH where
+  fmap f (MH x) = MH (fmap f x)
+
+instance Applicative MH where
+  pure x = MH (pure x)
+  MH f <*> MH x = MH (f <*> x)
+
+instance Monad MH where
+  return x = MH (return x)
+  MH x >>= f = MH (x >>= \ x' -> fromMH (f x'))
+
+-- do we actually need this instance?
+instance St.MonadState ChatState MH where
+  get = fst `fmap` MH St.get
+  put st = MH $ do
+    (_, c) <- St.get
+    St.put (st, c)
+
+instance St.MonadIO MH where
+  liftIO = MH . St.liftIO
 
 -- | This represents any event that we might care about in the
 --   main application loop
 data MHEvent
   = WSEvent WebsocketEvent
     -- ^ For events that arise from the websocket
-  | RespEvent (ChatState -> EventM Name ChatState)
+  | RespEvent (MH ())
     -- ^ For the result values of async IO operations
   | AsyncErrEvent SomeException
     -- ^ For errors that arise in the course of async IO operations
@@ -531,7 +601,7 @@ data CmdArgs :: * -> * where
 
 -- | A 'CmdExec' value represents the implementation of a command
 --   when provided with its arguments
-type CmdExec a = a -> ChatState -> EventM Name (Next ChatState)
+type CmdExec a = a -> MH ()
 
 -- | A 'Cmd' packages up a 'CmdArgs' specifier and the 'CmdExec'
 --   implementation with a name and a description.
@@ -553,7 +623,7 @@ commandName (Cmd name _ _ _ ) = name
 data Keybinding =
     KB { kbDescription :: T.Text
        , kbEvent :: Vty.Event
-       , kbAction :: ChatState -> EventM Name (Next ChatState)
+       , kbAction :: MH ()
        }
 
 -- | Find a keybinding that matches a Vty Event

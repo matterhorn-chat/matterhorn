@@ -31,104 +31,104 @@ import           Events.UrlSelect
 import           Events.MessageSelect
 
 onEvent :: ChatState -> BrickEvent Name MHEvent -> EventM Name (Next ChatState)
-onEvent st (AppEvent e) = onAppEvent st e
-onEvent st (VtyEvent (Vty.EvKey (Vty.KChar 'l') [Vty.MCtrl])) = do
-    Just vty <- getVtyHandle
-    liftIO $ Vty.refresh vty
-    continue st
-onEvent st (VtyEvent e) = onVtyEvent st e
-onEvent st _ = continue st
+onEvent st ev = runMHEvent st $ case ev of
+  (AppEvent e) -> onAppEvent e
+  (VtyEvent (Vty.EvKey (Vty.KChar 'l') [Vty.MCtrl])) -> do
+    Just vty <- mh getVtyHandle
+    io $ Vty.refresh vty
+  (VtyEvent e) -> onVtyEvent e
+  _ -> return ()
 
-onAppEvent :: ChatState -> MHEvent -> EventM Name (Next ChatState)
-onAppEvent st RefreshWebsocketEvent = do
+onAppEvent :: MHEvent -> MH ()
+onAppEvent RefreshWebsocketEvent = do
+  st <- use id
   liftIO $ connectWebsockets st
-  continue st
-onAppEvent st WebsocketDisconnect =
-  continue (st & csConnectionStatus .~ Disconnected)
-onAppEvent st WebsocketConnect =
-  continue =<< refreshLoadedChannels (st & csConnectionStatus .~ Connected)
-onAppEvent st (WSEvent we) =
-  handleWSEvent st we
-onAppEvent st (RespEvent f) =
-  continue =<< f st
-onAppEvent st (AsyncErrEvent e) = do
+onAppEvent WebsocketDisconnect =
+  csConnectionStatus .= Disconnected
+onAppEvent WebsocketConnect = do
+  csConnectionStatus .= Connected
+  refreshLoadedChannels
+onAppEvent (WSEvent we) =
+  handleWSEvent we
+onAppEvent (RespEvent f) = f
+onAppEvent (AsyncErrEvent e) = do
   let msg = "An unexpected error has occurred! The exception encountered was:\n  " <>
             T.pack (show e) <>
             "\nPlease report this error at https://github.com/matterhorn-chat/matterhorn/issues"
-  continue =<< postErrorMessage msg st
+  postErrorMessage msg
 
-onVtyEvent :: ChatState -> Vty.Event -> EventM Name (Next ChatState)
-onVtyEvent st e = do
+onVtyEvent :: Vty.Event -> MH ()
+onVtyEvent e = do
     -- Even if we aren't showing the help UI when a resize occurs, we
     -- need to invalidate its cache entry anyway in case the new size
     -- differs from the cached size.
     case e of
-        (Vty.EvResize _ _) -> invalidateCacheEntry HelpText
+        (Vty.EvResize _ _) -> mh $ invalidateCacheEntry HelpText
         _ -> return ()
 
-    case st^.csMode of
-        Main                       -> onEventMain st e
-        ShowHelp _                 -> onEventShowHelp st e
-        ChannelSelect              -> onEventChannelSelect st e
-        UrlSelect                  -> onEventUrlSelect st e
-        LeaveChannelConfirm        -> onEventLeaveChannelConfirm st e
-        JoinChannel                -> onEventJoinChannel st e
-        ChannelScroll              -> onEventChannelScroll st e
-        MessageSelect              -> onEventMessageSelect st e
-        MessageSelectDeleteConfirm -> onEventMessageSelectDeleteConfirm st e
-        DeleteChannelConfirm       -> onEventDeleteChannelConfirm st e
+    mode <- use csMode
+    case mode of
+        Main                       -> onEventMain e
+        ShowHelp _                 -> onEventShowHelp e
+        ChannelSelect              -> onEventChannelSelect e
+        UrlSelect                  -> onEventUrlSelect e
+        LeaveChannelConfirm        -> onEventLeaveChannelConfirm e
+        JoinChannel                -> onEventJoinChannel e
+        ChannelScroll              -> onEventChannelScroll e
+        MessageSelect              -> onEventMessageSelect e
+        MessageSelectDeleteConfirm -> onEventMessageSelectDeleteConfirm e
+        DeleteChannelConfirm       -> onEventDeleteChannelConfirm e
 
-handleWSEvent :: ChatState -> WebsocketEvent -> EventM Name (Next ChatState)
-handleWSEvent st we =
+handleWSEvent :: WebsocketEvent -> MH ()
+handleWSEvent we = do
+  myId <- use (csMe.userIdL)
   case weEvent we of
     WMPosted -> case wepPost (weData we) of
       Just p  -> do
           -- If the message is a header change, also update the channel
           -- metadata.
-          let updated = if postType p /= SystemHeaderChange
-                        then st
-                        else case postPropsNewHeader $ p^.postPropsL of
-                            Nothing -> st
-                            Just newHeader ->
-                                st & csChannel(postChannelId p).ccInfo.cdHeader .~ newHeader
-          addMessage p updated >>= continue
-      Nothing -> continue st
+          case postPropsNewHeader (p^.postPropsL) of
+              Just newHeader | postType p == SystemHeaderChange ->
+                  csChannel(postChannelId p).ccInfo.cdHeader .= newHeader
+              _ -> return ()
+          addMessage p
+      Nothing -> return ()
     WMPostEdited -> case wepPost (weData we) of
-      Just p  -> editMessage p st >>= continue
-      Nothing -> continue st
+      Just p  -> editMessage p
+      Nothing -> return ()
     WMPostDeleted -> case wepPost (weData we) of
-      Just p  -> deleteMessage p st >>= continue
-      Nothing -> continue st
+      Just p  -> deleteMessage p
+      Nothing ->  return ()
     WMStatusChange -> case wepStatus (weData we) of
       Just status -> case wepUserId (weData we) of
-          Just uId -> updateStatus uId status st >>= continue
-          Nothing -> continue st
-      Nothing -> continue st
+          Just uId -> updateStatus uId status
+          Nothing -> return ()
+      Nothing -> return ()
     WMChannelViewed -> case wepChannelId (weData we) of
-      Just cId -> setLastViewedFor st cId >>= continue
-      Nothing -> continue st
+      Just cId -> setLastViewedFor cId
+      Nothing -> return ()
     WMUserAdded -> case webChannelId (weBroadcast we) of
-      Just cId -> if wepUserId (weData we) == (Just $ st^.csMe.userIdL)
-                  then handleChannelInvite cId st >>= continue
-                  else continue st
-      Nothing -> continue st
+      Just cId -> if wepUserId (weData we) == Just myId
+                  then handleChannelInvite cId
+                  else return ()
+      Nothing -> return ()
     WMUserUpdated -> -- XXX
-      continue st
+      return ()
     WMNewUser -> do
       let Just newUserId = wepUserId $ weData we
-      handleNewUser newUserId st >>= continue
+      handleNewUser newUserId
     WMUserRemoved -> -- XXX
-      continue st
+      return ()
     WMChannelDeleted -> -- XXX
-      continue st
+      return ()
     WMDirectAdded -> -- XXX
-      continue st
+      return ()
     WMChannelCreated -> -- XXX
-      continue st
+      return ()
     WMGroupAdded -> -- XXX
-      continue st
+      return ()
     WMLeaveTeam -> -- XXX: How do we deal with this one?
-      continue st
+      return ()
     -- An 'ephemeral message' is just MatterMost's version
     -- of our 'client message'. This can be a little bit
     -- wacky, e.g. if the user types '/shortcuts' in the
@@ -137,28 +137,28 @@ handleWSEvent st we =
     -- probably a good idea to handle these messages anyway.
     WMEphemeralMessage -> case wepPost (weData we) of
       Just p  -> do
-        postInfoMessage (p^.postMessageL) st >>= continue
-      Nothing -> continue st
+        postInfoMessage (p^.postMessageL)
+      Nothing -> return ()
     -- Right now, we don't use any server preferences in
     -- our client, but that might change
-    WMPreferenceChanged -> continue st
+    WMPreferenceChanged -> return ()
     -- This happens whenever a user connects to the server
     -- I think all the information we need (about being
     -- online or away or what-have-you) gets represented
     -- in StatusChanged messages, so we can ignore it.
-    WMHello -> continue st
+    WMHello -> return ()
     -- right now we don't show typing notifications. maybe
     -- we should? i dunno.
-    WMTyping -> continue st
+    WMTyping -> return ()
     -- Do we need to do anything with this?
-    WMUpdateTeam -> continue st
+    WMUpdateTeam -> return ()
     WMReactionAdded -> case wepReaction (weData we) of
       Just r  -> case webChannelId (weBroadcast we) of
-        Just cId -> continue (addReaction st r cId)
-        Nothing -> continue st
-      Nothing -> continue st
+        Just cId -> addReaction r cId
+        Nothing -> return ()
+      Nothing -> return ()
     WMReactionRemoved -> case wepReaction (weData we) of
       Just r  -> case webChannelId (weBroadcast we) of
-        Just cId -> continue (removeReaction st r cId)
-        Nothing -> continue st
-      Nothing -> continue st
+        Just cId -> removeReaction r cId
+        Nothing -> return ()
+      Nothing -> return ()
