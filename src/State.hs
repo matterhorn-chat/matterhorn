@@ -406,7 +406,7 @@ hasUnread st cId = maybe False id $ do
 
 setLastViewedFor :: ChannelId -> MH ()
 setLastViewedFor cId = do
-  now <- liftIO getCurrentTime
+  now <- getNow
   msgs <- use msgMap
   if cId `HM.member` msgs
     then csChannel(cId).ccInfo.cdViewed .= now
@@ -640,7 +640,7 @@ handleNewChannel :: T.Text -> Bool -> Channel -> MH ()
 handleNewChannel name switch nc = do
   -- time to do a lot of state updating:
   -- create a new ClientChannel structure
-  now <- liftIO getCurrentTime
+  now <- getNow
   let cChannel = ClientChannel
         { _ccContents = emptyChannelContents
         , _ccInfo     = ChannelInfo
@@ -673,7 +673,7 @@ handleNewChannel name switch nc = do
 
 editMessage :: Post -> MH ()
 editMessage new = do
-  now <- liftIO getCurrentTime
+  now <- getNow
   st <- use id
   let chan = csChannel (postChannelId new)
       isEditedMessage m = m^.mPostId == Just (new^.postIdL)
@@ -687,7 +687,7 @@ editMessage new = do
 
 deleteMessage :: Post -> MH ()
 deleteMessage new = do
-  now <- liftIO getCurrentTime
+  now <- getNow
   let isDeletedMessage m = m^.mPostId == Just (new^.postIdL)
       chan = csChannel (postChannelId new)
   chan.ccContents.cdMessages.each.filtered isDeletedMessage %= (& mDeleted .~ True)
@@ -721,7 +721,7 @@ addMessage new = do
           -- msgMap channel ID key presence above.
           return ()
       Just _ -> do
-          now <- liftIO getCurrentTime
+          now <- getNow
           let cp = toClientPost new (new^.postParentIdL)
               fromMe = (cp^.cpUser == (Just $ getId (st^.csMe))) &&
                        (isNothing $ cp^.cpUserOverride)

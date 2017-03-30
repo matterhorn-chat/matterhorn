@@ -21,7 +21,7 @@ import           Control.Concurrent.MVar (MVar)
 import           Control.Exception (SomeException)
 import qualified Control.Monad.State as St
 import           Data.HashMap.Strict (HashMap)
-import           Data.Time.Clock (UTCTime)
+import           Data.Time.Clock (UTCTime, getCurrentTime)
 import           Data.Time.LocalTime (TimeZone)
 import qualified Data.HashMap.Strict as HM
 import           Data.List (partition, sort)
@@ -29,7 +29,8 @@ import           Data.Maybe
 import qualified Data.Sequence as Seq
 import           Data.Monoid
 import qualified Graphics.Vty as Vty
-import           Lens.Micro.Platform (at, makeLenses, lens, (&), (^.), (^?), (%~), (.~), ix, to, SimpleGetter)
+import           Lens.Micro.Platform (at, makeLenses, lens, (&), (^.), (^?), (%~), (.~),
+                                      ix, to, SimpleGetter)
 import           Network.Mattermost
 import           Network.Mattermost.Exceptions
 import           Network.Mattermost.Lenses
@@ -447,7 +448,7 @@ runMH st (MH mote) = do
   ((), (st', _)) <- St.runStateT mote (st, Brick.continue)
   return st'
 
--- | lift a computatoin in 'EventM' into 'MH'
+-- | lift a computation in 'EventM' into 'MH'
 mh :: EventM Name a -> MH a
 mh = MH . St.lift
 
@@ -462,11 +463,15 @@ mhSuspendAndResume mote = MH $ do
   (st, _) <- St.get
   St.put (st, \ _ -> Brick.suspendAndResume (mote st))
 
--- | This will request that after this computation finishes the application should exit
+-- | This will request that after this computation finishes the
+-- application should exit
 requestQuit :: MH ()
 requestQuit = MH $ do
   (st, _) <- St.get
   St.put (st, Brick.halt)
+
+getNow :: MH UTCTime
+getNow = St.liftIO getCurrentTime
 
 instance Functor MH where
   fmap f (MH x) = MH (fmap f x)
@@ -479,6 +484,8 @@ instance Monad MH where
   return x = MH (return x)
   MH x >>= f = MH (x >>= \ x' -> fromMH (f x'))
 
+-- We want to pretend that the state is only the ChatState, rather
+-- than the ChatState and the Brick continuation
 instance St.MonadState ChatState MH where
   get = fst `fmap` MH St.get
   put st = MH $ do
