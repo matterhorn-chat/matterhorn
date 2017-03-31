@@ -1024,7 +1024,7 @@ runLoggedCommand cmd args = do
 openSelectedMessageURLs :: MH ()
 openSelectedMessageURLs = do
     mode <- use csMode
-    when (mode /= MessageSelect) $ do
+    when (mode == MessageSelect) $ do
         Just curMsg <- use (to getSelectedMessage)
         let urls = msgURLs curMsg
         when (not (null urls)) $ do
