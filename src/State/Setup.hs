@@ -271,11 +271,8 @@ initializeState cr myTeam myUser = do
   msgs <- fmap (HM.fromList . F.toList) $ forM (F.toList chans) $ \c -> do
       let cChannel = ClientChannel
                        { _ccContents = emptyChannelContents
-                       , _ccInfo     = initialChannelInfo c & cdCurrentState .~ state
+                       , _ccInfo     = initialChannelInfo c & cdCurrentState .~ ChanLoadPending
                        }
-          state = if c^.channelTypeL == Direct
-                  then ChanUnloaded
-                  else ChanLoadPending
 
       return (getId c, cChannel)
 
@@ -319,6 +316,8 @@ initializeState cr myTeam myUser = do
   -- It's important to queue up these channel metadata fetches first so
   -- that by the time the scrollback requests are processed, we have the
   -- latest metadata.
+  --
+  -- First we queue up fetches for non-DM channels:
   F.forM_ chans $ \c ->
       when (getId c /= townSqId && c^.channelTypeL /= Direct) $
           doAsyncWith Normal st $ do
@@ -326,6 +325,15 @@ initializeState cr myTeam myUser = do
               return $ \st' -> do
                   return $ st' & csChannel(getId c).ccInfo %~ channelInfoFromChannelWithData cwd
 
+  -- Then we queue up fetches for DM channels:
+  F.forM_ chans $ \c ->
+      when (c^.channelTypeL == Direct) $
+          doAsyncWith Normal st $ do
+              cwd <- liftIO $ mmGetChannel session myTeamId (getId c)
+              return $ \st' -> do
+                  return $ st' & csChannel(getId c).ccInfo %~ channelInfoFromChannelWithData cwd
+
+  -- Then we queue up scrollback fetches for non-DM channels:
   F.forM_ chans $ \c ->
       when (getId c /= townSqId && c^.channelTypeL /= Direct) $
           doAsync Normal st $ asyncFetchScrollback Normal st (getId c)
