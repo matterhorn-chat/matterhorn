@@ -326,10 +326,10 @@ initializeState cr myTeam myUser = do
   -- Then we queue up fetches for DM channels:
   F.forM_ chans $ \c ->
       when (c^.channelTypeL == Direct) $
-          doAsyncWith Normal st $ do
+          doAsyncWithIO Normal st $ do
               cwd <- liftIO $ mmGetChannel session myTeamId (getId c)
-              return $ \st' -> do
-                  return $ st' & csChannel(getId c).ccInfo %~ channelInfoFromChannelWithData cwd
+              return $ do
+                  csChannel(getId c).ccInfo %= channelInfoFromChannelWithData cwd
 
   -- Then we queue up scrollback fetches for non-DM channels:
   F.forM_ chans $ \c ->
