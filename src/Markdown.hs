@@ -44,6 +44,7 @@ import qualified Graphics.Vty as V
 import           Lens.Micro.Platform ((^.))
 
 import           Themes
+import           Types (userSigil)
 import           Types.Posts
 
 type UserSet = Set Text
@@ -264,7 +265,7 @@ separate uSet sq = case viewl sq of
           let s' = removeCursor s
           in case viewl rs of
             _ | s' `Set.member` uSet ||
-                ("@" `T.isPrefixOf` s' && (T.drop 1 s' `Set.member` uSet)) ->
+                ((T.singleton userSigil) `T.isPrefixOf` s' && (T.drop 1 s' `Set.member` uSet)) ->
                 buildString s n <| separate uSet rs
             Fragment (TStr s'') n' :< xs
               | n == n' -> gatherStrings (s <> s'') n xs
@@ -278,7 +279,7 @@ separate uSet sq = case viewl sq of
                       Fragment (TStr s) Emoji
                   | s' `Set.member` uSet ->
                       Fragment (TStr s) User
-                  | "@" `T.isPrefixOf` (removeCursor s) &&
+                  | (T.singleton userSigil) `T.isPrefixOf` (removeCursor s) &&
                     (T.drop 1 (removeCursor s) `Set.member` uSet) ->
                       Fragment (TStr s) User
                   | otherwise -> Fragment (TStr s) n

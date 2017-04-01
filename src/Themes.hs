@@ -50,6 +50,8 @@ import Brick
 import Brick.Widgets.List
 import qualified Data.Text as T
 
+import Types (userSigil)
+
 defaultThemeName :: T.Text
 defaultThemeName = darkColorThemeName
 
@@ -236,7 +238,7 @@ colorUsername s = withDefAttr (attrForUsername s) $ txt s
 
 attrForUsername :: T.Text -> AttrName
 attrForUsername s
-    | "@" `T.isPrefixOf` s ||
+    | (T.singleton userSigil) `T.isPrefixOf` s ||
       "+" `T.isPrefixOf` s ||
       "-" `T.isPrefixOf` s ||
       " " `T.isPrefixOf` s

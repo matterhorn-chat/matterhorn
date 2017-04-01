@@ -159,8 +159,8 @@ getOrdinaryChannels st =
           unread = hasUnread st chan
           recent = Just chan == st^.csRecentChannel
           sigil = case st ^. csLastChannelInput . at chan of
-            Nothing      -> "#"
-            Just ("", _) -> "#"
+            Nothing      -> T.singleton normalChannelSigil
+            Just ("", _) -> T.singleton normalChannelSigil
             _            -> "»"
     ]
 
@@ -175,8 +175,8 @@ getDmChannels st =
                  colorUsername
           sigil =
             case do { cId <- m_chanId; st^.csLastChannelInput.at cId } of
-              Nothing      -> T.singleton $ userSigil u
-              Just ("", _) -> T.singleton $ userSigil u
+              Nothing      -> T.singleton $ userSigilFromInfo u
+              Just ("", _) -> T.singleton $ userSigilFromInfo u
               _            -> "»"
           uname = u^.uiName
           cname = getDMChannelName (st^.csMe^.userIdL) (u^.uiId)
