@@ -158,7 +158,7 @@ data ClientChannel = ClientChannel
 
 -- Sigils
 normalChannelSigil :: Char
-normalChannelSigil = '#'
+normalChannelSigil = '~'
 
 userSigil :: Char
 userSigil = '@'

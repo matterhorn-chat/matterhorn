@@ -13,6 +13,7 @@ module Themes
   , codeAttr
   , emailAttr
   , emojiAttr
+  , channelNameAttr
   , clientMessageAttr
   , clientHeaderAttr
   , clientEmphAttr
@@ -112,6 +113,9 @@ channelListHeaderAttr = "channelListHeader"
 currentChannelNameAttr :: AttrName
 currentChannelNameAttr = "currentChannelName"
 
+channelNameAttr :: AttrName
+channelNameAttr = "channelNameAttr"
+
 unreadChannelAttr :: AttrName
 unreadChannelAttr = "unreadChannel"
 
@@ -168,6 +172,7 @@ lightColorTheme = attrMap (black `on` white) $
   , (emailAttr,                        fg yellow)
   , (codeAttr,                         fg magenta)
   , (emojiAttr,                        fg yellow)
+  , (channelNameAttr,                  fg blue)
   , (clientMessageAttr,                fg black)
   , (clientEmphAttr,                   fg black `withStyle` bold)
   , (clientStrongAttr,                 fg black `withStyle` bold `withStyle` underline)
@@ -203,6 +208,7 @@ darkAttrs =
   , (emailAttr,                        fg yellow)
   , (codeAttr,                         fg magenta)
   , (emojiAttr,                        fg yellow)
+  , (channelNameAttr,                  fg cyan)
   , (clientMessageAttr,                fg white)
   , (clientEmphAttr,                   fg white `withStyle` bold)
   , (clientStrongAttr,                 fg white `withStyle` bold `withStyle` underline)

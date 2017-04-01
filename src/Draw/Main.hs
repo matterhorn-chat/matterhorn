@@ -25,7 +25,6 @@ import           Data.List (intersperse)
 import qualified Data.Map.Strict as Map
 import           Data.Maybe (listToMaybe, maybeToList, catMaybes, isJust)
 import           Data.Monoid ((<>))
-import           Data.Set (Set)
 import qualified Data.Set as Set
 import           Data.Text (Text)
 import qualified Data.Text as T
@@ -45,9 +44,9 @@ import           Types
 import           Types.Posts
 import           Draw.Util
 
-renderChatMessage :: Set Text -> (UTCTime -> Widget Name) -> Message -> Widget Name
-renderChatMessage uSet renderTimeFunc msg =
-    let m = renderMessage msg True uSet
+renderChatMessage :: UserSet -> ChannelSet -> (UTCTime -> Widget Name) -> Message -> Widget Name
+renderChatMessage uSet cSet renderTimeFunc msg =
+    let m = renderMessage msg True uSet cSet
         msgAtch = if Seq.null (msg^.mAttachments)
           then emptyWidget
           else withDefAttr clientMessageAttr $ vBox
@@ -215,8 +214,8 @@ previewFromInput uname s =
                            , _mOriginalPost  = Nothing
                            }
 
-renderUserCommandBox :: Set T.Text -> ChatState -> Widget Name
-renderUserCommandBox uSet st =
+renderUserCommandBox :: UserSet -> ChannelSet -> ChatState -> Widget Name
+renderUserCommandBox uSet cSet st =
     let prompt = txt $ case st^.csEditState.cedEditMode of
             Replying _ _ -> "reply> "
             Editing _    ->  "edit> "
@@ -236,7 +235,7 @@ renderUserCommandBox uSet st =
             Replying msg _ ->
                 let msgWithoutParent = msg & mInReplyToMsg .~ NotAReply
                 in hBox [ replyArrow
-                        , addEllipsis $ renderMessage msgWithoutParent True uSet
+                        , addEllipsis $ renderMessage msgWithoutParent True uSet cSet
                         ]
             _ -> emptyWidget
 
@@ -260,11 +259,11 @@ renderUserCommandBox uSet st =
 maxMessageHeight :: Int
 maxMessageHeight = 200
 
-renderSingleMessage :: ChatState -> Set T.Text -> Message -> Widget Name
-renderSingleMessage st uSet msg = renderChatMessage uSet (withBrackets . renderTime st) msg
+renderSingleMessage :: ChatState -> UserSet -> ChannelSet -> Message -> Widget Name
+renderSingleMessage st uSet cSet msg = renderChatMessage uSet cSet (withBrackets . renderTime st) msg
 
-renderCurrentChannelDisplay :: Set Text -> ChatState -> Widget Name
-renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
+renderCurrentChannelDisplay :: UserSet -> ChannelSet -> ChatState -> Widget Name
+renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
     where
     conn = case st^.csConnectionStatus of
       Connected -> emptyWidget
@@ -300,7 +299,7 @@ renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
             cached (ChannelMessages cId) $
             vBox $ (withDefAttr loadMoreAttr $ hCenter $
                     str "<< Press C-b to load more messages >>") :
-                   (F.toList $ renderSingleMessage st uSet <$> channelMessages)
+                   (F.toList $ renderSingleMessage st uSet cSet <$> channelMessages)
         MessageSelect ->
             renderMessagesWithSelect (st^.csMessageSelect) channelMessages
         MessageSelectDeleteConfirm ->
@@ -341,7 +340,7 @@ renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
         -- Render the message associated with the current post ID.
         curMsgResult <- withReaderT relaxHeight $ render $
             forceAttr messageSelectAttr $
-            padRight Max $ renderSingleMessage st uSet curMsg
+            padRight Max $ renderSingleMessage st uSet cSet curMsg
 
         let targetHeight = ctx^.availHeightL
             upperHeight = targetHeight `div` 2
@@ -361,7 +360,7 @@ renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
                                 True -> return Vty.emptyImage
                                 False -> do
                                     r <- withReaderT relaxHeight $
-                                           render $ padRight Max $ renderSingleMessage st uSet msg
+                                           render $ padRight Max $ renderSingleMessage st uSet cSet msg
                                     return $ r^.imageL
                             goDown ms' maxHeight (num + 1) (Vty.vertJoin img result)
 
@@ -379,7 +378,7 @@ renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
                                 True -> return Vty.emptyImage
                                 False -> do
                                     r <- withReaderT relaxHeight $
-                                           render $ padRight Max $ renderSingleMessage st uSet msg
+                                           render $ padRight Max $ renderSingleMessage st uSet cSet msg
                                     return $ r^.imageL
                             goUp ms' maxHeight $ Vty.vertJoin result img
 
@@ -429,7 +428,7 @@ renderCurrentChannelDisplay uSet st = (header <+> conn) <=> messages
                                     True -> return Vty.emptyImage
                                     False -> do
                                         r <- withReaderT relaxHeight $
-                                               render $ padRight Max $ renderSingleMessage st uSet msg
+                                               render $ padRight Max $ renderSingleMessage st uSet cSet msg
                                         return $ r^.imageL
                                 go ms' $ Vty.vertJoin result img
 
@@ -560,9 +559,9 @@ maybePreviewViewport w =
                 render $ vLimit previewMaxHeight $ viewport MessagePreviewViewport Vertical $
                          (Widget Fixed Fixed $ return result)
 
-inputPreview :: Set T.Text -> ChatState -> Widget Name
-inputPreview uSet st | not $ st^.csShowMessagePreview = emptyWidget
-                     | otherwise = thePreview
+inputPreview :: UserSet -> ChannelSet -> ChatState -> Widget Name
+inputPreview uSet cSet st | not $ st^.csShowMessagePreview = emptyWidget
+                          | otherwise = thePreview
     where
     uname = st^.csMe.userUsernameL
     -- Insert a cursor sentinel into the input text just before
@@ -583,12 +582,12 @@ inputPreview uSet st | not $ st^.csShowMessagePreview = emptyWidget
                        Nothing -> noPreview
                        Just pm -> if T.null curStr
                                   then noPreview
-                                  else renderMessage pm True uSet
+                                  else renderMessage pm True uSet cSet
                  in (maybePreviewViewport msgPreview) <=>
                     hBorderWithLabel (withDefAttr clientEmphAttr $ str "[Preview ↑]")
 
-userInputArea :: Set T.Text -> ChatState -> Widget Name
-userInputArea uSet st =
+userInputArea :: UserSet -> ChannelSet -> ChatState -> Widget Name
+userInputArea uSet cSet st =
     case st^.csMode of
         ChannelSelect -> renderChannelSelect st
         UrlSelect     -> hCenter $ hBox [ txt "Press "
@@ -602,7 +601,7 @@ userInputArea uSet st =
                                         , txt " to stop scrolling and resume chatting."
                                         ]
         MessageSelectDeleteConfirm -> renderDeleteConfirm
-        _             -> renderUserCommandBox uSet st
+        _             -> renderUserCommandBox uSet cSet st
 
 renderDeleteConfirm :: Widget Name
 renderDeleteConfirm =
@@ -612,13 +611,14 @@ mainInterface :: ChatState -> Widget Name
 mainInterface st =
     (renderChannelList st <+> vBorder <+> mainDisplay)
       <=> bottomBorder
-      <=> inputPreview uSet st
-      <=> userInputArea uSet st
+      <=> inputPreview uSet cSet st
+      <=> userInputArea uSet cSet st
     where
     mainDisplay = case st^.csMode of
         UrlSelect -> renderUrlList st
-        _         -> maybeSubdue $ renderCurrentChannelDisplay uSet st
+        _         -> maybeSubdue $ renderCurrentChannelDisplay uSet cSet st
     uSet = Set.fromList (map _uiName (HM.elems (st^.usrMap)))
+    cSet = Set.fromList (_cdName <$> _ccInfo <$> (HM.elems $ st^.msgMap))
 
     bottomBorder = case st^.csMode of
         MessageSelect -> messageSelectBottomBar st

@@ -3,7 +3,9 @@
 {-# LANGUAGE ParallelListComp #-}
 
 module Markdown
-  ( renderMessage
+  ( UserSet
+  , ChannelSet
+  , renderMessage
   , renderText
   , blockGetURLs
   , cursorSentinel
@@ -44,10 +46,11 @@ import qualified Graphics.Vty as V
 import           Lens.Micro.Platform ((^.))
 
 import           Themes
-import           Types (userSigil)
+import           Types (userSigil, normalChannelSigil)
 import           Types.Posts
 
 type UserSet = Set Text
+type ChannelSet = Set Text
 
 omitUsernameTypes :: [MessageType]
 omitUsernameTypes =
@@ -62,8 +65,8 @@ getReplyToMessage m =
         ParentLoaded _ parent -> Just parent
         _ -> Nothing
 
-renderMessage :: Message -> Bool -> UserSet -> Widget a
-renderMessage msg renderReplyParent uSet =
+renderMessage :: Message -> Bool -> UserSet -> ChannelSet -> Widget a
+renderMessage msg renderReplyParent uSet cSet =
     let msgUsr = case msg^.mUserName of
           Just u
             | msg^.mType `elem` omitUsernameTypes -> Nothing
@@ -72,15 +75,15 @@ renderMessage msg renderReplyParent uSet =
         mine = case msgUsr of
           Just un
             | msg^.mType == CP Emote -> B.txt "*" <+> colorUsername un
-                                    <+> B.txt " " <+> renderMarkdown uSet (msg^.mText)
-            | otherwise -> colorUsername un <+> B.txt ": " <+> renderMarkdown uSet (msg^.mText)
-          Nothing -> renderMarkdown uSet (msg^.mText)
+                                    <+> B.txt " " <+> renderMarkdown uSet cSet (msg^.mText)
+            | otherwise -> colorUsername un <+> B.txt ": " <+> renderMarkdown uSet cSet (msg^.mText)
+          Nothing -> renderMarkdown uSet cSet (msg^.mText)
         parent = if not renderReplyParent
                  then Nothing
                  else getReplyToMessage msg
     in case parent of
         Nothing -> mine
-        Just m -> let parentMsg = renderMessage m False uSet
+        Just m -> let parentMsg = renderMessage m False uSet cSet
                   in (replyArrow <+>
                      (addEllipsis $ B.forceAttr replyParentAttr parentMsg))
                       B.<=> mine
@@ -101,9 +104,9 @@ cursorSentinel :: Char
 cursorSentinel = '‸'
 
 -- Render markdown with username highlighting
-renderMarkdown :: UserSet -> Blocks -> Widget a
-renderMarkdown uSet =
-  B.vBox . F.toList . fmap (toWidget uSet) . addBlankLines
+renderMarkdown :: UserSet -> ChannelSet -> Blocks -> Widget a
+renderMarkdown uSet cSet =
+  B.vBox . F.toList . fmap (toWidget uSet cSet) . addBlankLines
 
 -- Add blank lines only between adjacent elements of the same type, to
 -- save space
@@ -129,7 +132,7 @@ addBlankLines = go' . viewl
 
 -- Render text to markdown without username highlighting
 renderText :: Text -> Widget a
-renderText txt = renderMarkdown Set.empty bs
+renderText txt = renderMarkdown Set.empty Set.empty bs
   where C.Doc _ bs = C.markdown C.def txt
 
 vBox :: F.Foldable f => f (Widget a) -> Widget a
@@ -141,40 +144,40 @@ hBox = B.hBox . F.toList
 --
 
 class ToWidget t where
-  toWidget :: UserSet -> t -> Widget a
+  toWidget :: UserSet -> ChannelSet -> t -> Widget a
 
 header :: Int -> Widget a
 header n = B.txt (T.replicate n "#")
 
 instance ToWidget Block where
-  toWidget uPat (C.Para is) = toInlineChunk is uPat
-  toWidget uPat (C.Header n is) =
+  toWidget uPat cPat (C.Para is) = toInlineChunk is uPat cPat
+  toWidget uPat cPat (C.Header n is) =
     B.withDefAttr clientHeaderAttr
-      (header n <+> B.txt " " <+> toInlineChunk is uPat)
-  toWidget uPat (C.Blockquote is) =
-    B.padLeft (B.Pad 4) (vBox $ fmap (toWidget uPat) is)
-  toWidget uPat (C.List _ l bs) = toList l bs uPat
-  toWidget _ (C.CodeBlock _ tx) =
+      (header n <+> B.txt " " <+> toInlineChunk is uPat cPat)
+  toWidget uPat cPat (C.Blockquote is) =
+    B.padLeft (B.Pad 4) (vBox $ fmap (toWidget uPat cPat) is)
+  toWidget uPat cPat (C.List _ l bs) = toList l bs uPat cPat
+  toWidget _ _ (C.CodeBlock _ tx) =
     B.withDefAttr codeAttr $
         let padding = B.padLeftRight 1 (B.vLimit (length theLines) B.vBorder)
             theLines = expandEmpty <$> T.lines tx
             expandEmpty "" = " "
             expandEmpty s  = s
         in padding <+> (B.vBox $ textWithCursor <$> theLines)
-  toWidget _ (C.HtmlBlock txt) = textWithCursor txt
-  toWidget _ (C.HRule) = B.vLimit 1 (B.fill '*')
+  toWidget _ _ (C.HtmlBlock txt) = textWithCursor txt
+  toWidget _ _ (C.HRule) = B.vLimit 1 (B.fill '*')
 
-toInlineChunk :: Inlines -> UserSet -> Widget a
-toInlineChunk is uSet = B.Widget B.Fixed B.Fixed $ do
+toInlineChunk :: Inlines -> UserSet -> ChannelSet -> Widget a
+toInlineChunk is uSet cSet = B.Widget B.Fixed B.Fixed $ do
   ctx <- B.getContext
   let width = ctx^.B.availWidthL
       fs    = toFragments is
-      ws    = fmap gatherWidgets (split width uSet fs)
+      ws    = fmap gatherWidgets (split width uSet cSet fs)
   B.render (vBox (fmap hBox ws))
 
-toList :: ListType -> [Blocks] -> UserSet -> Widget a
-toList lt bs uSet = vBox
-  [ B.txt i <+> (vBox (fmap (toWidget uSet) b))
+toList :: ListType -> [Blocks] -> UserSet -> ChannelSet -> Widget a
+toList lt bs uSet cSet = vBox
+  [ B.txt i <+> (vBox (fmap (toWidget uSet cSet) b))
   | b <- bs | i <- is ]
   where is = case lt of
           C.Bullet _ -> repeat ("• ")
@@ -208,6 +211,7 @@ data FragmentStyle
   | User
   | Link
   | Emoji
+  | Channel
     deriving (Eq, Show)
 
 -- We convert it pretty mechanically:
@@ -256,20 +260,22 @@ data SplitState = SplitState
   , splitCurrCol :: Int
   }
 
-separate :: UserSet -> Seq Fragment -> Seq Fragment
-separate uSet sq = case viewl sq of
+separate :: UserSet -> ChannelSet -> Seq Fragment -> Seq Fragment
+separate uSet cSet sq = case viewl sq of
   Fragment (TStr s) n :< xs -> gatherStrings s n xs
-  Fragment x n :< xs        -> Fragment x n <| separate uSet xs
+  Fragment x n :< xs        -> Fragment x n <| separate uSet cSet xs
   EmptyL                    -> S.empty
   where gatherStrings s n rs =
           let s' = removeCursor s
           in case viewl rs of
             _ | s' `Set.member` uSet ||
                 ((T.singleton userSigil) `T.isPrefixOf` s' && (T.drop 1 s' `Set.member` uSet)) ->
-                buildString s n <| separate uSet rs
+                buildString s n <| separate uSet cSet rs
+            _ | ((T.singleton normalChannelSigil) `T.isPrefixOf` s' && (T.drop 1 s' `Set.member` cSet)) ->
+                buildString s n <| separate uSet cSet rs
             Fragment (TStr s'') n' :< xs
               | n == n' -> gatherStrings (s <> s'') n xs
-            Fragment _ _ :< _ -> buildString s n <| separate uSet rs
+            Fragment _ _ :< _ -> buildString s n <| separate uSet cSet rs
             EmptyL -> S.singleton (buildString s n)
         buildString s n =
             let s' = removeCursor s
@@ -282,15 +288,18 @@ separate uSet sq = case viewl sq of
                   | (T.singleton userSigil) `T.isPrefixOf` (removeCursor s) &&
                     (T.drop 1 (removeCursor s) `Set.member` uSet) ->
                       Fragment (TStr s) User
+                  | (T.singleton normalChannelSigil) `T.isPrefixOf` (removeCursor s) &&
+                    (T.drop 1 (removeCursor s) `Set.member` cSet) ->
+                      Fragment (TStr s) Channel
                   | otherwise -> Fragment (TStr s) n
 
 removeCursor :: T.Text -> T.Text
 removeCursor = T.filter (/= cursorSentinel)
 
-split :: Int -> UserSet -> Seq Fragment -> Seq (Seq Fragment)
-split maxCols uSet = splitChunks
-                   . go (SplitState (S.singleton S.empty) 0)
-                   . separate uSet
+split :: Int -> UserSet -> ChannelSet -> Seq Fragment -> Seq (Seq Fragment)
+split maxCols uSet cSet = splitChunks
+                          . go (SplitState (S.singleton S.empty) 0)
+                          . separate uSet cSet
   where go st (viewl-> f :< fs) = go st' fs
           where st' =
                   if | fTextual f == TSoftBreak || fTextual f == TLineBreak ->
@@ -348,6 +357,7 @@ gatherWidgets (viewl-> (Fragment frag style :< rs)) = go style (strOf frag) rs
                 Emoji  -> B.withDefAttr emojiAttr (textWithCursor t)
                 User   -> B.withDefAttr (attrForUsername $ removeCursor t)
                                         (textWithCursor t)
+                Channel -> B.withDefAttr channelNameAttr (textWithCursor t)
           in w <| gatherWidgets xs
 gatherWidgets _ =
   S.empty
