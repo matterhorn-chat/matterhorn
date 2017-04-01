@@ -160,6 +160,13 @@ data ClientChannel = ClientChannel
     -- ^ The 'ChannelInfo' for the channel
   }
 
+-- Sigils
+normalChannelSigil :: Char
+normalChannelSigil = '~'
+
+userSigil :: Char
+userSigil = '@'
+
 -- Get a channel's name, depending on its type
 preferredChannelName :: Channel -> T.Text
 preferredChannelName ch

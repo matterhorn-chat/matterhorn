@@ -13,6 +13,7 @@ module Themes
   , codeAttr
   , emailAttr
   , emojiAttr
+  , channelNameAttr
   , clientMessageAttr
   , clientHeaderAttr
   , clientEmphAttr
@@ -49,6 +50,8 @@ import Graphics.Vty
 import Brick
 import Brick.Widgets.List
 import qualified Data.Text as T
+
+import Types (userSigil)
 
 defaultThemeName :: T.Text
 defaultThemeName = darkColorThemeName
@@ -110,6 +113,9 @@ channelListHeaderAttr = "channelListHeader"
 currentChannelNameAttr :: AttrName
 currentChannelNameAttr = "currentChannelName"
 
+channelNameAttr :: AttrName
+channelNameAttr = "channelNameAttr"
+
 unreadChannelAttr :: AttrName
 unreadChannelAttr = "unreadChannel"
 
@@ -166,6 +172,7 @@ lightColorTheme = attrMap (black `on` white) $
   , (emailAttr,                        fg yellow)
   , (codeAttr,                         fg magenta)
   , (emojiAttr,                        fg yellow)
+  , (channelNameAttr,                  fg blue)
   , (clientMessageAttr,                fg black)
   , (clientEmphAttr,                   fg black `withStyle` bold)
   , (clientStrongAttr,                 fg black `withStyle` bold `withStyle` underline)
@@ -201,6 +208,7 @@ darkAttrs =
   , (emailAttr,                        fg yellow)
   , (codeAttr,                         fg magenta)
   , (emojiAttr,                        fg yellow)
+  , (channelNameAttr,                  fg cyan)
   , (clientMessageAttr,                fg white)
   , (clientEmphAttr,                   fg white `withStyle` bold)
   , (clientStrongAttr,                 fg white `withStyle` bold `withStyle` underline)
@@ -236,7 +244,7 @@ colorUsername s = withDefAttr (attrForUsername s) $ txt s
 
 attrForUsername :: T.Text -> AttrName
 attrForUsername s
-    | "@" `T.isPrefixOf` s ||
+    | (T.singleton userSigil) `T.isPrefixOf` s ||
       "+" `T.isPrefixOf` s ||
       "-" `T.isPrefixOf` s ||
       " " `T.isPrefixOf` s

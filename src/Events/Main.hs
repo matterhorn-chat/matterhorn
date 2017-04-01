@@ -180,8 +180,8 @@ tabComplete dir = do
       priorities  = [] :: [T.Text]-- XXX: add recent completions to this
       completions = Set.fromList (st^.csNames.cnUsers ++
                                   completableChannels ++
-                                  map ("@" <>) (st^.csNames.cnUsers) ++
-                                  map ("#" <>) completableChannels ++
+                                  map (T.singleton userSigil <>) (st^.csNames.cnUsers) ++
+                                  map (T.singleton normalChannelSigil <>) completableChannels ++
                                   map ("/" <>) (commandName <$> commandList))
 
       line        = Z.currentLine $ st^.csCmdLine.editContentsL

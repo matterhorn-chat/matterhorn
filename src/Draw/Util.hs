@@ -42,8 +42,8 @@ renderUTCTime fmt tz t =
 withBrackets :: Widget a -> Widget a
 withBrackets w = str "[" <+> w <+> str "]"
 
-userSigil :: UserInfo -> Char
-userSigil u = case u^.uiStatus of
+userSigilFromInfo :: UserInfo -> Char
+userSigilFromInfo u = case u^.uiStatus of
     Offline -> ' '
     Online  -> '+'
     Away    -> '-'
@@ -53,10 +53,10 @@ mkChannelName :: ChannelInfo -> T.Text
 mkChannelName c = T.cons sigil (c^.cdName)
   where sigil =  case c^.cdType of
           Private   -> '?'
-          Ordinary  -> '#'
-          Group     -> '#'
-          Direct    -> '@'
+          Ordinary  -> normalChannelSigil
+          Group     -> normalChannelSigil
+          Direct    -> userSigil
           _         -> '!'
 
 mkDMChannelName :: UserInfo -> T.Text
-mkDMChannelName u = T.cons (userSigil u) (u^.uiName)
+mkDMChannelName u = T.cons (userSigilFromInfo u) (u^.uiName)
