@@ -155,15 +155,18 @@ handleInputSubmission = do
   mode <- use (csEditState.cedEditMode)
   let (line:rest) = getEditContents cmdLine
       allLines = T.intercalate "\n" $ line : rest
+
+  -- We clean up before dispatching the command or sending the message
+  -- since otherwise the command could change the state and then doing
+  -- cleanup afterwards could clean up the wrong things.
+  csCmdLine                     %= applyEdit Z.clearZipper
+  csInputHistory                %= addHistoryEntry allLines cId
+  csInputHistoryPosition.at cId .= Nothing
+  csEditState.cedEditMode       .= NewPost
+
   case T.uncons line of
     Just ('/',cmd) -> dispatchCommand cmd
-    _              -> do sendMessage mode allLines
-
-  -- now clear the state for the next message
-  csCmdLine %= applyEdit Z.clearZipper
-  csInputHistory %= addHistoryEntry allLines cId
-  csInputHistoryPosition.at cId .= Nothing
-  csEditState.cedEditMode .= NewPost
+    _              -> sendMessage mode allLines
 
 tabComplete :: Completion.Direction -> MH ()
 tabComplete dir = do
