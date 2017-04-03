@@ -742,24 +742,37 @@ addMessage new = do
                   then updateViewed
                   else setNewMessageCutoff cId msg
 
-          -- If the message is in reply to another message, try to find it in
-          -- the scrollback for the post's channel. If the message isn't there,
-          -- fetch it. If we have to fetch it, don't post this message to the
-          -- channel until we have fetched the parent.
-          case msg^.mInReplyToMsg of
-              ParentNotLoaded parentId -> do
-                  doAsyncWith Normal $ do
-                      let theTeamId = st^.csMyTeam.teamIdL
-                      p <- mmGetPost (st^.csSession) theTeamId cId parentId
-                      let postMap = HM.fromList [ ( pId
-                                                  , clientPostToMessage st (toClientPost x (x^.postParentIdL))
-                                                  )
-                                                | (pId, x) <- HM.toList (p^.postsPostsL)
-                                                ]
-                      return $ do
-                        csPostMap %= HM.union postMap
-                        doAddMessage
-              _ -> doAddMessage
+              doHandleNewMessage = do
+                  -- If the message is in reply to another message,
+                  -- try to find it in the scrollback for the post's
+                  -- channel. If the message isn't there, fetch it. If
+                  -- we have to fetch it, don't post this message to the
+                  -- channel until we have fetched the parent.
+                  case msg^.mInReplyToMsg of
+                      ParentNotLoaded parentId -> do
+                          doAsyncWith Normal $ do
+                              let theTeamId = st^.csMyTeam.teamIdL
+                              p <- mmGetPost (st^.csSession) theTeamId cId parentId
+                              let postMap = HM.fromList [ ( pId
+                                                          , clientPostToMessage st (toClientPost x (x^.postParentIdL))
+                                                          )
+                                                        | (pId, x) <- HM.toList (p^.postsPostsL)
+                                                        ]
+                              return $ do
+                                csPostMap %= HM.union postMap
+                                doAddMessage
+                      _ -> doAddMessage
+
+          -- If this message was written by a user we don't know about,
+          -- fetch the user's information before posting the message.
+          case cp^.cpUser of
+              Nothing -> doHandleNewMessage
+              Just uId ->
+                  case st^.usrMap.at uId of
+                      Just _ -> doHandleNewMessage
+                      Nothing -> do
+                          handleNewUser uId
+                          doAsyncWith Normal $ return doHandleNewMessage
 
 setNewMessageCutoff :: ChannelId -> Message -> MH ()
 setNewMessageCutoff cId msg =
