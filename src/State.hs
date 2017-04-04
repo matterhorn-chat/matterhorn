@@ -168,18 +168,6 @@ messageSelectDown = do
                 nextPostId = getNextPost (Seq.drop (idx + 1) chanMsgs)
             csMessageSelect .= MessageSelectState (nextPostId <|> selected)
         _ -> return ()
-    -- when (mode == MessageSelect && isJust (selectMessagePostId selected)) $ do
-    --     oldPostId@(Just selPostId) <-
-
-    -- | st^.csMode /= MessageSelect = return st
-    -- | isNothing $ selectMessagePostId $ st^.csMessageSelect = return st
-    -- | otherwise = do
-    --     let oldPostId@(Just selPostId) = selectMessagePostId $ st^.csMessageSelect
-    --         chanMsgs = st ^. csCurrentChannel . ccContents . cdMessages
-    --         Just idx = Seq.findIndexR (\m -> m^.mPostId == Just selPostId) chanMsgs
-    --         nextPostId = getNextPost (Seq.drop (idx + 1) chanMsgs)
-
-    --     return $ st & csMessageSelect .~ MessageSelectState (nextPostId <|> oldPostId)
 
 isMine :: ChatState -> Message -> Bool
 isMine st msg = (Just $ st^.csMe.userUsernameL) == msg^.mUserName
@@ -367,16 +355,16 @@ removeChannelFromState cId = do
     when (chType /= Direct) $ do
             csEditState.cedInputHistoryPosition .at cId .= Nothing
             csEditState.cedLastChannelInput     .at cId .= Nothing
+            -- Update input history
             csEditState.cedInputHistory         %= removeChannelHistory cId
-                          -- Update input history
+            -- Flush cnToChanId
             csNames.cnToChanId                  .at cName .= Nothing
-                          -- Flush cnToChanId
+            -- Flush cnChans
             csNames.cnChans                     %= filter (/= cName)
-                          -- Flush cnChans
+            -- Update msgMap
             msgMap                              .at cId .= Nothing
-                          -- Update msgMap
+            -- Remove from focus zipper
             csFocus                             %= Z.filterZipper (/= cId)
-                          -- Remove from focus zipper
 
 fetchCurrentChannelMembers :: MH ()
 fetchCurrentChannelMembers = do
@@ -465,12 +453,6 @@ postChangeChannelCommon = do
     updateChannelListScroll
     loadLastEdit
     resetCurrentEdit
-    -- resetCurrentEdit <$>
-    -- loadLastEdit <$>
-    -- (updateChannelListScroll =<<
-    --  resetEditorState =<<
-    --  fetchCurrentScrollback =<<
-    --  resetHistoryPosition st)
 
 resetEditorState :: MH ()
 resetEditorState = do
@@ -483,9 +465,6 @@ preChangeChannelCommon = do
     csRecentChannel .= Just cId
     saveCurrentEdit
     clearNewMessageCutoff cId
---    clearNewMessageCutoff cId $
---        saveCurrentEdit $
---        st & csRecentChannel .~ Just cId
 
 nextChannel :: MH ()
 nextChannel = do
@@ -808,7 +787,6 @@ execMMCommand name rest = do
 fetchCurrentScrollback :: MH ()
 fetchCurrentScrollback = do
   cId <- use csCurrentChannelId
-  -- XXX ???
   currentState <- preuse (msgMap.ix(cId).ccInfo.cdCurrentState)
   didQueue <- case maybe False (== ChanUnloaded) currentState of
       True -> do
@@ -902,11 +880,6 @@ updateChannelSelectMatches = do
     userNames   <- use (to sortedUserList)
     let chanMatches = catMaybes (fmap chanNameMatches chanNames)
     let userMatches = catMaybes (fmap chanNameMatches (fmap _uiName userNames))
---    chanMatches <- (catMaybes . fmap chanNameMatches) <$> use (csNames._)
---    userMatches <- (catMaybes . fmap chanNameMatches) <$> use (to sortedUserList.each (to (^.uiName)))
---    let chanNameMatches = channelNameMatch (st^.csChannelSelectString)
---        chanMatches = catMaybes $ chanNameMatches <$> st^.csNames.cnChans
---        userMatches = catMaybes $ chanNameMatches <$> (^.uiName) <$> sortedUserList st
     let mkMap ms = HM.fromList [(channelNameFromMatch m, m) | m <- ms]
     csChannelSelectChannelMatches .= mkMap chanMatches
     csChannelSelectUserMatches    .= mkMap userMatches

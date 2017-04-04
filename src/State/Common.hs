@@ -105,8 +105,6 @@ messagesFromPosts p = do -- (msgs, st')
                                 )
                               | (pId, x) <- HM.toList (p^.postsPostsL)
                               ]
---        st' = st & csPostMap %~ (HM.union postMap)
---        msgs = clientPostToMessage st' <$> clientPost <$> ps
         ps   = findPost <$> (Seq.reverse $ postsOrder p)
         clientPost :: Post -> ClientPost
         clientPost x = toClientPost x (postId <$> parent x)
@@ -187,8 +185,7 @@ asyncFetchScrollback prio cId = do
             contents <- fromPosts posts
             -- We need to set the new message cutoff only if there are
             -- actually messages that came in after our last view time.
-            let -- Just viewTime = st'^?msgMap.ix cId.ccInfo.cdViewed
-                setCutoff = if hasNew
+            let setCutoff = if hasNew
                             then const $ Just $ minimum (_mDate <$> newMessages)
                             else id
                 hasNew = not $ Seq.null newMessages
