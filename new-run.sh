@@ -1,5 +1,10 @@
 #!/bin/sh
 
+# Run the most recently-modified matterhorn binary in the matterhorn
+# working tree.
+#
+# Portability: Linux, OS X
+
 set -e
 
 # Before you ask: yes, I know about -executable, but it only works for
