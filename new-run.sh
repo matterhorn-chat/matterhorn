@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 # Before you ask: yes, I know about -executable, but it only works for GNU find.
 # Using -perm +111 should work solidly across platforms.
 OPTIONS=$(find . -name matterhorn -type f -perm +111)
