@@ -273,9 +273,9 @@ initializeState cr myTeam myUser = do
                        , _ccInfo     = initialChannelInfo c & cdCurrentState .~ state
                        }
 
-          state = if c^.channelTypeL == Direct
-                  then ChanUnloaded
-                  else ChanLoadPending
+          state = if c^.channelNameL == "town-square"
+                  then ChanLoadPending
+                  else ChanUnloaded
 
       return (getId c, cChannel)
 
@@ -334,11 +334,5 @@ initializeState cr myTeam myUser = do
               cwd <- liftIO $ mmGetChannel session myTeamId (getId c)
               return $ do
                   csChannel(getId c).ccInfo %= channelInfoFromChannelWithData cwd
-
-  -- Then we queue up scrollback fetches for non-DM channels:
-  F.forM_ chans $ \c ->
-      when (getId c /= townSqId && c^.channelTypeL /= Direct) $
-          doAsyncWithIO Normal st $ do
-            return $ asyncFetchScrollback Normal (getId c)
 
   updateViewedIO st
