@@ -7,7 +7,7 @@ license:          BSD3
 license-file:     LICENSE
 author:           Getty Ritter <gdritter@galois.com>
 maintainer:       Getty Ritter <gdritter@galois.com>
-copyright:        ©2016 Getty Ritter
+copyright:        ©2016-2017 Getty Ritter, Jonathan Daugherty, Jason Dagit
 category:         Chat
 build-type:       Simple
 cabal-version:    >= 1.12
