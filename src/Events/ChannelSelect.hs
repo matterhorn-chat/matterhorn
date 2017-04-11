@@ -41,4 +41,8 @@ channelSelectKeybindings =
     , KB "Cancel channel selection"
          (Vty.EvKey Vty.KEsc []) $ do
            csMode .= Main
+
+    , KB "Cancel channel selection"
+         (Vty.EvKey (Vty.KChar 'c') [Vty.MCtrl]) $ do
+           csMode .= Main
     ]
