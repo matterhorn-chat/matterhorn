@@ -76,6 +76,11 @@ To change channels, use `/focus` or one of the default bindings `C-n`
 
 To directly message another user, use `/focus` or `C-g`.
 
+`C-g` channel switching mode does a substring match of the input text on
+the channel and usernames; metacharacters `^` and `$` at the beginning
+or end of input, respectively, anchor the match in case of multiple
+matches.
+
 To switch to the channel you were in prior to the current channel, use
 the default binding `M-s` (swap). The most recent channel is marked in
 the channel list with a "`<`" indicator.
