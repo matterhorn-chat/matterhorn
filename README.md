@@ -74,6 +74,8 @@ binding `M-p`.
 To change channels, use `/focus` or one of the default bindings `C-n`
 (next channel), `C-p` (previous channel), `C-g` (fast channel switch).
 
+To directly message another user, use `/focus` or `C-g`.
+
 To switch to the channel you were in prior to the current channel, use
 the default binding `M-s` (swap). The most recent channel is marked in
 the channel list with a "`<`" indicator.
