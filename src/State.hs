@@ -855,9 +855,9 @@ channelHistoryBackward = do
                   let eLines = T.lines entry
                       mv = if length eLines == 1 then gotoEOL else id
                   in do
+                    saveCurrentEdit
                     csCmdLine.editContentsL .= (mv $ textZipper eLines Nothing)
                     csInputHistoryPosition.at cId .= (Just $ Just newI)
-                    saveCurrentEdit
 
 showHelpScreen :: HelpScreen -> MH ()
 showHelpScreen screen = do
