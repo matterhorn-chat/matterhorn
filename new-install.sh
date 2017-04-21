@@ -48,13 +48,16 @@ function clone_or_update_repo {
 }
 
 function install_deps {
-  git branch
-  echo clone_or_update_repo "$(current_branch)" "$MATTERMOST_API_REPO" "$MATTERMOST_DIR"
   clone_or_update_repo $(current_branch) $MATTERMOST_API_REPO $MATTERMOST_DIR
 }
 
 function current_branch {
-  git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/'
+  if [[ -z "$TRAVIS_BRANCH" ]]
+  then
+      git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/'
+  else
+    "$TRAVIS_BRANCH"
+  fi
 }
 
 function build {
