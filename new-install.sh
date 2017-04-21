@@ -53,6 +53,7 @@ function install_deps {
 }
 
 function current_branch {
+  echo TRAVIS_BRANCH="$TRAVIS_BRANCH"
   if [[ -z "$TRAVIS_BRANCH" ]]
   then
       git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/'
