@@ -41,14 +41,14 @@ function clone_or_update_repo {
 
     if [ ! -d "$destdir" ]
     then
-        git clone -b $branch $repo $destdir
+        git clone -b "$branch" "$repo" "$destdir"
     else
         cd $destdir && git pull
     fi
 }
 
 function install_deps {
-  clone_or_update_repo $(current_branch) $MATTERMOST_API_REPO $MATTERMOST_DIR
+  clone_or_update_repo "$(current_branch)" "$MATTERMOST_API_REPO" "$MATTERMOST_DIR"
 }
 
 function current_branch {
