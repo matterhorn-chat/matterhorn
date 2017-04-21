@@ -41,6 +41,7 @@ function clone_or_update_repo {
 
     if [ ! -d "$destdir" ]
     then
+        echo git clone -b "$branch" "$repo" "$destdir"
         git clone -b "$branch" "$repo" "$destdir"
     else
         cd $destdir && git pull
