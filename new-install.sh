@@ -48,6 +48,8 @@ function clone_or_update_repo {
 }
 
 function install_deps {
+  git branch
+  echo clone_or_update_repo "$(current_branch)" "$MATTERMOST_API_REPO" "$MATTERMOST_DIR"
   clone_or_update_repo $(current_branch) $MATTERMOST_API_REPO $MATTERMOST_DIR
 }
 
