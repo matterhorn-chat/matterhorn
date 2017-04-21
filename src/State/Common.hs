@@ -230,11 +230,13 @@ updateViewedIO st = do
       Connected -> do
           now <- getCurrentTime
           let cId = st^.csCurrentChannelId
+              pId = st^.csRecentChannel
           doAsyncWithIO Normal st $ do
-            mmUpdateLastViewedAt
+            mmViewChannel
               (st^.csSession)
               (getId (st^.csMyTeam))
               cId
+              pId
             return (csCurrentChannel.ccInfo.cdViewed .= now)
           return st
       Disconnected -> return st
