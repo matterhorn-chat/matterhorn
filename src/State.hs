@@ -297,7 +297,17 @@ startJoinChannel = do
     session <- use csSession
     myTeamId <- use (csMyTeam.teamIdL)
     doAsyncWith Preempt $ do
-        chans <- mmGetMoreChannels session myTeamId
+        -- We don't get to just request all channels, so we request channels in
+        -- chunks of 50.  A better UI might be to request an initial set and
+        -- then wait for the user to demand more.
+        let fetchCount     = 50
+            loop acc start = do
+              newChans <- mmGetMoreChannels session myTeamId start fetchCount
+              let chans = acc <> newChans
+              if length newChans < fetchCount
+                then return chans
+                else loop chans (start+fetchCount)
+        chans <- loop mempty 0
         return $ do
             csJoinChannelList .= (Just $ list JoinChannelList (V.fromList $ F.toList chans) 1)
 
