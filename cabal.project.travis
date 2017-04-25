@@ -1,0 +1,4 @@
+packages: deps/mattermost-api/mattermost-api.cabal
+jobs: 1
+package matterhorn
+  ghc-options: -Werror
