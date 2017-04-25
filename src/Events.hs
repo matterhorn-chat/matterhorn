@@ -159,3 +159,6 @@ handleWSEvent we = do
         Just cId -> removeReaction r cId
         Nothing -> return ()
       Nothing -> return ()
+    WMAddedToTeam -> return () -- XXX: we need to handle this
+    WMWebRTC      -> return ()
+    WMAuthenticationChallenge -> return ()
