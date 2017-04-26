@@ -22,7 +22,7 @@ For example, you might run the following commands, where `VERSION` and
 
     wget https://github.com/matterhorn-chat/matterhorn/releases/download/<VERSION>/matterhorn-<VERSION>-<PLATFORM>.tar.gz
     tar xf matterhorn-<VERSION>-<PLATFORM>.tar.gz
-    cd matterhorn-<VERSION>-<PLATFORM>.tar.gz
+    cd matterhorn-<VERSION>-<PLATFORM>
     ./matterhorn
 
 Note: Version `ABBCC.X.Y` matches MatterMost server version `A.BB.CC`. For
