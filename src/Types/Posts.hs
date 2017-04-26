@@ -61,8 +61,9 @@ data ClientPost = ClientPost
 -- | An attachment has a very long URL associated, as well as
 --   an actual file URL
 data Attachment = Attachment
-  { _attachmentName :: T.Text
-  , _attachmentURL  :: T.Text
+  { _attachmentName   :: T.Text
+  , _attachmentURL    :: T.Text
+  , _attachmentFileId :: FileId
   } deriving (Eq, Show)
 
 -- | A Mattermost 'Post' value can represent either a normal

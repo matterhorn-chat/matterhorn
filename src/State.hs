@@ -18,6 +18,7 @@ import           Data.Char (isAlphaNum)
 import           Brick.Main (getVtyHandle, viewportScroll, vScrollToBeginning, vScrollBy)
 import           Brick.Widgets.Edit (applyEdit)
 import           Control.Monad (when, void)
+import qualified Data.ByteString as BS
 import           Data.Text.Zipper (textZipper, clearZipper, insertMany, gotoEOL)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
@@ -35,12 +36,16 @@ import           Lens.Micro.Platform
 import           System.Process (proc, std_in, std_out, std_err, StdStream(..),
                                  createProcess, waitForProcess)
 import           System.IO (hGetContents)
+import           System.Directory ( createDirectoryIfMissing )
+import           System.Environment.XDG.BaseDir ( getUserCacheDir )
+import           System.FilePath
 
 import           Network.Mattermost
 import           Network.Mattermost.Exceptions
 import           Network.Mattermost.Lenses
 
 import           Config
+import           FilePaths
 import           Types
 import           Types.Posts
 import           InputHistory
@@ -966,14 +971,15 @@ removeDuplicates = snd . go Set.empty
 
 msgURLs :: Message -> Seq.Seq LinkChoice
 msgURLs msg | Just uname <- msg^.mUserName =
-  let msgUrls = (\ (url, text) -> LinkChoice (msg^.mDate) uname text url) <$>
+  let msgUrls = (\ (url, text) -> LinkChoice (msg^.mDate) uname text url Nothing) <$>
                   (mconcat $ blockGetURLs <$> (F.toList $ msg^.mText))
       attachmentURLs = (\ a ->
                           LinkChoice
                             (msg^.mDate)
                             uname
                             ("attachment `" <> (a^.attachmentName) <> "`")
-                            (a^.attachmentURL))
+                            (a^.attachmentURL)
+                            (Just (a^.attachmentFileId)))
                        <$> (msg^.mAttachments)
   in msgUrls <> attachmentURLs
 msgURLs _ = mempty
@@ -998,9 +1004,24 @@ openURL link = do
     case cmd of
         Nothing ->
             return False
-        Just urlOpenCommand -> do
-            runLoggedCommand (T.unpack urlOpenCommand) [T.unpack $ link^.linkURL]
-            return True
+        Just urlOpenCommand ->
+            case _linkFileId link of
+              Nothing -> do
+                runLoggedCommand (T.unpack urlOpenCommand) [T.unpack $ link^.linkURL]
+                return True
+              Just fId -> do
+                sess  <- use csSession
+                fname <- liftIO $ do
+                  info     <- mmGetFileInfo sess fId
+                  contents <- mmGetFile sess fId
+                  cacheDir <- getUserCacheDir xdgName
+                  let dir   = cacheDir </> "files" </> T.unpack (idString fId)
+                      fname = dir </> T.unpack (fileInfoName info)
+                  createDirectoryIfMissing True dir
+                  BS.writeFile fname contents
+                  return fname
+                runLoggedCommand (T.unpack urlOpenCommand) [fname]
+                return True
 
 runLoggedCommand :: String -> [String] -> MH ()
 runLoggedCommand cmd args = do
