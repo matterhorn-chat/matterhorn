@@ -7,20 +7,28 @@ Matterhorn is a terminal-based client for the MatterMost chat system.
 
 ![](screenshots/screenshot-00.png)
 
-# Installing
+# Quick Start
 
-We provide pre-built binary releases for some platforms. Please see the
-release list to download a binary release for your platform:
-
-https://github.com/matterhorn-chat/matterhorn/releases
-
-(If your platform is not listed, you may need to build from source if
-we don't have the resources to ship a release for your platform. See
-the Building section below.)
+We provide pre-built binary releases for some platforms. Please see the release
+list to download a binary release for your platform that matches your server
+version: https://github.com/matterhorn-chat/matterhorn/releases
 
 Run the `matterhorn` binary in the release archive. You'll be prompted
 for your server information. At present `matterhorn` supports only
 username/password authentication.
+
+For example, you might run the following commands, where `VERSION` and
+`PLATFORM` match your setup:
+
+    wget https://github.com/matterhorn-chat/matterhorn/releases/download/<VERSION>/matterhorn-<VERSION>-<PLATFORM>.tar.gz
+    tar xf matterhorn-<VERSION>-<PLATFORM>.tar.gz
+    cd matterhorn-<VERSION>-<PLATFORM>.tar.gz
+    ./matterhorn
+
+Note: Version `ABBCC.X.Y` matches MatterMost server version `A.BB.CC`. For
+example, if your MatterMost server version is `3.6.0` then you would download
+matterhorn version `30600.2.4`. See [Our Versioning
+Scheme](#our-versioning-scheme) for details.
 
 # Configuring
 
