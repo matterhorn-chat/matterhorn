@@ -387,7 +387,7 @@ fetchCurrentChannelMembers = do
     session <- use csSession
     myTeamId <- use (csMyTeam.teamIdL)
     doAsyncWith Preempt $ do
-        chanUserMap <- liftIO $ mmGetChannelMembers session myTeamId cId
+        chanUserMap <- liftIO $ mmGetChannelMembers session myTeamId cId 0 10000
 
         -- Construct a message listing them all and post it to the
         -- channel:
@@ -1098,7 +1098,7 @@ handleNewUser newUserId = do
         newUser <- mmGetUser (st^.csSession) newUserId
         -- Also re-load the team members so we can tell whether the new
         -- user is in the current user's team.
-        teamUsers <- mmGetProfiles (st^.csSession) (st^.csMyTeam.teamIdL)
+        teamUsers <- mmGetProfiles (st^.csSession) (st^.csMyTeam.teamIdL) 0 10000
         let uInfo = userInfoFromUser newUser (HM.member newUserId teamUsers)
 
         return $ do
