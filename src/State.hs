@@ -1011,7 +1011,7 @@ openURL link = do
                 return True
               Just fId -> do
                 sess  <- use csSession
-                fname <- liftIO $ do
+                doAsyncWith Normal $ do
                   info     <- mmGetFileInfo sess fId
                   contents <- mmGetFile sess fId
                   cacheDir <- getUserCacheDir xdgName
@@ -1019,8 +1019,7 @@ openURL link = do
                       fname = dir </> T.unpack (fileInfoName info)
                   createDirectoryIfMissing True dir
                   BS.writeFile fname contents
-                  return fname
-                runLoggedCommand (T.unpack urlOpenCommand) [fname]
+                  return $! runLoggedCommand (T.unpack urlOpenCommand) [fname]
                 return True
 
 runLoggedCommand :: String -> [String] -> MH ()
