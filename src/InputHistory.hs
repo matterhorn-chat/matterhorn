@@ -44,8 +44,6 @@ writeHistory ih = do
     createDirectoryIfMissing True $ dropFileName historyFile
     let entries = (\(cId, z) -> (cId, V.toList z)) <$>
                   (HM.toList $ ih^.historyEntries)
-    -- XXX This needs to set a file mode but due to locking and laziness
-    -- this was a pain so I didn't do it. -JTD
     writeFile historyFile $ show entries
 
 readHistory :: IO (Either String InputHistory)
