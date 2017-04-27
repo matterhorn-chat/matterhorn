@@ -402,7 +402,7 @@ data Mode =
     | MessageSelectDeleteConfirm
     deriving (Eq)
 
--- | We're either connected or we're not. yeop
+-- | We're either connected or we're not.
 data ConnectionStatus = Connected | Disconnected
 
 -- | This is the giant bundle of fields that represents the current
