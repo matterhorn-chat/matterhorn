@@ -279,7 +279,8 @@ separate uSet cSet sq = case viewl sq of
             EmptyL -> S.singleton (buildString s n)
         buildString s n =
             let s' = removeCursor s
-            in if | ":" `T.isPrefixOf` s' &&
+            in if | n == Code -> Fragment (TStr s) n
+                  | ":" `T.isPrefixOf` s' &&
                     ":" `T.isSuffixOf` s' &&
                     textWidth s' > 2 ->
                       Fragment (TStr s) Emoji
