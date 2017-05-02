@@ -82,6 +82,7 @@ onVtyEvent e = do
 handleWSEvent :: WebsocketEvent -> MH ()
 handleWSEvent we = do
   myId <- use (csMe.userIdL)
+  myTeamId <- use (csMyTeam.teamIdL)
   case weEvent we of
     WMPosted -> case wepPost (weData we) of
       Just p  -> do
@@ -108,7 +109,8 @@ handleWSEvent we = do
       Just cId -> setLastViewedFor cId
       Nothing -> return ()
     WMUserAdded -> case webChannelId (weBroadcast we) of
-      Just cId -> if wepUserId (weData we) == Just myId
+      Just cId -> if wepUserId (weData we) == Just myId &&
+                     wepTeamId (weData we) == Just myTeamId
                   then handleChannelInvite cId
                   else return ()
       Nothing -> return ()
