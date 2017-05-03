@@ -15,6 +15,9 @@ channelScrollKeybindings =
   [ KB "Load more messages in the current channel"
     (Vty.EvKey (Vty.KChar 'b') [Vty.MCtrl])
     loadMoreMessages
+  , KB "Select and open a URL posted to the current channel"
+    (Vty.EvKey (Vty.KChar 'o') [Vty.MCtrl])
+    startUrlSelect
   , KB "Scroll up" (Vty.EvKey Vty.KPageUp [])
     channelPageUp
   , KB "Scroll down" (Vty.EvKey Vty.KPageDown [])
