@@ -18,6 +18,7 @@ import Themes
 import Types
 import Command
 import Events.ShowHelp
+import Events.ChannelScroll
 import Events.ChannelSelect
 import Events.UrlSelect
 import Events.Main
@@ -46,6 +47,7 @@ keybindSections =
     , ("Main Interface", mainKeybindings)
     , ("Channel Select Mode", channelSelectKeybindings)
     , ("URL Select Mode", urlSelectKeybindings)
+    , ("Channel Scroll Mode", channelScrollKeybindings)
     , ("Message Select Mode", messageSelectKeybindings)
     , ("Text Editing", editingKeybindings)
     ]
