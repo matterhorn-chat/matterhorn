@@ -9,3 +9,4 @@ dist-newstyle
 *~
 .DS_Store
 tags
+_darcs/
