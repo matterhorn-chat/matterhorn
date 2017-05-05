@@ -28,10 +28,10 @@ import Markdown (renderText)
 import Options (mhVersion)
 
 drawShowHelp :: HelpScreen -> ChatState -> [Widget Name]
-drawShowHelp screen = const [helpBox widget]
-  where widget = case screen of
-          MainHelp   -> mainHelp
-          ScriptHelp -> scriptHelp
+drawShowHelp screen = const [helpBox name widget]
+  where (name, widget) = case screen of
+          MainHelp   -> (HelpText,       mainHelp)
+          ScriptHelp -> (ScriptHelpText, scriptHelp)
 
 withMargins :: (Int, Int) -> Widget a -> Widget a
 withMargins (hMargin, vMargin) w =
@@ -52,11 +52,11 @@ keybindSections =
     , ("Text Editing", editingKeybindings)
     ]
 
-helpBox :: Widget Name -> Widget Name
-helpBox helpText =
+helpBox :: Name -> Widget Name -> Widget Name
+helpBox n helpText =
     centerLayer $ withMargins (2, 1) $
       (withDefAttr helpAttr $ borderWithLabel (withDefAttr helpEmphAttr $ txt "Matterhorn Help") $
-       (viewport HelpViewport Vertical $ cached HelpText helpText)) <=>
+       (viewport HelpViewport Vertical $ cached n helpText)) <=>
       quitMessage
     where
     quitMessage = padTop (Pad 1) $ hCenter $ txt "Press Esc to exit the help screen."

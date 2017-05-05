@@ -103,6 +103,7 @@ data Name = ChannelMessages ChannelId
           | ChannelList
           | HelpViewport
           | HelpText
+          | ScriptHelpText
           | ChannelSelectString
           | CompletionAlternatives
           | JoinChannelList
