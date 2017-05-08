@@ -143,7 +143,9 @@ getSelectedMessage st
         let chanMsgs = st ^. csCurrentChannel . ccContents . cdMessages
 
         idx <- Seq.findIndexR (\m -> m^.mPostId == Just selPostId) chanMsgs
-        Seq.lookup idx chanMsgs
+        if idx < (Seq.length chanMsgs) && idx >= 0
+        then Just $ chanMsgs `Seq.index` idx
+        else Nothing
 
 messageSelectUp :: MH ()
 messageSelectUp = do

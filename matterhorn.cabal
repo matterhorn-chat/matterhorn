@@ -63,7 +63,7 @@ executable matterhorn
                      , mattermost-api >= 30701.1.0
                      , base-compat
                      , unordered-containers
-                     , containers >= 0.5.8
+                     , containers >= 0.5.7
                      , connection
                      , text
                      , bytestring
