@@ -328,9 +328,9 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
         case Seq.findIndexR (\m -> m^.mPostId == Just selPostId) msgs of
             Nothing -> renderLastMessages msgs
             Just idx ->
-                case Seq.lookup idx msgs of
-                    Nothing -> renderLastMessages msgs
-                    Just curMsg -> unsafeMessageSelectList msgs idx curMsg
+                if idx < (Seq.length msgs) && idx >= 0
+                then unsafeMessageSelectList msgs idx $ msgs `Seq.index` idx
+                else renderLastMessages msgs
 
     unsafeMessageSelectList msgs idx curMsg = Widget Greedy Greedy $ do
         ctx <- getContext
