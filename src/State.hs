@@ -18,6 +18,7 @@ import           Data.Char (isAlphaNum)
 import           Brick.Main (getVtyHandle, viewportScroll, vScrollToBeginning, vScrollBy)
 import           Brick.Widgets.Edit (applyEdit)
 import           Control.Monad (when, void)
+import qualified Data.ByteString as BS
 import           Data.Text.Zipper (textZipper, clearZipper, insertMany, gotoEOL)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
@@ -35,12 +36,16 @@ import           Lens.Micro.Platform
 import           System.Process (proc, std_in, std_out, std_err, StdStream(..),
                                  createProcess, waitForProcess)
 import           System.IO (hGetContents)
+import           System.Directory ( createDirectoryIfMissing )
+import           System.Environment.XDG.BaseDir ( getUserCacheDir )
+import           System.FilePath
 
 import           Network.Mattermost
 import           Network.Mattermost.Exceptions
 import           Network.Mattermost.Lenses
 
 import           Config
+import           FilePaths
 import           Types
 import           Types.Posts
 import           InputHistory
@@ -299,7 +304,17 @@ startJoinChannel = do
     session <- use csSession
     myTeamId <- use (csMyTeam.teamIdL)
     doAsyncWith Preempt $ do
-        chans <- mmGetMoreChannels session myTeamId
+        -- We don't get to just request all channels, so we request channels in
+        -- chunks of 50.  A better UI might be to request an initial set and
+        -- then wait for the user to demand more.
+        let fetchCount     = 50
+            loop acc start = do
+              newChans <- mmGetMoreChannels session myTeamId start fetchCount
+              let chans = acc <> newChans
+              if length newChans < fetchCount
+                then return chans
+                else loop chans (start+fetchCount)
+        chans <- loop mempty 0
         return $ do
             csJoinChannelList .= (Just $ list JoinChannelList (V.fromList $ F.toList chans) 1)
 
@@ -374,7 +389,7 @@ fetchCurrentChannelMembers = do
     session <- use csSession
     myTeamId <- use (csMyTeam.teamIdL)
     doAsyncWith Preempt $ do
-        chanUserMap <- liftIO $ mmGetChannelMembers session myTeamId cId
+        chanUserMap <- liftIO $ mmGetChannelMembers session myTeamId cId 0 10000
 
         -- Construct a message listing them all and post it to the
         -- channel:
@@ -958,14 +973,15 @@ removeDuplicates = snd . go Set.empty
 
 msgURLs :: Message -> Seq.Seq LinkChoice
 msgURLs msg | Just uname <- msg^.mUserName =
-  let msgUrls = (\ (url, text) -> LinkChoice (msg^.mDate) uname text url) <$>
+  let msgUrls = (\ (url, text) -> LinkChoice (msg^.mDate) uname text url Nothing) <$>
                   (mconcat $ blockGetURLs <$> (F.toList $ msg^.mText))
       attachmentURLs = (\ a ->
                           LinkChoice
                             (msg^.mDate)
                             uname
                             ("attachment `" <> (a^.attachmentName) <> "`")
-                            (a^.attachmentURL))
+                            (a^.attachmentURL)
+                            (Just (a^.attachmentFileId)))
                        <$> (msg^.mAttachments)
   in msgUrls <> attachmentURLs
 msgURLs _ = mempty
@@ -990,9 +1006,23 @@ openURL link = do
     case cmd of
         Nothing ->
             return False
-        Just urlOpenCommand -> do
-            runLoggedCommand (T.unpack urlOpenCommand) [T.unpack $ link^.linkURL]
-            return True
+        Just urlOpenCommand ->
+            case _linkFileId link of
+              Nothing -> do
+                runLoggedCommand (T.unpack urlOpenCommand) [T.unpack $ link^.linkURL]
+                return True
+              Just fId -> do
+                sess  <- use csSession
+                doAsyncWith Normal $ do
+                  info     <- mmGetFileInfo sess fId
+                  contents <- mmGetFile sess fId
+                  cacheDir <- getUserCacheDir xdgName
+                  let dir   = cacheDir </> "files" </> T.unpack (idString fId)
+                      fname = dir </> T.unpack (fileInfoName info)
+                  createDirectoryIfMissing True dir
+                  BS.writeFile fname contents
+                  return $! runLoggedCommand (T.unpack urlOpenCommand) [fname]
+                return True
 
 runLoggedCommand :: String -> [String] -> MH ()
 runLoggedCommand cmd args = do
@@ -1070,7 +1100,7 @@ handleNewUser newUserId = do
         newUser <- mmGetUser (st^.csSession) newUserId
         -- Also re-load the team members so we can tell whether the new
         -- user is in the current user's team.
-        teamUsers <- mmGetProfiles (st^.csSession) (st^.csMyTeam.teamIdL)
+        teamUsers <- mmGetProfiles (st^.csSession) (st^.csMyTeam.teamIdL) 0 10000
         let uInfo = userInfoFromUser newUser (HM.member newUserId teamUsers)
 
         return $ do

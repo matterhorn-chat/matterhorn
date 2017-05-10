@@ -126,8 +126,9 @@ asyncFetchAttachments p = do
     let scheme = "https://"
         attUrl = scheme <> host <> urlForFile fId
         attachment = Attachment
-                       { _attachmentName = fileInfoName info
-                       , _attachmentURL  = attUrl
+                       { _attachmentName   = fileInfoName info
+                       , _attachmentURL    = attUrl
+                       , _attachmentFileId = fId
                        }
         addAttachment m
           | m^.mPostId == Just pId =
@@ -230,11 +231,13 @@ updateViewedIO st = do
       Connected -> do
           now <- getCurrentTime
           let cId = st^.csCurrentChannelId
+              pId = st^.csRecentChannel
           doAsyncWithIO Normal st $ do
-            mmUpdateLastViewedAt
+            mmViewChannel
               (st^.csSession)
               (getId (st^.csMyTeam))
               cId
+              pId
             return (csCurrentChannel.ccInfo.cdViewed .= now)
           return st
       Disconnected -> return st

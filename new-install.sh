@@ -35,19 +35,30 @@ function init {
 function clone_or_update_repo {
     mkdir -p $DEPS
 
-    local repo=$1
-    local destdir=$2
+    local branch=$1
+    local repo=$2
+    local destdir=$3
 
     if [ ! -d "$destdir" ]
     then
-        git clone $repo $destdir
+        echo git clone -b "$branch" "$repo" "$destdir"
+        git clone -b "$branch" "$repo" "$destdir"
     else
         cd $destdir && git pull
     fi
 }
 
 function install_deps {
-    clone_or_update_repo $MATTERMOST_API_REPO $MATTERMOST_DIR
+  clone_or_update_repo "$(current_branch)" "$MATTERMOST_API_REPO" "$MATTERMOST_DIR"
+}
+
+function current_branch {
+  if [[ -z "$TRAVIS_BRANCH" ]]
+  then
+      git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/'
+  else
+      echo "$TRAVIS_BRANCH"
+  fi
 }
 
 function build {

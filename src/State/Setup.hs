@@ -279,7 +279,7 @@ initializeState cr myTeam myUser = do
 
       return (getId c, cChannel)
 
-  teamUsers <- mmGetProfiles session myTeamId
+  teamUsers <- mmGetProfiles session myTeamId 0 10000
   users <- loadAllUsers session
   let mkUser u = userInfoFromUser u (HM.member (u^.userIdL) teamUsers)
   tz    <- getCurrentTimeZone

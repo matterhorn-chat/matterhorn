@@ -142,10 +142,11 @@ data PostRef
 
 -- | For representing links to things in the 'open links' view
 data LinkChoice = LinkChoice
-  { _linkTime :: UTCTime
-  , _linkUser :: T.Text
-  , _linkName :: T.Text
-  , _linkURL  :: T.Text
+  { _linkTime   :: UTCTime
+  , _linkUser   :: T.Text
+  , _linkName   :: T.Text
+  , _linkURL    :: T.Text
+  , _linkFileId :: Maybe FileId
   } deriving (Eq, Show)
 
 makeLenses ''LinkChoice

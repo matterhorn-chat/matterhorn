@@ -107,9 +107,6 @@ handleWSEvent we = do
           Just uId -> updateStatus uId status
           Nothing -> return ()
       Nothing -> return ()
-    WMChannelViewed -> case wepChannelId (weData we) of
-      Just cId -> setLastViewedFor cId
-      Nothing -> return ()
     WMUserAdded -> case webChannelId (weBroadcast we) of
       Just cId -> if wepUserId (weData we) == Just myId &&
                      wepTeamId (weData we) == Just myTeamId
@@ -166,3 +163,6 @@ handleWSEvent we = do
         Just cId -> removeReaction r cId
         Nothing -> return ()
       Nothing -> return ()
+    WMAddedToTeam -> return () -- XXX: we need to handle this
+    WMWebRTC      -> return ()
+    WMAuthenticationChallenge -> return ()
