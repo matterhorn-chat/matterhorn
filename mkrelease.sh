@@ -44,7 +44,7 @@ function install_tools {
         cd cabal-dependency-licenses
         cabal install
         mkdir -p $CABAL_DEPS_TOOL_DIR
-        cd $HERE && rm -r $BUILD
+        cd $HERE && rm -rf $BUILD
     fi
 }
 
