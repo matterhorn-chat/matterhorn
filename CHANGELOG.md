@@ -1,4 +1,36 @@
 
+30802.0.0
+=========
+
+This release supports server version 3.8.2.
+
+Package changes:
+* Relax constraint on containers to allow 0.5.7 or greater.
+* Upgraded mattermost-api to 30802.0.0.
+
+Bug fixes:
+* The help interface now updates properly when showing either the main
+  help window or the scripts help window.
+* Attachments are now saved asynchronously.
+* Attachments are now opened without using the browser, thus removing
+  our dependency on a valid browser session with the server (fixes #128)
+* Editing state is now saved before switching history entries (fixes
+  #210)
+* Messages with unknown authors trigger a user metadata fetch (fixes #205)
+
+New keybindings:
+* C-o now opens the URL list while scrolling through channel messages.
+* C-c now cancels channel selection in C-g mode
+
+UI changes:
+* Channel scroll mode keybindings were added to the help page.
+* We no longer perform string highlighting on the contents of Markdown
+  code spans in messages.
+* On startup, only the scrollback for Town Square is fetched to improve
+  performance. Scrollback for other channels is fetched on demand.
+* We now use the channel sigil "~" rather than "#" to match the web
+  client behavior, and highlight ~-prefixed channel names (fixes #204).
+
 30701.0.0
 =========
 
