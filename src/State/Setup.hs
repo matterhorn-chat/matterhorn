@@ -20,7 +20,7 @@ import           Data.Monoid ((<>))
 import qualified Data.Sequence as Seq
 import           Data.Time.LocalTime ( TimeZone(..), getCurrentTimeZone )
 import           Lens.Micro.Platform
-import           System.Exit (exitFailure)
+import           System.Exit (exitFailure, ExitCode(ExitSuccess))
 import           System.IO (Handle, hPutStrLn, hFlush)
 import           System.IO.Temp (withSystemTempFile)
 
@@ -64,11 +64,12 @@ startSubprocessLogger logChan requestChan = do
           ProgramOutput progName args out err ec <-
               STM.atomically $ STM.readTChan logChan
 
-          -- If either stdout or stderr is non-empty, log it and
-          -- notify the user.
+          -- If either stdout or stderr is non-empty or there was an exit
+          -- failaure, log it and notify the user.
           let emptyOutput s = null s || s == "\n"
 
-          case emptyOutput out && emptyOutput err of
+          case ec == ExitSuccess && emptyOutput out && emptyOutput err of
+              -- the "good" case, no output and exit sucess
               True -> logMonitor logPath logHandle
               False -> do
                   hPutStrLn logHandle $
