@@ -91,3 +91,46 @@ executable matterhorn
                      , Hclip
                      , mtl
   default-language:    Haskell2010
+
+
+test-suite test_messages
+  type:               exitcode-stdio-1.0
+  main-is:            test_messages.hs
+  default-language:   Haskell2010
+  default-extensions: OverloadedStrings
+                    , ScopedTypeVariables
+  ghc-options:        -Wall -fno-warn-orphans
+  hs-source-dirs:     src, test
+  build-depends:      base >=4.7 && <5
+                    , base-compat
+                    , brick >= 0.17
+                    , bytestring
+                    , cheapskate
+                    , config-ini >= 0.1.2
+                    , connection
+                    , containers >= 0.5.7
+                    , directory
+                    , filepath
+                    , hashable
+                    , Hclip
+                    , mattermost-api >= 30802.0.0
+                    , mattermost-api-qc >= 30802.0.0
+                    , microlens-platform
+                    , mtl
+                    , process
+                    , quickcheck-instances
+                    , quickcheck-text
+                    , stm
+                    , strict
+                    , string-conversions
+                    , tasty
+                    , tasty-hunit
+                    , tasty-quickcheck
+                    , text
+                    , text-zipper >= 0.10
+                    , time >= 1.6
+                    , transformers
+                    , unordered-containers
+                    , vector < 0.12
+                    , vty >= 5.15
+                    , xdg-basedir
