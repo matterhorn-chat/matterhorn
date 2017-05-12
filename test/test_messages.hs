@@ -10,7 +10,7 @@ import           System.Exit
 import           Test.Tasty
 import           Test.Tasty.HUnit
 import           Test.Tasty.QuickCheck
-import           Types.Posts
+import           Types.Messages
 
 main :: IO ()
 main = defaultMain tests `catch` (\e -> do
@@ -28,10 +28,10 @@ tests = testGroup "Messages Tests"
 
 createTests :: TestTree
 createTests = testGroup "Create"
-              [ testCase "no messages" -- n.b. silly impl. for now
-                    $ Seq.null Seq.empty @? "messages not null Sequence"
+              [ testCase "no messages"
+                    $ Seq.null noMessages @? "messages not null Sequence"
               , testProperty "has messages"  -- n.b. silly impl. for now
-                    $ \x -> not (Seq.null (x :: Seq.Seq Message)) ==> not (Seq.null x)
+                    $ \x -> not (Seq.null (x :: Messages)) ==> not (Seq.null x)
               ]
 
 movementTests :: TestTree
@@ -52,11 +52,11 @@ movementTests = testGroup "Movement"
 
 moveDownTestEmpty :: TestTree
 moveDownTestEmpty = testCase "Move up in empty messages" $
-                    Nothing @=? (getNextPost Seq.empty)
+                    Nothing @=? (getNextPost noMessages)
 
 moveUpTestEmpty :: TestTree
 moveUpTestEmpty = testProperty "Move down in empty messages" $
-                    \x -> Nothing == (getPrevPost x Seq.empty)
+                    \x -> Nothing == (getPrevPost x noMessages)
 
 moveDownTestSingle :: TestTree
 moveDownTestSingle = testProperty "Move up from single message" $

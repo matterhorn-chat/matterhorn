@@ -3,7 +3,7 @@ module Message_QCA where
 import Cheapskate_QCA ()
 import Network.Mattermost.QuickCheck ()
 import Test.Tasty.QuickCheck
-import Types
+import Types.Messages
 import Types.Posts
 
 instance Arbitrary Message where
