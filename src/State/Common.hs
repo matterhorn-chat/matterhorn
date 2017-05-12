@@ -148,7 +148,7 @@ newClientMessage ty msg = do
 addClientMessage :: ClientMessage -> MH ()
 addClientMessage msg = do
   cid <- use csCurrentChannelId
-  msgMap.ix cid.ccContents.cdMessages %= (Seq.|> clientMessageToMessage msg)
+  msgMap.ix cid.ccContents.cdMessages %= (appendMessage $ clientMessageToMessage msg)
 
 -- | Add a new 'ClientMessage' representing an error message to
 --   the current channel's message list
@@ -169,7 +169,7 @@ postErrorMessageIO err st = do
   now <- liftIO getCurrentTime
   let msg = ClientMessage err now Error
       cId = st ^. csCurrentChannelId
-  return $ st & msgMap.ix cId.ccContents.cdMessages %~ (Seq.|> clientMessageToMessage msg)
+  return $ st & msgMap.ix cId.ccContents.cdMessages %~ (appendMessage $ clientMessageToMessage msg)
 
 numScrollbackPosts :: Int
 numScrollbackPosts = 100
@@ -191,7 +191,7 @@ asyncFetchScrollback prio cId = do
                             then const $ Just $ minimum (_mDate <$> newMessages)
                             else id
                 hasNew = not $ Seq.null newMessages
-                newMessages = Seq.filter (\m -> m^.mDate > viewTime) $
+                newMessages = filterMessages (\m -> m^.mDate > viewTime) $
                               contents^.cdMessages
             csChannel(cId).ccContents .= contents
             csChannel(cId).ccInfo.cdCurrentState .= ChanLoaded

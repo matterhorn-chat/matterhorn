@@ -73,8 +73,8 @@ refreshChannel chan = do
   session <- use csSession
   myTeamId <- use (csMyTeam.teamIdL)
   doAsyncWith Normal $
-    case F.find (\ p -> isJust (p^.mPostId)) (Seq.reverse msgs) of
-    Just (Message { _mPostId = Just pId }) -> do
+    case getLastPost msgs of
+    Just pId -> do
       -- Get the latest channel metadata.
       cwd <- mmGetChannel session myTeamId chan
 
@@ -134,7 +134,7 @@ beginMessageSelect = do
     -- If we can't find one at all, we ignore the mode switch request
     -- and just return.
     chanMsgs <- use(csCurrentChannel . ccContents . cdMessages)
-    let recentPost = getPrevPost (Seq.length chanMsgs - 1) chanMsgs
+    let recentPost = getLastPost chanMsgs
 
     when (isJust recentPost) $ do
         csMode .= MessageSelect
@@ -147,21 +147,16 @@ getSelectedMessage st
         selPostId <- selectMessagePostId $ st^.csMessageSelect
 
         let chanMsgs = st ^. csCurrentChannel . ccContents . cdMessages
-
-        idx <- Seq.findIndexR (\m -> m^.mPostId == Just selPostId) chanMsgs
-        if idx < (Seq.length chanMsgs) && idx >= 0
-        then Just $ chanMsgs `Seq.index` idx
-        else Nothing
+        findMessage selPostId chanMsgs
 
 messageSelectUp :: MH ()
 messageSelectUp = do
     mode <- use csMode
     selected <- use (csMessageSelect.to selectMessagePostId)
     case selected of
-        Just selPostId | mode == MessageSelect -> do
+        Just _ | mode == MessageSelect -> do
             chanMsgs <- use (csCurrentChannel.ccContents.cdMessages)
-            let Just idx = Seq.findIndexR (\m -> m^.mPostId == Just selPostId) chanMsgs
-                nextPostId = getNextPost (Seq.drop (idx - 1) chanMsgs)
+            let nextPostId = getPrevPostId selected chanMsgs
             csMessageSelect .= MessageSelectState (nextPostId <|> selected)
         _ -> return ()
 
@@ -170,10 +165,9 @@ messageSelectDown = do
     mode <- use csMode
     selected <- use (csMessageSelect.to selectMessagePostId)
     case selected of
-        Just selPostId | mode == MessageSelect -> do
+        Just _ | mode == MessageSelect -> do
             chanMsgs <- use (csCurrentChannel.ccContents.cdMessages)
-            let Just idx = Seq.findIndexR (\m -> m^.mPostId == Just selPostId) chanMsgs
-                nextPostId = getNextPost (Seq.drop (idx + 1) chanMsgs)
+            let nextPostId = getNextPostId selected chanMsgs
             csMessageSelect .= MessageSelectState (nextPostId <|> selected)
         _ -> return ()
 

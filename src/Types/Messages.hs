@@ -4,11 +4,12 @@
 module Types.Messages where
 
 import           Cheapskate (Blocks)
+import           Control.Applicative
 import qualified Data.Map.Strict as Map
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Time.Clock (UTCTime)
-import           Lens.Micro.Platform (makeLenses)
+import           Lens.Micro.Platform
 import           Network.Mattermost
 import           Types.Posts
 
@@ -72,13 +73,67 @@ clientMessageToMessage cm = Message
   , _mOriginalPost  = Nothing
   }
 
+-- | A wrapper for an ordered, unique list of 'Message' values
+type Messages = Seq.Seq Message
+
 -- ** 'Message' Lenses
 
 makeLenses ''Message
 
-
--- | A wrapper for an ordered, unique list of 'Message' values
-type Messages = Seq.Seq Message
+-- ** Common operations on Messages
 
 noMessages :: Messages
 noMessages = mempty
+
+appendMessage :: Message -> Messages -> Messages
+appendMessage = flip (Seq.|>)
+
+-- filterMessages :: (Message -> Bool) -> Messages -> Messages
+filterMessages :: (Message -> Bool) -> Messages -> Seq.Seq Message
+filterMessages = Seq.filter
+
+countMessages :: Messages -> Int
+countMessages = Seq.length
+
+
+-- | findMessage searches for a specific message as identified by the
+-- PostId.  The search starts from the most recent messages because
+-- that is the most likely place the message will occur.
+findMessage :: PostId -> Messages -> Maybe Message
+findMessage pid msgs = Seq.findIndexR (\m -> m^.mPostId == Just pid) msgs
+                       >>= Just . Seq.index msgs
+
+-- | Look forward for the first Message that corresponds to a user
+-- Post (i.e. has a post ID) that follows the specified PostId
+getNextPostId :: Maybe PostId -> Messages -> Maybe PostId
+getNextPostId = getRelPostId foldl
+
+
+-- | Look backwards for the first Message that corresponds to a user
+-- Post (i.e. has a post ID) that comes before the specified PostId.
+getPrevPostId :: Maybe PostId -> Messages -> Maybe PostId
+getPrevPostId = getRelPostId $ foldr . flip
+
+-- | Find the next PostId after the specified PostId (if there is one)
+-- by folding in the specified direction
+getRelPostId :: ((Either PostId (Maybe PostId)
+                      -> Message
+                      -> Either PostId (Maybe PostId))
+                -> Either PostId (Maybe PostId)
+                -> Messages
+                -> Either PostId (Maybe PostId))
+             -> Maybe PostId
+             -> Messages
+             -> Maybe PostId
+getRelPostId folD jp = case jp of
+                         Nothing -> getLastPost
+                         Just p -> either (const Nothing) id . folD fnd (Left p)
+    where fnd = either fndp fndnext
+          fndp c v = if v^.mPostId == Just c then Right Nothing else Left c
+          idOfPost m = if m^.mDeleted then Nothing else m^.mPostId
+          fndnext n m = Right (n <|> idOfPost m)
+
+-- | Find the most recent message that is a user Post (if any).
+getLastPost :: Messages -> Maybe PostId
+getLastPost msgs = Seq.findIndexR (\m -> not (m^.mDeleted)) msgs >>=
+                   _mPostId <$> Seq.index msgs
