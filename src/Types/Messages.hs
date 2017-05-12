@@ -75,3 +75,10 @@ clientMessageToMessage cm = Message
 -- ** 'Message' Lenses
 
 makeLenses ''Message
+
+
+-- | A wrapper for an ordered, unique list of 'Message' values
+type Messages = Seq.Seq Message
+
+noMessages :: Messages
+noMessages = mempty
