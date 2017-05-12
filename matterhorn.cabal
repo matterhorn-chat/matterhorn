@@ -130,6 +130,7 @@ test-suite test_messages
                     , text-zipper >= 0.10
                     , time >= 1.6
                     , transformers
+                    , Unique
                     , unordered-containers
                     , vector < 0.12
                     , vty >= 5.15

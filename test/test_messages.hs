@@ -1,9 +1,9 @@
 module Main where
 
 import           Control.Exception
+import qualified Data.List.UniqueUnsorted as U
 import           Data.Monoid ((<>))
 import qualified Data.Sequence as Seq
-import qualified Data.Set as Set
 import           Lens.Micro.Platform
 import           Message_QCA
 import           System.Exit
@@ -78,8 +78,8 @@ postids nms = intersperse ", " $ fmap pid nms
 
 uniqueIds :: Seq.Seq Message -> Bool
 uniqueIds msgs =
-    let ids = foldr (\m s -> Set.insert (m^.mPostId) s) Set.empty msgs
-    in  Seq.length msgs == Set.size ids
+    let ids = foldr (\m s -> m^.mPostId : s) [] msgs
+    in  Seq.length msgs == length (U.unique ids)
 
 moveDownTestMultipleStart :: TestTree
 moveDownTestMultipleStart =
