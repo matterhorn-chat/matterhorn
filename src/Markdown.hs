@@ -48,6 +48,7 @@ import           Lens.Micro.Platform ((^.))
 import           Themes
 import           Types (userSigil, normalChannelSigil)
 import           Types.Posts
+import           Types.Messages
 
 type UserSet = Set Text
 type ChannelSet = Set Text

@@ -44,6 +44,7 @@ import           Zipper (Zipper, focusL)
 import           InputHistory
 
 import           Types.Posts
+import           Types.Messages
 
 
 -- * Configuration

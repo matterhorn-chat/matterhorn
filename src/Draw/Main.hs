@@ -42,6 +42,7 @@ import           State.Common
 import           Themes
 import           Types
 import           Types.Posts
+import           Types.Messages
 import           Draw.Util
 
 renderChatMessage :: UserSet -> ChannelSet -> (UTCTime -> Widget Name) -> Message -> Widget Name

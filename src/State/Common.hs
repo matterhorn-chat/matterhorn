@@ -23,6 +23,7 @@ import           Network.Mattermost.Exceptions
 
 import           Types
 import           Types.Posts
+import           Types.Messages
 
 -- * MatterMost API
 
