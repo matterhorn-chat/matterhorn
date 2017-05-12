@@ -171,3 +171,10 @@ should consider to make submitting patches easier for all concerned:
    discuss any usability / UI, performance, or compatibility issues.
  - Please make changes consistent with the conventions already used in
    the codebase.
+
+# Frequently Asked Questions
+
+* Q: Does matterhorn support Gitlab authentication?
+* A: No. But we would be happy to work with contributors who are
+  interested in investigating what this would take and/or implementing
+  it.  See the Contributing section for details.
