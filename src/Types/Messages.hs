@@ -5,31 +5,32 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Types.Messages ( Message(..)
-                      , isDeletable, isReplyable, isEditable
-                      , mText, mUserName, mDate, mType, mPending, mDeleted
-                      , mAttachments, mInReplyToMsg, mPostId, mReactions
-                      , mOriginalPost
-                      , MessageType(..)
-                      , ReplyState(..)
-                      , clientMessageToMessage
-                      , Messages
-                      , ChronologicalMessages
-                      , RetrogradeMessages
-                      , MessageOps (..)
-                      , noMessages
-                      , countMessages
-                      , emptyMessages
-                      , splitMessages
-                      , findMessage
-                      , getNextPostId
-                      , getPrevPostId
-                      , getLatestPostId
-                      , findLatestUserMessage
-                      , messagesAfter
-                      , reverseMessages
-                      , unreverseMessages
-                      )
+module Types.Messages
+  ( Message(..)
+  , isDeletable, isReplyable, isEditable
+  , mText, mUserName, mDate, mType, mPending, mDeleted
+  , mAttachments, mInReplyToMsg, mPostId, mReactions
+  , mOriginalPost
+  , MessageType(..)
+  , ReplyState(..)
+  , clientMessageToMessage
+  , Messages
+  , ChronologicalMessages
+  , RetrogradeMessages
+  , MessageOps (..)
+  , noMessages
+  , countMessages
+  , emptyMessages
+  , splitMessages
+  , findMessage
+  , getNextPostId
+  , getPrevPostId
+  , getLatestPostId
+  , findLatestUserMessage
+  , messagesAfter
+  , reverseMessages
+  , unreverseMessages
+  )
 where
 
 import           Cheapskate (Blocks)
