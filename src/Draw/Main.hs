@@ -11,6 +11,7 @@ import           Brick.Widgets.Center (hCenter)
 import           Brick.Widgets.Edit (editContentsL, renderEditor, getEditContents)
 import           Brick.Widgets.List (renderList)
 import           Control.Arrow ((>>>))
+import           Control.Monad (foldM)
 import           Control.Monad.Trans.Reader (withReaderT)
 import           Data.Time.Clock (UTCTime(..))
 import           Data.Time.Calendar (fromGregorian)
@@ -345,32 +346,13 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
             upperHeight = targetHeight `div` 2
             lowerHeight = targetHeight - upperHeight
 
-            goDown :: Seq.Seq Message -> Int -> Int -> Vty.Image -> RenderM Name (Int, Vty.Image)
-            goDown ms maxHeight num img
-                | Vty.imageHeight img >= maxHeight =
-                    return (num, img)
-                | otherwise =
-                    case Seq.viewl ms of
-                        Seq.EmptyL -> return (num, img)
-                        msg Seq.:< ms' -> do
-                            result <- render1 msg
-                            goDown ms' maxHeight (num + 1) (Vty.vertJoin img result)
+        let (before, atAndAfter) = Seq.splitAt idx msgs
+            after = Seq.drop 1 atAndAfter
+            lowerRender = render1HLimit Vty.vertJoin targetHeight
+            upperRender = render1HLimit (flip Vty.vertJoin) targetHeight
 
-            goUp :: Seq.Seq Message -> Int -> Vty.Image -> RenderM Name Vty.Image
-            goUp ms maxHeight img
-                | Vty.imageHeight img >= maxHeight =
-                    return $ Vty.cropTop maxHeight img
-                | otherwise =
-                    case Seq.viewr ms of
-                        Seq.EmptyR -> return img
-                        ms' Seq.:> msg -> do
-                            result <- render1 msg
-                            goUp ms' maxHeight $ Vty.vertJoin result img
-
-        let (before, after) = Seq.splitAt idx msgs
-
-        (_, lowerHalf) <- goDown (Seq.drop 1 after) targetHeight 0 Vty.emptyImage
-        upperHalf <- goUp before targetHeight Vty.emptyImage
+        lowerHalf <- foldM lowerRender Vty.emptyImage $ after
+        upperHalf <- foldM upperRender Vty.emptyImage $ reverseMessages before
 
         let curHeight = Vty.imageHeight $ curMsgResult^.imageL
             uncropped = upperHalf Vty.<-> curMsgResult^.imageL Vty.<-> lowerHalf
@@ -396,23 +378,16 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
     renderLastMessages msgs =
         Widget Greedy Greedy $ do
             ctx <- getContext
-
             let targetHeight = ctx^.availHeightL
-                go :: Seq.Seq Message -> Vty.Image -> RenderM Name Vty.Image
-                go ms img
-                    | Vty.imageHeight img >= targetHeight =
-                        return img
-                    | otherwise =
-                        case Seq.viewr ms of
-                            Seq.EmptyR -> return img
-                            ms' Seq.:> msg -> do
-                                result <- render1 msg
-                                go ms' $ Vty.vertJoin result img
-
-            img <- Vty.cropTop targetHeight <$> go msgs Vty.emptyImage
-            return $ emptyResult & imageL .~ img
+                renderBuild = render1HLimit (flip Vty.vertJoin) targetHeight
+            img <- foldM renderBuild Vty.emptyImage $ reverseMessages msgs
+            return $ emptyResult & imageL .~ (Vty.cropTop targetHeight img)
 
     relaxHeight c = c & availHeightL .~ (max maxMessageHeight (c^.availHeightL))
+
+    render1HLimit fjoin lim img msg = if Vty.imageHeight img >= lim
+                                      then return img
+                                      else do fjoin img <$> render1 msg
 
     render1 :: Message -> RenderM Name Vty.Image
     render1 msg = case msg^.mDeleted of
