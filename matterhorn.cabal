@@ -114,11 +114,10 @@ test-suite test_messages
                     , hashable
                     , Hclip
                     , mattermost-api >= 30802.0.0
-                    , mattermost-api-qc >= 30802.0.0
+                    , mattermost-api-qc >= 30802.1.0
                     , microlens-platform
                     , mtl
                     , process
-                    , quickcheck-instances
                     , quickcheck-text
                     , stm
                     , strict

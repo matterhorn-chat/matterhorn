@@ -1,40 +1,47 @@
 module Cheapskate_QCA where
 
-import Cheapskate.Types
-import Test.QuickCheck.Instances ()
-import Test.Tasty.QuickCheck
+import           Cheapskate.Types
+import qualified Data.Sequence as Seq ()
+import           Network.Mattermost.QuickCheck (genText, genSeq)
+import           Test.Tasty.QuickCheck
 
-instance Arbitrary Block where
-    arbitrary = oneof [ Para <$> arbitrary
-                      , Header <$> arbitrary <*> arbitrary
-                      , Blockquote <$> arbitrary
-                      , List <$> arbitrary <*> arbitrary <*> arbitrary
-                      , CodeBlock <$> arbitrary <*> arbitrary
-                      , HtmlBlock <$> arbitrary
-                      , pure HRule
+genBlocks :: Gen Blocks
+genBlocks = genSeq genBlock
+
+genBlock :: Gen Block
+genBlock = oneof [ Para <$> genInlines
+                 , Header <$> arbitrary <*> genInlines
+                 , Blockquote <$> genBlocks
+                 , List <$> arbitrary <*> genListType <*> listOf (genBlocks)
+                 , CodeBlock <$> genCodeAttr <*> genText
+                 , HtmlBlock <$> genText
+                 , return HRule
+                 ]
+
+genInlines :: Gen Inlines
+genInlines = genSeq genInline
+
+genInline :: Gen Inline
+genInline = oneof [ Str <$> genText
+                  , return Space
+                  , return SoftBreak
+                  , return LineBreak
+                  , Emph <$> genInlines
+                  , Strong <$> genInlines
+                  , Code <$> genText
+                  , Link <$> genInlines <*> genText <*> genText
+                  , Image <$> genInlines <*> genText <*> genText
+                  , Entity <$> genText
+                  , RawHtml <$> genText
+                  ]
+
+genListType :: Gen ListType
+genListType = oneof [ Bullet <$> arbitrary
+                      , Numbered <$> genNumWrapper <*> arbitrary
                       ]
 
-instance Arbitrary Inline where
-    arbitrary = oneof [ Str <$> arbitrary
-                      , pure Space
-                      , pure SoftBreak
-                      , pure LineBreak
-                      , Emph <$> arbitrary
-                      , Strong <$> arbitrary
-                      , Code <$> arbitrary
-                      , Link <$> arbitrary <*> arbitrary <*> arbitrary
-                      , Image <$> arbitrary <*> arbitrary <*> arbitrary
-                      , Entity <$> arbitrary
-                      , RawHtml <$> arbitrary
-                      ]
+genNumWrapper :: Gen NumWrapper
+genNumWrapper = elements [ PeriodFollowing, ParenFollowing ]
 
-instance Arbitrary ListType where
-    arbitrary = oneof [ Bullet <$> arbitrary
-                      , Numbered <$> arbitrary <*> arbitrary
-                      ]
-
-instance Arbitrary NumWrapper where
-    arbitrary = elements [ PeriodFollowing, ParenFollowing ]
-
-instance Arbitrary CodeAttr where
-    arbitrary = CodeAttr <$> arbitrary <*> arbitrary
+genCodeAttr :: Gen CodeAttr
+genCodeAttr = CodeAttr <$> genText <*> genText

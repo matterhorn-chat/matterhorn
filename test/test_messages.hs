@@ -7,6 +7,7 @@ import           Data.Monoid ((<>))
 import qualified Data.Sequence as Seq
 import           Lens.Micro.Platform
 import           Message_QCA
+import           Network.Mattermost.Types
 import           System.Exit
 import           Test.Tasty
 import           Test.Tasty.HUnit
