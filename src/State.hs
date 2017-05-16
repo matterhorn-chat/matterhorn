@@ -48,6 +48,7 @@ import           Config
 import           FilePaths
 import           Types
 import           Types.Posts
+import           Types.Messages
 import           InputHistory
 import           Themes
 import           Zipper (Zipper)
@@ -72,17 +73,18 @@ refreshChannel chan = do
   session <- use csSession
   myTeamId <- use (csMyTeam.teamIdL)
   doAsyncWith Normal $
-    case F.find (\ p -> isJust (p^.mPostId)) (Seq.reverse msgs) of
-    Just (Message { _mPostId = Just pId }) -> do
+    case getLatestPostId msgs of
+    Just pId -> do
       -- Get the latest channel metadata.
       cwd <- mmGetChannel session myTeamId chan
 
-      -- Load posts since the last post in this channel.
+      -- Load posts since the last post in this channel.  Note that
+      -- postsOrder from mattermost-api is most recent first.
       posts <- mmGetPostsAfter session myTeamId chan pId 0 100
       return $ do
-        mapM_ addMessage [ (posts^.postsPostsL) HM.! p
-                         | p <- F.toList (posts^.postsOrderL)
-                         ]
+        mapM_ addMessageToState [ (posts^.postsPostsL) HM.! p
+                                | p <- F.toList (posts^.postsOrderL)
+                                ]
         let newChanInfo ci = channelInfoFromChannelWithData cwd ci
                                & cdCurrentState     .~ ChanLoaded
 
@@ -105,24 +107,6 @@ refreshLoadedChannels = do
 
 -- * Message selection mode
 
--- | Starting from the current sequence index, look forward for a
--- Message that corresponds to a user Post (i.e. has a post ID).
-getNextPost :: Seq.Seq Message -> Maybe PostId
-getNextPost msgs =
-    case Seq.viewl msgs of
-        Seq.EmptyL -> Nothing
-        msg Seq.:< rest ->
-            (if msg^.mDeleted then Nothing else msg^.mPostId) <|> getNextPost rest
-
--- | Starting from the current sequence index, look backwards for a
--- Message that corresponds to a user Post (i.e. has a post ID).
-getPrevPost :: Int -> Seq.Seq Message -> Maybe PostId
-getPrevPost i msgs =
-    case Seq.viewr (Seq.take (i+1) msgs) of
-        Seq.EmptyR -> Nothing
-        rest Seq.:> msg ->
-            (if msg^.mDeleted then Nothing else msg^.mPostId) <|> getPrevPost (i - 1) rest
-
 beginMessageSelect :: MH ()
 beginMessageSelect = do
     -- Get the number of messages in the current channel and set the
@@ -133,7 +117,7 @@ beginMessageSelect = do
     -- If we can't find one at all, we ignore the mode switch request
     -- and just return.
     chanMsgs <- use(csCurrentChannel . ccContents . cdMessages)
-    let recentPost = getPrevPost (Seq.length chanMsgs - 1) chanMsgs
+    let recentPost = getLatestPostId chanMsgs
 
     when (isJust recentPost) $ do
         csMode .= MessageSelect
@@ -146,21 +130,16 @@ getSelectedMessage st
         selPostId <- selectMessagePostId $ st^.csMessageSelect
 
         let chanMsgs = st ^. csCurrentChannel . ccContents . cdMessages
-
-        idx <- Seq.findIndexR (\m -> m^.mPostId == Just selPostId) chanMsgs
-        if idx < (Seq.length chanMsgs) && idx >= 0
-        then Just $ chanMsgs `Seq.index` idx
-        else Nothing
+        findMessage selPostId chanMsgs
 
 messageSelectUp :: MH ()
 messageSelectUp = do
     mode <- use csMode
     selected <- use (csMessageSelect.to selectMessagePostId)
     case selected of
-        Just selPostId | mode == MessageSelect -> do
+        Just _ | mode == MessageSelect -> do
             chanMsgs <- use (csCurrentChannel.ccContents.cdMessages)
-            let Just idx = Seq.findIndexR (\m -> m^.mPostId == Just selPostId) chanMsgs
-                nextPostId = getNextPost (Seq.drop (idx - 1) chanMsgs)
+            let nextPostId = getPrevPostId selected chanMsgs
             csMessageSelect .= MessageSelectState (nextPostId <|> selected)
         _ -> return ()
 
@@ -169,10 +148,9 @@ messageSelectDown = do
     mode <- use csMode
     selected <- use (csMessageSelect.to selectMessagePostId)
     case selected of
-        Just selPostId | mode == MessageSelect -> do
+        Just _ | mode == MessageSelect -> do
             chanMsgs <- use (csCurrentChannel.ccContents.cdMessages)
-            let Just idx = Seq.findIndexR (\m -> m^.mPostId == Just selPostId) chanMsgs
-                nextPostId = getNextPost (Seq.drop (idx + 1) chanMsgs)
+            let nextPostId = getNextPostId selected chanMsgs
             csMessageSelect .= MessageSelectState (nextPostId <|> selected)
         _ -> return ()
 
@@ -245,27 +223,12 @@ beginUpdateMessage = do
 
 replyToLatestMessage :: MH ()
 replyToLatestMessage = do
-    latest <- use (to getLatestUserMessage)
-    case latest of
-        Just msg | isReplyable msg -> do
-            let Just p = msg^.mOriginalPost
-            csMode .= Main
-            csEditState.cedEditMode .= Replying msg p
-        _ -> return ()
-
--- | Get the latest normal or emote post in the current channel.
-getLatestUserMessage :: ChatState -> Maybe Message
-getLatestUserMessage st =
-    let go msgs = case Seq.viewr msgs of
-            Seq.EmptyR -> Nothing
-            rest Seq.:> msg ->
-                (if msg^.mDeleted || not (msg^.mType `elem` [CP NormalPost, CP Emote])
-                 then Nothing
-                 else (Just msg <* msg^.mOriginalPost)) <|>
-                go rest
-
-        chanMsgs = st ^. csCurrentChannel . ccContents . cdMessages
-    in go chanMsgs
+  msgs <- use (csCurrentChannel . ccContents . cdMessages)
+  case findLatestUserMessage isReplyable msgs of
+    Just msg -> do let Just p = msg^.mOriginalPost
+                   csMode .= Main
+                   csEditState.cedEditMode .= Replying msg p
+    _ -> return ()
 
 beginReplyCompose :: MH ()
 beginReplyCompose = do
@@ -553,7 +516,7 @@ asyncFetchMoreMessages st cId =
             cc <- fromPosts posts
             ccId <- use csCurrentChannelId
             mh $ invalidateCacheEntry (ChannelMessages ccId)
-            csChannel(ccId).ccContents.cdMessages %= (cc^.cdMessages Seq.><)
+            csChannel(ccId).ccContents.cdMessages %= ((cc^.cdMessages) <>)
 
 loadMoreMessages :: MH ()
 loadMoreMessages = do
@@ -674,7 +637,7 @@ editMessage new = do
   let chan = csChannel (postChannelId new)
       isEditedMessage m = m^.mPostId == Just (new^.postIdL)
       msg = clientPostToMessage st (toClientPost new (new^.postParentIdL))
-  chan . ccContents . cdMessages . each . filtered isEditedMessage .= msg
+  chan . ccContents . cdMessages . traversed . filtered isEditedMessage .= msg
   chan . ccInfo . cdUpdated .= now
   csPostMap.ix(postId new) .= msg
   cId <- use csCurrentChannelId
@@ -686,7 +649,7 @@ deleteMessage new = do
   now <- getNow
   let isDeletedMessage m = m^.mPostId == Just (new^.postIdL)
       chan = csChannel (postChannelId new)
-  chan.ccContents.cdMessages.each.filtered isDeletedMessage %= (& mDeleted .~ True)
+  chan.ccContents.cdMessages.traversed.filtered isDeletedMessage %= (& mDeleted .~ True)
   chan.ccInfo.cdUpdated .= now
   cId <- use csCurrentChannelId
   when (postChannelId new == cId) $
@@ -700,8 +663,8 @@ maybeRingBell = do
         Just vty <- mh getVtyHandle
         liftIO $ ringTerminalBell $ outputIface vty
 
-addMessage :: Post -> MH ()
-addMessage new = do
+addMessageToState :: Post -> MH ()
+addMessageToState new = do
   st <- use id
   asyncFetchAttachments new
   case st^.msgMap.at (postChannelId new) of
@@ -730,7 +693,7 @@ addMessage new = do
                 csPostMap.ix(postId new) .= msg
                 s <- use id
                 let msg' = clientPostToMessage s (toClientPost new (new^.postParentIdL))
-                chan.ccContents.cdMessages %= (Seq.|> msg')
+                chan.ccContents.cdMessages %= (addMessage msg')
                 chan.ccInfo.cdUpdated %= updateTime
                 when (not fromMe) $ maybeRingBell
                 ccId <- use csCurrentChannelId

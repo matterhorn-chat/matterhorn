@@ -26,7 +26,6 @@ import           Data.Time.LocalTime (TimeZone)
 import qualified Data.HashMap.Strict as HM
 import           Data.List (partition, sort)
 import           Data.Maybe
-import qualified Data.Sequence as Seq
 import           Data.Monoid
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform (at, makeLenses, lens, (&), (^.), (^?), (%~), (.~),
@@ -44,6 +43,7 @@ import           Zipper (Zipper, focusL)
 import           InputHistory
 
 import           Types.Posts
+import           Types.Messages
 
 
 -- * Configuration
@@ -201,13 +201,13 @@ channelInfoFromChannelWithData (ChannelWithData chan chanData) ci =
 -- | The 'ChannelContents' is a wrapper for a list of
 --   'Message' values
 data ChannelContents = ChannelContents
-  { _cdMessages :: Seq.Seq Message
+  { _cdMessages :: Messages
   }
 
 -- | An initial empty 'ChannelContents' value
 emptyChannelContents :: ChannelContents
 emptyChannelContents = ChannelContents
-  { _cdMessages = mempty
+  { _cdMessages = noMessages
   }
 
 -- | The 'ChannelState' represents our internal state

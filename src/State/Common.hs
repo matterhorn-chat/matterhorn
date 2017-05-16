@@ -23,6 +23,7 @@ import           Network.Mattermost.Exceptions
 
 import           Types
 import           Types.Posts
+import           Types.Messages
 
 -- * MatterMost API
 
@@ -88,15 +89,16 @@ fromPosts ps = do
 getDMChannelName :: UserId -> UserId -> T.Text
 getDMChannelName me you = cname
   where
-  [loUser, hiUser] = sort [ you, me ]
-  cname = idString loUser <> "__" <> idString hiUser
+  [loUser, hiUser] = sort $ idString <$> [ you, me ]
+  cname = loUser <> "__" <> hiUser
 
-messagesFromPosts :: Posts -> MH (Seq.Seq Message)
+messagesFromPosts :: Posts -> MH Messages
 messagesFromPosts p = do -- (msgs, st')
   st <- use id
   csPostMap %= HM.union (postMap st)
   st' <- use id
-  let msgs = fmap (clientPostToMessage st') (clientPost <$> ps)
+  let msgs = postsToMessages (clientPostToMessage st') (clientPost <$> ps)
+      postsToMessages f = foldr (addMessage . f) noMessages
   return msgs
     where
         postMap :: ChatState -> HM.HashMap PostId Message
@@ -105,6 +107,7 @@ messagesFromPosts p = do -- (msgs, st')
                                 )
                               | (pId, x) <- HM.toList (p^.postsPostsL)
                               ]
+        -- n.b. postsOrder is most recent first
         ps   = findPost <$> (Seq.reverse $ postsOrder p)
         clientPost :: Post -> ClientPost
         clientPost x = toClientPost x (postId <$> parent x)
@@ -135,7 +138,7 @@ asyncFetchAttachments p = do
             m & mAttachments %~ (attachment Seq.<|)
           | otherwise              = m
     return $
-      csChannel(cId).ccContents.cdMessages.each %= addAttachment
+      csChannel(cId).ccContents.cdMessages.traversed %= addAttachment
 
 -- | Create a new 'ClientMessage' value
 newClientMessage :: (MonadIO m) => ClientMessageType -> T.Text -> m ClientMessage
@@ -147,7 +150,7 @@ newClientMessage ty msg = do
 addClientMessage :: ClientMessage -> MH ()
 addClientMessage msg = do
   cid <- use csCurrentChannelId
-  msgMap.ix cid.ccContents.cdMessages %= (Seq.|> clientMessageToMessage msg)
+  msgMap.ix cid.ccContents.cdMessages %= (addMessage $ clientMessageToMessage msg)
 
 -- | Add a new 'ClientMessage' representing an error message to
 --   the current channel's message list
@@ -168,7 +171,7 @@ postErrorMessageIO err st = do
   now <- liftIO getCurrentTime
   let msg = ClientMessage err now Error
       cId = st ^. csCurrentChannelId
-  return $ st & msgMap.ix cId.ccContents.cdMessages %~ (Seq.|> clientMessageToMessage msg)
+  return $ st & msgMap.ix cId.ccContents.cdMessages %~ (addMessage $ clientMessageToMessage msg)
 
 numScrollbackPosts :: Int
 numScrollbackPosts = 100
@@ -189,9 +192,8 @@ asyncFetchScrollback prio cId = do
             let setCutoff = if hasNew
                             then const $ Just $ minimum (_mDate <$> newMessages)
                             else id
-                hasNew = not $ Seq.null newMessages
-                newMessages = Seq.filter (\m -> m^.mDate > viewTime) $
-                              contents^.cdMessages
+                hasNew = not $ emptyMessages newMessages
+                newMessages = messagesAfter viewTime $ contents^.cdMessages
             csChannel(cId).ccContents .= contents
             csChannel(cId).ccInfo.cdCurrentState .= ChanLoaded
             csChannel(cId).ccInfo.cdNewMessageCutoff %= setCutoff
