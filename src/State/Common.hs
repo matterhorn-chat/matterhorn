@@ -238,7 +238,7 @@ updateViewedIO st = do
               (getId (st^.csMyTeam))
               cId
               pId
-            return (csCurrentChannel.ccInfo.cdViewed .= now)
+            return (csChannel(cId).ccInfo.cdViewed .= now)
           return st
       Disconnected -> return st
 
