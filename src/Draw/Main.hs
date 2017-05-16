@@ -306,14 +306,9 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
             renderMessagesWithSelect (st^.csMessageSelect) channelMessages
         MessageSelectDeleteConfirm ->
             renderMessagesWithSelect (st^.csMessageSelect) channelMessages
-        _ -> renderLastMessages channelMessages
+        _ -> renderLastMessages $ reverseMessages channelMessages
 
-    -- The first case here should never happen because if we're in
-    -- MessageSelect mode, we should only get into that mode when the
-    -- selected message in the selection state is present (Just).
-    renderMessagesWithSelect (MessageSelectState Nothing) msgs =
-        renderLastMessages msgs
-    renderMessagesWithSelect (MessageSelectState (Just selPostId)) msgs =
+    renderMessagesWithSelect (MessageSelectState selPostId) msgs =
         -- In this case, we want to fill the message list with messages
         -- but use the post ID as a cursor. To do this efficiently we
         -- only want to render enough messages to fill the screen.
@@ -327,14 +322,12 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
         -- First, we sanity-check the application state because under
         -- some conditions, the selected message might be gone (e.g.
         -- deleted).
-        case Seq.findIndexR (\m -> m^.mPostId == Just selPostId) msgs of
-            Nothing -> renderLastMessages msgs
-            Just idx ->
-                if idx < (Seq.length msgs) && idx >= 0
-                then unsafeMessageSelectList msgs idx $ msgs `Seq.index` idx
-                else renderLastMessages msgs
+        let (s, (before, after)) = splitMessages selPostId msgs
+        in case s of
+             Nothing -> renderLastMessages before
+             Just m -> unsafeMessageSelectList before after m
 
-    unsafeMessageSelectList msgs idx curMsg = Widget Greedy Greedy $ do
+    unsafeMessageSelectList before after curMsg = Widget Greedy Greedy $ do
         ctx <- getContext
 
         -- Render the message associated with the current post ID.
@@ -346,13 +339,11 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
             upperHeight = targetHeight `div` 2
             lowerHeight = targetHeight - upperHeight
 
-        let (before, atAndAfter) = Seq.splitAt idx msgs
-            after = Seq.drop 1 atAndAfter
             lowerRender = render1HLimit Vty.vertJoin targetHeight
             upperRender = render1HLimit (flip Vty.vertJoin) targetHeight
 
-        lowerHalf <- foldM lowerRender Vty.emptyImage $ after
-        upperHalf <- foldM upperRender Vty.emptyImage $ reverseMessages before
+        lowerHalf <- foldM lowerRender Vty.emptyImage after
+        upperHalf <- foldM upperRender Vty.emptyImage before
 
         let curHeight = Vty.imageHeight $ curMsgResult^.imageL
             uncropped = upperHalf Vty.<-> curMsgResult^.imageL Vty.<-> lowerHalf
@@ -374,13 +365,13 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
                           (getNewMessageCutoff cId st)
                           (getMessageListing cId st)
 
-    renderLastMessages :: Seq.Seq Message -> Widget Name
+    renderLastMessages :: ReverseMessages -> Widget Name
     renderLastMessages msgs =
         Widget Greedy Greedy $ do
             ctx <- getContext
             let targetHeight = ctx^.availHeightL
                 renderBuild = render1HLimit (flip Vty.vertJoin) targetHeight
-            img <- foldM renderBuild Vty.emptyImage $ reverseMessages msgs
+            img <- foldM renderBuild Vty.emptyImage msgs
             return $ emptyResult & imageL .~ (Vty.cropTop targetHeight img)
 
     relaxHeight c = c & availHeightL .~ (max maxMessageHeight (c^.availHeightL))
@@ -404,15 +395,15 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
     chnType = chan^.ccInfo.cdType
     topicStr = chan^.ccInfo.cdHeader
 
-getMessageListing :: ChannelId -> ChatState -> Seq.Seq Message
+getMessageListing :: ChannelId -> ChatState -> Messages
 getMessageListing cId st =
     st ^. msgMap . ix cId . ccContents . cdMessages
 
-insertTransitions :: Text -> TimeZone -> Maybe UTCTime -> Seq.Seq Message -> Seq.Seq Message
+insertTransitions :: Text -> TimeZone -> Maybe UTCTime -> Messages -> Messages
 insertTransitions fmt tz cutoff ms = fst $ F.foldl' nextMsg initState ms
     where
-        initState :: (Seq.Seq Message, Maybe Message)
-        initState = (mempty, Nothing)
+        initState :: (Messages, Maybe Message)
+        initState = (noMessages, Nothing)
 
         dateMsg d = Message (getBlocks (T.pack $ formatTime defaultTimeLocale (T.unpack fmt)
                                                  (utcToLocalTime tz d)))
@@ -423,22 +414,22 @@ insertTransitions fmt tz cutoff ms = fst $ F.foldl' nextMsg initState ms
                                    False False Seq.empty NotAReply
                                    Nothing mempty Nothing
 
-        nextMsg :: (Seq.Seq Message, Maybe Message) -> Message -> (Seq.Seq Message, Maybe Message)
-        nextMsg (rest, Nothing) msg = (rest Seq.|> msg, Just msg)
+        nextMsg :: (Messages, Maybe Message) -> Message -> (Messages, Maybe Message)
+        nextMsg (rest, Nothing) msg = (appendMessage msg rest, Just msg)
         nextMsg (rest, Just prevMsg) msg =
             let toInsert = newMessageTransition cutoff <> dateTransition
                 dateTransition =
                     if localDay (utcToLocalTime tz (msg^.mDate)) /= localDay (utcToLocalTime tz (prevMsg^.mDate))
-                    then Seq.singleton $ dateMsg (msg^.mDate)
-                    else mempty
-                newMessageTransition Nothing = mempty
+                    then appendMessage (dateMsg (msg^.mDate)) noMessages
+                    else noMessages
+                newMessageTransition Nothing = noMessages
                 newMessageTransition (Just cutoffTime) =
                     if prevMsg^.mDate < cutoffTime && msg^.mDate >= cutoffTime
-                    then Seq.singleton $ newMessagesMsg cutoffTime
-                    else mempty
+                    then appendMessage (newMessagesMsg cutoffTime) noMessages
+                    else noMessages
             in if msg^.mDeleted
                then (rest, Just prevMsg)
-               else ((rest Seq.>< toInsert) Seq.|> msg, Just msg)
+               else (appendMessage msg (joinMessages rest toInsert), Just msg)
 
 findUserByDMChannelName :: HashMap UserId UserInfo
                         -> T.Text -- ^ the dm channel name
