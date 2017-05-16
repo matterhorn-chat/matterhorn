@@ -73,7 +73,7 @@ refreshChannel chan = do
   session <- use csSession
   myTeamId <- use (csMyTeam.teamIdL)
   doAsyncWith Normal $
-    case getLastPost msgs of
+    case getLastPostId msgs of
     Just pId -> do
       -- Get the latest channel metadata.
       cwd <- mmGetChannel session myTeamId chan
@@ -134,7 +134,7 @@ beginMessageSelect = do
     -- If we can't find one at all, we ignore the mode switch request
     -- and just return.
     chanMsgs <- use(csCurrentChannel . ccContents . cdMessages)
-    let recentPost = getLastPost chanMsgs
+    let recentPost = getLastPostId chanMsgs
 
     when (isJust recentPost) $ do
         csMode .= MessageSelect

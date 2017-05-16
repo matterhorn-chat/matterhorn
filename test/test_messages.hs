@@ -2,6 +2,7 @@ module Main where
 
 import           Control.Exception
 import qualified Data.List.UniqueUnsorted as U
+import           Data.Maybe (isNothing, fromJust)
 import           Data.Monoid ((<>))
 import qualified Data.Sequence as Seq
 import           Lens.Micro.Platform
@@ -19,10 +20,35 @@ main = defaultMain tests `catch` (\e -> do
                                     else putStrLn "FAILED"
                                     throwIO e)
 
+
+makeMsgs :: [Message] -> Messages
+makeMsgs = foldl (flip appendMessage) noMessages
+
+idlist :: Foldable t => t Message -> [Maybe PostId]
+idlist = foldl (\s m -> m^.mPostId : s) []
+
+postids :: Show a => Seq.Seq (a, Message) -> String
+postids nms = intersperse ", " $ fmap pid nms
+    where pid (n, m) = show n <> ".mPostID=" <> show (m^.mPostId)
+          intersperse b ls = case Seq.viewl ls of
+                               Seq.EmptyL -> ""
+                               l Seq.:< r -> l <> b <> (intersperse b r)
+
+uniqueIds :: Foldable t => t Message -> Bool
+uniqueIds msgs =
+    let ids = idlist msgs
+    in  length ids == length (U.unique ids)
+
+validIds :: Foldable t => t Message -> Bool
+validIds = null . filter isNothing . idlist
+
+
 tests :: TestTree
 tests = testGroup "Messages Tests"
         [ createTests
         , movementTests
+        , reversalTests
+        , splitTests
         ]
 
 
@@ -30,9 +56,42 @@ createTests :: TestTree
 createTests = testGroup "Create"
               [ testCase "no messages"
                     $ 0 @=? countMessages noMessages
-              , testProperty "has messages"  -- n.b. silly impl. for now
-                    $ \x -> not (Seq.null (x :: Messages)) ==>
-                            0 /= countMessages x
+              , testProperty "has messages"
+                    $ \x -> not (emptyMessages x) ==> 0 /= countMessages x
+              , testProperty "append to empty"
+                    $ \x -> 1 == (countMessages $ appendMessage x noMessages)
+              , testProperty "append to append to empty"
+                    $ \(x, y) -> 2 == (countMessages $
+                                       appendMessage x $
+                                       appendMessage y noMessages)
+              , testProperty "join to empty"
+                    $ \(x, y) ->
+                        let m1 = appendMessage x $ appendMessage y noMessages
+                            m2 = noMessages
+                        in (2 == (countMessages $ joinMessages m1 m2) &&
+                            2 == (countMessages $ joinMessages m2 m1))
+              , testProperty "join to one"
+                    $ \(x, y, z) ->
+                        let m1 = appendMessage x $ appendMessage y noMessages
+                            m2 = appendMessage z noMessages
+                            j1 = joinMessages m1 m2
+                            j2 = joinMessages m2 m1
+                        in (3 == (countMessages $ j1) &&
+                            3 == (countMessages $ j2) &&
+                            idlist [y, x, z] == idlist j1 &&
+                            idlist [z, y, x] == idlist j2)
+
+              , testProperty "join to many"
+                    $ \(w, x, y, z) ->
+                        let m1 = appendMessage x $ appendMessage y noMessages
+                            m2 = appendMessage w $ appendMessage z noMessages
+                            j1 = joinMessages m1 m2
+                            j2 = joinMessages m2 m1
+                        in (4 == (countMessages $ j1) &&
+                            4 == (countMessages $ j2) &&
+                            idlist [y, x, z, w] == idlist j1 &&
+                            idlist [z, w, y, x] == idlist j2)
+
               ]
 
 movementTests :: TestTree
@@ -68,18 +127,6 @@ moveUpTestSingle :: TestTree
 moveUpTestSingle = testProperty "Move down from single message" $
                     \x -> let msgs = appendMessage x noMessages
                           in Nothing == (getPrevPostId (x^.mPostId) msgs)
-
-postids :: Show a => Seq.Seq (a, Message) -> String
-postids nms = intersperse ", " $ fmap pid nms
-    where pid (n, m) = show n <> ".mPostID=" <> show (m^.mPostId)
-          intersperse b ls = case Seq.viewl ls of
-                               Seq.EmptyL -> ""
-                               l Seq.:< r -> l <> b <> (intersperse b r)
-
-uniqueIds :: Seq.Seq Message -> Bool
-uniqueIds msgs =
-    let ids = foldr (\m s -> m^.mPostId : s) [] msgs
-    in  Seq.length msgs == length (U.unique ids)
 
 moveDownTestMultipleStart :: TestTree
 moveDownTestMultipleStart =
@@ -204,3 +251,127 @@ moveUpTestMultipleSkipDeletedAll =
                              info = idents <> " against " <> show msgid
                          in uniqueIds msgs ==>
                             counterexample info $ Nothing == msgid
+
+reversalTests :: TestTree
+reversalTests = testGroup "Reversal"
+                [ testProperty "round trip" $
+                \l -> let rr = reverseMessages (reverseMessages l)
+                          ids = idlist l
+                          rr_ids = idlist rr
+                      in getLastPostId l == getLastPostId rr && ids == rr_ids
+                , testCase "reverse nothing" $
+                  (emptyMessages $ reverseMessages noMessages) @?
+                  "reverse of empty Messages"
+                ]
+
+splitTests :: TestTree
+splitTests = testGroup "Split"
+             [ testCase "split nothing on empty" $
+                        let (m, _) = splitMessages Nothing noMessages
+                        in isNothing m @? "must be nothing"
+             , testProperty "split just on empty" $ \x ->
+                   let (m, _) = splitMessages (Just x) noMessages
+                   in isNothing m
+             , testProperty "split nothing on list" $ \x ->
+                 let (m, _) = splitMessages Nothing x
+                 in isNothing m
+             , testProperty "split nothing on not found" $ \(w, x, y, z) ->
+                 let (m, _) = splitMessages (w^.mPostId) msgs
+                     msgs = foldr appendMessage noMessages [x, y, z]
+                     idents = postids $ Seq.zip (Seq.fromList "wxyz") msgs
+                     info = idents <> " against " <> show ((fromJust m)^.mPostId)
+                 in uniqueIds [w, x, y, z] ==>
+                    counterexample info $ isNothing m
+             , testProperty "all before reversed on split nothing"
+                   $ \(w, x, y, z) ->
+                       let (_, (before, _)) = splitMessages Nothing msgs
+                           msgs = makeMsgs inpl
+                           inpl = [w, x, y, z]
+                           control = idlist (reverse inpl)
+                           result = idlist before
+                           info = show control <> " /= " <> show result
+                       in counterexample info $ control == result
+             , testProperty "all before reversed on not found"
+                   $ \(w, x, y, z) ->
+                       let (_, (before, _)) = splitMessages (w^.mPostId) msgs
+                           msgs = makeMsgs inpl
+                           inpl = [x, y, z]
+                       in uniqueIds [w, x, y, z] ==>
+                          idlist (reverse inpl) == idlist before
+
+             , testProperty "found at first position"
+                   $ \(w, x, y, z) ->
+                       let (m, _) = splitMessages (w^.mPostId) msgs
+                           msgs = makeMsgs inpl
+                           inpl = [w, x, y, z]
+                       in validIds inpl && uniqueIds inpl ==>
+                          w^.mPostId == (fromJust m)^.mPostId
+             , testProperty "no before when found at first position"
+                   $ \(w, x, y, z) ->
+                       let (_, (before, _)) = splitMessages (w^.mPostId) msgs
+                           msgs = makeMsgs inpl
+                           inpl = [w, x, y, z]
+                           info = show (idlist inpl) <> " ==> " <> (show $ idlist before)
+                       in validIds inpl && uniqueIds inpl ==>
+                          counterexample info $ emptyMessages before
+             , testProperty "remaining after when found at first position"
+                   $ \(w, x, y, z) ->
+                       let (_, (_, after)) = splitMessages (w^.mPostId) msgs
+                           msgs = makeMsgs inpl
+                           inpl = [w, x, y, z]
+                           info = show (idlist inpl) <> " ==> " <> (show $ idlist after)
+                       in validIds inpl && uniqueIds inpl ==>
+                          counterexample info $
+                                         idlist (tail inpl) == idlist after
+
+             , testProperty "found at last position"
+                   $ \(w, x, y, z) ->
+                       let (m, _) = splitMessages (z^.mPostId) msgs
+                           msgs = makeMsgs inpl
+                           inpl = [w, x, y, z]
+                       in validIds inpl && uniqueIds inpl ==>
+                          z^.mPostId == (fromJust m)^.mPostId
+             , testProperty "reversed before when found at last position"
+                   $ \(w, x, y, z) ->
+                       let (_, (before, _)) = splitMessages (z^.mPostId) msgs
+                           msgs = makeMsgs inpl
+                           inpl = [w, x, y, z]
+                           info = show (idlist inpl) <> " ==> " <> (show $ idlist before)
+                       in validIds inpl && uniqueIds inpl ==>
+                          counterexample info $
+                                         idlist (reverse $ init inpl) == idlist before
+             , testProperty "no after when found at last position"
+                   $ \(w, x, y, z) ->
+                       let (_, (_, after)) = splitMessages (z^.mPostId) msgs
+                           msgs = makeMsgs inpl
+                           inpl = [w, x, y, z]
+                           info = show (idlist inpl) <> " ==> " <> (show $ idlist after)
+                       in validIds inpl && uniqueIds inpl ==>
+                          counterexample info $ emptyMessages after
+
+             , testProperty "found at midpoint position"
+                   $ \(v, w, x, y, z) ->
+                       let (m, _) = splitMessages (x^.mPostId) msgs
+                           msgs = makeMsgs inpl
+                           inpl = [v, w, x, y, z]
+                       in validIds inpl && uniqueIds inpl ==>
+                          x^.mPostId == (fromJust m)^.mPostId
+             , testProperty "reversed before when found at midpoint position"
+                   $ \(v, w, x, y, z) ->
+                       let (_, (before, _)) = splitMessages (x^.mPostId) msgs
+                           msgs = makeMsgs inpl
+                           inpl = [v, w, x, y, z]
+                           info = show (idlist inpl) <> " ==> " <> (show $ idlist before)
+                       in validIds inpl && uniqueIds inpl ==>
+                          counterexample info $
+                                         idlist (reverse $ take 2 inpl) == idlist before
+             , testProperty "after when found at midpoint position"
+                   $ \(v, w, x, y, z) ->
+                       let (_, (_, after)) = splitMessages (x^.mPostId) msgs
+                           msgs = makeMsgs inpl
+                           inpl = [v, w, x, y, z]
+                           info = show (idlist inpl) <> " ==> " <> (show $ idlist after)
+                       in validIds inpl && uniqueIds inpl ==>
+                          counterexample info $
+                                         idlist (drop 3 inpl) == idlist after
+             ]
