@@ -4,6 +4,7 @@
 module Main where
 
 import           Control.Exception
+import           Data.List (intercalate)
 import qualified Data.List.UniqueUnsorted as U
 import           Data.Maybe (isNothing, fromJust)
 import           Data.Monoid ((<>))
@@ -33,12 +34,11 @@ makeMsgs = foldl (flip appendMessage) noMessages
 idlist :: Foldable t => t Message -> [Maybe PostId]
 idlist = foldl (\s m -> m^.mPostId : s) []
 
-postids :: Show a => Seq.Seq (a, Message) -> String
-postids nms = intersperse ", " $ fmap pid nms
-    where pid (n, m) = show n <> ".mPostID=" <> show (m^.mPostId)
-          intersperse b ls = case Seq.viewl ls of
-                               Seq.EmptyL -> ""
-                               l Seq.:< r -> l <> b <> (intersperse b r)
+postids :: (Foldable t, Show a) => [a] -> t Message -> String
+postids names msgs = let zipf = (\(n,z) m -> (tail n, (head n, m) : z))
+                         zipped = snd $ foldl zipf (names, []) msgs
+                         pid (n, m) = show n <> ".mPostID=" <> show (m^.mPostId)
+                     in intercalate ", " $ map pid zipped
 
 uniqueIds :: Foldable t => t Message -> Bool
 uniqueIds msgs =
@@ -146,7 +146,7 @@ moveDownTestMultipleStart =
                          let msgs = makeMsgs [ postMsg x, postMsg y, postMsg z]
                              msgid = getNextPostId ((postMsg x)^.mPostId) msgs
                              -- for useful info on failure:
-                             idents = postids $ Seq.zip (Seq.fromList "xyz") msgs
+                             idents = postids "xyz" msgs
                              info = idents <> " against " <> show msgid
                          in counterexample info $
                                 (postMsg y)^.mPostId == msgid
@@ -158,7 +158,7 @@ moveUpTestMultipleStart =
                          let msgs = makeMsgs [ postMsg x, postMsg y, postMsg z]
                              msgid = getPrevPostId ((postMsg x)^.mPostId) msgs
                              -- for useful info on failure:
-                             idents = postids $ Seq.zip (Seq.fromList "xyz") msgs
+                             idents = postids "xyz" msgs
                              info = idents <> " against " <> show msgid
                          in uniqueIds msgs ==>
                             counterexample info $ Nothing == msgid
@@ -171,7 +171,7 @@ moveDownTestMultipleEnd =
                                     -- n.b. makes more sense to start at z...
                              msgid = getNextPostId ((postMsg z)^.mPostId) msgs
                              -- for useful info on failure:
-                             idents = postids $ Seq.zip (Seq.fromList "xyz") msgs
+                             idents = postids "xyz" msgs
                              info = idents <> " against " <> show msgid
                          in uniqueIds msgs ==>
                             counterexample info $ Nothing == msgid
@@ -183,7 +183,7 @@ moveUpTestMultipleEnd =
                          let msgs = makeMsgs [ postMsg x, postMsg y, postMsg z]
                              msgid = getPrevPostId ((postMsg z)^.mPostId) msgs
                              -- for useful info on failure:
-                             idents = postids $ Seq.zip (Seq.fromList "xyz") msgs
+                             idents = postids "xyz" msgs
                              info = idents <> " against " <> show msgid
                          in uniqueIds msgs ==>
                             counterexample info $
@@ -199,7 +199,7 @@ moveDownTestMultipleSkipDeleted =
                                              , postMsg z]
                              msgid = getNextPostId ((postMsg w)^.mPostId) msgs
                              -- for useful info on failure:
-                             idents = postids $ Seq.zip (Seq.fromList "wxyz") msgs
+                             idents = postids "wxyz" msgs
                              info = idents <> " against " <> show msgid
                          in counterexample info $
                                 ((postMsg z)^.mPostId) == msgid
@@ -214,7 +214,7 @@ moveUpTestMultipleSkipDeleted =
                                              , postMsg z]
                              msgid = getPrevPostId ((postMsg z)^.mPostId) msgs
                              -- for useful info on failure:
-                             idents = postids $ Seq.zip (Seq.fromList "wxyz") msgs
+                             idents = postids "wxyz" msgs
                              info = idents <> " against " <> show msgid
                          in uniqueIds msgs ==>
                             counterexample info $
@@ -233,7 +233,7 @@ moveDownTestMultipleSkipDeletedAll =
                                              , delMsg z]
                              msgid = getNextPostId ((delMsg w)^.mPostId) msgs
                              -- for useful info on failure:
-                             idents = postids $ Seq.zip (Seq.fromList "wxyz") msgs
+                             idents = postids "wxyz" msgs
                              info = idents <> " against " <> show msgid
                          in counterexample info $ Nothing == msgid
 
@@ -250,7 +250,7 @@ moveUpTestMultipleSkipDeletedAll =
                                              , delMsg z]
                              msgid = getPrevPostId ((delMsg z)^.mPostId) msgs
                              -- for useful info on failure:
-                             idents = postids $ Seq.zip (Seq.fromList "wxyz") msgs
+                             idents = postids "wxyz" msgs
                              info = idents <> " against " <> show msgid
                          in uniqueIds msgs ==>
                             counterexample info $ Nothing == msgid
@@ -281,7 +281,7 @@ splitTests = testGroup "Split"
              , testProperty "split nothing on not found" $ \(w, x, y, z) ->
                  let (m, _) = splitMessages (w^.mPostId) msgs
                      msgs = foldr appendMessage noMessages [x, y, z]
-                     idents = postids $ Seq.zip (Seq.fromList "wxyz") msgs
+                     idents = postids "wxyz" msgs
                      info = idents <> " against " <> show ((fromJust m)^.mPostId)
                  in uniqueIds [w, x, y, z] ==>
                     counterexample info $ isNothing m
