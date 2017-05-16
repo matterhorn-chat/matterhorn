@@ -89,8 +89,8 @@ fromPosts ps = do
 getDMChannelName :: UserId -> UserId -> T.Text
 getDMChannelName me you = cname
   where
-  [loUser, hiUser] = sort [ you, me ]
-  cname = idString loUser <> "__" <> idString hiUser
+  [loUser, hiUser] = sort $ idString <$> [ you, me ]
+  cname = loUser <> "__" <> hiUser
 
 messagesFromPosts :: Posts -> MH (Seq.Seq Message)
 messagesFromPosts p = do -- (msgs, st')
