@@ -266,7 +266,7 @@ moveUpTestMultipleSkipDeletedAll =
 reversalTests :: TestTree
 reversalTests = testGroup "Reversal"
                 [ testProperty "round trip" $
-                \l -> let rr = reverseMessages (reverseMessages l)
+                \l -> let rr = unreverseMessages (reverseMessages l)
                           ids = idlist l
                           rr_ids = idlist rr
                       in getLastPostId l == getLastPostId rr && ids == rr_ids

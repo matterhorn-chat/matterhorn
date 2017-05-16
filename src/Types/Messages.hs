@@ -1,7 +1,31 @@
 -- {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Types.Messages where
+module Types.Messages ( Message(..)
+                      , isDeletable, isReplyable, isEditable
+                      , mText, mUserName, mDate, mType, mPending, mDeleted
+                      , mAttachments, mInReplyToMsg, mPostId, mReactions
+                      , mOriginalPost
+                      , MessageType(..)
+                      , ReplyState(..)
+                      , clientMessageToMessage
+                      , Messages
+                      , ReverseMessages
+                      , noMessages
+                      , appendMessage
+                      , countMessages
+                      , emptyMessages
+                      , splitMessages
+                      , findMessage
+                      , getNextPostId
+                      , getPrevPostId
+                      , getLastPostId
+                      , findLatestUserMessage
+                      , messagesAfter
+                      , reverseMessages
+                      , unreverseMessages
+                      )
+where
 
 import           Cheapskate (Blocks)
 import           Control.Applicative
@@ -202,3 +226,7 @@ messagesAfter viewTime = Seq.takeWhileL (\m -> m^.mDate > viewTime)
 -- | Reverse the order of the messages
 reverseMessages :: Messages -> ReverseMessages
 reverseMessages = foldl (flip (Seq.<|)) Seq.empty
+
+-- | Unreverse the order of the messages
+unreverseMessages :: ReverseMessages -> Messages
+unreverseMessages = foldl (flip (Seq.<|)) Seq.empty
