@@ -1,3 +1,6 @@
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
+
 module Main where
 
 import           Control.Exception
@@ -9,6 +12,8 @@ import           Lens.Micro.Platform
 import           Message_QCA
 import           Network.Mattermost.Types
 import           System.Exit
+import           Test.QuickCheck.Checkers
+import           Test.QuickCheck.Classes
 import           Test.Tasty
 import           Test.Tasty.HUnit
 import           Test.Tasty.QuickCheck
@@ -43,6 +48,10 @@ uniqueIds msgs =
 validIds :: Foldable t => t Message -> Bool
 validIds = null . filter isNothing . idlist
 
+tastyBatch :: TestBatch -> TestTree
+tastyBatch b = testGroup (fst b) $ tastyTests (snd b)
+    where tastyTests = map tastyTest
+          tastyTest = uncurry testProperty
 
 tests :: TestTree
 tests = testGroup "Messages Tests"
@@ -50,6 +59,7 @@ tests = testGroup "Messages Tests"
         , movementTests
         , reversalTests
         , splitTests
+        , instanceTests
         ]
 
 
@@ -69,14 +79,14 @@ createTests = testGroup "Create"
                     $ \(x, y) ->
                         let m1 = appendMessage x $ appendMessage y noMessages
                             m2 = noMessages
-                        in (2 == (countMessages $ joinMessages m1 m2) &&
-                            2 == (countMessages $ joinMessages m2 m1))
+                        in (2 == (countMessages $ m1 <> m2) &&
+                            2 == (countMessages $ m2 <> m1))
               , testProperty "join to one"
                     $ \(x, y, z) ->
                         let m1 = appendMessage x $ appendMessage y noMessages
                             m2 = appendMessage z noMessages
-                            j1 = joinMessages m1 m2
-                            j2 = joinMessages m2 m1
+                            j1 = m1 <> m2
+                            j2 = m2 <> m1
                         in (3 == (countMessages $ j1) &&
                             3 == (countMessages $ j2) &&
                             idlist [y, x, z] == idlist j1 &&
@@ -86,8 +96,8 @@ createTests = testGroup "Create"
                     $ \(w, x, y, z) ->
                         let m1 = appendMessage x $ appendMessage y noMessages
                             m2 = appendMessage w $ appendMessage z noMessages
-                            j1 = joinMessages m1 m2
-                            j2 = joinMessages m2 m1
+                            j1 = m1 <> m2
+                            j2 = m2 <> m1
                         in (4 == (countMessages $ j1) &&
                             4 == (countMessages $ j2) &&
                             idlist [y, x, z, w] == idlist j1 &&
@@ -376,3 +386,15 @@ splitTests = testGroup "Split"
                           counterexample info $
                                          idlist (drop 3 inpl) == idlist after
              ]
+
+
+instanceTests :: TestTree
+instanceTests = testGroup "Messages Instances"
+                [ tastyBatch (monoid (undefined :: Messages))
+                ]
+
+instance EqProp Messages where
+    a =-= b = idlist a =-= idlist b
+
+instance EqProp PostId where
+    a =-= b = (show $ idString a) =-= (show $ idString b)

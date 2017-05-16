@@ -429,7 +429,7 @@ insertTransitions fmt tz cutoff ms = fst $ F.foldl' nextMsg initState ms
                     else noMessages
             in if msg^.mDeleted
                then (rest, Just prevMsg)
-               else (appendMessage msg (joinMessages rest toInsert), Just msg)
+               else (appendMessage msg (rest <> toInsert), Just msg)
 
 findUserByDMChannelName :: HashMap UserId UserInfo
                         -> T.Text -- ^ the dm channel name

@@ -106,6 +106,7 @@ test-suite test_messages
                     , brick >= 0.17
                     , bytestring
                     , cheapskate
+                    , checkers
                     , config-ini >= 0.1.2
                     , connection
                     , containers >= 0.5.7

@@ -100,9 +100,6 @@ noMessages = mempty
 appendMessage :: Message -> Messages -> Messages
 appendMessage = flip (Seq.|>)
 
-joinMessages :: Messages -> Messages -> Messages
-joinMessages = (Seq.><)
-
 -- | Filters the message list to only those matching the specified
 -- filterMessages :: (Message -> Bool) -> Messages -> Messages
 filterMessages :: (Message -> Bool) -> Messages -> Seq.Seq Message
