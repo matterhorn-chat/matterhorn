@@ -106,24 +106,6 @@ refreshLoadedChannels = do
 
 -- * Message selection mode
 
--- | Starting from the current sequence index, look forward for a
--- Message that corresponds to a user Post (i.e. has a post ID).
-getNextPost :: Seq.Seq Message -> Maybe PostId
-getNextPost msgs =
-    case Seq.viewl msgs of
-        Seq.EmptyL -> Nothing
-        msg Seq.:< rest ->
-            (if msg^.mDeleted then Nothing else msg^.mPostId) <|> getNextPost rest
-
--- | Starting from the current sequence index, look backwards for a
--- Message that corresponds to a user Post (i.e. has a post ID).
-getPrevPost :: Int -> Seq.Seq Message -> Maybe PostId
-getPrevPost i msgs =
-    case Seq.viewr (Seq.take (i+1) msgs) of
-        Seq.EmptyR -> Nothing
-        rest Seq.:> msg ->
-            (if msg^.mDeleted then Nothing else msg^.mPostId) <|> getPrevPost (i - 1) rest
-
 beginMessageSelect :: MH ()
 beginMessageSelect = do
     -- Get the number of messages in the current channel and set the
@@ -240,27 +222,12 @@ beginUpdateMessage = do
 
 replyToLatestMessage :: MH ()
 replyToLatestMessage = do
-    latest <- use (to getLatestUserMessage)
-    case latest of
-        Just msg | isReplyable msg -> do
-            let Just p = msg^.mOriginalPost
-            csMode .= Main
-            csEditState.cedEditMode .= Replying msg p
-        _ -> return ()
-
--- | Get the latest normal or emote post in the current channel.
-getLatestUserMessage :: ChatState -> Maybe Message
-getLatestUserMessage st =
-    let go msgs = case Seq.viewr msgs of
-            Seq.EmptyR -> Nothing
-            rest Seq.:> msg ->
-                (if msg^.mDeleted || not (msg^.mType `elem` [CP NormalPost, CP Emote])
-                 then Nothing
-                 else (Just msg <* msg^.mOriginalPost)) <|>
-                go rest
-
-        chanMsgs = st ^. csCurrentChannel . ccContents . cdMessages
-    in go chanMsgs
+  msgs <- use (csCurrentChannel . ccContents . cdMessages)
+  case findLatestUserMessage isReplyable msgs of
+    Just msg -> do let Just p = msg^.mOriginalPost
+                   csMode .= Main
+                   csEditState.cedEditMode .= Replying msg p
+    _ -> return ()
 
 beginReplyCompose :: MH ()
 beginReplyCompose = do
@@ -725,7 +692,7 @@ addMessage new = do
                 csPostMap.ix(postId new) .= msg
                 s <- use id
                 let msg' = clientPostToMessage s (toClientPost new (new^.postParentIdL))
-                chan.ccContents.cdMessages %= (Seq.|> msg')
+                chan.ccContents.cdMessages %= (appendMessage msg')
                 chan.ccInfo.cdUpdated %= updateTime
                 when (not fromMe) $ maybeRingBell
                 ccId <- use csCurrentChannelId

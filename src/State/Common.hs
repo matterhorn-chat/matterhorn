@@ -92,12 +92,13 @@ getDMChannelName me you = cname
   [loUser, hiUser] = sort $ idString <$> [ you, me ]
   cname = loUser <> "__" <> hiUser
 
-messagesFromPosts :: Posts -> MH (Seq.Seq Message)
+messagesFromPosts :: Posts -> MH Messages
 messagesFromPosts p = do -- (msgs, st')
   st <- use id
   csPostMap %= HM.union (postMap st)
   st' <- use id
-  let msgs = fmap (clientPostToMessage st') (clientPost <$> ps)
+  let msgs = postsToMessages (clientPostToMessage st') (clientPost <$> ps)
+      postsToMessages f = foldr (appendMessage . f) noMessages
   return msgs
     where
         postMap :: ChatState -> HM.HashMap PostId Message
@@ -190,9 +191,8 @@ asyncFetchScrollback prio cId = do
             let setCutoff = if hasNew
                             then const $ Just $ minimum (_mDate <$> newMessages)
                             else id
-                hasNew = not $ Seq.null newMessages
-                newMessages = filterMessages (\m -> m^.mDate > viewTime) $
-                              contents^.cdMessages
+                hasNew = not $ emptyMessages newMessages
+                newMessages = messagesAfter viewTime $ contents^.cdMessages
             csChannel(cId).ccContents .= contents
             csChannel(cId).ccInfo.cdCurrentState .= ChanLoaded
             csChannel(cId).ccInfo.cdNewMessageCutoff %= setCutoff
