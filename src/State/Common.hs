@@ -232,7 +232,7 @@ updateViewedIO st = do
           now <- getCurrentTime
           let cId = st^.csCurrentChannelId
               pId = st^.csRecentChannel
-          doAsyncWithIO Normal st $ do
+          doAsyncWithIO Preempt st $ do
             mmViewChannel
               (st^.csSession)
               (getId (st^.csMyTeam))
