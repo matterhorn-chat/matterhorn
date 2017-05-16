@@ -98,7 +98,7 @@ messagesFromPosts p = do -- (msgs, st')
   csPostMap %= HM.union (postMap st)
   st' <- use id
   let msgs = postsToMessages (clientPostToMessage st') (clientPost <$> ps)
-      postsToMessages f = foldr (appendMessage . f) noMessages
+      postsToMessages f = foldr (addMessage . f) noMessages
   return msgs
     where
         postMap :: ChatState -> HM.HashMap PostId Message
@@ -107,6 +107,7 @@ messagesFromPosts p = do -- (msgs, st')
                                 )
                               | (pId, x) <- HM.toList (p^.postsPostsL)
                               ]
+        -- n.b. postsOrder is most recent first
         ps   = findPost <$> (Seq.reverse $ postsOrder p)
         clientPost :: Post -> ClientPost
         clientPost x = toClientPost x (postId <$> parent x)
@@ -137,7 +138,7 @@ asyncFetchAttachments p = do
             m & mAttachments %~ (attachment Seq.<|)
           | otherwise              = m
     return $
-      csChannel(cId).ccContents.cdMessages.each %= addAttachment
+      csChannel(cId).ccContents.cdMessages.traversed %= addAttachment
 
 -- | Create a new 'ClientMessage' value
 newClientMessage :: (MonadIO m) => ClientMessageType -> T.Text -> m ClientMessage
@@ -149,7 +150,7 @@ newClientMessage ty msg = do
 addClientMessage :: ClientMessage -> MH ()
 addClientMessage msg = do
   cid <- use csCurrentChannelId
-  msgMap.ix cid.ccContents.cdMessages %= (appendMessage $ clientMessageToMessage msg)
+  msgMap.ix cid.ccContents.cdMessages %= (addMessage $ clientMessageToMessage msg)
 
 -- | Add a new 'ClientMessage' representing an error message to
 --   the current channel's message list
@@ -170,7 +171,7 @@ postErrorMessageIO err st = do
   now <- liftIO getCurrentTime
   let msg = ClientMessage err now Error
       cId = st ^. csCurrentChannelId
-  return $ st & msgMap.ix cId.ccContents.cdMessages %~ (appendMessage $ clientMessageToMessage msg)
+  return $ st & msgMap.ix cId.ccContents.cdMessages %~ (addMessage $ clientMessageToMessage msg)
 
 numScrollbackPosts :: Int
 numScrollbackPosts = 100

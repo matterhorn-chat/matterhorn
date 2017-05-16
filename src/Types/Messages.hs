@@ -1,4 +1,8 @@
--- {-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveFoldable #-}
+{-# LANGUAGE DeriveTraversable #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Types.Messages ( Message(..)
@@ -10,7 +14,9 @@ module Types.Messages ( Message(..)
                       , ReplyState(..)
                       , clientMessageToMessage
                       , Messages
-                      , ReverseMessages
+                      , ChronologicalMessages
+                      , RetrogradeMessages
+                      , MessageOps (..)
                       , noMessages
                       , appendMessage
                       , countMessages
@@ -19,7 +25,7 @@ module Types.Messages ( Message(..)
                       , findMessage
                       , getNextPostId
                       , getPrevPostId
-                      , getLastPostId
+                      , getLatestPostId
                       , findLatestUserMessage
                       , messagesAfter
                       , reverseMessages
@@ -102,70 +108,121 @@ clientMessageToMessage cm = Message
 
 makeLenses ''Message
 
+-- ----------------------------------------------------------------------
+
+-- These declarations allow the use of a DirectionalSeq, which is a Seq
+-- that uses a phantom type to identify the ordering of the elements
+-- in the sequence (Forward or Reverse).  The constructors are not
+-- exported from this module so that a DirectionalSeq can only be
+-- constructed by the functions in this module.
+
+data Chronological
+data Retrograde
+class SeqDirection a
+instance SeqDirection Chronological
+instance SeqDirection Retrograde
+
+data SeqDirection dir => DirectionalSeq dir a =
+    DSeq { dseq :: Seq.Seq a }
+         deriving (Show, Functor, Foldable, Traversable)
+
+instance SeqDirection a => Monoid (DirectionalSeq a Message) where
+    mempty = DSeq mempty
+    mappend a b = DSeq $ mappend (dseq a) (dseq b)
+
+
+-- ----------------------------------------------------------------------
+
 -- * Message Collections
 
 -- | A wrapper for an ordered, unique list of 'Message' values.
 --
--- This type has the following instances: Show, Functor, Monoid, Foldable
-type Messages = Seq.Seq Message
+-- This type has (and promises) the following instances: Show,
+-- Functor, Monoid, Foldable, Traversable
+type ChronologicalMessages = DirectionalSeq Chronological Message
+type Messages = ChronologicalMessages
 
 -- | There are also cases where the list of 'Message' values are kept
 -- in reverse order (most recent -> oldest); these cases are
--- represented by the `ReverseMessages` type.
-type ReverseMessages = Seq.Seq Message
+-- represented by the `RetrogradeMessages` type.
+type RetrogradeMessages = DirectionalSeq Retrograde Message
 
 
 -- ** Common operations on Messages
 
+class MessageOps a where
+    addMessage :: Message -> a -> a
+
+instance MessageOps ChronologicalMessages where
+    addMessage m ml = case Seq.viewr (dseq ml) of
+                        Seq.EmptyR   -> DSeq $ Seq.singleton m
+                        ml' Seq.:> l ->
+                            case compare (m^.mDate) (l^.mDate) of
+                              GT -> DSeq $ dseq ml Seq.|> m
+                              EQ -> if m^.mPostId == l^.mPostId && isJust (m^.mPostId)
+                                    -- then ml
+                                    then DSeq $ dseq ml Seq.|> m
+                                    else DSeq $ dseq ml Seq.|> m
+                              LT -> dirDateInsert m ml
+
+dirDateInsert :: Message -> ChronologicalMessages -> ChronologicalMessages
+dirDateInsert m ml = DSeq . finalize $ foldr insAfter initial $ dseq ml
+        where initial = (Just m, mempty)
+              insAfter c (Nothing, l) = (Nothing, c Seq.<| l)
+              insAfter c (Just n, l) =
+                  case compare (n^.mDate) (c^.mDate) of
+                    GT -> (Nothing, c Seq.<| (n Seq.<| l))
+                    EQ -> if n^.mPostId == c^.mPostId && isJust (c^.mPostId)
+                          then (Nothing, c Seq.<| l)
+                          else (Nothing, c Seq.<| (n Seq.<| l))
+                    LT -> (Just n, c Seq.<| l)
+              finalize (Just n, l) = n Seq.<| l
+              finalize (_, l) = l
 
 noMessages :: Messages
-noMessages = mempty
+noMessages = DSeq mempty
 
 appendMessage :: Message -> Messages -> Messages
-appendMessage = flip (Seq.|>)
-
--- | Filters the message list to only those matching the specified
--- filterMessages :: (Message -> Bool) -> Messages -> Messages
-filterMessages :: (Message -> Bool) -> Messages -> Seq.Seq Message
-filterMessages = Seq.filter
+appendMessage m = DSeq . flip (Seq.|>) m . dseq
 
 countMessages :: Messages -> Int
-countMessages = Seq.length
+countMessages = Seq.length . dseq
 
 emptyMessages :: Messages -> Bool
-emptyMessages = Seq.null
+emptyMessages = Seq.null . dseq
 
 
--- | Searches for the specified PostId and returns a tuple of (Maybe
--- Message, (Messages, Messages)) where the first element is the
--- Message associated with the PostId (if it exists), the first
--- element of the second is all the messages from the beginning of the
--- list to the message just before the PostId message (or all messages
--- if not found) *in reverse order*, and the second element of the
--- second are all the messages that follow the found message (none if
--- the message was never found) in *forward* order.
+-- | Searches for the specified PostId and returns a tuple where the
+-- first element is the Message associated with the PostId (if it
+-- exists), and the second element is another tuple: the first element
+-- of the second is all the messages from the beginning of the list to
+-- the message just before the PostId message (or all messages if not
+-- found) *in reverse order*, and the second element of the second are
+-- all the messages that follow the found message (none if the message
+-- was never found) in *forward* order.
 splitMessages :: Maybe PostId -> Messages -> (Maybe Message,
-                                              (ReverseMessages, Messages))
-splitMessages Nothing msgs = (Nothing, (Seq.reverse msgs, noMessages))
+                                              (RetrogradeMessages, Messages))
+splitMessages Nothing msgs = (Nothing,
+                              (DSeq $ Seq.reverse $ dseq msgs, noMessages))
 splitMessages pid msgs =
     -- n.b. searches from the end as that is usually where the message
     -- is more likely to be found.  There is usually < 1000 messages
     -- total, so this does not need hyper efficiency.
-    case Seq.viewr msgs of
-      Seq.EmptyR  -> (Nothing, (noMessages, noMessages))
+    case Seq.viewr (dseq msgs) of
+      Seq.EmptyR  -> (Nothing, (reverseMessages noMessages, noMessages))
       ms Seq.:> m -> if m^.mPostId == pid
-                     then (Just m, (Seq.reverse ms, noMessages))
-                     else let (a, (b,c)) = splitMessages pid ms
+                     then (Just m, (DSeq $ Seq.reverse ms, noMessages))
+                     else let (a, (b,c)) = splitMessages pid $ DSeq ms
                           in case a of
-                               Nothing -> (a, (m Seq.<| b, c))
-                               Just _  -> (a, (b, c Seq.|> m))
+                               Nothing -> (a, (DSeq $ m Seq.<| (dseq b), c))
+                               Just _  -> (a, (b, DSeq $ (dseq c) Seq.|> m))
 
 -- | findMessage searches for a specific message as identified by the
 -- PostId.  The search starts from the most recent messages because
 -- that is the most likely place the message will occur.
 findMessage :: PostId -> Messages -> Maybe Message
-findMessage pid msgs = Seq.findIndexR (\m -> m^.mPostId == Just pid) msgs
-                       >>= Just . Seq.index msgs
+findMessage pid msgs = Seq.findIndexR (\m -> m^.mPostId == Just pid) (dseq msgs)
+                       >>= Just . Seq.index (dseq msgs)
 
 -- | Look forward for the first Message that corresponds to a user
 -- Post (i.e. has a post ID) that follows the specified PostId
@@ -190,7 +247,7 @@ getRelPostId :: ((Either PostId (Maybe PostId)
              -> Messages
              -> Maybe PostId
 getRelPostId folD jp = case jp of
-                         Nothing -> getLastPostId
+                         Nothing -> getLatestPostId
                          Just p -> either (const Nothing) id . folD fnd (Left p)
     where fnd = either fndp fndnext
           fndp c v = if v^.mPostId == Just c then Right Nothing else Left c
@@ -199,8 +256,9 @@ getRelPostId folD jp = case jp of
 
 -- | Find the most recent message that is a Post (as opposed to a
 -- local message) (if any).
-getLastPostId :: Messages -> Maybe PostId
-getLastPostId msgs = Seq.findIndexR valid msgs >>= _mPostId <$> Seq.index msgs
+getLatestPostId :: Messages -> Maybe PostId
+getLatestPostId msgs = Seq.findIndexR valid (dseq msgs)
+                     >>= _mPostId <$> Seq.index (dseq msgs)
     where valid m = not (m^.mDeleted) && isJust (m^.mPostId)
 
 -- | Find the most recent message that is a message posted by a user
@@ -208,7 +266,7 @@ getLastPostId msgs = Seq.findIndexR valid msgs >>= _mPostId <$> Seq.index msgs
 -- user event that is not a message (i.e. find a normal message or an
 -- emote).
 findLatestUserMessage :: (Message -> Bool) -> Messages -> Maybe Message
-findLatestUserMessage f msgs = case getLastPostId msgs of
+findLatestUserMessage f msgs = case getLatestPostId msgs of
                                   Nothing -> Nothing
                                   Just pid -> findUserMessageFrom pid msgs
     where findUserMessageFrom p ms =
@@ -221,12 +279,12 @@ findLatestUserMessage f msgs = case getLastPostId msgs of
 
 -- | Return all messages that were posted after the specified date/time.
 messagesAfter :: UTCTime -> Messages -> Messages
-messagesAfter viewTime = Seq.takeWhileL (\m -> m^.mDate > viewTime)
+messagesAfter viewTime = DSeq . Seq.takeWhileL (\m -> m^.mDate > viewTime) . dseq
 
 -- | Reverse the order of the messages
-reverseMessages :: Messages -> ReverseMessages
-reverseMessages = foldl (flip (Seq.<|)) Seq.empty
+reverseMessages :: Messages -> RetrogradeMessages
+reverseMessages = DSeq . Seq.reverse . dseq
 
 -- | Unreverse the order of the messages
-unreverseMessages :: ReverseMessages -> Messages
-unreverseMessages = foldl (flip (Seq.<|)) Seq.empty
+unreverseMessages :: RetrogradeMessages -> Messages
+unreverseMessages = DSeq . Seq.reverse . dseq

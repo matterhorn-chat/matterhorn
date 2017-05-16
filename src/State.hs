@@ -73,17 +73,18 @@ refreshChannel chan = do
   session <- use csSession
   myTeamId <- use (csMyTeam.teamIdL)
   doAsyncWith Normal $
-    case getLastPostId msgs of
+    case getLatestPostId msgs of
     Just pId -> do
       -- Get the latest channel metadata.
       cwd <- mmGetChannel session myTeamId chan
 
-      -- Load posts since the last post in this channel.
+      -- Load posts since the last post in this channel.  Note that
+      -- postsOrder from mattermost-api is most recent first.
       posts <- mmGetPostsAfter session myTeamId chan pId 0 100
       return $ do
-        mapM_ addMessage [ (posts^.postsPostsL) HM.! p
-                         | p <- F.toList (posts^.postsOrderL)
-                         ]
+        mapM_ addMessageToState [ (posts^.postsPostsL) HM.! p
+                                | p <- F.toList (posts^.postsOrderL)
+                                ]
         let newChanInfo ci = channelInfoFromChannelWithData cwd ci
                                & cdCurrentState     .~ ChanLoaded
 
@@ -116,7 +117,7 @@ beginMessageSelect = do
     -- If we can't find one at all, we ignore the mode switch request
     -- and just return.
     chanMsgs <- use(csCurrentChannel . ccContents . cdMessages)
-    let recentPost = getLastPostId chanMsgs
+    let recentPost = getLatestPostId chanMsgs
 
     when (isJust recentPost) $ do
         csMode .= MessageSelect
@@ -636,7 +637,7 @@ editMessage new = do
   let chan = csChannel (postChannelId new)
       isEditedMessage m = m^.mPostId == Just (new^.postIdL)
       msg = clientPostToMessage st (toClientPost new (new^.postParentIdL))
-  chan . ccContents . cdMessages . each . filtered isEditedMessage .= msg
+  chan . ccContents . cdMessages . traversed . filtered isEditedMessage .= msg
   chan . ccInfo . cdUpdated .= now
   csPostMap.ix(postId new) .= msg
   cId <- use csCurrentChannelId
@@ -648,7 +649,7 @@ deleteMessage new = do
   now <- getNow
   let isDeletedMessage m = m^.mPostId == Just (new^.postIdL)
       chan = csChannel (postChannelId new)
-  chan.ccContents.cdMessages.each.filtered isDeletedMessage %= (& mDeleted .~ True)
+  chan.ccContents.cdMessages.traversed.filtered isDeletedMessage %= (& mDeleted .~ True)
   chan.ccInfo.cdUpdated .= now
   cId <- use csCurrentChannelId
   when (postChannelId new == cId) $
@@ -662,8 +663,8 @@ maybeRingBell = do
         Just vty <- mh getVtyHandle
         liftIO $ ringTerminalBell $ outputIface vty
 
-addMessage :: Post -> MH ()
-addMessage new = do
+addMessageToState :: Post -> MH ()
+addMessageToState new = do
   st <- use id
   asyncFetchAttachments new
   case st^.msgMap.at (postChannelId new) of
@@ -692,7 +693,7 @@ addMessage new = do
                 csPostMap.ix(postId new) .= msg
                 s <- use id
                 let msg' = clientPostToMessage s (toClientPost new (new^.postParentIdL))
-                chan.ccContents.cdMessages %= (appendMessage msg')
+                chan.ccContents.cdMessages %= (addMessage msg')
                 chan.ccInfo.cdUpdated %= updateTime
                 when (not fromMe) $ maybeRingBell
                 ccId <- use csCurrentChannelId

@@ -6,9 +6,14 @@ module Main where
 import           Control.Exception
 import           Data.List (intercalate)
 import qualified Data.List.UniqueUnsorted as U
+import qualified Data.Map as Map
 import           Data.Maybe (isNothing, fromJust)
 import           Data.Monoid ((<>))
 import qualified Data.Sequence as Seq
+import qualified Data.Text as T
+import           Data.Time.Calendar (Day(..))
+import           Data.Time.Clock (UTCTime(..), getCurrentTime
+                                 , secondsToDiffTime)
 import           Lens.Micro.Platform
 import           Message_QCA
 import           Network.Mattermost.Types
@@ -19,24 +24,55 @@ import           Test.Tasty
 import           Test.Tasty.HUnit
 import           Test.Tasty.QuickCheck
 import           Types.Messages
+import           Types.Posts
 
 main :: IO ()
 main = defaultMain tests `catch` (\e -> do
                                     if e == ExitSuccess
                                     then putStrLn "Passed"
-                                    else putStrLn "FAILED"
-                                    throwIO e)
+                                    else do putStrLn "FAILED"
+                                            throwIO e)
 
+tests :: TestTree
+tests = testGroup "Messages Tests"
+        [ createTests
+        , movementTests
+        , reversalTests
+        , splitTests
+        , instanceTests
+        ]
+
+
+test_m1 :: IO Message
+test_m1 = do t1 <- getCurrentTime
+             return $ Message Seq.empty Nothing t1 (CP NormalPost) False False Seq.empty NotAReply Nothing Map.empty Nothing
+
+test_m2 :: IO Message
+test_m2 = do t2 <- getCurrentTime
+             return $ Message Seq.empty Nothing t2 (CP Emote) False False Seq.empty NotAReply (Just $ fromId $ Id $ T.pack "m2") Map.empty Nothing
+
+test_m3 :: IO Message
+test_m3 = do t3 <- getCurrentTime
+             return $ Message Seq.empty Nothing t3 (CP NormalPost) False False Seq.empty NotAReply (Just $ fromId $ Id $ T.pack "m3") Map.empty Nothing
+
+setDateOrderMessages :: [Message] -> [Message]
+setDateOrderMessages = snd . foldl setTimeAndInsert (startTime, [])
+    where setTimeAndInsert (t, ml) m = let t2 = tick t
+                                       in (t2, ml ++ [m {_mDate = t2}])
+          startTime = UTCTime (ModifiedJulianDay 100) (secondsToDiffTime 0)
+          tick (UTCTime d t) = UTCTime d $ succ t
 
 makeMsgs :: [Message] -> Messages
-makeMsgs = foldl (flip appendMessage) noMessages
+makeMsgs = foldr addMessage noMessages
 
 idlist :: Foldable t => t Message -> [Maybe PostId]
-idlist = foldl (\s m -> m^.mPostId : s) []
+idlist = foldr (\m s -> m^.mPostId : s) []
 
-postids :: (Foldable t, Show a) => [a] -> t Message -> String
-postids names msgs = let zipf = (\(n,z) m -> (tail n, (head n, m) : z))
-                         zipped = snd $ foldl zipf (names, []) msgs
+postids :: (Foldable t) => String -> t Message -> String
+postids names msgs = let zipf = (\(n,z) m -> if null n
+                                             then ("", ('?', m) : z)
+                                             else (init n, (last n, m) : z))
+                         zipped = snd $ foldr (flip zipf) (names, []) msgs
                          pid (n, m) = show n <> ".mPostID=" <> show (m^.mPostId)
                      in intercalate ", " $ map pid zipped
 
@@ -53,55 +89,83 @@ tastyBatch b = testGroup (fst b) $ tastyTests (snd b)
     where tastyTests = map tastyTest
           tastyTest = uncurry testProperty
 
-tests :: TestTree
-tests = testGroup "Messages Tests"
-        [ createTests
-        , movementTests
-        , reversalTests
-        , splitTests
-        , instanceTests
-        ]
-
-
 createTests :: TestTree
 createTests = testGroup "Create"
               [ testCase "no messages"
                     $ 0 @=? countMessages noMessages
               , testProperty "has messages"
                     $ \x -> not (emptyMessages x) ==> 0 /= countMessages x
-              , testProperty "append to empty"
-                    $ \x -> 1 == (countMessages $ appendMessage x noMessages)
-              , testProperty "append to append to empty"
-                    $ \(x, y) -> 2 == (countMessages $
-                                       appendMessage x $
-                                       appendMessage y noMessages)
+              , testProperty "add to empty"
+                    $ \x -> 1 == (countMessages $ addMessage x noMessages)
+              , testProperty "add to add to empty"
+                    $ \(x, y) -> 2 == (countMessages $ makeMsgs [x, y])
               , testProperty "join to empty"
                     $ \(x, y) ->
-                        let m1 = appendMessage x $ appendMessage y noMessages
+                        let m1 = makeMsgs [x, y]
                             m2 = noMessages
                         in (2 == (countMessages $ m1 <> m2) &&
                             2 == (countMessages $ m2 <> m1))
-              , testProperty "join to one"
+
+              , testProperty "join one to many"
                     $ \(x, y, z) ->
-                        let m1 = appendMessage x $ appendMessage y noMessages
-                            m2 = appendMessage z noMessages
-                            j1 = m1 <> m2
+                        let l1 = setDateOrderMessages [x, y]
+                            m1 = makeMsgs l1
+                            m2 = addMessage z noMessages
                             j2 = m2 <> m1
-                        in (3 == (countMessages $ j1) &&
-                            3 == (countMessages $ j2) &&
-                            idlist [y, x, z] == idlist j1 &&
-                            idlist [z, y, x] == idlist j2)
+                        in idlist [z, x, y] === idlist j2
+
+              , testProperty "join many to one"
+                    $ \(x, y, z) ->
+                        let l1 = setDateOrderMessages [x, y]
+                            m1 = makeMsgs l1
+                            m2 = addMessage z noMessages
+                            j1 = m1 <> m2
+                        in idlist [x, y, z] === idlist j1
 
               , testProperty "join to many"
                     $ \(w, x, y, z) ->
-                        let m1 = appendMessage x $ appendMessage y noMessages
-                            m2 = appendMessage w $ appendMessage z noMessages
+                        let l1 = setDateOrderMessages [x, y]
+                            l2 = setDateOrderMessages [w, z]
+                            m1 = makeMsgs l1
+                            m2 = makeMsgs l2
+                            -- note that mappend is literal: there is
+                            -- no date relationship between the
+                            -- members l1 and l2 and mappend doesn't
+                            -- enforce one.
                             j1 = m1 <> m2
                             j2 = m2 <> m1
                         in (4 == (countMessages $ j1) &&
                             4 == (countMessages $ j2) &&
-                            idlist [y, x, z, w] == idlist j1 &&
-                            idlist [z, w, y, x] == idlist j2)
+                            idlist (l1 <> l2) == idlist j1 &&
+                            idlist (l2 <> l1) == idlist j2)
+
+              , testProperty "natural ordering of addMessage"
+                    $ \(w, x, y, z) ->
+                        let l = setDateOrderMessages [w, x, y, z]
+                        in idlist l === idlist (makeMsgs l)
+
+              , testProperty "reverse ordering of addMessage"
+                    $ \(w, x, y, z) ->
+                        let l = setDateOrderMessages [w, x, y, z]
+                        in idlist l === idlist (makeMsgs $ reverse l)
+
+              , testProperty "mirrored ordering of addMessage"
+                    $ \(w, x, y, z) ->
+                        let l = setDateOrderMessages [w, x, y, z]
+                            [w', x', y', z'] = l
+                        in idlist l === idlist (makeMsgs [y', z', w', x'])
+
+              , testProperty "ordering 1 of addMessage"
+                    $ \(w, x, y, z) ->
+                        let l = setDateOrderMessages [w, x, y, z]
+                            [w', x', y', z'] = l
+                        in idlist l === idlist (makeMsgs [y', w', z', x'])
+
+              , testProperty "ordering 2 of addMessage"
+                    $ \(w, x, y, z) ->
+                        let l = setDateOrderMessages [w, x, y, z]
+                            [w', x', y', z'] = l
+                        in idlist l === idlist (makeMsgs [x', z', w', y'])
 
               ]
 
@@ -131,32 +195,39 @@ moveUpTestEmpty = testProperty "Move down in empty messages" $
 
 moveDownTestSingle :: TestTree
 moveDownTestSingle = testProperty "Move up from single message" $
-                   \x -> let msgs = appendMessage x noMessages
+                   \x -> let msgs = addMessage x noMessages
                          in Nothing == (getNextPostId (x^.mPostId) msgs)
 
 moveUpTestSingle :: TestTree
 moveUpTestSingle = testProperty "Move down from single message" $
-                    \x -> let msgs = appendMessage x noMessages
+                    \x -> let msgs = addMessage x noMessages
                           in Nothing == (getPrevPostId (x^.mPostId) msgs)
 
 moveDownTestMultipleStart :: TestTree
 moveDownTestMultipleStart =
     testProperty "Move down in multiple messages from the start" $
-                     \(x, y, z) ->
-                         let msgs = makeMsgs [ postMsg x, postMsg y, postMsg z]
-                             msgid = getNextPostId ((postMsg x)^.mPostId) msgs
+                     \(x', y', z') ->
+                         let [x, y, z] = setDateOrderMessages
+                                         [ postMsg x'
+                                         , postMsg y'
+                                         , postMsg z'
+                                         ]
+                             msgs = makeMsgs [x, y, z]
+                             msgid = getNextPostId (x^.mPostId) msgs
                              -- for useful info on failure:
                              idents = postids "xyz" msgs
                              info = idents <> " against " <> show msgid
                          in counterexample info $
-                                (postMsg y)^.mPostId == msgid
+                                y^.mPostId == msgid
 
 moveUpTestMultipleStart :: TestTree
 moveUpTestMultipleStart =
     testProperty "Move up in multiple messages from the start" $
-                     \(x, y, z) ->
-                         let msgs = makeMsgs [ postMsg x, postMsg y, postMsg z]
-                             msgid = getPrevPostId ((postMsg x)^.mPostId) msgs
+                     \(x', y', z') ->
+                         let [x, y, z] = setDateOrderMessages
+                                         [ postMsg x', postMsg y', postMsg z']
+                             msgs = makeMsgs [x, y, z]
+                             msgid = getPrevPostId (x^.mPostId) msgs
                              -- for useful info on failure:
                              idents = postids "xyz" msgs
                              info = idents <> " against " <> show msgid
@@ -166,10 +237,11 @@ moveUpTestMultipleStart =
 moveDownTestMultipleEnd :: TestTree
 moveDownTestMultipleEnd =
     testProperty "Move down in multiple messages from the end" $
-                     \(x, y, z) ->
-                         let msgs = makeMsgs [ postMsg x, postMsg y, postMsg z]
-                                    -- n.b. makes more sense to start at z...
-                             msgid = getNextPostId ((postMsg z)^.mPostId) msgs
+                     \(x', y', z') ->
+                         let [x, y, z] = setDateOrderMessages
+                                         [ postMsg x', postMsg y', postMsg z']
+                             msgs = makeMsgs [x, y, z]
+                             msgid = getNextPostId (z^.mPostId) msgs
                              -- for useful info on failure:
                              idents = postids "xyz" msgs
                              info = idents <> " against " <> show msgid
@@ -179,59 +251,64 @@ moveDownTestMultipleEnd =
 moveUpTestMultipleEnd :: TestTree
 moveUpTestMultipleEnd =
     testProperty "Move up in multiple messages from the end" $
-                     \(x, y, z) ->
-                         let msgs = makeMsgs [ postMsg x, postMsg y, postMsg z]
-                             msgid = getPrevPostId ((postMsg z)^.mPostId) msgs
+                     \(x', y', z') ->
+                         let [x, y, z] = setDateOrderMessages
+                                         [ postMsg x', postMsg y', postMsg z']
+                             msgs = makeMsgs [x, y, z]
+                             msgid = getPrevPostId (z^.mPostId) msgs
                              -- for useful info on failure:
                              idents = postids "xyz" msgs
                              info = idents <> " against " <> show msgid
                          in uniqueIds msgs ==>
-                            counterexample info $
-                                ((postMsg y)^.mPostId) == msgid
+                            counterexample info $ (y^.mPostId) == msgid
 
 moveDownTestMultipleSkipDeleted :: TestTree
 moveDownTestMultipleSkipDeleted =
     testProperty "Move down in multiple messages skipping deleteds" $
-                     \(w, x, y, z) ->
-                         let msgs = makeMsgs [ postMsg w
-                                             , delMsg x
-                                             , delMsg y
-                                             , postMsg z]
-                             msgid = getNextPostId ((postMsg w)^.mPostId) msgs
+                     \(w', x', y', z') ->
+                         let [w, x, y, z] = setDateOrderMessages
+                                            [ postMsg w'
+                                            , delMsg x'
+                                            , delMsg y'
+                                            , postMsg z']
+                             msgs = makeMsgs [w, x, y, z]
+                             msgid = getNextPostId (w^.mPostId) msgs
                              -- for useful info on failure:
                              idents = postids "wxyz" msgs
                              info = idents <> " against " <> show msgid
-                         in counterexample info $
-                                ((postMsg z)^.mPostId) == msgid
+                         in counterexample info $ (z^.mPostId) == msgid
 
 moveUpTestMultipleSkipDeleted :: TestTree
 moveUpTestMultipleSkipDeleted =
     testProperty "Move one up in multiple messages skipping deleteds" $
-                     \(w, x, y, z) ->
-                         let msgs = makeMsgs [ postMsg w
-                                             , delMsg x
-                                             , delMsg y
-                                             , postMsg z]
-                             msgid = getPrevPostId ((postMsg z)^.mPostId) msgs
+                     \(w', x', y', z') ->
+                         let [w, x, y, z] = setDateOrderMessages
+                                            [ postMsg w'
+                                            , delMsg x'
+                                            , delMsg y'
+                                            , postMsg z']
+                             msgs = makeMsgs [w, x, y, z]
+                             msgid = getPrevPostId (z^.mPostId) msgs
                              -- for useful info on failure:
                              idents = postids "wxyz" msgs
                              info = idents <> " against " <> show msgid
                          in uniqueIds msgs ==>
-                            counterexample info $
-                                ((postMsg w)^.mPostId) == msgid
+                            counterexample info $ (w^.mPostId) == msgid
 
 moveDownTestMultipleSkipDeletedAll :: TestTree
 moveDownTestMultipleSkipDeletedAll =
     testProperty "Move one down in multiple deleted messages skipping deleteds" $
-                     \(w, x, y, z) ->
+                     \(w', x', y', z') ->
                          -- n.b. current selected is also deleted,
                          -- which can happen due to multi-user async
                          -- server changes.
-                         let msgs = makeMsgs [ delMsg w
-                                             , delMsg x
-                                             , delMsg y
-                                             , delMsg z]
-                             msgid = getNextPostId ((delMsg w)^.mPostId) msgs
+                         let [w, x, y, z] = setDateOrderMessages
+                                            [ delMsg w'
+                                            , delMsg x'
+                                            , delMsg y'
+                                            , delMsg z']
+                             msgs = makeMsgs [w, x, y, z]
+                             msgid = getNextPostId (w^.mPostId) msgs
                              -- for useful info on failure:
                              idents = postids "wxyz" msgs
                              info = idents <> " against " <> show msgid
@@ -240,15 +317,17 @@ moveDownTestMultipleSkipDeletedAll =
 moveUpTestMultipleSkipDeletedAll :: TestTree
 moveUpTestMultipleSkipDeletedAll =
     testProperty "Move one up in multiple deleted messages skipping deleteds" $
-                     \(w, x, y, z) ->
+                     \(w', x', y', z') ->
                          -- n.b. current selected is also deleted,
                          -- which can happen due to multi-user async
                          -- server changes.
-                         let msgs = makeMsgs [ delMsg w
-                                             , delMsg x
-                                             , delMsg y
-                                             , delMsg z]
-                             msgid = getPrevPostId ((delMsg z)^.mPostId) msgs
+                         let [w, x, y, z] = setDateOrderMessages
+                                            [ delMsg w'
+                                            , delMsg x'
+                                            , delMsg y'
+                                            , delMsg z']
+                             msgs = makeMsgs [w, x, y, z]
+                             msgid = getPrevPostId (z^.mPostId) msgs
                              -- for useful info on failure:
                              idents = postids "wxyz" msgs
                              info = idents <> " against " <> show msgid
@@ -258,13 +337,17 @@ moveUpTestMultipleSkipDeletedAll =
 reversalTests :: TestTree
 reversalTests = testGroup "Reversal"
                 [ testProperty "round trip" $
-                \l -> let rr = unreverseMessages (reverseMessages l)
-                          ids = idlist l
-                          rr_ids = idlist rr
-                      in getLastPostId l == getLastPostId rr && ids == rr_ids
+                     \l -> let rr = unreverseMessages (reverseMessages l)
+                           in idlist l === idlist rr
+                , testProperty "getLatestMessage finds same in either dir" $
+                     \l -> let rr = unreverseMessages (reverseMessages l)  -- KWQ: just one reverse, not two
+                           in getLatestPostId l === getLatestPostId rr
                 , testCase "reverse nothing" $
-                  (emptyMessages $ reverseMessages noMessages) @?
-                  "reverse of empty Messages"
+                      (emptyMessages $ unreverseMessages $ reverseMessages noMessages) @?
+                      "reverse of empty Messages"
+                , testProperty "reverse order" $
+                      \l -> let r = reverseMessages l
+                            in idlist l === reverse (idlist r)
                 ]
 
 splitTests :: TestTree
@@ -272,120 +355,149 @@ splitTests = testGroup "Split"
              [ testCase "split nothing on empty" $
                         let (m, _) = splitMessages Nothing noMessages
                         in isNothing m @? "must be nothing"
+
              , testProperty "split just on empty" $ \x ->
                    let (m, _) = splitMessages (Just x) noMessages
                    in isNothing m
+
              , testProperty "split nothing on list" $ \x ->
                  let (m, _) = splitMessages Nothing x
                  in isNothing m
-             , testProperty "split nothing on not found" $ \(w, x, y, z) ->
+
+             , testProperty "split nothing on not found" $ \(w', x', y', z') ->
                  let (m, _) = splitMessages (w^.mPostId) msgs
-                     msgs = foldr appendMessage noMessages [x, y, z]
+                     [w, x, y, z] = setDateOrderMessages [w', x', y', z']
+                     msgs = makeMsgs [x, y, z]
                      idents = postids "wxyz" msgs
                      info = idents <> " against " <> show ((fromJust m)^.mPostId)
                  in uniqueIds [w, x, y, z] ==>
                     counterexample info $ isNothing m
+
              , testProperty "all before reversed on split nothing"
                    $ \(w, x, y, z) ->
                        let (_, (before, _)) = splitMessages Nothing msgs
                            msgs = makeMsgs inpl
-                           inpl = [w, x, y, z]
+                           inpl = setDateOrderMessages [w, x, y, z]
                            control = idlist (reverse inpl)
                            result = idlist before
                            info = show control <> " /= " <> show result
                        in counterexample info $ control == result
+
              , testProperty "all before reversed on not found"
-                   $ \(w, x, y, z) ->
+                   $ \(w', x', y', z') ->
                        let (_, (before, _)) = splitMessages (w^.mPostId) msgs
                            msgs = makeMsgs inpl
                            inpl = [x, y, z]
+                           [w, x, y, z] = setDateOrderMessages [w', x', y', z']
                        in uniqueIds [w, x, y, z] ==>
                           idlist (reverse inpl) == idlist before
 
              , testProperty "found at first position"
-                   $ \(w, x, y, z) ->
+                   $ \(w', x', y', z') ->
                        let (m, _) = splitMessages (w^.mPostId) msgs
                            msgs = makeMsgs inpl
                            inpl = [w, x, y, z]
+                           [w, x, y, z] = setDateOrderMessages [w', x', y', z']
                        in validIds inpl && uniqueIds inpl ==>
                           w^.mPostId == (fromJust m)^.mPostId
+
              , testProperty "no before when found at first position"
-                   $ \(w, x, y, z) ->
+                   $ \(w', x', y', z') ->
                        let (_, (before, _)) = splitMessages (w^.mPostId) msgs
                            msgs = makeMsgs inpl
                            inpl = [w, x, y, z]
+                           [w, x, y, z] = setDateOrderMessages [w', x', y', z']
                            info = show (idlist inpl) <> " ==> " <> (show $ idlist before)
                        in validIds inpl && uniqueIds inpl ==>
-                          counterexample info $ emptyMessages before
+                          counterexample info $ emptyMessages $ unreverseMessages before
              , testProperty "remaining after when found at first position"
-                   $ \(w, x, y, z) ->
+                   $ \(w', x', y', z') ->
                        let (_, (_, after)) = splitMessages (w^.mPostId) msgs
                            msgs = makeMsgs inpl
                            inpl = [w, x, y, z]
+                           [w, x, y, z] = setDateOrderMessages [w', x', y', z']
                            info = show (idlist inpl) <> " ==> " <> (show $ idlist after)
                        in validIds inpl && uniqueIds inpl ==>
                           counterexample info $
                                          idlist (tail inpl) == idlist after
 
              , testProperty "found at last position"
-                   $ \(w, x, y, z) ->
+                   $ \(w', x', y', z') ->
                        let (m, _) = splitMessages (z^.mPostId) msgs
                            msgs = makeMsgs inpl
                            inpl = [w, x, y, z]
+                           [w, x, y, z] = setDateOrderMessages [w', x', y', z']
                        in validIds inpl && uniqueIds inpl ==>
                           z^.mPostId == (fromJust m)^.mPostId
+
              , testProperty "reversed before when found at last position"
-                   $ \(w, x, y, z) ->
+                   $ \(w', x', y', z') ->
                        let (_, (before, _)) = splitMessages (z^.mPostId) msgs
                            msgs = makeMsgs inpl
                            inpl = [w, x, y, z]
+                           [w, x, y, z] = setDateOrderMessages [w', x', y', z']
                            info = show (idlist inpl) <> " ==> " <> (show $ idlist before)
                        in validIds inpl && uniqueIds inpl ==>
                           counterexample info $
                                          idlist (reverse $ init inpl) == idlist before
+
              , testProperty "no after when found at last position"
-                   $ \(w, x, y, z) ->
+                   $ \(w', x', y', z') ->
                        let (_, (_, after)) = splitMessages (z^.mPostId) msgs
                            msgs = makeMsgs inpl
                            inpl = [w, x, y, z]
+                           [w, x, y, z] = setDateOrderMessages [w', x', y', z']
                            info = show (idlist inpl) <> " ==> " <> (show $ idlist after)
                        in validIds inpl && uniqueIds inpl ==>
                           counterexample info $ emptyMessages after
 
              , testProperty "found at midpoint position"
-                   $ \(v, w, x, y, z) ->
+                   $ \(v', w', x', y', z') ->
                        let (m, _) = splitMessages (x^.mPostId) msgs
                            msgs = makeMsgs inpl
                            inpl = [v, w, x, y, z]
+                           [v, w, x, y, z] = setDateOrderMessages
+                                             [v', w', x', y', z']
                        in validIds inpl && uniqueIds inpl ==>
                           x^.mPostId == (fromJust m)^.mPostId
+
              , testProperty "reversed before when found at midpoint position"
-                   $ \(v, w, x, y, z) ->
+                   $ \(v', w', x', y', z') ->
                        let (_, (before, _)) = splitMessages (x^.mPostId) msgs
                            msgs = makeMsgs inpl
                            inpl = [v, w, x, y, z]
+                           [v, w, x, y, z] = setDateOrderMessages
+                                             [v', w', x', y', z']
                            info = show (idlist inpl) <> " ==> " <> (show $ idlist before)
                        in validIds inpl && uniqueIds inpl ==>
                           counterexample info $
-                                         idlist (reverse $ take 2 inpl) == idlist before
+                                         idlist [w, v] == idlist before
+
              , testProperty "after when found at midpoint position"
-                   $ \(v, w, x, y, z) ->
+                   $ \(v', w', x', y', z') ->
                        let (_, (_, after)) = splitMessages (x^.mPostId) msgs
                            msgs = makeMsgs inpl
                            inpl = [v, w, x, y, z]
+                           [v, w, x, y, z] = setDateOrderMessages
+                                             [v', w', x', y', z']
                            info = show (idlist inpl) <> " ==> " <> (show $ idlist after)
                        in validIds inpl && uniqueIds inpl ==>
                           counterexample info $
-                                         idlist (drop 3 inpl) == idlist after
+                                         idlist [y, z] == idlist after
              ]
 
 
 instanceTests :: TestTree
 instanceTests = testGroup "Messages Instances"
-                [ tastyBatch (monoid (undefined :: Messages))
-                ]
+                $ map tastyBatch
+                      [ (monoid (undefined :: Messages))
+                      , (monoid (undefined :: RetrogradeMessages))
+                      ]
 
 instance EqProp Messages where
+    a =-= b = idlist a =-= idlist b
+
+instance EqProp RetrogradeMessages where
     a =-= b = idlist a =-= idlist b
 
 instance EqProp PostId where

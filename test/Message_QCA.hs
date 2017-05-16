@@ -1,7 +1,10 @@
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
+
 module Message_QCA where
 
 import Cheapskate_QCA
-import Data.Map
+import Data.Map hiding (foldr)
 import Network.Mattermost.QuickCheck
 import Network.Mattermost.Types
 import Test.Tasty.QuickCheck
@@ -101,3 +104,9 @@ instance Arbitrary Message where arbitrary = genMessage
 instance Arbitrary Message__DeletedPost where arbitrary = genMessage__DeletedPost
 instance Arbitrary Message__Posted where arbitrary = genMessage__Posted
 instance Arbitrary PostId where arbitrary = genPostId
+
+instance Arbitrary Messages where
+    arbitrary = sized $ \s -> foldr addMessage noMessages <$> vectorOf s arbitrary
+
+instance Arbitrary RetrogradeMessages where
+    arbitrary = reverseMessages <$> arbitrary
