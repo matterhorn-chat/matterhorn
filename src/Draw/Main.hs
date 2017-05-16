@@ -336,8 +336,6 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
     unsafeMessageSelectList msgs idx curMsg = Widget Greedy Greedy $ do
         ctx <- getContext
 
-        let relaxHeight c = c & availHeightL .~ (max maxMessageHeight (c^.availHeightL))
-
         -- Render the message associated with the current post ID.
         curMsgResult <- withReaderT relaxHeight $ render $
             forceAttr messageSelectAttr $
@@ -355,12 +353,7 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
                     case Seq.viewl ms of
                         Seq.EmptyL -> return (num, img)
                         msg Seq.:< ms' -> do
-                            result <- case msg^.mDeleted of
-                                True -> return Vty.emptyImage
-                                False -> do
-                                    r <- withReaderT relaxHeight $
-                                           render $ padRight Max $ renderSingleMessage st uSet cSet msg
-                                    return $ r^.imageL
+                            result <- render1 msg
                             goDown ms' maxHeight (num + 1) (Vty.vertJoin img result)
 
             goUp :: Seq.Seq Message -> Int -> Vty.Image -> RenderM Name Vty.Image
@@ -371,12 +364,7 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
                     case Seq.viewr ms of
                         Seq.EmptyR -> return img
                         ms' Seq.:> msg -> do
-                            result <- case msg^.mDeleted of
-                                True -> return Vty.emptyImage
-                                False -> do
-                                    r <- withReaderT relaxHeight $
-                                           render $ padRight Max $ renderSingleMessage st uSet cSet msg
-                                    return $ r^.imageL
+                            result <- render1 msg
                             goUp ms' maxHeight $ Vty.vertJoin result img
 
         let (before, after) = Seq.splitAt idx msgs
@@ -410,7 +398,6 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
             ctx <- getContext
 
             let targetHeight = ctx^.availHeightL
-                relaxHeight c = c & availHeightL .~ (max maxMessageHeight (c^.availHeightL))
                 go :: Seq.Seq Message -> Vty.Image -> RenderM Name Vty.Image
                 go ms img
                     | Vty.imageHeight img >= targetHeight =
@@ -419,16 +406,22 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
                         case Seq.viewr ms of
                             Seq.EmptyR -> return img
                             ms' Seq.:> msg -> do
-                                result <- case msg^.mDeleted of
-                                    True -> return Vty.emptyImage
-                                    False -> do
-                                        r <- withReaderT relaxHeight $
-                                               render $ padRight Max $ renderSingleMessage st uSet cSet msg
-                                        return $ r^.imageL
+                                result <- render1 msg
                                 go ms' $ Vty.vertJoin result img
 
             img <- Vty.cropTop targetHeight <$> go msgs Vty.emptyImage
             return $ emptyResult & imageL .~ img
+
+    relaxHeight c = c & availHeightL .~ (max maxMessageHeight (c^.availHeightL))
+
+    render1 :: Message -> RenderM Name Vty.Image
+    render1 msg = case msg^.mDeleted of
+                    True -> return Vty.emptyImage
+                    False -> do
+                      r <- withReaderT relaxHeight $
+                           render $ padRight Max $
+                                  renderSingleMessage st uSet cSet msg
+                      return $ r^.imageL
 
     cId = st^.csCurrentChannelId
     chan = st^.csCurrentChannel
