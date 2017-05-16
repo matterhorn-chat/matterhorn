@@ -349,8 +349,6 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
 
             goDown :: Seq.Seq Message -> Int -> Int -> Vty.Image -> RenderM Name (Int, Vty.Image)
             goDown ms maxHeight num img
-                | Seq.null ms =
-                    return (num, img)
                 | Vty.imageHeight img >= maxHeight =
                     return (num, img)
                 | otherwise =
@@ -369,8 +367,6 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
             goUp ms maxHeight img
                 | Vty.imageHeight img >= maxHeight =
                     return $ Vty.cropTop maxHeight img
-                | Seq.null ms =
-                    return img
                 | otherwise =
                     case Seq.viewr ms of
                         Seq.EmptyR -> return img
@@ -417,8 +413,6 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
                 relaxHeight c = c & availHeightL .~ (max maxMessageHeight (c^.availHeightL))
                 go :: Seq.Seq Message -> Vty.Image -> RenderM Name Vty.Image
                 go ms img
-                    | Seq.null ms =
-                        return img
                     | Vty.imageHeight img >= targetHeight =
                         return img
                     | otherwise =
