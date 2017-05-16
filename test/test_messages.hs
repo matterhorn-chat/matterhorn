@@ -143,9 +143,7 @@ moveDownTestMultipleStart :: TestTree
 moveDownTestMultipleStart =
     testProperty "Move down in multiple messages from the start" $
                      \(x, y, z) ->
-                         let msgs = Seq.fromList [ postMsg x
-                                                 , postMsg y
-                                                 , postMsg z]
+                         let msgs = makeMsgs [ postMsg x, postMsg y, postMsg z]
                              msgid = getNextPostId ((postMsg x)^.mPostId) msgs
                              -- for useful info on failure:
                              idents = postids $ Seq.zip (Seq.fromList "xyz") msgs
@@ -157,9 +155,7 @@ moveUpTestMultipleStart :: TestTree
 moveUpTestMultipleStart =
     testProperty "Move up in multiple messages from the start" $
                      \(x, y, z) ->
-                         let msgs = Seq.fromList [ postMsg x
-                                                 , postMsg y
-                                                 , postMsg z]
+                         let msgs = makeMsgs [ postMsg x, postMsg y, postMsg z]
                              msgid = getPrevPostId ((postMsg x)^.mPostId) msgs
                              -- for useful info on failure:
                              idents = postids $ Seq.zip (Seq.fromList "xyz") msgs
@@ -171,9 +167,7 @@ moveDownTestMultipleEnd :: TestTree
 moveDownTestMultipleEnd =
     testProperty "Move down in multiple messages from the end" $
                      \(x, y, z) ->
-                         let msgs = Seq.fromList [ postMsg x
-                                                 , postMsg y
-                                                 , postMsg z]
+                         let msgs = makeMsgs [ postMsg x, postMsg y, postMsg z]
                                     -- n.b. makes more sense to start at z...
                              msgid = getNextPostId ((postMsg z)^.mPostId) msgs
                              -- for useful info on failure:
@@ -186,9 +180,7 @@ moveUpTestMultipleEnd :: TestTree
 moveUpTestMultipleEnd =
     testProperty "Move up in multiple messages from the end" $
                      \(x, y, z) ->
-                         let msgs = Seq.fromList [ postMsg x
-                                                 , postMsg y
-                                                 , postMsg z]
+                         let msgs = makeMsgs [ postMsg x, postMsg y, postMsg z]
                              msgid = getPrevPostId ((postMsg z)^.mPostId) msgs
                              -- for useful info on failure:
                              idents = postids $ Seq.zip (Seq.fromList "xyz") msgs
@@ -201,10 +193,10 @@ moveDownTestMultipleSkipDeleted :: TestTree
 moveDownTestMultipleSkipDeleted =
     testProperty "Move down in multiple messages skipping deleteds" $
                      \(w, x, y, z) ->
-                         let msgs = Seq.fromList [ postMsg w
-                                                 , delMsg x
-                                                 , delMsg y
-                                                 , postMsg z]
+                         let msgs = makeMsgs [ postMsg w
+                                             , delMsg x
+                                             , delMsg y
+                                             , postMsg z]
                              msgid = getNextPostId ((postMsg w)^.mPostId) msgs
                              -- for useful info on failure:
                              idents = postids $ Seq.zip (Seq.fromList "wxyz") msgs
@@ -216,10 +208,10 @@ moveUpTestMultipleSkipDeleted :: TestTree
 moveUpTestMultipleSkipDeleted =
     testProperty "Move one up in multiple messages skipping deleteds" $
                      \(w, x, y, z) ->
-                         let msgs = Seq.fromList [ postMsg w
-                                                 , delMsg x
-                                                 , delMsg y
-                                                 , postMsg z]
+                         let msgs = makeMsgs [ postMsg w
+                                             , delMsg x
+                                             , delMsg y
+                                             , postMsg z]
                              msgid = getPrevPostId ((postMsg z)^.mPostId) msgs
                              -- for useful info on failure:
                              idents = postids $ Seq.zip (Seq.fromList "wxyz") msgs
@@ -235,10 +227,10 @@ moveDownTestMultipleSkipDeletedAll =
                          -- n.b. current selected is also deleted,
                          -- which can happen due to multi-user async
                          -- server changes.
-                         let msgs = Seq.fromList [ delMsg w
-                                                 , delMsg x
-                                                 , delMsg y
-                                                 , delMsg z]
+                         let msgs = makeMsgs [ delMsg w
+                                             , delMsg x
+                                             , delMsg y
+                                             , delMsg z]
                              msgid = getNextPostId ((delMsg w)^.mPostId) msgs
                              -- for useful info on failure:
                              idents = postids $ Seq.zip (Seq.fromList "wxyz") msgs
@@ -252,10 +244,10 @@ moveUpTestMultipleSkipDeletedAll =
                          -- n.b. current selected is also deleted,
                          -- which can happen due to multi-user async
                          -- server changes.
-                         let msgs = Seq.fromList [ delMsg w
-                                                 , delMsg x
-                                                 , delMsg y
-                                                 , delMsg z]
+                         let msgs = makeMsgs [ delMsg w
+                                             , delMsg x
+                                             , delMsg y
+                                             , delMsg z]
                              msgid = getPrevPostId ((delMsg z)^.mPostId) msgs
                              -- for useful info on failure:
                              idents = postids $ Seq.zip (Seq.fromList "wxyz") msgs
