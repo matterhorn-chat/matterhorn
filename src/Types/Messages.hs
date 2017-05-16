@@ -18,7 +18,6 @@ module Types.Messages ( Message(..)
                       , RetrogradeMessages
                       , MessageOps (..)
                       , noMessages
-                      , appendMessage
                       , countMessages
                       , emptyMessages
                       , splitMessages
@@ -155,8 +154,8 @@ class MessageOps a where
 
 instance MessageOps ChronologicalMessages where
     addMessage m ml = case Seq.viewr (dseq ml) of
-                        Seq.EmptyR   -> DSeq $ Seq.singleton m
-                        ml' Seq.:> l ->
+                        Seq.EmptyR -> DSeq $ Seq.singleton m
+                        _ Seq.:> l ->
                             case compare (m^.mDate) (l^.mDate) of
                               GT -> DSeq $ dseq ml Seq.|> m
                               EQ -> if m^.mPostId == l^.mPostId && isJust (m^.mPostId)
@@ -182,8 +181,6 @@ dirDateInsert m ml = DSeq . finalize $ foldr insAfter initial $ dseq ml
 noMessages :: Messages
 noMessages = DSeq mempty
 
-appendMessage :: Message -> Messages -> Messages
-appendMessage m = DSeq . flip (Seq.|>) m . dseq
 
 countMessages :: Messages -> Int
 countMessages = Seq.length . dseq
