@@ -352,7 +352,7 @@ fetchCurrentChannelMembers = do
     session <- use csSession
     myTeamId <- use (csMyTeam.teamIdL)
     doAsyncWith Preempt $ do
-        chanUserMap <- liftIO $ mmGetChannelMembers session myTeamId cId 0 10000
+        chanUserMap <- mmGetChannelMembers session myTeamId cId 0 10000
 
         -- Construct a message listing them all and post it to the
         -- channel:
