@@ -181,7 +181,6 @@ dirDateInsert m = onDirectedSeq $ finalize . foldr insAfter initial
 noMessages :: Messages
 noMessages = DSeq mempty
 
-
 -- | Searches for the specified PostId and returns a tuple where the
 -- first element is the Message associated with the PostId (if it
 -- exists), and the second element is another tuple: the first element
@@ -218,7 +217,6 @@ findMessage pid msgs = Seq.findIndexR (\m -> m^.mPostId == Just pid) (dseq msgs)
 -- Post (i.e. has a post ID) that follows the specified PostId
 getNextPostId :: Maybe PostId -> Messages -> Maybe PostId
 getNextPostId = getRelPostId foldl
-
 
 -- | Look backwards for the first Message that corresponds to a user
 -- Post (i.e. has a post ID) that comes before the specified PostId.
