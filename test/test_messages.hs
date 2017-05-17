@@ -4,7 +4,7 @@
 module Main where
 
 import           Control.Exception
-import           Data.List (intercalate)
+import           Data.List (intercalate, sortBy)
 import qualified Data.List.UniqueUnsorted as U
 import qualified Data.Map as Map
 import           Data.Maybe (isNothing, fromJust)
@@ -159,13 +159,71 @@ createTests = testGroup "Create"
                     $ \(w, x, y, z) ->
                         let l = setDateOrderMessages [w, x, y, z]
                             [w', x', y', z'] = l
-                        in idlist l === idlist (makeMsgs [y', w', z', x'])
+                        in
+                           idlist l === idlist (makeMsgs [y', w', z', x'])
 
               , testProperty "ordering 2 of addMessage"
                     $ \(w, x, y, z) ->
                         let l = setDateOrderMessages [w, x, y, z]
                             [w', x', y', z'] = l
                         in idlist l === idlist (makeMsgs [x', z', w', y'])
+
+              , testProperty "duplicated last addMessage"
+                    $ \(w, x, y, z) ->
+                        let l = setDateOrderMessages $ map postMsg [w, x, y, z]
+                        in uniqueIds l ==>
+                          idlist l === idlist (makeMsgs $ [last l] <> l)
+
+              , testProperty "duplicated natural ordering of addMessage"
+                    $ \(w, x, y, z) ->
+                        let l = setDateOrderMessages $ map postMsg [w, x, y, z]
+                        in idlist l === idlist (makeMsgs $ l <> l)
+
+              , testProperty "duplicated reverse ordering of addMessage"
+                    $ \(w, x, y, z) ->
+                        let l = setDateOrderMessages $ map postMsg [w, x, y, z]
+                        in idlist l === idlist (makeMsgs $ reverse l <> l)
+
+              , testProperty "duplicated mirrored ordering of addMessage"
+                    $ \(w, x, y, z) ->
+                        let l = setDateOrderMessages $ map postMsg [w, x, y, z]
+                            [w', x', y', z'] = l
+                        in idlist l === idlist (makeMsgs $ [y', z', w', x'] <> l)
+
+              , testProperty "duplicated ordering 1 of addMessage"
+                    $ \(w, x, y, z) ->
+                        let l = setDateOrderMessages $ postMsg <$> [w, x, y, z]
+                            [w', x', y', z'] = l
+                        in idlist l === idlist (makeMsgs $ [y', w', z', x'] <> l)
+
+              , testProperty "duplicated ordering 2 of addMessage"
+                    $ \(w, x, y, z) ->
+                        let l = setDateOrderMessages $ postMsg <$> [w, x, y, z]
+                            [w', x', y', z'] = l
+                        in idlist l === idlist (makeMsgs $ [x', z', w', y'] <> l)
+
+              , testProperty "non-posted are not duplicate removed"
+                    $ \(w, x, y, z) ->
+                        let l = setDateOrderMessages [w, x, y, z]
+                            [w', x', y', z'] = l
+                            l' = [x', z', w', y']
+                            ex = sortBy (\a b -> compare (a^.mDate) (b^.mDate))
+                                 ([e | e <- l', isNothing (e^.mPostId) ] <> l)
+                        in idlist ex === idlist (makeMsgs $ l' <> l)
+
+              , testProperty "duplicate dates different IDs in posted order"
+                    $ \(w, x, y, z) ->
+                        let d = UTCTime
+                                (ModifiedJulianDay 1234)
+                                (secondsToDiffTime 9876)
+                            l = foldl (setTime d) [] $ postMsg <$> [w, x, y, z]
+                            setTime t ml m = ml ++ [m {_mDate = t}]
+                            [w', x', y', z'] = l
+                            l' = [x', z', w', y']
+                            ex = l
+                        in uniqueIds l ==>
+                           idlist ex === idlist (makeMsgs $ l' <> l)
+
 
               ]
 

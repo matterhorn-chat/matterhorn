@@ -160,9 +160,8 @@ instance MessageOps ChronologicalMessages where
                             case compare (m^.mDate) (l^.mDate) of
                               GT -> DSeq $ dseq ml Seq.|> m
                               EQ -> if m^.mPostId == l^.mPostId && isJust (m^.mPostId)
-                                    -- then ml
-                                    then DSeq $ dseq ml Seq.|> m
-                                    else DSeq $ dseq ml Seq.|> m
+                                    then ml
+                                    else dirDateInsert m ml
                               LT -> dirDateInsert m ml
 
 dirDateInsert :: Message -> ChronologicalMessages -> ChronologicalMessages
@@ -174,7 +173,7 @@ dirDateInsert m ml = DSeq . finalize $ foldr insAfter initial $ dseq ml
                     GT -> (Nothing, c Seq.<| (n Seq.<| l))
                     EQ -> if n^.mPostId == c^.mPostId && isJust (c^.mPostId)
                           then (Nothing, c Seq.<| l)
-                          else (Nothing, c Seq.<| (n Seq.<| l))
+                          else (Just n, c Seq.<| l)
                     LT -> (Just n, c Seq.<| l)
               finalize (Just n, l) = n Seq.<| l
               finalize (_, l) = l
