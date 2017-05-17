@@ -130,6 +130,9 @@ instance SeqDirection a => Monoid (DirectionalSeq a Message) where
     mempty = DSeq mempty
     mappend a b = DSeq $ mappend (dseq a) (dseq b)
 
+onDirectedSeq :: SeqDirection dir => (Seq.Seq a -> Seq.Seq b)
+                 -> DirectionalSeq dir a -> DirectionalSeq dir b
+onDirectedSeq f = DSeq . f . dseq
 
 -- ----------------------------------------------------------------------
 
@@ -165,7 +168,7 @@ instance MessageOps ChronologicalMessages where
                               LT -> dirDateInsert m ml
 
 dirDateInsert :: Message -> ChronologicalMessages -> ChronologicalMessages
-dirDateInsert m ml = DSeq . finalize $ foldr insAfter initial $ dseq ml
+dirDateInsert m = onDirectedSeq $ finalize . foldr insAfter initial
         where initial = (Just m, mempty)
               insAfter c (Nothing, l) = (Nothing, c Seq.<| l)
               insAfter c (Just n, l) =
@@ -276,7 +279,7 @@ findLatestUserMessage f msgs = case getLatestPostId msgs of
 
 -- | Return all messages that were posted after the specified date/time.
 messagesAfter :: UTCTime -> Messages -> Messages
-messagesAfter viewTime = DSeq . Seq.takeWhileL (\m -> m^.mDate > viewTime) . dseq
+messagesAfter viewTime = onDirectedSeq $ Seq.takeWhileL (\m -> m^.mDate > viewTime)
 
 -- | Reverse the order of the messages
 reverseMessages :: Messages -> RetrogradeMessages
