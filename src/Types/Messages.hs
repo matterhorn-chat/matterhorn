@@ -19,8 +19,6 @@ module Types.Messages
   , RetrogradeMessages
   , MessageOps (..)
   , noMessages
-  , countMessages
-  , emptyMessages
   , splitMessages
   , findMessage
   , getNextPostId
@@ -43,7 +41,6 @@ import           Data.Time.Clock (UTCTime)
 import           Lens.Micro.Platform
 import           Network.Mattermost
 import           Types.Posts
-
 
 -- * Messages
 
@@ -183,13 +180,6 @@ dirDateInsert m = onDirectedSeq $ finalize . foldr insAfter initial
 
 noMessages :: Messages
 noMessages = DSeq mempty
-
-
-countMessages :: Messages -> Int
-countMessages = Seq.length . dseq
-
-emptyMessages :: Messages -> Bool
-emptyMessages = Seq.null . dseq
 
 
 -- | Searches for the specified PostId and returns a tuple where the

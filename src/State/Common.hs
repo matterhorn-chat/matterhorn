@@ -192,7 +192,7 @@ asyncFetchScrollback prio cId = do
             let setCutoff = if hasNew
                             then const $ Just $ minimum (_mDate <$> newMessages)
                             else id
-                hasNew = not $ emptyMessages newMessages
+                hasNew = not $ null newMessages
                 newMessages = messagesAfter viewTime $ contents^.cdMessages
             csChannel(cId).ccContents .= contents
             csChannel(cId).ccInfo.cdCurrentState .= ChanLoaded

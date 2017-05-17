@@ -92,19 +92,19 @@ tastyBatch b = testGroup (fst b) $ tastyTests (snd b)
 createTests :: TestTree
 createTests = testGroup "Create"
               [ testCase "no messages"
-                    $ 0 @=? countMessages noMessages
+                    $ 0 @=? length noMessages
               , testProperty "has messages"
-                    $ \x -> not (emptyMessages x) ==> 0 /= countMessages x
+                    $ \x -> not (null (x :: Messages)) ==> 0 /= length x
               , testProperty "add to empty"
-                    $ \x -> 1 == (countMessages $ addMessage x noMessages)
+                    $ \x -> 1 == (length $ addMessage x noMessages)
               , testProperty "add to add to empty"
-                    $ \(x, y) -> 2 == (countMessages $ makeMsgs [x, y])
+                    $ \(x, y) -> 2 == (length $ makeMsgs [x, y])
               , testProperty "join to empty"
                     $ \(x, y) ->
                         let m1 = makeMsgs [x, y]
                             m2 = noMessages
-                        in (2 == (countMessages $ m1 <> m2) &&
-                            2 == (countMessages $ m2 <> m1))
+                        in (2 == (length $ m1 <> m2) &&
+                            2 == (length $ m2 <> m1))
 
               , testProperty "join one to many"
                     $ \(x, y, z) ->
@@ -134,8 +134,8 @@ createTests = testGroup "Create"
                             -- enforce one.
                             j1 = m1 <> m2
                             j2 = m2 <> m1
-                        in (4 == (countMessages $ j1) &&
-                            4 == (countMessages $ j2) &&
+                        in (4 == (length j1) &&
+                            4 == (length j2) &&
                             idlist (l1 <> l2) == idlist j1 &&
                             idlist (l2 <> l1) == idlist j2)
 
@@ -401,7 +401,7 @@ reversalTests = testGroup "Reversal"
                      \l -> let rr = unreverseMessages (reverseMessages l)  -- KWQ: just one reverse, not two
                            in getLatestPostId l === getLatestPostId rr
                 , testCase "reverse nothing" $
-                      (emptyMessages $ unreverseMessages $ reverseMessages noMessages) @?
+                      (null $ unreverseMessages $ reverseMessages noMessages) @?
                       "reverse of empty Messages"
                 , testProperty "reverse order" $
                       \l -> let r = reverseMessages l
@@ -507,7 +507,7 @@ splitTests = testGroup "Split"
                            [w, x, y, z] = setDateOrderMessages [w', x', y', z']
                            info = show (idlist inpl) <> " ==> " <> (show $ idlist after)
                        in validIds inpl && uniqueIds inpl ==>
-                          counterexample info $ emptyMessages after
+                          counterexample info $ null after
 
              , testProperty "found at midpoint position"
                    $ \(v', w', x', y', z') ->
