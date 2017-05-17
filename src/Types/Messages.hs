@@ -147,36 +147,36 @@ type Messages = ChronologicalMessages
 -- represented by the `RetrogradeMessages` type.
 type RetrogradeMessages = DirectionalSeq Retrograde Message
 
-
 -- ** Common operations on Messages
 
 class MessageOps a where
     addMessage :: Message -> a -> a
 
 instance MessageOps ChronologicalMessages where
-    addMessage m ml = case Seq.viewr (dseq ml) of
-                        Seq.EmptyR -> DSeq $ Seq.singleton m
-                        _ Seq.:> l ->
-                            case compare (m^.mDate) (l^.mDate) of
-                              GT -> DSeq $ dseq ml Seq.|> m
-                              EQ -> if m^.mPostId == l^.mPostId && isJust (m^.mPostId)
-                                    then ml
-                                    else dirDateInsert m ml
-                              LT -> dirDateInsert m ml
+    addMessage m ml =
+        case Seq.viewr (dseq ml) of
+            Seq.EmptyR -> DSeq $ Seq.singleton m
+            _ Seq.:> l ->
+                case compare (m^.mDate) (l^.mDate) of
+                  GT -> DSeq $ dseq ml Seq.|> m
+                  EQ -> if m^.mPostId == l^.mPostId && isJust (m^.mPostId)
+                        then ml
+                        else dirDateInsert m ml
+                  LT -> dirDateInsert m ml
 
 dirDateInsert :: Message -> ChronologicalMessages -> ChronologicalMessages
 dirDateInsert m = onDirectedSeq $ finalize . foldr insAfter initial
-        where initial = (Just m, mempty)
-              insAfter c (Nothing, l) = (Nothing, c Seq.<| l)
-              insAfter c (Just n, l) =
-                  case compare (n^.mDate) (c^.mDate) of
-                    GT -> (Nothing, c Seq.<| (n Seq.<| l))
-                    EQ -> if n^.mPostId == c^.mPostId && isJust (c^.mPostId)
-                          then (Nothing, c Seq.<| l)
-                          else (Just n, c Seq.<| l)
-                    LT -> (Just n, c Seq.<| l)
-              finalize (Just n, l) = n Seq.<| l
-              finalize (_, l) = l
+   where initial = (Just m, mempty)
+         insAfter c (Nothing, l) = (Nothing, c Seq.<| l)
+         insAfter c (Just n, l) =
+             case compare (n^.mDate) (c^.mDate) of
+               GT -> (Nothing, c Seq.<| (n Seq.<| l))
+               EQ -> if n^.mPostId == c^.mPostId && isJust (c^.mPostId)
+                     then (Nothing, c Seq.<| l)
+                     else (Just n, c Seq.<| l)
+               LT -> (Just n, c Seq.<| l)
+         finalize (Just n, l) = n Seq.<| l
+         finalize (_, l) = l
 
 noMessages :: Messages
 noMessages = DSeq mempty
