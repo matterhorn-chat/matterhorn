@@ -264,7 +264,7 @@ maxMessageHeight :: Int
 maxMessageHeight = 200
 
 renderSingleMessage :: ChatState -> UserSet -> ChannelSet -> Message -> Widget Name
-renderSingleMessage st uSet cSet msg = renderChatMessage uSet cSet (withBrackets . renderTime st) msg
+renderSingleMessage st uSet cSet = renderChatMessage uSet cSet (withBrackets . renderTime st)
 
 renderCurrentChannelDisplay :: UserSet -> ChannelSet -> ChatState -> Widget Name
 renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
@@ -380,7 +380,7 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
 
     render1HLimit fjoin lim img msg = if Vty.imageHeight img >= lim
                                       then return img
-                                      else do fjoin img <$> render1 msg
+                                      else fjoin img <$> render1 msg
 
     render1 :: Message -> RenderM Name Vty.Image
     render1 msg = case msg^.mDeleted of
