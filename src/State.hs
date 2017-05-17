@@ -687,21 +687,20 @@ addMessageToState new = do
               fromMe = (cp^.cpUser == (Just $ getId (st^.csMe))) &&
                        (isNothing $ cp^.cpUserOverride)
               updateTime = if fromMe then id else const now
-              msg = clientPostToMessage st cp
               cId = postChannelId new
 
               doAddMessage = do
-                let chan = msgMap . ix cId
-                csPostMap.ix(postId new) .= msg
                 s <- use id
-                let msg' = clientPostToMessage s (toClientPost new (new^.postParentIdL))
+                let chan = msgMap . ix cId
+                    msg' = clientPostToMessage s (toClientPost new (new^.postParentIdL))
+                csPostMap.ix(postId new) .= msg'
                 chan.ccContents.cdMessages %= (addMessage msg')
                 chan.ccInfo.cdUpdated %= updateTime
                 when (not fromMe) $ maybeRingBell
                 ccId <- use csCurrentChannelId
                 if postChannelId new == ccId
                   then updateViewed
-                  else setNewMessageCutoff cId msg
+                  else setNewMessageCutoff cId msg'
 
               doHandleNewMessage = do
                   -- If the message is in reply to another message,
@@ -709,8 +708,8 @@ addMessageToState new = do
                   -- channel. If the message isn't there, fetch it. If
                   -- we have to fetch it, don't post this message to the
                   -- channel until we have fetched the parent.
-                  case msg^.mInReplyToMsg of
-                      ParentNotLoaded parentId -> do
+                  case getMessageForPostId st <$> cp^.cpInReplyToPost of
+                      Just (ParentNotLoaded parentId) -> do
                           doAsyncWith Normal $ do
                               let theTeamId = st^.csMyTeam.teamIdL
                               p <- mmGetPost (st^.csSession) theTeamId cId parentId
