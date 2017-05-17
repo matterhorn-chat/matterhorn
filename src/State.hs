@@ -516,7 +516,9 @@ asyncFetchMoreMessages st cId =
             cc <- fromPosts posts
             ccId <- use csCurrentChannelId
             mh $ invalidateCacheEntry (ChannelMessages ccId)
-            csChannel(ccId).ccContents.cdMessages %= ((cc^.cdMessages) <>)
+            mapM_ (\m ->
+                   csChannel(ccId).ccContents.cdMessages %= (addMessage m))
+                 (cc^.cdMessages)
 
 loadMoreMessages :: MH ()
 loadMoreMessages = do
