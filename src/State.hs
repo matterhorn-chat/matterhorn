@@ -1069,5 +1069,5 @@ handleNewUser newUserId = do
 
         return $ do
             -- Update the name map and the list of known users
-            usrMap . ix newUserId .= uInfo
+            usrMap . at newUserId .= Just uInfo
             csNames . cnUsers %= (sort . ((newUser^.userUsernameL):))
