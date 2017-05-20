@@ -89,9 +89,15 @@ channelListWidth :: Int
 channelListWidth = 20
 
 renderChannelList :: ChatState -> Widget Name
-renderChannelList st = hLimit channelListWidth $ viewport ChannelList Vertical $
+renderChannelList st = hLimit channelListWidth $ maybeViewport $
                        vBox $ concat $ renderChannelGroup st <$> channelGroups
     where
+        -- Only render the channel list in a viewport if we're not in
+        -- channel select mode, since we don't want or need the viewport
+        -- state to be affected by channel select input.
+        maybeViewport = if st^.csMode == ChannelSelect
+                        then id
+                        else viewport ChannelList Vertical
         channelGroups = [ ( "Channels"
                           , getOrdinaryChannels st
                           , st^.csChannelSelectChannelMatches
