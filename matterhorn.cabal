@@ -73,7 +73,7 @@ executable matterhorn
                      , microlens-platform
                      , brick >= 0.17
                      , data-default
-                     , vty >= 5.15
+                     , vty >= 5.15.1
                      , transformers
                      , text-zipper >= 0.10
                      , array
@@ -133,5 +133,5 @@ test-suite test_messages
                     , Unique
                     , unordered-containers
                     , vector < 0.12
-                    , vty >= 5.15
+                    , vty >= 5.15.1
                     , xdg-basedir
