@@ -305,7 +305,6 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
     chatText = case st^.csMode of
         ChannelScroll ->
             viewport (ChannelMessages cId) Vertical $
-            reportExtent (ChannelMessages cId) $
             cached (ChannelMessages cId) $
             vBox $ (withDefAttr loadMoreAttr $ hCenter $
                     str "<< Press C-b to load more messages >>") :
