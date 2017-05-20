@@ -28,8 +28,12 @@ channelScrollKeybindings =
   ]
 
 onEventChannelScroll :: Vty.Event -> MH ()
-onEventChannelScroll (Vty.EvResize _ _) =
-    mh invalidateCache
+onEventChannelScroll (Vty.EvResize _ _) = do
+    cId <- use csCurrentChannelId
+    mh $ do
+      invalidateCache
+      let vp = ChannelMessages cId
+      vScrollToEnd $ viewportScroll vp
 onEventChannelScroll e
   | Just kb <- lookupKeybinding e channelScrollKeybindings = kbAction kb
 onEventChannelScroll _ = do
