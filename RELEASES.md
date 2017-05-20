@@ -35,12 +35,13 @@ the platforms on which binary distributions will be built.
 
 4. Check for a passing Travis CI build.
 
-5. If uploading to Hackage:
+5. Upload to Hackage:
 
    * Generate a `cabal sdist`
    * Unpack the `sdist` archive
    * Perform a complete build on the unpacked archive
    * If any issues arise, repair and go to (2)
+   * Otherwise, `cabal upload` the package
 
 6. Generate platform binary distributions using `mkrelease.sh` on the
    relevant platforms.
