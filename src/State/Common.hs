@@ -228,7 +228,7 @@ removeReaction r cId = csChannel(cId).ccContents.cdMessages %= fmap upd
                   m & mReactions %~ (Map.insertWith (+) (r^.reactionEmojiNameL) (-1))
               | otherwise = m
 
-updateViewedIO :: ChatState -> IO ChatState
+updateViewedIO :: ChatState -> IO ()
 updateViewedIO st = do
   -- Only do this if we're connected to avoid triggering noisy exceptions.
   case st^.csConnectionStatus of
@@ -243,8 +243,7 @@ updateViewedIO st = do
               cId
               pId
             return (csChannel(cId).ccInfo.cdViewed .= Just now)
-          return st
-      Disconnected -> return st
+      Disconnected -> return ()
 
 copyToClipboard :: T.Text -> MH ()
 copyToClipboard txt = do

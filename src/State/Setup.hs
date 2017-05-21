@@ -337,3 +337,4 @@ initializeState cr myTeam myUser = do
                   csChannel(getId c).ccInfo %= channelInfoFromChannelWithData cwd
 
   updateViewedIO st
+  return st

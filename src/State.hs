@@ -12,7 +12,6 @@ import           Brick.Widgets.List (list, listMoveTo, listSelectedElement)
 import           Control.Applicative
 import           Control.Exception (catch)
 import           Control.Monad.IO.Class (liftIO)
-import qualified Control.Monad.State as St
 import qualified Control.Concurrent.STM as STM
 import           Data.Char (isAlphaNum)
 import           Brick.Main (getVtyHandle, viewportScroll, vScrollToBeginning, vScrollBy)
@@ -383,8 +382,7 @@ setLastViewedFor cId = do
 updateViewed :: MH ()
 updateViewed = do
   st <- use id
-  st' <- liftIO (updateViewedIO st)
-  St.put st'
+  liftIO (updateViewedIO st)
 
 resetHistoryPosition :: MH ()
 resetHistoryPosition = do
