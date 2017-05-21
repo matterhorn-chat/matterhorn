@@ -193,7 +193,9 @@ asyncFetchScrollback prio cId = do
                             then const $ Just $ minimum (_mDate <$> newMessages)
                             else id
                 hasNew = not $ null newMessages
-                newMessages = messagesAfter viewTime $ contents^.cdMessages
+                newMessages = case viewTime of
+                    Nothing -> mempty
+                    Just vt -> messagesAfter vt $ contents^.cdMessages
             csChannel(cId).ccContents .= contents
             csChannel(cId).ccInfo.cdCurrentState .= ChanLoaded
             csChannel(cId).ccInfo.cdNewMessageCutoff %= setCutoff
@@ -240,7 +242,7 @@ updateViewedIO st = do
               (getId (st^.csMyTeam))
               cId
               pId
-            return (csChannel(cId).ccInfo.cdViewed .= now)
+            return (csChannel(cId).ccInfo.cdViewed .= Just now)
           return st
       Disconnected -> return st
 

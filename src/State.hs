@@ -368,8 +368,8 @@ fetchCurrentChannelMembers = do
 hasUnread :: ChatState -> ChannelId -> Bool
 hasUnread st cId = maybe False id $ do
   chan <- st^.msgMap.at(cId)
-  let u = chan^.ccInfo.cdViewed
-      v = chan^.ccInfo.cdUpdated
+  u <- chan^.ccInfo.cdViewed
+  let v = chan^.ccInfo.cdUpdated
   return (v > u)
 
 setLastViewedFor :: ChannelId -> MH ()
@@ -377,7 +377,7 @@ setLastViewedFor cId = do
   now <- getNow
   msgs <- use msgMap
   if cId `HM.member` msgs
-    then csChannel(cId).ccInfo.cdViewed .= now
+    then csChannel(cId).ccInfo.cdViewed .= Just now
     else handleChannelInvite cId
 
 updateViewed :: MH ()
@@ -605,7 +605,7 @@ handleNewChannel name switch nc = do
   let cChannel = ClientChannel
         { _ccContents = emptyChannelContents
         , _ccInfo     = ChannelInfo
-                          { _cdViewed           = now
+                          { _cdViewed           = Nothing
                           , _cdUpdated          = now
                           , _cdName             = preferredChannelName nc
                           , _cdHeader           = nc^.channelHeaderL

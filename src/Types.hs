@@ -178,7 +178,7 @@ preferredChannelName ch
 initialChannelInfo :: Channel -> ChannelInfo
 initialChannelInfo chan =
     let updated  = chan ^. channelLastPostAtL
-    in ChannelInfo { _cdViewed           = updated
+    in ChannelInfo { _cdViewed           = Nothing
                    , _cdUpdated          = updated
                    , _cdName             = preferredChannelName chan
                    , _cdHeader           = chan^.channelHeaderL
@@ -191,7 +191,7 @@ channelInfoFromChannelWithData :: ChannelWithData -> ChannelInfo -> ChannelInfo
 channelInfoFromChannelWithData (ChannelWithData chan chanData) ci =
     let viewed   = chanData ^. channelDataLastViewedAtL
         updated  = chan ^. channelLastPostAtL
-    in ci { _cdViewed           = viewed
+    in ci { _cdViewed           = Just viewed
           , _cdUpdated          = updated
           , _cdName             = preferredChannelName chan
           , _cdHeader           = (chan^.channelHeaderL)
@@ -224,7 +224,7 @@ data ChannelState
 -- | The 'ChannelInfo' record represents metadata
 --   about a channel
 data ChannelInfo = ChannelInfo
-  { _cdViewed           :: UTCTime
+  { _cdViewed           :: Maybe UTCTime
     -- ^ The last time we looked at a channel
   , _cdUpdated          :: UTCTime
     -- ^ The last time a message showed up in the channel
@@ -654,5 +654,7 @@ sortedUserList st = sort yes ++ sort no
               | (st^.csCurrentChannelId) == cId -> False
               | otherwise ->
                   let info = st^.csChannel(cId).ccInfo
-                  in info^.cdUpdated > info^.cdViewed
+                  in case info^.cdViewed of
+                      Nothing -> False
+                      Just v -> info^.cdUpdated > v
         (yes, no) = partition hasUnread userList
