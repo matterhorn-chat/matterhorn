@@ -3,31 +3,32 @@ Status](https://travis-ci.org/matterhorn-chat/matterhorn.svg?branch=master)](htt
 
 ![](logo.png)
 
-Matterhorn is a terminal-based client for the MatterMost chat system.
+Matterhorn is a terminal client for the MatterMost chat system.
 
 ![](screenshots/screenshot-00.png)
 
 # Quick Start
 
-We provide pre-built binary releases for some platforms. Please see the release
-list to download a binary release for your platform that matches your server
-version: https://github.com/matterhorn-chat/matterhorn/releases
+We provide pre-built binary releases for some platforms. Please see the
+release list to download a binary release for your platform that matches
+your server version:
 
-Run the `matterhorn` binary in the release archive. You'll be prompted
-for your server information. At present `matterhorn` supports only
-username/password authentication.
+https://github.com/matterhorn-chat/matterhorn/releases
 
-For example, you might run the following commands, where `VERSION` and
-`PLATFORM` match your setup:
+To fetch a release and run Matterhorn, you might run the following
+commands (where `VERSION` and `PLATFORM` match your setup):
 
     wget https://github.com/matterhorn-chat/matterhorn/releases/download/<VERSION>/matterhorn-<VERSION>-<PLATFORM>.tar.gz
     tar xf matterhorn-<VERSION>-<PLATFORM>.tar.gz
     cd matterhorn-<VERSION>-<PLATFORM>
     ./matterhorn
 
-Note: Version `ABBCC.X.Y` matches MatterMost server version `A.BB.CC`. For
-example, if your MatterMost server version is `3.6.0` then you would download
-matterhorn version `30600.2.4`. See [Our Versioning
+When you run Matterhorn you'll be prompted for your server information.
+At present `matterhorn` supports only username/password authentication.
+
+Note: Version `ABBCC.X.Y` matches MatterMost server version `A.BB.CC`.
+For example, if your MatterMost server version is `3.6.0` then you
+would download matterhorn version `30600.2.4`. See [Our Versioning
 Scheme](#our-versioning-scheme) for details.
 
 # Configuring
@@ -39,8 +40,10 @@ For configuration options you have two choices:
 
 The first option is useful when trying out the program because you can
 get up and running without worrying about making a configuration. Once
-you're ready for that, an example configuration file can be found at
-`sample-config.ini`.
+you're ready to make your settings persistent, they can be added to
+a configuration file. An example configuration file can be found at
+`sample-config.ini`. Any settings omitted from the configuration will be
+obtained interactively at startup.
 
 When looking for configuration files, matterhorn will prefer
 `config.ini` in the current working directory, but will look in the
