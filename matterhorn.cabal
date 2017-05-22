@@ -91,7 +91,6 @@ executable matterhorn
                      , mtl
   default-language:    Haskell2010
 
-
 test-suite test_messages
   type:               exitcode-stdio-1.0
   main-is:            test_messages.hs
