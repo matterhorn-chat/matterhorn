@@ -467,7 +467,7 @@ splitTests = testGroup "Split"
                            [w, x, y, z] = setDateOrderMessages [w', x', y', z']
                            info = show (idlist inpl) <> " ==> " <> (show $ idlist before)
                        in validIds inpl && uniqueIds inpl ==>
-                          counterexample info $ emptyMessages $ unreverseMessages before
+                          counterexample info $ null $ unreverseMessages before
              , testProperty "remaining after when found at first position"
                    $ \(w', x', y', z') ->
                        let (_, (_, after)) = splitMessages (w^.mPostId) msgs
