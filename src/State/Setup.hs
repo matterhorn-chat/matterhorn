@@ -22,7 +22,8 @@ import           Data.Time.LocalTime ( TimeZone(..), getCurrentTimeZone )
 import           Lens.Micro.Platform
 import           System.Exit (exitFailure, ExitCode(ExitSuccess))
 import           System.IO (Handle, hPutStrLn, hFlush)
-import           System.IO.Temp (withSystemTempFile)
+import           System.IO.Temp (openTempFile)
+import           System.Directory (getTemporaryDirectory)
 
 import           Network.Mattermost
 import           Network.Mattermost.Lenses
@@ -60,18 +61,25 @@ userRefresh session requestChan = void $ forkIO $ forever refresh
 
 startSubprocessLogger :: STM.TChan ProgramOutput -> RequestChan -> IO ()
 startSubprocessLogger logChan requestChan = do
-    let logMonitor logPath logHandle = do
+    let logMonitor mPair = do
           ProgramOutput progName args out err ec <-
               STM.atomically $ STM.readTChan logChan
 
           -- If either stdout or stderr is non-empty or there was an exit
-          -- failaure, log it and notify the user.
+          -- failure, log it and notify the user.
           let emptyOutput s = null s || s == "\n"
 
           case ec == ExitSuccess && emptyOutput out && emptyOutput err of
               -- the "good" case, no output and exit sucess
-              True -> logMonitor logPath logHandle
+              True -> logMonitor mPair
               False -> do
+                  (logPath, logHandle) <- case mPair of
+                      Just p ->
+                          return p
+                      Nothing -> do
+                          tmp <- getTemporaryDirectory
+                          openTempFile tmp "matterhorn-subprocess.log"
+
                   hPutStrLn logHandle $
                       unlines [ "Program: " <> progName
                               , "Arguments: " <> show args
@@ -90,9 +98,9 @@ startSubprocessLogger logChan requestChan = do
                                              logPath <> " for details."
                           postErrorMessage msg
 
-                  logMonitor logPath logHandle
+                  logMonitor (Just (logPath, logHandle))
 
-    void $ forkIO $ withSystemTempFile "matterhorn.log" logMonitor
+    void $ forkIO $ logMonitor Nothing
 
 startTimezoneMonitor :: TimeZone -> RequestChan -> IO ()
 startTimezoneMonitor tz requestChan = do

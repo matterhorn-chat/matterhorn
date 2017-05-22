@@ -10,7 +10,7 @@ import           Brick (invalidateCacheEntry)
 import           Brick.Widgets.Edit (getEditContents, editContentsL)
 import           Brick.Widgets.List (list, listMoveTo, listSelectedElement)
 import           Control.Applicative
-import           Control.Exception (catch)
+import           Control.Exception (SomeException, catch, try)
 import           Control.Monad.IO.Class (liftIO)
 import qualified Control.Concurrent.STM as STM
 import           Data.Char (isAlphaNum)
@@ -32,6 +32,7 @@ import qualified Data.Foldable as F
 import           Graphics.Vty (outputIface)
 import           Graphics.Vty.Output.Interface (ringTerminalBell)
 import           Lens.Micro.Platform
+import           System.Exit (ExitCode(..))
 import           System.Process (proc, std_in, std_out, std_err, StdStream(..),
                                  createProcess, waitForProcess)
 import           System.IO (hGetContents)
@@ -994,12 +995,20 @@ runLoggedCommand cmd args = do
                                  , std_out = CreatePipe
                                  , std_err = CreatePipe
                                  }
-    (Nothing, Just outh, Just errh, ph) <- createProcess opener
-    ec <- waitForProcess ph
-    outResult <- hGetContents outh
-    errResult <- hGetContents errh
-    let po = ProgramOutput cmd args outResult errResult ec
-    STM.atomically $ STM.writeTChan (st^.csResources.crSubprocessLog) po
+    result <- try $ createProcess opener
+    case result of
+        Left (e::SomeException) -> do
+            let po = ProgramOutput cmd args "" (show e) (ExitFailure 1)
+            STM.atomically $ STM.writeTChan (st^.csResources.crSubprocessLog) po
+        Right (Nothing, Just outh, Just errh, ph) -> do
+            ec <- waitForProcess ph
+            outResult <- hGetContents outh
+            errResult <- hGetContents errh
+            let po = ProgramOutput cmd args outResult errResult ec
+            STM.atomically $ STM.writeTChan (st^.csResources.crSubprocessLog) po
+        Right _ ->
+            error $ "BUG: createProcess returned unexpected result, report this at " <>
+                    "https://github.com/matterhorn-chat/matterhorn"
 
 openSelectedMessageURLs :: MH ()
 openSelectedMessageURLs = do
