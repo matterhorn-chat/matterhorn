@@ -128,7 +128,7 @@ instance SeqDirection a => Monoid (DirectionalSeq a Message) where
     mappend a b = DSeq $ mappend (dseq a) (dseq b)
 
 onDirectedSeq :: SeqDirection dir => (Seq.Seq a -> Seq.Seq b)
-                 -> DirectionalSeq dir a -> DirectionalSeq dir b
+              -> DirectionalSeq dir a -> DirectionalSeq dir b
 onDirectedSeq f = DSeq . f . dseq
 
 -- ----------------------------------------------------------------------
@@ -189,10 +189,11 @@ noMessages = DSeq mempty
 -- found) *in reverse order*, and the second element of the second are
 -- all the messages that follow the found message (none if the message
 -- was never found) in *forward* order.
-splitMessages :: Maybe PostId -> Messages -> (Maybe Message,
-                                              (RetrogradeMessages, Messages))
-splitMessages Nothing msgs = (Nothing,
-                              (DSeq $ Seq.reverse $ dseq msgs, noMessages))
+splitMessages :: Maybe PostId
+              -> Messages
+              -> (Maybe Message, (RetrogradeMessages, Messages))
+splitMessages Nothing msgs =
+    (Nothing, (DSeq $ Seq.reverse $ dseq msgs, noMessages))
 splitMessages pid msgs =
     -- n.b. searches from the end as that is usually where the message
     -- is more likely to be found.  There is usually < 1000 messages
@@ -210,8 +211,9 @@ splitMessages pid msgs =
 -- PostId.  The search starts from the most recent messages because
 -- that is the most likely place the message will occur.
 findMessage :: PostId -> Messages -> Maybe Message
-findMessage pid msgs = Seq.findIndexR (\m -> m^.mPostId == Just pid) (dseq msgs)
-                       >>= Just . Seq.index (dseq msgs)
+findMessage pid msgs =
+    Seq.findIndexR (\m -> m^.mPostId == Just pid) (dseq msgs)
+    >>= Just . Seq.index (dseq msgs)
 
 -- | Look forward for the first Message that corresponds to a user
 -- Post (i.e. has a post ID) that follows the specified PostId
@@ -245,8 +247,9 @@ getRelPostId folD jp = case jp of
 -- | Find the most recent message that is a Post (as opposed to a
 -- local message) (if any).
 getLatestPostId :: Messages -> Maybe PostId
-getLatestPostId msgs = Seq.findIndexR valid (dseq msgs)
-                     >>= _mPostId <$> Seq.index (dseq msgs)
+getLatestPostId msgs =
+    Seq.findIndexR valid (dseq msgs)
+    >>= _mPostId <$> Seq.index (dseq msgs)
     where valid m = not (m^.mDeleted) && isJust (m^.mPostId)
 
 -- | Find the most recent message that is a message posted by a user
@@ -254,9 +257,10 @@ getLatestPostId msgs = Seq.findIndexR valid (dseq msgs)
 -- user event that is not a message (i.e. find a normal message or an
 -- emote).
 findLatestUserMessage :: (Message -> Bool) -> Messages -> Maybe Message
-findLatestUserMessage f msgs = case getLatestPostId msgs of
-                                  Nothing -> Nothing
-                                  Just pid -> findUserMessageFrom pid msgs
+findLatestUserMessage f msgs =
+    case getLatestPostId msgs of
+        Nothing -> Nothing
+        Just pid -> findUserMessageFrom pid msgs
     where findUserMessageFrom p ms =
               let Just msg = findMessage p ms
               in if f msg
