@@ -1,8 +1,9 @@
 name:                matterhorn
 version:             30802.0.0
-synopsis:            Terminal client for MatterMost chat system
-description:         This is a basic terminal-based client for the MatterMost chat system.
-                     More description coming soon.
+synopsis:            Terminal client for the MatterMost chat system
+description:         This is a terminal client for the MatterMost chat
+                     system. Please see the README for a list of
+                     features and information on getting started.
 license:             BSD3
 license-file:        LICENSE
 author:              Getty Ritter <gdritter@galois.com>
