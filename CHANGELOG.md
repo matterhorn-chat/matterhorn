@@ -1,4 +1,32 @@
 
+30802.1.0
+=========
+
+This release supports server version 3.8.2. This release is our first
+official public release.
+
+Package changes:
+ * Removed stale array and data-default dependencies
+ * Increased lower bound on base dependency to 4.8 to relect our GHC
+   testing.
+
+Improvements:
+ * Subprocess error logs are now only created on demand. Previously we
+   created them on startup before any subprocess errors had occurred.
+ * We now provide a QuickCheck test for some infrastructure.
+
+Bug fixes:
+ * Fixed a bug whereby some resize operations would cause a program
+   crash by triggering an unsafe mutable vector operation in Vty.
+ * New user creation is now handled successfully and no longer requires
+   a client restart to function reliably. Previously bad behavior
+   included not coloring new users' names and not showing new users'
+   names at all on their messages.
+ * Message selection mode is no longer blocked by errors and other
+   non-post content.
+ * Subprocesses that fail to run are now consistently mentioned in the
+   subprocess error log.
+
 30802.0.0
 =========
 
