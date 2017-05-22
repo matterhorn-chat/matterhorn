@@ -14,9 +14,11 @@ DEPS=$HERE/deps
 
 # The source for the mattermost API package
 MATTERMOST_API_REPO=https://github.com/matterhorn-chat/mattermost-api.git
+MATTERMOST_API_QC_REPO=https://github.com/matterhorn-chat/mattermost-api-qc.git
 
 # Where to clone the mattermost API package
-MATTERMOST_DIR=$DEPS/mattermost-api
+MATTERMOST_API_DIR=$DEPS/mattermost-api
+MATTERMOST_API_QC_DIR=$DEPS/mattermost-api-qc
 
 # Whether this is a first-time install (see below)
 FIRST_TIME=0
@@ -25,7 +27,8 @@ function init {
     if [ ! -d "$HERE/cabal.project.local" ]
     then
         FIRST_TIME=1
-        echo 'packages: deps/mattermost-api/mattermost-api.cabal' >cabal.project.local
+        echo 'packages: deps/mattermost-api/mattermost-api.cabal'  >cabal.project.local
+        echo '          deps/mattermost-api-qc/mattermost-api-qc.cabal' >>cabal.project.local
     fi
 }
 
@@ -49,7 +52,8 @@ function clone_or_update_repo {
 }
 
 function install_deps {
-  clone_or_update_repo "$(current_branch)" "$MATTERMOST_API_REPO" "$MATTERMOST_DIR"
+  clone_or_update_repo "$(current_branch)" "$MATTERMOST_API_REPO" "$MATTERMOST_API_DIR"
+  clone_or_update_repo "$(current_branch)" "$MATTERMOST_API_QC_REPO" "$MATTERMOST_API_QC_DIR"
 }
 
 function current_branch {
@@ -68,11 +72,11 @@ function build {
     then
         # For first-time builds, get dependencies installed as fast as
         # possible.
-        cabal new-build -j
+        cabal new-build -j --enable-tests
     else
         # But for subsequent builds, build with -j1 to avoid suppression
         # of useful (e.g. warning) output.
-        cabal new-build -j1
+        cabal new-build -j1 --enable-tests
     fi
 }
 
