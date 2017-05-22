@@ -129,24 +129,11 @@ The easiest way to build `matterhorn` is to use the provided
 `ghc`/`cabal` installation. It will pull the appropriate repos and build
 the sandbox in the appropriate way.
 
-If you want to, you can also run the install process manually.
-You'll need both the `matterhorn` repo and the `mattermost-api` repo,
-neither of which are currently in Hackage. Clone both of them to
-an appropriate place:
-
-~~~
-$ git clone git@github.com:matterhorn-chat/mattermost-api.git
-$ git clone git@github.com:matterhorn-chat/matterhorn.git
-~~~
-
-Move into the `matterhorn` directory, create a new sandbox, add
-the `mattermost-api` package as an extra dependency, install the
-dependencies, and build the package:
+If you want to, you can also run the install process manually:
 
 ~~~
 $ cd matterhorn
 $ cabal sandbox init
-$ cabal sandbox add-source ../mattermost-api
 $ cabal install
 $ cabal build
 ~~~
