@@ -314,6 +314,7 @@ initializeState cr myTeam myUser = do
           cwd <- liftIO $ mmGetChannel session myTeamId (getId c)
           return $ do
               csChannel(getId c).ccInfo %= channelInfoFromChannelWithData cwd
+              liftIO $ updateViewedIO st
               asyncFetchScrollback Preempt (getId c)
 
   -- It's important to queue up these channel metadata fetches first so
@@ -336,5 +337,4 @@ initializeState cr myTeam myUser = do
               return $ do
                   csChannel(getId c).ccInfo %= channelInfoFromChannelWithData cwd
 
-  updateViewedIO st
   return st
