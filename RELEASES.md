@@ -52,4 +52,3 @@ the platforms on which binary distributions will be built.
 
 9. Make binary release available on GitHub by editing the pushed tag and
    uploading the release archives.
-
