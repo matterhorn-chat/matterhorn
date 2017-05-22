@@ -73,11 +73,9 @@ executable matterhorn
                      , process
                      , microlens-platform
                      , brick >= 0.17
-                     , data-default
                      , vty >= 5.15.1
                      , transformers
                      , text-zipper >= 0.10
-                     , array
                      , time >= 1.6
                      , xdg-basedir
                      , filepath
