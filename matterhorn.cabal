@@ -6,8 +6,8 @@ description:         This is a terminal client for the MatterMost chat
                      features and information on getting started.
 license:             BSD3
 license-file:        LICENSE
-author:              Getty Ritter <gdritter@galois.com>
-maintainer:          Getty Ritter <gdritter@galois.com>
+author:              matterhorn@galois.com
+maintainer:          matterhorn@galois.com
 copyright:           ©2016-2017 AUTHORS.txt
 category:            Chat
 build-type:          Simple
