@@ -41,7 +41,18 @@ interactiveGatherCredentials :: Config
                              -> Maybe AuthenticationException
                              -> IO ConnectionInfo
 interactiveGatherCredentials config authError = do
-    let state = State { hostnameEdit = editor Hostname (txt . T.concat) (Just 1) hStr
+    let state = newState config authError
+    finalSt <- defaultMain app state
+    let finalH = T.concat $ getEditContents $ hostnameEdit finalSt
+        finalPort = read $ T.unpack $ T.concat $ getEditContents $ portEdit finalSt
+        finalU = T.concat $ getEditContents $ usernameEdit finalSt
+        finalPass = T.concat $ getEditContents $ passwordEdit finalSt
+    return $ ConnectionInfo finalH finalPort finalU finalPass
+
+newState :: Config -> Maybe AuthenticationException -> State
+newState config authError = state
+    where
+        state = State { hostnameEdit = editor Hostname (txt . T.concat) (Just 1) hStr
                       , portEdit = editor Port (txt . T.concat) (Just 1) (T.pack $ show $ configPort config)
                       , usernameEdit = editor Username (txt . T.concat) (Just 1) uStr
                       , passwordEdit = editor Password toPassword     (Just 1) pStr
@@ -57,12 +68,6 @@ interactiveGatherCredentials config authError = do
                           | T.null uStr -> Username
                           | T.null pStr -> Password
                           | otherwise   -> Hostname
-    finalSt <- defaultMain app state
-    let finalH = T.concat $ getEditContents $ hostnameEdit finalSt
-        finalPort = read $ T.unpack $ T.concat $ getEditContents $ portEdit finalSt
-        finalU = T.concat $ getEditContents $ usernameEdit finalSt
-        finalPass = T.concat $ getEditContents $ passwordEdit finalSt
-    return $ ConnectionInfo finalH finalPort finalU finalPass
 
 app :: App State e Name
 app = App
