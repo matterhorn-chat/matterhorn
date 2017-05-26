@@ -1,5 +1,6 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE RankNTypes #-}
 module Login
   ( interactiveGatherCredentials
   ) where
@@ -158,8 +159,32 @@ onEvent _  (VtyEvent (EvKey KEsc [])) = liftIO exitSuccess
 onEvent st (VtyEvent (EvKey (KChar '\t') [])) =
     continue $ st & focus %~ nextFocus
 onEvent st (VtyEvent (EvKey KEnter [])) =
-    -- check for valid (non-empty) contents
-    let h = T.concat $ getEditContents $ st^.hostnameEdit
+    if badState st then continue st else halt st
+onEvent st (VtyEvent e) = do
+    let target :: Lens' State (Editor T.Text Name)
+        target = getFocusedEditor st
+    continue =<< handleEventLensed st target handleEditorEvent e
+onEvent st _ = continue st
+
+nextFocus :: Name -> Name
+nextFocus Hostname = Port
+nextFocus Port     = Username
+nextFocus Username = Password
+nextFocus Password = Hostname
+
+getFocusedEditor :: State -> Lens' State (Editor T.Text Name)
+getFocusedEditor st =
+    case st^.focus of
+        Hostname -> hostnameEdit
+        Port     -> portEdit
+        Username -> usernameEdit
+        Password -> passwordEdit
+
+badState :: State -> Bool
+badState st = bad
+    where
+        -- check for valid (non-empty) contents
+        h = T.concat $ getEditContents $ st^.hostnameEdit
         u = T.concat $ getEditContents $ st^.usernameEdit
         p = T.concat $ getEditContents $ st^.passwordEdit
         port :: Maybe Int
@@ -171,19 +196,3 @@ onEvent st (VtyEvent (EvKey KEnter [])) =
                  , (not $ validHostname st)
                  , (not $ validPort st)
                  ]
-    in if bad then continue st else halt st
-onEvent st (VtyEvent e) = do
-    let target :: Lens' State (Editor T.Text Name)
-        target = case st^.focus of
-          Hostname -> hostnameEdit
-          Port     -> portEdit
-          Username -> usernameEdit
-          Password -> passwordEdit
-    continue =<< handleEventLensed st target handleEditorEvent e
-onEvent st _ = continue st
-
-nextFocus :: Name -> Name
-nextFocus Hostname = Port
-nextFocus Port     = Username
-nextFocus Username = Password
-nextFocus Password = Hostname
