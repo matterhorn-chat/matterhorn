@@ -188,8 +188,6 @@ setupState logFile config requestChan eventChan = do
                 initConnectionData (ciHostname cInfo)
                                    (fromIntegral (ciPort cInfo))
 
-        putStrLn "Authenticating..."
-
         let login = Login { username = ciUsername cInfo
                           , password = ciPassword cInfo
                           }
@@ -273,7 +271,6 @@ initializeState cr myTeam myUser = do
 
   userRefresh session requestChan
 
-  putStrLn $ "Loading channels for team " <> show (teamName myTeam) <> "..."
   chans <- mmGetChannels session myTeamId
 
   msgs <- fmap (HM.fromList . F.toList) $ forM (F.toList chans) $ \c -> do
