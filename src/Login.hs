@@ -106,7 +106,6 @@ errorMessageDisplay :: State -> Widget Name
 errorMessageDisplay st = do
     case previousError st of
         Nothing -> emptyWidget
-        -- XXX
         Just e -> txt " " <=>
                   (withDefAttr errorAttr $
                    hCenter (str "Error: " <+> renderAuthError e))
