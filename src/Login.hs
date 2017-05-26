@@ -11,6 +11,7 @@ import Brick.Widgets.Edit
 import Brick.Widgets.Center
 import Brick.Widgets.Border
 import Control.Monad.IO.Class (liftIO)
+import Data.Char (isNumber)
 import Data.Maybe (isNothing)
 import Text.Read (readMaybe)
 import qualified Data.Text as T
@@ -26,16 +27,24 @@ import Types (ConnectionInfo(..), AuthenticationException(..))
 data Name = Hostname | Port | Username | Password deriving (Ord, Eq, Show)
 
 data State =
-    State { hostnameEdit :: Editor T.Text Name
-          , portEdit     :: Editor T.Text Name
-          , usernameEdit :: Editor T.Text Name
-          , passwordEdit :: Editor T.Text Name
-          , focus    :: Name
+    State { hostnameEdit  :: Editor T.Text Name
+          , portEdit      :: Editor T.Text Name
+          , usernameEdit  :: Editor T.Text Name
+          , passwordEdit  :: Editor T.Text Name
+          , focus         :: Name
           , previousError :: Maybe AuthenticationException
           }
 
 toPassword :: [T.Text] -> Widget a
 toPassword s = txt $ T.replicate (T.length $ T.concat s) "*"
+
+validHostname :: State -> Bool
+validHostname st =
+    all (flip notElem (":/"::String)) $ T.unpack $ T.concat $ getEditContents $ hostnameEdit st
+
+validPort :: State -> Bool
+validPort st =
+    all isNumber $ T.unpack $ T.concat $ getEditContents $ portEdit st
 
 interactiveGatherCredentials :: Config
                              -> Maybe AuthenticationException
@@ -114,15 +123,19 @@ credentialsForm st =
     border $
     vBox [ renderText "Please enter your MatterMost credentials to log in."
          , txt " "
-         , txt "Hostname:" <+> renderEditor (focus st == Hostname) (hostnameEdit st)
+         , txt "Hostname: " <+> renderEditor (focus st == Hostname) (hostnameEdit st)
+         , if validHostname st
+              then txt " "
+              else hCenter $ withDefAttr errorAttr $ txt "Invalid hostname"
+         , txt "Port:     " <+> renderEditor (focus st == Port) (portEdit st)
+         , if validPort st
+              then txt " "
+              else hCenter $ withDefAttr errorAttr $ txt "Invalid port"
+         , txt "Username: " <+> renderEditor (focus st == Username) (usernameEdit st)
          , txt " "
-         , txt "Port:    " <+> renderEditor (focus st == Port) (portEdit st)
+         , txt "Password: " <+> renderEditor (focus st == Password) (passwordEdit st)
          , txt " "
-         , txt "Username:" <+> renderEditor (focus st == Username) (usernameEdit st)
-         , txt " "
-         , txt "Password:" <+> renderEditor (focus st == Password) (passwordEdit st)
-         , txt " "
-         , renderText "Press Enter to log in or Esc to exit."
+         , hCenter $ renderText "Press Enter to log in or Esc to exit."
          ]
 
 onEvent :: State -> BrickEvent Name e -> EventM Name (Next State)
@@ -140,9 +153,14 @@ onEvent st (VtyEvent (EvKey KEnter [])) =
         p = T.concat $ getEditContents $ passwordEdit st
         port :: Maybe Int
         port = readMaybe (T.unpack $ T.concat $ getEditContents $ portEdit st)
-    in case T.null h || T.null u || T.null p || isNothing port of
-        True -> continue st
-        False -> halt st
+        bad = or [ T.null h
+                 , T.null u
+                 , T.null p
+                 , isNothing port
+                 , (not $ validHostname st)
+                 , (not $ validPort st)
+                 ]
+    in if bad then continue st else halt st
 onEvent st (VtyEvent e) =
     case focus st of
         Hostname -> do
