@@ -1,4 +1,5 @@
 {-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE TemplateHaskell #-}
 module Login
   ( interactiveGatherCredentials
   ) where
@@ -15,6 +16,7 @@ import Data.Char (isNumber)
 import Data.Maybe (isNothing)
 import Data.Monoid ((<>))
 import Text.Read (readMaybe)
+import Lens.Micro.Platform
 import qualified Data.Text as T
 import Graphics.Vty hiding (Config)
 import System.Exit (exitSuccess)
@@ -28,24 +30,26 @@ import Types (ConnectionInfo(..), AuthenticationException(..))
 data Name = Hostname | Port | Username | Password deriving (Ord, Eq, Show)
 
 data State =
-    State { hostnameEdit  :: Editor T.Text Name
-          , portEdit      :: Editor T.Text Name
-          , usernameEdit  :: Editor T.Text Name
-          , passwordEdit  :: Editor T.Text Name
-          , focus         :: Name
-          , previousError :: Maybe AuthenticationException
+    State { _hostnameEdit  :: Editor T.Text Name
+          , _portEdit      :: Editor T.Text Name
+          , _usernameEdit  :: Editor T.Text Name
+          , _passwordEdit  :: Editor T.Text Name
+          , _focus         :: Name
+          , _previousError :: Maybe AuthenticationException
           }
+
+makeLenses ''State
 
 toPassword :: [T.Text] -> Widget a
 toPassword s = txt $ T.replicate (T.length $ T.concat s) "*"
 
 validHostname :: State -> Bool
 validHostname st =
-    all (flip notElem (":/"::String)) $ T.unpack $ T.concat $ getEditContents $ hostnameEdit st
+    all (flip notElem (":/"::String)) $ T.unpack $ T.concat $ getEditContents $ st^.hostnameEdit
 
 validPort :: State -> Bool
 validPort st =
-    all isNumber $ T.unpack $ T.concat $ getEditContents $ portEdit st
+    all isNumber $ T.unpack $ T.concat $ getEditContents $ st^.portEdit
 
 interactiveGatherCredentials :: Config
                              -> Maybe AuthenticationException
@@ -53,21 +57,21 @@ interactiveGatherCredentials :: Config
 interactiveGatherCredentials config authError = do
     let state = newState config authError
     finalSt <- defaultMain app state
-    let finalH = T.concat $ getEditContents $ hostnameEdit finalSt
-        finalPort = read $ T.unpack $ T.concat $ getEditContents $ portEdit finalSt
-        finalU = T.concat $ getEditContents $ usernameEdit finalSt
-        finalPass = T.concat $ getEditContents $ passwordEdit finalSt
+    let finalH    = T.concat $ getEditContents $ finalSt^.hostnameEdit
+        finalPort = read $ T.unpack $ T.concat $ getEditContents $ finalSt^.portEdit
+        finalU    = T.concat $ getEditContents $ finalSt^.usernameEdit
+        finalPass = T.concat $ getEditContents $ finalSt^.passwordEdit
     return $ ConnectionInfo finalH finalPort finalU finalPass
 
 newState :: Config -> Maybe AuthenticationException -> State
 newState config authError = state
     where
-        state = State { hostnameEdit = editor Hostname (txt . T.concat) (Just 1) hStr
-                      , portEdit = editor Port (txt . T.concat) (Just 1) (T.pack $ show $ configPort config)
-                      , usernameEdit = editor Username (txt . T.concat) (Just 1) uStr
-                      , passwordEdit = editor Password toPassword     (Just 1) pStr
-                      , focus = initialFocus
-                      , previousError = authError
+        state = State { _hostnameEdit = editor Hostname (txt . T.concat) (Just 1) hStr
+                      , _portEdit = editor Port (txt . T.concat) (Just 1) (T.pack $ show $ configPort config)
+                      , _usernameEdit = editor Username (txt . T.concat) (Just 1) uStr
+                      , _passwordEdit = editor Password toPassword     (Just 1) pStr
+                      , _focus = initialFocus
+                      , _previousError = authError
                       }
         hStr = maybe "" id $ configHost config
         uStr = maybe "" id $ configUser config
@@ -105,7 +109,7 @@ credsDraw st =
 
 errorMessageDisplay :: State -> Widget Name
 errorMessageDisplay st = do
-    case previousError st of
+    case st^.previousError of
         Nothing -> emptyWidget
         Just e ->
             hCenter $ hLimit uiWidth $
@@ -134,17 +138,17 @@ credentialsForm st =
     border $
     vBox [ renderText "Please enter your MatterMost credentials to log in."
          , padTop (Pad 1) $
-           txt "Hostname: " <+> renderEditor (focus st == Hostname) (hostnameEdit st)
+           txt "Hostname: " <+> renderEditor (st^.focus == Hostname) (st^.hostnameEdit)
          , if validHostname st
               then txt " "
               else hCenter $ renderError $ txt "Invalid hostname"
-         , txt "Port:     " <+> renderEditor (focus st == Port) (portEdit st)
+         , txt "Port:     " <+> renderEditor (st^.focus == Port) (st^.portEdit)
          , if validPort st
               then txt " "
               else hCenter $ renderError $ txt "Invalid port"
-         , txt "Username: " <+> renderEditor (focus st == Username) (usernameEdit st)
+         , txt "Username: " <+> renderEditor (st^.focus == Username) (st^.usernameEdit)
          , padTop (Pad 1) $
-           txt "Password: " <+> renderEditor (focus st == Password) (passwordEdit st)
+           txt "Password: " <+> renderEditor (st^.focus == Password) (st^.passwordEdit)
          , padTop (Pad 1) $
            hCenter $ renderText "Press Enter to log in or Esc to exit."
          ]
@@ -152,18 +156,14 @@ credentialsForm st =
 onEvent :: State -> BrickEvent Name e -> EventM Name (Next State)
 onEvent _  (VtyEvent (EvKey KEsc [])) = liftIO exitSuccess
 onEvent st (VtyEvent (EvKey (KChar '\t') [])) =
-    continue $ st { focus = if | focus st == Hostname -> Port
-                               | focus st == Port     -> Username
-                               | focus st == Username -> Password
-                               | focus st == Password -> Hostname
-                  }
+    continue $ st & focus %~ nextFocus
 onEvent st (VtyEvent (EvKey KEnter [])) =
     -- check for valid (non-empty) contents
-    let h = T.concat $ getEditContents $ hostnameEdit st
-        u = T.concat $ getEditContents $ usernameEdit st
-        p = T.concat $ getEditContents $ passwordEdit st
+    let h = T.concat $ getEditContents $ st^.hostnameEdit
+        u = T.concat $ getEditContents $ st^.usernameEdit
+        p = T.concat $ getEditContents $ st^.passwordEdit
         port :: Maybe Int
-        port = readMaybe (T.unpack $ T.concat $ getEditContents $ portEdit st)
+        port = readMaybe (T.unpack $ T.concat $ getEditContents $ st^.portEdit)
         bad = or [ T.null h
                  , T.null u
                  , T.null p
@@ -172,18 +172,18 @@ onEvent st (VtyEvent (EvKey KEnter [])) =
                  , (not $ validPort st)
                  ]
     in if bad then continue st else halt st
-onEvent st (VtyEvent e) =
-    case focus st of
-        Hostname -> do
-            e' <- handleEditorEvent e (hostnameEdit st)
-            continue $ st { hostnameEdit = e' }
-        Port -> do
-            e' <- handleEditorEvent e (portEdit st)
-            continue $ st { portEdit = e' }
-        Username -> do
-            e' <- handleEditorEvent e (usernameEdit st)
-            continue $ st { usernameEdit = e' }
-        Password -> do
-            e' <- handleEditorEvent e (passwordEdit st)
-            continue $ st { passwordEdit = e' }
+onEvent st (VtyEvent e) = do
+    let target :: Lens' State (Editor T.Text Name)
+        target = case st^.focus of
+          Hostname -> hostnameEdit
+          Port     -> portEdit
+          Username -> usernameEdit
+          Password -> passwordEdit
+    continue =<< handleEventLensed st target handleEditorEvent e
 onEvent st _ = continue st
+
+nextFocus :: Name -> Name
+nextFocus Hostname = Port
+nextFocus Port     = Username
+nextFocus Username = Password
+nextFocus Password = Hostname
