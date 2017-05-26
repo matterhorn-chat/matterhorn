@@ -13,6 +13,7 @@ import Brick.Widgets.Border
 import Control.Monad.IO.Class (liftIO)
 import Data.Char (isNumber)
 import Data.Maybe (isNothing)
+import Data.Monoid ((<>))
 import Text.Read (readMaybe)
 import qualified Data.Text as T
 import Graphics.Vty hiding (Config)
@@ -106,35 +107,46 @@ errorMessageDisplay :: State -> Widget Name
 errorMessageDisplay st = do
     case previousError st of
         Nothing -> emptyWidget
-        Just e -> txt " " <=>
-                  (withDefAttr errorAttr $
-                   hCenter (str "Error: " <+> renderAuthError e))
+        Just e ->
+            hCenter $ hLimit uiWidth $
+            padTop (Pad 1) $ renderError $ renderText $
+            "Error: " <> renderAuthError e
 
-renderAuthError :: AuthenticationException -> Widget Name
-renderAuthError (ConnectError _) = txt "Could not connect to server"
-renderAuthError (ResolveError _) = txt "Could not resolve server hostname"
-renderAuthError (OtherAuthError e) = str $ show e
-renderAuthError (LoginError (LoginFailureException msg)) = str msg
+renderAuthError :: AuthenticationException -> T.Text
+renderAuthError (ConnectError _) =
+    "Could not connect to server"
+renderAuthError (ResolveError _) =
+    "Could not resolve server hostname"
+renderAuthError (OtherAuthError e) =
+    T.pack $ show e
+renderAuthError (LoginError (LoginFailureException msg)) =
+    T.pack msg
+
+renderError :: Widget a -> Widget a
+renderError = withDefAttr errorAttr
+
+uiWidth :: Int
+uiWidth = 50
 
 credentialsForm :: State -> Widget Name
 credentialsForm st =
-    hCenter $ hLimit 50 $ vLimit 15 $
+    hCenter $ hLimit uiWidth $ vLimit 15 $
     border $
     vBox [ renderText "Please enter your MatterMost credentials to log in."
-         , txt " "
-         , txt "Hostname: " <+> renderEditor (focus st == Hostname) (hostnameEdit st)
+         , padTop (Pad 1) $
+           txt "Hostname: " <+> renderEditor (focus st == Hostname) (hostnameEdit st)
          , if validHostname st
               then txt " "
-              else hCenter $ withDefAttr errorAttr $ txt "Invalid hostname"
+              else hCenter $ renderError $ txt "Invalid hostname"
          , txt "Port:     " <+> renderEditor (focus st == Port) (portEdit st)
          , if validPort st
               then txt " "
-              else hCenter $ withDefAttr errorAttr $ txt "Invalid port"
+              else hCenter $ renderError $ txt "Invalid port"
          , txt "Username: " <+> renderEditor (focus st == Username) (usernameEdit st)
-         , txt " "
-         , txt "Password: " <+> renderEditor (focus st == Password) (passwordEdit st)
-         , txt " "
-         , hCenter $ renderText "Press Enter to log in or Esc to exit."
+         , padTop (Pad 1) $
+           txt "Password: " <+> renderEditor (focus st == Password) (passwordEdit st)
+         , padTop (Pad 1) $
+           hCenter $ renderText "Press Enter to log in or Esc to exit."
          ]
 
 onEvent :: State -> BrickEvent Name e -> EventM Name (Next State)
