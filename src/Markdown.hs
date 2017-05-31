@@ -182,8 +182,10 @@ toList lt bs uSet cSet = vBox
   | b <- bs | i <- is ]
   where is = case lt of
           C.Bullet _ -> repeat ("• ")
-          C.Numbered _ _ -> [ T.pack (show (n :: Int)) <> ". "
-                            | n <- [1..] ]
+          C.Numbered C.PeriodFollowing s ->
+            [ T.pack (show (n :: Int)) <> ". " | n <- [s..] ]
+          C.Numbered C.ParenFollowing s ->
+            [ T.pack (show (n :: Int)) <> ") " | n <- [s..] ]
 
 -- We want to do word-wrapping, but for that we want a linear
 -- sequence of chunks we can break up. The typical Markdown
