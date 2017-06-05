@@ -287,10 +287,17 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
                                                   chnName
                                                   (st^.csMe^.userIdL) of
                        Nothing -> txt $ mkChannelName (chan^.ccInfo)
-                       Just u  -> colorUsername $ mkDMChannelName u
+                       Just u  -> userHeader u
                    _        -> txt $ mkChannelName (chan^.ccInfo)
                  False -> renderText $
                           mkChannelName (chan^.ccInfo) <> " - " <> topicStr
+    userHeader u = let p1 = (colorUsername $ mkDMChannelName u)
+                       p2 = txt " is " <+> txt nfn
+                       quote n = " \"" <> n <> "\" "
+                       nfn = let n = maybe " " quote $ u^.uiNickName
+                                 e = " <" <> u^.uiEmail <> ">"
+                             in (u^.uiFirstName) <> n <> (u^.uiLastName) <> e
+                   in p1 <+> p2
     messages = body <+> txt " "
 
     body = chatText <=> case chan^.ccInfo.cdCurrentState of

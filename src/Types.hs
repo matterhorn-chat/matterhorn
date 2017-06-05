@@ -270,19 +270,29 @@ makeLenses ''ClientChannel
 -- | A 'UserInfo' value represents everything we need to know at
 --   runtime about a user
 data UserInfo = UserInfo
-  { _uiName   :: T.Text
-  , _uiId     :: UserId
-  , _uiStatus :: UserStatus
-  , _uiInTeam :: Bool
+  { _uiName      :: T.Text
+  , _uiId        :: UserId
+  , _uiStatus    :: UserStatus
+  , _uiInTeam    :: Bool
+  , _uiNickName  :: Maybe T.Text
+  , _uiFirstName :: T.Text
+  , _uiLastName  :: T.Text
+  , _uiEmail     :: T.Text
   } deriving (Eq, Show)
 
 -- | Create a 'UserInfo' value from a Mattermost 'User' value
 userInfoFromUser :: User -> Bool -> UserInfo
 userInfoFromUser up inTeam = UserInfo
-  { _uiName   = userUsername up
-  , _uiId     = userId up
-  , _uiStatus = Offline
-  , _uiInTeam = inTeam
+  { _uiName      = userUsername up
+  , _uiId        = userId up
+  , _uiStatus    = Offline
+  , _uiInTeam    = inTeam
+  , _uiNickName  = if T.null (userNickname up)
+                   then Nothing
+                   else Just $ userNickname up
+  , _uiFirstName = userFirstName up
+  , _uiLastName  = userLastName up
+  , _uiEmail     = userEmail up
   }
 
 -- | The 'UserStatus' value represents possible current status for
