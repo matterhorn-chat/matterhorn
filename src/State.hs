@@ -209,6 +209,9 @@ deleteCurrentChannel = do
             csMode .= Main
             leaveCurrentChannel
 
+isCurrentChannel :: ChatState -> ChannelId -> Bool
+isCurrentChannel st cId = st^.csCurrentChannelId == cId
+
 beginUpdateMessage :: MH ()
 beginUpdateMessage = do
     selected <- use (to getSelectedMessage)
