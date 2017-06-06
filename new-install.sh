@@ -45,7 +45,18 @@ function clone_or_update_repo {
     if [ ! -d "$destdir" ]
     then
         echo git clone -b "$branch" "$repo" "$destdir"
-        git clone -b "$branch" "$repo" "$destdir"
+        if ! git clone -b "$branch" "$repo" "$destdir" 2> gitclone.err
+        then
+            if grep -q "fatal: Remote branch ${branch} not found in upstream origin" gitclone.err
+            then
+                echo "Branch ${branch} does not exist; using master"
+                echo git clone "$repo" "$destdir"
+                git clone "$repo" "$destdir"
+            else
+                cat gitclone.err
+            fi
+        fi
+
     else
         cd $destdir && git pull
     fi
