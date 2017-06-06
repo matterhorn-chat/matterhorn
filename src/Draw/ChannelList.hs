@@ -1,122 +1,181 @@
 {-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE FlexibleInstances #-}
+
+-- | This module provides the Drawing functionality for the
+-- ChannelList sidebar.  The sidebar is divided vertically into groups
+-- and each group is rendered separately.
+--
+-- There are actually two UI modes handled by this code:
+--
+--   * Normal display of the channels, with various markers to
+--     indicate the current channel, channels with unread messages,
+--     user state (for Direct Message channels), etc.
+--
+--   * ChannelSelect display where the user is typing match characters
+--     into a prompt at the ChannelList sidebar is showing only those
+--     channels matching the entered text (and highlighting the
+--     matching portion).
 
 module Draw.ChannelList (renderChannelList) where
 
-import           Brick
+import           Brick hiding (render)
 import           Brick.Widgets.Border
 import qualified Data.HashMap.Strict as HM
 import           Data.Monoid ((<>))
 import qualified Data.Text as T
 import           Draw.Util
 import           Lens.Micro.Platform
-import           Network.Mattermost.Lenses
 import           State
-import           State.Common
 import           Themes
 import           Types
 
+type GroupName = T.Text
+
+-- | Specify the different groups of channels to be displayed
+-- vertically in the ChannelList sidebar.  This list provides the
+-- central control over what channels are displayed and how they are
+-- grouped.
+channelListGroups :: [ ( GroupName
+                          -- ^ the name of this group
+                       , Getting ChannelSelectMap ChatState ChannelSelectMap
+                          -- ^ A lens to get the HashMap of matching
+                          -- selections when in ChannelSelect mode
+                          -- (ignored for Normal mode).
+                       , ChatState -> [ChannelListEntry]
+                          -- ^ The function to retrieve the list of
+                          -- channels for this group from the
+                          -- ChatState.
+                       ) ]
+channelListGroups =
+    [ ("Channels", csChannelSelectChannelMatches, getOrdinaryChannels)
+    , ("Users",    csChannelSelectUserMatches,    getDmChannels)
+    ]
+
+-- | True if there is an active channel selection operation (i.e. in
+-- ChannelSelect mode).  This requires both the state change *and*
+-- some channel selection text.
+hasActiveChannelSelection :: ChatState -> Bool
+hasActiveChannelSelection st =
+    st^.csMode == ChannelSelect && not (T.null (st^.csChannelSelectString))
+
+-- | This is the main function that is called from external code to
+-- render the ChannelList sidebar.
 renderChannelList :: ChatState -> Widget Name
-renderChannelList st = maybeViewport $
-                       vBox $ concat $ renderChannelGroup st <$> channelGroups
-    where
-        -- Only render the channel list in a viewport if we're not in
-        -- channel select mode, since we don't want or need the viewport
-        -- state to be affected by channel select input.
-        maybeViewport = if st^.csMode == ChannelSelect
-                        then id
+renderChannelList st =
+    let maybeViewport = if hasActiveChannelSelection st
+                        then id -- no viewport scrolling when actively selecting a channel
                         else viewport ChannelList Vertical
-        channelGroups = [ ( "Channels"
-                          , getOrdinaryChannels st
-                          , st^.csChannelSelectChannelMatches
-                          )
-                        , ( "Users"
-                          , getDmChannels st
-                          , st^.csChannelSelectUserMatches
-                          )
-                        ]
+        renderedGroups = if hasActiveChannelSelection st
+                         then render <$> selectedGroupEntries <$> channelListGroups
+                         else render <$> plainGroupEntries <$> channelListGroups
+        plainGroupEntries (n, _m, f) = (n, f st)
+        selectedGroupEntries (n, m, f) = (n, foldr (addSelectedChannel m) [] $ f st)
+        addSelectedChannel m e s = case HM.lookup (entryLabel e) (st^.m) of
+                                     Just y -> SCLE e y : s
+                                     Nothing -> s
+    in maybeViewport $ vBox $ renderedGroups
 
-renderChannelGroup :: ChatState
-                   -> (T.Text, [ChannelListEntry], HM.HashMap T.Text ChannelSelectMatch)
-                   -> [Widget Name]
-renderChannelGroup st (groupName, entries, csMatches) =
+class Renderable a where
+    render :: a -> Widget Name
+
+-- | Renders a specific group, given the name of the group and the
+-- list of entries in that group (which are expected to be either
+-- ChannelListEntry or SelectedChannelListEntry elements).
+renderChannelGroup :: Renderable a => (GroupName, [a]) -> [Widget Name]
+renderChannelGroup (groupName, entries) =
     let header label = hBorderWithLabel $ withDefAttr channelListHeaderAttr $ txt label
-    in header groupName : (renderChannelListEntry st csMatches <$> entries)
+    in header groupName : (render <$> entries)
 
+instance Renderable a => Renderable ((,) GroupName [a]) where
+  render = vBox . renderChannelGroup
+
+-- | Internal record describing each channel entry and its associated
+-- attributes.  This is the object passed to the rendering function so
+-- that it can determine how to render each channel.
 data ChannelListEntry =
-    ChannelListEntry { entryChannelName :: T.Text
-                     , entrySigil       :: T.Text
+    ChannelListEntry { entrySigil       :: T.Text
                      , entryLabel       :: T.Text
-                     , entryMakeWidget  :: T.Text -> Widget Name
                      , entryHasUnread   :: Bool
                      , entryIsRecent    :: Bool
+                     , entryIsCurrent   :: Bool
+                     , entryUserStatus  :: Maybe UserStatus
                      }
 
-renderChannelListEntry :: ChatState
-                       -> HM.HashMap T.Text ChannelSelectMatch
-                       -> ChannelListEntry
-                       -> Widget Name
-renderChannelListEntry st csMatches entry =
-    decorate $ decorateRecent $ padRight Max $
-    entryMakeWidget entry $ entrySigil entry <> entryLabel entry
+-- | Similar to the ChannelListEntry, but also holds information about
+-- the matching channel select specification.
+data SelectedChannelListEntry = SCLE ChannelListEntry ChannelSelectMatch
+
+-- | Render an individual Channel List entry (in Normal mode) with
+-- appropriate visual decorations.
+renderChannelListEntry :: ChannelListEntry -> Widget Name
+renderChannelListEntry entry =
+    decorate $ decorateRecent entry $ padRight Max $
+    entryWidget $ entrySigil entry <> entryLabel entry
     where
-    decorate = if | matches -> const $
-                      let Just (ChannelSelectMatch preMatch inMatch postMatch) =
-                                   HM.lookup (entryLabel entry) csMatches
-                      in (txt $ entrySigil entry)
-                          <+> txt preMatch
-                          <+> (forceAttr channelSelectMatchAttr $ txt inMatch)
-                          <+> txt postMatch
-                  | isChanSelect &&
-                    (not $ T.null $ st^.csChannelSelectString) -> const emptyWidget
-                  | current ->
-                      if isChanSelect
-                      then forceAttr currentChannelNameAttr
-                      else visible . forceAttr currentChannelNameAttr
+    decorate = if | entryIsCurrent entry ->
+                      visible . forceAttr currentChannelNameAttr
                   | entryHasUnread entry ->
                       forceAttr unreadChannelAttr
                   | otherwise -> id
+    entryWidget = case entryUserStatus entry of
+                    Just Offline -> withDefAttr clientMessageAttr . txt
+                    Just _       -> colorUsername
+                    Nothing      -> txt
 
-    decorateRecent = if entryIsRecent entry
-                     then (<+> (withDefAttr recentMarkerAttr $ str "<"))
-                     else id
+instance Renderable ChannelListEntry where render = renderChannelListEntry
 
-    matches = isChanSelect && (HM.member (entryLabel entry) csMatches) &&
-              (not $ T.null $ st^.csChannelSelectString)
+-- | Render an individual entry when in Channel Select mode,
+-- highlighting the matching portion, or completely suppressing the
+-- entry if it doesn't match.
+renderChannelSelectListEntry :: SelectedChannelListEntry -> Widget Name
+renderChannelSelectListEntry (SCLE entry match) =
+    let ChannelSelectMatch preMatch inMatch postMatch = match
+    in decorateRecent entry $ padRight Max $
+                           (txt $ entrySigil entry)
+                           <+> txt preMatch
+                           <+> (forceAttr channelSelectMatchAttr $ txt inMatch)
+                           <+> txt postMatch
 
-    isChanSelect = st^.csMode == ChannelSelect
-    current = entryChannelName entry == currentChannelName
-    currentChannelName = st^.csCurrentChannel.ccInfo.cdName
+instance Renderable SelectedChannelListEntry
+    where render = renderChannelSelectListEntry
 
+-- | If this channel is the most recently viewed channel (prior to the
+-- currently viewed channel), add a decoration to denote that.
+decorateRecent :: ChannelListEntry -> Widget n -> Widget n
+decorateRecent entry = if entryIsRecent entry
+                       then (<+> (withDefAttr recentMarkerAttr $ str "<"))
+                       else id
+
+-- | Extract the names and information about normal channels to be
+-- displayed in the ChannelList sidebar.
 getOrdinaryChannels :: ChatState -> [ChannelListEntry]
 getOrdinaryChannels st =
-    [ ChannelListEntry n sigil n txt unread recent
+    [ ChannelListEntry sigil n unread recent current Nothing
     | n <- (st ^. csNames . cnChans)
     , let Just chan = st ^. csNames . cnToChanId . at n
           unread = hasUnread st chan
           recent = Just chan == st^.csRecentChannel
+          current = isCurrentChannel st chan
           sigil = case st ^. csLastChannelInput . at chan of
             Nothing      -> T.singleton normalChannelSigil
             Just ("", _) -> T.singleton normalChannelSigil
             _            -> "»"
     ]
 
+-- | Extract the names and information about Direct Message channels
+-- to be displayed in the ChannelList sidebar.
 getDmChannels :: ChatState -> [ChannelListEntry]
 getDmChannels st =
-    [ ChannelListEntry cname sigil uname colorUsername' unread recent
+    [ ChannelListEntry sigil uname unread recent current (Just $ u^.uiStatus)
     | u <- sortedUserList st
-    , let colorUsername' =
-            if | u^.uiStatus == Offline ->
-                 withDefAttr clientMessageAttr . txt
-               | otherwise ->
-                 colorUsername
-          sigil =
+    , let sigil =
             case do { cId <- m_chanId; st^.csLastChannelInput.at cId } of
               Nothing      -> T.singleton $ userSigilFromInfo u
               Just ("", _) -> T.singleton $ userSigilFromInfo u
               _            -> "»"
           uname = u^.uiName
-          cname = getDMChannelName (st^.csMe^.userIdL) (u^.uiId)
           recent = maybe False ((== st^.csRecentChannel) . Just) m_chanId
           m_chanId = st^.csNames.cnToChanId.at (u^.uiName)
           unread = maybe False (hasUnread st) m_chanId
+          current = maybe False (isCurrentChannel st) m_chanId
        ]

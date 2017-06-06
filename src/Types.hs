@@ -434,14 +434,16 @@ data ChatState = ChatState
   , _csMode                        :: Mode
   , _csShowMessagePreview          :: Bool
   , _csChannelSelectString         :: T.Text
-  , _csChannelSelectChannelMatches :: HashMap T.Text ChannelSelectMatch
-  , _csChannelSelectUserMatches    :: HashMap T.Text ChannelSelectMatch
+  , _csChannelSelectChannelMatches :: ChannelSelectMap
+  , _csChannelSelectUserMatches    :: ChannelSelectMap
   , _csRecentChannel               :: Maybe ChannelId
   , _csUrlList                     :: List Name LinkChoice
   , _csConnectionStatus            :: ConnectionStatus
   , _csJoinChannelList             :: Maybe (List Name Channel)
   , _csMessageSelect               :: MessageSelectState
   }
+
+type ChannelSelectMap = HM.HashMap T.Text ChannelSelectMatch
 
 data MessageSelectState =
     MessageSelectState { selectMessagePostId :: Maybe PostId }
