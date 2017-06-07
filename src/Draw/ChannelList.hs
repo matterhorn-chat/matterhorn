@@ -1,5 +1,4 @@
 {-# LANGUAGE MultiWayIf #-}
-{-# LANGUAGE FlexibleInstances #-}
 
 -- | This module provides the Drawing functionality for the
 -- ChannelList sidebar.  The sidebar is divided vertically into groups
@@ -18,7 +17,7 @@
 
 module Draw.ChannelList (renderChannelList) where
 
-import           Brick hiding (render)
+import           Brick
 import           Brick.Widgets.Border
 import qualified Data.HashMap.Strict as HM
 import           Data.Monoid ((<>))
@@ -66,28 +65,22 @@ renderChannelList st =
                         then id -- no viewport scrolling when actively selecting a channel
                         else viewport ChannelList Vertical
         renderedGroups = if hasActiveChannelSelection st
-                         then render <$> selectedGroupEntries <$> channelListGroups
-                         else render <$> plainGroupEntries <$> channelListGroups
+                         then renderChannelGroup renderChannelSelectListEntry <$> selectedGroupEntries
+                         else renderChannelGroup renderChannelListEntry       <$> plainGroupEntries
         plainGroupEntries (n, _m, f) = (n, f st)
         selectedGroupEntries (n, m, f) = (n, foldr (addSelectedChannel m) [] $ f st)
         addSelectedChannel m e s = case HM.lookup (entryLabel e) (st^.m) of
                                      Just y -> SCLE e y : s
                                      Nothing -> s
-    in maybeViewport $ vBox $ renderedGroups
-
-class Renderable a where
-    render :: a -> Widget Name
+    in maybeViewport $ vBox $ concat $ renderedGroups <$> channelListGroups
 
 -- | Renders a specific group, given the name of the group and the
 -- list of entries in that group (which are expected to be either
 -- ChannelListEntry or SelectedChannelListEntry elements).
-renderChannelGroup :: Renderable a => (GroupName, [a]) -> [Widget Name]
-renderChannelGroup (groupName, entries) =
+renderChannelGroup :: (a -> Widget Name) -> (GroupName, [a]) -> [Widget Name]
+renderChannelGroup eRender (groupName, entries) =
     let header label = hBorderWithLabel $ withDefAttr channelListHeaderAttr $ txt label
-    in header groupName : (render <$> entries)
-
-instance Renderable a => Renderable ((,) GroupName [a]) where
-  render = vBox . renderChannelGroup
+    in header groupName : (eRender <$> entries)
 
 -- | Internal record describing each channel entry and its associated
 -- attributes.  This is the object passed to the rendering function so
@@ -122,8 +115,6 @@ renderChannelListEntry entry =
                     Just _       -> colorUsername
                     Nothing      -> txt
 
-instance Renderable ChannelListEntry where render = renderChannelListEntry
-
 -- | Render an individual entry when in Channel Select mode,
 -- highlighting the matching portion, or completely suppressing the
 -- entry if it doesn't match.
@@ -135,9 +126,6 @@ renderChannelSelectListEntry (SCLE entry match) =
                            <+> txt preMatch
                            <+> (forceAttr channelSelectMatchAttr $ txt inMatch)
                            <+> txt postMatch
-
-instance Renderable SelectedChannelListEntry
-    where render = renderChannelSelectListEntry
 
 -- | If this channel is the most recently viewed channel (prior to the
 -- currently viewed channel), add a decoration to denote that.
