@@ -99,6 +99,8 @@ executable matterhorn
 test-suite test_messages
   type:               exitcode-stdio-1.0
   main-is:            test_messages.hs
+  other-modules:      Cheapskate_QCA
+                    , Message_QCA
   default-language:   Haskell2010
   default-extensions: OverloadedStrings
                     , ScopedTypeVariables
