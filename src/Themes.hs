@@ -9,6 +9,7 @@ module Themes
   , channelListHeaderAttr
   , currentChannelNameAttr
   , unreadChannelAttr
+  , mentionsChannelAttr
   , urlAttr
   , codeAttr
   , emailAttr
@@ -119,6 +120,9 @@ channelNameAttr = "channelNameAttr"
 unreadChannelAttr :: AttrName
 unreadChannelAttr = "unreadChannel"
 
+mentionsChannelAttr :: AttrName
+mentionsChannelAttr = "mentionsChannel"
+
 dateTransitionAttr :: AttrName
 dateTransitionAttr = "dateTransition"
 
@@ -168,6 +172,7 @@ lightColorTheme = attrMap (black `on` white) $
   , (channelListHeaderAttr,            fg cyan)
   , (currentChannelNameAttr,           black `on` yellow `withStyle` bold)
   , (unreadChannelAttr,                black `on` cyan   `withStyle` bold)
+  , (mentionsChannelAttr,              black `on` red    `withStyle` bold)
   , (urlAttr,                          fg brightYellow)
   , (emailAttr,                        fg yellow)
   , (codeAttr,                         fg magenta)
@@ -204,6 +209,7 @@ darkAttrs =
   , (channelListHeaderAttr,            fg cyan)
   , (currentChannelNameAttr,           black `on` yellow `withStyle` bold)
   , (unreadChannelAttr,                black `on` cyan   `withStyle` bold)
+  , (mentionsChannelAttr,              black `on` red    `withStyle` bold)
   , (urlAttr,                          fg yellow)
   , (emailAttr,                        fg yellow)
   , (codeAttr,                         fg magenta)

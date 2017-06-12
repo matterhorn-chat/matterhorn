@@ -89,6 +89,7 @@ data ChannelListEntry =
     ChannelListEntry { entrySigil       :: T.Text
                      , entryLabel       :: T.Text
                      , entryHasUnread   :: Bool
+                     , entryHasMentions :: Bool
                      , entryIsRecent    :: Bool
                      , entryIsCurrent   :: Bool
                      , entryUserStatus  :: Maybe UserStatus
@@ -107,6 +108,8 @@ renderChannelListEntry entry =
     where
     decorate = if | entryIsCurrent entry ->
                       visible . forceAttr currentChannelNameAttr
+                  | entryHasMentions entry ->
+                      forceAttr mentionsChannelAttr
                   | entryHasUnread entry ->
                       forceAttr unreadChannelAttr
                   | otherwise -> id
@@ -138,7 +141,7 @@ decorateRecent entry = if entryIsRecent entry
 -- displayed in the ChannelList sidebar.
 getOrdinaryChannels :: ChatState -> [ChannelListEntry]
 getOrdinaryChannels st =
-    [ ChannelListEntry sigil n unread recent current Nothing
+    [ ChannelListEntry sigil n unread mentions recent current Nothing
     | n <- (st ^. csNames . cnChans)
     , let Just chan = st ^. csNames . cnToChanId . at n
           unread = hasUnread st chan
@@ -148,13 +151,14 @@ getOrdinaryChannels st =
             Nothing      -> T.singleton normalChannelSigil
             Just ("", _) -> T.singleton normalChannelSigil
             _            -> "»"
+          mentions = st^.csChannel(chan).ccInfo.cdHasMentions
     ]
 
 -- | Extract the names and information about Direct Message channels
 -- to be displayed in the ChannelList sidebar.
 getDmChannels :: ChatState -> [ChannelListEntry]
 getDmChannels st =
-    [ ChannelListEntry sigil uname unread recent current (Just $ u^.uiStatus)
+    [ ChannelListEntry sigil uname unread mentions recent current (Just $ u^.uiStatus)
     | u <- sortedUserList st
     , let sigil =
             case do { cId <- m_chanId; st^.csLastChannelInput.at cId } of
@@ -166,4 +170,5 @@ getDmChannels st =
           m_chanId = st^.csNames.cnToChanId.at (u^.uiName)
           unread = maybe False (hasUnread st) m_chanId
           current = maybe False (isCurrentChannel st) m_chanId
+          mentions = unread
        ]

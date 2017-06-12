@@ -94,6 +94,11 @@ handleWSEvent we = do
               Just newHeader | postType p == SystemHeaderChange ->
                   csChannel(postChannelId p).ccInfo.cdHeader .= newHeader
               _ -> return ()
+          case wepMentions (weData we) of
+            Just lst
+              | length lst > 0 ->
+                  csChannel(postChannelId p).ccInfo.cdHasMentions .= True
+            _ -> return ()
           addMessageToState p
       Nothing -> return ()
     WMPostEdited -> case wepPost (weData we) of

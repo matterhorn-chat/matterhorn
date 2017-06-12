@@ -179,6 +179,7 @@ initialChannelInfo :: Channel -> ChannelInfo
 initialChannelInfo chan =
     let updated  = chan ^. channelLastPostAtL
     in ChannelInfo { _cdViewed           = Nothing
+                   , _cdHasMentions      = False
                    , _cdUpdated          = updated
                    , _cdName             = preferredChannelName chan
                    , _cdHeader           = chan^.channelHeaderL
@@ -226,6 +227,8 @@ data ChannelState
 data ChannelInfo = ChannelInfo
   { _cdViewed           :: Maybe UTCTime
     -- ^ The last time we looked at a channel
+  , _cdHasMentions      :: Bool
+    -- ^ True if there are unread user mentions
   , _cdUpdated          :: UTCTime
     -- ^ The last time a message showed up in the channel
   , _cdName             :: T.Text

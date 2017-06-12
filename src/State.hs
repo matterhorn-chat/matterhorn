@@ -385,6 +385,7 @@ setLastViewedFor cId = do
 
 updateViewed :: MH ()
 updateViewed = do
+  csCurrentChannel.ccInfo.cdHasMentions .= False
   st <- use id
   liftIO (updateViewedIO st)
 
@@ -608,6 +609,7 @@ handleNewChannel name switch nc = do
         { _ccContents = emptyChannelContents
         , _ccInfo     = ChannelInfo
                           { _cdViewed           = Nothing
+                          , _cdHasMentions      = False
                           , _cdUpdated          = now
                           , _cdName             = preferredChannelName nc
                           , _cdHeader           = nc^.channelHeaderL
