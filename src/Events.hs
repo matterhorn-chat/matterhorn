@@ -6,6 +6,7 @@ import           Prelude.Compat
 
 import           Brick
 import           Control.Monad.IO.Class (liftIO)
+import qualified Data.Set as Set
 import qualified Data.Text as T
 import           Data.Monoid ((<>))
 import qualified Graphics.Vty as Vty
@@ -90,13 +91,14 @@ handleWSEvent we = do
       Just p  -> do
           -- If the message is a header change, also update the channel
           -- metadata.
+          myUserId <- use (csMe.userIdL)
           case postPropsNewHeader (p^.postPropsL) of
               Just newHeader | postType p == SystemHeaderChange ->
                   csChannel(postChannelId p).ccInfo.cdHeader .= newHeader
               _ -> return ()
           case wepMentions (weData we) of
             Just lst
-              | length lst > 0 ->
+              | myUserId `Set.member` lst ->
                   csChannel(postChannelId p).ccInfo.cdHasMentions .= True
             _ -> return ()
           addMessageToState p
