@@ -852,7 +852,7 @@ updateChannelSelectMatches = do
     -- user matches and then update the match lists.
     chanNameMatches <- use (csChannelSelectString.to channelNameMatch)
     chanNames   <- use (csNames.cnChans)
-    userNames   <- use (to sortedUserList)
+    userNames   <- use (to userList)
     let chanMatches = catMaybes (fmap chanNameMatches chanNames)
     let userMatches = catMaybes (fmap chanNameMatches (fmap _uiName userNames))
     let mkMap ms = HM.fromList [(channelNameFromMatch m, m) | m <- ms]

@@ -659,10 +659,7 @@ lookupKeybinding e kbs = listToMaybe $ filter ((== e) . kbEvent) kbs
 
 sortedUserList :: ChatState -> [UserInfo]
 sortedUserList st = sort yes ++ sort no
-  where userList = filter showUser (HM.elems(st^.usrMap))
-        showUser u = not (isSelf u) && (u^.uiInTeam)
-        isSelf u = (st^.csMe.userIdL) == (u^.uiId)
-        hasUnread u =
+  where hasUnread u =
           case st^.csNames.cnToChanId.at(u^.uiName) of
             Nothing  -> False
             Just cId
@@ -672,4 +669,9 @@ sortedUserList st = sort yes ++ sort no
                   in case info^.cdViewed of
                       Nothing -> False
                       Just v -> info^.cdUpdated > v
-        (yes, no) = partition hasUnread userList
+        (yes, no) = partition hasUnread (userList st)
+
+userList :: ChatState -> [UserInfo]
+userList st = filter showUser (HM.elems(st^.usrMap))
+  where showUser u = not (isSelf u) && (u^.uiInTeam)
+        isSelf u = (st^.csMe.userIdL) == (u^.uiId)
