@@ -47,6 +47,7 @@ import           Network.Mattermost.Lenses
 import           Config
 import           FilePaths
 import           Types
+import           Types.Channels
 import           Types.Posts
 import           Types.Messages
 import           Types.Users
@@ -317,9 +318,6 @@ startLeaveCurrentChannel = do
     case canLeaveChannel cInfo of
         True -> csMode .= LeaveChannelConfirm
         False -> postErrorMessage "The /leave command cannot be used with this channel."
-
-canLeaveChannel :: ChannelInfo -> Bool
-canLeaveChannel cInfo = not $ cInfo^.cdType `elem` [Direct, Group]
 
 leaveCurrentChannel :: MH ()
 leaveCurrentChannel = do
@@ -604,10 +602,7 @@ handleNewChannel :: T.Text -> Bool -> Channel -> MH ()
 handleNewChannel name switch nc = do
   -- time to do a lot of state updating:
   -- create a new ClientChannel structure
-  let cChannel = ClientChannel
-        { _ccContents = emptyChannelContents
-        , _ccInfo     = initialChannelInfo nc
-        }
+  let cChannel = makeClientChannel nc
   -- add it to the message map, and to the map so we can look it up by
   -- user name
   csNames.cnToChanId.at(name) .= Just (getId nc)

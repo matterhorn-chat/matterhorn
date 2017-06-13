@@ -42,6 +42,9 @@ import           Markdown
 import           State
 import           Themes
 import           Types
+import           Types.Channels ( ChannelState(..), ChannelInfo(..), ClientChannel(..)
+                                , ccInfo, ccContents
+                                , cdCurrentState, cdName, cdType, cdHeader, cdMessages)
 import           Types.Posts
 import           Types.Messages
 import           Types.Users

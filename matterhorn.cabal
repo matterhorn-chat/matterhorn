@@ -54,6 +54,7 @@ executable matterhorn
                        Events.LeaveChannelConfirm
                        Events.DeleteChannelConfirm
                        Types
+                       Types.Channels
                        Types.Messages
                        Types.Users
                        Types.Posts

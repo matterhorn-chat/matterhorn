@@ -21,6 +21,7 @@ import           Network.Mattermost.Lenses
 import           Network.Mattermost.Exceptions
 
 import           Types
+import           Types.Channels
 import           Types.Posts
 import           Types.Messages
 

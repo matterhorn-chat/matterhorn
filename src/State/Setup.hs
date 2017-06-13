@@ -38,6 +38,7 @@ import           State.Common
 import           TeamSelect
 import           Themes
 import           Types
+import           Types.Channels
 import           Types.Users
 import           Zipper (Zipper)
 import qualified Zipper as Z
@@ -276,11 +277,7 @@ initializeState cr myTeam myUser = do
   chans <- mmGetChannels session myTeamId
 
   msgs <- fmap (HM.fromList . F.toList) $ forM (F.toList chans) $ \c -> do
-      let cChannel = ClientChannel
-                       { _ccContents = emptyChannelContents
-                       , _ccInfo     = initialChannelInfo c & cdCurrentState .~ state
-                       }
-
+      let cChannel = makeClientChannel c & ccInfo.cdCurrentState .~ state
           state = if c^.channelNameL == "town-square"
                   then ChanLoadPending
                   else ChanUnloaded

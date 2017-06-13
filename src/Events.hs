@@ -20,6 +20,7 @@ import           Connection
 import           State
 import           State.Common
 import           Types
+import           Types.Channels (ccInfo, cdHeader, cdHasMentions)
 
 import           Events.ShowHelp
 import           Events.Main
