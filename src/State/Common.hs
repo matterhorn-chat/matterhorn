@@ -144,7 +144,8 @@ newClientMessage ty msg = do
 addClientMessage :: ClientMessage -> MH ()
 addClientMessage msg = do
   cid <- use csCurrentChannelId
-  msgMap.ix cid.ccContents.cdMessages %= (addMessage $ clientMessageToMessage msg)
+  let addCMsg = ccContents.cdMessages %~ (addMessage $ clientMessageToMessage msg)
+  csChannels %= modifyChannelById cid addCMsg
 
 -- | Add a new 'ClientMessage' representing an error message to
 --   the current channel's message list
@@ -165,7 +166,8 @@ postErrorMessageIO err st = do
   now <- liftIO getCurrentTime
   let msg = ClientMessage err now Error
       cId = st ^. csCurrentChannelId
-  return $ st & msgMap.ix cId.ccContents.cdMessages %~ (addMessage $ clientMessageToMessage msg)
+      addEMsg = ccContents.cdMessages %~ (addMessage $ clientMessageToMessage msg)
+  return $ st & csChannels %~ modifyChannelById cId addEMsg
 
 numScrollbackPosts :: Int
 numScrollbackPosts = 100
@@ -175,7 +177,7 @@ asyncFetchScrollback :: AsyncPriority -> ChannelId -> MH ()
 asyncFetchScrollback prio cId = do
     session  <- use csSession
     myTeamId <- use (csMyTeam.teamIdL)
-    Just viewTime <- preuse (msgMap.ix cId.ccInfo.cdViewed)
+    Just viewTime <- preuse (csChannels.to (findChannelById cId)._Just.ccInfo.cdViewed)
     doAsyncWith prio $ do
         posts <- mmGetPosts session myTeamId cId 0 numScrollbackPosts
         return $ do

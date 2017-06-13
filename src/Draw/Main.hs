@@ -20,7 +20,6 @@ import           Data.Time.Format ( formatTime
 import           Data.Time.LocalTime ( TimeZone, utcToLocalTime
                                      , localTimeToUTC, localDay
                                      , LocalTime(..), midnight )
-import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
 import qualified Data.Foldable as F
 import           Data.List (intersperse)
@@ -42,9 +41,10 @@ import           Markdown
 import           State
 import           Themes
 import           Types
-import           Types.Channels ( ChannelState(..), ChannelInfo(..), ClientChannel(..)
+import           Types.Channels ( ChannelState(..)
                                 , ccInfo, ccContents
-                                , cdCurrentState, cdName, cdType, cdHeader, cdMessages)
+                                , cdCurrentState, cdName, cdType, cdHeader, cdMessages
+                                , findChannelById)
 import           Types.Posts
 import           Types.Messages
 import           Types.Users
@@ -308,7 +308,7 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
 
 getMessageListing :: ChannelId -> ChatState -> Messages
 getMessageListing cId st =
-    st ^. msgMap . ix cId . ccContents . cdMessages
+    (st ^. csChannels.to (findChannelById cId)) ^?! _Just . ccContents . cdMessages
 
 insertTransitions :: Text -> TimeZone -> Maybe UTCTime -> Messages -> Messages
 insertTransitions datefmt tz cutoff ms = foldr addMessage ms transitions
@@ -467,7 +467,7 @@ mainInterface st =
         UrlSelect -> renderUrlList st
         _         -> maybeSubdue $ renderCurrentChannelDisplay uSet cSet st
     uSet = Set.fromList $ (st^.csUsers.to allUsers) ^.. (each.uiName)
-    cSet = Set.fromList (_cdName <$> _ccInfo <$> (HM.elems $ st^.msgMap))
+    cSet = Set.fromList $ (st^.csChannels ^.. traversed.ccInfo.cdName)
 
     bottomBorder = case st^.csMode of
         MessageSelect -> messageSelectBottomBar st

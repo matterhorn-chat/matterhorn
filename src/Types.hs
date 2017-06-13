@@ -279,7 +279,7 @@ data ChatState = ChatState
   , _csNames                       :: MMNames
   , _csMe                          :: User
   , _csMyTeam                      :: Team
-  , _msgMap                        :: HashMap ChannelId ClientChannel
+  , _csChannels                    :: ClientChannels
   , _csPostMap                     :: HashMap PostId Message
   , _csUsers                       :: Users
   , _timeZone                      :: TimeZone
@@ -396,13 +396,13 @@ csCurrentChannelId = csFocus.focusL
 
 csCurrentChannel :: Lens' ChatState ClientChannel
 csCurrentChannel =
-  lens (\ st -> (st^.msgMap) HM.! (st^.csCurrentChannelId))
-       (\ st n -> st & msgMap %~ HM.insert (st^.csCurrentChannelId) n)
+  lens (\ st -> findChannelById (st^.csCurrentChannelId) (st^.csChannels) ^?! _Just)
+       (\ st n -> st & csChannels %~ addChannel (st^.csCurrentChannelId) n)
 
 csChannel :: ChannelId -> Lens' ChatState ClientChannel
 csChannel cId =
-  lens (\ st -> (st^.msgMap) HM.! cId)
-       (\ st n -> st & msgMap %~ HM.insert cId n)
+  lens (\ st -> findChannelById cId (st^.csChannels) ^?! _Just)
+       (\ st n -> st & csChannels %~ addChannel cId n)
 
 csUser :: UserId -> Lens' ChatState UserInfo
 csUser uId =

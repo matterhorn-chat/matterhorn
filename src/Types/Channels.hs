@@ -1,10 +1,14 @@
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveFoldable #-}
+{-# LANGUAGE DeriveTraversable #-}
 
 module Types.Channels
   ( ClientChannel(..)
   , ChannelContents(..)
   , ChannelInfo(..)
   , ChannelState(..)
+  , ClientChannels -- constructor remains internal
   -- * Lenses created for accessing ClientChannel fields
   , ccContents, ccInfo
   -- * Lenses created for accessing ChannelInfo fields
@@ -14,6 +18,10 @@ module Types.Channels
   , cdMessages
   -- * Creating ClientChannel objects
   , makeClientChannel
+  -- * Managing ClientChannel collections
+  , noChannels, addChannel, findChannelById, modifyChannelById
+  , filteredChannelIds
+  , filteredChannels
   -- * Creating ChannelInfo objects
   , channelInfoFromChannelWithData
   -- * Miscellaneous channel-related operations
@@ -22,11 +30,12 @@ module Types.Channels
   )
 where
 
+import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
 import           Data.Time.Clock (UTCTime)
 import           Lens.Micro.Platform
 import           Network.Mattermost.Lenses
-import           Network.Mattermost.Types ( Channel(..)
+import           Network.Mattermost.Types ( Channel(..), ChannelId
                                           , ChannelWithData(..)
                                           , Type(..)
                                           )
@@ -134,3 +143,45 @@ makeClientChannel nc = ClientChannel
 
 canLeaveChannel :: ChannelInfo -> Bool
 canLeaveChannel cInfo = not $ cInfo^.cdType `elem` [Direct, Group]
+
+-- ** Manage the collection of all Channels
+
+-- | Define a binary kinded type to allow derivation of functor.
+newtype AllMyChannels a = AllChannels { _ofChans :: HM.HashMap ChannelId a }
+    deriving (Functor, Foldable, Traversable)
+
+-- | Define the exported typename which universally binds the
+-- collection to the ChannelInfo type.
+type ClientChannels = AllMyChannels ClientChannel
+
+makeLenses ''AllMyChannels
+
+-- | Initial collection of Channels with no members
+noChannels :: ClientChannels
+noChannels = AllChannels HM.empty
+
+-- | Add a channel to the existing collection.
+addChannel :: ChannelId -> ClientChannel -> ClientChannels -> ClientChannels
+addChannel cId cinfo = AllChannels . HM.insert cId cinfo . _ofChans
+
+-- | Get the ChannelInfo information given the ChannelId
+findChannelById :: ChannelId -> ClientChannels -> Maybe ClientChannel
+findChannelById cId = HM.lookup cId . _ofChans
+
+-- | Extract a specific user from the collection and perform an
+-- endomorphism operation on it, then put it back into the collection.
+modifyChannelById :: ChannelId -> (ClientChannel -> ClientChannel)
+                  -> ClientChannels -> ClientChannels
+modifyChannelById cId f = ofChans.ix(cId) %~ f
+
+-- | Apply a filter to each ClientChannel and return a list of the
+-- ChannelId values for which the filter matched.
+filteredChannelIds :: (ClientChannel -> Bool) -> ClientChannels -> [ChannelId]
+filteredChannelIds f cc = fst <$> filter (f . snd) (HM.toList (cc^.ofChans))
+
+-- | Filter the ClientChannel collection, keeping only those for which
+-- the provided filter test function returns True.
+filteredChannels :: ((ChannelId, ClientChannel) -> Bool)
+                 -> ClientChannels -> ClientChannels
+filteredChannels f cc =
+    AllChannels . HM.fromList . filter f $ cc^.ofChans.to HM.toList

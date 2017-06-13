@@ -158,7 +158,7 @@ newState rs i u m tz hist = ChatState
   , _csMe                          = u
   , _csMyTeam                      = m
   , _csNames                       = emptyMMNames
-  , _msgMap                        = HM.empty
+  , _csChannels                    = noChannels
   , _csPostMap                     = HM.empty
   , _csUsers                       = noUsers
   , _timeZone                      = tz
@@ -276,12 +276,11 @@ initializeState cr myTeam myUser = do
 
   chans <- mmGetChannels session myTeamId
 
-  msgs <- fmap (HM.fromList . F.toList) $ forM (F.toList chans) $ \c -> do
+  msgs <- forM (F.toList chans) $ \c -> do
       let cChannel = makeClientChannel c & ccInfo.cdCurrentState .~ state
           state = if c^.channelNameL == "town-square"
                   then ChanLoadPending
                   else ChanUnloaded
-
       return (getId c, cChannel)
 
   teamUsers <- mmGetProfiles session myTeamId 0 10000
@@ -308,7 +307,7 @@ initializeState cr myTeam myUser = do
       chanZip = Z.findRight (== townSqId) (Z.fromList chanIds)
       st = newState cr chanZip myUser myTeam tz hist
              & csUsers %~ flip (foldr (uncurry addUser)) (fmap mkUser users)
-             & msgMap .~ msgs
+             & csChannels %~ flip (foldr (uncurry addChannel)) msgs
              & csNames .~ chanNames
 
   -- Fetch town-square asynchronously, but put it in the queue early.

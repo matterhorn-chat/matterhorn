@@ -97,15 +97,11 @@ refreshChannel chan = do
 -- state as dirty until we get a response
 refreshLoadedChannels :: MH ()
 refreshLoadedChannels = do
-  msgs <- use msgMap
-  sequence_
-    [ refreshChannel cId
-    | (cId, chan) <- HM.toList msgs
-    , chan^.ccInfo.cdCurrentState == ChanLoaded
-    ]
-  let upd ChanLoaded = ChanRefreshing
-      upd chanState  = chanState
-  msgMap.each.ccInfo.cdCurrentState %= upd
+  let isChanLoaded cc = cc^.ccInfo.cdCurrentState == ChanLoaded
+      setChanToRefreshing = ccInfo.cdCurrentState .~ ChanRefreshing
+  cIds <- use (csChannels.to (filteredChannelIds isChanLoaded))
+  csChannels %= flip (foldr ((flip modifyChannelById) setChanToRefreshing)) cIds
+  sequence_ $ refreshChannel <$> cIds
 
 -- * Message selection mode
 
@@ -344,7 +340,7 @@ removeChannelFromState cId = do
             -- Flush cnChans
             csNames.cnChans                     %= filter (/= cName)
             -- Update msgMap
-            msgMap                              .at cId .= Nothing
+            csChannels                          %= filteredChannels ((/=) cId . fst)
             -- Remove from focus zipper
             csFocus                             %= Z.filterZipper (/= cId)
 
@@ -369,7 +365,7 @@ fetchCurrentChannelMembers = do
 
 hasUnread :: ChatState -> ChannelId -> Bool
 hasUnread st cId = maybe False id $ do
-  chan <- st^.msgMap.at(cId)
+  chan <- findChannelById cId (st^.csChannels)
   u <- chan^.ccInfo.cdViewed
   let v = chan^.ccInfo.cdUpdated
   return (v > u)
@@ -377,10 +373,10 @@ hasUnread st cId = maybe False id $ do
 setLastViewedFor :: ChannelId -> MH ()
 setLastViewedFor cId = do
   now <- getNow
-  msgs <- use msgMap
-  if cId `HM.member` msgs
-    then csChannel(cId).ccInfo.cdViewed .= Just now
-    else handleChannelInvite cId
+  chan <- use (csChannels.to (findChannelById cId))
+  case chan of
+    Just _  -> csChannels %= modifyChannelById cId (ccInfo.cdViewed ?~ now)
+    Nothing -> handleChannelInvite cId
 
 updateViewed :: MH ()
 updateViewed = do
@@ -473,12 +469,15 @@ getNextNonDMChannel :: ChatState
                     -> (Zipper ChannelId -> Zipper ChannelId)
                     -> (Zipper ChannelId -> Zipper ChannelId)
 getNextNonDMChannel st shift z =
-    if (st^?msgMap.ix(Z.focus z).ccInfo.cdType) == Just Direct
+    if fType z == Direct
     then z
     else go (shift z)
   where go z'
-          | (st^?msgMap.ix(Z.focus z').ccInfo.cdType) /= Just Direct = z'
+          | fType z' /= Direct = z'
           | otherwise = go (shift z')
+        fType onz = st^.(csChannels.to
+                          (findChannelById (Z.focus onz))) ^?! _Just.ccInfo.cdType
+
 
 getNextUnreadChannel :: ChatState
                      -> (Zipper ChannelId -> Zipper ChannelId)
@@ -611,7 +610,7 @@ handleNewChannel name switch nc = do
   -- do nothing
   when (chType /= Direct) $
       csNames.cnChans %= (sort . (name:))
-  msgMap.at(getId nc) .= Just cChannel
+  csChannels %= addChannel (getId nc) cChannel
   -- we should figure out how to do this better: this adds it to the
   -- channel zipper in such a way that we don't ever change our focus
   -- to something else, which is kind of silly
@@ -658,7 +657,7 @@ addMessageToState :: Post -> MH ()
 addMessageToState new = do
   st <- use id
   asyncFetchAttachments new
-  case st^.msgMap.at (postChannelId new) of
+  case st^.csChannels.to (findChannelById (postChannelId new)) of
       Nothing ->
           -- When we join channels, sometimes we get the "user has
           -- been added to channel" message here BEFORE we get the
@@ -680,11 +679,12 @@ addMessageToState new = do
 
               doAddMessage = do
                 s <- use id
-                let chan = msgMap . ix cId
-                    msg' = clientPostToMessage s (toClientPost new (new^.postParentIdL))
+                let msg' = clientPostToMessage s
+                           (toClientPost new (new^.postParentIdL))
                 csPostMap.ix(postId new) .= msg'
-                chan.ccContents.cdMessages %= (addMessage msg')
-                chan.ccInfo.cdUpdated %= updateTime
+                csChannels %= modifyChannelById cId
+                  ((ccContents.cdMessages %~ addMessage msg') .
+                   (ccInfo.cdUpdated %~ updateTime))
                 when (not fromMe) $ maybeRingBell
                 ccId <- use csCurrentChannelId
                 if postChannelId new == ccId
@@ -733,7 +733,7 @@ clearNewMessageCutoff cId =
 
 getNewMessageCutoff :: ChannelId -> ChatState -> Maybe UTCTime
 getNewMessageCutoff cId st = do
-    cc <- st^.msgMap.at cId
+    cc <- st^.(csChannels.to (findChannelById cId))
     cc^.ccInfo.cdNewMessageCutoff
 
 execMMCommand :: T.Text -> T.Text -> MH ()
@@ -757,14 +757,11 @@ execMMCommand name rest = do
 fetchCurrentScrollback :: MH ()
 fetchCurrentScrollback = do
   cId <- use csCurrentChannelId
-  currentState <- preuse (msgMap.ix(cId).ccInfo.cdCurrentState)
-  didQueue <- case maybe False (== ChanUnloaded) currentState of
-      True -> do
-          asyncFetchScrollback Preempt cId
-          return True
-      False -> return False
-  csChannel(cId).ccInfo.cdCurrentState %=
-    if didQueue then const ChanLoadPending else id
+  chan <- use (csChannels.to (findChannelById cId))
+  let currentState = (chan ^?! _Just)^.ccInfo.cdCurrentState
+  when (currentState == ChanUnloaded) $
+       do asyncFetchScrollback Preempt cId
+          csChannel(cId).ccInfo.cdCurrentState .= ChanLoadPending
 
 mkChannelZipperList :: MMNames -> [ChannelId]
 mkChannelZipperList chanNames =
@@ -780,7 +777,7 @@ setChannelTopic st msg = do
         theTeamId = st^.csMyTeam.teamIdL
     doAsyncWithIO Normal st $ do
         void $ mmSetChannelHeader (st^.csSession) theTeamId chanId msg
-        return $ msgMap.at chanId.each.ccInfo.cdHeader .= msg
+        return $ csChannel(chanId).ccInfo.cdHeader .= msg
 
 channelHistoryForward :: MH ()
 channelHistoryForward = do
