@@ -604,19 +604,9 @@ handleNewChannel :: T.Text -> Bool -> Channel -> MH ()
 handleNewChannel name switch nc = do
   -- time to do a lot of state updating:
   -- create a new ClientChannel structure
-  now <- getNow
   let cChannel = ClientChannel
         { _ccContents = emptyChannelContents
-        , _ccInfo     = ChannelInfo
-                          { _cdViewed           = Nothing
-                          , _cdHasMentions      = False
-                          , _cdUpdated          = now
-                          , _cdName             = preferredChannelName nc
-                          , _cdHeader           = nc^.channelHeaderL
-                          , _cdType             = nc^.channelTypeL
-                          , _cdCurrentState     = ChanLoaded
-                          , _cdNewMessageCutoff = Nothing
-                          }
+        , _ccInfo     = initialChannelInfo nc
         }
   -- add it to the message map, and to the map so we can look it up by
   -- user name
