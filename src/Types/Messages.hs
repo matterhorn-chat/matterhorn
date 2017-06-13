@@ -39,7 +39,7 @@ import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Time.Clock (UTCTime)
 import           Lens.Micro.Platform
-import           Network.Mattermost
+import           Network.Mattermost.Types (PostId, Post)
 import           Types.Posts
 
 -- * Messages
