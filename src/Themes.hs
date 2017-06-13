@@ -209,7 +209,7 @@ darkAttrs =
   , (channelListHeaderAttr,            fg cyan)
   , (currentChannelNameAttr,           black `on` yellow `withStyle` bold)
   , (unreadChannelAttr,                black `on` cyan   `withStyle` bold)
-  , (mentionsChannelAttr,              black `on` red    `withStyle` bold)
+  , (mentionsChannelAttr,              black `on` brightMagenta `withStyle` bold)
   , (urlAttr,                          fg yellow)
   , (emailAttr,                        fg yellow)
   , (codeAttr,                         fg magenta)
