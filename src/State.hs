@@ -396,8 +396,7 @@ resetHistoryPosition = do
     csInputHistoryPosition.at cId .= Just Nothing
 
 updateStatus :: UserId -> T.Text -> MH ()
-updateStatus uId t =
-  usrMap.ix(uId).uiStatus .= statusFromText t
+updateStatus uId t = csUsers %= modifyUserById uId (uiStatus .~ statusFromText t)
 
 clearEditor :: MH ()
 clearEditor = csCmdLine %= applyEdit clearZipper
@@ -723,7 +722,7 @@ addMessageToState new = do
           case cp^.cpUser of
               Nothing -> doHandleNewMessage
               Just uId ->
-                  case st^.usrMap.at uId of
+                  case st^.csUsers.to (findUserById uId) of
                       Just _ -> doHandleNewMessage
                       Nothing -> do
                           handleNewUser uId
@@ -1072,5 +1071,5 @@ handleNewUser newUserId = do
 
         return $ do
             -- Update the name map and the list of known users
-            usrMap . at newUserId .= Just uInfo
+            csUsers %= addUser newUserId uInfo
             csNames . cnUsers %= (sort . ((newUser^.userUsernameL):))

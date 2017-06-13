@@ -12,7 +12,6 @@ import           Control.Arrow
 import           Control.Monad (void)
 import           Control.Monad.IO.Class (liftIO)
 import qualified Data.ByteString as BS
-import qualified Data.HashMap.Strict as HM
 import           Data.Monoid ((<>))
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -81,10 +80,9 @@ toggleMessagePreview = csShowMessagePreview %= not
 addUserToCurrentChannel :: T.Text -> MH ()
 addUserToCurrentChannel uname = do
     -- First: is this a valid username?
-    usrs <- use usrMap
-    let results = filter ((== uname) . _uiName . snd) $ HM.toList usrs
-    case results of
-        [(uid, _)] -> do
+    usrs <- use csUsers
+    case findUserByName usrs uname of
+        Just (uid, _) -> do
             cId <- use csCurrentChannelId
             session <- use csSession
             myTeamId <- use (csMyTeam.teamIdL)

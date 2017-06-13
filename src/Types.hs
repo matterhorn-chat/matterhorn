@@ -28,8 +28,8 @@ import           Data.List (partition, sort)
 import           Data.Maybe
 import           Data.Monoid
 import qualified Graphics.Vty as Vty
-import           Lens.Micro.Platform (at, makeLenses, lens, (&), (^.), (^?), (%~), (.~),
-                                      ix, to, SimpleGetter)
+import           Lens.Micro.Platform ( at, makeLenses, lens, (&), (^.), (%~), (.~), (^?!)
+                                     , to, SimpleGetter, _Just)
 import           Network.Mattermost
 import           Network.Mattermost.Exceptions
 import           Network.Mattermost.Lenses
@@ -372,7 +372,7 @@ data ChatState = ChatState
   , _csMyTeam                      :: Team
   , _msgMap                        :: HashMap ChannelId ClientChannel
   , _csPostMap                     :: HashMap PostId Message
-  , _usrMap                        :: HashMap UserId UserInfo
+  , _csUsers                       :: Users
   , _timeZone                      :: TimeZone
   , _csEditState                   :: ChatEditState
   , _csMode                        :: Mode
@@ -497,8 +497,8 @@ csChannel cId =
 
 csUser :: UserId -> Lens' ChatState UserInfo
 csUser uId =
-  lens (\ st -> (st^.usrMap) HM.! uId)
-       (\ st n -> st & usrMap %~ HM.insert uId n)
+  lens (\ st -> findUserById uId (st^.csUsers) ^?! _Just)
+       (\ st n -> st & csUsers %~ addUser uId n)
 
 -- ** Interim lenses for backwards compat
 
@@ -535,7 +535,7 @@ getMessageForPostId st pId =
         Just m -> ParentLoaded pId m
 
 getUsernameForUserId :: ChatState -> UserId -> Maybe T.Text
-getUsernameForUserId st uId = st^.usrMap ^? ix uId.uiName
+getUsernameForUserId st uId = _uiName <$> findUserById uId (st^.csUsers)
 
 clientPostToMessage :: ChatState -> ClientPost -> Message
 clientPostToMessage st cp = Message
@@ -613,6 +613,6 @@ sortedUserList st = sort yes ++ sort no
         (yes, no) = partition hasUnread (userList st)
 
 userList :: ChatState -> [UserInfo]
-userList st = filter showUser (HM.elems(st^.usrMap))
+userList st = filter showUser $ allUsers (st^.csUsers)
   where showUser u = not (isSelf u) && (u^.uiInTeam)
         isSelf u = (st^.csMe.userIdL) == (u^.uiId)

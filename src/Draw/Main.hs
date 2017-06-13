@@ -23,10 +23,9 @@ import           Data.Time.LocalTime ( TimeZone, utcToLocalTime
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
 import qualified Data.Foldable as F
-import           Data.HashMap.Strict ( HashMap )
 import           Data.List (intersperse)
 import qualified Data.Map.Strict as Map
-import           Data.Maybe (listToMaybe, maybeToList, catMaybes, isJust)
+import           Data.Maybe (catMaybes, isJust)
 import           Data.Monoid ((<>))
 import qualified Data.Set as Set
 import           Data.Text (Text)
@@ -41,7 +40,6 @@ import qualified Graphics.Vty as Vty
 
 import           Markdown
 import           State
-import           State.Common
 import           Themes
 import           Types
 import           Types.Posts
@@ -179,7 +177,7 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
              case T.null topicStr of
                  True -> case chnType of
                    Direct ->
-                     case findUserByDMChannelName (st^.usrMap)
+                     case findUserByDMChannelName (st^.csUsers)
                                                   chnName
                                                   (st^.csMe^.userIdL) of
                        Nothing -> txt $ mkChannelName (chan^.ccInfo)
@@ -336,17 +334,6 @@ insertTransitions datefmt tz cutoff ms = foldr addMessage ms transitions
                              Nothing mempty Nothing
 
 
-findUserByDMChannelName :: HashMap UserId UserInfo
-                        -> T.Text -- ^ the dm channel name
-                        -> UserId -- ^ me
-                        -> Maybe UserInfo -- ^ you
-findUserByDMChannelName userMap dmchan me = listToMaybe
-  [ user
-  | u <- HM.keys userMap
-  , getDMChannelName me u == dmchan
-  , user <- maybeToList (HM.lookup u userMap)
-  ]
-
 renderChannelSelect :: ChatState -> Widget Name
 renderChannelSelect st =
     withDefAttr channelSelectPromptAttr $
@@ -476,7 +463,7 @@ mainInterface st =
     mainDisplay = case st^.csMode of
         UrlSelect -> renderUrlList st
         _         -> maybeSubdue $ renderCurrentChannelDisplay uSet cSet st
-    uSet = Set.fromList (map _uiName (HM.elems (st^.usrMap)))
+    uSet = Set.fromList $ (st^.csUsers.to allUsers) ^.. (each.uiName)
     cSet = Set.fromList (_cdName <$> _ccInfo <$> (HM.elems $ st^.msgMap))
 
     bottomBorder = case st^.csMode of

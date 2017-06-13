@@ -8,7 +8,6 @@ import           Control.Exception (try)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
-import           Data.List (sort)
 import qualified Data.Map.Strict as Map
 import           Data.Monoid ((<>))
 import qualified Data.Sequence as Seq
@@ -85,12 +84,6 @@ fromPosts ps = do
   F.forM_ (ps^.postsPostsL) $
     asyncFetchAttachments
   return (ChannelContents msgs)
-
-getDMChannelName :: UserId -> UserId -> T.Text
-getDMChannelName me you = cname
-  where
-  [loUser, hiUser] = sort $ idString <$> [ you, me ]
-  cname = loUser <> "__" <> hiUser
 
 messagesFromPosts :: Posts -> MH Messages
 messagesFromPosts p = do -- (msgs, st')

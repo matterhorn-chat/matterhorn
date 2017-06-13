@@ -1,8 +1,10 @@
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE DeriveFunctor #-}
 
 module Types.Users
   ( UserInfo(..)
   , UserStatus(..)
+  , Users   -- constructor remains internal
   -- * Lenses created for accessing UserInfo fields
   , uiName, uiId, uiStatus, uiInTeam, uiNickName, uiFirstName, uiLastName, uiEmail
   -- * Various operations on UserInfo
@@ -10,12 +12,22 @@ module Types.Users
   , userInfoFromUser
   -- * Miscellaneous
   , statusFromText
+  , findUserById
+  , findUserByName
+  , findUserByDMChannelName
+  , noUsers, addUser, allUsers
+  , modifyUserById
+  , getDMChannelName
   )
 where
 
+import qualified Data.HashMap.Strict as HM
+import           Data.List (sort)
+import           Data.Maybe (listToMaybe, maybeToList)
+import           Data.Monoid ((<>))
 import qualified Data.Text as T
 import           Lens.Micro.Platform
-import           Network.Mattermost.Types (UserId, User(..))
+import           Network.Mattermost.Types (UserId, User(..), idString)
 
 -- * 'UserInfo' Values
 
@@ -75,3 +87,61 @@ instance Ord UserInfo where
       LT
     | otherwise =
       (u1^.uiName) `compare` (u2^.uiName)
+
+-- ** Manage the collection of all Users
+
+-- | Define a binary kinded type to allow derivation of functor.
+newtype AllMyUsers a = AllUsers { _ofUsers :: HM.HashMap UserId a }
+    deriving Functor
+
+-- | Define the exported typename which universally binds the
+-- collection to the UserInfo type.
+type Users = AllMyUsers UserInfo
+
+makeLenses ''AllMyUsers
+
+-- | Initial collection of Users with no members
+noUsers :: Users
+noUsers = AllUsers HM.empty
+
+-- | Add a member to the existing collection of Users
+addUser :: UserId -> UserInfo -> Users -> Users
+addUser uId userinfo = AllUsers . HM.insert uId userinfo . _ofUsers
+
+-- | Get a list of all known users
+allUsers :: Users -> [UserInfo]
+allUsers = HM.elems . _ofUsers
+
+-- | Get the User information given the UserId
+findUserById :: UserId -> Users -> Maybe UserInfo
+findUserById uId = HM.lookup uId . _ofUsers
+
+-- | Get the User information given the user's name.  This is an exact
+-- match on the username field, not necessarly the presented name.
+findUserByName :: Users -> T.Text -> Maybe (UserId, UserInfo)
+findUserByName allusers name =
+  case filter ((== name) . _uiName . snd) $ HM.toList $ _ofUsers allusers of
+    (usr : []) -> Just usr
+    _ -> Nothing
+
+-- | Extract a specific user from the collection and perform an
+-- endomorphism operation on it, then put it back into the collection.
+modifyUserById :: UserId -> (UserInfo -> UserInfo) -> Users -> Users
+modifyUserById uId f = ofUsers.ix(uId) %~ f
+
+getDMChannelName :: UserId -> UserId -> T.Text
+getDMChannelName me you = cname
+  where
+  [loUser, hiUser] = sort $ idString <$> [ you, me ]
+  cname = loUser <> "__" <> hiUser
+
+findUserByDMChannelName :: Users
+                        -> T.Text -- ^ the dm channel name
+                        -> UserId -- ^ me
+                        -> Maybe UserInfo -- ^ you
+findUserByDMChannelName users dmchan me = listToMaybe
+  [ user
+  | u <- HM.keys $ _ofUsers users
+  , getDMChannelName me u == dmchan
+  , user <- maybeToList (HM.lookup u $ _ofUsers users)
+  ]

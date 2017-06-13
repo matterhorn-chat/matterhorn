@@ -1,3 +1,5 @@
+{-# LANGUAGE TypeFamilies #-}
+
 module State.Setup where
 
 import           Prelude ()
@@ -40,14 +42,13 @@ import           Types.Users
 import           Zipper (Zipper)
 import qualified Zipper as Z
 
-fetchUserStatuses :: Session -> IO (MH ())
-fetchUserStatuses session = do
+updateUserStatuses :: Session -> IO (MH ())
+updateUserStatuses session = do
   statusMap <- mmGetStatuses session
   return $ do
-    let updateUser u = u & uiStatus .~ (case HM.lookup (u^.uiId) statusMap of
-                                          Nothing -> Offline
-                                          Just t  -> statusFromText t)
-    usrMap.each %= updateUser
+    let setStatus u = u & uiStatus .~ (newsts u)
+        newsts u = (statusMap^.at(u^.uiId) & _Just %~ statusFromText) ^. non Offline
+    csUsers %= fmap setStatus
 
 userRefresh :: Session -> RequestChan -> IO ()
 userRefresh session requestChan = void $ forkIO $ forever refresh
@@ -55,7 +56,7 @@ userRefresh session requestChan = void $ forkIO $ forever refresh
           let seconds = (* (1000 * 1000))
           threadDelay (seconds 30)
           STM.atomically $ STM.writeTChan requestChan $ do
-            rs <- try $ fetchUserStatuses session
+            rs <- try $ updateUserStatuses session
             case rs of
               Left (_ :: SomeException) -> return (return ())
               Right upd -> return upd
@@ -158,7 +159,7 @@ newState rs i u m tz hist = ChatState
   , _csNames                       = emptyMMNames
   , _msgMap                        = HM.empty
   , _csPostMap                     = HM.empty
-  , _usrMap                        = HM.empty
+  , _csUsers                       = noUsers
   , _timeZone                      = tz
   , _csEditState                   = emptyEditState hist
   , _csMode                        = Main
@@ -268,7 +269,7 @@ initializeState cr myTeam myUser = do
   let ChatResources session _ requestChan _ _ _ _ _ = cr
   let myTeamId = getId myTeam
 
-  STM.atomically $ STM.writeTChan requestChan $ fetchUserStatuses session
+  STM.atomically $ STM.writeTChan requestChan $ updateUserStatuses session
 
   userRefresh session requestChan
 
@@ -288,7 +289,7 @@ initializeState cr myTeam myUser = do
 
   teamUsers <- mmGetProfiles session myTeamId 0 10000
   users <- loadAllUsers session
-  let mkUser u = userInfoFromUser u (HM.member (u^.userIdL) teamUsers)
+  let mkUser u = (u^.userIdL, userInfoFromUser u (HM.member (u^.userIdL) teamUsers))
   tz    <- getCurrentTimeZone
   hist  <- do
       result <- readHistory
@@ -309,7 +310,7 @@ initializeState cr myTeam myUser = do
                 , c <- maybeToList (HM.lookup i (chanNames ^. cnToChanId)) ]
       chanZip = Z.findRight (== townSqId) (Z.fromList chanIds)
       st = newState cr chanZip myUser myTeam tz hist
-             & usrMap .~ fmap mkUser users
+             & csUsers %~ flip (foldr (uncurry addUser)) (fmap mkUser users)
              & msgMap .~ msgs
              & csNames .~ chanNames
 
