@@ -46,6 +46,7 @@ import           Themes
 import           Types
 import           Types.Posts
 import           Types.Messages
+import           Types.Users
 import           Draw.ChannelList (renderChannelList)
 import           Draw.Util
 

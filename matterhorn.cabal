@@ -55,6 +55,7 @@ executable matterhorn
                        Events.DeleteChannelConfirm
                        Types
                        Types.Messages
+                       Types.Users
                        Types.Posts
                        FilePaths
                        TeamSelect

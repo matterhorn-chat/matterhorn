@@ -36,6 +36,7 @@ import           State.Common
 import           TeamSelect
 import           Themes
 import           Types
+import           Types.Users
 import           Zipper (Zipper)
 import qualified Zipper as Z
 

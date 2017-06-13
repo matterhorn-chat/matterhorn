@@ -49,6 +49,7 @@ import           FilePaths
 import           Types
 import           Types.Posts
 import           Types.Messages
+import           Types.Users
 import           InputHistory
 import           Themes
 import           Zipper (Zipper)

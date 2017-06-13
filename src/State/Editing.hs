@@ -31,6 +31,7 @@ import           Network.Mattermost.Lenses
 
 import           Config
 import           Types
+import           Types.Users
 
 import           State.Common
 
