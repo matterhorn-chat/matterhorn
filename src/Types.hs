@@ -28,8 +28,8 @@ import           Data.List (partition, sort)
 import           Data.Maybe
 import           Data.Monoid
 import qualified Graphics.Vty as Vty
-import           Lens.Micro.Platform (at, makeLenses, lens, (&), (^.), (^?), (%~), (.~),
-                                      ix, to, SimpleGetter)
+import           Lens.Micro.Platform ( at, makeLenses, lens, (&), (^.), (%~), (.~), (^?!)
+                                     , to, SimpleGetter, _Just)
 import           Network.Mattermost
 import           Network.Mattermost.Exceptions
 import           Network.Mattermost.Lenses
@@ -42,9 +42,10 @@ import           Zipper (Zipper, focusL)
 
 import           InputHistory
 
+import           Types.Channels
 import           Types.Posts
 import           Types.Messages
-
+import           Types.Users
 
 -- * Configuration
 
@@ -151,98 +152,12 @@ data LinkChoice = LinkChoice
 
 makeLenses ''LinkChoice
 
--- * Channel representations
-
--- | A 'ClientChannel' contains both the message
---   listing and the metadata about a channel
-data ClientChannel = ClientChannel
-  { _ccContents :: ChannelContents
-    -- ^ A list of 'Message's in the channel
-  , _ccInfo     :: ChannelInfo
-    -- ^ The 'ChannelInfo' for the channel
-  }
-
 -- Sigils
 normalChannelSigil :: Char
 normalChannelSigil = '~'
 
 userSigil :: Char
 userSigil = '@'
-
--- Get a channel's name, depending on its type
-preferredChannelName :: Channel -> T.Text
-preferredChannelName ch
-    | channelType ch == Group = channelDisplayName ch
-    | otherwise = channelName ch
-
-initialChannelInfo :: Channel -> ChannelInfo
-initialChannelInfo chan =
-    let updated  = chan ^. channelLastPostAtL
-    in ChannelInfo { _cdViewed           = Nothing
-                   , _cdHasMentions      = False
-                   , _cdUpdated          = updated
-                   , _cdName             = preferredChannelName chan
-                   , _cdHeader           = chan^.channelHeaderL
-                   , _cdType             = chan^.channelTypeL
-                   , _cdCurrentState     = ChanUnloaded
-                   , _cdNewMessageCutoff = Nothing
-                   }
-
-channelInfoFromChannelWithData :: ChannelWithData -> ChannelInfo -> ChannelInfo
-channelInfoFromChannelWithData (ChannelWithData chan chanData) ci =
-    let viewed   = chanData ^. channelDataLastViewedAtL
-        updated  = chan ^. channelLastPostAtL
-    in ci { _cdViewed           = Just viewed
-          , _cdUpdated          = updated
-          , _cdName             = preferredChannelName chan
-          , _cdHeader           = (chan^.channelHeaderL)
-          , _cdType             = (chan^.channelTypeL)
-          }
-
--- | The 'ChannelContents' is a wrapper for a list of
---   'Message' values
-data ChannelContents = ChannelContents
-  { _cdMessages :: Messages
-  }
-
--- | An initial empty 'ChannelContents' value
-emptyChannelContents :: ChannelContents
-emptyChannelContents = ChannelContents
-  { _cdMessages = noMessages
-  }
-
--- | The 'ChannelState' represents our internal state
---   of the channel with respect to our knowledge (or
---   lack thereof) about the server's information
---   about the channel.
-data ChannelState
-  = ChanUnloaded
-  | ChanLoaded
-  | ChanLoadPending
-  | ChanRefreshing
-    deriving (Eq, Show)
-
--- | The 'ChannelInfo' record represents metadata
---   about a channel
-data ChannelInfo = ChannelInfo
-  { _cdViewed           :: Maybe UTCTime
-    -- ^ The last time we looked at a channel
-  , _cdHasMentions      :: Bool
-    -- ^ True if there are unread user mentions
-  , _cdUpdated          :: UTCTime
-    -- ^ The last time a message showed up in the channel
-  , _cdName             :: T.Text
-    -- ^ The name of the channel
-  , _cdHeader           :: T.Text
-    -- ^ The header text of a channel
-  , _cdType             :: Type
-    -- ^ The type of a channel: public, private, or DM
-  , _cdCurrentState     :: ChannelState
-    -- ^ The current state of the channel
-  , _cdNewMessageCutoff :: Maybe UTCTime
-    -- ^ The last time we looked at the new messages in
-    --   this channel, if ever
-  }
 
 -- ** Channel-matching types
 
@@ -261,71 +176,6 @@ data ChannelSelectPattern = CSP MatchType T.Text
 
 data MatchType = Prefix | Suffix | Infix | Equal deriving (Eq, Show)
 
-
--- ** Channel-related Lenses
-
-makeLenses ''ChannelContents
-makeLenses ''ChannelInfo
-makeLenses ''ClientChannel
-
--- * 'UserInfo' Values
-
--- | A 'UserInfo' value represents everything we need to know at
---   runtime about a user
-data UserInfo = UserInfo
-  { _uiName      :: T.Text
-  , _uiId        :: UserId
-  , _uiStatus    :: UserStatus
-  , _uiInTeam    :: Bool
-  , _uiNickName  :: Maybe T.Text
-  , _uiFirstName :: T.Text
-  , _uiLastName  :: T.Text
-  , _uiEmail     :: T.Text
-  } deriving (Eq, Show)
-
--- | Create a 'UserInfo' value from a Mattermost 'User' value
-userInfoFromUser :: User -> Bool -> UserInfo
-userInfoFromUser up inTeam = UserInfo
-  { _uiName      = userUsername up
-  , _uiId        = userId up
-  , _uiStatus    = Offline
-  , _uiInTeam    = inTeam
-  , _uiNickName  = if T.null (userNickname up)
-                   then Nothing
-                   else Just $ userNickname up
-  , _uiFirstName = userFirstName up
-  , _uiLastName  = userLastName up
-  , _uiEmail     = userEmail up
-  }
-
--- | The 'UserStatus' value represents possible current status for
---   a user
-data UserStatus
-  = Online
-  | Away
-  | Offline
-  | Other T.Text
-    deriving (Eq, Show)
-
-statusFromText :: T.Text -> UserStatus
-statusFromText t = case t of
-  "online"  -> Online
-  "offline" -> Offline
-  "away"    -> Away
-  _         -> Other t
-
--- ** 'UserInfo' lenses
-
-makeLenses ''UserInfo
-
-instance Ord UserInfo where
-  u1 `compare` u2
-    | u1^.uiStatus == Offline && u2^.uiStatus /= Offline =
-      GT
-    | u1^.uiStatus /= Offline && u2^.uiStatus == Offline =
-      LT
-    | otherwise =
-      (u1^.uiName) `compare` (u2^.uiName)
 
 -- * Application State Values
 
@@ -429,9 +279,9 @@ data ChatState = ChatState
   , _csNames                       :: MMNames
   , _csMe                          :: User
   , _csMyTeam                      :: Team
-  , _msgMap                        :: HashMap ChannelId ClientChannel
+  , _csChannels                    :: ClientChannels
   , _csPostMap                     :: HashMap PostId Message
-  , _usrMap                        :: HashMap UserId UserInfo
+  , _csUsers                       :: Users
   , _timeZone                      :: TimeZone
   , _csEditState                   :: ChatEditState
   , _csMode                        :: Mode
@@ -546,18 +396,18 @@ csCurrentChannelId = csFocus.focusL
 
 csCurrentChannel :: Lens' ChatState ClientChannel
 csCurrentChannel =
-  lens (\ st -> (st^.msgMap) HM.! (st^.csCurrentChannelId))
-       (\ st n -> st & msgMap %~ HM.insert (st^.csCurrentChannelId) n)
+  lens (\ st -> findChannelById (st^.csCurrentChannelId) (st^.csChannels) ^?! _Just)
+       (\ st n -> st & csChannels %~ addChannel (st^.csCurrentChannelId) n)
 
 csChannel :: ChannelId -> Lens' ChatState ClientChannel
 csChannel cId =
-  lens (\ st -> (st^.msgMap) HM.! cId)
-       (\ st n -> st & msgMap %~ HM.insert cId n)
+  lens (\ st -> findChannelById cId (st^.csChannels) ^?! _Just)
+       (\ st n -> st & csChannels %~ addChannel cId n)
 
 csUser :: UserId -> Lens' ChatState UserInfo
 csUser uId =
-  lens (\ st -> (st^.usrMap) HM.! uId)
-       (\ st n -> st & usrMap %~ HM.insert uId n)
+  lens (\ st -> findUserById uId (st^.csUsers) ^?! _Just)
+       (\ st n -> st & csUsers %~ addUser uId n)
 
 -- ** Interim lenses for backwards compat
 
@@ -594,7 +444,7 @@ getMessageForPostId st pId =
         Just m -> ParentLoaded pId m
 
 getUsernameForUserId :: ChatState -> UserId -> Maybe T.Text
-getUsernameForUserId st uId = st^.usrMap ^? ix uId.uiName
+getUsernameForUserId st uId = _uiName <$> findUserById uId (st^.csUsers)
 
 clientPostToMessage :: ChatState -> ClientPost -> Message
 clientPostToMessage st cp = Message
@@ -672,6 +522,6 @@ sortedUserList st = sort yes ++ sort no
         (yes, no) = partition hasUnread (userList st)
 
 userList :: ChatState -> [UserInfo]
-userList st = filter showUser (HM.elems(st^.usrMap))
+userList st = filter showUser $ allUsers (st^.csUsers)
   where showUser u = not (isSelf u) && (u^.uiInTeam)
         isSelf u = (st^.csMe.userIdL) == (u^.uiId)

@@ -8,7 +8,6 @@ import           Control.Exception (try)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
-import           Data.List (sort)
 import qualified Data.Map.Strict as Map
 import           Data.Monoid ((<>))
 import qualified Data.Sequence as Seq
@@ -22,6 +21,7 @@ import           Network.Mattermost.Lenses
 import           Network.Mattermost.Exceptions
 
 import           Types
+import           Types.Channels
 import           Types.Posts
 import           Types.Messages
 
@@ -86,12 +86,6 @@ fromPosts ps = do
     asyncFetchAttachments
   return (ChannelContents msgs)
 
-getDMChannelName :: UserId -> UserId -> T.Text
-getDMChannelName me you = cname
-  where
-  [loUser, hiUser] = sort $ idString <$> [ you, me ]
-  cname = loUser <> "__" <> hiUser
-
 messagesFromPosts :: Posts -> MH Messages
 messagesFromPosts p = do -- (msgs, st')
   st <- use id
@@ -150,7 +144,8 @@ newClientMessage ty msg = do
 addClientMessage :: ClientMessage -> MH ()
 addClientMessage msg = do
   cid <- use csCurrentChannelId
-  msgMap.ix cid.ccContents.cdMessages %= (addMessage $ clientMessageToMessage msg)
+  let addCMsg = ccContents.cdMessages %~ (addMessage $ clientMessageToMessage msg)
+  csChannels %= modifyChannelById cid addCMsg
 
 -- | Add a new 'ClientMessage' representing an error message to
 --   the current channel's message list
@@ -171,7 +166,8 @@ postErrorMessageIO err st = do
   now <- liftIO getCurrentTime
   let msg = ClientMessage err now Error
       cId = st ^. csCurrentChannelId
-  return $ st & msgMap.ix cId.ccContents.cdMessages %~ (addMessage $ clientMessageToMessage msg)
+      addEMsg = ccContents.cdMessages %~ (addMessage $ clientMessageToMessage msg)
+  return $ st & csChannels %~ modifyChannelById cId addEMsg
 
 numScrollbackPosts :: Int
 numScrollbackPosts = 100
@@ -181,7 +177,7 @@ asyncFetchScrollback :: AsyncPriority -> ChannelId -> MH ()
 asyncFetchScrollback prio cId = do
     session  <- use csSession
     myTeamId <- use (csMyTeam.teamIdL)
-    Just viewTime <- preuse (msgMap.ix cId.ccInfo.cdViewed)
+    Just viewTime <- preuse (csChannels.to (findChannelById cId)._Just.ccInfo.cdViewed)
     doAsyncWith prio $ do
         posts <- mmGetPosts session myTeamId cId 0 numScrollbackPosts
         return $ do

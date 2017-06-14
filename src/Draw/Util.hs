@@ -12,6 +12,8 @@ import Lens.Micro.Platform
 import Network.Mattermost
 
 import Types
+import Types.Channels
+import Types.Users
 import Themes
 
 defaultTimeFormat :: T.Text
