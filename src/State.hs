@@ -918,7 +918,7 @@ stopUrlSelect = csMode .= Main
 findUrls :: ClientChannel -> [LinkChoice]
 findUrls chan =
     let msgs = chan^.ccContents.cdMessages
-    in removeDuplicates $ concat $ F.toList $ F.toList <$> Seq.reverse <$> msgURLs <$> msgs
+    in removeDuplicates $ concat $ F.toList $ F.toList <$> msgURLs <$> msgs
 
 removeDuplicates :: [LinkChoice] -> [LinkChoice]
 removeDuplicates = snd . go Set.empty
