@@ -27,7 +27,6 @@ import           Lens.Micro.Platform
 import           State
 import           Themes
 import           Types
-import           Types.Channels
 import           Types.Users
 import           Types.Channels
 
