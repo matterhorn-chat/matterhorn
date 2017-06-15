@@ -3,7 +3,7 @@ Status](https://travis-ci.org/matterhorn-chat/matterhorn.svg?branch=master)](htt
 
 ![](logo.png)
 
-Matterhorn is a terminal client for the MatterMost chat system.
+Matterhorn is a terminal client for the Mattermost chat system.
 
 ![](screenshots/screenshot-00.png)
 
@@ -26,8 +26,8 @@ commands (where `VERSION` and `PLATFORM` match your setup):
 When you run Matterhorn you'll be prompted for your server information.
 At present `matterhorn` supports only username/password authentication.
 
-Note: Version `ABBCC.X.Y` matches MatterMost server version `A.BB.CC`.
-For example, if your MatterMost server version is `3.6.0` then you
+Note: Version `ABBCC.X.Y` matches Mattermost server version `A.BB.CC`.
+For example, if your Mattermost server version is `3.6.0` then you
 would download matterhorn version `30600.2.4`. See [Our Versioning
 Scheme](#our-versioning-scheme) for details.
 
@@ -141,8 +141,8 @@ $ cabal build
 # Our Versioning Scheme
 
 Matterhorn version strings will be of the form `ABBCC.X.Y` where ABBCC
-corresponds to the MatterMost server version supported by the release.
-For example, if a release supports MatterMost server version 1.2.3, the
+corresponds to the Mattermost server version supported by the release.
+For example, if a release supports Mattermost server version 1.2.3, the
 ABBCC portion of the `matterhorn` version will be `10203`. The `X.Y`
 portion of the version corresponds to our own version namespace for the
 package. If the server version changes, `X.Y` SHOULD be `0.0`. Otherwise
