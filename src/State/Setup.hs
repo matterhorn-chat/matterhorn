@@ -49,7 +49,7 @@ updateUserStatuses session = do
   return $ do
     let setStatus u = u & uiStatus .~ (newsts u)
         newsts u = (statusMap^.at(u^.uiId) & _Just %~ statusFromText) ^. non Offline
-    csUsers %= fmap setStatus
+    csUsers . mapped %= setStatus
 
 userRefresh :: Session -> RequestChan -> IO ()
 userRefresh session requestChan = void $ forkIO $ forever refresh
