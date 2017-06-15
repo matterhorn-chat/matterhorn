@@ -7,9 +7,9 @@ Before beginning, the person making the release should have access to
 the platforms on which binary distributions will be built.
 
 1. Set the `matterhorn` package version. The version string must be of
-   the form `ABBCC.X.Y` where ABBCC corresponds to the MatterMost
+   the form `ABBCC.X.Y` where ABBCC corresponds to the Mattermost
    server version supported by the release. For example, if the release
-   supports MatterMost server version 1.2.3, the ABBCC portion of the
+   supports Mattermost server version 1.2.3, the ABBCC portion of the
    `matterhorn` version should be `10203`. The `X.Y` portion of the
    version corresponds to our own version namespace for the package.
    If the server version changes, `X.Y` SHOULD be `0.0`. Otherwise the

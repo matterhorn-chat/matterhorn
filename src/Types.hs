@@ -123,7 +123,7 @@ data AuthenticationException =
     deriving (Show)
 
 -- | Our 'ConnectionInfo' contains exactly as much information as is
--- necessary to start a connection with a MatterMost server
+-- necessary to start a connection with a Mattermost server
 data ConnectionInfo =
     ConnectionInfo { ciHostname :: T.Text
                    , ciPort     :: Int

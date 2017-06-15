@@ -138,7 +138,7 @@ handleWSEvent we = do
       return ()
     WMLeaveTeam -> -- XXX: How do we deal with this one?
       return ()
-    -- An 'ephemeral message' is just MatterMost's version
+    -- An 'ephemeral message' is just Mattermost's version
     -- of our 'client message'. This can be a little bit
     -- wacky, e.g. if the user types '/shortcuts' in the
     -- browser, we'll get an ephemeral message even in

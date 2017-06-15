@@ -25,7 +25,7 @@ import           Types.Channels
 import           Types.Posts
 import           Types.Messages
 
--- * MatterMost API
+-- * Mattermost API
 
 -- | Try to run a computation, posting an informative error
 --   message if it fails with a 'MattermostServerError'.

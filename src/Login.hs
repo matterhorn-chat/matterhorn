@@ -137,7 +137,7 @@ credentialsForm :: State -> Widget Name
 credentialsForm st =
     hCenter $ hLimit uiWidth $ vLimit 15 $
     border $
-    vBox [ renderText "Please enter your MatterMost credentials to log in."
+    vBox [ renderText "Please enter your Mattermost credentials to log in."
          , padTop (Pad 1) $
            txt "Hostname: " <+> renderEditor (st^.focus == Hostname) (st^.hostnameEdit)
          , if validHostname st
