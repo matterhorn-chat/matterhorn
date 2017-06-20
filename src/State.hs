@@ -11,7 +11,7 @@ import           Control.Exception (SomeException, catch, try)
 import           Control.Monad.IO.Class (liftIO)
 import qualified Control.Concurrent.STM as STM
 import           Data.Char (isAlphaNum)
-import           Brick.Main (getVtyHandle, viewportScroll, vScrollToBeginning, vScrollBy)
+import           Brick.Main (getVtyHandle, viewportScroll, vScrollToBeginning, vScrollBy, vScrollToEnd)
 import           Brick.Widgets.Edit (applyEdit)
 import           Control.Monad (when, void)
 import qualified Data.ByteString as BS
@@ -502,6 +502,16 @@ channelPageDown :: MH ()
 channelPageDown = do
   cId <- use csCurrentChannelId
   mh $ vScrollBy (viewportScroll (ChannelMessages cId)) pageAmount
+
+channelScrollToTop :: MH ()
+channelScrollToTop = do
+  cId <- use csCurrentChannelId
+  mh $ vScrollToBeginning (viewportScroll (ChannelMessages cId))
+
+channelScrollToBottom :: MH ()
+channelScrollToBottom = do
+  cId <- use csCurrentChannelId
+  mh $ vScrollToEnd (viewportScroll (ChannelMessages cId))
 
 asyncFetchMoreMessages :: ChatState -> ChannelId -> IO ()
 asyncFetchMoreMessages st cId =

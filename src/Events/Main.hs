@@ -87,6 +87,14 @@ mainKeybindings =
                                            (Vty.EvKey Vty.KDown [])
                  False -> channelHistoryForward
 
+    , KB "Scroll to the top of the channel message list"
+         (Vty.EvKey Vty.KHome []) $ do
+             cId <- use csCurrentChannelId
+             let vp = ChannelMessages cId
+             mh $ invalidateCacheEntry vp
+             channelScrollToTop
+             csMode .= ChannelScroll
+
     , KB "Page up in the channel message list"
          (Vty.EvKey Vty.KPageUp []) $ do
              cId <- use csCurrentChannelId

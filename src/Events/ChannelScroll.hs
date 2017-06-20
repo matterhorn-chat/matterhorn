@@ -25,6 +25,10 @@ channelScrollKeybindings =
   , KB "Cancel scrolling and return to channel view"
     (Vty.EvKey Vty.KEsc []) $
     csMode .= Main
+  , KB "Scroll to top" (Vty.EvKey Vty.KHome [])
+    channelScrollToTop
+  , KB "Scroll to bottom" (Vty.EvKey Vty.KEnd [])
+    channelScrollToBottom
   ]
 
 onEventChannelScroll :: Vty.Event -> MH ()
