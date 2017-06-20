@@ -308,7 +308,7 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
 
 getMessageListing :: ChannelId -> ChatState -> Messages
 getMessageListing cId st =
-    (st ^. csChannels.to (findChannelById cId)) ^?! _Just . ccContents . cdMessages
+    st ^?! csChannels.folding (findChannelById cId) . ccContents . cdMessages
 
 insertTransitions :: Text -> TimeZone -> Maybe UTCTime -> Messages -> Messages
 insertTransitions datefmt tz cutoff ms = foldr addMessage ms transitions
@@ -466,8 +466,8 @@ mainInterface st =
     mainDisplay = case st^.csMode of
         UrlSelect -> renderUrlList st
         _         -> maybeSubdue $ renderCurrentChannelDisplay uSet cSet st
-    uSet = Set.fromList $ (st^.csUsers.to allUsers) ^.. (each.uiName)
-    cSet = Set.fromList $ (st^.csChannels ^.. traversed.ccInfo.cdName)
+    uSet = Set.fromList (st^..csUsers.to allUsers.folded.uiName)
+    cSet = Set.fromList (st^..csChannels.folded.ccInfo.cdName)
 
     bottomBorder = case st^.csMode of
         MessageSelect -> messageSelectBottomBar st
