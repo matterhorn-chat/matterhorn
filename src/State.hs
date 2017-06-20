@@ -195,14 +195,15 @@ beginCurrentChannelDeleteConfirm = do
 
 deleteCurrentChannel :: MH ()
 deleteCurrentChannel = do
+    leaveCurrentChannel
+    csMode .= Main
+
     cId <- use csCurrentChannelId
     session <- use csSession
     myTeamId <- use (csMyTeam.teamIdL)
-    doAsyncWith Preempt $ do
+    doAsyncWith Normal $ do
         mmDeleteChannel session myTeamId cId
-        return $ do
-            csMode .= Main
-            leaveCurrentChannel
+        return $ return ()
 
 isCurrentChannel :: ChatState -> ChannelId -> Bool
 isCurrentChannel st cId = st^.csCurrentChannelId == cId
