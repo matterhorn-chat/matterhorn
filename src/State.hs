@@ -520,7 +520,7 @@ asyncFetchMoreMessages :: ChatState -> ChannelId -> IO ()
 asyncFetchMoreMessages st cId =
     doAsyncWithIO Preempt st $ do
         let offset = length $ st^.csChannel(cId).ccContents.cdMessages
-            numToFetch = 10
+            numToFetch = pageAmount
         posts <- mmGetPosts (st^.csSession) (st^.csMyTeam.teamIdL) cId (offset - 1) numToFetch
         return $ do
             cc <- fromPosts posts
