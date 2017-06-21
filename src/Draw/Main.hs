@@ -189,11 +189,15 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
                  False -> renderText $
                           mkChannelName (chan^.ccInfo) <> " - " <> topicStr
     userHeader u = let p1 = (colorUsername $ mkDMChannelName u)
-                       p2 = txt " is " <+> txt nfn
+                       p2 = txt $ T.intercalate " " $ filter (not . T.null) parts
+                       parts = [ " is"
+                               , u^.uiFirstName
+                               , nick
+                               , u^.uiLastName
+                               , "<" <> u^.uiEmail <> ">"
+                               ]
                        quote n = " \"" <> n <> "\" "
-                       nfn = let n = maybe " " quote $ u^.uiNickName
-                                 e = " <" <> u^.uiEmail <> ">"
-                             in (u^.uiFirstName) <> n <> (u^.uiLastName) <> e
+                       nick = maybe "" quote $ u^.uiNickName
                    in p1 <+> p2
     messages = body <+> txt " "
 
