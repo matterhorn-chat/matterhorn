@@ -153,7 +153,7 @@ getOrdinaryChannels st =
             Nothing      -> T.singleton normalChannelSigil
             Just ("", _) -> T.singleton normalChannelSigil
             _            -> "»"
-          mentions = st^.csChannel(chan).ccInfo.cdHasMentions
+          mentions = maybe False id (st^?csChannel(chan).ccInfo.cdHasMentions)
     ]
 
 -- | Extract the names and information about Direct Message channels

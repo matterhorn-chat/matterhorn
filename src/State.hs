@@ -85,7 +85,7 @@ refreshChannel chan = do
                                 | p <- F.toList (posts^.postsOrderL)
                                 ]
         let newChanInfo ci = channelInfoFromChannelWithData cwd ci
-                               & cdCurrentState     .~ ChanLoaded
+                               & cdCurrentState .~ ChanLoaded
 
         csChannel(chan).ccInfo %= newChanInfo
     _ -> return (return ())
@@ -188,10 +188,11 @@ deleteSelectedMessage = do
 beginCurrentChannelDeleteConfirm :: MH ()
 beginCurrentChannelDeleteConfirm = do
     cId <- use csCurrentChannelId
-    chType <- use (csChannel(cId).ccInfo.cdType)
-    if chType /= Direct
-       then csMode .= DeleteChannelConfirm
-       else postErrorMessage "The /delete-channel command cannot be used with direct message channels."
+    withChannel cId $ \chan -> do
+        let chType = chan^.ccInfo.cdType
+        if chType /= Direct
+            then csMode .= DeleteChannelConfirm
+            else postErrorMessage "The /delete-channel command cannot be used with direct message channels."
 
 deleteCurrentChannel :: MH ()
 deleteCurrentChannel = do
@@ -326,9 +327,10 @@ leaveCurrentChannel = do
 
 removeChannelFromState :: ChannelId -> MH ()
 removeChannelFromState cId = do
-    cName <- use (csChannel(cId).ccInfo.cdName)
-    chType <- use (csChannel(cId).ccInfo.cdType)
-    when (chType /= Direct) $ do
+    withChannel cId $ \ chan -> do
+        let cName = chan^.ccInfo.cdName
+            chType = chan^.ccInfo.cdType
+        when (chType /= Direct) $ do
             csEditState.cedInputHistoryPosition .at cId .= Nothing
             csEditState.cedLastChannelInput     .at cId .= Nothing
             -- Update input history
@@ -632,9 +634,9 @@ editMessage :: Post -> MH ()
 editMessage new = do
   now <- getNow
   st <- use id
-  let chan = csChannel (postChannelId new)
-      isEditedMessage m = m^.mPostId == Just (new^.postIdL)
+  let isEditedMessage m = m^.mPostId == Just (new^.postIdL)
       msg = clientPostToMessage st (toClientPost new (new^.postParentIdL))
+      chan = csChannel (new^.postChannelIdL)
   chan . ccContents . cdMessages . traversed . filtered isEditedMessage .= msg
   chan . ccInfo . cdUpdated .= now
   csPostMap.ix(postId new) .= msg
@@ -646,7 +648,7 @@ deleteMessage :: Post -> MH ()
 deleteMessage new = do
   now <- getNow
   let isDeletedMessage m = m^.mPostId == Just (new^.postIdL)
-      chan = csChannel (postChannelId new)
+      chan = csChannel (new^.postChannelIdL)
   chan.ccContents.cdMessages.traversed.filtered isDeletedMessage %= (& mDeleted .~ True)
   chan.ccInfo.cdUpdated .= now
   cId <- use csCurrentChannelId
@@ -665,7 +667,7 @@ addMessageToState :: Post -> MH ()
 addMessageToState new = do
   st <- use id
   asyncFetchAttachments new
-  case st^.csChannels.to (findChannelById (postChannelId new)) of
+  case st ^? csChannel(postChannelId new) of
       Nothing ->
           -- When we join channels, sometimes we get the "user has
           -- been added to channel" message here BEFORE we get the
@@ -741,7 +743,7 @@ clearNewMessageCutoff cId =
 
 getNewMessageCutoff :: ChannelId -> ChatState -> Maybe UTCTime
 getNewMessageCutoff cId st = do
-    cc <- st^.(csChannels.to (findChannelById cId))
+    cc <- st^?csChannel(cId)
     cc^.ccInfo.cdNewMessageCutoff
 
 execMMCommand :: T.Text -> T.Text -> MH ()
@@ -765,11 +767,10 @@ execMMCommand name rest = do
 fetchCurrentScrollback :: MH ()
 fetchCurrentScrollback = do
   cId <- use csCurrentChannelId
-  chan <- use (csChannels.to (findChannelById cId))
-  let currentState = (chan ^?! _Just)^.ccInfo.cdCurrentState
-  when (currentState == ChanUnloaded) $
-       do asyncFetchScrollback Preempt cId
-          csChannel(cId).ccInfo.cdCurrentState .= ChanLoadPending
+  withChannel cId $ \ chan -> do
+    when (chan^.ccInfo.cdCurrentState == ChanUnloaded) $ do
+      asyncFetchScrollback Preempt cId
+      csChannel(cId).ccInfo.cdCurrentState .= ChanLoadPending
 
 mkChannelZipperList :: MMNames -> [ChannelId]
 mkChannelZipperList chanNames =

@@ -183,10 +183,10 @@ tabComplete dir = do
   let completableChannels = catMaybes (flip map (st^.csNames.cnChans) $ \cname -> do
           -- Only permit completion of channel names for non-Group channels
           cId <- st^.csNames.cnToChanId.at cname
-          let cInfo = st^.csChannel(cId).ccInfo
-          case cInfo^.cdType /= Group of
-              True -> Just cname
-              False -> Nothing
+          let cType = st^?csChannel(cId).ccInfo.cdType
+          case cType of
+              Just Group -> Nothing
+              _          -> Just cname
           )
 
       priorities  = [] :: [T.Text]-- XXX: add recent completions to this

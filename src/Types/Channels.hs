@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveFoldable #-}
 {-# LANGUAGE DeriveTraversable #-}
+{-# LANGUAGE RankNTypes #-}
 
 module Types.Channels
   ( ClientChannel(..)
@@ -20,6 +21,7 @@ module Types.Channels
   , makeClientChannel
   -- * Managing ClientChannel collections
   , noChannels, addChannel, findChannelById, modifyChannelById
+  , channelByIdL, maybeChannelByIdL
   , filteredChannelIds
   , filteredChannels
   -- * Creating ChannelInfo objects
@@ -34,7 +36,7 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
 import           Data.Time.Clock (UTCTime)
 import           Lens.Micro.Platform
-import           Network.Mattermost.Lenses
+import           Network.Mattermost.Lenses hiding (Lens')
 import           Network.Mattermost.Types ( Channel(..), ChannelId
                                           , ChannelWithData(..)
                                           , Type(..)
@@ -173,6 +175,16 @@ findChannelById cId = HM.lookup cId . _ofChans
 modifyChannelById :: ChannelId -> (ClientChannel -> ClientChannel)
                   -> ClientChannels -> ClientChannels
 modifyChannelById cId f = ofChans.ix(cId) %~ f
+
+-- | A 'Traversal' that will give us the 'ClientChannel' in a
+-- 'ClientChannels' structure if it exists
+channelByIdL :: ChannelId -> Traversal' ClientChannels ClientChannel
+channelByIdL cId = ofChans . ix cId
+
+-- | A 'Lens' that will give us the 'ClientChannel' in a
+-- 'ClientChannels' wrapped in a 'Maybe'
+maybeChannelByIdL :: ChannelId -> Lens' ClientChannels (Maybe ClientChannel)
+maybeChannelByIdL cId = ofChans . at cId
 
 -- | Apply a filter to each ClientChannel and return a list of the
 -- ChannelId values for which the filter matched.

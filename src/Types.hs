@@ -29,7 +29,8 @@ import           Data.Maybe
 import           Data.Monoid
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( at, makeLenses, lens, (&), (^.), (%~), (.~), (^?!)
-                                     , to, SimpleGetter, _Just)
+                                     , (^?), to, SimpleGetter, _Just
+                                     , Traversal', preuse )
 import           Network.Mattermost
 import           Network.Mattermost.Exceptions
 import           Network.Mattermost.Lenses
@@ -399,10 +400,20 @@ csCurrentChannel =
   lens (\ st -> findChannelById (st^.csCurrentChannelId) (st^.csChannels) ^?! _Just)
        (\ st n -> st & csChannels %~ addChannel (st^.csCurrentChannelId) n)
 
-csChannel :: ChannelId -> Lens' ChatState ClientChannel
+csChannel :: ChannelId -> Traversal' ChatState ClientChannel
 csChannel cId =
-  lens (\ st -> findChannelById cId (st^.csChannels) ^?! _Just)
-       (\ st n -> st & csChannels %~ addChannel cId n)
+  csChannels . channelByIdL cId
+
+csChannel' :: ChannelId -> Lens' ChatState (Maybe ClientChannel)
+csChannel' cId =
+  csChannels . maybeChannelByIdL cId
+
+withChannel :: ChannelId -> (ClientChannel -> MH ()) -> MH ()
+withChannel cId mote = do
+  chan <- preuse (csChannel(cId))
+  case chan of
+    Nothing -> return ()
+    Just c  -> mote c
 
 csUser :: UserId -> Lens' ChatState UserInfo
 csUser uId =
@@ -515,10 +526,12 @@ sortedUserList st = sort yes ++ sort no
             Just cId
               | (st^.csCurrentChannelId) == cId -> False
               | otherwise ->
-                  let info = st^.csChannel(cId).ccInfo
-                  in case info^.cdViewed of
-                      Nothing -> False
+                case st^?csChannel(cId).ccInfo of
+                  Nothing -> False
+                  Just info ->
+                    case (info^.cdViewed) of
                       Just v -> info^.cdUpdated > v
+                      _      -> False
         (yes, no) = partition hasUnread (userList st)
 
 userList :: ChatState -> [UserInfo]
