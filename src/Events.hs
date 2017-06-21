@@ -5,6 +5,7 @@ import           Prelude ()
 import           Prelude.Compat
 
 import           Brick
+import           Control.Monad (forM_)
 import           Control.Monad.IO.Class (liftIO)
 import qualified Data.Set as Set
 import qualified Data.Text as T
@@ -150,7 +151,18 @@ handleWSEvent we = do
       Nothing -> return ()
     -- Right now, we don't use any server preferences in
     -- our client, but that might change
-    WMPreferenceChanged -> return ()
+    WMPreferenceChanged
+      | Just pref <- wepPreferences (weData we)
+      , Just fps <- mapM preferenceToFlaggedPost pref ->
+        forM_ fps $ \f ->
+          setMessageFlag (flaggedPostId f) (flaggedPostStatus f)
+      | otherwise -> return ()
+    WMPreferenceDeleted
+      | Just pref <- wepPreferences (weData we)
+      , Just fps <- mapM preferenceToFlaggedPost pref ->
+        forM_ fps $ \f ->
+          setMessageFlag (flaggedPostId f) (flaggedPostStatus f)
+      | otherwise -> return ()
     -- This happens whenever a user connects to the server
     -- I think all the information we need (about being
     -- online or away or what-have-you) gets represented

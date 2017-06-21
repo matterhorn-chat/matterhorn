@@ -11,6 +11,7 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.Map.Strict as Map
 import           Data.Monoid ((<>))
 import qualified Data.Sequence as Seq
+import qualified Data.Set as Set
 import qualified Data.Text as T
 import           Data.Time.Clock (getCurrentTime)
 import           Lens.Micro.Platform
@@ -89,18 +90,24 @@ fromPosts ps = do
 messagesFromPosts :: Posts -> MH Messages
 messagesFromPosts p = do -- (msgs, st')
   st <- use id
+  flags <- use (csResources.crFlaggedPosts)
   csPostMap %= HM.union (postMap st)
   st' <- use id
-  let msgs = postsToMessages (clientPostToMessage st') (clientPost <$> ps)
+  let msgs = postsToMessages (maybeFlag flags . clientPostToMessage st') (clientPost <$> ps)
       postsToMessages f = foldr (addMessage . f) noMessages
   return msgs
     where
         postMap :: ChatState -> HM.HashMap PostId Message
-        postMap st = HM.fromList [ ( pId
-                                , clientPostToMessage st (toClientPost x Nothing)
-                                )
-                              | (pId, x) <- HM.toList (p^.postsPostsL)
-                              ]
+        postMap st = HM.fromList
+          [ ( pId
+            , clientPostToMessage st (toClientPost x Nothing)
+            )
+          | (pId, x) <- HM.toList (p^.postsPostsL)
+          ]
+        maybeFlag flagSet msg
+          | Just pId <- msg^.mPostId, pId `Set.member` flagSet
+            = msg & mFlagged .~ True
+          | otherwise = msg
         -- n.b. postsOrder is most recent first
         ps   = findPost <$> (Seq.reverse $ postsOrder p)
         clientPost :: Post -> ClientPost

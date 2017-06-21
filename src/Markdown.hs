@@ -77,6 +77,8 @@ renderMessage msg renderReplyParent uSet cSet =
           Just un
             | msg^.mType == CP Emote -> B.txt "*" <+> colorUsername un
                                     <+> B.txt " " <+> renderMarkdown uSet cSet (msg^.mText)
+            | msg^.mFlagged ->
+              colorUsername un <+> B.txt "[!]: " <+> renderMarkdown uSet cSet (msg^.mText)
             | otherwise -> colorUsername un <+> B.txt ": " <+> renderMarkdown uSet cSet (msg^.mText)
           Nothing -> renderMarkdown uSet cSet (msg^.mText)
         parent = if not renderReplyParent

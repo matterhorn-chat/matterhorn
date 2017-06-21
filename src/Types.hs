@@ -27,6 +27,7 @@ import qualified Data.HashMap.Strict as HM
 import           Data.List (partition, sort)
 import           Data.Maybe
 import           Data.Monoid
+import           Data.Set (Set)
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( at, makeLenses, lens, (&), (^.), (%~), (.~), (^?!)
                                      , (^?), to, SimpleGetter, _Just
@@ -203,6 +204,7 @@ data ChatResources = ChatResources
   , _crTheme         :: AttrMap
   , _crQuitCondition :: MVar ()
   , _crConfiguration :: Config
+  , _crFlaggedPosts  :: Set PostId
   }
 
 -- | The 'ChatEditState' value contains the editor widget itself
@@ -476,6 +478,7 @@ clientPostToMessage st cp = Message
   , _mPostId        = Just $ cp^.cpPostId
   , _mReactions     = _cpReactions cp
   , _mOriginalPost  = Just $ cp^.cpOriginalPost
+  , _mFlagged       = False
   }
 
 -- * Slash Commands

@@ -78,4 +78,9 @@ messageSelectKeybindings =
     , KB "Copy a verbatim section to the clipboard"
          (Vty.EvKey (Vty.KChar 'y') []) $
          copyVerbatimToClipboard
+
+    , KB "Flag the selected message"
+         (Vty.EvKey (Vty.KChar 'f') []) $
+         flagMessage
+
     ]

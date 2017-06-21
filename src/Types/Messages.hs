@@ -9,7 +9,7 @@ module Types.Messages
   ( Message(..)
   , isDeletable, isReplyable, isEditable
   , mText, mUserName, mDate, mType, mPending, mDeleted
-  , mAttachments, mInReplyToMsg, mPostId, mReactions
+  , mAttachments, mInReplyToMsg, mPostId, mReactions, mFlagged
   , mOriginalPost
   , MessageType(..)
   , ReplyState(..)
@@ -58,6 +58,7 @@ data Message = Message
   , _mPostId        :: Maybe PostId
   , _mReactions     :: Map.Map T.Text Int
   , _mOriginalPost  :: Maybe Post
+  , _mFlagged       :: Bool
   } deriving (Show)
 
 isDeletable :: Message -> Bool
@@ -99,6 +100,7 @@ clientMessageToMessage cm = Message
   , _mPostId        = Nothing
   , _mReactions     = Map.empty
   , _mOriginalPost  = Nothing
+  , _mFlagged       = False
   }
 
 -- ** 'Message' Lenses

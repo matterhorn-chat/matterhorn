@@ -20,6 +20,7 @@ import           Data.List (sort)
 import           Data.Maybe (listToMaybe, maybeToList, fromJust)
 import           Data.Monoid ((<>))
 import qualified Data.Sequence as Seq
+import qualified Data.Set as Set
 import           Data.Time.LocalTime ( TimeZone(..), getCurrentTimeZone )
 import           Lens.Micro.Platform
 import           System.Exit (exitFailure, ExitCode(ExitSuccess))
@@ -254,6 +255,7 @@ setupState logFile config requestChan eventChan = do
              , _crQuitCondition = quitCondition
              , _crConfiguration = config
              , _crSubprocessLog = slc
+             , _crFlaggedPosts  = mempty
              }
   initializeState cr myTeam myUser
 
@@ -267,8 +269,17 @@ loadAllUsers session = go HM.empty 0
 
 initializeState :: ChatResources -> Team -> User -> IO ChatState
 initializeState cr myTeam myUser = do
-  let ChatResources session _ requestChan _ _ _ _ _ = cr
+  let ChatResources session _ requestChan _ _ _ _ _ _ = cr
   let myTeamId = getId myTeam
+
+  prefs <- mmGetMyPreferences session
+  let cr' = cr { _crFlaggedPosts = Set.fromList
+                   [ flaggedPostId fp
+                   | p <- F.toList prefs
+                   , Just fp <- [ preferenceToFlaggedPost p ]
+                   , flaggedPostStatus fp
+                   ]
+               }
 
   STM.atomically $ STM.writeTChan requestChan $ updateUserStatuses session
 
@@ -305,7 +316,7 @@ initializeState cr myTeam myUser = do
                 | i <- chanNames ^. cnUsers
                 , c <- maybeToList (HM.lookup i (chanNames ^. cnToChanId)) ]
       chanZip = Z.findRight (== townSqId) (Z.fromList chanIds)
-      st = newState cr chanZip myUser myTeam tz hist
+      st = newState cr' chanZip myUser myTeam tz hist
              & csUsers %~ flip (foldr (uncurry addUser)) (fmap mkUser users)
              & csChannels %~ flip (foldr (uncurry addChannel)) msgs
              & csNames .~ chanNames

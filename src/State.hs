@@ -209,6 +209,35 @@ deleteCurrentChannel = do
 isCurrentChannel :: ChatState -> ChannelId -> Bool
 isCurrentChannel st cId = st^.csCurrentChannelId == cId
 
+setMessageFlag :: PostId -> Bool -> MH ()
+setMessageFlag pId f = do
+  msgMb <- use (csPostMap.at(pId))
+  case msgMb of
+    Just msg
+      | Just orig <- msg^.mOriginalPost -> do
+      let isTargetMessage m = m^.mPostId == Just pId
+          chan = csChannel(orig^.postChannelIdL)
+      chan.ccContents.cdMessages.traversed.filtered isTargetMessage.mFlagged .= f
+      csPostMap.ix(pId).mFlagged .= f
+    _ -> return ()
+
+flagMessage :: MH ()
+flagMessage = do
+  selected <- use (to getSelectedMessage)
+  session <- use csSession
+  myId <- use (csMe.userIdL)
+  case selected of
+    Just msg
+      | Just pId <- msg^.mPostId -> do
+          let f = msg^.mFlagged
+          csMode .= Main
+          doAsyncWith Normal $ do
+            mmFlagPost session myId pId (not f)
+            return $ do
+              setMessageFlag pId (not f)
+              return ()
+    _ -> return ()
+
 beginUpdateMessage :: MH ()
 beginUpdateMessage = do
     selected <- use (to getSelectedMessage)

@@ -119,6 +119,7 @@ previewFromInput uname s =
                            , _mPostId        = Nothing
                            , _mReactions     = mempty
                            , _mOriginalPost  = Nothing
+                           , _mFlagged       = False
                            }
 
 renderUserCommandBox :: UserSet -> ChannelSet -> ChatState -> Widget Name
@@ -330,11 +331,11 @@ insertTransitions datefmt tz cutoff ms = foldr addMessage ms transitions
                                           (T.unpack datefmt)
                                           (utcToLocalTime tz d)))
                       Nothing d (C DateTransition) False False
-                      Seq.empty NotAReply Nothing mempty Nothing
+                      Seq.empty NotAReply Nothing mempty Nothing False
           newMessagesMsg d = Message (getBlocks (T.pack "New Messages"))
                              Nothing d (C NewMessagesTransition)
                              False False Seq.empty NotAReply
-                             Nothing mempty Nothing
+                             Nothing mempty Nothing False
 
 
 renderChannelSelect :: ChatState -> Widget Name
@@ -369,6 +370,8 @@ messageSelectBottomBar st =
                   , (\m -> isMine st m && isDeletable m, "d", "delete")
                   , (const hasURLs, "o", openUrlsMsg)
                   , (const hasVerb, "y", "yank")
+                  , (\m -> not (m^.mFlagged), "f", "flag")
+                  , (\m ->      m^.mFlagged , "f", "unflag")
                   ]
         Just postMsg = getSelectedMessage st
 
