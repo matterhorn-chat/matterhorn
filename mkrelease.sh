@@ -5,7 +5,17 @@ set -e
 HERE=$(cd `dirname $0`; pwd)
 
 function get_platform {
-    uname -s
+    if [ -f "/etc/redhat-release" ]
+    then
+        if grep Fedora /etc/redhat-release >/dev/null
+        then
+            echo "Fedora"
+        else
+            echo "unknown-redhat"
+        fi
+    else
+        uname -s
+    fi
 }
 
 function get_arch {
