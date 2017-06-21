@@ -232,7 +232,8 @@ flagMessage = do
           let f = msg^.mFlagged
           csMode .= Main
           doAsyncWith Normal $ do
-            mmFlagPost session myId pId (not f)
+            let doFlag = if f then mmUnflagPost else mmFlagPost
+            doFlag session myId pId
             return $ do
               setMessageFlag pId (not f)
               return ()
