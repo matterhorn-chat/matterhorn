@@ -91,7 +91,7 @@ data ChannelListEntry =
     ChannelListEntry { entrySigil       :: T.Text
                      , entryLabel       :: T.Text
                      , entryHasUnread   :: Bool
-                     , entryHasMentions :: Bool
+                     , entryMentions    :: Int
                      , entryIsRecent    :: Bool
                      , entryIsCurrent   :: Bool
                      , entryUserStatus  :: Maybe UserStatus
@@ -105,12 +105,12 @@ data SelectedChannelListEntry = SCLE ChannelListEntry ChannelSelectMatch
 -- appropriate visual decorations.
 renderChannelListEntry :: ChannelListEntry -> Widget Name
 renderChannelListEntry entry =
-    decorate $ decorateRecent entry $ padRight Max $
+    decorate $ decorateRecent entry $ decorateMentions $ padRight Max $
     entryWidget $ entrySigil entry <> entryLabel entry
     where
     decorate = if | entryIsCurrent entry ->
                       visible . forceAttr currentChannelNameAttr
-                  | entryHasMentions entry ->
+                  | entryMentions entry > 0 ->
                       forceAttr mentionsChannelAttr
                   | entryHasUnread entry ->
                       forceAttr unreadChannelAttr
@@ -119,6 +119,13 @@ renderChannelListEntry entry =
                     Just Offline -> withDefAttr clientMessageAttr . txt
                     Just _       -> colorUsername
                     Nothing      -> txt
+    decorateMentions
+      | entryMentions entry > 9 =
+        (<+> str "[9+]")
+      | entryMentions entry > 0 =
+        (<+> str ("[" <> show (entryMentions entry) <> "]"))
+      | otherwise = id
+
 
 -- | Render an individual entry when in Channel Select mode,
 -- highlighting the matching portion, or completely suppressing the
@@ -153,7 +160,7 @@ getOrdinaryChannels st =
             Nothing      -> T.singleton normalChannelSigil
             Just ("", _) -> T.singleton normalChannelSigil
             _            -> "»"
-          mentions = maybe False id (st^?csChannel(chan).ccInfo.cdHasMentions)
+          mentions = maybe 0 id (st^?csChannel(chan).ccInfo.cdMentionCount)
     ]
 
 -- | Extract the names and information about Direct Message channels
@@ -172,5 +179,7 @@ getDmChannels st =
           m_chanId = st^.csNames.cnToChanId.at (u^.uiName)
           unread = maybe False (hasUnread st) m_chanId
           current = maybe False (isCurrentChannel st) m_chanId
-          mentions = unread
+          mentions = case m_chanId of
+            Just cId -> maybe 0 id (st^?csChannel(cId).ccInfo.cdMentionCount)
+            Nothing  -> 0
        ]

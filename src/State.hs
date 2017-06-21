@@ -380,7 +380,7 @@ setLastViewedFor cId = do
 
 updateViewed :: MH ()
 updateViewed = do
-  csCurrentChannel.ccInfo.cdHasMentions .= False
+  csCurrentChannel.ccInfo.cdMentionCount .= 0
   st <- use id
   liftIO (updateViewedIO st)
 

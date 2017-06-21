@@ -14,7 +14,7 @@ module Types.Channels
   , ccContents, ccInfo
   -- * Lenses created for accessing ChannelInfo fields
   , cdViewed, cdUpdated, cdName, cdHeader, cdType, cdCurrentState
-  , cdNewMessageCutoff, cdHasMentions
+  , cdNewMessageCutoff, cdMentionCount
   -- * Lenses created for accessing ChannelContents fields
   , cdMessages
   -- * Creating ClientChannel objects
@@ -64,7 +64,7 @@ initialChannelInfo :: Channel -> ChannelInfo
 initialChannelInfo chan =
     let updated  = chan ^. channelLastPostAtL
     in ChannelInfo { _cdViewed           = Nothing
-                   , _cdHasMentions      = False
+                   , _cdMentionCount     = 0
                    , _cdUpdated          = updated
                    , _cdName             = preferredChannelName chan
                    , _cdHeader           = chan^.channelHeaderL
@@ -82,6 +82,7 @@ channelInfoFromChannelWithData (ChannelWithData chan chanData) ci =
           , _cdName             = preferredChannelName chan
           , _cdHeader           = (chan^.channelHeaderL)
           , _cdType             = (chan^.channelTypeL)
+          , _cdMentionCount     = chanData^.channelDataMentionCountL
           }
 
 -- | The 'ChannelContents' is a wrapper for a list of
@@ -112,8 +113,8 @@ data ChannelState
 data ChannelInfo = ChannelInfo
   { _cdViewed           :: Maybe UTCTime
     -- ^ The last time we looked at a channel
-  , _cdHasMentions      :: Bool
-    -- ^ True if there are unread user mentions
+  , _cdMentionCount     :: Int
+    -- ^ The current number of unread mentions
   , _cdUpdated          :: UTCTime
     -- ^ The last time a message showed up in the channel
   , _cdName             :: T.Text

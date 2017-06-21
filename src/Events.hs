@@ -20,7 +20,7 @@ import           Connection
 import           State
 import           State.Common
 import           Types
-import           Types.Channels (ccInfo, cdHeader, cdHasMentions)
+import           Types.Channels (ccInfo, cdHeader, cdMentionCount)
 
 import           Events.ShowHelp
 import           Events.Main
@@ -100,7 +100,7 @@ handleWSEvent we = do
           case wepMentions (weData we) of
             Just lst
               | myUserId `Set.member` lst ->
-                  csChannel(postChannelId p).ccInfo.cdHasMentions .= True
+                  csChannel(postChannelId p).ccInfo.cdMentionCount += 1
             _ -> return ()
           addMessageToState p
       Nothing -> return ()
