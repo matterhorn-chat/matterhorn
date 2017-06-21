@@ -121,9 +121,9 @@ renderChannelListEntry entry =
                     Nothing      -> txt
     decorateMentions
       | entryMentions entry > 9 =
-        (<+> str "[9+]")
+        (<+> str "(9+)")
       | entryMentions entry > 0 =
-        (<+> str ("[" <> show (entryMentions entry) <> "]"))
+        (<+> str ("(" <> show (entryMentions entry) <> ")"))
       | otherwise = id
 
 
