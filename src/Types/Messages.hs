@@ -74,7 +74,7 @@ isEditable m = _mType m `elem` [CP NormalPost, CP Emote]
 --   post from Mattermost or an internal message. This represents
 --   the union of both kinds of post types.
 data MessageType = C ClientMessageType
-                 | CP PostType
+                 | CP ClientPostType
                  deriving (Eq, Show)
 
 -- | The 'ReplyState' of a message represents whether a message

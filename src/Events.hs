@@ -94,7 +94,7 @@ handleWSEvent we = do
           -- metadata.
           myUserId <- use (csMe.userIdL)
           case postPropsNewHeader (p^.postPropsL) of
-              Just newHeader | postType p == SystemHeaderChange ->
+              Just newHeader | postType p == PostTypeHeaderChange ->
                   csChannel(postChannelId p).ccInfo.cdHeader .= newHeader
               _ -> return ()
           case wepMentions (weData we) of
