@@ -7,7 +7,7 @@
 
 module Types.Messages
   ( Message(..)
-  , isDeletable, isReplyable, isEditable
+  , isDeletable, isReplyable, isEditable, isReplyTo
   , mText, mUserName, mDate, mType, mPending, mDeleted
   , mAttachments, mInReplyToMsg, mPostId, mReactions
   , mOriginalPost
@@ -68,6 +68,13 @@ isReplyable m = _mType m `elem` [CP NormalPost, CP Emote]
 
 isEditable :: Message -> Bool
 isEditable m = _mType m `elem` [CP NormalPost, CP Emote]
+
+isReplyTo :: PostId -> Message -> Bool
+isReplyTo expectedParentId m =
+    case _mInReplyToMsg m of
+        NotAReply                      -> False
+        ParentNotLoaded actualParentId -> actualParentId == expectedParentId
+        ParentLoaded actualParentId _  -> actualParentId == expectedParentId
 
 -- | A 'Message' is the representation we use for storage and
 --   rendering, so it must be able to represent either a

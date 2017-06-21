@@ -647,7 +647,8 @@ editMessage new = do
 deleteMessage :: Post -> MH ()
 deleteMessage new = do
   now <- getNow
-  let isDeletedMessage m = m^.mPostId == Just (new^.postIdL)
+  let isDeletedMessage m = m^.mPostId == Just (new^.postIdL) ||
+                           isReplyTo (new^.postIdL) m
       chan = csChannel (new^.postChannelIdL)
   chan.ccContents.cdMessages.traversed.filtered isDeletedMessage %= (& mDeleted .~ True)
   chan.ccInfo.cdUpdated .= now
