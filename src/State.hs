@@ -85,7 +85,7 @@ refreshChannel chan = do
                                 | p <- F.toList (posts^.postsOrderL)
                                 ]
         let newChanInfo ci = channelInfoFromChannelWithData cwd ci
-                               & cdCurrentState .~ ChanLoaded
+                               & cdCurrentState %~ quiescentChannelState ChanReloading
 
         csChannel(chan).ccInfo %= newChanInfo
     _ -> return (return ())
@@ -95,7 +95,7 @@ refreshChannel chan = do
 refreshLoadedChannels :: MH ()
 refreshLoadedChannels = do
   let isChanLoaded cc = cc^.ccInfo.cdCurrentState == ChanLoaded
-      setChanToRefreshing = ccInfo.cdCurrentState .~ ChanRefreshing
+      setChanToRefreshing = ccInfo.cdCurrentState %~ pendingChannelState
   cIds <- use (csChannels.to (filteredChannelIds isChanLoaded))
   csChannels %= flip (foldr ((flip modifyChannelById) setChanToRefreshing)) cIds
   sequence_ $ refreshChannel <$> cIds
@@ -771,7 +771,7 @@ fetchCurrentScrollback = do
   withChannel cId $ \ chan -> do
     when (chan^.ccInfo.cdCurrentState == ChanUnloaded) $ do
       asyncFetchScrollback Preempt cId
-      csChannel(cId).ccInfo.cdCurrentState .= ChanLoadPending
+      csChannel(cId).ccInfo.cdCurrentState .= loadingChannelContentState
 
 mkChannelZipperList :: MMNames -> [ChannelId]
 mkChannelZipperList chanNames =

@@ -279,8 +279,8 @@ initializeState cr myTeam myUser = do
   msgs <- forM (F.toList chans) $ \c -> do
       let cChannel = makeClientChannel c & ccInfo.cdCurrentState .~ state
           state = if c^.channelNameL == "town-square"
-                  then ChanLoadPending
-                  else ChanUnloaded
+                  then loadingChannelContentState
+                  else initialChannelState
       return (getId c, cChannel)
 
   teamUsers <- mmGetProfiles session myTeamId 0 10000

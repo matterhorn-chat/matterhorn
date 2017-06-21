@@ -26,6 +26,12 @@ module Types.Channels
   , filteredChannels
   -- * Creating ChannelInfo objects
   , channelInfoFromChannelWithData
+  -- * Channel State management
+  , initialChannelState
+  , loadingChannelContentState
+  , isPendingState
+  , pendingChannelState
+  , quiescentChannelState
   -- * Miscellaneous channel-related operations
   , canLeaveChannel
   , preferredChannelName
@@ -69,7 +75,7 @@ initialChannelInfo chan =
                    , _cdName             = preferredChannelName chan
                    , _cdHeader           = chan^.channelHeaderL
                    , _cdType             = chan^.channelTypeL
-                   , _cdCurrentState     = ChanUnloaded
+                   , _cdCurrentState     = initialChannelState
                    , _cdNewMessageCutoff = Nothing
                    }
 
@@ -97,16 +103,79 @@ emptyChannelContents = ChannelContents
   { _cdMessages = noMessages
   }
 
+------------------------------------------------------------------------
+
+-- * Channel State management
+
 -- | The 'ChannelState' represents our internal state
 --   of the channel with respect to our knowledge (or
 --   lack thereof) about the server's information
 --   about the channel.
 data ChannelState
-  = ChanUnloaded
-  | ChanLoaded
-  | ChanLoadPending
-  | ChanRefreshing
-    deriving (Eq, Show)
+  = ChanResyncing   -- ^ (Re-) fetching for an unloaded channel
+  | ChanUnloaded    -- ^ Only have channel metadata
+  | ChanReloading   -- ^ (Re-) fetching for a loaded channel
+  | ChanLoaded      -- ^ Have channel metadata and contents
+    deriving (Eq, Show, Ord, Enum)
+
+-- The ChannelState may be affected by background operations (see
+-- asyncIO), so state transitions may be suggested by the completion
+-- of those asynchronous operations but they should be reconciled with
+-- any other asynchronous (or foreground) state updates.
+--
+-- To facilitate this, the ChannelState is a member of Ord and Enum,
+-- with the intention that states generally transition to higher state
+-- values (indicating more knowledge/completeness) and not downwards,
+-- allowing the use of `max` and `pred` and `succ` below for managing
+-- state changes.  The `Ord` and `Enum` membership is merely for local
+-- convenience: all state management should be handled by the methods
+-- below so more detailed methods can be used instead of the Ord and
+-- Enum instances without impact to external code.
+
+-- | Specifies the initial state for created ClientChannel objects.
+initialChannelState :: ChannelState
+initialChannelState = ChanUnloaded
+
+-- | The state to use to indicate that channel content (i.e.,
+-- messages) are being loaded (possibly asynchronously).  In contrast
+-- to the `pendingChannelState` function, this function is used when
+-- the channel is transitioning from only having the metadata
+-- information to having full content information.
+loadingChannelContentState :: ChannelState
+loadingChannelContentState = ChanReloading
+
+-- | The pendingChannelState specifies the new ChannelState to
+-- represent an active fetch of information for a channel, given the
+-- channel's current state.  This is used when the existing
+-- information is being refreshed.
+pendingChannelState :: ChannelState -> ChannelState
+pendingChannelState currentState =
+  if isPendingState currentState
+  then currentState
+  else pred currentState
+
+-- | The completionChannelState specifies the new ChannelState upon
+-- completion of an activity.  The activity is represented by the
+-- first argument, which is the pendingState.  The channel may have
+-- been updated in the interim by other activities as well, so the
+-- currentState is also provided.  This function determines the proper
+-- new state of the channel based on the action and current state.  In
+-- the event that multiple update operations are performed at the same
+-- time, the state should always reach higher resting states.
+quiescentChannelState :: ChannelState -> ChannelState -> ChannelState
+quiescentChannelState pendingState currentState =
+  if isPendingState pendingState
+  then max currentState (succ pendingState)
+  else currentState
+
+-- | Returns true if the channel's state is one where there is a
+-- pending asynchronous update already scheduled.
+isPendingState :: ChannelState -> Bool
+isPendingState cstate = cstate `elem` [ ChanReloading
+                                      , ChanResyncing
+                                      ]
+
+------------------------------------------------------------------------
 
 -- | The 'ChannelInfo' record represents metadata
 --   about a channel

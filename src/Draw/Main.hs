@@ -201,14 +201,10 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
                    in p1 <+> p2
     messages = body <+> txt " "
 
-    body = chatText <=> case chan^.ccInfo.cdCurrentState of
-      ChanUnloaded    -> withDefAttr clientMessageAttr $
-                           txt "[Loading channel...]"
-      ChanLoadPending -> withDefAttr clientMessageAttr $
-                          txt "[Loading channel...]"
-      ChanRefreshing  -> withDefAttr clientMessageAttr $
-                           txt "[Refreshing channel...]"
-      _               -> emptyWidget
+    body = chatText
+      <=> case chan^.ccInfo.cdCurrentState.to stateMessage of
+            Nothing -> emptyWidget
+            Just msg -> withDefAttr clientMessageAttr $ txt msg
 
     chatText = case st^.csMode of
         ChannelScroll ->
@@ -309,6 +305,15 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
     chnName = chan^.ccInfo.cdName
     chnType = chan^.ccInfo.cdType
     topicStr = chan^.ccInfo.cdHeader
+
+
+-- | When displaying channel contents, it may be convenient to display
+-- information about the current state of the channel.
+stateMessage :: ChannelState -> Maybe T.Text
+stateMessage ChanResyncing = Just "[Fetching channel information...]"
+stateMessage ChanUnloaded = Just "[Loading channel...]"
+stateMessage ChanReloading = Just "[Reloading channel...]"
+stateMessage ChanLoaded = Nothing
 
 getMessageListing :: ChannelId -> ChatState -> Messages
 getMessageListing cId st =
