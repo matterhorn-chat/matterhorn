@@ -69,7 +69,7 @@ genMessage__Posted = Message__Posted
 
 genMessageType :: Gen MessageType
 genMessageType = oneof [ C <$> genClientMessageType
-                      , CP <$> genPostType
+                      , CP <$> genClientPostType
                       ]
 
 genClientMessageType :: Gen ClientMessageType
@@ -79,13 +79,13 @@ genClientMessageType = elements [ Informative
                          , NewMessagesTransition
                          ]
 
-genPostType :: Gen PostType
-genPostType = elements [ NormalPost
-                         , Emote
-                         , Join
-                         , Leave
-                         , TopicChange
-                         ]
+genClientPostType :: Gen ClientPostType
+genClientPostType = elements [ NormalPost
+                             , Emote
+                             , Join
+                             , Leave
+                             , TopicChange
+                             ]
 
 genReplyState :: Gen ReplyState
 genReplyState = oneof [ return NotAReply
