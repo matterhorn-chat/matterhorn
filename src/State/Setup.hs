@@ -314,7 +314,7 @@ initializeState cr myTeam myUser = do
   case F.find ((== townSqId) . getId) chans of
       Nothing -> return ()
       Just c -> doAsyncWithIO Preempt st $ do
-          cwd <- liftIO $ mmGetChannel session myTeamId (getId c)
+          cwd <- mmGetChannel session myTeamId (getId c)
           return $ do
               csChannel(getId c).ccInfo %= channelInfoFromChannelWithData cwd
               liftIO $ updateViewedIO st
@@ -328,7 +328,7 @@ initializeState cr myTeam myUser = do
   F.forM_ chans $ \c ->
       when (getId c /= townSqId && c^.channelTypeL /= Direct) $
           doAsyncWithIO Normal st $ do
-              cwd <- liftIO $ mmGetChannel session myTeamId (getId c)
+              cwd <- mmGetChannel session myTeamId (getId c)
               return $ do
                   csChannel(getId c).ccInfo %= channelInfoFromChannelWithData cwd
 
@@ -336,7 +336,7 @@ initializeState cr myTeam myUser = do
   F.forM_ chans $ \c ->
       when (c^.channelTypeL == Direct) $
           doAsyncWithIO Normal st $ do
-              cwd <- liftIO $ mmGetChannel session myTeamId (getId c)
+              cwd <- mmGetChannel session myTeamId (getId c)
               return $ do
                   csChannel(getId c).ccInfo %= channelInfoFromChannelWithData cwd
 
