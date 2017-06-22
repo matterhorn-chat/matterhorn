@@ -36,16 +36,19 @@ type GroupName = T.Text
 -- vertically in the ChannelList sidebar.  This list provides the
 -- central control over what channels are displayed and how they are
 -- grouped.
+--
+-- Each group is specified as a tuple of:
+--
+--   * the name of this group
+--
+--   * A lens to get the HashMap of matching selections when in
+--     ChannelSelect mode (ignored for Normal mode).
+--
+--   * The function to retrieve the list of channels for this group
+--     from the ChatState.
 channelListGroups :: [ ( GroupName
-                          -- ^ the name of this group
                        , Getting ChannelSelectMap ChatState ChannelSelectMap
-                          -- ^ A lens to get the HashMap of matching
-                          -- selections when in ChannelSelect mode
-                          -- (ignored for Normal mode).
                        , ChatState -> [ChannelListEntry]
-                          -- ^ The function to retrieve the list of
-                          -- channels for this group from the
-                          -- ChatState.
                        ) ]
 channelListGroups =
     [ ("Channels", csChannelSelectChannelMatches, getOrdinaryChannels)
