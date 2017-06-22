@@ -95,7 +95,7 @@ refreshChannel chan = do
 refreshLoadedChannels :: MH ()
 refreshLoadedChannels = do
   let isChanLoaded cc = cc^.ccInfo.cdCurrentState == ChanLoaded
-      setChanToRefreshing = ccInfo.cdCurrentState %~ pendingChannelState
+      setChanToRefreshing = ccInfo.cdCurrentState %~ fst . pendingChannelState
   cIds <- use (csChannels.to (filteredChannelIds isChanLoaded))
   csChannels %= flip (foldr ((flip modifyChannelById) setChanToRefreshing)) cIds
   sequence_ $ refreshChannel <$> cIds

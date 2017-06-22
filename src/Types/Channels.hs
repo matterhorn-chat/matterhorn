@@ -147,12 +147,17 @@ loadingChannelContentState = ChanReloading
 -- | The pendingChannelState specifies the new ChannelState to
 -- represent an active fetch of information for a channel, given the
 -- channel's current state.  This is used when the existing
--- information is being refreshed.
-pendingChannelState :: ChannelState -> ChannelState
+-- information is being refreshed.  The return is a tuple of the new
+-- state and a function to call after the async operation has finished
+-- with the ChannelState at that time and which will return the new
+-- state that should be set on that completion.
+pendingChannelState :: ChannelState -> (ChannelState,
+                                        (ChannelState -> ChannelState))
 pendingChannelState currentState =
   if isPendingState currentState
-  then currentState
-  else pred currentState
+  then (currentState, id)
+  else let pendState = pred currentState
+       in (pendState, quiescentChannelState pendState)
 
 -- | The completionChannelState specifies the new ChannelState upon
 -- completion of an activity.  The activity is represented by the
