@@ -204,19 +204,15 @@ asyncFetchReactionsForPost cId p
       myTeamId <- use (csMyTeam.teamIdL)
       doAsyncWith Normal $ do
         reactions <- mmGetReactionsForPost session myTeamId cId (p^.postIdL)
-        return $ do
-          let insert r = Map.insertWith (+) (r^.reactionEmojiNameL) 1
-              insertAll m = foldr insert m reactions
-              upd m | m^.mPostId == Just (p^.postIdL) =
-                        m & mReactions %~ insertAll
-                    | otherwise = m
-          csChannel(cId).ccContents.cdMessages %= fmap upd
+        return $ addReactions cId reactions
 
-addReaction :: Reaction -> ChannelId -> MH ()
-addReaction r cId = csChannel(cId).ccContents.cdMessages %= fmap upd
-  where upd m | m^.mPostId == Just (r^.reactionPostIdL) =
-                  m & mReactions %~ (Map.insertWith (+) (r^.reactionEmojiNameL) 1)
-              | otherwise = m
+addReactions :: ChannelId -> [Reaction] -> MH ()
+addReactions cId rs = csChannel(cId).ccContents.cdMessages %= fmap upd
+  where upd msg = msg & mReactions %~ insertAll (msg^.mPostId)
+        insert pId r
+          | pId == Just (r^.reactionPostIdL) = Map.insertWith (+) (r^.reactionEmojiNameL) 1
+          | otherwise = id
+        insertAll pId msg = foldr (insert pId) msg rs
 
 removeReaction :: Reaction -> ChannelId -> MH ()
 removeReaction r cId = csChannel(cId).ccContents.cdMessages %= fmap upd

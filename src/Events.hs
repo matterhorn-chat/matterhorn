@@ -163,7 +163,7 @@ handleWSEvent we = do
     WMUpdateTeam -> return ()
     WMReactionAdded -> case wepReaction (weData we) of
       Just r  -> case webChannelId (weBroadcast we) of
-        Just cId -> addReaction r cId
+        Just cId -> addReactions cId [r]
         Nothing -> return ()
       Nothing -> return ()
     WMReactionRemoved -> case wepReaction (weData we) of
