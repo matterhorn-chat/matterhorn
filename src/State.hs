@@ -13,7 +13,7 @@ import qualified Control.Concurrent.STM as STM
 import           Data.Char (isAlphaNum)
 import           Brick.Main (getVtyHandle, viewportScroll, vScrollToBeginning, vScrollBy, vScrollToEnd)
 import           Brick.Widgets.Edit (applyEdit)
-import           Control.Monad (when, void)
+import           Control.Monad (when, unless, void)
 import qualified Data.ByteString as BS
 import           Data.Text.Zipper (textZipper, clearZipper, insertMany, gotoEOL)
 import qualified Data.HashMap.Strict as HM
@@ -755,9 +755,19 @@ fetchCurrentScrollback :: MH ()
 fetchCurrentScrollback = do
   cId <- use csCurrentChannelId
   withChannel cId $ \ chan -> do
-    when (chan^.ccInfo.cdCurrentState == ChanUnloaded) $ do
+    unless (chan^.ccInfo.cdCurrentState == ChanLoaded) $ do
+      -- Upgrades the channel state to "Loaded" to indicate that
+      -- content is now present (this is the main point where channel
+      -- state is switched from metadata-only to with-content), then
+      -- initiates an operation to read the content (which will change
+      -- the state to a pending for loaded.  If there was an async
+      -- background task pending (esp. if this channel was selected
+      -- just after startup and startup fetching is still underway),
+      -- this will potentially schedule a duplicate, but that will not
+      -- be harmful since quiescent channel states only increase to
+      -- "higher" states.
+      csChannel(cId).ccInfo.cdCurrentState .= ChanLoaded
       asyncFetchScrollback Preempt cId
-      csChannel(cId).ccInfo.cdCurrentState .= loadingChannelContentState
 
 mkChannelZipperList :: MMNames -> [ChannelId]
 mkChannelZipperList chanNames =

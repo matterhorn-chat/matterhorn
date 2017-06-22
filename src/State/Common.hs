@@ -298,14 +298,13 @@ numScrollbackPosts = 100
 
 -- | Fetch scrollback for a channel in the background
 asyncFetchScrollback :: AsyncPriority -> ChannelId -> MH ()
-asyncFetchScrollback prio cId = do
-    session  <- use csSession
-    myTeamId <- use (csMyTeam.teamIdL)
-    Just viewTime <- preuse (csChannels.to (findChannelById cId)._Just.ccInfo.cdViewed)
-    doAsyncWith prio $ do
-        posts <- mmGetPosts session myTeamId cId 0 numScrollbackPosts
-        return $ do
-            mapM_ (asyncFetchReactionsForPost cId) (posts^.postsPostsL)
+asyncFetchScrollback prio cId =
+  withChannel cId $ \chan ->
+    asPending doAsyncChannelMM prio (Just cId)
+              (___2 mmGetPosts 0 numScrollbackPosts)
+              (addPostsToChannel (chan^.ccInfo.cdViewed))
+  where addPostsToChannel viewTime pcId posts = do
+            mapM_ (asyncFetchReactionsForPost pcId) (posts^.postsPostsL)
             contents <- fromPosts posts
             -- We need to set the new message cutoff only if there are
             -- actually messages that came in after our last view time.
@@ -316,19 +315,15 @@ asyncFetchScrollback prio cId = do
                 newMessages = case viewTime of
                     Nothing -> mempty
                     Just vt -> messagesAfter vt $ contents^.cdMessages
-            csChannel(cId).ccContents .= contents
-            csChannel(cId).ccInfo.cdCurrentState .= ChanLoaded
-            csChannel(cId).ccInfo.cdNewMessageCutoff %= setCutoff
+            csChannel(pcId).ccContents .= contents
+            csChannel(pcId).ccInfo.cdNewMessageCutoff %= setCutoff
 
 asyncFetchReactionsForPost :: ChannelId -> Post -> MH ()
 asyncFetchReactionsForPost cId p
   | not (p^.postHasReactionsL) = return ()
-  | otherwise = do
-      session <- use csSession
-      myTeamId <- use (csMyTeam.teamIdL)
-      doAsyncWith Normal $ do
-        reactions <- mmGetReactionsForPost session myTeamId cId (p^.postIdL)
-        return $ addReactions cId reactions
+  | otherwise = doAsyncChannelMM Normal (Just cId)
+        (___1 mmGetReactionsForPost (p^.postIdL))
+        addReactions
 
 addReactions :: ChannelId -> [Reaction] -> MH ()
 addReactions cId rs = csChannel(cId).ccContents.cdMessages %= fmap upd
