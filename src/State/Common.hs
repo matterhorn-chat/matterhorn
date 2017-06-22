@@ -42,6 +42,54 @@ tryMM act onSuccess = do
 
 -- * Background Computation
 
+-- $background_computation
+--
+-- The main context for Matterhorn is the EventM context provided by
+-- the 'Brick' library.  This context is normally waiting for user
+-- input (or terminal resizing, etc.) which gets turned into an
+-- MHEvent and the 'onEvent' event handler is called to process that
+-- event, after which the display is redrawn as necessary and brick
+-- awaits the next input.
+--
+-- However, it is often convenient to communicate with the Mattermost
+-- server in the background, so that large numbers of
+-- synchronously-blocking events (e.g. on startup) or refreshes can
+-- occur whenever needed and without negatively impacting the UI
+-- updates or responsiveness.  This is handled by a 'forkIO' context
+-- that waits on an STM channel for work to do, performs the work, and
+-- then sends brick an MHEvent containing the completion or failure
+-- information for that work.
+--
+-- The /doAsyncWith/ family of functions here facilitates that
+-- asynchronous functionality.  This is typically used in the
+-- following fashion:
+--
+-- > doSomething :: MH ()
+-- > doSomething = do
+-- >    got <- something
+-- >    doAsyncWith Normal $ do
+-- >       r <- mmFetchR ....
+-- >       return $ do
+-- >          csSomething.here %= processed r
+--
+-- The second argument is an IO monad operation (because 'forkIO' runs
+-- in the IO Monad context), but it returns an MH monad operation.
+-- The IO monad has access to the closure of 'doSomething' (e.g. the
+-- 'got' value), but it should be aware that the state of the MH monad
+-- may have been changed by the time the IO monad runs in the
+-- background, so the closure is a snapshot of information at the time
+-- the 'doAsyncWith' was called.
+--
+-- Similarly, the returned MH monad operation is *not* run in the
+-- context of the 'forkIO' background, but it is instead passed via an
+-- MHEvent back to the main brick thread, where it is executed in an
+-- EventM handler's MH monad context.  This operation therefore has
+-- access to the combined closure of the pre- 'doAsyncWith' code and
+-- the closure of the IO operation.  It is important that the final MH
+-- monad operation should *re-obtain* state information from the MH
+-- monad instead of using or setting the state obtained prior to the
+-- 'doAsyncWith' call.
+
 -- | Priority setting for asynchronous work items. Preempt means that
 -- the queued item will be the next work item begun (i.e. it goes to the
 -- front of the queue); normal means it will go last in the queue.
