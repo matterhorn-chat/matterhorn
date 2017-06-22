@@ -1,4 +1,5 @@
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Command where
 
 import Prelude ()
@@ -18,6 +19,7 @@ import State
 import State.Common
 import State.Editing
 import Types
+import HelpTopics
 
 printArgSpec :: CmdArgs a -> T.Text
 printArgSpec NoArg = ""
@@ -69,16 +71,16 @@ commandList =
     (TokenArg "channel" NoArg) $ \ (name, ()) ->
         changeChannel name
   , Cmd "help" "Show this help screen" NoArg $ \ _ ->
-        showHelpScreen MainHelp
+        showHelpScreen mainHelpTopic
   , Cmd "help" "Show help about a particular topic"
-      (TokenArg "topic" NoArg) $ \ (topic, ()) ->
-        case topic of
-          "main"    -> showHelpScreen MainHelp
-          "scripts" -> showHelpScreen ScriptHelp
-          _         -> do
-            let msg = ("Unknown help topic: `" <> topic <> "`. " <>
-                      "Available topics are:\n  - main\n  - scripts\n")
-            postErrorMessage msg
+      (TokenArg "topic" NoArg) $ \ (topicName, ()) ->
+          case lookupHelpTopic topicName of
+              Nothing -> do
+                  let msg = ("Unknown help topic: `" <> topicName <> "`. " <>
+                            (T.unlines $ "Available topics are:" : knownTopics))
+                      knownTopics = ("  - " <>) <$> helpTopicName <$> helpTopics
+                  postErrorMessage msg
+              Just topic -> showHelpScreen topic
   , Cmd "sh" "List the available shell scripts" NoArg $ \ () ->
       listScripts
   , Cmd "sh" "Run a prewritten shell script"

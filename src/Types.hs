@@ -254,10 +254,19 @@ data HelpScreen
   | ScriptHelp
     deriving (Eq)
 
+-- * Help topics
+data HelpTopic =
+    HelpTopic { helpTopicName         :: T.Text
+              , helpTopicDescription  :: T.Text
+              , helpTopicScreen       :: HelpScreen
+              , helpTopicViewportName :: Name
+              }
+              deriving (Eq)
+
 -- | The 'Mode' represents the current dominant UI activity
 data Mode =
     Main
-    | ShowHelp HelpScreen
+    | ShowHelp HelpTopic
     | ChannelSelect
     | UrlSelect
     | LeaveChannelConfirm

@@ -22,6 +22,7 @@ import State.Editing
 import Command
 import Completion
 import InputHistory
+import HelpTopics (mainHelpTopic)
 
 import Network.Mattermost (Type(..))
 
@@ -34,7 +35,7 @@ mainKeybindings :: [Keybinding]
 mainKeybindings =
     [ KB "Show this help screen"
          (Vty.EvKey (Vty.KFun 1) []) $
-         showHelpScreen MainHelp
+         showHelpScreen mainHelpTopic
 
     , KB "Select a message to edit/reply/delete"
          (Vty.EvKey (Vty.KChar 's') [Vty.MCtrl]) $

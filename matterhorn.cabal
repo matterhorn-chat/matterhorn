@@ -53,6 +53,7 @@ executable matterhorn
                        Events.UrlSelect
                        Events.LeaveChannelConfirm
                        Events.DeleteChannelConfirm
+                       HelpTopics
                        Types
                        Types.Channels
                        Types.Messages

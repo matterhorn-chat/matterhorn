@@ -833,10 +833,10 @@ channelHistoryBackward = do
                     csCmdLine.editContentsL .= (mv $ textZipper eLines Nothing)
                     csInputHistoryPosition.at cId .= (Just $ Just newI)
 
-showHelpScreen :: HelpScreen -> MH ()
-showHelpScreen screen = do
-    mh $ vScrollToBeginning (viewportScroll HelpViewport)
-    csMode .= ShowHelp screen
+showHelpScreen :: HelpTopic -> MH ()
+showHelpScreen topic = do
+    mh $ vScrollToBeginning (viewportScroll $ helpTopicViewportName topic)
+    csMode .= ShowHelp topic
 
 beginChannelSelect :: MH ()
 beginChannelSelect = do
