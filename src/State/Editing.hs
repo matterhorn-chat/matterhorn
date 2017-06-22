@@ -132,6 +132,12 @@ editingKeybindings =
   , KB "Delete the word to the right of the cursor"
     (EvKey (KChar 'd') [MMeta]) $ do
     csCmdLine %= applyEdit Z.deleteWord
+  , KB "Move the cursor to the beginning of the input"
+    (EvKey KHome []) $ do
+    csCmdLine %= applyEdit gotoHome
+  , KB "Move the cursor to the end of the input"
+    (EvKey KEnd []) $ do
+    csCmdLine %= applyEdit gotoEnd
   , KB "Kill the line to the right of the current position and copy it"
     (EvKey (KChar 'k') [MCtrl]) $ do
       z <- use (csCmdLine.editContentsL)
@@ -225,3 +231,15 @@ cursorAtChar ch e =
         curLine = Z.currentLine z
         z = e^.editContentsL
     in (T.singleton ch) `T.isPrefixOf` T.drop col curLine
+
+gotoHome :: Z.TextZipper T.Text -> Z.TextZipper T.Text
+gotoHome = Z.moveCursor (0, 0)
+
+gotoEnd :: Z.TextZipper T.Text -> Z.TextZipper T.Text
+gotoEnd z =
+    let zLines = Z.getText z
+        numLines = length zLines
+        lastLineLength = T.length $ last zLines
+    in if numLines > 0
+       then Z.moveCursor (numLines - 1, lastLineLength) z
+       else z
