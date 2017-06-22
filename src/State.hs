@@ -64,41 +64,52 @@ pageAmount = 15
 
 -- * Refreshing Channel Data
 
--- | Get all the new messages for a given channel. In addition, load the
--- channel metadata and update that, too.
+-- | Refresh information about a specific channel.  The channel
+-- metadata is refreshed, and if this is a loaded channel, the
+-- scrollback is updated as well.
 refreshChannel :: ChannelId -> MH ()
-refreshChannel chan = do
-  msgs <- use (csChannel(chan).ccContents.cdMessages)
-  session <- use csSession
-  myTeamId <- use (csMyTeam.teamIdL)
-  doAsyncWith Normal $
-    case getLatestPostId msgs of
-    Just pId -> do
-      -- Get the latest channel metadata.
-      cwd <- mmGetChannel session myTeamId chan
+refreshChannel cId =
+  asPending doAsyncChannelMM Normal (Just cId) mmGetChannel postRefreshChannel
+  where postRefreshChannel cId' cwd = do
+          updateChannelInfo cId' cwd
+          -- If this is an active channel, also update the Messages to
+          -- retrieve any that might have been missed.
+          updateMessages cId'
 
-      -- Load posts since the last post in this channel.  Note that
-      -- postsOrder from mattermost-api is most recent first.
-      posts <- mmGetPostsAfter session myTeamId chan pId 0 100
-      return $ do
-        mapM_ addMessageToState [ (posts^.postsPostsL) HM.! p
-                                | p <- F.toList (posts^.postsOrderL)
-                                ]
-        let newChanInfo ci = channelInfoFromChannelWithData cwd ci
-                               & cdCurrentState %~ quiescentChannelState ChanReloading
 
-        csChannel(chan).ccInfo %= newChanInfo
-    _ -> return (return ())
-
--- | Find all the loaded channels and refresh their state, setting the
--- state as dirty until we get a response
-refreshLoadedChannels :: MH ()
-refreshLoadedChannels = do
-  let isChanLoaded cc = cc^.ccInfo.cdCurrentState == ChanLoaded
-      setChanToRefreshing = ccInfo.cdCurrentState %~ fst . pendingChannelState
-  cIds <- use (csChannels.to (filteredChannelIds isChanLoaded))
-  csChannels %= flip (foldr ((flip modifyChannelById) setChanToRefreshing)) cIds
+-- | Refresh information about all channels.  This is usually
+-- triggered when a reconnect event for the WebSocket to the server
+-- occurs.
+refreshChannels :: MH ()
+refreshChannels = do
+  cIds <- use (csChannels.to (filteredChannelIds (const True)))
   sequence_ $ refreshChannel <$> cIds
+
+
+-- | Update the indicted Channel entry with the new data retrieved
+-- from the Mattermost server.
+updateChannelInfo :: ChannelId -> ChannelWithData -> MH ()
+updateChannelInfo cid cwd =
+  csChannel(cid).ccInfo %= channelInfoFromChannelWithData cwd
+
+-- | If this channel has content, fetch any new content that has
+-- arrived after the existing content.
+updateMessages :: ChannelId -> MH ()
+updateMessages cId =
+  withChannel cId $ \chan ->
+    when (chan^.ccInfo.cdCurrentState.to (== ChanLoaded)) $
+      case getLatestPostId (chan^.ccContents.cdMessages) of
+        Nothing -> return ()
+        Just pId -> asPending doAsyncChannelMM Normal (Just cId)
+                      (___3 mmGetPostsAfter pId 0 100)
+                      (\_ posts ->
+                          -- Load posts since the last post in this
+                          -- channel.  Note that postsOrder from
+                          -- mattermost-api is most recent first.
+                          mapM_ addMessageToState
+                                [ (posts^.postsPostsL) HM.! p
+                                | p <- F.toList (posts^.postsOrderL)
+                                ])
 
 -- * Message selection mode
 
