@@ -12,7 +12,6 @@ import qualified Control.Concurrent.STM as STM
 import           Control.Concurrent.MVar (newEmptyMVar)
 import           Control.Exception (SomeException, catch, try)
 import           Control.Monad (forM, forever, when, void)
-import           Control.Monad.IO.Class (liftIO)
 import qualified Data.Text as T
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
