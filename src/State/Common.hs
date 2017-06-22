@@ -124,6 +124,78 @@ doAsyncWithIO prio st thunk = do
     let queue = st^.csResources.crRequestQueue
     STM.atomically $ putChan queue $ thunk
 
+-- | Performs an asynchronous IO operation.  On completion, the final
+-- argument a completion function is executed in an MH () context in
+-- the main (brick) thread.
+doAsyncMM :: AsyncPriority                -- ^ the priority for this async operation
+          -> (Session -> TeamId -> IO a)  -- ^ the async MM channel-based IO operation
+          -> (a -> MH ())                 -- ^ function to process the results in
+                                          -- brick event handling context
+          -> MH ()
+doAsyncMM prio mmOp thunk = do
+  session <- use csSession
+  myTeamId <- use (csMyTeam.teamIdL)
+  doAsyncWith prio $ do
+    r <- mmOp session myTeamId
+    return $ thunk r
+
+-- | Helper type for a function to perform an asynchronous MM
+-- operation on a channel and then invoke an MH completion event.
+type DoAsyncChannelMM a
+  = AsyncPriority  -- ^ the priority for this async operation
+  -> Maybe ChannelId -- ^ defaults to the "current" channel if Nothing
+  -> (Session -> TeamId -> ChannelId -> IO a) -- ^ the asynchronous Mattermost
+                                               -- channel-based IO operation
+  -> (ChannelId -> a -> MH ()) -- ^ function to process the results in brick
+                             -- event handling context
+  -> MH ()
+
+-- | Performs an asynchronous IO operation on a specific channel.  On
+-- completion, the final argument a completion function is executed in
+-- an MH () context in the main (brick) thread.
+--
+-- If no channel ID is provided on input, the current channel is used;
+-- the completion function is always called with the channel ID upon
+-- which the operation was performed.
+doAsyncChannelMM :: DoAsyncChannelMM a
+doAsyncChannelMM prio m_cId mmOp thunk = do
+  ccId <- use csCurrentChannelId
+  let cId = maybe ccId id m_cId
+  doAsyncMM prio (\s t -> mmOp s t cId) (\r -> thunk cId r)
+
+-- | Prefix function for calling doAsyncChannelMM that will set the
+-- channel state to "pending" until the async operation completes.  If
+-- the channel state is already in the pending state when this
+-- function is called, no operations are performed (i.e., this request
+-- is treated as a duplicate).
+asPending :: DoAsyncChannelMM a -> DoAsyncChannelMM a
+asPending asyncOp prio m_cId mmOp thunk = do
+    ccId <- use csCurrentChannelId
+    let cId = maybe ccId id m_cId
+    withChannel cId $ \chan ->
+        let origState = chan^.ccInfo.cdCurrentState
+            (pendState, setDone) = pendingChannelState origState
+        in if pendState == origState
+           then return ()  -- this operation already pending; do not duplicate
+           else do
+             csChannel(cId).ccInfo.cdCurrentState .= pendState
+             asyncOp prio m_cId mmOp $ \_ r ->
+                 do csChannel(cId).ccInfo.cdCurrentState %= setDone
+                    thunk cId r
+
+-- | Helper to skip the first 3 arguments of a 4 argument function
+___1 :: (a -> b -> c -> d -> e) -> d -> (a -> b -> c -> e)
+___1 f a = \s t c -> f s t c a
+
+-- | Helper to skip the first 3 arguments of a 5 argument function
+___2 :: (a -> b -> c -> d -> e -> g) -> d -> e -> (a -> b -> c -> g)
+___2 f a b = \s t c -> f s t c a b
+
+-- | Use this convenience function if no operation needs to be
+-- performed in the MH state after an async operation completes.
+endAsyncNOP :: ChannelId -> a -> MH ()
+endAsyncNOP _ _ = return ()
+
 -- * Client Messages
 
 -- | Create 'ChannelContents' from a 'Posts' value
