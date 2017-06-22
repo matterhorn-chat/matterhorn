@@ -381,8 +381,7 @@ setLastViewedFor cId = do
 updateViewed :: MH ()
 updateViewed = do
   csCurrentChannel.ccInfo.cdMentionCount .= 0
-  st <- use id
-  liftIO (updateViewedIO st)
+  updateViewedChan =<< use csCurrentChannelId
 
 resetHistoryPosition :: MH ()
 resetHistoryPosition = do
@@ -516,9 +515,11 @@ channelScrollToBottom = do
   cId <- use csCurrentChannelId
   mh $ vScrollToEnd (viewportScroll (ChannelMessages cId))
 
-asyncFetchMoreMessages :: ChatState -> ChannelId -> IO ()
-asyncFetchMoreMessages st cId =
-    doAsyncWithIO Preempt st $ do
+asyncFetchMoreMessages :: MH ()
+asyncFetchMoreMessages = do
+    cId  <- use csCurrentChannelId
+    st   <- use id
+    doAsyncWith Preempt $ do
         let offset = length $ st^.csChannel(cId).ccContents.cdMessages
             numToFetch = pageAmount
         posts <- mmGetPosts (st^.csSession) (st^.csMyTeam.teamIdL) cId (offset - 1) numToFetch
@@ -533,12 +534,7 @@ asyncFetchMoreMessages st cId =
 loadMoreMessages :: MH ()
 loadMoreMessages = do
     mode <- use csMode
-    cId  <- use csCurrentChannelId
-    st   <- use id
-    case mode of
-        ChannelScroll -> do
-            liftIO $ asyncFetchMoreMessages st cId
-        _ -> return ()
+    when (mode == ChannelScroll) asyncFetchMoreMessages
 
 channelByName :: ChatState -> T.Text -> Maybe ChannelId
 channelByName st n
@@ -781,12 +777,13 @@ mkChannelZipperList chanNames =
   | i <- chanNames ^. cnUsers
   , c <- maybeToList (HM.lookup i (chanNames ^. cnToChanId)) ]
 
-setChannelTopic :: ChatState -> T.Text -> IO ()
-setChannelTopic st msg = do
-    let chanId = st^.csCurrentChannelId
-        theTeamId = st^.csMyTeam.teamIdL
-    doAsyncWithIO Normal st $ do
-        void $ mmSetChannelHeader (st^.csSession) theTeamId chanId msg
+setChannelTopic :: T.Text -> MH ()
+setChannelTopic msg = do
+    chanId <- use csCurrentChannelId
+    theTeamId <- use (csMyTeam.teamIdL)
+    session  <- use csSession
+    doAsyncWith Normal $ do
+        void $ mmSetChannelHeader session theTeamId chanId msg
         return $ csChannel(chanId).ccInfo.cdHeader .= msg
 
 channelHistoryForward :: MH ()

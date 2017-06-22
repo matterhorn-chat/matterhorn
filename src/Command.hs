@@ -61,9 +61,7 @@ commandList =
       setTheme themeName
   , Cmd "topic" "Set the current channel's topic"
     (LineArg "topic") $ \ p -> do
-      when (not $ T.null p) $ do
-          st <- use id
-          liftIO $ setChannelTopic st p
+      when (not $ T.null p) $ setChannelTopic p
   , Cmd "add-user" "Add a user to the current channel"
     (TokenArg "username" NoArg) $ \ (uname, ()) ->
         addUserToCurrentChannel uname
