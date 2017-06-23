@@ -196,7 +196,7 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
                                , u^.uiLastName
                                , "<" <> u^.uiEmail <> ">"
                                ]
-                       quote n = " \"" <> n <> "\" "
+                       quote n = "\"" <> n <> "\""
                        nick = maybe "" quote $ u^.uiNickName
                    in p1 <+> p2
     messages = body <+> txt " "
