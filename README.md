@@ -15,16 +15,17 @@ your server version:
 
 https://github.com/matterhorn-chat/matterhorn/releases
 
-To fetch a release and run Matterhorn, you might run the following
-commands (where `VERSION` and `PLATFORM` match your setup):
+To fetch a release and run Matterhorn, run the following commands (where
+`VERSION` and `PLATFORM` match your setup):
 
     wget https://github.com/matterhorn-chat/matterhorn/releases/download/<VERSION>/matterhorn-<VERSION>-<PLATFORM>.tar.gz
     tar xf matterhorn-<VERSION>-<PLATFORM>.tar.gz
     cd matterhorn-<VERSION>-<PLATFORM>
     ./matterhorn
 
-When you run Matterhorn you'll be prompted for your server information.
-At present `matterhorn` supports only username/password authentication.
+When you run Matterhorn you'll be prompted for your server information
+and credentials. At present `matterhorn` supports only username/password
+authentication.
 
 Note: Version `ABBCC.X.Y` matches Mattermost server version `A.BB.CC`.
 For example, if your Mattermost server version is `3.6.0` then you
