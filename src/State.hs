@@ -644,9 +644,21 @@ deleteMessage new = do
   now <- getNow
   let isDeletedMessage m = m^.mPostId == Just (new^.postIdL) ||
                            isReplyTo (new^.postIdL) m
+      chan :: Traversal' ChatState ClientChannel
       chan = csChannel (new^.postChannelIdL)
   chan.ccContents.cdMessages.traversed.filtered isDeletedMessage %= (& mDeleted .~ True)
   chan.ccInfo.cdUpdated .= now
+
+  -- When there was a new message cutoff set, we need to check to see
+  -- whether deletion of this message changes the cutoff.
+  mCutoff <- preuse (chan.ccInfo.cdNewMessageCutoff.folded)
+  case mCutoff of
+      Nothing -> return ()
+      Just cutoff -> do
+          msgs <- use (chan.ccContents.cdMessages)
+          when (F.null $ messagesAfter cutoff msgs) $
+              chan.ccInfo.cdNewMessageCutoff .= Nothing
+
   cId <- use csCurrentChannelId
   when (postChannelId new == cId) updateViewed
 

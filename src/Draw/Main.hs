@@ -328,8 +328,9 @@ insertTransitions datefmt tz cutoff ms = foldr addMessage ms transitions
           dateT = fmap dateMsg dateRange
           dateRange = let dr = foldr checkDateChange [] ms
                       in if length dr > 1 then tail dr else []
-          checkDateChange m [] = [dayStart $ m^.mDate]
-          checkDateChange m dl = if dayOf (head dl) == dayOf (m^.mDate)
+          checkDateChange m [] | m^.mDeleted = []
+                               | otherwise = [dayStart $ m^.mDate]
+          checkDateChange m dl = if dayOf (head dl) == dayOf (m^.mDate) || m^.mDeleted
                                  then dl
                                  else dayStart (m^.mDate) : dl
           dayOf = localDay . utcToLocalTime tz
