@@ -26,6 +26,7 @@ module Types.Messages
   , getLatestPostId
   , findLatestUserMessage
   , messagesAfter
+  , messagesOnOrAfter
   , reverseMessages
   , unreverseMessages
   )
@@ -279,6 +280,10 @@ findLatestUserMessage f msgs =
 -- | Return all messages that were posted after the specified date/time.
 messagesAfter :: UTCTime -> Messages -> Messages
 messagesAfter viewTime = onDirectedSeq $ Seq.takeWhileR (\m -> m^.mDate > viewTime)
+
+-- | Return all messages that were posted at or after the specified date/time.
+messagesOnOrAfter :: UTCTime -> Messages -> Messages
+messagesOnOrAfter viewTime = onDirectedSeq $ Seq.takeWhileR (\m -> m^.mDate >= viewTime)
 
 -- | Reverse the order of the messages
 reverseMessages :: Messages -> RetrogradeMessages

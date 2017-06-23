@@ -366,9 +366,10 @@ fetchCurrentChannelMembers = do
 hasUnread :: ChatState -> ChannelId -> Bool
 hasUnread st cId = maybe False id $ do
   chan <- findChannelById cId (st^.csChannels)
-  u <- chan^.ccInfo.cdViewed
-  let v = chan^.ccInfo.cdUpdated
-  return (v > u)
+  case chan^.ccInfo.cdNewMessageCutoff of
+      Nothing -> return False
+      Just cutoff ->
+          return $ not $ F.null $ messagesOnOrAfter cutoff $ chan^.ccContents.cdMessages
 
 setLastViewedFor :: ChannelId -> MH ()
 setLastViewedFor cId = do
