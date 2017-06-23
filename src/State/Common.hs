@@ -124,6 +124,82 @@ doAsyncWithIO prio st thunk = do
     let queue = st^.csResources.crRequestQueue
     STM.atomically $ putChan queue $ thunk
 
+-- | Performs an asynchronous IO operation.  On completion, the final
+-- argument a completion function is executed in an MH () context in
+-- the main (brick) thread.
+doAsyncMM :: AsyncPriority                -- ^ the priority for this async operation
+          -> (Session -> TeamId -> IO a)  -- ^ the async MM channel-based IO operation
+          -> (a -> MH ())                 -- ^ function to process the results in
+                                          -- brick event handling context
+          -> MH ()
+doAsyncMM prio mmOp thunk = do
+  session <- use csSession
+  myTeamId <- use (csMyTeam.teamIdL)
+  doAsyncWith prio $ do
+    r <- mmOp session myTeamId
+    return $ thunk r
+
+-- | Helper type for a function to perform an asynchronous MM
+-- operation on a channel and then invoke an MH completion event.
+type DoAsyncChannelMM a
+  = AsyncPriority  -- ^ the priority for this async operation
+  -> Maybe ChannelId -- ^ defaults to the "current" channel if Nothing
+  -> (Session -> TeamId -> ChannelId -> IO a) -- ^ the asynchronous Mattermost
+                                               -- channel-based IO operation
+  -> (ChannelId -> a -> MH ()) -- ^ function to process the results in brick
+                             -- event handling context
+  -> MH ()
+
+-- | Performs an asynchronous IO operation on a specific channel.  On
+-- completion, the final argument a completion function is executed in
+-- an MH () context in the main (brick) thread.
+--
+-- If no channel ID is provided on input, the current channel is used;
+-- the completion function is always called with the channel ID upon
+-- which the operation was performed.
+doAsyncChannelMM :: DoAsyncChannelMM a
+doAsyncChannelMM prio m_cId mmOp thunk = do
+  ccId <- use csCurrentChannelId
+  let cId = maybe ccId id m_cId
+  doAsyncMM prio (\s t -> mmOp s t cId) (\r -> thunk cId r)
+
+-- | Prefix function for calling doAsyncChannelMM that will set the
+-- channel state to "pending" until the async operation completes.  If
+-- the channel state is already in the pending state when this
+-- function is called, no operations are performed (i.e., this request
+-- is treated as a duplicate).
+asPending :: DoAsyncChannelMM a -> DoAsyncChannelMM a
+asPending asyncOp prio m_cId mmOp thunk = do
+    ccId <- use csCurrentChannelId
+    let cId = maybe ccId id m_cId
+    withChannel cId $ \chan ->
+        let origState = chan^.ccInfo.cdCurrentState
+            (pendState, setDone) = pendingChannelState origState
+        in if pendState == origState
+           then return ()  -- this operation already pending; do not duplicate
+           else do
+             csChannel(cId).ccInfo.cdCurrentState .= pendState
+             asyncOp prio m_cId mmOp $ \_ r ->
+                 do csChannel(cId).ccInfo.cdCurrentState %= setDone
+                    thunk cId r
+
+-- | Helper to skip the first 3 arguments of a 4 argument function
+___1 :: (a -> b -> c -> d -> e) -> d -> (a -> b -> c -> e)
+___1 f a = \s t c -> f s t c a
+
+-- | Helper to skip the first 3 arguments of a 5 argument function
+___2 :: (a -> b -> c -> d -> e -> g) -> d -> e -> (a -> b -> c -> g)
+___2 f a b = \s t c -> f s t c a b
+
+-- | Helper to skip the first 3 arguments of a 5 argument function
+___3 :: (a -> b -> c -> d -> e -> g -> h) -> d -> e -> g -> (a -> b -> c -> h)
+___3 f a b d = \s t c -> f s t c a b d
+
+-- | Use this convenience function if no operation needs to be
+-- performed in the MH state after an async operation completes.
+endAsyncNOP :: ChannelId -> a -> MH ()
+endAsyncNOP _ _ = return ()
+
 -- * Client Messages
 
 -- | Create 'ChannelContents' from a 'Posts' value
@@ -222,14 +298,13 @@ numScrollbackPosts = 100
 
 -- | Fetch scrollback for a channel in the background
 asyncFetchScrollback :: AsyncPriority -> ChannelId -> MH ()
-asyncFetchScrollback prio cId = do
-    session  <- use csSession
-    myTeamId <- use (csMyTeam.teamIdL)
-    Just viewTime <- preuse (csChannels.to (findChannelById cId)._Just.ccInfo.cdViewed)
-    doAsyncWith prio $ do
-        posts <- mmGetPosts session myTeamId cId 0 numScrollbackPosts
-        return $ do
-            mapM_ (asyncFetchReactionsForPost cId) (posts^.postsPostsL)
+asyncFetchScrollback prio cId =
+  withChannel cId $ \chan ->
+    asPending doAsyncChannelMM prio (Just cId)
+              (___2 mmGetPosts 0 numScrollbackPosts)
+              (addPostsToChannel (chan^.ccInfo.cdViewed))
+  where addPostsToChannel viewTime pcId posts = do
+            mapM_ (asyncFetchReactionsForPost pcId) (posts^.postsPostsL)
             contents <- fromPosts posts
             -- We need to set the new message cutoff only if there are
             -- actually messages that came in after our last view time.
@@ -240,19 +315,15 @@ asyncFetchScrollback prio cId = do
                 newMessages = case viewTime of
                     Nothing -> mempty
                     Just vt -> messagesAfter vt $ contents^.cdMessages
-            csChannel(cId).ccContents .= contents
-            csChannel(cId).ccInfo.cdCurrentState .= ChanLoaded
-            csChannel(cId).ccInfo.cdNewMessageCutoff %= setCutoff
+            csChannel(pcId).ccContents .= contents
+            csChannel(pcId).ccInfo.cdNewMessageCutoff %= setCutoff
 
 asyncFetchReactionsForPost :: ChannelId -> Post -> MH ()
 asyncFetchReactionsForPost cId p
   | not (p^.postHasReactionsL) = return ()
-  | otherwise = do
-      session <- use csSession
-      myTeamId <- use (csMyTeam.teamIdL)
-      doAsyncWith Normal $ do
-        reactions <- mmGetReactionsForPost session myTeamId cId (p^.postIdL)
-        return $ addReactions cId reactions
+  | otherwise = doAsyncChannelMM Normal (Just cId)
+        (___1 mmGetReactionsForPost (p^.postIdL))
+        addReactions
 
 addReactions :: ChannelId -> [Reaction] -> MH ()
 addReactions cId rs = csChannel(cId).ccContents.cdMessages %= fmap upd
