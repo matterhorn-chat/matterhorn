@@ -637,8 +637,7 @@ editMessage new = do
   chan . ccInfo . cdUpdated .= now
   csPostMap.ix(postId new) .= msg
   cId <- use csCurrentChannelId
-  when (postChannelId new == cId) $
-    updateViewed
+  when (postChannelId new == cId) updateViewed
 
 deleteMessage :: Post -> MH ()
 deleteMessage new = do
@@ -649,8 +648,7 @@ deleteMessage new = do
   chan.ccContents.cdMessages.traversed.filtered isDeletedMessage %= (& mDeleted .~ True)
   chan.ccInfo.cdUpdated .= now
   cId <- use csCurrentChannelId
-  when (postChannelId new == cId) $
-    updateViewed
+  when (postChannelId new == cId) updateViewed
 
 maybeRingBell :: MH ()
 maybeRingBell = do
