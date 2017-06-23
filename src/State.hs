@@ -478,10 +478,15 @@ getNextNonDMChannel st shift z =
         fType onz = st^.(csChannels.to
                           (findChannelById (Z.focus onz))) ^?! _Just.ccInfo.cdType
 
-
 getNextUnreadChannel :: ChatState
                      -> (Zipper ChannelId -> Zipper ChannelId)
-getNextUnreadChannel st = Z.findRight (hasUnread st)
+getNextUnreadChannel st =
+    -- The next channel with unread messages must also be a channel
+    -- other than the current one, since the zipper may be on a channel
+    -- that has unread messages and will stay that way until we leave
+    -- it- so we need to skip that channel when doing the zipper search
+    -- for the next candidate channel.
+    Z.findRight (\cId -> hasUnread st cId && (cId /= st^.csCurrentChannelId))
 
 listThemes :: MH ()
 listThemes = do
