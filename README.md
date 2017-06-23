@@ -127,15 +127,14 @@ these operations.
 The easiest way to build `matterhorn` is to use the provided
 `install.sh` script, which requires `git` and an appropriate
 `ghc`/`cabal` installation. It will pull the appropriate repos and build
-the sandbox in the appropriate way.
+the application.
 
 If you want to, you can also run the install process manually:
 
 ~~~
 $ cd matterhorn
-$ cabal sandbox init
-$ cabal install
-$ cabal build
+$ cabal new-build
+$ ./run.sh
 ~~~
 
 # Our Versioning Scheme

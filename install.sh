@@ -3,7 +3,7 @@
 # This script builds and installs this package and its dependencies in a
 # sandbox. This script is also suitable for rebuilds during development.
 #
-# Note that this uses standard cabal commands rather than 'new-build'.
+# Note that this uses cabal 'new-build' operation instead of standard install.
 
 set -e
 
@@ -12,23 +12,23 @@ HERE=$(cd `dirname $0`; pwd)
 # Where dependency repos get cloned
 DEPS=$HERE/deps
 
-# Where we'll put the package sandbox
-SANDBOX=$HERE/.cabal-sandbox
-
 # The source for the mattermost API package
 MATTERMOST_API_REPO=https://github.com/matterhorn-chat/mattermost-api.git
+MATTERMOST_API_QC_REPO=https://github.com/matterhorn-chat/mattermost-api-qc.git
 
 # Where to clone the mattermost API package
-MATTERMOST_DIR=$DEPS/mattermost-api
+MATTERMOST_API_DIR=$DEPS/mattermost-api
+MATTERMOST_API_QC_DIR=$DEPS/mattermost-api-qc
 
 # Whether this is a first-time install (see below)
 FIRST_TIME=0
 
 function init {
-    if [ ! -d "$HERE/.cabal-sandbox" ]
+    if [ ! -d "$HERE/cabal.project.local" ]
     then
         FIRST_TIME=1
-        cabal sandbox --sandbox=$SANDBOX init
+        echo 'packages: deps/mattermost-api/mattermost-api.cabal'  >cabal.project.local
+        echo '          deps/mattermost-api-qc/mattermost-api-qc.cabal' >>cabal.project.local
     fi
 }
 
@@ -38,25 +38,42 @@ function init {
 function clone_or_update_repo {
     mkdir -p $DEPS
 
-    local repo=$1
-    local destdir=$2
+    local branch=$1
+    local repo=$2
+    local destdir=$3
 
     if [ ! -d "$destdir" ]
     then
-        git clone $repo $destdir
+        echo git clone -b "$branch" "$repo" "$destdir"
+        if ! git clone -b "$branch" "$repo" "$destdir" 2> gitclone.err
+        then
+            if grep -q "fatal: Remote branch ${branch} not found in upstream origin" gitclone.err
+            then
+                echo "Branch ${branch} does not exist; using master"
+                echo git clone "$repo" "$destdir"
+                git clone "$repo" "$destdir"
+            else
+                cat gitclone.err
+            fi
+        fi
+
     else
         cd $destdir && git pull
-    fi
-
-    if [ "$FIRST_TIME" == "1" ]
-    then
-        cd $HERE && \
-            cabal sandbox --sandbox=$SANDBOX add-source $destdir
     fi
 }
 
 function install_deps {
-    clone_or_update_repo $MATTERMOST_API_REPO $MATTERMOST_DIR
+  clone_or_update_repo "$(current_branch)" "$MATTERMOST_API_REPO" "$MATTERMOST_API_DIR"
+  clone_or_update_repo "$(current_branch)" "$MATTERMOST_API_QC_REPO" "$MATTERMOST_API_QC_DIR"
+}
+
+function current_branch {
+  if [[ -z "$TRAVIS_BRANCH" ]]
+  then
+      git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/'
+  else
+      echo "$TRAVIS_BRANCH"
+  fi
 }
 
 function build {
@@ -66,11 +83,11 @@ function build {
     then
         # For first-time builds, get dependencies installed as fast as
         # possible.
-        cabal install -j
+        cabal new-build -j --enable-tests
     else
         # But for subsequent builds, build with -j1 to avoid suppression
         # of useful (e.g. warning) output.
-        cabal install -j1
+        cabal new-build -j1 --enable-tests
     fi
 }
 
