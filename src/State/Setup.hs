@@ -16,7 +16,7 @@ import qualified Data.Text as T
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
 import           Data.List (sort)
-import           Data.Maybe (listToMaybe, maybeToList, fromJust)
+import           Data.Maybe (listToMaybe, maybeToList, fromJust, catMaybes)
 import           Data.Monoid ((<>))
 import qualified Data.Sequence as Seq
 import           Data.Time.LocalTime ( TimeZone(..), getCurrentTimeZone )
@@ -25,7 +25,7 @@ import           System.Exit (exitFailure, ExitCode(ExitSuccess))
 import           System.IO (Handle, hPutStrLn, hFlush)
 import           System.IO.Temp (openTempFile)
 import           System.Directory (getTemporaryDirectory)
-import           Text.Aspell (Aspell, startAspell)
+import           Text.Aspell (Aspell, AspellOption(..), startAspell)
 
 import           Network.Mattermost
 import           Network.Mattermost.Lenses
@@ -300,7 +300,10 @@ initializeState cr myTeam myUser = do
 
   sp <- case configEnableAspell $ cr^.crConfiguration of
       False -> return Nothing
-      True -> either (const Nothing) Just <$> startAspell
+      True ->
+          let aspellOpts = catMaybes [ UseDictionary <$> (configAspellDictionary $ cr^.crConfiguration)
+                                     ]
+          in either (const Nothing) Just <$> startAspell aspellOpts
 
   let chanNames = mkChanNames myUser users chans
       Just townSqId = chanNames ^. cnToChanId . at "town-square"

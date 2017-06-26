@@ -36,6 +36,7 @@ fromIni = do
     configTimeFormat     <- fieldMb "timeFormat"
     configDateFormat     <- fieldMb "dateFormat"
     configTheme          <- fieldMb "theme"
+    configAspellDictionary <- fieldMb "aspellDictionary"
     configURLOpenCommand <- fieldMb "urlOpenCommand"
     configSmartBacktick  <- fieldFlagDef "smartbacktick"
       (configSmartBacktick defaultConfig)
@@ -65,6 +66,7 @@ defaultConfig =
            , configActivityBell       = False
            , configShowMessagePreview = False
            , configEnableAspell       = False
+           , configAspellDictionary   = Nothing
            }
 
 findConfig :: Maybe FilePath -> IO (Either String Config)
