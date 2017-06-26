@@ -31,7 +31,7 @@ import qualified Data.Set as Set
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           Data.Text.Zipper (cursorPosition, insertChar, getText, gotoEOL)
-import           Data.Char (isSpace)
+import           Data.Char (isSpace, isPunctuation)
 import           Lens.Micro.Platform
 
 import           Network.Mattermost
@@ -124,8 +124,9 @@ previewFromInput uname s =
                            }
 
 data Token =
-    Whitespace T.Text
-    | Normal T.Text
+    Ignore T.Text
+    | Check T.Text
+    deriving (Show)
 
 drawEditorContents :: ChatState -> [T.Text] -> Widget Name
 drawEditorContents st =
@@ -141,8 +142,16 @@ doHighlightMisspellings misspellings contents =
         handleLine t =
             -- For annotated tokens, coallesce tokens of the same type
             -- and add attributes for misspellings.
-            let mkW (Left tok) = withDefAttr misspellingAttr $ txt $ getTokenText tok
-                mkW (Right tok) = txt $ getTokenText tok
+            let mkW (Left tok) =
+                    let s = getTokenText tok
+                    in if T.null s
+                       then emptyWidget
+                       else withDefAttr misspellingAttr $ txt $ getTokenText tok
+                mkW (Right tok) =
+                    let s = getTokenText tok
+                    in if T.null s
+                       then emptyWidget
+                       else txt s
 
                 go :: Either Token Token -> [Either Token Token] -> [Either Token Token]
                 go lst [] = [lst]
@@ -152,38 +161,40 @@ doHighlightMisspellings misspellings contents =
                         (Right a, Right b) -> go (Right $ combineTokens a b) toks
                         _                  -> lst : go tok toks
 
-            in hBox $ mkW <$> (go (Right $ Whitespace "") $ annotatedTokens t)
+            in hBox $ mkW <$> (go (Right $ Ignore "") $ annotatedTokens t)
 
-        combineTokens (Whitespace a) (Whitespace b) = Whitespace $ a <> b
-        combineTokens (Normal a) (Normal b) = Normal $ a <> b
-        combineTokens (Whitespace a) (Normal b) = Normal $ a <> b
-        combineTokens (Normal a) (Whitespace b) = Normal $ a <> b
+        combineTokens (Ignore a) (Ignore b) = Ignore $ a <> b
+        combineTokens (Check a) (Check b) = Check $ a <> b
+        combineTokens (Ignore a) (Check b) = Check $ a <> b
+        combineTokens (Check a) (Ignore b) = Check $ a <> b
 
-        getTokenText (Whitespace a) = a
-        getTokenText (Normal a) = a
+        getTokenText (Ignore a) = a
+        getTokenText (Check a) = a
 
         annotatedTokens t =
             -- For every token, check on whether it is a misspelling.
             -- The result is Either Token Token where the Left is a
             -- misspelling and the Right is not.
-            checkMisspelling <$> tokenize t (Whitespace "")
+            checkMisspelling <$> tokenize t (Ignore "")
 
-        checkMisspelling t@(Whitespace _) = Right t
-        checkMisspelling t@(Normal s) =
+        checkMisspelling t@(Ignore _) = Right t
+        checkMisspelling t@(Check s) =
             if s `S.member` misspellings
             then Left t
             else Right t
 
+        ignoreChar c = isSpace c || isPunctuation c || c == '`'
+
         tokenize t curTok
             | T.null t = [curTok]
-            | isSpace $ T.head t =
+            | ignoreChar $ T.head t =
                 case curTok of
-                    Whitespace s -> tokenize (T.tail t) (Whitespace $ s <> (T.singleton $ T.head t))
-                    Normal s -> Normal s : tokenize (T.tail t) (Whitespace $ T.singleton $ T.head t)
+                    Ignore s -> tokenize (T.tail t) (Ignore $ s <> (T.singleton $ T.head t))
+                    Check s -> Check s : tokenize (T.tail t) (Ignore $ T.singleton $ T.head t)
             | otherwise =
                 case curTok of
-                    Whitespace s -> Whitespace s : tokenize (T.tail t) (Normal $ T.singleton $ T.head t)
-                    Normal s -> tokenize (T.tail t) (Normal $ s <> (T.singleton $ T.head t))
+                    Ignore s -> Ignore s : tokenize (T.tail t) (Check $ T.singleton $ T.head t)
+                    Check s -> tokenize (T.tail t) (Check $ s <> (T.singleton $ T.head t))
 
     in vBox $ handleLine <$> contents
 
