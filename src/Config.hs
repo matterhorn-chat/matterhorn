@@ -41,6 +41,8 @@ fromIni = do
       (configSmartBacktick defaultConfig)
     configShowMessagePreview <- fieldFlagDef "showMessagePreview"
       (configShowMessagePreview defaultConfig)
+    configEnableAspell <- fieldFlagDef "enableAspell"
+      (configEnableAspell defaultConfig)
     configActivityBell <- fieldFlagDef "activityBell"
       (configActivityBell defaultConfig)
     configPass <- (Just . PasswordCommand <$> field "passcmd") <|>
@@ -62,6 +64,7 @@ defaultConfig =
            , configURLOpenCommand     = Nothing
            , configActivityBell       = False
            , configShowMessagePreview = False
+           , configEnableAspell       = False
            }
 
 findConfig :: Maybe FilePath -> IO (Either String Config)

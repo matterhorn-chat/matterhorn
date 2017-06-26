@@ -298,7 +298,9 @@ initializeState cr myTeam myUser = do
 
   startSubprocessLogger (cr^.crSubprocessLog) requestChan
 
-  sp <- either (const Nothing) Just <$> startAspell
+  sp <- case configEnableAspell $ cr^.crConfiguration of
+      False -> return Nothing
+      True -> either (const Nothing) Just <$> startAspell
 
   let chanNames = mkChanNames myUser users chans
       Just townSqId = chanNames ^. cnToChanId . at "town-square"
