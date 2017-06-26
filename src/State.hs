@@ -237,9 +237,7 @@ flagMessage = do
           doAsyncWith Normal $ do
             let doFlag = if f then mmUnflagPost else mmFlagPost
             doFlag session myId pId
-            return $ do
-              setMessageFlag pId (not f)
-              return ()
+            return $ return ()
     _ -> return ()
 
 beginUpdateMessage :: MH ()
