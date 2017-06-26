@@ -36,6 +36,7 @@ module Themes
   , urlListSelectedAttr
   , messageSelectAttr
   , messageSelectStatusAttr
+  , misspellingAttr
 
   -- * Username formatting
   , colorUsername
@@ -156,6 +157,9 @@ clientStrongAttr = "clientStrong"
 errorMessageAttr :: AttrName
 errorMessageAttr = "errorMessage"
 
+misspellingAttr :: AttrName
+misspellingAttr = "misspelling"
+
 messageSelectStatusAttr :: AttrName
 messageSelectStatusAttr = "messageSelectStatus"
 
@@ -199,6 +203,7 @@ lightColorTheme = attrMap (black `on` white) $
   , (urlListSelectedAttr,              black `on` yellow)
   , (messageSelectAttr,                black `on` yellow)
   , (messageSelectStatusAttr,          fg black)
+  , (misspellingAttr,                  black `on` red)
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 
@@ -236,6 +241,7 @@ darkAttrs =
   , (urlListSelectedAttr,              black `on` yellow)
   , (messageSelectAttr,                black `on` yellow)
   , (messageSelectStatusAttr,          fg white)
+  , (misspellingAttr,                  black `on` red)
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 
