@@ -127,8 +127,14 @@ data Token =
     Whitespace T.Text
     | Normal T.Text
 
-drawEditorContents :: S.Set T.Text -> [T.Text] -> Widget Name
-drawEditorContents misspellings contents =
+drawEditorContents :: ChatState -> [T.Text] -> Widget Name
+drawEditorContents st =
+    case st^.csEditState.cedSpellChecker of
+        Nothing -> txt . T.concat
+        Just _ -> doHighlightMisspellings (st^.csEditState.cedMisspellings)
+
+doHighlightMisspellings :: S.Set T.Text -> [T.Text] -> Widget Name
+doHighlightMisspellings misspellings contents =
     -- Traverse the input, gathering non-whitespace into tokens and
     -- checking if they appear in the misspelling collection
     let handleLine t | t == "" = txt " "
@@ -187,9 +193,7 @@ renderUserCommandBox uSet cSet st =
             Replying _ _ -> "reply> "
             Editing _    ->  "edit> "
             NewPost      ->      "> "
-        inputBox = renderEditor
-                      (drawEditorContents (st^.csEditState.cedMisspellings))
-                      True (st^.csCmdLine)
+        inputBox = renderEditor (drawEditorContents st) True (st^.csCmdLine)
         curContents = getEditContents $ st^.csCmdLine
         multilineContent = length curContents > 1
         multilineHints =
