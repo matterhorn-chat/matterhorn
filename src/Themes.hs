@@ -203,7 +203,7 @@ lightColorTheme = attrMap (black `on` white) $
   , (urlListSelectedAttr,              black `on` yellow)
   , (messageSelectAttr,                black `on` yellow)
   , (messageSelectStatusAttr,          fg black)
-  , (misspellingAttr,                  black `on` red)
+  , (misspellingAttr,                  fg red `withStyle` underline)
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 
@@ -241,7 +241,7 @@ darkAttrs =
   , (urlListSelectedAttr,              black `on` yellow)
   , (messageSelectAttr,                black `on` yellow)
   , (messageSelectStatusAttr,          fg white)
-  , (misspellingAttr,                  black `on` red)
+  , (misspellingAttr,                  fg red `withStyle` underline)
   ] <>
   ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
 
