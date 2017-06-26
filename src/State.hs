@@ -211,6 +211,9 @@ isCurrentChannel st cId = st^.csCurrentChannelId == cId
 
 setMessageFlag :: PostId -> Bool -> MH ()
 setMessageFlag pId f = do
+  if f
+    then csResources.crFlaggedPosts %= Set.insert pId
+    else csResources.crFlaggedPosts %= Set.delete pId
   msgMb <- use (csPostMap.at(pId))
   case msgMb of
     Just msg

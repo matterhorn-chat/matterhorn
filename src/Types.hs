@@ -256,6 +256,13 @@ data HelpScreen
   | ScriptHelp
     deriving (Eq)
 
+-- | []
+data PostListContents
+  = PostListFlagged
+--   | PostListPinned ChannelId
+--   | PostListSearch Text -- for the query
+  deriving (Eq)
+
 -- | The 'Mode' represents the current dominant UI activity
 data Mode =
     Main
@@ -268,6 +275,7 @@ data Mode =
     | ChannelScroll
     | MessageSelect
     | MessageSelectDeleteConfirm
+    | PostListOverlay PostListContents
     deriving (Eq)
 
 -- | We're either connected or we're not.
@@ -297,12 +305,18 @@ data ChatState = ChatState
   , _csConnectionStatus            :: ConnectionStatus
   , _csJoinChannelList             :: Maybe (List Name Channel)
   , _csMessageSelect               :: MessageSelectState
+  , _csPostListOverlay             :: PostListOverlayState
   }
 
 type ChannelSelectMap = HM.HashMap T.Text ChannelSelectMatch
 
 data MessageSelectState =
     MessageSelectState { selectMessagePostId :: Maybe PostId }
+
+data PostListOverlayState = PostListOverlayState
+  { _postListPosts    :: Messages
+  , _postListSelected :: Maybe PostId
+  }
 
 -- * MH Monad
 
@@ -392,6 +406,7 @@ data MHEvent
 makeLenses ''ChatResources
 makeLenses ''ChatState
 makeLenses ''ChatEditState
+makeLenses ''PostListOverlayState
 
 -- ** Utility Lenses
 csCurrentChannelId :: Lens' ChatState ChannelId

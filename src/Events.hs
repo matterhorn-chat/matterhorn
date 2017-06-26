@@ -32,6 +32,7 @@ import           Events.LeaveChannelConfirm
 import           Events.DeleteChannelConfirm
 import           Events.UrlSelect
 import           Events.MessageSelect
+import           Events.PostListOverlay
 
 onEvent :: ChatState -> BrickEvent Name MHEvent -> EventM Name (Next ChatState)
 onEvent st ev = runMHEvent st $ case ev of
@@ -83,6 +84,7 @@ onVtyEvent e = do
         MessageSelect              -> onEventMessageSelect e
         MessageSelectDeleteConfirm -> onEventMessageSelectDeleteConfirm e
         DeleteChannelConfirm       -> onEventDeleteChannelConfirm e
+        PostListOverlay _          -> onEventPostListOverlay e
 
 handleWSEvent :: WebsocketEvent -> MH ()
 handleWSEvent we = do
@@ -151,6 +153,7 @@ handleWSEvent we = do
       Nothing -> return ()
     -- Right now, we don't use any server preferences in
     -- our client, but that might change
+
     WMPreferenceChanged
       | Just pref <- wepPreferences (weData we)
       , Just fps <- mapM preferenceToFlaggedPost pref ->
@@ -163,6 +166,7 @@ handleWSEvent we = do
         forM_ fps $ \f ->
           setMessageFlag (flaggedPostId f) (flaggedPostStatus f)
       | otherwise -> return ()
+
     -- This happens whenever a user connects to the server
     -- I think all the information we need (about being
     -- online or away or what-have-you) gets represented

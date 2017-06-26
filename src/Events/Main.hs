@@ -18,6 +18,7 @@ import Lens.Micro.Platform
 import Types
 import Types.Channels (ccInfo, cdType)
 import State
+import State.PostListOverlay (enterFlaggedPostListMode)
 import State.Editing
 import Command
 import Completion
@@ -153,6 +154,10 @@ mainKeybindings =
     , KB "Cancel message reply or update"
          (Vty.EvKey (Vty.KChar 'c') [Vty.MCtrl]) $
          cancelReplyOrEdit
+
+    , KB "View currently flagged posts"
+         (Vty.EvKey (Vty.KChar 'f') [Vty.MCtrl]) $
+         enterFlaggedPostListMode
     ]
 
 handleInputSubmission :: MH ()

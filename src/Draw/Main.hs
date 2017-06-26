@@ -1,5 +1,5 @@
 {-# LANGUAGE MultiWayIf #-}
-module Draw.Main (drawMain) where
+module Draw.Main (drawMain, renderSingleMessage, insertTransitions) where
 
 import           Prelude ()
 import           Prelude.Compat

@@ -174,6 +174,7 @@ newState rs i u m tz hist = ChatState
   , _csConnectionStatus            = Connected
   , _csJoinChannelList             = Nothing
   , _csMessageSelect               = MessageSelectState Nothing
+  , _csPostListOverlay             = PostListOverlayState mempty Nothing
   }
 
 setupState :: Maybe Handle -> Config -> RequestChan -> BChan MHEvent -> IO ChatState

@@ -30,6 +30,7 @@ executable matterhorn
                        State
                        State.Common
                        State.Editing
+                       State.PostListOverlay
                        State.Setup
                        Zipper
                        Themes
@@ -39,6 +40,7 @@ executable matterhorn
                        Draw.ShowHelp
                        Draw.LeaveChannelConfirm
                        Draw.DeleteChannelConfirm
+                       Draw.PostListOverlay
                        Draw.JoinChannel
                        Draw.Util
                        InputHistory
@@ -50,6 +52,7 @@ executable matterhorn
                        Events.JoinChannel
                        Events.ChannelScroll
                        Events.ChannelSelect
+                       Events.PostListOverlay
                        Events.UrlSelect
                        Events.LeaveChannelConfirm
                        Events.DeleteChannelConfirm
