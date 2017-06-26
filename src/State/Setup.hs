@@ -25,6 +25,7 @@ import           System.Exit (exitFailure, ExitCode(ExitSuccess))
 import           System.IO (Handle, hPutStrLn, hFlush)
 import           System.IO.Temp (openTempFile)
 import           System.Directory (getTemporaryDirectory)
+import           Text.Aspell (Aspell, startAspell)
 
 import           Network.Mattermost
 import           Network.Mattermost.Lenses
@@ -150,8 +151,9 @@ newState :: ChatResources
          -> Team
          -> TimeZone
          -> InputHistory
+         -> Maybe Aspell
          -> ChatState
-newState rs i u m tz hist = ChatState
+newState rs i u m tz hist sp = ChatState
   { _csResources                   = rs
   , _csFocus                       = i
   , _csMe                          = u
@@ -161,7 +163,7 @@ newState rs i u m tz hist = ChatState
   , _csPostMap                     = HM.empty
   , _csUsers                       = noUsers
   , _timeZone                      = tz
-  , _csEditState                   = emptyEditState hist
+  , _csEditState                   = emptyEditState hist sp
   , _csMode                        = Main
   , _csShowMessagePreview          = configShowMessagePreview $ rs^.crConfiguration
   , _csChannelSelectString         = ""
@@ -296,6 +298,8 @@ initializeState cr myTeam myUser = do
 
   startSubprocessLogger (cr^.crSubprocessLog) requestChan
 
+  sp <- either (const Nothing) Just <$> startAspell
+
   let chanNames = mkChanNames myUser users chans
       Just townSqId = chanNames ^. cnToChanId . at "town-square"
       chanIds = [ (chanNames ^. cnToChanId) HM.! i
@@ -304,7 +308,7 @@ initializeState cr myTeam myUser = do
                 | i <- chanNames ^. cnUsers
                 , c <- maybeToList (HM.lookup i (chanNames ^. cnToChanId)) ]
       chanZip = Z.findRight (== townSqId) (Z.fromList chanIds)
-      st = newState cr chanZip myUser myTeam tz hist
+      st = newState cr chanZip myUser myTeam tz hist sp
              & csUsers %~ flip (foldr (uncurry addUser)) (fmap mkUser users)
              & csChannels %~ flip (foldr (uncurry addChannel)) msgs
              & csNames .~ chanNames

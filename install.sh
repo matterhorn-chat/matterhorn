@@ -15,10 +15,12 @@ DEPS=$HERE/deps
 # The source for the mattermost API package
 MATTERMOST_API_REPO=https://github.com/matterhorn-chat/mattermost-api.git
 MATTERMOST_API_QC_REPO=https://github.com/matterhorn-chat/mattermost-api-qc.git
+ASPELL_PIPE_REPO=https://github.com/matterhorn-chat/aspell-pipe.git
 
 # Where to clone the mattermost API package
 MATTERMOST_API_DIR=$DEPS/mattermost-api
 MATTERMOST_API_QC_DIR=$DEPS/mattermost-api-qc
+ASPELL_PIPE_DIR=$DEPS/aspell-pipe
 
 # Whether this is a first-time install (see below)
 FIRST_TIME=0
@@ -29,6 +31,7 @@ function init {
         FIRST_TIME=1
         echo 'packages: deps/mattermost-api/mattermost-api.cabal'  >cabal.project.local
         echo '          deps/mattermost-api-qc/mattermost-api-qc.cabal' >>cabal.project.local
+        echo '          deps/aspell-pipe' >>cabal.project.local
     fi
 }
 
@@ -65,6 +68,7 @@ function clone_or_update_repo {
 function install_deps {
   clone_or_update_repo "$(current_branch)" "$MATTERMOST_API_REPO" "$MATTERMOST_API_DIR"
   clone_or_update_repo "$(current_branch)" "$MATTERMOST_API_QC_REPO" "$MATTERMOST_API_QC_DIR"
+  clone_or_update_repo "$(current_branch)" "$ASPELL_PIPE_REPO" "$ASPELL_PIPE_DIR"
 }
 
 function current_branch {

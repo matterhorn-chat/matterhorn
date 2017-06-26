@@ -16,6 +16,7 @@ import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform
 import           System.Exit (exitFailure)
 import           System.IO (IOMode(WriteMode), openFile, hClose)
+import           Text.Aspell (stopAspell)
 
 import           Config
 import           Options
@@ -58,6 +59,11 @@ main = do
         return vty
 
   finalSt <- customMain mkVty (Just eventChan) app st
+
+  case finalSt^.csEditState.cedSpellChecker of
+      Nothing -> return ()
+      Just s -> stopAspell s
+
   case logFile of
     Nothing -> return ()
     Just h -> hClose h

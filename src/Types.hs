@@ -38,6 +38,7 @@ import           Network.Mattermost.WebSocket
 import           Network.Connection (HostNotResolved, HostCannotConnect)
 import qualified Data.Text as T
 import           System.Exit (ExitCode)
+import           Text.Aspell (Aspell, Mistake)
 
 import           Zipper (Zipper, focusL)
 
@@ -219,6 +220,8 @@ data ChatEditState = ChatEditState
   , _cedCurrentAlternative   :: T.Text
   , _cedCompletionAlternatives :: [T.Text]
   , _cedYankBuffer           :: T.Text
+  , _cedSpellChecker         :: Maybe Aspell
+  , _cedMisspellings         :: [Mistake]
   }
 
 data EditMode =
@@ -229,8 +232,8 @@ data EditMode =
 
 -- | We can initialize a new 'ChatEditState' value with just an
 --   edit history, which we save locally.
-emptyEditState :: InputHistory -> ChatEditState
-emptyEditState hist = ChatEditState
+emptyEditState :: InputHistory -> Maybe Aspell -> ChatEditState
+emptyEditState hist sp = ChatEditState
   { _cedEditor               = editor MessageInput (txt . T.unlines) Nothing ""
   , _cedMultiline            = False
   , _cedInputHistory         = hist
@@ -241,6 +244,8 @@ emptyEditState hist = ChatEditState
   , _cedCurrentAlternative   = ""
   , _cedEditMode             = NewPost
   , _cedYankBuffer           = ""
+  , _cedSpellChecker         = sp
+  , _cedMisspellings         = []
   }
 
 -- | A 'RequestChan' is a queue of operations we have to perform
