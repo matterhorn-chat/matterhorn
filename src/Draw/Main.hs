@@ -130,9 +130,13 @@ data Token =
 
 drawEditorContents :: ChatState -> [T.Text] -> Widget Name
 drawEditorContents st =
-    case st^.csEditState.cedSpellChecker of
-        Nothing -> txt . T.concat
-        Just _ -> doHighlightMisspellings (st^.csEditState.cedMisspellings)
+    let noHighlight = txt . T.concat
+    in case st^.csEditState.cedSpellChecker of
+        Nothing -> noHighlight
+        Just _ ->
+            case S.null (st^.csEditState.cedMisspellings) of
+                True -> noHighlight
+                False -> doHighlightMisspellings (st^.csEditState.cedMisspellings)
 
 doHighlightMisspellings :: S.Set T.Text -> [T.Text] -> Widget Name
 doHighlightMisspellings misspellings contents =
