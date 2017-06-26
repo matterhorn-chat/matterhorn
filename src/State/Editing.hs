@@ -213,7 +213,7 @@ handleEditingInput e = do
             contents <- getEditContents <$> use csCmdLine
             doAsyncWith Normal $ do
                 -- For each line in the editor, submit an aspell request.
-                let query = mapM (askAspell checker) contents
+                let query = concat <$> mapM (askAspell checker) contents
                     postMistakes :: [AspellResponse] -> MH ()
                     postMistakes responses = do
                         let getMistakes AllCorrect = []
