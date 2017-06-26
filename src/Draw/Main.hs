@@ -123,9 +123,14 @@ previewFromInput uname s =
                            , _mOriginalPost  = Nothing
                            }
 
+-- | Tokens in spell check highlighting.
 data Token =
     Ignore T.Text
+    -- ^ This bit of text is to be ignored for the purposes of
+    -- spell-checking.
     | Check T.Text
+    -- ^ This bit of text should be checked against the spell checker's
+    -- misspelling list.
     deriving (Show)
 
 drawEditorContents :: ChatState -> [T.Text] -> Widget Name
@@ -138,6 +143,57 @@ drawEditorContents st =
                 True -> noHighlight
                 False -> doHighlightMisspellings (st^.csEditState.cedMisspellings)
 
+-- | This function takes a set of misspellings from the spell
+-- checker, the editor lines, and builds a rendering of the text with
+-- misspellings highlighted.
+--
+-- This function processes each line of text from the editor as follows:
+--
+-- * Tokenize the line based on our rules for what constitutes
+--   whitespace. We do this because we need to check "words" in the
+--   user's input against the list of misspellings returned by the spell
+--   checker. But to do this we need to ignore the same things that
+--   Aspell ignores, and it ignores whitespace and lots of puncutation.
+--   We also do this because once we have identified the misspellings
+--   present in the input, we need to reconstruct the user's input and
+--   that means preserving whitespace so that the input looks as it was
+--   originally typed.
+--
+-- * Once we have a list of tokens -- the whitespace tokens to be
+--   preserved but ignored and the tokens to be checked -- we check
+--   each non-whitespace token for presence in the list of misspellings
+--   reported by the checker.
+--
+-- * Having indicated which tokens correspond to misspelled words, we
+--   then need to coallesce adjacent tokens that are of the same
+--   "misspelling status", i.e., two neighboring tokens (of whitespace
+--   or check type) need to be coallesced if they both correspond to
+--   text that is a misspelling or if they both are NOT a misspelling.
+--   We do this so that the final Brick widget is optimal in that it
+--   uses a minimal number of box cells to display substrings that have
+--   the same attribute.
+--
+-- * Finally we build a widget out of these coallesced tokens and apply
+--   the misspellingAttr attribute to the misspelled tokens.
+--
+-- Note that since we have to come to our own conclusion about which
+-- words are worth checking in the checker's output, sometimes our
+-- algorithm will differ from aspell in what is considered "part of a
+-- word" and what isn't. In particular, Aspell is smart about sometimes
+-- noticing that "'" is an apostrophe and at other times that it is
+-- a single quote as part of a quoted string. As a result there will
+-- be cases where Markdown formatting characters interact poorly
+-- with Aspell's checking to result in misspellings that are *not*
+-- highlighted.
+--
+-- One way to deal with this would be to *not* parse the user's input
+-- as done here, complete with all its Markdown metacharacters, but to
+-- instead 1) parse the input as Markdown, 2) traverse the Markdown AST
+-- and extract the words from the relevant subtrees, and 3) spell-check
+-- those words. The reason we don't do it that way in the first place is
+-- because 1) the user's input might not be valid markdown and 2) even
+-- if we did that, we'd still have to do this tokenization operation to
+-- annotate misspellings and reconstruct the user's raw input.
 doHighlightMisspellings :: S.Set T.Text -> [T.Text] -> Widget Name
 doHighlightMisspellings misspellings contents =
     -- Traverse the input, gathering non-whitespace into tokens and
