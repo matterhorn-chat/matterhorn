@@ -20,6 +20,7 @@ import qualified Control.Concurrent.STM as STM
 import           Control.Concurrent.MVar (MVar)
 import           Control.Exception (SomeException)
 import qualified Control.Monad.State as St
+import qualified Data.Set as S
 import           Data.HashMap.Strict (HashMap)
 import           Data.Time.Clock (UTCTime, getCurrentTime)
 import           Data.Time.LocalTime (TimeZone)
@@ -38,7 +39,7 @@ import           Network.Mattermost.WebSocket
 import           Network.Connection (HostNotResolved, HostCannotConnect)
 import qualified Data.Text as T
 import           System.Exit (ExitCode)
-import           Text.Aspell (Aspell, Mistake)
+import           Text.Aspell (Aspell)
 
 import           Zipper (Zipper, focusL)
 
@@ -221,7 +222,7 @@ data ChatEditState = ChatEditState
   , _cedCompletionAlternatives :: [T.Text]
   , _cedYankBuffer           :: T.Text
   , _cedSpellChecker         :: Maybe Aspell
-  , _cedMisspellings         :: [Mistake]
+  , _cedMisspellings         :: S.Set T.Text
   }
 
 data EditMode =
@@ -245,7 +246,7 @@ emptyEditState hist sp = ChatEditState
   , _cedEditMode             = NewPost
   , _cedYankBuffer           = ""
   , _cedSpellChecker         = sp
-  , _cedMisspellings         = []
+  , _cedMisspellings         = mempty
   }
 
 -- | A 'RequestChan' is a queue of operations we have to perform
