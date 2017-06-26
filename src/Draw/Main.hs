@@ -21,6 +21,7 @@ import           Data.Time.LocalTime ( TimeZone, utcToLocalTime
                                      , localTimeToUTC, localDay
                                      , LocalTime(..), midnight )
 import qualified Data.Sequence as Seq
+import qualified Data.Set as S
 import qualified Data.Foldable as F
 import           Data.List (intersperse)
 import qualified Data.Map.Strict as Map
@@ -121,13 +122,18 @@ previewFromInput uname s =
                            , _mOriginalPost  = Nothing
                            }
 
+drawEditorContents :: S.Set T.Text -> [T.Text] -> Widget Name
+drawEditorContents _ = txt . T.unlines
+
 renderUserCommandBox :: UserSet -> ChannelSet -> ChatState -> Widget Name
 renderUserCommandBox uSet cSet st =
     let prompt = txt $ case st^.csEditState.cedEditMode of
             Replying _ _ -> "reply> "
             Editing _    ->  "edit> "
             NewPost      ->      "> "
-        inputBox = renderEditor True (st^.csCmdLine)
+        inputBox = renderEditor
+                      (drawEditorContents (st^.csEditState.cedMisspellings))
+                      True (st^.csCmdLine)
         curContents = getEditContents $ st^.csCmdLine
         multilineContent = length curContents > 1
         multilineHints =

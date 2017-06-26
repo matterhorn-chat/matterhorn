@@ -10,7 +10,7 @@ module Types where
 import           Prelude ()
 import           Prelude.Compat
 
-import           Brick (EventM, txt, Next)
+import           Brick (EventM, Next)
 import qualified Brick
 import           Brick.BChan
 import           Brick.AttrMap (AttrMap)
@@ -235,7 +235,7 @@ data EditMode =
 --   edit history, which we save locally.
 emptyEditState :: InputHistory -> Maybe Aspell -> ChatEditState
 emptyEditState hist sp = ChatEditState
-  { _cedEditor               = editor MessageInput (txt . T.unlines) Nothing ""
+  { _cedEditor               = editor MessageInput Nothing ""
   , _cedMultiline            = False
   , _cedInputHistory         = hist
   , _cedInputHistoryPosition = mempty

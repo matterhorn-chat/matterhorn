@@ -67,10 +67,10 @@ interactiveGatherCredentials config authError = do
 newState :: Config -> Maybe AuthenticationException -> State
 newState config authError = state
     where
-        state = State { _hostnameEdit = editor Hostname (txt . T.concat) (Just 1) hStr
-                      , _portEdit = editor Port (txt . T.concat) (Just 1) (T.pack $ show $ configPort config)
-                      , _usernameEdit = editor Username (txt . T.concat) (Just 1) uStr
-                      , _passwordEdit = editor Password toPassword     (Just 1) pStr
+        state = State { _hostnameEdit = editor Hostname (Just 1) hStr
+                      , _portEdit = editor Port (Just 1) (T.pack $ show $ configPort config)
+                      , _usernameEdit = editor Username (Just 1) uStr
+                      , _passwordEdit = editor Password (Just 1) pStr
                       , _focus = initialFocus
                       , _previousError = authError
                       }
@@ -139,17 +139,17 @@ credentialsForm st =
     border $
     vBox [ renderText "Please enter your Mattermost credentials to log in."
          , padTop (Pad 1) $
-           txt "Hostname: " <+> renderEditor (st^.focus == Hostname) (st^.hostnameEdit)
+           txt "Hostname: " <+> renderEditor (txt . T.concat) (st^.focus == Hostname) (st^.hostnameEdit)
          , if validHostname st
               then txt " "
               else hCenter $ renderError $ txt "Invalid hostname"
-         , txt "Port:     " <+> renderEditor (st^.focus == Port) (st^.portEdit)
+         , txt "Port:     " <+> renderEditor (txt . T.concat) (st^.focus == Port) (st^.portEdit)
          , if validPort st
               then txt " "
               else hCenter $ renderError $ txt "Invalid port"
-         , txt "Username: " <+> renderEditor (st^.focus == Username) (st^.usernameEdit)
+         , txt "Username: " <+> renderEditor (txt . T.concat) (st^.focus == Username) (st^.usernameEdit)
          , padTop (Pad 1) $
-           txt "Password: " <+> renderEditor (st^.focus == Password) (st^.passwordEdit)
+           txt "Password: " <+> renderEditor toPassword (st^.focus == Password) (st^.passwordEdit)
          , padTop (Pad 1) $
            hCenter $ renderText "Press Enter to log in or Esc to exit."
          ]
