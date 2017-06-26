@@ -35,7 +35,7 @@ script:
  - if [ -f configure.ac ]; then autoreconf -i; fi
  - cabal check
  - cp cabal.project.travis cabal.project.local
- - bash new-install.sh
+ - bash install.sh
  - cabal sdist
 
 # EOF

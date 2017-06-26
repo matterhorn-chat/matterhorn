@@ -326,6 +326,10 @@ removeChannelFromState cId _ = do
         let cName = chan^.ccInfo.cdName
             chType = chan^.ccInfo.cdType
         when (chType /= Direct) $ do
+            origFocus <- use csCurrentChannelId
+            when (origFocus == cId) $ do
+              st <- use id
+              setFocusWith (getNextNonDMChannel st Z.right)
             csEditState.cedInputHistoryPosition .at cId .= Nothing
             csEditState.cedLastChannelInput     .at cId .= Nothing
             -- Update input history
