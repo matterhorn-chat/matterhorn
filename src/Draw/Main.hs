@@ -135,7 +135,7 @@ data Token =
 
 drawEditorContents :: UserSet -> ChannelSet -> ChatState -> [T.Text] -> Widget Name
 drawEditorContents uSet cSet st =
-    let noHighlight = txt . T.concat
+    let noHighlight = txt . T.unlines
     in case st^.csEditState.cedSpellChecker of
         Nothing -> noHighlight
         Just _ ->
