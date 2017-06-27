@@ -109,7 +109,7 @@ default binding of `C-s`. Use the default binding of `C-c` to cancel
 these operations.
 
 To enable spell-checking in the message editor, install Aspell and set
-`enableAspell` to `True` on your configuration. To override Aspell's
+`enableAspell` to `True` in your configuration. To override Aspell's
 choice of master dictionary, set the `aspellDictionary` option to the
 name of the dictionary you'd like to use.
 
