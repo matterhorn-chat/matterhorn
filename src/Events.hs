@@ -166,6 +166,8 @@ handleWSEvent we = do
     -- our client, but that might change
     WMPreferenceChanged -> return ()
 
+    WMPreferenceDeleted -> return ()
+
     -- This happens whenever a user connects to the server
     -- I think all the information we need (about being
     -- online or away or what-have-you) gets represented
