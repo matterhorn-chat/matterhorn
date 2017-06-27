@@ -133,15 +133,15 @@ data Token =
     -- misspelling list.
     deriving (Show)
 
-drawEditorContents :: ChatState -> [T.Text] -> Widget Name
-drawEditorContents st =
+drawEditorContents :: UserSet -> ChannelSet -> ChatState -> [T.Text] -> Widget Name
+drawEditorContents uSet cSet st =
     let noHighlight = txt . T.concat
     in case st^.csEditState.cedSpellChecker of
         Nothing -> noHighlight
         Just _ ->
             case S.null (st^.csEditState.cedMisspellings) of
                 True -> noHighlight
-                False -> doHighlightMisspellings (st^.csEditState.cedMisspellings)
+                False -> doHighlightMisspellings uSet cSet (st^.csEditState.cedMisspellings)
 
 -- | This function takes a set of misspellings from the spell
 -- checker, the editor lines, and builds a rendering of the text with
@@ -194,11 +194,13 @@ drawEditorContents st =
 -- because 1) the user's input might not be valid markdown and 2) even
 -- if we did that, we'd still have to do this tokenization operation to
 -- annotate misspellings and reconstruct the user's raw input.
-doHighlightMisspellings :: S.Set T.Text -> [T.Text] -> Widget Name
-doHighlightMisspellings misspellings contents =
+doHighlightMisspellings :: UserSet -> ChannelSet -> S.Set T.Text -> [T.Text] -> Widget Name
+doHighlightMisspellings uSet cSet misspellings contents =
     -- Traverse the input, gathering non-whitespace into tokens and
     -- checking if they appear in the misspelling collection
-    let handleLine t | t == "" = txt " "
+    let whitelist = S.union uSet cSet
+
+        handleLine t | t == "" = txt " "
         handleLine t =
             -- For annotated tokens, coallesce tokens of the same type
             -- and add attributes for misspellings.
@@ -239,9 +241,11 @@ doHighlightMisspellings misspellings contents =
 
         checkMisspelling t@(Ignore _) = Right t
         checkMisspelling t@(Check s) =
-            if s `S.member` misspellings
-            then Left t
-            else Right t
+            if s `S.member` whitelist
+            then Right t
+            else if s `S.member` misspellings
+                 then Left t
+                 else Right t
 
         ignoreChar c = isSpace c || isPunctuation c || c == '`'
 
@@ -264,7 +268,7 @@ renderUserCommandBox uSet cSet st =
             Replying _ _ -> "reply> "
             Editing _    ->  "edit> "
             NewPost      ->      "> "
-        inputBox = renderEditor (drawEditorContents st) True (st^.csCmdLine)
+        inputBox = renderEditor (drawEditorContents uSet cSet st) True (st^.csCmdLine)
         curContents = getEditContents $ st^.csCmdLine
         multilineContent = length curContents > 1
         multilineHints =
