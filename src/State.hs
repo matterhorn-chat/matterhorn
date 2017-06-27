@@ -76,7 +76,6 @@ refreshChannel cId =
           -- retrieve any that might have been missed.
           updateMessages cId'
 
-
 -- | Refresh information about all channels.  This is usually
 -- triggered when a reconnect event for the WebSocket to the server
 -- occurs.
@@ -84,7 +83,6 @@ refreshChannels :: MH ()
 refreshChannels = do
   cIds <- use (csChannels.to (filteredChannelIds (const True)))
   sequence_ $ refreshChannel <$> cIds
-
 
 -- | Update the indicted Channel entry with the new data retrieved
 -- from the Mattermost server.
