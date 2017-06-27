@@ -370,7 +370,8 @@ hasUnread st cId = maybe False id $ do
   -- time.
   --
   -- The channel could either be in ChanUnloaded state or in its pending
-  -- equivalent, and either one means we do not have scrollback.
+  -- equivalent, and either one means we do not have scrollback so we
+  -- shouldn't check the cutoff.
   let noMessageStates = [ initialChannelState
                         , fst $ pendingChannelState initialChannelState
                         ]
