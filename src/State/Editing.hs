@@ -203,9 +203,13 @@ handleEditingInput e = do
 
         csCurrentCompletion .= Nothing
 
-    -- Now that we've handled the event, if we're doing spell-checking,
-    -- kick off an async request to the spell checker for the current
-    -- editor contents.
+    liftIO $ st^.csEditState.cedResetSpellCheckTimer
+
+-- Kick off an async request to the spell checker for the current editor
+-- contents.
+requestSpellCheck :: MH ()
+requestSpellCheck = do
+    st <- use id
     case st^.csEditState.cedSpellChecker of
         Nothing -> return ()
         Just checker -> do

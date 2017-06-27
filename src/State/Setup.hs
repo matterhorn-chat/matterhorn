@@ -9,6 +9,7 @@ import           Brick.BChan
 import           Brick.Widgets.List (list)
 import           Control.Concurrent (threadDelay, forkIO)
 import qualified Control.Concurrent.STM as STM
+import           Control.Concurrent.STM.Delay
 import           Control.Concurrent.MVar (newEmptyMVar)
 import           Control.Exception (SomeException, catch, try)
 import           Control.Monad (forM, forever, when, void)
@@ -35,6 +36,7 @@ import           Config
 import           InputHistory
 import           Login
 import           State.Common
+import           State.Editing (requestSpellCheck)
 import           TeamSelect
 import           Themes
 import           Types
@@ -152,8 +154,9 @@ newState :: ChatResources
          -> TimeZone
          -> InputHistory
          -> Maybe Aspell
+         -> IO ()
          -> ChatState
-newState rs i u m tz hist sp = ChatState
+newState rs i u m tz hist sp resetTimer = ChatState
   { _csResources                   = rs
   , _csFocus                       = i
   , _csMe                          = u
@@ -163,7 +166,7 @@ newState rs i u m tz hist sp = ChatState
   , _csPostMap                     = HM.empty
   , _csUsers                       = noUsers
   , _timeZone                      = tz
-  , _csEditState                   = emptyEditState hist sp
+  , _csEditState                   = emptyEditState hist sp resetTimer
   , _csMode                        = Main
   , _csShowMessagePreview          = configShowMessagePreview $ rs^.crConfiguration
   , _csChannelSelectString         = ""
@@ -298,6 +301,11 @@ initializeState cr myTeam myUser = do
 
   startSubprocessLogger (cr^.crSubprocessLog) requestChan
 
+  -- Start the spell check timer thread.
+  let spellCheckerTimeout = 500 * 1000 -- 500k us = 500ms
+  resetSCChan <- startSpellCheckerThread (cr^.crEventQueue) spellCheckerTimeout
+  let resetSCTimer = STM.atomically $ STM.writeTChan resetSCChan ()
+
   sp <- case configEnableAspell $ cr^.crConfiguration of
       False -> return Nothing
       True ->
@@ -313,7 +321,7 @@ initializeState cr myTeam myUser = do
                 | i <- chanNames ^. cnUsers
                 , c <- maybeToList (HM.lookup i (chanNames ^. cnToChanId)) ]
       chanZip = Z.findRight (== townSqId) (Z.fromList chanIds)
-      st = newState cr chanZip myUser myTeam tz hist sp
+      st = newState cr chanZip myUser myTeam tz hist sp resetSCTimer
              & csUsers %~ flip (foldr (uncurry addUser)) (fmap mkUser users)
              & csChannels %~ flip (foldr (uncurry addChannel)) msgs
              & csNames .~ chanNames
@@ -349,3 +357,75 @@ initializeState cr myTeam myUser = do
                   csChannel(getId c).ccInfo %= channelInfoFromChannelWithData cwd
 
   return st
+
+-- Start the background spell checker delay thread.
+--
+-- The purpose of this thread is to postpone the spell checker query
+-- while the user is actively typing and only wait until they have
+-- stopped typing before bothering with a query. This is to avoid spell
+-- checker queries when the editor contents are changing rapidly.
+-- Avoiding such queries reduces system load and redraw frequency.
+--
+-- We do this by starting a thread whose job is to wait for the event
+-- loop to tell it to schedule a spell check. Spell checks are scheduled
+-- by writing to the channel returned by this function. The scheduler
+-- thread reads from that channel and then works with another worker
+-- thread as follows:
+--
+-- A wakeup of the main spell checker thread causes it to determine
+-- whether the worker thread is already waiting on a timer. When that
+-- timer goes off, a spell check will be requested. If there is already
+-- an active timer that has not yet expired, the timer's expiration is
+-- extended. This is the case where typing is occurring and we want to
+-- continue postponing the spell check. If there is not an active timer
+-- or the active timer has expired, we create a new timer and send it to
+-- the worker thread for waiting.
+--
+-- The worker thread works by reading a timer from its queue, waiting
+-- until the timer expires, and then injecting an event into the main
+-- event loop to request a spell check.
+startSpellCheckerThread :: BChan MHEvent
+                        -- ^ The main event loop's event channel.
+                        -> Int
+                        -- ^ The number of microseconds to wait before
+                        -- requesting a spell check.
+                        -> IO (STM.TChan ())
+startSpellCheckerThread eventChan spellCheckTimeout = do
+  delayWakeupChan <- STM.atomically STM.newTChan
+  delayWorkerChan <- STM.atomically STM.newTChan
+  delVar <- STM.atomically $ STM.newTVar Nothing
+
+  -- The delay worker actually waits on the delay to expire and then
+  -- requests a spell check.
+  void $ forkIO $ forever $ do
+    STM.atomically $ waitDelay =<< STM.readTChan delayWorkerChan
+    writeBChan eventChan (RespEvent requestSpellCheck)
+
+  -- The delay manager waits for requests to start a delay timer and
+  -- signals the worker to begin waiting.
+  void $ forkIO $ forever $ do
+    () <- STM.atomically $ STM.readTChan delayWakeupChan
+
+    oldDel <- STM.atomically $ STM.readTVar delVar
+    mNewDel <- case oldDel of
+        Nothing -> Just <$> newDelay spellCheckTimeout
+        Just del -> do
+            -- It's possible that between this check for expiration and
+            -- the updateDelay below, the timer will expire -- at which
+            -- point this will mean that we won't extend the timer as
+            -- originally desired. But that's alright, because future
+            -- keystroke will trigger another timer anyway.
+            expired <- tryWaitDelayIO del
+            case expired of
+                True -> Just <$> newDelay spellCheckTimeout
+                False -> do
+                    updateDelay del spellCheckTimeout
+                    return Nothing
+
+    case mNewDel of
+        Nothing -> return ()
+        Just newDel -> STM.atomically $ do
+            STM.writeTVar delVar $ Just newDel
+            STM.writeTChan delayWorkerChan newDel
+
+  return delayWakeupChan

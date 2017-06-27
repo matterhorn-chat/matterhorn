@@ -224,6 +224,7 @@ data ChatEditState = ChatEditState
   , _cedCompletionAlternatives :: [T.Text]
   , _cedYankBuffer           :: T.Text
   , _cedSpellChecker         :: Maybe Aspell
+  , _cedResetSpellCheckTimer :: IO ()
   , _cedMisspellings         :: S.Set T.Text
   }
 
@@ -235,8 +236,8 @@ data EditMode =
 
 -- | We can initialize a new 'ChatEditState' value with just an
 --   edit history, which we save locally.
-emptyEditState :: InputHistory -> Maybe Aspell -> ChatEditState
-emptyEditState hist sp = ChatEditState
+emptyEditState :: InputHistory -> Maybe Aspell -> IO () -> ChatEditState
+emptyEditState hist sp resetTimer = ChatEditState
   { _cedEditor               = editor MessageInput Nothing ""
   , _cedMultiline            = False
   , _cedInputHistory         = hist
@@ -249,6 +250,7 @@ emptyEditState hist sp = ChatEditState
   , _cedYankBuffer           = ""
   , _cedSpellChecker         = sp
   , _cedMisspellings         = mempty
+  , _cedResetSpellCheckTimer = resetTimer
   }
 
 -- | A 'RequestChan' is a queue of operations we have to perform
