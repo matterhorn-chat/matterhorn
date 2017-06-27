@@ -360,10 +360,24 @@ fetchCurrentChannelMembers =
 hasUnread :: ChatState -> ChannelId -> Bool
 hasUnread st cId = maybe False id $ do
   chan <- findChannelById cId (st^.csChannels)
-  case chan^.ccInfo.cdNewMessageCutoff of
-      Nothing -> return False
-      Just cutoff ->
-          return $ not $ F.null $ messagesOnOrAfter cutoff $ chan^.ccContents.cdMessages
+
+  -- If the channel is not yet loaded, there is no scrollback loaded so
+  -- there will be no new message cutoff. In that case the best thing
+  -- to do is to compare the view/update timestamps for the channel.
+  -- Once the channel messages are loaded, the right thing to do is to
+  -- check the cutoff since deletions could mean that there's nothing
+  -- new to view even though the update time is greater than the view
+  -- time.
+  if chan^.ccInfo.cdCurrentState == initialChannelState
+     then do
+         lastViewTime <- chan^.ccInfo.cdViewed
+         return (chan^.ccInfo.cdUpdated > lastViewTime)
+     else case chan^.ccInfo.cdNewMessageCutoff of
+         Nothing -> return False
+         Just cutoff ->
+             return $ not $ F.null $
+                      messagesOnOrAfter cutoff $
+                      chan^.ccContents.cdMessages
 
 setLastViewedFor :: ChannelId -> MH ()
 setLastViewedFor cId = do
