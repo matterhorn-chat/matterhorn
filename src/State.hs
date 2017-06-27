@@ -368,7 +368,14 @@ hasUnread st cId = maybe False id $ do
   -- check the cutoff since deletions could mean that there's nothing
   -- new to view even though the update time is greater than the view
   -- time.
-  if chan^.ccInfo.cdCurrentState == initialChannelState
+  --
+  -- The channel could either be in ChanUnloaded state or in its pending
+  -- equivalent, and either one means we do not have scrollback.
+  let noMessageStates = [ initialChannelState
+                        , fst $ pendingChannelState initialChannelState
+                        ]
+
+  if chan^.ccInfo.cdCurrentState `elem` noMessageStates
      then do
          lastViewTime <- chan^.ccInfo.cdViewed
          return (chan^.ccInfo.cdUpdated > lastViewTime)
