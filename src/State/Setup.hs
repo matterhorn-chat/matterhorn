@@ -326,36 +326,6 @@ initializeState cr myTeam myUser = do
              & csChannels %~ flip (foldr (uncurry addChannel)) msgs
              & csNames .~ chanNames
 
-  -- Fetch town-square asynchronously, but put it in the queue early.
-  case F.find ((== townSqId) . getId) chans of
-      Nothing -> return ()
-      Just c -> doAsyncWithIO Preempt st $ do
-          cwd <- mmGetChannel session myTeamId (getId c)
-          return $ do
-              csChannel(getId c).ccInfo %= channelInfoFromChannelWithData cwd
-              updateViewedChan (getId c)
-              asyncFetchScrollback Preempt (getId c)
-
-  -- It's important to queue up these channel metadata fetches first so
-  -- that by the time the scrollback requests are processed, we have the
-  -- latest metadata.
-  --
-  -- First we queue up fetches for non-DM channels:
-  F.forM_ chans $ \c ->
-      when (getId c /= townSqId && c^.channelTypeL /= Direct) $
-          doAsyncWithIO Normal st $ do
-              cwd <- mmGetChannel session myTeamId (getId c)
-              return $ do
-                  csChannel(getId c).ccInfo %= channelInfoFromChannelWithData cwd
-
-  -- Then we queue up fetches for DM channels:
-  F.forM_ chans $ \c ->
-      when (c^.channelTypeL == Direct) $
-          doAsyncWithIO Normal st $ do
-              cwd <- mmGetChannel session myTeamId (getId c)
-              return $ do
-                  csChannel(getId c).ccInfo %= channelInfoFromChannelWithData cwd
-
   return st
 
 -- Start the background spell checker delay thread.
