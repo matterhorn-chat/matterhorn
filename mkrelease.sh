@@ -62,7 +62,7 @@ install_tools
 
 echo Version: $VERSION
 echo Filename: $FILENAME
-cd $HERE && ./new-install.sh
+cd $HERE && ./install.sh
 
 TMPDIR=$(mktemp -d)
 function cleanup {
