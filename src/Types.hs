@@ -428,10 +428,13 @@ csChannel' cId =
   csChannels . maybeChannelByIdL cId
 
 withChannel :: ChannelId -> (ClientChannel -> MH ()) -> MH ()
-withChannel cId mote = do
+withChannel cId = withChannelOrDefault cId ()
+
+withChannelOrDefault :: ChannelId -> a -> (ClientChannel -> MH a) -> MH a
+withChannelOrDefault cId deflt mote = do
   chan <- preuse (csChannel(cId))
   case chan of
-    Nothing -> return ()
+    Nothing -> return deflt
     Just c  -> mote c
 
 csUser :: UserId -> Lens' ChatState UserInfo
