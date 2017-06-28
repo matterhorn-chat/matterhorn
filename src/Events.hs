@@ -102,7 +102,7 @@ handleWSEvent we = do
               | myUserId `Set.member` lst ->
                   csChannel(postChannelId p).ccInfo.cdMentionCount += 1
             _ -> return ()
-          addMessageToState p
+          addMessageToState p >>= postProcessMessageAdd
       Nothing -> return ()
 
     WMPostEdited -> case wepPost (weData we) of

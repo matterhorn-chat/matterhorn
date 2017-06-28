@@ -296,28 +296,6 @@ postErrorMessageIO err st = do
 numScrollbackPosts :: Int
 numScrollbackPosts = 100
 
--- | Fetch scrollback for a channel in the background
-asyncFetchScrollback :: AsyncPriority -> ChannelId -> MH ()
-asyncFetchScrollback prio cId =
-  withChannel cId $ \chan ->
-    asPending doAsyncChannelMM prio (Just cId)
-              (___2 mmGetPosts 0 numScrollbackPosts)
-              (addPostsToChannel (chan^.ccInfo.cdViewed))
-  where addPostsToChannel viewTime pcId posts = do
-            mapM_ (asyncFetchReactionsForPost pcId) (posts^.postsPostsL)
-            contents <- fromPosts posts
-            -- We need to set the new message cutoff only if there are
-            -- actually messages that came in after our last view time.
-            let setCutoff = if hasNew
-                            then const $ Just $ minimum (_mDate <$> newMessages)
-                            else id
-                hasNew = not $ null newMessages
-                newMessages = case viewTime of
-                    Nothing -> mempty
-                    Just vt -> messagesAfter vt $ contents^.cdMessages
-            csChannel(pcId).ccContents .= contents
-            csChannel(pcId).ccInfo.cdNewMessageCutoff %= setCutoff
-
 asyncFetchReactionsForPost :: ChannelId -> Post -> MH ()
 asyncFetchReactionsForPost cId p
   | not (p^.postHasReactionsL) = return ()

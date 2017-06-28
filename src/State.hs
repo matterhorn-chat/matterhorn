@@ -21,7 +21,7 @@ import qualified Data.Sequence as Seq
 import           Data.List (sort)
 import           Data.Maybe (maybeToList, isJust, catMaybes, isNothing)
 import           Data.Monoid ((<>))
-import           Data.Time.Clock (UTCTime, getCurrentTime)
+import           Data.Time.Clock (UTCTime(..), getCurrentTime)
 import qualified Data.Set as Set
 import qualified Data.Text as T
 import qualified Data.Vector as V
@@ -96,20 +96,29 @@ updateChannelInfo cid cwd =
 -- arrived after the existing content.
 updateMessages :: ChannelId -> MH ()
 updateMessages cId =
-  withChannel cId $ \chan ->
-    when (chan^.ccInfo.cdCurrentState.to (== ChanLoaded)) $
-      case getLatestPostId (chan^.ccContents.cdMessages) of
-        Nothing -> return ()
-        Just pId -> asPending doAsyncChannelMM Normal (Just cId)
-                      (___3 mmGetPostsAfter pId 0 100)
-                      (\_ posts ->
-                          -- Load posts since the last post in this
-                          -- channel.  Note that postsOrder from
-                          -- mattermost-api is most recent first.
-                          mapM_ addMessageToState
-                                [ (posts^.postsPostsL) HM.! p
-                                | p <- F.toList (posts^.postsOrderL)
-                                ])
+  withChannel cId $ \chan -> do
+    when (chan^.ccInfo.cdCurrentState.to (== ChanLoaded)) $ do
+      curId <- use csCurrentChannelId
+      let priority = if curId == cId then Preempt else Normal
+      asyncFetchScrollback priority cId
+
+-- | Fetch scrollback for a channel in the background
+asyncFetchScrollback :: AsyncPriority -> ChannelId -> MH ()
+asyncFetchScrollback prio cId =
+  withChannel cId $ \chan -> do
+    asPending doAsyncChannelMM prio (Just cId)
+              (case getLatestPostId (chan^.ccContents.cdMessages) of
+                 Nothing  -> (___2 mmGetPosts          0 numScrollbackPosts)
+                 Just pId -> (___3 mmGetPostsAfter pId 0 numScrollbackPosts)
+              )
+              (\_ posts ->
+                 postProcessMessageAdd =<<
+                     foldl mappend mempty <$>
+                        mapM addMessageToState
+                                 [ (posts^.postsPostsL) HM.! p
+                                 | p <- F.toList (posts^.postsOrderL)
+                                 ])
+
 
 -- * Message selection mode
 
@@ -692,12 +701,42 @@ maybeRingBell = do
         Just vty <- mh getVtyHandle
         liftIO $ ringTerminalBell $ outputIface vty
 
-addMessageToState :: Post -> MH ()
+-- | PostProcessMessageAdd is an internal value that informs the main
+-- code whether the user should be notified (e.g., ring the bell) or
+-- the server should be updated (e.g., that the channel has been
+-- viewed).  This is a monoid so that it can be folded over when there
+-- are multiple inbound posts to be processed.
+data PostProcessMessageAdd = NoAction
+                           | NotifyUser
+                           | UpdateServerViewed
+                           | NotifyUserAndServer
+
+instance Monoid PostProcessMessageAdd where
+  mempty = NoAction
+  mappend NotifyUserAndServer _         = NotifyUserAndServer
+  mappend _ NotifyUserAndServer         = NotifyUserAndServer
+  mappend NotifyUser UpdateServerViewed = NotifyUserAndServer
+  mappend UpdateServerViewed NotifyUser = NotifyUserAndServer
+  mappend x NoAction                    = x
+  mappend _ x                           = x
+
+-- | postProcessMessageAdd performs the actual actions indicated by
+-- the corresponding input value.
+postProcessMessageAdd :: PostProcessMessageAdd -> MH ()
+postProcessMessageAdd NoAction            = return ()
+postProcessMessageAdd UpdateServerViewed  = updateViewed
+postProcessMessageAdd NotifyUser          = maybeRingBell
+postProcessMessageAdd NotifyUserAndServer = updateViewed >> maybeRingBell
+
+-- | Adds a possibly new message to the associated channel contents.
+-- Returns True if this is something that should potentially notify
+-- the user of a change to the channel (i.e., not a message we
+-- posted).
+addMessageToState :: Post -> MH PostProcessMessageAdd
 addMessageToState new = do
   st <- use id
-  asyncFetchAttachments new
   case st ^? csChannel(postChannelId new) of
-      Nothing ->
+      Nothing -> do
           -- When we join channels, sometimes we get the "user has
           -- been added to channel" message here BEFORE we get the
           -- websocket event that says we got added to a channel. This
@@ -707,7 +746,7 @@ addMessageToState new = do
           -- message here, but this is the only case of messages that we
           -- /expect/ to drop for this reason. Hence the check for the
           -- msgMap channel ID key presence above.
-          return ()
+          return NoAction
       Just _ -> do
           now <- getNow
           let cp = toClientPost new (new^.postParentIdL)
@@ -717,18 +756,15 @@ addMessageToState new = do
               cId = postChannelId new
 
               doAddMessage = do
-                s <- use id
-                let msg' = clientPostToMessage s
-                           (toClientPost new (new^.postParentIdL))
+                s <- use id  -- use *latest* state
+                let msg' = clientPostToMessage s cp
                 csPostMap.ix(postId new) .= msg'
                 csChannels %= modifyChannelById cId
                   ((ccContents.cdMessages %~ addMessage msg') .
                    (ccInfo.cdUpdated %~ updateTime))
-                when (not fromMe) $ maybeRingBell
-                ccId <- use csCurrentChannelId
-                if postChannelId new == ccId
-                  then updateViewed
-                  else setNewMessageCutoff cId msg'
+                asyncFetchReactionsForPost cId new
+                asyncFetchAttachments new
+                postedNewMessage
 
               doHandleNewMessage = do
                   -- If the message is in reply to another message,
@@ -738,18 +774,27 @@ addMessageToState new = do
                   -- channel until we have fetched the parent.
                   case getMessageForPostId st <$> cp^.cpInReplyToPost of
                       Just (ParentNotLoaded parentId) -> do
-                          doAsyncWith Normal $ do
-                              let theTeamId = st^.csMyTeam.teamIdL
-                              p <- mmGetPost (st^.csSession) theTeamId cId parentId
-                              let postMap = HM.fromList [ ( pId
-                                                          , clientPostToMessage st (toClientPost x (x^.postParentIdL))
-                                                          )
-                                                        | (pId, x) <- HM.toList (p^.postsPostsL)
-                                                        ]
-                              return $ do
-                                csPostMap %= HM.union postMap
-                                doAddMessage
+                          doAsyncChannelMM Normal (Just cId)
+                              (___1 mmGetPost parentId)
+                              (\_ p ->
+                                  let postMap = HM.fromList [ ( pId
+                                                              , clientPostToMessage st
+                                                                (toClientPost x (x^.postParentIdL))
+                                                              )
+                                                            | (pId, x) <- HM.toList (p^.postsPostsL)
+                                                            ]
+                                  in do csPostMap %= HM.union postMap
+                                        doAddMessage >> return ()
+                              )
+                          postedNewMessage
                       _ -> doAddMessage
+
+              postedNewMessage = do
+                currCId <- use csCurrentChannelId
+                if postChannelId new == currCId
+                  then return UpdateServerViewed
+                  else do hasNew <- setNewMessageCutoff cId $ postCreateAt new
+                          return $ if hasNew && not fromMe then NotifyUser else NoAction
 
           -- If this message was written by a user we don't know about,
           -- fetch the user's information before posting the message.
@@ -760,11 +805,33 @@ addMessageToState new = do
                       Just _ -> doHandleNewMessage
                       Nothing -> do
                           handleNewUser uId
-                          doAsyncWith Normal $ return doHandleNewMessage
+                          doAsyncWith Normal $ return (doHandleNewMessage >> return ())
+                          postedNewMessage
 
-setNewMessageCutoff :: ChannelId -> Message -> MH ()
-setNewMessageCutoff cId msg =
-    csChannel(cId).ccInfo.cdNewMessageCutoff %= (<|> Just (msg^.mDate))
+-- | Updates the cutoff marker for new messages in the Channel that
+-- the user hasn't seen yet.  This should only be called for channels
+-- other than the currently selected channel.  Setting the
+-- cdNewMessageCutoff will cause channel indications of unread
+-- messages and control where the "New Messages" marker may be
+-- displayed when the channel is actually selected.
+setNewMessageCutoff :: ChannelId -> UTCTime -> MH Bool
+setNewMessageCutoff cId mdate =
+  let zerodate = UTCTime (toEnum 0) (toEnum 0)
+      cdate = if zerodate == mdate then Nothing else Just mdate
+      earliestDateAfter startdate newdate olddate =
+        case newdate of
+        Nothing -> olddate  -- no new date, no change to existing cutoff
+        Just d -> case startdate of
+          Nothing -> Nothing
+          Just s -> if d > s
+                    then Just $ maybe d (min d) olddate -- new, if new is earlier than prev
+                    else Nothing
+  in withChannelOrDefault cId False $ \chan -> do
+    let oldCutoff = chan^.ccInfo.cdNewMessageCutoff
+        newCutoff = earliestDateAfter (chan^.ccInfo.cdViewed) cdate oldCutoff
+        changed = oldCutoff /= newCutoff
+    when changed $ csChannel(cId).ccInfo.cdNewMessageCutoff .= newCutoff
+    return changed
 
 clearNewMessageCutoff :: ChannelId -> MH ()
 clearNewMessageCutoff cId =
