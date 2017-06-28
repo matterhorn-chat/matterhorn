@@ -17,6 +17,8 @@ function install_packages {
     then
         sudo apt-get install --yes \
             ghc ghc-prof \
+            happy \
+            alex \
             zlib1g-dev
     elif fedora
     then
@@ -33,11 +35,14 @@ function install_cabal {
     local url=https://hackage.haskell.org/package/cabal-install-$ver/$pkg
     local tmp=$(mktemp -d)
 
-    cd $tmp
-    wget $url
-    tar -xf $pkg
-    cd cabal-install-$ver
-    bash bootstrap.sh
+    if ! which cabal >/dev/null 2>/dev/null
+    then
+        cd $tmp
+        wget $url
+        tar -xf $pkg
+        cd cabal-install-$ver
+        bash bootstrap.sh
+    fi
 
     rm -rf $tmp
 }
