@@ -68,8 +68,10 @@ pageAmount = 15
 -- metadata is refreshed, and if this is a loaded channel, the
 -- scrollback is updated as well.
 refreshChannel :: ChannelId -> MH ()
-refreshChannel cId =
-  asPending doAsyncChannelMM Normal (Just cId) mmGetChannel postRefreshChannel
+refreshChannel cId = do
+  curId <- use csCurrentChannelId
+  let priority = if curId == cId then Preempt else Normal
+  asPending doAsyncChannelMM priority (Just cId) mmGetChannel postRefreshChannel
   where postRefreshChannel cId' cwd = do
           updateChannelInfo cId' cwd
           -- If this is an active channel, also update the Messages to
