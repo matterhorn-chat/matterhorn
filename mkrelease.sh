@@ -13,6 +13,9 @@ function get_platform {
         else
             echo "unknown-redhat"
         fi
+    elif grep -i ubuntu /etc/apt/sources.list 2>/dev/null >/dev/null
+    then
+        echo "ubuntu"
     else
         uname -s
     fi
