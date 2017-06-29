@@ -112,11 +112,11 @@ emptyChannelContents = ChannelContents
 --   lack thereof) about the server's information
 --   about the channel.
 data ChannelState
-  = ChanResyncing   -- ^ (Re-) fetching for an unloaded channel
-  | ChanUnloaded    -- ^ Only have channel metadata
-  | ChanReloading   -- ^ (Re-) fetching for a loaded channel
-  | ChanLoaded      -- ^ Have channel metadata and contents
-    deriving (Eq, Show, Ord, Enum)
+  = ChanGettingInfo    -- ^ (Re-) fetching for an unloaded channel
+  | ChanUnloaded       -- ^ Only have channel metadata
+  | ChanGettingPosts   -- ^ (Re-) fetching for a loaded channel
+  | ChanLoaded         -- ^ Have channel metadata and contents
+    deriving (Eq, Show)
 
 -- The ChannelState may be affected by background operations (see
 -- asyncIO), so state transitions may be suggested by the completion
@@ -142,7 +142,7 @@ initialChannelState = ChanUnloaded
 -- the channel is transitioning from only having the metadata
 -- information to having full content information.
 loadingChannelContentState :: ChannelState
-loadingChannelContentState = ChanReloading
+loadingChannelContentState = ChanGettingPosts
 
 -- | The pendingChannelState specifies the new ChannelState to
 -- represent an active fetch of information for a channel, given the
@@ -153,11 +153,10 @@ loadingChannelContentState = ChanReloading
 -- state that should be set on that completion.
 pendingChannelState :: ChannelState -> (ChannelState,
                                         (ChannelState -> ChannelState))
-pendingChannelState currentState =
-  if isPendingState currentState
-  then (currentState, id)
-  else let pendState = pred currentState
-       in (pendState, quiescentChannelState pendState)
+pendingChannelState ChanGettingInfo = (ChanGettingInfo, id)
+pendingChannelState ChanGettingPosts = (ChanGettingPosts, id)
+pendingChannelState ChanUnloaded = (ChanGettingInfo, quiescentChannelState ChanUnloaded)
+pendingChannelState ChanLoaded = (ChanGettingPosts, quiescentChannelState ChanLoaded)
 
 -- | The completionChannelState specifies the new ChannelState upon
 -- completion of an activity.  The activity is represented by the
@@ -168,16 +167,19 @@ pendingChannelState currentState =
 -- the event that multiple update operations are performed at the same
 -- time, the state should always reach higher resting states.
 quiescentChannelState :: ChannelState -> ChannelState -> ChannelState
-quiescentChannelState pendingState currentState =
-  if isPendingState pendingState
-  then max currentState (succ pendingState)
-  else currentState
+quiescentChannelState targetState currentState =
+  if isPendingState targetState
+  then currentState
+  else case (currentState, targetState) of
+         (ChanLoaded,        ChanUnloaded) -> ChanLoaded
+         (ChanGettingPosts,  ChanUnloaded) -> ChanGettingPosts
+         (_, t) -> t
 
 -- | Returns true if the channel's state is one where there is a
 -- pending asynchronous update already scheduled.
 isPendingState :: ChannelState -> Bool
-isPendingState cstate = cstate `elem` [ ChanReloading
-                                      , ChanResyncing
+isPendingState cstate = cstate `elem` [ ChanGettingPosts
+                                      , ChanGettingInfo
                                       ]
 
 ------------------------------------------------------------------------

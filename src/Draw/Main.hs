@@ -451,10 +451,10 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
 -- | When displaying channel contents, it may be convenient to display
 -- information about the current state of the channel.
 stateMessage :: ChannelState -> Maybe T.Text
-stateMessage ChanResyncing = Just "[Fetching channel information...]"
-stateMessage ChanUnloaded = Just "[Loading channel...]"
-stateMessage ChanReloading = Just "[Reloading channel...]"
-stateMessage ChanLoaded = Nothing
+stateMessage ChanGettingInfo   = Just "[Fetching channel information...]"
+stateMessage ChanUnloaded      = Just "[Channel content pending...]"
+stateMessage ChanGettingPosts  = Just "[Fetching channel content...]"
+stateMessage ChanLoaded        = Nothing
 
 getMessageListing :: ChannelId -> ChatState -> Messages
 getMessageListing cId st =
