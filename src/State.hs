@@ -996,17 +996,22 @@ openSelectedURL = do
 openURL :: LinkChoice -> MH Bool
 openURL link = do
     cmd <- use (csResources.crConfiguration.to configURLOpenCommand)
+    outputChan <- use (csResources.crSubprocessLog)
     case cmd of
         Nothing ->
             return False
         Just urlOpenCommand ->
             case _linkFileId link of
               Nothing -> do
-                runLoggedCommand (T.unpack urlOpenCommand) [T.unpack $ link^.linkURL]
+                doAsyncWith Preempt $ do
+                    runLoggedCommand outputChan (T.unpack urlOpenCommand) [T.unpack $ link^.linkURL]
+                    return $ return ()
+
                 return True
+
               Just fId -> do
                 sess  <- use csSession
-                doAsyncWith Normal $ do
+                doAsyncWith Preempt $ do
                   info     <- mmGetFileInfo sess fId
                   contents <- mmGetFile sess fId
                   cacheDir <- getUserCacheDir xdgName
@@ -1014,13 +1019,13 @@ openURL link = do
                       fname = dir </> T.unpack (fileInfoName info)
                   createDirectoryIfMissing True dir
                   BS.writeFile fname contents
-                  return $! runLoggedCommand (T.unpack urlOpenCommand) [fname]
+                  runLoggedCommand outputChan (T.unpack urlOpenCommand) [fname]
+                  return $ return ()
+
                 return True
 
-runLoggedCommand :: String -> [String] -> MH ()
-runLoggedCommand cmd args = do
-  st <- use id
-  liftIO $ do
+runLoggedCommand :: STM.TChan ProgramOutput -> String -> [String] -> IO ()
+runLoggedCommand outputChan cmd args = do
     let opener = (proc cmd args) { std_in = NoStream
                                  , std_out = CreatePipe
                                  , std_err = CreatePipe
@@ -1029,13 +1034,13 @@ runLoggedCommand cmd args = do
     case result of
         Left (e::SomeException) -> do
             let po = ProgramOutput cmd args "" (show e) (ExitFailure 1)
-            STM.atomically $ STM.writeTChan (st^.csResources.crSubprocessLog) po
+            STM.atomically $ STM.writeTChan outputChan po
         Right (Nothing, Just outh, Just errh, ph) -> do
             ec <- waitForProcess ph
             outResult <- hGetContents outh
             errResult <- hGetContents errh
             let po = ProgramOutput cmd args outResult errResult ec
-            STM.atomically $ STM.writeTChan (st^.csResources.crSubprocessLog) po
+            STM.atomically $ STM.writeTChan outputChan po
         Right _ ->
             error $ "BUG: createProcess returned unexpected result, report this at " <>
                     "https://github.com/matterhorn-chat/matterhorn"
