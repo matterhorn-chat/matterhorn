@@ -768,9 +768,9 @@ addMessageToState new = do
                    (ccInfo.cdUpdated %~ updateTime))
                 asyncFetchReactionsForPost cId new
                 asyncFetchAttachments new
-                postedNewMessage
+                postedChanMessage
 
-              doHandleNewMessage = do
+              doHandleAddedMessage = do
                   -- If the message is in reply to another message,
                   -- try to find it in the scrollback for the post's
                   -- channel. If the message isn't there, fetch it. If
@@ -790,10 +790,10 @@ addMessageToState new = do
                                   in do csPostMap %= HM.union postMap
                                         doAddMessage >> return ()
                               )
-                          postedNewMessage
+                          postedChanMessage
                       _ -> doAddMessage
 
-              postedNewMessage = do
+              postedChanMessage = do
                 currCId <- use csCurrentChannelId
                 if postChannelId new == currCId
                   then return UpdateServerViewed
@@ -803,14 +803,14 @@ addMessageToState new = do
           -- If this message was written by a user we don't know about,
           -- fetch the user's information before posting the message.
           case cp^.cpUser of
-              Nothing -> doHandleNewMessage
+              Nothing -> doHandleAddedMessage
               Just uId ->
                   case st^.csUsers.to (findUserById uId) of
-                      Just _ -> doHandleNewMessage
+                      Just _ -> doHandleAddedMessage
                       Nothing -> do
                           handleNewUser uId
-                          doAsyncWith Normal $ return (doHandleNewMessage >> return ())
-                          postedNewMessage
+                          doAsyncWith Normal $ return (doHandleAddedMessage >> return ())
+                          postedChanMessage
 
 -- | Updates the cutoff marker for new messages in the Channel that
 -- the user hasn't seen yet.  This should only be called for channels
