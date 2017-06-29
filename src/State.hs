@@ -1003,6 +1003,7 @@ openURL link = do
         Just urlOpenCommand ->
             case _linkFileId link of
               Nothing -> do
+                -- The link is a web link, not an attachment
                 doAsyncWith Preempt $ do
                     runLoggedCommand outputChan (T.unpack urlOpenCommand) [T.unpack $ link^.linkURL]
                     return $ return ()
@@ -1010,6 +1011,8 @@ openURL link = do
                 return True
 
               Just fId -> do
+                -- The link is for an attachment, so fetch it and then
+                -- open the local copy.
                 sess  <- use csSession
                 doAsyncWith Preempt $ do
                   info     <- mmGetFileInfo sess fId
