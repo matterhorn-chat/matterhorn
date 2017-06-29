@@ -301,8 +301,7 @@ themeEntriesForStyle sty =
                                         , Sky.backgroundColor sty
                                         )
         typeEntries = mkTokenTypeEntry <$> Sky.tokenStyles sty
-    in (baseHighlightedCodeBlockAttr, themeDefAttr) :
-       typeEntries
+    in typeEntries
 
 baseAttrFromPair :: (Maybe Sky.Color, Maybe Sky.Color) -> Attr
 baseAttrFromPair (mf, mb) =
