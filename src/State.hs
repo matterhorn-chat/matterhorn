@@ -579,7 +579,7 @@ asyncFetchMoreMessages = do
                addObtainedMessages
 
 addObtainedMessages :: ChannelId -> Posts -> MH ()
-addObtainedMessages cId posts =
+addObtainedMessages _cId posts =
     postProcessMessageAdd =<<
         foldl mappend mempty <$>
               mapM addMessageToState
