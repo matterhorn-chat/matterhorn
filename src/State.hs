@@ -555,12 +555,16 @@ asyncFetchMoreMessages = do
         let offset = length $ chan^.ccContents.cdMessages
         in asPending doAsyncChannelMM Preempt (Just cId)
                (___2 mmGetPosts offset pageAmount)
-               (\ccId posts -> do
-                  cc <- fromPosts posts
-                  mh $ invalidateCacheEntry (ChannelMessages ccId)
-                  mapM_ (\m ->
-                         csChannel(ccId).ccContents.cdMessages %= addMessage m)
-                          (cc^.cdMessages))
+               addObtainedMessages
+
+addObtainedMessages :: ChannelId -> Posts -> MH ()
+addObtainedMessages cId posts =
+    postProcessMessageAdd =<<
+        foldl mappend mempty <$>
+              mapM addMessageToState
+                       [ (posts^.postsPostsL) HM.! p
+                       | p <- F.toList (posts^.postsOrderL)
+                       ]
 
 loadMoreMessages :: MH ()
 loadMoreMessages = do
