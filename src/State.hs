@@ -789,6 +789,7 @@ addMessageToState new = do
                    (ccInfo.cdUpdated %~ updateTime))
                 asyncFetchReactionsForPost cId new
                 asyncFetchAttachments new
+                mh $ invalidateCacheEntry (ChannelMessages cId)
                 postedChanMessage
 
               doHandleAddedMessage = do
