@@ -40,6 +40,7 @@ import           Data.Sequence ( Seq
                                , viewl
                                , viewr)
 import qualified Data.Sequence as S
+import qualified Skylighting as Sky
 import           Data.Set (Set)
 import qualified Data.Set as Set
 import qualified Graphics.Vty as V
@@ -158,15 +159,36 @@ instance ToWidget Block where
   toWidget uPat cPat (C.Blockquote is) =
     B.padLeft (B.Pad 4) (vBox $ fmap (toWidget uPat cPat) is)
   toWidget uPat cPat (C.List _ l bs) = toList l bs uPat cPat
-  toWidget _ _ (C.CodeBlock _ tx) =
+  toWidget _ _ (C.CodeBlock ci tx) =
+      let f = maybe rawCodeBlockToWidget codeBlockToWidget mSyntax
+          mSyntax = Sky.lookupSyntax (C.codeLang ci) Sky.defaultSyntaxMap
+      in f tx
+  toWidget _ _ (C.HtmlBlock txt) = textWithCursor txt
+  toWidget _ _ (C.HRule) = B.vLimit 1 (B.fill '*')
+
+codeBlockToWidget :: Sky.Syntax -> T.Text -> Widget a
+codeBlockToWidget syntax tx =
+    let result = Sky.tokenize cfg syntax tx
+        cfg = Sky.TokenizerConfig Sky.defaultSyntaxMap False
+    in case result of
+        Left _ -> rawCodeBlockToWidget tx
+        Right tokLines -> B.vBox $ renderTokenLine <$> tokLines
+
+renderTokenLine :: Sky.SourceLine -> Widget a
+renderTokenLine toks = B.hBox $ renderToken <$> toks
+
+renderToken :: Sky.Token -> Widget a
+renderToken (ty, tx) =
+    B.withDefAttr (attrNameForTokenType ty) $ B.txt tx
+
+rawCodeBlockToWidget :: T.Text -> Widget a
+rawCodeBlockToWidget tx =
     B.withDefAttr codeAttr $
         let padding = B.padLeftRight 1 (B.vLimit (length theLines) B.vBorder)
             theLines = expandEmpty <$> T.lines tx
             expandEmpty "" = " "
             expandEmpty s  = s
         in padding <+> (B.vBox $ textWithCursor <$> theLines)
-  toWidget _ _ (C.HtmlBlock txt) = textWithCursor txt
-  toWidget _ _ (C.HRule) = B.vLimit 1 (B.fill '*')
 
 toInlineChunk :: Inlines -> UserSet -> ChannelSet -> Widget a
 toInlineChunk is uSet cSet = B.Widget B.Fixed B.Fixed $ do

@@ -101,6 +101,7 @@ executable matterhorn
                      , aspell-pipe          >= 0.2    && < 0.3
                      , stm-delay            >= 0.1    && < 0.2
                      , unix                 >= 2.7.1.0 && < 2.7.3.0
+                     , skylighting          >= 0.3.3.1 && < 0.4
   default-language:    Haskell2010
 
 test-suite test_messages
