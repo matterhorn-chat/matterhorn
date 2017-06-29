@@ -172,7 +172,9 @@ codeBlockToWidget syntax tx =
         cfg = Sky.TokenizerConfig Sky.defaultSyntaxMap False
     in case result of
         Left _ -> rawCodeBlockToWidget tx
-        Right tokLines -> B.vBox $ renderTokenLine <$> tokLines
+        Right tokLines ->
+            let padding = B.padLeftRight 1 (B.vLimit (length tokLines) B.vBorder)
+            in padding <+> (B.vBox $ renderTokenLine <$> tokLines)
 
 renderTokenLine :: Sky.SourceLine -> Widget a
 renderTokenLine toks = B.hBox $ renderToken <$> toks
