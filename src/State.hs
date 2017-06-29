@@ -102,22 +102,43 @@ updateMessages cId =
       let priority = if curId == cId then Preempt else Normal
       asyncFetchScrollback priority cId
 
--- | Fetch scrollback for a channel in the background
+-- | Fetch scrollback for a channel in the background.  This may be
+-- called to fetch messages in a number of situations, including:
+--
+--   1. WebSocket connect at init, no messages available
+--
+--   2. WebSocket reconnect after losing connectivity for a period
+--
+--   3. Channel selected by user
+--
+--      a. No current messages fetched yet
+--
+--      b. Messages may have been provided unsolicited via the
+--         WebSocket.
+--
+--   4. User got invited to the channel (by another user).
+--
+-- For most cases, fetching the most recent set of messages is
+-- appropriate, but for case 2, messages from the most recent forward
+-- should be retrieved.  However, be careful not to confuse case 2
+-- with case 3b.
 asyncFetchScrollback :: AsyncPriority -> ChannelId -> MH ()
-asyncFetchScrollback prio cId =
+asyncFetchScrollback prio cId = do
   withChannel cId $ \chan -> do
+    let last_pId = getLatestPostId (chan^.ccContents.cdMessages)
+        newCutoff = chan^.ccInfo.cdNewMessageCutoff
     asPending doAsyncChannelMM prio (Just cId)
-              (case getLatestPostId (chan^.ccContents.cdMessages) of
-                 Nothing  -> (___2 mmGetPosts          0 numScrollbackPosts)
-                 Just pId -> (___3 mmGetPostsAfter pId 0 numScrollbackPosts)
-              )
-              (\_ posts ->
-                 postProcessMessageAdd =<<
-                     foldl mappend mempty <$>
-                        mapM addMessageToState
-                                 [ (posts^.postsPostsL) HM.! p
-                                 | p <- F.toList (posts^.postsOrderL)
-                                 ])
+      (case (last_pId, newCutoff) of
+         (Nothing, _)        -> (___2 mmGetPosts          0 numScrollbackPosts)
+         (Just pId, Nothing) -> (___3 mmGetPostsAfter pId 0 numScrollbackPosts)
+         (Just pId, Just ct) ->
+             case findMessage pId (chan^.ccContents.cdMessages) of
+               Nothing -> (___2 mmGetPosts          0 numScrollbackPosts)
+               Just m  -> if m^.mDate > ct
+                          then (___3 mmGetPostsAfter pId 0 numScrollbackPosts)
+                          else (___2 mmGetPosts          0 numScrollbackPosts)
+      )
+      addObtainedMessages
 
 
 -- * Message selection mode
