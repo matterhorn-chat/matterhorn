@@ -1108,3 +1108,4 @@ handleNewUser newUserId = doAsyncMM Normal getUserInfo updateUserState
               -- Update the name map and the list of known users
               do csUsers %= addUser newUserId uInfo
                  csNames . cnUsers %= (sort . ((newUser^.userUsernameL):))
+                 csNames . cnToUserId . at (newUser^.userUsernameL) .= Just newUserId
