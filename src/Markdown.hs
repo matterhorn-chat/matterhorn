@@ -181,7 +181,7 @@ renderTokenLine toks = B.hBox $ renderToken <$> toks
 
 renderToken :: Sky.Token -> Widget a
 renderToken (ty, tx) =
-    B.withDefAttr (attrNameForTokenType ty) $ B.txt tx
+    B.withDefAttr (attrNameForTokenType ty) $ textWithCursor tx
 
 rawCodeBlockToWidget :: T.Text -> Widget a
 rawCodeBlockToWidget tx =
