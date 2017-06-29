@@ -115,6 +115,7 @@ data ChannelState
   = ChanGettingInfo    -- ^ (Re-) fetching for an unloaded channel
   | ChanUnloaded       -- ^ Only have channel metadata
   | ChanGettingPosts   -- ^ (Re-) fetching for a loaded channel
+  | ChanInitialSelect  -- ^ Initially selected channel, but not contents yet
   | ChanLoaded         -- ^ Have channel metadata and contents
     deriving (Eq, Show)
 
@@ -157,6 +158,7 @@ pendingChannelState ChanGettingInfo = (ChanGettingInfo, id)
 pendingChannelState ChanGettingPosts = (ChanGettingPosts, id)
 pendingChannelState ChanUnloaded = (ChanGettingInfo, quiescentChannelState ChanUnloaded)
 pendingChannelState ChanLoaded = (ChanGettingPosts, quiescentChannelState ChanLoaded)
+pendingChannelState ChanInitialSelect = (ChanGettingPosts, quiescentChannelState ChanInitialSelect)
 
 -- | The completionChannelState specifies the new ChannelState upon
 -- completion of an activity.  The activity is represented by the
@@ -173,6 +175,7 @@ quiescentChannelState targetState currentState =
   else case (currentState, targetState) of
          (ChanLoaded,        ChanUnloaded) -> ChanLoaded
          (ChanGettingPosts,  ChanUnloaded) -> ChanGettingPosts
+         (ChanInitialSelect, ChanUnloaded) -> ChanInitialSelect
          (_, t) -> t
 
 -- | Returns true if the channel's state is one where there is a

@@ -454,6 +454,7 @@ stateMessage :: ChannelState -> Maybe T.Text
 stateMessage ChanGettingInfo   = Just "[Fetching channel information...]"
 stateMessage ChanUnloaded      = Just "[Channel content pending...]"
 stateMessage ChanGettingPosts  = Just "[Fetching channel content...]"
+stateMessage ChanInitialSelect = Just "[channel initial content pending...]"
 stateMessage ChanLoaded        = Nothing
 
 getMessageListing :: ChannelId -> ChatState -> Messages

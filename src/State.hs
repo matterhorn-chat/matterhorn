@@ -97,7 +97,7 @@ updateChannelInfo cid cwd =
 updateMessages :: ChannelId -> MH ()
 updateMessages cId =
   withChannel cId $ \chan -> do
-    when (chan^.ccInfo.cdCurrentState.to (== ChanLoaded)) $ do
+    when (chan^.ccInfo.cdCurrentState.to (`elem` [ChanLoaded, ChanInitialSelect])) $ do
       curId <- use csCurrentChannelId
       let priority = if curId == cId then Preempt else Normal
       asyncFetchScrollback priority cId
@@ -748,10 +748,16 @@ instance Monoid PostProcessMessageAdd where
 -- | postProcessMessageAdd performs the actual actions indicated by
 -- the corresponding input value.
 postProcessMessageAdd :: PostProcessMessageAdd -> MH ()
-postProcessMessageAdd NoAction            = return ()
-postProcessMessageAdd UpdateServerViewed  = updateViewed
-postProcessMessageAdd NotifyUser          = maybeRingBell
-postProcessMessageAdd NotifyUserAndServer = updateViewed >> maybeRingBell
+postProcessMessageAdd ppma = do
+  postOp ppma
+  cState <- use (csCurrentChannel.ccInfo.cdCurrentState)
+  when (cState == ChanInitialSelect) $
+    csCurrentChannel.ccInfo.cdCurrentState .= ChanLoaded
+ where
+   postOp NoAction            = return ()
+   postOp UpdateServerViewed  = updateViewed
+   postOp NotifyUser          = maybeRingBell
+   postOp NotifyUserAndServer = updateViewed >> maybeRingBell
 
 -- | Adds a possibly new message to the associated channel contents.
 -- Returns True if this is something that should potentially notify
@@ -817,8 +823,12 @@ addMessageToState new = do
 
               postedChanMessage = do
                 currCId <- use csCurrentChannelId
+                cState <- use (csCurrentChannel.ccInfo.cdCurrentState)
                 if postChannelId new == currCId
-                  then return UpdateServerViewed
+                then do
+                  when (cState == ChanInitialSelect) $
+                    void $ setNewMessageCutoff cId $ postCreateAt new
+                  return UpdateServerViewed
                   else do hasNew <- setNewMessageCutoff cId $ postCreateAt new
                           return $ if hasNew && not fromMe then NotifyUser else NoAction
 
@@ -851,7 +861,7 @@ setNewMessageCutoff cId mdate =
           Nothing -> Nothing
           Just s -> if d > s
                     then Just $ maybe d (min d) olddate -- new, if new is earlier than prev
-                    else Nothing
+                    else olddate
   in withChannelOrDefault cId False $ \chan -> do
     let oldCutoff = chan^.ccInfo.cdNewMessageCutoff
         newCutoff = earliestDateAfter (chan^.ccInfo.cdViewed) cdate oldCutoff
@@ -890,7 +900,7 @@ fetchCurrentScrollback :: MH ()
 fetchCurrentScrollback = do
   cId <- use csCurrentChannelId
   withChannel cId $ \ chan -> do
-    unless (chan^.ccInfo.cdCurrentState == ChanLoaded) $ do
+    unless (chan^.ccInfo.cdCurrentState `elem` [ChanLoaded, ChanInitialSelect]) $ do
       -- Upgrades the channel state to "Loaded" to indicate that
       -- content is now present (this is the main point where channel
       -- state is switched from metadata-only to with-content), then
@@ -901,7 +911,8 @@ fetchCurrentScrollback = do
       -- this will potentially schedule a duplicate, but that will not
       -- be harmful since quiescent channel states only increase to
       -- "higher" states.
-      csChannel(cId).ccInfo.cdCurrentState .= ChanLoaded
+      when (chan^.ccInfo.cdCurrentState /= ChanInitialSelect) $
+        csChannel(cId).ccInfo.cdCurrentState .= ChanLoaded
       asyncFetchScrollback Preempt cId
 
 mkChannelZipperList :: MMNames -> [ChannelId]
