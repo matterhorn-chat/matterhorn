@@ -33,8 +33,8 @@ import           System.Exit (ExitCode(..))
 import           System.Process (proc, std_in, std_out, std_err, StdStream(..),
                                  createProcess, waitForProcess)
 import           System.IO (hGetContents, hFlush, hPutStrLn)
-import           System.Directory ( createDirectoryIfMissing )
-import           System.Environment.XDG.BaseDir ( getUserCacheDir )
+import           System.Directory (createDirectoryIfMissing)
+import           System.Environment.XDG.BaseDir (getUserCacheDir)
 import           System.FilePath
 
 import           Network.Mattermost
