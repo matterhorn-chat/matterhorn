@@ -4,24 +4,26 @@ module Scripts
   )
 where
 
+import Control.Monad (when)
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.Text as T
 import Data.Monoid ((<>))
-import System.Process (readProcessWithExitCode)
+import qualified Control.Concurrent.STM as STM
 import System.Exit (ExitCode(..))
 import Lens.Micro.Platform (use)
 
 import Types
-import State (sendMessage)
+import State (sendMessage, runLoggedCommand)
 import State.Common
 import FilePaths (Script(..), getAllScripts, locateScriptPath)
 
 findAndRunScript :: T.Text -> T.Text -> MH ()
 findAndRunScript scriptName input = do
     fpMb <- liftIO $ locateScriptPath (T.unpack scriptName)
+    outputChan <- use (csResources.crSubprocessLog)
     case fpMb of
       ScriptPath scriptPath -> do
-        doAsyncWith Preempt $ runScript scriptPath input
+        doAsyncWith Preempt $ runScript outputChan scriptPath input
       NonexecScriptPath scriptPath -> do
         let msg = ("The script `" <> T.pack scriptPath <> "` cannot be " <>
              "executed. Try running\n" <>
@@ -34,22 +36,15 @@ findAndRunScript scriptName input = do
         let msg = ("No script named " <> scriptName <> " was found")
         postErrorMessage msg
 
-runScript :: FilePath -> T.Text -> IO (MH ())
-runScript fp text = do
-  (code, stdout, stderr) <- readProcessWithExitCode fp [] (T.unpack text)
-  case code of
-    ExitSuccess -> return $ do
-      mode <- use (csEditState.cedEditMode)
-      sendMessage mode (T.pack stdout)
-    ExitFailure _ -> return $ do
-      let msgText = "The script `" <> T.pack fp <> "` exited with a " <>
-                    "non-zero exit code."
-          msgText' = if stderr == ""
-                       then msgText
-                       else msgText <> " It also produced the " <>
-                            "following output on stderr:\n~~~~~\n" <>
-                            T.pack stderr <> "~~~~~\n" <> scriptHelpAddendum
-      postErrorMessage msgText'
+runScript :: STM.TChan ProgramOutput -> FilePath -> T.Text -> IO (MH ())
+runScript outputChan fp text = do
+  po <- runLoggedCommand True outputChan fp [] (Just $ T.unpack text)
+  return $ case programExitCode po of
+    ExitSuccess -> do
+        when (null $ programStderr po) $ do
+            mode <- use (csEditState.cedEditMode)
+            sendMessage mode (T.pack $ programStdout po)
+    ExitFailure _ -> return ()
 
 listScripts :: MH ()
 listScripts = do

@@ -32,7 +32,7 @@ import           Lens.Micro.Platform
 import           System.Exit (ExitCode(..))
 import           System.Process (proc, std_in, std_out, std_err, StdStream(..),
                                  createProcess, waitForProcess)
-import           System.IO (hGetContents)
+import           System.IO (hGetContents, hFlush, hPutStrLn)
 import           System.Directory ( createDirectoryIfMissing )
 import           System.Environment.XDG.BaseDir ( getUserCacheDir )
 import           System.FilePath
@@ -1005,7 +1005,7 @@ openURL link = do
               Nothing -> do
                 -- The link is a web link, not an attachment
                 doAsyncWith Preempt $ do
-                    runLoggedCommand outputChan (T.unpack urlOpenCommand) [T.unpack $ link^.linkURL]
+                    void $ runLoggedCommand False outputChan (T.unpack urlOpenCommand) [T.unpack $ link^.linkURL] Nothing
                     return $ return ()
 
                 return True
@@ -1022,28 +1022,48 @@ openURL link = do
                       fname = dir </> T.unpack (fileInfoName info)
                   createDirectoryIfMissing True dir
                   BS.writeFile fname contents
-                  runLoggedCommand outputChan (T.unpack urlOpenCommand) [fname]
+                  void $ runLoggedCommand False outputChan (T.unpack urlOpenCommand) [fname] Nothing
                   return $ return ()
 
                 return True
 
-runLoggedCommand :: STM.TChan ProgramOutput -> String -> [String] -> IO ()
-runLoggedCommand outputChan cmd args = do
-    let opener = (proc cmd args) { std_in = NoStream
+runLoggedCommand :: Bool
+                 -- ^ Whether stdout output is expected for this program
+                 -> STM.TChan ProgramOutput
+                 -- ^ The output channel to send the output to
+                 -> String
+                 -- ^ The program name
+                 -> [String]
+                 -- ^ Arguments
+                 -> Maybe String
+                 -- ^ The stdin to send, if any
+                 -> IO ProgramOutput
+runLoggedCommand stdoutOkay outputChan cmd args mInput = do
+    let stdIn = maybe NoStream (const CreatePipe) mInput
+        opener = (proc cmd args) { std_in = stdIn
                                  , std_out = CreatePipe
                                  , std_err = CreatePipe
                                  }
     result <- try $ createProcess opener
     case result of
         Left (e::SomeException) -> do
-            let po = ProgramOutput cmd args "" (show e) (ExitFailure 1)
+            let po = ProgramOutput cmd args "" stdoutOkay (show e) (ExitFailure 1)
             STM.atomically $ STM.writeTChan outputChan po
-        Right (Nothing, Just outh, Just errh, ph) -> do
+            return po
+        Right (stdinResult, Just outh, Just errh, ph) -> do
+            case stdinResult of
+                Just inh -> do
+                    let Just input = mInput
+                    hPutStrLn inh input
+                    hFlush inh
+                Nothing -> return ()
+
             ec <- waitForProcess ph
             outResult <- hGetContents outh
             errResult <- hGetContents errh
-            let po = ProgramOutput cmd args outResult errResult ec
+            let po = ProgramOutput cmd args outResult stdoutOkay errResult ec
             STM.atomically $ STM.writeTChan outputChan po
+            return po
         Right _ ->
             error $ "BUG: createProcess returned unexpected result, report this at " <>
                     "https://github.com/matterhorn-chat/matterhorn"
