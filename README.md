@@ -128,6 +128,7 @@ name of the dictionary you'd like to use.
 * Message editor with kill/yank buffer and readline-style keybindings
 * Tab-completion of usernames, channel names, and commands
 * Spell-checking via Aspell
+* Syntax highlighting of fenced code blocks in messages
 
 # Building
 
