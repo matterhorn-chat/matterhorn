@@ -297,11 +297,7 @@ attrNameForTokenType ty =
 
 themeEntriesForStyle :: Sky.Style -> [(AttrName, Attr)]
 themeEntriesForStyle sty =
-    let themeDefAttr = baseAttrFromPair ( Sky.defaultColor sty
-                                        , Sky.backgroundColor sty
-                                        )
-        typeEntries = mkTokenTypeEntry <$> Sky.tokenStyles sty
-    in typeEntries
+    mkTokenTypeEntry <$> Sky.tokenStyles sty
 
 baseAttrFromPair :: (Maybe Sky.Color, Maybe Sky.Color) -> Attr
 baseAttrFromPair (mf, mb) =
