@@ -2,11 +2,12 @@
 
 module Draw.PostListOverlay where
 
-import Prelude ()
-import Prelude.Compat
-import Control.Monad.Trans.Reader (withReaderT)
+import           Prelude ()
+import           Prelude.Compat
+
+import           Control.Monad.Trans.Reader (withReaderT)
 import qualified Data.Foldable as F
-import Data.Monoid ((<>))
+import           Data.Monoid ((<>))
 import qualified Data.Text as T
 import           Data.Time.Format ( formatTime
                                   , defaultTimeLocale )
@@ -15,9 +16,9 @@ import           Data.Time.LocalTime ( TimeZone, utcToLocalTime
                                      , LocalTime(..), TimeOfDay(..) )
 import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
-import Lens.Micro.Platform
-import Network.Mattermost
-import Network.Mattermost.Lenses
+import           Lens.Micro.Platform
+import           Network.Mattermost
+import           Network.Mattermost.Lenses
 
 import Brick
 import Brick.Widgets.Border
@@ -63,7 +64,7 @@ insertDateHeaders datefmt tz ms = foldr addMessage ms dateT
 drawPostsBox :: PostListContents -> ChatState -> Widget Name
 drawPostsBox contents st =
   centerLayer $ hLimitWithPadding 10 $ borderWithLabel (txt contentString) $ vBox $
-    map channelFor (reverse (F.toList messages)) ++ [fill ' ']
+    renderedMessageList ++ [fill ' ']
   where contentString = case contents of
           PostListFlagged -> "Flagged posts"
         uSet = Set.fromList (st^..csUsers.to allUsers.folded.uiName)
@@ -73,10 +74,7 @@ drawPostsBox contents st =
                      (st^.timeZone)
                      (st^.csPostListOverlay.postListPosts)
         channelFor msg =
-          let renderedMsg
-                | msg^.mPostId == st^.csPostListOverlay.postListSelected =
-                  renderSingleMessage st uSet cSet msg <+> txt "??"
-                | otherwise = renderSingleMessage st uSet cSet msg
+          let renderedMsg = renderSingleMessage st uSet cSet msg
           in case msg^.mOriginalPost of
             Just post
               | Just chan <- st^?csChannels.channelByIdL(post^.postChannelIdL) ->
@@ -91,3 +89,10 @@ drawPostsBox contents st =
                          (str "  " <+> renderedMsg))
             _ | CP _ <- msg^.mType -> str "[BUG: unknown channel]"
               | otherwise -> renderedMsg
+
+        renderedMessageList =
+          let (s, (before, after)) = splitMessages (st^.csPostListOverlay.postListSelected) messages
+          in case s of
+            Nothing -> map channelFor (reverse (F.toList messages))
+            Just curMsg ->
+              [unsafeRenderMessageSelection (curMsg, (after, before)) channelFor]

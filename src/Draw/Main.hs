@@ -1,5 +1,5 @@
 {-# LANGUAGE MultiWayIf #-}
-module Draw.Main (drawMain, renderSingleMessage, insertTransitions) where
+module Draw.Main (drawMain, renderSingleMessage, insertTransitions, unsafeRenderMessageSelection) where
 
 import           Prelude ()
 import           Prelude.Compat
@@ -237,39 +237,8 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
         let (s, (before, after)) = splitMessages selPostId msgs
         in case s of
              Nothing -> renderLastMessages before
-             Just m -> unsafeMessageSelectList before after m
-
-    unsafeMessageSelectList before after curMsg = Widget Greedy Greedy $ do
-        ctx <- getContext
-
-        -- Render the message associated with the current post ID.
-        curMsgResult <- withReaderT relaxHeight $ render $
-            forceAttr messageSelectAttr $
-            padRight Max $ renderSingleMessage st uSet cSet curMsg
-
-        let targetHeight = ctx^.availHeightL
-            upperHeight = targetHeight `div` 2
-            lowerHeight = targetHeight - upperHeight
-
-            lowerRender = render1HLimit Vty.vertJoin targetHeight
-            upperRender = render1HLimit (flip Vty.vertJoin) targetHeight
-
-        lowerHalf <- foldM lowerRender Vty.emptyImage after
-        upperHalf <- foldM upperRender Vty.emptyImage before
-
-        let curHeight = Vty.imageHeight $ curMsgResult^.imageL
-            uncropped = upperHalf Vty.<-> curMsgResult^.imageL Vty.<-> lowerHalf
-            img = if Vty.imageHeight lowerHalf < (lowerHeight - curHeight)
-                  then Vty.cropTop targetHeight uncropped
-                  else if Vty.imageHeight upperHalf < upperHeight
-                       then Vty.cropBottom targetHeight uncropped
-                       else Vty.cropTop upperHeight upperHalf Vty.<->
-                            curMsgResult^.imageL Vty.<->
-                            (if curHeight < lowerHeight
-                             then Vty.cropBottom (lowerHeight - curHeight) lowerHalf
-                             else Vty.cropBottom lowerHeight lowerHalf)
-
-        return $ emptyResult & imageL .~ img
+             Just m ->
+               unsafeRenderMessageSelection (m, (before, after)) (renderSingleMessage st uSet cSet)
 
     channelMessages =
         insertTransitions (getDateFormat st)
@@ -288,11 +257,10 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
 
     relaxHeight c = c & availHeightL .~ (max maxMessageHeight (c^.availHeightL))
 
-    render1HLimit fjoin lim img msg = if Vty.imageHeight img >= lim
-                                      then return img
-                                      else fjoin img <$> render1 msg
+    render1HLimit fjoin lim img msg
+      | Vty.imageHeight img >= lim = return img
+      | otherwise = fjoin img <$> render1 msg
 
-    render1 :: Message -> RenderM Name Vty.Image
     render1 msg = case msg^.mDeleted of
                     True -> return Vty.emptyImage
                     False -> do
@@ -306,6 +274,60 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
     chnName = chan^.ccInfo.cdName
     chnType = chan^.ccInfo.cdType
     topicStr = chan^.ccInfo.cdHeader
+
+-- | Render a selected message with focus, including the messages
+-- before and the messages after it. The foldable parameters exist
+-- because (depending on the situation) we might use either of the
+-- message list types for the 'before' and 'after' (i.e. the
+-- chronological or retrograde message sequences).
+unsafeRenderMessageSelection ::
+  (Foldable f, Foldable g) =>
+  (Message, (f Message, g Message)) ->
+  (Message -> Widget Name) ->
+  Widget Name
+unsafeRenderMessageSelection (curMsg, (before, after)) doMsgRender =
+  Widget Greedy Greedy $ do
+    let relaxHeight c = c & availHeightL .~ (max maxMessageHeight (c^.availHeightL))
+
+        render1HLimit fjoin lim img msg
+          | Vty.imageHeight img >= lim = return img
+          | otherwise = fjoin img <$> render1 msg
+
+        render1 msg = case msg^.mDeleted of
+                        True -> return Vty.emptyImage
+                        False -> do
+                          r <- withReaderT relaxHeight $
+                               render $ padRight Max $
+                               doMsgRender msg
+                          return $ r^.imageL
+
+    ctx <- getContext
+    curMsgResult <- withReaderT relaxHeight $ render $
+                    forceAttr messageSelectAttr $
+                    padRight Max $ doMsgRender curMsg
+
+    let targetHeight = ctx^.availHeightL
+        upperHeight = targetHeight `div` 2
+        lowerHeight = targetHeight - upperHeight
+
+        lowerRender = render1HLimit Vty.vertJoin targetHeight
+        upperRender = render1HLimit (flip Vty.vertJoin) targetHeight
+
+    lowerHalf <- foldM lowerRender Vty.emptyImage after
+    upperHalf <- foldM upperRender Vty.emptyImage before
+
+    let curHeight = Vty.imageHeight $ curMsgResult^.imageL
+        uncropped = upperHalf Vty.<-> curMsgResult^.imageL Vty.<-> lowerHalf
+        img = if Vty.imageHeight lowerHalf < (lowerHeight - curHeight)
+              then Vty.cropTop targetHeight uncropped
+              else if Vty.imageHeight upperHalf < upperHeight
+                   then Vty.cropBottom targetHeight uncropped
+                   else Vty.cropTop upperHeight upperHalf Vty.<->
+                        curMsgResult^.imageL Vty.<->
+                        (if curHeight < lowerHeight
+                          then Vty.cropBottom (lowerHeight - curHeight) lowerHalf
+                          else Vty.cropBottom lowerHeight lowerHalf)
+    return $ emptyResult & imageL .~ img
 
 getMessageListing :: ChannelId -> ChatState -> Messages
 getMessageListing cId st =
