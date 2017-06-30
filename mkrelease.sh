@@ -39,6 +39,7 @@ CABAL_DEPS_TOOL_DIR=$HOME/.cabal/bin
 function prepare_dist {
     local dest=$1
     cp $HERE/dist-newstyle/build/matterhorn-$VERSION/build/matterhorn/matterhorn $dest
+    strip $dest/matterhorn
     cp $HERE/sample-config.ini $dest
     cp $HERE/README.md $dest
     cp $HERE/CHANGELOG.md $dest
