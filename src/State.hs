@@ -569,6 +569,12 @@ channelScrollToBottom = do
   cId <- use csCurrentChannelId
   mh $ vScrollToEnd (viewportScroll (ChannelMessages cId))
 
+-- | Fetches additional message history for the current channel.  This
+-- is generally called when in ChannelScroll mode, in which state the
+-- output is cached and seen via a scrolling viewport; new messages
+-- received in this mode are not normally shown, but this explicit
+-- user-driven fetch should be displayed, so this also invalidates the
+-- cache.
 asyncFetchMoreMessages :: MH ()
 asyncFetchMoreMessages = do
     cId  <- use csCurrentChannelId
@@ -576,7 +582,8 @@ asyncFetchMoreMessages = do
         let offset = length $ chan^.ccContents.cdMessages
         in asPending doAsyncChannelMM Preempt (Just cId)
                (___2 mmGetPosts offset pageAmount)
-               addObtainedMessages
+               (\c p -> do addObtainedMessages c p
+                           mh $ invalidateCacheEntry (ChannelMessages cId))
 
 addObtainedMessages :: ChannelId -> Posts -> MH ()
 addObtainedMessages _cId posts =
@@ -795,7 +802,6 @@ addMessageToState new = do
                    (ccInfo.cdUpdated %~ updateTime))
                 asyncFetchReactionsForPost cId new
                 asyncFetchAttachments new
-                mh $ invalidateCacheEntry (ChannelMessages cId)
                 postedChanMessage
 
               doHandleAddedMessage = do

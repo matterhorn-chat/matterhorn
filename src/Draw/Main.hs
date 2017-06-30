@@ -349,6 +349,11 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
 
     chatText = case st^.csMode of
         ChannelScroll ->
+            -- n.b., In this mode, the output is cached and scrolled
+            -- via the viewport.  This means that newly received
+            -- messages are *not* displayed, but this preserves the
+            -- stability of the scrolling, which provides a better
+            -- user experience.
             viewport (ChannelMessages cId) Vertical $
             cached (ChannelMessages cId) $
             vBox $ (withDefAttr loadMoreAttr $ hCenter $
