@@ -20,6 +20,7 @@ import qualified Control.Concurrent.STM as STM
 import           Control.Concurrent.MVar (MVar)
 import           Control.Exception (SomeException)
 import qualified Control.Monad.State as St
+import qualified Data.Foldable as F
 import qualified Data.Set as S
 import           Data.HashMap.Strict (HashMap)
 import           Data.Time.Clock (UTCTime, getCurrentTime)
@@ -30,7 +31,7 @@ import           Data.Maybe
 import           Data.Monoid
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( at, makeLenses, lens, (&), (^.), (%~), (.~), (^?!)
-                                     , (^?), to, SimpleGetter, _Just
+                                     , to, SimpleGetter, _Just
                                      , Traversal', preuse )
 import           Network.Mattermost
 import           Network.Mattermost.Exceptions
@@ -538,23 +539,49 @@ data Keybinding =
 lookupKeybinding :: Vty.Event -> [Keybinding] -> Maybe Keybinding
 lookupKeybinding e kbs = listToMaybe $ filter ((== e) . kbEvent) kbs
 
+-- *  Channel Updates and Notifications
+
+hasUnread :: ChatState -> ChannelId -> Bool
+hasUnread st cId = maybe False id $ do
+  chan <- findChannelById cId (st^.csChannels)
+
+  -- If the channel is not yet loaded, there is no scrollback loaded so
+  -- there will be no new message cutoff. In that case the best thing
+  -- to do is to compare the view/update timestamps for the channel.
+  -- Once the channel messages are loaded, the right thing to do is to
+  -- check the cutoff since deletions could mean that there's nothing
+  -- new to view even though the update time is greater than the view
+  -- time.
+  --
+  -- The channel could either be in ChanUnloaded state or in its pending
+  -- equivalent, and either one means we do not have scrollback so we
+  -- shouldn't check the cutoff.
+  let noMessageStates = [ initialChannelState
+                        , fst $ pendingChannelState initialChannelState
+                        ]
+
+  if chan^.ccInfo.cdCurrentState `elem` noMessageStates
+     then do
+         lastViewTime <- chan^.ccInfo.cdViewed
+         return (chan^.ccInfo.cdUpdated > lastViewTime)
+     else case chan^.ccInfo.cdNewMessageCutoff of
+         Nothing -> return False
+         Just cutoff ->
+             return $ not $ F.null $
+                      messagesOnOrAfter cutoff $
+                      chan^.ccContents.cdMessages
+
 sortedUserList :: ChatState -> [UserInfo]
 sortedUserList st = sortBy cmp yes <> sortBy cmp no
   where
       cmp = compareUserInfo uiName
-      hasUnread u =
+      dmHasUnread u =
           case st^.csNames.cnToChanId.at(u^.uiName) of
             Nothing  -> False
             Just cId
               | (st^.csCurrentChannelId) == cId -> False
-              | otherwise ->
-                case st^?csChannel(cId).ccInfo of
-                  Nothing -> False
-                  Just info ->
-                    case (info^.cdViewed) of
-                      Just v -> info^.cdUpdated > v
-                      _      -> False
-      (yes, no) = partition hasUnread (userList st)
+              | otherwise -> hasUnread st cId
+      (yes, no) = partition dmHasUnread (userList st)
 
 compareUserInfo :: (Ord a) => Lens' UserInfo a -> UserInfo -> UserInfo -> Ordering
 compareUserInfo field u1 u2
