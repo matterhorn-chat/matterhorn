@@ -36,6 +36,7 @@ executable matterhorn
                        Themes
                        Draw
                        Draw.Main
+                       Draw.Messages
                        Draw.ChannelList
                        Draw.ShowHelp
                        Draw.LeaveChannelConfirm

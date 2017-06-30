@@ -31,6 +31,7 @@ import Types.Posts
 import Types.Messages
 import Types.Users
 import Draw.Main
+import Draw.Messages
 import Draw.Util
 
 hLimitWithPadding :: Int -> Widget n -> Widget n
