@@ -151,8 +151,6 @@ handleWSEvent we = do
       Just p  -> do
         postInfoMessage (p^.postMessageL)
       Nothing -> return ()
-    -- Right now, we don't use any server preferences in
-    -- our client, but that might change
 
     WMPreferenceChanged
       | Just pref <- wepPreferences (weData we)
@@ -172,11 +170,14 @@ handleWSEvent we = do
     -- online or away or what-have-you) gets represented
     -- in StatusChanged messages, so we can ignore it.
     WMHello -> return ()
+
     -- right now we don't show typing notifications. maybe
     -- we should? i dunno.
     WMTyping -> return ()
+
     -- Do we need to do anything with this?
     WMUpdateTeam -> return ()
+
     WMReactionAdded -> case wepReaction (weData we) of
       Just r  -> case webChannelId (weBroadcast we) of
         Just cId -> addReaction r cId
@@ -187,6 +188,7 @@ handleWSEvent we = do
         Just cId -> removeReaction r cId
         Nothing -> return ()
       Nothing -> return ()
+
     WMAddedToTeam -> return () -- XXX: we need to handle this
     WMWebRTC      -> return ()
     WMAuthenticationChallenge -> return ()

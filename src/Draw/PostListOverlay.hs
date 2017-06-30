@@ -8,6 +8,12 @@ import Control.Monad.Trans.Reader (withReaderT)
 import qualified Data.Foldable as F
 import Data.Monoid ((<>))
 import qualified Data.Text as T
+import           Data.Time.Format ( formatTime
+                                  , defaultTimeLocale )
+import           Data.Time.LocalTime ( TimeZone, utcToLocalTime
+                                     , localTimeToUTC, localDay
+                                     , LocalTime(..), TimeOfDay(..) )
+import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
 import Lens.Micro.Platform
 import Network.Mattermost
@@ -20,6 +26,7 @@ import Brick.Widgets.Center
 import Themes
 import Types
 import Types.Channels
+import Types.Posts
 import Types.Messages
 import Types.Users
 import Draw.Main
@@ -37,21 +44,39 @@ drawPostListOverlay :: PostListContents -> ChatState -> [Widget Name]
 drawPostListOverlay contents st =
   drawPostsBox contents st : (forceAttr "invalid" <$> drawMain st)
 
+insertDateHeaders :: T.Text -> TimeZone -> Messages -> Messages
+insertDateHeaders datefmt tz ms = foldr addMessage ms dateT
+    where dateT = fmap dateMsg dateRange
+          dateRange = foldr checkDateChange [] ms
+          checkDateChange m [] = [dayStart $ m^.mDate]
+          checkDateChange m dl = if dayOf (head dl) == dayOf (m^.mDate)
+                                 then dl
+                                 else dayStart (m^.mDate) : dl
+          dayOf = localDay . utcToLocalTime tz
+          dayStart dt = localTimeToUTC tz $ LocalTime (dayOf dt) $ TimeOfDay 23 59 59
+          dateMsg d = Message (getBlocks (T.pack $ formatTime defaultTimeLocale
+                                          (T.unpack datefmt)
+                                          (utcToLocalTime tz d)))
+                      Nothing d (C DateTransition) False False
+                      Seq.empty NotAReply Nothing mempty Nothing False
+
 drawPostsBox :: PostListContents -> ChatState -> Widget Name
 drawPostsBox contents st =
   centerLayer $ hLimitWithPadding 10 $ borderWithLabel (txt contentString) $ vBox $
-    map channelFor (F.toList messages) ++ [fill ' ']
+    map channelFor (reverse (F.toList messages)) ++ [fill ' ']
   where contentString = case contents of
           PostListFlagged -> "Flagged posts"
         uSet = Set.fromList (st^..csUsers.to allUsers.folded.uiName)
         cSet = Set.fromList (st^..csChannels.folded.ccInfo.cdName)
-        messages = insertTransitions
+        messages = insertDateHeaders
                      (getDateFormat st)
                      (st^.timeZone)
-                     Nothing
                      (st^.csPostListOverlay.postListPosts)
         channelFor msg =
-          let renderedMsg = renderSingleMessage st uSet cSet msg
+          let renderedMsg
+                | msg^.mPostId == st^.csPostListOverlay.postListSelected =
+                  renderSingleMessage st uSet cSet msg <+> txt "??"
+                | otherwise = renderSingleMessage st uSet cSet msg
           in case msg^.mOriginalPost of
             Just post
               | Just chan <- st^?csChannels.channelByIdL(post^.postChannelIdL) ->
