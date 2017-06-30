@@ -303,10 +303,10 @@ baseAttrFromPair :: (Maybe Sky.Color, Maybe Sky.Color) -> Attr
 baseAttrFromPair (mf, mb) =
     case (mf, mb) of
         (Nothing, Nothing) -> defAttr
-        (Just f, Nothing) -> fg (tokenColorToVtyColor f)
-        (Nothing, Just b) -> bg (tokenColorToVtyColor b)
-        (Just f, Just b) -> (tokenColorToVtyColor f) `on`
-                            (tokenColorToVtyColor b)
+        (Just f, Nothing)  -> fg (tokenColorToVtyColor f)
+        (Nothing, Just b)  -> bg (tokenColorToVtyColor b)
+        (Just f, Just b)   -> (tokenColorToVtyColor f) `on`
+                              (tokenColorToVtyColor b)
 
 tokenColorToVtyColor :: Sky.Color -> Color
 tokenColorToVtyColor (Sky.RGB r g b) = rgbColor r g b
