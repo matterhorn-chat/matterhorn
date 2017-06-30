@@ -539,8 +539,10 @@ lookupKeybinding :: Vty.Event -> [Keybinding] -> Maybe Keybinding
 lookupKeybinding e kbs = listToMaybe $ filter ((== e) . kbEvent) kbs
 
 sortedUserList :: ChatState -> [UserInfo]
-sortedUserList st = sortBy compareUserInfo yes ++ sortBy compareUserInfo no
-  where hasUnread u =
+sortedUserList st = sortBy cmp yes <> sortBy cmp no
+  where
+      cmp = compareUserInfo uiName
+      hasUnread u =
           case st^.csNames.cnToChanId.at(u^.uiName) of
             Nothing  -> False
             Just cId
@@ -552,16 +554,16 @@ sortedUserList st = sortBy compareUserInfo yes ++ sortBy compareUserInfo no
                     case (info^.cdViewed) of
                       Just v -> info^.cdUpdated > v
                       _      -> False
-        (yes, no) = partition hasUnread (userList st)
+      (yes, no) = partition hasUnread (userList st)
 
-compareUserInfo :: UserInfo -> UserInfo -> Ordering
-compareUserInfo u1 u2
+compareUserInfo :: (Ord a) => Lens' UserInfo a -> UserInfo -> UserInfo -> Ordering
+compareUserInfo field u1 u2
     | u1^.uiStatus == Offline && u2^.uiStatus /= Offline =
       GT
     | u1^.uiStatus /= Offline && u2^.uiStatus == Offline =
       LT
     | otherwise =
-      (u1^.uiName) `compare` (u2^.uiName)
+      (u1^.field) `compare` (u2^.field)
 
 userList :: ChatState -> [UserInfo]
 userList st = filter showUser $ allUsers (st^.csUsers)
