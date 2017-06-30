@@ -25,7 +25,7 @@ import           Data.HashMap.Strict (HashMap)
 import           Data.Time.Clock (UTCTime, getCurrentTime)
 import           Data.Time.LocalTime (TimeZone)
 import qualified Data.HashMap.Strict as HM
-import           Data.List (partition, sort)
+import           Data.List (partition, sortBy)
 import           Data.Maybe
 import           Data.Monoid
 import qualified Graphics.Vty as Vty
@@ -539,7 +539,7 @@ lookupKeybinding :: Vty.Event -> [Keybinding] -> Maybe Keybinding
 lookupKeybinding e kbs = listToMaybe $ filter ((== e) . kbEvent) kbs
 
 sortedUserList :: ChatState -> [UserInfo]
-sortedUserList st = sort yes ++ sort no
+sortedUserList st = sortBy compareUserInfo yes ++ sortBy compareUserInfo no
   where hasUnread u =
           case st^.csNames.cnToChanId.at(u^.uiName) of
             Nothing  -> False
@@ -553,6 +553,15 @@ sortedUserList st = sort yes ++ sort no
                       Just v -> info^.cdUpdated > v
                       _      -> False
         (yes, no) = partition hasUnread (userList st)
+
+compareUserInfo :: UserInfo -> UserInfo -> Ordering
+compareUserInfo u1 u2
+    | u1^.uiStatus == Offline && u2^.uiStatus /= Offline =
+      GT
+    | u1^.uiStatus /= Offline && u2^.uiStatus == Offline =
+      LT
+    | otherwise =
+      (u1^.uiName) `compare` (u2^.uiName)
 
 userList :: ChatState -> [UserInfo]
 userList st = filter showUser $ allUsers (st^.csUsers)

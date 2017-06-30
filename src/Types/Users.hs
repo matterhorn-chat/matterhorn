@@ -79,15 +79,6 @@ statusFromText t = case t of
 
 makeLenses ''UserInfo
 
-instance Ord UserInfo where
-  u1 `compare` u2
-    | u1^.uiStatus == Offline && u2^.uiStatus /= Offline =
-      GT
-    | u1^.uiStatus /= Offline && u2^.uiStatus == Offline =
-      LT
-    | otherwise =
-      (u1^.uiName) `compare` (u2^.uiName)
-
 -- ** Manage the collection of all Users
 
 -- | Define a binary kinded type to allow derivation of functor.
