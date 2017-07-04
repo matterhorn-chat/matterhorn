@@ -20,6 +20,8 @@ import System.FilePath (dropFileName)
 import qualified System.IO.Strict as S
 import qualified Data.Vector as V
 import           Data.Text ( Text )
+import qualified System.Posix.Files as P
+import qualified System.Posix.Types as P
 
 import IOUtil
 import FilePaths
@@ -38,6 +40,9 @@ newHistory = InputHistory mempty
 removeChannelHistory :: ChannelId -> InputHistory -> InputHistory
 removeChannelHistory cId ih = ih & historyEntries.at cId .~ Nothing
 
+historyFileMode :: P.FileMode
+historyFileMode = P.unionFileModes P.ownerReadMode P.ownerWriteMode
+
 writeHistory :: InputHistory -> IO ()
 writeHistory ih = do
     historyFile <- historyFilePath
@@ -45,6 +50,7 @@ writeHistory ih = do
     let entries = (\(cId, z) -> (cId, V.toList z)) <$>
                   (HM.toList $ ih^.historyEntries)
     writeFile historyFile $ show entries
+    P.setFileMode historyFile historyFileMode
 
 readHistory :: IO (Either String InputHistory)
 readHistory = runExceptT $ do

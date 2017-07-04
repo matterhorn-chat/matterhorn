@@ -32,10 +32,15 @@ channelSelectKeybindings =
              st <- use id
              let allMatches = (HM.elems $ st^.csChannelSelectChannelMatches) <>
                               (HM.elems $ st^.csChannelSelectUserMatches)
-             case allMatches of
-                 [single] -> do
+                 matchingName = (==) (st^.csChannelSelectString) . channelNameFromMatch
+                 exactMatches = filter matchingName allMatches
+             case (allMatches, exactMatches) of
+                 ([single], _) -> do
                      csMode .= Main
                      changeChannel (channelNameFromMatch single)
+                 (_, [exact]) -> do
+                     csMode .= Main
+                     changeChannel (channelNameFromMatch exact)
                  _ -> return ()
 
     , KB "Cancel channel selection"

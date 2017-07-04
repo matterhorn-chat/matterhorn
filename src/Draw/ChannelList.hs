@@ -176,7 +176,7 @@ getDmChannels st =
             case do { cId <- m_chanId; st^.csLastChannelInput.at cId } of
               Nothing      -> T.singleton $ userSigilFromInfo u
               Just ("", _) -> T.singleton $ userSigilFromInfo u
-              _            -> "»"
+              _            -> "»"  -- shows that user has a message in-progress
           uname = u^.uiName
           recent = maybe False ((== st^.csRecentChannel) . Just) m_chanId
           m_chanId = st^.csNames.cnToChanId.at (u^.uiName)

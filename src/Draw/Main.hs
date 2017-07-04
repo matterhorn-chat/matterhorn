@@ -497,7 +497,7 @@ insertTransitions datefmt tz cutoff ms = foldr addMessage ms transitions
 renderChannelSelect :: ChatState -> Widget Name
 renderChannelSelect st =
     withDefAttr channelSelectPromptAttr $
-    (txt "Switch to channel: ") <+>
+    (txt "Switch to channel [use ^ and $ to anchor]: ") <+>
      (showCursor ChannelSelectString (Location (T.length $ st^.csChannelSelectString, 0)) $
       txt $
       (if T.null $ st^.csChannelSelectString

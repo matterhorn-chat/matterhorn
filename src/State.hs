@@ -32,9 +32,9 @@ import           Lens.Micro.Platform
 import           System.Exit (ExitCode(..))
 import           System.Process (proc, std_in, std_out, std_err, StdStream(..),
                                  createProcess, waitForProcess)
-import           System.IO (hGetContents)
-import           System.Directory ( createDirectoryIfMissing )
-import           System.Environment.XDG.BaseDir ( getUserCacheDir )
+import           System.IO (hGetContents, hFlush, hPutStrLn)
+import           System.Directory (createDirectoryIfMissing)
+import           System.Environment.XDG.BaseDir (getUserCacheDir)
 import           System.FilePath
 
 import           Network.Mattermost
@@ -386,38 +386,6 @@ fetchCurrentChannelMembers =
                   usernames = sort $ userUsername <$> (F.toList chanUsers)
 
               postInfoMessage msgStr)
-
--- *  Channel Updates and Notifications
-
-hasUnread :: ChatState -> ChannelId -> Bool
-hasUnread st cId = maybe False id $ do
-  chan <- findChannelById cId (st^.csChannels)
-
-  -- If the channel is not yet loaded, there is no scrollback loaded so
-  -- there will be no new message cutoff. In that case the best thing
-  -- to do is to compare the view/update timestamps for the channel.
-  -- Once the channel messages are loaded, the right thing to do is to
-  -- check the cutoff since deletions could mean that there's nothing
-  -- new to view even though the update time is greater than the view
-  -- time.
-  --
-  -- The channel could either be in ChanUnloaded state or in its pending
-  -- equivalent, and either one means we do not have scrollback so we
-  -- shouldn't check the cutoff.
-  let noMessageStates = [ initialChannelState
-                        , fst $ pendingChannelState initialChannelState
-                        ]
-
-  if chan^.ccInfo.cdCurrentState `elem` noMessageStates
-     then do
-         lastViewTime <- chan^.ccInfo.cdViewed
-         return (chan^.ccInfo.cdUpdated > lastViewTime)
-     else case chan^.ccInfo.cdNewMessageCutoff of
-         Nothing -> return False
-         Just cutoff ->
-             return $ not $ F.null $
-                      messagesOnOrAfter cutoff $
-                      chan^.ccContents.cdMessages
 
 setLastViewedFor :: ChannelId -> MH ()
 setLastViewedFor cId = do
@@ -1108,17 +1076,25 @@ openSelectedURL = do
 openURL :: LinkChoice -> MH Bool
 openURL link = do
     cmd <- use (csResources.crConfiguration.to configURLOpenCommand)
+    outputChan <- use (csResources.crSubprocessLog)
     case cmd of
         Nothing ->
             return False
         Just urlOpenCommand ->
             case _linkFileId link of
               Nothing -> do
-                runLoggedCommand (T.unpack urlOpenCommand) [T.unpack $ link^.linkURL]
+                -- The link is a web link, not an attachment
+                doAsyncWith Preempt $ do
+                    void $ runLoggedCommand False outputChan (T.unpack urlOpenCommand) [T.unpack $ link^.linkURL] Nothing
+                    return $ return ()
+
                 return True
+
               Just fId -> do
+                -- The link is for an attachment, so fetch it and then
+                -- open the local copy.
                 sess  <- use csSession
-                doAsyncWith Normal $ do
+                doAsyncWith Preempt $ do
                   info     <- mmGetFileInfo sess fId
                   contents <- mmGetFile sess fId
                   cacheDir <- getUserCacheDir xdgName
@@ -1126,28 +1102,48 @@ openURL link = do
                       fname = dir </> T.unpack (fileInfoName info)
                   createDirectoryIfMissing True dir
                   BS.writeFile fname contents
-                  return $! runLoggedCommand (T.unpack urlOpenCommand) [fname]
+                  void $ runLoggedCommand False outputChan (T.unpack urlOpenCommand) [fname] Nothing
+                  return $ return ()
+
                 return True
 
-runLoggedCommand :: String -> [String] -> MH ()
-runLoggedCommand cmd args = do
-  st <- use id
-  liftIO $ do
-    let opener = (proc cmd args) { std_in = NoStream
+runLoggedCommand :: Bool
+                 -- ^ Whether stdout output is expected for this program
+                 -> STM.TChan ProgramOutput
+                 -- ^ The output channel to send the output to
+                 -> String
+                 -- ^ The program name
+                 -> [String]
+                 -- ^ Arguments
+                 -> Maybe String
+                 -- ^ The stdin to send, if any
+                 -> IO ProgramOutput
+runLoggedCommand stdoutOkay outputChan cmd args mInput = do
+    let stdIn = maybe NoStream (const CreatePipe) mInput
+        opener = (proc cmd args) { std_in = stdIn
                                  , std_out = CreatePipe
                                  , std_err = CreatePipe
                                  }
     result <- try $ createProcess opener
     case result of
         Left (e::SomeException) -> do
-            let po = ProgramOutput cmd args "" (show e) (ExitFailure 1)
-            STM.atomically $ STM.writeTChan (st^.csResources.crSubprocessLog) po
-        Right (Nothing, Just outh, Just errh, ph) -> do
+            let po = ProgramOutput cmd args "" stdoutOkay (show e) (ExitFailure 1)
+            STM.atomically $ STM.writeTChan outputChan po
+            return po
+        Right (stdinResult, Just outh, Just errh, ph) -> do
+            case stdinResult of
+                Just inh -> do
+                    let Just input = mInput
+                    hPutStrLn inh input
+                    hFlush inh
+                Nothing -> return ()
+
             ec <- waitForProcess ph
             outResult <- hGetContents outh
             errResult <- hGetContents errh
-            let po = ProgramOutput cmd args outResult errResult ec
-            STM.atomically $ STM.writeTChan (st^.csResources.crSubprocessLog) po
+            let po = ProgramOutput cmd args outResult stdoutOkay errResult ec
+            STM.atomically $ STM.writeTChan outputChan po
+            return po
         Right _ ->
             error $ "BUG: createProcess returned unexpected result, report this at " <>
                     "https://github.com/matterhorn-chat/matterhorn"
@@ -1220,3 +1216,4 @@ handleNewUser newUserId = doAsyncMM Normal getUserInfo updateUserState
               -- Update the name map and the list of known users
               do csUsers %= addUser newUserId uInfo
                  csNames . cnUsers %= (sort . ((newUser^.userUsernameL):))
+                 csNames . cnToUserId . at (newUser^.userUsernameL) .= Just newUserId

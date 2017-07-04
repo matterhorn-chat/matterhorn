@@ -2,6 +2,7 @@
 module Themes
   ( defaultThemeName
   , themes
+  , attrNameForTokenType
 
   -- * Attribute names
   , timeAttr
@@ -52,6 +53,7 @@ import Graphics.Vty
 import Brick
 import Brick.Widgets.List
 import qualified Data.Text as T
+import qualified Skylighting as Sky
 
 import Types (userSigil)
 
@@ -170,80 +172,85 @@ themes =
     ]
 
 lightColorTheme :: AttrMap
-lightColorTheme = attrMap (black `on` white) $
-  [ (timeAttr,                         fg black)
-  , (channelHeaderAttr,                fg black `withStyle` underline)
-  , (channelListHeaderAttr,            fg cyan)
-  , (currentChannelNameAttr,           black `on` yellow `withStyle` bold)
-  , (unreadChannelAttr,                black `on` cyan   `withStyle` bold)
-  , (mentionsChannelAttr,              black `on` red    `withStyle` bold)
-  , (urlAttr,                          fg brightYellow)
-  , (emailAttr,                        fg yellow)
-  , (codeAttr,                         fg magenta)
-  , (emojiAttr,                        fg yellow)
-  , (channelNameAttr,                  fg blue)
-  , (clientMessageAttr,                fg black)
-  , (clientEmphAttr,                   fg black `withStyle` bold)
-  , (clientStrongAttr,                 fg black `withStyle` bold `withStyle` underline)
-  , (clientHeaderAttr,                 fg red `withStyle` bold)
-  , (dateTransitionAttr,               fg green)
-  , (newMessageTransitionAttr,         black `on` yellow)
-  , (errorMessageAttr,                 fg red)
-  , (helpAttr,                         black `on` cyan)
-  , (helpEmphAttr,                     fg white)
-  , (channelSelectMatchAttr,           black `on` magenta)
-  , (channelSelectPromptAttr,          fg black)
-  , (completionAlternativeListAttr,    white `on` blue)
-  , (completionAlternativeCurrentAttr, black `on` yellow)
-  , (dialogAttr,                       black `on` cyan)
-  , (dialogEmphAttr,                   fg white)
-  , (listSelectedFocusedAttr,          black `on` yellow)
-  , (recentMarkerAttr,                 fg black `withStyle` bold)
-  , (loadMoreAttr,                     black `on` cyan)
-  , (urlListSelectedAttr,              black `on` yellow)
-  , (messageSelectAttr,                black `on` yellow)
-  , (messageSelectStatusAttr,          fg black)
-  , (misspellingAttr,                  fg red `withStyle` underline)
-  ] <>
-  ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
+lightColorTheme =
+  let sty = Sky.kate
+  in attrMap (black `on` white) $
+     [ (timeAttr,                         fg black)
+     , (channelHeaderAttr,                fg black `withStyle` underline)
+     , (channelListHeaderAttr,            fg cyan)
+     , (currentChannelNameAttr,           black `on` yellow `withStyle` bold)
+     , (unreadChannelAttr,                black `on` cyan   `withStyle` bold)
+     , (mentionsChannelAttr,              black `on` red    `withStyle` bold)
+     , (urlAttr,                          fg brightYellow)
+     , (emailAttr,                        fg yellow)
+     , (codeAttr,                         fg magenta)
+     , (emojiAttr,                        fg yellow)
+     , (channelNameAttr,                  fg blue)
+     , (clientMessageAttr,                fg black)
+     , (clientEmphAttr,                   fg black `withStyle` bold)
+     , (clientStrongAttr,                 fg black `withStyle` bold `withStyle` underline)
+     , (clientHeaderAttr,                 fg red `withStyle` bold)
+     , (dateTransitionAttr,               fg green)
+     , (newMessageTransitionAttr,         black `on` yellow)
+     , (errorMessageAttr,                 fg red)
+     , (helpAttr,                         black `on` cyan)
+     , (helpEmphAttr,                     fg white)
+     , (channelSelectMatchAttr,           black `on` magenta)
+     , (channelSelectPromptAttr,          fg black)
+     , (completionAlternativeListAttr,    white `on` blue)
+     , (completionAlternativeCurrentAttr, black `on` yellow)
+     , (dialogAttr,                       black `on` cyan)
+     , (dialogEmphAttr,                   fg white)
+     , (listSelectedFocusedAttr,          black `on` yellow)
+     , (recentMarkerAttr,                 fg black `withStyle` bold)
+     , (loadMoreAttr,                     black `on` cyan)
+     , (urlListSelectedAttr,              black `on` yellow)
+     , (messageSelectAttr,                black `on` yellow)
+     , (messageSelectStatusAttr,          fg black)
+     , (misspellingAttr,                  fg red `withStyle` underline)
+     ] <>
+     ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors) <>
+     (themeEntriesForStyle sty)
 
 darkAttrs :: [(AttrName, Attr)]
 darkAttrs =
-  [ (timeAttr,                         fg white)
-  , (channelHeaderAttr,                fg white `withStyle` underline)
-  , (channelListHeaderAttr,            fg cyan)
-  , (currentChannelNameAttr,           black `on` yellow `withStyle` bold)
-  , (unreadChannelAttr,                black `on` cyan   `withStyle` bold)
-  , (mentionsChannelAttr,              black `on` brightMagenta `withStyle` bold)
-  , (urlAttr,                          fg yellow)
-  , (emailAttr,                        fg yellow)
-  , (codeAttr,                         fg magenta)
-  , (emojiAttr,                        fg yellow)
-  , (channelNameAttr,                  fg cyan)
-  , (clientMessageAttr,                fg white)
-  , (clientEmphAttr,                   fg white `withStyle` bold)
-  , (clientStrongAttr,                 fg white `withStyle` bold `withStyle` underline)
-  , (clientHeaderAttr,                 fg red `withStyle` bold)
-  , (dateTransitionAttr,               fg green)
-  , (newMessageTransitionAttr,         fg yellow `withStyle` bold)
-  , (errorMessageAttr,                 fg red)
-  , (helpAttr,                         black `on` cyan)
-  , (helpEmphAttr,                     fg white)
-  , (channelSelectMatchAttr,           black `on` magenta)
-  , (channelSelectPromptAttr,          fg white)
-  , (completionAlternativeListAttr,    white `on` blue)
-  , (completionAlternativeCurrentAttr, black `on` yellow)
-  , (dialogAttr,                       black `on` cyan)
-  , (dialogEmphAttr,                   fg white)
-  , (listSelectedFocusedAttr,          black `on` yellow)
-  , (recentMarkerAttr,                 fg yellow `withStyle` bold)
-  , (loadMoreAttr,                     black `on` cyan)
-  , (urlListSelectedAttr,              black `on` yellow)
-  , (messageSelectAttr,                black `on` yellow)
-  , (messageSelectStatusAttr,          fg white)
-  , (misspellingAttr,                  fg red `withStyle` underline)
-  ] <>
-  ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors)
+  let sty = Sky.espresso
+  in [ (timeAttr,                         fg white)
+     , (channelHeaderAttr,                fg white `withStyle` underline)
+     , (channelListHeaderAttr,            fg cyan)
+     , (currentChannelNameAttr,           black `on` yellow `withStyle` bold)
+     , (unreadChannelAttr,                black `on` cyan   `withStyle` bold)
+     , (mentionsChannelAttr,              black `on` brightMagenta `withStyle` bold)
+     , (urlAttr,                          fg yellow)
+     , (emailAttr,                        fg yellow)
+     , (codeAttr,                         fg magenta)
+     , (emojiAttr,                        fg yellow)
+     , (channelNameAttr,                  fg cyan)
+     , (clientMessageAttr,                fg white)
+     , (clientEmphAttr,                   fg white `withStyle` bold)
+     , (clientStrongAttr,                 fg white `withStyle` bold `withStyle` underline)
+     , (clientHeaderAttr,                 fg red `withStyle` bold)
+     , (dateTransitionAttr,               fg green)
+     , (newMessageTransitionAttr,         fg yellow `withStyle` bold)
+     , (errorMessageAttr,                 fg red)
+     , (helpAttr,                         black `on` cyan)
+     , (helpEmphAttr,                     fg white)
+     , (channelSelectMatchAttr,           black `on` magenta)
+     , (channelSelectPromptAttr,          fg white)
+     , (completionAlternativeListAttr,    white `on` blue)
+     , (completionAlternativeCurrentAttr, black `on` yellow)
+     , (dialogAttr,                       black `on` cyan)
+     , (dialogEmphAttr,                   fg white)
+     , (listSelectedFocusedAttr,          black `on` yellow)
+     , (recentMarkerAttr,                 fg yellow `withStyle` bold)
+     , (loadMoreAttr,                     black `on` cyan)
+     , (urlListSelectedAttr,              black `on` yellow)
+     , (messageSelectAttr,                black `on` yellow)
+     , (messageSelectStatusAttr,          fg white)
+     , (misspellingAttr,                  fg red `withStyle` underline)
+     ] <>
+     ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors) <>
+     (themeEntriesForStyle sty)
 
 darkColorTheme :: AttrMap
 darkColorTheme = attrMap defAttr darkAttrs
@@ -278,3 +285,39 @@ usernameColors =
     , fg brightMagenta
     , fg brightCyan
     ]
+
+-- Functions for dealing with Skylighting styles
+
+baseHighlightedCodeBlockAttr :: AttrName
+baseHighlightedCodeBlockAttr = "highlightedCodeBlock"
+
+attrNameForTokenType :: Sky.TokenType -> AttrName
+attrNameForTokenType ty =
+    baseHighlightedCodeBlockAttr <> (attrName $ show ty)
+
+themeEntriesForStyle :: Sky.Style -> [(AttrName, Attr)]
+themeEntriesForStyle sty =
+    mkTokenTypeEntry <$> Sky.tokenStyles sty
+
+baseAttrFromPair :: (Maybe Sky.Color, Maybe Sky.Color) -> Attr
+baseAttrFromPair (mf, mb) =
+    case (mf, mb) of
+        (Nothing, Nothing) -> defAttr
+        (Just f, Nothing)  -> fg (tokenColorToVtyColor f)
+        (Nothing, Just b)  -> bg (tokenColorToVtyColor b)
+        (Just f, Just b)   -> (tokenColorToVtyColor f) `on`
+                              (tokenColorToVtyColor b)
+
+tokenColorToVtyColor :: Sky.Color -> Color
+tokenColorToVtyColor (Sky.RGB r g b) = rgbColor r g b
+
+mkTokenTypeEntry :: (Sky.TokenType, Sky.TokenStyle) -> (AttrName, Attr)
+mkTokenTypeEntry (ty, tSty) =
+    let a = setStyle baseAttr
+        baseAttr = baseAttrFromPair (Sky.tokenColor tSty, Sky.tokenBackground tSty)
+        setStyle =
+            if Sky.tokenBold tSty then flip withStyle bold else id .
+            if Sky.tokenItalic tSty then flip withStyle standout else id .
+            if Sky.tokenUnderline tSty then flip withStyle underline else id
+
+    in (attrNameForTokenType ty, a)

@@ -67,14 +67,14 @@ userRefresh session requestChan = void $ forkIO $ forever refresh
 startSubprocessLogger :: STM.TChan ProgramOutput -> RequestChan -> IO ()
 startSubprocessLogger logChan requestChan = do
     let logMonitor mPair = do
-          ProgramOutput progName args out err ec <-
+          ProgramOutput progName args out stdoutOkay err ec <-
               STM.atomically $ STM.readTChan logChan
 
           -- If either stdout or stderr is non-empty or there was an exit
           -- failure, log it and notify the user.
           let emptyOutput s = null s || s == "\n"
 
-          case ec == ExitSuccess && emptyOutput out && emptyOutput err of
+          case ec == ExitSuccess && (emptyOutput out || stdoutOkay) && emptyOutput err of
               -- the "good" case, no output and exit sucess
               True -> logMonitor mPair
               False -> do
@@ -98,9 +98,9 @@ startSubprocessLogger logChan requestChan = do
 
                   STM.atomically $ STM.writeTChan requestChan $ do
                       return $ do
-                          let msg = T.pack $ "Program " <> show progName <>
-                                             " produced unexpected output; see " <>
-                                             logPath <> " for details."
+                          let msg = T.pack $
+                                "An error occurred when running " <> show progName <>
+                                "; see " <> logPath <> " for details."
                           postErrorMessage msg
 
                   logMonitor (Just (logPath, logHandle))
