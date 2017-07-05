@@ -812,8 +812,8 @@ addMessageToState new = do
                   when (cState == ChanInitialSelect) $
                     void $ setNewMessageCutoff cId $ postCreateAt new
                   return UpdateServerViewed
-                  else do hasNew <- setNewMessageCutoff cId $ postCreateAt new
-                          return $ if hasNew && not fromMe then NotifyUser else NoAction
+                else do hasNew <- setNewMessageCutoff cId $ postCreateAt new
+                        return $ if hasNew && not fromMe then NotifyUser else NoAction
 
           -- If this message was written by a user we don't know about,
           -- fetch the user's information before posting the message.
