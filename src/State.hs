@@ -128,17 +128,26 @@ asyncFetchScrollback prio cId = do
     let last_pId = getLatestPostId (chan^.ccContents.cdMessages)
         newCutoff = chan^.ccInfo.cdNewMessageCutoff
     asPending doAsyncChannelMM prio (Just cId)
-      (case (last_pId, newCutoff) of
-         (Nothing, _)        -> (___2 mmGetPosts          0 numScrollbackPosts)
-         (Just pId, Nothing) -> (___3 mmGetPostsAfter pId 0 numScrollbackPosts)
-         (Just pId, Just ct) ->
-             case findMessage pId (chan^.ccContents.cdMessages) of
-               Nothing -> (___2 mmGetPosts          0 numScrollbackPosts)
-               Just m  -> if m^.mDate > ct
-                          then (___3 mmGetPostsAfter pId 0 numScrollbackPosts)
-                          else (___2 mmGetPosts          0 numScrollbackPosts)
+      (let fc = case (last_pId, newCutoff) of
+                  (Nothing, _)        -> F1  -- or F4
+                  (Just pId, Nothing) -> F2 pId
+                  (Just pId, Just ct) ->
+                    case findMessage pId (chan^.ccContents.cdMessages) of
+                      Nothing -> F4 -- ??
+                      Just m  -> if m^.mDate > ct
+                                then F3b pId
+                                else F3a
+           op = case fc of
+                  F1      -> ___2 mmGetPosts
+                  F2 pId  -> ___3 mmGetPostsAfter pId
+                  F3a     -> ___2 mmGetPosts
+                  F3b pId -> ___3 mmGetPostsBefore pId
+                  F4      -> ___2 mmGetPosts
+       in op 0 numScrollbackPosts
       )
       addObtainedMessages
+
+data FetchCase = F1 | F2 PostId | F3a | F3b PostId | F4 deriving (Eq,Show)
 
 
 -- * Message selection mode
