@@ -841,7 +841,7 @@ setNewMessageCutoff cId mdate =
         case newdate of
         Nothing -> olddate  -- no new date, no change to existing cutoff
         Just d -> case startdate of
-          Nothing -> Nothing
+          Nothing -> Just $ maybe d (min d) olddate -- new, if new is earlier than prev
           Just s -> if d > s
                     then Just $ maybe d (min d) olddate -- new, if new is earlier than prev
                     else olddate
