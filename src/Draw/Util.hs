@@ -42,7 +42,7 @@ renderUTCTime fmt tz t =
        else withDefAttr timeAttr (txt timeStr)
 
 withBrackets :: Widget a -> Widget a
-withBrackets w = str "[" <+> w <+> str "]"
+withBrackets w = hBox [str "[", w, str "]"]
 
 userSigilFromInfo :: UserInfo -> Char
 userSigilFromInfo u = case u^.uiStatus of

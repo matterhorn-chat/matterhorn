@@ -137,10 +137,11 @@ renderChannelSelectListEntry :: SelectedChannelListEntry -> Widget Name
 renderChannelSelectListEntry (SCLE entry match) =
     let ChannelSelectMatch preMatch inMatch postMatch = match
     in decorateRecent entry $ padRight Max $
-                           (txt $ entrySigil entry)
-                           <+> txt preMatch
-                           <+> (forceAttr channelSelectMatchAttr $ txt inMatch)
-                           <+> txt postMatch
+         hBox [ txt $ entrySigil entry
+              , txt preMatch
+              , forceAttr channelSelectMatchAttr $ txt inMatch
+              , txt postMatch
+              ]
 
 -- | If this channel is the most recently viewed channel (prior to the
 -- currently viewed channel), add a decoration to denote that.

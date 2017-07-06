@@ -76,9 +76,16 @@ renderMessage msg renderReplyParent uSet cSet =
           Nothing -> Nothing
         mine = case msgUsr of
           Just un
-            | msg^.mType == CP Emote -> B.txt "*" <+> colorUsername un
-                                    <+> B.txt " " <+> renderMarkdown uSet cSet (msg^.mText)
-            | otherwise -> colorUsername un <+> B.txt ": " <+> renderMarkdown uSet cSet (msg^.mText)
+            | msg^.mType == CP Emote ->
+                hBox [ B.txt "*", colorUsername un
+                     , B.txt " "
+                     , renderMarkdown uSet cSet (msg^.mText)
+                     ]
+            | otherwise ->
+                hBox [ colorUsername un
+                     , B.txt ": "
+                     , renderMarkdown uSet cSet (msg^.mText)
+                     ]
           Nothing -> renderMarkdown uSet cSet (msg^.mText)
         parent = if not renderReplyParent
                  then Nothing
@@ -154,8 +161,8 @@ header n = B.txt (T.replicate n "#")
 instance ToWidget Block where
   toWidget uPat cPat (C.Para is) = toInlineChunk is uPat cPat
   toWidget uPat cPat (C.Header n is) =
-    B.withDefAttr clientHeaderAttr
-      (header n <+> B.txt " " <+> toInlineChunk is uPat cPat)
+    B.withDefAttr clientHeaderAttr $
+      hBox [header n, B.txt " ", toInlineChunk is uPat cPat]
   toWidget uPat cPat (C.Blockquote is) =
     B.padLeft (B.Pad 4) (vBox $ fmap (toWidget uPat cPat) is)
   toWidget uPat cPat (C.List _ l bs) = toList l bs uPat cPat

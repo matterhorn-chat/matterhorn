@@ -57,19 +57,19 @@ renderChatMessage :: UserSet -> ChannelSet -> (UTCTime -> Widget Name) -> Messag
 renderChatMessage uSet cSet renderTimeFunc msg =
     let m = renderMessage msg True uSet cSet
         msgAtch = if Seq.null (msg^.mAttachments)
-          then emptyWidget
-          else withDefAttr clientMessageAttr $ vBox
+          then Nothing
+          else Just $ withDefAttr clientMessageAttr $ vBox
                  [ txt ("  [attached: `" <> a^.attachmentName <> "`]")
                  | a <- F.toList (msg^.mAttachments)
                  ]
         msgReac = if Map.null (msg^.mReactions)
-          then emptyWidget
+          then Nothing
           else let renderR e 1 = " [" <> e <> "]"
                    renderR e n
                      | n > 1     = " [" <> e <> " " <> T.pack (show n) <> "]"
                      | otherwise = ""
                    reacMsg = Map.foldMapWithKey renderR (msg^.mReactions)
-               in withDefAttr emojiAttr $ txt ("   " <> reacMsg)
+               in Just $ withDefAttr emojiAttr $ txt ("   " <> reacMsg)
         msgTxt =
           case msg^.mUserName of
             Just _
@@ -82,8 +82,8 @@ renderChatMessage uSet cSet renderTimeFunc msg =
                     C NewMessagesTransition -> withDefAttr newMessageTransitionAttr (hBorderWithLabel m)
                     C Error -> withDefAttr errorMessageAttr m
                     _ -> withDefAttr clientMessageAttr m
-        fullMsg = msgTxt <=> msgAtch <=> msgReac
-        maybeRenderTime w = renderTimeFunc (msg^.mDate) <+> txt " " <+> w
+        fullMsg = hBox $ msgTxt : catMaybes [msgAtch, msgReac]
+        maybeRenderTime w = hBox [renderTimeFunc (msg^.mDate), txt " ", w]
         maybeRenderTimeWith f = case msg^.mType of
             C DateTransition -> id
             C NewMessagesTransition -> id
@@ -272,12 +272,13 @@ renderUserCommandBox uSet cSet st =
         curContents = getEditContents $ st^.csCmdLine
         multilineContent = length curContents > 1
         multilineHints =
-            (borderElem bsHorizontal) <+>
-            (str $ "[" <> (show $ (+1) $ fst $ cursorPosition $
-                                  st^.csCmdLine.editContentsL) <>
-                   "/" <> (show $ length curContents) <> "]") <+>
-            (hBorderWithLabel $ withDefAttr clientEmphAttr $
-             (str "In multi-line mode. Press M-e to finish."))
+            hBox [ borderElem bsHorizontal
+                 , str $ "[" <> (show $ (+1) $ fst $ cursorPosition $
+                                        st^.csCmdLine.editContentsL) <>
+                         "/" <> (show $ length curContents) <> "]"
+                 , hBorderWithLabel $ withDefAttr clientEmphAttr $
+                   str "In multi-line mode. Press M-e to finish."
+                 ]
 
         replyDisplay = case st^.csEditState.cedEditMode of
             Replying msg _ ->
@@ -293,14 +294,15 @@ renderUserCommandBox uSet cSet st =
                                then "line"
                                else "lines"
                     numLines = length curContents
-                in vLimit 1 $
-                   prompt <+> if multilineContent
-                              then ((withDefAttr clientEmphAttr $
-                                     str $ "[" <> show numLines <> " " <> linesStr <>
-                                           "; Enter: send, M-e: edit, Backspace: cancel] ")) <+>
-                                   (txt $ head curContents) <+>
-                                   (showCursor MessageInput (Location (0,0)) $ str " ")
-                              else inputBox
+                in vLimit 1 $ hBox $
+                   prompt : if multilineContent
+                            then [ withDefAttr clientEmphAttr $
+                                   str $ "[" <> show numLines <> " " <> linesStr <>
+                                         "; Enter: send, M-e: edit, Backspace: cancel] "
+                                 , txt $ head curContents
+                                 , showCursor MessageInput (Location (0,0)) $ str " "
+                                 ]
+                            else [inputBox]
             True -> vLimit 5 inputBox <=> multilineHints
     in replyDisplay <=> commandBox
 
@@ -340,7 +342,7 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
                        quote n = "\"" <> n <> "\""
                        nick = maybe "" quote $ u^.uiNickName
                    in p1 <+> p2
-    messages = body <+> txt " "
+    messages = padRight (Pad 1) body
 
     body = chatText
       <=> case chan^.ccInfo.cdCurrentState.to stateMessage of
@@ -615,10 +617,11 @@ renderDeleteConfirm =
 
 mainInterface :: ChatState -> Widget Name
 mainInterface st =
-    (hLimit channelListWidth (renderChannelList st) <+> vBorder <+> mainDisplay)
-      <=> bottomBorder
-      <=> inputPreview uSet cSet st
-      <=> userInputArea uSet cSet st
+    vBox [ hBox [hLimit channelListWidth (renderChannelList st), vBorder, mainDisplay]
+         , bottomBorder
+         , inputPreview uSet cSet st
+         , userInputArea uSet cSet st
+         ]
     where
     mainDisplay = case st^.csMode of
         UrlSelect -> renderUrlList st
@@ -630,7 +633,8 @@ mainInterface st =
         MessageSelect -> messageSelectBottomBar st
         _ -> case st^.csCurrentCompletion of
             Just _ | length (st^.csEditState.cedCompletionAlternatives) > 1 -> completionAlternatives st
-            _ -> maybeSubdue $ hLimit channelListWidth hBorder <+> borderElem bsIntersectB <+> hBorder
+            _ -> maybeSubdue $ hBox
+                 [hLimit channelListWidth hBorder, borderElem bsIntersectB, hBorder]
 
     maybeSubdue = if st^.csMode == ChannelSelect
                   then forceAttr ""
