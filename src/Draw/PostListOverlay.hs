@@ -62,26 +62,37 @@ insertDateHeaders datefmt tz ms = foldr addMessage ms dateT
                       Nothing d (C DateTransition) False False
                       Seq.empty NotAReply Nothing mempty Nothing False
 
+-- | Draw a PostListOverlay as a floating overlay on top of whatever
+-- is rendered beneath it
 drawPostsBox :: PostListContents -> ChatState -> Widget Name
 drawPostsBox contents st =
   centerLayer $ hLimitWithPadding 10 $ borderWithLabel contentHeader $
     padRight (Pad 1) messageListContents
-  where contentHeader = withAttr channelListHeaderAttr $ txt $ case contents of
+  where -- The 'window title' of the overlay
+        contentHeader = withAttr channelListHeaderAttr $ txt $ case contents of
           PostListFlagged -> "Flagged posts"
+        -- User and channel set, for use in message rendering
         uSet = Set.fromList (st^..csUsers.to allUsers.folded.uiName)
         cSet = Set.fromList (st^..csChannels.folded.ccInfo.cdName)
+
         messages = insertDateHeaders
                      (getDateFormat st)
                      (st^.timeZone)
                      (st^.csPostListOverlay.postListPosts)
 
+        -- The overall contents, with a sensible default even if there
+        -- are no messages
         messageListContents
           | null (st^.csPostListOverlay.postListPosts) =
             padTopBottom 1 (padLeftRight 50 (str "No messages"))
           | otherwise = vBox renderedMessageList
-        channelFor msg =
+
+        -- The render-message function we're using
+        renderMessageForOverlay msg =
           let renderedMsg = renderSingleMessage st uSet cSet msg
           in case msg^.mOriginalPost of
+            -- We should factor out some of the channel name logic at
+            -- some point, but we can do that later
             Just post
               | Just chan <- st^?csChannels.channelByIdL(post^.postChannelIdL) ->
                  case chan^.ccInfo.cdType of
@@ -96,9 +107,10 @@ drawPostsBox contents st =
             _ | CP _ <- msg^.mType -> str "[BUG: unknown channel]"
               | otherwise -> renderedMsg
 
+        -- The full message list, rendered with the current selection
         renderedMessageList =
           let (s, (before, after)) = splitMessages (st^.csPostListOverlay.postListSelected) messages
           in case s of
-            Nothing -> map channelFor (reverse (F.toList messages))
+            Nothing -> map renderMessageForOverlay (reverse (F.toList messages))
             Just curMsg ->
-              [unsafeRenderMessageSelection (curMsg, (after, before)) channelFor]
+              [unsafeRenderMessageSelection (curMsg, (after, before)) renderMessageForOverlay]

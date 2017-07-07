@@ -11,6 +11,7 @@ onEventPostListOverlay e
       kbAction kb
 onEventPostListOverlay _ = return ()
 
+-- | The keybindings we want to use while viewing a post list overlay
 postListOverlayKeybindings :: [Keybinding]
 postListOverlayKeybindings =
   [ KB "Exit post browsing" (Vty.EvKey Vty.KEsc []) $
