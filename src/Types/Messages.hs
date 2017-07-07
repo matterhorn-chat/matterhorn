@@ -21,6 +21,7 @@ module Types.Messages
   , noMessages
   , splitMessages
   , findMessage
+  , filterMessages
   , getNextPostId
   , getPrevPostId
   , getLatestPostId
@@ -150,6 +151,13 @@ type Messages = ChronologicalMessages
 type RetrogradeMessages = DirectionalSeq Retrograde Message
 
 -- ** Common operations on Messages
+
+filterMessages ::
+  SeqDirection seq =>
+  (Message -> Bool) ->
+  DirectionalSeq seq Message ->
+  DirectionalSeq seq Message
+filterMessages p = onDirectedSeq (Seq.filter p)
 
 class MessageOps a where
     addMessage :: Message -> a -> a

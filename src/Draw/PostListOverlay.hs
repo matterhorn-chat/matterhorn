@@ -64,9 +64,9 @@ insertDateHeaders datefmt tz ms = foldr addMessage ms dateT
 
 drawPostsBox :: PostListContents -> ChatState -> Widget Name
 drawPostsBox contents st =
-  centerLayer $ hLimitWithPadding 10 $ borderWithLabel (txt contentString) $ vBox $
-    renderedMessageList ++ [fill ' ']
-  where contentString = case contents of
+  centerLayer $ hLimitWithPadding 10 $ borderWithLabel contentHeader $
+    padRight (Pad 1) messageListContents
+  where contentHeader = withAttr channelListHeaderAttr $ txt $ case contents of
           PostListFlagged -> "Flagged posts"
         uSet = Set.fromList (st^..csUsers.to allUsers.folded.uiName)
         cSet = Set.fromList (st^..csChannels.folded.ccInfo.cdName)
@@ -74,6 +74,11 @@ drawPostsBox contents st =
                      (getDateFormat st)
                      (st^.timeZone)
                      (st^.csPostListOverlay.postListPosts)
+
+        messageListContents
+          | null (st^.csPostListOverlay.postListPosts) =
+            padTopBottom 1 (padLeftRight 50 (str "No messages"))
+          | otherwise = vBox renderedMessageList
         channelFor msg =
           let renderedMsg = renderSingleMessage st uSet cSet msg
           in case msg^.mOriginalPost of

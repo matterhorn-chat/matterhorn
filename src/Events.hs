@@ -156,13 +156,13 @@ handleWSEvent we = do
       | Just pref <- wepPreferences (weData we)
       , Just fps <- mapM preferenceToFlaggedPost pref ->
         forM_ fps $ \f ->
-          setMessageFlag (flaggedPostId f) (flaggedPostStatus f)
+          updateMessageFlag (flaggedPostId f) (flaggedPostStatus f)
       | otherwise -> return ()
     WMPreferenceDeleted
       | Just pref <- wepPreferences (weData we)
       , Just fps <- mapM preferenceToFlaggedPost pref ->
         forM_ fps $ \f ->
-          setMessageFlag (flaggedPostId f) False
+          updateMessageFlag (flaggedPostId f) False
       | otherwise -> return ()
 
     -- This happens whenever a user connects to the server

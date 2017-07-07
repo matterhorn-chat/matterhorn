@@ -17,6 +17,7 @@ import Lens.Micro.Platform (use)
 import State
 import State.Common
 import State.Editing
+import State.PostListOverlay
 import Types
 
 printArgSpec :: CmdArgs a -> T.Text
@@ -107,6 +108,9 @@ commandList =
   , Cmd "shrug" "Send a message followed by a shrug emoticon"
     (LineArg "message") $
     \msg -> execMMCommand "shrug" msg
+
+  , Cmd "flags" "Open up a pane of flagged posts"  NoArg $ \ () ->
+      enterFlaggedPostListMode
   ]
 
 scriptHelpAddendum :: T.Text

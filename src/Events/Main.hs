@@ -156,7 +156,7 @@ mainKeybindings =
          cancelReplyOrEdit
 
     , KB "View currently flagged posts"
-         (Vty.EvKey (Vty.KChar 'f') [Vty.MCtrl]) $
+         (Vty.EvKey (Vty.KChar '8') [Vty.MMeta]) $
          enterFlaggedPostListMode
     ]
 

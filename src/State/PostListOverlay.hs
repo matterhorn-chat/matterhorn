@@ -4,6 +4,7 @@ import Lens.Micro.Platform
 import Network.Mattermost
 import Network.Mattermost.Lenses
 
+import State
 import State.Common
 import Types
 import Types.Messages
@@ -14,11 +15,17 @@ enterPostListMode contents msgs = do
   csPostListOverlay.postListSelected .= getLatestPostId msgs
   csMode .= PostListOverlay contents
 
+exitPostListMode :: MH ()
+exitPostListMode = do
+  csPostListOverlay.postListPosts .= mempty
+  csPostListOverlay.postListSelected .= Nothing
+  csMode .= Main
+
 enterFlaggedPostListMode :: MH ()
 enterFlaggedPostListMode = do
   session <- use csSession
   uId <- use (csMe.userIdL)
-  doAsyncWith Normal $ do
+  doAsyncWith Preempt $ do
     posts <- mmGetFlaggedPosts session uId
     return $ do
       messages <- messagesFromPosts posts
@@ -43,3 +50,10 @@ postListSelectDown = do
     Nothing -> return ()
     Just _ ->
       csPostListOverlay.postListSelected .= prevId
+
+postListUnflagSelected :: MH ()
+postListUnflagSelected = do
+  msgId <- use (csPostListOverlay.postListSelected)
+  case msgId of
+    Nothing  -> return ()
+    Just pId -> flagMessage pId False

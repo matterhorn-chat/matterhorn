@@ -81,6 +81,6 @@ messageSelectKeybindings =
 
     , KB "Flag the selected message"
          (Vty.EvKey (Vty.KChar 'f') []) $
-         flagMessage
+         flagSelectedMessage
 
     ]

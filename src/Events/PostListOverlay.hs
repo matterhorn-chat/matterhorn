@@ -1,7 +1,6 @@
 module Events.PostListOverlay where
 
 import qualified Graphics.Vty as Vty
-import           Lens.Micro.Platform
 
 import Types
 import State.PostListOverlay
@@ -15,10 +14,10 @@ onEventPostListOverlay _ = return ()
 postListOverlayKeybindings :: [Keybinding]
 postListOverlayKeybindings =
   [ KB "Exit post browsing" (Vty.EvKey Vty.KEsc []) $
-    csMode .= Main
+    exitPostListMode
 
   , KB "Exit post browsing" (Vty.EvKey (Vty.KChar 'c') [Vty.MCtrl]) $
-    csMode .= Main
+    exitPostListMode
 
   , KB "Select the previous message" (Vty.EvKey (Vty.KChar 'k') []) $
     postListSelectUp
@@ -31,4 +30,7 @@ postListOverlayKeybindings =
 
   , KB "Select the next message" (Vty.EvKey Vty.KDown []) $
     postListSelectDown
+
+  , KB "Toggle the selected message flag" (Vty.EvKey (Vty.KChar 'f') []) $
+    postListUnflagSelected
   ]
