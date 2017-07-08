@@ -20,6 +20,7 @@ import           Data.List (sort)
 import           Data.Maybe (listToMaybe, maybeToList, fromJust, catMaybes)
 import           Data.Monoid ((<>))
 import qualified Data.Sequence as Seq
+import qualified Data.Set as Set
 import           Data.Time.LocalTime ( TimeZone(..), getCurrentTimeZone )
 import           Lens.Micro.Platform
 import           System.Exit (exitFailure, ExitCode(ExitSuccess))
@@ -35,6 +36,7 @@ import           Network.Mattermost.Logging (mmLoggerDebug)
 import           Config
 import           InputHistory
 import           Login
+import           State (updateMessageFlag)
 import           State.Common
 import           State.Editing (requestSpellCheck)
 import           TeamSelect
@@ -177,7 +179,16 @@ newState rs i u m tz hist sp resetTimer = ChatState
   , _csConnectionStatus            = Connected
   , _csJoinChannelList             = Nothing
   , _csMessageSelect               = MessageSelectState Nothing
+  , _csPostListOverlay             = PostListOverlayState mempty Nothing
   }
+
+loadFlaggedMessages :: ChatState -> IO ()
+loadFlaggedMessages st = doAsyncWithIO Normal st $ do
+  prefs <- mmGetMyPreferences (st^.csResources.crSession)
+  return $ sequence_ [ updateMessageFlag (flaggedPostId fp) True
+                     | Just fp <- F.toList (fmap preferenceToFlaggedPost prefs)
+                     , flaggedPostStatus fp
+                     ]
 
 setupState :: Maybe Handle -> Config -> RequestChan -> BChan MHEvent -> IO ChatState
 setupState logFile config requestChan eventChan = do
@@ -258,6 +269,7 @@ setupState logFile config requestChan eventChan = do
              , _crQuitCondition = quitCondition
              , _crConfiguration = config
              , _crSubprocessLog = slc
+             , _crFlaggedPosts  = mempty
              }
   initializeState cr myTeam myUser
 
@@ -271,7 +283,7 @@ loadAllUsers session = go HM.empty 0
 
 initializeState :: ChatResources -> Team -> User -> IO ChatState
 initializeState cr myTeam myUser = do
-  let ChatResources session _ requestChan _ _ _ _ _ = cr
+  let ChatResources session _ requestChan _ _ _ _ _ _ = cr
   let myTeamId = getId myTeam
 
   STM.atomically $ STM.writeTChan requestChan $ updateUserStatuses session
@@ -326,6 +338,7 @@ initializeState cr myTeam myUser = do
              & csChannels %~ flip (foldr (uncurry addChannel)) msgs
              & csNames .~ chanNames
 
+  loadFlaggedMessages st
   return st
 
 -- Start the background spell checker delay thread.

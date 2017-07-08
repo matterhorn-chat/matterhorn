@@ -9,11 +9,12 @@ module Types.Messages
   ( Message(..)
   , isDeletable, isReplyable, isEditable, isReplyTo
   , mText, mUserName, mDate, mType, mPending, mDeleted
-  , mAttachments, mInReplyToMsg, mPostId, mReactions
-  , mOriginalPost
+  , mAttachments, mInReplyToMsg, mPostId, mReactions, mFlagged
+  , mOriginalPost, mChannelId
   , MessageType(..)
   , ReplyState(..)
   , clientMessageToMessage
+  , newMessageOfType
   , Messages
   , ChronologicalMessages
   , RetrogradeMessages
@@ -21,6 +22,7 @@ module Types.Messages
   , noMessages
   , splitMessages
   , findMessage
+  , filterMessages
   , getNextPostId
   , getPrevPostId
   , getLatestPostId
@@ -40,7 +42,7 @@ import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Time.Clock (UTCTime)
 import           Lens.Micro.Platform
-import           Network.Mattermost.Types (PostId, Post)
+import           Network.Mattermost.Types (ChannelId, PostId, Post)
 import           Types.Posts
 
 -- * Messages
@@ -59,6 +61,8 @@ data Message = Message
   , _mPostId        :: Maybe PostId
   , _mReactions     :: Map.Map T.Text Int
   , _mOriginalPost  :: Maybe Post
+  , _mFlagged       :: Bool
+  , _mChannelId     :: Maybe ChannelId
   } deriving (Show)
 
 isDeletable :: Message -> Bool
@@ -107,6 +111,25 @@ clientMessageToMessage cm = Message
   , _mPostId        = Nothing
   , _mReactions     = Map.empty
   , _mOriginalPost  = Nothing
+  , _mFlagged       = False
+  , _mChannelId     = Nothing
+  }
+
+newMessageOfType :: T.Text -> MessageType -> UTCTime -> Message
+newMessageOfType text typ d = Message
+  { _mText         = getBlocks text
+  , _mUserName     = Nothing
+  , _mDate         = d
+  , _mType         = typ
+  , _mPending      = False
+  , _mDeleted      = False
+  , _mAttachments  = Seq.empty
+  , _mInReplyToMsg = NotAReply
+  , _mPostId       = Nothing
+  , _mReactions    = Map.empty
+  , _mOriginalPost = Nothing
+  , _mFlagged      = False
+  , _mChannelId    = Nothing
   }
 
 -- ** 'Message' Lenses
@@ -156,6 +179,13 @@ type Messages = ChronologicalMessages
 type RetrogradeMessages = DirectionalSeq Retrograde Message
 
 -- ** Common operations on Messages
+
+filterMessages ::
+  SeqDirection seq =>
+  (Message -> Bool) ->
+  DirectionalSeq seq Message ->
+  DirectionalSeq seq Message
+filterMessages p = onDirectedSeq (Seq.filter p)
 
 class MessageOps a where
     addMessage :: Message -> a -> a

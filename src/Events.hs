@@ -5,6 +5,7 @@ import           Prelude ()
 import           Prelude.Compat
 
 import           Brick
+import           Control.Monad (forM_)
 import           Control.Monad.IO.Class (liftIO)
 import qualified Data.Set as Set
 import qualified Data.Text as T
@@ -31,6 +32,7 @@ import           Events.LeaveChannelConfirm
 import           Events.DeleteChannelConfirm
 import           Events.UrlSelect
 import           Events.MessageSelect
+import           Events.PostListOverlay
 
 onEvent :: ChatState -> BrickEvent Name MHEvent -> EventM Name (Next ChatState)
 onEvent st ev = runMHEvent st $ case ev of
@@ -82,6 +84,7 @@ onVtyEvent e = do
         MessageSelect              -> onEventMessageSelect e
         MessageSelectDeleteConfirm -> onEventMessageSelectDeleteConfirm e
         DeleteChannelConfirm       -> onEventDeleteChannelConfirm e
+        PostListOverlay _          -> onEventPostListOverlay e
 
 handleWSEvent :: WebsocketEvent -> MH ()
 handleWSEvent we = do
@@ -162,11 +165,19 @@ handleWSEvent we = do
         postInfoMessage (p^.postMessageL)
       Nothing -> return ()
 
-    -- Right now, we don't use any server preferences in
-    -- our client, but that might change
-    WMPreferenceChanged -> return ()
-
-    WMPreferenceDeleted -> return ()
+    -- The only preference we observe right now is flagging
+    WMPreferenceChanged
+      | Just pref <- wepPreferences (weData we)
+      , Just fps <- mapM preferenceToFlaggedPost pref ->
+        forM_ fps $ \f ->
+          updateMessageFlag (flaggedPostId f) (flaggedPostStatus f)
+      | otherwise -> return ()
+    WMPreferenceDeleted
+      | Just pref <- wepPreferences (weData we)
+      , Just fps <- mapM preferenceToFlaggedPost pref ->
+        forM_ fps $ \f ->
+          updateMessageFlag (flaggedPostId f) False
+      | otherwise -> return ()
 
     -- This happens whenever a user connects to the server
     -- I think all the information we need (about being

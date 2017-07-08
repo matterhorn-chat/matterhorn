@@ -12,6 +12,7 @@ import qualified Data.Text as T
 import State
 import State.Common
 import State.Editing
+import State.PostListOverlay
 import Types
 import HelpTopics
 import Scripts
@@ -88,6 +89,9 @@ commandList =
   , Cmd "shrug" "Send a message followed by a shrug emoticon"
     (LineArg "message") $
     \msg -> execMMCommand "shrug" msg
+
+  , Cmd "flags" "Open up a pane of flagged posts"  NoArg $ \ () ->
+      enterFlaggedPostListMode
   ]
 
 dispatchCommand :: T.Text -> MH ()

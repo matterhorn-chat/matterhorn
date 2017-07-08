@@ -24,7 +24,6 @@ import qualified Data.Sequence as Seq
 import qualified Data.Set as S
 import qualified Data.Foldable as F
 import           Data.List (intersperse)
-import qualified Data.Map.Strict as Map
 import           Data.Maybe (catMaybes, isJust)
 import           Data.Monoid ((<>))
 import qualified Data.Set as Set
@@ -51,44 +50,9 @@ import           Types.Posts
 import           Types.Messages
 import           Types.Users
 import           Draw.ChannelList (renderChannelList)
+import           Draw.Messages
 import           Draw.Util
 
-renderChatMessage :: UserSet -> ChannelSet -> (UTCTime -> Widget Name) -> Message -> Widget Name
-renderChatMessage uSet cSet renderTimeFunc msg =
-    let m = renderMessage msg True uSet cSet
-        msgAtch = if Seq.null (msg^.mAttachments)
-          then Nothing
-          else Just $ withDefAttr clientMessageAttr $ vBox
-                 [ txt ("  [attached: `" <> a^.attachmentName <> "`]")
-                 | a <- F.toList (msg^.mAttachments)
-                 ]
-        msgReac = if Map.null (msg^.mReactions)
-          then Nothing
-          else let renderR e 1 = " [" <> e <> "]"
-                   renderR e n
-                     | n > 1     = " [" <> e <> " " <> T.pack (show n) <> "]"
-                     | otherwise = ""
-                   reacMsg = Map.foldMapWithKey renderR (msg^.mReactions)
-               in Just $ withDefAttr emojiAttr $ txt ("   " <> reacMsg)
-        msgTxt =
-          case msg^.mUserName of
-            Just _
-              | msg^.mType == CP Join || msg^.mType == CP Leave ->
-                  withDefAttr clientMessageAttr m
-              | otherwise -> m
-            Nothing ->
-                case msg^.mType of
-                    C DateTransition -> withDefAttr dateTransitionAttr (hBorderWithLabel m)
-                    C NewMessagesTransition -> withDefAttr newMessageTransitionAttr (hBorderWithLabel m)
-                    C Error -> withDefAttr errorMessageAttr m
-                    _ -> withDefAttr clientMessageAttr m
-        fullMsg = hBox $ msgTxt : catMaybes [msgAtch, msgReac]
-        maybeRenderTime w = hBox [renderTimeFunc (msg^.mDate), txt " ", w]
-        maybeRenderTimeWith f = case msg^.mType of
-            C DateTransition -> id
-            C NewMessagesTransition -> id
-            _ -> f
-    in maybeRenderTimeWith maybeRenderTime fullMsg
 
 channelListWidth :: Int
 channelListWidth = 20
@@ -121,6 +85,8 @@ previewFromInput uname s =
                            , _mPostId        = Nothing
                            , _mReactions     = mempty
                            , _mOriginalPost  = Nothing
+                           , _mFlagged       = False
+                           , _mChannelId     = Nothing
                            }
 
 -- | Tokens in spell check highlighting.
@@ -306,12 +272,6 @@ renderUserCommandBox uSet cSet st =
             True -> vLimit 5 inputBox <=> multilineHints
     in replyDisplay <=> commandBox
 
-maxMessageHeight :: Int
-maxMessageHeight = 200
-
-renderSingleMessage :: ChatState -> UserSet -> ChannelSet -> Message -> Widget Name
-renderSingleMessage st uSet cSet = renderChatMessage uSet cSet (withBrackets . renderTime st)
-
 renderCurrentChannelDisplay :: UserSet -> ChannelSet -> ChatState -> Widget Name
 renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
     where
@@ -384,39 +344,8 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
         let (s, (before, after)) = splitMessages selPostId msgs
         in case s of
              Nothing -> renderLastMessages before
-             Just m -> unsafeMessageSelectList before after m
-
-    unsafeMessageSelectList before after curMsg = Widget Greedy Greedy $ do
-        ctx <- getContext
-
-        -- Render the message associated with the current post ID.
-        curMsgResult <- withReaderT relaxHeight $ render $
-            forceAttr messageSelectAttr $
-            padRight Max $ renderSingleMessage st uSet cSet curMsg
-
-        let targetHeight = ctx^.availHeightL
-            upperHeight = targetHeight `div` 2
-            lowerHeight = targetHeight - upperHeight
-
-            lowerRender = render1HLimit Vty.vertJoin targetHeight
-            upperRender = render1HLimit (flip Vty.vertJoin) targetHeight
-
-        lowerHalf <- foldM lowerRender Vty.emptyImage after
-        upperHalf <- foldM upperRender Vty.emptyImage before
-
-        let curHeight = Vty.imageHeight $ curMsgResult^.imageL
-            uncropped = upperHalf Vty.<-> curMsgResult^.imageL Vty.<-> lowerHalf
-            img = if Vty.imageHeight lowerHalf < (lowerHeight - curHeight)
-                  then Vty.cropTop targetHeight uncropped
-                  else if Vty.imageHeight upperHalf < upperHeight
-                       then Vty.cropBottom targetHeight uncropped
-                       else Vty.cropTop upperHeight upperHalf Vty.<->
-                            curMsgResult^.imageL Vty.<->
-                            (if curHeight < lowerHeight
-                             then Vty.cropBottom (lowerHeight - curHeight) lowerHalf
-                             else Vty.cropBottom lowerHeight lowerHalf)
-
-        return $ emptyResult & imageL .~ img
+             Just m ->
+               unsafeRenderMessageSelection (m, (before, after)) (renderSingleMessage st uSet cSet)
 
     channelMessages =
         insertTransitions (getDateFormat st)
@@ -435,11 +364,10 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
 
     relaxHeight c = c & availHeightL .~ (max maxMessageHeight (c^.availHeightL))
 
-    render1HLimit fjoin lim img msg = if Vty.imageHeight img >= lim
-                                      then return img
-                                      else fjoin img <$> render1 msg
+    render1HLimit fjoin lim img msg
+      | Vty.imageHeight img >= lim = return img
+      | otherwise = fjoin img <$> render1 msg
 
-    render1 :: Message -> RenderM Name Vty.Image
     render1 msg = case msg^.mDeleted of
                     True -> return Vty.emptyImage
                     False -> do
@@ -485,15 +413,20 @@ insertTransitions datefmt tz cutoff ms = foldr addMessage ms transitions
           dayOf = localDay . utcToLocalTime tz
           dayStart dt = localTimeToUTC tz $ LocalTime (dayOf dt) $ midnight
           justBefore (UTCTime d t) = UTCTime d $ pred t
-          dateMsg d = Message (getBlocks (T.pack $ formatTime defaultTimeLocale
-                                          (T.unpack datefmt)
-                                          (utcToLocalTime tz d)))
-                      Nothing d (C DateTransition) False False
-                      Seq.empty NotAReply Nothing mempty Nothing
-          newMessagesMsg d = Message (getBlocks (T.pack "New Messages"))
-                             Nothing d (C NewMessagesTransition)
-                             False False Seq.empty NotAReply
-                             Nothing mempty Nothing
+          dateMsg d = newMessageOfType (T.pack (formatTime defaultTimeLocale
+                                                (T.unpack datefmt)
+                                                (utcToLocalTime tz d)))
+                        (C DateTransition) d
+          newMessagesMsg d = newMessageOfType (T.pack "New Messages") (C NewMessagesTransition) d
+          -- dateMsg d = Message (getBlocks (T.pack $ formatTime defaultTimeLocale
+          --                                 (T.unpack datefmt)
+          --                                 (utcToLocalTime tz d)))
+          --             Nothing d (C DateTransition) False False
+          --             Seq.empty NotAReply Nothing mempty Nothing False Nothing
+          -- newMessagesMsg d = Message (getBlocks (T.pack "New Messages"))
+          --                    Nothing d (C NewMessagesTransition)
+          --                    False False Seq.empty NotAReply
+          --                    Nothing mempty Nothing False Nothing
 
 
 renderChannelSelect :: ChatState -> Widget Name
@@ -528,6 +461,8 @@ messageSelectBottomBar st =
                   , (\m -> isMine st m && isDeletable m, "d", "delete")
                   , (const hasURLs, "o", openUrlsMsg)
                   , (const hasVerb, "y", "yank")
+                  , (\m -> not (m^.mFlagged), "f", "flag")
+                  , (\m ->      m^.mFlagged , "f", "unflag")
                   ]
         Just postMsg = getSelectedMessage st
 

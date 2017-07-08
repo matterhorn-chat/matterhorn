@@ -81,6 +81,11 @@ renderMessage msg renderReplyParent uSet cSet =
                      , B.txt " "
                      , renderMarkdown uSet cSet (msg^.mText)
                      ]
+            | msg^.mFlagged ->
+                hBox [ colorUsername un
+                     , B.txt "[!]: "
+                     , renderMarkdown uSet cSet (msg^.mText)
+                     ]
             | otherwise ->
                 hBox [ colorUsername un
                      , B.txt ": "

@@ -10,6 +10,7 @@ import Draw.Main
 import Draw.ShowHelp
 import Draw.LeaveChannelConfirm
 import Draw.DeleteChannelConfirm
+import Draw.PostListOverlay
 import Draw.JoinChannel
 
 draw :: ChatState -> [Widget Name]
@@ -25,3 +26,4 @@ draw st =
         MessageSelect              -> drawMain st
         MessageSelectDeleteConfirm -> drawMain st
         DeleteChannelConfirm       -> drawDeleteChannelConfirm st
+        PostListOverlay contents   -> drawPostListOverlay contents st
