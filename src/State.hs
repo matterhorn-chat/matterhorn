@@ -21,7 +21,7 @@ import qualified Data.Sequence as Seq
 import           Data.List (sort)
 import           Data.Maybe (maybeToList, isJust, catMaybes, isNothing)
 import           Data.Monoid ((<>))
-import           Data.Time.Clock (UTCTime(..), getCurrentTime)
+import           Data.Time.Clock (UTCTime(..))
 import qualified Data.Set as Set
 import qualified Data.Text as T
 import qualified Data.Vector as V
@@ -1203,10 +1203,8 @@ sendMessage mode msg =
                                                 }
                             void $ mmPost (st^.csSession) theTeamId modifiedPost
                         Editing p -> do
-                            now <- getCurrentTime
                             let modifiedPost = p { postMessage = msg
                                                  , postPendingPostId = Nothing
-                                                 , postUpdateAt = now
                                                  }
                             void $ mmUpdatePost (st^.csSession) theTeamId modifiedPost
 
