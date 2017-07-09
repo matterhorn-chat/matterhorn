@@ -131,6 +131,29 @@ name of the dictionary you'd like to use.
 * Syntax highlighting of fenced code blocks in messages (works best in
   256-color terminals)
 
+# Spell Checking Support
+
+Matterhorn uses `aspell` to perform spell-checking of your message
+input. To use this feature:
+
+ * Install `aspell` and ensure that your installation includes
+   dictionaries corresponding to your `LANG` setting. To check this, ask
+   `aspell` to check some input:
+   ```
+   $ echo stuff | aspell -a
+   Error: No word lists can be found for the language "en".
+   $ echo $LANG
+   en_US
+   ```
+   If Aspell succeeds, the output will look like this:
+   ```
+   @(#) International Ispell Version 3.1.20 (but really Aspell 0.60.6.1)
+   *
+   ```
+ * Set `enableAspell` to `True` in your `config.ini`
+ * Enter any message input in the message editor in `matterhorn`. After
+   a short delay after you stop typing, misspelled words will turn red.
+
 # Building
 
 The easiest way to build `matterhorn` is to use the provided
