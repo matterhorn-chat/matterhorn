@@ -156,18 +156,14 @@ input. To use this feature:
 
 # Building
 
-The easiest way to build `matterhorn` is to use the provided
-`install.sh` script, which requires `git` and an appropriate
-`ghc`/`cabal` installation. It will pull the appropriate repos and build
-the application.
-
-If you want to, you can also run the install process manually:
-
-~~~
-$ cd matterhorn
-$ cabal new-build
-$ ./run.sh
-~~~
+`matterhorn` is built with the provided `install.sh` script, which
+requires `git` and an appropriate `ghc`/`cabal` installation.
+(Although the name suggests installtion, this will just do a build in
+`dist-newstyle`.) This script will pull the appropriate repos and build
+the application. This is required for building Matterhorn since clones
+of some of our other dependencies may need to be locally available in
+`deps/` in case important changes to those dependencies have not yet
+been released.
 
 # Our Versioning Scheme
 
