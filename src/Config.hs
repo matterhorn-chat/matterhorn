@@ -38,6 +38,7 @@ fromIni = do
     configTheme          <- fieldMbOf "theme" stringField
     configAspellDictionary <- fieldMbOf "aspellDictionary" stringField
     configURLOpenCommand <- fieldMbOf "urlOpenCommand" stringField
+    configURLOpenCommandInteractive <- fieldFlagDef "urlOpenCommandIsInteractive" False
     configSmartBacktick  <- fieldFlagDef "smartbacktick"
       (configSmartBacktick defaultConfig)
     configShowMessagePreview <- fieldFlagDef "showMessagePreview"
@@ -83,6 +84,7 @@ defaultConfig =
            , configTheme              = Nothing
            , configSmartBacktick      = True
            , configURLOpenCommand     = Nothing
+           , configURLOpenCommandInteractive = False
            , configActivityBell       = False
            , configShowMessagePreview = False
            , configEnableAspell       = False

@@ -73,6 +73,7 @@ data Config = Config
   , configTheme          :: Maybe T.Text
   , configSmartBacktick  :: Bool
   , configURLOpenCommand :: Maybe T.Text
+  , configURLOpenCommandInteractive :: Bool
   , configActivityBell   :: Bool
   , configShowMessagePreview :: Bool
   , configEnableAspell   :: Bool

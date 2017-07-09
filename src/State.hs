@@ -1084,48 +1084,70 @@ openSelectedURL = do
 
 openURL :: LinkChoice -> MH Bool
 openURL link = do
-    cmd <- use (csResources.crConfiguration.to configURLOpenCommand)
-    case cmd of
+    cfg <- use (csResources.crConfiguration)
+    case configURLOpenCommand cfg of
         Nothing ->
             return False
-        Just urlOpenCommand ->
+        Just urlOpenCommand -> do
             -- Is the URL referring to an attachment?
-            case _linkFileId link of
-              Nothing -> do
-                  openLink urlOpenCommand link
-                  return True
+            let act = case _linkFileId link of
+                    Nothing -> openLink link
+                    Just fId -> openAttachment fId
 
-              Just fId -> do
-                  openAttachment urlOpenCommand fId
-                  return True
+            -- Is the URL-opening command interactive? If so, pause
+            -- Matterhorn and run the opener interactively. Otherwise
+            -- run the opener asynchronously and continue running
+            -- Matterhorn interactively.
+            case configURLOpenCommandInteractive cfg of
+                False -> do
+                    st <- use id
+                    outputChan <- use (csResources.crSubprocessLog)
+                    doAsyncWith Preempt $ do
+                        args <- act st
+                        void $ runLoggedCommand False outputChan (T.unpack urlOpenCommand)
+                                                args Nothing
+                        return $ return ()
+                True -> mhSuspendAndResume $ \st -> do
+                    args <- act st
+                    void $ runInteractiveCommand (T.unpack urlOpenCommand) args
+                    return $ st & csMode .~ Main
 
-openLink :: T.Text -> LinkChoice -> MH ()
-openLink urlOpenCommand link = do
-    -- The link is a web link, not an attachment
-    outputChan <- use (csResources.crSubprocessLog)
-    doAsyncWith Preempt $ do
-        void $ runLoggedCommand False outputChan (T.unpack urlOpenCommand)
-                                [T.unpack $ link^.linkURL] Nothing
-        return $ return ()
+            return True
 
-openAttachment :: T.Text -> FileId -> MH ()
-openAttachment urlOpenCommand fId = do
+openLink :: LinkChoice -> ChatState -> IO [String]
+openLink link _ = return [T.unpack $ link^.linkURL]
+
+openAttachment :: FileId -> ChatState -> IO [String]
+openAttachment fId st = do
     -- The link is for an attachment, so fetch it and then
     -- open the local copy.
-    sess <- use csSession
-    outputChan <- use (csResources.crSubprocessLog)
-    doAsyncWith Preempt $ do
-        info     <- mmGetFileInfo sess fId
-        contents <- mmGetFile sess fId
-        cacheDir <- getUserCacheDir xdgName
+    let sess = st^.csSession
 
-        let dir   = cacheDir </> "files" </> T.unpack (idString fId)
-            fname = dir </> T.unpack (fileInfoName info)
+    info     <- mmGetFileInfo sess fId
+    contents <- mmGetFile sess fId
+    cacheDir <- getUserCacheDir xdgName
 
-        createDirectoryIfMissing True dir
-        BS.writeFile fname contents
-        void $ runLoggedCommand False outputChan (T.unpack urlOpenCommand) [fname] Nothing
-        return $ return ()
+    let dir   = cacheDir </> "files" </> T.unpack (idString fId)
+        fname = dir </> T.unpack (fileInfoName info)
+
+    createDirectoryIfMissing True dir
+    BS.writeFile fname contents
+    return [fname]
+
+runInteractiveCommand :: String
+                      -> [String]
+                      -> IO (Either String ExitCode)
+runInteractiveCommand cmd args = do
+    let opener = (proc cmd args) { std_in = Inherit
+                                 , std_out = Inherit
+                                 , std_err = Inherit
+                                 }
+    result <- try $ createProcess opener
+    case result of
+        Left (e::SomeException) -> return $ Left $ show e
+        Right (_, _, _, ph) -> do
+            ec <- waitForProcess ph
+            return $ Right ec
 
 runLoggedCommand :: Bool
                  -- ^ Whether stdout output is expected for this program
