@@ -83,7 +83,7 @@ drawPostsBox contents st =
         -- are no messages
         messageListContents
           | null (st^.csPostListOverlay.postListPosts) =
-            padTopBottom 1 (padLeftRight 50 (str "No messages"))
+            padTopBottom 1 (hCenter (str "No messages"))
           | otherwise = vBox renderedMessageList
 
         -- The render-message function we're using
