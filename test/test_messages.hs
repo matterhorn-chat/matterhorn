@@ -45,15 +45,15 @@ tests = testGroup "Messages Tests"
 
 test_m1 :: IO Message
 test_m1 = do t1 <- getCurrentTime
-             return $ Message Seq.empty Nothing t1 (CP NormalPost) False False Seq.empty NotAReply Nothing Map.empty Nothing False
+             return $ Message Seq.empty Nothing t1 (CP NormalPost) False False Seq.empty NotAReply Nothing Map.empty Nothing False Nothing
 
 test_m2 :: IO Message
 test_m2 = do t2 <- getCurrentTime
-             return $ Message Seq.empty Nothing t2 (CP Emote) False False Seq.empty NotAReply (Just $ fromId $ Id $ T.pack "m2") Map.empty Nothing False
+             return $ Message Seq.empty Nothing t2 (CP Emote) False False Seq.empty NotAReply (Just $ fromId $ Id $ T.pack "m2") Map.empty Nothing False Nothing
 
 test_m3 :: IO Message
 test_m3 = do t3 <- getCurrentTime
-             return $ Message Seq.empty Nothing t3 (CP NormalPost) False False Seq.empty NotAReply (Just $ fromId $ Id $ T.pack "m3") Map.empty Nothing False
+             return $ Message Seq.empty Nothing t3 (CP NormalPost) False False Seq.empty NotAReply (Just $ fromId $ Id $ T.pack "m3") Map.empty Nothing False Nothing
 
 setDateOrderMessages :: [Message] -> [Message]
 setDateOrderMessages = snd . foldl setTimeAndInsert (startTime, [])
