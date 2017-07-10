@@ -701,26 +701,24 @@ handleNewChannel name switch nc = do
 
 editMessage :: Post -> MH ()
 editMessage new = do
-  now <- getNow
   st <- use id
   let isEditedMessage m = m^.mPostId == Just (new^.postIdL)
       msg = clientPostToMessage st (toClientPost new (new^.postParentIdL))
       chan = csChannel (new^.postChannelIdL)
   chan . ccContents . cdMessages . traversed . filtered isEditedMessage .= msg
-  chan . ccInfo . cdUpdated .= now
+  chan . ccInfo . cdUpdated %= max (new^.postUpdateAtL)
   csPostMap.ix(postId new) .= msg
   cId <- use csCurrentChannelId
   when (postChannelId new == cId) updateViewed
 
 deleteMessage :: Post -> MH ()
 deleteMessage new = do
-  now <- getNow
   let isDeletedMessage m = m^.mPostId == Just (new^.postIdL) ||
                            isReplyTo (new^.postIdL) m
       chan :: Traversal' ChatState ClientChannel
       chan = csChannel (new^.postChannelIdL)
   chan.ccContents.cdMessages.traversed.filtered isDeletedMessage %= (& mDeleted .~ True)
-  chan.ccInfo.cdUpdated .= now
+  chan.ccInfo.cdUpdated %= max (new^.postDeleteAtL . non (new^.postUpdateAtL))
   cId <- use csCurrentChannelId
   when (postChannelId new == cId) updateViewed
 

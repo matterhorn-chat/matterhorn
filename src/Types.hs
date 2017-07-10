@@ -22,7 +22,7 @@ import           Control.Exception (SomeException)
 import qualified Control.Monad.State as St
 import qualified Data.Set as S
 import           Data.HashMap.Strict (HashMap)
-import           Data.Time.Clock (UTCTime, getCurrentTime)
+import           Data.Time.Clock (UTCTime)
 import           Data.Time.LocalTime (TimeZone)
 import qualified Data.HashMap.Strict as HM
 import           Data.List (partition, sortBy)
@@ -365,9 +365,6 @@ requestQuit :: MH ()
 requestQuit = MH $ do
   (st, _) <- St.get
   St.put (st, Brick.halt)
-
-getNow :: MH UTCTime
-getNow = St.liftIO getCurrentTime
 
 instance Functor MH where
   fmap f (MH x) = MH (fmap f x)
