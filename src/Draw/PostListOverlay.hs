@@ -83,7 +83,7 @@ drawPostsBox contents st =
         -- are no messages
         messageListContents
           | null (st^.csPostListOverlay.postListPosts) =
-            padTopBottom 1 (hCenter (str "No messages"))
+            padTopBottom 1 (hCenter (str "You have not flagged any messages."))
           | otherwise = vBox renderedMessageList
 
         -- The render-message function we're using
