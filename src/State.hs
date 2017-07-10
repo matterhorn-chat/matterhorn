@@ -1091,8 +1091,8 @@ openURL link = do
         Just urlOpenCommand -> do
             -- Is the URL referring to an attachment?
             let act = case _linkFileId link of
-                    Nothing -> openLink link
-                    Just fId -> openAttachment fId
+                    Nothing -> prepareLink link
+                    Just fId -> prepareAttachment fId
 
             -- Is the URL-opening command interactive? If so, pause
             -- Matterhorn and run the opener interactively. Otherwise
@@ -1114,11 +1114,11 @@ openURL link = do
 
             return True
 
-openLink :: LinkChoice -> ChatState -> IO [String]
-openLink link _ = return [T.unpack $ link^.linkURL]
+prepareLink :: LinkChoice -> ChatState -> IO [String]
+prepareLink link _ = return [T.unpack $ link^.linkURL]
 
-openAttachment :: FileId -> ChatState -> IO [String]
-openAttachment fId st = do
+prepareAttachment :: FileId -> ChatState -> IO [String]
+prepareAttachment fId st = do
     -- The link is for an attachment, so fetch it and then
     -- open the local copy.
     let sess = st^.csSession
