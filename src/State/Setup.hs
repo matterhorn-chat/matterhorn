@@ -20,7 +20,6 @@ import           Data.List (sort)
 import           Data.Maybe (listToMaybe, maybeToList, fromJust, catMaybes)
 import           Data.Monoid ((<>))
 import qualified Data.Sequence as Seq
-import qualified Data.Set as Set
 import           Data.Time.LocalTime ( TimeZone(..), getCurrentTimeZone )
 import           Lens.Micro.Platform
 import           System.Exit (exitFailure, ExitCode(ExitSuccess))

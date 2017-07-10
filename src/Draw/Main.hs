@@ -418,15 +418,6 @@ insertTransitions datefmt tz cutoff ms = foldr addMessage ms transitions
                                                 (utcToLocalTime tz d)))
                         (C DateTransition) d
           newMessagesMsg d = newMessageOfType (T.pack "New Messages") (C NewMessagesTransition) d
-          -- dateMsg d = Message (getBlocks (T.pack $ formatTime defaultTimeLocale
-          --                                 (T.unpack datefmt)
-          --                                 (utcToLocalTime tz d)))
-          --             Nothing d (C DateTransition) False False
-          --             Seq.empty NotAReply Nothing mempty Nothing False Nothing
-          -- newMessagesMsg d = Message (getBlocks (T.pack "New Messages"))
-          --                    Nothing d (C NewMessagesTransition)
-          --                    False False Seq.empty NotAReply
-          --                    Nothing mempty Nothing False Nothing
 
 
 renderChannelSelect :: ChatState -> Widget Name
