@@ -45,7 +45,9 @@ import           Themes
 import           Types
 import           Types.Channels ( ChannelState(..)
                                 , ccInfo, ccContents
-                                , cdCurrentState, cdName, cdType, cdHeader, cdMessages
+                                , cdCurrentState
+                                , cdName, cdType, cdHeader, cdMessages
+                                , cdViewed, cdViewedPrev
                                 , findChannelById)
 import           Types.Posts
 import           Types.Messages
@@ -473,7 +475,10 @@ insertTransitions datefmt tz cutoff ms = foldr addMessage ms transitions
     where transitions = newMessagesT <> dateT
           newMessagesT = case cutoff of
                            Nothing -> []
-                           Just t -> [newMessagesMsg $ justBefore t]
+                           Just t -> [newMessagesMsg $ justAfter t
+                                     | isJust $ findLatestUserMessage
+                                                (not . view mDeleted)
+                                                (messagesAfter t ms) ]
           dateT = fmap dateMsg dateRange
           dateRange = let dr = foldr checkDateChange [] ms
                       in if length dr > 1 then tail dr else []
@@ -484,7 +489,7 @@ insertTransitions datefmt tz cutoff ms = foldr addMessage ms transitions
                                  else dayStart (m^.mDate) : dl
           dayOf = localDay . utcToLocalTime tz
           dayStart dt = localTimeToUTC tz $ LocalTime (dayOf dt) $ midnight
-          justBefore (UTCTime d t) = UTCTime d $ pred t
+          justAfter (UTCTime d t) = UTCTime d $ succ t
           dateMsg d = Message (getBlocks (T.pack $ formatTime defaultTimeLocale
                                           (T.unpack datefmt)
                                           (utcToLocalTime tz d)))

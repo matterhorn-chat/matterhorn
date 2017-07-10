@@ -316,23 +316,6 @@ removeReaction r cId = csChannel(cId).ccContents.cdMessages %= fmap upd
                   m & mReactions %~ (Map.insertWith (+) (r^.reactionEmojiNameL) (-1))
               | otherwise = m
 
-updateViewedChan :: ChannelId -> MH ()
-updateViewedChan cId = do
-  -- Only do this if we're connected to avoid triggering noisy exceptions.
-  st <- use id
-  case st^.csConnectionStatus of
-      Connected -> do
-          now <- liftIO getCurrentTime
-          let pId = st^.csRecentChannel
-          doAsyncWith Preempt $ do
-            mmViewChannel
-              (st^.csSession)
-              (getId (st^.csMyTeam))
-              cId
-              pId
-            return (csChannel(cId).ccInfo.cdViewed .= Just now)
-      Disconnected -> return ()
-
 copyToClipboard :: T.Text -> MH ()
 copyToClipboard txt = do
   result <- liftIO (try (setClipboard (T.unpack txt)))

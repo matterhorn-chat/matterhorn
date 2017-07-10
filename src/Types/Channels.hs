@@ -13,8 +13,9 @@ module Types.Channels
   -- * Lenses created for accessing ClientChannel fields
   , ccContents, ccInfo
   -- * Lenses created for accessing ChannelInfo fields
-  , cdViewed, cdUpdated, cdName, cdHeader, cdType, cdCurrentState
-  , cdNewMessageCutoff, cdMentionCount
+  , cdViewed, cdViewedPrev, cdUpdated
+  , cdName, cdHeader, cdType, cdCurrentState
+  , cdMentionCount
   -- * Lenses created for accessing ChannelContents fields
   , cdMessages
   -- * Creating ClientChannel objects
@@ -32,6 +33,7 @@ module Types.Channels
   , isPendingState
   , pendingChannelState
   , quiescentChannelState
+  , latchViewed
   -- * Miscellaneous channel-related operations
   , canLeaveChannel
   , preferredChannelName
@@ -70,13 +72,13 @@ initialChannelInfo :: Channel -> ChannelInfo
 initialChannelInfo chan =
     let updated  = chan ^. channelLastPostAtL
     in ChannelInfo { _cdViewed           = Nothing
+                   , _cdViewedPrev       = Nothing
                    , _cdMentionCount     = 0
                    , _cdUpdated          = updated
                    , _cdName             = preferredChannelName chan
                    , _cdHeader           = chan^.channelHeaderL
                    , _cdType             = chan^.channelTypeL
                    , _cdCurrentState     = initialChannelState
-                   , _cdNewMessageCutoff = Nothing
                    }
 
 channelInfoFromChannelWithData :: ChannelWithData -> ChannelInfo -> ChannelInfo
@@ -84,6 +86,7 @@ channelInfoFromChannelWithData (ChannelWithData chan chanData) ci =
     let viewed   = chanData ^. channelDataLastViewedAtL
         updated  = chan ^. channelLastPostAtL
     in ci { _cdViewed           = Just viewed
+          , _cdViewedPrev       = Just viewed
           , _cdUpdated          = updated
           , _cdName             = preferredChannelName chan
           , _cdHeader           = (chan^.channelHeaderL)
@@ -192,6 +195,7 @@ isPendingState cstate = cstate `elem` [ ChanGettingPosts
 data ChannelInfo = ChannelInfo
   { _cdViewed           :: Maybe UTCTime
     -- ^ The last time we looked at a channel
+  , _cdViewedPrev       :: Maybe UTCTime
   , _cdMentionCount     :: Int
     -- ^ The current number of unread mentions
   , _cdUpdated          :: UTCTime
@@ -204,9 +208,6 @@ data ChannelInfo = ChannelInfo
     -- ^ The type of a channel: public, private, or DM
   , _cdCurrentState     :: ChannelState
     -- ^ The current state of the channel
-  , _cdNewMessageCutoff :: Maybe UTCTime
-    -- ^ The last time we looked at the new messages in
-    --   this channel, if ever
   }
 
 -- ** Channel-related Lenses
@@ -277,3 +278,7 @@ filteredChannels :: ((ChannelId, ClientChannel) -> Bool)
                  -> ClientChannels -> ClientChannels
 filteredChannels f cc =
     AllChannels . HM.fromList . filter f $ cc^.ofChans.to HM.toList
+
+-- | Save the current cdViewed value in cdViewedPrev
+latchViewed :: ClientChannel -> ClientChannel
+latchViewed c = c & ccInfo.cdViewedPrev .~ (c^.ccInfo.cdViewed)

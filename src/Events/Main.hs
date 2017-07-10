@@ -130,11 +130,6 @@ mainKeybindings =
          (Vty.EvKey (Vty.KChar 'o') [Vty.MCtrl]) $
            startUrlSelect
 
-    , KB "Clear the current channel's unread message indicator"
-         (Vty.EvKey (Vty.KChar 'l') [Vty.MMeta]) $ do
-           cId <- use csCurrentChannelId
-           clearNewMessageCutoff cId
-
     , KB "Toggle multi-line message compose mode"
          (Vty.EvKey (Vty.KChar 'e') [Vty.MMeta]) $
            toggleMultilineEditing

@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 module State where
 
 import           Prelude ()
@@ -126,7 +128,7 @@ asyncFetchScrollback :: AsyncPriority -> ChannelId -> MH ()
 asyncFetchScrollback prio cId = do
   withChannel cId $ \chan -> do
     let last_pId = getLatestPostId (chan^.ccContents.cdMessages)
-        newCutoff = chan^.ccInfo.cdNewMessageCutoff
+        newCutoff = chan^.ccInfo.cdViewedPrev
     asPending doAsyncChannelMM prio (Just cId)
       (let fc = case (last_pId, newCutoff) of
                   (Nothing, _)        -> F1  -- or F4
@@ -396,18 +398,50 @@ fetchCurrentChannelMembers =
 
               postInfoMessage msgStr)
 
-setLastViewedFor :: ChannelId -> MH ()
-setLastViewedFor cId = do
-  now <- getNow
+-- | Called on async completion when the currently viewed channel has
+-- been updated (i.e., just switched to this channel) to update local
+-- state.
+setLastViewedFor :: Maybe ChannelId -> ChannelId -> () -> MH ()
+setLastViewedFor prevId cId _ = do
   chan <- use (csChannels.to (findChannelById cId))
+  -- Update new channel's viewed time, creating the channel if needed
   case chan of
-    Just _  -> csChannels %= modifyChannelById cId (ccInfo.cdViewed ?~ now)
+    Just c  ->
+        let lastmsg = findLatestUserMessage (const True) (c^.ccContents.cdMessages)
+        in case lastmsg of
+             Nothing -> return ()
+             Just m -> csChannels %= (channelByIdL cId.ccInfo.cdViewed ?~ m^.mDate)
     Nothing -> handleChannelInvite cId
+  -- Update the old channel's previous viewed time (allows tracking of new messages)
+  case prevId of
+    Nothing -> return ()
+    Just p -> csChannels %= (channelByIdL p %~ latchViewed)
 
 updateViewed :: MH ()
 updateViewed = do
   csCurrentChannel.ccInfo.cdMentionCount .= 0
   updateViewedChan =<< use csCurrentChannelId
+
+-- | When a new channel has been selected for viewing, this will
+-- notify the server of the change, and also update the local channel
+-- state to set the last-viewed time for the previous channel and
+-- update the viewed time to now for the newly selected channel.
+updateViewedChan :: ChannelId -> MH ()
+updateViewedChan cId = use csConnectionStatus >>= \case
+      Connected -> do
+          -- Only do this if we're connected to avoid triggering noisy exceptions.
+          pId <- use csRecentChannel
+          doAsyncChannelMM Preempt (Just cId)
+            (___1 mmViewChannel pId)
+            (setLastViewedFor pId)
+      Disconnected ->
+          -- Cannot update server; make no local updates to avoid
+          -- getting out-of-sync with the server.  Assumes that this
+          -- is a temporary break in connectivity and that after the
+          -- connection is restored, the user's normal activities will
+          -- update state as appropriate.  If connectivity is
+          -- permanently lost, managing this state is irrelevant.
+          return ()
 
 resetHistoryPosition :: MH ()
 resetHistoryPosition = do
@@ -466,7 +500,6 @@ preChangeChannelCommon = do
     cId <- use csCurrentChannelId
     csRecentChannel .= Just cId
     saveCurrentEdit
-    clearNewMessageCutoff cId
 
 nextChannel :: MH ()
 nextChannel = do
@@ -688,17 +721,6 @@ deleteMessage new = do
       chan = csChannel (new^.postChannelIdL)
   chan.ccContents.cdMessages.traversed.filtered isDeletedMessage %= (& mDeleted .~ True)
   chan.ccInfo.cdUpdated .= now
-
-  -- When there was a new message cutoff set, we need to check to see
-  -- whether deletion of this message changes the cutoff.
-  mCutoff <- preuse (chan.ccInfo.cdNewMessageCutoff.folded)
-  case mCutoff of
-      Nothing -> return ()
-      Just cutoff -> do
-          msgs <- use (chan.ccContents.cdMessages)
-          when (F.null $ messagesAfter cutoff msgs) $
-              chan.ccInfo.cdNewMessageCutoff .= Nothing
-
   cId <- use csCurrentChannelId
   when (postChannelId new == cId) updateViewed
 
@@ -763,11 +785,10 @@ addMessageToState new = do
           -- msgMap channel ID key presence above.
           return NoAction
       Just _ -> do
-          now <- getNow
           let cp = toClientPost new (new^.postParentIdL)
               fromMe = (cp^.cpUser == (Just $ getId (st^.csMe))) &&
                        (isNothing $ cp^.cpUserOverride)
-              updateTime = if fromMe then id else const now
+              updateTime = if fromMe then id else max (new^.postUpdateAtL)
               cId = postChannelId new
 
               doAddMessage = do
@@ -804,16 +825,18 @@ addMessageToState new = do
                           postedChanMessage
                       _ -> doAddMessage
 
-              postedChanMessage = do
-                currCId <- use csCurrentChannelId
-                cState <- use (csCurrentChannel.ccInfo.cdCurrentState)
-                if postChannelId new == currCId
-                then do
-                  when (cState == ChanInitialSelect) $
-                    void $ setNewMessageCutoff cId $ postCreateAt new
-                  return UpdateServerViewed
-                else do hasNew <- setNewMessageCutoff cId $ postCreateAt new
-                        return $ if hasNew && not fromMe then NotifyUser else NoAction
+              postedChanMessage =
+                withChannelOrDefault (postChannelId new) NoAction $ \pnc -> do
+                    currCId <- use csCurrentChannelId
+                    return $ if postChannelId new == currCId
+                             then UpdateServerViewed
+                             else case pnc^.ccInfo.cdViewedPrev of
+                                    Nothing -> NotifyUser
+                                    Just vp ->
+                                        let hasNew = (postCreateAt new) > vp
+                                        in if hasNew && not fromMe
+                                           then NotifyUser
+                                           else NoAction
 
           -- If this message was written by a user we don't know about,
           -- fetch the user's information before posting the message.
@@ -827,39 +850,10 @@ addMessageToState new = do
                           doAsyncWith Normal $ return (doHandleAddedMessage >> return ())
                           postedChanMessage
 
--- | Updates the cutoff marker for new messages in the Channel that
--- the user hasn't seen yet.  This should only be called for channels
--- other than the currently selected channel.  Setting the
--- cdNewMessageCutoff will cause channel indications of unread
--- messages and control where the "New Messages" marker may be
--- displayed when the channel is actually selected.
-setNewMessageCutoff :: ChannelId -> UTCTime -> MH Bool
-setNewMessageCutoff cId mdate =
-  let zerodate = UTCTime (toEnum 0) (toEnum 0)
-      cdate = if zerodate == mdate then Nothing else Just mdate
-      earliestDateAfter startdate newdate olddate =
-        case newdate of
-        Nothing -> olddate  -- no new date, no change to existing cutoff
-        Just d -> case startdate of
-          Nothing -> Just $ maybe d (min d) olddate -- new, if new is earlier than prev
-          Just s -> if d > s
-                    then Just $ maybe d (min d) olddate -- new, if new is earlier than prev
-                    else olddate
-  in withChannelOrDefault cId False $ \chan -> do
-    let oldCutoff = chan^.ccInfo.cdNewMessageCutoff
-        newCutoff = earliestDateAfter (chan^.ccInfo.cdViewed) cdate oldCutoff
-        changed = oldCutoff /= newCutoff
-    when changed $ csChannel(cId).ccInfo.cdNewMessageCutoff .= newCutoff
-    return changed
-
-clearNewMessageCutoff :: ChannelId -> MH ()
-clearNewMessageCutoff cId =
-    csChannel(cId).ccInfo.cdNewMessageCutoff .= Nothing
-
 getNewMessageCutoff :: ChannelId -> ChatState -> Maybe UTCTime
 getNewMessageCutoff cId st = do
     cc <- st^?csChannel(cId)
-    cc^.ccInfo.cdNewMessageCutoff
+    cc^.ccInfo.cdViewedPrev
 
 execMMCommand :: T.Text -> T.Text -> MH ()
 execMMCommand name rest = do
