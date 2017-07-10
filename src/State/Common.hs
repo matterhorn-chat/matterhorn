@@ -294,9 +294,8 @@ postErrorMessage err = do
 
 postErrorMessageIO :: T.Text -> ChatState -> IO ChatState
 postErrorMessageIO err st = do
-  now <- liftIO getCurrentTime
-  let msg = ClientMessage err now Error
-      cId = st ^. csCurrentChannelId
+  msg <- newClientMessage Error err
+  let cId = st ^. csCurrentChannelId
       addEMsg = ccContents.cdMessages %~ (addMessage $ clientMessageToMessage msg)
   return $ st & csChannels %~ modifyChannelById cId addEMsg
 

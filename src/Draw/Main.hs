@@ -302,7 +302,7 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
                        quote n = "\"" <> n <> "\""
                        nick = maybe "" quote $ u^.uiNickName
                    in p1 <+> p2
-    messages = padRight (Pad 1) body
+    messages = padTop Max $ padRight (Pad 1) body
 
     body = chatText
       <=> case chan^.ccInfo.cdCurrentState.to stateMessage of

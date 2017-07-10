@@ -22,7 +22,7 @@ import qualified Data.Sequence as Seq
 import           Data.List (sort)
 import           Data.Maybe (maybeToList, isJust, catMaybes, isNothing)
 import           Data.Monoid ((<>))
-import           Data.Time.Clock (UTCTime(..), getCurrentTime)
+import           Data.Time.Clock (UTCTime(..))
 import qualified Data.Set as Set
 import qualified Data.Text as T
 import qualified Data.Vector as V
@@ -1148,36 +1148,47 @@ openSelectedURL = do
 openURL :: LinkChoice -> MH Bool
 openURL link = do
     cmd <- use (csResources.crConfiguration.to configURLOpenCommand)
-    outputChan <- use (csResources.crSubprocessLog)
     case cmd of
         Nothing ->
             return False
         Just urlOpenCommand ->
+            -- Is the URL referring to an attachment?
             case _linkFileId link of
               Nothing -> do
-                -- The link is a web link, not an attachment
-                doAsyncWith Preempt $ do
-                    void $ runLoggedCommand False outputChan (T.unpack urlOpenCommand) [T.unpack $ link^.linkURL] Nothing
-                    return $ return ()
-
-                return True
+                  openLink urlOpenCommand link
+                  return True
 
               Just fId -> do
-                -- The link is for an attachment, so fetch it and then
-                -- open the local copy.
-                sess  <- use csSession
-                doAsyncWith Preempt $ do
-                  info     <- mmGetFileInfo sess fId
-                  contents <- mmGetFile sess fId
-                  cacheDir <- getUserCacheDir xdgName
-                  let dir   = cacheDir </> "files" </> T.unpack (idString fId)
-                      fname = dir </> T.unpack (fileInfoName info)
-                  createDirectoryIfMissing True dir
-                  BS.writeFile fname contents
-                  void $ runLoggedCommand False outputChan (T.unpack urlOpenCommand) [fname] Nothing
-                  return $ return ()
+                  openAttachment urlOpenCommand fId
+                  return True
 
-                return True
+openLink :: T.Text -> LinkChoice -> MH ()
+openLink urlOpenCommand link = do
+    -- The link is a web link, not an attachment
+    outputChan <- use (csResources.crSubprocessLog)
+    doAsyncWith Preempt $ do
+        void $ runLoggedCommand False outputChan (T.unpack urlOpenCommand)
+                                [T.unpack $ link^.linkURL] Nothing
+        return $ return ()
+
+openAttachment :: T.Text -> FileId -> MH ()
+openAttachment urlOpenCommand fId = do
+    -- The link is for an attachment, so fetch it and then
+    -- open the local copy.
+    sess <- use csSession
+    outputChan <- use (csResources.crSubprocessLog)
+    doAsyncWith Preempt $ do
+        info     <- mmGetFileInfo sess fId
+        contents <- mmGetFile sess fId
+        cacheDir <- getUserCacheDir xdgName
+
+        let dir   = cacheDir </> "files" </> T.unpack (idString fId)
+            fname = dir </> T.unpack (fileInfoName info)
+
+        createDirectoryIfMissing True dir
+        BS.writeFile fname contents
+        void $ runLoggedCommand False outputChan (T.unpack urlOpenCommand) [fname] Nothing
+        return $ return ()
 
 runLoggedCommand :: Bool
                  -- ^ Whether stdout output is expected for this program
@@ -1266,10 +1277,8 @@ sendMessage mode msg =
                                                 }
                             void $ mmPost (st^.csSession) theTeamId modifiedPost
                         Editing p -> do
-                            now <- getCurrentTime
                             let modifiedPost = p { postMessage = msg
                                                  , postPendingPostId = Nothing
-                                                 , postUpdateAt = now
                                                  }
                             void $ mmUpdatePost (st^.csSession) theTeamId modifiedPost
 

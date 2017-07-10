@@ -29,15 +29,15 @@ defaultPort = 443
 fromIni :: IniParser Config
 fromIni = do
   section "mattermost" $ do
-    configUser           <- fieldMb "user"
-    configHost           <- fieldMb "host"
-    configTeam           <- fieldMb "team"
+    configUser           <- fieldMbOf "user" stringField
+    configHost           <- fieldMbOf "host" stringField
+    configTeam           <- fieldMbOf "team" stringField
     configPort           <- fieldDefOf "port" number (configPort defaultConfig)
-    configTimeFormat     <- fieldMb "timeFormat"
-    configDateFormat     <- fieldMb "dateFormat"
-    configTheme          <- fieldMb "theme"
-    configAspellDictionary <- fieldMb "aspellDictionary"
-    configURLOpenCommand <- fieldMb "urlOpenCommand"
+    configTimeFormat     <- fieldMbOf "timeFormat" stringField
+    configDateFormat     <- fieldMbOf "dateFormat" stringField
+    configTheme          <- fieldMbOf "theme" stringField
+    configAspellDictionary <- fieldMbOf "aspellDictionary" stringField
+    configURLOpenCommand <- fieldMbOf "urlOpenCommand" stringField
     configSmartBacktick  <- fieldFlagDef "smartbacktick"
       (configSmartBacktick defaultConfig)
     configShowMessagePreview <- fieldFlagDef "showMessagePreview"
@@ -50,6 +50,26 @@ fromIni = do
                   (Just . PasswordString  <$> field "pass") <|>
                   pure Nothing
     return Config { .. }
+
+stringField :: T.Text -> Either String T.Text
+stringField t =
+    case isQuoted t of
+        True -> Right $ parseQuotedString t
+        False -> Right t
+
+parseQuotedString :: T.Text -> T.Text
+parseQuotedString t =
+    let body = T.drop 1 $ T.init t
+        unescapeQuotes s | T.null s = s
+                         | "\\\"" `T.isPrefixOf` s = "\"" <> unescapeQuotes (T.drop 2 s)
+                         | otherwise = (T.singleton $ T.head s) <> unescapeQuotes (T.drop 1 s)
+    in unescapeQuotes body
+
+isQuoted :: T.Text -> Bool
+isQuoted t =
+    let quote = "\""
+    in (quote `T.isPrefixOf` t) &&
+       (quote `T.isSuffixOf` t)
 
 defaultConfig :: Config
 defaultConfig =

@@ -131,20 +131,39 @@ name of the dictionary you'd like to use.
 * Syntax highlighting of fenced code blocks in messages (works best in
   256-color terminals)
 
+# Spell Checking Support
+
+Matterhorn uses `aspell` to perform spell-checking of your message
+input. To use this feature:
+
+ * Install `aspell` and ensure that your installation includes
+   dictionaries corresponding to your `LANG` setting. To check this, ask
+   `aspell` to check some input:
+   ```
+   $ echo stuff | aspell -a
+   Error: No word lists can be found for the language "en".
+   $ echo $LANG
+   en_US
+   ```
+   If Aspell succeeds, the output will look like this:
+   ```
+   @(#) International Ispell Version 3.1.20 (but really Aspell 0.60.6.1)
+   *
+   ```
+ * Set `enableAspell` to `True` in your `config.ini`
+ * Enter any message input in the message editor in `matterhorn`. After
+   a short delay after you stop typing, misspelled words will turn red.
+
 # Building
 
-The easiest way to build `matterhorn` is to use the provided
-`install.sh` script, which requires `git` and an appropriate
-`ghc`/`cabal` installation. It will pull the appropriate repos and build
-the application.
-
-If you want to, you can also run the install process manually:
-
-~~~
-$ cd matterhorn
-$ cabal new-build
-$ ./run.sh
-~~~
+`matterhorn` is built with the provided `install.sh` script, which
+requires `git` and an appropriate `ghc`/`cabal` installation.
+(Although the name suggests installtion, this will just do a build in
+`dist-newstyle`.) This script will pull the appropriate repos and build
+the application. This is required for building Matterhorn since clones
+of some of our other dependencies may need to be locally available in
+`deps/` in case important changes to those dependencies have not yet
+been released.
 
 # Our Versioning Scheme
 

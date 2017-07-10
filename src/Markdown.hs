@@ -189,6 +189,7 @@ codeBlockToWidget syntax tx =
             in padding <+> (B.vBox $ renderTokenLine <$> tokLines)
 
 renderTokenLine :: Sky.SourceLine -> Widget a
+renderTokenLine [] = B.str " "
 renderTokenLine toks = B.hBox $ renderToken <$> toks
 
 renderToken :: Sky.Token -> Widget a

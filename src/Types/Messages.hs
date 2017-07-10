@@ -291,9 +291,9 @@ getLatestPostId msgs =
     where valid m = not (m^.mDeleted) && isJust (m^.mPostId)
 
 -- | Find the most recent message that is a message posted by a user
--- that matches the (if any), skipping local client messages and any
--- user event that is not a message (i.e. find a normal message or an
--- emote).
+-- that matches the test (if any), skipping local client messages and
+-- any user event that is not a message (i.e. find a normal message or
+-- an emote).
 findLatestUserMessage :: (Message -> Bool) -> Messages -> Maybe Message
 findLatestUserMessage f msgs =
     case getLatestPostId msgs of
