@@ -196,6 +196,7 @@ data ChannelInfo = ChannelInfo
   { _cdViewed           :: Maybe UTCTime
     -- ^ The last time we looked at a channel
   , _cdViewedPrev       :: Maybe UTCTime
+    -- ^ The previous cdViewed setting, used to establish a new message threshold
   , _cdMentionCount     :: Int
     -- ^ The current number of unread mentions
   , _cdUpdated          :: UTCTime
