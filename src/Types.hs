@@ -28,6 +28,7 @@ import qualified Data.HashMap.Strict as HM
 import           Data.List (partition, sortBy)
 import           Data.Maybe
 import           Data.Monoid
+import           Data.Set (Set)
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( at, makeLenses, lens, (&), (^.), (%~), (.~), (^?!)
                                      , to, SimpleGetter, _Just
@@ -208,6 +209,7 @@ data ChatResources = ChatResources
   , _crTheme         :: AttrMap
   , _crQuitCondition :: MVar ()
   , _crConfiguration :: Config
+  , _crFlaggedPosts  :: Set PostId
   }
 
 -- | The 'ChatEditState' value contains the editor widget itself
@@ -265,7 +267,7 @@ data HelpScreen
   | ScriptHelp
     deriving (Eq)
 
--- * Help topics
+-- |  Help topics
 data HelpTopic =
     HelpTopic { helpTopicName         :: T.Text
               , helpTopicDescription  :: T.Text
@@ -273,6 +275,13 @@ data HelpTopic =
               , helpTopicViewportName :: Name
               }
               deriving (Eq)
+
+-- | Mode type for the current contents of the post list overlay
+data PostListContents
+  = PostListFlagged
+--   | PostListPinned ChannelId
+--   | PostListSearch Text -- for the query
+  deriving (Eq)
 
 -- | The 'Mode' represents the current dominant UI activity
 data Mode =
@@ -286,6 +295,7 @@ data Mode =
     | ChannelScroll
     | MessageSelect
     | MessageSelectDeleteConfirm
+    | PostListOverlay PostListContents
     deriving (Eq)
 
 -- | We're either connected or we're not.
@@ -315,12 +325,18 @@ data ChatState = ChatState
   , _csConnectionStatus            :: ConnectionStatus
   , _csJoinChannelList             :: Maybe (List Name Channel)
   , _csMessageSelect               :: MessageSelectState
+  , _csPostListOverlay             :: PostListOverlayState
   }
 
 type ChannelSelectMap = HM.HashMap T.Text ChannelSelectMatch
 
 data MessageSelectState =
     MessageSelectState { selectMessagePostId :: Maybe PostId }
+
+data PostListOverlayState = PostListOverlayState
+  { _postListPosts    :: Messages
+  , _postListSelected :: Maybe PostId
+  }
 
 -- * MH Monad
 
@@ -407,6 +423,7 @@ data MHEvent
 makeLenses ''ChatResources
 makeLenses ''ChatState
 makeLenses ''ChatEditState
+makeLenses ''PostListOverlayState
 
 -- ** Utility Lenses
 csCurrentChannelId :: Lens' ChatState ChannelId
@@ -496,6 +513,8 @@ clientPostToMessage st cp = Message
   , _mPostId        = Just $ cp^.cpPostId
   , _mReactions     = _cpReactions cp
   , _mOriginalPost  = Just $ cp^.cpOriginalPost
+  , _mFlagged       = False
+  , _mChannelId     = Just $ cp^.cpChannelId
   }
 
 -- * Slash Commands

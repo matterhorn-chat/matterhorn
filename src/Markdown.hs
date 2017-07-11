@@ -81,6 +81,11 @@ renderMessage msg renderReplyParent uSet cSet =
                      , B.txt " "
                      , renderMarkdown uSet cSet (msg^.mText)
                      ]
+            | msg^.mFlagged ->
+                hBox [ colorUsername un
+                     , B.txt "[!]: "
+                     , renderMarkdown uSet cSet (msg^.mText)
+                     ]
             | otherwise ->
                 hBox [ colorUsername un
                      , B.txt ": "
@@ -184,6 +189,7 @@ codeBlockToWidget syntax tx =
             in padding <+> (B.vBox $ renderTokenLine <$> tokLines)
 
 renderTokenLine :: Sky.SourceLine -> Widget a
+renderTokenLine [] = B.str " "
 renderTokenLine toks = B.hBox $ renderToken <$> toks
 
 renderToken :: Sky.Token -> Widget a

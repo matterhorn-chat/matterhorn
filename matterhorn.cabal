@@ -30,15 +30,18 @@ executable matterhorn
                        State
                        State.Common
                        State.Editing
+                       State.PostListOverlay
                        State.Setup
                        Zipper
                        Themes
                        Draw
                        Draw.Main
+                       Draw.Messages
                        Draw.ChannelList
                        Draw.ShowHelp
                        Draw.LeaveChannelConfirm
                        Draw.DeleteChannelConfirm
+                       Draw.PostListOverlay
                        Draw.JoinChannel
                        Draw.Util
                        InputHistory
@@ -50,6 +53,7 @@ executable matterhorn
                        Events.JoinChannel
                        Events.ChannelScroll
                        Events.ChannelSelect
+                       Events.PostListOverlay
                        Events.UrlSelect
                        Events.LeaveChannelConfirm
                        Events.DeleteChannelConfirm
@@ -89,7 +93,7 @@ executable matterhorn
                      , xdg-basedir          >= 0.2    && < 0.3
                      , filepath             >= 1.4    && < 1.5
                      , directory            >= 1.3    && < 1.4
-                     , vector               < 0.12
+                     , vector               < 0.13
                      , strict               >= 0.3    && < 0.4
                      , hashable             >= 1.2    && < 1.3
                      , cheapskate           >= 0.1    && < 0.2

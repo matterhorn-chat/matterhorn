@@ -27,6 +27,8 @@ genMessage = Message
              <*> genMaybe genPostId
              <*> genMap genText arbitrary
              <*> genMaybe genPost
+             <*> arbitrary
+             <*> (Just <$> genChannelId)
 
 -- Some tests specifically want deleted or non-deleted messages, so
 -- make an easy way to specify these.
@@ -46,7 +48,9 @@ genMessage__DeletedPost = Message__DeletedPost
                               <*> genReplyState
                               <*> (Just <$> genPostId)  -- must have been Posted if deleted
                               <*> genMap genText arbitrary
-                              <*> genMaybe genPost)
+                              <*> genMaybe genPost
+                              <*> arbitrary
+                              <*> (Just <$> genChannelId))
 
 newtype Message__Posted = Message__Posted { postMsg :: Message }
     deriving Show
@@ -64,7 +68,9 @@ genMessage__Posted = Message__Posted
                          <*> genReplyState
                          <*> (Just <$> genPostId)
                          <*> genMap genText arbitrary
-                         <*> genMaybe genPost)
+                         <*> genMaybe genPost
+                         <*> arbitrary
+                         <*> (Just <$> genChannelId))
 
 
 genMessageType :: Gen MessageType
