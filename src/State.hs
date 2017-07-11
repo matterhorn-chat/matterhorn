@@ -728,7 +728,7 @@ editMessage new = do
       msg = clientPostToMessage st (toClientPost new (new^.postParentIdL))
       chan = csChannel (new^.postChannelIdL)
   chan . ccContents . cdMessages . traversed . filtered isEditedMessage .= msg
-  chan . %= adjustUpdated new
+  chan %= adjustUpdated new
   csPostMap.ix(postId new) .= msg
   cId <- use csCurrentChannelId
   when (postChannelId new == cId) updateViewed
@@ -740,7 +740,7 @@ deleteMessage new = do
       chan :: Traversal' ChatState ClientChannel
       chan = csChannel (new^.postChannelIdL)
   chan.ccContents.cdMessages.traversed.filtered isDeletedMessage %= (& mDeleted .~ True)
-  chan . %= adjustUpdated new
+  chan %= adjustUpdated new
   cId <- use csCurrentChannelId
   when (postChannelId new == cId) updateViewed
 
