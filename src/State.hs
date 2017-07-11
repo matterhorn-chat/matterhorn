@@ -406,12 +406,34 @@ setLastViewedFor prevId cId _ = do
   chan <- use (csChannels.to (findChannelById cId))
   -- Update new channel's viewed time, creating the channel if needed
   case chan of
-    Just c  ->
-        let lastmsg = findLatestUserMessage (const True) (c^.ccContents.cdMessages)
-        in case lastmsg of
-             Nothing -> return ()
-             Just m -> csChannels %= (channelByIdL cId.ccInfo.cdViewed ?~ m^.mDate)
     Nothing -> handleChannelInvite cId
+    Just _  ->
+      -- The server has been sent a viewed POST update, but there is
+      -- no local information on what timestamp the server actually
+      -- recorded.  There are a couple of options for setting the
+      -- local value of the viewed time:
+      --
+      --   1. Attempting to locally construct a value, which would
+      --      involve scanning all (User) messages in the channel to
+      --      find the maximum of the created date, the modified date,
+      --      or the deleted date, and assuming that maximum mostly
+      --      matched the server's viewed time.
+      --
+      --   2. Issuing a channel metadata request to get the server's
+      --      new concept of the viewed time.
+      --
+      --   3. Having the "chan/viewed" POST that was just issued
+      --      return a value from the server. See
+      --      https://github.com/mattermost/platform/issues/6803.
+      --
+      -- Method 3 would be the best and most lightweight.  Until that
+      -- is available, Method 2 will be used.  The downside to Method
+      -- 2 is additional client-server messaging, and a delay in
+      -- updating the client data, but it's also immune to any new or
+      -- removed Message date fields, or anything else that would
+      -- contribute to the viewed/updated times on the server.
+      doAsyncChannelMM Preempt (Just cId) mmGetChannel
+      (\pcid cwd -> csChannel(pcid).ccInfo %= channelInfoFromChannelWithData cwd)
   -- Update the old channel's previous viewed time (allows tracking of new messages)
   case prevId of
     Nothing -> return ()

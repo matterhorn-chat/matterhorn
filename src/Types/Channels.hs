@@ -40,6 +40,7 @@ module Types.Channels
   )
 where
 
+import           Control.Applicative ((<|>))
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
 import           Data.Time.Clock (UTCTime)
@@ -86,7 +87,7 @@ channelInfoFromChannelWithData (ChannelWithData chan chanData) ci =
     let viewed   = chanData ^. channelDataLastViewedAtL
         updated  = chan ^. channelLastPostAtL
     in ci { _cdViewed           = Just viewed
-          , _cdViewedPrev       = Just viewed
+          , _cdViewedPrev       = _cdViewedPrev ci <|> Just viewed
           , _cdUpdated          = updated
           , _cdName             = preferredChannelName chan
           , _cdHeader           = (chan^.channelHeaderL)
