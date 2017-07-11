@@ -47,7 +47,6 @@ import           Types.Channels ( ChannelState(..)
                                 , ccInfo, ccContents
                                 , cdCurrentState
                                 , cdName, cdType, cdHeader, cdMessages
-                                , cdViewed, cdViewedPrev
                                 , findChannelById)
 import           Types.Posts
 import           Types.Messages
