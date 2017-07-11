@@ -728,7 +728,7 @@ editMessage new = do
       msg = clientPostToMessage st (toClientPost new (new^.postParentIdL))
       chan = csChannel (new^.postChannelIdL)
   chan . ccContents . cdMessages . traversed . filtered isEditedMessage .= msg
-  chan . ccInfo . cdUpdated %= max (new^.postUpdateAtL)
+  chan . %= adjustUpdated new
   csPostMap.ix(postId new) .= msg
   cId <- use csCurrentChannelId
   when (postChannelId new == cId) updateViewed
@@ -740,7 +740,7 @@ deleteMessage new = do
       chan :: Traversal' ChatState ClientChannel
       chan = csChannel (new^.postChannelIdL)
   chan.ccContents.cdMessages.traversed.filtered isDeletedMessage %= (& mDeleted .~ True)
-  chan.ccInfo.cdUpdated %= max (new^.postDeleteAtL . non (new^.postUpdateAtL))
+  chan . %= adjustUpdated new
   cId <- use csCurrentChannelId
   when (postChannelId new == cId) updateViewed
 
@@ -808,7 +808,6 @@ addMessageToState new = do
           let cp = toClientPost new (new^.postParentIdL)
               fromMe = (cp^.cpUser == (Just $ getId (st^.csMe))) &&
                        (isNothing $ cp^.cpUserOverride)
-              updateTime = if fromMe then id else max (new^.postUpdateAtL)
               cId = postChannelId new
 
               doAddMessage = do
@@ -817,7 +816,7 @@ addMessageToState new = do
                 csPostMap.ix(postId new) .= msg'
                 csChannels %= modifyChannelById cId
                   ((ccContents.cdMessages %~ addMessage msg') .
-                   (ccInfo.cdUpdated %~ updateTime))
+                   (adjustUpdated new))
                 asyncFetchReactionsForPost cId new
                 asyncFetchAttachments new
                 postedChanMessage

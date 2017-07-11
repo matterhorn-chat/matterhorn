@@ -34,6 +34,7 @@ module Types.Channels
   , pendingChannelState
   , quiescentChannelState
   , latchViewed
+  , adjustUpdated
   -- * Miscellaneous channel-related operations
   , canLeaveChannel
   , preferredChannelName
@@ -49,6 +50,7 @@ import           Network.Mattermost.Lenses hiding (Lens')
 import           Network.Mattermost.Types ( Channel(..), ChannelId
                                           , ChannelWithData(..)
                                           , Type(..)
+                                          , Post
                                           )
 import           Types.Messages (Messages, noMessages)
 
@@ -284,3 +286,8 @@ filteredChannels f cc =
 -- | Save the current cdViewed value in cdViewedPrev
 latchViewed :: ClientChannel -> ClientChannel
 latchViewed c = c & ccInfo.cdViewedPrev .~ (c^.ccInfo.cdViewed)
+
+-- | Adjust updated time based on a message, ensuring that the updated
+-- time does not move backward.
+adjustUpdated :: Post -> ClientChannel -> ClientChannel
+adjustUpdated m = ccInfo.cdUpdated %~ max (m^.postDeleteAtL . non (m^.postUpdateAtL))
