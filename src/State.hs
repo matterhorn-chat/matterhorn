@@ -1036,7 +1036,7 @@ channelHistoryBackward = do
 
 showHelpScreen :: HelpTopic -> MH ()
 showHelpScreen topic = do
-    mh $ vScrollToBeginning (viewportScroll $ helpTopicViewportName topic)
+    mh $ vScrollToBeginning (viewportScroll HelpViewport)
     csMode .= ShowHelp topic
 
 beginChannelSelect :: MH ()
