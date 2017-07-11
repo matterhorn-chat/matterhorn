@@ -16,7 +16,7 @@ import qualified Graphics.Vty as Vty
 import Lens.Micro.Platform
 
 import Types
-import Types.Channels (ccInfo, cdType)
+import Types.Channels (ccInfo, cdType, latchViewed)
 import State
 import State.Editing
 import Command
@@ -129,6 +129,10 @@ mainKeybindings =
     , KB "Select and open a URL posted to the current channel"
          (Vty.EvKey (Vty.KChar 'o') [Vty.MCtrl]) $
            startUrlSelect
+
+    , KB "Clear the current channel's unread message indicator"
+         (Vty.EvKey (Vty.KChar 'l') [Vty.MMeta]) $
+           csCurrentChannel %= latchViewed
 
     , KB "Toggle multi-line message compose mode"
          (Vty.EvKey (Vty.KChar 'e') [Vty.MMeta]) $
