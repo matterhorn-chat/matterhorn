@@ -21,4 +21,3 @@ for OPTION in ${SORTED}; do
 done
 
 echo "No executables found."
-
