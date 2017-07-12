@@ -912,11 +912,13 @@ addMessageToState new = do
                     currCId <- use csCurrentChannelId
                     return $ if postChannelId new == currCId
                              then UpdateServerViewed
-                             else case pnc^.ccInfo.cdViewedPrev of
+                             else if fromMe
+                                  then NoAction
+                                  else case pnc^.ccInfo.cdViewedPrev of
                                     Nothing -> NotifyUser
                                     Just vp ->
                                         let hasNew = (postCreateAt new) > vp
-                                        in if hasNew && not fromMe
+                                        in if hasNew
                                            then NotifyUser
                                            else NoAction
 
