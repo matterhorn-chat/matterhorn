@@ -42,7 +42,8 @@ import           Markdown
 import           State
 import           Themes
 import           Types
-import           Types.Channels ( ChannelState(..)
+import           Types.Channels ( NewMessageIndicator(..)
+                                , ChannelState(..)
                                 , ccInfo, ccContents
                                 , cdCurrentState
                                 , cdName, cdType, cdHeader, cdMessages
@@ -397,15 +398,21 @@ getMessageListing :: ChannelId -> ChatState -> Messages
 getMessageListing cId st =
     st ^?! csChannels.folding (findChannelById cId) . ccContents . cdMessages
 
-insertTransitions :: Text -> TimeZone -> Maybe UTCTime -> Messages -> Messages
+insertTransitions :: Text -> TimeZone -> Maybe NewMessageIndicator -> Messages -> Messages
 insertTransitions datefmt tz cutoff ms = foldr addMessage ms transitions
     where transitions = newMessagesT <> dateT
+          anyNondeletedNewMessages t =
+              isJust $ findLatestUserMessage (not . view mDeleted) (messagesAfter t ms)
           newMessagesT = case cutoff of
-                           Nothing -> []
-                           Just t -> [newMessagesMsg $ justAfter t
-                                     | isJust $ findLatestUserMessage
-                                                (not . view mDeleted)
-                                                (messagesAfter t ms) ]
+              Nothing -> []
+              Just Hide -> []
+              Just (NewPostsAfterServerTime t)
+                  | anyNondeletedNewMessages t -> [newMessagesMsg $ justAfter t]
+                  | otherwise -> []
+              Just (NewPostsStartingAt t)
+                  | anyNondeletedNewMessages (justBefore t) -> [newMessagesMsg $ justBefore t]
+                  | otherwise -> []
+
           dateT = fmap dateMsg dateRange
           dateRange = let dr = foldr checkDateChange [] ms
                       in if length dr > 1 then tail dr else []
@@ -416,6 +423,7 @@ insertTransitions datefmt tz cutoff ms = foldr addMessage ms transitions
                                  else dayStart (m^.mDate) : dl
           dayOf = localDay . utcToLocalTime tz
           dayStart dt = localTimeToUTC tz $ LocalTime (dayOf dt) $ midnight
+          justBefore (UTCTime d t) = UTCTime d $ pred t
           justAfter (UTCTime d t) = UTCTime d $ succ t
           dateMsg d = newMessageOfType (T.pack $ formatTime defaultTimeLocale
                                                  (T.unpack datefmt)

@@ -16,7 +16,7 @@ import qualified Graphics.Vty as Vty
 import Lens.Micro.Platform
 
 import Types
-import Types.Channels (ccInfo, cdType, latchViewed)
+import Types.Channels (ccInfo, cdType, clearNewMessageIndicator)
 import State
 import State.PostListOverlay (enterFlaggedPostListMode)
 import State.Editing
@@ -133,7 +133,7 @@ mainKeybindings =
 
     , KB "Clear the current channel's unread message indicator"
          (Vty.EvKey (Vty.KChar 'l') [Vty.MMeta]) $
-           csCurrentChannel %= latchViewed
+           csCurrentChannel %= clearNewMessageIndicator
 
     , KB "Toggle multi-line message compose mode"
          (Vty.EvKey (Vty.KChar 'e') [Vty.MMeta]) $

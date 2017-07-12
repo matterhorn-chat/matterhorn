@@ -10,10 +10,11 @@ module Types.Channels
   , ChannelInfo(..)
   , ChannelState(..)
   , ClientChannels -- constructor remains internal
+  , NewMessageIndicator(..)
   -- * Lenses created for accessing ClientChannel fields
   , ccContents, ccInfo
   -- * Lenses created for accessing ChannelInfo fields
-  , cdViewed, cdViewedPrev, cdUpdated
+  , cdViewed, cdNewMessageIndicator, cdUpdated
   , cdName, cdHeader, cdType, cdCurrentState
   , cdMentionCount
   -- * Lenses created for accessing ChannelContents fields
@@ -33,15 +34,15 @@ module Types.Channels
   , isPendingState
   , pendingChannelState
   , quiescentChannelState
-  , latchViewed
+  , clearNewMessageIndicator
   , adjustUpdated
+  , updateNewMessageIndicator
   -- * Miscellaneous channel-related operations
   , canLeaveChannel
   , preferredChannelName
   )
 where
 
-import           Control.Applicative ((<|>))
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
 import           Data.Time.Clock (UTCTime)
@@ -71,11 +72,17 @@ preferredChannelName ch
     | channelType ch == Group = channelDisplayName ch
     | otherwise = channelName ch
 
+data NewMessageIndicator =
+    Hide
+    | NewPostsAfterServerTime UTCTime
+    | NewPostsStartingAt UTCTime
+    deriving (Eq, Show)
+
 initialChannelInfo :: Channel -> ChannelInfo
 initialChannelInfo chan =
     let updated  = chan ^. channelLastPostAtL
     in ChannelInfo { _cdViewed           = Nothing
-                   , _cdViewedPrev       = Nothing
+                   , _cdNewMessageIndicator = Hide
                    , _cdMentionCount     = 0
                    , _cdUpdated          = updated
                    , _cdName             = preferredChannelName chan
@@ -89,7 +96,9 @@ channelInfoFromChannelWithData (ChannelWithData chan chanData) ci =
     let viewed   = chanData ^. channelDataLastViewedAtL
         updated  = chan ^. channelLastPostAtL
     in ci { _cdViewed           = Just viewed
-          , _cdViewedPrev       = _cdViewedPrev ci <|> Just viewed
+          , _cdNewMessageIndicator = case _cdNewMessageIndicator ci of
+              Hide -> if updated > viewed then NewPostsAfterServerTime viewed else Hide
+              v -> v
           , _cdUpdated          = updated
           , _cdName             = preferredChannelName chan
           , _cdHeader           = (chan^.channelHeaderL)
@@ -198,8 +207,8 @@ isPendingState cstate = cstate `elem` [ ChanGettingPosts
 data ChannelInfo = ChannelInfo
   { _cdViewed           :: Maybe UTCTime
     -- ^ The last time we looked at a channel
-  , _cdViewedPrev       :: Maybe UTCTime
-    -- ^ The previous cdViewed setting, used to establish a new message threshold
+  , _cdNewMessageIndicator :: NewMessageIndicator
+    -- ^ The state of the channel's new message indicator.
   , _cdMentionCount     :: Int
     -- ^ The current number of unread mentions
   , _cdUpdated          :: UTCTime
@@ -283,12 +292,30 @@ filteredChannels :: ((ChannelId, ClientChannel) -> Bool)
 filteredChannels f cc =
     AllChannels . HM.fromList . filter f $ cc^.ofChans.to HM.toList
 
--- | Save the current cdViewed value in cdViewedPrev
-latchViewed :: ClientChannel -> ClientChannel
-latchViewed c = c & ccInfo.cdViewedPrev .~ (c^.ccInfo.cdViewed)
+-- | Clear the new message indicator for the specified channel
+clearNewMessageIndicator :: ClientChannel -> ClientChannel
+clearNewMessageIndicator c = c & ccInfo.cdNewMessageIndicator .~ Hide
 
 -- | Adjust updated time based on a message, ensuring that the updated
 -- time does not move backward.
 adjustUpdated :: Post -> ClientChannel -> ClientChannel
 adjustUpdated m =
-    ccInfo.cdUpdated %~ (max (max (m^.postDeleteAtL . non (m^.postUpdateAtL)) (m^.postCreateAtL)))
+    ccInfo.cdUpdated %~ max (maxPostTimestamp m)
+
+maxPostTimestamp :: Post -> UTCTime
+maxPostTimestamp m = max (m^.postDeleteAtL . non (m^.postUpdateAtL)) (m^.postCreateAtL)
+
+updateNewMessageIndicator :: Post -> ClientChannel -> ClientChannel
+updateNewMessageIndicator m =
+    ccInfo.cdNewMessageIndicator %~
+        (\old ->
+          case old of
+              Hide ->
+                  NewPostsStartingAt $ m^.postCreateAtL
+              NewPostsStartingAt ts ->
+                  NewPostsStartingAt $ min (m^.postCreateAtL) ts
+              NewPostsAfterServerTime ts ->
+                  if m^.postCreateAtL <= ts
+                  then NewPostsStartingAt $ m^.postCreateAtL
+                  else NewPostsAfterServerTime ts
+              )

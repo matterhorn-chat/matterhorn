@@ -24,7 +24,6 @@ import qualified Data.Sequence as Seq
 import           Data.List (sort)
 import           Data.Maybe (maybeToList, isJust, catMaybes, isNothing)
 import           Data.Monoid ((<>))
-import           Data.Time.Clock (UTCTime(..))
 import qualified Data.Set as Set
 import qualified Data.Text as T
 import qualified Data.Vector as V
@@ -129,17 +128,37 @@ asyncFetchScrollback :: AsyncPriority -> ChannelId -> MH ()
 asyncFetchScrollback prio cId = do
   withChannel cId $ \chan -> do
     let last_pId = getLatestPostId (chan^.ccContents.cdMessages)
-        newCutoff = chan^.ccInfo.cdViewedPrev
+        newCutoff = chan^.ccInfo.cdNewMessageIndicator
     asPending doAsyncChannelMM prio (Just cId)
-      (let fc = case (last_pId, newCutoff) of
-                  (Nothing, _)        -> F1  -- or F4
-                  (Just pId, Nothing) -> F2 pId
-                  (Just pId, Just ct) ->
-                    case findMessage pId (chan^.ccContents.cdMessages) of
-                      Nothing -> F4 -- ??
-                      Just m  -> if m^.mDate > ct
-                                then F3b pId
-                                else F3a
+      (let fc = case last_pId of
+                  Nothing  -> F1  -- or F4
+                  Just pId ->
+                      case findMessage pId (chan^.ccContents.cdMessages) of
+                        Nothing -> F4 -- This should never happen since
+                                      -- we just assigned pId.
+                        Just m ->
+                            case newCutoff of
+                                Hide ->
+                                    -- No cutoff has been set, so we
+                                    -- just ask for the most recent
+                                    -- messages.
+                                    F2 pId
+                                NewPostsAfterServerTime ct ->
+                                    -- If the most recent message is
+                                    -- after the cutoff, meaning there
+                                    -- might be intervening messages
+                                    -- that we missed.
+                                    if m^.mDate > ct
+                                    then F3b pId
+                                    else F3a
+                                NewPostsStartingAt ct ->
+                                    -- If the most recent message is
+                                    -- after the cutoff, meaning there
+                                    -- might be intervening messages
+                                    -- that we missed.
+                                    if m^.mDate >= ct
+                                    then F3b pId
+                                    else F3a
            op = case fc of
                   F1      -> ___2 mmGetPosts
                   F2 pId  -> ___3 mmGetPostsAfter pId
@@ -498,7 +517,7 @@ setLastViewedFor prevId cId _ = do
   -- Update the old channel's previous viewed time (allows tracking of new messages)
   case prevId of
     Nothing -> return ()
-    Just p -> csChannels %= (channelByIdL p %~ latchViewed)
+    Just p -> csChannels %= (channelByIdL p %~ clearNewMessageIndicator)
 
 updateViewed :: MH ()
 updateViewed = do
@@ -872,6 +891,7 @@ addMessageToState new = do
               cId = postChannelId new
 
               doAddMessage = do
+                currCId <- use csCurrentChannelId
                 s <- use id  -- use *latest* state
                 flags <- use (csResources.crFlaggedPosts)
                 let msg' = clientPostToMessage s cp
@@ -879,7 +899,11 @@ addMessageToState new = do
                 csPostMap.at(postId new) .= Just msg'
                 csChannels %= modifyChannelById cId
                   ((ccContents.cdMessages %~ addMessage msg') .
-                   (adjustUpdated new))
+                   (adjustUpdated new) .
+                   (\c -> if currCId == cId
+                          then c
+                          else updateNewMessageIndicator new c)
+                  )
                 asyncFetchReactionsForPost cId new
                 asyncFetchAttachments new
                 postedChanMessage
@@ -908,19 +932,13 @@ addMessageToState new = do
                       _ -> doAddMessage
 
               postedChanMessage =
-                withChannelOrDefault (postChannelId new) NoAction $ \pnc -> do
+                withChannelOrDefault (postChannelId new) NoAction $ \_ -> do
                     currCId <- use csCurrentChannelId
                     return $ if postChannelId new == currCId
                              then UpdateServerViewed
                              else if fromMe
                                   then NoAction
-                                  else case pnc^.ccInfo.cdViewedPrev of
-                                    Nothing -> NotifyUser
-                                    Just vp ->
-                                        let hasNew = (postCreateAt new) > vp
-                                        in if hasNew
-                                           then NotifyUser
-                                           else NoAction
+                                  else NotifyUser
 
           -- If this message was written by a user we don't know about,
           -- fetch the user's information before posting the message.
@@ -934,10 +952,10 @@ addMessageToState new = do
                           doAsyncWith Normal $ return (doHandleAddedMessage >> return ())
                           postedChanMessage
 
-getNewMessageCutoff :: ChannelId -> ChatState -> Maybe UTCTime
+getNewMessageCutoff :: ChannelId -> ChatState -> Maybe NewMessageIndicator
 getNewMessageCutoff cId st = do
     cc <- st^?csChannel(cId)
-    cc^.ccInfo.cdViewedPrev
+    return $ cc^.ccInfo.cdNewMessageIndicator
 
 execMMCommand :: T.Text -> T.Text -> MH ()
 execMMCommand name rest = do
