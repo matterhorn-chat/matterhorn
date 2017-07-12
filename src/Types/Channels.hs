@@ -290,4 +290,5 @@ latchViewed c = c & ccInfo.cdViewedPrev .~ (c^.ccInfo.cdViewed)
 -- | Adjust updated time based on a message, ensuring that the updated
 -- time does not move backward.
 adjustUpdated :: Post -> ClientChannel -> ClientChannel
-adjustUpdated m = ccInfo.cdUpdated %~ max (m^.postDeleteAtL . non (m^.postUpdateAtL))
+adjustUpdated m =
+    ccInfo.cdUpdated %~ (max (max (m^.postDeleteAtL . non (m^.postUpdateAtL)) (m^.postCreateAtL)))
