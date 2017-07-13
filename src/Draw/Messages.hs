@@ -26,11 +26,11 @@ maxMessageHeight = 200
 
 renderSingleMessage :: ChatState -> UserSet -> ChannelSet -> Message -> Widget Name
 renderSingleMessage st uSet cSet =
-  renderChatMessage uSet cSet (withBrackets . renderTime st)
+  renderChatMessage st uSet cSet (withBrackets . renderTime st)
 
-renderChatMessage :: UserSet -> ChannelSet -> (UTCTime -> Widget Name) -> Message -> Widget Name
-renderChatMessage uSet cSet renderTimeFunc msg =
-    let m = renderMessage msg True uSet cSet
+renderChatMessage :: ChatState -> UserSet -> ChannelSet -> (UTCTime -> Widget Name) -> Message -> Widget Name
+renderChatMessage st uSet cSet renderTimeFunc msg =
+    let m = renderMessage st msg True uSet cSet
         msgAtch = if Seq.null (msg^.mAttachments)
           then Nothing
           else Just $ withDefAttr clientMessageAttr $ vBox

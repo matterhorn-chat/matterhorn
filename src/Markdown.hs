@@ -47,7 +47,7 @@ import qualified Graphics.Vty as V
 import           Lens.Micro.Platform ((^.))
 
 import           Themes
-import           Types (userSigil, normalChannelSigil)
+import           Types (ChatState, getMessageForPostId, userSigil, normalChannelSigil)
 import           Types.Posts
 import           Types.Messages
 
@@ -61,14 +61,8 @@ omitUsernameTypes =
     , CP TopicChange
     ]
 
-getReplyToMessage :: Message -> Maybe Message
-getReplyToMessage m =
-    case m^.mInReplyToMsg of
-        ParentLoaded _ parent -> Just parent
-        _ -> Nothing
-
-renderMessage :: Message -> Bool -> UserSet -> ChannelSet -> Widget a
-renderMessage msg renderReplyParent uSet cSet =
+renderMessage :: ChatState -> Message -> Bool -> UserSet -> ChannelSet -> Widget a
+renderMessage st msg renderReplyParent uSet cSet =
     let msgUsr = case msg^.mUserName of
           Just u
             | msg^.mType `elem` omitUsernameTypes -> Nothing
@@ -92,15 +86,17 @@ renderMessage msg renderReplyParent uSet cSet =
                      , renderMarkdown uSet cSet (msg^.mText)
                      ]
           Nothing -> renderMarkdown uSet cSet (msg^.mText)
-        parent = if not renderReplyParent
-                 then Nothing
-                 else getReplyToMessage msg
-    in case parent of
-        Nothing -> mine
-        Just m -> let parentMsg = renderMessage m False uSet cSet
-                  in (replyArrow <+>
-                     (addEllipsis $ B.forceAttr replyParentAttr parentMsg))
-                      B.<=> mine
+        withParent p = (replyArrow <+> p) B.<=> mine
+    in if not renderReplyParent
+       then mine
+       else case msg^.mInReplyToMsg of
+          NotAReply -> mine
+          InReplyTo parentId ->
+              case getMessageForPostId st parentId of
+                  Nothing -> withParent (B.str "[loading...]")
+                  Just pm ->
+                      let parentMsg = renderMessage st pm False uSet cSet
+                      in withParent (addEllipsis $ B.forceAttr replyParentAttr parentMsg)
 
 addEllipsis :: Widget a -> Widget a
 addEllipsis w = B.Widget (B.hSize w) (B.vSize w) $ do

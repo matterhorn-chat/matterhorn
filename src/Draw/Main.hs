@@ -252,7 +252,7 @@ renderUserCommandBox uSet cSet st =
             Replying msg _ ->
                 let msgWithoutParent = msg & mInReplyToMsg .~ NotAReply
                 in hBox [ replyArrow
-                        , addEllipsis $ renderMessage msgWithoutParent True uSet cSet
+                        , addEllipsis $ renderMessage st msgWithoutParent True uSet cSet
                         ]
             _ -> emptyWidget
 
@@ -528,7 +528,7 @@ inputPreview uSet cSet st | not $ st^.csShowMessagePreview = emptyWidget
                        Nothing -> noPreview
                        Just pm -> if T.null curStr
                                   then noPreview
-                                  else renderMessage pm True uSet cSet
+                                  else renderMessage st pm True uSet cSet
                  in (maybePreviewViewport msgPreview) <=>
                     hBorderWithLabel (withDefAttr clientEmphAttr $ str "[Preview ↑]")
 

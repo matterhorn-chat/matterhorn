@@ -914,22 +914,25 @@ addMessageToState new = do
                   -- channel. If the message isn't there, fetch it. If
                   -- we have to fetch it, don't post this message to the
                   -- channel until we have fetched the parent.
-                  case getMessageForPostId st <$> cp^.cpInReplyToPost of
-                      Just (ParentNotLoaded parentId) -> do
-                          doAsyncChannelMM Normal (Just cId)
-                              (___1 mmGetPost parentId)
-                              (\_ p ->
-                                  let postMap = HM.fromList [ ( pId
-                                                              , clientPostToMessage st
-                                                                (toClientPost x (x^.postParentIdL))
-                                                              )
-                                                            | (pId, x) <- HM.toList (p^.postsPostsL)
-                                                            ]
-                                  in do csPostMap %= HM.union postMap
-                                        doAddMessage >> return ()
-                              )
-                          postedChanMessage
-                      _ -> doAddMessage
+                  case cp^.cpInReplyToPost of
+                      Just parentId ->
+                          case getMessageForPostId st parentId of
+                              Nothing -> do
+                                  doAsyncChannelMM Normal (Just cId)
+                                      (___1 mmGetPost parentId)
+                                      (\_ p ->
+                                          let postMap = HM.fromList [ ( pId
+                                                                      , clientPostToMessage st
+                                                                        (toClientPost x (x^.postParentIdL))
+                                                                      )
+                                                                    | (pId, x) <- HM.toList (p^.postsPostsL)
+                                                                    ]
+                                          in csPostMap %= HM.union postMap
+                                      )
+                              _ -> return ()
+                      _ -> return ()
+
+                  doAddMessage
 
               postedChanMessage =
                 withChannelOrDefault (postChannelId new) NoAction $ \_ -> do

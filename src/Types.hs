@@ -485,11 +485,8 @@ dateFormat = csResources . crConfiguration . to configDateFormat
 
 -- ** 'ChatState' Helper Functions
 
-getMessageForPostId :: ChatState -> PostId -> ReplyState
-getMessageForPostId st pId =
-    case st^.csPostMap.at(pId) of
-        Nothing -> ParentNotLoaded pId
-        Just m -> ParentLoaded pId m
+getMessageForPostId :: ChatState -> PostId -> Maybe Message
+getMessageForPostId st pId = st^.csPostMap.at(pId)
 
 getUsernameForUserId :: ChatState -> UserId -> Maybe T.Text
 getUsernameForUserId st uId = _uiName <$> findUserById uId (st^.csUsers)
@@ -509,7 +506,7 @@ clientPostToMessage st cp = Message
   , _mInReplyToMsg  =
     case cp^.cpInReplyToPost of
       Nothing  -> NotAReply
-      Just pId -> getMessageForPostId st pId
+      Just pId -> InReplyTo pId
   , _mPostId        = Just $ cp^.cpPostId
   , _mReactions     = _cpReactions cp
   , _mOriginalPost  = Just $ cp^.cpOriginalPost

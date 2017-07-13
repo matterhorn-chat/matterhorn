@@ -95,8 +95,7 @@ genClientPostType = elements [ NormalPost
 
 genReplyState :: Gen ReplyState
 genReplyState = oneof [ return NotAReply
-                      , ParentLoaded <$> genPostId <*> genMessage
-                      , ParentNotLoaded <$> genPostId
+                      , InReplyTo <$> genPostId
                       ]
 
 genAttachment :: Gen Attachment

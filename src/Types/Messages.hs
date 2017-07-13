@@ -76,9 +76,8 @@ isEditable m = _mType m `elem` [CP NormalPost, CP Emote]
 isReplyTo :: PostId -> Message -> Bool
 isReplyTo expectedParentId m =
     case _mInReplyToMsg m of
-        NotAReply                      -> False
-        ParentNotLoaded actualParentId -> actualParentId == expectedParentId
-        ParentLoaded actualParentId _  -> actualParentId == expectedParentId
+        NotAReply                -> False
+        InReplyTo actualParentId -> actualParentId == expectedParentId
 
 -- | A 'Message' is the representation we use for storage and
 --   rendering, so it must be able to represent either a
@@ -92,8 +91,7 @@ data MessageType = C ClientMessageType
 --   is a reply, and if so, to what message
 data ReplyState =
     NotAReply
-    | ParentLoaded PostId Message
-    | ParentNotLoaded PostId
+    | InReplyTo PostId
     deriving (Show)
 
 -- | Convert a 'ClientMessage' to a 'Message'
