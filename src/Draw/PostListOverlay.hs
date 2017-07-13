@@ -83,7 +83,10 @@ drawPostsBox contents st =
         -- are no messages
         messageListContents
           | null (st^.csPostListOverlay.postListPosts) =
-            padTopBottom 1 $ hCenter $ str $ case contents of
+            padTopBottom 1 $
+            hCenter $
+            withDefAttr clientEmphAttr $
+            str $ case contents of
               PostListFlagged -> "You have no flagged messages."
           | otherwise = vBox renderedMessageList
 
