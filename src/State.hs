@@ -937,11 +937,14 @@ addMessageToState new = do
               postedChanMessage =
                 withChannelOrDefault (postChannelId new) NoAction $ \_ -> do
                     currCId <- use csCurrentChannelId
-                    return $ if postChannelId new == currCId
-                             then UpdateServerViewed
-                             else if fromMe
-                                  then NoAction
-                                  else NotifyUser
+
+                    let curChannelAction = if postChannelId new == currCId
+                                           then UpdateServerViewed
+                                           else NoAction
+                        originUserAction = if fromMe
+                                           then NoAction
+                                           else NotifyUser
+                    return $ curChannelAction <> originUserAction
 
           -- If this message was written by a user we don't know about,
           -- fetch the user's information before posting the message.
