@@ -918,7 +918,7 @@ addMessageToState new = do
                       Just parentId ->
                           case getMessageForPostId st parentId of
                               Nothing -> do
-                                  doAsyncChannelMM Normal (Just cId)
+                                  doAsyncChannelMM Preempt (Just cId)
                                       (___1 mmGetPost parentId)
                                       (\_ p ->
                                           let postMap = HM.fromList [ ( pId
