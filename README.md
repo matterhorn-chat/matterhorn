@@ -135,6 +135,7 @@ name of the dictionary you'd like to use.
 * Syntax highlighting of fenced code blocks in messages (works best in
   256-color terminals)
 * Flagging and unflagging of posts, which are then viewable with `M-8`
+  or `/flags`
 
 # Spell Checking Support
 
