@@ -16,8 +16,9 @@ import qualified Graphics.Vty as Vty
 import Lens.Micro.Platform
 
 import Types
-import Types.Channels (ccInfo, cdType)
+import Types.Channels (ccInfo, cdType, clearNewMessageIndicator)
 import State
+import State.PostListOverlay (enterFlaggedPostListMode)
 import State.Editing
 import Command
 import Completion
@@ -131,9 +132,8 @@ mainKeybindings =
            startUrlSelect
 
     , KB "Clear the current channel's unread message indicator"
-         (Vty.EvKey (Vty.KChar 'l') [Vty.MMeta]) $ do
-           cId <- use csCurrentChannelId
-           clearNewMessageCutoff cId
+         (Vty.EvKey (Vty.KChar 'l') [Vty.MMeta]) $
+           csCurrentChannel %= clearNewMessageIndicator
 
     , KB "Toggle multi-line message compose mode"
          (Vty.EvKey (Vty.KChar 'e') [Vty.MMeta]) $
@@ -146,6 +146,10 @@ mainKeybindings =
     , KB "Cancel message reply or update"
          (Vty.EvKey (Vty.KChar 'c') [Vty.MCtrl]) $
          cancelReplyOrEdit
+
+    , KB "View currently flagged posts"
+         (Vty.EvKey (Vty.KChar '8') [Vty.MMeta]) $
+         enterFlaggedPostListMode
     ]
 
 handleInputSubmission :: MH ()

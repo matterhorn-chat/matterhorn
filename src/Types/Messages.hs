@@ -9,11 +9,12 @@ module Types.Messages
   ( Message(..)
   , isDeletable, isReplyable, isEditable, isReplyTo
   , mText, mUserName, mDate, mType, mPending, mDeleted
-  , mAttachments, mInReplyToMsg, mPostId, mReactions
-  , mOriginalPost
+  , mAttachments, mInReplyToMsg, mPostId, mReactions, mFlagged
+  , mOriginalPost, mChannelId
   , MessageType(..)
   , ReplyState(..)
   , clientMessageToMessage
+  , newMessageOfType
   , Messages
   , ChronologicalMessages
   , RetrogradeMessages
@@ -21,12 +22,12 @@ module Types.Messages
   , noMessages
   , splitMessages
   , findMessage
+  , filterMessages
   , getNextPostId
   , getPrevPostId
   , getLatestPostId
   , findLatestUserMessage
   , messagesAfter
-  , messagesOnOrAfter
   , reverseMessages
   , unreverseMessages
   )
@@ -40,7 +41,7 @@ import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Time.Clock (UTCTime)
 import           Lens.Micro.Platform
-import           Network.Mattermost.Types (PostId, Post)
+import           Network.Mattermost.Types (ChannelId, PostId, Post)
 import           Types.Posts
 
 -- * Messages
@@ -59,6 +60,8 @@ data Message = Message
   , _mPostId        :: Maybe PostId
   , _mReactions     :: Map.Map T.Text Int
   , _mOriginalPost  :: Maybe Post
+  , _mFlagged       :: Bool
+  , _mChannelId     :: Maybe ChannelId
   } deriving (Show)
 
 isDeletable :: Message -> Bool
@@ -73,9 +76,8 @@ isEditable m = _mType m `elem` [CP NormalPost, CP Emote]
 isReplyTo :: PostId -> Message -> Bool
 isReplyTo expectedParentId m =
     case _mInReplyToMsg m of
-        NotAReply                      -> False
-        ParentNotLoaded actualParentId -> actualParentId == expectedParentId
-        ParentLoaded actualParentId _  -> actualParentId == expectedParentId
+        NotAReply                -> False
+        InReplyTo actualParentId -> actualParentId == expectedParentId
 
 -- | A 'Message' is the representation we use for storage and
 --   rendering, so it must be able to represent either a
@@ -89,8 +91,7 @@ data MessageType = C ClientMessageType
 --   is a reply, and if so, to what message
 data ReplyState =
     NotAReply
-    | ParentLoaded PostId Message
-    | ParentNotLoaded PostId
+    | InReplyTo PostId
     deriving (Show)
 
 -- | Convert a 'ClientMessage' to a 'Message'
@@ -107,6 +108,25 @@ clientMessageToMessage cm = Message
   , _mPostId        = Nothing
   , _mReactions     = Map.empty
   , _mOriginalPost  = Nothing
+  , _mFlagged       = False
+  , _mChannelId     = Nothing
+  }
+
+newMessageOfType :: T.Text -> MessageType -> UTCTime -> Message
+newMessageOfType text typ d = Message
+  { _mText         = getBlocks text
+  , _mUserName     = Nothing
+  , _mDate         = d
+  , _mType         = typ
+  , _mPending      = False
+  , _mDeleted      = False
+  , _mAttachments  = Seq.empty
+  , _mInReplyToMsg = NotAReply
+  , _mPostId       = Nothing
+  , _mReactions    = Map.empty
+  , _mOriginalPost = Nothing
+  , _mFlagged      = False
+  , _mChannelId    = Nothing
   }
 
 -- ** 'Message' Lenses
@@ -156,6 +176,13 @@ type Messages = ChronologicalMessages
 type RetrogradeMessages = DirectionalSeq Retrograde Message
 
 -- ** Common operations on Messages
+
+filterMessages ::
+  SeqDirection seq =>
+  (Message -> Bool) ->
+  DirectionalSeq seq Message ->
+  DirectionalSeq seq Message
+filterMessages p = onDirectedSeq (Seq.filter p)
 
 class MessageOps a where
     addMessage :: Message -> a -> a
@@ -280,10 +307,6 @@ findLatestUserMessage f msgs =
 -- | Return all messages that were posted after the specified date/time.
 messagesAfter :: UTCTime -> Messages -> Messages
 messagesAfter viewTime = onDirectedSeq $ Seq.takeWhileR (\m -> m^.mDate > viewTime)
-
--- | Return all messages that were posted at or after the specified date/time.
-messagesOnOrAfter :: UTCTime -> Messages -> Messages
-messagesOnOrAfter viewTime = onDirectedSeq $ Seq.takeWhileR (\m -> m^.mDate >= viewTime)
 
 -- | Reverse the order of the messages
 reverseMessages :: Messages -> RetrogradeMessages

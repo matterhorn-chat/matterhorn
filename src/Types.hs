@@ -20,15 +20,15 @@ import qualified Control.Concurrent.STM as STM
 import           Control.Concurrent.MVar (MVar)
 import           Control.Exception (SomeException)
 import qualified Control.Monad.State as St
-import qualified Data.Foldable as F
 import qualified Data.Set as S
 import           Data.HashMap.Strict (HashMap)
-import           Data.Time.Clock (UTCTime, getCurrentTime)
+import           Data.Time.Clock (UTCTime)
 import           Data.Time.LocalTime (TimeZone)
 import qualified Data.HashMap.Strict as HM
 import           Data.List (partition, sortBy)
 import           Data.Maybe
 import           Data.Monoid
+import           Data.Set (Set)
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( at, makeLenses, lens, (&), (^.), (%~), (.~), (^?!)
                                      , to, SimpleGetter, _Just
@@ -210,6 +210,7 @@ data ChatResources = ChatResources
   , _crTheme         :: AttrMap
   , _crQuitCondition :: MVar ()
   , _crConfiguration :: Config
+  , _crFlaggedPosts  :: Set PostId
   }
 
 -- | The 'ChatEditState' value contains the editor widget itself
@@ -267,7 +268,7 @@ data HelpScreen
   | ScriptHelp
     deriving (Eq)
 
--- * Help topics
+-- |  Help topics
 data HelpTopic =
     HelpTopic { helpTopicName         :: T.Text
               , helpTopicDescription  :: T.Text
@@ -275,6 +276,13 @@ data HelpTopic =
               , helpTopicViewportName :: Name
               }
               deriving (Eq)
+
+-- | Mode type for the current contents of the post list overlay
+data PostListContents
+  = PostListFlagged
+--   | PostListPinned ChannelId
+--   | PostListSearch Text -- for the query
+  deriving (Eq)
 
 -- | The 'Mode' represents the current dominant UI activity
 data Mode =
@@ -288,6 +296,7 @@ data Mode =
     | ChannelScroll
     | MessageSelect
     | MessageSelectDeleteConfirm
+    | PostListOverlay PostListContents
     deriving (Eq)
 
 -- | We're either connected or we're not.
@@ -317,12 +326,18 @@ data ChatState = ChatState
   , _csConnectionStatus            :: ConnectionStatus
   , _csJoinChannelList             :: Maybe (List Name Channel)
   , _csMessageSelect               :: MessageSelectState
+  , _csPostListOverlay             :: PostListOverlayState
   }
 
 type ChannelSelectMap = HM.HashMap T.Text ChannelSelectMatch
 
 data MessageSelectState =
     MessageSelectState { selectMessagePostId :: Maybe PostId }
+
+data PostListOverlayState = PostListOverlayState
+  { _postListPosts    :: Messages
+  , _postListSelected :: Maybe PostId
+  }
 
 -- * MH Monad
 
@@ -368,9 +383,6 @@ requestQuit = MH $ do
   (st, _) <- St.get
   St.put (st, Brick.halt)
 
-getNow :: MH UTCTime
-getNow = St.liftIO getCurrentTime
-
 instance Functor MH where
   fmap f (MH x) = MH (fmap f x)
 
@@ -412,6 +424,7 @@ data MHEvent
 makeLenses ''ChatResources
 makeLenses ''ChatState
 makeLenses ''ChatEditState
+makeLenses ''PostListOverlayState
 
 -- ** Utility Lenses
 csCurrentChannelId :: Lens' ChatState ChannelId
@@ -473,11 +486,8 @@ dateFormat = csResources . crConfiguration . to configDateFormat
 
 -- ** 'ChatState' Helper Functions
 
-getMessageForPostId :: ChatState -> PostId -> ReplyState
-getMessageForPostId st pId =
-    case st^.csPostMap.at(pId) of
-        Nothing -> ParentNotLoaded pId
-        Just m -> ParentLoaded pId m
+getMessageForPostId :: ChatState -> PostId -> Maybe Message
+getMessageForPostId st pId = st^.csPostMap.at(pId)
 
 getUsernameForUserId :: ChatState -> UserId -> Maybe T.Text
 getUsernameForUserId st uId = _uiName <$> findUserById uId (st^.csUsers)
@@ -497,10 +507,12 @@ clientPostToMessage st cp = Message
   , _mInReplyToMsg  =
     case cp^.cpInReplyToPost of
       Nothing  -> NotAReply
-      Just pId -> getMessageForPostId st pId
+      Just pId -> InReplyTo pId
   , _mPostId        = Just $ cp^.cpPostId
   , _mReactions     = _cpReactions cp
   , _mOriginalPost  = Just $ cp^.cpOriginalPost
+  , _mFlagged       = False
+  , _mChannelId     = Just $ cp^.cpChannelId
   }
 
 -- * Slash Commands
@@ -548,32 +560,8 @@ lookupKeybinding e kbs = listToMaybe $ filter ((== e) . kbEvent) kbs
 hasUnread :: ChatState -> ChannelId -> Bool
 hasUnread st cId = maybe False id $ do
   chan <- findChannelById cId (st^.csChannels)
-
-  -- If the channel is not yet loaded, there is no scrollback loaded so
-  -- there will be no new message cutoff. In that case the best thing
-  -- to do is to compare the view/update timestamps for the channel.
-  -- Once the channel messages are loaded, the right thing to do is to
-  -- check the cutoff since deletions could mean that there's nothing
-  -- new to view even though the update time is greater than the view
-  -- time.
-  --
-  -- The channel could either be in ChanUnloaded state or in its pending
-  -- equivalent, and either one means we do not have scrollback so we
-  -- shouldn't check the cutoff.
-  let noMessageStates = [ initialChannelState
-                        , fst $ pendingChannelState initialChannelState
-                        ]
-
-  if chan^.ccInfo.cdCurrentState `elem` noMessageStates
-     then do
-         lastViewTime <- chan^.ccInfo.cdViewed
-         return (chan^.ccInfo.cdUpdated > lastViewTime)
-     else case chan^.ccInfo.cdNewMessageCutoff of
-         Nothing -> return False
-         Just cutoff ->
-             return $ not $ F.null $
-                      messagesOnOrAfter cutoff $
-                      chan^.ccContents.cdMessages
+  lastViewTime <- chan^.ccInfo.cdViewed
+  return (chan^.ccInfo.cdUpdated > lastViewTime)
 
 sortedUserList :: ChatState -> [UserInfo]
 sortedUserList st = sortBy cmp yes <> sortBy cmp no

@@ -104,9 +104,13 @@ To quickly show a list of URLs mentioned in the current channel and then
 open one in your local browser, use the default binding of `C-o` and
 configure the `urlOpenCommand` configuration setting.
 
-To edit, delete, or reply to a message, select a message with the
-default binding of `C-s`. Use the default binding of `C-c` to cancel
-these operations.
+To edit, delete, flag, or reply to a message, select a message with
+the default binding of `C-s`. Use the default binding of `C-c` to
+cancel these operations.
+
+Messages that have been flagged can be viewed with either the `/flags`
+command or `M-8`. This view allows you to select and unflag particular
+messages, as well.
 
 To enable spell-checking in the message editor, install Aspell and set
 `enableAspell` to `True` in your configuration. To override Aspell's
@@ -130,6 +134,8 @@ name of the dictionary you'd like to use.
 * Spell-checking via Aspell
 * Syntax highlighting of fenced code blocks in messages (works best in
   256-color terminals)
+* Flagging and unflagging of posts, which are then viewable with `M-8`
+  or `/flags`
 
 # Spell Checking Support
 

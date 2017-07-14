@@ -23,6 +23,7 @@ import Events.ChannelSelect
 import Events.UrlSelect
 import Events.Main
 import Events.MessageSelect
+import Events.PostListOverlay
 import State.Editing (editingKeybindings)
 import Markdown (renderText)
 import Options (mhVersion)
@@ -132,6 +133,7 @@ keybindSections =
     , ("Channel Scroll Mode", channelScrollKeybindings)
     , ("Message Select Mode", messageSelectKeybindings)
     , ("Text Editing", editingKeybindings)
+    , ("Flagged Messages", postListOverlayKeybindings)
     ]
 
 helpBox :: Name -> Widget Name -> Widget Name
