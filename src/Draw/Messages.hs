@@ -57,7 +57,7 @@ renderChatMessage st uSet cSet renderTimeFunc msg =
                     C NewMessagesTransition -> withDefAttr newMessageTransitionAttr (hBorderWithLabel m)
                     C Error -> withDefAttr errorMessageAttr m
                     _ -> withDefAttr clientMessageAttr m
-        fullMsg = hBox $ msgTxt : catMaybes [msgAtch, msgReac]
+        fullMsg = vBox $ msgTxt : catMaybes [msgAtch, msgReac]
         maybeRenderTime w = hBox [renderTimeFunc (msg^.mDate), txt " ", w]
         maybeRenderTimeWith f = case msg^.mType of
             C DateTransition -> id
