@@ -10,8 +10,9 @@ Package changes:
 
 New features and keybindings:
  * Matterhorn now supports Flagged Posts. To use this feature:
-   * Press M-8 to show a list of your flagged posts. Within that view,
-     'f' will unflag.
+   * Press M-8 or use the /flags command to show a list of your
+     flagged posts. Within that view, 'f' will unflag a selected
+     message.
    * In message selection mode in channels (C-s), 'f' will flag/unflag
      the selected message.
    * Flagged posts appear with a flag marker "[!]" next to the author's
@@ -32,7 +33,7 @@ New features and keybindings:
    mode, and also navigate the message list while scrolling.
  * Matterhorn now displays the mention count in the channel sidebar to
    mimic the web client behavior and highlights channels with at least
-   mone ention in megenta in the sidebar.
+   one mention in megenta in the sidebar.
 
 Bug fixes and improvements:
  * Configuration file values can now use quoted string syntax (fixes
