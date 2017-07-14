@@ -33,7 +33,7 @@ New features and keybindings:
    mode, and also navigate the message list while scrolling.
  * Matterhorn now displays the mention count in the channel sidebar to
    mimic the web client behavior and highlights channels with at least
-   one mention in megenta in the sidebar.
+   one mention in magenta in the sidebar.
 
 Bug fixes and improvements:
  * Configuration file values can now use quoted string syntax (fixes
