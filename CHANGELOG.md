@@ -1,4 +1,62 @@
 
+31000.0.0
+=========
+
+This release supports server verison 3.10.0.
+
+Package changes:
+ * Upgraded mattermost-api to 31000.0.0.
+ * Upgraded mattermost-api-qc to 31000.0.0.
+
+New features and keybindings:
+ * Matterhorn now supports Flagged Posts. To use this feature:
+   * Press M-8 to show a list of your flagged posts. Within that view,
+     'f' will unflag.
+   * In message selection mode in channels (C-s), 'f' will flag/unflag
+     the selected message.
+   * Flagged posts appear with a flag marker "[!]" next to the author's
+     username.
+ * Syntax highlighting of fenced code blocks is now supported in
+   256-color terminals. Code blocks must provide the langauge hint using
+   the same syntax as supported by the web client.
+ * Spell checking of user input is now supported using Aspell. To use
+   this feature:
+   * Install the Aspell binary and dictionaries on your system.
+   * Set enableAspell = true in your Matterhorn configuration.
+   * Optionally, set aspellDictionary to the name of the Aspell
+     dictionary you want to use (this is only necessary if you want to
+     override your LANG setting, which is typically sufficient)
+   * Once user input is entered into the input area, a short delay after
+     typing stops, a spell check will highlight any misspelled words.
+ * Home and End now move the cursor as usual in editor while in normal
+   mode, and also navigate the message list while scrolling.
+ * Matterhorn now displays the mention count in the channel sidebar to
+   mimic the web client behavior and highlights channels with at least
+   mone ention in megenta in the sidebar.
+
+Bug fixes and improvements:
+ * Configuration file values can now use quoted string syntax (fixes
+   #269)
+ * The channel switch mode prompt now mentions anchors.
+ * The URL opening command is now run asynchronously.
+ * Input history files are now saved with an appropriate file mode (fixes #218)
+ * Fixed a bug that caused users created after a session began not to
+   appear in the sidebar.
+ * Help topics (valid arguments to /help) are now displayed in the main
+   help UI (fixes #225)
+ * Message deletion now also deletes replies to the deleted message
+   (fixes #257)
+ * On channel deletion, leave before deleting to avoid a server error.
+ * URLs in the URL list are now displayed in the same order in which
+   they appear in messages (fixes #250)
+ * User identification now appears in DM channel headers.
+ * Numbered lists now render starting at first specified number (fixes
+   #243)
+ * The login screen now displays validation errors for hostname and port
+   inputs when appropriate (fixes #242)
+ * Channel select inputs that have an exact match no longer require
+   ^/$ anchors.
+
 30802.1.0
 =========
 
