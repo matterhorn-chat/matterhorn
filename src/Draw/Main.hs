@@ -44,6 +44,7 @@ import           Themes
 import           Types
 import           Types.Channels ( NewMessageIndicator(..)
                                 , ChannelState(..)
+                                , ClientChannel
                                 , ccInfo, ccContents
                                 , cdCurrentState
                                 , cdName, cdType, cdHeader, cdMessages
@@ -274,6 +275,34 @@ renderUserCommandBox uSet cSet st =
             True -> vLimit 5 inputBox <=> multilineHints
     in replyDisplay <=> commandBox
 
+renderChannelHeader :: UserSet -> ChannelSet -> ChatState -> ClientChannel -> Widget Name
+renderChannelHeader uSet cSet st chan =
+    let chnType = chan^.ccInfo.cdType
+        chnName = chan^.ccInfo.cdName
+        topicStr = chan^.ccInfo.cdHeader
+        userHeader u = let s = T.intercalate " " $ filter (not . T.null) parts
+                           parts = [ u^.uiName
+                                   , " is"
+                                   , u^.uiFirstName
+                                   , nick
+                                   , u^.uiLastName
+                                   , "(" <> u^.uiEmail <> ")"
+                                   ]
+                           quote n = "\"" <> n <> "\""
+                           nick = maybe "" quote $ u^.uiNickName
+                       in s
+        foundUser = findUserByDMChannelName (st^.csUsers) chnName (st^.csMe^.userIdL)
+        maybeTopic = if T.null topicStr
+                     then ""
+                     else " - " <> topicStr
+        channelNameString = case chnType of
+            Direct ->
+                case foundUser of
+                    Nothing -> mkChannelName (chan^.ccInfo)
+                    Just u  -> userHeader u
+            _ -> mkChannelName (chan^.ccInfo)
+    in renderText' uSet cSet (channelNameString <> maybeTopic)
+
 renderCurrentChannelDisplay :: UserSet -> ChannelSet -> ChatState -> Widget Name
 renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
     where
@@ -282,28 +311,7 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
       Disconnected -> withDefAttr errorMessageAttr (str "[NOT CONNECTED]")
     header = withDefAttr channelHeaderAttr $
              padRight Max $
-             case T.null topicStr of
-                 True -> case chnType of
-                   Direct ->
-                     case findUserByDMChannelName (st^.csUsers)
-                                                  chnName
-                                                  (st^.csMe^.userIdL) of
-                       Nothing -> txt $ mkChannelName (chan^.ccInfo)
-                       Just u  -> userHeader u
-                   _        -> txt $ mkChannelName (chan^.ccInfo)
-                 False -> renderText $
-                          mkChannelName (chan^.ccInfo) <> " - " <> topicStr
-    userHeader u = let p1 = (colorUsername $ mkDMChannelName u)
-                       p2 = txt $ T.intercalate " " $ filter (not . T.null) parts
-                       parts = [ " is"
-                               , u^.uiFirstName
-                               , nick
-                               , u^.uiLastName
-                               , "<" <> u^.uiEmail <> ">"
-                               ]
-                       quote n = "\"" <> n <> "\""
-                       nick = maybe "" quote $ u^.uiNickName
-                   in p1 <+> p2
+             renderChannelHeader uSet cSet st chan
     messages = padTop Max $ padRight (Pad 1) body
 
     body = chatText
@@ -380,10 +388,6 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
 
     cId = st^.csCurrentChannelId
     chan = st^.csCurrentChannel
-    chnName = chan^.ccInfo.cdName
-    chnType = chan^.ccInfo.cdType
-    topicStr = chan^.ccInfo.cdHeader
-
 
 -- | When displaying channel contents, it may be convenient to display
 -- information about the current state of the channel.
