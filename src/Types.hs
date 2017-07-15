@@ -4,8 +4,137 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+module Types
+  ( ConnectionStatus(..)
+  , HelpTopic(..)
+  , MessageSelectState(..)
+  , ProgramOutput(..)
+  , MHEvent(..)
+  , Name(..)
+  , ChannelSelectMatch(..)
+  , ConnectionInfo(..)
+  , Config(..)
+  , HelpScreen(..)
+  , PasswordSource(..)
+  , MatchType(..)
+  , EditMode(..)
+  , Mode(..)
+  , ChannelSelectPattern(..)
+  , PostListContents(..)
+  , ChannelSelectMap
+  , AuthenticationException(..)
+  , RequestChan
 
-module Types where
+  , MMNames
+  , mkChanNames
+  , cnUsers
+  , cnToUserId
+  , cnToChanId
+  -- , cnDMs
+  , cnChans
+
+  , LinkChoice(LinkChoice)
+  , linkUser
+  , linkURL
+  , linkTime
+  , linkName
+  , linkFileId
+
+  , ChatState
+  , newState
+  , csResources
+  , csFocus
+  , csCurrentCompletion
+  , csLastChannelInput
+  , csInputHistory
+  , csInputHistoryPosition
+  , csCmdLine
+  , csSession
+  -- , csUser
+  , csCurrentChannel
+  , csCurrentChannelId
+  , csUrlList
+  , csShowMessagePreview
+  , csPostMap
+  , csRecentChannel
+  , csPostListOverlay
+  , csMyTeam
+  , csMode
+  , csMessageSelect
+  , csJoinChannelList
+  , csConnectionStatus
+  , csNames
+  , csUsers
+  , csChannel
+  -- , csChannel'
+  , csChannels
+  , csChannelSelectUserMatches
+  , csChannelSelectChannelMatches
+  , csChannelSelectString
+  , csMe
+  , csEditState
+  , timeZone
+
+  , ChatEditState
+  , emptyEditState
+  , cedYankBuffer
+  , cedSpellChecker
+  , cedMisspellings
+  , cedEditMode
+  , cedCompletionAlternatives
+  , cedResetSpellCheckTimer
+  , cedCurrentAlternative
+  , cedMultiline
+  , cedInputHistory
+  , cedInputHistoryPosition
+  , cedLastChannelInput
+
+  , PostListOverlayState
+  , postListSelected
+  , postListPosts
+
+  , ChatResources(ChatResources)
+  , crEventQueue
+  , crTheme
+  , crSession
+  , crSubprocessLog
+  , crRequestQueue
+  , crQuitCondition
+  , crFlaggedPosts
+  , crConn
+  , crConfiguration
+
+  , Cmd(..)
+  , commandName
+  , CmdArgs(..)
+
+  , Keybinding(..)
+  , lookupKeybinding
+
+  , MH
+  , runMHEvent
+  -- , runMH
+  , mh
+  , mhSuspendAndResume
+  , mhHandleEventLensed
+
+  , requestQuit
+  , dateFormat
+  , timeFormat
+  , clientPostToMessage
+  -- , getUsernameForUserId
+  , getMessageForPostId
+  , withChannel
+  , withChannelOrDefault
+  , userList
+  , sortedUserList
+  , hasUnread
+  , channelNameFromMatch
+
+  , userSigil
+  , normalChannelSigil
+  )
+where
 
 import           Prelude ()
 import           Prelude.Compat
@@ -15,17 +144,19 @@ import qualified Brick
 import           Brick.BChan
 import           Brick.AttrMap (AttrMap)
 import           Brick.Widgets.Edit (Editor, editor)
-import           Brick.Widgets.List (List)
+import           Brick.Widgets.List (List, list)
 import qualified Control.Concurrent.STM as STM
 import           Control.Concurrent.MVar (MVar)
 import           Control.Exception (SomeException)
 import qualified Control.Monad.State as St
+import qualified Data.Foldable as F
+import qualified Data.Sequence as Seq
 import qualified Data.Set as S
 import           Data.HashMap.Strict (HashMap)
 import           Data.Time.Clock (UTCTime)
 import           Data.Time.LocalTime (TimeZone)
 import qualified Data.HashMap.Strict as HM
-import           Data.List (partition, sortBy)
+import           Data.List (partition, sortBy, sort)
 import           Data.Maybe
 import           Data.Monoid
 import           Data.Set (Set)
@@ -96,6 +227,28 @@ data MMNames = MMNames
 -- | An empty 'MMNames' record
 emptyMMNames :: MMNames
 emptyMMNames = MMNames mempty mempty mempty mempty mempty
+
+mkChanNames :: User -> HM.HashMap UserId User -> Seq.Seq Channel -> MMNames
+mkChanNames myUser users chans = MMNames
+  { _cnChans = sort
+               [ preferredChannelName c
+               | c <- F.toList chans, channelType c /= Direct ]
+  , _cnDMs = sort
+             [ channelName c
+             | c <- F.toList chans, channelType c == Direct ]
+  , _cnToChanId = HM.fromList $
+                  [ (preferredChannelName c, channelId c) | c <- F.toList chans ] ++
+                  [ (userUsername u, c)
+                  | u <- HM.elems users
+                  , c <- lookupChan (getDMChannelName (getId myUser) (getId u))
+                  ]
+  , _cnUsers = sort (map userUsername (HM.elems users))
+  , _cnToUserId = HM.fromList
+                  [ (userUsername u, getId u) | u <- HM.elems users ]
+  }
+  where lookupChan n = [ c^.channelIdL
+                       | c <- F.toList chans, c^.channelNameL == n
+                       ]
 
 -- ** 'MMNames' Lenses
 
@@ -326,6 +479,39 @@ data ChatState = ChatState
   , _csJoinChannelList             :: Maybe (List Name Channel)
   , _csMessageSelect               :: MessageSelectState
   , _csPostListOverlay             :: PostListOverlayState
+  }
+
+newState :: ChatResources
+         -> Zipper ChannelId
+         -> User
+         -> Team
+         -> TimeZone
+         -> InputHistory
+         -> Maybe Aspell
+         -> IO ()
+         -> ChatState
+newState rs i u m tz hist sp resetTimer = ChatState
+  { _csResources                   = rs
+  , _csFocus                       = i
+  , _csMe                          = u
+  , _csMyTeam                      = m
+  , _csNames                       = emptyMMNames
+  , _csChannels                    = noChannels
+  , _csPostMap                     = HM.empty
+  , _csUsers                       = noUsers
+  , _timeZone                      = tz
+  , _csEditState                   = emptyEditState hist sp resetTimer
+  , _csMode                        = Main
+  , _csShowMessagePreview          = configShowMessagePreview $ _crConfiguration rs
+  , _csChannelSelectString         = ""
+  , _csChannelSelectChannelMatches = mempty
+  , _csChannelSelectUserMatches    = mempty
+  , _csRecentChannel               = Nothing
+  , _csUrlList                     = list UrlList mempty 2
+  , _csConnectionStatus            = Connected
+  , _csJoinChannelList             = Nothing
+  , _csMessageSelect               = MessageSelectState Nothing
+  , _csPostListOverlay             = PostListOverlayState mempty Nothing
   }
 
 type ChannelSelectMap = HM.HashMap T.Text ChannelSelectMatch

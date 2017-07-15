@@ -1192,7 +1192,7 @@ openURL link = do
             return False
         Just urlOpenCommand ->
             -- Is the URL referring to an attachment?
-            case _linkFileId link of
+            case link^.linkFileId of
               Nothing -> do
                   openLink urlOpenCommand link
                   return True

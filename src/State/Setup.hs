@@ -6,7 +6,6 @@ import           Prelude ()
 import           Prelude.Compat
 
 import           Brick.BChan
-import           Brick.Widgets.List (list)
 import           Control.Concurrent (threadDelay, forkIO)
 import qualified Control.Concurrent.STM as STM
 import           Control.Concurrent.STM.Delay
@@ -16,7 +15,6 @@ import           Control.Monad (forM, forever, when, void)
 import qualified Data.Text as T
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
-import           Data.List (sort)
 import           Data.Maybe (listToMaybe, maybeToList, fromJust, catMaybes)
 import           Data.Monoid ((<>))
 import qualified Data.Sequence as Seq
@@ -26,7 +24,7 @@ import           System.Exit (exitFailure, ExitCode(ExitSuccess))
 import           System.IO (Handle, hPutStrLn, hFlush)
 import           System.IO.Temp (openTempFile)
 import           System.Directory (getTemporaryDirectory)
-import           Text.Aspell (Aspell, AspellOption(..), startAspell)
+import           Text.Aspell (AspellOption(..), startAspell)
 
 import           Network.Mattermost
 import           Network.Mattermost.Lenses
@@ -43,7 +41,6 @@ import           Themes
 import           Types
 import           Types.Channels
 import           Types.Users
-import           Zipper (Zipper)
 import qualified Zipper as Z
 
 updateUserStatuses :: Session -> IO (MH ())
@@ -126,61 +123,6 @@ startTimezoneMonitor tz requestChan = do
 
   void $ forkIO (timezoneMonitor tz)
 
-mkChanNames :: User -> HM.HashMap UserId User -> Seq.Seq Channel -> MMNames
-mkChanNames myUser users chans = MMNames
-  { _cnChans = sort
-               [ preferredChannelName c
-               | c <- F.toList chans, channelType c /= Direct ]
-  , _cnDMs = sort
-             [ channelName c
-             | c <- F.toList chans, channelType c == Direct ]
-  , _cnToChanId = HM.fromList $
-                  [ (preferredChannelName c, channelId c) | c <- F.toList chans ] ++
-                  [ (userUsername u, c)
-                  | u <- HM.elems users
-                  , c <- lookupChan (getDMChannelName (getId myUser) (getId u))
-                  ]
-  , _cnUsers = sort (map userUsername (HM.elems users))
-  , _cnToUserId = HM.fromList
-                  [ (userUsername u, getId u) | u <- HM.elems users ]
-  }
-  where lookupChan n = [ c^.channelIdL
-                       | c <- F.toList chans, c^.channelNameL == n
-                       ]
-
-newState :: ChatResources
-         -> Zipper ChannelId
-         -> User
-         -> Team
-         -> TimeZone
-         -> InputHistory
-         -> Maybe Aspell
-         -> IO ()
-         -> ChatState
-newState rs i u m tz hist sp resetTimer = ChatState
-  { _csResources                   = rs
-  , _csFocus                       = i
-  , _csMe                          = u
-  , _csMyTeam                      = m
-  , _csNames                       = emptyMMNames
-  , _csChannels                    = noChannels
-  , _csPostMap                     = HM.empty
-  , _csUsers                       = noUsers
-  , _timeZone                      = tz
-  , _csEditState                   = emptyEditState hist sp resetTimer
-  , _csMode                        = Main
-  , _csShowMessagePreview          = configShowMessagePreview $ rs^.crConfiguration
-  , _csChannelSelectString         = ""
-  , _csChannelSelectChannelMatches = mempty
-  , _csChannelSelectUserMatches    = mempty
-  , _csRecentChannel               = Nothing
-  , _csUrlList                     = list UrlList mempty 2
-  , _csConnectionStatus            = Connected
-  , _csJoinChannelList             = Nothing
-  , _csMessageSelect               = MessageSelectState Nothing
-  , _csPostListOverlay             = PostListOverlayState mempty Nothing
-  }
-
 loadFlaggedMessages :: ChatState -> IO ()
 loadFlaggedMessages st = doAsyncWithIO Normal st $ do
   prefs <- mmGetMyPreferences (st^.csResources.crSession)
@@ -259,17 +201,8 @@ setupState logFile config requestChan eventChan = do
       theme = case lookup themeName themes of
           Nothing -> fromJust $ lookup defaultThemeName themes
           Just t -> t
-      cr = ChatResources
-             { _crSession       = session
-             , _crConn          = cd
-             , _crRequestQueue  = requestChan
-             , _crEventQueue    = eventChan
-             , _crTheme         = theme
-             , _crQuitCondition = quitCondition
-             , _crConfiguration = config
-             , _crSubprocessLog = slc
-             , _crFlaggedPosts  = mempty
-             }
+      cr = ChatResources session cd requestChan eventChan
+             slc theme quitCondition config mempty
   initializeState cr myTeam myUser
 
 loadAllUsers :: Session -> IO (HM.HashMap UserId User)
