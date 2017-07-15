@@ -7,6 +7,7 @@ module Markdown
   , ChannelSet
   , renderMessage
   , renderText
+  , renderText'
   , blockGetURLs
   , cursorSentinel
   , addEllipsis
@@ -142,7 +143,10 @@ addBlankLines = go' . viewl
 
 -- Render text to markdown without username highlighting
 renderText :: Text -> Widget a
-renderText txt = renderMarkdown Set.empty Set.empty bs
+renderText txt = renderText' Set.empty Set.empty txt
+
+renderText' :: UserSet -> ChannelSet -> Text -> Widget a
+renderText' uSet cSet txt = renderMarkdown uSet cSet bs
   where C.Doc _ bs = C.markdown C.def txt
 
 vBox :: F.Foldable f => f (Widget a) -> Widget a
