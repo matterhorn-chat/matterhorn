@@ -30,7 +30,6 @@ module Types
   , cnUsers
   , cnToUserId
   , cnToChanId
-  -- , cnDMs
   , cnChans
 
   , LinkChoice(LinkChoice)
@@ -50,7 +49,6 @@ module Types
   , csInputHistoryPosition
   , csCmdLine
   , csSession
-  -- , csUser
   , csCurrentChannel
   , csCurrentChannelId
   , csUrlList
@@ -66,7 +64,6 @@ module Types
   , csNames
   , csUsers
   , csChannel
-  -- , csChannel'
   , csChannels
   , csChannelSelectUserMatches
   , csChannelSelectChannelMatches
@@ -113,7 +110,6 @@ module Types
 
   , MH
   , runMHEvent
-  -- , runMH
   , mh
   , mhSuspendAndResume
   , mhHandleEventLensed
@@ -122,7 +118,6 @@ module Types
   , dateFormat
   , timeFormat
   , clientPostToMessage
-  -- , getUsernameForUserId
   , getMessageForPostId
   , withChannel
   , withChannelOrDefault
@@ -216,7 +211,6 @@ data Config = Config
 --   names and mapping them back to internal IDs.
 data MMNames = MMNames
   { _cnChans    :: [T.Text] -- ^ All channel names
-  , _cnDMs      :: [T.Text] -- ^ All DM channel names
   , _cnToChanId :: HashMap T.Text ChannelId
       -- ^ Mapping from channel names to 'ChannelId' values
   , _cnUsers    :: [T.Text] -- ^ All users
@@ -226,16 +220,13 @@ data MMNames = MMNames
 
 -- | An empty 'MMNames' record
 emptyMMNames :: MMNames
-emptyMMNames = MMNames mempty mempty mempty mempty mempty
+emptyMMNames = MMNames mempty mempty mempty mempty
 
 mkChanNames :: User -> HM.HashMap UserId User -> Seq.Seq Channel -> MMNames
 mkChanNames myUser users chans = MMNames
   { _cnChans = sort
                [ preferredChannelName c
                | c <- F.toList chans, channelType c /= Direct ]
-  , _cnDMs = sort
-             [ channelName c
-             | c <- F.toList chans, channelType c == Direct ]
   , _cnToChanId = HM.fromList $
                   [ (preferredChannelName c, channelId c) | c <- F.toList chans ] ++
                   [ (userUsername u, c)
@@ -540,12 +531,6 @@ runMHEvent st (MH mote) = do
   ((), (st', rs)) <- St.runStateT mote (st, Brick.continue)
   rs st'
 
--- | Run an 'MM computation, ignoring any requests to quit
-runMH :: ChatState -> MH () -> EventM Name ChatState
-runMH st (MH mote) = do
-  ((), (st', _)) <- St.runStateT mote (st, Brick.continue)
-  return st'
-
 -- | lift a computation in 'EventM' into 'MH'
 mh :: EventM Name a -> MH a
 mh = MH . St.lift
@@ -624,10 +609,6 @@ csChannel :: ChannelId -> Traversal' ChatState ClientChannel
 csChannel cId =
   csChannels . channelByIdL cId
 
-csChannel' :: ChannelId -> Lens' ChatState (Maybe ClientChannel)
-csChannel' cId =
-  csChannels . maybeChannelByIdL cId
-
 withChannel :: ChannelId -> (ClientChannel -> MH ()) -> MH ()
 withChannel cId = withChannelOrDefault cId ()
 
@@ -637,11 +618,6 @@ withChannelOrDefault cId deflt mote = do
   case chan of
     Nothing -> return deflt
     Just c  -> mote c
-
-csUser :: UserId -> Lens' ChatState UserInfo
-csUser uId =
-  lens (\ st -> findUserById uId (st^.csUsers) ^?! _Just)
-       (\ st n -> st & csUsers %~ addUser uId n)
 
 -- ** Interim lenses for backwards compat
 
