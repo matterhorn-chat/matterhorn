@@ -493,22 +493,22 @@ getUsernameForUserId st uId = _uiName <$> findUserById uId (st^.csUsers)
 
 clientPostToMessage :: ChatState -> ClientPost -> Message
 clientPostToMessage st cp = Message
-  { _mText          = _cpText cp
-  , _mUserName      = case _cpUserOverride cp of
+  { _mText          = cp^.cpText
+  , _mUserName      = case cp^.cpUserOverride of
     Just n
-      | _cpType cp == NormalPost -> Just (n <> "[BOT]")
-    _ -> getUsernameForUserId st =<< _cpUser cp
-  , _mDate          = _cpDate cp
-  , _mType          = CP $ _cpType cp
-  , _mPending       = _cpPending cp
-  , _mDeleted       = _cpDeleted cp
-  , _mAttachments   = _cpAttachments cp
+      | cp^.cpType == NormalPost -> Just (n <> "[BOT]")
+    _ -> getUsernameForUserId st =<< cp^.cpUser
+  , _mDate          = cp^.cpDate
+  , _mType          = CP $ cp^.cpType
+  , _mPending       = cp^.cpPending
+  , _mDeleted       = cp^.cpDeleted
+  , _mAttachments   = cp^.cpAttachments
   , _mInReplyToMsg  =
     case cp^.cpInReplyToPost of
       Nothing  -> NotAReply
       Just pId -> InReplyTo pId
   , _mPostId        = Just $ cp^.cpPostId
-  , _mReactions     = _cpReactions cp
+  , _mReactions     = cp^.cpReactions
   , _mOriginalPost  = Just $ cp^.cpOriginalPost
   , _mFlagged       = False
   , _mChannelId     = Just $ cp^.cpChannelId

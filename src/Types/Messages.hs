@@ -97,10 +97,10 @@ data ReplyState =
 -- | Convert a 'ClientMessage' to a 'Message'
 clientMessageToMessage :: ClientMessage -> Message
 clientMessageToMessage cm = Message
-  { _mText          = getBlocks (_cmText cm)
+  { _mText          = getBlocks (cm^.cmText)
   , _mUserName      = Nothing
-  , _mDate          = _cmDate cm
-  , _mType          = C $ _cmType cm
+  , _mDate          = cm^.cmDate
+  , _mType          = C $ cm^.cmType
   , _mPending       = False
   , _mDeleted       = False
   , _mAttachments   = Seq.empty

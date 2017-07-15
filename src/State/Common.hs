@@ -5,7 +5,7 @@ import           Prelude.Compat
 
 import qualified Control.Concurrent.STM as STM
 import           Control.Exception (try)
-import           Control.Monad.IO.Class (MonadIO, liftIO)
+import           Control.Monad.IO.Class (liftIO)
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Map.Strict as Map
@@ -13,7 +13,6 @@ import           Data.Monoid ((<>))
 import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
 import qualified Data.Text as T
-import           Data.Time.Clock (getCurrentTime)
 import           Lens.Micro.Platform
 import           System.Hclip (setClipboard, ClipboardException(..))
 
@@ -253,23 +252,13 @@ asyncFetchAttachments p = do
     info <- mmGetFileInfo session fId
     let scheme = "https://"
         attUrl = scheme <> host <> urlForFile fId
-        attachment = Attachment
-                       { _attachmentName   = fileInfoName info
-                       , _attachmentURL    = attUrl
-                       , _attachmentFileId = fId
-                       }
+        attachment = mkAttachment (fileInfoName info) attUrl fId
         addAttachment m
           | m^.mPostId == Just pId =
             m & mAttachments %~ (attachment Seq.<|)
           | otherwise              = m
     return $
       csChannel(cId).ccContents.cdMessages.traversed %= addAttachment
-
--- | Create a new 'ClientMessage' value
-newClientMessage :: (MonadIO m) => ClientMessageType -> T.Text -> m ClientMessage
-newClientMessage ty msg = do
-  now <- liftIO getCurrentTime
-  return (ClientMessage msg now ty)
 
 -- | Add a 'ClientMessage' to the current channel's message list
 addClientMessage :: ClientMessage -> MH ()
