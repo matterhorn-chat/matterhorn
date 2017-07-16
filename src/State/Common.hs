@@ -187,18 +187,6 @@ asPending asyncOp prio m_cId mmOp eventHandler = do
                  do csChannel(cId).ccInfo.cdCurrentState %= setDone
                     eventHandler cId r
 
--- | Helper to skip the first 3 arguments of a 4 argument function
-___1 :: (a -> b -> c -> d -> e) -> d -> (a -> b -> c -> e)
-___1 f a = \s t c -> f s t c a
-
--- | Helper to skip the first 3 arguments of a 5 argument function
-___2 :: (a -> b -> c -> d -> e -> g) -> d -> e -> (a -> b -> c -> g)
-___2 f a b = \s t c -> f s t c a b
-
--- | Helper to skip the first 3 arguments of a 5 argument function
-___3 :: (a -> b -> c -> d -> e -> g -> h) -> d -> e -> g -> (a -> b -> c -> h)
-___3 f a b d = \s t c -> f s t c a b d
-
 -- | Use this convenience function if no operation needs to be
 -- performed in the MH state after an async operation completes.
 endAsyncNOP :: ChannelId -> a -> MH ()
@@ -299,7 +287,7 @@ asyncFetchReactionsForPost :: ChannelId -> Post -> MH ()
 asyncFetchReactionsForPost cId p
   | not (p^.postHasReactionsL) = return ()
   | otherwise = doAsyncChannelMM Normal (Just cId)
-        (___1 mmGetReactionsForPost (p^.postIdL))
+        (\s t c -> mmGetReactionsForPost s t c (p^.postIdL))
         addReactions
 
 addReactions :: ChannelId -> [Reaction] -> MH ()

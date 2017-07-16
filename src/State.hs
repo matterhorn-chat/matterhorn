@@ -129,8 +129,8 @@ asyncFetchScrollback prio cId = do
   withChannel cId $ \chan -> do
     let last_pId = getLatestPostId (chan^.ccContents.cdMessages)
         newCutoff = chan^.ccInfo.cdNewMessageIndicator
-    asPending doAsyncChannelMM prio (Just cId)
-      (let fc = case last_pId of
+        fetchMessages s t c = do
+            let fc = case last_pId of
                   Nothing  -> F1  -- or F4
                   Just pId ->
                       case findMessage pId (chan^.ccContents.cdMessages) of
@@ -159,15 +159,16 @@ asyncFetchScrollback prio cId = do
                                     if m^.mDate >= ct
                                     then F3b pId
                                     else F3a
-           op = case fc of
-                  F1      -> ___2 mmGetPosts
-                  F2 pId  -> ___3 mmGetPostsAfter pId
-                  F3a     -> ___2 mmGetPosts
-                  F3b pId -> ___3 mmGetPostsBefore pId
-                  F4      -> ___2 mmGetPosts
-       in op 0 numScrollbackPosts
-      )
-      addObtainedMessages
+                op = case fc of
+                    F1      -> mmGetPosts s t c
+                    F2 pId  -> mmGetPostsAfter s t c pId
+                    F3a     -> mmGetPosts s t c
+                    F3b pId -> mmGetPostsBefore s t c pId
+                    F4      -> mmGetPosts s t c
+            op 0 numScrollbackPosts
+
+    asPending doAsyncChannelMM prio (Just cId) fetchMessages
+              addObtainedMessages
 
 data FetchCase = F1 | F2 PostId | F3a | F3b PostId | F4 deriving (Eq,Show)
 
@@ -249,7 +250,7 @@ deleteSelectedMessage = do
             case msg^.mOriginalPost of
               Just p ->
                   doAsyncChannelMM Preempt Nothing
-                      (___1 mmDeletePost (postId p))
+                      (\s t c -> mmDeletePost s t c (postId p))
                       (\_ _ -> do csEditState.cedEditMode .= NewPost
                                   csMode .= Main)
               Nothing -> return ()
@@ -467,7 +468,7 @@ removeChannelFromState cId _ = do
 fetchCurrentChannelMembers :: MH ()
 fetchCurrentChannelMembers =
     doAsyncChannelMM Preempt Nothing
-        (___2 mmGetChannelMembers 0 10000)
+        (\s t c -> mmGetChannelMembers s t c 0 10000)
         (\_ chanUserMap -> do
               -- Construct a message listing them all and post it to the
               -- channel:
@@ -534,7 +535,7 @@ updateViewedChan cId = use csConnectionStatus >>= \case
           -- Only do this if we're connected to avoid triggering noisy exceptions.
           pId <- use csRecentChannel
           doAsyncChannelMM Preempt (Just cId)
-            (___1 mmViewChannel pId)
+            (\s t c -> mmViewChannel s t c pId)
             (setLastViewedFor pId)
       Disconnected ->
           -- Cannot update server; make no local updates to avoid
@@ -693,7 +694,7 @@ asyncFetchMoreMessages = do
     withChannel cId $ \chan ->
         let offset = length $ chan^.ccContents.cdMessages
         in asPending doAsyncChannelMM Preempt (Just cId)
-               (___2 mmGetPosts offset pageAmount)
+               (\s t c -> mmGetPosts s t c offset pageAmount)
                (\c p -> do addObtainedMessages c p
                            mh $ invalidateCacheEntry (ChannelMessages cId))
 
@@ -919,7 +920,7 @@ addMessageToState new = do
                           case getMessageForPostId st parentId of
                               Nothing -> do
                                   doAsyncChannelMM Preempt (Just cId)
-                                      (___1 mmGetPost parentId)
+                                      (\s t c -> mmGetPost s t c parentId)
                                       (\_ p ->
                                           let postMap = HM.fromList [ ( pId
                                                                       , clientPostToMessage st
@@ -1010,7 +1011,7 @@ mkChannelZipperList chanNames =
 
 setChannelTopic :: T.Text -> MH ()
 setChannelTopic msg = doAsyncChannelMM Normal Nothing
-                      (___1 mmSetChannelHeader msg)
+                      (\s t c -> mmSetChannelHeader s t c msg)
                       (\cId _ -> csChannel(cId).ccInfo.cdHeader .= msg)
 
 channelHistoryForward :: MH ()
