@@ -95,13 +95,12 @@ tryMM act onSuccess = do
 -- front of the queue); normal means it will go last in the queue.
 data AsyncPriority = Preempt | Normal
 
--- | Run a computation in the background, ignoring any results
---   from it.
+-- | Run a computation in the background, ignoring any results from it.
 doAsync :: AsyncPriority -> IO () -> MH ()
 doAsync prio act = doAsyncWith prio (act >> return (return ()))
 
--- | Run a computation in the background, returning a computation
---   to be called on the 'ChatState' value.
+-- | Run a computation in the background, returning a computation to be
+-- called on the 'ChatState' value.
 doAsyncWith :: AsyncPriority -> IO (MH ()) -> MH ()
 doAsyncWith prio act = do
     let putChan = case prio of
@@ -114,8 +113,8 @@ doAsyncIO :: AsyncPriority -> ChatState -> IO () -> IO ()
 doAsyncIO prio st act =
   doAsyncWithIO prio st (act >> return (return ()))
 
--- | Run a computation in the background, returning a computation
---   to be called on the 'ChatState' value.
+-- | Run a computation in the background, returning a computation to be
+-- called on the 'ChatState' value.
 doAsyncWithIO :: AsyncPriority -> ChatState -> IO (MH ()) -> IO ()
 doAsyncWithIO prio st act = do
     let putChan = case prio of
@@ -124,13 +123,16 @@ doAsyncWithIO prio st act = do
     let queue = st^.csResources.crRequestQueue
     STM.atomically $ putChan queue act
 
--- | Performs an asynchronous IO operation.  On completion, the final
--- argument a completion function is executed in an MH () context in
--- the main (brick) thread.
-doAsyncMM :: AsyncPriority                -- ^ the priority for this async operation
-          -> (Session -> TeamId -> IO a)  -- ^ the async MM channel-based IO operation
-          -> (a -> MH ())                 -- ^ function to process the results in
-                                          -- brick event handling context
+-- | Performs an asynchronous IO operation. On completion, the final
+-- argument a completion function is executed in an MH () context in the
+-- main (brick) thread.
+doAsyncMM :: AsyncPriority
+          -- ^ the priority for this async operation
+          -> (Session -> TeamId -> IO a)
+          -- ^ the async MM channel-based IO operation
+          -> (a -> MH ())
+          -- ^ function to process the results in brick event handling
+          -- context
           -> MH ()
 doAsyncMM prio mmOp eventHandler = do
   session <- use (csResources.crSession)
@@ -139,8 +141,8 @@ doAsyncMM prio mmOp eventHandler = do
     r <- mmOp session myTeamId
     return $ eventHandler r
 
--- | Helper type for a function to perform an asynchronous MM
--- operation on a channel and then invoke an MH completion event.
+-- | Helper type for a function to perform an asynchronous MM operation
+-- on a channel and then invoke an MH completion event.
 type DoAsyncChannelMM a =
     AsyncPriority
     -- ^ the priority for this async operation
@@ -152,7 +154,7 @@ type DoAsyncChannelMM a =
     -- ^ function to process the results in brick event handling context
     -> MH ()
 
--- | Performs an asynchronous IO operation on a specific channel.  On
+-- | Performs an asynchronous IO operation on a specific channel. On
 -- completion, the final argument a completion function is executed in
 -- an MH () context in the main (brick) thread.
 --
