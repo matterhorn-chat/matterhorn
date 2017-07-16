@@ -51,16 +51,18 @@ updateUserStatuses session = do
         newsts u = (statusMap^.at(u^.uiId) & _Just %~ statusFromText) ^. non Offline
     csUsers . mapped %= setStatus
 
-userRefresh :: Session -> RequestChan -> IO ()
-userRefresh session requestChan = void $ forkIO $ forever refresh
-  where refresh = do
-          let seconds = (* (1000 * 1000))
-          threadDelay (seconds 30)
+startUserRefreshThread :: Session -> RequestChan -> IO ()
+startUserRefreshThread session requestChan = void $ forkIO $ forever refresh
+  where
+      seconds = (* (1000 * 1000))
+      userRefreshInterval = 30
+      refresh = do
           STM.atomically $ STM.writeTChan requestChan $ do
             rs <- try $ updateUserStatuses session
             case rs of
               Left (_ :: SomeException) -> return (return ())
               Right upd -> return upd
+          threadDelay (seconds userRefreshInterval)
 
 startSubprocessLogger :: STM.TChan ProgramOutput -> RequestChan -> IO ()
 startSubprocessLogger logChan requestChan = do
@@ -218,9 +220,7 @@ initializeState cr myTeam myUser = do
   let ChatResources session _ requestChan _ _ _ _ _ _ = cr
   let myTeamId = getId myTeam
 
-  STM.atomically $ STM.writeTChan requestChan $ updateUserStatuses session
-
-  userRefresh session requestChan
+  startUserRefreshThread session requestChan
 
   chans <- mmGetChannels session myTeamId
 
