@@ -141,14 +141,16 @@ doAsyncMM prio mmOp thunk = do
 
 -- | Helper type for a function to perform an asynchronous MM
 -- operation on a channel and then invoke an MH completion event.
-type DoAsyncChannelMM a
-  = AsyncPriority  -- ^ the priority for this async operation
-  -> Maybe ChannelId -- ^ defaults to the "current" channel if Nothing
-  -> (Session -> TeamId -> ChannelId -> IO a) -- ^ the asynchronous Mattermost
-                                               -- channel-based IO operation
-  -> (ChannelId -> a -> MH ()) -- ^ function to process the results in brick
-                             -- event handling context
-  -> MH ()
+type DoAsyncChannelMM a =
+    AsyncPriority
+    -- ^ the priority for this async operation
+    -> Maybe ChannelId
+    -- ^ defaults to the "current" channel if Nothing
+    -> (Session -> TeamId -> ChannelId -> IO a)
+    -- ^ the asynchronous Mattermost channel-based IO operation
+    -> (ChannelId -> a -> MH ())
+    -- ^ function to process the results in brick event handling context
+    -> MH ()
 
 -- | Performs an asynchronous IO operation on a specific channel.  On
 -- completion, the final argument a completion function is executed in
