@@ -436,10 +436,10 @@ leaveCurrentChannel = do
         when (canLeaveChannel (chan^.ccInfo)) $
              doAsyncChannelMM Preempt (Just cId)
                       mmLeaveChannel
-                      removeChannelFromState
+                      (\c () -> removeChannelFromState c)
 
-removeChannelFromState :: ChannelId -> a -> MH ()
-removeChannelFromState cId _ = do
+removeChannelFromState :: ChannelId -> MH ()
+removeChannelFromState cId = do
     withChannel cId $ \ chan -> do
         let cName = chan^.ccInfo.cdName
             chType = chan^.ccInfo.cdType
