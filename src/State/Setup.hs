@@ -217,7 +217,8 @@ loadAllUsers session = go HM.empty 0
 
 initializeState :: ChatResources -> Team -> User -> IO ChatState
 initializeState cr myTeam myUser = do
-  let ChatResources session _ requestChan _ _ _ _ _ _ = cr
+  let session = cr^.crSession
+      requestChan = cr^.crRequestQueue
   let myTeamId = getId myTeam
 
   startUserRefreshThread session requestChan
