@@ -118,6 +118,7 @@ module Types
   , userList
   , hasUnread
   , channelNameFromMatch
+  , isMine
 
   , userSigil
   , normalChannelSigil
@@ -615,6 +616,9 @@ withChannelOrDefault cId deflt mote = do
     Just c  -> mote c
 
 -- ** 'ChatState' Helper Functions
+
+isMine :: ChatState -> Message -> Bool
+isMine st msg = (Just $ st^.csMe.userUsernameL) == msg^.mUserName
 
 getMessageForPostId :: ChatState -> PostId -> Maybe Message
 getMessageForPostId st pId = st^.csPostMap.at(pId)

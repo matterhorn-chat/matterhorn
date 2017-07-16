@@ -221,9 +221,6 @@ messageSelectDown = do
             csMessageSelect .= MessageSelectState (nextPostId <|> selected)
         _ -> return ()
 
-isMine :: ChatState -> Message -> Bool
-isMine st msg = (Just $ st^.csMe.userUsernameL) == msg^.mUserName
-
 messageSelectDownBy :: Int -> MH ()
 messageSelectDownBy amt
     | amt <= 0 = return ()
