@@ -12,14 +12,13 @@ import           Control.Exception (catch)
 import           Control.Monad (forM, when)
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
-import           Data.Maybe (listToMaybe, maybeToList, fromJust, catMaybes)
+import           Data.Maybe (listToMaybe, maybeToList, fromJust)
 import           Data.Monoid ((<>))
 import qualified Data.Sequence as Seq
 import           Data.Time.LocalTime (getCurrentTimeZone)
 import           Lens.Micro.Platform
 import           System.Exit (exitFailure)
 import           System.IO (Handle)
-import           Text.Aspell (AspellOption(..), startAspell)
 
 import           Network.Mattermost
 import           Network.Mattermost.Lenses
@@ -160,20 +159,8 @@ initializeState cr myTeam myUser = do
   startTimezoneMonitorThread tz requestChan
   -- * Subprocess logger
   startSubprocessLoggerThread (cr^.crSubprocessLog) requestChan
-  -- * Spell check timer
-  spResult <- case configEnableAspell $ cr^.crConfiguration of
-      False -> return Nothing
-      True -> do
-          let aspellOpts = catMaybes [ UseDictionary <$> (configAspellDictionary $ cr^.crConfiguration)
-                                     ]
-              spellCheckerTimeout = 500 * 1000 -- 500k us = 500ms
-          asResult <- either (const Nothing) Just <$> startAspell aspellOpts
-          case asResult of
-              Nothing -> return Nothing
-              Just as -> do
-                  resetSCChan <- startSpellCheckerThread (cr^.crEventQueue) spellCheckerTimeout
-                  let resetSCTimer = STM.atomically $ STM.writeTChan resetSCChan ()
-                  return $ Just (as, resetSCTimer)
+  -- * Spell checker and spell check timer, if configured
+  spResult <- maybeStartSpellChecker (cr^.crConfiguration) (cr^.crEventQueue)
 
   let chanNames = mkChanNames myUser users chans
       Just townSqId = chanNames ^. cnToChanId . at "town-square"

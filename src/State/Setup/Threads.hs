@@ -2,7 +2,7 @@ module State.Setup.Threads
   ( startUserRefreshThread
   , startSubprocessLoggerThread
   , startTimezoneMonitorThread
-  , startSpellCheckerThread
+  , maybeStartSpellChecker
   )
 where
 
@@ -16,6 +16,7 @@ import           Control.Concurrent.STM.Delay
 import           Control.Exception (SomeException, try)
 import           Control.Monad (forever, when, void)
 import qualified Data.Text as T
+import           Data.Maybe (catMaybes)
 import           Data.Monoid ((<>))
 import           Data.Time.LocalTime ( TimeZone(..), getCurrentTimeZone )
 import           Lens.Micro.Platform
@@ -23,6 +24,7 @@ import           System.Exit (ExitCode(ExitSuccess))
 import           System.IO (hPutStrLn, hFlush)
 import           System.IO.Temp (openTempFile)
 import           System.Directory (getTemporaryDirectory)
+import           Text.Aspell (Aspell, AspellOption(..), startAspell)
 
 import           Network.Mattermost
 
@@ -112,6 +114,22 @@ startTimezoneMonitorThread tz requestChan = do
         timezoneMonitor newTz
 
   void $ forkIO (timezoneMonitor tz)
+
+maybeStartSpellChecker :: Config -> BChan MHEvent -> IO (Maybe (Aspell, IO ()))
+maybeStartSpellChecker config eventQueue = do
+  case configEnableAspell config of
+      False -> return Nothing
+      True -> do
+          let aspellOpts = catMaybes [ UseDictionary <$> (configAspellDictionary config)
+                                     ]
+              spellCheckerTimeout = 500 * 1000 -- 500k us = 500ms
+          asResult <- either (const Nothing) Just <$> startAspell aspellOpts
+          case asResult of
+              Nothing -> return Nothing
+              Just as -> do
+                  resetSCChan <- startSpellCheckerThread eventQueue spellCheckerTimeout
+                  let resetSCTimer = STM.atomically $ STM.writeTChan resetSCChan ()
+                  return $ Just (as, resetSCTimer)
 
 -- Start the background spell checker delay thread.
 --
