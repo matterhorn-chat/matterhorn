@@ -203,7 +203,7 @@ handleEditingInput e = do
 
         csEditState.cedCurrentCompletion .= Nothing
 
-    liftIO $ st^.csEditState.cedResetSpellCheckTimer
+    liftIO $ resetSpellCheckTimer $ st^.csEditState
 
 -- Kick off an async request to the spell checker for the current editor
 -- contents.
@@ -212,10 +212,10 @@ requestSpellCheck = do
     st <- use id
     case st^.csEditState.cedSpellChecker of
         Nothing -> return ()
-        Just checker -> do
+        Just (checker, _) -> do
             -- Get the editor contents.
             contents <- getEditContents <$> use (csEditState.cedEditor)
-            doAsyncWith Normal $ do
+            doAsyncWith Preempt $ do
                 -- For each line in the editor, submit an aspell request.
                 let query = concat <$> mapM (askAspell checker) contents
                     postMistakes :: [AspellResponse] -> MH ()

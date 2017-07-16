@@ -75,7 +75,6 @@ module Types
   , cedCompletionAlternatives
   , cedCurrentCompletion
   , cedEditor
-  , cedResetSpellCheckTimer
   , cedCurrentAlternative
   , cedMultiline
   , cedInputHistory
@@ -113,6 +112,7 @@ module Types
   , requestQuit
   , clientPostToMessage
   , getMessageForPostId
+  , resetSpellCheckTimer
   , withChannel
   , withChannelOrDefault
   , userList
@@ -362,8 +362,7 @@ data ChatEditState = ChatEditState
   , _cedCurrentAlternative   :: T.Text
   , _cedCompletionAlternatives :: [T.Text]
   , _cedYankBuffer           :: T.Text
-  , _cedSpellChecker         :: Maybe Aspell
-  , _cedResetSpellCheckTimer :: IO ()
+  , _cedSpellChecker         :: Maybe (Aspell, IO ())
   , _cedMisspellings         :: S.Set T.Text
   }
 
@@ -375,8 +374,8 @@ data EditMode =
 
 -- | We can initialize a new 'ChatEditState' value with just an
 --   edit history, which we save locally.
-emptyEditState :: InputHistory -> Maybe Aspell -> IO () -> ChatEditState
-emptyEditState hist sp resetTimer = ChatEditState
+emptyEditState :: InputHistory -> Maybe (Aspell, IO ()) -> ChatEditState
+emptyEditState hist sp = ChatEditState
   { _cedEditor               = editor MessageInput Nothing ""
   , _cedMultiline            = False
   , _cedInputHistory         = hist
@@ -389,7 +388,6 @@ emptyEditState hist sp resetTimer = ChatEditState
   , _cedYankBuffer           = ""
   , _cedSpellChecker         = sp
   , _cedMisspellings         = mempty
-  , _cedResetSpellCheckTimer = resetTimer
   }
 
 -- | A 'RequestChan' is a queue of operations we have to perform
@@ -470,10 +468,9 @@ newState :: ChatResources
          -> Team
          -> TimeZone
          -> InputHistory
-         -> Maybe Aspell
-         -> IO ()
+         -> Maybe (Aspell, IO ())
          -> ChatState
-newState rs i u m tz hist sp resetTimer = ChatState
+newState rs i u m tz hist sp = ChatState
   { _csResources                   = rs
   , _csFocus                       = i
   , _csMe                          = u
@@ -483,7 +480,7 @@ newState rs i u m tz hist sp resetTimer = ChatState
   , _csPostMap                     = HM.empty
   , _csUsers                       = noUsers
   , _timeZone                      = tz
-  , _csEditState                   = emptyEditState hist sp resetTimer
+  , _csEditState                   = emptyEditState hist sp
   , _csMode                        = Main
   , _csShowMessagePreview          = configShowMessagePreview $ _crConfiguration rs
   , _csChannelSelectString         = ""
@@ -587,6 +584,12 @@ makeLenses ''ChatResources
 makeLenses ''ChatState
 makeLenses ''ChatEditState
 makeLenses ''PostListOverlayState
+
+resetSpellCheckTimer :: ChatEditState -> IO ()
+resetSpellCheckTimer s =
+    case s^.cedSpellChecker of
+        Nothing -> return ()
+        Just (_, reset) -> reset
 
 -- ** Utility Lenses
 csCurrentChannelId :: Lens' ChatState ChannelId

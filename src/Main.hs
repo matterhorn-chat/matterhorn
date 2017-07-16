@@ -62,7 +62,7 @@ main = do
 
   case finalSt^.csEditState.cedSpellChecker of
       Nothing -> return ()
-      Just s -> stopAspell s
+      Just (s, _) -> stopAspell s
 
   case logFile of
     Nothing -> return ()

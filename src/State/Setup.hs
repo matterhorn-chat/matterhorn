@@ -64,8 +64,8 @@ startUserRefreshThread session requestChan = void $ forkIO $ forever refresh
               Right upd -> return upd
           threadDelay (seconds userRefreshInterval)
 
-startSubprocessLogger :: STM.TChan ProgramOutput -> RequestChan -> IO ()
-startSubprocessLogger logChan requestChan = do
+startSubprocessLoggerThread :: STM.TChan ProgramOutput -> RequestChan -> IO ()
+startSubprocessLoggerThread logChan requestChan = do
     let logMonitor mPair = do
           ProgramOutput progName args out stdoutOkay err ec <-
               STM.atomically $ STM.readTChan logChan
@@ -107,8 +107,8 @@ startSubprocessLogger logChan requestChan = do
 
     void $ forkIO $ logMonitor Nothing
 
-startTimezoneMonitor :: TimeZone -> RequestChan -> IO ()
-startTimezoneMonitor tz requestChan = do
+startTimezoneMonitorThread :: TimeZone -> RequestChan -> IO ()
+startTimezoneMonitorThread tz requestChan = do
   -- Start the timezone monitor thread
   let timezoneMonitorSleepInterval = minutes 5
       minutes = (* (seconds 60))
@@ -221,8 +221,6 @@ initializeState cr myTeam myUser = do
       requestChan = cr^.crRequestQueue
   let myTeamId = getId myTeam
 
-  startUserRefreshThread session requestChan
-
   chans <- mmGetChannels session myTeamId
 
   msgs <- forM (F.toList chans) $ \c -> do
@@ -242,21 +240,27 @@ initializeState cr myTeam myUser = do
           Left _ -> return newHistory
           Right h -> return h
 
-  startTimezoneMonitor tz requestChan
-
-  startSubprocessLogger (cr^.crSubprocessLog) requestChan
-
-  -- Start the spell check timer thread.
-  let spellCheckerTimeout = 500 * 1000 -- 500k us = 500ms
-  resetSCChan <- startSpellCheckerThread (cr^.crEventQueue) spellCheckerTimeout
-  let resetSCTimer = STM.atomically $ STM.writeTChan resetSCChan ()
-
-  sp <- case configEnableAspell $ cr^.crConfiguration of
+  -- Start background worker threads:
+  -- * User status refresher
+  startUserRefreshThread session requestChan
+  -- * Timezone change monitor
+  startTimezoneMonitorThread tz requestChan
+  -- * Subprocess logger
+  startSubprocessLoggerThread (cr^.crSubprocessLog) requestChan
+  -- * Spell check timer
+  spResult <- case configEnableAspell $ cr^.crConfiguration of
       False -> return Nothing
-      True ->
+      True -> do
           let aspellOpts = catMaybes [ UseDictionary <$> (configAspellDictionary $ cr^.crConfiguration)
                                      ]
-          in either (const Nothing) Just <$> startAspell aspellOpts
+              spellCheckerTimeout = 500 * 1000 -- 500k us = 500ms
+          asResult <- either (const Nothing) Just <$> startAspell aspellOpts
+          case asResult of
+              Nothing -> return Nothing
+              Just as -> do
+                  resetSCChan <- startSpellCheckerThread (cr^.crEventQueue) spellCheckerTimeout
+                  let resetSCTimer = STM.atomically $ STM.writeTChan resetSCChan ()
+                  return $ Just (as, resetSCTimer)
 
   let chanNames = mkChanNames myUser users chans
       Just townSqId = chanNames ^. cnToChanId . at "town-square"
@@ -266,7 +270,7 @@ initializeState cr myTeam myUser = do
                 | i <- chanNames ^. cnUsers
                 , c <- maybeToList (HM.lookup i (chanNames ^. cnToChanId)) ]
       chanZip = Z.findRight (== townSqId) (Z.fromList chanIds)
-      st = newState cr chanZip myUser myTeam tz hist sp resetSCTimer
+      st = newState cr chanZip myUser myTeam tz hist spResult
              & csUsers %~ flip (foldr (uncurry addUser)) (fmap mkUser users)
              & csChannels %~ flip (foldr (uncurry addChannel)) msgs
              & csNames .~ chanNames
