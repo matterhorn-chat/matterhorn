@@ -15,7 +15,7 @@ function get_platform {
         fi
     elif grep -i ubuntu /etc/apt/sources.list 2>/dev/null >/dev/null
     then
-        echo "ubuntu"
+        echo "Ubuntu"
     else
         uname -s
     fi
