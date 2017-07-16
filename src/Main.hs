@@ -67,7 +67,7 @@ main = do
   case logFile of
     Nothing -> return ()
     Just h -> hClose h
-  writeHistory (finalSt^.csInputHistory)
+  writeHistory (finalSt^.csEditState.cedInputHistory)
 
 app :: App ChatState MHEvent Name
 app = App

@@ -237,13 +237,13 @@ renderUserCommandBox uSet cSet st =
             Replying _ _ -> "reply> "
             Editing _    ->  "edit> "
             NewPost      ->      "> "
-        inputBox = renderEditor (drawEditorContents uSet cSet st) True (st^.csCmdLine)
-        curContents = getEditContents $ st^.csCmdLine
+        inputBox = renderEditor (drawEditorContents uSet cSet st) True (st^.csEditState.cedEditor)
+        curContents = getEditContents $ st^.csEditState.cedEditor
         multilineContent = length curContents > 1
         multilineHints =
             hBox [ borderElem bsHorizontal
                  , str $ "[" <> (show $ (+1) $ fst $ cursorPosition $
-                                        st^.csCmdLine.editContentsL) <>
+                                        st^.csEditState.cedEditor.editContentsL) <>
                          "/" <> (show $ length curContents) <> "]"
                  , hBorderWithLabel $ withDefAttr clientEmphAttr $
                    str "In multi-line mode. Press M-e to finish."
@@ -524,7 +524,7 @@ inputPreview uSet cSet st | not $ st^.csShowMessagePreview = emptyWidget
     -- end of whatever line the user is editing, that is very unlikely
     -- to be a problem.
     curContents = getText $ (gotoEOL >>> insertChar cursorSentinel) $
-                  st^.csCmdLine.editContentsL
+                  st^.csEditState.cedEditor.editContentsL
     curStr = T.intercalate "\n" curContents
     previewMsg = previewFromInput uname curStr
     thePreview = let noPreview = str "(No preview)"
@@ -573,7 +573,7 @@ mainInterface st =
 
     bottomBorder = case st^.csMode of
         MessageSelect -> messageSelectBottomBar st
-        _ -> case st^.csCurrentCompletion of
+        _ -> case st^.csEditState.cedCurrentCompletion of
             Just _ | length (st^.csEditState.cedCompletionAlternatives) > 1 -> completionAlternatives st
             _ -> maybeSubdue $ hBox
                  [hLimit channelListWidth hBorder, borderElem bsIntersectB, hBorder]

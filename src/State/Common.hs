@@ -133,7 +133,7 @@ doAsyncMM :: AsyncPriority                -- ^ the priority for this async opera
                                           -- brick event handling context
           -> MH ()
 doAsyncMM prio mmOp thunk = do
-  session <- use csSession
+  session <- use (csResources.crSession)
   myTeamId <- use (csMyTeam.teamIdL)
   doAsyncWith prio $ do
     r <- mmOp session myTeamId
@@ -246,7 +246,7 @@ asyncFetchAttachments :: Post -> MH ()
 asyncFetchAttachments p = do
   let cId = (p^.postChannelIdL)
       pId = (p^.postIdL)
-  session <- use csSession
+  session <- use (csResources.crSession)
   host    <- use (csResources.crConn.cdHostnameL)
   F.forM_ (p^.postFileIdsL) $ \fId -> doAsyncWith Normal $ do
     info <- mmGetFileInfo session fId

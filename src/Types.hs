@@ -43,12 +43,6 @@ module Types
   , newState
   , csResources
   , csFocus
-  , csCurrentCompletion
-  , csLastChannelInput
-  , csInputHistory
-  , csInputHistoryPosition
-  , csCmdLine
-  , csSession
   , csCurrentChannel
   , csCurrentChannelId
   , csUrlList
@@ -79,6 +73,8 @@ module Types
   , cedMisspellings
   , cedEditMode
   , cedCompletionAlternatives
+  , cedCurrentCompletion
+  , cedEditor
   , cedResetSpellCheckTimer
   , cedCurrentAlternative
   , cedMultiline
@@ -115,8 +111,6 @@ module Types
   , mhHandleEventLensed
 
   , requestQuit
-  , dateFormat
-  , timeFormat
   , clientPostToMessage
   , getMessageForPostId
   , withChannel
@@ -156,8 +150,7 @@ import           Data.Monoid
 import           Data.Set (Set)
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( at, makeLenses, lens, (&), (^.), (%~), (.~), (^?!)
-                                     , to, SimpleGetter, _Just
-                                     , Traversal', preuse )
+                                     , _Just, Traversal', preuse )
 import           Network.Mattermost
 import           Network.Mattermost.Exceptions
 import           Network.Mattermost.Lenses
@@ -617,32 +610,6 @@ withChannelOrDefault cId deflt mote = do
   case chan of
     Nothing -> return deflt
     Just c  -> mote c
-
--- ** Interim lenses for backwards compat
-
-csSession :: Lens' ChatState Session
-csSession = csResources . crSession
-
-csCmdLine :: Lens' ChatState (Editor T.Text Name)
-csCmdLine = csEditState . cedEditor
-
-csInputHistory :: Lens' ChatState InputHistory
-csInputHistory = csEditState . cedInputHistory
-
-csInputHistoryPosition :: Lens' ChatState (HM.HashMap ChannelId (Maybe Int))
-csInputHistoryPosition = csEditState . cedInputHistoryPosition
-
-csLastChannelInput :: Lens' ChatState (HM.HashMap ChannelId (T.Text, EditMode))
-csLastChannelInput = csEditState . cedLastChannelInput
-
-csCurrentCompletion :: Lens' ChatState (Maybe T.Text)
-csCurrentCompletion = csEditState . cedCurrentCompletion
-
-timeFormat :: SimpleGetter ChatState (Maybe T.Text)
-timeFormat = csResources . crConfiguration . to configTimeFormat
-
-dateFormat :: SimpleGetter ChatState (Maybe T.Text)
-dateFormat = csResources . crConfiguration . to configDateFormat
 
 -- ** 'ChatState' Helper Functions
 

@@ -315,7 +315,7 @@ updateMessageFlag pId f = do
 -- | Tell the server that we have flagged or unflagged a message.
 flagMessage :: PostId -> Bool -> MH ()
 flagMessage pId f = do
-  session <- use csSession
+  session <- use (csResources.crSession)
   myId <- use (csMe.userIdL)
   doAsyncWith Normal $ do
     let doFlag = if f then mmFlagPost else mmUnflagPost
@@ -342,7 +342,7 @@ beginUpdateMessage = do
             let Just p = msg^.mOriginalPost
             csMode .= Main
             csEditState.cedEditMode .= Editing p
-            csCmdLine %= applyEdit (clearZipper >> (insertMany $ postMessage p))
+            csEditState.cedEditor %= applyEdit (clearZipper >> (insertMany $ postMessage p))
         _ -> return ()
 
 replyToLatestMessage :: MH ()
@@ -371,7 +371,7 @@ cancelReplyOrEdit = do
         NewPost -> return ()
         _ -> do
             csEditState.cedEditMode .= NewPost
-            csCmdLine %= applyEdit clearZipper
+            csEditState.cedEditor %= applyEdit clearZipper
 
 copyVerbatimToClipboard :: MH ()
 copyVerbatimToClipboard = do
@@ -388,7 +388,7 @@ copyVerbatimToClipboard = do
 
 startJoinChannel :: MH ()
 startJoinChannel = do
-    session <- use csSession
+    session <- use (csResources.crSession)
     myTeamId <- use (csMyTeam.teamIdL)
     doAsyncWith Preempt $ do
         -- We don't get to just request all channels, so we request channels in
@@ -419,7 +419,7 @@ handleChannelInvite :: ChannelId -> MH ()
 handleChannelInvite cId = do
     st <- use id
     doAsyncWith Normal $ do
-        tryMM (mmGetChannel (st^.csSession) (st^.csMyTeam.teamIdL) cId)
+        tryMM (mmGetChannel (st^.csResources.crSession) (st^.csMyTeam.teamIdL) cId)
               (\(ChannelWithData chan _) -> do
                 return $ do
                   handleNewChannel (preferredChannelName chan) False chan
@@ -548,36 +548,36 @@ updateViewedChan cId = use csConnectionStatus >>= \case
 resetHistoryPosition :: MH ()
 resetHistoryPosition = do
     cId <- use csCurrentChannelId
-    csInputHistoryPosition.at cId .= Just Nothing
+    csEditState.cedInputHistoryPosition.at cId .= Just Nothing
 
 updateStatus :: UserId -> T.Text -> MH ()
 updateStatus uId t = csUsers %= modifyUserById uId (uiStatus .~ statusFromText t)
 
 clearEditor :: MH ()
-clearEditor = csCmdLine %= applyEdit clearZipper
+clearEditor = csEditState.cedEditor %= applyEdit clearZipper
 
 loadLastEdit :: MH ()
 loadLastEdit = do
     cId <- use csCurrentChannelId
-    lastInput <- use (csLastChannelInput.at cId)
+    lastInput <- use (csEditState.cedLastChannelInput.at cId)
     case lastInput of
         Nothing -> return ()
         Just (lastEdit, lastEditMode) -> do
-            csCmdLine %= (applyEdit $ insertMany (lastEdit) . clearZipper)
+            csEditState.cedEditor %= (applyEdit $ insertMany (lastEdit) . clearZipper)
             csEditState.cedEditMode .= lastEditMode
 
 saveCurrentEdit :: MH ()
 saveCurrentEdit = do
     cId <- use csCurrentChannelId
-    cmdLine <- use csCmdLine
+    cmdLine <- use (csEditState.cedEditor)
     mode <- use (csEditState.cedEditMode)
-    csLastChannelInput.at cId .=
+    csEditState.cedLastChannelInput.at cId .=
       Just (T.intercalate "\n" $ getEditContents $ cmdLine, mode)
 
 resetCurrentEdit :: MH ()
 resetCurrentEdit = do
     cId <- use csCurrentChannelId
-    csLastChannelInput.at cId .= Nothing
+    csEditState.cedLastChannelInput.at cId .= Nothing
 
 updateChannelListScroll :: MH ()
 updateChannelListScroll = do
@@ -753,7 +753,7 @@ attemptCreateDMChannel name = do
       -- We have a user of that name but no channel. Time to make one!
       tId <- use (csMyTeam.teamIdL)
       Just uId <- use (csNames.cnToUserId.at(name))
-      session <- use csSession
+      session <- use (csResources.crSession)
       doAsyncWith Normal $ do
         -- create a new channel
         nc <- mmCreateDirect session tId uId
@@ -764,7 +764,7 @@ attemptCreateDMChannel name = do
 createOrdinaryChannel :: T.Text -> MH ()
 createOrdinaryChannel name  = do
   tId <- use (csMyTeam.teamIdL)
-  session <- use csSession
+  session <- use (csResources.crSession)
   doAsyncWith Preempt $ do
     -- create a new chat channel
     let slug = T.map (\ c -> if isAlphaNum c then c else '-') (T.toLower name)
@@ -966,7 +966,7 @@ getNewMessageCutoff cId st = do
 execMMCommand :: T.Text -> T.Text -> MH ()
 execMMCommand name rest = do
   cId      <- use csCurrentChannelId
-  session  <- use csSession
+  session  <- use (csResources.crSession)
   myTeamId <- use (csMyTeam.teamIdL)
   let mc = MinCommand
              { minComChannelId = cId
@@ -1016,28 +1016,28 @@ setChannelTopic msg = doAsyncChannelMM Normal Nothing
 channelHistoryForward :: MH ()
 channelHistoryForward = do
   cId <- use csCurrentChannelId
-  inputHistoryPos <- use (csInputHistoryPosition.at cId)
-  inputHistory <- use csInputHistory
+  inputHistoryPos <- use (csEditState.cedInputHistoryPosition.at cId)
+  inputHistory <- use (csEditState.cedInputHistory)
   case inputHistoryPos of
       Just (Just i)
         | i == 0 -> do
           -- Transition out of history navigation
-          csInputHistoryPosition.at cId .= Just Nothing
+          csEditState.cedInputHistoryPosition.at cId .= Just Nothing
           loadLastEdit
         | otherwise -> do
           let Just entry = getHistoryEntry cId newI inputHistory
               newI = i - 1
               eLines = T.lines entry
               mv = if length eLines == 1 then gotoEOL else id
-          csCmdLine.editContentsL .= (mv $ textZipper eLines Nothing)
-          csInputHistoryPosition.at cId .= (Just $ Just newI)
+          csEditState.cedEditor.editContentsL .= (mv $ textZipper eLines Nothing)
+          csEditState.cedInputHistoryPosition.at cId .= (Just $ Just newI)
       _ -> return ()
 
 channelHistoryBackward :: MH ()
 channelHistoryBackward = do
   cId <- use csCurrentChannelId
-  inputHistoryPos <- use (csInputHistoryPosition.at cId)
-  inputHistory <- use csInputHistory
+  inputHistoryPos <- use (csEditState.cedInputHistoryPosition.at cId)
+  inputHistory <- use (csEditState.cedInputHistory)
   case inputHistoryPos of
       Just (Just i) ->
           let newI = i + 1
@@ -1046,8 +1046,8 @@ channelHistoryBackward = do
               Just entry -> do
                   let eLines = T.lines entry
                       mv = if length eLines == 1 then gotoEOL else id
-                  csCmdLine.editContentsL .= (mv $ textZipper eLines Nothing)
-                  csInputHistoryPosition.at cId .= (Just $ Just newI)
+                  csEditState.cedEditor.editContentsL .= (mv $ textZipper eLines Nothing)
+                  csEditState.cedInputHistoryPosition.at cId .= (Just $ Just newI)
       _ ->
           let newI = 0
           in case getHistoryEntry cId newI inputHistory of
@@ -1057,8 +1057,8 @@ channelHistoryBackward = do
                       mv = if length eLines == 1 then gotoEOL else id
                   in do
                     saveCurrentEdit
-                    csCmdLine.editContentsL .= (mv $ textZipper eLines Nothing)
-                    csInputHistoryPosition.at cId .= (Just $ Just newI)
+                    csEditState.cedEditor.editContentsL .= (mv $ textZipper eLines Nothing)
+                    csEditState.cedInputHistoryPosition.at cId .= (Just $ Just newI)
 
 showHelpScreen :: HelpTopic -> MH ()
 showHelpScreen topic = do
@@ -1214,7 +1214,7 @@ openAttachment :: T.Text -> FileId -> MH ()
 openAttachment urlOpenCommand fId = do
     -- The link is for an attachment, so fetch it and then
     -- open the local copy.
-    sess <- use csSession
+    sess <- use (csResources.crSession)
     outputChan <- use (csResources.crSubprocessLog)
     doAsyncWith Preempt $ do
         info     <- mmGetFileInfo sess fId
@@ -1307,19 +1307,19 @@ sendMessage mode msg =
                       case mode of
                         NewPost -> do
                             pendingPost <- mkPendingPost msg myId chanId
-                            void $ mmPost (st^.csSession) theTeamId pendingPost
+                            void $ mmPost (st^.csResources.crSession) theTeamId pendingPost
                         Replying _ p -> do
                             pendingPost <- mkPendingPost msg myId chanId
                             let modifiedPost =
                                     pendingPost { pendingPostParentId = Just $ postId p
                                                 , pendingPostRootId = Just $ postId p
                                                 }
-                            void $ mmPost (st^.csSession) theTeamId modifiedPost
+                            void $ mmPost (st^.csResources.crSession) theTeamId modifiedPost
                         Editing p -> do
                             let modifiedPost = p { postMessage = msg
                                                  , postPendingPostId = Nothing
                                                  }
-                            void $ mmUpdatePost (st^.csSession) theTeamId modifiedPost
+                            void $ mmUpdatePost (st^.csResources.crSession) theTeamId modifiedPost
 
 handleNewUser :: UserId -> MH ()
 handleNewUser newUserId = doAsyncMM Normal getUserInfo updateUserState
