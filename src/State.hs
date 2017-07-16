@@ -478,8 +478,8 @@ fetchCurrentChannelMembers =
 -- | Called on async completion when the currently viewed channel has
 -- been updated (i.e., just switched to this channel) to update local
 -- state.
-setLastViewedFor :: Maybe ChannelId -> ChannelId -> () -> MH ()
-setLastViewedFor prevId cId _ = do
+setLastViewedFor :: Maybe ChannelId -> ChannelId -> MH ()
+setLastViewedFor prevId cId = do
   chan <- use (csChannels.to (findChannelById cId))
   -- Update new channel's viewed time, creating the channel if needed
   case chan of
@@ -532,7 +532,7 @@ updateViewedChan cId = use csConnectionStatus >>= \case
           pId <- use csRecentChannel
           doAsyncChannelMM Preempt (Just cId)
             (\s t c -> mmViewChannel s t c pId)
-            (setLastViewedFor pId)
+            (\c () -> setLastViewedFor pId c)
       Disconnected ->
           -- Cannot update server; make no local updates to avoid
           -- getting out-of-sync with the server.  Assumes that this
