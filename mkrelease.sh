@@ -11,7 +11,7 @@ function get_platform {
         then
             echo "Fedora"
         else
-            echo "unknown-redhat"
+            echo "Unknown-Redhat"
         fi
     elif grep -i ubuntu /etc/apt/sources.list 2>/dev/null >/dev/null
     then
