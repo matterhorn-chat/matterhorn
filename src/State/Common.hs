@@ -98,31 +98,31 @@ data AsyncPriority = Preempt | Normal
 -- | Run a computation in the background, ignoring any results
 --   from it.
 doAsync :: AsyncPriority -> IO () -> MH ()
-doAsync prio thunk = doAsyncWith prio (thunk >> return (return ()))
+doAsync prio act = doAsyncWith prio (act >> return (return ()))
 
 -- | Run a computation in the background, returning a computation
 --   to be called on the 'ChatState' value.
 doAsyncWith :: AsyncPriority -> IO (MH ()) -> MH ()
-doAsyncWith prio thunk = do
+doAsyncWith prio act = do
     let putChan = case prio of
           Preempt -> STM.unGetTChan
           Normal  -> STM.writeTChan
     queue <- use (csResources.crRequestQueue)
-    liftIO $ STM.atomically $ putChan queue $ thunk
+    liftIO $ STM.atomically $ putChan queue act
 
 doAsyncIO :: AsyncPriority -> ChatState -> IO () -> IO ()
-doAsyncIO prio st thunk =
-  doAsyncWithIO prio st (thunk >> return (return ()))
+doAsyncIO prio st act =
+  doAsyncWithIO prio st (act >> return (return ()))
 
 -- | Run a computation in the background, returning a computation
 --   to be called on the 'ChatState' value.
 doAsyncWithIO :: AsyncPriority -> ChatState -> IO (MH ()) -> IO ()
-doAsyncWithIO prio st thunk = do
+doAsyncWithIO prio st act = do
     let putChan = case prio of
           Preempt -> STM.unGetTChan
           Normal  -> STM.writeTChan
     let queue = st^.csResources.crRequestQueue
-    STM.atomically $ putChan queue $ thunk
+    STM.atomically $ putChan queue act
 
 -- | Performs an asynchronous IO operation.  On completion, the final
 -- argument a completion function is executed in an MH () context in
@@ -132,12 +132,12 @@ doAsyncMM :: AsyncPriority                -- ^ the priority for this async opera
           -> (a -> MH ())                 -- ^ function to process the results in
                                           -- brick event handling context
           -> MH ()
-doAsyncMM prio mmOp thunk = do
+doAsyncMM prio mmOp eventHandler = do
   session <- use (csResources.crSession)
   myTeamId <- use (csMyTeam.teamIdL)
   doAsyncWith prio $ do
     r <- mmOp session myTeamId
-    return $ thunk r
+    return $ eventHandler r
 
 -- | Helper type for a function to perform an asynchronous MM
 -- operation on a channel and then invoke an MH completion event.
@@ -160,10 +160,10 @@ type DoAsyncChannelMM a =
 -- the completion function is always called with the channel ID upon
 -- which the operation was performed.
 doAsyncChannelMM :: DoAsyncChannelMM a
-doAsyncChannelMM prio m_cId mmOp thunk = do
+doAsyncChannelMM prio m_cId mmOp eventHandler = do
   ccId <- use csCurrentChannelId
   let cId = maybe ccId id m_cId
-  doAsyncMM prio (\s t -> mmOp s t cId) (\r -> thunk cId r)
+  doAsyncMM prio (\s t -> mmOp s t cId) (eventHandler cId)
 
 -- | Prefix function for calling doAsyncChannelMM that will set the
 -- channel state to "pending" until the async operation completes.  If
@@ -171,7 +171,7 @@ doAsyncChannelMM prio m_cId mmOp thunk = do
 -- function is called, no operations are performed (i.e., this request
 -- is treated as a duplicate).
 asPending :: DoAsyncChannelMM a -> DoAsyncChannelMM a
-asPending asyncOp prio m_cId mmOp thunk = do
+asPending asyncOp prio m_cId mmOp eventHandler = do
     ccId <- use csCurrentChannelId
     let cId = maybe ccId id m_cId
     withChannel cId $ \chan ->
@@ -183,7 +183,7 @@ asPending asyncOp prio m_cId mmOp thunk = do
              csChannel(cId).ccInfo.cdCurrentState .= pendState
              asyncOp prio m_cId mmOp $ \_ r ->
                  do csChannel(cId).ccInfo.cdCurrentState %= setDone
-                    thunk cId r
+                    eventHandler cId r
 
 -- | Helper to skip the first 3 arguments of a 4 argument function
 ___1 :: (a -> b -> c -> d -> e) -> d -> (a -> b -> c -> e)
