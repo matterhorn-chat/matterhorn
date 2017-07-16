@@ -172,7 +172,6 @@ asyncFetchScrollback prio cId = do
 
 data FetchCase = F1 | F2 PostId | F3a | F3b PostId | F4 deriving (Eq,Show)
 
-
 -- * Message selection mode
 
 beginMessageSelect :: MH ()
