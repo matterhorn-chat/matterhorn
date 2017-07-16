@@ -122,7 +122,6 @@ module Types
   , withChannel
   , withChannelOrDefault
   , userList
-  , sortedUserList
   , hasUnread
   , channelNameFromMatch
 
@@ -151,7 +150,7 @@ import           Data.HashMap.Strict (HashMap)
 import           Data.Time.Clock (UTCTime)
 import           Data.Time.LocalTime (TimeZone)
 import qualified Data.HashMap.Strict as HM
-import           Data.List (partition, sortBy, sort)
+import           Data.List (sort)
 import           Data.Maybe
 import           Data.Monoid
 import           Data.Set (Set)
@@ -723,27 +722,6 @@ hasUnread st cId = maybe False id $ do
   chan <- findChannelById cId (st^.csChannels)
   lastViewTime <- chan^.ccInfo.cdViewed
   return (chan^.ccInfo.cdUpdated > lastViewTime)
-
-sortedUserList :: ChatState -> [UserInfo]
-sortedUserList st = sortBy cmp yes <> sortBy cmp no
-  where
-      cmp = compareUserInfo uiName
-      dmHasUnread u =
-          case st^.csNames.cnToChanId.at(u^.uiName) of
-            Nothing  -> False
-            Just cId
-              | (st^.csCurrentChannelId) == cId -> False
-              | otherwise -> hasUnread st cId
-      (yes, no) = partition dmHasUnread (userList st)
-
-compareUserInfo :: (Ord a) => Lens' UserInfo a -> UserInfo -> UserInfo -> Ordering
-compareUserInfo field u1 u2
-    | u1^.uiStatus == Offline && u2^.uiStatus /= Offline =
-      GT
-    | u1^.uiStatus /= Offline && u2^.uiStatus == Offline =
-      LT
-    | otherwise =
-      (u1^.field) `compare` (u2^.field)
 
 userList :: ChatState -> [UserInfo]
 userList st = filter showUser $ allUsers (st^.csUsers)
