@@ -32,6 +32,7 @@ executable matterhorn
                        State.Editing
                        State.PostListOverlay
                        State.Setup
+                       State.Setup.Threads
                        Zipper
                        Themes
                        Draw
