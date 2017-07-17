@@ -52,3 +52,7 @@ the platforms on which binary distributions will be built.
 
 9. Make binary release available on GitHub by editing the pushed tag and
    uploading the release archives.
+
+10. Ask the Galois twitter account manager to tweet about the release:
+    "We're pleased to announce the release of Matterhorn version <VERSION>!
+    Get it at https://github.com/matterhorn-chat/matterhorn/releases/tag/<VERSION>"
