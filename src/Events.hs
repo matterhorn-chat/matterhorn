@@ -209,3 +209,9 @@ handleWSEvent we = do
     WMWebRTC      -> return ()
 
     WMAuthenticationChallenge -> return ()
+
+    -- XXX do something with me
+    WMChannelViewed -> return ()
+
+    -- XXX do something with me
+    WMChannelUpdated -> return ()

@@ -49,6 +49,8 @@ fromIni = do
     configPass <- (Just . PasswordCommand <$> field "passcmd") <|>
                   (Just . PasswordString  <$> field "pass") <|>
                   pure Nothing
+    configUnsafeUseHTTP <-
+      fieldFlagDef "unsafeUseUnauthenticatedConnection" False
     return Config { .. }
 
 stringField :: T.Text -> Either String T.Text
@@ -87,6 +89,7 @@ defaultConfig =
            , configShowMessagePreview = False
            , configEnableAspell       = False
            , configAspellDictionary   = Nothing
+           , configUnsafeUseHTTP    = False
            }
 
 findConfig :: Maybe FilePath -> IO (Either String Config)

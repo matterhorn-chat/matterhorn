@@ -196,6 +196,7 @@ data Config = Config
   , configShowMessagePreview :: Bool
   , configEnableAspell   :: Bool
   , configAspellDictionary :: Maybe T.Text
+  , configUnsafeUseHTTP :: Bool
   } deriving (Eq, Show)
 
 -- * 'MMNames' structures
