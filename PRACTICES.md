@@ -35,7 +35,10 @@ Branching
    `develop` we do a code review that is appropriate to the level of
    complexity and risk of the work being merged, which may involve an
    in-person code tour but typically involves just commit review with
-   questions and requests for changes.
+   questions and requests for changes. We do this to ensure that other
+   team members are aware of the ramifications of the work, to provide
+   an opportunity for feedback, and to get fresh eyes on the work to
+   spot problems that won't be evident to its author.
 
  * Bug fixes and other small, uncontroversial changes can be committed
    directly to `master` and merged back into `develop`. This ensures
