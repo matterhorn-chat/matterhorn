@@ -57,9 +57,18 @@ setupState logFile config requestChan eventChan = do
         Just f  -> \ cd -> cd `withLogger` mmLoggerDebug f
 
   let loginLoop cInfo = do
-        cd <- setLogger `fmap`
-                initConnectionData (ciHostname cInfo)
-                                   (fromIntegral (ciPort cInfo))
+        cd <- fmap setLogger $
+                -- we don't implement HTTP fallback right now, we just
+                -- go straight for HTTP if someone has indicated that
+                -- they want it. We probably should in the future
+                -- always try HTTPS first, and then, if the
+                -- configuration option is there, try falling back to
+                -- HTTP.
+                if (configUnsafeUseHTTP config)
+                  then initConnectionDataInsecure (ciHostname cInfo)
+                         (fromIntegral (ciPort cInfo))
+                  else initConnectionData (ciHostname cInfo)
+                         (fromIntegral (ciPort cInfo))
 
         let login = Login { username = ciUsername cInfo
                           , password = ciPassword cInfo
