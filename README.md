@@ -194,6 +194,9 @@ should consider to make submitting patches easier for all concerned:
    discuss any usability / UI, performance, or compatibility issues.
  - Please make changes consistent with the conventions already used in
    the codebase.
+ - We follow a few development practices to support our project and it
+   helps when contributors are aware of these. Please see `PRACTICES.md`
+   for more information.
 
 # Frequently Asked Questions
 
