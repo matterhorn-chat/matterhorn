@@ -100,7 +100,7 @@ propose a stepwise approach. Here's what happened:
    not in any channels (i.e. when the zipper has nothing to focus).
 
    Note that this state would only persist during startup just before
-   the bulk channel fetch.
+   the bulk channel fetch. More on this below.
 
  * This also revealed another problem, which is that we were fetching
    users in setup, too. Just like with channels, we have other code
