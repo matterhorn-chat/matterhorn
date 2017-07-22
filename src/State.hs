@@ -73,7 +73,7 @@ refreshChannel :: Bool -> ChannelId -> MH ()
 refreshChannel refreshMessages cId = do
   curId <- use csCurrentChannelId
   let priority = if curId == cId then Preempt else Normal
-  asPending doAsyncChannelMM priority (Just cId) mmGetChannel postRefreshChannel
+  asPending doAsyncChannelMM priority cId mmGetChannel postRefreshChannel
   where postRefreshChannel cId' cwd = do
           updateChannelInfo cId' cwd
           -- If this is an active channel, also update the Messages to
@@ -167,7 +167,7 @@ asyncFetchScrollback prio cId = do
                     F4      -> mmGetPosts s t c
             op 0 numScrollbackPosts
 
-    asPending doAsyncChannelMM prio (Just cId) fetchMessages
+    asPending doAsyncChannelMM prio cId fetchMessages
               addObtainedMessages
 
 data FetchCase = F1 | F2 PostId | F3a | F3b PostId | F4 deriving (Eq,Show)
@@ -241,11 +241,12 @@ deleteSelectedMessage :: MH ()
 deleteSelectedMessage = do
     selectedMessage <- use (to getSelectedMessage)
     st <- use id
+    cId <- use csCurrentChannelId
     case selectedMessage of
         Just msg | isMine st msg && isDeletable msg ->
             case msg^.mOriginalPost of
               Just p ->
-                  doAsyncChannelMM Preempt Nothing
+                  doAsyncChannelMM Preempt cId
                       (\s t c -> mmDeletePost s t c (postId p))
                       (\_ _ -> do csEditState.cedEditMode .= NewPost
                                   csMode .= Main)
@@ -265,7 +266,8 @@ deleteCurrentChannel :: MH ()
 deleteCurrentChannel = do
     leaveCurrentChannel
     csMode .= Main
-    doAsyncChannelMM Normal Nothing mmDeleteChannel endAsyncNOP
+    cId <- use csCurrentChannelId
+    doAsyncChannelMM Normal cId mmDeleteChannel endAsyncNOP
 
 isCurrentChannel :: ChatState -> ChannelId -> Bool
 isCurrentChannel st cId = st^.csCurrentChannelId == cId
@@ -408,7 +410,7 @@ startJoinChannel = do
 joinChannel :: Channel -> MH ()
 joinChannel chan = do
     csMode .= Main
-    doAsyncChannelMM Preempt (Just $ getId chan) mmJoinChannel endAsyncNOP
+    doAsyncChannelMM Preempt (getId chan) mmJoinChannel endAsyncNOP
 
 -- | When another user adds us to a channel, we need to fetch the
 -- channel info for that channel.
@@ -434,7 +436,7 @@ leaveCurrentChannel = do
     cId <- use csCurrentChannelId
     withChannel cId $ \chan ->
         when (canLeaveChannel (chan^.ccInfo)) $
-             doAsyncChannelMM Preempt (Just cId)
+             doAsyncChannelMM Preempt cId
                       mmLeaveChannel
                       (\c () -> removeChannelFromState c)
 
@@ -462,8 +464,9 @@ removeChannelFromState cId = do
             csFocus                             %= Z.filterZipper (/= cId)
 
 fetchCurrentChannelMembers :: MH ()
-fetchCurrentChannelMembers =
-    doAsyncChannelMM Preempt Nothing
+fetchCurrentChannelMembers = do
+    cId <- use csCurrentChannelId
+    doAsyncChannelMM Preempt cId
         (\s t c -> mmGetChannelMembers s t c 0 10000)
         (\_ chanUserMap -> do
               -- Construct a message listing them all and post it to the
@@ -509,7 +512,7 @@ setLastViewedFor prevId cId = do
       -- updating the client data, but it's also immune to any new or
       -- removed Message date fields, or anything else that would
       -- contribute to the viewed/updated times on the server.
-      doAsyncChannelMM Preempt (Just cId) mmGetChannel
+      doAsyncChannelMM Preempt cId mmGetChannel
       (\pcid cwd -> csChannel(pcid).ccInfo %= channelInfoFromChannelWithData cwd)
   -- Update the old channel's previous viewed time (allows tracking of new messages)
   case prevId of
@@ -530,7 +533,7 @@ updateViewedChan cId = use csConnectionStatus >>= \case
       Connected -> do
           -- Only do this if we're connected to avoid triggering noisy exceptions.
           pId <- use csRecentChannel
-          doAsyncChannelMM Preempt (Just cId)
+          doAsyncChannelMM Preempt cId
             (\s t c -> mmViewChannel s t c pId)
             (\c () -> setLastViewedFor pId c)
       Disconnected ->
@@ -689,7 +692,7 @@ asyncFetchMoreMessages = do
     cId  <- use csCurrentChannelId
     withChannel cId $ \chan ->
         let offset = length $ chan^.ccContents.cdMessages
-        in asPending doAsyncChannelMM Preempt (Just cId)
+        in asPending doAsyncChannelMM Preempt cId
                (\s t c -> mmGetPosts s t c offset pageAmount)
                (\c p -> do addObtainedMessages c p
                            mh $ invalidateCacheEntry (ChannelMessages cId))
@@ -915,7 +918,7 @@ addMessageToState new = do
                       Just parentId ->
                           case getMessageForPostId st parentId of
                               Nothing -> do
-                                  doAsyncChannelMM Preempt (Just cId)
+                                  doAsyncChannelMM Preempt cId
                                       (\s t c -> mmGetPost s t c parentId)
                                       (\_ p ->
                                           let postMap = HM.fromList [ ( pId
@@ -1006,8 +1009,9 @@ mkChannelZipperList chanNames =
   , c <- maybeToList (HM.lookup i (chanNames ^. cnToChanId)) ]
 
 setChannelTopic :: T.Text -> MH ()
-setChannelTopic msg =
-    doAsyncChannelMM Preempt Nothing
+setChannelTopic msg = do
+    cId <- use csCurrentChannelId
+    doAsyncChannelMM Preempt cId
         (\s t c -> mmSetChannelHeader s t c msg)
         (\_ _ -> return ())
 

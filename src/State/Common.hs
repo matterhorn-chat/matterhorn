@@ -146,8 +146,8 @@ doAsyncMM prio mmOp eventHandler = do
 type DoAsyncChannelMM a =
     AsyncPriority
     -- ^ the priority for this async operation
-    -> Maybe ChannelId
-    -- ^ defaults to the "current" channel if Nothing
+    -> ChannelId
+    -- ^ The channel
     -> (Session -> TeamId -> ChannelId -> IO a)
     -- ^ the asynchronous Mattermost channel-based IO operation
     -> (ChannelId -> a -> MH ())
@@ -162,9 +162,7 @@ type DoAsyncChannelMM a =
 -- the completion function is always called with the channel ID upon
 -- which the operation was performed.
 doAsyncChannelMM :: DoAsyncChannelMM a
-doAsyncChannelMM prio m_cId mmOp eventHandler = do
-  ccId <- use csCurrentChannelId
-  let cId = maybe ccId id m_cId
+doAsyncChannelMM prio cId mmOp eventHandler =
   doAsyncMM prio (\s t -> mmOp s t cId) (eventHandler cId)
 
 -- | Prefix function for calling doAsyncChannelMM that will set the
@@ -173,9 +171,7 @@ doAsyncChannelMM prio m_cId mmOp eventHandler = do
 -- function is called, no operations are performed (i.e., this request
 -- is treated as a duplicate).
 asPending :: DoAsyncChannelMM a -> DoAsyncChannelMM a
-asPending asyncOp prio m_cId mmOp eventHandler = do
-    ccId <- use csCurrentChannelId
-    let cId = maybe ccId id m_cId
+asPending asyncOp prio cId mmOp eventHandler = do
     withChannel cId $ \chan ->
         let origState = chan^.ccInfo.cdCurrentState
             (pendState, setDone) = pendingChannelState origState
@@ -183,7 +179,7 @@ asPending asyncOp prio m_cId mmOp eventHandler = do
            then return ()  -- this operation already pending; do not duplicate
            else do
              csChannel(cId).ccInfo.cdCurrentState .= pendState
-             asyncOp prio m_cId mmOp $ \_ r ->
+             asyncOp prio cId mmOp $ \_ r ->
                  do csChannel(cId).ccInfo.cdCurrentState %= setDone
                     eventHandler cId r
 
@@ -286,7 +282,7 @@ numScrollbackPosts = 100
 asyncFetchReactionsForPost :: ChannelId -> Post -> MH ()
 asyncFetchReactionsForPost cId p
   | not (p^.postHasReactionsL) = return ()
-  | otherwise = doAsyncChannelMM Normal (Just cId)
+  | otherwise = doAsyncChannelMM Normal cId
         (\s t c -> mmGetReactionsForPost s t c (p^.postIdL))
         addReactions
 
