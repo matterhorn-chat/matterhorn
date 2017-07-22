@@ -1006,9 +1006,10 @@ mkChannelZipperList chanNames =
   , c <- maybeToList (HM.lookup i (chanNames ^. cnToChanId)) ]
 
 setChannelTopic :: T.Text -> MH ()
-setChannelTopic msg = doAsyncChannelMM Normal Nothing
-                      (\s t c -> mmSetChannelHeader s t c msg)
-                      (\cId _ -> csChannel(cId).ccInfo.cdHeader .= msg)
+setChannelTopic msg =
+    doAsyncChannelMM Preempt Nothing
+        (\s t c -> mmSetChannelHeader s t c msg)
+        (\_ _ -> return ())
 
 channelHistoryForward :: MH ()
 channelHistoryForward = do

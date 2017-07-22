@@ -21,7 +21,7 @@ import           Connection
 import           State
 import           State.Common
 import           Types
-import           Types.Channels (ccInfo, cdHeader, cdMentionCount)
+import           Types.Channels (ccInfo, cdMentionCount)
 
 import           Events.ShowHelp
 import           Events.Main
@@ -96,10 +96,6 @@ handleWSEvent we = do
           -- If the message is a header change, also update the channel
           -- metadata.
           myUserId <- use (csMe.userIdL)
-          case postPropsNewHeader (p^.postPropsL) of
-              Just newHeader | postType p == PostTypeHeaderChange ->
-                  csChannel(postChannelId p).ccInfo.cdHeader .= newHeader
-              _ -> return ()
           case wepMentions (weData we) of
             Just lst
               | myUserId `Set.member` lst ->
@@ -210,8 +206,12 @@ handleWSEvent we = do
 
     WMAuthenticationChallenge -> return ()
 
-    -- XXX do something with me
-    WMChannelViewed -> return ()
+    WMChannelViewed ->
+        case webChannelId $ weBroadcast we of
+            Just cId -> refreshChannel False cId
+            Nothing -> return ()
 
-    -- XXX do something with me
-    WMChannelUpdated -> return ()
+    WMChannelUpdated ->
+        case webChannelId $ weBroadcast we of
+            Just cId -> refreshChannel False cId
+            Nothing -> return ()
