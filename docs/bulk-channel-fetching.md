@@ -147,11 +147,11 @@ These first steps should be possible without breaking anything:
 
  1. In cases where we currently accept an optional channel ID and fall
     back to the current one if it isn't provided, instead always require
-    a channel ID (e.g. `setLastViewedFor`). This forces the caller to
-    make the fallback policy decision, makes it impossible for the caller's
-    current channel to differ from the callee's current channel (due
-    e.g. to accessing the wrong state), and makes data flow easier to
-    understand.
+    a channel ID (e.g. `doAsyncChannelMM`). This forces the caller to
+    make the fallback policy decision, makes it impossible for the
+    caller's current channel to differ from the callee's current channel
+    (due e.g. to accessing the wrong state), and makes data flow easier
+    to understand.
 
  2. Remove the `csCurrentChannelId` and `csCurrentChannel` lenses.
     Replace their uses with `withCurrentChannelId` and
