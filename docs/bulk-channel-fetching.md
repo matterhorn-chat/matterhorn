@@ -153,6 +153,9 @@ These first steps should be possible without breaking anything:
     (due e.g. to accessing the wrong state), and makes data flow easier
     to understand.
 
+    Done:
+    https://github.com/matterhorn-chat/matterhorn/commit/08e9c900167b8d32534c9ab44b669ce11c2ebfde
+
  2. Remove the `csCurrentChannelId` and `csCurrentChannel` lenses.
     Replace their uses with `withCurrentChannelId` and
     `withCurrentChannel` function calls, respectively, to force explicit
