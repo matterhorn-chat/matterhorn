@@ -69,8 +69,8 @@ pageAmount = 15
 -- | Refresh information about a specific channel.  The channel
 -- metadata is refreshed, and if this is a loaded channel, the
 -- scrollback is updated as well.
-refreshChannel :: ChannelId -> MH ()
-refreshChannel cId = do
+refreshChannel :: Bool -> ChannelId -> MH ()
+refreshChannel refreshMessages cId = do
   curId <- use csCurrentChannelId
   let priority = if curId == cId then Preempt else Normal
   asPending doAsyncChannelMM priority (Just cId) mmGetChannel postRefreshChannel
@@ -78,7 +78,7 @@ refreshChannel cId = do
           updateChannelInfo cId' cwd
           -- If this is an active channel, also update the Messages to
           -- retrieve any that might have been missed.
-          updateMessages cId'
+          when refreshMessages $ updateMessages cId'
 
 -- | Refresh information about all channels.  This is usually
 -- triggered when a reconnect event for the WebSocket to the server
@@ -86,7 +86,7 @@ refreshChannel cId = do
 refreshChannels :: MH ()
 refreshChannels = do
   cIds <- use (csChannels.to (filteredChannelIds (const True)))
-  sequence_ $ refreshChannel <$> cIds
+  sequence_ $ refreshChannel True <$> cIds
 
 -- | Update the indicted Channel entry with the new data retrieved
 -- from the Mattermost server.
