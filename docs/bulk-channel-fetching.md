@@ -92,9 +92,7 @@ propose a stepwise approach. Here's what happened:
 
  * This change also revealed the many spots where we rely on an implicit
    current channel, or where we fall back to the current channel in the
-   absence of a specified channel. It also revealed a few spots where
-   there are meaningful behaviors in both cases, such as how to deal
-   with posting error messages so the user can see them:
+   absence of a specified channel.
 
  * The next issue was dealing with rendering, since without an implicit
    current channel, we needed a way to deal with that. The approach I
