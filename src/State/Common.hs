@@ -250,10 +250,9 @@ asyncFetchAttachments p = do
 
 -- | Add a 'ClientMessage' to the current channel's message list
 addClientMessage :: ClientMessage -> MH ()
-addClientMessage msg = do
-  cid <- use csCurrentChannelId
+addClientMessage msg = withCurrentChannelId $ \cId -> do
   let addCMsg = ccContents.cdMessages %~ (addMessage $ clientMessageToMessage msg)
-  csChannels %= modifyChannelById cid addCMsg
+  csChannels %= modifyChannelById cId addCMsg
 
 -- | Add a new 'ClientMessage' representing an error message to
 --   the current channel's message list
@@ -270,10 +269,9 @@ postErrorMessage err = do
     doAsyncWith Normal (return $ addClientMessage msg)
 
 postErrorMessageIO :: T.Text -> ChatState -> IO ChatState
-postErrorMessageIO err st = do
+postErrorMessageIO err st = withCurrentChannelId_ st $ \cId -> do
   msg <- newClientMessage Error err
-  let cId = st ^. csCurrentChannelId
-      addEMsg = ccContents.cdMessages %~ (addMessage $ clientMessageToMessage msg)
+  let addEMsg = ccContents.cdMessages %~ (addMessage $ clientMessageToMessage msg)
   return $ st & csChannels %~ modifyChannelById cId addEMsg
 
 numScrollbackPosts :: Int

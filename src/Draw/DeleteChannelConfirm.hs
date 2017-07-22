@@ -6,11 +6,12 @@ where
 
 import Prelude ()
 import Prelude.Compat
+import Data.Maybe (fromJust)
 
 import Brick
 import Brick.Widgets.Center
 import Brick.Widgets.Border
-import Lens.Micro.Platform ((^.))
+import Lens.Micro.Platform ((^.), (^?))
 
 import Types
 import Types.Channels ( ccInfo, cdName )
@@ -23,7 +24,9 @@ drawDeleteChannelConfirm st =
 
 confirmBox :: ChatState -> Widget Name
 confirmBox st =
-    let cName = st^.csCurrentChannel.ccInfo.cdName
+    let cName = chan^.ccInfo.cdName
+        chan = fromJust $ st ^? csChannel(cId)
+        cId = withCurrentChannelId_ st id
     in centerLayer $ hLimit 50 $ vLimit 15 $
        withDefAttr dialogAttr $
        borderWithLabel (txt "Confirm Delete Channel") $

@@ -24,7 +24,7 @@ import qualified Data.Sequence as Seq
 import qualified Data.Set as S
 import qualified Data.Foldable as F
 import           Data.List (intersperse)
-import           Data.Maybe (catMaybes, isJust)
+import           Data.Maybe (catMaybes, isJust, fromJust)
 import           Data.Monoid ((<>))
 import qualified Data.Set as Set
 import           Data.Text (Text)
@@ -386,8 +386,8 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
                                   renderSingleMessage st uSet cSet msg
                       return $ r^.imageL
 
-    cId = st^.csCurrentChannelId
-    chan = st^.csCurrentChannel
+    cId = withCurrentChannelId_ st id
+    chan = fromJust $ st ^? csChannel(cId)
 
 -- | When displaying channel contents, it may be convenient to display
 -- information about the current state of the channel.
@@ -565,8 +565,11 @@ mainInterface st =
          , userInputArea uSet cSet st
          ]
     where
+    chan = fromJust $ st ^? csChannel(cId)
+    cId = withCurrentChannelId_ st id
+
     mainDisplay = case st^.csMode of
-        UrlSelect -> renderUrlList st
+        UrlSelect -> renderUrlList chan st
         _         -> maybeSubdue $ renderCurrentChannelDisplay uSet cSet st
     uSet = Set.fromList (st^..csUsers.to allUsers.folded.uiName)
     cSet = Set.fromList (st^..csChannels.folded.ccInfo.cdName)
@@ -582,12 +585,12 @@ mainInterface st =
                   then forceAttr ""
                   else id
 
-renderUrlList :: ChatState -> Widget Name
-renderUrlList st =
+renderUrlList :: ClientChannel -> ChatState -> Widget Name
+renderUrlList chan st =
     header <=> urlDisplay
     where
         header = withDefAttr channelHeaderAttr $ vLimit 1 $
-                 (txt $ "URLs: " <> (st^.csCurrentChannel.ccInfo.cdName)) <+>
+                 (txt $ "URLs: " <> (chan^.ccInfo.cdName)) <+>
                  fill ' '
 
         urlDisplay = if F.length urls == 0
