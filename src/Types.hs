@@ -111,6 +111,7 @@ module Types
   , withCurrentChannelIdDefault
   , withCurrentChannelId_
   , withCurrentChannel
+  , getCurrentChannelId
   , requestQuit
   , clientPostToMessage
   , getMessageForPostId
@@ -615,6 +616,9 @@ withCurrentChannelId_ s f = f (s^.csCurrentChannelId)
 
 withCurrentChannel :: (ClientChannel -> MH ()) -> MH ()
 withCurrentChannel act = use csCurrentChannel >>= act
+
+getCurrentChannelId :: ChatState -> Maybe ChannelId
+getCurrentChannelId st = Just $ st^.csCurrentChannelId
 
 csChannel :: ChannelId -> Traversal' ChatState ClientChannel
 csChannel cId =

@@ -141,8 +141,9 @@ initializeState cr myTeam myUser = do
   let session = cr^.crSession
       requestChan = cr^.crRequestQueue
   let myTeamId = getId myTeam
+      isTownSquare c = c^.channelNameL == "town-square"
 
-  chans <- mmGetChannels session myTeamId
+  chans <- Seq.filter isTownSquare <$> mmGetChannels session myTeamId
 
   msgs <- forM (F.toList chans) $ \c -> do
       let cChannel = makeClientChannel c & ccInfo.cdCurrentState .~ state

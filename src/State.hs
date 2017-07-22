@@ -70,9 +70,22 @@ pageAmount = 15
 -- metadata is refreshed, and if this is a loaded channel, the
 -- scrollback is updated as well.
 refreshChannel :: Bool -> ChannelId -> MH ()
-refreshChannel refreshMessages cId = withCurrentChannelId $ \curId -> do
-  let priority = if curId == cId then Preempt else Normal
-  asPending doAsyncChannelMM priority cId mmGetChannel postRefreshChannel
+refreshChannel refreshMessages cId = do
+  session <- use (csResources.crSession)
+  myTeamId <- use (csMyTeam.teamIdL)
+  curId <- use (to getCurrentChannelId)
+  let priority = if curId == Just cId then Preempt else Normal
+
+  -- If this channel is unknown, create it first.
+  mChan <- preuse (csChannel(cId))
+  case isNothing mChan of
+      True -> doAsyncWith priority $ do
+          cwd@(ChannelWithData chan _) <- mmGetChannel session myTeamId cId
+          return $ do
+              handleNewChannel (preferredChannelName chan) False chan
+              postRefreshChannel cId cwd
+
+      False -> asPending doAsyncChannelMM priority cId mmGetChannel postRefreshChannel
   where postRefreshChannel cId' cwd = do
           updateChannelInfo cId' cwd
           -- If this is an active channel, also update the Messages to
@@ -84,8 +97,11 @@ refreshChannel refreshMessages cId = withCurrentChannelId $ \curId -> do
 -- occurs.
 refreshChannels :: MH ()
 refreshChannels = do
-  cIds <- use (csChannels.to (filteredChannelIds (const True)))
-  sequence_ $ refreshChannel True <$> cIds
+  session <- use (csResources.crSession)
+  myTeamId <- use (csMyTeam.teamIdL)
+  doAsyncWith Preempt $ do
+    chans <- mmGetChannels session myTeamId
+    return $ sequence_ $ refreshChannel True <$> (getId <$> F.toList chans)
 
 -- | Update the indicted Channel entry with the new data retrieved
 -- from the Mattermost server.
