@@ -57,6 +57,7 @@ import qualified Zipper as Z
 import           Markdown (blockGetURLs, findVerbatimChunk)
 
 import           State.Common
+import           State.Setup.Threads (updateUserStatuses)
 
 -- * Hard-coded constants
 
@@ -113,6 +114,8 @@ refreshChannelsAndUsers = do
             case findUserById (getId u) knownUsers of
                 Just _ -> return ()
                 Nothing -> handleNewUserDirect u
+
+        doAsyncWith Preempt $ updateUserStatuses session
 
 -- | Update the indicted Channel entry with the new data retrieved
 -- from the Mattermost server.

@@ -1,5 +1,6 @@
 module State.Setup.Threads
   ( startUserRefreshThread
+  , updateUserStatuses
   , startSubprocessLoggerThread
   , startTimezoneMonitorThread
   , maybeStartSpellChecker
