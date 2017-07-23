@@ -208,10 +208,10 @@ handleWSEvent we = do
 
     WMChannelViewed ->
         case webChannelId $ weBroadcast we of
-            Just cId -> refreshChannel False cId
+            Just cId -> refreshChannelById False cId
             Nothing -> return ()
 
     WMChannelUpdated ->
         case webChannelId $ weBroadcast we of
-            Just cId -> refreshChannel False cId
+            Just cId -> refreshChannelById False cId
             Nothing -> return ()
