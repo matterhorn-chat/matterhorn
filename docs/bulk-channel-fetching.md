@@ -190,6 +190,9 @@ These first steps should be possible without breaking anything:
     user-specific metadata, so make `refreshChannels` update the state
     with that, too.
 
+    Done:
+    https://github.com/matterhorn-chat/matterhorn/commit/558760cf906ef1770f492fe4b8676e8adfd4f507
+
 Now come the steps to get rid of the implicit current channel
 assumption:
 
