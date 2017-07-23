@@ -12,8 +12,7 @@ import           Control.Exception (catch)
 import           Control.Monad (forM, when)
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
-import           Data.Maybe (listToMaybe, maybeToList, fromJust)
-import           Data.Monoid ((<>))
+import           Data.Maybe (listToMaybe, fromJust)
 import qualified Data.Sequence as Seq
 import           Data.Time.LocalTime (getCurrentTimeZone)
 import           Lens.Micro.Platform
@@ -34,7 +33,6 @@ import           Themes
 import           State.Setup.Threads
 import           Types
 import           Types.Channels
-import           Types.Users
 import qualified Zipper as Z
 
 loadFlaggedMessages :: ChatState -> IO ()
@@ -128,14 +126,6 @@ setupState logFile config requestChan eventChan = do
              slc theme quitCondition config mempty
   initializeState cr myTeam myUser
 
-loadAllUsers :: Session -> IO (HM.HashMap UserId User)
-loadAllUsers session = go HM.empty 0
-  where go users n = do
-          newUsers <- mmGetUsers session (n * 50) 50
-          if HM.null newUsers
-            then return users
-            else go (newUsers <> users) (n+1)
-
 initializeState :: ChatResources -> Team -> User -> IO ChatState
 initializeState cr myTeam myUser = do
   let session = cr^.crSession
@@ -152,9 +142,6 @@ initializeState cr myTeam myUser = do
                   else initialChannelState
       return (getId c, cChannel)
 
-  teamUsers <- mmGetProfiles session myTeamId 0 10000
-  users <- loadAllUsers session
-  let mkUser u = (u^.userIdL, userInfoFromUser u (HM.member (u^.userIdL) teamUsers))
   tz    <- getCurrentTimeZone
   hist  <- do
       result <- readHistory
@@ -172,16 +159,12 @@ initializeState cr myTeam myUser = do
   -- * Spell checker and spell check timer, if configured
   spResult <- maybeStartSpellChecker (cr^.crConfiguration) (cr^.crEventQueue)
 
-  let chanNames = mkChanNames myUser users chans
+  let chanNames = mkChanNames myUser mempty chans
       Just townSqId = chanNames ^. cnToChanId . at "town-square"
       chanIds = [ (chanNames ^. cnToChanId) HM.! i
-                | i <- chanNames ^. cnChans ] ++
-                [ c
-                | i <- chanNames ^. cnUsers
-                , c <- maybeToList (HM.lookup i (chanNames ^. cnToChanId)) ]
+                | i <- chanNames ^. cnChans ]
       chanZip = Z.findRight (== townSqId) (Z.fromList chanIds)
       st = newState cr chanZip myUser myTeam tz hist spResult
-             & csUsers %~ flip (foldr (uncurry addUser)) (fmap mkUser users)
              & csChannels %~ flip (foldr (uncurry addChannel)) msgs
              & csNames .~ chanNames
 

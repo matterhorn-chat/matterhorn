@@ -15,7 +15,7 @@ import qualified Control.Concurrent.STM as STM
 import           Data.Char (isAlphaNum)
 import           Brick.Main (getVtyHandle, viewportScroll, vScrollToBeginning, vScrollBy, vScrollToEnd)
 import           Brick.Widgets.Edit (applyEdit)
-import           Control.Monad (when, unless, void)
+import           Control.Monad (when, unless, void, forM_)
 import qualified Data.ByteString as BS
 import           Data.Function (on)
 import           Data.Text.Zipper (textZipper, clearZipper, insertMany, gotoEOL)
@@ -75,6 +75,11 @@ refreshChannel refreshMessages cId = do
   myTeamId <- use (csMyTeam.teamIdL)
   curId <- use (to getCurrentChannelId)
   let priority = if curId == Just cId then Preempt else Normal
+      postRefreshChannel cId' cwd = do
+          updateChannelInfo cId' cwd
+          -- If this is an active channel, also update the Messages to
+          -- retrieve any that might have been missed.
+          when refreshMessages $ updateMessages cId'
 
   -- If this channel is unknown, create it first.
   mChan <- preuse (csChannel(cId))
@@ -86,22 +91,24 @@ refreshChannel refreshMessages cId = do
               postRefreshChannel cId cwd
 
       False -> asPending doAsyncChannelMM priority cId mmGetChannel postRefreshChannel
-  where postRefreshChannel cId' cwd = do
-          updateChannelInfo cId' cwd
-          -- If this is an active channel, also update the Messages to
-          -- retrieve any that might have been missed.
-          when refreshMessages $ updateMessages cId'
 
--- | Refresh information about all channels.  This is usually
+-- | Refresh information about all channels and users. This is usually
 -- triggered when a reconnect event for the WebSocket to the server
 -- occurs.
-refreshChannels :: MH ()
-refreshChannels = do
+refreshChannelsAndUsers :: MH ()
+refreshChannelsAndUsers = do
   session <- use (csResources.crSession)
   myTeamId <- use (csMyTeam.teamIdL)
   doAsyncWith Preempt $ do
     chans <- mmGetChannels session myTeamId
-    return $ sequence_ $ refreshChannel True <$> (getId <$> F.toList chans)
+    uMap <- mmGetProfiles session myTeamId 0 10000
+    return $ do
+        sequence_ $ refreshChannel True <$> (getId <$> F.toList chans)
+        forM_ (HM.elems uMap) $ \u -> do
+            result <- preuse $ csUsers.to (findUserById $ getId u)
+            case result of
+                Just _ -> return ()
+                Nothing -> handleNewUserDirect u
 
 -- | Update the indicted Channel entry with the new data retrieved
 -- from the Mattermost server.
@@ -1314,6 +1321,14 @@ sendMessage mode msg = withCurrentChannelId $ \chanId ->
                                                  , postPendingPostId = Nothing
                                                  }
                             void $ mmUpdatePost (st^.csResources.crSession) theTeamId modifiedPost
+
+handleNewUserDirect :: User -> MH ()
+handleNewUserDirect newUser = do
+    let usrInfo = userInfoFromUser newUser True
+        newUserId = getId newUser
+    csUsers %= addUser newUserId usrInfo
+    csNames . cnUsers %= (sort . ((newUser^.userUsernameL):))
+    csNames . cnToUserId . at (newUser^.userUsernameL) .= Just newUserId
 
 handleNewUser :: UserId -> MH ()
 handleNewUser newUserId = doAsyncMM Normal getUserInfo updateUserState

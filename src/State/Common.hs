@@ -310,3 +310,11 @@ copyToClipboard txt = do
       postErrorMessage errMsg
     Right () ->
       return ()
+
+loadAllUsers :: Session -> IO (HM.HashMap UserId User)
+loadAllUsers session = go HM.empty 0
+  where go users n = do
+          newUsers <- mmGetUsers session (n * 50) 50
+          if HM.null newUsers
+            then return users
+            else go (newUsers <> users) (n+1)

@@ -51,7 +51,7 @@ onAppEvent WebsocketDisconnect =
   csConnectionStatus .= Disconnected
 onAppEvent WebsocketConnect = do
   csConnectionStatus .= Connected
-  refreshChannels
+  refreshChannelsAndUsers
 onAppEvent (WSEvent we) =
   handleWSEvent we
 onAppEvent (RespEvent f) = f
