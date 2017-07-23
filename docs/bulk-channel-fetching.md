@@ -166,8 +166,9 @@ These first steps should be possible without breaking anything:
     `withCurrentChannelId :: (ChannelId -> MH ()) -> MH ()`
     `withCurrentChannel :: (ClientChannel -> MH ()) -> MH ()`
 
-    Done:
+    Done in
     https://github.com/matterhorn-chat/matterhorn/commit/d9b6ab56c7198071b3e93b26e2bc0bbed9d67006
+    but reverted and postponed to the latter half of this plan.
 
  3. Modify the `WebsocketConnect` handler so that it also refreshes user
     data. This makes it suitable for use at startup and also to pick up

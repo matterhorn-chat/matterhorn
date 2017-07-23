@@ -195,12 +195,11 @@ sortedUserList st = sortBy cmp yes <> sortBy cmp no
   where
       cmp = compareUserInfo uiName
       dmHasUnread u =
-          withCurrentChannelId_ st $ \curId ->
-            case st^.csNames.cnToChanId.at(u^.uiName) of
-              Nothing  -> False
-              Just cId
-                | curId == cId -> False
-                | otherwise -> hasUnread st cId
+          case st^.csNames.cnToChanId.at(u^.uiName) of
+            Nothing  -> False
+            Just cId
+              | (st^.csCurrentChannelId) == cId -> False
+              | otherwise -> hasUnread st cId
       (yes, no) = partition dmHasUnread (userList st)
 
 compareUserInfo :: (Ord a) => Lens' UserInfo a -> UserInfo -> UserInfo -> Ordering

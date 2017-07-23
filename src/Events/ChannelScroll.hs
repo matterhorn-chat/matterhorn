@@ -32,7 +32,8 @@ channelScrollKeybindings =
   ]
 
 onEventChannelScroll :: Vty.Event -> MH ()
-onEventChannelScroll (Vty.EvResize _ _) = withCurrentChannelId $ \cId -> do
+onEventChannelScroll (Vty.EvResize _ _) = do
+    cId <- use csCurrentChannelId
     mh $ do
       invalidateCache
       let vp = ChannelMessages cId

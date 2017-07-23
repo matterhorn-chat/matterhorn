@@ -43,6 +43,8 @@ module Types
   , newState
   , csResources
   , csFocus
+  , csCurrentChannel
+  , csCurrentChannelId
   , csUrlList
   , csShowMessagePreview
   , csPostMap
@@ -107,11 +109,6 @@ module Types
   , mhSuspendAndResume
   , mhHandleEventLensed
 
-  , withCurrentChannelId
-  , withCurrentChannelIdDefault
-  , withCurrentChannelId_
-  , withCurrentChannel
-  , getCurrentChannelId
   , requestQuit
   , clientPostToMessage
   , getMessageForPostId
@@ -154,7 +151,7 @@ import           Data.Monoid
 import           Data.Set (Set)
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( at, makeLenses, lens, (&), (^.), (%~), (.~), (^?!)
-                                     , _Just, Traversal', preuse, use )
+                                     , _Just, Traversal', preuse )
 import           Network.Mattermost
 import           Network.Mattermost.Exceptions
 import           Network.Mattermost.Lenses
@@ -604,21 +601,6 @@ csCurrentChannel :: Lens' ChatState ClientChannel
 csCurrentChannel =
   lens (\ st -> findChannelById (st^.csCurrentChannelId) (st^.csChannels) ^?! _Just)
        (\ st n -> st & csChannels %~ addChannel (st^.csCurrentChannelId) n)
-
-withCurrentChannelId :: (ChannelId -> MH ()) -> MH ()
-withCurrentChannelId act = use csCurrentChannelId >>= act
-
-withCurrentChannelIdDefault :: a -> (ChannelId -> MH a) -> MH a
-withCurrentChannelIdDefault _ act = use csCurrentChannelId >>= act
-
-withCurrentChannelId_ :: ChatState -> (ChannelId -> a) -> a
-withCurrentChannelId_ s f = f (s^.csCurrentChannelId)
-
-withCurrentChannel :: (ClientChannel -> MH ()) -> MH ()
-withCurrentChannel act = use csCurrentChannel >>= act
-
-getCurrentChannelId :: ChatState -> Maybe ChannelId
-getCurrentChannelId st = Just $ st^.csCurrentChannelId
 
 csChannel :: ChannelId -> Traversal' ChatState ClientChannel
 csChannel cId =

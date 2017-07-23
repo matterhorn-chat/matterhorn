@@ -73,7 +73,7 @@ pageAmount = 15
 refreshChannel :: Bool -> ChannelWithData -> MH ()
 refreshChannel refreshMessages cwd@(ChannelWithData chan chanData) = do
   let cId = getId chan
-  curId <- use (to getCurrentChannelId)
+  curId <- use csCurrentChannelId
 
   -- If this channel is unknown, register it first.
   mChan <- preuse (csChannel(cId))
@@ -84,7 +84,7 @@ refreshChannel refreshMessages cwd@(ChannelWithData chan chanData) = do
 
   -- If this is an active channel or the current channel, also update
   -- the Messages to retrieve any that might have been missed.
-  when (refreshMessages || (Just cId == curId)) $
+  when (refreshMessages || (cId == curId)) $
       updateMessages cId
 
 refreshChannelById :: Bool -> ChannelId -> MH ()
@@ -127,11 +127,11 @@ updateChannelInfo cid cwd =
 -- arrived after the existing content.
 updateMessages :: ChannelId -> MH ()
 updateMessages cId =
-    withCurrentChannelId $ \curId ->
-      withChannel cId $ \chan -> do
-        when (chan^.ccInfo.cdCurrentState.to (`elem` [ChanLoaded, ChanInitialSelect])) $ do
-          let priority = if curId == cId then Preempt else Normal
-          asyncFetchScrollback priority cId
+  withChannel cId $ \chan -> do
+    when (chan^.ccInfo.cdCurrentState.to (`elem` [ChanLoaded, ChanInitialSelect])) $ do
+      curId <- use csCurrentChannelId
+      let priority = if curId == cId then Preempt else Normal
+      asyncFetchScrollback priority cId
 
 -- | Fetch scrollback for a channel in the background.  This may be
 -- called to fetch messages in a number of situations, including:
@@ -204,7 +204,7 @@ data FetchCase = F1 | F2 PostId | F3a | F3b PostId | F4 deriving (Eq,Show)
 -- * Message selection mode
 
 beginMessageSelect :: MH ()
-beginMessageSelect = withCurrentChannel $ \chan -> do
+beginMessageSelect = do
     -- Get the number of messages in the current channel and set the
     -- currently selected message index to be the most recently received
     -- message that corresponds to a Post (i.e. exclude informative
@@ -212,8 +212,8 @@ beginMessageSelect = withCurrentChannel $ \chan -> do
     --
     -- If we can't find one at all, we ignore the mode switch request
     -- and just return.
-    let chanMsgs = chan ^. ccContents . cdMessages
-        recentPost = getLatestPostId chanMsgs
+    chanMsgs <- use(csCurrentChannel . ccContents . cdMessages)
+    let recentPost = getLatestPostId chanMsgs
 
     when (isJust recentPost) $ do
         csMode .= MessageSelect
@@ -222,30 +222,30 @@ beginMessageSelect = withCurrentChannel $ \chan -> do
 getSelectedMessage :: ChatState -> Maybe Message
 getSelectedMessage st
     | st^.csMode /= MessageSelect && st^.csMode /= MessageSelectDeleteConfirm = Nothing
-    | otherwise = withCurrentChannelId_ st $ \cId -> do
+    | otherwise = do
         selPostId <- selectMessagePostId $ st^.csMessageSelect
 
-        let chanMsgs = st^.csChannel(cId) . ccContents . cdMessages
+        let chanMsgs = st ^. csCurrentChannel . ccContents . cdMessages
         findMessage selPostId chanMsgs
 
 messageSelectUp :: MH ()
-messageSelectUp = withCurrentChannelId $ \cId -> do
+messageSelectUp = do
     mode <- use csMode
     selected <- use (csMessageSelect.to selectMessagePostId)
     case selected of
         Just _ | mode == MessageSelect -> do
-            chanMsgs <- use (csChannel(cId).ccContents.cdMessages)
+            chanMsgs <- use (csCurrentChannel.ccContents.cdMessages)
             let nextPostId = getPrevPostId selected chanMsgs
             csMessageSelect .= MessageSelectState (nextPostId <|> selected)
         _ -> return ()
 
 messageSelectDown :: MH ()
-messageSelectDown = withCurrentChannelId $ \cId -> do
+messageSelectDown = do
     mode <- use csMode
     selected <- use (csMessageSelect.to selectMessagePostId)
     case selected of
         Just _ | mode == MessageSelect -> do
-            chanMsgs <- use (csChannel(cId).ccContents.cdMessages)
+            chanMsgs <- use (csCurrentChannel.ccContents.cdMessages)
             let nextPostId = getNextPostId selected chanMsgs
             csMessageSelect .= MessageSelectState (nextPostId <|> selected)
         _ -> return ()
@@ -267,9 +267,10 @@ beginConfirmDeleteSelectedMessage =
     csMode .= MessageSelectDeleteConfirm
 
 deleteSelectedMessage :: MH ()
-deleteSelectedMessage = withCurrentChannelId $ \cId -> do
+deleteSelectedMessage = do
     selectedMessage <- use (to getSelectedMessage)
     st <- use id
+    cId <- use csCurrentChannelId
     case selectedMessage of
         Just msg | isMine st msg && isDeletable msg ->
             case msg^.mOriginalPost of
@@ -282,21 +283,23 @@ deleteSelectedMessage = withCurrentChannelId $ \cId -> do
         _ -> return ()
 
 beginCurrentChannelDeleteConfirm :: MH ()
-beginCurrentChannelDeleteConfirm = withCurrentChannel $ \chan -> do
-    let chType = chan^.ccInfo.cdType
-    if chType /= Direct
-        then csMode .= DeleteChannelConfirm
-        else postErrorMessage "The /delete-channel command cannot be used with direct message channels."
+beginCurrentChannelDeleteConfirm = do
+    cId <- use csCurrentChannelId
+    withChannel cId $ \chan -> do
+        let chType = chan^.ccInfo.cdType
+        if chType /= Direct
+            then csMode .= DeleteChannelConfirm
+            else postErrorMessage "The /delete-channel command cannot be used with direct message channels."
 
 deleteCurrentChannel :: MH ()
 deleteCurrentChannel = do
     leaveCurrentChannel
     csMode .= Main
-    withCurrentChannelId $ \cId ->
-        doAsyncChannelMM Normal cId mmDeleteChannel endAsyncNOP
+    cId <- use csCurrentChannelId
+    doAsyncChannelMM Normal cId mmDeleteChannel endAsyncNOP
 
 isCurrentChannel :: ChatState -> ChannelId -> Bool
-isCurrentChannel st cId = withCurrentChannelId_ st (cId ==)
+isCurrentChannel st cId = st^.csCurrentChannelId == cId
 
 -- | Update the UI to reflect the flagged/unflagged state of a
 -- message. This __does not__ talk to the Mattermost server, but
@@ -371,8 +374,8 @@ beginUpdateMessage = do
         _ -> return ()
 
 replyToLatestMessage :: MH ()
-replyToLatestMessage = withCurrentChannel $ \chan -> do
-  let msgs = chan^.ccContents.cdMessages
+replyToLatestMessage = do
+  msgs <- use (csCurrentChannel . ccContents . cdMessages)
   case findLatestUserMessage isReplyable msgs of
     Just msg -> do let Just p = msg^.mOriginalPost
                    csMode .= Main
@@ -451,13 +454,15 @@ handleChannelInvite cId = do
                   asyncFetchScrollback Normal cId)
 
 startLeaveCurrentChannel :: MH ()
-startLeaveCurrentChannel = withCurrentChannel $ \chan -> do
-    case canLeaveChannel (chan^.ccInfo) of
+startLeaveCurrentChannel = do
+    cInfo <- use (csCurrentChannel.ccInfo)
+    case canLeaveChannel cInfo of
         True -> csMode .= LeaveChannelConfirm
         False -> postErrorMessage "The /leave command cannot be used with this channel."
 
 leaveCurrentChannel :: MH ()
-leaveCurrentChannel = withCurrentChannelId $ \cId ->
+leaveCurrentChannel = do
+    cId <- use csCurrentChannelId
     withChannel cId $ \chan ->
         when (canLeaveChannel (chan^.ccInfo)) $
              doAsyncChannelMM Preempt cId
@@ -465,11 +470,12 @@ leaveCurrentChannel = withCurrentChannelId $ \cId ->
                       (\c () -> removeChannelFromState c)
 
 removeChannelFromState :: ChannelId -> MH ()
-removeChannelFromState cId = withCurrentChannelId $ \origFocus -> do
+removeChannelFromState cId = do
     withChannel cId $ \ chan -> do
         let cName = chan^.ccInfo.cdName
             chType = chan^.ccInfo.cdType
         when (chType /= Direct) $ do
+            origFocus <- use csCurrentChannelId
             when (origFocus == cId) $ do
               st <- use id
               setFocusWith (getNextNonDMChannel st Z.right)
@@ -487,7 +493,8 @@ removeChannelFromState cId = withCurrentChannelId $ \origFocus -> do
             csFocus                             %= Z.filterZipper (/= cId)
 
 fetchCurrentChannelMembers :: MH ()
-fetchCurrentChannelMembers = withCurrentChannelId $ \cId -> do
+fetchCurrentChannelMembers = do
+    cId <- use csCurrentChannelId
     doAsyncChannelMM Preempt cId
         (\s t c -> mmGetChannelMembers s t c 0 10000)
         (\_ chanUserMap -> do
@@ -542,9 +549,9 @@ setLastViewedFor prevId cId = do
     Just p -> csChannels %= (channelByIdL p %~ clearNewMessageIndicator)
 
 updateViewed :: MH ()
-updateViewed = withCurrentChannelId $ \cId -> do
-  csChannel(cId).ccInfo.cdMentionCount .= 0
-  updateViewedChan cId
+updateViewed = do
+  csCurrentChannel.ccInfo.cdMentionCount .= 0
+  updateViewedChan =<< use csCurrentChannelId
 
 -- | When a new channel has been selected for viewing, this will
 -- notify the server of the change, and also update the local channel
@@ -568,7 +575,8 @@ updateViewedChan cId = use csConnectionStatus >>= \case
           return ()
 
 resetHistoryPosition :: MH ()
-resetHistoryPosition = withCurrentChannelId $ \cId -> do
+resetHistoryPosition = do
+    cId <- use csCurrentChannelId
     csEditState.cedInputHistoryPosition.at cId .= Just Nothing
 
 updateStatus :: UserId -> T.Text -> MH ()
@@ -578,7 +586,8 @@ clearEditor :: MH ()
 clearEditor = csEditState.cedEditor %= applyEdit clearZipper
 
 loadLastEdit :: MH ()
-loadLastEdit = withCurrentChannelId $ \cId -> do
+loadLastEdit = do
+    cId <- use csCurrentChannelId
     lastInput <- use (csEditState.cedLastChannelInput.at cId)
     case lastInput of
         Nothing -> return ()
@@ -587,14 +596,16 @@ loadLastEdit = withCurrentChannelId $ \cId -> do
             csEditState.cedEditMode .= lastEditMode
 
 saveCurrentEdit :: MH ()
-saveCurrentEdit = withCurrentChannelId $ \cId -> do
+saveCurrentEdit = do
+    cId <- use csCurrentChannelId
     cmdLine <- use (csEditState.cedEditor)
     mode <- use (csEditState.cedEditMode)
     csEditState.cedLastChannelInput.at cId .=
       Just (T.intercalate "\n" $ getEditContents $ cmdLine, mode)
 
 resetCurrentEdit :: MH ()
-resetCurrentEdit = withCurrentChannelId $ \cId -> do
+resetCurrentEdit = do
+    cId <- use csCurrentChannelId
     csEditState.cedLastChannelInput.at cId .= Nothing
 
 updateChannelListScroll :: MH ()
@@ -616,7 +627,8 @@ resetEditorState = do
     clearEditor
 
 preChangeChannelCommon :: MH ()
-preChangeChannelCommon = withCurrentChannelId $ \cId -> do
+preChangeChannelCommon = do
+    cId <- use csCurrentChannelId
     csRecentChannel .= Just cId
     saveCurrentEdit
 
@@ -657,13 +669,13 @@ getNextNonDMChannel st shift z =
 
 getNextUnreadChannel :: ChatState
                      -> (Zipper ChannelId -> Zipper ChannelId)
-getNextUnreadChannel st = withCurrentChannelId_ st $ \currCId ->
+getNextUnreadChannel st =
     -- The next channel with unread messages must also be a channel
     -- other than the current one, since the zipper may be on a channel
     -- that has unread messages and will stay that way until we leave
     -- it- so we need to skip that channel when doing the zipper search
     -- for the next candidate channel.
-    Z.findRight (\cId -> hasUnread st cId && (cId /= currCId))
+    Z.findRight (\cId -> hasUnread st cId && (cId /= st^.csCurrentChannelId))
 
 listThemes :: MH ()
 listThemes = do
@@ -679,19 +691,23 @@ setTheme name =
         Just t -> csResources.crTheme .= t
 
 channelPageUp :: MH ()
-channelPageUp = withCurrentChannelId $ \cId -> do
+channelPageUp = do
+  cId <- use csCurrentChannelId
   mh $ vScrollBy (viewportScroll (ChannelMessages cId)) (-1 * pageAmount)
 
 channelPageDown :: MH ()
-channelPageDown = withCurrentChannelId $ \cId -> do
+channelPageDown = do
+  cId <- use csCurrentChannelId
   mh $ vScrollBy (viewportScroll (ChannelMessages cId)) pageAmount
 
 channelScrollToTop :: MH ()
-channelScrollToTop = withCurrentChannelId $ \cId -> do
+channelScrollToTop = do
+  cId <- use csCurrentChannelId
   mh $ vScrollToBeginning (viewportScroll (ChannelMessages cId))
 
 channelScrollToBottom :: MH ()
-channelScrollToBottom = withCurrentChannelId $ \cId -> do
+channelScrollToBottom = do
+  cId <- use csCurrentChannelId
   mh $ vScrollToEnd (viewportScroll (ChannelMessages cId))
 
 -- | Fetches additional message history for the current channel.  This
@@ -701,7 +717,8 @@ channelScrollToBottom = withCurrentChannelId $ \cId -> do
 -- user-driven fetch should be displayed, so this also invalidates the
 -- cache.
 asyncFetchMoreMessages :: MH ()
-asyncFetchMoreMessages = withCurrentChannelId $ \cId ->
+asyncFetchMoreMessages = do
+    cId  <- use csCurrentChannelId
     withChannel cId $ \chan ->
         let offset = length $ chan^.ccContents.cdMessages
         in asPending doAsyncChannelMM Preempt cId
@@ -825,8 +842,8 @@ editMessage new = do
   chan . ccContents . cdMessages . traversed . filtered isEditedMessage .= msg
   chan %= adjustUpdated new
   csPostMap.ix(postId new) .= msg
-  withCurrentChannelId $ \cId ->
-      when (postChannelId new == cId) updateViewed
+  cId <- use csCurrentChannelId
+  when (postChannelId new == cId) updateViewed
 
 deleteMessage :: Post -> MH ()
 deleteMessage new = do
@@ -836,8 +853,8 @@ deleteMessage new = do
       chan = csChannel (new^.postChannelIdL)
   chan.ccContents.cdMessages.traversed.filtered isDeletedMessage %= (& mDeleted .~ True)
   chan %= adjustUpdated new
-  withCurrentChannelId $ \cId ->
-      when (postChannelId new == cId) updateViewed
+  cId <- use csCurrentChannelId
+  when (postChannelId new == cId) updateViewed
 
 maybeRingBell :: MH ()
 maybeRingBell = do
@@ -869,12 +886,11 @@ instance Monoid PostProcessMessageAdd where
 -- | postProcessMessageAdd performs the actual actions indicated by
 -- the corresponding input value.
 postProcessMessageAdd :: PostProcessMessageAdd -> MH ()
-postProcessMessageAdd ppma = withCurrentChannelId $ \cId -> do
-    withChannel cId $ \chan -> do
-      postOp ppma
-      let cState = chan^.ccInfo.cdCurrentState
-      when (cState == ChanInitialSelect) $
-        csChannel(cId).ccInfo.cdCurrentState .= ChanLoaded
+postProcessMessageAdd ppma = do
+  postOp ppma
+  cState <- use (csCurrentChannel.ccInfo.cdCurrentState)
+  when (cState == ChanInitialSelect) $
+    csCurrentChannel.ccInfo.cdCurrentState .= ChanLoaded
  where
    postOp NoAction            = return ()
    postOp UpdateServerViewed  = updateViewed
@@ -907,19 +923,19 @@ addMessageToState new = do
               cId = postChannelId new
 
               doAddMessage = do
+                currCId <- use csCurrentChannelId
                 s <- use id  -- use *latest* state
                 flags <- use (csResources.crFlaggedPosts)
                 let msg' = clientPostToMessage s cp
                              & mFlagged .~ ((cp^.cpPostId) `Set.member` flags)
                 csPostMap.at(postId new) .= Just msg'
-                withCurrentChannelId $ \currCId -> do
-                    csChannels %= modifyChannelById cId
-                      ((ccContents.cdMessages %~ addMessage msg') .
-                       (adjustUpdated new) .
-                       (\c -> if currCId == cId
-                              then c
-                              else updateNewMessageIndicator new c)
-                      )
+                csChannels %= modifyChannelById cId
+                  ((ccContents.cdMessages %~ addMessage msg') .
+                   (adjustUpdated new) .
+                   (\c -> if currCId == cId
+                          then c
+                          else updateNewMessageIndicator new c)
+                  )
                 asyncFetchReactionsForPost cId new
                 asyncFetchAttachments new
                 postedChanMessage
@@ -951,15 +967,16 @@ addMessageToState new = do
                   doAddMessage
 
               postedChanMessage =
-                withChannelOrDefault (postChannelId new) NoAction $ \_ ->
-                    withCurrentChannelIdDefault NoAction $ \currCId -> do
-                        let curChannelAction = if postChannelId new == currCId
-                                               then UpdateServerViewed
-                                               else NoAction
-                            originUserAction = if fromMe
-                                               then NoAction
-                                               else NotifyUser
-                        return $ curChannelAction <> originUserAction
+                withChannelOrDefault (postChannelId new) NoAction $ \_ -> do
+                    currCId <- use csCurrentChannelId
+
+                    let curChannelAction = if postChannelId new == currCId
+                                           then UpdateServerViewed
+                                           else NoAction
+                        originUserAction = if fromMe
+                                           then NoAction
+                                           else NotifyUser
+                    return $ curChannelAction <> originUserAction
 
           -- If this message was written by a user we don't know about,
           -- fetch the user's information before posting the message.
@@ -979,7 +996,8 @@ getNewMessageCutoff cId st = do
     return $ cc^.ccInfo.cdNewMessageIndicator
 
 execMMCommand :: T.Text -> T.Text -> MH ()
-execMMCommand name rest = withCurrentChannelId $ \cId -> do
+execMMCommand name rest = do
+  cId      <- use csCurrentChannelId
   session  <- use (csResources.crSession)
   myTeamId <- use (csMyTeam.teamIdL)
   let mc = MinCommand
@@ -996,22 +1014,23 @@ execMMCommand name rest = withCurrentChannelId $ \cId -> do
       postErrorMessage ("Error running command: " <> (T.pack err))
 
 fetchCurrentScrollback :: MH ()
-fetchCurrentScrollback = withCurrentChannelId $ \cId -> do
-    withChannel cId $ \chan -> do
-      unless (chan^.ccInfo.cdCurrentState `elem` [ChanLoaded, ChanInitialSelect]) $ do
-        -- Upgrades the channel state to "Loaded" to indicate that
-        -- content is now present (this is the main point where channel
-        -- state is switched from metadata-only to with-content), then
-        -- initiates an operation to read the content (which will change
-        -- the state to a pending for loaded.  If there was an async
-        -- background task pending (esp. if this channel was selected
-        -- just after startup and startup fetching is still underway),
-        -- this will potentially schedule a duplicate, but that will not
-        -- be harmful since quiescent channel states only increase to
-        -- "higher" states.
-        when (chan^.ccInfo.cdCurrentState /= ChanInitialSelect) $
-          csChannel(cId).ccInfo.cdCurrentState .= ChanLoaded
-        asyncFetchScrollback Preempt cId
+fetchCurrentScrollback = do
+  cId <- use csCurrentChannelId
+  withChannel cId $ \ chan -> do
+    unless (chan^.ccInfo.cdCurrentState `elem` [ChanLoaded, ChanInitialSelect]) $ do
+      -- Upgrades the channel state to "Loaded" to indicate that
+      -- content is now present (this is the main point where channel
+      -- state is switched from metadata-only to with-content), then
+      -- initiates an operation to read the content (which will change
+      -- the state to a pending for loaded.  If there was an async
+      -- background task pending (esp. if this channel was selected
+      -- just after startup and startup fetching is still underway),
+      -- this will potentially schedule a duplicate, but that will not
+      -- be harmful since quiescent channel states only increase to
+      -- "higher" states.
+      when (chan^.ccInfo.cdCurrentState /= ChanInitialSelect) $
+        csChannel(cId).ccInfo.cdCurrentState .= ChanLoaded
+      asyncFetchScrollback Preempt cId
 
 mkChannelZipperList :: MMNames -> [ChannelId]
 mkChannelZipperList chanNames =
@@ -1022,13 +1041,15 @@ mkChannelZipperList chanNames =
   , c <- maybeToList (HM.lookup i (chanNames ^. cnToChanId)) ]
 
 setChannelTopic :: T.Text -> MH ()
-setChannelTopic msg = withCurrentChannelId $ \cId ->
+setChannelTopic msg = do
+    cId <- use csCurrentChannelId
     doAsyncChannelMM Preempt cId
         (\s t c -> mmSetChannelHeader s t c msg)
         (\_ _ -> return ())
 
 channelHistoryForward :: MH ()
-channelHistoryForward = withCurrentChannelId $ \cId -> do
+channelHistoryForward = do
+  cId <- use csCurrentChannelId
   inputHistoryPos <- use (csEditState.cedInputHistoryPosition.at cId)
   inputHistory <- use (csEditState.cedInputHistory)
   case inputHistoryPos of
@@ -1047,7 +1068,8 @@ channelHistoryForward = withCurrentChannelId $ \cId -> do
       _ -> return ()
 
 channelHistoryBackward :: MH ()
-channelHistoryBackward = withCurrentChannelId $ \cId -> do
+channelHistoryBackward = do
+  cId <- use csCurrentChannelId
   inputHistoryPos <- use (csEditState.cedInputHistoryPosition.at cId)
   inputHistory <- use (csEditState.cedInputHistory)
   case inputHistoryPos of
@@ -1145,8 +1167,8 @@ parseChannelSelectPattern pat = do
         tys                        -> error $ "BUG: invalid channel select case: " <> show tys
 
 startUrlSelect :: MH ()
-startUrlSelect = withCurrentChannel $ \chan -> do
-    let urls = chan^.to findUrls.to V.fromList
+startUrlSelect = do
+    urls <- use (csCurrentChannel.to findUrls.to V.fromList)
     csMode    .= UrlSelect
     csUrlList .= (listMoveTo (length urls - 1) $ list UrlList urls 2)
 
@@ -1301,7 +1323,7 @@ shouldSkipMessage "" = True
 shouldSkipMessage s = T.all (`elem` (" \t"::String)) s
 
 sendMessage :: EditMode -> T.Text -> MH ()
-sendMessage mode msg = withCurrentChannelId $ \chanId ->
+sendMessage mode msg =
     case shouldSkipMessage msg of
         True -> return ()
         False -> do
@@ -1313,6 +1335,7 @@ sendMessage mode msg = withCurrentChannelId $ \chanId ->
                     postErrorMessage m
                 Connected -> do
                     let myId   = st^.csMe.userIdL
+                        chanId = st^.csCurrentChannelId
                         theTeamId = st^.csMyTeam.teamIdL
                     doAsync Preempt $ do
                       case mode of

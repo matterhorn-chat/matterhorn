@@ -80,11 +80,12 @@ toggleMessagePreview :: MH ()
 toggleMessagePreview = csShowMessagePreview %= not
 
 addUserToCurrentChannel :: T.Text -> MH ()
-addUserToCurrentChannel uname = withCurrentChannelId $ \cId -> do
+addUserToCurrentChannel uname = do
     -- First: is this a valid username?
     usrs <- use csUsers
     case findUserByName usrs uname of
         Just (uid, _) -> do
+            cId <- use csCurrentChannelId
             session <- use (csResources.crSession)
             myTeamId <- use (csMyTeam.teamIdL)
             doAsyncWith Normal $ do

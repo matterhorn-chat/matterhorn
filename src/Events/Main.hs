@@ -90,7 +90,8 @@ mainKeybindings =
                  False -> channelHistoryForward
 
     , KB "Page up in the channel message list"
-         (Vty.EvKey Vty.KPageUp []) $ withCurrentChannelId $ \cId -> do
+         (Vty.EvKey Vty.KPageUp []) $ do
+             cId <- use csCurrentChannelId
              let vp = ChannelMessages cId
              mh $ invalidateCacheEntry vp
              mh $ vScrollToEnd $ viewportScroll vp
@@ -132,8 +133,7 @@ mainKeybindings =
 
     , KB "Clear the current channel's unread message indicator"
          (Vty.EvKey (Vty.KChar 'l') [Vty.MMeta]) $
-           withCurrentChannelId $ \cId ->
-               csChannel(cId) %= clearNewMessageIndicator
+           csCurrentChannel %= clearNewMessageIndicator
 
     , KB "Toggle multi-line message compose mode"
          (Vty.EvKey (Vty.KChar 'e') [Vty.MMeta]) $
@@ -153,8 +153,9 @@ mainKeybindings =
     ]
 
 handleInputSubmission :: MH ()
-handleInputSubmission = withCurrentChannelId $ \cId -> do
+handleInputSubmission = do
   cmdLine <- use (csEditState.cedEditor)
+  cId <- use csCurrentChannelId
 
   -- send the relevant message
   mode <- use (csEditState.cedEditMode)
