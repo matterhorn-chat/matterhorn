@@ -157,10 +157,6 @@ type DoAsyncChannelMM a =
 -- | Performs an asynchronous IO operation on a specific channel. On
 -- completion, the final argument a completion function is executed in
 -- an MH () context in the main (brick) thread.
---
--- If no channel ID is provided on input, the current channel is used;
--- the completion function is always called with the channel ID upon
--- which the operation was performed.
 doAsyncChannelMM :: DoAsyncChannelMM a
 doAsyncChannelMM prio cId mmOp eventHandler =
   doAsyncMM prio (\s t -> mmOp s t cId) (eventHandler cId)
