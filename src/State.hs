@@ -109,8 +109,8 @@ refreshChannelsAndUsers = do
         forM_ (HM.elems chansWithData) $ refreshChannel True
 
         forM_ (HM.elems uMap) $ \u -> do
-            result <- preuse $ csUsers.to (findUserById $ getId u)
-            case result of
+            knownUsers <- use csUsers
+            case findUserById (getId u) knownUsers of
                 Just _ -> return ()
                 Nothing -> handleNewUserDirect u
 
