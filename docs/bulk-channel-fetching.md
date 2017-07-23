@@ -178,6 +178,9 @@ These first steps should be possible without breaking anything:
     startup and also to detect channels that the user was added to
     during a disconnection.
 
+    Done:
+    https://github.com/matterhorn-chat/matterhorn/commit/e5c7a8a68be3c08bbbe2a0043762f00648f38182
+
  5. Modify `refreshChannels` so that instead of iterating over the
     channels already in the state, it asks the server for a full
     list using the bulk endpoint mentioned above. This also provides the
