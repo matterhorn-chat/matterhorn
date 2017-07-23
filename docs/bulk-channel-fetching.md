@@ -193,6 +193,18 @@ These first steps should be possible without breaking anything:
     Done:
     https://github.com/matterhorn-chat/matterhorn/commit/558760cf906ef1770f492fe4b8676e8adfd4f507
 
+As of this point we have the following improvement:
+
+    cygnus@pickle:~/src/matterhorn$ wc -l log_before
+         165 log_before
+    cygnus@pickle:~/src/matterhorn$ wc -l log_after
+          29 log_after
+
+So here are the stats as of this step:
+
+ * Before this refactor: startup time: 14 seconds, 165 log lines
+ * After this refactor: startup time: 3.5 seconds, 29 log lines
+
 Now come the steps to get rid of the implicit current channel
 assumption:
 
