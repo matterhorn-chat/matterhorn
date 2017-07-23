@@ -173,6 +173,9 @@ These first steps should be possible without breaking anything:
     data. This makes it suitable for use at startup and also to pick up
     users added during a disconnection.
 
+    Done:
+    https://github.com/matterhorn-chat/matterhorn/commit/3d2c9fa89f410e5680479fa5e974bb96212c317a
+
  4. Modify `refreshChannels` so that it can handle new channels in
     addition to known channels. This makes it suitable for use at
     startup and also to detect channels that the user was added to
