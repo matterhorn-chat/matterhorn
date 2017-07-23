@@ -71,14 +71,14 @@ pageAmount = 15
 -- metadata is refreshed, and if this is a loaded channel, the
 -- scrollback is updated as well.
 refreshChannel :: Bool -> ChannelWithData -> MH ()
-refreshChannel refreshMessages cwd@(ChannelWithData chan chanData) = do
+refreshChannel refreshMessages cwd@(ChannelWithData chan _) = do
   let cId = getId chan
   curId <- use csCurrentChannelId
 
   -- If this channel is unknown, register it first.
   mChan <- preuse (csChannel(cId))
   when (isNothing mChan) $
-      handleNewChannel (preferredChannelName chan) False chan (Just chanData)
+      handleNewChannel (preferredChannelName chan) False cwd
 
   updateChannelInfo cId cwd
 
@@ -448,9 +448,8 @@ handleChannelInvite cId = do
     st <- use id
     doAsyncWith Normal $ do
         tryMM (mmGetChannel (st^.csResources.crSession) (st^.csMyTeam.teamIdL) cId)
-              (\(ChannelWithData chan _) -> do
-                return $ do
-                  handleNewChannel (preferredChannelName chan) False chan Nothing
+              (\cwd@(ChannelWithData chan _) -> return $ do
+                  handleNewChannel (preferredChannelName chan) False cwd
                   asyncFetchScrollback Normal cId)
 
 startLeaveCurrentChannel :: MH ()
@@ -786,7 +785,8 @@ attemptCreateDMChannel name = do
       doAsyncWith Normal $ do
         -- create a new channel
         nc <- mmCreateDirect session tId uId
-        return $ handleNewChannel name True nc Nothing
+        cwd <- mmGetChannel session tId (getId nc)
+        return $ handleNewChannel name True cwd
     else
       postErrorMessage ("No channel or user named " <> name)
 
@@ -804,17 +804,18 @@ createOrdinaryChannel name  = do
           , minChannelHeader      = Nothing
           , minChannelType        = Ordinary
           }
-    tryMM (mmCreateChannel session tId minChannel)
-          (\c -> return $ handleNewChannel name True c Nothing)
+    tryMM (do c <- mmCreateChannel session tId minChannel
+              mmGetChannel session tId (getId c)
+          )
+          (return . handleNewChannel name True)
 
-handleNewChannel :: T.Text -> Bool -> Channel -> Maybe ChannelData -> MH ()
-handleNewChannel name switch nc mData = do
+handleNewChannel :: T.Text -> Bool -> ChannelWithData -> MH ()
+handleNewChannel name switch (ChannelWithData nc cData) = do
   -- time to do a lot of state updating:
   -- create a new ClientChannel structure
-  let cChannel' = makeClientChannel nc
-      cChannel = case mData of
-          Nothing -> cChannel'
-          Just cData -> cChannel' & ccInfo %~ channelInfoFromChannelWithData (ChannelWithData nc cData)
+  let cChannel = makeClientChannel nc &
+                   ccInfo %~ channelInfoFromChannelWithData (ChannelWithData nc cData)
+
   -- add it to the message map, and to the map so we can look it up by
   -- user name
   csNames.cnToChanId.at(name) .= Just (getId nc)
