@@ -237,13 +237,13 @@ assumption:
      fetch any channels or users. Initialize the channel zipper to empty.
 
  11. Modify `Draw.Main` to show nothing (or perhaps a helpful message)
- in the channel message area when the channel zipper is unfocused.
- Modify it also to not display a cursor for the message editor. (We'll
- assume that this state is only ever transient and no user interaction
- with the editor will be meaningful in this state. If that turns out to
- be false -- if we want to permit the user to interact with the editor
- in periods of prolonged startup delay -- we can always improve this
- later.)
+     in the channel message area when the channel zipper is unfocused.
+     Modify it also to not display a cursor for the message editor.
+     (We'll assume that this state is only ever transient and no user
+     interaction with the editor will be meaningful in this state. If
+     that turns out to be false -- if we want to permit the user to
+     interact with the editor in periods of prolonged startup delay --
+     we can always improve this later.)
 
  12. Remove the now-unused special channel state for the initially
      selected channel.
