@@ -156,28 +156,14 @@ These first steps should be possible without breaking anything:
     Done:
     https://github.com/matterhorn-chat/matterhorn/commit/08e9c900167b8d32534c9ab44b669ce11c2ebfde
 
- 2. Remove the `csCurrentChannelId` and `csCurrentChannel` lenses.
-    Replace their uses with `withCurrentChannelId` and
-    `withCurrentChannel` function calls, respectively, to force explicit
-    dependencies on the assumption of a current channel. Initially these
-    will just use the current channel as usual. We'll modify them in a
-    later step.
-
-    `withCurrentChannelId :: (ChannelId -> MH ()) -> MH ()`
-    `withCurrentChannel :: (ClientChannel -> MH ()) -> MH ()`
-
-    Done in
-    https://github.com/matterhorn-chat/matterhorn/commit/d9b6ab56c7198071b3e93b26e2bc0bbed9d67006
-    but reverted and postponed to the latter half of this plan.
-
- 3. Modify the `WebsocketConnect` handler so that it also refreshes user
+ 2. Modify the `WebsocketConnect` handler so that it also refreshes user
     data. This makes it suitable for use at startup and also to pick up
     users added during a disconnection.
 
     Done:
     https://github.com/matterhorn-chat/matterhorn/commit/3d2c9fa89f410e5680479fa5e974bb96212c317a
 
- 4. Modify `refreshChannels` so that it can handle new channels in
+ 3. Modify `refreshChannels` so that it can handle new channels in
     addition to known channels. This makes it suitable for use at
     startup and also to detect channels that the user was added to
     during a disconnection.
@@ -185,7 +171,7 @@ These first steps should be possible without breaking anything:
     Done:
     https://github.com/matterhorn-chat/matterhorn/commit/e5c7a8a68be3c08bbbe2a0043762f00648f38182
 
- 5. Modify `refreshChannels` so that instead of iterating over the
+ 4. Modify `refreshChannels` so that instead of iterating over the
     channels already in the state, it asks the server for a full
     list using the bulk endpoint mentioned above. This also provides the
     user-specific metadata, so make `refreshChannels` update the state
@@ -209,7 +195,24 @@ So here are the stats as of this step:
 Now come the steps to get rid of the implicit current channel
 assumption:
 
- 7. Modify the Zipper data structure to support optional focus:
+ 5. Remove the `csCurrentChannelId` and `csCurrentChannel` lenses.
+    Replace their uses with `withCurrentChannelId` and
+    `withCurrentChannel` function calls, respectively, to force explicit
+    dependencies on the assumption of a current channel. Initially these
+    will just use the current channel as usual. We'll modify them in a
+    later step.
+
+    `withCurrentChannelId :: (ChannelId -> MH ()) -> MH ()`
+    `withCurrentChannel :: (ClientChannel -> MH ()) -> MH ()`
+
+    This change was done in
+      https://github.com/matterhorn-chat/matterhorn/commit/d9b6ab56c7198071b3e93b26e2bc0bbed9d67006
+    but reverted in
+      https://github.com/matterhorn-chat/matterhorn/commit/5d2666cb98b31b1a959850a98c5a06ca18c17b6b
+    and postponed to this point in the process to fit in better with
+    other proposed changes.
+
+ 6. Modify the Zipper data structure to support optional focus:
 
     - focus :: Z.Zipper a -> Maybe a
     - focus (Z.fromList []) == Nothing
@@ -217,30 +220,30 @@ assumption:
     - (find)left/(find)right/etc transition from Nothing to Just 0 or
       (N-1) as appropriate
 
- 8. Modify `refreshChannels` so that it uses server state to determine
+ 7. Modify `refreshChannels` so that it uses server state to determine
     which channel should be initially selected, rather than hard-coding
     Town Square. Doing this is easy: if the zipper is not focusd on a
     channel, then we're starting up and it's safe to set the focus.
     Otherwise don't do this.
 
- 9. Modify `withCurrentChannel(Id)` to do nothing (skip calls to their
+ 8. Modify `withCurrentChannel(Id)` to do nothing (skip calls to their
     input actions) when `focus (st^.csFocus) == Nothing`.
 
- 10. Modify `preChangeChannelCommon` and `preChangeChannelCommon` so
-     that they can each cope with the new zipper state transformation
-     (Nothing -> Just).
+ 9. Modify `preChangeChannelCommon` and `preChangeChannelCommon` so
+    that they can each cope with the new zipper state transformation
+    (Nothing -> Just).
 
- 11. Modify the setup process (`initializeState`) so that it does not
+ 10. Modify the setup process (`initializeState`) so that it does not
      fetch any channels or users. Initialize the channel zipper to empty.
 
- 12. Modify `Draw.Main` to show nothing (or perhaps a helpful message)
-     in the channel message area when the channel zipper is unfocused.
-     Modify it also to not display a cursor for the message editor.
-     (We'll assume that this state is only ever transient and no user
-     interaction with the editor will be meaningful in this state. If
-     that turns out to be false -- if we want to permit the user to
-     interact with the editor in periods of prolonged startup delay --
-     we can always improve this later.)
+ 11. Modify `Draw.Main` to show nothing (or perhaps a helpful message)
+ in the channel message area when the channel zipper is unfocused.
+ Modify it also to not display a cursor for the message editor. (We'll
+ assume that this state is only ever transient and no user interaction
+ with the editor will be meaningful in this state. If that turns out to
+ be false -- if we want to permit the user to interact with the editor
+ in periods of prolonged startup delay -- we can always improve this
+ later.)
 
- 13. Remove the now-unused special channel state for the initially
+ 12. Remove the now-unused special channel state for the initially
      selected channel.
