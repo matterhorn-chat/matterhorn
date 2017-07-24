@@ -40,7 +40,8 @@ fromIni = do
     configURLOpenCommand <- fieldMbOf "urlOpenCommand" stringField
     configSmartBacktick  <- fieldFlagDef "smartbacktick"
       (configSmartBacktick defaultConfig)
-    configShowBackground <- fieldOf "showBackgroundActivity" backgroundField
+    configShowBackground <- fieldDefOf "showBackgroundActivity" backgroundField
+      (configShowBackground defaultConfig)
     configShowMessagePreview <- fieldFlagDef "showMessagePreview"
       (configShowMessagePreview defaultConfig)
     configEnableAspell <- fieldFlagDef "enableAspell"
