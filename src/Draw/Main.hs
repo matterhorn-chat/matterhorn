@@ -576,7 +576,15 @@ mainInterface st =
         _ -> case st^.csEditState.cedCurrentCompletion of
             Just _ | length (st^.csEditState.cedCompletionAlternatives) > 1 -> completionAlternatives st
             _ -> maybeSubdue $ hBox
-                 [hLimit channelListWidth hBorder, borderElem bsIntersectB, hBorder]
+                 [ hLimit channelListWidth hBorder
+                 , borderElem bsIntersectB
+                 , hBorder
+                 , showBusy]
+
+    showBusy = case st^.csWorkerIsBusy of
+                 Just (Just n) -> txt (T.pack $ "*" <> show n)
+                 Just Nothing -> txt "*"
+                 Nothing -> emptyWidget
 
     maybeSubdue = if st^.csMode == ChannelSelect
                   then forceAttr ""

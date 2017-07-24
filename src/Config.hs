@@ -40,6 +40,7 @@ fromIni = do
     configURLOpenCommand <- fieldMbOf "urlOpenCommand" stringField
     configSmartBacktick  <- fieldFlagDef "smartbacktick"
       (configSmartBacktick defaultConfig)
+    configShowBackground <- fieldOf "showBackgroundActivity" backgroundField
     configShowMessagePreview <- fieldFlagDef "showMessagePreview"
       (configShowMessagePreview defaultConfig)
     configEnableAspell <- fieldFlagDef "enableAspell"
@@ -52,6 +53,15 @@ fromIni = do
     configUnsafeUseHTTP <-
       fieldFlagDef "unsafeUseUnauthenticatedConnection" False
     return Config { .. }
+
+backgroundField :: T.Text -> Either String BackgroundInfo
+backgroundField t =
+  case t of
+    "Disabled" -> Right Disabled
+    "Active" -> Right Active
+    "ActiveCount" -> Right ActiveCount
+    _ -> Left ("Invalid value " <> show t
+              <> "; must be one of: Disabled, Active, ActiveCount")
 
 stringField :: T.Text -> Either String T.Text
 stringField t =
@@ -86,6 +96,7 @@ defaultConfig =
            , configSmartBacktick      = True
            , configURLOpenCommand     = Nothing
            , configActivityBell       = False
+           , configShowBackground     = Disabled
            , configShowMessagePreview = False
            , configEnableAspell       = False
            , configAspellDictionary   = Nothing

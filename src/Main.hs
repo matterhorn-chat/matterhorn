@@ -41,7 +41,29 @@ main = do
 
   requestChan <- STM.atomically STM.newTChan
   void $ forkIO $ forever $ do
+    startWork <-
+      case configShowBackground config of
+        Disabled -> return $ return ()
+        Active -> do chk <- STM.atomically $ STM.tryPeekTChan requestChan
+                     case chk of
+                       Nothing -> do writeBChan eventChan BGIdle
+                                     return $ writeBChan eventChan $ BGBusy Nothing
+                       _ -> return $ return ()
+        ActiveCount -> do
+          chk <- STM.atomically $ do
+            chanCopy <- STM.cloneTChan requestChan
+            let cntMsgs = do m <- STM.tryReadTChan chanCopy
+                             case m of
+                               Nothing -> return 0
+                               Just _ -> (1 +) <$> cntMsgs
+            cntMsgs
+          case chk of
+            0 -> do writeBChan eventChan BGIdle
+                    return (writeBChan eventChan $ BGBusy (Just 1))
+            _ -> do writeBChan eventChan $ BGBusy (Just chk)
+                    return $ return ()
     req <- STM.atomically $ STM.readTChan requestChan
+    startWork
     res <- try req
     case res of
       Left e    -> writeBChan eventChan (AsyncErrEvent e)

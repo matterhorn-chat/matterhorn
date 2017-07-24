@@ -23,6 +23,7 @@ module Types
   , PostListContents(..)
   , ChannelSelectMap
   , AuthenticationException(..)
+  , BackgroundInfo(..)
   , RequestChan
 
   , MMNames
@@ -55,6 +56,7 @@ module Types
   , csMessageSelect
   , csJoinChannelList
   , csConnectionStatus
+  , csWorkerIsBusy
   , csNames
   , csUsers
   , csChannel
@@ -193,11 +195,14 @@ data Config = Config
   , configSmartBacktick  :: Bool
   , configURLOpenCommand :: Maybe T.Text
   , configActivityBell   :: Bool
+  , configShowBackground :: BackgroundInfo
   , configShowMessagePreview :: Bool
   , configEnableAspell   :: Bool
   , configAspellDictionary :: Maybe T.Text
   , configUnsafeUseHTTP :: Bool
   } deriving (Eq, Show)
+
+data BackgroundInfo = Disabled | Active | ActiveCount deriving (Eq, Show)
 
 -- * 'MMNames' structures
 
@@ -459,6 +464,7 @@ data ChatState = ChatState
   , _csRecentChannel               :: Maybe ChannelId
   , _csUrlList                     :: List Name LinkChoice
   , _csConnectionStatus            :: ConnectionStatus
+  , _csWorkerIsBusy                :: Maybe (Maybe Int)
   , _csJoinChannelList             :: Maybe (List Name Channel)
   , _csMessageSelect               :: MessageSelectState
   , _csPostListOverlay             :: PostListOverlayState
@@ -491,6 +497,7 @@ newState rs i u m tz hist sp = ChatState
   , _csRecentChannel               = Nothing
   , _csUrlList                     = list UrlList mempty 2
   , _csConnectionStatus            = Connected
+  , _csWorkerIsBusy                = Nothing
   , _csJoinChannelList             = Nothing
   , _csMessageSelect               = MessageSelectState Nothing
   , _csPostListOverlay             = PostListOverlayState mempty Nothing
@@ -579,6 +586,8 @@ data MHEvent
     -- ^ Tell our main loop to refresh the websocket connection
   | WebsocketDisconnect
   | WebsocketConnect
+  | BGIdle              -- ^ background worker is idle
+  | BGBusy (Maybe Int)  -- ^ background worker is busy (with n requests)
 
 -- ** Application State Lenses
 
