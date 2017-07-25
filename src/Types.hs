@@ -122,6 +122,7 @@ module Types
   , channelNameFromMatch
   , isMine
   , getUsernameForUserId
+  , getLastChannelPreference
 
   , userSigil
   , normalChannelSigil
@@ -156,6 +157,7 @@ import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( at, makeLenses, lens, (&), (^.), (%~), (.~), (^?!)
                                      , _Just, Traversal', preuse )
 import           Network.Mattermost
+import           Network.Mattermost.Types (ChannelId(..))
 import           Network.Mattermost.Exceptions
 import           Network.Mattermost.Lenses
 import           Network.Mattermost.WebSocket
@@ -204,6 +206,21 @@ data Config = Config
   } deriving (Eq, Show)
 
 data BackgroundInfo = Disabled | Active | ActiveCount deriving (Eq, Show)
+
+-- * Preferences
+
+getLastChannelPreference :: Seq.Seq Preference -> Maybe ChannelId
+getLastChannelPreference prefs =
+    let isLastChannelIdPreference p =
+            and [ preferenceCategory p == PreferenceCategoryLast
+                , preferenceName     p == PreferenceName "channel"
+                ]
+        prefChannelId p =
+            let PreferenceValue v = preferenceValue p
+            in CI $ Id v
+
+    in prefChannelId <$>
+       (listToMaybe $ F.toList $ Seq.filter isLastChannelIdPreference prefs)
 
 -- * 'MMNames' structures
 

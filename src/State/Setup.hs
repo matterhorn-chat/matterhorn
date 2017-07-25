@@ -35,9 +35,8 @@ import           Types
 import           Types.Channels
 import qualified Zipper as Z
 
-loadFlaggedMessages :: ChatState -> IO ()
-loadFlaggedMessages st = doAsyncWithIO Normal st $ do
-  prefs <- mmGetMyPreferences (st^.csResources.crSession)
+loadFlaggedMessages :: Seq.Seq Preference -> ChatState -> IO ()
+loadFlaggedMessages prefs st = doAsyncWithIO Normal st $ do
   return $ sequence_ [ updateMessageFlag (flaggedPostId fp) True
                      | Just fp <- F.toList (fmap preferenceToFlaggedPost prefs)
                      , flaggedPostStatus fp
@@ -128,18 +127,24 @@ setupState logFile config requestChan eventChan = do
 
 initializeState :: ChatResources -> Team -> User -> IO ChatState
 initializeState cr myTeam myUser = do
+  prefs <- mmGetMyPreferences (cr^.crSession)
+  let lastChan = getLastChannelPreference prefs
+
   let session = cr^.crSession
       requestChan = cr^.crRequestQueue
   let myTeamId = getId myTeam
-      isTownSquare c = c^.channelNameL == "town-square"
+      isLastChannel c =
+          case lastChan of
+              Nothing -> c^.channelNameL == "town-square"
+              Just lastChanId -> c^.channelIdL == lastChanId
 
-  chans <- Seq.filter isTownSquare <$> mmGetChannels session myTeamId
+  chans <- Seq.filter isLastChannel <$> mmGetChannels session myTeamId
 
+  -- Since the only channel we are dealing with is by construction the
+  -- last channel, we don't have to consider other cases here:
   msgs <- forM (F.toList chans) $ \c -> do
       let cChannel = makeClientChannel c & ccInfo.cdCurrentState .~ state
-          state = if c^.channelNameL == "town-square"
-                  then ChanInitialSelect
-                  else initialChannelState
+          state = ChanInitialSelect
       return (getId c, cChannel)
 
   tz    <- getCurrentTimeZone
@@ -160,13 +165,12 @@ initializeState cr myTeam myUser = do
   spResult <- maybeStartSpellChecker (cr^.crConfiguration) (cr^.crEventQueue)
 
   let chanNames = mkChanNames myUser mempty chans
-      Just townSqId = chanNames ^. cnToChanId . at "town-square"
       chanIds = [ (chanNames ^. cnToChanId) HM.! i
                 | i <- chanNames ^. cnChans ]
-      chanZip = Z.findRight (== townSqId) (Z.fromList chanIds)
+      chanZip = Z.fromList chanIds
       st = newState cr chanZip myUser myTeam tz hist spResult
              & csChannels %~ flip (foldr (uncurry addChannel)) msgs
              & csNames .~ chanNames
 
-  loadFlaggedMessages st
+  loadFlaggedMessages prefs st
   return st
