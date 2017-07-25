@@ -812,7 +812,17 @@ createOrdinaryChannel name  = do
 handleNewChannel :: Bool -> ChannelWithData -> MH ()
 handleNewChannel = handleNewChannel_ True
 
-handleNewChannel_ :: Bool -> Bool -> ChannelWithData -> MH ()
+handleNewChannel_ :: Bool
+                  -- ^ Whether to permit this call to recursively
+                  -- schedule itself for later if it can't locate
+                  -- a DM channel user record. This is to prevent
+                  -- uncontrolled recursion.
+                  -> Bool
+                  -- ^ Whether to switch to the new channel once it has
+                  -- been installed.
+                  -> ChannelWithData
+                  -- ^ The channel to install.
+                  -> MH ()
 handleNewChannel_ permitPostpone switch cwd@(ChannelWithData nc cData) = do
   -- Create a new ClientChannel structure
   let cChannel = makeClientChannel nc &
