@@ -121,6 +121,7 @@ module Types
   , hasUnread
   , channelNameFromMatch
   , isMine
+  , getUsernameForUserId
 
   , userSigil
   , normalChannelSigil

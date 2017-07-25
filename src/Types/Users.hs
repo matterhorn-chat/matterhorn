@@ -1,4 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE DeriveFunctor #-}
 
 module Types.Users
@@ -18,6 +19,7 @@ module Types.Users
   , noUsers, addUser, allUsers
   , modifyUserById
   , getDMChannelName
+  , userIdForDMChannel
   )
 where
 
@@ -27,7 +29,7 @@ import           Data.Maybe (listToMaybe, maybeToList)
 import           Data.Monoid ((<>))
 import qualified Data.Text as T
 import           Lens.Micro.Platform
-import           Network.Mattermost.Types (UserId, User(..), idString)
+import           Network.Mattermost.Types (Id(Id), UserId(..), User(..), idString)
 
 -- * 'UserInfo' Values
 
@@ -125,6 +127,24 @@ getDMChannelName me you = cname
   where
   [loUser, hiUser] = sort $ idString <$> [ you, me ]
   cname = loUser <> "__" <> hiUser
+
+-- | Extract the corresponding other user from a direct channel name.
+-- Returns Nothing if the string is not a direct channel name or if it
+-- is but neither user ID in the name matches the current user's ID.
+userIdForDMChannel :: UserId
+                   -- ^ My user ID
+                   -> T.Text
+                   -- ^ The channel name
+                   -> Maybe UserId
+userIdForDMChannel me chanName =
+    -- Direct channel names are of the form "UID__UID" where one of the
+    -- UIDs is mine and the other is the other channel participant.
+    let vals = T.splitOn "__" chanName
+    in case vals of
+        [u1, u2] -> if | (UI $ Id u1) == me  -> Just $ UI $ Id u2
+                       | (UI $ Id u2) == me  -> Just $ UI $ Id u1
+                       | otherwise        -> Nothing
+        _ -> Nothing
 
 findUserByDMChannelName :: Users
                         -> T.Text -- ^ the dm channel name
