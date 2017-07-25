@@ -909,6 +909,8 @@ editMessage new = do
   chan . ccContents . cdMessages . traversed . filtered isEditedMessage .= msg
   chan %= adjustUpdated new
   csPostMap.ix(postId new) .= msg
+  asyncFetchReactionsForPost (postChannelId new) new
+  asyncFetchAttachments new
   cId <- use csCurrentChannelId
   when (postChannelId new == cId) updateViewed
 
