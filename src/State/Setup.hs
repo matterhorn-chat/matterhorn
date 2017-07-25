@@ -128,15 +128,11 @@ setupState logFile config requestChan eventChan = do
 initializeState :: ChatResources -> Team -> User -> IO ChatState
 initializeState cr myTeam myUser = do
   prefs <- mmGetMyPreferences (cr^.crSession)
-  let lastChan = getLastChannelPreference prefs
 
   let session = cr^.crSession
       requestChan = cr^.crRequestQueue
       myTeamId = getId myTeam
-      isLastChannel c =
-          case lastChan of
-              Nothing -> c^.channelNameL == "town-square"
-              Just lastChanId -> c^.channelIdL == lastChanId
+      isLastChannel c = c^.channelNameL == "town-square"
 
   -- Get all channels, but filter down to just the one we want to start
   -- in. We get all, rather than requesting by name or ID, because
