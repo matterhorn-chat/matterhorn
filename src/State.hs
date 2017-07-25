@@ -107,13 +107,13 @@ refreshChannelsAndUsers = do
     chansWithData <- mmGetAllChannelsWithDataForUser session myTeamId myId
     uMap <- mmGetProfiles session myTeamId 0 10000
     return $ do
-        forM_ (HM.elems chansWithData) $ refreshChannel True
-
         forM_ (HM.elems uMap) $ \u -> do
             knownUsers <- use csUsers
             case findUserById (getId u) knownUsers of
                 Just _ -> return ()
                 Nothing -> handleNewUserDirect u
+
+        forM_ (HM.elems chansWithData) $ refreshChannel True
 
         doAsyncWith Preempt $ updateUserStatuses session
 
