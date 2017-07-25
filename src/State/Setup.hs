@@ -132,12 +132,18 @@ initializeState cr myTeam myUser = do
 
   let session = cr^.crSession
       requestChan = cr^.crRequestQueue
-  let myTeamId = getId myTeam
+      myTeamId = getId myTeam
       isLastChannel c =
           case lastChan of
               Nothing -> c^.channelNameL == "town-square"
               Just lastChanId -> c^.channelIdL == lastChanId
 
+  -- Get all channels, but filter down to just the one we want to start
+  -- in. We get all, rather than requesting by name or ID, because
+  -- we don't know whether the server will give us a last-viewed
+  -- preference, and when it doesn't, we need to look for Town Square
+  -- by name. Even this is ultimately not entirely correct since Town
+  -- Square can be renamed!
   chans <- Seq.filter isLastChannel <$> mmGetChannels session myTeamId
 
   -- Since the only channel we are dealing with is by construction the
