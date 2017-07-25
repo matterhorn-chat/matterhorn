@@ -721,7 +721,7 @@ changeChannel name = do
     st <- use id
     case channelByName st name of
       Just cId -> setFocus cId
-      Nothing -> attemptCreateDMChannel name
+      Nothing  -> attemptCreateDMChannel name
 
 setFocus :: ChannelId -> MH ()
 setFocus cId = setFocusWith (Z.findRight (== cId))
@@ -745,18 +745,21 @@ attemptCreateDMChannel :: T.Text -> MH ()
 attemptCreateDMChannel name = do
   users <- use (csNames.cnUsers)
   nameToChanId <- use (csNames.cnToChanId)
-  if name `elem` users && not (name `HM.member` nameToChanId)
-    then do
-      -- We have a user of that name but no channel. Time to make one!
-      tId <- use (csMyTeam.teamIdL)
-      Just uId <- use (csNames.cnToUserId.at(name))
-      session <- use (csResources.crSession)
-      doAsyncWith Normal $ do
-        -- create a new channel
-        nc <- mmCreateDirect session tId uId
-        return $ handleNewChannel name True nc
-    else
-      postErrorMessage ("No channel or user named " <> name)
+  myName <- use (csMe.userUsernameL)
+  if name == myName
+    then postErrorMessage ("Cannot create a DM channel with yourself")
+    else if name `elem` users && not (name `HM.member` nameToChanId)
+      then do
+        -- We have a user of that name but no channel. Time to make one!
+        tId <- use (csMyTeam.teamIdL)
+        Just uId <- use (csNames.cnToUserId.at(name))
+        session <- use (csResources.crSession)
+        doAsyncWith Normal $ do
+          -- create a new channel
+          nc <- mmCreateDirect session tId uId
+          return $ handleNewChannel name True nc
+      else
+        postErrorMessage ("No channel or user named " <> name)
 
 createOrdinaryChannel :: T.Text -> MH ()
 createOrdinaryChannel name  = do
