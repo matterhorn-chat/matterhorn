@@ -32,7 +32,7 @@ PLATFORM=$(get_platform)
 LONG_HEAD=$(git log | head -1 | awk '{ print $2 }')
 SHORT_HEAD=${LONG_HEAD:0:8}
 DIRNAME=$BASENAME-$VERSION-$PLATFORM-$ARCH
-FILENAME=$DIRNAME.tar.gz
+FILENAME=$DIRNAME.tar.bz2
 CABAL_DEPS_REPO=https://github.com/matterhorn-chat/cabal-dependency-licenses.git
 CABAL_DEPS_TOOL_DIR=$HOME/.cabal/bin
 
