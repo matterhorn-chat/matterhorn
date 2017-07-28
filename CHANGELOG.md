@@ -1,4 +1,19 @@
 
+40000.0.1
+=========
+
+Package changes:
+ * Upgraded mattermost-api to 40000.0.1.
+ * Upgraded mattermost-api-qc to 40000.0.1.
+
+Bug fixes:
+ * Ignore `emoji_added` websocket events rather than crashing due to
+   JSON decode failures (#296)
+ * `channel_viewed` websocket events from 4.0 servers
+   lacking a `channel_id` value no longer cause a client crash
+   (https://mattermost.atlassian.net/browse/PLT-7252)
+ * mkrelease.sh: use correct bindist file extension (#295)
+
 40000.0.0
 =========
 
