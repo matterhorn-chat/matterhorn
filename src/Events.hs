@@ -149,6 +149,9 @@ handleWSEvent we = do
     WMGroupAdded -> -- XXX
       return ()
 
+    WMEmojiAdded -> -- XXX
+      return ()
+
     WMLeaveTeam -> -- XXX: How do we deal with this one?
       return ()
 
