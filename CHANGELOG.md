@@ -1,4 +1,58 @@
 
+40000.0.1
+=========
+
+Package changes:
+ * Upgraded mattermost-api to 40000.0.1.
+ * Upgraded mattermost-api-qc to 40000.0.1.
+
+Bug fixes:
+ * Ignore `emoji_added` websocket events rather than crashing due to
+   JSON decode failures (#296)
+ * `channel_viewed` websocket events from 4.0 servers
+   lacking a `channel_id` value no longer cause a client crash
+   (https://mattermost.atlassian.net/browse/PLT-7252)
+ * mkrelease.sh: use correct bindist file extension (#295)
+
+40000.0.0
+=========
+
+This release supports server version 4.0.
+
+Package changes:
+ * Upgraded mattermost-api to 40000.0.0.
+ * Upgraded mattermost-api-qc to 40000.0.0.
+
+Bug fixes:
+ * Attempts to `/focus` your own DM channel no longer trigger a server
+   error (fixes #294)
+ * Message edits now properly restore message reactions and attachments
+   (fixes #292)
+ * DM channels with topics now display those topics in addition to the
+   DM channel user identification.
+ * Rendering of attachments regressed in 31000.0.0 and is now fixed
+   so that attachments are displayed beneath, not to the right of, their
+   messages.
+
+New features:
+ * Markdown image alt text is now rendered when available and Markdown
+   images are now available in the C-o URL list (fixes #285)
+ * Added a new configuration setting, `showBackgroundActivity`, which
+   determines whether the status of Matterhorn's asynchronous work queue
+   is displayed in the interface. This setting is mostly for developers
+   but can be a helpful diagnostic tool. When enabled, the setting
+   causes the async queue length to appear in the lower-right corner of
+   the interface.
+ * Added a new configuration setting,
+   `unsafeUseUnauthenticatedConnection`, which causes Matterhorn to use
+   a non-HTTPS connection when connecting to the configured host and
+   port. As the sample configuration file says, use this only if you
+   know what you are doing.
+
+Internal changes:
+ * Added support for 4.0's `channel_viewed` and `channel_updated`
+   websocket events.
+
 31000.0.0
 =========
 
