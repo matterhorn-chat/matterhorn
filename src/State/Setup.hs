@@ -20,7 +20,6 @@ import           System.Exit (exitFailure)
 import           System.IO (Handle)
 
 import           Network.Mattermost
-import           Network.Mattermost.Lenses
 import           Network.Mattermost.Logging (mmLoggerDebug)
 
 import           Config
@@ -132,7 +131,6 @@ initializeState cr myTeam myUser = do
   let session = cr^.crSession
       requestChan = cr^.crRequestQueue
       myTeamId = getId myTeam
-      isLastChannel c = c^.channelNameL == "town-square"
 
   -- Get all channels, but filter down to just the one we want to start
   -- in. We get all, rather than requesting by name or ID, because
@@ -140,7 +138,7 @@ initializeState cr myTeam myUser = do
   -- preference, and when it doesn't, we need to look for Town Square
   -- by name. Even this is ultimately not entirely correct since Town
   -- Square can be renamed!
-  chans <- Seq.filter isLastChannel <$> mmGetChannels session myTeamId
+  chans <- Seq.filter isTownSquare <$> mmGetChannels session myTeamId
 
   -- Since the only channel we are dealing with is by construction the
   -- last channel, we don't have to consider other cases here:
