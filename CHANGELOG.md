@@ -1,4 +1,13 @@
 
+40000.0.2
+=========
+
+Bug fixes:
+ * Attachments no longer appear in duplicate for edited messages.
+
+Package changes:
+ * CHANGELOG.md is now listed in extra-doc-files.
+
 40000.0.1
 =========
 
