@@ -9,6 +9,7 @@ import           Control.Monad.IO.Class (liftIO)
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Map.Strict as Map
+import           Data.Maybe (isNothing)
 import           Data.Monoid ((<>))
 import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
@@ -245,9 +246,13 @@ asyncFetchAttachments p = do
     let scheme = "https://"
         attUrl = scheme <> host <> urlForFile fId
         attachment = mkAttachment (fileInfoName info) attUrl fId
+        addIfMissing a as =
+            if isNothing $ Seq.elemIndexL a as
+            then a Seq.<| as
+            else as
         addAttachment m
           | m^.mPostId == Just pId =
-            m & mAttachments %~ (attachment Seq.<|)
+            m & mAttachments %~ (addIfMissing attachment)
           | otherwise              = m
     return $
       csChannel(cId).ccContents.cdMessages.traversed %= addAttachment
