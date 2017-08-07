@@ -65,7 +65,7 @@ Internal changes:
 31000.0.0
 =========
 
-This release supports server verison 3.10.0.
+This release supports server version 3.10.0.
 
 Package changes:
  * Upgraded mattermost-api to 31000.0.0.
@@ -319,4 +319,4 @@ Bug fixes:
 30600.0.0
 =========
 
-Initial versioned release for server verison 3.6.0.
+Initial versioned release for server version 3.6.0.
