@@ -95,3 +95,45 @@ Workflow
    producing code, the result of this is the learning that occurs
    when exploring a design. Then, having learned, one can embark on a
    better-informed implementation.
+
+Design
+------
+
+We would like issues not to linger too long unaddressed, because then
+the meaning of "open ticket" is ambiguous to us and to end users: is it
+planned? Is it well-understood? It's unclear.
+
+But we can only tackle so many things, and sometimes we don't even know
+enough about what's involved in a task to know its level of effort. So
+in the mean time, before we can investigate, the ticket lingers.
+
+Once we're learning what is inovlved, using the ticket as a place to
+hash out ideas or collect context is annoying because using ticket
+comments for that isn't effective.
+
+To address these concerns:
+
+ * Whenever we have some high-level thing we want to implement, instead
+   of creating a placeholder ticket, make a page on the project wiki.
+   On this page we'll collaboratively hash out design ideas, collect
+   context and research, and share approaches. These documents represent
+   a "staging ground" for new ideas.
+
+ * Once enough context has been gathered to support moving forward on
+   the feature, create concrete tickets from the context. It's also
+   possible we decide *not* to move forward, in which case the rationale
+   for aborting can be clearly captured on the wiki. This way, external
+   users can see why we decided not to implement something.
+
+ * When external users create tickets for high-level features that
+   cannot be implemented immediately but that we agree deserve
+   consideration and need further investigation, close the tickets
+   by referring to the newly-created context wiki page where we'll
+   be hashing out the details. This means that we strive to ensure that
+   open tickets are by definition always workable and fleshed-out.
+
+ * This way, when external users stop by to ask about features, we can
+   point them at those pages to make it easier to 1) share the developed
+   context, 2) make it clear what is missing in case they want to help,
+   and 3) keep a record of design decisions for posterity even after the
+   feature is implemented.
