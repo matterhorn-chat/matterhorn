@@ -86,8 +86,8 @@ executable matterhorn
                      , config-ini           >= 0.1.2  && < 0.2
                      , process              >= 1.4    && < 1.7
                      , microlens-platform   >= 0.3    && < 0.4
-                     , brick                >= 0.21   && < 0.22
-                     , vty                  >= 5.15.1 && < 5.16
+                     , brick                >= 0.23   && < 0.24
+                     , vty                  >= 5.17   && < 5.18
                      , transformers         >= 0.4    && < 0.6
                      , text-zipper          >= 0.10   && < 0.11
                      , time                 >= 1.6    && < 1.9
@@ -121,7 +121,7 @@ test-suite test_messages
   hs-source-dirs:     src, test
   build-depends:      base                 >=4.7     && <5
                     , base-compat          >= 0.9    && < 0.10
-                    , brick                >= 0.21   && < 0.22
+                    , brick                >= 0.23   && < 0.24
                     , bytestring           >= 0.10   && < 0.11
                     , cheapskate           >= 0.1    && < 0.2
                     , checkers             >= 0.4    && < 0.5
@@ -151,5 +151,5 @@ test-suite test_messages
                     , Unique               >= 0.4    && < 0.5
                     , unordered-containers >= 0.2    && < 0.3
                     , vector               <= 0.12.0.1
-                    , vty                  >= 5.15.1 && < 5.16
+                    , vty                  >= 5.17   && < 5.18
                     , xdg-basedir          >= 0.2    && < 0.3

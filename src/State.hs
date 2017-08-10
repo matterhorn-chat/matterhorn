@@ -942,8 +942,7 @@ maybeRingBell :: MH ()
 maybeRingBell = do
     doBell <- use (csResources.crConfiguration.to configActivityBell)
     when doBell $ do
-        -- This is safe because we only get Nothing in appStartEvent.
-        Just vty <- mh getVtyHandle
+        vty <- mh getVtyHandle
         liftIO $ ringTerminalBell $ outputIface vty
 
 -- | PostProcessMessageAdd is an internal value that informs the main

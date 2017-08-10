@@ -38,7 +38,7 @@ onEvent :: ChatState -> BrickEvent Name MHEvent -> EventM Name (Next ChatState)
 onEvent st ev = runMHEvent st $ case ev of
   (AppEvent e) -> onAppEvent e
   (VtyEvent (Vty.EvKey (Vty.KChar 'l') [Vty.MCtrl])) -> do
-    Just vty <- mh getVtyHandle
+    vty <- mh getVtyHandle
     liftIO $ Vty.refresh vty
   (VtyEvent e) -> onVtyEvent e
   _ -> return ()
