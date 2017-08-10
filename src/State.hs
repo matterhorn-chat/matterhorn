@@ -699,6 +699,16 @@ channelPageDown = do
   cId <- use csCurrentChannelId
   mh $ vScrollBy (viewportScroll (ChannelMessages cId)) pageAmount
 
+channelScrollUp :: MH ()
+channelScrollUp = do
+  cId <- use csCurrentChannelId
+  mh $ vScrollBy (viewportScroll (ChannelMessages cId)) (-1)
+
+channelScrollDown :: MH ()
+channelScrollDown = do
+  cId <- use csCurrentChannelId
+  mh $ vScrollBy (viewportScroll (ChannelMessages cId)) 1
+
 channelScrollToTop :: MH ()
 channelScrollToTop = do
   cId <- use csCurrentChannelId
