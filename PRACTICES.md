@@ -114,7 +114,10 @@ comments for that isn't effective.
 To address these concerns:
 
  * Whenever we have some high-level thing we want to implement, instead
-   of creating a placeholder ticket, make a page on the project wiki.
+   of creating a placeholder ticket, make a page on the project wiki at
+
+   https://github.com/matterhorn-chat/matterhorn/wiki
+
    On this page we'll collaboratively hash out design ideas, collect
    context and research, and share approaches. These documents represent
    a "staging ground" for new ideas.
