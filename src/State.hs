@@ -1261,15 +1261,25 @@ findUrls chan =
     let msgs = chan^.ccContents.cdMessages
     in removeDuplicates $ concat $ F.toList $ F.toList <$> msgURLs <$> msgs
 
-removeDuplicates :: [LinkChoice] -> [LinkChoice]
-removeDuplicates = snd . go Set.empty
+-- XXX: move this somewhere more sensible!
+
+-- | The 'nubOn' function removes duplicate elements from a list. In
+-- particular, it keeps only the /last/ occurrence of each
+-- element. The equality of two elements in a call to @nub f@ is
+-- determined using @f x == f y@, and the resulting elements must have
+-- an 'Ord' instance in order to make this function more efficient.
+nubOn :: (Ord b) => (a -> b) -> [a] -> [a]
+nubOn f = snd . go Set.empty
   where go before [] = (before, [])
         go before (x:xs) =
           let (before', xs') = go before xs
-              linkData = (x^.linkURL, x^.linkUser) in
-          if linkData `Set.member` before'
+              key = f x in
+          if key `Set.member` before'
             then (before', xs')
-            else (Set.insert linkData before', x : xs')
+            else (Set.insert key before', x : xs')
+
+removeDuplicates :: [LinkChoice] -> [LinkChoice]
+removeDuplicates = nubOn (\ l -> (l^.linkURL, l^.linkUser))
 
 msgURLs :: Message -> Seq.Seq LinkChoice
 msgURLs msg | Just uname <- msg^.mUserName =
