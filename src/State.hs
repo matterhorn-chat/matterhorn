@@ -1265,10 +1265,11 @@ removeDuplicates :: [LinkChoice] -> [LinkChoice]
 removeDuplicates = snd . go Set.empty
   where go before [] = (before, [])
         go before (x:xs) =
-          let (before', xs') = go before xs in
-          if (x^.linkURL) `Set.member` before'
+          let (before', xs') = go before xs
+              linkData = (x^.linkURL, x^.linkUser) in
+          if linkData `Set.member` before'
             then (before', xs')
-            else (Set.insert (x^.linkURL) before', x : xs')
+            else (Set.insert linkData before', x : xs')
 
 msgURLs :: Message -> Seq.Seq LinkChoice
 msgURLs msg | Just uname <- msg^.mUserName =
