@@ -9,7 +9,7 @@ import           Brick (invalidateCacheEntry)
 import           Brick.Widgets.Edit (getEditContents, editContentsL)
 import           Brick.Widgets.List (list, listMoveTo, listSelectedElement)
 import           Control.Applicative
-import           Control.Exception (SomeException, catch, try)
+import           Control.Exception (SomeException, try)
 import           Control.Monad.IO.Class (liftIO)
 import qualified Control.Concurrent.STM as STM
 import           Data.Char (isAlphaNum)
@@ -40,7 +40,6 @@ import           System.Environment.XDG.BaseDir (getUserCacheDir)
 import           System.FilePath
 
 import           Network.Mattermost
-import           Network.Mattermost.Exceptions
 import           Network.Mattermost.Lenses
 
 import           Config
@@ -1075,24 +1074,6 @@ getNewMessageCutoff :: ChannelId -> ChatState -> Maybe NewMessageIndicator
 getNewMessageCutoff cId st = do
     cc <- st^?csChannel(cId)
     return $ cc^.ccInfo.cdNewMessageIndicator
-
-execMMCommand :: T.Text -> T.Text -> MH ()
-execMMCommand name rest = do
-  cId      <- use csCurrentChannelId
-  session  <- use (csResources.crSession)
-  myTeamId <- use (csMyTeam.teamIdL)
-  let mc = MinCommand
-             { minComChannelId = cId
-             , minComCommand   = "/" <> name <> " " <> rest
-             }
-      runCmd = liftIO $ do
-        void $ mmExecute session myTeamId mc
-      handler (HTTPResponseException err) = return (Just err)
-  errMsg <- liftIO $ (runCmd >> return Nothing) `catch` handler
-  case errMsg of
-    Nothing -> return ()
-    Just err ->
-      postErrorMessage ("Error running command: " <> (T.pack err))
 
 fetchCurrentScrollback :: MH ()
 fetchCurrentScrollback = do
