@@ -41,6 +41,8 @@ fromIni = do
     configURLOpenCommandInteractive <- fieldFlagDef "urlOpenCommandIsInteractive" False
     configSmartBacktick  <- fieldFlagDef "smartbacktick"
       (configSmartBacktick defaultConfig)
+    configShowBackground <- fieldDefOf "showBackgroundActivity" backgroundField
+      (configShowBackground defaultConfig)
     configShowMessagePreview <- fieldFlagDef "showMessagePreview"
       (configShowMessagePreview defaultConfig)
     configEnableAspell <- fieldFlagDef "enableAspell"
@@ -50,7 +52,18 @@ fromIni = do
     configPass <- (Just . PasswordCommand <$> field "passcmd") <|>
                   (Just . PasswordString  <$> field "pass") <|>
                   pure Nothing
+    configUnsafeUseHTTP <-
+      fieldFlagDef "unsafeUseUnauthenticatedConnection" False
     return Config { .. }
+
+backgroundField :: T.Text -> Either String BackgroundInfo
+backgroundField t =
+  case t of
+    "Disabled" -> Right Disabled
+    "Active" -> Right Active
+    "ActiveCount" -> Right ActiveCount
+    _ -> Left ("Invalid value " <> show t
+              <> "; must be one of: Disabled, Active, ActiveCount")
 
 stringField :: T.Text -> Either String T.Text
 stringField t =
@@ -86,9 +99,11 @@ defaultConfig =
            , configURLOpenCommand     = Nothing
            , configURLOpenCommandInteractive = False
            , configActivityBell       = False
+           , configShowBackground     = Disabled
            , configShowMessagePreview = False
            , configEnableAspell       = False
            , configAspellDictionary   = Nothing
+           , configUnsafeUseHTTP    = False
            }
 
 findConfig :: Maybe FilePath -> IO (Either String Config)

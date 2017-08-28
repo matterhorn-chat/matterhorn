@@ -40,6 +40,7 @@ module Types.Channels
   -- * Miscellaneous channel-related operations
   , canLeaveChannel
   , preferredChannelName
+  , isTownSquare
   )
 where
 
@@ -319,3 +320,11 @@ updateNewMessageIndicator m =
                   then NewPostsStartingAt $ m^.postCreateAtL
                   else NewPostsAfterServerTime ts
               )
+
+-- | Town Square is special in that its non-display name cannot be
+-- changed and is a hard-coded constant server-side according to the
+-- developers (as of 8/2/17). So this is a reliable way to check for
+-- whether a channel is in fact that channel, even if the user has
+-- changed its display name.
+isTownSquare :: Channel -> Bool
+isTownSquare c = c^.channelNameL == "town-square"

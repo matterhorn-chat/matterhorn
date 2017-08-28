@@ -1,4 +1,5 @@
 {-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE RankNTypes #-}
 
 -- | This module provides the Drawing functionality for the
 -- ChannelList sidebar.  The sidebar is divided vertically into groups
@@ -20,6 +21,7 @@ module Draw.ChannelList (renderChannelList) where
 import           Brick
 import           Brick.Widgets.Border
 import qualified Data.HashMap.Strict as HM
+import           Data.List (sortBy, partition)
 import           Data.Monoid ((<>))
 import qualified Data.Text as T
 import           Draw.Util
@@ -160,7 +162,7 @@ getOrdinaryChannels st =
           unread = hasUnread st chan
           recent = Just chan == st^.csRecentChannel
           current = isCurrentChannel st chan
-          sigil = case st ^. csLastChannelInput . at chan of
+          sigil = case st ^. csEditState.cedLastChannelInput.at chan of
             Nothing      -> T.singleton normalChannelSigil
             Just ("", _) -> T.singleton normalChannelSigil
             _            -> "»"
@@ -174,7 +176,7 @@ getDmChannels st =
     [ ChannelListEntry sigil uname unread mentions recent current (Just $ u^.uiStatus)
     | u <- sortedUserList st
     , let sigil =
-            case do { cId <- m_chanId; st^.csLastChannelInput.at cId } of
+            case do { cId <- m_chanId; st^.csEditState.cedLastChannelInput.at cId } of
               Nothing      -> T.singleton $ userSigilFromInfo u
               Just ("", _) -> T.singleton $ userSigilFromInfo u
               _            -> "»"  -- shows that user has a message in-progress
@@ -187,3 +189,24 @@ getDmChannels st =
             Just cId -> maybe 0 id (st^?csChannel(cId).ccInfo.cdMentionCount)
             Nothing  -> 0
        ]
+
+sortedUserList :: ChatState -> [UserInfo]
+sortedUserList st = sortBy cmp yes <> sortBy cmp no
+  where
+      cmp = compareUserInfo uiName
+      dmHasUnread u =
+          case st^.csNames.cnToChanId.at(u^.uiName) of
+            Nothing  -> False
+            Just cId
+              | (st^.csCurrentChannelId) == cId -> False
+              | otherwise -> hasUnread st cId
+      (yes, no) = partition dmHasUnread (userList st)
+
+compareUserInfo :: (Ord a) => Lens' UserInfo a -> UserInfo -> UserInfo -> Ordering
+compareUserInfo field u1 u2
+    | u1^.uiStatus == Offline && u2^.uiStatus /= Offline =
+      GT
+    | u1^.uiStatus /= Offline && u2^.uiStatus == Offline =
+      LT
+    | otherwise =
+      (u1^.field) `compare` (u2^.field)

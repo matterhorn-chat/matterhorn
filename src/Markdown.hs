@@ -7,6 +7,7 @@ module Markdown
   , ChannelSet
   , renderMessage
   , renderText
+  , renderText'
   , blockGetURLs
   , cursorSentinel
   , addEllipsis
@@ -142,7 +143,10 @@ addBlankLines = go' . viewl
 
 -- Render text to markdown without username highlighting
 renderText :: Text -> Widget a
-renderText txt = renderMarkdown Set.empty Set.empty bs
+renderText txt = renderText' Set.empty Set.empty txt
+
+renderText' :: UserSet -> ChannelSet -> Text -> Widget a
+renderText' uSet cSet txt = renderMarkdown uSet cSet bs
   where C.Doc _ bs = C.markdown C.def txt
 
 vBox :: F.Foldable f => f (Widget a) -> Widget a
@@ -283,8 +287,8 @@ toFragments = go Normal
             go Emph is <> go n xs
           C.Strong is :< xs ->
             go Strong is <> go n xs
-          C.Image _ _ _ :< xs ->
-            Fragment (TStr "[img]") Link <| go n xs
+          C.Image altIs _ _ :< xs ->
+            Fragment (TStr ("[image" <> altInlinesString altIs <> "]")) Link <| go n xs
           C.Entity t :< xs ->
             Fragment (TStr t) Link <| go n xs
           EmptyL -> S.empty
@@ -414,12 +418,13 @@ inlinesToText = F.fold . fmap go
         go (C.Strong is)   = F.fold (fmap go is)
         go (C.Code t)      = t
         go (C.Link is _ _) = F.fold (fmap go is)
-        go (C.Image _ _ _) = "[img]"
+        go (C.Image is _ _) = "[image" <> altInlinesString is <> "]"
         go (C.Entity t)    = t
         go (C.RawHtml t)   = t
 
-
-
+altInlinesString :: S.Seq C.Inline -> T.Text
+altInlinesString is | S.null is = ""
+                    | otherwise = ":" <> inlinesToText is
 
 blockGetURLs :: C.Block -> S.Seq (T.Text, T.Text)
 blockGetURLs (C.Para is) = mconcat $ inlineGetURLs <$> F.toList is
@@ -433,7 +438,7 @@ inlineGetURLs (C.Emph is) = mconcat $ inlineGetURLs <$> F.toList is
 inlineGetURLs (C.Strong is) = mconcat $ inlineGetURLs <$> F.toList is
 inlineGetURLs (C.Link is url "") = (url, inlinesToText is) S.<| (mconcat $ inlineGetURLs <$> F.toList is)
 inlineGetURLs (C.Link is _ url) = (url, inlinesToText is) S.<| (mconcat $ inlineGetURLs <$> F.toList is)
-inlineGetURLs (C.Image is _ _) = mconcat $ inlineGetURLs <$> F.toList is
+inlineGetURLs (C.Image is url _) = S.singleton (url, inlinesToText is)
 inlineGetURLs _ = mempty
 
 replyArrow :: Widget a

@@ -1,4 +1,18 @@
-module Zipper where
+module Zipper
+  ( Zipper
+  , fromList
+  , focus
+  , focusL
+  , left
+  , leftL
+  , right
+  , rightL
+  , findLeft
+  , findRight
+  , updateList
+  , filterZipper
+  )
+where
 
 import Prelude ()
 import Prelude.Compat

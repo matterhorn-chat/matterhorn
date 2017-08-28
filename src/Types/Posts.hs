@@ -1,15 +1,57 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE TemplateHaskell #-}
+module Types.Posts
+  ( ClientMessage
+  , newClientMessage
+  , cmDate
+  , cmType
+  , cmText
 
-module Types.Posts where
+  , ClientMessageType(..)
+
+  , Attachment
+  , mkAttachment
+  , attachmentName
+  , attachmentFileId
+  , attachmentURL
+
+  , ClientPostType(..)
+
+  , ClientPost
+  , toClientPost
+  , cpUserOverride
+  , cpUser
+  , cpText
+  , cpType
+  , cpReactions
+  , cpPending
+  , cpOriginalPost
+  , cpInReplyToPost
+  , cpDate
+  , cpChannelId
+  , cpAttachments
+  , cpDeleted
+  , cpPostId
+
+  , unEmote
+
+  , postIsLeave
+  , postIsJoin
+  , postIsTopicChange
+  , postIsEmote
+
+  , getBlocks
+  )
+where
 
 import           Cheapskate (Blocks)
 import qualified Cheapskate as C
+import           Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Data.Map.Strict as Map
 import           Data.Monoid ((<>))
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
-import           Data.Time.Clock (UTCTime)
+import           Data.Time.Clock (UTCTime, getCurrentTime)
 import           Lens.Micro.Platform ((^.), makeLenses)
 import           Network.Mattermost
 import           Network.Mattermost.Lenses
@@ -23,6 +65,12 @@ data ClientMessage = ClientMessage
   , _cmDate :: UTCTime
   , _cmType :: ClientMessageType
   } deriving (Eq, Show)
+
+-- | Create a new 'ClientMessage' value
+newClientMessage :: (MonadIO m) => ClientMessageType -> T.Text -> m ClientMessage
+newClientMessage ty msg = do
+  now <- liftIO getCurrentTime
+  return (ClientMessage msg now ty)
 
 -- | We format 'ClientMessage' values differently depending on
 --   their 'ClientMessageType'
@@ -65,6 +113,9 @@ data Attachment = Attachment
   , _attachmentURL    :: T.Text
   , _attachmentFileId :: FileId
   } deriving (Eq, Show)
+
+mkAttachment :: T.Text -> T.Text -> FileId -> Attachment
+mkAttachment = Attachment
 
 -- | A Mattermost 'Post' value can represent either a normal
 --   chat message or one of several special events.

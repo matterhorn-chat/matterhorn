@@ -23,10 +23,12 @@ defaultDateFormat :: T.Text
 defaultDateFormat = "%Y-%m-%d"
 
 getTimeFormat :: ChatState -> T.Text
-getTimeFormat st = maybe defaultTimeFormat id (st^.timeFormat)
+getTimeFormat st =
+    maybe defaultTimeFormat id (st^.csResources.crConfiguration.to configTimeFormat)
 
 getDateFormat :: ChatState -> T.Text
-getDateFormat st = maybe defaultDateFormat id (st^.dateFormat)
+getDateFormat st =
+    maybe defaultDateFormat id (st^.csResources.crConfiguration.to configDateFormat)
 
 renderTime :: ChatState -> UTCTime -> Widget Name
 renderTime st = renderUTCTime (getTimeFormat st) (st^.timeZone)

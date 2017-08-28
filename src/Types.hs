@@ -4,8 +4,130 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+module Types
+  ( ConnectionStatus(..)
+  , HelpTopic(..)
+  , MessageSelectState(..)
+  , ProgramOutput(..)
+  , MHEvent(..)
+  , Name(..)
+  , ChannelSelectMatch(..)
+  , ConnectionInfo(..)
+  , Config(..)
+  , HelpScreen(..)
+  , PasswordSource(..)
+  , MatchType(..)
+  , EditMode(..)
+  , Mode(..)
+  , ChannelSelectPattern(..)
+  , PostListContents(..)
+  , ChannelSelectMap
+  , AuthenticationException(..)
+  , BackgroundInfo(..)
+  , RequestChan
 
-module Types where
+  , MMNames
+  , mkChanNames
+  , cnUsers
+  , cnToUserId
+  , cnToChanId
+  , cnChans
+
+  , LinkChoice(LinkChoice)
+  , linkUser
+  , linkURL
+  , linkTime
+  , linkName
+  , linkFileId
+
+  , ChatState
+  , newState
+  , csResources
+  , csFocus
+  , csCurrentChannel
+  , csCurrentChannelId
+  , csUrlList
+  , csShowMessagePreview
+  , csPostMap
+  , csRecentChannel
+  , csPostListOverlay
+  , csMyTeam
+  , csMode
+  , csMessageSelect
+  , csJoinChannelList
+  , csConnectionStatus
+  , csWorkerIsBusy
+  , csNames
+  , csUsers
+  , csChannel
+  , csChannels
+  , csChannelSelectUserMatches
+  , csChannelSelectChannelMatches
+  , csChannelSelectString
+  , csMe
+  , csEditState
+  , timeZone
+
+  , ChatEditState
+  , emptyEditState
+  , cedYankBuffer
+  , cedSpellChecker
+  , cedMisspellings
+  , cedEditMode
+  , cedCompletionAlternatives
+  , cedCurrentCompletion
+  , cedEditor
+  , cedCurrentAlternative
+  , cedMultiline
+  , cedInputHistory
+  , cedInputHistoryPosition
+  , cedLastChannelInput
+
+  , PostListOverlayState
+  , postListSelected
+  , postListPosts
+
+  , ChatResources(ChatResources)
+  , crEventQueue
+  , crTheme
+  , crSession
+  , crSubprocessLog
+  , crRequestQueue
+  , crQuitCondition
+  , crFlaggedPosts
+  , crConn
+  , crConfiguration
+
+  , Cmd(..)
+  , commandName
+  , CmdArgs(..)
+
+  , Keybinding(..)
+  , lookupKeybinding
+
+  , MH
+  , runMHEvent
+  , mh
+  , mhSuspendAndResume
+  , mhHandleEventLensed
+
+  , requestQuit
+  , clientPostToMessage
+  , getMessageForPostId
+  , resetSpellCheckTimer
+  , withChannel
+  , withChannelOrDefault
+  , userList
+  , hasUnread
+  , channelNameFromMatch
+  , isMine
+  , getUsernameForUserId
+  , getLastChannelPreference
+
+  , userSigil
+  , normalChannelSigil
+  )
+where
 
 import           Prelude ()
 import           Prelude.Compat
@@ -15,25 +137,27 @@ import qualified Brick
 import           Brick.BChan
 import           Brick.AttrMap (AttrMap)
 import           Brick.Widgets.Edit (Editor, editor)
-import           Brick.Widgets.List (List)
+import           Brick.Widgets.List (List, list)
 import qualified Control.Concurrent.STM as STM
 import           Control.Concurrent.MVar (MVar)
 import           Control.Exception (SomeException)
 import qualified Control.Monad.State as St
+import qualified Data.Foldable as F
+import qualified Data.Sequence as Seq
 import qualified Data.Set as S
 import           Data.HashMap.Strict (HashMap)
 import           Data.Time.Clock (UTCTime)
 import           Data.Time.LocalTime (TimeZone)
 import qualified Data.HashMap.Strict as HM
-import           Data.List (partition, sortBy)
+import           Data.List (sort)
 import           Data.Maybe
 import           Data.Monoid
 import           Data.Set (Set)
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( at, makeLenses, lens, (&), (^.), (%~), (.~), (^?!)
-                                     , to, SimpleGetter, _Just
-                                     , Traversal', preuse )
+                                     , _Just, Traversal', preuse )
 import           Network.Mattermost
+import           Network.Mattermost.Types (ChannelId(..))
 import           Network.Mattermost.Exceptions
 import           Network.Mattermost.Lenses
 import           Network.Mattermost.WebSocket
@@ -75,10 +199,29 @@ data Config = Config
   , configURLOpenCommand :: Maybe T.Text
   , configURLOpenCommandInteractive :: Bool
   , configActivityBell   :: Bool
+  , configShowBackground :: BackgroundInfo
   , configShowMessagePreview :: Bool
   , configEnableAspell   :: Bool
   , configAspellDictionary :: Maybe T.Text
+  , configUnsafeUseHTTP :: Bool
   } deriving (Eq, Show)
+
+data BackgroundInfo = Disabled | Active | ActiveCount deriving (Eq, Show)
+
+-- * Preferences
+
+getLastChannelPreference :: Seq.Seq Preference -> Maybe ChannelId
+getLastChannelPreference prefs =
+    let isLastChannelIdPreference p =
+            and [ preferenceCategory p == PreferenceCategoryLast
+                , preferenceName     p == PreferenceName "channel"
+                ]
+        prefChannelId p =
+            let PreferenceValue v = preferenceValue p
+            in CI $ Id v
+
+    in prefChannelId <$>
+       (listToMaybe $ F.toList $ Seq.filter isLastChannelIdPreference prefs)
 
 -- * 'MMNames' structures
 
@@ -86,7 +229,6 @@ data Config = Config
 --   names and mapping them back to internal IDs.
 data MMNames = MMNames
   { _cnChans    :: [T.Text] -- ^ All channel names
-  , _cnDMs      :: [T.Text] -- ^ All DM channel names
   , _cnToChanId :: HashMap T.Text ChannelId
       -- ^ Mapping from channel names to 'ChannelId' values
   , _cnUsers    :: [T.Text] -- ^ All users
@@ -96,7 +238,26 @@ data MMNames = MMNames
 
 -- | An empty 'MMNames' record
 emptyMMNames :: MMNames
-emptyMMNames = MMNames mempty mempty mempty mempty mempty
+emptyMMNames = MMNames mempty mempty mempty mempty
+
+mkChanNames :: User -> HM.HashMap UserId User -> Seq.Seq Channel -> MMNames
+mkChanNames myUser users chans = MMNames
+  { _cnChans = sort
+               [ preferredChannelName c
+               | c <- F.toList chans, channelType c /= Direct ]
+  , _cnToChanId = HM.fromList $
+                  [ (preferredChannelName c, channelId c) | c <- F.toList chans ] ++
+                  [ (userUsername u, c)
+                  | u <- HM.elems users
+                  , c <- lookupChan (getDMChannelName (getId myUser) (getId u))
+                  ]
+  , _cnUsers = sort (map userUsername (HM.elems users))
+  , _cnToUserId = HM.fromList
+                  [ (userUsername u, getId u) | u <- HM.elems users ]
+  }
+  where lookupChan n = [ c^.channelIdL
+                       | c <- F.toList chans, c^.channelNameL == n
+                       ]
 
 -- ** 'MMNames' Lenses
 
@@ -227,8 +388,7 @@ data ChatEditState = ChatEditState
   , _cedCurrentAlternative   :: T.Text
   , _cedCompletionAlternatives :: [T.Text]
   , _cedYankBuffer           :: T.Text
-  , _cedSpellChecker         :: Maybe Aspell
-  , _cedResetSpellCheckTimer :: IO ()
+  , _cedSpellChecker         :: Maybe (Aspell, IO ())
   , _cedMisspellings         :: S.Set T.Text
   }
 
@@ -240,8 +400,8 @@ data EditMode =
 
 -- | We can initialize a new 'ChatEditState' value with just an
 --   edit history, which we save locally.
-emptyEditState :: InputHistory -> Maybe Aspell -> IO () -> ChatEditState
-emptyEditState hist sp resetTimer = ChatEditState
+emptyEditState :: InputHistory -> Maybe (Aspell, IO ()) -> ChatEditState
+emptyEditState hist sp = ChatEditState
   { _cedEditor               = editor MessageInput Nothing ""
   , _cedMultiline            = False
   , _cedInputHistory         = hist
@@ -254,7 +414,6 @@ emptyEditState hist sp resetTimer = ChatEditState
   , _cedYankBuffer           = ""
   , _cedSpellChecker         = sp
   , _cedMisspellings         = mempty
-  , _cedResetSpellCheckTimer = resetTimer
   }
 
 -- | A 'RequestChan' is a queue of operations we have to perform
@@ -324,9 +483,43 @@ data ChatState = ChatState
   , _csRecentChannel               :: Maybe ChannelId
   , _csUrlList                     :: List Name LinkChoice
   , _csConnectionStatus            :: ConnectionStatus
+  , _csWorkerIsBusy                :: Maybe (Maybe Int)
   , _csJoinChannelList             :: Maybe (List Name Channel)
   , _csMessageSelect               :: MessageSelectState
   , _csPostListOverlay             :: PostListOverlayState
+  }
+
+newState :: ChatResources
+         -> Zipper ChannelId
+         -> User
+         -> Team
+         -> TimeZone
+         -> InputHistory
+         -> Maybe (Aspell, IO ())
+         -> ChatState
+newState rs i u m tz hist sp = ChatState
+  { _csResources                   = rs
+  , _csFocus                       = i
+  , _csMe                          = u
+  , _csMyTeam                      = m
+  , _csNames                       = emptyMMNames
+  , _csChannels                    = noChannels
+  , _csPostMap                     = HM.empty
+  , _csUsers                       = noUsers
+  , _timeZone                      = tz
+  , _csEditState                   = emptyEditState hist sp
+  , _csMode                        = Main
+  , _csShowMessagePreview          = configShowMessagePreview $ _crConfiguration rs
+  , _csChannelSelectString         = ""
+  , _csChannelSelectChannelMatches = mempty
+  , _csChannelSelectUserMatches    = mempty
+  , _csRecentChannel               = Nothing
+  , _csUrlList                     = list UrlList mempty 2
+  , _csConnectionStatus            = Connected
+  , _csWorkerIsBusy                = Nothing
+  , _csJoinChannelList             = Nothing
+  , _csMessageSelect               = MessageSelectState Nothing
+  , _csPostListOverlay             = PostListOverlayState mempty Nothing
   }
 
 type ChannelSelectMap = HM.HashMap T.Text ChannelSelectMatch
@@ -354,12 +547,6 @@ runMHEvent :: ChatState -> MH () -> EventM Name (Next ChatState)
 runMHEvent st (MH mote) = do
   ((), (st', rs)) <- St.runStateT mote (st, Brick.continue)
   rs st'
-
--- | Run an 'MM computation, ignoring any requests to quit
-runMH :: ChatState -> MH () -> EventM Name ChatState
-runMH st (MH mote) = do
-  ((), (st', _)) <- St.runStateT mote (st, Brick.continue)
-  return st'
 
 -- | lift a computation in 'EventM' into 'MH'
 mh :: EventM Name a -> MH a
@@ -418,6 +605,8 @@ data MHEvent
     -- ^ Tell our main loop to refresh the websocket connection
   | WebsocketDisconnect
   | WebsocketConnect
+  | BGIdle              -- ^ background worker is idle
+  | BGBusy (Maybe Int)  -- ^ background worker is busy (with n requests)
 
 -- ** Application State Lenses
 
@@ -425,6 +614,12 @@ makeLenses ''ChatResources
 makeLenses ''ChatState
 makeLenses ''ChatEditState
 makeLenses ''PostListOverlayState
+
+resetSpellCheckTimer :: ChatEditState -> IO ()
+resetSpellCheckTimer s =
+    case s^.cedSpellChecker of
+        Nothing -> return ()
+        Just (_, reset) -> reset
 
 -- ** Utility Lenses
 csCurrentChannelId :: Lens' ChatState ChannelId
@@ -439,10 +634,6 @@ csChannel :: ChannelId -> Traversal' ChatState ClientChannel
 csChannel cId =
   csChannels . channelByIdL cId
 
-csChannel' :: ChannelId -> Lens' ChatState (Maybe ClientChannel)
-csChannel' cId =
-  csChannels . maybeChannelByIdL cId
-
 withChannel :: ChannelId -> (ClientChannel -> MH ()) -> MH ()
 withChannel cId = withChannelOrDefault cId ()
 
@@ -453,38 +644,10 @@ withChannelOrDefault cId deflt mote = do
     Nothing -> return deflt
     Just c  -> mote c
 
-csUser :: UserId -> Lens' ChatState UserInfo
-csUser uId =
-  lens (\ st -> findUserById uId (st^.csUsers) ^?! _Just)
-       (\ st n -> st & csUsers %~ addUser uId n)
-
--- ** Interim lenses for backwards compat
-
-csSession :: Lens' ChatState Session
-csSession = csResources . crSession
-
-csCmdLine :: Lens' ChatState (Editor T.Text Name)
-csCmdLine = csEditState . cedEditor
-
-csInputHistory :: Lens' ChatState InputHistory
-csInputHistory = csEditState . cedInputHistory
-
-csInputHistoryPosition :: Lens' ChatState (HM.HashMap ChannelId (Maybe Int))
-csInputHistoryPosition = csEditState . cedInputHistoryPosition
-
-csLastChannelInput :: Lens' ChatState (HM.HashMap ChannelId (T.Text, EditMode))
-csLastChannelInput = csEditState . cedLastChannelInput
-
-csCurrentCompletion :: Lens' ChatState (Maybe T.Text)
-csCurrentCompletion = csEditState . cedCurrentCompletion
-
-timeFormat :: SimpleGetter ChatState (Maybe T.Text)
-timeFormat = csResources . crConfiguration . to configTimeFormat
-
-dateFormat :: SimpleGetter ChatState (Maybe T.Text)
-dateFormat = csResources . crConfiguration . to configDateFormat
-
 -- ** 'ChatState' Helper Functions
+
+isMine :: ChatState -> Message -> Bool
+isMine st msg = (Just $ st^.csMe.userUsernameL) == msg^.mUserName
 
 getMessageForPostId :: ChatState -> PostId -> Maybe Message
 getMessageForPostId st pId = st^.csPostMap.at(pId)
@@ -494,22 +657,22 @@ getUsernameForUserId st uId = _uiName <$> findUserById uId (st^.csUsers)
 
 clientPostToMessage :: ChatState -> ClientPost -> Message
 clientPostToMessage st cp = Message
-  { _mText          = _cpText cp
-  , _mUserName      = case _cpUserOverride cp of
+  { _mText          = cp^.cpText
+  , _mUserName      = case cp^.cpUserOverride of
     Just n
-      | _cpType cp == NormalPost -> Just (n <> "[BOT]")
-    _ -> getUsernameForUserId st =<< _cpUser cp
-  , _mDate          = _cpDate cp
-  , _mType          = CP $ _cpType cp
-  , _mPending       = _cpPending cp
-  , _mDeleted       = _cpDeleted cp
-  , _mAttachments   = _cpAttachments cp
+      | cp^.cpType == NormalPost -> Just (n <> "[BOT]")
+    _ -> getUsernameForUserId st =<< cp^.cpUser
+  , _mDate          = cp^.cpDate
+  , _mType          = CP $ cp^.cpType
+  , _mPending       = cp^.cpPending
+  , _mDeleted       = cp^.cpDeleted
+  , _mAttachments   = cp^.cpAttachments
   , _mInReplyToMsg  =
     case cp^.cpInReplyToPost of
       Nothing  -> NotAReply
       Just pId -> InReplyTo pId
   , _mPostId        = Just $ cp^.cpPostId
-  , _mReactions     = _cpReactions cp
+  , _mReactions     = cp^.cpReactions
   , _mOriginalPost  = Just $ cp^.cpOriginalPost
   , _mFlagged       = False
   , _mChannelId     = Just $ cp^.cpChannelId
@@ -562,27 +725,6 @@ hasUnread st cId = maybe False id $ do
   chan <- findChannelById cId (st^.csChannels)
   lastViewTime <- chan^.ccInfo.cdViewed
   return (chan^.ccInfo.cdUpdated > lastViewTime)
-
-sortedUserList :: ChatState -> [UserInfo]
-sortedUserList st = sortBy cmp yes <> sortBy cmp no
-  where
-      cmp = compareUserInfo uiName
-      dmHasUnread u =
-          case st^.csNames.cnToChanId.at(u^.uiName) of
-            Nothing  -> False
-            Just cId
-              | (st^.csCurrentChannelId) == cId -> False
-              | otherwise -> hasUnread st cId
-      (yes, no) = partition dmHasUnread (userList st)
-
-compareUserInfo :: (Ord a) => Lens' UserInfo a -> UserInfo -> UserInfo -> Ordering
-compareUserInfo field u1 u2
-    | u1^.uiStatus == Offline && u2^.uiStatus /= Offline =
-      GT
-    | u1^.uiStatus /= Offline && u2^.uiStatus == Offline =
-      LT
-    | otherwise =
-      (u1^.field) `compare` (u2^.field)
 
 userList :: ChatState -> [UserInfo]
 userList st = filter showUser $ allUsers (st^.csUsers)

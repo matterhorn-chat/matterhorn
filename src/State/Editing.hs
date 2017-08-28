@@ -56,7 +56,7 @@ invokeExternalEditor = do
       Sys.withSystemTempFile "matterhorn_editor.tmp" $ \tmpFileName tmpFileHandle -> do
         -- Write the current message to the temp file
         Sys.hPutStr tmpFileHandle $ T.unpack $ T.intercalate "\n" $
-            getEditContents $ st^.csCmdLine
+            getEditContents $ st^.csEditState.cedEditor
         Sys.hClose tmpFileHandle
 
         -- Run the editor
@@ -72,7 +72,7 @@ invokeExternalEditor = do
                         postErrorMessageIO "Failed to decode file contents as UTF-8" st
                     Right t -> do
                         let tmpLines = T.lines t
-                        return $ st & csCmdLine.editContentsL .~ (Z.textZipper tmpLines Nothing)
+                        return $ st & csEditState.cedEditor.editContentsL .~ (Z.textZipper tmpLines Nothing)
                                     & csEditState.cedMultiline .~ (length tmpLines > 1)
             Sys.ExitFailure _ -> return st
 
@@ -86,7 +86,7 @@ addUserToCurrentChannel uname = do
     case findUserByName usrs uname of
         Just (uid, _) -> do
             cId <- use csCurrentChannelId
-            session <- use csSession
+            session <- use (csResources.crSession)
             myTeamId <- use (csMyTeam.teamIdL)
             doAsyncWith Normal $ do
                 tryMM (void $ mmChannelAddUser session myTeamId cId uid)
@@ -97,59 +97,59 @@ addUserToCurrentChannel uname = do
 handlePaste :: BS.ByteString -> MH ()
 handlePaste bytes = do
   let pasteStr = T.pack (UTF8.toString bytes)
-  csCmdLine %= applyEdit (Z.insertMany pasteStr)
-  contents <- use (csCmdLine.to getEditContents)
+  csEditState.cedEditor %= applyEdit (Z.insertMany pasteStr)
+  contents <- use (csEditState.cedEditor.to getEditContents)
   case length contents > 1 of
       True -> startMultilineEditing
       False -> return ()
 
 editingPermitted :: ChatState -> Bool
 editingPermitted st =
-    (length (getEditContents $ st^.csCmdLine) == 1) ||
+    (length (getEditContents $ st^.csEditState.cedEditor) == 1) ||
     st^.csEditState.cedMultiline
 
 editingKeybindings :: [Keybinding]
 editingKeybindings =
   [ KB "Transpose the final two characters"
     (EvKey (KChar 't') [MCtrl]) $ do
-    csCmdLine %= applyEdit Z.transposeChars
+    csEditState.cedEditor %= applyEdit Z.transposeChars
   , KB "Move one character to the right"
     (EvKey (KChar 'f') [MCtrl]) $ do
-    csCmdLine %= applyEdit Z.moveRight
+    csEditState.cedEditor %= applyEdit Z.moveRight
   , KB "Move one character to the left"
     (EvKey (KChar 'b') [MCtrl]) $ do
-    csCmdLine %= applyEdit Z.moveLeft
+    csEditState.cedEditor %= applyEdit Z.moveLeft
   , KB "Move one word to the right"
     (EvKey (KChar 'f') [MMeta]) $ do
-    csCmdLine %= applyEdit Z.moveWordRight
+    csEditState.cedEditor %= applyEdit Z.moveWordRight
   , KB "Move one word to the left"
     (EvKey (KChar 'b') [MMeta]) $ do
-    csCmdLine %= applyEdit Z.moveWordLeft
+    csEditState.cedEditor %= applyEdit Z.moveWordLeft
   , KB "Delete the word to the left of the cursor"
     (EvKey (KBS) [MMeta]) $ do
-    csCmdLine %= applyEdit Z.deletePrevWord
+    csEditState.cedEditor %= applyEdit Z.deletePrevWord
   , KB "Delete the word to the left of the cursor"
     (EvKey (KChar 'w') [MCtrl]) $ do
-    csCmdLine %= applyEdit Z.deletePrevWord
+    csEditState.cedEditor %= applyEdit Z.deletePrevWord
   , KB "Delete the word to the right of the cursor"
     (EvKey (KChar 'd') [MMeta]) $ do
-    csCmdLine %= applyEdit Z.deleteWord
+    csEditState.cedEditor %= applyEdit Z.deleteWord
   , KB "Move the cursor to the beginning of the input"
     (EvKey KHome []) $ do
-    csCmdLine %= applyEdit gotoHome
+    csEditState.cedEditor %= applyEdit gotoHome
   , KB "Move the cursor to the end of the input"
     (EvKey KEnd []) $ do
-    csCmdLine %= applyEdit gotoEnd
+    csEditState.cedEditor %= applyEdit gotoEnd
   , KB "Kill the line to the right of the current position and copy it"
     (EvKey (KChar 'k') [MCtrl]) $ do
-      z <- use (csCmdLine.editContentsL)
+      z <- use (csEditState.cedEditor.editContentsL)
       let restOfLine = Z.currentLine (Z.killToBOL z)
       csEditState.cedYankBuffer .= restOfLine
-      csCmdLine %= applyEdit Z.killToEOL
+      csEditState.cedEditor %= applyEdit Z.killToEOL
   , KB "Paste the current buffer contents at the cursor"
     (EvKey (KChar 'y') [MCtrl]) $ do
       buf <- use (csEditState.cedYankBuffer)
-      csCmdLine %= applyEdit (Z.insertMany buf)
+      csEditState.cedEditor %= applyEdit (Z.insertMany buf)
   ]
 
 handleEditingInput :: Event -> MH ()
@@ -171,39 +171,39 @@ handleEditingInput e = do
           -- Not editing; backspace here means cancel multi-line message
           -- composition
           EvKey KBS [] | (not $ editingPermitted st) ->
-            csCmdLine %= applyEdit Z.clearZipper
+            csEditState.cedEditor %= applyEdit Z.clearZipper
 
           -- Backspace in editing mode with smart pair insertion means
           -- smart pair removal when possible
           EvKey KBS [] | editingPermitted st && smartBacktick ->
-              let backspace = csCmdLine %= applyEdit Z.deletePrevChar
-              in case cursorAtOneOf smartChars (st^.csCmdLine) of
+              let backspace = csEditState.cedEditor %= applyEdit Z.deletePrevChar
+              in case cursorAtOneOf smartChars (st^.csEditState.cedEditor) of
                   Nothing -> backspace
                   Just ch ->
                       -- Smart char removal:
-                      if | (cursorAtChar ch $ applyEdit Z.moveLeft $ st^.csCmdLine) &&
-                           (cursorIsAtEnd $ applyEdit Z.moveRight $ st^.csCmdLine) ->
-                             csCmdLine %= applyEdit (Z.deleteChar >>> Z.deletePrevChar)
+                      if | (cursorAtChar ch $ applyEdit Z.moveLeft $ st^.csEditState.cedEditor) &&
+                           (cursorIsAtEnd $ applyEdit Z.moveRight $ st^.csEditState.cedEditor) ->
+                             csEditState.cedEditor %= applyEdit (Z.deleteChar >>> Z.deletePrevChar)
                          | otherwise -> backspace
 
           EvKey (KChar ch) [] | editingPermitted st && smartBacktick && ch `elem` smartChars ->
               -- Smart char insertion:
-              let doInsertChar = csCmdLine %= applyEdit (Z.insertChar ch)
-              in if | (editorEmpty $ st^.csCmdLine) ||
-                         ((cursorAtChar ' ' (applyEdit Z.moveLeft $ st^.csCmdLine)) &&
-                          (cursorIsAtEnd $ st^.csCmdLine)) ->
-                        csCmdLine %= applyEdit (Z.insertMany (T.pack $ ch:ch:[]) >>> Z.moveLeft)
-                    | (cursorAtChar ch $ st^.csCmdLine) &&
-                      (cursorIsAtEnd $ applyEdit Z.moveRight $ st^.csCmdLine) ->
-                        csCmdLine %= applyEdit Z.moveRight
+              let doInsertChar = csEditState.cedEditor %= applyEdit (Z.insertChar ch)
+              in if | (editorEmpty $ st^.csEditState.cedEditor) ||
+                         ((cursorAtChar ' ' (applyEdit Z.moveLeft $ st^.csEditState.cedEditor)) &&
+                          (cursorIsAtEnd $ st^.csEditState.cedEditor)) ->
+                        csEditState.cedEditor %= applyEdit (Z.insertMany (T.pack $ ch:ch:[]) >>> Z.moveLeft)
+                    | (cursorAtChar ch $ st^.csEditState.cedEditor) &&
+                      (cursorIsAtEnd $ applyEdit Z.moveRight $ st^.csEditState.cedEditor) ->
+                        csEditState.cedEditor %= applyEdit Z.moveRight
                     | otherwise -> doInsertChar
 
-          _ | editingPermitted st -> mhHandleEventLensed csCmdLine handleEditorEvent e
+          _ | editingPermitted st -> mhHandleEventLensed (csEditState.cedEditor) handleEditorEvent e
             | otherwise -> return ()
 
-        csCurrentCompletion .= Nothing
+        csEditState.cedCurrentCompletion .= Nothing
 
-    liftIO $ st^.csEditState.cedResetSpellCheckTimer
+    liftIO $ resetSpellCheckTimer $ st^.csEditState
 
 -- Kick off an async request to the spell checker for the current editor
 -- contents.
@@ -212,10 +212,10 @@ requestSpellCheck = do
     st <- use id
     case st^.csEditState.cedSpellChecker of
         Nothing -> return ()
-        Just checker -> do
+        Just (checker, _) -> do
             -- Get the editor contents.
-            contents <- getEditContents <$> use csCmdLine
-            doAsyncWith Normal $ do
+            contents <- getEditContents <$> use (csEditState.cedEditor)
+            doAsyncWith Preempt $ do
                 -- For each line in the editor, submit an aspell request.
                 let query = concat <$> mapM (askAspell checker) contents
                     postMistakes :: [AspellResponse] -> MH ()

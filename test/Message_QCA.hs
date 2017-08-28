@@ -99,7 +99,7 @@ genReplyState = oneof [ return NotAReply
                       ]
 
 genAttachment :: Gen Attachment
-genAttachment = Attachment
+genAttachment = mkAttachment
                 <$> genText
                 <*> genText
                 <*> genFileId

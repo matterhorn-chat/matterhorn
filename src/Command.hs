@@ -5,9 +5,15 @@ module Command where
 import Prelude ()
 import Prelude.Compat
 
-import Control.Monad (when)
-import Data.Monoid ((<>))
+import qualified Control.Exception as Exn
+import           Control.Monad.IO.Class (liftIO)
+import           Control.Monad (void)
+import           Data.Monoid ((<>))
 import qualified Data.Text as T
+import           Lens.Micro.Platform
+import qualified Network.Mattermost as MM
+import qualified Network.Mattermost.Lenses as MM
+import qualified Network.Mattermost.Exceptions as MM
 
 import State
 import State.Common
@@ -58,8 +64,8 @@ commandList =
     (TokenArg "theme" NoArg) $ \ (themeName, ()) ->
       setTheme themeName
   , Cmd "topic" "Set the current channel's topic"
-    (LineArg "topic") $ \ p -> do
-      when (not $ T.null p) $ setChannelTopic p
+    (LineArg "topic") $ \ p ->
+      if not (T.null p) then setChannelTopic p else return ()
   , Cmd "add-user" "Add a user to the current channel"
     (TokenArg "username" NoArg) $ \ (uname, ()) ->
         addUserToCurrentChannel uname
@@ -94,6 +100,33 @@ commandList =
       enterFlaggedPostListMode
   ]
 
+execMMCommand :: T.Text -> T.Text -> MH ()
+execMMCommand name rest = do
+  cId      <- use csCurrentChannelId
+  session  <- use (csResources.crSession)
+  myTeamId <- use (csMyTeam.(MM.teamIdL))
+  let mc = MM.MinCommand
+             { MM.minComChannelId = cId
+             , MM.minComCommand   = "/" <> name <> " " <> rest
+             }
+      runCmd = liftIO $ do
+        void $ MM.mmExecute session myTeamId mc
+      handleHTTP (MM.HTTPResponseException err) =
+        return (Just (T.pack err))
+        -- XXX: this might be a bit brittle in the future, because it
+        -- assumes the shape of an error message. We might want to
+        -- think about a better way of discovering this error and
+        -- reporting it accordingly?
+      handleCmdErr (MM.MattermostServerError err) =
+        let (_, msg) = T.breakOn ": " err in
+          return (Just (T.drop 2 msg))
+  errMsg <- liftIO $ (runCmd >> return Nothing) `Exn.catch` handleHTTP
+                                                `Exn.catch` handleCmdErr
+  case errMsg of
+    Nothing -> return ()
+    Just err ->
+      postErrorMessage ("Error running command: " <> err)
+
 dispatchCommand :: T.Text -> MH ()
 dispatchCommand cmd =
   case T.words cmd of
@@ -101,9 +134,7 @@ dispatchCommand cmd =
                              , name == x
                              ] -> go [] matchingCmds
       where go [] [] = do
-              let msg = ("error running command /" <> x <> ":\n" <>
-                         "no such command")
-              postErrorMessage msg
+              execMMCommand x (T.unwords xs)
             go errs [] = do
               let msg = ("error running command /" <> x <> ":\n" <>
                          mconcat [ "    " <> e | e <- errs ])

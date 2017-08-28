@@ -21,7 +21,7 @@ import           Connection
 import           State
 import           State.Common
 import           Types
-import           Types.Channels (ccInfo, cdHeader, cdMentionCount)
+import           Types.Channels (ccInfo, cdMentionCount)
 
 import           Events.ShowHelp
 import           Events.Main
@@ -38,7 +38,7 @@ onEvent :: ChatState -> BrickEvent Name MHEvent -> EventM Name (Next ChatState)
 onEvent st ev = runMHEvent st $ case ev of
   (AppEvent e) -> onAppEvent e
   (VtyEvent (Vty.EvKey (Vty.KChar 'l') [Vty.MCtrl])) -> do
-    Just vty <- mh getVtyHandle
+    vty <- mh getVtyHandle
     liftIO $ Vty.refresh vty
   (VtyEvent e) -> onVtyEvent e
   _ -> return ()
@@ -51,7 +51,9 @@ onAppEvent WebsocketDisconnect =
   csConnectionStatus .= Disconnected
 onAppEvent WebsocketConnect = do
   csConnectionStatus .= Connected
-  refreshChannels
+  refreshChannelsAndUsers
+onAppEvent BGIdle     = csWorkerIsBusy .= Nothing
+onAppEvent (BGBusy n) = csWorkerIsBusy .= Just n
 onAppEvent (WSEvent we) =
   handleWSEvent we
 onAppEvent (RespEvent f) = f
@@ -96,10 +98,6 @@ handleWSEvent we = do
           -- If the message is a header change, also update the channel
           -- metadata.
           myUserId <- use (csMe.userIdL)
-          case postPropsNewHeader (p^.postPropsL) of
-              Just newHeader | postType p == PostTypeHeaderChange ->
-                  csChannel(postChannelId p).ccInfo.cdHeader .= newHeader
-              _ -> return ()
           case wepMentions (weData we) of
             Just lst
               | myUserId `Set.member` lst ->
@@ -149,6 +147,9 @@ handleWSEvent we = do
       return ()
 
     WMGroupAdded -> -- XXX
+      return ()
+
+    WMEmojiAdded -> -- XXX
       return ()
 
     WMLeaveTeam -> -- XXX: How do we deal with this one?
@@ -209,3 +210,13 @@ handleWSEvent we = do
     WMWebRTC      -> return ()
 
     WMAuthenticationChallenge -> return ()
+
+    WMChannelViewed ->
+        case webChannelId $ weBroadcast we of
+            Just cId -> refreshChannelById False cId
+            Nothing -> return ()
+
+    WMChannelUpdated ->
+        case webChannelId $ weBroadcast we of
+            Just cId -> refreshChannelById False cId
+            Nothing -> return ()

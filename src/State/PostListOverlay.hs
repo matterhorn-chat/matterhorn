@@ -28,7 +28,7 @@ exitPostListMode = do
 -- server.
 enterFlaggedPostListMode :: MH ()
 enterFlaggedPostListMode = do
-  session <- use csSession
+  session <- use (csResources.crSession)
   uId <- use (csMe.userIdL)
   doAsyncWith Preempt $ do
     posts <- mmGetFlaggedPosts session uId

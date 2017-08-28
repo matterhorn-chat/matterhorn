@@ -75,7 +75,7 @@ mainKeybindings =
              -- navigate the history.
              isMultiline <- use (csEditState.cedMultiline)
              case isMultiline of
-                 True -> mhHandleEventLensed csCmdLine handleEditorEvent
+                 True -> mhHandleEventLensed (csEditState.cedEditor) handleEditorEvent
                                            (Vty.EvKey Vty.KUp [])
                  False -> channelHistoryBackward
 
@@ -85,7 +85,7 @@ mainKeybindings =
              -- we navigate the history.
              isMultiline <- use (csEditState.cedMultiline)
              case isMultiline of
-                 True -> mhHandleEventLensed csCmdLine handleEditorEvent
+                 True -> mhHandleEventLensed (csEditState.cedEditor) handleEditorEvent
                                            (Vty.EvKey Vty.KDown [])
                  False -> channelHistoryForward
 
@@ -121,10 +121,10 @@ mainKeybindings =
                  -- Enter in multiline mode does the usual thing; we
                  -- only send on Enter when we're outside of multiline
                  -- mode.
-                 True -> mhHandleEventLensed csCmdLine handleEditorEvent
+                 True -> mhHandleEventLensed (csEditState.cedEditor) handleEditorEvent
                                            (Vty.EvKey Vty.KEnter [])
                  False -> do
-                   csCurrentCompletion .= Nothing
+                   csEditState.cedCurrentCompletion .= Nothing
                    handleInputSubmission
 
     , KB "Select and open a URL posted to the current channel"
@@ -154,7 +154,7 @@ mainKeybindings =
 
 handleInputSubmission :: MH ()
 handleInputSubmission = do
-  cmdLine <- use csCmdLine
+  cmdLine <- use (csEditState.cedEditor)
   cId <- use csCurrentChannelId
 
   -- send the relevant message
@@ -165,9 +165,9 @@ handleInputSubmission = do
   -- We clean up before dispatching the command or sending the message
   -- since otherwise the command could change the state and then doing
   -- cleanup afterwards could clean up the wrong things.
-  csCmdLine                     %= applyEdit Z.clearZipper
-  csInputHistory                %= addHistoryEntry allLines cId
-  csInputHistoryPosition.at cId .= Nothing
+  csEditState.cedEditor         %= applyEdit Z.clearZipper
+  csEditState.cedInputHistory   %= addHistoryEntry allLines cId
+  csEditState.cedInputHistoryPosition.at cId .= Nothing
   csEditState.cedEditMode       .= NewPost
 
   case T.uncons line of
@@ -193,19 +193,19 @@ tabComplete dir = do
                                   map (T.singleton normalChannelSigil <>) completableChannels ++
                                   map ("/" <>) (commandName <$> commandList))
 
-      line        = Z.currentLine $ st^.csCmdLine.editContentsL
-      curComp     = st^.csCurrentCompletion
+      line        = Z.currentLine $ st^.csEditState.cedEditor.editContentsL
+      curComp     = st^.csEditState.cedCurrentCompletion
       (nextComp, alts) = case curComp of
           Nothing -> let cw = currentWord line
                      in (Just cw, filter (cw `T.isPrefixOf`) $ Set.toList completions)
           Just cw -> (Just cw, filter (cw `T.isPrefixOf`) $ Set.toList completions)
 
       mb_word     = wordComplete dir priorities completions line curComp
-  csCurrentCompletion .= nextComp
+  csEditState.cedCurrentCompletion .= nextComp
   csEditState.cedCompletionAlternatives .= alts
   let (edit, curAlternative) = case mb_word of
           Nothing -> (id, "")
           Just w -> (Z.insertMany w . Z.deletePrevWord, w)
 
-  csCmdLine %= (applyEdit edit)
+  csEditState.cedEditor %= (applyEdit edit)
   csEditState.cedCurrentAlternative .= curAlternative
