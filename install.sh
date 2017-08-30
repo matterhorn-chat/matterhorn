@@ -92,9 +92,10 @@ function build {
     else
         # But for subsequent builds, build with -j1 to avoid suppression
         # of useful (e.g. warning) output.
-        cabal new-build -j --enable-tests
+        cabal new-build -j1 --enable-tests
     fi
 }
+
 
 init
 install_deps
