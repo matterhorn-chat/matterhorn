@@ -186,7 +186,8 @@ codeBlockToWidget syntax tx =
         Left _ -> rawCodeBlockToWidget tx
         Right tokLines ->
             let padding = B.padLeftRight 1 (B.vLimit (length tokLines) B.vBorder)
-            in padding <+> (B.vBox $ renderTokenLine <$> tokLines)
+            in (B.txt $ "[" <> Sky.sName syntax <> "]") B.<=>
+               (padding <+> (B.vBox $ renderTokenLine <$> tokLines))
 
 renderTokenLine :: Sky.SourceLine -> Widget a
 renderTokenLine [] = B.str " "
