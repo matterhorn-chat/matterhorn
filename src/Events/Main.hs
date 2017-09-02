@@ -168,11 +168,14 @@ handleInputSubmission = do
   csEditState.cedEditor         %= applyEdit Z.clearZipper
   csEditState.cedInputHistory   %= addHistoryEntry allLines cId
   csEditState.cedInputHistoryPosition.at cId .= Nothing
-  csEditState.cedEditMode       .= NewPost
 
   case T.uncons line of
     Just ('/',cmd) -> dispatchCommand cmd
     _              -> sendMessage mode allLines
+
+  -- Reset the edit mode *after* handling the input so that the input
+  -- handler can tell whether we're editing, replying, etc.
+  csEditState.cedEditMode       .= NewPost
 
 tabComplete :: Completion.Direction -> MH ()
 tabComplete dir = do

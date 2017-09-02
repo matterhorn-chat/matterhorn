@@ -5,6 +5,7 @@ module Command where
 import Prelude ()
 import Prelude.Compat
 
+import           Control.Applicative ((<|>))
 import qualified Control.Exception as Exn
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad (void)
@@ -105,9 +106,18 @@ execMMCommand name rest = do
   cId      <- use csCurrentChannelId
   session  <- use (csResources.crSession)
   myTeamId <- use (csMyTeam.(MM.teamIdL))
+  em       <- use (csEditState.cedEditMode)
   let mc = MM.MinCommand
              { MM.minComChannelId = cId
              , MM.minComCommand   = "/" <> name <> " " <> rest
+             , MM.minComParentId  = case em of
+                 Replying _ p -> Just $ MM.getId p
+                 Editing p    -> MM.postParentId p
+                 _            -> Nothing
+             , MM.minComRootId  = case em of
+                 Replying _ p -> MM.postRootId p <|> (Just $ MM.postId p)
+                 Editing p    -> MM.postRootId p
+                 _            -> Nothing
              }
       runCmd = liftIO $ do
         void $ MM.mmExecute session myTeamId mc
