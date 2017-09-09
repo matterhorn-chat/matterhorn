@@ -500,7 +500,8 @@ fetchCurrentChannelMembers = do
               -- channel:
               let msgStr = "Channel members (" <> (T.pack $ show $ length chanUsers) <> "):\n" <>
                            T.intercalate ", " usernames
-                  chanUsers = snd <$> HM.toList chanUserMap
+                  userDeleted u = userDeleteAt u > userCreateAt u
+                  chanUsers = filter (not . userDeleted) $ snd <$> HM.toList chanUserMap
                   usernames = sort $ userUsername <$> (F.toList chanUsers)
 
               postInfoMessage msgStr)
