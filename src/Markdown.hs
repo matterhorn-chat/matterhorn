@@ -64,8 +64,8 @@ omitUsernameTypes =
     , CP TopicChange
     ]
 
-renderMessage :: ChatState -> Message -> Bool -> UserSet -> ChannelSet -> Widget a
-renderMessage st msg renderReplyParent uSet cSet =
+renderMessage :: ChatState -> Message -> Bool -> UserSet -> ChannelSet -> Bool -> Widget a
+renderMessage st msg renderReplyParent uSet cSet indentBlocks =
     let msgUsr = case msg^.mUserName of
           Just u
             | msg^.mType `elem` omitUsernameTypes -> Nothing
@@ -97,7 +97,7 @@ renderMessage st msg renderReplyParent uSet cSet =
               case getMessageForPostId st parentId of
                   Nothing -> withParent (B.str "[loading...]")
                   Just pm ->
-                      let parentMsg = renderMessage st pm False uSet cSet
+                      let parentMsg = renderMessage st pm False uSet cSet False
                       in withParent (addEllipsis $ B.forceAttr replyParentAttr parentMsg)
 
     where
@@ -110,9 +110,12 @@ renderMessage st msg renderReplyParent uSet cSet =
         layout n m (C.Para inlns :< _)
             | F.any breakCheck inlns      = multiLnLayout n m
         layout n m _                      = hBox $ join [n, return m]
-        multiLnLayout n m = vBox [ hBox n
-                                 , hBox [B.txt "  ", m]
-                                 ]
+        multiLnLayout n m =
+            if indentBlocks
+               then vBox [ hBox n
+                         , hBox [B.txt "  ", m]
+                         ]
+               else hBox $ n <> [m]
         breakCheck C.LineBreak = True
         breakCheck C.SoftBreak = True
         breakCheck _ = False
