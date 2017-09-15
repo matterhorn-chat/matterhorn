@@ -114,6 +114,8 @@ test-suite test_messages
   main-is:            test_messages.hs
   other-modules:      Cheapskate_QCA
                     , Message_QCA
+                    , Types.Messages
+                    , Types.Posts
   default-language:   Haskell2010
   default-extensions: OverloadedStrings
                     , ScopedTypeVariables

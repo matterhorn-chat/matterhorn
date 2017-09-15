@@ -1,6 +1,7 @@
-{-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE MultiWayIf       #-}
 {-# LANGUAGE ParallelListComp #-}
+{-# LANGUAGE RecordWildCards  #-}
+{-# LANGUAGE ViewPatterns     #-}
 
 module Markdown
   ( UserSet
@@ -46,6 +47,7 @@ import           Data.Set (Set)
 import qualified Data.Set as Set
 import qualified Graphics.Vty as V
 import           Lens.Micro.Platform ((^.))
+import           Control.Monad              (join)
 
 import           Themes
 import           Types (ChatState, getMessageForPostId, userSigil, normalChannelSigil)
@@ -62,42 +64,62 @@ omitUsernameTypes =
     , CP TopicChange
     ]
 
-renderMessage :: ChatState -> Message -> Bool -> UserSet -> ChannelSet -> Widget a
-renderMessage st msg renderReplyParent uSet cSet =
+renderMessage :: ChatState -> Message -> Bool -> UserSet -> ChannelSet -> Bool -> Widget a
+renderMessage st msg renderReplyParent uSet cSet indentBlocks =
     let msgUsr = case msg^.mUserName of
           Just u
             | msg^.mType `elem` omitUsernameTypes -> Nothing
             | otherwise -> Just u
           Nothing -> Nothing
-        mine = case msgUsr of
+        nameElems = case msgUsr of
           Just un
             | msg^.mType == CP Emote ->
-                hBox [ B.txt "*", colorUsername un
-                     , B.txt " "
-                     , renderMarkdown uSet cSet (msg^.mText)
-                     ]
+                [ B.txt "*", colorUsername un
+                , B.txt " "
+                ]
             | msg^.mFlagged ->
-                hBox [ colorUsername un
-                     , B.txt "[!]: "
-                     , renderMarkdown uSet cSet (msg^.mText)
-                     ]
+                [ colorUsername un
+                , B.txt "[!]: "
+                ]
             | otherwise ->
-                hBox [ colorUsername un
-                     , B.txt ": "
-                     , renderMarkdown uSet cSet (msg^.mText)
-                     ]
-          Nothing -> renderMarkdown uSet cSet (msg^.mText)
-        withParent p = (replyArrow <+> p) B.<=> mine
+                [ colorUsername un
+                , B.txt ": "
+                ]
+          Nothing -> []
+        rmd = renderMarkdown uSet cSet (msg^.mText)
+        msgWidget = layout nameElems rmd . viewl $ msg^.mText
+        withParent p = (replyArrow <+> p) B.<=> msgWidget
     in if not renderReplyParent
-       then mine
+       then msgWidget
        else case msg^.mInReplyToMsg of
-          NotAReply -> mine
+          NotAReply -> msgWidget
           InReplyTo parentId ->
               case getMessageForPostId st parentId of
                   Nothing -> withParent (B.str "[loading...]")
                   Just pm ->
-                      let parentMsg = renderMessage st pm False uSet cSet
+                      let parentMsg = renderMessage st pm False uSet cSet False
                       in withParent (addEllipsis $ B.forceAttr replyParentAttr parentMsg)
+
+    where
+        layout n m xs
+            | length xs > 1               = multiLnLayout n m
+        layout n m (C.Blockquote {} :< _) = multiLnLayout n m
+        layout n m (C.CodeBlock {} :< _)  = multiLnLayout n m
+        layout n m (C.HtmlBlock {} :< _)  = multiLnLayout n m
+        layout n m (C.List {} :< _)       = multiLnLayout n m
+        layout n m (C.Para inlns :< _)
+            | F.any breakCheck inlns      = multiLnLayout n m
+        layout n m _                      = hBox $ join [n, return m]
+        multiLnLayout n m =
+            if indentBlocks
+               then vBox [ hBox n
+                         , hBox [B.txt "  ", m]
+                         ]
+               else hBox $ n <> [m]
+        breakCheck C.LineBreak = True
+        breakCheck C.SoftBreak = True
+        breakCheck _ = False
+
 
 addEllipsis :: Widget a -> Widget a
 addEllipsis w = B.Widget (B.hSize w) (B.vSize w) $ do
@@ -186,7 +208,8 @@ codeBlockToWidget syntax tx =
         Left _ -> rawCodeBlockToWidget tx
         Right tokLines ->
             let padding = B.padLeftRight 1 (B.vLimit (length tokLines) B.vBorder)
-            in padding <+> (B.vBox $ renderTokenLine <$> tokLines)
+            in (B.txt $ "[" <> Sky.sName syntax <> "]") B.<=>
+               (padding <+> (B.vBox $ renderTokenLine <$> tokLines))
 
 renderTokenLine :: Sky.SourceLine -> Widget a
 renderTokenLine [] = B.str " "
