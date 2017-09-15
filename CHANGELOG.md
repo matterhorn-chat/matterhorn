@@ -1,4 +1,29 @@
 
+40000.1.0
+=========
+
+New features:
+ * SOCKS 4 and 5 proxies are supported with the `ALL_PROXY`,
+   `HTTP_PROXY`, and `HTTPS_PROXY` environment variables, provided the
+   proxy URI uses the `socks4` or `socks5` scheme.
+ * Messages that start with a block-level element now get laid out so
+   that the block level element appears underneath, rather than to the
+   right of, the user name. This helps with long usernames such as bots.
+   Thanks to @kellymclaughlin for this change.
+ * Code blocks with fencing now display the language when syntax
+   highlighting is active.
+ * In channel scroll mode, Up/Down arrow keys scroll by just one row
+ * All channel and user data are now fetched more efficiently on startup
+   for greatly improved startup time.
+
+Bug fixes:
+ * The `/members` command now only shows active users (fixes #315)
+ * Reset edit mode after handling commands and message input, provide
+   reply context when running commands (fixes #305)
+ * Allow all unknown client commands to fall through to server (fixes
+   #306)
+ * Improve uniqueness comparisons for URL lists
+
 40000.0.2
 =========
 
