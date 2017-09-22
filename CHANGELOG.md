@@ -3,9 +3,6 @@
 =========
 
 New features:
- * SOCKS 4 and 5 proxies are supported with the `ALL_PROXY`,
-   `HTTP_PROXY`, and `HTTPS_PROXY` environment variables, provided the
-   proxy URI uses the `socks4` or `socks5` scheme.
  * Messages that start with a block-level element now get laid out so
    that the block level element appears underneath, rather than to the
    right of, the user name. This helps with long usernames such as bots.
