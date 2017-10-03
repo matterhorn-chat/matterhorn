@@ -56,10 +56,6 @@ import           Draw.ChannelList (renderChannelList)
 import           Draw.Messages
 import           Draw.Util
 
-
-channelListWidth :: Int
-channelListWidth = 20
-
 previewFromInput :: T.Text -> T.Text -> Maybe Message
 previewFromInput _ s | s == T.singleton cursorSentinel = Nothing
 previewFromInput uname s =
@@ -565,6 +561,7 @@ mainInterface st =
          , userInputArea uSet cSet st
          ]
     where
+    channelListWidth = configChannelListWidth $ st^.csResources.crConfiguration
     mainDisplay = case st^.csMode of
         UrlSelect -> renderUrlList st
         _         -> maybeSubdue $ renderCurrentChannelDisplay uSet cSet st

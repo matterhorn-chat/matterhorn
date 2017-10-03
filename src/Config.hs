@@ -33,6 +33,8 @@ fromIni = do
     configHost           <- fieldMbOf "host" stringField
     configTeam           <- fieldMbOf "team" stringField
     configPort           <- fieldDefOf "port" number (configPort defaultConfig)
+    configChannelListWidth <- fieldDefOf "channelListWidth" number
+                              (configChannelListWidth defaultConfig)
     configTimeFormat     <- fieldMbOf "timeFormat" stringField
     configDateFormat     <- fieldMbOf "dateFormat" stringField
     configTheme          <- fieldMbOf "theme" stringField
@@ -102,6 +104,7 @@ defaultConfig =
            , configEnableAspell       = False
            , configAspellDictionary   = Nothing
            , configUnsafeUseHTTP    = False
+           , configChannelListWidth = 20
            }
 
 findConfig :: Maybe FilePath -> IO (Either String Config)
