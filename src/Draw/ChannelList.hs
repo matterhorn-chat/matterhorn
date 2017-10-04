@@ -21,7 +21,6 @@ module Draw.ChannelList (renderChannelList) where
 import           Brick
 import           Brick.Widgets.Border
 import qualified Data.HashMap.Strict as HM
-import           Data.List (sortBy, partition)
 import           Data.Monoid ((<>))
 import qualified Data.Text as T
 import           Draw.Util
@@ -71,8 +70,9 @@ renderChannelList st =
     let maybeViewport = if hasActiveChannelSelection st
                         then id -- no viewport scrolling when actively selecting a channel
                         else viewport ChannelList Vertical
+        selMatch = st^.csChannelSelectState.selectedMatch
         renderedGroups = if hasActiveChannelSelection st
-                         then renderChannelGroup renderChannelSelectListEntry <$> selectedGroupEntries
+                         then renderChannelGroup (renderChannelSelectListEntry selMatch) <$> selectedGroupEntries
                          else renderChannelGroup renderChannelListEntry       <$> plainGroupEntries
         plainGroupEntries (n, _m, f) = (n, f st)
         selectedGroupEntries (n, m, f) = (n, foldr (addSelectedChannel m) [] $ f st)
@@ -135,10 +135,16 @@ renderChannelListEntry entry =
 -- | Render an individual entry when in Channel Select mode,
 -- highlighting the matching portion, or completely suppressing the
 -- entry if it doesn't match.
-renderChannelSelectListEntry :: SelectedChannelListEntry -> Widget Name
-renderChannelSelectListEntry (SCLE entry match) =
+renderChannelSelectListEntry :: T.Text -> SelectedChannelListEntry -> Widget Name
+renderChannelSelectListEntry selMatch (SCLE entry match) =
     let ChannelSelectMatch preMatch inMatch postMatch = match
-    in decorateRecent entry $ padRight Max $
+        fullName = channelNameFromMatch match
+        maybeSelect = if fullName == selMatch
+                      then withDefAttr currentChannelNameAttr
+                      else id
+    in maybeSelect $
+       decorateRecent entry $
+       padRight Max $
          hBox [ txt $ entrySigil entry
               , txt preMatch
               , forceAttr channelSelectMatchAttr $ txt inMatch
@@ -189,24 +195,3 @@ getDmChannels st =
             Just cId -> maybe 0 id (st^?csChannel(cId).ccInfo.cdMentionCount)
             Nothing  -> 0
        ]
-
-sortedUserList :: ChatState -> [UserInfo]
-sortedUserList st = sortBy cmp yes <> sortBy cmp no
-  where
-      cmp = compareUserInfo uiName
-      dmHasUnread u =
-          case st^.csNames.cnToChanId.at(u^.uiName) of
-            Nothing  -> False
-            Just cId
-              | (st^.csCurrentChannelId) == cId -> False
-              | otherwise -> hasUnread st cId
-      (yes, no) = partition dmHasUnread (userList st)
-
-compareUserInfo :: (Ord a) => Lens' UserInfo a -> UserInfo -> UserInfo -> Ordering
-compareUserInfo field u1 u2
-    | u1^.uiStatus == Offline && u2^.uiStatus /= Offline =
-      GT
-    | u1^.uiStatus /= Offline && u2^.uiStatus == Offline =
-      LT
-    | otherwise =
-      (u1^.field) `compare` (u2^.field)

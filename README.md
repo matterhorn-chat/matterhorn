@@ -91,7 +91,7 @@ To directly message another user, use `/focus` or `C-g`.
 `C-g` channel switching mode does a substring match of the input text on
 the channel and usernames; metacharacters `^` and `$` at the beginning
 or end of input, respectively, anchor the match in case of multiple
-matches.
+matches. The cursor in this mode is usable with `C-n` and `C-p`.
 
 To switch to the channel you were in prior to the current channel, use
 the default binding `M-s` (swap). The most recent channel is marked in

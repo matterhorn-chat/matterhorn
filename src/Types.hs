@@ -44,6 +44,7 @@ module Types
   , userMatches
   , channelMatches
   , channelSelectInput
+  , selectedMatch
   , emptyChannelSelectState
 
   , ChatState
@@ -127,6 +128,7 @@ module Types
   , isMine
   , getUsernameForUserId
   , getLastChannelPreference
+  , sortedUserList
 
   , userSigil
   , normalChannelSigil
@@ -153,7 +155,7 @@ import           Data.HashMap.Strict (HashMap)
 import           Data.Time.Clock (UTCTime)
 import           Data.Time.LocalTime (TimeZone)
 import qualified Data.HashMap.Strict as HM
-import           Data.List (sort)
+import           Data.List (sort, partition, sortBy)
 import           Data.Maybe
 import           Data.Monoid
 import           Data.Set (Set)
@@ -528,13 +530,15 @@ data ChannelSelectState =
     ChannelSelectState { _channelSelectInput :: T.Text
                        , _channelMatches     :: ChannelSelectMap
                        , _userMatches        :: ChannelSelectMap
+                       , _selectedMatch      :: T.Text
                        }
 
 emptyChannelSelectState :: ChannelSelectState
 emptyChannelSelectState =
-    ChannelSelectState { _channelSelectInput          = ""
-                       , _channelMatches = mempty
-                       , _userMatches    = mempty
+    ChannelSelectState { _channelSelectInput = ""
+                       , _channelMatches     = mempty
+                       , _userMatches        = mempty
+                       , _selectedMatch      = ""
                        }
 
 data MessageSelectState =
@@ -744,3 +748,24 @@ userList :: ChatState -> [UserInfo]
 userList st = filter showUser $ allUsers (st^.csUsers)
   where showUser u = not (isSelf u) && (u^.uiInTeam)
         isSelf u = (st^.csMe.userIdL) == (u^.uiId)
+
+sortedUserList :: ChatState -> [UserInfo]
+sortedUserList st = sortBy cmp yes <> sortBy cmp no
+  where
+      cmp = compareUserInfo uiName
+      dmHasUnread u =
+          case st^.csNames.cnToChanId.at(u^.uiName) of
+            Nothing  -> False
+            Just cId
+              | (st^.csCurrentChannelId) == cId -> False
+              | otherwise -> hasUnread st cId
+      (yes, no) = partition dmHasUnread (userList st)
+
+compareUserInfo :: (Ord a) => Lens' UserInfo a -> UserInfo -> UserInfo -> Ordering
+compareUserInfo field u1 u2
+    | u1^.uiStatus == Offline && u2^.uiStatus /= Offline =
+      GT
+    | u1^.uiStatus /= Offline && u2^.uiStatus == Offline =
+      LT
+    | otherwise =
+      (u1^.field) `compare` (u2^.field)

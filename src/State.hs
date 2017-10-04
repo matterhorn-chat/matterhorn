@@ -21,7 +21,7 @@ import           Data.Function (on)
 import           Data.Text.Zipper (textZipper, clearZipper, insertMany, gotoEOL)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
-import           Data.List (sort)
+import           Data.List (sort, findIndex)
 import           Data.Maybe (maybeToList, isJust, catMaybes, isNothing)
 import           Data.Monoid ((<>))
 import qualified Data.Set as Set
@@ -1167,18 +1167,79 @@ beginChannelSelect = do
     csMode .= ChannelSelect
     csChannelSelectState .= emptyChannelSelectState
 
+channelSelectNext :: MH ()
+channelSelectNext = do
+    chanMatches <- use (csChannelSelectState.channelMatches)
+    usernameMatches <- use (csChannelSelectState.userMatches)
+    uList <- use (to sortedUserList)
+
+    csChannelSelectState.selectedMatch %= \oldMatch ->
+        -- Make the list of all matches, in display order.
+        let unames = HM.keys usernameMatches
+            allMatches = concat [ HM.keys chanMatches
+                                , [ u^.uiName | u <- uList
+                                  , u^.uiName `elem` unames
+                                  ]
+                                ]
+        -- If the current match is the last match, select the first
+        -- match. Otherwise find the match following the selected match.
+        in case findIndex (== oldMatch) allMatches of
+            Nothing -> ""
+            Just i -> if i == length allMatches - 1
+                      then head allMatches
+                      else allMatches !! (i + 1)
+
+channelSelectPrevious :: MH ()
+channelSelectPrevious = do
+    chanMatches <- use (csChannelSelectState.channelMatches)
+    usernameMatches <- use (csChannelSelectState.userMatches)
+    uList <- use (to sortedUserList)
+
+    csChannelSelectState.selectedMatch %= \oldMatch ->
+        -- Make the list of all matches, in display order.
+        let unames = HM.keys usernameMatches
+            allMatches = concat [ HM.keys chanMatches
+                                , [ u^.uiName | u <- uList
+                                  , u^.uiName `elem` unames
+                                  ]
+                                ]
+        -- If the current match is the first match, select the last
+        -- match. Otherwise find the match following the selected match.
+        in case findIndex (== oldMatch) allMatches of
+            Nothing -> ""
+            Just i -> if i == 0
+                      then last allMatches
+                      else allMatches !! (i - 1)
+
 updateChannelSelectMatches :: MH ()
 updateChannelSelectMatches = do
     -- Given the current channel select string, find all the channel and
     -- user matches and then update the match lists.
     chanNameMatches <- use (csChannelSelectState.channelSelectInput.to channelNameMatch)
     chanNames   <- use (csNames.cnChans)
-    userNames   <- use (to userList)
+    uList       <- use (to sortedUserList)
     let chanMatches = catMaybes (fmap chanNameMatches chanNames)
-        usernameMatches = catMaybes (fmap chanNameMatches (fmap _uiName userNames))
+        usernameMatches = catMaybes (fmap chanNameMatches (fmap _uiName uList))
         mkMap ms = HM.fromList [(channelNameFromMatch m, m) | m <- ms]
     csChannelSelectState.channelMatches .= mkMap chanMatches
     csChannelSelectState.userMatches    .= mkMap usernameMatches
+    csChannelSelectState.selectedMatch  %= \oldMatch ->
+        -- If the previously selected match is still a possible match,
+        -- leave it selected. Otherwise revert to the first available
+        -- match.
+        let newMatch = if oldMatch `elem` allMatches
+                       then oldMatch
+                       else firstAvailableMatch
+            unames = channelNameFromMatch <$> usernameMatches
+            allMatches = concat [ channelNameFromMatch <$> chanMatches
+                                , [ u^.uiName | u <- uList
+                                  , u^.uiName `elem` unames
+                                  ]
+                                ]
+            firstAvailableMatch = if null allMatches
+                                  then ""
+                                  else head allMatches
+        in newMatch
 
 channelNameMatch :: T.Text -> T.Text -> Maybe ChannelSelectMatch
 channelNameMatch patStr chanName =
