@@ -9,9 +9,10 @@ import           Brick
 import           Brick.BChan
 import           Control.Concurrent (forkIO)
 import qualified Control.Concurrent.STM as STM
-import           Control.Exception (try)
-import           Control.Monad (forever, void)
+import           Control.Exception (SomeException, try)
+import           Control.Monad (forever, void, when)
 import           Data.Monoid ((<>))
+import           Data.List (isInfixOf)
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform
 import           System.Exit (exitFailure)
@@ -40,6 +41,13 @@ main = do
   writeBChan eventChan RefreshWebsocketEvent
 
   requestChan <- STM.atomically STM.newTChan
+
+  -- Filter for exceptions that we don't want to report to the user,
+  -- probably because they are not actionable and/or contain no useful
+  -- information.
+  let shouldIgnore :: SomeException -> Bool
+      shouldIgnore e = "resource vanished" `isInfixOf` show e
+
   void $ forkIO $ forever $ do
     startWork <-
       case configShowBackground config of
@@ -66,7 +74,8 @@ main = do
     startWork
     res <- try req
     case res of
-      Left e    -> writeBChan eventChan (AsyncErrEvent e)
+      Left e    -> when (not $ shouldIgnore e) $
+                   writeBChan eventChan (AsyncErrEvent e)
       Right upd -> writeBChan eventChan (RespEvent upd)
 
   logFile <- case optLogLocation opts of
