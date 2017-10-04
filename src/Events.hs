@@ -140,8 +140,10 @@ handleWSEvent we = do
     WMChannelDeleted -> -- XXX
       return ()
 
-    WMDirectAdded -> -- XXX
-      return ()
+    WMDirectAdded -> do
+        case webChannelId (weBroadcast we) of
+          Just cId -> handleChannelInvite cId
+          Nothing -> return ()
 
     WMChannelCreated -> -- XXX
       return ()
