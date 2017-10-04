@@ -16,10 +16,10 @@ onEventChannelSelect :: Vty.Event -> MH ()
 onEventChannelSelect e | Just kb <- lookupKeybinding e channelSelectKeybindings =
     kbAction kb
 onEventChannelSelect (Vty.EvKey Vty.KBS []) = do
-    csChannelSelectString %= (\s -> if T.null s then s else T.init s)
+    csChannelSelectState.channelSelectInput %= (\s -> if T.null s then s else T.init s)
     updateChannelSelectMatches
 onEventChannelSelect (Vty.EvKey (Vty.KChar c) []) | c /= '\t' = do
-    csChannelSelectString %= (flip T.snoc c)
+    csChannelSelectState.channelSelectInput %= (flip T.snoc c)
     updateChannelSelectMatches
 onEventChannelSelect _ = return ()
 
@@ -30,9 +30,9 @@ channelSelectKeybindings =
              -- If there is only one channel selection match, switch to
              -- it
              st <- use id
-             let allMatches = (HM.elems $ st^.csChannelSelectChannelMatches) <>
-                              (HM.elems $ st^.csChannelSelectUserMatches)
-                 matchingName = (==) (st^.csChannelSelectString) . channelNameFromMatch
+             let allMatches = (HM.elems $ st^.csChannelSelectState.channelMatches) <>
+                              (HM.elems $ st^.csChannelSelectState.userMatches)
+                 matchingName = (==) (st^.csChannelSelectState.channelSelectInput) . channelNameFromMatch
                  exactMatches = filter matchingName allMatches
              case (allMatches, exactMatches) of
                  ([single], _) -> do

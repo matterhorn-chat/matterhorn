@@ -40,6 +40,12 @@ module Types
   , linkName
   , linkFileId
 
+  , ChannelSelectState(..)
+  , userMatches
+  , channelMatches
+  , channelSelectInput
+  , emptyChannelSelectState
+
   , ChatState
   , newState
   , csResources
@@ -61,9 +67,7 @@ module Types
   , csUsers
   , csChannel
   , csChannels
-  , csChannelSelectUserMatches
-  , csChannelSelectChannelMatches
-  , csChannelSelectString
+  , csChannelSelectState
   , csMe
   , csEditState
   , timeZone
@@ -477,9 +481,7 @@ data ChatState = ChatState
   , _csEditState                   :: ChatEditState
   , _csMode                        :: Mode
   , _csShowMessagePreview          :: Bool
-  , _csChannelSelectString         :: T.Text
-  , _csChannelSelectChannelMatches :: ChannelSelectMap
-  , _csChannelSelectUserMatches    :: ChannelSelectMap
+  , _csChannelSelectState          :: ChannelSelectState
   , _csRecentChannel               :: Maybe ChannelId
   , _csUrlList                     :: List Name LinkChoice
   , _csConnectionStatus            :: ConnectionStatus
@@ -510,9 +512,7 @@ newState rs i u m tz hist sp = ChatState
   , _csEditState                   = emptyEditState hist sp
   , _csMode                        = Main
   , _csShowMessagePreview          = configShowMessagePreview $ _crConfiguration rs
-  , _csChannelSelectString         = ""
-  , _csChannelSelectChannelMatches = mempty
-  , _csChannelSelectUserMatches    = mempty
+  , _csChannelSelectState          = emptyChannelSelectState
   , _csRecentChannel               = Nothing
   , _csUrlList                     = list UrlList mempty 2
   , _csConnectionStatus            = Connected
@@ -523,6 +523,19 @@ newState rs i u m tz hist sp = ChatState
   }
 
 type ChannelSelectMap = HM.HashMap T.Text ChannelSelectMatch
+
+data ChannelSelectState =
+    ChannelSelectState { _channelSelectInput :: T.Text
+                       , _channelMatches     :: ChannelSelectMap
+                       , _userMatches        :: ChannelSelectMap
+                       }
+
+emptyChannelSelectState :: ChannelSelectState
+emptyChannelSelectState =
+    ChannelSelectState { _channelSelectInput          = ""
+                       , _channelMatches = mempty
+                       , _userMatches    = mempty
+                       }
 
 data MessageSelectState =
     MessageSelectState { selectMessagePostId :: Maybe PostId }
@@ -614,6 +627,7 @@ makeLenses ''ChatResources
 makeLenses ''ChatState
 makeLenses ''ChatEditState
 makeLenses ''PostListOverlayState
+makeLenses ''ChannelSelectState
 
 resetSpellCheckTimer :: ChatEditState -> IO ()
 resetSpellCheckTimer s =

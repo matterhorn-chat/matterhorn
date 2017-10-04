@@ -53,8 +53,8 @@ channelListGroups :: [ ( GroupName
                        , ChatState -> [ChannelListEntry]
                        ) ]
 channelListGroups =
-    [ ("Channels", csChannelSelectChannelMatches, getOrdinaryChannels)
-    , ("Users",    csChannelSelectUserMatches,    getDmChannels)
+    [ ("Channels", csChannelSelectState.channelMatches, getOrdinaryChannels)
+    , ("Users",    csChannelSelectState.userMatches,    getDmChannels)
     ]
 
 -- | True if there is an active channel selection operation (i.e. in
@@ -62,7 +62,7 @@ channelListGroups =
 -- some channel selection text.
 hasActiveChannelSelection :: ChatState -> Bool
 hasActiveChannelSelection st =
-    st^.csMode == ChannelSelect && not (T.null (st^.csChannelSelectString))
+    st^.csMode == ChannelSelect && not (T.null (st^.csChannelSelectState.channelSelectInput))
 
 -- | This is the main function that is called from external code to
 -- render the ChannelList sidebar.

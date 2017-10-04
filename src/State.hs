@@ -1164,23 +1164,21 @@ showHelpScreen topic = do
 
 beginChannelSelect :: MH ()
 beginChannelSelect = do
-    csMode                        .= ChannelSelect
-    csChannelSelectString         .= ""
-    csChannelSelectChannelMatches .= mempty
-    csChannelSelectUserMatches    .= mempty
+    csMode .= ChannelSelect
+    csChannelSelectState .= emptyChannelSelectState
 
 updateChannelSelectMatches :: MH ()
 updateChannelSelectMatches = do
     -- Given the current channel select string, find all the channel and
     -- user matches and then update the match lists.
-    chanNameMatches <- use (csChannelSelectString.to channelNameMatch)
+    chanNameMatches <- use (csChannelSelectState.channelSelectInput.to channelNameMatch)
     chanNames   <- use (csNames.cnChans)
     userNames   <- use (to userList)
     let chanMatches = catMaybes (fmap chanNameMatches chanNames)
-    let userMatches = catMaybes (fmap chanNameMatches (fmap _uiName userNames))
-    let mkMap ms = HM.fromList [(channelNameFromMatch m, m) | m <- ms]
-    csChannelSelectChannelMatches .= mkMap chanMatches
-    csChannelSelectUserMatches    .= mkMap userMatches
+        usernameMatches = catMaybes (fmap chanNameMatches (fmap _uiName userNames))
+        mkMap ms = HM.fromList [(channelNameFromMatch m, m) | m <- ms]
+    csChannelSelectState.channelMatches .= mkMap chanMatches
+    csChannelSelectState.userMatches    .= mkMap usernameMatches
 
 channelNameMatch :: T.Text -> T.Text -> Maybe ChannelSelectMatch
 channelNameMatch patStr chanName =
