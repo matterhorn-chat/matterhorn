@@ -7,12 +7,8 @@ import           Prelude.Compat
 
 import           Brick
 import           Brick.BChan
-import           Control.Concurrent (forkIO)
 import qualified Control.Concurrent.STM as STM
-import           Control.Exception (SomeException, try)
-import           Control.Monad (forever, void, when)
 import           Data.Monoid ((<>))
-import           Data.List (isInfixOf)
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform
 import           System.Exit (exitFailure)
@@ -26,6 +22,7 @@ import           Events
 import           Draw
 import           Types
 import           InputHistory
+import           AsyncThread
 
 main :: IO ()
 main = do
@@ -42,45 +39,12 @@ main = do
 
   requestChan <- STM.atomically STM.newTChan
 
-  -- Filter for exceptions that we don't want to report to the user,
-  -- probably because they are not actionable and/or contain no useful
-  -- information.
-  let shouldIgnore :: SomeException -> Bool
-      shouldIgnore e = "resource vanished" `isInfixOf` show e
-
-  void $ forkIO $ forever $ do
-    startWork <-
-      case configShowBackground config of
-        Disabled -> return $ return ()
-        Active -> do chk <- STM.atomically $ STM.tryPeekTChan requestChan
-                     case chk of
-                       Nothing -> do writeBChan eventChan BGIdle
-                                     return $ writeBChan eventChan $ BGBusy Nothing
-                       _ -> return $ return ()
-        ActiveCount -> do
-          chk <- STM.atomically $ do
-            chanCopy <- STM.cloneTChan requestChan
-            let cntMsgs = do m <- STM.tryReadTChan chanCopy
-                             case m of
-                               Nothing -> return 0
-                               Just _ -> (1 +) <$> cntMsgs
-            cntMsgs
-          case chk of
-            0 -> do writeBChan eventChan BGIdle
-                    return (writeBChan eventChan $ BGBusy (Just 1))
-            _ -> do writeBChan eventChan $ BGBusy (Just chk)
-                    return $ return ()
-    req <- STM.atomically $ STM.readTChan requestChan
-    startWork
-    res <- try req
-    case res of
-      Left e    -> when (not $ shouldIgnore e) $
-                   writeBChan eventChan (AsyncErrEvent e)
-      Right upd -> writeBChan eventChan (RespEvent upd)
+  startAsyncWorkerThread config requestChan eventChan
 
   logFile <- case optLogLocation opts of
     Just path -> Just `fmap` openFile path WriteMode
     Nothing   -> return Nothing
+
   st <- setupState logFile config requestChan eventChan
 
   let mkVty = do
