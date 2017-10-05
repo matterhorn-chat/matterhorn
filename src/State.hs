@@ -1167,30 +1167,23 @@ beginChannelSelect = do
     csMode .= ChannelSelect
     csChannelSelectState .= emptyChannelSelectState
 
+-- Select the next match in channel selection mode.
 channelSelectNext :: MH ()
-channelSelectNext = do
-    chanMatches <- use (csChannelSelectState.channelMatches)
-    usernameMatches <- use (csChannelSelectState.userMatches)
-    uList <- use (to sortedUserList)
+channelSelectNext = updateSelectedMatch succ
 
-    csChannelSelectState.selectedMatch %= \oldMatch ->
-        -- Make the list of all matches, in display order.
-        let unames = HM.keys usernameMatches
-            allMatches = concat [ HM.keys chanMatches
-                                , [ u^.uiName | u <- uList
-                                  , u^.uiName `elem` unames
-                                  ]
-                                ]
-        -- If the current match is the last match, select the first
-        -- match. Otherwise find the match following the selected match.
-        in case findIndex (== oldMatch) allMatches of
-            Nothing -> ""
-            Just i -> if i == length allMatches - 1
-                      then head allMatches
-                      else allMatches !! (i + 1)
-
+-- Select the previous match in channel selection mode.
 channelSelectPrevious :: MH ()
-channelSelectPrevious = do
+channelSelectPrevious = updateSelectedMatch pred
+
+-- Update the channel selection mode match cursor. The argument function
+-- determines how the new cursor position is computed from the old
+-- one. The new cursor position is automatically wrapped around to the
+-- beginning or end of the channel selection match list, so cursor
+-- transformations do not have to do index validation. If the current
+-- match (e.g. the sentinel "") is not found in the match list, this
+-- sets the cursor position to the first match, if any.
+updateSelectedMatch :: (Int -> Int) -> MH ()
+updateSelectedMatch nextIndex = do
     chanMatches <- use (csChannelSelectState.channelMatches)
     usernameMatches <- use (csChannelSelectState.userMatches)
     uList <- use (to sortedUserList)
@@ -1198,18 +1191,23 @@ channelSelectPrevious = do
     csChannelSelectState.selectedMatch %= \oldMatch ->
         -- Make the list of all matches, in display order.
         let unames = HM.keys usernameMatches
-            allMatches = concat [ HM.keys chanMatches
+            allMatches = concat [ sort $ HM.keys chanMatches
                                 , [ u^.uiName | u <- uList
                                   , u^.uiName `elem` unames
                                   ]
                                 ]
-        -- If the current match is the first match, select the last
-        -- match. Otherwise find the match following the selected match.
         in case findIndex (== oldMatch) allMatches of
-            Nothing -> ""
-            Just i -> if i == 0
-                      then last allMatches
-                      else allMatches !! (i - 1)
+            Nothing -> if null allMatches
+                       then ""
+                       else allMatches !! 0
+            Just i ->
+                let newIndex = if tmpIndex < 0
+                               then length allMatches - 1
+                               else if tmpIndex >= length allMatches
+                                    then 0
+                                    else tmpIndex
+                    tmpIndex = nextIndex i
+                in allMatches !! newIndex
 
 updateChannelSelectMatches :: MH ()
 updateChannelSelectMatches = do
