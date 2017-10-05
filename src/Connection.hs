@@ -16,7 +16,8 @@ import           Types
 
 connectWebsockets :: ChatState -> IO ()
 connectWebsockets st = do
-  let shunt e = writeBChan (st^.csResources.crEventQueue) (WSEvent e)
+  let shunt (Left msg) = writeBChan (st^.csResources.crEventQueue) (WebsocketParseError msg)
+      shunt (Right e) = writeBChan (st^.csResources.crEventQueue) (WSEvent e)
       runWS = mmWithWebSocket (st^.csResources.crSession) shunt $ \ _ -> do
                 writeBChan (st^.csResources.crEventQueue) WebsocketConnect
                 waitAndQuit st

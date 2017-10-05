@@ -620,6 +620,8 @@ data MHEvent
     -- ^ For errors that arise in the course of async IO operations
   | RefreshWebsocketEvent
     -- ^ Tell our main loop to refresh the websocket connection
+  | WebsocketParseError String
+    -- ^ We failed to parse an incoming websocket event
   | WebsocketDisconnect
   | WebsocketConnect
   | BGIdle              -- ^ background worker is idle
