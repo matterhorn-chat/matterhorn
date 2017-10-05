@@ -612,20 +612,24 @@ instance St.MonadIO MH where
 -- | This represents any event that we might care about in the
 --   main application loop
 data MHEvent
-  = WSEvent WebsocketEvent
+    = WSEvent WebsocketEvent
     -- ^ For events that arise from the websocket
-  | RespEvent (MH ())
+    | RespEvent (MH ())
     -- ^ For the result values of async IO operations
-  | AsyncErrEvent SomeException
+    | AsyncErrEvent SomeException
     -- ^ For errors that arise in the course of async IO operations
-  | RefreshWebsocketEvent
+    | RefreshWebsocketEvent
     -- ^ Tell our main loop to refresh the websocket connection
-  | WebsocketParseError String
+    | WebsocketParseError String
     -- ^ We failed to parse an incoming websocket event
-  | WebsocketDisconnect
-  | WebsocketConnect
-  | BGIdle              -- ^ background worker is idle
-  | BGBusy (Maybe Int)  -- ^ background worker is busy (with n requests)
+    | WebsocketDisconnect
+    -- ^ The websocket connection went down.
+    | WebsocketConnect
+    -- ^ The websocket connection came up.
+    | BGIdle
+    -- ^ background worker is idle
+    | BGBusy (Maybe Int)
+    -- ^ background worker is busy (with n requests)
 
 -- ** Application State Lenses
 
