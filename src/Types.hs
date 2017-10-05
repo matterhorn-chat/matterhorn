@@ -609,8 +609,7 @@ instance St.MonadState ChatState MH where
 instance St.MonadIO MH where
   liftIO = MH . St.liftIO
 
--- | This represents any event that we might care about in the
---   main application loop
+-- | This represents events that we handle in the main application loop.
 data MHEvent
     = WSEvent WebsocketEvent
     -- ^ For events that arise from the websocket
