@@ -54,17 +54,17 @@ onAppEvent WebsocketConnect = do
   refreshChannelsAndUsers
 onAppEvent BGIdle     = csWorkerIsBusy .= Nothing
 onAppEvent (BGBusy n) = csWorkerIsBusy .= Just n
-onAppEvent (WebsocketParseError e) = do
-  let msg = "A websocket message could not be parsed:\n  " <>
-            T.pack e <>
-            "\nPlease report this error at https://github.com/matterhorn-chat/matterhorn/issues"
-  postErrorMessage msg
 onAppEvent (WSEvent we) =
   handleWSEvent we
 onAppEvent (RespEvent f) = f
 onAppEvent (AsyncErrEvent e) = do
   let msg = "An unexpected error has occurred! The exception encountered was:\n  " <>
             T.pack (show e) <>
+            "\nPlease report this error at https://github.com/matterhorn-chat/matterhorn/issues"
+  postErrorMessage msg
+onAppEvent (WebsocketParseError e) = do
+  let msg = "A websocket message could not be parsed:\n  " <>
+            T.pack e <>
             "\nPlease report this error at https://github.com/matterhorn-chat/matterhorn/issues"
   postErrorMessage msg
 
