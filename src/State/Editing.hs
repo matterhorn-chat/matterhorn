@@ -113,6 +113,18 @@ editingKeybindings =
   [ KB "Transpose the final two characters"
     (EvKey (KChar 't') [MCtrl]) $ do
     csEditState.cedEditor %= applyEdit Z.transposeChars
+  , KB "Go to the start of the current line"
+    (EvKey (KChar 'a') [MCtrl]) $ do
+    csEditState.cedEditor %= applyEdit Z.gotoBOL
+  , KB "Go to the end of the current line"
+    (EvKey (KChar 'e') [MCtrl]) $ do
+    csEditState.cedEditor %= applyEdit Z.gotoEOL
+  , KB "Delete the character at the cursor"
+    (EvKey (KChar 'd') [MCtrl]) $ do
+    csEditState.cedEditor %= applyEdit Z.deleteChar
+  , KB "Delete from the cursor to the start of the current line"
+    (EvKey (KChar 'u') [MCtrl]) $ do
+    csEditState.cedEditor %= applyEdit Z.killToBOL
   , KB "Move one character to the right"
     (EvKey (KChar 'f') [MCtrl]) $ do
     csEditState.cedEditor %= applyEdit Z.moveRight

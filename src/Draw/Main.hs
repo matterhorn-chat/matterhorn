@@ -56,10 +56,6 @@ import           Draw.ChannelList (renderChannelList)
 import           Draw.Messages
 import           Draw.Util
 
-
-channelListWidth :: Int
-channelListWidth = 20
-
 previewFromInput :: T.Text -> T.Text -> Maybe Message
 previewFromInput _ s | s == T.singleton cursorSentinel = Nothing
 previewFromInput uname s =
@@ -438,13 +434,14 @@ insertTransitions datefmt tz cutoff ms = foldr addMessage ms transitions
 
 renderChannelSelect :: ChatState -> Widget Name
 renderChannelSelect st =
-    withDefAttr channelSelectPromptAttr $
-    (txt "Switch to channel [use ^ and $ to anchor]: ") <+>
-     (showCursor ChannelSelectString (Location (T.length $ st^.csChannelSelectString, 0)) $
-      txt $
-      (if T.null $ st^.csChannelSelectString
-       then " "
-       else st^.csChannelSelectString))
+    let cstr = st^.csChannelSelectState.channelSelectInput
+    in withDefAttr channelSelectPromptAttr $
+       (txt "Switch to channel [use ^ and $ to anchor]: ") <+>
+        (showCursor ChannelSelectString (Location (T.length cstr, 0)) $
+         txt $
+         (if T.null cstr
+          then " "
+          else cstr))
 
 drawMain :: ChatState -> [Widget Name]
 drawMain st = [mainInterface st]
@@ -565,6 +562,7 @@ mainInterface st =
          , userInputArea uSet cSet st
          ]
     where
+    channelListWidth = configChannelListWidth $ st^.csResources.crConfiguration
     mainDisplay = case st^.csMode of
         UrlSelect -> renderUrlList st
         _         -> maybeSubdue $ renderCurrentChannelDisplay uSet cSet st

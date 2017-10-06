@@ -62,6 +62,11 @@ onAppEvent (AsyncErrEvent e) = do
             T.pack (show e) <>
             "\nPlease report this error at https://github.com/matterhorn-chat/matterhorn/issues"
   postErrorMessage msg
+onAppEvent (WebsocketParseError e) = do
+  let msg = "A websocket message could not be parsed:\n  " <>
+            T.pack e <>
+            "\nPlease report this error at https://github.com/matterhorn-chat/matterhorn/issues"
+  postErrorMessage msg
 
 onVtyEvent :: Vty.Event -> MH ()
 onVtyEvent e = do
@@ -140,8 +145,10 @@ handleWSEvent we = do
     WMChannelDeleted -> -- XXX
       return ()
 
-    WMDirectAdded -> -- XXX
-      return ()
+    WMDirectAdded -> do
+        case webChannelId (weBroadcast we) of
+          Just cId -> handleChannelInvite cId
+          Nothing -> return ()
 
     WMChannelCreated -> -- XXX
       return ()

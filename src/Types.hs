@@ -40,6 +40,13 @@ module Types
   , linkName
   , linkFileId
 
+  , ChannelSelectState(..)
+  , userMatches
+  , channelMatches
+  , channelSelectInput
+  , selectedMatch
+  , emptyChannelSelectState
+
   , ChatState
   , newState
   , csResources
@@ -61,9 +68,7 @@ module Types
   , csUsers
   , csChannel
   , csChannels
-  , csChannelSelectUserMatches
-  , csChannelSelectChannelMatches
-  , csChannelSelectString
+  , csChannelSelectState
   , csMe
   , csEditState
   , timeZone
@@ -123,6 +128,7 @@ module Types
   , isMine
   , getUsernameForUserId
   , getLastChannelPreference
+  , sortedUserList
 
   , userSigil
   , normalChannelSigil
@@ -149,7 +155,7 @@ import           Data.HashMap.Strict (HashMap)
 import           Data.Time.Clock (UTCTime)
 import           Data.Time.LocalTime (TimeZone)
 import qualified Data.HashMap.Strict as HM
-import           Data.List (sort)
+import           Data.List (sort, partition, sortBy)
 import           Data.Maybe
 import           Data.Monoid
 import           Data.Set (Set)
@@ -204,6 +210,7 @@ data Config = Config
   , configEnableAspell   :: Bool
   , configAspellDictionary :: Maybe T.Text
   , configUnsafeUseHTTP :: Bool
+  , configChannelListWidth :: Int
   } deriving (Eq, Show)
 
 data BackgroundInfo = Disabled | Active | ActiveCount deriving (Eq, Show)
@@ -477,9 +484,7 @@ data ChatState = ChatState
   , _csEditState                   :: ChatEditState
   , _csMode                        :: Mode
   , _csShowMessagePreview          :: Bool
-  , _csChannelSelectString         :: T.Text
-  , _csChannelSelectChannelMatches :: ChannelSelectMap
-  , _csChannelSelectUserMatches    :: ChannelSelectMap
+  , _csChannelSelectState          :: ChannelSelectState
   , _csRecentChannel               :: Maybe ChannelId
   , _csUrlList                     :: List Name LinkChoice
   , _csConnectionStatus            :: ConnectionStatus
@@ -510,9 +515,7 @@ newState rs i u m tz hist sp = ChatState
   , _csEditState                   = emptyEditState hist sp
   , _csMode                        = Main
   , _csShowMessagePreview          = configShowMessagePreview $ _crConfiguration rs
-  , _csChannelSelectString         = ""
-  , _csChannelSelectChannelMatches = mempty
-  , _csChannelSelectUserMatches    = mempty
+  , _csChannelSelectState          = emptyChannelSelectState
   , _csRecentChannel               = Nothing
   , _csUrlList                     = list UrlList mempty 2
   , _csConnectionStatus            = Connected
@@ -523,6 +526,21 @@ newState rs i u m tz hist sp = ChatState
   }
 
 type ChannelSelectMap = HM.HashMap T.Text ChannelSelectMatch
+
+data ChannelSelectState =
+    ChannelSelectState { _channelSelectInput :: T.Text
+                       , _channelMatches     :: ChannelSelectMap
+                       , _userMatches        :: ChannelSelectMap
+                       , _selectedMatch      :: T.Text
+                       }
+
+emptyChannelSelectState :: ChannelSelectState
+emptyChannelSelectState =
+    ChannelSelectState { _channelSelectInput = ""
+                       , _channelMatches     = mempty
+                       , _userMatches        = mempty
+                       , _selectedMatch      = ""
+                       }
 
 data MessageSelectState =
     MessageSelectState { selectMessagePostId :: Maybe PostId }
@@ -592,21 +610,26 @@ instance St.MonadState ChatState MH where
 instance St.MonadIO MH where
   liftIO = MH . St.liftIO
 
--- | This represents any event that we might care about in the
---   main application loop
+-- | This represents events that we handle in the main application loop.
 data MHEvent
-  = WSEvent WebsocketEvent
+    = WSEvent WebsocketEvent
     -- ^ For events that arise from the websocket
-  | RespEvent (MH ())
+    | RespEvent (MH ())
     -- ^ For the result values of async IO operations
-  | AsyncErrEvent SomeException
+    | AsyncErrEvent SomeException
     -- ^ For errors that arise in the course of async IO operations
-  | RefreshWebsocketEvent
+    | RefreshWebsocketEvent
     -- ^ Tell our main loop to refresh the websocket connection
-  | WebsocketDisconnect
-  | WebsocketConnect
-  | BGIdle              -- ^ background worker is idle
-  | BGBusy (Maybe Int)  -- ^ background worker is busy (with n requests)
+    | WebsocketParseError String
+    -- ^ We failed to parse an incoming websocket event
+    | WebsocketDisconnect
+    -- ^ The websocket connection went down.
+    | WebsocketConnect
+    -- ^ The websocket connection came up.
+    | BGIdle
+    -- ^ background worker is idle
+    | BGBusy (Maybe Int)
+    -- ^ background worker is busy (with n requests)
 
 -- ** Application State Lenses
 
@@ -614,6 +637,7 @@ makeLenses ''ChatResources
 makeLenses ''ChatState
 makeLenses ''ChatEditState
 makeLenses ''PostListOverlayState
+makeLenses ''ChannelSelectState
 
 resetSpellCheckTimer :: ChatEditState -> IO ()
 resetSpellCheckTimer s =
@@ -730,3 +754,24 @@ userList :: ChatState -> [UserInfo]
 userList st = filter showUser $ allUsers (st^.csUsers)
   where showUser u = not (isSelf u) && (u^.uiInTeam)
         isSelf u = (st^.csMe.userIdL) == (u^.uiId)
+
+sortedUserList :: ChatState -> [UserInfo]
+sortedUserList st = sortBy cmp yes <> sortBy cmp no
+  where
+      cmp = compareUserInfo uiName
+      dmHasUnread u =
+          case st^.csNames.cnToChanId.at(u^.uiName) of
+            Nothing  -> False
+            Just cId
+              | (st^.csCurrentChannelId) == cId -> False
+              | otherwise -> hasUnread st cId
+      (yes, no) = partition dmHasUnread (userList st)
+
+compareUserInfo :: (Ord a) => Lens' UserInfo a -> UserInfo -> UserInfo -> Ordering
+compareUserInfo field u1 u2
+    | u1^.uiStatus == Offline && u2^.uiStatus /= Offline =
+      GT
+    | u1^.uiStatus /= Offline && u2^.uiStatus == Offline =
+      LT
+    | otherwise =
+      (u1^.field) `compare` (u2^.field)

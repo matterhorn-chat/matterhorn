@@ -191,7 +191,7 @@ instance ToWidget Block where
     B.withDefAttr clientHeaderAttr $
       hBox [header n, B.txt " ", toInlineChunk is uPat cPat]
   toWidget uPat cPat (C.Blockquote is) =
-    B.padLeft (B.Pad 4) (vBox $ fmap (toWidget uPat cPat) is)
+    addQuoting (vBox $ fmap (toWidget uPat cPat) is)
   toWidget uPat cPat (C.List _ l bs) = toList l bs uPat cPat
   toWidget _ _ (C.CodeBlock ci tx) =
       let f = maybe rawCodeBlockToWidget codeBlockToWidget mSyntax
@@ -199,6 +199,22 @@ instance ToWidget Block where
       in f tx
   toWidget _ _ (C.HtmlBlock txt) = textWithCursor txt
   toWidget _ _ (C.HRule) = B.vLimit 1 (B.fill '*')
+
+quoteChar :: Char
+quoteChar = '>'
+
+addQuoting :: B.Widget n -> B.Widget n
+addQuoting w =
+    B.Widget B.Fixed (B.vSize w) $ do
+        ctx <- B.getContext
+        childResult <- B.render $ B.hLimit (ctx^.B.availWidthL - 2) w
+
+        let quoteBorder = B.raw $ V.charFill (ctx^.B.attrL) quoteChar 1 height
+            height = V.imageHeight $ childResult^.B.imageL
+
+        B.render $ B.hBox [ B.padRight (B.Pad 1) quoteBorder
+                          , B.Widget B.Fixed B.Fixed $ return childResult
+                          ]
 
 codeBlockToWidget :: Sky.Syntax -> T.Text -> Widget a
 codeBlockToWidget syntax tx =
