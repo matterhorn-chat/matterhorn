@@ -288,7 +288,7 @@ data FragmentStyle
   | Strong
   | Code
   | User
-  | Link
+  | Link Text
   | Emoji
   | Channel
     deriving (Eq, Show)
@@ -307,8 +307,8 @@ toFragments = go Normal
             Fragment TLineBreak n <| go n xs
           C.Link label url _ :< xs ->
             case F.toList label of
-              [C.Str s] | s == url -> Fragment (TLink url) Link <| go n xs
-              _                    -> go Link label <> go n xs
+              [C.Str s] | s == url -> Fragment (TLink url) (Link url) <| go n xs
+              _                    -> go (Link url) label <> go n xs
           C.RawHtml t :< xs ->
             Fragment (TRawHtml t) n <| go n xs
           C.Code t :< xs ->
@@ -326,10 +326,10 @@ toFragments = go Normal
             go Emph is <> go n xs
           C.Strong is :< xs ->
             go Strong is <> go n xs
-          C.Image altIs _ _ :< xs ->
-            Fragment (TStr ("[image" <> altInlinesString altIs <> "]")) Link <| go n xs
+          C.Image altIs url _ :< xs ->
+            Fragment (TStr ("[image" <> altInlinesString altIs <> "]")) (Link url) <| go n xs
           C.Entity t :< xs ->
-            Fragment (TStr t) Link <| go n xs
+            Fragment (TStr t) (Link t) <| go n xs
           EmptyL -> S.empty
 
 --
@@ -433,7 +433,9 @@ gatherWidgets (viewl-> (Fragment frag style :< rs)) = go style (strOf frag) rs
                 Emph   -> B.withDefAttr clientEmphAttr (textWithCursor t)
                 Strong -> B.withDefAttr clientStrongAttr (textWithCursor t)
                 Code   -> B.withDefAttr codeAttr (textWithCursor t)
-                Link   -> B.withDefAttr urlAttr (textWithCursor t)
+                Link l ->
+                  B.modifyDefAttr (`V.withURL` l)
+                    (B.withDefAttr urlAttr (textWithCursor t))
                 Emoji  -> B.withDefAttr emojiAttr (textWithCursor t)
                 User   -> B.withDefAttr (attrForUsername $ removeCursor t)
                                         (textWithCursor t)
