@@ -1374,10 +1374,29 @@ openURL link = do
                         void $ runLoggedCommand False outputChan (T.unpack urlOpenCommand)
                                                 args Nothing
                         return $ return ()
-                True -> mhSuspendAndResume $ \st -> do
-                    args <- act st
-                    void $ runInteractiveCommand (T.unpack urlOpenCommand) args
-                    return $ st & csMode .~ Main
+                True -> do
+                    -- If there isn't a new message cutoff showing in
+                    -- the current channel, set one. This way, while the
+                    -- user is gone using their interactive URL opener,
+                    -- when they return, any messages that arrive in the
+                    -- current channel will be displayed as new.
+                    curChan <- use csCurrentChannel
+                    let msgs = curChan^.ccContents.cdMessages
+                    case findLatestUserMessage isEditable msgs of
+                        Nothing -> return ()
+                        Just m ->
+                            case m^.mOriginalPost of
+                                Nothing -> return ()
+                                Just p ->
+                                    case curChan^.ccInfo.cdNewMessageIndicator of
+                                        Hide ->
+                                            csCurrentChannel.ccInfo.cdNewMessageIndicator .= (NewPostsAfterServerTime (p^.postCreateAtL))
+                                        _ -> return ()
+
+                    mhSuspendAndResume $ \st -> do
+                        args <- act st
+                        void $ runInteractiveCommand (T.unpack urlOpenCommand) args
+                        return $ st & csMode .~ Main
 
             return True
 
