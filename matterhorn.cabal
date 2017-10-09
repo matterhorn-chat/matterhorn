@@ -88,8 +88,8 @@ executable matterhorn
                      , config-ini           >= 0.1.2  && < 0.2
                      , process              >= 1.4    && < 1.7
                      , microlens-platform   >= 0.3    && < 0.4
-                     , brick                >= 0.23   && < 0.24
-                     , vty                  >= 5.17   && < 5.18
+                     , brick                >= 0.28   && < 0.29
+                     , vty                  >= 5.18   && < 5.19
                      , transformers         >= 0.4    && < 0.6
                      , text-zipper          >= 0.10   && < 0.11
                      , time                 >= 1.6    && < 1.9
