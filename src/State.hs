@@ -107,10 +107,11 @@ refreshChannelsAndUsers = do
     uMap <- mmGetProfiles session myTeamId 0 10000
     return $ do
         forM_ (HM.elems uMap) $ \u -> do
-            knownUsers <- use csUsers
-            case findUserById (getId u) knownUsers of
-                Just _ -> return ()
-                Nothing -> handleNewUserDirect u
+            when (not $ userDeleted u) $ do
+                knownUsers <- use csUsers
+                case findUserById (getId u) knownUsers of
+                    Just _ -> return ()
+                    Nothing -> handleNewUserDirect u
 
         forM_ (HM.elems chansWithData) $ refreshChannel True
 
@@ -500,7 +501,6 @@ fetchCurrentChannelMembers = do
               -- channel:
               let msgStr = "Channel members (" <> (T.pack $ show $ length chanUsers) <> "):\n" <>
                            T.intercalate ", " usernames
-                  userDeleted u = userDeleteAt u > userCreateAt u
                   chanUsers = filter (not . userDeleted) $ snd <$> HM.toList chanUserMap
                   usernames = sort $ userUsername <$> (F.toList chanUsers)
 

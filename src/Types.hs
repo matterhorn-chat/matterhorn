@@ -764,7 +764,7 @@ sortedUserList st = sortBy cmp yes <> sortBy cmp no
             Just cId
               | (st^.csCurrentChannelId) == cId -> False
               | otherwise -> hasUnread st cId
-      (yes, no) = partition dmHasUnread (userList st)
+      (yes, no) = partition dmHasUnread (filter (not . _uiDeleted) $ userList st)
 
 compareUserInfo :: (Ord a) => Lens' UserInfo a -> UserInfo -> UserInfo -> Ordering
 compareUserInfo field u1 u2
