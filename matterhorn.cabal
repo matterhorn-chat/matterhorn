@@ -28,6 +28,7 @@ executable matterhorn
                        Connection
                        Completion
                        App
+                       Constants
                        State
                        State.Common
                        State.Editing

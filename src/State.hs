@@ -53,16 +53,11 @@ import           InputHistory
 import           Themes
 import           Zipper (Zipper)
 import qualified Zipper as Z
+import           Constants
 import           Markdown (blockGetURLs, findVerbatimChunk)
 
 import           State.Common
 import           State.Setup.Threads (updateUserStatuses)
-
--- * Hard-coded constants
-
--- | The number of posts to include per page
-pageAmount :: Int
-pageAmount = 15
 
 -- * Refreshing Channel Data
 

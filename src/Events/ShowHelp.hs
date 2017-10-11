@@ -9,6 +9,7 @@ import Lens.Micro.Platform
 
 import Types
 import State
+import Constants
 
 onEventShowHelp :: Vty.Event -> MH ()
 onEventShowHelp e | Just kb <- lookupKeybinding e helpKeybindings =
