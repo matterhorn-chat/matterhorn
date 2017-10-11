@@ -1,6 +1,97 @@
 {-# LANGUAGE LambdaCase #-}
+module State
+  (
+  -- * Message flagging
+    updateMessageFlag
+  , flagMessage
 
-module State where
+  -- * Running external programs
+  , runLoggedCommand
+
+  -- * Channel sidebar selection
+  , prevChannel
+  , nextChannel
+  , recentChannel
+  , nextUnreadChannel
+
+  -- * Working with channels
+  , createOrdinaryChannel
+  , startJoinChannel
+  , joinChannel
+  , changeChannel
+  , startLeaveCurrentChannel
+  , leaveCurrentChannel
+  , beginCurrentChannelDeleteConfirm
+  , deleteCurrentChannel
+  , loadMoreMessages
+  , channelScrollToTop
+  , channelScrollToBottom
+  , channelScrollUp
+  , channelScrollDown
+  , channelPageUp
+  , channelPageDown
+  , isCurrentChannel
+  , getNewMessageCutoff
+  , setChannelTopic
+  , fetchCurrentChannelMembers
+  , refreshChannelById
+  , handleChannelInvite
+
+  -- * Channel history
+  , channelHistoryForward
+  , channelHistoryBackward
+
+  -- * Working with messages
+  , sendMessage
+  , msgURLs
+  , editMessage
+  , deleteMessage
+  , addMessageToState
+  , postProcessMessageAdd
+
+  -- * Working with users
+  , handleNewUser
+  , updateStatus
+
+  -- * Startup/reconnect management
+  , refreshChannelsAndUsers
+
+  -- * Channel selection mode
+  , beginChannelSelect
+  , updateChannelSelectMatches
+  , channelSelectNext
+  , channelSelectPrevious
+
+  -- * Message selection mode
+  , beginMessageSelect
+  , flagSelectedMessage
+  , copyVerbatimToClipboard
+  , openSelectedMessageURLs
+  , beginConfirmDeleteSelectedMessage
+  , messageSelectUp
+  , messageSelectUpBy
+  , messageSelectDown
+  , messageSelectDownBy
+  , deleteSelectedMessage
+  , beginReplyCompose
+  , beginUpdateMessage
+  , getSelectedMessage
+  , cancelReplyOrEdit
+  , replyToLatestMessage
+
+  -- * URL selection mode
+  , startUrlSelect
+  , stopUrlSelect
+  , openSelectedURL
+
+  -- * Help
+  , showHelpScreen
+
+  -- * Themes
+  , listThemes
+  , setTheme
+  )
+where
 
 import           Prelude ()
 import           Prelude.Compat
