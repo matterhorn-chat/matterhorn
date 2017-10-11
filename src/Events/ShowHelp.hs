@@ -8,7 +8,6 @@ import qualified Graphics.Vty as Vty
 import Lens.Micro.Platform
 
 import Types
-import State
 import Constants
 
 onEventShowHelp :: Vty.Event -> MH ()
