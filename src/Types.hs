@@ -99,6 +99,7 @@ module Types
   , crSubprocessLog
   , crRequestQueue
   , crQuitCondition
+  , crUserStatusLock
   , crFlaggedPosts
   , crConn
   , crConfiguration
@@ -376,6 +377,7 @@ data ChatResources = ChatResources
   , _crSubprocessLog :: STM.TChan ProgramOutput
   , _crTheme         :: AttrMap
   , _crQuitCondition :: MVar ()
+  , _crUserStatusLock :: MVar ()
   , _crConfiguration :: Config
   , _crFlaggedPosts  :: Set PostId
   }

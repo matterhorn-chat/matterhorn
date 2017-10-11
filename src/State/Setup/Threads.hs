@@ -11,10 +11,10 @@ import           Prelude ()
 import           Prelude.Compat
 
 import           Brick.BChan
-import           Control.Concurrent (threadDelay, forkIO)
+import           Control.Concurrent (threadDelay, forkIO, MVar, putMVar, tryTakeMVar)
 import qualified Control.Concurrent.STM as STM
 import           Control.Concurrent.STM.Delay
-import           Control.Exception (SomeException, try)
+import           Control.Exception (SomeException, try, finally)
 import           Control.Monad (forever, when, void)
 import qualified Data.Text as T
 import           Data.Maybe (catMaybes)
@@ -34,22 +34,27 @@ import           State.Editing (requestSpellCheck)
 import           Types
 import           Types.Users
 
-updateUserStatuses :: Session -> IO (MH ())
-updateUserStatuses session = do
-  statusMap <- mmGetStatuses session
-  return $ do
-    let setStatus u = u & uiStatus .~ (newsts u)
-        newsts u = (statusMap^.at(u^.uiId) & _Just %~ statusFromText) ^. non Offline
-    csUsers . mapped %= setStatus
+updateUserStatuses :: MVar () -> Session -> IO (MH ())
+updateUserStatuses lock session = do
+  lockResult <- tryTakeMVar lock
 
-startUserRefreshThread :: Session -> RequestChan -> IO ()
-startUserRefreshThread session requestChan = void $ forkIO $ forever refresh
+  case lockResult of
+      Nothing -> return $ return ()
+      Just () -> do
+          statusMap <- mmGetStatuses session `finally` putMVar lock ()
+          return $ do
+            let setStatus u = u & uiStatus .~ (newsts u)
+                newsts u = (statusMap^.at(u^.uiId) & _Just %~ statusFromText) ^. non Offline
+            csUsers . mapped %= setStatus
+
+startUserRefreshThread :: MVar () -> Session -> RequestChan -> IO ()
+startUserRefreshThread lock session requestChan = void $ forkIO $ forever refresh
   where
       seconds = (* (1000 * 1000))
       userRefreshInterval = 30
       refresh = do
           STM.atomically $ STM.writeTChan requestChan $ do
-            rs <- try $ updateUserStatuses session
+            rs <- try $ updateUserStatuses lock session
             case rs of
               Left (_ :: SomeException) -> return (return ())
               Right upd -> return upd

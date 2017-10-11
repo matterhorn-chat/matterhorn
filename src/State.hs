@@ -115,7 +115,8 @@ refreshChannelsAndUsers = do
 
         forM_ (HM.elems chansWithData) $ refreshChannel True
 
-        doAsyncWith Preempt $ updateUserStatuses session
+        lock <- use (csResources.crUserStatusLock)
+        doAsyncWith Preempt $ updateUserStatuses lock session
 
 -- | Update the indicted Channel entry with the new data retrieved
 -- from the Mattermost server.
