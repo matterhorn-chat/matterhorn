@@ -25,6 +25,7 @@ import Command
 import Completion
 import InputHistory
 import HelpTopics (mainHelpTopic)
+import Constants
 
 import Network.Mattermost (Type(..))
 
