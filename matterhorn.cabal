@@ -27,7 +27,6 @@ executable matterhorn
                        Command
                        Connection
                        Completion
-                       AsyncThread
                        App
                        State
                        State.Common

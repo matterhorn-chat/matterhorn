@@ -17,10 +17,10 @@ import           Text.Aspell (stopAspell)
 import           Config
 import           Options
 import           State.Setup
+import           State.Setup.Threads (startAsyncWorkerThread)
 import           Events
 import           Draw
 import           Types
-import           AsyncThread
 
 app :: App ChatState MHEvent Name
 app = App
