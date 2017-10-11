@@ -1,6 +1,8 @@
 {-# LANGUAGE TypeFamilies #-}
-
-module State.Setup where
+module State.Setup
+  ( setupState
+  )
+where
 
 import           Prelude ()
 import           Prelude.Compat
