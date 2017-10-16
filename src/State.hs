@@ -21,6 +21,7 @@ module State
   , changeChannel
   , startLeaveCurrentChannel
   , leaveCurrentChannel
+  , leaveChannel
   , beginCurrentChannelDeleteConfirm
   , deleteCurrentChannel
   , loadMoreMessages
@@ -547,13 +548,14 @@ startLeaveCurrentChannel = do
         False -> postErrorMessage "The /leave command cannot be used with this channel."
 
 leaveCurrentChannel :: MH ()
-leaveCurrentChannel = do
-    cId <- use csCurrentChannelId
-    withChannel cId $ \chan ->
-        when (canLeaveChannel (chan^.ccInfo)) $
-             doAsyncChannelMM Preempt cId
-                      mmLeaveChannel
-                      (\c () -> removeChannelFromState c)
+leaveCurrentChannel = use csCurrentChannelId >>= leaveChannel
+
+leaveChannel :: ChannelId -> MH ()
+leaveChannel cId = withChannel cId $ \chan ->
+    when (canLeaveChannel (chan^.ccInfo)) $
+        doAsyncChannelMM Preempt cId
+                 mmLeaveChannel
+                 (\c () -> removeChannelFromState c)
 
 removeChannelFromState :: ChannelId -> MH ()
 removeChannelFromState cId = do
