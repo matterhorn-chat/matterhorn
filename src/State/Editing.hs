@@ -94,6 +94,20 @@ addUserToCurrentChannel uname = do
         _ -> do
             postErrorMessage ("No such user: " <> uname)
 
+removeUserFromCurrentChannel :: T.Text -> MH ()
+removeUserFromCurrentChannel uname = do
+    -- First: is this a valid username?
+    usrs <- use csUsers
+    case findUserByName usrs uname of
+        Just (uid, _) -> do
+            cId <- use csCurrentChannelId
+            session <- use (csResources.crSession)
+            doAsyncWith Normal $ do
+                tryMM (void $ mmChannelRemoveUser session cId uid)
+                      (const $ return (return ()))
+        _ -> do
+            postErrorMessage ("No such user: " <> uname)
+
 handlePaste :: BS.ByteString -> MH ()
 handlePaste bytes = do
   let pasteStr = T.pack (UTF8.toString bytes)
