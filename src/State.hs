@@ -37,6 +37,8 @@ module State
   , fetchCurrentChannelMembers
   , refreshChannelById
   , handleChannelInvite
+  , addUserToCurrentChannel
+  , removeUserFromCurrentChannel
 
   -- * Channel history
   , channelHistoryForward
@@ -539,6 +541,35 @@ handleChannelInvite cId = do
               (\cwd -> return $ do
                   handleNewChannel False cwd
                   asyncFetchScrollback Normal cId)
+
+addUserToCurrentChannel :: T.Text -> MH ()
+addUserToCurrentChannel uname = do
+    -- First: is this a valid username?
+    usrs <- use csUsers
+    case findUserByName usrs uname of
+        Just (uid, _) -> do
+            cId <- use csCurrentChannelId
+            session <- use (csResources.crSession)
+            myTeamId <- use (csMyTeam.teamIdL)
+            doAsyncWith Normal $ do
+                tryMM (void $ mmChannelAddUser session myTeamId cId uid)
+                      (const $ return (return ()))
+        _ -> do
+            postErrorMessage ("No such user: " <> uname)
+
+removeUserFromCurrentChannel :: T.Text -> MH ()
+removeUserFromCurrentChannel uname = do
+    -- First: is this a valid username?
+    usrs <- use csUsers
+    case findUserByName usrs uname of
+        Just (uid, _) -> do
+            cId <- use csCurrentChannelId
+            session <- use (csResources.crSession)
+            doAsyncWith Normal $ do
+                tryMM (void $ mmChannelRemoveUser session cId uid)
+                      (const $ return (return ()))
+        _ -> do
+            postErrorMessage ("No such user: " <> uname)
 
 startLeaveCurrentChannel :: MH ()
 startLeaveCurrentChannel = do

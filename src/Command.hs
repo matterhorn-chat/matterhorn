@@ -18,7 +18,6 @@ import qualified Network.Mattermost.Exceptions as MM
 
 import State
 import State.Common
-import State.Editing
 import State.PostListOverlay
 import Types
 import HelpTopics
