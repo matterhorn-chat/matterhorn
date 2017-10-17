@@ -5,7 +5,7 @@ import           Prelude ()
 import           Prelude.Compat
 
 import           Brick
-import           Control.Monad (forM_)
+import           Control.Monad (forM_, when)
 import           Control.Monad.IO.Class (liftIO)
 import qualified Data.Set as Set
 import qualified Data.Text as T
@@ -98,57 +98,58 @@ handleWSEvent we = do
     myId <- use (csMe.userIdL)
     myTeamId <- use (csMyTeam.teamIdL)
     case weEvent we of
-        WMPosted -> case wepPost (weData we) of
-            Just p  -> do
+        WMPosted
+            | Just p <- wepPost (weData we) -> do
                 -- If the message is a header change, also update the
                 -- channel metadata.
                 myUserId <- use (csMe.userIdL)
                 case wepMentions (weData we) of
-                  Just lst
-                    | myUserId `Set.member` lst ->
+                    Just lst | myUserId `Set.member` lst ->
                         csChannel(postChannelId p).ccInfo.cdMentionCount += 1
-                  _ -> return ()
+                    _ -> return ()
                 addMessageToState p >>= postProcessMessageAdd
-            Nothing -> return ()
+            | otherwise -> return ()
 
-        WMPostEdited ->
-            maybe (return ()) editMessage $ wepPost (weData we)
+        WMPostEdited
+            | Just p <- wepPost (weData we) -> editMessage p
+            | otherwise -> return ()
 
-        WMPostDeleted ->
-            maybe (return ()) deleteMessage $ wepPost (weData we)
+        WMPostDeleted
+            | Just p <- wepPost (weData we) -> deleteMessage p
+            | otherwise -> return ()
 
-        WMStatusChange ->
-            case (,) <$> wepStatus (weData we) <*> wepUserId (weData we) of
-                Just (status, uId) -> updateStatus uId status
-                Nothing -> return ()
+        WMStatusChange
+            | Just status <- wepStatus (weData we)
+            , Just uId <- wepUserId (weData we) ->
+                updateStatus uId status
+            | otherwise -> return ()
 
-        WMUserAdded ->
-            case webChannelId (weBroadcast we) of
-                Just cId -> if wepUserId (weData we) == Just myId &&
-                               wepTeamId (weData we) == Just myTeamId
-                            then handleChannelInvite cId
-                            else return ()
-                Nothing -> return ()
+        WMUserAdded
+            | Just cId <- webChannelId (weBroadcast we) ->
+                when (wepUserId (weData we) == Just myId &&
+                      wepTeamId (weData we) == Just myTeamId) $
+                    handleChannelInvite cId
+            | otherwise -> return ()
 
-        WMNewUser ->
-            maybe (return ()) handleNewUser $ wepUserId $ weData we
+        WMNewUser
+            | Just uId <- wepUserId $ weData we -> handleNewUser uId
+            | otherwise -> return ()
 
-        WMUserRemoved ->
-            case wepChannelId (weData we) of
-                Just cId -> if webUserId (weBroadcast we) == Just myId
-                            then removeChannelFromState cId
-                            else return ()
-                Nothing -> return ()
+        WMUserRemoved
+            | Just cId <- wepChannelId (weData we) ->
+                when (webUserId (weBroadcast we) == Just myId) $
+                    removeChannelFromState cId
+            | otherwise -> return ()
 
-        WMChannelDeleted ->
-            case wepChannelId (weData we) of
-                Just cId -> if webTeamId (weBroadcast we) == Just myTeamId
-                               then removeChannelFromState cId
-                               else return ()
-                Nothing -> return ()
+        WMChannelDeleted
+            | Just cId <- wepChannelId (weData we) ->
+                when (webTeamId (weBroadcast we) == Just myTeamId) $
+                    removeChannelFromState cId
+            | otherwise -> return ()
 
-        WMDirectAdded ->
-            maybe (return ()) handleChannelInvite $ webChannelId (weBroadcast we)
+        WMDirectAdded
+            | Just cId <- webChannelId (weBroadcast we) -> handleChannelInvite cId
+            | otherwise -> return ()
 
         -- An 'ephemeral message' is just Mattermost's version of our
         -- 'client message'. This can be a little bit wacky, e.g.
@@ -156,8 +157,9 @@ handleWSEvent we = do
         -- an ephemeral message even in MatterHorn with the browser
         -- shortcuts, but it's probably a good idea to handle these
         -- messages anyway.
-        WMEphemeralMessage ->
-            maybe (return ()) (postInfoMessage . postMessage) $ wepPost (weData we)
+        WMEphemeralMessage
+            | Just p <- wepPost $ weData we -> postInfoMessage $ p^.postMessageL
+            | otherwise -> return ()
 
         -- The only preference we observe right now is flagging
         WMPreferenceChanged
@@ -174,21 +176,23 @@ handleWSEvent we = do
                   updateMessageFlag (flaggedPostId f) False
             | otherwise -> return ()
 
-        WMReactionAdded ->
-            case (,) <$> wepReaction (weData we) <*> webChannelId (weBroadcast we) of
-                Just (r, cId) -> addReactions cId [r]
-                Nothing -> return ()
+        WMReactionAdded
+            | Just r <- wepReaction (weData we)
+            , Just cId <- webChannelId (weBroadcast we) -> addReactions cId [r]
+            | otherwise -> return ()
 
-        WMReactionRemoved ->
-            case (,) <$> wepReaction (weData we) <*> webChannelId (weBroadcast we) of
-                Just (r, cId) -> removeReaction r cId
-                Nothing -> return ()
+        WMReactionRemoved
+            | Just r <- wepReaction (weData we)
+            , Just cId <- webChannelId (weBroadcast we) -> removeReaction r cId
+            | otherwise -> return ()
 
-        WMChannelViewed ->
-            maybe (return ()) (refreshChannelById False) $ webChannelId $ weBroadcast we
+        WMChannelViewed
+            | Just cId <- webChannelId $ weBroadcast we -> refreshChannelById False cId
+            | otherwise -> return ()
 
-        WMChannelUpdated ->
-            maybe (return ()) (refreshChannelById False) $ webChannelId $ weBroadcast we
+        WMChannelUpdated
+            | Just cId <- webChannelId $ weBroadcast we -> refreshChannelById False cId
+            | otherwise -> return ()
 
         -- We are pretty sure we should do something about these:
         WMAddedToTeam -> return ()
