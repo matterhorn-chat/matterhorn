@@ -132,9 +132,6 @@ handleWSEvent we = do
                   else return ()
       Nothing -> return ()
 
-    WMUserUpdated -> -- XXX
-      return ()
-
     WMNewUser -> do
       let Just newUserId = wepUserId $ weData we
       handleNewUser newUserId
@@ -158,18 +155,6 @@ handleWSEvent we = do
           Just cId -> handleChannelInvite cId
           Nothing -> return ()
 
-    WMChannelCreated -> -- XXX
-      return ()
-
-    WMGroupAdded -> -- XXX
-      return ()
-
-    WMEmojiAdded -> -- XXX
-      return ()
-
-    WMLeaveTeam -> -- XXX: How do we deal with this one?
-      return ()
-
     -- An 'ephemeral message' is just Mattermost's version
     -- of our 'client message'. This can be a little bit
     -- wacky, e.g. if the user types '/shortcuts' in the
@@ -188,25 +173,13 @@ handleWSEvent we = do
         forM_ fps $ \f ->
           updateMessageFlag (flaggedPostId f) (flaggedPostStatus f)
       | otherwise -> return ()
+
     WMPreferenceDeleted
       | Just pref <- wepPreferences (weData we)
       , Just fps <- mapM preferenceToFlaggedPost pref ->
         forM_ fps $ \f ->
           updateMessageFlag (flaggedPostId f) False
       | otherwise -> return ()
-
-    -- This happens whenever a user connects to the server
-    -- I think all the information we need (about being
-    -- online or away or what-have-you) gets represented
-    -- in StatusChanged messages, so we can ignore it.
-    WMHello -> return ()
-
-    -- right now we don't show typing notifications. maybe
-    -- we should? i dunno.
-    WMTyping -> return ()
-
-    -- Do we need to do anything with this?
-    WMUpdateTeam -> return ()
 
     WMReactionAdded -> case wepReaction (weData we) of
       Just r  -> case webChannelId (weBroadcast we) of
@@ -220,12 +193,6 @@ handleWSEvent we = do
         Nothing -> return ()
       Nothing -> return ()
 
-    WMAddedToTeam -> return () -- XXX: we need to handle this
-
-    WMWebRTC      -> return ()
-
-    WMAuthenticationChallenge -> return ()
-
     WMChannelViewed ->
         case webChannelId $ weBroadcast we of
             Just cId -> refreshChannelById False cId
@@ -235,3 +202,21 @@ handleWSEvent we = do
         case webChannelId $ weBroadcast we of
             Just cId -> refreshChannelById False cId
             Nothing -> return ()
+
+    -- We are pretty sure we should do something about these:
+    WMAddedToTeam -> return ()
+
+    -- We aren't sure whether there is anything we should do about these
+    -- yet:
+    WMUpdateTeam -> return ()
+    WMUserUpdated -> return ()
+    WMLeaveTeam -> return ()
+
+    -- We deliberately ignore these events:
+    WMChannelCreated -> return ()
+    WMGroupAdded -> return ()
+    WMEmojiAdded -> return ()
+    WMWebRTC -> return ()
+    WMTyping -> return ()
+    WMHello -> return ()
+    WMAuthenticationChallenge -> return ()
