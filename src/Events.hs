@@ -117,18 +117,18 @@ handleWSEvent we = do
         WMPostDeleted ->
             maybe (return ()) deleteMessage $ wepPost (weData we)
 
-        WMStatusChange -> case wepStatus (weData we) of
-            Just status -> case wepUserId (weData we) of
-                Just uId -> updateStatus uId status
+        WMStatusChange ->
+            case (,) <$> wepStatus (weData we) <*> wepUserId (weData we) of
+                Just (status, uId) -> updateStatus uId status
                 Nothing -> return ()
-            Nothing -> return ()
 
-        WMUserAdded -> case webChannelId (weBroadcast we) of
-            Just cId -> if wepUserId (weData we) == Just myId &&
-                           wepTeamId (weData we) == Just myTeamId
-                        then handleChannelInvite cId
-                        else return ()
-            Nothing -> return ()
+        WMUserAdded ->
+            case webChannelId (weBroadcast we) of
+                Just cId -> if wepUserId (weData we) == Just myId &&
+                               wepTeamId (weData we) == Just myTeamId
+                            then handleChannelInvite cId
+                            else return ()
+                Nothing -> return ()
 
         WMNewUser ->
             maybe (return ()) handleNewUser $ wepUserId $ weData we
@@ -174,17 +174,15 @@ handleWSEvent we = do
                   updateMessageFlag (flaggedPostId f) False
             | otherwise -> return ()
 
-        WMReactionAdded -> case wepReaction (weData we) of
-            Just r  -> case webChannelId (weBroadcast we) of
-                Just cId -> addReactions cId [r]
+        WMReactionAdded ->
+            case (,) <$> wepReaction (weData we) <*> webChannelId (weBroadcast we) of
+                Just (r, cId) -> addReactions cId [r]
                 Nothing -> return ()
-            Nothing -> return ()
 
-        WMReactionRemoved -> case wepReaction (weData we) of
-            Just r  -> case webChannelId (weBroadcast we) of
-                Just cId -> removeReaction r cId
+        WMReactionRemoved ->
+            case (,) <$> wepReaction (weData we) <*> webChannelId (weBroadcast we) of
+                Just (r, cId) -> removeReaction r cId
                 Nothing -> return ()
-            Nothing -> return ()
 
         WMChannelViewed ->
             maybe (return ()) (refreshChannelById False) $ webChannelId $ weBroadcast we
