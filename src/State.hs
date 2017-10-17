@@ -669,7 +669,12 @@ setLastViewedFor prevId cId = do
   chan <- use (csChannels.to (findChannelById cId))
   -- Update new channel's viewed time, creating the channel if needed
   case chan of
-    Nothing -> handleChannelInvite cId
+    Nothing ->
+        -- It's possible for us to get spurious WMChannelViewed events
+        -- from the server, e.g. for channels that have been deleted.
+        -- So here we ignore the request since it's hard to detect it
+        -- before this point.
+        return ()
     Just _  ->
       -- The server has been sent a viewed POST update, but there is
       -- no local information on what timestamp the server actually
