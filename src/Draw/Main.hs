@@ -326,7 +326,7 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
             cached (ChannelMessages cId) $
             vBox $ (withDefAttr loadMoreAttr $ hCenter $
                     str "<< Press C-b to load more messages >>") :
-                   (F.toList $ renderSingleMessage st cutoff uSet cSet <$> channelMessages)
+                   (F.toList $ renderSingleMessage st editCutoff uSet cSet <$> channelMessages)
         MessageSelect ->
             renderMessagesWithSelect (st^.csMessageSelect) channelMessages
         MessageSelectDeleteConfirm ->
@@ -354,6 +354,7 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
                unsafeRenderMessageSelection (m, (before, after)) (renderSingleMessage st Nothing uSet cSet)
 
     cutoff = getNewMessageCutoff cId st
+    editCutoff = getEditedMessageCutoff cId st
     channelMessages =
         insertTransitions (getDateFormat st)
                           (st ^. timeZone)
@@ -380,7 +381,7 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
                     False -> do
                       r <- withReaderT relaxHeight $
                            render $ padRight Max $
-                                  renderSingleMessage st cutoff uSet cSet msg
+                                  renderSingleMessage st editCutoff uSet cSet msg
                       return $ r^.imageL
 
     cId = st^.csCurrentChannelId

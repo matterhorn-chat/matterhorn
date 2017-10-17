@@ -750,7 +750,8 @@ hasUnread :: ChatState -> ChannelId -> Bool
 hasUnread st cId = maybe False id $ do
   chan <- findChannelById cId (st^.csChannels)
   lastViewTime <- chan^.ccInfo.cdViewed
-  return (chan^.ccInfo.cdUpdated > lastViewTime)
+  return $ (chan^.ccInfo.cdUpdated > lastViewTime) ||
+           (isJust $ chan^.ccInfo.cdEditedMessageThreshold)
 
 userList :: ChatState -> [UserInfo]
 userList st = filter showUser $ allUsers (st^.csUsers)

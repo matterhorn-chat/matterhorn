@@ -20,16 +20,15 @@ import           Themes
 import           Types
 import           Types.Posts
 import           Types.Messages
-import           Types.Channels (NewMessageIndicator)
 
 maxMessageHeight :: Int
 maxMessageHeight = 200
 
-renderSingleMessage :: ChatState -> Maybe NewMessageIndicator -> UserSet -> ChannelSet -> Message -> Widget Name
+renderSingleMessage :: ChatState -> Maybe UTCTime -> UserSet -> ChannelSet -> Message -> Widget Name
 renderSingleMessage st ind uSet cSet =
   renderChatMessage st ind uSet cSet (withBrackets . renderTime st)
 
-renderChatMessage :: ChatState -> Maybe NewMessageIndicator -> UserSet -> ChannelSet -> (UTCTime -> Widget Name) -> Message -> Widget Name
+renderChatMessage :: ChatState -> Maybe UTCTime -> UserSet -> ChannelSet -> (UTCTime -> Widget Name) -> Message -> Widget Name
 renderChatMessage st ind uSet cSet renderTimeFunc msg =
     let m = renderMessage st ind msg True uSet cSet True
         msgAtch = if Seq.null (msg^.mAttachments)

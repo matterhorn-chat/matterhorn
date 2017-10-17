@@ -34,6 +34,7 @@ import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Foldable as F
 import           Data.Monoid (First(..), (<>))
+import           Data.Time.Clock (UTCTime)
 import           Data.Sequence ( Seq
                                , ViewL(..)
                                , ViewR(..)
@@ -52,7 +53,6 @@ import           Control.Monad              (join)
 import           Network.Mattermost.Lenses (postUpdateAtL, postCreateAtL)
 import           Themes
 import           Types (ChatState, getMessageForPostId, userSigil, normalChannelSigil)
-import           Types.Channels (NewMessageIndicator(..))
 import           Types.Posts
 import           Types.Messages
 
@@ -66,8 +66,8 @@ omitUsernameTypes =
     , CP TopicChange
     ]
 
-renderMessage :: ChatState -> Maybe NewMessageIndicator -> Message -> Bool -> UserSet -> ChannelSet -> Bool -> Widget a
-renderMessage st ind msg renderReplyParent uSet cSet indentBlocks =
+renderMessage :: ChatState -> Maybe UTCTime -> Message -> Bool -> UserSet -> ChannelSet -> Bool -> Widget a
+renderMessage st mEditTheshold msg renderReplyParent uSet cSet indentBlocks =
     let msgUsr = case msg^.mUserName of
           Just u
             | msg^.mType `elem` omitUsernameTypes -> Nothing
@@ -90,16 +90,10 @@ renderMessage st ind msg renderReplyParent uSet cSet indentBlocks =
           Nothing -> []
         rmd = renderMarkdown uSet cSet (msg^.mText)
         maybeEditHighlight =
-            case (,) <$> msg^.mOriginalPost <*> ind of
+            case (,) <$> msg^.mOriginalPost <*> mEditTheshold of
                 Nothing -> id
-                Just (p, cutoff) -> case cutoff of
-                    Hide -> id
-                    NewPostsAfterServerTime t ->
-                        if p^.postCreateAtL < t && p^.postUpdateAtL > t
-                        then B.withDefAttr recentlyEditedPostAttr
-                        else id
-                    NewPostsStartingAt t ->
-                        if p^.postCreateAtL < t && p^.postUpdateAtL >= t
+                Just (p, cutoff) ->
+                        if p^.postCreateAtL < cutoff && p^.postUpdateAtL >= cutoff
                         then B.withDefAttr recentlyEditedPostAttr
                         else id
         msgWidget =
@@ -114,7 +108,7 @@ renderMessage st ind msg renderReplyParent uSet cSet indentBlocks =
               case getMessageForPostId st parentId of
                   Nothing -> withParent (B.str "[loading...]")
                   Just pm ->
-                      let parentMsg = renderMessage st ind pm False uSet cSet False
+                      let parentMsg = renderMessage st mEditTheshold pm False uSet cSet False
                       in withParent (addEllipsis $ B.forceAttr replyParentAttr parentMsg)
 
     where

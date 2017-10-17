@@ -16,7 +16,7 @@ import qualified Graphics.Vty as Vty
 import Lens.Micro.Platform
 
 import Types
-import Types.Channels (ccInfo, cdType, clearNewMessageIndicator)
+import Types.Channels (ccInfo, cdType, clearNewMessageIndicator, clearEditedThreshold)
 import Types.Users (uiDeleted, findUserById)
 import State
 import State.PostListOverlay (enterFlaggedPostListMode)
@@ -133,9 +133,10 @@ mainKeybindings =
          (Vty.EvKey (Vty.KChar 'o') [Vty.MCtrl]) $
            startUrlSelect
 
-    , KB "Clear the current channel's unread message indicator"
+    , KB "Clear the current channel's unread message and editing indicators"
          (Vty.EvKey (Vty.KChar 'l') [Vty.MMeta]) $
-           csCurrentChannel %= clearNewMessageIndicator
+           csCurrentChannel %= (clearNewMessageIndicator .
+                                clearEditedThreshold)
 
     , KB "Toggle multi-line message compose mode"
          (Vty.EvKey (Vty.KChar 'e') [Vty.MMeta]) $

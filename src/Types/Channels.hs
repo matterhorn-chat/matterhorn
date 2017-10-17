@@ -14,7 +14,7 @@ module Types.Channels
   -- * Lenses created for accessing ClientChannel fields
   , ccContents, ccInfo
   -- * Lenses created for accessing ChannelInfo fields
-  , cdViewed, cdNewMessageIndicator, cdUpdated
+  , cdViewed, cdNewMessageIndicator, cdEditedMessageThreshold, cdUpdated
   , cdName, cdHeader, cdType, cdCurrentState
   , cdMentionCount
   -- * Lenses created for accessing ChannelContents fields
@@ -35,7 +35,9 @@ module Types.Channels
   , pendingChannelState
   , quiescentChannelState
   , clearNewMessageIndicator
+  , clearEditedThreshold
   , adjustUpdated
+  , adjustEditedThreshold
   , updateNewMessageIndicator
   -- * Miscellaneous channel-related operations
   , canLeaveChannel
@@ -84,6 +86,7 @@ initialChannelInfo chan =
     let updated  = chan ^. channelLastPostAtL
     in ChannelInfo { _cdViewed           = Nothing
                    , _cdNewMessageIndicator = Hide
+                   , _cdEditedMessageThreshold = Nothing
                    , _cdMentionCount     = 0
                    , _cdUpdated          = updated
                    , _cdName             = preferredChannelName chan
@@ -210,6 +213,8 @@ data ChannelInfo = ChannelInfo
     -- ^ The last time we looked at a channel
   , _cdNewMessageIndicator :: NewMessageIndicator
     -- ^ The state of the channel's new message indicator.
+  , _cdEditedMessageThreshold :: Maybe UTCTime
+    -- ^ The channel's edited message threshold.
   , _cdMentionCount     :: Int
     -- ^ The current number of unread mentions
   , _cdUpdated          :: UTCTime
@@ -297,11 +302,24 @@ filteredChannels f cc =
 clearNewMessageIndicator :: ClientChannel -> ClientChannel
 clearNewMessageIndicator c = c & ccInfo.cdNewMessageIndicator .~ Hide
 
+-- | Clear the edit threshold for the specified channel
+clearEditedThreshold :: ClientChannel -> ClientChannel
+clearEditedThreshold c = c & ccInfo.cdEditedMessageThreshold .~ Nothing
+
 -- | Adjust updated time based on a message, ensuring that the updated
 -- time does not move backward.
 adjustUpdated :: Post -> ClientChannel -> ClientChannel
 adjustUpdated m =
     ccInfo.cdUpdated %~ max (maxPostTimestamp m)
+
+adjustEditedThreshold :: Post -> ClientChannel -> ClientChannel
+adjustEditedThreshold m c =
+    if m^.postUpdateAtL <= m^.postCreateAtL
+    then c
+    else c & ccInfo.cdEditedMessageThreshold %~ (\mt -> case mt of
+        Just t -> Just $ min (m^.postUpdateAtL) t
+        Nothing -> Just $ m^.postUpdateAtL
+        )
 
 maxPostTimestamp :: Post -> UTCTime
 maxPostTimestamp m = max (m^.postDeleteAtL . non (m^.postUpdateAtL)) (m^.postCreateAtL)

@@ -34,6 +34,7 @@ module State
   , channelPageDown
   , isCurrentChannel
   , getNewMessageCutoff
+  , getEditedMessageCutoff
   , setChannelTopic
   , fetchCurrentChannelMembers
   , refreshChannelById
@@ -115,6 +116,7 @@ import           Control.Monad (when, unless, void, forM_)
 import qualified Data.ByteString as BS
 import           Data.Function (on)
 import           Data.Text.Zipper (textZipper, clearZipper, insertMany, gotoEOL)
+import           Data.Time.Clock (UTCTime)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
 import           Data.List (sort, findIndex)
@@ -706,7 +708,7 @@ setLastViewedFor prevId cId = do
   -- Update the old channel's previous viewed time (allows tracking of new messages)
   case prevId of
     Nothing -> return ()
-    Just p -> csChannels %= (channelByIdL p %~ clearNewMessageIndicator)
+    Just p -> csChannels %= (channelByIdL p %~ (clearNewMessageIndicator . clearEditedThreshold))
 
 updateViewed :: MH ()
 updateViewed = do
@@ -1081,11 +1083,15 @@ editMessage new = do
       msg = clientPostToMessage st (toClientPost new (new^.postParentIdL))
       chan = csChannel (new^.postChannelIdL)
   chan . ccContents . cdMessages . traversed . filtered isEditedMessage .= msg
+
+  cId <- use csCurrentChannelId
+  when (postChannelId new /= cId) $
+      chan %= adjustEditedThreshold new
+
   chan %= adjustUpdated new
   csPostMap.ix(postId new) .= msg
   asyncFetchReactionsForPost (postChannelId new) new
   asyncFetchAttachments new
-  cId <- use csCurrentChannelId
   when (postChannelId new == cId) updateViewed
 
 deleteMessage :: Post -> MH ()
@@ -1236,6 +1242,11 @@ getNewMessageCutoff :: ChannelId -> ChatState -> Maybe NewMessageIndicator
 getNewMessageCutoff cId st = do
     cc <- st^?csChannel(cId)
     return $ cc^.ccInfo.cdNewMessageIndicator
+
+getEditedMessageCutoff :: ChannelId -> ChatState -> Maybe UTCTime
+getEditedMessageCutoff cId st = do
+    cc <- st^?csChannel(cId)
+    cc^.ccInfo.cdEditedMessageThreshold
 
 fetchCurrentScrollback :: MH ()
 fetchCurrentScrollback = do
