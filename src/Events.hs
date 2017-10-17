@@ -111,13 +111,11 @@ handleWSEvent we = do
           addMessageToState p >>= postProcessMessageAdd
       Nothing -> return ()
 
-    WMPostEdited -> case wepPost (weData we) of
-      Just p  -> editMessage p
-      Nothing -> return ()
+    WMPostEdited ->
+        maybe (return ()) editMessage $ wepPost (weData we)
 
-    WMPostDeleted -> case wepPost (weData we) of
-      Just p  -> deleteMessage p
-      Nothing ->  return ()
+    WMPostDeleted ->
+        maybe (return ()) deleteMessage $ wepPost (weData we)
 
     WMStatusChange -> case wepStatus (weData we) of
       Just status -> case wepUserId (weData we) of
@@ -132,9 +130,8 @@ handleWSEvent we = do
                   else return ()
       Nothing -> return ()
 
-    WMNewUser -> do
-      let Just newUserId = wepUserId $ weData we
-      handleNewUser newUserId
+    WMNewUser ->
+        maybe (return ()) handleNewUser $ wepUserId $ weData we
 
     WMUserRemoved ->
       case wepChannelId (weData we) of
@@ -150,10 +147,8 @@ handleWSEvent we = do
                     else return ()
         Nothing -> return ()
 
-    WMDirectAdded -> do
-        case webChannelId (weBroadcast we) of
-          Just cId -> handleChannelInvite cId
-          Nothing -> return ()
+    WMDirectAdded ->
+        maybe (return ()) handleChannelInvite $ webChannelId (weBroadcast we)
 
     -- An 'ephemeral message' is just Mattermost's version
     -- of our 'client message'. This can be a little bit
@@ -161,10 +156,8 @@ handleWSEvent we = do
     -- browser, we'll get an ephemeral message even in
     -- MatterHorn with the browser shortcuts, but it's
     -- probably a good idea to handle these messages anyway.
-    WMEphemeralMessage -> case wepPost (weData we) of
-      Just p  -> do
-        postInfoMessage (p^.postMessageL)
-      Nothing -> return ()
+    WMEphemeralMessage ->
+        maybe (return ()) (postInfoMessage . postMessage) $ wepPost (weData we)
 
     -- The only preference we observe right now is flagging
     WMPreferenceChanged
@@ -194,14 +187,10 @@ handleWSEvent we = do
       Nothing -> return ()
 
     WMChannelViewed ->
-        case webChannelId $ weBroadcast we of
-            Just cId -> refreshChannelById False cId
-            Nothing -> return ()
+        maybe (return ()) (refreshChannelById False) $ webChannelId $ weBroadcast we
 
     WMChannelUpdated ->
-        case webChannelId $ weBroadcast we of
-            Just cId -> refreshChannelById False cId
-            Nothing -> return ()
+        maybe (return ()) (refreshChannelById False) $ webChannelId $ weBroadcast we
 
     -- We are pretty sure we should do something about these:
     WMAddedToTeam -> return ()
