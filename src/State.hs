@@ -384,10 +384,9 @@ beginCurrentChannelDeleteConfirm = do
 
 deleteCurrentChannel :: MH ()
 deleteCurrentChannel = do
-    leaveCurrentChannel
     csMode .= Main
     cId <- use csCurrentChannelId
-    doAsyncChannelMM Normal cId mmDeleteChannel endAsyncNOP
+    leaveChannelIfPossible cId True
 
 isCurrentChannel :: ChatState -> ChannelId -> Bool
 isCurrentChannel st cId = st^.csCurrentChannelId == cId
@@ -582,12 +581,42 @@ startLeaveCurrentChannel = do
 leaveCurrentChannel :: MH ()
 leaveCurrentChannel = use csCurrentChannelId >>= leaveChannel
 
+leaveChannelIfPossible :: ChannelId -> Bool -> MH ()
+leaveChannelIfPossible cId delete = do
+    st <- use id
+    me <- use csMe
+    let isMe u = u^.userIdL == me^.userIdL
+
+    case st ^? csChannel(cId).ccInfo of
+        Nothing -> return ()
+        Just cInfo -> case canLeaveChannel cInfo of
+            False -> return ()
+            True ->
+                -- The server will reject an attempt to leave a private
+                -- channel if we're the only member.
+                doAsyncChannelMM Preempt cId
+                    fetchChannelMembers
+                    (\_ members -> do
+                        -- If the channel is private:
+                        -- * leave it if we aren't the last member.
+                        -- * delete it if we are.
+                        --
+                        -- Otherwise:
+                        -- * leave (or delete) the channel as specified
+                        -- by the delete argument.
+                        let func = case cInfo^.cdType of
+                                Private -> case all isMe members of
+                                    True -> mmDeleteChannel
+                                    False -> mmLeaveChannel
+                                _ -> if delete
+                                     then mmDeleteChannel
+                                     else mmLeaveChannel
+
+                        doAsyncChannelMM Preempt cId func endAsyncNOP
+                    )
+
 leaveChannel :: ChannelId -> MH ()
-leaveChannel cId = withChannel cId $ \chan ->
-    when (canLeaveChannel (chan^.ccInfo)) $
-        doAsyncChannelMM Preempt cId
-                 mmLeaveChannel
-                 (\c () -> removeChannelFromState c)
+leaveChannel cId = leaveChannelIfPossible cId False
 
 removeChannelFromState :: ChannelId -> MH ()
 removeChannelFromState cId = do
@@ -616,16 +645,21 @@ fetchCurrentChannelMembers :: MH ()
 fetchCurrentChannelMembers = do
     cId <- use csCurrentChannelId
     doAsyncChannelMM Preempt cId
-        (\s t c -> mmGetChannelMembers s t c 0 10000)
-        (\_ chanUserMap -> do
+        fetchChannelMembers
+        (\_ chanUsers -> do
               -- Construct a message listing them all and post it to the
               -- channel:
               let msgStr = "Channel members (" <> (T.pack $ show $ length chanUsers) <> "):\n" <>
                            T.intercalate ", " usernames
-                  chanUsers = filter (not . userDeleted) $ snd <$> HM.toList chanUserMap
-                  usernames = sort $ userUsername <$> (F.toList chanUsers)
+                  usernames = sort $ userUsername <$> filteredUsers
+                  filteredUsers = filter (not . userDeleted) chanUsers
 
               postInfoMessage msgStr)
+
+fetchChannelMembers :: Session -> TeamId -> ChannelId -> IO [User]
+fetchChannelMembers s t c = do
+    chanUserMap <- mmGetChannelMembers s t c 0 10000
+    return $ snd <$> HM.toList chanUserMap
 
 -- | Called on async completion when the currently viewed channel has
 -- been updated (i.e., just switched to this channel) to update local
