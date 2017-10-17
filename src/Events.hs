@@ -142,7 +142,7 @@ handleWSEvent we = do
     WMUserRemoved ->
       case wepChannelId (weData we) of
         Just cId -> if webUserId (weBroadcast we) == Just myId
-                    then leaveChannel cId
+                    then removeChannelFromState cId
                     else return ()
         Nothing -> return ()
 
