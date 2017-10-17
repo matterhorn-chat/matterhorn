@@ -95,117 +95,117 @@ onVtyEvent e = do
 
 handleWSEvent :: WebsocketEvent -> MH ()
 handleWSEvent we = do
-  myId <- use (csMe.userIdL)
-  myTeamId <- use (csMyTeam.teamIdL)
-  case weEvent we of
-    WMPosted -> case wepPost (weData we) of
-      Just p  -> do
-          -- If the message is a header change, also update the channel
-          -- metadata.
-          myUserId <- use (csMe.userIdL)
-          case wepMentions (weData we) of
-            Just lst
-              | myUserId `Set.member` lst ->
-                  csChannel(postChannelId p).ccInfo.cdMentionCount += 1
-            _ -> return ()
-          addMessageToState p >>= postProcessMessageAdd
-      Nothing -> return ()
+    myId <- use (csMe.userIdL)
+    myTeamId <- use (csMyTeam.teamIdL)
+    case weEvent we of
+        WMPosted -> case wepPost (weData we) of
+            Just p  -> do
+                -- If the message is a header change, also update the
+                -- channel metadata.
+                myUserId <- use (csMe.userIdL)
+                case wepMentions (weData we) of
+                  Just lst
+                    | myUserId `Set.member` lst ->
+                        csChannel(postChannelId p).ccInfo.cdMentionCount += 1
+                  _ -> return ()
+                addMessageToState p >>= postProcessMessageAdd
+            Nothing -> return ()
 
-    WMPostEdited ->
-        maybe (return ()) editMessage $ wepPost (weData we)
+        WMPostEdited ->
+            maybe (return ()) editMessage $ wepPost (weData we)
 
-    WMPostDeleted ->
-        maybe (return ()) deleteMessage $ wepPost (weData we)
+        WMPostDeleted ->
+            maybe (return ()) deleteMessage $ wepPost (weData we)
 
-    WMStatusChange -> case wepStatus (weData we) of
-      Just status -> case wepUserId (weData we) of
-          Just uId -> updateStatus uId status
-          Nothing -> return ()
-      Nothing -> return ()
+        WMStatusChange -> case wepStatus (weData we) of
+            Just status -> case wepUserId (weData we) of
+                Just uId -> updateStatus uId status
+                Nothing -> return ()
+            Nothing -> return ()
 
-    WMUserAdded -> case webChannelId (weBroadcast we) of
-      Just cId -> if wepUserId (weData we) == Just myId &&
-                     wepTeamId (weData we) == Just myTeamId
-                  then handleChannelInvite cId
-                  else return ()
-      Nothing -> return ()
+        WMUserAdded -> case webChannelId (weBroadcast we) of
+            Just cId -> if wepUserId (weData we) == Just myId &&
+                           wepTeamId (weData we) == Just myTeamId
+                        then handleChannelInvite cId
+                        else return ()
+            Nothing -> return ()
 
-    WMNewUser ->
-        maybe (return ()) handleNewUser $ wepUserId $ weData we
+        WMNewUser ->
+            maybe (return ()) handleNewUser $ wepUserId $ weData we
 
-    WMUserRemoved ->
-      case wepChannelId (weData we) of
-        Just cId -> if webUserId (weBroadcast we) == Just myId
-                    then removeChannelFromState cId
-                    else return ()
-        Nothing -> return ()
+        WMUserRemoved ->
+            case wepChannelId (weData we) of
+                Just cId -> if webUserId (weBroadcast we) == Just myId
+                            then removeChannelFromState cId
+                            else return ()
+                Nothing -> return ()
 
-    WMChannelDeleted ->
-      case wepChannelId (weData we) of
-        Just cId -> if webTeamId (weBroadcast we) == Just myTeamId
-                    then removeChannelFromState cId
-                    else return ()
-        Nothing -> return ()
+        WMChannelDeleted ->
+            case wepChannelId (weData we) of
+                Just cId -> if webTeamId (weBroadcast we) == Just myTeamId
+                               then removeChannelFromState cId
+                               else return ()
+                Nothing -> return ()
 
-    WMDirectAdded ->
-        maybe (return ()) handleChannelInvite $ webChannelId (weBroadcast we)
+        WMDirectAdded ->
+            maybe (return ()) handleChannelInvite $ webChannelId (weBroadcast we)
 
-    -- An 'ephemeral message' is just Mattermost's version
-    -- of our 'client message'. This can be a little bit
-    -- wacky, e.g. if the user types '/shortcuts' in the
-    -- browser, we'll get an ephemeral message even in
-    -- MatterHorn with the browser shortcuts, but it's
-    -- probably a good idea to handle these messages anyway.
-    WMEphemeralMessage ->
-        maybe (return ()) (postInfoMessage . postMessage) $ wepPost (weData we)
+        -- An 'ephemeral message' is just Mattermost's version of our
+        -- 'client message'. This can be a little bit wacky, e.g.
+        -- if the user types '/shortcuts' in the browser, we'll get
+        -- an ephemeral message even in MatterHorn with the browser
+        -- shortcuts, but it's probably a good idea to handle these
+        -- messages anyway.
+        WMEphemeralMessage ->
+            maybe (return ()) (postInfoMessage . postMessage) $ wepPost (weData we)
 
-    -- The only preference we observe right now is flagging
-    WMPreferenceChanged
-      | Just pref <- wepPreferences (weData we)
-      , Just fps <- mapM preferenceToFlaggedPost pref ->
-        forM_ fps $ \f ->
-          updateMessageFlag (flaggedPostId f) (flaggedPostStatus f)
-      | otherwise -> return ()
+        -- The only preference we observe right now is flagging
+        WMPreferenceChanged
+            | Just pref <- wepPreferences (weData we)
+            , Just fps <- mapM preferenceToFlaggedPost pref ->
+              forM_ fps $ \f ->
+                  updateMessageFlag (flaggedPostId f) (flaggedPostStatus f)
+            | otherwise -> return ()
 
-    WMPreferenceDeleted
-      | Just pref <- wepPreferences (weData we)
-      , Just fps <- mapM preferenceToFlaggedPost pref ->
-        forM_ fps $ \f ->
-          updateMessageFlag (flaggedPostId f) False
-      | otherwise -> return ()
+        WMPreferenceDeleted
+            | Just pref <- wepPreferences (weData we)
+            , Just fps <- mapM preferenceToFlaggedPost pref ->
+              forM_ fps $ \f ->
+                  updateMessageFlag (flaggedPostId f) False
+            | otherwise -> return ()
 
-    WMReactionAdded -> case wepReaction (weData we) of
-      Just r  -> case webChannelId (weBroadcast we) of
-        Just cId -> addReactions cId [r]
-        Nothing -> return ()
-      Nothing -> return ()
+        WMReactionAdded -> case wepReaction (weData we) of
+            Just r  -> case webChannelId (weBroadcast we) of
+                Just cId -> addReactions cId [r]
+                Nothing -> return ()
+            Nothing -> return ()
 
-    WMReactionRemoved -> case wepReaction (weData we) of
-      Just r  -> case webChannelId (weBroadcast we) of
-        Just cId -> removeReaction r cId
-        Nothing -> return ()
-      Nothing -> return ()
+        WMReactionRemoved -> case wepReaction (weData we) of
+            Just r  -> case webChannelId (weBroadcast we) of
+                Just cId -> removeReaction r cId
+                Nothing -> return ()
+            Nothing -> return ()
 
-    WMChannelViewed ->
-        maybe (return ()) (refreshChannelById False) $ webChannelId $ weBroadcast we
+        WMChannelViewed ->
+            maybe (return ()) (refreshChannelById False) $ webChannelId $ weBroadcast we
 
-    WMChannelUpdated ->
-        maybe (return ()) (refreshChannelById False) $ webChannelId $ weBroadcast we
+        WMChannelUpdated ->
+            maybe (return ()) (refreshChannelById False) $ webChannelId $ weBroadcast we
 
-    -- We are pretty sure we should do something about these:
-    WMAddedToTeam -> return ()
+        -- We are pretty sure we should do something about these:
+        WMAddedToTeam -> return ()
 
-    -- We aren't sure whether there is anything we should do about these
-    -- yet:
-    WMUpdateTeam -> return ()
-    WMUserUpdated -> return ()
-    WMLeaveTeam -> return ()
+        -- We aren't sure whether there is anything we should do about
+        -- these yet:
+        WMUpdateTeam -> return ()
+        WMUserUpdated -> return ()
+        WMLeaveTeam -> return ()
 
-    -- We deliberately ignore these events:
-    WMChannelCreated -> return ()
-    WMGroupAdded -> return ()
-    WMEmojiAdded -> return ()
-    WMWebRTC -> return ()
-    WMTyping -> return ()
-    WMHello -> return ()
-    WMAuthenticationChallenge -> return ()
+        -- We deliberately ignore these events:
+        WMChannelCreated -> return ()
+        WMGroupAdded -> return ()
+        WMEmojiAdded -> return ()
+        WMWebRTC -> return ()
+        WMTyping -> return ()
+        WMHello -> return ()
+        WMAuthenticationChallenge -> return ()
