@@ -1079,19 +1079,20 @@ handleNewChannel_ permitPostpone switch cwd@(ChannelWithData nc cData) = do
 editMessage :: Post -> MH ()
 editMessage new = do
   st <- use id
+  myId <- use (csMe.userIdL)
   let isEditedMessage m = m^.mPostId == Just (new^.postIdL)
       msg = clientPostToMessage st (toClientPost new (new^.postParentIdL))
       chan = csChannel (new^.postChannelIdL)
   chan . ccContents . cdMessages . traversed . filtered isEditedMessage .= msg
 
-  cId <- use csCurrentChannelId
-  when (postChannelId new /= cId) $
+  when (postUserId new /= Just myId) $
       chan %= adjustEditedThreshold new
 
   chan %= adjustUpdated new
   csPostMap.ix(postId new) .= msg
   asyncFetchReactionsForPost (postChannelId new) new
   asyncFetchAttachments new
+  cId <- use csCurrentChannelId
   when (postChannelId new == cId) updateViewed
 
 deleteMessage :: Post -> MH ()
