@@ -49,8 +49,10 @@ import qualified Graphics.Vty as V
 import           Lens.Micro.Platform ((^.))
 import           Control.Monad              (join)
 
+import           Network.Mattermost.Lenses (postUpdateAtL, postCreateAtL)
 import           Themes
 import           Types (ChatState, getMessageForPostId, userSigil, normalChannelSigil)
+import           Types.Channels (NewMessageIndicator(..))
 import           Types.Posts
 import           Types.Messages
 
@@ -64,8 +66,8 @@ omitUsernameTypes =
     , CP TopicChange
     ]
 
-renderMessage :: ChatState -> Message -> Bool -> UserSet -> ChannelSet -> Bool -> Widget a
-renderMessage st msg renderReplyParent uSet cSet indentBlocks =
+renderMessage :: ChatState -> Maybe NewMessageIndicator -> Message -> Bool -> UserSet -> ChannelSet -> Bool -> Widget a
+renderMessage st ind msg renderReplyParent uSet cSet indentBlocks =
     let msgUsr = case msg^.mUserName of
           Just u
             | msg^.mType `elem` omitUsernameTypes -> Nothing
@@ -87,7 +89,22 @@ renderMessage st msg renderReplyParent uSet cSet indentBlocks =
                 ]
           Nothing -> []
         rmd = renderMarkdown uSet cSet (msg^.mText)
-        msgWidget = layout nameElems rmd . viewl $ msg^.mText
+        maybeEditHighlight =
+            case (,) <$> msg^.mOriginalPost <*> ind of
+                Nothing -> id
+                Just (p, cutoff) -> case cutoff of
+                    Hide -> id
+                    NewPostsAfterServerTime t ->
+                        if p^.postCreateAtL < t && p^.postUpdateAtL > t
+                        then B.withDefAttr recentlyEditedPostAttr
+                        else id
+                    NewPostsStartingAt t ->
+                        if p^.postCreateAtL < t && p^.postUpdateAtL >= t
+                        then B.withDefAttr recentlyEditedPostAttr
+                        else id
+        msgWidget =
+            maybeEditHighlight $
+            layout nameElems rmd . viewl $ msg^.mText
         withParent p = (replyArrow <+> p) B.<=> msgWidget
     in if not renderReplyParent
        then msgWidget
@@ -97,7 +114,7 @@ renderMessage st msg renderReplyParent uSet cSet indentBlocks =
               case getMessageForPostId st parentId of
                   Nothing -> withParent (B.str "[loading...]")
                   Just pm ->
-                      let parentMsg = renderMessage st pm False uSet cSet False
+                      let parentMsg = renderMessage st ind pm False uSet cSet False
                       in withParent (addEllipsis $ B.forceAttr replyParentAttr parentMsg)
 
     where

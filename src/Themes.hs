@@ -38,6 +38,7 @@ module Themes
   , messageSelectAttr
   , messageSelectStatusAttr
   , misspellingAttr
+  , recentlyEditedPostAttr
 
   -- * Username formatting
   , colorUsername
@@ -165,6 +166,9 @@ misspellingAttr = "misspelling"
 messageSelectStatusAttr :: AttrName
 messageSelectStatusAttr = "messageSelectStatus"
 
+recentlyEditedPostAttr :: AttrName
+recentlyEditedPostAttr = "recentlyEditedPost"
+
 themes :: [(T.Text, AttrMap)]
 themes =
     [ (darkColorThemeName,      darkColorTheme)
@@ -208,6 +212,7 @@ lightColorTheme =
      , (messageSelectAttr,                black `on` yellow)
      , (messageSelectStatusAttr,          fg black)
      , (misspellingAttr,                  fg red `withStyle` underline)
+     , (recentlyEditedPostAttr,           black `on` yellow)
      ] <>
      ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors) <>
      (themeEntriesForStyle sty)
@@ -248,6 +253,7 @@ darkAttrs =
      , (messageSelectAttr,                black `on` yellow)
      , (messageSelectStatusAttr,          fg white)
      , (misspellingAttr,                  fg red `withStyle` underline)
+     , (recentlyEditedPostAttr,           black `on` yellow)
      ] <>
      ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors) <>
      (themeEntriesForStyle sty)

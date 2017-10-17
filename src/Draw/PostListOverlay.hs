@@ -92,7 +92,7 @@ drawPostsBox contents st =
 
         -- The render-message function we're using
         renderMessageForOverlay msg =
-          let renderedMsg = renderSingleMessage st uSet cSet msg
+          let renderedMsg = renderSingleMessage st Nothing uSet cSet msg
           in case msg^.mOriginalPost of
             -- We should factor out some of the channel name logic at
             -- some point, but we can do that later

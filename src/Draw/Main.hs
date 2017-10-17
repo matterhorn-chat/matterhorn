@@ -249,7 +249,7 @@ renderUserCommandBox uSet cSet st =
             Replying msg _ ->
                 let msgWithoutParent = msg & mInReplyToMsg .~ NotAReply
                 in hBox [ replyArrow
-                        , addEllipsis $ renderMessage st msgWithoutParent True uSet cSet False
+                        , addEllipsis $ renderMessage st Nothing msgWithoutParent True uSet cSet False
                         ]
             _ -> emptyWidget
 
@@ -326,7 +326,7 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
             cached (ChannelMessages cId) $
             vBox $ (withDefAttr loadMoreAttr $ hCenter $
                     str "<< Press C-b to load more messages >>") :
-                   (F.toList $ renderSingleMessage st uSet cSet <$> channelMessages)
+                   (F.toList $ renderSingleMessage st cutoff uSet cSet <$> channelMessages)
         MessageSelect ->
             renderMessagesWithSelect (st^.csMessageSelect) channelMessages
         MessageSelectDeleteConfirm ->
@@ -351,12 +351,13 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
         in case s of
              Nothing -> renderLastMessages before
              Just m ->
-               unsafeRenderMessageSelection (m, (before, after)) (renderSingleMessage st uSet cSet)
+               unsafeRenderMessageSelection (m, (before, after)) (renderSingleMessage st Nothing uSet cSet)
 
+    cutoff = getNewMessageCutoff cId st
     channelMessages =
         insertTransitions (getDateFormat st)
                           (st ^. timeZone)
-                          (getNewMessageCutoff cId st)
+                          cutoff
                           (getMessageListing cId st)
 
     renderLastMessages :: RetrogradeMessages -> Widget Name
@@ -379,7 +380,7 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
                     False -> do
                       r <- withReaderT relaxHeight $
                            render $ padRight Max $
-                                  renderSingleMessage st uSet cSet msg
+                                  renderSingleMessage st cutoff uSet cSet msg
                       return $ r^.imageL
 
     cId = st^.csCurrentChannelId
@@ -529,7 +530,7 @@ inputPreview uSet cSet st | not $ st^.csShowMessagePreview = emptyWidget
                        Nothing -> noPreview
                        Just pm -> if T.null curStr
                                   then noPreview
-                                  else renderMessage st pm True uSet cSet True
+                                  else renderMessage st Nothing pm True uSet cSet True
                  in (maybePreviewViewport msgPreview) <=>
                     hBorderWithLabel (withDefAttr clientEmphAttr $ str "[Preview ↑]")
 
