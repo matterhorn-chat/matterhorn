@@ -22,7 +22,11 @@ function install_packages {
             zlib1g-dev
     elif fedora
     then
-        echo "Fedora install not supported yet"
+        sudo dnf install -y \
+            ghc \
+            happy \
+            alex \
+            zlib-devel
     else
         echo "Unsupported Linux distribution"
         exit 1
