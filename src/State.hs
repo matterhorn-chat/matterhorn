@@ -22,6 +22,7 @@ module State
   , startLeaveCurrentChannel
   , leaveCurrentChannel
   , leaveChannel
+  , removeChannelFromState
   , beginCurrentChannelDeleteConfirm
   , deleteCurrentChannel
   , loadMoreMessages

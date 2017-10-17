@@ -146,8 +146,12 @@ handleWSEvent we = do
                     else return ()
         Nothing -> return ()
 
-    WMChannelDeleted -> -- XXX
-      return ()
+    WMChannelDeleted ->
+      case wepChannelId (weData we) of
+        Just cId -> if webTeamId (weBroadcast we) == Just myTeamId
+                    then removeChannelFromState cId
+                    else return ()
+        Nothing -> return ()
 
     WMDirectAdded -> do
         case webChannelId (weBroadcast we) of
