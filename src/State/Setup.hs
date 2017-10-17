@@ -1,13 +1,15 @@
 {-# LANGUAGE TypeFamilies #-}
-
-module State.Setup where
+module State.Setup
+  ( setupState
+  )
+where
 
 import           Prelude ()
 import           Prelude.Compat
 
 import           Brick.BChan
 import qualified Control.Concurrent.STM as STM
-import           Control.Concurrent.MVar (newEmptyMVar)
+import           Control.Concurrent.MVar (newEmptyMVar, putMVar)
 import           Control.Exception (catch)
 import           Control.Monad (forM, when)
 import qualified Data.Foldable as F
@@ -112,6 +114,10 @@ setupState logFile config requestChan eventChan = do
               Just t -> return t
 
   quitCondition <- newEmptyMVar
+
+  userStatusLock <- newEmptyMVar
+  putMVar userStatusLock ()
+
   slc <- STM.atomically STM.newTChan
 
   let themeName = case configTheme config of
@@ -121,7 +127,7 @@ setupState logFile config requestChan eventChan = do
           Nothing -> fromJust $ lookup defaultThemeName themes
           Just t -> t
       cr = ChatResources session cd requestChan eventChan
-             slc theme quitCondition config mempty
+             slc theme quitCondition userStatusLock config mempty
   initializeState cr myTeam myUser
 
 initializeState :: ChatResources -> Team -> User -> IO ChatState
@@ -156,7 +162,7 @@ initializeState cr myTeam myUser = do
 
   -- Start background worker threads:
   -- * User status refresher
-  startUserRefreshThread session requestChan
+  startUserRefreshThread (cr^.crUserStatusLock) session requestChan
   -- * Timezone change monitor
   startTimezoneMonitorThread tz requestChan
   -- * Subprocess logger

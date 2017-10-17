@@ -139,8 +139,12 @@ handleWSEvent we = do
       let Just newUserId = wepUserId $ weData we
       handleNewUser newUserId
 
-    WMUserRemoved -> -- XXX
-      return ()
+    WMUserRemoved ->
+      case wepChannelId (weData we) of
+        Just cId -> if webUserId (weBroadcast we) == Just myId
+                    then leaveChannel cId
+                    else return ()
+        Nothing -> return ()
 
     WMChannelDeleted -> -- XXX
       return ()

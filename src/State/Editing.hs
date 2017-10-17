@@ -9,7 +9,6 @@ import           Brick.Widgets.Edit (Editor, handleEditorEvent, getEditContents,
 import           Brick.Widgets.Edit (applyEdit)
 import qualified Codec.Binary.UTF8.Generic as UTF8
 import           Control.Arrow
-import           Control.Monad (void)
 import           Control.Monad.IO.Class (liftIO)
 import qualified Data.ByteString as BS
 import           Data.Monoid ((<>))
@@ -27,12 +26,8 @@ import qualified System.IO.Temp as Sys
 import qualified System.Process as Sys
 import           Text.Aspell (AspellResponse(..), mistakeWord, askAspell)
 
-import           Network.Mattermost
-import           Network.Mattermost.Lenses
-
 import           Config
 import           Types
-import           Types.Users
 
 import           State.Common
 
@@ -78,21 +73,6 @@ invokeExternalEditor = do
 
 toggleMessagePreview :: MH ()
 toggleMessagePreview = csShowMessagePreview %= not
-
-addUserToCurrentChannel :: T.Text -> MH ()
-addUserToCurrentChannel uname = do
-    -- First: is this a valid username?
-    usrs <- use csUsers
-    case findUserByName usrs uname of
-        Just (uid, _) -> do
-            cId <- use csCurrentChannelId
-            session <- use (csResources.crSession)
-            myTeamId <- use (csMyTeam.teamIdL)
-            doAsyncWith Normal $ do
-                tryMM (void $ mmChannelAddUser session myTeamId cId uid)
-                      (const $ return (return ()))
-        _ -> do
-            postErrorMessage ("No such user: " <> uname)
 
 handlePaste :: BS.ByteString -> MH ()
 handlePaste bytes = do

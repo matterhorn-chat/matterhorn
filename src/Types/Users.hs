@@ -8,6 +8,7 @@ module Types.Users
   , Users   -- constructor remains internal
   -- * Lenses created for accessing UserInfo fields
   , uiName, uiId, uiStatus, uiInTeam, uiNickName, uiFirstName, uiLastName, uiEmail
+  , uiDeleted
   -- * Various operations on UserInfo
   -- * Creating UserInfo objects
   , userInfoFromUser
@@ -20,6 +21,7 @@ module Types.Users
   , modifyUserById
   , getDMChannelName
   , userIdForDMChannel
+  , userDeleted
   )
 where
 
@@ -44,7 +46,12 @@ data UserInfo = UserInfo
   , _uiFirstName :: T.Text
   , _uiLastName  :: T.Text
   , _uiEmail     :: T.Text
+  , _uiDeleted   :: Bool
   } deriving (Eq, Show)
+
+-- | Is this user deleted?
+userDeleted :: User -> Bool
+userDeleted u = userDeleteAt u > userCreateAt u
 
 -- | Create a 'UserInfo' value from a Mattermost 'User' value
 userInfoFromUser :: User -> Bool -> UserInfo
@@ -59,6 +66,7 @@ userInfoFromUser up inTeam = UserInfo
   , _uiFirstName = userFirstName up
   , _uiLastName  = userLastName up
   , _uiEmail     = userEmail up
+  , _uiDeleted   = userDeleted up
   }
 
 -- | The 'UserStatus' value represents possible current status for

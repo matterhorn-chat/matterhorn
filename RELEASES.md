@@ -56,3 +56,16 @@ the platforms on which binary distributions will be built.
 10. Tweet about the release using the `@matterhorn_chat` account:
     "We're pleased to announce the release of Matterhorn version <VERSION> for @mattermosthq!
     Get it at https://github.com/matterhorn-chat/matterhorn/releases/tag/<VERSION>"
+
+Release Hosts
+=============
+
+OS X:
+* `gala.galois.com`
+* `fuji.galois.com`
+
+Ubuntu:
+* `vm-35-59.eic.galois.com`
+
+Fedora:
+* `vm-35-58.eic.galois.com`

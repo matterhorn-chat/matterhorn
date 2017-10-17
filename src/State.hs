@@ -1,6 +1,100 @@
 {-# LANGUAGE LambdaCase #-}
+module State
+  (
+  -- * Message flagging
+    updateMessageFlag
+  , flagMessage
 
-module State where
+  -- * Running external programs
+  , runLoggedCommand
+
+  -- * Channel sidebar selection
+  , prevChannel
+  , nextChannel
+  , recentChannel
+  , nextUnreadChannel
+
+  -- * Working with channels
+  , createOrdinaryChannel
+  , startJoinChannel
+  , joinChannel
+  , changeChannel
+  , startLeaveCurrentChannel
+  , leaveCurrentChannel
+  , leaveChannel
+  , beginCurrentChannelDeleteConfirm
+  , deleteCurrentChannel
+  , loadMoreMessages
+  , channelScrollToTop
+  , channelScrollToBottom
+  , channelScrollUp
+  , channelScrollDown
+  , channelPageUp
+  , channelPageDown
+  , isCurrentChannel
+  , getNewMessageCutoff
+  , setChannelTopic
+  , fetchCurrentChannelMembers
+  , refreshChannelById
+  , handleChannelInvite
+  , addUserToCurrentChannel
+  , removeUserFromCurrentChannel
+
+  -- * Channel history
+  , channelHistoryForward
+  , channelHistoryBackward
+
+  -- * Working with messages
+  , sendMessage
+  , msgURLs
+  , editMessage
+  , deleteMessage
+  , addMessageToState
+  , postProcessMessageAdd
+
+  -- * Working with users
+  , handleNewUser
+  , updateStatus
+
+  -- * Startup/reconnect management
+  , refreshChannelsAndUsers
+
+  -- * Channel selection mode
+  , beginChannelSelect
+  , updateChannelSelectMatches
+  , channelSelectNext
+  , channelSelectPrevious
+
+  -- * Message selection mode
+  , beginMessageSelect
+  , flagSelectedMessage
+  , copyVerbatimToClipboard
+  , openSelectedMessageURLs
+  , beginConfirmDeleteSelectedMessage
+  , messageSelectUp
+  , messageSelectUpBy
+  , messageSelectDown
+  , messageSelectDownBy
+  , deleteSelectedMessage
+  , beginReplyCompose
+  , beginUpdateMessage
+  , getSelectedMessage
+  , cancelReplyOrEdit
+  , replyToLatestMessage
+
+  -- * URL selection mode
+  , startUrlSelect
+  , stopUrlSelect
+  , openSelectedURL
+
+  -- * Help
+  , showHelpScreen
+
+  -- * Themes
+  , listThemes
+  , setTheme
+  )
+where
 
 import           Prelude ()
 import           Prelude.Compat
@@ -53,16 +147,11 @@ import           InputHistory
 import           Themes
 import           Zipper (Zipper)
 import qualified Zipper as Z
+import           Constants
 import           Markdown (blockGetURLs, findVerbatimChunk)
 
 import           State.Common
 import           State.Setup.Threads (updateUserStatuses)
-
--- * Hard-coded constants
-
--- | The number of posts to include per page
-pageAmount :: Int
-pageAmount = 15
 
 -- * Refreshing Channel Data
 
@@ -107,14 +196,16 @@ refreshChannelsAndUsers = do
     uMap <- mmGetProfiles session myTeamId 0 10000
     return $ do
         forM_ (HM.elems uMap) $ \u -> do
-            knownUsers <- use csUsers
-            case findUserById (getId u) knownUsers of
-                Just _ -> return ()
-                Nothing -> handleNewUserDirect u
+            when (not $ userDeleted u) $ do
+                knownUsers <- use csUsers
+                case findUserById (getId u) knownUsers of
+                    Just _ -> return ()
+                    Nothing -> handleNewUserDirect u
 
         forM_ (HM.elems chansWithData) $ refreshChannel True
 
-        doAsyncWith Preempt $ updateUserStatuses session
+        lock <- use (csResources.crUserStatusLock)
+        doAsyncWith Preempt $ updateUserStatuses lock session
 
 -- | Update the indicted Channel entry with the new data retrieved
 -- from the Mattermost server.
@@ -451,6 +542,35 @@ handleChannelInvite cId = do
                   handleNewChannel False cwd
                   asyncFetchScrollback Normal cId)
 
+addUserToCurrentChannel :: T.Text -> MH ()
+addUserToCurrentChannel uname = do
+    -- First: is this a valid username?
+    usrs <- use csUsers
+    case findUserByName usrs uname of
+        Just (uid, _) -> do
+            cId <- use csCurrentChannelId
+            session <- use (csResources.crSession)
+            myTeamId <- use (csMyTeam.teamIdL)
+            doAsyncWith Normal $ do
+                tryMM (void $ mmChannelAddUser session myTeamId cId uid)
+                      (const $ return (return ()))
+        _ -> do
+            postErrorMessage ("No such user: " <> uname)
+
+removeUserFromCurrentChannel :: T.Text -> MH ()
+removeUserFromCurrentChannel uname = do
+    -- First: is this a valid username?
+    usrs <- use csUsers
+    case findUserByName usrs uname of
+        Just (uid, _) -> do
+            cId <- use csCurrentChannelId
+            session <- use (csResources.crSession)
+            doAsyncWith Normal $ do
+                tryMM (void $ mmChannelRemoveUser session cId uid)
+                      (const $ return (return ()))
+        _ -> do
+            postErrorMessage ("No such user: " <> uname)
+
 startLeaveCurrentChannel :: MH ()
 startLeaveCurrentChannel = do
     cInfo <- use (csCurrentChannel.ccInfo)
@@ -459,13 +579,14 @@ startLeaveCurrentChannel = do
         False -> postErrorMessage "The /leave command cannot be used with this channel."
 
 leaveCurrentChannel :: MH ()
-leaveCurrentChannel = do
-    cId <- use csCurrentChannelId
-    withChannel cId $ \chan ->
-        when (canLeaveChannel (chan^.ccInfo)) $
-             doAsyncChannelMM Preempt cId
-                      mmLeaveChannel
-                      (\c () -> removeChannelFromState c)
+leaveCurrentChannel = use csCurrentChannelId >>= leaveChannel
+
+leaveChannel :: ChannelId -> MH ()
+leaveChannel cId = withChannel cId $ \chan ->
+    when (canLeaveChannel (chan^.ccInfo)) $
+        doAsyncChannelMM Preempt cId
+                 mmLeaveChannel
+                 (\c () -> removeChannelFromState c)
 
 removeChannelFromState :: ChannelId -> MH ()
 removeChannelFromState cId = do
@@ -500,7 +621,6 @@ fetchCurrentChannelMembers = do
               -- channel:
               let msgStr = "Channel members (" <> (T.pack $ show $ length chanUsers) <> "):\n" <>
                            T.intercalate ", " usernames
-                  userDeleted u = userDeleteAt u > userCreateAt u
                   chanUsers = filter (not . userDeleted) $ snd <$> HM.toList chanUserMap
                   usernames = sort $ userUsername <$> (F.toList chanUsers)
 

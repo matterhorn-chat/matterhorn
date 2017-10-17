@@ -17,6 +17,7 @@ import Lens.Micro.Platform
 
 import Types
 import Types.Channels (ccInfo, cdType, clearNewMessageIndicator)
+import Types.Users (uiDeleted, findUserById)
 import State
 import State.PostListOverlay (enterFlaggedPostListMode)
 import State.Editing
@@ -24,6 +25,7 @@ import Command
 import Completion
 import InputHistory
 import HelpTopics (mainHelpTopic)
+import Constants
 
 import Network.Mattermost (Type(..))
 
@@ -180,6 +182,8 @@ handleInputSubmission = do
 tabComplete :: Completion.Direction -> MH ()
 tabComplete dir = do
   st <- use id
+  knownUsers <- use csUsers
+
   let completableChannels = catMaybes (flip map (st^.csNames.cnChans) $ \cname -> do
           -- Only permit completion of channel names for non-Group channels
           cId <- st^.csNames.cnToChanId.at cname
@@ -189,10 +193,21 @@ tabComplete dir = do
               _          -> Just cname
           )
 
+      completableUsers = catMaybes (flip map (st^.csNames.cnUsers) $ \uname -> do
+          -- Only permit completion of user names for non-deleted users
+          uId <- st^.csNames.cnToUserId.at uname
+          case findUserById uId knownUsers of
+              Nothing -> Nothing
+              Just u ->
+                  if u^.uiDeleted
+                     then Nothing
+                     else Just uname
+          )
+
       priorities  = [] :: [T.Text]-- XXX: add recent completions to this
-      completions = Set.fromList (st^.csNames.cnUsers ++
+      completions = Set.fromList (completableUsers ++
                                   completableChannels ++
-                                  map (T.singleton userSigil <>) (st^.csNames.cnUsers) ++
+                                  map (T.singleton userSigil <>) completableUsers ++
                                   map (T.singleton normalChannelSigil <>) completableChannels ++
                                   map ("/" <>) (commandName <$> commandList))
 

@@ -4,6 +4,7 @@ module State.Setup.Threads
   , startSubprocessLoggerThread
   , startTimezoneMonitorThread
   , maybeStartSpellChecker
+  , startAsyncWorkerThread
   )
 where
 
@@ -11,11 +12,12 @@ import           Prelude ()
 import           Prelude.Compat
 
 import           Brick.BChan
-import           Control.Concurrent (threadDelay, forkIO)
+import           Control.Concurrent (threadDelay, forkIO, MVar, putMVar, tryTakeMVar)
 import qualified Control.Concurrent.STM as STM
 import           Control.Concurrent.STM.Delay
-import           Control.Exception (SomeException, try)
+import           Control.Exception (SomeException, try, finally)
 import           Control.Monad (forever, when, void)
+import           Data.List (isInfixOf)
 import qualified Data.Text as T
 import           Data.Maybe (catMaybes)
 import           Data.Monoid ((<>))
@@ -34,22 +36,27 @@ import           State.Editing (requestSpellCheck)
 import           Types
 import           Types.Users
 
-updateUserStatuses :: Session -> IO (MH ())
-updateUserStatuses session = do
-  statusMap <- mmGetStatuses session
-  return $ do
-    let setStatus u = u & uiStatus .~ (newsts u)
-        newsts u = (statusMap^.at(u^.uiId) & _Just %~ statusFromText) ^. non Offline
-    csUsers . mapped %= setStatus
+updateUserStatuses :: MVar () -> Session -> IO (MH ())
+updateUserStatuses lock session = do
+  lockResult <- tryTakeMVar lock
 
-startUserRefreshThread :: Session -> RequestChan -> IO ()
-startUserRefreshThread session requestChan = void $ forkIO $ forever refresh
+  case lockResult of
+      Nothing -> return $ return ()
+      Just () -> do
+          statusMap <- mmGetStatuses session `finally` putMVar lock ()
+          return $ do
+            let setStatus u = u & uiStatus .~ (newsts u)
+                newsts u = (statusMap^.at(u^.uiId) & _Just %~ statusFromText) ^. non Offline
+            csUsers . mapped %= setStatus
+
+startUserRefreshThread :: MVar () -> Session -> RequestChan -> IO ()
+startUserRefreshThread lock session requestChan = void $ forkIO $ forever refresh
   where
       seconds = (* (1000 * 1000))
       userRefreshInterval = 30
       refresh = do
           STM.atomically $ STM.writeTChan requestChan $ do
-            rs <- try $ updateUserStatuses session
+            rs <- try $ updateUserStatuses lock session
             case rs of
               Left (_ :: SomeException) -> return (return ())
               Right upd -> return upd
@@ -203,3 +210,49 @@ startSpellCheckerThread eventChan spellCheckTimeout = do
             STM.writeTChan delayWorkerChan newDel
 
   return delayWakeupChan
+
+-------------------------------------------------------------------
+-- Async worker thread
+
+startAsyncWorkerThread :: Config -> STM.TChan (IO (MH ())) -> BChan MHEvent -> IO ()
+startAsyncWorkerThread c r e = void $ forkIO $ asyncWorker c r e
+
+asyncWorker :: Config -> STM.TChan (IO (MH ())) -> BChan MHEvent -> IO ()
+asyncWorker c r e = forever $ doAsyncWork c r e
+
+doAsyncWork :: Config -> STM.TChan (IO (MH ())) -> BChan MHEvent -> IO ()
+doAsyncWork config requestChan eventChan = do
+    startWork <- case configShowBackground config of
+        Disabled -> return $ return ()
+        Active -> do chk <- STM.atomically $ STM.tryPeekTChan requestChan
+                     case chk of
+                       Nothing -> do writeBChan eventChan BGIdle
+                                     return $ writeBChan eventChan $ BGBusy Nothing
+                       _ -> return $ return ()
+        ActiveCount -> do
+          chk <- STM.atomically $ do
+            chanCopy <- STM.cloneTChan requestChan
+            let cntMsgs = do m <- STM.tryReadTChan chanCopy
+                             case m of
+                               Nothing -> return 0
+                               Just _ -> (1 +) <$> cntMsgs
+            cntMsgs
+          case chk of
+            0 -> do writeBChan eventChan BGIdle
+                    return (writeBChan eventChan $ BGBusy (Just 1))
+            _ -> do writeBChan eventChan $ BGBusy (Just chk)
+                    return $ return ()
+
+    req <- STM.atomically $ STM.readTChan requestChan
+    startWork
+    res <- try req
+    case res of
+      Left e    -> when (not $ shouldIgnore e) $
+                   writeBChan eventChan (AsyncErrEvent e)
+      Right upd -> writeBChan eventChan (RespEvent upd)
+
+-- Filter for exceptions that we don't want to report to the user,
+-- probably because they are not actionable and/or contain no useful
+-- information.
+shouldIgnore :: SomeException -> Bool
+shouldIgnore e = "resource vanished" `isInfixOf` show e
