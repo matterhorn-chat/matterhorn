@@ -8,6 +8,7 @@ import Control.Monad (when)
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.Text as T
 import Data.Monoid ((<>))
+import Control.Concurrent (takeMVar, newEmptyMVar)
 import qualified Control.Concurrent.STM as STM
 import System.Exit (ExitCode(..))
 import Lens.Micro.Platform (use)
@@ -38,7 +39,9 @@ findAndRunScript scriptName input = do
 
 runScript :: STM.TChan ProgramOutput -> FilePath -> T.Text -> IO (MH ())
 runScript outputChan fp text = do
-  po <- runLoggedCommand True outputChan fp [] (Just $ T.unpack text)
+  outputVar <- newEmptyMVar
+  runLoggedCommand True outputChan fp [] (Just $ T.unpack text) (Just outputVar)
+  po <- takeMVar outputVar
   return $ case programExitCode po of
     ExitSuccess -> do
         when (null $ programStderr po) $ do

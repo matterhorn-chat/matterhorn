@@ -106,6 +106,7 @@ import           Brick.Widgets.List (list, listMoveTo, listSelectedElement)
 import           Control.Applicative
 import           Control.Exception (SomeException, try)
 import           Control.Monad.IO.Class (liftIO)
+import           Control.Concurrent (MVar, putMVar, forkIO)
 import qualified Control.Concurrent.STM as STM
 import           Data.Char (isAlphaNum)
 import           Brick.Main (getVtyHandle, viewportScroll, vScrollToBeginning, vScrollBy, vScrollToEnd)
@@ -1531,8 +1532,8 @@ openURL link = do
                     outputChan <- use (csResources.crSubprocessLog)
                     doAsyncWith Preempt $ do
                         args <- act st
-                        void $ runLoggedCommand False outputChan (T.unpack urlOpenCommand)
-                                                args Nothing
+                        runLoggedCommand False outputChan (T.unpack urlOpenCommand)
+                                         args Nothing Nothing
                         return $ return ()
                 True -> do
                     -- If there isn't a new message cutoff showing in
@@ -1605,8 +1606,10 @@ runLoggedCommand :: Bool
                  -- ^ Arguments
                  -> Maybe String
                  -- ^ The stdin to send, if any
-                 -> IO ProgramOutput
-runLoggedCommand stdoutOkay outputChan cmd args mInput = do
+                 -> Maybe (MVar ProgramOutput)
+                 -- ^ Where to put the program output when it is ready
+                 -> IO ()
+runLoggedCommand stdoutOkay outputChan cmd args mInput mOutputVar = void $ forkIO $ do
     let stdIn = maybe NoStream (const CreatePipe) mInput
         opener = (proc cmd args) { std_in = stdIn
                                  , std_out = CreatePipe
@@ -1617,7 +1620,7 @@ runLoggedCommand stdoutOkay outputChan cmd args mInput = do
         Left (e::SomeException) -> do
             let po = ProgramOutput cmd args "" stdoutOkay (show e) (ExitFailure 1)
             STM.atomically $ STM.writeTChan outputChan po
-            return po
+            maybe (return ()) (flip putMVar po) mOutputVar
         Right (stdinResult, Just outh, Just errh, ph) -> do
             case stdinResult of
                 Just inh -> do
@@ -1631,7 +1634,7 @@ runLoggedCommand stdoutOkay outputChan cmd args mInput = do
             errResult <- hGetContents errh
             let po = ProgramOutput cmd args outResult stdoutOkay errResult ec
             STM.atomically $ STM.writeTChan outputChan po
-            return po
+            maybe (return ()) (flip putMVar po) mOutputVar
         Right _ ->
             error $ "BUG: createProcess returned unexpected result, report this at " <>
                     "https://github.com/matterhorn-chat/matterhorn"
