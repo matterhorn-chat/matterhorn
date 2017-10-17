@@ -93,7 +93,7 @@ renderMessage st mEditTheshold msg renderReplyParent uSet cSet indentBlocks =
             case (,) <$> msg^.mOriginalPost <*> mEditTheshold of
                 Nothing -> id
                 Just (p, cutoff) ->
-                        if p^.postCreateAtL < cutoff && p^.postUpdateAtL >= cutoff
+                        if p^.postUpdateAtL >= cutoff && p^.postUpdateAtL > p^.postCreateAtL
                         then B.withDefAttr recentlyEditedPostAttr
                         else id
         msgWidget =
