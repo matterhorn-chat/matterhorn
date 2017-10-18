@@ -89,13 +89,15 @@ renderMessage st mEditTheshold msg renderReplyParent uSet cSet indentBlocks =
                 ]
           Nothing -> []
         rmd = renderMarkdown uSet cSet (msg^.mText)
-        maybeEditHighlight =
-            case (,) <$> msg^.mOriginalPost <*> mEditTheshold of
-                Nothing -> id
-                Just (p, cutoff) ->
-                        if p^.postUpdateAtL >= cutoff && p^.postUpdateAtL > p^.postCreateAtL
-                        then B.withDefAttr recentlyEditedPostAttr
-                        else id
+        maybeEditHighlight = case msg^.mOriginalPost of
+            Nothing -> id
+            Just p ->
+                if p^.postUpdateAtL > p^.postCreateAtL
+                then case mEditTheshold of
+                    Just cutoff | p^.postUpdateAtL >= cutoff ->
+                        (B.<=> (B.withDefAttr recentlyEditedPostAttr $ B.txt "[edited]"))
+                    _ -> (B.<=> (B.txt "[edited]"))
+                else id
         msgWidget =
             maybeEditHighlight $
             layout nameElems rmd . viewl $ msg^.mText
