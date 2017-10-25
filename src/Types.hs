@@ -212,6 +212,7 @@ data Config = Config
   , configAspellDictionary :: Maybe T.Text
   , configUnsafeUseHTTP :: Bool
   , configChannelListWidth :: Int
+  , configShowOlderEdits :: Bool
   } deriving (Eq, Show)
 
 data BackgroundInfo = Disabled | Active | ActiveCount deriving (Eq, Show)

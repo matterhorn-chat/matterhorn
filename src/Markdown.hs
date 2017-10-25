@@ -69,7 +69,12 @@ omitUsernameTypes =
 -- The special string we use to indicate the placement of a styled
 -- indication that a message has been edited.
 editMarkingSentinel :: Text
-editMarkingSentinel = "#__mh_edited"
+editMarkingSentinel = "#__mh_edit"
+
+-- The special string we use to indicate the placement of a styled
+-- indication that a message has been edited recently.
+editRecentlyMarkingSentinel :: Text
+editRecentlyMarkingSentinel = "#__mh_edit_r"
 
 -- The actual user-facing text that we render in place of the edit
 -- marking sentinel.
@@ -80,22 +85,22 @@ editMarking = "(edited)"
 -- If the last block is a paragraph, append it to that paragraph.
 -- Otherwise, append a new block so it appears beneath the last
 -- block-level element.
-addEditSentinel :: Blocks -> Blocks
-addEditSentinel bs =
+addEditSentinel :: Text -> Blocks -> Blocks
+addEditSentinel s bs =
     case viewr bs of
         EmptyR -> bs
-        (rest :> b) -> rest <> appendEditSentinel b
+        (rest :> b) -> rest <> appendEditSentinel s b
 
-appendEditSentinel :: Block -> Blocks
-appendEditSentinel b =
+appendEditSentinel :: Text -> Block -> Blocks
+appendEditSentinel sentinel b =
     let s = C.Para (S.singleton m)
-        m = C.Str editMarkingSentinel
+        m = C.Str sentinel
     in case b of
         C.Para is -> S.singleton $ C.Para (is |> C.Str " " |> m)
         _ -> S.fromList [b, s]
 
-renderMessage :: ChatState -> Maybe UTCTime -> Message -> Bool -> UserSet -> ChannelSet -> Bool -> Widget a
-renderMessage st mEditTheshold msg renderReplyParent uSet cSet indentBlocks =
+renderMessage :: ChatState -> Maybe UTCTime -> Bool -> Message -> Bool -> UserSet -> ChannelSet -> Bool -> Widget a
+renderMessage st mEditTheshold showOlderEdits msg renderReplyParent uSet cSet indentBlocks =
     let msgUsr = case msg^.mUserName of
           Just u
             | msg^.mType `elem` omitUsernameTypes -> Nothing
@@ -125,8 +130,10 @@ renderMessage st mEditTheshold msg renderReplyParent uSet cSet indentBlocks =
                 if p^.postUpdateAtL > p^.postCreateAtL
                 then case mEditTheshold of
                     Just cutoff | p^.postUpdateAtL >= cutoff ->
-                        addEditSentinel bs
-                    _ -> bs
+                        addEditSentinel editRecentlyMarkingSentinel bs
+                    _ -> if showOlderEdits
+                         then addEditSentinel editMarkingSentinel bs
+                         else bs
                 else bs
 
         augmentedText = maybeAugment $ msg^.mText
@@ -142,7 +149,7 @@ renderMessage st mEditTheshold msg renderReplyParent uSet cSet indentBlocks =
               case getMessageForPostId st parentId of
                   Nothing -> withParent (B.str "[loading...]")
                   Just pm ->
-                      let parentMsg = renderMessage st mEditTheshold pm False uSet cSet False
+                      let parentMsg = renderMessage st mEditTheshold False pm False uSet cSet False
                       in withParent (addEllipsis $ B.forceAttr replyParentAttr parentMsg)
 
     where
@@ -326,6 +333,7 @@ data TextFragment
   | TLink Text
   | TRawHtml Text
   | TEditSentinel
+  | TEditRecentlySentinel
     deriving (Show, Eq)
 
 data FragmentStyle
@@ -338,6 +346,7 @@ data FragmentStyle
   | Emoji
   | Channel
   | Edited
+  | EditedRecently
     deriving (Eq, Show)
 
 -- We convert it pretty mechanically:
@@ -346,6 +355,8 @@ toFragments = go Normal
   where go n c = case viewl c of
           C.Str t :< xs | t == editMarkingSentinel ->
             Fragment TEditSentinel Edited <| go n xs
+          C.Str t :< xs | t == editRecentlyMarkingSentinel ->
+            Fragment TEditRecentlySentinel EditedRecently <| go n xs
           C.Str t :< xs ->
             Fragment (TStr t) n <| go n xs
           C.Space :< xs ->
@@ -459,6 +470,7 @@ fragmentSize f = case fTextual f of
   TLink t    -> textWidth t
   TRawHtml t -> textWidth t
   TEditSentinel -> textWidth editMarking
+  TEditRecentlySentinel -> textWidth editMarking
   TSpace     -> 1
   TLineBreak -> 0
   TSoftBreak -> 0
@@ -469,6 +481,7 @@ strOf f = case f of
   TLink t    -> t
   TRawHtml t -> t
   TEditSentinel -> editMarking
+  TEditRecentlySentinel -> editMarking
   TSpace     -> " "
   _          -> ""
 
@@ -483,6 +496,7 @@ gatherWidgets (viewl-> (Fragment frag style :< rs)) = go style (strOf frag) rs
                 Normal -> textWithCursor t
                 Emph   -> B.withDefAttr clientEmphAttr (textWithCursor t)
                 Edited -> B.withDefAttr editedMarkingAttr $ B.txt t
+                EditedRecently -> B.withDefAttr editedRecentlyMarkingAttr $ B.txt t
                 Strong -> B.withDefAttr clientStrongAttr (textWithCursor t)
                 Code   -> B.withDefAttr codeAttr (textWithCursor t)
                 Link l ->

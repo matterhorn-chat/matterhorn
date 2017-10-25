@@ -43,6 +43,8 @@ fromIni = do
     configURLOpenCommandInteractive <- fieldFlagDef "urlOpenCommandIsInteractive" False
     configSmartBacktick  <- fieldFlagDef "smartbacktick"
       (configSmartBacktick defaultConfig)
+    configShowOlderEdits <- fieldFlagDef "showOlderEdits"
+      (configShowOlderEdits defaultConfig)
     configShowBackground <- fieldDefOf "showBackgroundActivity" backgroundField
       (configShowBackground defaultConfig)
     configShowMessagePreview <- fieldFlagDef "showMessagePreview"
@@ -107,6 +109,7 @@ defaultConfig =
            , configAspellDictionary   = Nothing
            , configUnsafeUseHTTP    = False
            , configChannelListWidth = 20
+           , configShowOlderEdits     = True
            }
 
 findConfig :: Maybe FilePath -> IO (Either String Config)

@@ -30,7 +30,8 @@ renderSingleMessage st ind uSet cSet =
 
 renderChatMessage :: ChatState -> Maybe UTCTime -> UserSet -> ChannelSet -> (UTCTime -> Widget Name) -> Message -> Widget Name
 renderChatMessage st ind uSet cSet renderTimeFunc msg =
-    let m = renderMessage st ind msg True uSet cSet True
+    let showOlderEdits = configShowOlderEdits $ st^.csResources.crConfiguration
+        m = renderMessage st ind showOlderEdits msg True uSet cSet True
         msgAtch = if Seq.null (msg^.mAttachments)
           then Nothing
           else Just $ withDefAttr clientMessageAttr $ vBox
