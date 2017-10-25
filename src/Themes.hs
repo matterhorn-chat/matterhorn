@@ -39,6 +39,7 @@ module Themes
   , messageSelectStatusAttr
   , misspellingAttr
   , recentlyEditedPostAttr
+  , editedMarkingAttr
 
   -- * Username formatting
   , colorUsername
@@ -81,6 +82,9 @@ urlListSelectedAttr = "urlListSelectedAttr"
 
 messageSelectAttr :: AttrName
 messageSelectAttr = "messageSelectAttr"
+
+editedMarkingAttr :: AttrName
+editedMarkingAttr = "editedMarking"
 
 dialogAttr :: AttrName
 dialogAttr = "dialog"
@@ -213,6 +217,7 @@ lightColorTheme =
      , (messageSelectStatusAttr,          fg black)
      , (misspellingAttr,                  fg red `withStyle` underline)
      , (recentlyEditedPostAttr,           black `on` yellow)
+     , (editedMarkingAttr,                fg yellow)
      ] <>
      ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors) <>
      (themeEntriesForStyle sty)
@@ -254,6 +259,7 @@ darkAttrs =
      , (messageSelectStatusAttr,          fg white)
      , (misspellingAttr,                  fg red `withStyle` underline)
      , (recentlyEditedPostAttr,           black `on` yellow)
+     , (editedMarkingAttr,                fg yellow)
      ] <>
      ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors) <>
      (themeEntriesForStyle sty)

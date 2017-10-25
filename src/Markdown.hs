@@ -66,6 +66,34 @@ omitUsernameTypes =
     , CP TopicChange
     ]
 
+-- The special string we use to indicate the placement of a styled
+-- indication that a message has been edited.
+editMarkingSentinel :: Text
+editMarkingSentinel = "#__mh_edited"
+
+-- The actual user-facing text that we render in place of the edit
+-- marking sentinel.
+editMarking :: Text
+editMarking = "(edited)"
+
+-- Add the edit sentinel to the end of the last block in the sequence.
+-- If the last block is a paragraph, append it to that paragraph.
+-- Otherwise, append a new block so it appears beneath the last
+-- block-level element.
+addEditSentinel :: Blocks -> Blocks
+addEditSentinel bs =
+    case viewr bs of
+        EmptyR -> bs
+        (rest :> b) -> rest <> appendEditSentinel b
+
+appendEditSentinel :: Block -> Blocks
+appendEditSentinel b =
+    let s = C.Para (S.singleton m)
+        m = C.Str editMarkingSentinel
+    in case b of
+        C.Para is -> S.singleton $ C.Para (is |> C.Str " " |> m)
+        _ -> S.fromList [b, s]
+
 renderMessage :: ChatState -> Maybe UTCTime -> Message -> Bool -> UserSet -> ChannelSet -> Bool -> Widget a
 renderMessage st mEditTheshold msg renderReplyParent uSet cSet indentBlocks =
     let msgUsr = case msg^.mUserName of
@@ -88,20 +116,23 @@ renderMessage st mEditTheshold msg renderReplyParent uSet cSet indentBlocks =
                 , B.txt ": "
                 ]
           Nothing -> []
-        rmd = renderMarkdown uSet cSet (msg^.mText)
-        editMarking = B.txt "(edited)"
-        maybeEditHighlight = case msg^.mOriginalPost of
-            Nothing -> id
+
+        -- Use the editing threshold to determine whether to append an
+        -- editing indication to this message.
+        maybeAugment bs = case msg^.mOriginalPost of
+            Nothing -> bs
             Just p ->
                 if p^.postUpdateAtL > p^.postCreateAtL
                 then case mEditTheshold of
                     Just cutoff | p^.postUpdateAtL >= cutoff ->
-                        (B.<=> (B.withDefAttr recentlyEditedPostAttr editMarking))
-                    _ -> (B.<=> editMarking)
-                else id
+                        addEditSentinel bs
+                    _ -> bs
+                else bs
+
+        augmentedText = maybeAugment $ msg^.mText
+        rmd = renderMarkdown uSet cSet augmentedText
         msgWidget =
-            maybeEditHighlight $
-            layout nameElems rmd . viewl $ msg^.mText
+            (layout nameElems rmd . viewl) augmentedText
         withParent p = (replyArrow <+> p) B.<=> msgWidget
     in if not renderReplyParent
        then msgWidget
@@ -294,6 +325,7 @@ data TextFragment
   | TLineBreak
   | TLink Text
   | TRawHtml Text
+  | TEditSentinel
     deriving (Show, Eq)
 
 data FragmentStyle
@@ -305,12 +337,15 @@ data FragmentStyle
   | Link Text
   | Emoji
   | Channel
+  | Edited
     deriving (Eq, Show)
 
 -- We convert it pretty mechanically:
 toFragments :: Inlines -> Seq Fragment
 toFragments = go Normal
   where go n c = case viewl c of
+          C.Str t :< xs | t == editMarkingSentinel ->
+            Fragment TEditSentinel Edited <| go n xs
           C.Str t :< xs ->
             Fragment (TStr t) n <| go n xs
           C.Space :< xs ->
@@ -423,6 +458,7 @@ fragmentSize f = case fTextual f of
   TStr t     -> textWidth t
   TLink t    -> textWidth t
   TRawHtml t -> textWidth t
+  TEditSentinel -> textWidth editMarking
   TSpace     -> 1
   TLineBreak -> 0
   TSoftBreak -> 0
@@ -432,6 +468,7 @@ strOf f = case f of
   TStr t     -> t
   TLink t    -> t
   TRawHtml t -> t
+  TEditSentinel -> editMarking
   TSpace     -> " "
   _          -> ""
 
@@ -445,6 +482,7 @@ gatherWidgets (viewl-> (Fragment frag style :< rs)) = go style (strOf frag) rs
           let w = case s of
                 Normal -> textWithCursor t
                 Emph   -> B.withDefAttr clientEmphAttr (textWithCursor t)
+                Edited -> B.withDefAttr editedMarkingAttr $ B.txt t
                 Strong -> B.withDefAttr clientStrongAttr (textWithCursor t)
                 Code   -> B.withDefAttr codeAttr (textWithCursor t)
                 Link l ->
