@@ -133,7 +133,7 @@ mainKeybindings =
          (Vty.EvKey (Vty.KChar 'o') [Vty.MCtrl]) $
            startUrlSelect
 
-    , KB "Clear the current channel's unread message and editing indicators"
+    , KB "Clear the current channel's unread / edited indicators"
          (Vty.EvKey (Vty.KChar 'l') [Vty.MMeta]) $
            csCurrentChannel %= (clearNewMessageIndicator .
                                 clearEditedThreshold)
