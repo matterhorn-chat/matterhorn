@@ -263,9 +263,9 @@ darkAttrs =
      , (messageSelectAttr,                black `on` yellow)
      , (messageSelectStatusAttr,          fg white)
      , (misspellingAttr,                  fg red `withStyle` underline)
-     , (recentlyEditedPostAttr,           black `on` yellow)
+     , (recentlyEditedPostAttr,           fg yellow)
      , (editedMarkingAttr,                fg yellow)
-     , (editedRecentlyMarkingAttr,        black `on` yellow)
+     , (editedRecentlyMarkingAttr,        fg yellow)
      ] <>
      ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors) <>
      (themeEntriesForStyle sty)
