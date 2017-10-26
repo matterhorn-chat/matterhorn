@@ -39,6 +39,9 @@ module Types.Channels
   , adjustUpdated
   , adjustEditedThreshold
   , updateNewMessageIndicator
+  -- * Notification settings
+  , shouldNotifyForNewPost
+  , shouldNotifyForMention
   -- * Miscellaneous channel-related operations
   , canLeaveChannel
   , preferredChannelName
@@ -241,6 +244,17 @@ data ChannelInfo = ChannelInfo
 makeLenses ''ChannelContents
 makeLenses ''ChannelInfo
 makeLenses ''ClientChannel
+
+shouldNotifyForNewPost :: ClientChannel -> Bool
+shouldNotifyForNewPost cc =
+    (notifyPropsDesktop $ cc^.ccInfo.cdNotifyProps) == IsValue NotifyOptionAll
+
+shouldNotifyForMention :: ClientChannel -> Bool
+shouldNotifyForMention cc =
+    let values = [ IsValue NotifyOptionAll
+                 , IsValue NotifyOptionMention
+                 ]
+    in (notifyPropsDesktop $ cc^.ccInfo.cdNotifyProps) `elem` values
 
 -- ** Miscellaneous channel operations
 
