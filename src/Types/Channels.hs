@@ -40,8 +40,7 @@ module Types.Channels
   , adjustEditedThreshold
   , updateNewMessageIndicator
   -- * Notification settings
-  , shouldNotifyForNewPost
-  , shouldNotifyForMention
+  , notifyPreference
   -- * Miscellaneous channel-related operations
   , canLeaveChannel
   , preferredChannelName
@@ -58,9 +57,11 @@ import           Network.Mattermost.Types ( Channel(..), ChannelId
                                           , ChannelWithData(..)
                                           , Type(..)
                                           , Post
-                                          , NotifyProps
+                                          , User(userNotifyProps)
+                                          , ChannelNotifyProps
                                           , NotifyOption(..)
-                                          , emptyNotifyProps
+                                          , WithDefault(..)
+                                          , emptyChannelNotifyProps
                                           )
 import           Types.Messages (Messages, noMessages)
 
@@ -99,7 +100,7 @@ initialChannelInfo chan =
                    , _cdHeader           = chan^.channelHeaderL
                    , _cdType             = chan^.channelTypeL
                    , _cdCurrentState     = initialChannelState
-                   , _cdNotifyProps      = emptyNotifyProps
+                   , _cdNotifyProps      = emptyChannelNotifyProps
                    }
 
 channelInfoFromChannelWithData :: ChannelWithData -> ChannelInfo -> ChannelInfo
@@ -235,7 +236,7 @@ data ChannelInfo = ChannelInfo
     -- ^ The type of a channel: public, private, or DM
   , _cdCurrentState     :: ChannelState
     -- ^ The current state of the channel
-  , _cdNotifyProps      :: NotifyProps
+  , _cdNotifyProps      :: ChannelNotifyProps
     -- ^ The user's notification settings for this channel
   }
 
@@ -245,16 +246,11 @@ makeLenses ''ChannelContents
 makeLenses ''ChannelInfo
 makeLenses ''ClientChannel
 
-shouldNotifyForNewPost :: ClientChannel -> Bool
-shouldNotifyForNewPost cc =
-    (notifyPropsDesktop $ cc^.ccInfo.cdNotifyProps) == IsValue NotifyOptionAll
-
-shouldNotifyForMention :: ClientChannel -> Bool
-shouldNotifyForMention cc =
-    let values = [ IsValue NotifyOptionAll
-                 , IsValue NotifyOptionMention
-                 ]
-    in (notifyPropsDesktop $ cc^.ccInfo.cdNotifyProps) `elem` values
+notifyPreference :: User -> ClientChannel -> NotifyOption
+notifyPreference u cc =
+    case cc^.ccInfo.cdNotifyProps.channelNotifyPropsDesktopL of
+        IsValue v -> v
+        Default   -> (userNotifyProps u)^.userNotifyPropsDesktopL
 
 -- ** Miscellaneous channel operations
 
