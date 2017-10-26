@@ -1216,7 +1216,7 @@ addMessageToState new = do
                   doAddMessage
 
               postedChanMessage =
-                withChannelOrDefault (postChannelId new) NoAction $ \_ -> do
+                withChannelOrDefault (postChannelId new) NoAction $ \chan -> do
                     currCId <- use csCurrentChannelId
 
                     let curChannelAction = if postChannelId new == currCId
@@ -1224,7 +1224,9 @@ addMessageToState new = do
                                            else NoAction
                         originUserAction = if fromMe
                                            then NoAction
-                                           else NotifyUser
+                                           else if shouldNotifyForNewPost chan
+                                                then NotifyUser
+                                                else NoAction
                     return $ curChannelAction <> originUserAction
 
           -- If this message was written by a user we don't know about,
