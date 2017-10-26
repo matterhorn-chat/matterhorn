@@ -1158,7 +1158,10 @@ data PostToAdd =
     | RecentPost Post Bool
     -- ^ A message posted to the channel since the user connected, along
     -- with a flag indicating whether the post triggered any of the
-    -- user's mentions
+    -- user's mentions. We need an extra flag because the server
+    -- determines whether the post has any mentions, and that data is
+    -- only available in websocket events (and then provided to this
+    -- constructor).
 
 -- | Adds a possibly new message to the associated channel contents.
 -- Returns True if this is something that should potentially notify
