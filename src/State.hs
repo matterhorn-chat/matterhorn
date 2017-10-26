@@ -903,7 +903,7 @@ addObtainedMessages :: ChannelId -> Posts -> MH ()
 addObtainedMessages _cId posts =
     postProcessMessageAdd =<<
         foldl mappend mempty <$>
-              mapM addMessageToState
+              mapM (addMessageToState False)
                        [ (posts^.postsPostsL) HM.! p
                        | p <- F.toList (posts^.postsOrderL)
                        ]
@@ -1151,8 +1151,8 @@ postProcessMessageAdd ppma = do
 -- Returns True if this is something that should potentially notify
 -- the user of a change to the channel (i.e., not a message we
 -- posted).
-addMessageToState :: Post -> MH PostProcessMessageAdd
-addMessageToState new = do
+addMessageToState :: Bool -> Post -> MH PostProcessMessageAdd
+addMessageToState wasMentioned new = do
   st <- use id
   case st ^? csChannel(postChannelId new) of
       Nothing -> do
@@ -1184,7 +1184,10 @@ addMessageToState new = do
                    (adjustUpdated new) .
                    (\c -> if currCId == cId
                           then c
-                          else updateNewMessageIndicator new c)
+                          else updateNewMessageIndicator new c) .
+                   (\c -> if wasMentioned
+                          then c & ccInfo.cdMentionCount %~ succ
+                          else c)
                   )
                 asyncFetchReactionsForPost cId new
                 asyncFetchAttachments new
@@ -1220,12 +1223,14 @@ addMessageToState new = do
                 withChannelOrDefault (postChannelId new) NoAction $ \chan -> do
                     currCId <- use csCurrentChannelId
 
-                    let curChannelAction = if postChannelId new == currCId
+                    let notifyPref = notifyPreference (st^.csMe) chan
+                        curChannelAction = if postChannelId new == currCId
                                            then UpdateServerViewed
                                            else NoAction
                         originUserAction = if fromMe
                                            then NoAction
-                                           else if notifyPreference (st^.csMe) chan == NotifyOptionAll
+                                           else if notifyPref == NotifyOptionAll ||
+                                                   (notifyPref == NotifyOptionMention && wasMentioned)
                                                 then NotifyUser
                                                 else NoAction
                     return $ curChannelAction <> originUserAction
