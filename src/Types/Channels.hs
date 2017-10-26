@@ -55,6 +55,9 @@ import           Network.Mattermost.Types ( Channel(..), ChannelId
                                           , ChannelWithData(..)
                                           , Type(..)
                                           , Post
+                                          , NotifyProps
+                                          , NotifyOption(..)
+                                          , emptyNotifyProps
                                           )
 import           Types.Messages (Messages, noMessages)
 
@@ -93,6 +96,7 @@ initialChannelInfo chan =
                    , _cdHeader           = chan^.channelHeaderL
                    , _cdType             = chan^.channelTypeL
                    , _cdCurrentState     = initialChannelState
+                   , _cdNotifyProps      = emptyNotifyProps
                    }
 
 channelInfoFromChannelWithData :: ChannelWithData -> ChannelInfo -> ChannelInfo
@@ -108,6 +112,7 @@ channelInfoFromChannelWithData (ChannelWithData chan chanData) ci =
           , _cdHeader           = (chan^.channelHeaderL)
           , _cdType             = (chan^.channelTypeL)
           , _cdMentionCount     = chanData^.channelDataMentionCountL
+          , _cdNotifyProps      = chanData^.channelDataNotifyPropsL
           }
 
 -- | The 'ChannelContents' is a wrapper for a list of
@@ -227,6 +232,8 @@ data ChannelInfo = ChannelInfo
     -- ^ The type of a channel: public, private, or DM
   , _cdCurrentState     :: ChannelState
     -- ^ The current state of the channel
+  , _cdNotifyProps      :: NotifyProps
+    -- ^ The user's notification settings for this channel
   }
 
 -- ** Channel-related Lenses
