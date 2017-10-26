@@ -138,6 +138,7 @@ import           System.Environment.XDG.BaseDir (getUserCacheDir)
 import           System.FilePath
 
 import           Network.Mattermost
+import           Network.Mattermost.Types (NotifyOption(..))
 import           Network.Mattermost.Lenses
 
 import           Config
@@ -1224,7 +1225,7 @@ addMessageToState new = do
                                            else NoAction
                         originUserAction = if fromMe
                                            then NoAction
-                                           else if shouldNotifyForNewPost chan
+                                           else if notifyPreference (st^.csMe) chan == NotifyOptionAll
                                                 then NotifyUser
                                                 else NoAction
                     return $ curChannelAction <> originUserAction
