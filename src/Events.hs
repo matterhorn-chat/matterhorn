@@ -105,7 +105,7 @@ handleWSEvent we = do
                 let wasMentioned = case wepMentions (weData we) of
                       Just lst -> myUserId `Set.member` lst
                       _ -> False
-                addMessageToState wasMentioned p >>= postProcessMessageAdd
+                addMessageToState (RecentPost p wasMentioned) >>= postProcessMessageAdd
             | otherwise -> return ()
 
         WMPostEdited

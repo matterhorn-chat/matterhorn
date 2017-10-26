@@ -47,6 +47,7 @@ module State
   , channelHistoryBackward
 
   -- * Working with messages
+  , PostToAdd(..)
   , sendMessage
   , msgURLs
   , editMessage
@@ -903,7 +904,7 @@ addObtainedMessages :: ChannelId -> Posts -> MH ()
 addObtainedMessages _cId posts =
     postProcessMessageAdd =<<
         foldl mappend mempty <$>
-              mapM (addMessageToState False)
+              mapM (addMessageToState . OldPost)
                        [ (posts^.postsPostsL) HM.! p
                        | p <- F.toList (posts^.postsOrderL)
                        ]
@@ -1147,18 +1148,31 @@ postProcessMessageAdd ppma = do
    postOp NotifyUser          = maybeRingBell
    postOp NotifyUserAndServer = updateViewed >> maybeRingBell
 
+-- | When we add posts to the application state, we either get them
+-- from the server during scrollback fetches (here called 'OldPost') or
+-- we get them from websocket events when they are posted in real time
+-- (here called 'RecentPost').
+data PostToAdd =
+    OldPost Post
+    -- ^ A post from the server's history
+    | RecentPost Post Bool
+    -- ^ A message posted to the channel since the user connected, along
+    -- with a flag indicating whether the post triggered any of the
+    -- user's mentions
+
 -- | Adds a possibly new message to the associated channel contents.
 -- Returns True if this is something that should potentially notify
 -- the user of a change to the channel (i.e., not a message we
 -- posted).
---
--- The boolean parameter indicates whether this post also mentions the
--- currently logged-in user. We have to include this as a separate
--- parameter because in the case of a websocket event providing this
--- post, the server does this check for us and indicates this in the
--- websocket event.
-addMessageToState :: Bool -> Post -> MH PostProcessMessageAdd
-addMessageToState wasMentioned new = do
+addMessageToState :: PostToAdd -> MH PostProcessMessageAdd
+addMessageToState newPostData = do
+  let (new, wasMentioned) =  case newPostData of
+        -- A post from scrollback history has no mention data, and
+        -- that's okay: we only need to track mentions to tell the user
+        -- that recent posts contained mentions.
+        OldPost p      -> (p, False)
+        RecentPost p m -> (p, m)
+
   st <- use id
   case st ^? csChannel(postChannelId new) of
       Nothing -> do
