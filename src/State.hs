@@ -1166,7 +1166,7 @@ data PostToAdd =
 -- posted).
 addMessageToState :: PostToAdd -> MH PostProcessMessageAdd
 addMessageToState newPostData = do
-  let (new, wasMentioned) =  case newPostData of
+  let (new, wasMentioned) = case newPostData of
         -- A post from scrollback history has no mention data, and
         -- that's okay: we only need to track mentions to tell the user
         -- that recent posts contained mentions.
