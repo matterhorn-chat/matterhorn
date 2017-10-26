@@ -1151,6 +1151,12 @@ postProcessMessageAdd ppma = do
 -- Returns True if this is something that should potentially notify
 -- the user of a change to the channel (i.e., not a message we
 -- posted).
+--
+-- The boolean parameter indicates whether this post also mentions the
+-- currently logged-in user. We have to include this as a separate
+-- parameter because in the case of a websocket event providing this
+-- post, the server does this check for us and indicates this in the
+-- websocket event.
 addMessageToState :: Bool -> Post -> MH PostProcessMessageAdd
 addMessageToState wasMentioned new = do
   st <- use id
