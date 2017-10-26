@@ -47,6 +47,7 @@ module State
   , channelHistoryBackward
 
   -- * Working with messages
+  , PostToAdd(..)
   , sendMessage
   , msgURLs
   , editMessage
@@ -138,6 +139,7 @@ import           System.Environment.XDG.BaseDir (getUserCacheDir)
 import           System.FilePath
 
 import           Network.Mattermost
+import           Network.Mattermost.Types (NotifyOption(..))
 import           Network.Mattermost.Lenses
 
 import           Config
@@ -902,7 +904,7 @@ addObtainedMessages :: ChannelId -> Posts -> MH ()
 addObtainedMessages _cId posts =
     postProcessMessageAdd =<<
         foldl mappend mempty <$>
-              mapM addMessageToState
+              mapM (addMessageToState . OldPost)
                        [ (posts^.postsPostsL) HM.! p
                        | p <- F.toList (posts^.postsOrderL)
                        ]
@@ -1146,12 +1148,34 @@ postProcessMessageAdd ppma = do
    postOp NotifyUser          = maybeRingBell
    postOp NotifyUserAndServer = updateViewed >> maybeRingBell
 
+-- | When we add posts to the application state, we either get them
+-- from the server during scrollback fetches (here called 'OldPost') or
+-- we get them from websocket events when they are posted in real time
+-- (here called 'RecentPost').
+data PostToAdd =
+    OldPost Post
+    -- ^ A post from the server's history
+    | RecentPost Post Bool
+    -- ^ A message posted to the channel since the user connected, along
+    -- with a flag indicating whether the post triggered any of the
+    -- user's mentions. We need an extra flag because the server
+    -- determines whether the post has any mentions, and that data is
+    -- only available in websocket events (and then provided to this
+    -- constructor).
+
 -- | Adds a possibly new message to the associated channel contents.
 -- Returns True if this is something that should potentially notify
 -- the user of a change to the channel (i.e., not a message we
 -- posted).
-addMessageToState :: Post -> MH PostProcessMessageAdd
-addMessageToState new = do
+addMessageToState :: PostToAdd -> MH PostProcessMessageAdd
+addMessageToState newPostData = do
+  let (new, wasMentioned) = case newPostData of
+        -- A post from scrollback history has no mention data, and
+        -- that's okay: we only need to track mentions to tell the user
+        -- that recent posts contained mentions.
+        OldPost p      -> (p, False)
+        RecentPost p m -> (p, m)
+
   st <- use id
   case st ^? csChannel(postChannelId new) of
       Nothing -> do
@@ -1183,7 +1207,10 @@ addMessageToState new = do
                    (adjustUpdated new) .
                    (\c -> if currCId == cId
                           then c
-                          else updateNewMessageIndicator new c)
+                          else updateNewMessageIndicator new c) .
+                   (\c -> if wasMentioned
+                          then c & ccInfo.cdMentionCount %~ succ
+                          else c)
                   )
                 asyncFetchReactionsForPost cId new
                 asyncFetchAttachments new
@@ -1216,15 +1243,19 @@ addMessageToState new = do
                   doAddMessage
 
               postedChanMessage =
-                withChannelOrDefault (postChannelId new) NoAction $ \_ -> do
+                withChannelOrDefault (postChannelId new) NoAction $ \chan -> do
                     currCId <- use csCurrentChannelId
 
-                    let curChannelAction = if postChannelId new == currCId
+                    let notifyPref = notifyPreference (st^.csMe) chan
+                        curChannelAction = if postChannelId new == currCId
                                            then UpdateServerViewed
                                            else NoAction
                         originUserAction = if fromMe
                                            then NoAction
-                                           else NotifyUser
+                                           else if notifyPref == NotifyOptionAll ||
+                                                   (notifyPref == NotifyOptionMention && wasMentioned)
+                                                then NotifyUser
+                                                else NoAction
                     return $ curChannelAction <> originUserAction
 
           -- If this message was written by a user we don't know about,

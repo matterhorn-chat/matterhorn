@@ -39,6 +39,8 @@ module Types.Channels
   , adjustUpdated
   , adjustEditedThreshold
   , updateNewMessageIndicator
+  -- * Notification settings
+  , notifyPreference
   -- * Miscellaneous channel-related operations
   , canLeaveChannel
   , preferredChannelName
@@ -55,6 +57,11 @@ import           Network.Mattermost.Types ( Channel(..), ChannelId
                                           , ChannelWithData(..)
                                           , Type(..)
                                           , Post
+                                          , User(userNotifyProps)
+                                          , ChannelNotifyProps
+                                          , NotifyOption(..)
+                                          , WithDefault(..)
+                                          , emptyChannelNotifyProps
                                           )
 import           Types.Messages (Messages, noMessages)
 
@@ -93,6 +100,7 @@ initialChannelInfo chan =
                    , _cdHeader           = chan^.channelHeaderL
                    , _cdType             = chan^.channelTypeL
                    , _cdCurrentState     = initialChannelState
+                   , _cdNotifyProps      = emptyChannelNotifyProps
                    }
 
 channelInfoFromChannelWithData :: ChannelWithData -> ChannelInfo -> ChannelInfo
@@ -108,6 +116,7 @@ channelInfoFromChannelWithData (ChannelWithData chan chanData) ci =
           , _cdHeader           = (chan^.channelHeaderL)
           , _cdType             = (chan^.channelTypeL)
           , _cdMentionCount     = chanData^.channelDataMentionCountL
+          , _cdNotifyProps      = chanData^.channelDataNotifyPropsL
           }
 
 -- | The 'ChannelContents' is a wrapper for a list of
@@ -227,6 +236,8 @@ data ChannelInfo = ChannelInfo
     -- ^ The type of a channel: public, private, or DM
   , _cdCurrentState     :: ChannelState
     -- ^ The current state of the channel
+  , _cdNotifyProps      :: ChannelNotifyProps
+    -- ^ The user's notification settings for this channel
   }
 
 -- ** Channel-related Lenses
@@ -234,6 +245,12 @@ data ChannelInfo = ChannelInfo
 makeLenses ''ChannelContents
 makeLenses ''ChannelInfo
 makeLenses ''ClientChannel
+
+notifyPreference :: User -> ClientChannel -> NotifyOption
+notifyPreference u cc =
+    case cc^.ccInfo.cdNotifyProps.channelNotifyPropsDesktopL of
+        IsValue v -> v
+        Default   -> (userNotifyProps u)^.userNotifyPropsDesktopL
 
 -- ** Miscellaneous channel operations
 

@@ -21,7 +21,6 @@ import           Connection
 import           State
 import           State.Common
 import           Types
-import           Types.Channels (ccInfo, cdMentionCount)
 
 import           Events.ShowHelp
 import           Events.Main
@@ -103,11 +102,10 @@ handleWSEvent we = do
                 -- If the message is a header change, also update the
                 -- channel metadata.
                 myUserId <- use (csMe.userIdL)
-                case wepMentions (weData we) of
-                    Just lst | myUserId `Set.member` lst ->
-                        csChannel(postChannelId p).ccInfo.cdMentionCount += 1
-                    _ -> return ()
-                addMessageToState p >>= postProcessMessageAdd
+                let wasMentioned = case wepMentions (weData we) of
+                      Just lst -> myUserId `Set.member` lst
+                      _ -> False
+                addMessageToState (RecentPost p wasMentioned) >>= postProcessMessageAdd
             | otherwise -> return ()
 
         WMPostEdited
