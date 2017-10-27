@@ -843,16 +843,16 @@ getNextUnreadChannel st =
 
 listThemes :: MH ()
 listThemes = do
-    let mkThemeList _ = T.intercalate "\n\n" $
-                        "Available built-in themes:" :
-                        (("  " <>) <$> fst <$> themes)
-    postInfoMessage (mkThemeList themes)
+    let themeList = T.intercalate "\n\n" $
+                    "Available built-in themes:" :
+                    (("  " <>) <$> internalThemeName <$> internalThemes)
+    postInfoMessage themeList
 
 setTheme :: T.Text -> MH ()
 setTheme name =
-    case lookup name themes of
+    case lookupTheme name of
         Nothing -> listThemes
-        Just t -> csResources.crTheme .= t
+        Just t -> csResources.crTheme .= attrMapFromInternalTheme t
 
 channelPageUp :: MH ()
 channelPageUp = do

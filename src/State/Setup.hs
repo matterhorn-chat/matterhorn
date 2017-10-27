@@ -14,7 +14,7 @@ import           Control.Exception (catch)
 import           Control.Monad (forM, when)
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
-import           Data.Maybe (listToMaybe, fromJust)
+import           Data.Maybe (listToMaybe, fromMaybe)
 import qualified Data.Sequence as Seq
 import           Data.Time.LocalTime (getCurrentTimeZone)
 import           Lens.Micro.Platform
@@ -121,11 +121,9 @@ setupState logFile config requestChan eventChan = do
   slc <- STM.atomically STM.newTChan
 
   let themeName = case configTheme config of
-          Nothing -> defaultThemeName
+          Nothing -> internalThemeName defaultTheme
           Just t -> t
-      theme = case lookup themeName themes of
-          Nothing -> fromJust $ lookup defaultThemeName themes
-          Just t -> t
+      theme = attrMapFromInternalTheme $ fromMaybe defaultTheme (lookupTheme themeName)
       cr = ChatResources session cd requestChan eventChan
              slc theme quitCondition userStatusLock config mempty
   initializeState cr myTeam myUser

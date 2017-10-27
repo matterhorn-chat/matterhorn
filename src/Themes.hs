@@ -1,8 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Themes
-  ( defaultThemeName
-  , themes
+  ( InternalTheme(..)
+
+  , defaultTheme
+  , internalThemes
   , attrNameForTokenType
+  , attrMapFromInternalTheme
+  , lookupTheme
 
   -- * Attribute names
   , timeAttr
@@ -48,6 +52,7 @@ module Themes
 
 import Prelude ()
 import Prelude.Compat
+import Data.List (find)
 
 import Data.Hashable (hash)
 import Data.Monoid ((<>))
@@ -58,9 +63,6 @@ import qualified Data.Text as T
 import qualified Skylighting as Sky
 
 import Types (userSigil)
-
-defaultThemeName :: T.Text
-defaultThemeName = darkColorThemeName
 
 helpAttr :: AttrName
 helpAttr = "help"
@@ -106,12 +108,6 @@ completionAlternativeListAttr = "tabCompletionAlternative"
 
 completionAlternativeCurrentAttr :: AttrName
 completionAlternativeCurrentAttr = "tabCompletionCursor"
-
-darkColorThemeName :: T.Text
-darkColorThemeName = "builtin:dark"
-
-lightColorThemeName :: T.Text
-lightColorThemeName = "builtin:light"
 
 timeAttr :: AttrName
 timeAttr = "time"
@@ -173,54 +169,75 @@ misspellingAttr = "misspelling"
 messageSelectStatusAttr :: AttrName
 messageSelectStatusAttr = "messageSelectStatus"
 
-themes :: [(T.Text, AttrMap)]
-themes =
-    [ (darkColorThemeName,      darkColorTheme)
-    , (lightColorThemeName,     lightColorTheme)
+data InternalTheme =
+    InternalTheme { internalThemeName        :: T.Text
+                  , internalThemeDefaultAttr :: Attr
+                  , internalThemeMapping     :: [(AttrName, Attr)]
+                  }
+
+lookupTheme :: T.Text -> Maybe InternalTheme
+lookupTheme n = find ((== n) . internalThemeName) internalThemes
+
+attrMapFromInternalTheme :: InternalTheme -> AttrMap
+attrMapFromInternalTheme t =
+    attrMap (internalThemeDefaultAttr t) (internalThemeMapping t)
+
+internalThemes :: [InternalTheme]
+internalThemes =
+    [ darkColorTheme
+    , lightColorTheme
     ]
 
-lightColorTheme :: AttrMap
-lightColorTheme =
-  let sty = Sky.kate
-  in attrMap (black `on` white) $
-     [ (timeAttr,                         fg black)
-     , (channelHeaderAttr,                fg black `withStyle` underline)
-     , (channelListHeaderAttr,            fg cyan)
-     , (currentChannelNameAttr,           black `on` yellow `withStyle` bold)
-     , (unreadChannelAttr,                black `on` cyan   `withStyle` bold)
-     , (mentionsChannelAttr,              black `on` red    `withStyle` bold)
-     , (urlAttr,                          fg brightYellow)
-     , (emailAttr,                        fg yellow)
-     , (codeAttr,                         fg magenta)
-     , (emojiAttr,                        fg yellow)
-     , (channelNameAttr,                  fg blue)
-     , (clientMessageAttr,                fg black)
-     , (clientEmphAttr,                   fg black `withStyle` bold)
-     , (clientStrongAttr,                 fg black `withStyle` bold `withStyle` underline)
-     , (clientHeaderAttr,                 fg red `withStyle` bold)
-     , (dateTransitionAttr,               fg green)
-     , (newMessageTransitionAttr,         black `on` yellow)
-     , (errorMessageAttr,                 fg red)
-     , (helpAttr,                         black `on` cyan)
-     , (helpEmphAttr,                     fg white)
-     , (channelSelectMatchAttr,           black `on` magenta)
-     , (channelSelectPromptAttr,          fg black)
-     , (completionAlternativeListAttr,    white `on` blue)
-     , (completionAlternativeCurrentAttr, black `on` yellow)
-     , (dialogAttr,                       black `on` cyan)
-     , (dialogEmphAttr,                   fg white)
-     , (listSelectedFocusedAttr,          black `on` yellow)
-     , (recentMarkerAttr,                 fg black `withStyle` bold)
-     , (loadMoreAttr,                     black `on` cyan)
-     , (urlListSelectedAttr,              black `on` yellow)
-     , (messageSelectAttr,                black `on` yellow)
-     , (messageSelectStatusAttr,          fg black)
-     , (misspellingAttr,                  fg red `withStyle` underline)
-     , (editedMarkingAttr,                fg yellow)
-     , (editedRecentlyMarkingAttr,        black `on` yellow)
-     ] <>
-     ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors) <>
-     (themeEntriesForStyle sty)
+defaultTheme :: InternalTheme
+defaultTheme = darkColorTheme
+
+lightColorTheme :: InternalTheme
+lightColorTheme = InternalTheme name def lightAttrs
+    where
+        name = "builtin:light"
+        def = black `on` white
+
+lightAttrs :: [(AttrName, Attr)]
+lightAttrs =
+    let sty = Sky.kate
+    in [ (timeAttr,                         fg black)
+       , (channelHeaderAttr,                fg black `withStyle` underline)
+       , (channelListHeaderAttr,            fg cyan)
+       , (currentChannelNameAttr,           black `on` yellow `withStyle` bold)
+       , (unreadChannelAttr,                black `on` cyan   `withStyle` bold)
+       , (mentionsChannelAttr,              black `on` red    `withStyle` bold)
+       , (urlAttr,                          fg brightYellow)
+       , (emailAttr,                        fg yellow)
+       , (codeAttr,                         fg magenta)
+       , (emojiAttr,                        fg yellow)
+       , (channelNameAttr,                  fg blue)
+       , (clientMessageAttr,                fg black)
+       , (clientEmphAttr,                   fg black `withStyle` bold)
+       , (clientStrongAttr,                 fg black `withStyle` bold `withStyle` underline)
+       , (clientHeaderAttr,                 fg red `withStyle` bold)
+       , (dateTransitionAttr,               fg green)
+       , (newMessageTransitionAttr,         black `on` yellow)
+       , (errorMessageAttr,                 fg red)
+       , (helpAttr,                         black `on` cyan)
+       , (helpEmphAttr,                     fg white)
+       , (channelSelectMatchAttr,           black `on` magenta)
+       , (channelSelectPromptAttr,          fg black)
+       , (completionAlternativeListAttr,    white `on` blue)
+       , (completionAlternativeCurrentAttr, black `on` yellow)
+       , (dialogAttr,                       black `on` cyan)
+       , (dialogEmphAttr,                   fg white)
+       , (listSelectedFocusedAttr,          black `on` yellow)
+       , (recentMarkerAttr,                 fg black `withStyle` bold)
+       , (loadMoreAttr,                     black `on` cyan)
+       , (urlListSelectedAttr,              black `on` yellow)
+       , (messageSelectAttr,                black `on` yellow)
+       , (messageSelectStatusAttr,          fg black)
+       , (misspellingAttr,                  fg red `withStyle` underline)
+       , (editedMarkingAttr,                fg yellow)
+       , (editedRecentlyMarkingAttr,        black `on` yellow)
+       ] <>
+       ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors) <>
+       (themeEntriesForStyle sty)
 
 darkAttrs :: [(AttrName, Attr)]
 darkAttrs =
@@ -264,8 +281,11 @@ darkAttrs =
      ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors) <>
      (themeEntriesForStyle sty)
 
-darkColorTheme :: AttrMap
-darkColorTheme = attrMap defAttr darkAttrs
+darkColorTheme :: InternalTheme
+darkColorTheme = InternalTheme name def darkAttrs
+    where
+        name = "builtin:dark"
+        def = defAttr
 
 usernameAttr :: Int -> AttrName
 usernameAttr i = "username" <> (attrName $ show i)
