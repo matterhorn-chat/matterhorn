@@ -61,6 +61,7 @@ import Brick
 import Brick.Widgets.List
 import qualified Data.Text as T
 import qualified Skylighting as Sky
+import Skylighting (TokenType(..))
 
 import Types (userSigil)
 
@@ -323,9 +324,41 @@ usernameColors =
 baseHighlightedCodeBlockAttr :: AttrName
 baseHighlightedCodeBlockAttr = "highlightedCodeBlock"
 
-attrNameForTokenType :: Sky.TokenType -> AttrName
-attrNameForTokenType ty =
-    baseHighlightedCodeBlockAttr <> (attrName $ show ty)
+attrNameForTokenType :: TokenType -> AttrName
+attrNameForTokenType ty = baseHighlightedCodeBlockAttr <> (attrName s)
+    where
+        s = case ty of
+          KeywordTok        -> "keyword"
+          DataTypeTok       -> "dataType"
+          DecValTok         -> "declaration"
+          BaseNTok          -> "baseN"
+          FloatTok          -> "float"
+          ConstantTok       -> "constant"
+          CharTok           -> "char"
+          SpecialCharTok    -> "specialChar"
+          StringTok         -> "string"
+          VerbatimStringTok -> "verbatimString"
+          SpecialStringTok  -> "specialString"
+          ImportTok         -> "import"
+          CommentTok        -> "comment"
+          DocumentationTok  -> "documentation"
+          AnnotationTok     -> "annotation"
+          CommentVarTok     -> "comment"
+          OtherTok          -> "other"
+          FunctionTok       -> "function"
+          VariableTok       -> "variable"
+          ControlFlowTok    -> "controlFlow"
+          OperatorTok       -> "operator"
+          BuiltInTok        -> "builtIn"
+          ExtensionTok      -> "extension"
+          PreprocessorTok   -> "preprocessor"
+          AttributeTok      -> "attribute"
+          RegionMarkerTok   -> "regionMarker"
+          InformationTok    -> "information"
+          WarningTok        -> "warning"
+          AlertTok          -> "alert"
+          ErrorTok          -> "error"
+          NormalTok         -> "normal"
 
 themeEntriesForStyle :: Sky.Style -> [(AttrName, Attr)]
 themeEntriesForStyle sty =
@@ -460,5 +493,98 @@ themeSchema =
       )
     , ( editedRecentlyMarkingAttr
       , "The 'edited' marking that appears on newly-edited messages"
+      )
+    , ( attrNameForTokenType KeywordTok
+      , "Syntax highlighting: Keyword"
+      )
+    , ( attrNameForTokenType DataTypeTok
+      , "Syntax highlighting: DataType"
+      )
+    , ( attrNameForTokenType DecValTok
+      , "Syntax highlighting: Declaration"
+      )
+    , ( attrNameForTokenType BaseNTok
+      , "Syntax highlighting: BaseN"
+      )
+    , ( attrNameForTokenType FloatTok
+      , "Syntax highlighting: Float"
+      )
+    , ( attrNameForTokenType ConstantTok
+      , "Syntax highlighting: Constant"
+      )
+    , ( attrNameForTokenType CharTok
+      , "Syntax highlighting: Char"
+      )
+    , ( attrNameForTokenType SpecialCharTok
+      , "Syntax highlighting: Special Char"
+      )
+    , ( attrNameForTokenType StringTok
+      , "Syntax highlighting: String"
+      )
+    , ( attrNameForTokenType VerbatimStringTok
+      , "Syntax highlighting: Verbatim String"
+      )
+    , ( attrNameForTokenType SpecialStringTok
+      , "Syntax highlighting: Special String"
+      )
+    , ( attrNameForTokenType ImportTok
+      , "Syntax highlighting: Import"
+      )
+    , ( attrNameForTokenType CommentTok
+      , "Syntax highlighting: Comment"
+      )
+    , ( attrNameForTokenType DocumentationTok
+      , "Syntax highlighting: Documentation"
+      )
+    , ( attrNameForTokenType AnnotationTok
+      , "Syntax highlighting: Annotation"
+      )
+    , ( attrNameForTokenType CommentVarTok
+      , "Syntax highlighting: Comment"
+      )
+    , ( attrNameForTokenType OtherTok
+      , "Syntax highlighting: Other"
+      )
+    , ( attrNameForTokenType FunctionTok
+      , "Syntax highlighting: Function"
+      )
+    , ( attrNameForTokenType VariableTok
+      , "Syntax highlighting: Variable"
+      )
+    , ( attrNameForTokenType ControlFlowTok
+      , "Syntax highlighting: Control Flow"
+      )
+    , ( attrNameForTokenType OperatorTok
+      , "Syntax highlighting: Operator"
+      )
+    , ( attrNameForTokenType BuiltInTok
+      , "Syntax highlighting: Built-In"
+      )
+    , ( attrNameForTokenType ExtensionTok
+      , "Syntax highlighting: Extension"
+      )
+    , ( attrNameForTokenType PreprocessorTok
+      , "Syntax highlighting: Preprocessor"
+      )
+    , ( attrNameForTokenType AttributeTok
+      , "Syntax highlighting: Attribute"
+      )
+    , ( attrNameForTokenType RegionMarkerTok
+      , "Syntax highlighting: Region Marker"
+      )
+    , ( attrNameForTokenType InformationTok
+      , "Syntax highlighting: Information"
+      )
+    , ( attrNameForTokenType WarningTok
+      , "Syntax highlighting: Warning"
+      )
+    , ( attrNameForTokenType AlertTok
+      , "Syntax highlighting: Alert"
+      )
+    , ( attrNameForTokenType ErrorTok
+      , "Syntax highlighting: Error"
+      )
+    , ( attrNameForTokenType NormalTok
+      , "Syntax highlighting: Normal text"
       )
     ]
