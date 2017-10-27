@@ -403,10 +403,10 @@ themeSchema =
       , "Channel selection: the portion of a channel name that matches"
       )
     , ( completionAlternativeListAttr
-      , "Channel selection: the channel alternative list"
+      , "Tab completion alternatives"
       )
     , ( completionAlternativeCurrentAttr
-      , "Channel selection: the currently-selected alternative"
+      , "The currently-selected tab completion alternative"
       )
     , ( dialogAttr
       , "Dialog box text"
