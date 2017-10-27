@@ -265,7 +265,7 @@ darkAttrs =
      , (misspellingAttr,                  fg red `withStyle` underline)
      , (recentlyEditedPostAttr,           fg yellow)
      , (editedMarkingAttr,                fg yellow)
-     , (editedRecentlyMarkingAttr,        fg yellow)
+     , (editedRecentlyMarkingAttr,        black `on` yellow)
      ] <>
      ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors) <>
      (themeEntriesForStyle sty)
