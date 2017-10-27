@@ -333,3 +333,112 @@ mkTokenTypeEntry (ty, tSty) =
             if Sky.tokenUnderline tSty then flip withStyle underline else id
 
     in (attrNameForTokenType ty, a)
+
+themeSchema :: [(AttrName, T.Text)]
+themeSchema =
+    [ ( timeAttr
+      , "Timestamps on chat messages"
+      )
+    , ( channelHeaderAttr
+      , "Channel headers displayed above chat message lists"
+      )
+    , ( channelListHeaderAttr
+      , "The heading of the channel list sections"
+      )
+    , ( currentChannelNameAttr
+      , "The currently selected channel in the channel list"
+      )
+    , ( unreadChannelAttr
+      , "A channel in the channel list with unread messages"
+      )
+    , ( mentionsChannelAttr
+      , "A channel in the channel list with unread mentions"
+      )
+    , ( urlAttr
+      , "A URL in a chat message"
+      )
+    , ( codeAttr
+      , "A code block in a chat message with no language indication"
+      )
+    , ( emailAttr
+      , "An e-mail address in a chat message"
+      )
+    , ( emojiAttr
+      , "A text emoji indication in a chat message"
+      )
+    , ( channelNameAttr
+      , "A channel name in a chat message"
+      )
+    , ( clientMessageAttr
+      , "A Matterhorn diagnostic or informative message"
+      )
+    , ( clientHeaderAttr
+      , "Markdown heading"
+      )
+    , ( clientEmphAttr
+      , "Markdown 'emphasized' text"
+      )
+    , ( clientStrongAttr
+      , "Markdown 'strong' text"
+      )
+    , ( dateTransitionAttr
+      , "Date transition lines between chat messages on different days"
+      )
+    , ( newMessageTransitionAttr
+      , "The 'New Messages' line that appears above unread messages"
+      )
+    , ( errorMessageAttr
+      , "Matterhorn error messages"
+      )
+    , ( helpAttr
+      , "The help screen text"
+      )
+    , ( helpEmphAttr
+      , "The help screen's emphasized text"
+      )
+    , ( channelSelectPromptAttr
+      , "Channel selection: prompt"
+      )
+    , ( channelSelectMatchAttr
+      , "Channel selection: the portion of a channel name that matches"
+      )
+    , ( completionAlternativeListAttr
+      , "Channel selection: the channel alternative list"
+      )
+    , ( completionAlternativeCurrentAttr
+      , "Channel selection: the currently-selected alternative"
+      )
+    , ( dialogAttr
+      , "Dialog box text"
+      )
+    , ( dialogEmphAttr
+      , "Dialog box emphasized text"
+      )
+    , ( recentMarkerAttr
+      , "The marker indicating the channel last visited"
+      )
+    , ( replyParentAttr
+      , "The arrow between replies and messages replied to"
+      )
+    , ( loadMoreAttr
+      , "The 'Load More' line that appears at the top of a chat message list"
+      )
+    , ( urlListSelectedAttr
+      , "URL list: the selected URL"
+      )
+    , ( messageSelectAttr
+      , "Message selection: the currently-selected message"
+      )
+    , ( messageSelectStatusAttr
+      , "Message selection: the message selection actions"
+      )
+    , ( misspellingAttr
+      , "A misspelled word in the chat message editor"
+      )
+    , ( editedMarkingAttr
+      , "The 'edited' marking that appears on edited messages"
+      )
+    , ( editedRecentlyMarkingAttr
+      , "The 'edited' marking that appears on newly-edited messages"
+      )
+    ]
