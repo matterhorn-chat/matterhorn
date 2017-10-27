@@ -418,7 +418,7 @@ themeSchema =
       , "The marker indicating the channel last visited"
       )
     , ( replyParentAttr
-      , "The arrow between replies and messages replied to"
+      , "The first line of parent messages appearing above reply messages"
       )
     , ( loadMoreAttr
       , "The 'Load More' line that appears at the top of a chat message list"
