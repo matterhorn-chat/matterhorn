@@ -587,4 +587,6 @@ themeSchema =
     , ( attrNameForTokenType NormalTok
       , "Syntax highlighting: Normal text"
       )
-    ]
+    ] <> [ (usernameAttr i, T.pack $ "Username color " <> show i)
+         | i <- [0..(length usernameColors)-1]
+         ]
