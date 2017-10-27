@@ -69,19 +69,19 @@ helpEmphAttr :: AttrName
 helpEmphAttr = "helpEmphasis"
 
 recentMarkerAttr :: AttrName
-recentMarkerAttr = "recentMarker"
+recentMarkerAttr = "recentChannelMarker"
 
 replyParentAttr :: AttrName
-replyParentAttr = "replyParent"
+replyParentAttr = "replyParentPreview"
 
 loadMoreAttr :: AttrName
 loadMoreAttr = "loadMoreMessages"
 
 urlListSelectedAttr :: AttrName
-urlListSelectedAttr = "urlListSelectedAttr"
+urlListSelectedAttr = "urlListCursor"
 
 messageSelectAttr :: AttrName
-messageSelectAttr = "messageSelectAttr"
+messageSelectAttr = "messageSelectCursor"
 
 editedMarkingAttr :: AttrName
 editedMarkingAttr = "editedMarking"
@@ -102,10 +102,10 @@ channelSelectPromptAttr :: AttrName
 channelSelectPromptAttr = "channelSelectPrompt"
 
 completionAlternativeListAttr :: AttrName
-completionAlternativeListAttr = "completionAlternativeList"
+completionAlternativeListAttr = "tabCompletionAlternative"
 
 completionAlternativeCurrentAttr :: AttrName
-completionAlternativeCurrentAttr = "completionAlternativeCurrent"
+completionAlternativeCurrentAttr = "tabCompletionCursor"
 
 darkColorThemeName :: T.Text
 darkColorThemeName = "builtin:dark"
@@ -120,19 +120,19 @@ channelHeaderAttr :: AttrName
 channelHeaderAttr = "channelHeader"
 
 channelListHeaderAttr :: AttrName
-channelListHeaderAttr = "channelListHeader"
+channelListHeaderAttr = "channelListSectionHeader"
 
 currentChannelNameAttr :: AttrName
 currentChannelNameAttr = "currentChannelName"
 
 channelNameAttr :: AttrName
-channelNameAttr = "channelNameAttr"
+channelNameAttr = "channelName"
 
 unreadChannelAttr :: AttrName
 unreadChannelAttr = "unreadChannel"
 
 mentionsChannelAttr :: AttrName
-mentionsChannelAttr = "mentionsChannel"
+mentionsChannelAttr = "channelWithMentions"
 
 dateTransitionAttr :: AttrName
 dateTransitionAttr = "dateTransition"
@@ -144,7 +144,7 @@ urlAttr :: AttrName
 urlAttr = "url"
 
 codeAttr :: AttrName
-codeAttr = "code"
+codeAttr = "codeBlock"
 
 emailAttr :: AttrName
 emailAttr = "email"
@@ -156,13 +156,13 @@ clientMessageAttr :: AttrName
 clientMessageAttr = "clientMessage"
 
 clientHeaderAttr :: AttrName
-clientHeaderAttr = "clientHeader"
+clientHeaderAttr = "markdownHeader"
 
 clientEmphAttr :: AttrName
-clientEmphAttr = "clientEmph"
+clientEmphAttr = "markdownEmph"
 
 clientStrongAttr :: AttrName
-clientStrongAttr = "clientStrong"
+clientStrongAttr = "markdownStrong"
 
 errorMessageAttr :: AttrName
 errorMessageAttr = "errorMessage"
