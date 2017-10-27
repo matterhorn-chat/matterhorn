@@ -38,7 +38,6 @@ module Themes
   , messageSelectAttr
   , messageSelectStatusAttr
   , misspellingAttr
-  , recentlyEditedPostAttr
   , editedMarkingAttr
   , editedRecentlyMarkingAttr
 
@@ -174,9 +173,6 @@ misspellingAttr = "misspelling"
 messageSelectStatusAttr :: AttrName
 messageSelectStatusAttr = "messageSelectStatus"
 
-recentlyEditedPostAttr :: AttrName
-recentlyEditedPostAttr = "recentlyEditedPost"
-
 themes :: [(T.Text, AttrMap)]
 themes =
     [ (darkColorThemeName,      darkColorTheme)
@@ -220,7 +216,6 @@ lightColorTheme =
      , (messageSelectAttr,                black `on` yellow)
      , (messageSelectStatusAttr,          fg black)
      , (misspellingAttr,                  fg red `withStyle` underline)
-     , (recentlyEditedPostAttr,           black `on` yellow)
      , (editedMarkingAttr,                fg yellow)
      , (editedRecentlyMarkingAttr,        black `on` yellow)
      ] <>
@@ -263,7 +258,6 @@ darkAttrs =
      , (messageSelectAttr,                black `on` yellow)
      , (messageSelectStatusAttr,          fg white)
      , (misspellingAttr,                  fg red `withStyle` underline)
-     , (recentlyEditedPostAttr,           fg yellow)
      , (editedMarkingAttr,                fg yellow)
      , (editedRecentlyMarkingAttr,        black `on` yellow)
      ] <>
