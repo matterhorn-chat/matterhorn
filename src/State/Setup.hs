@@ -8,6 +8,7 @@ import           Prelude ()
 import           Prelude.Compat
 
 import           Brick.BChan
+import           Brick.Themes (themeToAttrMap)
 import qualified Control.Concurrent.STM as STM
 import           Control.Concurrent.MVar (newEmptyMVar, putMVar)
 import           Control.Exception (catch)
@@ -123,7 +124,8 @@ setupState logFile config requestChan eventChan = do
   let themeName = case configTheme config of
           Nothing -> internalThemeName defaultTheme
           Just t -> t
-      theme = attrMapFromInternalTheme $ fromMaybe defaultTheme (lookupTheme themeName)
+      theme = themeToAttrMap $ internalTheme $
+              fromMaybe defaultTheme (lookupTheme themeName)
       cr = ChatResources session cd requestChan eventChan
              slc theme quitCondition userStatusLock config mempty
   initializeState cr myTeam myUser

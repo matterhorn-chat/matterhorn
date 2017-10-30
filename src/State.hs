@@ -103,6 +103,7 @@ import           Prelude ()
 import           Prelude.Compat
 
 import           Brick (invalidateCacheEntry)
+import           Brick.Themes (themeToAttrMap)
 import           Brick.Widgets.Edit (getEditContents, editContentsL)
 import           Brick.Widgets.List (list, listMoveTo, listSelectedElement)
 import           Control.Applicative
@@ -852,7 +853,8 @@ setTheme :: T.Text -> MH ()
 setTheme name =
     case lookupTheme name of
         Nothing -> listThemes
-        Just t -> csResources.crTheme .= attrMapFromInternalTheme t
+        Just it -> csResources.crTheme .=
+            (themeToAttrMap $ internalTheme it)
 
 channelPageUp :: MH ()
 channelPageUp = do

@@ -5,7 +5,6 @@ module Themes
   , defaultTheme
   , internalThemes
   , attrNameForTokenType
-  , attrMapFromInternalTheme
   , lookupTheme
 
   -- * Attribute names
@@ -54,10 +53,12 @@ import Prelude ()
 import Prelude.Compat
 import Data.List (find)
 
+import qualified Data.Map as M
 import Data.Hashable (hash)
 import Data.Monoid ((<>))
 import Graphics.Vty
 import Brick
+import Brick.Themes
 import Brick.Widgets.List
 import qualified Data.Text as T
 import qualified Skylighting as Sky
@@ -172,16 +173,11 @@ messageSelectStatusAttr = "messageSelectStatus"
 
 data InternalTheme =
     InternalTheme { internalThemeName        :: T.Text
-                  , internalThemeDefaultAttr :: Attr
-                  , internalThemeMapping     :: [(AttrName, Attr)]
+                  , internalTheme            :: Theme
                   }
 
 lookupTheme :: T.Text -> Maybe InternalTheme
 lookupTheme n = find ((== n) . internalThemeName) internalThemes
-
-attrMapFromInternalTheme :: InternalTheme -> AttrMap
-attrMapFromInternalTheme t =
-    attrMap (internalThemeDefaultAttr t) (internalThemeMapping t)
 
 internalThemes :: [InternalTheme]
 internalThemes =
@@ -193,15 +189,17 @@ defaultTheme :: InternalTheme
 defaultTheme = darkColorTheme
 
 lightColorTheme :: InternalTheme
-lightColorTheme = InternalTheme name def lightAttrs
+lightColorTheme = InternalTheme name theme
     where
+        theme = Theme def lightAttrs Nothing mempty themeDocs
         name = "builtin:light"
         def = black `on` white
 
-lightAttrs :: [(AttrName, Attr)]
+lightAttrs :: M.Map AttrName Attr
 lightAttrs =
     let sty = Sky.kate
-    in [ (timeAttr,                         fg black)
+    in M.fromList $
+       [ (timeAttr,                         fg black)
        , (channelHeaderAttr,                fg black `withStyle` underline)
        , (channelListHeaderAttr,            fg cyan)
        , (currentChannelNameAttr,           black `on` yellow `withStyle` bold)
@@ -240,10 +238,11 @@ lightAttrs =
        ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors) <>
        (themeEntriesForStyle sty)
 
-darkAttrs :: [(AttrName, Attr)]
+darkAttrs :: M.Map AttrName Attr
 darkAttrs =
   let sty = Sky.espresso
-  in [ (timeAttr,                         fg white)
+  in M.fromList $
+     [ (timeAttr,                         fg white)
      , (channelHeaderAttr,                fg white `withStyle` underline)
      , (channelListHeaderAttr,            fg cyan)
      , (currentChannelNameAttr,           black `on` yellow `withStyle` bold)
@@ -283,8 +282,9 @@ darkAttrs =
      (themeEntriesForStyle sty)
 
 darkColorTheme :: InternalTheme
-darkColorTheme = InternalTheme name def darkAttrs
+darkColorTheme = InternalTheme name theme
     where
+        theme = Theme def darkAttrs Nothing mempty themeDocs
         name = "builtin:dark"
         def = defAttr
 
@@ -387,8 +387,8 @@ mkTokenTypeEntry (ty, tSty) =
 
     in (attrNameForTokenType ty, a)
 
-themeSchema :: [(AttrName, T.Text)]
-themeSchema =
+themeDocs :: ThemeDocumentation
+themeDocs = ThemeDocumentation $ M.fromList $
     [ ( timeAttr
       , "Timestamps on chat messages"
       )
