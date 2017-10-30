@@ -172,8 +172,8 @@ messageSelectStatusAttr :: AttrName
 messageSelectStatusAttr = "messageSelectStatus"
 
 data InternalTheme =
-    InternalTheme { internalThemeName        :: T.Text
-                  , internalTheme            :: Theme
+    InternalTheme { internalThemeName :: T.Text
+                  , internalTheme     :: Theme
                   }
 
 lookupTheme :: T.Text -> Maybe InternalTheme
