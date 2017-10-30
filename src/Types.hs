@@ -202,6 +202,7 @@ data Config = Config
   , configTimeFormat     :: Maybe T.Text
   , configDateFormat     :: Maybe T.Text
   , configTheme          :: Maybe T.Text
+  , configThemeCustomizationFile :: Maybe T.Text
   , configSmartBacktick  :: Bool
   , configURLOpenCommand :: Maybe T.Text
   , configURLOpenCommandInteractive :: Bool

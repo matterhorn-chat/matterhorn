@@ -38,6 +38,7 @@ fromIni = do
     configTimeFormat     <- fieldMbOf "timeFormat" stringField
     configDateFormat     <- fieldMbOf "dateFormat" stringField
     configTheme          <- fieldMbOf "theme" stringField
+    configThemeCustomizationFile <- fieldMbOf "themeCustomizationFile" stringField
     configAspellDictionary <- fieldMbOf "aspellDictionary" stringField
     configURLOpenCommand <- fieldMbOf "urlOpenCommand" stringField
     configURLOpenCommandInteractive <- fieldFlagDef "urlOpenCommandIsInteractive" False
@@ -99,6 +100,7 @@ defaultConfig =
            , configTimeFormat         = Nothing
            , configDateFormat         = Nothing
            , configTheme              = Nothing
+           , configThemeCustomizationFile = Nothing
            , configSmartBacktick      = True
            , configURLOpenCommand     = Nothing
            , configURLOpenCommandInteractive = False

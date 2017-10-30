@@ -8,18 +8,21 @@ import           Prelude ()
 import           Prelude.Compat
 
 import           Brick.BChan
-import           Brick.Themes (themeToAttrMap)
+import           Brick.Themes (themeToAttrMap, loadCustomizations)
 import qualified Control.Concurrent.STM as STM
 import           Control.Concurrent.MVar (newEmptyMVar, putMVar)
 import           Control.Exception (catch)
 import           Control.Monad (forM, when)
+import           Data.Monoid ((<>))
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
-import           Data.Maybe (listToMaybe, fromMaybe)
+import           Data.Maybe (listToMaybe, fromMaybe, fromJust, isNothing)
 import qualified Data.Sequence as Seq
+import qualified Data.Text as T
 import           Data.Time.LocalTime (getCurrentTimeZone)
 import           Lens.Micro.Platform
 import           System.Exit (exitFailure)
+import           System.FilePath ((</>), isRelative, dropFileName)
 import           System.IO (Handle)
 
 import           Network.Mattermost
@@ -124,10 +127,33 @@ setupState logFile (cPath, config) requestChan eventChan = do
   let themeName = case configTheme config of
           Nothing -> internalThemeName defaultTheme
           Just t -> t
-      theme = themeToAttrMap $ internalTheme $
-              fromMaybe defaultTheme (lookupTheme themeName)
-      cr = ChatResources session cd requestChan eventChan
-             slc theme quitCondition userStatusLock config mempty
+      baseTheme = internalTheme $ fromMaybe defaultTheme (lookupTheme themeName)
+
+  -- Did the configuration specify a theme customization file? If so,
+  -- load it and customize the theme.
+  custTheme <- case configThemeCustomizationFile config of
+      Nothing -> return baseTheme
+      Just path ->
+          -- If we have no configuration path (i.e. we used the default
+          -- config) then ignore theme customization.
+          let pathStr = T.unpack path
+          in if isRelative pathStr && isNothing cPath
+             then return baseTheme
+             else do
+                 let absPath = if isRelative pathStr
+                               then (dropFileName $ fromJust cPath) </> pathStr
+                               else pathStr
+                 result <- loadCustomizations absPath baseTheme
+                 case result of
+                     Left e -> do
+                         putStrLn $ "Error loading theme customization from " <> show absPath <> ": " <> e
+                         exitFailure
+                     Right t -> return t
+
+  let cr = ChatResources session cd requestChan eventChan
+             slc (themeToAttrMap custTheme) quitCondition
+             userStatusLock config mempty
+
   initializeState cr myTeam myUser
 
 initializeState :: ChatResources -> Team -> User -> IO ChatState
