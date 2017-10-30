@@ -385,8 +385,8 @@ mkTokenTypeEntry (ty, tSty) =
 
     in (attrNameForTokenType ty, a)
 
-themeDocs :: ThemeDocumentation
-themeDocs = ThemeDocumentation $ M.fromList $
+_themeDocs :: ThemeDocumentation
+_themeDocs = ThemeDocumentation $ M.fromList $
     [ ( timeAttr
       , "Timestamps on chat messages"
       )
