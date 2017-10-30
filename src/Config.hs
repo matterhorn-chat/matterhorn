@@ -1,5 +1,5 @@
 {-# LANGUAGE RecordWildCards #-}
-
+{-# LANGUAGE TupleSections #-}
 module Config
   ( Config(..)
   , PasswordSource(..)
@@ -112,13 +112,13 @@ defaultConfig =
            , configShowOlderEdits     = True
            }
 
-findConfig :: Maybe FilePath -> IO (Either String Config)
+findConfig :: Maybe FilePath -> IO (Either String (Maybe FilePath, Config))
 findConfig Nothing = do
     cfg <- locateConfig configFileName
     case cfg of
-        Nothing -> return $ Right defaultConfig
-        Just path -> getConfig path
-findConfig (Just path) = getConfig path
+        Nothing -> return $ Right (Nothing, defaultConfig)
+        Just path -> (fmap (Just path,)) <$> getConfig path
+findConfig (Just path) = (fmap (Just path,)) <$> getConfig path
 
 getConfig :: FilePath -> IO (Either String Config)
 getConfig fp = runExceptT $ do

@@ -44,8 +44,8 @@ loadFlaggedMessages prefs st = doAsyncWithIO Normal st $ do
                      , flaggedPostStatus fp
                      ]
 
-setupState :: Maybe Handle -> Config -> RequestChan -> BChan MHEvent -> IO ChatState
-setupState logFile config requestChan eventChan = do
+setupState :: Maybe Handle -> (Maybe FilePath, Config) -> RequestChan -> BChan MHEvent -> IO ChatState
+setupState logFile (cPath, config) requestChan eventChan = do
   -- If we don't have enough credentials, ask for them.
   connInfo <- case getCredentials config of
       Nothing -> interactiveGatherCredentials config Nothing
