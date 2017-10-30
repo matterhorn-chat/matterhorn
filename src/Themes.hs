@@ -191,15 +191,14 @@ defaultTheme = darkColorTheme
 lightColorTheme :: InternalTheme
 lightColorTheme = InternalTheme name theme
     where
-        theme = Theme def lightAttrs Nothing mempty themeDocs
+        theme = newTheme def lightAttrs
         name = "builtin:light"
         def = black `on` white
 
-lightAttrs :: M.Map AttrName Attr
+lightAttrs :: [(AttrName, Attr)]
 lightAttrs =
     let sty = Sky.kate
-    in M.fromList $
-       [ (timeAttr,                         fg black)
+    in [ (timeAttr,                         fg black)
        , (channelHeaderAttr,                fg black `withStyle` underline)
        , (channelListHeaderAttr,            fg cyan)
        , (currentChannelNameAttr,           black `on` yellow `withStyle` bold)
@@ -238,11 +237,10 @@ lightAttrs =
        ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors) <>
        (themeEntriesForStyle sty)
 
-darkAttrs :: M.Map AttrName Attr
+darkAttrs :: [(AttrName, Attr)]
 darkAttrs =
   let sty = Sky.espresso
-  in M.fromList $
-     [ (timeAttr,                         fg white)
+  in [ (timeAttr,                         fg white)
      , (channelHeaderAttr,                fg white `withStyle` underline)
      , (channelListHeaderAttr,            fg cyan)
      , (currentChannelNameAttr,           black `on` yellow `withStyle` bold)
@@ -284,7 +282,7 @@ darkAttrs =
 darkColorTheme :: InternalTheme
 darkColorTheme = InternalTheme name theme
     where
-        theme = Theme def darkAttrs Nothing mempty themeDocs
+        theme = newTheme def darkAttrs
         name = "builtin:dark"
         def = defAttr
 
