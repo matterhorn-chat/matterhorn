@@ -64,7 +64,12 @@ The user interface has three main areas:
 
 You can use built-in keybindings or `/cmd`-style commands to operate
 the client. To see available keybindings and commands, use the default
-binding of `F1` or run the `/help` command.
+binding of `F1` or run the `/help` command. Keybindings may include
+modifiers such as Control (indicated with a `C-` prefix) or Meta
+(indicated with a `M-` prefix). If your keyboard has an `Alt` key, that
+will work as `Meta`. If it does not, you may be able to configure your
+terminal to provide `Meta` via other means (e.g. iTerm2 on OS X can be
+configured to make the left Option key work as Meta).
 
 To join a channel, use the `/join` command to choose from a list of
 available channels. To create a channel, use `/create-channel`. To leave
