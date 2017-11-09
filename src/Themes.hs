@@ -602,6 +602,9 @@ themeDocs = ThemeDocumentation $ M.fromList $
     , ( attrNameForTokenType NormalTok
       , "Syntax highlighting: Normal text"
       )
+    , ( listSelectedFocusedAttr
+      , "The selected channel"
+      )
     ] <> [ (usernameAttr i, T.pack $ "Username color " <> show i)
          | i <- [0..(length usernameColors)-1]
          ]
