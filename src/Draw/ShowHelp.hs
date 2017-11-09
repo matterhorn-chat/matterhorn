@@ -186,7 +186,10 @@ themeHelp = overrideAttr codeAttr helpEmphAttr $ vBox
         " * bold\n"
   , padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Theme Attributes"
   , padTop (Pad 1) $ hCenter $ hLimit 72 $ renderText $
-        "This section lists all possible theme attributes for use in customization files along with a description of how each one is used in Matterhorn. Each option listed can be set in the *other* section of the customization file. Each provides three customization settings:\n" <>
+        "This section lists all possible theme attributes for use in customization " <>
+        "files along with a description of how each one is used in Matterhorn. Each " <>
+        "option listed can be set in the *other* section of the customization file. " <>
+        "Each provides three customization settings:\n" <>
         " * *<option>.fg = <color>*\n" <>
         " * *<option>.bg = <color>*\n" <>
         " * *<option>.style = <style>* or *<option>.style = [<style>, ...]*\n"
