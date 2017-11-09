@@ -55,6 +55,7 @@ import Data.List (find)
 
 import qualified Data.Map as M
 import Data.Hashable (hash)
+import Data.Maybe (isNothing)
 import Data.Monoid ((<>))
 import Graphics.Vty
 import Brick
@@ -180,10 +181,23 @@ lookupTheme :: T.Text -> Maybe InternalTheme
 lookupTheme n = find ((== n) . internalThemeName) internalThemes
 
 internalThemes :: [InternalTheme]
-internalThemes =
+internalThemes = validateInternalTheme <$>
     [ darkColorTheme
     , lightColorTheme
     ]
+
+validateInternalTheme :: InternalTheme -> InternalTheme
+validateInternalTheme it =
+    let un = undocumentedAttrNames (internalTheme it)
+    in if not $ null un
+       then error $ "Internal theme " <> show (T.unpack (internalThemeName it)) <>
+                    " references undocumented attribute names: " <> show un
+       else it
+
+undocumentedAttrNames :: Theme -> [AttrName]
+undocumentedAttrNames t =
+    let noDocs k = isNothing $ attrNameDescription themeDocs k
+    in filter noDocs (M.keys $ themeDefaultMapping t)
 
 defaultTheme :: InternalTheme
 defaultTheme = darkColorTheme
@@ -385,8 +399,11 @@ mkTokenTypeEntry (ty, tSty) =
 
     in (attrNameForTokenType ty, a)
 
-_themeDocs :: ThemeDocumentation
-_themeDocs = ThemeDocumentation $ M.fromList $
+attrNameDescription :: ThemeDocumentation -> AttrName -> Maybe T.Text
+attrNameDescription td an = M.lookup an (themeDescriptions td)
+
+themeDocs :: ThemeDocumentation
+themeDocs = ThemeDocumentation $ M.fromList $
     [ ( timeAttr
       , "Timestamps on chat messages"
       )
