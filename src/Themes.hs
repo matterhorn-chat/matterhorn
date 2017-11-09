@@ -6,6 +6,7 @@ module Themes
   , internalThemes
   , attrNameForTokenType
   , lookupTheme
+  , themeDocs
 
   -- * Attribute names
   , timeAttr

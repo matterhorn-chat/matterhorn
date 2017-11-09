@@ -284,6 +284,7 @@ data Name = ChannelMessages ChannelId
           | HelpViewport
           | HelpText
           | ScriptHelpText
+          | ThemeHelpText
           | ChannelSelectString
           | CompletionAlternatives
           | JoinChannelList
@@ -437,6 +438,7 @@ type RequestChan = STM.TChan (IO (MH ()))
 data HelpScreen
   = MainHelp
   | ScriptHelp
+  | ThemeHelp
     deriving (Eq)
 
 -- |  Help topics

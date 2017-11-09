@@ -4,11 +4,14 @@ import Prelude ()
 import Prelude.Compat
 
 import Brick
+import Brick.Themes (themeDescriptions)
 import Brick.Widgets.Border
 import Brick.Widgets.Center (hCenter, centerLayer)
+import Brick.Widgets.List (listSelectedFocusedAttr)
 import Lens.Micro.Platform
-import Data.List (sortBy)
+import Data.List (sortBy, intercalate, sort)
 import Data.Ord (comparing)
+import qualified Data.Map as M
 import qualified Data.Text as T
 import Data.Monoid ((<>))
 import qualified Graphics.Vty as Vty
@@ -38,6 +41,7 @@ helpTopicDraw topic =
     case helpTopicScreen topic of
         MainHelp -> const mainHelp
         ScriptHelp -> const scriptHelp
+        ThemeHelp -> const themeHelp
 
 mainHelp :: Widget Name
 mainHelp = commandHelp
@@ -115,6 +119,88 @@ scriptHelp = vBox
              , "Matterhorn command " ]
            , [ "> *> /sh rot13 Hello, world!*\n" ]
            ]
+
+themeHelp :: Widget a
+themeHelp = overrideAttr codeAttr helpEmphAttr $ vBox
+  [ padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Using Themes"
+  , padTop (Pad 1) $ hCenter $ renderText "Matterhorn provides these built-in color themes:"
+  , padTop (Pad 1) $ vBox $ hCenter <$> withDefAttr helpEmphAttr <$>
+                            txt <$> internalThemeName <$> internalThemes
+  , padTop (Pad 1) $ hCenter $ hLimit 72 $ renderText $
+        "These themes can be selected with the */theme* command. To automatically " <>
+        "select a theme at startup, set the *theme* configuration file option to one " <>
+        "of the themes listed above."
+  , padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Customizing the Theme"
+  , padTop (Pad 1) $ hCenter $ hLimit 72 $ renderText $
+        "Theme customization is also supported. To customize the selected theme, " <>
+        "create a theme customization file and set the `themeCustomizationFile` " <>
+        "configuration option to the path to the customization file. If the path " <>
+        "to the file is relative, Matterhorn will look for it in the same directory " <>
+        "as the Matterhorn configuration file.\n" <>
+        "  \n" <>
+        "Theme customization files are INI-style files that can customize any " <>
+        "foreground color, background color, or style of any aspect of the " <>
+        "Matterhorn user interface. Here is an example:\n" <>
+        "```\n" <>
+        "[default]\n" <>
+        "default.fg = blue\n" <>
+        "default.bg = black\n" <>
+        "\n" <>
+        "[other]\n" <>
+        attrNameToConfig codeAttr <> ".fg = magenta\n" <>
+        attrNameToConfig codeAttr <> ".style = bold\n" <>
+        attrNameToConfig clientEmphAttr <> ".fg = cyan\n" <>
+        attrNameToConfig clientEmphAttr <> ".style = [bold, underline]\n" <>
+        attrNameToConfig listSelectedFocusedAttr <> ".fg = brightGreen\n" <>
+        "```\n" <>
+        "In the example above, the theme's default foreground and background colors " <>
+        "are both customized to *blue* and *black*, respectively. The *default* section " <>
+        "contains only customizations for the *default* attribute. All other customizations " <>
+        "go in the *other* section. We can also set the style for attributes; we can either " <>
+        "set just one style (as with the bold setting above) or multiple styles at once " <>
+        "(as in the bold/underline example).\n\n" <>
+        "Available colors are:\n" <>
+        " * black\n" <>
+        " * red\n" <>
+        " * green\n" <>
+        " * yellow\n" <>
+        " * blue\n" <>
+        " * magenta\n" <>
+        " * cyan\n" <>
+        " * white\n" <>
+        " * brightBlack\n" <>
+        " * brightRed\n" <>
+        " * brightGreen\n" <>
+        " * brightYellow\n" <>
+        " * brightBlue\n" <>
+        " * brightMagenta\n" <>
+        " * brightCyan\n" <>
+        " * brightWhite\n" <>
+        "  \n" <>
+        "Available styles are:\n" <>
+        " * standout\n" <>
+        " * underline\n" <>
+        " * reverseVideo\n" <>
+        " * blink\n" <>
+        " * dim\n" <>
+        " * bold\n"
+  , padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Theme Attributes"
+  , padTop (Pad 1) $ hCenter $ hLimit 72 $ renderText $
+        "This section lists all possible theme attributes for use in customization files along with a description of how each one is used in Matterhorn. Each option listed can be set in the *other* section of the customization file. Each provides three customization settings:\n" <>
+        " * *<option>.fg = <color>*\n" <>
+        " * *<option>.bg = <color>*\n" <>
+        " * *<option>.style = <style>* or *<option>.style = [<style>, ...]*\n"
+
+  , padTop (Pad 1) $ hCenter $ hLimit 72 $ renderText $
+        let names = sort $
+                    (\(n, msg) -> (attrNameToConfig n, msg)) <$>
+                    (M.toList $ themeDescriptions themeDocs)
+            mkEntry (opt, msg) = "*" <> opt <> "*\n" <> msg <> "\n"
+        in T.concat $ mkEntry <$> names
+  ]
+
+attrNameToConfig :: AttrName -> T.Text
+attrNameToConfig = T.pack . intercalate "." . attrNameComponents
 
 withMargins :: (Int, Int) -> Widget a -> Widget a
 withMargins (hMargin, vMargin) w =

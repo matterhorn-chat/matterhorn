@@ -2,6 +2,7 @@
 module HelpTopics
   ( helpTopics
   , lookupHelpTopic
+  , themeHelpTopic
 
   , mainHelpTopic
   )
@@ -19,6 +20,7 @@ helpTopics :: [HelpTopic]
 helpTopics =
     [ mainHelpTopic
     , scriptHelpTopic
+    , themeHelpTopic
     ]
 
 mainHelpTopic :: HelpTopic
@@ -28,6 +30,10 @@ mainHelpTopic =
 scriptHelpTopic :: HelpTopic
 scriptHelpTopic =
     HelpTopic "scripts" "Help on available scripts" ScriptHelp ScriptHelpText
+
+themeHelpTopic :: HelpTopic
+themeHelpTopic =
+    HelpTopic "themes" "Help on color themes" ThemeHelp ThemeHelpText
 
 lookupHelpTopic :: T.Text -> Maybe HelpTopic
 lookupHelpTopic topic =
