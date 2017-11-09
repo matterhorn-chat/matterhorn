@@ -17,6 +17,7 @@ import           Data.Ini.Config
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import           Data.Monoid ((<>))
+import           System.Directory (makeAbsolute)
 import           System.Process (readProcess)
 
 import           IOUtil
@@ -59,6 +60,8 @@ fromIni = do
                   pure Nothing
     configUnsafeUseHTTP <-
       fieldFlagDef "unsafeUseUnauthenticatedConnection" False
+
+    let configAbsPath = Nothing
     return Config { .. }
 
 backgroundField :: T.Text -> Either String BackgroundInfo
@@ -92,7 +95,8 @@ isQuoted t =
 
 defaultConfig :: Config
 defaultConfig =
-    Config { configUser               = Nothing
+    Config { configAbsPath            = Nothing
+           , configUser               = Nothing
            , configHost               = Nothing
            , configTeam               = Nothing
            , configPort               = defaultPort
@@ -114,21 +118,22 @@ defaultConfig =
            , configShowOlderEdits     = True
            }
 
-findConfig :: Maybe FilePath -> IO (Either String (Maybe FilePath, Config))
+findConfig :: Maybe FilePath -> IO (Either String Config)
 findConfig Nothing = do
     cfg <- locateConfig configFileName
     case cfg of
-        Nothing -> return $ Right (Nothing, defaultConfig)
-        Just path -> (fmap (Just path,)) <$> getConfig path
-findConfig (Just path) = (fmap (Just path,)) <$> getConfig path
+        Nothing -> return $ Right defaultConfig
+        Just path -> getConfig path
+findConfig (Just path) = getConfig path
 
 getConfig :: FilePath -> IO (Either String Config)
 getConfig fp = runExceptT $ do
-  t <- (convertIOException $ T.readFile fp) `catchE`
-       (\e -> throwE $ "Could not read " <> show fp <> ": " <> e)
+  absPath <- convertIOException $ makeAbsolute fp
+  t <- (convertIOException $ T.readFile absPath) `catchE`
+       (\e -> throwE $ "Could not read " <> show absPath <> ": " <> e)
   case parseIniFile t fromIni of
     Left err -> do
-      throwE $ "Unable to parse " ++ fp ++ ":" ++ err
+      throwE $ "Unable to parse " ++ absPath ++ ":" ++ err
     Right conf -> do
       actualPass <- case configPass conf of
         Just (PasswordCommand cmdString) -> do
@@ -139,7 +144,9 @@ getConfig fp = runExceptT $ do
         Just (PasswordString pass) -> return $ Just pass
         Nothing -> return Nothing
 
-      return conf { configPass = PasswordString <$> actualPass }
+      return conf { configPass = PasswordString <$> actualPass
+                  , configAbsPath = Just absPath
+                  }
 
 -- | Returns the hostname, username, and password from the config. Only
 -- returns Just if all three have been provided. The idea is that if

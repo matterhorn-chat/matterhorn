@@ -47,8 +47,8 @@ loadFlaggedMessages prefs st = doAsyncWithIO Normal st $ do
                      , flaggedPostStatus fp
                      ]
 
-setupState :: Maybe Handle -> (Maybe FilePath, Config) -> RequestChan -> BChan MHEvent -> IO ChatState
-setupState logFile (cPath, config) requestChan eventChan = do
+setupState :: Maybe Handle -> Config -> RequestChan -> BChan MHEvent -> IO ChatState
+setupState logFile config requestChan eventChan = do
   -- If we don't have enough credentials, ask for them.
   connInfo <- case getCredentials config of
       Nothing -> interactiveGatherCredentials config Nothing
@@ -137,11 +137,11 @@ setupState logFile (cPath, config) requestChan eventChan = do
           -- If we have no configuration path (i.e. we used the default
           -- config) then ignore theme customization.
           let pathStr = T.unpack path
-          in if isRelative pathStr && isNothing cPath
+          in if isRelative pathStr && isNothing (configAbsPath config)
              then return baseTheme
              else do
                  let absPath = if isRelative pathStr
-                               then (dropFileName $ fromJust cPath) </> pathStr
+                               then (dropFileName $ fromJust $ configAbsPath config) </> pathStr
                                else pathStr
                  result <- loadCustomizations absPath baseTheme
                  case result of

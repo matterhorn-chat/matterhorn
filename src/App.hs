@@ -31,8 +31,8 @@ app = App
   , appAttrMap      = (^.csResources.crTheme)
   }
 
-runMatterhorn :: Options -> (Maybe FilePath, Config) -> IO ChatState
-runMatterhorn opts (cPath, config) = do
+runMatterhorn :: Options -> Config -> IO ChatState
+runMatterhorn opts config = do
     eventChan <- newBChan 25
     writeBChan eventChan RefreshWebsocketEvent
 
@@ -44,7 +44,7 @@ runMatterhorn opts (cPath, config) = do
       Just path -> Just `fmap` openFile path WriteMode
       Nothing   -> return Nothing
 
-    st <- setupState logFile (cPath, config) requestChan eventChan
+    st <- setupState logFile config requestChan eventChan
 
     let mkVty = do
           vty <- Vty.mkVty Vty.defaultConfig

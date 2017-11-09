@@ -214,6 +214,7 @@ data Config = Config
   , configUnsafeUseHTTP :: Bool
   , configChannelListWidth :: Int
   , configShowOlderEdits :: Bool
+  , configAbsPath        :: Maybe FilePath
   } deriving (Eq, Show)
 
 data BackgroundInfo = Disabled | Active | ActiveCount deriving (Eq, Show)
