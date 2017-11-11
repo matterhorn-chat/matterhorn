@@ -68,6 +68,9 @@ module State
   , channelSelectNext
   , channelSelectPrevious
 
+  -- * Server-side preferences
+  , applyPreferenceChange
+
   -- * Message selection mode
   , beginMessageSelect
   , flagSelectedMessage
@@ -203,6 +206,12 @@ channelHiddenPreference cId = do
   let matching = filter (\p -> groupChannelId p == cId) $
                  catMaybes $ preferenceToGroupChannelPreference <$> (F.toList prefs)
   return $ any (not . groupChannelShow) matching
+
+applyPreferenceChange :: Preference -> MH ()
+applyPreferenceChange pref
+    | Just f <- preferenceToFlaggedPost pref =
+        updateMessageFlag (flaggedPostId f) (flaggedPostStatus f)
+applyPreferenceChange _ = return ()
 
 -- | Refresh information about all channels and users. This is usually
 -- triggered when a reconnect event for the WebSocket to the server

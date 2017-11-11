@@ -159,12 +159,9 @@ handleWSEvent we = do
             | Just p <- wepPost $ weData we -> postInfoMessage $ p^.postMessageL
             | otherwise -> return ()
 
-        -- The only preference we observe right now is flagging
         WMPreferenceChanged
-            | Just pref <- wepPreferences (weData we)
-            , Just fps <- mapM preferenceToFlaggedPost pref ->
-              forM_ fps $ \f ->
-                  updateMessageFlag (flaggedPostId f) (flaggedPostStatus f)
+            | Just prefs <- wepPreferences (weData we) ->
+                mapM_ applyPreferenceChange prefs
             | otherwise -> return ()
 
         WMPreferenceDeleted
