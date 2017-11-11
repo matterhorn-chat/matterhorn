@@ -228,7 +228,6 @@ applyPreferenceChange pref
                 -- it, ask for a load/refresh.
                 refreshChannelById True cId
             _ -> return ()
-
 applyPreferenceChange _ = return ()
 
 updatePreference :: Preference -> MH ()
