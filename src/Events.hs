@@ -192,6 +192,10 @@ handleWSEvent we = do
             | Just cId <- webChannelId $ weBroadcast we -> refreshChannelById False cId
             | otherwise -> return ()
 
+        WMGroupAdded
+            | Just cId <- webChannelId (weBroadcast we) -> handleChannelInvite cId
+            | otherwise -> return ()
+
         -- We are pretty sure we should do something about these:
         WMAddedToTeam -> return ()
 
@@ -203,7 +207,6 @@ handleWSEvent we = do
 
         -- We deliberately ignore these events:
         WMChannelCreated -> return ()
-        WMGroupAdded -> return ()
         WMEmojiAdded -> return ()
         WMWebRTC -> return ()
         WMTyping -> return ()
