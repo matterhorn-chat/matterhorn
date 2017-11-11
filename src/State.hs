@@ -224,11 +224,7 @@ createGroupChannel usernameList = do
         session <- use (csResources.crSession)
         doAsyncWith Preempt $ do
             chan <- mmCreateGroupChannel session results
-            let pref = Preference { preferenceCategory = PreferenceCategoryGroupChannelShow
-                                  , preferenceValue = PreferenceValue "true"
-                                  , preferenceName = PreferenceName $ idString $ channelId chan
-                                  , preferenceUserId = me^.userIdL
-                                  }
+            let pref = showGroupChannelPref (channelId chan) (me^.userIdL)
             -- It's possible that the channel already existed, in which
             -- case we want to request a preference change to show it.
             mmSetPreferences session (me^.userIdL) $ Seq.fromList [pref]
@@ -729,19 +725,30 @@ leaveChannelIfPossible cId delete = do
                                     False -> mmLeaveChannel
                                 Group ->
                                     \s _ _ ->
-                                        mmSetPreferences s (me^.userIdL) $ Seq.fromList [
-                                           Preference { preferenceCategory = PreferenceCategoryGroupChannelShow
-                                                      , preferenceValue = PreferenceValue "false"
-                                                      , preferenceName = PreferenceName $ idString cId
-                                                      , preferenceUserId = me^.userIdL
-                                                      }
-                                                      ]
+                                        mmSetPreferences s (me^.userIdL) $
+                                            Seq.fromList [hideGroupChannelPref cId $ me^.userIdL]
                                 _ -> if delete
                                      then mmDeleteChannel
                                      else mmLeaveChannel
 
                         doAsyncChannelMM Preempt cId func endAsyncNOP
                     )
+
+hideGroupChannelPref :: ChannelId -> UserId -> Preference
+hideGroupChannelPref cId uId =
+    Preference { preferenceCategory = PreferenceCategoryGroupChannelShow
+               , preferenceValue = PreferenceValue "false"
+               , preferenceName = PreferenceName $ idString cId
+               , preferenceUserId = uId
+               }
+
+showGroupChannelPref :: ChannelId -> UserId -> Preference
+showGroupChannelPref cId uId =
+    Preference { preferenceCategory = PreferenceCategoryGroupChannelShow
+               , preferenceValue = PreferenceValue "true"
+               , preferenceName = PreferenceName $ idString cId
+               , preferenceUserId = uId
+               }
 
 leaveChannel :: ChannelId -> MH ()
 leaveChannel cId = leaveChannelIfPossible cId False
