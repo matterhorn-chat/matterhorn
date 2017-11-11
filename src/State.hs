@@ -690,6 +690,15 @@ leaveChannelIfPossible cId delete = do
                                 Private -> case all isMe members of
                                     True -> mmDeleteChannel
                                     False -> mmLeaveChannel
+                                Group ->
+                                    \s _ _ ->
+                                        mmSetPreferences s (me^.userIdL) $ Seq.fromList [
+                                           Preference { preferenceCategory = PreferenceCategoryGroupChannelShow
+                                                      , preferenceValue = PreferenceValue "false"
+                                                      , preferenceName = PreferenceName $ idString cId
+                                                      , preferenceUserId = me^.userIdL
+                                                      }
+                                                      ]
                                 _ -> if delete
                                      then mmDeleteChannel
                                      else mmLeaveChannel
