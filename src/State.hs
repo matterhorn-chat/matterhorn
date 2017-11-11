@@ -211,7 +211,33 @@ applyPreferenceChange :: Preference -> MH ()
 applyPreferenceChange pref
     | Just f <- preferenceToFlaggedPost pref =
         updateMessageFlag (flaggedPostId f) (flaggedPostStatus f)
+    | Just g <- preferenceToGroupChannelPreference pref = do
+        -- First, go update the preferences with this change.
+        updatePreference pref
+
+        let cId = groupChannelId g
+        mChan <- preuse $ csChannel cId
+
+        case (mChan, groupChannelShow g) of
+            (Just _, False) ->
+                -- If it has been set to hidden and we are showing it,
+                -- remove it from the state.
+                removeChannelFromState cId
+            (Nothing, True) ->
+                -- If it has been set to showing and we are not showing
+                -- it, ask for a load/refresh.
+                refreshChannelById True cId
+            _ -> return ()
+
 applyPreferenceChange _ = return ()
+
+updatePreference :: Preference -> MH ()
+updatePreference pref = do
+    let replacePreference new old
+            | preferenceCategory old == preferenceCategory new &&
+              preferenceName old == preferenceName new = new
+            | otherwise = old
+    csResources.crPreferences %= fmap (replacePreference pref)
 
 -- | Refresh information about all channels and users. This is usually
 -- triggered when a reconnect event for the WebSocket to the server
