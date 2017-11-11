@@ -202,7 +202,6 @@ channelHiddenPreference cId = do
   prefs <- use (csResources.crPreferences)
   let matching = filter (\p -> groupChannelId p == cId) $
                  catMaybes $ preferenceToGroupChannelPreference <$> (F.toList prefs)
-  liftIO $ hPutStrLn stderr $ show matching
   return $ any (not . groupChannelShow) matching
 
 -- | Refresh information about all channels and users. This is usually
