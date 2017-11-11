@@ -139,7 +139,8 @@ import           System.Environment.XDG.BaseDir (getUserCacheDir)
 import           System.FilePath
 
 import           Network.Mattermost
-import           Network.Mattermost.Types (NotifyOption(..))
+import           Network.Mattermost.Types (NotifyOption(..), GroupChannelPreference(..),
+                                           preferenceToGroupChannelPreference)
 import           Network.Mattermost.Lenses
 
 import           Config
@@ -169,17 +170,24 @@ refreshChannel refreshMessages cwd@(ChannelWithData chan _) = do
   let cId = getId chan
   curId <- use csCurrentChannelId
 
-  -- If this channel is unknown, register it first.
-  mChan <- preuse (csChannel(cId))
-  when (isNothing mChan) $
-      handleNewChannel False cwd
+  -- If this is a group channel that the user has chosen to hide, ignore
+  -- the refresh request.
+  isHidden <- channelHiddenPreference cId
+  case isHidden of
+      True -> return ()
+      False -> do
+          -- If this channel is unknown, register it first.
+          mChan <- preuse (csChannel(cId))
+          when (isNothing mChan) $
+              handleNewChannel False cwd
 
-  updateChannelInfo cId cwd
+          updateChannelInfo cId cwd
 
-  -- If this is an active channel or the current channel, also update
-  -- the Messages to retrieve any that might have been missed.
-  when (refreshMessages || (cId == curId)) $
-      updateMessages cId
+          -- If this is an active channel or the current channel, also
+          -- update the Messages to retrieve any that might have been
+          -- missed.
+          when (refreshMessages || (cId == curId)) $
+              updateMessages cId
 
 refreshChannelById :: Bool -> ChannelId -> MH ()
 refreshChannelById refreshMessages cId = do
@@ -188,6 +196,14 @@ refreshChannelById refreshMessages cId = do
   doAsyncWith Preempt $ do
       cwd <- mmGetChannel session myTeamId cId
       return $ refreshChannel refreshMessages cwd
+
+channelHiddenPreference :: ChannelId -> MH Bool
+channelHiddenPreference cId = do
+  prefs <- use (csResources.crPreferences)
+  let matching = filter (\p -> groupChannelId p == cId) $
+                 catMaybes $ preferenceToGroupChannelPreference <$> (F.toList prefs)
+  liftIO $ hPutStrLn stderr $ show matching
+  return $ any (not . groupChannelShow) matching
 
 -- | Refresh information about all channels and users. This is usually
 -- triggered when a reconnect event for the WebSocket to the server

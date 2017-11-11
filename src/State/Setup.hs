@@ -120,6 +120,8 @@ setupState logFile config requestChan eventChan = do
 
   slc <- STM.atomically STM.newTChan
 
+  prefs <- mmGetMyPreferences session
+
   let themeName = case configTheme config of
           Nothing -> defaultThemeName
           Just t -> t
@@ -127,13 +129,11 @@ setupState logFile config requestChan eventChan = do
           Nothing -> fromJust $ lookup defaultThemeName themes
           Just t -> t
       cr = ChatResources session cd requestChan eventChan
-             slc theme quitCondition userStatusLock config mempty
+             slc theme quitCondition userStatusLock config mempty prefs
   initializeState cr myTeam myUser
 
 initializeState :: ChatResources -> Team -> User -> IO ChatState
 initializeState cr myTeam myUser = do
-  prefs <- mmGetMyPreferences (cr^.crSession)
-
   let session = cr^.crSession
       requestChan = cr^.crRequestQueue
       myTeamId = getId myTeam
@@ -178,5 +178,5 @@ initializeState cr myTeam myUser = do
              & csChannels %~ flip (foldr (uncurry addChannel)) msgs
              & csNames .~ chanNames
 
-  loadFlaggedMessages prefs st
+  loadFlaggedMessages (cr^.crPreferences) st
   return st

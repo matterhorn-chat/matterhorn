@@ -93,6 +93,7 @@ module Types
   , postListPosts
 
   , ChatResources(ChatResources)
+  , crPreferences
   , crEventQueue
   , crTheme
   , crSession
@@ -382,6 +383,7 @@ data ChatResources = ChatResources
   , _crUserStatusLock :: MVar ()
   , _crConfiguration :: Config
   , _crFlaggedPosts  :: Set PostId
+  , _crPreferences   :: Seq.Seq Preference
   }
 
 -- | The 'ChatEditState' value contains the editor widget itself
