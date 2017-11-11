@@ -222,7 +222,7 @@ updateChannelInfo cid cwd@(ChannelWithData new _) = do
       Nothing -> return ()
       Just old ->
           let oldName = old^.ccInfo.cdName
-              newName = channelName new
+              newName = preferredChannelName new
           in if oldName == newName
              then return ()
              else do
