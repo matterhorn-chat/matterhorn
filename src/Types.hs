@@ -129,7 +129,6 @@ module Types
   , channelNameFromMatch
   , isMine
   , getUsernameForUserId
-  , getLastChannelPreference
   , sortedUserList
 
   , userSigil
@@ -217,21 +216,6 @@ data Config = Config
   } deriving (Eq, Show)
 
 data BackgroundInfo = Disabled | Active | ActiveCount deriving (Eq, Show)
-
--- * Preferences
-
-getLastChannelPreference :: Seq.Seq Preference -> Maybe ChannelId
-getLastChannelPreference prefs =
-    let isLastChannelIdPreference p =
-            and [ preferenceCategory p == PreferenceCategoryLast
-                , preferenceName     p == PreferenceName "channel"
-                ]
-        prefChannelId p =
-            let PreferenceValue v = preferenceValue p
-            in CI $ Id v
-
-    in prefChannelId <$>
-       (listToMaybe $ F.toList $ Seq.filter isLastChannelIdPreference prefs)
 
 -- * 'MMNames' structures
 
