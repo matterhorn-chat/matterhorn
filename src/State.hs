@@ -213,11 +213,39 @@ refreshChannelsAndUsers = do
         lock <- use (csResources.crUserStatusLock)
         doAsyncWith Preempt $ updateUserStatuses lock session
 
--- | Update the indicted Channel entry with the new data retrieved
--- from the Mattermost server.
+-- | Update the indicted Channel entry with the new data retrieved from
+-- the Mattermost server. Also update the channel name if it changed.
 updateChannelInfo :: ChannelId -> ChannelWithData -> MH ()
-updateChannelInfo cid cwd =
+updateChannelInfo cid cwd@(ChannelWithData new _) = do
+  mOldChannel <- preuse $ csChannel(cid)
+  case mOldChannel of
+      Nothing -> return ()
+      Just old ->
+          let oldName = old^.ccInfo.cdName
+              newName = channelName new
+          in if oldName == newName
+             then return ()
+             else do
+                 removeChannelName oldName
+                 addChannelName (channelType new) cid newName
+
   csChannel(cid).ccInfo %= channelInfoFromChannelWithData cwd
+
+addChannelName :: Type -> ChannelId -> T.Text -> MH ()
+addChannelName chType cid name = do
+    csNames.cnToChanId.at(name) .= Just cid
+
+    -- For direct channels the username is already in the user list so
+    -- do nothing
+    when (chType /= Direct) $
+        csNames.cnChans %= (sort . (name:))
+
+removeChannelName :: T.Text -> MH ()
+removeChannelName name = do
+    -- Flush cnToChanId
+    csNames.cnToChanId.at name .= Nothing
+    -- Flush cnChans
+    csNames.cnChans %= filter (/= name)
 
 -- | If this channel has content, fetch any new content that has
 -- arrived after the existing content.
@@ -637,10 +665,8 @@ removeChannelFromState cId = do
             csEditState.cedLastChannelInput     .at cId .= Nothing
             -- Update input history
             csEditState.cedInputHistory         %= removeChannelHistory cId
-            -- Flush cnToChanId
-            csNames.cnToChanId                  .at cName .= Nothing
-            -- Flush cnChans
-            csNames.cnChans                     %= filter (/= cName)
+            -- Remove channel name mappings
+            removeChannelName cName
             -- Update msgMap
             csChannels                          %= filteredChannels ((/=) cId . fst)
             -- Remove from focus zipper
@@ -1058,12 +1084,7 @@ handleNewChannel_ permitPostpone switch cwd@(ChannelWithData nc cData) = do
   case mName of
       Nothing -> return ()
       Just name -> do
-          csNames.cnToChanId.at(name) .= Just (getId nc)
-
-          -- For direct channels the username is already in the user
-          -- list so do nothing
-          when (chType /= Direct) $
-              csNames.cnChans %= (sort . (name:))
+          addChannelName chType (getId nc) name
 
           csChannels %= addChannel (getId nc) cChannel
 
