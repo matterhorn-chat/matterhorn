@@ -41,6 +41,7 @@ module State
   , handleChannelInvite
   , addUserToCurrentChannel
   , removeUserFromCurrentChannel
+  , createGroupChannel
 
   -- * Channel history
   , channelHistoryForward
@@ -199,6 +200,42 @@ refreshChannelById refreshMessages cId = do
   doAsyncWith Preempt $ do
       cwd <- mmGetChannel session myTeamId cId
       return $ refreshChannel refreshMessages cwd
+
+createGroupChannel :: T.Text -> MH ()
+createGroupChannel usernameList = do
+    users <- use csUsers
+    myTeamId <- use (csMyTeam.teamIdL)
+    me <- use csMe
+
+    let usernames = T.words usernameList
+        findUserIds [] = return []
+        findUserIds (n:ns) = do
+            case findUserByName users n of
+                Nothing -> do
+                    postErrorMessage $ "No such user: " <> n
+                    return []
+                Just (uId, _) -> (uId:) <$> findUserIds ns
+
+    results <- findUserIds usernames
+
+    -- If we found all of the users mentioned, then create the group
+    -- channel.
+    when (length results == length usernames) $ do
+        session <- use (csResources.crSession)
+        doAsyncWith Preempt $ do
+            chan <- mmCreateGroupChannel session results
+            let pref = Preference { preferenceCategory = PreferenceCategoryGroupChannelShow
+                                  , preferenceValue = PreferenceValue "true"
+                                  , preferenceName = PreferenceName $ idString $ channelId chan
+                                  , preferenceUserId = me^.userIdL
+                                  }
+            -- It's possible that the channel already existed, in which
+            -- case we want to request a preference change to show it.
+            mmSetPreferences session (me^.userIdL) $ Seq.fromList [pref]
+            cwd <- mmGetChannel session myTeamId (channelId chan)
+            return $ do
+                applyPreferenceChange pref
+                handleNewChannel True cwd
 
 channelHiddenPreference :: ChannelId -> MH Bool
 channelHiddenPreference cId = do

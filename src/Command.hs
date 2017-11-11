@@ -88,6 +88,8 @@ commandList =
               Just topic -> showHelpScreen topic
   , Cmd "sh" "List the available shell scripts" NoArg $ \ () ->
       listScripts
+  , Cmd "group-msg" "Create a group chat"
+    (LineArg "user1 user2 ...") createGroupChannel
   , Cmd "sh" "Run a prewritten shell script"
     (TokenArg "script" (LineArg "message")) $ \ (script, text) ->
       findAndRunScript script text
