@@ -209,3 +209,4 @@ handleWSEvent we = do
         WMTyping -> return ()
         WMHello -> return ()
         WMAuthenticationChallenge -> return ()
+        WMUserRoleUpdated -> return ()
