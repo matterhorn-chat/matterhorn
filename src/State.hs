@@ -319,7 +319,8 @@ addChannelName chType cid name = do
 
     -- For direct channels the username is already in the user list so
     -- do nothing
-    when (chType /= Direct) $
+    existingNames <- use $ csNames.cnChans
+    when (chType /= Direct && (not $ name `elem` existingNames)) $
         csNames.cnChans %= (sort . (name:))
 
 removeChannelName :: T.Text -> MH ()
