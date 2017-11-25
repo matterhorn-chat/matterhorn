@@ -1131,76 +1131,85 @@ handleNewChannel_ :: Bool
                   -- ^ The channel to install.
                   -> MH ()
 handleNewChannel_ permitPostpone switch cwd@(ChannelWithData nc cData) = do
-  -- Create a new ClientChannel structure
-  let cChannel = makeClientChannel nc &
-                   ccInfo %~ channelInfoFromChannelWithData (ChannelWithData nc cData)
+  -- Only add the channel to the state if it isn't already known.
+  mChan <- preuse (csChannel(getId nc))
+  case mChan of
+      Just _ -> return ()
+      Nothing -> do
+        -- Create a new ClientChannel structure
+        let cChannel = makeClientChannel nc &
+                         ccInfo %~ channelInfoFromChannelWithData (ChannelWithData nc cData)
 
-  st <- use id
+        st <- use id
 
-  -- Add it to the message map, and to the name map so we can look it up
-  -- by name. The name we use for the channel depends on its type:
-  let chType = nc^.channelTypeL
+        -- Add it to the message map, and to the name map so we can look
+        -- it up by name. The name we use for the channel depends on its
+        -- type:
+        let chType = nc^.channelTypeL
 
-  -- Get the channel name. If we couldn't, that means we have async work
-  -- to do before we can register this channel (in which case abort
-  -- because we got rescheduled).
-  mName <- case chType of
-      Direct -> case userIdForDMChannel (st^.csMe.userIdL) $ channelName nc of
-          -- If this is a direct channel but we can't extract a user ID
-          -- from the name, then it failed to parse. We need to assign
-          -- a channel name in our channel map, and the best we can do
-          -- to preserve uniqueness is to use the channel name string.
-          -- This is undesirable but direct channels never get rendered
-          -- directly; they only get used by first looking up usernames.
-          -- So this name should never appear anywhere, but at least we
-          -- can go ahead and register the channel and handle events for
-          -- it. That isn't very useful but it's probably better than
-          -- ignoring this entirely.
-          Nothing -> return $ Just $ channelName nc
-          Just otherUserId ->
-              case getUsernameForUserId st otherUserId of
-                  -- If we found a user ID in the channel name string
-                  -- but don't have that user's metadata, postpone
-                  -- adding this channel until we have fetched the
-                  -- metadata. This can happen when we have a channel
-                  -- record for a user that is no longer in the current
-                  -- team. To avoid recursion due to a problem, ensure
-                  -- that the rescheduled new channel handler is not
-                  -- permitted to try this again.
-                  --
-                  -- If we're already in a recursive attempt to register
-                  -- this channel and still couldn't find a username,
-                  -- just bail and use the synthetic name (this has the
-                  -- same problems as above).
-                  Nothing -> do
-                      case permitPostpone of
-                          False -> return $ Just $ channelName nc
-                          True -> do
-                              handleNewUser otherUserId
-                              doAsyncWith Normal $
-                                  return $ handleNewChannel_ False switch cwd
-                              return Nothing
-                  Just ncUsername ->
-                      return $ Just $ ncUsername
-      _ -> return $ Just $ preferredChannelName nc
+        -- Get the channel name. If we couldn't, that means we have
+        -- async work to do before we can register this channel (in
+        -- which case abort because we got rescheduled).
+        mName <- case chType of
+            Direct -> case userIdForDMChannel (st^.csMe.userIdL) $ channelName nc of
+                -- If this is a direct channel but we can't extract a
+                -- user ID from the name, then it failed to parse. We
+                -- need to assign a channel name in our channel map,
+                -- and the best we can do to preserve uniqueness is to
+                -- use the channel name string. This is undesirable
+                -- but direct channels never get rendered directly;
+                -- they only get used by first looking up usernames.
+                -- So this name should never appear anywhere, but at
+                -- least we can go ahead and register the channel and
+                -- handle events for it. That isn't very useful but it's
+                -- probably better than ignoring this entirely.
+                Nothing -> return $ Just $ channelName nc
+                Just otherUserId ->
+                    case getUsernameForUserId st otherUserId of
+                        -- If we found a user ID in the channel name
+                        -- string but don't have that user's metadata,
+                        -- postpone adding this channel until we have
+                        -- fetched the metadata. This can happen when
+                        -- we have a channel record for a user that
+                        -- is no longer in the current team. To avoid
+                        -- recursion due to a problem, ensure that
+                        -- the rescheduled new channel handler is not
+                        -- permitted to try this again.
+                        --
+                        -- If we're already in a recursive attempt to
+                        -- register this channel and still couldn't find
+                        -- a username, just bail and use the synthetic
+                        -- name (this has the same problems as above).
+                        Nothing -> do
+                            case permitPostpone of
+                                False -> return $ Just $ channelName nc
+                                True -> do
+                                    handleNewUser otherUserId
+                                    doAsyncWith Normal $
+                                        return $ handleNewChannel_ False switch cwd
+                                    return Nothing
+                        Just ncUsername ->
+                            return $ Just $ ncUsername
+            _ -> return $ Just $ preferredChannelName nc
 
-  case mName of
-      Nothing -> return ()
-      Just name -> do
-          addChannelName chType (getId nc) name
+        case mName of
+            Nothing -> return ()
+            Just name -> do
+                addChannelName chType (getId nc) name
 
-          csChannels %= addChannel (getId nc) cChannel
+                csChannels %= addChannel (getId nc) cChannel
 
-          -- We should figure out how to do this better: this adds it to
-          -- the channel zipper in such a way that we don't ever change
-          -- our focus to something else, which is kind of silly
-          names <- use csNames
-          let newZip = Z.updateList (mkChannelZipperList names)
-          csFocus %= newZip
+                -- We should figure out how to do this better: this adds
+                -- it to the channel zipper in such a way that we don't
+                -- ever change our focus to something else, which is
+                -- kind of silly
+                names <- use csNames
+                let newZip = Z.updateList (mkChannelZipperList names)
+                csFocus %= newZip
 
-          -- Finally, set our focus to the newly created channel if the
-          -- caller requested a change of channel.
-          when switch $ setFocus (getId nc)
+                -- Finally, set our focus to the newly created channel
+                -- if the caller requested a change of channel.
+                when switch $ setFocus (getId nc)
 
 editMessage :: Post -> MH ()
 editMessage new = do
