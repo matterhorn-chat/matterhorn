@@ -1312,15 +1312,26 @@ addMessageToState newPostData = do
   st <- use id
   case st ^? csChannel(postChannelId new) of
       Nothing -> do
-          -- When we join channels, sometimes we get the "user has
-          -- been added to channel" message here BEFORE we get the
-          -- websocket event that says we got added to a channel. This
-          -- means the message arriving here in addMessage can't be
-          -- added yet because we haven't fetched the channel metadata
-          -- in the websocket handler. So to be safe we just drop the
-          -- message here, but this is the only case of messages that we
-          -- /expect/ to drop for this reason. Hence the check for the
-          -- msgMap channel ID key presence above.
+          session <- use (csResources.crSession)
+          myTeamId <- use (csMyTeam.teamIdL)
+          doAsyncWith Preempt $ do
+              cwd@(ChannelWithData nc _) <- mmGetChannel session myTeamId (postChannelId new)
+
+              let chType = nc^.channelTypeL
+                  pref = showGroupChannelPref (postChannelId new) (st^.csMe.userIdL)
+
+              return $ do
+                  -- If the incoming message is for a group channel we
+                  -- don't know about, that's because it was previously
+                  -- hidden by the user. We need to show it, and to do
+                  -- that we need to update the server-side preference.
+                  -- (That, in turn, triggers a channel refresh.)
+                  if chType == Group
+                      then applyPreferenceChange pref
+                      else refreshChannel True cwd
+
+                  addMessageToState newPostData >>= postProcessMessageAdd
+
           return NoAction
       Just _ -> do
           let cp = toClientPost new (new^.postParentIdL)
