@@ -1,5 +1,6 @@
 module State.PostListOverlay where
 
+import Data.Text (Text)
 import Lens.Micro.Platform
 import Network.Mattermost
 import Network.Mattermost.Lenses
@@ -35,6 +36,19 @@ enterFlaggedPostListMode = do
     return $ do
       messages <- messagesFromPosts posts
       enterPostListMode PostListFlagged messages
+
+-- | Create a PostListOverlay with post search result messages from the
+-- server.
+enterSearchResultPostListMode :: Text -> MH ()
+enterSearchResultPostListMode terms = do
+  session <- use (csResources.crSession)
+  tId <- teamId <$> use csMyTeam
+  enterPostListMode (PostListSearch terms True) noMessages
+  doAsyncWith Preempt $ do
+    posts <- mmSearchPosts session tId terms False
+    return $ do
+      messages <- messagesFromPosts posts
+      enterPostListMode (PostListSearch terms False) messages
 
 -- | Move the selection up in the PostListOverlay, which corresponds
 -- to finding a chronologically /newer/ message.

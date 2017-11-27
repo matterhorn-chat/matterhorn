@@ -69,7 +69,8 @@ drawPostsBox contents st =
     padRight (Pad 1) messageListContents
   where -- The 'window title' of the overlay
         contentHeader = withAttr channelListHeaderAttr $ txt $ case contents of
-          PostListFlagged -> "Flagged posts"
+          PostListFlagged        -> "Flagged posts"
+          PostListSearch terms _ -> "Search results: " <> terms
         -- User and channel set, for use in message rendering
         uSet = Set.fromList (st^..csUsers.to allUsers.folded.uiName)
         cSet = Set.fromList (st^..csChannels.folded.ccInfo.cdName)
@@ -87,7 +88,11 @@ drawPostsBox contents st =
             hCenter $
             withDefAttr clientEmphAttr $
             str $ case contents of
-              PostListFlagged -> "You have no flagged messages."
+              PostListFlagged            -> "You have no flagged messages."
+              PostListSearch _ searching ->
+                if searching
+                  then "Searching ..."
+                  else "No search results found"
           | otherwise = vBox renderedMessageList
 
         -- The render-message function we're using
