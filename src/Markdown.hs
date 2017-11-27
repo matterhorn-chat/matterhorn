@@ -99,8 +99,20 @@ appendEditSentinel sentinel b =
         C.Para is -> S.singleton $ C.Para (is |> C.Str " " |> m)
         _ -> S.fromList [b, s]
 
+-- | renderMessage performs markdown rendering of the specified message.
+--
+-- The 'mEditThreshold' argument specifies a time boundary where
+-- "edited" markers are not shown for any messages older than this
+-- mark (under the presumption that they are distracting for really
+-- old stuff).  The mEditThreshold will be None if there is no
+-- boundary known yet; the boundary is typically set to the "new"
+-- message boundary.
+--
+-- The 'showOlderEdits' argument is a value read from the user's
+-- configuration file that indicates that "edited" markers should be
+-- shown for old messages (i.e., ignore the mEditThreshold value).
 renderMessage :: ChatState -> Maybe UTCTime -> Bool -> Message -> Bool -> UserSet -> ChannelSet -> Bool -> Widget a
-renderMessage st mEditTheshold showOlderEdits msg renderReplyParent uSet cSet indentBlocks =
+renderMessage st mEditThreshold showOlderEdits msg renderReplyParent uSet cSet indentBlocks =
     let msgUsr = case msg^.mUserName of
           Just u
             | msg^.mType `elem` omitUsernameTypes -> Nothing
@@ -128,7 +140,7 @@ renderMessage st mEditTheshold showOlderEdits msg renderReplyParent uSet cSet in
             Nothing -> bs
             Just p ->
                 if p^.postUpdateAtL > p^.postCreateAtL
-                then case mEditTheshold of
+                then case mEditThreshold of
                     Just cutoff | p^.postUpdateAtL >= cutoff ->
                         addEditSentinel editRecentlyMarkingSentinel bs
                     _ -> if showOlderEdits
@@ -149,7 +161,7 @@ renderMessage st mEditTheshold showOlderEdits msg renderReplyParent uSet cSet in
               case getMessageForPostId st parentId of
                   Nothing -> withParent (B.str "[loading...]")
                   Just pm ->
-                      let parentMsg = renderMessage st mEditTheshold False pm False uSet cSet False
+                      let parentMsg = renderMessage st mEditThreshold False pm False uSet cSet False
                       in withParent (addEllipsis $ B.forceAttr replyParentAttr parentMsg)
 
     where
