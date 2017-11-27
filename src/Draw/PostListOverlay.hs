@@ -69,8 +69,11 @@ drawPostsBox contents st =
     padRight (Pad 1) messageListContents
   where -- The 'window title' of the overlay
         contentHeader = withAttr channelListHeaderAttr $ txt $ case contents of
-          PostListFlagged        -> "Flagged posts"
-          PostListSearch terms _ -> "Search results: " <> terms
+          PostListFlagged                -> "Flagged posts"
+          PostListSearch terms searching -> "Search results" <> if searching
+            then ": " <> terms
+            else " (" <> (T.pack . show . length) (st^.csPostListOverlay.postListPosts) <> "): " <> terms
+
         -- User and channel set, for use in message rendering
         uSet = Set.fromList (st^..csUsers.to allUsers.folded.uiName)
         cSet = Set.fromList (st^..csChannels.folded.ccInfo.cdName)
