@@ -435,8 +435,8 @@ data HelpTopic =
 -- | Mode type for the current contents of the post list overlay
 data PostListContents
   = PostListFlagged
---   | PostListPinned ChannelId
---   | PostListSearch Text -- for the query
+  | PostListSearch T.Text Bool -- for the query and search status
+  --   | PostListPinned ChannelId
   deriving (Eq)
 
 -- | The 'Mode' represents the current dominant UI activity
