@@ -63,6 +63,7 @@ function clone_or_update_repo {
                 then
                     tag=develop
                 fi
+            fi
         fi
         echo "Using branch ${tag}, revision $(git -C $destdir rev-parse --verify HEAD) for ${repo} in ${destdir}"
     else
