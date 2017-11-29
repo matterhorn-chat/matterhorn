@@ -7,12 +7,15 @@ import Brick
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime(..))
 import Data.Time.Format (formatTime, defaultTimeLocale)
-import Data.Time.LocalTime (TimeZone, utcToLocalTime)
+import Data.Time.LocalTime (TimeZone, LocalTime(..)
+                           ,utcToLocalTime, localTimeToUTC, midnight, localDay)
 import Lens.Micro.Platform
 import Network.Mattermost
 
 import Types
 import Types.Channels
+import Types.Messages
+import Types.Posts
 import Types.Users
 import Themes
 
@@ -42,6 +45,24 @@ renderUTCTime fmt tz t =
     in if T.null fmt
        then emptyWidget
        else withDefAttr timeAttr (txt timeStr)
+
+insertDateMarkers :: Messages -> T.Text -> TimeZone -> Messages
+insertDateMarkers ms datefmt tz = foldr addMessage ms dateT
+    where dateT = fmap dateMsg dateRange
+          dateRange = {- drop 1 $ -} foldr checkDateChange [] ms
+          checkDateChange m [] | m^.mDeleted = []
+                               | otherwise = [dayStart $ m^.mDate]
+          checkDateChange m dl = let msgDay = dayStart (m^.mDate)
+                                 in if head dl == msgDay || m^.mDeleted
+                                    then dl
+                                    else msgDay : dl
+          dayOf = localDay . utcToLocalTime tz
+          dayStart dt = localTimeToUTC tz $ LocalTime (dayOf dt) $ midnight
+          dateMsg d = newMessageOfType (T.pack $ formatTime defaultTimeLocale
+                                                 (T.unpack datefmt)
+                                                 (utcToLocalTime tz d))
+                      (C DateTransition) d
+
 
 withBrackets :: Widget a -> Widget a
 withBrackets w = hBox [str "[", w, str "]"]
