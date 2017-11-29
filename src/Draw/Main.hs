@@ -15,7 +15,7 @@ import           Control.Monad (foldM)
 import           Control.Monad.Trans.Reader (withReaderT)
 import           Data.Time.Clock (UTCTime(..))
 import           Data.Time.Calendar (fromGregorian)
-import           Data.Time.LocalTime (TimeZone)
+import           Data.Time.LocalTime.TimeZone.Series (TimeZoneSeries)
 import qualified Data.Sequence as Seq
 import qualified Data.Set as S
 import qualified Data.Foldable as F
@@ -34,9 +34,13 @@ import           Network.Mattermost.Lenses
 
 import qualified Graphics.Vty as Vty
 
+import           Draw.ChannelList (renderChannelList)
+import           Draw.Messages
+import           Draw.Util
 import           Markdown
 import           State
 import           Themes
+import           TimeUtils (justAfter, justBefore)
 import           Types
 import           Types.Channels ( NewMessageIndicator(..)
                                 , ChannelState(..)
@@ -45,12 +49,9 @@ import           Types.Channels ( NewMessageIndicator(..)
                                 , cdCurrentState
                                 , cdName, cdType, cdHeader, cdMessages
                                 , findChannelById)
-import           Types.Posts
 import           Types.Messages
+import           Types.Posts
 import           Types.Users
-import           Draw.ChannelList (renderChannelList)
-import           Draw.Messages
-import           Draw.Util
 
 previewFromInput :: T.Text -> T.Text -> Maybe Message
 previewFromInput _ s | s == T.singleton cursorSentinel = Nothing
@@ -410,9 +411,6 @@ insertTransitions ms cutoff = insertDateMarkers $ foldr addMessage ms newMessage
               Just (NewPostsStartingAt t)
                   | anyNondeletedNewMessages (justBefore t) -> [newMessagesMsg $ justBefore t]
                   | otherwise -> []
-          justBefore (UTCTime d t) = UTCTime d $ pred t
-          justAfter (UTCTime d t) = UTCTime d $ succ t
-
           newMessagesMsg d = newMessageOfType (T.pack "New Messages")
                              (C NewMessagesTransition) d
 
