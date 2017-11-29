@@ -397,7 +397,7 @@ getMessageListing :: ChannelId -> ChatState -> Messages
 getMessageListing cId st =
     st ^?! csChannels.folding (findChannelById cId) . ccContents . cdMessages
 
-insertTransitions :: Messages -> Maybe NewMessageIndicator -> Text -> TimeZone -> Messages
+insertTransitions :: Messages -> Maybe NewMessageIndicator -> Text -> TimeZoneSeries -> Messages
 insertTransitions ms cutoff = insertDateMarkers $ foldr addMessage ms newMessagesT
     where anyNondeletedNewMessages t =
               isJust $ findLatestUserMessage (not . view mDeleted) (messagesAfter t ms)
