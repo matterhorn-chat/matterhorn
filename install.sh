@@ -56,7 +56,7 @@ function clone_or_update_repo {
             tag=master  # default to master
             git fetch origin develop:develop
             devtag=$(git rev-parse --verify refs/heads/develop)
-            if git rev-list --pretty=oneline --topo-order --simplify-by-decoration master..$branch | grep -E $devtag
+            if git rev-list --pretty=oneline --topo-order --simplify-by-decoration $branch | grep -E $devtag
             then
                 # This branch was based on develop, so try to use the
                 # develop branch in the dependent repo
@@ -104,7 +104,5 @@ function build {
 
 
 init
-set -x
 install_deps
-set +x
 build
