@@ -54,7 +54,7 @@ function clone_or_update_repo {
             tag=$branch
         else
             tag=master  # default to master
-            devtag=$(git rev-parse --verify origin/develop)
+            devtag=$(git rev-parse origin/develop)
             if git rev-list --pretty=online --topo-order --simplify-by-decoration master..$branch | grep -E $devtag
             then
                 # This branch was based on develop, so try to use the
