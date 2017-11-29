@@ -53,16 +53,16 @@ function clone_or_update_repo {
         then
             tag=$branch
         else
-            devtag=$(git rev-parse --verify refs/heads/develop)
-            if [ -n "${devtag}" ]
+            tag=master  # default to master
+            devtag=$(git rev-parse --verify origin/develop)
+            if git rev-list --pretty=online --topo-order --simplify-by-decoration master..$branch | grep -E $devtag
             then
+                # This branch was based on develop, so try to use the
+                # develop branch in the dependent repo
                 if git -C $destdir checkout develop
                 then
                     tag=develop
-                else
-                    tag=master
                 fi
-            fi
         fi
         echo "Using branch ${tag}, revision $(git -C $destdir rev-parse --verify HEAD) for ${repo} in ${destdir}"
     else
