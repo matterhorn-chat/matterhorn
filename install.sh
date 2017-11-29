@@ -49,13 +49,24 @@ function clone_or_update_repo {
     if [ ! -d "$destdir" ]
     then
         git clone "$repo" "$destdir" 2> gitclone.err
-        cd $destdir
-        if ! git checkout "$branch"
+        if git -C $destdir checkout "$branch"
         then
-            echo "Branch ${branch} does not exist; using master"
+            tag=$branch
+        else
+            devtag=$(git rev-parse --verify refs/heads/develop)
+            if [ -n "${devtag}" ]
+            then
+                if git -C $destdir checkout develop
+                then
+                    tag=develop
+                else
+                    tag=master
+                fi
+            fi
         fi
+        echo "Using branch ${tag}, revision $(git -C $destdir rev-parse --verify HEAD) for ${repo} in ${destdir}"
     else
-        cd $destdir && git pull
+        git -C $destdir pull
     fi
 }
 
