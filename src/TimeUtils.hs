@@ -59,5 +59,5 @@ asLocalTime = utcToLocalTime'
 
 
 -- | Local time in displayable format
-localTimeText :: TimeZoneSeries -> T.Text -> UTCTime -> T.Text
-localTimeText tz fmt time = T.pack $ formatTime defaultTimeLocale (T.unpack fmt) (asLocalTime tz time)
+localTimeText :: T.Text -> LocalTime -> T.Text
+localTimeText fmt time = T.pack $ formatTime defaultTimeLocale (T.unpack fmt) time

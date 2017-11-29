@@ -43,14 +43,14 @@ renderUTCTime :: T.Text -> TimeZoneSeries -> UTCTime -> Widget a
 renderUTCTime fmt tz t =
     if T.null fmt
     then emptyWidget
-    else withDefAttr timeAttr (txt $ localTimeText tz fmt t)
+    else withDefAttr timeAttr (txt $ localTimeText fmt $ asLocalTime tz t)
 
 insertDateMarkers :: Messages -> T.Text -> TimeZoneSeries -> Messages
 insertDateMarkers ms datefmt tz = foldr (addMessage . dateMsg) ms dateRange
     where dateRange = foldr checkDateChange Set.empty ms
           checkDateChange m = let msgDay = startOfDay (Just tz) (m^.mDate)
                               in if m^.mDeleted then id else Set.insert msgDay
-          dateMsg d = let t = localTimeText tz datefmt d
+          dateMsg d = let t = localTimeText datefmt $ asLocalTime tz d
                       in newMessageOfType t (C DateTransition) d
 
 
