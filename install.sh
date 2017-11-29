@@ -102,5 +102,7 @@ function build {
 
 
 init
+set -x
 install_deps
+set +x
 build
