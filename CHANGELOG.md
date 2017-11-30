@@ -65,7 +65,6 @@ Bug fixes:
  * New messages to previously-hidden group channels will cause the
    group channel to be shown again (fixes #326)
 
-
 Package changes:
  * PRACTICES.md is now listed in extra-doc-files.
  * Three scripts usable with the `/sh` command are now listed in
