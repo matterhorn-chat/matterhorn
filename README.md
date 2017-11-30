@@ -7,6 +7,12 @@ Matterhorn is a terminal client for the Mattermost chat system.
 
 ![](screenshots/screenshot-00.png)
 
+# New Release Notifications
+
+Get notified about new Matterhorn releases by following our Twitter account!
+
+[https://twitter.com/matterhorn_chat](https://twitter.com/matterhorn_chat)
+
 # Quick Start
 
 We provide pre-built binary releases for some platforms. Please see the
