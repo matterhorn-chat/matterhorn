@@ -4,6 +4,12 @@
 This release supports server version 4.4.
 
 New features:
+ * The active color theme can be customized by creating a theme
+   customization file and setting the new `themeCustomizationFile`
+   option. This setting lets you override any foreground color,
+   background color, or style of any aspect of the Matterhorn interface.
+   For details on the format of the customization file, please see the
+   "Themes" help in Matterhorn with the `/help themes` command.
  * Edited posts are now displayed with a trailling "edited"
    marker. This change includes some new behavior and a new
    configuration option:
