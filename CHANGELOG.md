@@ -1,6 +1,8 @@
 40400.0.0
 =========
 
+This release supports server version 4.4.
+
 New features:
  * Edited posts are now displayed with a trailling "edited"
    marker. This change includes some new behavior and a new
