@@ -78,6 +78,9 @@ function install_deps {
   clone_or_update_repo "$(current_branch)" "$ASPELL_PIPE_REPO" "$ASPELL_PIPE_DIR"
 }
 
+# The install.sh is normally run from a git checkout of the matterhorn
+# repository, but if TRAVIS_BRANCH is set, this is a Continuous
+# Integration (CI) automated build for a specific version.
 function current_branch {
   if [[ -z "$TRAVIS_BRANCH" ]]
   then
