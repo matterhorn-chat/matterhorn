@@ -65,9 +65,10 @@ function clone_or_update_repo {
 }
 
 function install_deps {
-  clone_or_update_repo "$(current_branch)" "$MATTERMOST_API_REPO" "$MATTERMOST_API_DIR"
-  clone_or_update_repo "$(current_branch)" "$MATTERMOST_API_QC_REPO" "$MATTERMOST_API_QC_DIR"
-  clone_or_update_repo "$(current_branch)" "$ASPELL_PIPE_REPO" "$ASPELL_PIPE_DIR"
+  branch=$(current_branch)
+  clone_or_update_repo "${branch}" "$MATTERMOST_API_REPO" "$MATTERMOST_API_DIR"
+  clone_or_update_repo "${branch}" "$MATTERMOST_API_QC_REPO" "$MATTERMOST_API_QC_DIR"
+  clone_or_update_repo "${branch}" "$ASPELL_PIPE_REPO" "$ASPELL_PIPE_DIR"
 }
 
 # The install.sh is normally run from a git checkout of the matterhorn
