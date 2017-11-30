@@ -54,8 +54,12 @@ function clone_or_update_repo {
             tag=$branch
         else
             tag=master  # default to master
+
+            # Determine if the matterhorn repo $branch is based on the
+            # develop branch
             git fetch origin develop:develop
             devtag=$(git rev-parse --verify refs/heads/develop)
+
             if git rev-list --pretty=oneline --topo-order --simplify-by-decoration $branch | grep -E $devtag
             then
                 # This branch was based on develop, so try to use the
