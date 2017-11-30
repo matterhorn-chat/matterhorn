@@ -51,35 +51,17 @@ function clone_or_update_repo {
     then
         git clone "$repo" "$destdir" 2> gitclone.err
         cd $destdir
-        if git checkout "$branch"
-        then
-            tag=$branch
-        else
-            tag=master  # default to master
-            if branched_from_develop $origdir $branch
+        for tag in "$branch" develop master; do
+            if git checkout "$tag"
             then
-                # This branch was based on develop, so try to use the
-                # develop branch in the dependent repo
-                if git checkout develop
-                then
-                    tag=develop
-                fi
+                break
             fi
-        fi
+        done
         echo "Using branch ${tag}, revision $(git -C $destdir rev-parse --verify HEAD) for ${repo} in ${destdir}"
     else
         cd $destdir
         git pull
     fi
-}
-
-function branched_from_develop() {
-    local indir=$1
-    local branch=$2
-    cd $indir
-    git fetch origin develop:develop
-    devtag=$(git rev-parse --verify refs/heads/develop)
-    git rev-list --pretty=oneline --topo-order --simplify-by-decoration $branch | grep -E $devtag
 }
 
 function install_deps {
@@ -116,9 +98,6 @@ function build {
 }
 
 
-ls
-set -x
 init
 install_deps
-set +x
 build
