@@ -116,6 +116,9 @@ function build {
 }
 
 
+ls
+set -x
 init
 install_deps
+set +x
 build
