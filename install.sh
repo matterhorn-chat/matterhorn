@@ -45,26 +45,22 @@ function clone_or_update_repo {
     local branch=$1
     local repo=$2
     local destdir=$3
+    local origdir=$(pwd)
 
     if [ ! -d "$destdir" ]
     then
         git clone "$repo" "$destdir" 2> gitclone.err
-        if git -C $destdir checkout "$branch"
+        cd $destdir
+        if git checkout "$branch"
         then
             tag=$branch
         else
             tag=master  # default to master
-
-            # Determine if the matterhorn repo $branch is based on the
-            # develop branch
-            git fetch origin develop:develop
-            devtag=$(git rev-parse --verify refs/heads/develop)
-
-            if git rev-list --pretty=oneline --topo-order --simplify-by-decoration $branch | grep -E $devtag
+            if branched_from_develop $origdir $branch
             then
                 # This branch was based on develop, so try to use the
                 # develop branch in the dependent repo
-                if git -C $destdir checkout develop
+                if git checkout develop
                 then
                     tag=develop
                 fi
@@ -72,8 +68,18 @@ function clone_or_update_repo {
         fi
         echo "Using branch ${tag}, revision $(git -C $destdir rev-parse --verify HEAD) for ${repo} in ${destdir}"
     else
-        git -C $destdir pull
+        cd $destdir
+        git pull
     fi
+}
+
+function branched_from_develop() {
+    local indir=$1
+    local branch=$2
+    cd $indir
+    git fetch origin develop:develop
+    devtag=$(git rev-parse --verify refs/heads/develop)
+    git rev-list --pretty=oneline --topo-order --simplify-by-decoration $branch | grep -E $devtag
 }
 
 function install_deps {
