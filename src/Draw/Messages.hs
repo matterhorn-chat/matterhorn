@@ -24,6 +24,11 @@ import           Types.Messages
 maxMessageHeight :: Int
 maxMessageHeight = 200
 
+-- | renderSingleMessage is the main message drawing function.
+--
+-- The `ind` argument specifies an "indicator boundary".  Showing
+-- various indicators (e.g. "edited") is not typically done for
+-- messages that are older than this boundary value.
 renderSingleMessage :: ChatState -> Maybe UTCTime -> UserSet -> ChannelSet -> Message -> Widget Name
 renderSingleMessage st ind uSet cSet =
   renderChatMessage st ind uSet cSet (withBrackets . renderTime st)

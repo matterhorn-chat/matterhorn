@@ -41,6 +41,7 @@ module State
   , handleChannelInvite
   , addUserToCurrentChannel
   , removeUserFromCurrentChannel
+  , createGroupChannel
 
   -- * Channel history
   , channelHistoryForward
@@ -67,6 +68,9 @@ module State
   , updateChannelSelectMatches
   , channelSelectNext
   , channelSelectPrevious
+
+  -- * Server-side preferences
+  , applyPreferenceChange
 
   -- * Message selection mode
   , beginMessageSelect
@@ -140,7 +144,8 @@ import           System.Environment.XDG.BaseDir (getUserCacheDir)
 import           System.FilePath
 
 import           Network.Mattermost
-import           Network.Mattermost.Types (NotifyOption(..))
+import           Network.Mattermost.Types (NotifyOption(..), GroupChannelPreference(..),
+                                           preferenceToGroupChannelPreference)
 import           Network.Mattermost.Lenses
 
 import           Config
@@ -170,17 +175,24 @@ refreshChannel refreshMessages cwd@(ChannelWithData chan _) = do
   let cId = getId chan
   curId <- use csCurrentChannelId
 
-  -- If this channel is unknown, register it first.
-  mChan <- preuse (csChannel(cId))
-  when (isNothing mChan) $
-      handleNewChannel False cwd
+  -- If this is a group channel that the user has chosen to hide, ignore
+  -- the refresh request.
+  isHidden <- channelHiddenPreference cId
+  case isHidden of
+      True -> return ()
+      False -> do
+          -- If this channel is unknown, register it first.
+          mChan <- preuse (csChannel(cId))
+          when (isNothing mChan) $
+              handleNewChannel False cwd
 
-  updateChannelInfo cId cwd
+          updateChannelInfo cId cwd
 
-  -- If this is an active channel or the current channel, also update
-  -- the Messages to retrieve any that might have been missed.
-  when (refreshMessages || (cId == curId)) $
-      updateMessages cId
+          -- If this is an active channel or the current channel, also
+          -- update the Messages to retrieve any that might have been
+          -- missed.
+          when (refreshMessages || (cId == curId)) $
+              updateMessages cId
 
 refreshChannelById :: Bool -> ChannelId -> MH ()
 refreshChannelById refreshMessages cId = do
@@ -189,6 +201,76 @@ refreshChannelById refreshMessages cId = do
   doAsyncWith Preempt $ do
       cwd <- mmGetChannel session myTeamId cId
       return $ refreshChannel refreshMessages cwd
+
+createGroupChannel :: T.Text -> MH ()
+createGroupChannel usernameList = do
+    users <- use csUsers
+    myTeamId <- use (csMyTeam.teamIdL)
+    me <- use csMe
+
+    let usernames = T.words usernameList
+        findUserIds [] = return []
+        findUserIds (n:ns) = do
+            case findUserByName users n of
+                Nothing -> do
+                    postErrorMessage $ "No such user: " <> n
+                    return []
+                Just (uId, _) -> (uId:) <$> findUserIds ns
+
+    results <- findUserIds usernames
+
+    -- If we found all of the users mentioned, then create the group
+    -- channel.
+    when (length results == length usernames) $ do
+        session <- use (csResources.crSession)
+        doAsyncWith Preempt $ do
+            chan <- mmCreateGroupChannel session results
+            let pref = showGroupChannelPref (channelId chan) (me^.userIdL)
+            -- It's possible that the channel already existed, in which
+            -- case we want to request a preference change to show it.
+            mmSetPreferences session (me^.userIdL) $ Seq.fromList [pref]
+            cwd <- mmGetChannel session myTeamId (channelId chan)
+            return $ do
+                applyPreferenceChange pref
+                handleNewChannel True cwd
+
+channelHiddenPreference :: ChannelId -> MH Bool
+channelHiddenPreference cId = do
+  prefs <- use (csResources.crPreferences)
+  let matching = filter (\p -> groupChannelId p == cId) $
+                 catMaybes $ preferenceToGroupChannelPreference <$> (F.toList prefs)
+  return $ any (not . groupChannelShow) matching
+
+applyPreferenceChange :: Preference -> MH ()
+applyPreferenceChange pref
+    | Just f <- preferenceToFlaggedPost pref =
+        updateMessageFlag (flaggedPostId f) (flaggedPostStatus f)
+    | Just g <- preferenceToGroupChannelPreference pref = do
+        -- First, go update the preferences with this change.
+        updatePreference pref
+
+        let cId = groupChannelId g
+        mChan <- preuse $ csChannel cId
+
+        case (mChan, groupChannelShow g) of
+            (Just _, False) ->
+                -- If it has been set to hidden and we are showing it,
+                -- remove it from the state.
+                removeChannelFromState cId
+            (Nothing, True) ->
+                -- If it has been set to showing and we are not showing
+                -- it, ask for a load/refresh.
+                refreshChannelById True cId
+            _ -> return ()
+applyPreferenceChange _ = return ()
+
+updatePreference :: Preference -> MH ()
+updatePreference pref = do
+    let replacePreference new old
+            | preferenceCategory old == preferenceCategory new &&
+              preferenceName old == preferenceName new = new
+            | otherwise = old
+    csResources.crPreferences %= fmap (replacePreference pref)
 
 -- | Refresh information about all channels and users. This is usually
 -- triggered when a reconnect event for the WebSocket to the server
@@ -214,11 +296,40 @@ refreshChannelsAndUsers = do
         lock <- use (csResources.crUserStatusLock)
         doAsyncWith Preempt $ updateUserStatuses lock session
 
--- | Update the indicted Channel entry with the new data retrieved
--- from the Mattermost server.
+-- | Update the indicted Channel entry with the new data retrieved from
+-- the Mattermost server. Also update the channel name if it changed.
 updateChannelInfo :: ChannelId -> ChannelWithData -> MH ()
-updateChannelInfo cid cwd =
+updateChannelInfo cid cwd@(ChannelWithData new _) = do
+  mOldChannel <- preuse $ csChannel(cid)
+  case mOldChannel of
+      Nothing -> return ()
+      Just old ->
+          let oldName = old^.ccInfo.cdName
+              newName = preferredChannelName new
+          in if oldName == newName
+             then return ()
+             else do
+                 removeChannelName oldName
+                 addChannelName (channelType new) cid newName
+
   csChannel(cid).ccInfo %= channelInfoFromChannelWithData cwd
+
+addChannelName :: Type -> ChannelId -> T.Text -> MH ()
+addChannelName chType cid name = do
+    csNames.cnToChanId.at(name) .= Just cid
+
+    -- For direct channels the username is already in the user list so
+    -- do nothing
+    existingNames <- use $ csNames.cnChans
+    when (chType /= Direct && (not $ name `elem` existingNames)) $
+        csNames.cnChans %= (sort . (name:))
+
+removeChannelName :: T.Text -> MH ()
+removeChannelName name = do
+    -- Flush cnToChanId
+    csNames.cnToChanId.at name .= Nothing
+    -- Flush cnChans
+    csNames.cnChans %= filter (/= name)
 
 -- | If this channel has content, fetch any new content that has
 -- arrived after the existing content.
@@ -614,12 +725,32 @@ leaveChannelIfPossible cId delete = do
                                 Private -> case all isMe members of
                                     True -> mmDeleteChannel
                                     False -> mmLeaveChannel
+                                Group ->
+                                    \s _ _ ->
+                                        mmSetPreferences s (me^.userIdL) $
+                                            Seq.fromList [hideGroupChannelPref cId $ me^.userIdL]
                                 _ -> if delete
                                      then mmDeleteChannel
                                      else mmLeaveChannel
 
                         doAsyncChannelMM Preempt cId func endAsyncNOP
                     )
+
+hideGroupChannelPref :: ChannelId -> UserId -> Preference
+hideGroupChannelPref cId uId =
+    Preference { preferenceCategory = PreferenceCategoryGroupChannelShow
+               , preferenceValue = PreferenceValue "false"
+               , preferenceName = PreferenceName $ idString cId
+               , preferenceUserId = uId
+               }
+
+showGroupChannelPref :: ChannelId -> UserId -> Preference
+showGroupChannelPref cId uId =
+    Preference { preferenceCategory = PreferenceCategoryGroupChannelShow
+               , preferenceValue = PreferenceValue "true"
+               , preferenceName = PreferenceName $ idString cId
+               , preferenceUserId = uId
+               }
 
 leaveChannel :: ChannelId -> MH ()
 leaveChannel cId = leaveChannelIfPossible cId False
@@ -638,10 +769,8 @@ removeChannelFromState cId = do
             csEditState.cedLastChannelInput     .at cId .= Nothing
             -- Update input history
             csEditState.cedInputHistory         %= removeChannelHistory cId
-            -- Flush cnToChanId
-            csNames.cnToChanId                  .at cName .= Nothing
-            -- Flush cnChans
-            csNames.cnChans                     %= filter (/= cName)
+            -- Remove channel name mappings
+            removeChannelName cName
             -- Update msgMap
             csChannels                          %= filteredChannels ((/=) cId . fst)
             -- Remove from focus zipper
@@ -1004,81 +1133,85 @@ handleNewChannel_ :: Bool
                   -- ^ The channel to install.
                   -> MH ()
 handleNewChannel_ permitPostpone switch cwd@(ChannelWithData nc cData) = do
-  -- Create a new ClientChannel structure
-  let cChannel = makeClientChannel nc &
-                   ccInfo %~ channelInfoFromChannelWithData (ChannelWithData nc cData)
+  -- Only add the channel to the state if it isn't already known.
+  mChan <- preuse (csChannel(getId nc))
+  case mChan of
+      Just _ -> return ()
+      Nothing -> do
+        -- Create a new ClientChannel structure
+        let cChannel = makeClientChannel nc &
+                         ccInfo %~ channelInfoFromChannelWithData (ChannelWithData nc cData)
 
-  st <- use id
+        st <- use id
 
-  -- Add it to the message map, and to the name map so we can look it up
-  -- by name. The name we use for the channel depends on its type:
-  let chType = nc^.channelTypeL
+        -- Add it to the message map, and to the name map so we can look
+        -- it up by name. The name we use for the channel depends on its
+        -- type:
+        let chType = nc^.channelTypeL
 
-  -- Get the channel name. If we couldn't, that means we have async work
-  -- to do before we can register this channel (in which case abort
-  -- because we got rescheduled).
-  mName <- case chType of
-      Direct -> case userIdForDMChannel (st^.csMe.userIdL) $ channelName nc of
-          -- If this is a direct channel but we can't extract a user ID
-          -- from the name, then it failed to parse. We need to assign
-          -- a channel name in our channel map, and the best we can do
-          -- to preserve uniqueness is to use the channel name string.
-          -- This is undesirable but direct channels never get rendered
-          -- directly; they only get used by first looking up usernames.
-          -- So this name should never appear anywhere, but at least we
-          -- can go ahead and register the channel and handle events for
-          -- it. That isn't very useful but it's probably better than
-          -- ignoring this entirely.
-          Nothing -> return $ Just $ channelName nc
-          Just otherUserId ->
-              case getUsernameForUserId st otherUserId of
-                  -- If we found a user ID in the channel name string
-                  -- but don't have that user's metadata, postpone
-                  -- adding this channel until we have fetched the
-                  -- metadata. This can happen when we have a channel
-                  -- record for a user that is no longer in the current
-                  -- team. To avoid recursion due to a problem, ensure
-                  -- that the rescheduled new channel handler is not
-                  -- permitted to try this again.
-                  --
-                  -- If we're already in a recursive attempt to register
-                  -- this channel and still couldn't find a username,
-                  -- just bail and use the synthetic name (this has the
-                  -- same problems as above).
-                  Nothing -> do
-                      case permitPostpone of
-                          False -> return $ Just $ channelName nc
-                          True -> do
-                              handleNewUser otherUserId
-                              doAsyncWith Normal $
-                                  return $ handleNewChannel_ False switch cwd
-                              return Nothing
-                  Just ncUsername ->
-                      return $ Just $ ncUsername
-      _ -> return $ Just $ preferredChannelName nc
+        -- Get the channel name. If we couldn't, that means we have
+        -- async work to do before we can register this channel (in
+        -- which case abort because we got rescheduled).
+        mName <- case chType of
+            Direct -> case userIdForDMChannel (st^.csMe.userIdL) $ channelName nc of
+                -- If this is a direct channel but we can't extract a
+                -- user ID from the name, then it failed to parse. We
+                -- need to assign a channel name in our channel map,
+                -- and the best we can do to preserve uniqueness is to
+                -- use the channel name string. This is undesirable
+                -- but direct channels never get rendered directly;
+                -- they only get used by first looking up usernames.
+                -- So this name should never appear anywhere, but at
+                -- least we can go ahead and register the channel and
+                -- handle events for it. That isn't very useful but it's
+                -- probably better than ignoring this entirely.
+                Nothing -> return $ Just $ channelName nc
+                Just otherUserId ->
+                    case getUsernameForUserId st otherUserId of
+                        -- If we found a user ID in the channel name
+                        -- string but don't have that user's metadata,
+                        -- postpone adding this channel until we have
+                        -- fetched the metadata. This can happen when
+                        -- we have a channel record for a user that
+                        -- is no longer in the current team. To avoid
+                        -- recursion due to a problem, ensure that
+                        -- the rescheduled new channel handler is not
+                        -- permitted to try this again.
+                        --
+                        -- If we're already in a recursive attempt to
+                        -- register this channel and still couldn't find
+                        -- a username, just bail and use the synthetic
+                        -- name (this has the same problems as above).
+                        Nothing -> do
+                            case permitPostpone of
+                                False -> return $ Just $ channelName nc
+                                True -> do
+                                    handleNewUser otherUserId
+                                    doAsyncWith Normal $
+                                        return $ handleNewChannel_ False switch cwd
+                                    return Nothing
+                        Just ncUsername ->
+                            return $ Just $ ncUsername
+            _ -> return $ Just $ preferredChannelName nc
 
-  case mName of
-      Nothing -> return ()
-      Just name -> do
-          csNames.cnToChanId.at(name) .= Just (getId nc)
+        case mName of
+            Nothing -> return ()
+            Just name -> do
+                addChannelName chType (getId nc) name
 
-          -- For direct channels the username is already in the user
-          -- list so do nothing
-          when (chType /= Direct) $
-              csNames.cnChans %= (sort . (name:))
+                csChannels %= addChannel (getId nc) cChannel
 
-          csChannels %= addChannel (getId nc) cChannel
+                -- We should figure out how to do this better: this adds
+                -- it to the channel zipper in such a way that we don't
+                -- ever change our focus to something else, which is
+                -- kind of silly
+                names <- use csNames
+                let newZip = Z.updateList (mkChannelZipperList names)
+                csFocus %= newZip
 
-          -- We should figure out how to do this better: this adds it to
-          -- the channel zipper in such a way that we don't ever change
-          -- our focus to something else, which is kind of silly
-          names <- use csNames
-          let newZip = Z.updateList (mkChannelZipperList names)
-          csFocus %= newZip
-
-          -- Finally, set our focus to the newly created channel if the
-          -- caller requested a change of channel.
-          when switch $ setFocus (getId nc)
+                -- Finally, set our focus to the newly created channel
+                -- if the caller requested a change of channel.
+                when switch $ setFocus (getId nc)
 
 editMessage :: Post -> MH ()
 editMessage new = do
@@ -1181,15 +1314,26 @@ addMessageToState newPostData = do
   st <- use id
   case st ^? csChannel(postChannelId new) of
       Nothing -> do
-          -- When we join channels, sometimes we get the "user has
-          -- been added to channel" message here BEFORE we get the
-          -- websocket event that says we got added to a channel. This
-          -- means the message arriving here in addMessage can't be
-          -- added yet because we haven't fetched the channel metadata
-          -- in the websocket handler. So to be safe we just drop the
-          -- message here, but this is the only case of messages that we
-          -- /expect/ to drop for this reason. Hence the check for the
-          -- msgMap channel ID key presence above.
+          session <- use (csResources.crSession)
+          myTeamId <- use (csMyTeam.teamIdL)
+          doAsyncWith Preempt $ do
+              cwd@(ChannelWithData nc _) <- mmGetChannel session myTeamId (postChannelId new)
+
+              let chType = nc^.channelTypeL
+                  pref = showGroupChannelPref (postChannelId new) (st^.csMe.userIdL)
+
+              return $ do
+                  -- If the incoming message is for a group channel we
+                  -- don't know about, that's because it was previously
+                  -- hidden by the user. We need to show it, and to do
+                  -- that we need to update the server-side preference.
+                  -- (That, in turn, triggers a channel refresh.)
+                  if chType == Group
+                      then applyPreferenceChange pref
+                      else refreshChannel True cwd
+
+                  addMessageToState newPostData >>= postProcessMessageAdd
+
           return NoAction
       Just _ -> do
           let cp = toClientPost new (new^.postParentIdL)

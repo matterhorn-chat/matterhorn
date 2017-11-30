@@ -1,3 +1,77 @@
+40400.0.0
+=========
+
+This release supports server version 4.4.
+
+New features:
+ * Edited posts are now displayed with a trailling "edited"
+   marker. This change includes some new behavior and a new
+   configuration option:
+   * When you visit a post that has recent edits, the "edited" marker
+     will be highlighted. This highlight can be dismissed in the same
+     way as the "New Messages" cutoff, using the `M-l` keybinding.
+   * This feature can be turned off using by setting the
+     `showOlderEdits` configuration option to `False`.
+ * New commands:
+   * The `/remove-user` command removes a user from a channel.
+   * The `/group-msg` command creates a new private group channel
+     including several users.
+   * The `/search [term]` command searches the chat history for posts
+     that include the provided text and displays those posts in an
+     overlay. Thanks to @abhin4v for this change!
+ * Matterhorn now includes embedded hyperlinks using terminal escape
+   sequences in terminals that support them. For more information on
+   terminal support for hyperlink escape sequences, please see [this
+   gist](https://gist.github.com/egmontkob/eb114294efbcd5adb1944c9f3cb5feda)
+   and its associated discussion.
+ * The width of the channel list (in columns) is now configurable with
+   `channelListWidth`, which defaults to 20.
+ * The `urlOpenCommand` can now be an interactive terminal-based
+   program (such as a terminal-based web browser) but this requires
+   the configuration option `urlOpenCommandIsInteractive` to be set to
+   `True`. This defaults to `False` and should not be changed if the
+   `urlOpenCommand` is not a terminal-based program.
+ * The current selection in channel select mode can be moved forward
+   and backward with `C-n` and `C-p`. (fixes #139)
+ * Quotation blocks now include visible characters in addition to
+   indentation.
+ * We now honor the server's notification settings for channels.
+
+Bug fixes:
+ * New direct-message channels are properly added to running sessions
+   (fixes #264)
+ * No more reporting of "resource vanished" exceptions (fixes #116)
+ * Missing editing keybindings now included in edit binding list
+   (fixes #139)
+ * Websocket message parse failures no longer result in crashes (fixes
+   #297)
+ * The sidebar no longer shows deleted users (fixes #316)
+ * Tab-completion no longer includes deleted users (fixes #320)
+ * User status updates are now rate-limited (fixes #282)
+ * Private channels can be deleted successfully (fixes #304)
+ * External commands now run in the background in their own thread and
+   do not block the main UI (fixes #270)
+ * Channel renaming is honored at runtime and does not require a
+   restart (fixes #324)
+ * Group channel show/hide preferences are observed, which in practice
+   means a user can now 'leave' a several-user group channel
+ * New channels will not appear twice in the sidebar (fixes #327)
+ * New messages to previously-hidden group channels will cause the
+   group channel to be shown again (fixes #326)
+
+
+Package changes:
+ * PRACTICES.md is now listed in extra-doc-files.
+ * Three scripts usable with the `/sh` command are now listed in
+   extra-doc-files:
+   * `cowsay` runs the message text through the `cowsay` shell command
+     and formats the output as a verbatim block. This command requires
+     the `cowsay` command-line program to be installed externally.
+   * `figlet` runs the message text through the `figlet` shell command
+     and formats the output as a verbatim block. This command requires
+     the `figlet` command-line program to be installed externally.
+   * `rot13` runs the trivial ROT13 subsitution cipher over the
+     message text and otherwise passes it through unchanged.
 
 40000.1.0
 =========

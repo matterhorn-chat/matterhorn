@@ -75,6 +75,9 @@ To join a channel, use the `/join` command to choose from a list of
 available channels. To create a channel, use `/create-channel`. To leave
 a channel, use `/leave-channel`.
 
+To create a private group chat amongst yourself and other users, use the
+`/group-msg` command, e.g., `/group-msg user1 user2`.
+
 To see the members in the current channel, use the `/members` command.
 
 To send a message, type it into the editor and press Enter to send.

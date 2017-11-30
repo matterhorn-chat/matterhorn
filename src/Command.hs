@@ -88,6 +88,8 @@ commandList =
               Just topic -> showHelpScreen topic
   , Cmd "sh" "List the available shell scripts" NoArg $ \ () ->
       listScripts
+  , Cmd "group-msg" "Create a group chat"
+    (LineArg "user1 user2 ...") createGroupChannel
   , Cmd "sh" "Run a prewritten shell script"
     (TokenArg "script" (LineArg "message")) $ \ (script, text) ->
       findAndRunScript script text
@@ -101,6 +103,9 @@ commandList =
 
   , Cmd "flags" "Open up a pane of flagged posts"  NoArg $ \ () ->
       enterFlaggedPostListMode
+
+  , Cmd "search" "Search for posts with given terms"  (LineArg "terms") $
+      enterSearchResultPostListMode
   ]
 
 execMMCommand :: T.Text -> T.Text -> MH ()

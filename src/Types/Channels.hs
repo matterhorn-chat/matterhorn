@@ -261,7 +261,7 @@ makeClientChannel nc = ClientChannel
   }
 
 canLeaveChannel :: ChannelInfo -> Bool
-canLeaveChannel cInfo = not $ cInfo^.cdType `elem` [Direct, Group]
+canLeaveChannel cInfo = not $ cInfo^.cdType `elem` [Direct]
 
 -- ** Manage the collection of all Channels
 
