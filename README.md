@@ -147,6 +147,7 @@ name of the dictionary you'd like to use.
 * Support for SOCKS 4 and 5 proxies via the `ALL_PROXY`, `HTTP_PROXY`,
   and `HTTPS_PROXY` environment variables. (Plain HTTP proxies are not
   yet supported.)
+* Multiple color themes with color theme customization support
 
 # Spell Checking Support
 
