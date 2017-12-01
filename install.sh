@@ -39,6 +39,27 @@ function init {
 # clone_or_update_repo TARGET_BRANCH REPO_URL DEST_DIR
 #
 # Clones if absent; pulls otherwise.
+#
+# If this was a clone, then it tries to update the repo to the same
+# branch as the matterhorn repo (the expectation is that parallel
+# changes in the this related repo will have parallel branches).
+# Sometimes changes in the matterhorn repo do not have associated
+# changes in the this repo; in that case, the "develop" branch is
+# tried in this repo, followed by the master branch if there is no
+# develop branch.
+#
+# This is based on the branching strategy for matterhorn and
+# associated repos of (1) master is current release, (2) develop is
+# where completed work is collected for the next release candidate,
+# (3) feature branches are made off of develop, and (4) bugfix
+# branches can be made off of either master or develop, and (5) the
+# "branch" name can actually be a release tag, and related repos
+# should either bear the same release tag or use the head of the
+# master branch for their release.
+#
+# If this was a pull, assume the directory containing the dependent
+# repo is already on the branch it should have and just use the pull
+# to move to the latest HEAD on that branch.
 function clone_or_update_repo {
     mkdir -p $DEPS
 
