@@ -36,7 +36,7 @@ function init {
     fi
 }
 
-# clone_or_update_repo $REPO_URL $DEST_DIR
+# clone_or_update_repo TARGET_BRANCH REPO_URL DEST_DIR
 #
 # Clones if absent; pulls otherwise.
 function clone_or_update_repo {
