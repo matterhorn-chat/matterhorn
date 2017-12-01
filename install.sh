@@ -86,11 +86,12 @@ function current_branch {
 function build {
     cd $HERE
 
-    if [ $FIRST_TIME -eq 1 ]
+    if [ $FIRST_TIME -eq 1 -a "$GHCVER" != "8.0.1" ]
     then
-        # For first-time builds, get dependencies installed as fast as
-        # possible.
-        cabal new-build -j1 --enable-tests -v
+        # Build with '-j' for natural parallelism to get dependencies
+        # installed as fast as possible if this is the first build
+        # (but this frequently fails for GHC 8.0.1)
+        cabal new-build -j --enable-tests
     else
         # But for subsequent builds, build with -j1 to avoid suppression
         # of useful (e.g. warning) output.
