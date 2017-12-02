@@ -73,7 +73,7 @@ function clone_or_update_repo {
         git clone "$repo" "$destdir" 2> gitclone.err
         cd $destdir
         for tag in "$branch" develop master; do
-            if git checkout "$tag"
+            if git checkout "$tag" 2>/dev/null
             then
                 break
             fi
