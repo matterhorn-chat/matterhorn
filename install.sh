@@ -27,7 +27,7 @@ ASPELL_PIPE_DIR=$DEPS/aspell-pipe
 FIRST_TIME=0
 
 function init {
-    if [ ! -d "$HERE/cabal.project.local" ]
+    if [ ! -f "$HERE/cabal.project.local" ]
     then
         FIRST_TIME=1
         echo 'packages: deps/mattermost-api/mattermost-api.cabal'  >cabal.project.local
