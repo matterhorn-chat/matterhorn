@@ -50,6 +50,7 @@ runMatterhorn opts config = do
           vty <- Vty.mkVty Vty.defaultConfig
           let output = Vty.outputIface vty
           Vty.setMode output Vty.BracketedPaste True
+          Vty.setMode output Vty.Hyperlink True
           return vty
 
     finalSt <- customMain mkVty (Just eventChan) app st
