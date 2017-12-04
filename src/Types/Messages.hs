@@ -359,11 +359,3 @@ findLatestUserMessage f msgs =
 -- | Return all messages that were posted after the specified date/time.
 messagesAfter :: UTCTime -> Messages -> Messages
 messagesAfter viewTime = onDirectedSeq $ Seq.takeWhileR (\m -> m^.mDate > viewTime)
-
--- | Reverse the order of the messages
-reverseMessages :: Messages -> RetrogradeMessages
-reverseMessages = DSeq . Seq.reverse . dseq
-
--- | Unreverse the order of the messages
-unreverseMessages :: RetrogradeMessages -> Messages
-unreverseMessages = DSeq . Seq.reverse . dseq
