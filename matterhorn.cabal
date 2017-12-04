@@ -94,7 +94,7 @@ executable matterhorn
                      , process              >= 1.4    && < 1.7
                      , microlens-platform   >= 0.3    && < 0.4
                      , brick                >= 0.29   && < 0.30
-                     , vty                  >= 5.18   && < 5.19
+                     , vty                  >= 5.19   && < 5.20
                      , transformers         >= 0.4    && < 0.6
                      , text-zipper          >= 0.10   && < 0.11
                      , time                 >= 1.6    && < 1.9
@@ -160,5 +160,5 @@ test-suite test_messages
                     , Unique               >= 0.4    && < 0.5
                     , unordered-containers >= 0.2    && < 0.3
                     , vector               <= 0.12.0.1
-                    , vty                  >= 5.18   && < 5.19
+                    , vty                  >= 5.19   && < 5.20
                     , xdg-basedir          >= 0.2    && < 0.3
