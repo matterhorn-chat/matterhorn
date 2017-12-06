@@ -297,7 +297,10 @@ renderChannelHeader uSet cSet st chan =
                     Nothing -> mkChannelName (chan^.ccInfo)
                     Just u  -> userHeader u
             _ -> mkChannelName (chan^.ccInfo)
-    in renderText' uSet cSet (T.filter (not . (== '\n')) (channelNameString <> maybeTopic))
+        newlineToSpace '\n' = ' '
+        newlineToSpace c = c
+
+    in renderText' uSet cSet (T.map newlineToSpace (channelNameString <> maybeTopic))
 
 renderCurrentChannelDisplay :: UserSet -> ChannelSet -> ChatState -> Widget Name
 renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
