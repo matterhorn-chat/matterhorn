@@ -229,7 +229,7 @@ cursorSentinel = '‸'
 -- Render markdown with username highlighting
 renderMarkdown :: HighlightSet -> Blocks -> Widget a
 renderMarkdown hSet =
-  B.vBox . F.toList . fmap (toWidget hSet) . addBlankLines
+  B.vBox . F.toList . fmap (blockToWidget hSet) . addBlankLines
 
 -- Add blank lines only between adjacent elements of the same type, to
 -- save space
@@ -269,26 +269,26 @@ hBox = B.hBox . F.toList
 
 --
 
-class ToWidget t where
-  toWidget :: HighlightSet -> t -> Widget a
+-- class ToWidget t where
+--   toWidget :: HighlightSet -> t -> Widget a
 
 header :: Int -> Widget a
 header n = B.txt (T.replicate n "#")
 
-instance ToWidget Block where
-  toWidget hSet (C.Para is) = toInlineChunk is hSet
-  toWidget hSet (C.Header n is) =
+blockToWidget :: HighlightSet -> Block -> Widget a
+blockToWidget hSet (C.Para is) = toInlineChunk is hSet
+blockToWidget hSet (C.Header n is) =
     B.withDefAttr clientHeaderAttr $
       hBox [header n, B.txt " ", toInlineChunk is hSet]
-  toWidget hSet (C.Blockquote is) =
-    addQuoting (vBox $ fmap (toWidget hSet) is)
-  toWidget hSet (C.List _ l bs) = toList l bs hSet
-  toWidget _ (C.CodeBlock ci tx) =
+blockToWidget hSet (C.Blockquote is) =
+    addQuoting (vBox $ fmap (blockToWidget hSet) is)
+blockToWidget hSet (C.List _ l bs) = toList l bs hSet
+blockToWidget _ (C.CodeBlock ci tx) =
       let f = maybe rawCodeBlockToWidget codeBlockToWidget mSyntax
           mSyntax = Sky.lookupSyntax (C.codeLang ci) Sky.defaultSyntaxMap
       in f tx
-  toWidget _ (C.HtmlBlock txt) = textWithCursor txt
-  toWidget _ (C.HRule) = B.vLimit 1 (B.fill '*')
+blockToWidget _ (C.HtmlBlock txt) = textWithCursor txt
+blockToWidget _ (C.HRule) = B.vLimit 1 (B.fill '*')
 
 quoteChar :: Char
 quoteChar = '>'
@@ -344,7 +344,7 @@ toInlineChunk is hSet = B.Widget B.Fixed B.Fixed $ do
 
 toList :: ListType -> [Blocks] -> HighlightSet -> Widget a
 toList lt bs hSet = vBox
-  [ B.txt i <+> (vBox (fmap (toWidget hSet) b))
+  [ B.txt i <+> (vBox (fmap (blockToWidget hSet) b))
   | b <- bs | i <- is ]
   where is = case lt of
           C.Bullet _ -> repeat ("• ")
