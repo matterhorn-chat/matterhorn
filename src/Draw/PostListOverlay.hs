@@ -32,6 +32,7 @@ import Types.Users
 import Draw.Main
 import Draw.Messages
 import Draw.Util
+import Markdown
 
 hLimitWithPadding :: Int -> Widget n -> Widget n
 hLimitWithPadding pad contents = Widget
@@ -75,8 +76,10 @@ drawPostsBox contents st =
             else " (" <> (T.pack . show . length) (st^.csPostListOverlay.postListPosts) <> "): " <> terms
 
         -- User and channel set, for use in message rendering
-        uSet = Set.fromList (st^..csUsers.to allUsers.folded.uiName)
-        cSet = Set.fromList (st^..csChannels.folded.ccInfo.cdName)
+        hSet = HighlightSet
+                 { hUserSet = Set.fromList (st^..csUsers.to allUsers.folded.uiName)
+                 , hChannelSet = Set.fromList (st^..csChannels.folded.ccInfo.cdName)
+                 }
 
         messages = insertDateHeaders
                      (getDateFormat st)
@@ -100,7 +103,7 @@ drawPostsBox contents st =
 
         -- The render-message function we're using
         renderMessageForOverlay msg =
-          let renderedMsg = renderSingleMessage st Nothing uSet cSet msg
+          let renderedMsg = renderSingleMessage st Nothing hSet msg
           in case msg^.mOriginalPost of
             -- We should factor out some of the channel name logic at
             -- some point, but we can do that later

@@ -29,18 +29,17 @@ maxMessageHeight = 200
 -- The `ind` argument specifies an "indicator boundary".  Showing
 -- various indicators (e.g. "edited") is not typically done for
 -- messages that are older than this boundary value.
-renderSingleMessage :: ChatState -> Maybe UTCTime -> UserSet -> ChannelSet -> Message -> Widget Name
-renderSingleMessage st ind uSet cSet =
-  renderChatMessage st ind uSet cSet (withBrackets . renderTime st)
+renderSingleMessage :: ChatState -> Maybe UTCTime -> HighlightSet -> Message -> Widget Name
+renderSingleMessage st ind hSet =
+  renderChatMessage st ind hSet (withBrackets . renderTime st)
 
-renderChatMessage :: ChatState -> Maybe UTCTime -> UserSet -> ChannelSet -> (UTCTime -> Widget Name) -> Message -> Widget Name
-renderChatMessage st ind uSet cSet renderTimeFunc msg =
+renderChatMessage :: ChatState -> Maybe UTCTime -> HighlightSet -> (UTCTime -> Widget Name) -> Message -> Widget Name
+renderChatMessage st ind hSet renderTimeFunc msg =
     let showOlderEdits = configShowOlderEdits $ st^.csResources.crConfiguration
         m = renderMessage st MessageData
               { mdMessage           = msg
               , mdEditThreshold     = ind
-              , mdUserSet           = uSet
-              , mdChannelSet        = cSet
+              , mdHighlightSet      = hSet
               , mdShowOlderEdits    = showOlderEdits
               , mdRenderReplyParent = True
               , mdIndentBlocks      = True

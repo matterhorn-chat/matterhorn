@@ -7,6 +7,7 @@ module Markdown
   ( UserSet
   , ChannelSet
   , MessageData(..)
+  , HighlightSet(..)
   , renderMessage
   , renderText
   , renderText'
@@ -60,6 +61,14 @@ import           Types.Messages
 type UserSet = Set Text
 type ChannelSet = Set Text
 
+data HighlightSet = HighlightSet
+  { hUserSet    :: Set Text
+  , hChannelSet :: Set Text
+  }
+
+emptyHSet :: HighlightSet
+emptyHSet = HighlightSet Set.empty Set.empty
+
 omitUsernameTypes :: [MessageType]
 omitUsernameTypes =
     [ CP Join
@@ -107,8 +116,8 @@ data MessageData = MessageData
   , mdShowOlderEdits    :: Bool
   , mdMessage           :: Message
   , mdRenderReplyParent :: Bool
-  , mdUserSet           :: UserSet
-  , mdChannelSet        :: ChannelSet
+  , mdHighlightSet      :: HighlightSet
+--  , mdChannelSet        :: ChannelSet
   , mdIndentBlocks      :: Bool
   }
 
@@ -162,7 +171,7 @@ renderMessage st md@MessageData { mdMessage = msg, .. } =
                 else bs
 
         augmentedText = maybeAugment $ msg^.mText
-        rmd = renderMarkdown mdUserSet mdChannelSet augmentedText
+        rmd = renderMarkdown mdHighlightSet augmentedText
         msgWidget =
             (layout nameElems rmd . viewl) augmentedText
         withParent p = (replyArrow <+> p) B.<=> msgWidget
@@ -218,9 +227,9 @@ cursorSentinel :: Char
 cursorSentinel = '‸'
 
 -- Render markdown with username highlighting
-renderMarkdown :: UserSet -> ChannelSet -> Blocks -> Widget a
-renderMarkdown uSet cSet =
-  B.vBox . F.toList . fmap (toWidget uSet cSet) . addBlankLines
+renderMarkdown :: HighlightSet -> Blocks -> Widget a
+renderMarkdown hSet =
+  B.vBox . F.toList . fmap (toWidget hSet) . addBlankLines
 
 -- Add blank lines only between adjacent elements of the same type, to
 -- save space
@@ -246,10 +255,10 @@ addBlankLines = go' . viewl
 
 -- Render text to markdown without username highlighting
 renderText :: Text -> Widget a
-renderText txt = renderText' Set.empty Set.empty txt
+renderText txt = renderText' emptyHSet txt
 
-renderText' :: UserSet -> ChannelSet -> Text -> Widget a
-renderText' uSet cSet txt = renderMarkdown uSet cSet bs
+renderText' :: HighlightSet -> Text -> Widget a
+renderText' hSet txt = renderMarkdown hSet bs
   where C.Doc _ bs = C.markdown C.def txt
 
 vBox :: F.Foldable f => f (Widget a) -> Widget a
@@ -261,25 +270,25 @@ hBox = B.hBox . F.toList
 --
 
 class ToWidget t where
-  toWidget :: UserSet -> ChannelSet -> t -> Widget a
+  toWidget :: HighlightSet -> t -> Widget a
 
 header :: Int -> Widget a
 header n = B.txt (T.replicate n "#")
 
 instance ToWidget Block where
-  toWidget uPat cPat (C.Para is) = toInlineChunk is uPat cPat
-  toWidget uPat cPat (C.Header n is) =
+  toWidget hSet (C.Para is) = toInlineChunk is hSet
+  toWidget hSet (C.Header n is) =
     B.withDefAttr clientHeaderAttr $
-      hBox [header n, B.txt " ", toInlineChunk is uPat cPat]
-  toWidget uPat cPat (C.Blockquote is) =
-    addQuoting (vBox $ fmap (toWidget uPat cPat) is)
-  toWidget uPat cPat (C.List _ l bs) = toList l bs uPat cPat
-  toWidget _ _ (C.CodeBlock ci tx) =
+      hBox [header n, B.txt " ", toInlineChunk is hSet]
+  toWidget hSet (C.Blockquote is) =
+    addQuoting (vBox $ fmap (toWidget hSet) is)
+  toWidget hSet (C.List _ l bs) = toList l bs hSet
+  toWidget _ (C.CodeBlock ci tx) =
       let f = maybe rawCodeBlockToWidget codeBlockToWidget mSyntax
           mSyntax = Sky.lookupSyntax (C.codeLang ci) Sky.defaultSyntaxMap
       in f tx
-  toWidget _ _ (C.HtmlBlock txt) = textWithCursor txt
-  toWidget _ _ (C.HRule) = B.vLimit 1 (B.fill '*')
+  toWidget _ (C.HtmlBlock txt) = textWithCursor txt
+  toWidget _ (C.HRule) = B.vLimit 1 (B.fill '*')
 
 quoteChar :: Char
 quoteChar = '>'
@@ -325,17 +334,17 @@ rawCodeBlockToWidget tx =
             expandEmpty s  = s
         in padding <+> (B.vBox $ textWithCursor <$> theLines)
 
-toInlineChunk :: Inlines -> UserSet -> ChannelSet -> Widget a
-toInlineChunk is uSet cSet = B.Widget B.Fixed B.Fixed $ do
+toInlineChunk :: Inlines -> HighlightSet -> Widget a
+toInlineChunk is hSet = B.Widget B.Fixed B.Fixed $ do
   ctx <- B.getContext
   let width = ctx^.B.availWidthL
       fs    = toFragments is
-      ws    = fmap gatherWidgets (split width uSet cSet fs)
+      ws    = fmap gatherWidgets (split width hSet fs)
   B.render (vBox (fmap hBox ws))
 
-toList :: ListType -> [Blocks] -> UserSet -> ChannelSet -> Widget a
-toList lt bs uSet cSet = vBox
-  [ B.txt i <+> (vBox (fmap (toWidget uSet cSet) b))
+toList :: ListType -> [Blocks] -> HighlightSet -> Widget a
+toList lt bs hSet = vBox
+  [ B.txt i <+> (vBox (fmap (toWidget hSet) b))
   | b <- bs | i <- is ]
   where is = case lt of
           C.Bullet _ -> repeat ("• ")
@@ -428,22 +437,23 @@ data SplitState = SplitState
   , splitCurrCol :: Int
   }
 
-separate :: UserSet -> ChannelSet -> Seq Fragment -> Seq Fragment
-separate uSet cSet sq = case viewl sq of
+separate :: HighlightSet -> Seq Fragment -> Seq Fragment
+separate hSet sq = case viewl sq of
   Fragment (TStr s) n :< xs -> gatherStrings s n xs
-  Fragment x n :< xs        -> Fragment x n <| separate uSet cSet xs
+  Fragment x n :< xs        -> Fragment x n <| separate hSet xs
   EmptyL                    -> S.empty
-  where gatherStrings s n rs =
+  where HighlightSet { hUserSet = uSet, hChannelSet = cSet } = hSet
+        gatherStrings s n rs =
           let s' = removeCursor s
           in case viewl rs of
             _ | s' `Set.member` uSet ||
                 (userSigil `T.isPrefixOf` s' && (T.drop 1 s' `Set.member` uSet)) ->
-                buildString s n <| separate uSet cSet rs
+                buildString s n <| separate hSet rs
             _ | (normalChannelSigil `T.isPrefixOf` s' && (T.drop 1 s' `Set.member` cSet)) ->
-                buildString s n <| separate uSet cSet rs
+                buildString s n <| separate hSet rs
             Fragment (TStr s'') n' :< xs
               | n == n' -> gatherStrings (s <> s'') n xs
-            Fragment _ _ :< _ -> buildString s n <| separate uSet cSet rs
+            Fragment _ _ :< _ -> buildString s n <| separate hSet rs
             EmptyL -> S.singleton (buildString s n)
         buildString s n =
             let s' = removeCursor s
@@ -465,10 +475,10 @@ separate uSet cSet sq = case viewl sq of
 removeCursor :: T.Text -> T.Text
 removeCursor = T.filter (/= cursorSentinel)
 
-split :: Int -> UserSet -> ChannelSet -> Seq Fragment -> Seq (Seq Fragment)
-split maxCols uSet cSet = splitChunks
+split :: Int -> HighlightSet -> Seq Fragment -> Seq (Seq Fragment)
+split maxCols hSet = splitChunks
                           . go (SplitState (S.singleton S.empty) 0)
-                          . separate uSet cSet
+                          . separate hSet
   where go st (viewl-> f :< fs) = go st' fs
           where st' =
                   if | fTextual f == TSoftBreak || fTextual f == TLineBreak ->

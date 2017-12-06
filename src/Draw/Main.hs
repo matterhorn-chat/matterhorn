@@ -98,15 +98,15 @@ data Token =
     -- misspelling list.
     deriving (Show)
 
-drawEditorContents :: UserSet -> ChannelSet -> ChatState -> [T.Text] -> Widget Name
-drawEditorContents uSet cSet st =
+drawEditorContents :: HighlightSet -> ChatState -> [T.Text] -> Widget Name
+drawEditorContents hSet st =
     let noHighlight = txt . T.unlines
     in case st^.csEditState.cedSpellChecker of
         Nothing -> noHighlight
         Just _ ->
             case S.null (st^.csEditState.cedMisspellings) of
                 True -> noHighlight
-                False -> doHighlightMisspellings uSet cSet (st^.csEditState.cedMisspellings)
+                False -> doHighlightMisspellings hSet (st^.csEditState.cedMisspellings)
 
 -- | This function takes a set of misspellings from the spell
 -- checker, the editor lines, and builds a rendering of the text with
@@ -159,11 +159,11 @@ drawEditorContents uSet cSet st =
 -- because 1) the user's input might not be valid markdown and 2) even
 -- if we did that, we'd still have to do this tokenization operation to
 -- annotate misspellings and reconstruct the user's raw input.
-doHighlightMisspellings :: UserSet -> ChannelSet -> S.Set T.Text -> [T.Text] -> Widget Name
-doHighlightMisspellings uSet cSet misspellings contents =
+doHighlightMisspellings :: HighlightSet -> S.Set T.Text -> [T.Text] -> Widget Name
+doHighlightMisspellings hSet misspellings contents =
     -- Traverse the input, gathering non-whitespace into tokens and
     -- checking if they appear in the misspelling collection
-    let whitelist = S.union uSet cSet
+    let whitelist = S.union (hUserSet hSet) (hChannelSet hSet)
 
         handleLine t | t == "" = txt " "
         handleLine t =
@@ -227,13 +227,13 @@ doHighlightMisspellings uSet cSet misspellings contents =
 
     in vBox $ handleLine <$> contents
 
-renderUserCommandBox :: UserSet -> ChannelSet -> ChatState -> Widget Name
-renderUserCommandBox uSet cSet st =
+renderUserCommandBox :: HighlightSet -> ChatState -> Widget Name
+renderUserCommandBox hSet st =
     let prompt = txt $ case st^.csEditState.cedEditMode of
             Replying _ _ -> "reply> "
             Editing _    ->  "edit> "
             NewPost      ->      "> "
-        inputBox = renderEditor (drawEditorContents uSet cSet st) True (st^.csEditState.cedEditor)
+        inputBox = renderEditor (drawEditorContents hSet st) True (st^.csEditState.cedEditor)
         curContents = getEditContents $ st^.csEditState.cedEditor
         multilineContent = length curContents > 1
         multilineHints =
@@ -251,14 +251,12 @@ renderUserCommandBox uSet cSet st =
                 in hBox [ replyArrow
                         , addEllipsis $ renderMessage st MessageData
                           { mdMessage           = msgWithoutParent
-                          , mdUserSet           = uSet
-                          , mdChannelSet        = cSet
+                          , mdHighlightSet      = hSet
                           , mdEditThreshold     = Nothing
                           , mdShowOlderEdits    = False
                           , mdRenderReplyParent = True
                           , mdIndentBlocks      = False
                           }
-                          -- (MessageData Nothing False msgWithoutParent True uSet cSet False)
                         ]
             _ -> emptyWidget
 
@@ -280,8 +278,8 @@ renderUserCommandBox uSet cSet st =
             True -> vLimit 5 inputBox <=> multilineHints
     in replyDisplay <=> commandBox
 
-renderChannelHeader :: UserSet -> ChannelSet -> ChatState -> ClientChannel -> Widget Name
-renderChannelHeader uSet cSet st chan =
+renderChannelHeader :: HighlightSet -> ChatState -> ClientChannel -> Widget Name
+renderChannelHeader hSet st chan =
     let chnType = chan^.ccInfo.cdType
         chnName = chan^.ccInfo.cdName
         topicStr = chan^.ccInfo.cdHeader
@@ -309,17 +307,17 @@ renderChannelHeader uSet cSet st chan =
         newlineToSpace '\n' = ' '
         newlineToSpace c = c
 
-    in renderText' uSet cSet (T.map newlineToSpace (channelNameString <> maybeTopic))
+    in renderText' hSet (T.map newlineToSpace (channelNameString <> maybeTopic))
 
-renderCurrentChannelDisplay :: UserSet -> ChannelSet -> ChatState -> Widget Name
-renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
+renderCurrentChannelDisplay :: HighlightSet -> ChatState -> Widget Name
+renderCurrentChannelDisplay hSet st = (header <+> conn) <=> messages
     where
     conn = case st^.csConnectionStatus of
       Connected -> emptyWidget
       Disconnected -> withDefAttr errorMessageAttr (str "[NOT CONNECTED]")
     header = withDefAttr channelHeaderAttr $
              padRight Max $
-             renderChannelHeader uSet cSet st chan
+             renderChannelHeader hSet st chan
     messages = padTop Max $ padRight (Pad 1) body
 
     body = chatText
@@ -338,7 +336,7 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
             cached (ChannelMessages cId) $
             vBox $ (withDefAttr loadMoreAttr $ hCenter $
                     str "<< Press C-b to load more messages >>") :
-                   (F.toList $ renderSingleMessage st editCutoff uSet cSet <$> channelMessages)
+                   (F.toList $ renderSingleMessage st editCutoff hSet <$> channelMessages)
         MessageSelect ->
             renderMessagesWithSelect (st^.csMessageSelect) channelMessages
         MessageSelectDeleteConfirm ->
@@ -363,7 +361,7 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
         in case s of
              Nothing -> renderLastMessages before
              Just m ->
-               unsafeRenderMessageSelection (m, (before, after)) (renderSingleMessage st Nothing uSet cSet)
+               unsafeRenderMessageSelection (m, (before, after)) (renderSingleMessage st Nothing hSet)
 
     cutoff = getNewMessageCutoff cId st
     editCutoff = getEditedMessageCutoff cId st
@@ -393,7 +391,7 @@ renderCurrentChannelDisplay uSet cSet st = (header <+> conn) <=> messages
                     False -> do
                       r <- withReaderT relaxHeight $
                            render $ padRight Max $
-                                  renderSingleMessage st editCutoff uSet cSet msg
+                                  renderSingleMessage st editCutoff hSet msg
                       return $ r^.imageL
 
     cId = st^.csCurrentChannelId
@@ -520,9 +518,9 @@ maybePreviewViewport w =
                 render $ vLimit previewMaxHeight $ viewport MessagePreviewViewport Vertical $
                          (Widget Fixed Fixed $ return result)
 
-inputPreview :: UserSet -> ChannelSet -> ChatState -> Widget Name
-inputPreview uSet cSet st | not $ st^.csShowMessagePreview = emptyWidget
-                          | otherwise = thePreview
+inputPreview :: HighlightSet -> ChatState -> Widget Name
+inputPreview hSet st | not $ st^.csShowMessagePreview = emptyWidget
+                     | otherwise = thePreview
     where
     uname = st^.csMe.userUsernameL
     -- Insert a cursor sentinel into the input text just before
@@ -545,8 +543,7 @@ inputPreview uSet cSet st | not $ st^.csShowMessagePreview = emptyWidget
                                   then noPreview
                                   else renderMessage st MessageData
                                          { mdMessage           = pm
-                                         , mdUserSet           = uSet
-                                         , mdChannelSet        = cSet
+                                         , mdHighlightSet      = hSet
                                          , mdEditThreshold     = Nothing
                                          , mdShowOlderEdits    = False
                                          , mdRenderReplyParent = True
@@ -555,8 +552,8 @@ inputPreview uSet cSet st | not $ st^.csShowMessagePreview = emptyWidget
                  in (maybePreviewViewport msgPreview) <=>
                     hBorderWithLabel (withDefAttr clientEmphAttr $ str "[Preview ↑]")
 
-userInputArea :: UserSet -> ChannelSet -> ChatState -> Widget Name
-userInputArea uSet cSet st =
+userInputArea :: HighlightSet -> ChatState -> Widget Name
+userInputArea hSet st =
     case st^.csMode of
         ChannelSelect -> renderChannelSelect st
         UrlSelect     -> hCenter $ hBox [ txt "Press "
@@ -570,7 +567,7 @@ userInputArea uSet cSet st =
                                         , txt " to stop scrolling and resume chatting."
                                         ]
         MessageSelectDeleteConfirm -> renderDeleteConfirm
-        _             -> renderUserCommandBox uSet cSet st
+        _             -> renderUserCommandBox hSet st
 
 renderDeleteConfirm :: Widget Name
 renderDeleteConfirm =
@@ -580,16 +577,18 @@ mainInterface :: ChatState -> Widget Name
 mainInterface st =
     vBox [ hBox [hLimit channelListWidth (renderChannelList st), vBorder, mainDisplay]
          , bottomBorder
-         , inputPreview uSet cSet st
-         , userInputArea uSet cSet st
+         , inputPreview hSet st
+         , userInputArea hSet st
          ]
     where
     channelListWidth = configChannelListWidth $ st^.csResources.crConfiguration
     mainDisplay = case st^.csMode of
         UrlSelect -> renderUrlList st
-        _         -> maybeSubdue $ renderCurrentChannelDisplay uSet cSet st
-    uSet = Set.fromList (st^..csUsers.to allUsers.folded.uiName)
-    cSet = Set.fromList (st^..csChannels.folded.ccInfo.cdName)
+        _         -> maybeSubdue $ renderCurrentChannelDisplay hSet st
+    hSet = HighlightSet
+             { hUserSet = Set.fromList (st^..csUsers.to allUsers.folded.uiName)
+             , hChannelSet = Set.fromList (st^..csChannels.folded.ccInfo.cdName)
+             }
 
     bottomBorder = case st^.csMode of
         MessageSelect -> messageSelectBottomBar st
