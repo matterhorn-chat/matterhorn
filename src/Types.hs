@@ -121,6 +121,7 @@ module Types
   , requestQuit
   , clientPostToMessage
   , getMessageForPostId
+  , getParentMessage
   , resetSpellCheckTimer
   , withChannel
   , withChannelOrDefault
@@ -133,6 +134,11 @@ module Types
 
   , userSigil
   , normalChannelSigil
+
+  , HighlightSet(..)
+  , UserSet
+  , ChannelSet
+  , getHighlightSet
   )
 where
 
@@ -159,10 +165,10 @@ import qualified Data.HashMap.Strict as HM
 import           Data.List (sort, partition, sortBy)
 import           Data.Maybe
 import           Data.Monoid
-import           Data.Set (Set)
+import qualified Data.Set as Set
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( at, makeLenses, lens, (&), (^.), (%~), (.~), (^?!)
-                                     , _Just, Traversal', preuse )
+                                     , _Just, Traversal', preuse, (^..), folded, to )
 import           Network.Mattermost
 import           Network.Mattermost.Exceptions
 import           Network.Mattermost.Lenses
@@ -368,7 +374,7 @@ data ChatResources = ChatResources
   , _crQuitCondition :: MVar ()
   , _crUserStatusLock :: MVar ()
   , _crConfiguration :: Config
-  , _crFlaggedPosts  :: Set PostId
+  , _crFlaggedPosts  :: Set.Set PostId
   , _crPreferences   :: Seq.Seq Preference
   }
 
@@ -668,6 +674,12 @@ isMine st msg = (Just $ st^.csMe.userUsernameL) == msg^.mUserName
 getMessageForPostId :: ChatState -> PostId -> Maybe Message
 getMessageForPostId st pId = st^.csPostMap.at(pId)
 
+getParentMessage :: ChatState -> Message -> Maybe Message
+getParentMessage st msg
+  | InReplyTo pId <- msg^.mInReplyToMsg
+    = st^.csPostMap.at(pId)
+  | otherwise = Nothing
+
 getUsernameForUserId :: ChatState -> UserId -> Maybe T.Text
 getUsernameForUserId st uId = _uiName <$> findUserById uId (st^.csUsers)
 
@@ -768,3 +780,19 @@ compareUserInfo field u1 u2
       LT
     | otherwise =
       (u1^.field) `compare` (u2^.field)
+
+-- * HighlightSet
+
+type UserSet = Set.Set T.Text
+type ChannelSet = Set.Set T.Text
+
+data HighlightSet = HighlightSet
+  { hUserSet    :: Set.Set T.Text
+  , hChannelSet :: Set.Set T.Text
+  }
+
+getHighlightSet :: ChatState -> HighlightSet
+getHighlightSet st = HighlightSet
+  { hUserSet = Set.fromList (st^..csUsers.to allUsers.folded.uiName)
+  , hChannelSet = Set.fromList (st^..csChannels.folded.ccInfo.cdName)
+  }

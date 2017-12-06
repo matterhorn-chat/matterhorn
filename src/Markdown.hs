@@ -4,10 +4,7 @@
 {-# LANGUAGE ViewPatterns     #-}
 
 module Markdown
-  ( UserSet
-  , ChannelSet
-  , MessageData(..)
-  , HighlightSet(..)
+  ( MessageData(..)
   , renderMessage
   , renderText
   , renderText'
@@ -46,7 +43,6 @@ import           Data.Sequence ( Seq
                                , viewr)
 import qualified Data.Sequence as S
 import qualified Skylighting as Sky
-import           Data.Set (Set)
 import qualified Data.Set as Set
 import qualified Graphics.Vty as V
 import           Lens.Micro.Platform ((^.))
@@ -54,17 +50,9 @@ import           Control.Monad              (join)
 
 import           Network.Mattermost.Lenses (postUpdateAtL, postCreateAtL)
 import           Themes
-import           Types (ChatState, getMessageForPostId, userSigil, normalChannelSigil)
+import           Types (HighlightSet(..), userSigil, normalChannelSigil)
 import           Types.Posts
 import           Types.Messages
-
-type UserSet = Set Text
-type ChannelSet = Set Text
-
-data HighlightSet = HighlightSet
-  { hUserSet    :: Set Text
-  , hChannelSet :: Set Text
-  }
 
 emptyHSet :: HighlightSet
 emptyHSet = HighlightSet Set.empty Set.empty
@@ -115,9 +103,9 @@ data MessageData = MessageData
   { mdEditThreshold     :: Maybe UTCTime
   , mdShowOlderEdits    :: Bool
   , mdMessage           :: Message
+  , mdParentMessage     :: Maybe Message
   , mdRenderReplyParent :: Bool
   , mdHighlightSet      :: HighlightSet
---  , mdChannelSet        :: ChannelSet
   , mdIndentBlocks      :: Bool
   }
 
@@ -133,8 +121,8 @@ data MessageData = MessageData
 -- The 'mdShowOlderEdits' argument is a value read from the user's
 -- configuration file that indicates that "edited" markers should be
 -- shown for old messages (i.e., ignore the mdEditThreshold value).
-renderMessage :: ChatState -> MessageData -> Widget a
-renderMessage st md@MessageData { mdMessage = msg, .. } =
+renderMessage :: MessageData -> Widget a
+renderMessage md@MessageData { mdMessage = msg, .. } =
     let msgUsr = case msg^.mUserName of
           Just u
             | msg^.mType `elem` omitUsernameTypes -> Nothing
@@ -179,15 +167,17 @@ renderMessage st md@MessageData { mdMessage = msg, .. } =
        then msgWidget
        else case msg^.mInReplyToMsg of
           NotAReply -> msgWidget
-          InReplyTo parentId ->
-              case getMessageForPostId st parentId of
+          InReplyTo _ ->
+              case mdParentMessage of
                   Nothing -> withParent (B.str "[loading...]")
                   Just pm ->
-                      let parentMsg = renderMessage st md { mdShowOlderEdits = False
-                                                          , mdMessage = pm
-                                                          , mdRenderReplyParent = False
-                                                          , mdIndentBlocks = False
-                                                          }
+                      let parentMsg = renderMessage md
+                            { mdShowOlderEdits    = False
+                            , mdMessage           = pm
+                            , mdParentMessage     = Nothing
+                            , mdRenderReplyParent = False
+                            , mdIndentBlocks      = False
+                            }
                       in withParent (addEllipsis $ B.forceAttr replyParentAttr parentMsg)
 
     where

@@ -14,7 +14,6 @@ import           Data.Time.Format ( formatTime
 import           Data.Time.LocalTime ( TimeZone, utcToLocalTime
                                      , localTimeToUTC, localDay
                                      , LocalTime(..), TimeOfDay(..) )
-import qualified Data.Set as Set
 import           Lens.Micro.Platform
 import           Network.Mattermost
 import           Network.Mattermost.Lenses
@@ -32,7 +31,6 @@ import Types.Users
 import Draw.Main
 import Draw.Messages
 import Draw.Util
-import Markdown
 
 hLimitWithPadding :: Int -> Widget n -> Widget n
 hLimitWithPadding pad contents = Widget
@@ -75,12 +73,6 @@ drawPostsBox contents st =
             then ": " <> terms
             else " (" <> (T.pack . show . length) (st^.csPostListOverlay.postListPosts) <> "): " <> terms
 
-        -- User and channel set, for use in message rendering
-        hSet = HighlightSet
-                 { hUserSet = Set.fromList (st^..csUsers.to allUsers.folded.uiName)
-                 , hChannelSet = Set.fromList (st^..csChannels.folded.ccInfo.cdName)
-                 }
-
         messages = insertDateHeaders
                      (getDateFormat st)
                      (st^.timeZone)
@@ -103,7 +95,7 @@ drawPostsBox contents st =
 
         -- The render-message function we're using
         renderMessageForOverlay msg =
-          let renderedMsg = renderSingleMessage st Nothing hSet msg
+          let renderedMsg = renderSingleMessage st Nothing msg
           in case msg^.mOriginalPost of
             -- We should factor out some of the channel name logic at
             -- some point, but we can do that later
