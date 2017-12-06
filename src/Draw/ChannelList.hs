@@ -166,7 +166,7 @@ getOrdinaryChannels st =
     | n <- (st ^. csNames . cnChans)
     , let Just chan = st ^. csNames . cnToChanId . at n
           unread = hasUnread st chan
-          recent = Just chan == st^.csRecentChannel
+          recent = isRecentChannel st chan
           current = isCurrentChannel st chan
           sigil = case st ^. csEditState.cedLastChannelInput.at chan of
             Nothing      -> T.singleton normalChannelSigil
@@ -187,7 +187,7 @@ getDmChannels st =
               Just ("", _) -> T.singleton $ userSigilFromInfo u
               _            -> "»"  -- shows that user has a message in-progress
           uname = u^.uiName
-          recent = maybe False ((== st^.csRecentChannel) . Just) m_chanId
+          recent = maybe False (isRecentChannel st) m_chanId
           m_chanId = st^.csNames.cnToChanId.at (u^.uiName)
           unread = maybe False (hasUnread st) m_chanId
           current = maybe False (isCurrentChannel st) m_chanId

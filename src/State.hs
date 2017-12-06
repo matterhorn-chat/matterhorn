@@ -33,6 +33,7 @@ module State
   , channelPageUp
   , channelPageDown
   , isCurrentChannel
+  , isRecentChannel
   , getNewMessageCutoff
   , getEditedMessageCutoff
   , setChannelTopic
@@ -507,6 +508,9 @@ deleteCurrentChannel = do
 
 isCurrentChannel :: ChatState -> ChannelId -> Bool
 isCurrentChannel st cId = st^.csCurrentChannelId == cId
+
+isRecentChannel :: ChatState -> ChannelId -> Bool
+isRecentChannel st cId = st^.csRecentChannel == Just cId
 
 -- | Update the UI to reflect the flagged/unflagged state of a
 -- message. This __does not__ talk to the Mattermost server, but
