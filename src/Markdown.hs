@@ -6,6 +6,7 @@
 module Markdown
   ( UserSet
   , ChannelSet
+  , MessageData(..)
   , renderMessage
   , renderText
   , renderText'
@@ -99,20 +100,32 @@ appendEditSentinel sentinel b =
         C.Para is -> S.singleton $ C.Para (is |> C.Str " " |> m)
         _ -> S.fromList [b, s]
 
+-- | A bundled structure that includes all the information necessary
+-- to render a given message
+data MessageData = MessageData
+  { mdEditThreshold     :: Maybe UTCTime
+  , mdShowOlderEdits    :: Bool
+  , mdMessage           :: Message
+  , mdRenderReplyParent :: Bool
+  , mdUserSet           :: UserSet
+  , mdChannelSet        :: ChannelSet
+  , mdIndentBlocks      :: Bool
+  }
+
 -- | renderMessage performs markdown rendering of the specified message.
 --
--- The 'mEditThreshold' argument specifies a time boundary where
+-- The 'mdEditThreshold' argument specifies a time boundary where
 -- "edited" markers are not shown for any messages older than this
 -- mark (under the presumption that they are distracting for really
--- old stuff).  The mEditThreshold will be None if there is no
+-- old stuff).  The mdEditThreshold will be None if there is no
 -- boundary known yet; the boundary is typically set to the "new"
 -- message boundary.
 --
--- The 'showOlderEdits' argument is a value read from the user's
+-- The 'mdShowOlderEdits' argument is a value read from the user's
 -- configuration file that indicates that "edited" markers should be
--- shown for old messages (i.e., ignore the mEditThreshold value).
-renderMessage :: ChatState -> Maybe UTCTime -> Bool -> Message -> Bool -> UserSet -> ChannelSet -> Bool -> Widget a
-renderMessage st mEditThreshold showOlderEdits msg renderReplyParent uSet cSet indentBlocks =
+-- shown for old messages (i.e., ignore the mdEditThreshold value).
+renderMessage :: ChatState -> MessageData -> Widget a
+renderMessage st md@MessageData { mdMessage = msg, .. } =
     let msgUsr = case msg^.mUserName of
           Just u
             | msg^.mType `elem` omitUsernameTypes -> Nothing
@@ -140,20 +153,20 @@ renderMessage st mEditThreshold showOlderEdits msg renderReplyParent uSet cSet i
             Nothing -> bs
             Just p ->
                 if p^.postUpdateAtL > p^.postCreateAtL
-                then case mEditThreshold of
+                then case mdEditThreshold of
                     Just cutoff | p^.postUpdateAtL >= cutoff ->
                         addEditSentinel editRecentlyMarkingSentinel bs
-                    _ -> if showOlderEdits
+                    _ -> if mdShowOlderEdits
                          then addEditSentinel editMarkingSentinel bs
                          else bs
                 else bs
 
         augmentedText = maybeAugment $ msg^.mText
-        rmd = renderMarkdown uSet cSet augmentedText
+        rmd = renderMarkdown mdUserSet mdChannelSet augmentedText
         msgWidget =
             (layout nameElems rmd . viewl) augmentedText
         withParent p = (replyArrow <+> p) B.<=> msgWidget
-    in if not renderReplyParent
+    in if not mdRenderReplyParent
        then msgWidget
        else case msg^.mInReplyToMsg of
           NotAReply -> msgWidget
@@ -161,7 +174,11 @@ renderMessage st mEditThreshold showOlderEdits msg renderReplyParent uSet cSet i
               case getMessageForPostId st parentId of
                   Nothing -> withParent (B.str "[loading...]")
                   Just pm ->
-                      let parentMsg = renderMessage st mEditThreshold False pm False uSet cSet False
+                      let parentMsg = renderMessage st md { mdShowOlderEdits = False
+                                                          , mdMessage = pm
+                                                          , mdRenderReplyParent = False
+                                                          , mdIndentBlocks = False
+                                                          }
                       in withParent (addEllipsis $ B.forceAttr replyParentAttr parentMsg)
 
     where
@@ -175,7 +192,7 @@ renderMessage st mEditThreshold showOlderEdits msg renderReplyParent uSet cSet i
             | F.any breakCheck inlns      = multiLnLayout n m
         layout n m _                      = hBox $ join [n, return m]
         multiLnLayout n m =
-            if indentBlocks
+            if mdIndentBlocks
                then vBox [ hBox n
                          , hBox [B.txt "  ", m]
                          ]
