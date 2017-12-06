@@ -30,6 +30,7 @@ import           Network.Mattermost.Logging (mmLoggerDebug)
 import           Config
 import           InputHistory
 import           Login
+import           RunState
 import           State (updateMessageFlag)
 import           State.Common
 import           TeamSelect
@@ -164,13 +165,27 @@ initializeState cr myTeam myUser = do
       requestChan = cr^.crRequestQueue
       myTeamId = getId myTeam
 
+ -- Create a predicate to find the last selected channel by reading the
+ -- run state file. If unable to read or decode or validate the file, this
+ -- predicate is just `isTownSquare`.
+  isLastSelectedChannel <- do
+    result <- readRunState . teamId $ myTeam
+    case result of
+      Right runState | isValidRunState cr myUser runState -> return $ \c ->
+           channelId c == runState^.rsChannelId
+      _ -> return isTownSquare
+
   -- Get all channels, but filter down to just the one we want to start
   -- in. We get all, rather than requesting by name or ID, because
-  -- we don't know whether the server will give us a last-viewed
-  -- preference, and when it doesn't, we need to look for Town Square
-  -- by name. Even this is ultimately not entirely correct since Town
-  -- Square can be renamed!
-  chans <- Seq.filter isTownSquare <$> mmGetChannels session myTeamId
+  -- we don't know whether the server will give us a last-viewed preference.
+  -- We first try to find a channel matching with the last selected channel ID,
+  -- failing which we look for the Town Square channel by name.
+  -- This is not entirely correct since the Town Square channel can be renamed!
+  userChans <- mmGetChannels session myTeamId
+  let lastSelectedChans = Seq.filter isLastSelectedChannel userChans
+      chans = if Seq.null lastSelectedChans
+                then Seq.filter isTownSquare userChans
+                else lastSelectedChans
 
   -- Since the only channel we are dealing with is by construction the
   -- last channel, we don't have to consider other cases here:

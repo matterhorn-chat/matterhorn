@@ -66,6 +66,7 @@ executable matterhorn
                        Events.LeaveChannelConfirm
                        Events.DeleteChannelConfirm
                        HelpTopics
+                       RunState
                        Scripts
                        TimeUtils
                        Types

@@ -3,6 +3,9 @@ module FilePaths
   ( historyFilePath
   , historyFileName
 
+  , runStateFilePath
+  , runStateFileName
+
   , configFileName
 
   , xdgName
@@ -19,6 +22,7 @@ import Prelude.Compat
 import Control.Monad (forM, filterM)
 import Data.Monoid ((<>))
 import Data.Maybe (listToMaybe)
+import Data.Text (unpack, Text)
 import System.Directory ( doesFileExist
                         , doesDirectoryExist
                         , getDirectoryContents
@@ -34,11 +38,18 @@ xdgName = "matterhorn"
 historyFileName :: FilePath
 historyFileName = "history.txt"
 
+runStateFileName :: Text -> FilePath
+runStateFileName teamId = "run_state_" ++ unpack teamId ++ ".txt"
+
 configFileName :: FilePath
 configFileName = "config.ini"
 
 historyFilePath :: IO FilePath
 historyFilePath = getUserConfigFile xdgName historyFileName
+
+runStateFilePath :: Text -> IO FilePath
+runStateFilePath teamId =
+  getUserConfigFile xdgName (runStateFileName teamId)
 
 -- | Find a specified configuration file by looking in all of the
 -- supported locations.
