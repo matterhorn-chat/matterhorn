@@ -455,7 +455,7 @@ separate hSet sq = case viewl sq of
                   | removeCursor s' `Set.member` uSet ->
                       Fragment (TStr s) (User s)
                   | Just uname <- userSigil `T.stripPrefix` removeCursor s
-                  , removeCursor uname `Set.member` uSet ->
+                    , removeCursor uname `Set.member` uSet ->
                       Fragment (TStr s) (User uname)
                   | normalChannelSigil `T.isPrefixOf` (removeCursor s) &&
                     (T.drop 1 (removeCursor s) `Set.member` cSet) ->
