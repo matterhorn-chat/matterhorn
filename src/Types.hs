@@ -164,7 +164,6 @@ import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( at, makeLenses, lens, (&), (^.), (%~), (.~), (^?!)
                                      , _Just, Traversal', preuse )
 import           Network.Mattermost
-import           Network.Mattermost.Types (ChannelId(..))
 import           Network.Mattermost.Exceptions
 import           Network.Mattermost.Lenses
 import           Network.Mattermost.WebSocket
