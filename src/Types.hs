@@ -193,27 +193,27 @@ data PasswordSource =
 -- | These are all the values that can be read in our configuration
 -- file.
 data Config = Config
-  { configUser           :: Maybe T.Text
-  , configHost           :: Maybe T.Text
-  , configTeam           :: Maybe T.Text
-  , configPort           :: Int
-  , configPass           :: Maybe PasswordSource
-  , configTimeFormat     :: Maybe T.Text
-  , configDateFormat     :: Maybe T.Text
-  , configTheme          :: Maybe T.Text
-  , configThemeCustomizationFile :: Maybe T.Text
-  , configSmartBacktick  :: Bool
-  , configURLOpenCommand :: Maybe T.Text
+  { configUser                      :: Maybe T.Text
+  , configHost                      :: Maybe T.Text
+  , configTeam                      :: Maybe T.Text
+  , configPort                      :: Int
+  , configPass                      :: Maybe PasswordSource
+  , configTimeFormat                :: Maybe T.Text
+  , configDateFormat                :: Maybe T.Text
+  , configTheme                     :: Maybe T.Text
+  , configThemeCustomizationFile    :: Maybe T.Text
+  , configSmartBacktick             :: Bool
+  , configURLOpenCommand            :: Maybe T.Text
   , configURLOpenCommandInteractive :: Bool
-  , configActivityBell   :: Bool
-  , configShowBackground :: BackgroundInfo
-  , configShowMessagePreview :: Bool
-  , configEnableAspell   :: Bool
-  , configAspellDictionary :: Maybe T.Text
-  , configUnsafeUseHTTP :: Bool
-  , configChannelListWidth :: Int
-  , configShowOlderEdits :: Bool
-  , configAbsPath        :: Maybe FilePath
+  , configActivityBell              :: Bool
+  , configShowBackground            :: BackgroundInfo
+  , configShowMessagePreview        :: Bool
+  , configEnableAspell              :: Bool
+  , configAspellDictionary          :: Maybe T.Text
+  , configUnsafeUseHTTP             :: Bool
+  , configChannelListWidth          :: Int
+  , configShowOlderEdits            :: Bool
+  , configAbsPath                   :: Maybe FilePath
   } deriving (Eq, Show)
 
 data BackgroundInfo = Disabled | Active | ActiveCount deriving (Eq, Show)
