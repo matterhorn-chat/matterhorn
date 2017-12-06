@@ -75,6 +75,7 @@ data UserStatus
   = Online
   | Away
   | Offline
+  | DoNotDisturb
   | Other T.Text
     deriving (Eq, Show)
 
@@ -83,6 +84,7 @@ statusFromText t = case t of
   "online"  -> Online
   "offline" -> Offline
   "away"    -> Away
+  "dnd"     -> DoNotDisturb
   _         -> Other t
 
 -- ** 'UserInfo' lenses

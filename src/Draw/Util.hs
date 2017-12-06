@@ -48,10 +48,11 @@ withBrackets w = hBox [str "[", w, str "]"]
 
 userSigilFromInfo :: UserInfo -> Char
 userSigilFromInfo u = case u^.uiStatus of
-    Offline -> ' '
-    Online  -> '+'
-    Away    -> '-'
-    Other _ -> '?'
+    Offline      -> ' '
+    Online       -> '+'
+    Away         -> '-'
+    DoNotDisturb -> '×'
+    Other _      -> '?'
 
 mkChannelName :: ChannelInfo -> T.Text
 mkChannelName c = T.cons sigil (c^.cdName)
