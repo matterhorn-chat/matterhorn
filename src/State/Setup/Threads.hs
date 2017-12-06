@@ -21,7 +21,7 @@ import           Data.List (isInfixOf)
 import qualified Data.Text as T
 import           Data.Maybe (catMaybes)
 import           Data.Monoid ((<>))
-import           Data.Time.LocalTime ( TimeZone(..), getCurrentTimeZone )
+import           Data.Time.LocalTime.TimeZone.Series (TimeZoneSeries)
 import           Lens.Micro.Platform
 import           System.Exit (ExitCode(ExitSuccess))
 import           System.IO (hPutStrLn, hFlush)
@@ -33,6 +33,7 @@ import           Network.Mattermost
 
 import           State.Common
 import           State.Editing (requestSpellCheck)
+import           TimeUtils (lookupLocalTimeZone)
 import           Types
 import           Types.Users
 
@@ -105,7 +106,7 @@ startSubprocessLoggerThread logChan requestChan = do
 
     void $ forkIO $ logMonitor Nothing
 
-startTimezoneMonitorThread :: TimeZone -> RequestChan -> IO ()
+startTimezoneMonitorThread :: TimeZoneSeries -> RequestChan -> IO ()
 startTimezoneMonitorThread tz requestChan = do
   -- Start the timezone monitor thread
   let timezoneMonitorSleepInterval = minutes 5
@@ -114,7 +115,7 @@ startTimezoneMonitorThread tz requestChan = do
       timezoneMonitor prevTz = do
         threadDelay timezoneMonitorSleepInterval
 
-        newTz <- getCurrentTimeZone
+        newTz <- lookupLocalTimeZone
         when (newTz /= prevTz) $
             STM.atomically $ STM.writeTChan requestChan $ do
                 return $ timeZone .= newTz
@@ -122,6 +123,7 @@ startTimezoneMonitorThread tz requestChan = do
         timezoneMonitor newTz
 
   void $ forkIO (timezoneMonitor tz)
+
 
 maybeStartSpellChecker :: Config -> BChan MHEvent -> IO (Maybe (Aspell, IO ()))
 maybeStartSpellChecker config eventQueue = do

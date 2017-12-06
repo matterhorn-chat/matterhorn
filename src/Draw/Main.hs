@@ -15,11 +15,7 @@ import           Control.Monad (foldM)
 import           Control.Monad.Trans.Reader (withReaderT)
 import           Data.Time.Clock (UTCTime(..))
 import           Data.Time.Calendar (fromGregorian)
-import           Data.Time.Format ( formatTime
-                                  , defaultTimeLocale )
-import           Data.Time.LocalTime ( TimeZone, utcToLocalTime
-                                     , localTimeToUTC, localDay
-                                     , LocalTime(..), midnight )
+import           Data.Time.LocalTime.TimeZone.Series (TimeZoneSeries)
 import qualified Data.Sequence as Seq
 import qualified Data.Set as S
 import qualified Data.Foldable as F
@@ -37,9 +33,13 @@ import           Network.Mattermost.Lenses
 
 import qualified Graphics.Vty as Vty
 
+import           Draw.ChannelList (renderChannelList)
+import           Draw.Messages
+import           Draw.Util
 import           Markdown
 import           State
 import           Themes
+import           TimeUtils (justAfter, justBefore)
 import           Types
 import           Types.Channels ( NewMessageIndicator(..)
                                 , ChannelState(..)
@@ -48,12 +48,9 @@ import           Types.Channels ( NewMessageIndicator(..)
                                 , cdCurrentState
                                 , cdName, cdType, cdHeader, cdMessages
                                 , findChannelById)
-import           Types.Posts
 import           Types.Messages
+import           Types.Posts
 import           Types.Users
-import           Draw.ChannelList (renderChannelList)
-import           Draw.Messages
-import           Draw.Util
 
 previewFromInput :: T.Text -> T.Text -> Maybe Message
 previewFromInput _ s | s == T.singleton cursorSentinel = Nothing
@@ -370,10 +367,11 @@ renderCurrentChannelDisplay st = (header <+> conn) <=> messages
     cutoff = getNewMessageCutoff cId st
     editCutoff = getEditedMessageCutoff cId st
     channelMessages =
-        insertTransitions (getDateFormat st)
-                          (st ^. timeZone)
+        insertTransitions (getMessageListing cId st)
                           cutoff
-                          (getMessageListing cId st)
+                          (getDateFormat st)
+                          (st ^. timeZone)
+
 
     renderLastMessages :: RetrogradeMessages -> Widget Name
     renderLastMessages msgs =
@@ -414,10 +412,9 @@ getMessageListing :: ChannelId -> ChatState -> Messages
 getMessageListing cId st =
     st ^?! csChannels.folding (findChannelById cId) . ccContents . cdMessages
 
-insertTransitions :: Text -> TimeZone -> Maybe NewMessageIndicator -> Messages -> Messages
-insertTransitions datefmt tz cutoff ms = foldr addMessage ms transitions
-    where transitions = newMessagesT <> dateT
-          anyNondeletedNewMessages t =
+insertTransitions :: Messages -> Maybe NewMessageIndicator -> Text -> TimeZoneSeries -> Messages
+insertTransitions ms cutoff = insertDateMarkers $ foldr addMessage ms newMessagesT
+    where anyNondeletedNewMessages t =
               isJust $ findLatestUserMessage (not . view mDeleted) (messagesAfter t ms)
           newMessagesT = case cutoff of
               Nothing -> []
@@ -428,23 +425,6 @@ insertTransitions datefmt tz cutoff ms = foldr addMessage ms transitions
               Just (NewPostsStartingAt t)
                   | anyNondeletedNewMessages (justBefore t) -> [newMessagesMsg $ justBefore t]
                   | otherwise -> []
-
-          dateT = fmap dateMsg dateRange
-          dateRange = let dr = foldr checkDateChange [] ms
-                      in if length dr > 1 then tail dr else []
-          checkDateChange m [] | m^.mDeleted = []
-                               | otherwise = [dayStart $ m^.mDate]
-          checkDateChange m dl = if dayOf (head dl) == dayOf (m^.mDate) || m^.mDeleted
-                                 then dl
-                                 else dayStart (m^.mDate) : dl
-          dayOf = localDay . utcToLocalTime tz
-          dayStart dt = localTimeToUTC tz $ LocalTime (dayOf dt) $ midnight
-          justBefore (UTCTime d t) = UTCTime d $ pred t
-          justAfter (UTCTime d t) = UTCTime d $ succ t
-          dateMsg d = newMessageOfType (T.pack $ formatTime defaultTimeLocale
-                                                 (T.unpack datefmt)
-                                                 (utcToLocalTime tz d))
-                      (C DateTransition) d
           newMessagesMsg d = newMessageOfType (T.pack "New Messages")
                              (C NewMessagesTransition) d
 

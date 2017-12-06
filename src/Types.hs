@@ -160,7 +160,7 @@ import qualified Data.Sequence as Seq
 import qualified Data.Set as S
 import           Data.HashMap.Strict (HashMap)
 import           Data.Time.Clock (UTCTime)
-import           Data.Time.LocalTime (TimeZone)
+import           Data.Time.LocalTime.TimeZone.Series (TimeZoneSeries)
 import qualified Data.HashMap.Strict as HM
 import           Data.List (sort, partition, sortBy)
 import           Data.Maybe
@@ -478,7 +478,7 @@ data ChatState = ChatState
   , _csChannels                    :: ClientChannels
   , _csPostMap                     :: HashMap PostId Message
   , _csUsers                       :: Users
-  , _timeZone                      :: TimeZone
+  , _timeZone                      :: TimeZoneSeries
   , _csEditState                   :: ChatEditState
   , _csMode                        :: Mode
   , _csShowMessagePreview          :: Bool
@@ -496,7 +496,7 @@ newState :: ChatResources
          -> Zipper ChannelId
          -> User
          -> Team
-         -> TimeZone
+         -> TimeZoneSeries
          -> InputHistory
          -> Maybe (Aspell, IO ())
          -> ChatState

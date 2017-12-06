@@ -19,7 +19,6 @@ import qualified Data.HashMap.Strict as HM
 import           Data.Maybe (listToMaybe, fromMaybe, fromJust, isNothing)
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
-import           Data.Time.LocalTime (getCurrentTimeZone)
 import           Lens.Micro.Platform
 import           System.Exit (exitFailure)
 import           System.FilePath ((</>), isRelative, dropFileName)
@@ -35,6 +34,7 @@ import           State (updateMessageFlag)
 import           State.Common
 import           TeamSelect
 import           Themes
+import           TimeUtils (lookupLocalTimeZone)
 import           State.Setup.Threads
 import           Types
 import           Types.Channels
@@ -179,7 +179,7 @@ initializeState cr myTeam myUser = do
           state = ChanInitialSelect
       return (getId c, cChannel)
 
-  tz    <- getCurrentTimeZone
+  tz    <- lookupLocalTimeZone
   hist  <- do
       result <- readHistory
       case result of
