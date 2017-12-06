@@ -249,7 +249,16 @@ renderUserCommandBox uSet cSet st =
             Replying msg _ ->
                 let msgWithoutParent = msg & mInReplyToMsg .~ NotAReply
                 in hBox [ replyArrow
-                        , addEllipsis $ renderMessage st (MessageData Nothing False msgWithoutParent True uSet cSet False)
+                        , addEllipsis $ renderMessage st MessageData
+                          { mdMessage           = msgWithoutParent
+                          , mdUserSet           = uSet
+                          , mdChannelSet        = cSet
+                          , mdEditThreshold     = Nothing
+                          , mdShowOlderEdits    = False
+                          , mdRenderReplyParent = True
+                          , mdIndentBlocks      = False
+                          }
+                          -- (MessageData Nothing False msgWithoutParent True uSet cSet False)
                         ]
             _ -> emptyWidget
 
@@ -534,7 +543,15 @@ inputPreview uSet cSet st | not $ st^.csShowMessagePreview = emptyWidget
                        Nothing -> noPreview
                        Just pm -> if T.null curStr
                                   then noPreview
-                                  else renderMessage st (MessageData Nothing False pm True uSet cSet True)
+                                  else renderMessage st MessageData
+                                         { mdMessage           = pm
+                                         , mdUserSet           = uSet
+                                         , mdChannelSet        = cSet
+                                         , mdEditThreshold     = Nothing
+                                         , mdShowOlderEdits    = False
+                                         , mdRenderReplyParent = True
+                                         , mdIndentBlocks      = True
+                                         }
                  in (maybePreviewViewport msgPreview) <=>
                     hBorderWithLabel (withDefAttr clientEmphAttr $ str "[Preview ↑]")
 
