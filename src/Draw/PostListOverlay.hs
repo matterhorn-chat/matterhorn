@@ -9,7 +9,6 @@ import           Control.Monad.Trans.Reader (withReaderT)
 import qualified Data.Foldable as F
 import           Data.Monoid ((<>))
 import qualified Data.Text as T
-import qualified Data.Set as Set
 import           Lens.Micro.Platform
 import           Network.Mattermost
 import           Network.Mattermost.Lenses
@@ -51,10 +50,6 @@ drawPostsBox contents st =
           PostListSearch terms searching -> "Search results" <> if searching
             then ": " <> terms
             else " (" <> (T.pack . show . length) (st^.csPostListOverlay.postListPosts) <> "): " <> terms
-
-        -- User and channel set, for use in message rendering
-        uSet = Set.fromList (st^..csUsers.to allUsers.folded.uiName)
-        cSet = Set.fromList (st^..csChannels.folded.ccInfo.cdName)
 
         messages = insertDateMarkers
                      (st^.csPostListOverlay.postListPosts)
