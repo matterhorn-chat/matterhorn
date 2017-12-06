@@ -122,7 +122,7 @@ renderChannelListEntry entry =
                   | otherwise -> id
     entryWidget = case entryUserStatus entry of
                     Just Offline -> withDefAttr clientMessageAttr . txt
-                    Just _       -> colorUsername
+                    Just _       -> colorUsername (entryLabel entry)
                     Nothing      -> txt
     decorateMentions
       | entryMentions entry > 9 =
@@ -169,8 +169,8 @@ getOrdinaryChannels st =
           recent = isRecentChannel st chan
           current = isCurrentChannel st chan
           sigil = case st ^. csEditState.cedLastChannelInput.at chan of
-            Nothing      -> T.singleton normalChannelSigil
-            Just ("", _) -> T.singleton normalChannelSigil
+            Nothing      -> normalChannelSigil
+            Just ("", _) -> normalChannelSigil
             _            -> "»"
           mentions = maybe 0 id (st^?csChannel(chan).ccInfo.cdMentionCount)
     ]
@@ -179,13 +179,13 @@ getOrdinaryChannels st =
 -- to be displayed in the ChannelList sidebar.
 getDmChannels :: ChatState -> [ChannelListEntry]
 getDmChannels st =
-    [ ChannelListEntry sigil uname unread mentions recent current (Just $ u^.uiStatus)
+    [ ChannelListEntry (T.cons sigil " ") uname unread mentions recent current (Just $ u^.uiStatus)
     | u <- sortedUserList st
     , let sigil =
             case do { cId <- m_chanId; st^.csEditState.cedLastChannelInput.at cId } of
-              Nothing      -> T.singleton $ userSigilFromInfo u
-              Just ("", _) -> T.singleton $ userSigilFromInfo u
-              _            -> "»"  -- shows that user has a message in-progress
+              Nothing      -> userSigilFromInfo u
+              Just ("", _) -> userSigilFromInfo u
+              _            -> '»'  -- shows that user has a message in-progress
           uname = u^.uiName
           recent = maybe False (isRecentChannel st) m_chanId
           m_chanId = st^.csNames.cnToChanId.at (u^.uiName)

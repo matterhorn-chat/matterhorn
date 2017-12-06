@@ -121,15 +121,15 @@ renderMessage st mEditThreshold showOlderEdits msg renderReplyParent uSet cSet i
         nameElems = case msgUsr of
           Just un
             | msg^.mType == CP Emote ->
-                [ B.txt "*", colorUsername un
+                [ B.txt "*", colorUsername un un
                 , B.txt " "
                 ]
             | msg^.mFlagged ->
-                [ colorUsername un
+                [ colorUsername un un
                 , B.txt "[!]: "
                 ]
             | otherwise ->
-                [ colorUsername un
+                [ colorUsername un un
                 , B.txt ": "
                 ]
           Nothing -> []
@@ -353,7 +353,7 @@ data FragmentStyle
   | Emph
   | Strong
   | Code
-  | User
+  | User Text
   | Link Text
   | Emoji
   | Channel
@@ -420,9 +420,9 @@ separate uSet cSet sq = case viewl sq of
           let s' = removeCursor s
           in case viewl rs of
             _ | s' `Set.member` uSet ||
-                ((T.singleton userSigil) `T.isPrefixOf` s' && (T.drop 1 s' `Set.member` uSet)) ->
+                (userSigil `T.isPrefixOf` s' && (T.drop 1 s' `Set.member` uSet)) ->
                 buildString s n <| separate uSet cSet rs
-            _ | ((T.singleton normalChannelSigil) `T.isPrefixOf` s' && (T.drop 1 s' `Set.member` cSet)) ->
+            _ | (normalChannelSigil `T.isPrefixOf` s' && (T.drop 1 s' `Set.member` cSet)) ->
                 buildString s n <| separate uSet cSet rs
             Fragment (TStr s'') n' :< xs
               | n == n' -> gatherStrings (s <> s'') n xs
@@ -435,12 +435,12 @@ separate uSet cSet sq = case viewl sq of
                     ":" `T.isSuffixOf` s' &&
                     textWidth s' > 2 ->
                       Fragment (TStr s) Emoji
-                  | s' `Set.member` uSet ->
-                      Fragment (TStr s) User
-                  | (T.singleton userSigil) `T.isPrefixOf` (removeCursor s) &&
-                    (T.drop 1 (removeCursor s) `Set.member` uSet) ->
-                      Fragment (TStr s) User
-                  | (T.singleton normalChannelSigil) `T.isPrefixOf` (removeCursor s) &&
+                  | removeCursor s' `Set.member` uSet ->
+                      Fragment (TStr s) (User s)
+                  | Just uname <- userSigil `T.stripPrefix` removeCursor s
+                  , removeCursor uname `Set.member` uSet ->
+                      Fragment (TStr s) (User uname)
+                  | normalChannelSigil `T.isPrefixOf` (removeCursor s) &&
                     (T.drop 1 (removeCursor s) `Set.member` cSet) ->
                       Fragment (TStr s) Channel
                   | otherwise -> Fragment (TStr s) n
@@ -504,21 +504,24 @@ gatherWidgets (viewl-> (Fragment frag style :< rs)) = go style (strOf frag) rs
   where go s t (viewl-> (Fragment f s' :< xs))
           | s == s' = go s (t <> strOf f) xs
         go s t xs =
-          let w = case s of
-                Normal -> textWithCursor t
-                Emph   -> B.withDefAttr clientEmphAttr (textWithCursor t)
+          let rawText = B.txt (removeCursor t)
+              rawWidget = case s of
+                Normal -> rawText
+                Emph   -> B.withDefAttr clientEmphAttr rawText
                 Edited -> B.withDefAttr editedMarkingAttr $ B.txt t
                 EditedRecently -> B.withDefAttr editedRecentlyMarkingAttr $ B.txt t
-                Strong -> B.withDefAttr clientStrongAttr (textWithCursor t)
-                Code   -> B.withDefAttr codeAttr (textWithCursor t)
+                Strong -> B.withDefAttr clientStrongAttr rawText
+                Code   -> B.withDefAttr codeAttr rawText
                 Link l ->
                   B.modifyDefAttr (`V.withURL` l)
-                    (B.withDefAttr urlAttr (textWithCursor t))
-                Emoji  -> B.withDefAttr emojiAttr (textWithCursor t)
-                User   -> B.withDefAttr (attrForUsername $ removeCursor t)
-                                        (textWithCursor t)
-                Channel -> B.withDefAttr channelNameAttr (textWithCursor t)
-          in w <| gatherWidgets xs
+                    (B.withDefAttr urlAttr rawText)
+                Emoji  -> B.withDefAttr emojiAttr rawText
+                User u -> colorUsername u t
+                Channel -> B.withDefAttr channelNameAttr rawText
+              widget
+                | T.any (== cursorSentinel) t = B.visible rawWidget
+                | otherwise = rawWidget
+          in widget <| gatherWidgets xs
 gatherWidgets _ =
   S.empty
 

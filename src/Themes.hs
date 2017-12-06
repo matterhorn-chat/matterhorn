@@ -47,7 +47,6 @@ module Themes
 
   -- * Username formatting
   , colorUsername
-  , attrForUsername
   ) where
 
 import Prelude ()
@@ -65,8 +64,6 @@ import Brick.Widgets.List
 import qualified Data.Text as T
 import qualified Skylighting as Sky
 import Skylighting (TokenType(..))
-
-import Types (userSigil)
 
 helpAttr :: AttrName
 helpAttr = "help"
@@ -304,17 +301,10 @@ darkColorTheme = InternalTheme name theme
 usernameAttr :: Int -> AttrName
 usernameAttr i = "username" <> (attrName $ show i)
 
-colorUsername :: T.Text -> Widget a
-colorUsername s = withDefAttr (attrForUsername s) $ txt s
-
-attrForUsername :: T.Text -> AttrName
-attrForUsername s
-    | (T.singleton userSigil) `T.isPrefixOf` s ||
-      "+" `T.isPrefixOf` s ||
-      "-" `T.isPrefixOf` s ||
-      " " `T.isPrefixOf` s
-      = usernameAttr $ hash (T.tail s) `mod` (length usernameColors)
-    | otherwise = usernameAttr $ hash s `mod` (length usernameColors)
+colorUsername :: T.Text -> T.Text -> Widget a
+colorUsername username display =
+  withDefAttr (usernameAttr h) $ txt (display)
+    where h = hash username `mod` length usernameColors
 
 usernameColors :: [Attr]
 usernameColors =

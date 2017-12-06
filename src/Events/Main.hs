@@ -208,8 +208,8 @@ tabComplete dir = do
       priorities  = [] :: [T.Text]-- XXX: add recent completions to this
       completions = Set.fromList (completableUsers ++
                                   completableChannels ++
-                                  map (T.singleton userSigil <>) completableUsers ++
-                                  map (T.singleton normalChannelSigil <>) completableChannels ++
+                                  map (userSigil <>) completableUsers ++
+                                  map (normalChannelSigil <>) completableChannels ++
                                   map ("/" <>) (commandName <$> commandList))
 
       line        = Z.currentLine $ st^.csEditState.cedEditor.editContentsL

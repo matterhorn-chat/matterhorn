@@ -317,11 +317,11 @@ data LinkChoice = LinkChoice
 makeLenses ''LinkChoice
 
 -- Sigils
-normalChannelSigil :: Char
-normalChannelSigil = '~'
+normalChannelSigil :: T.Text
+normalChannelSigil = "~"
 
-userSigil :: Char
-userSigil = '@'
+userSigil :: T.Text
+userSigil = "@"
 
 -- ** Channel-matching types
 

@@ -1051,8 +1051,8 @@ loadMoreMessages = do
 
 channelByName :: ChatState -> T.Text -> Maybe ChannelId
 channelByName st n
-    | (T.singleton normalChannelSigil) `T.isPrefixOf` n = st ^. csNames . cnToChanId . at (T.tail n)
-    | (T.singleton userSigil) `T.isPrefixOf` n = st ^. csNames . cnToChanId . at (T.tail n)
+    | normalChannelSigil `T.isPrefixOf` n = st ^. csNames . cnToChanId . at (T.tail n)
+    | userSigil `T.isPrefixOf` n = st ^. csNames . cnToChanId . at (T.tail n)
     | otherwise            = st ^. csNames . cnToChanId . at n
 
 -- | This switches to the named channel or creates it if it is a missing
