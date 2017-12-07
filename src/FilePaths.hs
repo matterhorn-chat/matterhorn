@@ -39,7 +39,7 @@ historyFileName :: FilePath
 historyFileName = "history.txt"
 
 lastRunStateFileName :: Text -> FilePath
-lastRunStateFileName teamId = "last_run_state_" ++ unpack teamId ++ ".txt"
+lastRunStateFileName teamId = "last_run_state_" ++ unpack teamId ++ ".json"
 
 configFileName :: FilePath
 configFileName = "config.ini"

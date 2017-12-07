@@ -118,6 +118,7 @@ executable matterhorn
                      , skylighting          >= 0.3.3.1 && < 0.4
                      , timezone-olson       >= 0.1.7   && < 0.2
                      , timezone-series      >= 0.1.6.1 && < 0.2
+                     , aeson                >= 1.0.0.0
   default-language:    Haskell2010
 
 test-suite test_messages

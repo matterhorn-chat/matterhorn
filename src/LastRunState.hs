@@ -14,10 +14,12 @@ import Prelude ()
 import Prelude.Compat
 
 import Control.Monad.Trans.Except
+import qualified Data.Aeson as A
+import qualified Data.ByteString as BS
+import qualified Data.ByteString.Lazy as LBS
 import Lens.Micro.Platform
 import System.Directory (createDirectoryIfMissing)
 import System.FilePath (dropFileName)
-import qualified System.IO.Strict as S
 import qualified System.Posix.Files as P
 import qualified System.Posix.Types as P
 
@@ -36,7 +38,22 @@ data LastRunState = LastRunState
   , _lrsPort              :: Port      -- ^ Post of the server
   , _lrsUserId            :: UserId    -- ^ ID of the logged-in user
   , _lrsSelectedChannelId :: ChannelId -- ^ ID of the last selected channel
-  } deriving (Show, Read)
+  }
+
+instance A.ToJSON LastRunState where
+  toJSON lrs = A.object [ "host"           A..= _lrsHost lrs
+                        , "port"           A..= _lrsPort lrs
+                        , "user_id"        A..= _lrsUserId lrs
+                        , "sel_channel_id" A..= _lrsSelectedChannelId lrs
+                        ]
+
+instance A.FromJSON LastRunState where
+  parseJSON = A.withObject "LastRunState" $ \v ->
+    LastRunState
+    <$> v A..: "host"
+    <*> v A..: "port"
+    <*> v A..: "user_id"
+    <*> v A..: "sel_channel_id"
 
 makeLenses ''LastRunState
 
@@ -56,19 +73,19 @@ writeLastRunState :: ChatState -> IO (Either String ())
 writeLastRunState cs = runExceptT . convertIOException $ do
   let runState = toLastRunState cs
       tId      = cs^.csMyTeam.teamIdL
-  lastRunStateFile <- lastRunStateFilePath . unId . toId $ tId
+  lastRunStateFile <- lastRunStateFilePath $ unId $ toId tId
   createDirectoryIfMissing True $ dropFileName lastRunStateFile
-  writeFile lastRunStateFile $ show runState
+  BS.writeFile lastRunStateFile $ LBS.toStrict $ A.encode runState
   P.setFileMode lastRunStateFile lastRunStateFileMode
 
 -- | Reads the last run state from a file given the current team ID.
 readLastRunState :: TeamId -> IO (Either String LastRunState)
 readLastRunState tId = runExceptT $ do
   contents <- convertIOException $
-    (lastRunStateFilePath . unId . toId $ tId) >>= S.readFile
-  case reads contents of
-    [(val, "")] -> return val
-    _ -> throwE "Failed to parse runState file"
+    lastRunStateFilePath (unId $ toId tId) >>= BS.readFile
+  case A.eitherDecodeStrict' contents of
+    Right val -> return val
+    Left err -> throwE $ "Failed to parse lastRunState file: " ++ err
 
 -- | Checks if the given last run state is valid for the current server and user.
 isValidLastRunState :: ChatResources -> User -> LastRunState -> Bool
