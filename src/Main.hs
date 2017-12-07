@@ -11,7 +11,7 @@ import           Config
 import           Options
 import           Types
 import           InputHistory
-import           RunState
+import           LastRunState
 import           App
 
 main :: IO ()
@@ -30,7 +30,7 @@ main = do
 
     -- Try to write the run state to a file. If it fails, just print the error
     -- and do not exit with a failure status because the run state file is optional.
-    done <- writeRunState finalSt
+    done <- writeLastRunState finalSt
     case done of
       Left err -> putStrLn $ "Error in writing last run state: " <> err
       Right _  -> return ()

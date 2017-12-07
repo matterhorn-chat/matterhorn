@@ -30,7 +30,7 @@ import           Network.Mattermost.Logging (mmLoggerDebug)
 import           Config
 import           InputHistory
 import           Login
-import           RunState
+import           LastRunState
 import           State (updateMessageFlag)
 import           State.Common
 import           TeamSelect
@@ -169,10 +169,10 @@ initializeState cr myTeam myUser = do
  -- run state file. If unable to read or decode or validate the file, this
  -- predicate is just `isTownSquare`.
   isLastSelectedChannel <- do
-    result <- readRunState . teamId $ myTeam
+    result <- readLastRunState . teamId $ myTeam
     case result of
-      Right runState | isValidRunState cr myUser runState -> return $ \c ->
-           channelId c == runState^.rsChannelId
+      Right lrs | isValidLastRunState cr myUser lrs -> return $ \c ->
+           channelId c == lrs^.lrsSelectedChannelId
       _ -> return isTownSquare
 
   -- Get all channels, but filter down to just the one we want to start

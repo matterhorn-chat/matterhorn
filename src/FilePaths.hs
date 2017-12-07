@@ -3,8 +3,8 @@ module FilePaths
   ( historyFilePath
   , historyFileName
 
-  , runStateFilePath
-  , runStateFileName
+  , lastRunStateFilePath
+  , lastRunStateFileName
 
   , configFileName
 
@@ -38,8 +38,8 @@ xdgName = "matterhorn"
 historyFileName :: FilePath
 historyFileName = "history.txt"
 
-runStateFileName :: Text -> FilePath
-runStateFileName teamId = "run_state_" ++ unpack teamId ++ ".txt"
+lastRunStateFileName :: Text -> FilePath
+lastRunStateFileName teamId = "last_run_state_" ++ unpack teamId ++ ".txt"
 
 configFileName :: FilePath
 configFileName = "config.ini"
@@ -47,9 +47,9 @@ configFileName = "config.ini"
 historyFilePath :: IO FilePath
 historyFilePath = getUserConfigFile xdgName historyFileName
 
-runStateFilePath :: Text -> IO FilePath
-runStateFilePath teamId =
-  getUserConfigFile xdgName (runStateFileName teamId)
+lastRunStateFilePath :: Text -> IO FilePath
+lastRunStateFilePath teamId =
+  getUserConfigFile xdgName (lastRunStateFileName teamId)
 
 -- | Find a specified configuration file by looking in all of the
 -- supported locations.
