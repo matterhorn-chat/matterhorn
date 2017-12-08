@@ -19,6 +19,7 @@ import Network.Mattermost.Version (mmApiVersion)
 
 import Themes
 import Types
+import Types.Keybindings
 import Command
 import Events.ShowHelp
 import Events.ChannelScroll

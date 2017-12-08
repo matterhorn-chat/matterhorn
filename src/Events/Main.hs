@@ -18,6 +18,7 @@ import Lens.Micro.Platform
 import Types
 import Types.Channels (ccInfo, cdType, clearNewMessageIndicator, clearEditedThreshold)
 import Types.Users (uiDeleted, findUserById)
+import Types.Keybindings
 import State
 import State.PostListOverlay (enterFlaggedPostListMode)
 import State.Editing

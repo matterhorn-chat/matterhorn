@@ -109,9 +109,6 @@ module Types
   , commandName
   , CmdArgs(..)
 
-  , Keybinding(..)
-  , lookupKeybinding
-
   , MH
   , runMHEvent
   , mh
@@ -166,7 +163,6 @@ import           Data.List (sort, partition, sortBy)
 import           Data.Maybe
 import           Data.Monoid
 import qualified Data.Set as Set
-import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( at, makeLenses, lens, (&), (^.), (%~), (.~), (^?!)
                                      , _Just, Traversal', preuse, (^..), folded, to )
 import           Network.Mattermost
@@ -731,20 +727,6 @@ data Cmd = forall a. Cmd
 -- | Helper function to extract the name out of a 'Cmd' value
 commandName :: Cmd -> T.Text
 commandName (Cmd name _ _ _ ) = name
-
--- * Keybindings
-
--- | A 'Keybinding' represents a keybinding along with its
---   implementation
-data Keybinding =
-    KB { kbDescription :: T.Text
-       , kbEvent :: Vty.Event
-       , kbAction :: MH ()
-       }
-
--- | Find a keybinding that matches a Vty Event
-lookupKeybinding :: Vty.Event -> [Keybinding] -> Maybe Keybinding
-lookupKeybinding e kbs = listToMaybe $ filter ((== e) . kbEvent) kbs
 
 -- *  Channel Updates and Notifications
 

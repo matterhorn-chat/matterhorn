@@ -12,8 +12,11 @@ import           Prelude ()
 import           Prelude.Compat
 
 import           Control.Applicative
+import           Control.Monad (forM)
 import           Control.Monad.Trans.Except
 import           Data.Ini.Config
+import qualified Data.Map.Strict as M
+import           Data.Maybe (catMaybes, fromMaybe)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import           Data.Monoid ((<>))
@@ -23,13 +26,14 @@ import           System.Process (readProcess)
 import           IOUtil
 import           FilePaths
 import           Types
+import           Types.Keybindings
 
 defaultPort :: Int
 defaultPort = 443
 
-fromIni :: IniParser Config
+fromIni :: IniParser (KeyConfig, Config)
 fromIni = do
-  section "mattermost" $ do
+  conf <- section "mattermost" $ do
     configUser           <- fieldMbOf "user" stringField
     configHost           <- fieldMbOf "host" stringField
     configTeam           <- fieldMbOf "team" stringField
@@ -63,6 +67,13 @@ fromIni = do
 
     let configAbsPath = Nothing
     return Config { .. }
+  keys <- sectionMb "keybindings" $ do
+    fmap (M.fromList . catMaybes) $ forM allEvents $ \ ev -> do
+      kb <- fieldMbOf (keyEventToString ev) bindingFromString
+      case kb of
+        Nothing      -> return Nothing
+        Just binding -> return (Just (ev, binding))
+  return (fromMaybe mempty keys, conf)
 
 backgroundField :: T.Text -> Either String BackgroundInfo
 backgroundField t =
@@ -134,7 +145,7 @@ getConfig fp = runExceptT $ do
   case parseIniFile t fromIni of
     Left err -> do
       throwE $ "Unable to parse " ++ absPath ++ ":" ++ err
-    Right conf -> do
+    Right (_, conf) -> do
       actualPass <- case configPass conf of
         Just (PasswordCommand cmdString) -> do
           let (cmd:rest) = T.unpack <$> T.words cmdString

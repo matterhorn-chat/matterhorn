@@ -9,6 +9,7 @@ import qualified Graphics.Vty as Vty
 import Lens.Micro.Platform
 
 import Types
+import Types.Keybindings
 import State
 
 onEventChannelSelect :: Vty.Event -> MH ()

@@ -71,6 +71,7 @@ executable matterhorn
                        TimeUtils
                        Types
                        Types.Channels
+                       Types.Keybindings
                        Types.Messages
                        Types.Users
                        Types.Posts
