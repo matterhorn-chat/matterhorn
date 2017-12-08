@@ -26,12 +26,12 @@ import           System.Process (readProcess)
 import           IOUtil
 import           FilePaths
 import           Types
-import           Types.Keybindings
+import           Types.KeyEvents
 
 defaultPort :: Int
 defaultPort = 443
 
-fromIni :: IniParser (KeyConfig, Config)
+fromIni :: IniParser Config
 fromIni = do
   conf <- section "mattermost" $ do
     configUser           <- fieldMbOf "user" stringField
@@ -66,6 +66,7 @@ fromIni = do
       fieldFlagDef "unsafeUseUnauthenticatedConnection" False
 
     let configAbsPath = Nothing
+        configUserKeys = mempty
     return Config { .. }
   keys <- sectionMb "keybindings" $ do
     fmap (M.fromList . catMaybes) $ forM allEvents $ \ ev -> do
@@ -73,7 +74,7 @@ fromIni = do
       case kb of
         Nothing      -> return Nothing
         Just binding -> return (Just (ev, binding))
-  return (fromMaybe mempty keys, conf)
+  return conf { configUserKeys = fromMaybe mempty keys }
 
 backgroundField :: T.Text -> Either String BackgroundInfo
 backgroundField t =
@@ -127,6 +128,7 @@ defaultConfig =
            , configUnsafeUseHTTP    = False
            , configChannelListWidth = 20
            , configShowOlderEdits     = True
+           , configUserKeys           = mempty
            }
 
 findConfig :: Maybe FilePath -> IO (Either String Config)
@@ -145,7 +147,7 @@ getConfig fp = runExceptT $ do
   case parseIniFile t fromIni of
     Left err -> do
       throwE $ "Unable to parse " ++ absPath ++ ":" ++ err
-    Right (_, conf) -> do
+    Right conf -> do
       actualPass <- case configPass conf of
         Just (PasswordCommand cmdString) -> do
           let (cmd:rest) = T.unpack <$> T.words cmdString

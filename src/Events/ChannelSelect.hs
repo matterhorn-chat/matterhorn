@@ -8,8 +8,8 @@ import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
 import Lens.Micro.Platform
 
+import Events.Keybindings
 import Types
-import Types.Keybindings
 import State
 
 onEventChannelSelect :: Vty.Event -> MH ()

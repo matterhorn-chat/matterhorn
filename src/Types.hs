@@ -179,6 +179,7 @@ import           Zipper (Zipper, focusL)
 import           InputHistory
 
 import           Types.Channels
+import           Types.KeyEvents
 import           Types.Posts
 import           Types.Messages
 import           Types.Users
@@ -216,6 +217,7 @@ data Config = Config
   , configChannelListWidth          :: Int
   , configShowOlderEdits            :: Bool
   , configAbsPath                   :: Maybe FilePath
+  , configUserKeys                  :: KeyConfig
   } deriving (Eq, Show)
 
 data BackgroundInfo = Disabled | Active | ActiveCount deriving (Eq, Show)

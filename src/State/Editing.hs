@@ -28,7 +28,7 @@ import           Text.Aspell (AspellResponse(..), mistakeWord, askAspell)
 
 import           Config
 import           Types
-import           Types.Keybindings
+import           Events.Keybindings
 
 import           State.Common
 

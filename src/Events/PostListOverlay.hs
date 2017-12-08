@@ -3,7 +3,7 @@ module Events.PostListOverlay where
 import qualified Graphics.Vty as Vty
 
 import Types
-import Types.Keybindings
+import Events.Keybindings
 import State.PostListOverlay
 
 onEventPostListOverlay :: Vty.Event -> MH ()

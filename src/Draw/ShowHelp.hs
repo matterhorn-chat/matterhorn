@@ -19,7 +19,7 @@ import Network.Mattermost.Version (mmApiVersion)
 
 import Themes
 import Types
-import Types.Keybindings
+import Events.Keybindings
 import Command
 import Events.ShowHelp
 import Events.ChannelScroll
@@ -223,7 +223,7 @@ withMargins (hMargin, vMargin) w =
 keybindSections :: [(T.Text, [Keybinding])]
 keybindSections =
     [ ("This Help Page", helpKeybindings)
-    , ("Main Interface", mainKeybindings)
+    , ("Main Interface", mainKeybindings mempty)
     , ("Channel Select Mode", channelSelectKeybindings)
     , ("URL Select Mode", urlSelectKeybindings)
     , ("Channel Scroll Mode", channelScrollKeybindings)

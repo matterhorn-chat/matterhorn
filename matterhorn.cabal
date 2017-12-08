@@ -55,6 +55,7 @@ executable matterhorn
                        InputHistory
                        IOUtil
                        Events
+                       Events.Keybindings
                        Events.ShowHelp
                        Events.MessageSelect
                        Events.Main
@@ -71,7 +72,7 @@ executable matterhorn
                        TimeUtils
                        Types
                        Types.Channels
-                       Types.Keybindings
+                       Types.KeyEvents
                        Types.Messages
                        Types.Users
                        Types.Posts
