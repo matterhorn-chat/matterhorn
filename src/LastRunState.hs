@@ -13,6 +13,7 @@ module LastRunState
 import Prelude ()
 import Prelude.Compat
 
+import Control.Monad (when)
 import Control.Monad.Trans.Except
 import qualified Data.Aeson as A
 import qualified Data.ByteString as BS
@@ -29,7 +30,7 @@ import Network.Mattermost (Hostname, Port)
 import Network.Mattermost.Types
 import Network.Mattermost.Lenses
 import Types
-import Zipper (focusL)
+import Types.Channels
 
 -- | Run state of the program. This is saved in a file on program exit and
 -- | looked up from the file on program startup.
@@ -62,21 +63,23 @@ toLastRunState cs = LastRunState
   { _lrsHost              = cs^.csResources.crConn.cdHostnameL
   , _lrsPort              = cs^.csResources.crConn.cdPortL
   , _lrsUserId            = cs^.csMe.userIdL
-  , _lrsSelectedChannelId = cs^.csFocus.focusL
+  , _lrsSelectedChannelId = cs^.csCurrentChannelId
   }
 
 lastRunStateFileMode :: P.FileMode
 lastRunStateFileMode = P.unionFileModes P.ownerReadMode P.ownerWriteMode
 
 -- | Writes the run state to a file. The file is specific to the current team.
+-- | Writes only if the current channel is an ordrinary or a private channel.
 writeLastRunState :: ChatState -> IO (Either String ())
-writeLastRunState cs = runExceptT . convertIOException $ do
-  let runState = toLastRunState cs
-      tId      = cs^.csMyTeam.teamIdL
-  lastRunStateFile <- lastRunStateFilePath $ unId $ toId tId
-  createDirectoryIfMissing True $ dropFileName lastRunStateFile
-  BS.writeFile lastRunStateFile $ LBS.toStrict $ A.encode runState
-  P.setFileMode lastRunStateFile lastRunStateFileMode
+writeLastRunState cs = runExceptT . convertIOException $
+  when (cs^.csCurrentChannel.ccInfo.cdType `elem` [Ordinary, Private]) $ do
+    let runState = toLastRunState cs
+        tId      = cs^.csMyTeam.teamIdL
+    lastRunStateFile <- lastRunStateFilePath $ unId $ toId tId
+    createDirectoryIfMissing True $ dropFileName lastRunStateFile
+    BS.writeFile lastRunStateFile $ LBS.toStrict $ A.encode runState
+    P.setFileMode lastRunStateFile lastRunStateFileMode
 
 -- | Reads the last run state from a file given the current team ID.
 readLastRunState :: TeamId -> IO (Either String LastRunState)
