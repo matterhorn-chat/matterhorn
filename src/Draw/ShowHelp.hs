@@ -184,6 +184,12 @@ themeHelp = overrideAttr codeAttr helpEmphAttr $ vBox
         " * blink\n" <>
         " * dim\n" <>
         " * bold\n"
+  , padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Username Highlighting"
+  , padTop (Pad 1) $ hCenter $ hLimit 72 $ renderText $
+        "Username colors are chosen by hashing each username and then using the hash " <>
+        "to choose a color from a list of predefined username colors. If you would like " <>
+        "to change the color in a given entry of this list, we provide the " <>
+        "\"username.N\" attributes, where N is the index in the username color list."
   , padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Theme Attributes"
   , padTop (Pad 1) $ hCenter $ hLimit 72 $ renderText $
         "This section lists all possible theme attributes for use in customization " <>
