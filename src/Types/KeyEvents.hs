@@ -4,8 +4,8 @@ import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
 
--- * This enum represents all the possible key events a user might
--- * want to use.
+-- | This enum represents all the possible key events a user might
+--   want to use.
 data KeyEvent
   = VtyRefreshEvent
   | ShowHelpEvent
@@ -22,14 +22,16 @@ data KeyEvent
   | EnterOpenURLModeEvent
   | ClearUnreadEvent
   | ToggleMultiLineEvent
-  | CancelReplyEvent
   | EnterFlaggedPostsEvent
+
+  -- generic cancel
+  | CancelEvent
 
   -- channel-scroll-specific
   | LoadMoreEvent
   | OpenMessageURLEvent
 
-  -- scrolling events
+  -- scrolling events---maybe rebindable?
   | ScrollUpEvent
   | ScrollDownEvent
   | PageUpEvent
@@ -55,7 +57,7 @@ allEvents =
   , EnterOpenURLModeEvent
   , ClearUnreadEvent
   , ToggleMultiLineEvent
-  , CancelReplyEvent
+  , CancelEvent
   , EnterFlaggedPostsEvent
 
   , LoadMoreEvent
@@ -67,7 +69,7 @@ data Binding = Binding
   , kbKey  :: Vty.Key
   } deriving (Eq, Show, Ord)
 
-type KeyConfig = M.Map KeyEvent Binding
+type KeyConfig = M.Map KeyEvent [Binding]
 
 bindingFromString :: T.Text -> Either String Binding
 bindingFromString kb = go (T.splitOn "-" kb) []
@@ -113,6 +115,10 @@ bindingFromString kb = go (T.splitOn "-" kb) []
               return (Vty.KChar c)
           | otherwise = Left ("Unknown keybinding: " ++ show t)
 
+bindingListFromString :: T.Text -> Either String [Binding]
+bindingListFromString =
+  mapM (bindingFromString . T.strip) . T.splitOn ","
+
 keyEventFromString :: T.Text -> Either String KeyEvent
 keyEventFromString t = case t of
   "quit"                   -> return QuitEvent
@@ -123,7 +129,7 @@ keyEventFromString t = case t of
   "toggle-message-preview" -> return ToggleMessagePreviewEvent
   "invoke-editor"          -> return InvokeEditorEvent
   "toggle-multiline"       -> return ToggleMultiLineEvent
-  "cancel-reply"           -> return CancelReplyEvent
+  "cancel"                 -> return CancelEvent
 
   "enter-fast-select"      -> return EnterFastSelectModeEvent
   "focus-next-channel"     -> return NextChannelEvent
@@ -150,7 +156,7 @@ keyEventToString ev = case ev of
   ToggleMessagePreviewEvent -> "toggle-message-preview"
   InvokeEditorEvent         -> "invoke-editor"
   ToggleMultiLineEvent      -> "toggle-multiline"
-  CancelReplyEvent          -> "cancel-reply"
+  CancelEvent               -> "cancel"
 
   EnterFastSelectModeEvent  -> "enter-fast-select"
   NextChannelEvent          -> "focus-next-channel"

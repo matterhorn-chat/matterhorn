@@ -52,22 +52,23 @@ handleKeyboardEvent keyList e fallthrough = do
     Just kb -> kbAction kb
     Nothing -> fallthrough e
 
-mkKb :: KeyEvent -> T.Text -> MH () -> KeyConfig -> Keybinding
-mkKb ev msg action conf = KB msg (bindingToEvent key) action
-  where key | Just k <- M.lookup ev conf = k
-            | otherwise = defaultBindings ev
+mkKb :: KeyEvent -> T.Text -> MH () -> KeyConfig -> [Keybinding]
+mkKb ev msg action conf =
+  [ KB msg (bindingToEvent key) action | key <- allKeys ]
+  where allKeys | Just ks <- M.lookup ev conf = ks
+                | otherwise = defaultBindings ev
 
-staticKb :: T.Text -> Vty.Event -> MH () -> KeyConfig -> Keybinding
-staticKb msg event action _ = KB msg event action
+staticKb :: T.Text -> Vty.Event -> MH () -> KeyConfig -> [Keybinding]
+staticKb msg event action _ = [KB msg event action]
 
-mkKeybindings :: [KeyConfig -> Keybinding] -> KeyConfig -> [Keybinding]
-mkKeybindings ks conf = [ k conf | k <- ks ]
+mkKeybindings :: [KeyConfig -> [Keybinding]] -> KeyConfig -> [Keybinding]
+mkKeybindings ks conf = concat [ k conf | k <- ks ]
 
 bindingToEvent :: Binding -> Vty.Event
 bindingToEvent binding =
   Vty.EvKey (kbKey binding) (kbMods binding)
 
-defaultBindings :: KeyEvent -> Binding
+defaultBindings :: KeyEvent -> [Binding]
 defaultBindings ev =
   let meta binding = binding { kbMods = Vty.MMeta : kbMods binding }
       ctrl binding = binding { kbMods = Vty.MCtrl : kbMods binding }
@@ -75,32 +76,35 @@ defaultBindings ev =
       key c = Binding { kbMods = [], kbKey = Vty.KChar c }
       fn n = Binding { kbMods = [], kbKey = Vty.KFun n }
   in case ev of
-        VtyRefreshEvent -> ctrl (key 'l')
-        ShowHelpEvent -> fn 1
-        EnterSelectModeEvent -> ctrl (key 's')
-        ReplyRecentEvent -> ctrl (key 'r')
-        ToggleMessagePreviewEvent -> meta (key 'p')
-        InvokeEditorEvent -> meta (key 'k')
-        EnterFastSelectModeEvent -> ctrl (key 'g')
-        QuitEvent -> ctrl (key 'q')
-        NextChannelEvent -> ctrl (key 'n')
-        PrevChannelEvent -> ctrl (key 'p')
-        NextUnreadChannelEvent -> meta (key 'a')
-        LastChannelEvent -> meta (key 's')
-        EnterOpenURLModeEvent -> ctrl (key 'o')
-        ClearUnreadEvent -> meta (key 'l')
-        ToggleMultiLineEvent -> meta (key 'e')
-        CancelReplyEvent -> kb Vty.KEsc
-        EnterFlaggedPostsEvent -> meta (key '8')
+        VtyRefreshEvent -> [ ctrl (key 'l') ]
+        ShowHelpEvent -> [ fn 1 ]
+        EnterSelectModeEvent -> [ ctrl (key 's') ]
+        ReplyRecentEvent -> [ ctrl (key 'r') ]
+        ToggleMessagePreviewEvent -> [ meta (key 'p') ]
+        InvokeEditorEvent -> [ meta (key 'k') ]
+        EnterFastSelectModeEvent -> [ ctrl (key 'g') ]
+        QuitEvent -> [ ctrl (key 'q') ]
+        NextChannelEvent -> [ ctrl (key 'n') ]
+        PrevChannelEvent -> [ ctrl (key 'p') ]
+        NextUnreadChannelEvent -> [ meta (key 'a') ]
+        LastChannelEvent -> [ meta (key 's') ]
+        EnterOpenURLModeEvent -> [ ctrl (key 'o') ]
+        ClearUnreadEvent -> [ meta (key 'l') ]
+        ToggleMultiLineEvent -> [ meta (key 'e') ]
+        EnterFlaggedPostsEvent -> [ meta (key '8') ]
+
+        CancelEvent -> [ kb Vty.KEsc
+                       , ctrl (key 'c')
+                       ]
 
         -- channel-scroll-specific
-        LoadMoreEvent -> ctrl (key 'b')
-        OpenMessageURLEvent -> ctrl (key 'o')
+        LoadMoreEvent -> [ ctrl (key 'b') ]
+        OpenMessageURLEvent -> [ ctrl (key 'o') ]
 
         -- scrolling events
-        ScrollUpEvent -> kb Vty.KUp
-        ScrollDownEvent -> kb Vty.KDown
-        PageUpEvent -> kb Vty.KPageUp
-        PageDownEvent -> kb Vty.KPageDown
-        ScrollTopEvent -> kb Vty.KHome
-        ScrollBottomEvent -> kb Vty.KEnd
+        ScrollUpEvent -> [ kb Vty.KUp ]
+        ScrollDownEvent -> [ kb Vty.KDown ]
+        PageUpEvent -> [ kb Vty.KPageUp ]
+        PageDownEvent -> [ kb Vty.KPageDown ]
+        ScrollTopEvent -> [ kb Vty.KHome ]
+        ScrollBottomEvent -> [ kb Vty.KEnd ]

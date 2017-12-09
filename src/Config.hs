@@ -70,7 +70,7 @@ fromIni = do
     return Config { .. }
   keys <- sectionMb "keybindings" $ do
     fmap (M.fromList . catMaybes) $ forM allEvents $ \ ev -> do
-      kb <- fieldMbOf (keyEventToString ev) bindingFromString
+      kb <- fieldMbOf (keyEventToString ev) bindingListFromString
       case kb of
         Nothing      -> return Nothing
         Just binding -> return (Just (ev, binding))

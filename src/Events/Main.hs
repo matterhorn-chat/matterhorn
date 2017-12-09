@@ -147,11 +147,7 @@ mainKeybindings = mkKeybindings
     , mkKb ToggleMultiLineEvent "Toggle multi-line message compose mode"
            toggleMultilineEditing
 
-    , mkKb CancelReplyEvent "Cancel message reply or update"
-         cancelReplyOrEdit
-
-    , staticKb "Cancel message reply or update"
-         (Vty.EvKey (Vty.KChar 'c') [Vty.MCtrl]) $
+    , mkKb CancelEvent "Cancel message reply or update"
          cancelReplyOrEdit
 
     , mkKb EnterFlaggedPostsEvent "View currently flagged posts"
