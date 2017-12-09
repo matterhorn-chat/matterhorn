@@ -157,7 +157,6 @@ import           Control.Exception (SomeException)
 import qualified Control.Monad.State as St
 import qualified Data.Foldable as F
 import qualified Data.Sequence as Seq
-import qualified Data.Set as S
 import           Data.HashMap.Strict (HashMap)
 import           Data.Time.Clock (UTCTime)
 import           Data.Time.LocalTime.TimeZone.Series (TimeZoneSeries)
@@ -393,7 +392,7 @@ data ChatEditState = ChatEditState
   , _cedCompletionAlternatives :: [T.Text]
   , _cedYankBuffer           :: T.Text
   , _cedSpellChecker         :: Maybe (Aspell, IO ())
-  , _cedMisspellings         :: S.Set T.Text
+  , _cedMisspellings         :: Set.Set T.Text
   }
 
 data EditMode =
