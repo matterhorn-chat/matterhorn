@@ -45,6 +45,7 @@ drawPostsBox contents st =
   centerLayer $ hLimitWithPadding 10 $ borderWithLabel contentHeader $
     padRight (Pad 1) messageListContents
   where -- The 'window title' of the overlay
+        hs = getHighlightSet st
         contentHeader = withAttr channelListHeaderAttr $ txt $ case contents of
           PostListFlagged                -> "Flagged posts"
           PostListSearch terms searching -> "Search results" <> if searching
@@ -73,7 +74,7 @@ drawPostsBox contents st =
 
         -- The render-message function we're using
         renderMessageForOverlay msg =
-          let renderedMsg = renderSingleMessage st Nothing msg
+          let renderedMsg = renderSingleMessage st hs Nothing msg
           in case msg^.mOriginalPost of
             -- We should factor out some of the channel name logic at
             -- some point, but we can do that later
