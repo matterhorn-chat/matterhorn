@@ -3,6 +3,7 @@ module Types.KeyEvents where
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
+import Text.Read (readMaybe)
 
 -- | This enum represents all the possible key events a user might
 --   want to use.
@@ -110,7 +111,9 @@ bindingFromString kb = go (T.splitOn "-" kb) []
         pKey "menu"      = return Vty.KMenu
         pKey t
           | Just n <- T.stripPrefix "f" t =
-              return (Vty.KFun (read (T.unpack n)))
+              case readMaybe (T.unpack n) of
+                  Nothing -> Left ("Unknown keybinding: " ++ show t)
+                  Just i -> return (Vty.KFun i)
           | Just (c, "") <- T.uncons t =
               return (Vty.KChar c)
           | otherwise = Left ("Unknown keybinding: " ++ show t)
