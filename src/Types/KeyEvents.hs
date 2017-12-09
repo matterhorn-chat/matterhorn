@@ -1,4 +1,23 @@
-module Types.KeyEvents where
+module Types.KeyEvents
+  (
+  -- * Types
+    KeyEvent(..)
+  , KeyConfig
+  , Binding(..)
+
+  -- * Data
+  , allEvents
+
+  -- * Parsing and pretty-printing
+  , parseBinding
+  , parseBindingList
+  , ppBinding
+
+  -- * Key event name resolution
+  , keyEventFromName
+  , keyEventName
+  )
+where
 
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
