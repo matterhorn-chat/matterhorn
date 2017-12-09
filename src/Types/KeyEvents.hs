@@ -163,8 +163,8 @@ bindingListFromString :: T.Text -> Either String [Binding]
 bindingListFromString =
   mapM (bindingFromString . T.strip) . T.splitOn ","
 
-keyEventFromString :: T.Text -> Either String KeyEvent
-keyEventFromString t =
+keyEventFromName :: T.Text -> Either String KeyEvent
+keyEventFromName t =
     let mapping = M.fromList [ (keyEventName e, e) | e <- allEvents ]
     in case M.lookup t mapping of
         Just e -> return e
