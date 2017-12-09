@@ -20,6 +20,8 @@ module Draw.ChannelList (renderChannelList) where
 
 import           Brick
 import           Brick.Widgets.Border
+import qualified Data.Sequence as Seq
+import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
 import           Data.Monoid ((<>))
 import qualified Data.Text as T
@@ -49,7 +51,7 @@ type GroupName = T.Text
 --     from the ChatState.
 channelListGroups :: [ ( GroupName
                        , Getting ChannelSelectMap ChatState ChannelSelectMap
-                       , ChatState -> [ChannelListEntry]
+                       , ChatState -> Maybe Int -> Seq.Seq ChannelListEntry
                        ) ]
 channelListGroups =
     [ ("Channels", csChannelSelectState.channelMatches, getOrdinaryChannels)
@@ -67,27 +69,30 @@ hasActiveChannelSelection st =
 -- render the ChannelList sidebar.
 renderChannelList :: ChatState -> Widget Name
 renderChannelList st =
-    let maybeViewport = if hasActiveChannelSelection st
-                        then id -- no viewport scrolling when actively selecting a channel
-                        else viewport ChannelList Vertical
-        selMatch = st^.csChannelSelectState.selectedMatch
-        renderedGroups = if hasActiveChannelSelection st
-                         then renderChannelGroup (renderChannelSelectListEntry selMatch) <$> selectedGroupEntries
-                         else renderChannelGroup renderChannelListEntry       <$> plainGroupEntries
-        plainGroupEntries (n, _m, f) = (n, f st)
-        selectedGroupEntries (n, m, f) = (n, foldr (addSelectedChannel m) [] $ f st)
-        addSelectedChannel m e s = case HM.lookup (entryLabel e) (st^.m) of
-                                     Just y -> SCLE e y : s
-                                     Nothing -> s
-    in maybeViewport $ vBox $ concat $ renderedGroups <$> channelListGroups
+    Widget Fixed Greedy $ do
+        ctx <- getContext
+
+        let maybeViewport = if hasActiveChannelSelection st
+                            then id -- no viewport scrolling when actively selecting a channel
+                            else viewport ChannelList Vertical
+            selMatch = st^.csChannelSelectState.selectedMatch
+            renderedGroups = if hasActiveChannelSelection st
+                             then renderChannelGroup (renderChannelSelectListEntry selMatch) <$> selectedGroupEntries
+                             else renderChannelGroup renderChannelListEntry <$> plainGroupEntries
+            plainGroupEntries (n, _m, f) = (n, f st (Just $ ctx^.availHeightL))
+            selectedGroupEntries (n, m, f) = (n, F.foldr (addSelectedChannel m) mempty $ f st Nothing)
+            addSelectedChannel m e s = case HM.lookup (entryLabel e) (st^.m) of
+                                         Just y -> SCLE e y Seq.<| s
+                                         Nothing -> s
+        render $ maybeViewport $ vBox $ vBox <$> F.toList <$> (F.toList $ renderedGroups <$> channelListGroups)
 
 -- | Renders a specific group, given the name of the group and the
 -- list of entries in that group (which are expected to be either
 -- ChannelListEntry or SelectedChannelListEntry elements).
-renderChannelGroup :: (a -> Widget Name) -> (GroupName, [a]) -> [Widget Name]
+renderChannelGroup :: (a -> Widget Name) -> (GroupName, Seq.Seq a) -> Seq.Seq (Widget Name)
 renderChannelGroup eRender (groupName, entries) =
     let header label = hBorderWithLabel $ withDefAttr channelListHeaderAttr $ txt label
-    in header groupName : (eRender <$> entries)
+    in header groupName Seq.<| (eRender <$> entries)
 
 -- | Internal record describing each channel entry and its associated
 -- attributes.  This is the object passed to the rendering function so
@@ -160,9 +165,9 @@ decorateRecent entry = if entryIsRecent entry
 
 -- | Extract the names and information about normal channels to be
 -- displayed in the ChannelList sidebar.
-getOrdinaryChannels :: ChatState -> [ChannelListEntry]
-getOrdinaryChannels st =
-    [ ChannelListEntry sigil n unread mentions recent current Nothing
+getOrdinaryChannels :: ChatState -> Maybe Int -> Seq.Seq ChannelListEntry
+getOrdinaryChannels st _ =
+    Seq.fromList [ ChannelListEntry sigil n unread mentions recent current Nothing
     | n <- (st ^. csNames . cnChans)
     , let Just chan = st ^. csNames . cnToChanId . at n
           unread = hasUnread st chan
@@ -177,21 +182,29 @@ getOrdinaryChannels st =
 
 -- | Extract the names and information about Direct Message channels
 -- to be displayed in the ChannelList sidebar.
-getDmChannels :: ChatState -> [ChannelListEntry]
-getDmChannels st =
-    [ ChannelListEntry (T.cons sigil " ") uname unread mentions recent current (Just $ u^.uiStatus)
-    | u <- sortedUserList st
-    , let sigil =
-            case do { cId <- m_chanId; st^.csEditState.cedLastChannelInput.at cId } of
-              Nothing      -> userSigilFromInfo u
-              Just ("", _) -> userSigilFromInfo u
-              _            -> '»'  -- shows that user has a message in-progress
-          uname = u^.uiName
-          recent = maybe False (isRecentChannel st) m_chanId
-          m_chanId = st^.csNames.cnToChanId.at (u^.uiName)
-          unread = maybe False (hasUnread st) m_chanId
-          current = maybe False (isCurrentChannel st) m_chanId
-          mentions = case m_chanId of
-            Just cId -> maybe 0 id (st^?csChannel(cId).ccInfo.cdMentionCount)
-            Nothing  -> 0
-       ]
+getDmChannels :: ChatState -> Maybe Int -> Seq.Seq ChannelListEntry
+getDmChannels st height =
+    let es = Seq.fromList
+             [ ChannelListEntry (T.cons sigil " ") uname unread mentions recent current (Just $ u^.uiStatus)
+             | u <- sortedUserList st
+             , let sigil =
+                     case do { cId <- m_chanId; st^.csEditState.cedLastChannelInput.at cId } of
+                       Nothing      -> userSigilFromInfo u
+                       Just ("", _) -> userSigilFromInfo u
+                       _            -> '»'  -- shows that user has a message in-progress
+                   uname = u^.uiName
+                   recent = maybe False (isRecentChannel st) m_chanId
+                   m_chanId = st^.csNames.cnToChanId.at (u^.uiName)
+                   unread = maybe False (hasUnread st) m_chanId
+                   current = maybe False (isCurrentChannel st) m_chanId
+                   mentions = case m_chanId of
+                     Just cId -> maybe 0 id (st^?csChannel(cId).ccInfo.cdMentionCount)
+                     Nothing  -> 0
+                ]
+        (h, t) = Seq.breakl entryIsCurrent es
+    in case height of
+        Nothing -> es
+        Just height' -> if null t
+                        then Seq.take height' h
+                        else Seq.drop (length h - height') h <>
+                             Seq.take height' t
