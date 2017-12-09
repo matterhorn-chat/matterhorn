@@ -49,6 +49,27 @@ type GroupName = T.Text
 --
 --   * The function to retrieve the list of channels for this group
 --     from the ChatState.
+--
+-- The retrieval function is also given an optional integer that
+-- indicates the height of the channel list (the amount of screen space
+-- available to be used). This is provided as an optimization so that we
+-- can avoid rendering all known entries when they wouldn't be visible
+-- anyway. Please see 'getDmChannels' for more details.
+--
+-- The height value is optional because when we're in channel selection
+-- mode, we don't want to optimize away hidden channel list entries. If
+-- we were to do that, they wouldn't be checked for matching against the
+-- channel selection input. So in that case 'Nothing' is given as the
+-- channel list height. But otherwise when we're not in that mode we
+-- want to skip rendering hidden entries. (Ideally we wouldn't need this
+-- hack at all and could be smart about which entries to show regardless
+-- of mode, but right now we use a Brick viewport to make scrolling the
+-- channel list easy, but that doesn't give us much control over which
+-- entries to skip.)
+--
+-- Lastly, this functionality uses Sequences instead of lists to
+-- facilitate efficient take/drop operations when the optimization
+-- mentioned above is in effect.
 channelListGroups :: [ ( GroupName
                        , Getting ChannelSelectMap ChatState ChannelSelectMap
                        , ChatState -> Maybe Int -> Seq.Seq ChannelListEntry
@@ -191,6 +212,19 @@ getOrdinaryChannels st _ =
 
 -- | Extract the names and information about Direct Message channels
 -- to be displayed in the ChannelList sidebar.
+--
+-- This function takes advantage of the channel height, when given, by
+-- only returning enough entries to guarantee that we fill the channel
+-- list. For example, if the list is N rows high, this function will
+-- return at most 2N channel list entries. It does this, rather than
+-- return them all, to avoid rendering (potentially thousands of)
+-- entries that won't be visible on the screen anyway, and that turns
+-- out to be a big performance win on servers with thousands of users.
+-- We return *twice* the number of required entries to ensure that no
+-- matter where the selected channel is within the set of returned
+-- entries, there are enough entries before and after the selected
+-- channel to get the Brick viewport to position the final result in a
+-- way that is natural.
 getDmChannels :: ChatState -> Maybe Int -> Seq.Seq ChannelListEntry
 getDmChannels st height =
     let es = Seq.fromList
