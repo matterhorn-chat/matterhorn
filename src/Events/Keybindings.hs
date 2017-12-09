@@ -1,19 +1,21 @@
 module Events.Keybindings
-  ( Keybinding (..)
-  , KeyEvent (..)
+  ( defaultBindings
   , lookupKeybinding
-  , KeyConfig
-  , allEvents
-  , bindingFromString
-  , keyEventToString
-  , keyEventFromString
-  , defaultBindings
 
   , mkKb
   , staticKb
   , mkKeybindings
 
   , handleKeyboardEvent
+
+  -- Re-exports:
+  , Keybinding (..)
+  , KeyEvent (..)
+  , KeyConfig
+  , allEvents
+  , parseBinding
+  , keyEventName
+  , keyEventFromName
   ) where
 
 import qualified Data.Map.Strict as M
