@@ -72,26 +72,35 @@ renderChannelList st =
     Widget Fixed Greedy $ do
         ctx <- getContext
 
-        let maybeViewport = if hasActiveChannelSelection st
-                            then id -- no viewport scrolling when actively selecting a channel
-                            else viewport ChannelList Vertical
+        let maybeViewport =
+                if hasActiveChannelSelection st
+                then id -- no viewport scrolling when actively selecting a channel
+                else viewport ChannelList Vertical
             selMatch = st^.csChannelSelectState.selectedMatch
-            renderedGroups = if hasActiveChannelSelection st
-                             then renderChannelGroup (renderChannelSelectListEntry selMatch) <$> selectedGroupEntries
-                             else renderChannelGroup renderChannelListEntry <$> plainGroupEntries
-            plainGroupEntries (n, _m, f) = (n, f st (Just $ ctx^.availHeightL))
-            selectedGroupEntries (n, m, f) = (n, F.foldr (addSelectedChannel m) mempty $ f st Nothing)
-            addSelectedChannel m e s = case HM.lookup (entryLabel e) (st^.m) of
-                                         Just y -> SCLE e y Seq.<| s
-                                         Nothing -> s
-        render $ maybeViewport $ vBox $ vBox <$> F.toList <$> (F.toList $ renderedGroups <$> channelListGroups)
+            renderedGroups =
+                if hasActiveChannelSelection st
+                then renderChannelGroup (renderChannelSelectListEntry selMatch) <$>
+                         selectedGroupEntries
+                else renderChannelGroup renderChannelListEntry <$> plainGroupEntries
+            plainGroupEntries (n, _m, f) =
+                (n, f st (Just $ ctx^.availHeightL))
+            selectedGroupEntries (n, m, f) =
+                (n, F.foldr (addSelectedChannel m) mempty $ f st Nothing)
+            addSelectedChannel m e s =
+                case HM.lookup (entryLabel e) (st^.m) of
+                    Just y -> SCLE e y Seq.<| s
+                    Nothing -> s
+
+        render $ maybeViewport $ vBox $ vBox <$>
+                 F.toList <$> (F.toList $ renderedGroups <$> channelListGroups)
 
 -- | Renders a specific group, given the name of the group and the
 -- list of entries in that group (which are expected to be either
 -- ChannelListEntry or SelectedChannelListEntry elements).
 renderChannelGroup :: (a -> Widget Name) -> (GroupName, Seq.Seq a) -> Seq.Seq (Widget Name)
 renderChannelGroup eRender (groupName, entries) =
-    let header label = hBorderWithLabel $ withDefAttr channelListHeaderAttr $ txt label
+    let header label = hBorderWithLabel $
+                       withDefAttr channelListHeaderAttr $ txt label
     in header groupName Seq.<| (eRender <$> entries)
 
 -- | Internal record describing each channel entry and its associated
@@ -185,7 +194,8 @@ getOrdinaryChannels st _ =
 getDmChannels :: ChatState -> Maybe Int -> Seq.Seq ChannelListEntry
 getDmChannels st height =
     let es = Seq.fromList
-             [ ChannelListEntry (T.cons sigil " ") uname unread mentions recent current (Just $ u^.uiStatus)
+             [ ChannelListEntry (T.cons sigil " ") uname unread
+                                mentions recent current (Just $ u^.uiStatus)
              | u <- sortedUserList st
              , let sigil =
                      case do { cId <- m_chanId; st^.csEditState.cedLastChannelInput.at cId } of
