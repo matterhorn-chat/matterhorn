@@ -24,6 +24,18 @@ data KeyEvent
   | ToggleMultiLineEvent
   | CancelReplyEvent
   | EnterFlaggedPostsEvent
+
+  -- channel-scroll-specific
+  | LoadMoreEvent
+  | OpenMessageURLEvent
+
+  -- scrolling events
+  | ScrollUpEvent
+  | ScrollDownEvent
+  | PageUpEvent
+  | PageDownEvent
+  | ScrollTopEvent
+  | ScrollBottomEvent
     deriving (Eq, Show, Ord, Enum)
 
 allEvents :: [KeyEvent]
@@ -45,6 +57,9 @@ allEvents =
   , ToggleMultiLineEvent
   , CancelReplyEvent
   , EnterFlaggedPostsEvent
+
+  , LoadMoreEvent
+  , OpenMessageURLEvent
   ]
 
 data Binding = Binding
@@ -120,6 +135,9 @@ keyEventFromString t = case t of
   "show-help"              -> return ShowHelpEvent
   "select-mode"            -> return EnterSelectModeEvent
   "enter-url-open"         -> return EnterOpenURLModeEvent
+
+  "load-more"              -> return LoadMoreEvent
+  "open-message-url"       -> return OpenMessageURLEvent
   _                        -> Left ("Unknown event: " ++ show t)
 
 keyEventToString :: KeyEvent -> T.Text
@@ -144,3 +162,13 @@ keyEventToString ev = case ev of
   ShowHelpEvent             -> "show-help"
   EnterSelectModeEvent      -> "select-mode"
   EnterOpenURLModeEvent     -> "enter-url-open"
+
+  LoadMoreEvent             -> "load-more"
+  OpenMessageURLEvent       -> "open-message-url"
+
+  ScrollUpEvent     -> "scroll-up"
+  ScrollDownEvent   -> "scroll-down"
+  PageUpEvent       -> "page-up"
+  PageDownEvent     -> "page-down"
+  ScrollTopEvent    -> "scroll-top"
+  ScrollBottomEvent -> "scroll-bottom"

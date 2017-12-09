@@ -31,13 +31,16 @@ import Constants
 import Network.Mattermost (Type(..))
 
 onEventMain :: Vty.Event -> MH ()
-onEventMain e = do
-  conf <- use (csResources.crConfiguration)
-  let keyMap = mainKeybindings (configUserKeys conf)
-  case e of
-    _ | Just kb <- lookupKeybinding e keyMap -> kbAction kb
+onEventMain e =
+  handleKeyboardEvent mainKeybindings e $ \ ev -> case ev of
     (Vty.EvPaste bytes) -> handlePaste bytes
-    _ -> handleEditingInput e
+    _ -> handleEditingInput ev
+  -- conf <- use (csResources.crConfiguration)
+  -- let keyMap = mainKeybindings (configUserKeys conf)
+  -- case e of
+  --   _ | Just kb <- lookupKeybinding e keyMap -> kbAction kb
+  --   (Vty.EvPaste bytes) -> handlePaste bytes
+  --   _ -> handleEditingInput e
 
 mainKeybindings :: KeyConfig -> [Keybinding]
 mainKeybindings = mkKeybindings
@@ -79,8 +82,9 @@ mainKeybindings = mkKeybindings
          (Vty.EvKey (Vty.KBackTab) []) $
          tabComplete Backwards
 
-    , staticKb "Scroll up in the channel input history"
-         (Vty.EvKey Vty.KUp []) $ do
+    , mkKb
+        ScrollUpEvent
+        "Scroll up in the channel input history" $ do
              -- Up in multiline mode does the usual thing; otherwise we
              -- navigate the history.
              isMultiline <- use (csEditState.cedMultiline)
@@ -89,8 +93,9 @@ mainKeybindings = mkKeybindings
                                            (Vty.EvKey Vty.KUp [])
                  False -> channelHistoryBackward
 
-    , staticKb "Scroll down in the channel input history"
-         (Vty.EvKey Vty.KDown []) $ do
+    , mkKb
+        ScrollDownEvent
+        "Scroll down in the channel input history" $ do
              -- Down in multiline mode does the usual thing; otherwise
              -- we navigate the history.
              isMultiline <- use (csEditState.cedMultiline)
@@ -99,8 +104,7 @@ mainKeybindings = mkKeybindings
                                            (Vty.EvKey Vty.KDown [])
                  False -> channelHistoryForward
 
-    , staticKb "Page up in the channel message list"
-         (Vty.EvKey Vty.KPageUp []) $ do
+    , mkKb PageUpEvent "Page up in the channel message list" $ do
              cId <- use csCurrentChannelId
              let vp = ChannelMessages cId
              mh $ invalidateCacheEntry vp

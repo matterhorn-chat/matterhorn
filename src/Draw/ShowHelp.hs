@@ -38,14 +38,14 @@ drawShowHelp topic st =
     [helpBox (helpTopicViewportName topic) $ helpTopicDraw topic st]
 
 helpTopicDraw :: HelpTopic -> ChatState -> Widget Name
-helpTopicDraw topic =
+helpTopicDraw topic st =
     case helpTopicScreen topic of
-        MainHelp -> const mainHelp
-        ScriptHelp -> const scriptHelp
-        ThemeHelp -> const themeHelp
+        MainHelp -> mainHelp (configUserKeys (st^.csResources.crConfiguration))
+        ScriptHelp -> scriptHelp
+        ThemeHelp -> themeHelp
 
-mainHelp :: Widget Name
-mainHelp = commandHelp
+mainHelp :: KeyConfig -> Widget Name
+mainHelp kc = commandHelp
   where
     commandHelp = vBox $ [ padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ str mhVersion
                          , hCenter $ withDefAttr helpEmphAttr $ str mmApiVersion
@@ -54,7 +54,7 @@ mainHelp = commandHelp
                          , padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Commands"
                          , mkCommandHelpText $ sortBy (comparing commandName) commandList
                          ] <>
-                         (mkKeybindingHelp <$> keybindSections)
+                         (mkKeybindingHelp <$> keybindSections kc)
 
     mkCommandHelpText :: [Cmd] -> Widget Name
     mkCommandHelpText cs =
@@ -220,13 +220,13 @@ withMargins (hMargin, vMargin) w =
             hl = ctx^.availHeightL - (2 * vMargin)
         render $ hLimit wl $ vLimit hl w
 
-keybindSections :: [(T.Text, [Keybinding])]
-keybindSections =
+keybindSections :: KeyConfig -> [(T.Text, [Keybinding])]
+keybindSections kc =
     [ ("This Help Page", helpKeybindings)
-    , ("Main Interface", mainKeybindings mempty)
+    , ("Main Interface", mainKeybindings kc)
     , ("Channel Select Mode", channelSelectKeybindings)
     , ("URL Select Mode", urlSelectKeybindings)
-    , ("Channel Scroll Mode", channelScrollKeybindings)
+    , ("Channel Scroll Mode", channelScrollKeybindings kc)
     , ("Message Select Mode", messageSelectKeybindings)
     , ("Text Editing", editingKeybindings)
     , ("Flagged Messages", postListOverlayKeybindings)
