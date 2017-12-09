@@ -19,6 +19,7 @@ import Network.Mattermost.Version (mmApiVersion)
 
 import Themes
 import Types
+import Types.KeyEvents (Binding(..), ppBinding)
 import Events.Keybindings
 import Command
 import Events.ShowHelp
@@ -247,49 +248,19 @@ kbColumnWidth = 12
 kbDescColumnWidth :: Int
 kbDescColumnWidth = 60
 
+eventToBinding :: Vty.Event -> Binding
+eventToBinding (Vty.EvKey k mods) = Binding mods k
+eventToBinding k = error $ "BUG: invalid keybinding " <> show k
+
 mkKeybindingHelp :: (T.Text, [Keybinding]) -> Widget Name
 mkKeybindingHelp (sectionName, kbs) =
     (hCenter $ padTop (Pad 1) $ withDefAttr helpEmphAttr $ txt $ "Keybindings: " <> sectionName) <=>
-    (hCenter $ vBox $ mkKeybindHelp <$> (sortBy (comparing (ppKbEvent.kbEvent)) kbs))
+    (hCenter $ vBox $ mkKeybindHelp <$> (sortBy (comparing (ppBinding.eventToBinding.kbEvent)) kbs))
 
 mkKeybindHelp :: Keybinding -> Widget Name
 mkKeybindHelp (KB desc ev _) =
-    (withDefAttr helpEmphAttr $ txt $ padTo kbColumnWidth $ ppKbEvent ev) <+>
+    (withDefAttr helpEmphAttr $ txt $ padTo kbColumnWidth $ ppBinding $ eventToBinding ev) <+>
     (vLimit 1 $ hLimit kbDescColumnWidth $ renderText desc <+> fill ' ')
-
-ppKbEvent :: Vty.Event -> T.Text
-ppKbEvent (Vty.EvKey k mods) =
-    T.intercalate "-" $ (ppMod <$> mods) <> [ppKey k]
-ppKbEvent _ = "<????>"
-
-ppKey :: Vty.Key -> T.Text
-ppKey (Vty.KChar c)   = ppChar c
-ppKey (Vty.KFun n)    = "F" <> (T.pack $ show n)
-ppKey Vty.KBackTab    = "S-Tab"
-ppKey Vty.KEsc        = "Esc"
-ppKey Vty.KBS         = "Backspace"
-ppKey Vty.KEnter      = "Enter"
-ppKey Vty.KUp         = "Up"
-ppKey Vty.KDown       = "Down"
-ppKey Vty.KLeft       = "Left"
-ppKey Vty.KRight      = "Right"
-ppKey Vty.KHome       = "Home"
-ppKey Vty.KEnd        = "End"
-ppKey Vty.KPageUp     = "PgUp"
-ppKey Vty.KPageDown   = "PgDown"
-ppKey Vty.KDel        = "Del"
-ppKey _               = "???"
-
-ppChar :: Char -> T.Text
-ppChar '\t' = "Tab"
-ppChar ' '  = "Space"
-ppChar c    = T.singleton c
-
-ppMod :: Vty.Modifier -> T.Text
-ppMod Vty.MMeta  = "M"
-ppMod Vty.MAlt   = "A"
-ppMod Vty.MCtrl  = "C"
-ppMod Vty.MShift = "S"
 
 padTo :: Int -> T.Text -> T.Text
 padTo n s = s <> T.replicate (n - T.length s) " "

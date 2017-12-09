@@ -4,6 +4,7 @@ import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
 import Text.Read (readMaybe)
+import Data.Monoid ((<>))
 
 -- | This enum represents all the possible key events a user might
 --   want to use.
@@ -124,6 +125,39 @@ bindingFromString kb = go (T.splitOn "-" $ T.toLower kb) []
           | Just (c, "") <- T.uncons t =
               return (Vty.KChar c)
           | otherwise = Left ("Unknown keybinding: " ++ show t)
+
+ppBinding :: Binding -> T.Text
+ppBinding (Binding mods k) =
+    T.intercalate "-" $ (ppMod <$> mods) <> [ppKey k]
+
+ppKey :: Vty.Key -> T.Text
+ppKey (Vty.KChar c)   = ppChar c
+ppKey (Vty.KFun n)    = "F" <> (T.pack $ show n)
+ppKey Vty.KBackTab    = "S-Tab"
+ppKey Vty.KEsc        = "Esc"
+ppKey Vty.KBS         = "Backspace"
+ppKey Vty.KEnter      = "Enter"
+ppKey Vty.KUp         = "Up"
+ppKey Vty.KDown       = "Down"
+ppKey Vty.KLeft       = "Left"
+ppKey Vty.KRight      = "Right"
+ppKey Vty.KHome       = "Home"
+ppKey Vty.KEnd        = "End"
+ppKey Vty.KPageUp     = "PgUp"
+ppKey Vty.KPageDown   = "PgDown"
+ppKey Vty.KDel        = "Del"
+ppKey _               = "???"
+
+ppChar :: Char -> T.Text
+ppChar '\t' = "Tab"
+ppChar ' '  = "Space"
+ppChar c    = T.singleton c
+
+ppMod :: Vty.Modifier -> T.Text
+ppMod Vty.MMeta  = "M"
+ppMod Vty.MAlt   = "A"
+ppMod Vty.MCtrl  = "C"
+ppMod Vty.MShift = "S"
 
 bindingListFromString :: T.Text -> Either String [Binding]
 bindingListFromString =
