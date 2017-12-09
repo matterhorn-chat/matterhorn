@@ -284,11 +284,17 @@ renderChannelHeader st hs chan =
         topicStr = chan^.ccInfo.cdHeader
         userHeader u = let s = T.intercalate " " $ filter (not . T.null) parts
                            parts = [ u^.uiName
-                                   , " is"
-                                   , u^.uiFirstName
+                                   , if (all T.null names)
+                                     then mempty
+                                     else "is"
+                                   ] <> names <> [
+                                     if T.null (u^.uiEmail)
+                                     then mempty
+                                     else "(" <> u^.uiEmail <> ")"
+                                   ]
+                           names = [ u^.uiFirstName
                                    , nick
                                    , u^.uiLastName
-                                   , "(" <> u^.uiEmail <> ")"
                                    ]
                            quote n = "\"" <> n <> "\""
                            nick = maybe "" quote $ u^.uiNickName
