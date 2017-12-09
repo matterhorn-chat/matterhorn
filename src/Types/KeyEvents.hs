@@ -73,16 +73,16 @@ data Binding = Binding
 type KeyConfig = M.Map KeyEvent [Binding]
 
 bindingFromString :: T.Text -> Either String Binding
-bindingFromString kb = go (T.splitOn "-" kb) []
+bindingFromString kb = go (T.splitOn "-" $ T.toLower kb) []
   where go [k] mods = do
           key <- pKey k
           return Binding { kbMods = mods, kbKey = key }
         go (k:ks) mods = do
           m <- case k of
-            "S" -> return Vty.MShift
-            "M" -> return Vty.MMeta
-            "A" -> return Vty.MAlt
-            "C" -> return Vty.MCtrl
+            "s" -> return Vty.MShift
+            "m" -> return Vty.MMeta
+            "a" -> return Vty.MAlt
+            "c" -> return Vty.MCtrl
             _   -> Left ("Unknown modifier prefix: " ++ show k)
           go ks (m:mods)
         go [] _ = Left "Empty keybinding not allowed"
