@@ -120,31 +120,11 @@ bindingListFromString =
   mapM (bindingFromString . T.strip) . T.splitOn ","
 
 keyEventFromString :: T.Text -> Either String KeyEvent
-keyEventFromString t = case t of
-  "quit"                   -> return QuitEvent
-  "vty-refresh"            -> return VtyRefreshEvent
-  "clear-unread"           -> return ClearUnreadEvent
-
-  "reply-recent"           -> return ReplyRecentEvent
-  "toggle-message-preview" -> return ToggleMessagePreviewEvent
-  "invoke-editor"          -> return InvokeEditorEvent
-  "toggle-multiline"       -> return ToggleMultiLineEvent
-  "cancel"                 -> return CancelEvent
-
-  "enter-fast-select"      -> return EnterFastSelectModeEvent
-  "focus-next-channel"     -> return NextChannelEvent
-  "focus-prev-channel"     -> return PrevChannelEvent
-  "focus-next-unread"      -> return NextUnreadChannelEvent
-  "focus-last-channel"     -> return LastChannelEvent
-
-  "show-flagged-posts"     -> return EnterFlaggedPostsEvent
-  "show-help"              -> return ShowHelpEvent
-  "select-mode"            -> return EnterSelectModeEvent
-  "enter-url-open"         -> return EnterOpenURLModeEvent
-
-  "load-more"              -> return LoadMoreEvent
-  "open-message-url"       -> return OpenMessageURLEvent
-  _                        -> Left ("Unknown event: " ++ show t)
+keyEventFromString t =
+    let mapping = M.fromList [ (keyEventToString e, e) | e <- allEvents ]
+    in case M.lookup t mapping of
+        Just e -> return e
+        Nothing -> Left ("Unknown event: " ++ show t)
 
 keyEventToString :: KeyEvent -> T.Text
 keyEventToString ev = case ev of
