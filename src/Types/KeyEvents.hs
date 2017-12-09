@@ -79,11 +79,16 @@ bindingFromString kb = go (T.splitOn "-" $ T.toLower kb) []
           return Binding { kbMods = mods, kbKey = key }
         go (k:ks) mods = do
           m <- case k of
-            "s" -> return Vty.MShift
-            "m" -> return Vty.MMeta
-            "a" -> return Vty.MAlt
-            "c" -> return Vty.MCtrl
-            _   -> Left ("Unknown modifier prefix: " ++ show k)
+            "s"       -> return Vty.MShift
+            "shift"   -> return Vty.MShift
+            "m"       -> return Vty.MMeta
+            "meta"    -> return Vty.MMeta
+            "a"       -> return Vty.MAlt
+            "alt"     -> return Vty.MAlt
+            "c"       -> return Vty.MCtrl
+            "ctrl"    -> return Vty.MCtrl
+            "control" -> return Vty.MCtrl
+            _         -> Left ("Unknown modifier prefix: " ++ show k)
           go ks (m:mods)
         go [] _ = Left "Empty keybinding not allowed"
         pKey "esc"       = return Vty.KEsc
