@@ -109,6 +109,8 @@ bindingFromString kb = go (T.splitOn "-" kb) []
         pKey "pgdown"    = return Vty.KPageDown
         pKey "begin"     = return Vty.KBegin
         pKey "menu"      = return Vty.KMenu
+        pKey "space"     = return (Vty.KChar ' ')
+        pKey "tab"       = return (Vty.KChar '\t')
         pKey t
           | Just n <- T.stripPrefix "f" t =
               case readMaybe (T.unpack n) of
