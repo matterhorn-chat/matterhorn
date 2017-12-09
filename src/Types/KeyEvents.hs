@@ -73,8 +73,8 @@ data Binding = Binding
 
 type KeyConfig = M.Map KeyEvent [Binding]
 
-bindingFromString :: T.Text -> Either String Binding
-bindingFromString kb = go (T.splitOn "-" $ T.toLower kb) []
+parseBinding :: T.Text -> Either String Binding
+parseBinding kb = go (T.splitOn "-" $ T.toLower kb) []
   where go [k] mods = do
           key <- pKey k
           return Binding { kbMods = mods, kbKey = key }
@@ -159,9 +159,9 @@ ppMod Vty.MAlt   = "A"
 ppMod Vty.MCtrl  = "C"
 ppMod Vty.MShift = "S"
 
-bindingListFromString :: T.Text -> Either String [Binding]
-bindingListFromString =
-  mapM (bindingFromString . T.strip) . T.splitOn ","
+parseBindingList :: T.Text -> Either String [Binding]
+parseBindingList =
+  mapM (parseBinding . T.strip) . T.splitOn ","
 
 keyEventFromName :: T.Text -> Either String KeyEvent
 keyEventFromName t =
