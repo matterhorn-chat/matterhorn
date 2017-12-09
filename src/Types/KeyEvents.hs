@@ -152,7 +152,7 @@ ppBinding (Binding mods k) =
 ppKey :: Vty.Key -> T.Text
 ppKey (Vty.KChar c)   = ppChar c
 ppKey (Vty.KFun n)    = "F" <> (T.pack $ show n)
-ppKey Vty.KBackTab    = "S-Tab"
+ppKey Vty.KBackTab    = "BackTab"
 ppKey Vty.KEsc        = "Esc"
 ppKey Vty.KBS         = "Backspace"
 ppKey Vty.KEnter      = "Enter"
