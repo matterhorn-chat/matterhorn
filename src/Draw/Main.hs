@@ -261,9 +261,7 @@ renderUserCommandBox st hs =
 
         commandBox = case st^.csEditState.cedMultiline of
             False ->
-                let linesStr = if numLines == 1
-                               then "line"
-                               else "lines"
+                let linesStr = "line" <> if numLines == 1 then "" else "s"
                     numLines = length curContents
                 in vLimit 1 $ hBox $
                    prompt : if multilineContent
