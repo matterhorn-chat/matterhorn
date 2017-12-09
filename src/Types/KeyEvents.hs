@@ -165,13 +165,13 @@ bindingListFromString =
 
 keyEventFromString :: T.Text -> Either String KeyEvent
 keyEventFromString t =
-    let mapping = M.fromList [ (keyEventToString e, e) | e <- allEvents ]
+    let mapping = M.fromList [ (keyEventName e, e) | e <- allEvents ]
     in case M.lookup t mapping of
         Just e -> return e
         Nothing -> Left ("Unknown event: " ++ show t)
 
-keyEventToString :: KeyEvent -> T.Text
-keyEventToString ev = case ev of
+keyEventName :: KeyEvent -> T.Text
+keyEventName ev = case ev of
   QuitEvent                 -> "quit"
   VtyRefreshEvent           -> "vty-refresh"
   ClearUnreadEvent          -> "clear-unread"
