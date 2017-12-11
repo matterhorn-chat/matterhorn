@@ -73,26 +73,36 @@ data KeyEvent
 
 allEvents :: [KeyEvent]
 allEvents =
-  [ VtyRefreshEvent
-  , ShowHelpEvent
-  , EnterSelectModeEvent
-  , ReplyRecentEvent
+  [ QuitEvent
+  , VtyRefreshEvent
+  , ClearUnreadEvent
+
   , ToggleMessagePreviewEvent
   , InvokeEditorEvent
+  , ToggleMultiLineEvent
+  , CancelEvent
+  , ReplyRecentEvent
+
   , EnterFastSelectModeEvent
-  , QuitEvent
   , NextChannelEvent
   , PrevChannelEvent
   , NextUnreadChannelEvent
   , LastChannelEvent
-  , EnterOpenURLModeEvent
-  , ClearUnreadEvent
-  , ToggleMultiLineEvent
-  , CancelEvent
+
   , EnterFlaggedPostsEvent
+  , ShowHelpEvent
+  , EnterSelectModeEvent
+  , EnterOpenURLModeEvent
 
   , LoadMoreEvent
   , OpenMessageURLEvent
+
+  , ScrollUpEvent
+  , ScrollDownEvent
+  , PageUpEvent
+  , PageDownEvent
+  , ScrollTopEvent
+  , ScrollBottomEvent
 
   , SelectUpEvent
   , SelectDownEvent
@@ -222,11 +232,11 @@ keyEventName ev = case ev of
   QuitEvent                 -> "quit"
   VtyRefreshEvent           -> "vty-refresh"
   ClearUnreadEvent          -> "clear-unread"
+  CancelEvent               -> "cancel"
 
   ToggleMessagePreviewEvent -> "toggle-message-preview"
   InvokeEditorEvent         -> "invoke-editor"
   ToggleMultiLineEvent      -> "toggle-multiline"
-  CancelEvent               -> "cancel"
   ReplyRecentEvent          -> "reply-recent"
 
   EnterFastSelectModeEvent  -> "enter-fast-select"
