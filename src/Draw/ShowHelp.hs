@@ -223,14 +223,14 @@ withMargins (hMargin, vMargin) w =
 
 keybindSections :: KeyConfig -> [(T.Text, [Keybinding])]
 keybindSections kc =
-    [ ("This Help Page", helpKeybindings)
+    [ ("This Help Page", helpKeybindings kc)
     , ("Main Interface", mainKeybindings kc)
-    , ("Channel Select Mode", channelSelectKeybindings)
-    , ("URL Select Mode", urlSelectKeybindings)
+    , ("Channel Select Mode", channelSelectKeybindings kc)
+    , ("URL Select Mode", urlSelectKeybindings kc)
     , ("Channel Scroll Mode", channelScrollKeybindings kc)
-    , ("Message Select Mode", messageSelectKeybindings)
+    , ("Message Select Mode", messageSelectKeybindings kc)
     , ("Text Editing", editingKeybindings)
-    , ("Flagged Messages", postListOverlayKeybindings)
+    , ("Flagged Messages", postListOverlayKeybindings kc)
     ]
 
 helpBox :: Name -> Widget Name -> Widget Name

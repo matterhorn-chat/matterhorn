@@ -119,7 +119,7 @@ editingKeybindings =
     (EvKey (KChar 'b') [MMeta]) $ do
     csEditState.cedEditor %= applyEdit Z.moveWordLeft
   , KB "Delete the word to the left of the cursor"
-    (EvKey (KBS) [MMeta]) $ do
+    (EvKey KBS [MMeta]) $ do
     csEditState.cedEditor %= applyEdit Z.deletePrevWord
   , KB "Delete the word to the left of the cursor"
     (EvKey (KChar 'w') [MCtrl]) $ do

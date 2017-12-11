@@ -44,10 +44,10 @@ lookupKeybinding e kbs = case filter ((== e) . kbEvent) kbs of
 
 handleKeyboardEvent
   :: (KeyConfig -> [Keybinding])
-  -> Vty.Event
   -> (Vty.Event -> MH ())
+  -> Vty.Event
   -> MH ()
-handleKeyboardEvent keyList e fallthrough = do
+handleKeyboardEvent keyList fallthrough e = do
   conf <- use (csResources.crConfiguration)
   let keyMap = keyList (configUserKeys conf)
   case lookupKeybinding e keyMap of
@@ -110,3 +110,12 @@ defaultBindings ev =
         PageDownEvent -> [ kb Vty.KPageDown ]
         ScrollTopEvent -> [ kb Vty.KHome ]
         ScrollBottomEvent -> [ kb Vty.KEnd ]
+
+        SelectUpEvent -> [ key 'k', kb Vty.KUp ]
+        SelectDownEvent -> [ key 'j', kb Vty.KDown ]
+
+        FlagMessageEvent   -> [ key 'f' ]
+        YankMessageEvent   -> [ key 'y' ]
+        DeleteMessageEvent -> [ key 'd' ]
+        EditMessageEvent   -> [ key 'e' ]
+        ReplyMessageEvent  -> [ key 'r' ]

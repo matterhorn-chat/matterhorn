@@ -59,6 +59,16 @@ data KeyEvent
   | PageDownEvent
   | ScrollTopEvent
   | ScrollBottomEvent
+
+  -- select events---not the same as scrolling sometimes!
+  | SelectUpEvent
+  | SelectDownEvent
+
+  | FlagMessageEvent
+  | YankMessageEvent
+  | DeleteMessageEvent
+  | EditMessageEvent
+  | ReplyMessageEvent
     deriving (Eq, Show, Ord, Enum)
 
 allEvents :: [KeyEvent]
@@ -83,6 +93,15 @@ allEvents =
 
   , LoadMoreEvent
   , OpenMessageURLEvent
+
+  , SelectUpEvent
+  , SelectDownEvent
+
+  , FlagMessageEvent
+  , YankMessageEvent
+  , DeleteMessageEvent
+  , EditMessageEvent
+  , ReplyMessageEvent
   ]
 
 data Binding = Binding
@@ -204,11 +223,11 @@ keyEventName ev = case ev of
   VtyRefreshEvent           -> "vty-refresh"
   ClearUnreadEvent          -> "clear-unread"
 
-  ReplyRecentEvent          -> "reply-recent"
   ToggleMessagePreviewEvent -> "toggle-message-preview"
   InvokeEditorEvent         -> "invoke-editor"
   ToggleMultiLineEvent      -> "toggle-multiline"
   CancelEvent               -> "cancel"
+  ReplyRecentEvent          -> "reply-recent"
 
   EnterFastSelectModeEvent  -> "enter-fast-select"
   NextChannelEvent          -> "focus-next-channel"
@@ -230,3 +249,12 @@ keyEventName ev = case ev of
   PageDownEvent     -> "page-down"
   ScrollTopEvent    -> "scroll-top"
   ScrollBottomEvent -> "scroll-bottom"
+
+  SelectUpEvent   -> "select-up"
+  SelectDownEvent -> "select-down"
+
+  FlagMessageEvent   -> "flag-message"
+  YankMessageEvent   -> "yank-message"
+  DeleteMessageEvent -> "delete-message"
+  EditMessageEvent   -> "edit-message"
+  ReplyMessageEvent  -> "reply-recent"

@@ -17,16 +17,15 @@ channelScrollKeybindings = mkKeybindings
     loadMoreMessages
   , mkKb OpenMessageURLEvent "Select and open a URL posted to the current channel"
     startUrlSelect
-  , staticKb "Scroll up" (Vty.EvKey Vty.KUp [])
-    channelScrollUp
-  , staticKb "Scroll down" (Vty.EvKey Vty.KDown [])
-    channelScrollDown
   , mkKb ScrollUpEvent "Scroll up"
-    channelPageUp
+    channelScrollUp
   , mkKb ScrollDownEvent "Scroll down"
+    channelScrollDown
+  , mkKb PageUpEvent "Scroll up"
+    channelPageUp
+  , mkKb PageDownEvent "Scroll down"
     channelPageDown
-  , staticKb "Cancel scrolling and return to channel view"
-    (Vty.EvKey Vty.KEsc []) $
+  , mkKb CancelEvent "Cancel scrolling and return to channel view" $
     csMode .= Main
   , mkKb ScrollTopEvent "Scroll to top"
     channelScrollToTop
@@ -35,8 +34,8 @@ channelScrollKeybindings = mkKeybindings
   ]
 
 onEventChannelScroll :: Vty.Event -> MH ()
-onEventChannelScroll ev =
-  handleKeyboardEvent channelScrollKeybindings ev $ \ e -> case e of
+onEventChannelScroll =
+  handleKeyboardEvent channelScrollKeybindings $ \ e -> case e of
     (Vty.EvResize _ _) -> do
       cId <- use csCurrentChannelId
       mh $ do

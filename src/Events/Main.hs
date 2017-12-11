@@ -31,8 +31,8 @@ import Constants
 import Network.Mattermost (Type(..))
 
 onEventMain :: Vty.Event -> MH ()
-onEventMain e =
-  handleKeyboardEvent mainKeybindings e $ \ ev -> case ev of
+onEventMain =
+  handleKeyboardEvent mainKeybindings $ \ ev -> case ev of
     (Vty.EvPaste bytes) -> handlePaste bytes
     _ -> handleEditingInput ev
   -- conf <- use (csResources.crConfiguration)

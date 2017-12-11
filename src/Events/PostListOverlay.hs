@@ -7,32 +7,14 @@ import Events.Keybindings
 import State.PostListOverlay
 
 onEventPostListOverlay :: Vty.Event -> MH ()
-onEventPostListOverlay e
-  | Just kb <- lookupKeybinding e postListOverlayKeybindings =
-      kbAction kb
-onEventPostListOverlay _ = return ()
+onEventPostListOverlay =
+  handleKeyboardEvent postListOverlayKeybindings $ \ _ -> return ()
 
 -- | The keybindings we want to use while viewing a post list overlay
-postListOverlayKeybindings :: [Keybinding]
-postListOverlayKeybindings =
-  [ KB "Exit post browsing" (Vty.EvKey Vty.KEsc []) $
-    exitPostListMode
-
-  , KB "Exit post browsing" (Vty.EvKey (Vty.KChar 'c') [Vty.MCtrl]) $
-    exitPostListMode
-
-  , KB "Select the previous message" (Vty.EvKey (Vty.KChar 'k') []) $
-    postListSelectUp
-
-  , KB "Select the previous message" (Vty.EvKey Vty.KUp []) $
-    postListSelectUp
-
-  , KB "Select the next message" (Vty.EvKey (Vty.KChar 'j') []) $
-    postListSelectDown
-
-  , KB "Select the next message" (Vty.EvKey Vty.KDown []) $
-    postListSelectDown
-
-  , KB "Toggle the selected message flag" (Vty.EvKey (Vty.KChar 'f') []) $
-    postListUnflagSelected
+postListOverlayKeybindings :: KeyConfig -> [Keybinding]
+postListOverlayKeybindings = mkKeybindings
+  [ mkKb CancelEvent "Exit post browsing" exitPostListMode
+  , mkKb SelectUpEvent "Select the previous message" postListSelectUp
+  , mkKb SelectDownEvent "Select the next message" postListSelectDown
+  , mkKb FlagMessageEvent "Toggle the selected message flag" postListUnflagSelected
   ]
