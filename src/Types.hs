@@ -273,6 +273,7 @@ data Name = ChannelMessages ChannelId
           | HelpText
           | ScriptHelpText
           | ThemeHelpText
+          | KeybindingHelpText
           | ChannelSelectString
           | CompletionAlternatives
           | JoinChannelList
@@ -428,6 +429,7 @@ data HelpScreen
   = MainHelp
   | ScriptHelp
   | ThemeHelp
+  | KeybindingHelp
     deriving (Eq)
 
 -- |  Help topics

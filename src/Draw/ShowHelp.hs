@@ -9,12 +9,13 @@ import Brick.Widgets.Border
 import Brick.Widgets.Center (hCenter, centerLayer)
 import Brick.Widgets.List (listSelectedFocusedAttr)
 import Lens.Micro.Platform
-import Data.List (sortBy, intercalate, sort)
-import Data.Ord (comparing)
+import Data.List (intercalate, sort)
+import Data.Maybe (isNothing)
 import qualified Data.Map as M
 import qualified Data.Text as T
 import Data.Monoid ((<>))
 import qualified Graphics.Vty as Vty
+import GHC.Exts (sortWith, groupWith)
 import Network.Mattermost.Version (mmApiVersion)
 
 import Themes
@@ -44,6 +45,7 @@ helpTopicDraw topic st =
         MainHelp -> mainHelp (configUserKeys (st^.csResources.crConfiguration))
         ScriptHelp -> scriptHelp
         ThemeHelp -> themeHelp
+        KeybindingHelp -> keybindingHelp (configUserKeys (st^.csResources.crConfiguration))
 
 mainHelp :: KeyConfig -> Widget Name
 mainHelp kc = commandHelp
@@ -53,7 +55,7 @@ mainHelp kc = commandHelp
                          , padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Help Topics"
                          , drawHelpTopics
                          , padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Commands"
-                         , mkCommandHelpText $ sortBy (comparing commandName) commandList
+                         , mkCommandHelpText $ sortWith commandName commandList
                          ] <>
                          (mkKeybindingHelp <$> keybindSections kc)
 
@@ -120,6 +122,46 @@ scriptHelp = vBox
            , [ "after which you can send ROT13 messages with the "
              , "Matterhorn command " ]
            , [ "> *> /sh rot13 Hello, world!*\n" ]
+           ]
+
+keybindingHelp :: KeyConfig -> Widget Name
+keybindingHelp kc = vBox $
+  [ padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Configurable Keybindings"
+  , padTop (Pad 1) $ hCenter $ hLimit 100 $ vBox keybindingHelpText
+  ] ++ map mkKeybindEventSectionHelp (keybindSections kc)
+  where keybindingHelpText = map (padTop (Pad 1) . renderText . mconcat)
+          [ [ "Many of the keybindings used in Matterhorn can be "
+            , "modified from within Matterhorn's **config.ini** file. "
+            , "To do this, include a section called **[KEYBINDINGS]** "
+            , "in your file, and use the event names listed below as "
+            , "keys and the desired key sequence as values.\n"
+            ]
+          , [ "For example, by default, the keybinding to move to the next "
+            , "channel in the public channel list is **C-n**, and the corresponding "
+            , "previous channel binding is **C-p**. You might want to remap these "
+            , "to other keys: say, **C-j** and **C-k**. We can do this with the following "
+            , "configuration snippet:\n"
+            ]
+          , [ "```ini\n"
+            , "[KEYBINDINGS]\n"
+            , "focus-next-channel = C-j\n"
+            , "focus-prev-channel = C-k\n"
+            , "```\n"
+            ]
+          , [ "You can remap a command to more than one key sequence, in which "
+            , "case any one of the key sequences provided can be used to invoke "
+            , "the relevant command. Additionally, some key combinations are "
+            , "used in multiple modes (such as URL select or help viewing) and "
+            , "therefore share the same name, such as **cancel** or **scroll-up**.\n"
+            ]
+          , [ "Additionally, some keys simply cannot be remapped, mostly in the "
+            , "case of editing keybindings. If you feel that a particular key "
+            , "event should be rebindable and isn't, then please feel free to "
+            , "let us know by posting in issue in the Matterhorn issue tracker.\n"
+            ]
+          , [ "The rebindable key events, along with their **current** "
+            , "values, are as follows:"
+            ]
            ]
 
 themeHelp :: Widget a
@@ -255,17 +297,32 @@ eventToBinding k = error $ "BUG: invalid keybinding " <> show k
 mkKeybindingHelp :: (T.Text, [Keybinding]) -> Widget Name
 mkKeybindingHelp (sectionName, kbs) =
     (hCenter $ padTop (Pad 1) $ withDefAttr helpEmphAttr $ txt $ "Keybindings: " <> sectionName) <=>
-    (hCenter $ vBox $ mkKeybindHelp <$> (sortBy (comparing (ppBinding.eventToBinding.kbEvent)) kbs))
+    (hCenter $ vBox $ mkKeybindHelp <$> (sortWith (ppBinding.eventToBinding.kbEvent) kbs))
 
 mkKeybindHelp :: Keybinding -> Widget Name
-mkKeybindHelp (KB desc ev _ src) =
+mkKeybindHelp (KB desc ev _ _) =
     (withDefAttr helpEmphAttr $ txt $ padTo kbColumnWidth $ ppBinding $ eventToBinding ev) <+>
-    (vLimit 1 $ hLimit kbDescColumnWidth $ renderText desc <+> event <+> fill ' ')
-    where event = case src of
-            Nothing -> emptyWidget
-            Just e ->
-              withDefAttr codeAttr $
-                str " (" <+> txt (keyEventName e) <+> str ")"
+    (vLimit 1 $ hLimit kbDescColumnWidth $ renderText desc <+> fill ' ')
+
+
+mkKeybindEventSectionHelp :: (T.Text, [Keybinding]) -> Widget Name
+mkKeybindEventSectionHelp (sectionName, kbs) =
+  let lst = sortWith (fmap keyEventName . kbBindingInfo . head) $ groupWith kbBindingInfo kbs
+  in if all (all (isNothing . kbBindingInfo)) lst
+       then emptyWidget
+       else (hCenter $ padTop (Pad 1) $ withDefAttr helpEmphAttr $ txt $ "Keybindings: " <> sectionName) <=>
+            (hCenter $ vBox $ concat $ mkKeybindEventHelp <$> lst)
+
+mkKeybindEventHelp :: [Keybinding] -> [Widget Name]
+mkKeybindEventHelp ks@(KB desc _ _ (Just e):_) =
+  let evs = [ ev | KB _ ev _ _ <- ks ]
+      evText = T.intercalate ", " (map (ppBinding . eventToBinding) evs)
+  in [ txt (padTo 72 ("; " <> desc))
+     , (withDefAttr helpEmphAttr $ txt $ keyEventName e) <+>
+       txt (" = " <> evText)
+     , str " "
+     ]
+mkKeybindEventHelp _ = []
 
 padTo :: Int -> T.Text -> T.Text
 padTo n s = s <> T.replicate (n - T.length s) " "
