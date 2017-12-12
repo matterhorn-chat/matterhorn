@@ -50,7 +50,6 @@ where
 
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
-import           Data.Time.Clock (UTCTime)
 import           Lens.Micro.Platform
 import           Network.Mattermost.Lenses hiding (Lens')
 import           Network.Mattermost.Types ( Channel(..), ChannelId
@@ -61,6 +60,7 @@ import           Network.Mattermost.Types ( Channel(..), ChannelId
                                           , ChannelNotifyProps
                                           , NotifyOption(..)
                                           , WithDefault(..)
+                                          , ServerTime
                                           , emptyChannelNotifyProps
                                           )
 import           Types.Messages (Messages, noMessages)
@@ -84,8 +84,8 @@ preferredChannelName ch
 
 data NewMessageIndicator =
     Hide
-    | NewPostsAfterServerTime UTCTime
-    | NewPostsStartingAt UTCTime
+    | NewPostsAfterServerTime ServerTime
+    | NewPostsStartingAt ServerTime
     deriving (Eq, Show)
 
 initialChannelInfo :: Channel -> ChannelInfo
@@ -218,15 +218,15 @@ isPendingState cstate = cstate `elem` [ ChanGettingPosts
 -- | The 'ChannelInfo' record represents metadata
 --   about a channel
 data ChannelInfo = ChannelInfo
-  { _cdViewed           :: Maybe UTCTime
+  { _cdViewed           :: Maybe ServerTime
     -- ^ The last time we looked at a channel
   , _cdNewMessageIndicator :: NewMessageIndicator
     -- ^ The state of the channel's new message indicator.
-  , _cdEditedMessageThreshold :: Maybe UTCTime
+  , _cdEditedMessageThreshold :: Maybe ServerTime
     -- ^ The channel's edited message threshold.
   , _cdMentionCount     :: Int
     -- ^ The current number of unread mentions
-  , _cdUpdated          :: UTCTime
+  , _cdUpdated          :: ServerTime
     -- ^ The last time a message showed up in the channel
   , _cdName             :: T.Text
     -- ^ The name of the channel
@@ -338,7 +338,7 @@ adjustEditedThreshold m c =
         Nothing -> Just $ m^.postUpdateAtL
         )
 
-maxPostTimestamp :: Post -> UTCTime
+maxPostTimestamp :: Post -> ServerTime
 maxPostTimestamp m = max (m^.postDeleteAtL . non (m^.postUpdateAtL)) (m^.postCreateAtL)
 
 updateNewMessageIndicator :: Post -> ClientChannel -> ClientChannel

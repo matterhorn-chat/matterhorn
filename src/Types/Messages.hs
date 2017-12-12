@@ -75,9 +75,8 @@ import qualified Data.Map.Strict as Map
 import           Data.Maybe (isJust)
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
-import           Data.Time.Clock (UTCTime)
 import           Lens.Micro.Platform
-import           Network.Mattermost.Types (ChannelId, PostId, Post)
+import           Network.Mattermost.Types (ChannelId, PostId, Post, ServerTime)
 import           Types.Posts
 
 -- ----------------------------------------------------------------------
@@ -88,7 +87,7 @@ import           Types.Posts
 data Message = Message
   { _mText          :: Blocks
   , _mUserName      :: Maybe T.Text
-  , _mDate          :: UTCTime
+  , _mDate          :: ServerTime
   , _mType          :: MessageType
   , _mPending       :: Bool
   , _mDeleted       :: Bool
@@ -152,7 +151,7 @@ clientMessageToMessage cm = Message
   , _mChannelId     = Nothing
   }
 
-newMessageOfType :: T.Text -> MessageType -> UTCTime -> Message
+newMessageOfType :: T.Text -> MessageType -> ServerTime -> Message
 newMessageOfType text typ d = Message
   { _mText         = getBlocks text
   , _mUserName     = Nothing
@@ -357,5 +356,5 @@ findLatestUserMessage f msgs =
                         Just p' -> findUserMessageFrom p' msgs
 
 -- | Return all messages that were posted after the specified date/time.
-messagesAfter :: UTCTime -> Messages -> Messages
+messagesAfter :: ServerTime -> Messages -> Messages
 messagesAfter viewTime = onDirectedSeq $ Seq.takeWhileR (\m -> m^.mDate > viewTime)

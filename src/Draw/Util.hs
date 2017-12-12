@@ -10,6 +10,7 @@ import Data.Time.Clock (UTCTime(..))
 import Data.Time.LocalTime.TimeZone.Series (TimeZoneSeries)
 import Lens.Micro.Platform
 import Network.Mattermost
+import Network.Mattermost.Types
 
 import Types
 import Types.Channels
@@ -45,13 +46,19 @@ renderUTCTime fmt tz t =
     then emptyWidget
     else withDefAttr timeAttr (txt $ localTimeText fmt $ asLocalTime tz t)
 
+-- | Generates a local matterhorn-only client message that creates a
+-- date marker.  The server date is converted to a local time (via
+-- timezone), and midnight of that timezone used to generate date
+-- markers.  Note that the actual time of the server and this client
+-- are still not synchronized, but no manipulations here actually use
+-- the client time.
 insertDateMarkers :: Messages -> T.Text -> TimeZoneSeries -> Messages
 insertDateMarkers ms datefmt tz = foldr (addMessage . dateMsg) ms dateRange
     where dateRange = foldr checkDateChange Set.empty ms
-          checkDateChange m = let msgDay = startOfDay (Just tz) (m^.mDate)
+          checkDateChange m = let msgDay = startOfDay (Just tz) (withServerTime (m^.mDate))
                               in if m^.mDeleted then id else Set.insert msgDay
           dateMsg d = let t = localTimeText datefmt $ asLocalTime tz d
-                      in newMessageOfType t (C DateTransition) d
+                      in newMessageOfType t (C DateTransition) (ServerTime d)
 
 
 withBrackets :: Widget a -> Widget a
