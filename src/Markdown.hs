@@ -441,6 +441,9 @@ separate hSet sq = case viewl sq of
                 buildString s n <| separate hSet rs
             _ | (normalChannelSigil `T.isPrefixOf` s' && (T.drop 1 s' `Set.member` cSet)) ->
                 buildString s n <| separate hSet rs
+            Fragment (TStr s'') _ :< _
+              | s'' == userSigil || s'' == normalChannelSigil ->
+                buildString s n <| separate hSet rs
             Fragment (TStr s'') n' :< xs
               | n == n' -> gatherStrings (s <> s'') n xs
             Fragment _ _ :< _ -> buildString s n <| separate hSet rs
