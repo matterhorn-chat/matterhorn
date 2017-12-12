@@ -258,9 +258,14 @@ mkKeybindingHelp (sectionName, kbs) =
     (hCenter $ vBox $ mkKeybindHelp <$> (sortBy (comparing (ppBinding.eventToBinding.kbEvent)) kbs))
 
 mkKeybindHelp :: Keybinding -> Widget Name
-mkKeybindHelp (KB desc ev _) =
+mkKeybindHelp (KB desc ev _ src) =
     (withDefAttr helpEmphAttr $ txt $ padTo kbColumnWidth $ ppBinding $ eventToBinding ev) <+>
-    (vLimit 1 $ hLimit kbDescColumnWidth $ renderText desc <+> fill ' ')
+    (vLimit 1 $ hLimit kbDescColumnWidth $ renderText desc <+> event <+> fill ' ')
+    where event = case src of
+            Nothing -> emptyWidget
+            Just e ->
+              withDefAttr codeAttr $
+                str " (" <+> txt (keyEventName e) <+> str ")"
 
 padTo :: Int -> T.Text -> T.Text
 padTo n s = s <> T.replicate (n - T.length s) " "

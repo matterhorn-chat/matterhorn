@@ -91,55 +91,56 @@ editingPermitted st =
 
 editingKeybindings :: [Keybinding]
 editingKeybindings =
-  [ KB "Transpose the final two characters"
+  let kb desc ev mote = KB desc ev mote Nothing in
+  [ kb "Transpose the final two characters"
     (EvKey (KChar 't') [MCtrl]) $ do
     csEditState.cedEditor %= applyEdit Z.transposeChars
-  , KB "Go to the start of the current line"
+  , kb "Go to the start of the current line"
     (EvKey (KChar 'a') [MCtrl]) $ do
     csEditState.cedEditor %= applyEdit Z.gotoBOL
-  , KB "Go to the end of the current line"
+  , kb "Go to the end of the current line"
     (EvKey (KChar 'e') [MCtrl]) $ do
     csEditState.cedEditor %= applyEdit Z.gotoEOL
-  , KB "Delete the character at the cursor"
+  , kb "Delete the character at the cursor"
     (EvKey (KChar 'd') [MCtrl]) $ do
     csEditState.cedEditor %= applyEdit Z.deleteChar
-  , KB "Delete from the cursor to the start of the current line"
+  , kb "Delete from the cursor to the start of the current line"
     (EvKey (KChar 'u') [MCtrl]) $ do
     csEditState.cedEditor %= applyEdit Z.killToBOL
-  , KB "Move one character to the right"
+  , kb "Move one character to the right"
     (EvKey (KChar 'f') [MCtrl]) $ do
     csEditState.cedEditor %= applyEdit Z.moveRight
-  , KB "Move one character to the left"
+  , kb "Move one character to the left"
     (EvKey (KChar 'b') [MCtrl]) $ do
     csEditState.cedEditor %= applyEdit Z.moveLeft
-  , KB "Move one word to the right"
+  , kb "Move one word to the right"
     (EvKey (KChar 'f') [MMeta]) $ do
     csEditState.cedEditor %= applyEdit Z.moveWordRight
-  , KB "Move one word to the left"
+  , kb "Move one word to the left"
     (EvKey (KChar 'b') [MMeta]) $ do
     csEditState.cedEditor %= applyEdit Z.moveWordLeft
-  , KB "Delete the word to the left of the cursor"
+  , kb "Delete the word to the left of the cursor"
     (EvKey KBS [MMeta]) $ do
     csEditState.cedEditor %= applyEdit Z.deletePrevWord
-  , KB "Delete the word to the left of the cursor"
+  , kb "Delete the word to the left of the cursor"
     (EvKey (KChar 'w') [MCtrl]) $ do
     csEditState.cedEditor %= applyEdit Z.deletePrevWord
-  , KB "Delete the word to the right of the cursor"
+  , kb "Delete the word to the right of the cursor"
     (EvKey (KChar 'd') [MMeta]) $ do
     csEditState.cedEditor %= applyEdit Z.deleteWord
-  , KB "Move the cursor to the beginning of the input"
+  , kb "Move the cursor to the beginning of the input"
     (EvKey KHome []) $ do
     csEditState.cedEditor %= applyEdit gotoHome
-  , KB "Move the cursor to the end of the input"
+  , kb "Move the cursor to the end of the input"
     (EvKey KEnd []) $ do
     csEditState.cedEditor %= applyEdit gotoEnd
-  , KB "Kill the line to the right of the current position and copy it"
+  , kb "Kill the line to the right of the current position and copy it"
     (EvKey (KChar 'k') [MCtrl]) $ do
       z <- use (csEditState.cedEditor.editContentsL)
       let restOfLine = Z.currentLine (Z.killToBOL z)
       csEditState.cedYankBuffer .= restOfLine
       csEditState.cedEditor %= applyEdit Z.killToEOL
-  , KB "Paste the current buffer contents at the cursor"
+  , kb "Paste the current buffer contents at the cursor"
     (EvKey (KChar 'y') [MCtrl]) $ do
       buf <- use (csEditState.cedYankBuffer)
       csEditState.cedEditor %= applyEdit (Z.insertMany buf)

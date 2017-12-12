@@ -26,7 +26,7 @@ helpKeybindings = mkKeybindings
     , mkKb PageUpEvent "Page up" $
         mh $ vScrollBy (viewportScroll HelpViewport) (-1 * pageAmount)
     , mkKb PageDownEvent "Page down" $
-        mh $ vScrollBy (viewportScroll HelpViewport) (-1 * pageAmount)
+        mh $ vScrollBy (viewportScroll HelpViewport) (1 * pageAmount)
     , mkKb CancelEvent "Return to the main interface" $
         csMode .= Main
     ]

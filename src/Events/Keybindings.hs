@@ -34,6 +34,7 @@ data Keybinding =
     KB { kbDescription :: T.Text
        , kbEvent :: Vty.Event
        , kbAction :: MH ()
+       , kbBindingInfo :: Maybe KeyEvent
        }
 
 -- | Find a keybinding that matches a Vty Event
@@ -56,12 +57,12 @@ handleKeyboardEvent keyList fallthrough e = do
 
 mkKb :: KeyEvent -> T.Text -> MH () -> KeyConfig -> [Keybinding]
 mkKb ev msg action conf =
-  [ KB msg (bindingToEvent key) action | key <- allKeys ]
+  [ KB msg (bindingToEvent key) action (Just ev) | key <- allKeys ]
   where allKeys | Just ks <- M.lookup ev conf = ks
                 | otherwise = defaultBindings ev
 
 staticKb :: T.Text -> Vty.Event -> MH () -> KeyConfig -> [Keybinding]
-staticKb msg event action _ = [KB msg event action]
+staticKb msg event action _ = [KB msg event action Nothing]
 
 mkKeybindings :: [KeyConfig -> [Keybinding]] -> KeyConfig -> [Keybinding]
 mkKeybindings ks conf = concat [ k conf | k <- ks ]

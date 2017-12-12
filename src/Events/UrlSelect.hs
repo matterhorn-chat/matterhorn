@@ -25,15 +25,13 @@ urlSelectKeybindings = mkKeybindings
 
     , mkKb CancelEvent "Cancel URL selection" stopUrlSelect
 
+    , mkKb SelectUpEvent "Move cursor up" $
+        mhHandleEventLensed csUrlList handleListEvent (Vty.EvKey Vty.KUp [])
+
+    , mkKb SelectDownEvent "Move cursor down" $
+        mhHandleEventLensed csUrlList handleListEvent (Vty.EvKey Vty.KDown [])
+
     , staticKb "Cancel URL selection"
          (Vty.EvKey (Vty.KChar 'q') []) $ stopUrlSelect
-
-    , staticKb "Move cursor down"
-         (Vty.EvKey (Vty.KChar 'j') []) $
-           mhHandleEventLensed csUrlList handleListEvent (Vty.EvKey Vty.KDown [])
-
-    , staticKb "Move cursor up"
-         (Vty.EvKey (Vty.KChar 'k') []) $
-           mhHandleEventLensed csUrlList handleListEvent (Vty.EvKey Vty.KUp [])
 
     ]
