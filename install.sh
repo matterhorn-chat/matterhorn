@@ -30,9 +30,12 @@ function init {
     if [ ! -f "$HERE/cabal.project.local" ]
     then
         FIRST_TIME=1
-        echo 'packages: deps/mattermost-api/mattermost-api.cabal'  >cabal.project.local
-        echo '          deps/mattermost-api-qc/mattermost-api-qc.cabal' >>cabal.project.local
-        echo '          deps/aspell-pipe' >>cabal.project.local
+        echo "packages: ${MATTERMOST_API_dir}/mattermost-api.cabal"  >cabal.project.local
+        echo "          ${MATTERMOST_API_QC_DIR}/mattermost-api-qc.cabal" >>cabal.project.local
+        echo "          ${ASPELL_PIPE_DIR}/aspell-pipe.cabal" >>cabal.project.local
+        echo "Built cabal.project.local:"
+        cat cabal.project.local
+        echo "----"
     fi
 }
 
