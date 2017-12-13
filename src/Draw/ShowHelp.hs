@@ -75,7 +75,7 @@ drawHelpTopics =
         drawTopic t = (withDefAttr helpEmphAttr $ txt (padTo topicNameWidth $ helpTopicName t)) <+>
                       txt (helpTopicDescription t)
     in (padBottom (Pad 1) $
-        hCenter $ renderText "These topics can be used with the `/help` command:") <=>
+        hCenter $ renderText "Learn more about these topics with `/help <topic>`:") <=>
        (hCenter $ vBox allHelpTopics)
 
 scriptHelp :: Widget Name
