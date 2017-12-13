@@ -13,6 +13,7 @@ import           Types
 import           InputHistory
 import           LastRunState
 import           App
+import           Events (ensureKeybindingConsistency)
 
 main :: IO ()
 main = do
@@ -23,6 +24,12 @@ main = do
             putStrLn $ "Error loading config: " <> err
             exitFailure
         Right c -> return c
+
+    case ensureKeybindingConsistency (configUserKeys config) of
+        Right () -> return ()
+        Left err -> do
+            putStrLn $ "Configuration error: " <> err
+            exitFailure
 
     finalSt <- runMatterhorn opts config
 

@@ -102,7 +102,6 @@ defaultBindings ev =
 
         -- channel-scroll-specific
         LoadMoreEvent -> [ ctrl (key 'b') ]
-        OpenMessageURLEvent -> [ ctrl (key 'o') ]
 
         -- scrolling events
         ScrollUpEvent -> [ kb Vty.KUp ]
@@ -115,8 +114,9 @@ defaultBindings ev =
         SelectUpEvent -> [ key 'k', kb Vty.KUp ]
         SelectDownEvent -> [ key 'j', kb Vty.KDown ]
 
-        FlagMessageEvent   -> [ key 'f' ]
-        YankMessageEvent   -> [ key 'y' ]
-        DeleteMessageEvent -> [ key 'd' ]
-        EditMessageEvent   -> [ key 'e' ]
-        ReplyMessageEvent  -> [ key 'r' ]
+        FlagMessageEvent    -> [ key 'f' ]
+        YankMessageEvent    -> [ key 'y' ]
+        DeleteMessageEvent  -> [ key 'd' ]
+        EditMessageEvent    -> [ key 'e' ]
+        ReplyMessageEvent   -> [ key 'r' ]
+        OpenMessageURLEvent -> [ key 'o' ]

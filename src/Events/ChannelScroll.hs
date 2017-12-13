@@ -15,7 +15,7 @@ channelScrollKeybindings :: KeyConfig -> [Keybinding]
 channelScrollKeybindings = mkKeybindings
   [ mkKb LoadMoreEvent "Load more messages in the current channel"
     loadMoreMessages
-  , mkKb OpenMessageURLEvent "Select and open a URL posted to the current channel"
+  , mkKb EnterOpenURLModeEvent "Select and open a URL posted to the current channel"
     startUrlSelect
   , mkKb ScrollUpEvent "Scroll up"
     channelScrollUp
