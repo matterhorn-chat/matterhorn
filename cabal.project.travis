@@ -1,4 +1,6 @@
 packages: deps/mattermost-api/mattermost-api.cabal
+          deps/mattermost-api-qc/mattermost-api-qc.cabal
+          deps/aspell-pipe/aspell-pipe.cabal
 jobs: 1
 package matterhorn
   ghc-options: -Werror
