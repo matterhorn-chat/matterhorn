@@ -133,7 +133,7 @@ keybindingHelp kc = vBox $
           [ [ "Many of the keybindings used in Matterhorn can be "
             , "modified from within Matterhorn's **config.ini** file. "
             , "To do this, include a section called **[KEYBINDINGS]** "
-            , "in your file, and use the event names listed below as "
+            , "in your config file and use the event names listed below as "
             , "keys and the desired key sequence as values.\n"
             ]
           , [ "For example, by default, the keybinding to move to the next "
@@ -150,14 +150,15 @@ keybindingHelp kc = vBox $
             ]
           , [ "You can remap a command to more than one key sequence, in which "
             , "case any one of the key sequences provided can be used to invoke "
-            , "the relevant command. Additionally, some key combinations are "
+            , "the relevant command. To do this, provide the desired bindings as "
+            , "a comma-separated list. Additionally, some key combinations are "
             , "used in multiple modes (such as URL select or help viewing) and "
             , "therefore share the same name, such as **cancel** or **scroll-up**.\n"
             ]
           , [ "Additionally, some keys simply cannot be remapped, mostly in the "
             , "case of editing keybindings. If you feel that a particular key "
             , "event should be rebindable and isn't, then please feel free to "
-            , "let us know by posting in issue in the Matterhorn issue tracker.\n"
+            , "let us know by posting an issue in the Matterhorn issue tracker.\n"
             ]
           , [ "The rebindable key events, along with their **current** "
             , "values, are as follows:"
