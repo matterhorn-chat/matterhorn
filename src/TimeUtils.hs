@@ -15,9 +15,10 @@ import           Data.Time.LocalTime.TimeZone.Olson (getTimeZoneSeriesFromOlsonF
 import           Data.Time.LocalTime.TimeZone.Series (TimeZoneSeries
                                                      , localTimeToUTC'
                                                      , utcToLocalTime')
+import           Network.Mattermost.Types (ServerTime(..))
 
 
--- | Get the tiemezone series that should be used for converting UTC
+-- | Get the timezone series that should be used for converting UTC
 -- times into local times with appropriate DST adjustments.
 lookupLocalTimeZone :: IO TimeZoneSeries
 lookupLocalTimeZone = getTimeZoneSeriesFromOlsonFile "/etc/localtime"
@@ -31,14 +32,16 @@ lookupLocalTimeZone = getTimeZoneSeriesFromOlsonFile "/etc/localtime"
 -- timestamps to operate normally (whereas a type-match for a
 -- non-timestamp-entry in the sort operation would be considerably
 -- more complex).
-justAfter :: UTCTime -> UTCTime
-justAfter time = let UTCTime d t = time in UTCTime d (succ t)
+justAfter :: ServerTime -> ServerTime
+justAfter = ServerTime . justAfterUTC . withServerTime
+    where justAfterUTC time = let UTCTime d t = time in UTCTime d (succ t)
 
 
 -- | Obtain a time value that is just moments before the input time;
 -- see the comment for the 'justAfter' function for more details.
-justBefore :: UTCTime -> UTCTime
-justBefore time = let UTCTime d t = time in UTCTime d (pred t)
+justBefore :: ServerTime -> ServerTime
+justBefore = ServerTime . justBeforeUTC . withServerTime
+    where justBeforeUTC time = let UTCTime d t = time in UTCTime d (pred t)
 
 
 -- | The timestamp for the start of the day associated with the input

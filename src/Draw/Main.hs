@@ -29,6 +29,7 @@ import           Data.Char (isSpace, isPunctuation)
 import           Lens.Micro.Platform
 
 import           Network.Mattermost
+import           Network.Mattermost.Types (ServerTime(..))
 import           Network.Mattermost.Lenses
 
 import qualified Graphics.Vty as Vty
@@ -67,7 +68,7 @@ previewFromInput uname s =
        then Nothing
        else Just $ Message { _mText          = getBlocks content
                            , _mUserName      = Just uname
-                           , _mDate          = UTCTime (fromGregorian 1970 1 1) 0
+                           , _mDate          = ServerTime $ UTCTime (fromGregorian 1970 1 1) 0
                            -- The date is not used for preview
                            -- rendering, but we need to provide one.
                            -- Ideally we'd just today's date, but the
@@ -619,9 +620,9 @@ renderUrlList st =
                       then emptyWidget
                       else (txt ": " <+> (renderText $ link^.linkName))
                   , fill ' '
-                  , renderDate st time
+                  , renderDate st $ withServerTime time
                   , str " "
-                  , renderTime st time
+                  , renderTime st $ withServerTime time
                   ] ) <=>
             (vLimit 1 (renderText $ link^.linkURL))
 

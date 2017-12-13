@@ -10,9 +10,9 @@ import           Data.Maybe (catMaybes)
 import           Data.Monoid ((<>))
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
-import           Data.Time.Clock (UTCTime(..))
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform
+import           Network.Mattermost.Types (ServerTime(..))
 
 import           Draw.Util
 import           Markdown
@@ -29,11 +29,11 @@ maxMessageHeight = 200
 -- The `ind` argument specifies an "indicator boundary".  Showing
 -- various indicators (e.g. "edited") is not typically done for
 -- messages that are older than this boundary value.
-renderSingleMessage :: ChatState -> HighlightSet -> Maybe UTCTime -> Message -> Widget Name
+renderSingleMessage :: ChatState -> HighlightSet -> Maybe ServerTime -> Message -> Widget Name
 renderSingleMessage st hs ind =
-  renderChatMessage st hs ind (withBrackets . renderTime st)
+  renderChatMessage st hs ind (withBrackets . renderTime st . withServerTime)
 
-renderChatMessage :: ChatState -> HighlightSet -> Maybe UTCTime -> (UTCTime -> Widget Name) -> Message -> Widget Name
+renderChatMessage :: ChatState -> HighlightSet -> Maybe ServerTime -> (ServerTime -> Widget Name) -> Message -> Widget Name
 renderChatMessage st hs ind renderTimeFunc msg =
     let showOlderEdits = configShowOlderEdits $ st^.csResources.crConfiguration
         parent = case msg^.mInReplyToMsg of
