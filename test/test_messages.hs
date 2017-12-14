@@ -44,23 +44,23 @@ tests = testGroup "Messages Tests"
 
 
 test_m1 :: IO Message
-test_m1 = do t1 <- getCurrentTime
+test_m1 = do t1 <- ServerTime <$> getCurrentTime
              return $ Message Seq.empty Nothing t1 (CP NormalPost) False False Seq.empty NotAReply Nothing Map.empty Nothing False Nothing
 
 test_m2 :: IO Message
-test_m2 = do t2 <- getCurrentTime
+test_m2 = do t2 <- ServerTime <$> getCurrentTime
              return $ Message Seq.empty Nothing t2 (CP Emote) False False Seq.empty NotAReply (Just $ fromId $ Id $ T.pack "m2") Map.empty Nothing False Nothing
 
 test_m3 :: IO Message
-test_m3 = do t3 <- getCurrentTime
+test_m3 = do t3 <- ServerTime <$> getCurrentTime
              return $ Message Seq.empty Nothing t3 (CP NormalPost) False False Seq.empty NotAReply (Just $ fromId $ Id $ T.pack "m3") Map.empty Nothing False Nothing
 
 setDateOrderMessages :: [Message] -> [Message]
 setDateOrderMessages = snd . foldl setTimeAndInsert (startTime, [])
     where setTimeAndInsert (t, ml) m = let t2 = tick t
                                        in (t2, ml ++ [m {_mDate = t2}])
-          startTime = UTCTime (ModifiedJulianDay 100) (secondsToDiffTime 0)
-          tick (UTCTime d t) = UTCTime d $ succ t
+          startTime = ServerTime $ UTCTime (ModifiedJulianDay 100) (secondsToDiffTime 0)
+          tick (ServerTime (UTCTime d t)) = ServerTime $ UTCTime d $ succ t
 
 makeMsgs :: [Message] -> Messages
 makeMsgs = foldr addMessage noMessages
@@ -213,7 +213,7 @@ createTests = testGroup "Create"
 
               , testProperty "duplicate dates different IDs in posted order"
                     $ \(w, x, y, z) ->
-                        let d = UTCTime
+                        let d = ServerTime $ UTCTime
                                 (ModifiedJulianDay 1234)
                                 (secondsToDiffTime 9876)
                             l = foldl (setTime d) [] $ postMsg <$> [w, x, y, z]

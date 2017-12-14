@@ -123,7 +123,6 @@ import           Control.Monad (when, unless, void, forM_)
 import qualified Data.ByteString as BS
 import           Data.Function (on)
 import           Data.Text.Zipper (textZipper, clearZipper, insertMany, gotoEOL)
-import           Data.Time.Clock (UTCTime)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
 import           Data.List (sort, findIndex)
@@ -146,7 +145,8 @@ import           System.FilePath
 
 import           Network.Mattermost
 import           Network.Mattermost.Types (NotifyOption(..), GroupChannelPreference(..),
-                                           preferenceToGroupChannelPreference)
+                                           preferenceToGroupChannelPreference,
+                                           ServerTime)
 import           Network.Mattermost.Lenses
 
 import           Config
@@ -1425,7 +1425,7 @@ getNewMessageCutoff cId st = do
     cc <- st^?csChannel(cId)
     return $ cc^.ccInfo.cdNewMessageIndicator
 
-getEditedMessageCutoff :: ChannelId -> ChatState -> Maybe UTCTime
+getEditedMessageCutoff :: ChannelId -> ChatState -> Maybe ServerTime
 getEditedMessageCutoff cId st = do
     cc <- st^?csChannel(cId)
     cc^.ccInfo.cdEditedMessageThreshold

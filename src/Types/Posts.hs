@@ -51,9 +51,9 @@ import qualified Data.Map.Strict as Map
 import           Data.Monoid ((<>))
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
-import           Data.Time.Clock (UTCTime, getCurrentTime)
+import           Data.Time.Clock (getCurrentTime)
 import           Lens.Micro.Platform ((^.), makeLenses)
-import           Network.Mattermost
+import           Network.Mattermost.Types
 import           Network.Mattermost.Lenses
 
 -- * Client Messages
@@ -62,15 +62,22 @@ import           Network.Mattermost.Lenses
 --   like help text or an error message.
 data ClientMessage = ClientMessage
   { _cmText :: T.Text
-  , _cmDate :: UTCTime
+  , _cmDate :: ServerTime
   , _cmType :: ClientMessageType
   } deriving (Eq, Show)
 
--- | Create a new 'ClientMessage' value
+-- | Create a new 'ClientMessage' value.  This is a message generated
+-- by this Matterhorn client and not by (or visible to) the Server.
+-- These should be visible, but not necessarily integrated into any
+-- special position in the output stream (i.e., they should generally
+-- appear at the bottom of the messages display, but subsequent
+-- messages should follow them), so this is a special place where
+-- there is an assumed approximation of equality between local time
+-- and server time.
 newClientMessage :: (MonadIO m) => ClientMessageType -> T.Text -> m ClientMessage
 newClientMessage ty msg = do
   now <- liftIO getCurrentTime
-  return (ClientMessage msg now ty)
+  return (ClientMessage msg (ServerTime now) ty)
 
 -- | We format 'ClientMessage' values differently depending on
 --   their 'ClientMessageType'
@@ -94,7 +101,7 @@ data ClientPost = ClientPost
   { _cpText          :: Blocks
   , _cpUser          :: Maybe UserId
   , _cpUserOverride  :: Maybe T.Text
-  , _cpDate          :: UTCTime
+  , _cpDate          :: ServerTime
   , _cpType          :: ClientPostType
   , _cpPending       :: Bool
   , _cpDeleted       :: Bool

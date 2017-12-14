@@ -79,7 +79,7 @@ drawHelpTopics =
         drawTopic t = (withDefAttr helpEmphAttr $ txt (padTo topicNameWidth $ helpTopicName t)) <+>
                       txt (helpTopicDescription t)
     in (padBottom (Pad 1) $
-        hCenter $ renderText "These topics can be used with the `/help` command:") <=>
+        hCenter $ renderText "Learn more about these topics with `/help <topic>`:") <=>
        (hCenter $ vBox allHelpTopics)
 
 scriptHelp :: Widget Name
@@ -271,7 +271,12 @@ themeHelp = overrideAttr codeAttr helpEmphAttr $ vBox
         " * reverseVideo\n" <>
         " * blink\n" <>
         " * dim\n" <>
-        " * bold\n"
+        " * bold\n" <>
+        "  \n" <>
+        "In addition, a special value of *default* is possible for either color " <>
+        "setting of an attribute. This value indicates that the attribute should " <>
+        "use the terminal emulator's default foreground or background color of " <>
+        "choice rather than a specific ANSI color."
   , padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Username Highlighting"
   , padTop (Pad 1) $ hCenter $ hLimit 72 $ renderText $
         "Username colors are chosen by hashing each username and then using the hash " <>

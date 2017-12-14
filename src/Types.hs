@@ -154,9 +154,7 @@ import           Control.Exception (SomeException)
 import qualified Control.Monad.State as St
 import qualified Data.Foldable as F
 import qualified Data.Sequence as Seq
-import qualified Data.Set as S
 import           Data.HashMap.Strict (HashMap)
-import           Data.Time.Clock (UTCTime)
 import           Data.Time.LocalTime.TimeZone.Series (TimeZoneSeries)
 import qualified Data.HashMap.Strict as HM
 import           Data.List (sort, partition, sortBy)
@@ -168,6 +166,7 @@ import           Lens.Micro.Platform ( at, makeLenses, lens, (&), (^.), (%~), (.
 import           Network.Mattermost
 import           Network.Mattermost.Exceptions
 import           Network.Mattermost.Lenses
+import           Network.Mattermost.Types
 import           Network.Mattermost.WebSocket
 import           Network.Connection (HostNotResolved, HostCannotConnect)
 import qualified Data.Text as T
@@ -312,7 +311,7 @@ data PostRef
 
 -- | For representing links to things in the 'open links' view
 data LinkChoice = LinkChoice
-  { _linkTime   :: UTCTime
+  { _linkTime   :: ServerTime
   , _linkUser   :: T.Text
   , _linkName   :: T.Text
   , _linkURL    :: T.Text
@@ -392,7 +391,7 @@ data ChatEditState = ChatEditState
   , _cedCompletionAlternatives :: [T.Text]
   , _cedYankBuffer           :: T.Text
   , _cedSpellChecker         :: Maybe (Aspell, IO ())
-  , _cedMisspellings         :: S.Set T.Text
+  , _cedMisspellings         :: Set.Set T.Text
   }
 
 data EditMode =

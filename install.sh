@@ -32,7 +32,7 @@ function init {
         FIRST_TIME=1
         echo 'packages: deps/mattermost-api/mattermost-api.cabal'  >cabal.project.local
         echo '          deps/mattermost-api-qc/mattermost-api-qc.cabal' >>cabal.project.local
-        echo '          deps/aspell-pipe' >>cabal.project.local
+        echo '          deps/aspell-pipe/aspell-pipe.cabal' >>cabal.project.local
     fi
 }
 

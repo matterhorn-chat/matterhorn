@@ -33,7 +33,6 @@ import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Foldable as F
 import           Data.Monoid (First(..), (<>))
-import           Data.Time.Clock (UTCTime)
 import           Data.Sequence ( Seq
                                , ViewL(..)
                                , ViewR(..)
@@ -49,6 +48,7 @@ import           Lens.Micro.Platform ((^.))
 import           Control.Monad              (join)
 
 import           Network.Mattermost.Lenses (postUpdateAtL, postCreateAtL)
+import           Network.Mattermost.Types (ServerTime(..))
 import           Themes
 import           Types (HighlightSet(..), userSigil, normalChannelSigil)
 import           Types.Posts
@@ -100,7 +100,7 @@ appendEditSentinel sentinel b =
 -- | A bundled structure that includes all the information necessary
 -- to render a given message
 data MessageData = MessageData
-  { mdEditThreshold     :: Maybe UTCTime
+  { mdEditThreshold     :: Maybe ServerTime
   , mdShowOlderEdits    :: Bool
   , mdMessage           :: Message
   , mdParentMessage     :: Maybe Message
@@ -440,6 +440,9 @@ separate hSet sq = case viewl sq of
                 (userSigil `T.isPrefixOf` s' && (T.drop 1 s' `Set.member` uSet)) ->
                 buildString s n <| separate hSet rs
             _ | (normalChannelSigil `T.isPrefixOf` s' && (T.drop 1 s' `Set.member` cSet)) ->
+                buildString s n <| separate hSet rs
+            Fragment (TStr s'') _ :< _
+              | s'' == userSigil || s'' == normalChannelSigil ->
                 buildString s n <| separate hSet rs
             Fragment (TStr s'') n' :< xs
               | n == n' -> gatherStrings (s <> s'') n xs
