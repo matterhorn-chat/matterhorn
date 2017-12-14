@@ -13,6 +13,7 @@ module Types.KeyEvents
   , parseBindingList
   , ppBinding
   , nonCharKeys
+  , eventToBinding
 
   -- * Key event name resolution
   , keyEventFromName
@@ -115,6 +116,10 @@ allEvents =
   , ReplyMessageEvent
   ]
 
+eventToBinding :: Vty.Event -> Binding
+eventToBinding (Vty.EvKey k mods) = Binding mods k
+eventToBinding k = error $ "BUG: invalid keybinding " <> show k
+
 data Binding = Binding
   { kbMods :: [Vty.Modifier]
   , kbKey  :: Vty.Key
@@ -167,12 +172,12 @@ parseBinding kb = go (T.splitOn "-" $ T.toLower kb) []
         pKey "space"     = return (Vty.KChar ' ')
         pKey "tab"       = return (Vty.KChar '\t')
         pKey t
+          | Just (c, "") <- T.uncons t =
+              return (Vty.KChar c)
           | Just n <- T.stripPrefix "f" t =
               case readMaybe (T.unpack n) of
                   Nothing -> Left ("Unknown keybinding: " ++ show t)
                   Just i -> return (Vty.KFun i)
-          | Just (c, "") <- T.uncons t =
-              return (Vty.KChar c)
           | otherwise = Left ("Unknown keybinding: " ++ show t)
 
 ppBinding :: Binding -> T.Text
@@ -277,4 +282,4 @@ keyEventName ev = case ev of
   YankMessageEvent   -> "yank-message"
   DeleteMessageEvent -> "delete-message"
   EditMessageEvent   -> "edit-message"
-  ReplyMessageEvent  -> "reply-recent"
+  ReplyMessageEvent  -> "reply-message"

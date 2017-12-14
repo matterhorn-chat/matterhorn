@@ -52,6 +52,9 @@ import           Types.Channels ( NewMessageIndicator(..)
 import           Types.Messages
 import           Types.Posts
 import           Types.Users
+import           Types.KeyEvents
+import           Events.Keybindings
+import           Events.MessageSelect
 
 previewFromInput :: T.Text -> T.Text -> Maybe Message
 previewFromInput _ s | s == T.singleton cursorSentinel = Nothing
@@ -461,13 +464,37 @@ messageSelectBottomBar st =
         hasURLs = numURLs > 0
         openUrlsMsg = "open " <> (T.pack $ show numURLs) <> " URL" <> s
         hasVerb = isJust (findVerbatimChunk (postMsg^.mText))
-        options = [ (isReplyable, "r", "reply")
-                  , (\m -> isMine st m && isEditable m, "e", "edit")
-                  , (\m -> isMine st m && isDeletable m, "d", "delete")
-                  , (const hasURLs, "o", openUrlsMsg)
-                  , (const hasVerb, "y", "yank")
-                  , (\m -> not (m^.mFlagged), "f", "flag")
-                  , (\m ->      m^.mFlagged , "f", "unflag")
+        -- make sure these keybinding pieces are up-to-date!
+        ev e =
+          let keyconf = st^.csResources.crConfiguration.to configUserKeys
+              keymap = messageSelectKeybindings keyconf
+          in T.intercalate ","
+               [ ppBinding (eventToBinding b)
+               | KB { kbBindingInfo = Just e'
+                    , kbEvent       = b
+                    } <- keymap
+               , e' == e ]
+        options = [ ( isReplyable
+                    , ev ReplyMessageEvent
+                    , "reply" )
+                  , ( \m -> isMine st m && isEditable m
+                    , ev EditMessageEvent
+                    , "edit" )
+                  , ( \m -> isMine st m && isDeletable m
+                    , ev DeleteMessageEvent
+                    , "delete" )
+                  , ( const hasURLs
+                    , ev OpenMessageURLEvent
+                    , openUrlsMsg )
+                  , ( const hasVerb
+                    , ev YankMessageEvent
+                    , "yank" )
+                  , ( \m -> not (m^.mFlagged)
+                    , ev FlagMessageEvent
+                    , "flag" )
+                  , ( \m ->      m^.mFlagged
+                    , ev FlagMessageEvent
+                    , "unflag" )
                   ]
         Just postMsg = getSelectedMessage st
 

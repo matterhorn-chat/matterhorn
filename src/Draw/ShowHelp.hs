@@ -20,7 +20,7 @@ import Network.Mattermost.Version (mmApiVersion)
 
 import Themes
 import Types
-import Types.KeyEvents (Binding(..), ppBinding, nonCharKeys)
+import Types.KeyEvents (Binding(..), ppBinding, nonCharKeys, eventToBinding)
 import Events.Keybindings
 import Command
 import Events.ShowHelp
@@ -338,10 +338,6 @@ kbColumnWidth = 12
 
 kbDescColumnWidth :: Int
 kbDescColumnWidth = 60
-
-eventToBinding :: Vty.Event -> Binding
-eventToBinding (Vty.EvKey k mods) = Binding mods k
-eventToBinding k = error $ "BUG: invalid keybinding " <> show k
 
 mkKeybindingHelp :: (T.Text, [Keybinding]) -> Widget Name
 mkKeybindingHelp (sectionName, kbs) =
