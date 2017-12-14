@@ -20,7 +20,7 @@ import Network.Mattermost.Version (mmApiVersion)
 
 import Themes
 import Types
-import Types.KeyEvents (Binding(..), ppBinding)
+import Types.KeyEvents (Binding(..), ppBinding, nonCharKeys)
 import Events.Keybindings
 import Command
 import Events.ShowHelp
@@ -129,16 +129,26 @@ keybindingHelp kc = vBox $
   [ padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Configurable Keybindings"
   , padTop (Pad 1) $ hCenter $ hLimit 100 $ vBox keybindingHelpText
   ] ++ map mkKeybindEventSectionHelp (keybindSections kc)
+    ++
+  [ padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Keybinding Syntax"
+  , padTop (Pad 1) $ hCenter $ hLimit 100 $ vBox validKeys
+  ]
   where keybindingHelpText = map (padTop (Pad 1) . renderText . mconcat)
           [ [ "Many of the keybindings used in Matterhorn can be "
             , "modified from within Matterhorn's **config.ini** file. "
             , "To do this, include a section called **[KEYBINDINGS]** "
             , "in your file, and use the event names listed below as "
-            , "keys and the desired key sequence as values.\n"
+            , "keys and the desired key sequence as values. "
+            , "See the end of this page for documentation on the valid "
+            , "syntax for key sequences.\n"
             ]
           , [ "For example, by default, the keybinding to move to the next "
-            , "channel in the public channel list is **C-n**, and the corresponding "
-            , "previous channel binding is **C-p**. You might want to remap these "
+            , "channel in the public channel list is **"
+            , nextChanBinding
+            , "**, and the corresponding "
+            , "previous channel binding is **"
+            , prevChanBinding
+            , "**. You might want to remap these "
             , "to other keys: say, **C-j** and **C-k**. We can do this with the following "
             , "configuration snippet:\n"
             ]
@@ -163,6 +173,39 @@ keybindingHelp kc = vBox $
             , "values, are as follows:"
             ]
            ]
+        nextChanBinding = ppBinding (head (defaultBindings NextChannelEvent))
+        prevChanBinding = ppBinding (head (defaultBindings PrevChannelEvent))
+        validKeys = map (padTop (Pad 1) . renderText . mconcat)
+          [ [ "The syntax used for key sequences consists of zero or more "
+            , "single-character modifier characters followed by a keystroke "
+            , "all separated by dashes. The available modifier keys are "
+            , "**S** for Shift, **C** for Ctrl, **A** for Alt, and **M** for "
+            , "Meta. So, for example, **"
+            , ppBinding (Binding [] (Vty.KFun 2))
+            , "** is the F2 key pressed with no "
+            , "modifier keys; **"
+            , ppBinding (Binding [Vty.MCtrl] (Vty.KChar 'x'))
+            , "** is Ctrl and X pressed together, "
+            , "and **"
+            , ppBinding (Binding [Vty.MShift, Vty.MCtrl] (Vty.KChar 'x'))
+            , "** is Shift, Ctrl, and X all pressed together. "
+            , "Although Matterhorn will pretty-print all key combinations "
+            , "with specific capitalization, the parser is **not** case-sensitive "
+            , "and will ignore any capitalization."
+            ]
+          , [ "Your terminal emulator might not recognize some particular "
+            , "keypress combinations, or it might reserve certain combinations of "
+            , "keys for some terminal-specific operation. Matterhorn does not have a "
+            , "reliable way of testing this, so it is up to you to avoid setting "
+            , "keybindings that your terminal emulator does not deliver to applications."
+            ]
+          , [ "Letter keys, number keys, and function keys are specified with "
+            , "their obvious name, such as **x** for the X key, **8** for the 8 "
+            , "key, and **f5** for the F5 key. Other valid keys include: "
+            , T.intercalate ", " [ "**" <> key <> "**" | key <- nonCharKeys ]
+            , "."
+            ]
+          ]
 
 themeHelp :: Widget a
 themeHelp = overrideAttr codeAttr helpEmphAttr $ vBox

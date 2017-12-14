@@ -12,6 +12,7 @@ module Types.KeyEvents
   , parseBinding
   , parseBindingList
   , ppBinding
+  , nonCharKeys
 
   -- * Key event name resolution
   , keyEventFromName
@@ -204,6 +205,15 @@ ppKey Vty.KPause      = "Pause"
 ppKey Vty.KIns        = "Insert"
 ppKey Vty.KBegin      = "Begin"
 ppKey Vty.KMenu       = "Menu"
+
+nonCharKeys :: [T.Text]
+nonCharKeys = map ppKey
+  [ Vty.KBackTab, Vty.KEsc, Vty.KBS, Vty.KEnter, Vty.KUp, Vty.KDown
+  , Vty.KLeft, Vty.KRight, Vty.KHome, Vty.KEnd, Vty.KPageDown
+  , Vty.KPageUp, Vty.KDel, Vty.KUpLeft, Vty.KUpRight, Vty.KDownLeft
+  , Vty.KDownRight, Vty.KCenter, Vty.KPrtScr, Vty.KPause, Vty.KIns
+  , Vty.KBegin, Vty.KMenu
+  ]
 
 ppChar :: Char -> T.Text
 ppChar '\t' = "Tab"
