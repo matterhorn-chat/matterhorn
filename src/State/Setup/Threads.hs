@@ -1,5 +1,6 @@
 module State.Setup.Threads
   ( startUserRefreshThread
+  , startTypingUsersRefreshThread
   , updateUserStatuses
   , startSubprocessLoggerThread
   , startTimezoneMonitorThread
@@ -17,10 +18,12 @@ import qualified Control.Concurrent.STM as STM
 import           Control.Concurrent.STM.Delay
 import           Control.Exception (SomeException, try, finally)
 import           Control.Monad (forever, when, void)
+import           Control.Monad.IO.Class (liftIO)
 import           Data.List (isInfixOf)
 import qualified Data.Text as T
 import           Data.Maybe (catMaybes)
 import           Data.Monoid ((<>))
+import           Data.Time (getCurrentTime, addUTCTime)
 import           Data.Time.LocalTime.TimeZone.Series (TimeZoneSeries)
 import           Lens.Micro.Platform
 import           System.Exit (ExitCode(ExitSuccess))
@@ -36,6 +39,7 @@ import           State.Editing (requestSpellCheck)
 import           TimeUtils (lookupLocalTimeZone)
 import           Types
 import           Types.Users
+import           Types.Channels
 
 updateUserStatuses :: MVar () -> Session -> IO (MH ())
 updateUserStatuses lock session = do
@@ -62,6 +66,23 @@ startUserRefreshThread lock session requestChan = void $ forkIO $ forever refres
               Left (_ :: SomeException) -> return (return ())
               Right upd -> return upd
           threadDelay (seconds userRefreshInterval)
+
+-- This thread refreshes the map of typing users every second, forever,
+-- to expire users who have stopped typing. Expiry time is 3 seconds.
+startTypingUsersRefreshThread :: RequestChan -> IO ()
+startTypingUsersRefreshThread requestChan = void $ forkIO $ forever refresh
+  where
+    seconds = (* (1000 * 1000))
+    refreshInterval = 1
+    expiryIntervalSeconds = 3
+    refresh = do
+      STM.atomically $ STM.writeTChan requestChan $ return $ do
+        now <- liftIO getCurrentTime
+        let expiry = addUTCTime (- expiryIntervalSeconds) now
+        let expireUsers c = c & ccInfo.cdTypingUsers %~ expireTypingUsers expiry
+        csChannels . mapped %= expireUsers
+
+      threadDelay (seconds refreshInterval)
 
 startSubprocessLoggerThread :: STM.TChan ProgramOutput -> RequestChan -> IO ()
 startSubprocessLoggerThread logChan requestChan = do

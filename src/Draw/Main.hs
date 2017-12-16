@@ -46,7 +46,7 @@ import           Types.Channels ( NewMessageIndicator(..)
                                 , ChannelState(..)
                                 , ClientChannel
                                 , ccInfo, ccContents
-                                , cdCurrentState
+                                , cdCurrentState, cdTypingUsers
                                 , cdName, cdType, cdHeader, cdMessages
                                 , findChannelById)
 import           Types.Messages
@@ -586,11 +586,22 @@ mainInterface st =
                  [ hLimit channelListWidth hBorder
                  , borderElem bsIntersectB
                  , hBorder
-                 , showBusy]
+                 , showTypingUsers
+                 , showBusy
+                 ]
+
+    showTypingUsers = case allTypingUsers (st^.csCurrentChannel.ccInfo.cdTypingUsers) of
+                        [] -> emptyWidget
+                        [uId] | Just un <- getUsernameForUserId st uId ->
+                           txt $ un <> " is typing"
+                        [uId1, uId2] | Just un1 <- getUsernameForUserId st uId1
+                                     , Just un2 <- getUsernameForUserId st uId2 ->
+                           txt $ un1 <> " and " <> un2 <> " are typing"
+                        _ -> txt "several people are typing"
 
     showBusy = case st^.csWorkerIsBusy of
-                 Just (Just n) -> txt (T.pack $ "*" <> show n)
-                 Just Nothing -> txt "*"
+                 Just (Just n) -> hLimit 2 hBorder <+> txt (T.pack $ "*" <> show n)
+                 Just Nothing -> hLimit 2 hBorder <+> txt "*"
                  Nothing -> emptyWidget
 
     maybeSubdue = if st^.csMode == ChannelSelect

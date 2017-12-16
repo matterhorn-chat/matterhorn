@@ -204,6 +204,8 @@ initializeState cr myTeam myUser = do
   -- Start background worker threads:
   -- * User status refresher
   startUserRefreshThread (cr^.crUserStatusLock) session requestChan
+  -- * Refresher for users who are typing currently
+  startTypingUsersRefreshThread requestChan
   -- * Timezone change monitor
   startTimezoneMonitorThread tz requestChan
   -- * Subprocess logger

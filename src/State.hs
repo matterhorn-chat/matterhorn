@@ -60,6 +60,7 @@ module State
   -- * Working with users
   , handleNewUser
   , updateStatus
+  , handleTypingUser
 
   -- * Startup/reconnect management
   , refreshChannelsAndUsers
@@ -130,6 +131,7 @@ import           Data.Maybe (maybeToList, isJust, catMaybes, isNothing)
 import           Data.Monoid ((<>))
 import qualified Data.Set as Set
 import qualified Data.Text as T
+import           Data.Time (getCurrentTime)
 import qualified Data.Vector as V
 import qualified Data.Foldable as F
 import           Graphics.Vty (outputIface)
@@ -1907,3 +1909,8 @@ handleNewUser newUserId = doAsyncMM Normal getUserInfo updateUserState
               do csUsers %= addUser newUserId uInfo
                  csNames . cnUsers %= (sort . ((newUser^.userUsernameL):))
                  csNames . cnToUserId . at (newUser^.userUsernameL) .= Just newUserId
+
+handleTypingUser :: UserId -> ChannelId -> MH ()
+handleTypingUser uId cId = do
+  ts <- liftIO getCurrentTime -- get time now
+  csChannels %= modifyChannelById cId (addChannelTypingUser uId ts)

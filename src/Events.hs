@@ -139,6 +139,11 @@ handleWSEvent we = do
                     removeChannelFromState cId
             | otherwise -> return ()
 
+        WMTyping
+            | Just uId <- wepUserId $ weData we
+            , Just cId <- webChannelId (weBroadcast we) -> handleTypingUser uId cId
+            | otherwise -> return ()
+
         WMChannelDeleted
             | Just cId <- wepChannelId (weData we) ->
                 when (webTeamId (weBroadcast we) == Just myTeamId) $
@@ -206,7 +211,6 @@ handleWSEvent we = do
         WMChannelCreated -> return ()
         WMEmojiAdded -> return ()
         WMWebRTC -> return ()
-        WMTyping -> return ()
         WMHello -> return ()
         WMAuthenticationChallenge -> return ()
         WMUserRoleUpdated -> return ()
