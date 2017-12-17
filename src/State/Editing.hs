@@ -31,6 +31,10 @@ import           Types
 
 import           State.Common
 
+import           Network.Mattermost.Types (Post(..))
+import           Network.Mattermost.WebSocket (mmSendWSAction)
+import           Network.Mattermost.WebSocket.Types (WebsocketAction(..))
+
 startMultilineEditing :: MH ()
 startMultilineEditing = csEditState.cedMultiline .= True
 
@@ -190,12 +194,29 @@ handleEditingInput e = do
                         csEditState.cedEditor %= applyEdit Z.moveRight
                     | otherwise -> doInsertChar
 
-          _ | editingPermitted st -> mhHandleEventLensed (csEditState.cedEditor) handleEditorEvent e
+          _ | editingPermitted st -> do
+              mhHandleEventLensed (csEditState.cedEditor) handleEditorEvent e
+              sendUserTypingAction
             | otherwise -> return ()
 
         csEditState.cedCurrentCompletion .= Nothing
 
     liftIO $ resetSpellCheckTimer $ st^.csEditState
+
+-- | Send the user_typing action to the server asynchronously, over the connected websocket.
+-- | If the websocket is not connected, drop the action silently.
+sendUserTypingAction :: MH ()
+sendUserTypingAction = do
+  st <- use id
+  case st^.csConnectionStatus of
+    Connected s ws -> do
+      let pId = case st^.csEditState.cedEditMode of
+                  Replying _ post -> Just $ postId post
+                  _               -> Nothing
+          action = UserTyping s (st^.csCurrentChannelId) pId
+      csConnectionStatus .= Connected (s+1) ws -- increment the sequence number
+      doAsync Normal $ mmSendWSAction (st^.csResources.crConn) ws action
+    Disconnected -> return ()
 
 -- Kick off an async request to the spell checker for the current editor
 -- contents.

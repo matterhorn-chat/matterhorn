@@ -158,6 +158,7 @@ import qualified Control.Monad.State as St
 import qualified Data.Foldable as F
 import qualified Data.Sequence as Seq
 import           Data.HashMap.Strict (HashMap)
+import           Data.Int (Int64)
 import           Data.Time.LocalTime.TimeZone.Series (TimeZoneSeries)
 import qualified Data.HashMap.Strict as HM
 import           Data.List (sort, partition, sortBy)
@@ -462,8 +463,9 @@ data Mode =
     | PostListOverlay PostListContents
     deriving (Eq)
 
--- | We're either connected or we're not.
-data ConnectionStatus = Connected | Disconnected
+-- | We're either connected or we're not. If connected, keep the latest
+-- | websocket action sequence number and the websocket itself.
+data ConnectionStatus = Connected Int64 MMWebSocket | Disconnected
 
 -- | This is the giant bundle of fields that represents the current
 --  state of our application at any given time. Some of this should
@@ -515,7 +517,7 @@ newState rs i u m tz hist sp = ChatState
   , _csChannelSelectState          = emptyChannelSelectState
   , _csRecentChannel               = Nothing
   , _csUrlList                     = list UrlList mempty 2
-  , _csConnectionStatus            = Connected
+  , _csConnectionStatus            = Disconnected
   , _csWorkerIsBusy                = Nothing
   , _csJoinChannelList             = Nothing
   , _csMessageSelect               = MessageSelectState Nothing
@@ -621,8 +623,8 @@ data MHEvent
     -- ^ We failed to parse an incoming websocket event
     | WebsocketDisconnect
     -- ^ The websocket connection went down.
-    | WebsocketConnect
-    -- ^ The websocket connection came up.
+    | WebsocketConnect MMWebSocket
+    -- ^ The websocket connection came up. Keep a reference to the connected websocket.
     | BGIdle
     -- ^ background worker is idle
     | BGBusy (Maybe Int)

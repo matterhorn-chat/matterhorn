@@ -43,13 +43,11 @@ onEvent st ev = runMHEvent st $ case ev of
   _ -> return ()
 
 onAppEvent :: MHEvent -> MH ()
-onAppEvent RefreshWebsocketEvent = do
-  st <- use id
-  liftIO $ connectWebsockets st
+onAppEvent RefreshWebsocketEvent = connectWebsockets
 onAppEvent WebsocketDisconnect =
   csConnectionStatus .= Disconnected
-onAppEvent WebsocketConnect = do
-  csConnectionStatus .= Connected
+onAppEvent (WebsocketConnect ws) = do
+  csConnectionStatus .= Connected 1 ws
   refreshChannelsAndUsers
 onAppEvent BGIdle     = csWorkerIsBusy .= Nothing
 onAppEvent (BGBusy n) = csWorkerIsBusy .= Just n

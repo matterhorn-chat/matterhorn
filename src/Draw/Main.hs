@@ -319,8 +319,8 @@ renderCurrentChannelDisplay :: ChatState -> HighlightSet -> Widget Name
 renderCurrentChannelDisplay st hs = (header <+> conn) <=> messages
     where
     conn = case st^.csConnectionStatus of
-      Connected -> emptyWidget
-      Disconnected -> withDefAttr errorMessageAttr (str "[NOT CONNECTED]")
+      Connected _ _ -> emptyWidget
+      Disconnected  -> withDefAttr errorMessageAttr (str "[NOT CONNECTED]")
     header = withDefAttr channelHeaderAttr $
              padRight Max $
              renderChannelHeader st hs chan

@@ -8,21 +8,24 @@ import           Control.Concurrent (forkIO, threadDelay)
 import           Control.Concurrent.MVar
 import           Control.Exception (SomeException, catch)
 import           Control.Monad (void)
+import           Control.Monad.IO.Class (liftIO)
 import           Lens.Micro.Platform
 
 import           Network.Mattermost.WebSocket
 
 import           Types
 
-connectWebsockets :: ChatState -> IO ()
-connectWebsockets st = do
-  let shunt (Left msg) = writeBChan (st^.csResources.crEventQueue) (WebsocketParseError msg)
-      shunt (Right e) = writeBChan (st^.csResources.crEventQueue) (WSEvent e)
-      runWS = mmWithWebSocket (st^.csResources.crSession) shunt $ \ _ -> do
-                writeBChan (st^.csResources.crEventQueue) WebsocketConnect
-                waitAndQuit st
-  void $ forkIO $ runWS `catch` handleTimeout 1 st
-                        `catch` handleError 5 st
+connectWebsockets :: MH ()
+connectWebsockets = do
+  st <- use id
+  liftIO $ do
+    let shunt (Left msg) = writeBChan (st^.csResources.crEventQueue) (WebsocketParseError msg)
+        shunt (Right e) = writeBChan (st^.csResources.crEventQueue) (WSEvent e)
+        runWS = mmWithWebSocket (st^.csResources.crSession) shunt $ \ws -> do
+                  writeBChan (st^.csResources.crEventQueue) $ WebsocketConnect ws
+                  waitAndQuit st
+    void $ forkIO $ runWS `catch` handleTimeout 1 st
+                          `catch` handleError 5 st
 
 waitAndQuit :: ChatState -> IO ()
 waitAndQuit st =
