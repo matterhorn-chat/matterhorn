@@ -219,6 +219,7 @@ data Config = Config
   , configUnsafeUseHTTP             :: Bool
   , configChannelListWidth          :: Int
   , configShowOlderEdits            :: Bool
+  , configShowTypingIndicator       :: Bool
   , configAbsPath                   :: Maybe FilePath
   } deriving (Eq, Show)
 

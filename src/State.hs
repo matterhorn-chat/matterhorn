@@ -1912,5 +1912,7 @@ handleNewUser newUserId = doAsyncMM Normal getUserInfo updateUserState
 
 handleTypingUser :: UserId -> ChannelId -> MH ()
 handleTypingUser uId cId = do
-  ts <- liftIO getCurrentTime -- get time now
-  csChannels %= modifyChannelById cId (addChannelTypingUser uId ts)
+  config <- use (csResources.crConfiguration)
+  when (configShowTypingIndicator config) $ do
+    ts <- liftIO getCurrentTime -- get time now
+    csChannels %= modifyChannelById cId (addChannelTypingUser uId ts)
