@@ -41,4 +41,9 @@ script:
  - bash install.sh
  - cabal sdist
 
+cache:
+  directories:
+  - $HOME/.cabal
+  - $HOME/.ghc
+
 # EOF
