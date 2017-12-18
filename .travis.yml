@@ -43,7 +43,6 @@ script:
 
 cache:
   directories:
-  - dist-newstyle
   - $HOME/.cabal
   - $HOME/.ghc
 
