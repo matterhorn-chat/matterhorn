@@ -41,4 +41,10 @@ script:
  - bash install.sh
  - cabal sdist
 
+cache:
+  directories:
+  - dist-newstyle
+  - $HOME/.cabal
+  - $HOME/.ghc
+
 # EOF
