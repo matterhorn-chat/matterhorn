@@ -1,4 +1,5 @@
 {-# LANGUAGE MultiWayIf #-}
+{-#LANGUAGE RecordWildCards #-}
 
 module State.Editing where
 
@@ -94,7 +95,7 @@ editingPermitted st =
     st^.csEditState.cedMultiline
 
 editingKeybindings :: [Keybinding]
-editingKeybindings =
+editingKeybindings = map withUserTypingAction
   [ KB "Transpose the final two characters"
     (EvKey (KChar 't') [MCtrl]) $ do
     csEditState.cedEditor %= applyEdit Z.transposeChars
@@ -148,6 +149,9 @@ editingKeybindings =
       buf <- use (csEditState.cedYankBuffer)
       csEditState.cedEditor %= applyEdit (Z.insertMany buf)
   ]
+  where
+    withUserTypingAction (KB {..}) =
+      KB kbDescription kbEvent (kbAction >> sendUserTypingAction)
 
 handleEditingInput :: Event -> MH ()
 handleEditingInput e = do
@@ -185,7 +189,9 @@ handleEditingInput e = do
 
           EvKey (KChar ch) [] | editingPermitted st && smartBacktick && ch `elem` smartChars ->
               -- Smart char insertion:
-              let doInsertChar = csEditState.cedEditor %= applyEdit (Z.insertChar ch)
+              let doInsertChar = do
+                    csEditState.cedEditor %= applyEdit (Z.insertChar ch)
+                    sendUserTypingAction
               in if | (editorEmpty $ st^.csEditState.cedEditor) ||
                          ((cursorAtChar ' ' (applyEdit Z.moveLeft $ st^.csEditState.cedEditor)) &&
                           (cursorIsAtEnd $ st^.csEditState.cedEditor)) ->
