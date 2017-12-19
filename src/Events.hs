@@ -43,9 +43,7 @@ onEvent st ev = runMHEvent st $ case ev of
   _ -> return ()
 
 onAppEvent :: MHEvent -> MH ()
-onAppEvent RefreshWebsocketEvent = do
-  st <- use id
-  liftIO $ connectWebsockets st
+onAppEvent RefreshWebsocketEvent = connectWebsockets
 onAppEvent WebsocketDisconnect =
   csConnectionStatus .= Disconnected
 onAppEvent WebsocketConnect = do
@@ -139,6 +137,11 @@ handleWSEvent we = do
                     removeChannelFromState cId
             | otherwise -> return ()
 
+        WMTyping
+            | Just uId <- wepUserId $ weData we
+            , Just cId <- webChannelId (weBroadcast we) -> handleTypingUser uId cId
+            | otherwise -> return ()
+
         WMChannelDeleted
             | Just cId <- wepChannelId (weData we) ->
                 when (webTeamId (weBroadcast we) == Just myTeamId) $
@@ -206,7 +209,6 @@ handleWSEvent we = do
         WMChannelCreated -> return ()
         WMEmojiAdded -> return ()
         WMWebRTC -> return ()
-        WMTyping -> return ()
         WMHello -> return ()
         WMAuthenticationChallenge -> return ()
         WMUserRoleUpdated -> return ()

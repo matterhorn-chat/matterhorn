@@ -69,6 +69,7 @@ module Types
   , csChannel
   , csChannels
   , csChannelSelectState
+  , csWebsocketActionChan
   , csMe
   , csEditState
   , timeZone
@@ -99,11 +100,12 @@ module Types
   , crSession
   , crSubprocessLog
   , crRequestQueue
-  , crQuitCondition
   , crUserStatusLock
   , crFlaggedPosts
   , crConn
   , crConfiguration
+
+  , WebsocketAction(..)
 
   , Cmd(..)
   , commandName
@@ -158,6 +160,7 @@ import qualified Control.Monad.State as St
 import qualified Data.Foldable as F
 import qualified Data.Sequence as Seq
 import           Data.HashMap.Strict (HashMap)
+import           Data.Time (UTCTime)
 import           Data.Time.LocalTime.TimeZone.Series (TimeZoneSeries)
 import qualified Data.HashMap.Strict as HM
 import           Data.List (sort, partition, sortBy)
@@ -171,7 +174,7 @@ import           Network.Mattermost
 import           Network.Mattermost.Exceptions
 import           Network.Mattermost.Lenses
 import           Network.Mattermost.Types
-import           Network.Mattermost.WebSocket
+import           Network.Mattermost.WebSocket (WebsocketEvent)
 import           Network.Connection (HostNotResolved, HostCannotConnect)
 import qualified Data.Text as T
 import           System.Exit (ExitCode)
@@ -218,6 +221,7 @@ data Config = Config
   , configUnsafeUseHTTP             :: Bool
   , configChannelListWidth          :: Int
   , configShowOlderEdits            :: Bool
+  , configShowTypingIndicator       :: Bool
   , configAbsPath                   :: Maybe FilePath
   } deriving (Eq, Show)
 
@@ -370,7 +374,6 @@ data ChatResources = ChatResources
   , _crEventQueue    :: BChan MHEvent
   , _crSubprocessLog :: STM.TChan ProgramOutput
   , _crTheme         :: AttrMap
-  , _crQuitCondition :: MVar ()
   , _crUserStatusLock :: MVar ()
   , _crConfiguration :: Config
   , _crFlaggedPosts  :: Set.Set PostId
@@ -485,6 +488,7 @@ data ChatState = ChatState
   , _csRecentChannel               :: Maybe ChannelId
   , _csUrlList                     :: List Name LinkChoice
   , _csConnectionStatus            :: ConnectionStatus
+  , _csWebsocketActionChan         :: STM.TChan WebsocketAction
   , _csWorkerIsBusy                :: Maybe (Maybe Int)
   , _csJoinChannelList             :: Maybe (List Name Channel)
   , _csMessageSelect               :: MessageSelectState
@@ -498,8 +502,9 @@ newState :: ChatResources
          -> TimeZoneSeries
          -> InputHistory
          -> Maybe (Aspell, IO ())
+         -> STM.TChan WebsocketAction
          -> ChatState
-newState rs i u m tz hist sp = ChatState
+newState rs i u m tz hist sp wac = ChatState
   { _csResources                   = rs
   , _csFocus                       = i
   , _csMe                          = u
@@ -516,6 +521,7 @@ newState rs i u m tz hist sp = ChatState
   , _csRecentChannel               = Nothing
   , _csUrlList                     = list UrlList mempty 2
   , _csConnectionStatus            = Connected
+  , _csWebsocketActionChan         = wac
   , _csWorkerIsBusy                = Nothing
   , _csJoinChannelList             = Nothing
   , _csMessageSelect               = MessageSelectState Nothing
@@ -546,6 +552,13 @@ data PostListOverlayState = PostListOverlayState
   { _postListPosts    :: Messages
   , _postListSelected :: Maybe PostId
   }
+
+-- | Actions that can be sent on the websocket to the server.
+data WebsocketAction =
+    UserTyping UTCTime ChannelId (Maybe PostId) -- ^ user typing in the input box
+  -- | GetStatuses
+  -- | GetStatusesByIds [UserId]
+  deriving (Read, Show, Eq, Ord)
 
 -- * MH Monad
 

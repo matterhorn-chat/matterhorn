@@ -26,7 +26,6 @@ import qualified System.Posix.Types as P
 
 import IOUtil
 import FilePaths
-import Network.Mattermost (Hostname, Port)
 import Network.Mattermost.Types
 import Network.Mattermost.Lenses
 import Types
