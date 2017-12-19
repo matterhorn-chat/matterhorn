@@ -20,6 +20,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Zipper as Z
 import qualified Data.Text.Zipper.Generic.Words as Z
+import           Data.Time (getCurrentTime)
 import           Graphics.Vty (Event(..), Key(..), Modifier(..))
 import           Lens.Micro.Platform
 import qualified System.Environment as Sys
@@ -220,8 +221,10 @@ sendUserTypingAction = do
         let pId = case st^.csEditState.cedEditMode of
                     Replying _ post -> Just $ postId post
                     _               -> Nothing
-            action = UserTyping (st^.csCurrentChannelId) pId
-        liftIO $ STM.atomically $ STM.writeTChan (st^.csWebsocketActionChan) action
+        liftIO $ do
+          now <- getCurrentTime
+          let action = UserTyping now (st^.csCurrentChannelId) pId
+          STM.atomically $ STM.writeTChan (st^.csWebsocketActionChan) action
       Disconnected -> return ()
 
 -- Kick off an async request to the spell checker for the current editor

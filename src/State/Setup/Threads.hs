@@ -34,6 +34,7 @@ import           Text.Aspell (Aspell, AspellOption(..), startAspell)
 
 import           Network.Mattermost
 
+import           Constants
 import           State.Common
 import           State.Editing (requestSpellCheck)
 import           TimeUtils (lookupLocalTimeZone)
@@ -73,16 +74,15 @@ startTypingUsersRefreshThread :: RequestChan -> IO ()
 startTypingUsersRefreshThread requestChan = void $ forkIO $ forever refresh
   where
     seconds = (* (1000 * 1000))
-    refreshInterval = 1
-    expiryIntervalSeconds = 3
+    refreshIntervalMicros = ceiling $ seconds $ userTypingExpiryInterval / 2
     refresh = do
       STM.atomically $ STM.writeTChan requestChan $ return $ do
         now <- liftIO getCurrentTime
-        let expiry = addUTCTime (- expiryIntervalSeconds) now
+        let expiry = addUTCTime (- userTypingExpiryInterval) now
         let expireUsers c = c & ccInfo.cdTypingUsers %~ expireTypingUsers expiry
         csChannels . mapped %= expireUsers
 
-      threadDelay (seconds refreshInterval)
+      threadDelay refreshIntervalMicros
 
 startSubprocessLoggerThread :: STM.TChan ProgramOutput -> RequestChan -> IO ()
 startSubprocessLoggerThread logChan requestChan = do

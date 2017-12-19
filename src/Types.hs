@@ -160,7 +160,7 @@ import qualified Control.Monad.State as St
 import qualified Data.Foldable as F
 import qualified Data.Sequence as Seq
 import           Data.HashMap.Strict (HashMap)
-import           Data.Int (Int64)
+import           Data.Time (UTCTime)
 import           Data.Time.LocalTime.TimeZone.Series (TimeZoneSeries)
 import qualified Data.HashMap.Strict as HM
 import           Data.List (sort, partition, sortBy)
@@ -554,7 +554,7 @@ data PostListOverlayState = PostListOverlayState
   }
 
 data WebsocketAction =
-    UserTyping ChannelId (Maybe PostId)
+    UserTyping UTCTime ChannelId (Maybe PostId)
   -- | GetStatuses
   -- | GetStatusesByIds [UserId]
   deriving (Read, Show, Eq, Ord)
