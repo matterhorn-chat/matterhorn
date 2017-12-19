@@ -34,6 +34,12 @@ connectWebsockets = do
     void $ forkIO $ runWS `catch` handleTimeout 1 st
                           `catch` handleError 5 st
 
+-- | Take websocket actions from the websocket action channel in the ChatState and
+-- | send them to the server over the websocket.
+-- | Takes and propagates the action sequence number which in incremented for
+-- | each successful send.
+-- | Keeps and propagates a map of channel id to last user_typing notification send time
+-- | so that the new user_typing actions are throttled to be send only once in two seconds.
 processWebsocketActions :: ChatState -> WS.MMWebSocket -> Int64 -> HM.HashMap ChannelId (Max UTCTime) -> IO ()
 processWebsocketActions st ws s userTypingLastNotifTimeMap = do
   action <- STM.atomically $ STM.readTChan (st^.csWebsocketActionChan)

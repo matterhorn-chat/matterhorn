@@ -553,8 +553,9 @@ data PostListOverlayState = PostListOverlayState
   , _postListSelected :: Maybe PostId
   }
 
+-- | Actions that can be sent on the websocket to the server.
 data WebsocketAction =
-    UserTyping UTCTime ChannelId (Maybe PostId)
+    UserTyping UTCTime ChannelId (Maybe PostId) -- ^ user typing in the input box
   -- | GetStatuses
   -- | GetStatusesByIds [UserId]
   deriving (Read, Show, Eq, Ord)

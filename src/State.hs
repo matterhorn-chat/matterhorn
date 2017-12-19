@@ -1910,6 +1910,7 @@ handleNewUser newUserId = doAsyncMM Normal getUserInfo updateUserState
                  csNames . cnUsers %= (sort . ((newUser^.userUsernameL):))
                  csNames . cnToUserId . at (newUser^.userUsernameL) .= Just newUserId
 
+-- | Handle the typing events from the websocket to show the currently typing users on UI
 handleTypingUser :: UserId -> ChannelId -> MH ()
 handleTypingUser uId cId = do
   config <- use (csResources.crConfiguration)
