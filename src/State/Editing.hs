@@ -10,6 +10,7 @@ import           Brick.Widgets.Edit (Editor, handleEditorEvent, getEditContents,
 import           Brick.Widgets.Edit (applyEdit)
 import qualified Codec.Binary.UTF8.Generic as UTF8
 import           Control.Arrow
+import qualified Control.Concurrent.STM as STM
 import           Control.Monad (when)
 import           Control.Monad.IO.Class (liftIO)
 import qualified Data.ByteString as BS
@@ -34,8 +35,6 @@ import           Types
 import           State.Common
 
 import           Network.Mattermost.Types (Post(..))
-import           Network.Mattermost.WebSocket (mmSendWSAction)
-import           Network.Mattermost.WebSocket.Types (WebsocketAction(..))
 
 startMultilineEditing :: MH ()
 startMultilineEditing = csEditState.cedMultiline .= True
@@ -217,13 +216,12 @@ sendUserTypingAction = do
   st <- use id
   when (configShowTypingIndicator (st^.csResources.crConfiguration)) $
     case st^.csConnectionStatus of
-      Connected s ws -> do
+      Connected -> do
         let pId = case st^.csEditState.cedEditMode of
                     Replying _ post -> Just $ postId post
                     _               -> Nothing
-            action = UserTyping s (st^.csCurrentChannelId) pId
-        csConnectionStatus .= Connected (s+1) ws -- increment the sequence number
-        doAsync Normal $ mmSendWSAction (st^.csResources.crConn) ws action
+            action = UserTyping (st^.csCurrentChannelId) pId
+        liftIO $ STM.atomically $ STM.writeTChan (st^.csWebsocketActionChan) action
       Disconnected -> return ()
 
 -- Kick off an async request to the spell checker for the current editor

@@ -69,6 +69,7 @@ module Types
   , csChannel
   , csChannels
   , csChannelSelectState
+  , csWebsocketActionChan
   , csMe
   , csEditState
   , timeZone
@@ -99,11 +100,12 @@ module Types
   , crSession
   , crSubprocessLog
   , crRequestQueue
-  , crQuitCondition
   , crUserStatusLock
   , crFlaggedPosts
   , crConn
   , crConfiguration
+
+  , WebsocketAction(..)
 
   , Cmd(..)
   , commandName
@@ -172,7 +174,7 @@ import           Network.Mattermost
 import           Network.Mattermost.Exceptions
 import           Network.Mattermost.Lenses
 import           Network.Mattermost.Types
-import           Network.Mattermost.WebSocket
+import           Network.Mattermost.WebSocket (WebsocketEvent)
 import           Network.Connection (HostNotResolved, HostCannotConnect)
 import qualified Data.Text as T
 import           System.Exit (ExitCode)
@@ -372,7 +374,6 @@ data ChatResources = ChatResources
   , _crEventQueue    :: BChan MHEvent
   , _crSubprocessLog :: STM.TChan ProgramOutput
   , _crTheme         :: AttrMap
-  , _crQuitCondition :: MVar ()
   , _crUserStatusLock :: MVar ()
   , _crConfiguration :: Config
   , _crFlaggedPosts  :: Set.Set PostId
@@ -464,9 +465,8 @@ data Mode =
     | PostListOverlay PostListContents
     deriving (Eq)
 
--- | We're either connected or we're not. If connected, keep the latest
--- | websocket action sequence number and the websocket itself.
-data ConnectionStatus = Connected Int64 MMWebSocket | Disconnected
+-- | We're either connected or we're not.
+data ConnectionStatus = Connected | Disconnected
 
 -- | This is the giant bundle of fields that represents the current
 --  state of our application at any given time. Some of this should
@@ -488,6 +488,7 @@ data ChatState = ChatState
   , _csRecentChannel               :: Maybe ChannelId
   , _csUrlList                     :: List Name LinkChoice
   , _csConnectionStatus            :: ConnectionStatus
+  , _csWebsocketActionChan         :: STM.TChan WebsocketAction
   , _csWorkerIsBusy                :: Maybe (Maybe Int)
   , _csJoinChannelList             :: Maybe (List Name Channel)
   , _csMessageSelect               :: MessageSelectState
@@ -501,8 +502,9 @@ newState :: ChatResources
          -> TimeZoneSeries
          -> InputHistory
          -> Maybe (Aspell, IO ())
+         -> STM.TChan WebsocketAction
          -> ChatState
-newState rs i u m tz hist sp = ChatState
+newState rs i u m tz hist sp wac = ChatState
   { _csResources                   = rs
   , _csFocus                       = i
   , _csMe                          = u
@@ -518,7 +520,8 @@ newState rs i u m tz hist sp = ChatState
   , _csChannelSelectState          = emptyChannelSelectState
   , _csRecentChannel               = Nothing
   , _csUrlList                     = list UrlList mempty 2
-  , _csConnectionStatus            = Disconnected
+  , _csConnectionStatus            = Connected
+  , _csWebsocketActionChan         = wac
   , _csWorkerIsBusy                = Nothing
   , _csJoinChannelList             = Nothing
   , _csMessageSelect               = MessageSelectState Nothing
@@ -549,6 +552,12 @@ data PostListOverlayState = PostListOverlayState
   { _postListPosts    :: Messages
   , _postListSelected :: Maybe PostId
   }
+
+data WebsocketAction =
+    UserTyping ChannelId (Maybe PostId)
+  -- | GetStatuses
+  -- | GetStatusesByIds [UserId]
+  deriving (Read, Show, Eq, Ord)
 
 -- * MH Monad
 
@@ -624,8 +633,8 @@ data MHEvent
     -- ^ We failed to parse an incoming websocket event
     | WebsocketDisconnect
     -- ^ The websocket connection went down.
-    | WebsocketConnect MMWebSocket
-    -- ^ The websocket connection came up. Keep a reference to the connected websocket.
+    | WebsocketConnect
+    -- ^ The websocket connection came up.
     | BGIdle
     -- ^ background worker is idle
     | BGBusy (Maybe Int)

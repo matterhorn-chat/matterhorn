@@ -46,8 +46,8 @@ onAppEvent :: MHEvent -> MH ()
 onAppEvent RefreshWebsocketEvent = connectWebsockets
 onAppEvent WebsocketDisconnect =
   csConnectionStatus .= Disconnected
-onAppEvent (WebsocketConnect ws) = do
-  csConnectionStatus .= Connected 1 ws
+onAppEvent WebsocketConnect = do
+  csConnectionStatus .= Connected
   refreshChannelsAndUsers
 onAppEvent BGIdle     = csWorkerIsBusy .= Nothing
 onAppEvent (BGBusy n) = csWorkerIsBusy .= Just n

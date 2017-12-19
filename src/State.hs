@@ -859,7 +859,7 @@ updateViewed = do
 -- update the viewed time to now for the newly selected channel.
 updateViewedChan :: ChannelId -> MH ()
 updateViewedChan cId = use csConnectionStatus >>= \case
-      Connected _ _ -> do
+      Connected -> do
           -- Only do this if we're connected to avoid triggering noisy exceptions.
           pId <- use csRecentChannel
           doAsyncChannelMM Preempt cId
@@ -1863,7 +1863,7 @@ sendMessage mode msg =
                 Disconnected -> do
                     let m = "Cannot send messages while disconnected."
                     postErrorMessage m
-                Connected _ _ -> do
+                Connected -> do
                     let myId   = st^.csMe.userIdL
                         chanId = st^.csCurrentChannelId
                         theTeamId = st^.csMyTeam.teamIdL

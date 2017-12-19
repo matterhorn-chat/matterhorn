@@ -118,8 +118,6 @@ setupState logFile config requestChan eventChan = do
               Nothing -> interactiveTeamSelection (F.toList (initialLoadTeams initialLoad))
               Just t -> return t
 
-  quitCondition <- newEmptyMVar
-
   userStatusLock <- newEmptyMVar
   putMVar userStatusLock ()
 
@@ -154,8 +152,7 @@ setupState logFile config requestChan eventChan = do
                      Right t -> return t
 
   let cr = ChatResources session cd requestChan eventChan
-             slc (themeToAttrMap custTheme) quitCondition
-             userStatusLock config mempty prefs
+             slc (themeToAttrMap custTheme) userStatusLock config mempty prefs
 
   initializeState cr myTeam myUser
 
@@ -205,7 +202,8 @@ initializeState cr myTeam myUser = do
   -- * User status refresher
   startUserRefreshThread (cr^.crUserStatusLock) session requestChan
   -- * Refresher for users who are typing currently
-  startTypingUsersRefreshThread requestChan
+  when (configShowTypingIndicator (cr^.crConfiguration)) $
+    startTypingUsersRefreshThread requestChan
   -- * Timezone change monitor
   startTimezoneMonitorThread tz requestChan
   -- * Subprocess logger
@@ -213,11 +211,12 @@ initializeState cr myTeam myUser = do
   -- * Spell checker and spell check timer, if configured
   spResult <- maybeStartSpellChecker (cr^.crConfiguration) (cr^.crEventQueue)
 
+  waChan <- STM.newTChanIO
   let chanNames = mkChanNames myUser mempty chans
       chanIds = [ (chanNames ^. cnToChanId) HM.! i
                 | i <- chanNames ^. cnChans ]
       chanZip = Z.fromList chanIds
-      st = newState cr chanZip myUser myTeam tz hist spResult
+      st = newState cr chanZip myUser myTeam tz hist spResult waChan
              & csChannels %~ flip (foldr (uncurry addChannel)) msgs
              & csNames .~ chanNames
 
