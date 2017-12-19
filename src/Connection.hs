@@ -10,10 +10,13 @@ import           Control.Exception (SomeException, catch)
 import           Control.Monad (void)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Int (Int64)
+import qualified Data.HashMap.Strict as HM
+import           Data.Semigroup (Max(..), (<>))
 import           Data.Time (UTCTime(..), secondsToDiffTime, getCurrentTime, diffUTCTime)
 import           Data.Time.Calendar (Day(..))
 import           Lens.Micro.Platform
 
+import           Network.Mattermost.Types (ChannelId)
 import qualified Network.Mattermost.WebSocket as WS
 
 import           Constants
@@ -27,26 +30,32 @@ connectWebsockets = do
         shunt (Right e) = writeBChan (st^.csResources.crEventQueue) (WSEvent e)
         runWS = WS.mmWithWebSocket (st^.csResources.crSession) shunt $ \ws -> do
                   writeBChan (st^.csResources.crEventQueue) WebsocketConnect
-                  processWebsocketActions st ws 1 zeroTime
+                  processWebsocketActions st ws 1 HM.empty
     void $ forkIO $ runWS `catch` handleTimeout 1 st
                           `catch` handleError 5 st
-  where
-    zeroTime = UTCTime (ModifiedJulianDay 0) (secondsToDiffTime 0)
 
-processWebsocketActions :: ChatState -> WS.MMWebSocket -> Int64 -> UTCTime -> IO ()
-processWebsocketActions st ws s lastUserTypingNotifTime = do
+processWebsocketActions :: ChatState -> WS.MMWebSocket -> Int64 -> HM.HashMap ChannelId (Max UTCTime) -> IO ()
+processWebsocketActions st ws s userTypingLastNotifTimeMap = do
   action <- STM.atomically $ STM.readTChan (st^.csWebsocketActionChan)
   if (shouldSendAction action)
     then do
       WS.mmSendWSAction (st^.csResources.crConn) ws $ convert action
-      processWebsocketActions st ws (s + 1) =<< getCurrentTime
+      now <- getCurrentTime
+      processWebsocketActions st ws (s + 1) $ userTypingLastNotifTimeMap' action now
     else do
-      processWebsocketActions st ws s lastUserTypingNotifTime
+      processWebsocketActions st ws s userTypingLastNotifTimeMap
   where
     convert (UserTyping _ cId pId) = WS.UserTyping s cId pId
 
-    shouldSendAction (UserTyping ts _ _) =
-      diffUTCTime ts lastUserTypingNotifTime >= (userTypingExpiryInterval / 2 - 0.5)
+    shouldSendAction (UserTyping ts cId _) =
+      diffUTCTime ts (userTypingLastNotifTime cId) >= (userTypingExpiryInterval / 2 - 0.5)
+
+    userTypingLastNotifTime cId = getMax $ HM.lookupDefault (Max zeroTime) cId userTypingLastNotifTimeMap
+
+    zeroTime = UTCTime (ModifiedJulianDay 0) (secondsToDiffTime 0)
+
+    userTypingLastNotifTimeMap' (UserTyping _ cId _) now =
+      HM.insertWith (<>) cId (Max now) userTypingLastNotifTimeMap
 
 handleTimeout :: Int -> ChatState -> WS.MMWebSocketTimeoutException -> IO ()
 handleTimeout seconds st _ = reconnectAfter seconds st
