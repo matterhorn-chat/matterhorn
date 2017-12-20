@@ -42,7 +42,7 @@ connectWebsockets = do
 -- | so that the new user_typing actions are throttled to be send only once in two seconds.
 processWebsocketActions :: ChatState -> WS.MMWebSocket -> Int64 -> HM.HashMap ChannelId (Max UTCTime) -> IO ()
 processWebsocketActions st ws s userTypingLastNotifTimeMap = do
-  action <- STM.atomically $ STM.readTChan (st^.csWebsocketActionChan)
+  action <- STM.atomically $ STM.readTChan (st^.csResources.crWebsocketActionChan)
   if (shouldSendAction action)
     then do
       WS.mmSendWSAction (st^.csResources.crConn) ws $ convert action

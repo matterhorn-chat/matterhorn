@@ -224,7 +224,7 @@ sendUserTypingAction = do
         liftIO $ do
           now <- getCurrentTime
           let action = UserTyping now (st^.csCurrentChannelId) pId
-          STM.atomically $ STM.writeTChan (st^.csWebsocketActionChan) action
+          STM.atomically $ STM.writeTChan (st^.csResources.crWebsocketActionChan) action
       Disconnected -> return ()
 
 -- Kick off an async request to the spell checker for the current editor

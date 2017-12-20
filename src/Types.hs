@@ -69,7 +69,6 @@ module Types
   , csChannel
   , csChannels
   , csChannelSelectState
-  , csWebsocketActionChan
   , csMe
   , csEditState
   , timeZone
@@ -99,6 +98,7 @@ module Types
   , crTheme
   , crSession
   , crSubprocessLog
+  , crWebsocketActionChan
   , crRequestQueue
   , crUserStatusLock
   , crFlaggedPosts
@@ -368,16 +368,17 @@ data ProgramOutput =
 -- limited to information that we read or set up
 -- prior to setting up the bulk of the application state.
 data ChatResources = ChatResources
-  { _crSession       :: Session
-  , _crConn          :: ConnectionData
-  , _crRequestQueue  :: RequestChan
-  , _crEventQueue    :: BChan MHEvent
-  , _crSubprocessLog :: STM.TChan ProgramOutput
-  , _crTheme         :: AttrMap
-  , _crUserStatusLock :: MVar ()
-  , _crConfiguration :: Config
-  , _crFlaggedPosts  :: Set.Set PostId
-  , _crPreferences   :: Seq.Seq Preference
+  { _crSession             :: Session
+  , _crConn                :: ConnectionData
+  , _crRequestQueue        :: RequestChan
+  , _crEventQueue          :: BChan MHEvent
+  , _crSubprocessLog       :: STM.TChan ProgramOutput
+  , _crWebsocketActionChan :: STM.TChan WebsocketAction
+  , _crTheme               :: AttrMap
+  , _crUserStatusLock      :: MVar ()
+  , _crConfiguration       :: Config
+  , _crFlaggedPosts        :: Set.Set PostId
+  , _crPreferences         :: Seq.Seq Preference
   }
 
 -- | The 'ChatEditState' value contains the editor widget itself
@@ -488,7 +489,6 @@ data ChatState = ChatState
   , _csRecentChannel               :: Maybe ChannelId
   , _csUrlList                     :: List Name LinkChoice
   , _csConnectionStatus            :: ConnectionStatus
-  , _csWebsocketActionChan         :: STM.TChan WebsocketAction
   , _csWorkerIsBusy                :: Maybe (Maybe Int)
   , _csJoinChannelList             :: Maybe (List Name Channel)
   , _csMessageSelect               :: MessageSelectState
@@ -502,9 +502,8 @@ newState :: ChatResources
          -> TimeZoneSeries
          -> InputHistory
          -> Maybe (Aspell, IO ())
-         -> STM.TChan WebsocketAction
          -> ChatState
-newState rs i u m tz hist sp wac = ChatState
+newState rs i u m tz hist sp = ChatState
   { _csResources                   = rs
   , _csFocus                       = i
   , _csMe                          = u
@@ -521,7 +520,6 @@ newState rs i u m tz hist sp wac = ChatState
   , _csRecentChannel               = Nothing
   , _csUrlList                     = list UrlList mempty 2
   , _csConnectionStatus            = Connected
-  , _csWebsocketActionChan         = wac
   , _csWorkerIsBusy                = Nothing
   , _csJoinChannelList             = Nothing
   , _csMessageSelect               = MessageSelectState Nothing
