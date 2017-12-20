@@ -113,10 +113,11 @@ import           Brick.Themes (themeToAttrMap)
 import           Brick.Widgets.Edit (getEditContents, editContentsL)
 import           Brick.Widgets.List (list, listMoveTo, listSelectedElement)
 import           Control.Applicative
-import           Control.Exception (SomeException, try)
-import           Control.Monad.IO.Class (liftIO)
+import           Control.Concurrent.Async (runConcurrently, Concurrently(..), concurrently)
 import           Control.Concurrent (MVar, putMVar, forkIO)
 import qualified Control.Concurrent.STM as STM
+import           Control.Exception (SomeException, try)
+import           Control.Monad.IO.Class (liftIO)
 import           Data.Char (isAlphaNum)
 import           Brick.Main (getVtyHandle, viewportScroll, vScrollToBeginning, vScrollBy, vScrollToEnd)
 import           Brick.Widgets.Edit (applyEdit)
@@ -127,7 +128,7 @@ import           Data.Text.Zipper (textZipper, clearZipper, insertMany, gotoEOL)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
 import           Data.List (sort, findIndex)
-import           Data.Maybe (maybeToList, isJust, catMaybes, isNothing)
+import           Data.Maybe (maybeToList, isJust, fromJust, catMaybes, isNothing)
 import           Data.Monoid ((<>))
 import qualified Data.Set as Set
 import qualified Data.Text as T
@@ -284,8 +285,15 @@ refreshChannelsAndUsers = do
   myTeamId <- use (csMyTeam.teamIdL)
   myId <- use (csMe.userIdL)
   doAsyncWith Preempt $ do
-    chansWithData <- mmGetAllChannelsWithDataForUser session myTeamId myId
-    uMap <- mmGetProfiles session myTeamId 0 10000
+    (chans, datas, uMap) <- runConcurrently $ (,,)
+                            <$> Concurrently (mmGetAllChannelsForUser session myTeamId myId)
+                            <*> Concurrently (mmGetAllChannelDataForUser session myTeamId myId)
+                            <*> Concurrently (mmGetProfiles session myTeamId 0 10000)
+
+    let dataMap = HM.fromList $ F.toList $ (\d -> (channelDataChannelId d, d)) <$> datas
+        mkPair chan = (getId chan, ChannelWithData chan $ fromJust $ HM.lookup (getId chan) dataMap)
+        chansWithData = HM.fromList $ F.toList $ mkPair <$> chans
+
     return $ do
         forM_ (HM.elems uMap) $ \u -> do
             when (not $ userDeleted u) $ do
@@ -1765,8 +1773,7 @@ prepareAttachment fId st = do
     -- open the local copy.
     let sess = st^.csResources.crSession
 
-    info     <- mmGetFileInfo sess fId
-    contents <- mmGetFile sess fId
+    (info, contents) <- concurrently (mmGetFileInfo sess fId) (mmGetFile sess fId)
     cacheDir <- getUserCacheDir xdgName
 
     let dir   = cacheDir </> "files" </> T.unpack (idString fId)
@@ -1896,11 +1903,11 @@ handleNewUserDirect newUser = do
 handleNewUser :: UserId -> MH ()
 handleNewUser newUserId = doAsyncMM Normal getUserInfo updateUserState
     where getUserInfo session team =
-              do nUser <- mmGetUser session newUserId
+              do (nUser, teamUsers)  <- concurrently (mmGetUser session newUserId)
+                                                     (mmGetProfiles session team 0 10000)
                  -- Also re-load the team members so we can tell
                  -- whether the new user is in the current user's
                  -- team.
-                 teamUsers <- mmGetProfiles session team 0 10000
                  let usrInfo = userInfoFromUser nUser (HM.member newUserId teamUsers)
                  return (nUser, usrInfo)
           updateUserState :: (User, UserInfo) -> MH ()
