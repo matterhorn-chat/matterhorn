@@ -121,7 +121,8 @@ setupState logFile config requestChan eventChan = do
   userStatusLock <- newEmptyMVar
   putMVar userStatusLock ()
 
-  slc <- STM.atomically STM.newTChan
+  slc <- STM.newTChanIO
+  wac <- STM.newTChanIO
 
   prefs <- mmGetMyPreferences session
 
@@ -152,7 +153,7 @@ setupState logFile config requestChan eventChan = do
                      Right t -> return t
 
   let cr = ChatResources session cd requestChan eventChan
-             slc (themeToAttrMap custTheme) userStatusLock config mempty prefs
+             slc wac (themeToAttrMap custTheme) userStatusLock config mempty prefs
 
   initializeState cr myTeam myUser
 
@@ -211,12 +212,11 @@ initializeState cr myTeam myUser = do
   -- * Spell checker and spell check timer, if configured
   spResult <- maybeStartSpellChecker (cr^.crConfiguration) (cr^.crEventQueue)
 
-  waChan <- STM.newTChanIO
   let chanNames = mkChanNames myUser mempty chans
       chanIds = [ (chanNames ^. cnToChanId) HM.! i
                 | i <- chanNames ^. cnChans ]
       chanZip = Z.fromList chanIds
-      st = newState cr chanZip myUser myTeam tz hist spResult waChan
+      st = newState cr chanZip myUser myTeam tz hist spResult
              & csChannels %~ flip (foldr (uncurry addChannel)) msgs
              & csNames .~ chanNames
 
