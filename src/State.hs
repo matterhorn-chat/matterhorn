@@ -281,6 +281,8 @@ updatePreference pref = do
 -- occurs.
 refreshChannelsAndUsers :: MH ()
 refreshChannelsAndUsers = do
+  -- The below code is a duplicate of mmGetAllChannelsWithDataForUser function,
+  -- which has been inlined here to gain a concurrency benefit.
   session <- use (csResources.crSession)
   myTeamId <- use (csMyTeam.teamIdL)
   myId <- use (csMe.userIdL)
