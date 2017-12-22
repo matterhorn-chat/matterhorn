@@ -1,5 +1,6 @@
 module App
   ( runMatterhorn
+  , closeMatterhorn
   )
 where
 
@@ -8,14 +9,19 @@ import           Prelude.Compat
 
 import           Brick
 import           Brick.BChan
+import           Data.Monoid ((<>))
 import qualified Control.Concurrent.STM as STM
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform
 import           System.IO (IOMode(WriteMode), openFile, hClose)
 import           Text.Aspell (stopAspell)
 
+import           Network.Mattermost
+
 import           Config
 import           Options
+import           InputHistory
+import           LastRunState
 import           State.Setup
 import           State.Setup.Threads (startAsyncWorkerThread)
 import           Events
@@ -64,3 +70,17 @@ runMatterhorn opts config = do
       Just h -> hClose h
 
     return finalSt
+
+-- | Cleanup resources and save data for restoring on program restart.
+closeMatterhorn :: ChatState -> IO ()
+closeMatterhorn finalSt = do
+  mmCloseSession (finalSt^.csResources.crSession)
+
+  writeHistory (finalSt^.csEditState.cedInputHistory)
+
+  -- Try to write the run state to a file. If it fails, just print the error
+  -- and do not exit with a failure status because the run state file is optional.
+  done <- writeLastRunState finalSt
+  case done of
+    Left err -> putStrLn $ "Error in writing last run state: " <> err
+    Right _  -> return ()
