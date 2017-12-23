@@ -69,9 +69,9 @@ setupState logFile config requestChan eventChan = do
                 -- HTTP.
                 if (configUnsafeUseHTTP config)
                   then initConnectionDataInsecure (ciHostname cInfo)
-                         (fromIntegral (ciPort cInfo))
+                         (fromIntegral (ciPort cInfo)) defaultConnectionPoolConfig
                   else initConnectionData (ciHostname cInfo)
-                         (fromIntegral (ciPort cInfo))
+                         (fromIntegral (ciPort cInfo)) defaultConnectionPoolConfig
 
         let login = Login { username = ciUsername cInfo
                           , password = ciPassword cInfo
