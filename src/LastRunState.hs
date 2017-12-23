@@ -70,8 +70,8 @@ lastRunStateFileMode = P.unionFileModes P.ownerReadMode P.ownerWriteMode
 
 -- | Writes the run state to a file. The file is specific to the current team.
 -- | Writes only if the current channel is an ordrinary or a private channel.
-writeLastRunState :: ChatState -> IO (Either String ())
-writeLastRunState cs = runExceptT . convertIOException $
+writeLastRunState :: ChatState -> IO ()
+writeLastRunState cs =
   when (cs^.csCurrentChannel.ccInfo.cdType `elem` [Ordinary, Private]) $ do
     let runState = toLastRunState cs
         tId      = cs^.csMyTeam.teamIdL

@@ -11,6 +11,7 @@ import           Brick
 import           Brick.BChan
 import           Data.Monoid ((<>))
 import qualified Control.Concurrent.STM as STM
+import           Control.Monad.Trans.Except (runExceptT)
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform
 import           System.IO (IOMode(WriteMode), openFile, hClose)
@@ -21,6 +22,7 @@ import           Network.Mattermost
 import           Config
 import           Options
 import           InputHistory
+import           IOUtil
 import           LastRunState
 import           State.Setup
 import           State.Setup.Threads (startAsyncWorkerThread)
@@ -74,13 +76,12 @@ runMatterhorn opts config = do
 -- | Cleanup resources and save data for restoring on program restart.
 closeMatterhorn :: ChatState -> IO ()
 closeMatterhorn finalSt = do
-  mmCloseSession (finalSt^.csResources.crSession)
-
-  writeHistory (finalSt^.csEditState.cedInputHistory)
-
-  -- Try to write the run state to a file. If it fails, just print the error
-  -- and do not exit with a failure status because the run state file is optional.
-  done <- writeLastRunState finalSt
-  case done of
-    Left err -> putStrLn $ "Error in writing last run state: " <> err
-    Right _  -> return ()
+  logIfError (mmCloseSession $ finalSt^.csResources.crSession) "Error in closing session"
+  logIfError (writeHistory (finalSt^.csEditState.cedInputHistory)) "Error in writing history"
+  logIfError (writeLastRunState finalSt) "Error in writing last run state"
+  where
+    logIfError action msg = do
+      done <- runExceptT $ convertIOException $ action
+      case done of
+        Left err -> putStrLn $ msg <> ": " <> err
+        Right _  -> return ()
