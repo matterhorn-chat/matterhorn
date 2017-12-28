@@ -13,6 +13,10 @@ module Types
   , Name(..)
   , ChannelSelectMatch(..)
   , ConnectionInfo(..)
+  , ciHostname
+  , ciPort
+  , ciUsername
+  , ciPassword
   , Config(..)
   , HelpScreen(..)
   , PasswordSource(..)
@@ -298,11 +302,13 @@ data AuthenticationException =
 -- | Our 'ConnectionInfo' contains exactly as much information as is
 -- necessary to start a connection with a Mattermost server
 data ConnectionInfo =
-    ConnectionInfo { ciHostname :: T.Text
-                   , ciPort     :: Int
-                   , ciUsername :: T.Text
-                   , ciPassword :: T.Text
+    ConnectionInfo { _ciHostname :: T.Text
+                   , _ciPort     :: Int
+                   , _ciUsername :: T.Text
+                   , _ciPassword :: T.Text
                    }
+
+makeLenses ''ConnectionInfo
 
 -- | We want to continue referring to posts by their IDs, but we don't want to
 -- have to synthesize new valid IDs for messages from the client
