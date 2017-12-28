@@ -93,13 +93,13 @@ mkForm :: ConnectionInfo -> Form ConnectionInfo e Name
 mkForm =
     let label s w = padBottom (Pad 1) $
                     (vLimit 1 $ hLimit 15 $ str s <+> fill ' ') <+> w
-    in newForm [ label "Hostname" @@=
+    in newForm [ label "Hostname:" @@=
                    editHostname ciHostname Hostname
-               , label "Port" @@=
+               , label "Port:" @@=
                    editShowableField ciPort Port
-               , label "Username" @@=
+               , label "Username:" @@=
                    editTextField ciUsername Username (Just 1)
-               , label "Password" @@=
+               , label "Password:" @@=
                    editPasswordField ciPassword Password
                ]
 
