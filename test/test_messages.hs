@@ -10,7 +10,6 @@ import qualified Data.Map as Map
 import           Data.Maybe (isNothing, fromJust)
 import           Data.Monoid ((<>))
 import qualified Data.Sequence as Seq
-import qualified Data.Text as T
 import           Data.Time.Calendar (Day(..))
 import           Data.Time.Clock (UTCTime(..), getCurrentTime
                                  , secondsToDiffTime)
