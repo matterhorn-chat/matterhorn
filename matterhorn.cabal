@@ -134,6 +134,7 @@ test-suite test_messages
                     , Message_QCA
                     , Types.Messages
                     , Types.Posts
+                    , Types.DirectionalSeq
   default-language:   Haskell2010
   default-extensions: OverloadedStrings
                     , ScopedTypeVariables
