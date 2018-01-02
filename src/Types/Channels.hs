@@ -15,7 +15,7 @@ module Types.Channels
   , ccContents, ccInfo
   -- * Lenses created for accessing ChannelInfo fields
   , cdViewed, cdNewMessageIndicator, cdEditedMessageThreshold, cdUpdated
-  , cdName, cdHeader, cdType, cdCurrentState
+  , cdName, cdHeader, cdPurpose, cdType, cdCurrentState
   , cdMentionCount, cdTypingUsers
   -- * Lenses created for accessing ChannelContents fields
   , cdMessages
@@ -101,6 +101,7 @@ initialChannelInfo chan =
                    , _cdUpdated                = updated
                    , _cdName                   = preferredChannelName chan
                    , _cdHeader                 = chan^.channelHeaderL
+                   , _cdPurpose                = chan^.channelPurposeL
                    , _cdType                   = chan^.channelTypeL
                    , _cdCurrentState           = initialChannelState
                    , _cdNotifyProps            = emptyChannelNotifyProps
@@ -118,6 +119,7 @@ channelInfoFromChannelWithData (ChannelWithData chan chanData) ci =
           , _cdUpdated          = updated
           , _cdName             = preferredChannelName chan
           , _cdHeader           = (chan^.channelHeaderL)
+          , _cdPurpose          = (chan^.channelPurposeL)
           , _cdType             = (chan^.channelTypeL)
           , _cdMentionCount     = chanData^.channelDataMentionCountL
           , _cdNotifyProps      = chanData^.channelDataNotifyPropsL
@@ -236,6 +238,8 @@ data ChannelInfo = ChannelInfo
     -- ^ The name of the channel
   , _cdHeader           :: T.Text
     -- ^ The header text of a channel
+  , _cdPurpose          :: T.Text
+    -- ^ The stated purpose of the channel
   , _cdType             :: Type
     -- ^ The type of a channel: public, private, or DM
   , _cdCurrentState     :: ChannelState
