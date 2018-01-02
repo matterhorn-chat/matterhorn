@@ -167,7 +167,7 @@ initializeState cr myTeam myUser = do
  -- run state file. If unable to read or decode or validate the file, this
  -- predicate is just `isTownSquare`.
   isLastSelectedChannel <- do
-    result <- readLastRunState . teamId $ myTeam
+    result <- readLastRunState $ teamId myTeam
     case result of
       Right lrs | isValidLastRunState cr myUser lrs -> return $ \c ->
            channelId c == lrs^.lrsSelectedChannelId
