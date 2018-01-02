@@ -65,6 +65,7 @@ module Types.Messages
   , getPrevPostId
   , getLatestPostId
   , findLatestUserMessage
+  -- * Operations on any Message type
   , messagesAfter
   )
 where
@@ -224,7 +225,12 @@ filterMessages ::
 filterMessages p = onDirectedSeq (Seq.filter p)
 
 class MessageOps a where
+    -- | addMessage inserts a date in proper chronological order, with
+    -- the following extra functionality:
+    --     * no duplication (by PostId)
+    --     * no duplication (adjacent UnknownGap entries)
     addMessage :: Message -> a -> a
+
 
 instance MessageOps ChronologicalMessages where
     addMessage m ml =
@@ -237,6 +243,7 @@ instance MessageOps ChronologicalMessages where
                         then ml
                         else dirDateInsert m ml
                   LT -> dirDateInsert m ml
+
 
 dirDateInsert :: Message -> ChronologicalMessages -> ChronologicalMessages
 dirDateInsert m = onDirectedSeq $ finalize . foldr insAfter initial
@@ -354,6 +361,9 @@ findLatestUserMessage f msgs =
                  else case getPrevPostId (msg^.mPostId) msgs of
                         Nothing -> Nothing
                         Just p' -> findUserMessageFrom p' msgs
+
+-- ----------------------------------------------------------------------
+-- * Operations on any Message type
 
 -- | Return all messages that were posted after the specified date/time.
 messagesAfter :: ServerTime -> Messages -> Messages
