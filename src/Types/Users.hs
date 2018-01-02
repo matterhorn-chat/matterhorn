@@ -22,14 +22,20 @@ module Types.Users
   , getDMChannelName
   , userIdForDMChannel
   , userDeleted
+  , TypingUsers
+  , noTypingUsers
+  , addTypingUser
+  , allTypingUsers
+  , expireTypingUsers
   )
 where
 
+import           Data.Semigroup ((<>), Max(..))
 import qualified Data.HashMap.Strict as HM
 import           Data.List (sort)
 import           Data.Maybe (listToMaybe, maybeToList)
-import           Data.Monoid ((<>))
 import qualified Data.Text as T
+import           Data.Time (UTCTime)
 import           Lens.Micro.Platform
 import           Network.Mattermost.Types (Id(Id), UserId(..), User(..), idString)
 
@@ -97,11 +103,11 @@ makeLenses ''UserInfo
 newtype AllMyUsers a = AllUsers { _ofUsers :: HM.HashMap UserId a }
     deriving Functor
 
+makeLenses ''AllMyUsers
+
 -- | Define the exported typename which universally binds the
 -- collection to the UserInfo type.
 type Users = AllMyUsers UserInfo
-
-makeLenses ''AllMyUsers
 
 -- | Initial collection of Users with no members
 noUsers :: Users
@@ -114,6 +120,29 @@ addUser uId userinfo = AllUsers . HM.insert uId userinfo . _ofUsers
 -- | Get a list of all known users
 allUsers :: Users -> [UserInfo]
 allUsers = HM.elems . _ofUsers
+
+-- | Define the exported typename to represent the collection of users
+-- | who are currently typing. The values kept against the user id keys are the
+-- | latest timestamps of typing events from the server.
+type TypingUsers = AllMyUsers (Max UTCTime)
+
+-- | Initial collection of TypingUsers with no members
+noTypingUsers :: TypingUsers
+noTypingUsers = AllUsers HM.empty
+
+-- | Add a member to the existing collection of TypingUsers
+addTypingUser :: UserId -> UTCTime -> TypingUsers -> TypingUsers
+addTypingUser uId ts = AllUsers . HM.insertWith (<>) uId (Max ts) . _ofUsers
+
+-- | Get a list of all typing users
+allTypingUsers :: TypingUsers -> [UserId]
+allTypingUsers = HM.keys . _ofUsers
+
+-- | Remove all the expired users from the collection of TypingUsers.
+-- | Expiry is decided by the given timestamp.
+expireTypingUsers :: UTCTime -> TypingUsers -> TypingUsers
+expireTypingUsers expiryTimestamp =
+  AllUsers . HM.filter (\(Max ts') -> ts' >= expiryTimestamp) . _ofUsers
 
 -- | Get the User information given the UserId
 findUserById :: UserId -> Users -> Maybe UserInfo

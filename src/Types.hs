@@ -13,6 +13,10 @@ module Types
   , Name(..)
   , ChannelSelectMatch(..)
   , ConnectionInfo(..)
+  , ciHostname
+  , ciPort
+  , ciUsername
+  , ciPassword
   , Config(..)
   , HelpScreen(..)
   , PasswordSource(..)
@@ -98,12 +102,14 @@ module Types
   , crTheme
   , crSession
   , crSubprocessLog
+  , crWebsocketActionChan
   , crRequestQueue
-  , crQuitCondition
   , crUserStatusLock
   , crFlaggedPosts
   , crConn
   , crConfiguration
+
+  , WebsocketAction(..)
 
   , Cmd(..)
   , commandName
@@ -155,6 +161,7 @@ import qualified Control.Monad.State as St
 import qualified Data.Foldable as F
 import qualified Data.Sequence as Seq
 import           Data.HashMap.Strict (HashMap)
+import           Data.Time (UTCTime)
 import           Data.Time.LocalTime.TimeZone.Series (TimeZoneSeries)
 import qualified Data.HashMap.Strict as HM
 import           Data.List (sort, partition, sortBy)
@@ -167,7 +174,7 @@ import           Network.Mattermost
 import           Network.Mattermost.Exceptions
 import           Network.Mattermost.Lenses
 import           Network.Mattermost.Types
-import           Network.Mattermost.WebSocket
+import           Network.Mattermost.WebSocket (WebsocketEvent)
 import           Network.Connection (HostNotResolved, HostCannotConnect)
 import qualified Data.Text as T
 import           System.Exit (ExitCode)
@@ -215,6 +222,7 @@ data Config = Config
   , configUnsafeUseHTTP             :: Bool
   , configChannelListWidth          :: Int
   , configShowOlderEdits            :: Bool
+  , configShowTypingIndicator       :: Bool
   , configAbsPath                   :: Maybe FilePath
   , configUserKeys                  :: KeyConfig
   } deriving (Eq, Show)
@@ -293,11 +301,13 @@ data AuthenticationException =
 -- | Our 'ConnectionInfo' contains exactly as much information as is
 -- necessary to start a connection with a Mattermost server
 data ConnectionInfo =
-    ConnectionInfo { ciHostname :: T.Text
-                   , ciPort     :: Int
-                   , ciUsername :: T.Text
-                   , ciPassword :: T.Text
+    ConnectionInfo { _ciHostname :: T.Text
+                   , _ciPort     :: Int
+                   , _ciUsername :: T.Text
+                   , _ciPassword :: T.Text
                    }
+
+makeLenses ''ConnectionInfo
 
 -- | We want to continue referring to posts by their IDs, but we don't want to
 -- have to synthesize new valid IDs for messages from the client
@@ -363,17 +373,17 @@ data ProgramOutput =
 -- limited to information that we read or set up
 -- prior to setting up the bulk of the application state.
 data ChatResources = ChatResources
-  { _crSession       :: Session
-  , _crConn          :: ConnectionData
-  , _crRequestQueue  :: RequestChan
-  , _crEventQueue    :: BChan MHEvent
-  , _crSubprocessLog :: STM.TChan ProgramOutput
-  , _crTheme         :: AttrMap
-  , _crQuitCondition :: MVar ()
-  , _crUserStatusLock :: MVar ()
-  , _crConfiguration :: Config
-  , _crFlaggedPosts  :: Set.Set PostId
-  , _crPreferences   :: Seq.Seq Preference
+  { _crSession             :: Session
+  , _crConn                :: ConnectionData
+  , _crRequestQueue        :: RequestChan
+  , _crEventQueue          :: BChan MHEvent
+  , _crSubprocessLog       :: STM.TChan ProgramOutput
+  , _crWebsocketActionChan :: STM.TChan WebsocketAction
+  , _crTheme               :: AttrMap
+  , _crUserStatusLock      :: MVar ()
+  , _crConfiguration       :: Config
+  , _crFlaggedPosts        :: Set.Set PostId
+  , _crPreferences         :: Seq.Seq Preference
   }
 
 -- | The 'ChatEditState' value contains the editor widget itself
@@ -546,6 +556,13 @@ data PostListOverlayState = PostListOverlayState
   { _postListPosts    :: Messages
   , _postListSelected :: Maybe PostId
   }
+
+-- | Actions that can be sent on the websocket to the server.
+data WebsocketAction =
+    UserTyping UTCTime ChannelId (Maybe PostId) -- ^ user typing in the input box
+  -- | GetStatuses
+  -- | GetStatusesByIds [UserId]
+  deriving (Read, Show, Eq, Ord)
 
 -- * MH Monad
 

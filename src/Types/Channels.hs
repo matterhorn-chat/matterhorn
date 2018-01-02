@@ -16,7 +16,7 @@ module Types.Channels
   -- * Lenses created for accessing ChannelInfo fields
   , cdViewed, cdNewMessageIndicator, cdEditedMessageThreshold, cdUpdated
   , cdName, cdHeader, cdType, cdCurrentState
-  , cdMentionCount
+  , cdMentionCount, cdTypingUsers
   -- * Lenses created for accessing ChannelContents fields
   , cdMessages
   -- * Creating ClientChannel objects
@@ -39,6 +39,7 @@ module Types.Channels
   , adjustUpdated
   , adjustEditedThreshold
   , updateNewMessageIndicator
+  , addChannelTypingUser
   -- * Notification settings
   , notifyPreference
   -- * Miscellaneous channel-related operations
@@ -50,9 +51,10 @@ where
 
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
+import           Data.Time.Clock (UTCTime)
 import           Lens.Micro.Platform
 import           Network.Mattermost.Lenses hiding (Lens')
-import           Network.Mattermost.Types ( Channel(..), ChannelId
+import           Network.Mattermost.Types ( Channel(..), UserId, ChannelId
                                           , ChannelWithData(..)
                                           , Type(..)
                                           , Post
@@ -64,6 +66,7 @@ import           Network.Mattermost.Types ( Channel(..), ChannelId
                                           , emptyChannelNotifyProps
                                           )
 import           Types.Messages (Messages, noMessages)
+import           Types.Users    (TypingUsers, noTypingUsers, addTypingUser)
 
 -- * Channel representations
 
@@ -91,16 +94,17 @@ data NewMessageIndicator =
 initialChannelInfo :: Channel -> ChannelInfo
 initialChannelInfo chan =
     let updated  = chan ^. channelLastPostAtL
-    in ChannelInfo { _cdViewed           = Nothing
-                   , _cdNewMessageIndicator = Hide
+    in ChannelInfo { _cdViewed                 = Nothing
+                   , _cdNewMessageIndicator    = Hide
                    , _cdEditedMessageThreshold = Nothing
-                   , _cdMentionCount     = 0
-                   , _cdUpdated          = updated
-                   , _cdName             = preferredChannelName chan
-                   , _cdHeader           = chan^.channelHeaderL
-                   , _cdType             = chan^.channelTypeL
-                   , _cdCurrentState     = initialChannelState
-                   , _cdNotifyProps      = emptyChannelNotifyProps
+                   , _cdMentionCount           = 0
+                   , _cdUpdated                = updated
+                   , _cdName                   = preferredChannelName chan
+                   , _cdHeader                 = chan^.channelHeaderL
+                   , _cdType                   = chan^.channelTypeL
+                   , _cdCurrentState           = initialChannelState
+                   , _cdNotifyProps            = emptyChannelNotifyProps
+                   , _cdTypingUsers            = noTypingUsers
                    }
 
 channelInfoFromChannelWithData :: ChannelWithData -> ChannelInfo -> ChannelInfo
@@ -238,6 +242,8 @@ data ChannelInfo = ChannelInfo
     -- ^ The current state of the channel
   , _cdNotifyProps      :: ChannelNotifyProps
     -- ^ The user's notification settings for this channel
+  , _cdTypingUsers      :: TypingUsers
+    -- ^ The users who are currently typing in this channel
   }
 
 -- ** Channel-related Lenses
@@ -314,6 +320,10 @@ filteredChannels :: ((ChannelId, ClientChannel) -> Bool)
                  -> ClientChannels -> ClientChannels
 filteredChannels f cc =
     AllChannels . HM.fromList . filter f $ cc^.ofChans.to HM.toList
+
+-- | Add user to the list of users in this channel who are currently typing.
+addChannelTypingUser :: UserId -> UTCTime -> ClientChannel -> ClientChannel
+addChannelTypingUser uId ts = ccInfo.cdTypingUsers %~ (addTypingUser uId ts)
 
 -- | Clear the new message indicator for the specified channel
 clearNewMessageIndicator :: ClientChannel -> ClientChannel

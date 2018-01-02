@@ -60,6 +60,7 @@ module State
   -- * Working with users
   , handleNewUser
   , updateStatus
+  , handleTypingUser
 
   -- * Startup/reconnect management
   , refreshChannelsAndUsers
@@ -112,10 +113,11 @@ import           Brick.Themes (themeToAttrMap)
 import           Brick.Widgets.Edit (getEditContents, editContentsL)
 import           Brick.Widgets.List (list, listMoveTo, listSelectedElement)
 import           Control.Applicative
-import           Control.Exception (SomeException, try)
-import           Control.Monad.IO.Class (liftIO)
+import           Control.Concurrent.Async (runConcurrently, Concurrently(..), concurrently)
 import           Control.Concurrent (MVar, putMVar, forkIO)
 import qualified Control.Concurrent.STM as STM
+import           Control.Exception (SomeException, try)
+import           Control.Monad.IO.Class (liftIO)
 import           Data.Char (isAlphaNum)
 import           Brick.Main (getVtyHandle, viewportScroll, vScrollToBeginning, vScrollBy, vScrollToEnd)
 import           Brick.Widgets.Edit (applyEdit)
@@ -126,10 +128,11 @@ import           Data.Text.Zipper (textZipper, clearZipper, insertMany, gotoEOL)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
 import           Data.List (sort, findIndex)
-import           Data.Maybe (maybeToList, isJust, catMaybes, isNothing)
+import           Data.Maybe (maybeToList, isJust, fromJust, catMaybes, isNothing)
 import           Data.Monoid ((<>))
 import qualified Data.Set as Set
 import qualified Data.Text as T
+import           Data.Time (getCurrentTime)
 import qualified Data.Vector as V
 import qualified Data.Foldable as F
 import           Graphics.Vty (outputIface)
@@ -278,12 +281,21 @@ updatePreference pref = do
 -- occurs.
 refreshChannelsAndUsers :: MH ()
 refreshChannelsAndUsers = do
+  -- The below code is a duplicate of mmGetAllChannelsWithDataForUser function,
+  -- which has been inlined here to gain a concurrency benefit.
   session <- use (csResources.crSession)
   myTeamId <- use (csMyTeam.teamIdL)
   myId <- use (csMe.userIdL)
   doAsyncWith Preempt $ do
-    chansWithData <- mmGetAllChannelsWithDataForUser session myTeamId myId
-    uMap <- mmGetProfiles session myTeamId 0 10000
+    (chans, datas, uMap) <- runConcurrently $ (,,)
+                            <$> Concurrently (mmGetAllChannelsForUser session myTeamId myId)
+                            <*> Concurrently (mmGetAllChannelDataForUser session myTeamId myId)
+                            <*> Concurrently (mmGetProfiles session myTeamId 0 10000)
+
+    let dataMap = HM.fromList $ F.toList $ (\d -> (channelDataChannelId d, d)) <$> datas
+        mkPair chan = (getId chan, ChannelWithData chan $ fromJust $ HM.lookup (getId chan) dataMap)
+        chansWithData = HM.fromList $ F.toList $ mkPair <$> chans
+
     return $ do
         forM_ (HM.elems uMap) $ \u -> do
             when (not $ userDeleted u) $ do
@@ -1763,8 +1775,7 @@ prepareAttachment fId st = do
     -- open the local copy.
     let sess = st^.csResources.crSession
 
-    info     <- mmGetFileInfo sess fId
-    contents <- mmGetFile sess fId
+    (info, contents) <- concurrently (mmGetFileInfo sess fId) (mmGetFile sess fId)
     cacheDir <- getUserCacheDir xdgName
 
     let dir   = cacheDir </> "files" </> T.unpack (idString fId)
@@ -1894,11 +1905,11 @@ handleNewUserDirect newUser = do
 handleNewUser :: UserId -> MH ()
 handleNewUser newUserId = doAsyncMM Normal getUserInfo updateUserState
     where getUserInfo session team =
-              do nUser <- mmGetUser session newUserId
+              do (nUser, teamUsers)  <- concurrently (mmGetUser session newUserId)
+                                                     (mmGetProfiles session team 0 10000)
                  -- Also re-load the team members so we can tell
                  -- whether the new user is in the current user's
                  -- team.
-                 teamUsers <- mmGetProfiles session team 0 10000
                  let usrInfo = userInfoFromUser nUser (HM.member newUserId teamUsers)
                  return (nUser, usrInfo)
           updateUserState :: (User, UserInfo) -> MH ()
@@ -1907,3 +1918,11 @@ handleNewUser newUserId = doAsyncMM Normal getUserInfo updateUserState
               do csUsers %= addUser newUserId uInfo
                  csNames . cnUsers %= (sort . ((newUser^.userUsernameL):))
                  csNames . cnToUserId . at (newUser^.userUsernameL) .= Just newUserId
+
+-- | Handle the typing events from the websocket to show the currently typing users on UI
+handleTypingUser :: UserId -> ChannelId -> MH ()
+handleTypingUser uId cId = do
+  config <- use (csResources.crConfiguration)
+  when (configShowTypingIndicator config) $ do
+    ts <- liftIO getCurrentTime -- get time now
+    csChannels %= modifyChannelById cId (addChannelTypingUser uId ts)

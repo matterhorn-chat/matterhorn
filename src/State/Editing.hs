@@ -1,4 +1,5 @@
 {-# LANGUAGE MultiWayIf #-}
+{-#LANGUAGE RecordWildCards #-}
 
 module State.Editing where
 
@@ -9,6 +10,8 @@ import           Brick.Widgets.Edit (Editor, handleEditorEvent, getEditContents,
 import           Brick.Widgets.Edit (applyEdit)
 import qualified Codec.Binary.UTF8.Generic as UTF8
 import           Control.Arrow
+import qualified Control.Concurrent.STM as STM
+import           Control.Monad (when)
 import           Control.Monad.IO.Class (liftIO)
 import qualified Data.ByteString as BS
 import           Data.Monoid ((<>))
@@ -17,6 +20,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Zipper as Z
 import qualified Data.Text.Zipper.Generic.Words as Z
+import           Data.Time (getCurrentTime)
 import           Graphics.Vty (Event(..), Key(..), Modifier(..))
 import           Lens.Micro.Platform
 import qualified System.Environment as Sys
@@ -31,6 +35,8 @@ import           Types
 import           Events.Keybindings
 
 import           State.Common
+
+import           Network.Mattermost.Types (Post(..))
 
 startMultilineEditing :: MH ()
 startMultilineEditing = csEditState.cedMultiline .= True
@@ -92,6 +98,7 @@ editingPermitted st =
 editingKeybindings :: [Keybinding]
 editingKeybindings =
   let kb desc ev mote = KB desc ev mote Nothing in
+  map withUserTypingAction
   [ kb "Transpose the final two characters"
     (EvKey (KChar 't') [MCtrl]) $ do
     csEditState.cedEditor %= applyEdit Z.transposeChars
@@ -145,6 +152,11 @@ editingKeybindings =
       buf <- use (csEditState.cedYankBuffer)
       csEditState.cedEditor %= applyEdit (Z.insertMany buf)
   ]
+  where
+    withUserTypingAction (KB {..}) =
+      KB kbDescription kbEvent
+         (kbAction >> sendUserTypingAction)
+         kbBindingInfo
 
 handleEditingInput :: Event -> MH ()
 handleEditingInput e = do
@@ -182,7 +194,9 @@ handleEditingInput e = do
 
           EvKey (KChar ch) [] | editingPermitted st && smartBacktick && ch `elem` smartChars ->
               -- Smart char insertion:
-              let doInsertChar = csEditState.cedEditor %= applyEdit (Z.insertChar ch)
+              let doInsertChar = do
+                    csEditState.cedEditor %= applyEdit (Z.insertChar ch)
+                    sendUserTypingAction
               in if | (editorEmpty $ st^.csEditState.cedEditor) ||
                          ((cursorAtChar ' ' (applyEdit Z.moveLeft $ st^.csEditState.cedEditor)) &&
                           (cursorIsAtEnd $ st^.csEditState.cedEditor)) ->
@@ -192,12 +206,31 @@ handleEditingInput e = do
                         csEditState.cedEditor %= applyEdit Z.moveRight
                     | otherwise -> doInsertChar
 
-          _ | editingPermitted st -> mhHandleEventLensed (csEditState.cedEditor) handleEditorEvent e
+          _ | editingPermitted st -> do
+              mhHandleEventLensed (csEditState.cedEditor) handleEditorEvent e
+              sendUserTypingAction
             | otherwise -> return ()
 
         csEditState.cedCurrentCompletion .= Nothing
 
     liftIO $ resetSpellCheckTimer $ st^.csEditState
+
+-- | Send the user_typing action to the server asynchronously, over the connected websocket.
+-- | If the websocket is not connected, drop the action silently.
+sendUserTypingAction :: MH ()
+sendUserTypingAction = do
+  st <- use id
+  when (configShowTypingIndicator (st^.csResources.crConfiguration)) $
+    case st^.csConnectionStatus of
+      Connected -> do
+        let pId = case st^.csEditState.cedEditMode of
+                    Replying _ post -> Just $ postId post
+                    _               -> Nothing
+        liftIO $ do
+          now <- getCurrentTime
+          let action = UserTyping now (st^.csCurrentChannelId) pId
+          STM.atomically $ STM.writeTChan (st^.csResources.crWebsocketActionChan) action
+      Disconnected -> return ()
 
 -- Kick off an async request to the spell checker for the current editor
 -- contents.

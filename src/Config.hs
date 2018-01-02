@@ -55,6 +55,8 @@ fromIni = do
       (configShowBackground defaultConfig)
     configShowMessagePreview <- fieldFlagDef "showMessagePreview"
       (configShowMessagePreview defaultConfig)
+    configShowTypingIndicator <- fieldFlagDef "showTypingIndicator"
+      (configShowTypingIndicator defaultConfig)
     configEnableAspell <- fieldFlagDef "enableAspell"
       (configEnableAspell defaultConfig)
     configActivityBell <- fieldFlagDef "activityBell"
@@ -107,28 +109,29 @@ isQuoted t =
 
 defaultConfig :: Config
 defaultConfig =
-    Config { configAbsPath            = Nothing
-           , configUser               = Nothing
-           , configHost               = Nothing
-           , configTeam               = Nothing
-           , configPort               = defaultPort
-           , configPass               = Nothing
-           , configTimeFormat         = Nothing
-           , configDateFormat         = Nothing
-           , configTheme              = Nothing
-           , configThemeCustomizationFile = Nothing
-           , configSmartBacktick      = True
-           , configURLOpenCommand     = Nothing
+    Config { configAbsPath                   = Nothing
+           , configUser                      = Nothing
+           , configHost                      = Nothing
+           , configTeam                      = Nothing
+           , configPort                      = defaultPort
+           , configPass                      = Nothing
+           , configTimeFormat                = Nothing
+           , configDateFormat                = Nothing
+           , configTheme                     = Nothing
+           , configThemeCustomizationFile    = Nothing
+           , configSmartBacktick             = True
+           , configURLOpenCommand            = Nothing
            , configURLOpenCommandInteractive = False
-           , configActivityBell       = False
-           , configShowBackground     = Disabled
-           , configShowMessagePreview = False
-           , configEnableAspell       = False
-           , configAspellDictionary   = Nothing
-           , configUnsafeUseHTTP    = False
-           , configChannelListWidth = 20
-           , configShowOlderEdits     = True
-           , configUserKeys           = mempty
+           , configActivityBell              = False
+           , configShowBackground            = Disabled
+           , configShowMessagePreview        = False
+           , configEnableAspell              = False
+           , configAspellDictionary          = Nothing
+           , configUnsafeUseHTTP             = False
+           , configChannelListWidth          = 20
+           , configShowOlderEdits            = True
+           , configUserKeys                  = mempty
+           , configShowTypingIndicator       = False
            }
 
 findConfig :: Maybe FilePath -> IO (Either String Config)

@@ -17,6 +17,7 @@ import qualified Network.Mattermost.Lenses as MM
 import qualified Network.Mattermost.Exceptions as MM
 
 import State
+import State.Editing (toggleMessagePreview)
 import State.Common
 import State.PostListOverlay
 import Types
@@ -72,6 +73,8 @@ commandList =
   , Cmd "remove-user" "Remove a user from the current channel"
     (TokenArg "username" NoArg) $ \ (uname, ()) ->
         removeUserFromCurrentChannel uname
+  , Cmd "message-preview" "Toggle preview of the current message" NoArg $ \_ ->
+        toggleMessagePreview
   , Cmd "focus" "Focus on a named channel"
     (TokenArg "channel" NoArg) $ \ (name, ()) ->
         changeChannel name

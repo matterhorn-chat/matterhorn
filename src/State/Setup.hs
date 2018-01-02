@@ -68,13 +68,13 @@ setupState logFile config requestChan eventChan = do
                 -- configuration option is there, try falling back to
                 -- HTTP.
                 if (configUnsafeUseHTTP config)
-                  then initConnectionDataInsecure (ciHostname cInfo)
-                         (fromIntegral (ciPort cInfo))
-                  else initConnectionData (ciHostname cInfo)
-                         (fromIntegral (ciPort cInfo))
+                  then initConnectionDataInsecure (cInfo^.ciHostname)
+                         (fromIntegral (cInfo^.ciPort))
+                  else initConnectionData (cInfo^.ciHostname)
+                         (fromIntegral (cInfo^.ciPort))
 
-        let login = Login { username = ciUsername cInfo
-                          , password = ciPassword cInfo
+        let login = Login { username = cInfo^.ciUsername
+                          , password = cInfo^.ciPassword
                           }
         result <- (Right <$> mmLogin cd login)
                     `catch` (\e -> return $ Left $ ResolveError e)
@@ -85,10 +85,10 @@ setupState logFile config requestChan eventChan = do
         -- user adjust if something went wrong rather than enter them
         -- all again.
         let modifiedConfig =
-                config { configUser = Just $ ciUsername cInfo
-                       , configPass = Just $ PasswordString $ ciPassword cInfo
-                       , configPort = ciPort cInfo
-                       , configHost = Just $ ciHostname cInfo
+                config { configUser = Just $ cInfo^.ciUsername
+                       , configPass = Just $ PasswordString $ cInfo^.ciPassword
+                       , configPort = cInfo^.ciPort
+                       , configHost = Just $ cInfo^.ciHostname
                        }
 
         case result of
@@ -118,12 +118,11 @@ setupState logFile config requestChan eventChan = do
               Nothing -> interactiveTeamSelection (F.toList (initialLoadTeams initialLoad))
               Just t -> return t
 
-  quitCondition <- newEmptyMVar
-
   userStatusLock <- newEmptyMVar
   putMVar userStatusLock ()
 
-  slc <- STM.atomically STM.newTChan
+  slc <- STM.newTChanIO
+  wac <- STM.newTChanIO
 
   prefs <- mmGetMyPreferences session
 
@@ -154,8 +153,7 @@ setupState logFile config requestChan eventChan = do
                      Right t -> return t
 
   let cr = ChatResources session cd requestChan eventChan
-             slc (themeToAttrMap custTheme) quitCondition
-             userStatusLock config mempty prefs
+             slc wac (themeToAttrMap custTheme) userStatusLock config mempty prefs
 
   initializeState cr myTeam myUser
 
@@ -204,6 +202,9 @@ initializeState cr myTeam myUser = do
   -- Start background worker threads:
   -- * User status refresher
   startUserRefreshThread (cr^.crUserStatusLock) session requestChan
+  -- * Refresher for users who are typing currently
+  when (configShowTypingIndicator (cr^.crConfiguration)) $
+    startTypingUsersRefreshThread requestChan
   -- * Timezone change monitor
   startTimezoneMonitorThread tz requestChan
   -- * Subprocess logger

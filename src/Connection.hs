@@ -5,30 +5,65 @@ import           Prelude.Compat
 
 import           Brick.BChan
 import           Control.Concurrent (forkIO, threadDelay)
-import           Control.Concurrent.MVar
+import qualified Control.Concurrent.STM as STM
 import           Control.Exception (SomeException, catch)
 import           Control.Monad (void)
+import           Control.Monad.IO.Class (liftIO)
+import           Data.Int (Int64)
+import qualified Data.HashMap.Strict as HM
+import           Data.Semigroup (Max(..), (<>))
+import           Data.Time (UTCTime(..), secondsToDiffTime, getCurrentTime, diffUTCTime)
+import           Data.Time.Calendar (Day(..))
 import           Lens.Micro.Platform
 
-import           Network.Mattermost.WebSocket
+import           Network.Mattermost.Types (ChannelId)
+import qualified Network.Mattermost.WebSocket as WS
 
+import           Constants
 import           Types
 
-connectWebsockets :: ChatState -> IO ()
-connectWebsockets st = do
-  let shunt (Left msg) = writeBChan (st^.csResources.crEventQueue) (WebsocketParseError msg)
-      shunt (Right e) = writeBChan (st^.csResources.crEventQueue) (WSEvent e)
-      runWS = mmWithWebSocket (st^.csResources.crSession) shunt $ \ _ -> do
-                writeBChan (st^.csResources.crEventQueue) WebsocketConnect
-                waitAndQuit st
-  void $ forkIO $ runWS `catch` handleTimeout 1 st
-                        `catch` handleError 5 st
+connectWebsockets :: MH ()
+connectWebsockets = do
+  st <- use id
+  liftIO $ do
+    let shunt (Left msg) = writeBChan (st^.csResources.crEventQueue) (WebsocketParseError msg)
+        shunt (Right e) = writeBChan (st^.csResources.crEventQueue) (WSEvent e)
+        runWS = WS.mmWithWebSocket (st^.csResources.crSession) shunt $ \ws -> do
+                  writeBChan (st^.csResources.crEventQueue) WebsocketConnect
+                  processWebsocketActions st ws 1 HM.empty
+    void $ forkIO $ runWS `catch` handleTimeout 1 st
+                          `catch` handleError 5 st
 
-waitAndQuit :: ChatState -> IO ()
-waitAndQuit st =
-  void (takeMVar (st^.csResources.crQuitCondition))
+-- | Take websocket actions from the websocket action channel in the ChatState and
+-- | send them to the server over the websocket.
+-- | Takes and propagates the action sequence number which in incremented for
+-- | each successful send.
+-- | Keeps and propagates a map of channel id to last user_typing notification send time
+-- | so that the new user_typing actions are throttled to be send only once in two seconds.
+processWebsocketActions :: ChatState -> WS.MMWebSocket -> Int64 -> HM.HashMap ChannelId (Max UTCTime) -> IO ()
+processWebsocketActions st ws s userTypingLastNotifTimeMap = do
+  action <- STM.atomically $ STM.readTChan (st^.csResources.crWebsocketActionChan)
+  if (shouldSendAction action)
+    then do
+      WS.mmSendWSAction (st^.csResources.crConn) ws $ convert action
+      now <- getCurrentTime
+      processWebsocketActions st ws (s + 1) $ userTypingLastNotifTimeMap' action now
+    else do
+      processWebsocketActions st ws s userTypingLastNotifTimeMap
+  where
+    convert (UserTyping _ cId pId) = WS.UserTyping s cId pId
 
-handleTimeout :: Int -> ChatState -> MMWebSocketTimeoutException -> IO ()
+    shouldSendAction (UserTyping ts cId _) =
+      diffUTCTime ts (userTypingLastNotifTime cId) >= (userTypingExpiryInterval / 2 - 0.5)
+
+    userTypingLastNotifTime cId = getMax $ HM.lookupDefault (Max zeroTime) cId userTypingLastNotifTimeMap
+
+    zeroTime = UTCTime (ModifiedJulianDay 0) (secondsToDiffTime 0)
+
+    userTypingLastNotifTimeMap' (UserTyping _ cId _) now =
+      HM.insertWith (<>) cId (Max now) userTypingLastNotifTimeMap
+
+handleTimeout :: Int -> ChatState -> WS.MMWebSocketTimeoutException -> IO ()
 handleTimeout seconds st _ = reconnectAfter seconds st
 
 handleError :: Int -> ChatState -> SomeException -> IO ()
