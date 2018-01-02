@@ -47,7 +47,7 @@ import qualified Graphics.Vty as V
 import           Lens.Micro.Platform ((^.))
 import           Control.Monad              (join)
 
-import           Network.Mattermost.Lenses (postUpdateAtL, postCreateAtL)
+import           Network.Mattermost.Lenses (postEditAtL, postCreateAtL)
 import           Network.Mattermost.Types (ServerTime(..))
 import           Themes
 import           Types (HighlightSet(..), userSigil, normalChannelSigil)
@@ -149,9 +149,9 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
         maybeAugment bs = case msg^.mOriginalPost of
             Nothing -> bs
             Just p ->
-                if p^.postUpdateAtL > p^.postCreateAtL
+                if p^.postEditAtL > p^.postCreateAtL
                 then case mdEditThreshold of
-                    Just cutoff | p^.postUpdateAtL >= cutoff ->
+                    Just cutoff | p^.postEditAtL >= cutoff ->
                         addEditSentinel editRecentlyMarkingSentinel bs
                     _ -> if mdShowOlderEdits
                          then addEditSentinel editMarkingSentinel bs
