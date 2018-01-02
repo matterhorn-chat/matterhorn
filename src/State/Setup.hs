@@ -163,9 +163,9 @@ initializeState cr myTeam myUser = do
       requestChan = cr^.crRequestQueue
       myTeamId = getId myTeam
 
- -- Create a predicate to find the last selected channel by reading the
- -- run state file. If unable to read or decode or validate the file, this
- -- predicate is just `isTownSquare`.
+  -- Create a predicate to find the last selected channel by reading the
+  -- run state file. If unable to read or decode or validate the file, this
+  -- predicate is just `isTownSquare`.
   isLastSelectedChannel <- do
     result <- readLastRunState . teamId $ myTeam
     case result of
