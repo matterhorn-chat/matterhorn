@@ -45,15 +45,15 @@ tests = testGroup "Messages Tests"
 
 test_m1 :: IO Message
 test_m1 = do t1 <- ServerTime <$> getCurrentTime
-             return $ Message Seq.empty Nothing t1 (CP NormalPost) False False Seq.empty NotAReply Nothing Map.empty Nothing False Nothing
+             return $ makeMsg t1 Nothing
 
 test_m2 :: IO Message
 test_m2 = do t2 <- ServerTime <$> getCurrentTime
-             return $ Message Seq.empty Nothing t2 (CP Emote) False False Seq.empty NotAReply (Just $ fromId $ Id $ T.pack "m2") Map.empty Nothing False Nothing
+             return $ (makeMsg t2 (Just $ fromId $ Id "m2")) { _mType = CP Emote }
 
 test_m3 :: IO Message
 test_m3 = do t3 <- ServerTime <$> getCurrentTime
-             return $ Message Seq.empty Nothing t3 (CP NormalPost) False False Seq.empty NotAReply (Just $ fromId $ Id $ T.pack "m3") Map.empty Nothing False Nothing
+             return $ makeMsg t3 (Just $ fromId $ Id "m3")
 
 setDateOrderMessages :: [Message] -> [Message]
 setDateOrderMessages = snd . foldl setTimeAndInsert (startTime, [])
@@ -61,6 +61,10 @@ setDateOrderMessages = snd . foldl setTimeAndInsert (startTime, [])
                                        in (t2, ml ++ [m {_mDate = t2}])
           startTime = ServerTime $ UTCTime (ModifiedJulianDay 100) (secondsToDiffTime 0)
           tick (ServerTime (UTCTime d t)) = ServerTime $ UTCTime d $ succ t
+
+makeMsg :: ServerTime -> Maybe PostId -> Message
+makeMsg t pId = Message Seq.empty Nothing t (CP NormalPost) False False Seq.empty NotAReply
+                        pId Map.empty Nothing False Nothing
 
 makeMsgs :: [Message] -> Messages
 makeMsgs = foldr addMessage noMessages
