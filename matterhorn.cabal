@@ -101,6 +101,7 @@ executable matterhorn
                      , microlens-platform   >= 0.3    && < 0.4
                      , brick                >= 0.32   && < 0.33
                      , vty                  >= 5.19   && < 5.20
+                     , word-wrap            >= 0.4.0  && < 0.5
                      , transformers         >= 0.4    && < 0.6
                      , text-zipper          >= 0.10   && < 0.11
                      , time                 >= 1.6    && < 1.9

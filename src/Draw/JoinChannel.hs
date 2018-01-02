@@ -14,9 +14,10 @@ import Brick.Widgets.Border
 import Data.Monoid ((<>))
 import Lens.Micro.Platform ((^.))
 import qualified Data.Vector as V
-
+import Text.Wrap ( defaultWrapSettings, preserveIndentation )
 import Network.Mattermost (Channel)
-import Network.Mattermost.Lenses (channelDisplayNameL, channelNameL)
+import Network.Mattermost.Lenses ( channelDisplayNameL , channelNameL
+                                 , channelPurposeL )
 
 import Types
 import Themes
@@ -47,4 +48,6 @@ joinChannelBox st =
 
 renderJoinListItem :: Bool -> Channel -> Widget Name
 renderJoinListItem _ chan =
-    padRight Max $ txt $ chan^.channelNameL <> " (" <> chan^.channelDisplayNameL <> ")"
+    txtWrapWith (defaultWrapSettings { preserveIndentation = True }) $
+                 chan^.channelNameL <> " (" <> chan^.channelDisplayNameL <> ")" <>
+                 "\n        " <> chan^.channelPurposeL
