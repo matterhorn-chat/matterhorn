@@ -170,6 +170,15 @@ keybindingHelp kc = vBox $
             , "event should be rebindable and isn't, then please feel free to "
             , "let us know by posting an issue in the Matterhorn issue tracker.\n"
             ]
+          , [ "It is also possible to entirely unbind a key event by setting its "
+            , "key to **unbound**, thus avoiding conflicts between default bindings "
+            , "and new ones:\n"
+            ]
+          , [ "```ini\n"
+            , "[KEYBINDINGS]\n"
+            , "focus-next-channel = unbound\n"
+            , "```\n"
+            ]
           , [ "The rebindable key events, along with their **current** "
             , "values, are as follows:"
             ]

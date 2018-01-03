@@ -235,7 +235,8 @@ ensureKeybindingConsistency kc = mapM_ checkGroup allBindings
     allBindings = groupWith fst $ concat
       [ case M.lookup ev kc of
           Nothing -> zip (defaultBindings ev) (repeat (False, ev))
-          Just bs -> zip bs (repeat (True, ev))
+          Just (BindingList bs) -> zip bs (repeat (True, ev))
+          Just Unbound -> []
       | ev <- allEvents
       ]
 

@@ -58,7 +58,8 @@ handleKeyboardEvent keyList fallthrough e = do
 mkKb :: KeyEvent -> T.Text -> MH () -> KeyConfig -> [Keybinding]
 mkKb ev msg action conf =
   [ KB msg (bindingToEvent key) action (Just ev) | key <- allKeys ]
-  where allKeys | Just ks <- M.lookup ev conf = ks
+  where allKeys | Just (BindingList ks) <- M.lookup ev conf = ks
+                | Just Unbound <- M.lookup ev conf = []
                 | otherwise = defaultBindings ev
 
 staticKb :: T.Text -> Vty.Event -> MH () -> KeyConfig -> [Keybinding]

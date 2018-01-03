@@ -4,6 +4,7 @@ module Types.KeyEvents
     KeyEvent(..)
   , KeyConfig
   , Binding(..)
+  , BindingState(..)
 
   -- * Data
   , allEvents
@@ -125,7 +126,12 @@ data Binding = Binding
   , kbKey  :: Vty.Key
   } deriving (Eq, Show, Ord)
 
-type KeyConfig = M.Map KeyEvent [Binding]
+data BindingState =
+    BindingList [Binding]
+    | Unbound
+    deriving (Show, Eq, Ord)
+
+type KeyConfig = M.Map KeyEvent BindingState
 
 parseBinding :: T.Text -> Either String Binding
 parseBinding kb = go (T.splitOn "-" $ T.toLower kb) []
@@ -231,9 +237,11 @@ ppMod Vty.MAlt   = "A"
 ppMod Vty.MCtrl  = "C"
 ppMod Vty.MShift = "S"
 
-parseBindingList :: T.Text -> Either String [Binding]
-parseBindingList =
-  mapM (parseBinding . T.strip) . T.splitOn ","
+parseBindingList :: T.Text -> Either String BindingState
+parseBindingList t =
+    if T.toLower t == "unbound"
+    then return Unbound
+    else BindingList <$> mapM (parseBinding . T.strip) (T.splitOn "," t)
 
 keyEventFromName :: T.Text -> Either String KeyEvent
 keyEventFromName t =
