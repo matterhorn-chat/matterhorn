@@ -32,7 +32,9 @@ import           System.IO.Temp (openTempFile)
 import           System.Directory (getTemporaryDirectory)
 import           Text.Aspell (Aspell, AspellOption(..), startAspell)
 
-import           Network.Mattermost
+import           Network.Mattermost (mmGetStatuses)
+import           Network.Mattermost.Types
+import           Network.Mattermost.Lenses
 
 import           Constants
 import           State.Common

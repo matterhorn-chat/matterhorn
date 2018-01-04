@@ -55,7 +55,7 @@ import           Data.Time.Clock (UTCTime)
 import           Lens.Micro.Platform
 import           Network.Mattermost.Lenses hiding (Lens')
 import           Network.Mattermost.Types ( Channel(..), UserId, ChannelId
-                                          , ChannelWithData(..)
+                                          , ChannelMember(..)
                                           , Type(..)
                                           , Post
                                           , User(userNotifyProps)
@@ -108,11 +108,11 @@ initialChannelInfo chan =
                    , _cdTypingUsers            = noTypingUsers
                    }
 
-channelInfoFromChannelWithData :: ChannelWithData -> ChannelInfo -> ChannelInfo
-channelInfoFromChannelWithData (ChannelWithData chan chanData) ci =
-    let viewed   = chanData ^. channelDataLastViewedAtL
+channelInfoFromChannelWithData :: Channel -> ChannelMember -> ChannelInfo -> ChannelInfo
+channelInfoFromChannelWithData chan chanMember ci =
+    let viewed   = chanMember ^. to channelMemberLastViewedAt
         updated  = chan ^. channelLastPostAtL
-    in ci { _cdViewed           = Just viewed
+    in ci { _cdViewed           = Nothing -- Just viewed
           , _cdNewMessageIndicator = case _cdNewMessageIndicator ci of
               Hide -> if updated > viewed then NewPostsAfterServerTime viewed else Hide
               v -> v
@@ -121,8 +121,8 @@ channelInfoFromChannelWithData (ChannelWithData chan chanData) ci =
           , _cdHeader           = (chan^.channelHeaderL)
           , _cdPurpose          = (chan^.channelPurposeL)
           , _cdType             = (chan^.channelTypeL)
-          , _cdMentionCount     = chanData^.channelDataMentionCountL
-          , _cdNotifyProps      = chanData^.channelDataNotifyPropsL
+          , _cdMentionCount     = chanMember^.to channelMemberMentionCount
+          , _cdNotifyProps      = chanMember^.to channelMemberNotifyProps
           }
 
 -- | The 'ChannelContents' is a wrapper for a list of

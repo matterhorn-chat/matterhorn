@@ -28,8 +28,7 @@ import           Data.Text.Zipper (cursorPosition, insertChar, getText, gotoEOL)
 import           Data.Char (isSpace, isPunctuation)
 import           Lens.Micro.Platform
 
-import           Network.Mattermost
-import           Network.Mattermost.Types (ServerTime(..))
+import           Network.Mattermost.Types (ChannelId, Type(Direct), ServerTime(..))
 import           Network.Mattermost.Lenses
 
 import qualified Graphics.Vty as Vty

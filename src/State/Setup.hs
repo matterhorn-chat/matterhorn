@@ -24,7 +24,8 @@ import           System.Exit (exitFailure)
 import           System.FilePath ((</>), isRelative, dropFileName)
 import           System.IO (Handle)
 
-import           Network.Mattermost
+import           Network.Mattermost.Endpoints
+import           Network.Mattermost.Types
 import           Network.Mattermost.Logging (mmLoggerDebug)
 
 import           Config
@@ -103,19 +104,19 @@ setupState logFile config requestChan eventChan = do
 
   (session, myUser, cd) <- loginLoop connInfo
 
-  initialLoad <- mmGetInitialLoad session
-  when (Seq.null $ initialLoadTeams initialLoad) $ do
+  teams <- mmGetUsersTeams UserMe session
+  when (Seq.null teams) $ do
       putStrLn "Error: your account is not a member of any teams"
       exitFailure
 
   myTeam <- case configTeam config of
       Nothing -> do
-          interactiveTeamSelection $ F.toList $ initialLoadTeams initialLoad
+          interactiveTeamSelection $ F.toList teams
       Just tName -> do
-          let matchingTeam = listToMaybe $ filter matches $ F.toList $ initialLoadTeams initialLoad
+          let matchingTeam = listToMaybe $ filter matches $ F.toList teams
               matches t = teamName t == tName
           case matchingTeam of
-              Nothing -> interactiveTeamSelection (F.toList (initialLoadTeams initialLoad))
+              Nothing -> interactiveTeamSelection (F.toList teams)
               Just t -> return t
 
   userStatusLock <- newEmptyMVar
@@ -124,7 +125,7 @@ setupState logFile config requestChan eventChan = do
   slc <- STM.newTChanIO
   wac <- STM.newTChanIO
 
-  prefs <- mmGetMyPreferences session
+  prefs <- mmGetUsersPreferences UserMe session
 
   let themeName = case configTheme config of
           Nothing -> internalThemeName defaultTheme
@@ -179,7 +180,7 @@ initializeState cr myTeam myUser = do
   -- We first try to find a channel matching with the last selected channel ID,
   -- failing which we look for the Town Square channel by name.
   -- This is not entirely correct since the Town Square channel can be renamed!
-  userChans <- mmGetChannels session myTeamId
+  userChans <- mmGetChannelsForUser UserMe myTeamId session
   let lastSelectedChans = Seq.filter isLastSelectedChannel userChans
       chans = if Seq.null lastSelectedChans
                 then Seq.filter isTownSquare userChans

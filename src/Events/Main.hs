@@ -28,7 +28,7 @@ import InputHistory
 import HelpTopics (mainHelpTopic)
 import Constants
 
-import Network.Mattermost (Type(..))
+import Network.Mattermost.Types (Type(..))
 
 onEventMain :: Vty.Event -> MH ()
 onEventMain =

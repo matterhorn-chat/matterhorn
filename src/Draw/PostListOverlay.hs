@@ -10,7 +10,7 @@ import qualified Data.Foldable as F
 import           Data.Monoid ((<>))
 import qualified Data.Text as T
 import           Lens.Micro.Platform
-import           Network.Mattermost
+import           Network.Mattermost.Types
 import           Network.Mattermost.Lenses
 
 import Brick

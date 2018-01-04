@@ -15,7 +15,7 @@ import Data.Monoid ((<>))
 import Lens.Micro.Platform ((^.))
 import qualified Data.Vector as V
 import Text.Wrap ( defaultWrapSettings, preserveIndentation )
-import Network.Mattermost (Channel)
+import Network.Mattermost.Types (Channel)
 import Network.Mattermost.Lenses ( channelDisplayNameL , channelNameL
                                  , channelPurposeL )
 

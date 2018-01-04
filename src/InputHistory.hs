@@ -25,7 +25,7 @@ import qualified System.Posix.Types as P
 
 import IOUtil
 import FilePaths
-import Network.Mattermost (ChannelId)
+import Network.Mattermost.Types (ChannelId)
 
 data InputHistory =
     InputHistory { _historyEntries :: HM.HashMap ChannelId (V.Vector Text)

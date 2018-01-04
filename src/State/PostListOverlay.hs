@@ -2,8 +2,8 @@ module State.PostListOverlay where
 
 import Data.Text (Text)
 import Lens.Micro.Platform
-import Network.Mattermost
-import Network.Mattermost.Lenses
+import Network.Mattermost.Endpoints
+import Network.Mattermost.Types
 
 import State
 import State.Common
@@ -25,14 +25,12 @@ exitPostListMode = do
   csPostListOverlay.postListSelected .= Nothing
   csMode .= Main
 
--- | Create a PostListOverlay with flagged messages from the
--- server.
+-- | Create a PostListOverlay with flagged messages from the server.
 enterFlaggedPostListMode :: MH ()
 enterFlaggedPostListMode = do
   session <- use (csResources.crSession)
-  uId <- use (csMe.userIdL)
   doAsyncWith Preempt $ do
-    posts <- mmGetFlaggedPosts session uId
+    posts <- mmGetListOfFlaggedPosts UserMe defaultFlaggedPostsQuery session
     return $ do
       messages <- messagesFromPosts posts
       enterPostListMode PostListFlagged messages
@@ -45,7 +43,7 @@ enterSearchResultPostListMode terms = do
   tId <- teamId <$> use csMyTeam
   enterPostListMode (PostListSearch terms True) noMessages
   doAsyncWith Preempt $ do
-    posts <- mmSearchPosts session tId terms False
+    posts <- mmSearchForTeamPosts tId (SearchPosts terms False) session
     return $ do
       messages <- messagesFromPosts posts
       enterPostListMode (PostListSearch terms False) messages

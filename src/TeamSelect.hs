@@ -14,7 +14,7 @@ import qualified Data.Vector as V
 import Graphics.Vty
 import System.Exit (exitSuccess)
 
-import Network.Mattermost
+import Network.Mattermost.Types
 
 import Markdown
 

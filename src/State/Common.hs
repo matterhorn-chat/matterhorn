@@ -17,7 +17,8 @@ import qualified Data.Text as T
 import           Lens.Micro.Platform
 import           System.Hclip (setClipboard, ClipboardException(..))
 
-import           Network.Mattermost
+import           Network.Mattermost.Endpoints
+import           Network.Mattermost.Types
 import           Network.Mattermost.Lenses
 import           Network.Mattermost.Exceptions
 
@@ -234,7 +235,7 @@ asyncFetchAttachments p = do
   session <- use (csResources.crSession)
   host    <- use (csResources.crConn.cdHostnameL)
   F.forM_ (p^.postFileIdsL) $ \fId -> doAsyncWith Normal $ do
-    info <- mmGetFileInfo session fId
+    info <- mmGetMetadataForFile fId session
     let scheme = "https://"
         attUrl = scheme <> host <> urlForFile fId
         attachment = mkAttachment (fileInfoName info) attUrl fId
@@ -284,7 +285,7 @@ asyncFetchReactionsForPost :: ChannelId -> Post -> MH ()
 asyncFetchReactionsForPost cId p
   | not (p^.postHasReactionsL) = return ()
   | otherwise = doAsyncChannelMM Normal cId
-        (\s t c -> mmGetReactionsForPost s t c (p^.postIdL))
+        (\s _ _ -> fmap F.toList (mmGetReactionsForPost (p^.postIdL) s))
         addReactions
 
 addReactions :: ChannelId -> [Reaction] -> MH ()
@@ -321,7 +322,11 @@ copyToClipboard txt = do
 loadAllUsers :: Session -> IO (HM.HashMap UserId User)
 loadAllUsers session = go HM.empty 0
   where go users n = do
-          newUsers <- mmGetUsers session (n * 50) 50
-          if HM.null newUsers
+          let query = defaultUserQuery
+                { userQueryPage    = Just (n * 50)
+                , userQueryPerPage = Just 50
+                }
+          newUsers <- mmGetUsers query session
+          if F.null newUsers
             then return users
-            else go (newUsers <> users) (n+1)
+            else go (HM.fromList [ (userId u, u) | u <- F.toList newUsers ] <> users) (n+1)

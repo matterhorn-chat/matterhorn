@@ -170,7 +170,7 @@ import           Data.Monoid
 import qualified Data.Set as Set
 import           Lens.Micro.Platform ( at, makeLenses, lens, (&), (^.), (%~), (.~), (^?!)
                                      , _Just, Traversal', preuse, (^..), folded, to )
-import           Network.Mattermost
+import           Network.Mattermost (ConnectionData)
 import           Network.Mattermost.Exceptions
 import           Network.Mattermost.Lenses
 import           Network.Mattermost.Types

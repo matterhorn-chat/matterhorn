@@ -16,7 +16,7 @@ import           GHC.Exts (groupWith)
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform
 
-import           Network.Mattermost
+import           Network.Mattermost.Types
 import           Network.Mattermost.Lenses
 import           Network.Mattermost.WebSocket
 

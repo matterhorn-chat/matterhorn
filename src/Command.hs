@@ -12,8 +12,8 @@ import           Control.Monad (void)
 import           Data.Monoid ((<>))
 import qualified Data.Text as T
 import           Lens.Micro.Platform
-import qualified Network.Mattermost as MM
-import qualified Network.Mattermost.Lenses as MM
+import qualified Network.Mattermost.Endpoints as MM
+import qualified Network.Mattermost.Types as MM
 import qualified Network.Mattermost.Exceptions as MM
 
 import State
@@ -115,7 +115,6 @@ execMMCommand :: T.Text -> T.Text -> MH ()
 execMMCommand name rest = do
   cId      <- use csCurrentChannelId
   session  <- use (csResources.crSession)
-  myTeamId <- use (csMyTeam.(MM.teamIdL))
   em       <- use (csEditState.cedEditMode)
   let mc = MM.MinCommand
              { MM.minComChannelId = cId
@@ -130,7 +129,7 @@ execMMCommand name rest = do
                  _            -> Nothing
              }
       runCmd = liftIO $ do
-        void $ MM.mmExecute session myTeamId mc
+        void $ MM.mmExecuteCommand mc session
       handleHTTP (MM.HTTPResponseException err) =
         return (Just (T.pack err))
         -- XXX: this might be a bit brittle in the future, because it
