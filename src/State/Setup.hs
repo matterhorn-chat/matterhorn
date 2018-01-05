@@ -10,7 +10,7 @@ import           Prelude.Compat
 import           Brick.BChan
 import           Brick.Themes (themeToAttrMap, loadCustomizations)
 import qualified Control.Concurrent.STM as STM
-import           Control.Concurrent.MVar (newEmptyMVar, putMVar)
+import           Control.Concurrent.MVar (newMVar)
 import           Control.Exception (catch)
 import           Control.Monad (forM, when)
 import           Data.Monoid ((<>))
@@ -119,8 +119,10 @@ setupState logFile config requestChan eventChan = do
               Nothing -> interactiveTeamSelection (F.toList teams)
               Just t -> return t
 
-  userStatusLock <- newEmptyMVar
-  putMVar userStatusLock ()
+  userStatusLock <- newMVar ()
+--  putMVar userStatusLock ()
+
+  userIdSet <- STM.atomically $ STM.newTVar mempty
 
   slc <- STM.newTChanIO
   wac <- STM.newTChanIO
@@ -154,7 +156,7 @@ setupState logFile config requestChan eventChan = do
                      Right t -> return t
 
   let cr = ChatResources session cd requestChan eventChan
-             slc wac (themeToAttrMap custTheme) userStatusLock config mempty prefs
+             slc wac (themeToAttrMap custTheme) userStatusLock userIdSet config mempty prefs
 
   initializeState cr myTeam myUser
 
@@ -202,7 +204,7 @@ initializeState cr myTeam myUser = do
 
   -- Start background worker threads:
   -- * User status refresher
-  startUserRefreshThread (cr^.crUserStatusLock) session requestChan
+  startUserRefreshThread (cr^.crUserIdSet) (cr^.crUserStatusLock) session requestChan
   -- * Refresher for users who are typing currently
   when (configShowTypingIndicator (cr^.crConfiguration)) $
     startTypingUsersRefreshThread requestChan

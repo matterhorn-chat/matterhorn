@@ -319,15 +319,3 @@ copyToClipboard txt = do
       postErrorMessage errMsg
     Right () ->
       return ()
-
-loadAllUsers :: Session -> IO (HM.HashMap UserId User)
-loadAllUsers session = go HM.empty 0
-  where go users n = do
-          let query = defaultUserQuery
-                { userQueryPage    = Just (n * 50)
-                , userQueryPerPage = Just 50
-                }
-          newUsers <- mmGetUsers query session
-          if F.null newUsers
-            then return users
-            else go (HM.fromList [ (userId u, u) | u <- F.toList newUsers ] <> users) (n+1)

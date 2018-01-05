@@ -146,7 +146,6 @@ import           System.Directory (createDirectoryIfMissing)
 import           System.Environment.XDG.BaseDir (getUserCacheDir)
 import           System.FilePath
 
--- import           Network.Mattermost
 import qualified Network.Mattermost.Endpoints as MM
 import           Network.Mattermost.Types
                                            -- (NotifyOption(..), GroupChannelPreference(..),
@@ -307,8 +306,10 @@ refreshChannelsAndUsers = do
 
         forM_ chansWithData $ uncurry (refreshChannel True)
 
+        userSet <- use (csResources.crUserIdSet)
+        liftIO $ STM.atomically $ STM.writeTVar userSet (fmap userId users)
         lock <- use (csResources.crUserStatusLock)
-        doAsyncWith Preempt $ updateUserStatuses lock session
+        doAsyncWith Preempt $ updateUserStatuses userSet lock session
 
 -- | Update the indicted Channel entry with the new data retrieved from
 -- the Mattermost server. Also update the channel name if it changed.
@@ -1918,6 +1919,8 @@ handleNewUserDirect newUser = do
     csUsers %= addUser newUserId usrInfo
     csNames . cnUsers %= (sort . ((newUser^.userUsernameL):))
     csNames . cnToUserId . at (newUser^.userUsernameL) .= Just newUserId
+    userSet <- use (csResources.crUserIdSet)
+    liftIO $ STM.atomically $ STM.modifyTVar userSet $ (newUserId Seq.<|)
 
 handleNewUser :: UserId -> MH ()
 handleNewUser newUserId = doAsyncMM Normal getUserInfo updateUserState
@@ -1939,6 +1942,8 @@ handleNewUser newUserId = doAsyncMM Normal getUserInfo updateUserState
               do csUsers %= addUser newUserId uInfo
                  csNames . cnUsers %= (sort . ((newUser^.userUsernameL):))
                  csNames . cnToUserId . at (newUser^.userUsernameL) .= Just newUserId
+                 userSet <- use (csResources.crUserIdSet)
+                 liftIO $ STM.atomically $ STM.modifyTVar userSet $ (newUserId Seq.<|)
 
 -- | Handle the typing events from the websocket to show the currently typing users on UI
 handleTypingUser :: UserId -> ChannelId -> MH ()

@@ -20,6 +20,9 @@ import           Control.Exception (SomeException, try, finally)
 import           Control.Monad (forever, when, void)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.List (isInfixOf)
+import qualified Data.Foldable as F
+import qualified Data.HashMap.Strict as HM
+import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Maybe (catMaybes)
 import           Data.Monoid ((<>))
@@ -32,9 +35,8 @@ import           System.IO.Temp (openTempFile)
 import           System.Directory (getTemporaryDirectory)
 import           Text.Aspell (Aspell, AspellOption(..), startAspell)
 
-import           Network.Mattermost (mmGetStatuses)
+import           Network.Mattermost.Endpoints
 import           Network.Mattermost.Types
-import           Network.Mattermost.Lenses
 
 import           Constants
 import           State.Common
@@ -44,27 +46,30 @@ import           Types
 import           Types.Users
 import           Types.Channels
 
-updateUserStatuses :: MVar () -> Session -> IO (MH ())
-updateUserStatuses lock session = do
+updateUserStatuses :: STM.TVar (Seq.Seq UserId) -> MVar () -> Session -> IO (MH ())
+updateUserStatuses usersVar lock session = do
   lockResult <- tryTakeMVar lock
+  users <- STM.atomically $ STM.readTVar usersVar
 
   case lockResult of
-      Nothing -> return $ return ()
-      Just () -> do
-          statusMap <- mmGetStatuses session `finally` putMVar lock ()
+      Just () | not (F.null users) -> do
+          statuses <- mmGetUserStatusByIds users session `finally` putMVar lock ()
           return $ do
-            let setStatus u = u & uiStatus .~ (newsts u)
+            let statusMap = HM.fromList [ (statusUserId s, statusStatus s) | s <- F.toList statuses ]
+                setStatus u = u & uiStatus .~ (newsts u)
                 newsts u = (statusMap^.at(u^.uiId) & _Just %~ statusFromText) ^. non Offline
             csUsers . mapped %= setStatus
+      Just () -> putMVar lock () >> return (return ())
+      _ -> return $ return ()
 
-startUserRefreshThread :: MVar () -> Session -> RequestChan -> IO ()
-startUserRefreshThread lock session requestChan = void $ forkIO $ forever refresh
+startUserRefreshThread :: STM.TVar (Seq.Seq UserId) -> MVar () -> Session -> RequestChan -> IO ()
+startUserRefreshThread usersVar lock session requestChan = void $ forkIO $ forever refresh
   where
       seconds = (* (1000 * 1000))
       userRefreshInterval = 30
       refresh = do
           STM.atomically $ STM.writeTChan requestChan $ do
-            rs <- try $ updateUserStatuses lock session
+            rs <- try $ updateUserStatuses usersVar lock session
             case rs of
               Left (_ :: SomeException) -> return (return ())
               Right upd -> return upd

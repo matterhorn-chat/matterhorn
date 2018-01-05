@@ -105,6 +105,7 @@ module Types
   , crWebsocketActionChan
   , crRequestQueue
   , crUserStatusLock
+  , crUserIdSet
   , crFlaggedPosts
   , crConn
   , crConfiguration
@@ -381,6 +382,7 @@ data ChatResources = ChatResources
   , _crWebsocketActionChan :: STM.TChan WebsocketAction
   , _crTheme               :: AttrMap
   , _crUserStatusLock      :: MVar ()
+  , _crUserIdSet           :: STM.TVar (Seq.Seq UserId)
   , _crConfiguration       :: Config
   , _crFlaggedPosts        :: Set.Set PostId
   , _crPreferences         :: Seq.Seq Preference
