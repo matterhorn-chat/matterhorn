@@ -666,7 +666,7 @@ startJoinChannel = do
                 else loop chans (start+fetchCount)
         chans <- Seq.filter (\ c -> not (channelId c `elem` myChannels)) <$> loop mempty 0
         return $ do
-            csJoinChannelList .= (Just $ list JoinChannelList (V.fromList $ F.toList chans) 1)
+            csJoinChannelList .= (Just $ list JoinChannelList (V.fromList $ F.toList chans) 2)
 
     csMode .= JoinChannel
     csJoinChannelList .= Nothing
