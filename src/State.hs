@@ -286,11 +286,16 @@ refreshChannelsAndUsers = do
   -- which has been inlined here to gain a concurrency benefit.
   session <- use (csResources.crSession)
   myTeamId <- use (csMyTeam.teamIdL)
+  let userQuery = MM.defaultUserQuery
+        { MM.userQueryPage = Just 0
+        , MM.userQueryPerPage = Just 10000
+        , MM.userQueryInTeam = Just myTeamId
+        }
   doAsyncWith Preempt $ do
     (chans, datas, users) <- runConcurrently $ (,,)
                             <$> Concurrently (MM.mmGetChannelsForUser UserMe myTeamId session)
                             <*> Concurrently (MM.mmGetChannelMembersForUser UserMe myTeamId session)
-                            <*> Concurrently (MM.mmGetUsers MM.defaultUserQuery session)
+                            <*> Concurrently (MM.mmGetUsers userQuery session)
 
     let dataMap = HM.fromList $ F.toList $ (\d -> (channelMemberChannelId d, d)) <$> datas
         mkPair chan = (chan, fromJust $ HM.lookup (channelId chan) dataMap)
