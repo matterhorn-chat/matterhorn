@@ -50,10 +50,7 @@ joinChannelBox st =
 renderJoinListItem :: Bool -> Channel -> Widget Name
 renderJoinListItem _ chan =
     let baseStr = chan^.channelNameL <> " (" <> chan^.channelDisplayNameL <> ")"
-        (s, height) =
-            if T.null (chan^.channelPurposeL)
-            then (baseStr, 1)
-            else (baseStr <> "\n  " <> chan^.channelPurposeL, 2)
-    in vLimit height $
+        s = baseStr <> "\n  " <> (T.strip $ chan^.channelPurposeL)
+    in vLimit 2 $
          txtWrapWith (defaultWrapSettings { preserveIndentation = True }) s <+>
          (fill ' ')
