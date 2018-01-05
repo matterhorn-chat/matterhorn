@@ -11,6 +11,7 @@ import Brick
 import Brick.Widgets.List
 import Brick.Widgets.Center
 import Brick.Widgets.Border
+import qualified Data.Text as T
 import Data.Monoid ((<>))
 import Lens.Micro.Platform ((^.))
 import qualified Data.Vector as V
@@ -48,8 +49,11 @@ joinChannelBox st =
 
 renderJoinListItem :: Bool -> Channel -> Widget Name
 renderJoinListItem _ chan =
-    vLimit 2 $
-    (txtWrapWith (defaultWrapSettings { preserveIndentation = True }) $
-                  chan^.channelNameL <> " (" <> chan^.channelDisplayNameL <> ")" <>
-                  "\n        " <> chan^.channelPurposeL) <+>
-    (fill ' ')
+    let baseStr = chan^.channelNameL <> " (" <> chan^.channelDisplayNameL <> ")"
+        (s, height) =
+            if T.null (chan^.channelPurposeL)
+            then (baseStr, 1)
+            else (baseStr <> "\n  " <> chan^.channelPurposeL, 2)
+    in vLimit height $
+         txtWrapWith (defaultWrapSettings { preserveIndentation = True }) s <+>
+         (fill ' ')
