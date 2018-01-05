@@ -1416,9 +1416,10 @@ addMessageToState newPostData = do
                               Nothing -> do
                                   doAsyncChannelMM Preempt cId
                                       (\s _ _ -> MM.mmGetThread parentId s)
-                                      (\_ p ->
+                                      (\_ p -> do
+                                          st' <- use id
                                           let postMap = HM.fromList [ ( pId
-                                                                      , clientPostToMessage st
+                                                                      , clientPostToMessage st'
                                                                         (toClientPost x (x^.postParentIdL))
                                                                       )
                                                                     | (pId, x) <- HM.toList (p^.postsPostsL)
