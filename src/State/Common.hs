@@ -39,8 +39,9 @@ tryMM :: IO a
 tryMM act onSuccess = do
     result <- liftIO $ try act
     case result of
-        Left (MattermostServerError msg) -> return $ postErrorMessage msg
-        Right value                      -> liftIO $ onSuccess value
+        Left (MattermostError { mattermostErrorMessage = msg }) ->
+          return $ postErrorMessage msg
+        Right value -> liftIO $ onSuccess value
 
 -- * Background Computation
 

@@ -573,11 +573,10 @@ flagMessage :: PostId -> Bool -> MH ()
 flagMessage pId f = do
   session <- use (csResources.crSession)
   myId <- use (csMe.userIdL)
-  postInfoMessage "flaggin'"
   doAsyncWith Normal $ do
     let doFlag = if f then MM.mmFlagPost else MM.mmUnflagPost
     doFlag myId pId session
-    return $ postInfoMessage "done"
+    return $ return ()
 
 -- | Tell the server that the message we currently have selected
 -- should have its flagged state toggled.
@@ -1140,6 +1139,7 @@ attemptCreateDMChannel name = do
 createOrdinaryChannel :: T.Text -> MH ()
 createOrdinaryChannel name  = do
   session <- use (csResources.crSession)
+  myTeamId <- use (csMyTeam.teamIdL)
   doAsyncWith Preempt $ do
     -- create a new chat channel
     let slug = T.map (\ c -> if isAlphaNum c then c else '-') (T.toLower name)
@@ -1149,6 +1149,7 @@ createOrdinaryChannel name  = do
           , minChannelPurpose     = Nothing
           , minChannelHeader      = Nothing
           , minChannelType        = Ordinary
+          , minChannelTeamId      = myTeamId
           }
     tryMM (do c <- MM.mmCreateChannel minChannel session
               chan <- MM.mmGetChannel (getId c) session

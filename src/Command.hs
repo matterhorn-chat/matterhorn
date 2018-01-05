@@ -109,6 +109,7 @@ commandList =
 
   , Cmd "search" "Search for posts with given terms"  (LineArg "terms") $
       enterSearchResultPostListMode
+
   ]
 
 execMMCommand :: T.Text -> T.Text -> MH ()
@@ -139,8 +140,12 @@ execMMCommand name rest = do
       handleCmdErr (MM.MattermostServerError err) =
         let (_, msg) = T.breakOn ": " err in
           return (Just (T.drop 2 msg))
+      handleMMErr (MM.MattermostError
+                     { MM.mattermostErrorMessage = msg }) =
+        return (Just msg)
   errMsg <- liftIO $ (runCmd >> return Nothing) `Exn.catch` handleHTTP
                                                 `Exn.catch` handleCmdErr
+                                                `Exn.catch` handleMMErr
   case errMsg of
     Nothing -> return ()
     Just err ->

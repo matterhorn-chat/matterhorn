@@ -112,7 +112,7 @@ channelInfoFromChannelWithData :: Channel -> ChannelMember -> ChannelInfo -> Cha
 channelInfoFromChannelWithData chan chanMember ci =
     let viewed   = chanMember ^. to channelMemberLastViewedAt
         updated  = chan ^. channelLastPostAtL
-    in ci { _cdViewed           = Nothing -- Just viewed
+    in ci { _cdViewed           = Just viewed
           , _cdNewMessageIndicator = case _cdNewMessageIndicator ci of
               Hide -> if updated > viewed then NewPostsAfterServerTime viewed else Hide
               v -> v
