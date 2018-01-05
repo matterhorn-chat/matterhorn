@@ -663,10 +663,11 @@ startJoinChannel = do
               let chans = acc <> newChans
               if length newChans < fetchCount
                 then return chans
-                else loop chans (start+fetchCount)
+                else loop chans (start+1)
         chans <- Seq.filter (\ c -> not (channelId c `elem` myChannels)) <$> loop mempty 0
+        let sortedChans = V.fromList $ F.toList $ Seq.sortBy (compare `on` channelName) chans
         return $ do
-            csJoinChannelList .= (Just $ list JoinChannelList (V.fromList $ F.toList chans) 2)
+            csJoinChannelList .= (Just $ list JoinChannelList sortedChans 2)
 
     csMode .= JoinChannel
     csJoinChannelList .= Nothing
