@@ -1429,7 +1429,7 @@ addMessageToState newPostData = do
                                                                       )
                                                                     | (pId, x) <- HM.toList (p^.postsPostsL)
                                                                     ]
-                                          in csPostMap %= HM.union postMap
+                                          csPostMap %= HM.union postMap
                                       )
                               _ -> return ()
                       _ -> return ()
