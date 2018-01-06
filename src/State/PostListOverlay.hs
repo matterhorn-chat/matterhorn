@@ -1,5 +1,6 @@
 module State.PostListOverlay where
 
+import Control.Monad
 import Data.Text (Text)
 import Lens.Micro.Platform
 import Network.Mattermost.Endpoints
@@ -15,7 +16,7 @@ import Types.Messages
 enterPostListMode ::  PostListContents -> Messages -> MH ()
 enterPostListMode contents msgs = do
   csPostListOverlay.postListPosts .= msgs
-  csPostListOverlay.postListSelected .= getLatestPostId msgs
+  csPostListOverlay.postListSelected .= join ((^.mPostId) <$> getLatestPostMsg msgs)
   csMode .= PostListOverlay contents
 
 -- | Clear out the state of a PostListOverlay

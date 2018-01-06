@@ -119,6 +119,7 @@ import           Control.Concurrent (MVar, putMVar, forkIO)
 import qualified Control.Concurrent.STM as STM
 import           Control.Exception (SomeException, try)
 import           Control.Monad.IO.Class (liftIO)
+import           Control.Monad
 import           Data.Char (isAlphaNum)
 import           Brick.Main (getVtyHandle, viewportScroll, vScrollToBeginning, vScrollBy, vScrollToEnd)
 import           Brick.Widgets.Edit (applyEdit)
@@ -365,11 +366,11 @@ beginMessageSelect = do
     -- If we can't find one at all, we ignore the mode switch request
     -- and just return.
     chanMsgs <- use(csCurrentChannel . ccContents . cdMessages)
-    let recentPost = getLatestPostId chanMsgs
+    let recentPost = getLatestPostMsg chanMsgs
 
     when (isJust recentPost) $ do
         csMode .= MessageSelect
-        csMessageSelect .= MessageSelectState recentPost
+        csMessageSelect .= MessageSelectState (join $ ((^.mPostId) <$> recentPost))
 
 getSelectedMessage :: ChatState -> Maybe Message
 getSelectedMessage st
@@ -1019,15 +1020,11 @@ addObtainedMessages cId reqCnt posts = do
             -- location, so adding the gap here would cause an
             -- infinite update loop.
 
-            mbLatestPostDate = (getLatestPostId localMessages
-                               >>= flip findMessage localMessages
-                               >>= (^.mDate.to pure))
-            addingAtEnd = maybe True ((<=) latestDate) mbLatestPostDate
+            addingAtEnd = maybe True ((<=) latestDate) $
+                          (^.mDate) <$> getLatestPostMsg localMessages
 
             addingAtStart = maybe True ((>=) earliestDate) $
-                            (getEarliestPostId localMessages
-                            >>= flip findMessage localMessages
-                            >>= (^.mDate.to pure))
+                            (^.mDate) <$> getEarliestPostMsg localMessages
             removeStart = if addingAtStart && noMoreBefore then Nothing else Just earliestPId
             removeEnd = if addingAtEnd then Nothing else Just latestPId
 

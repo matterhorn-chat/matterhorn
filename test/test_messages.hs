@@ -4,6 +4,7 @@
 module Main where
 
 import           Control.Exception
+import           Data.Function (on)
 import           Data.List (intercalate, sortBy, sort)
 import qualified Data.List.UniqueUnsorted as U
 import qualified Data.Map as Map
@@ -23,9 +24,9 @@ import           Test.QuickCheck.Classes
 import           Test.Tasty
 import           Test.Tasty.HUnit
 import           Test.Tasty.QuickCheck
+import           TimeUtils
 import           Types.Messages
 import           Types.Posts
-import           TimeUtils
 
 main :: IO ()
 main = defaultMain tests `catch` (\e -> do
@@ -37,6 +38,7 @@ main = defaultMain tests `catch` (\e -> do
 tests :: TestTree
 tests = testGroup "Messages Tests"
         [ createTests
+        , lookupTests
         , movementTests
         , reversalTests
         , splitTests
@@ -405,7 +407,8 @@ reversalTests = testGroup "Reversal"
                            in idlist l === idlist rr
                 , testProperty "getLatestMessage finds same in either dir" $
                      \l -> let rr = unreverseMessages (reverseMessages l)  -- KWQ: just one reverse, not two
-                           in getLatestPostId l === getLatestPostId rr
+                           in ((^.mPostId) <$> getLatestPostMsg l) ===
+                              ((^.mPostId) <$> getLatestPostMsg rr)
                 , testCase "reverse nothing" $
                       (null $ unreverseMessages $ reverseMessages noMessages) @?
                       "reverse of empty Messages"
@@ -413,6 +416,35 @@ reversalTests = testGroup "Reversal"
                       \l -> let r = reverseMessages l
                             in idlist l === reverse (idlist r)
                 ]
+
+lookupTests :: TestTree
+lookupTests = testGroup "Lookup"
+              [ testProperty "getEarliestPostMsg" $ \(m1, m2, m3, m4, m5) ->
+                    let mlist = m1 : m2 : m3 : m4 : m5 : []
+                        msgs = makeMsgs mlist
+                        postIds = fmap (^.mPostId)
+                                  $ sortBy (compare `on` (^.mDate))
+                                  $ filter (\m -> isJust (m^.mPostId) && (not $ m^.mDeleted)) mlist
+                        firstPostId = (^.mPostId) <$> getEarliestPostMsg msgs
+                    in if null postIds
+                       then Nothing === firstPostId
+                       else Just (head postIds) === firstPostId
+
+              , testProperty "getLatestPostMsg" $ \(m1, m2, m3, m4, m5) ->
+                    let mlist = m1 : m2 : m3 : m4 : m5 : []
+                        msgs = makeMsgs mlist
+                        postIds = fmap (^.mPostId)
+                                  $ sortBy (compare `on` (^.mDate))
+                                  $ filter (\m -> isJust (m^.mPostId) && (not $ m^.mDeleted)) mlist
+                        lastPostId = (^.mPostId) <$> getLatestPostMsg msgs
+                    in counterexample ("ids: " <> show (idlist msgs)
+                                      <> "\n dates: " <> (show $ fmap show $ foldr (\m l -> m^.mDate : l) [] msgs)
+                                      <> "\n deleted: " <> (show $ fmap show $ foldr (\m l -> m^.mDeleted : l) [] msgs)
+                                      <> "\n postIds:" <> show postIds) (
+                        if null postIds
+                        then Nothing === lastPostId
+                        else Just (last postIds) === lastPostId)
+              ]
 
 splitTests :: TestTree
 splitTests = testGroup "Split"

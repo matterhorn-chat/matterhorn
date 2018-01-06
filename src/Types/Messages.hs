@@ -62,8 +62,8 @@ module Types.Messages
   , findMessage
   , getNextPostId
   , getPrevPostId
-  , getEarliestPostId
-  , getLatestPostId
+  , getEarliestPostMsg
+  , getLatestPostMsg
   , findLatestUserMessage
   -- * Operations on any Message type
   , messagesAfter
@@ -74,8 +74,9 @@ where
 
 import           Cheapskate (Blocks)
 import           Control.Applicative
+import           Data.Foldable
 import qualified Data.Map.Strict as Map
-import           Data.Maybe (isJust, isNothing)
+import           Data.Maybe (isJust, isNothing, listToMaybe)
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Tuple
@@ -329,7 +330,7 @@ getRelPostId :: ((Either PostId (Maybe PostId)
              -> Messages
              -> Maybe PostId
 getRelPostId folD jp = case jp of
-                         Nothing -> getLatestPostId
+                         Nothing -> \msgs -> (getLatestPostMsg msgs >>= _mPostId)
                          Just p -> either (const Nothing) id . folD fnd (Left p)
     where fnd = either fndp fndnext
           fndp c v = if v^.mPostId == Just c then Right Nothing else Left c
@@ -338,19 +339,15 @@ getRelPostId folD jp = case jp of
 
 -- | Find the most recent message that is a Post (as opposed to a
 -- local message) (if any).
-getLatestPostId :: Messages -> Maybe PostId
-getLatestPostId msgs =
-    Seq.findIndexR valid (dseq msgs)
-    >>= _mPostId <$> Seq.index (dseq msgs)
-    where valid m = not (m^.mDeleted) && isJust (m^.mPostId)
+getLatestPostMsg :: Messages -> Maybe Message
+getLatestPostMsg msgs =
+    (listToMaybe . reverse . toList) $ (Seq.dropWhileR (not . validUserMessage) (dseq msgs))
 
 -- | Find the earliest message that is a Post (as opposed to a
 -- local message) (if any).
-getEarliestPostId :: Messages -> Maybe PostId
-getEarliestPostId msgs =
-    Seq.findIndexL valid (dseq msgs)
-    >>= _mPostId <$> Seq.index (dseq msgs)
-    where valid m = not (m^.mDeleted) && isJust (m^.mPostId)
+getEarliestPostMsg :: Messages -> Maybe Message
+getEarliestPostMsg msgs =
+    (listToMaybe . toList) $ (Seq.dropWhileL (not . validUserMessage) (dseq msgs))
 
 
 -- | Find the most recent message that is a message posted by a user
@@ -358,17 +355,11 @@ getEarliestPostId msgs =
 -- any user event that is not a message (i.e. find a normal message or
 -- an emote).
 findLatestUserMessage :: (Message -> Bool) -> Messages -> Maybe Message
-findLatestUserMessage f msgs =
-    case getLatestPostId msgs of
-        Nothing -> Nothing
-        Just pid -> findUserMessageFrom pid msgs
-    where findUserMessageFrom p ms =
-              let Just msg = findMessage p ms
-              in if f msg
-                 then Just msg
-                 else case getPrevPostId (msg^.mPostId) msgs of
-                        Nothing -> Nothing
-                        Just p' -> findUserMessageFrom p' msgs
+findLatestUserMessage f =
+    listToMaybe . toList . Seq.dropWhileR (\m -> not (validUserMessage m) && not (f m)) . dseq
+
+validUserMessage :: Message -> Bool
+validUserMessage m = isJust (m^.mPostId) && not (m^.mDeleted)
 
 -- ----------------------------------------------------------------------
 -- * Operations on any Message type
