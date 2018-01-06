@@ -1265,8 +1265,8 @@ handleNewChannel_ permitPostpone switch nc member = do
       Just _ -> return ()
       Nothing -> do
         -- Create a new ClientChannel structure
-        let cChannel = makeClientChannel nc &
-                         ccInfo %~ channelInfoFromChannelWithData nc member
+        cChannel <- (ccInfo %~ channelInfoFromChannelWithData nc member) <$>
+                   makeClientChannel nc
 
         st <- use id
 

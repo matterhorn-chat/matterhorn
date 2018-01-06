@@ -49,6 +49,7 @@ module Types.Channels
   )
 where
 
+import           Control.Monad.IO.Class (MonadIO)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
 import           Data.Time.Clock (UTCTime)
@@ -65,8 +66,9 @@ import           Network.Mattermost.Types ( Channel(..), UserId, ChannelId
                                           , ServerTime
                                           , emptyChannelNotifyProps
                                           )
-import           Types.Messages (Messages, noMessages)
-import           Types.Users    (TypingUsers, noTypingUsers, addTypingUser)
+import           Types.Messages (Messages, noMessages, addMessage, clientMessageToMessage)
+import           Types.Posts (ClientMessageType(UnknownGap), newClientMessage)
+import           Types.Users (TypingUsers, noTypingUsers, addTypingUser)
 
 -- * Channel representations
 
@@ -131,11 +133,18 @@ data ChannelContents = ChannelContents
   { _cdMessages :: Messages
   }
 
--- | An initial empty 'ChannelContents' value
-emptyChannelContents :: ChannelContents
-emptyChannelContents = ChannelContents
-  { _cdMessages = noMessages
-  }
+-- | An initial empty 'ChannelContents' value.  This also contains an
+-- UnknownGap, which is a signal that causes actual content fetching.
+-- The initial Gap's timestamp is the local client time, but
+-- subsequent fetches will synchronize with the server (and eventually
+-- eliminate this Gap as well).
+emptyChannelContents :: MonadIO m => m ChannelContents
+emptyChannelContents = do
+  gapMsg <- clientMessageToMessage <$> newClientMessage UnknownGap "--GAP--"
+  return $ ChannelContents { _cdMessages = addMessage gapMsg noMessages
+                           }
+
+
 
 ------------------------------------------------------------------------
 
@@ -264,9 +273,10 @@ notifyPreference u cc =
 
 -- ** Miscellaneous channel operations
 
-makeClientChannel :: Channel -> ClientChannel
-makeClientChannel nc = ClientChannel
-  { _ccContents = emptyChannelContents
+makeClientChannel :: (MonadIO m) => Channel -> m ClientChannel
+makeClientChannel nc = emptyChannelContents >>= \contents ->
+  return ClientChannel
+  { _ccContents = contents
   , _ccInfo = initialChannelInfo nc
   }
 
