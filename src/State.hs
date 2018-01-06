@@ -392,7 +392,9 @@ asyncFetchScrollback prio cId = do
                                     -- No cutoff has been set, so we
                                     -- just ask for the most recent
                                     -- messages.
-                                    F2 pId
+                                    case getPrevPostId last_pId (chan^.ccContents.cdMessages) of
+                                      Just pi -> F2 pi    -- overlaps for contiguity checking
+                                      Nothing -> F2 pId -- get whatever we can
                                 NewPostsAfterServerTime ct ->
                                     -- If the most recent message is
                                     -- after the cutoff, meaning there
