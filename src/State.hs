@@ -1018,11 +1018,27 @@ asyncFetchMoreMessages :: MH ()
 asyncFetchMoreMessages = do
     cId  <- use csCurrentChannelId
     withChannel cId $ \chan ->
-        let offset = length $ chan^.ccContents.cdMessages
+        let offset = max 0 $ length (chan^.ccContents.cdMessages) - 2
+            -- Fetch more messages prior to any existing messages, but
+            -- attempt to overlap with existing messages for
+            -- determining contiguity or gaps.  Back up two messages
+            -- and request from there backward, which should include
+            -- the last message in the response.  This is an attempt
+            -- to fetch *more* messages, so it's expected that there
+            -- are at least 2 messages already here, but in case there
+            -- aren't, just get another page from roughly the right
+            -- location.
+            first' = splitMessagesOn (^.mPostId.to isJust) (chan^.ccContents.cdMessages)
+            second' = splitMessagesOn (^.mPostId.to isJust) $ snd $ snd first'
             query = MM.defaultPostQuery
                       { MM.postQueryPage = Just offset
                       , MM.postQueryPerPage = Just pageAmount
                       }
+                    & \q -> case (fst first', fst second' >>= (^.mPostId)) of
+                             (Just _, Just i) -> q { MM.postQueryBefore = Just i
+                                                  , MM.postQueryPage   = Just 0
+                                                  }
+                             _ -> q
         in doAsyncChannelMM Preempt cId
                (\s _ c -> MM.mmGetPostsForChannel c query s)
                (\c p -> do addObtainedMessages c p >>= postProcessMessageAdd
