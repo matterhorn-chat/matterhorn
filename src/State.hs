@@ -957,7 +957,6 @@ updateChannelListScroll = do
 postChangeChannelCommon :: MH ()
 postChangeChannelCommon = do
     resetHistoryPosition
-    fetchCurrentScrollback
     resetEditorState
     updateChannelListScroll
     loadLastEdit
@@ -1556,24 +1555,6 @@ getEditedMessageCutoff cId st = do
     cc <- st^?csChannel(cId)
     cc^.ccInfo.cdEditedMessageThreshold
 
-fetchCurrentScrollback :: MH ()
-fetchCurrentScrollback = do
-  cId <- use csCurrentChannelId
-  withChannel cId $ \ chan -> do
-    unless (chan^.ccInfo.cdCurrentState `elem` [ChanLoaded, ChanInitialSelect]) $ do
-      -- Upgrades the channel state to "Loaded" to indicate that
-      -- content is now present (this is the main point where channel
-      -- state is switched from metadata-only to with-content), then
-      -- initiates an operation to read the content (which will change
-      -- the state to a pending for loaded.  If there was an async
-      -- background task pending (esp. if this channel was selected
-      -- just after startup and startup fetching is still underway),
-      -- this will potentially schedule a duplicate, but that will not
-      -- be harmful since quiescent channel states only increase to
-      -- "higher" states.
-      when (chan^.ccInfo.cdCurrentState /= ChanInitialSelect) $
-        csChannel(cId).ccInfo.cdCurrentState .= ChanLoaded
-      asyncFetchScrollback Preempt cId
 
 fetchNewIfNeeded :: MH ()
 fetchNewIfNeeded = do
