@@ -379,8 +379,7 @@ asyncFetchScrollback prio cId = do
   withChannel cId $ \chan -> do
     let last_pId = getLatestPostId (chan^.ccContents.cdMessages)
         newCutoff = chan^.ccInfo.cdNewMessageIndicator
-        fetchMessages s _ c = do
-            let fc = case last_pId of
+        fc = case last_pId of
                   Nothing  -> F1  -- or F4
                   Just pId ->
                       case findMessage pId (chan^.ccContents.cdMessages) of
@@ -411,20 +410,24 @@ asyncFetchScrollback prio cId = do
                                     if m^.mDate >= ct
                                     then F3b pId
                                     else F3a
-                query = MM.defaultPostQuery
-                  { MM.postQueryPage = Just 0
-                  , MM.postQueryPerPage = Just numScrollbackPosts
-                  }
+        fetchMessages s _ c = do
+            let query = MM.defaultPostQuery
+                        { MM.postQueryPage = Just 0
+                        , MM.postQueryPerPage = Just numScrollbackPosts
+                        }
                 finalQuery = case fc of
-                    F1      -> query -- mmGetPosts s t c
-                    F2 pId  -> query { MM.postQueryAfter = Just pId } -- mmGetPostsAfter s t c pId
-                    F3a     -> query -- mmGetPosts s t c
-                    F3b pId -> query { MM.postQueryBefore = Just pId } -- mmGetPostsBefore s t c pId
-                    F4      -> query -- mmGetPosts s t c
-            MM.mmGetPostsForChannel c finalQuery s --  op 0 numScrollbackPosts
+                    F1      -> query
+                    F2 pId  -> query { MM.postQueryAfter = Just pId }
+                    F3a     -> query
+                    F3b pId -> query { MM.postQueryBefore = Just pId }
+                    F4      -> query
+            MM.mmGetPostsForChannel c finalQuery s
+        requestedCount = case fc of
+                           F2 _ -> numScrollbackPosts
+                           _ -> -numScrollbackPosts
 
     doAsyncChannelMM prio cId fetchMessages
-              (\c p -> addObtainedMessages c p >>= postProcessMessageAdd)
+              (\c p -> addObtainedMessages c requestedCount p >>= postProcessMessageAdd)
 
 data FetchCase = F1 | F2 PostId | F3a | F3b PostId | F4 deriving (Eq,Show)
 
@@ -1043,12 +1046,12 @@ asyncFetchMoreMessages = do
                              _ -> q
         in doAsyncChannelMM Preempt cId
                (\s _ c -> MM.mmGetPostsForChannel c query s)
-               (\c p -> do addObtainedMessages c p >>= postProcessMessageAdd
+               (\c p -> do addObtainedMessages c (-pageAmount) p >>= postProcessMessageAdd
                            mh $ invalidateCacheEntry (ChannelMessages cId))
 
-addObtainedMessages :: ChannelId -> Posts -> MH PostProcessMessageAdd
-addObtainedMessages _cId posts | null (F.toList (posts^.postsOrderL)) = return NoAction
-addObtainedMessages cId posts = do
+addObtainedMessages :: ChannelId -> Int -> Posts -> MH PostProcessMessageAdd
+addObtainedMessages _ _ posts | null (F.toList (posts^.postsOrderL)) = return NoAction
+addObtainedMessages cId reqCnt posts = do
     -- Adding a block of server-provided messages, which are known to
     -- be contiguous.  Locally this may overlap with some UnknownGap
     -- messages, which can therefore be removed.  Alternatively the
@@ -1095,6 +1098,9 @@ addObtainedMessages cId posts = do
                                >>= (^.mDate.to pure))
             postingToEnd = maybe True ((<) latestDate) mbLatestPostDate
 
+            noMoreBefore = reqCnt < 0 && length pIdList < (-reqCnt)
+            noMoreAfter = reqCnt > 0 && length pIdList < reqCnt
+
         -- Add all the new *unique* posts into the existing channel
         -- corpus, generating needed fetches of data associated with
         -- the post, and determining an notification action to be
@@ -1112,12 +1118,19 @@ addObtainedMessages cId posts = do
             csChannels %= modifyChannelById cId
                            (ccContents.cdMessages %~ (fst . removeMatchesFromSubset isGap (Just earliestPId) (Just latestPId)))
 
-        unless (earliestPId `elem` dupPIds) $
+        -- Add a gap at each end of the newly fetched data, unless:
+        --   1. there is an overlap
+        --   2. there is no more in the indicated direction
+        --      a. indicated by adding messages later than any currently
+        --         held messages (see note above re 'postingToEnd').
+        --      b. the amount returned was less than the amount requested
+
+        unless (earliestPId `elem` dupPIds || noMoreBefore) $
                let gapMsg = newGapMessage (justBefore earliestDate)
                in csChannels %= modifyChannelById cId
                       (ccContents.cdMessages %~ addMessage gapMsg)
 
-        unless (latestPId `elem` dupPIds || postingToEnd) $
+        unless (latestPId `elem` dupPIds || postingToEnd || noMoreAfter) $
                let gapMsg = newGapMessage (justAfter latestDate)
                in csChannels %= modifyChannelById cId
                       (ccContents.cdMessages %~ addMessage gapMsg)
