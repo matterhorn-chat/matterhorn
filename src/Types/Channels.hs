@@ -17,7 +17,7 @@ module Types.Channels
   , cdName, cdHeader, cdPurpose, cdType
   , cdMentionCount, cdTypingUsers
   -- * Lenses created for accessing ChannelContents fields
-  , cdMessages
+  , cdMessages, cdFetchPending
   -- * Creating ClientChannel objects
   , makeClientChannel
   -- * Managing ClientChannel collections
@@ -124,6 +124,7 @@ channelInfoFromChannelWithData chan chanMember ci =
 --   'Message' values
 data ChannelContents = ChannelContents
   { _cdMessages :: Messages
+  , _cdFetchPending :: Bool
   }
 
 -- | An initial empty 'ChannelContents' value.  This also contains an
@@ -135,6 +136,7 @@ emptyChannelContents :: MonadIO m => m ChannelContents
 emptyChannelContents = do
   gapMsg <- clientMessageToMessage <$> newClientMessage UnknownGap "--Fetching messages (when connected)--"
   return $ ChannelContents { _cdMessages = addMessage gapMsg noMessages
+                           , _cdFetchPending = False
                            }
 
 

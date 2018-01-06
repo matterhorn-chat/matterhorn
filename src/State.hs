@@ -57,7 +57,7 @@ module State
   , deleteMessage
   , addMessageToState
   , postProcessMessageAdd
-  , fetchNewIfNeeded
+  , fetchVisibleIfNeeded
 
   -- * Working with users
   , handleNewUser
@@ -1096,7 +1096,14 @@ addObtainedMessages cId reqCnt posts = do
             mbLatestPostDate = (getLatestPostId localMessages
                                >>= flip findMessage localMessages
                                >>= (^.mDate.to pure))
-            postingToEnd = maybe True ((<) latestDate) mbLatestPostDate
+            addingAtEnd = maybe True ((<=) latestDate) mbLatestPostDate
+
+            addingAtStart = maybe True ((>=) earliestDate) $
+                            (getEarliestPostId localMessages
+                            >>= flip findMessage localMessages
+                            >>= (^.mDate.to pure))
+            removeStart = if addingAtStart && noMoreBefore then Nothing else Just earliestPId
+            removeEnd = if addingAtEnd then Nothing else Just latestPId
 
             noMoreBefore = reqCnt < 0 && length pIdList < (-reqCnt)
             noMoreAfter = reqCnt > 0 && length pIdList < reqCnt
@@ -1113,27 +1120,25 @@ addObtainedMessages cId reqCnt posts = do
                    , not (p `elem` dupPIds)
                    ]
 
-        unless (null match) $
-            -- There was overlap, so remove any gaps created by the overlap
-            csChannels %= modifyChannelById cId
-                           (ccContents.cdMessages %~ (fst . removeMatchesFromSubset isGap (Just earliestPId) (Just latestPId)))
+        csChannels %= modifyChannelById cId
+                           (ccContents.cdMessages %~ (fst . removeMatchesFromSubset isGap removeStart removeEnd))
 
         -- Add a gap at each end of the newly fetched data, unless:
         --   1. there is an overlap
         --   2. there is no more in the indicated direction
         --      a. indicated by adding messages later than any currently
-        --         held messages (see note above re 'postingToEnd').
+        --         held messages (see note above re 'addingAtEnd').
         --      b. the amount returned was less than the amount requested
 
         unless (earliestPId `elem` dupPIds || noMoreBefore) $
                let gapMsg = newGapMessage (justBefore earliestDate)
                in csChannels %= modifyChannelById cId
-                      (ccContents.cdMessages %~ addMessage gapMsg)
+                       (ccContents.cdMessages %~ addMessage gapMsg)
 
-        unless (latestPId `elem` dupPIds || postingToEnd || noMoreAfter) $
+        unless (latestPId `elem` dupPIds || addingAtEnd || noMoreAfter) $
                let gapMsg = newGapMessage (justAfter latestDate)
                in csChannels %= modifyChannelById cId
-                      (ccContents.cdMessages %~ addMessage gapMsg)
+                                 (ccContents.cdMessages %~ addMessage gapMsg)
 
         return action
 
@@ -1529,17 +1534,34 @@ getEditedMessageCutoff cId st = do
     cc^.ccInfo.cdEditedMessageThreshold
 
 
-fetchNewIfNeeded :: MH ()
-fetchNewIfNeeded = do
+fetchVisibleIfNeeded :: MH ()
+fetchVisibleIfNeeded = do
   sts <- use csConnectionStatus
   case sts of
     Connected -> do
        cId <- use csCurrentChannelId
        withChannel cId $ \chan ->
-           let lastmsg = lastMsg $ chan^.ccContents.cdMessages.to reverseMessages
-           in when (maybe False isGap lastmsg) $ do
-                     removeEndGaps cId
-                     asyncFetchScrollback Preempt cId
+           let msgs = chan^.ccContents.cdMessages.to reverseMessages
+               (numToReq, gapInDisplayable, _, rel'pId) =
+                   foldl gapTrail (numScrollbackPosts, False, Nothing, Nothing) msgs
+               gapTrail a@(_,  True, _, _) _ = a
+               gapTrail a@(0,     _, _, _) _ = a
+               gapTrail   (a, False, b, c) m | isGap m = (a, True, b, c)
+               gapTrail (remCnt, _, prev'pId, prev''pId) msg =
+                   (remCnt - 1, False, msg^.mPostId <|> prev'pId, prev'pId <|> prev''pId)
+               query = MM.defaultPostQuery
+                       { MM.postQueryPage    = Just 0
+                       , MM.postQueryPerPage = Just numToReq
+                       }
+               finalQuery = case rel'pId of
+                              Nothing -> query
+                              Just pid -> query { MM.postQueryBefore = Just pid }
+               op = \s _ c -> MM.mmGetPostsForChannel c finalQuery s
+           in when ((not $ chan^.ccContents.cdFetchPending) && gapInDisplayable) $ do
+                     csChannel(cId).ccContents.cdFetchPending .= True
+                     doAsyncChannelMM Preempt cId op
+                         (\c p -> do addObtainedMessages c (-numToReq) p >>= postProcessMessageAdd
+                                     csChannel(c).ccContents.cdFetchPending .= False)
 
     _ -> return ()
 

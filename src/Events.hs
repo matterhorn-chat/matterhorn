@@ -39,7 +39,7 @@ import           Events.MessageSelect
 import           Events.PostListOverlay
 
 onEvent :: ChatState -> BrickEvent Name MHEvent -> EventM Name (Next ChatState)
-onEvent st ev = runMHEvent st (onEv >> postEvent)
+onEvent st ev = runMHEvent st (onEv >> fetchVisibleIfNeeded)
     where onEv = do case ev of
                       (AppEvent e) -> onAppEvent e
                       (VtyEvent (Vty.EvKey (Vty.KChar 'l') [Vty.MCtrl])) -> do
@@ -47,9 +47,6 @@ onEvent st ev = runMHEvent st (onEv >> postEvent)
                            liftIO $ Vty.refresh vty
                       (VtyEvent e) -> onVtyEvent e
                       _ -> return ()
-
-postEvent :: MH ()
-postEvent = fetchNewIfNeeded
 
 onAppEvent :: MHEvent -> MH ()
 onAppEvent RefreshWebsocketEvent = connectWebsockets
