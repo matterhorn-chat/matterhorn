@@ -58,6 +58,7 @@ module Types.Messages
     -- * Operations on Posted Messages
   , splitMessages
   , splitMessagesOn
+  , splitRetrogradeMessagesOn
   , findMessage
   , getNextPostId
   , getPrevPostId
@@ -253,9 +254,25 @@ unreverseMessages = DSeq . Seq.reverse . dseq
 splitMessagesOn :: (Message -> Bool)
                 -> Messages
                 -> (Maybe Message, (RetrogradeMessages, Messages))
-splitMessagesOn f msgs =
+splitMessagesOn = splitMsgSeqOn
+
+-- | Similar to 'splitMessagesOn', but taking RetrogradeMessages as input.
+splitRetrogradeMessagesOn :: (Message -> Bool)
+                          -> RetrogradeMessages
+                          -> (Maybe Message, (Messages, RetrogradeMessages))
+splitRetrogradeMessagesOn = splitMsgSeqOn
+
+-- n.b., the splitMessagesOn and splitRetrogradeMessagesOn could be
+-- unified into the following, but that will require TypeFamilies or
+-- similar to relate d and r SeqDirection types.  For now, it's
+-- simplier to just have two API endpoints.
+splitMsgSeqOn :: (SeqDirection d, SeqDirection r) =>
+                  (Message -> Bool)
+                -> DirectionalSeq d Message
+                -> (Maybe Message, (DirectionalSeq r Message, DirectionalSeq d Message))
+splitMsgSeqOn f msgs =
     let (removed, remaining) = dirSeqBreakl f msgs
-        devomer = reverseMessages removed
+        devomer = DSeq $ Seq.reverse $ dseq removed
     in (withDirSeqHead id remaining, (devomer, onDirectedSeq (Seq.drop 1) remaining))
 
 
