@@ -74,7 +74,7 @@ where
 import           Cheapskate (Blocks)
 import           Control.Applicative
 import qualified Data.Map.Strict as Map
-import           Data.Maybe (isJust)
+import           Data.Maybe (isJust, isNothing)
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Tuple
@@ -374,31 +374,37 @@ messagesAfter viewTime = onDirectedSeq $ Seq.takeWhileR (\m -> m^.mDate > viewTi
 -- start to finish, irrespective of 'firstId' and 'lastId') and the
 -- list of removed items.
 --
--- If the starting PostId does not exist, but the ending PostId does
--- exist, then removal occurs from the start of the list.
---
--- If the ending PostId does not exist, removal occurs from the
--- starting PostId position to the end of the list.
---
--- If neither the starting nor the ending PostId exist, no removal
--- occurs.
+--    start       | end          |  operates-on              | (test) case
+--   --------------------------------------------------------|-------------
+--   Nothing      | Nothing      | entire list               |  C1
+--   Nothing      | Just found   | start --> found]          |  C2
+--   Nothing      | Just missing | nothing [suggest invalid] |  C3
+--   Just found   | Nothing      | [found --> end            |  C4
+--   Just found   | Just found   | [found --> found]         |  C5
+--   Just found   | Just missing | [found --> end            |  C6
+--   Just missing | Nothing      | nothing [suggest invalid] |  C7
+--   Just missing | Just found   | start --> found]          |  C8
+--   Just missing | Just missing | nothing [suggest invalid] |  C9
 --
 --  @removeMatchesFromSubset matchPred fromId toId msgs = (remaining, removed)@
-removeMatchesFromSubset :: (Message -> Bool) -> PostId -> PostId
+--
+removeMatchesFromSubset :: (Message -> Bool) -> Maybe PostId -> Maybe PostId
                         -> Messages -> (Messages, Messages)
 removeMatchesFromSubset matching firstId lastId msgs =
     let knownIds = fmap (^.mPostId) msgs
-    in if Just firstId `elem` knownIds
-       then onDirSeqSubset
-                (\m -> m^.mPostId == Just firstId)
-                (\m -> m^.mPostId == Just lastId)
-                (swap . dirSeqPartition matching) msgs
-       else if Just lastId `elem` knownIds
+    in if isNothing firstId && isNothing lastId
+       then swap $ dirSeqPartition matching msgs
+       else if isJust firstId && firstId `elem` knownIds
             then onDirSeqSubset
+                (\m -> m^.mPostId == firstId)
+                (if isJust lastId then \m -> m^.mPostId == lastId else const False)
+                (swap . dirSeqPartition matching) msgs
+            else if isJust lastId && lastId `elem` knownIds
+                 then onDirSeqSubset
                      (const True)
-                     (\m -> m^.mPostId == Just lastId)
+                     (\m -> m^.mPostId == lastId)
                      (swap . dirSeqPartition matching) msgs
-            else (msgs, noMessages)
+                 else (msgs, noMessages)
 
 -- | Performs an operation on the first Message, returning just the
 -- result of that operation, or Nothing if there were no messages.

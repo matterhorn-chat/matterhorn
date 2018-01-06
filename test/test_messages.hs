@@ -557,18 +557,18 @@ removeTests = adjustOption (\(QuickCheckMaxRatio n) -> QuickCheckMaxRatio (n*10)
                     let (remaining, removed) = removeMatchesFromSubset (const True) id1 id2 noMessages
                     in counterexample "got something from nothing" $ null remaining && null removed
 
-              , testProperty "remove range not found" $ \(id1, id2, msglist) ->
+              , testProperty "remove range not found (C9)" $ \(id1, id2, msglist) ->
                     let msgs = makeMsgs msglist
                         ids = idlist msgs
-                        (remaining, removed) = removeMatchesFromSubset (const True) id1 id2 msgs
+                        (remaining, removed) = removeMatchesFromSubset (const True) (Just id1) (Just id2) msgs
                     in (not $ Just id1 `elem` ids || Just id2 `elem` ids) ==>
                        counterexample "got something from invalid range" $
                                       null removed && length remaining == length ids
 
-              , testProperty "remove first in range" $ \(id1, id2, msglist) ->
+              , testProperty "remove first in range (C6)" $ \(id1, id2, msglist) ->
                     let msgs = makeMsgs msglist
                         ids = idlist msgs
-                        (remaining, removed) = removeMatchesFromSubset (const True) id1 id2 msgs
+                        (remaining, removed) = removeMatchesFromSubset (const True) (Just id1) (Just id2) msgs
                     in Just id1 `elem` ids && (not $ Just id2 `elem` ids) ==>
                        counterexample ("with idlist " <> show ids <>
                                        " remove id1=" <> show id1 <>
@@ -583,7 +583,7 @@ removeTests = adjustOption (\(QuickCheckMaxRatio n) -> QuickCheckMaxRatio (n*10)
               , testProperty "remove nothing first in range" $ \(id1, id2, msglist) ->
                     let msgs = makeMsgs msglist
                         ids = idlist msgs
-                        (remaining, removed) = removeMatchesFromSubset (const False) id1 id2 msgs
+                        (remaining, removed) = removeMatchesFromSubset (const False) (Just id1) (Just id2) msgs
                     in Just id1 `elem` ids && (not $ Just id2 `elem` ids) ==>
                        counterexample ("with idlist " <> show ids <>
                                        " remove id1=" <> show id1 <>
@@ -593,19 +593,19 @@ removeTests = adjustOption (\(QuickCheckMaxRatio n) -> QuickCheckMaxRatio (n*10)
                                           (idlist remaining == ids && null removed)
 
               , testCase "remove only as last" $
-                let (remaining, removed) = removeMatchesFromSubset (const True) id1 id2 msgs
+                let (remaining, removed) = removeMatchesFromSubset (const True) (Just id1) (Just id2) msgs
                     id1 = fromId $ Id "id1"
                     id2 = fromId $ Id "id2"
                     msgs = makeMsgs [makeMsg (ServerTime originTime) (Just id2)]
                 in null remaining && length removed == 1 @? "removed"
 
-              , testProperty "remove last in range" $ \(idx2, msg, msglist) ->
+              , testProperty "remove last in range (C8)" $ \(idx2, msg, msglist) ->
                     let msgs = makeMsgs $ msg : msglist
                         ids = idlist msgs
                         id2 = ids !! idx2'
                         id1 = PI $ Id $ T.intercalate "-" $ map (unId . unPI) $ catMaybes ids
                         idx2' = abs idx2 `mod` length ids
-                        (remaining, removed) = removeMatchesFromSubset (const True) id1 (fromJust id2) msgs
+                        (remaining, removed) = removeMatchesFromSubset (const True) (Just id1) id2 msgs
                     in (isJust id2) && uniqueIds msgs ==>
                        counterexample ("with idlist " <> show ids <>
                                        " remove id2=" <> show id2 <>
@@ -618,7 +618,7 @@ removeTests = adjustOption (\(QuickCheckMaxRatio n) -> QuickCheckMaxRatio (n*10)
                                           id2 `elem` idlist removed &&
                                           (not $ id2 `elem` idlist remaining)
 
-              , testProperty "remove sub range" $ \(m1, m2, m3, m4, m5, idx1, idx2) ->
+              , testProperty "remove sub range (C5)" $ \(m1, m2, m3, m4, m5, idx1, idx2) ->
                     let msgs = makeMsgs $ m1 : m2 : m3 : m4 : m5 : []
                         ids = idlist msgs
 
@@ -631,7 +631,7 @@ removeTests = adjustOption (\(QuickCheckMaxRatio n) -> QuickCheckMaxRatio (n*10)
                         idx1' = head idxl
                         idx2' = last idxl
 
-                        (remaining, removed) = removeMatchesFromSubset (const True) (fromJust id1) (fromJust id2) msgs
+                        (remaining, removed) = removeMatchesFromSubset (const True) id1 id2 msgs
                     in uniqueIds msgs && isJust id1 && isJust id2 ==>
                        counterexample ("with idlist " <> show (idlist msgs) <>
                                        "\n idx1=" <> show idx1' <>
@@ -657,7 +657,7 @@ removeTests = adjustOption (\(QuickCheckMaxRatio n) -> QuickCheckMaxRatio (n*10)
                         idx1' = head idxl
                         idx2' = last idxl
 
-                        (remaining, removed) = removeMatchesFromSubset (const False) (fromJust id1) (fromJust id2) msgs
+                        (remaining, removed) = removeMatchesFromSubset (const False) id1 id2 msgs
                     in uniqueIds msgs && isJust id1 && isJust id2 ==>
                        counterexample ("with idlist " <> show (idlist msgs) <>
                                        "\n idx1=" <> show idx1' <>
@@ -669,7 +669,7 @@ removeTests = adjustOption (\(QuickCheckMaxRatio n) -> QuickCheckMaxRatio (n*10)
                                       ) $
                        (idlist remaining == ids && null removed)
 
-              , testProperty "remove first in sub range" $ \(m1, m2, m3, m4, m5, idx1, idx2) ->
+              , testProperty "remove first in sub range (C5)" $ \(m1, m2, m3, m4, m5, idx1, idx2) ->
                     let msgs = makeMsgs $ m1 : m2 : m3 : m4 : m5 : []
                         ids = idlist msgs
 
@@ -682,7 +682,7 @@ removeTests = adjustOption (\(QuickCheckMaxRatio n) -> QuickCheckMaxRatio (n*10)
                         idx1' = head idxl
                         idx2' = last idxl
 
-                        (remaining, removed) = removeMatchesFromSubset (\m -> m^.mPostId == id1) (fromJust id1) (fromJust id2) msgs
+                        (remaining, removed) = removeMatchesFromSubset (\m -> m^.mPostId == id1) id1 id2 msgs
                     in uniqueIds msgs && isJust id1 && isJust id2 ==>
                        counterexample ("with idlist " <> show (idlist msgs) <>
                                        "\n idx1=" <> show idx1' <>
@@ -694,7 +694,7 @@ removeTests = adjustOption (\(QuickCheckMaxRatio n) -> QuickCheckMaxRatio (n*10)
                        (idlist remaining == (filter (/= id1) ids) &&
                         idlist removed == [id1])
 
-              , testProperty "remove last in sub range" $ \(m1, m2, m3, m4, m5, idx1, idx2) ->
+              , testProperty "remove last in sub range (C5)" $ \(m1, m2, m3, m4, m5, idx1, idx2) ->
                     let msgs = makeMsgs $ m1 : m2 : m3 : m4 : m5 : []
                         ids = idlist msgs
 
@@ -707,7 +707,7 @@ removeTests = adjustOption (\(QuickCheckMaxRatio n) -> QuickCheckMaxRatio (n*10)
                         idx1' = head idxl
                         idx2' = last idxl
 
-                        (remaining, removed) = removeMatchesFromSubset (\m -> m^.mPostId == id2) (fromJust id1) (fromJust id2) msgs
+                        (remaining, removed) = removeMatchesFromSubset (\m -> m^.mPostId == id2) id1 id2 msgs
                     in uniqueIds msgs && isJust id1 && isJust id2 ==>
                        counterexample ("with idlist " <> show (idlist msgs) <>
                                        "\n idx1=" <> show idx1' <>
@@ -719,7 +719,7 @@ removeTests = adjustOption (\(QuickCheckMaxRatio n) -> QuickCheckMaxRatio (n*10)
                        (idlist remaining == (filter (/= id2) ids) &&
                         idlist removed == [id2])
 
-              , testProperty "remove some in sub range" $ \(m1, m2, m3, m4, m5, idx1, idx2) ->
+              , testProperty "remove some in sub range (C5)" $ \(m1, m2, m3, m4, m5, idx1, idx2) ->
                     let msgs = makeMsgs $ m1 : m2 : m3 : m4 : m5 : []
                         ids = idlist msgs
 
@@ -734,7 +734,7 @@ removeTests = adjustOption (\(QuickCheckMaxRatio n) -> QuickCheckMaxRatio (n*10)
 
                         rmvIds = map snd $ filter (odd . fst) $ zip [(0::Int)..] matchIds
 
-                        (remaining, removed) = removeMatchesFromSubset (\m -> m^.mPostId `elem` rmvIds) (fromJust id1) (fromJust id2) msgs
+                        (remaining, removed) = removeMatchesFromSubset (\m -> m^.mPostId `elem` rmvIds) id1 id2 msgs
                     in uniqueIds msgs && isJust id1 && isJust id2 ==>
                        counterexample ("with idlist " <> show (idlist msgs) <>
                                        "\n idx1=" <> show idx1' <>
@@ -747,6 +747,82 @@ removeTests = adjustOption (\(QuickCheckMaxRatio n) -> QuickCheckMaxRatio (n*10)
                                       ) $
                        (idlist remaining == (filter (not . flip elem rmvIds) ids) &&
                         idlist removed == rmvIds)
+
+              , testProperty "remove from start last Nothing (C4)" $ \(m1, m2, m3, m4, m5, idx1) ->
+                    let msgs = makeMsgs $ m1 : m2 : m3 : m4 : m5 : []
+                        ids = idlist msgs
+
+                        (leftIds, matchIds) = splitAt idx1' ids
+                        id1 = head matchIds
+
+                        idx1' = abs idx1 `mod` 5
+
+                        (remaining, removed) = removeMatchesFromSubset (const True) id1 Nothing msgs
+                    in uniqueIds msgs && isJust id1 ==>
+                       counterexample ("with idlist " <> show (idlist msgs) <>
+                                       "\n idx1=" <> show idx1' <>
+                                       "\n extracts=" <> show (idlist removed) <>
+                                       "\n matching=" <> show matchIds <>
+                                       "\n and leaves remaining=" <> show (idlist remaining)
+                                      ) $
+                       (idlist remaining == leftIds &&
+                        idlist removed == matchIds)
+
+              , testProperty "remove from Nothing to offset (C2)" $ \(m1, m2, m3, m4, m5, idx1) ->
+                    let msgs = makeMsgs $ m1 : m2 : m3 : m4 : m5 : []
+                        ids = idlist msgs
+
+                        (matchIds, leftIds) = splitAt (idx1' + 1) ids
+                        id1 = last matchIds
+
+                        idx1' = abs idx1 `mod` 4
+
+                        (remaining, removed) = removeMatchesFromSubset (const True) Nothing id1 msgs
+                    in uniqueIds msgs && isJust id1 ==>
+                       counterexample ("with idlist " <> show (idlist msgs) <>
+                                       "\n idx1=" <> show idx1' <>
+                                       "\n extracts=" <> show (idlist removed) <>
+                                       "\n matching=" <> show matchIds <>
+                                       "\n and leaves remaining=" <> show (idlist remaining)
+                                      ) $
+                       (idlist remaining == leftIds &&
+                        idlist removed == matchIds)
+
+              , testProperty "remove from start not found last Nothing (C7)" $ \(m1, m2, m3, m4, m5, id1) ->
+                    let msgs = makeMsgs $ m1 : m2 : m3 : m4 : m5 : []
+                        ids = idlist msgs
+                        (remaining, removed) = removeMatchesFromSubset (const True) id1 Nothing msgs
+                    in uniqueIds msgs && isJust id1 && (not $ id1 `elem` ids) ==>
+                       counterexample ("with idlist " <> show ids <>
+                                       "\n extracts=" <> show (idlist removed) <>
+                                       "\n and leaves remaining=" <> show (idlist remaining)
+                                      ) $
+                       (idlist remaining == ids &&
+                        null removed)
+
+              , testProperty "remove from Nothing to end not found (C3)" $ \(m1, m2, m3, m4, m5, id1) ->
+                    let msgs = makeMsgs $ m1 : m2 : m3 : m4 : m5 : []
+                        ids = idlist msgs
+                        (remaining, removed) = removeMatchesFromSubset (const True) Nothing id1 msgs
+                    in uniqueIds msgs && isJust id1 && (not $ id1 `elem` ids) ==>
+                       counterexample ("with idlist " <> show ids <>
+                                       "\n extracts=" <> show (idlist removed) <>
+                                       "\n and leaves remaining=" <> show (idlist remaining)
+                                      ) $
+                       (idlist remaining == ids &&
+                        null removed)
+
+              , testProperty "remove from Nothing to Nothing (C1)" $ \(m1, m2, m3, m4, m5, id1) ->
+                    let msgs = makeMsgs $ m1 : m2 : m3 : m4 : m5 : []
+                        ids = idlist msgs
+                        (remaining, removed) = removeMatchesFromSubset (const True) Nothing Nothing msgs
+                    in uniqueIds msgs && isJust id1 && (not $ id1 `elem` ids) ==>
+                       counterexample ("with idlist " <> show ids <>
+                                       "\n extracts=" <> show (idlist removed) <>
+                                       "\n and leaves remaining=" <> show (idlist remaining)
+                                      ) $
+                       (idlist removed == ids &&
+                        null remaining)
 
               ]
 

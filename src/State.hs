@@ -1102,7 +1102,7 @@ addObtainedMessages cId posts = do
 
             match = snd $ removeMatchesFromSubset
                           (\m -> maybe False (\p -> p `elem` pIdList) (m^.mPostId))
-                          earliestPId latestPId localMessages
+                          (Just earliestPId) (Just latestPId) localMessages
 
             dupPIds = catMaybes $ foldr (\m l -> m^.mPostId : l) [] match
 
@@ -1146,7 +1146,7 @@ addObtainedMessages cId posts = do
         unless (null match) $
             -- There was overlap, so remove any gaps created by the overlap
             csChannels %= modifyChannelById cId
-                           (ccContents.cdMessages %~ (fst . removeMatchesFromSubset isGap earliestPId latestPId))
+                           (ccContents.cdMessages %~ (fst . removeMatchesFromSubset isGap (Just earliestPId) (Just latestPId)))
 
         unless (earliestPId `elem` dupPIds) $
                let gapMsg = newGapMessage "early" (justBefore earliestDate)
