@@ -1,6 +1,5 @@
 module State.Messages
     ( addDisconnectGaps
-    , removeEndGaps
     , loadFlaggedMessages
     , updateMessageFlag
     , lastMsg
@@ -49,13 +48,6 @@ addEndGap cId = withChannel cId $ \chan ->
         newGapMessage = newMessageOfType (T.pack "Disconnected... will update when connected") (C UnknownGap)
     in unless lastIsGap
            (csChannels %= modifyChannelById cId (ccContents.cdMessages %~ addMessage gapMsg))
-
-removeEndGaps :: ChannelId -> MH ()
-removeEndGaps cId =
-        csChannel(cId).ccContents.cdMessages %=
-                     (unreverseMessages .
-                      snd . snd . splitRetrogradeMessagesOn (not . isGap) .
-                      reverseMessages)
 
 
 lastMsg :: RetrogradeMessages -> Maybe Message
