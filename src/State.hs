@@ -1084,13 +1084,12 @@ asyncFetchMoreMessages = do
 
 addObtainedMessages :: ChannelId -> Posts -> MH PostProcessMessageAdd
 addObtainedMessages _cId posts | null (F.toList (posts^.postsOrderL)) = return NoAction
-addObtainedMessages _cId posts = do
+addObtainedMessages cId posts = do
     -- Adding a block of server-provided messages, which are known to
     -- be contiguous.  Locally this may overlap with some UnknownGap
     -- messages, which can therefore be removed.  Alternatively the
     -- new block may be discontiguous with the local blocks, in which
     -- case the new block should be surrounded by UnknownGaps.
-    cId  <- use csCurrentChannelId
     withChannelOrDefault cId NoAction $ \chan -> do
         let pIdList = F.toList (posts^.postsOrderL)
             -- the first and list PostId in the batch to be added
