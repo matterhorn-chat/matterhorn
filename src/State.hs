@@ -156,6 +156,7 @@ import           Network.Mattermost.Lenses
 
 import           Config
 import           FilePaths
+import           TimeUtils (justBefore, justAfter)
 import           Types
 import           Types.Channels
 import           Types.Posts
@@ -1082,12 +1083,84 @@ asyncFetchMoreMessages = do
                            mh $ invalidateCacheEntry (ChannelMessages cId))
 
 addObtainedMessages :: ChannelId -> Posts -> MH PostProcessMessageAdd
-addObtainedMessages _cId posts =
-    foldl mappend mempty <$>
+addObtainedMessages _cId posts | null (F.toList (posts^.postsOrderL)) = return NoAction
+addObtainedMessages _cId posts = do
+    -- Adding a block of server-provided messages, which are known to
+    -- be contiguous.  Locally this may overlap with some UnknownGap
+    -- messages, which can therefore be removed.  Alternatively the
+    -- new block may be discontiguous with the local blocks, in which
+    -- case the new block should be surrounded by UnknownGaps.
+    cId  <- use csCurrentChannelId
+    withChannelOrDefault cId NoAction $ \chan -> do
+        let pIdList = F.toList (posts^.postsOrderL)
+            -- the first and list PostId in the batch to be added
+            earliestPId = last pIdList
+            latestPId = head pIdList
+            earliestDate = postCreateAt $ (posts^.postsPostsL) HM.! earliestPId
+            latestDate = postCreateAt $ (posts^.postsPostsL) HM.! latestPId
+
+            localMessages = chan^.ccContents . cdMessages
+
+            match = snd $ removeMatchesFromSubset
+                          (\m -> maybe False (\p -> p `elem` pIdList) (m^.mPostId))
+                          earliestPId latestPId localMessages
+
+            dupPIds = catMaybes $ foldr (\m l -> m^.mPostId : l) [] match
+
+            -- If there were any matches, then there was overlap of
+            -- the new messages with existing messages.
+
+            -- Don't re-add matching messages (avoid overhead like
+            -- re-checking/re-fetching related post information, and
+            -- do not signal action needed for notifications), and
+            -- remove any gaps in the overlapping region.
+
+            newGapMessage t d = newMessageOfType (T.pack $  "Gap (adds) " <> t) (C UnknownGap) d
+
+            -- If this batch contains the latest known messages, do
+            -- not add a following gap.  A gap at this point is added
+            -- by a websocket disconnect, and any fetches thereafter
+            -- are assumed to be the most current information (until
+            -- another disconnect), so no gap is needed.
+            -- Additionally, the presence of a gap at the end for a
+            -- connected client causes a fetch of messages at this
+            -- location, so adding the gap here would cause an
+            -- infinite update loop.
+
+            mbLatestPostDate = (getLatestPostId localMessages
+                               >>= flip findMessage localMessages
+                               >>= (^.mDate.to pure))
+            postingToEnd = maybe True ((<) latestDate) mbLatestPostDate
+
+        -- Add all the new *unique* posts into the existing channel
+        -- corpus, generating needed fetches of data associated with
+        -- the post, and determining an notification action to be
+        -- taken (if any).
+
+        action <- foldr mappend mempty <$>
           mapM (addMessageToState . OldPost)
                    [ (posts^.postsPostsL) HM.! p
                    | p <- F.toList (posts^.postsOrderL)
+                   , not (p `elem` dupPIds)
                    ]
+
+        unless (null match) $
+            -- There was overlap, so remove any gaps created by the overlap
+            csChannels %= modifyChannelById cId
+                           (ccContents.cdMessages %~ (fst . removeMatchesFromSubset isGap earliestPId latestPId))
+
+        unless (earliestPId `elem` dupPIds) $
+               let gapMsg = newGapMessage "early" (justBefore earliestDate)
+               in csChannels %= modifyChannelById cId
+                      (ccContents.cdMessages %~ addMessage gapMsg)
+
+        unless (latestPId `elem` dupPIds || postingToEnd) $
+               let gapMsg = newGapMessage "late" (justAfter latestDate)
+               in csChannels %= modifyChannelById cId
+                      (ccContents.cdMessages %~ addMessage gapMsg)
+
+        return action
+
 
 loadMoreMessages :: MH ()
 loadMoreMessages = do
