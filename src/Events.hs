@@ -195,11 +195,11 @@ handleWSEvent we = do
             | otherwise -> return ()
 
         WMChannelViewed
-            | Just cId <- webChannelId $ weBroadcast we -> refreshChannelById False cId
+            | Just cId <- webChannelId $ weBroadcast we -> refreshChannelById cId
             | otherwise -> return ()
 
         WMChannelUpdated
-            | Just cId <- webChannelId $ weBroadcast we -> refreshChannelById False cId
+            | Just cId <- webChannelId $ weBroadcast we -> refreshChannelById cId
             | otherwise -> return ()
 
         WMGroupAdded

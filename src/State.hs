@@ -179,10 +179,9 @@ import           State.Setup.Threads (updateUserStatuses)
 -- | Refresh information about a specific channel.  The channel
 -- metadata is refreshed, and if this is a loaded channel, the
 -- scrollback is updated as well.
-refreshChannel :: Bool -> Channel -> ChannelMember -> MH ()
-refreshChannel refreshMessages chan member = do
+refreshChannel :: Channel -> ChannelMember -> MH ()
+refreshChannel chan member = do
   let cId = getId chan
-  curId <- use csCurrentChannelId
 
   -- If this is a group channel that the user has chosen to hide, ignore
   -- the refresh request.
@@ -197,13 +196,13 @@ refreshChannel refreshMessages chan member = do
 
           updateChannelInfo cId chan member
 
-refreshChannelById :: Bool -> ChannelId -> MH ()
-refreshChannelById refreshMessages cId = do
+refreshChannelById :: ChannelId -> MH ()
+refreshChannelById cId = do
   session <- use (csResources.crSession)
   doAsyncWith Preempt $ do
       cwd <- MM.mmGetChannel cId session
       member <- MM.mmGetChannelMember cId UserMe session
-      return $ refreshChannel refreshMessages cwd member
+      return $ refreshChannel cwd member
 
 createGroupChannel :: T.Text -> MH ()
 createGroupChannel usernameList = do
@@ -263,7 +262,7 @@ applyPreferenceChange pref
             (Nothing, True) ->
                 -- If it has been set to showing and we are not showing
                 -- it, ask for a load/refresh.
-                refreshChannelById True cId
+                refreshChannelById cId
             _ -> return ()
 applyPreferenceChange _ = return ()
 
@@ -307,7 +306,7 @@ refreshChannelsAndUsers = do
                     Just _ -> return ()
                     Nothing -> handleNewUserDirect u
 
-        forM_ chansWithData $ uncurry (refreshChannel True)
+        forM_ chansWithData $ uncurry refreshChannel
 
         userSet <- use (csResources.crUserIdSet)
         liftIO $ STM.atomically $ STM.writeTVar userSet (fmap userId users)
@@ -1401,7 +1400,7 @@ addMessageToState newPostData = do
                   -- (That, in turn, triggers a channel refresh.)
                   if chType == Group
                       then applyPreferenceChange pref
-                      else refreshChannel True nc member
+                      else refreshChannel nc member
 
                   addMessageToState newPostData >>= postProcessMessageAdd
 
