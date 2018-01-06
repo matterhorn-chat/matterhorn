@@ -32,8 +32,6 @@ import           Config
 import           InputHistory
 import           Login
 import           LastRunState
-import           State (updateMessageFlag)
-import           State.Common
 import           State.Messages
 import           TeamSelect
 import           Themes
