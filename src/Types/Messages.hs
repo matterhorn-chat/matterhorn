@@ -66,6 +66,7 @@ module Types.Messages
   , findLatestUserMessage
   -- * Operations on any Message type
   , messagesAfter
+  , withFirstMessage
   )
 where
 
@@ -364,3 +365,9 @@ findLatestUserMessage f msgs =
 -- | Return all messages that were posted after the specified date/time.
 messagesAfter :: ServerTime -> Messages -> Messages
 messagesAfter viewTime = onDirectedSeq $ Seq.takeWhileR (\m -> m^.mDate > viewTime)
+
+-- | Performs an operation on the first Message, returning just the
+-- result of that operation, or Nothing if there were no messages.
+-- Note that the message is not necessarily a posted user message.
+withFirstMessage :: SeqDirection dir => (Message -> r) -> DirectionalSeq dir Message -> Maybe r
+withFirstMessage = withDirSeqHead
