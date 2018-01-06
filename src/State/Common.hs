@@ -173,18 +173,16 @@ endAsyncNOP _ _ = return ()
 
 messagesFromPosts :: Posts -> MH Messages
 messagesFromPosts p = do
-  st <- use id
   flags <- use (csResources.crFlaggedPosts)
-  csPostMap %= HM.union (postMap st)
-  st' <- use id
-  let msgs = postsToMessages (maybeFlag flags . clientPostToMessage st') (clientPost <$> ps)
+  csPostMap %= HM.union postMap
+  let msgs = postsToMessages (maybeFlag flags . clientPostToMessage) (clientPost <$> ps)
       postsToMessages f = foldr (addMessage . f) noMessages
   return msgs
     where
-        postMap :: ChatState -> HM.HashMap PostId Message
-        postMap st = HM.fromList
+        postMap :: HM.HashMap PostId Message
+        postMap = HM.fromList
           [ ( pId
-            , clientPostToMessage st (toClientPost x Nothing)
+            , clientPostToMessage (toClientPost x Nothing)
             )
           | (pId, x) <- HM.toList (p^.postsPostsL)
           ]

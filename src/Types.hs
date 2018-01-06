@@ -701,8 +701,8 @@ getParentMessage st msg
 getUsernameForUserId :: ChatState -> UserId -> Maybe T.Text
 getUsernameForUserId st uId = _uiName <$> findUserById uId (st^.csUsers)
 
-clientPostToMessage :: ChatState -> ClientPost -> Message
-clientPostToMessage st cp = Message
+clientPostToMessage :: ClientPost -> Message
+clientPostToMessage cp = Message
   { _mText          = cp^.cpText
   , _mUser          = case cp^.cpUserOverride of
                         Just n | cp^.cpType == NormalPost -> UserOverride (n <> "[BOT]")

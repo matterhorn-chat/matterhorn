@@ -1259,10 +1259,9 @@ handleNewChannel_ permitPostpone switch nc member = do
 
 editMessage :: Post -> MH ()
 editMessage new = do
-  st <- use id
   myId <- use (csMe.userIdL)
   let isEditedMessage m = m^.mPostId == Just (new^.postIdL)
-      msg = clientPostToMessage st (toClientPost new (new^.postParentIdL))
+      msg = clientPostToMessage (toClientPost new (new^.postParentIdL))
       chan = csChannel (new^.postChannelIdL)
   chan . ccContents . cdMessages . traversed . filtered isEditedMessage .= msg
 
@@ -1385,9 +1384,8 @@ addMessageToState newPostData = do
 
               doAddMessage = do
                 currCId <- use csCurrentChannelId
-                s <- use id  -- use *latest* state
                 flags <- use (csResources.crFlaggedPosts)
-                let msg' = clientPostToMessage s cp
+                let msg' = clientPostToMessage cp
                              & mFlagged .~ ((cp^.cpPostId) `Set.member` flags)
                 csPostMap.at(postId new) .= Just msg'
                 csChannels %= modifyChannelById cId
@@ -1417,9 +1415,8 @@ addMessageToState newPostData = do
                                   doAsyncChannelMM Preempt cId
                                       (\s _ _ -> MM.mmGetThread parentId s)
                                       (\_ p -> do
-                                          st' <- use id
                                           let postMap = HM.fromList [ ( pId
-                                                                      , clientPostToMessage st'
+                                                                      , clientPostToMessage
                                                                         (toClientPost x (x^.postParentIdL))
                                                                       )
                                                                     | (pId, x) <- HM.toList (p^.postsPostsL)
