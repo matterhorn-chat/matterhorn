@@ -42,10 +42,9 @@ import           Themes
 import           TimeUtils (justAfter, justBefore)
 import           Types
 import           Types.Channels ( NewMessageIndicator(..)
-                                , ChannelState(..)
                                 , ClientChannel
                                 , ccInfo, ccContents
-                                , cdCurrentState, cdTypingUsers
+                                , cdTypingUsers
                                 , cdName, cdType, cdHeader, cdMessages
                                 , findChannelById)
 import           Types.Messages
@@ -329,9 +328,6 @@ renderCurrentChannelDisplay st hs = (header <+> conn) <=> messages
     messages = padTop Max $ padRight (Pad 1) body
 
     body = chatText
-      <=> case chan^.ccInfo.cdCurrentState.to stateMessage of
-            Nothing -> emptyWidget
-            Just msg -> withDefAttr clientMessageAttr $ txt msg
 
     chatText = case st^.csMode of
         ChannelScroll ->
@@ -406,14 +402,6 @@ renderCurrentChannelDisplay st hs = (header <+> conn) <=> messages
     cId = st^.csCurrentChannelId
     chan = st^.csCurrentChannel
 
--- | When displaying channel contents, it may be convenient to display
--- information about the current state of the channel.
-stateMessage :: ChannelState -> Maybe T.Text
-stateMessage ChanGettingInfo   = Just "[Fetching channel information...]"
-stateMessage ChanUnloaded      = Just "[Channel content pending...]"
-stateMessage ChanGettingPosts  = Just "[Fetching channel content...]"
-stateMessage ChanInitialSelect = Just "[channel initial content pending...]"
-stateMessage ChanLoaded        = Nothing
 
 getMessageListing :: ChannelId -> ChatState -> Messages
 getMessageListing cId st =

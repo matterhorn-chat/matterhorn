@@ -422,7 +422,7 @@ asyncFetchScrollback prio cId = do
                     F4      -> query -- mmGetPosts s t c
             MM.mmGetPostsForChannel c finalQuery s --  op 0 numScrollbackPosts
 
-    asPending doAsyncChannelMM prio cId fetchMessages
+    doAsyncChannelMM prio cId fetchMessages
               (\c p -> addObtainedMessages c p >>= postProcessMessageAdd)
 
 data FetchCase = F1 | F2 PostId | F3a | F3b PostId | F4 deriving (Eq,Show)
@@ -1024,7 +1024,7 @@ asyncFetchMoreMessages = do
                       { MM.postQueryPage = Just offset
                       , MM.postQueryPerPage = Just pageAmount
                       }
-        in asPending doAsyncChannelMM Preempt cId
+        in doAsyncChannelMM Preempt cId
                (\s _ c -> MM.mmGetPostsForChannel c query s)
                (\c p -> do addObtainedMessages c p >>= postProcessMessageAdd
                            mh $ invalidateCacheEntry (ChannelMessages cId))
@@ -1345,11 +1345,7 @@ instance Monoid PostProcessMessageAdd where
 -- | postProcessMessageAdd performs the actual actions indicated by
 -- the corresponding input value.
 postProcessMessageAdd :: PostProcessMessageAdd -> MH ()
-postProcessMessageAdd ppma = do
-  postOp ppma
-  cState <- use (csCurrentChannel.ccInfo.cdCurrentState)
-  when (cState == ChanInitialSelect) $
-    csCurrentChannel.ccInfo.cdCurrentState .= ChanLoaded
+postProcessMessageAdd ppma = postOp ppma
  where
    postOp NoAction            = return ()
    postOp UpdateServerViewed  = updateViewed

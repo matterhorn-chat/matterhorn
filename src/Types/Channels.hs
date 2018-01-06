@@ -8,14 +8,13 @@ module Types.Channels
   ( ClientChannel(..)
   , ChannelContents(..)
   , ChannelInfo(..)
-  , ChannelState(..)
   , ClientChannels -- constructor remains internal
   , NewMessageIndicator(..)
   -- * Lenses created for accessing ClientChannel fields
   , ccContents, ccInfo
   -- * Lenses created for accessing ChannelInfo fields
   , cdViewed, cdNewMessageIndicator, cdEditedMessageThreshold, cdUpdated
-  , cdName, cdHeader, cdPurpose, cdType, cdCurrentState
+  , cdName, cdHeader, cdPurpose, cdType
   , cdMentionCount, cdTypingUsers
   -- * Lenses created for accessing ChannelContents fields
   , cdMessages
@@ -29,11 +28,6 @@ module Types.Channels
   -- * Creating ChannelInfo objects
   , channelInfoFromChannelWithData
   -- * Channel State management
-  , initialChannelState
-  , loadingChannelContentState
-  , isPendingState
-  , pendingChannelState
-  , quiescentChannelState
   , clearNewMessageIndicator
   , clearEditedThreshold
   , adjustUpdated
@@ -105,7 +99,6 @@ initialChannelInfo chan =
                    , _cdHeader                 = chan^.channelHeaderL
                    , _cdPurpose                = chan^.channelPurposeL
                    , _cdType                   = chan^.channelTypeL
-                   , _cdCurrentState           = initialChannelState
                    , _cdNotifyProps            = emptyChannelNotifyProps
                    , _cdTypingUsers            = noTypingUsers
                    }
@@ -145,89 +138,6 @@ emptyChannelContents = do
                            }
 
 
-
-------------------------------------------------------------------------
-
--- * Channel State management
-
--- | The 'ChannelState' represents our internal state
---   of the channel with respect to our knowledge (or
---   lack thereof) about the server's information
---   about the channel.
-data ChannelState
-  = ChanGettingInfo    -- ^ (Re-) fetching for an unloaded channel
-  | ChanUnloaded       -- ^ Only have channel metadata
-  | ChanGettingPosts   -- ^ (Re-) fetching for a loaded channel
-  | ChanInitialSelect  -- ^ Initially selected channel, but not contents yet
-  | ChanLoaded         -- ^ Have channel metadata and contents
-    deriving (Eq, Show)
-
--- The ChannelState may be affected by background operations (see
--- asyncIO), so state transitions may be suggested by the completion
--- of those asynchronous operations but they should be reconciled with
--- any other asynchronous (or foreground) state updates.
---
--- To facilitate this, the ChannelState is a member of Ord and Enum,
--- with the intention that states generally transition to higher state
--- values (indicating more knowledge/completeness) and not downwards,
--- allowing the use of `max` and `pred` and `succ` below for managing
--- state changes.  The `Ord` and `Enum` membership is merely for local
--- convenience: all state management should be handled by the methods
--- below so more detailed methods can be used instead of the Ord and
--- Enum instances without impact to external code.
-
--- | Specifies the initial state for created ClientChannel objects.
-initialChannelState :: ChannelState
-initialChannelState = ChanUnloaded
-
--- | The state to use to indicate that channel content (i.e.,
--- messages) are being loaded (possibly asynchronously).  In contrast
--- to the `pendingChannelState` function, this function is used when
--- the channel is transitioning from only having the metadata
--- information to having full content information.
-loadingChannelContentState :: ChannelState
-loadingChannelContentState = ChanGettingPosts
-
--- | The pendingChannelState specifies the new ChannelState to
--- represent an active fetch of information for a channel, given the
--- channel's current state.  This is used when the existing
--- information is being refreshed.  The return is a tuple of the new
--- state and a function to call after the async operation has finished
--- with the ChannelState at that time and which will return the new
--- state that should be set on that completion.
-pendingChannelState :: ChannelState -> (ChannelState,
-                                        (ChannelState -> ChannelState))
-pendingChannelState ChanGettingInfo = (ChanGettingInfo, id)
-pendingChannelState ChanGettingPosts = (ChanGettingPosts, id)
-pendingChannelState ChanUnloaded = (ChanGettingInfo, quiescentChannelState ChanUnloaded)
-pendingChannelState ChanLoaded = (ChanGettingPosts, quiescentChannelState ChanLoaded)
-pendingChannelState ChanInitialSelect = (ChanGettingPosts, quiescentChannelState ChanInitialSelect)
-
--- | The completionChannelState specifies the new ChannelState upon
--- completion of an activity.  The activity is represented by the
--- first argument, which is the pendingState.  The channel may have
--- been updated in the interim by other activities as well, so the
--- currentState is also provided.  This function determines the proper
--- new state of the channel based on the action and current state.  In
--- the event that multiple update operations are performed at the same
--- time, the state should always reach higher resting states.
-quiescentChannelState :: ChannelState -> ChannelState -> ChannelState
-quiescentChannelState targetState currentState =
-  if isPendingState targetState
-  then currentState
-  else case (currentState, targetState) of
-         (ChanLoaded,        ChanUnloaded) -> ChanLoaded
-         (ChanGettingPosts,  ChanUnloaded) -> ChanGettingPosts
-         (ChanInitialSelect, ChanUnloaded) -> ChanInitialSelect
-         (_, t) -> t
-
--- | Returns true if the channel's state is one where there is a
--- pending asynchronous update already scheduled.
-isPendingState :: ChannelState -> Bool
-isPendingState cstate = cstate `elem` [ ChanGettingPosts
-                                      , ChanGettingInfo
-                                      ]
-
 ------------------------------------------------------------------------
 
 -- | The 'ChannelInfo' record represents metadata
@@ -251,8 +161,6 @@ data ChannelInfo = ChannelInfo
     -- ^ The stated purpose of the channel
   , _cdType             :: Type
     -- ^ The type of a channel: public, private, or DM
-  , _cdCurrentState     :: ChannelState
-    -- ^ The current state of the channel
   , _cdNotifyProps      :: ChannelNotifyProps
     -- ^ The user's notification settings for this channel
   , _cdTypingUsers      :: TypingUsers
@@ -334,6 +242,11 @@ filteredChannels :: ((ChannelId, ClientChannel) -> Bool)
                  -> ClientChannels -> ClientChannels
 filteredChannels f cc =
     AllChannels . HM.fromList . filter f $ cc^.ofChans.to HM.toList
+
+------------------------------------------------------------------------
+
+-- * Channel State management
+
 
 -- | Add user to the list of users in this channel who are currently typing.
 addChannelTypingUser :: UserId -> UTCTime -> ClientChannel -> ClientChannel
