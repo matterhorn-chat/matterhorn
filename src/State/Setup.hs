@@ -34,6 +34,7 @@ import           Login
 import           LastRunState
 import           State (updateMessageFlag)
 import           State.Common
+import           State.Messages
 import           TeamSelect
 import           Themes
 import           TimeUtils (lookupLocalTimeZone)
@@ -41,13 +42,6 @@ import           State.Setup.Threads
 import           Types
 import           Types.Channels
 import qualified Zipper as Z
-
-loadFlaggedMessages :: Seq.Seq Preference -> ChatState -> IO ()
-loadFlaggedMessages prefs st = doAsyncWithIO Normal st $ do
-  return $ sequence_ [ updateMessageFlag (flaggedPostId fp) True
-                     | Just fp <- F.toList (fmap preferenceToFlaggedPost prefs)
-                     , flaggedPostStatus fp
-                     ]
 
 setupState :: Maybe Handle -> Config -> RequestChan -> BChan MHEvent -> IO ChatState
 setupState logFile config requestChan eventChan = do
