@@ -57,6 +57,7 @@ module State
   , deleteMessage
   , addMessageToState
   , postProcessMessageAdd
+  , fetchNewIfNeeded
 
   -- * Working with users
   , handleNewUser
@@ -1573,6 +1574,20 @@ fetchCurrentScrollback = do
       when (chan^.ccInfo.cdCurrentState /= ChanInitialSelect) $
         csChannel(cId).ccInfo.cdCurrentState .= ChanLoaded
       asyncFetchScrollback Preempt cId
+
+fetchNewIfNeeded :: MH ()
+fetchNewIfNeeded = do
+  sts <- use csConnectionStatus
+  case sts of
+    Connected -> do
+       cId <- use csCurrentChannelId
+       withChannel cId $ \chan ->
+           let lastmsg = lastMsg $ chan^.ccContents.cdMessages.to reverseMessages
+           in when (maybe False isGap lastmsg) $ do
+                     removeEndGaps cId
+                     asyncFetchScrollback Preempt cId
+
+    _ -> return ()
 
 mkChannelZipperList :: MMNames -> [ChannelId]
 mkChannelZipperList chanNames =
