@@ -117,6 +117,7 @@ execMMCommand name rest = do
   cId      <- use csCurrentChannelId
   session  <- use (csResources.crSession)
   em       <- use (csEditState.cedEditMode)
+  tId      <- use (csMyTeam.to MM.teamId)
   let mc = MM.MinCommand
              { MM.minComChannelId = cId
              , MM.minComCommand   = "/" <> name <> " " <> rest
@@ -128,6 +129,7 @@ execMMCommand name rest = do
                  Replying _ p -> MM.postRootId p <|> (Just $ MM.postId p)
                  Editing p    -> MM.postRootId p
                  _            -> Nothing
+             , MM.minComTeamId = tId
              }
       runCmd = liftIO $ do
         void $ MM.mmExecuteCommand mc session

@@ -148,9 +148,6 @@ import           System.FilePath
 
 import qualified Network.Mattermost.Endpoints as MM
 import           Network.Mattermost.Types
-                                           -- (NotifyOption(..), GroupChannelPreference(..),
-                                           -- preferenceToGroupChannelPreference,
-                                           -- ServerTime)
 import           Network.Mattermost.Lenses
 
 import           Config
@@ -1505,7 +1502,7 @@ mkChannelZipperList chanNames =
 setChannelTopic :: T.Text -> MH ()
 setChannelTopic msg = do
     cId <- use csCurrentChannelId
-    let patch = MM.defaultChannelPatch { MM.channelPatchHeader = Just msg }
+    let patch = defaultChannelPatch { channelPatchHeader = Just msg }
     doAsyncChannelMM Preempt cId
         (\s _ _ -> MM.mmPatchChannel cId patch s)
         (\_ _ -> return ())
@@ -1911,13 +1908,13 @@ sendMessage mode msg =
                     doAsync Preempt $ do
                       case mode of
                         NewPost -> do
-                            let pendingPost = MM.rawPost msg chanId
+                            let pendingPost = rawPost msg chanId
                             void $ MM.mmCreatePost pendingPost (st^.csResources.crSession)
                         Replying _ p -> do
-                            let pendingPost = (MM.rawPost msg chanId) { MM.rawPostRootId = Just (postId p) }
+                            let pendingPost = (rawPost msg chanId) { rawPostRootId = Just (postId p) }
                             void $ MM.mmCreatePost pendingPost (st^.csResources.crSession)
                         Editing p -> do
-                            void $ MM.mmUpdatePost (postId p) (MM.postUpdate msg) (st^.csResources.crSession)
+                            void $ MM.mmUpdatePost (postId p) (postUpdate msg) (st^.csResources.crSession)
 
 handleNewUserDirect :: User -> MH ()
 handleNewUserDirect newUser = do
