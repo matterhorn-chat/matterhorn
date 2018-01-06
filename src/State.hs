@@ -1425,9 +1425,11 @@ data PostToAdd =
     -- constructor).
 
 -- | Adds a possibly new message to the associated channel contents.
--- Returns True if this is something that should potentially notify
--- the user of a change to the channel (i.e., not a message we
--- posted).
+-- Returns an indicator of whether the user should be potentially
+-- notified of a change (a new message not posted by this user, a
+-- mention of the user, etc.).  This operation has no effect on any
+-- existing UnknownGap entries and should be called when those are
+-- irrelevant.
 addMessageToState :: PostToAdd -> MH PostProcessMessageAdd
 addMessageToState newPostData = do
   let (new, wasMentioned) = case newPostData of
