@@ -251,8 +251,9 @@ renderUserCommandBox st hs =
                 in hBox [ replyArrow
                         , addEllipsis $ renderMessage MessageData
                           { mdMessage           = msgWithoutParent
-                          , mdUserName          = nameForUserRef st $ msgWithoutParent^.mUser
+                          , mdUserName          = msgWithoutParent^.mUser.to (nameForUserRef st)
                           , mdParentMessage     = Nothing
+                          , mdParentUserName    = Nothing
                           , mdHighlightSet      = hs
                           , mdEditThreshold     = Nothing
                           , mdShowOlderEdits    = False
@@ -545,17 +546,18 @@ inputPreview st hs | not $ st^.csShowMessagePreview = emptyWidget
                        Nothing -> noPreview
                        Just pm -> if T.null curStr
                                   then noPreview
-                                  else renderMessage MessageData
-                                         { mdMessage           = pm
-                                         , mdUserName = nameForUserRef st $ pm^.mUser
-                                         , mdParentMessage     =
-                                             getParentMessage st pm
-                                         , mdHighlightSet      = hs
-                                         , mdEditThreshold     = Nothing
-                                         , mdShowOlderEdits    = False
-                                         , mdRenderReplyParent = True
-                                         , mdIndentBlocks      = True
-                                         }
+                                  else prview pm $ getParentMessage st pm
+                     prview m p = renderMessage MessageData
+                                  { mdMessage           = m
+                                  , mdUserName          = m^.mUser.to (nameForUserRef st)
+                                  , mdParentMessage     = p
+                                  , mdParentUserName    = p >>= (^.mUser.to (nameForUserRef st))
+                                  , mdHighlightSet      = hs
+                                  , mdEditThreshold     = Nothing
+                                  , mdShowOlderEdits    = False
+                                  , mdRenderReplyParent = True
+                                  , mdIndentBlocks      = True
+                                  }
                  in (maybePreviewViewport msgPreview) <=>
                     hBorderWithLabel (withDefAttr clientEmphAttr $ str "[Preview ↑]")
 

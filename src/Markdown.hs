@@ -105,6 +105,7 @@ data MessageData = MessageData
   , mdMessage           :: Message
   , mdUserName          :: Maybe T.Text
   , mdParentMessage     :: Maybe Message
+  , mdParentUserName    :: Maybe T.Text
   , mdRenderReplyParent :: Bool
   , mdHighlightSet      :: HighlightSet
   , mdIndentBlocks      :: Bool

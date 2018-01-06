@@ -50,8 +50,9 @@ renderChatMessage st hs ind renderTimeFunc msg =
           InReplyTo pId -> getMessageForPostId st pId
         m = renderMessage MessageData
               { mdMessage           = msg
-              , mdUserName          = nameForUserRef st $ msg^.mUser
+              , mdUserName          = msg^.mUser.to (nameForUserRef st)
               , mdParentMessage     = parent
+              , mdParentUserName    = parent >>= (^.mUser.to (nameForUserRef st))
               , mdEditThreshold     = ind
               , mdHighlightSet      = hs
               , mdShowOlderEdits    = showOlderEdits
