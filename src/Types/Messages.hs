@@ -62,6 +62,7 @@ module Types.Messages
   , findMessage
   , getNextPostId
   , getPrevPostId
+  , getEarliestPostId
   , getLatestPostId
   , findLatestUserMessage
   -- * Operations on any Message type
@@ -340,6 +341,14 @@ getRelPostId folD jp = case jp of
 getLatestPostId :: Messages -> Maybe PostId
 getLatestPostId msgs =
     Seq.findIndexR valid (dseq msgs)
+    >>= _mPostId <$> Seq.index (dseq msgs)
+    where valid m = not (m^.mDeleted) && isJust (m^.mPostId)
+
+-- | Find the earliest message that is a Post (as opposed to a
+-- local message) (if any).
+getEarliestPostId :: Messages -> Maybe PostId
+getEarliestPostId msgs =
+    Seq.findIndexL valid (dseq msgs)
     >>= _mPostId <$> Seq.index (dseq msgs)
     where valid m = not (m^.mDeleted) && isJust (m^.mPostId)
 
