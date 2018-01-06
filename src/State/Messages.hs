@@ -29,7 +29,7 @@ addDisconnectGaps = mapM_ addEndGap . filteredChannelIds (const True) =<< use cs
 
 
 addEndGap :: ChannelId -> MH ()
-addEndGap cId = withChannelOrDefault cId () $ \chan ->
+addEndGap cId = withChannel cId $ \chan ->
     let lastmsg_ = chan^.ccContents.cdMessages.to reverseMessages.to lastMsg
         lastIsGap = maybe False isGap lastmsg_
         gapMsg = newGapMessage timeJustAfterLast
