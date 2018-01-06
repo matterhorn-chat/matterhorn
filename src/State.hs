@@ -393,7 +393,7 @@ asyncFetchScrollback prio cId = do
                                     -- just ask for the most recent
                                     -- messages.
                                     case getPrevPostId last_pId (chan^.ccContents.cdMessages) of
-                                      Just pi -> F2 pi    -- overlaps for contiguity checking
+                                      Just pid -> F2 pid -- overlaps for contiguity checking
                                       Nothing -> F2 pId -- get whatever we can
                                 NewPostsAfterServerTime ct ->
                                     -- If the most recent message is
