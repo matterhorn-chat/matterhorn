@@ -49,8 +49,9 @@ onEvent st ev = runMHEvent st $ case ev of
 
 onAppEvent :: MHEvent -> MH ()
 onAppEvent RefreshWebsocketEvent = connectWebsockets
-onAppEvent WebsocketDisconnect =
+onAppEvent WebsocketDisconnect = do
   csConnectionStatus .= Disconnected
+  disconnectChannels
 onAppEvent WebsocketConnect = do
   csConnectionStatus .= Connected
   refreshChannelsAndUsers

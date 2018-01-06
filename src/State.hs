@@ -19,6 +19,7 @@ module State
   , startJoinChannel
   , joinChannel
   , changeChannel
+  , disconnectChannels
   , startLeaveCurrentChannel
   , leaveCurrentChannel
   , leaveChannel
@@ -168,6 +169,7 @@ import           Constants
 import           Markdown (blockGetURLs, findVerbatimChunk)
 
 import           State.Common
+import           State.Messages
 import           State.Setup.Threads (updateUserStatuses)
 
 -- * Refreshing Channel Data
@@ -316,7 +318,12 @@ refreshChannelsAndUsers = do
         lock <- use (csResources.crUserStatusLock)
         doAsyncWith Preempt $ updateUserStatuses userSet lock session
 
--- | Update the indicted Channel entry with the new data retrieved from
+-- | Websocket was disconnected, so all channels may now miss some
+-- messages
+disconnectChannels :: MH ()
+disconnectChannels = addDisconnectGaps
+
+-- | Update the indicated Channel entry with the new data retrieved from
 -- the Mattermost server. Also update the channel name if it changed.
 updateChannelInfo :: ChannelId -> Channel -> ChannelMember -> MH ()
 updateChannelInfo cid new member = do
