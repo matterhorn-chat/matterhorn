@@ -197,12 +197,6 @@ refreshChannel refreshMessages chan member = do
 
           updateChannelInfo cId chan member
 
-          -- If this is an active channel or the current channel, also
-          -- update the Messages to retrieve any that might have been
-          -- missed.
-          when (refreshMessages || (cId == curId)) $
-              updateMessages cId
-
 refreshChannelById :: Bool -> ChannelId -> MH ()
 refreshChannelById refreshMessages cId = do
   session <- use (csResources.crSession)
@@ -360,15 +354,6 @@ removeChannelName name = do
     -- Flush cnChans
     csNames.cnChans %= filter (/= name)
 
--- | If this channel has content, fetch any new content that has
--- arrived after the existing content.
-updateMessages :: ChannelId -> MH ()
-updateMessages cId =
-  withChannel cId $ \chan -> do
-    when (chan^.ccInfo.cdCurrentState.to (`elem` [ChanLoaded, ChanInitialSelect])) $ do
-      curId <- use csCurrentChannelId
-      let priority = if curId == cId then Preempt else Normal
-      asyncFetchScrollback priority cId
 
 -- | Fetch scrollback for a channel in the background.  This may be
 -- called to fetch messages in a number of situations, including:
