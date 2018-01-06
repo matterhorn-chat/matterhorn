@@ -14,10 +14,16 @@ import Types.Posts
 genMap :: Ord key => Gen key -> Gen value -> Gen (Map key value)
 genMap gk gv = let kv = (,) <$> gk <*> gv in fromList <$> listOf kv
 
+genUserRef :: Gen UserRef
+genUserRef = oneof [ return NoUser
+                   , UserI <$> genUserId
+                   , UserOverride <$> genText
+                   ]
+
 genMessage :: Gen Message
 genMessage = Message
              <$> genBlocks
-             <*> genMaybe genText
+             <*> genUserRef
              <*> genTime
              <*> genMessageType
              <*> arbitrary
@@ -39,7 +45,7 @@ genMessage__DeletedPost :: Gen Message__DeletedPost
 genMessage__DeletedPost = Message__DeletedPost
                           <$> (Message
                                <$> genBlocks
-                              <*> genMaybe genText
+                              <*> genUserRef
                               <*> genTime
                               <*> genMessageType
                               <*> arbitrary
@@ -59,7 +65,7 @@ genMessage__Posted :: Gen Message__Posted
 genMessage__Posted = Message__Posted
                      <$> (Message
                           <$> genBlocks
-                         <*> genMaybe genText
+                         <*> genUserRef
                          <*> genTime
                          <*> genMessageType
                          <*> arbitrary

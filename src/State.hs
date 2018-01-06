@@ -1717,13 +1717,13 @@ removeDuplicates :: [LinkChoice] -> [LinkChoice]
 removeDuplicates = nubOn (\ l -> (l^.linkURL, l^.linkUser))
 
 msgURLs :: Message -> Seq.Seq LinkChoice
-msgURLs msg | Just uname <- msg^.mUserName =
-  let msgUrls = (\ (url, text) -> LinkChoice (msg^.mDate) uname text url Nothing) <$>
+msgURLs msg | UserI uid <- msg^.mUser =
+  let msgUrls = (\ (url, text) -> LinkChoice (msg^.mDate) uid text url Nothing) <$>
                   (mconcat $ blockGetURLs <$> (F.toList $ msg^.mText))
       attachmentURLs = (\ a ->
                           LinkChoice
                             (msg^.mDate)
-                            uname
+                            uid
                             ("attachment `" <> (a^.attachmentName) <> "`")
                             (a^.attachmentURL)
                             (Just (a^.attachmentFileId)))

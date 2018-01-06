@@ -39,10 +39,11 @@ module Types.Messages
   ( -- * Message and operations on a single Message
     Message(..)
   , isDeletable, isReplyable, isEditable, isReplyTo, isGap
-  , mText, mUserName, mDate, mType, mPending, mDeleted
+  , mText, mUser, mDate, mType, mPending, mDeleted
   , mAttachments, mInReplyToMsg, mPostId, mReactions, mFlagged
   , mOriginalPost, mChannelId
   , MessageType(..)
+  , UserRef(..)
   , ReplyState(..)
   , clientMessageToMessage
   , newMessageOfType
@@ -81,7 +82,7 @@ import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Tuple
 import           Lens.Micro.Platform
-import           Network.Mattermost.Types (ChannelId, PostId, Post, ServerTime)
+import           Network.Mattermost.Types (ChannelId, PostId, Post, ServerTime, UserId)
 import           Types.DirectionalSeq
 import           Types.Posts
 
@@ -92,7 +93,7 @@ import           Types.Posts
 --   Mattermost itself or from a client-internal source.
 data Message = Message
   { _mText          :: Blocks
-  , _mUserName      :: Maybe T.Text
+  , _mUser          :: UserRef
   , _mDate          :: ServerTime
   , _mType          :: MessageType
   , _mPending       :: Bool
@@ -132,6 +133,12 @@ data MessageType = C ClientMessageType
                  | CP ClientPostType
                  deriving (Eq, Show)
 
+-- | There may be no user (usually an internal message), a reference
+-- to a user (by Id), or the server may have supplied a specific
+-- username (often associated with bots).
+data UserRef = NoUser | UserI UserId | UserOverride T.Text
+               deriving (Eq, Show)
+
 -- | The 'ReplyState' of a message represents whether a message
 --   is a reply, and if so, to what message
 data ReplyState =
@@ -146,7 +153,7 @@ data ReplyState =
 clientMessageToMessage :: ClientMessage -> Message
 clientMessageToMessage cm = Message
   { _mText          = getBlocks (cm^.cmText)
-  , _mUserName      = Nothing
+  , _mUser          = NoUser
   , _mDate          = cm^.cmDate
   , _mType          = C $ cm^.cmType
   , _mPending       = False
@@ -163,7 +170,7 @@ clientMessageToMessage cm = Message
 newMessageOfType :: T.Text -> MessageType -> ServerTime -> Message
 newMessageOfType text typ d = Message
   { _mText         = getBlocks text
-  , _mUserName     = Nothing
+  , _mUser         = NoUser
   , _mDate         = d
   , _mType         = typ
   , _mPending      = False

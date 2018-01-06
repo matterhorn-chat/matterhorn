@@ -28,7 +28,7 @@ import           Data.Text.Zipper (cursorPosition, insertChar, getText, gotoEOL)
 import           Data.Char (isSpace, isPunctuation)
 import           Lens.Micro.Platform
 
-import           Network.Mattermost.Types (ChannelId, Type(Direct), ServerTime(..))
+import           Network.Mattermost.Types (ChannelId, Type(Direct), ServerTime(..), UserId)
 import           Network.Mattermost.Lenses
 
 import qualified Graphics.Vty as Vty
@@ -54,9 +54,9 @@ import           Types.KeyEvents
 import           Events.Keybindings
 import           Events.MessageSelect
 
-previewFromInput :: T.Text -> T.Text -> Maybe Message
+previewFromInput :: UserId -> T.Text -> Maybe Message
 previewFromInput _ s | s == T.singleton cursorSentinel = Nothing
-previewFromInput uname s =
+previewFromInput uId s =
     -- If it starts with a slash but not /me, this has no preview
     -- representation
     let isCommand = "/" `T.isPrefixOf` s
@@ -68,7 +68,7 @@ previewFromInput uname s =
     in if isCommand && not isEmote
        then Nothing
        else Just $ Message { _mText          = getBlocks content
-                           , _mUserName      = Just uname
+                           , _mUser          = UserI uId
                            , _mDate          = ServerTime $ UTCTime (fromGregorian 1970 1 1) 0
                            -- The date is not used for preview
                            -- rendering, but we need to provide one.
@@ -251,6 +251,7 @@ renderUserCommandBox st hs =
                 in hBox [ replyArrow
                         , addEllipsis $ renderMessage MessageData
                           { mdMessage           = msgWithoutParent
+                          , mdUserName          = nameForUserRef st $ msgWithoutParent^.mUser
                           , mdParentMessage     = Nothing
                           , mdHighlightSet      = hs
                           , mdEditThreshold     = Nothing
@@ -525,7 +526,7 @@ inputPreview :: ChatState -> HighlightSet -> Widget Name
 inputPreview st hs | not $ st^.csShowMessagePreview = emptyWidget
                    | otherwise = thePreview
     where
-    uname = st^.csMe.userUsernameL
+    uId = st^.csMe.userIdL
     -- Insert a cursor sentinel into the input text just before
     -- rendering the preview. We use the inserted sentinel (which is
     -- not rendered) to get brick to ensure that the line the cursor is
@@ -538,7 +539,7 @@ inputPreview st hs | not $ st^.csShowMessagePreview = emptyWidget
     curContents = getText $ (gotoEOL >>> insertChar cursorSentinel) $
                   st^.csEditState.cedEditor.editContentsL
     curStr = T.intercalate "\n" curContents
-    previewMsg = previewFromInput uname curStr
+    previewMsg = previewFromInput uId curStr
     thePreview = let noPreview = str "(No preview)"
                      msgPreview = case previewMsg of
                        Nothing -> noPreview
@@ -546,6 +547,7 @@ inputPreview st hs | not $ st^.csShowMessagePreview = emptyWidget
                                   then noPreview
                                   else renderMessage MessageData
                                          { mdMessage           = pm
+                                         , mdUserName = nameForUserRef st $ pm^.mUser
                                          , mdParentMessage     =
                                              getParentMessage st pm
                                          , mdHighlightSet      = hs
@@ -640,7 +642,7 @@ renderUrlList st =
           let time = link^.linkTime
           in attr sel $ vLimit 2 $
             (vLimit 1 $
-             hBox [ let u = (link^.linkUser) in colorUsername u u
+             hBox [ let u = maybe "" id (link^.linkUser.to (getUsernameForUserId st)) in colorUsername u u
                   , if link^.linkName == link^.linkURL
                       then emptyWidget
                       else (txt ": " <+> (renderText $ link^.linkName))
