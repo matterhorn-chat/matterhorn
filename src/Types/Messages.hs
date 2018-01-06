@@ -57,6 +57,7 @@ module Types.Messages
   , unreverseMessages
     -- * Operations on Posted Messages
   , splitMessages
+  , splitMessagesOn
   , findMessage
   , getNextPostId
   , getPrevPostId
@@ -242,6 +243,22 @@ reverseMessages = DSeq . Seq.reverse . dseq
 unreverseMessages :: RetrogradeMessages -> Messages
 unreverseMessages = DSeq . Seq.reverse . dseq
 
+-- | Splits the message list at first message where the specified
+-- predicate returns true.  The result is the message where the split
+-- occurred, followed by the messages preceeding the split point (in
+-- retrograde order) and the messages following the split point).  If
+-- the predicate never matches a message before reaching the end of
+-- the list, then the matched message is None and all of the messages
+-- are in the first (retrograde) collection of of messages.
+splitMessagesOn :: (Message -> Bool)
+                -> Messages
+                -> (Maybe Message, (RetrogradeMessages, Messages))
+splitMessagesOn f msgs =
+    let (removed, remaining) = dirSeqBreakl f msgs
+        devomer = reverseMessages removed
+    in (withDirSeqHead id remaining, (devomer, onDirectedSeq (Seq.drop 1) remaining))
+
+
 -- ----------------------------------------------------------------------
 -- * Operations on Posted Messages
 
@@ -256,20 +273,7 @@ unreverseMessages = DSeq . Seq.reverse . dseq
 splitMessages :: Maybe PostId
               -> Messages
               -> (Maybe Message, (RetrogradeMessages, Messages))
-splitMessages Nothing msgs =
-    (Nothing, (DSeq $ Seq.reverse $ dseq msgs, noMessages))
-splitMessages pid msgs =
-    -- n.b. searches from the end as that is usually where the message
-    -- is more likely to be found.  There is usually < 1000 messages
-    -- total, so this does not need hyper efficiency.
-    case Seq.viewr (dseq msgs) of
-      Seq.EmptyR  -> (Nothing, (reverseMessages noMessages, noMessages))
-      ms Seq.:> m -> if m^.mPostId == pid
-                     then (Just m, (DSeq $ Seq.reverse ms, noMessages))
-                     else let (a, (b,c)) = splitMessages pid $ DSeq ms
-                          in case a of
-                               Nothing -> (a, (DSeq $ m Seq.<| (dseq b), c))
-                               Just _  -> (a, (b, DSeq $ (dseq c) Seq.|> m))
+splitMessages pid msgs = splitMessagesOn (\m -> isJust pid && m^.mPostId == pid) msgs
 
 -- | findMessage searches for a specific message as identified by the
 -- PostId.  The search starts from the most recent messages because
