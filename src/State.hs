@@ -1061,7 +1061,7 @@ addObtainedMessages cId posts = do
             -- do not signal action needed for notifications), and
             -- remove any gaps in the overlapping region.
 
-            newGapMessage t d = newMessageOfType (T.pack $  "Gap (adds) " <> t) (C UnknownGap) d
+            newGapMessage d = newMessageOfType "Additional messages???" (C UnknownGap) d
 
             -- If this batch contains the latest known messages, do
             -- not add a following gap.  A gap at this point is added
@@ -1096,12 +1096,12 @@ addObtainedMessages cId posts = do
                            (ccContents.cdMessages %~ (fst . removeMatchesFromSubset isGap (Just earliestPId) (Just latestPId)))
 
         unless (earliestPId `elem` dupPIds) $
-               let gapMsg = newGapMessage "early" (justBefore earliestDate)
+               let gapMsg = newGapMessage (justBefore earliestDate)
                in csChannels %= modifyChannelById cId
                       (ccContents.cdMessages %~ addMessage gapMsg)
 
         unless (latestPId `elem` dupPIds || postingToEnd) $
-               let gapMsg = newGapMessage "late" (justAfter latestDate)
+               let gapMsg = newGapMessage (justAfter latestDate)
                in csChannels %= modifyChannelById cId
                       (ccContents.cdMessages %~ addMessage gapMsg)
 

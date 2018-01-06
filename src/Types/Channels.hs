@@ -140,7 +140,7 @@ data ChannelContents = ChannelContents
 -- eliminate this Gap as well).
 emptyChannelContents :: MonadIO m => m ChannelContents
 emptyChannelContents = do
-  gapMsg <- clientMessageToMessage <$> newClientMessage UnknownGap "--GAP--"
+  gapMsg <- clientMessageToMessage <$> newClientMessage UnknownGap "--Fetching messages (when connected)--"
   return $ ChannelContents { _cdMessages = addMessage gapMsg noMessages
                            }
 
