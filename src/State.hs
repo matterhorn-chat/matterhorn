@@ -353,83 +353,6 @@ removeChannelName name = do
     csNames.cnChans %= filter (/= name)
 
 
--- | Fetch scrollback for a channel in the background.  This may be
--- called to fetch messages in a number of situations, including:
---
---   1. WebSocket connect at init, no messages available
---
---   2. WebSocket reconnect after losing connectivity for a period
---
---   3. Channel selected by user
---
---      a. No current messages fetched yet
---
---      b. Messages may have been provided unsolicited via the
---         WebSocket.
---
---   4. User got invited to the channel (by another user).
---
--- For most cases, fetching the most recent set of messages is
--- appropriate, but for case 2, messages from the most recent forward
--- should be retrieved.  However, be careful not to confuse case 2
--- with case 3b.
-asyncFetchScrollback :: AsyncPriority -> ChannelId -> MH ()
-asyncFetchScrollback prio cId = do
-  withChannel cId $ \chan -> do
-    let last_pId = getLatestPostId (chan^.ccContents.cdMessages)
-        newCutoff = chan^.ccInfo.cdNewMessageIndicator
-        fc = case last_pId of
-                  Nothing  -> F1  -- or F4
-                  Just pId ->
-                      case findMessage pId (chan^.ccContents.cdMessages) of
-                        Nothing -> F4 -- This should never happen since
-                                      -- we just assigned pId.
-                        Just m ->
-                            case newCutoff of
-                                Hide ->
-                                    -- No cutoff has been set, so we
-                                    -- just ask for the most recent
-                                    -- messages.
-                                    case getPrevPostId last_pId (chan^.ccContents.cdMessages) of
-                                      Just pid -> F2 pid -- overlaps for contiguity checking
-                                      Nothing -> F2 pId -- get whatever we can
-                                NewPostsAfterServerTime ct ->
-                                    -- If the most recent message is
-                                    -- after the cutoff, meaning there
-                                    -- might be intervening messages
-                                    -- that we missed.
-                                    if m^.mDate > ct
-                                    then F3b pId
-                                    else F3a
-                                NewPostsStartingAt ct ->
-                                    -- If the most recent message is
-                                    -- after the cutoff, meaning there
-                                    -- might be intervening messages
-                                    -- that we missed.
-                                    if m^.mDate >= ct
-                                    then F3b pId
-                                    else F3a
-        fetchMessages s _ c = do
-            let query = MM.defaultPostQuery
-                        { MM.postQueryPage = Just 0
-                        , MM.postQueryPerPage = Just numScrollbackPosts
-                        }
-                finalQuery = case fc of
-                    F1      -> query
-                    F2 pId  -> query { MM.postQueryAfter = Just pId }
-                    F3a     -> query
-                    F3b pId -> query { MM.postQueryBefore = Just pId }
-                    F4      -> query
-            MM.mmGetPostsForChannel c finalQuery s
-        requestedCount = case fc of
-                           F2 _ -> numScrollbackPosts
-                           _ -> -numScrollbackPosts
-
-    doAsyncChannelMM prio cId fetchMessages
-              (\c p -> addObtainedMessages c requestedCount p >>= postProcessMessageAdd)
-
-data FetchCase = F1 | F2 PostId | F3a | F3b PostId | F4 deriving (Eq,Show)
-
 -- * Message selection mode
 
 beginMessageSelect :: MH ()
@@ -646,9 +569,7 @@ handleChannelInvite cId = do
     doAsyncWith Normal $ do
         member <- MM.mmGetChannelMember cId UserMe (st^.csResources.crSession)
         tryMM (MM.mmGetChannel cId (st^.csResources.crSession))
-              (\cwd -> return $ do
-                  handleNewChannel False cwd member
-                  asyncFetchScrollback Normal cId)
+              (\cwd -> return $ handleNewChannel False cwd member)
 
 addUserToCurrentChannel :: T.Text -> MH ()
 addUserToCurrentChannel uname = do
