@@ -66,6 +66,7 @@ module Types.Messages
   , findLatestUserMessage
   -- * Operations on any Message type
   , messagesAfter
+  , removeMatchesFromSubset
   , withFirstMessage
   )
 where
@@ -76,6 +77,7 @@ import qualified Data.Map.Strict as Map
 import           Data.Maybe (isJust)
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
+import           Data.Tuple
 import           Lens.Micro.Platform
 import           Network.Mattermost.Types (ChannelId, PostId, Post, ServerTime)
 import           Types.DirectionalSeq
@@ -365,6 +367,38 @@ findLatestUserMessage f msgs =
 -- | Return all messages that were posted after the specified date/time.
 messagesAfter :: ServerTime -> Messages -> Messages
 messagesAfter viewTime = onDirectedSeq $ Seq.takeWhileR (\m -> m^.mDate > viewTime)
+
+-- | Removes any Messages (all types) for which the predicate is true
+-- from the specified subset of messages (identified by a starting and
+-- ending PostId, inclusive) and returns the resulting list (from
+-- start to finish, irrespective of 'firstId' and 'lastId') and the
+-- list of removed items.
+--
+-- If the starting PostId does not exist, but the ending PostId does
+-- exist, then removal occurs from the start of the list.
+--
+-- If the ending PostId does not exist, removal occurs from the
+-- starting PostId position to the end of the list.
+--
+-- If neither the starting nor the ending PostId exist, no removal
+-- occurs.
+--
+--  @removeMatchesFromSubset matchPred fromId toId msgs = (remaining, removed)@
+removeMatchesFromSubset :: (Message -> Bool) -> PostId -> PostId
+                        -> Messages -> (Messages, Messages)
+removeMatchesFromSubset matching firstId lastId msgs =
+    let knownIds = fmap (^.mPostId) msgs
+    in if Just firstId `elem` knownIds
+       then onDirSeqSubset
+                (\m -> m^.mPostId == Just firstId)
+                (\m -> m^.mPostId == Just lastId)
+                (swap . dirSeqPartition matching) msgs
+       else if Just lastId `elem` knownIds
+            then onDirSeqSubset
+                     (const True)
+                     (\m -> m^.mPostId == Just lastId)
+                     (swap . dirSeqPartition matching) msgs
+            else (msgs, noMessages)
 
 -- | Performs an operation on the first Message, returning just the
 -- result of that operation, or Nothing if there were no messages.

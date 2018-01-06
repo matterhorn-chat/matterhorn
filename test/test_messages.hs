@@ -4,10 +4,10 @@
 module Main where
 
 import           Control.Exception
-import           Data.List (intercalate, sortBy)
+import           Data.List (intercalate, sortBy, sort)
 import qualified Data.List.UniqueUnsorted as U
 import qualified Data.Map as Map
-import           Data.Maybe (isNothing, fromJust)
+import           Data.Maybe (isNothing, fromJust, isJust, catMaybes)
 import           Data.Monoid ((<>))
 import qualified Data.Sequence as Seq
 import           Data.Time.Calendar (Day(..))
@@ -24,6 +24,7 @@ import           Test.Tasty.HUnit
 import           Test.Tasty.QuickCheck
 import           Types.Messages
 import           Types.Posts
+import           TimeUtils
 
 main :: IO ()
 main = defaultMain tests `catch` (\e -> do
@@ -38,6 +39,7 @@ tests = testGroup "Messages Tests"
         , movementTests
         , reversalTests
         , splitTests
+        , removeTests
         , instanceTests
         ]
 
@@ -547,6 +549,206 @@ splitTests = testGroup "Split"
                                          idlist [y, z] == idlist after
              ]
 
+
+removeTests :: TestTree
+removeTests = adjustOption (\(QuickCheckMaxRatio n) -> QuickCheckMaxRatio (n*10)) $
+              testGroup "Remove"
+              [ testProperty "remove on empty" $ \(id1, id2) ->
+                    let (remaining, removed) = removeMatchesFromSubset (const True) id1 id2 noMessages
+                    in counterexample "got something from nothing" $ null remaining && null removed
+
+              , testProperty "remove range not found" $ \(id1, id2, msglist) ->
+                    let msgs = makeMsgs msglist
+                        ids = idlist msgs
+                        (remaining, removed) = removeMatchesFromSubset (const True) id1 id2 msgs
+                    in (not $ Just id1 `elem` ids || Just id2 `elem` ids) ==>
+                       counterexample "got something from invalid range" $
+                                      null removed && length remaining == length ids
+
+              , testProperty "remove first in range" $ \(id1, id2, msglist) ->
+                    let msgs = makeMsgs msglist
+                        ids = idlist msgs
+                        (remaining, removed) = removeMatchesFromSubset (const True) id1 id2 msgs
+                    in Just id1 `elem` ids && (not $ Just id2 `elem` ids) ==>
+                       counterexample ("with idlist " <> show ids <>
+                                       " remove id1=" <> show id1 <>
+                                       " should be in " <> show (idlist removed) <>
+                                       " but not id2=" <> show id2 <>
+                                       " and remaining=" <> show (idlist remaining)) $
+                                      (not $ null removed) &&
+                                      (length remaining /= length ids) &&
+                                      Just id1 `elem` idlist removed &&
+                                      (not $ Just id1 `elem` idlist remaining)
+
+              , testProperty "remove nothing first in range" $ \(id1, id2, msglist) ->
+                    let msgs = makeMsgs msglist
+                        ids = idlist msgs
+                        (remaining, removed) = removeMatchesFromSubset (const False) id1 id2 msgs
+                    in Just id1 `elem` ids && (not $ Just id2 `elem` ids) ==>
+                       counterexample ("with idlist " <> show ids <>
+                                       " remove id1=" <> show id1 <>
+                                       " should be in " <> show (idlist removed) <>
+                                       " but not id2=" <> show id2 <>
+                                       " and remaining=" <> show (idlist remaining)) $
+                                          (idlist remaining == ids && null removed)
+
+              , testCase "remove only as last" $
+                let (remaining, removed) = removeMatchesFromSubset (const True) id1 id2 msgs
+                    id1 = fromId $ Id "id1"
+                    id2 = fromId $ Id "id2"
+                    msgs = makeMsgs [makeMsg (ServerTime originTime) (Just id2)]
+                in null remaining && length removed == 1 @? "removed"
+
+              , testProperty "remove last in range" $ \(idx2, msg, msglist) ->
+                    let msgs = makeMsgs $ msg : msglist
+                        ids = idlist msgs
+                        id2 = ids !! idx2'
+                        id1 = PI $ Id $ T.intercalate "-" $ map (unId . unPI) $ catMaybes ids
+                        idx2' = abs idx2 `mod` length ids
+                        (remaining, removed) = removeMatchesFromSubset (const True) id1 (fromJust id2) msgs
+                    in (isJust id2) && uniqueIds msgs ==>
+                       counterexample ("with idlist " <> show ids <>
+                                       " remove id2=" <> show id2 <>
+                                       " should be in " <> show (idlist removed) <>
+                                       " but not id1=" <> show id1 <>
+                                       " and remaining=" <> show (idlist remaining)
+                                      ) $
+                                          (not $ null removed) &&
+                                          (length remaining /= length ids) &&
+                                          id2 `elem` idlist removed &&
+                                          (not $ id2 `elem` idlist remaining)
+
+              , testProperty "remove sub range" $ \(m1, m2, m3, m4, m5, idx1, idx2) ->
+                    let msgs = makeMsgs $ m1 : m2 : m3 : m4 : m5 : []
+                        ids = idlist msgs
+
+                        (ids', postIds) = splitAt (idx2' + 1) ids
+                        (preIds, matchIds) = splitAt idx1' ids'
+                        id1 = head matchIds
+                        id2 = last matchIds
+
+                        idxl = sort $ map (\v -> abs v `mod` 5) [idx1, idx2]
+                        idx1' = head idxl
+                        idx2' = last idxl
+
+                        (remaining, removed) = removeMatchesFromSubset (const True) (fromJust id1) (fromJust id2) msgs
+                    in uniqueIds msgs && isJust id1 && isJust id2 ==>
+                       counterexample ("with idlist " <> show (idlist msgs) <>
+                                       "\n idx1=" <> show idx1' <>
+                                       "\n idx2=" <> show idx2' <>
+                                       "\n extracts=" <> show (idlist removed) <>
+                                       "\n matching=" <> show matchIds <>
+                                       "\n and leaves remaining=" <> show (idlist remaining) <>
+                                       "\n from " <> show preIds <> " and " <> show postIds
+                                      ) $
+                       (idlist remaining == (preIds <> postIds) &&
+                        idlist removed == matchIds)
+
+              , testProperty "remove nothing sub range" $ \(m1, m2, m3, m4, m5, idx1, idx2) ->
+                    let msgs = makeMsgs $ m1 : m2 : m3 : m4 : m5 : []
+                        ids = idlist msgs
+
+                        (ids', postIds) = splitAt (idx2' + 1) ids
+                        (preIds, matchIds) = splitAt idx1' ids'
+                        id1 = head matchIds
+                        id2 = last matchIds
+
+                        idxl = sort $ map (\v -> abs v `mod` 5) [idx1, idx2]
+                        idx1' = head idxl
+                        idx2' = last idxl
+
+                        (remaining, removed) = removeMatchesFromSubset (const False) (fromJust id1) (fromJust id2) msgs
+                    in uniqueIds msgs && isJust id1 && isJust id2 ==>
+                       counterexample ("with idlist " <> show (idlist msgs) <>
+                                       "\n idx1=" <> show idx1' <>
+                                       "\n idx2=" <> show idx2' <>
+                                       "\n extracts=" <> show (idlist removed) <>
+                                       "\n matching=" <> show matchIds <>
+                                       "\n and leaves remaining=" <> show (idlist remaining) <>
+                                       "\n from " <> show preIds <> " and " <> show postIds
+                                      ) $
+                       (idlist remaining == ids && null removed)
+
+              , testProperty "remove first in sub range" $ \(m1, m2, m3, m4, m5, idx1, idx2) ->
+                    let msgs = makeMsgs $ m1 : m2 : m3 : m4 : m5 : []
+                        ids = idlist msgs
+
+                        (ids', _) = splitAt (idx2' + 1) ids
+                        (_, matchIds) = splitAt idx1' ids'
+                        id1 = head matchIds
+                        id2 = last matchIds
+
+                        idxl = sort $ map (\v -> abs v `mod` 5) [idx1, idx2]
+                        idx1' = head idxl
+                        idx2' = last idxl
+
+                        (remaining, removed) = removeMatchesFromSubset (\m -> m^.mPostId == id1) (fromJust id1) (fromJust id2) msgs
+                    in uniqueIds msgs && isJust id1 && isJust id2 ==>
+                       counterexample ("with idlist " <> show (idlist msgs) <>
+                                       "\n idx1=" <> show idx1' <>
+                                       "\n idx2=" <> show idx2' <>
+                                       "\n extracts=" <> show (idlist removed) <>
+                                       "\n matching=" <> show matchIds <>
+                                       "\n and leaves remaining=" <> show (idlist remaining)
+                                      ) $
+                       (idlist remaining == (filter (/= id1) ids) &&
+                        idlist removed == [id1])
+
+              , testProperty "remove last in sub range" $ \(m1, m2, m3, m4, m5, idx1, idx2) ->
+                    let msgs = makeMsgs $ m1 : m2 : m3 : m4 : m5 : []
+                        ids = idlist msgs
+
+                        (ids', _) = splitAt (idx2' + 1) ids
+                        (_, matchIds) = splitAt idx1' ids'
+                        id1 = head matchIds
+                        id2 = last matchIds
+
+                        idxl = sort $ map (\v -> abs v `mod` 5) [idx1, idx2]
+                        idx1' = head idxl
+                        idx2' = last idxl
+
+                        (remaining, removed) = removeMatchesFromSubset (\m -> m^.mPostId == id2) (fromJust id1) (fromJust id2) msgs
+                    in uniqueIds msgs && isJust id1 && isJust id2 ==>
+                       counterexample ("with idlist " <> show (idlist msgs) <>
+                                       "\n idx1=" <> show idx1' <>
+                                       "\n idx2=" <> show idx2' <>
+                                       "\n extracts=" <> show (idlist removed) <>
+                                       "\n matching=" <> show matchIds <>
+                                       "\n and leaves remaining=" <> show (idlist remaining)
+                                      ) $
+                       (idlist remaining == (filter (/= id2) ids) &&
+                        idlist removed == [id2])
+
+              , testProperty "remove some in sub range" $ \(m1, m2, m3, m4, m5, idx1, idx2) ->
+                    let msgs = makeMsgs $ m1 : m2 : m3 : m4 : m5 : []
+                        ids = idlist msgs
+
+                        (ids', _) = splitAt (idx2' + 1) ids
+                        (_, matchIds) = splitAt idx1' ids'
+                        id1 = head matchIds
+                        id2 = last matchIds
+
+                        idxl = sort $ map (\v -> abs v `mod` 5) [idx1, idx2]
+                        idx1' = head idxl
+                        idx2' = last idxl
+
+                        rmvIds = map snd $ filter (odd . fst) $ zip [(0::Int)..] matchIds
+
+                        (remaining, removed) = removeMatchesFromSubset (\m -> m^.mPostId `elem` rmvIds) (fromJust id1) (fromJust id2) msgs
+                    in uniqueIds msgs && isJust id1 && isJust id2 ==>
+                       counterexample ("with idlist " <> show (idlist msgs) <>
+                                       "\n idx1=" <> show idx1' <>
+                                       "\n idx2=" <> show idx2' <>
+                                       "\n matching=" <> show matchIds <>
+                                       "\n removing=" <> show rmvIds <>
+                                       "\n extracts=" <> show (idlist removed) <>
+                                       "\n and leaves remaining=" <> show (idlist remaining) <>
+                                       "\n from " <> show (filter (not . flip elem rmvIds) ids)
+                                      ) $
+                       (idlist remaining == (filter (not . flip elem rmvIds) ids) &&
+                        idlist removed == rmvIds)
+
+              ]
 
 instanceTests :: TestTree
 instanceTests = testGroup "Messages Instances"
