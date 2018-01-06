@@ -1063,6 +1063,19 @@ addObtainedMessages cId reqCnt posts = do
                in csChannels %= modifyChannelById cId
                                  (ccContents.cdMessages %~ addMessage gapMsg)
 
+        -- Now initiate fetches for use information for any
+        -- as-yet-unknown users related to this new set of messages
+
+        let users = foldr (\post -> Set.insert (postUserId post)) Set.empty (posts^.postsPostsL)
+            addUserIfUnknown st uId = case st^.csUsers.to (findUserById uId) of
+                                        Just _  -> return ()
+                                        Nothing -> handleNewUser uId
+        st <- use id
+        mapM_ (addUserIfUnknown st) $ catMaybes $ F.toList users
+
+        -- Return the aggregated user notification action needed
+        -- relative to the set of added messages.
+
         return action
 
 
@@ -1434,17 +1447,7 @@ addMessageToState newPostData = do
                                                 else NoAction
                     return $ curChannelAction <> originUserAction
 
-          -- If this message was written by a user we don't know about,
-          -- fetch the user's information before posting the message.
-          case cp^.cpUser of
-              Nothing -> doHandleAddedMessage
-              Just uId ->
-                  case st^.csUsers.to (findUserById uId) of
-                      Just _ -> doHandleAddedMessage
-                      Nothing -> do
-                          handleNewUser uId
-                          doAsyncWith Normal $ return (doHandleAddedMessage >> return ())
-                          postedChanMessage
+          doHandleAddedMessage
 
 getNewMessageCutoff :: ChannelId -> ChatState -> Maybe NewMessageIndicator
 getNewMessageCutoff cId st = do
