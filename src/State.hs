@@ -429,7 +429,7 @@ asyncFetchScrollback prio cId = do
             MM.mmGetPostsForChannel c finalQuery s --  op 0 numScrollbackPosts
 
     asPending doAsyncChannelMM prio cId fetchMessages
-              addObtainedMessages
+              (\c p -> addObtainedMessages c p >>= postProcessMessageAdd)
 
 data FetchCase = F1 | F2 PostId | F3a | F3b PostId | F4 deriving (Eq,Show)
 
@@ -1071,17 +1071,16 @@ asyncFetchMoreMessages = do
                       }
         in asPending doAsyncChannelMM Preempt cId
                (\s _ c -> MM.mmGetPostsForChannel c query s)
-               (\c p -> do addObtainedMessages c p
+               (\c p -> do addObtainedMessages c p >>= postProcessMessageAdd
                            mh $ invalidateCacheEntry (ChannelMessages cId))
 
-addObtainedMessages :: ChannelId -> Posts -> MH ()
+addObtainedMessages :: ChannelId -> Posts -> MH PostProcessMessageAdd
 addObtainedMessages _cId posts =
-    postProcessMessageAdd =<<
-        foldl mappend mempty <$>
-              mapM (addMessageToState . OldPost)
-                       [ (posts^.postsPostsL) HM.! p
-                       | p <- F.toList (posts^.postsOrderL)
-                       ]
+    foldl mappend mempty <$>
+          mapM (addMessageToState . OldPost)
+                   [ (posts^.postsPostsL) HM.! p
+                   | p <- F.toList (posts^.postsOrderL)
+                   ]
 
 loadMoreMessages :: MH ()
 loadMoreMessages = do
