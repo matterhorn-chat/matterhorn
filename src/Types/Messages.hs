@@ -38,7 +38,7 @@ of Nothing@ or @case mType of C _@).
 module Types.Messages
   ( -- * Message and operations on a single Message
     Message(..)
-  , isDeletable, isReplyable, isEditable, isReplyTo
+  , isDeletable, isReplyable, isEditable, isReplyTo, isGap
   , mText, mUserName, mDate, mType, mPending, mDeleted
   , mAttachments, mInReplyToMsg, mPostId, mReactions, mFlagged
   , mOriginalPost, mChannelId
@@ -115,6 +115,9 @@ isReplyTo expectedParentId m =
     case _mInReplyToMsg m of
         NotAReply                -> False
         InReplyTo actualParentId -> actualParentId == expectedParentId
+
+isGap :: Message -> Bool
+isGap m = _mType m == C UnknownGap
 
 -- | A 'Message' is the representation we use for storage and
 --   rendering, so it must be able to represent either a
