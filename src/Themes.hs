@@ -26,6 +26,7 @@ module Themes
   , clientStrongAttr
   , dateTransitionAttr
   , newMessageTransitionAttr
+  , gapMessageAttr
   , errorMessageAttr
   , helpAttr
   , helpEmphAttr
@@ -164,6 +165,9 @@ clientStrongAttr = "markdownStrong"
 errorMessageAttr :: AttrName
 errorMessageAttr = "errorMessage"
 
+gapMessageAttr :: AttrName
+gapMessageAttr = "gapMessage"
+
 misspellingAttr :: AttrName
 misspellingAttr = "misspelling"
 
@@ -228,6 +232,7 @@ lightAttrs =
        , (dateTransitionAttr,               fg green)
        , (newMessageTransitionAttr,         black `on` yellow)
        , (errorMessageAttr,                 fg red)
+       , (gapMessageAttr,                   fg (rgbColor (240::Int) (120::Int) (0::Int)))
        , (helpAttr,                         black `on` cyan)
        , (helpEmphAttr,                     fg white)
        , (channelSelectMatchAttr,           black `on` magenta)
@@ -270,6 +275,7 @@ darkAttrs =
      , (dateTransitionAttr,               fg green)
      , (newMessageTransitionAttr,         fg yellow `withStyle` bold)
      , (errorMessageAttr,                 fg red)
+     , (gapMessageAttr,                   black `on` (rgbColor (240::Int) (120::Int) (0::Int)))
      , (helpAttr,                         black `on` cyan)
      , (helpEmphAttr,                     fg white)
      , (channelSelectMatchAttr,           black `on` magenta)
@@ -448,6 +454,9 @@ themeDocs = ThemeDocumentation $ M.fromList $
       )
     , ( errorMessageAttr
       , "Matterhorn error messages"
+      )
+    , ( gapMessageAttr
+      , "Matterhorn message gap information"
       )
     , ( helpAttr
       , "The help screen text"

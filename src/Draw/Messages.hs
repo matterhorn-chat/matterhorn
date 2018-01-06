@@ -73,6 +73,7 @@ renderChatMessage st hs ind renderTimeFunc msg =
                     C DateTransition -> withDefAttr dateTransitionAttr (hBorderWithLabel m)
                     C NewMessagesTransition -> withDefAttr newMessageTransitionAttr (hBorderWithLabel m)
                     C Error -> withDefAttr errorMessageAttr m
+                    C UnknownGap -> withDefAttr gapMessageAttr m
                     _ -> withDefAttr clientMessageAttr m
         fullMsg = vBox $ msgTxt : catMaybes [msgAtch, msgReac]
         maybeRenderTime w = hBox [renderTimeFunc (msg^.mDate), txt " ", w]
