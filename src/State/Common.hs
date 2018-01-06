@@ -189,14 +189,6 @@ endAsyncNOP _ _ = return ()
 
 -- * Client Messages
 
--- | Create 'ChannelContents' from a 'Posts' value
-fromPosts :: Posts -> MH ChannelContents
-fromPosts ps = do
-  msgs <- messagesFromPosts ps
-  F.forM_ (ps^.postsPostsL) $
-    asyncFetchAttachments
-  return (ChannelContents msgs)
-
 messagesFromPosts :: Posts -> MH Messages
 messagesFromPosts p = do
   st <- use id
