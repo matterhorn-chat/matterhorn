@@ -120,7 +120,6 @@ setupState logFile config requestChan eventChan = do
               Just t -> return t
 
   userStatusLock <- newMVar ()
---  putMVar userStatusLock ()
 
   userIdSet <- STM.atomically $ STM.newTVar mempty
 
