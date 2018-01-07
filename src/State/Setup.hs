@@ -59,8 +59,8 @@ incompleteCredentials config = ConnectionInfo hStr (configPort config) uStr pStr
             _                       -> ""
 
 
-setupState :: Maybe Handle -> Config -> RequestChan -> BChan MHEvent -> IO ChatState
-setupState logFile initialConfig requestChan eventChan = do
+setupState :: Maybe Handle -> Config -> IO ChatState
+setupState logFile initialConfig = do
   -- If we don't have enough credentials, ask for them.
   connInfo <- case getCredentials initialConfig of
       Nothing -> interactiveGatherCredentials (incompleteCredentials initialConfig) Nothing
@@ -163,6 +163,9 @@ setupState logFile initialConfig requestChan eventChan = do
                          putStrLn $ "Error loading theme customization from " <> show absPath <> ": " <> e
                          exitFailure
                      Right t -> return t
+
+  requestChan <- STM.atomically STM.newTChan
+  eventChan <- newBChan 25
 
   let cr = ChatResources session cd requestChan eventChan
              slc wac (themeToAttrMap custTheme) userStatusLock userIdSet config mempty prefs
