@@ -18,12 +18,11 @@ import Control.Monad.IO.Class (liftIO)
 import Data.Monoid ((<>))
 import Lens.Micro.Platform
 import qualified Data.Text as T
-import Graphics.Vty hiding (Config)
+import Graphics.Vty
 import System.Exit (exitSuccess)
 
 import Network.Mattermost.Exceptions (LoginFailureException(..))
 
-import Config
 import Markdown
 import Types ( ConnectionInfo(..), ciPassword, ciUsername, ciHostname
              , ciPort, AuthenticationException(..)
@@ -46,7 +45,7 @@ validHostname ls =
        then Just t
        else Nothing
 
-interactiveGatherCredentials :: Config
+interactiveGatherCredentials :: ConnectionInfo
                              -> Maybe AuthenticationException
                              -> IO ConnectionInfo
 interactiveGatherCredentials config authError = do
@@ -54,23 +53,18 @@ interactiveGatherCredentials config authError = do
     finalSt <- defaultMain app state
     return $ formState $ finalSt^.loginForm
 
-newState :: Config -> Maybe AuthenticationException -> State
-newState config authError = state
+newState :: ConnectionInfo -> Maybe AuthenticationException -> State
+newState cInfo authError = state
     where
         state = State { _loginForm = form { formFocus = focusSetCurrent initialFocus (formFocus form)
                                           }
                       , _previousError = authError
                       }
-        form = mkForm $ ConnectionInfo hStr (configPort config) uStr pStr
-        hStr = maybe "" id $ configHost config
-        uStr = maybe "" id $ configUser config
-        pStr = case configPass config of
-            Just (PasswordString s) -> s
-            _                       -> ""
-        initialFocus = if | T.null hStr -> Hostname
-                          | T.null uStr -> Username
-                          | T.null pStr -> Password
-                          | otherwise   -> Hostname
+        form = mkForm cInfo
+        initialFocus = if | T.null (cInfo^.ciHostname) -> Hostname
+                          | T.null (cInfo^.ciUsername) -> Username
+                          | T.null (cInfo^.ciPassword) -> Password
+                          | otherwise                  -> Hostname
 
 app :: App State () Name
 app = App

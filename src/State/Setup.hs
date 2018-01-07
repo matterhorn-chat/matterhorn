@@ -49,11 +49,21 @@ loadFlaggedMessages prefs st = doAsyncWithIO Normal st $ do
                      , flaggedPostStatus fp
                      ]
 
+incompleteCredentials :: Config -> ConnectionInfo
+incompleteCredentials config = ConnectionInfo hStr (configPort config) uStr pStr
+    where
+        hStr = maybe "" id $ configHost config
+        uStr = maybe "" id $ configUser config
+        pStr = case configPass config of
+            Just (PasswordString s) -> s
+            _                       -> ""
+
+
 setupState :: Maybe Handle -> Config -> RequestChan -> BChan MHEvent -> IO ChatState
-setupState logFile config requestChan eventChan = do
+setupState logFile initialConfig requestChan eventChan = do
   -- If we don't have enough credentials, ask for them.
-  connInfo <- case getCredentials config of
-      Nothing -> interactiveGatherCredentials config Nothing
+  connInfo <- case getCredentials initialConfig of
+      Nothing -> interactiveGatherCredentials (incompleteCredentials initialConfig) Nothing
       Just connInfo -> return connInfo
 
   let setLogger = case logFile of
@@ -68,7 +78,7 @@ setupState logFile config requestChan eventChan = do
                 -- always try HTTPS first, and then, if the
                 -- configuration option is there, try falling back to
                 -- HTTP.
-                if (configUnsafeUseHTTP config)
+                if (configUnsafeUseHTTP initialConfig)
                   then initConnectionDataInsecure (cInfo^.ciHostname)
                          (fromIntegral (cInfo^.ciPort))
                   else initConnectionData (cInfo^.ciHostname)
@@ -82,27 +92,27 @@ setupState logFile config requestChan eventChan = do
                     `catch` (\e -> return $ Left $ ConnectError e)
                     `catch` (\e -> return $ Left $ OtherAuthError e)
 
-        -- Update the config with the entered settings so we can let the
-        -- user adjust if something went wrong rather than enter them
-        -- all again.
-        let modifiedConfig =
-                config { configUser = Just $ cInfo^.ciUsername
-                       , configPass = Just $ PasswordString $ cInfo^.ciPassword
-                       , configPort = cInfo^.ciPort
-                       , configHost = Just $ cInfo^.ciHostname
-                       }
+        -- Update the config with the entered settings so that later,
+        -- when we offer the option of saving the entered credentials to
+        -- disk, we can do so with an updated config.
+        let config =
+                initialConfig { configUser = Just $ cInfo^.ciUsername
+                              , configPass = Just $ PasswordString $ cInfo^.ciPassword
+                              , configPort = cInfo^.ciPort
+                              , configHost = Just $ cInfo^.ciHostname
+                              }
 
         case result of
             Right (Right (sess, user)) ->
-                return (sess, user, cd)
+                return (sess, user, cd, config)
             Right (Left e) ->
-                interactiveGatherCredentials modifiedConfig (Just $ LoginError e) >>=
+                interactiveGatherCredentials cInfo (Just $ LoginError e) >>=
                     loginLoop
             Left e ->
-                interactiveGatherCredentials modifiedConfig (Just e) >>=
+                interactiveGatherCredentials cInfo (Just e) >>=
                     loginLoop
 
-  (session, myUser, cd) <- loginLoop connInfo
+  (session, myUser, cd, config) <- loginLoop connInfo
 
   teams <- mmGetUsersTeams UserMe session
   when (Seq.null teams) $ do
