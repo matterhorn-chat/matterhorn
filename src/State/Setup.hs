@@ -214,20 +214,29 @@ initializeState cr myTeam myUser = do
           Left _ -> return newHistory
           Right h -> return h
 
+  --------------------------------------------------------------------
   -- Start background worker threads:
+  --
   -- * Main async queue worker thread
   startAsyncWorkerThread (cr^.crConfiguration) (cr^.crRequestQueue) (cr^.crEventQueue)
+
   -- * User status refresher
   startUserRefreshThread (cr^.crUserIdSet) (cr^.crUserStatusLock) session requestChan
+
   -- * Refresher for users who are typing currently
   when (configShowTypingIndicator (cr^.crConfiguration)) $
     startTypingUsersRefreshThread requestChan
+
   -- * Timezone change monitor
   startTimezoneMonitorThread tz requestChan
+
   -- * Subprocess logger
   startSubprocessLoggerThread (cr^.crSubprocessLog) requestChan
+
   -- * Spell checker and spell check timer, if configured
   spResult <- maybeStartSpellChecker (cr^.crConfiguration) (cr^.crEventQueue)
+
+  -- End thread startup ----------------------------------------------
 
   let chanNames = mkChanNames myUser mempty chans
       chanIds = [ (chanNames ^. cnToChanId) HM.! i
