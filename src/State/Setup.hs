@@ -215,6 +215,8 @@ initializeState cr myTeam myUser = do
           Right h -> return h
 
   -- Start background worker threads:
+  -- * Main async queue worker thread
+  startAsyncWorkerThread (cr^.crConfiguration) (cr^.crRequestQueue) (cr^.crEventQueue)
   -- * User status refresher
   startUserRefreshThread (cr^.crUserIdSet) (cr^.crUserStatusLock) session requestChan
   -- * Refresher for users who are typing currently
@@ -236,4 +238,8 @@ initializeState cr myTeam myUser = do
              & csNames .~ chanNames
 
   loadFlaggedMessages (cr^.crPreferences) st
+
+  -- Trigger an initial websocket refresh
+  writeBChan (cr^.crEventQueue) RefreshWebsocketEvent
+
   return st

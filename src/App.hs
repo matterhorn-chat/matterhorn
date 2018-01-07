@@ -7,7 +7,6 @@ import           Prelude ()
 import           Prelude.Compat
 
 import           Brick
-import           Brick.BChan
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform
 import           System.IO (IOMode(WriteMode), openFile, hClose)
@@ -16,7 +15,6 @@ import           Text.Aspell (stopAspell)
 import           Config
 import           Options
 import           State.Setup
-import           State.Setup.Threads (startAsyncWorkerThread)
 import           Events
 import           Draw
 import           Types
@@ -37,10 +35,6 @@ runMatterhorn opts config = do
       Nothing   -> return Nothing
 
     st <- setupState logFile config
-
-    writeBChan (st^.csResources.crEventQueue) RefreshWebsocketEvent
-    startAsyncWorkerThread config (st^.csResources.crRequestQueue)
-        (st^.csResources.crEventQueue)
 
     let mkVty = do
           vty <- Vty.mkVty Vty.defaultConfig
