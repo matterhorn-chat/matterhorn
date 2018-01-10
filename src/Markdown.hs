@@ -176,6 +176,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                       let parentMsg = renderMessage md
                             { mdShowOlderEdits    = False
                             , mdMessage           = pm
+                            , mdUserName          = mdParentUserName
                             , mdParentMessage     = Nothing
                             , mdRenderReplyParent = False
                             , mdIndentBlocks      = False
