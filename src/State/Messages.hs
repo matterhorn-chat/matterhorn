@@ -33,9 +33,16 @@ import           Types.Posts
 -- server.  This gaps will later be removed by successful fetching
 -- overlaps if the connection is re-established.  Note that the
 -- disconnect is re-iterated periodically via a re-connect timer
--- attempt, so do not duplicate gaps.
+-- attempt, so do not duplicate gaps.  Also clear any flags
+-- representing a pending exchange with the server (which will now
+-- never complete).
 addDisconnectGaps :: MH ()
-addDisconnectGaps = mapM_ addEndGap . filteredChannelIds (const True) =<< use csChannels
+addDisconnectGaps = mapM_ onEach . filteredChannelIds (const True) =<< use csChannels
+    where onEach c = do addEndGap c
+                        clearPendingFlags c
+
+clearPendingFlags :: ChannelId -> MH ()
+clearPendingFlags c = csChannel(c).ccContents.cdFetchPending .= False
 
 
 addEndGap :: ChannelId -> MH ()
