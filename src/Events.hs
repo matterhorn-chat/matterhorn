@@ -192,7 +192,7 @@ handleWSEvent we = do
             | otherwise -> return ()
 
         WMChannelViewed
-            | Just cId <- webChannelId $ weBroadcast we -> refreshChannelById cId
+            | Just cId <- wepChannelId $ weData we -> refreshChannelById cId
             | otherwise -> return ()
 
         WMChannelUpdated
