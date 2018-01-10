@@ -93,9 +93,9 @@ binding `M-e`. Markdown syntax is accepted.
 To edit your current message in an external editor (`$EDITOR`), use the
 default binding of `M-k`.
 
-To preview the message you're about to send (e.g. to check on how your
-Markdown syntax will be rendered), toggle preview mode with the default
-binding `M-p`.
+To preview the message you're about to send while you compose it (e.g.
+to check on how your Markdown syntax will be rendered), toggle preview
+mode with the default binding `M-p`.
 
 To change channels, use `/focus` or one of the default bindings `C-n`
 (next channel), `C-p` (previous channel), `C-g` (fast channel switch).

@@ -41,11 +41,21 @@ import           Types
 import           Types.Channels
 import qualified Zipper as Z
 
-setupState :: Maybe Handle -> Config -> RequestChan -> BChan MHEvent -> IO ChatState
-setupState logFile config requestChan eventChan = do
+incompleteCredentials :: Config -> ConnectionInfo
+incompleteCredentials config = ConnectionInfo hStr (configPort config) uStr pStr
+    where
+        hStr = maybe "" id $ configHost config
+        uStr = maybe "" id $ configUser config
+        pStr = case configPass config of
+            Just (PasswordString s) -> s
+            _                       -> ""
+
+
+setupState :: Maybe Handle -> Config -> IO ChatState
+setupState logFile initialConfig = do
   -- If we don't have enough credentials, ask for them.
-  connInfo <- case getCredentials config of
-      Nothing -> interactiveGatherCredentials config Nothing
+  connInfo <- case getCredentials initialConfig of
+      Nothing -> interactiveGatherCredentials (incompleteCredentials initialConfig) Nothing
       Just connInfo -> return connInfo
 
   let setLogger = case logFile of
@@ -60,7 +70,7 @@ setupState logFile config requestChan eventChan = do
                 -- always try HTTPS first, and then, if the
                 -- configuration option is there, try falling back to
                 -- HTTP.
-                if (configUnsafeUseHTTP config)
+                if (configUnsafeUseHTTP initialConfig)
                   then initConnectionDataInsecure (cInfo^.ciHostname)
                          (fromIntegral (cInfo^.ciPort))
                   else initConnectionData (cInfo^.ciHostname)
@@ -74,27 +84,27 @@ setupState logFile config requestChan eventChan = do
                     `catch` (\e -> return $ Left $ ConnectError e)
                     `catch` (\e -> return $ Left $ OtherAuthError e)
 
-        -- Update the config with the entered settings so we can let the
-        -- user adjust if something went wrong rather than enter them
-        -- all again.
-        let modifiedConfig =
-                config { configUser = Just $ cInfo^.ciUsername
-                       , configPass = Just $ PasswordString $ cInfo^.ciPassword
-                       , configPort = cInfo^.ciPort
-                       , configHost = Just $ cInfo^.ciHostname
-                       }
+        -- Update the config with the entered settings so that later,
+        -- when we offer the option of saving the entered credentials to
+        -- disk, we can do so with an updated config.
+        let config =
+                initialConfig { configUser = Just $ cInfo^.ciUsername
+                              , configPass = Just $ PasswordString $ cInfo^.ciPassword
+                              , configPort = cInfo^.ciPort
+                              , configHost = Just $ cInfo^.ciHostname
+                              }
 
         case result of
             Right (Right (sess, user)) ->
-                return (sess, user, cd)
+                return (sess, user, cd, config)
             Right (Left e) ->
-                interactiveGatherCredentials modifiedConfig (Just $ LoginError e) >>=
+                interactiveGatherCredentials cInfo (Just $ LoginError e) >>=
                     loginLoop
             Left e ->
-                interactiveGatherCredentials modifiedConfig (Just e) >>=
+                interactiveGatherCredentials cInfo (Just e) >>=
                     loginLoop
 
-  (session, myUser, cd) <- loginLoop connInfo
+  (session, myUser, cd, config) <- loginLoop connInfo
 
   teams <- mmGetUsersTeams UserMe session
   when (Seq.null teams) $ do
@@ -112,7 +122,6 @@ setupState logFile config requestChan eventChan = do
               Just t -> return t
 
   userStatusLock <- newMVar ()
---  putMVar userStatusLock ()
 
   userIdSet <- STM.atomically $ STM.newTVar mempty
 
@@ -146,6 +155,9 @@ setupState logFile config requestChan eventChan = do
                          putStrLn $ "Error loading theme customization from " <> show absPath <> ": " <> e
                          exitFailure
                      Right t -> return t
+
+  requestChan <- STM.atomically STM.newTChan
+  eventChan <- newBChan 25
 
   let cr = ChatResources session cd requestChan eventChan
              slc wac (themeToAttrMap custTheme) userStatusLock userIdSet config mempty prefs
@@ -193,18 +205,29 @@ initializeState cr myTeam myUser = do
           Left _ -> return newHistory
           Right h -> return h
 
+  --------------------------------------------------------------------
   -- Start background worker threads:
+  --
+  -- * Main async queue worker thread
+  startAsyncWorkerThread (cr^.crConfiguration) (cr^.crRequestQueue) (cr^.crEventQueue)
+
   -- * User status refresher
   startUserRefreshThread (cr^.crUserIdSet) (cr^.crUserStatusLock) session requestChan
+
   -- * Refresher for users who are typing currently
   when (configShowTypingIndicator (cr^.crConfiguration)) $
     startTypingUsersRefreshThread requestChan
+
   -- * Timezone change monitor
   startTimezoneMonitorThread tz requestChan
+
   -- * Subprocess logger
   startSubprocessLoggerThread (cr^.crSubprocessLog) requestChan
+
   -- * Spell checker and spell check timer, if configured
   spResult <- maybeStartSpellChecker (cr^.crConfiguration) (cr^.crEventQueue)
+
+  -- End thread startup ----------------------------------------------
 
   let chanNames = mkChanNames myUser mempty chans
       chanIds = [ (chanNames ^. cnToChanId) HM.! i
@@ -215,4 +238,8 @@ initializeState cr myTeam myUser = do
              & csNames .~ chanNames
 
   loadFlaggedMessages (cr^.crPreferences) st
+
+  -- Trigger an initial websocket refresh
+  writeBChan (cr^.crEventQueue) RefreshWebsocketEvent
+
   return st
