@@ -1063,7 +1063,7 @@ asyncFetchMoreMessages = do
     withChannel cId $ \chan ->
         let offset = length $ chan^.ccContents.cdMessages
             query = MM.defaultPostQuery
-                      { MM.postQueryPage = Just offset
+                      { MM.postQueryPage = Just (offset `div` pageAmount)
                       , MM.postQueryPerPage = Just pageAmount
                       }
         in asPending doAsyncChannelMM Preempt cId
