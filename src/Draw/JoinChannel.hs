@@ -52,4 +52,4 @@ renderJoinListItem _ chan =
     let baseStr = chan^.channelNameL <> " (" <> chan^.channelDisplayNameL <> ")"
         s = "  " <> (T.strip $ chan^.channelPurposeL)
     in (vLimit 1 $ txt baseStr <+> fill ' ') <=>
-       (vLimit 1 $ (txtWrapWith (defaultWrapSettings { preserveIndentation = True }) s) <+> fill ' ')
+       (vLimit 1 $ txtWrapWith (defaultWrapSettings { preserveIndentation = True }) s)
