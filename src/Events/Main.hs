@@ -171,9 +171,9 @@ handleInputSubmission = do
   csEditState.cedInputHistory   %= addHistoryEntry allLines cId
   csEditState.cedInputHistoryPosition.at cId .= Nothing
 
-  case T.uncons line of
-    Just ('/',cmd) -> dispatchCommand cmd
-    _              -> sendMessage mode allLines
+  case T.uncons allLines of
+    Just ('/', cmd) -> dispatchCommand cmd
+    _               -> sendMessage mode allLines
 
   -- Reset the edit mode *after* handling the input so that the input
   -- handler can tell whether we're editing, replying, etc.

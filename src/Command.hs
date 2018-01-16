@@ -9,6 +9,7 @@ import           Control.Applicative ((<|>))
 import qualified Control.Exception as Exn
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad (void)
+import qualified Data.Char as Char
 import           Data.Monoid ((<>))
 import qualified Data.Text as T
 import           Lens.Micro.Platform
@@ -24,20 +25,38 @@ import Types
 import HelpTopics
 import Scripts
 
+-- | This function skips any initial whitespace and returns the first
+-- 'token' (i.e. any sequence of non-whitespace characters) as well as
+-- the trailing rest of the string, after any whitespace. This is used
+-- for tokenizing the first bits of command input while leaving the
+-- subsequent chunks unchanged, preserving newlines and other
+-- important formatting.
+unwordHead :: T.Text -> Maybe (T.Text, T.Text)
+unwordHead t =
+  let t' = T.dropWhile Char.isSpace t
+      (w, rs)  = T.break Char.isSpace t'
+  in if T.null w
+       then Nothing
+       else Just (w, T.dropWhile Char.isSpace rs)
+
 printArgSpec :: CmdArgs a -> T.Text
 printArgSpec NoArg = ""
 printArgSpec (LineArg ts) = "[" <> ts <> "]"
 printArgSpec (TokenArg t NoArg) = "[" <> t <> "]"
 printArgSpec (TokenArg t rs) = "[" <> t <> "] " <> printArgSpec rs
 
-matchArgs :: CmdArgs a -> [T.Text] -> Either T.Text a
-matchArgs NoArg []  = return ()
-matchArgs NoArg [t] = Left ("unexpected argument '" <> t <> "'")
-matchArgs NoArg ts  = Left ("unexpected arguments '" <> T.unwords ts <> "'")
-matchArgs (LineArg _) ts = return (T.unwords ts)
-matchArgs rs@(TokenArg _ NoArg) [] = Left ("missing argument: " <> printArgSpec rs)
-matchArgs rs@(TokenArg _ _) [] = Left ("missing arguments: " <> printArgSpec rs)
-matchArgs (TokenArg _ rs) (t:ts) = (,) <$> pure t <*> matchArgs rs ts
+matchArgs :: CmdArgs a -> T.Text -> Either T.Text a
+matchArgs NoArg t = case unwordHead t of
+  Nothing -> return ()
+  Just (a, as)
+    | not (T.all Char.isSpace as) -> Left ("Unexpected arguments '" <> t <> "'")
+    | otherwise -> Left ("Unexpected argument '" <> a <> "'")
+matchArgs (LineArg _) t = return t
+matchArgs spec@(TokenArg _ rs) t = case unwordHead t of
+  Nothing -> case rs of
+    NoArg -> Left ("Missing argument: " <> printArgSpec spec)
+    _     -> Left ("Missing arguments: " <> printArgSpec spec)
+  Just (a, as) -> (,) <$> pure a <*> matchArgs rs as
 
 commandList :: [Cmd]
 commandList =
@@ -89,13 +108,17 @@ commandList =
                       knownTopics = ("  - " <>) <$> helpTopicName <$> helpTopics
                   postErrorMessage msg
               Just topic -> showHelpScreen topic
+
   , Cmd "sh" "List the available shell scripts" NoArg $ \ () ->
       listScripts
+
   , Cmd "group-msg" "Create a group chat"
     (LineArg "user1 user2 ...") createGroupChannel
+
   , Cmd "sh" "Run a prewritten shell script"
     (TokenArg "script" (LineArg "message")) $ \ (script, text) ->
       findAndRunScript script text
+
   , Cmd "me" "Send an emote message"
     (LineArg "message") $
     \msg -> execMMCommand "me" msg
@@ -155,12 +178,14 @@ execMMCommand name rest = do
 
 dispatchCommand :: T.Text -> MH ()
 dispatchCommand cmd =
-  case T.words cmd of
-    (x:xs) | matchingCmds <- [ c | c@(Cmd name _ _ _) <- commandList
-                             , name == x
-                             ] -> go [] matchingCmds
+  case unwordHead cmd of
+    Just (x, xs)
+      | matchingCmds <- [ c
+                        | c@(Cmd name _ _ _) <- commandList
+                        , name == x
+                        ] -> go [] matchingCmds
       where go [] [] = do
-              execMMCommand x (T.unwords xs)
+              execMMCommand x xs
             go errs [] = do
               let msg = ("error running command /" <> x <> ":\n" <>
                          mconcat [ "    " <> e | e <- errs ])
