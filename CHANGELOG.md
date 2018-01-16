@@ -1,3 +1,50 @@
+
+40600.0.0
+=========
+
+This release supports Mattermost server version 4.6.
+
+New features:
+ * Rebindable keys are now supported! See `/help keybindings` for
+   details. Matterhorn also checks for conflicting bindings on startup.
+ * The user status list now supports the Do Not Disturb status (shown as
+   `×`).
+ * User typing notifications are now supported. These are off by default
+   but can be enabled with the `showTypingIndicator` configuration
+   setting. Enabling the feature causes Matterhorn to produce such
+   notifications for the server and to display typing indications from
+   other users. Thanks to Abhinav Sarkar for this feature!
+ * Matterhorn now remembers which channel was visited when the client is
+   closed and returns to that channel on startup. Thanks to Abhinav
+   Sarkar for this feature!
+
+New commands:
+ * `/message-preview` now toggles message preview mode in addition to
+   default `M-p` keybinding.
+
+Bug fixes:
+ * New post reactions no longer cause a post to be indicated as
+   "(edited)" (#333)
+
+UI changes:
+ * The channel list shown by `/join` now also displays the channel
+   purpose for each channel when possible.
+
+Performance improvements:
+ * Matterhorn now has much lower input latency on servers with very
+   large numbers of users due to user list rendering performance
+   improvements.
+
+Miscellaneous:
+ * This release now uses only version 4 API endpoints, consistent with
+   the upstream deprecation of version 3 API endpoints in the 4.6
+   release.
+ * Startup requests are now performed concurrently to improve
+   performance (#347, thanks to Abhinav Sarkar)
+ * Channel header strings containing newlines are now rendered more
+   effectively: newlines are converted to spaces. This behavior more
+   closely matches the web client, too.
+
 40400.0.0
 =========
 

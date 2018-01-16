@@ -953,7 +953,7 @@ asyncFetchMoreMessages = do
             first' = splitMessagesOn (^.mPostId.to isJust) (chan^.ccContents.cdMessages)
             second' = splitMessagesOn (^.mPostId.to isJust) $ snd $ snd first'
             query = MM.defaultPostQuery
-                      { MM.postQueryPage = Just offset
+                      { MM.postQueryPage = Just (offset `div` pageAmount)
                       , MM.postQueryPerPage = Just pageAmount
                       }
                     & \q -> case (fst first', fst second' >>= (^.mPostId)) of
