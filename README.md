@@ -145,6 +145,7 @@ name of the dictionary you'd like to use.
 * Preview message rendering before sending
 * Optional smart quoting for efficient Markdown entry
 * Edit messages with `$EDITOR`
+* Rebindable keys (see `/help keybindings`)
 * Message editor with kill/yank buffer and readline-style keybindings
 * Tab-completion of usernames, channel names, and commands
 * Spell-checking via Aspell
