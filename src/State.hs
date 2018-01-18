@@ -19,6 +19,7 @@ module State
   , startJoinChannel
   , joinChannel
   , changeChannel
+  , disconnectChannels
   , startLeaveCurrentChannel
   , leaveCurrentChannel
   , leaveChannel
@@ -54,8 +55,8 @@ module State
   , msgURLs
   , editMessage
   , deleteMessage
-  , addMessageToState
-  , postProcessMessageAdd
+  , addNewPostedMessage
+  , fetchVisibleIfNeeded
 
   -- * Working with users
   , handleNewUser
@@ -121,7 +122,7 @@ import           Control.Monad.IO.Class (liftIO)
 import           Data.Char (isAlphaNum)
 import           Brick.Main (getVtyHandle, viewportScroll, vScrollToBeginning, vScrollBy, vScrollToEnd)
 import           Brick.Widgets.Edit (applyEdit)
-import           Control.Monad (when, unless, void, forM_)
+import           Control.Monad (when, unless, void, forM_, join)
 import qualified Data.ByteString as BS
 import           Data.Function (on)
 import           Data.Text.Zipper (textZipper, clearZipper, insertMany, gotoEOL)
@@ -152,6 +153,7 @@ import           Network.Mattermost.Lenses
 
 import           Config
 import           FilePaths
+import           TimeUtils (justBefore, justAfter)
 import           Types
 import           Types.Channels
 import           Types.Posts
@@ -165,6 +167,7 @@ import           Constants
 import           Markdown (blockGetURLs, findVerbatimChunk)
 
 import           State.Common
+import           State.Messages
 import           State.Setup.Threads (updateUserStatuses)
 
 -- * Refreshing Channel Data
@@ -172,10 +175,9 @@ import           State.Setup.Threads (updateUserStatuses)
 -- | Refresh information about a specific channel.  The channel
 -- metadata is refreshed, and if this is a loaded channel, the
 -- scrollback is updated as well.
-refreshChannel :: Bool -> Channel -> ChannelMember -> MH ()
-refreshChannel refreshMessages chan member = do
+refreshChannel :: Channel -> ChannelMember -> MH ()
+refreshChannel chan member = do
   let cId = getId chan
-  curId <- use csCurrentChannelId
 
   -- If this is a group channel that the user has chosen to hide, ignore
   -- the refresh request.
@@ -190,19 +192,13 @@ refreshChannel refreshMessages chan member = do
 
           updateChannelInfo cId chan member
 
-          -- If this is an active channel or the current channel, also
-          -- update the Messages to retrieve any that might have been
-          -- missed.
-          when (refreshMessages || (cId == curId)) $
-              updateMessages cId
-
-refreshChannelById :: Bool -> ChannelId -> MH ()
-refreshChannelById refreshMessages cId = do
+refreshChannelById :: ChannelId -> MH ()
+refreshChannelById cId = do
   session <- use (csResources.crSession)
   doAsyncWith Preempt $ do
       cwd <- MM.mmGetChannel cId session
       member <- MM.mmGetChannelMember cId UserMe session
-      return $ refreshChannel refreshMessages cwd member
+      return $ refreshChannel cwd member
 
 createGroupChannel :: T.Text -> MH ()
 createGroupChannel usernameList = do
@@ -262,7 +258,7 @@ applyPreferenceChange pref
             (Nothing, True) ->
                 -- If it has been set to showing and we are not showing
                 -- it, ask for a load/refresh.
-                refreshChannelById True cId
+                refreshChannelById cId
             _ -> return ()
 applyPreferenceChange _ = return ()
 
@@ -306,14 +302,19 @@ refreshChannelsAndUsers = do
                     Just _ -> return ()
                     Nothing -> handleNewUserDirect u
 
-        forM_ chansWithData $ uncurry (refreshChannel True)
+        forM_ chansWithData $ uncurry refreshChannel
 
         userSet <- use (csResources.crUserIdSet)
         liftIO $ STM.atomically $ STM.writeTVar userSet (fmap userId users)
         lock <- use (csResources.crUserStatusLock)
         doAsyncWith Preempt $ updateUserStatuses userSet lock session
 
--- | Update the indicted Channel entry with the new data retrieved from
+-- | Websocket was disconnected, so all channels may now miss some
+-- messages
+disconnectChannels :: MH ()
+disconnectChannels = addDisconnectGaps
+
+-- | Update the indicated Channel entry with the new data retrieved from
 -- the Mattermost server. Also update the channel name if it changed.
 updateChannelInfo :: ChannelId -> Channel -> ChannelMember -> MH ()
 updateChannelInfo cid new member = do
@@ -348,87 +349,6 @@ removeChannelName name = do
     -- Flush cnChans
     csNames.cnChans %= filter (/= name)
 
--- | If this channel has content, fetch any new content that has
--- arrived after the existing content.
-updateMessages :: ChannelId -> MH ()
-updateMessages cId =
-  withChannel cId $ \chan -> do
-    when (chan^.ccInfo.cdCurrentState.to (`elem` [ChanLoaded, ChanInitialSelect])) $ do
-      curId <- use csCurrentChannelId
-      let priority = if curId == cId then Preempt else Normal
-      asyncFetchScrollback priority cId
-
--- | Fetch scrollback for a channel in the background.  This may be
--- called to fetch messages in a number of situations, including:
---
---   1. WebSocket connect at init, no messages available
---
---   2. WebSocket reconnect after losing connectivity for a period
---
---   3. Channel selected by user
---
---      a. No current messages fetched yet
---
---      b. Messages may have been provided unsolicited via the
---         WebSocket.
---
---   4. User got invited to the channel (by another user).
---
--- For most cases, fetching the most recent set of messages is
--- appropriate, but for case 2, messages from the most recent forward
--- should be retrieved.  However, be careful not to confuse case 2
--- with case 3b.
-asyncFetchScrollback :: AsyncPriority -> ChannelId -> MH ()
-asyncFetchScrollback prio cId = do
-  withChannel cId $ \chan -> do
-    let last_pId = getLatestPostId (chan^.ccContents.cdMessages)
-        newCutoff = chan^.ccInfo.cdNewMessageIndicator
-        fetchMessages s _ c = do
-            let fc = case last_pId of
-                  Nothing  -> F1  -- or F4
-                  Just pId ->
-                      case findMessage pId (chan^.ccContents.cdMessages) of
-                        Nothing -> F4 -- This should never happen since
-                                      -- we just assigned pId.
-                        Just m ->
-                            case newCutoff of
-                                Hide ->
-                                    -- No cutoff has been set, so we
-                                    -- just ask for the most recent
-                                    -- messages.
-                                    F2 pId
-                                NewPostsAfterServerTime ct ->
-                                    -- If the most recent message is
-                                    -- after the cutoff, meaning there
-                                    -- might be intervening messages
-                                    -- that we missed.
-                                    if m^.mDate > ct
-                                    then F3b pId
-                                    else F3a
-                                NewPostsStartingAt ct ->
-                                    -- If the most recent message is
-                                    -- after the cutoff, meaning there
-                                    -- might be intervening messages
-                                    -- that we missed.
-                                    if m^.mDate >= ct
-                                    then F3b pId
-                                    else F3a
-                query = MM.defaultPostQuery
-                  { MM.postQueryPage = Just 0
-                  , MM.postQueryPerPage = Just numScrollbackPosts
-                  }
-                finalQuery = case fc of
-                    F1      -> query -- mmGetPosts s t c
-                    F2 pId  -> query { MM.postQueryAfter = Just pId } -- mmGetPostsAfter s t c pId
-                    F3a     -> query -- mmGetPosts s t c
-                    F3b pId -> query { MM.postQueryBefore = Just pId } -- mmGetPostsBefore s t c pId
-                    F4      -> query -- mmGetPosts s t c
-            MM.mmGetPostsForChannel c finalQuery s --  op 0 numScrollbackPosts
-
-    asPending doAsyncChannelMM prio cId fetchMessages
-              addObtainedMessages
-
-data FetchCase = F1 | F2 PostId | F3a | F3b PostId | F4 deriving (Eq,Show)
 
 -- * Message selection mode
 
@@ -442,11 +362,11 @@ beginMessageSelect = do
     -- If we can't find one at all, we ignore the mode switch request
     -- and just return.
     chanMsgs <- use(csCurrentChannel . ccContents . cdMessages)
-    let recentPost = getLatestPostId chanMsgs
+    let recentPost = getLatestPostMsg chanMsgs
 
     when (isJust recentPost) $ do
         csMode .= MessageSelect
-        csMessageSelect .= MessageSelectState recentPost
+        csMessageSelect .= MessageSelectState (join $ ((^.mPostId) <$> recentPost))
 
 getSelectedMessage :: ChatState -> Maybe Message
 getSelectedMessage st
@@ -532,44 +452,6 @@ isCurrentChannel st cId = st^.csCurrentChannelId == cId
 isRecentChannel :: ChatState -> ChannelId -> Bool
 isRecentChannel st cId = st^.csRecentChannel == Just cId
 
--- | Update the UI to reflect the flagged/unflagged state of a
--- message. This __does not__ talk to the Mattermost server, but
--- rather is the function we call when the Mattermost server notifies
--- us of flagged or unflagged messages.
-updateMessageFlag :: PostId -> Bool -> MH ()
-updateMessageFlag pId f = do
-  if f
-    then csResources.crFlaggedPosts %= Set.insert pId
-    else csResources.crFlaggedPosts %= Set.delete pId
-  msgMb <- use (csPostMap.at(pId))
-  case msgMb of
-    Just msg
-      | Just cId <- msg^.mChannelId -> do
-      let isTargetMessage m = m^.mPostId == Just pId
-      csChannel(cId).ccContents.cdMessages.traversed.filtered isTargetMessage.mFlagged .= f
-      csPostMap.ix(pId).mFlagged .= f
-      -- We also want to update the post overlay if this happens while
-      -- we're we're observing it
-      mode <- use csMode
-      case mode of
-        PostListOverlay PostListFlagged
-          | f ->
-              csPostListOverlay.postListPosts %=
-                addMessage (msg & mFlagged .~ True)
-          -- deleting here is tricky, because it means that we need to
-          -- move the focus somewhere: we'll try moving it _up_ unless
-          -- we can't, in which case we'll try moving it down.
-          | otherwise -> do
-              selId <- use (csPostListOverlay.postListSelected)
-              posts <- use (csPostListOverlay.postListPosts)
-              let nextId = case getNextPostId selId posts of
-                    Nothing -> getPrevPostId selId posts
-                    Just x  -> Just x
-              csPostListOverlay.postListSelected .= nextId
-              csPostListOverlay.postListPosts %=
-                filterMessages (((/=) `on` _mPostId) msg)
-        _ -> return ()
-    _ -> return ()
 
 -- | Tell the server that we have flagged or unflagged a message.
 flagMessage :: PostId -> Bool -> MH ()
@@ -684,9 +566,7 @@ handleChannelInvite cId = do
     doAsyncWith Normal $ do
         member <- MM.mmGetChannelMember cId UserMe (st^.csResources.crSession)
         tryMM (MM.mmGetChannel cId (st^.csResources.crSession))
-              (\cwd -> return $ do
-                  handleNewChannel False cwd member
-                  asyncFetchScrollback Normal cId)
+              (\cwd -> return $ handleNewChannel False cwd member)
 
 addUserToCurrentChannel :: T.Text -> MH ()
 addUserToCurrentChannel uname = do
@@ -945,7 +825,6 @@ updateChannelListScroll = do
 postChangeChannelCommon :: MH ()
 postChangeChannelCommon = do
     resetHistoryPosition
-    fetchCurrentScrollback
     resetEditorState
     updateChannelListScroll
     loadLastEdit
@@ -1061,24 +940,140 @@ asyncFetchMoreMessages :: MH ()
 asyncFetchMoreMessages = do
     cId  <- use csCurrentChannelId
     withChannel cId $ \chan ->
-        let offset = length $ chan^.ccContents.cdMessages
+        let offset = max 0 $ length (chan^.ccContents.cdMessages) - 2
+            -- Fetch more messages prior to any existing messages, but
+            -- attempt to overlap with existing messages for
+            -- determining contiguity or gaps.  Back up two messages
+            -- and request from there backward, which should include
+            -- the last message in the response.  This is an attempt
+            -- to fetch *more* messages, so it's expected that there
+            -- are at least 2 messages already here, but in case there
+            -- aren't, just get another page from roughly the right
+            -- location.
+            first' = splitMessagesOn (^.mPostId.to isJust) (chan^.ccContents.cdMessages)
+            second' = splitMessagesOn (^.mPostId.to isJust) $ snd $ snd first'
             query = MM.defaultPostQuery
                       { MM.postQueryPage = Just (offset `div` pageAmount)
                       , MM.postQueryPerPage = Just pageAmount
                       }
-        in asPending doAsyncChannelMM Preempt cId
+                    & \q -> case (fst first', fst second' >>= (^.mPostId)) of
+                             (Just _, Just i) -> q { MM.postQueryBefore = Just i
+                                                  , MM.postQueryPage   = Just 0
+                                                  }
+                             _ -> q
+        in doAsyncChannelMM Preempt cId
                (\s _ c -> MM.mmGetPostsForChannel c query s)
-               (\c p -> do addObtainedMessages c p
+               (\c p -> do addObtainedMessages c (-pageAmount) p >>= postProcessMessageAdd
                            mh $ invalidateCacheEntry (ChannelMessages cId))
 
-addObtainedMessages :: ChannelId -> Posts -> MH ()
-addObtainedMessages _cId posts =
-    postProcessMessageAdd =<<
-        foldl mappend mempty <$>
-              mapM (addMessageToState . OldPost)
-                       [ (posts^.postsPostsL) HM.! p
-                       | p <- F.toList (posts^.postsOrderL)
-                       ]
+
+addNewPostedMessage :: PostToAdd -> MH ()
+addNewPostedMessage p =
+    addMessageToState p >>= postProcessMessageAdd
+
+
+addObtainedMessages :: ChannelId -> Int -> Posts -> MH PostProcessMessageAdd
+addObtainedMessages _ _ posts | null (F.toList (posts^.postsOrderL)) = return NoAction
+addObtainedMessages cId reqCnt posts = do
+    -- Adding a block of server-provided messages, which are known to
+    -- be contiguous.  Locally this may overlap with some UnknownGap
+    -- messages, which can therefore be removed.  Alternatively the
+    -- new block may be discontiguous with the local blocks, in which
+    -- case the new block should be surrounded by UnknownGaps.
+    withChannelOrDefault cId NoAction $ \chan -> do
+        let pIdList = F.toList (posts^.postsOrderL)
+            -- the first and list PostId in the batch to be added
+            earliestPId = last pIdList
+            latestPId = head pIdList
+            earliestDate = postCreateAt $ (posts^.postsPostsL) HM.! earliestPId
+            latestDate = postCreateAt $ (posts^.postsPostsL) HM.! latestPId
+
+            localMessages = chan^.ccContents . cdMessages
+
+            match = snd $ removeMatchesFromSubset
+                          (\m -> maybe False (\p -> p `elem` pIdList) (m^.mPostId))
+                          (Just earliestPId) (Just latestPId) localMessages
+
+            dupPIds = catMaybes $ foldr (\m l -> m^.mPostId : l) [] match
+
+            -- If there were any matches, then there was overlap of
+            -- the new messages with existing messages.
+
+            -- Don't re-add matching messages (avoid overhead like
+            -- re-checking/re-fetching related post information, and
+            -- do not signal action needed for notifications), and
+            -- remove any gaps in the overlapping region.
+
+            newGapMessage d = newMessageOfType "Additional messages???" (C UnknownGap) d
+
+            -- If this batch contains the latest known messages, do
+            -- not add a following gap.  A gap at this point is added
+            -- by a websocket disconnect, and any fetches thereafter
+            -- are assumed to be the most current information (until
+            -- another disconnect), so no gap is needed.
+            -- Additionally, the presence of a gap at the end for a
+            -- connected client causes a fetch of messages at this
+            -- location, so adding the gap here would cause an
+            -- infinite update loop.
+
+            addingAtEnd = maybe True ((<=) latestDate) $
+                          (^.mDate) <$> getLatestPostMsg localMessages
+
+            addingAtStart = maybe True ((>=) earliestDate) $
+                            (^.mDate) <$> getEarliestPostMsg localMessages
+            removeStart = if addingAtStart && noMoreBefore then Nothing else Just earliestPId
+            removeEnd = if addingAtEnd then Nothing else Just latestPId
+
+            noMoreBefore = reqCnt < 0 && length pIdList < (-reqCnt)
+            noMoreAfter = reqCnt > 0 && length pIdList < reqCnt
+
+        -- Add all the new *unique* posts into the existing channel
+        -- corpus, generating needed fetches of data associated with
+        -- the post, and determining an notification action to be
+        -- taken (if any).
+
+        action <- foldr mappend mempty <$>
+          mapM (addMessageToState . OldPost)
+                   [ (posts^.postsPostsL) HM.! p
+                   | p <- F.toList (posts^.postsOrderL)
+                   , not (p `elem` dupPIds)
+                   ]
+
+        csChannels %= modifyChannelById cId
+                           (ccContents.cdMessages %~ (fst . removeMatchesFromSubset isGap removeStart removeEnd))
+
+        -- Add a gap at each end of the newly fetched data, unless:
+        --   1. there is an overlap
+        --   2. there is no more in the indicated direction
+        --      a. indicated by adding messages later than any currently
+        --         held messages (see note above re 'addingAtEnd').
+        --      b. the amount returned was less than the amount requested
+
+        unless (earliestPId `elem` dupPIds || noMoreBefore) $
+               let gapMsg = newGapMessage (justBefore earliestDate)
+               in csChannels %= modifyChannelById cId
+                       (ccContents.cdMessages %~ addMessage gapMsg)
+
+        unless (latestPId `elem` dupPIds || addingAtEnd || noMoreAfter) $
+               let gapMsg = newGapMessage (justAfter latestDate)
+               in csChannels %= modifyChannelById cId
+                                 (ccContents.cdMessages %~ addMessage gapMsg)
+
+        -- Now initiate fetches for use information for any
+        -- as-yet-unknown users related to this new set of messages
+
+        let users = foldr (\post -> Set.insert (postUserId post)) Set.empty (posts^.postsPostsL)
+            addUserIfUnknown st uId = case st^.csUsers.to (findUserById uId) of
+                                        Just _  -> return ()
+                                        Nothing -> handleNewUser uId
+        st <- use id
+        mapM_ (addUserIfUnknown st) $ catMaybes $ F.toList users
+
+        -- Return the aggregated user notification action needed
+        -- relative to the set of added messages.
+
+        return action
+
 
 loadMoreMessages :: MH ()
 loadMoreMessages = do
@@ -1184,8 +1179,8 @@ handleNewChannel_ permitPostpone switch nc member = do
       Just _ -> return ()
       Nothing -> do
         -- Create a new ClientChannel structure
-        let cChannel = makeClientChannel nc &
-                         ccInfo %~ channelInfoFromChannelWithData nc member
+        cChannel <- (ccInfo %~ channelInfoFromChannelWithData nc member) <$>
+                   makeClientChannel nc
 
         st <- use id
 
@@ -1260,10 +1255,9 @@ handleNewChannel_ permitPostpone switch nc member = do
 
 editMessage :: Post -> MH ()
 editMessage new = do
-  st <- use id
   myId <- use (csMe.userIdL)
   let isEditedMessage m = m^.mPostId == Just (new^.postIdL)
-      msg = clientPostToMessage st (toClientPost new (new^.postParentIdL))
+      msg = clientPostToMessage (toClientPost new (new^.postParentIdL))
       chan = csChannel (new^.postChannelIdL)
   chan . ccContents . cdMessages . traversed . filtered isEditedMessage .= msg
 
@@ -1317,11 +1311,7 @@ instance Monoid PostProcessMessageAdd where
 -- | postProcessMessageAdd performs the actual actions indicated by
 -- the corresponding input value.
 postProcessMessageAdd :: PostProcessMessageAdd -> MH ()
-postProcessMessageAdd ppma = do
-  postOp ppma
-  cState <- use (csCurrentChannel.ccInfo.cdCurrentState)
-  when (cState == ChanInitialSelect) $
-    csCurrentChannel.ccInfo.cdCurrentState .= ChanLoaded
+postProcessMessageAdd ppma = postOp ppma
  where
    postOp NoAction            = return ()
    postOp UpdateServerViewed  = updateViewed
@@ -1344,9 +1334,11 @@ data PostToAdd =
     -- constructor).
 
 -- | Adds a possibly new message to the associated channel contents.
--- Returns True if this is something that should potentially notify
--- the user of a change to the channel (i.e., not a message we
--- posted).
+-- Returns an indicator of whether the user should be potentially
+-- notified of a change (a new message not posted by this user, a
+-- mention of the user, etc.).  This operation has no effect on any
+-- existing UnknownGap entries and should be called when those are
+-- irrelevant.
 addMessageToState :: PostToAdd -> MH PostProcessMessageAdd
 addMessageToState newPostData = do
   let (new, wasMentioned) = case newPostData of
@@ -1375,7 +1367,7 @@ addMessageToState newPostData = do
                   -- (That, in turn, triggers a channel refresh.)
                   if chType == Group
                       then applyPreferenceChange pref
-                      else refreshChannel True nc member
+                      else refreshChannel nc member
 
                   addMessageToState newPostData >>= postProcessMessageAdd
 
@@ -1388,9 +1380,8 @@ addMessageToState newPostData = do
 
               doAddMessage = do
                 currCId <- use csCurrentChannelId
-                s <- use id  -- use *latest* state
                 flags <- use (csResources.crFlaggedPosts)
-                let msg' = clientPostToMessage s cp
+                let msg' = clientPostToMessage cp
                              & mFlagged .~ ((cp^.cpPostId) `Set.member` flags)
                 csPostMap.at(postId new) .= Just msg'
                 csChannels %= modifyChannelById cId
@@ -1420,9 +1411,8 @@ addMessageToState newPostData = do
                                   doAsyncChannelMM Preempt cId
                                       (\s _ _ -> MM.mmGetThread parentId s)
                                       (\_ p -> do
-                                          st' <- use id
                                           let postMap = HM.fromList [ ( pId
-                                                                      , clientPostToMessage st'
+                                                                      , clientPostToMessage
                                                                         (toClientPost x (x^.postParentIdL))
                                                                       )
                                                                     | (pId, x) <- HM.toList (p^.postsPostsL)
@@ -1450,17 +1440,7 @@ addMessageToState newPostData = do
                                                 else NoAction
                     return $ curChannelAction <> originUserAction
 
-          -- If this message was written by a user we don't know about,
-          -- fetch the user's information before posting the message.
-          case cp^.cpUser of
-              Nothing -> doHandleAddedMessage
-              Just uId ->
-                  case st^.csUsers.to (findUserById uId) of
-                      Just _ -> doHandleAddedMessage
-                      Nothing -> do
-                          handleNewUser uId
-                          doAsyncWith Normal $ return (doHandleAddedMessage >> return ())
-                          postedChanMessage
+          doHandleAddedMessage
 
 getNewMessageCutoff :: ChannelId -> ChatState -> Maybe NewMessageIndicator
 getNewMessageCutoff cId st = do
@@ -1472,24 +1452,39 @@ getEditedMessageCutoff cId st = do
     cc <- st^?csChannel(cId)
     cc^.ccInfo.cdEditedMessageThreshold
 
-fetchCurrentScrollback :: MH ()
-fetchCurrentScrollback = do
-  cId <- use csCurrentChannelId
-  withChannel cId $ \ chan -> do
-    unless (chan^.ccInfo.cdCurrentState `elem` [ChanLoaded, ChanInitialSelect]) $ do
-      -- Upgrades the channel state to "Loaded" to indicate that
-      -- content is now present (this is the main point where channel
-      -- state is switched from metadata-only to with-content), then
-      -- initiates an operation to read the content (which will change
-      -- the state to a pending for loaded.  If there was an async
-      -- background task pending (esp. if this channel was selected
-      -- just after startup and startup fetching is still underway),
-      -- this will potentially schedule a duplicate, but that will not
-      -- be harmful since quiescent channel states only increase to
-      -- "higher" states.
-      when (chan^.ccInfo.cdCurrentState /= ChanInitialSelect) $
-        csChannel(cId).ccInfo.cdCurrentState .= ChanLoaded
-      asyncFetchScrollback Preempt cId
+
+fetchVisibleIfNeeded :: MH ()
+fetchVisibleIfNeeded = do
+  sts <- use csConnectionStatus
+  case sts of
+    Connected -> do
+       cId <- use csCurrentChannelId
+       withChannel cId $ \chan ->
+           let msgs = chan^.ccContents.cdMessages.to reverseMessages
+               (numRemaining, gapInDisplayable, _, rel'pId, overlap) =
+                   foldl gapTrail (numScrollbackPosts, False, Nothing, Nothing, 2) msgs
+               gapTrail a@(_,  True, _, _, _) _ = a
+               gapTrail a@(0,     _, _, _, _) _ = a
+               gapTrail   (a, False, b, c, d) m | isGap m = (a, True, b, c, d)
+               gapTrail (remCnt, _, prev'pId, prev''pId, ovl) msg =
+                   (remCnt - 1, False, msg^.mPostId <|> prev'pId, prev'pId <|> prev''pId,
+                    ovl + if isNothing (msg^.mPostId) then 1 else 0)
+               numToReq = numRemaining + overlap
+               query = MM.defaultPostQuery
+                       { MM.postQueryPage    = Just 0
+                       , MM.postQueryPerPage = Just numToReq
+                       }
+               finalQuery = case rel'pId of
+                              Nothing -> query
+                              Just pid -> query { MM.postQueryBefore = Just pid }
+               op = \s _ c -> MM.mmGetPostsForChannel c finalQuery s
+           in when ((not $ chan^.ccContents.cdFetchPending) && gapInDisplayable) $ do
+                     csChannel(cId).ccContents.cdFetchPending .= True
+                     doAsyncChannelMM Preempt cId op
+                         (\c p -> do addObtainedMessages c (-numToReq) p >>= postProcessMessageAdd
+                                     csChannel(c).ccContents.cdFetchPending .= False)
+
+    _ -> return ()
 
 mkChannelZipperList :: MMNames -> [ChannelId]
 mkChannelZipperList chanNames =
@@ -1718,13 +1713,13 @@ removeDuplicates :: [LinkChoice] -> [LinkChoice]
 removeDuplicates = nubOn (\ l -> (l^.linkURL, l^.linkUser))
 
 msgURLs :: Message -> Seq.Seq LinkChoice
-msgURLs msg | Just uname <- msg^.mUserName =
-  let msgUrls = (\ (url, text) -> LinkChoice (msg^.mDate) uname text url Nothing) <$>
+msgURLs msg | UserI uid <- msg^.mUser =
+  let msgUrls = (\ (url, text) -> LinkChoice (msg^.mDate) uid text url Nothing) <$>
                   (mconcat $ blockGetURLs <$> (F.toList $ msg^.mText))
       attachmentURLs = (\ a ->
                           LinkChoice
                             (msg^.mDate)
-                            uname
+                            uid
                             ("attachment `" <> (a^.attachmentName) <> "`")
                             (a^.attachmentURL)
                             (Just (a^.attachmentFileId)))

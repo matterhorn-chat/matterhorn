@@ -323,7 +323,7 @@ data PostRef
 -- | For representing links to things in the 'open links' view
 data LinkChoice = LinkChoice
   { _linkTime   :: ServerTime
-  , _linkUser   :: T.Text
+  , _linkUser   :: UserId
   , _linkName   :: T.Text
   , _linkURL    :: T.Text
   , _linkFileId :: Maybe FileId
@@ -687,7 +687,7 @@ withChannelOrDefault cId deflt mote = do
 -- ** 'ChatState' Helper Functions
 
 isMine :: ChatState -> Message -> Bool
-isMine st msg = (Just $ st^.csMe.userUsernameL) == msg^.mUserName
+isMine st msg = (UserI $ st^.csMe.userIdL) == msg^.mUser
 
 getMessageForPostId :: ChatState -> PostId -> Maybe Message
 getMessageForPostId st pId = st^.csPostMap.at(pId)
@@ -701,13 +701,12 @@ getParentMessage st msg
 getUsernameForUserId :: ChatState -> UserId -> Maybe T.Text
 getUsernameForUserId st uId = _uiName <$> findUserById uId (st^.csUsers)
 
-clientPostToMessage :: ChatState -> ClientPost -> Message
-clientPostToMessage st cp = Message
+clientPostToMessage :: ClientPost -> Message
+clientPostToMessage cp = Message
   { _mText          = cp^.cpText
-  , _mUserName      = case cp^.cpUserOverride of
-    Just n
-      | cp^.cpType == NormalPost -> Just (n <> "[BOT]")
-    _ -> getUsernameForUserId st =<< cp^.cpUser
+  , _mUser          = case cp^.cpUserOverride of
+                        Just n | cp^.cpType == NormalPost -> UserOverride (n <> "[BOT]")
+                        _ -> maybe NoUser UserI $ cp^.cpUser
   , _mDate          = cp^.cpDate
   , _mType          = CP $ cp^.cpType
   , _mPending       = cp^.cpPending

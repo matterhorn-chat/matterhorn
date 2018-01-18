@@ -103,7 +103,9 @@ data MessageData = MessageData
   { mdEditThreshold     :: Maybe ServerTime
   , mdShowOlderEdits    :: Bool
   , mdMessage           :: Message
+  , mdUserName          :: Maybe T.Text
   , mdParentMessage     :: Maybe Message
+  , mdParentUserName    :: Maybe T.Text
   , mdRenderReplyParent :: Bool
   , mdHighlightSet      :: HighlightSet
   , mdIndentBlocks      :: Bool
@@ -123,7 +125,7 @@ data MessageData = MessageData
 -- shown for old messages (i.e., ignore the mdEditThreshold value).
 renderMessage :: MessageData -> Widget a
 renderMessage md@MessageData { mdMessage = msg, .. } =
-    let msgUsr = case msg^.mUserName of
+    let msgUsr = case mdUserName of
           Just u
             | msg^.mType `elem` omitUsernameTypes -> Nothing
             | otherwise -> Just u
@@ -174,6 +176,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                       let parentMsg = renderMessage md
                             { mdShowOlderEdits    = False
                             , mdMessage           = pm
+                            , mdUserName          = mdParentUserName
                             , mdParentMessage     = Nothing
                             , mdRenderReplyParent = False
                             , mdIndentBlocks      = False

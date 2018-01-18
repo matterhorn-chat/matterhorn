@@ -24,6 +24,15 @@ import           Types.Messages
 maxMessageHeight :: Int
 maxMessageHeight = 200
 
+
+-- | nameForUserRef converts the UserRef into a printable name, based
+-- on the current known user data.
+nameForUserRef :: ChatState -> UserRef -> Maybe T.Text
+nameForUserRef st uref = case uref of
+                           NoUser -> Nothing
+                           UserOverride t -> Just t
+                           UserI uId -> getUsernameForUserId st uId
+
 -- | renderSingleMessage is the main message drawing function.
 --
 -- The `ind` argument specifies an "indicator boundary".  Showing
@@ -41,7 +50,9 @@ renderChatMessage st hs ind renderTimeFunc msg =
           InReplyTo pId -> getMessageForPostId st pId
         m = renderMessage MessageData
               { mdMessage           = msg
+              , mdUserName          = msg^.mUser.to (nameForUserRef st)
               , mdParentMessage     = parent
+              , mdParentUserName    = parent >>= (^.mUser.to (nameForUserRef st))
               , mdEditThreshold     = ind
               , mdHighlightSet      = hs
               , mdShowOlderEdits    = showOlderEdits
@@ -63,17 +74,17 @@ renderChatMessage st hs ind renderTimeFunc msg =
                    reacMsg = Map.foldMapWithKey renderR (msg^.mReactions)
                in Just $ withDefAttr emojiAttr $ txt ("   " <> reacMsg)
         msgTxt =
-          case msg^.mUserName of
-            Just _
-              | msg^.mType == CP Join || msg^.mType == CP Leave ->
-                  withDefAttr clientMessageAttr m
-              | otherwise -> m
-            Nothing ->
+          case msg^.mUser of
+            NoUser ->
                 case msg^.mType of
                     C DateTransition -> withDefAttr dateTransitionAttr (hBorderWithLabel m)
                     C NewMessagesTransition -> withDefAttr newMessageTransitionAttr (hBorderWithLabel m)
                     C Error -> withDefAttr errorMessageAttr m
+                    C UnknownGap -> withDefAttr gapMessageAttr m
                     _ -> withDefAttr clientMessageAttr m
+            _ | msg^.mType == CP Join || msg^.mType == CP Leave ->
+                  withDefAttr clientMessageAttr m
+              | otherwise -> m
         fullMsg = vBox $ msgTxt : catMaybes [msgAtch, msgReac]
         maybeRenderTime w = hBox [renderTimeFunc (msg^.mDate), txt " ", w]
         maybeRenderTimeWith f = case msg^.mType of

@@ -32,8 +32,7 @@ import           Config
 import           InputHistory
 import           Login
 import           LastRunState
-import           State (updateMessageFlag)
-import           State.Common
+import           State.Messages
 import           TeamSelect
 import           Themes
 import           TimeUtils (lookupLocalTimeZone)
@@ -41,13 +40,6 @@ import           State.Setup.Threads
 import           Types
 import           Types.Channels
 import qualified Zipper as Z
-
-loadFlaggedMessages :: Seq.Seq Preference -> ChatState -> IO ()
-loadFlaggedMessages prefs st = doAsyncWithIO Normal st $ do
-  return $ sequence_ [ updateMessageFlag (flaggedPostId fp) True
-                     | Just fp <- F.toList (fmap preferenceToFlaggedPost prefs)
-                     , flaggedPostStatus fp
-                     ]
 
 incompleteCredentials :: Config -> ConnectionInfo
 incompleteCredentials config = ConnectionInfo hStr (configPort config) uStr pStr
@@ -203,8 +195,7 @@ initializeState cr myTeam myUser = do
   -- Since the only channel we are dealing with is by construction the
   -- last channel, we don't have to consider other cases here:
   msgs <- forM (F.toList chans) $ \c -> do
-      let cChannel = makeClientChannel c & ccInfo.cdCurrentState .~ state
-          state = ChanInitialSelect
+      cChannel <- makeClientChannel c
       return (getId c, cChannel)
 
   tz    <- lookupLocalTimeZone

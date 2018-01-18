@@ -37,6 +37,7 @@ executable matterhorn
                        State
                        State.Common
                        State.Editing
+                       State.Messages
                        State.PostListOverlay
                        State.Setup
                        State.Setup.Threads
@@ -132,6 +133,7 @@ test-suite test_messages
   main-is:            test_messages.hs
   other-modules:      Cheapskate_QCA
                     , Message_QCA
+                    , TimeUtils
                     , Types.Messages
                     , Types.Posts
                     , Types.DirectionalSeq

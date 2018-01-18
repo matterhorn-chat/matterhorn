@@ -164,24 +164,6 @@ doAsyncChannelMM :: DoAsyncChannelMM a
 doAsyncChannelMM prio cId mmOp eventHandler =
   doAsyncMM prio (\s t -> mmOp s t cId) (eventHandler cId)
 
--- | Prefix function for calling doAsyncChannelMM that will set the
--- channel state to "pending" until the async operation completes.  If
--- the channel state is already in the pending state when this
--- function is called, no operations are performed (i.e., this request
--- is treated as a duplicate).
-asPending :: DoAsyncChannelMM a -> DoAsyncChannelMM a
-asPending asyncOp prio cId mmOp eventHandler = do
-    withChannel cId $ \chan ->
-        let origState = chan^.ccInfo.cdCurrentState
-            (pendState, setDone) = pendingChannelState origState
-        in if pendState == origState
-           then return ()  -- this operation already pending; do not duplicate
-           else do
-             csChannel(cId).ccInfo.cdCurrentState .= pendState
-             asyncOp prio cId mmOp $ \_ r ->
-                 do csChannel(cId).ccInfo.cdCurrentState %= setDone
-                    eventHandler cId r
-
 -- | Use this convenience function if no operation needs to be
 -- performed in the MH state after an async operation completes.
 endAsyncNOP :: ChannelId -> a -> MH ()
@@ -189,28 +171,18 @@ endAsyncNOP _ _ = return ()
 
 -- * Client Messages
 
--- | Create 'ChannelContents' from a 'Posts' value
-fromPosts :: Posts -> MH ChannelContents
-fromPosts ps = do
-  msgs <- messagesFromPosts ps
-  F.forM_ (ps^.postsPostsL) $
-    asyncFetchAttachments
-  return (ChannelContents msgs)
-
 messagesFromPosts :: Posts -> MH Messages
 messagesFromPosts p = do
-  st <- use id
   flags <- use (csResources.crFlaggedPosts)
-  csPostMap %= HM.union (postMap st)
-  st' <- use id
-  let msgs = postsToMessages (maybeFlag flags . clientPostToMessage st') (clientPost <$> ps)
+  csPostMap %= HM.union postMap
+  let msgs = postsToMessages (maybeFlag flags . clientPostToMessage) (clientPost <$> ps)
       postsToMessages f = foldr (addMessage . f) noMessages
   return msgs
     where
-        postMap :: ChatState -> HM.HashMap PostId Message
-        postMap st = HM.fromList
+        postMap :: HM.HashMap PostId Message
+        postMap = HM.fromList
           [ ( pId
-            , clientPostToMessage st (toClientPost x Nothing)
+            , clientPostToMessage (toClientPost x Nothing)
             )
           | (pId, x) <- HM.toList (p^.postsPostsL)
           ]

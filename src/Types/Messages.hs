@@ -38,11 +38,12 @@ of Nothing@ or @case mType of C _@).
 module Types.Messages
   ( -- * Message and operations on a single Message
     Message(..)
-  , isDeletable, isReplyable, isEditable, isReplyTo
-  , mText, mUserName, mDate, mType, mPending, mDeleted
+  , isDeletable, isReplyable, isEditable, isReplyTo, isGap
+  , mText, mUser, mDate, mType, mPending, mDeleted
   , mAttachments, mInReplyToMsg, mPostId, mReactions, mFlagged
   , mOriginalPost, mChannelId
   , MessageType(..)
+  , UserRef(..)
   , ReplyState(..)
   , clientMessageToMessage
   , newMessageOfType
@@ -57,24 +58,31 @@ module Types.Messages
   , unreverseMessages
     -- * Operations on Posted Messages
   , splitMessages
+  , splitMessagesOn
+  , splitRetrogradeMessagesOn
   , findMessage
   , getNextPostId
   , getPrevPostId
-  , getLatestPostId
+  , getEarliestPostMsg
+  , getLatestPostMsg
   , findLatestUserMessage
   -- * Operations on any Message type
   , messagesAfter
+  , removeMatchesFromSubset
+  , withFirstMessage
   )
 where
 
 import           Cheapskate (Blocks)
 import           Control.Applicative
+import           Data.Foldable
 import qualified Data.Map.Strict as Map
-import           Data.Maybe (isJust)
+import           Data.Maybe (isJust, isNothing, listToMaybe)
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
+import           Data.Tuple
 import           Lens.Micro.Platform
-import           Network.Mattermost.Types (ChannelId, PostId, Post, ServerTime)
+import           Network.Mattermost.Types (ChannelId, PostId, Post, ServerTime, UserId)
 import           Types.DirectionalSeq
 import           Types.Posts
 
@@ -85,7 +93,7 @@ import           Types.Posts
 --   Mattermost itself or from a client-internal source.
 data Message = Message
   { _mText          :: Blocks
-  , _mUserName      :: Maybe T.Text
+  , _mUser          :: UserRef
   , _mDate          :: ServerTime
   , _mType          :: MessageType
   , _mPending       :: Bool
@@ -114,6 +122,9 @@ isReplyTo expectedParentId m =
         NotAReply                -> False
         InReplyTo actualParentId -> actualParentId == expectedParentId
 
+isGap :: Message -> Bool
+isGap m = _mType m == C UnknownGap
+
 -- | A 'Message' is the representation we use for storage and
 --   rendering, so it must be able to represent either a
 --   post from Mattermost or an internal message. This represents
@@ -121,6 +132,12 @@ isReplyTo expectedParentId m =
 data MessageType = C ClientMessageType
                  | CP ClientPostType
                  deriving (Eq, Show)
+
+-- | There may be no user (usually an internal message), a reference
+-- to a user (by Id), or the server may have supplied a specific
+-- username (often associated with bots).
+data UserRef = NoUser | UserI UserId | UserOverride T.Text
+               deriving (Eq, Show)
 
 -- | The 'ReplyState' of a message represents whether a message
 --   is a reply, and if so, to what message
@@ -136,7 +153,7 @@ data ReplyState =
 clientMessageToMessage :: ClientMessage -> Message
 clientMessageToMessage cm = Message
   { _mText          = getBlocks (cm^.cmText)
-  , _mUserName      = Nothing
+  , _mUser          = NoUser
   , _mDate          = cm^.cmDate
   , _mType          = C $ cm^.cmType
   , _mPending       = False
@@ -153,7 +170,7 @@ clientMessageToMessage cm = Message
 newMessageOfType :: T.Text -> MessageType -> ServerTime -> Message
 newMessageOfType text typ d = Message
   { _mText         = getBlocks text
-  , _mUserName     = Nothing
+  , _mUser         = NoUser
   , _mDate         = d
   , _mType         = typ
   , _mPending      = False
@@ -242,6 +259,38 @@ reverseMessages = DSeq . Seq.reverse . dseq
 unreverseMessages :: RetrogradeMessages -> Messages
 unreverseMessages = DSeq . Seq.reverse . dseq
 
+-- | Splits the message list at first message where the specified
+-- predicate returns true.  The result is the message where the split
+-- occurred, followed by the messages preceeding the split point (in
+-- retrograde order) and the messages following the split point).  If
+-- the predicate never matches a message before reaching the end of
+-- the list, then the matched message is None and all of the messages
+-- are in the first (retrograde) collection of of messages.
+splitMessagesOn :: (Message -> Bool)
+                -> Messages
+                -> (Maybe Message, (RetrogradeMessages, Messages))
+splitMessagesOn = splitMsgSeqOn
+
+-- | Similar to 'splitMessagesOn', but taking RetrogradeMessages as input.
+splitRetrogradeMessagesOn :: (Message -> Bool)
+                          -> RetrogradeMessages
+                          -> (Maybe Message, (Messages, RetrogradeMessages))
+splitRetrogradeMessagesOn = splitMsgSeqOn
+
+-- n.b., the splitMessagesOn and splitRetrogradeMessagesOn could be
+-- unified into the following, but that will require TypeFamilies or
+-- similar to relate d and r SeqDirection types.  For now, it's
+-- simplier to just have two API endpoints.
+splitMsgSeqOn :: (SeqDirection d, SeqDirection r) =>
+                  (Message -> Bool)
+                -> DirectionalSeq d Message
+                -> (Maybe Message, (DirectionalSeq r Message, DirectionalSeq d Message))
+splitMsgSeqOn f msgs =
+    let (removed, remaining) = dirSeqBreakl f msgs
+        devomer = DSeq $ Seq.reverse $ dseq removed
+    in (withDirSeqHead id remaining, (devomer, onDirectedSeq (Seq.drop 1) remaining))
+
+
 -- ----------------------------------------------------------------------
 -- * Operations on Posted Messages
 
@@ -256,20 +305,7 @@ unreverseMessages = DSeq . Seq.reverse . dseq
 splitMessages :: Maybe PostId
               -> Messages
               -> (Maybe Message, (RetrogradeMessages, Messages))
-splitMessages Nothing msgs =
-    (Nothing, (DSeq $ Seq.reverse $ dseq msgs, noMessages))
-splitMessages pid msgs =
-    -- n.b. searches from the end as that is usually where the message
-    -- is more likely to be found.  There is usually < 1000 messages
-    -- total, so this does not need hyper efficiency.
-    case Seq.viewr (dseq msgs) of
-      Seq.EmptyR  -> (Nothing, (reverseMessages noMessages, noMessages))
-      ms Seq.:> m -> if m^.mPostId == pid
-                     then (Just m, (DSeq $ Seq.reverse ms, noMessages))
-                     else let (a, (b,c)) = splitMessages pid $ DSeq ms
-                          in case a of
-                               Nothing -> (a, (DSeq $ m Seq.<| (dseq b), c))
-                               Just _  -> (a, (b, DSeq $ (dseq c) Seq.|> m))
+splitMessages pid msgs = splitMessagesOn (\m -> isJust pid && m^.mPostId == pid) msgs
 
 -- | findMessage searches for a specific message as identified by the
 -- PostId.  The search starts from the most recent messages because
@@ -301,7 +337,7 @@ getRelPostId :: ((Either PostId (Maybe PostId)
              -> Messages
              -> Maybe PostId
 getRelPostId folD jp = case jp of
-                         Nothing -> getLatestPostId
+                         Nothing -> \msgs -> (getLatestPostMsg msgs >>= _mPostId)
                          Just p -> either (const Nothing) id . folD fnd (Left p)
     where fnd = either fndp fndnext
           fndp c v = if v^.mPostId == Just c then Right Nothing else Left c
@@ -310,11 +346,15 @@ getRelPostId folD jp = case jp of
 
 -- | Find the most recent message that is a Post (as opposed to a
 -- local message) (if any).
-getLatestPostId :: Messages -> Maybe PostId
-getLatestPostId msgs =
-    Seq.findIndexR valid (dseq msgs)
-    >>= _mPostId <$> Seq.index (dseq msgs)
-    where valid m = not (m^.mDeleted) && isJust (m^.mPostId)
+getLatestPostMsg :: Messages -> Maybe Message
+getLatestPostMsg msgs =
+    (listToMaybe . reverse . toList) $ (Seq.dropWhileR (not . validUserMessage) (dseq msgs))
+
+-- | Find the earliest message that is a Post (as opposed to a
+-- local message) (if any).
+getEarliestPostMsg :: Messages -> Maybe Message
+getEarliestPostMsg msgs =
+    (listToMaybe . toList) $ (Seq.dropWhileL (not . validUserMessage) (dseq msgs))
 
 
 -- | Find the most recent message that is a message posted by a user
@@ -322,17 +362,11 @@ getLatestPostId msgs =
 -- any user event that is not a message (i.e. find a normal message or
 -- an emote).
 findLatestUserMessage :: (Message -> Bool) -> Messages -> Maybe Message
-findLatestUserMessage f msgs =
-    case getLatestPostId msgs of
-        Nothing -> Nothing
-        Just pid -> findUserMessageFrom pid msgs
-    where findUserMessageFrom p ms =
-              let Just msg = findMessage p ms
-              in if f msg
-                 then Just msg
-                 else case getPrevPostId (msg^.mPostId) msgs of
-                        Nothing -> Nothing
-                        Just p' -> findUserMessageFrom p' msgs
+findLatestUserMessage f =
+    listToMaybe . toList . Seq.dropWhileR (\m -> not (validUserMessage m) && not (f m)) . dseq
+
+validUserMessage :: Message -> Bool
+validUserMessage m = isJust (m^.mPostId) && not (m^.mDeleted)
 
 -- ----------------------------------------------------------------------
 -- * Operations on any Message type
@@ -340,3 +374,47 @@ findLatestUserMessage f msgs =
 -- | Return all messages that were posted after the specified date/time.
 messagesAfter :: ServerTime -> Messages -> Messages
 messagesAfter viewTime = onDirectedSeq $ Seq.takeWhileR (\m -> m^.mDate > viewTime)
+
+-- | Removes any Messages (all types) for which the predicate is true
+-- from the specified subset of messages (identified by a starting and
+-- ending PostId, inclusive) and returns the resulting list (from
+-- start to finish, irrespective of 'firstId' and 'lastId') and the
+-- list of removed items.
+--
+--    start       | end          |  operates-on              | (test) case
+--   --------------------------------------------------------|-------------
+--   Nothing      | Nothing      | entire list               |  C1
+--   Nothing      | Just found   | start --> found]          |  C2
+--   Nothing      | Just missing | nothing [suggest invalid] |  C3
+--   Just found   | Nothing      | [found --> end            |  C4
+--   Just found   | Just found   | [found --> found]         |  C5
+--   Just found   | Just missing | [found --> end            |  C6
+--   Just missing | Nothing      | nothing [suggest invalid] |  C7
+--   Just missing | Just found   | start --> found]          |  C8
+--   Just missing | Just missing | nothing [suggest invalid] |  C9
+--
+--  @removeMatchesFromSubset matchPred fromId toId msgs = (remaining, removed)@
+--
+removeMatchesFromSubset :: (Message -> Bool) -> Maybe PostId -> Maybe PostId
+                        -> Messages -> (Messages, Messages)
+removeMatchesFromSubset matching firstId lastId msgs =
+    let knownIds = fmap (^.mPostId) msgs
+    in if isNothing firstId && isNothing lastId
+       then swap $ dirSeqPartition matching msgs
+       else if isJust firstId && firstId `elem` knownIds
+            then onDirSeqSubset
+                (\m -> m^.mPostId == firstId)
+                (if isJust lastId then \m -> m^.mPostId == lastId else const False)
+                (swap . dirSeqPartition matching) msgs
+            else if isJust lastId && lastId `elem` knownIds
+                 then onDirSeqSubset
+                     (const True)
+                     (\m -> m^.mPostId == lastId)
+                     (swap . dirSeqPartition matching) msgs
+                 else (msgs, noMessages)
+
+-- | Performs an operation on the first Message, returning just the
+-- result of that operation, or Nothing if there were no messages.
+-- Note that the message is not necessarily a posted user message.
+withFirstMessage :: SeqDirection dir => (Message -> r) -> DirectionalSeq dir Message -> Maybe r
+withFirstMessage = withDirSeqHead

@@ -39,18 +39,20 @@ import           Events.MessageSelect
 import           Events.PostListOverlay
 
 onEvent :: ChatState -> BrickEvent Name MHEvent -> EventM Name (Next ChatState)
-onEvent st ev = runMHEvent st $ case ev of
-  (AppEvent e) -> onAppEvent e
-  (VtyEvent (Vty.EvKey (Vty.KChar 'l') [Vty.MCtrl])) -> do
-    vty <- mh getVtyHandle
-    liftIO $ Vty.refresh vty
-  (VtyEvent e) -> onVtyEvent e
-  _ -> return ()
+onEvent st ev = runMHEvent st (onEv >> fetchVisibleIfNeeded)
+    where onEv = do case ev of
+                      (AppEvent e) -> onAppEvent e
+                      (VtyEvent (Vty.EvKey (Vty.KChar 'l') [Vty.MCtrl])) -> do
+                           vty <- mh getVtyHandle
+                           liftIO $ Vty.refresh vty
+                      (VtyEvent e) -> onVtyEvent e
+                      _ -> return ()
 
 onAppEvent :: MHEvent -> MH ()
 onAppEvent RefreshWebsocketEvent = connectWebsockets
-onAppEvent WebsocketDisconnect =
+onAppEvent WebsocketDisconnect = do
   csConnectionStatus .= Disconnected
+  disconnectChannels
 onAppEvent WebsocketConnect = do
   csConnectionStatus .= Connected
   refreshChannelsAndUsers
@@ -108,7 +110,7 @@ handleWSEvent we = do
                 let wasMentioned = case wepMentions (weData we) of
                       Just lst -> myUserId `Set.member` lst
                       _ -> False
-                addMessageToState (RecentPost p wasMentioned) >>= postProcessMessageAdd
+                addNewPostedMessage $ RecentPost p wasMentioned
             | otherwise -> return ()
 
         WMPostEdited
@@ -190,11 +192,11 @@ handleWSEvent we = do
             | otherwise -> return ()
 
         WMChannelViewed
-            | Just cId <- webChannelId $ weBroadcast we -> refreshChannelById False cId
+            | Just cId <- wepChannelId $ weData we -> refreshChannelById cId
             | otherwise -> return ()
 
         WMChannelUpdated
-            | Just cId <- webChannelId $ weBroadcast we -> refreshChannelById False cId
+            | Just cId <- webChannelId $ weBroadcast we -> refreshChannelById cId
             | otherwise -> return ()
 
         WMGroupAdded
