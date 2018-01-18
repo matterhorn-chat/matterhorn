@@ -75,7 +75,9 @@ modifiers such as Control (indicated with a `C-` prefix) or Meta
 (indicated with a `M-` prefix). If your keyboard has an `Alt` key, that
 will work as `Meta`. If it does not, you may be able to configure your
 terminal to provide `Meta` via other means (e.g. iTerm2 on OS X can be
-configured to make the left Option key work as Meta).
+configured to make the left Option key work as Meta). Keybindings can
+be customized in the configuration file; see `/help keybindings` for
+details.
 
 To join a channel, use the `/join` command to choose from a list of
 available channels. To create a channel, use `/create-channel`. To leave
