@@ -644,7 +644,7 @@ renderUrlList st =
           let time = link^.linkTime
           in attr sel $ vLimit 2 $
             (vLimit 1 $
-             hBox [ let u = maybe "" id (link^.linkUser.to (getUsernameForUserId st)) in colorUsername u u
+             hBox [ let u = maybe "" id (link^.linkUser.to (nameForUserRef st)) in colorUsername u u
                   , if link^.linkName == link^.linkURL
                       then emptyWidget
                       else (txt ": " <+> (renderText $ link^.linkName))

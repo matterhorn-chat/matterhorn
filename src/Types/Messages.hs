@@ -137,7 +137,7 @@ data MessageType = C ClientMessageType
 -- to a user (by Id), or the server may have supplied a specific
 -- username (often associated with bots).
 data UserRef = NoUser | UserI UserId | UserOverride T.Text
-               deriving (Eq, Show)
+               deriving (Eq, Show, Ord)
 
 -- | The 'ReplyState' of a message represents whether a message
 --   is a reply, and if so, to what message

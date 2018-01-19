@@ -323,7 +323,7 @@ data PostRef
 -- | For representing links to things in the 'open links' view
 data LinkChoice = LinkChoice
   { _linkTime   :: ServerTime
-  , _linkUser   :: UserId
+  , _linkUser   :: UserRef
   , _linkName   :: T.Text
   , _linkURL    :: T.Text
   , _linkFileId :: Maybe FileId

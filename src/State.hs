@@ -1713,8 +1713,11 @@ removeDuplicates :: [LinkChoice] -> [LinkChoice]
 removeDuplicates = nubOn (\ l -> (l^.linkURL, l^.linkUser))
 
 msgURLs :: Message -> Seq.Seq LinkChoice
-msgURLs msg | UserI uid <- msg^.mUser =
-  let msgUrls = (\ (url, text) -> LinkChoice (msg^.mDate) uid text url Nothing) <$>
+msgURLs msg
+  | NoUser <- msg^.mUser = mempty
+  | otherwise =
+  let uid = msg^.mUser
+      msgUrls = (\ (url, text) -> LinkChoice (msg^.mDate) uid text url Nothing) <$>
                   (mconcat $ blockGetURLs <$> (F.toList $ msg^.mText))
       attachmentURLs = (\ a ->
                           LinkChoice
@@ -1725,7 +1728,6 @@ msgURLs msg | UserI uid <- msg^.mUser =
                             (Just (a^.attachmentFileId)))
                        <$> (msg^.mAttachments)
   in msgUrls <> attachmentURLs
-msgURLs _ = mempty
 
 openSelectedURL :: MH ()
 openSelectedURL = do
