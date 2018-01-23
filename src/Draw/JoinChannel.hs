@@ -51,5 +51,5 @@ renderJoinListItem :: Bool -> Channel -> Widget Name
 renderJoinListItem _ chan =
     let baseStr = chan^.channelNameL <> " (" <> chan^.channelDisplayNameL <> ")"
         s = "  " <> (T.strip $ chan^.channelPurposeL)
-    in (vLimit 1 $ txt baseStr <+> fill ' ') <=>
+    in (vLimit 1 $ padRight Max $ txt baseStr) <=>
        (vLimit 1 $ txtWrapWith (defaultWrapSettings { preserveIndentation = True }) s)
