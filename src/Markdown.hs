@@ -22,6 +22,7 @@ import Prelude.Compat
 import           Brick ( (<+>), Widget, textWidth )
 import qualified Brick.Widgets.Border as B
 import qualified Brick.Widgets.Border.Style as B
+import qualified Brick.Widgets.Skylighting as BS
 import qualified Brick as B
 import           Cheapskate.Types ( Block
                                   , Blocks
@@ -308,15 +309,7 @@ codeBlockToWidget syntax tx =
         Right tokLines ->
             let padding = B.padLeftRight 1 (B.vLimit (length tokLines) B.vBorder)
             in (B.txt $ "[" <> Sky.sName syntax <> "]") B.<=>
-               (padding <+> (B.vBox $ renderTokenLine <$> tokLines))
-
-renderTokenLine :: Sky.SourceLine -> Widget a
-renderTokenLine [] = B.str " "
-renderTokenLine toks = B.hBox $ renderToken <$> toks
-
-renderToken :: Sky.Token -> Widget a
-renderToken (ty, tx) =
-    B.withDefAttr (attrNameForTokenType ty) $ textWithCursor tx
+               (padding <+> BS.renderRawSource textWithCursor tokLines)
 
 rawCodeBlockToWidget :: T.Text -> Widget a
 rawCodeBlockToWidget tx =

@@ -4,7 +4,6 @@ module Themes
 
   , defaultTheme
   , internalThemes
-  , attrNameForTokenType
   , lookupTheme
   , themeDocs
 
@@ -62,6 +61,9 @@ import Graphics.Vty
 import Brick
 import Brick.Themes
 import Brick.Widgets.List
+import Brick.Widgets.Skylighting ( attrNameForTokenType, attrMappingsForStyle
+                                 , highlightedCodeBlockAttr
+                                 )
 import qualified Data.Text as T
 import qualified Skylighting as Sky
 import Skylighting (TokenType(..))
@@ -252,7 +254,7 @@ lightAttrs =
        , (editedRecentlyMarkingAttr,        black `on` yellow)
        ] <>
        ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors) <>
-       (themeEntriesForStyle sty)
+       (filter skipBaseCodeblockAttr $ attrMappingsForStyle sty)
 
 darkAttrs :: [(AttrName, Attr)]
 darkAttrs =
@@ -295,7 +297,10 @@ darkAttrs =
      , (editedRecentlyMarkingAttr,        black `on` yellow)
      ] <>
      ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors) <>
-     (themeEntriesForStyle sty)
+     (filter skipBaseCodeblockAttr $ attrMappingsForStyle sty)
+
+skipBaseCodeblockAttr :: (AttrName, Attr) -> Bool
+skipBaseCodeblockAttr = ((/= highlightedCodeBlockAttr) . fst)
 
 darkColorTheme :: InternalTheme
 darkColorTheme = InternalTheme name theme
@@ -329,72 +334,6 @@ usernameColors =
     ]
 
 -- Functions for dealing with Skylighting styles
-
-baseHighlightedCodeBlockAttr :: AttrName
-baseHighlightedCodeBlockAttr = "highlightedCodeBlock"
-
-attrNameForTokenType :: TokenType -> AttrName
-attrNameForTokenType ty = baseHighlightedCodeBlockAttr <> (attrName s)
-    where
-        s = case ty of
-          KeywordTok        -> "keyword"
-          DataTypeTok       -> "dataType"
-          DecValTok         -> "declaration"
-          BaseNTok          -> "baseN"
-          FloatTok          -> "float"
-          ConstantTok       -> "constant"
-          CharTok           -> "char"
-          SpecialCharTok    -> "specialChar"
-          StringTok         -> "string"
-          VerbatimStringTok -> "verbatimString"
-          SpecialStringTok  -> "specialString"
-          ImportTok         -> "import"
-          CommentTok        -> "comment"
-          DocumentationTok  -> "documentation"
-          AnnotationTok     -> "annotation"
-          CommentVarTok     -> "comment"
-          OtherTok          -> "other"
-          FunctionTok       -> "function"
-          VariableTok       -> "variable"
-          ControlFlowTok    -> "controlFlow"
-          OperatorTok       -> "operator"
-          BuiltInTok        -> "builtIn"
-          ExtensionTok      -> "extension"
-          PreprocessorTok   -> "preprocessor"
-          AttributeTok      -> "attribute"
-          RegionMarkerTok   -> "regionMarker"
-          InformationTok    -> "information"
-          WarningTok        -> "warning"
-          AlertTok          -> "alert"
-          ErrorTok          -> "error"
-          NormalTok         -> "normal"
-
-themeEntriesForStyle :: Sky.Style -> [(AttrName, Attr)]
-themeEntriesForStyle sty =
-    mkTokenTypeEntry <$> Sky.tokenStyles sty
-
-baseAttrFromPair :: (Maybe Sky.Color, Maybe Sky.Color) -> Attr
-baseAttrFromPair (mf, mb) =
-    case (mf, mb) of
-        (Nothing, Nothing) -> defAttr
-        (Just f, Nothing)  -> fg (tokenColorToVtyColor f)
-        (Nothing, Just b)  -> bg (tokenColorToVtyColor b)
-        (Just f, Just b)   -> (tokenColorToVtyColor f) `on`
-                              (tokenColorToVtyColor b)
-
-tokenColorToVtyColor :: Sky.Color -> Color
-tokenColorToVtyColor (Sky.RGB r g b) = rgbColor r g b
-
-mkTokenTypeEntry :: (Sky.TokenType, Sky.TokenStyle) -> (AttrName, Attr)
-mkTokenTypeEntry (ty, tSty) =
-    let a = setStyle baseAttr
-        baseAttr = baseAttrFromPair (Sky.tokenColor tSty, Sky.tokenBackground tSty)
-        setStyle =
-            if Sky.tokenBold tSty then flip withStyle bold else id .
-            if Sky.tokenItalic tSty then flip withStyle standout else id .
-            if Sky.tokenUnderline tSty then flip withStyle underline else id
-
-    in (attrNameForTokenType ty, a)
 
 attrNameDescription :: ThemeDocumentation -> AttrName -> Maybe T.Text
 attrNameDescription td an = M.lookup an (themeDescriptions td)
@@ -508,6 +447,9 @@ themeDocs = ThemeDocumentation $ M.fromList $
       )
     , ( editedRecentlyMarkingAttr
       , "The 'edited' marking that appears on newly-edited messages"
+      )
+    , ( highlightedCodeBlockAttr
+      , "The base attribute for syntax-highlighted code blocks"
       )
     , ( attrNameForTokenType KeywordTok
       , "Syntax highlighting: Keyword"
