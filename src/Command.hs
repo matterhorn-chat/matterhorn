@@ -21,6 +21,7 @@ import State
 import State.Editing (toggleMessagePreview)
 import State.Common
 import State.PostListOverlay
+import State.UserListOverlay
 import Types
 import HelpTopics
 import Scripts
@@ -73,7 +74,8 @@ commandList =
       beginCurrentChannelDeleteConfirm
   , Cmd "members" "Show the current channel's members"
     NoArg $ \ () ->
-      fetchCurrentChannelMembers
+      enterChannelMembersUserList
+--      fetchCurrentChannelMembers
   , Cmd "leave" "Leave the current channel" NoArg $ \ () ->
       startLeaveCurrentChannel
   , Cmd "join" "Join a channel" NoArg $ \ () ->

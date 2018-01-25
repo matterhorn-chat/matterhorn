@@ -25,6 +25,7 @@ module Types
   , Mode(..)
   , ChannelSelectPattern(..)
   , PostListContents(..)
+  , UserListContents(..)
   , ChannelSelectMap
   , AuthenticationException(..)
   , BackgroundInfo(..)
@@ -62,6 +63,7 @@ module Types
   , csPostMap
   , csRecentChannel
   , csPostListOverlay
+  , csUserListOverlay
   , csMyTeam
   , csMode
   , csMessageSelect
@@ -95,6 +97,10 @@ module Types
   , PostListOverlayState
   , postListSelected
   , postListPosts
+
+  , UserListOverlayState
+  , userListSelected
+  , userListUsers
 
   , ChatResources(ChatResources)
   , crPreferences
@@ -459,6 +465,11 @@ data PostListContents
   --   | PostListPinned ChannelId
   deriving (Eq)
 
+-- | Mode type for the current contents of the user list overlay
+data UserListContents
+  = UserListChannelMembers
+  deriving (Eq)
+
 -- | The 'Mode' represents the current dominant UI activity
 data Mode =
     Main
@@ -472,6 +483,7 @@ data Mode =
     | MessageSelect
     | MessageSelectDeleteConfirm
     | PostListOverlay PostListContents
+    | UserListOverlay UserListContents
     deriving (Eq)
 
 -- | We're either connected or we're not.
@@ -501,6 +513,7 @@ data ChatState = ChatState
   , _csJoinChannelList             :: Maybe (List Name Channel)
   , _csMessageSelect               :: MessageSelectState
   , _csPostListOverlay             :: PostListOverlayState
+  , _csUserListOverlay             :: UserListOverlayState
   }
 
 newState :: ChatResources
@@ -532,6 +545,7 @@ newState rs i u m tz hist sp = ChatState
   , _csJoinChannelList             = Nothing
   , _csMessageSelect               = MessageSelectState Nothing
   , _csPostListOverlay             = PostListOverlayState mempty Nothing
+  , _csUserListOverlay             = UserListOverlayState mempty Nothing
   }
 
 type ChannelSelectMap = HM.HashMap T.Text ChannelSelectMatch
@@ -557,6 +571,11 @@ data MessageSelectState =
 data PostListOverlayState = PostListOverlayState
   { _postListPosts    :: Messages
   , _postListSelected :: Maybe PostId
+  }
+
+data UserListOverlayState = UserListOverlayState
+  { _userListUsers    :: Seq.Seq UserInfo
+  , _userListSelected :: Maybe PostId
   }
 
 -- | Actions that can be sent on the websocket to the server.
@@ -653,6 +672,7 @@ makeLenses ''ChatResources
 makeLenses ''ChatState
 makeLenses ''ChatEditState
 makeLenses ''PostListOverlayState
+makeLenses ''UserListOverlayState
 makeLenses ''ChannelSelectState
 
 resetSpellCheckTimer :: ChatEditState -> IO ()
