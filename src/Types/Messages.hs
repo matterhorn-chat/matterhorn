@@ -363,7 +363,7 @@ getEarliestPostMsg msgs =
 -- an emote).
 findLatestUserMessage :: (Message -> Bool) -> Messages -> Maybe Message
 findLatestUserMessage f =
-    listToMaybe . toList . Seq.dropWhileR (\m -> not (validUserMessage m) && not (f m)) . dseq
+    listToMaybe . reverse . toList . Seq.dropWhileR (\m -> not (validUserMessage m && f m)) . dseq
 
 validUserMessage :: Message -> Bool
 validUserMessage m = isJust (m^.mPostId) && not (m^.mDeleted)

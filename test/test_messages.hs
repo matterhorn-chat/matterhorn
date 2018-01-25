@@ -444,6 +444,22 @@ lookupTests = testGroup "Lookup"
                         if null postIds
                         then Nothing === lastPostId
                         else Just (last postIds) === lastPostId)
+
+              , testProperty "findLatestUserMessage" $ \(m1, m2, m3, m4, m5) ->
+                    let mlist = m1 : m2 : m3 : m4 : m5 : []
+                        msgs = makeMsgs mlist
+                        postIds = fmap (^.mPostId)
+                                  $ sortBy (compare `on` (^.mDate))
+                                  $ filter (\m -> isJust (m^.mPostId) && (not $ m^.mDeleted)) mlist
+                        lastPostId = (^.mPostId) <$> findLatestUserMessage (const True) msgs
+                        firstPostId = (^.mPostId) <$> findLatestUserMessage (\m -> m^.mPostId == head postIds) msgs
+                    in counterexample ("ids: " <> show (idlist msgs)
+                                      <> "\n dates: " <> (show $ fmap show $ foldr (\m l -> m^.mDate : l) [] msgs)
+                                      <> "\n deleted: " <> (show $ fmap show $ foldr (\m l -> m^.mDeleted : l) [] msgs)
+                                      <> "\n postIds:" <> show postIds) (
+                        if null postIds
+                        then Nothing === lastPostId
+                        else Just (last postIds) === lastPostId .&&. Just (head postIds) === firstPostId)
               ]
 
 splitTests :: TestTree
