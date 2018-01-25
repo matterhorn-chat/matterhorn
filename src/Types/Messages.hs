@@ -78,7 +78,7 @@ import           Control.Applicative
 import           Data.Foldable
 import qualified Data.Map.Strict as Map
 import           Data.Maybe (isJust, isNothing, listToMaybe)
-import qualified Data.Sequence as Seq
+import           Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Tuple
 import           Lens.Micro.Platform
@@ -223,11 +223,11 @@ class MessageOps a where
 
 instance MessageOps ChronologicalMessages where
     addMessage m ml =
-        case Seq.viewr (dseq ml) of
-            Seq.EmptyR -> DSeq $ Seq.singleton m
-            _ Seq.:> l ->
+        case viewr (dseq ml) of
+            EmptyR -> DSeq $ singleton m
+            _ :> l ->
                 case compare (m^.mDate) (l^.mDate) of
-                  GT -> DSeq $ dseq ml Seq.|> m
+                  GT -> DSeq $ dseq ml |> m
                   EQ -> if m^.mPostId == l^.mPostId && isJust (m^.mPostId)
                         then ml
                         else dirDateInsert m ml
@@ -237,15 +237,15 @@ instance MessageOps ChronologicalMessages where
 dirDateInsert :: Message -> ChronologicalMessages -> ChronologicalMessages
 dirDateInsert m = onDirectedSeq $ finalize . foldr insAfter initial
    where initial = (Just m, mempty)
-         insAfter c (Nothing, l) = (Nothing, c Seq.<| l)
+         insAfter c (Nothing, l) = (Nothing, c <| l)
          insAfter c (Just n, l) =
              case compare (n^.mDate) (c^.mDate) of
-               GT -> (Nothing, c Seq.<| (n Seq.<| l))
+               GT -> (Nothing, c <| (n <| l))
                EQ -> if n^.mPostId == c^.mPostId && isJust (c^.mPostId)
-                     then (Nothing, c Seq.<| l)
-                     else (Just n, c Seq.<| l)
-               LT -> (Just n, c Seq.<| l)
-         finalize (Just n, l) = n Seq.<| l
+                     then (Nothing, c <| l)
+                     else (Just n, c <| l)
+               LT -> (Just n, c <| l)
+         finalize (Just n, l) = n <| l
          finalize (_, l) = l
 
 noMessages :: Messages
@@ -312,7 +312,7 @@ splitMessages pid msgs = splitMessagesOn (\m -> isJust pid && m^.mPostId == pid)
 -- that is the most likely place the message will occur.
 findMessage :: PostId -> Messages -> Maybe Message
 findMessage pid msgs =
-    Seq.findIndexR (\m -> m^.mPostId == Just pid) (dseq msgs)
+    findIndexR (\m -> m^.mPostId == Just pid) (dseq msgs)
     >>= Just . Seq.index (dseq msgs)
 
 -- | Look forward for the first Message that corresponds to a user
@@ -373,7 +373,7 @@ validUserMessage m = isJust (m^.mPostId) && not (m^.mDeleted)
 
 -- | Return all messages that were posted after the specified date/time.
 messagesAfter :: ServerTime -> Messages -> Messages
-messagesAfter viewTime = onDirectedSeq $ Seq.takeWhileR (\m -> m^.mDate > viewTime)
+messagesAfter viewTime = onDirectedSeq $ takeWhileR (\m -> m^.mDate > viewTime)
 
 -- | Removes any Messages (all types) for which the predicate is true
 -- from the specified subset of messages (identified by a starting and
