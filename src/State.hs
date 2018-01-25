@@ -1786,6 +1786,10 @@ openURL link = do
                                         Hide ->
                                             csCurrentChannel.ccInfo.cdNewMessageIndicator .= (NewPostsAfterServerTime (p^.postCreateAtL))
                                         _ -> return ()
+                    -- No need to add a gap here: the websocket
+                    -- disconnect/reconnect events will automatically
+                    -- handle management of messages delivered while
+                    -- suspended.
 
                     mhSuspendAndResume $ \st -> do
                         args <- act st
