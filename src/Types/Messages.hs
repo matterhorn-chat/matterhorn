@@ -75,9 +75,8 @@ where
 
 import           Cheapskate (Blocks)
 import           Control.Applicative
-import           Data.Foldable
 import qualified Data.Map.Strict as Map
-import           Data.Maybe (isJust, isNothing, listToMaybe)
+import           Data.Maybe (isJust, isNothing)
 import           Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Tuple
@@ -348,13 +347,18 @@ getRelPostId folD jp = case jp of
 -- local message) (if any).
 getLatestPostMsg :: Messages -> Maybe Message
 getLatestPostMsg msgs =
-    (listToMaybe . reverse . toList) $ (Seq.dropWhileR (not . validUserMessage) (dseq msgs))
+    case viewr $ dropWhileR (not . validUserMessage) (dseq msgs) of
+      EmptyR -> Nothing
+      _ :> m -> Just m
+
 
 -- | Find the earliest message that is a Post (as opposed to a
 -- local message) (if any).
 getEarliestPostMsg :: Messages -> Maybe Message
 getEarliestPostMsg msgs =
-    (listToMaybe . toList) $ (Seq.dropWhileL (not . validUserMessage) (dseq msgs))
+    case viewl $ dropWhileL (not . validUserMessage) (dseq msgs) of
+      EmptyL -> Nothing
+      m :< _ -> Just m
 
 
 -- | Find the most recent message that is a message posted by a user
@@ -362,8 +366,11 @@ getEarliestPostMsg msgs =
 -- any user event that is not a message (i.e. find a normal message or
 -- an emote).
 findLatestUserMessage :: (Message -> Bool) -> Messages -> Maybe Message
-findLatestUserMessage f =
-    listToMaybe . reverse . toList . Seq.dropWhileR (\m -> not (validUserMessage m && f m)) . dseq
+findLatestUserMessage f ml =
+    case viewr $ dropWhileR (\m -> not (validUserMessage m && f m)) $ dseq ml of
+      EmptyR -> Nothing
+      _ :> m -> Just m
+
 
 validUserMessage :: Message -> Bool
 validUserMessage m = isJust (m^.mPostId) && not (m^.mDeleted)
