@@ -242,7 +242,9 @@ renderUserCommandBox st hs =
                                         st^.csEditState.cedEditor.editContentsL) <>
                          "/" <> (show $ length curContents) <> "]"
                  , hBorderWithLabel $ withDefAttr clientEmphAttr $
-                   str "In multi-line mode. Press M-e to finish."
+                   txt $ "In multi-line mode. Press " <>
+                         (ppBinding (head (defaultBindings ToggleMultiLineEvent))) <>
+                         " to finish."
                  ]
 
         replyDisplay = case st^.csEditState.cedEditMode of
