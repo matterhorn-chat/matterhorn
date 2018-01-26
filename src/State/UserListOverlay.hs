@@ -1,13 +1,10 @@
 module State.UserListOverlay where
 
-import Control.Monad
-import Data.Text (Text)
 import Data.Sequence (Seq)
 import Lens.Micro.Platform
 import qualified Network.Mattermost.Endpoints as MM
 import Network.Mattermost.Types
 
-import State
 import State.Common
 import Types
 import Types.Users
