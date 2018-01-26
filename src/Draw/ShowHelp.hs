@@ -183,8 +183,8 @@ keybindingHelp kc = vBox $
             , "values, are as follows:"
             ]
            ]
-        nextChanBinding = ppBinding (head (defaultBindings NextChannelEvent))
-        prevChanBinding = ppBinding (head (defaultBindings PrevChannelEvent))
+        nextChanBinding = ppBinding (getFirstDefaultBinding NextChannelEvent)
+        prevChanBinding = ppBinding (getFirstDefaultBinding PrevChannelEvent)
         validKeys = map (padTop (Pad 1) . renderText . mconcat)
           [ [ "The syntax used for key sequences consists of zero or more "
             , "single-character modifier characters followed by a keystroke "

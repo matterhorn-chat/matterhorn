@@ -243,7 +243,7 @@ renderUserCommandBox st hs =
                          "/" <> (show $ length curContents) <> "]"
                  , hBorderWithLabel $ withDefAttr clientEmphAttr $
                    txt $ "In multi-line mode. Press " <>
-                         (ppBinding (head (defaultBindings ToggleMultiLineEvent))) <>
+                         (ppBinding (getFirstDefaultBinding ToggleMultiLineEvent)) <>
                          " to finish."
                  ]
 
