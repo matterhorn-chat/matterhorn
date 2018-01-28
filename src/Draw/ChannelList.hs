@@ -23,6 +23,7 @@ import           Brick.Widgets.Border
 import qualified Data.Sequence as Seq
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
+import           Data.Maybe (fromMaybe)
 import           Data.Monoid ((<>))
 import qualified Data.Text as T
 import           Draw.Util
@@ -198,8 +199,8 @@ decorateRecent entry = if entryIsRecent entry
 getOrdinaryChannels :: ChatState -> Maybe Int -> Seq.Seq ChannelListEntry
 getOrdinaryChannels st _ =
     Seq.fromList [ ChannelListEntry sigil n unread mentions recent current Nothing
-    | n <- (st ^. csNames . cnChans)
-    , let Just chan = st ^. csNames . cnToChanId . at n
+    | n <- getAllChannelNames' st
+    , let Just chan = getChannelIdByName' st n
           unread = hasUnread st chan
           recent = isRecentChannel st chan
           current = isCurrentChannel st chan
@@ -207,7 +208,7 @@ getOrdinaryChannels st _ =
             Nothing      -> normalChannelSigil
             Just ("", _) -> normalChannelSigil
             _            -> "»"
-          mentions = maybe 0 id (st^?csChannel(chan).ccInfo.cdMentionCount)
+          mentions = getChannelMentionCount' st chan
     ]
 
 -- | Extract the names and information about Direct Message channels
@@ -238,12 +239,10 @@ getDmChannels st height =
                        _            -> '»'  -- shows that user has a message in-progress
                    uname = u^.uiName
                    recent = maybe False (isRecentChannel st) m_chanId
-                   m_chanId = st^.csNames.cnToChanId.at (u^.uiName)
+                   m_chanId = getChannelIdByName' st $ u^.uiName
                    unread = maybe False (hasUnread st) m_chanId
                    current = maybe False (isCurrentChannel st) m_chanId
-                   mentions = case m_chanId of
-                     Just cId -> maybe 0 id (st^?csChannel(cId).ccInfo.cdMentionCount)
-                     Nothing  -> 0
+                   mentions = fromMaybe 0 $ getChannelMentionCount' st <$> m_chanId
                 ]
         (h, t) = Seq.breakl entryIsCurrent es
     in case height of

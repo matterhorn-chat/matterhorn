@@ -183,10 +183,11 @@ tabComplete :: Completion.Direction -> MH ()
 tabComplete dir = do
   st <- use id
   knownUsers <- use csUsers
+  allChans <- getAllChannelNames
 
-  let completableChannels = catMaybes (flip map (st^.csNames.cnChans) $ \cname -> do
+  let completableChannels = catMaybes (flip map allChans $ \cname -> do
           -- Only permit completion of channel names for non-Group channels
-          cId <- st^.csNames.cnToChanId.at cname
+          cId <- getChannelIdByName cname
           let cType = st^?csChannel(cId).ccInfo.cdType
           case cType of
               Just Group -> Nothing

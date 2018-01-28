@@ -135,10 +135,13 @@ module Types
   , getUsernameForUserId
   , getUserIdForUsername
   , getChannelIdByName
+  , getChannelIdByName'
   , getAllChannelNames
+  , getAllChannelNames'
   , sortedUserList
   , removeChannelName
   , addChannelName
+  , getChannelMentionCount'
 
   , userSigil
   , normalChannelSigil
@@ -174,7 +177,7 @@ import           Data.List (sort, partition, sortBy)
 import           Data.Maybe
 import           Data.Monoid
 import qualified Data.Set as Set
-import           Lens.Micro.Platform ( at, makeLenses, lens, (&), (^.), (%~), (.~), (^?!)
+import           Lens.Micro.Platform ( at, makeLenses, lens, (&), (^.), (%~), (.~), (^?!), (^?)
                                      , (.=), (%=), _Just, Traversal', preuse, (^..), folded, to
                                      , use
                                      )
@@ -736,8 +739,13 @@ getUserIdForUsername name = use (csNames.cnToUserId.at(name))
 
 getChannelIdByName :: T.Text -> MH (Maybe ChannelId)
 getChannelIdByName name = do
-    nameToChanId <- use (csNames.cnToChanId)
-    return $ HM.lookup (trimAnySigil name) nameToChanId
+    st <- use id
+    return $ getChannelIdByName' st name
+
+getChannelIdByName' :: ChatState -> T.Text -> Maybe ChannelId
+getChannelIdByName' st name =
+    let nameToChanId = st^.csNames.cnToChanId
+    in HM.lookup (trimAnySigil name) nameToChanId
 
 trimAnySigil :: T.Text -> T.Text
 trimAnySigil n
@@ -755,8 +763,15 @@ addChannelName chType cid name = do
     when (chType /= Direct && (not $ name `elem` existingNames)) $
         csNames.cnChans %= (sort . (name:))
 
+getChannelMentionCount' :: ChatState -> ChannelId -> Int
+getChannelMentionCount' st cId =
+    maybe 0 id (st^?csChannel(cId).ccInfo.cdMentionCount)
+
 getAllChannelNames :: MH [T.Text]
-getAllChannelNames = use (csNames.cnChans)
+getAllChannelNames = getAllChannelNames' <$> use id
+
+getAllChannelNames' :: ChatState -> [T.Text]
+getAllChannelNames' st = st^.csNames.cnChans
 
 removeChannelName :: T.Text -> MH ()
 removeChannelName name = do
