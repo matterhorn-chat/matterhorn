@@ -94,7 +94,6 @@ module Types
   , crPreferences
   , crEventQueue
   , crTheme
-  , crSession
   , crSubprocessLog
   , crWebsocketActionChan
   , crRequestQueue
@@ -103,6 +102,8 @@ module Types
   , crFlaggedPosts
   , crConn
   , crConfiguration
+  , getSession
+  , getResourceSession
 
   , WebsocketAction(..)
 
@@ -692,6 +693,12 @@ makeLenses ''ChatState
 makeLenses ''ChatEditState
 makeLenses ''PostListOverlayState
 makeLenses ''ChannelSelectState
+
+getSession :: MH Session
+getSession = use (csResources.crSession)
+
+getResourceSession :: ChatResources -> Session
+getResourceSession = _crSession
 
 resetSpellCheckTimer :: ChatEditState -> IO ()
 resetSpellCheckTimer s =

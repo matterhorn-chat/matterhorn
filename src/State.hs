@@ -193,7 +193,7 @@ refreshChannel chan member = do
 
 refreshChannelById :: ChannelId -> MH ()
 refreshChannelById cId = do
-  session <- use (csResources.crSession)
+  session <- getSession
   doAsyncWith Preempt $ do
       cwd <- MM.mmGetChannel cId session
       member <- MM.mmGetChannelMember cId UserMe session
@@ -218,7 +218,7 @@ createGroupChannel usernameList = do
     -- If we found all of the users mentioned, then create the group
     -- channel.
     when (length results == length usernames) $ do
-        session <- use (csResources.crSession)
+        session <- getSession
         doAsyncWith Preempt $ do
             chan <- MM.mmCreateGroupMessageChannel (Seq.fromList results) session
             let pref = showGroupChannelPref (channelId chan) (me^.userIdL)
@@ -276,7 +276,7 @@ refreshChannelsAndUsers :: MH ()
 refreshChannelsAndUsers = do
   -- The below code is a duplicate of mmGetAllChannelsWithDataForUser function,
   -- which has been inlined here to gain a concurrency benefit.
-  session <- use (csResources.crSession)
+  session <- getSession
   myTeamId <- getMyTeamId
   let userQuery = MM.defaultUserQuery
         { MM.userQueryPage = Just 0
@@ -434,7 +434,7 @@ isRecentChannel st cId = st^.csRecentChannel == Just cId
 -- | Tell the server that we have flagged or unflagged a message.
 flagMessage :: PostId -> Bool -> MH ()
 flagMessage pId f = do
-  session <- use (csResources.crSession)
+  session <- getSession
   myId <- getMyUserId
   doAsyncWith Normal $ do
     let doFlag = if f then MM.mmFlagPost else MM.mmUnflagPost
@@ -507,7 +507,7 @@ copyVerbatimToClipboard = do
 
 startJoinChannel :: MH ()
 startJoinChannel = do
-    session <- use (csResources.crSession)
+    session <- getSession
     myTeamId <- getMyTeamId
     myChannels <- use (csChannels.to (filteredChannelIds (const True)))
     doAsyncWith Preempt $ do
@@ -540,10 +540,10 @@ joinChannel chan = do
 -- channel info for that channel.
 handleChannelInvite :: ChannelId -> MH ()
 handleChannelInvite cId = do
-    st <- use id
+    session <- getSession
     doAsyncWith Normal $ do
-        member <- MM.mmGetChannelMember cId UserMe (st^.csResources.crSession)
-        tryMM (MM.mmGetChannel cId (st^.csResources.crSession))
+        member <- MM.mmGetChannelMember cId UserMe session
+        tryMM (MM.mmGetChannel cId session)
               (\cwd -> return $ handleNewChannel False cwd member)
 
 addUserToCurrentChannel :: T.Text -> MH ()
@@ -553,7 +553,7 @@ addUserToCurrentChannel uname = do
     case result of
         Just u -> do
             cId <- use csCurrentChannelId
-            session <- use (csResources.crSession)
+            session <- getSession
             let channelMember = MinChannelMember (u^.uiId) cId
             doAsyncWith Normal $ do
                 tryMM (void $ MM.mmAddUser cId channelMember session)
@@ -568,7 +568,7 @@ removeUserFromCurrentChannel uname = do
     case result of
         Just u -> do
             cId <- use csCurrentChannelId
-            session <- use (csResources.crSession)
+            session <- getSession
             doAsyncWith Normal $ do
                 tryMM (void $ MM.mmRemoveUserFromChannel cId (UserById $ u^.uiId) session)
                       (const $ return (return ()))
@@ -1092,7 +1092,7 @@ attemptCreateDMChannel name = do
         -- We have a user of that name but no channel. Time to make one!
         myId <- getMyUserId
         Just uId <- getUserIdForUsername name
-        session <- use (csResources.crSession)
+        session <- getSession
         doAsyncWith Normal $ do
           -- create a new channel
           nc <- MM.mmCreateDirectMessageChannel (uId, myId) session -- tId uId
@@ -1104,7 +1104,7 @@ attemptCreateDMChannel name = do
 
 createOrdinaryChannel :: T.Text -> MH ()
 createOrdinaryChannel name  = do
-  session <- use (csResources.crSession)
+  session <- getSession
   myTeamId <- getMyTeamId
   doAsyncWith Preempt $ do
     -- create a new chat channel
@@ -1312,7 +1312,7 @@ addMessageToState newPostData = do
   st <- use id
   case st ^? csChannel(postChannelId new) of
       Nothing -> do
-          session <- use (csResources.crSession)
+          session <- getSession
           doAsyncWith Preempt $ do
               nc <- MM.mmGetChannel (postChannelId new) session
               member <- MM.mmGetChannelMember (postChannelId new) UserMe session
@@ -1703,10 +1703,12 @@ openURL link = do
         Nothing ->
             return False
         Just urlOpenCommand -> do
+            session <- getSession
+
             -- Is the URL referring to an attachment?
             let act = case link^.linkFileId of
                     Nothing -> prepareLink link
-                    Just fId -> prepareAttachment fId
+                    Just fId -> prepareAttachment fId session
 
             -- Is the URL-opening command interactive? If so, pause
             -- Matterhorn and run the opener interactively. Otherwise
@@ -1714,10 +1716,9 @@ openURL link = do
             -- Matterhorn interactively.
             case configURLOpenCommandInteractive cfg of
                 False -> do
-                    st <- use id
                     outputChan <- use (csResources.crSubprocessLog)
                     doAsyncWith Preempt $ do
-                        args <- act st
+                        args <- act
                         runLoggedCommand False outputChan (T.unpack urlOpenCommand)
                                          args Nothing Nothing
                         return $ return ()
@@ -1745,20 +1746,19 @@ openURL link = do
                     -- suspended.
 
                     mhSuspendAndResume $ \st -> do
-                        args <- act st
+                        args <- act
                         void $ runInteractiveCommand (T.unpack urlOpenCommand) args
                         return $ st & csMode .~ Main
 
             return True
 
-prepareLink :: LinkChoice -> ChatState -> IO [String]
-prepareLink link _ = return [T.unpack $ link^.linkURL]
+prepareLink :: LinkChoice -> IO [String]
+prepareLink link = return [T.unpack $ link^.linkURL]
 
-prepareAttachment :: FileId -> ChatState -> IO [String]
-prepareAttachment fId st = do
+prepareAttachment :: FileId -> Session -> IO [String]
+prepareAttachment fId sess = do
     -- The link is for an attachment, so fetch it and then
     -- open the local copy.
-    let sess = st^.csResources.crSession
 
     (info, contents) <- concurrently (MM.mmGetMetadataForFile fId sess) (MM.mmGetFile fId sess)
     cacheDir <- getUserCacheDir xdgName
@@ -1859,16 +1859,17 @@ sendMessage mode msg =
                     postErrorMessage m
                 Connected -> do
                     let chanId = st^.csCurrentChannelId
+                    session <- getSession
                     doAsync Preempt $ do
                       case mode of
                         NewPost -> do
                             let pendingPost = rawPost msg chanId
-                            void $ MM.mmCreatePost pendingPost (st^.csResources.crSession)
+                            void $ MM.mmCreatePost pendingPost session
                         Replying _ p -> do
                             let pendingPost = (rawPost msg chanId) { rawPostRootId = Just (postId p) }
-                            void $ MM.mmCreatePost pendingPost (st^.csResources.crSession)
+                            void $ MM.mmCreatePost pendingPost session
                         Editing p -> do
-                            void $ MM.mmUpdatePost (postId p) (postUpdate msg) (st^.csResources.crSession)
+                            void $ MM.mmUpdatePost (postId p) (postUpdate msg) session
 
 handleNewUserDirect :: User -> MH ()
 handleNewUserDirect newUser = do

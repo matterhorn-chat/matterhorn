@@ -165,7 +165,7 @@ setupState logFile initialConfig = do
 
 initializeState :: ChatResources -> Team -> User -> IO ChatState
 initializeState cr myTeam myUser = do
-  let session = cr^.crSession
+  let session = getResourceSession cr
       requestChan = cr^.crRequestQueue
       myTeamId = getId myTeam
 

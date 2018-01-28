@@ -138,7 +138,7 @@ commandList =
 execMMCommand :: T.Text -> T.Text -> MH ()
 execMMCommand name rest = do
   cId      <- use csCurrentChannelId
-  session  <- use (csResources.crSession)
+  session  <- getSession
   em       <- use (csEditState.cedEditMode)
   tId      <- getMyTeamId
   let mc = MM.MinCommand

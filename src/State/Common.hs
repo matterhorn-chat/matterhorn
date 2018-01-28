@@ -138,7 +138,7 @@ doAsyncMM :: AsyncPriority
           -- context
           -> MH ()
 doAsyncMM prio mmOp eventHandler = do
-  session <- use (csResources.crSession)
+  session <- getSession
   myTeamId <- getMyTeamId
   doAsyncWith prio $ do
     r <- mmOp session myTeamId
@@ -205,7 +205,7 @@ asyncFetchAttachments :: Post -> MH ()
 asyncFetchAttachments p = do
   let cId = (p^.postChannelIdL)
       pId = (p^.postIdL)
-  session <- use (csResources.crSession)
+  session <- getSession
   host    <- use (csResources.crConn.cdHostnameL)
   F.forM_ (p^.postFileIdsL) $ \fId -> doAsyncWith Normal $ do
     info <- mmGetMetadataForFile fId session
