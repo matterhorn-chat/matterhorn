@@ -773,10 +773,10 @@ trimAnySigil n
 addNewUser :: UserInfo -> MH ()
 addNewUser u = csUsers %= addUser u
 
-addUsernameMapping :: User -> MH ()
+addUsernameMapping :: UserInfo -> MH ()
 addUsernameMapping user = do
-    let uname = user^.userUsernameL
-        uid = getId user
+    let uname = user^.uiName
+        uid = user^.uiId
     csNames.cnUsers %= (sort . (uname:))
     csNames.cnToUserId.at uname .= Just uid
 

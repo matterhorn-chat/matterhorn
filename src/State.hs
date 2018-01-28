@@ -1875,7 +1875,7 @@ handleNewUserDirect newUser = do
     let usrInfo = userInfoFromUser newUser True
         newUserId = getId newUser
     addNewUser usrInfo
-    addUsernameMapping newUser
+    addUsernameMapping usrInfo
     userSet <- use (csResources.crUserIdSet)
     liftIO $ STM.atomically $ STM.modifyTVar userSet $ (newUserId Seq.<|)
 
@@ -1892,12 +1892,13 @@ handleNewUser newUserId = doAsyncMM Normal getUserInfo updateUserState
                  -- whether the new user is in the current user's
                  -- team.
                  let usrInfo = userInfoFromUser nUser (HM.member newUserId teamUsers)
-                 return (nUser, usrInfo)
-          updateUserState :: (User, UserInfo) -> MH ()
-          updateUserState (newUser, uInfo) =
+                 return usrInfo
+
+          updateUserState :: UserInfo -> MH ()
+          updateUserState uInfo =
               -- Update the name map and the list of known users
               do addNewUser uInfo
-                 addUsernameMapping newUser
+                 addUsernameMapping uInfo
                  userSet <- use (csResources.crUserIdSet)
                  liftIO $ STM.atomically $ STM.modifyTVar userSet $ (newUserId Seq.<|)
 
