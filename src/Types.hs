@@ -133,6 +133,7 @@ module Types
   , channelNameFromMatch
   , isMine
   , getUsernameForUserId
+  , getUserIdForUsername
   , sortedUserList
 
   , userSigil
@@ -169,7 +170,9 @@ import           Data.Maybe
 import           Data.Monoid
 import qualified Data.Set as Set
 import           Lens.Micro.Platform ( at, makeLenses, lens, (&), (^.), (%~), (.~), (^?!)
-                                     , _Just, Traversal', preuse, (^..), folded, to )
+                                     , _Just, Traversal', preuse, (^..), folded, to
+                                     , use
+                                     )
 import           Network.Mattermost (ConnectionData)
 import           Network.Mattermost.Exceptions
 import           Network.Mattermost.Lenses
@@ -722,6 +725,9 @@ getParentMessage st msg
 
 getUsernameForUserId :: ChatState -> UserId -> Maybe T.Text
 getUsernameForUserId st uId = _uiName <$> findUserById uId (st^.csUsers)
+
+getUserIdForUsername :: T.Text -> MH (Maybe UserId)
+getUserIdForUsername name = use (csNames.cnToUserId.at(name))
 
 clientPostToMessage :: ClientPost -> Message
 clientPostToMessage cp = Message

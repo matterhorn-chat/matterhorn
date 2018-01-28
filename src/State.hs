@@ -1123,7 +1123,7 @@ attemptCreateDMChannel name = do
       then do
         -- We have a user of that name but no channel. Time to make one!
         myId <- use (csMe.userIdL)
-        Just uId <- use (csNames.cnToUserId.at(name))
+        Just uId <- getUserIdForUsername name
         session <- use (csResources.crSession)
         doAsyncWith Normal $ do
           -- create a new channel
