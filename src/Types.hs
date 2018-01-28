@@ -32,6 +32,7 @@ module Types
 
   , MMNames
   , mkNames
+  , mkChannelZipperList
   , getChannelIdsInOrder
   , addUsernameMapping
 
@@ -270,8 +271,19 @@ makeLenses ''MMNames
 
 -- ** 'MMNames' functions
 
+mkChannelZipperList :: MMNames -> [ChannelId]
+mkChannelZipperList chanNames =
+  getChannelIdsInOrder chanNames ++
+  getDMChannelIdsInOrder chanNames
+
 getChannelIdsInOrder :: MMNames -> [ChannelId]
 getChannelIdsInOrder n = [ (n ^. cnToChanId) HM.! i | i <- n ^. cnChans ]
+
+getDMChannelIdsInOrder :: MMNames -> [ChannelId]
+getDMChannelIdsInOrder n =
+  [ c | i <- n ^. cnUsers
+      , c <- maybeToList (HM.lookup i (n ^. cnToChanId))
+  ]
 
 addUsernameMapping :: User -> MMNames -> MMNames
 addUsernameMapping user n =

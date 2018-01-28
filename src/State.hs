@@ -1485,13 +1485,6 @@ fetchVisibleIfNeeded = do
 
     _ -> return ()
 
-mkChannelZipperList :: MMNames -> [ChannelId]
-mkChannelZipperList chanNames =
-  getChannelIdsInOrder chanNames ++
-  [ c
-  | i <- chanNames ^. cnUsers
-  , c <- maybeToList (HM.lookup i (chanNames ^. cnToChanId)) ]
-
 setChannelTopic :: T.Text -> MH ()
 setChannelTopic msg = do
     cId <- use csCurrentChannelId
