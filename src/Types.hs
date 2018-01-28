@@ -32,7 +32,7 @@ module Types
 
   , MMNames
   , mkNames
-  , mkChannelZipperList
+  , refreshChannelZipper
   , getChannelIdsInOrder
   , addUsernameMapping
 
@@ -67,7 +67,6 @@ module Types
   , csJoinChannelList
   , csConnectionStatus
   , csWorkerIsBusy
-  , csNames
   , csChannel
   , csChannels
   , csChannelSelectState
@@ -203,7 +202,7 @@ import qualified Data.Text as T
 import           System.Exit (ExitCode)
 import           Text.Aspell (Aspell)
 
-import           Zipper (Zipper, focusL)
+import           Zipper (Zipper, focusL, updateList)
 
 import           InputHistory
 
@@ -265,10 +264,6 @@ data MMNames = MMNames
       -- ^ Mapping from user names to 'UserId' values
   }
 
--- | An empty 'MMNames' record
-emptyMMNames :: MMNames
-emptyMMNames = MMNames mempty mempty mempty mempty
-
 mkNames :: User -> HM.HashMap UserId User -> Seq.Seq Channel -> MMNames
 mkNames myUser users chans = MMNames
   { _cnChans = sort
@@ -307,13 +302,6 @@ getDMChannelIdsInOrder n =
   [ c | i <- n ^. cnUsers
       , c <- maybeToList (HM.lookup i (n ^. cnToChanId))
   ]
-
-addUsernameMapping :: User -> MMNames -> MMNames
-addUsernameMapping user n =
-    let uname = user^.userUsernameL
-        uid = getId user
-    in n & cnUsers %~ (sort . (uname:))
-         & cnToUserId.at uname .~ Just uid
 
 -- * Internal Names and References
 
@@ -555,13 +543,14 @@ newState :: ChatResources
          -> TimeZoneSeries
          -> InputHistory
          -> Maybe (Aspell, IO ())
+         -> MMNames
          -> ChatState
-newState rs i u m tz hist sp = ChatState
+newState rs i u m tz hist sp ns = ChatState
   { _csResources                   = rs
   , _csFocus                       = i
   , _csMe                          = u
   , _csMyTeam                      = m
-  , _csNames                       = emptyMMNames
+  , _csNames                       = ns
   , _csChannels                    = noChannels
   , _csPostMap                     = HM.empty
   , _csUsers                       = noUsers
@@ -784,6 +773,13 @@ trimAnySigil n
 addNewUser :: UserInfo -> MH ()
 addNewUser u = csUsers %= addUser u
 
+addUsernameMapping :: User -> MH ()
+addUsernameMapping user = do
+    let uname = user^.userUsernameL
+        uid = getId user
+    csNames.cnUsers %= (sort . (uname:))
+    csNames.cnToUserId.at uname .= Just uid
+
 addChannelName :: Type -> ChannelId -> T.Text -> MH ()
 addChannelName chType cid name = do
     csNames.cnToChanId.at(name) .= Just cid
@@ -816,6 +812,16 @@ removeChannelName name = do
     csNames.cnToChanId.at name .= Nothing
     -- Flush cnChans
     csNames.cnChans %= filter (/= name)
+
+-- Rebuild the channel zipper contents from the current names collection.
+refreshChannelZipper :: MH ()
+refreshChannelZipper = do
+    -- We should figure out how to do this better: this adds it to the
+    -- channel zipper in such a way that we don't ever change our focus
+    -- to something else, which is kind of silly
+    names <- use csNames
+    let newZip = updateList (mkChannelZipperList names)
+    csFocus %= newZip
 
 clientPostToMessage :: ClientPost -> Message
 clientPostToMessage cp = Message

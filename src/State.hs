@@ -1210,13 +1210,7 @@ handleNewChannel_ permitPostpone switch nc member = do
 
                 csChannels %= addChannel (getId nc) cChannel
 
-                -- We should figure out how to do this better: this adds
-                -- it to the channel zipper in such a way that we don't
-                -- ever change our focus to something else, which is
-                -- kind of silly
-                names <- use csNames
-                let newZip = Z.updateList (mkChannelZipperList names)
-                csFocus %= newZip
+                refreshChannelZipper
 
                 -- Finally, set our focus to the newly created channel
                 -- if the caller requested a change of channel.
@@ -1883,7 +1877,7 @@ handleNewUserDirect newUser = do
     let usrInfo = userInfoFromUser newUser True
         newUserId = getId newUser
     addNewUser usrInfo
-    csNames %= addUsernameMapping newUser
+    addUsernameMapping newUser
     userSet <- use (csResources.crUserIdSet)
     liftIO $ STM.atomically $ STM.modifyTVar userSet $ (newUserId Seq.<|)
 
@@ -1905,7 +1899,7 @@ handleNewUser newUserId = doAsyncMM Normal getUserInfo updateUserState
           updateUserState (newUser, uInfo) =
               -- Update the name map and the list of known users
               do addNewUser uInfo
-                 csNames %= addUsernameMapping newUser
+                 addUsernameMapping newUser
                  userSet <- use (csResources.crUserIdSet)
                  liftIO $ STM.atomically $ STM.modifyTVar userSet $ (newUserId Seq.<|)
 
