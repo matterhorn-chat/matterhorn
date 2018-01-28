@@ -32,7 +32,6 @@ import           State
 import           Themes
 import           Types
 import           Types.Users
-import           Types.Channels
 
 type GroupName = T.Text
 
