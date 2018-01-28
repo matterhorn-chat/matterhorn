@@ -33,6 +33,7 @@ module Types
   , MMNames
   , mkNames
   , getChannelIdsInOrder
+  , addUsernameMapping
 
   , LinkChoice(LinkChoice)
   , linkUser
@@ -271,6 +272,13 @@ makeLenses ''MMNames
 
 getChannelIdsInOrder :: MMNames -> [ChannelId]
 getChannelIdsInOrder n = [ (n ^. cnToChanId) HM.! i | i <- n ^. cnChans ]
+
+addUsernameMapping :: User -> MMNames -> MMNames
+addUsernameMapping user n =
+    let uname = user^.userUsernameL
+        uid = getId user
+    in n & cnUsers %~ (sort . (uname:))
+         & cnToUserId.at uname .~ Just uid
 
 -- * Internal Names and References
 

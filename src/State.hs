@@ -1922,8 +1922,7 @@ handleNewUserDirect newUser = do
     let usrInfo = userInfoFromUser newUser True
         newUserId = getId newUser
     csUsers %= addUser newUserId usrInfo
-    csNames . cnUsers %= (sort . ((newUser^.userUsernameL):))
-    csNames . cnToUserId . at (newUser^.userUsernameL) .= Just newUserId
+    csNames %= addUsernameMapping newUser
     userSet <- use (csResources.crUserIdSet)
     liftIO $ STM.atomically $ STM.modifyTVar userSet $ (newUserId Seq.<|)
 
@@ -1945,8 +1944,7 @@ handleNewUser newUserId = doAsyncMM Normal getUserInfo updateUserState
           updateUserState (newUser, uInfo) =
               -- Update the name map and the list of known users
               do csUsers %= addUser newUserId uInfo
-                 csNames . cnUsers %= (sort . ((newUser^.userUsernameL):))
-                 csNames . cnToUserId . at (newUser^.userUsernameL) .= Just newUserId
+                 csNames %= addUsernameMapping newUser
                  userSet <- use (csResources.crUserIdSet)
                  liftIO $ STM.atomically $ STM.modifyTVar userSet $ (newUserId Seq.<|)
 
