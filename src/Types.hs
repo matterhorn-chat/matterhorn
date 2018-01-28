@@ -773,21 +773,19 @@ trimAnySigil n
 addNewUser :: UserInfo -> MH ()
 addNewUser u = do
     csUsers %= addUser u
-    addUsernameMapping u
+
+    let uname = u^.uiName
+        uid = u^.uiId
+    csNames.cnUsers %= (sort . (uname:))
+    csNames.cnToUserId.at uname .= Just uid
+
     userSet <- use (csResources.crUserIdSet)
-    St.liftIO $ STM.atomically $ STM.modifyTVar userSet $ ((u^.uiId) Seq.<|)
+    St.liftIO $ STM.atomically $ STM.modifyTVar userSet $ (uid Seq.<|)
 
 setUserIdSet :: Seq.Seq UserId -> MH ()
 setUserIdSet ids = do
     userSet <- use (csResources.crUserIdSet)
     St.liftIO $ STM.atomically $ STM.writeTVar userSet ids
-
-addUsernameMapping :: UserInfo -> MH ()
-addUsernameMapping user = do
-    let uname = user^.uiName
-        uid = user^.uiId
-    csNames.cnUsers %= (sort . (uname:))
-    csNames.cnToUserId.at uname .= Just uid
 
 addChannelName :: Type -> ChannelId -> T.Text -> MH ()
 addChannelName chType cid name = do
