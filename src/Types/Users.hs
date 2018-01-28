@@ -27,6 +27,7 @@ module Types.Users
   , addTypingUser
   , allTypingUsers
   , expireTypingUsers
+  , allUserIds
   )
 where
 
@@ -112,6 +113,9 @@ type Users = AllMyUsers UserInfo
 -- | Initial collection of Users with no members
 noUsers :: Users
 noUsers = AllUsers HM.empty
+
+allUserIds :: Users -> [UserId]
+allUserIds = HM.keys . _ofUsers
 
 -- | Add a member to the existing collection of Users
 addUser :: UserId -> UserInfo -> Users -> Users

@@ -136,8 +136,15 @@ module Types
   , getUserIdForUsername
   , getChannelIdByName
   , getChannelIdByName'
+  , getChannelByName
+  , getChannelByName'
+  , getUserById
+  , getUserById'
+  , getAllUserIds
   , getAllChannelNames
   , getAllChannelNames'
+  , getAllUsernames
+  , getAllUsernames'
   , sortedUserList
   , removeChannelName
   , addChannelName
@@ -742,10 +749,20 @@ getChannelIdByName name = do
     st <- use id
     return $ getChannelIdByName' st name
 
+getChannelByName :: T.Text -> MH (Maybe ClientChannel)
+getChannelByName name = do
+    st <- use id
+    return $ getChannelByName' st name
+
 getChannelIdByName' :: ChatState -> T.Text -> Maybe ChannelId
 getChannelIdByName' st name =
     let nameToChanId = st^.csNames.cnToChanId
     in HM.lookup (trimAnySigil name) nameToChanId
+
+getChannelByName' :: ChatState -> T.Text -> Maybe ClientChannel
+getChannelByName' st name = do
+    cId <- getChannelIdByName' st name
+    findChannelById cId (st^.csChannels)
 
 trimAnySigil :: T.Text -> T.Text
 trimAnySigil n
@@ -770,8 +787,14 @@ getChannelMentionCount' st cId =
 getAllChannelNames :: MH [T.Text]
 getAllChannelNames = getAllChannelNames' <$> use id
 
+getAllUsernames :: MH [T.Text]
+getAllUsernames = getAllUsernames' <$> use id
+
 getAllChannelNames' :: ChatState -> [T.Text]
 getAllChannelNames' st = st^.csNames.cnChans
+
+getAllUsernames' :: ChatState -> [T.Text]
+getAllUsernames' st = st^.csNames.cnChans
 
 removeChannelName :: T.Text -> MH ()
 removeChannelName name = do
@@ -841,6 +864,15 @@ userList :: ChatState -> [UserInfo]
 userList st = filter showUser $ allUsers (st^.csUsers)
   where showUser u = not (isSelf u) && (u^.uiInTeam)
         isSelf u = (st^.csMe.userIdL) == (u^.uiId)
+
+getAllUserIds :: MH [UserId]
+getAllUserIds = allUserIds <$> use csUsers
+
+getUserById :: UserId -> MH (Maybe UserInfo)
+getUserById uId = getUserById' uId <$> use id
+
+getUserById' :: UserId -> ChatState -> Maybe UserInfo
+getUserById' uId st = findUserById uId (st^.csUsers)
 
 sortedUserList :: ChatState -> [UserInfo]
 sortedUserList st = sortBy cmp yes <> sortBy cmp no
