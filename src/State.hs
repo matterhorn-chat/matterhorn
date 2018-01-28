@@ -349,7 +349,6 @@ removeChannelName name = do
     -- Flush cnChans
     csNames.cnChans %= filter (/= name)
 
-
 -- * Message selection mode
 
 beginMessageSelect :: MH ()
