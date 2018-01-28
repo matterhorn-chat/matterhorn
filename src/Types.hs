@@ -773,6 +773,8 @@ addNewUser :: UserInfo -> MH ()
 addNewUser u = do
     csUsers %= addUser u
     addUsernameMapping u
+    userSet <- use (csResources.crUserIdSet)
+    St.liftIO $ STM.atomically $ STM.modifyTVar userSet $ ((u^.uiId) Seq.<|)
 
 addUsernameMapping :: UserInfo -> MH ()
 addUsernameMapping user = do

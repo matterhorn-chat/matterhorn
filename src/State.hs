@@ -1873,10 +1873,7 @@ sendMessage mode msg =
 handleNewUserDirect :: User -> MH ()
 handleNewUserDirect newUser = do
     let usrInfo = userInfoFromUser newUser True
-        newUserId = getId newUser
     addNewUser usrInfo
-    userSet <- use (csResources.crUserIdSet)
-    liftIO $ STM.atomically $ STM.modifyTVar userSet $ (newUserId Seq.<|)
 
 handleNewUser :: UserId -> MH ()
 handleNewUser newUserId = doAsyncMM Normal getUserInfo updateUserState
@@ -1896,9 +1893,7 @@ handleNewUser newUserId = doAsyncMM Normal getUserInfo updateUserState
           updateUserState :: UserInfo -> MH ()
           updateUserState uInfo =
               -- Update the name map and the list of known users
-              do addNewUser uInfo
-                 userSet <- use (csResources.crUserIdSet)
-                 liftIO $ STM.atomically $ STM.modifyTVar userSet $ (newUserId Seq.<|)
+              addNewUser uInfo
 
 -- | Handle the typing events from the websocket to show the currently typing users on UI
 handleTypingUser :: UserId -> ChannelId -> MH ()
