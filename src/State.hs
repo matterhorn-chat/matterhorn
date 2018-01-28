@@ -552,14 +552,14 @@ handleChannelInvite cId = do
 addUserToCurrentChannel :: T.Text -> MH ()
 addUserToCurrentChannel uname = do
     -- First: is this a valid username?
-    usrs <- use csUsers
-    case findUserByName usrs uname of
-        Just (uid, _) -> do
+    result <- getUserByUsername uname
+    case result of
+        Just u -> do
             cId <- use csCurrentChannelId
             session <- use (csResources.crSession)
-            let channelMember = MinChannelMember uid cId
+            let channelMember = MinChannelMember (u^.uiId) cId
             doAsyncWith Normal $ do
-                tryMM (void $ MM.mmAddUser cId channelMember session) -- session myTeamId cId uid)
+                tryMM (void $ MM.mmAddUser cId channelMember session)
                       (const $ return (return ()))
         _ -> do
             postErrorMessage ("No such user: " <> uname)
@@ -567,13 +567,13 @@ addUserToCurrentChannel uname = do
 removeUserFromCurrentChannel :: T.Text -> MH ()
 removeUserFromCurrentChannel uname = do
     -- First: is this a valid username?
-    usrs <- use csUsers
-    case findUserByName usrs uname of
-        Just (uid, _) -> do
+    result <- getUserByUsername uname
+    case result of
+        Just u -> do
             cId <- use csCurrentChannelId
             session <- use (csResources.crSession)
             doAsyncWith Normal $ do
-                tryMM (void $ MM.mmRemoveUserFromChannel cId (UserById uid) session)
+                tryMM (void $ MM.mmRemoveUserFromChannel cId (UserById $ u^.uiId) session)
                       (const $ return (return ()))
         _ -> do
             postErrorMessage ("No such user: " <> uname)

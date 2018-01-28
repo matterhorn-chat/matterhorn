@@ -134,6 +134,8 @@ module Types
   , isMine
   , getUsernameForUserId
   , getUserIdForUsername
+  , getUserIdForUsername'
+  , getUserByUsername
   , getChannelIdByName
   , getChannelIdByName'
   , getChannelByName
@@ -742,7 +744,10 @@ getUsernameForUserId :: ChatState -> UserId -> Maybe T.Text
 getUsernameForUserId st uId = _uiName <$> findUserById uId (st^.csUsers)
 
 getUserIdForUsername :: T.Text -> MH (Maybe UserId)
-getUserIdForUsername name = use (csNames.cnToUserId.at(name))
+getUserIdForUsername name = getUserIdForUsername' name <$> use id
+
+getUserIdForUsername' :: T.Text -> ChatState -> Maybe UserId
+getUserIdForUsername' name st = st^.csNames.cnToUserId.at name
 
 getChannelIdByName :: T.Text -> MH (Maybe ChannelId)
 getChannelIdByName name = do
@@ -873,6 +878,14 @@ getUserById uId = getUserById' uId <$> use id
 
 getUserById' :: UserId -> ChatState -> Maybe UserInfo
 getUserById' uId st = findUserById uId (st^.csUsers)
+
+getUserByUsername :: T.Text -> MH (Maybe UserInfo)
+getUserByUsername name = getUserByUsername' name <$> use id
+
+getUserByUsername' :: T.Text -> ChatState -> Maybe UserInfo
+getUserByUsername' name st = do
+    uId <- getUserIdForUsername' name st
+    getUserById' uId st
 
 sortedUserList :: ChatState -> [UserInfo]
 sortedUserList st = sortBy cmp yes <> sortBy cmp no
