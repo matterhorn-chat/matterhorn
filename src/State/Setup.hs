@@ -229,13 +229,12 @@ initializeState cr myTeam myUser = do
 
   -- End thread startup ----------------------------------------------
 
-  let chanNames = mkChanNames myUser mempty chans
-      chanIds = [ (chanNames ^. cnToChanId) HM.! i
-                | i <- chanNames ^. cnChans ]
+  let names = mkNames myUser mempty chans
+      chanIds = getChannelIdsInOrder names
       chanZip = Z.fromList chanIds
       st = newState cr chanZip myUser myTeam tz hist spResult
              & csChannels %~ flip (foldr (uncurry addChannel)) msgs
-             & csNames .~ chanNames
+             & csNames .~ names
 
   loadFlaggedMessages (cr^.crPreferences) st
 

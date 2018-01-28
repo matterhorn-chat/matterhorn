@@ -31,11 +31,8 @@ module Types
   , RequestChan
 
   , MMNames
-  , mkChanNames
-  , cnUsers
-  , cnToUserId
-  , cnToChanId
-  , cnChans
+  , mkNames
+  , getChannelIdsInOrder
 
   , LinkChoice(LinkChoice)
   , linkUser
@@ -247,8 +244,8 @@ data MMNames = MMNames
 emptyMMNames :: MMNames
 emptyMMNames = MMNames mempty mempty mempty mempty
 
-mkChanNames :: User -> HM.HashMap UserId User -> Seq.Seq Channel -> MMNames
-mkChanNames myUser users chans = MMNames
+mkNames :: User -> HM.HashMap UserId User -> Seq.Seq Channel -> MMNames
+mkNames myUser users chans = MMNames
   { _cnChans = sort
                [ preferredChannelName c
                | c <- F.toList chans, channelType c /= Direct ]
@@ -269,6 +266,11 @@ mkChanNames myUser users chans = MMNames
 -- ** 'MMNames' Lenses
 
 makeLenses ''MMNames
+
+-- ** 'MMNames' functions
+
+getChannelIdsInOrder :: MMNames -> [ChannelId]
+getChannelIdsInOrder n = [ (n ^. cnToChanId) HM.! i | i <- n ^. cnChans ]
 
 -- * Internal Names and References
 
