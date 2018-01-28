@@ -15,7 +15,6 @@ import           Control.Exception (catch)
 import           Control.Monad (forM, when)
 import           Data.Monoid ((<>))
 import qualified Data.Foldable as F
-import qualified Data.HashMap.Strict as HM
 import           Data.Maybe (listToMaybe, fromMaybe, fromJust, isNothing)
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
