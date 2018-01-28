@@ -332,16 +332,6 @@ updateChannelInfo cid new member = do
 
   csChannel(cid).ccInfo %= channelInfoFromChannelWithData new member
 
-addChannelName :: Type -> ChannelId -> T.Text -> MH ()
-addChannelName chType cid name = do
-    csNames.cnToChanId.at(name) .= Just cid
-
-    -- For direct channels the username is already in the user list so
-    -- do nothing
-    existingNames <- getAllChannelNames
-    when (chType /= Direct && (not $ name `elem` existingNames)) $
-        csNames.cnChans %= (sort . (name:))
-
 -- * Message selection mode
 
 beginMessageSelect :: MH ()
@@ -1107,12 +1097,12 @@ setFocusWith f = do
 
 attemptCreateDMChannel :: T.Text -> MH ()
 attemptCreateDMChannel name = do
-  users <- use (csNames.cnUsers)
-  nameToChanId <- use (csNames.cnToChanId)
+  mCid <- getChannelIdByName name
+  mUid <- getUserIdForUsername name
   myName <- use (csMe.userUsernameL)
   if name == myName
     then postErrorMessage ("Cannot create a DM channel with yourself")
-    else if name `elem` users && not (name `HM.member` nameToChanId)
+    else if isJust mUid && isNothing mCid
       then do
         -- We have a user of that name but no channel. Time to make one!
         myId <- use (csMe.userIdL)

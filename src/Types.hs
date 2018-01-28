@@ -134,9 +134,11 @@ module Types
   , isMine
   , getUsernameForUserId
   , getUserIdForUsername
+  , getChannelIdByName
   , getAllChannelNames
   , sortedUserList
   , removeChannelName
+  , addChannelName
 
   , userSigil
   , normalChannelSigil
@@ -157,6 +159,7 @@ import           Brick.BChan
 import           Brick.AttrMap (AttrMap)
 import           Brick.Widgets.Edit (Editor, editor)
 import           Brick.Widgets.List (List, list)
+import           Control.Monad (when)
 import qualified Control.Concurrent.STM as STM
 import           Control.Concurrent.MVar (MVar)
 import           Control.Exception (SomeException)
@@ -730,6 +733,21 @@ getUsernameForUserId st uId = _uiName <$> findUserById uId (st^.csUsers)
 
 getUserIdForUsername :: T.Text -> MH (Maybe UserId)
 getUserIdForUsername name = use (csNames.cnToUserId.at(name))
+
+getChannelIdByName :: T.Text -> MH (Maybe ChannelId)
+getChannelIdByName name = do
+    nameToChanId <- use (csNames.cnToChanId)
+    return $ HM.lookup name nameToChanId
+
+addChannelName :: Type -> ChannelId -> T.Text -> MH ()
+addChannelName chType cid name = do
+    csNames.cnToChanId.at(name) .= Just cid
+
+    -- For direct channels the username is already in the user list so
+    -- do nothing
+    existingNames <- getAllChannelNames
+    when (chType /= Direct && (not $ name `elem` existingNames)) $
+        csNames.cnChans %= (sort . (name:))
 
 getAllChannelNames :: MH [T.Text]
 getAllChannelNames = use (csNames.cnChans)
