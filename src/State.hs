@@ -301,10 +301,10 @@ refreshChannelsAndUsers = do
 
         forM_ chansWithData $ uncurry refreshChannel
 
-        userSet <- use (csResources.crUserIdSet)
-        liftIO $ STM.atomically $ STM.writeTVar userSet (fmap userId users)
+        setUserIdSet (userId <$> users)
         lock <- use (csResources.crUserStatusLock)
-        doAsyncWith Preempt $ updateUserStatuses userSet lock session
+        setVar <- use (csResources.crUserIdSet)
+        doAsyncWith Preempt $ updateUserStatuses setVar lock session
 
 -- | Websocket was disconnected, so all channels may now miss some
 -- messages

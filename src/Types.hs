@@ -151,6 +151,7 @@ module Types
   , removeChannelName
   , addChannelName
   , addNewUser
+  , setUserIdSet
   , getChannelMentionCount'
 
   , userSigil
@@ -775,6 +776,11 @@ addNewUser u = do
     addUsernameMapping u
     userSet <- use (csResources.crUserIdSet)
     St.liftIO $ STM.atomically $ STM.modifyTVar userSet $ ((u^.uiId) Seq.<|)
+
+setUserIdSet :: Seq.Seq UserId -> MH ()
+setUserIdSet ids = do
+    userSet <- use (csResources.crUserIdSet)
+    St.liftIO $ STM.atomically $ STM.writeTVar userSet ids
 
 addUsernameMapping :: UserInfo -> MH ()
 addUsernameMapping user = do
