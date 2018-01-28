@@ -136,6 +136,7 @@ module Types
   , getUserIdForUsername
   , getAllChannelNames
   , sortedUserList
+  , removeChannelName
 
   , userSigil
   , normalChannelSigil
@@ -171,7 +172,7 @@ import           Data.Maybe
 import           Data.Monoid
 import qualified Data.Set as Set
 import           Lens.Micro.Platform ( at, makeLenses, lens, (&), (^.), (%~), (.~), (^?!)
-                                     , _Just, Traversal', preuse, (^..), folded, to
+                                     , (.=), (%=), _Just, Traversal', preuse, (^..), folded, to
                                      , use
                                      )
 import           Network.Mattermost (ConnectionData)
@@ -732,6 +733,13 @@ getUserIdForUsername name = use (csNames.cnToUserId.at(name))
 
 getAllChannelNames :: MH [T.Text]
 getAllChannelNames = use (csNames.cnChans)
+
+removeChannelName :: T.Text -> MH ()
+removeChannelName name = do
+    -- Flush cnToChanId
+    csNames.cnToChanId.at name .= Nothing
+    -- Flush cnChans
+    csNames.cnChans %= filter (/= name)
 
 clientPostToMessage :: ClientPost -> Message
 clientPostToMessage cp = Message

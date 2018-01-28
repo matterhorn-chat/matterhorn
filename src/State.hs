@@ -342,13 +342,6 @@ addChannelName chType cid name = do
     when (chType /= Direct && (not $ name `elem` existingNames)) $
         csNames.cnChans %= (sort . (name:))
 
-removeChannelName :: T.Text -> MH ()
-removeChannelName name = do
-    -- Flush cnToChanId
-    csNames.cnToChanId.at name .= Nothing
-    -- Flush cnChans
-    csNames.cnChans %= filter (/= name)
-
 -- * Message selection mode
 
 beginMessageSelect :: MH ()
