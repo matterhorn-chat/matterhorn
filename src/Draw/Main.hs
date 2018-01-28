@@ -29,7 +29,6 @@ import           Data.Char (isSpace, isPunctuation)
 import           Lens.Micro.Platform
 
 import           Network.Mattermost.Types (ChannelId, Type(Direct), ServerTime(..), UserId)
-import           Network.Mattermost.Lenses
 
 import qualified Graphics.Vty as Vty
 
@@ -303,7 +302,7 @@ renderChannelHeader st hs chan =
                            quote n = "\"" <> n <> "\""
                            nick = maybe "" quote $ u^.uiNickName
                        in s
-        foundUser = getUserByDMChannelName' chnName (st^.csMe^.userIdL) st
+        foundUser = getUserByDMChannelName' chnName (getMyUserId' st) st
         maybeTopic = if T.null topicStr
                      then ""
                      else " - " <> topicStr
@@ -529,7 +528,7 @@ inputPreview :: ChatState -> HighlightSet -> Widget Name
 inputPreview st hs | not $ st^.csShowMessagePreview = emptyWidget
                    | otherwise = thePreview
     where
-    uId = st^.csMe.userIdL
+    uId = getMyUserId' st
     -- Insert a cursor sentinel into the input text just before
     -- rendering the preview. We use the inserted sentinel (which is
     -- not rendered) to get brick to ensure that the line the cursor is

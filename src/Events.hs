@@ -99,16 +99,15 @@ onVtyEvent e = do
 
 handleWSEvent :: WebsocketEvent -> MH ()
 handleWSEvent we = do
-    myId <- use (csMe.userIdL)
+    myId <- getMyUserId
     myTeamId <- use (csMyTeam.teamIdL)
     case weEvent we of
         WMPosted
             | Just p <- wepPost (weData we) -> do
                 -- If the message is a header change, also update the
                 -- channel metadata.
-                myUserId <- use (csMe.userIdL)
                 let wasMentioned = case wepMentions (weData we) of
-                      Just lst -> myUserId `Set.member` lst
+                      Just lst -> myId `Set.member` lst
                       _ -> False
                 addNewPostedMessage $ RecentPost p wasMentioned
             | otherwise -> return ()

@@ -69,7 +69,6 @@ module Types
   , csChannel
   , csChannels
   , csChannelSelectState
-  , csMe
   , csEditState
   , timeZone
 
@@ -129,6 +128,10 @@ module Types
   , hasUnread
   , channelNameFromMatch
   , isMine
+  , getMyUser
+  , getMyUser'
+  , getMyUserId
+  , getMyUserId'
   , getUsernameForUserId
   , getUserIdForUsername
   , getUserIdForUsername'
@@ -721,7 +724,7 @@ withChannelOrDefault cId deflt mote = do
 -- ** 'ChatState' Helper Functions
 
 isMine :: ChatState -> Message -> Bool
-isMine st msg = (UserI $ st^.csMe.userIdL) == msg^.mUser
+isMine st msg = (UserI $ getMyUserId' st) == msg^.mUser
 
 getMessageForPostId :: ChatState -> PostId -> Maybe Message
 getMessageForPostId st pId = st^.csPostMap.at(pId)
@@ -890,7 +893,7 @@ hasUnread st cId = maybe False id $ do
 userList :: ChatState -> [UserInfo]
 userList st = filter showUser $ allUsers (st^.csUsers)
   where showUser u = not (isSelf u) && (u^.uiInTeam)
-        isSelf u = (st^.csMe.userIdL) == (u^.uiId)
+        isSelf u = (getMyUserId' st) == (u^.uiId)
 
 getAllUserIds :: MH [UserId]
 getAllUserIds = allUserIds <$> use csUsers
@@ -900,6 +903,18 @@ getUserById uId = getUserById' uId <$> use id
 
 getUserById' :: UserId -> ChatState -> Maybe UserInfo
 getUserById' uId st = findUserById uId (st^.csUsers)
+
+getMyUserId :: MH UserId
+getMyUserId = getMyUserId' <$> use id
+
+getMyUserId' :: ChatState -> UserId
+getMyUserId' st = getMyUser' st ^. userIdL
+
+getMyUser :: MH User
+getMyUser = getMyUser' <$> use id
+
+getMyUser' :: ChatState -> User
+getMyUser' st = st^.csMe
 
 getUserByDMChannelName' :: T.Text
                         -- ^ the dm channel name

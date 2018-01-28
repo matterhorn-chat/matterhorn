@@ -61,7 +61,7 @@ toLastRunState :: ChatState -> LastRunState
 toLastRunState cs = LastRunState
   { _lrsHost              = cs^.csResources.crConn.cdHostnameL
   , _lrsPort              = cs^.csResources.crConn.cdPortL
-  , _lrsUserId            = cs^.csMe.userIdL
+  , _lrsUserId            = getMyUserId' cs
   , _lrsSelectedChannelId = cs^.csCurrentChannelId
   }
 

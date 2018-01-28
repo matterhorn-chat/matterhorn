@@ -202,7 +202,7 @@ refreshChannelById cId = do
 createGroupChannel :: T.Text -> MH ()
 createGroupChannel usernameList = do
     st <- use id
-    me <- use csMe
+    me <- getMyUser
 
     let usernames = T.words usernameList
         findUserIds [] = return []
@@ -435,7 +435,7 @@ isRecentChannel st cId = st^.csRecentChannel == Just cId
 flagMessage :: PostId -> Bool -> MH ()
 flagMessage pId f = do
   session <- use (csResources.crSession)
-  myId <- use (csMe.userIdL)
+  myId <- getMyUserId
   doAsyncWith Normal $ do
     let doFlag = if f then MM.mmFlagPost else MM.mmUnflagPost
     doFlag myId pId session
@@ -532,7 +532,7 @@ startJoinChannel = do
 joinChannel :: Channel -> MH ()
 joinChannel chan = do
     csMode .= Main
-    myId <- use (csMe.userIdL)
+    myId <- getMyUserId
     let member = MinChannelMember myId (getId chan)
     doAsyncChannelMM Preempt (getId chan) (\ s _ c -> MM.mmAddUser c member s) endAsyncNOP
 
@@ -588,7 +588,7 @@ leaveCurrentChannel = use csCurrentChannelId >>= leaveChannel
 leaveChannelIfPossible :: ChannelId -> Bool -> MH ()
 leaveChannelIfPossible cId delete = do
     st <- use id
-    me <- use csMe
+    me <- getMyUser
     let isMe u = u^.userIdL == me^.userIdL
 
     case st ^? csChannel(cId).ccInfo of
@@ -1084,13 +1084,13 @@ attemptCreateDMChannel :: T.Text -> MH ()
 attemptCreateDMChannel name = do
   mCid <- getChannelIdByName name
   mUid <- getUserIdForUsername name
-  myName <- use (csMe.userUsernameL)
-  if name == myName
+  me <- getMyUser
+  if name == me^.userUsernameL
     then postErrorMessage ("Cannot create a DM channel with yourself")
     else if isJust mUid && isNothing mCid
       then do
         -- We have a user of that name but no channel. Time to make one!
-        myId <- use (csMe.userIdL)
+        myId <- getMyUserId
         Just uId <- getUserIdForUsername name
         session <- use (csResources.crSession)
         doAsyncWith Normal $ do
@@ -1160,7 +1160,7 @@ handleNewChannel_ permitPostpone switch nc member = do
         -- async work to do before we can register this channel (in
         -- which case abort because we got rescheduled).
         mName <- case chType of
-            Direct -> case userIdForDMChannel (st^.csMe.userIdL) $ channelName nc of
+            Direct -> case userIdForDMChannel (getMyUserId' st) $ channelName nc of
                 -- If this is a direct channel but we can't extract a
                 -- user ID from the name, then it failed to parse. We
                 -- need to assign a channel name in our channel map,
@@ -1216,7 +1216,7 @@ handleNewChannel_ permitPostpone switch nc member = do
 
 editMessage :: Post -> MH ()
 editMessage new = do
-  myId <- use (csMe.userIdL)
+  myId <- getMyUserId
   let isEditedMessage m = m^.mPostId == Just (new^.postIdL)
       msg = clientPostToMessage (toClientPost new (new^.postParentIdL))
       chan = csChannel (new^.postChannelIdL)
@@ -1318,7 +1318,7 @@ addMessageToState newPostData = do
               member <- MM.mmGetChannelMember (postChannelId new) UserMe session
 
               let chType = nc^.channelTypeL
-                  pref = showGroupChannelPref (postChannelId new) (st^.csMe.userIdL)
+                  pref = showGroupChannelPref (postChannelId new) (getMyUserId' st)
 
               return $ do
                   -- If the incoming message is for a group channel we
@@ -1335,7 +1335,7 @@ addMessageToState newPostData = do
           return NoAction
       Just _ -> do
           let cp = toClientPost new (new^.postParentIdL)
-              fromMe = (cp^.cpUser == (Just $ getId (st^.csMe))) &&
+              fromMe = (cp^.cpUser == (Just $ getMyUserId' st)) &&
                        (isNothing $ cp^.cpUserOverride)
               cId = postChannelId new
 
@@ -1389,7 +1389,7 @@ addMessageToState newPostData = do
                 withChannelOrDefault (postChannelId new) NoAction $ \chan -> do
                     currCId <- use csCurrentChannelId
 
-                    let notifyPref = notifyPreference (st^.csMe) chan
+                    let notifyPref = notifyPreference (getMyUser' st) chan
                         curChannelAction = if postChannelId new == currCId
                                            then UpdateServerViewed
                                            else NoAction
