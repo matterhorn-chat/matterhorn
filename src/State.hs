@@ -1487,8 +1487,7 @@ fetchVisibleIfNeeded = do
 
 mkChannelZipperList :: MMNames -> [ChannelId]
 mkChannelZipperList chanNames =
-  [ (chanNames ^. cnToChanId) HM.! i
-  | i <- chanNames ^. cnChans ] ++
+  getChannelIdsInOrder chanNames ++
   [ c
   | i <- chanNames ^. cnUsers
   , c <- maybeToList (HM.lookup i (chanNames ^. cnToChanId)) ]
