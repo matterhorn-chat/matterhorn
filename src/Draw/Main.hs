@@ -303,7 +303,7 @@ renderChannelHeader st hs chan =
                            quote n = "\"" <> n <> "\""
                            nick = maybe "" quote $ u^.uiNickName
                        in s
-        foundUser = findUserByDMChannelName (st^.csUsers) chnName (st^.csMe^.userIdL)
+        foundUser = getUserByDMChannelName' chnName (st^.csMe^.userIdL) st
         maybeTopic = if T.null topicStr
                      then ""
                      else " - " <> topicStr

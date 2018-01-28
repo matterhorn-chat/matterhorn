@@ -124,7 +124,7 @@ handleWSEvent we = do
         WMStatusChange
             | Just status <- wepStatus (weData we)
             , Just uId <- wepUserId (weData we) ->
-                updateStatus uId status
+                setUserStatus uId status
             | otherwise -> return ()
 
         WMUserAdded

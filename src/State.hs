@@ -60,7 +60,6 @@ module State
 
   -- * Working with users
   , handleNewUser
-  , updateStatus
   , handleTypingUser
 
   -- * Startup/reconnect management
@@ -202,17 +201,17 @@ refreshChannelById cId = do
 
 createGroupChannel :: T.Text -> MH ()
 createGroupChannel usernameList = do
-    users <- use csUsers
+    st <- use id
     me <- use csMe
 
     let usernames = T.words usernameList
         findUserIds [] = return []
         findUserIds (n:ns) = do
-            case findUserByName users n of
+            case getUserByUsername' n st of
                 Nothing -> do
                     postErrorMessage $ "No such user: " <> n
                     return []
-                Just (uId, _) -> (uId:) <$> findUserIds ns
+                Just u -> (u^.uiId:) <$> findUserIds ns
 
     results <- findUserIds usernames
 
@@ -297,10 +296,8 @@ refreshChannelsAndUsers = do
     return $ do
         forM_ users $ \u -> do
             when (not $ userDeleted u) $ do
-                knownUsers <- use csUsers
-                case findUserById (getId u) knownUsers of
-                    Just _ -> return ()
-                    Nothing -> handleNewUserDirect u
+                result <- getUserById (getId u)
+                when (isNothing result) $ handleNewUserDirect u
 
         forM_ chansWithData $ uncurry refreshChannel
 
@@ -770,9 +767,6 @@ resetHistoryPosition = do
     cId <- use csCurrentChannelId
     csEditState.cedInputHistoryPosition.at cId .= Just Nothing
 
-updateStatus :: UserId -> T.Text -> MH ()
-updateStatus uId t = csUsers %= modifyUserById uId (uiStatus .~ statusFromText t)
-
 clearEditor :: MH ()
 clearEditor = csEditState.cedEditor %= applyEdit clearZipper
 
@@ -1044,11 +1038,11 @@ addObtainedMessages cId reqCnt posts = do
         -- as-yet-unknown users related to this new set of messages
 
         let users = foldr (\post -> Set.insert (postUserId post)) Set.empty (posts^.postsPostsL)
-            addUserIfUnknown st uId = case st^.csUsers.to (findUserById uId) of
-                                        Just _  -> return ()
-                                        Nothing -> handleNewUser uId
-        st <- use id
-        mapM_ (addUserIfUnknown st) $ catMaybes $ F.toList users
+            addUserIfUnknown uId = do
+                result <- getUserById uId
+                when (isNothing result) $ handleNewUser uId
+
+        mapM_ addUserIfUnknown $ catMaybes $ F.toList users
 
         -- Return the aggregated user notification action needed
         -- relative to the set of added messages.
@@ -1888,7 +1882,7 @@ handleNewUserDirect :: User -> MH ()
 handleNewUserDirect newUser = do
     let usrInfo = userInfoFromUser newUser True
         newUserId = getId newUser
-    csUsers %= addUser newUserId usrInfo
+    addNewUser usrInfo
     csNames %= addUsernameMapping newUser
     userSet <- use (csResources.crUserIdSet)
     liftIO $ STM.atomically $ STM.modifyTVar userSet $ (newUserId Seq.<|)
@@ -1910,7 +1904,7 @@ handleNewUser newUserId = doAsyncMM Normal getUserInfo updateUserState
           updateUserState :: (User, UserInfo) -> MH ()
           updateUserState (newUser, uInfo) =
               -- Update the name map and the list of known users
-              do csUsers %= addUser newUserId uInfo
+              do addNewUser uInfo
                  csNames %= addUsernameMapping newUser
                  userSet <- use (csResources.crUserIdSet)
                  liftIO $ STM.atomically $ STM.modifyTVar userSet $ (newUserId Seq.<|)

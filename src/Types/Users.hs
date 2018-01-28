@@ -118,8 +118,8 @@ allUserIds :: Users -> [UserId]
 allUserIds = HM.keys . _ofUsers
 
 -- | Add a member to the existing collection of Users
-addUser :: UserId -> UserInfo -> Users -> Users
-addUser uId userinfo = AllUsers . HM.insert uId userinfo . _ofUsers
+addUser :: UserInfo -> Users -> Users
+addUser userinfo = AllUsers . HM.insert (userinfo^.uiId) userinfo . _ofUsers
 
 -- | Get a list of all known users
 allUsers :: Users -> [UserInfo]

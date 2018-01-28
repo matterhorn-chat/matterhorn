@@ -82,9 +82,9 @@ drawPostsBox contents st =
               | Just chan <- st^?csChannels.channelByIdL(post^.postChannelIdL) ->
                  case chan^.ccInfo.cdType of
                   Direct
-                    | Just u <- findUserByDMChannelName (st^.csUsers)
-                                                        (chan^.ccInfo.cdName)
-                                                        (st^.csMe.userIdL) ->
+                    | Just u <- getUserByDMChannelName' (chan^.ccInfo.cdName)
+                                                        (st^.csMe.userIdL)
+                                                        st ->
                         (forceAttr channelNameAttr (txt (T.singleton '@' <> u^.uiName)) <=>
                           (str "  " <+> renderedMsg))
                   _ -> (forceAttr channelNameAttr (txt (chan^.ccInfo.to mkChannelName)) <=>

@@ -68,7 +68,6 @@ module Types
   , csConnectionStatus
   , csWorkerIsBusy
   , csNames
-  , csUsers
   , csChannel
   , csChannels
   , csChannelSelectState
@@ -135,7 +134,10 @@ module Types
   , getUsernameForUserId
   , getUserIdForUsername
   , getUserIdForUsername'
+  , getUserByDMChannelName'
   , getUserByUsername
+  , getUserByUsername'
+  , setUserStatus
   , getChannelIdByName
   , getChannelIdByName'
   , getChannelByName
@@ -150,6 +152,7 @@ module Types
   , sortedUserList
   , removeChannelName
   , addChannelName
+  , addNewUser
   , getChannelMentionCount'
 
   , userSigil
@@ -740,6 +743,9 @@ getParentMessage st msg
     = st^.csPostMap.at(pId)
   | otherwise = Nothing
 
+setUserStatus :: UserId -> T.Text -> MH ()
+setUserStatus uId t = csUsers %= modifyUserById uId (uiStatus .~ statusFromText t)
+
 getUsernameForUserId :: ChatState -> UserId -> Maybe T.Text
 getUsernameForUserId st uId = _uiName <$> findUserById uId (st^.csUsers)
 
@@ -774,6 +780,9 @@ trimAnySigil n
     | normalChannelSigil `T.isPrefixOf` n = T.tail n
     | userSigil `T.isPrefixOf` n          = T.tail n
     | otherwise                           = n
+
+addNewUser :: UserInfo -> MH ()
+addNewUser u = csUsers %= addUser u
 
 addChannelName :: Type -> ChannelId -> T.Text -> MH ()
 addChannelName chType cid name = do
@@ -878,6 +887,16 @@ getUserById uId = getUserById' uId <$> use id
 
 getUserById' :: UserId -> ChatState -> Maybe UserInfo
 getUserById' uId st = findUserById uId (st^.csUsers)
+
+getUserByDMChannelName' :: T.Text
+                        -- ^ the dm channel name
+                        -> UserId
+                        -- ^ me
+                        -> ChatState
+                        -> Maybe UserInfo
+                        -- ^ you
+getUserByDMChannelName' name self st =
+    findUserByDMChannelName (st^.csUsers) name self
 
 getUserByUsername :: T.Text -> MH (Maybe UserInfo)
 getUserByUsername name = getUserByUsername' name <$> use id
