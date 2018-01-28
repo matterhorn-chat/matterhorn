@@ -134,6 +134,7 @@ module Types
   , isMine
   , getUsernameForUserId
   , getUserIdForUsername
+  , getAllChannelNames
   , sortedUserList
 
   , userSigil
@@ -728,6 +729,9 @@ getUsernameForUserId st uId = _uiName <$> findUserById uId (st^.csUsers)
 
 getUserIdForUsername :: T.Text -> MH (Maybe UserId)
 getUserIdForUsername name = use (csNames.cnToUserId.at(name))
+
+getAllChannelNames :: MH [T.Text]
+getAllChannelNames = use (csNames.cnChans)
 
 clientPostToMessage :: ClientPost -> Message
 clientPostToMessage cp = Message

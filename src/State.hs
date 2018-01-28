@@ -338,7 +338,7 @@ addChannelName chType cid name = do
 
     -- For direct channels the username is already in the user list so
     -- do nothing
-    existingNames <- use $ csNames.cnChans
+    existingNames <- getAllChannelNames
     when (chType /= Direct && (not $ name `elem` existingNames)) $
         csNames.cnChans %= (sort . (name:))
 
@@ -1597,7 +1597,7 @@ updateChannelSelectMatches = do
     -- Given the current channel select string, find all the channel and
     -- user matches and then update the match lists.
     chanNameMatches <- use (csChannelSelectState.channelSelectInput.to channelNameMatch)
-    chanNames   <- use (csNames.cnChans)
+    chanNames   <- getAllChannelNames
     uList       <- use (to sortedUserList)
     let chanMatches = catMaybes (fmap chanNameMatches chanNames)
         usernameMatches = catMaybes (fmap chanNameMatches (fmap _uiName uList))
