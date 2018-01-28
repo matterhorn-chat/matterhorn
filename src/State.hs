@@ -129,7 +129,7 @@ import           Data.Text.Zipper (textZipper, clearZipper, insertMany, gotoEOL)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
 import           Data.List (sort, findIndex)
-import           Data.Maybe (maybeToList, isJust, fromJust, catMaybes, isNothing)
+import           Data.Maybe (isJust, fromJust, catMaybes, isNothing)
 import           Data.Monoid ((<>))
 import qualified Data.Set as Set
 import qualified Data.Text as T
@@ -1062,18 +1062,12 @@ loadMoreMessages = do
     mode <- use csMode
     when (mode == ChannelScroll) asyncFetchMoreMessages
 
-channelByName :: ChatState -> T.Text -> Maybe ChannelId
-channelByName st n
-    | normalChannelSigil `T.isPrefixOf` n = st ^. csNames . cnToChanId . at (T.tail n)
-    | userSigil `T.isPrefixOf` n = st ^. csNames . cnToChanId . at (T.tail n)
-    | otherwise            = st ^. csNames . cnToChanId . at n
-
 -- | This switches to the named channel or creates it if it is a missing
 -- but valid user channel.
 changeChannel :: T.Text -> MH ()
 changeChannel name = do
-    st <- use id
-    case channelByName st name of
+    result <- getChannelIdByName name
+    case result of
       Just cId -> setFocus cId
       Nothing  -> attemptCreateDMChannel name
 

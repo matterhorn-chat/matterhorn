@@ -737,7 +737,13 @@ getUserIdForUsername name = use (csNames.cnToUserId.at(name))
 getChannelIdByName :: T.Text -> MH (Maybe ChannelId)
 getChannelIdByName name = do
     nameToChanId <- use (csNames.cnToChanId)
-    return $ HM.lookup name nameToChanId
+    return $ HM.lookup (trimAnySigil name) nameToChanId
+
+trimAnySigil :: T.Text -> T.Text
+trimAnySigil n
+    | normalChannelSigil `T.isPrefixOf` n = T.tail n
+    | userSigil `T.isPrefixOf` n          = T.tail n
+    | otherwise                           = n
 
 addChannelName :: Type -> ChannelId -> T.Text -> MH ()
 addChannelName chType cid name = do
