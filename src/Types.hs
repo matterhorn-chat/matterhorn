@@ -34,7 +34,6 @@ module Types
   , mkNames
   , refreshChannelZipper
   , getChannelIdsInOrder
-  , addUsernameMapping
 
   , LinkChoice(LinkChoice)
   , linkUser
@@ -771,7 +770,9 @@ trimAnySigil n
     | otherwise                           = n
 
 addNewUser :: UserInfo -> MH ()
-addNewUser u = csUsers %= addUser u
+addNewUser u = do
+    csUsers %= addUser u
+    addUsernameMapping u
 
 addUsernameMapping :: UserInfo -> MH ()
 addUsernameMapping user = do
