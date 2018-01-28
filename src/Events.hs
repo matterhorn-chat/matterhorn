@@ -100,7 +100,7 @@ onVtyEvent e = do
 handleWSEvent :: WebsocketEvent -> MH ()
 handleWSEvent we = do
     myId <- getMyUserId
-    myTeamId <- use (csMyTeam.teamIdL)
+    myTeamId <- getMyTeamId
     case weEvent we of
         WMPosted
             | Just p <- wepPost (weData we) -> do

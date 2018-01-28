@@ -74,7 +74,8 @@ writeLastRunState :: ChatState -> IO (Either String ())
 writeLastRunState cs = runExceptT . convertIOException $
   when (cs^.csCurrentChannel.ccInfo.cdType `elem` [Ordinary, Private]) $ do
     let runState = toLastRunState cs
-        tId      = cs^.csMyTeam.teamIdL
+        tId      = getMyTeamId' cs
+
     lastRunStateFile <- lastRunStateFilePath $ unId $ toId tId
     createDirectoryIfMissing True $ dropFileName lastRunStateFile
     BS.writeFile lastRunStateFile $ LBS.toStrict $ A.encode runState

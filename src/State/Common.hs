@@ -139,7 +139,7 @@ doAsyncMM :: AsyncPriority
           -> MH ()
 doAsyncMM prio mmOp eventHandler = do
   session <- use (csResources.crSession)
-  myTeamId <- use (csMyTeam.teamIdL)
+  myTeamId <- getMyTeamId
   doAsyncWith prio $ do
     r <- mmOp session myTeamId
     return $ eventHandler r

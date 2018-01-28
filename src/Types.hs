@@ -60,7 +60,6 @@ module Types
   , csPostMap
   , csRecentChannel
   , csPostListOverlay
-  , csMyTeam
   , csMode
   , csMessageSelect
   , csJoinChannelList
@@ -132,6 +131,8 @@ module Types
   , getMyUser'
   , getMyUserId
   , getMyUserId'
+  , getMyTeamId
+  , getMyTeamId'
   , getUsernameForUserId
   , getUserIdForUsername
   , getUserIdForUsername'
@@ -909,6 +910,12 @@ getMyUserId = getMyUserId' <$> use id
 
 getMyUserId' :: ChatState -> UserId
 getMyUserId' st = getMyUser' st ^. userIdL
+
+getMyTeamId :: MH TeamId
+getMyTeamId = getMyTeamId' <$> use id
+
+getMyTeamId' :: ChatState -> TeamId
+getMyTeamId' st = st ^. csMyTeam . teamIdL
 
 getMyUser :: MH User
 getMyUser = getMyUser' <$> use id

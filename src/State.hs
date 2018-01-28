@@ -277,7 +277,7 @@ refreshChannelsAndUsers = do
   -- The below code is a duplicate of mmGetAllChannelsWithDataForUser function,
   -- which has been inlined here to gain a concurrency benefit.
   session <- use (csResources.crSession)
-  myTeamId <- use (csMyTeam.teamIdL)
+  myTeamId <- getMyTeamId
   let userQuery = MM.defaultUserQuery
         { MM.userQueryPage = Just 0
         , MM.userQueryPerPage = Just 10000
@@ -508,7 +508,7 @@ copyVerbatimToClipboard = do
 startJoinChannel :: MH ()
 startJoinChannel = do
     session <- use (csResources.crSession)
-    myTeamId <- use (csMyTeam.teamIdL)
+    myTeamId <- getMyTeamId
     myChannels <- use (csChannels.to (filteredChannelIds (const True)))
     doAsyncWith Preempt $ do
         -- We don't get to just request all channels, so we request channels in
@@ -1105,7 +1105,7 @@ attemptCreateDMChannel name = do
 createOrdinaryChannel :: T.Text -> MH ()
 createOrdinaryChannel name  = do
   session <- use (csResources.crSession)
-  myTeamId <- use (csMyTeam.teamIdL)
+  myTeamId <- getMyTeamId
   doAsyncWith Preempt $ do
     -- create a new chat channel
     let slug = T.map (\ c -> if isAlphaNum c then c else '-') (T.toLower name)
