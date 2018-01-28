@@ -1836,11 +1836,10 @@ openSelectedMessageURLs = do
         let urls = msgURLs curMsg
         when (not (null urls)) $ do
             openedAll <- and <$> mapM openURL urls
-            case openedAll of
-                True -> csMode .= Main
-                False -> do
-                    let msg = "Config option 'urlOpenCommand' missing; cannot open URL."
-                    postInfoMessage msg
+            csMode .= Main
+            when (not openedAll) $ do
+                let msg = "Config option 'urlOpenCommand' missing; cannot open URL."
+                postInfoMessage msg
 
 shouldSkipMessage :: T.Text -> Bool
 shouldSkipMessage "" = True
