@@ -434,7 +434,6 @@ isCurrentChannel st cId = st^.csCurrentChannelId == cId
 isRecentChannel :: ChatState -> ChannelId -> Bool
 isRecentChannel st cId = st^.csRecentChannel == Just cId
 
-
 -- | Tell the server that we have flagged or unflagged a message.
 flagMessage :: PostId -> Bool -> MH ()
 flagMessage pId f = do
