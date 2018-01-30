@@ -61,7 +61,7 @@ toLastRunState :: ChatState -> LastRunState
 toLastRunState cs = LastRunState
   { _lrsHost              = cs^.csResources.crConn.cdHostnameL
   , _lrsPort              = cs^.csResources.crConn.cdPortL
-  , _lrsUserId            = getMyUserId' cs
+  , _lrsUserId            = myUserId cs
   , _lrsSelectedChannelId = cs^.csCurrentChannelId
   }
 
@@ -74,7 +74,7 @@ writeLastRunState :: ChatState -> IO (Either String ())
 writeLastRunState cs = runExceptT . convertIOException $
   when (cs^.csCurrentChannel.ccInfo.cdType `elem` [Ordinary, Private]) $ do
     let runState = toLastRunState cs
-        tId      = getMyTeamId' cs
+        tId      = myTeamId cs
 
     lastRunStateFile <- lastRunStateFilePath $ unId $ toId tId
     createDirectoryIfMissing True $ dropFileName lastRunStateFile
@@ -92,7 +92,7 @@ readLastRunState tId = runExceptT $ do
 
 -- | Checks if the given last run state is valid for the current server and user.
 isValidLastRunState :: ChatResources -> User -> LastRunState -> Bool
-isValidLastRunState cr myUser rs =
+isValidLastRunState cr me rs =
      rs^.lrsHost   == cr^.crConn.cdHostnameL
   && rs^.lrsPort   == cr^.crConn.cdPortL
-  && rs^.lrsUserId == myUser^.userIdL
+  && rs^.lrsUserId == me^.userIdL

@@ -116,6 +116,7 @@ module Types
   , mh
   , mhSuspendAndResume
   , mhHandleEventLensed
+  , gets
 
   , requestQuit
   , clientPostToMessage
@@ -128,36 +129,26 @@ module Types
   , hasUnread
   , channelNameFromMatch
   , isMine
-  , getMyUser
-  , getMyUser'
-  , getMyUserId
-  , getMyUserId'
-  , getMyTeamId
-  , getMyTeamId'
-  , getUsernameForUserId
-  , getUserIdForUsername
-  , getUserIdForUsername'
-  , getUserByDMChannelName'
-  , getUserByUsername
-  , getUserByUsername'
   , setUserStatus
-  , getChannelIdByName
-  , getChannelIdByName'
-  , getChannelByName
-  , getChannelByName'
-  , getUserById
-  , getUserById'
-  , getAllUserIds
-  , getAllChannelNames
-  , getAllChannelNames'
-  , getAllUsernames
-  , getAllUsernames'
+  , myUser
+  , myUserId
+  , myTeamId
+  , usernameForUserId
+  , userIdForUsername
+  , userByDMChannelName
+  , userByUsername
+  , channelIdByName
+  , channelByName
+  , userById
+  , allUserIds
+  , allChannelNames
+  , allUsernames
   , sortedUserList
   , removeChannelName
   , addChannelName
   , addNewUser
   , setUserIdSet
-  , getChannelMentionCount'
+  , channelMentionCount
 
   , userSigil
   , normalChannelSigil
@@ -183,6 +174,7 @@ import qualified Control.Concurrent.STM as STM
 import           Control.Concurrent.MVar (MVar)
 import           Control.Exception (SomeException)
 import qualified Control.Monad.State as St
+import           Control.Monad.State (gets)
 import qualified Data.Foldable as F
 import qualified Data.Sequence as Seq
 import           Data.HashMap.Strict (HashMap)
@@ -732,7 +724,7 @@ withChannelOrDefault cId deflt mote = do
 -- ** 'ChatState' Helper Functions
 
 isMine :: ChatState -> Message -> Bool
-isMine st msg = (UserI $ getMyUserId' st) == msg^.mUser
+isMine st msg = (UserI $ myUserId st) == msg^.mUser
 
 getMessageForPostId :: ChatState -> PostId -> Maybe Message
 getMessageForPostId st pId = st^.csPostMap.at(pId)
@@ -746,33 +738,20 @@ getParentMessage st msg
 setUserStatus :: UserId -> T.Text -> MH ()
 setUserStatus uId t = csUsers %= modifyUserById uId (uiStatus .~ statusFromText t)
 
-getUsernameForUserId :: ChatState -> UserId -> Maybe T.Text
-getUsernameForUserId st uId = _uiName <$> findUserById uId (st^.csUsers)
+usernameForUserId :: UserId -> ChatState -> Maybe T.Text
+usernameForUserId uId st = _uiName <$> findUserById uId (st^.csUsers)
 
-getUserIdForUsername :: T.Text -> MH (Maybe UserId)
-getUserIdForUsername name = getUserIdForUsername' name <$> use id
+userIdForUsername :: T.Text -> ChatState -> Maybe UserId
+userIdForUsername name st = st^.csNames.cnToUserId.at name
 
-getUserIdForUsername' :: T.Text -> ChatState -> Maybe UserId
-getUserIdForUsername' name st = st^.csNames.cnToUserId.at name
-
-getChannelIdByName :: T.Text -> MH (Maybe ChannelId)
-getChannelIdByName name = do
-    st <- use id
-    return $ getChannelIdByName' st name
-
-getChannelByName :: T.Text -> MH (Maybe ClientChannel)
-getChannelByName name = do
-    st <- use id
-    return $ getChannelByName' st name
-
-getChannelIdByName' :: ChatState -> T.Text -> Maybe ChannelId
-getChannelIdByName' st name =
+channelIdByName :: T.Text -> ChatState -> Maybe ChannelId
+channelIdByName name st =
     let nameToChanId = st^.csNames.cnToChanId
     in HM.lookup (trimAnySigil name) nameToChanId
 
-getChannelByName' :: ChatState -> T.Text -> Maybe ClientChannel
-getChannelByName' st name = do
-    cId <- getChannelIdByName' st name
+channelByName :: T.Text -> ChatState -> Maybe ClientChannel
+channelByName name st = do
+    cId <- channelIdByName name st
     findChannelById cId (st^.csChannels)
 
 trimAnySigil :: T.Text -> T.Text
@@ -804,25 +783,19 @@ addChannelName chType cid name = do
 
     -- For direct channels the username is already in the user list so
     -- do nothing
-    existingNames <- getAllChannelNames
+    existingNames <- gets allChannelNames
     when (chType /= Direct && (not $ name `elem` existingNames)) $
         csNames.cnChans %= (sort . (name:))
 
-getChannelMentionCount' :: ChatState -> ChannelId -> Int
-getChannelMentionCount' st cId =
+channelMentionCount :: ChannelId -> ChatState -> Int
+channelMentionCount cId st =
     maybe 0 id (st^?csChannel(cId).ccInfo.cdMentionCount)
 
-getAllChannelNames :: MH [T.Text]
-getAllChannelNames = getAllChannelNames' <$> use id
+allChannelNames :: ChatState -> [T.Text]
+allChannelNames st = st^.csNames.cnChans
 
-getAllUsernames :: MH [T.Text]
-getAllUsernames = getAllUsernames' <$> use id
-
-getAllChannelNames' :: ChatState -> [T.Text]
-getAllChannelNames' st = st^.csNames.cnChans
-
-getAllUsernames' :: ChatState -> [T.Text]
-getAllUsernames' st = st^.csNames.cnChans
+allUsernames :: ChatState -> [T.Text]
+allUsernames st = st^.csNames.cnChans
 
 removeChannelName :: T.Text -> MH ()
 removeChannelName name = do
@@ -901,52 +874,37 @@ hasUnread st cId = maybe False id $ do
 userList :: ChatState -> [UserInfo]
 userList st = filter showUser $ allUsers (st^.csUsers)
   where showUser u = not (isSelf u) && (u^.uiInTeam)
-        isSelf u = (getMyUserId' st) == (u^.uiId)
+        isSelf u = (myUserId st) == (u^.uiId)
 
-getAllUserIds :: MH [UserId]
-getAllUserIds = allUserIds <$> use csUsers
+allUserIds :: ChatState -> [UserId]
+allUserIds st = getAllUserIds $ st^.csUsers
 
-getUserById :: UserId -> MH (Maybe UserInfo)
-getUserById uId = getUserById' uId <$> use id
+userById :: UserId -> ChatState -> Maybe UserInfo
+userById uId st = findUserById uId (st^.csUsers)
 
-getUserById' :: UserId -> ChatState -> Maybe UserInfo
-getUserById' uId st = findUserById uId (st^.csUsers)
+myUserId :: ChatState -> UserId
+myUserId st = myUser st ^. userIdL
 
-getMyUserId :: MH UserId
-getMyUserId = getMyUserId' <$> use id
+myTeamId :: ChatState -> TeamId
+myTeamId st = st ^. csMyTeam . teamIdL
 
-getMyUserId' :: ChatState -> UserId
-getMyUserId' st = getMyUser' st ^. userIdL
+myUser :: ChatState -> User
+myUser st = st^.csMe
 
-getMyTeamId :: MH TeamId
-getMyTeamId = getMyTeamId' <$> use id
-
-getMyTeamId' :: ChatState -> TeamId
-getMyTeamId' st = st ^. csMyTeam . teamIdL
-
-getMyUser :: MH User
-getMyUser = getMyUser' <$> use id
-
-getMyUser' :: ChatState -> User
-getMyUser' st = st^.csMe
-
-getUserByDMChannelName' :: T.Text
-                        -- ^ the dm channel name
-                        -> UserId
-                        -- ^ me
-                        -> ChatState
-                        -> Maybe UserInfo
-                        -- ^ you
-getUserByDMChannelName' name self st =
+userByDMChannelName :: T.Text
+                    -- ^ the dm channel name
+                    -> UserId
+                    -- ^ me
+                    -> ChatState
+                    -> Maybe UserInfo
+                    -- ^ you
+userByDMChannelName name self st =
     findUserByDMChannelName (st^.csUsers) name self
 
-getUserByUsername :: T.Text -> MH (Maybe UserInfo)
-getUserByUsername name = getUserByUsername' name <$> use id
-
-getUserByUsername' :: T.Text -> ChatState -> Maybe UserInfo
-getUserByUsername' name st = do
-    uId <- getUserIdForUsername' name st
-    getUserById' uId st
+userByUsername :: T.Text -> ChatState -> Maybe UserInfo
+userByUsername name st = do
+    uId <- userIdForUsername name st
+    userById uId st
 
 sortedUserList :: ChatState -> [UserInfo]
 sortedUserList st = sortBy cmp yes <> sortBy cmp no

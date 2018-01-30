@@ -202,12 +202,12 @@ refreshChannelById cId = do
 createGroupChannel :: T.Text -> MH ()
 createGroupChannel usernameList = do
     st <- use id
-    me <- getMyUser
+    me <- gets myUser
 
     let usernames = T.words usernameList
         findUserIds [] = return []
         findUserIds (n:ns) = do
-            case getUserByUsername' n st of
+            case userByUsername n st of
                 Nothing -> do
                     postErrorMessage $ "No such user: " <> n
                     return []
@@ -277,16 +277,16 @@ refreshChannelsAndUsers = do
   -- The below code is a duplicate of mmGetAllChannelsWithDataForUser function,
   -- which has been inlined here to gain a concurrency benefit.
   session <- getSession
-  myTeamId <- getMyTeamId
+  myTId <- gets myTeamId
   let userQuery = MM.defaultUserQuery
         { MM.userQueryPage = Just 0
         , MM.userQueryPerPage = Just 10000
-        , MM.userQueryInTeam = Just myTeamId
+        , MM.userQueryInTeam = Just myTId
         }
   doAsyncWith Preempt $ do
     (chans, datas, users) <- runConcurrently $ (,,)
-                            <$> Concurrently (MM.mmGetChannelsForUser UserMe myTeamId session)
-                            <*> Concurrently (MM.mmGetChannelMembersForUser UserMe myTeamId session)
+                            <$> Concurrently (MM.mmGetChannelsForUser UserMe myTId session)
+                            <*> Concurrently (MM.mmGetChannelMembersForUser UserMe myTId session)
                             <*> Concurrently (MM.mmGetUsers userQuery session)
 
     let dataMap = HM.fromList $ F.toList $ (\d -> (channelMemberChannelId d, d)) <$> datas
@@ -296,7 +296,7 @@ refreshChannelsAndUsers = do
     return $ do
         forM_ users $ \u -> do
             when (not $ userDeleted u) $ do
-                result <- getUserById (getId u)
+                result <- gets (userById (getId u))
                 when (isNothing result) $ handleNewUserDirect u
 
         forM_ chansWithData $ uncurry refreshChannel
@@ -435,7 +435,7 @@ isRecentChannel st cId = st^.csRecentChannel == Just cId
 flagMessage :: PostId -> Bool -> MH ()
 flagMessage pId f = do
   session <- getSession
-  myId <- getMyUserId
+  myId <- gets myUserId
   doAsyncWith Normal $ do
     let doFlag = if f then MM.mmFlagPost else MM.mmUnflagPost
     doFlag myId pId session
@@ -508,7 +508,7 @@ copyVerbatimToClipboard = do
 startJoinChannel :: MH ()
 startJoinChannel = do
     session <- getSession
-    myTeamId <- getMyTeamId
+    myTId <- gets myTeamId
     myChannels <- use (csChannels.to (filteredChannelIds (const True)))
     doAsyncWith Preempt $ do
         -- We don't get to just request all channels, so we request channels in
@@ -516,7 +516,7 @@ startJoinChannel = do
         -- then wait for the user to demand more.
         let fetchCount     = 50
             loop acc start = do
-              newChans <- MM.mmGetPublicChannels myTeamId (Just start) (Just fetchCount) session
+              newChans <- MM.mmGetPublicChannels myTId (Just start) (Just fetchCount) session
               let chans = acc <> newChans
               if length newChans < fetchCount
                 then return chans
@@ -532,7 +532,7 @@ startJoinChannel = do
 joinChannel :: Channel -> MH ()
 joinChannel chan = do
     csMode .= Main
-    myId <- getMyUserId
+    myId <- gets myUserId
     let member = MinChannelMember myId (getId chan)
     doAsyncChannelMM Preempt (getId chan) (\ s _ c -> MM.mmAddUser c member s) endAsyncNOP
 
@@ -549,7 +549,7 @@ handleChannelInvite cId = do
 addUserToCurrentChannel :: T.Text -> MH ()
 addUserToCurrentChannel uname = do
     -- First: is this a valid username?
-    result <- getUserByUsername uname
+    result <- gets (userByUsername uname)
     case result of
         Just u -> do
             cId <- use csCurrentChannelId
@@ -564,7 +564,7 @@ addUserToCurrentChannel uname = do
 removeUserFromCurrentChannel :: T.Text -> MH ()
 removeUserFromCurrentChannel uname = do
     -- First: is this a valid username?
-    result <- getUserByUsername uname
+    result <- gets (userByUsername uname)
     case result of
         Just u -> do
             cId <- use csCurrentChannelId
@@ -588,7 +588,7 @@ leaveCurrentChannel = use csCurrentChannelId >>= leaveChannel
 leaveChannelIfPossible :: ChannelId -> Bool -> MH ()
 leaveChannelIfPossible cId delete = do
     st <- use id
-    me <- getMyUser
+    me <- gets myUser
     let isMe u = u^.userIdL == me^.userIdL
 
     case st ^? csChannel(cId).ccInfo of
@@ -1037,7 +1037,7 @@ addObtainedMessages cId reqCnt posts = do
 
         let users = foldr (\post -> Set.insert (postUserId post)) Set.empty (posts^.postsPostsL)
             addUserIfUnknown uId = do
-                result <- getUserById uId
+                result <- gets (userById uId)
                 when (isNothing result) $ handleNewUser uId
 
         mapM_ addUserIfUnknown $ catMaybes $ F.toList users
@@ -1057,7 +1057,7 @@ loadMoreMessages = do
 -- but valid user channel.
 changeChannel :: T.Text -> MH ()
 changeChannel name = do
-    result <- getChannelIdByName name
+    result <- gets (channelIdByName name)
     case result of
       Just cId -> setFocus cId
       Nothing  -> attemptCreateDMChannel name
@@ -1082,16 +1082,16 @@ setFocusWith f = do
 
 attemptCreateDMChannel :: T.Text -> MH ()
 attemptCreateDMChannel name = do
-  mCid <- getChannelIdByName name
-  mUid <- getUserIdForUsername name
-  me <- getMyUser
+  mCid <- gets (channelIdByName name)
+  mUid <- gets (userIdForUsername name)
+  me <- gets myUser
   if name == me^.userUsernameL
     then postErrorMessage ("Cannot create a DM channel with yourself")
     else if isJust mUid && isNothing mCid
       then do
         -- We have a user of that name but no channel. Time to make one!
-        myId <- getMyUserId
-        Just uId <- getUserIdForUsername name
+        myId <- gets myUserId
+        Just uId <- gets (userIdForUsername name)
         session <- getSession
         doAsyncWith Normal $ do
           -- create a new channel
@@ -1105,7 +1105,7 @@ attemptCreateDMChannel name = do
 createOrdinaryChannel :: T.Text -> MH ()
 createOrdinaryChannel name  = do
   session <- getSession
-  myTeamId <- getMyTeamId
+  myTId <- gets myTeamId
   doAsyncWith Preempt $ do
     -- create a new chat channel
     let slug = T.map (\ c -> if isAlphaNum c then c else '-') (T.toLower name)
@@ -1115,7 +1115,7 @@ createOrdinaryChannel name  = do
           , minChannelPurpose     = Nothing
           , minChannelHeader      = Nothing
           , minChannelType        = Ordinary
-          , minChannelTeamId      = myTeamId
+          , minChannelTeamId      = myTId
           }
     tryMM (do c <- MM.mmCreateChannel minChannel session
               chan <- MM.mmGetChannel (getId c) session
@@ -1160,7 +1160,7 @@ handleNewChannel_ permitPostpone switch nc member = do
         -- async work to do before we can register this channel (in
         -- which case abort because we got rescheduled).
         mName <- case chType of
-            Direct -> case userIdForDMChannel (getMyUserId' st) $ channelName nc of
+            Direct -> case userIdForDMChannel (myUserId st) $ channelName nc of
                 -- If this is a direct channel but we can't extract a
                 -- user ID from the name, then it failed to parse. We
                 -- need to assign a channel name in our channel map,
@@ -1174,7 +1174,7 @@ handleNewChannel_ permitPostpone switch nc member = do
                 -- probably better than ignoring this entirely.
                 Nothing -> return $ Just $ channelName nc
                 Just otherUserId ->
-                    case getUsernameForUserId st otherUserId of
+                    case usernameForUserId otherUserId st of
                         -- If we found a user ID in the channel name
                         -- string but don't have that user's metadata,
                         -- postpone adding this channel until we have
@@ -1216,7 +1216,7 @@ handleNewChannel_ permitPostpone switch nc member = do
 
 editMessage :: Post -> MH ()
 editMessage new = do
-  myId <- getMyUserId
+  myId <- gets myUserId
   let isEditedMessage m = m^.mPostId == Just (new^.postIdL)
       msg = clientPostToMessage (toClientPost new (new^.postParentIdL))
       chan = csChannel (new^.postChannelIdL)
@@ -1318,7 +1318,7 @@ addMessageToState newPostData = do
               member <- MM.mmGetChannelMember (postChannelId new) UserMe session
 
               let chType = nc^.channelTypeL
-                  pref = showGroupChannelPref (postChannelId new) (getMyUserId' st)
+                  pref = showGroupChannelPref (postChannelId new) (myUserId st)
 
               return $ do
                   -- If the incoming message is for a group channel we
@@ -1335,7 +1335,7 @@ addMessageToState newPostData = do
           return NoAction
       Just _ -> do
           let cp = toClientPost new (new^.postParentIdL)
-              fromMe = (cp^.cpUser == (Just $ getMyUserId' st)) &&
+              fromMe = (cp^.cpUser == (Just $ myUserId st)) &&
                        (isNothing $ cp^.cpUserOverride)
               cId = postChannelId new
 
@@ -1389,7 +1389,7 @@ addMessageToState newPostData = do
                 withChannelOrDefault (postChannelId new) NoAction $ \chan -> do
                     currCId <- use csCurrentChannelId
 
-                    let notifyPref = notifyPreference (getMyUser' st) chan
+                    let notifyPref = notifyPreference (myUser st) chan
                         curChannelAction = if postChannelId new == currCId
                                            then UpdateServerViewed
                                            else NoAction
@@ -1559,7 +1559,7 @@ updateChannelSelectMatches = do
     -- Given the current channel select string, find all the channel and
     -- user matches and then update the match lists.
     chanNameMatches <- use (csChannelSelectState.channelSelectInput.to channelNameMatch)
-    chanNames   <- getAllChannelNames
+    chanNames   <- gets allChannelNames
     uList       <- use (to sortedUserList)
     let chanMatches = catMaybes (fmap chanNameMatches chanNames)
         usernameMatches = catMaybes (fmap chanNameMatches (fmap _uiName uList))

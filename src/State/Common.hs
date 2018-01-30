@@ -139,9 +139,9 @@ doAsyncMM :: AsyncPriority
           -> MH ()
 doAsyncMM prio mmOp eventHandler = do
   session <- getSession
-  myTeamId <- getMyTeamId
+  tId <- gets myTeamId
   doAsyncWith prio $ do
-    r <- mmOp session myTeamId
+    r <- mmOp session tId
     return $ eventHandler r
 
 -- | Helper type for a function to perform an asynchronous MM operation

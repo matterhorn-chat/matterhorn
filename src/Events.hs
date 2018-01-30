@@ -99,8 +99,8 @@ onVtyEvent e = do
 
 handleWSEvent :: WebsocketEvent -> MH ()
 handleWSEvent we = do
-    myId <- getMyUserId
-    myTeamId <- getMyTeamId
+    myId <- gets myUserId
+    myTId <- gets myTeamId
     case weEvent we of
         WMPosted
             | Just p <- wepPost (weData we) -> do
@@ -129,7 +129,7 @@ handleWSEvent we = do
         WMUserAdded
             | Just cId <- webChannelId (weBroadcast we) ->
                 when (wepUserId (weData we) == Just myId &&
-                      wepTeamId (weData we) == Just myTeamId) $
+                      wepTeamId (weData we) == Just myTId) $
                     handleChannelInvite cId
             | otherwise -> return ()
 
@@ -150,7 +150,7 @@ handleWSEvent we = do
 
         WMChannelDeleted
             | Just cId <- wepChannelId (weData we) ->
-                when (webTeamId (weBroadcast we) == Just myTeamId) $
+                when (webTeamId (weBroadcast we) == Just myTId) $
                     removeChannelFromState cId
             | otherwise -> return ()
 

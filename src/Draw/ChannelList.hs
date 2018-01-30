@@ -198,8 +198,8 @@ decorateRecent entry = if entryIsRecent entry
 getOrdinaryChannels :: ChatState -> Maybe Int -> Seq.Seq ChannelListEntry
 getOrdinaryChannels st _ =
     Seq.fromList [ ChannelListEntry sigil n unread mentions recent current Nothing
-    | n <- getAllChannelNames' st
-    , let Just chan = getChannelIdByName' st n
+    | n <- allChannelNames st
+    , let Just chan = channelIdByName n st
           unread = hasUnread st chan
           recent = isRecentChannel st chan
           current = isCurrentChannel st chan
@@ -207,7 +207,7 @@ getOrdinaryChannels st _ =
             Nothing      -> normalChannelSigil
             Just ("", _) -> normalChannelSigil
             _            -> "»"
-          mentions = getChannelMentionCount' st chan
+          mentions = channelMentionCount chan st
     ]
 
 -- | Extract the names and information about Direct Message channels
@@ -238,10 +238,10 @@ getDmChannels st height =
                        _            -> '»'  -- shows that user has a message in-progress
                    uname = u^.uiName
                    recent = maybe False (isRecentChannel st) m_chanId
-                   m_chanId = getChannelIdByName' st $ u^.uiName
+                   m_chanId = channelIdByName (u^.uiName) st
                    unread = maybe False (hasUnread st) m_chanId
                    current = maybe False (isCurrentChannel st) m_chanId
-                   mentions = fromMaybe 0 $ getChannelMentionCount' st <$> m_chanId
+                   mentions = fromMaybe 0 $ channelMentionCount <$> m_chanId <*> pure st
                 ]
         (h, t) = Seq.breakl entryIsCurrent es
     in case height of

@@ -140,7 +140,7 @@ execMMCommand name rest = do
   cId      <- use csCurrentChannelId
   session  <- getSession
   em       <- use (csEditState.cedEditMode)
-  tId      <- getMyTeamId
+  tId      <- gets myTeamId
   let mc = MM.MinCommand
              { MM.minComChannelId = cId
              , MM.minComCommand   = "/" <> name <> " " <> rest

@@ -103,7 +103,7 @@ setupState logFile initialConfig = do
                 interactiveGatherCredentials cInfo (Just e) >>=
                     loginLoop
 
-  (session, myUser, cd, config) <- loginLoop connInfo
+  (session, me, cd, config) <- loginLoop connInfo
 
   teams <- mmGetUsersTeams UserMe session
   when (Seq.null teams) $ do
@@ -161,13 +161,13 @@ setupState logFile initialConfig = do
   let cr = ChatResources session cd requestChan eventChan
              slc wac (themeToAttrMap custTheme) userStatusLock userIdSet config mempty prefs
 
-  initializeState cr myTeam myUser
+  initializeState cr myTeam me
 
 initializeState :: ChatResources -> Team -> User -> IO ChatState
-initializeState cr myTeam myUser = do
+initializeState cr myTeam me = do
   let session = getResourceSession cr
       requestChan = cr^.crRequestQueue
-      myTeamId = getId myTeam
+      myTId = getId myTeam
 
   -- Create a predicate to find the last selected channel by reading the
   -- run state file. If unable to read or decode or validate the file, this
@@ -175,7 +175,7 @@ initializeState cr myTeam myUser = do
   isLastSelectedChannel <- do
     result <- readLastRunState $ teamId myTeam
     case result of
-      Right lrs | isValidLastRunState cr myUser lrs -> return $ \c ->
+      Right lrs | isValidLastRunState cr me lrs -> return $ \c ->
            channelId c == lrs^.lrsSelectedChannelId
       _ -> return isTownSquare
 
@@ -185,7 +185,7 @@ initializeState cr myTeam myUser = do
   -- We first try to find a channel matching with the last selected channel ID,
   -- failing which we look for the Town Square channel by name.
   -- This is not entirely correct since the Town Square channel can be renamed!
-  userChans <- mmGetChannelsForUser UserMe myTeamId session
+  userChans <- mmGetChannelsForUser UserMe myTId session
   let lastSelectedChans = Seq.filter isLastSelectedChannel userChans
       chans = if Seq.null lastSelectedChans
                 then Seq.filter isTownSquare userChans
@@ -228,10 +228,10 @@ initializeState cr myTeam myUser = do
 
   -- End thread startup ----------------------------------------------
 
-  let names = mkNames myUser mempty chans
+  let names = mkNames me mempty chans
       chanIds = getChannelIdsInOrder names
       chanZip = Z.fromList chanIds
-      st = newState cr chanZip myUser myTeam tz hist spResult names
+      st = newState cr chanZip me myTeam tz hist spResult names
              & csChannels %~ flip (foldr (uncurry addChannel)) msgs
 
   loadFlaggedMessages (cr^.crPreferences) st

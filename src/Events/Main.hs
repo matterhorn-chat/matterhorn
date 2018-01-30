@@ -182,20 +182,20 @@ handleInputSubmission = do
 tabComplete :: Completion.Direction -> MH ()
 tabComplete dir = do
   st <- use id
-  allUserIds <- getAllUserIds
-  allChanNames <- getAllChannelNames
+  allUIds <- gets allUserIds
+  allChanNames <- gets allChannelNames
 
   let completableChannels = catMaybes (flip map allChanNames $ \cname -> do
           -- Only permit completion of channel names for non-Group channels
-          ch <- getChannelByName' st cname
+          ch <- channelByName cname st
           case ch^.ccInfo.cdType of
               Group -> Nothing
               _     -> Just cname
           )
 
-      completableUsers = catMaybes (flip map allUserIds $ \uId -> do
+      completableUsers = catMaybes (flip map allUIds $ \uId -> do
           -- Only permit completion of user names for non-deleted users
-          case getUserById' uId st of
+          case userById uId st of
               Nothing -> Nothing
               Just u ->
                   if u^.uiDeleted

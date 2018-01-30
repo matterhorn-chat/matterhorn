@@ -41,7 +41,7 @@ enterFlaggedPostListMode = do
 enterSearchResultPostListMode :: Text -> MH ()
 enterSearchResultPostListMode terms = do
   session <- getSession
-  tId <- getMyTeamId
+  tId <- gets myTeamId
   enterPostListMode (PostListSearch terms True) noMessages
   doAsyncWith Preempt $ do
     posts <- mmSearchForTeamPosts tId (SearchPosts terms False) session

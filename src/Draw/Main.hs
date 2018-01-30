@@ -302,7 +302,7 @@ renderChannelHeader st hs chan =
                            quote n = "\"" <> n <> "\""
                            nick = maybe "" quote $ u^.uiNickName
                        in s
-        foundUser = getUserByDMChannelName' chnName (getMyUserId' st) st
+        foundUser = userByDMChannelName chnName (myUserId st) st
         maybeTopic = if T.null topicStr
                      then ""
                      else " - " <> topicStr
@@ -528,7 +528,7 @@ inputPreview :: ChatState -> HighlightSet -> Widget Name
 inputPreview st hs | not $ st^.csShowMessagePreview = emptyWidget
                    | otherwise = thePreview
     where
-    uId = getMyUserId' st
+    uId = myUserId st
     -- Insert a cursor sentinel into the input text just before
     -- rendering the preview. We use the inserted sentinel (which is
     -- not rendered) to get brick to ensure that the line the cursor is
@@ -611,10 +611,10 @@ mainInterface st =
 
     showTypingUsers = case allTypingUsers (st^.csCurrentChannel.ccInfo.cdTypingUsers) of
                         [] -> emptyWidget
-                        [uId] | Just un <- getUsernameForUserId st uId ->
+                        [uId] | Just un <- usernameForUserId uId st ->
                            txt $ un <> " is typing"
-                        [uId1, uId2] | Just un1 <- getUsernameForUserId st uId1
-                                     , Just un2 <- getUsernameForUserId st uId2 ->
+                        [uId1, uId2] | Just un1 <- usernameForUserId uId1 st
+                                     , Just un2 <- usernameForUserId uId2 st ->
                            txt $ un1 <> " and " <> un2 <> " are typing"
                         _ -> txt "several people are typing"
 
