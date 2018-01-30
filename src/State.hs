@@ -365,12 +365,12 @@ beginMessageSelect = do
     let recentPost = getLatestPostMsg chanMsgs
 
     when (isJust recentPost) $ do
-        csMode .= MessageSelect
+        setMode MessageSelect
         csMessageSelect .= MessageSelectState (join $ ((^.mPostId) <$> recentPost))
 
 getSelectedMessage :: ChatState -> Maybe Message
 getSelectedMessage st
-    | st^.csMode /= MessageSelect && st^.csMode /= MessageSelectDeleteConfirm = Nothing
+    | appMode st /= MessageSelect && appMode st /= MessageSelectDeleteConfirm = Nothing
     | otherwise = do
         selPostId <- selectMessagePostId $ st^.csMessageSelect
 
@@ -379,7 +379,7 @@ getSelectedMessage st
 
 messageSelectUp :: MH ()
 messageSelectUp = do
-    mode <- use csMode
+    mode <- gets appMode
     selected <- use (csMessageSelect.to selectMessagePostId)
     case selected of
         Just _ | mode == MessageSelect -> do
@@ -390,10 +390,9 @@ messageSelectUp = do
 
 messageSelectDown :: MH ()
 messageSelectDown = do
-    mode <- use csMode
     selected <- use (csMessageSelect.to selectMessagePostId)
     case selected of
-        Just _ | mode == MessageSelect -> do
+        Just _ -> whenMode MessageSelect $ do
             chanMsgs <- use (csCurrentChannel.ccContents.cdMessages)
             let nextPostId = getNextPostId selected chanMsgs
             csMessageSelect .= MessageSelectState (nextPostId <|> selected)
@@ -413,7 +412,7 @@ messageSelectUpBy amt
 
 beginConfirmDeleteSelectedMessage :: MH ()
 beginConfirmDeleteSelectedMessage =
-    csMode .= MessageSelectDeleteConfirm
+    setMode MessageSelectDeleteConfirm
 
 deleteSelectedMessage :: MH ()
 deleteSelectedMessage = do
@@ -427,7 +426,7 @@ deleteSelectedMessage = do
                   doAsyncChannelMM Preempt cId
                       (\s _ _ -> MM.mmDeletePost (postId p) s)
                       (\_ _ -> do csEditState.cedEditMode .= NewPost
-                                  csMode .= Main)
+                                  setMode Main)
               Nothing -> return ()
         _ -> return ()
 
@@ -437,12 +436,12 @@ beginCurrentChannelDeleteConfirm = do
     withChannel cId $ \chan -> do
         let chType = chan^.ccInfo.cdType
         if chType /= Direct
-            then csMode .= DeleteChannelConfirm
+            then setMode DeleteChannelConfirm
             else postErrorMessage "The /delete-channel command cannot be used with direct message channels."
 
 deleteCurrentChannel :: MH ()
 deleteCurrentChannel = do
-    csMode .= Main
+    setMode Main
     cId <- use csCurrentChannelId
     leaveChannelIfPossible cId True
 
@@ -481,7 +480,7 @@ beginUpdateMessage = do
     case selected of
         Just msg | isMine st msg && isEditable msg -> do
             let Just p = msg^.mOriginalPost
-            csMode .= Main
+            setMode Main
             csEditState.cedEditMode .= Editing p
             csEditState.cedEditor %= applyEdit (clearZipper >> (insertMany $ postMessage p))
         _ -> return ()
@@ -491,7 +490,7 @@ replyToLatestMessage = do
   msgs <- use (csCurrentChannel . ccContents . cdMessages)
   case findLatestUserMessage isReplyable msgs of
     Just msg -> do let Just p = msg^.mOriginalPost
-                   csMode .= Main
+                   setMode Main
                    csEditState.cedEditMode .= Replying msg p
     _ -> return ()
 
@@ -502,7 +501,7 @@ beginReplyCompose = do
         Nothing -> return ()
         Just msg -> do
             let Just p = msg^.mOriginalPost
-            csMode .= Main
+            setMode Main
             csEditState.cedEditMode .= Replying msg p
 
 cancelReplyOrEdit :: MH ()
@@ -523,7 +522,7 @@ copyVerbatimToClipboard = do
             Nothing -> return ()
             Just txt -> do
               copyToClipboard txt
-              csMode .= Main
+              setMode Main
 
 -- * Joining, Leaving, and Inviting
 
@@ -548,12 +547,12 @@ startJoinChannel = do
         return $ do
             csJoinChannelList .= (Just $ list JoinChannelList sortedChans 2)
 
-    csMode .= JoinChannel
+    setMode JoinChannel
     csJoinChannelList .= Nothing
 
 joinChannel :: Channel -> MH ()
 joinChannel chan = do
-    csMode .= Main
+    setMode Main
     myId <- use (csMe.userIdL)
     let member = MinChannelMember myId (getId chan)
     doAsyncChannelMM Preempt (getId chan) (\ s _ c -> MM.mmAddUser c member s) endAsyncNOP
@@ -601,7 +600,7 @@ startLeaveCurrentChannel :: MH ()
 startLeaveCurrentChannel = do
     cInfo <- use (csCurrentChannel.ccInfo)
     case canLeaveChannel cInfo of
-        True -> csMode .= LeaveChannelConfirm
+        True -> setMode LeaveChannelConfirm
         False -> postErrorMessage "The /leave command cannot be used with this channel."
 
 leaveCurrentChannel :: MH ()
@@ -1076,9 +1075,7 @@ addObtainedMessages cId reqCnt posts = do
 
 
 loadMoreMessages :: MH ()
-loadMoreMessages = do
-    mode <- use csMode
-    when (mode == ChannelScroll) asyncFetchMoreMessages
+loadMoreMessages = whenMode ChannelScroll asyncFetchMoreMessages
 
 channelByName :: ChatState -> T.Text -> Maybe ChannelId
 channelByName st n
@@ -1552,11 +1549,11 @@ channelHistoryBackward = do
 showHelpScreen :: HelpTopic -> MH ()
 showHelpScreen topic = do
     mh $ vScrollToBeginning (viewportScroll HelpViewport)
-    csMode .= ShowHelp topic
+    setMode $ ShowHelp topic
 
 beginChannelSelect :: MH ()
 beginChannelSelect = do
-    csMode .= ChannelSelect
+    setMode ChannelSelect
     csChannelSelectState .= emptyChannelSelectState
 
 -- Select the next match in channel selection mode.
@@ -1681,11 +1678,11 @@ parseChannelSelectPattern pat = do
 startUrlSelect :: MH ()
 startUrlSelect = do
     urls <- use (csCurrentChannel.to findUrls.to V.fromList)
-    csMode    .= UrlSelect
+    setMode UrlSelect
     csUrlList .= (listMoveTo (length urls - 1) $ list UrlList urls 2)
 
 stopUrlSelect :: MH ()
-stopUrlSelect = csMode .= Main
+stopUrlSelect = setMode Main
 
 findUrls :: ClientChannel -> [LinkChoice]
 findUrls chan =
@@ -1730,9 +1727,7 @@ msgURLs msg
   in msgUrls <> attachmentURLs
 
 openSelectedURL :: MH ()
-openSelectedURL = do
-  mode <- use csMode
-  when (mode == UrlSelect) $ do
+openSelectedURL = whenMode UrlSelect $ do
     selected <- use (csUrlList.to listSelectedElement)
     case selected of
         Nothing -> return ()
@@ -1741,7 +1736,7 @@ openSelectedURL = do
             when (not opened) $ do
                 let msg = "Config option 'urlOpenCommand' missing; cannot open URL."
                 postInfoMessage msg
-                csMode .= Main
+                setMode Main
 
 openURL :: LinkChoice -> MH Bool
 openURL link = do
@@ -1794,7 +1789,7 @@ openURL link = do
                     mhSuspendAndResume $ \st -> do
                         args <- act st
                         void $ runInteractiveCommand (T.unpack urlOpenCommand) args
-                        return $ st & csMode .~ Main
+                        return $ setMode' Main st
 
             return True
 
@@ -1876,18 +1871,16 @@ runLoggedCommand stdoutOkay outputChan cmd args mInput mOutputVar = void $ forkI
                     "https://github.com/matterhorn-chat/matterhorn"
 
 openSelectedMessageURLs :: MH ()
-openSelectedMessageURLs = do
-    mode <- use csMode
-    when (mode == MessageSelect) $ do
-        Just curMsg <- use (to getSelectedMessage)
-        let urls = msgURLs curMsg
-        when (not (null urls)) $ do
-            openedAll <- and <$> mapM openURL urls
-            case openedAll of
-                True -> csMode .= Main
-                False -> do
-                    let msg = "Config option 'urlOpenCommand' missing; cannot open URL."
-                    postInfoMessage msg
+openSelectedMessageURLs = whenMode MessageSelect $ do
+    Just curMsg <- use (to getSelectedMessage)
+    let urls = msgURLs curMsg
+    when (not (null urls)) $ do
+        openedAll <- and <$> mapM openURL urls
+        case openedAll of
+            True -> setMode Main
+            False -> do
+                let msg = "Config option 'urlOpenCommand' missing; cannot open URL."
+                postInfoMessage msg
 
 shouldSkipMessage :: T.Text -> Bool
 shouldSkipMessage "" = True

@@ -26,7 +26,7 @@ channelScrollKeybindings = mkKeybindings
   , mkKb PageDownEvent "Scroll down"
     channelPageDown
   , mkKb CancelEvent "Cancel scrolling and return to channel view" $
-    csMode .= Main
+    setMode Main
   , mkKb ScrollTopEvent "Scroll to top"
     channelScrollToTop
   , mkKb ScrollBottomEvent "Scroll to bottom"

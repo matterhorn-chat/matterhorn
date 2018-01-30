@@ -83,7 +83,7 @@ onVtyEvent e = do
             mh $ invalidateCacheEntry ScriptHelpText
         _ -> return ()
 
-    mode <- use csMode
+    mode <- gets appMode
     case mode of
         Main                       -> onEventMain e
         ShowHelp _                 -> onEventShowHelp e

@@ -29,11 +29,11 @@ channelSelectKeybindings = mkKeybindings
          (Vty.EvKey Vty.KEnter []) $ do
              selMatch <- use (csChannelSelectState.selectedMatch)
 
-             csMode .= Main
+             setMode Main
              when (selMatch /= "") $ do
                  changeChannel selMatch
 
-    , mkKb CancelEvent "Cancel channel selection" $ csMode .= Main
+    , mkKb CancelEvent "Cancel channel selection" $ setMode Main
     , mkKb NextChannelEvent "Select next match" channelSelectNext
     , mkKb PrevChannelEvent "Select previous match" channelSelectPrevious
     ]

@@ -84,7 +84,7 @@ channelListGroups =
 -- some channel selection text.
 hasActiveChannelSelection :: ChatState -> Bool
 hasActiveChannelSelection st =
-    st^.csMode == ChannelSelect && not (T.null (st^.csChannelSelectState.channelSelectInput))
+    appMode st == ChannelSelect && not (T.null (st^.csChannelSelectState.channelSelectInput))
 
 -- | This is the main function that is called from external code to
 -- render the ChannelList sidebar.

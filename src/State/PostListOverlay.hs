@@ -17,14 +17,14 @@ enterPostListMode ::  PostListContents -> Messages -> MH ()
 enterPostListMode contents msgs = do
   csPostListOverlay.postListPosts .= msgs
   csPostListOverlay.postListSelected .= join ((^.mPostId) <$> getLatestPostMsg msgs)
-  csMode .= PostListOverlay contents
+  setMode $ PostListOverlay contents
 
 -- | Clear out the state of a PostListOverlay
 exitPostListMode :: MH ()
 exitPostListMode = do
   csPostListOverlay.postListPosts .= mempty
   csPostListOverlay.postListSelected .= Nothing
-  csMode .= Main
+  setMode Main
 
 -- | Create a PostListOverlay with flagged messages from the server.
 enterFlaggedPostListMode :: MH ()
