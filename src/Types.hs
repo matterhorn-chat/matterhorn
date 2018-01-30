@@ -12,6 +12,7 @@ module Types
   , MHEvent(..)
   , Name(..)
   , ChannelSelectMatch(..)
+  , StartupStateInfo(..)
   , ConnectionInfo(..)
   , ciHostname
   , ciPort
@@ -503,15 +504,18 @@ data ChatState = ChatState
   , _csPostListOverlay             :: PostListOverlayState
   }
 
-newState :: ChatResources
-         -> Zipper ChannelId
-         -> User
-         -> Team
-         -> TimeZoneSeries
-         -> InputHistory
-         -> Maybe (Aspell, IO ())
-         -> ChatState
-newState rs i u m tz hist sp = ChatState
+data StartupStateInfo =
+    StartupStateInfo { startupStateResources      :: ChatResources
+                     , startupStateChannelZipper  :: Zipper ChannelId
+                     , startupStateConnectedUser  :: User
+                     , startupStateTeam           :: Team
+                     , startupStateTimeZone       :: TimeZoneSeries
+                     , startupStateInitialHistory :: InputHistory
+                     , startupStateSpellChecker   :: Maybe (Aspell, IO ())
+                     }
+
+newState :: StartupStateInfo -> ChatState
+newState (StartupStateInfo rs i u m tz hist sp) = ChatState
   { _csResources                   = rs
   , _csFocus                       = i
   , _csMe                          = u
