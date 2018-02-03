@@ -30,6 +30,7 @@ import Events.UrlSelect
 import Events.Main
 import Events.MessageSelect
 import Events.PostListOverlay
+import Events.UserListOverlay
 import State.Editing (editingKeybindings)
 import Markdown (renderText)
 import Options (mhVersion)
@@ -331,6 +332,7 @@ keybindSections kc =
     , ("Message Select Mode", messageSelectKeybindings kc)
     , ("Text Editing", editingKeybindings)
     , ("Flagged Messages", postListOverlayKeybindings kc)
+    , ("User Listings", userListOverlayKeybindings kc)
     ]
 
 helpBox :: Name -> Widget Name -> Widget Name
