@@ -10,6 +10,7 @@ import           Control.Monad.IO.Class (liftIO)
 import           Data.List (intercalate)
 import qualified Data.Map as M
 import qualified Data.Set as Set
+import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Monoid ((<>))
 import           GHC.Exts (groupWith)
@@ -135,7 +136,7 @@ handleWSEvent we = do
             | otherwise -> return ()
 
         WMNewUser
-            | Just uId <- wepUserId $ weData we -> handleNewUser uId
+            | Just uId <- wepUserId $ weData we -> handleNewUsers (Seq.singleton uId)
             | otherwise -> return ()
 
         WMUserRemoved

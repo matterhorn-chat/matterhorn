@@ -59,7 +59,7 @@ module State
   , fetchVisibleIfNeeded
 
   -- * Working with users
-  , handleNewUser
+  , handleNewUsers
   , updateStatus
   , handleTypingUser
 
@@ -1061,12 +1061,17 @@ addObtainedMessages cId reqCnt posts = do
         -- Now initiate fetches for use information for any
         -- as-yet-unknown users related to this new set of messages
 
-        let users = foldr (\post -> Set.insert (postUserId post)) Set.empty (posts^.postsPostsL)
-            addUserIfUnknown st uId = case st^.csUsers.to (findUserById uId) of
-                                        Just _  -> return ()
-                                        Nothing -> handleNewUser uId
+        let users = foldr (\post s -> maybe s (flip Set.insert s) (postUserId post))
+                          Set.empty (posts^.postsPostsL)
+            addUnknownUsers st inputUserIds =
+                let knownUserIds = allUserIds (st^.csUsers)
+                    unknownUsers = Set.difference inputUserIds knownUserIds
+                in if Set.null unknownUsers
+                   then return ()
+                   else handleNewUsers $ Seq.fromList $ F.toList unknownUsers
+
         st <- use id
-        mapM_ (addUserIfUnknown st) $ catMaybes $ F.toList users
+        addUnknownUsers st users
 
         -- Return the aggregated user notification action needed
         -- relative to the set of added messages.
@@ -1223,7 +1228,7 @@ handleNewChannel_ permitPostpone switch nc member = do
                             case permitPostpone of
                                 False -> return $ Just $ channelName nc
                                 True -> do
-                                    handleNewUser otherUserId
+                                    handleNewUsers $ Seq.singleton otherUserId
                                     doAsyncWith Normal $
                                         return $ handleNewChannel_ False switch nc member
                                     return Nothing
@@ -1920,10 +1925,10 @@ handleNewUserDirect newUser = do
     userSet <- use (csResources.crUserIdSet)
     liftIO $ STM.atomically $ STM.modifyTVar userSet $ (newUserId Seq.<|)
 
-handleNewUser :: UserId -> MH ()
-handleNewUser newUserId = doAsyncMM Normal getUserInfo updateUserState
+handleNewUsers :: Seq.Seq UserId -> MH ()
+handleNewUsers newUserIds = doAsyncMM Preempt getUserInfo updateUserStates
     where getUserInfo session _ =
-              do (nUser, users)  <- concurrently (MM.mmGetUser (UserById newUserId) session)
+              do (nUsers, users)  <- concurrently (MM.mmGetUsersByIds newUserIds session)
                                                     (MM.mmGetUsers MM.defaultUserQuery
                                                       { MM.userQueryPage = Just 0
                                                       , MM.userQueryPerPage = Just 10000
@@ -1932,16 +1937,22 @@ handleNewUser newUserId = doAsyncMM Normal getUserInfo updateUserState
                  -- Also re-load the team members so we can tell
                  -- whether the new user is in the current user's
                  -- team.
-                 let usrInfo = userInfoFromUser nUser (HM.member newUserId teamUsers)
-                 return (nUser, usrInfo)
+                 let usrInfo u = userInfoFromUser u (HM.member (userId u) teamUsers)
+                     usrList = F.toList nUsers
+                 return $ zip usrList (usrInfo <$> usrList)
+
+          updateUserStates :: [(User, UserInfo)] -> MH ()
+          updateUserStates pairs = mapM_ updateUserState pairs
+
           updateUserState :: (User, UserInfo) -> MH ()
           updateUserState (newUser, uInfo) =
               -- Update the name map and the list of known users
-              do csUsers %= addUser newUserId uInfo
+              do let uId = userId newUser
+                 csUsers %= addUser uId uInfo
                  csNames . cnUsers %= (sort . ((newUser^.userUsernameL):))
-                 csNames . cnToUserId . at (newUser^.userUsernameL) .= Just newUserId
+                 csNames . cnToUserId . at (newUser^.userUsernameL) .= Just uId
                  userSet <- use (csResources.crUserIdSet)
-                 liftIO $ STM.atomically $ STM.modifyTVar userSet $ (newUserId Seq.<|)
+                 liftIO $ STM.atomically $ STM.modifyTVar userSet $ (uId Seq.<|)
 
 -- | Handle the typing events from the websocket to show the currently typing users on UI
 handleTypingUser :: UserId -> ChannelId -> MH ()
