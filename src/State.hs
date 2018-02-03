@@ -1026,11 +1026,21 @@ addObtainedMessages cId reqCnt posts = do
             noMoreBefore = reqCnt < 0 && length pIdList < (-reqCnt)
             noMoreAfter = reqCnt > 0 && length pIdList < reqCnt
 
+        -- The post map returned by the server will *already* have
+        -- all thread messages for each post that is part of a
+        -- thread. By calling messagesFromPosts here, we go ahead and
+        -- populate the csPostMap with those posts so that below, in
+        -- addMessageToState, we notice that we already know about reply
+        -- parent messages and can avoid fetching them. This converts
+        -- the posts to Messages and stores those and also returns
+        -- them, but we don't need them here. We just want the post map
+        -- update.
+        void $ messagesFromPosts posts
+
         -- Add all the new *unique* posts into the existing channel
         -- corpus, generating needed fetches of data associated with
         -- the post, and determining an notification action to be
         -- taken (if any).
-
         action <- foldr mappend mempty <$>
           mapM (addMessageToState . OldPost)
                    [ (posts^.postsPostsL) HM.! p
