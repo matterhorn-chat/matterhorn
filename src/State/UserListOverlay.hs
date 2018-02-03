@@ -36,7 +36,6 @@ userListSelectDown :: MH ()
 userListSelectDown = do
   return ()
 
-
 fetchChannelMembers :: Session -> TeamId -> ChannelId -> IO (Seq User)
 fetchChannelMembers s _ c = do
     let query = MM.defaultUserQuery
@@ -46,7 +45,6 @@ fetchChannelMembers s _ c = do
           }
     chanUserMap <- MM.mmGetUsers query s
     return chanUserMap
-
 
 enterChannelMembersUserList :: MH ()
 enterChannelMembersUserList = do
