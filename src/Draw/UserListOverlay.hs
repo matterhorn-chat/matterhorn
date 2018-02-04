@@ -15,6 +15,7 @@ import           Lens.Micro.Platform
 
 import Brick
 import Brick.Widgets.Border
+import Brick.Widgets.Edit
 import Brick.Widgets.Center
 
 import Themes
@@ -32,17 +33,24 @@ hLimitWithPadding pad contents = Widget
 
 drawUserListOverlay :: UserListContents -> ChatState -> [Widget Name]
 drawUserListOverlay contents st =
-  drawUsersBox contents st : (forceAttr "invalid" <$> drawMain st)
+  drawUsersBox contents (st^.csUserListOverlay) :
+  (forceAttr "invalid" <$> drawMain st)
 
 -- | Draw a PostListOverlay as a floating overlay on top of whatever
 -- is rendered beneath it
-drawUsersBox :: UserListContents -> ChatState -> Widget Name
+drawUsersBox :: UserListContents -> UserListOverlayState -> Widget Name
 drawUsersBox contents st =
-  centerLayer $ hLimitWithPadding 10 $ borderWithLabel contentHeader $
-    padRight (Pad 1) userListContents
+  centerLayer $ hLimitWithPadding 10 $ borderWithLabel contentHeader body
   where -- The 'window title' of the overlay
-        userListContents
-          | null (st^.csUserListOverlay.userListUsers) =
+        body = vBox [ (padRight (Pad 1) $ str promptMsg) <+>
+                      renderEditor (txt . T.unlines) True (st^.userListSearchInput)
+                    , hBorder
+                    , padRight (Pad 1) userResultList
+                    ]
+        promptMsg = case contents of
+            UserListChannelMembers -> "Search channel members:"
+        userResultList
+          | null (st^.userListUsers) =
             padTopBottom 1 $ hCenter $ withDefAttr clientEmphAttr $
             str $ case contents of
               UserListChannelMembers -> "No users in channel."
@@ -50,7 +58,7 @@ drawUsersBox contents st =
 
         contentHeader = str "Users In Channel"
 
-        users = F.toList (st^.csUserListOverlay.userListUsers)
+        users = F.toList (st^.userListUsers)
         renderedUserList = map renderUser users
 
         renderUser ui =

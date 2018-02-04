@@ -101,6 +101,7 @@ module Types
   , UserListOverlayState
   , userListSelected
   , userListUsers
+  , userListSearchInput
 
   , ChatResources(ChatResources)
   , crPreferences
@@ -293,6 +294,7 @@ data Name = ChannelMessages ChannelId
           | JoinChannelList
           | UrlList
           | MessagePreviewViewport
+          | UserListSearchInput
           deriving (Eq, Show, Ord)
 
 -- | The sum type of exceptions we expect to encounter on authentication
@@ -545,7 +547,11 @@ newState rs i u m tz hist sp = ChatState
   , _csJoinChannelList             = Nothing
   , _csMessageSelect               = MessageSelectState Nothing
   , _csPostListOverlay             = PostListOverlayState mempty Nothing
-  , _csUserListOverlay             = UserListOverlayState mempty Nothing
+  , _csUserListOverlay             =
+      UserListOverlayState { _userListUsers       = mempty
+                           , _userListSelected    = Nothing
+                           , _userListSearchInput = editor UserListSearchInput (Just 1) ""
+                           }
   }
 
 type ChannelSelectMap = HM.HashMap T.Text ChannelSelectMatch
@@ -576,6 +582,7 @@ data PostListOverlayState = PostListOverlayState
 data UserListOverlayState = UserListOverlayState
   { _userListUsers    :: Seq.Seq UserInfo
   , _userListSelected :: Maybe PostId
+  , _userListSearchInput :: Editor T.Text Name
   }
 
 -- | Actions that can be sent on the websocket to the server.

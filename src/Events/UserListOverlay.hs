@@ -2,13 +2,16 @@ module Events.UserListOverlay where
 
 import qualified Graphics.Vty as Vty
 
+import Brick.Widgets.Edit (handleEditorEvent)
+
 import Types
 import Events.Keybindings
 import State.UserListOverlay
 
 onEventUserListOverlay :: Vty.Event -> MH ()
 onEventUserListOverlay =
-  handleKeyboardEvent userListOverlayKeybindings $ \ _ -> return ()
+  handleKeyboardEvent userListOverlayKeybindings $
+      mhHandleEventLensed (csUserListOverlay.userListSearchInput) handleEditorEvent
 
 -- | The keybindings we want to use while viewing a user list overlay
 userListOverlayKeybindings :: KeyConfig -> [Keybinding]
