@@ -25,7 +25,6 @@ module Types
   , Mode(..)
   , ChannelSelectPattern(..)
   , PostListContents(..)
-  , UserListContents(..)
   , ChannelSelectMap
   , AuthenticationException(..)
   , BackgroundInfo(..)
@@ -98,10 +97,13 @@ module Types
   , postListSelected
   , postListPosts
 
+  , UserSearchScope(..)
+
   , UserListOverlayState
   , userListSelected
   , userListUsers
   , userListSearchInput
+  , userListSearchScope
 
   , ChatResources(ChatResources)
   , crPreferences
@@ -467,11 +469,6 @@ data PostListContents
   --   | PostListPinned ChannelId
   deriving (Eq)
 
--- | Mode type for the current contents of the user list overlay
-data UserListContents
-  = UserListChannelMembers
-  deriving (Eq)
-
 -- | The 'Mode' represents the current dominant UI activity
 data Mode =
     Main
@@ -485,7 +482,7 @@ data Mode =
     | MessageSelect
     | MessageSelectDeleteConfirm
     | PostListOverlay PostListContents
-    | UserListOverlay UserListContents
+    | UserListOverlay
     deriving (Eq)
 
 -- | We're either connected or we're not.
@@ -551,6 +548,7 @@ newState rs i u m tz hist sp = ChatState
       UserListOverlayState { _userListUsers       = mempty
                            , _userListSelected    = Nothing
                            , _userListSearchInput = editor UserListSearchInput (Just 1) ""
+                           , _userListSearchScope = AllUsers
                            }
   }
 
@@ -583,7 +581,12 @@ data UserListOverlayState = UserListOverlayState
   { _userListUsers    :: Seq.Seq UserInfo
   , _userListSelected :: Maybe PostId
   , _userListSearchInput :: Editor T.Text Name
+  , _userListSearchScope :: UserSearchScope
   }
+
+data UserSearchScope =
+    ChannelMembers ChannelId
+    | AllUsers
 
 -- | Actions that can be sent on the websocket to the server.
 data WebsocketAction =

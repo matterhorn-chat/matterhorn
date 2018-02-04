@@ -5,17 +5,17 @@ import Lens.Micro.Platform
 import qualified Network.Mattermost.Endpoints as MM
 import Network.Mattermost.Types
 
-import State.Common
 import Types
-import Types.Users
 
 -- | Create a PostListOverlay with the given content description and
 -- with a specified list of messages.
-enterUserListMode :: UserListContents -> Seq User -> MH ()
-enterUserListMode contents msgs = do
-  csUserListOverlay.userListUsers .= fmap (flip userInfoFromUser True) msgs
-  csUserListOverlay.userListSelected .= Nothing -- join ((^.mPostId) <$> getLatestPostMsg msgs)
-  csMode .= UserListOverlay contents
+enterUserListMode :: UserSearchScope -> MH ()
+enterUserListMode scope = do
+  csUserListOverlay.userListSearchScope .= scope
+  csUserListOverlay.userListSelected .= Nothing
+  -- TODO: kick off an async action to start gathering results for the
+  -- specified scope.
+  csMode .= UserListOverlay
 
 -- | Clear out the state of a PostListOverlay
 exitUserListMode :: MH ()
@@ -49,5 +49,4 @@ fetchChannelMembers s _ c = do
 enterChannelMembersUserList :: MH ()
 enterChannelMembersUserList = do
   cId <- use csCurrentChannelId
-  doAsyncChannelMM Preempt cId fetchChannelMembers $ \ _ chanUsers -> do
-    enterUserListMode UserListChannelMembers chanUsers
+  enterUserListMode (ChannelMembers cId)

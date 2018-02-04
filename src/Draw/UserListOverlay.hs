@@ -31,15 +31,15 @@ hLimitWithPadding pad contents = Widget
       withReaderT (& availWidthL  %~ (\ n -> n - (2 * pad))) $ render $ cropToContext contents
   }
 
-drawUserListOverlay :: UserListContents -> ChatState -> [Widget Name]
-drawUserListOverlay contents st =
-  drawUsersBox contents (st^.csUserListOverlay) :
+drawUserListOverlay :: ChatState -> [Widget Name]
+drawUserListOverlay st =
+  drawUsersBox (st^.csUserListOverlay) :
   (forceAttr "invalid" <$> drawMain st)
 
 -- | Draw a PostListOverlay as a floating overlay on top of whatever
 -- is rendered beneath it
-drawUsersBox :: UserListContents -> UserListOverlayState -> Widget Name
-drawUsersBox contents st =
+drawUsersBox :: UserListOverlayState -> Widget Name
+drawUsersBox st =
   centerLayer $ hLimitWithPadding 10 $ borderWithLabel contentHeader body
   where -- The 'window title' of the overlay
         body = vBox [ (padRight (Pad 1) $ str promptMsg) <+>
@@ -47,13 +47,16 @@ drawUsersBox contents st =
                     , hBorder
                     , padRight (Pad 1) userResultList
                     ]
-        promptMsg = case contents of
-            UserListChannelMembers -> "Search channel members:"
+        scope = st^.userListSearchScope
+        promptMsg = case scope of
+            ChannelMembers _ -> "Search channel members:"
+            AllUsers         -> "Search all users:"
         userResultList
           | null (st^.userListUsers) =
             padTopBottom 1 $ hCenter $ withDefAttr clientEmphAttr $
-            str $ case contents of
-              UserListChannelMembers -> "No users in channel."
+            str $ case scope of
+              ChannelMembers _ -> "No users in channel."
+              AllUsers         -> "No users found."
           | otherwise = vBox renderedUserList
 
         contentHeader = str "Users In Channel"

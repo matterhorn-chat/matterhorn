@@ -28,4 +28,4 @@ draw st =
         MessageSelectDeleteConfirm -> drawMain st
         DeleteChannelConfirm       -> drawDeleteChannelConfirm st
         PostListOverlay contents   -> drawPostListOverlay contents st
-        UserListOverlay contents   -> drawUserListOverlay contents st
+        UserListOverlay            -> drawUserListOverlay st

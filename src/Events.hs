@@ -97,7 +97,7 @@ onVtyEvent e = do
         MessageSelectDeleteConfirm -> onEventMessageSelectDeleteConfirm e
         DeleteChannelConfirm       -> onEventDeleteChannelConfirm e
         PostListOverlay _          -> onEventPostListOverlay e
-        UserListOverlay _          -> onEventUserListOverlay e
+        UserListOverlay            -> onEventUserListOverlay e
 
 handleWSEvent :: WebsocketEvent -> MH ()
 handleWSEvent we = do
