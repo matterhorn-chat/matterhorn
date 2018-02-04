@@ -75,7 +75,6 @@ commandList =
   , Cmd "members" "Show the current channel's members"
     NoArg $ \ () ->
       enterChannelMembersUserList
---      fetchCurrentChannelMembers
   , Cmd "leave" "Leave the current channel" NoArg $ \ () ->
       startLeaveCurrentChannel
   , Cmd "join" "Join a channel" NoArg $ \ () ->
