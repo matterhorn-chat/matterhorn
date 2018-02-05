@@ -59,7 +59,9 @@ drawUsersBox st =
               AllUsers         -> "No users found."
           | otherwise = vBox renderedUserList
 
-        contentHeader = str "Users In Channel"
+        contentHeader = str $ case scope of
+            ChannelMembers _ -> "Users In Channel"
+            AllUsers         -> "Users On This Server"
 
         users = F.toList (st^.userListUsers)
         renderedUserList = map renderUser users
