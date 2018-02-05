@@ -21,6 +21,13 @@ import Types
 import Types.Users
 import State.Common
 
+-- | Show the user list overlay for searching/showing members of the
+-- current channel.
+enterChannelMembersUserList :: MH ()
+enterChannelMembersUserList = do
+  cId <- use csCurrentChannelId
+  enterUserListMode (ChannelMembers cId)
+
 -- | Show the user list overlay with the given search scope, and issue a
 -- request to gather the first search results.
 enterUserListMode :: UserSearchScope -> MH ()
@@ -84,8 +91,3 @@ fetchChannelMembers s _ c = do
           }
     chanUserMap <- MM.mmGetUsers query s
     return chanUserMap
-
-enterChannelMembersUserList :: MH ()
-enterChannelMembersUserList = do
-  cId <- use csCurrentChannelId
-  enterUserListMode (ChannelMembers cId)
