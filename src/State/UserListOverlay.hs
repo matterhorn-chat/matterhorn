@@ -1,4 +1,10 @@
-module State.UserListOverlay where
+module State.UserListOverlay
+  ( enterChannelMembersUserList
+  , exitUserListMode
+  , userListSelectDown
+  , userListSelectUp
+  )
+where
 
 import Data.Sequence (Seq)
 import Lens.Micro.Platform
@@ -6,16 +12,28 @@ import qualified Network.Mattermost.Endpoints as MM
 import Network.Mattermost.Types
 
 import Types
+import Types.Users
+import State.Common
 
 -- | Create a PostListOverlay with the given content description and
 -- with a specified list of messages.
 enterUserListMode :: UserSearchScope -> MH ()
 enterUserListMode scope = do
+  -- Kick off a search in the specified scope
   csUserListOverlay.userListSearchScope .= scope
   csUserListOverlay.userListSelected .= Nothing
-  -- TODO: kick off an async action to start gathering results for the
-  -- specified scope.
+  asyncBeginSearch scope
   csMode .= UserListOverlay
+
+asyncBeginSearch :: UserSearchScope -> MH ()
+asyncBeginSearch scope = do
+  csUserListOverlay.userListSearching .= True
+  case scope of
+      ChannelMembers cId -> doAsyncChannelMM Preempt cId
+          fetchChannelMembers $ \ _ chanUsers -> do
+              csUserListOverlay.userListSearchResults .= ((\u -> userInfoFromUser u True) <$> chanUsers)
+              csUserListOverlay.userListSearching .= False
+      AllUsers -> return ()
 
 -- | Clear out the state of a PostListOverlay
 exitUserListMode :: MH ()

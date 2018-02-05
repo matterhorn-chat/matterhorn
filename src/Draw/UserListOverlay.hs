@@ -51,12 +51,19 @@ drawUsersBox st =
         promptMsg = case scope of
             ChannelMembers _ -> "Search channel members:"
             AllUsers         -> "Search all users:"
-        userResultList
+
+        userResultList =
+            if st^.userListSearching
+            then padTopBottom 1 $ hCenter $ withDefAttr clientEmphAttr $
+                 str "Searching..."
+            else showResults
+
+        showResults
           | null users =
-            padTopBottom 1 $ hCenter $ withDefAttr clientEmphAttr $
-            str $ case scope of
-              ChannelMembers _ -> "No users in channel."
-              AllUsers         -> "No users found."
+              padTopBottom 1 $ hCenter $ withDefAttr clientEmphAttr $
+              str $ case scope of
+                ChannelMembers _ -> "No users in channel."
+                AllUsers         -> "No users found."
           | otherwise = vBox renderedUserList
 
         contentHeader = str $ case scope of

@@ -104,6 +104,7 @@ module Types
   , userListSearchResults
   , userListSearchInput
   , userListSearchScope
+  , userListSearching
 
   , ChatResources(ChatResources)
   , crPreferences
@@ -549,6 +550,7 @@ newState rs i u m tz hist sp = ChatState
                            , _userListSelected    = Nothing
                            , _userListSearchInput = editor UserListSearchInput (Just 1) ""
                            , _userListSearchScope = AllUsers
+                           , _userListSearching = False
                            }
   }
 
@@ -582,6 +584,7 @@ data UserListOverlayState = UserListOverlayState
   , _userListSelected :: Maybe PostId
   , _userListSearchInput :: Editor T.Text Name
   , _userListSearchScope :: UserSearchScope
+  , _userListSearching :: Bool
   }
 
 data UserSearchScope =
