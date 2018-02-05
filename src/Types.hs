@@ -105,6 +105,7 @@ module Types
   , userListSearchInput
   , userListSearchScope
   , userListSearching
+  , userListRequestingMore
 
   , listFromUserSearchResults
 
@@ -555,6 +556,7 @@ newState rs i u m tz hist sp = ChatState
                            , _userListSearchInput = editor UserListSearchInput (Just 1) ""
                            , _userListSearchScope = AllUsers
                            , _userListSearching = False
+                           , _userListRequestingMore = False
                            }
   }
 
@@ -592,6 +594,7 @@ data UserListOverlayState = UserListOverlayState
   , _userListSearchInput :: Editor T.Text Name
   , _userListSearchScope :: UserSearchScope
   , _userListSearching :: Bool
+  , _userListRequestingMore :: Bool
   }
 
 data UserSearchScope =

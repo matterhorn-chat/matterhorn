@@ -53,9 +53,18 @@ drawUsersBox st =
   where -- The 'window title' of the overlay
         body = vBox [ (padRight (Pad 1) $ str promptMsg) <+>
                       renderEditor (txt . T.unlines) True (st^.userListSearchInput)
-                    , hBorder
+                    , cursorPositionBorder
                     , userResultList
                     ]
+        cursorPositionBorder = case st^.userListSearchResults.L.listSelectedL of
+            Nothing -> hBorder
+            Just _ ->
+                let msg = case st^.userListRequestingMore of
+                            True -> "Fetching more results..."
+                            False -> "Showing first " <>
+                                     show numSearchResults <> " search results"
+                in hBorderWithLabel $ str $ "[" <> msg <> "]"
+
         scope = st^.userListSearchScope
         promptMsg = case scope of
             ChannelMembers _ -> "Search channel members:"
