@@ -49,22 +49,24 @@ exitUserListMode = do
   csUserListOverlay.userListSelected .= Nothing
   csMode .= Main
 
--- | Move the selection up in the PostListOverlay, which corresponds
--- to finding a chronologically /newer/ message.
+-- | Move the selection up in the user list overlay by one user.
 userListSelectUp :: MH ()
 userListSelectUp = do
   csUserListOverlay.userListSearchResults %= L.listMoveUp
 
--- | Move the selection down in the PostListOverlay, which corresponds
--- to finding a chronologically /old/ message.
+-- | Move the selection down in the user list overlay by one user.
 userListSelectDown :: MH ()
 userListSelectDown = do
   csUserListOverlay.userListSearchResults %= L.listMoveDown
 
+-- | Move the selection up in the user list overlay by a page of users
+-- (userListPageSize).
 userListPageUp :: MH ()
 userListPageUp = do
   csUserListOverlay.userListSearchResults %= L.listMoveBy (-1 * userListPageSize)
 
+-- | Move the selection down in the user list overlay by a page of users
+-- (userListPageSize).
 userListPageDown :: MH ()
 userListPageDown = do
   csUserListOverlay.userListSearchResults %= L.listMoveBy userListPageSize
