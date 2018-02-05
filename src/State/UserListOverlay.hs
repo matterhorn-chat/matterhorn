@@ -71,6 +71,7 @@ userListPageDown :: MH ()
 userListPageDown = do
   csUserListOverlay.userListSearchResults %= L.listMoveBy userListPageSize
 
+-- | The number of users in a "page" for cursor movement purposes.
 userListPageSize :: Int
 userListPageSize = 10
 
