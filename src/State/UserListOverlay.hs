@@ -136,4 +136,4 @@ fetchInitialResults scope s searchString = do
 
 userListSearchString :: MH T.Text
 userListSearchString =
-    (T.unlines . E.getEditContents) <$> use (csUserListOverlay.userListSearchInput)
+    (head . E.getEditContents) <$> use (csUserListOverlay.userListSearchInput)
