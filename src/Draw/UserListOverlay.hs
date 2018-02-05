@@ -32,6 +32,14 @@ hLimitWithPadding pad contents = Widget
       withReaderT (& availWidthL  %~ (\ n -> n - (2 * pad))) $ render $ cropToContext contents
   }
 
+vLimitWithPadding :: Int -> Widget n -> Widget n
+vLimitWithPadding pad contents = Widget
+  { hSize  = (hSize contents)
+  , vSize  = Fixed
+  , render =
+      withReaderT (& availHeightL %~ (\ n -> n - (2 * pad))) $ render $ cropToContext contents
+  }
+
 drawUserListOverlay :: ChatState -> [Widget Name]
 drawUserListOverlay st =
   drawUsersBox (st^.csUserListOverlay) :
@@ -41,7 +49,7 @@ drawUserListOverlay st =
 -- is rendered beneath it
 drawUsersBox :: UserListOverlayState -> Widget Name
 drawUsersBox st =
-  centerLayer $ hLimitWithPadding 10 $ borderWithLabel contentHeader body
+  centerLayer $ hLimitWithPadding 10 $ vLimitWithPadding 2 $ borderWithLabel contentHeader body
   where -- The 'window title' of the overlay
         body = vBox [ (padRight (Pad 1) $ str promptMsg) <+>
                       renderEditor (txt . T.unlines) True (st^.userListSearchInput)
@@ -55,14 +63,14 @@ drawUsersBox st =
 
         userResultList =
             if st^.userListSearching
-            then padTopBottom 1 $ hCenter $ withDefAttr clientEmphAttr $
-                 str "Searching..."
+            then showMessage "Searching..."
             else showResults
+
+        showMessage = center . withDefAttr clientEmphAttr . str
 
         showResults
           | numSearchResults == 0 =
-              padTopBottom 1 $ hCenter $ withDefAttr clientEmphAttr $
-              str $ case scope of
+              showMessage $ case scope of
                 ChannelMembers _ -> "No users in channel."
                 AllUsers         -> "No users found."
           | otherwise = renderedUserList
