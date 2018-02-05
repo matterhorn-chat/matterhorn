@@ -1,5 +1,6 @@
 module Events.UserListOverlay where
 
+import Control.Monad (when)
 import qualified Graphics.Vty as Vty
 
 import Brick.Widgets.Edit (handleEditorEvent)
@@ -10,8 +11,19 @@ import State.UserListOverlay
 
 onEventUserListOverlay :: Vty.Event -> MH ()
 onEventUserListOverlay =
-  handleKeyboardEvent userListOverlayKeybindings $
-      mhHandleEventLensed (csUserListOverlay.userListSearchInput) handleEditorEvent
+  handleKeyboardEvent userListOverlayKeybindings $ \e -> do
+      -- Get the editor content before the event.
+      before <- userListSearchString
+
+      -- Handle the editor input event.
+      mhHandleEventLensed (csUserListOverlay.userListSearchInput) handleEditorEvent e
+
+      -- Get the editor content after the event. If the string changed,
+      -- start a new search.
+      after <- userListSearchString
+
+      when (before /= after) $
+          resetUserListSearch after
 
 -- | The keybindings we want to use while viewing a user list overlay
 userListOverlayKeybindings :: KeyConfig -> [Keybinding]

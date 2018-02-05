@@ -1,21 +1,27 @@
 module State.UserListOverlay
   ( enterChannelMembersUserList
+  , resetUserListSearch
   , exitUserListMode
+
   , userListSelectDown
   , userListSelectUp
   , userListPageDown
   , userListPageUp
+
+  , userListSearchString
   )
 where
 
 import Data.Sequence (Seq)
 import qualified Data.Vector as Vec
 import qualified Data.Foldable as F
+import qualified Data.Text as T
 import Lens.Micro.Platform
 import qualified Network.Mattermost.Endpoints as MM
 import Network.Mattermost.Types
 
 import qualified Brick.Widgets.List as L
+import qualified Brick.Widgets.Edit as E
 
 import Types
 import Types.Users
@@ -34,15 +40,16 @@ enterUserListMode :: UserSearchScope -> MH ()
 enterUserListMode scope = do
   csUserListOverlay.userListSearchScope .= scope
   csUserListOverlay.userListSelected .= Nothing
-  asyncBeginSearch scope
   csMode .= UserListOverlay
+  resetUserListSearch ""
 
-asyncBeginSearch :: UserSearchScope -> MH ()
-asyncBeginSearch scope = do
+resetUserListSearch :: T.Text -> MH ()
+resetUserListSearch searchString = do
   csUserListOverlay.userListSearching .= True
   session <- use (csResources.crSession)
+  scope <- use (csUserListOverlay.userListSearchScope)
   doAsyncWith Preempt $ do
-      chanUsers <- fetchInitialResults scope session
+      chanUsers <- fetchInitialResults scope session searchString
       return $ do
           let lst = listFromUserSearchResults $
                       (\u -> userInfoFromUser u True) <$> (Vec.fromList $ F.toList chanUsers)
@@ -85,13 +92,35 @@ userListPageSize = 10
 
 -- | Perform an initial request for search results in the specified
 -- scope.
-fetchInitialResults :: UserSearchScope -> Session -> IO (Seq User)
-fetchInitialResults (ChannelMembers cId) s = do
-    let query = MM.defaultUserQuery
-          { MM.userQueryPage = Just 0
-          , MM.userQueryPerPage = Just 10000
-          , MM.userQueryInChannel = Just cId
-          }
-    chanUserMap <- MM.mmGetUsers query s
-    return chanUserMap
-fetchInitialResults AllUsers _ = return mempty
+fetchInitialResults :: UserSearchScope -> Session -> T.Text -> IO (Seq User)
+fetchInitialResults scope s searchString = do
+    let chanScope = case scope of
+            ChannelMembers cId -> Just cId
+            AllUsers -> Nothing
+        pageSize = 100
+        pageNum = 0
+
+    case T.null searchString of
+        True -> do
+            let query = MM.defaultUserQuery
+                  { MM.userQueryPage = Just pageNum
+                  , MM.userQueryPerPage = Just pageSize
+                  , MM.userQueryInChannel = chanScope
+                  }
+            MM.mmGetUsers query s
+        False -> do
+            let query = UserSearch { userSearchTerm = searchString
+                                   , userSearchAllowInactive = False
+                                   , userSearchWithoutTeam = False
+                                   , userSearchInChannelId = case scope of
+                                       ChannelMembers cId -> Just cId
+                                       AllUsers           -> Nothing
+                                   , userSearchNotInTeamId = Nothing
+                                   , userSearchNotInChannelId = Nothing -- TODO: use this for /add-user
+                                   , userSearchTeamId = Nothing -- TODO: when should we omit or provide this?
+                                   }
+            MM.mmSearchUsers query s
+
+userListSearchString :: MH T.Text
+userListSearchString =
+    (T.unlines . E.getEditContents) <$> use (csUserListOverlay.userListSearchInput)
