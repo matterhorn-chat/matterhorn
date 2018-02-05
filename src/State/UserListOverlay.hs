@@ -40,14 +40,14 @@ enterUserListMode scope = do
 asyncBeginSearch :: UserSearchScope -> MH ()
 asyncBeginSearch scope = do
   csUserListOverlay.userListSearching .= True
-  case scope of
-      ChannelMembers cId -> doAsyncChannelMM Preempt cId
-          fetchChannelMembers $ \ _ chanUsers -> do
-              let lst = listFromUserSearchResults $
-                          (\u -> userInfoFromUser u True) <$> (Vec.fromList $ F.toList chanUsers)
-              csUserListOverlay.userListSearchResults .= lst
-              csUserListOverlay.userListSearching .= False
-      AllUsers -> return ()
+  session <- use (csResources.crSession)
+  doAsyncWith Preempt $ do
+      chanUsers <- fetchInitialResults scope session
+      return $ do
+          let lst = listFromUserSearchResults $
+                      (\u -> userInfoFromUser u True) <$> (Vec.fromList $ F.toList chanUsers)
+          csUserListOverlay.userListSearchResults .= lst
+          csUserListOverlay.userListSearching .= False
 
 -- | Clear out the state of the user list overlay and return to the Main
 -- mode.
@@ -83,12 +83,15 @@ userListPageDown = do
 userListPageSize :: Int
 userListPageSize = 10
 
-fetchChannelMembers :: Session -> TeamId -> ChannelId -> IO (Seq User)
-fetchChannelMembers s _ c = do
+-- | Perform an initial request for search results in the specified
+-- scope.
+fetchInitialResults :: UserSearchScope -> Session -> IO (Seq User)
+fetchInitialResults (ChannelMembers cId) s = do
     let query = MM.defaultUserQuery
           { MM.userQueryPage = Just 0
           , MM.userQueryPerPage = Just 10000
-          , MM.userQueryInChannel = Just c
+          , MM.userQueryInChannel = Just cId
           }
     chanUserMap <- MM.mmGetUsers query s
     return chanUserMap
+fetchInitialResults AllUsers _ = return mempty
