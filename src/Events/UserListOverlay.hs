@@ -27,8 +27,8 @@ onEventUserListOverlay =
 userListOverlayKeybindings :: KeyConfig -> [Keybinding]
 userListOverlayKeybindings = mkKeybindings
   [ mkKb CancelEvent "Exit user browsing" exitUserListMode
-  , mkKb SelectUpEvent "Select the previous user" userListSelectUp
-  , mkKb SelectDownEvent "Select the next user" userListSelectDown
+  , mkKb SearchSelectUpEvent "Select the previous user" userListSelectUp
+  , mkKb SearchSelectDownEvent "Select the next user" userListSelectDown
   , mkKb PageDownEvent "Page down in the user list" userListPageDown
   , mkKb PageUpEvent "Page up in the user list" userListPageUp
   ]

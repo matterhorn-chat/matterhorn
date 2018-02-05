@@ -115,6 +115,11 @@ defaultBindings ev =
         SelectUpEvent -> [ key 'k', kb Vty.KUp ]
         SelectDownEvent -> [ key 'j', kb Vty.KDown ]
 
+        -- search selection - like SelectUp/Down above but need to not
+        -- conflict with editor inputs
+        SearchSelectUpEvent -> [ kb Vty.KUp ]
+        SearchSelectDownEvent -> [ kb Vty.KDown ]
+
         FlagMessageEvent    -> [ key 'f' ]
         YankMessageEvent    -> [ key 'y' ]
         DeleteMessageEvent  -> [ key 'd' ]
