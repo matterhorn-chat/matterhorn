@@ -17,6 +17,9 @@ import Data.Monoid ((<>))
 import qualified Data.Vector as Vec
 import qualified Data.Foldable as F
 import qualified Data.Text as T
+import qualified Data.Sequence as Seq
+import qualified Data.HashMap.Strict as HM
+import Data.Maybe (fromMaybe)
 import Lens.Micro.Platform
 import qualified Network.Mattermost.Endpoints as MM
 import Network.Mattermost.Types
@@ -58,8 +61,7 @@ resetUserListSearch = do
       doAsyncWith Preempt $ do
           results <- fetchInitialResults scope session searchString
           return $ do
-              let lst = listFromUserSearchResults $
-                          (\u -> userInfoFromUser u True) <$> results
+              let lst = listFromUserSearchResults results
               csUserListOverlay.userListSearchResults .= lst
               csUserListOverlay.userListSearching .= False
 
@@ -68,6 +70,10 @@ resetUserListSearch = do
               -- If so, issue another search.
               afterSearchString <- userListSearchString
               when (searchString /= afterSearchString) resetUserListSearch
+
+userInfoFromPair :: User -> T.Text -> UserInfo
+userInfoFromPair u status =
+    userInfoFromUser u True & uiStatus .~ statusFromText status
 
 -- | Clear out the state of the user list overlay and return to the Main
 -- mode.
@@ -136,9 +142,8 @@ prefetchNextPage = do
           session <- use (csResources.crSession)
           scope <- use (csUserListOverlay.userListSearchScope)
           doAsyncWith Preempt $ do
-              results <- getUserSearchResultsPage pageNum scope session searchString
+              newChunk <- getUserSearchResultsPage pageNum scope session searchString
               return $ do
-                  let newChunk = (\u -> userInfoFromUser u True) <$> results
                   -- Because we only ever append, this is safe to do
                   -- w.r.t. the selected index of the list. If we ever
                   -- prepended or removed, we'd also need to manage the
@@ -152,13 +157,13 @@ userListPageSize = 10
 
 -- | Perform an initial request for search results in the specified
 -- scope.
-fetchInitialResults :: UserSearchScope -> Session -> T.Text -> IO (Vec.Vector User)
+fetchInitialResults :: UserSearchScope -> Session -> T.Text -> IO (Vec.Vector UserInfo)
 fetchInitialResults = getUserSearchResultsPage 0
 
 searchResultsChunkSize :: Int
 searchResultsChunkSize = 40
 
-getUserSearchResultsPage :: Int -> UserSearchScope -> Session -> T.Text -> IO (Vec.Vector User)
+getUserSearchResultsPage :: Int -> UserSearchScope -> Session -> T.Text -> IO (Vec.Vector UserInfo)
 getUserSearchResultsPage pageNum scope s searchString = do
     let chanScope = case scope of
             ChannelMembers cId -> Just cId
@@ -185,8 +190,20 @@ getUserSearchResultsPage pageNum scope s searchString = do
                                    }
             MM.mmSearchUsers query s
 
-    let uList = Vec.fromList $ F.toList users
-    return uList
+    let uList = F.toList users
+        uIds = userId <$> uList
+
+    -- Now fetch status info for the users we got.
+    case null uList of
+        False -> do
+            statuses <- MM.mmGetUserStatusByIds (Seq.fromList uIds) s
+            let statusMap = HM.fromList [ (statusUserId e, statusStatus e) | e <- F.toList statuses ]
+                usersWithStatus = [ userInfoFromPair u (fromMaybe "" $ HM.lookup (userId u) statusMap)
+                                  | u <- uList
+                                  ]
+
+            return $ Vec.fromList usersWithStatus
+        True -> return mempty
 
 userListSearchString :: MH T.Text
 userListSearchString =

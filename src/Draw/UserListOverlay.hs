@@ -23,6 +23,7 @@ import Themes
 import Types
 import Types.Users
 import Draw.Main
+import Draw.Util (userSigilFromInfo)
 
 hLimitWithPadding :: Int -> Widget n -> Widget n
 hLimitWithPadding pad contents = Widget
@@ -94,7 +95,9 @@ drawUsersBox st =
         renderUser foc ui =
             (if foc then forceAttr L.listSelectedFocusedAttr else id) $
             vLimit 2 $
-            vBox [ hBox ( colorUsername (ui^.uiName) (ui^.uiName)
+            vBox [ hBox ( colorUsername (ui^.uiName) (T.singleton $ userSigilFromInfo ui)
+                        : str " "
+                        : colorUsername (ui^.uiName) (ui^.uiName)
                         : case ui^.uiNickName of
                             Just n | n /= (ui^.uiName) ->
                                      [txt (" (" <> n <> ")")]
