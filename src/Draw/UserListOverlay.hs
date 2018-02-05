@@ -95,8 +95,10 @@ drawUsersBox st =
                         , if (not (T.null (ui^.uiFirstName)) || not (T.null (ui^.uiLastName)))
                           then txt (ui^.uiFirstName <> " " <> ui^.uiLastName <> " ")
                           else emptyWidget
-                        , modifyDefAttr (`V.withURL` ("mailto:" <> ui^.uiEmail)) $
-                          withDefAttr urlAttr (txt ("<" <> ui^.uiEmail <> ">"))
+                        , if (T.null $ ui^.uiEmail)
+                          then emptyWidget
+                          else modifyDefAttr (`V.withURL` ("mailto:" <> ui^.uiEmail)) $
+                               withDefAttr urlAttr (txt ("<" <> ui^.uiEmail <> ">"))
                         ]
                  ] <+>
             fill ' '
