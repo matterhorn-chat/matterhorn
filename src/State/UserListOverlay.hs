@@ -19,6 +19,7 @@ import qualified Data.Text as T
 import Lens.Micro.Platform
 import qualified Network.Mattermost.Endpoints as MM
 import Network.Mattermost.Types
+import qualified Data.Text.Zipper as Z
 
 import qualified Brick.Widgets.List as L
 import qualified Brick.Widgets.Edit as E
@@ -40,11 +41,13 @@ enterUserListMode :: UserSearchScope -> MH ()
 enterUserListMode scope = do
   csUserListOverlay.userListSearchScope .= scope
   csUserListOverlay.userListSelected .= Nothing
+  csUserListOverlay.userListSearchInput.E.editContentsL %= Z.clearZipper
   csMode .= UserListOverlay
-  resetUserListSearch ""
+  resetUserListSearch
 
-resetUserListSearch :: T.Text -> MH ()
-resetUserListSearch searchString = do
+resetUserListSearch :: MH ()
+resetUserListSearch = do
+  searchString <- userListSearchString
   csUserListOverlay.userListSearching .= True
   session <- use (csResources.crSession)
   scope <- use (csUserListOverlay.userListSearchScope)
