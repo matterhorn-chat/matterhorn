@@ -35,12 +35,6 @@ onEventMain =
   handleKeyboardEvent mainKeybindings $ \ ev -> case ev of
     (Vty.EvPaste bytes) -> handlePaste bytes
     _ -> handleEditingInput ev
-  -- conf <- use (csResources.crConfiguration)
-  -- let keyMap = mainKeybindings (configUserKeys conf)
-  -- case e of
-  --   _ | Just kb <- lookupKeybinding e keyMap -> kbAction kb
-  --   (Vty.EvPaste bytes) -> handlePaste bytes
-  --   _ -> handleEditingInput e
 
 mainKeybindings :: KeyConfig -> [Keybinding]
 mainKeybindings = mkKeybindings
