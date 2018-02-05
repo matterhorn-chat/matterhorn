@@ -52,7 +52,7 @@ drawUsersBox st =
             ChannelMembers _ -> "Search channel members:"
             AllUsers         -> "Search all users:"
         userResultList
-          | null (st^.userListUsers) =
+          | null users =
             padTopBottom 1 $ hCenter $ withDefAttr clientEmphAttr $
             str $ case scope of
               ChannelMembers _ -> "No users in channel."
