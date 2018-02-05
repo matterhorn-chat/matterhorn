@@ -101,7 +101,7 @@ module Types
 
   , UserListOverlayState
   , userListSelected
-  , userListUsers
+  , userListSearchResults
   , userListSearchInput
   , userListSearchScope
 
@@ -545,7 +545,7 @@ newState rs i u m tz hist sp = ChatState
   , _csMessageSelect               = MessageSelectState Nothing
   , _csPostListOverlay             = PostListOverlayState mempty Nothing
   , _csUserListOverlay             =
-      UserListOverlayState { _userListUsers       = mempty
+      UserListOverlayState { _userListSearchResults = mempty
                            , _userListSelected    = Nothing
                            , _userListSearchInput = editor UserListSearchInput (Just 1) ""
                            , _userListSearchScope = AllUsers
@@ -578,7 +578,7 @@ data PostListOverlayState = PostListOverlayState
   }
 
 data UserListOverlayState = UserListOverlayState
-  { _userListUsers    :: Seq.Seq UserInfo
+  { _userListSearchResults :: Seq.Seq UserInfo
   , _userListSelected :: Maybe PostId
   , _userListSearchInput :: Editor T.Text Name
   , _userListSearchScope :: UserSearchScope

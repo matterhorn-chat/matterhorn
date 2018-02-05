@@ -20,7 +20,7 @@ enterUserListMode scope = do
 -- | Clear out the state of a PostListOverlay
 exitUserListMode :: MH ()
 exitUserListMode = do
-  csUserListOverlay.userListUsers .= mempty
+  csUserListOverlay.userListSearchResults .= mempty
   csUserListOverlay.userListSelected .= Nothing
   csMode .= Main
 

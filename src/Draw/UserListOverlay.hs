@@ -63,7 +63,7 @@ drawUsersBox st =
             ChannelMembers _ -> "Channel Members"
             AllUsers         -> "Users On This Server"
 
-        users = F.toList (st^.userListUsers)
+        users = F.toList (st^.userListSearchResults)
         renderedUserList = map renderUser users
 
         renderUser ui =
