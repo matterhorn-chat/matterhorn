@@ -12,6 +12,7 @@ module State.UserListOverlay
   )
 where
 
+import Control.Monad (when)
 import Data.Sequence (Seq)
 import qualified Data.Vector as Vec
 import qualified Data.Foldable as F
@@ -47,17 +48,26 @@ enterUserListMode scope = do
 
 resetUserListSearch :: MH ()
 resetUserListSearch = do
-  searchString <- userListSearchString
-  csUserListOverlay.userListSearching .= True
-  session <- use (csResources.crSession)
-  scope <- use (csUserListOverlay.userListSearchScope)
-  doAsyncWith Preempt $ do
-      chanUsers <- fetchInitialResults scope session searchString
-      return $ do
-          let lst = listFromUserSearchResults $
-                      (\u -> userInfoFromUser u True) <$> (Vec.fromList $ F.toList chanUsers)
-          csUserListOverlay.userListSearchResults .= lst
-          csUserListOverlay.userListSearching .= False
+  searchPending <- use (csUserListOverlay.userListSearching)
+
+  when (not searchPending) $ do
+      searchString <- userListSearchString
+      csUserListOverlay.userListSearching .= True
+      session <- use (csResources.crSession)
+      scope <- use (csUserListOverlay.userListSearchScope)
+      doAsyncWith Preempt $ do
+          chanUsers <- fetchInitialResults scope session searchString
+          return $ do
+              let lst = listFromUserSearchResults $
+                          (\u -> userInfoFromUser u True) <$> (Vec.fromList $ F.toList chanUsers)
+              csUserListOverlay.userListSearchResults .= lst
+              csUserListOverlay.userListSearching .= False
+
+              -- Now that the results are available, check to see if the
+              -- search string changed since this request was submitted.
+              -- If so, issue another search.
+              afterSearchString <- userListSearchString
+              when (searchString /= afterSearchString) resetUserListSearch
 
 -- | Clear out the state of the user list overlay and return to the Main
 -- mode.
