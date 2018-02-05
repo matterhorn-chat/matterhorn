@@ -106,6 +106,8 @@ module Types
   , userListSearchScope
   , userListSearching
 
+  , listFromUserSearchResults
+
   , ChatResources(ChatResources)
   , crPreferences
   , crEventQueue
@@ -171,6 +173,7 @@ import           Control.Exception (SomeException)
 import qualified Control.Monad.State as St
 import qualified Data.Foldable as F
 import qualified Data.Sequence as Seq
+import qualified Data.Vector as Vec
 import           Data.HashMap.Strict (HashMap)
 import           Data.Time (UTCTime)
 import           Data.Time.LocalTime.TimeZone.Series (TimeZoneSeries)
@@ -298,6 +301,7 @@ data Name = ChannelMessages ChannelId
           | UrlList
           | MessagePreviewViewport
           | UserListSearchInput
+          | UserListSearchResults
           deriving (Eq, Show, Ord)
 
 -- | The sum type of exceptions we expect to encounter on authentication
@@ -546,13 +550,16 @@ newState rs i u m tz hist sp = ChatState
   , _csMessageSelect               = MessageSelectState Nothing
   , _csPostListOverlay             = PostListOverlayState mempty Nothing
   , _csUserListOverlay             =
-      UserListOverlayState { _userListSearchResults = mempty
+      UserListOverlayState { _userListSearchResults = listFromUserSearchResults mempty
                            , _userListSelected    = Nothing
                            , _userListSearchInput = editor UserListSearchInput (Just 1) ""
                            , _userListSearchScope = AllUsers
                            , _userListSearching = False
                            }
   }
+
+listFromUserSearchResults :: Vec.Vector UserInfo -> List Name UserInfo
+listFromUserSearchResults rs = list UserListSearchResults rs 2
 
 type ChannelSelectMap = HM.HashMap T.Text ChannelSelectMatch
 
@@ -580,7 +587,7 @@ data PostListOverlayState = PostListOverlayState
   }
 
 data UserListOverlayState = UserListOverlayState
-  { _userListSearchResults :: Seq.Seq UserInfo
+  { _userListSearchResults :: List Name UserInfo
   , _userListSelected :: Maybe PostId
   , _userListSearchInput :: Editor T.Text Name
   , _userListSearchScope :: UserSearchScope

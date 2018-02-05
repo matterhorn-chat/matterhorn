@@ -7,9 +7,13 @@ module State.UserListOverlay
 where
 
 import Data.Sequence (Seq)
+import qualified Data.Vector as Vec
+import qualified Data.Foldable as F
 import Lens.Micro.Platform
 import qualified Network.Mattermost.Endpoints as MM
 import Network.Mattermost.Types
+
+import qualified Brick.Widgets.List as L
 
 import Types
 import Types.Users
@@ -19,7 +23,6 @@ import State.Common
 -- with a specified list of messages.
 enterUserListMode :: UserSearchScope -> MH ()
 enterUserListMode scope = do
-  -- Kick off a search in the specified scope
   csUserListOverlay.userListSearchScope .= scope
   csUserListOverlay.userListSelected .= Nothing
   asyncBeginSearch scope
@@ -31,14 +34,16 @@ asyncBeginSearch scope = do
   case scope of
       ChannelMembers cId -> doAsyncChannelMM Preempt cId
           fetchChannelMembers $ \ _ chanUsers -> do
-              csUserListOverlay.userListSearchResults .= ((\u -> userInfoFromUser u True) <$> chanUsers)
+              let lst = listFromUserSearchResults $
+                          (\u -> userInfoFromUser u True) <$> (Vec.fromList $ F.toList chanUsers)
+              csUserListOverlay.userListSearchResults .= lst
               csUserListOverlay.userListSearching .= False
       AllUsers -> return ()
 
 -- | Clear out the state of a PostListOverlay
 exitUserListMode :: MH ()
 exitUserListMode = do
-  csUserListOverlay.userListSearchResults .= mempty
+  csUserListOverlay.userListSearchResults .= listFromUserSearchResults mempty
   csUserListOverlay.userListSelected .= Nothing
   csMode .= Main
 
@@ -46,13 +51,13 @@ exitUserListMode = do
 -- to finding a chronologically /newer/ message.
 userListSelectUp :: MH ()
 userListSelectUp = do
-  return ()
+  csUserListOverlay.userListSearchResults %= L.listMoveUp
 
 -- | Move the selection down in the PostListOverlay, which corresponds
 -- to finding a chronologically /old/ message.
 userListSelectDown :: MH ()
 userListSelectDown = do
-  return ()
+  csUserListOverlay.userListSearchResults %= L.listMoveDown
 
 fetchChannelMembers :: Session -> TeamId -> ChannelId -> IO (Seq User)
 fetchChannelMembers s _ c = do

@@ -16,6 +16,7 @@ import           Lens.Micro.Platform
 import Brick
 import Brick.Widgets.Border
 import Brick.Widgets.Edit
+import qualified Brick.Widgets.List as L
 import Brick.Widgets.Center
 
 import Themes
@@ -45,7 +46,7 @@ drawUsersBox st =
         body = vBox [ (padRight (Pad 1) $ str promptMsg) <+>
                       renderEditor (txt . T.unlines) True (st^.userListSearchInput)
                     , hBorder
-                    , padRight (Pad 1) userResultList
+                    , userResultList
                     ]
         scope = st^.userListSearchScope
         promptMsg = case scope of
@@ -59,32 +60,35 @@ drawUsersBox st =
             else showResults
 
         showResults
-          | null users =
+          | numSearchResults == 0 =
               padTopBottom 1 $ hCenter $ withDefAttr clientEmphAttr $
               str $ case scope of
                 ChannelMembers _ -> "No users in channel."
                 AllUsers         -> "No users found."
-          | otherwise = vBox renderedUserList
+          | otherwise = renderedUserList
 
         contentHeader = str $ case scope of
             ChannelMembers _ -> "Channel Members"
             AllUsers         -> "Users On This Server"
 
-        users = F.toList (st^.userListSearchResults)
-        renderedUserList = map renderUser users
+        renderedUserList = L.renderList renderUser True (st^.userListSearchResults)
+        numSearchResults = F.length $ st^.userListSearchResults.L.listElementsL
 
-        renderUser ui =
-          vBox [ hBox ( colorUsername (ui^.uiName) (ui^.uiName)
-                      : case ui^.uiNickName of
-                          Just n | n /= (ui^.uiName) ->
-                                   [txt (" (" <> n <> ")")]
-                          _ -> []
-                      )
-               , hBox [ str "  "
-                      , if (not (T.null (ui^.uiFirstName)) || not (T.null (ui^.uiLastName)))
-                        then txt (ui^.uiFirstName <> " " <> ui^.uiLastName <> " ")
-                        else emptyWidget
-                      , modifyDefAttr (`V.withURL` ("mailto:" <> ui^.uiEmail)) $
-                        withDefAttr urlAttr (txt ("<" <> ui^.uiEmail <> ">"))
-                      ]
-               ]
+        renderUser foc ui =
+            (if foc then forceAttr L.listSelectedFocusedAttr else id) $
+            vLimit 2 $
+            vBox [ hBox ( colorUsername (ui^.uiName) (ui^.uiName)
+                        : case ui^.uiNickName of
+                            Just n | n /= (ui^.uiName) ->
+                                     [txt (" (" <> n <> ")")]
+                            _ -> []
+                        )
+                 , hBox [ str "  "
+                        , if (not (T.null (ui^.uiFirstName)) || not (T.null (ui^.uiLastName)))
+                          then txt (ui^.uiFirstName <> " " <> ui^.uiLastName <> " ")
+                          else emptyWidget
+                        , modifyDefAttr (`V.withURL` ("mailto:" <> ui^.uiEmail)) $
+                          withDefAttr urlAttr (txt ("<" <> ui^.uiEmail <> ">"))
+                        ]
+                 ] <+>
+            fill ' '
