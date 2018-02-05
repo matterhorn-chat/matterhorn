@@ -104,7 +104,7 @@ mainKeybindings = mkKeybindings
              mh $ invalidateCacheEntry vp
              mh $ vScrollToEnd $ viewportScroll vp
              mh $ vScrollBy (viewportScroll vp) (-1 * pageAmount)
-             csMode .= ChannelScroll
+             setMode ChannelScroll
 
     , mkKb NextChannelEvent "Change to the next channel in the channel list"
          nextChannel

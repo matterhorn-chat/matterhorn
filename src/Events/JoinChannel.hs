@@ -35,6 +35,6 @@ onEventJoinChannel (Vty.EvKey Vty.KEnter []) = do
             Nothing -> return ()
             Just (_, chan) -> joinChannel chan
 onEventJoinChannel (Vty.EvKey Vty.KEsc []) = do
-    csMode .= Main
+    setMode Main
 onEventJoinChannel _ = do
     return ()

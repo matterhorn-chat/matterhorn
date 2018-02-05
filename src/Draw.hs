@@ -3,7 +3,6 @@
 module Draw (draw) where
 
 import Brick
-import Lens.Micro.Platform ((^.))
 
 import Types
 import Draw.Main
@@ -16,7 +15,7 @@ import Draw.JoinChannel
 
 draw :: ChatState -> [Widget Name]
 draw st =
-    case st^.csMode of
+    case appMode st of
         Main                       -> drawMain st
         ChannelScroll              -> drawMain st
         UrlSelect                  -> drawMain st

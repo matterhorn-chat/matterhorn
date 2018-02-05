@@ -90,7 +90,7 @@ updateMessageFlag pId f = do
       csPostMap.ix(pId).mFlagged .= f
       -- We also want to update the post overlay if this happens while
       -- we're we're observing it
-      mode <- use csMode
+      mode <- gets appMode
       case mode of
         PostListOverlay PostListFlagged
           | f ->

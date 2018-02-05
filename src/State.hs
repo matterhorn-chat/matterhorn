@@ -59,7 +59,7 @@ module State
   , fetchVisibleIfNeeded
 
   -- * Working with users
-  , handleNewUser
+  , handleNewUsers
   , updateStatus
   , handleTypingUser
 
@@ -365,12 +365,12 @@ beginMessageSelect = do
     let recentPost = getLatestPostMsg chanMsgs
 
     when (isJust recentPost) $ do
-        csMode .= MessageSelect
+        setMode MessageSelect
         csMessageSelect .= MessageSelectState (join $ ((^.mPostId) <$> recentPost))
 
 getSelectedMessage :: ChatState -> Maybe Message
 getSelectedMessage st
-    | st^.csMode /= MessageSelect && st^.csMode /= MessageSelectDeleteConfirm = Nothing
+    | appMode st /= MessageSelect && appMode st /= MessageSelectDeleteConfirm = Nothing
     | otherwise = do
         selPostId <- selectMessagePostId $ st^.csMessageSelect
 
@@ -379,7 +379,7 @@ getSelectedMessage st
 
 messageSelectUp :: MH ()
 messageSelectUp = do
-    mode <- use csMode
+    mode <- gets appMode
     selected <- use (csMessageSelect.to selectMessagePostId)
     case selected of
         Just _ | mode == MessageSelect -> do
@@ -390,10 +390,9 @@ messageSelectUp = do
 
 messageSelectDown :: MH ()
 messageSelectDown = do
-    mode <- use csMode
     selected <- use (csMessageSelect.to selectMessagePostId)
     case selected of
-        Just _ | mode == MessageSelect -> do
+        Just _ -> whenMode MessageSelect $ do
             chanMsgs <- use (csCurrentChannel.ccContents.cdMessages)
             let nextPostId = getNextPostId selected chanMsgs
             csMessageSelect .= MessageSelectState (nextPostId <|> selected)
@@ -413,7 +412,7 @@ messageSelectUpBy amt
 
 beginConfirmDeleteSelectedMessage :: MH ()
 beginConfirmDeleteSelectedMessage =
-    csMode .= MessageSelectDeleteConfirm
+    setMode MessageSelectDeleteConfirm
 
 deleteSelectedMessage :: MH ()
 deleteSelectedMessage = do
@@ -427,7 +426,7 @@ deleteSelectedMessage = do
                   doAsyncChannelMM Preempt cId
                       (\s _ _ -> MM.mmDeletePost (postId p) s)
                       (\_ _ -> do csEditState.cedEditMode .= NewPost
-                                  csMode .= Main)
+                                  setMode Main)
               Nothing -> return ()
         _ -> return ()
 
@@ -437,12 +436,12 @@ beginCurrentChannelDeleteConfirm = do
     withChannel cId $ \chan -> do
         let chType = chan^.ccInfo.cdType
         if chType /= Direct
-            then csMode .= DeleteChannelConfirm
+            then setMode DeleteChannelConfirm
             else postErrorMessage "The /delete-channel command cannot be used with direct message channels."
 
 deleteCurrentChannel :: MH ()
 deleteCurrentChannel = do
-    csMode .= Main
+    setMode Main
     cId <- use csCurrentChannelId
     leaveChannelIfPossible cId True
 
@@ -481,7 +480,7 @@ beginUpdateMessage = do
     case selected of
         Just msg | isMine st msg && isEditable msg -> do
             let Just p = msg^.mOriginalPost
-            csMode .= Main
+            setMode Main
             csEditState.cedEditMode .= Editing p
             csEditState.cedEditor %= applyEdit (clearZipper >> (insertMany $ postMessage p))
         _ -> return ()
@@ -491,7 +490,7 @@ replyToLatestMessage = do
   msgs <- use (csCurrentChannel . ccContents . cdMessages)
   case findLatestUserMessage isReplyable msgs of
     Just msg -> do let Just p = msg^.mOriginalPost
-                   csMode .= Main
+                   setMode Main
                    csEditState.cedEditMode .= Replying msg p
     _ -> return ()
 
@@ -502,7 +501,7 @@ beginReplyCompose = do
         Nothing -> return ()
         Just msg -> do
             let Just p = msg^.mOriginalPost
-            csMode .= Main
+            setMode Main
             csEditState.cedEditMode .= Replying msg p
 
 cancelReplyOrEdit :: MH ()
@@ -523,7 +522,7 @@ copyVerbatimToClipboard = do
             Nothing -> return ()
             Just txt -> do
               copyToClipboard txt
-              csMode .= Main
+              setMode Main
 
 -- * Joining, Leaving, and Inviting
 
@@ -548,12 +547,12 @@ startJoinChannel = do
         return $ do
             csJoinChannelList .= (Just $ list JoinChannelList sortedChans 2)
 
-    csMode .= JoinChannel
+    setMode JoinChannel
     csJoinChannelList .= Nothing
 
 joinChannel :: Channel -> MH ()
 joinChannel chan = do
-    csMode .= Main
+    setMode Main
     myId <- use (csMe.userIdL)
     let member = MinChannelMember myId (getId chan)
     doAsyncChannelMM Preempt (getId chan) (\ s _ c -> MM.mmAddUser c member s) endAsyncNOP
@@ -601,7 +600,7 @@ startLeaveCurrentChannel :: MH ()
 startLeaveCurrentChannel = do
     cInfo <- use (csCurrentChannel.ccInfo)
     case canLeaveChannel cInfo of
-        True -> csMode .= LeaveChannelConfirm
+        True -> setMode LeaveChannelConfirm
         False -> postErrorMessage "The /leave command cannot be used with this channel."
 
 leaveCurrentChannel :: MH ()
@@ -1027,11 +1026,21 @@ addObtainedMessages cId reqCnt posts = do
             noMoreBefore = reqCnt < 0 && length pIdList < (-reqCnt)
             noMoreAfter = reqCnt > 0 && length pIdList < reqCnt
 
+        -- The post map returned by the server will *already* have
+        -- all thread messages for each post that is part of a
+        -- thread. By calling messagesFromPosts here, we go ahead and
+        -- populate the csPostMap with those posts so that below, in
+        -- addMessageToState, we notice that we already know about reply
+        -- parent messages and can avoid fetching them. This converts
+        -- the posts to Messages and stores those and also returns
+        -- them, but we don't need them here. We just want the post map
+        -- update.
+        void $ messagesFromPosts posts
+
         -- Add all the new *unique* posts into the existing channel
         -- corpus, generating needed fetches of data associated with
         -- the post, and determining an notification action to be
         -- taken (if any).
-
         action <- foldr mappend mempty <$>
           mapM (addMessageToState . OldPost)
                    [ (posts^.postsPostsL) HM.! p
@@ -1062,12 +1071,17 @@ addObtainedMessages cId reqCnt posts = do
         -- Now initiate fetches for use information for any
         -- as-yet-unknown users related to this new set of messages
 
-        let users = foldr (\post -> Set.insert (postUserId post)) Set.empty (posts^.postsPostsL)
-            addUserIfUnknown st uId = case st^.csUsers.to (findUserById uId) of
-                                        Just _  -> return ()
-                                        Nothing -> handleNewUser uId
+        let users = foldr (\post s -> maybe s (flip Set.insert s) (postUserId post))
+                          Set.empty (posts^.postsPostsL)
+            addUnknownUsers st inputUserIds =
+                let knownUserIds = allUserIds (st^.csUsers)
+                    unknownUsers = Set.difference inputUserIds knownUserIds
+                in if Set.null unknownUsers
+                   then return ()
+                   else handleNewUsers $ Seq.fromList $ F.toList unknownUsers
+
         st <- use id
-        mapM_ (addUserIfUnknown st) $ catMaybes $ F.toList users
+        addUnknownUsers st users
 
         -- Return the aggregated user notification action needed
         -- relative to the set of added messages.
@@ -1076,9 +1090,7 @@ addObtainedMessages cId reqCnt posts = do
 
 
 loadMoreMessages :: MH ()
-loadMoreMessages = do
-    mode <- use csMode
-    when (mode == ChannelScroll) asyncFetchMoreMessages
+loadMoreMessages = whenMode ChannelScroll asyncFetchMoreMessages
 
 channelByName :: ChatState -> T.Text -> Maybe ChannelId
 channelByName st n
@@ -1226,7 +1238,7 @@ handleNewChannel_ permitPostpone switch nc member = do
                             case permitPostpone of
                                 False -> return $ Just $ channelName nc
                                 True -> do
-                                    handleNewUser otherUserId
+                                    handleNewUsers $ Seq.singleton otherUserId
                                     doAsyncWith Normal $
                                         return $ handleNewChannel_ False switch nc member
                                     return Nothing
@@ -1552,11 +1564,11 @@ channelHistoryBackward = do
 showHelpScreen :: HelpTopic -> MH ()
 showHelpScreen topic = do
     mh $ vScrollToBeginning (viewportScroll HelpViewport)
-    csMode .= ShowHelp topic
+    setMode $ ShowHelp topic
 
 beginChannelSelect :: MH ()
 beginChannelSelect = do
-    csMode .= ChannelSelect
+    setMode ChannelSelect
     csChannelSelectState .= emptyChannelSelectState
 
 -- Select the next match in channel selection mode.
@@ -1681,11 +1693,11 @@ parseChannelSelectPattern pat = do
 startUrlSelect :: MH ()
 startUrlSelect = do
     urls <- use (csCurrentChannel.to findUrls.to V.fromList)
-    csMode    .= UrlSelect
+    setMode UrlSelect
     csUrlList .= (listMoveTo (length urls - 1) $ list UrlList urls 2)
 
 stopUrlSelect :: MH ()
-stopUrlSelect = csMode .= Main
+stopUrlSelect = setMode Main
 
 findUrls :: ClientChannel -> [LinkChoice]
 findUrls chan =
@@ -1730,9 +1742,7 @@ msgURLs msg
   in msgUrls <> attachmentURLs
 
 openSelectedURL :: MH ()
-openSelectedURL = do
-  mode <- use csMode
-  when (mode == UrlSelect) $ do
+openSelectedURL = whenMode UrlSelect $ do
     selected <- use (csUrlList.to listSelectedElement)
     case selected of
         Nothing -> return ()
@@ -1741,7 +1751,7 @@ openSelectedURL = do
             when (not opened) $ do
                 let msg = "Config option 'urlOpenCommand' missing; cannot open URL."
                 postInfoMessage msg
-                csMode .= Main
+                setMode Main
 
 openURL :: LinkChoice -> MH Bool
 openURL link = do
@@ -1794,7 +1804,7 @@ openURL link = do
                     mhSuspendAndResume $ \st -> do
                         args <- act st
                         void $ runInteractiveCommand (T.unpack urlOpenCommand) args
-                        return $ st & csMode .~ Main
+                        return $ setMode' Main st
 
             return True
 
@@ -1876,18 +1886,16 @@ runLoggedCommand stdoutOkay outputChan cmd args mInput mOutputVar = void $ forkI
                     "https://github.com/matterhorn-chat/matterhorn"
 
 openSelectedMessageURLs :: MH ()
-openSelectedMessageURLs = do
-    mode <- use csMode
-    when (mode == MessageSelect) $ do
-        Just curMsg <- use (to getSelectedMessage)
-        let urls = msgURLs curMsg
-        when (not (null urls)) $ do
-            openedAll <- and <$> mapM openURL urls
-            case openedAll of
-                True -> csMode .= Main
-                False -> do
-                    let msg = "Config option 'urlOpenCommand' missing; cannot open URL."
-                    postInfoMessage msg
+openSelectedMessageURLs = whenMode MessageSelect $ do
+    Just curMsg <- use (to getSelectedMessage)
+    let urls = msgURLs curMsg
+    when (not (null urls)) $ do
+        openedAll <- and <$> mapM openURL urls
+        case openedAll of
+            True -> setMode Main
+            False -> do
+                let msg = "Config option 'urlOpenCommand' missing; cannot open URL."
+                postInfoMessage msg
 
 shouldSkipMessage :: T.Text -> Bool
 shouldSkipMessage "" = True
@@ -1927,10 +1935,10 @@ handleNewUserDirect newUser = do
     userSet <- use (csResources.crUserIdSet)
     liftIO $ STM.atomically $ STM.modifyTVar userSet $ (newUserId Seq.<|)
 
-handleNewUser :: UserId -> MH ()
-handleNewUser newUserId = doAsyncMM Normal getUserInfo updateUserState
+handleNewUsers :: Seq.Seq UserId -> MH ()
+handleNewUsers newUserIds = doAsyncMM Preempt getUserInfo updateUserStates
     where getUserInfo session _ =
-              do (nUser, users)  <- concurrently (MM.mmGetUser (UserById newUserId) session)
+              do (nUsers, users)  <- concurrently (MM.mmGetUsersByIds newUserIds session)
                                                     (MM.mmGetUsers MM.defaultUserQuery
                                                       { MM.userQueryPage = Just 0
                                                       , MM.userQueryPerPage = Just 10000
@@ -1939,16 +1947,22 @@ handleNewUser newUserId = doAsyncMM Normal getUserInfo updateUserState
                  -- Also re-load the team members so we can tell
                  -- whether the new user is in the current user's
                  -- team.
-                 let usrInfo = userInfoFromUser nUser (HM.member newUserId teamUsers)
-                 return (nUser, usrInfo)
+                 let usrInfo u = userInfoFromUser u (HM.member (userId u) teamUsers)
+                     usrList = F.toList nUsers
+                 return $ zip usrList (usrInfo <$> usrList)
+
+          updateUserStates :: [(User, UserInfo)] -> MH ()
+          updateUserStates pairs = mapM_ updateUserState pairs
+
           updateUserState :: (User, UserInfo) -> MH ()
           updateUserState (newUser, uInfo) =
               -- Update the name map and the list of known users
-              do csUsers %= addUser newUserId uInfo
+              do let uId = userId newUser
+                 csUsers %= addUser uId uInfo
                  csNames . cnUsers %= (sort . ((newUser^.userUsernameL):))
-                 csNames . cnToUserId . at (newUser^.userUsernameL) .= Just newUserId
+                 csNames . cnToUserId . at (newUser^.userUsernameL) .= Just uId
                  userSet <- use (csResources.crUserIdSet)
-                 liftIO $ STM.atomically $ STM.modifyTVar userSet $ (newUserId Seq.<|)
+                 liftIO $ STM.atomically $ STM.modifyTVar userSet $ (uId Seq.<|)
 
 -- | Handle the typing events from the websocket to show the currently typing users on UI
 handleTypingUser :: UserId -> ChannelId -> MH ()

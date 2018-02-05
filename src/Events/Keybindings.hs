@@ -1,6 +1,7 @@
 module Events.Keybindings
   ( defaultBindings
   , lookupKeybinding
+  , getFirstDefaultBinding
 
   , mkKb
   , staticKb
@@ -18,6 +19,7 @@ module Events.Keybindings
   , keyEventFromName
   ) where
 
+import           Data.Monoid ((<>))
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
@@ -71,6 +73,12 @@ mkKeybindings ks conf = concat [ k conf | k <- ks ]
 bindingToEvent :: Binding -> Vty.Event
 bindingToEvent binding =
   Vty.EvKey (kbKey binding) (kbMods binding)
+
+getFirstDefaultBinding :: KeyEvent -> Binding
+getFirstDefaultBinding ev =
+    case defaultBindings ev of
+        [] -> error $ "BUG: event " <> show ev <> " has no default bindings!"
+        (b:_) -> b
 
 defaultBindings :: KeyEvent -> [Binding]
 defaultBindings ev =

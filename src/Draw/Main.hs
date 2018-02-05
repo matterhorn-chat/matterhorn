@@ -243,7 +243,7 @@ renderUserCommandBox st hs =
                          "/" <> (show $ length curContents) <> "]"
                  , hBorderWithLabel $ withDefAttr clientEmphAttr $
                    txt $ "In multi-line mode. Press " <>
-                         (ppBinding (head (defaultBindings ToggleMultiLineEvent))) <>
+                         (ppBinding (getFirstDefaultBinding ToggleMultiLineEvent)) <>
                          " to finish."
                  ]
 
@@ -333,7 +333,7 @@ renderCurrentChannelDisplay st hs = (header <+> conn) <=> messages
 
     body = chatText
 
-    chatText = case st^.csMode of
+    chatText = case appMode st of
         ChannelScroll ->
             -- n.b., In this mode, the output is cached and scrolled
             -- via the viewport.  This means that newly received
@@ -565,7 +565,7 @@ inputPreview st hs | not $ st^.csShowMessagePreview = emptyWidget
 
 userInputArea :: ChatState -> HighlightSet -> Widget Name
 userInputArea st hs =
-    case st^.csMode of
+    case appMode st of
         ChannelSelect -> renderChannelSelect st
         UrlSelect     -> hCenter $ hBox [ txt "Press "
                                         , withDefAttr clientEmphAttr $ txt "Enter"
@@ -594,11 +594,11 @@ mainInterface st =
     where
     hs = getHighlightSet st
     channelListWidth = configChannelListWidth $ st^.csResources.crConfiguration
-    mainDisplay = case st^.csMode of
+    mainDisplay = case appMode st of
         UrlSelect -> renderUrlList st
         _         -> maybeSubdue $ renderCurrentChannelDisplay st hs
 
-    bottomBorder = case st^.csMode of
+    bottomBorder = case appMode st of
         MessageSelect -> messageSelectBottomBar st
         _ -> case st^.csEditState.cedCurrentCompletion of
             Just _ | length (st^.csEditState.cedCompletionAlternatives) > 1 -> completionAlternatives st
@@ -624,7 +624,7 @@ mainInterface st =
                  Just Nothing -> hLimit 2 hBorder <+> txt "*"
                  Nothing -> emptyWidget
 
-    maybeSubdue = if st^.csMode == ChannelSelect
+    maybeSubdue = if appMode st == ChannelSelect
                   then forceAttr ""
                   else id
 

@@ -233,7 +233,16 @@ initializeState cr myTeam myUser = do
       chanIds = [ (chanNames ^. cnToChanId) HM.! i
                 | i <- chanNames ^. cnChans ]
       chanZip = Z.fromList chanIds
-      st = newState cr chanZip myUser myTeam tz hist spResult
+      startupState =
+          StartupStateInfo { startupStateResources      = cr
+                           , startupStateChannelZipper  = chanZip
+                           , startupStateConnectedUser  = myUser
+                           , startupStateTeam           = myTeam
+                           , startupStateTimeZone       = tz
+                           , startupStateInitialHistory = hist
+                           , startupStateSpellChecker   = spResult
+                           }
+      st = newState startupState
              & csChannels %~ flip (foldr (uncurry addChannel)) msgs
              & csNames .~ chanNames
 

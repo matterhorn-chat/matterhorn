@@ -17,7 +17,7 @@ module Types.Users
   , findUserById
   , findUserByName
   , findUserByDMChannelName
-  , noUsers, addUser, allUsers
+  , noUsers, addUser, allUsers, allUserIds
   , modifyUserById
   , getDMChannelName
   , userIdForDMChannel
@@ -34,6 +34,7 @@ import           Data.Semigroup ((<>), Max(..))
 import qualified Data.HashMap.Strict as HM
 import           Data.List (sort)
 import           Data.Maybe (listToMaybe, maybeToList)
+import qualified Data.Set as Set
 import qualified Data.Text as T
 import           Data.Time (UTCTime)
 import           Lens.Micro.Platform
@@ -116,6 +117,9 @@ noUsers = AllUsers HM.empty
 -- | Add a member to the existing collection of Users
 addUser :: UserId -> UserInfo -> Users -> Users
 addUser uId userinfo = AllUsers . HM.insert uId userinfo . _ofUsers
+
+allUserIds :: Users -> Set.Set UserId
+allUserIds = Set.fromList . HM.keys . _ofUsers
 
 -- | Get a list of all known users
 allUsers :: Users -> [UserInfo]

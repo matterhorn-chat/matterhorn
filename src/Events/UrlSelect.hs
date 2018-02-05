@@ -5,7 +5,6 @@ import Prelude.Compat
 
 import Brick.Widgets.List
 import qualified Graphics.Vty as Vty
-import Lens.Micro.Platform
 
 import Types
 import Events.Keybindings
@@ -21,7 +20,7 @@ urlSelectKeybindings = mkKeybindings
     [ staticKb "Open the selected URL, if any"
          (Vty.EvKey Vty.KEnter []) $ do
              openSelectedURL
-             csMode .= Main
+             setMode Main
 
     , mkKb CancelEvent "Cancel URL selection" stopUrlSelect
 
