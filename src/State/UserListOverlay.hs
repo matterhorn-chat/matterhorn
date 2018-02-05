@@ -12,6 +12,18 @@ module State.UserListOverlay
   )
 where
 
+-- TODO
+--
+-- * implement UI for /add-user using this module (in the case where it
+--   is given no args)
+-- * implement UI for DMing new users using this module (need new
+--   command for this, and also maybe /focus with no args)
+-- * implement Enter keypress handler, invoke from
+--   onEventUserListOverlay (e.g. /add-user invites, /focus chats, etc.)
+-- * try out single-line, multi-column listing for results
+-- * maybe increase search chunk size to 100
+-- * maybe show something below the list when RequestingMore = True?
+
 import Control.Monad (when)
 import Data.Monoid ((<>))
 import qualified Data.Vector as Vec
