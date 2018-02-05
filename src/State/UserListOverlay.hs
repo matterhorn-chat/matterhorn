@@ -13,7 +13,6 @@ module State.UserListOverlay
 where
 
 import Control.Monad (when)
-import Data.Sequence (Seq)
 import Data.Monoid ((<>))
 import qualified Data.Vector as Vec
 import qualified Data.Foldable as F
@@ -60,7 +59,7 @@ resetUserListSearch = do
           results <- fetchInitialResults scope session searchString
           return $ do
               let lst = listFromUserSearchResults $
-                          (\u -> userInfoFromUser u True) <$> (Vec.fromList $ F.toList results)
+                          (\u -> userInfoFromUser u True) <$> results
               csUserListOverlay.userListSearchResults .= lst
               csUserListOverlay.userListSearching .= False
 
@@ -139,7 +138,7 @@ prefetchNextPage = do
           doAsyncWith Preempt $ do
               results <- getUserSearchResultsPage pageNum scope session searchString
               return $ do
-                  let newChunk = (\u -> userInfoFromUser u True) <$> (Vec.fromList $ F.toList results)
+                  let newChunk = (\u -> userInfoFromUser u True) <$> results
                   -- Because we only ever append, this is safe to do
                   -- w.r.t. the selected index of the list. If we ever
                   -- prepended or removed, we'd also need to manage the
@@ -153,19 +152,19 @@ userListPageSize = 10
 
 -- | Perform an initial request for search results in the specified
 -- scope.
-fetchInitialResults :: UserSearchScope -> Session -> T.Text -> IO (Seq User)
+fetchInitialResults :: UserSearchScope -> Session -> T.Text -> IO (Vec.Vector User)
 fetchInitialResults = getUserSearchResultsPage 0
 
 searchResultsChunkSize :: Int
 searchResultsChunkSize = 40
 
-getUserSearchResultsPage :: Int -> UserSearchScope -> Session -> T.Text -> IO (Seq User)
+getUserSearchResultsPage :: Int -> UserSearchScope -> Session -> T.Text -> IO (Vec.Vector User)
 getUserSearchResultsPage pageNum scope s searchString = do
     let chanScope = case scope of
             ChannelMembers cId -> Just cId
             AllUsers -> Nothing
 
-    case T.null searchString of
+    users <- case T.null searchString of
         True -> do
             let query = MM.defaultUserQuery
                   { MM.userQueryPage = Just pageNum
@@ -185,6 +184,9 @@ getUserSearchResultsPage pageNum scope s searchString = do
                                    , userSearchTeamId = Nothing -- TODO: when should we omit or provide this?
                                    }
             MM.mmSearchUsers query s
+
+    let uList = Vec.fromList $ F.toList users
+    return uList
 
 userListSearchString :: MH T.Text
 userListSearchString =
