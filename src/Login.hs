@@ -86,7 +86,7 @@ editHostname stLens n =
 mkForm :: ConnectionInfo -> Form ConnectionInfo e Name
 mkForm =
     let label s w = padBottom (Pad 1) $
-                    (vLimit 1 $ hLimit 20 $ str s <+> fill ' ') <+> w
+                    (vLimit 1 $ hLimit 18 $ str s <+> fill ' ') <+> w
     in newForm [ label "Server hostname:" @@=
                    editHostname ciHostname Hostname
                , label "Server port:" @@=
@@ -137,7 +137,7 @@ renderError :: Widget a -> Widget a
 renderError = withDefAttr errorAttr
 
 uiWidth :: Int
-uiWidth = 50
+uiWidth = 60
 
 credentialsForm :: State -> Widget Name
 credentialsForm st =
