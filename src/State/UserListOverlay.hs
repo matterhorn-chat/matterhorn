@@ -49,7 +49,8 @@ asyncBeginSearch scope = do
               csUserListOverlay.userListSearching .= False
       AllUsers -> return ()
 
--- | Clear out the state of a PostListOverlay
+-- | Clear out the state of the user list overlay and return to the Main
+-- mode.
 exitUserListMode :: MH ()
 exitUserListMode = do
   csUserListOverlay.userListSearchResults .= listFromUserSearchResults mempty
