@@ -3,6 +3,8 @@ module State.UserListOverlay
   , exitUserListMode
   , userListSelectDown
   , userListSelectUp
+  , userListPageDown
+  , userListPageUp
   )
 where
 
@@ -58,6 +60,17 @@ userListSelectUp = do
 userListSelectDown :: MH ()
 userListSelectDown = do
   csUserListOverlay.userListSearchResults %= L.listMoveDown
+
+userListPageUp :: MH ()
+userListPageUp = do
+  csUserListOverlay.userListSearchResults %= L.listMoveBy (-1 * userListPageSize)
+
+userListPageDown :: MH ()
+userListPageDown = do
+  csUserListOverlay.userListSearchResults %= L.listMoveBy userListPageSize
+
+userListPageSize :: Int
+userListPageSize = 10
 
 fetchChannelMembers :: Session -> TeamId -> ChannelId -> IO (Seq User)
 fetchChannelMembers s _ c = do
