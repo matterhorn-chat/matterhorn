@@ -57,13 +57,20 @@ drawUsersBox st =
                     , cursorPositionBorder
                     , userResultList
                     ]
+        plural 1 = ""
+        plural _ = "s"
         cursorPositionBorder = case st^.userListSearchResults.L.listSelectedL of
             Nothing -> hBorder
             Just _ ->
                 let msg = case st^.userListRequestingMore of
                             True -> "Fetching more results..."
-                            False -> "Showing first " <>
-                                     show numSearchResults <> " search results"
+                            False -> case st^.userListHasAllResults of
+                                True -> "Showing all " <>
+                                         show numSearchResults <>
+                                         " result" <> plural numSearchResults
+                                False -> "Showing first " <>
+                                         show numSearchResults <>
+                                         " result" <> plural numSearchResults
                 in hBorderWithLabel $ str $ "[" <> msg <> "]"
 
         scope = st^.userListSearchScope

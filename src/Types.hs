@@ -106,6 +106,7 @@ module Types
   , userListSearchScope
   , userListSearching
   , userListRequestingMore
+  , userListHasAllResults
 
   , listFromUserSearchResults
 
@@ -557,6 +558,7 @@ newState rs i u m tz hist sp = ChatState
                            , _userListSearchScope = AllUsers
                            , _userListSearching = False
                            , _userListRequestingMore = False
+                           , _userListHasAllResults = False
                            }
   }
 
@@ -595,6 +597,7 @@ data UserListOverlayState = UserListOverlayState
   , _userListSearchScope :: UserSearchScope
   , _userListSearching :: Bool
   , _userListRequestingMore :: Bool
+  , _userListHasAllResults :: Bool
   }
 
 data UserSearchScope =

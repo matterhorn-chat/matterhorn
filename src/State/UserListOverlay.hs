@@ -56,6 +56,8 @@ resetUserListSearch = do
   when (not searchPending) $ do
       searchString <- userListSearchString
       csUserListOverlay.userListSearching .= True
+      csUserListOverlay.userListHasAllResults .= False
+      csUserListOverlay.userListSearchResults .= listFromUserSearchResults mempty
       session <- use (csResources.crSession)
       scope <- use (csUserListOverlay.userListSearchScope)
       doAsyncWith Preempt $ do
@@ -63,6 +65,7 @@ resetUserListSearch = do
           return $ do
               let lst = listFromUserSearchResults results
               csUserListOverlay.userListSearchResults .= lst
+              csUserListOverlay.userListHasAllResults .= (length results < searchResultsChunkSize)
               csUserListOverlay.userListSearching .= False
 
               -- Now that the results are available, check to see if the
@@ -124,8 +127,9 @@ selectionPrefetchDelta = 10
 prefetchNextPage :: MH ()
 prefetchNextPage = do
   gettingMore <- use (csUserListOverlay.userListRequestingMore)
+  hasAll <- use (csUserListOverlay.userListHasAllResults)
   searchString <- userListSearchString
-  when (T.null searchString && not gettingMore) $ do
+  when (not hasAll && T.null searchString && not gettingMore) $ do
       numResults <- use (csUserListOverlay.userListSearchResults.to F.length)
       curIdx <- use (csUserListOverlay.userListSearchResults.L.listSelectedL)
       let chunkMultiple = numResults `mod` searchResultsChunkSize == 0
@@ -150,6 +154,11 @@ prefetchNextPage = do
                   -- selection index to ensure it stays in bounds.
                   csUserListOverlay.userListSearchResults.L.listElementsL %= (<> newChunk)
                   csUserListOverlay.userListRequestingMore .= False
+
+                  -- If we got fewer results than we asked for, then we
+                  -- have them all!
+                  csUserListOverlay.userListHasAllResults .=
+                      (length newChunk < searchResultsChunkSize)
 
 -- | The number of users in a "page" for cursor movement purposes.
 userListPageSize :: Int
