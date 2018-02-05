@@ -21,8 +21,8 @@ import Types
 import Types.Users
 import State.Common
 
--- | Create a PostListOverlay with the given content description and
--- with a specified list of messages.
+-- | Show the user list overlay with the given search scope, and issue a
+-- request to gather the first search results.
 enterUserListMode :: UserSearchScope -> MH ()
 enterUserListMode scope = do
   csUserListOverlay.userListSearchScope .= scope
