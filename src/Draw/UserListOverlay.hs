@@ -60,7 +60,7 @@ drawUsersBox st =
           | otherwise = vBox renderedUserList
 
         contentHeader = str $ case scope of
-            ChannelMembers _ -> "Users In Channel"
+            ChannelMembers _ -> "Channel Members"
             AllUsers         -> "Users On This Server"
 
         users = F.toList (st^.userListUsers)
