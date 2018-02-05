@@ -78,13 +78,6 @@ exitUserListMode = do
   csUserListOverlay.userListSelected .= Nothing
   csMode .= Main
 
--- TODO:
---
--- * Cursor movement functions should ask the server for more results if
--- the cursor gets close to the bottom of the list.
---
--- * Implement AllUsers mode.
-
 -- | Move the selection up in the user list overlay by one user.
 userListSelectUp :: MH ()
 userListSelectUp = do
