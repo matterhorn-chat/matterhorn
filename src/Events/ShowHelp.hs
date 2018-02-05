@@ -5,7 +5,6 @@ import Prelude.Compat
 
 import Brick
 import qualified Graphics.Vty as Vty
-import Lens.Micro.Platform
 
 import Types
 import Events.Keybindings
