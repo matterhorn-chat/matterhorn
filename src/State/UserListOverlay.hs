@@ -58,7 +58,7 @@ enterUserListMode scope = do
   csUserListOverlay.userListSearchScope .= scope
   csUserListOverlay.userListSelected .= Nothing
   csUserListOverlay.userListSearchInput.E.editContentsL %= Z.clearZipper
-  csMode .= UserListOverlay
+  setMode UserListOverlay
   resetUserListSearch
 
 resetUserListSearch :: MH ()
@@ -96,7 +96,7 @@ exitUserListMode :: MH ()
 exitUserListMode = do
   csUserListOverlay.userListSearchResults .= listFromUserSearchResults mempty
   csUserListOverlay.userListSelected .= Nothing
-  csMode .= Main
+  setMode Main
 
 -- | Move the selection up in the user list overlay by one user.
 userListSelectUp :: MH ()
