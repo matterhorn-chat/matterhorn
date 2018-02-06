@@ -100,7 +100,7 @@ resetUserListSearch = do
       myId <- use (csMe.to userId)
       myTeamId <- use (csMyTeam.to teamId)
       doAsyncWith Preempt $ do
-          results <- removeSelf myId <$> fetchInitialResults myTeamId scope session searchString
+          results <- fetchInitialResults myTeamId myId scope session searchString
           return $ do
               let lst = listFromUserSearchResults results
               csUserListOverlay.userListSearchResults .= lst
@@ -188,7 +188,7 @@ prefetchNextPage = do
           myId <- use (csMe.to userId)
           myTeamId <- use (csMyTeam.to teamId)
           doAsyncWith Preempt $ do
-              newChunk <- removeSelf myId <$> getUserSearchResultsPage pageNum myTeamId scope session searchString
+              newChunk <- getUserSearchResultsPage pageNum myTeamId myId scope session searchString
               return $ do
                   -- Because we only ever append, this is safe to do
                   -- w.r.t. the selected index of the list. If we ever
@@ -202,23 +202,20 @@ prefetchNextPage = do
                   csUserListOverlay.userListHasAllResults .=
                       (length newChunk < searchResultsChunkSize)
 
-removeSelf :: UserId -> Vec.Vector UserInfo -> Vec.Vector UserInfo
-removeSelf myId = Vec.filter ((/= myId) . _uiId)
-
 -- | The number of users in a "page" for cursor movement purposes.
 userListPageSize :: Int
 userListPageSize = 10
 
 -- | Perform an initial request for search results in the specified
 -- scope.
-fetchInitialResults :: TeamId -> UserSearchScope -> Session -> T.Text -> IO (Vec.Vector UserInfo)
+fetchInitialResults :: TeamId -> UserId -> UserSearchScope -> Session -> T.Text -> IO (Vec.Vector UserInfo)
 fetchInitialResults = getUserSearchResultsPage 0
 
 searchResultsChunkSize :: Int
 searchResultsChunkSize = 40
 
-getUserSearchResultsPage :: Int -> TeamId -> UserSearchScope -> Session -> T.Text -> IO (Vec.Vector UserInfo)
-getUserSearchResultsPage pageNum myTeamId scope s searchString = do
+getUserSearchResultsPage :: Int -> TeamId -> UserId -> UserSearchScope -> Session -> T.Text -> IO (Vec.Vector UserInfo)
+getUserSearchResultsPage pageNum myTeamId myId scope s searchString = do
     users <- case T.null searchString of
         True -> do
             let query = MM.defaultUserQuery
@@ -252,7 +249,7 @@ getUserSearchResultsPage pageNum myTeamId scope s searchString = do
                                    }
             MM.mmSearchUsers query s
 
-    let uList = F.toList users
+    let uList = filter ((/= myId) . userId) $ F.toList users
         uIds = userId <$> uList
 
     -- Now fetch status info for the users we got.
