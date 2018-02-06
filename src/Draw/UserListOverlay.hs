@@ -70,7 +70,7 @@ drawUsersBox st =
       promptMsg = case scope of
           ChannelMembers _    -> "Search channel members:"
           ChannelNonMembers _ -> "Search users:"
-          AllUsers            -> "Search all users:"
+          AllUsers            -> "Search users:"
 
       userResultList =
           if st^.userListSearching
