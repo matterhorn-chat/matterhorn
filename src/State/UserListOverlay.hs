@@ -214,7 +214,19 @@ fetchInitialResults = getUserSearchResultsPage 0
 searchResultsChunkSize :: Int
 searchResultsChunkSize = 40
 
-getUserSearchResultsPage :: Int -> TeamId -> UserId -> UserSearchScope -> Session -> T.Text -> IO (Vec.Vector UserInfo)
+getUserSearchResultsPage :: Int
+                         -- ^ The page number of results to fetch, starting at zero.
+                         -> TeamId
+                         -- ^ My team ID.
+                         -> UserId
+                         -- ^ My user ID (my own user entry will never appear in the results)
+                         -> UserSearchScope
+                         -- ^ The scope to search
+                         -> Session
+                         -- ^ The connection session
+                         -> T.Text
+                         -- ^ The search string
+                         -> IO (Vec.Vector UserInfo)
 getUserSearchResultsPage pageNum myTeamId myId scope s searchString = do
     users <- case T.null searchString of
         True -> do
