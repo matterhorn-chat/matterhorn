@@ -159,11 +159,12 @@ selectionPrefetchDelta = 10
 
 -- Prefetch next page if:
 --  * the search string is empty (because we can't paginate searches,
---    just fetches for all users)
---  * cursor is within acceptable delta of end of list
---  * length of list is exactly a multiple of fetching chunk size
---    (indicating a very high probability that there are more results to
---    be fetched)
+--    just fetches for all users), and
+--  * cursor is within selectionPrefetchDelta positions of the end of
+--    list, and
+--  * the length of the current results list is exactly a multiple of
+--    fetching chunk size (thus indicating a very high probability that
+--    there are more results to be fetched).
 prefetchNextPage :: MH ()
 prefetchNextPage = do
   gettingMore <- use (csUserListOverlay.userListRequestingMore)
