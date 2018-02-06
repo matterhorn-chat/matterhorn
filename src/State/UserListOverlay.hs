@@ -245,6 +245,8 @@ getUserSearchResultsPage pageNum myTeamId myId scope s searchString = do
                   }
             MM.mmGetUsers query s
         False -> do
+            -- Unfortunately, we don't get pagination control when there
+            -- is a search string in effect.
             let query = UserSearch { userSearchTerm = searchString
                                    , userSearchAllowInactive = False
                                    , userSearchWithoutTeam = False
