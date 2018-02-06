@@ -85,8 +85,9 @@ resetUserListSearch = do
       csUserListOverlay.userListSearchResults .= listFromUserSearchResults mempty
       session <- use (csResources.crSession)
       scope <- use (csUserListOverlay.userListSearchScope)
+      myId <- use (csMe.to userId)
       doAsyncWith Preempt $ do
-          results <- fetchInitialResults scope session searchString
+          results <- removeSelf myId <$> fetchInitialResults scope session searchString
           return $ do
               let lst = listFromUserSearchResults results
               csUserListOverlay.userListSearchResults .= lst
@@ -171,8 +172,9 @@ prefetchNextPage = do
           csUserListOverlay.userListRequestingMore .= True
           session <- use (csResources.crSession)
           scope <- use (csUserListOverlay.userListSearchScope)
+          myId <- use (csMe.to userId)
           doAsyncWith Preempt $ do
-              newChunk <- getUserSearchResultsPage pageNum scope session searchString
+              newChunk <- removeSelf myId <$> getUserSearchResultsPage pageNum scope session searchString
               return $ do
                   -- Because we only ever append, this is safe to do
                   -- w.r.t. the selected index of the list. If we ever
@@ -185,6 +187,9 @@ prefetchNextPage = do
                   -- have them all!
                   csUserListOverlay.userListHasAllResults .=
                       (length newChunk < searchResultsChunkSize)
+
+removeSelf :: UserId -> Vec.Vector UserInfo -> Vec.Vector UserInfo
+removeSelf myId = Vec.filter ((/= myId) . _uiId)
 
 -- | The number of users in a "page" for cursor movement purposes.
 userListPageSize :: Int
