@@ -44,73 +44,73 @@ drawUsersBox :: UserListOverlayState -> Widget Name
 drawUsersBox st =
   centerLayer $ hLimitWithPadding 10 $ vLimit 25 $
   borderWithLabel contentHeader body
-  where -- The 'window title' of the overlay
-        body = vBox [ (padRight (Pad 1) $ str promptMsg) <+>
-                      renderEditor (txt . T.unlines) True (st^.userListSearchInput)
-                    , cursorPositionBorder
-                    , userResultList
-                    ]
-        plural 1 = ""
-        plural _ = "s"
-        cursorPositionBorder = case st^.userListSearchResults.L.listSelectedL of
-            Nothing -> hBorder
-            Just _ ->
-                let msg = case st^.userListRequestingMore of
-                            True -> "Fetching more results..."
-                            False -> case st^.userListHasAllResults of
-                                True -> "Showing all " <>
-                                         show numSearchResults <>
-                                         " result" <> plural numSearchResults
-                                False -> "Showing first " <>
-                                         show numSearchResults <>
-                                         " result" <> plural numSearchResults
-                in hBorderWithLabel $ str $ "[" <> msg <> "]"
+  where
+      body = vBox [ (padRight (Pad 1) $ str promptMsg) <+>
+                    renderEditor (txt . T.unlines) True (st^.userListSearchInput)
+                  , cursorPositionBorder
+                  , userResultList
+                  ]
+      plural 1 = ""
+      plural _ = "s"
+      cursorPositionBorder = case st^.userListSearchResults.L.listSelectedL of
+          Nothing -> hBorder
+          Just _ ->
+              let msg = case st^.userListRequestingMore of
+                          True -> "Fetching more results..."
+                          False -> case st^.userListHasAllResults of
+                              True -> "Showing all " <>
+                                       show numSearchResults <>
+                                       " result" <> plural numSearchResults
+                              False -> "Showing first " <>
+                                       show numSearchResults <>
+                                       " result" <> plural numSearchResults
+              in hBorderWithLabel $ str $ "[" <> msg <> "]"
 
-        scope = st^.userListSearchScope
-        promptMsg = case scope of
-            ChannelMembers _ -> "Search channel members:"
-            AllUsers         -> "Search all users:"
+      scope = st^.userListSearchScope
+      promptMsg = case scope of
+          ChannelMembers _ -> "Search channel members:"
+          AllUsers         -> "Search all users:"
 
-        userResultList =
-            if st^.userListSearching
-            then showMessage "Searching..."
-            else showResults
+      userResultList =
+          if st^.userListSearching
+          then showMessage "Searching..."
+          else showResults
 
-        showMessage = center . withDefAttr clientEmphAttr . str
+      showMessage = center . withDefAttr clientEmphAttr . str
 
-        showResults
-          | numSearchResults == 0 =
-              showMessage $ case scope of
-                ChannelMembers _ -> "No users in channel."
-                AllUsers         -> "No users found."
-          | otherwise = renderedUserList
+      showResults
+        | numSearchResults == 0 =
+            showMessage $ case scope of
+              ChannelMembers _ -> "No users in channel."
+              AllUsers         -> "No users found."
+        | otherwise = renderedUserList
 
-        contentHeader = str $ case scope of
-            ChannelMembers _ -> "Channel Members"
-            AllUsers         -> "Users On This Server"
+      contentHeader = str $ case scope of
+          ChannelMembers _ -> "Channel Members"
+          AllUsers         -> "Users On This Server"
 
-        renderedUserList = L.renderList renderUser True (st^.userListSearchResults)
-        numSearchResults = F.length $ st^.userListSearchResults.L.listElementsL
+      renderedUserList = L.renderList renderUser True (st^.userListSearchResults)
+      numSearchResults = F.length $ st^.userListSearchResults.L.listElementsL
 
-        renderUser foc ui =
-            (if foc then forceAttr L.listSelectedFocusedAttr else id) $
-            vLimit 2 $
-            vBox [ hBox ( colorUsername (ui^.uiName) (T.singleton $ userSigilFromInfo ui)
-                        : str " "
-                        : colorUsername (ui^.uiName) (ui^.uiName)
-                        : case ui^.uiNickName of
-                            Just n | n /= (ui^.uiName) ->
-                                     [txt (" (" <> n <> ")")]
-                            _ -> []
-                        )
-                 , hBox [ str "  "
-                        , if (not (T.null (ui^.uiFirstName)) || not (T.null (ui^.uiLastName)))
-                          then txt (ui^.uiFirstName <> " " <> ui^.uiLastName <> " ")
-                          else emptyWidget
-                        , if (T.null $ ui^.uiEmail)
-                          then emptyWidget
-                          else modifyDefAttr (`V.withURL` ("mailto:" <> ui^.uiEmail)) $
-                               withDefAttr urlAttr (txt ("<" <> ui^.uiEmail <> ">"))
-                        ]
-                 ] <+>
-            fill ' '
+      renderUser foc ui =
+          (if foc then forceAttr L.listSelectedFocusedAttr else id) $
+          vLimit 2 $
+          vBox [ hBox ( colorUsername (ui^.uiName) (T.singleton $ userSigilFromInfo ui)
+                      : str " "
+                      : colorUsername (ui^.uiName) (ui^.uiName)
+                      : case ui^.uiNickName of
+                          Just n | n /= (ui^.uiName) ->
+                                   [txt (" (" <> n <> ")")]
+                          _ -> []
+                      )
+               , hBox [ str "  "
+                      , if (not (T.null (ui^.uiFirstName)) || not (T.null (ui^.uiLastName)))
+                        then txt (ui^.uiFirstName <> " " <> ui^.uiLastName <> " ")
+                        else emptyWidget
+                      , if (T.null $ ui^.uiEmail)
+                        then emptyWidget
+                        else modifyDefAttr (`V.withURL` ("mailto:" <> ui^.uiEmail)) $
+                             withDefAttr urlAttr (txt ("<" <> ui^.uiEmail <> ">"))
+                      ]
+               ] <+>
+          fill ' '
