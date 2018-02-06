@@ -21,8 +21,6 @@ where
 -- * implement Enter keypress handler, invoke from
 --   onEventUserListOverlay (e.g. /add-user invites, /focus chats, etc.)
 -- * try out single-line, multi-column listing for results
--- * maybe increase search chunk size to 100
--- * maybe show something below the list when RequestingMore = True?
 
 import Control.Monad (when)
 import Data.Monoid ((<>))
