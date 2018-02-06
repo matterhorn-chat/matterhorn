@@ -50,7 +50,7 @@ enterChannelMembersUserList = do
   enterUserListMode (ChannelMembers cId) (\u -> changeChannel (u^.uiName))
 
 -- | Show the user list overlay for showing users that are not members
--- of the current channel for the purposes of adding them to the
+-- of the current channel for the purpose of adding them to the
 -- channel.
 enterChannelInviteUserList :: MH ()
 enterChannelInviteUserList = do
