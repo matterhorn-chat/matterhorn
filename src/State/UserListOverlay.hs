@@ -17,8 +17,6 @@ where
 
 -- TODO
 --
--- * implement UI for DMing new users using this module (need new
---   command for this, and also maybe /focus with no args)
 -- * try out single-line, multi-column listing for results
 
 import Control.Monad (when)
