@@ -621,6 +621,7 @@ data UserListOverlayState = UserListOverlayState
 
 data UserSearchScope =
     ChannelMembers ChannelId
+    | ChannelNonMembers ChannelId
     | AllUsers
 
 -- | Actions that can be sent on the websocket to the server.

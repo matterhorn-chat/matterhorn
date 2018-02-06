@@ -1,5 +1,6 @@
 module State.UserListOverlay
   ( enterChannelMembersUserList
+  , enterChannelInviteUserList
   , resetUserListSearch
   , exitUserListMode
 
@@ -15,8 +16,6 @@ where
 
 -- TODO
 --
--- * implement UI for /add-user using this module (in the case where it
---   is given no args)
 -- * implement UI for DMing new users using this module (need new
 --   command for this, and also maybe /focus with no args)
 -- * try out single-line, multi-column listing for results
@@ -40,7 +39,7 @@ import qualified Brick.Widgets.Edit as E
 import Types
 import Types.Users
 import State.Common
-import State (changeChannel)
+import State (changeChannel, addUserToCurrentChannel)
 
 -- | Show the user list overlay for searching/showing members of the
 -- current channel.
@@ -48,6 +47,14 @@ enterChannelMembersUserList :: MH ()
 enterChannelMembersUserList = do
   cId <- use csCurrentChannelId
   enterUserListMode (ChannelMembers cId) (\u -> changeChannel (u^.uiName))
+
+-- | Show the user list overlay for showing users that are not members
+-- of the current channel for the purposes of adding them to the
+-- channel.
+enterChannelInviteUserList :: MH ()
+enterChannelInviteUserList = do
+  cId <- use csCurrentChannelId
+  enterUserListMode (ChannelNonMembers cId) (\u -> addUserToCurrentChannel (u^.uiName))
 
 -- | Interact with the currently-selected user (depending on how the
 -- overlay is configured).
@@ -84,8 +91,9 @@ resetUserListSearch = do
       session <- use (csResources.crSession)
       scope <- use (csUserListOverlay.userListSearchScope)
       myId <- use (csMe.to userId)
+      myTeamId <- use (csMyTeam.to teamId)
       doAsyncWith Preempt $ do
-          results <- removeSelf myId <$> fetchInitialResults scope session searchString
+          results <- removeSelf myId <$> fetchInitialResults myTeamId scope session searchString
           return $ do
               let lst = listFromUserSearchResults results
               csUserListOverlay.userListSearchResults .= lst
@@ -171,8 +179,9 @@ prefetchNextPage = do
           session <- use (csResources.crSession)
           scope <- use (csUserListOverlay.userListSearchScope)
           myId <- use (csMe.to userId)
+          myTeamId <- use (csMyTeam.to teamId)
           doAsyncWith Preempt $ do
-              newChunk <- removeSelf myId <$> getUserSearchResultsPage pageNum scope session searchString
+              newChunk <- removeSelf myId <$> getUserSearchResultsPage pageNum myTeamId scope session searchString
               return $ do
                   -- Because we only ever append, this is safe to do
                   -- w.r.t. the selected index of the list. If we ever
@@ -195,24 +204,28 @@ userListPageSize = 10
 
 -- | Perform an initial request for search results in the specified
 -- scope.
-fetchInitialResults :: UserSearchScope -> Session -> T.Text -> IO (Vec.Vector UserInfo)
+fetchInitialResults :: TeamId -> UserSearchScope -> Session -> T.Text -> IO (Vec.Vector UserInfo)
 fetchInitialResults = getUserSearchResultsPage 0
 
 searchResultsChunkSize :: Int
 searchResultsChunkSize = 40
 
-getUserSearchResultsPage :: Int -> UserSearchScope -> Session -> T.Text -> IO (Vec.Vector UserInfo)
-getUserSearchResultsPage pageNum scope s searchString = do
-    let chanScope = case scope of
-            ChannelMembers cId -> Just cId
-            AllUsers -> Nothing
-
+getUserSearchResultsPage :: Int -> TeamId -> UserSearchScope -> Session -> T.Text -> IO (Vec.Vector UserInfo)
+getUserSearchResultsPage pageNum myTeamId scope s searchString = do
     users <- case T.null searchString of
         True -> do
             let query = MM.defaultUserQuery
                   { MM.userQueryPage = Just pageNum
                   , MM.userQueryPerPage = Just searchResultsChunkSize
-                  , MM.userQueryInChannel = chanScope
+                  , MM.userQueryInChannel = case scope of
+                      ChannelMembers cId -> Just cId
+                      _                  -> Nothing
+                  , MM.userQueryNotInChannel = case scope of
+                      ChannelNonMembers cId -> Just cId
+                      _                     -> Nothing
+                  , MM.userQueryInTeam = case scope of
+                      ChannelNonMembers _ -> Just myTeamId
+                      _                   -> Nothing
                   }
             MM.mmGetUsers query s
         False -> do
@@ -221,10 +234,14 @@ getUserSearchResultsPage pageNum scope s searchString = do
                                    , userSearchWithoutTeam = False
                                    , userSearchInChannelId = case scope of
                                        ChannelMembers cId -> Just cId
-                                       AllUsers           -> Nothing
+                                       _                  -> Nothing
                                    , userSearchNotInTeamId = Nothing
-                                   , userSearchNotInChannelId = Nothing -- TODO: use this for /add-user
-                                   , userSearchTeamId = Nothing -- TODO: when should we omit or provide this?
+                                   , userSearchNotInChannelId = case scope of
+                                       ChannelNonMembers cId -> Just cId
+                                       _                     -> Nothing
+                                   , userSearchTeamId = case scope of
+                                       ChannelNonMembers _ -> Just myTeamId
+                                       _                   -> Nothing
                                    }
             MM.mmSearchUsers query s
 
