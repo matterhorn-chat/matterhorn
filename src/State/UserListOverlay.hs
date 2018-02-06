@@ -3,6 +3,7 @@ module State.UserListOverlay
   , resetUserListSearch
   , exitUserListMode
 
+  , userListActivateCurrent
   , userListSelectDown
   , userListSelectUp
   , userListPageDown
@@ -41,21 +42,35 @@ import qualified Brick.Widgets.Edit as E
 import Types
 import Types.Users
 import State.Common
+import State (changeChannel)
 
 -- | Show the user list overlay for searching/showing members of the
 -- current channel.
 enterChannelMembersUserList :: MH ()
 enterChannelMembersUserList = do
   cId <- use csCurrentChannelId
-  enterUserListMode (ChannelMembers cId)
+  enterUserListMode (ChannelMembers cId) (\u -> changeChannel (u^.uiName))
+
+-- | Interact with the currently-selected user (depending on how the
+-- overlay is configured).
+userListActivateCurrent :: MH ()
+userListActivateCurrent = do
+  mItem <- L.listSelectedElement <$> use (csUserListOverlay.userListSearchResults)
+  case mItem of
+      Nothing -> return ()
+      Just (_, user) -> do
+          handler <- use (csUserListOverlay.userListEnterHandler)
+          setMode Main
+          handler user
 
 -- | Show the user list overlay with the given search scope, and issue a
 -- request to gather the first search results.
-enterUserListMode :: UserSearchScope -> MH ()
-enterUserListMode scope = do
+enterUserListMode :: UserSearchScope -> (UserInfo -> MH ()) -> MH ()
+enterUserListMode scope enterHandler = do
   csUserListOverlay.userListSearchScope .= scope
   csUserListOverlay.userListSelected .= Nothing
   csUserListOverlay.userListSearchInput.E.editContentsL %= Z.clearZipper
+  csUserListOverlay.userListEnterHandler .= enterHandler
   setMode UserListOverlay
   resetUserListSearch
 
@@ -94,6 +109,7 @@ exitUserListMode :: MH ()
 exitUserListMode = do
   csUserListOverlay.userListSearchResults .= listFromUserSearchResults mempty
   csUserListOverlay.userListSelected .= Nothing
+  csUserListOverlay.userListEnterHandler .= (const $ return ())
   setMode Main
 
 -- | Move the selection up in the user list overlay by one user.

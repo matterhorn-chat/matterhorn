@@ -111,6 +111,7 @@ module Types
   , userListSearching
   , userListRequestingMore
   , userListHasAllResults
+  , userListEnterHandler
 
   , listFromUserSearchResults
 
@@ -561,19 +562,26 @@ newState (StartupStateInfo rs i u m tz hist sp) = ChatState
   , _csJoinChannelList             = Nothing
   , _csMessageSelect               = MessageSelectState Nothing
   , _csPostListOverlay             = PostListOverlayState mempty Nothing
-  , _csUserListOverlay             =
-      UserListOverlayState { _userListSearchResults = listFromUserSearchResults mempty
-                           , _userListSelected    = Nothing
-                           , _userListSearchInput = editor UserListSearchInput (Just 1) ""
-                           , _userListSearchScope = AllUsers
-                           , _userListSearching = False
-                           , _userListRequestingMore = False
-                           , _userListHasAllResults = False
-                           }
+  , _csUserListOverlay             = nullUserListOverlayState
   }
 
+nullUserListOverlayState :: UserListOverlayState
+nullUserListOverlayState =
+    UserListOverlayState { _userListSearchResults = listFromUserSearchResults mempty
+                         , _userListSelected    = Nothing
+                         , _userListSearchInput = editor UserListSearchInput (Just 1) ""
+                         , _userListSearchScope = AllUsers
+                         , _userListSearching = False
+                         , _userListRequestingMore = False
+                         , _userListHasAllResults = False
+                         , _userListEnterHandler = const $ return ()
+                         }
+
 listFromUserSearchResults :: Vec.Vector UserInfo -> List Name UserInfo
-listFromUserSearchResults rs = list UserListSearchResults rs 2
+listFromUserSearchResults rs =
+    -- NB: The item height here needs to actually match the UI drawing
+    -- in Draw.UserListOverlay.
+    list UserListSearchResults rs 2
 
 type ChannelSelectMap = HM.HashMap T.Text ChannelSelectMatch
 
@@ -608,6 +616,7 @@ data UserListOverlayState = UserListOverlayState
   , _userListSearching :: Bool
   , _userListRequestingMore :: Bool
   , _userListHasAllResults :: Bool
+  , _userListEnterHandler :: UserInfo -> MH ()
   }
 
 data UserSearchScope =

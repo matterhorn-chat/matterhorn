@@ -72,6 +72,9 @@ data KeyEvent
   | SearchSelectUpEvent
   | SearchSelectDownEvent
 
+  -- E.g. Pressing enter on an item in a list to do something with it
+  | ActivateListItemEvent
+
   | FlagMessageEvent
   | YankMessageEvent
   | DeleteMessageEvent
@@ -114,6 +117,8 @@ allEvents =
 
   , SelectUpEvent
   , SelectDownEvent
+
+  , ActivateListItemEvent
 
   , SearchSelectUpEvent
   , SearchSelectDownEvent
@@ -296,6 +301,8 @@ keyEventName ev = case ev of
 
   SearchSelectUpEvent   -> "search-select-up"
   SearchSelectDownEvent -> "search-select-down"
+
+  ActivateListItemEvent -> "activate-list-item"
 
   FlagMessageEvent   -> "flag-message"
   YankMessageEvent   -> "yank-message"

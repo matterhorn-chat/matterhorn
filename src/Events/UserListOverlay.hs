@@ -31,4 +31,5 @@ userListOverlayKeybindings = mkKeybindings
   , mkKb SearchSelectDownEvent "Select the next user" userListSelectDown
   , mkKb PageDownEvent "Page down in the user list" userListPageDown
   , mkKb PageUpEvent "Page up in the user list" userListPageUp
+  , mkKb ActivateListItemEvent "Interact with the selected user" userListActivateCurrent
   ]
