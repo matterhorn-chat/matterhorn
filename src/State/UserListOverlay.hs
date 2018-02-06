@@ -19,8 +19,6 @@ where
 --   is given no args)
 -- * implement UI for DMing new users using this module (need new
 --   command for this, and also maybe /focus with no args)
--- * implement Enter keypress handler, invoke from
---   onEventUserListOverlay (e.g. /add-user invites, /focus chats, etc.)
 -- * try out single-line, multi-column listing for results
 
 import Control.Monad (when)
