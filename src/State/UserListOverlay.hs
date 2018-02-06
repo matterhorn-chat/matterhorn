@@ -1,6 +1,7 @@
 module State.UserListOverlay
   ( enterChannelMembersUserList
   , enterChannelInviteUserList
+  , enterDMSearchUserList
   , resetUserListSearch
   , exitUserListMode
 
@@ -55,6 +56,12 @@ enterChannelInviteUserList :: MH ()
 enterChannelInviteUserList = do
   cId <- use csCurrentChannelId
   enterUserListMode (ChannelNonMembers cId) (\u -> addUserToCurrentChannel (u^.uiName))
+
+-- | Show the user list overlay for showing all users for the purpose of
+-- starting a direct message channel with another user.
+enterDMSearchUserList :: MH ()
+enterDMSearchUserList = do
+  enterUserListMode AllUsers (\u -> changeChannel (u^.uiName))
 
 -- | Interact with the currently-selected user (depending on how the
 -- overlay is configured).

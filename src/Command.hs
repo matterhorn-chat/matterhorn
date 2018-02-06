@@ -90,6 +90,9 @@ commandList =
   , Cmd "add-user" "Search for a user to add to the current channel"
     NoArg $ \ () ->
         enterChannelInviteUserList
+  , Cmd "msg" "Chat with a user privately"
+    NoArg $ \ () ->
+        enterDMSearchUserList
   , Cmd "add-user" "Add a user to the current channel"
     (TokenArg "username" NoArg) $ \ (uname, ()) ->
         addUserToCurrentChannel uname
