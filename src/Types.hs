@@ -195,7 +195,6 @@ import           Control.Concurrent.MVar (MVar)
 import           Control.Exception (SomeException)
 import qualified Control.Monad.State as St
 import           Control.Monad.State (gets)
-import           Control.Monad (when)
 import qualified Data.Foldable as F
 import qualified Data.Sequence as Seq
 import qualified Data.Vector as Vec

@@ -41,7 +41,7 @@ import State (changeChannel, addUserToCurrentChannel)
 enterChannelMembersUserList :: MH ()
 enterChannelMembersUserList = do
   cId <- use csCurrentChannelId
-  myId <- use (csMe.to userId)
+  myId <- gets myUserId
   enterUserListMode (ChannelMembers cId)
     (\u -> case u^.uiId /= myId of
       True -> changeChannel (u^.uiName) >> return True
@@ -54,7 +54,7 @@ enterChannelMembersUserList = do
 enterChannelInviteUserList :: MH ()
 enterChannelInviteUserList = do
   cId <- use csCurrentChannelId
-  myId <- use (csMe.to userId)
+  myId <- gets myUserId
   enterUserListMode (ChannelNonMembers cId)
     (\u -> case u^.uiId /= myId of
       True -> addUserToCurrentChannel (u^.uiName) >> return True
@@ -65,7 +65,7 @@ enterChannelInviteUserList = do
 -- starting a direct message channel with another user.
 enterDMSearchUserList :: MH ()
 enterDMSearchUserList = do
-  myId <- use (csMe.to userId)
+  myId <- gets myUserId
   enterUserListMode AllUsers
     (\u -> case u^.uiId /= myId of
       True -> changeChannel (u^.uiName) >> return True
@@ -106,11 +106,11 @@ resetUserListSearch = do
       csUserListOverlay.userListSearching .= True
       csUserListOverlay.userListHasAllResults .= False
       csUserListOverlay.userListSearchResults .= listFromUserSearchResults mempty
-      session <- use (csResources.crSession)
+      session <- getSession
       scope <- use (csUserListOverlay.userListSearchScope)
-      myTeamId <- use (csMyTeam.to teamId)
+      myTId <- gets myTeamId
       doAsyncWith Preempt $ do
-          results <- fetchInitialResults myTeamId scope session searchString
+          results <- fetchInitialResults myTId scope session searchString
           return $ do
               let lst = listFromUserSearchResults results
               csUserListOverlay.userListSearchResults .= lst
@@ -191,11 +191,11 @@ prefetchNextPage = do
       let pageNum = numResults `div` searchResultsChunkSize
 
       csUserListOverlay.userListRequestingMore .= True
-      session <- use (csResources.crSession)
+      session <- getSession
       scope <- use (csUserListOverlay.userListSearchScope)
-      myTeamId <- use (csMyTeam.to teamId)
+      myTId <- gets myTeamId
       doAsyncWith Preempt $ do
-          newChunk <- getUserSearchResultsPage pageNum myTeamId scope session searchString
+          newChunk <- getUserSearchResultsPage pageNum myTId scope session searchString
           return $ do
               -- Because we only ever append, this is safe to do w.r.t.
               -- the selected index of the list. If we ever prepended or
@@ -232,7 +232,7 @@ getUserSearchResultsPage :: Int
                          -> T.Text
                          -- ^ The search string
                          -> IO (Vec.Vector UserInfo)
-getUserSearchResultsPage pageNum myTeamId scope s searchString = do
+getUserSearchResultsPage pageNum myTId scope s searchString = do
     users <- case T.null searchString of
         True -> do
             let query = MM.defaultUserQuery
@@ -245,7 +245,7 @@ getUserSearchResultsPage pageNum myTeamId scope s searchString = do
                       ChannelNonMembers cId -> Just cId
                       _                     -> Nothing
                   , MM.userQueryInTeam = case scope of
-                      ChannelNonMembers _ -> Just myTeamId
+                      ChannelNonMembers _ -> Just myTId
                       _                   -> Nothing
                   }
             MM.mmGetUsers query s
@@ -264,7 +264,7 @@ getUserSearchResultsPage pageNum myTeamId scope s searchString = do
                                        ChannelNonMembers cId -> Just cId
                                        _                     -> Nothing
                                    , userSearchTeamId = case scope of
-                                       ChannelNonMembers _ -> Just myTeamId
+                                       ChannelNonMembers _ -> Just myTId
                                        _                   -> Nothing
                                    }
             MM.mmSearchUsers query s
