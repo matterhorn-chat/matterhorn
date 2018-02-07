@@ -95,6 +95,7 @@ drawUsersBox st =
       renderedUserList = L.renderList renderUser True (st^.userListSearchResults)
       numSearchResults = F.length $ st^.userListSearchResults.L.listElementsL
 
+      sanitize = T.replace "\t" ""
       renderUser foc ui =
           (if foc then forceAttr L.listSelectedFocusedAttr else id) $
           vLimit 2 $
@@ -108,7 +109,8 @@ drawUsersBox st =
                       )
                , hBox [ str "  "
                       , if (not (T.null (ui^.uiFirstName)) || not (T.null (ui^.uiLastName)))
-                        then txt (ui^.uiFirstName <> " " <> ui^.uiLastName <> " ")
+                        then padRight (Pad 1) $
+                             txt $ sanitize (ui^.uiFirstName <> " " <> ui^.uiLastName)
                         else emptyWidget
                       , if (T.null $ ui^.uiEmail)
                         then emptyWidget
