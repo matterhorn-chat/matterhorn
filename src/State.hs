@@ -972,7 +972,6 @@ addNewPostedMessage p =
 
 
 addObtainedMessages :: ChannelId -> Int -> Posts -> MH PostProcessMessageAdd
-addObtainedMessages _ _ posts | null (F.toList (posts^.postsOrderL)) = return NoAction
 addObtainedMessages cId reqCnt posts = do
     -- Adding a block of server-provided messages, which are known to
     -- be contiguous.  Locally this may overlap with some UnknownGap
