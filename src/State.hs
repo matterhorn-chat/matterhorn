@@ -1370,17 +1370,22 @@ addMessageToState newPostData = do
               let chType = nc^.channelTypeL
                   pref = showGroupChannelPref (postChannelId new) (st^.csMe.userIdL)
 
-              return $ do
-                  -- If the incoming message is for a group channel we
-                  -- don't know about, that's because it was previously
-                  -- hidden by the user. We need to show it, and to do
-                  -- that we need to update the server-side preference.
-                  -- (That, in turn, triggers a channel refresh.)
-                  if chType == Group
-                      then applyPreferenceChange pref
-                      else refreshChannel nc member
+              -- If the channel has been archived, we don't want to post
+              -- this message or add the channel to the state.
+              case channelDeleted nc of
+                  True -> return $ return ()
+                  False -> return $ do
+                      -- If the incoming message is for a group channel
+                      -- we don't know about, that's because it was
+                      -- previously hidden by the user. We need to
+                      -- show it, and to do that we need to update
+                      -- the server-side preference. (That, in turn,
+                      -- triggers a channel refresh.)
+                      if chType == Group
+                          then applyPreferenceChange pref
+                          else refreshChannel nc member
 
-                  addMessageToState newPostData >>= postProcessMessageAdd
+                      addMessageToState newPostData >>= postProcessMessageAdd
 
           return NoAction
       Just _ -> do

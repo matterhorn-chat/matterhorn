@@ -40,6 +40,7 @@ module Types.Channels
   , canLeaveChannel
   , preferredChannelName
   , isTownSquare
+  , channelDeleted
   )
 where
 
@@ -302,3 +303,6 @@ updateNewMessageIndicator m =
 -- changed its display name.
 isTownSquare :: Channel -> Bool
 isTownSquare c = c^.channelNameL == "town-square"
+
+channelDeleted :: Channel -> Bool
+channelDeleted c = c^.channelDeleteAtL > c^.channelCreateAtL
