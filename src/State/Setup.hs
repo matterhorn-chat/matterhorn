@@ -231,7 +231,17 @@ initializeState cr myTeam me = do
   let names = mkNames me mempty chans
       chanIds = getChannelIdsInOrder names
       chanZip = Z.fromList chanIds
-      st = newState cr chanZip me myTeam tz hist spResult names
+      startupState =
+          StartupStateInfo { startupStateResources      = cr
+                           , startupStateChannelZipper  = chanZip
+                           , startupStateConnectedUser  = me
+                           , startupStateTeam           = myTeam
+                           , startupStateTimeZone       = tz
+                           , startupStateInitialHistory = hist
+                           , startupStateSpellChecker   = spResult
+                           , startupStateNames          = names
+                           }
+      st = newState startupState
              & csChannels %~ flip (foldr (uncurry addChannel)) msgs
 
   loadFlaggedMessages (cr^.crPreferences) st

@@ -4,7 +4,6 @@ import Prelude ()
 import Prelude.Compat
 
 import qualified Graphics.Vty as Vty
-import Lens.Micro.Platform
 
 import Types
 import State
@@ -15,5 +14,5 @@ onEventLeaveChannelConfirm (Vty.EvKey k []) = do
         Vty.KChar c | c `elem` ("yY"::String) ->
             leaveCurrentChannel
         _ -> return ()
-    csMode .= Main
+    setMode Main
 onEventLeaveChannelConfirm _ = return ()

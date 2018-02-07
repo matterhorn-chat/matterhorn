@@ -35,6 +35,7 @@ import           Data.Semigroup ((<>), Max(..))
 import qualified Data.HashMap.Strict as HM
 import           Data.List (sort)
 import           Data.Maybe (listToMaybe, maybeToList)
+import qualified Data.Set as Set
 import qualified Data.Text as T
 import           Data.Time (UTCTime)
 import           Lens.Micro.Platform

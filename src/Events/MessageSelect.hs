@@ -6,7 +6,6 @@ import Prelude.Compat
 import Data.Monoid ((<>))
 import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
-import Lens.Micro.Platform
 
 import Types
 import Events.Keybindings
@@ -22,14 +21,14 @@ onEventMessageSelect =
 onEventMessageSelectDeleteConfirm :: Vty.Event -> MH ()
 onEventMessageSelectDeleteConfirm (Vty.EvKey (Vty.KChar 'y') []) = do
     deleteSelectedMessage
-    csMode .= Main
+    setMode Main
 onEventMessageSelectDeleteConfirm _ =
-    csMode .= Main
+    setMode Main
 
 messageSelectKeybindings :: KeyConfig -> [Keybinding]
 messageSelectKeybindings = mkKeybindings
     [ mkKb CancelEvent "Cancel message selection" $
-        csMode .= Main
+        setMode Main
 
     , mkKb SelectUpEvent "Select the previous message" messageSelectUp
     , mkKb SelectDownEvent "Select the next message" messageSelectDown

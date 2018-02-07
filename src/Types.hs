@@ -12,6 +12,7 @@ module Types
   , MHEvent(..)
   , Name(..)
   , ChannelSelectMatch(..)
+  , StartupStateInfo(..)
   , ConnectionInfo(..)
   , ciHostname
   , ciPort
@@ -60,7 +61,7 @@ module Types
   , csPostMap
   , csRecentChannel
   , csPostListOverlay
-  , csMode
+  , csMyTeam
   , csMessageSelect
   , csJoinChannelList
   , csConnectionStatus
@@ -70,6 +71,10 @@ module Types
   , csChannelSelectState
   , csEditState
   , timeZone
+  , whenMode
+  , setMode
+  , setMode'
+  , appMode
 
   , ChatEditState
   , emptyEditState
@@ -175,6 +180,7 @@ import           Control.Concurrent.MVar (MVar)
 import           Control.Exception (SomeException)
 import qualified Control.Monad.State as St
 import           Control.Monad.State (gets)
+import           Control.Monad (when)
 import qualified Data.Foldable as F
 import qualified Data.Sequence as Seq
 import           Data.HashMap.Strict (HashMap)
@@ -185,10 +191,9 @@ import           Data.List (sort, partition, sortBy)
 import           Data.Maybe
 import           Data.Monoid
 import qualified Data.Set as Set
-import           Lens.Micro.Platform ( at, makeLenses, lens, (&), (^.), (%~), (.~), (^?!), (^?)
-                                     , (.=), (%=), _Just, Traversal', preuse, (^..), folded, to
-                                     , use
-                                     )
+import           Lens.Micro.Platform ( at, makeLenses, lens, (&), (^.), (%~), (.~), (^?!), (.=)
+                                     , (%=), (^?)
+                                     , use, _Just, Traversal', preuse, (^..), folded, to )
 import           Network.Mattermost (ConnectionData)
 import           Network.Mattermost.Exceptions
 import           Network.Mattermost.Lenses
@@ -533,16 +538,19 @@ data ChatState = ChatState
   , _csPostListOverlay             :: PostListOverlayState
   }
 
-newState :: ChatResources
-         -> Zipper ChannelId
-         -> User
-         -> Team
-         -> TimeZoneSeries
-         -> InputHistory
-         -> Maybe (Aspell, IO ())
-         -> MMNames
-         -> ChatState
-newState rs i u m tz hist sp ns = ChatState
+data StartupStateInfo =
+    StartupStateInfo { startupStateResources      :: ChatResources
+                     , startupStateChannelZipper  :: Zipper ChannelId
+                     , startupStateConnectedUser  :: User
+                     , startupStateTeam           :: Team
+                     , startupStateTimeZone       :: TimeZoneSeries
+                     , startupStateInitialHistory :: InputHistory
+                     , startupStateSpellChecker   :: Maybe (Aspell, IO ())
+                     , startupStateNames          :: MMNames
+                     }
+
+newState :: StartupStateInfo -> ChatState
+newState (StartupStateInfo rs i u m tz hist sp ns) = ChatState
   { _csResources                   = rs
   , _csFocus                       = i
   , _csMe                          = u
@@ -691,6 +699,20 @@ getSession = use (csResources.crSession)
 
 getResourceSession :: ChatResources -> Session
 getResourceSession = _crSession
+
+whenMode :: Mode -> MH () -> MH ()
+whenMode m act = do
+    curMode <- use csMode
+    when (curMode == m) act
+
+setMode :: Mode -> MH ()
+setMode = (csMode .=)
+
+setMode' :: Mode -> ChatState -> ChatState
+setMode' m st = st & csMode .~ m
+
+appMode :: ChatState -> Mode
+appMode = _csMode
 
 resetSpellCheckTimer :: ChatEditState -> IO ()
 resetSpellCheckTimer s =
