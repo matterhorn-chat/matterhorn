@@ -9,6 +9,7 @@ import           Prelude.Compat
 import           Control.Monad.Trans.Reader (withReaderT)
 import qualified Data.Foldable as F
 import qualified Data.Text as T
+import           Data.Maybe (catMaybes)
 import           Data.Monoid ((<>))
 import qualified Graphics.Vty as V
 import           Lens.Micro.Platform
@@ -93,27 +94,24 @@ drawUsersBox st =
       renderedUserList = L.renderList renderUser True (st^.userListSearchResults)
       numSearchResults = F.length $ st^.userListSearchResults.L.listElementsL
 
-      sanitize = T.replace "\t" ""
+      sanitize = T.strip . T.replace "\t" " "
+      usernameWidth = 20
       renderUser foc ui =
           (if foc then forceAttr L.listSelectedFocusedAttr else id) $
           vLimit 2 $
-          vBox [ hBox ( colorUsername (ui^.uiName) (T.singleton $ userSigilFromInfo ui)
-                      : str " "
-                      : colorUsername (ui^.uiName) (ui^.uiName)
-                      : case ui^.uiNickName of
-                          Just n | n /= (ui^.uiName) ->
-                                   [txt (" (" <> n <> ")")]
-                          _ -> []
-                      )
-               , hBox [ str "    "
-                      , if (not (T.null (ui^.uiFirstName)) || not (T.null (ui^.uiLastName)))
-                        then padRight (Pad 1) $
-                             txt $ sanitize (ui^.uiFirstName <> " " <> ui^.uiLastName)
-                        else emptyWidget
-                      , if (T.null $ ui^.uiEmail)
-                        then emptyWidget
-                        else modifyDefAttr (`V.withURL` ("mailto:" <> ui^.uiEmail)) $
-                             withDefAttr urlAttr (txt ("<" <> ui^.uiEmail <> ">"))
-                      ]
-               ] <+>
-          fill ' '
+          padRight Max $
+          hBox $ (colorUsername (ui^.uiName) (T.singleton $ userSigilFromInfo ui))
+                 : (hLimit usernameWidth $ padRight Max $ colorUsername (ui^.uiName) (ui^.uiName))
+                 : extras
+          where
+              extras = padRight (Pad 1) <$> catMaybes [mFullname, mNickname, mEmail]
+              mFullname = if (not (T.null (ui^.uiFirstName)) || not (T.null (ui^.uiLastName)))
+                          then Just $ txt $ (sanitize $ ui^.uiFirstName) <> " " <> (sanitize $ ui^.uiLastName)
+                          else Nothing
+              mNickname = case ui^.uiNickName of
+                            Just n | n /= (ui^.uiName) -> Just $ txt $ "(" <> n <> ")"
+                            _ -> Nothing
+              mEmail = if (T.null $ ui^.uiEmail)
+                       then Nothing
+                       else Just $ modifyDefAttr (`V.withURL` ("mailto:" <> ui^.uiEmail)) $
+                                   withDefAttr urlAttr (txt ("<" <> ui^.uiEmail <> ">"))

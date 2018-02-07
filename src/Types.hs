@@ -581,7 +581,7 @@ listFromUserSearchResults :: Vec.Vector UserInfo -> List Name UserInfo
 listFromUserSearchResults rs =
     -- NB: The item height here needs to actually match the UI drawing
     -- in Draw.UserListOverlay.
-    list UserListSearchResults rs 2
+    list UserListSearchResults rs 1
 
 type ChannelSelectMap = HM.HashMap T.Text ChannelSelectMatch
 

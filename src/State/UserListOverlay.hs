@@ -15,10 +15,6 @@ module State.UserListOverlay
   )
 where
 
--- TODO
---
--- * try out single-line, multi-column listing for results
-
 import Control.Monad (when)
 import Data.Monoid ((<>))
 import qualified Data.Vector as Vec
