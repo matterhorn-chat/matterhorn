@@ -159,14 +159,16 @@ userListPageDown = userListMove (L.listMoveBy userListPageSize)
 userListMove :: (L.List Name UserInfo -> L.List Name UserInfo) -> MH ()
 userListMove f = do
   csUserListOverlay.userListSearchResults %= f
-  prefetchNextPage
+  maybePrefetchNextChunk
 
 -- | We'll attempt to prefetch the next page of results if the cursor
 -- gets within this many positions of the last result we have.
 selectionPrefetchDelta :: Int
 selectionPrefetchDelta = 10
 
--- Prefetch next page if:
+-- Prefetch the next chunk of user list search results if all of the
+-- following are true:
+--
 --  * the search string is empty (because we can't paginate searches,
 --    just fetches for all users), and
 --  * cursor is within selectionPrefetchDelta positions of the end of
@@ -174,8 +176,8 @@ selectionPrefetchDelta = 10
 --  * the length of the current results list is exactly a multiple of
 --    fetching chunk size (thus indicating a very high probability that
 --    there are more results to be fetched).
-prefetchNextPage :: MH ()
-prefetchNextPage = do
+maybePrefetchNextChunk :: MH ()
+maybePrefetchNextChunk = do
   gettingMore <- use (csUserListOverlay.userListRequestingMore)
   hasAll <- use (csUserListOverlay.userListHasAllResults)
   searchString <- userListSearchString
