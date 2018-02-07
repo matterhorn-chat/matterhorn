@@ -107,7 +107,7 @@ drawUsersBox st =
                                    [txt (" (" <> n <> ")")]
                           _ -> []
                       )
-               , hBox [ str "  "
+               , hBox [ str "    "
                       , if (not (T.null (ui^.uiFirstName)) || not (T.null (ui^.uiLastName)))
                         then padRight (Pad 1) $
                              txt $ sanitize (ui^.uiFirstName <> " " <> ui^.uiLastName)
