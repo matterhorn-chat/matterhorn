@@ -140,28 +140,25 @@ exitUserListMode = do
 
 -- | Move the selection up in the user list overlay by one user.
 userListSelectUp :: MH ()
-userListSelectUp = do
-  csUserListOverlay.userListSearchResults %= L.listMoveUp
-  prefetchNextPage
+userListSelectUp = userListMove L.listMoveUp
 
 -- | Move the selection down in the user list overlay by one user.
 userListSelectDown :: MH ()
-userListSelectDown = do
-  csUserListOverlay.userListSearchResults %= L.listMoveDown
-  prefetchNextPage
+userListSelectDown = userListMove L.listMoveDown
 
 -- | Move the selection up in the user list overlay by a page of users
 -- (userListPageSize).
 userListPageUp :: MH ()
-userListPageUp = do
-  csUserListOverlay.userListSearchResults %= L.listMoveBy (-1 * userListPageSize)
-  prefetchNextPage
+userListPageUp = userListMove (L.listMoveBy (-1 * userListPageSize))
 
 -- | Move the selection down in the user list overlay by a page of users
 -- (userListPageSize).
 userListPageDown :: MH ()
-userListPageDown = do
-  csUserListOverlay.userListSearchResults %= L.listMoveBy userListPageSize
+userListPageDown = userListMove (L.listMoveBy userListPageSize)
+
+userListMove :: (L.List Name UserInfo -> L.List Name UserInfo) -> MH ()
+userListMove f = do
+  csUserListOverlay.userListSearchResults %= f
   prefetchNextPage
 
 -- | We'll attempt to prefetch the next page of results if the cursor
