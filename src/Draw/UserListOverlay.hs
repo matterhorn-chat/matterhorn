@@ -58,9 +58,7 @@ drawUsersBox st =
               let msg = case st^.userListRequestingMore of
                           True -> "Fetching more results..."
                           False -> case st^.userListHasAllResults of
-                              True -> "Showing all " <>
-                                       show numSearchResults <>
-                                       " result" <> plural numSearchResults
+                              True -> "Showing all results (" <> show numSearchResults <> ")"
                               False -> "Showing first " <>
                                        show numSearchResults <>
                                        " result" <> plural numSearchResults
