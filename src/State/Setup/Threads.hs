@@ -17,11 +17,10 @@ import           Control.Concurrent (threadDelay, forkIO, MVar, putMVar, tryTake
 import qualified Control.Concurrent.STM as STM
 import           Control.Concurrent.STM.Delay
 import           Control.Exception (SomeException, try, finally)
-import           Control.Monad (forever, when, void)
+import           Control.Monad (forever, when, void, forM_)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.List (isInfixOf)
 import qualified Data.Foldable as F
-import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Maybe (catMaybes)
@@ -55,10 +54,8 @@ updateUserStatuses usersVar lock session = do
       Just () | not (F.null users) -> do
           statuses <- mmGetUserStatusByIds users session `finally` putMVar lock ()
           return $ do
-            let statusMap = HM.fromList [ (statusUserId s, statusStatus s) | s <- F.toList statuses ]
-                setStatus u = u & uiStatus .~ (newsts u)
-                newsts u = (statusMap^.at(u^.uiId) & _Just %~ statusFromText) ^. non Offline
-            csUsers . mapped %= setStatus
+              forM_ statuses $ \s ->
+                  setUserStatus (statusUserId s) (statusStatus s)
       Just () -> putMVar lock () >> return (return ())
       _ -> return $ return ()
 

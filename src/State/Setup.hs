@@ -15,7 +15,6 @@ import           Control.Exception (catch)
 import           Control.Monad (forM, when)
 import           Data.Monoid ((<>))
 import qualified Data.Foldable as F
-import qualified Data.HashMap.Strict as HM
 import           Data.Maybe (listToMaybe, fromMaybe, fromJust, isNothing)
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
@@ -104,7 +103,7 @@ setupState logFile initialConfig = do
                 interactiveGatherCredentials cInfo (Just e) >>=
                     loginLoop
 
-  (session, myUser, cd, config) <- loginLoop connInfo
+  (session, me, cd, config) <- loginLoop connInfo
 
   teams <- mmGetUsersTeams UserMe session
   when (Seq.null teams) $ do
@@ -162,13 +161,13 @@ setupState logFile initialConfig = do
   let cr = ChatResources session cd requestChan eventChan
              slc wac (themeToAttrMap custTheme) userStatusLock userIdSet config mempty prefs
 
-  initializeState cr myTeam myUser
+  initializeState cr myTeam me
 
 initializeState :: ChatResources -> Team -> User -> IO ChatState
-initializeState cr myTeam myUser = do
-  let session = cr^.crSession
+initializeState cr myTeam me = do
+  let session = getResourceSession cr
       requestChan = cr^.crRequestQueue
-      myTeamId = getId myTeam
+      myTId = getId myTeam
 
   -- Create a predicate to find the last selected channel by reading the
   -- run state file. If unable to read or decode or validate the file, this
@@ -176,7 +175,7 @@ initializeState cr myTeam myUser = do
   isLastSelectedChannel <- do
     result <- readLastRunState $ teamId myTeam
     case result of
-      Right lrs | isValidLastRunState cr myUser lrs -> return $ \c ->
+      Right lrs | isValidLastRunState cr me lrs -> return $ \c ->
            channelId c == lrs^.lrsSelectedChannelId
       _ -> return isTownSquare
 
@@ -186,7 +185,7 @@ initializeState cr myTeam myUser = do
   -- We first try to find a channel matching with the last selected channel ID,
   -- failing which we look for the Town Square channel by name.
   -- This is not entirely correct since the Town Square channel can be renamed!
-  userChans <- mmGetChannelsForUser UserMe myTeamId session
+  userChans <- mmGetChannelsForUser UserMe myTId session
   let lastSelectedChans = Seq.filter isLastSelectedChannel userChans
       chans = if Seq.null lastSelectedChans
                 then Seq.filter isTownSquare userChans
@@ -229,22 +228,21 @@ initializeState cr myTeam myUser = do
 
   -- End thread startup ----------------------------------------------
 
-  let chanNames = mkChanNames myUser mempty chans
-      chanIds = [ (chanNames ^. cnToChanId) HM.! i
-                | i <- chanNames ^. cnChans ]
+  let names = mkNames me mempty chans
+      chanIds = getChannelIdsInOrder names
       chanZip = Z.fromList chanIds
       startupState =
           StartupStateInfo { startupStateResources      = cr
                            , startupStateChannelZipper  = chanZip
-                           , startupStateConnectedUser  = myUser
+                           , startupStateConnectedUser  = me
                            , startupStateTeam           = myTeam
                            , startupStateTimeZone       = tz
                            , startupStateInitialHistory = hist
                            , startupStateSpellChecker   = spResult
+                           , startupStateNames          = names
                            }
       st = newState startupState
              & csChannels %~ flip (foldr (uncurry addChannel)) msgs
-             & csNames .~ chanNames
 
   loadFlaggedMessages (cr^.crPreferences) st
 

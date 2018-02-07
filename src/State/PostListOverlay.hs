@@ -29,7 +29,7 @@ exitPostListMode = do
 -- | Create a PostListOverlay with flagged messages from the server.
 enterFlaggedPostListMode :: MH ()
 enterFlaggedPostListMode = do
-  session <- use (csResources.crSession)
+  session <- getSession
   doAsyncWith Preempt $ do
     posts <- mmGetListOfFlaggedPosts UserMe defaultFlaggedPostsQuery session
     return $ do
@@ -40,8 +40,8 @@ enterFlaggedPostListMode = do
 -- server.
 enterSearchResultPostListMode :: Text -> MH ()
 enterSearchResultPostListMode terms = do
-  session <- use (csResources.crSession)
-  tId <- teamId <$> use csMyTeam
+  session <- getSession
+  tId <- gets myTeamId
   enterPostListMode (PostListSearch terms True) noMessages
   doAsyncWith Preempt $ do
     posts <- mmSearchForTeamPosts tId (SearchPosts terms False) session

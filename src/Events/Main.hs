@@ -17,7 +17,7 @@ import Lens.Micro.Platform
 
 import Types
 import Types.Channels (ccInfo, cdType, clearNewMessageIndicator, clearEditedThreshold)
-import Types.Users (uiDeleted, findUserById)
+import Types.Users (uiDeleted, uiName)
 import Events.Keybindings
 import State
 import State.PostListOverlay (enterFlaggedPostListMode)
@@ -176,26 +176,25 @@ handleInputSubmission = do
 tabComplete :: Completion.Direction -> MH ()
 tabComplete dir = do
   st <- use id
-  knownUsers <- use csUsers
+  allUIds <- gets allUserIds
+  allChanNames <- gets allChannelNames
 
-  let completableChannels = catMaybes (flip map (st^.csNames.cnChans) $ \cname -> do
+  let completableChannels = catMaybes (flip map allChanNames $ \cname -> do
           -- Only permit completion of channel names for non-Group channels
-          cId <- st^.csNames.cnToChanId.at cname
-          let cType = st^?csChannel(cId).ccInfo.cdType
-          case cType of
-              Just Group -> Nothing
-              _          -> Just cname
+          ch <- channelByName cname st
+          case ch^.ccInfo.cdType of
+              Group -> Nothing
+              _     -> Just cname
           )
 
-      completableUsers = catMaybes (flip map (st^.csNames.cnUsers) $ \uname -> do
+      completableUsers = catMaybes (flip map allUIds $ \uId -> do
           -- Only permit completion of user names for non-deleted users
-          uId <- st^.csNames.cnToUserId.at uname
-          case findUserById uId knownUsers of
+          case userById uId st of
               Nothing -> Nothing
               Just u ->
                   if u^.uiDeleted
                      then Nothing
-                     else Just uname
+                     else Just $ u^.uiName
           )
 
       priorities  = [] :: [T.Text]-- XXX: add recent completions to this
