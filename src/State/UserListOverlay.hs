@@ -45,7 +45,12 @@ import State (changeChannel, addUserToCurrentChannel)
 enterChannelMembersUserList :: MH ()
 enterChannelMembersUserList = do
   cId <- use csCurrentChannelId
-  enterUserListMode (ChannelMembers cId) (\u -> changeChannel (u^.uiName))
+  myId <- use (csMe.to userId)
+  enterUserListMode (ChannelMembers cId)
+    (\u -> case u^.uiId /= myId of
+      True -> changeChannel (u^.uiName) >> return True
+      False -> return False
+    )
 
 -- | Show the user list overlay for showing users that are not members
 -- of the current channel for the purpose of adding them to the
@@ -53,13 +58,23 @@ enterChannelMembersUserList = do
 enterChannelInviteUserList :: MH ()
 enterChannelInviteUserList = do
   cId <- use csCurrentChannelId
-  enterUserListMode (ChannelNonMembers cId) (\u -> addUserToCurrentChannel (u^.uiName))
+  myId <- use (csMe.to userId)
+  enterUserListMode (ChannelNonMembers cId)
+    (\u -> case u^.uiId /= myId of
+      True -> addUserToCurrentChannel (u^.uiName) >> return True
+      False -> return False
+    )
 
 -- | Show the user list overlay for showing all users for the purpose of
 -- starting a direct message channel with another user.
 enterDMSearchUserList :: MH ()
 enterDMSearchUserList = do
-  enterUserListMode AllUsers (\u -> changeChannel (u^.uiName))
+  myId <- use (csMe.to userId)
+  enterUserListMode AllUsers
+    (\u -> case u^.uiId /= myId of
+      True -> changeChannel (u^.uiName) >> return True
+      False -> return False
+    )
 
 -- | Interact with the currently-selected user (depending on how the
 -- overlay is configured).
@@ -70,12 +85,14 @@ userListActivateCurrent = do
       Nothing -> return ()
       Just (_, user) -> do
           handler <- use (csUserListOverlay.userListEnterHandler)
-          setMode Main
-          handler user
+          activated <- handler user
+          if activated
+             then setMode Main
+             else return ()
 
 -- | Show the user list overlay with the given search scope, and issue a
 -- request to gather the first search results.
-enterUserListMode :: UserSearchScope -> (UserInfo -> MH ()) -> MH ()
+enterUserListMode :: UserSearchScope -> (UserInfo -> MH Bool) -> MH ()
 enterUserListMode scope enterHandler = do
   csUserListOverlay.userListSearchScope .= scope
   csUserListOverlay.userListSelected .= Nothing
@@ -95,10 +112,9 @@ resetUserListSearch = do
       csUserListOverlay.userListSearchResults .= listFromUserSearchResults mempty
       session <- use (csResources.crSession)
       scope <- use (csUserListOverlay.userListSearchScope)
-      myId <- use (csMe.to userId)
       myTeamId <- use (csMyTeam.to teamId)
       doAsyncWith Preempt $ do
-          results <- fetchInitialResults myTeamId myId scope session searchString
+          results <- fetchInitialResults myTeamId scope session searchString
           return $ do
               let lst = listFromUserSearchResults results
               csUserListOverlay.userListSearchResults .= lst
@@ -121,7 +137,7 @@ exitUserListMode :: MH ()
 exitUserListMode = do
   csUserListOverlay.userListSearchResults .= listFromUserSearchResults mempty
   csUserListOverlay.userListSelected .= Nothing
-  csUserListOverlay.userListEnterHandler .= (const $ return ())
+  csUserListOverlay.userListEnterHandler .= (const $ return False)
   setMode Main
 
 -- | Move the selection up in the user list overlay by one user.
@@ -168,38 +184,34 @@ prefetchNextPage = do
   gettingMore <- use (csUserListOverlay.userListRequestingMore)
   hasAll <- use (csUserListOverlay.userListHasAllResults)
   searchString <- userListSearchString
-  when (not hasAll && T.null searchString && not gettingMore) $ do
-      numResults <- use (csUserListOverlay.userListSearchResults.to F.length)
-      curIdx <- use (csUserListOverlay.userListSearchResults.L.listSelectedL)
-      let chunkMultiple = numResults `mod` searchResultsChunkSize == 0
-          selectionNearEnd = case curIdx of
-            Nothing -> False
-            Just i -> numResults - (i + 1) < selectionPrefetchDelta
+  curIdx <- use (csUserListOverlay.userListSearchResults.L.listSelectedL)
+  numResults <- use (csUserListOverlay.userListSearchResults.to F.length)
 
-      when (selectionNearEnd && chunkMultiple) $ do
-          -- The page number should be the number of the *new* page to
-          -- fetch, which is (numResults / chunk size) exactly when
-          -- numResults % chunk size = 0.
-          let pageNum = numResults `div` searchResultsChunkSize
-          csUserListOverlay.userListRequestingMore .= True
-          session <- use (csResources.crSession)
-          scope <- use (csUserListOverlay.userListSearchScope)
-          myId <- use (csMe.to userId)
-          myTeamId <- use (csMyTeam.to teamId)
-          doAsyncWith Preempt $ do
-              newChunk <- getUserSearchResultsPage pageNum myTeamId myId scope session searchString
-              return $ do
-                  -- Because we only ever append, this is safe to do
-                  -- w.r.t. the selected index of the list. If we ever
-                  -- prepended or removed, we'd also need to manage the
-                  -- selection index to ensure it stays in bounds.
-                  csUserListOverlay.userListSearchResults.L.listElementsL %= (<> newChunk)
-                  csUserListOverlay.userListRequestingMore .= False
+  let selectionNearEnd = case curIdx of
+          Nothing -> False
+          Just i -> numResults - (i + 1) < selectionPrefetchDelta
 
-                  -- If we got fewer results than we asked for, then we
-                  -- have them all!
-                  csUserListOverlay.userListHasAllResults .=
-                      (length newChunk < searchResultsChunkSize)
+  when (not hasAll && T.null searchString && not gettingMore && selectionNearEnd) $ do
+      let pageNum = numResults `div` searchResultsChunkSize
+
+      csUserListOverlay.userListRequestingMore .= True
+      session <- use (csResources.crSession)
+      scope <- use (csUserListOverlay.userListSearchScope)
+      myTeamId <- use (csMyTeam.to teamId)
+      doAsyncWith Preempt $ do
+          newChunk <- getUserSearchResultsPage pageNum myTeamId scope session searchString
+          return $ do
+              -- Because we only ever append, this is safe to do w.r.t.
+              -- the selected index of the list. If we ever prepended or
+              -- removed, we'd also need to manage the selection index
+              -- to ensure it stays in bounds.
+              csUserListOverlay.userListSearchResults.L.listElementsL %= (<> newChunk)
+              csUserListOverlay.userListRequestingMore .= False
+
+              -- If we got fewer results than we asked for, then we have
+              -- them all!
+              csUserListOverlay.userListHasAllResults .=
+                  (length newChunk < searchResultsChunkSize)
 
 -- | The number of users in a "page" for cursor movement purposes.
 userListPageSize :: Int
@@ -207,7 +219,7 @@ userListPageSize = 10
 
 -- | Perform an initial request for search results in the specified
 -- scope.
-fetchInitialResults :: TeamId -> UserId -> UserSearchScope -> Session -> T.Text -> IO (Vec.Vector UserInfo)
+fetchInitialResults :: TeamId -> UserSearchScope -> Session -> T.Text -> IO (Vec.Vector UserInfo)
 fetchInitialResults = getUserSearchResultsPage 0
 
 searchResultsChunkSize :: Int
@@ -217,8 +229,6 @@ getUserSearchResultsPage :: Int
                          -- ^ The page number of results to fetch, starting at zero.
                          -> TeamId
                          -- ^ My team ID.
-                         -> UserId
-                         -- ^ My user ID (my own user entry will never appear in the results)
                          -> UserSearchScope
                          -- ^ The scope to search
                          -> Session
@@ -226,7 +236,7 @@ getUserSearchResultsPage :: Int
                          -> T.Text
                          -- ^ The search string
                          -> IO (Vec.Vector UserInfo)
-getUserSearchResultsPage pageNum myTeamId myId scope s searchString = do
+getUserSearchResultsPage pageNum myTeamId scope s searchString = do
     users <- case T.null searchString of
         True -> do
             let query = MM.defaultUserQuery
@@ -263,7 +273,7 @@ getUserSearchResultsPage pageNum myTeamId myId scope s searchString = do
                                    }
             MM.mmSearchUsers query s
 
-    let uList = filter ((/= myId) . userId) $ F.toList users
+    let uList = F.toList users
         uIds = userId <$> uList
 
     -- Now fetch status info for the users we got.

@@ -574,7 +574,7 @@ nullUserListOverlayState =
                          , _userListSearching = False
                          , _userListRequestingMore = False
                          , _userListHasAllResults = False
-                         , _userListEnterHandler = const $ return ()
+                         , _userListEnterHandler = const $ return False
                          }
 
 listFromUserSearchResults :: Vec.Vector UserInfo -> List Name UserInfo
@@ -616,7 +616,7 @@ data UserListOverlayState = UserListOverlayState
   , _userListSearching :: Bool
   , _userListRequestingMore :: Bool
   , _userListHasAllResults :: Bool
-  , _userListEnterHandler :: UserInfo -> MH ()
+  , _userListEnterHandler :: UserInfo -> MH Bool
   }
 
 data UserSearchScope =
