@@ -1942,16 +1942,8 @@ handleNewUserDirect newUser = do
 handleNewUsers :: Seq.Seq UserId -> MH ()
 handleNewUsers newUserIds = doAsyncMM Preempt getUserInfo updateUserStates
     where getUserInfo session _ =
-              do (nUsers, users)  <- concurrently (MM.mmGetUsersByIds newUserIds session)
-                                                    (MM.mmGetUsers MM.defaultUserQuery
-                                                      { MM.userQueryPage = Just 0
-                                                      , MM.userQueryPerPage = Just 10000
-                                                      } session)
-                 let teamUsers = HM.fromList [ (userId u, u) | u <- F.toList users ]
-                 -- Also re-load the team members so we can tell
-                 -- whether the new user is in the current user's
-                 -- team.
-                 let usrInfo u = userInfoFromUser u (HM.member (userId u) teamUsers)
+              do nUsers  <- MM.mmGetUsersByIds newUserIds session
+                 let usrInfo u = userInfoFromUser u True
                      usrList = F.toList nUsers
                  return $ zip usrList (usrInfo <$> usrList)
 
