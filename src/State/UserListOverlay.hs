@@ -94,6 +94,8 @@ enterUserListMode scope enterHandler = do
   csUserListOverlay.userListSelected .= Nothing
   csUserListOverlay.userListSearchInput.E.editContentsL %= Z.clearZipper
   csUserListOverlay.userListEnterHandler .= enterHandler
+  csUserListOverlay.userListSearching .= False
+  csUserListOverlay.userListHasAllResults .= False
   setMode UserListOverlay
   resetUserListSearch
 
