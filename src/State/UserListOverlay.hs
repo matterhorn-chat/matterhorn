@@ -156,6 +156,9 @@ userListPageUp = userListMove (L.listMoveBy (-1 * userListPageSize))
 userListPageDown :: MH ()
 userListPageDown = userListMove (L.listMoveBy userListPageSize)
 
+-- | Transform the user list results in some way, e.g. by moving the
+-- cursor, and then check to see whether the modification warrants a
+-- prefetch of more search results.
 userListMove :: (L.List Name UserInfo -> L.List Name UserInfo) -> MH ()
 userListMove f = do
   csUserListOverlay.userListSearchResults %= f
