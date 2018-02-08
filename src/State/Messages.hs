@@ -52,7 +52,7 @@ addEndGap cId = withChannel cId $ \chan ->
         gapMsg = newGapMessage timeJustAfterLast
         timeJustAfterLast = maybe t0 (justAfter . _mDate) lastmsg_
         t0 = ServerTime $ originTime  -- use any time for a channel with no messages yet
-        newGapMessage = newMessageOfType (T.pack "Disconnected... will update when connected") (C UnknownGap)
+        newGapMessage = newMessageOfType (T.pack "Disconnected. Will refresh when connected.") (C UnknownGap)
     in unless lastIsGap
            (csChannels %= modifyChannelById cId (ccContents.cdMessages %~ addMessage gapMsg))
 
