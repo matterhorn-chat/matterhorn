@@ -7,6 +7,9 @@ its related packages, `mattermost-api` and `mattermost-api-qc`. Before
 beginning, the person making the release should have access to the
 platforms on which binary distributions will be built.
 
+All operations in this process start from the `develop` branch of each
+package repository.
+
 1. Set the `matterhorn` package version. The version string must be of
    the form `ABBCC.X.Y` where ABBCC corresponds to the Mattermost
    server version supported by the release. For example, if the release
