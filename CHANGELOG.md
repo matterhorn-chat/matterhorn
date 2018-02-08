@@ -1,4 +1,20 @@
 
+40600.1.0
+=========
+
+Performance improvements:
+ * Matterhorn's reconnection handling was improved to more reliably
+   fetch messages that arrived while the client was disconnected.
+ * Startup performance was improved by reducing redundant post and user
+   metadata fetches when loading channel messages.
+
+Other fixes:
+ * The multi-line toggle help message now shows the active binding.
+ * Slash commands now support multi-line input. Previously only the
+   first line was passed as the command input.
+ * Matterhorn now updates channel view status on updates from other
+   clients (#342)
+
 40600.0.0
 =========
 
