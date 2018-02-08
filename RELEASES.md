@@ -2,9 +2,10 @@
 Matterhorn Release Process
 ==========================
 
-This is the release procedure for making a release of `matterhorn`.
-Before beginning, the person making the release should have access to
-the platforms on which binary distributions will be built.
+This is the release procedure for making a release of `matterhorn` and
+its related packages, `mattermost-api` and `mattermost-api-qc`. Before
+beginning, the person making the release should have access to the
+platforms on which binary distributions will be built.
 
 1. Set the `matterhorn` package version. The version string must be of
    the form `ABBCC.X.Y` where ABBCC corresponds to the Mattermost
@@ -17,6 +18,9 @@ the platforms on which binary distributions will be built.
    changes or functionality changes. The second component alone should
    change only if the package undergoes security fixes or other bug
    fixes.
+
+   Also set the versions of the API packages similary depending on what
+   changed in each one.
 
 2. Generate a changelog entry list from the git log since the last
    release tag. In the changelog, include
@@ -31,20 +35,25 @@ the platforms on which binary distributions will be built.
    The changes listed in the changelog should inform the choice of
    version number.
 
-3. Commit the changelog changes and `matterhorn.cabal` version change.
+   Also check the dependency version bounds for the `mattermost-api` and
+   `mattermost-api-qc` packages in case those changed or need to be
+   updated.
+
+3. Commit the changelog changes and Cabal version changes for each
+   package.
 
 4. Check for a passing Travis CI build.
 
-5. Upload to Hackage:
+5. Generate platform binary distributions using `mkrelease.sh` on the
+   relevant platforms.
+
+6. Upload each package to Hackage, starting with `mattermost-api`:
 
    * Generate a `cabal sdist`
    * Unpack the `sdist` archive
    * Perform a complete build on the unpacked archive
    * If any issues arise, repair and go to (2)
    * Otherwise, `cabal upload` the package
-
-6. Generate platform binary distributions using `mkrelease.sh` on the
-   relevant platforms.
 
 7. Tag the release commit using the package version as the tag string.
 
