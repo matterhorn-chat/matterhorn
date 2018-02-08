@@ -59,10 +59,13 @@ platforms on which binary distributions will be built.
 
 8. `git push --tags`
 
-9. Make binary release available on GitHub by editing the pushed tag and
-   uploading the release archives.
+9. Merge the `develop` branch to the `master` branch for each
+   repository.
 
-10. Tweet about the release using the `@matterhorn_chat` account:
+10. Make binary release available on GitHub by editing the pushed tag and
+    uploading the release archives.
+
+11. Tweet about the release using the `@matterhorn_chat` account:
     "We're pleased to announce the release of Matterhorn version <VERSION> for @mattermosthq!
     Get it at https://github.com/matterhorn-chat/matterhorn/releases/tag/<VERSION>"
 
