@@ -38,6 +38,7 @@ import           Events.DeleteChannelConfirm
 import           Events.UrlSelect
 import           Events.MessageSelect
 import           Events.PostListOverlay
+import           Events.UserListOverlay
 
 onEvent :: ChatState -> BrickEvent Name MHEvent -> EventM Name (Next ChatState)
 onEvent st ev = runMHEvent st (onEv >> fetchVisibleIfNeeded)
@@ -97,19 +98,19 @@ onVtyEvent e = do
         MessageSelectDeleteConfirm -> onEventMessageSelectDeleteConfirm e
         DeleteChannelConfirm       -> onEventDeleteChannelConfirm e
         PostListOverlay _          -> onEventPostListOverlay e
+        UserListOverlay            -> onEventUserListOverlay e
 
 handleWSEvent :: WebsocketEvent -> MH ()
 handleWSEvent we = do
-    myId <- use (csMe.userIdL)
-    myTeamId <- use (csMyTeam.teamIdL)
+    myId <- gets myUserId
+    myTId <- gets myTeamId
     case weEvent we of
         WMPosted
             | Just p <- wepPost (weData we) -> do
                 -- If the message is a header change, also update the
                 -- channel metadata.
-                myUserId <- use (csMe.userIdL)
                 let wasMentioned = case wepMentions (weData we) of
-                      Just lst -> myUserId `Set.member` lst
+                      Just lst -> myId `Set.member` lst
                       _ -> False
                 addNewPostedMessage $ RecentPost p wasMentioned
             | otherwise -> return ()
@@ -125,13 +126,13 @@ handleWSEvent we = do
         WMStatusChange
             | Just status <- wepStatus (weData we)
             , Just uId <- wepUserId (weData we) ->
-                updateStatus uId status
+                setUserStatus uId status
             | otherwise -> return ()
 
         WMUserAdded
             | Just cId <- webChannelId (weBroadcast we) ->
                 when (wepUserId (weData we) == Just myId &&
-                      wepTeamId (weData we) == Just myTeamId) $
+                      wepTeamId (weData we) == Just myTId) $
                     handleChannelInvite cId
             | otherwise -> return ()
 
@@ -152,7 +153,7 @@ handleWSEvent we = do
 
         WMChannelDeleted
             | Just cId <- wepChannelId (weData we) ->
-                when (webTeamId (weBroadcast we) == Just myTeamId) $
+                when (webTeamId (weBroadcast we) == Just myTId) $
                     removeChannelFromState cId
             | otherwise -> return ()
 

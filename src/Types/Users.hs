@@ -17,7 +17,7 @@ module Types.Users
   , findUserById
   , findUserByName
   , findUserByDMChannelName
-  , noUsers, addUser, allUsers, allUserIds
+  , noUsers, addUser, allUsers
   , modifyUserById
   , getDMChannelName
   , userIdForDMChannel
@@ -27,6 +27,7 @@ module Types.Users
   , addTypingUser
   , allTypingUsers
   , expireTypingUsers
+  , getAllUserIds
   )
 where
 
@@ -34,7 +35,6 @@ import           Data.Semigroup ((<>), Max(..))
 import qualified Data.HashMap.Strict as HM
 import           Data.List (sort)
 import           Data.Maybe (listToMaybe, maybeToList)
-import qualified Data.Set as Set
 import qualified Data.Text as T
 import           Data.Time (UTCTime)
 import           Lens.Micro.Platform
@@ -114,12 +114,12 @@ type Users = AllMyUsers UserInfo
 noUsers :: Users
 noUsers = AllUsers HM.empty
 
--- | Add a member to the existing collection of Users
-addUser :: UserId -> UserInfo -> Users -> Users
-addUser uId userinfo = AllUsers . HM.insert uId userinfo . _ofUsers
+getAllUserIds :: Users -> [UserId]
+getAllUserIds = HM.keys . _ofUsers
 
-allUserIds :: Users -> Set.Set UserId
-allUserIds = Set.fromList . HM.keys . _ofUsers
+-- | Add a member to the existing collection of Users
+addUser :: UserInfo -> Users -> Users
+addUser userinfo = AllUsers . HM.insert (userinfo^.uiId) userinfo . _ofUsers
 
 -- | Get a list of all known users
 allUsers :: Users -> [UserInfo]

@@ -21,6 +21,7 @@ import State
 import State.Editing (toggleMessagePreview)
 import State.Common
 import State.PostListOverlay
+import State.UserListOverlay
 import Types
 import HelpTopics
 import Scripts
@@ -73,7 +74,7 @@ commandList =
       beginCurrentChannelDeleteConfirm
   , Cmd "members" "Show the current channel's members"
     NoArg $ \ () ->
-      fetchCurrentChannelMembers
+      enterChannelMembersUserList
   , Cmd "leave" "Leave the current channel" NoArg $ \ () ->
       startLeaveCurrentChannel
   , Cmd "join" "Join a channel" NoArg $ \ () ->
@@ -86,6 +87,12 @@ commandList =
   , Cmd "topic" "Set the current channel's topic"
     (LineArg "topic") $ \ p ->
       if not (T.null p) then setChannelTopic p else return ()
+  , Cmd "add-user" "Search for a user to add to the current channel"
+    NoArg $ \ () ->
+        enterChannelInviteUserList
+  , Cmd "msg" "Chat with a user privately"
+    NoArg $ \ () ->
+        enterDMSearchUserList
   , Cmd "add-user" "Add a user to the current channel"
     (TokenArg "username" NoArg) $ \ (uname, ()) ->
         addUserToCurrentChannel uname
@@ -138,9 +145,9 @@ commandList =
 execMMCommand :: T.Text -> T.Text -> MH ()
 execMMCommand name rest = do
   cId      <- use csCurrentChannelId
-  session  <- use (csResources.crSession)
+  session  <- getSession
   em       <- use (csEditState.cedEditMode)
-  tId      <- use (csMyTeam.to MM.teamId)
+  tId      <- gets myTeamId
   let mc = MM.MinCommand
              { MM.minComChannelId = cId
              , MM.minComCommand   = "/" <> name <> " " <> rest

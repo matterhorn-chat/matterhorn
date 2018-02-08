@@ -32,11 +32,9 @@ module Types
   , RequestChan
 
   , MMNames
-  , mkChanNames
-  , cnUsers
-  , cnToUserId
-  , cnToChanId
-  , cnChans
+  , mkNames
+  , refreshChannelZipper
+  , getChannelIdsInOrder
 
   , LinkChoice(LinkChoice)
   , linkUser
@@ -63,17 +61,15 @@ module Types
   , csPostMap
   , csRecentChannel
   , csPostListOverlay
+  , csUserListOverlay
   , csMyTeam
   , csMessageSelect
   , csJoinChannelList
   , csConnectionStatus
   , csWorkerIsBusy
-  , csNames
-  , csUsers
   , csChannel
   , csChannels
   , csChannelSelectState
-  , csMe
   , csEditState
   , timeZone
   , whenMode
@@ -100,11 +96,24 @@ module Types
   , postListSelected
   , postListPosts
 
+  , UserSearchScope(..)
+
+  , UserListOverlayState
+  , userListSelected
+  , userListSearchResults
+  , userListSearchInput
+  , userListSearchScope
+  , userListSearching
+  , userListRequestingMore
+  , userListHasAllResults
+  , userListEnterHandler
+
+  , listFromUserSearchResults
+
   , ChatResources(ChatResources)
   , crPreferences
   , crEventQueue
   , crTheme
-  , crSession
   , crSubprocessLog
   , crWebsocketActionChan
   , crRequestQueue
@@ -113,6 +122,8 @@ module Types
   , crFlaggedPosts
   , crConn
   , crConfiguration
+  , getSession
+  , getResourceSession
 
   , WebsocketAction(..)
 
@@ -138,8 +149,26 @@ module Types
   , hasUnread
   , channelNameFromMatch
   , isMine
-  , getUsernameForUserId
+  , setUserStatus
+  , myUser
+  , myUserId
+  , myTeamId
+  , usernameForUserId
+  , userIdForUsername
+  , userByDMChannelName
+  , userByUsername
+  , channelIdByName
+  , channelByName
+  , userById
+  , allUserIds
+  , allChannelNames
+  , allUsernames
   , sortedUserList
+  , removeChannelName
+  , addChannelName
+  , addNewUser
+  , setUserIdSet
+  , channelMentionCount
 
   , userSigil
   , normalChannelSigil
@@ -160,14 +189,15 @@ import           Brick.BChan
 import           Brick.AttrMap (AttrMap)
 import           Brick.Widgets.Edit (Editor, editor)
 import           Brick.Widgets.List (List, list)
+import           Control.Monad (when)
 import qualified Control.Concurrent.STM as STM
 import           Control.Concurrent.MVar (MVar)
 import           Control.Exception (SomeException)
 import qualified Control.Monad.State as St
 import           Control.Monad.State (gets)
-import           Control.Monad (when)
 import qualified Data.Foldable as F
 import qualified Data.Sequence as Seq
+import qualified Data.Vector as Vec
 import           Data.HashMap.Strict (HashMap)
 import           Data.Time (UTCTime)
 import           Data.Time.LocalTime.TimeZone.Series (TimeZoneSeries)
@@ -177,6 +207,7 @@ import           Data.Maybe
 import           Data.Monoid
 import qualified Data.Set as Set
 import           Lens.Micro.Platform ( at, makeLenses, lens, (&), (^.), (%~), (.~), (^?!), (.=)
+                                     , (%=), (^?)
                                      , use, _Just, Traversal', preuse, (^..), folded, to )
 import           Network.Mattermost (ConnectionData)
 import           Network.Mattermost.Exceptions
@@ -188,7 +219,7 @@ import qualified Data.Text as T
 import           System.Exit (ExitCode)
 import           Text.Aspell (Aspell)
 
-import           Zipper (Zipper, focusL)
+import           Zipper (Zipper, focusL, updateList)
 
 import           InputHistory
 
@@ -250,12 +281,8 @@ data MMNames = MMNames
       -- ^ Mapping from user names to 'UserId' values
   }
 
--- | An empty 'MMNames' record
-emptyMMNames :: MMNames
-emptyMMNames = MMNames mempty mempty mempty mempty
-
-mkChanNames :: User -> HM.HashMap UserId User -> Seq.Seq Channel -> MMNames
-mkChanNames myUser users chans = MMNames
+mkNames :: User -> HM.HashMap UserId User -> Seq.Seq Channel -> MMNames
+mkNames myUser users chans = MMNames
   { _cnChans = sort
                [ preferredChannelName c
                | c <- F.toList chans, channelType c /= Direct ]
@@ -277,6 +304,22 @@ mkChanNames myUser users chans = MMNames
 
 makeLenses ''MMNames
 
+-- ** 'MMNames' functions
+
+mkChannelZipperList :: MMNames -> [ChannelId]
+mkChannelZipperList chanNames =
+  getChannelIdsInOrder chanNames ++
+  getDMChannelIdsInOrder chanNames
+
+getChannelIdsInOrder :: MMNames -> [ChannelId]
+getChannelIdsInOrder n = [ (n ^. cnToChanId) HM.! i | i <- n ^. cnChans ]
+
+getDMChannelIdsInOrder :: MMNames -> [ChannelId]
+getDMChannelIdsInOrder n =
+  [ c | i <- n ^. cnUsers
+      , c <- maybeToList (HM.lookup i (n ^. cnToChanId))
+  ]
+
 -- * Internal Names and References
 
 -- | This 'Name' type is the value used in `brick` to identify the
@@ -294,6 +337,8 @@ data Name = ChannelMessages ChannelId
           | JoinChannelList
           | UrlList
           | MessagePreviewViewport
+          | UserListSearchInput
+          | UserListSearchResults
           deriving (Eq, Show, Ord)
 
 -- | The sum type of exceptions we expect to encounter on authentication
@@ -479,6 +524,7 @@ data Mode =
     | MessageSelect
     | MessageSelectDeleteConfirm
     | PostListOverlay PostListContents
+    | UserListOverlay
     deriving (Eq)
 
 -- | We're either connected or we're not.
@@ -508,6 +554,7 @@ data ChatState = ChatState
   , _csJoinChannelList             :: Maybe (List Name Channel)
   , _csMessageSelect               :: MessageSelectState
   , _csPostListOverlay             :: PostListOverlayState
+  , _csUserListOverlay             :: UserListOverlayState
   }
 
 data StartupStateInfo =
@@ -518,15 +565,16 @@ data StartupStateInfo =
                      , startupStateTimeZone       :: TimeZoneSeries
                      , startupStateInitialHistory :: InputHistory
                      , startupStateSpellChecker   :: Maybe (Aspell, IO ())
+                     , startupStateNames          :: MMNames
                      }
 
 newState :: StartupStateInfo -> ChatState
-newState (StartupStateInfo rs i u m tz hist sp) = ChatState
+newState (StartupStateInfo rs i u m tz hist sp ns) = ChatState
   { _csResources                   = rs
   , _csFocus                       = i
   , _csMe                          = u
   , _csMyTeam                      = m
-  , _csNames                       = emptyMMNames
+  , _csNames                       = ns
   , _csChannels                    = noChannels
   , _csPostMap                     = HM.empty
   , _csUsers                       = noUsers
@@ -542,7 +590,26 @@ newState (StartupStateInfo rs i u m tz hist sp) = ChatState
   , _csJoinChannelList             = Nothing
   , _csMessageSelect               = MessageSelectState Nothing
   , _csPostListOverlay             = PostListOverlayState mempty Nothing
+  , _csUserListOverlay             = nullUserListOverlayState
   }
+
+nullUserListOverlayState :: UserListOverlayState
+nullUserListOverlayState =
+    UserListOverlayState { _userListSearchResults = listFromUserSearchResults mempty
+                         , _userListSelected    = Nothing
+                         , _userListSearchInput = editor UserListSearchInput (Just 1) ""
+                         , _userListSearchScope = AllUsers
+                         , _userListSearching = False
+                         , _userListRequestingMore = False
+                         , _userListHasAllResults = False
+                         , _userListEnterHandler = const $ return False
+                         }
+
+listFromUserSearchResults :: Vec.Vector UserInfo -> List Name UserInfo
+listFromUserSearchResults rs =
+    -- NB: The item height here needs to actually match the UI drawing
+    -- in Draw.UserListOverlay.
+    list UserListSearchResults rs 1
 
 type ChannelSelectMap = HM.HashMap T.Text ChannelSelectMatch
 
@@ -568,6 +635,22 @@ data PostListOverlayState = PostListOverlayState
   { _postListPosts    :: Messages
   , _postListSelected :: Maybe PostId
   }
+
+data UserListOverlayState = UserListOverlayState
+  { _userListSearchResults :: List Name UserInfo
+  , _userListSelected :: Maybe PostId
+  , _userListSearchInput :: Editor T.Text Name
+  , _userListSearchScope :: UserSearchScope
+  , _userListSearching :: Bool
+  , _userListRequestingMore :: Bool
+  , _userListHasAllResults :: Bool
+  , _userListEnterHandler :: UserInfo -> MH Bool
+  }
+
+data UserSearchScope =
+    ChannelMembers ChannelId
+    | ChannelNonMembers ChannelId
+    | AllUsers
 
 -- | Actions that can be sent on the websocket to the server.
 data WebsocketAction =
@@ -663,7 +746,14 @@ makeLenses ''ChatResources
 makeLenses ''ChatState
 makeLenses ''ChatEditState
 makeLenses ''PostListOverlayState
+makeLenses ''UserListOverlayState
 makeLenses ''ChannelSelectState
+
+getSession :: MH Session
+getSession = use (csResources.crSession)
+
+getResourceSession :: ChatResources -> Session
+getResourceSession = _crSession
 
 whenMode :: Mode -> MH () -> MH ()
 whenMode m act = do
@@ -711,7 +801,7 @@ withChannelOrDefault cId deflt mote = do
 -- ** 'ChatState' Helper Functions
 
 isMine :: ChatState -> Message -> Bool
-isMine st msg = (UserI $ st^.csMe.userIdL) == msg^.mUser
+isMine st msg = (UserI $ myUserId st) == msg^.mUser
 
 getMessageForPostId :: ChatState -> PostId -> Maybe Message
 getMessageForPostId st pId = st^.csPostMap.at(pId)
@@ -722,8 +812,84 @@ getParentMessage st msg
     = st^.csPostMap.at(pId)
   | otherwise = Nothing
 
-getUsernameForUserId :: ChatState -> UserId -> Maybe T.Text
-getUsernameForUserId st uId = _uiName <$> findUserById uId (st^.csUsers)
+setUserStatus :: UserId -> T.Text -> MH ()
+setUserStatus uId t = csUsers %= modifyUserById uId (uiStatus .~ statusFromText t)
+
+usernameForUserId :: UserId -> ChatState -> Maybe T.Text
+usernameForUserId uId st = _uiName <$> findUserById uId (st^.csUsers)
+
+userIdForUsername :: T.Text -> ChatState -> Maybe UserId
+userIdForUsername name st = st^.csNames.cnToUserId.at name
+
+channelIdByName :: T.Text -> ChatState -> Maybe ChannelId
+channelIdByName name st =
+    let nameToChanId = st^.csNames.cnToChanId
+    in HM.lookup (trimAnySigil name) nameToChanId
+
+channelByName :: T.Text -> ChatState -> Maybe ClientChannel
+channelByName name st = do
+    cId <- channelIdByName name st
+    findChannelById cId (st^.csChannels)
+
+trimAnySigil :: T.Text -> T.Text
+trimAnySigil n
+    | normalChannelSigil `T.isPrefixOf` n = T.tail n
+    | userSigil `T.isPrefixOf` n          = T.tail n
+    | otherwise                           = n
+
+addNewUser :: UserInfo -> MH ()
+addNewUser u = do
+    csUsers %= addUser u
+
+    let uname = u^.uiName
+        uid = u^.uiId
+    csNames.cnUsers %= (sort . (uname:))
+    csNames.cnToUserId.at uname .= Just uid
+
+    userSet <- use (csResources.crUserIdSet)
+    St.liftIO $ STM.atomically $ STM.modifyTVar userSet $ (uid Seq.<|)
+
+setUserIdSet :: Seq.Seq UserId -> MH ()
+setUserIdSet ids = do
+    userSet <- use (csResources.crUserIdSet)
+    St.liftIO $ STM.atomically $ STM.writeTVar userSet ids
+
+addChannelName :: Type -> ChannelId -> T.Text -> MH ()
+addChannelName chType cid name = do
+    csNames.cnToChanId.at(name) .= Just cid
+
+    -- For direct channels the username is already in the user list so
+    -- do nothing
+    existingNames <- gets allChannelNames
+    when (chType /= Direct && (not $ name `elem` existingNames)) $
+        csNames.cnChans %= (sort . (name:))
+
+channelMentionCount :: ChannelId -> ChatState -> Int
+channelMentionCount cId st =
+    maybe 0 id (st^?csChannel(cId).ccInfo.cdMentionCount)
+
+allChannelNames :: ChatState -> [T.Text]
+allChannelNames st = st^.csNames.cnChans
+
+allUsernames :: ChatState -> [T.Text]
+allUsernames st = st^.csNames.cnChans
+
+removeChannelName :: T.Text -> MH ()
+removeChannelName name = do
+    -- Flush cnToChanId
+    csNames.cnToChanId.at name .= Nothing
+    -- Flush cnChans
+    csNames.cnChans %= filter (/= name)
+
+-- Rebuild the channel zipper contents from the current names collection.
+refreshChannelZipper :: MH ()
+refreshChannelZipper = do
+    -- We should figure out how to do this better: this adds it to the
+    -- channel zipper in such a way that we don't ever change our focus
+    -- to something else, which is kind of silly
+    names <- use csNames
+    let newZip = updateList (mkChannelZipperList names)
+    csFocus %= newZip
 
 clientPostToMessage :: ClientPost -> Message
 clientPostToMessage cp = Message
@@ -785,7 +951,37 @@ hasUnread st cId = maybe False id $ do
 userList :: ChatState -> [UserInfo]
 userList st = filter showUser $ allUsers (st^.csUsers)
   where showUser u = not (isSelf u) && (u^.uiInTeam)
-        isSelf u = (st^.csMe.userIdL) == (u^.uiId)
+        isSelf u = (myUserId st) == (u^.uiId)
+
+allUserIds :: ChatState -> [UserId]
+allUserIds st = getAllUserIds $ st^.csUsers
+
+userById :: UserId -> ChatState -> Maybe UserInfo
+userById uId st = findUserById uId (st^.csUsers)
+
+myUserId :: ChatState -> UserId
+myUserId st = myUser st ^. userIdL
+
+myTeamId :: ChatState -> TeamId
+myTeamId st = st ^. csMyTeam . teamIdL
+
+myUser :: ChatState -> User
+myUser st = st^.csMe
+
+userByDMChannelName :: T.Text
+                    -- ^ the dm channel name
+                    -> UserId
+                    -- ^ me
+                    -> ChatState
+                    -> Maybe UserInfo
+                    -- ^ you
+userByDMChannelName name self st =
+    findUserByDMChannelName (st^.csUsers) name self
+
+userByUsername :: T.Text -> ChatState -> Maybe UserInfo
+userByUsername name st = do
+    uId <- userIdForUsername name st
+    userById uId st
 
 sortedUserList :: ChatState -> [UserInfo]
 sortedUserList st = sortBy cmp yes <> sortBy cmp no

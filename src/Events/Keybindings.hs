@@ -123,6 +123,13 @@ defaultBindings ev =
         SelectUpEvent -> [ key 'k', kb Vty.KUp ]
         SelectDownEvent -> [ key 'j', kb Vty.KDown ]
 
+        ActivateListItemEvent -> [ kb Vty.KEnter ]
+
+        -- search selection - like SelectUp/Down above but need to not
+        -- conflict with editor inputs
+        SearchSelectUpEvent -> [ ctrl (key 'p'), kb Vty.KUp ]
+        SearchSelectDownEvent -> [  ctrl (key 'n'), kb Vty.KDown ]
+
         FlagMessageEvent    -> [ key 'f' ]
         YankMessageEvent    -> [ key 'y' ]
         DeleteMessageEvent  -> [ key 'd' ]

@@ -25,10 +25,11 @@ import           Types
 connectWebsockets :: MH ()
 connectWebsockets = do
   st <- use id
+  session <- getSession
   liftIO $ do
     let shunt (Left msg) = writeBChan (st^.csResources.crEventQueue) (WebsocketParseError msg)
         shunt (Right e) = writeBChan (st^.csResources.crEventQueue) (WSEvent e)
-        runWS = WS.mmWithWebSocket (st^.csResources.crSession) shunt $ \ws -> do
+        runWS = WS.mmWithWebSocket session shunt $ \ws -> do
                   writeBChan (st^.csResources.crEventQueue) WebsocketConnect
                   processWebsocketActions st ws 1 HM.empty
     void $ forkIO $ runWS `catch` handleTimeout 1 st

@@ -31,7 +31,7 @@ nameForUserRef :: ChatState -> UserRef -> Maybe T.Text
 nameForUserRef st uref = case uref of
                            NoUser -> Nothing
                            UserOverride t -> Just t
-                           UserI uId -> getUsernameForUserId st uId
+                           UserI uId -> usernameForUserId uId st
 
 -- | renderSingleMessage is the main message drawing function.
 --

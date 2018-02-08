@@ -67,6 +67,14 @@ data KeyEvent
   | SelectUpEvent
   | SelectDownEvent
 
+  -- search select events---these need to not be valid editor inputs
+  -- (such as 'j' and 'k')
+  | SearchSelectUpEvent
+  | SearchSelectDownEvent
+
+  -- E.g. Pressing enter on an item in a list to do something with it
+  | ActivateListItemEvent
+
   | FlagMessageEvent
   | YankMessageEvent
   | DeleteMessageEvent
@@ -109,6 +117,11 @@ allEvents =
 
   , SelectUpEvent
   , SelectDownEvent
+
+  , ActivateListItemEvent
+
+  , SearchSelectUpEvent
+  , SearchSelectDownEvent
 
   , FlagMessageEvent
   , YankMessageEvent
@@ -285,6 +298,11 @@ keyEventName ev = case ev of
 
   SelectUpEvent   -> "select-up"
   SelectDownEvent -> "select-down"
+
+  SearchSelectUpEvent   -> "search-select-up"
+  SearchSelectDownEvent -> "search-select-down"
+
+  ActivateListItemEvent -> "activate-list-item"
 
   FlagMessageEvent   -> "flag-message"
   YankMessageEvent   -> "yank-message"
