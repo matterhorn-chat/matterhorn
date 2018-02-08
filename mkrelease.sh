@@ -37,8 +37,9 @@ CABAL_DEPS_REPO=https://github.com/matterhorn-chat/cabal-dependency-licenses.git
 CABAL_DEPS_TOOL_DIR=$HOME/.cabal/bin
 
 function prepare_dist {
-    local dest=$1
-    cp $(find dist-newstyle -type f -name matterhorn | grep 40600.0.0) $dest
+    local ver=$1
+    local dest=$2
+    cp $(find dist-newstyle -type f -name matterhorn | grep $ver) $dest
     strip $dest/matterhorn
     cp $HERE/sample-config.ini $dest
     cp $HERE/README.md $dest
@@ -75,5 +76,5 @@ function cleanup {
 trap cleanup EXIT
 
 mkdir $TMPDIR/$DIRNAME
-prepare_dist $TMPDIR/$DIRNAME
+prepare_dist $VERSION $TMPDIR/$DIRNAME
 cd $TMPDIR && tar -cj $DIRNAME > $HERE/$FILENAME
