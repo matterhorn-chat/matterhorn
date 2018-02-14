@@ -1875,7 +1875,7 @@ sendMessage mode msg =
                             let pendingPost = rawPost msg chanId
                             void $ MM.mmCreatePost pendingPost session
                         Replying _ p -> do
-                            let pendingPost = (rawPost msg chanId) { rawPostRootId = Just (postId p) }
+                            let pendingPost = (rawPost msg chanId) { rawPostRootId = postRootId p <|> (Just $ postId p) }
                             void $ MM.mmCreatePost pendingPost session
                         Editing p -> do
                             void $ MM.mmUpdatePost (postId p) (postUpdate msg) session
