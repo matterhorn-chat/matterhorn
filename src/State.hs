@@ -1577,15 +1577,19 @@ updateChannelSelectMatches = do
     let chanMatches = catMaybes (fmap chanNameMatches chanNames)
         usernameMatches = catMaybes (fmap chanNameMatches (fmap _uiName uList))
         mkMap ms = HM.fromList [(channelNameFromMatch m, m) | m <- ms]
+
+    newInput <- use (csChannelSelectState.channelSelectInput)
     csChannelSelectState.channelMatches .= mkMap chanMatches
     csChannelSelectState.userMatches    .= mkMap usernameMatches
     csChannelSelectState.selectedMatch  %= \oldMatch ->
         -- If the previously selected match is still a possible match,
         -- leave it selected. Otherwise revert to the first available
         -- match.
-        let newMatch = if oldMatch `elem` allMatches
-                       then oldMatch
-                       else firstAvailableMatch
+        let newMatch = if newInput `elem` allMatches
+                       then newInput
+                       else if oldMatch `elem` allMatches
+                            then oldMatch
+                            else firstAvailableMatch
             unames = channelNameFromMatch <$> usernameMatches
             allMatches = concat [ channelNameFromMatch <$> chanMatches
                                 , [ u^.uiName | u <- uList
