@@ -1582,9 +1582,10 @@ updateChannelSelectMatches = do
     csChannelSelectState.channelMatches .= mkMap chanMatches
     csChannelSelectState.userMatches    .= mkMap usernameMatches
     csChannelSelectState.selectedMatch  %= \oldMatch ->
-        -- If the previously selected match is still a possible match,
-        -- leave it selected. Otherwise revert to the first available
-        -- match.
+        -- If the user input exactly matches one of the matches, prefer
+        -- that one. Otherwise, if the previously selected match is
+        -- still a possible match, leave it selected. Otherwise revert
+        -- to the first available match.
         let newMatch = if newInput `elem` allMatches
                        then newInput
                        else if oldMatch `elem` allMatches
