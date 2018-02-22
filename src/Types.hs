@@ -71,6 +71,7 @@ module Types
   , csChannels
   , csChannelSelectState
   , csEditState
+  , csClientConfig
   , timeZone
   , whenMode
   , setMode
@@ -169,6 +170,8 @@ module Types
   , addNewUser
   , setUserIdSet
   , channelMentionCount
+  , useNickname
+  , displaynameForUserId
 
   , userSigil
   , normalChannelSigil
@@ -189,6 +192,7 @@ import           Brick.BChan
 import           Brick.AttrMap (AttrMap)
 import           Brick.Widgets.Edit (Editor, editor)
 import           Brick.Widgets.List (List, list)
+import           Control.Applicative ((<|>))
 import           Control.Monad (when)
 import qualified Control.Concurrent.STM as STM
 import           Control.Concurrent.MVar (MVar)
@@ -208,11 +212,12 @@ import           Data.Monoid
 import qualified Data.Set as Set
 import           Lens.Micro.Platform ( at, makeLenses, lens, (&), (^.), (%~), (.~), (^?!), (.=)
                                      , (%=), (^?)
-                                     , use, _Just, Traversal', preuse, (^..), folded, to )
+                                     , use, _Just, Traversal', preuse, (^..), folded, to, view )
 import           Network.Mattermost (ConnectionData)
 import           Network.Mattermost.Exceptions
 import           Network.Mattermost.Lenses
 import           Network.Mattermost.Types
+import           Network.Mattermost.Types.Config
 import           Network.Mattermost.WebSocket (WebsocketEvent)
 import           Network.Connection (HostNotResolved, HostCannotConnect)
 import qualified Data.Text as T
@@ -555,6 +560,7 @@ data ChatState = ChatState
   , _csMessageSelect               :: MessageSelectState
   , _csPostListOverlay             :: PostListOverlayState
   , _csUserListOverlay             :: UserListOverlayState
+  , _csClientConfig                :: Maybe ClientConfig
   }
 
 data StartupStateInfo =
@@ -591,6 +597,7 @@ newState (StartupStateInfo rs i u m tz hist sp ns) = ChatState
   , _csMessageSelect               = MessageSelectState Nothing
   , _csPostListOverlay             = PostListOverlayState mempty Nothing
   , _csUserListOverlay             = nullUserListOverlayState
+  , _csClientConfig                = Nothing
   }
 
 nullUserListOverlayState :: UserListOverlayState
@@ -815,20 +822,49 @@ getParentMessage st msg
 setUserStatus :: UserId -> T.Text -> MH ()
 setUserStatus uId t = csUsers %= modifyUserById uId (uiStatus .~ statusFromText t)
 
+nicknameForUserId :: UserId -> ChatState -> Maybe T.Text
+nicknameForUserId uId st = _uiNickName =<< findUserById uId (st^.csUsers)
+
 usernameForUserId :: UserId -> ChatState -> Maybe T.Text
 usernameForUserId uId st = _uiName <$> findUserById uId (st^.csUsers)
+
+displaynameForUserId :: UserId -> ChatState -> Maybe T.Text
+displaynameForUserId uId st
+    | useNickname st =
+        nicknameForUserId uId st <|> usernameForUserId uId st
+    | otherwise =
+        usernameForUserId uId st
 
 userIdForUsername :: T.Text -> ChatState -> Maybe UserId
 userIdForUsername name st = st^.csNames.cnToUserId.at name
 
 channelIdByName :: T.Text -> ChatState -> Maybe ChannelId
 channelIdByName name st =
-    let nameToChanId = st^.csNames.cnToChanId
-    in HM.lookup (trimAnySigil name) nameToChanId
+    let userInfos = st^.csUsers.to allUsers
+        uName = if useNickname st
+                then
+                    maybe name (view uiName)
+                              $ findUserByNickname userInfos name
+                else name
+        nameToChanId = st^.csNames.cnToChanId
+    in HM.lookup (trimAnySigil uName) nameToChanId
+
+useNickname :: ChatState -> Bool
+useNickname st = case st^?csClientConfig._Just.to clientConfigTeammateNameDisplay of
+                      Just "nickname_full_name" ->
+                          True
+                      _ ->
+                          False
 
 channelByName :: T.Text -> ChatState -> Maybe ClientChannel
-channelByName name st = do
-    cId <- channelIdByName name st
+channelByName n st = do
+    let userInfos = st^.csUsers.to allUsers
+        uName = if useNickname st
+              then
+                  maybe n (view uiName)
+                            $ findUserByNickname userInfos n
+              else n
+    cId <- channelIdByName uName st
     findChannelById cId (st^.csChannels)
 
 trimAnySigil :: T.Text -> T.Text

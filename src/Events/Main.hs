@@ -6,8 +6,10 @@ import Prelude.Compat
 
 import Brick
 import Brick.Widgets.Edit
+import Control.Monad (join)
 import Data.Maybe (catMaybes)
 import Data.Monoid ((<>))
+import Data.Tuple (swap)
 import qualified Data.Set as Set
 import qualified Data.Text as T
 import qualified Data.Text.Zipper as Z
@@ -17,7 +19,7 @@ import Lens.Micro.Platform
 
 import Types
 import Types.Channels (ccInfo, cdType, clearNewMessageIndicator, clearEditedThreshold)
-import Types.Users (uiDeleted, uiName)
+import Types.Users (uiDeleted, uiName, uiNickName)
 import Events.Keybindings
 import State
 import State.PostListOverlay (enterFlaggedPostListMode)
@@ -178,6 +180,7 @@ tabComplete dir = do
   st <- use id
   allUIds <- gets allUserIds
   allChanNames <- gets allChannelNames
+  displayNick <- use (to useNickname)
 
   let completableChannels = catMaybes (flip map allChanNames $ \cname -> do
           -- Only permit completion of channel names for non-Group channels
@@ -187,34 +190,66 @@ tabComplete dir = do
               _     -> Just cname
           )
 
-      completableUsers = catMaybes (flip map allUIds $ \uId -> do
+      users = catMaybes (flip map allUIds $ \uId ->
           -- Only permit completion of user names for non-deleted users
           case userById uId st of
               Nothing -> Nothing
-              Just u ->
-                  if u^.uiDeleted
-                     then Nothing
-                     else Just $ u^.uiName
+              Just u | u^.uiDeleted -> Nothing
+              Just u -> Just u
           )
 
+      -- The first member of the following pair is used for the completion
+      -- displayed in the message window and the second member
+      -- includes the nickname in parens if nickname display is
+      -- enabled for the completion options popup.
+      (completableUsers, completableUsers') =
+          if displayNick
+          then let showNick = maybe mempty ((<> ")") . (" - ("<>))
+                   userCompletion u = (u^.uiName, u^.uiName <> u^.uiNickName.to showNick)
+               in users^..traverse.to userCompletion & unzip
+          else let dupe x = (x,x)
+               in users^..traverse.uiName & dupe
+
       priorities  = [] :: [T.Text]-- XXX: add recent completions to this
+
+      commonCompletions = map (normalChannelSigil <>) completableChannels ++
+                          map ("/" <>) (commandName <$> commandList)
       completions = Set.fromList (completableUsers ++
                                   completableChannels ++
                                   map (userSigil <>) completableUsers ++
-                                  map (normalChannelSigil <>) completableChannels ++
-                                  map ("/" <>) (commandName <$> commandList))
-
+                                  commonCompletions)
+      completions' = Set.fromList (completableUsers' ++
+                                  completableChannels ++
+                                  map (userSigil <>) completableUsers' ++
+                                  commonCompletions)
       line        = Z.currentLine $ st^.csEditState.cedEditor.editContentsL
       curComp     = st^.csEditState.cedCurrentCompletion
       (nextComp, alts) = case curComp of
           Nothing -> let cw = currentWord line
-                     in (Just cw, filter (cw `T.isPrefixOf`) $ Set.toList completions)
-          Just cw -> (Just cw, filter (cw `T.isPrefixOf`) $ Set.toList completions)
+                     in (Just cw, filter (cw `T.isPrefixOf`) $ Set.toList completions')
+          Just cw -> (Just cw, filter (cw `T.isPrefixOf`) $ Set.toList completions')
 
       mb_word     = wordComplete dir priorities completions line curComp
+      mb_word' =
+          case mb_word of
+              Just mbw -> Just mbw
+              Nothing | displayNick ->
+                  let nicks = Set.fromList . catMaybes . join $ flip fmap users $ \u ->
+                              [u^.uiNickName, (userSigil <>) <$> u^.uiNickName]
+                      nickMatch = wordComplete dir priorities nicks line curComp
+                      nicksForUsers = catMaybes (flip map users $ \u ->
+                                                     swap <$> sequence (u^.uiName, u^.uiNickName)
+                                                )
+                  in case nickMatch of
+                         Just nm | T.singleton (T.head nm) == userSigil ->
+                             (userSigil <>) <$> flip lookup nicksForUsers (T.drop 1 nm)
+                         Just nm ->
+                             flip lookup nicksForUsers nm
+                         Nothing -> Nothing
+              _ -> Nothing
   csEditState.cedCurrentCompletion .= nextComp
   csEditState.cedCompletionAlternatives .= alts
-  let (edit, curAlternative) = case mb_word of
+  let (edit, curAlternative) = case mb_word' of
           Nothing -> (id, "")
           Just w -> (Z.insertMany w . Z.deletePrevWord, w)
 

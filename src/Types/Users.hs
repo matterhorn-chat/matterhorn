@@ -17,6 +17,7 @@ module Types.Users
   , findUserById
   , findUserByName
   , findUserByDMChannelName
+  , findUserByNickname
   , noUsers, addUser, allUsers
   , modifyUserById
   , getDMChannelName
@@ -31,6 +32,7 @@ module Types.Users
   )
 where
 
+import           Data.Foldable            (find)
 import           Data.Semigroup ((<>), Max(..))
 import qualified Data.HashMap.Strict as HM
 import           Data.List (sort)
@@ -159,6 +161,14 @@ findUserByName allusers name =
   case filter ((== name) . _uiName . snd) $ HM.toList $ _ofUsers allusers of
     (usr : []) -> Just usr
     _ -> Nothing
+
+-- | Get the User information given the user's name.  This is an exact
+-- match on the nickname field, not necessarily the presented name.
+findUserByNickname :: [UserInfo] -> T.Text -> Maybe UserInfo
+findUserByNickname uList nick =
+  find (nickCheck nick) uList
+    where
+        nickCheck n = maybe False (== n) . _uiNickName
 
 -- | Extract a specific user from the collection and perform an
 -- endomorphism operation on it, then put it back into the collection.
