@@ -32,7 +32,7 @@ module Types.Users
   )
 where
 
-import           Data.Foldable            (find)
+import           Data.Foldable (find)
 import           Data.Semigroup ((<>), Max(..))
 import qualified Data.HashMap.Strict as HM
 import           Data.List (sort)
