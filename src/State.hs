@@ -209,7 +209,7 @@ createGroupChannel usernameList = do
         findUserIds (n:ns) = do
             case userByUsername n st of
                 Nothing -> do
-                    postErrorMessage $ "No such user: " <> n
+                    mhError $ "No such user: " <> n
                     return []
                 Just u -> (u^.uiId:) <$> findUserIds ns
 
@@ -416,7 +416,7 @@ beginCurrentChannelDeleteConfirm = do
         let chType = chan^.ccInfo.cdType
         if chType /= Direct
             then setMode DeleteChannelConfirm
-            else postErrorMessage "The /delete-channel command cannot be used with direct message channels."
+            else mhError "The /delete-channel command cannot be used with direct message channels."
 
 deleteCurrentChannel :: MH ()
 deleteCurrentChannel = do
@@ -558,7 +558,7 @@ addUserToCurrentChannel uname = do
                 tryMM (void $ MM.mmAddUser cId channelMember session)
                       (const $ return (return ()))
         _ -> do
-            postErrorMessage ("No such user: " <> uname)
+            mhError ("No such user: " <> uname)
 
 removeUserFromCurrentChannel :: T.Text -> MH ()
 removeUserFromCurrentChannel uname = do
@@ -572,14 +572,14 @@ removeUserFromCurrentChannel uname = do
                 tryMM (void $ MM.mmRemoveUserFromChannel cId (UserById $ u^.uiId) session)
                       (const $ return (return ()))
         _ -> do
-            postErrorMessage ("No such user: " <> uname)
+            mhError ("No such user: " <> uname)
 
 startLeaveCurrentChannel :: MH ()
 startLeaveCurrentChannel = do
     cInfo <- use (csCurrentChannel.ccInfo)
     case canLeaveChannel cInfo of
         True -> setMode LeaveChannelConfirm
-        False -> postErrorMessage "The /leave command cannot be used with this channel."
+        False -> mhError "The /leave command cannot be used with this channel."
 
 leaveCurrentChannel :: MH ()
 leaveCurrentChannel = use csCurrentChannelId >>= leaveChannel
@@ -1094,7 +1094,7 @@ attemptCreateDMChannel name = do
   mUid <- gets (userIdForUsername name)
   me <- gets myUser
   if name == me^.userUsernameL
-    then postErrorMessage ("Cannot create a DM channel with yourself")
+    then mhError ("Cannot create a DM channel with yourself")
     else if isJust mUid && isNothing mCid
       then do
         -- We have a user of that name but no channel. Time to make one!
@@ -1108,7 +1108,7 @@ attemptCreateDMChannel name = do
           member <- MM.mmGetChannelMember (getId nc) UserMe session
           return $ handleNewChannel True cwd member
       else
-        postErrorMessage ("No channel or user named " <> name)
+        mhError ("No channel or user named " <> name)
 
 createOrdinaryChannel :: T.Text -> MH ()
 createOrdinaryChannel name  = do
@@ -1870,7 +1870,7 @@ sendMessage mode msg =
             case status of
                 Disconnected -> do
                     let m = "Cannot send messages while disconnected."
-                    postErrorMessage m
+                    mhError m
                 Connected -> do
                     let chanId = st^.csCurrentChannelId
                     session <- getSession

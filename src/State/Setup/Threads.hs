@@ -125,7 +125,7 @@ startSubprocessLoggerThread logChan requestChan = do
                           let msg = T.pack $
                                 "An error occurred when running " <> show progName <>
                                 "; see " <> logPath <> " for details."
-                          postErrorMessage msg
+                          mhError msg
 
                   logMonitor (Just (logPath, logHandle))
 

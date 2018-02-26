@@ -113,7 +113,7 @@ commandList =
                   let msg = ("Unknown help topic: `" <> topicName <> "`. " <>
                             (T.unlines $ "Available topics are:" : knownTopics))
                       knownTopics = ("  - " <>) <$> helpTopicName <$> helpTopics
-                  postErrorMessage msg
+                  mhError msg
               Just topic -> showHelpScreen topic
 
   , Cmd "sh" "List the available shell scripts" NoArg $ \ () ->
@@ -181,7 +181,7 @@ execMMCommand name rest = do
   case errMsg of
     Nothing -> return ()
     Just err ->
-      postErrorMessage ("Error running command: " <> err)
+      mhError ("Error running command: " <> err)
 
 dispatchCommand :: T.Text -> MH ()
 dispatchCommand cmd =
@@ -196,7 +196,7 @@ dispatchCommand cmd =
             go errs [] = do
               let msg = ("error running command /" <> x <> ":\n" <>
                          mconcat [ "    " <> e | e <- errs ])
-              postErrorMessage msg
+              mhError msg
             go errs (Cmd _ _ spec exe : cs) =
               case matchArgs spec xs of
                 Left e -> go (e:errs) cs

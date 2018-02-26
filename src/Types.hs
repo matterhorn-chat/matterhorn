@@ -10,6 +10,7 @@ module Types
   , MessageSelectState(..)
   , ProgramOutput(..)
   , MHEvent(..)
+  , InternalEvent(..)
   , Name(..)
   , ChannelSelectMatch(..)
   , StartupStateInfo(..)
@@ -169,6 +170,7 @@ module Types
   , addNewUser
   , setUserIdSet
   , channelMentionCount
+  , raiseInternalEvent
 
   , userSigil
   , normalChannelSigil
@@ -740,6 +742,13 @@ data MHEvent
     -- ^ background worker is idle
     | BGBusy (Maybe Int)
     -- ^ background worker is busy (with n requests)
+    | IEvent InternalEvent
+    -- ^ MH-internal events
+
+data InternalEvent
+    = DisplayError T.Text
+      -- ^ Display a generic error message to the user
+    deriving (Eq, Show)
 
 -- ** Application State Lenses
 
@@ -800,6 +809,11 @@ withChannelOrDefault cId deflt mote = do
     Just c  -> mote c
 
 -- ** 'ChatState' Helper Functions
+
+raiseInternalEvent :: InternalEvent -> MH ()
+raiseInternalEvent ev = do
+  queue <- use (csResources.crEventQueue)
+  St.liftIO $ writeBChan queue (IEvent ev)
 
 isMine :: ChatState -> Message -> Bool
 isMine st msg = (UserI $ myUserId st) == msg^.mUser

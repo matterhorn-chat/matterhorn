@@ -67,12 +67,17 @@ onAppEvent (AsyncErrEvent e) = do
   let msg = "An unexpected error has occurred! The exception encountered was:\n  " <>
             T.pack (show e) <>
             "\nPlease report this error at https://github.com/matterhorn-chat/matterhorn/issues"
-  postErrorMessage msg
+  mhError msg
 onAppEvent (WebsocketParseError e) = do
   let msg = "A websocket message could not be parsed:\n  " <>
             T.pack e <>
             "\nPlease report this error at https://github.com/matterhorn-chat/matterhorn/issues"
-  postErrorMessage msg
+  mhError msg
+onAppEvent (IEvent e) = do
+  handleIEvent e
+
+handleIEvent :: InternalEvent -> MH ()
+handleIEvent (DisplayError msg) = postErrorMessage' msg
 
 onVtyEvent :: Vty.Event -> MH ()
 onVtyEvent e = do
