@@ -58,11 +58,18 @@ drawUsersBox st =
           Just _ ->
               let msg = case st^.userListRequestingMore of
                           True -> "Fetching more results..."
-                          False -> case st^.userListHasAllResults of
-                              True -> "Showing all results (" <> show numSearchResults <> ")"
-                              False -> "Showing first " <>
-                                       show numSearchResults <>
-                                       " result" <> plural numSearchResults
+                          False -> "Showing " <> show numSearchResults <> " result" <> plural numSearchResults
+                          -- NOTE: one day when we resume doing
+                          -- pagination, we want to reinstate the
+                          -- following logic instead of the False case
+                          -- above. Please see State.UserListOverlay for
+                          -- details.
+                          --
+                          -- False -> case st^.userListHasAllResults of
+                          --     True -> "Showing all results (" <> show numSearchResults <> ")"
+                          --     False -> "Showing first " <>
+                          --              show numSearchResults <>
+                          --              " result" <> plural numSearchResults
               in hBorderWithLabel $ str $ "[" <> msg <> "]"
 
       scope = st^.userListSearchScope
