@@ -1708,8 +1708,7 @@ openSelectedURL = whenMode UrlSelect $ do
         Just (_, link) -> do
             opened <- openURL link
             when (not opened) $ do
-                let msg = "Config option 'urlOpenCommand' missing; cannot open URL."
-                postInfoMessage msg
+                mhError "Config option 'urlOpenCommand' missing; cannot open URL."
                 setMode Main
 
 openURL :: LinkChoice -> MH Bool
@@ -1852,9 +1851,8 @@ openSelectedMessageURLs = whenMode MessageSelect $ do
         openedAll <- and <$> mapM openURL urls
         case openedAll of
             True -> setMode Main
-            False -> do
-                let msg = "Config option 'urlOpenCommand' missing; cannot open URL."
-                postInfoMessage msg
+            False ->
+                mhError "Config option 'urlOpenCommand' missing; cannot open URL."
 
 shouldSkipMessage :: T.Text -> Bool
 shouldSkipMessage "" = True
