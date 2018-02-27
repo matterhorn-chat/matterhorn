@@ -38,7 +38,6 @@ module State
   , getNewMessageCutoff
   , getEditedMessageCutoff
   , setChannelTopic
-  , fetchCurrentChannelMembers
   , refreshChannelById
   , handleChannelInvite
   , addUserToCurrentChannel
@@ -659,21 +658,6 @@ removeChannelFromState cId = do
             csChannels                          %= filteredChannels ((/=) cId . fst)
             -- Remove from focus zipper
             csFocus                             %= Z.filterZipper (/= cId)
-
-fetchCurrentChannelMembers :: MH ()
-fetchCurrentChannelMembers = do
-    cId <- use csCurrentChannelId
-    doAsyncChannelMM Preempt cId
-        fetchChannelMembers
-        (\_ chanUsers -> do
-              -- Construct a message listing them all and post it to the
-              -- channel:
-              let msgStr = "Channel members (" <> (T.pack $ show $ length chanUsers) <> "):\n" <>
-                           T.intercalate ", " usernames
-                  usernames = sort $ userUsername <$> filteredUsers
-                  filteredUsers = filter (not . userDeleted) chanUsers
-
-              postInfoMessage msgStr)
 
 fetchChannelMembers :: Session -> TeamId -> ChannelId -> IO [User]
 fetchChannelMembers s _ c = do
