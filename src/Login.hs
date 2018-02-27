@@ -20,6 +20,7 @@ import Lens.Micro.Platform
 import qualified Data.Text as T
 import Graphics.Vty
 import System.Exit (exitSuccess)
+import qualified System.IO.Error as Err
 
 import Network.Mattermost.Exceptions (LoginFailureException(..))
 
@@ -128,6 +129,10 @@ renderAuthError (ConnectError _) =
     "Could not connect to server"
 renderAuthError (ResolveError _) =
     "Could not resolve server hostname"
+renderAuthError (AuthIOError err)
+  | Err.isDoesNotExistErrorType (Err.ioeGetErrorType err) =
+    "Unable to connect to the network"
+  | otherwise = "GetAddrInfo: " <> T.pack (Err.ioeGetErrorString err)
 renderAuthError (OtherAuthError e) =
     T.pack $ show e
 renderAuthError (LoginError (LoginFailureException msg)) =

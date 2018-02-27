@@ -347,6 +347,7 @@ data Name = ChannelMessages ChannelId
 data AuthenticationException =
     ConnectError HostCannotConnect
     | ResolveError HostNotResolved
+    | AuthIOError IOError
     | LoginError LoginFailureException
     | OtherAuthError SomeException
     deriving (Show)

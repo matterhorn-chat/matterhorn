@@ -22,6 +22,7 @@ import           Lens.Micro.Platform
 import           System.Exit (exitFailure)
 import           System.FilePath ((</>), isRelative, dropFileName)
 import           System.IO (Handle)
+import           System.IO.Error (catchIOError)
 
 import           Network.Mattermost.Endpoints
 import           Network.Mattermost.Types
@@ -81,6 +82,7 @@ setupState logFile initialConfig = do
         result <- (Right <$> mmLogin cd login)
                     `catch` (\e -> return $ Left $ ResolveError e)
                     `catch` (\e -> return $ Left $ ConnectError e)
+                    `catchIOError` (\e -> return $ Left $ AuthIOError e)
                     `catch` (\e -> return $ Left $ OtherAuthError e)
 
         -- Update the config with the entered settings so that later,
