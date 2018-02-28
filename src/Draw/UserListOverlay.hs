@@ -107,7 +107,7 @@ drawUsersBox st =
           (if foc then forceAttr L.listSelectedFocusedAttr else id) $
           vLimit 2 $
           padRight Max $
-          hBox $ (colorUsername (ui^.uiName) (T.singleton $ userSigilFromInfo ui))
+          hBox $ (padRight (Pad 1) $ colorUsername (ui^.uiName) (T.singleton $ userSigilFromInfo ui))
                  : (hLimit usernameWidth $ padRight Max $ colorUsername (ui^.uiName) (ui^.uiName))
                  : extras
           where
