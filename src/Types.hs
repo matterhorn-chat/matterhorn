@@ -149,6 +149,7 @@ module Types
   , userList
   , hasUnread
   , channelNameFromMatch
+  , trimAnySigil
   , isMine
   , setUserStatus
   , myUser

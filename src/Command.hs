@@ -77,8 +77,10 @@ commandList =
       enterChannelMembersUserList
   , Cmd "leave" "Leave the current channel" NoArg $ \ () ->
       startLeaveCurrentChannel
-  , Cmd "join" "Join a channel" NoArg $ \ () ->
+  , Cmd "join" "Browse the list of available channels" NoArg $ \ () ->
       startJoinChannel
+  , Cmd "join" "Join the specified channel" (TokenArg "channel" NoArg) $ \(n, ()) ->
+      joinChannelByName n
   , Cmd "theme" "List the available themes" NoArg $ \ () ->
       listThemes
   , Cmd "theme" "Set the color theme"

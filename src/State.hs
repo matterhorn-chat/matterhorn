@@ -18,6 +18,7 @@ module State
   , createOrdinaryChannel
   , startJoinChannel
   , joinChannel
+  , joinChannelByName
   , changeChannel
   , disconnectChannels
   , startLeaveCurrentChannel
@@ -503,6 +504,16 @@ copyVerbatimToClipboard = do
 
 -- * Joining, Leaving, and Inviting
 
+joinChannelByName :: T.Text -> MH ()
+joinChannelByName rawName = do
+    session <- getSession
+    tId <- gets myTeamId
+    doAsyncWith Preempt $ do
+        result <- try $ MM.mmGetChannelByName tId (trimAnySigil rawName) session
+        return $ case result of
+            Left (_::SomeException) -> mhError $ T.pack $ "No such channel: " <> (show rawName)
+            Right chan -> joinChannel $ getId chan
+
 startJoinChannel :: MH ()
 startJoinChannel = do
     session <- getSession
@@ -527,12 +538,12 @@ startJoinChannel = do
     setMode JoinChannel
     csJoinChannelList .= Nothing
 
-joinChannel :: Channel -> MH ()
-joinChannel chan = do
+joinChannel :: ChannelId -> MH ()
+joinChannel chanId = do
     setMode Main
     myId <- gets myUserId
-    let member = MinChannelMember myId (getId chan)
-    doAsyncChannelMM Preempt (getId chan) (\ s _ c -> MM.mmAddUser c member s) endAsyncNOP
+    let member = MinChannelMember myId chanId
+    doAsyncChannelMM Preempt chanId (\ s _ c -> MM.mmAddUser c member s) endAsyncNOP
 
 -- | When another user adds us to a channel, we need to fetch the
 -- channel info for that channel.
