@@ -106,6 +106,8 @@ commandList =
   , Cmd "focus" "Focus on a named channel"
     (TokenArg "channel" NoArg) $ \ (name, ()) ->
         changeChannel name
+  , Cmd "focus" "Select from available channels" NoArg $ \ () ->
+        beginChannelSelect
   , Cmd "help" "Show this help screen" NoArg $ \ _ ->
         showHelpScreen mainHelpTopic
   , Cmd "help" "Show help about a particular topic"
