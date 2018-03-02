@@ -40,6 +40,7 @@ module State
   , getEditedMessageCutoff
   , setChannelTopic
   , refreshChannelById
+  , refreshClientConfig
   , handleChannelInvite
   , addUserToCurrentChannel
   , removeUserFromCurrentChannel
@@ -305,6 +306,16 @@ refreshChannelsAndUsers = do
         lock <- use (csResources.crUserStatusLock)
         setVar <- use (csResources.crUserIdSet)
         doAsyncWith Preempt $ updateUserStatuses setVar lock session
+
+-- | Refresh client-accessible server configuration information. This
+-- is usually triggered when a reconnect event for the WebSocket to
+-- the server occurs.
+refreshClientConfig :: MH ()
+refreshClientConfig = do
+    session <- getSession
+    doAsyncWith Preempt $ do
+        cfg <- MM.mmGetClientConfiguration (Just "old") session
+        return (csClientConfig .= Just cfg)
 
 -- | Websocket was disconnected, so all channels may now miss some
 -- messages
@@ -1086,11 +1097,22 @@ setFocusWith f = do
 attemptCreateDMChannel :: T.Text -> MH ()
 attemptCreateDMChannel name = do
   mCid <- gets (channelIdByName name)
-  mUid <- gets (userIdForUsername name)
   me <- gets myUser
-  if name == me^.userUsernameL
-    then mhError ("Cannot create a DM channel with yourself")
-    else if isJust mUid && isNothing mCid
+  displayNick <- use (to useNickname)
+  uList       <- use (to sortedUserList)
+  let myName = if displayNick && not (T.null $ userNickname me)
+               then userNickname me
+               else me^.userUsernameL
+  if name == myName
+    then postErrorMessage ("Cannot create a DM channel with yourself")
+    else do
+      let uName = if displayNick
+                  then
+                      maybe name (view uiName)
+                                $ findUserByNickname uList name
+                  else name
+      mUid <- gets (userIdForUsername uName)
+      if isJust mUid && isNothing mCid
       then do
         -- We have a user of that name but no channel. Time to make one!
         myId <- gets myUserId
@@ -1569,8 +1591,12 @@ updateChannelSelectMatches = do
     chanNameMatches <- use (csChannelSelectState.channelSelectInput.to channelNameMatch)
     chanNames   <- gets allChannelNames
     uList       <- use (to sortedUserList)
+    displayNick <- use (to useNickname)
     let chanMatches = catMaybes (fmap chanNameMatches chanNames)
-        usernameMatches = catMaybes (fmap chanNameMatches (fmap _uiName uList))
+        displayName uInf
+            | displayNick = uInf^.uiNickName.non (uInf^.uiName)
+            | otherwise   = uInf^.uiName
+        usernameMatches = catMaybes (fmap (chanNameMatches . displayName) uList)
         mkMap ms = HM.fromList [(channelNameFromMatch m, m) | m <- ms]
 
     newInput <- use (csChannelSelectState.channelSelectInput)
@@ -1588,8 +1614,8 @@ updateChannelSelectMatches = do
                             else firstAvailableMatch
             unames = channelNameFromMatch <$> usernameMatches
             allMatches = concat [ channelNameFromMatch <$> chanMatches
-                                , [ u^.uiName | u <- uList
-                                  , u^.uiName `elem` unames
+                                , [ displayName u | u <- uList
+                                  , displayName u `elem` unames
                                   ]
                                 ]
             firstAvailableMatch = if null allMatches

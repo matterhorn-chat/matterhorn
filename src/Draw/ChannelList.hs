@@ -236,7 +236,9 @@ getDmChannels st height =
                        Nothing      -> userSigilFromInfo u
                        Just ("", _) -> userSigilFromInfo u
                        _            -> '»'  -- shows that user has a message in-progress
-                   uname = u^.uiName
+                   uname = if useNickname st
+                           then u^.uiNickName.non (u^.uiName)
+                           else u^.uiName
                    recent = maybe False (isRecentChannel st) m_chanId
                    m_chanId = channelIdByName (u^.uiName) st
                    unread = maybe False (hasUnread st) m_chanId

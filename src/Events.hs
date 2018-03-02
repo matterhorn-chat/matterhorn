@@ -58,6 +58,7 @@ onAppEvent WebsocketDisconnect = do
 onAppEvent WebsocketConnect = do
   csConnectionStatus .= Connected
   refreshChannelsAndUsers
+  refreshClientConfig
 onAppEvent BGIdle     = csWorkerIsBusy .= Nothing
 onAppEvent (BGBusy n) = csWorkerIsBusy .= Just n
 onAppEvent (WSEvent we) =
