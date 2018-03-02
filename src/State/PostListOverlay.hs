@@ -1,9 +1,10 @@
 module State.PostListOverlay where
 
+import Control.Monad
 import Data.Text (Text)
 import Lens.Micro.Platform
-import Network.Mattermost
-import Network.Mattermost.Lenses
+import Network.Mattermost.Endpoints
+import Network.Mattermost.Types
 
 import State
 import State.Common
@@ -15,24 +16,22 @@ import Types.Messages
 enterPostListMode ::  PostListContents -> Messages -> MH ()
 enterPostListMode contents msgs = do
   csPostListOverlay.postListPosts .= msgs
-  csPostListOverlay.postListSelected .= getLatestPostId msgs
-  csMode .= PostListOverlay contents
+  csPostListOverlay.postListSelected .= join ((^.mPostId) <$> getLatestPostMsg msgs)
+  setMode $ PostListOverlay contents
 
 -- | Clear out the state of a PostListOverlay
 exitPostListMode :: MH ()
 exitPostListMode = do
   csPostListOverlay.postListPosts .= mempty
   csPostListOverlay.postListSelected .= Nothing
-  csMode .= Main
+  setMode Main
 
--- | Create a PostListOverlay with flagged messages from the
--- server.
+-- | Create a PostListOverlay with flagged messages from the server.
 enterFlaggedPostListMode :: MH ()
 enterFlaggedPostListMode = do
-  session <- use (csResources.crSession)
-  uId <- use (csMe.userIdL)
+  session <- getSession
   doAsyncWith Preempt $ do
-    posts <- mmGetFlaggedPosts session uId
+    posts <- mmGetListOfFlaggedPosts UserMe defaultFlaggedPostsQuery session
     return $ do
       messages <- messagesFromPosts posts
       enterPostListMode PostListFlagged messages
@@ -41,11 +40,11 @@ enterFlaggedPostListMode = do
 -- server.
 enterSearchResultPostListMode :: Text -> MH ()
 enterSearchResultPostListMode terms = do
-  session <- use (csResources.crSession)
-  tId <- teamId <$> use csMyTeam
+  session <- getSession
+  tId <- gets myTeamId
   enterPostListMode (PostListSearch terms True) noMessages
   doAsyncWith Preempt $ do
-    posts <- mmSearchPosts session tId terms False
+    posts <- mmSearchForTeamPosts tId (SearchPosts terms False) session
     return $ do
       messages <- messagesFromPosts posts
       enterPostListMode (PostListSearch terms False) messages

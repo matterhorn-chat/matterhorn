@@ -6,8 +6,10 @@ import Prelude.Compat
 
 import Brick
 import Brick.Widgets.Edit
+import Control.Monad (join)
 import Data.Maybe (catMaybes)
 import Data.Monoid ((<>))
+import Data.Tuple (swap)
 import qualified Data.Set as Set
 import qualified Data.Text as T
 import qualified Data.Text.Zipper as Z
@@ -17,7 +19,8 @@ import Lens.Micro.Platform
 
 import Types
 import Types.Channels (ccInfo, cdType, clearNewMessageIndicator, clearEditedThreshold)
-import Types.Users (uiDeleted, findUserById)
+import Types.Users (uiDeleted, uiName, uiNickName)
+import Events.Keybindings
 import State
 import State.PostListOverlay (enterFlaggedPostListMode)
 import State.Editing
@@ -27,52 +30,57 @@ import InputHistory
 import HelpTopics (mainHelpTopic)
 import Constants
 
-import Network.Mattermost (Type(..))
+import Network.Mattermost.Types (Type(..))
 
 onEventMain :: Vty.Event -> MH ()
-onEventMain e | Just kb <- lookupKeybinding e mainKeybindings = kbAction kb
-onEventMain (Vty.EvPaste bytes) = handlePaste bytes
-onEventMain e = handleEditingInput e
+onEventMain =
+  handleKeyboardEvent mainKeybindings $ \ ev -> case ev of
+    (Vty.EvPaste bytes) -> handlePaste bytes
+    _ -> handleEditingInput ev
 
-mainKeybindings :: [Keybinding]
-mainKeybindings =
-    [ KB "Show this help screen"
-         (Vty.EvKey (Vty.KFun 1) []) $
-         showHelpScreen mainHelpTopic
+mainKeybindings :: KeyConfig -> [Keybinding]
+mainKeybindings = mkKeybindings
+    [ mkKb ShowHelpEvent
+        "Show this help screen"
+        (showHelpScreen mainHelpTopic)
 
-    , KB "Select a message to edit/reply/delete"
-         (Vty.EvKey (Vty.KChar 's') [Vty.MCtrl]) $
-         beginMessageSelect
+    , mkKb EnterSelectModeEvent
+        "Select a message to edit/reply/delete"
+        beginMessageSelect
 
-    , KB "Reply to the most recent message"
-         (Vty.EvKey (Vty.KChar 'r') [Vty.MCtrl]) $
-         replyToLatestMessage
+    , mkKb ReplyRecentEvent
+        "Reply to the most recent message"
+        replyToLatestMessage
 
-    , KB "Toggle message preview"
-         (Vty.EvKey (Vty.KChar 'p') [Vty.MMeta]) $
-         toggleMessagePreview
+    , mkKb ToggleMessagePreviewEvent "Toggle message preview"
+        toggleMessagePreview
 
-    , KB "Invoke *$EDITOR* to edit the current message"
-         (Vty.EvKey (Vty.KChar 'k') [Vty.MMeta]) $
-         invokeExternalEditor
+    , mkKb
+        InvokeEditorEvent
+        "Invoke *$EDITOR* to edit the current message"
+        invokeExternalEditor
 
-    , KB "Enter fast channel selection mode"
-         (Vty.EvKey (Vty.KChar 'g') [Vty.MCtrl]) $
+    , mkKb
+        EnterFastSelectModeEvent
+        "Enter fast channel selection mode"
          beginChannelSelect
 
-    , KB "Quit"
-         (Vty.EvKey (Vty.KChar 'q') [Vty.MCtrl]) $ requestQuit
+    , mkKb
+        QuitEvent
+        "Quit"
+        requestQuit
 
-    , KB "Tab-complete forward"
+    , staticKb "Tab-complete forward"
          (Vty.EvKey (Vty.KChar '\t') []) $
          tabComplete Forwards
 
-    , KB "Tab-complete backward"
+    , staticKb "Tab-complete backward"
          (Vty.EvKey (Vty.KBackTab) []) $
          tabComplete Backwards
 
-    , KB "Scroll up in the channel input history"
-         (Vty.EvKey Vty.KUp []) $ do
+    , mkKb
+        ScrollUpEvent
+        "Scroll up in the channel input history" $ do
              -- Up in multiline mode does the usual thing; otherwise we
              -- navigate the history.
              isMultiline <- use (csEditState.cedMultiline)
@@ -81,8 +89,9 @@ mainKeybindings =
                                            (Vty.EvKey Vty.KUp [])
                  False -> channelHistoryBackward
 
-    , KB "Scroll down in the channel input history"
-         (Vty.EvKey Vty.KDown []) $ do
+    , mkKb
+        ScrollDownEvent
+        "Scroll down in the channel input history" $ do
              -- Down in multiline mode does the usual thing; otherwise
              -- we navigate the history.
              isMultiline <- use (csEditState.cedMultiline)
@@ -91,32 +100,27 @@ mainKeybindings =
                                            (Vty.EvKey Vty.KDown [])
                  False -> channelHistoryForward
 
-    , KB "Page up in the channel message list"
-         (Vty.EvKey Vty.KPageUp []) $ do
+    , mkKb PageUpEvent "Page up in the channel message list" $ do
              cId <- use csCurrentChannelId
              let vp = ChannelMessages cId
              mh $ invalidateCacheEntry vp
              mh $ vScrollToEnd $ viewportScroll vp
              mh $ vScrollBy (viewportScroll vp) (-1 * pageAmount)
-             csMode .= ChannelScroll
+             setMode ChannelScroll
 
-    , KB "Change to the next channel in the channel list"
-         (Vty.EvKey (Vty.KChar 'n') [Vty.MCtrl]) $
+    , mkKb NextChannelEvent "Change to the next channel in the channel list"
          nextChannel
 
-    , KB "Change to the previous channel in the channel list"
-         (Vty.EvKey (Vty.KChar 'p') [Vty.MCtrl]) $
+    , mkKb PrevChannelEvent "Change to the previous channel in the channel list"
          prevChannel
 
-    , KB "Change to the next channel with unread messages"
-         (Vty.EvKey (Vty.KChar 'a') [Vty.MMeta]) $
+    , mkKb NextUnreadChannelEvent "Change to the next channel with unread messages"
          nextUnreadChannel
 
-    , KB "Change to the most recently-focused channel"
-         (Vty.EvKey (Vty.KChar 's') [Vty.MMeta]) $
+    , mkKb LastChannelEvent "Change to the most recently-focused channel"
          recentChannel
 
-    , KB "Send the current message"
+    , staticKb "Send the current message"
          (Vty.EvKey Vty.KEnter []) $ do
              isMultiline <- use (csEditState.cedMultiline)
              case isMultiline of
@@ -129,29 +133,20 @@ mainKeybindings =
                    csEditState.cedCurrentCompletion .= Nothing
                    handleInputSubmission
 
-    , KB "Select and open a URL posted to the current channel"
-         (Vty.EvKey (Vty.KChar 'o') [Vty.MCtrl]) $
+    , mkKb EnterOpenURLModeEvent "Select and open a URL posted to the current channel"
            startUrlSelect
 
-    , KB "Clear the current channel's unread / edited indicators"
-         (Vty.EvKey (Vty.KChar 'l') [Vty.MMeta]) $
+    , mkKb ClearUnreadEvent "Clear the current channel's unread / edited indicators" $
            csCurrentChannel %= (clearNewMessageIndicator .
                                 clearEditedThreshold)
 
-    , KB "Toggle multi-line message compose mode"
-         (Vty.EvKey (Vty.KChar 'e') [Vty.MMeta]) $
+    , mkKb ToggleMultiLineEvent "Toggle multi-line message compose mode"
            toggleMultilineEditing
 
-    , KB "Cancel message reply or update"
-         (Vty.EvKey Vty.KEsc []) $
+    , mkKb CancelEvent "Cancel message reply or update"
          cancelReplyOrEdit
 
-    , KB "Cancel message reply or update"
-         (Vty.EvKey (Vty.KChar 'c') [Vty.MCtrl]) $
-         cancelReplyOrEdit
-
-    , KB "View currently flagged posts"
-         (Vty.EvKey (Vty.KChar '8') [Vty.MMeta]) $
+    , mkKb EnterFlaggedPostsEvent "View currently flagged posts"
          enterFlaggedPostListMode
     ]
 
@@ -172,9 +167,9 @@ handleInputSubmission = do
   csEditState.cedInputHistory   %= addHistoryEntry allLines cId
   csEditState.cedInputHistoryPosition.at cId .= Nothing
 
-  case T.uncons line of
-    Just ('/',cmd) -> dispatchCommand cmd
-    _              -> sendMessage mode allLines
+  case T.uncons allLines of
+    Just ('/', cmd) -> dispatchCommand cmd
+    _               -> sendMessage mode allLines
 
   -- Reset the edit mode *after* handling the input so that the input
   -- handler can tell whether we're editing, replying, etc.
@@ -183,46 +178,78 @@ handleInputSubmission = do
 tabComplete :: Completion.Direction -> MH ()
 tabComplete dir = do
   st <- use id
-  knownUsers <- use csUsers
+  allUIds <- gets allUserIds
+  allChanNames <- gets allChannelNames
+  displayNick <- use (to useNickname)
 
-  let completableChannels = catMaybes (flip map (st^.csNames.cnChans) $ \cname -> do
+  let completableChannels = catMaybes (flip map allChanNames $ \cname -> do
           -- Only permit completion of channel names for non-Group channels
-          cId <- st^.csNames.cnToChanId.at cname
-          let cType = st^?csChannel(cId).ccInfo.cdType
-          case cType of
-              Just Group -> Nothing
-              _          -> Just cname
+          ch <- channelByName cname st
+          case ch^.ccInfo.cdType of
+              Group -> Nothing
+              _     -> Just cname
           )
 
-      completableUsers = catMaybes (flip map (st^.csNames.cnUsers) $ \uname -> do
+      users = catMaybes (flip map allUIds $ \uId ->
           -- Only permit completion of user names for non-deleted users
-          uId <- st^.csNames.cnToUserId.at uname
-          case findUserById uId knownUsers of
+          case userById uId st of
               Nothing -> Nothing
-              Just u ->
-                  if u^.uiDeleted
-                     then Nothing
-                     else Just uname
+              Just u | u^.uiDeleted -> Nothing
+              Just u -> Just u
           )
+
+      -- The first member of the following pair is used for the completion
+      -- displayed in the message window and the second member
+      -- includes the nickname in parens if nickname display is
+      -- enabled for the completion options popup.
+      (completableUsers, completableUsers') =
+          if displayNick
+          then let showNick = maybe mempty ((<> ")") . (" - ("<>))
+                   userCompletion u = (u^.uiName, u^.uiName <> u^.uiNickName.to showNick)
+               in users^..traverse.to userCompletion & unzip
+          else let dupe x = (x,x)
+               in users^..traverse.uiName & dupe
 
       priorities  = [] :: [T.Text]-- XXX: add recent completions to this
+
+      commonCompletions = map (normalChannelSigil <>) completableChannels ++
+                          map ("/" <>) (commandName <$> commandList)
       completions = Set.fromList (completableUsers ++
                                   completableChannels ++
                                   map (userSigil <>) completableUsers ++
-                                  map (normalChannelSigil <>) completableChannels ++
-                                  map ("/" <>) (commandName <$> commandList))
-
+                                  commonCompletions)
+      completions' = Set.fromList (completableUsers' ++
+                                  completableChannels ++
+                                  map (userSigil <>) completableUsers' ++
+                                  commonCompletions)
       line        = Z.currentLine $ st^.csEditState.cedEditor.editContentsL
       curComp     = st^.csEditState.cedCurrentCompletion
       (nextComp, alts) = case curComp of
           Nothing -> let cw = currentWord line
-                     in (Just cw, filter (cw `T.isPrefixOf`) $ Set.toList completions)
-          Just cw -> (Just cw, filter (cw `T.isPrefixOf`) $ Set.toList completions)
+                     in (Just cw, filter (cw `T.isPrefixOf`) $ Set.toList completions')
+          Just cw -> (Just cw, filter (cw `T.isPrefixOf`) $ Set.toList completions')
 
       mb_word     = wordComplete dir priorities completions line curComp
+      mb_word' =
+          case mb_word of
+              Just mbw -> Just mbw
+              Nothing | displayNick ->
+                  let nicks = Set.fromList . catMaybes . join $ flip fmap users $ \u ->
+                              [u^.uiNickName, (userSigil <>) <$> u^.uiNickName]
+                      nickMatch = wordComplete dir priorities nicks line curComp
+                      nicksForUsers = catMaybes (flip map users $ \u ->
+                                                     swap <$> sequence (u^.uiName, u^.uiNickName)
+                                                )
+                  in case nickMatch of
+                         Just nm | T.singleton (T.head nm) == userSigil ->
+                             (userSigil <>) <$> flip lookup nicksForUsers (T.drop 1 nm)
+                         Just nm ->
+                             flip lookup nicksForUsers nm
+                         Nothing -> Nothing
+              _ -> Nothing
   csEditState.cedCurrentCompletion .= nextComp
   csEditState.cedCompletionAlternatives .= alts
-  let (edit, curAlternative) = case mb_word of
+  let (edit, curAlternative) = case mb_word' of
           Nothing -> (id, "")
           Just w -> (Z.insertMany w . Z.deletePrevWord, w)
 

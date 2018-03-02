@@ -25,7 +25,6 @@ import           InputHistory
 import           IOUtil
 import           LastRunState
 import           State.Setup
-import           State.Setup.Threads (startAsyncWorkerThread)
 import           Events
 import           Draw
 import           Types
@@ -41,18 +40,11 @@ app = App
 
 runMatterhorn :: Options -> Config -> IO ChatState
 runMatterhorn opts config = do
-    eventChan <- newBChan 25
-    writeBChan eventChan RefreshWebsocketEvent
-
-    requestChan <- STM.atomically STM.newTChan
-
-    startAsyncWorkerThread config requestChan eventChan
-
     logFile <- case optLogLocation opts of
       Just path -> Just `fmap` openFile path WriteMode
       Nothing   -> return Nothing
 
-    st <- setupState logFile config requestChan eventChan
+    st <- setupState logFile config
 
     let mkVty = do
           vty <- Vty.mkVty Vty.defaultConfig
@@ -61,7 +53,7 @@ runMatterhorn opts config = do
           Vty.setMode output Vty.Hyperlink True
           return vty
 
-    finalSt <- customMain mkVty (Just eventChan) app st
+    finalSt <- customMain mkVty (Just $ st^.csResources.crEventQueue) app st
 
     case finalSt^.csEditState.cedSpellChecker of
         Nothing -> return ()

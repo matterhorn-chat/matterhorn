@@ -5,35 +5,32 @@ import Prelude.Compat
 
 import Brick.Widgets.List
 import qualified Graphics.Vty as Vty
-import Lens.Micro.Platform
 
 import Types
+import Events.Keybindings
 import State
 
 onEventUrlSelect :: Vty.Event -> MH ()
-onEventUrlSelect e
-    | Just kb <- lookupKeybinding e urlSelectKeybindings = kbAction kb
-    | otherwise = mhHandleEventLensed csUrlList handleListEvent e
+onEventUrlSelect =
+  handleKeyboardEvent urlSelectKeybindings $ \ ev ->
+    mhHandleEventLensed csUrlList handleListEvent ev
 
-urlSelectKeybindings :: [Keybinding]
-urlSelectKeybindings =
-    [ KB "Open the selected URL, if any"
+urlSelectKeybindings :: KeyConfig -> [Keybinding]
+urlSelectKeybindings = mkKeybindings
+    [ staticKb "Open the selected URL, if any"
          (Vty.EvKey Vty.KEnter []) $ do
              openSelectedURL
-             csMode .= Main
+             setMode Main
 
-    , KB "Cancel URL selection"
-         (Vty.EvKey Vty.KEsc []) $ stopUrlSelect
+    , mkKb CancelEvent "Cancel URL selection" stopUrlSelect
 
-    , KB "Cancel URL selection"
+    , mkKb SelectUpEvent "Move cursor up" $
+        mhHandleEventLensed csUrlList handleListEvent (Vty.EvKey Vty.KUp [])
+
+    , mkKb SelectDownEvent "Move cursor down" $
+        mhHandleEventLensed csUrlList handleListEvent (Vty.EvKey Vty.KDown [])
+
+    , staticKb "Cancel URL selection"
          (Vty.EvKey (Vty.KChar 'q') []) $ stopUrlSelect
-
-    , KB "Move cursor down"
-         (Vty.EvKey (Vty.KChar 'j') []) $
-           mhHandleEventLensed csUrlList handleListEvent (Vty.EvKey Vty.KDown [])
-
-    , KB "Move cursor up"
-         (Vty.EvKey (Vty.KChar 'k') []) $
-           mhHandleEventLensed csUrlList handleListEvent (Vty.EvKey Vty.KUp [])
 
     ]

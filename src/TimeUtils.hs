@@ -4,6 +4,7 @@ module TimeUtils
     , justAfter, justBefore
     , asLocalTime
     , localTimeText
+    , originTime
     )
     where
 
@@ -64,3 +65,8 @@ asLocalTime = utcToLocalTime'
 -- | Local time in displayable format
 localTimeText :: T.Text -> LocalTime -> T.Text
 localTimeText fmt time = T.pack $ formatTime defaultTimeLocale (T.unpack fmt) time
+
+
+-- | Provides a time value that can be used when there are no other times available
+originTime :: UTCTime
+originTime = UTCTime (toEnum 0) 0

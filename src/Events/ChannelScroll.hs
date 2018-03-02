@@ -8,41 +8,38 @@ import qualified Graphics.Vty as Vty
 import Lens.Micro.Platform
 
 import Types
+import Events.Keybindings
 import State
 
-channelScrollKeybindings :: [Keybinding]
-channelScrollKeybindings =
-  [ KB "Load more messages in the current channel"
-    (Vty.EvKey (Vty.KChar 'b') [Vty.MCtrl])
+channelScrollKeybindings :: KeyConfig -> [Keybinding]
+channelScrollKeybindings = mkKeybindings
+  [ mkKb LoadMoreEvent "Load more messages in the current channel"
     loadMoreMessages
-  , KB "Select and open a URL posted to the current channel"
-    (Vty.EvKey (Vty.KChar 'o') [Vty.MCtrl])
+  , mkKb EnterOpenURLModeEvent "Select and open a URL posted to the current channel"
     startUrlSelect
-  , KB "Scroll up" (Vty.EvKey Vty.KUp [])
+  , mkKb ScrollUpEvent "Scroll up"
     channelScrollUp
-  , KB "Scroll down" (Vty.EvKey Vty.KDown [])
+  , mkKb ScrollDownEvent "Scroll down"
     channelScrollDown
-  , KB "Scroll up" (Vty.EvKey Vty.KPageUp [])
+  , mkKb PageUpEvent "Scroll up"
     channelPageUp
-  , KB "Scroll down" (Vty.EvKey Vty.KPageDown [])
+  , mkKb PageDownEvent "Scroll down"
     channelPageDown
-  , KB "Cancel scrolling and return to channel view"
-    (Vty.EvKey Vty.KEsc []) $
-    csMode .= Main
-  , KB "Scroll to top" (Vty.EvKey Vty.KHome [])
+  , mkKb CancelEvent "Cancel scrolling and return to channel view" $
+    setMode Main
+  , mkKb ScrollTopEvent "Scroll to top"
     channelScrollToTop
-  , KB "Scroll to bottom" (Vty.EvKey Vty.KEnd [])
+  , mkKb ScrollBottomEvent "Scroll to bottom"
     channelScrollToBottom
   ]
 
 onEventChannelScroll :: Vty.Event -> MH ()
-onEventChannelScroll (Vty.EvResize _ _) = do
-    cId <- use csCurrentChannelId
-    mh $ do
-      invalidateCache
-      let vp = ChannelMessages cId
-      vScrollToEnd $ viewportScroll vp
-onEventChannelScroll e
-  | Just kb <- lookupKeybinding e channelScrollKeybindings = kbAction kb
-onEventChannelScroll _ = do
-    return ()
+onEventChannelScroll =
+  handleKeyboardEvent channelScrollKeybindings $ \ e -> case e of
+    (Vty.EvResize _ _) -> do
+      cId <- use csCurrentChannelId
+      mh $ do
+        invalidateCache
+        let vp = ChannelMessages cId
+        vScrollToEnd $ viewportScroll vp
+    _ -> return ()

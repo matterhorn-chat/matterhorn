@@ -17,6 +17,7 @@ module Types.Users
   , findUserById
   , findUserByName
   , findUserByDMChannelName
+  , findUserByNickname
   , noUsers, addUser, allUsers
   , modifyUserById
   , getDMChannelName
@@ -27,9 +28,11 @@ module Types.Users
   , addTypingUser
   , allTypingUsers
   , expireTypingUsers
+  , getAllUserIds
   )
 where
 
+import           Data.Foldable (find)
 import           Data.Semigroup ((<>), Max(..))
 import qualified Data.HashMap.Strict as HM
 import           Data.List (sort)
@@ -113,9 +116,12 @@ type Users = AllMyUsers UserInfo
 noUsers :: Users
 noUsers = AllUsers HM.empty
 
+getAllUserIds :: Users -> [UserId]
+getAllUserIds = HM.keys . _ofUsers
+
 -- | Add a member to the existing collection of Users
-addUser :: UserId -> UserInfo -> Users -> Users
-addUser uId userinfo = AllUsers . HM.insert uId userinfo . _ofUsers
+addUser :: UserInfo -> Users -> Users
+addUser userinfo = AllUsers . HM.insert (userinfo^.uiId) userinfo . _ofUsers
 
 -- | Get a list of all known users
 allUsers :: Users -> [UserInfo]
@@ -155,6 +161,14 @@ findUserByName allusers name =
   case filter ((== name) . _uiName . snd) $ HM.toList $ _ofUsers allusers of
     (usr : []) -> Just usr
     _ -> Nothing
+
+-- | Get the User information given the user's name.  This is an exact
+-- match on the nickname field, not necessarily the presented name.
+findUserByNickname :: [UserInfo] -> T.Text -> Maybe UserInfo
+findUserByNickname uList nick =
+  find (nickCheck nick) uList
+    where
+        nickCheck n = maybe False (== n) . _uiNickName
 
 -- | Extract a specific user from the collection and perform an
 -- endomorphism operation on it, then put it back into the collection.

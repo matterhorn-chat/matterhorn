@@ -32,10 +32,10 @@ findAndRunScript scriptName input = do
              "$ chmod u+x " <> T.pack scriptPath <> "\n" <>
              "```\n" <>
              "to correct this error. " <> scriptHelpAddendum)
-        postErrorMessage msg
+        mhError msg
       ScriptNotFound -> do
         let msg = ("No script named " <> scriptName <> " was found")
-        postErrorMessage msg
+        mhError msg
 
 runScript :: STM.TChan ProgramOutput -> FilePath -> T.Text -> IO (MH ())
 runScript outputChan fp text = do
@@ -70,7 +70,7 @@ listScripts = do
                     mconcat [ "  - " <> T.pack cmd <> "\n"
                             | cmd <- nonexecs
                             ] <> "\n" <> scriptHelpAddendum)
-      postErrorMessage errMsg
+      mhError errMsg
 
 scriptHelpAddendum :: T.Text
 scriptHelpAddendum =

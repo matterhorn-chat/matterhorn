@@ -23,6 +23,7 @@ import           Brick.Widgets.Border
 import qualified Data.Sequence as Seq
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
+import           Data.Maybe (fromMaybe)
 import           Data.Monoid ((<>))
 import qualified Data.Text as T
 import           Draw.Util
@@ -31,7 +32,6 @@ import           State
 import           Themes
 import           Types
 import           Types.Users
-import           Types.Channels
 
 type GroupName = T.Text
 
@@ -84,7 +84,7 @@ channelListGroups =
 -- some channel selection text.
 hasActiveChannelSelection :: ChatState -> Bool
 hasActiveChannelSelection st =
-    st^.csMode == ChannelSelect && not (T.null (st^.csChannelSelectState.channelSelectInput))
+    appMode st == ChannelSelect && not (T.null (st^.csChannelSelectState.channelSelectInput))
 
 -- | This is the main function that is called from external code to
 -- render the ChannelList sidebar.
@@ -198,8 +198,8 @@ decorateRecent entry = if entryIsRecent entry
 getOrdinaryChannels :: ChatState -> Maybe Int -> Seq.Seq ChannelListEntry
 getOrdinaryChannels st _ =
     Seq.fromList [ ChannelListEntry sigil n unread mentions recent current Nothing
-    | n <- (st ^. csNames . cnChans)
-    , let Just chan = st ^. csNames . cnToChanId . at n
+    | n <- allChannelNames st
+    , let Just chan = channelIdByName n st
           unread = hasUnread st chan
           recent = isRecentChannel st chan
           current = isCurrentChannel st chan
@@ -207,7 +207,7 @@ getOrdinaryChannels st _ =
             Nothing      -> normalChannelSigil
             Just ("", _) -> normalChannelSigil
             _            -> "»"
-          mentions = maybe 0 id (st^?csChannel(chan).ccInfo.cdMentionCount)
+          mentions = channelMentionCount chan st
     ]
 
 -- | Extract the names and information about Direct Message channels
@@ -236,14 +236,14 @@ getDmChannels st height =
                        Nothing      -> userSigilFromInfo u
                        Just ("", _) -> userSigilFromInfo u
                        _            -> '»'  -- shows that user has a message in-progress
-                   uname = u^.uiName
+                   uname = if useNickname st
+                           then u^.uiNickName.non (u^.uiName)
+                           else u^.uiName
                    recent = maybe False (isRecentChannel st) m_chanId
-                   m_chanId = st^.csNames.cnToChanId.at (u^.uiName)
+                   m_chanId = channelIdByName (u^.uiName) st
                    unread = maybe False (hasUnread st) m_chanId
                    current = maybe False (isCurrentChannel st) m_chanId
-                   mentions = case m_chanId of
-                     Just cId -> maybe 0 id (st^?csChannel(cId).ccInfo.cdMentionCount)
-                     Nothing  -> 0
+                   mentions = fromMaybe 0 $ channelMentionCount <$> m_chanId <*> pure st
                 ]
         (h, t) = Seq.breakl entryIsCurrent es
     in case height of

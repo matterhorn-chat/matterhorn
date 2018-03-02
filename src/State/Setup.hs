@@ -10,12 +10,11 @@ import           Prelude.Compat
 import           Brick.BChan
 import           Brick.Themes (themeToAttrMap, loadCustomizations)
 import qualified Control.Concurrent.STM as STM
-import           Control.Concurrent.MVar (newEmptyMVar, putMVar)
+import           Control.Concurrent.MVar (newMVar)
 import           Control.Exception (catch)
 import           Control.Monad (forM, when)
 import           Data.Monoid ((<>))
 import qualified Data.Foldable as F
-import qualified Data.HashMap.Strict as HM
 import           Data.Maybe (listToMaybe, fromMaybe, fromJust, isNothing)
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
@@ -23,16 +22,17 @@ import           Lens.Micro.Platform
 import           System.Exit (exitFailure)
 import           System.FilePath ((</>), isRelative, dropFileName)
 import           System.IO (Handle)
+import           System.IO.Error (catchIOError)
 
-import           Network.Mattermost
+import           Network.Mattermost.Endpoints
+import           Network.Mattermost.Types
 import           Network.Mattermost.Logging (mmLoggerDebug)
 
 import           Config
 import           InputHistory
 import           Login
 import           LastRunState
-import           State (updateMessageFlag)
-import           State.Common
+import           State.Messages
 import           TeamSelect
 import           Themes
 import           TimeUtils (lookupLocalTimeZone)
@@ -41,18 +41,21 @@ import           Types
 import           Types.Channels
 import qualified Zipper as Z
 
-loadFlaggedMessages :: Seq.Seq Preference -> ChatState -> IO ()
-loadFlaggedMessages prefs st = doAsyncWithIO Normal st $ do
-  return $ sequence_ [ updateMessageFlag (flaggedPostId fp) True
-                     | Just fp <- F.toList (fmap preferenceToFlaggedPost prefs)
-                     , flaggedPostStatus fp
-                     ]
+incompleteCredentials :: Config -> ConnectionInfo
+incompleteCredentials config = ConnectionInfo hStr (configPort config) uStr pStr
+    where
+        hStr = maybe "" id $ configHost config
+        uStr = maybe "" id $ configUser config
+        pStr = case configPass config of
+            Just (PasswordString s) -> s
+            _                       -> ""
 
-setupState :: Maybe Handle -> Config -> RequestChan -> BChan MHEvent -> IO ChatState
-setupState logFile config requestChan eventChan = do
+
+setupState :: Maybe Handle -> Config -> IO ChatState
+setupState logFile initialConfig = do
   -- If we don't have enough credentials, ask for them.
-  connInfo <- case getCredentials config of
-      Nothing -> interactiveGatherCredentials config Nothing
+  connInfo <- case getCredentials initialConfig of
+      Nothing -> interactiveGatherCredentials (incompleteCredentials initialConfig) Nothing
       Just connInfo -> return connInfo
 
   let setLogger = case logFile of
@@ -67,64 +70,66 @@ setupState logFile config requestChan eventChan = do
                 -- always try HTTPS first, and then, if the
                 -- configuration option is there, try falling back to
                 -- HTTP.
-                if (configUnsafeUseHTTP config)
-                  then initConnectionDataInsecure (ciHostname cInfo)
-                         (fromIntegral (ciPort cInfo)) defaultConnectionPoolConfig
-                  else initConnectionData (ciHostname cInfo)
-                         (fromIntegral (ciPort cInfo)) defaultConnectionPoolConfig
+                if (configUnsafeUseHTTP initialConfig)
+                  then initConnectionDataInsecure (cInfo^.ciHostname)
+                         (fromIntegral (cInfo^.ciPort)) defaultConnectionPoolConfig
+                  else initConnectionData (cInfo^.ciHostname)
+                         (fromIntegral (cInfo^.ciPort)) defaultConnectionPoolConfig
 
-        let login = Login { username = ciUsername cInfo
-                          , password = ciPassword cInfo
+        let login = Login { username = cInfo^.ciUsername
+                          , password = cInfo^.ciPassword
                           }
         result <- (Right <$> mmLogin cd login)
                     `catch` (\e -> return $ Left $ ResolveError e)
                     `catch` (\e -> return $ Left $ ConnectError e)
+                    `catchIOError` (\e -> return $ Left $ AuthIOError e)
                     `catch` (\e -> return $ Left $ OtherAuthError e)
 
-        -- Update the config with the entered settings so we can let the
-        -- user adjust if something went wrong rather than enter them
-        -- all again.
-        let modifiedConfig =
-                config { configUser = Just $ ciUsername cInfo
-                       , configPass = Just $ PasswordString $ ciPassword cInfo
-                       , configPort = ciPort cInfo
-                       , configHost = Just $ ciHostname cInfo
-                       }
+        -- Update the config with the entered settings so that later,
+        -- when we offer the option of saving the entered credentials to
+        -- disk, we can do so with an updated config.
+        let config =
+                initialConfig { configUser = Just $ cInfo^.ciUsername
+                              , configPass = Just $ PasswordString $ cInfo^.ciPassword
+                              , configPort = cInfo^.ciPort
+                              , configHost = Just $ cInfo^.ciHostname
+                              }
 
         case result of
             Right (Right (sess, user)) ->
-                return (sess, user, cd)
+                return (sess, user, cd, config)
             Right (Left e) ->
-                interactiveGatherCredentials modifiedConfig (Just $ LoginError e) >>=
+                interactiveGatherCredentials cInfo (Just $ LoginError e) >>=
                     loginLoop
             Left e ->
-                interactiveGatherCredentials modifiedConfig (Just e) >>=
+                interactiveGatherCredentials cInfo (Just e) >>=
                     loginLoop
 
-  (session, myUser, cd) <- loginLoop connInfo
+  (session, me, cd, config) <- loginLoop connInfo
 
-  initialLoad <- mmGetInitialLoad session
-  when (Seq.null $ initialLoadTeams initialLoad) $ do
+  teams <- mmGetUsersTeams UserMe session
+  when (Seq.null teams) $ do
       putStrLn "Error: your account is not a member of any teams"
       exitFailure
 
   myTeam <- case configTeam config of
       Nothing -> do
-          interactiveTeamSelection $ F.toList $ initialLoadTeams initialLoad
+          interactiveTeamSelection $ F.toList teams
       Just tName -> do
-          let matchingTeam = listToMaybe $ filter matches $ F.toList $ initialLoadTeams initialLoad
+          let matchingTeam = listToMaybe $ filter matches $ F.toList teams
               matches t = teamName t == tName
           case matchingTeam of
-              Nothing -> interactiveTeamSelection (F.toList (initialLoadTeams initialLoad))
+              Nothing -> interactiveTeamSelection (F.toList teams)
               Just t -> return t
 
-  userStatusLock <- newEmptyMVar
-  putMVar userStatusLock ()
+  userStatusLock <- newMVar ()
+
+  userIdSet <- STM.atomically $ STM.newTVar mempty
 
   slc <- STM.newTChanIO
   wac <- STM.newTChanIO
 
-  prefs <- mmGetMyPreferences session
+  prefs <- mmGetUsersPreferences UserMe session
 
   let themeName = case configTheme config of
           Nothing -> internalThemeName defaultTheme
@@ -152,24 +157,27 @@ setupState logFile config requestChan eventChan = do
                          exitFailure
                      Right t -> return t
 
-  let cr = ChatResources session cd requestChan eventChan
-             slc wac (themeToAttrMap custTheme) userStatusLock config mempty prefs
+  requestChan <- STM.atomically STM.newTChan
+  eventChan <- newBChan 25
 
-  initializeState cr myTeam myUser
+  let cr = ChatResources session cd requestChan eventChan
+             slc wac (themeToAttrMap custTheme) userStatusLock userIdSet config mempty prefs
+
+  initializeState cr myTeam me
 
 initializeState :: ChatResources -> Team -> User -> IO ChatState
-initializeState cr myTeam myUser = do
-  let session = cr^.crSession
+initializeState cr myTeam me = do
+  let session = getResourceSession cr
       requestChan = cr^.crRequestQueue
-      myTeamId = getId myTeam
+      myTId = getId myTeam
 
- -- Create a predicate to find the last selected channel by reading the
- -- run state file. If unable to read or decode or validate the file, this
- -- predicate is just `isTownSquare`.
+  -- Create a predicate to find the last selected channel by reading the
+  -- run state file. If unable to read or decode or validate the file, this
+  -- predicate is just `isTownSquare`.
   isLastSelectedChannel <- do
-    result <- readLastRunState . teamId $ myTeam
+    result <- readLastRunState $ teamId myTeam
     case result of
-      Right lrs | isValidLastRunState cr myUser lrs -> return $ \c ->
+      Right lrs | isValidLastRunState cr me lrs -> return $ \c ->
            channelId c == lrs^.lrsSelectedChannelId
       _ -> return isTownSquare
 
@@ -179,7 +187,7 @@ initializeState cr myTeam myUser = do
   -- We first try to find a channel matching with the last selected channel ID,
   -- failing which we look for the Town Square channel by name.
   -- This is not entirely correct since the Town Square channel can be renamed!
-  userChans <- mmGetChannels session myTeamId
+  userChans <- mmGetChannelsForUser UserMe myTId session
   let lastSelectedChans = Seq.filter isLastSelectedChannel userChans
       chans = if Seq.null lastSelectedChans
                 then Seq.filter isTownSquare userChans
@@ -188,8 +196,7 @@ initializeState cr myTeam myUser = do
   -- Since the only channel we are dealing with is by construction the
   -- last channel, we don't have to consider other cases here:
   msgs <- forM (F.toList chans) $ \c -> do
-      let cChannel = makeClientChannel c & ccInfo.cdCurrentState .~ state
-          state = ChanInitialSelect
+      cChannel <- makeClientChannel c
       return (getId c, cChannel)
 
   tz    <- lookupLocalTimeZone
@@ -199,26 +206,49 @@ initializeState cr myTeam myUser = do
           Left _ -> return newHistory
           Right h -> return h
 
+  --------------------------------------------------------------------
   -- Start background worker threads:
+  --
+  -- * Main async queue worker thread
+  startAsyncWorkerThread (cr^.crConfiguration) (cr^.crRequestQueue) (cr^.crEventQueue)
+
   -- * User status refresher
-  startUserRefreshThread (cr^.crUserStatusLock) session requestChan
+  startUserRefreshThread (cr^.crUserIdSet) (cr^.crUserStatusLock) session requestChan
+
   -- * Refresher for users who are typing currently
   when (configShowTypingIndicator (cr^.crConfiguration)) $
     startTypingUsersRefreshThread requestChan
+
   -- * Timezone change monitor
   startTimezoneMonitorThread tz requestChan
+
   -- * Subprocess logger
   startSubprocessLoggerThread (cr^.crSubprocessLog) requestChan
+
   -- * Spell checker and spell check timer, if configured
   spResult <- maybeStartSpellChecker (cr^.crConfiguration) (cr^.crEventQueue)
 
-  let chanNames = mkChanNames myUser mempty chans
-      chanIds = [ (chanNames ^. cnToChanId) HM.! i
-                | i <- chanNames ^. cnChans ]
+  -- End thread startup ----------------------------------------------
+
+  let names = mkNames me mempty chans
+      chanIds = getChannelIdsInOrder names
       chanZip = Z.fromList chanIds
-      st = newState cr chanZip myUser myTeam tz hist spResult
+      startupState =
+          StartupStateInfo { startupStateResources      = cr
+                           , startupStateChannelZipper  = chanZip
+                           , startupStateConnectedUser  = me
+                           , startupStateTeam           = myTeam
+                           , startupStateTimeZone       = tz
+                           , startupStateInitialHistory = hist
+                           , startupStateSpellChecker   = spResult
+                           , startupStateNames          = names
+                           }
+      st = newState startupState
              & csChannels %~ flip (foldr (uncurry addChannel)) msgs
-             & csNames .~ chanNames
 
   loadFlaggedMessages (cr^.crPreferences) st
+
+  -- Trigger an initial websocket refresh
+  writeBChan (cr^.crEventQueue) RefreshWebsocketEvent
+
   return st

@@ -9,7 +9,6 @@ import qualified Data.Set as Set
 import Data.Time.Clock (UTCTime(..))
 import Data.Time.LocalTime.TimeZone.Series (TimeZoneSeries)
 import Lens.Micro.Platform
-import Network.Mattermost
 import Network.Mattermost.Types
 
 import Types

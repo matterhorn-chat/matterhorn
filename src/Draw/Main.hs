@@ -28,9 +28,7 @@ import           Data.Text.Zipper (cursorPosition, insertChar, getText, gotoEOL)
 import           Data.Char (isSpace, isPunctuation)
 import           Lens.Micro.Platform
 
-import           Network.Mattermost
-import           Network.Mattermost.Types (ServerTime(..))
-import           Network.Mattermost.Lenses
+import           Network.Mattermost.Types (ChannelId, Type(Direct), ServerTime(..), UserId)
 
 import qualified Graphics.Vty as Vty
 
@@ -43,19 +41,21 @@ import           Themes
 import           TimeUtils (justAfter, justBefore)
 import           Types
 import           Types.Channels ( NewMessageIndicator(..)
-                                , ChannelState(..)
                                 , ClientChannel
                                 , ccInfo, ccContents
-                                , cdCurrentState, cdTypingUsers
+                                , cdTypingUsers
                                 , cdName, cdType, cdHeader, cdMessages
                                 , findChannelById)
 import           Types.Messages
 import           Types.Posts
 import           Types.Users
+import           Types.KeyEvents
+import           Events.Keybindings
+import           Events.MessageSelect
 
-previewFromInput :: T.Text -> T.Text -> Maybe Message
+previewFromInput :: UserId -> T.Text -> Maybe Message
 previewFromInput _ s | s == T.singleton cursorSentinel = Nothing
-previewFromInput uname s =
+previewFromInput uId s =
     -- If it starts with a slash but not /me, this has no preview
     -- representation
     let isCommand = "/" `T.isPrefixOf` s
@@ -67,7 +67,7 @@ previewFromInput uname s =
     in if isCommand && not isEmote
        then Nothing
        else Just $ Message { _mText          = getBlocks content
-                           , _mUserName      = Just uname
+                           , _mUser          = UserI uId
                            , _mDate          = ServerTime $ UTCTime (fromGregorian 1970 1 1) 0
                            -- The date is not used for preview
                            -- rendering, but we need to provide one.
@@ -241,7 +241,9 @@ renderUserCommandBox st hs =
                                         st^.csEditState.cedEditor.editContentsL) <>
                          "/" <> (show $ length curContents) <> "]"
                  , hBorderWithLabel $ withDefAttr clientEmphAttr $
-                   str "In multi-line mode. Press M-e to finish."
+                   txt $ "In multi-line mode. Press " <>
+                         (ppBinding (getFirstDefaultBinding ToggleMultiLineEvent)) <>
+                         " to finish."
                  ]
 
         replyDisplay = case st^.csEditState.cedEditMode of
@@ -250,7 +252,9 @@ renderUserCommandBox st hs =
                 in hBox [ replyArrow
                         , addEllipsis $ renderMessage MessageData
                           { mdMessage           = msgWithoutParent
+                          , mdUserName          = msgWithoutParent^.mUser.to (nameForUserRef st)
                           , mdParentMessage     = Nothing
+                          , mdParentUserName    = Nothing
                           , mdHighlightSet      = hs
                           , mdEditThreshold     = Nothing
                           , mdShowOlderEdits    = False
@@ -298,7 +302,7 @@ renderChannelHeader st hs chan =
                            quote n = "\"" <> n <> "\""
                            nick = maybe "" quote $ u^.uiNickName
                        in s
-        foundUser = findUserByDMChannelName (st^.csUsers) chnName (st^.csMe^.userIdL)
+        foundUser = userByDMChannelName chnName (myUserId st) st
         maybeTopic = if T.null topicStr
                      then ""
                      else " - " <> topicStr
@@ -327,11 +331,8 @@ renderCurrentChannelDisplay st hs = (header <+> conn) <=> messages
     messages = padTop Max $ padRight (Pad 1) body
 
     body = chatText
-      <=> case chan^.ccInfo.cdCurrentState.to stateMessage of
-            Nothing -> emptyWidget
-            Just msg -> withDefAttr clientMessageAttr $ txt msg
 
-    chatText = case st^.csMode of
+    chatText = case appMode st of
         ChannelScroll ->
             -- n.b., In this mode, the output is cached and scrolled
             -- via the viewport.  This means that newly received
@@ -404,14 +405,6 @@ renderCurrentChannelDisplay st hs = (header <+> conn) <=> messages
     cId = st^.csCurrentChannelId
     chan = st^.csCurrentChannel
 
--- | When displaying channel contents, it may be convenient to display
--- information about the current state of the channel.
-stateMessage :: ChannelState -> Maybe T.Text
-stateMessage ChanGettingInfo   = Just "[Fetching channel information...]"
-stateMessage ChanUnloaded      = Just "[Channel content pending...]"
-stateMessage ChanGettingPosts  = Just "[Fetching channel content...]"
-stateMessage ChanInitialSelect = Just "[channel initial content pending...]"
-stateMessage ChanLoaded        = Nothing
 
 getMessageListing :: ChannelId -> ChatState -> Messages
 getMessageListing cId st =
@@ -461,13 +454,37 @@ messageSelectBottomBar st =
         hasURLs = numURLs > 0
         openUrlsMsg = "open " <> (T.pack $ show numURLs) <> " URL" <> s
         hasVerb = isJust (findVerbatimChunk (postMsg^.mText))
-        options = [ (isReplyable, "r", "reply")
-                  , (\m -> isMine st m && isEditable m, "e", "edit")
-                  , (\m -> isMine st m && isDeletable m, "d", "delete")
-                  , (const hasURLs, "o", openUrlsMsg)
-                  , (const hasVerb, "y", "yank")
-                  , (\m -> not (m^.mFlagged), "f", "flag")
-                  , (\m ->      m^.mFlagged , "f", "unflag")
+        -- make sure these keybinding pieces are up-to-date!
+        ev e =
+          let keyconf = st^.csResources.crConfiguration.to configUserKeys
+              keymap = messageSelectKeybindings keyconf
+          in T.intercalate ","
+               [ ppBinding (eventToBinding b)
+               | KB { kbBindingInfo = Just e'
+                    , kbEvent       = b
+                    } <- keymap
+               , e' == e ]
+        options = [ ( isReplyable
+                    , ev ReplyMessageEvent
+                    , "reply" )
+                  , ( \m -> isMine st m && isEditable m
+                    , ev EditMessageEvent
+                    , "edit" )
+                  , ( \m -> isMine st m && isDeletable m
+                    , ev DeleteMessageEvent
+                    , "delete" )
+                  , ( const hasURLs
+                    , ev OpenMessageURLEvent
+                    , openUrlsMsg )
+                  , ( const hasVerb
+                    , ev YankMessageEvent
+                    , "yank" )
+                  , ( \m -> not (m^.mFlagged)
+                    , ev FlagMessageEvent
+                    , "flag" )
+                  , ( \m ->      m^.mFlagged
+                    , ev FlagMessageEvent
+                    , "unflag" )
                   ]
         Just postMsg = getSelectedMessage st
 
@@ -511,7 +528,7 @@ inputPreview :: ChatState -> HighlightSet -> Widget Name
 inputPreview st hs | not $ st^.csShowMessagePreview = emptyWidget
                    | otherwise = thePreview
     where
-    uname = st^.csMe.userUsernameL
+    uId = myUserId st
     -- Insert a cursor sentinel into the input text just before
     -- rendering the preview. We use the inserted sentinel (which is
     -- not rendered) to get brick to ensure that the line the cursor is
@@ -524,28 +541,30 @@ inputPreview st hs | not $ st^.csShowMessagePreview = emptyWidget
     curContents = getText $ (gotoEOL >>> insertChar cursorSentinel) $
                   st^.csEditState.cedEditor.editContentsL
     curStr = T.intercalate "\n" curContents
-    previewMsg = previewFromInput uname curStr
+    previewMsg = previewFromInput uId curStr
     thePreview = let noPreview = str "(No preview)"
                      msgPreview = case previewMsg of
                        Nothing -> noPreview
                        Just pm -> if T.null curStr
                                   then noPreview
-                                  else renderMessage MessageData
-                                         { mdMessage           = pm
-                                         , mdParentMessage     =
-                                             getParentMessage st pm
-                                         , mdHighlightSet      = hs
-                                         , mdEditThreshold     = Nothing
-                                         , mdShowOlderEdits    = False
-                                         , mdRenderReplyParent = True
-                                         , mdIndentBlocks      = True
-                                         }
+                                  else prview pm $ getParentMessage st pm
+                     prview m p = renderMessage MessageData
+                                  { mdMessage           = m
+                                  , mdUserName          = m^.mUser.to (nameForUserRef st)
+                                  , mdParentMessage     = p
+                                  , mdParentUserName    = p >>= (^.mUser.to (nameForUserRef st))
+                                  , mdHighlightSet      = hs
+                                  , mdEditThreshold     = Nothing
+                                  , mdShowOlderEdits    = False
+                                  , mdRenderReplyParent = True
+                                  , mdIndentBlocks      = True
+                                  }
                  in (maybePreviewViewport msgPreview) <=>
                     hBorderWithLabel (withDefAttr clientEmphAttr $ str "[Preview ↑]")
 
 userInputArea :: ChatState -> HighlightSet -> Widget Name
 userInputArea st hs =
-    case st^.csMode of
+    case appMode st of
         ChannelSelect -> renderChannelSelect st
         UrlSelect     -> hCenter $ hBox [ txt "Press "
                                         , withDefAttr clientEmphAttr $ txt "Enter"
@@ -574,11 +593,11 @@ mainInterface st =
     where
     hs = getHighlightSet st
     channelListWidth = configChannelListWidth $ st^.csResources.crConfiguration
-    mainDisplay = case st^.csMode of
+    mainDisplay = case appMode st of
         UrlSelect -> renderUrlList st
         _         -> maybeSubdue $ renderCurrentChannelDisplay st hs
 
-    bottomBorder = case st^.csMode of
+    bottomBorder = case appMode st of
         MessageSelect -> messageSelectBottomBar st
         _ -> case st^.csEditState.cedCurrentCompletion of
             Just _ | length (st^.csEditState.cedCompletionAlternatives) > 1 -> completionAlternatives st
@@ -592,10 +611,10 @@ mainInterface st =
 
     showTypingUsers = case allTypingUsers (st^.csCurrentChannel.ccInfo.cdTypingUsers) of
                         [] -> emptyWidget
-                        [uId] | Just un <- getUsernameForUserId st uId ->
+                        [uId] | Just un <- usernameForUserId uId st ->
                            txt $ un <> " is typing"
-                        [uId1, uId2] | Just un1 <- getUsernameForUserId st uId1
-                                     , Just un2 <- getUsernameForUserId st uId2 ->
+                        [uId1, uId2] | Just un1 <- usernameForUserId uId1 st
+                                     , Just un2 <- usernameForUserId uId2 st ->
                            txt $ un1 <> " and " <> un2 <> " are typing"
                         _ -> txt "several people are typing"
 
@@ -604,7 +623,7 @@ mainInterface st =
                  Just Nothing -> hLimit 2 hBorder <+> txt "*"
                  Nothing -> emptyWidget
 
-    maybeSubdue = if st^.csMode == ChannelSelect
+    maybeSubdue = if appMode st == ChannelSelect
                   then forceAttr ""
                   else id
 
@@ -626,7 +645,7 @@ renderUrlList st =
           let time = link^.linkTime
           in attr sel $ vLimit 2 $
             (vLimit 1 $
-             hBox [ let u = (link^.linkUser) in colorUsername u u
+             hBox [ let u = maybe "" id (link^.linkUser.to (nameForUserRef st)) in colorUsername u u
                   , if link^.linkName == link^.linkURL
                       then emptyWidget
                       else (txt ": " <+> (renderText $ link^.linkName))

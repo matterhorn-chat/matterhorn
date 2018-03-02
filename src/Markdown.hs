@@ -22,6 +22,7 @@ import Prelude.Compat
 import           Brick ( (<+>), Widget, textWidth )
 import qualified Brick.Widgets.Border as B
 import qualified Brick.Widgets.Border.Style as B
+import qualified Brick.Widgets.Skylighting as BS
 import qualified Brick as B
 import           Cheapskate.Types ( Block
                                   , Blocks
@@ -47,7 +48,7 @@ import qualified Graphics.Vty as V
 import           Lens.Micro.Platform ((^.))
 import           Control.Monad              (join)
 
-import           Network.Mattermost.Lenses (postUpdateAtL, postCreateAtL)
+import           Network.Mattermost.Lenses (postEditAtL, postCreateAtL)
 import           Network.Mattermost.Types (ServerTime(..))
 import           Themes
 import           Types (HighlightSet(..), userSigil, normalChannelSigil)
@@ -103,7 +104,9 @@ data MessageData = MessageData
   { mdEditThreshold     :: Maybe ServerTime
   , mdShowOlderEdits    :: Bool
   , mdMessage           :: Message
+  , mdUserName          :: Maybe T.Text
   , mdParentMessage     :: Maybe Message
+  , mdParentUserName    :: Maybe T.Text
   , mdRenderReplyParent :: Bool
   , mdHighlightSet      :: HighlightSet
   , mdIndentBlocks      :: Bool
@@ -123,7 +126,7 @@ data MessageData = MessageData
 -- shown for old messages (i.e., ignore the mdEditThreshold value).
 renderMessage :: MessageData -> Widget a
 renderMessage md@MessageData { mdMessage = msg, .. } =
-    let msgUsr = case msg^.mUserName of
+    let msgUsr = case mdUserName of
           Just u
             | msg^.mType `elem` omitUsernameTypes -> Nothing
             | otherwise -> Just u
@@ -149,9 +152,9 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
         maybeAugment bs = case msg^.mOriginalPost of
             Nothing -> bs
             Just p ->
-                if p^.postUpdateAtL > p^.postCreateAtL
+                if p^.postEditAtL > p^.postCreateAtL
                 then case mdEditThreshold of
-                    Just cutoff | p^.postUpdateAtL >= cutoff ->
+                    Just cutoff | p^.postEditAtL >= cutoff ->
                         addEditSentinel editRecentlyMarkingSentinel bs
                     _ -> if mdShowOlderEdits
                          then addEditSentinel editMarkingSentinel bs
@@ -174,6 +177,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                       let parentMsg = renderMessage md
                             { mdShowOlderEdits    = False
                             , mdMessage           = pm
+                            , mdUserName          = mdParentUserName
                             , mdParentMessage     = Nothing
                             , mdRenderReplyParent = False
                             , mdIndentBlocks      = False
@@ -305,15 +309,7 @@ codeBlockToWidget syntax tx =
         Right tokLines ->
             let padding = B.padLeftRight 1 (B.vLimit (length tokLines) B.vBorder)
             in (B.txt $ "[" <> Sky.sName syntax <> "]") B.<=>
-               (padding <+> (B.vBox $ renderTokenLine <$> tokLines))
-
-renderTokenLine :: Sky.SourceLine -> Widget a
-renderTokenLine [] = B.str " "
-renderTokenLine toks = B.hBox $ renderToken <$> toks
-
-renderToken :: Sky.Token -> Widget a
-renderToken (ty, tx) =
-    B.withDefAttr (attrNameForTokenType ty) $ textWithCursor tx
+               (padding <+> BS.renderRawSource textWithCursor tokLines)
 
 rawCodeBlockToWidget :: T.Text -> Widget a
 rawCodeBlockToWidget tx =

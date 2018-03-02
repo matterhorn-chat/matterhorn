@@ -9,82 +9,65 @@ import Prelude ()
 import Prelude.Compat
 
 import Brick
+import Brick.Forms
+import Brick.Focus
 import Brick.Widgets.Edit
 import Brick.Widgets.Center
 import Brick.Widgets.Border
 import Control.Monad.IO.Class (liftIO)
-import Data.Char (isNumber)
-import Data.Maybe (isNothing)
 import Data.Monoid ((<>))
-import Text.Read (readMaybe)
 import Lens.Micro.Platform
 import qualified Data.Text as T
-import Graphics.Vty hiding (Config)
+import Graphics.Vty
 import System.Exit (exitSuccess)
+import qualified System.IO.Error as Err
 
 import Network.Mattermost.Exceptions (LoginFailureException(..))
 
-import Config
 import Markdown
-import Types (ConnectionInfo(..), AuthenticationException(..))
+import Types ( ConnectionInfo(..), ciPassword, ciUsername, ciHostname
+             , ciPort, AuthenticationException(..)
+             )
 
 data Name = Hostname | Port | Username | Password deriving (Ord, Eq, Show)
 
 data State =
-    State { _hostnameEdit  :: Editor T.Text Name
-          , _portEdit      :: Editor T.Text Name
-          , _usernameEdit  :: Editor T.Text Name
-          , _passwordEdit  :: Editor T.Text Name
-          , _focus         :: Name
+    State { _loginForm     :: Form ConnectionInfo () Name
           , _previousError :: Maybe AuthenticationException
           }
 
 makeLenses ''State
 
-toPassword :: [T.Text] -> Widget a
-toPassword s = txt $ T.replicate (T.length $ T.concat s) "*"
+validHostname :: [T.Text] -> Maybe T.Text
+validHostname ls =
+    let s = T.unpack t
+        t = T.concat ls
+    in if all (flip notElem (":/"::String)) s
+       then Just t
+       else Nothing
 
-validHostname :: State -> Bool
-validHostname st =
-    all (flip notElem (":/"::String)) $ T.unpack $ T.concat $ getEditContents $ st^.hostnameEdit
-
-validPort :: State -> Bool
-validPort st =
-    all isNumber $ T.unpack $ T.concat $ getEditContents $ st^.portEdit
-
-interactiveGatherCredentials :: Config
+interactiveGatherCredentials :: ConnectionInfo
                              -> Maybe AuthenticationException
                              -> IO ConnectionInfo
 interactiveGatherCredentials config authError = do
     let state = newState config authError
     finalSt <- defaultMain app state
-    let finalH    = T.concat $ getEditContents $ finalSt^.hostnameEdit
-        finalPort = read $ T.unpack $ T.concat $ getEditContents $ finalSt^.portEdit
-        finalU    = T.concat $ getEditContents $ finalSt^.usernameEdit
-        finalPass = T.concat $ getEditContents $ finalSt^.passwordEdit
-    return $ ConnectionInfo finalH finalPort finalU finalPass
+    return $ formState $ finalSt^.loginForm
 
-newState :: Config -> Maybe AuthenticationException -> State
-newState config authError = state
+newState :: ConnectionInfo -> Maybe AuthenticationException -> State
+newState cInfo authError = state
     where
-        state = State { _hostnameEdit = editor Hostname (Just 1) hStr
-                      , _portEdit = editor Port (Just 1) (T.pack $ show $ configPort config)
-                      , _usernameEdit = editor Username (Just 1) uStr
-                      , _passwordEdit = editor Password (Just 1) pStr
-                      , _focus = initialFocus
+        state = State { _loginForm = form { formFocus = focusSetCurrent initialFocus (formFocus form)
+                                          }
                       , _previousError = authError
                       }
-        hStr = maybe "" id $ configHost config
-        uStr = maybe "" id $ configUser config
-        pStr = case configPass config of
-            Just (PasswordString s) -> s
-            _                       -> ""
-        initialFocus = if | T.null hStr -> Hostname
-                          | T.null uStr -> Username
-                          | T.null pStr -> Password
-                          | otherwise   -> Hostname
+        form = mkForm cInfo
+        initialFocus = if | T.null (cInfo^.ciHostname) -> Hostname
+                          | T.null (cInfo^.ciUsername) -> Username
+                          | T.null (cInfo^.ciPassword) -> Password
+                          | otherwise                  -> Hostname
 
-app :: App State e Name
+app :: App State () Name
 app = App
   { appDraw         = credsDraw
   , appChooseCursor = showFirstCursor
@@ -92,6 +75,28 @@ app = App
   , appStartEvent   = return
   , appAttrMap      = const colorTheme
   }
+
+editHostname :: (Show n, Ord n) => Lens' s T.Text -> n -> s -> FormFieldState s e n
+editHostname stLens n =
+    let ini = id
+        val = validHostname
+        limit = Just 1
+        renderTxt = txt . T.unlines
+    in editField stLens n limit ini val renderTxt id
+
+mkForm :: ConnectionInfo -> Form ConnectionInfo e Name
+mkForm =
+    let label s w = padBottom (Pad 1) $
+                    (vLimit 1 $ hLimit 18 $ str s <+> fill ' ') <+> w
+    in newForm [ label "Server hostname:" @@=
+                   editHostname ciHostname Hostname
+               , label "Server port:" @@=
+                   editShowableField ciPort Port
+               , label "Username:" @@=
+                   editTextField ciUsername Username (Just 1)
+               , label "Password:" @@=
+                   editPasswordField ciPassword Password
+               ]
 
 errorAttr :: AttrName
 errorAttr = "errorMessage"
@@ -101,6 +106,8 @@ colorTheme = attrMap defAttr
   [ (editAttr, black `on` white)
   , (editFocusedAttr, black `on` yellow)
   , (errorAttr, fg red)
+  , (focusedFormInputAttr, black `on` yellow)
+  , (invalidFormInputAttr, white `on` red)
   ]
 
 credsDraw :: State -> [Widget Name]
@@ -122,6 +129,10 @@ renderAuthError (ConnectError _) =
     "Could not connect to server"
 renderAuthError (ResolveError _) =
     "Could not resolve server hostname"
+renderAuthError (AuthIOError err)
+  | Err.isDoesNotExistErrorType (Err.ioeGetErrorType err) =
+    "Unable to connect to the network"
+  | otherwise = "GetAddrInfo: " <> T.pack (Err.ioeGetErrorString err)
 renderAuthError (OtherAuthError e) =
     T.pack $ show e
 renderAuthError (LoginError (LoginFailureException msg)) =
@@ -131,68 +142,21 @@ renderError :: Widget a -> Widget a
 renderError = withDefAttr errorAttr
 
 uiWidth :: Int
-uiWidth = 50
+uiWidth = 60
 
 credentialsForm :: State -> Widget Name
 credentialsForm st =
     hCenter $ hLimit uiWidth $ vLimit 15 $
     border $
     vBox [ renderText "Please enter your Mattermost credentials to log in."
-         , padTop (Pad 1) $
-           txt "Hostname: " <+> renderEditor (txt . T.concat) (st^.focus == Hostname) (st^.hostnameEdit)
-         , if validHostname st
-              then txt " "
-              else hCenter $ renderError $ txt "Invalid hostname"
-         , txt "Port:     " <+> renderEditor (txt . T.concat) (st^.focus == Port) (st^.portEdit)
-         , if validPort st
-              then txt " "
-              else hCenter $ renderError $ txt "Invalid port"
-         , txt "Username: " <+> renderEditor (txt . T.concat) (st^.focus == Username) (st^.usernameEdit)
-         , padTop (Pad 1) $
-           txt "Password: " <+> renderEditor toPassword (st^.focus == Password) (st^.passwordEdit)
-         , padTop (Pad 1) $
-           hCenter $ renderText "Press Enter to log in or Esc to exit."
+         , padTop (Pad 1) $ renderForm (st^.loginForm)
+         , hCenter $ renderText "Press Enter to log in or Esc to exit."
          ]
 
-onEvent :: State -> BrickEvent Name e -> EventM Name (Next State)
+onEvent :: State -> BrickEvent Name () -> EventM Name (Next State)
 onEvent _  (VtyEvent (EvKey KEsc [])) = liftIO exitSuccess
-onEvent st (VtyEvent (EvKey (KChar '\t') [])) =
-    continue $ st & focus %~ nextFocus
 onEvent st (VtyEvent (EvKey KEnter [])) =
-    if badState st then continue st else halt st
-onEvent st (VtyEvent e) = do
-    let target :: Lens' State (Editor T.Text Name)
-        target = getFocusedEditor st
-    continue =<< handleEventLensed st target handleEditorEvent e
-onEvent st _ = continue st
-
-nextFocus :: Name -> Name
-nextFocus Hostname = Port
-nextFocus Port     = Username
-nextFocus Username = Password
-nextFocus Password = Hostname
-
-getFocusedEditor :: State -> Lens' State (Editor T.Text Name)
-getFocusedEditor st =
-    case st^.focus of
-        Hostname -> hostnameEdit
-        Port     -> portEdit
-        Username -> usernameEdit
-        Password -> passwordEdit
-
-badState :: State -> Bool
-badState st = bad
-    where
-        -- check for valid (non-empty) contents
-        h = T.concat $ getEditContents $ st^.hostnameEdit
-        u = T.concat $ getEditContents $ st^.usernameEdit
-        p = T.concat $ getEditContents $ st^.passwordEdit
-        port :: Maybe Int
-        port = readMaybe (T.unpack $ T.concat $ getEditContents $ st^.portEdit)
-        bad = or [ T.null h
-                 , T.null u
-                 , T.null p
-                 , isNothing port
-                 , (not $ validHostname st)
-                 , (not $ validPort st)
-                 ]
+    if allFieldsValid (st^.loginForm) then halt st else continue st
+onEvent st e = do
+    f' <- handleFormEvent e (st^.loginForm)
+    continue $ st & loginForm .~ f'

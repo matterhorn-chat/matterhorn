@@ -17,7 +17,8 @@ import qualified Data.Text as T
 import           Lens.Micro.Platform
 import           System.Hclip (setClipboard, ClipboardException(..))
 
-import           Network.Mattermost
+import           Network.Mattermost.Endpoints
+import           Network.Mattermost.Types
 import           Network.Mattermost.Lenses
 import           Network.Mattermost.Exceptions
 
@@ -38,8 +39,9 @@ tryMM :: IO a
 tryMM act onSuccess = do
     result <- liftIO $ try act
     case result of
-        Left (MattermostServerError msg) -> return $ postErrorMessage msg
-        Right value                      -> liftIO $ onSuccess value
+        Left (MattermostError { mattermostErrorMessage = msg }) ->
+          return $ mhError msg
+        Right value -> liftIO $ onSuccess value
 
 -- * Background Computation
 
@@ -136,10 +138,10 @@ doAsyncMM :: AsyncPriority
           -- context
           -> MH ()
 doAsyncMM prio mmOp eventHandler = do
-  session <- use (csResources.crSession)
-  myTeamId <- use (csMyTeam.teamIdL)
+  session <- getSession
+  tId <- gets myTeamId
   doAsyncWith prio $ do
-    r <- mmOp session myTeamId
+    r <- mmOp session tId
     return $ eventHandler r
 
 -- | Helper type for a function to perform an asynchronous MM operation
@@ -162,24 +164,6 @@ doAsyncChannelMM :: DoAsyncChannelMM a
 doAsyncChannelMM prio cId mmOp eventHandler =
   doAsyncMM prio (\s t -> mmOp s t cId) (eventHandler cId)
 
--- | Prefix function for calling doAsyncChannelMM that will set the
--- channel state to "pending" until the async operation completes.  If
--- the channel state is already in the pending state when this
--- function is called, no operations are performed (i.e., this request
--- is treated as a duplicate).
-asPending :: DoAsyncChannelMM a -> DoAsyncChannelMM a
-asPending asyncOp prio cId mmOp eventHandler = do
-    withChannel cId $ \chan ->
-        let origState = chan^.ccInfo.cdCurrentState
-            (pendState, setDone) = pendingChannelState origState
-        in if pendState == origState
-           then return ()  -- this operation already pending; do not duplicate
-           else do
-             csChannel(cId).ccInfo.cdCurrentState .= pendState
-             asyncOp prio cId mmOp $ \_ r ->
-                 do csChannel(cId).ccInfo.cdCurrentState %= setDone
-                    eventHandler cId r
-
 -- | Use this convenience function if no operation needs to be
 -- performed in the MH state after an async operation completes.
 endAsyncNOP :: ChannelId -> a -> MH ()
@@ -187,28 +171,18 @@ endAsyncNOP _ _ = return ()
 
 -- * Client Messages
 
--- | Create 'ChannelContents' from a 'Posts' value
-fromPosts :: Posts -> MH ChannelContents
-fromPosts ps = do
-  msgs <- messagesFromPosts ps
-  F.forM_ (ps^.postsPostsL) $
-    asyncFetchAttachments
-  return (ChannelContents msgs)
-
 messagesFromPosts :: Posts -> MH Messages
 messagesFromPosts p = do
-  st <- use id
   flags <- use (csResources.crFlaggedPosts)
-  csPostMap %= HM.union (postMap st)
-  st' <- use id
-  let msgs = postsToMessages (maybeFlag flags . clientPostToMessage st') (clientPost <$> ps)
+  csPostMap %= HM.union postMap
+  let msgs = postsToMessages (maybeFlag flags . clientPostToMessage) (clientPost <$> ps)
       postsToMessages f = foldr (addMessage . f) noMessages
   return msgs
     where
-        postMap :: ChatState -> HM.HashMap PostId Message
-        postMap st = HM.fromList
+        postMap :: HM.HashMap PostId Message
+        postMap = HM.fromList
           [ ( pId
-            , clientPostToMessage st (toClientPost x Nothing)
+            , clientPostToMessage (toClientPost x Nothing)
             )
           | (pId, x) <- HM.toList (p^.postsPostsL)
           ]
@@ -231,10 +205,10 @@ asyncFetchAttachments :: Post -> MH ()
 asyncFetchAttachments p = do
   let cId = (p^.postChannelIdL)
       pId = (p^.postIdL)
-  session <- use (csResources.crSession)
+  session <- getSession
   host    <- use (csResources.crConn.cdHostnameL)
   F.forM_ (p^.postFileIdsL) $ \fId -> doAsyncWith Normal $ do
-    info <- mmGetFileInfo session fId
+    info <- mmGetMetadataForFile fId session
     let scheme = "https://"
         attUrl = scheme <> host <> urlForFile fId
         attachment = mkAttachment (fileInfoName info) attUrl fId
@@ -265,10 +239,15 @@ postInfoMessage err = do
 
 -- | Add a new 'ClientMessage' representing an error message to
 --   the current channel's message list
-postErrorMessage :: T.Text -> MH ()
-postErrorMessage err = do
+postErrorMessage' :: T.Text -> MH ()
+postErrorMessage' err = do
     msg <- newClientMessage Error err
     doAsyncWith Normal (return $ addClientMessage msg)
+
+-- | Raise a rich error
+mhError :: T.Text -> MH ()
+mhError err = do
+  raiseInternalEvent (DisplayError err)
 
 postErrorMessageIO :: T.Text -> ChatState -> IO ChatState
 postErrorMessageIO err st = do
@@ -284,7 +263,7 @@ asyncFetchReactionsForPost :: ChannelId -> Post -> MH ()
 asyncFetchReactionsForPost cId p
   | not (p^.postHasReactionsL) = return ()
   | otherwise = doAsyncChannelMM Normal cId
-        (\s t c -> mmGetReactionsForPost s t c (p^.postIdL))
+        (\s _ _ -> fmap F.toList (mmGetReactionsForPost (p^.postIdL) s))
         addReactions
 
 addReactions :: ChannelId -> [Reaction] -> MH ()
@@ -314,14 +293,6 @@ copyToClipboard txt = do
             MissingCommands cmds ->
               "Could not set clipboard due to missing one of the " <>
               "required program(s): " <> (T.pack $ show cmds)
-      postErrorMessage errMsg
+      mhError errMsg
     Right () ->
       return ()
-
-loadAllUsers :: Session -> IO (HM.HashMap UserId User)
-loadAllUsers session = go HM.empty 0
-  where go users n = do
-          newUsers <- mmGetUsers session (n * 50) 50
-          if HM.null newUsers
-            then return users
-            else go (newUsers <> users) (n+1)

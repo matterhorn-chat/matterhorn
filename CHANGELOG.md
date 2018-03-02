@@ -1,3 +1,100 @@
+
+40700.0.0
+=========
+
+This release supports Mattermost server version 4.7.
+
+New features:
+ * The `/focus` command with no arguments now starts channel selection
+   mode, equivalent to the default binding of `C-g`.
+ * The `/join` command now accepts an optional channel name argument. If
+   provided, the named channel is joined (#361).
+ * A new user browser was added! The user browser presents a list of
+   users and the ability to search users by name. The new user list
+   powers some new and existing commands:
+   * A new `/msg` command is used to browse known users and select a
+     user with `Enter` to begin a private chat session with the selected
+     user.
+   * A new `/add-user` command is used to add users to the current
+     channel. The list shows users who are not already members of the
+     channelcurrent and `Enter` adds the selected user to the channel.
+   * The existing `/members` command now shows a browsable user list of
+     members of the current channel. `Enter` begins a private chat
+     session with the selected user.
+
+Bug fixes:
+ * Missing `urlOpenCommand`s are now reported as error messages rather
+   than informative messages.
+ * More login-related exceptions are now displayed in a more readable
+   format on the login screen (#358).
+ * Channel selection mode now prefers an exact match as the initial
+   cursor selection if one exists (#356).
+ * Replies now indicate the correct parent message in the message list.
+ * The multi-line editor help message now shows the active binding
+   (previously `M-e`).
+
+40600.1.0
+=========
+
+Performance improvements:
+ * Matterhorn's reconnection handling was improved to more reliably
+   fetch messages that arrived while the client was disconnected.
+ * Startup performance was improved by reducing redundant post and user
+   metadata fetches when loading channel messages.
+
+Other fixes:
+ * The multi-line toggle help message now shows the active binding.
+ * Slash commands now support multi-line input. Previously only the
+   first line was passed as the command input.
+ * Matterhorn now updates channel view status on updates from other
+   clients (#342)
+
+40600.0.0
+=========
+
+This release supports Mattermost server version 4.6.
+
+New features:
+ * Rebindable keys are now supported! See `/help keybindings` for
+   details. Matterhorn also checks for conflicting bindings on startup.
+ * The user status list now supports the Do Not Disturb status (shown as
+   `×`).
+ * User typing notifications are now supported. These are off by default
+   but can be enabled with the `showTypingIndicator` configuration
+   setting. Enabling the feature causes Matterhorn to produce such
+   notifications for the server and to display typing indications from
+   other users. Thanks to Abhinav Sarkar for this feature!
+ * Matterhorn now remembers which channel was visited when the client is
+   closed and returns to that channel on startup. Thanks to Abhinav
+   Sarkar for this feature!
+
+New commands:
+ * `/message-preview` now toggles message preview mode in addition to
+   default `M-p` keybinding.
+
+Bug fixes:
+ * New post reactions no longer cause a post to be indicated as
+   "(edited)" (#333)
+
+UI changes:
+ * The channel list shown by `/join` now also displays the channel
+   purpose for each channel when possible.
+
+Performance improvements:
+ * Matterhorn now has much lower input latency on servers with very
+   large numbers of users due to user list rendering performance
+   improvements.
+
+Miscellaneous:
+ * This release now uses only version 4 API endpoints, consistent with
+   the upstream deprecation of version 3 API endpoints in the 4.6
+   release.
+ * Startup requests are now performed concurrently to improve
+   performance (#347, thanks to Abhinav Sarkar)
+ * Channel header strings containing newlines are now rendered more
+   effectively: newlines are converted to spaces. This behavior more
+   closely matches the web client, too.
+
 40400.0.0
 =========
 

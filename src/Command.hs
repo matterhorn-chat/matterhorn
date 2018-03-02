@@ -9,19 +9,36 @@ import           Control.Applicative ((<|>))
 import qualified Control.Exception as Exn
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad (void)
+import qualified Data.Char as Char
 import           Data.Monoid ((<>))
 import qualified Data.Text as T
 import           Lens.Micro.Platform
-import qualified Network.Mattermost as MM
-import qualified Network.Mattermost.Lenses as MM
+import qualified Network.Mattermost.Endpoints as MM
+import qualified Network.Mattermost.Types as MM
 import qualified Network.Mattermost.Exceptions as MM
 
 import State
+import State.Editing (toggleMessagePreview)
 import State.Common
 import State.PostListOverlay
+import State.UserListOverlay
 import Types
 import HelpTopics
 import Scripts
+
+-- | This function skips any initial whitespace and returns the first
+-- 'token' (i.e. any sequence of non-whitespace characters) as well as
+-- the trailing rest of the string, after any whitespace. This is used
+-- for tokenizing the first bits of command input while leaving the
+-- subsequent chunks unchanged, preserving newlines and other
+-- important formatting.
+unwordHead :: T.Text -> Maybe (T.Text, T.Text)
+unwordHead t =
+  let t' = T.dropWhile Char.isSpace t
+      (w, rs)  = T.break Char.isSpace t'
+  in if T.null w
+       then Nothing
+       else Just (w, T.dropWhile Char.isSpace rs)
 
 printArgSpec :: CmdArgs a -> T.Text
 printArgSpec NoArg = ""
@@ -29,14 +46,18 @@ printArgSpec (LineArg ts) = "[" <> ts <> "]"
 printArgSpec (TokenArg t NoArg) = "[" <> t <> "]"
 printArgSpec (TokenArg t rs) = "[" <> t <> "] " <> printArgSpec rs
 
-matchArgs :: CmdArgs a -> [T.Text] -> Either T.Text a
-matchArgs NoArg []  = return ()
-matchArgs NoArg [t] = Left ("unexpected argument '" <> t <> "'")
-matchArgs NoArg ts  = Left ("unexpected arguments '" <> T.unwords ts <> "'")
-matchArgs (LineArg _) ts = return (T.unwords ts)
-matchArgs rs@(TokenArg _ NoArg) [] = Left ("missing argument: " <> printArgSpec rs)
-matchArgs rs@(TokenArg _ _) [] = Left ("missing arguments: " <> printArgSpec rs)
-matchArgs (TokenArg _ rs) (t:ts) = (,) <$> pure t <*> matchArgs rs ts
+matchArgs :: CmdArgs a -> T.Text -> Either T.Text a
+matchArgs NoArg t = case unwordHead t of
+  Nothing -> return ()
+  Just (a, as)
+    | not (T.all Char.isSpace as) -> Left ("Unexpected arguments '" <> t <> "'")
+    | otherwise -> Left ("Unexpected argument '" <> a <> "'")
+matchArgs (LineArg _) t = return t
+matchArgs spec@(TokenArg _ rs) t = case unwordHead t of
+  Nothing -> case rs of
+    NoArg -> Left ("Missing argument: " <> printArgSpec spec)
+    _     -> Left ("Missing arguments: " <> printArgSpec spec)
+  Just (a, as) -> (,) <$> pure a <*> matchArgs rs as
 
 commandList :: [Cmd]
 commandList =
@@ -53,11 +74,13 @@ commandList =
       beginCurrentChannelDeleteConfirm
   , Cmd "members" "Show the current channel's members"
     NoArg $ \ () ->
-      fetchCurrentChannelMembers
+      enterChannelMembersUserList
   , Cmd "leave" "Leave the current channel" NoArg $ \ () ->
       startLeaveCurrentChannel
-  , Cmd "join" "Join a channel" NoArg $ \ () ->
+  , Cmd "join" "Browse the list of available channels" NoArg $ \ () ->
       startJoinChannel
+  , Cmd "join" "Join the specified channel" (TokenArg "channel" NoArg) $ \(n, ()) ->
+      joinChannelByName n
   , Cmd "theme" "List the available themes" NoArg $ \ () ->
       listThemes
   , Cmd "theme" "Set the color theme"
@@ -66,15 +89,25 @@ commandList =
   , Cmd "topic" "Set the current channel's topic"
     (LineArg "topic") $ \ p ->
       if not (T.null p) then setChannelTopic p else return ()
+  , Cmd "add-user" "Search for a user to add to the current channel"
+    NoArg $ \ () ->
+        enterChannelInviteUserList
+  , Cmd "msg" "Chat with a user privately"
+    NoArg $ \ () ->
+        enterDMSearchUserList
   , Cmd "add-user" "Add a user to the current channel"
     (TokenArg "username" NoArg) $ \ (uname, ()) ->
         addUserToCurrentChannel uname
   , Cmd "remove-user" "Remove a user from the current channel"
     (TokenArg "username" NoArg) $ \ (uname, ()) ->
         removeUserFromCurrentChannel uname
+  , Cmd "message-preview" "Toggle preview of the current message" NoArg $ \_ ->
+        toggleMessagePreview
   , Cmd "focus" "Focus on a named channel"
     (TokenArg "channel" NoArg) $ \ (name, ()) ->
         changeChannel name
+  , Cmd "focus" "Select from available channels" NoArg $ \ () ->
+        beginChannelSelect
   , Cmd "help" "Show this help screen" NoArg $ \ _ ->
         showHelpScreen mainHelpTopic
   , Cmd "help" "Show help about a particular topic"
@@ -84,15 +117,19 @@ commandList =
                   let msg = ("Unknown help topic: `" <> topicName <> "`. " <>
                             (T.unlines $ "Available topics are:" : knownTopics))
                       knownTopics = ("  - " <>) <$> helpTopicName <$> helpTopics
-                  postErrorMessage msg
+                  mhError msg
               Just topic -> showHelpScreen topic
+
   , Cmd "sh" "List the available shell scripts" NoArg $ \ () ->
       listScripts
+
   , Cmd "group-msg" "Create a group chat"
     (LineArg "user1 user2 ...") createGroupChannel
+
   , Cmd "sh" "Run a prewritten shell script"
     (TokenArg "script" (LineArg "message")) $ \ (script, text) ->
       findAndRunScript script text
+
   , Cmd "me" "Send an emote message"
     (LineArg "message") $
     \msg -> execMMCommand "me" msg
@@ -106,14 +143,15 @@ commandList =
 
   , Cmd "search" "Search for posts with given terms"  (LineArg "terms") $
       enterSearchResultPostListMode
+
   ]
 
 execMMCommand :: T.Text -> T.Text -> MH ()
 execMMCommand name rest = do
   cId      <- use csCurrentChannelId
-  session  <- use (csResources.crSession)
-  myTeamId <- use (csMyTeam.(MM.teamIdL))
+  session  <- getSession
   em       <- use (csEditState.cedEditMode)
+  tId      <- gets myTeamId
   let mc = MM.MinCommand
              { MM.minComChannelId = cId
              , MM.minComCommand   = "/" <> name <> " " <> rest
@@ -125,9 +163,10 @@ execMMCommand name rest = do
                  Replying _ p -> MM.postRootId p <|> (Just $ MM.postId p)
                  Editing p    -> MM.postRootId p
                  _            -> Nothing
+             , MM.minComTeamId = tId
              }
       runCmd = liftIO $ do
-        void $ MM.mmExecute session myTeamId mc
+        void $ MM.mmExecuteCommand mc session
       handleHTTP (MM.HTTPResponseException err) =
         return (Just (T.pack err))
         -- XXX: this might be a bit brittle in the future, because it
@@ -137,25 +176,31 @@ execMMCommand name rest = do
       handleCmdErr (MM.MattermostServerError err) =
         let (_, msg) = T.breakOn ": " err in
           return (Just (T.drop 2 msg))
+      handleMMErr (MM.MattermostError
+                     { MM.mattermostErrorMessage = msg }) =
+        return (Just msg)
   errMsg <- liftIO $ (runCmd >> return Nothing) `Exn.catch` handleHTTP
                                                 `Exn.catch` handleCmdErr
+                                                `Exn.catch` handleMMErr
   case errMsg of
     Nothing -> return ()
     Just err ->
-      postErrorMessage ("Error running command: " <> err)
+      mhError ("Error running command: " <> err)
 
 dispatchCommand :: T.Text -> MH ()
 dispatchCommand cmd =
-  case T.words cmd of
-    (x:xs) | matchingCmds <- [ c | c@(Cmd name _ _ _) <- commandList
-                             , name == x
-                             ] -> go [] matchingCmds
+  case unwordHead cmd of
+    Just (x, xs)
+      | matchingCmds <- [ c
+                        | c@(Cmd name _ _ _) <- commandList
+                        , name == x
+                        ] -> go [] matchingCmds
       where go [] [] = do
-              execMMCommand x (T.unwords xs)
+              execMMCommand x xs
             go errs [] = do
               let msg = ("error running command /" <> x <> ":\n" <>
                          mconcat [ "    " <> e | e <- errs ])
-              postErrorMessage msg
+              mhError msg
             go errs (Cmd _ _ spec exe : cs) =
               case matchArgs spec xs of
                 Left e -> go (e:errs) cs

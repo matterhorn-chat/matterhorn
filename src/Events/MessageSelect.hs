@@ -6,81 +6,57 @@ import Prelude.Compat
 import Data.Monoid ((<>))
 import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
-import Lens.Micro.Platform
 
 import Types
+import Events.Keybindings
 import State
 
 messagesPerPageOperation :: Int
 messagesPerPageOperation = 10
 
 onEventMessageSelect :: Vty.Event -> MH ()
-onEventMessageSelect e | Just kb <- lookupKeybinding e messageSelectKeybindings =
-  kbAction kb
-onEventMessageSelect _ = return ()
+onEventMessageSelect =
+  handleKeyboardEvent messageSelectKeybindings $ \ _ -> return ()
 
 onEventMessageSelectDeleteConfirm :: Vty.Event -> MH ()
 onEventMessageSelectDeleteConfirm (Vty.EvKey (Vty.KChar 'y') []) = do
     deleteSelectedMessage
-    csMode .= Main
+    setMode Main
 onEventMessageSelectDeleteConfirm _ =
-    csMode .= Main
+    setMode Main
 
-messageSelectKeybindings :: [Keybinding]
-messageSelectKeybindings =
-    [ KB "Cancel message selection"
-         (Vty.EvKey Vty.KEsc []) $ csMode .= Main
+messageSelectKeybindings :: KeyConfig -> [Keybinding]
+messageSelectKeybindings = mkKeybindings
+    [ mkKb CancelEvent "Cancel message selection" $
+        setMode Main
 
-    , KB "Cancel message selection"
-         (Vty.EvKey (Vty.KChar 'c') [Vty.MCtrl]) $
-         csMode .= Main
+    , mkKb SelectUpEvent "Select the previous message" messageSelectUp
+    , mkKb SelectDownEvent "Select the next message" messageSelectDown
+    , mkKb
+        PageUpEvent
+        (T.pack $ "Move the cursor up by " <> show messagesPerPageOperation <> " messages")
+        (messageSelectUpBy messagesPerPageOperation)
+    , mkKb
+        PageDownEvent
+        (T.pack $ "Move the cursor down by " <> show messagesPerPageOperation <> " messages")
+        (messageSelectDownBy messagesPerPageOperation)
 
-    , KB "Select the previous message"
-         (Vty.EvKey (Vty.KChar 'k') []) $
-         messageSelectUp
+    , mkKb OpenMessageURLEvent "Open all URLs in the selected message"
+        openSelectedMessageURLs
 
-    , KB "Select the previous message"
-         (Vty.EvKey Vty.KUp []) $
-         messageSelectUp
-
-    , KB (T.pack $ "Move the cursor up by " <> show messagesPerPageOperation <> " messages")
-         (Vty.EvKey Vty.KPageUp []) $
-         messageSelectUpBy messagesPerPageOperation
-
-    , KB "Select the next message"
-         (Vty.EvKey (Vty.KChar 'j') []) $
-         messageSelectDown
-
-    , KB "Select the next message"
-         (Vty.EvKey Vty.KDown []) $
-         messageSelectDown
-
-    , KB (T.pack $ "Move the cursor down by " <> show messagesPerPageOperation <> " messages")
-         (Vty.EvKey Vty.KPageDown []) $
-         messageSelectDownBy messagesPerPageOperation
-
-    , KB "Open all URLs in the selected message"
-         (Vty.EvKey (Vty.KChar 'o') []) $
-         openSelectedMessageURLs
-
-    , KB "Begin composing a reply to the selected message"
-         (Vty.EvKey (Vty.KChar 'r') []) $
+    , mkKb ReplyMessageEvent "Begin composing a reply to the selected message"
          beginReplyCompose
 
-    , KB "Begin editing the selected message"
-         (Vty.EvKey (Vty.KChar 'e') []) $
+    , mkKb EditMessageEvent "Begin editing the selected message"
          beginUpdateMessage
 
-    , KB "Delete the selected message (with confirmation)"
-         (Vty.EvKey (Vty.KChar 'd') []) $
+    , mkKb DeleteMessageEvent "Delete the selected message (with confirmation)"
          beginConfirmDeleteSelectedMessage
 
-    , KB "Copy a verbatim section to the clipboard"
-         (Vty.EvKey (Vty.KChar 'y') []) $
+    , mkKb YankMessageEvent "Copy a verbatim section to the clipboard"
          copyVerbatimToClipboard
 
-    , KB "Flag the selected message"
-         (Vty.EvKey (Vty.KChar 'f') []) $
+    , mkKb FlagMessageEvent "Flag the selected message"
          flagSelectedMessage
 
     ]

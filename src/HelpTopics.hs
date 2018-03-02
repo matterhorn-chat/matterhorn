@@ -21,6 +21,7 @@ helpTopics =
     [ mainHelpTopic
     , scriptHelpTopic
     , themeHelpTopic
+    , keybindingHelpTopic
     ]
 
 mainHelpTopic :: HelpTopic
@@ -34,6 +35,11 @@ scriptHelpTopic =
 themeHelpTopic :: HelpTopic
 themeHelpTopic =
     HelpTopic "themes" "Help on color themes" ThemeHelp ThemeHelpText
+
+keybindingHelpTopic :: HelpTopic
+keybindingHelpTopic =
+    HelpTopic "keybindings" "Help on overriding keybindings"
+      KeybindingHelp KeybindingHelpText
 
 lookupHelpTopic :: T.Text -> Maybe HelpTopic
 lookupHelpTopic topic =

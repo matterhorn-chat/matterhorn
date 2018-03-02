@@ -7,6 +7,8 @@ import Brick.Widgets.List
 import qualified Graphics.Vty as Vty
 import Lens.Micro.Platform
 
+import Network.Mattermost.Types (getId)
+
 import Types
 import State (joinChannel)
 
@@ -33,8 +35,8 @@ onEventJoinChannel (Vty.EvKey Vty.KEnter []) = do
         Nothing -> return ()
         Just l -> case listSelectedElement l of
             Nothing -> return ()
-            Just (_, chan) -> joinChannel chan
+            Just (_, chan) -> joinChannel (getId chan)
 onEventJoinChannel (Vty.EvKey Vty.KEsc []) = do
-    csMode .= Main
+    setMode Main
 onEventJoinChannel _ = do
     return ()

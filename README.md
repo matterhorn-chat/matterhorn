@@ -63,8 +63,8 @@ globally-accessible `/etc/matterhorn/config.ini`.
 The user interface has three main areas:
 
 * Left: list of channels you're in, and list of users in your team and
-  their statuses (`+` means online, `-` means away, and an absent sigil
-  means offline)
+  their statuses (`+` means online, `-` means away, `×` means Do Not
+  Disturb, and an absent sigil means offline)
 * Right: messages in the current channel
 * Bottom: editing area for writing, editing, and replying to messages
 
@@ -75,7 +75,9 @@ modifiers such as Control (indicated with a `C-` prefix) or Meta
 (indicated with a `M-` prefix). If your keyboard has an `Alt` key, that
 will work as `Meta`. If it does not, you may be able to configure your
 terminal to provide `Meta` via other means (e.g. iTerm2 on OS X can be
-configured to make the left Option key work as Meta).
+configured to make the left Option key work as Meta). Keybindings can
+be customized in the configuration file; see `/help keybindings` for
+details.
 
 To join a channel, use the `/join` command to choose from a list of
 available channels. To create a channel, use `/create-channel`. To leave
@@ -93,9 +95,9 @@ binding `M-e`. Markdown syntax is accepted.
 To edit your current message in an external editor (`$EDITOR`), use the
 default binding of `M-k`.
 
-To preview the message you're about to send (e.g. to check on how your
-Markdown syntax will be rendered), toggle preview mode with the default
-binding `M-p`.
+To preview the message you're about to send while you compose it (e.g.
+to check on how your Markdown syntax will be rendered), toggle preview
+mode with the default binding `M-p`.
 
 To change channels, use `/focus` or one of the default bindings `C-n`
 (next channel), `C-p` (previous channel), `C-g` (fast channel switch).
@@ -143,6 +145,7 @@ name of the dictionary you'd like to use.
 * Preview message rendering before sending
 * Optional smart quoting for efficient Markdown entry
 * Edit messages with `$EDITOR`
+* Rebindable keys (see `/help keybindings`)
 * Message editor with kill/yank buffer and readline-style keybindings
 * Tab-completion of usernames, channel names, and commands
 * Spell-checking via Aspell

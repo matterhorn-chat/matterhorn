@@ -10,7 +10,7 @@ import qualified Data.Foldable as F
 import           Data.Monoid ((<>))
 import qualified Data.Text as T
 import           Lens.Micro.Platform
-import           Network.Mattermost
+import           Network.Mattermost.Types
 import           Network.Mattermost.Lenses
 
 import Brick
@@ -82,9 +82,9 @@ drawPostsBox contents st =
               | Just chan <- st^?csChannels.channelByIdL(post^.postChannelIdL) ->
                  case chan^.ccInfo.cdType of
                   Direct
-                    | Just u <- findUserByDMChannelName (st^.csUsers)
-                                                        (chan^.ccInfo.cdName)
-                                                        (st^.csMe.userIdL) ->
+                    | Just u <- userByDMChannelName (chan^.ccInfo.cdName)
+                                                    (myUserId st)
+                                                    st ->
                         (forceAttr channelNameAttr (txt (T.singleton '@' <> u^.uiName)) <=>
                           (str "  " <+> renderedMsg))
                   _ -> (forceAttr channelNameAttr (txt (chan^.ccInfo.to mkChannelName)) <=>

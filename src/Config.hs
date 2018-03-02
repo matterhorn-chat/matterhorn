@@ -12,8 +12,11 @@ import           Prelude ()
 import           Prelude.Compat
 
 import           Control.Applicative
+import           Control.Monad (forM)
 import           Control.Monad.Trans.Except
 import           Data.Ini.Config
+import qualified Data.Map.Strict as M
+import           Data.Maybe (catMaybes, fromMaybe)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import           Data.Monoid ((<>))
@@ -23,13 +26,14 @@ import           System.Process (readProcess)
 import           IOUtil
 import           FilePaths
 import           Types
+import           Types.KeyEvents
 
 defaultPort :: Int
 defaultPort = 443
 
 fromIni :: IniParser Config
 fromIni = do
-  section "mattermost" $ do
+  conf <- section "mattermost" $ do
     configUser           <- fieldMbOf "user" stringField
     configHost           <- fieldMbOf "host" stringField
     configTeam           <- fieldMbOf "team" stringField
@@ -64,7 +68,15 @@ fromIni = do
       fieldFlagDef "unsafeUseUnauthenticatedConnection" False
 
     let configAbsPath = Nothing
+        configUserKeys = mempty
     return Config { .. }
+  keys <- sectionMb "keybindings" $ do
+    fmap (M.fromList . catMaybes) $ forM allEvents $ \ ev -> do
+      kb <- fieldMbOf (keyEventName ev) parseBindingList
+      case kb of
+        Nothing      -> return Nothing
+        Just binding -> return (Just (ev, binding))
+  return conf { configUserKeys = fromMaybe mempty keys }
 
 backgroundField :: T.Text -> Either String BackgroundInfo
 backgroundField t =
@@ -118,6 +130,7 @@ defaultConfig =
            , configUnsafeUseHTTP             = False
            , configChannelListWidth          = 20
            , configShowOlderEdits            = True
+           , configUserKeys                  = mempty
            , configShowTypingIndicator       = False
            }
 

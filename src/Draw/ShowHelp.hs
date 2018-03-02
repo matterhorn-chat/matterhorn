@@ -9,16 +9,19 @@ import Brick.Widgets.Border
 import Brick.Widgets.Center (hCenter, centerLayer)
 import Brick.Widgets.List (listSelectedFocusedAttr)
 import Lens.Micro.Platform
-import Data.List (sortBy, intercalate, sort)
-import Data.Ord (comparing)
+import Data.List (intercalate, sort)
+import Data.Maybe (isNothing)
 import qualified Data.Map as M
 import qualified Data.Text as T
 import Data.Monoid ((<>))
 import qualified Graphics.Vty as Vty
+import GHC.Exts (sortWith, groupWith)
 import Network.Mattermost.Version (mmApiVersion)
 
 import Themes
 import Types
+import Types.KeyEvents (Binding(..), ppBinding, nonCharKeys, eventToBinding)
+import Events.Keybindings
 import Command
 import Events.ShowHelp
 import Events.ChannelScroll
@@ -27,6 +30,7 @@ import Events.UrlSelect
 import Events.Main
 import Events.MessageSelect
 import Events.PostListOverlay
+import Events.UserListOverlay
 import State.Editing (editingKeybindings)
 import Markdown (renderText)
 import Options (mhVersion)
@@ -37,23 +41,24 @@ drawShowHelp topic st =
     [helpBox (helpTopicViewportName topic) $ helpTopicDraw topic st]
 
 helpTopicDraw :: HelpTopic -> ChatState -> Widget Name
-helpTopicDraw topic =
+helpTopicDraw topic st =
     case helpTopicScreen topic of
-        MainHelp -> const mainHelp
-        ScriptHelp -> const scriptHelp
-        ThemeHelp -> const themeHelp
+        MainHelp -> mainHelp (configUserKeys (st^.csResources.crConfiguration))
+        ScriptHelp -> scriptHelp
+        ThemeHelp -> themeHelp
+        KeybindingHelp -> keybindingHelp (configUserKeys (st^.csResources.crConfiguration))
 
-mainHelp :: Widget Name
-mainHelp = commandHelp
+mainHelp :: KeyConfig -> Widget Name
+mainHelp kc = commandHelp
   where
     commandHelp = vBox $ [ padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ str mhVersion
                          , hCenter $ withDefAttr helpEmphAttr $ str mmApiVersion
                          , padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Help Topics"
                          , drawHelpTopics
                          , padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Commands"
-                         , mkCommandHelpText $ sortBy (comparing commandName) commandList
+                         , mkCommandHelpText $ sortWith commandName commandList
                          ] <>
-                         (mkKeybindingHelp <$> keybindSections)
+                         (mkKeybindingHelp <$> keybindSections kc)
 
     mkCommandHelpText :: [Cmd] -> Widget Name
     mkCommandHelpText cs =
@@ -119,6 +124,99 @@ scriptHelp = vBox
              , "Matterhorn command " ]
            , [ "> *> /sh rot13 Hello, world!*\n" ]
            ]
+
+keybindingHelp :: KeyConfig -> Widget Name
+keybindingHelp kc = vBox $
+  [ padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Configurable Keybindings"
+  , padTop (Pad 1) $ hCenter $ hLimit 100 $ vBox keybindingHelpText
+  ] ++ map mkKeybindEventSectionHelp (keybindSections kc)
+    ++
+  [ padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Keybinding Syntax"
+  , padTop (Pad 1) $ hCenter $ hLimit 100 $ vBox validKeys
+  ]
+  where keybindingHelpText = map (padTop (Pad 1) . renderText . mconcat)
+          [ [ "Many of the keybindings used in Matterhorn can be "
+            , "modified from within Matterhorn's **config.ini** file. "
+            , "To do this, include a section called **[KEYBINDINGS]** "
+            , "in your config file and use the event names listed below as "
+            , "keys and the desired key sequence as values. "
+            , "See the end of this page for documentation on the valid "
+            , "syntax for key sequences.\n"
+            ]
+          , [ "For example, by default, the keybinding to move to the next "
+            , "channel in the public channel list is **"
+            , nextChanBinding
+            , "**, and the corresponding "
+            , "previous channel binding is **"
+            , prevChanBinding
+            , "**. You might want to remap these "
+            , "to other keys: say, **C-j** and **C-k**. We can do this with the following "
+            , "configuration snippet:\n"
+            ]
+          , [ "```ini\n"
+            , "[KEYBINDINGS]\n"
+            , "focus-next-channel = C-j\n"
+            , "focus-prev-channel = C-k\n"
+            , "```\n"
+            ]
+          , [ "You can remap a command to more than one key sequence, in which "
+            , "case any one of the key sequences provided can be used to invoke "
+            , "the relevant command. To do this, provide the desired bindings as "
+            , "a comma-separated list. Additionally, some key combinations are "
+            , "used in multiple modes (such as URL select or help viewing) and "
+            , "therefore share the same name, such as **cancel** or **scroll-up**.\n"
+            ]
+          , [ "Additionally, some keys simply cannot be remapped, mostly in the "
+            , "case of editing keybindings. If you feel that a particular key "
+            , "event should be rebindable and isn't, then please feel free to "
+            , "let us know by posting an issue in the Matterhorn issue tracker.\n"
+            ]
+          , [ "It is also possible to entirely unbind a key event by setting its "
+            , "key to **unbound**, thus avoiding conflicts between default bindings "
+            , "and new ones:\n"
+            ]
+          , [ "```ini\n"
+            , "[KEYBINDINGS]\n"
+            , "focus-next-channel = unbound\n"
+            , "```\n"
+            ]
+          , [ "The rebindable key events, along with their **current** "
+            , "values, are as follows:"
+            ]
+           ]
+        nextChanBinding = ppBinding (getFirstDefaultBinding NextChannelEvent)
+        prevChanBinding = ppBinding (getFirstDefaultBinding PrevChannelEvent)
+        validKeys = map (padTop (Pad 1) . renderText . mconcat)
+          [ [ "The syntax used for key sequences consists of zero or more "
+            , "single-character modifier characters followed by a keystroke "
+            , "all separated by dashes. The available modifier keys are "
+            , "**S** for Shift, **C** for Ctrl, **A** for Alt, and **M** for "
+            , "Meta. So, for example, **"
+            , ppBinding (Binding [] (Vty.KFun 2))
+            , "** is the F2 key pressed with no "
+            , "modifier keys; **"
+            , ppBinding (Binding [Vty.MCtrl] (Vty.KChar 'x'))
+            , "** is Ctrl and X pressed together, "
+            , "and **"
+            , ppBinding (Binding [Vty.MShift, Vty.MCtrl] (Vty.KChar 'x'))
+            , "** is Shift, Ctrl, and X all pressed together. "
+            , "Although Matterhorn will pretty-print all key combinations "
+            , "with specific capitalization, the parser is **not** case-sensitive "
+            , "and will ignore any capitalization."
+            ]
+          , [ "Your terminal emulator might not recognize some particular "
+            , "keypress combinations, or it might reserve certain combinations of "
+            , "keys for some terminal-specific operation. Matterhorn does not have a "
+            , "reliable way of testing this, so it is up to you to avoid setting "
+            , "keybindings that your terminal emulator does not deliver to applications."
+            ]
+          , [ "Letter keys, number keys, and function keys are specified with "
+            , "their obvious name, such as **x** for the X key, **8** for the 8 "
+            , "key, and **f5** for the F5 key. Other valid keys include: "
+            , T.intercalate ", " [ "**" <> key <> "**" | key <- nonCharKeys ]
+            , "."
+            ]
+          ]
 
 themeHelp :: Widget a
 themeHelp = overrideAttr codeAttr helpEmphAttr $ vBox
@@ -224,16 +322,17 @@ withMargins (hMargin, vMargin) w =
             hl = ctx^.availHeightL - (2 * vMargin)
         render $ hLimit wl $ vLimit hl w
 
-keybindSections :: [(T.Text, [Keybinding])]
-keybindSections =
-    [ ("This Help Page", helpKeybindings)
-    , ("Main Interface", mainKeybindings)
-    , ("Channel Select Mode", channelSelectKeybindings)
-    , ("URL Select Mode", urlSelectKeybindings)
-    , ("Channel Scroll Mode", channelScrollKeybindings)
-    , ("Message Select Mode", messageSelectKeybindings)
+keybindSections :: KeyConfig -> [(T.Text, [Keybinding])]
+keybindSections kc =
+    [ ("This Help Page", helpKeybindings kc)
+    , ("Main Interface", mainKeybindings kc)
+    , ("Channel Select Mode", channelSelectKeybindings kc)
+    , ("URL Select Mode", urlSelectKeybindings kc)
+    , ("Channel Scroll Mode", channelScrollKeybindings kc)
+    , ("Message Select Mode", messageSelectKeybindings kc)
     , ("Text Editing", editingKeybindings)
-    , ("Flagged Messages", postListOverlayKeybindings)
+    , ("Flagged Messages", postListOverlayKeybindings kc)
+    , ("User Listings", userListOverlayKeybindings kc)
     ]
 
 helpBox :: Name -> Widget Name -> Widget Name
@@ -254,46 +353,32 @@ kbDescColumnWidth = 60
 mkKeybindingHelp :: (T.Text, [Keybinding]) -> Widget Name
 mkKeybindingHelp (sectionName, kbs) =
     (hCenter $ padTop (Pad 1) $ withDefAttr helpEmphAttr $ txt $ "Keybindings: " <> sectionName) <=>
-    (hCenter $ vBox $ mkKeybindHelp <$> (sortBy (comparing (ppKbEvent.kbEvent)) kbs))
+    (hCenter $ vBox $ mkKeybindHelp <$> (sortWith (ppBinding.eventToBinding.kbEvent) kbs))
 
 mkKeybindHelp :: Keybinding -> Widget Name
-mkKeybindHelp (KB desc ev _) =
-    (withDefAttr helpEmphAttr $ txt $ padTo kbColumnWidth $ ppKbEvent ev) <+>
+mkKeybindHelp (KB desc ev _ _) =
+    (withDefAttr helpEmphAttr $ txt $ padTo kbColumnWidth $ ppBinding $ eventToBinding ev) <+>
     (vLimit 1 $ hLimit kbDescColumnWidth $ renderText desc <+> fill ' ')
 
-ppKbEvent :: Vty.Event -> T.Text
-ppKbEvent (Vty.EvKey k mods) =
-    T.intercalate "-" $ (ppMod <$> mods) <> [ppKey k]
-ppKbEvent _ = "<????>"
 
-ppKey :: Vty.Key -> T.Text
-ppKey (Vty.KChar c)   = ppChar c
-ppKey (Vty.KFun n)    = "F" <> (T.pack $ show n)
-ppKey Vty.KBackTab    = "S-Tab"
-ppKey Vty.KEsc        = "Esc"
-ppKey Vty.KBS         = "Backspace"
-ppKey Vty.KEnter      = "Enter"
-ppKey Vty.KUp         = "Up"
-ppKey Vty.KDown       = "Down"
-ppKey Vty.KLeft       = "Left"
-ppKey Vty.KRight      = "Right"
-ppKey Vty.KHome       = "Home"
-ppKey Vty.KEnd        = "End"
-ppKey Vty.KPageUp     = "PgUp"
-ppKey Vty.KPageDown   = "PgDown"
-ppKey Vty.KDel        = "Del"
-ppKey _               = "???"
+mkKeybindEventSectionHelp :: (T.Text, [Keybinding]) -> Widget Name
+mkKeybindEventSectionHelp (sectionName, kbs) =
+  let lst = sortWith (fmap keyEventName . kbBindingInfo . head) $ groupWith kbBindingInfo kbs
+  in if all (all (isNothing . kbBindingInfo)) lst
+       then emptyWidget
+       else (hCenter $ padTop (Pad 1) $ withDefAttr helpEmphAttr $ txt $ "Keybindings: " <> sectionName) <=>
+            (hCenter $ vBox $ concat $ mkKeybindEventHelp <$> lst)
 
-ppChar :: Char -> T.Text
-ppChar '\t' = "Tab"
-ppChar ' '  = "Space"
-ppChar c    = T.singleton c
-
-ppMod :: Vty.Modifier -> T.Text
-ppMod Vty.MMeta  = "M"
-ppMod Vty.MAlt   = "A"
-ppMod Vty.MCtrl  = "C"
-ppMod Vty.MShift = "S"
+mkKeybindEventHelp :: [Keybinding] -> [Widget Name]
+mkKeybindEventHelp ks@(KB desc _ _ (Just e):_) =
+  let evs = [ ev | KB _ ev _ _ <- ks ]
+      evText = T.intercalate ", " (map (ppBinding . eventToBinding) evs)
+  in [ txt (padTo 72 ("; " <> desc))
+     , (withDefAttr helpEmphAttr $ txt $ keyEventName e) <+>
+       txt (" = " <> evText)
+     , str " "
+     ]
+mkKeybindEventHelp _ = []
 
 padTo :: Int -> T.Text -> T.Text
 padTo n s = s <> T.replicate (n - T.length s) " "
