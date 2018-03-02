@@ -1,4 +1,38 @@
 
+40700.0.0
+=========
+
+This release supports Mattermost server version 4.7.
+
+New features:
+ * The `/focus` command with no arguments now starts channel selection
+   mode, equivalent to the default binding of `C-g`.
+ * The `/join` command now accepts an optional channel name argument. If
+   provided, the named channel is joined (#361).
+ * A new user browser was added! The user browser presents a list of
+   users and the ability to search users by name. The new user list
+   powers some new and existing commands:
+   * A new `/msg` command is used to browse known users and select a
+     user with `Enter` to begin a private chat session with the selected
+     user.
+   * A new `/add-user` command is used to add users to the current
+     channel. The list shows users who are not already members of the
+     channelcurrent and `Enter` adds the selected user to the channel.
+   * The existing `/members` command now shows a browsable user list of
+     members of the current channel. `Enter` begins a private chat
+     session with the selected user.
+
+Bug fixes:
+ * Missing `urlOpenCommand`s are now reported as error messages rather
+   than informative messages.
+ * More login-related exceptions are now displayed in a more readable
+   format on the login screen (#358).
+ * Channel selection mode now prefers an exact match as the initial
+   cursor selection if one exists (#356).
+ * Replies now indicate the correct parent message in the message list.
+ * The multi-line editor help message now shows the active binding
+   (previously `M-e`).
+
 40600.1.0
 =========
 

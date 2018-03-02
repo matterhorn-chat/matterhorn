@@ -40,7 +40,7 @@ tryMM act onSuccess = do
     result <- liftIO $ try act
     case result of
         Left (MattermostError { mattermostErrorMessage = msg }) ->
-          return $ postErrorMessage msg
+          return $ mhError msg
         Right value -> liftIO $ onSuccess value
 
 -- * Background Computation
@@ -239,10 +239,15 @@ postInfoMessage err = do
 
 -- | Add a new 'ClientMessage' representing an error message to
 --   the current channel's message list
-postErrorMessage :: T.Text -> MH ()
-postErrorMessage err = do
+postErrorMessage' :: T.Text -> MH ()
+postErrorMessage' err = do
     msg <- newClientMessage Error err
     doAsyncWith Normal (return $ addClientMessage msg)
+
+-- | Raise a rich error
+mhError :: T.Text -> MH ()
+mhError err = do
+  raiseInternalEvent (DisplayError err)
 
 postErrorMessageIO :: T.Text -> ChatState -> IO ChatState
 postErrorMessageIO err st = do
@@ -288,6 +293,6 @@ copyToClipboard txt = do
             MissingCommands cmds ->
               "Could not set clipboard due to missing one of the " <>
               "required program(s): " <> (T.pack $ show cmds)
-      postErrorMessage errMsg
+      mhError errMsg
     Right () ->
       return ()

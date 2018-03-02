@@ -116,7 +116,10 @@ resetUserListSearch = do
           return $ do
               let lst = listFromUserSearchResults results
               csUserListOverlay.userListSearchResults .= lst
-              csUserListOverlay.userListHasAllResults .= (length results < searchResultsChunkSize)
+              -- NOTE: Disabled for now. See the hack note below for
+              -- details.
+              --
+              -- csUserListOverlay.userListHasAllResults .= (length results < searchResultsChunkSize)
               csUserListOverlay.userListSearching .= False
 
               -- Now that the results are available, check to see if the
@@ -162,7 +165,10 @@ userListPageDown = userListMove (L.listMoveBy userListPageSize)
 userListMove :: (L.List Name UserInfo -> L.List Name UserInfo) -> MH ()
 userListMove f = do
   csUserListOverlay.userListSearchResults %= f
-  maybePrefetchNextChunk
+  -- NOTE! Do not enable this. See the docs for maybePrefetchNextChunk.
+  -- For now we want to keep the code around in case it can be
+  -- reinstated in the future.
+  -- maybePrefetchNextChunk
 
 -- | We'll attempt to prefetch the next page of results if the cursor
 -- gets within this many positions of the last result we have.
@@ -179,8 +185,14 @@ selectionPrefetchDelta = 10
 --  * the length of the current results list is exactly a multiple of
 --    fetching chunk size (thus indicating a very high probability that
 --    there are more results to be fetched).
-maybePrefetchNextChunk :: MH ()
-maybePrefetchNextChunk = do
+--
+-- NOTE: this function should be reinstated and called in 'userListMove'
+-- if we start using the /users endpoint again in the future. See the
+-- hack note in the getUserSearchResultsPage below for details. In the
+-- mean time, no pagination of results is possible so no prefetching
+-- should be done.
+_maybePrefetchNextChunk :: MH ()
+_maybePrefetchNextChunk = do
   gettingMore <- use (csUserListOverlay.userListRequestingMore)
   hasAll <- use (csUserListOverlay.userListHasAllResults)
   searchString <- userListSearchString
@@ -210,8 +222,11 @@ maybePrefetchNextChunk = do
 
               -- If we got fewer results than we asked for, then we have
               -- them all!
-              csUserListOverlay.userListHasAllResults .=
-                  (length newChunk < searchResultsChunkSize)
+              --
+              -- NOTE: disabled for now, see the hack note below.
+              --
+              -- csUserListOverlay.userListHasAllResults .=
+              --     (length newChunk < searchResultsChunkSize)
 
 -- | The number of users in a "page" for cursor movement purposes.
 userListPageSize :: Int
@@ -236,42 +251,38 @@ getUserSearchResultsPage :: Int
                          -> T.Text
                          -- ^ The search string
                          -> IO (Vec.Vector UserInfo)
-getUserSearchResultsPage pageNum myTId scope s searchString = do
-    users <- case T.null searchString of
-        True -> do
-            let query = MM.defaultUserQuery
-                  { MM.userQueryPage = Just pageNum
-                  , MM.userQueryPerPage = Just searchResultsChunkSize
-                  , MM.userQueryInChannel = case scope of
-                      ChannelMembers cId -> Just cId
-                      _                  -> Nothing
-                  , MM.userQueryNotInChannel = case scope of
-                      ChannelNonMembers cId -> Just cId
-                      _                     -> Nothing
-                  , MM.userQueryInTeam = case scope of
-                      ChannelNonMembers _ -> Just myTId
-                      _                   -> Nothing
-                  }
-            MM.mmGetUsers query s
-        False -> do
-            -- Unfortunately, we don't get pagination control when there
-            -- is a search string in effect. We'll get at most 100
-            -- results from a search.
-            let query = UserSearch { userSearchTerm = searchString
-                                   , userSearchAllowInactive = False
-                                   , userSearchWithoutTeam = False
-                                   , userSearchInChannelId = case scope of
-                                       ChannelMembers cId -> Just cId
-                                       _                  -> Nothing
-                                   , userSearchNotInTeamId = Nothing
-                                   , userSearchNotInChannelId = case scope of
-                                       ChannelNonMembers cId -> Just cId
-                                       _                     -> Nothing
-                                   , userSearchTeamId = case scope of
-                                       ChannelNonMembers _ -> Just myTId
-                                       _                   -> Nothing
-                                   }
-            MM.mmSearchUsers query s
+getUserSearchResultsPage _pageNum myTId scope s searchString = do
+    -- Unfortunately, we don't get pagination control when there is a
+    -- search string in effect. We'll get at most 100 results from a
+    -- search.
+    let query = UserSearch { userSearchTerm = if T.null searchString then " " else searchString
+                           -- Hack alert: Searching with the string " "
+                           -- above is a hack to use the search
+                           -- endpoint to get "all users" instead of
+                           -- those matching a particular non-empty
+                           -- non-whitespace string. This is because
+                           -- only the search endpoint provides a
+                           -- control to eliminate deleted users from
+                           -- the results. If we don't do this, and
+                           -- use the /users endpoint instead, we'll
+                           -- get deleted users in those results and
+                           -- then those deleted users will disappear
+                           -- from the results once the user enters a
+                           -- non-empty string string.
+                           , userSearchAllowInactive = False
+                           , userSearchWithoutTeam = False
+                           , userSearchInChannelId = case scope of
+                               ChannelMembers cId -> Just cId
+                               _                  -> Nothing
+                           , userSearchNotInTeamId = Nothing
+                           , userSearchNotInChannelId = case scope of
+                               ChannelNonMembers cId -> Just cId
+                               _                     -> Nothing
+                           , userSearchTeamId = case scope of
+                               ChannelNonMembers _ -> Just myTId
+                               _                   -> Nothing
+                           }
+    users <- MM.mmSearchUsers query s
 
     let uList = F.toList users
         uIds = userId <$> uList

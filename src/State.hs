@@ -18,6 +18,7 @@ module State
   , createOrdinaryChannel
   , startJoinChannel
   , joinChannel
+  , joinChannelByName
   , changeChannel
   , disconnectChannels
   , startLeaveCurrentChannel
@@ -38,7 +39,6 @@ module State
   , getNewMessageCutoff
   , getEditedMessageCutoff
   , setChannelTopic
-  , fetchCurrentChannelMembers
   , refreshChannelById
   , refreshClientConfig
   , handleChannelInvite
@@ -210,7 +210,7 @@ createGroupChannel usernameList = do
         findUserIds (n:ns) = do
             case userByUsername n st of
                 Nothing -> do
-                    postErrorMessage $ "No such user: " <> n
+                    mhError $ "No such user: " <> n
                     return []
                 Just u -> (u^.uiId:) <$> findUserIds ns
 
@@ -427,7 +427,7 @@ beginCurrentChannelDeleteConfirm = do
         let chType = chan^.ccInfo.cdType
         if chType /= Direct
             then setMode DeleteChannelConfirm
-            else postErrorMessage "The /delete-channel command cannot be used with direct message channels."
+            else mhError "The /delete-channel command cannot be used with direct message channels."
 
 deleteCurrentChannel :: MH ()
 deleteCurrentChannel = do
@@ -515,6 +515,16 @@ copyVerbatimToClipboard = do
 
 -- * Joining, Leaving, and Inviting
 
+joinChannelByName :: T.Text -> MH ()
+joinChannelByName rawName = do
+    session <- getSession
+    tId <- gets myTeamId
+    doAsyncWith Preempt $ do
+        result <- try $ MM.mmGetChannelByName tId (trimAnySigil rawName) session
+        return $ case result of
+            Left (_::SomeException) -> mhError $ T.pack $ "No such channel: " <> (show rawName)
+            Right chan -> joinChannel $ getId chan
+
 startJoinChannel :: MH ()
 startJoinChannel = do
     session <- getSession
@@ -539,12 +549,12 @@ startJoinChannel = do
     setMode JoinChannel
     csJoinChannelList .= Nothing
 
-joinChannel :: Channel -> MH ()
-joinChannel chan = do
+joinChannel :: ChannelId -> MH ()
+joinChannel chanId = do
     setMode Main
     myId <- gets myUserId
-    let member = MinChannelMember myId (getId chan)
-    doAsyncChannelMM Preempt (getId chan) (\ s _ c -> MM.mmAddUser c member s) endAsyncNOP
+    let member = MinChannelMember myId chanId
+    doAsyncChannelMM Preempt chanId (\ s _ c -> MM.mmAddUser c member s) endAsyncNOP
 
 -- | When another user adds us to a channel, we need to fetch the
 -- channel info for that channel.
@@ -569,7 +579,7 @@ addUserToCurrentChannel uname = do
                 tryMM (void $ MM.mmAddUser cId channelMember session)
                       (const $ return (return ()))
         _ -> do
-            postErrorMessage ("No such user: " <> uname)
+            mhError ("No such user: " <> uname)
 
 removeUserFromCurrentChannel :: T.Text -> MH ()
 removeUserFromCurrentChannel uname = do
@@ -583,14 +593,14 @@ removeUserFromCurrentChannel uname = do
                 tryMM (void $ MM.mmRemoveUserFromChannel cId (UserById $ u^.uiId) session)
                       (const $ return (return ()))
         _ -> do
-            postErrorMessage ("No such user: " <> uname)
+            mhError ("No such user: " <> uname)
 
 startLeaveCurrentChannel :: MH ()
 startLeaveCurrentChannel = do
     cInfo <- use (csCurrentChannel.ccInfo)
     case canLeaveChannel cInfo of
         True -> setMode LeaveChannelConfirm
-        False -> postErrorMessage "The /leave command cannot be used with this channel."
+        False -> mhError "The /leave command cannot be used with this channel."
 
 leaveCurrentChannel :: MH ()
 leaveCurrentChannel = use csCurrentChannelId >>= leaveChannel
@@ -670,24 +680,6 @@ removeChannelFromState cId = do
             csChannels                          %= filteredChannels ((/=) cId . fst)
             -- Remove from focus zipper
             csFocus                             %= Z.filterZipper (/= cId)
-
-fetchCurrentChannelMembers :: MH ()
-fetchCurrentChannelMembers = do
-    cId <- use csCurrentChannelId
-    displayNick <- use (to useNickname)
-    doAsyncChannelMM Preempt cId
-        fetchChannelMembers
-        (\_ chanUsers -> do
-              -- Construct a message listing them all and post it to the
-              -- channel:
-              let msgStr = "Channel members (" <> (T.pack $ show $ length chanUsers) <> "):\n" <>
-                           T.intercalate ", " usernames
-                  usernames = sort $ displayName <$> filteredUsers
-                  filteredUsers = filter (not . userDeleted) chanUsers
-                  displayName u = if not displayNick || T.null (userNickname u)
-                                  then userUsername u
-                                  else userNickname u
-              postInfoMessage msgStr)
 
 fetchChannelMembers :: Session -> TeamId -> ChannelId -> IO [User]
 fetchChannelMembers s _ c = do
@@ -1133,7 +1125,7 @@ attemptCreateDMChannel name = do
           member <- MM.mmGetChannelMember (getId nc) UserMe session
           return $ handleNewChannel True cwd member
       else
-        postErrorMessage ("No channel or user named " <> name)
+        mhError ("No channel or user named " <> name)
 
 createOrdinaryChannel :: T.Text -> MH ()
 createOrdinaryChannel name  = do
@@ -1606,15 +1598,20 @@ updateChannelSelectMatches = do
             | otherwise   = uInf^.uiName
         usernameMatches = catMaybes (fmap (chanNameMatches . displayName) uList)
         mkMap ms = HM.fromList [(channelNameFromMatch m, m) | m <- ms]
+
+    newInput <- use (csChannelSelectState.channelSelectInput)
     csChannelSelectState.channelMatches .= mkMap chanMatches
     csChannelSelectState.userMatches    .= mkMap usernameMatches
     csChannelSelectState.selectedMatch  %= \oldMatch ->
-        -- If the previously selected match is still a possible match,
-        -- leave it selected. Otherwise revert to the first available
-        -- match.
-        let newMatch = if oldMatch `elem` allMatches
-                       then oldMatch
-                       else firstAvailableMatch
+        -- If the user input exactly matches one of the matches, prefer
+        -- that one. Otherwise, if the previously selected match is
+        -- still a possible match, leave it selected. Otherwise revert
+        -- to the first available match.
+        let newMatch = if newInput `elem` allMatches
+                       then newInput
+                       else if oldMatch `elem` allMatches
+                            then oldMatch
+                            else firstAvailableMatch
             unames = channelNameFromMatch <$> usernameMatches
             allMatches = concat [ channelNameFromMatch <$> chanMatches
                                 , [ displayName u | u <- uList
@@ -1732,8 +1729,7 @@ openSelectedURL = whenMode UrlSelect $ do
         Just (_, link) -> do
             opened <- openURL link
             when (not opened) $ do
-                let msg = "Config option 'urlOpenCommand' missing; cannot open URL."
-                postInfoMessage msg
+                mhError "Config option 'urlOpenCommand' missing; cannot open URL."
                 setMode Main
 
 openURL :: LinkChoice -> MH Bool
@@ -1876,9 +1872,8 @@ openSelectedMessageURLs = whenMode MessageSelect $ do
         openedAll <- and <$> mapM openURL urls
         case openedAll of
             True -> setMode Main
-            False -> do
-                let msg = "Config option 'urlOpenCommand' missing; cannot open URL."
-                postInfoMessage msg
+            False ->
+                mhError "Config option 'urlOpenCommand' missing; cannot open URL."
 
 shouldSkipMessage :: T.Text -> Bool
 shouldSkipMessage "" = True
@@ -1894,7 +1889,7 @@ sendMessage mode msg =
             case status of
                 Disconnected -> do
                     let m = "Cannot send messages while disconnected."
-                    postErrorMessage m
+                    mhError m
                 Connected -> do
                     let chanId = st^.csCurrentChannelId
                     session <- getSession

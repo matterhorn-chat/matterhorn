@@ -77,8 +77,10 @@ commandList =
       enterChannelMembersUserList
   , Cmd "leave" "Leave the current channel" NoArg $ \ () ->
       startLeaveCurrentChannel
-  , Cmd "join" "Join a channel" NoArg $ \ () ->
+  , Cmd "join" "Browse the list of available channels" NoArg $ \ () ->
       startJoinChannel
+  , Cmd "join" "Join the specified channel" (TokenArg "channel" NoArg) $ \(n, ()) ->
+      joinChannelByName n
   , Cmd "theme" "List the available themes" NoArg $ \ () ->
       listThemes
   , Cmd "theme" "Set the color theme"
@@ -104,6 +106,8 @@ commandList =
   , Cmd "focus" "Focus on a named channel"
     (TokenArg "channel" NoArg) $ \ (name, ()) ->
         changeChannel name
+  , Cmd "focus" "Select from available channels" NoArg $ \ () ->
+        beginChannelSelect
   , Cmd "help" "Show this help screen" NoArg $ \ _ ->
         showHelpScreen mainHelpTopic
   , Cmd "help" "Show help about a particular topic"
@@ -113,7 +117,7 @@ commandList =
                   let msg = ("Unknown help topic: `" <> topicName <> "`. " <>
                             (T.unlines $ "Available topics are:" : knownTopics))
                       knownTopics = ("  - " <>) <$> helpTopicName <$> helpTopics
-                  postErrorMessage msg
+                  mhError msg
               Just topic -> showHelpScreen topic
 
   , Cmd "sh" "List the available shell scripts" NoArg $ \ () ->
@@ -181,7 +185,7 @@ execMMCommand name rest = do
   case errMsg of
     Nothing -> return ()
     Just err ->
-      postErrorMessage ("Error running command: " <> err)
+      mhError ("Error running command: " <> err)
 
 dispatchCommand :: T.Text -> MH ()
 dispatchCommand cmd =
@@ -196,7 +200,7 @@ dispatchCommand cmd =
             go errs [] = do
               let msg = ("error running command /" <> x <> ":\n" <>
                          mconcat [ "    " <> e | e <- errs ])
-              postErrorMessage msg
+              mhError msg
             go errs (Cmd _ _ spec exe : cs) =
               case matchArgs spec xs of
                 Left e -> go (e:errs) cs
