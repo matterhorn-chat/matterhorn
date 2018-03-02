@@ -216,6 +216,7 @@ handleWSEvent we = do
         -- We aren't sure whether there is anything we should do about
         -- these yet:
         WMUpdateTeam -> return ()
+        WMTeamDeleted -> return ()
         WMUserUpdated -> return ()
         WMLeaveTeam -> return ()
 
