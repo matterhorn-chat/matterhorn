@@ -8,9 +8,7 @@ import           Prelude ()
 import           Prelude.Compat
 
 import           Brick
-import           Brick.BChan
 import           Data.Monoid ((<>))
-import qualified Control.Concurrent.STM as STM
 import           Control.Monad.Trans.Except (runExceptT)
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform
@@ -68,7 +66,7 @@ runMatterhorn opts config = do
 -- | Cleanup resources and save data for restoring on program restart.
 closeMatterhorn :: ChatState -> IO ()
 closeMatterhorn finalSt = do
-  logIfError (mmCloseSession $ finalSt^.csResources.crSession) "Error in closing session"
+  logIfError (mmCloseSession $ getResourceSession $ finalSt^.csResources) "Error in closing session"
   logIfError (writeHistory (finalSt^.csEditState.cedInputHistory)) "Error in writing history"
   logIfError (writeLastRunState finalSt) "Error in writing last run state"
   where
