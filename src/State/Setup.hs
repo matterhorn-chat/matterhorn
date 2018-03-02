@@ -72,9 +72,9 @@ setupState logFile initialConfig = do
                 -- HTTP.
                 if (configUnsafeUseHTTP initialConfig)
                   then initConnectionDataInsecure (cInfo^.ciHostname)
-                         (fromIntegral (cInfo^.ciPort))
+                         (fromIntegral (cInfo^.ciPort)) defaultConnectionPoolConfig
                   else initConnectionData (cInfo^.ciHostname)
-                         (fromIntegral (cInfo^.ciPort))
+                         (fromIntegral (cInfo^.ciPort)) defaultConnectionPoolConfig
 
         let login = Login { username = cInfo^.ciUsername
                           , password = cInfo^.ciPassword
