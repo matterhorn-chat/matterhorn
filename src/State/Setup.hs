@@ -62,7 +62,7 @@ setupState logFile initialConfig = do
         Nothing -> id
         Just f  -> \ cd -> cd `withLogger` mmLoggerDebug f
 
-      poolCfg = ConnectionPoolConfig { cpIdleConnTimeout = 60
+      poolCfg = ConnectionPoolConfig { cpIdleConnTimeout = 10
                                      , cpStripesCount = 1
                                      , cpMaxConnCount = 5
                                      }
