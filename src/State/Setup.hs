@@ -62,7 +62,11 @@ setupState logFile initialConfig = do
         Nothing -> id
         Just f  -> \ cd -> cd `withLogger` mmLoggerDebug f
 
-  let loginLoop cInfo = do
+      poolCfg = ConnectionPoolConfig { cpIdleConnTimeout = 60
+                                     , cpStripesCount = 1
+                                     , cpMaxConnCount = 5
+                                     }
+      loginLoop cInfo = do
         cd <- fmap setLogger $
                 -- we don't implement HTTP fallback right now, we just
                 -- go straight for HTTP if someone has indicated that
@@ -73,10 +77,10 @@ setupState logFile initialConfig = do
                 if (configUnsafeUseHTTP initialConfig)
                   then initConnectionDataInsecure (cInfo^.ciHostname)
                          (fromIntegral (cInfo^.ciPort))
-                         defaultConnectionPoolConfig
+                         poolCfg
                   else initConnectionData (cInfo^.ciHostname)
                          (fromIntegral (cInfo^.ciPort))
-                         defaultConnectionPoolConfig
+                         poolCfg
 
         let login = Login { username = cInfo^.ciUsername
                           , password = cInfo^.ciPassword
