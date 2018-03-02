@@ -21,13 +21,8 @@ your server version:
 
 https://github.com/matterhorn-chat/matterhorn/releases
 
-To fetch a release and run Matterhorn, run the following commands (where
-`VERSION` and `PLATFORM` match your setup):
-
-    wget https://github.com/matterhorn-chat/matterhorn/releases/download/<VERSION>/matterhorn-<VERSION>-<PLATFORM>.tar.gz
-    tar xf matterhorn-<VERSION>-<PLATFORM>.tar.gz
-    cd matterhorn-<VERSION>-<PLATFORM>
-    ./matterhorn
+To run Matterhorn, unpack the binary release archive and run the
+`matterhorn` binary within.
 
 When you run Matterhorn you'll be prompted for your server information
 and credentials. At present `matterhorn` supports only username/password
