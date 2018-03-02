@@ -1104,7 +1104,7 @@ attemptCreateDMChannel name = do
                then userNickname me
                else me^.userUsernameL
   if name == myName
-    then postErrorMessage ("Cannot create a DM channel with yourself")
+    then mhError "Cannot create a DM channel with yourself"
     else do
       let uName = if displayNick
                   then
