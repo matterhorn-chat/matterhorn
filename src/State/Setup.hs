@@ -68,12 +68,6 @@ setupState logFile initialConfig = do
                                      }
       loginLoop cInfo = do
         cd <- fmap setLogger $
-                -- we don't implement HTTP fallback right now, we just
-                -- go straight for HTTP if someone has indicated that
-                -- they want it. We probably should in the future
-                -- always try HTTPS first, and then, if the
-                -- configuration option is there, try falling back to
-                -- HTTP.
                 if (configUnsafeUseHTTP initialConfig)
                   then initConnectionDataInsecure (cInfo^.ciHostname)
                          (fromIntegral (cInfo^.ciPort))
