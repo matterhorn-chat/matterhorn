@@ -279,33 +279,43 @@ refreshChannelsAndUsers = do
   -- which has been inlined here to gain a concurrency benefit.
   session <- getSession
   myTId <- gets myTeamId
-  let userQuery = MM.defaultUserQuery
-        { MM.userQueryPage = Just 0
-        , MM.userQueryPerPage = Just 10000
-        , MM.userQueryInTeam = Just myTId
-        }
   doAsyncWith Preempt $ do
-    (chans, datas, users) <- runConcurrently $ (,,)
-                            <$> Concurrently (MM.mmGetChannelsForUser UserMe myTId session)
-                            <*> Concurrently (MM.mmGetChannelMembersForUser UserMe myTId session)
-                            <*> Concurrently (MM.mmGetUsers userQuery session)
+    (chans, datas) <- runConcurrently $ (,)
+                     <$> Concurrently (MM.mmGetChannelsForUser UserMe myTId session)
+                     <*> Concurrently (MM.mmGetChannelMembersForUser UserMe myTId session)
 
     let dataMap = HM.fromList $ F.toList $ (\d -> (channelMemberChannelId d, d)) <$> datas
         mkPair chan = (chan, fromJust $ HM.lookup (channelId chan) dataMap)
         chansWithData = mkPair <$> chans
 
+        asyncFetchAllUsers page accum final = do
+            doAsyncWith Preempt $ do
+                let pageSize = 200
+                    userQuery = MM.defaultUserQuery
+                      { MM.userQueryPage = Just page
+                      , MM.userQueryPerPage = Just pageSize
+                      , MM.userQueryInTeam = Just myTId
+                      }
+                batch <- MM.mmGetUsers userQuery session
+
+                return $ case length batch < pageSize of
+                    True -> do
+                        let users = accum <> batch
+                        forM_ users $ \u -> do
+                            when (not $ userDeleted u) $ do
+                                result <- gets (userById (getId u))
+                                when (isNothing result) $ handleNewUserDirect u
+                        setUserIdSet (userId <$> users)
+                        final
+                    False ->
+                        asyncFetchAllUsers (page + 1) (accum <> batch) final
+
     return $ do
-        forM_ users $ \u -> do
-            when (not $ userDeleted u) $ do
-                result <- gets (userById (getId u))
-                when (isNothing result) $ handleNewUserDirect u
-
-        forM_ chansWithData $ uncurry refreshChannel
-
-        setUserIdSet (userId <$> users)
-        lock <- use (csResources.crUserStatusLock)
-        setVar <- use (csResources.crUserIdSet)
-        doAsyncWith Preempt $ updateUserStatuses setVar lock session
+        asyncFetchAllUsers 0 mempty $ do
+            forM_ chansWithData $ uncurry refreshChannel
+            lock <- use (csResources.crUserStatusLock)
+            setVar <- use (csResources.crUserIdSet)
+            doAsyncWith Preempt $ updateUserStatuses setVar lock session
 
 -- | Refresh client-accessible server configuration information. This
 -- is usually triggered when a reconnect event for the WebSocket to
