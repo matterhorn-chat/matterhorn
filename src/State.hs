@@ -627,9 +627,21 @@ leaveChannelIfPossible cId delete = do
             False -> return ()
             True ->
                 -- The server will reject an attempt to leave a private
-                -- channel if we're the only member.
+                -- channel if we're the only member. To check this, we
+                -- just ask for the first two members of the channel.
+                -- If there is only one, it must be us: hence the "all
+                -- isMe" check below. If there are two members, it
+                -- doesn't matter who they are, because we just know
+                -- that we aren't the only remaining member, so we can't
+                -- delete the channel.
                 doAsyncChannelMM Preempt cId
-                    fetchChannelMembers
+                    (\s _ _ ->
+                      let query = MM.defaultUserQuery
+                           { MM.userQueryPage = Just 0
+                           , MM.userQueryPerPage = Just 2
+                           , MM.userQueryInChannel = Just cId
+                           }
+                      in F.toList <$> MM.mmGetUsers query s)
                     (\_ members -> do
                         -- If the channel is private:
                         -- * leave it if we aren't the last member.
@@ -690,16 +702,6 @@ removeChannelFromState cId = do
             csChannels                          %= filteredChannels ((/=) cId . fst)
             -- Remove from focus zipper
             csFocus                             %= Z.filterZipper (/= cId)
-
-fetchChannelMembers :: Session -> TeamId -> ChannelId -> IO [User]
-fetchChannelMembers s _ c = do
-    let query = MM.defaultUserQuery
-          { MM.userQueryPage = Just 0
-          , MM.userQueryPerPage = Just 10000
-          , MM.userQueryInChannel = Just c
-          }
-    chanUserMap <- MM.mmGetUsers query s
-    return $ F.toList chanUserMap
 
 -- | Called on async completion when the currently viewed channel has
 -- been updated (i.e., just switched to this channel) to update local
