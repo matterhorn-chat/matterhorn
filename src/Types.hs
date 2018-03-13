@@ -113,6 +113,7 @@ module Types
   , listFromUserSearchResults
 
   , ChatResources(ChatResources)
+  , crUserPreferences
   , crPreferences
   , crEventQueue
   , crTheme
@@ -126,6 +127,12 @@ module Types
   , crConfiguration
   , getSession
   , getResourceSession
+
+  , UserPreferences(UserPreferences)
+  , userPrefShowJoinLeave
+
+  , defaultUserPreferences
+  , setUserPreferences
 
   , WebsocketAction(..)
 
@@ -428,6 +435,23 @@ data ProgramOutput =
                   , programExitCode :: ExitCode
                   }
 
+data UserPreferences = UserPreferences
+  { _userPrefShowJoinLeave :: Bool
+  }
+
+defaultUserPreferences :: UserPreferences
+defaultUserPreferences = UserPreferences
+  { _userPrefShowJoinLeave = True
+  }
+
+setUserPreferences :: Seq.Seq Preference -> UserPreferences -> UserPreferences
+setUserPreferences = flip (F.foldr go)
+  where go p u
+          | preferenceName p == PreferenceName "join_leave" =
+            u { _userPrefShowJoinLeave =
+                preferenceValue p /= PreferenceValue "false" }
+          | otherwise = u
+
 -- | 'ChatResources' represents configuration and
 -- connection-related information, as opposed to
 -- current model or view information. Information
@@ -447,7 +471,9 @@ data ChatResources = ChatResources
   , _crConfiguration       :: Config
   , _crFlaggedPosts        :: Set.Set PostId
   , _crPreferences         :: Seq.Seq Preference
+  , _crUserPreferences     :: UserPreferences
   }
+
 
 -- | The 'ChatEditState' value contains the editor widget itself
 --   as well as history and metadata we need for editing-related
@@ -766,6 +792,7 @@ makeLenses ''ChatEditState
 makeLenses ''PostListOverlayState
 makeLenses ''UserListOverlayState
 makeLenses ''ChannelSelectState
+makeLenses ''UserPreferences
 
 getSession :: MH Session
 getSession = use (csResources.crSession)

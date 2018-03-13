@@ -130,6 +130,7 @@ setupState logFile initialConfig = do
   wac <- STM.newTChanIO
 
   prefs <- mmGetUsersPreferences UserMe session
+  let userPrefs = setUserPreferences prefs defaultUserPreferences
 
   let themeName = case configTheme config of
           Nothing -> internalThemeName defaultTheme
@@ -161,7 +162,7 @@ setupState logFile initialConfig = do
   eventChan <- newBChan 25
 
   let cr = ChatResources session cd requestChan eventChan
-             slc wac (themeToAttrMap custTheme) userStatusLock userIdSet config mempty prefs
+             slc wac (themeToAttrMap custTheme) userStatusLock userIdSet config mempty prefs userPrefs
 
   initializeState cr myTeam me
 

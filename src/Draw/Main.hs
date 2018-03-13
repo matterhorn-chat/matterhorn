@@ -408,7 +408,10 @@ renderCurrentChannelDisplay st hs = (header <+> conn) <=> messages
 
 getMessageListing :: ChannelId -> ChatState -> Messages
 getMessageListing cId st =
-    st ^?! csChannels.folding (findChannelById cId) . ccContents . cdMessages
+    st ^?! csChannels.folding (findChannelById cId) . ccContents . cdMessages . to (filterMessages isShown)
+    where isShown m
+            | st^.csResources.crUserPreferences.userPrefShowJoinLeave = True
+            | otherwise = m^.mType /= CP Join && m^.mType /= CP Leave
 
 insertTransitions :: Messages -> Maybe NewMessageIndicator -> Text -> TimeZoneSeries -> Messages
 insertTransitions ms cutoff = insertDateMarkers $ foldr addMessage ms newMessagesT

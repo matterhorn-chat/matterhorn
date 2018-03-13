@@ -260,7 +260,8 @@ applyPreferenceChange pref
                 -- it, ask for a load/refresh.
                 refreshChannelById cId
             _ -> return ()
-applyPreferenceChange _ = return ()
+applyPreferenceChange pref =
+  csResources.crUserPreferences %= setUserPreferences (Seq.singleton pref)
 
 updatePreference :: Preference -> MH ()
 updatePreference pref = do
