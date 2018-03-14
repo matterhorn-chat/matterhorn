@@ -114,7 +114,6 @@ module Types
 
   , ChatResources(ChatResources)
   , crUserPreferences
-  , crPreferences
   , crEventQueue
   , crTheme
   , crSubprocessLog
@@ -130,6 +129,8 @@ module Types
 
   , UserPreferences(UserPreferences)
   , userPrefShowJoinLeave
+  , userPrefFlaggedPostList
+  , userPrefGroupChannelPrefs
 
   , defaultUserPreferences
   , setUserPreferences
@@ -436,17 +437,32 @@ data ProgramOutput =
                   }
 
 data UserPreferences = UserPreferences
-  { _userPrefShowJoinLeave :: Bool
+  { _userPrefShowJoinLeave     :: Bool
+  , _userPrefFlaggedPostList   :: Seq.Seq FlaggedPost
+  , _userPrefGroupChannelPrefs :: HM.HashMap ChannelId Bool
   }
 
 defaultUserPreferences :: UserPreferences
 defaultUserPreferences = UserPreferences
-  { _userPrefShowJoinLeave = True
+  { _userPrefShowJoinLeave     = True
+  , _userPrefFlaggedPostList   = mempty
+  , _userPrefGroupChannelPrefs = mempty
   }
 
 setUserPreferences :: Seq.Seq Preference -> UserPreferences -> UserPreferences
 setUserPreferences = flip (F.foldr go)
   where go p u
+          | Just fp <- preferenceToFlaggedPost p =
+            u { _userPrefFlaggedPostList =
+                _userPrefFlaggedPostList u Seq.|> fp
+              }
+          | Just gp <- preferenceToGroupChannelPreference p =
+            u { _userPrefGroupChannelPrefs =
+                HM.insert
+                  (groupChannelId gp)
+                  (groupChannelShow gp)
+                  (_userPrefGroupChannelPrefs u)
+              }
           | preferenceName p == PreferenceName "join_leave" =
             u { _userPrefShowJoinLeave =
                 preferenceValue p /= PreferenceValue "false" }
@@ -470,7 +486,6 @@ data ChatResources = ChatResources
   , _crUserIdSet           :: STM.TVar (Seq.Seq UserId)
   , _crConfiguration       :: Config
   , _crFlaggedPosts        :: Set.Set PostId
-  , _crPreferences         :: Seq.Seq Preference
   , _crUserPreferences     :: UserPreferences
   }
 

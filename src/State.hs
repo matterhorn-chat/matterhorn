@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiWayIf #-}
 module State
   (
   -- * Message flagging
@@ -234,19 +235,18 @@ createGroupChannel usernameList = do
 
 channelHiddenPreference :: ChannelId -> MH Bool
 channelHiddenPreference cId = do
-  prefs <- use (csResources.crPreferences)
-  let matching = filter (\p -> groupChannelId p == cId) $
-                 catMaybes $ preferenceToGroupChannelPreference <$> (F.toList prefs)
-  return $ any (not . groupChannelShow) matching
+  prefs <- use (csResources.crUserPreferences.userPrefGroupChannelPrefs)
+  let matching = filter (\p -> fst p == cId) (HM.toList prefs)
+  return $ any (not . snd) matching
 
 applyPreferenceChange :: Preference -> MH ()
-applyPreferenceChange pref
-    | Just f <- preferenceToFlaggedPost pref =
+applyPreferenceChange pref = do
+  -- always update our user preferences accordingly
+  csResources.crUserPreferences %= setUserPreferences (Seq.singleton pref)
+  if
+    | Just f <- preferenceToFlaggedPost pref -> do
         updateMessageFlag (flaggedPostId f) (flaggedPostStatus f)
-    | Just g <- preferenceToGroupChannelPreference pref = do
-        -- First, go update the preferences with this change.
-        updatePreference pref
-
+    | Just g <- preferenceToGroupChannelPreference pref -> do
         let cId = groupChannelId g
         mChan <- preuse $ csChannel cId
 
@@ -260,16 +260,7 @@ applyPreferenceChange pref
                 -- it, ask for a load/refresh.
                 refreshChannelById cId
             _ -> return ()
-applyPreferenceChange pref =
-  csResources.crUserPreferences %= setUserPreferences (Seq.singleton pref)
-
-updatePreference :: Preference -> MH ()
-updatePreference pref = do
-    let replacePreference new old
-            | preferenceCategory old == preferenceCategory new &&
-              preferenceName old == preferenceName new = new
-            | otherwise = old
-    csResources.crPreferences %= fmap (replacePreference pref)
+    | otherwise -> return ()
 
 -- | Refresh information about all channels and users. This is usually
 -- triggered when a reconnect event for the WebSocket to the server

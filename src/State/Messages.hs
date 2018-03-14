@@ -65,10 +65,10 @@ lastMsg = withFirstMessage id
 -- Flagged messages
 
 
-loadFlaggedMessages :: Seq.Seq Preference -> ChatState -> IO ()
+loadFlaggedMessages :: Seq.Seq FlaggedPost -> ChatState -> IO ()
 loadFlaggedMessages prefs st = doAsyncWithIO Normal st $ do
   return $ sequence_ [ updateMessageFlag (flaggedPostId fp) True
-                     | Just fp <- F.toList (fmap preferenceToFlaggedPost prefs)
+                     | fp <- F.toList prefs
                      , flaggedPostStatus fp
                      ]
 

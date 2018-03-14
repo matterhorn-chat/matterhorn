@@ -162,7 +162,8 @@ setupState logFile initialConfig = do
   eventChan <- newBChan 25
 
   let cr = ChatResources session cd requestChan eventChan
-             slc wac (themeToAttrMap custTheme) userStatusLock userIdSet config mempty prefs userPrefs
+             slc wac (themeToAttrMap custTheme) userStatusLock
+             userIdSet config mempty userPrefs
 
   initializeState cr myTeam me
 
@@ -247,7 +248,7 @@ initializeState cr myTeam me = do
       st = newState startupState
              & csChannels %~ flip (foldr (uncurry addChannel)) msgs
 
-  loadFlaggedMessages (cr^.crPreferences) st
+  loadFlaggedMessages (cr^.crUserPreferences.userPrefFlaggedPostList) st
 
   -- Trigger an initial websocket refresh
   writeBChan (cr^.crEventQueue) RefreshWebsocketEvent
