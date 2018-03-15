@@ -233,16 +233,12 @@ addClientMessage msg = do
 -- | Add a new 'ClientMessage' representing an error message to
 --   the current channel's message list
 postInfoMessage :: T.Text -> MH ()
-postInfoMessage err = do
-    msg <- newClientMessage Informative err
-    doAsyncWith Normal (return $ addClientMessage msg)
+postInfoMessage err = addClientMessage =<< newClientMessage Informative err
 
 -- | Add a new 'ClientMessage' representing an error message to
 --   the current channel's message list
 postErrorMessage' :: T.Text -> MH ()
-postErrorMessage' err = do
-    msg <- newClientMessage Error err
-    doAsyncWith Normal (return $ addClientMessage msg)
+postErrorMessage' err = addClientMessage =<< newClientMessage Error err
 
 -- | Raise a rich error
 mhError :: T.Text -> MH ()
