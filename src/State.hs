@@ -1371,6 +1371,13 @@ addMessageToState newPostData = do
           let cp = toClientPost new (new^.postParentIdL)
               fromMe = (cp^.cpUser == (Just $ myUserId st)) &&
                        (isNothing $ cp^.cpUserOverride)
+              userPrefs = st^.csResources.crUserPreferences
+              isJoinOrLeave = case cp^.cpType of
+                Join  -> True
+                Leave -> True
+                _     -> False
+              ignoredJoinLeaveMessage =
+                not (userPrefs^.userPrefShowJoinLeave) && isJoinOrLeave
               cId = postChannelId new
 
               doAddMessage = do
@@ -1427,12 +1434,14 @@ addMessageToState newPostData = do
                         curChannelAction = if postChannelId new == currCId
                                            then UpdateServerViewed
                                            else NoAction
-                        originUserAction = if fromMe
-                                           then NoAction
-                                           else if notifyPref == NotifyOptionAll ||
-                                                   (notifyPref == NotifyOptionMention && wasMentioned)
-                                                then NotifyUser
-                                                else NoAction
+                        originUserAction =
+                          if | fromMe                            -> NoAction
+                             | ignoredJoinLeaveMessage           -> NoAction
+                             | notifyPref == NotifyOptionAll     -> NotifyUser
+                             | notifyPref == NotifyOptionMention
+                                 && wasMentioned                 -> NotifyUser
+                             | otherwise                         -> NoAction
+
                     return $ curChannelAction <> originUserAction
 
           doHandleAddedMessage

@@ -62,7 +62,7 @@ import           Network.Mattermost.Types ( Channel(..), UserId, ChannelId
                                           , emptyChannelNotifyProps
                                           )
 import           Types.Messages (Messages, noMessages, addMessage, clientMessageToMessage)
-import           Types.Posts (ClientMessageType(UnknownGap), newClientMessage)
+import           Types.Posts (ClientMessageType(UnknownGap), newClientMessage, postIsLeave, postIsJoin)
 import           Types.Users (TypingUsers, noTypingUsers, addTypingUser)
 
 -- * Channel representations
@@ -266,7 +266,9 @@ clearEditedThreshold c = c & ccInfo.cdEditedMessageThreshold .~ Nothing
 -- | Adjust updated time based on a message, ensuring that the updated
 -- time does not move backward.
 adjustUpdated :: Post -> ClientChannel -> ClientChannel
-adjustUpdated m =
+adjustUpdated m
+  | postIsLeave m || postIsJoin m = id
+  | otherwise =
     ccInfo.cdUpdated %~ max (maxPostTimestamp m)
 
 adjustEditedThreshold :: Post -> ClientChannel -> ClientChannel
