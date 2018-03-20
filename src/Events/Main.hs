@@ -204,7 +204,7 @@ tabComplete dir = do
       -- enabled for the completion options popup.
       (completableUsers, completableUsers') =
           if displayNick
-          then let showNick = maybe mempty ((<> ")") . (" - ("<>))
+          then let showNick = maybe mempty ((<> ")") . ("("<>))
                    userCompletion u = (u^.uiName, u^.uiName <> u^.uiNickName.to showNick)
                in users^..traverse.to userCompletion & unzip
           else let dupe x = (x,x)
