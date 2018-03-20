@@ -210,7 +210,7 @@ tabComplete dir = do
           else let dupe x = (x,x)
                in users^..traverse.uiName & dupe
 
-      priorities  = [] :: [T.Text]-- XXX: add recent completions to this
+      priorities  = [] :: [T.Text]
 
       commonCompletions = map (normalChannelSigil <>) completableChannels ++
                           map ("/" <>) (commandName <$> commandList)
