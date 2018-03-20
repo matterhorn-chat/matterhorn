@@ -1574,15 +1574,11 @@ updateSelectedMatch :: (Int -> Int) -> MH ()
 updateSelectedMatch nextIndex = do
     chanMatches <- use (csChannelSelectState.channelMatches)
     usernameMatches <- use (csChannelSelectState.userMatches)
-    uList <- use (to sortedUserList)
 
     csChannelSelectState.selectedMatch %= \oldMatch ->
         -- Make the list of all matches, in display order.
-        let unames = HM.keys usernameMatches
-            allMatches = concat [ sort $ HM.keys chanMatches
-                                , [ u^.uiName | u <- uList
-                                  , u^.uiName `elem` unames
-                                  ]
+        let allMatches = concat [ sort $ HM.keys chanMatches
+                                , sort $ HM.keys usernameMatches
                                 ]
         in case findIndex (== oldMatch) allMatches of
             Nothing -> if null allMatches
