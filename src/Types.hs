@@ -280,6 +280,7 @@ data Config = Config
   , configShowTypingIndicator       :: Bool
   , configAbsPath                   :: Maybe FilePath
   , configUserKeys                  :: KeyConfig
+  , configHyperlinkingMode          :: Bool
   } deriving (Eq, Show)
 
 data BackgroundInfo = Disabled | Active | ActiveCount deriving (Eq, Show)

@@ -61,6 +61,8 @@ fromIni = do
       (configEnableAspell defaultConfig)
     configActivityBell <- fieldFlagDef "activityBell"
       (configActivityBell defaultConfig)
+    configHyperlinkingMode <- fieldFlagDef "hyperlinkURLs"
+      (configHyperlinkingMode defaultConfig)
     configPass <- (Just . PasswordCommand <$> field "passcmd") <|>
                   (Just . PasswordString  <$> field "pass") <|>
                   pure Nothing
@@ -132,6 +134,7 @@ defaultConfig =
            , configShowOlderEdits            = True
            , configUserKeys                  = mempty
            , configShowTypingIndicator       = False
+           , configHyperlinkingMode          = True
            }
 
 findConfig :: Maybe FilePath -> IO (Either String Config)
