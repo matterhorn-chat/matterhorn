@@ -1119,8 +1119,8 @@ attemptCreateDMChannel name = do
       if isJust mUid && isNothing mCid
       then do
         -- We have a user of that name but no channel. Time to make one!
+        let Just uId = mUid
         myId <- gets myUserId
-        Just uId <- gets (userIdForUsername name)
         session <- getSession
         doAsyncWith Normal $ do
           -- create a new channel
