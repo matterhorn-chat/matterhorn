@@ -15,6 +15,19 @@ import qualified Data.Text as T
 data Direction = Forwards | Backwards
   deriving (Read, Show, Eq, Ord)
 
+wordComplete :: Direction
+             -> Set T.Text   -- ^ potential completions
+             -> T.Text       -- ^ current prompt
+             -> Maybe T.Text -- ^ previous search
+             -> Maybe T.Text -- ^ completion
+wordComplete direction options prompt previous = do
+  let current = currentWord prompt
+  guard (not (T.null current))
+  let pat = case previous of
+        Just pattern | pattern `T.isPrefixOf` current -> pattern
+        _ -> current
+  search direction pat current options
+
 search :: Direction
        -> T.Text       -- ^ prefix
        -> T.Text       -- ^ current match
@@ -34,19 +47,6 @@ search direction prefix current options
   where
   advanceFun Forwards  = Set.lookupGT
   advanceFun Backwards = Set.lookupLT
-
-wordComplete :: Direction
-             -> Set T.Text   -- ^ potential completions
-             -> T.Text       -- ^ current prompt
-             -> Maybe T.Text -- ^ previous search
-             -> Maybe T.Text -- ^ completion
-wordComplete direction options prompt previous = do
-  let current = currentWord prompt
-  guard (not (T.null current))
-  let pat = case previous of
-        Just pattern | pattern `T.isPrefixOf` current -> pattern
-        _ -> current
-  search direction pat current options
 
 -- | trim whitespace and do any other edits we need
 -- to focus on the current word
