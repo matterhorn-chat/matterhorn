@@ -30,7 +30,7 @@ wordComplete :: Set.Set T.Text -> T.Text -> Maybe (Either T.Text Completer)
 wordComplete options input =
     let curWord = currentWord input
         alts = sort $ Set.toList $ Set.filter (curWord `T.isPrefixOf`) options
-    in if null alts
+    in if null alts || T.null curWord
        then Nothing
        else if length alts == 1
             then Just $ Left $ head alts
