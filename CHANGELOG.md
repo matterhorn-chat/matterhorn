@@ -1,4 +1,28 @@
 
+40800.0.0
+=========
+
+This release supports Mattermost server version 4.8.
+
+New features:
+ * Matterhorn now uses a connection pool with persistent server
+   connections for improved performance (thanks to Abhinav Sarkar)
+ * Matterhorn now honors the server-side user preference about whether
+   join/leave messages should be shown or hidden.
+ * Matterhorn now honors the server-side configuration setting that
+   determines whether users are displayed by nickname if possible
+   (thanks to Kelly McLaughlin)
+
+New configuration settings:
+ * The "hyperlinkURLs" setting controls whether Matterhorn emits
+   hyperlinking escape sequences. It defaults to on, but can be disabled
+   for users using terminal emulators that do not handle such escapes
+   gracefully when they don't support hyperlinking (see #374)
+
+Bug fixes:
+ * On (re-)connection, Matterhorn now fetches all users rather than just
+   the first few hundred.
+
 40700.0.0
 =========
 
