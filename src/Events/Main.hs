@@ -210,8 +210,6 @@ tabComplete dir = do
           else let dupe x = (x,x)
                in users^..traverse.uiName & dupe
 
-      priorities  = [] :: [T.Text]
-
       commonCompletions = map (normalChannelSigil <>) completableChannels ++
                           map ("/" <>) (commandName <$> commandList)
       completions = Set.fromList (completableUsers ++
@@ -229,14 +227,14 @@ tabComplete dir = do
                      in (Just cw, filter (cw `T.isPrefixOf`) $ Set.toList completions')
           Just cw -> (Just cw, filter (cw `T.isPrefixOf`) $ Set.toList completions')
 
-      mb_word     = wordComplete dir priorities completions line curComp
+      mb_word     = wordComplete dir completions line curComp
       mb_word' =
           case mb_word of
               Just mbw -> Just mbw
               Nothing | displayNick ->
                   let nicks = Set.fromList . catMaybes . join $ flip fmap users $ \u ->
                               [u^.uiNickName, (userSigil <>) <$> u^.uiNickName]
-                      nickMatch = wordComplete dir priorities nicks line curComp
+                      nickMatch = wordComplete dir nicks line curComp
                       nicksForUsers = catMaybes (flip map users $ \u ->
                                                      swap <$> sequence (u^.uiName, u^.uiNickName)
                                                 )

@@ -5,7 +5,6 @@ module Completion where
 import           Prelude ()
 import           Prelude.Compat
 
-import           Control.Applicative ( (<|>) )
 import           Control.Monad ( guard )
 import           Data.Char ( isSpace )
 import           Data.List ( find )
@@ -37,20 +36,17 @@ search direction prefix current options
   advanceFun Backwards = Set.lookupLT
 
 wordComplete :: Direction
-             -> [T.Text]     -- ^ priority completions
              -> Set T.Text   -- ^ potential completions
              -> T.Text       -- ^ current prompt
              -> Maybe T.Text -- ^ previous search
              -> Maybe T.Text -- ^ completion
-wordComplete direction hints options prompt previous = do
+wordComplete direction options prompt previous = do
   let current = currentWord prompt
   guard (not (T.null current))
-  case previous of
-    Just pattern | pattern `T.isPrefixOf` current ->
-      search direction pattern current options
-
-    _ -> find (current `T.isPrefixOf`) hints <|>
-         search direction current current options
+  let pat = case previous of
+        Just pattern | pattern `T.isPrefixOf` current -> pattern
+        _ -> current
+  search direction pat current options
 
 -- | trim whitespace and do any other edits we need
 -- to focus on the current word
