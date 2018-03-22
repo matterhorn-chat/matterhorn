@@ -102,6 +102,7 @@ editingKeybindings =
   [ kb "Transpose the final two characters"
     (EvKey (KChar 't') [MCtrl]) $ do
     csEditState.cedEditor %= applyEdit Z.transposeChars
+    csEditState.cedCompleter .= Nothing
   , kb "Go to the start of the current line"
     (EvKey (KChar 'a') [MCtrl]) $ do
     csEditState.cedEditor %= applyEdit Z.gotoBOL
@@ -111,30 +112,39 @@ editingKeybindings =
   , kb "Delete the character at the cursor"
     (EvKey (KChar 'd') [MCtrl]) $ do
     csEditState.cedEditor %= applyEdit Z.deleteChar
+    csEditState.cedCompleter .= Nothing
   , kb "Delete from the cursor to the start of the current line"
     (EvKey (KChar 'u') [MCtrl]) $ do
     csEditState.cedEditor %= applyEdit Z.killToBOL
+    csEditState.cedCompleter .= Nothing
   , kb "Move one character to the right"
     (EvKey (KChar 'f') [MCtrl]) $ do
     csEditState.cedEditor %= applyEdit Z.moveRight
+    csEditState.cedCompleter .= Nothing
   , kb "Move one character to the left"
     (EvKey (KChar 'b') [MCtrl]) $ do
     csEditState.cedEditor %= applyEdit Z.moveLeft
+    csEditState.cedCompleter .= Nothing
   , kb "Move one word to the right"
     (EvKey (KChar 'f') [MMeta]) $ do
     csEditState.cedEditor %= applyEdit Z.moveWordRight
+    csEditState.cedCompleter .= Nothing
   , kb "Move one word to the left"
     (EvKey (KChar 'b') [MMeta]) $ do
     csEditState.cedEditor %= applyEdit Z.moveWordLeft
+    csEditState.cedCompleter .= Nothing
   , kb "Delete the word to the left of the cursor"
     (EvKey KBS [MMeta]) $ do
     csEditState.cedEditor %= applyEdit Z.deletePrevWord
+    csEditState.cedCompleter .= Nothing
   , kb "Delete the word to the left of the cursor"
     (EvKey (KChar 'w') [MCtrl]) $ do
     csEditState.cedEditor %= applyEdit Z.deletePrevWord
+    csEditState.cedCompleter .= Nothing
   , kb "Delete the word to the right of the cursor"
     (EvKey (KChar 'd') [MMeta]) $ do
     csEditState.cedEditor %= applyEdit Z.deleteWord
+    csEditState.cedCompleter .= Nothing
   , kb "Move the cursor to the beginning of the input"
     (EvKey KHome []) $ do
     csEditState.cedEditor %= applyEdit gotoHome
@@ -147,10 +157,12 @@ editingKeybindings =
       let restOfLine = Z.currentLine (Z.killToBOL z)
       csEditState.cedYankBuffer .= restOfLine
       csEditState.cedEditor %= applyEdit Z.killToEOL
+      csEditState.cedCompleter .= Nothing
   , kb "Paste the current buffer contents at the cursor"
     (EvKey (KChar 'y') [MCtrl]) $ do
       buf <- use (csEditState.cedYankBuffer)
       csEditState.cedEditor %= applyEdit (Z.insertMany buf)
+      csEditState.cedCompleter .= Nothing
   ]
   where
     withUserTypingAction (KB {..}) =
