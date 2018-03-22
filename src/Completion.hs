@@ -20,24 +20,24 @@ import qualified Data.Text as T
 import qualified Zipper as Z
 
 data Completer =
-    Completer { completionAlternatives :: Z.Zipper T.Text
+    Completer { completionAlternatives :: Z.Zipper (T.Text, T.Text)
               }
 
 -- Nothing: no completions.
 -- Just Left: a single completion.
 -- Just Right: more than one completion.
-wordComplete :: Set.Set T.Text -> T.Text -> Maybe (Either T.Text Completer)
+wordComplete :: Set.Set (T.Text, T.Text) -> T.Text -> Maybe (Either T.Text Completer)
 wordComplete options input =
     let curWord = currentWord input
-        alts = sort $ Set.toList $ Set.filter (curWord `T.isPrefixOf`) options
+        alts = sort $ Set.toList $ Set.filter ((curWord `T.isPrefixOf`) . fst) options
     in if null alts || T.null curWord
        then Nothing
        else if length alts == 1
-            then Just $ Left $ head alts
+            then Just $ Left $ snd $ head alts
             else Just $ Right $ Completer { completionAlternatives = Z.fromList alts
                                           }
 
-currentAlternative :: Completer -> T.Text
+currentAlternative :: Completer -> (T.Text, T.Text)
 currentAlternative = Z.focus . completionAlternatives
 
 nextCompletion :: Completer -> Completer

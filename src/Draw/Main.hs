@@ -504,10 +504,11 @@ messageSelectBottomBar st =
 drawCompletionAlternatives :: Completer -> Widget Name
 drawCompletionAlternatives c =
     let alternatives = intersperse (txt " ") $ mkAlternative <$> Z.toList (completionAlternatives c)
-        mkAlternative val = let format = if val == currentAlternative c
-                                         then visible . withDefAttr completionAlternativeCurrentAttr
-                                         else id
-                            in format $ txt val
+        mkAlternative (displayVal, _) =
+            let format = if displayVal == (fst $ currentAlternative c)
+                         then visible . withDefAttr completionAlternativeCurrentAttr
+                         else id
+            in format $ txt displayVal
     in hBox [ borderElem bsHorizontal
             , txt "["
             , withDefAttr completionAlternativeListAttr $

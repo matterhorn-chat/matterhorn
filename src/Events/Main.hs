@@ -181,28 +181,26 @@ tabComplete dir = do
   allUIds <- gets allUserIds
   allChanNames <- gets allChannelNames
 
-  let completableChannels = catMaybes (flip map allChanNames $ \cname -> do
+  let channelCompletions = concat $ catMaybes (flip map allChanNames $ \cname -> do
           -- Only permit completion of channel names for non-Group channels
           ch <- channelByName cname st
           case ch^.ccInfo.cdType of
               Group -> Nothing
-              _     -> Just cname
+              _     -> Just [dupe cname, dupe $ normalChannelSigil <> cname]
           )
 
-      completableUsers = (^.uiName) <$> users
-      users = catMaybes (flip map allUIds $ \uId ->
+      userCompletions = concat $ catMaybes (flip map allUIds $ \uId ->
           -- Only permit completion of user names for non-deleted users
           case userById uId st of
               Nothing -> Nothing
               Just u | u^.uiDeleted -> Nothing
-              Just u -> Just u
+              Just u -> Just [dupe $ u^.uiName, dupe $ userSigil <> u^.uiName]
           )
 
-      commandCompletions = map ("/" <>) (commandName <$> commandList)
-      completions = Set.fromList (completableUsers ++
-                                  map (userSigil <>) completableUsers ++
-                                  completableChannels ++
-                                  map (normalChannelSigil <>) completableChannels ++
+      commandCompletions = dupe <$> map ("/" <>) (commandName <$> commandList)
+      dupe a = (a, a)
+      completions = Set.fromList (userCompletions ++
+                                  channelCompletions ++
                                   commandCompletions)
 
   mCompleter <- use (csEditState.cedCompleter)
@@ -238,5 +236,5 @@ tabComplete dir = do
   case mComp of
       Nothing -> return ()
       Just comp -> do
-          let w = currentAlternative comp
-          csEditState.cedEditor %= applyEdit (Z.insertMany w . Z.deletePrevWord)
+          let replacement = snd $ currentAlternative comp
+          csEditState.cedEditor %= applyEdit (Z.insertMany replacement . Z.deletePrevWord)
