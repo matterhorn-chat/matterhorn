@@ -19,6 +19,12 @@ import qualified Data.Text as T
 
 import qualified Zipper as Z
 
+-- A completer stores the stateful selection of a completion alternative
+-- from a sequence of alternatives. Each item in the sequence is a pair:
+-- the first element of the pair is the string corresonding to the user
+-- input and the second element of the pair is what will ultimately
+-- replace the user's input. The two are decoupled specifically to deal
+-- with permitting nickname completions to "resolve" to usernames.
 data Completer =
     Completer { completionAlternatives :: Z.Zipper (T.Text, T.Text)
               }
