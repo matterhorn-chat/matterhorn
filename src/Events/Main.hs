@@ -180,6 +180,7 @@ tabComplete dir = do
   st <- use id
   allUIds <- gets allUserIds
   allChanNames <- gets allChannelNames
+  displayNick <- use (to useNickname)
 
   let channelCompletions = concat $ catMaybes (flip map allChanNames $ \cname -> do
           -- Only permit completion of channel names for non-Group channels
@@ -194,7 +195,11 @@ tabComplete dir = do
           case userById uId st of
               Nothing -> Nothing
               Just u | u^.uiDeleted -> Nothing
-              Just u -> Just [dupe $ u^.uiName, dupe $ userSigil <> u^.uiName]
+              Just u ->
+                  let mNick = case u^.uiNickName of
+                        Just nick | displayNick -> [(nick, u^.uiName)]
+                        _ -> []
+                  in Just $ [dupe $ u^.uiName, dupe $ userSigil <> u^.uiName] <> mNick
           )
 
       commandCompletions = dupe <$> map ("/" <>) (commandName <$> commandList)
