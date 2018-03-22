@@ -4,12 +4,10 @@ module Events.Main where
 import Prelude ()
 import Prelude.Compat
 
-import Brick
+import Brick hiding (Direction)
 import Brick.Widgets.Edit
-import Control.Monad (join)
 import Data.Maybe (catMaybes)
 import Data.Monoid ((<>))
-import Data.Tuple (swap)
 import qualified Data.Set as Set
 import qualified Data.Text as T
 import qualified Data.Text.Zipper as Z
@@ -130,7 +128,7 @@ mainKeybindings = mkKeybindings
                  True -> mhHandleEventLensed (csEditState.cedEditor) handleEditorEvent
                                            (Vty.EvKey Vty.KEnter [])
                  False -> do
-                   csEditState.cedCurrentCompletion .= Nothing
+                   csEditState.cedCompleter .= Nothing
                    handleInputSubmission
 
     , mkKb EnterOpenURLModeEvent "Select and open a URL posted to the current channel"
@@ -175,12 +173,13 @@ handleInputSubmission = do
   -- handler can tell whether we're editing, replying, etc.
   csEditState.cedEditMode       .= NewPost
 
-tabComplete :: Completion.Direction -> MH ()
+data Direction = Forwards | Backwards
+
+tabComplete :: Direction -> MH ()
 tabComplete dir = do
   st <- use id
   allUIds <- gets allUserIds
   allChanNames <- gets allChannelNames
-  displayNick <- use (to useNickname)
 
   let completableChannels = catMaybes (flip map allChanNames $ \cname -> do
           -- Only permit completion of channel names for non-Group channels
@@ -190,6 +189,7 @@ tabComplete dir = do
               _     -> Just cname
           )
 
+      completableUsers = (^.uiName) <$> users
       users = catMaybes (flip map allUIds $ \uId ->
           -- Only permit completion of user names for non-deleted users
           case userById uId st of
@@ -198,58 +198,45 @@ tabComplete dir = do
               Just u -> Just u
           )
 
-      -- The first member of the following pair is used for the completion
-      -- displayed in the message window and the second member
-      -- includes the nickname in parens if nickname display is
-      -- enabled for the completion options popup.
-      (completableUsers, completableUsers') =
-          if displayNick
-          then let showNick = maybe mempty ((<> ")") . ("("<>))
-                   userCompletion u = (u^.uiName, u^.uiName <> u^.uiNickName.to showNick)
-               in users^..traverse.to userCompletion & unzip
-          else let dupe x = (x,x)
-               in users^..traverse.uiName & dupe
-
-      commonCompletions = map (normalChannelSigil <>) completableChannels ++
-                          map ("/" <>) (commandName <$> commandList)
+      commandCompletions = map ("/" <>) (commandName <$> commandList)
       completions = Set.fromList (completableUsers ++
-                                  completableChannels ++
                                   map (userSigil <>) completableUsers ++
-                                  commonCompletions)
-      completions' = Set.fromList (completableUsers' ++
                                   completableChannels ++
-                                  map (userSigil <>) completableUsers' ++
-                                  commonCompletions)
-      line        = Z.currentLine $ st^.csEditState.cedEditor.editContentsL
-      curComp     = st^.csEditState.cedCurrentCompletion
-      (nextComp, alts) = case curComp of
-          Nothing -> let cw = currentWord line
-                     in (Just cw, filter (cw `T.isPrefixOf`) $ Set.toList completions')
-          Just cw -> (Just cw, filter (cw `T.isPrefixOf`) $ Set.toList completions')
+                                  map (normalChannelSigil <>) completableChannels ++
+                                  commandCompletions)
 
-      mb_word     = wordComplete dir completions line curComp
-      mb_word' =
-          case mb_word of
-              Just mbw -> Just mbw
-              Nothing | displayNick ->
-                  let nicks = Set.fromList . catMaybes . join $ flip fmap users $ \u ->
-                              [u^.uiNickName, (userSigil <>) <$> u^.uiNickName]
-                      nickMatch = wordComplete dir nicks line curComp
-                      nicksForUsers = catMaybes (flip map users $ \u ->
-                                                     swap <$> sequence (u^.uiName, u^.uiNickName)
-                                                )
-                  in case nickMatch of
-                         Just nm | T.singleton (T.head nm) == userSigil ->
-                             (userSigil <>) <$> flip lookup nicksForUsers (T.drop 1 nm)
-                         Just nm ->
-                             flip lookup nicksForUsers nm
-                         Nothing -> Nothing
-              _ -> Nothing
-  csEditState.cedCurrentCompletion .= nextComp
-  csEditState.cedCompletionAlternatives .= alts
-  let (edit, curAlternative) = case mb_word' of
-          Nothing -> (id, "")
-          Just w -> (Z.insertMany w . Z.deletePrevWord, w)
+  mCompleter <- use (csEditState.cedCompleter)
+  case mCompleter of
+      Just _ -> do
+          -- Since there is already a completion in progress, cycle it
+          -- according to the directional preference.
+          let func = case dir of
+                Forwards -> nextCompletion
+                Backwards -> previousCompletion
+          csEditState.cedCompleter %= fmap func
+      Nothing -> do
+          -- There is no completion in progress, so start a new
+          -- completion from the current input.
+          let line = Z.currentLine $ st^.csEditState.cedEditor.editContentsL
+          case wordComplete completions line of
+              Nothing ->
+                  -- No matches were found, so do nothing.
+                  return ()
+              Just (Left single) ->
+                  -- Only a single match was found, so just replace the
+                  -- current word with the only match.
+                  csEditState.cedEditor %= applyEdit (Z.insertMany single . Z.deletePrevWord)
+              Just (Right many) -> do
+                  -- More than one match was found, so start a
+                  -- completion by storing the completer state.
+                  csEditState.cedCompleter .= Just many
 
-  csEditState.cedEditor %= (applyEdit edit)
-  csEditState.cedCurrentAlternative .= curAlternative
+  -- Get the current completer state (potentially just cycled to
+  -- the next completion above) and update the editor with the current
+  -- alternative.
+  mComp <- use (csEditState.cedCompleter)
+  case mComp of
+      Nothing -> return ()
+      Just comp -> do
+          let w = currentAlternative comp
+          csEditState.cedEditor %= applyEdit (Z.insertMany w . Z.deletePrevWord)

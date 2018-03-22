@@ -211,7 +211,7 @@ handleEditingInput e = do
               sendUserTypingAction
             | otherwise -> return ()
 
-        csEditState.cedCurrentCompletion .= Nothing
+        csEditState.cedCompleter .= Nothing
 
     liftIO $ resetSpellCheckTimer $ st^.csEditState
 

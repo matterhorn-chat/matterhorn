@@ -1,6 +1,7 @@
 module Zipper
   ( Zipper
   , fromList
+  , toList
   , focus
   , focusL
   , left
@@ -52,6 +53,9 @@ focusL = lens focus upd
 -- Turn a list into a wraparound zipper, focusing on the head
 fromList :: [a] -> Zipper a
 fromList xs = Zipper { zFocus = 0, zElems = xs }
+
+toList :: Zipper a -> [a]
+toList = zElems
 
 -- Shift the focus until a given element is found, or return the
 -- same zipper if none applies

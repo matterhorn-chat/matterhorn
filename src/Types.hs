@@ -85,10 +85,8 @@ module Types
   , cedSpellChecker
   , cedMisspellings
   , cedEditMode
-  , cedCompletionAlternatives
-  , cedCurrentCompletion
+  , cedCompleter
   , cedEditor
-  , cedCurrentAlternative
   , cedMultiline
   , cedInputHistory
   , cedInputHistoryPosition
@@ -244,6 +242,7 @@ import           Types.KeyEvents
 import           Types.Posts
 import           Types.Messages
 import           Types.Users
+import           Completion (Completer)
 
 -- * Configuration
 
@@ -501,9 +500,7 @@ data ChatEditState = ChatEditState
   , _cedInputHistory         :: InputHistory
   , _cedInputHistoryPosition :: HM.HashMap ChannelId (Maybe Int)
   , _cedLastChannelInput     :: HM.HashMap ChannelId (T.Text, EditMode)
-  , _cedCurrentCompletion    :: Maybe T.Text
-  , _cedCurrentAlternative   :: T.Text
-  , _cedCompletionAlternatives :: [T.Text]
+  , _cedCompleter            :: Maybe Completer
   , _cedYankBuffer           :: T.Text
   , _cedSpellChecker         :: Maybe (Aspell, IO ())
   , _cedMisspellings         :: Set.Set T.Text
@@ -524,9 +521,7 @@ emptyEditState hist sp = ChatEditState
   , _cedInputHistory         = hist
   , _cedInputHistoryPosition = mempty
   , _cedLastChannelInput     = mempty
-  , _cedCurrentCompletion    = Nothing
-  , _cedCompletionAlternatives = []
-  , _cedCurrentAlternative   = ""
+  , _cedCompleter            = Nothing
   , _cedEditMode             = NewPost
   , _cedYankBuffer           = ""
   , _cedSpellChecker         = sp

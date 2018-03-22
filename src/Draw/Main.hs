@@ -36,6 +36,8 @@ import           Draw.ChannelList (renderChannelList)
 import           Draw.Messages
 import           Draw.Util
 import           Markdown
+import           Completion (Completer(..), currentAlternative)
+import qualified Zipper as Z
 import           State
 import           Themes
 import           TimeUtils (justAfter, justBefore)
@@ -499,10 +501,10 @@ messageSelectBottomBar st =
             , hBorder
             ]
 
-completionAlternatives :: ChatState -> Widget Name
-completionAlternatives st =
-    let alternatives = intersperse (txt " ") $ mkAlternative <$> st^.csEditState.cedCompletionAlternatives
-        mkAlternative val = let format = if val == st^.csEditState.cedCurrentAlternative
+drawCompletionAlternatives :: Completer -> Widget Name
+drawCompletionAlternatives c =
+    let alternatives = intersperse (txt " ") $ mkAlternative <$> Z.toList (completionAlternatives c)
+        mkAlternative val = let format = if val == currentAlternative c
                                          then visible . withDefAttr completionAlternativeCurrentAttr
                                          else id
                             in format $ txt val
@@ -602,8 +604,8 @@ mainInterface st =
 
     bottomBorder = case appMode st of
         MessageSelect -> messageSelectBottomBar st
-        _ -> case st^.csEditState.cedCurrentCompletion of
-            Just _ | length (st^.csEditState.cedCompletionAlternatives) > 1 -> completionAlternatives st
+        _ -> case st^.csEditState.cedCompleter of
+            Just c -> drawCompletionAlternatives c
             _ -> maybeSubdue $ hBox
                  [ hLimit channelListWidth hBorder
                  , borderElem bsIntersectB
