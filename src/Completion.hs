@@ -7,13 +7,34 @@ import           Prelude.Compat
 
 import           Control.Monad ( guard )
 import           Data.Char ( isSpace )
-import           Data.List ( find )
+import           Data.List ( find, sort )
 import qualified Data.Set as Set
 import           Data.Set ( Set )
 import qualified Data.Text as T
 
+import qualified Zipper as Z
+
 data Direction = Forwards | Backwards
   deriving (Read, Show, Eq, Ord)
+
+data Completer =
+    Completer { completionAlternatives :: Z.Zipper T.Text
+              }
+
+wordComplete' :: Set.Set T.Text -> T.Text -> Maybe Completer
+wordComplete' options input =
+    let curWord = currentWord input
+        alts = sort $ Set.toList $ Set.filter (curWord `T.isPrefixOf`) options
+    in if null alts
+       then Nothing
+       else Just $ Completer { completionAlternatives = Z.fromList alts
+                             }
+
+nextCompletion :: Completer -> Completer
+nextCompletion (Completer z) = Completer $ Z.right z
+
+previousCompletion :: Completer -> Completer
+previousCompletion (Completer z) = Completer $ Z.left z
 
 wordComplete :: Direction
              -> Set T.Text   -- ^ potential completions
