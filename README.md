@@ -13,6 +13,13 @@ Get notified about new Matterhorn releases by following our Twitter account!
 
 [https://twitter.com/matterhorn_chat](https://twitter.com/matterhorn_chat)
 
+# Chat With the Developers
+
+The Matterhorn developers hang out on the official Mattermost
+pre-release server. Stop by to get support and say hello!
+
+[https://pre-release.mattermost.com/core/channels/matterhorn](https://pre-release.mattermost.com/core/channels/matterhorn)
+
 # Quick Start
 
 We provide pre-built binary releases for some platforms. Please see the
