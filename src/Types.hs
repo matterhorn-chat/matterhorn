@@ -217,7 +217,6 @@ import           Data.Time.LocalTime.TimeZone.Series (TimeZoneSeries)
 import qualified Data.HashMap.Strict as HM
 import           Data.List (sort, partition, sortBy)
 import           Data.Maybe
-import           Data.Monoid
 import qualified Data.Set as Set
 import           Lens.Micro.Platform ( at, makeLenses, lens, (&), (^.), (%~), (.~), (^?!), (.=)
                                      , (%=), (^?)

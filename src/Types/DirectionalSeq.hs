@@ -11,10 +11,7 @@
 
 module Types.DirectionalSeq where
 
-
-import           Data.Monoid
 import qualified Data.Sequence as Seq
-
 
 data Chronological
 data Retrograde
@@ -26,9 +23,11 @@ data SeqDirection dir => DirectionalSeq dir a =
     DSeq { dseq :: Seq.Seq a }
          deriving (Show, Functor, Foldable, Traversable)
 
+instance SeqDirection a => Semigroup (DirectionalSeq a e) where
+    (<>) a b = DSeq $ dseq a <> dseq b
+
 instance SeqDirection a => Monoid (DirectionalSeq a e) where
     mempty = DSeq mempty
-    mappend a b = DSeq $ mappend (dseq a) (dseq b)
 
 onDirectedSeq :: SeqDirection dir => (Seq.Seq a -> Seq.Seq b)
               -> DirectionalSeq dir a -> DirectionalSeq dir b
