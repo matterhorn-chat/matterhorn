@@ -278,9 +278,7 @@ getUserSearchResultsPage _pageNum myTId scope s searchString = do
                            , userSearchNotInChannelId = case scope of
                                ChannelNonMembers cId -> Just cId
                                _                     -> Nothing
-                           , userSearchTeamId = case scope of
-                               ChannelNonMembers _ -> Just myTId
-                               _                   -> Nothing
+                           , userSearchTeamId = Just myTId
                            }
     users <- MM.mmSearchUsers query s
 
