@@ -112,13 +112,14 @@ handleWSEvent we = do
     myTId <- gets myTeamId
     case weEvent we of
         WMPosted
-            | Just p <- wepPost (weData we) -> do
-                -- If the message is a header change, also update the
-                -- channel metadata.
-                let wasMentioned = case wepMentions (weData we) of
-                      Just lst -> myId `Set.member` lst
-                      _ -> False
-                addNewPostedMessage $ RecentPost p wasMentioned
+            | Just p <- wepPost (weData we) ->
+                when (wepTeamId (weData we) == Just myTId) $ do
+                    -- If the message is a header change, also update
+                    -- the channel metadata.
+                    let wasMentioned = case wepMentions (weData we) of
+                          Just lst -> myId `Set.member` lst
+                          _ -> False
+                    addNewPostedMessage $ RecentPost p wasMentioned
             | otherwise -> return ()
 
         WMPostEdited
@@ -204,7 +205,8 @@ handleWSEvent we = do
             | otherwise -> return ()
 
         WMChannelUpdated
-            | Just cId <- webChannelId $ weBroadcast we -> refreshChannelById cId
+            | Just cId <- webChannelId $ weBroadcast we ->
+                when (webTeamId (weBroadcast we) == Just myTId) $ refreshChannelById cId
             | otherwise -> return ()
 
         WMGroupAdded
