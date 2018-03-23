@@ -131,7 +131,6 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
 import           Data.List (sort, findIndex)
 import           Data.Maybe (isJust, fromJust, catMaybes, isNothing)
-import           Data.Monoid ((<>))
 import qualified Data.Set as Set
 import qualified Data.Text as T
 import           Data.Time (getCurrentTime)
@@ -1295,12 +1294,14 @@ data PostProcessMessageAdd = NoAction
 
 instance Monoid PostProcessMessageAdd where
   mempty = NoAction
-  mappend NotifyUserAndServer _         = NotifyUserAndServer
-  mappend _ NotifyUserAndServer         = NotifyUserAndServer
-  mappend NotifyUser UpdateServerViewed = NotifyUserAndServer
-  mappend UpdateServerViewed NotifyUser = NotifyUserAndServer
-  mappend x NoAction                    = x
-  mappend _ x                           = x
+
+instance Semigroup PostProcessMessageAdd where
+  (<>) NotifyUserAndServer _         = NotifyUserAndServer
+  (<>) _ NotifyUserAndServer         = NotifyUserAndServer
+  (<>) NotifyUser UpdateServerViewed = NotifyUserAndServer
+  (<>) UpdateServerViewed NotifyUser = NotifyUserAndServer
+  (<>) x NoAction                    = x
+  (<>) _ x                           = x
 
 -- | postProcessMessageAdd performs the actual actions indicated by
 -- the corresponding input value.
