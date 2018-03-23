@@ -89,7 +89,7 @@ executable matterhorn
                        Paths_matterhorn
   default-extensions:  OverloadedStrings,
                        ScopedTypeVariables
-  ghc-options:         -Wall -threaded
+  ghc-options:         -Wall -threaded -with-rtsopts=-I0
   build-depends:       base                 >=4.8     && <5
                      , mattermost-api       == 40800.0.0
                      , base-compat          >= 0.9    && < 0.10
