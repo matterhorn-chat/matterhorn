@@ -180,7 +180,8 @@ refreshChannel :: Channel -> ChannelMember -> MH ()
 refreshChannel chan member = do
   let cId = getId chan
   myTId <- gets myTeamId
-  let ourTeam = Just myTId == channelTeamId chan
+  let ourTeam = channelTeamId chan == Nothing ||
+                Just myTId == channelTeamId chan
 
   -- If this is a group channel that the user has chosen to hide or if
   -- the channel is not a channel for the current session's team, ignore
