@@ -1,4 +1,15 @@
 
+40800.0.1
+=========
+
+Bug fixes:
+ * User list overlays shown by `/msg`, `/add-user`, and `/members`
+   restrict results to the current team only.
+ * Message posts, channel view events, and channel metadata update
+   events destined for other teams are now properly ignored by
+   Matterhorn if the team for those events doesn't match the current
+   session's team.
+
 40800.0.0
 =========
 
