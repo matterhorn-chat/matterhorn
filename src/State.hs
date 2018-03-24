@@ -230,7 +230,7 @@ createGroupChannel usernameList = do
             let pref = showGroupChannelPref (channelId chan) (me^.userIdL)
             -- It's possible that the channel already existed, in which
             -- case we want to request a preference change to show it.
-            MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session -- (me^.userIdL) $ Seq.fromList [pref]
+            MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
             cwd <- MM.mmGetChannel (channelId chan) session
             member <- MM.mmGetChannelMember (channelId chan) UserMe session
             return $ do
