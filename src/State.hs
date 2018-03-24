@@ -433,7 +433,7 @@ beginCurrentChannelDeleteConfirm = do
         let chType = chan^.ccInfo.cdType
         if chType /= Direct
             then setMode DeleteChannelConfirm
-            else mhError "Direct message channels cannot be deleted"
+            else mhError "Direct message channels cannot be deleted."
 
 deleteCurrentChannel :: MH ()
 deleteCurrentChannel = do
