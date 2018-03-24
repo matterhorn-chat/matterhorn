@@ -2,3 +2,14 @@
 - Jason Dagit
 - Getty Ritter
 - Kevin Quick
+
+We're also grateful to the many contributors who have submitted patches:
+
+- Abhinav Sarkar <abhinav@abhinavsarkar.net>
+- Adam Wick <awick@uhsure.com>
+- Joram Wilander <jwawilander@gmail.com>
+- Kelly McLaughlin <kelly@kelly-mclaughlin.com>
+- Nicholas Skinsacos <nskins@umich.edu>
+- Ryan Scott <ryan.gl.scott@gmail.com>
+- Thomas M. DuBuisson <tommd@galois.com>
+- Tristan Ravitch <tristan@nochair.net>
