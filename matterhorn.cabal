@@ -8,7 +8,7 @@ license:             BSD3
 license-file:        LICENSE
 author:              matterhorn@galois.com
 maintainer:          matterhorn@galois.com
-copyright:           ©2016-2017 AUTHORS.txt
+copyright:           ©2016-2018 AUTHORS.txt
 category:            Chat
 build-type:          Simple
 cabal-version:       >= 1.18
