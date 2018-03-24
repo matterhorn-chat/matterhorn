@@ -1176,7 +1176,7 @@ handleNewChannel_ permitPostpone switch nc member = do
   -- Only add the channel to the state if it isn't already known.
   mChan <- preuse (csChannel(getId nc))
   case mChan of
-      Just _ -> return ()
+      Just _ -> when switch $ setFocus (getId nc)
       Nothing -> do
         -- Create a new ClientChannel structure
         cChannel <- (ccInfo %~ channelInfoFromChannelWithData nc member) <$>
