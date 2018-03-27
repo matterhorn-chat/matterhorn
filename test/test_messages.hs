@@ -9,7 +9,7 @@ import           Data.List (intercalate, sortBy, sort)
 import qualified Data.List.UniqueUnsorted as U
 import qualified Data.Map as Map
 import           Data.Maybe (isNothing, fromJust, isJust, catMaybes)
-import           Data.Monoid ((<>))
+import           Data.Monoid.Compat
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Time.Calendar (Day(..))
@@ -20,11 +20,11 @@ import           Message_QCA
 import           Network.Mattermost.Types
 import           System.Exit
 import           Test.QuickCheck.Checkers
-import           Test.QuickCheck.Classes
 import           Test.Tasty
 import           Test.Tasty.HUnit
 import           Test.Tasty.QuickCheck
 import           TimeUtils
+import           Types.DirectionalSeq
 import           Types.Messages
 import           Types.Posts
 
@@ -111,15 +111,15 @@ createTests = testGroup "Create"
                     $ \(x, y) ->
                         let m1 = makeMsgs [x, y]
                             m2 = noMessages
-                        in (2 == (length $ m1 <> m2) &&
-                            2 == (length $ m2 <> m1))
+                        in (2 == (length $ m1 `appendDirSeq` m2) &&
+                            2 == (length $ m2 `appendDirSeq` m1))
 
               , testProperty "join one to many"
                     $ \(x, y, z) ->
                         let l1 = setDateOrderMessages [x, y]
                             m1 = makeMsgs l1
                             m2 = addMessage z noMessages
-                            j2 = m2 <> m1
+                            j2 = m2 `appendDirSeq` m1
                         in idlist [z, x, y] === idlist j2
 
               , testProperty "join many to one"
@@ -127,7 +127,7 @@ createTests = testGroup "Create"
                         let l1 = setDateOrderMessages [x, y]
                             m1 = makeMsgs l1
                             m2 = addMessage z noMessages
-                            j1 = m1 <> m2
+                            j1 = m1 `appendDirSeq` m2
                         in idlist [x, y, z] === idlist j1
 
               , testProperty "join to many"
@@ -140,8 +140,8 @@ createTests = testGroup "Create"
                             -- no date relationship between the
                             -- members l1 and l2 and mappend doesn't
                             -- enforce one.
-                            j1 = m1 <> m2
-                            j2 = m2 <> m1
+                            j1 = m1 `appendDirSeq` m2
+                            j2 = m2 `appendDirSeq` m1
                         in (4 == (length j1) &&
                             4 == (length j2) &&
                             idlist (l1 <> l2) == idlist j1 &&
@@ -875,11 +875,20 @@ removeTests = adjustOption (\(QuickCheckMaxRatio n) -> QuickCheckMaxRatio (n*10)
 
               ]
 
+monoid' :: (Show t, Arbitrary t, EqProp t) => t -> (t -> t -> t) -> TestBatch
+monoid' mempty' mappend' =
+  ( "monoid"
+  , [ ("left  identity", leftId  mappend' mempty')
+    , ("right identity", rightId mappend' mempty')
+    , ("associativity" , isAssoc mappend')
+    ]
+  )
+
 instanceTests :: TestTree
 instanceTests = testGroup "Messages Instances"
                 $ map tastyBatch
-                      [ (monoid (undefined :: Messages))
-                      , (monoid (undefined :: RetrogradeMessages))
+                      [ (monoid' (emptyDirSeq :: Messages) appendDirSeq)
+                      , (monoid' (emptyDirSeq :: RetrogradeMessages) appendDirSeq)
                       ]
 
 instance EqProp Messages where
