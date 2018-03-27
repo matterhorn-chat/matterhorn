@@ -217,7 +217,7 @@ import           Data.Time.LocalTime.TimeZone.Series (TimeZoneSeries)
 import qualified Data.HashMap.Strict as HM
 import           Data.List (sort, partition, sortBy)
 import           Data.Maybe
-import           Data.Monoid
+import           Data.Monoid.Compat
 import qualified Data.Set as Set
 import           Lens.Micro.Platform ( at, makeLenses, lens, (&), (^.), (%~), (.~), (^?!), (.=)
                                      , (%=), (^?)
@@ -238,6 +238,7 @@ import           Zipper (Zipper, focusL, updateList)
 import           InputHistory
 
 import           Types.Channels
+import           Types.DirectionalSeq(emptyDirSeq)
 import           Types.KeyEvents
 import           Types.Posts
 import           Types.Messages
@@ -636,7 +637,7 @@ newState (StartupStateInfo rs i u m tz hist sp ns) = ChatState
   , _csWorkerIsBusy                = Nothing
   , _csJoinChannelList             = Nothing
   , _csMessageSelect               = MessageSelectState Nothing
-  , _csPostListOverlay             = PostListOverlayState mempty Nothing
+  , _csPostListOverlay             = PostListOverlayState emptyDirSeq Nothing
   , _csUserListOverlay             = nullUserListOverlayState
   , _csClientConfig                = Nothing
   }

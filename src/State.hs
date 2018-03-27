@@ -1027,7 +1027,7 @@ addObtainedMessages cId reqCnt posts = do
         -- corpus, generating needed fetches of data associated with
         -- the post, and determining an notification action to be
         -- taken (if any).
-        action <- foldr mappend mempty <$>
+        action <- foldr andProcessWith NoAction <$>
           mapM (addMessageToState . OldPost)
                    [ (posts^.postsPostsL) HM.! p
                    | p <- F.toList (posts^.postsOrderL)
@@ -1293,14 +1293,14 @@ data PostProcessMessageAdd = NoAction
                            | UpdateServerViewed
                            | NotifyUserAndServer
 
-instance Monoid PostProcessMessageAdd where
-  mempty = NoAction
-  mappend NotifyUserAndServer _         = NotifyUserAndServer
-  mappend _ NotifyUserAndServer         = NotifyUserAndServer
-  mappend NotifyUser UpdateServerViewed = NotifyUserAndServer
-  mappend UpdateServerViewed NotifyUser = NotifyUserAndServer
-  mappend x NoAction                    = x
-  mappend _ x                           = x
+andProcessWith
+  :: PostProcessMessageAdd -> PostProcessMessageAdd -> PostProcessMessageAdd
+andProcessWith NotifyUserAndServer _         = NotifyUserAndServer
+andProcessWith _ NotifyUserAndServer         = NotifyUserAndServer
+andProcessWith NotifyUser UpdateServerViewed = NotifyUserAndServer
+andProcessWith UpdateServerViewed NotifyUser = NotifyUserAndServer
+andProcessWith x NoAction                    = x
+andProcessWith _ x                           = x
 
 -- | postProcessMessageAdd performs the actual actions indicated by
 -- the corresponding input value.
@@ -1446,7 +1446,7 @@ addMessageToState newPostData = do
                                  && wasMentioned                 -> NotifyUser
                              | otherwise                         -> NoAction
 
-                    return $ curChannelAction <> originUserAction
+                    return $ curChannelAction `andProcessWith` originUserAction
 
           doHandleAddedMessage
 

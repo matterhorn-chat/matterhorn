@@ -10,6 +10,7 @@ import Network.Mattermost.Types
 import State
 import State.Common
 import Types
+import Types.DirectionalSeq (emptyDirSeq)
 import Types.Messages
 
 -- | Create a PostListOverlay with the given content description and
@@ -23,7 +24,7 @@ enterPostListMode contents msgs = do
 -- | Clear out the state of a PostListOverlay
 exitPostListMode :: MH ()
 exitPostListMode = do
-  csPostListOverlay.postListPosts .= mempty
+  csPostListOverlay.postListPosts .= emptyDirSeq
   csPostListOverlay.postListSelected .= Nothing
   setMode Main
 

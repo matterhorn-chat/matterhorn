@@ -12,7 +12,7 @@
 module Types.DirectionalSeq where
 
 
-import           Data.Monoid
+import           Data.Monoid.Compat
 import qualified Data.Sequence as Seq
 
 
@@ -26,9 +26,11 @@ data SeqDirection dir => DirectionalSeq dir a =
     DSeq { dseq :: Seq.Seq a }
          deriving (Show, Functor, Foldable, Traversable)
 
-instance SeqDirection a => Monoid (DirectionalSeq a e) where
-    mempty = DSeq mempty
-    mappend a b = DSeq $ mappend (dseq a) (dseq b)
+emptyDirSeq :: DirectionalSeq dir a
+emptyDirSeq = DSeq mempty
+
+appendDirSeq :: DirectionalSeq dir a -> DirectionalSeq dir a -> DirectionalSeq dir a
+appendDirSeq a b = DSeq $ mappend (dseq a) (dseq b)
 
 onDirectedSeq :: SeqDirection dir => (Seq.Seq a -> Seq.Seq b)
               -> DirectionalSeq dir a -> DirectionalSeq dir b
@@ -57,7 +59,7 @@ onDirSeqSubset startPred endPred op entries =
                       then (ml2 <> Seq.take 1 el, Seq.drop 1 el)
                       else (ml2, el)
         (ml3, rval) = op $ DSeq ml2'
-    in (DSeq bl <> ml3 <> DSeq el', rval)
+    in (DSeq bl `appendDirSeq` ml3 `appendDirSeq` DSeq el', rval)
 
 -- | dirSeqBreakl splits the DirectionalSeq into a tuple where the
 -- first element is the (possibly empty) DirectionalSeq of all
