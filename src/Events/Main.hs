@@ -197,7 +197,7 @@ tabComplete dir = do
               Just u | u^.uiDeleted -> Nothing
               Just u ->
                   let mNick = case u^.uiNickName of
-                        Just nick | displayNick -> [(nick, u^.uiName)]
+                        Just nick | displayNick -> [(userSigil <> nick, userSigil <> u^.uiName), (nick, u^.uiName)]
                         _ -> []
                   in Just $ [dupe $ u^.uiName, dupe $ userSigil <> u^.uiName] <> mNick
           )
