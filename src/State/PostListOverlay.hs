@@ -2,6 +2,7 @@ module State.PostListOverlay where
 
 import Control.Monad
 import Data.Text (Text)
+import qualified Data.Text as T
 import Lens.Micro.Platform
 import Network.Mattermost.Endpoints
 import Network.Mattermost.Types
@@ -9,6 +10,7 @@ import Network.Mattermost.Types
 import State
 import State.Common
 import Types
+import Types.DirectionalSeq (emptyDirSeq)
 import Types.Messages
 
 -- | Create a PostListOverlay with the given content description and
@@ -22,7 +24,7 @@ enterPostListMode contents msgs = do
 -- | Clear out the state of a PostListOverlay
 exitPostListMode :: MH ()
 exitPostListMode = do
-  csPostListOverlay.postListPosts .= mempty
+  csPostListOverlay.postListPosts .= emptyDirSeq
   csPostListOverlay.postListSelected .= Nothing
   setMode Main
 
@@ -42,12 +44,15 @@ enterSearchResultPostListMode :: Text -> MH ()
 enterSearchResultPostListMode terms = do
   session <- getSession
   tId <- gets myTeamId
-  enterPostListMode (PostListSearch terms True) noMessages
-  doAsyncWith Preempt $ do
-    posts <- mmSearchForTeamPosts tId (SearchPosts terms False) session
-    return $ do
-      messages <- messagesFromPosts posts
-      enterPostListMode (PostListSearch terms False) messages
+  case T.null $ T.strip terms of
+      True -> postInfoMessage "Search command requires at least one search term."
+      False -> do
+        enterPostListMode (PostListSearch terms True) noMessages
+        doAsyncWith Preempt $ do
+          posts <- mmSearchForTeamPosts tId (SearchPosts terms False) session
+          return $ do
+            messages <- messagesFromPosts posts
+            enterPostListMode (PostListSearch terms False) messages
 
 -- | Move the selection up in the PostListOverlay, which corresponds
 -- to finding a chronologically /newer/ message.

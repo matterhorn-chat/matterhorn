@@ -42,6 +42,9 @@ package repository.
    `mattermost-api-qc` packages in case those changed or need to be
    updated.
 
+   Also make sure that contributors mentioned in the changelog are
+   present in AUTHORS.txt.
+
 3. Commit the changelog changes and Cabal version changes for each
    package.
 

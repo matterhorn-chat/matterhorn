@@ -141,7 +141,7 @@ commandList =
   , Cmd "flags" "Open up a pane of flagged posts"  NoArg $ \ () ->
       enterFlaggedPostListMode
 
-  , Cmd "search" "Search for posts with given terms"  (LineArg "terms") $
+  , Cmd "search" "Search for posts with given terms" (LineArg "terms") $
       enterSearchResultPostListMode
 
   ]

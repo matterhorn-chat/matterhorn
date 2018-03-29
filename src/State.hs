@@ -230,7 +230,7 @@ createGroupChannel usernameList = do
             let pref = showGroupChannelPref (channelId chan) (me^.userIdL)
             -- It's possible that the channel already existed, in which
             -- case we want to request a preference change to show it.
-            MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session -- (me^.userIdL) $ Seq.fromList [pref]
+            MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
             cwd <- MM.mmGetChannel (channelId chan) session
             member <- MM.mmGetChannelMember (channelId chan) UserMe session
             return $ do
@@ -433,7 +433,7 @@ beginCurrentChannelDeleteConfirm = do
         let chType = chan^.ccInfo.cdType
         if chType /= Direct
             then setMode DeleteChannelConfirm
-            else mhError "The /delete-channel command cannot be used with direct message channels."
+            else mhError "Direct message channels cannot be deleted."
 
 deleteCurrentChannel :: MH ()
 deleteCurrentChannel = do
@@ -1027,7 +1027,7 @@ addObtainedMessages cId reqCnt posts = do
         -- corpus, generating needed fetches of data associated with
         -- the post, and determining an notification action to be
         -- taken (if any).
-        action <- foldr mappend mempty <$>
+        action <- foldr andProcessWith NoAction <$>
           mapM (addMessageToState . OldPost)
                    [ (posts^.postsPostsL) HM.! p
                    | p <- F.toList (posts^.postsOrderL)
@@ -1176,7 +1176,7 @@ handleNewChannel_ permitPostpone switch nc member = do
   -- Only add the channel to the state if it isn't already known.
   mChan <- preuse (csChannel(getId nc))
   case mChan of
-      Just _ -> return ()
+      Just _ -> when switch $ setFocus (getId nc)
       Nothing -> do
         -- Create a new ClientChannel structure
         cChannel <- (ccInfo %~ channelInfoFromChannelWithData nc member) <$>
@@ -1293,14 +1293,14 @@ data PostProcessMessageAdd = NoAction
                            | UpdateServerViewed
                            | NotifyUserAndServer
 
-instance Monoid PostProcessMessageAdd where
-  mempty = NoAction
-  mappend NotifyUserAndServer _         = NotifyUserAndServer
-  mappend _ NotifyUserAndServer         = NotifyUserAndServer
-  mappend NotifyUser UpdateServerViewed = NotifyUserAndServer
-  mappend UpdateServerViewed NotifyUser = NotifyUserAndServer
-  mappend x NoAction                    = x
-  mappend _ x                           = x
+andProcessWith
+  :: PostProcessMessageAdd -> PostProcessMessageAdd -> PostProcessMessageAdd
+andProcessWith NotifyUserAndServer _         = NotifyUserAndServer
+andProcessWith _ NotifyUserAndServer         = NotifyUserAndServer
+andProcessWith NotifyUser UpdateServerViewed = NotifyUserAndServer
+andProcessWith UpdateServerViewed NotifyUser = NotifyUserAndServer
+andProcessWith x NoAction                    = x
+andProcessWith _ x                           = x
 
 -- | postProcessMessageAdd performs the actual actions indicated by
 -- the corresponding input value.
@@ -1446,7 +1446,7 @@ addMessageToState newPostData = do
                                  && wasMentioned                 -> NotifyUser
                              | otherwise                         -> NoAction
 
-                    return $ curChannelAction <> originUserAction
+                    return $ curChannelAction `andProcessWith` originUserAction
 
           doHandleAddedMessage
 
