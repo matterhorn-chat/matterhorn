@@ -1258,7 +1258,6 @@ editMessage new = do
   when (postUserId new /= Just myId) $
       chan %= adjustEditedThreshold new
 
-  chan %= adjustUpdated new
   csPostMap.ix(postId new) .= msg
   asyncFetchReactionsForPost (postChannelId new) new
   asyncFetchAttachments new
