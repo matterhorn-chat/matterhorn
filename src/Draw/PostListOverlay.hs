@@ -50,17 +50,22 @@ drawPostsBox contents st =
           PostListFlagged                -> "Flagged posts"
           PostListSearch terms searching -> "Search results" <> if searching
             then ": " <> terms
-            else " (" <> (T.pack . show . length) (st^.csPostListOverlay.postListPosts) <> "): " <> terms
+            else " (" <> (T.pack . show . length) messages <> "): " <> terms
 
         messages = insertDateMarkers
-                     (st^.csPostListOverlay.postListPosts)
+                     (filterMessages knownChannel $ st^.csPostListOverlay.postListPosts)
                      (getDateFormat st)
                      (st^.timeZone)
+
+        knownChannel msg =
+            case msg^.mChannelId of
+                Just cId | Nothing <- st^?csChannels.channelByIdL(cId) -> False
+                _ -> True
 
         -- The overall contents, with a sensible default even if there
         -- are no messages
         messageListContents
-          | null (st^.csPostListOverlay.postListPosts) =
+          | null messages =
             padTopBottom 1 $
             hCenter $
             withDefAttr clientEmphAttr $
