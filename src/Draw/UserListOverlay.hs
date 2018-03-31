@@ -36,7 +36,7 @@ hLimitWithPadding pad contents = Widget
 
 drawUserListOverlay :: ChatState -> [Widget Name]
 drawUserListOverlay st =
-  drawUsersBox (st^.csUserListOverlay) :
+  (joinBorders $ drawUsersBox (st^.csUserListOverlay)) :
   (forceAttr "invalid" <$> drawMain st)
 
 -- | Draw a PostListOverlay as a floating overlay on top of whatever

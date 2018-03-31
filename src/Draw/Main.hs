@@ -443,7 +443,7 @@ renderChannelSelect st =
           else cstr))
 
 drawMain :: ChatState -> [Widget Name]
-drawMain st = [mainInterface st]
+drawMain st = [joinBorders $ mainInterface st]
 
 messageSelectBottomBar :: ChatState -> Widget Name
 messageSelectBottomBar st =
@@ -608,9 +608,7 @@ mainInterface st =
         _ -> case st^.csEditState.cedCompleter of
             Just c -> drawCompletionAlternatives c
             _ -> maybeSubdue $ hBox
-                 [ hLimit channelListWidth hBorder
-                 , borderElem bsIntersectB
-                 , hBorder
+                 [ hBorder
                  , showTypingUsers
                  , showBusy
                  ]
