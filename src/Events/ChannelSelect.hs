@@ -3,7 +3,7 @@ module Events.ChannelSelect where
 import Prelude ()
 import Prelude.Compat
 
-import Control.Monad (when)
+import Data.Monoid ((<>))
 import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
 import Lens.Micro.Platform
@@ -30,8 +30,10 @@ channelSelectKeybindings = mkKeybindings
              selMatch <- use (csChannelSelectState.selectedMatch)
 
              setMode Main
-             when (selMatch /= "") $ do
-                 changeChannel selMatch
+
+             let switch (UserMatch m) = changeChannel (userSigil <> m)
+                 switch (ChannelMatch m) = changeChannel (normalChannelSigil <> m)
+             maybe (return ()) switch selMatch
 
     , mkKb CancelEvent "Cancel channel selection" $ setMode Main
     , mkKb NextChannelEvent "Select next match" channelSelectNext

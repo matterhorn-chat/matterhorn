@@ -71,12 +71,13 @@ type GroupName = T.Text
 -- facilitate efficient take/drop operations when the optimization
 -- mentioned above is in effect.
 channelListGroups :: [ ( GroupName
-                       , Getting ChannelSelectMap ChatState ChannelSelectMap
-                       , ChatState -> Maybe Int -> Seq.Seq ChannelListEntry
+                       , Getting [ChannelSelectMatch] ChatState [ChannelSelectMatch]
+                       , ChatState -> Maybe Int -> (ChannelListEntry -> Bool) -> Seq.Seq ChannelListEntry
+                       , T.Text -> MatchValue
                        ) ]
 channelListGroups =
-    [ ("Channels", csChannelSelectState.channelMatches, getOrdinaryChannels)
-    , ("Users",    csChannelSelectState.userMatches,    getDmChannels)
+    [ ("Channels", csChannelSelectState.channelMatches, getOrdinaryChannels, ChannelMatch)
+    , ("Users",    csChannelSelectState.userMatches,    getDmChannels,       UserMatch)
     ]
 
 -- | True if there is an active channel selection operation (i.e. in
@@ -93,26 +94,31 @@ renderChannelList st =
     Widget Fixed Greedy $ do
         ctx <- getContext
 
-        let maybeViewport =
+        let selMatch = st^.csChannelSelectState.selectedMatch
+            renderedGroups gs =
                 if hasActiveChannelSelection st
-                then id -- no viewport scrolling when actively selecting a channel
-                else viewport ChannelList Vertical
-            selMatch = st^.csChannelSelectState.selectedMatch
-            renderedGroups =
-                if hasActiveChannelSelection st
-                then renderChannelGroup (renderChannelSelectListEntry selMatch) <$>
-                         selectedGroupEntries
-                else renderChannelGroup renderChannelListEntry <$> plainGroupEntries
-            plainGroupEntries (n, _m, f) =
-                (n, f st (Just $ ctx^.availHeightL))
-            selectedGroupEntries (n, m, f) =
-                (n, F.foldr (addSelectedChannel m) mempty $ f st Nothing)
-            addSelectedChannel m e s =
-                case HM.lookup (entryLabel e) (st^.m) of
+                then let (n, es, mkMatchValue) = selectedGroupEntries gs
+                     in renderChannelGroup (renderChannelSelectListEntry selMatch mkMatchValue) (n, es)
+                else renderChannelGroup renderChannelListEntry $ plainGroupEntries gs
+            plainGroupEntries (n, _, f, _) =
+                (n, f st (Just $ ctx^.availHeightL) (const True))
+            selectedGroupEntries (n, m, f, mkMatchValue) =
+                let mapping = HM.fromList $ (\match -> (matchFull match, match)) <$> matches
+                    matches = st^.m
+                in ( n
+                   , F.foldr (addSelectedChannel mapping) mempty $
+                         f st (Just $ ctx^.availHeightL) (hasChannelSelectMatch mapping)
+                   , mkMatchValue
+                   )
+            hasChannelSelectMatch matches e =
+                HM.member (entryLabel e) matches
+            addSelectedChannel matches e s =
+                case HM.lookup (entryLabel e) matches of
                     Just y -> SCLE e y Seq.<| s
                     Nothing -> s
 
-        render $ maybeViewport $ vBox $ vBox <$>
+        render $ viewport ChannelList Vertical $
+                 vBox $ vBox <$>
                  F.toList <$> (F.toList $ renderedGroups <$> channelListGroups)
 
 -- | Renders a specific group, given the name of the group and the
@@ -170,12 +176,11 @@ renderChannelListEntry entry =
 -- | Render an individual entry when in Channel Select mode,
 -- highlighting the matching portion, or completely suppressing the
 -- entry if it doesn't match.
-renderChannelSelectListEntry :: T.Text -> SelectedChannelListEntry -> Widget Name
-renderChannelSelectListEntry selMatch (SCLE entry match) =
-    let ChannelSelectMatch preMatch inMatch postMatch = match
-        fullName = channelNameFromMatch match
-        maybeSelect = if fullName == selMatch
-                      then withDefAttr currentChannelNameAttr
+renderChannelSelectListEntry :: Maybe MatchValue -> (T.Text -> MatchValue) -> SelectedChannelListEntry -> Widget Name
+renderChannelSelectListEntry selMatch mkMatchValue (SCLE entry match) =
+    let ChannelSelectMatch preMatch inMatch postMatch fullName = match
+        maybeSelect = if Just (mkMatchValue fullName) == selMatch
+                      then visible . withDefAttr currentChannelNameAttr
                       else id
     in maybeSelect $
        decorateRecent entry $
@@ -195,8 +200,8 @@ decorateRecent entry = if entryIsRecent entry
 
 -- | Extract the names and information about normal channels to be
 -- displayed in the ChannelList sidebar.
-getOrdinaryChannels :: ChatState -> Maybe Int -> Seq.Seq ChannelListEntry
-getOrdinaryChannels st _ =
+getOrdinaryChannels :: ChatState -> Maybe Int -> (ChannelListEntry -> Bool) -> Seq.Seq ChannelListEntry
+getOrdinaryChannels st _ _ =
     Seq.fromList [ ChannelListEntry sigil n unread mentions recent current Nothing
     | n <- allChannelNames st
     , let Just chan = channelIdByChannelName n st
@@ -225,9 +230,10 @@ getOrdinaryChannels st _ =
 -- entries, there are enough entries before and after the selected
 -- channel to get the Brick viewport to position the final result in a
 -- way that is natural.
-getDmChannels :: ChatState -> Maybe Int -> Seq.Seq ChannelListEntry
-getDmChannels st height =
-    let es = Seq.fromList
+getDmChannels :: ChatState -> Maybe Int -> (ChannelListEntry -> Bool) -> Seq.Seq ChannelListEntry
+getDmChannels st height matches =
+    let es = Seq.filter matches $
+             Seq.fromList
              [ ChannelListEntry (T.cons sigil " ") uname unread
                                 mentions recent current (Just $ u^.uiStatus)
              | u <- sortedUserList st
@@ -242,7 +248,9 @@ getDmChannels st height =
                    recent = maybe False (isRecentChannel st) m_chanId
                    m_chanId = channelIdByUsername (u^.uiName) st
                    unread = maybe False (hasUnread st) m_chanId
-                   current = maybe False (isCurrentChannel st) m_chanId
+                   current = case appMode st of
+                       ChannelSelect -> Just (UserMatch uname) == st^.csChannelSelectState.selectedMatch
+                       _ -> maybe False (isCurrentChannel st) m_chanId
                    mentions = fromMaybe 0 $ channelMentionCount <$> m_chanId <*> pure st
                 ]
         (h, t) = Seq.breakl entryIsCurrent es

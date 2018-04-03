@@ -13,6 +13,7 @@ module Types
   , InternalEvent(..)
   , Name(..)
   , ChannelSelectMatch(..)
+  , MatchValue(..)
   , StartupStateInfo(..)
   , ConnectionInfo(..)
   , ciHostname
@@ -27,7 +28,6 @@ module Types
   , Mode(..)
   , ChannelSelectPattern(..)
   , PostListContents(..)
-  , ChannelSelectMap
   , AuthenticationException(..)
   , BackgroundInfo(..)
   , RequestChan
@@ -155,7 +155,6 @@ module Types
   , withChannelOrDefault
   , userList
   , hasUnread
-  , channelNameFromMatch
   , trimAnySigil
   , isMine
   , setUserStatus
@@ -419,11 +418,9 @@ data ChannelSelectMatch =
     ChannelSelectMatch { nameBefore     :: T.Text
                        , nameMatched    :: T.Text
                        , nameAfter      :: T.Text
+                       , matchFull      :: T.Text
                        }
                        deriving (Eq, Show)
-
-channelNameFromMatch :: ChannelSelectMatch -> T.Text
-channelNameFromMatch (ChannelSelectMatch b m a) = b <> m <> a
 
 data ChannelSelectPattern = CSP MatchType T.Text
                           deriving (Eq, Show)
@@ -665,13 +662,16 @@ listFromUserSearchResults rs =
     -- in Draw.UserListOverlay.
     list UserListSearchResults rs 1
 
-type ChannelSelectMap = HM.HashMap T.Text ChannelSelectMatch
+data MatchValue =
+    UserMatch T.Text
+    | ChannelMatch T.Text
+    deriving (Eq, Show)
 
 data ChannelSelectState =
     ChannelSelectState { _channelSelectInput :: T.Text
-                       , _channelMatches     :: ChannelSelectMap
-                       , _userMatches        :: ChannelSelectMap
-                       , _selectedMatch      :: T.Text
+                       , _channelMatches     :: [ChannelSelectMatch]
+                       , _userMatches        :: [ChannelSelectMatch]
+                       , _selectedMatch      :: Maybe MatchValue
                        }
 
 emptyChannelSelectState :: ChannelSelectState
@@ -679,7 +679,7 @@ emptyChannelSelectState =
     ChannelSelectState { _channelSelectInput = ""
                        , _channelMatches     = mempty
                        , _userMatches        = mempty
-                       , _selectedMatch      = ""
+                       , _selectedMatch      = Nothing
                        }
 
 data MessageSelectState =

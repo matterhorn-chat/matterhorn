@@ -1603,28 +1603,31 @@ updateSelectedMatch nextIndex = do
 
     csChannelSelectState.selectedMatch %= \oldMatch ->
         -- Make the list of all matches, in display order.
-        let allMatches = concat [ sort $ HM.keys chanMatches
-                                , sort $ HM.keys usernameMatches
+        let allMatches = concat [ (ChannelMatch . matchFull) <$> chanMatches
+                                , (UserMatch . matchFull) <$> usernameMatches
                                 ]
-        in case findIndex (== oldMatch) allMatches of
-            Nothing -> if null allMatches
-                       then ""
-                       else allMatches !! 0
-            Just i ->
-                let newIndex = if tmpIndex < 0
-                               then length allMatches - 1
-                               else if tmpIndex >= length allMatches
-                                    then 0
-                                    else tmpIndex
-                    tmpIndex = nextIndex i
-                in allMatches !! newIndex
+            defaultMatch = if null allMatches
+                           then Nothing
+                           else Just $ allMatches !! 0
+        in case oldMatch of
+            Nothing -> defaultMatch
+            Just oldMatch' -> case findIndex (== oldMatch') allMatches of
+                Nothing -> defaultMatch
+                Just i ->
+                    let newIndex = if tmpIndex < 0
+                                   then length allMatches - 1
+                                   else if tmpIndex >= length allMatches
+                                        then 0
+                                        else tmpIndex
+                        tmpIndex = nextIndex i
+                    in Just $ allMatches !! newIndex
 
 updateChannelSelectMatches :: MH ()
 updateChannelSelectMatches = do
     -- Given the current channel select string, find all the channel and
     -- user matches and then update the match lists.
     chanNameMatches <- use (csChannelSelectState.channelSelectInput.to channelNameMatch)
-    chanNames   <- gets allChannelNames
+    chanNames   <- gets (sort . allChannelNames)
     uList       <- use (to sortedUserList)
     displayNick <- use (to useNickname)
     let chanMatches = catMaybes (fmap chanNameMatches chanNames)
@@ -1632,30 +1635,38 @@ updateChannelSelectMatches = do
             | displayNick = uInf^.uiNickName.non (uInf^.uiName)
             | otherwise   = uInf^.uiName
         usernameMatches = catMaybes (fmap (chanNameMatches . displayName) uList)
-        mkMap ms = HM.fromList [(channelNameFromMatch m, m) | m <- ms]
 
     newInput <- use (csChannelSelectState.channelSelectInput)
-    csChannelSelectState.channelMatches .= mkMap chanMatches
-    csChannelSelectState.userMatches    .= mkMap usernameMatches
+    csChannelSelectState.channelMatches .= chanMatches
+    csChannelSelectState.userMatches    .= usernameMatches
     csChannelSelectState.selectedMatch  %= \oldMatch ->
         -- If the user input exactly matches one of the matches, prefer
         -- that one. Otherwise, if the previously selected match is
         -- still a possible match, leave it selected. Otherwise revert
         -- to the first available match.
-        let newMatch = if newInput `elem` allMatches
-                       then newInput
-                       else if oldMatch `elem` allMatches
-                            then oldMatch
-                            else firstAvailableMatch
-            unames = channelNameFromMatch <$> usernameMatches
-            allMatches = concat [ channelNameFromMatch <$> chanMatches
-                                , [ displayName u | u <- uList
-                                  , displayName u `elem` unames
-                                  ]
-                                ]
-            firstAvailableMatch = if null allMatches
-                                  then ""
-                                  else head allMatches
+        let unames = matchFull <$> usernameMatches
+            cnames = matchFull <$> chanMatches
+            firstAvailableMatch =
+                if null chanMatches
+                then if null unames
+                     then Nothing
+                     else Just $ UserMatch $ head unames
+                else Just $ ChannelMatch $ head cnames
+            newMatch = case oldMatch of
+              Just (UserMatch u) ->
+                  if newInput `elem` unames
+                  then Just $ UserMatch newInput
+                  else if u `elem` unames
+                       then oldMatch
+                       else firstAvailableMatch
+              Just (ChannelMatch c) ->
+                  if newInput `elem` cnames
+                  then Just $ ChannelMatch $ newInput
+                  else if c `elem` cnames
+                       then oldMatch
+                       else firstAvailableMatch
+              Nothing -> firstAvailableMatch
+
         in newMatch
 
 channelNameMatch :: T.Text -> T.Text -> Maybe ChannelSelectMatch
@@ -1686,7 +1697,7 @@ applySelectPattern (CSP ty pat) chanName = do
         applyType _ = Nothing
 
     (pre, m, post) <- applyType ty
-    return $ ChannelSelectMatch pre m post
+    return $ ChannelSelectMatch pre m post chanName
 
 parseChannelSelectPattern :: T.Text -> Maybe ChannelSelectPattern
 parseChannelSelectPattern pat = do
