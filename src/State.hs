@@ -1081,8 +1081,10 @@ changeChannel :: T.Text -> MH ()
 changeChannel name = do
     result <- gets (channelIdByName name)
     case result of
-      Just cId -> setFocus cId
-      Nothing  -> attemptCreateDMChannel name
+      [] -> attemptCreateDMChannel name
+      [cId] -> setFocus cId
+      _ -> mhError $ T.pack $ "The input " <> show name <> " matches both channels " <>
+                     "and users. Try using '@' or '~' to disambiguate."
 
 setFocus :: ChannelId -> MH ()
 setFocus cId = setFocusWith (Z.findRight (== cId))
@@ -1104,7 +1106,7 @@ setFocusWith f = do
 
 attemptCreateDMChannel :: T.Text -> MH ()
 attemptCreateDMChannel name = do
-  mCid <- gets (channelIdByName name)
+  mCid <- gets (channelIdByUsername name)
   me <- gets myUser
   displayNick <- use (to useNickname)
   uList       <- use (to sortedUserList)

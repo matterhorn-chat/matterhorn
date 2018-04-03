@@ -166,6 +166,8 @@ module Types
   , userIdForUsername
   , userByDMChannelName
   , userByUsername
+  , channelIdByChannelName
+  , channelIdByUsername
   , channelIdByName
   , channelByName
   , userById
@@ -291,8 +293,11 @@ data BackgroundInfo = Disabled | Active | ActiveCount deriving (Eq, Show)
 --   names and mapping them back to internal IDs.
 data MMNames = MMNames
   { _cnChans    :: [T.Text] -- ^ All channel names
-  , _cnToChanId :: HashMap T.Text ChannelId
-      -- ^ Mapping from channel names to 'ChannelId' values
+  , _channelNameToChanId :: HashMap T.Text ChannelId
+  -- ^ Mapping from channel names to 'ChannelId' values
+  , _usernameToChanId :: HashMap T.Text ChannelId
+  -- ^ Mapping from user names to 'ChannelId' values. Only contains
+  -- entries for which DM channel IDs are known.
   , _cnUsers    :: [T.Text] -- ^ All users
   , _cnToUserId :: HashMap T.Text UserId
       -- ^ Mapping from user names to 'UserId' values
@@ -303,8 +308,8 @@ mkNames myUser users chans = MMNames
   { _cnChans = sort
                [ preferredChannelName c
                | c <- F.toList chans, channelType c /= Direct ]
-  , _cnToChanId = HM.fromList $
-                  [ (preferredChannelName c, channelId c) | c <- F.toList chans ] ++
+  , _channelNameToChanId = HM.fromList [ (preferredChannelName c, channelId c) | c <- F.toList chans ]
+  , _usernameToChanId = HM.fromList $
                   [ (userUsername u, c)
                   | u <- HM.elems users
                   , c <- lookupChan (getDMChannelName (getId myUser) (getId u))
@@ -329,12 +334,12 @@ mkChannelZipperList chanNames =
   getDMChannelIdsInOrder chanNames
 
 getChannelIdsInOrder :: MMNames -> [ChannelId]
-getChannelIdsInOrder n = [ (n ^. cnToChanId) HM.! i | i <- n ^. cnChans ]
+getChannelIdsInOrder n = [ (n ^. channelNameToChanId) HM.! i | i <- n ^. cnChans ]
 
 getDMChannelIdsInOrder :: MMNames -> [ChannelId]
 getDMChannelIdsInOrder n =
   [ c | i <- n ^. cnUsers
-      , c <- maybeToList (HM.lookup i (n ^. cnToChanId))
+      , c <- maybeToList (HM.lookup i (n ^. usernameToChanId))
   ]
 
 -- * Internal Names and References
@@ -893,15 +898,37 @@ displaynameForUserId uId st
 userIdForUsername :: T.Text -> ChatState -> Maybe UserId
 userIdForUsername name st = st^.csNames.cnToUserId.at name
 
-channelIdByName :: T.Text -> ChatState -> Maybe ChannelId
+channelIdByChannelName :: T.Text -> ChatState -> Maybe ChannelId
+channelIdByChannelName name st =
+    HM.lookup (trimAnySigil name) $ st^.csNames.channelNameToChanId
+
+-- | Get a channel ID by username or channel name. Note that this
+-- returns multiple results because it's possible for there to be a
+-- match for both users and channels. Note that this function uses
+-- sigils on the input to guarantee clash avoidance, i.e., that if the
+-- user sigil is present in the input, only users will be searched. This
+-- allows callers (or the user) to disambiguate by sigil, which may
+-- be necessary in cases where an input with no sigil finds multiple
+-- matches.
+channelIdByName :: T.Text -> ChatState -> [ChannelId]
 channelIdByName name st =
+    let uMatch = channelIdByUsername name st
+        cMatch = channelIdByChannelName name st
+        matches =
+            if | userSigil `T.isPrefixOf` name          -> [uMatch]
+               | normalChannelSigil `T.isPrefixOf` name -> [cMatch]
+               | otherwise                              -> [uMatch, cMatch]
+    in catMaybes matches
+
+channelIdByUsername :: T.Text -> ChatState -> Maybe ChannelId
+channelIdByUsername name st =
     let userInfos = st^.csUsers.to allUsers
         uName = if useNickname st
                 then
                     maybe name (view uiName)
                               $ findUserByNickname userInfos name
                 else name
-        nameToChanId = st^.csNames.cnToChanId
+        nameToChanId = st^.csNames.usernameToChanId
     in HM.lookup (trimAnySigil uName) nameToChanId
 
 useNickname :: ChatState -> Bool
@@ -913,13 +940,7 @@ useNickname st = case st^?csClientConfig._Just.to clientConfigTeammateNameDispla
 
 channelByName :: T.Text -> ChatState -> Maybe ClientChannel
 channelByName n st = do
-    let userInfos = st^.csUsers.to allUsers
-        uName = if useNickname st
-              then
-                  maybe n (view uiName)
-                            $ findUserByNickname userInfos n
-              else n
-    cId <- channelIdByName uName st
+    cId <- channelIdByChannelName n st
     findChannelById cId (st^.csChannels)
 
 trimAnySigil :: T.Text -> T.Text
@@ -947,7 +968,9 @@ setUserIdSet ids = do
 
 addChannelName :: Type -> ChannelId -> T.Text -> MH ()
 addChannelName chType cid name = do
-    csNames.cnToChanId.at(name) .= Just cid
+    case chType of
+        Direct -> csNames.usernameToChanId.at(name) .= Just cid
+        _ -> csNames.channelNameToChanId.at(name) .= Just cid
 
     -- For direct channels the username is already in the user list so
     -- do nothing
@@ -968,7 +991,7 @@ allUsernames st = st^.csNames.cnChans
 removeChannelName :: T.Text -> MH ()
 removeChannelName name = do
     -- Flush cnToChanId
-    csNames.cnToChanId.at name .= Nothing
+    csNames.channelNameToChanId.at name .= Nothing
     -- Flush cnChans
     csNames.cnChans %= filter (/= name)
 
@@ -1079,7 +1102,7 @@ sortedUserList st = sortBy cmp yes <> sortBy cmp no
   where
       cmp = compareUserInfo uiName
       dmHasUnread u =
-          case st^.csNames.cnToChanId.at(u^.uiName) of
+          case st^.csNames.usernameToChanId.at(u^.uiName) of
             Nothing  -> False
             Just cId
               | (st^.csCurrentChannelId) == cId -> False

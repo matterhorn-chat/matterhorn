@@ -199,7 +199,7 @@ getOrdinaryChannels :: ChatState -> Maybe Int -> Seq.Seq ChannelListEntry
 getOrdinaryChannels st _ =
     Seq.fromList [ ChannelListEntry sigil n unread mentions recent current Nothing
     | n <- allChannelNames st
-    , let Just chan = channelIdByName n st
+    , let Just chan = channelIdByChannelName n st
           unread = hasUnread st chan
           recent = isRecentChannel st chan
           current = isCurrentChannel st chan
@@ -240,7 +240,7 @@ getDmChannels st height =
                            then u^.uiNickName.non (u^.uiName)
                            else u^.uiName
                    recent = maybe False (isRecentChannel st) m_chanId
-                   m_chanId = channelIdByName (u^.uiName) st
+                   m_chanId = channelIdByUsername (u^.uiName) st
                    unread = maybe False (hasUnread st) m_chanId
                    current = maybe False (isCurrentChannel st) m_chanId
                    mentions = fromMaybe 0 $ channelMentionCount <$> m_chanId <*> pure st
