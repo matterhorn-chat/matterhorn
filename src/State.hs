@@ -1092,6 +1092,9 @@ changeChannel name = do
           -- There were no matches of any kind.
           | otherwise -> mhError $ T.pack $ "No such channel: " <> show name
       (Just cId, Nothing)
+          -- We matched a channel and there was an explicit sigil, so we
+          -- don't care about the username match.
+          | normalChannelSigil `T.isPrefixOf` name -> setFocus cId
           -- We matched both a channel and a user, even though there is
           -- no DM channel.
           | Just _ <- user -> err
