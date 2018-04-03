@@ -1080,11 +1080,29 @@ loadMoreMessages = whenMode ChannelScroll asyncFetchMoreMessages
 changeChannel :: T.Text -> MH ()
 changeChannel name = do
     result <- gets (channelIdByName name)
+    user <- gets (userByUsername name)
+    let err = mhError $ T.pack $ "The input " <> show name <> " matches both channels " <>
+                                 "and users. Try using '@' or '~' to disambiguate."
+
     case result of
-      [] -> attemptCreateDMChannel name
-      [cId] -> setFocus cId
-      _ -> mhError $ T.pack $ "The input " <> show name <> " matches both channels " <>
-                     "and users. Try using '@' or '~' to disambiguate."
+      (Nothing, Nothing)
+          -- We know about the user but there isn't already a DM
+          -- channel, so create one.
+          | Just _ <- user -> attemptCreateDMChannel name
+          -- There were no matches of any kind.
+          | otherwise -> mhError $ T.pack $ "No such channel: " <> show name
+      (Just cId, Nothing)
+          -- We matched both a channel and a user, even though there is
+          -- no DM channel.
+          | Just _ <- user -> err
+          -- We matched a channel only.
+          | otherwise -> setFocus cId
+      (Nothing, Just cId) ->
+          -- We matched a user only and there is already a DM channel.
+          setFocus cId
+      (Just _, Just _) ->
+          -- We matched both a channel and a user.
+          err
 
 setFocus :: ChannelId -> MH ()
 setFocus cId = setFocusWith (Z.findRight (== cId))
