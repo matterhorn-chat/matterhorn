@@ -1,4 +1,25 @@
 
+40800.0.2
+=========
+
+Bug fixes:
+ * Matterhorn now properly handles servers with users whose usernames
+   match existing channel names.
+ * The flagged post list now ignores flagged posts from channels of
+   which the current user is no longer a member.
+ * Tab-completion now supports nickname completion in the presence of
+   user sigils (relevant to #382).
+ * The `/search` command now copes better with an empty string as input
+   (#359).
+ * The `group-msg` command now switches to the relevant channel if it
+   already exists (#367).
+
+Other changes:
+ * Message edits no longer cause channels to appear to have unread
+   activity.
+ * The Haskell runtime's idle garbage collector was disabled, reducing
+   Matterhorn's idle CPU usage from 2-4% on some systems to zero.
+
 40800.0.1
 =========
 
