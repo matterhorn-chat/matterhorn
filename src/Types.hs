@@ -37,6 +37,9 @@ module Types
   , refreshChannelZipper
   , getChannelIdsInOrder
 
+  , trimUserSigil
+  , trimChannelSigil
+
   , LinkChoice(LinkChoice)
   , linkUser
   , linkURL
@@ -155,7 +158,6 @@ module Types
   , withChannelOrDefault
   , userList
   , hasUnread
-  , trimAnySigil
   , isMine
   , setUserStatus
   , myUser
@@ -896,7 +898,7 @@ displaynameForUserId uId st
         usernameForUserId uId st
 
 userIdForUsername :: T.Text -> ChatState -> Maybe UserId
-userIdForUsername name st = st^.csNames.cnToUserId.at (trimAnySigil name)
+userIdForUsername name st = st^.csNames.cnToUserId.at (trimUserSigil name)
 
 channelIdByChannelName :: T.Text -> ChatState -> Maybe ChannelId
 channelIdByChannelName name st =
@@ -942,12 +944,6 @@ channelByName :: T.Text -> ChatState -> Maybe ClientChannel
 channelByName n st = do
     cId <- channelIdByChannelName n st
     findChannelById cId (st^.csChannels)
-
-trimAnySigil :: T.Text -> T.Text
-trimAnySigil n
-    | normalChannelSigil `T.isPrefixOf` n = T.tail n
-    | userSigil `T.isPrefixOf` n          = T.tail n
-    | otherwise                           = n
 
 trimChannelSigil :: T.Text -> T.Text
 trimChannelSigil n

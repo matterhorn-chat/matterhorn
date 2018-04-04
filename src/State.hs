@@ -526,7 +526,7 @@ joinChannelByName rawName = do
     session <- getSession
     tId <- gets myTeamId
     doAsyncWith Preempt $ do
-        result <- try $ MM.mmGetChannelByName tId (trimAnySigil rawName) session
+        result <- try $ MM.mmGetChannelByName tId (trimChannelSigil rawName) session
         return $ case result of
             Left (_::SomeException) -> mhError $ T.pack $ "No such channel: " <> (show rawName)
             Right chan -> joinChannel $ getId chan
