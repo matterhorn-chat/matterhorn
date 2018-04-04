@@ -1626,15 +1626,29 @@ updateChannelSelectMatches :: MH ()
 updateChannelSelectMatches = do
     -- Given the current channel select string, find all the channel and
     -- user matches and then update the match lists.
-    chanNameMatches <- use (csChannelSelectState.channelSelectInput.to channelNameMatch)
+    input <- use (csChannelSelectState.channelSelectInput)
+    let pat = parseChannelSelectPattern input
+        chanNameMatches = case pat of
+            Nothing -> const Nothing
+            Just p -> if T.null input
+                      then const Nothing
+                      else applySelectPattern p
+        patTy = case pat of
+            Nothing -> Nothing
+            Just (CSP ty _) -> Just ty
+
     chanNames   <- gets (sort . allChannelNames)
     uList       <- use (to sortedUserList)
     displayNick <- use (to useNickname)
-    let chanMatches = catMaybes (fmap chanNameMatches chanNames)
+    let chanMatches = if patTy == Just UsersOnly
+                      then mempty
+                      else catMaybes (fmap chanNameMatches chanNames)
         displayName uInf
             | displayNick = uInf^.uiNickName.non (uInf^.uiName)
             | otherwise   = uInf^.uiName
-        usernameMatches = catMaybes (fmap (chanNameMatches . displayName) uList)
+        usernameMatches = if patTy == Just ChannelsOnly
+                          then mempty
+                          else catMaybes (fmap (chanNameMatches . displayName) uList)
 
     newInput <- use (csChannelSelectState.channelSelectInput)
     csChannelSelectState.channelMatches .= chanMatches
@@ -1669,14 +1683,6 @@ updateChannelSelectMatches = do
 
         in newMatch
 
-channelNameMatch :: T.Text -> T.Text -> Maybe ChannelSelectMatch
-channelNameMatch patStr chanName =
-    if T.null patStr
-    then Nothing
-    else do
-        pat <- parseChannelSelectPattern patStr
-        applySelectPattern pat chanName
-
 applySelectPattern :: ChannelSelectPattern -> T.Text -> Maybe ChannelSelectMatch
 applySelectPattern (CSP ty pat) chanName = do
     let applyType Infix  | pat `T.isInfixOf`  chanName =
@@ -1684,6 +1690,14 @@ applySelectPattern (CSP ty pat) chanName = do
                 (pre, post) -> return (pre, pat, T.drop (T.length pat) post)
 
         applyType Prefix | pat `T.isPrefixOf` chanName = do
+            let (b, a) = T.splitAt (T.length pat) chanName
+            return ("", b, a)
+
+        applyType UsersOnly | pat `T.isPrefixOf` chanName = do
+            let (b, a) = T.splitAt (T.length pat) chanName
+            return ("", b, a)
+
+        applyType ChannelsOnly | pat `T.isPrefixOf` chanName = do
             let (b, a) = T.splitAt (T.length pat) chanName
             return ("", b, a)
 
@@ -1701,6 +1715,10 @@ applySelectPattern (CSP ty pat) chanName = do
 
 parseChannelSelectPattern :: T.Text -> Maybe ChannelSelectPattern
 parseChannelSelectPattern pat = do
+    let only = if | userSigil `T.isPrefixOf` pat -> Just $ CSP UsersOnly $ T.tail pat
+                  | normalChannelSigil `T.isPrefixOf` pat -> Just $ CSP ChannelsOnly $ T.tail pat
+                  | otherwise -> Nothing
+
     (pat1, pfx) <- case "^" `T.isPrefixOf` pat of
         True  -> return (T.tail pat, Just Prefix)
         False -> return (pat, Nothing)
@@ -1709,7 +1727,7 @@ parseChannelSelectPattern pat = do
         True  -> return (T.init pat1, Just Suffix)
         False -> return (pat1, Nothing)
 
-    case (pfx, sfx) of
+    only <|> case (pfx, sfx) of
         (Nothing, Nothing)         -> return $ CSP Infix  pat2
         (Just Prefix, Nothing)     -> return $ CSP Prefix pat2
         (Nothing, Just Suffix)     -> return $ CSP Suffix pat2

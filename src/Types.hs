@@ -427,8 +427,14 @@ data ChannelSelectMatch =
 data ChannelSelectPattern = CSP MatchType T.Text
                           deriving (Eq, Show)
 
-data MatchType = Prefix | Suffix | Infix | Equal deriving (Eq, Show)
-
+data MatchType =
+    Prefix
+    | Suffix
+    | Infix
+    | Equal
+    | UsersOnly
+    | ChannelsOnly
+    deriving (Eq, Show)
 
 -- * Application State Values
 
