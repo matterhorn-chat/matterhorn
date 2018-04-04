@@ -956,8 +956,8 @@ trimChannelSigil n
 
 trimUserSigil :: T.Text -> T.Text
 trimUserSigil n
-    | userSet `T.isPrefixOf` n = T.tail n
-    | otherwise                = n
+    | userSigil `T.isPrefixOf` n = T.tail n
+    | otherwise                  = n
 
 addNewUser :: UserInfo -> MH ()
 addNewUser u = do
