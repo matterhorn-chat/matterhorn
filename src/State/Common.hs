@@ -1,16 +1,13 @@
 module State.Common where
 
 import           Prelude ()
-import           Prelude.Compat
+import           Prelude.MH
 
 import qualified Control.Concurrent.STM as STM
 import           Control.Exception (try)
-import           Control.Monad.IO.Class (liftIO)
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Map.Strict as Map
-import           Data.Maybe (isNothing)
-import           Data.Monoid ((<>))
 import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
 import qualified Data.Text as T

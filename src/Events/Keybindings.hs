@@ -19,7 +19,6 @@ module Events.Keybindings
   , keyEventFromName
   ) where
 
-import           Data.Monoid ((<>))
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
@@ -27,6 +26,8 @@ import           Lens.Micro.Platform (use)
 
 import           Types
 import           Types.KeyEvents
+import           Prelude ()
+import           Prelude.MH
 
 -- * Keybindings
 

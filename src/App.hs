@@ -5,10 +5,9 @@ module App
 where
 
 import           Prelude ()
-import           Prelude.Compat
+import           Prelude.MH
 
 import           Brick
-import           Data.Monoid ((<>))
 import           Control.Monad.Trans.Except (runExceptT)
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform

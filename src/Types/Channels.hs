@@ -44,7 +44,6 @@ module Types.Channels
   )
 where
 
-import           Control.Monad.IO.Class (MonadIO)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
 import           Data.Time.Clock (UTCTime)
@@ -64,6 +63,8 @@ import           Network.Mattermost.Types ( Channel(..), UserId, ChannelId
 import           Types.Messages (Messages, noMessages, addMessage, clientMessageToMessage)
 import           Types.Posts (ClientMessageType(UnknownGap), newClientMessage, postIsLeave, postIsJoin)
 import           Types.Users (TypingUsers, noTypingUsers, addTypingUser)
+import           Prelude ()
+import           Prelude.MH
 
 -- * Channel representations
 

@@ -1,7 +1,8 @@
 module Events.UserListOverlay where
 
-import Control.Monad (when)
 import qualified Graphics.Vty as Vty
+import           Prelude ()
+import           Prelude.MH
 
 import Brick.Widgets.Edit (handleEditorEvent)
 

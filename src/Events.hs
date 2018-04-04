@@ -2,18 +2,13 @@
 module Events where
 
 import           Prelude ()
-import           Prelude.Compat
+import           Prelude.MH
 
 import           Brick
-import           Control.Monad (forM_, when)
-import           Control.Monad.IO.Class (liftIO)
-import           Data.List (intercalate)
 import qualified Data.Map as M
 import qualified Data.Set as Set
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
-import           Data.Monoid ((<>))
-import           GHC.Exts (groupWith)
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform
 

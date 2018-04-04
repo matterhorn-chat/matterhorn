@@ -3,14 +3,10 @@
 module Command where
 
 import Prelude ()
-import Prelude.Compat
+import Prelude.MH
 
-import           Control.Applicative ((<|>))
 import qualified Control.Exception as Exn
-import           Control.Monad.IO.Class (liftIO)
-import           Control.Monad (void)
 import qualified Data.Char as Char
-import           Data.Monoid ((<>))
 import qualified Data.Text as T
 import           Lens.Micro.Platform
 import qualified Network.Mattermost.Endpoints as MM

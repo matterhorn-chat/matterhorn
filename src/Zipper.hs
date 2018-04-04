@@ -16,7 +16,7 @@ module Zipper
 where
 
 import Prelude ()
-import Prelude.Compat
+import Prelude.MH
 
 import Lens.Micro.Platform (Lens, lens, ix, (&), (.~))
 

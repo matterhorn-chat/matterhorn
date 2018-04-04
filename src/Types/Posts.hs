@@ -46,15 +46,15 @@ where
 
 import           Cheapskate (Blocks)
 import qualified Cheapskate as C
-import           Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Data.Map.Strict as Map
-import           Data.Monoid ((<>))
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Time.Clock (getCurrentTime)
 import           Lens.Micro.Platform ((^.), makeLenses)
 import           Network.Mattermost.Types
 import           Network.Mattermost.Lenses
+import           Prelude ()
+import           Prelude.MH
 
 -- * Client Messages
 

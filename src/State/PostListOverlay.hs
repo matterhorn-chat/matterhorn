@@ -1,11 +1,12 @@
 module State.PostListOverlay where
 
-import Control.Monad
 import Data.Text (Text)
 import qualified Data.Text as T
 import Lens.Micro.Platform
 import Network.Mattermost.Endpoints
 import Network.Mattermost.Types
+import Prelude ()
+import Prelude.MH
 
 import State
 import State.Common

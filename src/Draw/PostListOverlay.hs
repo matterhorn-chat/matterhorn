@@ -3,11 +3,10 @@
 module Draw.PostListOverlay where
 
 import           Prelude ()
-import           Prelude.Compat
+import           Prelude.MH
 
 import           Control.Monad.Trans.Reader (withReaderT)
 import qualified Data.Foldable as F
-import           Data.Monoid ((<>))
 import qualified Data.Text as T
 import           Lens.Micro.Platform
 import           Network.Mattermost.Types

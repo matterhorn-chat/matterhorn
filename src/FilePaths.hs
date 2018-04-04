@@ -17,11 +17,8 @@ module FilePaths
   ) where
 
 import Prelude ()
-import Prelude.Compat
+import Prelude.MH
 
-import Control.Monad (forM, filterM)
-import Data.Monoid ((<>))
-import Data.Maybe (listToMaybe)
 import Data.Text (unpack, Text)
 import System.Directory ( doesFileExist
                         , doesDirectoryExist

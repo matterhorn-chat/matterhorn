@@ -17,7 +17,7 @@ module Markdown
 where
 
 import Prelude ()
-import Prelude.Compat
+import Prelude.MH
 
 import           Brick ( (<+>), Widget, textWidth )
 import qualified Brick.Widgets.Border as B
@@ -33,7 +33,7 @@ import qualified Cheapskate as C
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Foldable as F
-import           Data.Monoid (First(..), (<>))
+import           Data.Monoid (First(..))
 import           Data.Sequence ( Seq
                                , ViewL(..)
                                , ViewR(..)
@@ -46,7 +46,6 @@ import qualified Skylighting as Sky
 import qualified Data.Set as Set
 import qualified Graphics.Vty as V
 import           Lens.Micro.Platform ((^.))
-import           Control.Monad              (join)
 
 import           Network.Mattermost.Lenses (postEditAtL, postCreateAtL)
 import           Network.Mattermost.Types (ServerTime(..))

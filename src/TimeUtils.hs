@@ -18,6 +18,9 @@ import           Data.Time.LocalTime.TimeZone.Series (TimeZoneSeries
                                                      , utcToLocalTime')
 import           Network.Mattermost.Types (ServerTime(..))
 
+import           Prelude ()
+import           Prelude.MH
+
 
 -- | Get the timezone series that should be used for converting UTC
 -- times into local times with appropriate DST adjustments.

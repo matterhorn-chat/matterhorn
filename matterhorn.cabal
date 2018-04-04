@@ -74,6 +74,7 @@ executable matterhorn
                        LastRunState
                        Scripts
                        TimeUtils
+                       Prelude.MH
                        Types
                        Types.Channels
                        Types.DirectionalSeq
@@ -88,7 +89,8 @@ executable matterhorn
                        Options
                        Paths_matterhorn
   default-extensions:  OverloadedStrings,
-                       ScopedTypeVariables
+                       ScopedTypeVariables,
+                       NoImplicitPrelude
   ghc-options:         -Wall -threaded -with-rtsopts=-I0
   build-depends:       base                 >=4.8     && <5
                      , mattermost-api       == 40800.0.0
@@ -141,6 +143,7 @@ test-suite test_messages
                     , Types.Messages
                     , Types.Posts
                     , Types.DirectionalSeq
+                    , Prelude.MH
   default-language:   Haskell2010
   default-extensions: OverloadedStrings
                     , ScopedTypeVariables

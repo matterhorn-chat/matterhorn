@@ -2,7 +2,7 @@
 module Draw.Main (drawMain) where
 
 import           Prelude ()
-import           Prelude.Compat
+import           Prelude.MH
 
 import           Brick
 import           Brick.Widgets.Border
@@ -11,7 +11,6 @@ import           Brick.Widgets.Center (hCenter)
 import           Brick.Widgets.Edit (editContentsL, renderEditor, getEditContents)
 import           Brick.Widgets.List (renderList)
 import           Control.Arrow ((>>>))
-import           Control.Monad (foldM)
 import           Control.Monad.Trans.Reader (withReaderT)
 import           Data.Time.Clock (UTCTime(..))
 import           Data.Time.Calendar (fromGregorian)
@@ -20,8 +19,6 @@ import qualified Data.Sequence as Seq
 import qualified Data.Set as S
 import qualified Data.Foldable as F
 import           Data.List (intersperse)
-import           Data.Maybe (catMaybes, isJust)
-import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           Data.Text.Zipper (cursorPosition, insertChar, getText, gotoEOL)

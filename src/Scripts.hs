@@ -4,14 +4,13 @@ module Scripts
   )
 where
 
-import Control.Monad (when)
-import Control.Monad.IO.Class (liftIO)
 import qualified Data.Text as T
-import Data.Monoid ((<>))
 import Control.Concurrent (takeMVar, newEmptyMVar)
 import qualified Control.Concurrent.STM as STM
 import System.Exit (ExitCode(..))
 import Lens.Micro.Platform (use)
+import Prelude ()
+import Prelude.MH
 
 import Types
 import State (sendMessage, runLoggedCommand)

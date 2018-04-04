@@ -7,7 +7,6 @@ module State.Messages
     where
 
 
-import           Control.Monad (unless)
 import qualified Data.Foldable as F
 import           Data.Function (on)
 import qualified Data.Sequence as Seq
@@ -22,6 +21,8 @@ import           Types
 import           Types.Channels
 import           Types.Messages
 import           Types.Posts
+import           Prelude ()
+import           Prelude.MH
 
 
 -- ----------------------------------------------------------------------

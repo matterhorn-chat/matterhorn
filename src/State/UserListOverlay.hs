@@ -15,18 +15,17 @@ module State.UserListOverlay
   )
 where
 
-import Control.Monad (when)
-import Data.Monoid ((<>))
 import qualified Data.Vector as Vec
 import qualified Data.Foldable as F
 import qualified Data.Text as T
 import qualified Data.Sequence as Seq
 import qualified Data.HashMap.Strict as HM
-import Data.Maybe (fromMaybe)
 import Lens.Micro.Platform
 import qualified Network.Mattermost.Endpoints as MM
 import Network.Mattermost.Types
 import qualified Data.Text.Zipper as Z
+import           Prelude ()
+import           Prelude.MH
 
 import qualified Brick.Widgets.List as L
 import qualified Brick.Widgets.Edit as E

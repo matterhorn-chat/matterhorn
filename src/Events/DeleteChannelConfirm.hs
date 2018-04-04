@@ -1,7 +1,7 @@
 module Events.DeleteChannelConfirm where
 
 import Prelude ()
-import Prelude.Compat
+import Prelude.MH
 
 import qualified Graphics.Vty as Vty
 

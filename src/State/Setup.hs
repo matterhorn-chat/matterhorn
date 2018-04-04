@@ -5,17 +5,15 @@ module State.Setup
 where
 
 import           Prelude ()
-import           Prelude.Compat
+import           Prelude.MH
 
 import           Brick.BChan
 import           Brick.Themes (themeToAttrMap, loadCustomizations)
 import qualified Control.Concurrent.STM as STM
 import           Control.Concurrent.MVar (newMVar)
 import           Control.Exception (catch)
-import           Control.Monad (forM, when)
-import           Data.Monoid ((<>))
 import qualified Data.Foldable as F
-import           Data.Maybe (listToMaybe, fromMaybe, fromJust, isNothing)
+import           Data.Maybe (fromJust)
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Lens.Micro.Platform

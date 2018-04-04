@@ -10,7 +10,7 @@ module InputHistory
   ) where
 
 import Prelude ()
-import Prelude.Compat
+import Prelude.MH
 
 import Control.Monad.Trans.Except
 import Lens.Micro.Platform

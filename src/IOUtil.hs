@@ -3,10 +3,9 @@ module IOUtil
   ) where
 
 import Prelude ()
-import Prelude.Compat
+import Prelude.MH
 
 import Control.Exception
-import Control.Monad.IO.Class
 import Control.Monad.Trans.Except
 import System.IO.Error (ioeGetErrorString)
 

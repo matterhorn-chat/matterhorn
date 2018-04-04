@@ -10,10 +10,9 @@ module Completion
 where
 
 import           Prelude ()
-import           Prelude.Compat
+import           Prelude.MH
 
 import           Data.Char ( isSpace )
-import           Data.List ( sort )
 import qualified Data.Set as Set
 import qualified Data.Text as T
 

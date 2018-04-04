@@ -2,12 +2,10 @@
 module Events.Main where
 
 import Prelude ()
-import Prelude.Compat
+import Prelude.MH
 
 import Brick hiding (Direction)
 import Brick.Widgets.Edit
-import Data.Maybe (catMaybes)
-import Data.Monoid ((<>))
 import qualified Data.Set as Set
 import qualified Data.Text as T
 import qualified Data.Text.Zipper as Z

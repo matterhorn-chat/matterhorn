@@ -2,17 +2,16 @@ module Draw.Messages where
 
 import           Brick
 import           Brick.Widgets.Border
-import           Control.Monad (foldM)
 import           Control.Monad.Trans.Reader (withReaderT)
 import qualified Data.Foldable as F
 import qualified Data.Map.Strict as Map
-import           Data.Maybe (catMaybes)
-import           Data.Monoid ((<>))
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform
 import           Network.Mattermost.Types (ServerTime(..))
+import           Prelude ()
+import           Prelude.MH
 
 import           Draw.Util
 import           Markdown

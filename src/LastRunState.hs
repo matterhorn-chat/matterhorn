@@ -11,9 +11,8 @@ module LastRunState
   ) where
 
 import Prelude ()
-import Prelude.Compat
+import Prelude.MH
 
-import Control.Monad (when)
 import Control.Monad.Trans.Except
 import qualified Data.Aeson as A
 import qualified Data.ByteString as BS

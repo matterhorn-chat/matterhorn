@@ -1,7 +1,7 @@
 module Events.ShowHelp where
 
 import Prelude ()
-import Prelude.Compat
+import Prelude.MH
 
 import Brick
 import qualified Graphics.Vty as Vty

@@ -1,9 +1,8 @@
 module Events.MessageSelect where
 
 import Prelude ()
-import Prelude.Compat
+import Prelude.MH
 
-import Data.Monoid ((<>))
 import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
 

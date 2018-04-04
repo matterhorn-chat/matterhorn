@@ -193,7 +193,7 @@ module Types
 where
 
 import           Prelude ()
-import           Prelude.Compat
+import           Prelude.MH
 
 import           Brick (EventM, Next)
 import qualified Brick
@@ -201,8 +201,6 @@ import           Brick.BChan
 import           Brick.AttrMap (AttrMap)
 import           Brick.Widgets.Edit (Editor, editor)
 import           Brick.Widgets.List (List, list)
-import           Control.Applicative ((<|>))
-import           Control.Monad (when)
 import qualified Control.Concurrent.STM as STM
 import           Control.Concurrent.MVar (MVar)
 import           Control.Exception (SomeException)
@@ -215,9 +213,7 @@ import           Data.HashMap.Strict (HashMap)
 import           Data.Time (UTCTime)
 import           Data.Time.LocalTime.TimeZone.Series (TimeZoneSeries)
 import qualified Data.HashMap.Strict as HM
-import           Data.List (sort, partition, sortBy)
-import           Data.Maybe
-import           Data.Monoid.Compat
+import           Data.List (partition, sortBy)
 import qualified Data.Set as Set
 import           Lens.Micro.Platform ( at, makeLenses, lens, (&), (^.), (%~), (.~), (^?!), (.=)
                                      , (%=), (^?)

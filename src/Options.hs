@@ -3,7 +3,7 @@
 module Options where
 
 import Prelude ()
-import Prelude.Compat
+import Prelude.MH
 
 import Data.Version (showVersion)
 import Development.GitRev

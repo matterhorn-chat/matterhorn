@@ -1,7 +1,7 @@
 module Events.LeaveChannelConfirm where
 
 import Prelude ()
-import Prelude.Compat
+import Prelude.MH
 
 import qualified Graphics.Vty as Vty
 

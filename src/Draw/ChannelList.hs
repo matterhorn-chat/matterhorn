@@ -23,8 +23,6 @@ import           Brick.Widgets.Border
 import qualified Data.Sequence as Seq
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
-import           Data.Maybe (fromMaybe)
-import           Data.Monoid ((<>))
 import qualified Data.Text as T
 import           Draw.Util
 import           Lens.Micro.Platform
@@ -32,6 +30,8 @@ import           State
 import           Themes
 import           Types
 import           Types.Users
+import           Prelude ()
+import           Prelude.MH
 
 type GroupName = T.Text
 

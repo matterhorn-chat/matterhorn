@@ -10,21 +10,17 @@ module State.Setup.Threads
 where
 
 import           Prelude ()
-import           Prelude.Compat
+import           Prelude.MH
 
 import           Brick.BChan
 import           Control.Concurrent (threadDelay, forkIO, MVar, putMVar, tryTakeMVar)
 import qualified Control.Concurrent.STM as STM
 import           Control.Concurrent.STM.Delay
 import           Control.Exception (SomeException, try, finally)
-import           Control.Monad (forever, when, void, forM_)
-import           Control.Monad.IO.Class (liftIO)
 import           Data.List (isInfixOf)
 import qualified Data.Foldable as F
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
-import           Data.Maybe (catMaybes)
-import           Data.Monoid ((<>))
 import           Data.Time (getCurrentTime, addUTCTime)
 import           Data.Time.LocalTime.TimeZone.Series (TimeZoneSeries)
 import           Lens.Micro.Platform

@@ -4,17 +4,14 @@
 module State.Editing where
 
 import           Prelude ()
-import           Prelude.Compat
+import           Prelude.MH
 
 import           Brick.Widgets.Edit (Editor, handleEditorEvent, getEditContents, editContentsL)
 import           Brick.Widgets.Edit (applyEdit)
 import qualified Codec.Binary.UTF8.Generic as UTF8
 import           Control.Arrow
 import qualified Control.Concurrent.STM as STM
-import           Control.Monad (when)
-import           Control.Monad.IO.Class (liftIO)
 import qualified Data.ByteString as BS
-import           Data.Monoid ((<>))
 import qualified Data.Set as S
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T

@@ -1,7 +1,7 @@
 module Draw.ShowHelp (drawShowHelp) where
 
 import Prelude ()
-import Prelude.Compat
+import Prelude.MH
 
 import Brick
 import Brick.Themes (themeDescriptions)
@@ -9,13 +9,9 @@ import Brick.Widgets.Border
 import Brick.Widgets.Center (hCenter, centerLayer)
 import Brick.Widgets.List (listSelectedFocusedAttr)
 import Lens.Micro.Platform
-import Data.List (intercalate, sort)
-import Data.Maybe (isNothing)
 import qualified Data.Map as M
 import qualified Data.Text as T
-import Data.Monoid ((<>))
 import qualified Graphics.Vty as Vty
-import GHC.Exts (sortWith, groupWith)
 import Network.Mattermost.Version (mmApiVersion)
 
 import Themes

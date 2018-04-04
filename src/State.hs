@@ -108,30 +108,26 @@ module State
 where
 
 import           Prelude ()
-import           Prelude.Compat
+import           Prelude.MH
 
 import           Brick (invalidateCacheEntry)
 import           Brick.Themes (themeToAttrMap)
 import           Brick.Widgets.Edit (getEditContents, editContentsL)
 import           Brick.Widgets.List (list, listMoveTo, listSelectedElement)
-import           Control.Applicative
 import           Control.Concurrent.Async (runConcurrently, Concurrently(..), concurrently)
 import           Control.Concurrent (MVar, putMVar, forkIO)
 import qualified Control.Concurrent.STM as STM
 import           Control.Exception (SomeException, try)
-import           Control.Monad.IO.Class (liftIO)
 import           Data.Char (isAlphaNum)
 import           Brick.Main (getVtyHandle, viewportScroll, vScrollToBeginning, vScrollBy, vScrollToEnd)
 import           Brick.Widgets.Edit (applyEdit)
-import           Control.Monad (when, unless, void, forM_, join)
 import qualified Data.ByteString as BS
 import           Data.Function (on)
 import           Data.Text.Zipper (textZipper, clearZipper, insertMany, gotoEOL)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
-import           Data.List (sort, findIndex)
-import           Data.Maybe (isJust, fromJust, catMaybes, isNothing)
-import           Data.Monoid ((<>))
+import           Data.List (findIndex)
+import           Data.Maybe (fromJust)
 import qualified Data.Set as Set
 import qualified Data.Text as T
 import           Data.Time (getCurrentTime)

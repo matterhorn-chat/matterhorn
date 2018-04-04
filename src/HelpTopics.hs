@@ -9,10 +9,9 @@ module HelpTopics
 where
 
 import Prelude ()
-import Prelude.Compat
+import Prelude.MH
 
 import qualified Data.Text as T
-import Data.Maybe (listToMaybe)
 
 import Types
 

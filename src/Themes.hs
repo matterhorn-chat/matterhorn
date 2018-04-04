@@ -50,13 +50,10 @@ module Themes
   ) where
 
 import Prelude ()
-import Prelude.Compat
-import Data.List (find)
+import Prelude.MH
 
 import qualified Data.Map as M
 import Data.Hashable (hash)
-import Data.Maybe (isNothing)
-import Data.Monoid ((<>))
 import Graphics.Vty
 import Brick
 import Brick.Themes

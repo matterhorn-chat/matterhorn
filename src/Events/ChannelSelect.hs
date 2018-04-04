@@ -1,9 +1,8 @@
 module Events.ChannelSelect where
 
 import Prelude ()
-import Prelude.Compat
+import Prelude.MH
 
-import Control.Monad (when)
 import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
 import Lens.Micro.Platform

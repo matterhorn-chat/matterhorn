@@ -3,13 +3,12 @@ module TeamSelect
   ) where
 
 import Prelude ()
-import Prelude.Compat
+import Prelude.MH
 
 import Brick
 import Brick.Widgets.List
 import Brick.Widgets.Center
 import Brick.Widgets.Border
-import Control.Monad.IO.Class (liftIO)
 import qualified Data.Vector as V
 import Graphics.Vty
 import System.Exit (exitSuccess)

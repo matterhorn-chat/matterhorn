@@ -1,7 +1,7 @@
 module Events.UrlSelect where
 
 import Prelude ()
-import Prelude.Compat
+import Prelude.MH
 
 import Brick.Widgets.List
 import qualified Graphics.Vty as Vty

@@ -6,7 +6,7 @@ module Login
   ) where
 
 import Prelude ()
-import Prelude.Compat
+import Prelude.MH
 
 import Brick
 import Brick.Forms
@@ -14,8 +14,6 @@ import Brick.Focus
 import Brick.Widgets.Edit
 import Brick.Widgets.Center
 import Brick.Widgets.Border
-import Control.Monad.IO.Class (liftIO)
-import Data.Monoid ((<>))
 import Lens.Micro.Platform
 import qualified Data.Text as T
 import Graphics.Vty

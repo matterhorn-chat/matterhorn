@@ -4,13 +4,11 @@
 module Draw.UserListOverlay where
 
 import           Prelude ()
-import           Prelude.Compat
+import           Prelude.MH
 
 import           Control.Monad.Trans.Reader (withReaderT)
 import qualified Data.Foldable as F
 import qualified Data.Text as T
-import           Data.Maybe (catMaybes)
-import           Data.Monoid ((<>))
 import qualified Graphics.Vty as V
 import           Lens.Micro.Platform
 

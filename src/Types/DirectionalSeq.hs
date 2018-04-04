@@ -12,8 +12,9 @@
 module Types.DirectionalSeq where
 
 
-import           Data.Monoid.Compat
 import qualified Data.Sequence as Seq
+import           Prelude ()
+import           Prelude.MH
 
 
 data Chronological

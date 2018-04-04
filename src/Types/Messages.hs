@@ -74,9 +74,7 @@ module Types.Messages
 where
 
 import           Cheapskate (Blocks)
-import           Control.Applicative
 import qualified Data.Map.Strict as Map
-import           Data.Maybe (isJust, isNothing)
 import           Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Tuple
@@ -84,6 +82,8 @@ import           Lens.Micro.Platform
 import           Network.Mattermost.Types (ChannelId, PostId, Post, ServerTime, UserId)
 import           Types.DirectionalSeq
 import           Types.Posts
+import           Prelude ()
+import           Prelude.MH
 
 -- ----------------------------------------------------------------------
 -- * Messages

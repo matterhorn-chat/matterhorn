@@ -1,9 +1,8 @@
 module Main where
 
 import           Prelude ()
-import           Prelude.Compat
+import           Prelude.MH
 
-import           Data.Monoid ((<>))
 import           System.Exit (exitFailure)
 
 import           Config

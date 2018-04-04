@@ -1,14 +1,12 @@
 module Connection where
 
 import           Prelude ()
-import           Prelude.Compat
+import           Prelude.MH
 
 import           Brick.BChan
 import           Control.Concurrent (forkIO, threadDelay)
 import qualified Control.Concurrent.STM as STM
 import           Control.Exception (SomeException, catch)
-import           Control.Monad (void)
-import           Control.Monad.IO.Class (liftIO)
 import           Data.Int (Int64)
 import qualified Data.HashMap.Strict as HM
 import           Data.Semigroup (Max(..), (<>))

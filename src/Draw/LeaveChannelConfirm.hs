@@ -5,7 +5,7 @@ module Draw.LeaveChannelConfirm
 where
 
 import Prelude ()
-import Prelude.Compat
+import Prelude.MH
 
 import Brick
 import Brick.Widgets.Center

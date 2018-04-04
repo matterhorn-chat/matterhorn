@@ -9,17 +9,13 @@ module Config
   ) where
 
 import           Prelude ()
-import           Prelude.Compat
+import           Prelude.MH
 
-import           Control.Applicative
-import           Control.Monad (forM)
 import           Control.Monad.Trans.Except
 import           Data.Ini.Config
 import qualified Data.Map.Strict as M
-import           Data.Maybe (catMaybes, fromMaybe)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
-import           Data.Monoid ((<>))
 import           System.Directory (makeAbsolute)
 import           System.Process (readProcess)
 

@@ -35,12 +35,12 @@ where
 import           Data.Foldable (find)
 import           Data.Semigroup ((<>), Max(..))
 import qualified Data.HashMap.Strict as HM
-import           Data.List (sort)
-import           Data.Maybe (listToMaybe, maybeToList)
 import qualified Data.Text as T
 import           Data.Time (UTCTime)
 import           Lens.Micro.Platform
 import           Network.Mattermost.Types (Id(Id), UserId(..), User(..), idString)
+import           Prelude ()
+import           Prelude.MH
 
 -- * 'UserInfo' Values
 
