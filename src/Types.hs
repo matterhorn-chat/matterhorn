@@ -900,7 +900,7 @@ userIdForUsername name st = st^.csNames.cnToUserId.at (trimAnySigil name)
 
 channelIdByChannelName :: T.Text -> ChatState -> Maybe ChannelId
 channelIdByChannelName name st =
-    HM.lookup (trimAnySigil name) $ st^.csNames.channelNameToChanId
+    HM.lookup (trimChannelSigil name) $ st^.csNames.channelNameToChanId
 
 -- | Get a channel ID by username or channel name. Returns (channel
 -- match, user match). Note that this returns multiple results because
@@ -929,7 +929,7 @@ channelIdByUsername name st =
                               $ findUserByNickname userInfos name
                 else name
         nameToChanId = st^.csNames.usernameToChanId
-    in HM.lookup (trimAnySigil uName) nameToChanId
+    in HM.lookup (trimUserSigil uName) nameToChanId
 
 useNickname :: ChatState -> Bool
 useNickname st = case st^?csClientConfig._Just.to clientConfigTeammateNameDisplay of
@@ -948,6 +948,16 @@ trimAnySigil n
     | normalChannelSigil `T.isPrefixOf` n = T.tail n
     | userSigil `T.isPrefixOf` n          = T.tail n
     | otherwise                           = n
+
+trimChannelSigil :: T.Text -> T.Text
+trimChannelSigil n
+    | normalChannelSigil `T.isPrefixOf` n = T.tail n
+    | otherwise                           = n
+
+trimUserSigil :: T.Text -> T.Text
+trimUserSigil n
+    | userSet `T.isPrefixOf` n = T.tail n
+    | otherwise                = n
 
 addNewUser :: UserInfo -> MH ()
 addNewUser u = do
