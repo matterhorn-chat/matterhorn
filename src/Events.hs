@@ -20,6 +20,7 @@ import           Lens.Micro.Platform
 import           Network.Mattermost.Types
 import           Network.Mattermost.Lenses
 import           Network.Mattermost.WebSocket
+import           Network.Mattermost.Exceptions (mattermostErrorMessage)
 
 import           Connection
 import           State
@@ -64,6 +65,8 @@ onAppEvent (BGBusy n) = csWorkerIsBusy .= Just n
 onAppEvent (WSEvent we) =
   handleWSEvent we
 onAppEvent (RespEvent f) = f
+onAppEvent (AsyncMattermostError e) = do
+  mhError $ mattermostErrorMessage e
 onAppEvent (AsyncErrEvent e) = do
   let msg = "An unexpected error has occurred! The exception encountered was:\n  " <>
             T.pack (show e) <>

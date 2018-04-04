@@ -787,6 +787,8 @@ data MHEvent
     -- ^ For events that arise from the websocket
     | RespEvent (MH ())
     -- ^ For the result values of async IO operations
+    | AsyncMattermostError MattermostError
+    -- ^ For Mattermost-specific exceptions
     | AsyncErrEvent SomeException
     -- ^ For errors that arise in the course of async IO operations
     | RefreshWebsocketEvent
