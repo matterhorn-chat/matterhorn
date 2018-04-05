@@ -144,7 +144,7 @@ module Types
   , mh
   , mhSuspendAndResume
   , mhHandleEventLensed
-  , gets
+  , St.gets
 
   , requestQuit
   , clientPostToMessage
@@ -210,12 +210,9 @@ import qualified Control.Concurrent.STM as STM
 import           Control.Concurrent.MVar (MVar)
 import           Control.Exception (SomeException)
 import qualified Control.Monad.State as St
-import           Control.Monad.State (gets)
 import qualified Data.Foldable as F
 import qualified Data.Sequence as Seq
 import qualified Data.Vector as Vec
-import           Data.Time (UTCTime)
-import           Data.Time.LocalTime.TimeZone.Series (TimeZoneSeries)
 import qualified Data.HashMap.Strict as HM
 import           Data.List (partition, sortBy)
 import qualified Data.Set as Set
@@ -951,7 +948,7 @@ addChannelName chType cid name = do
 
     -- For direct channels the username is already in the user list so
     -- do nothing
-    existingNames <- gets allChannelNames
+    existingNames <- St.gets allChannelNames
     when (chType /= Direct && (not $ name `elem` existingNames)) $
         csNames.cnChans %= (sort . (name:))
 

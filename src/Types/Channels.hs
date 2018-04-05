@@ -45,7 +45,6 @@ module Types.Channels
 where
 
 import qualified Data.HashMap.Strict as HM
-import           Data.Time.Clock (UTCTime)
 import           Lens.Micro.Platform
 import           Network.Mattermost.Lenses hiding (Lens')
 import           Network.Mattermost.Types ( Channel(..), UserId, ChannelId

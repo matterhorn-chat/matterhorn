@@ -6,7 +6,6 @@ where
 
 import Prelude ()
 import Prelude.MH
-import Data.Time (NominalDiffTime)
 
 -- | The number of rows to consider a "page" when scrolling
 pageAmount :: Int

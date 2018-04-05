@@ -13,8 +13,7 @@ import           Data.Time.Clock (UTCTime(..))
 import           Data.Time.Format (formatTime, defaultTimeLocale)
 import           Data.Time.LocalTime (LocalTime(..), TimeOfDay(..))
 import           Data.Time.LocalTime.TimeZone.Olson (getTimeZoneSeriesFromOlsonFile)
-import           Data.Time.LocalTime.TimeZone.Series (TimeZoneSeries
-                                                     , localTimeToUTC'
+import           Data.Time.LocalTime.TimeZone.Series ( localTimeToUTC'
                                                      , utcToLocalTime')
 import           Network.Mattermost.Types (ServerTime(..))
 

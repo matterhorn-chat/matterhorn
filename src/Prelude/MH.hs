@@ -44,6 +44,9 @@ module Prelude.MH
 , HashMap
 , Seq
 , Set
+, Time.UTCTime
+, Time.TimeZoneSeries
+, Time.NominalDiffTime
 ) where
 
 
@@ -66,3 +69,6 @@ import           Data.Text (Text)
 import           Data.HashMap.Strict (HashMap)
 import           Data.Sequence (Seq)
 import           Data.Set (Set)
+
+import qualified Data.Time as Time
+import qualified Data.Time.LocalTime.TimeZone.Series as Time

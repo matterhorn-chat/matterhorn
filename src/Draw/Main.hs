@@ -14,7 +14,6 @@ import           Control.Arrow ((>>>))
 import           Control.Monad.Trans.Reader (withReaderT)
 import           Data.Time.Clock (UTCTime(..))
 import           Data.Time.Calendar (fromGregorian)
-import           Data.Time.LocalTime.TimeZone.Series (TimeZoneSeries)
 import qualified Data.Sequence as Seq
 import qualified Data.Set as S
 import qualified Data.Foldable as F

@@ -21,7 +21,6 @@ import           Data.List (isInfixOf)
 import qualified Data.Foldable as F
 import qualified Data.Text as T
 import           Data.Time (getCurrentTime, addUTCTime)
-import           Data.Time.LocalTime.TimeZone.Series (TimeZoneSeries)
 import           Lens.Micro.Platform
 import           System.Exit (ExitCode(ExitSuccess))
 import           System.IO (hPutStrLn, hFlush)
