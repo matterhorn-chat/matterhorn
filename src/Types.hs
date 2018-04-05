@@ -214,7 +214,6 @@ import           Control.Monad.State (gets)
 import qualified Data.Foldable as F
 import qualified Data.Sequence as Seq
 import qualified Data.Vector as Vec
-import           Data.HashMap.Strict (HashMap)
 import           Data.Time (UTCTime)
 import           Data.Time.LocalTime.TimeZone.Series (TimeZoneSeries)
 import qualified Data.HashMap.Strict as HM

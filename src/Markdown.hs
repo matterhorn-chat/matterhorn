@@ -33,8 +33,7 @@ import qualified Cheapskate as C
 import qualified Data.Text as T
 import qualified Data.Foldable as F
 import           Data.Monoid (First(..))
-import           Data.Sequence ( Seq
-                               , ViewL(..)
+import           Data.Sequence ( ViewL(..)
                                , ViewR(..)
                                , (<|)
                                , (|>)

@@ -17,6 +17,7 @@ module Events.Keybindings
   , parseBinding
   , keyEventName
   , keyEventFromName
+
   ) where
 
 import qualified Data.Map.Strict as M
