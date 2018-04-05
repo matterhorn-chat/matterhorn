@@ -46,6 +46,13 @@ incompleteCredentials config = ConnectionInfo hStr (configPort config) uStr pStr
             Just (PasswordString s) -> s
             _                       -> ""
 
+convertLoginExceptions :: IO a -> IO (Either AuthenticationException a)
+convertLoginExceptions act =
+    (Right <$> act)
+        `catch` (\e -> return $ Left $ ResolveError e)
+        `catch` (\e -> return $ Left $ ConnectError e)
+        `catchIOError` (\e -> return $ Left $ AuthIOError e)
+        `catch` (\e -> return $ Left $ OtherAuthError e)
 
 setupState :: Maybe Handle -> Config -> IO ChatState
 setupState logFile initialConfig = do
@@ -75,11 +82,7 @@ setupState logFile initialConfig = do
         let login = Login { username = cInfo^.ciUsername
                           , password = cInfo^.ciPassword
                           }
-        result <- (Right <$> mmLogin cd login)
-                    `catch` (\e -> return $ Left $ ResolveError e)
-                    `catch` (\e -> return $ Left $ ConnectError e)
-                    `catchIOError` (\e -> return $ Left $ AuthIOError e)
-                    `catch` (\e -> return $ Left $ OtherAuthError e)
+        result <- convertLoginExceptions $ mmLogin cd login
 
         -- Update the config with the entered settings so that later,
         -- when we offer the option of saving the entered credentials to

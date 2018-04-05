@@ -98,7 +98,7 @@ commandList =
         removeUserFromCurrentChannel uname
   , Cmd "message-preview" "Toggle preview of the current message" NoArg $ \_ ->
         toggleMessagePreview
-  , Cmd "focus" "Focus on a named channel"
+  , Cmd "focus" "Focus on a channel or user"
     (TokenArg "channel" NoArg) $ \ (name, ()) ->
         changeChannel name
   , Cmd "focus" "Select from available channels" NoArg $ \ () ->

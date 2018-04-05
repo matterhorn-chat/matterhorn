@@ -517,7 +517,7 @@ joinChannelByName rawName = do
     session <- getSession
     tId <- gets myTeamId
     doAsyncWith Preempt $ do
-        result <- try $ MM.mmGetChannelByName tId (trimAnySigil rawName) session
+        result <- try $ MM.mmGetChannelByName tId (trimChannelSigil rawName) session
         return $ case result of
             Left (_::SomeException) -> mhError $ T.pack $ "No such channel: " <> (show rawName)
             Right chan -> joinChannel $ getId chan
@@ -1071,9 +1071,32 @@ loadMoreMessages = whenMode ChannelScroll asyncFetchMoreMessages
 changeChannel :: Text -> MH ()
 changeChannel name = do
     result <- gets (channelIdByName name)
+    user <- gets (userByUsername name)
+    let err = mhError $ T.pack $ "The input " <> show name <> " matches both channels " <>
+                                 "and users. Try using '@' or '~' to disambiguate."
+
     case result of
-      Just cId -> setFocus cId
-      Nothing  -> attemptCreateDMChannel name
+      (Nothing, Nothing)
+          -- We know about the user but there isn't already a DM
+          -- channel, so create one.
+          | Just _ <- user -> attemptCreateDMChannel name
+          -- There were no matches of any kind.
+          | otherwise -> mhError $ T.pack $ "No such channel: " <> show name
+      (Just cId, Nothing)
+          -- We matched a channel and there was an explicit sigil, so we
+          -- don't care about the username match.
+          | normalChannelSigil `T.isPrefixOf` name -> setFocus cId
+          -- We matched both a channel and a user, even though there is
+          -- no DM channel.
+          | Just _ <- user -> err
+          -- We matched a channel only.
+          | otherwise -> setFocus cId
+      (Nothing, Just cId) ->
+          -- We matched a user only and there is already a DM channel.
+          setFocus cId
+      (Just _, Just _) ->
+          -- We matched both a channel and a user.
+          err
 
 setFocus :: ChannelId -> MH ()
 setFocus cId = setFocusWith (Z.findRight (== cId))
@@ -1095,7 +1118,7 @@ setFocusWith f = do
 
 attemptCreateDMChannel :: Text -> MH ()
 attemptCreateDMChannel name = do
-  mCid <- gets (channelIdByName name)
+  mCid <- gets (channelIdByUsername name)
   me <- gets myUser
   displayNick <- use (to useNickname)
   uList       <- use (to sortedUserList)
@@ -1571,68 +1594,84 @@ updateSelectedMatch nextIndex = do
 
     csChannelSelectState.selectedMatch %= \oldMatch ->
         -- Make the list of all matches, in display order.
-        let allMatches = concat [ sort $ HM.keys chanMatches
-                                , sort $ HM.keys usernameMatches
+        let allMatches = concat [ (ChannelMatch . matchFull) <$> chanMatches
+                                , (UserMatch . matchFull) <$> usernameMatches
                                 ]
-        in case findIndex (== oldMatch) allMatches of
-            Nothing -> if null allMatches
-                       then ""
-                       else allMatches !! 0
-            Just i ->
-                let newIndex = if tmpIndex < 0
-                               then length allMatches - 1
-                               else if tmpIndex >= length allMatches
-                                    then 0
-                                    else tmpIndex
-                    tmpIndex = nextIndex i
-                in allMatches !! newIndex
+            defaultMatch = if null allMatches
+                           then Nothing
+                           else Just $ allMatches !! 0
+        in case oldMatch of
+            Nothing -> defaultMatch
+            Just oldMatch' -> case findIndex (== oldMatch') allMatches of
+                Nothing -> defaultMatch
+                Just i ->
+                    let newIndex = if tmpIndex < 0
+                                   then length allMatches - 1
+                                   else if tmpIndex >= length allMatches
+                                        then 0
+                                        else tmpIndex
+                        tmpIndex = nextIndex i
+                    in Just $ allMatches !! newIndex
 
 updateChannelSelectMatches :: MH ()
 updateChannelSelectMatches = do
     -- Given the current channel select string, find all the channel and
     -- user matches and then update the match lists.
-    chanNameMatches <- use (csChannelSelectState.channelSelectInput.to channelNameMatch)
-    chanNames   <- gets allChannelNames
+    input <- use (csChannelSelectState.channelSelectInput)
+    let pat = parseChannelSelectPattern input
+        chanNameMatches = case pat of
+            Nothing -> const Nothing
+            Just p -> if T.null input
+                      then const Nothing
+                      else applySelectPattern p
+        patTy = case pat of
+            Nothing -> Nothing
+            Just (CSP ty _) -> Just ty
+
+    chanNames   <- gets (sort . allChannelNames)
     uList       <- use (to sortedUserList)
     displayNick <- use (to useNickname)
-    let chanMatches = catMaybes (fmap chanNameMatches chanNames)
+    let chanMatches = if patTy == Just UsersOnly
+                      then mempty
+                      else catMaybes (fmap chanNameMatches chanNames)
         displayName uInf
             | displayNick = uInf^.uiNickName.non (uInf^.uiName)
             | otherwise   = uInf^.uiName
-        usernameMatches = catMaybes (fmap (chanNameMatches . displayName) uList)
-        mkMap ms = HM.fromList [(channelNameFromMatch m, m) | m <- ms]
+        usernameMatches = if patTy == Just ChannelsOnly
+                          then mempty
+                          else catMaybes (fmap (chanNameMatches . displayName) uList)
 
     newInput <- use (csChannelSelectState.channelSelectInput)
-    csChannelSelectState.channelMatches .= mkMap chanMatches
-    csChannelSelectState.userMatches    .= mkMap usernameMatches
+    csChannelSelectState.channelMatches .= chanMatches
+    csChannelSelectState.userMatches    .= usernameMatches
     csChannelSelectState.selectedMatch  %= \oldMatch ->
         -- If the user input exactly matches one of the matches, prefer
         -- that one. Otherwise, if the previously selected match is
         -- still a possible match, leave it selected. Otherwise revert
         -- to the first available match.
-        let newMatch = if newInput `elem` allMatches
-                       then newInput
-                       else if oldMatch `elem` allMatches
-                            then oldMatch
-                            else firstAvailableMatch
-            unames = channelNameFromMatch <$> usernameMatches
-            allMatches = concat [ channelNameFromMatch <$> chanMatches
-                                , [ displayName u | u <- uList
-                                  , displayName u `elem` unames
-                                  ]
-                                ]
-            firstAvailableMatch = if null allMatches
-                                  then ""
-                                  else head allMatches
+        let unames = matchFull <$> usernameMatches
+            cnames = matchFull <$> chanMatches
+            firstAvailableMatch =
+                if null chanMatches
+                then if null unames
+                     then Nothing
+                     else Just $ UserMatch $ head unames
+                else Just $ ChannelMatch $ head cnames
+            newMatch = case oldMatch of
+              Just (UserMatch u) ->
+                  if newInput `elem` unames
+                  then Just $ UserMatch newInput
+                  else if u `elem` unames
+                       then oldMatch
+                       else firstAvailableMatch
+              Just (ChannelMatch c) ->
+                  if newInput `elem` cnames
+                  then Just $ ChannelMatch $ newInput
+                  else if c `elem` cnames
+                       then oldMatch
+                       else firstAvailableMatch
+              Nothing -> firstAvailableMatch
         in newMatch
-
-channelNameMatch :: Text -> Text -> Maybe ChannelSelectMatch
-channelNameMatch patStr chanName =
-    if T.null patStr
-    then Nothing
-    else do
-        pat <- parseChannelSelectPattern patStr
-        applySelectPattern pat chanName
 
 applySelectPattern :: ChannelSelectPattern -> Text -> Maybe ChannelSelectMatch
 applySelectPattern (CSP ty pat) chanName = do
@@ -1641,6 +1680,14 @@ applySelectPattern (CSP ty pat) chanName = do
                 (pre, post) -> return (pre, pat, T.drop (T.length pat) post)
 
         applyType Prefix | pat `T.isPrefixOf` chanName = do
+            let (b, a) = T.splitAt (T.length pat) chanName
+            return ("", b, a)
+
+        applyType UsersOnly | pat `T.isPrefixOf` chanName = do
+            let (b, a) = T.splitAt (T.length pat) chanName
+            return ("", b, a)
+
+        applyType ChannelsOnly | pat `T.isPrefixOf` chanName = do
             let (b, a) = T.splitAt (T.length pat) chanName
             return ("", b, a)
 
@@ -1654,10 +1701,14 @@ applySelectPattern (CSP ty pat) chanName = do
         applyType _ = Nothing
 
     (pre, m, post) <- applyType ty
-    return $ ChannelSelectMatch pre m post
+    return $ ChannelSelectMatch pre m post chanName
 
 parseChannelSelectPattern :: Text -> Maybe ChannelSelectPattern
 parseChannelSelectPattern pat = do
+    let only = if | userSigil `T.isPrefixOf` pat -> Just $ CSP UsersOnly $ T.tail pat
+                  | normalChannelSigil `T.isPrefixOf` pat -> Just $ CSP ChannelsOnly $ T.tail pat
+                  | otherwise -> Nothing
+
     (pat1, pfx) <- case "^" `T.isPrefixOf` pat of
         True  -> return (T.tail pat, Just Prefix)
         False -> return (pat, Nothing)
@@ -1666,7 +1717,7 @@ parseChannelSelectPattern pat = do
         True  -> return (T.init pat1, Just Suffix)
         False -> return (pat1, Nothing)
 
-    case (pfx, sfx) of
+    only <|> case (pfx, sfx) of
         (Nothing, Nothing)         -> return $ CSP Infix  pat2
         (Just Prefix, Nothing)     -> return $ CSP Prefix pat2
         (Nothing, Just Suffix)     -> return $ CSP Suffix pat2

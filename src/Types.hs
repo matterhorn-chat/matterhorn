@@ -13,6 +13,7 @@ module Types
   , InternalEvent(..)
   , Name(..)
   , ChannelSelectMatch(..)
+  , MatchValue(..)
   , StartupStateInfo(..)
   , ConnectionInfo(..)
   , ciHostname
@@ -27,7 +28,6 @@ module Types
   , Mode(..)
   , ChannelSelectPattern(..)
   , PostListContents(..)
-  , ChannelSelectMap
   , AuthenticationException(..)
   , BackgroundInfo(..)
   , RequestChan
@@ -36,6 +36,9 @@ module Types
   , mkNames
   , refreshChannelZipper
   , getChannelIdsInOrder
+
+  , trimUserSigil
+  , trimChannelSigil
 
   , LinkChoice(LinkChoice)
   , linkUser
@@ -155,8 +158,6 @@ module Types
   , withChannelOrDefault
   , userList
   , hasUnread
-  , channelNameFromMatch
-  , trimAnySigil
   , isMine
   , setUserStatus
   , myUser
@@ -166,6 +167,8 @@ module Types
   , userIdForUsername
   , userByDMChannelName
   , userByUsername
+  , channelIdByChannelName
+  , channelIdByUsername
   , channelIdByName
   , channelByName
   , userById
@@ -288,8 +291,11 @@ data BackgroundInfo = Disabled | Active | ActiveCount deriving (Eq, Show)
 --   names and mapping them back to internal IDs.
 data MMNames = MMNames
   { _cnChans    :: [Text] -- ^ All channel names
-  , _cnToChanId :: HashMap Text ChannelId
-      -- ^ Mapping from channel names to 'ChannelId' values
+  , _channelNameToChanId :: HashMap Text ChannelId
+  -- ^ Mapping from channel names to 'ChannelId' values
+  , _usernameToChanId :: HashMap Text ChannelId
+  -- ^ Mapping from user names to 'ChannelId' values. Only contains
+  -- entries for which DM channel IDs are known.
   , _cnUsers    :: [Text] -- ^ All users
   , _cnToUserId :: HashMap Text UserId
       -- ^ Mapping from user names to 'UserId' values
@@ -300,8 +306,8 @@ mkNames myUser users chans = MMNames
   { _cnChans = sort
                [ preferredChannelName c
                | c <- toList chans, channelType c /= Direct ]
-  , _cnToChanId = HM.fromList $
-                  [ (preferredChannelName c, channelId c) | c <- toList chans ] ++
+  , _channelNameToChanId = HM.fromList [ (preferredChannelName c, channelId c) | c <- toList chans ]
+  , _usernameToChanId = HM.fromList $
                   [ (userUsername u, c)
                   | u <- HM.elems users
                   , c <- lookupChan (getDMChannelName (getId myUser) (getId u))
@@ -326,12 +332,12 @@ mkChannelZipperList chanNames =
   getDMChannelIdsInOrder chanNames
 
 getChannelIdsInOrder :: MMNames -> [ChannelId]
-getChannelIdsInOrder n = [ (n ^. cnToChanId) HM.! i | i <- n ^. cnChans ]
+getChannelIdsInOrder n = [ (n ^. channelNameToChanId) HM.! i | i <- n ^. cnChans ]
 
 getDMChannelIdsInOrder :: MMNames -> [ChannelId]
 getDMChannelIdsInOrder n =
   [ c | i <- n ^. cnUsers
-      , c <- maybeToList (HM.lookup i (n ^. cnToChanId))
+      , c <- maybeToList (HM.lookup i (n ^. usernameToChanId))
   ]
 
 -- * Internal Names and References
@@ -411,17 +417,21 @@ data ChannelSelectMatch =
     ChannelSelectMatch { nameBefore     :: Text
                        , nameMatched    :: Text
                        , nameAfter      :: Text
+                       , matchFull      :: Text
                        }
                        deriving (Eq, Show)
-
-channelNameFromMatch :: ChannelSelectMatch -> Text
-channelNameFromMatch (ChannelSelectMatch b m a) = b <> m <> a
 
 data ChannelSelectPattern = CSP MatchType Text
                           deriving (Eq, Show)
 
-data MatchType = Prefix | Suffix | Infix | Equal deriving (Eq, Show)
-
+data MatchType =
+    Prefix
+    | Suffix
+    | Infix
+    | Equal
+    | UsersOnly
+    | ChannelsOnly
+    deriving (Eq, Show)
 
 -- * Application State Values
 
@@ -657,13 +667,16 @@ listFromUserSearchResults rs =
     -- in Draw.UserListOverlay.
     list UserListSearchResults rs 1
 
-type ChannelSelectMap = HashMap Text ChannelSelectMatch
+data MatchValue =
+    UserMatch Text
+    | ChannelMatch Text
+    deriving (Eq, Show)
 
 data ChannelSelectState =
     ChannelSelectState { _channelSelectInput :: Text
-                       , _channelMatches     :: ChannelSelectMap
-                       , _userMatches        :: ChannelSelectMap
-                       , _selectedMatch      :: Text
+                       , _channelMatches     :: [ChannelSelectMatch]
+                       , _userMatches        :: [ChannelSelectMatch]
+                       , _selectedMatch      :: Maybe MatchValue
                        }
 
 emptyChannelSelectState :: ChannelSelectState
@@ -671,7 +684,7 @@ emptyChannelSelectState =
     ChannelSelectState { _channelSelectInput = ""
                        , _channelMatches     = mempty
                        , _userMatches        = mempty
-                       , _selectedMatch      = ""
+                       , _selectedMatch      = Nothing
                        }
 
 data MessageSelectState =
@@ -771,6 +784,8 @@ data MHEvent
     -- ^ For events that arise from the websocket
     | RespEvent (MH ())
     -- ^ For the result values of async IO operations
+    | AsyncMattermostError MattermostError
+    -- ^ For Mattermost-specific exceptions
     | AsyncErrEvent SomeException
     -- ^ For errors that arise in the course of async IO operations
     | RefreshWebsocketEvent
@@ -887,19 +902,42 @@ displaynameForUserId uId st
     | otherwise =
         usernameForUserId uId st
 
-userIdForUsername :: Text -> ChatState -> Maybe UserId
-userIdForUsername name st = st^.csNames.cnToUserId.at name
 
-channelIdByName :: Text -> ChatState -> Maybe ChannelId
+userIdForUsername :: Text -> ChatState -> Maybe UserId
+userIdForUsername name st = st^.csNames.cnToUserId.at (trimUserSigil name)
+
+channelIdByChannelName :: Text -> ChatState -> Maybe ChannelId
+channelIdByChannelName name st =
+    HM.lookup (trimChannelSigil name) $ st^.csNames.channelNameToChanId
+
+-- | Get a channel ID by username or channel name. Returns (channel
+-- match, user match). Note that this returns multiple results because
+-- it's possible for there to be a match for both users and channels.
+-- Note that this function uses sigils on the input to guarantee clash
+-- avoidance, i.e., that if the user sigil is present in the input,
+-- only users will be searched. This allows callers (or the user) to
+-- disambiguate by sigil, which may be necessary in cases where an input
+-- with no sigil finds multiple matches.
+channelIdByName :: Text -> ChatState -> (Maybe ChannelId, Maybe ChannelId)
 channelIdByName name st =
+    let uMatch = channelIdByUsername name st
+        cMatch = channelIdByChannelName name st
+        matches =
+            if | userSigil `T.isPrefixOf` name          -> (Nothing, uMatch)
+               | normalChannelSigil `T.isPrefixOf` name -> (cMatch, Nothing)
+               | otherwise                              -> (cMatch, uMatch)
+    in matches
+
+channelIdByUsername :: Text -> ChatState -> Maybe ChannelId
+channelIdByUsername name st =
     let userInfos = st^.csUsers.to allUsers
         uName = if useNickname st
                 then
                     maybe name (view uiName)
                               $ findUserByNickname userInfos name
                 else name
-        nameToChanId = st^.csNames.cnToChanId
-    in HM.lookup (trimAnySigil uName) nameToChanId
+        nameToChanId = st^.csNames.usernameToChanId
+    in HM.lookup (trimUserSigil uName) nameToChanId
 
 useNickname :: ChatState -> Bool
 useNickname st = case st^?csClientConfig._Just.to clientConfigTeammateNameDisplay of
@@ -910,20 +948,18 @@ useNickname st = case st^?csClientConfig._Just.to clientConfigTeammateNameDispla
 
 channelByName :: Text -> ChatState -> Maybe ClientChannel
 channelByName n st = do
-    let userInfos = st^.csUsers.to allUsers
-        uName = if useNickname st
-              then
-                  maybe n (view uiName)
-                            $ findUserByNickname userInfos n
-              else n
-    cId <- channelIdByName uName st
+    cId <- channelIdByChannelName n st
     findChannelById cId (st^.csChannels)
 
-trimAnySigil :: Text -> Text
-trimAnySigil n
+trimChannelSigil :: Text -> Text
+trimChannelSigil n
     | normalChannelSigil `T.isPrefixOf` n = T.tail n
-    | userSigil `T.isPrefixOf` n          = T.tail n
     | otherwise                           = n
+
+trimUserSigil :: Text -> Text
+trimUserSigil n
+    | userSigil `T.isPrefixOf` n = T.tail n
+    | otherwise                  = n
 
 addNewUser :: UserInfo -> MH ()
 addNewUser u = do
@@ -944,7 +980,9 @@ setUserIdSet ids = do
 
 addChannelName :: Type -> ChannelId -> Text -> MH ()
 addChannelName chType cid name = do
-    csNames.cnToChanId.at(name) .= Just cid
+    case chType of
+        Direct -> csNames.usernameToChanId.at(name) .= Just cid
+        _ -> csNames.channelNameToChanId.at(name) .= Just cid
 
     -- For direct channels the username is already in the user list so
     -- do nothing
@@ -965,7 +1003,7 @@ allUsernames st = st^.csNames.cnChans
 removeChannelName :: Text -> MH ()
 removeChannelName name = do
     -- Flush cnToChanId
-    csNames.cnToChanId.at name .= Nothing
+    csNames.channelNameToChanId.at name .= Nothing
     -- Flush cnChans
     csNames.cnChans %= filter (/= name)
 
@@ -1076,7 +1114,7 @@ sortedUserList st = sortBy cmp yes <> sortBy cmp no
   where
       cmp = compareUserInfo uiName
       dmHasUnread u =
-          case st^.csNames.cnToChanId.at(u^.uiName) of
+          case st^.csNames.usernameToChanId.at(u^.uiName) of
             Nothing  -> False
             Just cId
               | (st^.csCurrentChannelId) == cId -> False
