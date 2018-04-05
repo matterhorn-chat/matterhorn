@@ -12,24 +12,20 @@ import Lens.Micro.Platform
 import Network.Mattermost.Types
 
 import Types
-import Types.Channels
-import Types.Messages
-import Types.Posts
-import Types.Users
 import TimeUtils
 import Themes
 
-defaultTimeFormat :: T.Text
+defaultTimeFormat :: Text
 defaultTimeFormat = "%R"
 
-defaultDateFormat :: T.Text
+defaultDateFormat :: Text
 defaultDateFormat = "%Y-%m-%d"
 
-getTimeFormat :: ChatState -> T.Text
+getTimeFormat :: ChatState -> Text
 getTimeFormat st =
     maybe defaultTimeFormat id (st^.csResources.crConfiguration.to configTimeFormat)
 
-getDateFormat :: ChatState -> T.Text
+getDateFormat :: ChatState -> Text
 getDateFormat st =
     maybe defaultDateFormat id (st^.csResources.crConfiguration.to configDateFormat)
 
@@ -39,7 +35,7 @@ renderTime st = renderUTCTime (getTimeFormat st) (st^.timeZone)
 renderDate :: ChatState -> UTCTime -> Widget Name
 renderDate st = renderUTCTime (getDateFormat st) (st^.timeZone)
 
-renderUTCTime :: T.Text -> TimeZoneSeries -> UTCTime -> Widget a
+renderUTCTime :: Text -> TimeZoneSeries -> UTCTime -> Widget a
 renderUTCTime fmt tz t =
     if T.null fmt
     then emptyWidget
@@ -51,7 +47,7 @@ renderUTCTime fmt tz t =
 -- markers.  Note that the actual time of the server and this client
 -- are still not synchronized, but no manipulations here actually use
 -- the client time.
-insertDateMarkers :: Messages -> T.Text -> TimeZoneSeries -> Messages
+insertDateMarkers :: Messages -> Text -> TimeZoneSeries -> Messages
 insertDateMarkers ms datefmt tz = foldr (addMessage . dateMsg) ms dateRange
     where dateRange = foldr checkDateChange Set.empty ms
           checkDateChange m = let msgDay = startOfDay (Just tz) (withServerTime (m^.mDate))
@@ -71,7 +67,7 @@ userSigilFromInfo u = case u^.uiStatus of
     DoNotDisturb -> '×'
     Other _      -> '?'
 
-mkChannelName :: ChannelInfo -> T.Text
+mkChannelName :: ChannelInfo -> Text
 mkChannelName c = T.append sigil (c^.cdName)
   where sigil =  case c^.cdType of
           Private   -> T.singleton '?'
@@ -80,5 +76,5 @@ mkChannelName c = T.append sigil (c^.cdName)
           Direct    -> userSigil
           _         -> T.singleton '!'
 
-mkDMChannelName :: UserInfo -> T.Text
+mkDMChannelName :: UserInfo -> Text
 mkDMChannelName u = T.cons (userSigilFromInfo u) (u^.uiName)

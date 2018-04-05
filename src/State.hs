@@ -132,7 +132,6 @@ import qualified Data.Set as Set
 import qualified Data.Text as T
 import           Data.Time (getCurrentTime)
 import qualified Data.Vector as V
-import qualified Data.Foldable as F
 import           Graphics.Vty (outputIface)
 import           Graphics.Vty.Output.Interface (ringTerminalBell)
 import           Lens.Micro.Platform
@@ -152,10 +151,6 @@ import           Config
 import           FilePaths
 import           TimeUtils (justBefore, justAfter)
 import           Types
-import           Types.Channels
-import           Types.Posts
-import           Types.Messages
-import           Types.Users
 import           InputHistory
 import           Themes
 import           Zipper (Zipper)
@@ -201,7 +196,7 @@ refreshChannelById cId = do
       member <- MM.mmGetChannelMember cId UserMe session
       return $ refreshChannel cwd member
 
-createGroupChannel :: T.Text -> MH ()
+createGroupChannel :: Text -> MH ()
 createGroupChannel usernameList = do
     st <- use id
     me <- gets myUser
@@ -276,7 +271,7 @@ refreshChannelsAndUsers = do
                      <$> Concurrently (MM.mmGetChannelsForUser UserMe myTId session)
                      <*> Concurrently (MM.mmGetChannelMembersForUser UserMe myTId session)
 
-    let dataMap = HM.fromList $ F.toList $ (\d -> (channelMemberChannelId d, d)) <$> datas
+    let dataMap = HM.fromList $ toList $ (\d -> (channelMemberChannelId d, d)) <$> datas
         mkPair chan = (chan, fromJust $ HM.lookup (channelId chan) dataMap)
         chansWithData = mkPair <$> chans
 
@@ -517,7 +512,7 @@ copyVerbatimToClipboard = do
 
 -- * Joining, Leaving, and Inviting
 
-joinChannelByName :: T.Text -> MH ()
+joinChannelByName :: Text -> MH ()
 joinChannelByName rawName = do
     session <- getSession
     tId <- gets myTeamId
@@ -544,7 +539,7 @@ startJoinChannel = do
                 then return chans
                 else loop chans (start+1)
         chans <- Seq.filter (\ c -> not (channelId c `elem` myChannels)) <$> loop mempty 0
-        let sortedChans = V.fromList $ F.toList $ Seq.sortBy (compare `on` channelName) chans
+        let sortedChans = V.fromList $ toList $ Seq.sortBy (compare `on` channelName) chans
         return $ do
             csJoinChannelList .= (Just $ list JoinChannelList sortedChans 2)
 
@@ -568,7 +563,7 @@ handleChannelInvite cId = do
         tryMM (MM.mmGetChannel cId session)
               (\cwd -> return $ handleNewChannel False cwd member)
 
-addUserToCurrentChannel :: T.Text -> MH ()
+addUserToCurrentChannel :: Text -> MH ()
 addUserToCurrentChannel uname = do
     -- First: is this a valid username?
     result <- gets (userByUsername uname)
@@ -583,7 +578,7 @@ addUserToCurrentChannel uname = do
         _ -> do
             mhError ("No such user: " <> uname)
 
-removeUserFromCurrentChannel :: T.Text -> MH ()
+removeUserFromCurrentChannel :: Text -> MH ()
 removeUserFromCurrentChannel uname = do
     -- First: is this a valid username?
     result <- gets (userByUsername uname)
@@ -633,7 +628,7 @@ leaveChannelIfPossible cId delete = do
                            , MM.userQueryPerPage = Just 2
                            , MM.userQueryInChannel = Just cId
                            }
-                      in F.toList <$> MM.mmGetUsers query s)
+                      in toList <$> MM.mmGetUsers query s)
                     (\_ members -> do
                         -- If the channel is private:
                         -- * leave it if we aren't the last member.
@@ -875,7 +870,7 @@ listThemes = do
                     (("  " <>) <$> internalThemeName <$> internalThemes)
     postInfoMessage themeList
 
-setTheme :: T.Text -> MH ()
+setTheme :: Text -> MH ()
 setTheme name =
     case lookupTheme name of
         Nothing -> listThemes
@@ -962,7 +957,7 @@ addObtainedMessages cId reqCnt posts = do
     -- new block may be discontiguous with the local blocks, in which
     -- case the new block should be surrounded by UnknownGaps.
     withChannelOrDefault cId NoAction $ \chan -> do
-        let pIdList = F.toList (posts^.postsOrderL)
+        let pIdList = toList (posts^.postsOrderL)
             -- the first and list PostId in the batch to be added
             earliestPId = last pIdList
             latestPId = head pIdList
@@ -1026,7 +1021,7 @@ addObtainedMessages cId reqCnt posts = do
         action <- foldr andProcessWith NoAction <$>
           mapM (addMessageToState . OldPost)
                    [ (posts^.postsPostsL) HM.! p
-                   | p <- F.toList (posts^.postsOrderL)
+                   | p <- toList (posts^.postsOrderL)
                    , not (p `elem` dupPIds)
                    ]
 
@@ -1059,7 +1054,7 @@ addObtainedMessages cId reqCnt posts = do
                 let unknownUsers = Set.difference inputUserIds knownUserIds
                 if Set.null unknownUsers
                    then return ()
-                   else handleNewUsers $ Seq.fromList $ F.toList unknownUsers
+                   else handleNewUsers $ Seq.fromList $ toList unknownUsers
 
         addUnknownUsers users
 
@@ -1073,7 +1068,7 @@ loadMoreMessages = whenMode ChannelScroll asyncFetchMoreMessages
 
 -- | This switches to the named channel or creates it if it is a missing
 -- but valid user channel.
-changeChannel :: T.Text -> MH ()
+changeChannel :: Text -> MH ()
 changeChannel name = do
     result <- gets (channelIdByName name)
     case result of
@@ -1098,7 +1093,7 @@ setFocusWith f = do
         updateViewed
         postChangeChannelCommon
 
-attemptCreateDMChannel :: T.Text -> MH ()
+attemptCreateDMChannel :: Text -> MH ()
 attemptCreateDMChannel name = do
   mCid <- gets (channelIdByName name)
   me <- gets myUser
@@ -1131,7 +1126,7 @@ attemptCreateDMChannel name = do
       else
         mhError ("No channel or user named " <> name)
 
-createOrdinaryChannel :: T.Text -> MH ()
+createOrdinaryChannel :: Text -> MH ()
 createOrdinaryChannel name  = do
   session <- getSession
   myTId <- gets myTeamId
@@ -1489,7 +1484,7 @@ fetchVisibleIfNeeded = do
 
     _ -> return ()
 
-setChannelTopic :: T.Text -> MH ()
+setChannelTopic :: Text -> MH ()
 setChannelTopic msg = do
     cId <- use csCurrentChannelId
     let patch = defaultChannelPatch { channelPatchHeader = Just msg }
@@ -1631,7 +1626,7 @@ updateChannelSelectMatches = do
                                   else head allMatches
         in newMatch
 
-channelNameMatch :: T.Text -> T.Text -> Maybe ChannelSelectMatch
+channelNameMatch :: Text -> Text -> Maybe ChannelSelectMatch
 channelNameMatch patStr chanName =
     if T.null patStr
     then Nothing
@@ -1639,7 +1634,7 @@ channelNameMatch patStr chanName =
         pat <- parseChannelSelectPattern patStr
         applySelectPattern pat chanName
 
-applySelectPattern :: ChannelSelectPattern -> T.Text -> Maybe ChannelSelectMatch
+applySelectPattern :: ChannelSelectPattern -> Text -> Maybe ChannelSelectMatch
 applySelectPattern (CSP ty pat) chanName = do
     let applyType Infix  | pat `T.isInfixOf`  chanName =
             case T.breakOn pat chanName of
@@ -1661,7 +1656,7 @@ applySelectPattern (CSP ty pat) chanName = do
     (pre, m, post) <- applyType ty
     return $ ChannelSelectMatch pre m post
 
-parseChannelSelectPattern :: T.Text -> Maybe ChannelSelectPattern
+parseChannelSelectPattern :: Text -> Maybe ChannelSelectPattern
 parseChannelSelectPattern pat = do
     (pat1, pfx) <- case "^" `T.isPrefixOf` pat of
         True  -> return (T.tail pat, Just Prefix)
@@ -1690,7 +1685,7 @@ stopUrlSelect = setMode Main
 findUrls :: ClientChannel -> [LinkChoice]
 findUrls chan =
     let msgs = chan^.ccContents.cdMessages
-    in removeDuplicates $ concat $ F.toList $ F.toList <$> msgURLs <$> msgs
+    in removeDuplicates $ concat $ toList $ toList <$> msgURLs <$> msgs
 
 -- XXX: move this somewhere more sensible!
 
@@ -1718,7 +1713,7 @@ msgURLs msg
   | otherwise =
   let uid = msg^.mUser
       msgUrls = (\ (url, text) -> LinkChoice (msg^.mDate) uid text url Nothing) <$>
-                  (mconcat $ blockGetURLs <$> (F.toList $ msg^.mText))
+                  (mconcat $ blockGetURLs <$> (toList $ msg^.mText))
       attachmentURLs = (\ a ->
                           LinkChoice
                             (msg^.mDate)
@@ -1883,11 +1878,11 @@ openSelectedMessageURLs = whenMode MessageSelect $ do
             False ->
                 mhError "Config option 'urlOpenCommand' missing; cannot open URL."
 
-shouldSkipMessage :: T.Text -> Bool
+shouldSkipMessage :: Text -> Bool
 shouldSkipMessage "" = True
 shouldSkipMessage s = T.all (`elem` (" \t"::String)) s
 
-sendMessage :: EditMode -> T.Text -> MH ()
+sendMessage :: EditMode -> Text -> MH ()
 sendMessage mode msg =
     case shouldSkipMessage msg of
         True -> return ()
@@ -1922,7 +1917,7 @@ handleNewUsers newUserIds = doAsyncMM Preempt getUserInfo addNewUsers
     where getUserInfo session _ =
               do nUsers  <- MM.mmGetUsersByIds newUserIds session
                  let usrInfo u = userInfoFromUser u True
-                     usrList = F.toList nUsers
+                     usrList = toList nUsers
                  return $ usrInfo <$> usrList
 
           addNewUsers :: [UserInfo] -> MH ()

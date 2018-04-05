@@ -3,7 +3,6 @@ module Draw.Messages where
 import           Brick
 import           Brick.Widgets.Border
 import           Control.Monad.Trans.Reader (withReaderT)
-import qualified Data.Foldable as F
 import qualified Data.Map.Strict as Map
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
@@ -17,8 +16,6 @@ import           Draw.Util
 import           Markdown
 import           Themes
 import           Types
-import           Types.Posts
-import           Types.Messages
 
 maxMessageHeight :: Int
 maxMessageHeight = 200
@@ -26,7 +23,7 @@ maxMessageHeight = 200
 
 -- | nameForUserRef converts the UserRef into a printable name, based
 -- on the current known user data.
-nameForUserRef :: ChatState -> UserRef -> Maybe T.Text
+nameForUserRef :: ChatState -> UserRef -> Maybe Text
 nameForUserRef st uref = case uref of
                            NoUser -> Nothing
                            UserOverride t -> Just t
@@ -62,7 +59,7 @@ renderChatMessage st hs ind renderTimeFunc msg =
           then Nothing
           else Just $ withDefAttr clientMessageAttr $ vBox
                  [ txt ("  [attached: `" <> a^.attachmentName <> "`]")
-                 | a <- F.toList (msg^.mAttachments)
+                 | a <- toList (msg^.mAttachments)
                  ]
         msgReac = if Map.null (msg^.mReactions)
           then Nothing

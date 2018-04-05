@@ -36,7 +36,7 @@ data State =
 
 makeLenses ''State
 
-validHostname :: [T.Text] -> Maybe T.Text
+validHostname :: [Text] -> Maybe Text
 validHostname ls =
     let s = T.unpack t
         t = T.concat ls
@@ -74,7 +74,7 @@ app = App
   , appAttrMap      = const colorTheme
   }
 
-editHostname :: (Show n, Ord n) => Lens' s T.Text -> n -> s -> FormFieldState s e n
+editHostname :: (Show n, Ord n) => Lens' s Text -> n -> s -> FormFieldState s e n
 editHostname stLens n =
     let ini = id
         val = validHostname
@@ -122,7 +122,7 @@ errorMessageDisplay st = do
             padTop (Pad 1) $ renderError $ renderText $
             "Error: " <> renderAuthError e
 
-renderAuthError :: AuthenticationException -> T.Text
+renderAuthError :: AuthenticationException -> Text
 renderAuthError (ConnectError _) =
     "Could not connect to server"
 renderAuthError (ResolveError _) =

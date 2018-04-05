@@ -174,11 +174,11 @@ messageSelectStatusAttr :: AttrName
 messageSelectStatusAttr = "messageSelectStatus"
 
 data InternalTheme =
-    InternalTheme { internalThemeName :: T.Text
+    InternalTheme { internalThemeName :: Text
                   , internalTheme     :: Theme
                   }
 
-lookupTheme :: T.Text -> Maybe InternalTheme
+lookupTheme :: Text -> Maybe InternalTheme
 lookupTheme n = find ((== n) . internalThemeName) internalThemes
 
 internalThemes :: [InternalTheme]
@@ -309,7 +309,7 @@ darkColorTheme = InternalTheme name theme
 usernameAttr :: Int -> AttrName
 usernameAttr i = "username" <> (attrName $ show i)
 
-colorUsername :: T.Text -> T.Text -> Widget a
+colorUsername :: Text -> Text -> Widget a
 colorUsername username display =
   withDefAttr (usernameAttr h) $ txt (display)
     where h = hash username `mod` length usernameColors
@@ -332,7 +332,7 @@ usernameColors =
 
 -- Functions for dealing with Skylighting styles
 
-attrNameDescription :: ThemeDocumentation -> AttrName -> Maybe T.Text
+attrNameDescription :: ThemeDocumentation -> AttrName -> Maybe Text
 attrNameDescription td an = M.lookup an (themeDescriptions td)
 
 themeDocs :: ThemeDocumentation

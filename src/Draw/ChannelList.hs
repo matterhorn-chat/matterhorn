@@ -29,11 +29,10 @@ import           Lens.Micro.Platform
 import           State
 import           Themes
 import           Types
-import           Types.Users
 import           Prelude ()
 import           Prelude.MH
 
-type GroupName = T.Text
+type GroupName = Text
 
 -- | Specify the different groups of channels to be displayed
 -- vertically in the ChannelList sidebar.  This list provides the
@@ -113,7 +112,7 @@ renderChannelList st =
                     Nothing -> s
 
         render $ maybeViewport $ vBox $ vBox <$>
-                 F.toList <$> (F.toList $ renderedGroups <$> channelListGroups)
+                 toList <$> (toList $ renderedGroups <$> channelListGroups)
 
 -- | Renders a specific group, given the name of the group and the
 -- list of entries in that group (which are expected to be either
@@ -128,8 +127,8 @@ renderChannelGroup eRender (groupName, entries) =
 -- attributes.  This is the object passed to the rendering function so
 -- that it can determine how to render each channel.
 data ChannelListEntry =
-    ChannelListEntry { entrySigil       :: T.Text
-                     , entryLabel       :: T.Text
+    ChannelListEntry { entrySigil       :: Text
+                     , entryLabel       :: Text
                      , entryHasUnread   :: Bool
                      , entryMentions    :: Int
                      , entryIsRecent    :: Bool
@@ -170,7 +169,7 @@ renderChannelListEntry entry =
 -- | Render an individual entry when in Channel Select mode,
 -- highlighting the matching portion, or completely suppressing the
 -- entry if it doesn't match.
-renderChannelSelectListEntry :: T.Text -> SelectedChannelListEntry -> Widget Name
+renderChannelSelectListEntry :: Text -> SelectedChannelListEntry -> Widget Name
 renderChannelSelectListEntry selMatch (SCLE entry match) =
     let ChannelSelectMatch preMatch inMatch postMatch = match
         fullName = channelNameFromMatch match

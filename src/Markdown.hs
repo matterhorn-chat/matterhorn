@@ -30,7 +30,6 @@ import           Cheapskate.Types ( Block
                                   , ListType
                                   )
 import qualified Cheapskate as C
-import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Foldable as F
 import           Data.Monoid (First(..))
@@ -103,9 +102,9 @@ data MessageData = MessageData
   { mdEditThreshold     :: Maybe ServerTime
   , mdShowOlderEdits    :: Bool
   , mdMessage           :: Message
-  , mdUserName          :: Maybe T.Text
+  , mdUserName          :: Maybe Text
   , mdParentMessage     :: Maybe Message
-  , mdParentUserName    :: Maybe T.Text
+  , mdParentUserName    :: Maybe Text
   , mdRenderReplyParent :: Bool
   , mdHighlightSet      :: HighlightSet
   , mdIndentBlocks      :: Bool
@@ -222,7 +221,7 @@ cursorSentinel = '‸'
 -- Render markdown with username highlighting
 renderMarkdown :: HighlightSet -> Blocks -> Widget a
 renderMarkdown hSet =
-  B.vBox . F.toList . fmap (blockToWidget hSet) . addBlankLines
+  B.vBox . toList . fmap (blockToWidget hSet) . addBlankLines
 
 -- Add blank lines only between adjacent elements of the same type, to
 -- save space
@@ -255,10 +254,10 @@ renderText' hSet txt = renderMarkdown hSet bs
   where C.Doc _ bs = C.markdown C.def txt
 
 vBox :: F.Foldable f => f (Widget a) -> Widget a
-vBox = B.vBox . F.toList
+vBox = B.vBox . toList
 
 hBox :: F.Foldable f => f (Widget a) -> Widget a
-hBox = B.hBox . F.toList
+hBox = B.hBox . toList
 
 --
 
@@ -275,7 +274,7 @@ blockToWidget hSet (C.Header n is) =
       hBox [header n, B.txt " ", toInlineChunk is hSet]
 blockToWidget hSet (C.Blockquote is) =
     addQuoting (vBox $ fmap (blockToWidget hSet) is)
-blockToWidget hSet (C.List _ l bs) = toList l bs hSet
+blockToWidget hSet (C.List _ l bs) = blocksToList l bs hSet
 blockToWidget _ (C.CodeBlock ci tx) =
       let f = maybe rawCodeBlockToWidget codeBlockToWidget mSyntax
           mSyntax = Sky.lookupSyntax (C.codeLang ci) Sky.defaultSyntaxMap
@@ -299,7 +298,7 @@ addQuoting w =
                           , B.Widget B.Fixed B.Fixed $ return childResult
                           ]
 
-codeBlockToWidget :: Sky.Syntax -> T.Text -> Widget a
+codeBlockToWidget :: Sky.Syntax -> Text -> Widget a
 codeBlockToWidget syntax tx =
     let result = Sky.tokenize cfg syntax tx
         cfg = Sky.TokenizerConfig Sky.defaultSyntaxMap False
@@ -310,7 +309,7 @@ codeBlockToWidget syntax tx =
             in (B.txt $ "[" <> Sky.sName syntax <> "]") B.<=>
                (padding <+> BS.renderRawSource textWithCursor tokLines)
 
-rawCodeBlockToWidget :: T.Text -> Widget a
+rawCodeBlockToWidget :: Text -> Widget a
 rawCodeBlockToWidget tx =
     B.withDefAttr codeAttr $
         let padding = B.padLeftRight 1 (B.vLimit (length theLines) B.vBorder)
@@ -327,8 +326,8 @@ toInlineChunk is hSet = B.Widget B.Fixed B.Fixed $ do
       ws    = fmap gatherWidgets (split width hSet fs)
   B.render (vBox (fmap hBox ws))
 
-toList :: ListType -> [Blocks] -> HighlightSet -> Widget a
-toList lt bs hSet = vBox
+blocksToList :: ListType -> [Blocks] -> HighlightSet -> Widget a
+blocksToList lt bs hSet = vBox
   [ B.txt i <+> (vBox (fmap (blockToWidget hSet) b))
   | b <- bs | i <- is ]
   where is = case lt of
@@ -389,7 +388,7 @@ toFragments = go Normal
           C.LineBreak :< xs ->
             Fragment TLineBreak n <| go n xs
           C.Link label url _ :< xs ->
-            case F.toList label of
+            case toList label of
               [C.Str s] | s == url -> Fragment (TLink url) (Link url) <| go n xs
               _                    -> go (Link url) label <> go n xs
           C.RawHtml t :< xs ->
@@ -460,7 +459,7 @@ separate hSet sq = case viewl sq of
                       Fragment (TStr s) Channel
                   | otherwise -> Fragment (TStr s) n
 
-removeCursor :: T.Text -> T.Text
+removeCursor :: Text -> Text
 removeCursor = T.filter (/= cursorSentinel)
 
 split :: Int -> HighlightSet -> Seq Fragment -> Seq (Seq Fragment)
@@ -540,13 +539,13 @@ gatherWidgets (viewl-> (Fragment frag style :< rs)) = go style (strOf frag) rs
 gatherWidgets _ =
   S.empty
 
-textWithCursor :: T.Text -> Widget a
+textWithCursor :: Text -> Widget a
 textWithCursor t
     | T.any (== cursorSentinel) t = B.visible $ B.txt $ removeCursor t
     | otherwise = B.txt t
 
-inlinesToText :: Seq C.Inline -> T.Text
-inlinesToText = F.fold . fmap go
+inlinesText :: Seq C.Inline -> Text
+inlinesText = F.fold . fmap go
   where go (C.Str t)       = t
         go C.Space         = " "
         go C.SoftBreak     = " "
@@ -559,23 +558,23 @@ inlinesToText = F.fold . fmap go
         go (C.Entity t)    = t
         go (C.RawHtml t)   = t
 
-altInlinesString :: S.Seq C.Inline -> T.Text
+altInlinesString :: S.Seq C.Inline -> Text
 altInlinesString is | S.null is = ""
-                    | otherwise = ":" <> inlinesToText is
+                    | otherwise = ":" <> inlinesText is
 
-blockGetURLs :: C.Block -> S.Seq (T.Text, T.Text)
-blockGetURLs (C.Para is) = mconcat $ inlineGetURLs <$> F.toList is
-blockGetURLs (C.Header _ is) = mconcat $ inlineGetURLs <$> F.toList is
-blockGetURLs (C.Blockquote bs) = mconcat $ blockGetURLs <$> F.toList bs
-blockGetURLs (C.List _ _ bss) = mconcat $ mconcat $ (blockGetURLs <$>) <$> (F.toList <$> bss)
+blockGetURLs :: C.Block -> S.Seq (Text, Text)
+blockGetURLs (C.Para is) = mconcat $ inlineGetURLs <$> toList is
+blockGetURLs (C.Header _ is) = mconcat $ inlineGetURLs <$> toList is
+blockGetURLs (C.Blockquote bs) = mconcat $ blockGetURLs <$> toList bs
+blockGetURLs (C.List _ _ bss) = mconcat $ mconcat $ (blockGetURLs <$>) <$> (toList <$> bss)
 blockGetURLs _ = mempty
 
-inlineGetURLs :: C.Inline -> S.Seq (T.Text, T.Text)
-inlineGetURLs (C.Emph is) = mconcat $ inlineGetURLs <$> F.toList is
-inlineGetURLs (C.Strong is) = mconcat $ inlineGetURLs <$> F.toList is
-inlineGetURLs (C.Link is url "") = (url, inlinesToText is) S.<| (mconcat $ inlineGetURLs <$> F.toList is)
-inlineGetURLs (C.Link is _ url) = (url, inlinesToText is) S.<| (mconcat $ inlineGetURLs <$> F.toList is)
-inlineGetURLs (C.Image is url _) = S.singleton (url, inlinesToText is)
+inlineGetURLs :: C.Inline -> S.Seq (Text, Text)
+inlineGetURLs (C.Emph is) = mconcat $ inlineGetURLs <$> toList is
+inlineGetURLs (C.Strong is) = mconcat $ inlineGetURLs <$> toList is
+inlineGetURLs (C.Link is url "") = (url, inlinesText is) S.<| (mconcat $ inlineGetURLs <$> toList is)
+inlineGetURLs (C.Link is _ url) = (url, inlinesText is) S.<| (mconcat $ inlineGetURLs <$> toList is)
+inlineGetURLs (C.Image is url _) = S.singleton (url, inlinesText is)
 inlineGetURLs _ = mempty
 
 replyArrow :: Widget a
@@ -585,7 +584,7 @@ replyArrow =
          , B.str "▸"
          ]
 
-findVerbatimChunk :: C.Blocks -> Maybe T.Text
+findVerbatimChunk :: C.Blocks -> Maybe Text
 findVerbatimChunk = getFirst . F.foldMap go
   where go (C.CodeBlock _ t) = First (Just t)
         go _                 = First Nothing

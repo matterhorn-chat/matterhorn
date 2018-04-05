@@ -25,13 +25,13 @@ import qualified Zipper as Z
 -- replace the user's input. The two are decoupled specifically to deal
 -- with permitting nickname completions to "resolve" to usernames.
 data Completer =
-    Completer { completionAlternatives :: Z.Zipper (T.Text, T.Text)
+    Completer { completionAlternatives :: Z.Zipper (Text, Text)
               }
 
 -- Nothing: no completions.
 -- Just Left: a single completion.
 -- Just Right: more than one completion.
-wordComplete :: Set.Set (T.Text, T.Text) -> T.Text -> Maybe (Either T.Text Completer)
+wordComplete :: Set.Set (Text, Text) -> Text -> Maybe (Either Text Completer)
 wordComplete options input =
     let curWord = currentWord input
         alts = sort $ Set.toList $ Set.filter ((curWord `T.isPrefixOf`) . fst) options
@@ -42,7 +42,7 @@ wordComplete options input =
             else Just $ Right $ Completer { completionAlternatives = Z.fromList alts
                                           }
 
-currentAlternative :: Completer -> (T.Text, T.Text)
+currentAlternative :: Completer -> (Text, Text)
 currentAlternative = Z.focus . completionAlternatives
 
 nextCompletion :: Completer -> Completer
@@ -53,7 +53,7 @@ previousCompletion (Completer z) = Completer $ Z.left z
 
 -- | trim whitespace and do any other edits we need
 -- to focus on the current word
-currentWord :: T.Text -> T.Text
+currentWord :: Text -> Text
 currentWord line
   = T.reverse
   $ T.takeWhile (not . isSpace)

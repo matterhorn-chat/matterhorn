@@ -20,9 +20,6 @@ import           Network.Mattermost.Lenses
 import           Network.Mattermost.Exceptions
 
 import           Types
-import           Types.Channels
-import           Types.Posts
-import           Types.Messages
 
 -- * Mattermost API
 
@@ -229,20 +226,20 @@ addClientMessage msg = do
 
 -- | Add a new 'ClientMessage' representing an error message to
 --   the current channel's message list
-postInfoMessage :: T.Text -> MH ()
+postInfoMessage :: Text -> MH ()
 postInfoMessage err = addClientMessage =<< newClientMessage Informative err
 
 -- | Add a new 'ClientMessage' representing an error message to
 --   the current channel's message list
-postErrorMessage' :: T.Text -> MH ()
+postErrorMessage' :: Text -> MH ()
 postErrorMessage' err = addClientMessage =<< newClientMessage Error err
 
 -- | Raise a rich error
-mhError :: T.Text -> MH ()
+mhError :: Text -> MH ()
 mhError err = do
   raiseInternalEvent (DisplayError err)
 
-postErrorMessageIO :: T.Text -> ChatState -> IO ChatState
+postErrorMessageIO :: Text -> ChatState -> IO ChatState
 postErrorMessageIO err st = do
   msg <- newClientMessage Error err
   let cId = st ^. csCurrentChannelId
@@ -256,7 +253,7 @@ asyncFetchReactionsForPost :: ChannelId -> Post -> MH ()
 asyncFetchReactionsForPost cId p
   | not (p^.postHasReactionsL) = return ()
   | otherwise = doAsyncChannelMM Normal cId
-        (\s _ _ -> fmap F.toList (mmGetReactionsForPost (p^.postIdL) s))
+        (\s _ _ -> fmap toList (mmGetReactionsForPost (p^.postIdL) s))
         addReactions
 
 addReactions :: ChannelId -> [Reaction] -> MH ()
@@ -273,7 +270,7 @@ removeReaction r cId = csChannel(cId).ccContents.cdMessages %= fmap upd
                   m & mReactions %~ (Map.insertWith (+) (r^.reactionEmojiNameL) (-1))
               | otherwise = m
 
-copyToClipboard :: T.Text -> MH ()
+copyToClipboard :: Text -> MH ()
 copyToClipboard txt = do
   result <- liftIO (try (setClipboard (T.unpack txt)))
   case result of

@@ -76,7 +76,6 @@ where
 import           Cheapskate (Blocks)
 import qualified Data.Map.Strict as Map
 import           Data.Sequence as Seq
-import qualified Data.Text as T
 import           Data.Tuple
 import           Lens.Micro.Platform
 import           Network.Mattermost.Types (ChannelId, PostId, Post, ServerTime, UserId)
@@ -100,7 +99,7 @@ data Message = Message
   , _mAttachments   :: Seq.Seq Attachment
   , _mInReplyToMsg  :: ReplyState
   , _mPostId        :: Maybe PostId
-  , _mReactions     :: Map.Map T.Text Int
+  , _mReactions     :: Map.Map Text Int
   , _mOriginalPost  :: Maybe Post
   , _mFlagged       :: Bool
   , _mChannelId     :: Maybe ChannelId
@@ -135,7 +134,7 @@ data MessageType = C ClientMessageType
 -- | There may be no user (usually an internal message), a reference
 -- to a user (by Id), or the server may have supplied a specific
 -- username (often associated with bots).
-data UserRef = NoUser | UserI UserId | UserOverride T.Text
+data UserRef = NoUser | UserI UserId | UserOverride Text
                deriving (Eq, Show, Ord)
 
 -- | The 'ReplyState' of a message represents whether a message
@@ -166,7 +165,7 @@ clientMessageToMessage cm = Message
   , _mChannelId     = Nothing
   }
 
-newMessageOfType :: T.Text -> MessageType -> ServerTime -> Message
+newMessageOfType :: Text -> MessageType -> ServerTime -> Message
 newMessageOfType text typ d = Message
   { _mText         = getBlocks text
   , _mUser         = NoUser

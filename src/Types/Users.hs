@@ -46,14 +46,14 @@ import           Prelude.MH
 -- | A 'UserInfo' value represents everything we need to know at
 --   runtime about a user
 data UserInfo = UserInfo
-  { _uiName      :: T.Text
+  { _uiName      :: Text
   , _uiId        :: UserId
   , _uiStatus    :: UserStatus
   , _uiInTeam    :: Bool
-  , _uiNickName  :: Maybe T.Text
-  , _uiFirstName :: T.Text
-  , _uiLastName  :: T.Text
-  , _uiEmail     :: T.Text
+  , _uiNickName  :: Maybe Text
+  , _uiFirstName :: Text
+  , _uiLastName  :: Text
+  , _uiEmail     :: Text
   , _uiDeleted   :: Bool
   } deriving (Eq, Show)
 
@@ -84,10 +84,10 @@ data UserStatus
   | Away
   | Offline
   | DoNotDisturb
-  | Other T.Text
+  | Other Text
     deriving (Eq, Show)
 
-statusFromText :: T.Text -> UserStatus
+statusFromText :: Text -> UserStatus
 statusFromText t = case t of
   "online"  -> Online
   "offline" -> Offline
@@ -155,7 +155,7 @@ findUserById uId = HM.lookup uId . _ofUsers
 
 -- | Get the User information given the user's name.  This is an exact
 -- match on the username field, not necessarly the presented name.
-findUserByName :: Users -> T.Text -> Maybe (UserId, UserInfo)
+findUserByName :: Users -> Text -> Maybe (UserId, UserInfo)
 findUserByName allusers name =
   case filter ((== name) . _uiName . snd) $ HM.toList $ _ofUsers allusers of
     (usr : []) -> Just usr
@@ -163,7 +163,7 @@ findUserByName allusers name =
 
 -- | Get the User information given the user's name.  This is an exact
 -- match on the nickname field, not necessarily the presented name.
-findUserByNickname :: [UserInfo] -> T.Text -> Maybe UserInfo
+findUserByNickname :: [UserInfo] -> Text -> Maybe UserInfo
 findUserByNickname uList nick =
   find (nickCheck nick) uList
     where
@@ -174,7 +174,7 @@ findUserByNickname uList nick =
 modifyUserById :: UserId -> (UserInfo -> UserInfo) -> Users -> Users
 modifyUserById uId f = ofUsers.ix(uId) %~ f
 
-getDMChannelName :: UserId -> UserId -> T.Text
+getDMChannelName :: UserId -> UserId -> Text
 getDMChannelName me you = cname
   where
   [loUser, hiUser] = sort $ idString <$> [ you, me ]
@@ -185,7 +185,7 @@ getDMChannelName me you = cname
 -- is but neither user ID in the name matches the current user's ID.
 userIdForDMChannel :: UserId
                    -- ^ My user ID
-                   -> T.Text
+                   -> Text
                    -- ^ The channel name
                    -> Maybe UserId
 userIdForDMChannel me chanName =
@@ -199,7 +199,7 @@ userIdForDMChannel me chanName =
         _ -> Nothing
 
 findUserByDMChannelName :: Users
-                        -> T.Text -- ^ the dm channel name
+                        -> Text -- ^ the dm channel name
                         -> UserId -- ^ me
                         -> Maybe UserInfo -- ^ you
 findUserByDMChannelName users dmchan me = listToMaybe

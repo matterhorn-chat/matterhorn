@@ -31,7 +31,6 @@ import qualified Brick.Widgets.List as L
 import qualified Brick.Widgets.Edit as E
 
 import Types
-import Types.Users
 import State.Common
 import State (changeChannel, addUserToCurrentChannel)
 
@@ -127,7 +126,7 @@ resetUserListSearch = do
               afterSearchString <- userListSearchString
               when (searchString /= afterSearchString) resetUserListSearch
 
-userInfoFromPair :: User -> T.Text -> UserInfo
+userInfoFromPair :: User -> Text -> UserInfo
 userInfoFromPair u status =
     userInfoFromUser u True & uiStatus .~ statusFromText status
 
@@ -233,7 +232,7 @@ userListPageSize = 10
 
 -- | Perform an initial request for search results in the specified
 -- scope.
-fetchInitialResults :: TeamId -> UserSearchScope -> Session -> T.Text -> IO (Vec.Vector UserInfo)
+fetchInitialResults :: TeamId -> UserSearchScope -> Session -> Text -> IO (Vec.Vector UserInfo)
 fetchInitialResults = getUserSearchResultsPage 0
 
 searchResultsChunkSize :: Int
@@ -247,7 +246,7 @@ getUserSearchResultsPage :: Int
                          -- ^ The scope to search
                          -> Session
                          -- ^ The connection session
-                         -> T.Text
+                         -> Text
                          -- ^ The search string
                          -> IO (Vec.Vector UserInfo)
 getUserSearchResultsPage _pageNum myTId scope s searchString = do
@@ -281,14 +280,14 @@ getUserSearchResultsPage _pageNum myTId scope s searchString = do
                            }
     users <- MM.mmSearchUsers query s
 
-    let uList = F.toList users
+    let uList = toList users
         uIds = userId <$> uList
 
     -- Now fetch status info for the users we got.
     case null uList of
         False -> do
             statuses <- MM.mmGetUserStatusByIds (Seq.fromList uIds) s
-            let statusMap = HM.fromList [ (statusUserId e, statusStatus e) | e <- F.toList statuses ]
+            let statusMap = HM.fromList [ (statusUserId e, statusStatus e) | e <- toList statuses ]
                 usersWithStatus = [ userInfoFromPair u (fromMaybe "" $ HM.lookup (userId u) statusMap)
                                   | u <- uList
                                   ]
@@ -296,6 +295,6 @@ getUserSearchResultsPage _pageNum myTId scope s searchString = do
             return $ Vec.fromList usersWithStatus
         True -> return mempty
 
-userListSearchString :: MH T.Text
+userListSearchString :: MH Text
 userListSearchString =
     (head . E.getEditContents) <$> use (csUserListOverlay.userListSearchInput)

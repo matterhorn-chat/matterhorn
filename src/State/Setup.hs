@@ -12,7 +12,6 @@ import           Brick.Themes (themeToAttrMap, loadCustomizations)
 import qualified Control.Concurrent.STM as STM
 import           Control.Concurrent.MVar (newMVar)
 import           Control.Exception (catch)
-import qualified Data.Foldable as F
 import           Data.Maybe (fromJust)
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
@@ -36,7 +35,6 @@ import           Themes
 import           TimeUtils (lookupLocalTimeZone)
 import           State.Setup.Threads
 import           Types
-import           Types.Channels
 import qualified Zipper as Z
 
 incompleteCredentials :: Config -> ConnectionInfo
@@ -112,12 +110,12 @@ setupState logFile initialConfig = do
 
   myTeam <- case configTeam config of
       Nothing -> do
-          interactiveTeamSelection $ F.toList teams
+          interactiveTeamSelection $ toList teams
       Just tName -> do
-          let matchingTeam = listToMaybe $ filter matches $ F.toList teams
+          let matchingTeam = listToMaybe $ filter matches $ toList teams
               matches t = teamName t == tName
           case matchingTeam of
-              Nothing -> interactiveTeamSelection (F.toList teams)
+              Nothing -> interactiveTeamSelection (toList teams)
               Just t -> return t
 
   userStatusLock <- newMVar ()
@@ -195,7 +193,7 @@ initializeState cr myTeam me = do
 
   -- Since the only channel we are dealing with is by construction the
   -- last channel, we don't have to consider other cases here:
-  msgs <- forM (F.toList chans) $ \c -> do
+  msgs <- forM (toList chans) $ \c -> do
       cChannel <- makeClientChannel c
       return (getId c, cChannel)
 

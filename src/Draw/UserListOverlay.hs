@@ -20,7 +20,6 @@ import Brick.Widgets.Center
 
 import Themes
 import Types
-import Types.Users
 import Draw.Main
 import Draw.Util (userSigilFromInfo)
 

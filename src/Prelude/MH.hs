@@ -33,11 +33,14 @@ module Prelude.MH
 , Monad.foldM
 , Monad.MonadIO(..)
 -- commonly-used functions from List
+, Foldable.toList
 , List.find
 , List.sort
 , List.intercalate
 , Exts.sortWith
 , Exts.groupWith
+-- the Text type
+, Text.Text
 ) where
 
 
@@ -49,7 +52,9 @@ import           Prelude.Compat
 import           Control.Applicative ((<|>))
 import qualified Control.Monad as Monad
 import qualified Control.Monad.IO.Class as Monad
+import qualified Data.Foldable as Foldable
 import qualified Data.List as List
 import qualified Data.Maybe as Maybe
+import qualified Data.Text as Text
 import qualified GHC.Exts as Exts
 import qualified Text.Read as Read

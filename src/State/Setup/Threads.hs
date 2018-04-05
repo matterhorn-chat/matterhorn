@@ -38,8 +38,6 @@ import           State.Common
 import           State.Editing (requestSpellCheck)
 import           TimeUtils (lookupLocalTimeZone)
 import           Types
-import           Types.Users
-import           Types.Channels
 
 updateUserStatuses :: STM.TVar (Seq.Seq UserId) -> MVar () -> Session -> IO (MH ())
 updateUserStatuses usersVar lock session = do

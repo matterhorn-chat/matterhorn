@@ -307,7 +307,7 @@ themeHelp = overrideAttr codeAttr helpEmphAttr $ vBox
         in T.concat $ mkEntry <$> names
   ]
 
-attrNameToConfig :: AttrName -> T.Text
+attrNameToConfig :: AttrName -> Text
 attrNameToConfig = T.pack . intercalate "." . attrNameComponents
 
 withMargins :: (Int, Int) -> Widget a -> Widget a
@@ -318,7 +318,7 @@ withMargins (hMargin, vMargin) w =
             hl = ctx^.availHeightL - (2 * vMargin)
         render $ hLimit wl $ vLimit hl w
 
-keybindSections :: KeyConfig -> [(T.Text, [Keybinding])]
+keybindSections :: KeyConfig -> [(Text, [Keybinding])]
 keybindSections kc =
     [ ("This Help Page", helpKeybindings kc)
     , ("Main Interface", mainKeybindings kc)
@@ -346,7 +346,7 @@ kbColumnWidth = 12
 kbDescColumnWidth :: Int
 kbDescColumnWidth = 60
 
-mkKeybindingHelp :: (T.Text, [Keybinding]) -> Widget Name
+mkKeybindingHelp :: (Text, [Keybinding]) -> Widget Name
 mkKeybindingHelp (sectionName, kbs) =
     (hCenter $ padTop (Pad 1) $ withDefAttr helpEmphAttr $ txt $ "Keybindings: " <> sectionName) <=>
     (hCenter $ vBox $ mkKeybindHelp <$> (sortWith (ppBinding.eventToBinding.kbEvent) kbs))
@@ -357,7 +357,7 @@ mkKeybindHelp (KB desc ev _ _) =
     (vLimit 1 $ hLimit kbDescColumnWidth $ renderText desc <+> fill ' ')
 
 
-mkKeybindEventSectionHelp :: (T.Text, [Keybinding]) -> Widget Name
+mkKeybindEventSectionHelp :: (Text, [Keybinding]) -> Widget Name
 mkKeybindEventSectionHelp (sectionName, kbs) =
   let lst = sortWith (fmap keyEventName . kbBindingInfo . head) $ groupWith kbBindingInfo kbs
   in if all (all (isNothing . kbBindingInfo)) lst
@@ -376,5 +376,5 @@ mkKeybindEventHelp ks@(KB desc _ _ (Just e):_) =
      ]
 mkKeybindEventHelp _ = []
 
-padTo :: Int -> T.Text -> T.Text
+padTo :: Int -> Text -> Text
 padTo n s = s <> T.replicate (n - T.length s) " "

@@ -263,41 +263,41 @@ requestSpellCheck = do
 
                 tryMM query (return . postMistakes)
 
-editorEmpty :: Editor T.Text a -> Bool
+editorEmpty :: Editor Text a -> Bool
 editorEmpty e = cursorIsAtEnd e &&
                 cursorIsAtBeginning e
 
-cursorIsAtEnd :: Editor T.Text a -> Bool
+cursorIsAtEnd :: Editor Text a -> Bool
 cursorIsAtEnd e =
     let col = snd $ Z.cursorPosition z
         curLine = Z.currentLine z
         z = e^.editContentsL
     in col == T.length curLine
 
-cursorIsAtBeginning :: Editor T.Text a -> Bool
+cursorIsAtBeginning :: Editor Text a -> Bool
 cursorIsAtBeginning e =
     let col = snd $ Z.cursorPosition z
         z = e^.editContentsL
     in col == 0
 
-cursorAtOneOf :: [Char] -> Editor T.Text a -> Maybe Char
+cursorAtOneOf :: [Char] -> Editor Text a -> Maybe Char
 cursorAtOneOf [] _ = Nothing
 cursorAtOneOf (c:cs) e =
     if cursorAtChar c e
     then Just c
     else cursorAtOneOf cs e
 
-cursorAtChar :: Char -> Editor T.Text a -> Bool
+cursorAtChar :: Char -> Editor Text a -> Bool
 cursorAtChar ch e =
     let col = snd $ Z.cursorPosition z
         curLine = Z.currentLine z
         z = e^.editContentsL
     in (T.singleton ch) `T.isPrefixOf` T.drop col curLine
 
-gotoHome :: Z.TextZipper T.Text -> Z.TextZipper T.Text
+gotoHome :: Z.TextZipper Text -> Z.TextZipper Text
 gotoHome = Z.moveCursor (0, 0)
 
-gotoEnd :: Z.TextZipper T.Text -> Z.TextZipper T.Text
+gotoEnd :: Z.TextZipper Text -> Z.TextZipper Text
 gotoEnd z =
     let zLines = Z.getText z
         numLines = length zLines

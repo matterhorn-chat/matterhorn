@@ -76,7 +76,7 @@ fromIni = do
         Just binding -> return (Just (ev, binding))
   return conf { configUserKeys = fromMaybe mempty keys }
 
-backgroundField :: T.Text -> Either String BackgroundInfo
+backgroundField :: Text -> Either String BackgroundInfo
 backgroundField t =
   case t of
     "Disabled" -> Right Disabled
@@ -85,13 +85,13 @@ backgroundField t =
     _ -> Left ("Invalid value " <> show t
               <> "; must be one of: Disabled, Active, ActiveCount")
 
-stringField :: T.Text -> Either String T.Text
+stringField :: Text -> Either String Text
 stringField t =
     case isQuoted t of
         True -> Right $ parseQuotedString t
         False -> Right t
 
-parseQuotedString :: T.Text -> T.Text
+parseQuotedString :: Text -> Text
 parseQuotedString t =
     let body = T.drop 1 $ T.init t
         unescapeQuotes s | T.null s = s
@@ -99,7 +99,7 @@ parseQuotedString t =
                          | otherwise = (T.singleton $ T.head s) <> unescapeQuotes (T.drop 1 s)
     in unescapeQuotes body
 
-isQuoted :: T.Text -> Bool
+isQuoted :: Text -> Bool
 isQuoted t =
     let quote = "\""
     in (quote `T.isPrefixOf` t) &&

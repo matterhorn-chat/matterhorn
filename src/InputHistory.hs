@@ -19,7 +19,6 @@ import System.Directory (createDirectoryIfMissing)
 import System.FilePath (dropFileName)
 import qualified System.IO.Strict as S
 import qualified Data.Vector as V
-import           Data.Text ( Text )
 import qualified System.Posix.Files as P
 import qualified System.Posix.Types as P
 

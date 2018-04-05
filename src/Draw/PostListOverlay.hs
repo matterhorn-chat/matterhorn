@@ -6,7 +6,6 @@ import           Prelude ()
 import           Prelude.MH
 
 import           Control.Monad.Trans.Reader (withReaderT)
-import qualified Data.Foldable as F
 import qualified Data.Text as T
 import           Lens.Micro.Platform
 import           Network.Mattermost.Types
@@ -18,9 +17,6 @@ import Brick.Widgets.Center
 
 import Themes
 import Types
-import Types.Channels
-import Types.Messages
-import Types.Users
 import Draw.Main
 import Draw.Messages
 import Draw.Util
@@ -100,6 +96,6 @@ drawPostsBox contents st =
         renderedMessageList =
           let (s, (before, after)) = splitMessages (st^.csPostListOverlay.postListSelected) messages
           in case s of
-            Nothing -> map renderMessageForOverlay (reverse (F.toList messages))
+            Nothing -> map renderMessageForOverlay (reverse (toList messages))
             Just curMsg ->
               [unsafeRenderMessageSelection (curMsg, (after, before)) renderMessageForOverlay]

@@ -20,7 +20,6 @@ module Events.Keybindings
   ) where
 
 import qualified Data.Map.Strict as M
-import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform (use)
 
@@ -34,7 +33,7 @@ import           Prelude.MH
 -- | A 'Keybinding' represents a keybinding along with its
 --   implementation
 data Keybinding =
-    KB { kbDescription :: T.Text
+    KB { kbDescription :: Text
        , kbEvent :: Vty.Event
        , kbAction :: MH ()
        , kbBindingInfo :: Maybe KeyEvent
@@ -58,14 +57,14 @@ handleKeyboardEvent keyList fallthrough e = do
     Just kb -> kbAction kb
     Nothing -> fallthrough e
 
-mkKb :: KeyEvent -> T.Text -> MH () -> KeyConfig -> [Keybinding]
+mkKb :: KeyEvent -> Text -> MH () -> KeyConfig -> [Keybinding]
 mkKb ev msg action conf =
   [ KB msg (bindingToEvent key) action (Just ev) | key <- allKeys ]
   where allKeys | Just (BindingList ks) <- M.lookup ev conf = ks
                 | Just Unbound <- M.lookup ev conf = []
                 | otherwise = defaultBindings ev
 
-staticKb :: T.Text -> Vty.Event -> MH () -> KeyConfig -> [Keybinding]
+staticKb :: Text -> Vty.Event -> MH () -> KeyConfig -> [Keybinding]
 staticKb msg event action _ = [KB msg event action Nothing]
 
 mkKeybindings :: [KeyConfig -> [Keybinding]] -> KeyConfig -> [Keybinding]

@@ -147,7 +147,7 @@ data BindingState =
 
 type KeyConfig = M.Map KeyEvent BindingState
 
-parseBinding :: T.Text -> Either String Binding
+parseBinding :: Text -> Either String Binding
 parseBinding kb = go (T.splitOn "-" $ T.toLower kb) []
   where go [k] mods = do
           key <- pKey k
@@ -200,11 +200,11 @@ parseBinding kb = go (T.splitOn "-" $ T.toLower kb) []
                   Just i -> return (Vty.KFun i)
           | otherwise = Left ("Unknown keybinding: " ++ show t)
 
-ppBinding :: Binding -> T.Text
+ppBinding :: Binding -> Text
 ppBinding (Binding mods k) =
     T.intercalate "-" $ (ppMod <$> mods) <> [ppKey k]
 
-ppKey :: Vty.Key -> T.Text
+ppKey :: Vty.Key -> Text
 ppKey (Vty.KChar c)   = ppChar c
 ppKey (Vty.KFun n)    = "F" <> (T.pack $ show n)
 ppKey Vty.KBackTab    = "BackTab"
@@ -231,7 +231,7 @@ ppKey Vty.KIns        = "Insert"
 ppKey Vty.KBegin      = "Begin"
 ppKey Vty.KMenu       = "Menu"
 
-nonCharKeys :: [T.Text]
+nonCharKeys :: [Text]
 nonCharKeys = map ppKey
   [ Vty.KBackTab, Vty.KEsc, Vty.KBS, Vty.KEnter, Vty.KUp, Vty.KDown
   , Vty.KLeft, Vty.KRight, Vty.KHome, Vty.KEnd, Vty.KPageDown
@@ -240,31 +240,31 @@ nonCharKeys = map ppKey
   , Vty.KBegin, Vty.KMenu
   ]
 
-ppChar :: Char -> T.Text
+ppChar :: Char -> Text
 ppChar '\t' = "Tab"
 ppChar ' '  = "Space"
 ppChar c    = T.singleton c
 
-ppMod :: Vty.Modifier -> T.Text
+ppMod :: Vty.Modifier -> Text
 ppMod Vty.MMeta  = "M"
 ppMod Vty.MAlt   = "A"
 ppMod Vty.MCtrl  = "C"
 ppMod Vty.MShift = "S"
 
-parseBindingList :: T.Text -> Either String BindingState
+parseBindingList :: Text -> Either String BindingState
 parseBindingList t =
     if T.toLower t == "unbound"
     then return Unbound
     else BindingList <$> mapM (parseBinding . T.strip) (T.splitOn "," t)
 
-keyEventFromName :: T.Text -> Either String KeyEvent
+keyEventFromName :: Text -> Either String KeyEvent
 keyEventFromName t =
     let mapping = M.fromList [ (keyEventName e, e) | e <- allEvents ]
     in case M.lookup t mapping of
         Just e -> return e
         Nothing -> Left ("Unknown event: " ++ show t)
 
-keyEventName :: KeyEvent -> T.Text
+keyEventName :: KeyEvent -> Text
 keyEventName ev = case ev of
   QuitEvent                 -> "quit"
   VtyRefreshEvent           -> "vty-refresh"

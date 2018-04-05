@@ -28,7 +28,6 @@ import FilePaths
 import Network.Mattermost.Types
 import Network.Mattermost.Lenses
 import Types
-import Types.Channels
 
 -- | Run state of the program. This is saved in a file on program exit and
 -- | looked up from the file on program startup.

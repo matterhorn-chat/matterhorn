@@ -11,8 +11,6 @@ where
 import Prelude ()
 import Prelude.MH
 
-import qualified Data.Text as T
-
 import Types
 
 helpTopics :: [HelpTopic]
@@ -40,6 +38,6 @@ keybindingHelpTopic =
     HelpTopic "keybindings" "Help on overriding keybindings"
       KeybindingHelp KeybindingHelpText
 
-lookupHelpTopic :: T.Text -> Maybe HelpTopic
+lookupHelpTopic :: Text -> Maybe HelpTopic
 lookupHelpTopic topic =
     listToMaybe $ filter ((== topic) . helpTopicName) helpTopics

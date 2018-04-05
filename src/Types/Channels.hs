@@ -45,7 +45,6 @@ module Types.Channels
 where
 
 import qualified Data.HashMap.Strict as HM
-import qualified Data.Text as T
 import           Data.Time.Clock (UTCTime)
 import           Lens.Micro.Platform
 import           Network.Mattermost.Lenses hiding (Lens')
@@ -78,7 +77,7 @@ data ClientChannel = ClientChannel
   }
 
 -- Get a channel's name, depending on its type
-preferredChannelName :: Channel -> T.Text
+preferredChannelName :: Channel -> Text
 preferredChannelName ch
     | channelType ch == Group = channelDisplayName ch
     | otherwise = channelName ch
@@ -157,11 +156,11 @@ data ChannelInfo = ChannelInfo
     -- ^ The current number of unread mentions
   , _cdUpdated          :: ServerTime
     -- ^ The last time a message showed up in the channel
-  , _cdName             :: T.Text
+  , _cdName             :: Text
     -- ^ The name of the channel
-  , _cdHeader           :: T.Text
+  , _cdHeader           :: Text
     -- ^ The header text of a channel
-  , _cdPurpose          :: T.Text
+  , _cdPurpose          :: Text
     -- ^ The stated purpose of the channel
   , _cdType             :: Type
     -- ^ The type of a channel: public, private, or DM

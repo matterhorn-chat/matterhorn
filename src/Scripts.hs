@@ -17,7 +17,7 @@ import State (sendMessage, runLoggedCommand)
 import State.Common
 import FilePaths (Script(..), getAllScripts, locateScriptPath)
 
-findAndRunScript :: T.Text -> T.Text -> MH ()
+findAndRunScript :: Text -> Text -> MH ()
 findAndRunScript scriptName input = do
     fpMb <- liftIO $ locateScriptPath (T.unpack scriptName)
     outputChan <- use (csResources.crSubprocessLog)
@@ -36,7 +36,7 @@ findAndRunScript scriptName input = do
         let msg = ("No script named " <> scriptName <> " was found")
         mhError msg
 
-runScript :: STM.TChan ProgramOutput -> FilePath -> T.Text -> IO (MH ())
+runScript :: STM.TChan ProgramOutput -> FilePath -> Text -> IO (MH ())
 runScript outputChan fp text = do
   outputVar <- newEmptyMVar
   runLoggedCommand True outputChan fp [] (Just $ T.unpack text) (Just outputVar)
@@ -71,7 +71,7 @@ listScripts = do
                             ] <> "\n" <> scriptHelpAddendum)
       mhError errMsg
 
-scriptHelpAddendum :: T.Text
+scriptHelpAddendum :: Text
 scriptHelpAddendum =
   "For more help with scripts, run the command\n" <>
   "```\n/help scripts\n```\n"

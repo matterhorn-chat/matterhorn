@@ -28,7 +28,7 @@ import Scripts
 -- for tokenizing the first bits of command input while leaving the
 -- subsequent chunks unchanged, preserving newlines and other
 -- important formatting.
-unwordHead :: T.Text -> Maybe (T.Text, T.Text)
+unwordHead :: Text -> Maybe (Text, Text)
 unwordHead t =
   let t' = T.dropWhile Char.isSpace t
       (w, rs)  = T.break Char.isSpace t'
@@ -36,13 +36,13 @@ unwordHead t =
        then Nothing
        else Just (w, T.dropWhile Char.isSpace rs)
 
-printArgSpec :: CmdArgs a -> T.Text
+printArgSpec :: CmdArgs a -> Text
 printArgSpec NoArg = ""
 printArgSpec (LineArg ts) = "[" <> ts <> "]"
 printArgSpec (TokenArg t NoArg) = "[" <> t <> "]"
 printArgSpec (TokenArg t rs) = "[" <> t <> "] " <> printArgSpec rs
 
-matchArgs :: CmdArgs a -> T.Text -> Either T.Text a
+matchArgs :: CmdArgs a -> Text -> Either Text a
 matchArgs NoArg t = case unwordHead t of
   Nothing -> return ()
   Just (a, as)
@@ -142,7 +142,7 @@ commandList =
 
   ]
 
-execMMCommand :: T.Text -> T.Text -> MH ()
+execMMCommand :: Text -> Text -> MH ()
 execMMCommand name rest = do
   cId      <- use csCurrentChannelId
   session  <- getSession
@@ -183,7 +183,7 @@ execMMCommand name rest = do
     Just err ->
       mhError ("Error running command: " <> err)
 
-dispatchCommand :: T.Text -> MH ()
+dispatchCommand :: Text -> MH ()
 dispatchCommand cmd =
   case unwordHead cmd of
     Just (x, xs)

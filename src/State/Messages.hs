@@ -7,7 +7,6 @@ module State.Messages
     where
 
 
-import qualified Data.Foldable as F
 import           Data.Function (on)
 import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
@@ -18,9 +17,6 @@ import           Network.Mattermost.Types
 import           State.Common
 import           TimeUtils
 import           Types
-import           Types.Channels
-import           Types.Messages
-import           Types.Posts
 import           Prelude ()
 import           Prelude.MH
 
@@ -69,7 +65,7 @@ lastMsg = withFirstMessage id
 loadFlaggedMessages :: Seq.Seq FlaggedPost -> ChatState -> IO ()
 loadFlaggedMessages prefs st = doAsyncWithIO Normal st $ do
   return $ sequence_ [ updateMessageFlag (flaggedPostId fp) True
-                     | fp <- F.toList prefs
+                     | fp <- toList prefs
                      , flaggedPostStatus fp
                      ]
 

@@ -1,6 +1,5 @@
 module State.PostListOverlay where
 
-import Data.Text (Text)
 import qualified Data.Text as T
 import Lens.Micro.Platform
 import Network.Mattermost.Endpoints
@@ -12,7 +11,6 @@ import State
 import State.Common
 import Types
 import Types.DirectionalSeq (emptyDirSeq)
-import Types.Messages
 
 -- | Create a PostListOverlay with the given content description and
 -- with a specified list of messages.

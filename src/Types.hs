@@ -189,6 +189,11 @@ module Types
   , UserSet
   , ChannelSet
   , getHighlightSet
+
+  , module Types.Channels
+  , module Types.Messages
+  , module Types.Posts
+  , module Types.Users
   )
 where
 
@@ -246,30 +251,30 @@ import           Completion (Completer)
 -- | A user password is either given to us directly, or a command
 -- which we execute to find the password.
 data PasswordSource =
-    PasswordString T.Text
-    | PasswordCommand T.Text
+    PasswordString Text
+    | PasswordCommand Text
     deriving (Eq, Read, Show)
 
 -- | These are all the values that can be read in our configuration
 -- file.
 data Config = Config
-  { configUser                      :: Maybe T.Text
-  , configHost                      :: Maybe T.Text
-  , configTeam                      :: Maybe T.Text
+  { configUser                      :: Maybe Text
+  , configHost                      :: Maybe Text
+  , configTeam                      :: Maybe Text
   , configPort                      :: Int
   , configPass                      :: Maybe PasswordSource
-  , configTimeFormat                :: Maybe T.Text
-  , configDateFormat                :: Maybe T.Text
-  , configTheme                     :: Maybe T.Text
-  , configThemeCustomizationFile    :: Maybe T.Text
+  , configTimeFormat                :: Maybe Text
+  , configDateFormat                :: Maybe Text
+  , configTheme                     :: Maybe Text
+  , configThemeCustomizationFile    :: Maybe Text
   , configSmartBacktick             :: Bool
-  , configURLOpenCommand            :: Maybe T.Text
+  , configURLOpenCommand            :: Maybe Text
   , configURLOpenCommandInteractive :: Bool
   , configActivityBell              :: Bool
   , configShowBackground            :: BackgroundInfo
   , configShowMessagePreview        :: Bool
   , configEnableAspell              :: Bool
-  , configAspellDictionary          :: Maybe T.Text
+  , configAspellDictionary          :: Maybe Text
   , configUnsafeUseHTTP             :: Bool
   , configChannelListWidth          :: Int
   , configShowOlderEdits            :: Bool
@@ -286,11 +291,11 @@ data BackgroundInfo = Disabled | Active | ActiveCount deriving (Eq, Show)
 -- | The 'MMNames' record is for listing human-readable
 --   names and mapping them back to internal IDs.
 data MMNames = MMNames
-  { _cnChans    :: [T.Text] -- ^ All channel names
-  , _cnToChanId :: HashMap T.Text ChannelId
+  { _cnChans    :: [Text] -- ^ All channel names
+  , _cnToChanId :: HashMap Text ChannelId
       -- ^ Mapping from channel names to 'ChannelId' values
-  , _cnUsers    :: [T.Text] -- ^ All users
-  , _cnToUserId :: HashMap T.Text UserId
+  , _cnUsers    :: [Text] -- ^ All users
+  , _cnToUserId :: HashMap Text UserId
       -- ^ Mapping from user names to 'UserId' values
   }
 
@@ -298,9 +303,9 @@ mkNames :: User -> HM.HashMap UserId User -> Seq.Seq Channel -> MMNames
 mkNames myUser users chans = MMNames
   { _cnChans = sort
                [ preferredChannelName c
-               | c <- F.toList chans, channelType c /= Direct ]
+               | c <- toList chans, channelType c /= Direct ]
   , _cnToChanId = HM.fromList $
-                  [ (preferredChannelName c, channelId c) | c <- F.toList chans ] ++
+                  [ (preferredChannelName c, channelId c) | c <- toList chans ] ++
                   [ (userUsername u, c)
                   | u <- HM.elems users
                   , c <- lookupChan (getDMChannelName (getId myUser) (getId u))
@@ -310,7 +315,7 @@ mkNames myUser users chans = MMNames
                   [ (userUsername u, getId u) | u <- HM.elems users ]
   }
   where lookupChan n = [ c^.channelIdL
-                       | c <- F.toList chans, c^.channelNameL == n
+                       | c <- toList chans, c^.channelNameL == n
                        ]
 
 -- ** 'MMNames' Lenses
@@ -368,10 +373,10 @@ data AuthenticationException =
 -- | Our 'ConnectionInfo' contains exactly as much information as is
 -- necessary to start a connection with a Mattermost server
 data ConnectionInfo =
-    ConnectionInfo { _ciHostname :: T.Text
+    ConnectionInfo { _ciHostname :: Text
                    , _ciPort     :: Int
-                   , _ciUsername :: T.Text
-                   , _ciPassword :: T.Text
+                   , _ciUsername :: Text
+                   , _ciPassword :: Text
                    }
 
 makeLenses ''ConnectionInfo
@@ -390,33 +395,33 @@ data PostRef
 data LinkChoice = LinkChoice
   { _linkTime   :: ServerTime
   , _linkUser   :: UserRef
-  , _linkName   :: T.Text
-  , _linkURL    :: T.Text
+  , _linkName   :: Text
+  , _linkURL    :: Text
   , _linkFileId :: Maybe FileId
   } deriving (Eq, Show)
 
 makeLenses ''LinkChoice
 
 -- Sigils
-normalChannelSigil :: T.Text
+normalChannelSigil :: Text
 normalChannelSigil = "~"
 
-userSigil :: T.Text
+userSigil :: Text
 userSigil = "@"
 
 -- ** Channel-matching types
 
 data ChannelSelectMatch =
-    ChannelSelectMatch { nameBefore     :: T.Text
-                       , nameMatched    :: T.Text
-                       , nameAfter      :: T.Text
+    ChannelSelectMatch { nameBefore     :: Text
+                       , nameMatched    :: Text
+                       , nameAfter      :: Text
                        }
                        deriving (Eq, Show)
 
-channelNameFromMatch :: ChannelSelectMatch -> T.Text
+channelNameFromMatch :: ChannelSelectMatch -> Text
 channelNameFromMatch (ChannelSelectMatch b m a) = b <> m <> a
 
-data ChannelSelectPattern = CSP MatchType T.Text
+data ChannelSelectPattern = CSP MatchType Text
                           deriving (Eq, Show)
 
 data MatchType = Prefix | Suffix | Infix | Equal deriving (Eq, Show)
@@ -491,16 +496,16 @@ data ChatResources = ChatResources
 --   as well as history and metadata we need for editing-related
 --   operations.
 data ChatEditState = ChatEditState
-  { _cedEditor               :: Editor T.Text Name
+  { _cedEditor               :: Editor Text Name
   , _cedEditMode             :: EditMode
   , _cedMultiline            :: Bool
   , _cedInputHistory         :: InputHistory
   , _cedInputHistoryPosition :: HM.HashMap ChannelId (Maybe Int)
-  , _cedLastChannelInput     :: HM.HashMap ChannelId (T.Text, EditMode)
+  , _cedLastChannelInput     :: HM.HashMap ChannelId (Text, EditMode)
   , _cedCompleter            :: Maybe Completer
-  , _cedYankBuffer           :: T.Text
+  , _cedYankBuffer           :: Text
   , _cedSpellChecker         :: Maybe (Aspell, IO ())
-  , _cedMisspellings         :: Set.Set T.Text
+  , _cedMisspellings         :: Set.Set Text
   }
 
 data EditMode =
@@ -540,8 +545,8 @@ data HelpScreen
 
 -- |  Help topics
 data HelpTopic =
-    HelpTopic { helpTopicName         :: T.Text
-              , helpTopicDescription  :: T.Text
+    HelpTopic { helpTopicName         :: Text
+              , helpTopicDescription  :: Text
               , helpTopicScreen       :: HelpScreen
               , helpTopicViewportName :: Name
               }
@@ -550,7 +555,7 @@ data HelpTopic =
 -- | Mode type for the current contents of the post list overlay
 data PostListContents
   = PostListFlagged
-  | PostListSearch T.Text Bool -- for the query and search status
+  | PostListSearch Text Bool -- for the query and search status
   --   | PostListPinned ChannelId
   deriving (Eq)
 
@@ -656,13 +661,13 @@ listFromUserSearchResults rs =
     -- in Draw.UserListOverlay.
     list UserListSearchResults rs 1
 
-type ChannelSelectMap = HM.HashMap T.Text ChannelSelectMatch
+type ChannelSelectMap = HM.HashMap Text ChannelSelectMatch
 
 data ChannelSelectState =
-    ChannelSelectState { _channelSelectInput :: T.Text
+    ChannelSelectState { _channelSelectInput :: Text
                        , _channelMatches     :: ChannelSelectMap
                        , _userMatches        :: ChannelSelectMap
-                       , _selectedMatch      :: T.Text
+                       , _selectedMatch      :: Text
                        }
 
 emptyChannelSelectState :: ChannelSelectState
@@ -684,7 +689,7 @@ data PostListOverlayState = PostListOverlayState
 data UserListOverlayState = UserListOverlayState
   { _userListSearchResults :: List Name UserInfo
   , _userListSelected :: Maybe PostId
-  , _userListSearchInput :: Editor T.Text Name
+  , _userListSearchInput :: Editor Text Name
   , _userListSearchScope :: UserSearchScope
   , _userListSearching :: Bool
   , _userListRequestingMore :: Bool
@@ -788,7 +793,7 @@ data MHEvent
     -- ^ MH-internal events
 
 data InternalEvent
-    = DisplayError T.Text
+    = DisplayError Text
       -- ^ Display a generic error message to the user
     deriving (Eq, Show)
 
@@ -870,26 +875,26 @@ getParentMessage st msg
     = st^.csPostMap.at(pId)
   | otherwise = Nothing
 
-setUserStatus :: UserId -> T.Text -> MH ()
+setUserStatus :: UserId -> Text -> MH ()
 setUserStatus uId t = csUsers %= modifyUserById uId (uiStatus .~ statusFromText t)
 
-nicknameForUserId :: UserId -> ChatState -> Maybe T.Text
+nicknameForUserId :: UserId -> ChatState -> Maybe Text
 nicknameForUserId uId st = _uiNickName =<< findUserById uId (st^.csUsers)
 
-usernameForUserId :: UserId -> ChatState -> Maybe T.Text
+usernameForUserId :: UserId -> ChatState -> Maybe Text
 usernameForUserId uId st = _uiName <$> findUserById uId (st^.csUsers)
 
-displaynameForUserId :: UserId -> ChatState -> Maybe T.Text
+displaynameForUserId :: UserId -> ChatState -> Maybe Text
 displaynameForUserId uId st
     | useNickname st =
         nicknameForUserId uId st <|> usernameForUserId uId st
     | otherwise =
         usernameForUserId uId st
 
-userIdForUsername :: T.Text -> ChatState -> Maybe UserId
+userIdForUsername :: Text -> ChatState -> Maybe UserId
 userIdForUsername name st = st^.csNames.cnToUserId.at name
 
-channelIdByName :: T.Text -> ChatState -> Maybe ChannelId
+channelIdByName :: Text -> ChatState -> Maybe ChannelId
 channelIdByName name st =
     let userInfos = st^.csUsers.to allUsers
         uName = if useNickname st
@@ -907,7 +912,7 @@ useNickname st = case st^?csClientConfig._Just.to clientConfigTeammateNameDispla
                       _ ->
                           False
 
-channelByName :: T.Text -> ChatState -> Maybe ClientChannel
+channelByName :: Text -> ChatState -> Maybe ClientChannel
 channelByName n st = do
     let userInfos = st^.csUsers.to allUsers
         uName = if useNickname st
@@ -918,7 +923,7 @@ channelByName n st = do
     cId <- channelIdByName uName st
     findChannelById cId (st^.csChannels)
 
-trimAnySigil :: T.Text -> T.Text
+trimAnySigil :: Text -> Text
 trimAnySigil n
     | normalChannelSigil `T.isPrefixOf` n = T.tail n
     | userSigil `T.isPrefixOf` n          = T.tail n
@@ -941,7 +946,7 @@ setUserIdSet ids = do
     userSet <- use (csResources.crUserIdSet)
     St.liftIO $ STM.atomically $ STM.writeTVar userSet ids
 
-addChannelName :: Type -> ChannelId -> T.Text -> MH ()
+addChannelName :: Type -> ChannelId -> Text -> MH ()
 addChannelName chType cid name = do
     csNames.cnToChanId.at(name) .= Just cid
 
@@ -955,13 +960,13 @@ channelMentionCount :: ChannelId -> ChatState -> Int
 channelMentionCount cId st =
     maybe 0 id (st^?csChannel(cId).ccInfo.cdMentionCount)
 
-allChannelNames :: ChatState -> [T.Text]
+allChannelNames :: ChatState -> [Text]
 allChannelNames st = st^.csNames.cnChans
 
-allUsernames :: ChatState -> [T.Text]
+allUsernames :: ChatState -> [Text]
 allUsernames st = st^.csNames.cnChans
 
-removeChannelName :: T.Text -> MH ()
+removeChannelName :: Text -> MH ()
 removeChannelName name = do
     -- Flush cnToChanId
     csNames.cnToChanId.at name .= Nothing
@@ -1006,8 +1011,8 @@ clientPostToMessage cp = Message
 --   the type parameter represents the argument structure.
 data CmdArgs :: * -> * where
   NoArg    :: CmdArgs ()
-  LineArg  :: T.Text -> CmdArgs T.Text
-  TokenArg :: T.Text -> CmdArgs rest -> CmdArgs (T.Text, rest)
+  LineArg  :: Text -> CmdArgs Text
+  TokenArg :: Text -> CmdArgs rest -> CmdArgs (Text, rest)
 
 -- | A 'CmdExec' value represents the implementation of a command
 --   when provided with its arguments
@@ -1016,14 +1021,14 @@ type CmdExec a = a -> MH ()
 -- | A 'Cmd' packages up a 'CmdArgs' specifier and the 'CmdExec'
 --   implementation with a name and a description.
 data Cmd = forall a. Cmd
-  { cmdName    :: T.Text
-  , cmdDescr   :: T.Text
+  { cmdName    :: Text
+  , cmdDescr   :: Text
   , cmdArgSpec :: CmdArgs a
   , cmdAction  :: CmdExec a
   }
 
 -- | Helper function to extract the name out of a 'Cmd' value
-commandName :: Cmd -> T.Text
+commandName :: Cmd -> Text
 commandName (Cmd name _ _ _ ) = name
 
 -- *  Channel Updates and Notifications
@@ -1055,7 +1060,7 @@ myTeamId st = st ^. csMyTeam . teamIdL
 myUser :: ChatState -> User
 myUser st = st^.csMe
 
-userByDMChannelName :: T.Text
+userByDMChannelName :: Text
                     -- ^ the dm channel name
                     -> UserId
                     -- ^ me
@@ -1065,7 +1070,7 @@ userByDMChannelName :: T.Text
 userByDMChannelName name self st =
     findUserByDMChannelName (st^.csUsers) name self
 
-userByUsername :: T.Text -> ChatState -> Maybe UserInfo
+userByUsername :: Text -> ChatState -> Maybe UserInfo
 userByUsername name st = do
     uId <- userIdForUsername name st
     userById uId st
@@ -1093,12 +1098,12 @@ compareUserInfo field u1 u2
 
 -- * HighlightSet
 
-type UserSet = Set.Set T.Text
-type ChannelSet = Set.Set T.Text
+type UserSet = Set.Set Text
+type ChannelSet = Set.Set Text
 
 data HighlightSet = HighlightSet
-  { hUserSet    :: Set.Set T.Text
-  , hChannelSet :: Set.Set T.Text
+  { hUserSet    :: Set.Set Text
+  , hChannelSet :: Set.Set Text
   }
 
 getHighlightSet :: ChatState -> HighlightSet

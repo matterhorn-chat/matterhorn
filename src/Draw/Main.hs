@@ -19,7 +19,6 @@ import qualified Data.Sequence as Seq
 import qualified Data.Set as S
 import qualified Data.Foldable as F
 import           Data.List (intersperse)
-import           Data.Text (Text)
 import qualified Data.Text as T
 import           Data.Text.Zipper (cursorPosition, insertChar, getText, gotoEOL)
 import           Data.Char (isSpace, isPunctuation)
@@ -34,25 +33,15 @@ import           Draw.Messages
 import           Draw.Util
 import           Markdown
 import           Completion (Completer(..), currentAlternative)
-import qualified Zipper as Z
 import           State
 import           Themes
 import           TimeUtils (justAfter, justBefore)
 import           Types
-import           Types.Channels ( NewMessageIndicator(..)
-                                , ClientChannel
-                                , ccInfo, ccContents
-                                , cdTypingUsers
-                                , cdName, cdType, cdHeader, cdMessages
-                                , findChannelById)
-import           Types.Messages
-import           Types.Posts
-import           Types.Users
 import           Types.KeyEvents
 import           Events.Keybindings
 import           Events.MessageSelect
 
-previewFromInput :: UserId -> T.Text -> Maybe Message
+previewFromInput :: UserId -> Text -> Maybe Message
 previewFromInput _ s | s == T.singleton cursorSentinel = Nothing
 previewFromInput uId s =
     -- If it starts with a slash but not /me, this has no preview
@@ -86,15 +75,15 @@ previewFromInput uId s =
 
 -- | Tokens in spell check highlighting.
 data Token =
-    Ignore T.Text
+    Ignore Text
     -- ^ This bit of text is to be ignored for the purposes of
     -- spell-checking.
-    | Check T.Text
+    | Check Text
     -- ^ This bit of text should be checked against the spell checker's
     -- misspelling list.
     deriving (Show)
 
-drawEditorContents :: ChatState -> HighlightSet -> [T.Text] -> Widget Name
+drawEditorContents :: ChatState -> HighlightSet -> [Text] -> Widget Name
 drawEditorContents st hs =
     let noHighlight = txt . T.unlines
     in case st^.csEditState.cedSpellChecker of
@@ -157,7 +146,7 @@ drawEditorContents st hs =
 -- because 1) the user's input might not be valid markdown and 2) even
 -- if we did that, we'd still have to do this tokenization operation to
 -- annotate misspellings and reconstruct the user's raw input.
-doHighlightMisspellings :: HighlightSet -> S.Set T.Text -> [T.Text] -> Widget Name
+doHighlightMisspellings :: HighlightSet -> S.Set Text -> [Text] -> Widget Name
 doHighlightMisspellings hSet misspellings contents =
     -- Traverse the input, gathering non-whitespace into tokens and
     -- checking if they appear in the misspelling collection
@@ -342,7 +331,7 @@ renderCurrentChannelDisplay st hs = (header <+> conn) <=> messages
             cached (ChannelMessages cId) $
             vBox $ (withDefAttr loadMoreAttr $ hCenter $
                     str "<< Press C-b to load more messages >>") :
-                   (F.toList $ renderSingleMessage st hs editCutoff <$> channelMessages)
+                   (toList $ renderSingleMessage st hs editCutoff <$> channelMessages)
         MessageSelect ->
             renderMessagesWithSelect (st^.csMessageSelect) channelMessages
         MessageSelectDeleteConfirm ->
@@ -500,7 +489,7 @@ messageSelectBottomBar st =
 
 drawCompletionAlternatives :: Completer -> Widget Name
 drawCompletionAlternatives c =
-    let alternatives = intersperse (txt " ") $ mkAlternative <$> Z.toList (completionAlternatives c)
+    let alternatives = intersperse (txt " ") $ mkAlternative <$> toList (completionAlternatives c)
         mkAlternative (displayVal, _) =
             let format = if displayVal == (fst $ currentAlternative c)
                          then visible . withDefAttr completionAlternativeCurrentAttr

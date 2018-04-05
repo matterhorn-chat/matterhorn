@@ -19,7 +19,7 @@ module FilePaths
 import Prelude ()
 import Prelude.MH
 
-import Data.Text (unpack, Text)
+import Data.Text (unpack)
 import System.Directory ( doesFileExist
                         , doesDirectoryExist
                         , getDirectoryContents
