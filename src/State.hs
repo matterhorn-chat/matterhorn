@@ -1707,7 +1707,7 @@ nubOn f = snd . go Set.empty
 removeDuplicates :: [LinkChoice] -> [LinkChoice]
 removeDuplicates = nubOn (\ l -> (l^.linkURL, l^.linkUser))
 
-msgURLs :: Message -> Seq.Seq LinkChoice
+msgURLs :: Message -> Seq LinkChoice
 msgURLs msg
   | NoUser <- msg^.mUser = mempty
   | otherwise =
@@ -1912,7 +1912,7 @@ handleNewUserDirect newUser = do
     let usrInfo = userInfoFromUser newUser True
     addNewUser usrInfo
 
-handleNewUsers :: Seq.Seq UserId -> MH ()
+handleNewUsers :: Seq UserId -> MH ()
 handleNewUsers newUserIds = doAsyncMM Preempt getUserInfo addNewUsers
     where getUserInfo session _ =
               do nUsers  <- MM.mmGetUsersByIds newUserIds session

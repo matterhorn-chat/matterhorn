@@ -106,7 +106,7 @@ data ClientPost = ClientPost
   , _cpType          :: ClientPostType
   , _cpPending       :: Bool
   , _cpDeleted       :: Bool
-  , _cpAttachments   :: Seq.Seq Attachment
+  , _cpAttachments   :: Seq Attachment
   , _cpInReplyToPost :: Maybe PostId
   , _cpPostId        :: PostId
   , _cpChannelId     :: ChannelId

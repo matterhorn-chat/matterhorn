@@ -24,7 +24,7 @@ instance SeqDirection Chronological
 instance SeqDirection Retrograde
 
 data SeqDirection dir => DirectionalSeq dir a =
-    DSeq { dseq :: Seq.Seq a }
+    DSeq { dseq :: Seq a }
          deriving (Show, Functor, Foldable, Traversable)
 
 emptyDirSeq :: DirectionalSeq dir a
@@ -33,7 +33,7 @@ emptyDirSeq = DSeq mempty
 appendDirSeq :: DirectionalSeq dir a -> DirectionalSeq dir a -> DirectionalSeq dir a
 appendDirSeq a b = DSeq $ mappend (dseq a) (dseq b)
 
-onDirectedSeq :: SeqDirection dir => (Seq.Seq a -> Seq.Seq b)
+onDirectedSeq :: SeqDirection dir => (Seq a -> Seq b)
               -> DirectionalSeq dir a -> DirectionalSeq dir b
 onDirectedSeq f = DSeq . f . dseq
 

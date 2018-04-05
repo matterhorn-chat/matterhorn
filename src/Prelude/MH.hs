@@ -39,8 +39,11 @@ module Prelude.MH
 , List.intercalate
 , Exts.sortWith
 , Exts.groupWith
--- the Text type
-, Text.Text
+-- various type aliases
+, Text
+, HashMap
+, Seq
+, Set
 ) where
 
 
@@ -55,6 +58,11 @@ import qualified Control.Monad.IO.Class as Monad
 import qualified Data.Foldable as Foldable
 import qualified Data.List as List
 import qualified Data.Maybe as Maybe
-import qualified Data.Text as Text
 import qualified GHC.Exts as Exts
 import qualified Text.Read as Read
+
+-- these below we import only for type aliases
+import           Data.Text (Text)
+import           Data.HashMap.Strict (HashMap)
+import           Data.Sequence (Seq)
+import           Data.Set (Set)

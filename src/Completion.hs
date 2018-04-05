@@ -31,7 +31,7 @@ data Completer =
 -- Nothing: no completions.
 -- Just Left: a single completion.
 -- Just Right: more than one completion.
-wordComplete :: Set.Set (Text, Text) -> Text -> Maybe (Either Text Completer)
+wordComplete :: Set (Text, Text) -> Text -> Maybe (Either Text Completer)
 wordComplete options input =
     let curWord = currentWord input
         alts = sort $ Set.toList $ Set.filter ((curWord `T.isPrefixOf`) . fst) options

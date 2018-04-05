@@ -13,7 +13,6 @@ import Brick.Widgets.Border
 import Lens.Micro.Platform ((^.))
 
 import Types
-import Types.Channels ( ccInfo, cdName )
 import Themes
 import Draw.Main
 

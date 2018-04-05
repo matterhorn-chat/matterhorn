@@ -39,7 +39,7 @@ connectWebsockets = do
 -- | each successful send.
 -- | Keeps and propagates a map of channel id to last user_typing notification send time
 -- | so that the new user_typing actions are throttled to be send only once in two seconds.
-processWebsocketActions :: ChatState -> WS.MMWebSocket -> Int64 -> HM.HashMap ChannelId (Max UTCTime) -> IO ()
+processWebsocketActions :: ChatState -> WS.MMWebSocket -> Int64 -> HashMap ChannelId (Max UTCTime) -> IO ()
 processWebsocketActions st ws s userTypingLastNotifTimeMap = do
   action <- STM.atomically $ STM.readTChan (st^.csResources.crWebsocketActionChan)
   if (shouldSendAction action)

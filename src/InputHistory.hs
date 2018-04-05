@@ -27,7 +27,7 @@ import FilePaths
 import Network.Mattermost.Types (ChannelId)
 
 data InputHistory =
-    InputHistory { _historyEntries :: HM.HashMap ChannelId (V.Vector Text)
+    InputHistory { _historyEntries :: HashMap ChannelId (V.Vector Text)
                  }
                  deriving (Show)
 

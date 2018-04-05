@@ -96,7 +96,7 @@ data Message = Message
   , _mType          :: MessageType
   , _mPending       :: Bool
   , _mDeleted       :: Bool
-  , _mAttachments   :: Seq.Seq Attachment
+  , _mAttachments   :: Seq Attachment
   , _mInReplyToMsg  :: ReplyState
   , _mPostId        :: Maybe PostId
   , _mReactions     :: Map.Map Text Int

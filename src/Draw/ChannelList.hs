@@ -71,7 +71,7 @@ type GroupName = Text
 -- mentioned above is in effect.
 channelListGroups :: [ ( GroupName
                        , Getting ChannelSelectMap ChatState ChannelSelectMap
-                       , ChatState -> Maybe Int -> Seq.Seq ChannelListEntry
+                       , ChatState -> Maybe Int -> Seq ChannelListEntry
                        ) ]
 channelListGroups =
     [ ("Channels", csChannelSelectState.channelMatches, getOrdinaryChannels)
@@ -117,7 +117,7 @@ renderChannelList st =
 -- | Renders a specific group, given the name of the group and the
 -- list of entries in that group (which are expected to be either
 -- ChannelListEntry or SelectedChannelListEntry elements).
-renderChannelGroup :: (a -> Widget Name) -> (GroupName, Seq.Seq a) -> Seq.Seq (Widget Name)
+renderChannelGroup :: (a -> Widget Name) -> (GroupName, Seq a) -> Seq (Widget Name)
 renderChannelGroup eRender (groupName, entries) =
     let header label = hBorderWithLabel $
                        withDefAttr channelListHeaderAttr $ txt label
@@ -194,7 +194,7 @@ decorateRecent entry = if entryIsRecent entry
 
 -- | Extract the names and information about normal channels to be
 -- displayed in the ChannelList sidebar.
-getOrdinaryChannels :: ChatState -> Maybe Int -> Seq.Seq ChannelListEntry
+getOrdinaryChannels :: ChatState -> Maybe Int -> Seq ChannelListEntry
 getOrdinaryChannels st _ =
     Seq.fromList [ ChannelListEntry sigil n unread mentions recent current Nothing
     | n <- allChannelNames st
@@ -224,7 +224,7 @@ getOrdinaryChannels st _ =
 -- entries, there are enough entries before and after the selected
 -- channel to get the Brick viewport to position the final result in a
 -- way that is natural.
-getDmChannels :: ChatState -> Maybe Int -> Seq.Seq ChannelListEntry
+getDmChannels :: ChatState -> Maybe Int -> Seq ChannelListEntry
 getDmChannels st height =
     let es = Seq.fromList
              [ ChannelListEntry (T.cons sigil " ") uname unread

@@ -299,7 +299,7 @@ data MMNames = MMNames
       -- ^ Mapping from user names to 'UserId' values
   }
 
-mkNames :: User -> HM.HashMap UserId User -> Seq.Seq Channel -> MMNames
+mkNames :: User -> HashMap UserId User -> Seq Channel -> MMNames
 mkNames myUser users chans = MMNames
   { _cnChans = sort
                [ preferredChannelName c
@@ -440,8 +440,8 @@ data ProgramOutput =
 
 data UserPreferences = UserPreferences
   { _userPrefShowJoinLeave     :: Bool
-  , _userPrefFlaggedPostList   :: Seq.Seq FlaggedPost
-  , _userPrefGroupChannelPrefs :: HM.HashMap ChannelId Bool
+  , _userPrefFlaggedPostList   :: Seq FlaggedPost
+  , _userPrefGroupChannelPrefs :: HashMap ChannelId Bool
   }
 
 defaultUserPreferences :: UserPreferences
@@ -451,7 +451,7 @@ defaultUserPreferences = UserPreferences
   , _userPrefGroupChannelPrefs = mempty
   }
 
-setUserPreferences :: Seq.Seq Preference -> UserPreferences -> UserPreferences
+setUserPreferences :: Seq Preference -> UserPreferences -> UserPreferences
 setUserPreferences = flip (F.foldr go)
   where go p u
           | Just fp <- preferenceToFlaggedPost p =
@@ -485,9 +485,9 @@ data ChatResources = ChatResources
   , _crWebsocketActionChan :: STM.TChan WebsocketAction
   , _crTheme               :: AttrMap
   , _crUserStatusLock      :: MVar ()
-  , _crUserIdSet           :: STM.TVar (Seq.Seq UserId)
+  , _crUserIdSet           :: STM.TVar (Seq UserId)
   , _crConfiguration       :: Config
-  , _crFlaggedPosts        :: Set.Set PostId
+  , _crFlaggedPosts        :: Set PostId
   , _crUserPreferences     :: UserPreferences
   }
 
@@ -500,12 +500,12 @@ data ChatEditState = ChatEditState
   , _cedEditMode             :: EditMode
   , _cedMultiline            :: Bool
   , _cedInputHistory         :: InputHistory
-  , _cedInputHistoryPosition :: HM.HashMap ChannelId (Maybe Int)
-  , _cedLastChannelInput     :: HM.HashMap ChannelId (Text, EditMode)
+  , _cedInputHistoryPosition :: HashMap ChannelId (Maybe Int)
+  , _cedLastChannelInput     :: HashMap ChannelId (Text, EditMode)
   , _cedCompleter            :: Maybe Completer
   , _cedYankBuffer           :: Text
   , _cedSpellChecker         :: Maybe (Aspell, IO ())
-  , _cedMisspellings         :: Set.Set Text
+  , _cedMisspellings         :: Set Text
   }
 
 data EditMode =
@@ -661,7 +661,7 @@ listFromUserSearchResults rs =
     -- in Draw.UserListOverlay.
     list UserListSearchResults rs 1
 
-type ChannelSelectMap = HM.HashMap Text ChannelSelectMatch
+type ChannelSelectMap = HashMap Text ChannelSelectMatch
 
 data ChannelSelectState =
     ChannelSelectState { _channelSelectInput :: Text
@@ -941,7 +941,7 @@ addNewUser u = do
     userSet <- use (csResources.crUserIdSet)
     St.liftIO $ STM.atomically $ STM.modifyTVar userSet $ (uid Seq.<|)
 
-setUserIdSet :: Seq.Seq UserId -> MH ()
+setUserIdSet :: Seq UserId -> MH ()
 setUserIdSet ids = do
     userSet <- use (csResources.crUserIdSet)
     St.liftIO $ STM.atomically $ STM.writeTVar userSet ids
@@ -1098,12 +1098,12 @@ compareUserInfo field u1 u2
 
 -- * HighlightSet
 
-type UserSet = Set.Set Text
-type ChannelSet = Set.Set Text
+type UserSet = Set Text
+type ChannelSet = Set Text
 
 data HighlightSet = HighlightSet
-  { hUserSet    :: Set.Set Text
-  , hChannelSet :: Set.Set Text
+  { hUserSet    :: Set Text
+  , hChannelSet :: Set Text
   }
 
 getHighlightSet :: ChatState -> HighlightSet

@@ -558,18 +558,18 @@ inlinesText = F.fold . fmap go
         go (C.Entity t)    = t
         go (C.RawHtml t)   = t
 
-altInlinesString :: S.Seq C.Inline -> Text
+altInlinesString :: Seq C.Inline -> Text
 altInlinesString is | S.null is = ""
                     | otherwise = ":" <> inlinesText is
 
-blockGetURLs :: C.Block -> S.Seq (Text, Text)
+blockGetURLs :: C.Block -> Seq (Text, Text)
 blockGetURLs (C.Para is) = mconcat $ inlineGetURLs <$> toList is
 blockGetURLs (C.Header _ is) = mconcat $ inlineGetURLs <$> toList is
 blockGetURLs (C.Blockquote bs) = mconcat $ blockGetURLs <$> toList bs
 blockGetURLs (C.List _ _ bss) = mconcat $ mconcat $ (blockGetURLs <$>) <$> (toList <$> bss)
 blockGetURLs _ = mempty
 
-inlineGetURLs :: C.Inline -> S.Seq (Text, Text)
+inlineGetURLs :: C.Inline -> Seq (Text, Text)
 inlineGetURLs (C.Emph is) = mconcat $ inlineGetURLs <$> toList is
 inlineGetURLs (C.Strong is) = mconcat $ inlineGetURLs <$> toList is
 inlineGetURLs (C.Link is url "") = (url, inlinesText is) S.<| (mconcat $ inlineGetURLs <$> toList is)

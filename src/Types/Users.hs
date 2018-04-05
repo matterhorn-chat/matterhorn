@@ -102,7 +102,7 @@ makeLenses ''UserInfo
 -- ** Manage the collection of all Users
 
 -- | Define a binary kinded type to allow derivation of functor.
-newtype AllMyUsers a = AllUsers { _ofUsers :: HM.HashMap UserId a }
+newtype AllMyUsers a = AllUsers { _ofUsers :: HashMap UserId a }
     deriving Functor
 
 makeLenses ''AllMyUsers

@@ -14,8 +14,6 @@ import qualified Graphics.Vty as Vty
 import Lens.Micro.Platform
 
 import Types
-import Types.Channels (ccInfo, cdType, clearNewMessageIndicator, clearEditedThreshold)
-import Types.Users (uiDeleted, uiName, uiNickName)
 import Events.Keybindings
 import State
 import State.PostListOverlay (enterFlaggedPostListMode)

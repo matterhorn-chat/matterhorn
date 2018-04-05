@@ -173,7 +173,7 @@ messagesFromPosts p = do
       postsToMessages f = foldr (addMessage . f) noMessages
   return msgs
     where
-        postMap :: HM.HashMap PostId Message
+        postMap :: HashMap PostId Message
         postMap = HM.fromList
           [ ( pId
             , clientPostToMessage (toClientPost x Nothing)

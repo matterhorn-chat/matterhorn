@@ -197,7 +197,7 @@ canLeaveChannel cInfo = not $ cInfo^.cdType `elem` [Direct]
 -- ** Manage the collection of all Channels
 
 -- | Define a binary kinded type to allow derivation of functor.
-newtype AllMyChannels a = AllChannels { _ofChans :: HM.HashMap ChannelId a }
+newtype AllMyChannels a = AllChannels { _ofChans :: HashMap ChannelId a }
     deriving (Functor, Foldable, Traversable)
 
 -- | Define the exported typename which universally binds the

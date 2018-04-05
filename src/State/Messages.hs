@@ -8,7 +8,6 @@ module State.Messages
 
 
 import           Data.Function (on)
-import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
 import qualified Data.Text as T
 import           Lens.Micro.Platform
@@ -62,7 +61,7 @@ lastMsg = withFirstMessage id
 -- Flagged messages
 
 
-loadFlaggedMessages :: Seq.Seq FlaggedPost -> ChatState -> IO ()
+loadFlaggedMessages :: Seq FlaggedPost -> ChatState -> IO ()
 loadFlaggedMessages prefs st = doAsyncWithIO Normal st $ do
   return $ sequence_ [ updateMessageFlag (flaggedPostId fp) True
                      | fp <- toList prefs

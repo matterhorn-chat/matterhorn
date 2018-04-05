@@ -19,7 +19,6 @@ import           Control.Concurrent.STM.Delay
 import           Control.Exception (SomeException, try, finally)
 import           Data.List (isInfixOf)
 import qualified Data.Foldable as F
-import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Time (getCurrentTime, addUTCTime)
 import           Data.Time.LocalTime.TimeZone.Series (TimeZoneSeries)
@@ -39,7 +38,7 @@ import           State.Editing (requestSpellCheck)
 import           TimeUtils (lookupLocalTimeZone)
 import           Types
 
-updateUserStatuses :: STM.TVar (Seq.Seq UserId) -> MVar () -> Session -> IO (MH ())
+updateUserStatuses :: STM.TVar (Seq UserId) -> MVar () -> Session -> IO (MH ())
 updateUserStatuses usersVar lock session = do
   lockResult <- tryTakeMVar lock
   users <- STM.atomically $ STM.readTVar usersVar
@@ -53,7 +52,7 @@ updateUserStatuses usersVar lock session = do
       Just () -> putMVar lock () >> return (return ())
       _ -> return $ return ()
 
-startUserRefreshThread :: STM.TVar (Seq.Seq UserId) -> MVar () -> Session -> RequestChan -> IO ()
+startUserRefreshThread :: STM.TVar (Seq UserId) -> MVar () -> Session -> RequestChan -> IO ()
 startUserRefreshThread usersVar lock session requestChan = void $ forkIO $ forever refresh
   where
       seconds = (* (1000 * 1000))
