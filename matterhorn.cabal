@@ -185,3 +185,4 @@ test-suite test_messages
                     , vector               <= 0.12.0.1
                     , vty                  >= 5.20   && < 5.21
                     , xdg-basedir          >= 0.2    && < 0.3
+                    , semigroups           >= 0.18   && < 0.19

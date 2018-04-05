@@ -5,11 +5,10 @@ module Main where
 
 import           Control.Exception
 import           Data.Function (on)
-import           Data.List (intercalate, sortBy, sort)
+import           Data.List (sortBy)
 import qualified Data.List.UniqueUnsorted as U
 import qualified Data.Map as Map
-import           Data.Maybe (isNothing, fromJust, isJust, catMaybes)
-import           Data.Monoid.Compat
+import           Data.Maybe (fromJust)
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Time.Calendar (Day(..))
@@ -27,6 +26,7 @@ import           TimeUtils
 import           Types.DirectionalSeq
 import           Types.Messages
 import           Types.Posts
+import           Prelude.MH
 
 main :: IO ()
 main = defaultMain tests `catch` (\e -> do

@@ -1,8 +1,16 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE CPP #-}
+
+{-| This module is for internal re-exports of commonly-used
+  functions. This also lets us avoid churn between versions of GHC by
+  putting changed functions behind CPP in a single place.
+-}
 
 module Prelude.MH
-( module Prelude.Compat
+( module P
+#if !MIN_VERSION_base(4,11,0)
 , (<>)
+#endif
 , (<|>)
 -- commonly-used functions from Maybe
 , Maybe.isJust
@@ -32,7 +40,11 @@ module Prelude.MH
 , Exts.groupWith
 ) where
 
+
+#if !MIN_VERSION_base(4,11,0)
 import           Data.Semigroup ((<>))
+#endif
+import qualified Prelude.Compat as P
 import           Prelude.Compat
 import           Control.Applicative ((<|>))
 import qualified Control.Monad as Monad

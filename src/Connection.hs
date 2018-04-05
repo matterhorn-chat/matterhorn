@@ -9,7 +9,7 @@ import qualified Control.Concurrent.STM as STM
 import           Control.Exception (SomeException, catch)
 import           Data.Int (Int64)
 import qualified Data.HashMap.Strict as HM
-import           Data.Semigroup (Max(..), (<>))
+import           Data.Semigroup (Max(..))
 import           Data.Time (UTCTime(..), secondsToDiffTime, getCurrentTime, diffUTCTime)
 import           Data.Time.Calendar (Day(..))
 import           Lens.Micro.Platform

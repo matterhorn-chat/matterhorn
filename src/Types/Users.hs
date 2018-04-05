@@ -32,8 +32,7 @@ module Types.Users
   )
 where
 
-import           Data.Foldable (find)
-import           Data.Semigroup ((<>), Max(..))
+import           Data.Semigroup (Max(..))
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
 import           Data.Time (UTCTime)
