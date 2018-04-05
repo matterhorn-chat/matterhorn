@@ -20,7 +20,7 @@ import qualified Data.Foldable as F
 import qualified Data.Text as T
 import qualified Data.Sequence as Seq
 import qualified Data.HashMap.Strict as HM
-import Lens.Micro.Platform
+import Lens.Micro.Platform ((.=), (%=), (.~), to)
 import qualified Network.Mattermost.Endpoints as MM
 import Network.Mattermost.Types
 import qualified Data.Text.Zipper as Z

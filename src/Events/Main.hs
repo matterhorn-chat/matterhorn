@@ -11,7 +11,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Zipper as Z
 import qualified Data.Text.Zipper.Generic.Words as Z
 import qualified Graphics.Vty as Vty
-import Lens.Micro.Platform
+import Lens.Micro.Platform ((%=), (.=), to, at)
 
 import Types
 import Events.Keybindings

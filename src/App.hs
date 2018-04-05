@@ -10,7 +10,6 @@ import           Prelude.MH
 import           Brick
 import           Control.Monad.Trans.Except (runExceptT)
 import qualified Graphics.Vty as Vty
-import           Lens.Micro.Platform
 import           System.IO (IOMode(WriteMode), openFile, hClose)
 import           Text.Aspell (stopAspell)
 

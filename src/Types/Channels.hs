@@ -45,7 +45,9 @@ module Types.Channels
 where
 
 import qualified Data.HashMap.Strict as HM
-import           Lens.Micro.Platform
+import           Lens.Micro.Platform ((%~), (.~), Traversal', Lens',
+                                       makeLenses, ix, at,
+                                       to, non)
 import           Network.Mattermost.Lenses hiding (Lens')
 import           Network.Mattermost.Types ( Channel(..), UserId, ChannelId
                                           , ChannelMember(..)

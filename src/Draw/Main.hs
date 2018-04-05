@@ -21,7 +21,7 @@ import           Data.List (intersperse)
 import qualified Data.Text as T
 import           Data.Text.Zipper (cursorPosition, insertChar, getText, gotoEOL)
 import           Data.Char (isSpace, isPunctuation)
-import           Lens.Micro.Platform
+import           Lens.Micro.Platform ((.~), (^?!), to, view, folding)
 
 import           Network.Mattermost.Types (ChannelId, Type(Direct), ServerTime(..), UserId)
 

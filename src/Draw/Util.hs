@@ -6,7 +6,7 @@ import Prelude.MH
 import Brick
 import qualified Data.Text as T
 import qualified Data.Set as Set
-import Lens.Micro.Platform
+import Lens.Micro.Platform (to)
 import Network.Mattermost.Types
 
 import Types

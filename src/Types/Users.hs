@@ -35,7 +35,7 @@ where
 import           Data.Semigroup (Max(..))
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
-import           Lens.Micro.Platform
+import           Lens.Micro.Platform ((%~), makeLenses, ix)
 import           Network.Mattermost.Types (Id(Id), UserId(..), User(..), idString)
 import           Prelude ()
 import           Prelude.MH

@@ -12,7 +12,6 @@ import qualified Data.HashMap.Strict as HM
 import           Data.Semigroup (Max(..))
 import           Data.Time (UTCTime(..), secondsToDiffTime, getCurrentTime, diffUTCTime)
 import           Data.Time.Calendar (Day(..))
-import           Lens.Micro.Platform
 
 import           Network.Mattermost.Types (ChannelId)
 import qualified Network.Mattermost.WebSocket as WS

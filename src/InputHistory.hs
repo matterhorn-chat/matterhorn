@@ -13,7 +13,7 @@ import Prelude ()
 import Prelude.MH
 
 import Control.Monad.Trans.Except
-import Lens.Micro.Platform
+import Lens.Micro.Platform ((.~), (^?), (%~), at, ix, makeLenses)
 import qualified Data.HashMap.Strict as HM
 import System.Directory (createDirectoryIfMissing)
 import System.FilePath (dropFileName)

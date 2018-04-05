@@ -19,8 +19,10 @@ module Prelude.MH
 , Maybe.maybeToList
 , Maybe.fromMaybe
 , Maybe.catMaybes
+
 -- a non-partial Read function
 , Read.readMaybe
+
 -- commonly-used functions from Monad
 , Monad.forM
 , Monad.forM_
@@ -32,6 +34,7 @@ module Prelude.MH
 , Monad.forever
 , Monad.foldM
 , Monad.MonadIO(..)
+
 -- commonly-used functions from List
 , Foldable.toList
 , List.find
@@ -39,6 +42,12 @@ module Prelude.MH
 , List.intercalate
 , Exts.sortWith
 , Exts.groupWith
+
+-- common read-only lens operators
+, (Lens.&)
+, (Lens.^.)
+, Lens.use
+
 -- various type aliases
 , Text
 , HashMap
@@ -63,6 +72,7 @@ import qualified Data.List as List
 import qualified Data.Maybe as Maybe
 import qualified GHC.Exts as Exts
 import qualified Text.Read as Read
+import qualified Lens.Micro.Platform as Lens
 
 -- these below we import only for type aliases
 import           Data.Text (Text)

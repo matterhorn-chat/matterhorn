@@ -14,7 +14,6 @@ import qualified Data.Text as T
 import           Data.Time.Calendar (Day(..))
 import           Data.Time.Clock (UTCTime(..), getCurrentTime
                                  , secondsToDiffTime)
-import           Lens.Micro.Platform
 import           Message_QCA
 import           Network.Mattermost.Types
 import           System.Exit

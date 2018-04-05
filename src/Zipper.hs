@@ -19,7 +19,7 @@ import Prelude.MH
 
 import qualified Data.Foldable as F
 
-import Lens.Micro.Platform (Lens, lens, ix, (&), (.~))
+import Lens.Micro.Platform (Lens, lens, ix, (.~))
 
 data Zipper a = Zipper
   { zFocus :: Int

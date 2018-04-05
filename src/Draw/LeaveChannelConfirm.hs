@@ -10,7 +10,6 @@ import Prelude.MH
 import Brick
 import Brick.Widgets.Center
 import Brick.Widgets.Border
-import Lens.Micro.Platform ((^.))
 
 import Types
 import Themes

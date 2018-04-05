@@ -10,7 +10,7 @@ import qualified Data.Set as Set
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
-import           Lens.Micro.Platform
+import           Lens.Micro.Platform ((.=))
 
 import           Network.Mattermost.Types
 import           Network.Mattermost.Lenses

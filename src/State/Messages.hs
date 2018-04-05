@@ -10,7 +10,8 @@ module State.Messages
 import           Data.Function (on)
 import qualified Data.Set as Set
 import qualified Data.Text as T
-import           Lens.Micro.Platform
+import           Lens.Micro.Platform ((.=), (%=), (%~), (.~), to, at,
+                                     traversed, filtered, ix)
 import           Network.Mattermost
 import           Network.Mattermost.Types
 import           State.Common

@@ -8,7 +8,6 @@ import Brick.Themes (themeDescriptions)
 import Brick.Widgets.Border
 import Brick.Widgets.Center (hCenter, centerLayer)
 import Brick.Widgets.List (listSelectedFocusedAttr)
-import Lens.Micro.Platform
 import qualified Data.Map as M
 import qualified Data.Text as T
 import qualified Graphics.Vty as Vty

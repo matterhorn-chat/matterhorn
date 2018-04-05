@@ -5,7 +5,7 @@ import Prelude.MH
 
 import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
-import Lens.Micro.Platform
+import Lens.Micro.Platform ((%=))
 
 import Events.Keybindings
 import Types

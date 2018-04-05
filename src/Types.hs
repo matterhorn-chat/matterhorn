@@ -216,9 +216,9 @@ import qualified Data.Vector as Vec
 import qualified Data.HashMap.Strict as HM
 import           Data.List (partition, sortBy)
 import qualified Data.Set as Set
-import           Lens.Micro.Platform ( at, makeLenses, lens, (&), (^.), (%~), (.~), (^?!), (.=)
-                                     , (%=), (^?)
-                                     , use, _Just, Traversal', preuse, (^..), folded, to, view )
+import           Lens.Micro.Platform ( at, makeLenses, lens, (%~), (^?!), (.=)
+                                     , (%=), (^?), (.~)
+                                     , _Just, Traversal', preuse, (^..), folded, to, view )
 import           Network.Mattermost (ConnectionData)
 import           Network.Mattermost.Exceptions
 import           Network.Mattermost.Lenses

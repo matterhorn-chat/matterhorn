@@ -15,7 +15,7 @@ import           Control.Exception (catch)
 import           Data.Maybe (fromJust)
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
-import           Lens.Micro.Platform
+import           Lens.Micro.Platform ((%~))
 import           System.Exit (exitFailure)
 import           System.FilePath ((</>), isRelative, dropFileName)
 import           System.IO (Handle)

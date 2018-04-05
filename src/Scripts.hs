@@ -8,7 +8,6 @@ import qualified Data.Text as T
 import Control.Concurrent (takeMVar, newEmptyMVar)
 import qualified Control.Concurrent.STM as STM
 import System.Exit (ExitCode(..))
-import Lens.Micro.Platform (use)
 import Prelude ()
 import Prelude.MH
 

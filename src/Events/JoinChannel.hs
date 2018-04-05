@@ -5,7 +5,7 @@ import Prelude.MH
 
 import Brick.Widgets.List
 import qualified Graphics.Vty as Vty
-import Lens.Micro.Platform
+import Lens.Micro.Platform ((.=))
 
 import Network.Mattermost.Types (getId)
 

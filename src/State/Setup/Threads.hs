@@ -21,7 +21,7 @@ import           Data.List (isInfixOf)
 import qualified Data.Foldable as F
 import qualified Data.Text as T
 import           Data.Time (getCurrentTime, addUTCTime)
-import           Lens.Micro.Platform
+import           Lens.Micro.Platform ((.=), (%=), (%~), mapped)
 import           System.Exit (ExitCode(ExitSuccess))
 import           System.IO (hPutStrLn, hFlush)
 import           System.IO.Temp (openTempFile)

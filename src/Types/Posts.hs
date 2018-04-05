@@ -50,7 +50,7 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Time.Clock (getCurrentTime)
-import           Lens.Micro.Platform ((^.), makeLenses)
+import           Lens.Micro.Platform (makeLenses)
 import           Network.Mattermost.Types
 import           Network.Mattermost.Lenses
 import           Prelude ()

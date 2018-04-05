@@ -22,7 +22,6 @@ module Events.Keybindings
 
 import qualified Data.Map.Strict as M
 import qualified Graphics.Vty as Vty
-import           Lens.Micro.Platform (use)
 
 import           Types
 import           Types.KeyEvents

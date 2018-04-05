@@ -1,7 +1,7 @@
 module State.PostListOverlay where
 
 import qualified Data.Text as T
-import Lens.Micro.Platform
+import Lens.Micro.Platform ((.=))
 import Network.Mattermost.Endpoints
 import Network.Mattermost.Types
 import Prelude ()

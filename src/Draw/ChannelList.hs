@@ -25,7 +25,7 @@ import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
 import           Draw.Util
-import           Lens.Micro.Platform
+import           Lens.Micro.Platform (Getting, at, non)
 import           State
 import           Themes
 import           Types

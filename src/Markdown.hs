@@ -43,7 +43,6 @@ import qualified Data.Sequence as S
 import qualified Skylighting as Sky
 import qualified Data.Set as Set
 import qualified Graphics.Vty as V
-import           Lens.Micro.Platform ((^.))
 
 import           Network.Mattermost.Lenses (postEditAtL, postCreateAtL)
 import           Network.Mattermost.Types (ServerTime(..))

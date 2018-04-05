@@ -14,7 +14,7 @@ import Brick.Focus
 import Brick.Widgets.Edit
 import Brick.Widgets.Center
 import Brick.Widgets.Border
-import Lens.Micro.Platform
+import Lens.Micro.Platform ((.~), Lens', makeLenses)
 import qualified Data.Text as T
 import Graphics.Vty
 import System.Exit (exitSuccess)

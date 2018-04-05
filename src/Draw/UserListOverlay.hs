@@ -10,7 +10,7 @@ import           Control.Monad.Trans.Reader (withReaderT)
 import qualified Data.Foldable as F
 import qualified Data.Text as T
 import qualified Graphics.Vty as V
-import           Lens.Micro.Platform
+import           Lens.Micro.Platform ((%~))
 
 import Brick
 import Brick.Widgets.Border

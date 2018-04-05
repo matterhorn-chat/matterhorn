@@ -7,7 +7,7 @@ import           Prelude.MH
 
 import           Control.Monad.Trans.Reader (withReaderT)
 import qualified Data.Text as T
-import           Lens.Micro.Platform
+import           Lens.Micro.Platform ((^?), (%~), to)
 import           Network.Mattermost.Types
 import           Network.Mattermost.Lenses
 

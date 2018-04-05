@@ -19,7 +19,7 @@ import qualified Data.Text.Zipper as Z
 import qualified Data.Text.Zipper.Generic.Words as Z
 import           Data.Time (getCurrentTime)
 import           Graphics.Vty (Event(..), Key(..), Modifier(..))
-import           Lens.Micro.Platform
+import           Lens.Micro.Platform ((%=), (.=), (.~), to)
 import qualified System.Environment as Sys
 import qualified System.Exit as Sys
 import qualified System.IO as Sys

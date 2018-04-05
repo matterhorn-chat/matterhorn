@@ -11,7 +11,7 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
 import qualified Data.Text as T
-import           Lens.Micro.Platform
+import           Lens.Micro.Platform ((%=), (%~), (.~), traversed)
 import           System.Hclip (setClipboard, ClipboardException(..))
 
 import           Network.Mattermost.Endpoints

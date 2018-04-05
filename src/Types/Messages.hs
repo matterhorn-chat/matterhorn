@@ -77,7 +77,7 @@ import           Cheapskate (Blocks)
 import qualified Data.Map.Strict as Map
 import           Data.Sequence as Seq
 import           Data.Tuple
-import           Lens.Micro.Platform
+import           Lens.Micro.Platform (makeLenses)
 import           Network.Mattermost.Types (ChannelId, PostId, Post, ServerTime, UserId)
 import           Types.DirectionalSeq
 import           Types.Posts

@@ -12,7 +12,6 @@ import Brick.Widgets.List
 import Brick.Widgets.Center
 import Brick.Widgets.Border
 import qualified Data.Text as T
-import Lens.Micro.Platform ((^.))
 import qualified Data.Vector as V
 import Text.Wrap ( defaultWrapSettings, preserveIndentation )
 import Network.Mattermost.Types (Channel)

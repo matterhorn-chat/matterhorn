@@ -8,7 +8,6 @@ import Prelude.MH
 import qualified Control.Exception as Exn
 import qualified Data.Char as Char
 import qualified Data.Text as T
-import           Lens.Micro.Platform
 import qualified Network.Mattermost.Endpoints as MM
 import qualified Network.Mattermost.Types as MM
 import qualified Network.Mattermost.Exceptions as MM

@@ -17,7 +17,7 @@ import Control.Monad.Trans.Except
 import qualified Data.Aeson as A
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as LBS
-import Lens.Micro.Platform
+import Lens.Micro.Platform (makeLenses)
 import System.Directory (createDirectoryIfMissing)
 import System.FilePath (dropFileName)
 import qualified System.Posix.Files as P
