@@ -13,6 +13,8 @@ module Types.Users
   -- * Creating UserInfo objects
   , userInfoFromUser
   -- * Miscellaneous
+  , userSigil
+  , trimUserSigil
   , statusFromText
   , findUserById
   , findUserByName
@@ -152,21 +154,31 @@ expireTypingUsers expiryTimestamp =
 findUserById :: UserId -> Users -> Maybe UserInfo
 findUserById uId = HM.lookup uId . _ofUsers
 
--- | Get the User information given the user's name.  This is an exact
--- match on the username field, not necessarly the presented name.
+-- | Get the User information given the user's name. This is an exact
+-- match on the username field, not necessarly the presented name. It
+-- will automatically trim a user sigil from the input.
 findUserByName :: Users -> Text -> Maybe (UserId, UserInfo)
 findUserByName allusers name =
-  case filter ((== name) . _uiName . snd) $ HM.toList $ _ofUsers allusers of
+  case filter ((== trimUserSigil name) . _uiName . snd) $ HM.toList $ _ofUsers allusers of
     (usr : []) -> Just usr
     _ -> Nothing
 
--- | Get the User information given the user's name.  This is an exact
--- match on the nickname field, not necessarily the presented name.
+-- | Get the User information given the user's name. This is an exact
+-- match on the nickname field, not necessarily the presented name. It
+-- will automatically trim a user sigil from the input.
 findUserByNickname :: [UserInfo] -> Text -> Maybe UserInfo
 findUserByNickname uList nick =
   find (nickCheck nick) uList
     where
-        nickCheck n = maybe False (== n) . _uiNickName
+        nickCheck n = maybe False (== (trimUserSigil n)) . _uiNickName
+
+userSigil :: Text
+userSigil = "@"
+
+trimUserSigil :: Text -> Text
+trimUserSigil n
+    | userSigil `T.isPrefixOf` n = T.tail n
+    | otherwise                  = n
 
 -- | Extract a specific user from the collection and perform an
 -- endomorphism operation on it, then put it back into the collection.

@@ -37,7 +37,6 @@ module Types
   , refreshChannelZipper
   , getChannelIdsInOrder
 
-  , trimUserSigil
   , trimChannelSigil
 
   , LinkChoice(LinkChoice)
@@ -185,7 +184,6 @@ module Types
   , displaynameForUserId
   , raiseInternalEvent
 
-  , userSigil
   , normalChannelSigil
 
   , HighlightSet(..)
@@ -407,9 +405,6 @@ makeLenses ''LinkChoice
 -- Sigils
 normalChannelSigil :: Text
 normalChannelSigil = "~"
-
-userSigil :: Text
-userSigil = "@"
 
 -- ** Channel-matching types
 
@@ -955,11 +950,6 @@ trimChannelSigil :: Text -> Text
 trimChannelSigil n
     | normalChannelSigil `T.isPrefixOf` n = T.tail n
     | otherwise                           = n
-
-trimUserSigil :: Text -> Text
-trimUserSigil n
-    | userSigil `T.isPrefixOf` n = T.tail n
-    | otherwise                  = n
 
 addNewUser :: UserInfo -> MH ()
 addNewUser u = do
