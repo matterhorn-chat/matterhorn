@@ -112,11 +112,7 @@ startSubprocessLoggerThread logChan requestChan = do
                   hFlush logHandle
 
                   STM.atomically $ STM.writeTChan requestChan $ do
-                      return $ do
-                          let msg = T.pack $
-                                "An error occurred when running " <> show progName <>
-                                "; see " <> logPath <> " for details."
-                          mhError msg
+                      return $ mhError $ ProgramExecutionFailed (T.pack progName) (T.pack logPath)
 
                   logMonitor (Just (logPath, logHandle))
 
@@ -265,9 +261,10 @@ doAsyncWork config requestChan eventChan = do
     startWork
     res <- try req
     case res of
-      Left e ->
-          case fromException e of
-              Nothing -> writeBChan eventChan (AsyncErrEvent e)
-              Just mmErr -> writeBChan eventChan (AsyncMattermostError mmErr)
+      Left e -> do
+          let err = case fromException e of
+                Nothing -> AsyncErrEvent e
+                Just mmErr -> ServerError mmErr
+          writeBChan eventChan $ IEvent $ DisplayError err
       Right upd ->
           writeBChan eventChan (RespEvent upd)

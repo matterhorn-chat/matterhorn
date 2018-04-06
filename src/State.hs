@@ -206,7 +206,7 @@ createGroupChannel usernameList = do
         findUserIds (n:ns) = do
             case userByUsername n st of
                 Nothing -> do
-                    mhError $ "No such user: " <> n
+                    mhError $ NoSuchUser n
                     return []
                 Just u -> (u^.uiId:) <$> findUserIds ns
 
@@ -424,7 +424,7 @@ beginCurrentChannelDeleteConfirm = do
         let chType = chan^.ccInfo.cdType
         if chType /= Direct
             then setMode DeleteChannelConfirm
-            else mhError "Direct message channels cannot be deleted."
+            else mhError $ GenericError "Direct message channels cannot be deleted."
 
 deleteCurrentChannel :: MH ()
 deleteCurrentChannel = do
@@ -519,7 +519,7 @@ joinChannelByName rawName = do
     doAsyncWith Preempt $ do
         result <- try $ MM.mmGetChannelByName tId (trimChannelSigil rawName) session
         return $ case result of
-            Left (_::SomeException) -> mhError $ T.pack $ "No such channel: " <> (show rawName)
+            Left (_::SomeException) -> mhError $ NoSuchChannel rawName
             Right chan -> joinChannel $ getId chan
 
 startJoinChannel :: MH ()
@@ -576,7 +576,7 @@ addUserToCurrentChannel uname = do
                 tryMM (void $ MM.mmAddUser cId channelMember session)
                       (const $ return (return ()))
         _ -> do
-            mhError ("No such user: " <> uname)
+            mhError $ NoSuchUser uname
 
 removeUserFromCurrentChannel :: Text -> MH ()
 removeUserFromCurrentChannel uname = do
@@ -590,14 +590,14 @@ removeUserFromCurrentChannel uname = do
                 tryMM (void $ MM.mmRemoveUserFromChannel cId (UserById $ u^.uiId) session)
                       (const $ return (return ()))
         _ -> do
-            mhError ("No such user: " <> uname)
+            mhError $ NoSuchUser uname
 
 startLeaveCurrentChannel :: MH ()
 startLeaveCurrentChannel = do
     cInfo <- use (csCurrentChannel.ccInfo)
     case canLeaveChannel cInfo of
         True -> setMode LeaveChannelConfirm
-        False -> mhError "The /leave command cannot be used with this channel."
+        False -> mhError $ GenericError "The /leave command cannot be used with this channel."
 
 leaveCurrentChannel :: MH ()
 leaveCurrentChannel = use csCurrentChannelId >>= leaveChannel
@@ -1072,8 +1072,7 @@ changeChannel :: Text -> MH ()
 changeChannel name = do
     result <- gets (channelIdByName name)
     user <- gets (userByUsername name)
-    let err = mhError $ T.pack $ "The input " <> show name <> " matches both channels " <>
-                                 "and users. Try using '@' or '~' to disambiguate."
+    let err = mhError $ AmbiguousName name
 
     case result of
       (Nothing, Nothing)
@@ -1081,7 +1080,7 @@ changeChannel name = do
           -- channel, so create one.
           | Just _ <- user -> attemptCreateDMChannel name
           -- There were no matches of any kind.
-          | otherwise -> mhError $ T.pack $ "No such channel: " <> show name
+          | otherwise -> mhError $ NoSuchChannel name
       (Just cId, Nothing)
           -- We matched a channel and there was an explicit sigil, so we
           -- don't care about the username match.
@@ -1125,9 +1124,7 @@ attemptCreateDMChannel name = do
   let myName = if displayNick && not (T.null $ userNickname me)
                then userNickname me
                else me^.userUsernameL
-  if name == myName
-    then mhError "Cannot create a DM channel with yourself"
-    else do
+  when (name /= myName) $ do
       let uName = if displayNick
                   then
                       maybe name (view uiName)
@@ -1147,7 +1144,7 @@ attemptCreateDMChannel name = do
           member <- MM.mmGetChannelMember (getId nc) UserMe session
           return $ handleNewChannel True cwd member
       else
-        mhError ("No channel or user named " <> name)
+        mhError $ NoSuchUser name
 
 createOrdinaryChannel :: Text -> MH ()
 createOrdinaryChannel name  = do
@@ -1783,7 +1780,7 @@ openSelectedURL = whenMode UrlSelect $ do
         Just (_, link) -> do
             opened <- openURL link
             when (not opened) $ do
-                mhError "Config option 'urlOpenCommand' missing; cannot open URL."
+                mhError $ ConfigOptionMissing "urlOpenCommand"
                 setMode Main
 
 openURL :: LinkChoice -> MH Bool
@@ -1927,7 +1924,7 @@ openSelectedMessageURLs = whenMode MessageSelect $ do
         case openedAll of
             True -> setMode Main
             False ->
-                mhError "Config option 'urlOpenCommand' missing; cannot open URL."
+                mhError $ ConfigOptionMissing "urlOpenCommand"
 
 shouldSkipMessage :: Text -> Bool
 shouldSkipMessage "" = True
@@ -1943,7 +1940,7 @@ sendMessage mode msg =
             case status of
                 Disconnected -> do
                     let m = "Cannot send messages while disconnected."
-                    mhError m
+                    mhError $ GenericError m
                 Connected -> do
                     let chanId = st^.csCurrentChannelId
                     session <- getSession

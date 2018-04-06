@@ -15,6 +15,7 @@ module Types
   , ChannelSelectMatch(..)
   , MatchValue(..)
   , StartupStateInfo(..)
+  , MHError(..)
   , ConnectionInfo(..)
   , ciHostname
   , ciPort
@@ -779,10 +780,6 @@ data MHEvent
     -- ^ For events that arise from the websocket
     | RespEvent (MH ())
     -- ^ For the result values of async IO operations
-    | AsyncMattermostError MattermostError
-    -- ^ For Mattermost-specific exceptions
-    | AsyncErrEvent SomeException
-    -- ^ For errors that arise in the course of async IO operations
     | RefreshWebsocketEvent
     -- ^ Tell our main loop to refresh the websocket connection
     | WebsocketParseError String
@@ -799,9 +796,34 @@ data MHEvent
     -- ^ MH-internal events
 
 data InternalEvent
-    = DisplayError Text
-      -- ^ Display a generic error message to the user
-    deriving (Eq, Show)
+    = DisplayError MHError
+    -- ^ Some kind of application error occurred
+
+data MHError =
+    GenericError T.Text
+    -- ^ A generic error message constructor
+    | NoSuchChannel T.Text
+    -- ^ The specified channel does not exist
+    | NoSuchUser T.Text
+    -- ^ The specified user does not exist
+    | AmbiguousName T.Text
+    -- ^ The specified name matches both a user and a channel
+    | ServerError MattermostError
+    -- ^ A Mattermost server error occurred
+    | ClipboardError T.Text
+    -- ^ A problem occurred trying to deal with yanking or the system
+    -- clipboard
+    | ConfigOptionMissing T.Text
+    -- ^ A missing config option is required to perform an operation
+    | ProgramExecutionFailed T.Text T.Text
+    -- ^ Args: program name, path to log file. A problem occurred when
+    -- running the program.
+    | NoSuchScript T.Text
+    -- ^ The specified script was not found
+    | NoSuchHelpTopic T.Text
+    -- ^ The specified help topic was not found
+    | AsyncErrEvent SomeException
+    -- ^ For errors that arise in the course of async IO operations
 
 -- ** Application State Lenses
 

@@ -22,6 +22,7 @@ import           State
 import           State.Common
 import           Types
 import           Types.KeyEvents
+import           HelpTopics
 
 import           Events.Keybindings
 import           Events.ShowHelp
@@ -60,23 +61,46 @@ onAppEvent (BGBusy n) = csWorkerIsBusy .= Just n
 onAppEvent (WSEvent we) =
   handleWSEvent we
 onAppEvent (RespEvent f) = f
-onAppEvent (AsyncMattermostError e) = do
-  mhError $ mattermostErrorMessage e
-onAppEvent (AsyncErrEvent e) = do
-  let msg = "An unexpected error has occurred! The exception encountered was:\n  " <>
-            T.pack (show e) <>
-            "\nPlease report this error at https://github.com/matterhorn-chat/matterhorn/issues"
-  mhError msg
 onAppEvent (WebsocketParseError e) = do
   let msg = "A websocket message could not be parsed:\n  " <>
             T.pack e <>
             "\nPlease report this error at https://github.com/matterhorn-chat/matterhorn/issues"
-  mhError msg
+  mhError $ GenericError msg
 onAppEvent (IEvent e) = do
   handleIEvent e
 
 handleIEvent :: InternalEvent -> MH ()
-handleIEvent (DisplayError msg) = postErrorMessage' msg
+handleIEvent (DisplayError e) = postErrorMessage' $ formatError e
+
+formatError :: MHError -> T.Text
+formatError (GenericError msg) =
+    msg
+formatError (NoSuchChannel chan) =
+    T.pack $ "No such channel: " <> show chan
+formatError (NoSuchUser user) =
+    T.pack $ "No such user: " <> show user
+formatError (AmbiguousName name) =
+    T.pack $ "The input " <> show name <> " matches both channels " <>
+             "and users. Try using '@' or '~' to disambiguate."
+formatError (ServerError e) =
+    mattermostErrorMessage e
+formatError (ClipboardError msg) =
+    msg
+formatError (ConfigOptionMissing opt) =
+    T.pack $ "Config option " <> show opt <> " missing"
+formatError (ProgramExecutionFailed progName logPath) =
+    T.pack $ "An error occurred when running " <> show progName <>
+             "; see " <> show logPath <> " for details."
+formatError (NoSuchScript name) =
+    "No script named " <> name <> " was found"
+formatError (NoSuchHelpTopic topic) =
+    let knownTopics = ("  - " <>) <$> helpTopicName <$> helpTopics
+    in "Unknown help topic: `" <> topic <> "`. " <>
+       (T.unlines $ "Available topics are:" : knownTopics)
+formatError (AsyncErrEvent e) =
+    "An unexpected error has occurred! The exception encountered was:\n  " <>
+    T.pack (show e) <>
+    "\nPlease report this error at https://github.com/matterhorn-chat/matterhorn/issues"
 
 onVtyEvent :: Vty.Event -> MH ()
 onVtyEvent e = do

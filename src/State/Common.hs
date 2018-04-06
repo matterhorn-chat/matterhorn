@@ -17,7 +17,6 @@ import           System.Hclip (setClipboard, ClipboardException(..))
 import           Network.Mattermost.Endpoints
 import           Network.Mattermost.Types
 import           Network.Mattermost.Lenses
-import           Network.Mattermost.Exceptions
 
 import           Types
 
@@ -33,8 +32,7 @@ tryMM :: IO a
 tryMM act onSuccess = do
     result <- liftIO $ try act
     case result of
-        Left (MattermostError { mattermostErrorMessage = msg }) ->
-          return $ mhError msg
+        Left e -> return $ mhError $ ServerError e
         Right value -> liftIO $ onSuccess value
 
 -- * Background Computation
@@ -235,9 +233,8 @@ postErrorMessage' :: Text -> MH ()
 postErrorMessage' err = addClientMessage =<< newClientMessage Error err
 
 -- | Raise a rich error
-mhError :: Text -> MH ()
-mhError err = do
-  raiseInternalEvent (DisplayError err)
+mhError :: MHError -> MH ()
+mhError err = raiseInternalEvent (DisplayError err)
 
 postErrorMessageIO :: Text -> ChatState -> IO ChatState
 postErrorMessageIO err st = do
@@ -283,6 +280,6 @@ copyToClipboard txt = do
             MissingCommands cmds ->
               "Could not set clipboard due to missing one of the " <>
               "required program(s): " <> (T.pack $ show cmds)
-      mhError errMsg
+      mhError $ ClipboardError errMsg
     Right () ->
       return ()
