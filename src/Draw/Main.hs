@@ -273,7 +273,7 @@ renderChannelHeader st hs chan =
         chnName = chan^.ccInfo.cdName
         topicStr = chan^.ccInfo.cdHeader
         userHeader u = let s = T.intercalate " " $ filter (not . T.null) parts
-                           parts = [ u^.uiName
+                           parts = [ userSigil <> u^.uiName
                                    , if (all T.null names)
                                      then mempty
                                      else "is"
