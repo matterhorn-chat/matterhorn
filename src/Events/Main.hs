@@ -183,7 +183,9 @@ tabComplete dir = do
           ch <- channelByName cname st
           case ch^.ccInfo.cdType of
               Group -> Nothing
-              _     -> Just [dupe cname, dupe $ normalChannelSigil <> cname]
+              _     -> Just [ (cname, normalChannelSigil <> cname)
+                            , dupe $ normalChannelSigil <> cname
+                            ]
           )
 
       userCompletions = concat $ catMaybes (flip map allUIds $ \uId ->
@@ -193,9 +195,13 @@ tabComplete dir = do
               Just u | u^.uiDeleted -> Nothing
               Just u ->
                   let mNick = case u^.uiNickName of
-                        Just nick | displayNick -> [(userSigil <> nick, userSigil <> u^.uiName), (nick, u^.uiName)]
+                        Just nick | displayNick -> [ (userSigil <> nick, userSigil <> u^.uiName)
+                                                   , (nick, userSigil <> u^.uiName)
+                                                   ]
                         _ -> []
-                  in Just $ [dupe $ u^.uiName, dupe $ userSigil <> u^.uiName] <> mNick
+                  in Just $ [ (u^.uiName, userSigil <> u^.uiName)
+                            , dupe $ userSigil <> u^.uiName
+                            ] <> mNick
           )
 
       commandCompletions = dupe <$> map ("/" <>) (commandName <$> commandList)
