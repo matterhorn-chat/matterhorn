@@ -1,4 +1,13 @@
 
+40800.0.3
+=========
+
+Bug fixes:
+ * Fixed a bug that prevented DM channel changes when the DM channels
+   were named with user nicknames (#384)
+ * "Resource vanished" exceptions will no longer be silenced during
+   async work.
+
 40800.0.2
 =========
 
