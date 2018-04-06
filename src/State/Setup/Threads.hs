@@ -17,7 +17,6 @@ import           Control.Concurrent (threadDelay, forkIO, MVar, putMVar, tryTake
 import qualified Control.Concurrent.STM as STM
 import           Control.Concurrent.STM.Delay
 import           Control.Exception (SomeException, try, finally, fromException)
-import           Data.List (isInfixOf)
 import qualified Data.Foldable as F
 import qualified Data.Text as T
 import           Data.Time (getCurrentTime, addUTCTime)
@@ -267,15 +266,8 @@ doAsyncWork config requestChan eventChan = do
     res <- try req
     case res of
       Left e ->
-          when (not $ shouldIgnore e) $
-              case fromException e of
-                  Nothing -> writeBChan eventChan (AsyncErrEvent e)
-                  Just mmErr -> writeBChan eventChan (AsyncMattermostError mmErr)
+          case fromException e of
+              Nothing -> writeBChan eventChan (AsyncErrEvent e)
+              Just mmErr -> writeBChan eventChan (AsyncMattermostError mmErr)
       Right upd ->
           writeBChan eventChan (RespEvent upd)
-
--- Filter for exceptions that we don't want to report to the user,
--- probably because they are not actionable and/or contain no useful
--- information.
-shouldIgnore :: SomeException -> Bool
-shouldIgnore e = "resource vanished" `isInfixOf` show e
