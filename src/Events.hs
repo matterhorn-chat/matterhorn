@@ -80,8 +80,9 @@ formatError (NoSuchChannel chan) =
 formatError (NoSuchUser user) =
     T.pack $ "No such user: " <> show user
 formatError (AmbiguousName name) =
-    T.pack $ "The input " <> show name <> " matches both channels " <>
-             "and users. Try using '@' or '~' to disambiguate."
+    (T.pack $ "The input " <> show name <> " matches both channels ") <>
+    "and users. Try using '" <> userSigil <> "' or '" <>
+    normalChannelSigil <> "' to disambiguate."
 formatError (ServerError e) =
     mattermostErrorMessage e
 formatError (ClipboardError msg) =
