@@ -1286,6 +1286,34 @@ deleteMessage new = do
   cId <- use csCurrentChannelId
   when (postChannelId new == cId) updateViewed
 
+maybePostUsername :: ChatState -> Post -> T.Text
+maybePostUsername st p =
+    fromMaybe T.empty $ do
+    uId <- postUserId p
+    usernameForUserId uId st
+
+runNotifyCommand :: Post -> Bool -> MH ()
+runNotifyCommand post mentioned = do
+    outputChan <- use (csResources.crSubprocessLog)
+    st <- use id
+    notifyCommand <- use (csResources.crConfiguration.to configActivityNotifyCommand)
+    case notifyCommand of
+        Nothing -> return ()
+        Just cmd ->
+            doAsyncWith Preempt $ do
+                let messageString = T.unpack $ postMessage post
+                    notified = if mentioned then "1" else "2"
+                    sender = T.unpack $ maybePostUsername st post
+                runLoggedCommand False outputChan (T.unpack cmd)
+                                 [notified, sender, messageString] Nothing Nothing
+                return $ return ()
+
+maybeNotify :: PostToAdd -> MH ()
+maybeNotify (OldPost _) = do
+    return ()
+maybeNotify (RecentPost post mentioned) = runNotifyCommand post mentioned
+
+
 maybeRingBell :: MH ()
 maybeRingBell = do
     doBell <- use (csResources.crConfiguration.to configActivityBell)
@@ -1299,28 +1327,33 @@ maybeRingBell = do
 -- viewed).  This is a monoid so that it can be folded over when there
 -- are multiple inbound posts to be processed.
 data PostProcessMessageAdd = NoAction
-                           | NotifyUser
+                           | NotifyUser [PostToAdd]
                            | UpdateServerViewed
-                           | NotifyUserAndServer
+                           | NotifyUserAndServer [PostToAdd]
 
 andProcessWith
   :: PostProcessMessageAdd -> PostProcessMessageAdd -> PostProcessMessageAdd
-andProcessWith NotifyUserAndServer _         = NotifyUserAndServer
-andProcessWith _ NotifyUserAndServer         = NotifyUserAndServer
-andProcessWith NotifyUser UpdateServerViewed = NotifyUserAndServer
-andProcessWith UpdateServerViewed NotifyUser = NotifyUserAndServer
-andProcessWith x NoAction                    = x
-andProcessWith _ x                           = x
+andProcessWith NoAction x                                        = x
+andProcessWith x NoAction                                        = x
+andProcessWith (NotifyUserAndServer p) UpdateServerViewed        = NotifyUserAndServer p
+andProcessWith (NotifyUserAndServer p1) (NotifyUser p2)          = NotifyUserAndServer (p1 <> p2)
+andProcessWith (NotifyUserAndServer p1) (NotifyUserAndServer p2) = NotifyUserAndServer (p1 <> p2)
+andProcessWith (NotifyUser p1) (NotifyUserAndServer p2)          = NotifyUser (p1 <> p2)
+andProcessWith (NotifyUser p1) (NotifyUser p2)                   = NotifyUser (p1 <> p2)
+andProcessWith (NotifyUser p) UpdateServerViewed                 = NotifyUserAndServer p
+andProcessWith UpdateServerViewed UpdateServerViewed             = UpdateServerViewed
+andProcessWith UpdateServerViewed (NotifyUserAndServer p)        = NotifyUserAndServer p
+andProcessWith UpdateServerViewed (NotifyUser p)                 = NotifyUserAndServer p
 
 -- | postProcessMessageAdd performs the actual actions indicated by
 -- the corresponding input value.
 postProcessMessageAdd :: PostProcessMessageAdd -> MH ()
 postProcessMessageAdd ppma = postOp ppma
  where
-   postOp NoAction            = return ()
-   postOp UpdateServerViewed  = updateViewed
-   postOp NotifyUser          = maybeRingBell
-   postOp NotifyUserAndServer = updateViewed >> maybeRingBell
+   postOp NoAction                = return ()
+   postOp UpdateServerViewed      = updateViewed
+   postOp (NotifyUser p)          = maybeRingBell >> mapM_ maybeNotify p
+   postOp (NotifyUserAndServer p) = updateViewed >> maybeRingBell >> mapM_ maybeNotify p
 
 -- | When we add posts to the application state, we either get them
 -- from the server during scrollback fetches (here called 'OldPost') or
@@ -1451,9 +1484,9 @@ addMessageToState newPostData = do
                         originUserAction =
                           if | fromMe                            -> NoAction
                              | ignoredJoinLeaveMessage           -> NoAction
-                             | notifyPref == NotifyOptionAll     -> NotifyUser
+                             | notifyPref == NotifyOptionAll     -> NotifyUser [newPostData]
                              | notifyPref == NotifyOptionMention
-                                 && wasMentioned                 -> NotifyUser
+                                 && wasMentioned                 -> NotifyUser [newPostData]
                              | otherwise                         -> NoAction
 
                     return $ curChannelAction `andProcessWith` originUserAction

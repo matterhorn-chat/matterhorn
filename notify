@@ -1,0 +1,38 @@
+#!/bin/sh
+#############################################################
+# Sample shell-script for using notify-send with matterhorn #
+#############################################################
+
+# Positional parameters
+mentioned="${1?}"
+sender="${2?}"
+message="${3?}"
+
+# Script options
+
+# notify_URGENCIES
+# First word is urgency for items where you are not mentioned, the second is
+# urgency for items where you are mentioned.  Use "none" to not be notified,
+# otherwise low, normal, critical are options
+notify_URGENCIES="normal normal"
+#notify_URGENCIES="none normal"
+# The desktop notification category
+notify_CATEGORY="im.received"
+# Notification header
+notify_HEAD="Matterhorn message from $sender"
+# Notification body
+notify_BODY="$message"
+
+getUrgencyHelper() {
+    shift "$mentioned"
+    echo "$1"
+}
+
+getUrgency() {
+    # we are using arguments as a poor-mans bash array for portability
+    # shellcheck disable=SC2086
+    getUrgencyHelper $notify_URGENCIES
+}
+
+test "$(getUrgency)" = "none" ||
+    notify-send -u "$(getUrgency)" -c "$notify_CATEGORY" "$notify_HEAD" "$notify_BODY"
