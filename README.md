@@ -159,6 +159,8 @@ name of the dictionary you'd like to use.
   and `HTTPS_PROXY` environment variables. (Plain HTTP proxies are not
   yet supported.)
 * Multiple color themes with color theme customization support
+* Custom notifications via notification scripts (see the
+  `activityNotifyCommand` configuration setting).
 
 # Spell Checking Support
 
