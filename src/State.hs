@@ -1287,28 +1287,31 @@ deleteMessage new = do
   when (postChannelId new == cId) updateViewed
 
 maybePostUsername :: ChatState -> Post -> T.Text
-maybePostUsername st p = case do { uId <- postUserId p; name <- usernameForUserId uId st; return name } of
-    Nothing -> T.empty
-    Just x -> x
+maybePostUsername st p =
+    fromMaybe T.empty $ do
+    uId <- postUserId p
+    usernameForUserId uId st
 
-maybeNotify :: [PostToAdd] -> MH ()
-maybeNotify [] = do 
-    return ()
-maybeNotify (OldPost _:ps) =
-    maybeNotify ps
-maybeNotify (RecentPost p m:ps) = do
+runNotifyCommand :: Post -> Bool -> MH ()
+runNotifyCommand post mentioned = do
     outputChan <- use (csResources.crSubprocessLog)
     st <- use id
-    notifyCmd <- use (csResources.crConfiguration.to configActivityNotifyCmd)
-    case notifyCmd of
+    notifyCommand <- use (csResources.crConfiguration.to configActivityNotifyCommand)
+    case notifyCommand of
         Nothing -> return ()
         Just cmd ->
             doAsyncWith Preempt $ do
-                let (messageString, notified, sender) = (T.unpack (postMessage p), if m then "1" else "2",  T.unpack (maybePostUsername st p)) 
+                let messageString = T.unpack $ postMessage post
+                    notified = if mentioned then "1" else "2"
+                    sender = T.unpack $ maybePostUsername st post
                 runLoggedCommand False outputChan (T.unpack cmd)
-                                             [notified, sender, messageString] Nothing Nothing
+                                 [notified, sender, messageString] Nothing Nothing
                 return $ return ()
-    maybeNotify ps
+
+maybeNotify :: PostToAdd -> MH ()
+maybeNotify (OldPost _) = do
+    return ()
+maybeNotify (RecentPost post mentioned) = runNotifyCommand post mentioned
 
 
 maybeRingBell :: MH ()
@@ -1331,13 +1334,16 @@ data PostProcessMessageAdd = NoAction
 andProcessWith
   :: PostProcessMessageAdd -> PostProcessMessageAdd -> PostProcessMessageAdd
 andProcessWith NoAction x                                        = x
+andProcessWith x NoAction                                        = x
 andProcessWith (NotifyUserAndServer p) UpdateServerViewed        = NotifyUserAndServer p
 andProcessWith (NotifyUserAndServer p1) (NotifyUser p2)          = NotifyUserAndServer (p1 <> p2)
 andProcessWith (NotifyUserAndServer p1) (NotifyUserAndServer p2) = NotifyUserAndServer (p1 <> p2)
+andProcessWith (NotifyUser p1) (NotifyUserAndServer p2)          = NotifyUser (p1 <> p2)
 andProcessWith (NotifyUser p1) (NotifyUser p2)                   = NotifyUser (p1 <> p2)
 andProcessWith (NotifyUser p) UpdateServerViewed                 = NotifyUserAndServer p
 andProcessWith UpdateServerViewed UpdateServerViewed             = UpdateServerViewed
-andProcessWith x y                                               = andProcessWith y x
+andProcessWith UpdateServerViewed (NotifyUserAndServer p)        = NotifyUserAndServer p
+andProcessWith UpdateServerViewed (NotifyUser p)                 = NotifyUserAndServer p
 
 -- | postProcessMessageAdd performs the actual actions indicated by
 -- the corresponding input value.
@@ -1346,8 +1352,8 @@ postProcessMessageAdd ppma = postOp ppma
  where
    postOp NoAction                = return ()
    postOp UpdateServerViewed      = updateViewed
-   postOp (NotifyUser p)          = maybeRingBell >> maybeNotify p
-   postOp (NotifyUserAndServer p) = updateViewed >> maybeRingBell >> maybeNotify p
+   postOp (NotifyUser p)          = maybeRingBell >> mapM_ maybeNotify p
+   postOp (NotifyUserAndServer p) = updateViewed >> maybeRingBell >> mapM_ maybeNotify p
 
 -- | When we add posts to the application state, we either get them
 -- from the server during scrollback fetches (here called 'OldPost') or

@@ -14,7 +14,8 @@ message="${3?}"
 # First word is urgency for items where you are not mentioned, the second is
 # urgency for items where you are mentioned.  Use "none" to not be notified,
 # otherwise low, normal, critical are options
-notify_URGENCIES="none normal"
+notify_URGENCIES="normal normal"
+#notify_URGENCIES="none normal"
 # The desktop notification category
 notify_CATEGORY="im.received"
 # Notification header
@@ -24,7 +25,7 @@ notify_BODY="$message"
 
 getUrgencyHelper() {
     shift "$mentioned"
-    printf '%s' "$1"
+    echo "$1"
 }
 
 getUrgency() {

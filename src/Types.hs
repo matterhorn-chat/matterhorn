@@ -268,7 +268,7 @@ data Config = Config
   , configSmartBacktick             :: Bool
   , configURLOpenCommand            :: Maybe Text
   , configURLOpenCommandInteractive :: Bool
-  , configActivityNotifyCmd         :: Maybe T.Text
+  , configActivityNotifyCommand     :: Maybe T.Text
   , configActivityBell              :: Bool
   , configShowBackground            :: BackgroundInfo
   , configShowMessagePreview        :: Bool

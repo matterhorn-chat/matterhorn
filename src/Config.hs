@@ -55,7 +55,7 @@ fromIni = do
       (configShowTypingIndicator defaultConfig)
     configEnableAspell <- fieldFlagDef "enableAspell"
       (configEnableAspell defaultConfig)
-    configActivityNotifyCmd <- fieldMb "activityNotifyCmd"
+    configActivityNotifyCommand <- fieldMb "activityNotifyCommand"
     configActivityBell <- fieldFlagDef "activityBell"
       (configActivityBell defaultConfig)
     configHyperlinkingMode <- fieldFlagDef "hyperlinkURLs"
@@ -121,7 +121,7 @@ defaultConfig =
            , configSmartBacktick             = True
            , configURLOpenCommand            = Nothing
            , configURLOpenCommandInteractive = False
-           , configActivityNotifyCmd         = Nothing
+           , configActivityNotifyCommand     = Nothing
            , configActivityBell              = False
            , configShowBackground            = Disabled
            , configShowMessagePreview        = False
