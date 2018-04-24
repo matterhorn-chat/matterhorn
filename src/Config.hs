@@ -1,5 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE MultiWayIf #-}
 module Config
   ( Config(..)
   , PasswordSource(..)
@@ -192,11 +193,10 @@ fixupSyntaxDirs (Right c) =
         return $ Right c { configSyntaxDirs = dirs }
     else do
         newDirs <- forM (configSyntaxDirs c) $ \dir ->
-            if dir == bundledSyntaxPlaceholderName
-            then getBundledSyntaxPath
-            else if dir == userSyntaxPlaceholderName
-                 then xdgSyntaxDir
-                 else return dir
+            if | dir == bundledSyntaxPlaceholderName -> getBundledSyntaxPath
+               | dir == userSyntaxPlaceholderName    -> xdgSyntaxDir
+               | otherwise                           -> return dir
+
         return $ Right $ c { configSyntaxDirs = newDirs }
 
 getConfig :: FilePath -> IO (Either String Config)
