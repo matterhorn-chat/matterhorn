@@ -1,0 +1,815 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE language SYSTEM "language.dtd">
+<!-- PostgreSQL SQL, syntax definition based on sql.xml by Yury Lebedev
+     v5 fix comments by Gene Thomas <gene@genethomas.com>
+  -->
+<language name="SQL (PostgreSQL)" version="5" kateversion="2.4" section="Database" extensions="*.sql;*.SQL;*.ddl;*.DDL" mimetype="text/x-sql" casesensitive="0" author="Shane Wright (me@shanewright.co.uk)" license="">
+  <highlighting>
+    <list name="keywords">
+      <item>ABORT</item>
+      <item>ACCESS</item>
+      <item>ACTION</item>
+      <item>ADD</item>
+      <item>ADMIN</item>
+      <item>AFTER</item>
+      <item>AGGREGATE</item>
+      <item>ALIAS</item>
+      <item>ALL</item>
+      <item>ALLOCATE</item>
+      <item>ALTER</item>
+      <item>ANALYSE</item>
+      <item>ANALYZE</item>
+      <item>ANY</item>
+      <item>ARE</item>
+      <item>AS</item>
+      <item>ASC</item>
+      <item>ASENSITIVE</item>
+      <item>ASSERTION</item>
+      <item>ASSIGNMENT</item>
+      <item>ASYMMETRIC</item>
+      <item>AT</item>
+      <item>ATOMIC</item>
+      <item>AUTHORIZATION</item>
+      <item>BACKWARD</item>
+      <item>BEFORE</item>
+      <item>BEGIN</item>
+      <item>BETWEEN</item>
+      <item>BINARY</item>
+      <item>BOTH</item>
+      <item>BREADTH</item>
+      <item>BY</item>
+      <item>C</item>
+      <item>CACHE</item>
+      <item>CALL</item>
+      <item>CALLED</item>
+      <item>CARDINALITY</item>
+      <item>CASCADE</item>
+      <item>CASCADED</item>
+      <item>CASE</item>
+      <item>CAST</item>
+      <item>CATALOG</item>
+      <item>CATALOG_NAME</item>
+      <item>CHAIN</item>
+      <item>CHARACTERISTICS</item>
+      <item>CHARACTER_LENGTH</item>
+      <item>CHARACTER_SET_CATALOG</item>
+      <item>CHARACTER_SET_NAME</item>
+      <item>CHARACTER_SET_SCHEMA</item>
+      <item>CHAR_LENGTH</item>
+      <item>CHECK</item>
+      <item>CHECKED</item>
+      <item>CHECKPOINT</item>
+      <item>CLASS</item>
+      <item>CLASS_ORIGIN</item>
+      <item>CLOB</item>
+      <item>CLOSE</item>
+      <item>CLUSTER</item>
+      <item>COALESCE</item>
+      <item>COBOL</item>
+      <item>COLLATE</item>
+      <item>COLLATION</item>
+      <item>COLLATION_CATALOG</item>
+      <item>COLLATION_NAME</item>
+      <item>COLLATION_SCHEMA</item>
+      <item>COLUMN</item>
+      <item>COLUMN_NAME</item>
+      <item>COMMAND_FUNCTION</item>
+      <item>COMMAND_FUNCTION_CODE</item>
+      <item>COMMENT</item>
+      <item>COMMIT</item>
+      <item>COMMITTED</item>
+      <item>COMPLETION</item>
+      <item>CONDITION_NUMBER</item>
+      <item>CONNECT</item>
+      <item>CONNECTION</item>
+      <item>CONNECTION_NAME</item>
+      <item>CONSTRAINTS</item>
+      <item>CONSTRAINT</item>
+      <item>CONSTRAINT_CATALOG</item>
+      <item>CONSTRAINT_NAME</item>
+      <item>CONSTRAINT_SCHEMA</item>
+      <item>CONSTRUCTOR</item>
+      <item>CONTAINS</item>
+      <item>CONTINUE</item>
+      <item>CONVERT</item>
+      <item>COPY</item>
+      <item>CORRESPONDING</item>
+      <item>COUNT</item>
+      <item>CREATE</item>
+      <item>CREATEDB</item>
+      <item>CREATEUSER</item>
+      <item>CROSS</item>
+      <item>CUBE</item>
+      <item>CURRENT</item>
+      <item>CURRENT_DATE</item>
+      <item>CURRENT_PATH</item>
+      <item>CURRENT_ROLE</item>
+      <item>CURRENT_TIME</item>
+      <item>CURRENT_TIMESTAMP</item>
+      <item>CURRENT_USER</item>
+      <item>CURSOR</item>
+      <item>CURSOR_NAME</item>
+      <item>CYCLE</item>
+      <item>DATA</item>
+      <item>DATABASE</item>
+      <item>DATE</item>
+      <item>DATETIME_INTERVAL_CODE</item>
+      <item>DATETIME_INTERVAL_PRECISION</item>
+      <item>DAY</item>
+      <item>DEALLOCATE</item>
+      <item>DEC</item>
+      <item>DECIMAL</item>
+      <item>DECLARE</item>
+      <item>DEFAULT</item>
+      <item>DEFERRABLE</item>
+      <item>DEFERRED</item>
+      <item>DEFINED</item>
+      <item>DEFINER</item>
+      <item>DELETE</item>
+      <item>DELIMITERS</item>
+      <item>DEPTH</item>
+      <item>DEREF</item>
+      <item>DESC</item>
+      <item>DESCRIBE</item>
+      <item>DESCRIPTOR</item>
+      <item>DESTROY</item>
+      <item>DESTRUCTOR</item>
+      <item>DETERMINISTIC</item>
+      <item>DIAGNOSTICS</item>
+      <item>DICTIONARY</item>
+      <item>DISCONNECT</item>
+      <item>DISPATCH</item>
+      <item>DISTINCT</item>
+      <item>DO</item>
+      <item>DOMAIN</item>
+      <item>DOUBLE</item>
+      <item>DROP</item>
+      <item>DYNAMIC</item>
+      <item>DYNAMIC_FUNCTION</item>
+      <item>DYNAMIC_FUNCTION_CODE</item>
+      <item>EACH</item>
+      <item>ELSE</item>
+      <item>ENCODING</item>
+      <item>ENCRYPTED</item>
+      <item>END</item>
+      <item>END-EXEC</item>
+      <item>EQUALS</item>
+      <item>ESCAPE</item>
+      <item>EVERY</item>
+      <item>EXCEPT</item>
+      <item>EXCEPTION</item>
+      <item>EXCLUSIVE</item>
+      <item>EXEC</item>
+      <item>EXECUTE</item>
+      <item>EXISTING</item>
+      <item>EXISTS</item>
+      <item>EXPLAIN</item>
+      <item>EXTERNAL</item>
+      <item>FALSE</item>
+      <item>FETCH</item>
+      <item>FINAL</item>
+      <item>FIRST</item>
+      <item>FOR</item>
+      <item>FORCE</item>
+      <item>FOREIGN</item>
+      <item>FORTRAN</item>
+      <item>FORWARD</item>
+      <item>FOUND</item>
+      <item>FREE</item>
+      <item>FREEZE</item>
+      <item>FROM</item>
+      <item>FULL</item>
+      <item>FUNCTION</item>
+      <item>G</item>
+      <item>GENERAL</item>
+      <item>GENERATED</item>
+      <item>GET</item>
+      <item>GLOBAL</item>
+      <item>GO</item>
+      <item>GOTO</item>
+      <item>GRANT</item>
+      <item>GRANTED</item>
+      <item>GROUP</item>
+      <item>GROUPING</item>
+      <item>HANDLER</item>
+      <item>HAVING</item>
+      <item>HIERARCHY</item>
+      <item>HOLD</item>
+      <item>HOST</item>
+      <item>HOUR</item>
+      <item>IDENTITY</item>
+      <item>IGNORE</item>
+      <item>ILIKE</item>
+      <item>IMMEDIATE</item>
+      <item>IMMUTABLE</item>
+      <item>IMPLEMENTATION</item>
+      <item>IN</item>
+      <item>INCREMENT</item>
+      <item>INDEX</item>
+      <item>INDICATOR</item>
+      <item>INFIX</item>
+      <item>INHERITS</item>
+      <item>INITIALIZE</item>
+      <item>INITIALLY</item>
+      <item>INNER</item>
+      <item>INOUT</item>
+      <item>INPUT</item>
+      <item>INSENSITIVE</item>
+      <item>INSERT</item>
+      <item>INSTANCE</item>
+      <item>INSTANTIABLE</item>
+      <item>INSTEAD</item>
+      <item>INTERSECT</item>
+      <item>INTERVAL</item>
+      <item>INTO</item>
+      <item>INVOKER</item>
+      <item>IS</item>
+      <item>ISNULL</item>
+      <item>ISOLATION</item>
+      <item>ITERATE</item>
+      <item>JOIN</item>
+      <item>K</item>
+      <item>KEY</item>
+      <item>KEY_MEMBER</item>
+      <item>KEY_TYPE</item>
+      <item>LANCOMPILER</item>
+      <item>LANGUAGE</item>
+      <item>LARGE</item>
+      <item>LAST</item>
+      <item>LATERAL</item>
+      <item>LEADING</item>
+      <item>LEFT</item>
+      <item>LENGTH</item>
+      <item>LESS</item>
+      <item>LEVEL</item>
+      <item>LIKE</item>
+      <item>LIMIT</item>
+      <item>LISTEN</item>
+      <item>LOAD</item>
+      <item>LOCAL</item>
+      <item>LOCALTIME</item>
+      <item>LOCALTIMESTAMP</item>
+      <item>LOCATION</item>
+      <item>LOCATOR</item>
+      <item>LOCK</item>
+      <item>LOWER</item>
+      <item>M</item>
+      <item>MAP</item>
+      <item>MATCH</item>
+      <item>MAX</item>
+      <item>MAXVALUE</item>
+      <item>MESSAGE_LENGTH</item>
+      <item>MESSAGE_OCTET_LENGTH</item>
+      <item>MESSAGE_TEXT</item>
+      <item>METHOD</item>
+      <item>MIN</item>
+      <item>MINUTE</item>
+      <item>MINVALUE</item>
+      <item>MOD</item>
+      <item>MODE</item>
+      <item>MODIFIES</item>
+      <item>MODIFY</item>
+      <item>MODULE</item>
+      <item>MONTH</item>
+      <item>MORE</item>
+      <item>MOVE</item>
+      <item>MUMPS</item>
+      <item>NAME</item>
+      <item>NAMES</item>
+      <item>NATIONAL</item>
+      <item>NATURAL</item>
+      <item>NEW</item>
+      <item>NEXT</item>
+      <item>NO</item>
+      <item>NOCREATEDB</item>
+      <item>NOCREATEUSER</item>
+      <item>NONE</item>
+      <item>NOT</item>
+      <item>NOTHING</item>
+      <item>NOTIFY</item>
+      <item>NOTNULL</item>
+      <item>NULL</item>
+      <item>NULLABLE</item>
+      <item>NULLIF</item>
+      <item>NUMBER</item>
+      <item>NUMERIC</item>
+      <item>OBJECT</item>
+      <item>OCTET_LENGTH</item>
+      <item>OF</item>
+      <item>OFF</item>
+      <item>OFFSET</item>
+      <item>OIDS</item>
+      <item>OLD</item>
+      <item>ON</item>
+      <item>ONLY</item>
+      <item>OPEN</item>
+      <item>OPERATION</item>
+      <item>OPERATOR</item>
+      <item>OPTION</item>
+      <item>OPTIONS</item>
+      <item>ORDER</item>
+      <item>ORDINALITY</item>
+      <item>OUT</item>
+      <item>OUTER</item>
+      <item>OUTPUT</item>
+      <item>OVERLAPS</item>
+      <item>OVERLAY</item>
+      <item>OVERRIDING</item>
+      <item>OWNER</item>
+      <item>PAD</item>
+      <item>PARAMETER</item>
+      <item>PARAMETERS</item>
+      <item>PARAMETER_MODE</item>
+      <item>PARAMETER_NAME</item>
+      <item>PARAMETER_ORDINAL_POSITION</item>
+      <item>PARAMETER_SPECIFIC_CATALOG</item>
+      <item>PARAMETER_SPECIFIC_NAME</item>
+      <item>PARAMETER_SPECIFIC_SCHEMA</item>
+      <item>PARTIAL</item>
+      <item>PASCAL</item>
+      <item>PASSWORD</item>
+      <item>PATH</item>
+      <item>PENDANT</item>
+      <item>PLI</item>
+      <item>POSITION</item>
+      <item>POSTFIX</item>
+      <item>PRECISION</item>
+      <item>PREFIX</item>
+      <item>PREORDER</item>
+      <item>PREPARE</item>
+      <item>PRESERVE</item>
+      <item>PRIMARY</item>
+      <item>PRIOR</item>
+      <item>PRIVILEGES</item>
+      <item>PROCEDURAL</item>
+      <item>PROCEDURE</item>
+      <item>PUBLIC</item>
+      <item>READ</item>
+      <item>READS</item>
+      <item>REAL</item>
+      <item>RECURSIVE</item>
+      <item>REF</item>
+      <item>REFERENCES</item>
+      <item>REFERENCING</item>
+      <item>REINDEX</item>
+      <item>RELATIVE</item>
+      <item>RENAME</item>
+      <item>REPEATABLE</item>
+      <item>REPLACE</item>
+      <item>RESET</item>
+      <item>RESTRICT</item>
+      <item>RESULT</item>
+      <item>RETURN</item>
+      <item>RETURNED_LENGTH</item>
+      <item>RETURNED_OCTET_LENGTH</item>
+      <item>RETURNED_SQLSTATE</item>
+      <item>RETURNS</item>
+      <item>REVOKE</item>
+      <item>RIGHT</item>
+      <item>ROLE</item>
+      <item>ROLLBACK</item>
+      <item>ROLLUP</item>
+      <item>ROUTINE</item>
+      <item>ROUTINE_CATALOG</item>
+      <item>ROUTINE_NAME</item>
+      <item>ROUTINE_SCHEMA</item>
+      <item>ROW</item>
+      <item>ROWS</item>
+      <item>ROW_COUNT</item>
+      <item>RULE</item>
+      <item>SAVEPOINT</item>
+      <item>SCALE</item>
+      <item>SCHEMA</item>
+      <item>SCHEMA_NAME</item>
+      <item>SCOPE</item>
+      <item>SCROLL</item>
+      <item>SEARCH</item>
+      <item>SECOND</item>
+      <item>SECTION</item>
+      <item>SECURITY</item>
+      <item>SELECT</item>
+      <item>SELF</item>
+      <item>SENSITIVE</item>
+      <item>SEQUENCE</item>
+      <item>SERIALIZABLE</item>
+      <item>SERVER_NAME</item>
+      <item>SESSION</item>
+      <item>SESSION_USER</item>
+      <item>SET</item>
+      <item>SETOF</item>
+      <item>SETS</item>
+      <item>SHARE</item>
+      <item>SHOW</item>
+      <item>SIMILAR</item>
+      <item>SIMPLE</item>
+      <item>SIZE</item>
+      <item>SOME</item>
+      <item>SOURCE</item>
+      <item>SPACE</item>
+      <item>SPECIFIC</item>
+      <item>SPECIFICTYPE</item>
+      <item>SPECIFIC_NAME</item>
+      <item>SQL</item>
+      <item>SQLCODE</item>
+      <item>SQLERROR</item>
+      <item>SQLEXCEPTION</item>
+      <item>SQLSTATE</item>
+      <item>SQLWARNING</item>
+      <item>STABLE</item>
+      <item>START</item>
+      <item>STATE</item>
+      <item>STATEMENT</item>
+      <item>STATIC</item>
+      <item>STATISTICS</item>
+      <item>STDIN</item>
+      <item>STDOUT</item>
+      <item>STRUCTURE</item>
+      <item>STYLE</item>
+      <item>SUBCLASS_ORIGIN</item>
+      <item>SUBLIST</item>
+      <item>SUBSTRING</item>
+      <item>SUM</item>
+      <item>SYMMETRIC</item>
+      <item>SYSID</item>
+      <item>SYSTEM</item>
+      <item>SYSTEM_USER</item>
+      <item>TABLE</item>
+      <item>TABLE_NAME</item>
+      <item>TEMP</item>
+      <item>TEMPLATE</item>
+      <item>TEMPORARY</item>
+      <item>TERMINATE</item>
+      <item>THAN</item>
+      <item>THEN</item>
+      <item>TIMEZONE_HOUR</item>
+      <item>TIMEZONE_MINUTE</item>
+      <item>TO</item>
+      <item>TOAST</item>
+      <item>TRAILING</item>
+      <item>TRANSACTION</item>
+      <item>TRANSACTIONS_COMMITTED</item>
+      <item>TRANSACTIONS_ROLLED_BACK</item>
+      <item>TRANSACTION_ACTIVE</item>
+      <item>TRANSFORM</item>
+      <item>TRANSFORMS</item>
+      <item>TRANSLATE</item>
+      <item>TRANSLATION</item>
+      <item>TREAT</item>
+      <item>TRIGGER</item>
+      <item>TRIGGER_CATALOG</item>
+      <item>TRIGGER_NAME</item>
+      <item>TRIGGER_SCHEMA</item>
+      <item>TRIM</item>
+      <item>TRUE</item>
+      <item>TRUNCATE</item>
+      <item>TRUSTED</item>
+      <item>TYPE</item>
+      <item>UNCOMMITTED</item>
+      <item>UNDER</item>
+      <item>UNENCRYPTED</item>
+      <item>UNION</item>
+      <item>UNIQUE</item>
+      <item>UNKNOWN</item>
+      <item>UNLISTEN</item>
+      <item>UNNAMED</item>
+      <item>UNNEST</item>
+      <item>UNTIL</item>
+      <item>UPDATE</item>
+      <item>UPPER</item>
+      <item>USAGE</item>
+      <item>USER</item>
+      <item>USER_DEFINED_TYPE_CATALOG</item>
+      <item>USER_DEFINED_TYPE_NAME</item>
+      <item>USER_DEFINED_TYPE_SCHEMA</item>
+      <item>USING</item>
+      <item>VACUUM</item>
+      <item>VALID</item>
+      <item>VALUE</item>
+      <item>VALUES</item>
+      <item>VARIABLE</item>
+      <item>VARYING</item>
+      <item>VERBOSE</item>
+      <item>VERSION</item>
+      <item>VIEW</item>
+      <item>VOLATILE</item>
+      <item>WHEN</item>
+      <item>WHENEVER</item>
+      <item>WHERE</item>
+      <item>WHILE</item>
+      <item>WITH</item>
+      <item>WITHOUT</item>
+      <item>WORK</item>
+      <item>WRITE</item>
+      <item>YEAR</item>
+      <item>ZONE</item>
+    </list>
+    <list name="operators">
+      <item>+</item>
+      <item>-</item>
+      <item>*</item>
+      <item>/</item>
+      <item>||</item>
+      <item>|/</item>
+      <item>||/</item>
+      <item>!</item>
+      <item>!!</item>
+      <item>@</item>
+      <item>&amp;</item>
+      <item>|</item>
+      <item>#</item>
+      <item>&lt;&lt;</item>
+      <item>&gt;&gt;</item>
+      <item>%</item>
+      <item>^</item>
+      <item>=</item>
+      <item>!=</item>
+      <item>&lt;&gt;</item>
+      <item>&lt;</item>
+      <item>&lt;=</item>
+      <item>&gt;</item>
+      <item>&gt;=</item>
+      <item>~</item>
+      <item>~*</item>
+      <item>!~</item>
+      <item>!~*</item>
+      <item>^=</item>
+      <item>:=</item>
+      <item>=&gt;</item>
+      <item>**</item>
+      <item>..</item>
+      <item>AND</item>
+      <item>OR</item>
+      <item>NOT</item>
+      <!-- geometric -->
+      <item>##</item>
+      <item>&amp;&amp;</item>
+      <item>&amp;&lt;</item>
+      <item>&amp;&gt;</item>
+      <item>&lt;-&gt;</item>
+      <item>&lt;^</item>
+      <item>&gt;^</item>
+      <item>?#</item>
+      <item>?-</item>
+      <item>?-|</item>
+      <item>@-@</item>
+      <item>?|</item>
+      <item>?||</item>
+      <item>@@</item>
+      <item>~=</item>
+      <!-- network address type -->
+      <item>&lt;&lt;=</item>
+      <item>&gt;&gt;=</item>
+    </list>
+    <list name="functions">
+      <!-- math -->
+      <item>ABS</item>
+      <item>CBRT</item>
+      <item>CEIL</item>
+      <item>DEGREES</item>
+      <item>EXP</item>
+      <item>FLOOR</item>
+      <item>LN</item>
+      <item>LOG</item>
+      <item>MOD</item>
+      <item>PI</item>
+      <item>POW</item>
+      <item>RADIANS</item>
+      <item>RANDOM</item>
+      <item>ROUND</item>
+      <item>SIGN</item>
+      <item>SQRT</item>
+      <item>TRUNC</item>
+      <!-- trig -->
+      <item>ACOS</item>
+      <item>ASIN</item>
+      <item>ATAN</item>
+      <item>ATAN2</item>
+      <item>COS</item>
+      <item>COT</item>
+      <item>SIN</item>
+      <item>TAN</item>
+      <!-- string -->
+      <item>BIT_LENGTH</item>
+      <item>CHAR_LENGTH</item>
+      <item>CHARACTER_LENGTH</item>
+      <item>LOWER</item>
+      <item>OCTET_LENGTH</item>
+      <item>POSITION</item>
+      <item>SUBSTRING</item>
+      <item>TRIM</item>
+      <item>UPPER</item>
+      <!-- other string -->
+      <item>ASCII</item>
+      <item>BTRIM</item>
+      <item>CHR</item>
+      <item>CONVERT</item>
+      <item>INITCAP</item>
+      <item>LENGTH</item>
+      <item>LPAD</item>
+      <item>LTRIM</item>
+      <item>PG_CLIENT_ENCODING</item>
+      <item>REPEAT</item>
+      <item>RPAD</item>
+      <item>RTRIM</item>
+      <item>STRPOS</item>
+      <item>SUBSTR</item>
+      <item>TO_ASCII</item>
+      <item>TRANSLATE</item>
+      <item>ENCODE</item>
+      <item>DECODE</item>
+      <!-- data type formatting -->
+      <item>TO_CHAR</item>
+      <item>TO_DATE</item>
+      <item>TO_TIMESTAMP</item>
+      <item>TO_NUMBER</item>
+      <!-- date/time -->
+      <item>AGE</item>
+      <item>DATE_PART</item>
+      <item>DATE_TRUNC</item>
+      <item>EXTRACT</item>
+      <item>ISFINITE</item>
+      <item>NOW</item>
+      <item>TIMEOFDAY</item>
+      <item>TIMESTAMP</item>
+      <item>EXTRACT</item>
+      <!-- geometric -->
+      <item>AREA</item>
+      <item>BOX</item>
+      <item>CENTER</item>
+      <item>DIAMETER</item>
+      <item>HEIGHT</item>
+      <item>ISCLOSED</item>
+      <item>ISOPEN</item>
+      <item>PCLOSE</item>
+      <item>NPOINT</item>
+      <item>POPEN</item>
+      <item>RADIUS</item>
+      <item>WIDTH</item>
+      <!-- geometric type conversion -->
+      <item>BOX</item>
+      <item>CIRCLE</item>
+      <item>LSEG</item>
+      <item>PATH</item>
+      <item>POINT</item>
+      <item>POLYGON</item>
+      <!-- network address type, TEXT is omitted as it is more commonly a data type -->
+      <item>BROADCAST</item>
+      <item>HOST</item>
+      <item>MASKLEN</item>
+      <item>SET_MASKLEN</item>
+      <item>NETMASK</item>
+      <item>NETWORK</item>
+      <item>ABBREV</item>
+      <!-- sequence manipulation -->
+      <item>NEXTVAL</item>
+      <item>CURRVAL</item>
+      <item>SETVAL</item>
+      <!-- conditional expressions -->
+      <item>COALESCE</item>
+      <item>NULLIF</item>
+      <!-- misc -->
+      <item>HAS_TABLE_PRIVILEGE</item>
+      <item>PG_GET_VIEWDEF</item>
+      <item>PG_GET_RULEDEF</item>
+      <item>PG_GET_INDEXDEF</item>
+      <item>PG_GET_USERBYID</item>
+      <item>OBJ_DESCRIPTION</item>
+      <item>COL_DESCRIPTION</item>
+      <!-- aggregate -->
+      <item>AVG</item>
+      <item>COUNT</item>
+      <item>MAX</item>
+      <item>MIN</item>
+      <item>STDDEV</item>
+      <item>SUM</item>
+      <item>VARIANCE</item>
+    </list>
+    <list name="types">
+      <item>BIGINT</item>
+      <item>BIGSERIAL</item>
+      <item>BIT</item>
+      <item>BOOL</item>
+      <item>BOOLEAN</item>
+      <item>BOX</item>
+      <item>BYTEA</item>
+      <item>CHAR</item>
+      <item>CHARACTER</item>
+      <item>CIDR</item>
+      <item>CIRCLE</item>
+      <item>DATE</item>
+      <item>DECIMAL</item>
+      <item>FLOAT8</item>
+      <item>INET</item>
+      <item>INT</item>
+      <item>INT2</item>
+      <item>INT4</item>
+      <item>INT8</item>
+      <item>INTEGER</item>
+      <item>INTERVAL</item>
+      <item>LINE</item>
+      <item>LSEG</item>
+      <item>LZTEXT</item>
+      <item>MACADDR</item>
+      <item>MONEY</item>
+      <item>NUMERIC</item>
+      <item>OID</item>
+      <item>PATH</item>
+      <item>POINT</item>
+      <item>POLYGON</item>
+      <item>REAL</item>
+      <item>SERIAL</item>
+      <item>SERIAL8</item>
+      <item>SMALLINT</item>
+      <item>TEXT</item>
+      <item>TIME</item>
+      <item>TIMESTAMP</item>
+      <item>TIMESTAMPTZ</item>
+      <item>TIMETZ</item>
+      <item>VARBIT</item>
+      <item>VARCHAR</item>
+    </list>
+    <contexts>
+      <context name="Normal" attribute="Normal Text" lineEndContext="#stay">
+
+        <!-- comments before operators -->
+        <DetectChar attribute="Comment" context="SingleLineComment" char="#"/>
+        <Detect2Chars attribute="Comment" context="SingleLineComment" char="-" char1="-"/>
+        <Detect2Chars attribute="Comment" context="MultiLineComment" char="/" char1="*" beginRegion="Comment"/>
+        <RegExpr attribute="Comment" context="SingleLineComment" String="rem\b" insensitive="true" column="0"/>
+
+        <!-- HACK: don't jump into MultiLineString for CREATE FUNCTION $funcName$...$funcName$ -->
+        <RegExpr String="create\s+(or\s+replace\s+)?function" insensitive="true" context="CreateFunction" attribute="Keyword"/>
+
+        <RegExpr String="do\s+\$([^\$\n\r]*)\$" insensitive="true" context="FunctionBody" attribute="Keyword"/>
+        <keyword attribute="Keyword" context="#stay" String="keywords"/>
+        <keyword attribute="Operator" context="#stay" String="operators"/>
+        <keyword attribute="Function" context="#stay" String="functions"/>
+        <keyword attribute="Data Type" context="#stay" String="types"/>
+        <RegExpr attribute="Data Type" context="#stay" String="%bulk_exceptions\b" insensitive="true"/>
+        <RegExpr attribute="Data Type" context="#stay" String="%bulk_rowcount\b" insensitive="true"/>
+        <RegExpr attribute="Data Type" context="#stay" String="%found\b" insensitive="true"/>
+        <RegExpr attribute="Data Type" context="#stay" String="%isopen\b" insensitive="true"/>
+        <RegExpr attribute="Data Type" context="#stay" String="%notfound\b" insensitive="true"/>
+        <RegExpr attribute="Data Type" context="#stay" String="%rowcount\b" insensitive="true"/>
+        <RegExpr attribute="Data Type" context="#stay" String="%rowtype\b" insensitive="true"/>
+        <RegExpr attribute="Data Type" context="#stay" String="%type\b" insensitive="true"/>
+        <Float attribute="Float" context="#stay"/>
+        <Int attribute="Decimal" context="#stay"/>
+        <DetectChar attribute="String" context="String" char="'"/>
+        <DetectChar attribute="Comment" context="Identifier" char="&quot;"/>
+        <AnyChar attribute="Symbol" context="#stay" String=":&#38;"/>
+        <RegExpr attribute="Symbol" context="#stay" String="/$" column="0"/>
+        <RegExpr attribute="Preprocessor" context="Preprocessor" String="@@?[^@ \t\r\n]" column="0"/>
+        <RegExpr attribute="Operator" context="MultiLineString" String="\$([^\$\n\r]*)\$" dynamic="true"/>
+      </context>
+      <context name="CreateFunction" attribute="Normal Text" lineEndContext="#stay">
+        <RegExpr attribute="Function" context="FunctionBody" String="\$([^\$\n\r]*)\$" dynamic="true"/>
+        <IncludeRules context="Normal"/>
+      </context>
+      <context name="FunctionBody" attribute="Normal Text" lineEndContext="#stay" dynamic="true">
+        <RegExpr attribute="Function" context="#pop#pop" String="\$%1\$" dynamic="true"/>
+        <IncludeRules context="Normal"/>
+      </context>
+      <context name="MultiLineString" attribute="String" lineEndContext="#stay" dynamic="true">
+        <RegExpr attribute="Operator" context="#pop" String="\$%1\$" dynamic="true"/>
+      </context>
+      <context name="String" attribute="String" lineEndContext="#stay">
+        <LineContinue attribute="String" context="#pop"/>
+        <HlCStringChar attribute="String Char" context="#stay"/>
+        <DetectChar attribute="Symbol" context="#stay" char="&#38;"/>
+        <DetectChar attribute="String" context="#pop" char="'"/>
+      </context>
+      <context name="SingleLineComment" attribute="Comment" lineEndContext="#pop"/>
+      <context name="MultiLineComment" attribute="Comment" lineEndContext="#stay">
+        <LineContinue attribute="Comment" context="#pop"/>
+        <Detect2Chars attribute="Comment" context="#pop" char="*" char1="/" endRegion="Comment"/>
+      </context>
+      <context name="Identifier" attribute="Identifier" lineEndContext="#pop">
+        <DetectChar attribute="Identifier" context="#pop" char="&quot;"/>
+      </context>
+      <context name="Preprocessor" attribute="Preprocessor" lineEndContext="#pop"/>
+    </contexts>
+    <itemDatas>
+      <itemData name="Normal Text"       defStyleNum="dsNormal"/>
+      <itemData name="Keyword"           defStyleNum="dsKeyword"/>
+      <itemData name="Operator"          defStyleNum="dsNormal"/>
+      <itemData name="Function"          defStyleNum="dsFunction"/>
+      <itemData name="Data Type"         defStyleNum="dsDataType"/>
+      <itemData name="Decimal"           defStyleNum="dsDecVal"/>
+      <itemData name="Float"             defStyleNum="dsFloat"/>
+      <itemData name="String"            defStyleNum="dsString"/>
+      <itemData name="String Char"       defStyleNum="dsChar"/>
+      <itemData name="Comment"           defStyleNum="dsComment"/>
+      <itemData name="Identifier"        defStyleNum="dsOthers"/>
+      <itemData name="Symbol"            defStyleNum="dsChar"/>
+      <itemData name="Preprocessor"      defStyleNum="dsOthers"/>
+    </itemDatas>
+  </highlighting>
+  <general>
+    <comments>
+      <comment name="singleLine" start="--"/>
+      <comment name="multiLine" start="/*" end="*/"/>
+    </comments>
+    <keywords casesensitive="0" weakDeliminator="+-*/|=!&lt;&gt;~^:.@&amp;#%?"/>
+  </general>
+</language>

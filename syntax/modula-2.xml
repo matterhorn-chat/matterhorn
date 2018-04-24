@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE language SYSTEM "language.dtd">
+<language name="Modula-2" version="2" kateversion="2.2" section="Sources" extensions="*.mod;*.def;*.mi;*.md" mimetype="text/x-modula-2">
+  <highlighting>
+    <list name="directives">
+      <item>ASSEMBLER</item>
+      <item>ALLOCATE</item>
+      <item>DEALLOCATE</item>
+      <item>SIZE</item>
+      <item>Write</item>
+      <item>WriteString</item>
+      <item>WriteCard</item>
+      <item>WriteLn</item>
+      <item>WriteBf</item>
+      <item>WriteInt</item>
+      <item>WriteReal</item>
+      <item>WriteLongReal</item>
+      <item>Read</item>
+      <item>ReadString</item>
+      <item>ReadCard</item>
+      <item>ReadInt</item>
+      <item>ReadReal</item>
+      <item>ReadLongReal</item>
+      <item>Open</item>
+      <item>Close</item>
+      <item>OpenInput</item>
+      <item>OpenOutput</item>
+      <item>Accessible</item>
+      <item>Erase</item>
+      <item>EOF</item>
+      <item>Done</item>
+      <item>EmptyString</item>
+      <item>Assign</item>
+      <item>Append</item>
+      <item>Length</item>
+      <item>StrEq</item>
+      <item>Copy</item>
+      <item>Concat</item>
+      <item>pos</item>
+      <item>Delete</item>
+      <item>Insert</item>
+      <item>compare</item>
+      <item>CAPS</item>
+      <item>PutBf</item>
+      <item>GetArgs</item>
+      <item>GetEnv</item>
+      <item>ResetClock</item>
+      <item>UserTime</item>
+      <item>SystemTime</item>
+      <item>GetChar</item>
+      <item>GetInt</item>
+      <item>GetCard</item>
+      <item>GetString</item>
+      <item>GetReal</item>
+      <item>GetLongReal</item>
+      <item>PutChar</item>
+      <item>PutInt</item>
+      <item>PutCard</item>
+      <item>PutString</item>
+      <item>PutReal</item>
+      <item>PutLongReal</item>
+      <item>PutLn</item>
+    </list>
+    <list name="keywords">
+      <item>AND</item>
+      <item>ARRAY</item>
+      <item>ASM</item>
+      <item>BEGIN</item>
+      <item>CASE</item>
+      <item>CONST</item>
+      <item>DIV</item>
+      <item>DO</item>
+      <item>ELSE</item>
+      <item>ELSIF</item>
+      <item>END</item>
+      <item>FOR</item>
+      <item>IF</item>
+      <item>IMPLEMENTATION</item>
+      <item>IN</item>
+      <item>SET</item>
+      <item>INCL</item>
+      <item>EXCL</item>
+      <item>ABS</item>
+      <item>BITSET</item>
+      <item>CAP</item>
+      <item>CHR</item>
+      <item>DEC</item>
+      <item>HALT</item>
+      <item>HIGH</item>
+      <item>INC</item>
+      <item>MAX</item>
+      <item>MIN</item>
+      <item>ODD</item>
+      <item>ORD</item>
+      <item>PROC</item>
+      <item>TRUNC</item>
+      <item>VAL</item>
+      <item>MOD</item>
+      <item>NIL</item>
+      <item>NOT</item>
+      <item>OF</item>
+      <item>OR</item>
+      <item>PROCEDURE</item>
+      <item>MODULE</item>
+      <item>DEFINITION</item>
+      <item>RECORD</item>
+      <item>REPEAT</item>
+      <item>THEN</item>
+      <item>TO</item>
+      <item>TYPE</item>
+      <item>UNTIL</item>
+      <item>LOOP</item>
+      <item>VAR</item>
+      <item>WHILE</item>
+      <item>WITH</item>
+      <item>EXIT</item>
+      <item>FALSE</item>
+      <item>TRUE</item>
+      <item>BY</item>
+      <item>FROM</item>
+      <item>IMPORT</item>
+      <item>EXPORT</item>
+      <item>QUALIFIED</item>
+      <item>RETURN</item>
+      <item>NEWPROCESS</item>
+      <item>TRANSFER</item>
+      <item>IOTRANSFER</item>
+      <item>FOREIGN</item>
+    </list>
+    <list name="types">
+      <item>INTEGER</item>
+      <item>CARDINAL</item>
+      <item>SHORTINT</item>
+      <item>SHORTCARD</item>
+      <item>LONGINT</item>
+      <item>LONGREAL</item>
+      <item>CHAR</item>
+      <item>BOOLEAN</item>
+      <item>POINTER</item>
+      <item>ADDRESS</item>
+      <item>ADR</item>
+      <item>REAL</item>
+      <item>File</item>
+    </list>
+    <contexts>
+      <context attribute="Normal Text" lineEndContext="#stay" name="Normal">
+        <keyword attribute="Keyword" context="#stay" String="keywords"/>
+        <keyword attribute="Directive" context="#stay" String="directives"/>
+        <keyword attribute="Type" context="#stay" String="types"/>
+        <Float attribute="Number" context="#stay"/>
+        <Int attribute="Number" context="#stay"/>
+        <DetectChar attribute="String" context="String1" char="&quot;" />
+        <DetectChar attribute="String" context="String2" char="'" />
+        <StringDetect attribute="Directive" context="Prep1" String="(*$"/>
+        <Detect2Chars attribute="Comment" context="Comment2" char="(" char1="*"/>
+      </context>
+      <context attribute="String" lineEndContext="#pop" name="String1">
+        <DetectChar attribute="String" context="#pop" char="&quot;"/>
+      </context>
+      <context attribute="String" lineEndContext="#pop" name="String2">
+        <DetectChar attribute="String" context="#pop" char="'" />
+      </context>
+      <context attribute="Comment" lineEndContext="#stay" name="Comment2">
+        <Detect2Chars attribute="Comment" context="#pop" char="*" char1=")"/>
+      </context>
+      <context attribute="Comment" lineEndContext="#pop" name="Comment3" />
+      <context attribute="Directive" lineEndContext="#stay" name="Prep1">
+        <StringDetect attribute="Directive" context="Prep1" String="$*)"/>
+      </context>
+
+    </contexts>
+    <itemDatas>
+      <itemData name="Normal Text" defStyleNum="dsNormal" />
+      <itemData name="Keyword"     defStyleNum="dsKeyword" />
+      <itemData name="Type"        defStyleNum="dsDataType"/>
+      <itemData name="Number"      defStyleNum="dsDecVal" />
+      <itemData name="String"      defStyleNum="dsString" />
+      <itemData name="Directive"   defStyleNum="dsOthers" />
+      <itemData name="Comment"     defStyleNum="dsComment" />
+    </itemDatas>
+  </highlighting>
+  <general>
+    <keywords casesensitive="1" />
+    <comments>
+      <comment name="multiLine" start="(*" end="*)" />
+    </comments>
+  </general>
+</language>
