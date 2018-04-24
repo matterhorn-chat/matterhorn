@@ -5,7 +5,6 @@ module Config
   , PasswordSource(..)
   , findConfig
   , getCredentials
-  , defaultConfig
   ) where
 
 import           Prelude ()
@@ -16,8 +15,10 @@ import           Data.Ini.Config
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
+import           System.FilePath ((</>), takeDirectory, splitPath, joinPath)
 import           System.Directory (makeAbsolute)
 import           System.Process (readProcess)
+import           System.Environment (getExecutablePath)
 
 import           IOUtil
 import           FilePaths
@@ -26,6 +27,28 @@ import           Types.KeyEvents
 
 defaultPort :: Int
 defaultPort = 443
+
+defaultSkylightingPaths :: IO [FilePath]
+defaultSkylightingPaths = do
+    xdg <- xdgSyntaxDir
+
+    selfPath <- getExecutablePath
+    let distDir = "dist-newstyle/"
+        pathBits = splitPath selfPath
+        adjacent =
+            if distDir `elem` pathBits
+            then
+                -- We're in development, so use the development
+                -- executable path to locate the XML path in the
+                -- development tree.
+                (joinPath $ takeWhile (/= distDir) pathBits) </> syntaxDirName
+            else
+                -- In this case we assume the binary is being run from
+                -- a release, in which case the syntax directory is a
+                -- sibling of the executable path.
+                takeDirectory selfPath </> syntaxDirName
+
+    return [xdg, adjacent]
 
 fromIni :: IniParser Config
 fromIni = do
@@ -55,6 +78,7 @@ fromIni = do
       (configShowTypingIndicator defaultConfig)
     configEnableAspell <- fieldFlagDef "enableAspell"
       (configEnableAspell defaultConfig)
+    configSyntaxDirs <- fieldDefOf "syntaxDirectories" syntaxDirsField []
     configActivityNotifyCommand <- fieldMb "activityNotifyCommand"
     configActivityBell <- fieldFlagDef "activityBell"
       (configActivityBell defaultConfig)
@@ -76,6 +100,9 @@ fromIni = do
         Nothing      -> return Nothing
         Just binding -> return (Just (ev, binding))
   return conf { configUserKeys = fromMaybe mempty keys }
+
+syntaxDirsField :: Text -> Either String [FilePath]
+syntaxDirsField = listWithSeparator ":" string
 
 backgroundField :: Text -> Either String BackgroundInfo
 backgroundField t =
@@ -133,15 +160,28 @@ defaultConfig =
            , configUserKeys                  = mempty
            , configShowTypingIndicator       = False
            , configHyperlinkingMode          = True
+           , configSyntaxDirs                = []
            }
 
 findConfig :: Maybe FilePath -> IO (Either String Config)
 findConfig Nothing = do
     cfg <- locateConfig configFileName
-    case cfg of
+    fixupSyntaxDirs =<< case cfg of
         Nothing -> return $ Right defaultConfig
         Just path -> getConfig path
-findConfig (Just path) = getConfig path
+findConfig (Just path) = fixupSyntaxDirs =<< getConfig path
+
+-- | If the configuration has no syntax directories specified (the
+-- default if the user did not provide the setting), fill in the list
+-- with the defaults. Otherwise leave the configuration untouched.
+fixupSyntaxDirs :: Either String Config -> IO (Either String Config)
+fixupSyntaxDirs (Left e) = return $ Left e
+fixupSyntaxDirs (Right c) =
+    if configSyntaxDirs c == []
+    then do
+        dirs <- defaultSkylightingPaths
+        return $ Right c { configSyntaxDirs = dirs }
+    else return $ Right c
 
 getConfig :: FilePath -> IO (Either String Config)
 getConfig fp = runExceptT $ do

@@ -10,6 +10,8 @@ module FilePaths
 
   , xdgName
   , locateConfig
+  , xdgSyntaxDir
+  , syntaxDirName
 
   , Script(..)
   , locateScriptPath
@@ -26,8 +28,12 @@ import System.Directory ( doesFileExist
                         , getPermissions
                         , executable
                         )
-import System.Environment.XDG.BaseDir (getUserConfigFile, getAllConfigFiles)
-import System.FilePath (takeBaseName)
+import System.Environment.XDG.BaseDir
+  ( getUserConfigFile
+  , getAllConfigFiles
+  , getUserConfigDir
+  )
+import System.FilePath ((</>), takeBaseName)
 
 xdgName :: String
 xdgName = "matterhorn"
@@ -47,6 +53,14 @@ historyFilePath = getUserConfigFile xdgName historyFileName
 lastRunStateFilePath :: Text -> IO FilePath
 lastRunStateFilePath teamId =
   getUserConfigFile xdgName (lastRunStateFileName teamId)
+
+-- | Get the XDG path to the user-specific syntax definition directory.
+-- The path does not necessarily exist.
+xdgSyntaxDir :: IO FilePath
+xdgSyntaxDir = (</> syntaxDirName) <$> getUserConfigDir xdgName
+
+syntaxDirName :: FilePath
+syntaxDirName = "syntax"
 
 -- | Find a specified configuration file by looking in all of the
 -- supported locations.

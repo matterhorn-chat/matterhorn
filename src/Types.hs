@@ -281,6 +281,7 @@ data Config = Config
   , configAbsPath                   :: Maybe FilePath
   , configUserKeys                  :: KeyConfig
   , configHyperlinkingMode          :: Bool
+  , configSyntaxDirs                :: [FilePath]
   } deriving (Eq, Show)
 
 data BackgroundInfo = Disabled | Active | ActiveCount deriving (Eq, Show)
