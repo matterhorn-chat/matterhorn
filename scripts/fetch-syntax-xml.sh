@@ -31,4 +31,5 @@ trap "rm -r $BASE" exit
 cd $BASE
 cabal unpack $PKG
 cp -f $PKG/xml/*.xml $SYNTAX
+cp -f $PKG/xml/language.dtd $SYNTAX
 echo $SKYLIGHTING_VER > $SYNTAX/skylighting-version
