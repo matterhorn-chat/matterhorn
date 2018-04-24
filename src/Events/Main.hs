@@ -8,10 +8,12 @@ import Brick hiding (Direction)
 import Brick.Widgets.Edit
 import qualified Data.Set as Set
 import qualified Data.Text as T
+import qualified Data.Map as M
 import qualified Data.Text.Zipper as Z
 import qualified Data.Text.Zipper.Generic.Words as Z
 import qualified Graphics.Vty as Vty
 import Lens.Micro.Platform ((%=), (.=), to, at)
+import qualified Skylighting.Types as Sky
 
 import Types
 import Events.Keybindings
@@ -183,8 +185,8 @@ tabComplete dir = do
           ch <- channelByName cname st
           case ch^.ccInfo.cdType of
               Group -> Nothing
-              _     -> Just [ (cname, normalChannelSigil <> cname)
-                            , dupe $ normalChannelSigil <> cname
+              _     -> Just [ CompletionAlternative cname (normalChannelSigil <> cname) cname
+                            , mkAlt $ normalChannelSigil <> cname
                             ]
           )
 
@@ -195,17 +197,18 @@ tabComplete dir = do
               Just u | u^.uiDeleted -> Nothing
               Just u ->
                   let mNick = case u^.uiNickName of
-                        Just nick | displayNick -> [ (userSigil <> nick, userSigil <> u^.uiName)
-                                                   , (nick, userSigil <> u^.uiName)
-                                                   ]
+                        Just nick | displayNick ->
+                            [ CompletionAlternative (userSigil <> nick) (userSigil <> u^.uiName) (userSigil <> nick)
+                            , CompletionAlternative nick (userSigil <> u^.uiName) nick
+                            ]
                         _ -> []
-                  in Just $ [ (u^.uiName, userSigil <> u^.uiName)
-                            , dupe $ userSigil <> u^.uiName
+                  in Just $ [ CompletionAlternative (u^.uiName) (userSigil <> u^.uiName) (u^.uiName)
+                            , mkAlt $ userSigil <> u^.uiName
                             ] <> mNick
           )
 
-      commandCompletions = dupe <$> map ("/" <>) (commandName <$> commandList)
-      dupe a = (a, a)
+      commandCompletions = mkAlt <$> map ("/" <>) (commandName <$> commandList)
+      mkAlt a = CompletionAlternative a a a
       completions = Set.fromList (userCompletions ++
                                   channelCompletions ++
                                   commandCompletions)
@@ -223,7 +226,12 @@ tabComplete dir = do
           -- There is no completion in progress, so start a new
           -- completion from the current input.
           let line = Z.currentLine $ st^.csEditState.cedEditor.editContentsL
-          case wordComplete completions line of
+              completionsToUse =
+                  if | "```" `T.isPrefixOf` line ->
+                         Set.fromList $ (\k -> (CompletionAlternative ("```" <> k) ("```" <> k) k)) <$>
+                             (Sky.sShortname <$> (M.elems $ st^.csResources.crSyntaxMap))
+                     | otherwise -> completions
+          case wordComplete completionsToUse line of
               Nothing ->
                   -- No matches were found, so do nothing.
                   return ()
@@ -243,5 +251,5 @@ tabComplete dir = do
   case mComp of
       Nothing -> return ()
       Just comp -> do
-          let replacement = snd $ currentAlternative comp
+          let replacement = completionReplacement $ currentAlternative comp
           csEditState.cedEditor %= applyEdit (Z.insertMany replacement . Z.deletePrevWord)

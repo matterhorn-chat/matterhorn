@@ -31,7 +31,7 @@ import           Draw.ChannelList (renderChannelList)
 import           Draw.Messages
 import           Draw.Util
 import           Markdown
-import           Completion (Completer(..), currentAlternative)
+import           Completion (Completer(..), CompletionAlternative(..), currentAlternative)
 import           State
 import           Themes
 import           TimeUtils (justAfter, justBefore)
@@ -489,11 +489,11 @@ messageSelectBottomBar st =
 drawCompletionAlternatives :: Completer -> Widget Name
 drawCompletionAlternatives c =
     let alternatives = intersperse (txt " ") $ mkAlternative <$> toList (completionAlternatives c)
-        mkAlternative (displayVal, _) =
-            let format = if displayVal == (fst $ currentAlternative c)
+        mkAlternative alt =
+            let format = if completionInput alt == (completionInput $ currentAlternative c)
                          then visible . withDefAttr completionAlternativeCurrentAttr
                          else id
-            in format $ txt displayVal
+            in format $ txt $ completionDisplay alt
     in hBox [ borderElem bsHorizontal
             , txt "["
             , withDefAttr completionAlternativeListAttr $
