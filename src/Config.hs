@@ -28,27 +28,32 @@ import           Types.KeyEvents
 defaultPort :: Int
 defaultPort = 443
 
+bundledSyntaxPlaceholderName :: String
+bundledSyntaxPlaceholderName = "BUNDLED_SYNTAX"
+
 defaultSkylightingPaths :: IO [FilePath]
 defaultSkylightingPaths = do
     xdg <- xdgSyntaxDir
+    adjacent <- getBundledSyntaxPath
+    return [xdg, adjacent]
 
+getBundledSyntaxPath :: IO FilePath
+getBundledSyntaxPath = do
     selfPath <- getExecutablePath
     let distDir = "dist-newstyle/"
         pathBits = splitPath selfPath
-        adjacent =
-            if distDir `elem` pathBits
-            then
-                -- We're in development, so use the development
-                -- executable path to locate the XML path in the
-                -- development tree.
-                (joinPath $ takeWhile (/= distDir) pathBits) </> syntaxDirName
-            else
-                -- In this case we assume the binary is being run from
-                -- a release, in which case the syntax directory is a
-                -- sibling of the executable path.
-                takeDirectory selfPath </> syntaxDirName
 
-    return [xdg, adjacent]
+    return $ if distDir `elem` pathBits
+             then
+                 -- We're in development, so use the development
+                 -- executable path to locate the XML path in the
+                 -- development tree.
+                 (joinPath $ takeWhile (/= distDir) pathBits) </> syntaxDirName
+             else
+                 -- In this case we assume the binary is being run from
+                 -- a release, in which case the syntax directory is a
+                 -- sibling of the executable path.
+                 takeDirectory selfPath </> syntaxDirName
 
 fromIni :: IniParser Config
 fromIni = do
@@ -172,8 +177,9 @@ findConfig Nothing = do
 findConfig (Just path) = fixupSyntaxDirs =<< getConfig path
 
 -- | If the configuration has no syntax directories specified (the
--- default if the user did not provide the setting), fill in the list
--- with the defaults. Otherwise leave the configuration untouched.
+-- default if the user did not provide the setting), fill in the
+-- list with the defaults. Otherwise replace any bundled directory
+-- placeholders in the config's syntax path list.
 fixupSyntaxDirs :: Either String Config -> IO (Either String Config)
 fixupSyntaxDirs (Left e) = return $ Left e
 fixupSyntaxDirs (Right c) =
@@ -181,7 +187,12 @@ fixupSyntaxDirs (Right c) =
     then do
         dirs <- defaultSkylightingPaths
         return $ Right c { configSyntaxDirs = dirs }
-    else return $ Right c
+    else do
+        newDirs <- forM (configSyntaxDirs c) $ \dir ->
+            if dir == bundledSyntaxPlaceholderName
+            then getBundledSyntaxPath
+            else return dir
+        return $ Right $ c { configSyntaxDirs = newDirs }
 
 getConfig :: FilePath -> IO (Either String Config)
 getConfig fp = runExceptT $ do
