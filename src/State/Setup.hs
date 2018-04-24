@@ -162,7 +162,7 @@ setupState logFile initialConfig = do
 
   let cr = ChatResources session cd requestChan eventChan
              slc wac (themeToAttrMap custTheme) userStatusLock
-             userIdSet config mempty userPrefs
+             userIdSet config mempty userPrefs mempty
 
   initializeState cr myTeam me
 

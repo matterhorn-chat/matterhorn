@@ -125,6 +125,7 @@ module Types
   , crFlaggedPosts
   , crConn
   , crConfiguration
+  , crSyntaxMap
   , getSession
   , getResourceSession
 
@@ -231,6 +232,7 @@ import           Network.Connection (HostNotResolved, HostCannotConnect)
 import qualified Data.Text as T
 import           System.Exit (ExitCode)
 import           Text.Aspell (Aspell)
+import           Skylighting (SyntaxMap)
 
 import           Zipper (Zipper, focusL, updateList)
 
@@ -493,6 +495,7 @@ data ChatResources = ChatResources
   , _crConfiguration       :: Config
   , _crFlaggedPosts        :: Set PostId
   , _crUserPreferences     :: UserPreferences
+  , _crSyntaxMap           :: SyntaxMap
   }
 
 
@@ -1152,10 +1155,12 @@ type ChannelSet = Set Text
 data HighlightSet = HighlightSet
   { hUserSet    :: Set Text
   , hChannelSet :: Set Text
+  , hSyntaxMap  :: SyntaxMap
   }
 
 getHighlightSet :: ChatState -> HighlightSet
 getHighlightSet st = HighlightSet
   { hUserSet = Set.fromList (st^..csUsers.to allUsers.folded.uiName)
   , hChannelSet = Set.fromList (st^..csChannels.folded.ccInfo.cdName)
+  , hSyntaxMap = st^.csResources.crSyntaxMap
   }

@@ -52,7 +52,7 @@ import           Types.Posts
 import           Types.Messages
 
 emptyHSet :: HighlightSet
-emptyHSet = HighlightSet Set.empty Set.empty
+emptyHSet = HighlightSet Set.empty Set.empty mempty
 
 omitUsernameTypes :: [MessageType]
 omitUsernameTypes =
@@ -273,9 +273,9 @@ blockToWidget hSet (C.Header n is) =
 blockToWidget hSet (C.Blockquote is) =
     addQuoting (vBox $ fmap (blockToWidget hSet) is)
 blockToWidget hSet (C.List _ l bs) = blocksToList l bs hSet
-blockToWidget _ (C.CodeBlock ci tx) =
+blockToWidget hSet (C.CodeBlock ci tx) =
       let f = maybe rawCodeBlockToWidget codeBlockToWidget mSyntax
-          mSyntax = Sky.lookupSyntax (C.codeLang ci) Sky.defaultSyntaxMap
+          mSyntax = Sky.lookupSyntax (C.codeLang ci) (hSyntaxMap hSet)
       in f tx
 blockToWidget _ (C.HtmlBlock txt) = textWithCursor txt
 blockToWidget _ (C.HRule) = B.vLimit 1 (B.fill '*')
