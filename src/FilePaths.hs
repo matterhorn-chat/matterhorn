@@ -52,7 +52,7 @@ lastRunStateFilePath teamId =
 -- supported locations.
 locateConfig :: FilePath -> IO (Maybe FilePath)
 locateConfig filename = do
-  xdgLocations <- getAllConfigFiles "matterhorn" filename
+  xdgLocations <- getAllConfigFiles xdgName filename
   let confLocations = ["./" <> filename] ++
                       xdgLocations ++
                       ["/etc/matterhorn/" <> filename]
@@ -84,7 +84,7 @@ locateScriptPath :: FilePath -> IO Script
 locateScriptPath name
   | head name == '.' = return ScriptNotFound
   | otherwise = do
-    xdgLocations <- getAllConfigFiles "matterhorn" scriptDirName
+    xdgLocations <- getAllConfigFiles xdgName scriptDirName
     let cmdLocations = [ xdgLoc ++ "/" ++ name
                        | xdgLoc <- xdgLocations
                        ] ++ [ "/etc/matterhorn/scripts/" <> name ]
@@ -98,7 +98,7 @@ locateScriptPath name
 --   scripts.
 getAllScripts :: IO ([FilePath], [FilePath])
 getAllScripts = do
-  xdgLocations <- getAllConfigFiles "matterhorn" scriptDirName
+  xdgLocations <- getAllConfigFiles xdgName scriptDirName
   let cmdLocations = xdgLocations ++ ["/etc/matterhorn/scripts"]
   let getCommands dir = do
         exists <- doesDirectoryExist dir
