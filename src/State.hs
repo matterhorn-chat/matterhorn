@@ -1986,7 +1986,7 @@ sendMessage mode msg =
                             let pendingPost = (rawPost msg chanId) { rawPostRootId = postRootId p <|> (Just $ postId p) }
                             void $ MM.mmCreatePost pendingPost session
                         Editing p -> do
-                            void $ MM.mmUpdatePost (postId p) (postUpdate msg) session
+                            void $ MM.mmPatchPost (postId p) (postUpdateBody msg) session
 
 handleNewUserDirect :: User -> MH ()
 handleNewUserDirect newUser = do
