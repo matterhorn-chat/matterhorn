@@ -417,8 +417,8 @@ insertTransitions ms cutoff = insertDateMarkers $ foldr addMessage ms newMessage
           newMessagesMsg d = newMessageOfType (T.pack "New Messages")
                              (C NewMessagesTransition) d
 
-renderChannelSelect :: ChatState -> Widget Name
-renderChannelSelect st =
+renderChannelSelectPrompt :: ChatState -> Widget Name
+renderChannelSelectPrompt st =
     let cstr = st^.csChannelSelectState.channelSelectInput
     in withDefAttr channelSelectPromptAttr $
        (txt "Switch to channel [use ^ and $ to anchor]: ") <+>
@@ -560,7 +560,7 @@ inputPreview st hs | not $ st^.csShowMessagePreview = emptyWidget
 userInputArea :: ChatState -> HighlightSet -> Widget Name
 userInputArea st hs =
     case appMode st of
-        ChannelSelect -> renderChannelSelect st
+        ChannelSelect -> renderChannelSelectPrompt st
         UrlSelect     -> hCenter $ hBox [ txt "Press "
                                         , withDefAttr clientEmphAttr $ txt "Enter"
                                         , txt " to open the selected URL or "
