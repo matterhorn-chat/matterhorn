@@ -148,11 +148,11 @@ execMMCommand name rest = do
              , MM.minComCommand   = "/" <> name <> " " <> rest
              , MM.minComParentId  = case em of
                  Replying _ p -> Just $ MM.getId p
-                 Editing p    -> MM.postParentId p
+                 Editing p _  -> MM.postParentId p
                  _            -> Nothing
              , MM.minComRootId  = case em of
                  Replying _ p -> MM.postRootId p <|> (Just $ MM.postId p)
-                 Editing p    -> MM.postRootId p
+                 Editing p _  -> MM.postRootId p
                  _            -> Nothing
              , MM.minComTeamId = tId
              }

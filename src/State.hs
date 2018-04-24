@@ -467,9 +467,28 @@ beginUpdateMessage = do
         Just msg | isMine st msg && isEditable msg -> do
             let Just p = msg^.mOriginalPost
             setMode Main
-            csEditState.cedEditMode .= Editing p
-            csEditState.cedEditor %= applyEdit (clearZipper >> (insertMany $ postMessage p))
+            csEditState.cedEditMode .= Editing p (msg^.mType)
+            -- If the post that we're editing is an emote, we need
+            -- to strip the formatting because that's only there to
+            -- indicate that the post is an emote. This is annoying and
+            -- can go away one day when there is an actual post type
+            -- value of "emote" that we can look at. Note that the
+            -- removed formatting needs to be reinstated just prior to
+            -- issuing the API call to update the post.
+            let toEdit = if msg^.mType == CP Emote
+                         then removeEmoteFormatting $ postMessage p
+                         else postMessage p
+            csEditState.cedEditor %= applyEdit (clearZipper >> (insertMany toEdit))
         _ -> return ()
+
+removeEmoteFormatting :: T.Text -> T.Text
+removeEmoteFormatting t
+    | "*" `T.isPrefixOf` t &&
+      "*" `T.isSuffixOf` t = T.init $ T.drop 1 t
+    | otherwise = t
+
+addEmoteFormatting :: T.Text -> T.Text
+addEmoteFormatting t = "*" <> t <> "*"
 
 replyToLatestMessage :: MH ()
 replyToLatestMessage = do
@@ -1985,8 +2004,11 @@ sendMessage mode msg =
                         Replying _ p -> do
                             let pendingPost = (rawPost msg chanId) { rawPostRootId = postRootId p <|> (Just $ postId p) }
                             void $ MM.mmCreatePost pendingPost session
-                        Editing p -> do
-                            void $ MM.mmPatchPost (postId p) (postUpdateBody msg) session
+                        Editing p ty -> do
+                            let body = if ty == CP Emote
+                                       then addEmoteFormatting msg
+                                       else msg
+                            void $ MM.mmPatchPost (postId p) (postUpdateBody body) session
 
 handleNewUserDirect :: User -> MH ()
 handleNewUserDirect newUser = do

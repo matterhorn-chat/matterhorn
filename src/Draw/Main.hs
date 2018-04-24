@@ -40,9 +40,9 @@ import           Types.KeyEvents
 import           Events.Keybindings
 import           Events.MessageSelect
 
-previewFromInput :: UserId -> Text -> Maybe Message
-previewFromInput _ s | s == T.singleton cursorSentinel = Nothing
-previewFromInput uId s =
+previewFromInput :: Maybe MessageType -> UserId -> Text -> Maybe Message
+previewFromInput _ _ s | s == T.singleton cursorSentinel = Nothing
+previewFromInput overrideTy uId s =
     -- If it starts with a slash but not /me, this has no preview
     -- representation
     let isCommand = "/" `T.isPrefixOf` s
@@ -50,7 +50,7 @@ previewFromInput uId s =
         content = if isEmote
                   then T.stripStart $ T.drop 3 s
                   else s
-        msgTy = if isEmote then CP Emote else CP NormalPost
+        msgTy = fromMaybe (if isEmote then CP Emote else CP NormalPost) overrideTy
     in if isCommand && not isEmote
        then Nothing
        else Just $ Message { _mText          = getBlocks content
@@ -217,7 +217,7 @@ renderUserCommandBox :: ChatState -> HighlightSet -> Widget Name
 renderUserCommandBox st hs =
     let prompt = txt $ case st^.csEditState.cedEditMode of
             Replying _ _ -> "reply> "
-            Editing _    ->  "edit> "
+            Editing _ _  ->  "edit> "
             NewPost      ->      "> "
         inputBox = renderEditor (drawEditorContents st hs) True (st^.csEditState.cedEditor)
         curContents = getEditContents $ st^.csEditState.cedEditor
@@ -532,7 +532,10 @@ inputPreview st hs | not $ st^.csShowMessagePreview = emptyWidget
     curContents = getText $ (gotoEOL >>> insertChar cursorSentinel) $
                   st^.csEditState.cedEditor.editContentsL
     curStr = T.intercalate "\n" curContents
-    previewMsg = previewFromInput uId curStr
+    overrideTy = case st^.csEditState.cedEditMode of
+        Editing _ ty -> Just ty
+        _ -> Nothing
+    previewMsg = previewFromInput overrideTy uId curStr
     thePreview = let noPreview = str "(No preview)"
                      msgPreview = case previewMsg of
                        Nothing -> noPreview

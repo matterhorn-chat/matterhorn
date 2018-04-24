@@ -513,7 +513,7 @@ data ChatEditState = ChatEditState
 
 data EditMode =
     NewPost
-    | Editing Post
+    | Editing Post MessageType
     | Replying Message Post
       deriving (Show)
 
