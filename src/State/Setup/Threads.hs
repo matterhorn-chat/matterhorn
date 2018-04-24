@@ -6,6 +6,7 @@ module State.Setup.Threads
   , startTimezoneMonitorThread
   , maybeStartSpellChecker
   , startAsyncWorkerThread
+  , startSyntaxMapLoaderThread
   )
 where
 
@@ -20,12 +21,14 @@ import           Control.Exception (SomeException, try, finally, fromException)
 import qualified Data.Foldable as F
 import qualified Data.Text as T
 import           Data.Time (getCurrentTime, addUTCTime)
+import qualified Data.Map as M
 import           Lens.Micro.Platform ((.=), (%=), (%~), mapped)
 import           System.Exit (ExitCode(ExitSuccess))
 import           System.IO (hPutStrLn, hFlush)
 import           System.IO.Temp (openTempFile)
 import           System.Directory (getTemporaryDirectory)
 import           Text.Aspell (Aspell, AspellOption(..), startAspell)
+import           Skylighting.Loader (loadSyntaxesFromDir)
 
 import           Network.Mattermost.Endpoints
 import           Network.Mattermost.Types
@@ -224,6 +227,24 @@ startSpellCheckerThread eventChan spellCheckTimeout = do
             STM.writeTChan delayWorkerChan newDel
 
   return delayWakeupChan
+
+startSyntaxMapLoaderThread :: Config -> BChan MHEvent -> IO ()
+startSyntaxMapLoaderThread config eventChan = void $ forkIO $ do
+    -- Iterate over the configured syntax directories, loading syntax
+    -- maps. Ensure that entries loaded in earlier directories in the
+    -- sequence take precedence over entries loaded later.
+    mMaps <- forM (configSyntaxDirs config) $ \dir -> do
+        result <- try $ loadSyntaxesFromDir dir
+        case result of
+            Left (_::SomeException) -> return Nothing
+            Right (Left _)          -> return Nothing
+            Right (Right m)         -> return $ Just m
+
+    let maps = catMaybes mMaps
+        finalMap = foldl M.union mempty maps
+
+    writeBChan eventChan $ RespEvent $ do
+        csResources.crSyntaxMap .= finalMap
 
 -------------------------------------------------------------------
 -- Async worker thread

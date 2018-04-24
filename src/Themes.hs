@@ -62,8 +62,8 @@ import Brick.Widgets.Skylighting ( attrNameForTokenType, attrMappingsForStyle
                                  , highlightedCodeBlockAttr
                                  )
 import qualified Data.Text as T
-import qualified Skylighting as Sky
-import Skylighting (TokenType(..))
+import qualified Skylighting.Styles as Sky
+import Skylighting.Types (TokenType(..))
 
 helpAttr :: AttrName
 helpAttr = "help"

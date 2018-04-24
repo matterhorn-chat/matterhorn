@@ -232,7 +232,7 @@ import           Network.Connection (HostNotResolved, HostCannotConnect)
 import qualified Data.Text as T
 import           System.Exit (ExitCode)
 import           Text.Aspell (Aspell)
-import           Skylighting (SyntaxMap)
+import           Skylighting.Types (SyntaxMap)
 
 import           Zipper (Zipper, focusL, updateList)
 

@@ -40,7 +40,7 @@ import           Data.Sequence ( ViewL(..)
                                , viewl
                                , viewr)
 import qualified Data.Sequence as S
-import qualified Skylighting as Sky
+import qualified Skylighting.Core as Sky
 import qualified Data.Set as Set
 import qualified Graphics.Vty as V
 
@@ -274,7 +274,7 @@ blockToWidget hSet (C.Blockquote is) =
     addQuoting (vBox $ fmap (blockToWidget hSet) is)
 blockToWidget hSet (C.List _ l bs) = blocksToList l bs hSet
 blockToWidget hSet (C.CodeBlock ci tx) =
-      let f = maybe rawCodeBlockToWidget codeBlockToWidget mSyntax
+      let f = maybe rawCodeBlockToWidget (codeBlockToWidget (hSyntaxMap hSet)) mSyntax
           mSyntax = Sky.lookupSyntax (C.codeLang ci) (hSyntaxMap hSet)
       in f tx
 blockToWidget _ (C.HtmlBlock txt) = textWithCursor txt
@@ -296,10 +296,10 @@ addQuoting w =
                           , B.Widget B.Fixed B.Fixed $ return childResult
                           ]
 
-codeBlockToWidget :: Sky.Syntax -> Text -> Widget a
-codeBlockToWidget syntax tx =
+codeBlockToWidget :: Sky.SyntaxMap -> Sky.Syntax -> Text -> Widget a
+codeBlockToWidget syntaxMap syntax tx =
     let result = Sky.tokenize cfg syntax tx
-        cfg = Sky.TokenizerConfig Sky.defaultSyntaxMap False
+        cfg = Sky.TokenizerConfig syntaxMap False
     in case result of
         Left _ -> rawCodeBlockToWidget tx
         Right tokLines ->

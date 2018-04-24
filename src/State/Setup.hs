@@ -210,6 +210,9 @@ initializeState cr myTeam me = do
   --------------------------------------------------------------------
   -- Start background worker threads:
   --
+  -- * Syntax definition loader
+  startSyntaxMapLoaderThread (cr^.crConfiguration) (cr^.crEventQueue)
+
   -- * Main async queue worker thread
   startAsyncWorkerThread (cr^.crConfiguration) (cr^.crRequestQueue) (cr^.crEventQueue)
 
