@@ -58,8 +58,9 @@ previewFromInput overrideTy uId s =
                            , _mDate          = ServerTime $ UTCTime (fromGregorian 1970 1 1) 0
                            -- The date is not used for preview
                            -- rendering, but we need to provide one.
-                           -- Ideally we'd just today's date, but the
-                           -- rendering function is pure so we can't.
+                           -- Ideally we'd just use today's date, but
+                           -- the rendering function is pure so we
+                           -- can't.
                            , _mType          = msgTy
                            , _mPending       = False
                            , _mDeleted       = False
