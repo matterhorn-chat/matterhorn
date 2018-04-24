@@ -31,6 +31,9 @@ defaultPort = 443
 bundledSyntaxPlaceholderName :: String
 bundledSyntaxPlaceholderName = "BUNDLED_SYNTAX"
 
+userSyntaxPlaceholderName :: String
+userSyntaxPlaceholderName = "USER_SYNTAX"
+
 defaultSkylightingPaths :: IO [FilePath]
 defaultSkylightingPaths = do
     xdg <- xdgSyntaxDir
@@ -191,7 +194,9 @@ fixupSyntaxDirs (Right c) =
         newDirs <- forM (configSyntaxDirs c) $ \dir ->
             if dir == bundledSyntaxPlaceholderName
             then getBundledSyntaxPath
-            else return dir
+            else if dir == userSyntaxPlaceholderName
+                 then xdgSyntaxDir
+                 else return dir
         return $ Right $ c { configSyntaxDirs = newDirs }
 
 getConfig :: FilePath -> IO (Either String Config)
