@@ -88,7 +88,7 @@ module State
   , messageSelectDownBy
   , deleteSelectedMessage
   , beginReplyCompose
-  , beginUpdateMessage
+  , beginEditMessage
   , getSelectedMessage
   , cancelReplyOrEdit
   , replyToLatestMessage
@@ -459,8 +459,8 @@ flagSelectedMessage = do
         flagMessage pId (not (msg^.mFlagged))
     _        -> return ()
 
-beginUpdateMessage :: MH ()
-beginUpdateMessage = do
+beginEditMessage :: MH ()
+beginEditMessage = do
     selected <- use (to getSelectedMessage)
     st <- use id
     case selected of

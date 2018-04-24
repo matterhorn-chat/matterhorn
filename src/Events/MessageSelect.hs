@@ -47,7 +47,7 @@ messageSelectKeybindings = mkKeybindings
          beginReplyCompose
 
     , mkKb EditMessageEvent "Begin editing the selected message"
-         beginUpdateMessage
+         beginEditMessage
 
     , mkKb DeleteMessageEvent "Delete the selected message (with confirmation)"
          beginConfirmDeleteSelectedMessage
