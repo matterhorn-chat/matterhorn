@@ -19,6 +19,7 @@ helpTopics =
     , scriptHelpTopic
     , themeHelpTopic
     , keybindingHelpTopic
+    , syntaxHighlightingHelpTopic
     ]
 
 mainHelpTopic :: HelpTopic
@@ -37,6 +38,11 @@ keybindingHelpTopic :: HelpTopic
 keybindingHelpTopic =
     HelpTopic "keybindings" "Help on overriding keybindings"
       KeybindingHelp KeybindingHelpText
+
+syntaxHighlightingHelpTopic :: HelpTopic
+syntaxHighlightingHelpTopic =
+    HelpTopic "syntax" "Help on syntax highlighing"
+      SyntaxHighlightHelp SyntaxHighlightHelpText
 
 lookupHelpTopic :: Text -> Maybe HelpTopic
 lookupHelpTopic topic =

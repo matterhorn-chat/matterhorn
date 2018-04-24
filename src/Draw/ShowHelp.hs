@@ -41,6 +41,7 @@ helpTopicDraw topic st =
         MainHelp -> mainHelp (configUserKeys (st^.csResources.crConfiguration))
         ScriptHelp -> scriptHelp
         ThemeHelp -> themeHelp
+        SyntaxHighlightHelp -> syntaxHighlightHelp (configSyntaxDirs $ st^.csResources.crConfiguration)
         KeybindingHelp -> keybindingHelp (configUserKeys (st^.csResources.crConfiguration))
 
 mainHelp :: KeyConfig -> Widget Name
@@ -212,6 +213,30 @@ keybindingHelp kc = vBox $
             , "."
             ]
           ]
+
+para :: Text -> Widget a
+para t = padTop (Pad 1) $ hCenter (hLimit 72 $ padRight Max $ renderText t)
+
+syntaxHighlightHelp :: [FilePath] -> Widget a
+syntaxHighlightHelp dirs = overrideAttr codeAttr helpEmphAttr $ vBox
+  [ padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Syntax Highlighting"
+  , para $ "Matterhorn supports syntax highlighting in Markdown code blocks when the " <>
+           "name of the code block language follows the block opening sytnax:"
+  , para $ "```<language>"
+  , para $ "The possible values of `language` are determined by the available syntax " <>
+           "definitions. The available definitions are loaded from the following " <>
+           "directories according to the configuration setting `syntaxDirectories`. " <>
+           "If the setting is omitted, it defaults to the following sequence of directories:"
+  , para $ T.pack $ intercalate "\n" $ (\d -> "`" <> d <> "`") <$> dirs
+  , para $ "Syntax definitions are in the Kate XML format. Files with an " <>
+           "`xml` extension are loaded from each directory, with directories earlier " <>
+           "in the list taking precedence over later directories when more than one " <>
+           "directory provides a definition file for the same syntax."
+  , para $ "To place custom definitions in a directory, place a Kate " <>
+           "XML syntax definition in the directory and ensure that a copy of " <>
+           "`language.dtd` is also present. The file `language.dtd` can be found in " <>
+           "the `syntax/` directory of your Matterhorn distribution."
+  ]
 
 themeHelp :: Widget a
 themeHelp = overrideAttr codeAttr helpEmphAttr $ vBox
