@@ -4,6 +4,7 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RecordWildCards #-}
 module Types
   ( ConnectionStatus(..)
   , HelpTopic(..)
@@ -703,19 +704,19 @@ data StartupStateInfo =
                      }
 
 newState :: StartupStateInfo -> ChatState
-newState (StartupStateInfo rs i u m tz hist sp ns) =
-    ChatState { _csResources                   = rs
-              , _csFocus                       = i
-              , _csMe                          = u
-              , _csMyTeam                      = m
-              , _csNames                       = ns
+newState (StartupStateInfo {..}) =
+    ChatState { _csResources                   = startupStateResources
+              , _csFocus                       = startupStateChannelZipper
+              , _csMe                          = startupStateConnectedUser
+              , _csMyTeam                      = startupStateTeam
+              , _csNames                       = startupStateNames
               , _csChannels                    = noChannels
               , _csPostMap                     = HM.empty
               , _csUsers                       = noUsers
-              , _timeZone                      = tz
-              , _csEditState                   = emptyEditState hist sp
+              , _timeZone                      = startupStateTimeZone
+              , _csEditState                   = emptyEditState startupStateInitialHistory startupStateSpellChecker
               , _csMode                        = Main
-              , _csShowMessagePreview          = configShowMessagePreview $ _crConfiguration rs
+              , _csShowMessagePreview          = configShowMessagePreview $ _crConfiguration startupStateResources
               , _csChannelSelectState          = emptyChannelSelectState
               , _csRecentChannel               = Nothing
               , _csUrlList                     = list UrlList mempty 2
