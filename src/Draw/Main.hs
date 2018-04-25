@@ -40,9 +40,9 @@ import           Types.KeyEvents
 import           Events.Keybindings
 import           Events.MessageSelect
 
-previewFromInput :: UserId -> Text -> Maybe Message
-previewFromInput _ s | s == T.singleton cursorSentinel = Nothing
-previewFromInput uId s =
+previewFromInput :: Maybe MessageType -> UserId -> Text -> Maybe Message
+previewFromInput _ _ s | s == T.singleton cursorSentinel = Nothing
+previewFromInput overrideTy uId s =
     -- If it starts with a slash but not /me, this has no preview
     -- representation
     let isCommand = "/" `T.isPrefixOf` s
@@ -50,7 +50,7 @@ previewFromInput uId s =
         content = if isEmote
                   then T.stripStart $ T.drop 3 s
                   else s
-        msgTy = if isEmote then CP Emote else CP NormalPost
+        msgTy = fromMaybe (if isEmote then CP Emote else CP NormalPost) overrideTy
     in if isCommand && not isEmote
        then Nothing
        else Just $ Message { _mText          = getBlocks content
@@ -58,8 +58,9 @@ previewFromInput uId s =
                            , _mDate          = ServerTime $ UTCTime (fromGregorian 1970 1 1) 0
                            -- The date is not used for preview
                            -- rendering, but we need to provide one.
-                           -- Ideally we'd just today's date, but the
-                           -- rendering function is pure so we can't.
+                           -- Ideally we'd just use today's date, but
+                           -- the rendering function is pure so we
+                           -- can't.
                            , _mType          = msgTy
                            , _mPending       = False
                            , _mDeleted       = False
@@ -217,7 +218,7 @@ renderUserCommandBox :: ChatState -> HighlightSet -> Widget Name
 renderUserCommandBox st hs =
     let prompt = txt $ case st^.csEditState.cedEditMode of
             Replying _ _ -> "reply> "
-            Editing _    ->  "edit> "
+            Editing _ _  ->  "edit> "
             NewPost      ->      "> "
         inputBox = renderEditor (drawEditorContents st hs) True (st^.csEditState.cedEditor)
         curContents = getEditContents $ st^.csEditState.cedEditor
@@ -416,8 +417,8 @@ insertTransitions ms cutoff = insertDateMarkers $ foldr addMessage ms newMessage
           newMessagesMsg d = newMessageOfType (T.pack "New Messages")
                              (C NewMessagesTransition) d
 
-renderChannelSelect :: ChatState -> Widget Name
-renderChannelSelect st =
+renderChannelSelectPrompt :: ChatState -> Widget Name
+renderChannelSelectPrompt st =
     let cstr = st^.csChannelSelectState.channelSelectInput
     in withDefAttr channelSelectPromptAttr $
        (txt "Switch to channel [use ^ and $ to anchor]: ") <+>
@@ -532,7 +533,10 @@ inputPreview st hs | not $ st^.csShowMessagePreview = emptyWidget
     curContents = getText $ (gotoEOL >>> insertChar cursorSentinel) $
                   st^.csEditState.cedEditor.editContentsL
     curStr = T.intercalate "\n" curContents
-    previewMsg = previewFromInput uId curStr
+    overrideTy = case st^.csEditState.cedEditMode of
+        Editing _ ty -> Just ty
+        _ -> Nothing
+    previewMsg = previewFromInput overrideTy uId curStr
     thePreview = let noPreview = str "(No preview)"
                      msgPreview = case previewMsg of
                        Nothing -> noPreview
@@ -556,7 +560,7 @@ inputPreview st hs | not $ st^.csShowMessagePreview = emptyWidget
 userInputArea :: ChatState -> HighlightSet -> Widget Name
 userInputArea st hs =
     case appMode st of
-        ChannelSelect -> renderChannelSelect st
+        ChannelSelect -> renderChannelSelectPrompt st
         UrlSelect     -> hCenter $ hBox [ txt "Press "
                                         , withDefAttr clientEmphAttr $ txt "Enter"
                                         , txt " to open the selected URL or "
