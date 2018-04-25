@@ -237,9 +237,7 @@ import           Text.Aspell (Aspell)
 import           Skylighting.Types (SyntaxMap)
 
 import           Zipper (Zipper, focusL, updateList)
-
 import           InputHistory
-
 import           Types.Channels
 import           Types.DirectionalSeq(emptyDirSeq)
 import           Types.KeyEvents
@@ -257,8 +255,9 @@ data PasswordSource =
     | PasswordCommand Text
     deriving (Eq, Read, Show)
 
--- | These are all the values that can be read in our configuration
--- file.
+-- | This is how we represent the user's configuration. Most fields
+-- correspond to configuration file settings (see Config.hs) but some
+-- are for internal book-keeping purposes only.
 data Config =
     Config { configUser :: Maybe Text
            -- ^ The username to use when connecting.
@@ -332,8 +331,8 @@ data BackgroundInfo =
 
 -- * 'MMNames' structures
 
--- | The 'MMNames' record is for listing human-readable
---   names and mapping them back to internal IDs.
+-- | The 'MMNames' record is for listing human-readable names and
+-- mapping them back to internal IDs.
 data MMNames =
     MMNames { _cnChans :: [Text] -- ^ All channel names
             , _channelNameToChanId :: HashMap Text ChannelId
@@ -346,6 +345,8 @@ data MMNames =
             -- ^ Mapping from user names to 'UserId' values
             }
 
+-- | MMNames constructor, seeded with an initial mapping of user ID to
+-- user and channel metadata.
 mkNames :: User -> HashMap UserId User -> Seq Channel -> MMNames
 mkNames myUser users chans =
     MMNames { _cnChans = sort
@@ -387,8 +388,8 @@ getDMChannelIdsInOrder n =
 
 -- * Internal Names and References
 
--- | This 'Name' type is the value used in `brick` to identify the
--- currently focused widget or state.
+-- | This 'Name' type is the type used in 'brick' to identify various
+-- parts of the interface.
 data Name =
     ChannelMessages ChannelId
     | MessageInput
@@ -420,7 +421,9 @@ data AuthenticationException =
     deriving (Show)
 
 -- | Our 'ConnectionInfo' contains exactly as much information as is
--- necessary to start a connection with a Mattermost server
+-- necessary to start a connection with a Mattermost server. This is
+-- built up during interactive authentication and then is used to log
+-- in.
 data ConnectionInfo =
     ConnectionInfo { _ciHostname :: Text
                    , _ciPort     :: Int
@@ -433,13 +436,13 @@ makeLenses ''ConnectionInfo
 -- | We want to continue referring to posts by their IDs, but we don't
 -- want to have to synthesize new valid IDs for messages from the client
 -- itself (like error messages or informative client responses). To that
--- end, a PostRef can be either a PostId or a newly-generated client ID
+-- end, a PostRef can be either a PostId or a newly-generated client ID.
 data PostRef
     = MMId PostId
     | CLId Int
     deriving (Eq, Show)
 
--- | For representing links to things in the 'open links' view
+-- | This type represents links to things in the 'open links' view.
 data LinkChoice =
     LinkChoice { _linkTime   :: ServerTime
                , _linkUser   :: UserRef
@@ -456,11 +459,20 @@ normalChannelSigil = "~"
 
 -- ** Channel-matching types
 
+-- | A match in channel selection mode.
 data ChannelSelectMatch =
     ChannelSelectMatch { nameBefore     :: Text
+                       -- ^ The content of the match before the user's
+                       -- matching input.
                        , nameMatched    :: Text
+                       -- ^ The potion of the name that matched the
+                       -- user's input.
                        , nameAfter      :: Text
+                       -- ^ The portion of the name that came after the
+                       -- user's matching input.
                        , matchFull      :: Text
+                       -- ^ The full string for this entry so it doesn't
+                       -- have to be reassembled from the parts above.
                        }
                        deriving (Eq, Show)
 
