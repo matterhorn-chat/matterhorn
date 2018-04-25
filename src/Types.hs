@@ -703,6 +703,8 @@ data ChatState =
               -- switch to it in the sidebar.
               }
 
+-- | Startup state information that is constructed prior to building a
+-- ChatState.
 data StartupStateInfo =
     StartupStateInfo { startupStateResources      :: ChatResources
                      , startupStateChannelZipper  :: Zipper ChannelId
@@ -758,11 +760,15 @@ listFromUserSearchResults rs =
     -- in Draw.UserListOverlay.
     list UserListSearchResults rs 1
 
+-- | A match in channel selection mode. Constructors distinguish
+-- between channel and user matches to ensure that a match of each type
+-- is distinct.
 data MatchValue =
     UserMatch Text
     | ChannelMatch Text
     deriving (Eq, Show)
 
+-- | The state of channel selection mode.
 data ChannelSelectState =
     ChannelSelectState { _channelSelectInput :: Text
                        , _channelMatches     :: [ChannelSelectMatch]
@@ -778,14 +784,18 @@ emptyChannelSelectState =
                        , _selectedMatch      = Nothing
                        }
 
+-- | The state of message selection mode.
 data MessageSelectState =
-    MessageSelectState { selectMessagePostId :: Maybe PostId }
+    MessageSelectState { selectMessagePostId :: Maybe PostId
+                       }
 
+-- | The state of the post list overlay.
 data PostListOverlayState =
     PostListOverlayState { _postListPosts    :: Messages
                          , _postListSelected :: Maybe PostId
                          }
 
+-- | The state of the user list overlay.
 data UserListOverlayState =
     UserListOverlayState { _userListSearchResults :: List Name UserInfo
                          , _userListSearchInput :: Editor Text Name
@@ -796,6 +806,7 @@ data UserListOverlayState =
                          , _userListEnterHandler :: UserInfo -> MH Bool
                          }
 
+-- | The scope for searching for users in a user list overlay.
 data UserSearchScope =
     ChannelMembers ChannelId
     | ChannelNonMembers ChannelId
@@ -886,10 +897,12 @@ data MHEvent =
     | IEvent InternalEvent
     -- ^ MH-internal events
 
+-- | Internal application events.
 data InternalEvent =
     DisplayError MHError
     -- ^ Some kind of application error occurred
 
+-- | Application errors.
 data MHError =
     GenericError T.Text
     -- ^ A generic error message constructor
@@ -1239,6 +1252,8 @@ compareUserInfo field u1 u2
 type UserSet = Set Text
 type ChannelSet = Set Text
 
+-- | The set of usernames, channel names, and language names used for
+-- highlighting when rendering messages.
 data HighlightSet =
     HighlightSet { hUserSet    :: Set Text
                  , hChannelSet :: Set Text
