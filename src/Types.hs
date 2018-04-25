@@ -567,10 +567,16 @@ data ChatEditState =
                   , _cedMisspellings         :: Set Text
                   }
 
+-- | The input mode.
 data EditMode =
     NewPost
+    -- ^ The input is for a new post.
     | Editing Post MessageType
+    -- ^ The input is to be used as a new body for an existing post of
+    -- the specified type.
     | Replying Message Post
+    -- ^ The input is to be used as a new post in reply to the specified
+    -- post.
     deriving (Show)
 
 -- | We can initialize a new 'ChatEditState' value with just an edit
