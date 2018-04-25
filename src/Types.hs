@@ -593,28 +593,59 @@ data ConnectionStatus = Connected | Disconnected
 --  be broken out further, but hasn't yet been.
 data ChatState = ChatState
   { _csResources                   :: ChatResources
+  -- ^ Global application-wide resources that don't change much.
   , _csFocus                       :: Zipper ChannelId
+  -- ^ The channel sidebar zipper that tracks which channel is selected.
   , _csNames                       :: MMNames
+  -- ^ Mappings between names and user/channel IDs.
   , _csMe                          :: User
+  -- ^ The authenticated user.
   , _csMyTeam                      :: Team
+  -- ^ The active team of the authenticated user.
   , _csChannels                    :: ClientChannels
+  -- ^ The channels that we are showing, including their message lists.
   , _csPostMap                     :: HashMap PostId Message
+  -- ^ The map of post IDs to messages. This allows us to access
+  -- messages by ID without having to linearly scan channel message
+  -- lists.
   , _csUsers                       :: Users
+  -- ^ All of the users we know about.
   , _timeZone                      :: TimeZoneSeries
+  -- ^ The client time zone.
   , _csEditState                   :: ChatEditState
+  -- ^ The state of the input box used for composing and editing
+  -- messages and commands.
   , _csMode                        :: Mode
+  -- ^ The current application mode. This is used to dispatch to
+  -- different rendering and event handling routines.
   , _csShowMessagePreview          :: Bool
+  -- ^ Whether to show the message preview area.
   , _csChannelSelectState          :: ChannelSelectState
+  -- ^ The state of the user's input and selection for channel selection
+  -- mode.
   , _csRecentChannel               :: Maybe ChannelId
+  -- ^ The most recently-selected channel, if any.
   , _csUrlList                     :: List Name LinkChoice
+  -- ^ The URL list used to show URLs drawn from messages in a channel.
   , _csConnectionStatus            :: ConnectionStatus
+  -- ^ Our view of the connection status.
   , _csWorkerIsBusy                :: Maybe (Maybe Int)
+  -- ^ Whether the async worker thread is busy, and its queue length if
+  -- so.
   , _csJoinChannelList             :: Maybe (List Name Channel)
+  -- ^ The list of channels presented in the channel join window.
   , _csMessageSelect               :: MessageSelectState
+  -- ^ The state of message selection mode.
   , _csPostListOverlay             :: PostListOverlayState
+  -- ^ The state of the post list overlay.
   , _csUserListOverlay             :: UserListOverlayState
+  -- ^ The state of the user list overlay.
   , _csClientConfig                :: Maybe ClientConfig
+  -- ^ The Mattermost client configuration, as we understand it.
   , _csLastJoinRequest             :: Maybe ChannelId
+  -- ^ The most recently-joined channel ID that we look for in an
+  -- asynchronous join notification, so that we can switch to it in the
+  -- sidebar.
   }
 
 data StartupStateInfo =
