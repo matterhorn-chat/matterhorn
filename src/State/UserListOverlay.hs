@@ -89,7 +89,6 @@ userListActivateCurrent = do
 enterUserListMode :: UserSearchScope -> (UserInfo -> MH Bool) -> MH ()
 enterUserListMode scope enterHandler = do
   csUserListOverlay.userListSearchScope .= scope
-  csUserListOverlay.userListSelected .= Nothing
   csUserListOverlay.userListSearchInput.E.editContentsL %= Z.clearZipper
   csUserListOverlay.userListEnterHandler .= enterHandler
   csUserListOverlay.userListSearching .= False
@@ -135,7 +134,6 @@ userInfoFromPair u status =
 exitUserListMode :: MH ()
 exitUserListMode = do
   csUserListOverlay.userListSearchResults .= listFromUserSearchResults mempty
-  csUserListOverlay.userListSelected .= Nothing
   csUserListOverlay.userListEnterHandler .= (const $ return False)
   setMode Main
 

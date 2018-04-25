@@ -104,7 +104,6 @@ module Types
   , UserSearchScope(..)
 
   , UserListOverlayState
-  , userListSelected
   , userListSearchResults
   , userListSearchInput
   , userListSearchScope
@@ -745,7 +744,6 @@ newState (StartupStateInfo {..}) =
 nullUserListOverlayState :: UserListOverlayState
 nullUserListOverlayState =
     UserListOverlayState { _userListSearchResults  = listFromUserSearchResults mempty
-                         , _userListSelected       = Nothing
                          , _userListSearchInput    = editor UserListSearchInput (Just 1) ""
                          , _userListSearchScope    = AllUsers
                          , _userListSearching      = False
@@ -790,7 +788,6 @@ data PostListOverlayState =
 
 data UserListOverlayState =
     UserListOverlayState { _userListSearchResults :: List Name UserInfo
-                         , _userListSelected :: Maybe PostId
                          , _userListSearchInput :: Editor Text Name
                          , _userListSearchScope :: UserSearchScope
                          , _userListSearching :: Bool
