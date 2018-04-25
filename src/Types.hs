@@ -732,14 +732,14 @@ newState (StartupStateInfo {..}) =
 
 nullUserListOverlayState :: UserListOverlayState
 nullUserListOverlayState =
-    UserListOverlayState { _userListSearchResults = listFromUserSearchResults mempty
-                         , _userListSelected    = Nothing
-                         , _userListSearchInput = editor UserListSearchInput (Just 1) ""
-                         , _userListSearchScope = AllUsers
-                         , _userListSearching = False
+    UserListOverlayState { _userListSearchResults  = listFromUserSearchResults mempty
+                         , _userListSelected       = Nothing
+                         , _userListSearchInput    = editor UserListSearchInput (Just 1) ""
+                         , _userListSearchScope    = AllUsers
+                         , _userListSearching      = False
                          , _userListRequestingMore = False
-                         , _userListHasAllResults = False
-                         , _userListEnterHandler = const $ return False
+                         , _userListHasAllResults  = False
+                         , _userListEnterHandler   = const $ return False
                          }
 
 listFromUserSearchResults :: Vec.Vector UserInfo -> List Name UserInfo
