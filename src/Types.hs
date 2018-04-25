@@ -260,31 +260,61 @@ data PasswordSource =
 -- file.
 data Config = Config
   { configUser                      :: Maybe Text
+  -- ^ The username to use when connecting.
   , configHost                      :: Maybe Text
+  -- ^ The hostname to use when connecting.
   , configTeam                      :: Maybe Text
+  -- ^ The team name to use when connecting.
   , configPort                      :: Int
+  -- ^ The port to use when connecting.
   , configPass                      :: Maybe PasswordSource
+  -- ^ The password source to use when connecting.
   , configTimeFormat                :: Maybe Text
+  -- ^ The format string for timestamps.
   , configDateFormat                :: Maybe Text
+  -- ^ The format string for dates.
   , configTheme                     :: Maybe Text
+  -- ^ The name of the theme to use.
   , configThemeCustomizationFile    :: Maybe Text
+  -- ^ The path to the theme customization file, if any.
   , configSmartBacktick             :: Bool
+  -- ^ Whether to enable smart quoting characters.
   , configURLOpenCommand            :: Maybe Text
+  -- ^ The command to use to open URLs.
   , configURLOpenCommandInteractive :: Bool
+  -- ^ Whether the URL-opening command is interactive (i.e. whether it
+  -- should be given control of the terminal).
   , configActivityNotifyCommand     :: Maybe T.Text
+  -- ^ The command to run for activity notifications.
   , configActivityBell              :: Bool
+  -- ^ Whether to ring the terminal bell on activity.
   , configShowBackground            :: BackgroundInfo
+  -- ^ Whether to show async background worker thread info.
   , configShowMessagePreview        :: Bool
+  -- ^ Whether to show the message preview area.
   , configEnableAspell              :: Bool
+  -- ^ Whether to enable Aspell spell checking.
   , configAspellDictionary          :: Maybe Text
+  -- ^ A specific Aspell dictionary name to use.
   , configUnsafeUseHTTP             :: Bool
+  -- ^ Whether to permit an insecure HTTP connection.
   , configChannelListWidth          :: Int
+  -- ^ The width, in columns, of the channel list sidebar.
   , configShowOlderEdits            :: Bool
+  -- ^ Whether to highlight the edit indicator on edits made prior to
+  -- the beginning of the current session.
   , configShowTypingIndicator       :: Bool
+  -- ^ Whether to show the typing indicator for other users, and whether
+  -- to send typing notifications to other users.
   , configAbsPath                   :: Maybe FilePath
+  -- ^ A book-keeping field for the absolute path to the configuration.
+  -- (Not a user setting.)
   , configUserKeys                  :: KeyConfig
+  -- ^ The user's keybinding configuration.
   , configHyperlinkingMode          :: Bool
+  -- ^ Whether to enable terminal hyperlinking mode.
   , configSyntaxDirs                :: [FilePath]
+  -- ^ The search path for syntax description XML files.
   } deriving (Eq, Show)
 
 data BackgroundInfo = Disabled | Active | ActiveCount deriving (Eq, Show)
