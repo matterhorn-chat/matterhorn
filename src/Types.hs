@@ -76,6 +76,7 @@ module Types
   , csChannelSelectState
   , csEditState
   , csClientConfig
+  , csLastJoinRequest
   , timeZone
   , whenMode
   , setMode
@@ -613,6 +614,7 @@ data ChatState = ChatState
   , _csPostListOverlay             :: PostListOverlayState
   , _csUserListOverlay             :: UserListOverlayState
   , _csClientConfig                :: Maybe ClientConfig
+  , _csLastJoinRequest             :: Maybe ChannelId
   }
 
 data StartupStateInfo =
@@ -650,6 +652,7 @@ newState (StartupStateInfo rs i u m tz hist sp ns) = ChatState
   , _csPostListOverlay             = PostListOverlayState emptyDirSeq Nothing
   , _csUserListOverlay             = nullUserListOverlayState
   , _csClientConfig                = Nothing
+  , _csLastJoinRequest             = Nothing
   }
 
 nullUserListOverlayState :: UserListOverlayState

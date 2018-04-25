@@ -565,12 +565,19 @@ startJoinChannel = do
     setMode JoinChannel
     csJoinChannelList .= Nothing
 
+-- | If the user is not a member of the specified channel, submit a
+-- request to join it. Otherwise switch to the channel.
 joinChannel :: ChannelId -> MH ()
 joinChannel chanId = do
     setMode Main
-    myId <- gets myUserId
-    let member = MinChannelMember myId chanId
-    doAsyncChannelMM Preempt chanId (\ s _ c -> MM.mmAddUser c member s) endAsyncNOP
+    mChan <- preuse (csChannel(chanId))
+    case mChan of
+        Just _ -> setFocus chanId
+        Nothing -> do
+            myId <- gets myUserId
+            let member = MinChannelMember myId chanId
+            csLastJoinRequest .= Just chanId
+            doAsyncChannelMM Preempt chanId (\ s _ c -> MM.mmAddUser c member s) endAsyncNOP
 
 -- | When another user adds us to a channel, we need to fetch the
 -- channel info for that channel.
@@ -1274,8 +1281,18 @@ handleNewChannel_ permitPostpone switch nc member = do
                 refreshChannelZipper
 
                 -- Finally, set our focus to the newly created channel
-                -- if the caller requested a change of channel.
-                when switch $ setFocus (getId nc)
+                -- if the caller requested a change of channel. Also
+                -- consider the last join request state field in case
+                -- this is an asynchronous channel addition triggered by
+                -- a /join.
+                lastReq <- use csLastJoinRequest
+                wasLast <- case lastReq of
+                    Just cId | cId == getId nc -> do
+                        csLastJoinRequest .= Nothing
+                        return True
+                    _ -> return False
+
+                when (switch || wasLast) $ setFocus (getId nc)
 
 editMessage :: Post -> MH ()
 editMessage new = do
