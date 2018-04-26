@@ -13,6 +13,47 @@ overall concerns:
  * We want to manage inevitable software evolution, and
  * We want to reduce waste through good team coordination.
 
+Aesthetics
+----------
+
+When working with the code, we do not have a "style guide" and do not
+want to enumerate all the different ways that the code can or should
+be formatted.  We also recognize that the specific formatting
+decisions are often affected by editor behaviors and individual typing
+habits.
+
+The ultimate goal is readability and so in general, we recommend that
+you loosely follow existing formatting by default (eyes like to see
+familiar patterns), but feel free to implement specific practices where
+these match the editor tooling and or your personal aesthetics.
+
+The following are some of the aesthetic choices we've made; these are
+not hard rules but help to explain the current overall appearance:
+
+  * Imports are usually in alphabetical order and separated into 4-5
+    sections from the most global/generic to the most local/specific.
+    Because there can be a number of sections, we separate the imports
+    from the module body with two lines to help visually locate this
+    point.  See Events.hs as an example.
+    
+  * We have collected the most common Prelude elements into a local
+    file included by all modules (and therefore hiding the normal
+    Prelude).  This helps to reduce the number of overall imports, and
+    we keep this as the first import section to draw attention to the
+    fact that the normal Prelude is not in context by default.
+    
+  * We prefer not to mix the `.` and `$` operators on the same line:
+
+    ```haskell
+    let foo = func . chain . call $ parse $ input
+    let foo = func $ chain $ call $ parse $ input  -- preferred
+    ```
+
+  * Top-level functions have haddock documentation to help describe
+    what the function is used for (and sometimes ways in which it
+    shouldn't be used).
+    
+
 Branching
 ---------
 
