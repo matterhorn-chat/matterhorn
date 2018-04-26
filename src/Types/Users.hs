@@ -45,6 +45,8 @@ import           Lens.Micro.Platform ( (%~), makeLenses, ix )
 import           Network.Mattermost.Types ( Id(Id), UserId(..), User(..)
                                           , idString )
 
+import           Types.Common
+
 -- * 'UserInfo' Values
 
 -- | A 'UserInfo' value represents everything we need to know at
@@ -72,12 +74,12 @@ userInfoFromUser up inTeam = UserInfo
   , _uiId        = userId up
   , _uiStatus    = Offline
   , _uiInTeam    = inTeam
-  , _uiNickName  = if T.null (userNickname up)
-                   then Nothing
-                   else Just $ userNickname up
-  , _uiFirstName = userFirstName up
-  , _uiLastName  = userLastName up
-  , _uiEmail     = userEmail up
+  , _uiNickName  =
+      let nick = sanitizeUserText $ userNickname up
+      in if T.null nick then Nothing else Just nick
+  , _uiFirstName = sanitizeUserText $ userFirstName up
+  , _uiLastName  = sanitizeUserText $ userLastName up
+  , _uiEmail     = sanitizeUserText $ userEmail up
   , _uiDeleted   = userDeleted up
   }
 

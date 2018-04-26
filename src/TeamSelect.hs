@@ -17,6 +17,7 @@ import           System.Exit ( exitSuccess )
 import           Network.Mattermost.Types
 
 import           Markdown
+import           Types.Common
 
 
 type State = List () Team
@@ -61,7 +62,7 @@ teamSelect st =
 
 renderTeamItem :: Bool -> Team -> Widget ()
 renderTeamItem _ t =
-    padRight Max $ txt $ teamName t
+    padRight Max $ txt $ sanitizeUserText $ teamName t
 
 onEvent :: State -> BrickEvent () e -> EventM () (Next State)
 onEvent _  (VtyEvent (EvKey KEsc [])) = liftIO exitSuccess
