@@ -4,21 +4,22 @@ import           Prelude ()
 import           Prelude.MH
 
 import qualified Control.Concurrent.STM as STM
-import           Control.Exception (try)
+import           Control.Exception ( try )
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Map.Strict as Map
 import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
 import qualified Data.Text as T
-import           Lens.Micro.Platform ((%=), (%~), (.~), traversed)
-import           System.Hclip (setClipboard, ClipboardException(..))
+import           Lens.Micro.Platform ( (%=), (%~), (.~), traversed )
+import           System.Hclip ( setClipboard, ClipboardException(..) )
 
 import           Network.Mattermost.Endpoints
-import           Network.Mattermost.Types
 import           Network.Mattermost.Lenses
+import           Network.Mattermost.Types
 
 import           Types
+
 
 -- * Mattermost API
 

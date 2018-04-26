@@ -1,12 +1,13 @@
 module Events.LeaveChannelConfirm where
 
-import Prelude ()
-import Prelude.MH
+import           Prelude ()
+import           Prelude.MH
 
 import qualified Graphics.Vty as Vty
 
-import Types
-import State
+import           State
+import           Types
+
 
 onEventLeaveChannelConfirm :: Vty.Event -> MH ()
 onEventLeaveChannelConfirm (Vty.EvKey k []) = do

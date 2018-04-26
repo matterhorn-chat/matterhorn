@@ -16,24 +16,25 @@ module FilePaths
   , Script(..)
   , locateScriptPath
   , getAllScripts
-  ) where
+  )
+where
 
 import Prelude ()
 import Prelude.MH
 
-import Data.Text (unpack)
+import Data.Text ( unpack )
 import System.Directory ( doesFileExist
                         , doesDirectoryExist
                         , getDirectoryContents
                         , getPermissions
                         , executable
                         )
-import System.Environment.XDG.BaseDir
-  ( getUserConfigFile
-  , getAllConfigFiles
-  , getUserConfigDir
-  )
-import System.FilePath ((</>), takeBaseName)
+import System.Environment.XDG.BaseDir ( getUserConfigFile
+                                      , getAllConfigFiles
+                                      , getUserConfigDir
+                                      )
+import System.FilePath ( (</>), takeBaseName )
+
 
 xdgName :: String
 xdgName = "matterhorn"

@@ -2,24 +2,26 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Command where
 
-import Prelude ()
-import Prelude.MH
+import           Prelude ()
+import           Prelude.MH
 
 import qualified Control.Exception as Exn
 import qualified Data.Char as Char
 import qualified Data.Text as T
-import qualified Network.Mattermost.Endpoints as MM
-import qualified Network.Mattermost.Types as MM
-import qualified Network.Mattermost.Exceptions as MM
 
-import State
-import State.Editing (toggleMessagePreview)
-import State.Common
-import State.PostListOverlay
-import State.UserListOverlay
-import Types
-import HelpTopics
-import Scripts
+import qualified Network.Mattermost.Endpoints as MM
+import qualified Network.Mattermost.Exceptions as MM
+import qualified Network.Mattermost.Types as MM
+
+import           HelpTopics
+import           Scripts
+import           State
+import           State.Common
+import           State.Editing ( toggleMessagePreview )
+import           State.PostListOverlay
+import           State.UserListOverlay
+import           Types
+
 
 -- | This function skips any initial whitespace and returns the first
 -- 'token' (i.e. any sequence of non-whitespace characters) as well as

@@ -44,17 +44,20 @@ module Types.Posts
   )
 where
 
-import           Cheapskate (Blocks)
+import           Prelude ()
+import           Prelude.MH
+
+import           Cheapskate ( Blocks )
 import qualified Cheapskate as C
 import qualified Data.Map.Strict as Map
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
-import           Data.Time.Clock (getCurrentTime)
-import           Lens.Micro.Platform (makeLenses)
-import           Network.Mattermost.Types
+import           Data.Time.Clock ( getCurrentTime )
+import           Lens.Micro.Platform ( makeLenses )
+
 import           Network.Mattermost.Lenses
-import           Prelude ()
-import           Prelude.MH
+import           Network.Mattermost.Types
+
 
 -- * Client Messages
 

@@ -1,14 +1,15 @@
 module Events.UserListOverlay where
 
-import qualified Graphics.Vty as Vty
 import           Prelude ()
 import           Prelude.MH
 
-import Brick.Widgets.Edit (handleEditorEvent)
+import           Brick.Widgets.Edit ( handleEditorEvent )
+import qualified Graphics.Vty as Vty
 
-import Types
-import Events.Keybindings
-import State.UserListOverlay
+import           Events.Keybindings
+import           State.UserListOverlay
+import           Types
+
 
 onEventUserListOverlay :: Vty.Event -> MH ()
 onEventUserListOverlay =

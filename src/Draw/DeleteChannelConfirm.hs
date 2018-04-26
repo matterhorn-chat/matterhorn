@@ -8,12 +8,13 @@ import Prelude ()
 import Prelude.MH
 
 import Brick
-import Brick.Widgets.Center
 import Brick.Widgets.Border
+import Brick.Widgets.Center
 
-import Types
-import Themes
 import Draw.Main
+import Themes
+import Types
+
 
 drawDeleteChannelConfirm :: ChatState -> [Widget Name]
 drawDeleteChannelConfirm st =

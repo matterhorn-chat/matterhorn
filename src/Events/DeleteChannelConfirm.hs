@@ -1,12 +1,13 @@
 module Events.DeleteChannelConfirm where
 
-import Prelude ()
-import Prelude.MH
+import           Prelude ()
+import           Prelude.MH
 
 import qualified Graphics.Vty as Vty
 
-import Types
-import State
+import           Types
+import           State
+
 
 onEventDeleteChannelConfirm :: Vty.Event -> MH ()
 onEventDeleteChannelConfirm (Vty.EvKey k []) = do

@@ -19,6 +19,7 @@ import qualified Data.Text as T
 
 import qualified Zipper as Z
 
+
 -- A completer stores the stateful selection of a completion alternative
 -- from a sequence of alternatives.
 data Completer =

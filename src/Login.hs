@@ -3,29 +3,32 @@
 {-# LANGUAGE RankNTypes #-}
 module Login
   ( interactiveGatherCredentials
-  ) where
+  )
+where
 
-import Prelude ()
-import Prelude.MH
+import           Prelude ()
+import           Prelude.MH
 
-import Brick
-import Brick.Forms
-import Brick.Focus
-import Brick.Widgets.Edit
-import Brick.Widgets.Center
-import Brick.Widgets.Border
-import Lens.Micro.Platform ((.~), Lens', makeLenses)
+import           Brick
+import           Brick.Focus
+import           Brick.Forms
+import           Brick.Widgets.Border
+import           Brick.Widgets.Center
+import           Brick.Widgets.Edit
 import qualified Data.Text as T
-import Graphics.Vty
-import System.Exit (exitSuccess)
+import           Graphics.Vty
+import           Lens.Micro.Platform ( (.~), Lens', makeLenses )
+import           System.Exit ( exitSuccess )
 import qualified System.IO.Error as Err
 
-import Network.Mattermost.Exceptions (LoginFailureException(..))
+import           Network.Mattermost.Exceptions ( LoginFailureException(..) )
 
-import Markdown
-import Types ( ConnectionInfo(..), ciPassword, ciUsername, ciHostname
-             , ciPort, AuthenticationException(..)
-             )
+import           Markdown
+import           Types ( ConnectionInfo(..)
+                       , ciPassword, ciUsername, ciHostname
+                       , ciPort, AuthenticationException(..)
+                       )
+
 
 data Name = Hostname | Port | Username | Password deriving (Ord, Eq, Show)
 

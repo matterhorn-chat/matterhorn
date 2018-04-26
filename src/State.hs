@@ -110,57 +110,58 @@ where
 import           Prelude ()
 import           Prelude.MH
 
-import           Brick (invalidateCacheEntry)
-import           Brick.Themes (themeToAttrMap)
-import           Brick.Widgets.Edit (getEditContents, editContentsL)
-import           Brick.Widgets.List (list, listMoveTo, listSelectedElement)
-import           Control.Concurrent.Async (runConcurrently, Concurrently(..), concurrently)
-import           Control.Concurrent (MVar, putMVar, forkIO)
+import           Brick ( invalidateCacheEntry )
+import           Brick.Main ( getVtyHandle, viewportScroll, vScrollToBeginning, vScrollBy, vScrollToEnd )
+import           Brick.Themes ( themeToAttrMap )
+import           Brick.Widgets.Edit ( applyEdit )
+import           Brick.Widgets.Edit ( getEditContents, editContentsL )
+import           Brick.Widgets.List ( list, listMoveTo, listSelectedElement )
+import           Control.Concurrent ( MVar, putMVar, forkIO )
+import           Control.Concurrent.Async ( runConcurrently, Concurrently(..), concurrently )
 import qualified Control.Concurrent.STM as STM
-import           Control.Exception (SomeException, try)
-import           Data.Char (isAlphaNum)
-import           Brick.Main (getVtyHandle, viewportScroll, vScrollToBeginning, vScrollBy, vScrollToEnd)
-import           Brick.Widgets.Edit (applyEdit)
+import           Control.Exception ( SomeException, try )
 import qualified Data.ByteString as BS
-import           Data.Function (on)
-import           Data.Text.Zipper (textZipper, clearZipper, insertMany, gotoEOL)
+import           Data.Char ( isAlphaNum )
+import           Data.Function ( on )
 import qualified Data.HashMap.Strict as HM
+import           Data.List ( findIndex )
+import           Data.Maybe ( fromJust )
 import qualified Data.Sequence as Seq
-import           Data.List (findIndex)
-import           Data.Maybe (fromJust)
 import qualified Data.Set as Set
 import qualified Data.Text as T
-import           Data.Time (getCurrentTime)
+import           Data.Text.Zipper ( textZipper, clearZipper, insertMany, gotoEOL )
+import           Data.Time ( getCurrentTime )
 import qualified Data.Vector as V
-import           Graphics.Vty (outputIface)
-import           Graphics.Vty.Output.Interface (ringTerminalBell)
+import           Graphics.Vty ( outputIface )
+import           Graphics.Vty.Output.Interface ( ringTerminalBell )
 import           Lens.Micro.Platform
-import           System.Exit (ExitCode(..))
-import           System.Process (proc, std_in, std_out, std_err, StdStream(..),
-                                 createProcess, waitForProcess)
-import           System.IO (hGetContents, hFlush, hPutStrLn)
-import           System.Directory (createDirectoryIfMissing)
-import           System.Environment.XDG.BaseDir (getUserCacheDir)
+import           System.Directory ( createDirectoryIfMissing )
+import           System.Environment.XDG.BaseDir ( getUserCacheDir )
+import           System.Exit ( ExitCode(..) )
 import           System.FilePath
+import           System.IO ( hGetContents, hFlush, hPutStrLn )
+import           System.Process ( proc, std_in, std_out, std_err, StdStream(..)
+                                , createProcess, waitForProcess )
 
 import qualified Network.Mattermost.Endpoints as MM
-import           Network.Mattermost.Types
 import           Network.Mattermost.Lenses
+import           Network.Mattermost.Types
 
 import           Config
-import           FilePaths
-import           TimeUtils (justBefore, justAfter)
-import           Types
-import           InputHistory
-import           Themes
-import           Zipper (Zipper)
-import qualified Zipper as Z
 import           Constants
-import           Markdown (blockGetURLs, findVerbatimChunk)
+import           FilePaths
+import           InputHistory
+import           Markdown ( blockGetURLs, findVerbatimChunk )
+import           Themes
+import           TimeUtils ( justBefore, justAfter )
+import           Types
+import           Zipper ( Zipper )
+import qualified Zipper as Z
 
 import           State.Common
 import           State.Messages
-import           State.Setup.Threads (updateUserStatuses)
+import           State.Setup.Threads ( updateUserStatuses )
+
 
 -- * Refreshing Channel Data
 

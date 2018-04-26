@@ -22,12 +22,13 @@ module Types.KeyEvents
   )
 where
 
+import           Prelude ()
+import           Prelude.MH
+
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
 
-import Prelude ()
-import Prelude.MH
 
 -- | This enum represents all the possible key events a user might
 --   want to use.

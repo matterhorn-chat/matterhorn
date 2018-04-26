@@ -1,17 +1,18 @@
 module Draw.Util where
 
-import Prelude ()
-import Prelude.MH
+import           Prelude ()
+import           Prelude.MH
 
-import Brick
-import qualified Data.Text as T
+import           Brick
 import qualified Data.Set as Set
-import Lens.Micro.Platform (to)
-import Network.Mattermost.Types
+import qualified Data.Text as T
+import           Lens.Micro.Platform ( to )
+import           Network.Mattermost.Types
 
-import Types
-import TimeUtils
-import Themes
+import           Themes
+import           TimeUtils
+import           Types
+
 
 defaultTimeFormat :: Text
 defaultTimeFormat = "%R"

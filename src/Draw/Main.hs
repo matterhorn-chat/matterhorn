@@ -7,38 +7,40 @@ import           Prelude.MH
 import           Brick
 import           Brick.Widgets.Border
 import           Brick.Widgets.Border.Style
-import           Brick.Widgets.Center (hCenter)
-import           Brick.Widgets.Edit (editContentsL, renderEditor, getEditContents)
-import           Brick.Widgets.List (renderList)
-import           Control.Arrow ((>>>))
-import           Control.Monad.Trans.Reader (withReaderT)
-import           Data.Time.Clock (UTCTime(..))
-import           Data.Time.Calendar (fromGregorian)
+import           Brick.Widgets.Center ( hCenter )
+import           Brick.Widgets.Edit ( editContentsL, renderEditor, getEditContents )
+import           Brick.Widgets.List ( renderList )
+import           Control.Arrow ( (>>>) )
+import           Control.Monad.Trans.Reader ( withReaderT )
+import           Data.Char ( isSpace, isPunctuation )
+import qualified Data.Foldable as F
+import           Data.List ( intersperse )
 import qualified Data.Sequence as Seq
 import qualified Data.Set as S
-import qualified Data.Foldable as F
-import           Data.List (intersperse)
 import qualified Data.Text as T
-import           Data.Text.Zipper (cursorPosition, insertChar, getText, gotoEOL)
-import           Data.Char (isSpace, isPunctuation)
-import           Lens.Micro.Platform ((.~), (^?!), to, view, folding)
-
-import           Network.Mattermost.Types (ChannelId, Type(Direct), ServerTime(..), UserId)
-
+import           Data.Text.Zipper ( cursorPosition, insertChar, getText, gotoEOL )
+import           Data.Time.Calendar ( fromGregorian )
+import           Data.Time.Clock ( UTCTime(..) )
 import qualified Graphics.Vty as Vty
+import           Lens.Micro.Platform ( (.~), (^?!), to, view, folding )
 
-import           Draw.ChannelList (renderChannelList)
+import           Network.Mattermost.Types ( ChannelId, Type(Direct)
+                                          , ServerTime(..), UserId )
+
+
+import           Completion ( Completer(..), CompletionAlternative(..), currentAlternative )
+import           Draw.ChannelList ( renderChannelList )
 import           Draw.Messages
 import           Draw.Util
-import           Markdown
-import           Completion (Completer(..), CompletionAlternative(..), currentAlternative)
-import           State
-import           Themes
-import           TimeUtils (justAfter, justBefore)
-import           Types
-import           Types.KeyEvents
 import           Events.Keybindings
 import           Events.MessageSelect
+import           Markdown
+import           State
+import           Themes
+import           TimeUtils ( justAfter, justBefore )
+import           Types
+import           Types.KeyEvents
+
 
 previewFromInput :: Maybe MessageType -> UserId -> Text -> Maybe Message
 previewFromInput _ _ s | s == T.singleton cursorSentinel = Nothing

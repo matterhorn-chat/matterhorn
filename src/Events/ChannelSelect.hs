@@ -1,15 +1,16 @@
 module Events.ChannelSelect where
 
-import Prelude ()
-import Prelude.MH
+import           Prelude ()
+import           Prelude.MH
 
 import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
-import Lens.Micro.Platform ((%=))
+import           Lens.Micro.Platform ( (%=) )
 
-import Events.Keybindings
-import Types
-import State
+import           Events.Keybindings
+import           State
+import           Types
+
 
 onEventChannelSelect :: Vty.Event -> MH ()
 onEventChannelSelect =

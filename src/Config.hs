@@ -6,7 +6,8 @@ module Config
   , PasswordSource(..)
   , findConfig
   , getCredentials
-  ) where
+  )
+where
 
 import           Prelude ()
 import           Prelude.MH
@@ -16,15 +17,16 @@ import           Data.Ini.Config
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
-import           System.FilePath ((</>), takeDirectory, splitPath, joinPath)
-import           System.Directory (makeAbsolute)
-import           System.Process (readProcess)
-import           System.Environment (getExecutablePath)
+import           System.Directory ( makeAbsolute )
+import           System.Environment ( getExecutablePath )
+import           System.FilePath ( (</>), takeDirectory, splitPath, joinPath )
+import           System.Process ( readProcess )
 
-import           IOUtil
 import           FilePaths
+import           IOUtil
 import           Types
 import           Types.KeyEvents
+
 
 defaultPort :: Int
 defaultPort = 443

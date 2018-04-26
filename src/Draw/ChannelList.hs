@@ -18,19 +18,22 @@
 
 module Draw.ChannelList (renderChannelList) where
 
+import           Prelude ()
+import           Prelude.MH
+
 import           Brick
 import           Brick.Widgets.Border
 import qualified Data.Sequence as Seq
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
-import           Draw.Util
 import           Lens.Micro.Platform (Getting, at, non)
+
+import           Draw.Util
 import           State
 import           Themes
 import           Types
-import           Prelude ()
-import           Prelude.MH
+
 
 type GroupName = Text
 

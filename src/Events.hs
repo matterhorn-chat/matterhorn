@@ -6,36 +6,37 @@ import           Prelude.MH
 
 import           Brick
 import qualified Data.Map as M
-import qualified Data.Set as Set
 import qualified Data.Sequence as Seq
+import qualified Data.Set as Set
 import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
-import           Lens.Micro.Platform ((.=))
+import           Lens.Micro.Platform ( (.=) )
 
-import           Network.Mattermost.Types
+import           Network.Mattermost.Exceptions ( mattermostErrorMessage )
 import           Network.Mattermost.Lenses
+import           Network.Mattermost.Types
 import           Network.Mattermost.WebSocket
-import           Network.Mattermost.Exceptions (mattermostErrorMessage)
 
 import           Connection
+import           HelpTopics
 import           State
 import           State.Common
 import           Types
 import           Types.KeyEvents
-import           HelpTopics
 
-import           Events.Keybindings
-import           Events.ShowHelp
-import           Events.Main
-import           Events.JoinChannel
 import           Events.ChannelScroll
 import           Events.ChannelSelect
-import           Events.LeaveChannelConfirm
 import           Events.DeleteChannelConfirm
-import           Events.UrlSelect
+import           Events.JoinChannel
+import           Events.Keybindings
+import           Events.LeaveChannelConfirm
+import           Events.Main
 import           Events.MessageSelect
 import           Events.PostListOverlay
+import           Events.ShowHelp
+import           Events.UrlSelect
 import           Events.UserListOverlay
+
 
 onEvent :: ChatState -> BrickEvent Name MHEvent -> EventM Name (Next ChatState)
 onEvent st ev = runMHEvent st (onEv >> fetchVisibleIfNeeded)

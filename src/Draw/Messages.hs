@@ -2,13 +2,13 @@ module Draw.Messages where
 
 import           Brick
 import           Brick.Widgets.Border
-import           Control.Monad.Trans.Reader (withReaderT)
+import           Control.Monad.Trans.Reader ( withReaderT )
 import qualified Data.Map.Strict as Map
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
-import           Lens.Micro.Platform ((.~), to)
-import           Network.Mattermost.Types (ServerTime(..))
+import           Lens.Micro.Platform ( (.~), to )
+import           Network.Mattermost.Types ( ServerTime(..) )
 import           Prelude ()
 import           Prelude.MH
 

@@ -1,35 +1,37 @@
 module Draw.ShowHelp (drawShowHelp) where
 
-import Prelude ()
-import Prelude.MH
+import           Prelude ()
+import           Prelude.MH
 
-import Brick
-import Brick.Themes (themeDescriptions)
-import Brick.Widgets.Border
-import Brick.Widgets.Center (hCenter, centerLayer)
-import Brick.Widgets.List (listSelectedFocusedAttr)
+import           Brick
+import           Brick.Themes ( themeDescriptions )
+import           Brick.Widgets.Border
+import           Brick.Widgets.Center ( hCenter, centerLayer )
+import           Brick.Widgets.List ( listSelectedFocusedAttr )
 import qualified Data.Map as M
 import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
-import Network.Mattermost.Version (mmApiVersion)
 
-import Themes
-import Types
-import Types.KeyEvents (Binding(..), ppBinding, nonCharKeys, eventToBinding)
-import Events.Keybindings
-import Command
-import Events.ShowHelp
-import Events.ChannelScroll
-import Events.ChannelSelect
-import Events.UrlSelect
-import Events.Main
-import Events.MessageSelect
-import Events.PostListOverlay
-import Events.UserListOverlay
-import State.Editing (editingKeybindings)
-import Markdown (renderText)
-import Options (mhVersion)
-import HelpTopics (helpTopics)
+import           Network.Mattermost.Version ( mmApiVersion )
+
+import           Command
+import           Events.ChannelScroll
+import           Events.ChannelSelect
+import           Events.Keybindings
+import           Events.Main
+import           Events.MessageSelect
+import           Events.PostListOverlay
+import           Events.ShowHelp
+import           Events.UrlSelect
+import           Events.UserListOverlay
+import           HelpTopics ( helpTopics )
+import           Markdown ( renderText )
+import           Options ( mhVersion )
+import           State.Editing ( editingKeybindings )
+import           Themes
+import           Types
+import           Types.KeyEvents ( Binding(..), ppBinding, nonCharKeys, eventToBinding )
+
 
 drawShowHelp :: HelpTopic -> ChatState -> [Widget Name]
 drawShowHelp topic st =

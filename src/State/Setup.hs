@@ -8,34 +8,35 @@ import           Prelude ()
 import           Prelude.MH
 
 import           Brick.BChan
-import           Brick.Themes (themeToAttrMap, loadCustomizations)
+import           Brick.Themes ( themeToAttrMap, loadCustomizations )
+import           Control.Concurrent.MVar ( newMVar )
 import qualified Control.Concurrent.STM as STM
-import           Control.Concurrent.MVar (newMVar)
-import           Control.Exception (catch)
-import           Data.Maybe (fromJust)
+import           Control.Exception ( catch )
+import           Data.Maybe ( fromJust )
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
-import           Lens.Micro.Platform ((%~))
-import           System.Exit (exitFailure)
-import           System.FilePath ((</>), isRelative, dropFileName)
-import           System.IO (Handle)
-import           System.IO.Error (catchIOError)
+import           Lens.Micro.Platform ( (%~) )
+import           System.Exit ( exitFailure )
+import           System.FilePath ( (</>), isRelative, dropFileName )
+import           System.IO ( Handle )
+import           System.IO.Error ( catchIOError )
 
 import           Network.Mattermost.Endpoints
+import           Network.Mattermost.Logging ( mmLoggerDebug )
 import           Network.Mattermost.Types
-import           Network.Mattermost.Logging (mmLoggerDebug)
 
 import           Config
 import           InputHistory
-import           Login
 import           LastRunState
+import           Login
 import           State.Messages
+import           State.Setup.Threads
 import           TeamSelect
 import           Themes
-import           TimeUtils (lookupLocalTimeZone)
-import           State.Setup.Threads
+import           TimeUtils ( lookupLocalTimeZone )
 import           Types
 import qualified Zipper as Z
+
 
 incompleteCredentials :: Config -> ConnectionInfo
 incompleteCredentials config = ConnectionInfo hStr (configPort config) uStr pStr

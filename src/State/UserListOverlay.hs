@@ -15,24 +15,26 @@ module State.UserListOverlay
   )
 where
 
-import qualified Data.Vector as Vec
-import qualified Data.Foldable as F
-import qualified Data.Text as T
-import qualified Data.Sequence as Seq
-import qualified Data.HashMap.Strict as HM
-import Lens.Micro.Platform ((.=), (%=), (.~), to)
-import qualified Network.Mattermost.Endpoints as MM
-import Network.Mattermost.Types
-import qualified Data.Text.Zipper as Z
 import           Prelude ()
 import           Prelude.MH
 
-import qualified Brick.Widgets.List as L
 import qualified Brick.Widgets.Edit as E
+import qualified Brick.Widgets.List as L
+import qualified Data.Foldable as F
+import qualified Data.HashMap.Strict as HM
+import qualified Data.Sequence as Seq
+import qualified Data.Text as T
+import qualified Data.Text.Zipper as Z
+import qualified Data.Vector as Vec
+import           Lens.Micro.Platform ( (.=), (%=), (.~), to )
 
-import Types
-import State.Common
-import State (changeChannel, addUserToCurrentChannel)
+import qualified Network.Mattermost.Endpoints as MM
+import           Network.Mattermost.Types
+
+import           State ( changeChannel, addUserToCurrentChannel )
+import           State.Common
+import           Types
+
 
 -- | Show the user list overlay for searching/showing members of the
 -- current channel.

@@ -1,13 +1,15 @@
 module IOUtil
   ( convertIOException
-  ) where
+  )
+where
 
 import Prelude ()
 import Prelude.MH
 
 import Control.Exception
 import Control.Monad.Trans.Except
-import System.IO.Error (ioeGetErrorString)
+import System.IO.Error ( ioeGetErrorString )
+
 
 convertIOException :: IO a -> ExceptT String IO a
 convertIOException act = do

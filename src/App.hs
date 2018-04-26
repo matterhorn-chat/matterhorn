@@ -8,22 +8,23 @@ import           Prelude ()
 import           Prelude.MH
 
 import           Brick
-import           Control.Monad.Trans.Except (runExceptT)
+import           Control.Monad.Trans.Except ( runExceptT )
 import qualified Graphics.Vty as Vty
-import           System.IO (IOMode(WriteMode), openFile, hClose)
-import           Text.Aspell (stopAspell)
+import           System.IO ( IOMode(WriteMode), openFile, hClose )
+import           Text.Aspell ( stopAspell )
 
 import           Network.Mattermost
 
 import           Config
-import           Options
-import           InputHistory
-import           IOUtil
-import           LastRunState
-import           State.Setup
-import           Events
 import           Draw
+import           Events
+import           IOUtil
+import           InputHistory
+import           LastRunState
+import           Options
+import           State.Setup
 import           Types
+
 
 app :: App ChatState MHEvent Name
 app = App

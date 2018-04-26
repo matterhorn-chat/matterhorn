@@ -5,21 +5,22 @@ module Draw.PostListOverlay where
 import           Prelude ()
 import           Prelude.MH
 
-import           Control.Monad.Trans.Reader (withReaderT)
+import           Brick
+import           Brick.Widgets.Border
+import           Brick.Widgets.Center
+import           Control.Monad.Trans.Reader ( withReaderT )
 import qualified Data.Text as T
-import           Lens.Micro.Platform ((^?), (%~), to)
-import           Network.Mattermost.Types
+import           Lens.Micro.Platform ( (^?), (%~), to )
+
 import           Network.Mattermost.Lenses
+import           Network.Mattermost.Types
 
-import Brick
-import Brick.Widgets.Border
-import Brick.Widgets.Center
+import           Draw.Main
+import           Draw.Messages
+import           Draw.Util
+import           Themes
+import           Types
 
-import Themes
-import Types
-import Draw.Main
-import Draw.Messages
-import Draw.Util
 
 hLimitWithPadding :: Int -> Widget n -> Widget n
 hLimitWithPadding pad contents = Widget

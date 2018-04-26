@@ -1,32 +1,33 @@
 {-# LANGUAGE MultiWayIf #-}
 module Events.Main where
 
-import Prelude ()
-import Prelude.MH
+import           Prelude ()
+import           Prelude.MH
 
-import Brick hiding (Direction)
-import Brick.Widgets.Edit
+import           Brick hiding ( Direction )
+import           Brick.Widgets.Edit
+import qualified Data.Map as M
 import qualified Data.Set as Set
 import qualified Data.Text as T
-import qualified Data.Map as M
 import qualified Data.Text.Zipper as Z
 import qualified Data.Text.Zipper.Generic.Words as Z
 import qualified Graphics.Vty as Vty
-import Lens.Micro.Platform ((%=), (.=), to, at)
+import           Lens.Micro.Platform ( (%=), (.=), to, at )
 import qualified Skylighting.Types as Sky
 
-import Types
-import Events.Keybindings
-import State
-import State.PostListOverlay (enterFlaggedPostListMode)
-import State.Editing
-import Command
-import Completion
-import InputHistory
-import HelpTopics (mainHelpTopic)
-import Constants
+import           Network.Mattermost.Types ( Type(..) )
 
-import Network.Mattermost.Types (Type(..))
+import           Command
+import           Completion
+import           Constants
+import           Events.Keybindings
+import           HelpTopics ( mainHelpTopic )
+import           InputHistory
+import           State
+import           State.Editing
+import           State.PostListOverlay ( enterFlaggedPostListMode )
+import           Types
+
 
 onEventMain :: Vty.Event -> MH ()
 onEventMain =

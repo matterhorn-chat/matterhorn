@@ -14,30 +14,31 @@ import           Prelude ()
 import           Prelude.MH
 
 import           Brick.BChan
-import           Control.Concurrent (threadDelay, forkIO, MVar, putMVar, tryTakeMVar)
+import           Control.Concurrent ( threadDelay, forkIO, MVar, putMVar, tryTakeMVar )
 import qualified Control.Concurrent.STM as STM
 import           Control.Concurrent.STM.Delay
-import           Control.Exception (SomeException, try, finally, fromException)
+import           Control.Exception ( SomeException, try, finally, fromException )
 import qualified Data.Foldable as F
-import qualified Data.Text as T
-import           Data.Time (getCurrentTime, addUTCTime)
 import qualified Data.Map as M
-import           Lens.Micro.Platform ((.=), (%=), (%~), mapped)
-import           System.Exit (ExitCode(ExitSuccess))
-import           System.IO (hPutStrLn, hFlush)
-import           System.IO.Temp (openTempFile)
-import           System.Directory (getTemporaryDirectory)
-import           Text.Aspell (Aspell, AspellOption(..), startAspell)
-import           Skylighting.Loader (loadSyntaxesFromDir)
+import qualified Data.Text as T
+import           Data.Time ( getCurrentTime, addUTCTime )
+import           Lens.Micro.Platform ( (.=), (%=), (%~), mapped )
+import           Skylighting.Loader ( loadSyntaxesFromDir )
+import           System.Directory ( getTemporaryDirectory )
+import           System.Exit ( ExitCode(ExitSuccess) )
+import           System.IO ( hPutStrLn, hFlush )
+import           System.IO.Temp ( openTempFile )
+import           Text.Aspell ( Aspell, AspellOption(..), startAspell )
 
 import           Network.Mattermost.Endpoints
 import           Network.Mattermost.Types
 
 import           Constants
 import           State.Common
-import           State.Editing (requestSpellCheck)
-import           TimeUtils (lookupLocalTimeZone)
+import           State.Editing ( requestSpellCheck )
+import           TimeUtils ( lookupLocalTimeZone )
 import           Types
+
 
 updateUserStatuses :: STM.TVar (Seq UserId) -> MVar () -> Session -> IO (MH ())
 updateUserStatuses usersVar lock session = do

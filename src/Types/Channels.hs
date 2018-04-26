@@ -44,11 +44,15 @@ module Types.Channels
   )
 where
 
+import           Prelude ()
+import           Prelude.MH
+
 import qualified Data.HashMap.Strict as HM
-import           Lens.Micro.Platform ((%~), (.~), Traversal', Lens',
-                                       makeLenses, ix, at,
-                                       to, non)
-import           Network.Mattermost.Lenses hiding (Lens')
+import           Lens.Micro.Platform ( (%~), (.~), Traversal', Lens'
+                                     , makeLenses, ix, at
+                                     , to, non )
+
+import           Network.Mattermost.Lenses hiding ( Lens' )
 import           Network.Mattermost.Types ( Channel(..), UserId, ChannelId
                                           , ChannelMember(..)
                                           , Type(..)
@@ -60,11 +64,13 @@ import           Network.Mattermost.Types ( Channel(..), UserId, ChannelId
                                           , ServerTime
                                           , emptyChannelNotifyProps
                                           )
-import           Types.Messages (Messages, noMessages, addMessage, clientMessageToMessage)
-import           Types.Posts (ClientMessageType(UnknownGap), newClientMessage, postIsLeave, postIsJoin)
-import           Types.Users (TypingUsers, noTypingUsers, addTypingUser)
-import           Prelude ()
-import           Prelude.MH
+
+import           Types.Messages ( Messages, noMessages, addMessage
+                                , clientMessageToMessage )
+import           Types.Posts ( ClientMessageType(UnknownGap)
+                             , newClientMessage, postIsLeave, postIsJoin )
+import           Types.Users ( TypingUsers, noTypingUsers, addTypingUser )
+
 
 -- * Channel representations
 

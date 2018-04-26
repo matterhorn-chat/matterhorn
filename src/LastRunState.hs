@@ -8,26 +8,29 @@ module LastRunState
   , writeLastRunState
   , readLastRunState
   , isValidLastRunState
-  ) where
+  )
+where
 
-import Prelude ()
-import Prelude.MH
+import           Prelude ()
+import           Prelude.MH
 
-import Control.Monad.Trans.Except
+import           Control.Monad.Trans.Except
 import qualified Data.Aeson as A
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as LBS
-import Lens.Micro.Platform (makeLenses)
-import System.Directory (createDirectoryIfMissing)
-import System.FilePath (dropFileName)
+import           Lens.Micro.Platform ( makeLenses )
+import           System.Directory ( createDirectoryIfMissing )
+import           System.FilePath ( dropFileName )
 import qualified System.Posix.Files as P
 import qualified System.Posix.Types as P
 
-import IOUtil
-import FilePaths
-import Network.Mattermost.Types
-import Network.Mattermost.Lenses
-import Types
+import           Network.Mattermost.Lenses
+import           Network.Mattermost.Types
+
+import           FilePaths
+import           IOUtil
+import           Types
+
 
 -- | Run state of the program. This is saved in a file on program exit and
 -- | looked up from the file on program startup.

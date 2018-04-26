@@ -1,16 +1,17 @@
 module Events.JoinChannel where
 
-import Prelude ()
-import Prelude.MH
+import           Prelude ()
+import           Prelude.MH
 
-import Brick.Widgets.List
+import           Brick.Widgets.List
 import qualified Graphics.Vty as Vty
-import Lens.Micro.Platform ((.=))
+import           Lens.Micro.Platform ( (.=) )
 
-import Network.Mattermost.Types (getId)
+import           Network.Mattermost.Types ( getId )
 
-import Types
-import State (joinChannel)
+import           State ( joinChannel )
+import           Types
+
 
 joinChannelListKeys :: [Vty.Key]
 joinChannelListKeys =

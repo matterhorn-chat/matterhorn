@@ -7,24 +7,27 @@ module InputHistory
   , addHistoryEntry
   , getHistoryEntry
   , removeChannelHistory
-  ) where
+  )
+where
 
-import Prelude ()
-import Prelude.MH
+import           Prelude ()
+import           Prelude.MH
 
-import Control.Monad.Trans.Except
-import Lens.Micro.Platform ((.~), (^?), (%~), at, ix, makeLenses)
+import           Control.Monad.Trans.Except
 import qualified Data.HashMap.Strict as HM
-import System.Directory (createDirectoryIfMissing)
-import System.FilePath (dropFileName)
-import qualified System.IO.Strict as S
 import qualified Data.Vector as V
+import           Lens.Micro.Platform ( (.~), (^?), (%~), at, ix, makeLenses )
+import           System.Directory ( createDirectoryIfMissing )
+import           System.FilePath ( dropFileName )
+import qualified System.IO.Strict as S
 import qualified System.Posix.Files as P
 import qualified System.Posix.Types as P
 
-import IOUtil
-import FilePaths
-import Network.Mattermost.Types (ChannelId)
+import           Network.Mattermost.Types ( ChannelId )
+
+import           FilePaths
+import           IOUtil
+
 
 data InputHistory =
     InputHistory { _historyEntries :: HashMap ChannelId (V.Vector Text)

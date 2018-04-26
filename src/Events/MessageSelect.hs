@@ -1,14 +1,15 @@
 module Events.MessageSelect where
 
-import Prelude ()
-import Prelude.MH
+import           Prelude ()
+import           Prelude.MH
 
 import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
 
-import Types
-import Events.Keybindings
-import State
+import           Events.Keybindings
+import           State
+import           Types
+
 
 messagesPerPageOperation :: Int
 messagesPerPageOperation = 10

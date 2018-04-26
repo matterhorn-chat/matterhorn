@@ -4,20 +4,22 @@ import           Prelude ()
 import           Prelude.MH
 
 import           Brick.BChan
-import           Control.Concurrent (forkIO, threadDelay)
+import           Control.Concurrent ( forkIO, threadDelay )
 import qualified Control.Concurrent.STM as STM
-import           Control.Exception (SomeException, catch)
-import           Data.Int (Int64)
+import           Control.Exception ( SomeException, catch )
 import qualified Data.HashMap.Strict as HM
-import           Data.Semigroup (Max(..))
-import           Data.Time (UTCTime(..), secondsToDiffTime, getCurrentTime, diffUTCTime)
-import           Data.Time.Calendar (Day(..))
+import           Data.Int (Int64)
+import           Data.Semigroup ( Max(..) )
+import           Data.Time ( UTCTime(..), secondsToDiffTime, getCurrentTime
+                           , diffUTCTime )
+import           Data.Time.Calendar ( Day(..) )
 
-import           Network.Mattermost.Types (ChannelId)
+import           Network.Mattermost.Types ( ChannelId )
 import qualified Network.Mattermost.WebSocket as WS
 
 import           Constants
 import           Types
+
 
 connectWebsockets :: MH ()
 connectWebsockets = do

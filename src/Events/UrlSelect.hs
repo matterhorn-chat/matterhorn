@@ -1,14 +1,15 @@
 module Events.UrlSelect where
 
-import Prelude ()
-import Prelude.MH
+import           Prelude ()
+import           Prelude.MH
 
-import Brick.Widgets.List
+import           Brick.Widgets.List
 import qualified Graphics.Vty as Vty
 
-import Types
-import Events.Keybindings
-import State
+import           Events.Keybindings
+import           State
+import           Types
+
 
 onEventUrlSelect :: Vty.Event -> MH ()
 onEventUrlSelect =

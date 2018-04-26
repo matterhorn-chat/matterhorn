@@ -16,21 +16,20 @@ module Markdown
   )
 where
 
-import Prelude ()
-import Prelude.MH
+import           Prelude ()
+import           Prelude.MH
 
 import           Brick ( (<+>), Widget, textWidth )
+import qualified Brick as B
 import qualified Brick.Widgets.Border as B
 import qualified Brick.Widgets.Border.Style as B
 import qualified Brick.Widgets.Skylighting as BS
-import qualified Brick as B
+import qualified Cheapskate as C
 import           Cheapskate.Types ( Block
                                   , Blocks
                                   , Inlines
                                   , ListType
                                   )
-import qualified Cheapskate as C
-import qualified Data.Text as T
 import qualified Data.Foldable as F
 import           Data.Monoid (First(..))
 import           Data.Sequence ( ViewL(..)
@@ -40,16 +39,19 @@ import           Data.Sequence ( ViewL(..)
                                , viewl
                                , viewr)
 import qualified Data.Sequence as S
-import qualified Skylighting.Core as Sky
 import qualified Data.Set as Set
+import qualified Data.Text as T
 import qualified Graphics.Vty as V
+import qualified Skylighting.Core as Sky
 
-import           Network.Mattermost.Lenses (postEditAtL, postCreateAtL)
-import           Network.Mattermost.Types (ServerTime(..))
+import           Network.Mattermost.Lenses ( postEditAtL, postCreateAtL )
+import           Network.Mattermost.Types ( ServerTime(..) )
+
 import           Themes
-import           Types (HighlightSet(..), userSigil, normalChannelSigil)
+import           Types ( HighlightSet(..), userSigil, normalChannelSigil )
 import           Types.Posts
 import           Types.Messages
+
 
 emptyHSet :: HighlightSet
 emptyHSet = HighlightSet Set.empty Set.empty mempty

@@ -1,16 +1,18 @@
 module State.PostListOverlay where
 
-import qualified Data.Text as T
-import Lens.Micro.Platform ((.=))
-import Network.Mattermost.Endpoints
-import Network.Mattermost.Types
-import Prelude ()
-import Prelude.MH
+import           Prelude ()
+import           Prelude.MH
 
-import State
-import State.Common
-import Types
-import Types.DirectionalSeq (emptyDirSeq)
+import qualified Data.Text as T
+import           Lens.Micro.Platform ( (.=) )
+import           Network.Mattermost.Endpoints
+import           Network.Mattermost.Types
+
+import           State
+import           State.Common
+import           Types
+import           Types.DirectionalSeq (emptyDirSeq)
+
 
 -- | Create a PostListOverlay with the given content description and
 -- with a specified list of messages.

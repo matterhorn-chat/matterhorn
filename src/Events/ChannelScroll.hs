@@ -1,14 +1,15 @@
 module Events.ChannelScroll where
 
-import Prelude ()
-import Prelude.MH
+import           Prelude ()
+import           Prelude.MH
 
-import Brick
+import           Brick
 import qualified Graphics.Vty as Vty
 
-import Types
-import Events.Keybindings
-import State
+import           Events.Keybindings
+import           State
+import           Types
+
 
 channelScrollKeybindings :: KeyConfig -> [Keybinding]
 channelScrollKeybindings = mkKeybindings

@@ -1,21 +1,23 @@
 module TeamSelect
   ( interactiveTeamSelection
-  ) where
+  )
+where
 
-import Prelude ()
-import Prelude.MH
+import           Prelude ()
+import           Prelude.MH
 
-import Brick
-import Brick.Widgets.List
-import Brick.Widgets.Center
-import Brick.Widgets.Border
+import           Brick
+import           Brick.Widgets.Border
+import           Brick.Widgets.Center
+import           Brick.Widgets.List
 import qualified Data.Vector as V
-import Graphics.Vty
-import System.Exit (exitSuccess)
+import           Graphics.Vty
+import           System.Exit ( exitSuccess )
 
-import Network.Mattermost.Types
+import           Network.Mattermost.Types
 
-import Markdown
+import           Markdown
+
 
 type State = List () Team
 

@@ -47,23 +47,26 @@ module Themes
 
   -- * Username formatting
   , colorUsername
-  ) where
+  )
+where
 
-import Prelude ()
-import Prelude.MH
+import           Prelude ()
+import           Prelude.MH
 
+import           Brick
+import           Brick.Themes
+import           Brick.Widgets.List
+import           Brick.Widgets.Skylighting ( attrNameForTokenType
+                                           , attrMappingsForStyle
+                                           , highlightedCodeBlockAttr
+                                           )
+import           Data.Hashable ( hash )
 import qualified Data.Map as M
-import Data.Hashable (hash)
-import Graphics.Vty
-import Brick
-import Brick.Themes
-import Brick.Widgets.List
-import Brick.Widgets.Skylighting ( attrNameForTokenType, attrMappingsForStyle
-                                 , highlightedCodeBlockAttr
-                                 )
 import qualified Data.Text as T
+import           Graphics.Vty
 import qualified Skylighting.Styles as Sky
-import Skylighting.Types (TokenType(..))
+import           Skylighting.Types ( TokenType(..) )
+
 
 helpAttr :: AttrName
 helpAttr = "help"

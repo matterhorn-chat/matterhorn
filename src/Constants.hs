@@ -7,6 +7,7 @@ where
 import Prelude ()
 import Prelude.MH
 
+
 -- | The number of rows to consider a "page" when scrolling
 pageAmount :: Int
 pageAmount = 15

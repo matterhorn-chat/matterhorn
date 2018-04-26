@@ -3,7 +3,6 @@ module HelpTopics
   ( helpTopics
   , lookupHelpTopic
   , themeHelpTopic
-
   , mainHelpTopic
   )
 where
@@ -12,6 +11,7 @@ import Prelude ()
 import Prelude.MH
 
 import Types
+
 
 helpTopics :: [HelpTopic]
 helpTopics =

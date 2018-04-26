@@ -11,10 +11,10 @@
 
 module Types.DirectionalSeq where
 
-
-import qualified Data.Sequence as Seq
 import           Prelude ()
 import           Prelude.MH
+
+import qualified Data.Sequence as Seq
 
 
 data Chronological

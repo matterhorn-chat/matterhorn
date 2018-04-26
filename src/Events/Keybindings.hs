@@ -18,15 +18,18 @@ module Events.Keybindings
   , keyEventName
   , keyEventFromName
 
-  ) where
+  )
+where
+
+import           Prelude ()
+import           Prelude.MH
 
 import qualified Data.Map.Strict as M
 import qualified Graphics.Vty as Vty
 
 import           Types
 import           Types.KeyEvents
-import           Prelude ()
-import           Prelude.MH
+
 
 -- * Keybindings
 

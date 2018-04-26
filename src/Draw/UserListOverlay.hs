@@ -6,22 +6,22 @@ module Draw.UserListOverlay where
 import           Prelude ()
 import           Prelude.MH
 
-import           Control.Monad.Trans.Reader (withReaderT)
+import           Brick
+import           Brick.Widgets.Border
+import           Brick.Widgets.Center
+import           Brick.Widgets.Edit
+import qualified Brick.Widgets.List as L
+import           Control.Monad.Trans.Reader ( withReaderT )
 import qualified Data.Foldable as F
 import qualified Data.Text as T
 import qualified Graphics.Vty as V
-import           Lens.Micro.Platform ((%~))
+import           Lens.Micro.Platform ( (%~) )
 
-import Brick
-import Brick.Widgets.Border
-import Brick.Widgets.Edit
-import qualified Brick.Widgets.List as L
-import Brick.Widgets.Center
+import           Draw.Main
+import           Draw.Util ( userSigilFromInfo )
+import           Themes
+import           Types
 
-import Themes
-import Types
-import Draw.Main
-import Draw.Util (userSigilFromInfo)
 
 hLimitWithPadding :: Int -> Widget n -> Widget n
 hLimitWithPadding pad contents = Widget

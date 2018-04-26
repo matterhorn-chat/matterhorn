@@ -204,46 +204,48 @@ where
 import           Prelude ()
 import           Prelude.MH
 
-import           Brick (EventM, Next)
 import qualified Brick
+import           Brick ( EventM, Next )
+import           Brick.AttrMap ( AttrMap )
 import           Brick.BChan
-import           Brick.AttrMap (AttrMap)
-import           Brick.Widgets.Edit (Editor, editor)
-import           Brick.Widgets.List (List, list)
+import           Brick.Widgets.Edit ( Editor, editor )
+import           Brick.Widgets.List ( List, list )
+import           Control.Concurrent.MVar ( MVar )
 import qualified Control.Concurrent.STM as STM
-import           Control.Concurrent.MVar (MVar)
-import           Control.Exception (SomeException)
+import           Control.Exception ( SomeException )
 import qualified Control.Monad.State as St
 import qualified Data.Foldable as F
-import qualified Data.Sequence as Seq
-import qualified Data.Vector as Vec
 import qualified Data.HashMap.Strict as HM
-import           Data.List (partition, sortBy)
+import           Data.List ( partition, sortBy )
+import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
+import qualified Data.Text as T
+import qualified Data.Vector as Vec
 import           Lens.Micro.Platform ( at, makeLenses, lens, (%~), (^?!), (.=)
                                      , (%=), (^?), (.~)
                                      , _Just, Traversal', preuse, (^..), folded, to, view )
-import           Network.Mattermost (ConnectionData)
+import           Network.Connection ( HostNotResolved, HostCannotConnect )
+import           Skylighting.Types ( SyntaxMap )
+import           System.Exit ( ExitCode )
+import           Text.Aspell ( Aspell )
+
+import           Network.Mattermost ( ConnectionData )
 import           Network.Mattermost.Exceptions
 import           Network.Mattermost.Lenses
 import           Network.Mattermost.Types
 import           Network.Mattermost.Types.Config
-import           Network.Mattermost.WebSocket (WebsocketEvent)
-import           Network.Connection (HostNotResolved, HostCannotConnect)
-import qualified Data.Text as T
-import           System.Exit (ExitCode)
-import           Text.Aspell (Aspell)
-import           Skylighting.Types (SyntaxMap)
+import           Network.Mattermost.WebSocket ( WebsocketEvent )
 
-import           Zipper (Zipper, focusL, updateList)
+import           Completion ( Completer )
 import           InputHistory
 import           Types.Channels
-import           Types.DirectionalSeq(emptyDirSeq)
+import           Types.DirectionalSeq ( emptyDirSeq )
 import           Types.KeyEvents
-import           Types.Posts
 import           Types.Messages
+import           Types.Posts
 import           Types.Users
-import           Completion (Completer)
+import           Zipper ( Zipper, focusL, updateList )
+
 
 -- * Configuration
 

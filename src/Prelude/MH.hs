@@ -56,29 +56,30 @@ module Prelude.MH
 , Time.UTCTime
 , Time.TimeZoneSeries
 , Time.NominalDiffTime
-) where
+)
+where
 
 
 #if !MIN_VERSION_base(4,11,0)
-import           Data.Semigroup ((<>))
+import           Data.Semigroup ( (<>) )
 #endif
-import qualified Prelude.Compat as P
-import           Prelude.Compat
-import           Control.Applicative ((<|>))
+
+import           Control.Applicative ( (<|>) )
 import qualified Control.Monad as Monad
 import qualified Control.Monad.IO.Class as Monad
 import qualified Data.Foldable as Foldable
 import qualified Data.List as List
 import qualified Data.Maybe as Maybe
-import qualified GHC.Exts as Exts
-import qualified Text.Read as Read
-import qualified Lens.Micro.Platform as Lens
-
--- these below we import only for type aliases
-import           Data.Text (Text)
-import           Data.HashMap.Strict (HashMap)
-import           Data.Sequence (Seq)
-import           Data.Set (Set)
-
 import qualified Data.Time as Time
 import qualified Data.Time.LocalTime.TimeZone.Series as Time
+import qualified GHC.Exts as Exts
+import qualified Lens.Micro.Platform as Lens
+import           Prelude.Compat
+import qualified Prelude.Compat as P
+import qualified Text.Read as Read
+
+-- these below we import only for type aliases
+import           Data.HashMap.Strict ( HashMap )
+import           Data.Sequence ( Seq )
+import           Data.Set ( Set )
+import           Data.Text ( Text )

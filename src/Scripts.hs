@@ -4,17 +4,19 @@ module Scripts
   )
 where
 
-import qualified Data.Text as T
-import Control.Concurrent (takeMVar, newEmptyMVar)
-import qualified Control.Concurrent.STM as STM
-import System.Exit (ExitCode(..))
-import Prelude ()
-import Prelude.MH
+import           Prelude ()
+import           Prelude.MH
 
-import Types
-import State (sendMessage, runLoggedCommand)
-import State.Common
-import FilePaths (Script(..), getAllScripts, locateScriptPath)
+import           Control.Concurrent ( takeMVar, newEmptyMVar )
+import qualified Control.Concurrent.STM as STM
+import qualified Data.Text as T
+import           System.Exit ( ExitCode(..) )
+
+import           FilePaths ( Script(..), getAllScripts, locateScriptPath )
+import           State ( sendMessage, runLoggedCommand )
+import           State.Common
+import           Types
+
 
 findAndRunScript :: Text -> Text -> MH ()
 findAndRunScript scriptName input = do

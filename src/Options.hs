@@ -5,13 +5,14 @@ module Options where
 import Prelude ()
 import Prelude.MH
 
-import Data.Version (showVersion)
+import Data.Version ( showVersion )
 import Development.GitRev
-import Network.Mattermost.Version (mmApiVersion)
-import Paths_matterhorn (version)
+import Network.Mattermost.Version ( mmApiVersion )
+import Paths_matterhorn ( version )
 import System.Console.GetOpt
-import System.Environment (getArgs)
-import System.Exit (exitFailure, exitSuccess)
+import System.Environment ( getArgs )
+import System.Exit ( exitFailure, exitSuccess )
+
 
 data Behaviour
   = Normal

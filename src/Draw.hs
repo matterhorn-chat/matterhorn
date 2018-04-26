@@ -4,14 +4,15 @@ module Draw (draw) where
 
 import Brick
 
-import Types
-import Draw.Main
-import Draw.ShowHelp
-import Draw.LeaveChannelConfirm
 import Draw.DeleteChannelConfirm
-import Draw.PostListOverlay
-import Draw.UserListOverlay
 import Draw.JoinChannel
+import Draw.LeaveChannelConfirm
+import Draw.Main
+import Draw.PostListOverlay
+import Draw.ShowHelp
+import Draw.UserListOverlay
+import Types
+
 
 draw :: ChatState -> [Widget Name]
 draw st =

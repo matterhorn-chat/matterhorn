@@ -1,13 +1,13 @@
 {-# LANGUAGE MultiWayIf #-}
-{-#LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module State.Editing where
 
 import           Prelude ()
 import           Prelude.MH
 
-import           Brick.Widgets.Edit (Editor, handleEditorEvent, getEditContents, editContentsL)
-import           Brick.Widgets.Edit (applyEdit)
+import           Brick.Widgets.Edit ( Editor, applyEdit , handleEditorEvent
+                                    , getEditContents, editContentsL )
 import qualified Codec.Binary.UTF8.Generic as UTF8
 import           Control.Arrow
 import qualified Control.Concurrent.STM as STM
@@ -17,23 +17,23 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Zipper as Z
 import qualified Data.Text.Zipper.Generic.Words as Z
-import           Data.Time (getCurrentTime)
-import           Graphics.Vty (Event(..), Key(..), Modifier(..))
-import           Lens.Micro.Platform ((%=), (.=), (.~), to)
+import           Data.Time ( getCurrentTime )
+import           Graphics.Vty ( Event(..), Key(..), Modifier(..) )
+import           Lens.Micro.Platform ( (%=), (.=), (.~), to )
 import qualified System.Environment as Sys
 import qualified System.Exit as Sys
 import qualified System.IO as Sys
 import qualified System.IO.Temp as Sys
 import qualified System.Process as Sys
-import           Text.Aspell (AspellResponse(..), mistakeWord, askAspell)
-
-import           Config
-import           Types
-import           Events.Keybindings
-
-import           State.Common
+import           Text.Aspell ( AspellResponse(..), mistakeWord, askAspell )
 
 import           Network.Mattermost.Types (Post(..))
+
+import           Config
+import           Events.Keybindings
+import           State.Common
+import           Types
+
 
 startMultilineEditing :: MH ()
 startMultilineEditing = csEditState.cedMultiline .= True

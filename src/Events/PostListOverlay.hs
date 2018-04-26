@@ -1,12 +1,14 @@
 module Events.PostListOverlay where
 
-import qualified Graphics.Vty as Vty
 import           Prelude ()
 import           Prelude.MH
 
-import Types
-import Events.Keybindings
-import State.PostListOverlay
+import qualified Graphics.Vty as Vty
+
+import           Types
+import           Events.Keybindings
+import           State.PostListOverlay
+
 
 onEventPostListOverlay :: Vty.Event -> MH ()
 onEventPostListOverlay =

@@ -4,23 +4,25 @@ module Draw.JoinChannel
     )
 where
 
-import Prelude ()
-import Prelude.MH
+import           Prelude ()
+import           Prelude.MH
 
-import Brick
-import Brick.Widgets.List
-import Brick.Widgets.Center
-import Brick.Widgets.Border
+import           Brick
+import           Brick.Widgets.Border
+import           Brick.Widgets.Center
+import           Brick.Widgets.List
 import qualified Data.Text as T
 import qualified Data.Vector as V
-import Text.Wrap ( defaultWrapSettings, preserveIndentation )
-import Network.Mattermost.Types (Channel)
-import Network.Mattermost.Lenses ( channelDisplayNameL , channelNameL
-                                 , channelPurposeL )
+import           Text.Wrap ( defaultWrapSettings, preserveIndentation )
 
-import Types
-import Themes
-import Draw.Main
+import           Network.Mattermost.Lenses ( channelDisplayNameL , channelNameL
+                                           , channelPurposeL )
+import           Network.Mattermost.Types ( Channel )
+
+import           Draw.Main
+import           Themes
+import           Types
+
 
 drawJoinChannel :: ChatState -> [Widget Name]
 drawJoinChannel st = (joinBorders $ joinChannelBox st) : (forceAttr "invalid" <$> drawMain st)

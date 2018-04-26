@@ -1,14 +1,15 @@
 module Main where
 
-import           Prelude ()
-import           Prelude.MH
+import Prelude ()
+import Prelude.MH
 
-import           System.Exit (exitFailure)
+import System.Exit ( exitFailure )
 
-import           Config
-import           Options
-import           App
-import           Events (ensureKeybindingConsistency)
+import Config
+import Options
+import App
+import Events ( ensureKeybindingConsistency )
+
 
 main :: IO ()
 main = do

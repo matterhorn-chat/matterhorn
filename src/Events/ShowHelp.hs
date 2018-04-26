@@ -1,14 +1,15 @@
 module Events.ShowHelp where
 
-import Prelude ()
-import Prelude.MH
+import           Prelude ()
+import           Prelude.MH
 
-import Brick
+import           Brick
 import qualified Graphics.Vty as Vty
 
-import Types
-import Events.Keybindings
-import Constants
+import           Constants
+import           Events.Keybindings
+import           Types
+
 
 onEventShowHelp :: Vty.Event -> MH ()
 onEventShowHelp =
