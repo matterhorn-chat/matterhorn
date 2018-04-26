@@ -33,6 +33,7 @@ import           Config
 import           Events.Keybindings
 import           State.Common
 import           Types
+import           Types.Common ( sanitizeChar, sanitizeUserText' )
 
 
 startMultilineEditing :: MH ()
@@ -70,7 +71,7 @@ invokeExternalEditor = do
                     Left _ -> do
                         postErrorMessageIO "Failed to decode file contents as UTF-8" st
                     Right t -> do
-                        let tmpLines = T.lines t
+                        let tmpLines = T.lines $ sanitizeUserText' t
                         return $ st & csEditState.cedEditor.editContentsL .~ (Z.textZipper tmpLines Nothing)
                                     & csEditState.cedMultiline .~ (length tmpLines > 1)
             Sys.ExitFailure _ -> return st
@@ -81,7 +82,7 @@ toggleMessagePreview = csShowMessagePreview %= not
 handlePaste :: BS.ByteString -> MH ()
 handlePaste bytes = do
   let pasteStr = T.pack (UTF8.toString bytes)
-  csEditState.cedEditor %= applyEdit (Z.insertMany pasteStr)
+  csEditState.cedEditor %= applyEdit (Z.insertMany (sanitizeUserText' pasteStr))
   contents <- use (csEditState.cedEditor.to getEditContents)
   case length contents > 1 of
       True -> startMultilineEditing
@@ -201,7 +202,8 @@ handleEditingInput e = do
                              csEditState.cedEditor %= applyEdit (Z.deleteChar >>> Z.deletePrevChar)
                          | otherwise -> backspace
 
-          EvKey (KChar ch) [] | editingPermitted st && smartBacktick && ch `elem` smartChars ->
+          EvKey (KChar ch) []
+            | editingPermitted st && smartBacktick && ch `elem` smartChars ->
               -- Smart char insertion:
               let doInsertChar = do
                     csEditState.cedEditor %= applyEdit (Z.insertChar ch)
@@ -214,7 +216,9 @@ handleEditingInput e = do
                       (cursorIsAtEnd $ applyEdit Z.moveRight $ st^.csEditState.cedEditor) ->
                         csEditState.cedEditor %= applyEdit Z.moveRight
                     | otherwise -> doInsertChar
-
+            | editingPermitted st -> do
+              csEditState.cedEditor %= applyEdit (Z.insertMany (sanitizeChar ch))
+              sendUserTypingAction
           _ | editingPermitted st -> do
               mhHandleEventLensed (csEditState.cedEditor) handleEditorEvent e
               sendUserTypingAction

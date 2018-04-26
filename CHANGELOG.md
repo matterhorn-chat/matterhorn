@@ -1,4 +1,14 @@
 
+40900.0.1
+=========
+
+Bug fixes:
+ * Terminal escapes are now sanitized from local user input and
+   user-provided values from the server (#390).
+ * The Cabal package now includes XML syntax and DTD files in the
+   manifest.
+ * Releases now ship the syntax DTD.
+
 40900.0.0
 =========
 
