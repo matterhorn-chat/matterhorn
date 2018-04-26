@@ -63,6 +63,7 @@ import           Network.Mattermost.Types ( Channel(..), UserId, ChannelId
                                           , WithDefault(..)
                                           , ServerTime
                                           , emptyChannelNotifyProps
+                                          , unsafeUserText
                                           )
 
 import           Types.Messages ( Messages, noMessages, addMessage
@@ -86,8 +87,8 @@ data ClientChannel = ClientChannel
 -- Get a channel's name, depending on its type
 preferredChannelName :: Channel -> Text
 preferredChannelName ch
-    | channelType ch == Group = channelDisplayName ch
-    | otherwise = channelName ch
+    | channelType ch == Group = unsafeUserText $ channelDisplayName ch
+    | otherwise               = unsafeUserText $ channelName ch
 
 data NewMessageIndicator =
     Hide
@@ -104,8 +105,8 @@ initialChannelInfo chan =
                    , _cdMentionCount           = 0
                    , _cdUpdated                = updated
                    , _cdName                   = preferredChannelName chan
-                   , _cdHeader                 = chan^.channelHeaderL
-                   , _cdPurpose                = chan^.channelPurposeL
+                   , _cdHeader                 = unsafeUserText $ chan^.channelHeaderL
+                   , _cdPurpose                = unsafeUserText $ chan^.channelPurposeL
                    , _cdType                   = chan^.channelTypeL
                    , _cdNotifyProps            = emptyChannelNotifyProps
                    , _cdTypingUsers            = noTypingUsers
@@ -121,8 +122,8 @@ channelInfoFromChannelWithData chan chanMember ci =
               v -> v
           , _cdUpdated          = updated
           , _cdName             = preferredChannelName chan
-          , _cdHeader           = (chan^.channelHeaderL)
-          , _cdPurpose          = (chan^.channelPurposeL)
+          , _cdHeader           = (unsafeUserText $ chan^.channelHeaderL)
+          , _cdPurpose          = (unsafeUserText $ chan^.channelPurposeL)
           , _cdType             = (chan^.channelTypeL)
           , _cdMentionCount     = chanMember^.to channelMemberMentionCount
           , _cdNotifyProps      = chanMember^.to channelMemberNotifyProps
@@ -311,7 +312,7 @@ updateNewMessageIndicator m =
 -- whether a channel is in fact that channel, even if the user has
 -- changed its display name.
 isTownSquare :: Channel -> Bool
-isTownSquare c = c^.channelNameL == "town-square"
+isTownSquare c = (unsafeUserText $ c^.channelNameL) == "town-square"
 
 channelDeleted :: Channel -> Bool
 channelDeleted c = c^.channelDeleteAtL > c^.channelCreateAtL

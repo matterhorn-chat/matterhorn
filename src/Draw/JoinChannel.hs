@@ -17,7 +17,7 @@ import           Text.Wrap ( defaultWrapSettings, preserveIndentation )
 
 import           Network.Mattermost.Lenses ( channelDisplayNameL , channelNameL
                                            , channelPurposeL )
-import           Network.Mattermost.Types ( Channel )
+import           Network.Mattermost.Types ( Channel, unsafeUserText )
 
 import           Draw.Main
 import           Themes
@@ -49,7 +49,7 @@ joinChannelBox st =
 
 renderJoinListItem :: Bool -> Channel -> Widget Name
 renderJoinListItem _ chan =
-    let baseStr = chan^.channelNameL <> " (" <> chan^.channelDisplayNameL <> ")"
-        s = "  " <> (T.strip $ chan^.channelPurposeL)
+    let baseStr = (unsafeUserText $ chan^.channelNameL) <> " (" <> (unsafeUserText $ chan^.channelDisplayNameL) <> ")"
+        s = "  " <> (T.strip $ unsafeUserText $ chan^.channelPurposeL)
     in (vLimit 1 $ padRight Max $ txt baseStr) <=>
        (vLimit 1 $ txtWrapWith (defaultWrapSettings { preserveIndentation = True }) s)

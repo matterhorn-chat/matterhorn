@@ -61,7 +61,7 @@ teamSelect st =
 
 renderTeamItem :: Bool -> Team -> Widget ()
 renderTeamItem _ t =
-    padRight Max $ txt $ teamName t
+    padRight Max $ txt $ unsafeUserText $ teamName t
 
 onEvent :: State -> BrickEvent () e -> EventM () (Next State)
 onEvent _  (VtyEvent (EvKey KEsc [])) = liftIO exitSuccess

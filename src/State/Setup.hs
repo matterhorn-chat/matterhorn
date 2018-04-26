@@ -117,7 +117,7 @@ setupState logFile initialConfig = do
           interactiveTeamSelection $ toList teams
       Just tName -> do
           let matchingTeam = listToMaybe $ filter matches $ toList teams
-              matches t = teamName t == tName
+              matches t = (unsafeUserText $ teamName t) == tName
           case matchingTeam of
               Nothing -> interactiveTeamSelection (toList teams)
               Just t -> return t

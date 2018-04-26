@@ -43,7 +43,7 @@ import qualified Data.Text as T
 import           Lens.Micro.Platform ( (%~), makeLenses, ix )
 
 import           Network.Mattermost.Types ( Id(Id), UserId(..), User(..)
-                                          , idString )
+                                          , idString, unsafeUserText )
 
 -- * 'UserInfo' Values
 
@@ -72,12 +72,12 @@ userInfoFromUser up inTeam = UserInfo
   , _uiId        = userId up
   , _uiStatus    = Offline
   , _uiInTeam    = inTeam
-  , _uiNickName  = if T.null (userNickname up)
-                   then Nothing
-                   else Just $ userNickname up
-  , _uiFirstName = userFirstName up
-  , _uiLastName  = userLastName up
-  , _uiEmail     = userEmail up
+  , _uiNickName  =
+      let nick = unsafeUserText $ userNickname up
+      in if T.null nick then Nothing else Just nick
+  , _uiFirstName = unsafeUserText $ userFirstName up
+  , _uiLastName  = unsafeUserText $ userLastName up
+  , _uiEmail     = unsafeUserText $ userEmail up
   , _uiDeleted   = userDeleted up
   }
 

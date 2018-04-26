@@ -477,8 +477,8 @@ beginEditMessage = do
             -- removed formatting needs to be reinstated just prior to
             -- issuing the API call to update the post.
             let toEdit = if msg^.mType == CP Emote
-                         then removeEmoteFormatting $ postMessage p
-                         else postMessage p
+                         then removeEmoteFormatting $ unsafeUserText $ postMessage p
+                         else unsafeUserText $ postMessage p
             csEditState.cedEditor %= applyEdit (clearZipper >> (insertMany toEdit))
         _ -> return ()
 
@@ -1148,8 +1148,8 @@ attemptCreateDMChannel name = do
   me <- gets myUser
   displayNick <- use (to useNickname)
   uList       <- use (to sortedUserList)
-  let myName = if displayNick && not (T.null $ userNickname me)
-               then userNickname me
+  let myName = if displayNick && not (T.null $ unsafeUserText $ userNickname me)
+               then unsafeUserText $ userNickname me
                else me^.userUsernameL
   when (name /= myName) $ do
       let uName = if displayNick
@@ -1231,7 +1231,7 @@ handleNewChannel_ permitPostpone switch nc member = do
         -- async work to do before we can register this channel (in
         -- which case abort because we got rescheduled).
         mName <- case chType of
-            Direct -> case userIdForDMChannel (myUserId st) $ channelName nc of
+            Direct -> case userIdForDMChannel (myUserId st) (unsafeUserText $ channelName nc) of
                 -- If this is a direct channel but we can't extract a
                 -- user ID from the name, then it failed to parse. We
                 -- need to assign a channel name in our channel map,
@@ -1243,7 +1243,7 @@ handleNewChannel_ permitPostpone switch nc member = do
                 -- least we can go ahead and register the channel and
                 -- handle events for it. That isn't very useful but it's
                 -- probably better than ignoring this entirely.
-                Nothing -> return $ Just $ channelName nc
+                Nothing -> return $ Just $ unsafeUserText $ channelName nc
                 Just otherUserId ->
                     case usernameForUserId otherUserId st of
                         -- If we found a user ID in the channel name
@@ -1262,7 +1262,7 @@ handleNewChannel_ permitPostpone switch nc member = do
                         -- name (this has the same problems as above).
                         Nothing -> do
                             case permitPostpone of
-                                False -> return $ Just $ channelName nc
+                                False -> return $ Just $ unsafeUserText $ channelName nc
                                 True -> do
                                     handleNewUsers $ Seq.singleton otherUserId
                                     doAsyncWith Normal $
@@ -1338,7 +1338,7 @@ runNotifyCommand post mentioned = do
         Nothing -> return ()
         Just cmd ->
             doAsyncWith Preempt $ do
-                let messageString = T.unpack $ postMessage post
+                let messageString = T.unpack $ unsafeUserText $ postMessage post
                     notified = if mentioned then "1" else "2"
                     sender = T.unpack $ maybePostUsername st post
                 runLoggedCommand False outputChan (T.unpack cmd)

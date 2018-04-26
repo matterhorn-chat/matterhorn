@@ -200,7 +200,7 @@ handleWSEvent we = do
         -- shortcuts, but it's probably a good idea to handle these
         -- messages anyway.
         WMEphemeralMessage
-            | Just p <- wepPost $ weData we -> postInfoMessage $ p^.postMessageL
+            | Just p <- wepPost $ weData we -> postInfoMessage (unsafeUserText $ p^.postMessageL)
             | otherwise -> return ()
 
         WMPreferenceChanged

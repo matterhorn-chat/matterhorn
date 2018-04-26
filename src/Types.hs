@@ -364,7 +364,7 @@ mkNames myUser users chans =
                             [ (userUsername u, getId u) | u <- HM.elems users ]
             }
   where lookupChan n = [ c^.channelIdL
-                       | c <- toList chans, c^.channelNameL == n
+                       | c <- toList chans, (unsafeUserText $ c^.channelNameL) == n
                        ]
 
 -- ** 'MMNames' Lenses
