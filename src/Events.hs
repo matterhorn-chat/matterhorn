@@ -22,6 +22,7 @@ import           HelpTopics
 import           State
 import           State.Common
 import           Types
+import           Types.Common
 import           Types.KeyEvents
 
 import           Events.ChannelScroll
@@ -200,7 +201,7 @@ handleWSEvent we = do
         -- shortcuts, but it's probably a good idea to handle these
         -- messages anyway.
         WMEphemeralMessage
-            | Just p <- wepPost $ weData we -> postInfoMessage (unsafeUserText $ p^.postMessageL)
+            | Just p <- wepPost $ weData we -> postInfoMessage (sanitizeUserText $ p^.postMessageL)
             | otherwise -> return ()
 
         WMPreferenceChanged

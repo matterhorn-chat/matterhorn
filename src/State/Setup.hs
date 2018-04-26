@@ -35,6 +35,7 @@ import           TeamSelect
 import           Themes
 import           TimeUtils ( lookupLocalTimeZone )
 import           Types
+import           Types.Common
 import qualified Zipper as Z
 
 
@@ -117,7 +118,7 @@ setupState logFile initialConfig = do
           interactiveTeamSelection $ toList teams
       Just tName -> do
           let matchingTeam = listToMaybe $ filter matches $ toList teams
-              matches t = (unsafeUserText $ teamName t) == tName
+              matches t = (sanitizeUserText $ teamName t) == tName
           case matchingTeam of
               Nothing -> interactiveTeamSelection (toList teams)
               Just t -> return t

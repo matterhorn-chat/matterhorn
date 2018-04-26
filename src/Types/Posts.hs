@@ -58,6 +58,8 @@ import           Lens.Micro.Platform ( makeLenses )
 import           Network.Mattermost.Lenses
 import           Network.Mattermost.Types
 
+import           Types.Common
+
 
 -- * Client Messages
 
@@ -161,8 +163,8 @@ postIsTopicChange p = postType p == PostTypeHeaderChange
 postIsEmote :: Post -> Bool
 postIsEmote p =
     and [ p^.postPropsL.postPropsOverrideIconUrlL == Just (""::Text)
-        , ("*" `T.isPrefixOf` (unsafeUserText $ postMessage p))
-        , ("*" `T.isSuffixOf` (unsafeUserText $ postMessage p))
+        , ("*" `T.isPrefixOf` (sanitizeUserText $ postMessage p))
+        , ("*" `T.isSuffixOf` (sanitizeUserText $ postMessage p))
         ]
 
 -- | Find out whether a 'Post' is a user joining a channel
@@ -186,7 +188,7 @@ unEmote _ t = t
 --   'ParentId' if it has a known one.
 toClientPost :: Post -> Maybe PostId -> ClientPost
 toClientPost p parentId = ClientPost
-  { _cpText          = (getBlocks $ unEmote (postClientPostType p) $ unsafeUserText $ postMessage p)
+  { _cpText          = (getBlocks $ unEmote (postClientPostType p) $ sanitizeUserText $ postMessage p)
                        <> getAttachmentText p
   , _cpUser          = postUserId p
   , _cpUserOverride  = p^.postPropsL.postPropsOverrideUsernameL

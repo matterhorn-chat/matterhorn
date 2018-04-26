@@ -239,6 +239,7 @@ import           Network.Mattermost.WebSocket ( WebsocketEvent )
 import           Completion ( Completer )
 import           InputHistory
 import           Types.Channels
+import           Types.Common
 import           Types.DirectionalSeq ( emptyDirSeq )
 import           Types.KeyEvents
 import           Types.Messages
@@ -364,7 +365,7 @@ mkNames myUser users chans =
                             [ (userUsername u, getId u) | u <- HM.elems users ]
             }
   where lookupChan n = [ c^.channelIdL
-                       | c <- toList chans, (unsafeUserText $ c^.channelNameL) == n
+                       | c <- toList chans, (sanitizeUserText $ c^.channelNameL) == n
                        ]
 
 -- ** 'MMNames' Lenses

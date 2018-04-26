@@ -78,6 +78,7 @@ executable matterhorn
                        Prelude.MH
                        Types
                        Types.Channels
+                       Types.Common
                        Types.DirectionalSeq
                        Types.KeyEvents
                        Types.Messages
@@ -143,6 +144,7 @@ test-suite test_messages
                     , TimeUtils
                     , Types.Messages
                     , Types.Posts
+                    , Types.Common
                     , Types.DirectionalSeq
                     , Prelude.MH
   default-language:   Haskell2010
