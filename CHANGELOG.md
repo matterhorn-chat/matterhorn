@@ -5,7 +5,7 @@
 This release supports Mattermost server version 4.9.
 
 New features:
- * Matterhorn now supports activity notifications by ivoking a
+ * Matterhorn now supports activity notifications by invoking a
    user-configured external command. The external command is configured
    with the `activityNotifyCommand` setting. Matterhorn also includes
    an example notification script for Linux-based systems in the
