@@ -1,4 +1,39 @@
 
+40900.0.0
+=========
+
+This release supports Mattermost server version 4.9.
+
+New features:
+ * Matterhorn now supports activity notifications by ivoking a
+   user-configured external command. The external command is configured
+   with the `activityNotifyCommand` setting. Matterhorn also includes
+   an example notification script for Linux-based systems in the
+   `notification-scripts` directory. Thanks to Jason Miller for this
+   feature!
+ * Matterhorn now bundles syntax highlighting language descriptions
+   rather compiling them into the binary. This resolves issue #372.
+   The XML descriptions are in the Kate project's language description
+   format and are provided with their accompanying GPL license.
+   Syntax description files are loaded from a prioritized list
+   of directories. The list of directories is configurable using
+   the optional `syntaxDirectories` configuration setting. See
+   `sample_config.ini` for details.
+ * Matterhorn now tab-completes available syntax highlighting language
+   options on lines starting with the code block Markdown syntax (three
+   backticks) (#354).
+
+Other changes:
+ * Tab-completion now always fills in user sigil on username and
+   nickname completions, and fills in channel sigils on channel name
+   completions.
+ * Usernames in posts are now only highlighted when a user sigil is
+   present.
+
+Bug fixes:
+ * Matterhorn now switches to a channel after it has been joined (#355).
+ * Fixed emote editing (#388).
+
 40800.0.3
 =========
 
