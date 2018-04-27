@@ -399,8 +399,13 @@ messageSelectUpBy amt
       messageSelectUp >> messageSelectUpBy (amt - 1)
 
 beginConfirmDeleteSelectedMessage :: MH ()
-beginConfirmDeleteSelectedMessage =
-    setMode MessageSelectDeleteConfirm
+beginConfirmDeleteSelectedMessage = do
+    st <- use id
+    selected <- use (to getSelectedMessage)
+    case selected of
+        Just msg | isDeletable msg && isMine st msg ->
+            setMode MessageSelectDeleteConfirm
+        _ -> return ()
 
 deleteSelectedMessage :: MH ()
 deleteSelectedMessage = do
@@ -456,7 +461,7 @@ flagSelectedMessage = do
   selected <- use (to getSelectedMessage)
   case selected of
     Just msg
-      | Just pId <- messagePostId msg ->
+      | isFlaggable msg, Just pId <- messagePostId msg ->
         flagMessage pId (not (msg^.mFlagged))
     _        -> return ()
 
@@ -495,20 +500,21 @@ replyToLatestMessage :: MH ()
 replyToLatestMessage = do
   msgs <- use (csCurrentChannel . ccContents . cdMessages)
   case findLatestUserMessage isReplyable msgs of
-    Just msg -> do let Just p = msg^.mOriginalPost
-                   setMode Main
-                   csEditState.cedEditMode .= Replying msg p
+    Just msg | isReplyable msg ->
+        do let Just p = msg^.mOriginalPost
+           setMode Main
+           csEditState.cedEditMode .= Replying msg p
     _ -> return ()
 
 beginReplyCompose :: MH ()
 beginReplyCompose = do
     selected <- use (to getSelectedMessage)
     case selected of
-        Nothing -> return ()
-        Just msg -> do
+        Just msg | isReplyable msg -> do
             let Just p = msg^.mOriginalPost
             setMode Main
             csEditState.cedEditMode .= Replying msg p
+        _ -> return ()
 
 cancelReplyOrEdit :: MH ()
 cancelReplyOrEdit = do
