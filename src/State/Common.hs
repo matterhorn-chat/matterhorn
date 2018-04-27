@@ -220,7 +220,9 @@ asyncFetchAttachments p = do
 addClientMessage :: ClientMessage -> MH ()
 addClientMessage msg = do
   cid <- use csCurrentChannelId
-  let addCMsg = ccContents.cdMessages %~ (addMessage $ clientMessageToMessage msg)
+  uuid <- generateUUID
+  let addCMsg = ccContents.cdMessages %~
+          (addMessage $ clientMessageToMessage msg & mMessageId .~ Just (MessageUUID uuid))
   csChannels %= modifyChannelById cid addCMsg
 
 -- | Add a new 'ClientMessage' representing an error message to
@@ -240,8 +242,10 @@ mhError err = raiseInternalEvent (DisplayError err)
 postErrorMessageIO :: Text -> ChatState -> IO ChatState
 postErrorMessageIO err st = do
   msg <- newClientMessage Error err
+  uuid <- generateUUID_IO
   let cId = st ^. csCurrentChannelId
-      addEMsg = ccContents.cdMessages %~ (addMessage $ clientMessageToMessage msg)
+      addEMsg = ccContents.cdMessages %~
+          (addMessage $ clientMessageToMessage msg & mMessageId .~ Just (MessageUUID uuid))
   return $ st & csChannels %~ modifyChannelById cId addEMsg
 
 numScrollbackPosts :: Int

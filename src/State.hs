@@ -351,11 +351,11 @@ beginMessageSelect = do
     -- If we can't find one at all, we ignore the mode switch request
     -- and just return.
     chanMsgs <- use(csCurrentChannel . ccContents . cdMessages)
-    let recentPost = getLatestPostMsg chanMsgs
+    let recentMsg = getLatestSelectableMessage chanMsgs
 
-    when (isJust recentPost) $ do
+    when (isJust recentMsg) $ do
         setMode MessageSelect
-        csMessageSelect .= MessageSelectState (recentPost >>= _mMessageId)
+        csMessageSelect .= MessageSelectState (recentMsg >>= _mMessageId)
 
 getSelectedMessage :: ChatState -> Maybe Message
 getSelectedMessage st

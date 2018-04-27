@@ -473,10 +473,10 @@ messageSelectBottomBar st =
                   , ( const hasVerb
                     , ev YankMessageEvent
                     , "yank" )
-                  , ( \m -> not (m^.mFlagged)
+                  , ( \m -> isFlaggable m && not (m^.mFlagged)
                     , ev FlagMessageEvent
                     , "flag" )
-                  , ( \m ->      m^.mFlagged
+                  , ( \m -> isFlaggable m && m^.mFlagged
                     , ev FlagMessageEvent
                     , "unflag" )
                   ]

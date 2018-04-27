@@ -40,7 +40,7 @@ of Nothing@ or @case mType of C _@).
 module Types.Messages
   ( -- * Message and operations on a single Message
     Message(..)
-  , isDeletable, isReplyable, isEditable, isReplyTo, isGap
+  , isDeletable, isReplyable, isEditable, isReplyTo, isGap, isFlaggable
   , mText, mUser, mDate, mType, mPending, mDeleted
   , mAttachments, mInReplyToMsg, mMessageId, mReactions, mFlagged
   , mOriginalPost, mChannelId, mMarkdownSource
@@ -73,6 +73,7 @@ module Types.Messages
   , getPrevPostId
   , getEarliestPostMsg
   , getLatestPostMsg
+  , getLatestSelectableMessage
   , findLatestUserMessage
   -- * Operations on any Message type
   , messagesAfter
@@ -140,13 +141,22 @@ messagePostId m = do
     messageIdPostId mId
 
 isDeletable :: Message -> Bool
-isDeletable m = _mType m `elem` [CP NormalPost, CP Emote]
+isDeletable m =
+    isJust (messagePostId m) &&
+    _mType m `elem` [CP NormalPost, CP Emote]
+
+isFlaggable :: Message -> Bool
+isFlaggable = isJust . messagePostId
 
 isReplyable :: Message -> Bool
-isReplyable m = _mType m `elem` [CP NormalPost, CP Emote]
+isReplyable m =
+    isJust (messagePostId m) &&
+    (_mType m `elem` [CP NormalPost, CP Emote])
 
 isEditable :: Message -> Bool
-isEditable m = _mType m `elem` [CP NormalPost, CP Emote]
+isEditable m =
+    isJust (messagePostId m) &&
+    _mType m `elem` [CP NormalPost, CP Emote]
 
 isReplyTo :: PostId -> Message -> Bool
 isReplyTo expectedParentId m =
@@ -424,6 +434,13 @@ getLatestPostMsg msgs =
       EmptyR -> Nothing
       _ :> m -> Just m
 
+-- | Find the most recent message that is a message with an ID.
+getLatestSelectableMessage :: Messages -> Maybe Message
+getLatestSelectableMessage msgs =
+    case viewr $ dropWhileR (not . validSelectableMessage) (dseq msgs) of
+      EmptyR -> Nothing
+      _ :> m -> Just m
+
 
 -- | Find the earliest message that is a Post (as opposed to a
 -- local message) (if any).
@@ -449,6 +466,9 @@ validUserMessage m =
     not (m^.mDeleted) && case m^.mMessageId of
         Just (MessagePostId _) -> True
         _ -> False
+
+validSelectableMessage :: Message -> Bool
+validSelectableMessage m = isJust $ m^.mMessageId
 
 -- ----------------------------------------------------------------------
 -- * Operations on any Message type

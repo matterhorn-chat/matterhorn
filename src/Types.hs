@@ -147,6 +147,8 @@ module Types
   , MH
   , runMHEvent
   , mh
+  , generateUUID
+  , generateUUID_IO
   , mhSuspendAndResume
   , mhHandleEventLensed
   , St.gets
@@ -220,6 +222,7 @@ import           Data.List ( partition, sortBy )
 import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
 import qualified Data.Text as T
+import           Data.UUID ( UUID )
 import qualified Data.Vector as Vec
 import           Lens.Micro.Platform ( at, makeLenses, lens, (%~), (^?!), (.=)
                                      , (%=), (^?), (.~)
@@ -227,6 +230,7 @@ import           Lens.Micro.Platform ( at, makeLenses, lens, (%~), (^?!), (.=)
 import           Network.Connection ( HostNotResolved, HostCannotConnect )
 import           Skylighting.Types ( SyntaxMap )
 import           System.Exit ( ExitCode )
+import           System.Random ( randomIO )
 import           Text.Aspell ( Aspell )
 
 import           Network.Mattermost ( ConnectionData )
@@ -844,6 +848,12 @@ runMHEvent st (MH mote) = do
 -- | lift a computation in 'EventM' into 'MH'
 mh :: EventM Name a -> MH a
 mh = MH . St.lift
+
+generateUUID :: MH UUID
+generateUUID = liftIO generateUUID_IO
+
+generateUUID_IO :: IO UUID
+generateUUID_IO = randomIO
 
 mhHandleEventLensed :: Lens' ChatState b -> (e -> b -> EventM Name b) -> e -> MH ()
 mhHandleEventLensed ln f event = MH $ do
