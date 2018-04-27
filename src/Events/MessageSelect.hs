@@ -53,8 +53,11 @@ messageSelectKeybindings = mkKeybindings
     , mkKb DeleteMessageEvent "Delete the selected message (with confirmation)"
          beginConfirmDeleteSelectedMessage
 
-    , mkKb YankMessageEvent "Copy a verbatim section to the clipboard"
-         copyVerbatimToClipboard
+    , mkKb YankMessageEvent "Copy a verbatim section or message to the clipboard"
+         yankSelectedMessageVerbatim
+
+    , mkKb YankWholeMessageEvent "Copy an entire message to the clipboard"
+         yankSelectedMessage
 
     , mkKb FlagMessageEvent "Flag the selected message"
          flagSelectedMessage

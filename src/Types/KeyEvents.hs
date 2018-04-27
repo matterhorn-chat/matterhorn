@@ -79,6 +79,7 @@ data KeyEvent
 
   | FlagMessageEvent
   | YankMessageEvent
+  | YankWholeMessageEvent
   | DeleteMessageEvent
   | EditMessageEvent
   | ReplyMessageEvent
@@ -127,6 +128,7 @@ allEvents =
 
   , FlagMessageEvent
   , YankMessageEvent
+  , YankWholeMessageEvent
   , DeleteMessageEvent
   , EditMessageEvent
   , ReplyMessageEvent
@@ -308,6 +310,7 @@ keyEventName ev = case ev of
 
   FlagMessageEvent   -> "flag-message"
   YankMessageEvent   -> "yank-message"
+  YankWholeMessageEvent   -> "yank-whole-message"
   DeleteMessageEvent -> "delete-message"
   EditMessageEvent   -> "edit-message"
   ReplyMessageEvent  -> "reply-message"

@@ -458,7 +458,16 @@ messageSelectBottomBar st =
                     , kbEvent       = b
                     } <- keymap
                , e' == e ]
-        options = [ ( isReplyable
+        options = [ ( const True
+                    , ev YankWholeMessageEvent
+                    , "yank-all" )
+                  , ( \m -> isFlaggable m && not (m^.mFlagged)
+                    , ev FlagMessageEvent
+                    , "flag" )
+                  , ( \m -> isFlaggable m && m^.mFlagged
+                    , ev FlagMessageEvent
+                    , "unflag" )
+                  , ( isReplyable
                     , ev ReplyMessageEvent
                     , "reply" )
                   , ( \m -> isMine st m && isEditable m
@@ -472,13 +481,7 @@ messageSelectBottomBar st =
                     , openUrlsMsg )
                   , ( const hasVerb
                     , ev YankMessageEvent
-                    , "yank" )
-                  , ( \m -> isFlaggable m && not (m^.mFlagged)
-                    , ev FlagMessageEvent
-                    , "flag" )
-                  , ( \m -> isFlaggable m && m^.mFlagged
-                    , ev FlagMessageEvent
-                    , "unflag" )
+                    , "yank-code" )
                   ]
         Just postMsg = getSelectedMessage st
 

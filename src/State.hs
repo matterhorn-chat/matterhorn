@@ -79,7 +79,8 @@ module State
   -- * Message selection mode
   , beginMessageSelect
   , flagSelectedMessage
-  , copyVerbatimToClipboard
+  , yankSelectedMessageVerbatim
+  , yankSelectedMessage
   , openSelectedMessageURLs
   , beginConfirmDeleteSelectedMessage
   , messageSelectUp
@@ -525,16 +526,25 @@ cancelReplyOrEdit = do
             csEditState.cedEditMode .= NewPost
             csEditState.cedEditor %= applyEdit clearZipper
 
-copyVerbatimToClipboard :: MH ()
-copyVerbatimToClipboard = do
+yankSelectedMessageVerbatim :: MH ()
+yankSelectedMessageVerbatim = do
     selectedMessage <- use (to getSelectedMessage)
     case selectedMessage of
         Nothing -> return ()
-        Just m -> case findVerbatimChunk (m^.mText) of
-            Nothing -> return ()
-            Just txt -> do
-              copyToClipboard txt
-              setMode Main
+        Just m -> do
+            setMode Main
+            case findVerbatimChunk (m^.mText) of
+                Just txt -> copyToClipboard txt
+                Nothing  -> return ()
+
+yankSelectedMessage :: MH ()
+yankSelectedMessage = do
+    selectedMessage <- use (to getSelectedMessage)
+    case selectedMessage of
+        Nothing -> return ()
+        Just m -> do
+            setMode Main
+            copyToClipboard $ m^.mMarkdownSource
 
 -- * Joining, Leaving, and Inviting
 

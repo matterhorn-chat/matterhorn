@@ -135,6 +135,7 @@ defaultBindings ev =
 
         FlagMessageEvent    -> [ key 'f' ]
         YankMessageEvent    -> [ key 'y' ]
+        YankWholeMessageEvent -> [ key 'Y' ]
         DeleteMessageEvent  -> [ key 'd' ]
         EditMessageEvent    -> [ key 'e' ]
         ReplyMessageEvent   -> [ key 'r' ]
