@@ -41,7 +41,7 @@ module Types.Messages
   , isDeletable, isReplyable, isEditable, isReplyTo, isGap
   , mText, mUser, mDate, mType, mPending, mDeleted
   , mAttachments, mInReplyToMsg, mPostId, mReactions, mFlagged
-  , mOriginalPost, mChannelId
+  , mOriginalPost, mChannelId, mMarkdownSource
   , MessageType(..)
   , UserRef(..)
   , ReplyState(..)
@@ -96,6 +96,7 @@ import           Types.Posts
 --   Mattermost itself or from a client-internal source.
 data Message = Message
   { _mText          :: Blocks
+  , _mMarkdownSource :: Text
   , _mUser          :: UserRef
   , _mDate          :: ServerTime
   , _mType          :: MessageType
@@ -156,6 +157,7 @@ data ReplyState =
 clientMessageToMessage :: ClientMessage -> Message
 clientMessageToMessage cm = Message
   { _mText          = getBlocks (cm^.cmText)
+  , _mMarkdownSource = cm^.cmText
   , _mUser          = NoUser
   , _mDate          = cm^.cmDate
   , _mType          = C $ cm^.cmType
@@ -173,6 +175,7 @@ clientMessageToMessage cm = Message
 newMessageOfType :: Text -> MessageType -> ServerTime -> Message
 newMessageOfType text typ d = Message
   { _mText         = getBlocks text
+  , _mMarkdownSource = text
   , _mUser         = NoUser
   , _mDate         = d
   , _mType         = typ

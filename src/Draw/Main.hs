@@ -56,6 +56,7 @@ previewFromInput overrideTy uId s =
     in if isCommand && not isEmote
        then Nothing
        else Just $ Message { _mText          = getBlocks content
+                           , _mMarkdownSource = content
                            , _mUser          = UserI uId
                            , _mDate          = ServerTime $ UTCTime (fromGregorian 1970 1 1) 0
                            -- The date is not used for preview

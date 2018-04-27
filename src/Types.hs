@@ -1145,6 +1145,7 @@ refreshChannelZipper = do
 clientPostToMessage :: ClientPost -> Message
 clientPostToMessage cp =
     Message { _mText = cp^.cpText
+            , _mMarkdownSource = cp^.cpMarkdownSource
             , _mUser =
                 case cp^.cpUserOverride of
                     Just n | cp^.cpType == NormalPost -> UserOverride (n <> "[BOT]")

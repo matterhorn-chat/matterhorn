@@ -20,6 +20,7 @@ module Types.Posts
   , ClientPost
   , toClientPost
   , cpUserOverride
+  , cpMarkdownSource
   , cpUser
   , cpText
   , cpType
@@ -105,6 +106,7 @@ makeLenses ''ClientMessage
 --   removed and some preprocessing done.
 data ClientPost = ClientPost
   { _cpText          :: Blocks
+  , _cpMarkdownSource :: Text
   , _cpUser          :: Maybe UserId
   , _cpUserOverride  :: Maybe Text
   , _cpDate          :: ServerTime
@@ -187,22 +189,23 @@ unEmote _ t = t
 -- | Convert a Mattermost 'Post' to a 'ClientPost', passing in a
 --   'ParentId' if it has a known one.
 toClientPost :: Post -> Maybe PostId -> ClientPost
-toClientPost p parentId = ClientPost
-  { _cpText          = (getBlocks $ unEmote (postClientPostType p) $ sanitizeUserText $ postMessage p)
-                       <> getAttachmentText p
-  , _cpUser          = postUserId p
-  , _cpUserOverride  = p^.postPropsL.postPropsOverrideUsernameL
-  , _cpDate          = postCreateAt p
-  , _cpType          = postClientPostType p
-  , _cpPending       = False
-  , _cpDeleted       = False
-  , _cpAttachments   = Seq.empty
-  , _cpInReplyToPost = parentId
-  , _cpPostId        = p^.postIdL
-  , _cpChannelId     = p^.postChannelIdL
-  , _cpReactions     = Map.empty
-  , _cpOriginalPost  = p
-  }
+toClientPost p parentId =
+  let src = unEmote (postClientPostType p) $ sanitizeUserText $ postMessage p
+  in ClientPost { _cpText          = getBlocks src <> getAttachmentText p
+                , _cpMarkdownSource = src
+                , _cpUser          = postUserId p
+                , _cpUserOverride  = p^.postPropsL.postPropsOverrideUsernameL
+                , _cpDate          = postCreateAt p
+                , _cpType          = postClientPostType p
+                , _cpPending       = False
+                , _cpDeleted       = False
+                , _cpAttachments   = Seq.empty
+                , _cpInReplyToPost = parentId
+                , _cpPostId        = p^.postIdL
+                , _cpChannelId     = p^.postChannelIdL
+                , _cpReactions     = Map.empty
+                , _cpOriginalPost  = p
+                }
 
 -- | Right now, instead of treating 'attachment' properties specially, we're
 --   just going to roll them directly into the message text
