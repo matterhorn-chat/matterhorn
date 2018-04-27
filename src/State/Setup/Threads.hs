@@ -19,6 +19,7 @@ import qualified Control.Concurrent.STM as STM
 import           Control.Concurrent.STM.Delay
 import           Control.Exception ( SomeException, try, finally, fromException )
 import qualified Data.Foldable as F
+import           Data.List ( isInfixOf )
 import qualified Data.Map as M
 import qualified Data.Text as T
 import           Data.Time ( getCurrentTime, addUTCTime )
@@ -284,9 +285,19 @@ doAsyncWork config requestChan eventChan = do
     res <- try req
     case res of
       Left e -> do
-          let err = case fromException e of
-                Nothing -> AsyncErrEvent e
-                Just mmErr -> ServerError mmErr
-          writeBChan eventChan $ IEvent $ DisplayError err
+          when (not $ shouldIgnore e) $ do
+              let err = case fromException e of
+                    Nothing -> AsyncErrEvent e
+                    Just mmErr -> ServerError mmErr
+              writeBChan eventChan $ IEvent $ DisplayError err
       Right upd ->
           writeBChan eventChan (RespEvent upd)
+
+-- Filter for exceptions that we don't want to report to the user,
+-- probably because they are not actionable and/or contain no useful
+-- information.
+--
+-- E.g.
+-- https://github.com/matterhorn-chat/matterhorn/issues/391
+shouldIgnore :: SomeException -> Bool
+shouldIgnore e = "getAddrInfo" `isInfixOf` show e
