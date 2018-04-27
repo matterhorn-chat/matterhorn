@@ -341,7 +341,7 @@ renderCurrentChannelDisplay st hs = (header <+> conn) <=> messages
             renderMessagesWithSelect (st^.csMessageSelect) channelMessages
         _ -> renderLastMessages $ reverseMessages channelMessages
 
-    renderMessagesWithSelect (MessageSelectState selPostId) msgs =
+    renderMessagesWithSelect (MessageSelectState selMsgId) msgs =
         -- In this case, we want to fill the message list with messages
         -- but use the post ID as a cursor. To do this efficiently we
         -- only want to render enough messages to fill the screen.
@@ -355,7 +355,7 @@ renderCurrentChannelDisplay st hs = (header <+> conn) <=> messages
         -- First, we sanity-check the application state because under
         -- some conditions, the selected message might be gone (e.g.
         -- deleted).
-        let (s, (before, after)) = splitMessages (MessagePostId <$> selPostId) msgs
+        let (s, (before, after)) = splitMessages selMsgId msgs
         in case s of
              Nothing -> renderLastMessages before
              Just m ->

@@ -795,7 +795,7 @@ emptyChannelSelectState =
 
 -- | The state of message selection mode.
 data MessageSelectState =
-    MessageSelectState { selectMessagePostId :: Maybe PostId
+    MessageSelectState { selectMessageId :: Maybe MessageId
                        }
 
 -- | The state of the post list overlay.

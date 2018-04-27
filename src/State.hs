@@ -355,36 +355,35 @@ beginMessageSelect = do
 
     when (isJust recentPost) $ do
         setMode MessageSelect
-        csMessageSelect .= MessageSelectState (recentPost >>= messagePostId)
+        csMessageSelect .= MessageSelectState (recentPost >>= _mMessageId)
 
 getSelectedMessage :: ChatState -> Maybe Message
 getSelectedMessage st
     | appMode st /= MessageSelect && appMode st /= MessageSelectDeleteConfirm = Nothing
     | otherwise = do
-        selPostId <- selectMessagePostId $ st^.csMessageSelect
-
+        selMsgId <- selectMessageId $ st^.csMessageSelect
         let chanMsgs = st ^. csCurrentChannel . ccContents . cdMessages
-        findMessage (MessagePostId selPostId) chanMsgs
+        findMessage selMsgId chanMsgs
 
 messageSelectUp :: MH ()
 messageSelectUp = do
     mode <- gets appMode
-    selected <- use (csMessageSelect.to selectMessagePostId)
+    selected <- use (csMessageSelect.to selectMessageId)
     case selected of
         Just _ | mode == MessageSelect -> do
             chanMsgs <- use (csCurrentChannel.ccContents.cdMessages)
-            let nextPostId = getPrevPostId selected chanMsgs
-            csMessageSelect .= MessageSelectState (nextPostId <|> selected)
+            let nextMsgId = getPrevMessageId selected chanMsgs
+            csMessageSelect .= MessageSelectState (nextMsgId <|> selected)
         _ -> return ()
 
 messageSelectDown :: MH ()
 messageSelectDown = do
-    selected <- use (csMessageSelect.to selectMessagePostId)
+    selected <- use (csMessageSelect.to selectMessageId)
     case selected of
         Just _ -> whenMode MessageSelect $ do
             chanMsgs <- use (csCurrentChannel.ccContents.cdMessages)
-            let nextPostId = getNextPostId selected chanMsgs
-            csMessageSelect .= MessageSelectState (nextPostId <|> selected)
+            let nextMsgId = getNextMessageId selected chanMsgs
+            csMessageSelect .= MessageSelectState (nextMsgId <|> selected)
         _ -> return ()
 
 messageSelectDownBy :: Int -> MH ()
