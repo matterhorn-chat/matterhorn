@@ -95,7 +95,7 @@ drawPostsBox contents st =
 
         -- The full message list, rendered with the current selection
         renderedMessageList =
-          let (s, (before, after)) = splitMessages (st^.csPostListOverlay.postListSelected) messages
+          let (s, (before, after)) = splitMessages (MessagePostId <$> st^.csPostListOverlay.postListSelected) messages
           in case s of
             Nothing -> map renderMessageForOverlay (reverse (toList messages))
             Just curMsg ->

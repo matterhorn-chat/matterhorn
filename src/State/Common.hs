@@ -180,7 +180,7 @@ messagesFromPosts p = do
           | (pId, x) <- HM.toList (p^.postsPostsL)
           ]
         maybeFlag flagSet msg
-          | Just pId <- msg^.mPostId, pId `Set.member` flagSet
+          | Just (MessagePostId pId) <- msg^.mMessageId, pId `Set.member` flagSet
             = msg & mFlagged .~ True
           | otherwise = msg
         -- n.b. postsOrder is most recent first
@@ -210,7 +210,7 @@ asyncFetchAttachments p = do
             then a Seq.<| as
             else as
         addAttachment m
-          | m^.mPostId == Just pId =
+          | m^.mMessageId == Just (MessagePostId pId) =
             m & mAttachments %~ (addIfMissing attachment)
           | otherwise              = m
     return $
@@ -256,15 +256,15 @@ asyncFetchReactionsForPost cId p
 
 addReactions :: ChannelId -> [Reaction] -> MH ()
 addReactions cId rs = csChannel(cId).ccContents.cdMessages %= fmap upd
-  where upd msg = msg & mReactions %~ insertAll (msg^.mPostId)
-        insert pId r
-          | pId == Just (r^.reactionPostIdL) = Map.insertWith (+) (r^.reactionEmojiNameL) 1
+  where upd msg = msg & mReactions %~ insertAll (msg^.mMessageId)
+        insert mId r
+          | mId == Just (MessagePostId (r^.reactionPostIdL)) = Map.insertWith (+) (r^.reactionEmojiNameL) 1
           | otherwise = id
-        insertAll pId msg = foldr (insert pId) msg rs
+        insertAll mId msg = foldr (insert mId) msg rs
 
 removeReaction :: Reaction -> ChannelId -> MH ()
 removeReaction r cId = csChannel(cId).ccContents.cdMessages %= fmap upd
-  where upd m | m^.mPostId == Just (r^.reactionPostIdL) =
+  where upd m | m^.mMessageId == Just (MessagePostId $ r^.reactionPostIdL) =
                   m & mReactions %~ (Map.insertWith (+) (r^.reactionEmojiNameL) (-1))
               | otherwise = m
 

@@ -52,11 +52,11 @@ test_m1 = do t1 <- ServerTime <$> getCurrentTime
 
 test_m2 :: IO Message
 test_m2 = do t2 <- ServerTime <$> getCurrentTime
-             return $ (makeMsg t2 (Just $ fromId $ Id "m2")) { _mType = CP Emote }
+             return $ (makeMsg t2 (Just $ MessagePostId $ fromId $ Id "m2")) { _mType = CP Emote }
 
 test_m3 :: IO Message
 test_m3 = do t3 <- ServerTime <$> getCurrentTime
-             return $ makeMsg t3 (Just $ fromId $ Id "m3")
+             return $ makeMsg t3 (Just $ MessagePostId $ fromId $ Id "m3")
 
 setDateOrderMessages :: [Message] -> [Message]
 setDateOrderMessages = snd . foldl setTimeAndInsert (startTime, [])
@@ -65,22 +65,22 @@ setDateOrderMessages = snd . foldl setTimeAndInsert (startTime, [])
           startTime = ServerTime $ UTCTime (ModifiedJulianDay 100) (secondsToDiffTime 0)
           tick (ServerTime (UTCTime d t)) = ServerTime $ UTCTime d $ succ t
 
-makeMsg :: ServerTime -> Maybe PostId -> Message
-makeMsg t pId = Message Seq.empty NoUser t (CP NormalPost) False False Seq.empty NotAReply
-                        pId Map.empty Nothing False Nothing
+makeMsg :: ServerTime -> Maybe MessageId -> Message
+makeMsg t mId = Message Seq.empty mempty NoUser t (CP NormalPost) False False Seq.empty NotAReply
+                        mId Map.empty Nothing False Nothing
 
 makeMsgs :: [Message] -> Messages
 makeMsgs = foldr addMessage noMessages
 
-idlist :: Foldable t => t Message -> [Maybe PostId]
-idlist = foldr (\m s -> m^.mPostId : s) []
+idlist :: Foldable t => t Message -> [Maybe MessageId]
+idlist = foldr (\m s -> m^.mMessageId : s) []
 
 postids :: (Foldable t) => String -> t Message -> String
 postids names msgs = let zipf = (\(n,z) m -> if null n
                                              then ("", ('?', m) : z)
                                              else (init n, (last n, m) : z))
                          zipped = snd $ foldr (flip zipf) (names, []) msgs
-                         pid (n, m) = show n <> ".mPostID=" <> show (m^.mPostId)
+                         pid (n, m) = show n <> ".mPostID=" <> show (m^.mMessageId)
                      in intercalate ", " $ map pid zipped
 
 uniqueIds :: Foldable t => t Message -> Bool
@@ -215,7 +215,7 @@ createTests = testGroup "Create"
                             [w', x', y', z'] = l
                             l' = [x', z', w', y']
                             ex = sortBy (\a b -> compare (a^.mDate) (b^.mDate))
-                                 ([e | e <- l', isNothing (e^.mPostId) ] <> l)
+                                 ([e | e <- l', isNothing (messagePostId e) ] <> l)
                         in idlist ex === idlist (makeMsgs $ l' <> l)
 
               , testProperty "duplicate dates different IDs in posted order"
@@ -261,12 +261,12 @@ moveUpTestEmpty = testProperty "Move down in empty messages" $
 moveDownTestSingle :: TestTree
 moveDownTestSingle = testProperty "Move up from single message" $
                    \x -> let msgs = addMessage x noMessages
-                         in Nothing == (getNextPostId (x^.mPostId) msgs)
+                         in Nothing == (getNextPostId (messagePostId x) msgs)
 
 moveUpTestSingle :: TestTree
 moveUpTestSingle = testProperty "Move down from single message" $
                     \x -> let msgs = addMessage x noMessages
-                          in Nothing == (getPrevPostId (x^.mPostId) msgs)
+                          in Nothing == (getPrevPostId (messagePostId x) msgs)
 
 moveDownTestMultipleStart :: TestTree
 moveDownTestMultipleStart =
@@ -278,12 +278,12 @@ moveDownTestMultipleStart =
                                          , postMsg z'
                                          ]
                              msgs = makeMsgs [x, y, z]
-                             msgid = getNextPostId (x^.mPostId) msgs
+                             msgid = getNextMessageId (x^.mMessageId) msgs
                              -- for useful info on failure:
                              idents = postids "xyz" msgs
                              info = idents <> " against " <> show msgid
                          in counterexample info $
-                                y^.mPostId == msgid
+                                y^.mMessageId == msgid
 
 moveUpTestMultipleStart :: TestTree
 moveUpTestMultipleStart =
@@ -292,7 +292,7 @@ moveUpTestMultipleStart =
                          let [x, y, z] = setDateOrderMessages
                                          [ postMsg x', postMsg y', postMsg z']
                              msgs = makeMsgs [x, y, z]
-                             msgid = getPrevPostId (x^.mPostId) msgs
+                             msgid = getPrevPostId (messagePostId x) msgs
                              -- for useful info on failure:
                              idents = postids "xyz" msgs
                              info = idents <> " against " <> show msgid
@@ -306,7 +306,7 @@ moveDownTestMultipleEnd =
                          let [x, y, z] = setDateOrderMessages
                                          [ postMsg x', postMsg y', postMsg z']
                              msgs = makeMsgs [x, y, z]
-                             msgid = getNextPostId (z^.mPostId) msgs
+                             msgid = getNextPostId (messagePostId z) msgs
                              -- for useful info on failure:
                              idents = postids "xyz" msgs
                              info = idents <> " against " <> show msgid
@@ -320,12 +320,12 @@ moveUpTestMultipleEnd =
                          let [x, y, z] = setDateOrderMessages
                                          [ postMsg x', postMsg y', postMsg z']
                              msgs = makeMsgs [x, y, z]
-                             msgid = getPrevPostId (z^.mPostId) msgs
+                             msgid = getPrevPostId (messagePostId z) msgs
                              -- for useful info on failure:
                              idents = postids "xyz" msgs
                              info = idents <> " against " <> show msgid
                          in uniqueIds msgs ==>
-                            counterexample info $ (y^.mPostId) == msgid
+                            counterexample info $ (messagePostId y) == msgid
 
 moveDownTestMultipleSkipDeleted :: TestTree
 moveDownTestMultipleSkipDeleted =
@@ -337,11 +337,11 @@ moveDownTestMultipleSkipDeleted =
                                             , delMsg y'
                                             , postMsg z']
                              msgs = makeMsgs [w, x, y, z]
-                             msgid = getNextPostId (w^.mPostId) msgs
+                             msgid = getNextPostId (messagePostId w) msgs
                              -- for useful info on failure:
                              idents = postids "wxyz" msgs
                              info = idents <> " against " <> show msgid
-                         in counterexample info $ (z^.mPostId) == msgid
+                         in counterexample info $ (messagePostId z) == msgid
 
 moveUpTestMultipleSkipDeleted :: TestTree
 moveUpTestMultipleSkipDeleted =
@@ -353,12 +353,12 @@ moveUpTestMultipleSkipDeleted =
                                             , delMsg y'
                                             , postMsg z']
                              msgs = makeMsgs [w, x, y, z]
-                             msgid = getPrevPostId (z^.mPostId) msgs
+                             msgid = getPrevPostId (messagePostId z) msgs
                              -- for useful info on failure:
                              idents = postids "wxyz" msgs
                              info = idents <> " against " <> show msgid
                          in uniqueIds msgs ==>
-                            counterexample info $ (w^.mPostId) == msgid
+                            counterexample info $ (messagePostId w) == msgid
 
 moveDownTestMultipleSkipDeletedAll :: TestTree
 moveDownTestMultipleSkipDeletedAll =
@@ -373,7 +373,7 @@ moveDownTestMultipleSkipDeletedAll =
                                             , delMsg y'
                                             , delMsg z']
                              msgs = makeMsgs [w, x, y, z]
-                             msgid = getNextPostId (w^.mPostId) msgs
+                             msgid = getNextPostId (messagePostId w) msgs
                              -- for useful info on failure:
                              idents = postids "wxyz" msgs
                              info = idents <> " against " <> show msgid
@@ -392,7 +392,7 @@ moveUpTestMultipleSkipDeletedAll =
                                             , delMsg y'
                                             , delMsg z']
                              msgs = makeMsgs [w, x, y, z]
-                             msgid = getPrevPostId (z^.mPostId) msgs
+                             msgid = getPrevPostId (messagePostId z) msgs
                              -- for useful info on failure:
                              idents = postids "wxyz" msgs
                              info = idents <> " against " <> show msgid
@@ -406,8 +406,8 @@ reversalTests = testGroup "Reversal"
                            in idlist l === idlist rr
                 , testProperty "getLatestMessage finds same in either dir" $
                      \l -> let rr = unreverseMessages (reverseMessages l)  -- KWQ: just one reverse, not two
-                           in ((^.mPostId) <$> getLatestPostMsg l) ===
-                              ((^.mPostId) <$> getLatestPostMsg rr)
+                           in (messagePostId <$> getLatestPostMsg l) ===
+                              (messagePostId <$> getLatestPostMsg rr)
                 , testCase "reverse nothing" $
                       (null $ unreverseMessages $ reverseMessages noMessages) @?
                       "reverse of empty Messages"
@@ -421,10 +421,10 @@ lookupTests = testGroup "Lookup"
               [ testProperty "getEarliestPostMsg" $ \(m1, m2, m3, m4, m5) ->
                     let mlist = m1 : m2 : m3 : m4 : m5 : []
                         msgs = makeMsgs mlist
-                        postIds = fmap (^.mPostId)
+                        postIds = fmap messagePostId
                                   $ sortBy (compare `on` (^.mDate))
-                                  $ filter (\m -> isJust (m^.mPostId) && (not $ m^.mDeleted)) mlist
-                        firstPostId = (^.mPostId) <$> getEarliestPostMsg msgs
+                                  $ filter (\m -> isJust (messagePostId m) && (not $ m^.mDeleted)) mlist
+                        firstPostId = messagePostId <$> getEarliestPostMsg msgs
                     in if null postIds
                        then Nothing === firstPostId
                        else Just (head postIds) === firstPostId
@@ -432,10 +432,10 @@ lookupTests = testGroup "Lookup"
               , testProperty "getLatestPostMsg" $ \(m1, m2, m3, m4, m5) ->
                     let mlist = m1 : m2 : m3 : m4 : m5 : []
                         msgs = makeMsgs mlist
-                        postIds = fmap (^.mPostId)
+                        postIds = fmap messagePostId
                                   $ sortBy (compare `on` (^.mDate))
-                                  $ filter (\m -> isJust (m^.mPostId) && (not $ m^.mDeleted)) mlist
-                        lastPostId = (^.mPostId) <$> getLatestPostMsg msgs
+                                  $ filter (\m -> isJust (messagePostId m) && (not $ m^.mDeleted)) mlist
+                        lastPostId = messagePostId <$> getLatestPostMsg msgs
                     in counterexample ("ids: " <> show (idlist msgs)
                                       <> "\n dates: " <> (show $ fmap show $ foldr (\m l -> m^.mDate : l) [] msgs)
                                       <> "\n deleted: " <> (show $ fmap show $ foldr (\m l -> m^.mDeleted : l) [] msgs)
@@ -447,11 +447,11 @@ lookupTests = testGroup "Lookup"
               , testProperty "findLatestUserMessage" $ \(m1, m2, m3, m4, m5) ->
                     let mlist = m1 : m2 : m3 : m4 : m5 : []
                         msgs = makeMsgs mlist
-                        postIds = fmap (^.mPostId)
+                        postIds = fmap messagePostId
                                   $ sortBy (compare `on` (^.mDate))
-                                  $ filter (\m -> isJust (m^.mPostId) && (not $ m^.mDeleted)) mlist
-                        lastPostId = (^.mPostId) <$> findLatestUserMessage (const True) msgs
-                        firstPostId = (^.mPostId) <$> findLatestUserMessage (\m -> m^.mPostId == head postIds) msgs
+                                  $ filter (\m -> isJust (messagePostId m) && (not $ m^.mDeleted)) mlist
+                        lastPostId = messagePostId <$> findLatestUserMessage (const True) msgs
+                        firstPostId = messagePostId <$> findLatestUserMessage (\m -> messagePostId m == head postIds) msgs
                     in counterexample ("ids: " <> show (idlist msgs)
                                       <> "\n dates: " <> (show $ fmap show $ foldr (\m l -> m^.mDate : l) [] msgs)
                                       <> "\n deleted: " <> (show $ fmap show $ foldr (\m l -> m^.mDeleted : l) [] msgs)
@@ -476,11 +476,11 @@ splitTests = testGroup "Split"
                  in isNothing m
 
              , testProperty "split nothing on not found" $ \(w', x', y', z') ->
-                 let (m, _) = splitMessages (w^.mPostId) msgs
+                 let (m, _) = splitMessages (w^.mMessageId) msgs
                      [w, x, y, z] = setDateOrderMessages [w', x', y', z']
                      msgs = makeMsgs [x, y, z]
                      idents = postids "wxyz" msgs
-                     info = idents <> " against " <> show ((fromJust m)^.mPostId)
+                     info = idents <> " against " <> show (messagePostId (fromJust m))
                  in uniqueIds [w, x, y, z] ==>
                     counterexample info $ isNothing m
 
@@ -496,7 +496,7 @@ splitTests = testGroup "Split"
 
              , testProperty "all before reversed on not found"
                    $ \(w', x', y', z') ->
-                       let (_, (before, _)) = splitMessages (w^.mPostId) msgs
+                       let (_, (before, _)) = splitMessages (w^.mMessageId) msgs
                            msgs = makeMsgs inpl
                            inpl = [x, y, z]
                            [w, x, y, z] = setDateOrderMessages [w', x', y', z']
@@ -505,16 +505,16 @@ splitTests = testGroup "Split"
 
              , testProperty "found at first position"
                    $ \(w', x', y', z') ->
-                       let (m, _) = splitMessages (w^.mPostId) msgs
+                       let (m, _) = splitMessages (w^.mMessageId) msgs
                            msgs = makeMsgs inpl
                            inpl = [w, x, y, z]
                            [w, x, y, z] = setDateOrderMessages [w', x', y', z']
                        in validIds inpl && uniqueIds inpl ==>
-                          w^.mPostId == (fromJust m)^.mPostId
+                          messagePostId w == messagePostId (fromJust m)
 
              , testProperty "no before when found at first position"
                    $ \(w', x', y', z') ->
-                       let (_, (before, _)) = splitMessages (w^.mPostId) msgs
+                       let (_, (before, _)) = splitMessages (w^.mMessageId) msgs
                            msgs = makeMsgs inpl
                            inpl = [w, x, y, z]
                            [w, x, y, z] = setDateOrderMessages [w', x', y', z']
@@ -523,7 +523,7 @@ splitTests = testGroup "Split"
                           counterexample info $ null $ unreverseMessages before
              , testProperty "remaining after when found at first position"
                    $ \(w', x', y', z') ->
-                       let (_, (_, after)) = splitMessages (w^.mPostId) msgs
+                       let (_, (_, after)) = splitMessages (w^.mMessageId) msgs
                            msgs = makeMsgs inpl
                            inpl = [w, x, y, z]
                            [w, x, y, z] = setDateOrderMessages [w', x', y', z']
@@ -534,16 +534,16 @@ splitTests = testGroup "Split"
 
              , testProperty "found at last position"
                    $ \(w', x', y', z') ->
-                       let (m, _) = splitMessages (z^.mPostId) msgs
+                       let (m, _) = splitMessages (z^.mMessageId) msgs
                            msgs = makeMsgs inpl
                            inpl = [w, x, y, z]
                            [w, x, y, z] = setDateOrderMessages [w', x', y', z']
                        in validIds inpl && uniqueIds inpl ==>
-                          z^.mPostId == (fromJust m)^.mPostId
+                          messagePostId z == messagePostId (fromJust m)
 
              , testProperty "reversed before when found at last position"
                    $ \(w', x', y', z') ->
-                       let (_, (before, _)) = splitMessages (z^.mPostId) msgs
+                       let (_, (before, _)) = splitMessages (z^.mMessageId) msgs
                            msgs = makeMsgs inpl
                            inpl = [w, x, y, z]
                            [w, x, y, z] = setDateOrderMessages [w', x', y', z']
@@ -554,7 +554,7 @@ splitTests = testGroup "Split"
 
              , testProperty "no after when found at last position"
                    $ \(w', x', y', z') ->
-                       let (_, (_, after)) = splitMessages (z^.mPostId) msgs
+                       let (_, (_, after)) = splitMessages (z^.mMessageId) msgs
                            msgs = makeMsgs inpl
                            inpl = [w, x, y, z]
                            [w, x, y, z] = setDateOrderMessages [w', x', y', z']
@@ -564,17 +564,17 @@ splitTests = testGroup "Split"
 
              , testProperty "found at midpoint position"
                    $ \(v', w', x', y', z') ->
-                       let (m, _) = splitMessages (x^.mPostId) msgs
+                       let (m, _) = splitMessages (x^.mMessageId) msgs
                            msgs = makeMsgs inpl
                            inpl = [v, w, x, y, z]
                            [v, w, x, y, z] = setDateOrderMessages
                                              [v', w', x', y', z']
                        in validIds inpl && uniqueIds inpl ==>
-                          x^.mPostId == (fromJust m)^.mPostId
+                          messagePostId x == messagePostId (fromJust m)
 
              , testProperty "reversed before when found at midpoint position"
                    $ \(v', w', x', y', z') ->
-                       let (_, (before, _)) = splitMessages (x^.mPostId) msgs
+                       let (_, (before, _)) = splitMessages (x^.mMessageId) msgs
                            msgs = makeMsgs inpl
                            inpl = [v, w, x, y, z]
                            [v, w, x, y, z] = setDateOrderMessages
@@ -586,7 +586,7 @@ splitTests = testGroup "Split"
 
              , testProperty "after when found at midpoint position"
                    $ \(v', w', x', y', z') ->
-                       let (_, (_, after)) = splitMessages (x^.mPostId) msgs
+                       let (_, (_, after)) = splitMessages (x^.mMessageId) msgs
                            msgs = makeMsgs inpl
                            inpl = [v, w, x, y, z]
                            [v, w, x, y, z] = setDateOrderMessages
@@ -642,8 +642,8 @@ removeTests = adjustOption (\(QuickCheckMaxRatio n) -> QuickCheckMaxRatio (n*10)
 
               , testCase "remove only as last" $
                 let (remaining, removed) = removeMatchesFromSubset (const True) (Just id1) (Just id2) msgs
-                    id1 = fromId $ Id "id1"
-                    id2 = fromId $ Id "id2"
+                    id1 = MessagePostId $ fromId $ Id "id1"
+                    id2 = MessagePostId $ fromId $ Id "id2"
                     msgs = makeMsgs [makeMsg (ServerTime originTime) (Just id2)]
                 in null remaining && length removed == 1 @? "removed"
 
@@ -651,7 +651,8 @@ removeTests = adjustOption (\(QuickCheckMaxRatio n) -> QuickCheckMaxRatio (n*10)
                     let msgs = makeMsgs $ msg : msglist
                         ids = idlist msgs
                         id2 = ids !! idx2'
-                        id1 = PI $ Id $ T.intercalate "-" $ map (unId . unPI) $ catMaybes ids
+                        id1 = MessagePostId $ PI $ Id $ T.intercalate "-" $ map (unId . unPI) $
+                              catMaybes ((\i -> i >>= messageIdPostId) <$> ids)
                         idx2' = abs idx2 `mod` length ids
                         (remaining, removed) = removeMatchesFromSubset (const True) (Just id1) id2 msgs
                     in (isJust id2) && uniqueIds msgs ==>
@@ -730,7 +731,7 @@ removeTests = adjustOption (\(QuickCheckMaxRatio n) -> QuickCheckMaxRatio (n*10)
                         idx1' = head idxl
                         idx2' = last idxl
 
-                        (remaining, removed) = removeMatchesFromSubset (\m -> m^.mPostId == id1) id1 id2 msgs
+                        (remaining, removed) = removeMatchesFromSubset (\m -> m^.mMessageId == id1) id1 id2 msgs
                     in uniqueIds msgs && isJust id1 && isJust id2 ==>
                        counterexample ("with idlist " <> show (idlist msgs) <>
                                        "\n idx1=" <> show idx1' <>
@@ -755,7 +756,7 @@ removeTests = adjustOption (\(QuickCheckMaxRatio n) -> QuickCheckMaxRatio (n*10)
                         idx1' = head idxl
                         idx2' = last idxl
 
-                        (remaining, removed) = removeMatchesFromSubset (\m -> m^.mPostId == id2) id1 id2 msgs
+                        (remaining, removed) = removeMatchesFromSubset (\m -> m^.mMessageId == id2) id1 id2 msgs
                     in uniqueIds msgs && isJust id1 && isJust id2 ==>
                        counterexample ("with idlist " <> show (idlist msgs) <>
                                        "\n idx1=" <> show idx1' <>
@@ -782,7 +783,7 @@ removeTests = adjustOption (\(QuickCheckMaxRatio n) -> QuickCheckMaxRatio (n*10)
 
                         rmvIds = map snd $ filter (odd . fst) $ zip [(0::Int)..] matchIds
 
-                        (remaining, removed) = removeMatchesFromSubset (\m -> m^.mPostId `elem` rmvIds) id1 id2 msgs
+                        (remaining, removed) = removeMatchesFromSubset (\m -> m^.mMessageId `elem` rmvIds) id1 id2 msgs
                     in uniqueIds msgs && isJust id1 && isJust id2 ==>
                        counterexample ("with idlist " <> show (idlist msgs) <>
                                        "\n idx1=" <> show idx1' <>
@@ -898,3 +899,8 @@ instance EqProp RetrogradeMessages where
 
 instance EqProp PostId where
     a =-= b = (show $ idString a) =-= (show $ idString b)
+
+instance EqProp MessageId where
+    (MessagePostId a) =-= (MessagePostId b) = (show $ idString a) =-= (show $ idString b)
+    (MessageUUID a) =-= (MessageUUID b) = (show a) =-= (show b)
+    _ =-= _ = eq True False

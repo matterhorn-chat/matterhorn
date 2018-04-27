@@ -355,7 +355,7 @@ beginMessageSelect = do
 
     when (isJust recentPost) $ do
         setMode MessageSelect
-        csMessageSelect .= MessageSelectState (join $ ((^.mPostId) <$> recentPost))
+        csMessageSelect .= MessageSelectState (recentPost >>= messagePostId)
 
 getSelectedMessage :: ChatState -> Maybe Message
 getSelectedMessage st
@@ -364,7 +364,7 @@ getSelectedMessage st
         selPostId <- selectMessagePostId $ st^.csMessageSelect
 
         let chanMsgs = st ^. csCurrentChannel . ccContents . cdMessages
-        findMessage selPostId chanMsgs
+        findMessage (MessagePostId selPostId) chanMsgs
 
 messageSelectUp :: MH ()
 messageSelectUp = do
@@ -457,7 +457,7 @@ flagSelectedMessage = do
   selected <- use (to getSelectedMessage)
   case selected of
     Just msg
-      | Just pId <- msg^.mPostId ->
+      | Just pId <- messagePostId msg ->
         flagMessage pId (not (msg^.mFlagged))
     _        -> return ()
 
@@ -955,16 +955,16 @@ asyncFetchMoreMessages = do
             -- are at least 2 messages already here, but in case there
             -- aren't, just get another page from roughly the right
             -- location.
-            first' = splitMessagesOn (^.mPostId.to isJust) (chan^.ccContents.cdMessages)
-            second' = splitMessagesOn (^.mPostId.to isJust) $ snd $ snd first'
+            first' = splitMessagesOn (isJust . messagePostId) (chan^.ccContents.cdMessages)
+            second' = splitMessagesOn (isJust . messagePostId) $ snd $ snd first'
             query = MM.defaultPostQuery
                       { MM.postQueryPage = Just (offset `div` pageAmount)
                       , MM.postQueryPerPage = Just pageAmount
                       }
-                    & \q -> case (fst first', fst second' >>= (^.mPostId)) of
+                    & \q -> case (fst first', fst second' >>= messagePostId) of
                              (Just _, Just i) -> q { MM.postQueryBefore = Just i
-                                                  , MM.postQueryPage   = Just 0
-                                                  }
+                                                   , MM.postQueryPage   = Just 0
+                                                   }
                              _ -> q
         in doAsyncChannelMM Preempt cId
                (\s _ c -> MM.mmGetPostsForChannel c query s)
@@ -995,10 +995,16 @@ addObtainedMessages cId reqCnt posts = do
             localMessages = chan^.ccContents . cdMessages
 
             match = snd $ removeMatchesFromSubset
-                          (\m -> maybe False (\p -> p `elem` pIdList) (m^.mPostId))
-                          (Just earliestPId) (Just latestPId) localMessages
+                          (\m -> maybe False (\p -> p `elem` pIdList) (messagePostId m))
+                          (Just (MessagePostId earliestPId))
+                          (Just (MessagePostId latestPId))
+                          localMessages
 
-            dupPIds = catMaybes $ foldr (\m l -> m^.mPostId : l) [] match
+            accum m l =
+                case messagePostId m of
+                    Just pId -> pId : l
+                    Nothing -> l
+            dupPIds = foldr accum [] match
 
             -- If there were any matches, then there was overlap of
             -- the new messages with existing messages.
@@ -1025,8 +1031,8 @@ addObtainedMessages cId reqCnt posts = do
 
             addingAtStart = maybe True ((>=) earliestDate) $
                             (^.mDate) <$> getEarliestPostMsg localMessages
-            removeStart = if addingAtStart && noMoreBefore then Nothing else Just earliestPId
-            removeEnd = if addingAtEnd then Nothing else Just latestPId
+            removeStart = if addingAtStart && noMoreBefore then Nothing else Just (MessagePostId earliestPId)
+            removeEnd = if addingAtEnd then Nothing else Just (MessagePostId latestPId)
 
             noMoreBefore = reqCnt < 0 && length pIdList < (-reqCnt)
             noMoreAfter = reqCnt > 0 && length pIdList < reqCnt
@@ -1299,7 +1305,7 @@ handleNewChannel_ permitPostpone switch nc member = do
 editMessage :: Post -> MH ()
 editMessage new = do
   myId <- gets myUserId
-  let isEditedMessage m = m^.mPostId == Just (new^.postIdL)
+  let isEditedMessage m = m^.mMessageId == Just (MessagePostId $ new^.postIdL)
       msg = clientPostToMessage (toClientPost new (new^.postParentIdL))
       chan = csChannel (new^.postChannelIdL)
   chan . ccContents . cdMessages . traversed . filtered isEditedMessage .= msg
@@ -1315,7 +1321,7 @@ editMessage new = do
 
 deleteMessage :: Post -> MH ()
 deleteMessage new = do
-  let isDeletedMessage m = m^.mPostId == Just (new^.postIdL) ||
+  let isDeletedMessage m = m^.mMessageId == Just (MessagePostId $ new^.postIdL) ||
                            isReplyTo (new^.postIdL) m
       chan :: Traversal' ChatState ClientChannel
       chan = csChannel (new^.postChannelIdL)
@@ -1556,16 +1562,16 @@ fetchVisibleIfNeeded = do
                gapTrail a@(0,     _, _, _, _) _ = a
                gapTrail   (a, False, b, c, d) m | isGap m = (a, True, b, c, d)
                gapTrail (remCnt, _, prev'pId, prev''pId, ovl) msg =
-                   (remCnt - 1, False, msg^.mPostId <|> prev'pId, prev'pId <|> prev''pId,
-                    ovl + if isNothing (msg^.mPostId) then 1 else 0)
+                   (remCnt - 1, False, msg^.mMessageId <|> prev'pId, prev'pId <|> prev''pId,
+                    ovl + if not (isPostMessage msg) then 1 else 0)
                numToReq = numRemaining + overlap
                query = MM.defaultPostQuery
                        { MM.postQueryPage    = Just 0
                        , MM.postQueryPerPage = Just numToReq
                        }
                finalQuery = case rel'pId of
-                              Nothing -> query
-                              Just pid -> query { MM.postQueryBefore = Just pid }
+                              Just (MessagePostId pid) -> query { MM.postQueryBefore = Just pid }
+                              _ -> query
                op = \s _ c -> MM.mmGetPostsForChannel c finalQuery s
            in when ((not $ chan^.ccContents.cdFetchPending) && gapInDisplayable) $ do
                      csChannel(cId).ccContents.cdFetchPending .= True

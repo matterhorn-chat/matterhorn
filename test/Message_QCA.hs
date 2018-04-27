@@ -4,7 +4,11 @@
 module Message_QCA where
 
 import Cheapskate_QCA
+import Control.Monad (replicateM)
 import Data.Map hiding (foldr)
+import Data.Maybe (fromMaybe)
+import Data.UUID (UUID, fromByteString)
+import qualified Data.ByteString.Lazy as BSL
 import Network.Mattermost.QuickCheck
 import Network.Mattermost.Types
 import Test.Tasty.QuickCheck
@@ -23,6 +27,7 @@ genUserRef = oneof [ return NoUser
 genMessage :: Gen Message
 genMessage = Message
              <$> genBlocks
+             <*> genText
              <*> genUserRef
              <*> genTime
              <*> genMessageType
@@ -30,11 +35,15 @@ genMessage = Message
              <*> arbitrary
              <*> genSeq genAttachment
              <*> genReplyState
-             <*> genMaybe genPostId
+             <*> (fmap MessagePostId <$> genMaybe genPostId)
              <*> genMap genText arbitrary
              <*> genMaybe genPost
              <*> arbitrary
              <*> (Just <$> genChannelId)
+
+genUUID :: Gen UUID
+genUUID = (fromMaybe (error "BUG: invalid genUUID result") . fromByteString . BSL.pack) <$>
+          replicateM 16 arbitrary
 
 -- Some tests specifically want deleted or non-deleted messages, so
 -- make an easy way to specify these.
@@ -44,7 +53,8 @@ newtype Message__DeletedPost  = Message__DeletedPost { delMsg :: Message }
 genMessage__DeletedPost :: Gen Message__DeletedPost
 genMessage__DeletedPost = Message__DeletedPost
                           <$> (Message
-                               <$> genBlocks
+                              <$> genBlocks
+                              <*> genText
                               <*> genUserRef
                               <*> genTime
                               <*> genMessageType
@@ -52,7 +62,7 @@ genMessage__DeletedPost = Message__DeletedPost
                               <*> return True  -- mDeleted
                               <*> genSeq genAttachment
                               <*> genReplyState
-                              <*> (Just <$> genPostId)  -- must have been Posted if deleted
+                              <*> (Just <$> MessagePostId <$> genPostId)  -- must have been Posted if deleted
                               <*> genMap genText arbitrary
                               <*> genMaybe genPost
                               <*> arbitrary
@@ -64,7 +74,8 @@ newtype Message__Posted = Message__Posted { postMsg :: Message }
 genMessage__Posted :: Gen Message__Posted
 genMessage__Posted = Message__Posted
                      <$> (Message
-                          <$> genBlocks
+                         <$> genBlocks
+                         <*> genText
                          <*> genUserRef
                          <*> genTime
                          <*> genMessageType
@@ -72,7 +83,7 @@ genMessage__Posted = Message__Posted
                          <*> return False  -- mDeleted
                          <*> genSeq genAttachment
                          <*> genReplyState
-                         <*> (Just <$> genPostId)
+                         <*> (Just <$> MessagePostId <$> genPostId)
                          <*> genMap genText arbitrary
                          <*> genMaybe genPost
                          <*> arbitrary
@@ -115,6 +126,9 @@ instance Arbitrary Message where arbitrary = genMessage
 instance Arbitrary Message__DeletedPost where arbitrary = genMessage__DeletedPost
 instance Arbitrary Message__Posted where arbitrary = genMessage__Posted
 instance Arbitrary PostId where arbitrary = genPostId
+instance Arbitrary MessageId where arbitrary = oneof [ MessagePostId <$> genPostId
+                                                     , MessageUUID <$> genUUID
+                                                     ]
 
 instance Arbitrary Messages where
     arbitrary = sized $ \s -> foldr addMessage noMessages <$> vectorOf s arbitrary

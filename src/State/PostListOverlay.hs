@@ -19,7 +19,7 @@ import           Types.DirectionalSeq (emptyDirSeq)
 enterPostListMode ::  PostListContents -> Messages -> MH ()
 enterPostListMode contents msgs = do
   csPostListOverlay.postListPosts .= msgs
-  csPostListOverlay.postListSelected .= join ((^.mPostId) <$> getLatestPostMsg msgs)
+  csPostListOverlay.postListSelected .= (getLatestPostMsg msgs >>= messagePostId)
   setMode $ PostListOverlay contents
 
 -- | Clear out the state of a PostListOverlay

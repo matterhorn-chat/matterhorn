@@ -1,6 +1,8 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 {-|
 
@@ -29,8 +31,8 @@ client-generated messages will have a date/time although it is locally
 generated (usually by relation to an associated Post).
 
 Most other Matterhorn operations primarily are concerned with
-user-posted messages (@case mPostId of Just _@ or @case mType of CP
-_@), but others will include client-generated messages (@case mPostId
+user-posted messages (@case mMessageId of Just _@ or @case mType of CP
+_@), but others will include client-generated messages (@case mMessageId
 of Nothing@ or @case mType of C _@).
 
 --}
@@ -40,9 +42,13 @@ module Types.Messages
     Message(..)
   , isDeletable, isReplyable, isEditable, isReplyTo, isGap
   , mText, mUser, mDate, mType, mPending, mDeleted
-  , mAttachments, mInReplyToMsg, mPostId, mReactions, mFlagged
+  , mAttachments, mInReplyToMsg, mMessageId, mReactions, mFlagged
   , mOriginalPost, mChannelId, mMarkdownSource
   , MessageType(..)
+  , MessageId(..)
+  , isPostMessage
+  , messagePostId
+  , messageIdPostId
   , UserRef(..)
   , ReplyState(..)
   , clientMessageToMessage
@@ -61,6 +67,8 @@ module Types.Messages
   , splitMessagesOn
   , splitRetrogradeMessagesOn
   , findMessage
+  , getNextMessageId
+  , getPrevMessageId
   , getNextPostId
   , getPrevPostId
   , getEarliestPostMsg
@@ -77,9 +85,12 @@ import           Prelude ()
 import           Prelude.MH
 
 import           Cheapskate ( Blocks )
+import           Data.Hashable ( Hashable )
 import qualified Data.Map.Strict as Map
 import           Data.Sequence as Seq
 import           Data.Tuple
+import           Data.UUID ( UUID )
+import           GHC.Generics ( Generic )
 import           Lens.Micro.Platform ( makeLenses )
 
 import           Network.Mattermost.Types ( ChannelId, PostId, Post
@@ -91,6 +102,14 @@ import           Types.Posts
 
 -- ----------------------------------------------------------------------
 -- * Messages
+
+data MessageId = MessagePostId PostId
+               | MessageUUID UUID
+               deriving (Eq, Read, Show, Generic, Hashable)
+
+messageIdPostId :: MessageId -> Maybe PostId
+messageIdPostId (MessagePostId p) = Just p
+messageIdPostId _ = Nothing
 
 -- | A 'Message' is any message we might want to render, either from
 --   Mattermost itself or from a client-internal source.
@@ -104,12 +123,21 @@ data Message = Message
   , _mDeleted       :: Bool
   , _mAttachments   :: Seq Attachment
   , _mInReplyToMsg  :: ReplyState
-  , _mPostId        :: Maybe PostId
+  , _mMessageId     :: Maybe MessageId
   , _mReactions     :: Map.Map Text Int
   , _mOriginalPost  :: Maybe Post
   , _mFlagged       :: Bool
   , _mChannelId     :: Maybe ChannelId
   } deriving (Show)
+
+isPostMessage :: Message -> Bool
+isPostMessage m =
+    isJust (_mMessageId m >>= messageIdPostId)
+
+messagePostId :: Message -> Maybe PostId
+messagePostId m = do
+    mId <- _mMessageId m
+    messageIdPostId mId
 
 isDeletable :: Message -> Bool
 isDeletable m = _mType m `elem` [CP NormalPost, CP Emote]
@@ -165,7 +193,7 @@ clientMessageToMessage cm = Message
   , _mDeleted       = False
   , _mAttachments   = Seq.empty
   , _mInReplyToMsg  = NotAReply
-  , _mPostId        = Nothing
+  , _mMessageId     = Nothing
   , _mReactions     = Map.empty
   , _mOriginalPost  = Nothing
   , _mFlagged       = False
@@ -183,7 +211,7 @@ newMessageOfType text typ d = Message
   , _mDeleted      = False
   , _mAttachments  = Seq.empty
   , _mInReplyToMsg = NotAReply
-  , _mPostId       = Nothing
+  , _mMessageId    = Nothing
   , _mReactions    = Map.empty
   , _mOriginalPost = Nothing
   , _mFlagged      = False
@@ -234,7 +262,7 @@ instance MessageOps ChronologicalMessages where
             _ :> l ->
                 case compare (m^.mDate) (l^.mDate) of
                   GT -> DSeq $ dseq ml |> m
-                  EQ -> if m^.mPostId == l^.mPostId && isJust (m^.mPostId)
+                  EQ -> if m^.mMessageId == l^.mMessageId && isJust (m^.mMessageId)
                         then ml
                         else dirDateInsert m ml
                   LT -> dirDateInsert m ml
@@ -247,7 +275,7 @@ dirDateInsert m = onDirectedSeq $ finalize . foldr insAfter initial
          insAfter c (Just n, l) =
              case compare (n^.mDate) (c^.mDate) of
                GT -> (Nothing, c <| (n <| l))
-               EQ -> if n^.mPostId == c^.mPostId && isJust (c^.mPostId)
+               EQ -> if n^.mMessageId == c^.mMessageId && isJust (c^.mMessageId)
                      then (Nothing, c <| l)
                      else (Just n, c <| l)
                LT -> (Just n, c <| l)
@@ -300,39 +328,68 @@ splitMsgSeqOn f msgs =
 -- ----------------------------------------------------------------------
 -- * Operations on Posted Messages
 
--- | Searches for the specified PostId and returns a tuple where the
--- first element is the Message associated with the PostId (if it
+-- | Searches for the specified MessageId and returns a tuple where the
+-- first element is the Message associated with the MessageId (if it
 -- exists), and the second element is another tuple: the first element
 -- of the second is all the messages from the beginning of the list to
--- the message just before the PostId message (or all messages if not
+-- the message just before the MessageId message (or all messages if not
 -- found) *in reverse order*, and the second element of the second are
 -- all the messages that follow the found message (none if the message
 -- was never found) in *forward* order.
-splitMessages :: Maybe PostId
+splitMessages :: Maybe MessageId
               -> Messages
               -> (Maybe Message, (RetrogradeMessages, Messages))
-splitMessages pid msgs = splitMessagesOn (\m -> isJust pid && m^.mPostId == pid) msgs
+splitMessages mid msgs = splitMessagesOn (\m -> isJust mid && m^.mMessageId == mid) msgs
 
 -- | findMessage searches for a specific message as identified by the
 -- PostId.  The search starts from the most recent messages because
 -- that is the most likely place the message will occur.
-findMessage :: PostId -> Messages -> Maybe Message
-findMessage pid msgs =
-    findIndexR (\m -> m^.mPostId == Just pid) (dseq msgs)
+findMessage :: MessageId -> Messages -> Maybe Message
+findMessage mid msgs =
+    findIndexR (\m -> m^.mMessageId == Just mid) (dseq msgs)
     >>= Just . Seq.index (dseq msgs)
 
--- | Look forward for the first Message that corresponds to a user
--- Post (i.e. has a post ID) that follows the specified PostId
+-- | Look forward for the first Message with an ID that follows the
+-- specified PostId
+getNextMessageId :: Maybe MessageId -> Messages -> Maybe MessageId
+getNextMessageId = getRelMessageId foldl
+
+-- | Look backwards for the first Message with an ID that comes before
+-- the specified MessageId.
+getPrevMessageId :: Maybe MessageId -> Messages -> Maybe MessageId
+getPrevMessageId = getRelMessageId $ foldr . flip
+
+-- | Look forward for the first Message with an ID that follows the
+-- specified PostId
 getNextPostId :: Maybe PostId -> Messages -> Maybe PostId
 getNextPostId = getRelPostId foldl
 
--- | Look backwards for the first Message that corresponds to a user
--- Post (i.e. has a post ID) that comes before the specified PostId.
+-- | Look backwards for the first Post with an ID that comes before
+-- the specified PostId.
 getPrevPostId :: Maybe PostId -> Messages -> Maybe PostId
 getPrevPostId = getRelPostId $ foldr . flip
 
--- | Find the next PostId after the specified PostId (if there is one)
--- by folding in the specified direction
+-- | Find the next MessageId after the specified MessageId (if there is
+-- one) by folding in the specified direction
+getRelMessageId :: ((Either MessageId (Maybe MessageId)
+                         -> Message
+                         -> Either MessageId (Maybe MessageId))
+                   -> Either MessageId (Maybe MessageId)
+                   -> Messages
+                   -> Either MessageId (Maybe MessageId))
+                -> Maybe MessageId
+                -> Messages
+                -> Maybe MessageId
+getRelMessageId folD jp = case jp of
+                         Nothing -> \msgs -> (getLatestPostMsg msgs >>= _mMessageId)
+                         Just p -> either (const Nothing) id . folD fnd (Left p)
+    where fnd = either fndp fndnext
+          fndp c v = if v^.mMessageId == Just c then Right Nothing else Left c
+          idOfPost m = if m^.mDeleted then Nothing else m^.mMessageId
+          fndnext n m = Right (n <|> idOfPost m)
+
+-- | Find the next PostId after the specified PostId (if there is
+-- one) by folding in the specified direction
 getRelPostId :: ((Either PostId (Maybe PostId)
                       -> Message
                       -> Either PostId (Maybe PostId))
@@ -343,11 +400,20 @@ getRelPostId :: ((Either PostId (Maybe PostId)
              -> Messages
              -> Maybe PostId
 getRelPostId folD jp = case jp of
-                         Nothing -> \msgs -> (getLatestPostMsg msgs >>= _mPostId)
+                         Nothing -> \msgs -> do
+                             latest <- getLatestPostMsg msgs
+                             mId <- latest^.mMessageId
+                             case mId of
+                                 MessagePostId pId -> return pId
+                                 _ -> Nothing
                          Just p -> either (const Nothing) id . folD fnd (Left p)
     where fnd = either fndp fndnext
-          fndp c v = if v^.mPostId == Just c then Right Nothing else Left c
-          idOfPost m = if m^.mDeleted then Nothing else m^.mPostId
+          fndp c v = if v^.mMessageId == Just (MessagePostId c) then Right Nothing else Left c
+          idOfPost m = if m^.mDeleted
+                       then Nothing
+                       else case m^.mMessageId of
+                           Just (MessagePostId pId) -> Just pId
+                           _ -> Nothing
           fndnext n m = Right (n <|> idOfPost m)
 
 -- | Find the most recent message that is a Post (as opposed to a
@@ -378,9 +444,11 @@ findLatestUserMessage f ml =
       EmptyR -> Nothing
       _ :> m -> Just m
 
-
 validUserMessage :: Message -> Bool
-validUserMessage m = isJust (m^.mPostId) && not (m^.mDeleted)
+validUserMessage m =
+    not (m^.mDeleted) && case m^.mMessageId of
+        Just (MessagePostId _) -> True
+        _ -> False
 
 -- ----------------------------------------------------------------------
 -- * Operations on any Message type
@@ -391,7 +459,7 @@ messagesAfter viewTime = onDirectedSeq $ takeWhileR (\m -> m^.mDate > viewTime)
 
 -- | Removes any Messages (all types) for which the predicate is true
 -- from the specified subset of messages (identified by a starting and
--- ending PostId, inclusive) and returns the resulting list (from
+-- ending MessageId, inclusive) and returns the resulting list (from
 -- start to finish, irrespective of 'firstId' and 'lastId') and the
 -- list of removed items.
 --
@@ -409,21 +477,21 @@ messagesAfter viewTime = onDirectedSeq $ takeWhileR (\m -> m^.mDate > viewTime)
 --
 --  @removeMatchesFromSubset matchPred fromId toId msgs = (remaining, removed)@
 --
-removeMatchesFromSubset :: (Message -> Bool) -> Maybe PostId -> Maybe PostId
+removeMatchesFromSubset :: (Message -> Bool) -> Maybe MessageId -> Maybe MessageId
                         -> Messages -> (Messages, Messages)
 removeMatchesFromSubset matching firstId lastId msgs =
-    let knownIds = fmap (^.mPostId) msgs
+    let knownIds = fmap (^.mMessageId) msgs
     in if isNothing firstId && isNothing lastId
        then swap $ dirSeqPartition matching msgs
        else if isJust firstId && firstId `elem` knownIds
             then onDirSeqSubset
-                (\m -> m^.mPostId == firstId)
-                (if isJust lastId then \m -> m^.mPostId == lastId else const False)
+                (\m -> m^.mMessageId == firstId)
+                (if isJust lastId then \m -> m^.mMessageId == lastId else const False)
                 (swap . dirSeqPartition matching) msgs
             else if isJust lastId && lastId `elem` knownIds
                  then onDirSeqSubset
                      (const True)
-                     (\m -> m^.mPostId == lastId)
+                     (\m -> m^.mMessageId == lastId)
                      (swap . dirSeqPartition matching) msgs
                  else (msgs, noMessages)
 

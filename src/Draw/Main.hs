@@ -69,7 +69,7 @@ previewFromInput overrideTy uId s =
                            , _mDeleted       = False
                            , _mAttachments   = mempty
                            , _mInReplyToMsg  = NotAReply
-                           , _mPostId        = Nothing
+                           , _mMessageId     = Nothing
                            , _mReactions     = mempty
                            , _mOriginalPost  = Nothing
                            , _mFlagged       = False
@@ -355,7 +355,7 @@ renderCurrentChannelDisplay st hs = (header <+> conn) <=> messages
         -- First, we sanity-check the application state because under
         -- some conditions, the selected message might be gone (e.g.
         -- deleted).
-        let (s, (before, after)) = splitMessages selPostId msgs
+        let (s, (before, after)) = splitMessages (MessagePostId <$> selPostId) msgs
         in case s of
              Nothing -> renderLastMessages before
              Just m ->

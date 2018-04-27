@@ -1159,7 +1159,7 @@ clientPostToMessage cp =
                 case cp^.cpInReplyToPost of
                     Nothing  -> NotAReply
                     Just pId -> InReplyTo pId
-            , _mPostId = Just $ cp^.cpPostId
+            , _mMessageId = Just $ MessagePostId $ cp^.cpPostId
             , _mReactions = cp^.cpReactions
             , _mOriginalPost = Just $ cp^.cpOriginalPost
             , _mFlagged = False

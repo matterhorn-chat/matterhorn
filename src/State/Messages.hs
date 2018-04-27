@@ -84,7 +84,7 @@ updateMessageFlag pId f = do
   case msgMb of
     Just msg
       | Just cId <- msg^.mChannelId -> do
-      let isTargetMessage m = m^.mPostId == Just pId
+      let isTargetMessage m = m^.mMessageId == Just (MessagePostId pId)
       csChannel(cId).ccContents.cdMessages.traversed.filtered isTargetMessage.mFlagged .= f
       csPostMap.ix(pId).mFlagged .= f
       -- We also want to update the post overlay if this happens while
@@ -106,6 +106,6 @@ updateMessageFlag pId f = do
                     Just x  -> Just x
               csPostListOverlay.postListSelected .= nextId
               csPostListOverlay.postListPosts %=
-                filterMessages (((/=) `on` _mPostId) msg)
+                filterMessages (((/=) `on` _mMessageId) msg)
         _ -> return ()
     _ -> return ()
