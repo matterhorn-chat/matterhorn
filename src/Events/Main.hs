@@ -29,6 +29,7 @@ import           State.Editing
 import           State.MessageSelect
 import           State.PostListOverlay ( enterFlaggedPostListMode )
 import           State.UrlSelect
+import           State.Messages ( sendMessage )
 import           Types
 
 
