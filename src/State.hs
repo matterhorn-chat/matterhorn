@@ -1369,35 +1369,3 @@ showHelpScreen :: HelpTopic -> MH ()
 showHelpScreen topic = do
     mh $ vScrollToBeginning (viewportScroll HelpViewport)
     setMode $ ShowHelp topic
-
-shouldSkipMessage :: Text -> Bool
-shouldSkipMessage "" = True
-shouldSkipMessage s = T.all (`elem` (" \t"::String)) s
-
-sendMessage :: EditMode -> Text -> MH ()
-sendMessage mode msg =
-    case shouldSkipMessage msg of
-        True -> return ()
-        False -> do
-            status <- use csConnectionStatus
-            st <- use id
-            case status of
-                Disconnected -> do
-                    let m = "Cannot send messages while disconnected."
-                    mhError $ GenericError m
-                Connected -> do
-                    let chanId = st^.csCurrentChannelId
-                    session <- getSession
-                    doAsync Preempt $ do
-                      case mode of
-                        NewPost -> do
-                            let pendingPost = rawPost msg chanId
-                            void $ MM.mmCreatePost pendingPost session
-                        Replying _ p -> do
-                            let pendingPost = (rawPost msg chanId) { rawPostRootId = postRootId p <|> (Just $ postId p) }
-                            void $ MM.mmCreatePost pendingPost session
-                        Editing p ty -> do
-                            let body = if ty == CP Emote
-                                       then addEmoteFormatting msg
-                                       else msg
-                            void $ MM.mmPatchPost (postId p) (postUpdateBody body) session
