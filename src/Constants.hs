@@ -2,6 +2,7 @@ module Constants
   ( pageAmount
   , userTypingExpiryInterval
   , numScrollbackPosts
+  , previewMaxHeight
   )
 where
 
@@ -20,3 +21,6 @@ userTypingExpiryInterval = 5
 numScrollbackPosts :: Int
 numScrollbackPosts = 100
 
+-- | The maximum height of the message preview, in lines.
+previewMaxHeight :: Int
+previewMaxHeight = 5

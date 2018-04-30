@@ -29,6 +29,7 @@ import           Network.Mattermost.Types ( ChannelId, Type(Direct)
 
 
 import           Completion ( Completer(..), CompletionAlternative(..), currentAlternative )
+import           Constants
 import           Draw.ChannelList ( renderChannelList )
 import           Draw.Messages
 import           Draw.Util
@@ -513,9 +514,6 @@ drawCompletionAlternatives c =
             , txt "]"
             , borderElem bsHorizontal
             ]
-
-previewMaxHeight :: Int
-previewMaxHeight = 5
 
 maybePreviewViewport :: Widget Name -> Widget Name
 maybePreviewViewport w =
