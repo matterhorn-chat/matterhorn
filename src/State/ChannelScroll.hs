@@ -6,6 +6,7 @@ module State.ChannelScroll
   , channelScrollDown
   , channelPageUp
   , channelPageDown
+  , loadMoreMessages
   )
  where
 
@@ -15,6 +16,7 @@ import           Prelude.MH
 import           Brick.Main
 
 import           Constants
+import           State.Messages
 import           Types
 
 
@@ -47,3 +49,6 @@ channelScrollToBottom :: MH ()
 channelScrollToBottom = do
     cId <- use csCurrentChannelId
     mh $ vScrollToEnd (viewportScroll (ChannelMessages cId))
+
+loadMoreMessages :: MH ()
+loadMoreMessages = whenMode ChannelScroll asyncFetchMoreMessages

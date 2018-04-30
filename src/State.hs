@@ -1,17 +1,7 @@
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiWayIf #-}
 module State
-  (
-  -- * Working with channels
-    loadMoreMessages
-  , getNewMessageCutoff
+  ( getNewMessageCutoff
   , getEditedMessageCutoff
   , refreshClientConfig
-
-  -- * Working with messages
-  , fetchVisibleIfNeeded
-
-  -- * Help
   , showHelpScreen
   )
 where
@@ -28,7 +18,6 @@ import           Network.Mattermost.Types
 import           Types
 
 import           State.Common
-import           State.Messages
 
 
 -- | Refresh client-accessible server configuration information. This
@@ -40,9 +29,6 @@ refreshClientConfig = do
     doAsyncWith Preempt $ do
         cfg <- MM.mmGetClientConfiguration (Just "old") session
         return (csClientConfig .= Just cfg)
-
-loadMoreMessages :: MH ()
-loadMoreMessages = whenMode ChannelScroll asyncFetchMoreMessages
 
 getNewMessageCutoff :: ChannelId -> ChatState -> Maybe NewMessageIndicator
 getNewMessageCutoff cId st = do

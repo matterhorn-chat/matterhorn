@@ -7,7 +7,6 @@ import           Brick
 import qualified Graphics.Vty as Vty
 
 import           Events.Keybindings
-import           State
 import           State.ChannelScroll
 import           State.UrlSelect
 import           Types
