@@ -31,7 +31,7 @@ import           Lens.Micro.Platform ( (.=), (%=), (.~), to )
 import qualified Network.Mattermost.Endpoints as MM
 import           Network.Mattermost.Types
 
-import           State ( changeChannel, addUserToCurrentChannel )
+import           State.Channels ( changeChannel, addUserToCurrentChannel )
 import           State.Common
 import           Types
 

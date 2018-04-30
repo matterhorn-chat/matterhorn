@@ -9,7 +9,7 @@ import           Lens.Micro.Platform ( (.=) )
 
 import           Network.Mattermost.Types ( getId )
 
-import           State ( joinChannel )
+import           State.Channels ( joinChannel )
 import           Types
 
 

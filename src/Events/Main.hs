@@ -24,6 +24,7 @@ import           Events.Keybindings
 import           HelpTopics ( mainHelpTopic )
 import           InputHistory
 import           State
+import           State.Channels
 import           State.ChannelSelect
 import           State.Editing
 import           State.MessageSelect

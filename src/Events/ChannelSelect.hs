@@ -8,7 +8,7 @@ import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( (%=) )
 
 import           Events.Keybindings
-import           State
+import           State.Channels
 import           State.ChannelSelect
 import           Types
 

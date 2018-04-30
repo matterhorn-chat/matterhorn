@@ -30,7 +30,7 @@ import qualified Data.Text as T
 import           Lens.Micro.Platform (Getting, at, non)
 
 import           Draw.Util
-import           State
+import           State.Channels
 import           Themes
 import           Types
 

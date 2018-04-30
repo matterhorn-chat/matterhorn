@@ -45,6 +45,7 @@ executable matterhorn
                        State.ChannelSelect
                        State.Common
                        State.Editing
+                       State.Flagging
                        State.Messages
                        State.MessageSelect
                        State.PostListOverlay

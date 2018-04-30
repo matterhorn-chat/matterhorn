@@ -5,7 +5,7 @@ import           Prelude.MH
 
 import qualified Graphics.Vty as Vty
 
-import           State
+import           State.Channels
 import           Types
 
 

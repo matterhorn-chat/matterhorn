@@ -6,7 +6,7 @@ import           Prelude.MH
 import qualified Graphics.Vty as Vty
 
 import           Types
-import           State
+import           State.Channels
 
 
 onEventDeleteChannelConfirm :: Vty.Event -> MH ()

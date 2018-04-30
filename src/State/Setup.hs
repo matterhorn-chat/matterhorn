@@ -29,7 +29,7 @@ import           Config
 import           InputHistory
 import           LastRunState
 import           Login
-import           State.Messages
+import           State.Flagging
 import           State.Setup.Threads
 import           TeamSelect
 import           Themes
