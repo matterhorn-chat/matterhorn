@@ -59,7 +59,6 @@ module State
   , fetchVisibleIfNeeded
 
   -- * Working with users
-  , handleNewUsers
   , handleTypingUser
 
   -- * Startup/reconnect management
@@ -109,7 +108,6 @@ import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
 import qualified Data.Text as T
 import           Data.Text.Zipper ( textZipper, clearZipper, insertMany, gotoEOL )
-import           Data.Time ( getCurrentTime )
 import qualified Data.Vector as V
 import           Graphics.Vty ( outputIface )
 import           Graphics.Vty.Output.Interface ( ringTerminalBell )
@@ -133,6 +131,7 @@ import qualified Zipper as Z
 import           State.Common
 import           State.Messages
 import           State.Setup.Threads ( updateUserStatuses )
+import           State.Users
 
 
 -- * Refreshing Channel Data
@@ -1345,7 +1344,6 @@ getEditedMessageCutoff cId st = do
     cc <- st^?csChannel(cId)
     cc^.ccInfo.cdEditedMessageThreshold
 
-
 fetchVisibleIfNeeded :: MH ()
 fetchVisibleIfNeeded = do
   sts <- use csConnectionStatus
@@ -1655,27 +1653,3 @@ sendMessage mode msg =
                                        then addEmoteFormatting msg
                                        else msg
                             void $ MM.mmPatchPost (postId p) (postUpdateBody body) session
-
-handleNewUserDirect :: User -> MH ()
-handleNewUserDirect newUser = do
-    let usrInfo = userInfoFromUser newUser True
-    addNewUser usrInfo
-
-handleNewUsers :: Seq UserId -> MH ()
-handleNewUsers newUserIds = doAsyncMM Preempt getUserInfo addNewUsers
-    where getUserInfo session _ =
-              do nUsers  <- MM.mmGetUsersByIds newUserIds session
-                 let usrInfo u = userInfoFromUser u True
-                     usrList = toList nUsers
-                 return $ usrInfo <$> usrList
-
-          addNewUsers :: [UserInfo] -> MH ()
-          addNewUsers = mapM_ addNewUser
-
--- | Handle the typing events from the websocket to show the currently typing users on UI
-handleTypingUser :: UserId -> ChannelId -> MH ()
-handleTypingUser uId cId = do
-  config <- use (csResources.crConfiguration)
-  when (configShowTypingIndicator config) $ do
-    ts <- liftIO getCurrentTime -- get time now
-    csChannels %= modifyChannelById cId (addChannelTypingUser uId ts)

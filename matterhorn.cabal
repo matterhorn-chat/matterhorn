@@ -48,6 +48,7 @@ executable matterhorn
                        State.Setup
                        State.Setup.Threads
                        State.UserListOverlay
+                       State.Users
                        Zipper
                        Themes
                        Draw

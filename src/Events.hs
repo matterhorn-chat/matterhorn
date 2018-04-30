@@ -21,6 +21,7 @@ import           Connection
 import           HelpTopics
 import           State
 import           State.Common
+import           State.Users
 import           Types
 import           Types.Common
 import           Types.KeyEvents
