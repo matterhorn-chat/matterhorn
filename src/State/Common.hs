@@ -1,4 +1,45 @@
-module State.Common where
+module State.Common
+  (
+  -- * System interface
+    copyToClipboard
+  , openURL
+  , runLoggedCommand
+
+  -- * Attachments
+  , asyncFetchAttachments
+
+  -- * Reactions
+  , asyncFetchReactionsForPost
+  , addReactions
+  , removeReaction
+
+  -- * Posts
+  , messagesFromPosts
+
+  -- * Async
+  , AsyncPriority(..)
+  , doAsync
+  , doAsyncIO
+  , doAsyncWith
+  , doAsyncChannelMM
+  , doAsyncWithIO
+  , doAsyncMM
+  , tryMM
+  , endAsyncNOP
+
+  -- * Utilities
+  , postInfoMessage
+  , postErrorMessageIO
+  , postErrorMessage'
+  , mhError
+  , addEmoteFormatting
+  , removeEmoteFormatting
+  , msgURLs
+
+  -- * Prefs
+  , channelHiddenPreference
+  )
+where
 
 import           Prelude ()
 import           Prelude.MH
