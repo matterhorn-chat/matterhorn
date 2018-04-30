@@ -4,7 +4,6 @@ module State
   (
   -- * Message flagging
     updateMessageFlag
-  , flagMessage
 
   -- * Running external programs
   , runLoggedCommand
@@ -76,25 +75,6 @@ module State
   -- * Server-side preferences
   , applyPreferenceChange
 
-  -- * Message selection mode
-  , beginMessageSelect
-  , flagSelectedMessage
-  , viewSelectedMessage
-  , yankSelectedMessageVerbatim
-  , yankSelectedMessage
-  , openSelectedMessageURLs
-  , beginConfirmDeleteSelectedMessage
-  , messageSelectUp
-  , messageSelectUpBy
-  , messageSelectDown
-  , messageSelectDownBy
-  , deleteSelectedMessage
-  , beginReplyCompose
-  , beginEditMessage
-  , getSelectedMessage
-  , cancelReplyOrEdit
-  , replyToLatestMessage
-
   -- * URL selection mode
   , startUrlSelect
   , stopUrlSelect
@@ -113,17 +93,14 @@ import           Prelude ()
 import           Prelude.MH
 
 import           Brick ( invalidateCacheEntry )
-import           Brick.Main ( getVtyHandle, viewportScroll, hScrollToBeginning
+import           Brick.Main ( getVtyHandle, viewportScroll
                             , vScrollToBeginning, vScrollBy, vScrollToEnd )
 import           Brick.Themes ( themeToAttrMap )
 import           Brick.Widgets.Edit ( applyEdit )
 import           Brick.Widgets.Edit ( getEditContents, editContentsL )
 import           Brick.Widgets.List ( list, listMoveTo, listSelectedElement )
-import           Control.Concurrent ( MVar, putMVar, forkIO )
-import           Control.Concurrent.Async ( runConcurrently, Concurrently(..), concurrently )
-import qualified Control.Concurrent.STM as STM
+import           Control.Concurrent.Async ( runConcurrently, Concurrently(..) )
 import           Control.Exception ( SomeException, try )
-import qualified Data.ByteString as BS
 import           Data.Char ( isAlphaNum )
 import           Data.Function ( on )
 import qualified Data.HashMap.Strict as HM
@@ -138,13 +115,6 @@ import qualified Data.Vector as V
 import           Graphics.Vty ( outputIface )
 import           Graphics.Vty.Output.Interface ( ringTerminalBell )
 import           Lens.Micro.Platform
-import           System.Directory ( createDirectoryIfMissing )
-import           System.Environment.XDG.BaseDir ( getUserCacheDir )
-import           System.Exit ( ExitCode(..) )
-import           System.FilePath
-import           System.IO ( hGetContents, hFlush, hPutStrLn )
-import           System.Process ( proc, std_in, std_out, std_err, StdStream(..)
-                                , createProcess, waitForProcess )
 
 import qualified Network.Mattermost.Endpoints as MM
 import           Network.Mattermost.Lenses
@@ -152,9 +122,7 @@ import           Network.Mattermost.Types
 
 import           Config
 import           Constants
-import           FilePaths
 import           InputHistory
-import           Markdown ( blockGetURLs, findVerbatimChunk )
 import           Themes
 import           TimeUtils ( justBefore, justAfter )
 import           Types
@@ -342,90 +310,6 @@ updateChannelInfo cid new member = do
 
   csChannel(cid).ccInfo %= channelInfoFromChannelWithData new member
 
--- * Message selection mode
-
-beginMessageSelect :: MH ()
-beginMessageSelect = do
-    -- Get the number of messages in the current channel and set the
-    -- currently selected message index to be the most recently received
-    -- message that corresponds to a Post (i.e. exclude informative
-    -- messages).
-    --
-    -- If we can't find one at all, we ignore the mode switch request
-    -- and just return.
-    chanMsgs <- use(csCurrentChannel . ccContents . cdMessages)
-    let recentMsg = getLatestSelectableMessage chanMsgs
-
-    when (isJust recentMsg) $ do
-        setMode MessageSelect
-        csMessageSelect .= MessageSelectState (recentMsg >>= _mMessageId)
-
-getSelectedMessage :: ChatState -> Maybe Message
-getSelectedMessage st
-    | appMode st /= MessageSelect && appMode st /= MessageSelectDeleteConfirm = Nothing
-    | otherwise = do
-        selMsgId <- selectMessageId $ st^.csMessageSelect
-        let chanMsgs = st ^. csCurrentChannel . ccContents . cdMessages
-        findMessage selMsgId chanMsgs
-
-messageSelectUp :: MH ()
-messageSelectUp = do
-    mode <- gets appMode
-    selected <- use (csMessageSelect.to selectMessageId)
-    case selected of
-        Just _ | mode == MessageSelect -> do
-            chanMsgs <- use (csCurrentChannel.ccContents.cdMessages)
-            let nextMsgId = getPrevMessageId selected chanMsgs
-            csMessageSelect .= MessageSelectState (nextMsgId <|> selected)
-        _ -> return ()
-
-messageSelectDown :: MH ()
-messageSelectDown = do
-    selected <- use (csMessageSelect.to selectMessageId)
-    case selected of
-        Just _ -> whenMode MessageSelect $ do
-            chanMsgs <- use (csCurrentChannel.ccContents.cdMessages)
-            let nextMsgId = getNextMessageId selected chanMsgs
-            csMessageSelect .= MessageSelectState (nextMsgId <|> selected)
-        _ -> return ()
-
-messageSelectDownBy :: Int -> MH ()
-messageSelectDownBy amt
-    | amt <= 0 = return ()
-    | otherwise =
-        messageSelectDown >> messageSelectDownBy (amt - 1)
-
-messageSelectUpBy :: Int -> MH ()
-messageSelectUpBy amt
-    | amt <= 0 = return ()
-    | otherwise =
-      messageSelectUp >> messageSelectUpBy (amt - 1)
-
-beginConfirmDeleteSelectedMessage :: MH ()
-beginConfirmDeleteSelectedMessage = do
-    st <- use id
-    selected <- use (to getSelectedMessage)
-    case selected of
-        Just msg | isDeletable msg && isMine st msg ->
-            setMode MessageSelectDeleteConfirm
-        _ -> return ()
-
-deleteSelectedMessage :: MH ()
-deleteSelectedMessage = do
-    selectedMessage <- use (to getSelectedMessage)
-    st <- use id
-    cId <- use csCurrentChannelId
-    case selectedMessage of
-        Just msg | isMine st msg && isDeletable msg ->
-            case msg^.mOriginalPost of
-              Just p ->
-                  doAsyncChannelMM Preempt cId
-                      (\s _ _ -> MM.mmDeletePost (postId p) s)
-                      (\_ _ -> do csEditState.cedEditMode .= NewPost
-                                  setMode Main)
-              Nothing -> return ()
-        _ -> return ()
-
 beginCurrentChannelDeleteConfirm :: MH ()
 beginCurrentChannelDeleteConfirm = do
     cId <- use csCurrentChannelId
@@ -446,124 +330,6 @@ isCurrentChannel st cId = st^.csCurrentChannelId == cId
 
 isRecentChannel :: ChatState -> ChannelId -> Bool
 isRecentChannel st cId = st^.csRecentChannel == Just cId
-
--- | Tell the server that we have flagged or unflagged a message.
-flagMessage :: PostId -> Bool -> MH ()
-flagMessage pId f = do
-  session <- getSession
-  myId <- gets myUserId
-  doAsyncWith Normal $ do
-    let doFlag = if f then MM.mmFlagPost else MM.mmUnflagPost
-    doFlag myId pId session
-    return $ return ()
-
--- | Tell the server that the message we currently have selected
--- should have its flagged state toggled.
-flagSelectedMessage :: MH ()
-flagSelectedMessage = do
-  selected <- use (to getSelectedMessage)
-  case selected of
-    Just msg
-      | isFlaggable msg, Just pId <- messagePostId msg ->
-        flagMessage pId (not (msg^.mFlagged))
-    _        -> return ()
-
-viewSelectedMessage :: MH ()
-viewSelectedMessage = do
-  selected <- use (to getSelectedMessage)
-  case selected of
-    Just msg -> viewMessage msg
-    _        -> return ()
-
-viewMessage :: Message -> MH ()
-viewMessage m = do
-    csViewedMessage .= Just m
-    let vs = viewportScroll ViewMessageArea
-    mh $ do
-        vScrollToBeginning vs
-        hScrollToBeginning vs
-        invalidateCacheEntry ViewMessageArea
-    setMode ViewMessage
-
-beginEditMessage :: MH ()
-beginEditMessage = do
-    selected <- use (to getSelectedMessage)
-    st <- use id
-    case selected of
-        Just msg | isMine st msg && isEditable msg -> do
-            let Just p = msg^.mOriginalPost
-            setMode Main
-            csEditState.cedEditMode .= Editing p (msg^.mType)
-            -- If the post that we're editing is an emote, we need
-            -- to strip the formatting because that's only there to
-            -- indicate that the post is an emote. This is annoying and
-            -- can go away one day when there is an actual post type
-            -- value of "emote" that we can look at. Note that the
-            -- removed formatting needs to be reinstated just prior to
-            -- issuing the API call to update the post.
-            let toEdit = if msg^.mType == CP Emote
-                         then removeEmoteFormatting $ sanitizeUserText $ postMessage p
-                         else sanitizeUserText $ postMessage p
-            csEditState.cedEditor %= applyEdit (clearZipper >> (insertMany toEdit))
-        _ -> return ()
-
-removeEmoteFormatting :: T.Text -> T.Text
-removeEmoteFormatting t
-    | "*" `T.isPrefixOf` t &&
-      "*" `T.isSuffixOf` t = T.init $ T.drop 1 t
-    | otherwise = t
-
-addEmoteFormatting :: T.Text -> T.Text
-addEmoteFormatting t = "*" <> t <> "*"
-
-replyToLatestMessage :: MH ()
-replyToLatestMessage = do
-  msgs <- use (csCurrentChannel . ccContents . cdMessages)
-  case findLatestUserMessage isReplyable msgs of
-    Just msg | isReplyable msg ->
-        do let Just p = msg^.mOriginalPost
-           setMode Main
-           csEditState.cedEditMode .= Replying msg p
-    _ -> return ()
-
-beginReplyCompose :: MH ()
-beginReplyCompose = do
-    selected <- use (to getSelectedMessage)
-    case selected of
-        Just msg | isReplyable msg -> do
-            let Just p = msg^.mOriginalPost
-            setMode Main
-            csEditState.cedEditMode .= Replying msg p
-        _ -> return ()
-
-cancelReplyOrEdit :: MH ()
-cancelReplyOrEdit = do
-    mode <- use (csEditState.cedEditMode)
-    case mode of
-        NewPost -> return ()
-        _ -> do
-            csEditState.cedEditMode .= NewPost
-            csEditState.cedEditor %= applyEdit clearZipper
-
-yankSelectedMessageVerbatim :: MH ()
-yankSelectedMessageVerbatim = do
-    selectedMessage <- use (to getSelectedMessage)
-    case selectedMessage of
-        Nothing -> return ()
-        Just m -> do
-            setMode Main
-            case findVerbatimChunk (m^.mText) of
-                Just txt -> copyToClipboard txt
-                Nothing  -> return ()
-
-yankSelectedMessage :: MH ()
-yankSelectedMessage = do
-    selectedMessage <- use (to getSelectedMessage)
-    case selectedMessage of
-        Nothing -> return ()
-        Just m -> do
-            setMode Main
-            copyToClipboard $ m^.mMarkdownSource
 
 -- * Joining, Leaving, and Inviting
 
@@ -1866,23 +1632,6 @@ nubOn f = snd . go Set.empty
 removeDuplicates :: [LinkChoice] -> [LinkChoice]
 removeDuplicates = nubOn (\ l -> (l^.linkURL, l^.linkUser))
 
-msgURLs :: Message -> Seq LinkChoice
-msgURLs msg
-  | NoUser <- msg^.mUser = mempty
-  | otherwise =
-  let uid = msg^.mUser
-      msgUrls = (\ (url, text) -> LinkChoice (msg^.mDate) uid text url Nothing) <$>
-                  (mconcat $ blockGetURLs <$> (toList $ msg^.mText))
-      attachmentURLs = (\ a ->
-                          LinkChoice
-                            (msg^.mDate)
-                            uid
-                            ("attachment `" <> (a^.attachmentName) <> "`")
-                            (a^.attachmentURL)
-                            (Just (a^.attachmentFileId)))
-                       <$> (msg^.mAttachments)
-  in msgUrls <> attachmentURLs
-
 openSelectedURL :: MH ()
 openSelectedURL = whenMode UrlSelect $ do
     selected <- use (csUrlList.to listSelectedElement)
@@ -1893,149 +1642,6 @@ openSelectedURL = whenMode UrlSelect $ do
             when (not opened) $ do
                 mhError $ ConfigOptionMissing "urlOpenCommand"
                 setMode Main
-
-openURL :: LinkChoice -> MH Bool
-openURL link = do
-    cfg <- use (csResources.crConfiguration)
-    case configURLOpenCommand cfg of
-        Nothing ->
-            return False
-        Just urlOpenCommand -> do
-            session <- getSession
-
-            -- Is the URL referring to an attachment?
-            let act = case link^.linkFileId of
-                    Nothing -> prepareLink link
-                    Just fId -> prepareAttachment fId session
-
-            -- Is the URL-opening command interactive? If so, pause
-            -- Matterhorn and run the opener interactively. Otherwise
-            -- run the opener asynchronously and continue running
-            -- Matterhorn interactively.
-            case configURLOpenCommandInteractive cfg of
-                False -> do
-                    outputChan <- use (csResources.crSubprocessLog)
-                    doAsyncWith Preempt $ do
-                        args <- act
-                        runLoggedCommand False outputChan (T.unpack urlOpenCommand)
-                                         args Nothing Nothing
-                        return $ return ()
-                True -> do
-                    -- If there isn't a new message cutoff showing in
-                    -- the current channel, set one. This way, while the
-                    -- user is gone using their interactive URL opener,
-                    -- when they return, any messages that arrive in the
-                    -- current channel will be displayed as new.
-                    curChan <- use csCurrentChannel
-                    let msgs = curChan^.ccContents.cdMessages
-                    case findLatestUserMessage isEditable msgs of
-                        Nothing -> return ()
-                        Just m ->
-                            case m^.mOriginalPost of
-                                Nothing -> return ()
-                                Just p ->
-                                    case curChan^.ccInfo.cdNewMessageIndicator of
-                                        Hide ->
-                                            csCurrentChannel.ccInfo.cdNewMessageIndicator .= (NewPostsAfterServerTime (p^.postCreateAtL))
-                                        _ -> return ()
-                    -- No need to add a gap here: the websocket
-                    -- disconnect/reconnect events will automatically
-                    -- handle management of messages delivered while
-                    -- suspended.
-
-                    mhSuspendAndResume $ \st -> do
-                        args <- act
-                        void $ runInteractiveCommand (T.unpack urlOpenCommand) args
-                        return $ setMode' Main st
-
-            return True
-
-prepareLink :: LinkChoice -> IO [String]
-prepareLink link = return [T.unpack $ link^.linkURL]
-
-prepareAttachment :: FileId -> Session -> IO [String]
-prepareAttachment fId sess = do
-    -- The link is for an attachment, so fetch it and then
-    -- open the local copy.
-
-    (info, contents) <- concurrently (MM.mmGetMetadataForFile fId sess) (MM.mmGetFile fId sess)
-    cacheDir <- getUserCacheDir xdgName
-
-    let dir   = cacheDir </> "files" </> T.unpack (idString fId)
-        fname = dir </> T.unpack (fileInfoName info)
-
-    createDirectoryIfMissing True dir
-    BS.writeFile fname contents
-    return [fname]
-
-runInteractiveCommand :: String
-                      -> [String]
-                      -> IO (Either String ExitCode)
-runInteractiveCommand cmd args = do
-    let opener = (proc cmd args) { std_in = Inherit
-                                 , std_out = Inherit
-                                 , std_err = Inherit
-                                 }
-    result <- try $ createProcess opener
-    case result of
-        Left (e::SomeException) -> return $ Left $ show e
-        Right (_, _, _, ph) -> do
-            ec <- waitForProcess ph
-            return $ Right ec
-
-runLoggedCommand :: Bool
-                 -- ^ Whether stdout output is expected for this program
-                 -> STM.TChan ProgramOutput
-                 -- ^ The output channel to send the output to
-                 -> String
-                 -- ^ The program name
-                 -> [String]
-                 -- ^ Arguments
-                 -> Maybe String
-                 -- ^ The stdin to send, if any
-                 -> Maybe (MVar ProgramOutput)
-                 -- ^ Where to put the program output when it is ready
-                 -> IO ()
-runLoggedCommand stdoutOkay outputChan cmd args mInput mOutputVar = void $ forkIO $ do
-    let stdIn = maybe NoStream (const CreatePipe) mInput
-        opener = (proc cmd args) { std_in = stdIn
-                                 , std_out = CreatePipe
-                                 , std_err = CreatePipe
-                                 }
-    result <- try $ createProcess opener
-    case result of
-        Left (e::SomeException) -> do
-            let po = ProgramOutput cmd args "" stdoutOkay (show e) (ExitFailure 1)
-            STM.atomically $ STM.writeTChan outputChan po
-            maybe (return ()) (flip putMVar po) mOutputVar
-        Right (stdinResult, Just outh, Just errh, ph) -> do
-            case stdinResult of
-                Just inh -> do
-                    let Just input = mInput
-                    hPutStrLn inh input
-                    hFlush inh
-                Nothing -> return ()
-
-            ec <- waitForProcess ph
-            outResult <- hGetContents outh
-            errResult <- hGetContents errh
-            let po = ProgramOutput cmd args outResult stdoutOkay errResult ec
-            STM.atomically $ STM.writeTChan outputChan po
-            maybe (return ()) (flip putMVar po) mOutputVar
-        Right _ ->
-            error $ "BUG: createProcess returned unexpected result, report this at " <>
-                    "https://github.com/matterhorn-chat/matterhorn"
-
-openSelectedMessageURLs :: MH ()
-openSelectedMessageURLs = whenMode MessageSelect $ do
-    Just curMsg <- use (to getSelectedMessage)
-    let urls = msgURLs curMsg
-    when (not (null urls)) $ do
-        openedAll <- and <$> mapM openURL urls
-        case openedAll of
-            True -> setMode Main
-            False ->
-                mhError $ ConfigOptionMissing "urlOpenCommand"
 
 shouldSkipMessage :: Text -> Bool
 shouldSkipMessage "" = True

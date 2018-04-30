@@ -7,7 +7,7 @@ import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
 
 import           Events.Keybindings
-import           State
+import           State.MessageSelect
 import           Types
 
 

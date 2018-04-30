@@ -43,6 +43,7 @@ executable matterhorn
                        State.Common
                        State.Editing
                        State.Messages
+                       State.MessageSelect
                        State.PostListOverlay
                        State.Setup
                        State.Setup.Threads

@@ -36,6 +36,7 @@ import           Events.Keybindings
 import           Events.MessageSelect
 import           Markdown
 import           State
+import           State.MessageSelect
 import           Themes
 import           TimeUtils ( justAfter, justBefore )
 import           Types

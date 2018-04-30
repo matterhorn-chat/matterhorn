@@ -8,8 +8,8 @@ import           Lens.Micro.Platform ( (.=) )
 import           Network.Mattermost.Endpoints
 import           Network.Mattermost.Types
 
-import           State
 import           State.Common
+import           State.MessageSelect
 import           Types
 import           Types.DirectionalSeq (emptyDirSeq)
 

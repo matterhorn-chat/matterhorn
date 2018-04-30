@@ -25,6 +25,7 @@ import           HelpTopics ( mainHelpTopic )
 import           InputHistory
 import           State
 import           State.Editing
+import           State.MessageSelect
 import           State.PostListOverlay ( enterFlaggedPostListMode )
 import           Types
 
