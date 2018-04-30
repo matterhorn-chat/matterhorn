@@ -9,6 +9,7 @@ import           Lens.Micro.Platform ( (%=) )
 
 import           Events.Keybindings
 import           State
+import           State.ChannelSelect
 import           Types
 
 

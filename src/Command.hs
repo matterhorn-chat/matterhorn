@@ -16,6 +16,7 @@ import qualified Network.Mattermost.Types as MM
 import           HelpTopics
 import           Scripts
 import           State
+import           State.ChannelSelect
 import           State.Common
 import           State.Editing ( toggleMessagePreview )
 import           State.PostListOverlay
