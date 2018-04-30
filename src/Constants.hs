@@ -1,6 +1,7 @@
 module Constants
   ( pageAmount
   , userTypingExpiryInterval
+  , numScrollbackPosts
   )
 where
 
@@ -15,3 +16,7 @@ pageAmount = 15
 -- | The expiry interval in seconds for user typing notifications.
 userTypingExpiryInterval :: NominalDiffTime
 userTypingExpiryInterval = 5
+
+numScrollbackPosts :: Int
+numScrollbackPosts = 100
+
