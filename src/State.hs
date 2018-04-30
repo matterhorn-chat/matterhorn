@@ -770,11 +770,9 @@ asyncFetchMoreMessages = do
                (\c p -> do addObtainedMessages c (-pageAmount) p >>= postProcessMessageAdd
                            mh $ invalidateCacheEntry (ChannelMessages cId))
 
-
 addNewPostedMessage :: PostToAdd -> MH ()
 addNewPostedMessage p =
     addMessageToState p >>= postProcessMessageAdd
-
 
 addObtainedMessages :: ChannelId -> Int -> Posts -> MH PostProcessMessageAdd
 addObtainedMessages cId reqCnt posts = do
