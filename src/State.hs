@@ -67,11 +67,6 @@ module State
   -- * Server-side preferences
   , applyPreferenceChange
 
-  -- * URL selection mode
-  , startUrlSelect
-  , stopUrlSelect
-  , openSelectedURL
-
   -- * Help
   , showHelpScreen
 
@@ -90,7 +85,7 @@ import           Brick.Main ( getVtyHandle, viewportScroll
 import           Brick.Themes ( themeToAttrMap )
 import           Brick.Widgets.Edit ( applyEdit )
 import           Brick.Widgets.Edit ( getEditContents, editContentsL )
-import           Brick.Widgets.List ( list, listMoveTo, listSelectedElement )
+import           Brick.Widgets.List ( list )
 import           Control.Concurrent.Async ( runConcurrently, Concurrently(..) )
 import           Control.Exception ( SomeException, try )
 import           Data.Char ( isAlphaNum )
@@ -117,7 +112,6 @@ import           Themes
 import           TimeUtils ( justBefore, justAfter )
 import           Types
 import           Types.Common
-import           Util
 import           Zipper ( Zipper )
 import qualified Zipper as Z
 
@@ -1429,34 +1423,6 @@ showHelpScreen :: HelpTopic -> MH ()
 showHelpScreen topic = do
     mh $ vScrollToBeginning (viewportScroll HelpViewport)
     setMode $ ShowHelp topic
-
-startUrlSelect :: MH ()
-startUrlSelect = do
-    urls <- use (csCurrentChannel.to findUrls.to V.fromList)
-    setMode UrlSelect
-    csUrlList .= (listMoveTo (length urls - 1) $ list UrlList urls 2)
-
-stopUrlSelect :: MH ()
-stopUrlSelect = setMode Main
-
-findUrls :: ClientChannel -> [LinkChoice]
-findUrls chan =
-    let msgs = chan^.ccContents.cdMessages
-    in removeDuplicates $ concat $ toList $ toList <$> msgURLs <$> msgs
-
-removeDuplicates :: [LinkChoice] -> [LinkChoice]
-removeDuplicates = nubOn (\ l -> (l^.linkURL, l^.linkUser))
-
-openSelectedURL :: MH ()
-openSelectedURL = whenMode UrlSelect $ do
-    selected <- use (csUrlList.to listSelectedElement)
-    case selected of
-        Nothing -> return ()
-        Just (_, link) -> do
-            opened <- openURL link
-            when (not opened) $ do
-                mhError $ ConfigOptionMissing "urlOpenCommand"
-                setMode Main
 
 shouldSkipMessage :: Text -> Bool
 shouldSkipMessage "" = True

@@ -7,7 +7,7 @@ import           Brick.Widgets.List
 import qualified Graphics.Vty as Vty
 
 import           Events.Keybindings
-import           State
+import           State.UrlSelect
 import           Types
 
 
