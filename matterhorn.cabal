@@ -60,6 +60,7 @@ executable matterhorn
                        Draw.UserListOverlay
                        Draw.JoinChannel
                        Draw.Util
+                       Draw.ViewMessage
                        InputHistory
                        IOUtil
                        Events
@@ -75,6 +76,7 @@ executable matterhorn
                        Events.UserListOverlay
                        Events.LeaveChannelConfirm
                        Events.DeleteChannelConfirm
+                       Events.ViewMessage
                        HelpTopics
                        LastRunState
                        Scripts

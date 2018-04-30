@@ -62,4 +62,7 @@ messageSelectKeybindings = mkKeybindings
     , mkKb FlagMessageEvent "Flag the selected message"
          flagSelectedMessage
 
+    , mkKb ViewMessageEvent "View the selected message"
+         viewSelectedMessage
+
     ]

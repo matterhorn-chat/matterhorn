@@ -11,6 +11,7 @@ import Draw.Main
 import Draw.PostListOverlay
 import Draw.ShowHelp
 import Draw.UserListOverlay
+import Draw.ViewMessage
 import Types
 
 
@@ -29,3 +30,4 @@ draw st =
         DeleteChannelConfirm       -> drawDeleteChannelConfirm st
         PostListOverlay contents   -> drawPostListOverlay contents st
         UserListOverlay            -> drawUserListOverlay st
+        ViewMessage                -> drawViewMessage st

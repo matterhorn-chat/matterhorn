@@ -37,6 +37,7 @@ import           Events.PostListOverlay
 import           Events.ShowHelp
 import           Events.UrlSelect
 import           Events.UserListOverlay
+import           Events.ViewMessage
 
 
 onEvent :: ChatState -> BrickEvent Name MHEvent -> EventM Name (Next ChatState)
@@ -130,6 +131,7 @@ onVtyEvent e = do
         DeleteChannelConfirm       -> onEventDeleteChannelConfirm e
         PostListOverlay _          -> onEventPostListOverlay e
         UserListOverlay            -> onEventUserListOverlay e
+        ViewMessage                -> onEventViewMessage e
 
 handleWSEvent :: WebsocketEvent -> MH ()
 handleWSEvent we = do

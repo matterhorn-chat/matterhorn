@@ -78,6 +78,7 @@ module Types
   , csEditState
   , csClientConfig
   , csLastJoinRequest
+  , csViewedMessage
   , timeZone
   , whenMode
   , setMode
@@ -413,6 +414,7 @@ data Name =
     | MessagePreviewViewport
     | UserListSearchInput
     | UserListSearchResults
+    | ViewMessageArea
     deriving (Eq, Show, Ord)
 
 -- | The sum type of exceptions we expect to encounter on authentication
@@ -645,6 +647,7 @@ data Mode =
     | MessageSelectDeleteConfirm
     | PostListOverlay PostListContents
     | UserListOverlay
+    | ViewMessage
     deriving (Eq)
 
 -- | We're either connected or we're not.
@@ -714,6 +717,9 @@ data ChatState =
               -- ^ The most recently-joined channel ID that we look for
               -- in an asynchronous join notification, so that we can
               -- switch to it in the sidebar.
+              , _csViewedMessage :: Maybe Message
+              -- ^ Set when the ViewMessage mode is active. The message
+              -- being viewed.
               }
 
 -- | Startup state information that is constructed prior to building a
@@ -754,6 +760,7 @@ newState (StartupStateInfo {..}) =
               , _csUserListOverlay             = nullUserListOverlayState
               , _csClientConfig                = Nothing
               , _csLastJoinRequest             = Nothing
+              , _csViewedMessage               = Nothing
               }
 
 nullUserListOverlayState :: UserListOverlayState

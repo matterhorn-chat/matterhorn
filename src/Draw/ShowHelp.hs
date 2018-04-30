@@ -24,6 +24,7 @@ import           Events.PostListOverlay
 import           Events.ShowHelp
 import           Events.UrlSelect
 import           Events.UserListOverlay
+import           Events.ViewMessage
 import           HelpTopics ( helpTopics )
 import           Markdown ( renderText )
 import           Options ( mhVersion )
@@ -355,6 +356,7 @@ keybindSections kc =
     , ("Text Editing", editingKeybindings)
     , ("Flagged Messages", postListOverlayKeybindings kc)
     , ("User Listings", userListOverlayKeybindings kc)
+    , ("Message Viewer", viewMessageKeybindings kc)
     ]
 
 helpBox :: Name -> Widget Name -> Widget Name

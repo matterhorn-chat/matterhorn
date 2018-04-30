@@ -470,6 +470,9 @@ messageSelectBottomBar st =
                   , ( isReplyable
                     , ev ReplyMessageEvent
                     , "reply" )
+                  , ( const True
+                    , ev ViewMessageEvent
+                    , "view" )
                   , ( \m -> isMine st m && isEditable m
                     , ev EditMessageEvent
                     , "edit" )

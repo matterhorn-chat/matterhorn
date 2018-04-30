@@ -79,6 +79,7 @@ module State
   -- * Message selection mode
   , beginMessageSelect
   , flagSelectedMessage
+  , viewSelectedMessage
   , yankSelectedMessageVerbatim
   , yankSelectedMessage
   , openSelectedMessageURLs
@@ -112,7 +113,8 @@ import           Prelude ()
 import           Prelude.MH
 
 import           Brick ( invalidateCacheEntry )
-import           Brick.Main ( getVtyHandle, viewportScroll, vScrollToBeginning, vScrollBy, vScrollToEnd )
+import           Brick.Main ( getVtyHandle, viewportScroll, hScrollToBeginning
+                            , vScrollToBeginning, vScrollBy, vScrollToEnd )
 import           Brick.Themes ( themeToAttrMap )
 import           Brick.Widgets.Edit ( applyEdit )
 import           Brick.Widgets.Edit ( getEditContents, editContentsL )
@@ -465,6 +467,23 @@ flagSelectedMessage = do
       | isFlaggable msg, Just pId <- messagePostId msg ->
         flagMessage pId (not (msg^.mFlagged))
     _        -> return ()
+
+viewSelectedMessage :: MH ()
+viewSelectedMessage = do
+  selected <- use (to getSelectedMessage)
+  case selected of
+    Just msg -> viewMessage msg
+    _        -> return ()
+
+viewMessage :: Message -> MH ()
+viewMessage m = do
+    csViewedMessage .= Just m
+    let vs = viewportScroll ViewMessageArea
+    mh $ do
+        vScrollToBeginning vs
+        hScrollToBeginning vs
+        invalidateCacheEntry ViewMessageArea
+    setMode ViewMessage
 
 beginEditMessage :: MH ()
 beginEditMessage = do

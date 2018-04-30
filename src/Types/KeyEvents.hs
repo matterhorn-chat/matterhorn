@@ -77,6 +77,7 @@ data KeyEvent
   -- E.g. Pressing enter on an item in a list to do something with it
   | ActivateListItemEvent
 
+  | ViewMessageEvent
   | FlagMessageEvent
   | YankMessageEvent
   | YankWholeMessageEvent
@@ -127,6 +128,7 @@ allEvents =
   , SearchSelectDownEvent
 
   , FlagMessageEvent
+  , ViewMessageEvent
   , YankMessageEvent
   , YankWholeMessageEvent
   , DeleteMessageEvent
@@ -309,6 +311,7 @@ keyEventName ev = case ev of
   ActivateListItemEvent -> "activate-list-item"
 
   FlagMessageEvent   -> "flag-message"
+  ViewMessageEvent   -> "view-message"
   YankMessageEvent   -> "yank-message"
   YankWholeMessageEvent   -> "yank-whole-message"
   DeleteMessageEvent -> "delete-message"
