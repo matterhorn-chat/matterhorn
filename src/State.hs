@@ -128,32 +128,32 @@ import           State.Users
 -- scrollback is updated as well.
 refreshChannel :: Channel -> ChannelMember -> MH ()
 refreshChannel chan member = do
-  let cId = getId chan
-  myTId <- gets myTeamId
-  let ourTeam = channelTeamId chan == Nothing ||
-                Just myTId == channelTeamId chan
+    let cId = getId chan
+    myTId <- gets myTeamId
+    let ourTeam = channelTeamId chan == Nothing ||
+                  Just myTId == channelTeamId chan
 
-  -- If this is a group channel that the user has chosen to hide or if
-  -- the channel is not a channel for the current session's team, ignore
-  -- the refresh request.
-  isHidden <- channelHiddenPreference cId
-  case isHidden || not ourTeam of
-      True -> return ()
-      False -> do
-          -- If this channel is unknown, register it first.
-          mChan <- preuse (csChannel(cId))
-          when (isNothing mChan) $
-              handleNewChannel False chan member
+    -- If this is a group channel that the user has chosen to hide or if
+    -- the channel is not a channel for the current session's team, ignore
+    -- the refresh request.
+    isHidden <- channelHiddenPreference cId
+    case isHidden || not ourTeam of
+        True -> return ()
+        False -> do
+            -- If this channel is unknown, register it first.
+            mChan <- preuse (csChannel(cId))
+            when (isNothing mChan) $
+                handleNewChannel False chan member
 
-          updateChannelInfo cId chan member
+            updateChannelInfo cId chan member
 
 refreshChannelById :: ChannelId -> MH ()
 refreshChannelById cId = do
-  session <- getSession
-  doAsyncWith Preempt $ do
-      cwd <- MM.mmGetChannel cId session
-      member <- MM.mmGetChannelMember cId UserMe session
-      return $ refreshChannel cwd member
+    session <- getSession
+    doAsyncWith Preempt $ do
+        cwd <- MM.mmGetChannel cId session
+        member <- MM.mmGetChannelMember cId UserMe session
+        return $ refreshChannel cwd member
 
 createGroupChannel :: Text -> MH ()
 createGroupChannel usernameList = do
@@ -189,83 +189,84 @@ createGroupChannel usernameList = do
 
 channelHiddenPreference :: ChannelId -> MH Bool
 channelHiddenPreference cId = do
-  prefs <- use (csResources.crUserPreferences.userPrefGroupChannelPrefs)
-  let matching = filter (\p -> fst p == cId) (HM.toList prefs)
-  return $ any (not . snd) matching
+    prefs <- use (csResources.crUserPreferences.userPrefGroupChannelPrefs)
+    let matching = filter (\p -> fst p == cId) (HM.toList prefs)
+    return $ any (not . snd) matching
 
 applyPreferenceChange :: Preference -> MH ()
 applyPreferenceChange pref = do
-  -- always update our user preferences accordingly
-  csResources.crUserPreferences %= setUserPreferences (Seq.singleton pref)
-  if
-    | Just f <- preferenceToFlaggedPost pref -> do
-        updateMessageFlag (flaggedPostId f) (flaggedPostStatus f)
-    | Just g <- preferenceToGroupChannelPreference pref -> do
-        let cId = groupChannelId g
-        mChan <- preuse $ csChannel cId
+    -- always update our user preferences accordingly
+    csResources.crUserPreferences %= setUserPreferences (Seq.singleton pref)
+    if
+      | Just f <- preferenceToFlaggedPost pref -> do
+          updateMessageFlag (flaggedPostId f) (flaggedPostStatus f)
+      | Just g <- preferenceToGroupChannelPreference pref -> do
+          let cId = groupChannelId g
+          mChan <- preuse $ csChannel cId
 
-        case (mChan, groupChannelShow g) of
-            (Just _, False) ->
-                -- If it has been set to hidden and we are showing it,
-                -- remove it from the state.
-                removeChannelFromState cId
-            (Nothing, True) ->
-                -- If it has been set to showing and we are not showing
-                -- it, ask for a load/refresh.
-                refreshChannelById cId
-            _ -> return ()
-    | otherwise -> return ()
+          case (mChan, groupChannelShow g) of
+              (Just _, False) ->
+                  -- If it has been set to hidden and we are showing it,
+                  -- remove it from the state.
+                  removeChannelFromState cId
+              (Nothing, True) ->
+                  -- If it has been set to showing and we are not showing
+                  -- it, ask for a load/refresh.
+                  refreshChannelById cId
+              _ -> return ()
+      | otherwise -> return ()
 
 -- | Refresh information about all channels and users. This is usually
 -- triggered when a reconnect event for the WebSocket to the server
 -- occurs.
 refreshChannelsAndUsers :: MH ()
 refreshChannelsAndUsers = do
-  -- The below code is a duplicate of mmGetAllChannelsWithDataForUser function,
-  -- which has been inlined here to gain a concurrency benefit.
-  session <- getSession
-  myTId <- gets myTeamId
-  doAsyncWith Preempt $ do
-    (chans, datas) <- runConcurrently $ (,)
-                     <$> Concurrently (MM.mmGetChannelsForUser UserMe myTId session)
-                     <*> Concurrently (MM.mmGetChannelMembersForUser UserMe myTId session)
+    -- The below code is a duplicate of mmGetAllChannelsWithDataForUser
+    -- function, which has been inlined here to gain a concurrency
+    -- benefit.
+    session <- getSession
+    myTId <- gets myTeamId
+    doAsyncWith Preempt $ do
+      (chans, datas) <- runConcurrently $ (,)
+                       <$> Concurrently (MM.mmGetChannelsForUser UserMe myTId session)
+                       <*> Concurrently (MM.mmGetChannelMembersForUser UserMe myTId session)
 
-    let dataMap = HM.fromList $ toList $ (\d -> (channelMemberChannelId d, d)) <$> datas
-        mkPair chan = (chan, fromJust $ HM.lookup (channelId chan) dataMap)
-        chansWithData = mkPair <$> chans
+      let dataMap = HM.fromList $ toList $ (\d -> (channelMemberChannelId d, d)) <$> datas
+          mkPair chan = (chan, fromJust $ HM.lookup (channelId chan) dataMap)
+          chansWithData = mkPair <$> chans
 
-        asyncFetchAllUsers page accum final = do
-            doAsyncWith Preempt $ do
-                let pageSize = 200
-                    userQuery = MM.defaultUserQuery
-                      { MM.userQueryPage = Just page
-                      , MM.userQueryPerPage = Just pageSize
-                      , MM.userQueryInTeam = Just myTId
-                      }
-                batch <- MM.mmGetUsers userQuery session
+          asyncFetchAllUsers page accum final = do
+              doAsyncWith Preempt $ do
+                  let pageSize = 200
+                      userQuery = MM.defaultUserQuery
+                        { MM.userQueryPage = Just page
+                        , MM.userQueryPerPage = Just pageSize
+                        , MM.userQueryInTeam = Just myTId
+                        }
+                  batch <- MM.mmGetUsers userQuery session
 
-                return $ case length batch < pageSize of
-                    True -> do
-                        let users = accum <> batch
-                        forM_ users $ \u -> do
-                            when (not $ userDeleted u) $ do
-                                result <- gets (userById (getId u))
-                                when (isNothing result) $ handleNewUserDirect u
-                        setUserIdSet (userId <$> users)
-                        final
-                    False ->
-                        asyncFetchAllUsers (page + 1) (accum <> batch) final
+                  return $ case length batch < pageSize of
+                      True -> do
+                          let users = accum <> batch
+                          forM_ users $ \u -> do
+                              when (not $ userDeleted u) $ do
+                                  result <- gets (userById (getId u))
+                                  when (isNothing result) $ handleNewUserDirect u
+                          setUserIdSet (userId <$> users)
+                          final
+                      False ->
+                          asyncFetchAllUsers (page + 1) (accum <> batch) final
 
-    return $ do
-        asyncFetchAllUsers 0 mempty $ do
-            forM_ chansWithData $ uncurry refreshChannel
-            lock <- use (csResources.crUserStatusLock)
-            setVar <- use (csResources.crUserIdSet)
-            doAsyncWith Preempt $ updateUserStatuses setVar lock session
+      return $ do
+          asyncFetchAllUsers 0 mempty $ do
+              forM_ chansWithData $ uncurry refreshChannel
+              lock <- use (csResources.crUserStatusLock)
+              setVar <- use (csResources.crUserIdSet)
+              doAsyncWith Preempt $ updateUserStatuses setVar lock session
 
 -- | Refresh client-accessible server configuration information. This
--- is usually triggered when a reconnect event for the WebSocket to
--- the server occurs.
+-- is usually triggered when a reconnect event for the WebSocket to the
+-- server occurs.
 refreshClientConfig :: MH ()
 refreshClientConfig = do
     session <- getSession
@@ -282,19 +283,19 @@ disconnectChannels = addDisconnectGaps
 -- the Mattermost server. Also update the channel name if it changed.
 updateChannelInfo :: ChannelId -> Channel -> ChannelMember -> MH ()
 updateChannelInfo cid new member = do
-  mOldChannel <- preuse $ csChannel(cid)
-  case mOldChannel of
-      Nothing -> return ()
-      Just old ->
-          let oldName = old^.ccInfo.cdName
-              newName = preferredChannelName new
-          in if oldName == newName
-             then return ()
-             else do
-                 removeChannelName oldName
-                 addChannelName (channelType new) cid newName
+    mOldChannel <- preuse $ csChannel(cid)
+    case mOldChannel of
+        Nothing -> return ()
+        Just old ->
+            let oldName = old^.ccInfo.cdName
+                newName = preferredChannelName new
+            in if oldName == newName
+               then return ()
+               else do
+                   removeChannelName oldName
+                   addChannelName (channelType new) cid newName
 
-  csChannel(cid).ccInfo %= channelInfoFromChannelWithData new member
+    csChannel(cid).ccInfo %= channelInfoFromChannelWithData new member
 
 beginCurrentChannelDeleteConfirm :: MH ()
 beginCurrentChannelDeleteConfirm = do
@@ -509,53 +510,55 @@ removeChannelFromState cId = do
 -- state.
 setLastViewedFor :: Maybe ChannelId -> ChannelId -> MH ()
 setLastViewedFor prevId cId = do
-  chan <- use (csChannels.to (findChannelById cId))
-  -- Update new channel's viewed time, creating the channel if needed
-  case chan of
-    Nothing ->
-        -- It's possible for us to get spurious WMChannelViewed events
-        -- from the server, e.g. for channels that have been deleted.
-        -- So here we ignore the request since it's hard to detect it
-        -- before this point.
-        return ()
-    Just _  ->
-      -- The server has been sent a viewed POST update, but there is
-      -- no local information on what timestamp the server actually
-      -- recorded.  There are a couple of options for setting the
-      -- local value of the viewed time:
-      --
-      --   1. Attempting to locally construct a value, which would
-      --      involve scanning all (User) messages in the channel to
-      --      find the maximum of the created date, the modified date,
-      --      or the deleted date, and assuming that maximum mostly
-      --      matched the server's viewed time.
-      --
-      --   2. Issuing a channel metadata request to get the server's
-      --      new concept of the viewed time.
-      --
-      --   3. Having the "chan/viewed" POST that was just issued
-      --      return a value from the server. See
-      --      https://github.com/mattermost/platform/issues/6803.
-      --
-      -- Method 3 would be the best and most lightweight.  Until that
-      -- is available, Method 2 will be used.  The downside to Method
-      -- 2 is additional client-server messaging, and a delay in
-      -- updating the client data, but it's also immune to any new or
-      -- removed Message date fields, or anything else that would
-      -- contribute to the viewed/updated times on the server.
-      doAsyncChannelMM Preempt cId (\ s _ _ ->
-                                       (,) <$> MM.mmGetChannel cId s
-                                           <*> MM.mmGetChannelMember cId UserMe s)
-      (\pcid (cwd, member) -> csChannel(pcid).ccInfo %= channelInfoFromChannelWithData cwd member)
-  -- Update the old channel's previous viewed time (allows tracking of new messages)
-  case prevId of
-    Nothing -> return ()
-    Just p -> csChannels %= (channelByIdL p %~ (clearNewMessageIndicator . clearEditedThreshold))
+    chan <- use (csChannels.to (findChannelById cId))
+    -- Update new channel's viewed time, creating the channel if needed
+    case chan of
+        Nothing ->
+            -- It's possible for us to get spurious WMChannelViewed
+            -- events from the server, e.g. for channels that have been
+            -- deleted. So here we ignore the request since it's hard to
+            -- detect it before this point.
+            return ()
+        Just _  ->
+          -- The server has been sent a viewed POST update, but there is
+          -- no local information on what timestamp the server actually
+          -- recorded. There are a couple of options for setting the
+          -- local value of the viewed time:
+          --
+          --   1. Attempting to locally construct a value, which would
+          --      involve scanning all (User) messages in the channel
+          --      to find the maximum of the created date, the modified
+          --      date, or the deleted date, and assuming that maximum
+          --      mostly matched the server's viewed time.
+          --
+          --   2. Issuing a channel metadata request to get the server's
+          --      new concept of the viewed time.
+          --
+          --   3. Having the "chan/viewed" POST that was just issued
+          --      return a value from the server. See
+          --      https://github.com/mattermost/platform/issues/6803.
+          --
+          -- Method 3 would be the best and most lightweight. Until that
+          -- is available, Method 2 will be used. The downside to Method
+          -- 2 is additional client-server messaging, and a delay in
+          -- updating the client data, but it's also immune to any new
+          -- or removed Message date fields, or anything else that would
+          -- contribute to the viewed/updated times on the server.
+          doAsyncChannelMM Preempt cId (\ s _ _ ->
+                                           (,) <$> MM.mmGetChannel cId s
+                                               <*> MM.mmGetChannelMember cId UserMe s)
+          (\pcid (cwd, member) -> csChannel(pcid).ccInfo %= channelInfoFromChannelWithData cwd member)
+
+    -- Update the old channel's previous viewed time (allows tracking of
+    -- new messages)
+    case prevId of
+      Nothing -> return ()
+      Just p -> csChannels %= (channelByIdL p %~ (clearNewMessageIndicator . clearEditedThreshold))
 
 updateViewed :: MH ()
 updateViewed = do
-  csCurrentChannel.ccInfo.cdMentionCount .= 0
-  updateViewedChan =<< use csCurrentChannelId
+    csCurrentChannel.ccInfo.cdMentionCount .= 0
+    updateViewedChan =<< use csCurrentChannelId
 
 -- | When a new channel has been selected for viewing, this will
 -- notify the server of the change, and also update the local channel
@@ -563,20 +566,21 @@ updateViewed = do
 -- update the viewed time to now for the newly selected channel.
 updateViewedChan :: ChannelId -> MH ()
 updateViewedChan cId = use csConnectionStatus >>= \case
-      Connected -> do
-          -- Only do this if we're connected to avoid triggering noisy exceptions.
-          pId <- use csRecentChannel
-          doAsyncChannelMM Preempt cId
-            (\s _ c -> MM.mmViewChannel UserMe c pId s)
-            (\c () -> setLastViewedFor pId c)
-      Disconnected ->
-          -- Cannot update server; make no local updates to avoid
-          -- getting out-of-sync with the server.  Assumes that this
-          -- is a temporary break in connectivity and that after the
-          -- connection is restored, the user's normal activities will
-          -- update state as appropriate.  If connectivity is
-          -- permanently lost, managing this state is irrelevant.
-          return ()
+    Connected -> do
+        -- Only do this if we're connected to avoid triggering noisy
+        -- exceptions.
+        pId <- use csRecentChannel
+        doAsyncChannelMM Preempt cId
+          (\s _ c -> MM.mmViewChannel UserMe c pId s)
+          (\c () -> setLastViewedFor pId c)
+    Disconnected ->
+        -- Cannot update server; make no local updates to avoid getting
+        -- out-of-sync with the server. Assumes that this is a temporary
+        -- break in connectivity and that after the connection is
+        -- restored, the user's normal activities will update state as
+        -- appropriate. If connectivity is permanently lost, managing
+        -- this state is irrelevant.
+        return ()
 
 resetHistoryPosition :: MH ()
 resetHistoryPosition = do
@@ -693,33 +697,33 @@ setTheme name =
 
 channelPageUp :: MH ()
 channelPageUp = do
-  cId <- use csCurrentChannelId
-  mh $ vScrollBy (viewportScroll (ChannelMessages cId)) (-1 * pageAmount)
+    cId <- use csCurrentChannelId
+    mh $ vScrollBy (viewportScroll (ChannelMessages cId)) (-1 * pageAmount)
 
 channelPageDown :: MH ()
 channelPageDown = do
-  cId <- use csCurrentChannelId
-  mh $ vScrollBy (viewportScroll (ChannelMessages cId)) pageAmount
+    cId <- use csCurrentChannelId
+    mh $ vScrollBy (viewportScroll (ChannelMessages cId)) pageAmount
 
 channelScrollUp :: MH ()
 channelScrollUp = do
-  cId <- use csCurrentChannelId
-  mh $ vScrollBy (viewportScroll (ChannelMessages cId)) (-1)
+    cId <- use csCurrentChannelId
+    mh $ vScrollBy (viewportScroll (ChannelMessages cId)) (-1)
 
 channelScrollDown :: MH ()
 channelScrollDown = do
-  cId <- use csCurrentChannelId
-  mh $ vScrollBy (viewportScroll (ChannelMessages cId)) 1
+    cId <- use csCurrentChannelId
+    mh $ vScrollBy (viewportScroll (ChannelMessages cId)) 1
 
 channelScrollToTop :: MH ()
 channelScrollToTop = do
-  cId <- use csCurrentChannelId
-  mh $ vScrollToBeginning (viewportScroll (ChannelMessages cId))
+    cId <- use csCurrentChannelId
+    mh $ vScrollToBeginning (viewportScroll (ChannelMessages cId))
 
 channelScrollToBottom :: MH ()
 channelScrollToBottom = do
-  cId <- use csCurrentChannelId
-  mh $ vScrollToEnd (viewportScroll (ChannelMessages cId))
+    cId <- use csCurrentChannelId
+    mh $ vScrollToEnd (viewportScroll (ChannelMessages cId))
 
 -- | Fetches additional message history for the current channel.  This
 -- is generally called when in ChannelScroll mode, in which state the
@@ -935,56 +939,56 @@ setFocusWith f = do
 
 attemptCreateDMChannel :: Text -> MH ()
 attemptCreateDMChannel name = do
-  mCid <- gets (channelIdByUsername name)
-  me <- gets myUser
-  displayNick <- use (to useNickname)
-  uList       <- use (to sortedUserList)
-  let myName = if displayNick && not (T.null $ sanitizeUserText $ userNickname me)
-               then sanitizeUserText $ userNickname me
-               else me^.userUsernameL
-  when (name /= myName) $ do
-      let uName = if displayNick
-                  then
-                      maybe name (view uiName)
-                                $ findUserByNickname uList name
-                  else name
-      mUid <- gets (userIdForUsername uName)
-      if isJust mUid && isNothing mCid
-      then do
-        -- We have a user of that name but no channel. Time to make one!
-        let Just uId = mUid
-        myId <- gets myUserId
-        session <- getSession
-        doAsyncWith Normal $ do
-          -- create a new channel
-          nc <- MM.mmCreateDirectMessageChannel (uId, myId) session -- tId uId
-          cwd <- MM.mmGetChannel (getId nc) session
-          member <- MM.mmGetChannelMember (getId nc) UserMe session
-          return $ handleNewChannel True cwd member
-      else
-        mhError $ NoSuchUser name
+    mCid <- gets (channelIdByUsername name)
+    me <- gets myUser
+    displayNick <- use (to useNickname)
+    uList       <- use (to sortedUserList)
+    let myName = if displayNick && not (T.null $ sanitizeUserText $ userNickname me)
+                 then sanitizeUserText $ userNickname me
+                 else me^.userUsernameL
+    when (name /= myName) $ do
+        let uName = if displayNick
+                    then
+                        maybe name (view uiName)
+                                  $ findUserByNickname uList name
+                    else name
+        mUid <- gets (userIdForUsername uName)
+        if isJust mUid && isNothing mCid
+        then do
+            -- We have a user of that name but no channel. Time to make one!
+            let Just uId = mUid
+            myId <- gets myUserId
+            session <- getSession
+            doAsyncWith Normal $ do
+                -- create a new channel
+                nc <- MM.mmCreateDirectMessageChannel (uId, myId) session -- tId uId
+                cwd <- MM.mmGetChannel (getId nc) session
+                member <- MM.mmGetChannelMember (getId nc) UserMe session
+                return $ handleNewChannel True cwd member
+        else
+            mhError $ NoSuchUser name
 
 createOrdinaryChannel :: Text -> MH ()
 createOrdinaryChannel name  = do
-  session <- getSession
-  myTId <- gets myTeamId
-  doAsyncWith Preempt $ do
-    -- create a new chat channel
-    let slug = T.map (\ c -> if isAlphaNum c then c else '-') (T.toLower name)
-        minChannel = MinChannel
-          { minChannelName        = slug
-          , minChannelDisplayName = name
-          , minChannelPurpose     = Nothing
-          , minChannelHeader      = Nothing
-          , minChannelType        = Ordinary
-          , minChannelTeamId      = myTId
-          }
-    tryMM (do c <- MM.mmCreateChannel minChannel session
-              chan <- MM.mmGetChannel (getId c) session
-              member <- MM.mmGetChannelMember (getId c) UserMe session
-              return (chan, member)
-          )
-          (return . uncurry (handleNewChannel True))
+    session <- getSession
+    myTId <- gets myTeamId
+    doAsyncWith Preempt $ do
+        -- create a new chat channel
+        let slug = T.map (\ c -> if isAlphaNum c then c else '-') (T.toLower name)
+            minChannel = MinChannel
+              { minChannelName        = slug
+              , minChannelDisplayName = name
+              , minChannelPurpose     = Nothing
+              , minChannelHeader      = Nothing
+              , minChannelType        = Ordinary
+              , minChannelTeamId      = myTId
+              }
+        tryMM (do c <- MM.mmCreateChannel minChannel session
+                  chan <- MM.mmGetChannel (getId c) session
+                  member <- MM.mmGetChannelMember (getId c) UserMe session
+                  return (chan, member)
+              )
+              (return . uncurry (handleNewChannel True))
 
 handleNewChannel :: Bool -> Channel -> ChannelMember -> MH ()
 handleNewChannel = handleNewChannel_ True
@@ -1002,117 +1006,118 @@ handleNewChannel_ :: Bool
                   -> ChannelMember
                   -> MH ()
 handleNewChannel_ permitPostpone switch nc member = do
-  -- Only add the channel to the state if it isn't already known.
-  mChan <- preuse (csChannel(getId nc))
-  case mChan of
-      Just _ -> when switch $ setFocus (getId nc)
-      Nothing -> do
-        -- Create a new ClientChannel structure
-        cChannel <- (ccInfo %~ channelInfoFromChannelWithData nc member) <$>
-                   makeClientChannel nc
+    -- Only add the channel to the state if it isn't already known.
+    mChan <- preuse (csChannel(getId nc))
+    case mChan of
+        Just _ -> when switch $ setFocus (getId nc)
+        Nothing -> do
+            -- Create a new ClientChannel structure
+            cChannel <- (ccInfo %~ channelInfoFromChannelWithData nc member) <$>
+                       makeClientChannel nc
 
-        st <- use id
+            st <- use id
 
-        -- Add it to the message map, and to the name map so we can look
-        -- it up by name. The name we use for the channel depends on its
-        -- type:
-        let chType = nc^.channelTypeL
+            -- Add it to the message map, and to the name map so we
+            -- can look it up by name. The name we use for the channel
+            -- depends on its type:
+            let chType = nc^.channelTypeL
 
-        -- Get the channel name. If we couldn't, that means we have
-        -- async work to do before we can register this channel (in
-        -- which case abort because we got rescheduled).
-        mName <- case chType of
-            Direct -> case userIdForDMChannel (myUserId st) (sanitizeUserText $ channelName nc) of
-                -- If this is a direct channel but we can't extract a
-                -- user ID from the name, then it failed to parse. We
-                -- need to assign a channel name in our channel map,
-                -- and the best we can do to preserve uniqueness is to
-                -- use the channel name string. This is undesirable
-                -- but direct channels never get rendered directly;
-                -- they only get used by first looking up usernames.
-                -- So this name should never appear anywhere, but at
-                -- least we can go ahead and register the channel and
-                -- handle events for it. That isn't very useful but it's
-                -- probably better than ignoring this entirely.
-                Nothing -> return $ Just $ sanitizeUserText $ channelName nc
-                Just otherUserId ->
-                    case usernameForUserId otherUserId st of
-                        -- If we found a user ID in the channel name
-                        -- string but don't have that user's metadata,
-                        -- postpone adding this channel until we have
-                        -- fetched the metadata. This can happen when
-                        -- we have a channel record for a user that
-                        -- is no longer in the current team. To avoid
-                        -- recursion due to a problem, ensure that
-                        -- the rescheduled new channel handler is not
-                        -- permitted to try this again.
-                        --
-                        -- If we're already in a recursive attempt to
-                        -- register this channel and still couldn't find
-                        -- a username, just bail and use the synthetic
-                        -- name (this has the same problems as above).
-                        Nothing -> do
-                            case permitPostpone of
-                                False -> return $ Just $ sanitizeUserText $ channelName nc
-                                True -> do
-                                    handleNewUsers $ Seq.singleton otherUserId
-                                    doAsyncWith Normal $
-                                        return $ handleNewChannel_ False switch nc member
-                                    return Nothing
-                        Just ncUsername ->
-                            return $ Just $ ncUsername
-            _ -> return $ Just $ preferredChannelName nc
+            -- Get the channel name. If we couldn't, that means we have
+            -- async work to do before we can register this channel (in
+            -- which case abort because we got rescheduled).
+            mName <- case chType of
+                Direct -> case userIdForDMChannel (myUserId st) (sanitizeUserText $ channelName nc) of
+                    -- If this is a direct channel but we can't extract
+                    -- a user ID from the name, then it failed to
+                    -- parse. We need to assign a channel name in our
+                    -- channel map, and the best we can do to preserve
+                    -- uniqueness is to use the channel name string.
+                    -- This is undesirable but direct channels never get
+                    -- rendered directly; they only get used by first
+                    -- looking up usernames. So this name should never
+                    -- appear anywhere, but at least we can go ahead and
+                    -- register the channel and handle events for it.
+                    -- That isn't very useful but it's probably better
+                    -- than ignoring this entirely.
+                    Nothing -> return $ Just $ sanitizeUserText $ channelName nc
+                    Just otherUserId ->
+                        case usernameForUserId otherUserId st of
+                            -- If we found a user ID in the channel
+                            -- name string but don't have that user's
+                            -- metadata, postpone adding this channel
+                            -- until we have fetched the metadata. This
+                            -- can happen when we have a channel record
+                            -- for a user that is no longer in the
+                            -- current team. To avoid recursion due to a
+                            -- problem, ensure that the rescheduled new
+                            -- channel handler is not permitted to try
+                            -- this again.
+                            --
+                            -- If we're already in a recursive attempt
+                            -- to register this channel and still
+                            -- couldn't find a username, just bail and
+                            -- use the synthetic name (this has the same
+                            -- problems as above).
+                            Nothing -> do
+                                case permitPostpone of
+                                    False -> return $ Just $ sanitizeUserText $ channelName nc
+                                    True -> do
+                                        handleNewUsers $ Seq.singleton otherUserId
+                                        doAsyncWith Normal $
+                                            return $ handleNewChannel_ False switch nc member
+                                        return Nothing
+                            Just ncUsername ->
+                                return $ Just $ ncUsername
+                _ -> return $ Just $ preferredChannelName nc
 
-        case mName of
-            Nothing -> return ()
-            Just name -> do
-                addChannelName chType (getId nc) name
+            case mName of
+                Nothing -> return ()
+                Just name -> do
+                    addChannelName chType (getId nc) name
+                    csChannels %= addChannel (getId nc) cChannel
+                    refreshChannelZipper
 
-                csChannels %= addChannel (getId nc) cChannel
+                    -- Finally, set our focus to the newly created
+                    -- channel if the caller requested a change of
+                    -- channel. Also consider the last join request
+                    -- state field in case this is an asynchronous
+                    -- channel addition triggered by a /join.
+                    lastReq <- use csLastJoinRequest
+                    wasLast <- case lastReq of
+                        Just cId | cId == getId nc -> do
+                            csLastJoinRequest .= Nothing
+                            return True
+                        _ -> return False
 
-                refreshChannelZipper
-
-                -- Finally, set our focus to the newly created channel
-                -- if the caller requested a change of channel. Also
-                -- consider the last join request state field in case
-                -- this is an asynchronous channel addition triggered by
-                -- a /join.
-                lastReq <- use csLastJoinRequest
-                wasLast <- case lastReq of
-                    Just cId | cId == getId nc -> do
-                        csLastJoinRequest .= Nothing
-                        return True
-                    _ -> return False
-
-                when (switch || wasLast) $ setFocus (getId nc)
+                    when (switch || wasLast) $ setFocus (getId nc)
 
 editMessage :: Post -> MH ()
 editMessage new = do
-  myId <- gets myUserId
-  let isEditedMessage m = m^.mMessageId == Just (MessagePostId $ new^.postIdL)
-      msg = clientPostToMessage (toClientPost new (new^.postParentIdL))
-      chan = csChannel (new^.postChannelIdL)
-  chan . ccContents . cdMessages . traversed . filtered isEditedMessage .= msg
+    myId <- gets myUserId
+    let isEditedMessage m = m^.mMessageId == Just (MessagePostId $ new^.postIdL)
+        msg = clientPostToMessage (toClientPost new (new^.postParentIdL))
+        chan = csChannel (new^.postChannelIdL)
+    chan . ccContents . cdMessages . traversed . filtered isEditedMessage .= msg
 
-  when (postUserId new /= Just myId) $
-      chan %= adjustEditedThreshold new
+    when (postUserId new /= Just myId) $
+        chan %= adjustEditedThreshold new
 
-  csPostMap.ix(postId new) .= msg
-  asyncFetchReactionsForPost (postChannelId new) new
-  asyncFetchAttachments new
-  cId <- use csCurrentChannelId
-  when (postChannelId new == cId) updateViewed
+    csPostMap.ix(postId new) .= msg
+    asyncFetchReactionsForPost (postChannelId new) new
+    asyncFetchAttachments new
+    cId <- use csCurrentChannelId
+    when (postChannelId new == cId) updateViewed
 
 deleteMessage :: Post -> MH ()
 deleteMessage new = do
-  let isDeletedMessage m = m^.mMessageId == Just (MessagePostId $ new^.postIdL) ||
-                           isReplyTo (new^.postIdL) m
-      chan :: Traversal' ChatState ClientChannel
-      chan = csChannel (new^.postChannelIdL)
-  chan.ccContents.cdMessages.traversed.filtered isDeletedMessage %= (& mDeleted .~ True)
-  chan %= adjustUpdated new
-  cId <- use csCurrentChannelId
-  when (postChannelId new == cId) updateViewed
+    let isDeletedMessage m = m^.mMessageId == Just (MessagePostId $ new^.postIdL) ||
+                             isReplyTo (new^.postIdL) m
+        chan :: Traversal' ChatState ClientChannel
+        chan = csChannel (new^.postChannelIdL)
+    chan.ccContents.cdMessages.traversed.filtered isDeletedMessage %= (& mDeleted .~ True)
+    chan %= adjustUpdated new
+    cId <- use csCurrentChannelId
+    when (postChannelId new == cId) updateViewed
 
 maybePostUsername :: ChatState -> Post -> T.Text
 maybePostUsername st p =
@@ -1177,11 +1182,11 @@ andProcessWith UpdateServerViewed (NotifyUser p)                 = NotifyUserAnd
 -- the corresponding input value.
 postProcessMessageAdd :: PostProcessMessageAdd -> MH ()
 postProcessMessageAdd ppma = postOp ppma
- where
-   postOp NoAction                = return ()
-   postOp UpdateServerViewed      = updateViewed
-   postOp (NotifyUser p)          = maybeRingBell >> mapM_ maybeNotify p
-   postOp (NotifyUserAndServer p) = updateViewed >> maybeRingBell >> mapM_ maybeNotify p
+    where
+        postOp NoAction                = return ()
+        postOp UpdateServerViewed      = updateViewed
+        postOp (NotifyUser p)          = maybeRingBell >> mapM_ maybeNotify p
+        postOp (NotifyUserAndServer p) = updateViewed >> maybeRingBell >> mapM_ maybeNotify p
 
 -- | When we add posts to the application state, we either get them
 -- from the server during scrollback fetches (here called 'OldPost') or
@@ -1206,120 +1211,120 @@ data PostToAdd =
 -- irrelevant.
 addMessageToState :: PostToAdd -> MH PostProcessMessageAdd
 addMessageToState newPostData = do
-  let (new, wasMentioned) = case newPostData of
-        -- A post from scrollback history has no mention data, and
-        -- that's okay: we only need to track mentions to tell the user
-        -- that recent posts contained mentions.
-        OldPost p      -> (p, False)
-        RecentPost p m -> (p, m)
+    let (new, wasMentioned) = case newPostData of
+          -- A post from scrollback history has no mention data, and
+          -- that's okay: we only need to track mentions to tell the
+          -- user that recent posts contained mentions.
+          OldPost p      -> (p, False)
+          RecentPost p m -> (p, m)
 
-  st <- use id
-  case st ^? csChannel(postChannelId new) of
-      Nothing -> do
-          session <- getSession
-          doAsyncWith Preempt $ do
-              nc <- MM.mmGetChannel (postChannelId new) session
-              member <- MM.mmGetChannelMember (postChannelId new) UserMe session
+    st <- use id
+    case st ^? csChannel(postChannelId new) of
+        Nothing -> do
+            session <- getSession
+            doAsyncWith Preempt $ do
+                nc <- MM.mmGetChannel (postChannelId new) session
+                member <- MM.mmGetChannelMember (postChannelId new) UserMe session
 
-              let chType = nc^.channelTypeL
-                  pref = showGroupChannelPref (postChannelId new) (myUserId st)
+                let chType = nc^.channelTypeL
+                    pref = showGroupChannelPref (postChannelId new) (myUserId st)
 
-              -- If the channel has been archived, we don't want to post
-              -- this message or add the channel to the state.
-              case channelDeleted nc of
-                  True -> return $ return ()
-                  False -> return $ do
-                      -- If the incoming message is for a group channel
-                      -- we don't know about, that's because it was
-                      -- previously hidden by the user. We need to
-                      -- show it, and to do that we need to update
-                      -- the server-side preference. (That, in turn,
-                      -- triggers a channel refresh.)
-                      if chType == Group
-                          then applyPreferenceChange pref
-                          else refreshChannel nc member
+                -- If the channel has been archived, we don't want to
+                -- post this message or add the channel to the state.
+                case channelDeleted nc of
+                    True -> return $ return ()
+                    False -> return $ do
+                        -- If the incoming message is for a group
+                        -- channel we don't know about, that's because
+                        -- it was previously hidden by the user. We need
+                        -- to show it, and to do that we need to update
+                        -- the server-side preference. (That, in turn,
+                        -- triggers a channel refresh.)
+                        if chType == Group
+                            then applyPreferenceChange pref
+                            else refreshChannel nc member
 
-                      addMessageToState newPostData >>= postProcessMessageAdd
+                        addMessageToState newPostData >>= postProcessMessageAdd
 
-          return NoAction
-      Just _ -> do
-          let cp = toClientPost new (new^.postParentIdL)
-              fromMe = (cp^.cpUser == (Just $ myUserId st)) &&
-                       (isNothing $ cp^.cpUserOverride)
-              userPrefs = st^.csResources.crUserPreferences
-              isJoinOrLeave = case cp^.cpType of
-                Join  -> True
-                Leave -> True
-                _     -> False
-              ignoredJoinLeaveMessage =
-                not (userPrefs^.userPrefShowJoinLeave) && isJoinOrLeave
-              cId = postChannelId new
+            return NoAction
+        Just _ -> do
+            let cp = toClientPost new (new^.postParentIdL)
+                fromMe = (cp^.cpUser == (Just $ myUserId st)) &&
+                         (isNothing $ cp^.cpUserOverride)
+                userPrefs = st^.csResources.crUserPreferences
+                isJoinOrLeave = case cp^.cpType of
+                  Join  -> True
+                  Leave -> True
+                  _     -> False
+                ignoredJoinLeaveMessage =
+                  not (userPrefs^.userPrefShowJoinLeave) && isJoinOrLeave
+                cId = postChannelId new
 
-              doAddMessage = do
-                currCId <- use csCurrentChannelId
-                flags <- use (csResources.crFlaggedPosts)
-                let msg' = clientPostToMessage cp
-                             & mFlagged .~ ((cp^.cpPostId) `Set.member` flags)
-                csPostMap.at(postId new) .= Just msg'
-                csChannels %= modifyChannelById cId
-                  ((ccContents.cdMessages %~ addMessage msg') .
-                   (adjustUpdated new) .
-                   (\c -> if currCId == cId
-                          then c
-                          else updateNewMessageIndicator new c) .
-                   (\c -> if wasMentioned
-                          then c & ccInfo.cdMentionCount %~ succ
-                          else c)
-                  )
-                asyncFetchReactionsForPost cId new
-                asyncFetchAttachments new
-                postedChanMessage
-
-              doHandleAddedMessage = do
-                  -- If the message is in reply to another message,
-                  -- try to find it in the scrollback for the post's
-                  -- channel. If the message isn't there, fetch it. If
-                  -- we have to fetch it, don't post this message to the
-                  -- channel until we have fetched the parent.
-                  case cp^.cpInReplyToPost of
-                      Just parentId ->
-                          case getMessageForPostId st parentId of
-                              Nothing -> do
-                                  doAsyncChannelMM Preempt cId
-                                      (\s _ _ -> MM.mmGetThread parentId s)
-                                      (\_ p -> do
-                                          let postMap = HM.fromList [ ( pId
-                                                                      , clientPostToMessage
-                                                                        (toClientPost x (x^.postParentIdL))
-                                                                      )
-                                                                    | (pId, x) <- HM.toList (p^.postsPostsL)
-                                                                    ]
-                                          csPostMap %= HM.union postMap
-                                      )
-                              _ -> return ()
-                      _ -> return ()
-
-                  doAddMessage
-
-              postedChanMessage =
-                withChannelOrDefault (postChannelId new) NoAction $ \chan -> do
+                doAddMessage = do
                     currCId <- use csCurrentChannelId
+                    flags <- use (csResources.crFlaggedPosts)
+                    let msg' = clientPostToMessage cp
+                                 & mFlagged .~ ((cp^.cpPostId) `Set.member` flags)
+                    csPostMap.at(postId new) .= Just msg'
+                    csChannels %= modifyChannelById cId
+                      ((ccContents.cdMessages %~ addMessage msg') .
+                       (adjustUpdated new) .
+                       (\c -> if currCId == cId
+                              then c
+                              else updateNewMessageIndicator new c) .
+                       (\c -> if wasMentioned
+                              then c & ccInfo.cdMentionCount %~ succ
+                              else c)
+                      )
+                    asyncFetchReactionsForPost cId new
+                    asyncFetchAttachments new
+                    postedChanMessage
 
-                    let notifyPref = notifyPreference (myUser st) chan
-                        curChannelAction = if postChannelId new == currCId
-                                           then UpdateServerViewed
-                                           else NoAction
-                        originUserAction =
-                          if | fromMe                            -> NoAction
-                             | ignoredJoinLeaveMessage           -> NoAction
-                             | notifyPref == NotifyOptionAll     -> NotifyUser [newPostData]
-                             | notifyPref == NotifyOptionMention
-                                 && wasMentioned                 -> NotifyUser [newPostData]
-                             | otherwise                         -> NoAction
+                doHandleAddedMessage = do
+                    -- If the message is in reply to another message,
+                    -- try to find it in the scrollback for the post's
+                    -- channel. If the message isn't there, fetch it. If
+                    -- we have to fetch it, don't post this message to the
+                    -- channel until we have fetched the parent.
+                    case cp^.cpInReplyToPost of
+                        Just parentId ->
+                            case getMessageForPostId st parentId of
+                                Nothing -> do
+                                    doAsyncChannelMM Preempt cId
+                                        (\s _ _ -> MM.mmGetThread parentId s)
+                                        (\_ p -> do
+                                            let postMap = HM.fromList [ ( pId
+                                                                        , clientPostToMessage
+                                                                          (toClientPost x (x^.postParentIdL))
+                                                                        )
+                                                                      | (pId, x) <- HM.toList (p^.postsPostsL)
+                                                                      ]
+                                            csPostMap %= HM.union postMap
+                                        )
+                                _ -> return ()
+                        _ -> return ()
 
-                    return $ curChannelAction `andProcessWith` originUserAction
+                    doAddMessage
 
-          doHandleAddedMessage
+                postedChanMessage =
+                  withChannelOrDefault (postChannelId new) NoAction $ \chan -> do
+                      currCId <- use csCurrentChannelId
+
+                      let notifyPref = notifyPreference (myUser st) chan
+                          curChannelAction = if postChannelId new == currCId
+                                             then UpdateServerViewed
+                                             else NoAction
+                          originUserAction =
+                            if | fromMe                            -> NoAction
+                               | ignoredJoinLeaveMessage           -> NoAction
+                               | notifyPref == NotifyOptionAll     -> NotifyUser [newPostData]
+                               | notifyPref == NotifyOptionMention
+                                   && wasMentioned                 -> NotifyUser [newPostData]
+                               | otherwise                         -> NoAction
+
+                      return $ curChannelAction `andProcessWith` originUserAction
+
+            doHandleAddedMessage
 
 getNewMessageCutoff :: ChannelId -> ChatState -> Maybe NewMessageIndicator
 getNewMessageCutoff cId st = do
@@ -1333,36 +1338,36 @@ getEditedMessageCutoff cId st = do
 
 fetchVisibleIfNeeded :: MH ()
 fetchVisibleIfNeeded = do
-  sts <- use csConnectionStatus
-  case sts of
-    Connected -> do
-       cId <- use csCurrentChannelId
-       withChannel cId $ \chan ->
-           let msgs = chan^.ccContents.cdMessages.to reverseMessages
-               (numRemaining, gapInDisplayable, _, rel'pId, overlap) =
-                   foldl gapTrail (numScrollbackPosts, False, Nothing, Nothing, 2) msgs
-               gapTrail a@(_,  True, _, _, _) _ = a
-               gapTrail a@(0,     _, _, _, _) _ = a
-               gapTrail   (a, False, b, c, d) m | isGap m = (a, True, b, c, d)
-               gapTrail (remCnt, _, prev'pId, prev''pId, ovl) msg =
-                   (remCnt - 1, False, msg^.mMessageId <|> prev'pId, prev'pId <|> prev''pId,
-                    ovl + if not (isPostMessage msg) then 1 else 0)
-               numToReq = numRemaining + overlap
-               query = MM.defaultPostQuery
-                       { MM.postQueryPage    = Just 0
-                       , MM.postQueryPerPage = Just numToReq
-                       }
-               finalQuery = case rel'pId of
-                              Just (MessagePostId pid) -> query { MM.postQueryBefore = Just pid }
-                              _ -> query
-               op = \s _ c -> MM.mmGetPostsForChannel c finalQuery s
-           in when ((not $ chan^.ccContents.cdFetchPending) && gapInDisplayable) $ do
-                     csChannel(cId).ccContents.cdFetchPending .= True
-                     doAsyncChannelMM Preempt cId op
-                         (\c p -> do addObtainedMessages c (-numToReq) p >>= postProcessMessageAdd
-                                     csChannel(c).ccContents.cdFetchPending .= False)
+    sts <- use csConnectionStatus
+    case sts of
+      Connected -> do
+         cId <- use csCurrentChannelId
+         withChannel cId $ \chan ->
+             let msgs = chan^.ccContents.cdMessages.to reverseMessages
+                 (numRemaining, gapInDisplayable, _, rel'pId, overlap) =
+                     foldl gapTrail (numScrollbackPosts, False, Nothing, Nothing, 2) msgs
+                 gapTrail a@(_,  True, _, _, _) _ = a
+                 gapTrail a@(0,     _, _, _, _) _ = a
+                 gapTrail   (a, False, b, c, d) m | isGap m = (a, True, b, c, d)
+                 gapTrail (remCnt, _, prev'pId, prev''pId, ovl) msg =
+                     (remCnt - 1, False, msg^.mMessageId <|> prev'pId, prev'pId <|> prev''pId,
+                      ovl + if not (isPostMessage msg) then 1 else 0)
+                 numToReq = numRemaining + overlap
+                 query = MM.defaultPostQuery
+                         { MM.postQueryPage    = Just 0
+                         , MM.postQueryPerPage = Just numToReq
+                         }
+                 finalQuery = case rel'pId of
+                                Just (MessagePostId pid) -> query { MM.postQueryBefore = Just pid }
+                                _ -> query
+                 op = \s _ c -> MM.mmGetPostsForChannel c finalQuery s
+             in when ((not $ chan^.ccContents.cdFetchPending) && gapInDisplayable) $ do
+                       csChannel(cId).ccContents.cdFetchPending .= True
+                       doAsyncChannelMM Preempt cId op
+                           (\c p -> do addObtainedMessages c (-numToReq) p >>= postProcessMessageAdd
+                                       csChannel(c).ccContents.cdFetchPending .= False)
 
-    _ -> return ()
+      _ -> return ()
 
 setChannelTopic :: Text -> MH ()
 setChannelTopic msg = do
@@ -1374,50 +1379,50 @@ setChannelTopic msg = do
 
 channelHistoryForward :: MH ()
 channelHistoryForward = do
-  cId <- use csCurrentChannelId
-  inputHistoryPos <- use (csEditState.cedInputHistoryPosition.at cId)
-  inputHistory <- use (csEditState.cedInputHistory)
-  case inputHistoryPos of
-      Just (Just i)
-        | i == 0 -> do
-          -- Transition out of history navigation
-          csEditState.cedInputHistoryPosition.at cId .= Just Nothing
-          loadLastEdit
-        | otherwise -> do
-          let Just entry = getHistoryEntry cId newI inputHistory
-              newI = i - 1
-              eLines = T.lines entry
-              mv = if length eLines == 1 then gotoEOL else id
-          csEditState.cedEditor.editContentsL .= (mv $ textZipper eLines Nothing)
-          csEditState.cedInputHistoryPosition.at cId .= (Just $ Just newI)
-      _ -> return ()
+    cId <- use csCurrentChannelId
+    inputHistoryPos <- use (csEditState.cedInputHistoryPosition.at cId)
+    inputHistory <- use (csEditState.cedInputHistory)
+    case inputHistoryPos of
+        Just (Just i)
+          | i == 0 -> do
+            -- Transition out of history navigation
+            csEditState.cedInputHistoryPosition.at cId .= Just Nothing
+            loadLastEdit
+          | otherwise -> do
+            let Just entry = getHistoryEntry cId newI inputHistory
+                newI = i - 1
+                eLines = T.lines entry
+                mv = if length eLines == 1 then gotoEOL else id
+            csEditState.cedEditor.editContentsL .= (mv $ textZipper eLines Nothing)
+            csEditState.cedInputHistoryPosition.at cId .= (Just $ Just newI)
+        _ -> return ()
 
 channelHistoryBackward :: MH ()
 channelHistoryBackward = do
-  cId <- use csCurrentChannelId
-  inputHistoryPos <- use (csEditState.cedInputHistoryPosition.at cId)
-  inputHistory <- use (csEditState.cedInputHistory)
-  case inputHistoryPos of
-      Just (Just i) ->
-          let newI = i + 1
-          in case getHistoryEntry cId newI inputHistory of
-              Nothing -> return ()
-              Just entry -> do
-                  let eLines = T.lines entry
-                      mv = if length eLines == 1 then gotoEOL else id
-                  csEditState.cedEditor.editContentsL .= (mv $ textZipper eLines Nothing)
-                  csEditState.cedInputHistoryPosition.at cId .= (Just $ Just newI)
-      _ ->
-          let newI = 0
-          in case getHistoryEntry cId newI inputHistory of
-              Nothing -> return ()
-              Just entry ->
-                  let eLines = T.lines entry
-                      mv = if length eLines == 1 then gotoEOL else id
-                  in do
-                    saveCurrentEdit
+    cId <- use csCurrentChannelId
+    inputHistoryPos <- use (csEditState.cedInputHistoryPosition.at cId)
+    inputHistory <- use (csEditState.cedInputHistory)
+    case inputHistoryPos of
+        Just (Just i) ->
+            let newI = i + 1
+            in case getHistoryEntry cId newI inputHistory of
+                Nothing -> return ()
+                Just entry -> do
+                    let eLines = T.lines entry
+                        mv = if length eLines == 1 then gotoEOL else id
                     csEditState.cedEditor.editContentsL .= (mv $ textZipper eLines Nothing)
                     csEditState.cedInputHistoryPosition.at cId .= (Just $ Just newI)
+        _ ->
+            let newI = 0
+            in case getHistoryEntry cId newI inputHistory of
+                Nothing -> return ()
+                Just entry ->
+                    let eLines = T.lines entry
+                        mv = if length eLines == 1 then gotoEOL else id
+                    in do
+                      saveCurrentEdit
+                      csEditState.cedEditor.editContentsL .= (mv $ textZipper eLines Nothing)
+                      csEditState.cedInputHistoryPosition.at cId .= (Just $ Just newI)
 
 showHelpScreen :: HelpTopic -> MH ()
 showHelpScreen topic = do
