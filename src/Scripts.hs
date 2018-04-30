@@ -13,7 +13,8 @@ import qualified Data.Text as T
 import           System.Exit ( ExitCode(..) )
 
 import           FilePaths ( Script(..), getAllScripts, locateScriptPath )
-import           State ( sendMessage, runLoggedCommand )
+import           State ( sendMessage )
+import           State.Common ( runLoggedCommand )
 import           State.Common
 import           Types
 

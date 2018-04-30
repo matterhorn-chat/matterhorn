@@ -5,9 +5,6 @@ module State
   -- * Message flagging
     updateMessageFlag
 
-  -- * Running external programs
-  , runLoggedCommand
-
   -- * Channel sidebar selection
   , prevChannel
   , nextChannel
