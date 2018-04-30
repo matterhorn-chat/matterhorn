@@ -52,6 +52,9 @@ not hard rules but help to explain the current overall appearance:
   * Top-level functions have haddock documentation to help describe
     what the function is used for (and sometimes ways in which it
     shouldn't be used).
+
+  * Modules with more than a few exports should have an explicit export
+    list to help us identify dead code.
     
 
 Branching
