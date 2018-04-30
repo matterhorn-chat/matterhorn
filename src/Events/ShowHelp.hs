@@ -29,6 +29,10 @@ helpKeybindings = mkKeybindings
         mh $ vScrollBy (viewportScroll HelpViewport) (1 * pageAmount)
     , mkKb CancelEvent "Return to the main interface" $
         setMode Main
+    , mkKb ScrollBottomEvent "Scroll to the end of the help" $
+        mh $ vScrollToEnd (viewportScroll HelpViewport)
+    , mkKb ScrollTopEvent "Scroll to the beginning of the help" $
+        mh $ vScrollToBeginning (viewportScroll HelpViewport)
     ]
 
 -- KB "Scroll up"
