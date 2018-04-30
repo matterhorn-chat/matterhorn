@@ -28,12 +28,6 @@ module State
   , beginCurrentChannelDeleteConfirm
   , deleteCurrentChannel
   , loadMoreMessages
-  , channelScrollToTop
-  , channelScrollToBottom
-  , channelScrollUp
-  , channelScrollDown
-  , channelPageUp
-  , channelPageDown
   , isCurrentChannel
   , isRecentChannel
   , getNewMessageCutoff
@@ -81,7 +75,7 @@ import           Prelude.MH
 
 import           Brick ( invalidateCacheEntry )
 import           Brick.Main ( getVtyHandle, viewportScroll
-                            , vScrollToBeginning, vScrollBy, vScrollToEnd )
+                            , vScrollToBeginning )
 import           Brick.Themes ( themeToAttrMap )
 import           Brick.Widgets.Edit ( applyEdit )
 import           Brick.Widgets.Edit ( getEditContents, editContentsL )
@@ -694,36 +688,6 @@ setTheme name =
         Nothing -> listThemes
         Just it -> csResources.crTheme .=
             (themeToAttrMap $ internalTheme it)
-
-channelPageUp :: MH ()
-channelPageUp = do
-    cId <- use csCurrentChannelId
-    mh $ vScrollBy (viewportScroll (ChannelMessages cId)) (-1 * pageAmount)
-
-channelPageDown :: MH ()
-channelPageDown = do
-    cId <- use csCurrentChannelId
-    mh $ vScrollBy (viewportScroll (ChannelMessages cId)) pageAmount
-
-channelScrollUp :: MH ()
-channelScrollUp = do
-    cId <- use csCurrentChannelId
-    mh $ vScrollBy (viewportScroll (ChannelMessages cId)) (-1)
-
-channelScrollDown :: MH ()
-channelScrollDown = do
-    cId <- use csCurrentChannelId
-    mh $ vScrollBy (viewportScroll (ChannelMessages cId)) 1
-
-channelScrollToTop :: MH ()
-channelScrollToTop = do
-    cId <- use csCurrentChannelId
-    mh $ vScrollToBeginning (viewportScroll (ChannelMessages cId))
-
-channelScrollToBottom :: MH ()
-channelScrollToBottom = do
-    cId <- use csCurrentChannelId
-    mh $ vScrollToEnd (viewportScroll (ChannelMessages cId))
 
 -- | Fetches additional message history for the current channel.  This
 -- is generally called when in ChannelScroll mode, in which state the
