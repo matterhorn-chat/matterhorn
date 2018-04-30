@@ -40,6 +40,7 @@ executable matterhorn
                        App
                        Constants
                        State
+                       State.Channels
                        State.ChannelScroll
                        State.ChannelSelect
                        State.Common

@@ -20,6 +20,7 @@ import           Network.Mattermost.WebSocket
 import           Connection
 import           HelpTopics
 import           State
+import           State.Messages
 import           State.Common
 import           State.Users
 import           Types

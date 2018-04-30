@@ -4,6 +4,8 @@ module State.Messages
     , updateMessageFlag
     , lastMsg
     , sendMessage
+    , editMessage
+    , deleteMessage
     )
 where
 
@@ -13,14 +15,16 @@ import           Prelude.MH
 import           Data.Function ( on )
 import qualified Data.Set as Set
 import qualified Data.Text as T
-import           Lens.Micro.Platform ( (.=), (%=), (%~), (.~), to, at
+import           Lens.Micro.Platform ( Traversal', (.=), (%=), (%~), (.~), to, at
                                      , traversed, filtered, ix )
 
 import           Network.Mattermost
 import qualified Network.Mattermost.Endpoints as MM
+import           Network.Mattermost.Lenses
 import           Network.Mattermost.Types
 
 import           State.Common
+import           State.Channels
 import           TimeUtils
 import           Types
 
@@ -143,3 +147,31 @@ sendMessage mode msg =
 shouldSkipMessage :: Text -> Bool
 shouldSkipMessage "" = True
 shouldSkipMessage s = T.all (`elem` (" \t"::String)) s
+
+editMessage :: Post -> MH ()
+editMessage new = do
+    myId <- gets myUserId
+    let isEditedMessage m = m^.mMessageId == Just (MessagePostId $ new^.postIdL)
+        msg = clientPostToMessage (toClientPost new (new^.postParentIdL))
+        chan = csChannel (new^.postChannelIdL)
+    chan . ccContents . cdMessages . traversed . filtered isEditedMessage .= msg
+
+    when (postUserId new /= Just myId) $
+        chan %= adjustEditedThreshold new
+
+    csPostMap.ix(postId new) .= msg
+    asyncFetchReactionsForPost (postChannelId new) new
+    asyncFetchAttachments new
+    cId <- use csCurrentChannelId
+    when (postChannelId new == cId) updateViewed
+
+deleteMessage :: Post -> MH ()
+deleteMessage new = do
+    let isDeletedMessage m = m^.mMessageId == Just (MessagePostId $ new^.postIdL) ||
+                             isReplyTo (new^.postIdL) m
+        chan :: Traversal' ChatState ClientChannel
+        chan = csChannel (new^.postChannelIdL)
+    chan.ccContents.cdMessages.traversed.filtered isDeletedMessage %= (& mDeleted .~ True)
+    chan %= adjustUpdated new
+    cId <- use csCurrentChannelId
+    when (postChannelId new == cId) updateViewed
