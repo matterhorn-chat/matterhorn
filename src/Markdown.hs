@@ -19,7 +19,7 @@ where
 import           Prelude ()
 import           Prelude.MH
 
-import           Brick ( (<+>), Widget, textWidth )
+import           Brick ( (<+>), Widget(Widget), textWidth )
 import qualified Brick as B
 import qualified Brick.Widgets.Border as B
 import qualified Brick.Widgets.Border.Style as B
@@ -271,7 +271,7 @@ blockToWidget :: HighlightSet -> Block -> Widget a
 blockToWidget hSet (C.Para is) = toInlineChunk is hSet
 blockToWidget hSet (C.Header n is) =
     B.withDefAttr clientHeaderAttr $
-      hBox [header n, B.txt " ", toInlineChunk is hSet]
+      hBox [B.padRight (B.Pad 1) $ header n, toInlineChunk is hSet]
 blockToWidget hSet (C.Blockquote is) =
     addQuoting (vBox $ fmap (blockToWidget hSet) is)
 blockToWidget hSet (C.List _ l bs) = blocksToList l bs hSet
@@ -576,10 +576,10 @@ inlineGetURLs _ = mempty
 
 replyArrow :: Widget a
 replyArrow =
-    hBox [ B.str " "
-         , B.borderElem B.bsCornerTL
-         , B.str "▸"
-         ]
+    Widget B.Fixed B.Fixed $ do
+        ctx <- B.getContext
+        let bs = ctx^.B.ctxBorderStyleL
+        B.render $ B.str [' ', B.bsCornerTL bs, '▸']
 
 findVerbatimChunk :: C.Blocks -> Maybe Text
 findVerbatimChunk = getFirst . F.foldMap go
