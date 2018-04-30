@@ -96,6 +96,7 @@ executable matterhorn
                        Login
                        Markdown
                        Options
+                       Util
                        Paths_matterhorn
   default-extensions:  OverloadedStrings,
                        ScopedTypeVariables,

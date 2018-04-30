@@ -126,6 +126,7 @@ import           Themes
 import           TimeUtils ( justBefore, justAfter )
 import           Types
 import           Types.Common
+import           Util
 import           Zipper ( Zipper )
 import qualified Zipper as Z
 
@@ -1608,23 +1609,6 @@ findUrls :: ClientChannel -> [LinkChoice]
 findUrls chan =
     let msgs = chan^.ccContents.cdMessages
     in removeDuplicates $ concat $ toList $ toList <$> msgURLs <$> msgs
-
--- XXX: move this somewhere more sensible!
-
--- | The 'nubOn' function removes duplicate elements from a list. In
--- particular, it keeps only the /last/ occurrence of each
--- element. The equality of two elements in a call to @nub f@ is
--- determined using @f x == f y@, and the resulting elements must have
--- an 'Ord' instance in order to make this function more efficient.
-nubOn :: (Ord b) => (a -> b) -> [a] -> [a]
-nubOn f = snd . go Set.empty
-  where go before [] = (before, [])
-        go before (x:xs) =
-          let (before', xs') = go before xs
-              key = f x in
-          if key `Set.member` before'
-            then (before', xs')
-            else (Set.insert key before', x : xs')
 
 removeDuplicates :: [LinkChoice] -> [LinkChoice]
 removeDuplicates = nubOn (\ l -> (l^.linkURL, l^.linkUser))
