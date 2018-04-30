@@ -20,6 +20,7 @@ import           State.ChannelSelect
 import           State.Common
 import           State.Editing ( toggleMessagePreview )
 import           State.PostListOverlay
+import           State.Themes
 import           State.UserListOverlay
 import           Types
 

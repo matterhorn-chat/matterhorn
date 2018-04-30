@@ -63,10 +63,6 @@ module State
 
   -- * Help
   , showHelpScreen
-
-  -- * Themes
-  , listThemes
-  , setTheme
   )
 where
 
@@ -76,7 +72,6 @@ import           Prelude.MH
 import           Brick ( invalidateCacheEntry )
 import           Brick.Main ( getVtyHandle, viewportScroll
                             , vScrollToBeginning )
-import           Brick.Themes ( themeToAttrMap )
 import           Brick.Widgets.Edit ( applyEdit )
 import           Brick.Widgets.Edit ( getEditContents, editContentsL )
 import           Brick.Widgets.List ( list )
@@ -102,7 +97,6 @@ import           Network.Mattermost.Types
 import           Config
 import           Constants
 import           InputHistory
-import           Themes
 import           TimeUtils ( justBefore, justAfter )
 import           Types
 import           Types.Common
@@ -674,20 +668,6 @@ getNextUnreadChannel st =
     -- it- so we need to skip that channel when doing the zipper search
     -- for the next candidate channel.
     Z.findRight (\cId -> hasUnread st cId && (cId /= st^.csCurrentChannelId))
-
-listThemes :: MH ()
-listThemes = do
-    let themeList = T.intercalate "\n\n" $
-                    "Available built-in themes:" :
-                    (("  " <>) <$> internalThemeName <$> internalThemes)
-    postInfoMessage themeList
-
-setTheme :: Text -> MH ()
-setTheme name =
-    case lookupTheme name of
-        Nothing -> listThemes
-        Just it -> csResources.crTheme .=
-            (themeToAttrMap $ internalTheme it)
 
 -- | Fetches additional message history for the current channel.  This
 -- is generally called when in ChannelScroll mode, in which state the
