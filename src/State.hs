@@ -53,7 +53,6 @@ module State
   -- * Working with messages
   , PostToAdd(..)
   , sendMessage
-  , msgURLs
   , editMessage
   , deleteMessage
   , addNewPostedMessage
