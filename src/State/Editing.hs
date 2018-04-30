@@ -1,7 +1,15 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE RecordWildCards #-}
-
-module State.Editing where
+module State.Editing
+  ( requestSpellCheck
+  , editingKeybindings
+  , toggleMessagePreview
+  , toggleMultilineEditing
+  , invokeExternalEditor
+  , handlePaste
+  , handleEditingInput
+  )
+where
 
 import           Prelude ()
 import           Prelude.MH

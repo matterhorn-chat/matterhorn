@@ -1,6 +1,11 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Command where
+module Command
+  ( commandList
+  , dispatchCommand
+  , printArgSpec
+  )
+where
 
 import           Prelude ()
 import           Prelude.MH

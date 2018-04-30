@@ -1,4 +1,12 @@
-module State.PostListOverlay where
+module State.PostListOverlay
+  ( enterFlaggedPostListMode
+  , enterSearchResultPostListMode
+  , postListSelectUp
+  , postListSelectDown
+  , postListUnflagSelected
+  , exitPostListMode
+  )
+where
 
 import           Prelude ()
 import           Prelude.MH

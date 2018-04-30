@@ -1,4 +1,10 @@
-module Draw.Messages where
+module Draw.Messages
+  ( nameForUserRef
+  , maxMessageHeight
+  , renderSingleMessage
+  , unsafeRenderMessageSelection
+  )
+where
 
 import           Brick
 import           Brick.Widgets.Border
