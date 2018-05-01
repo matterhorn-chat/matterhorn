@@ -1,7 +1,5 @@
 module State
-  ( getNewMessageCutoff
-  , getEditedMessageCutoff
-  , refreshClientConfig
+  ( refreshClientConfig
   , showHelpScreen
   )
 where
@@ -13,7 +11,6 @@ import           Brick.Main ( viewportScroll, vScrollToBeginning )
 import           Lens.Micro.Platform
 
 import qualified Network.Mattermost.Endpoints as MM
-import           Network.Mattermost.Types
 
 import           Types
 
@@ -29,16 +26,6 @@ refreshClientConfig = do
     doAsyncWith Preempt $ do
         cfg <- MM.mmGetClientConfiguration (Just "old") session
         return (csClientConfig .= Just cfg)
-
-getNewMessageCutoff :: ChannelId -> ChatState -> Maybe NewMessageIndicator
-getNewMessageCutoff cId st = do
-    cc <- st^?csChannel(cId)
-    return $ cc^.ccInfo.cdNewMessageIndicator
-
-getEditedMessageCutoff :: ChannelId -> ChatState -> Maybe ServerTime
-getEditedMessageCutoff cId st = do
-    cc <- st^?csChannel(cId)
-    cc^.ccInfo.cdEditedMessageThreshold
 
 showHelpScreen :: HelpTopic -> MH ()
 showHelpScreen topic = do

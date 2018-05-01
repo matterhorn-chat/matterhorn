@@ -36,7 +36,6 @@ import           Draw.Util
 import           Events.Keybindings
 import           Events.MessageSelect
 import           Markdown
-import           State
 import           State.Common ( msgURLs )
 import           State.MessageSelect
 import           Themes

@@ -189,6 +189,8 @@ module Types
   , useNickname
   , displaynameForUserId
   , raiseInternalEvent
+  , getNewMessageCutoff
+  , getEditedMessageCutoff
 
   , normalChannelSigil
 
@@ -1293,3 +1295,13 @@ getHighlightSet st =
                  , hChannelSet = Set.fromList (st^..csChannels.folded.ccInfo.cdName)
                  , hSyntaxMap = st^.csResources.crSyntaxMap
                  }
+
+getNewMessageCutoff :: ChannelId -> ChatState -> Maybe NewMessageIndicator
+getNewMessageCutoff cId st = do
+    cc <- st^?csChannel(cId)
+    return $ cc^.ccInfo.cdNewMessageIndicator
+
+getEditedMessageCutoff :: ChannelId -> ChatState -> Maybe ServerTime
+getEditedMessageCutoff cId st = do
+    cc <- st^?csChannel(cId)
+    cc^.ccInfo.cdEditedMessageThreshold
