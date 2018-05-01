@@ -20,7 +20,7 @@ import qualified Network.Mattermost.Types as MM
 
 import           HelpTopics
 import           Scripts
-import           State
+import           State.Help
 import           State.Channels
 import           State.ChannelSelect
 import           State.Common

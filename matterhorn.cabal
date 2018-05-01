@@ -39,7 +39,7 @@ executable matterhorn
                        Completion
                        App
                        Constants
-                       State
+                       State.Help
                        State.Channels
                        State.ChannelScroll
                        State.ChannelSelect
