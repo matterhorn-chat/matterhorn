@@ -26,6 +26,7 @@ import qualified Data.Foldable as F
 import           Data.List ( isInfixOf )
 import qualified Data.Map as M
 import qualified Data.Text as T
+import qualified Data.Sequence as Seq
 import           Data.Time ( getCurrentTime, addUTCTime )
 import           Lens.Micro.Platform ( (.=), (%=), (%~), mapped )
 import           Skylighting.Loader ( loadSyntaxesFromDir )
@@ -309,7 +310,11 @@ data LogThreadState =
     LogThreadState { logThreadDestination :: Maybe (FilePath, Handle)
                    , logThreadEventChan :: BChan MHEvent
                    , logThreadCommandChan :: STM.TChan LogCommand
+                   , logThreadMessageBuffer :: Seq.Seq LogMessage
                    }
+
+maxLogMessageBufferSize :: Int
+maxLogMessageBufferSize = 100
 
 -- | The logging thread.
 startLoggingThread :: BChan MHEvent -> STM.TChan LogCommand -> IO ()
@@ -317,6 +322,7 @@ startLoggingThread eventChan logChan = do
     let initialState = LogThreadState { logThreadDestination = Nothing
                                       , logThreadEventChan = eventChan
                                       , logThreadCommandChan = logChan
+                                      , logThreadMessageBuffer = mempty
                                       }
     void $ forkIO $
         void $ St.runStateT logThreadBody initialState
@@ -331,6 +337,7 @@ nextLogCommand = do
 
 handleLogCommand :: LogCommand -> St.StateT LogThreadState IO ()
 handleLogCommand (LogToFile newPath) = do
+    now <- liftIO getCurrentTime
     oldDest <- St.gets logThreadDestination
 
     shouldChange <- case oldDest of
@@ -339,7 +346,9 @@ handleLogCommand (LogToFile newPath) = do
             if oldPath == newPath
             then return False
             else do
-                liftIO $ hClose oldHandle
+                liftIO $ do
+                    hPutStrLn oldHandle $ "[" <> show now <> "] <<< Logging end >>>"
+                    hClose oldHandle
                 return True
 
     when shouldChange $ do
@@ -348,10 +357,25 @@ handleLogCommand (LogToFile newPath) = do
             Left (e::SomeException) -> liftIO $ do
                 hPutStrLn stderr $ "Error in log thread: could not open " <> show newPath <> ": " <> show e
                 exitFailure
-            Right handle ->
+            Right handle -> do
                 St.modify $ \s -> s { logThreadDestination = Just (newPath, handle)
                                     }
+                flushLogMessageBuffer handle
+                liftIO $ hPutStrLn handle $ "[" <> show now <> "] <<< Logging start >>>"
 handleLogCommand (LogAMessage lm) = do
+    let addMessageToBuffer s =
+            let newSeq = if Seq.length s >= maxLogMessageBufferSize
+                         then Seq.drop 1 s
+                         else s
+            in newSeq Seq.|> lm
+
+    -- Append the message to the internal buffer, maintaining the bound
+    -- on the internal buffer size.
+    St.modify $ \s -> s { logThreadMessageBuffer = addMessageToBuffer (logThreadMessageBuffer s)
+                        }
+
+    -- If we have an active log destination, write the message to the
+    -- output file.
     dest <- St.gets logThreadDestination
     case dest of
         Nothing -> return ()
@@ -364,3 +388,14 @@ hPutLogMessage handle (LogMessage {..}) = do
     hPutStr handle $ "[" <> show logMessageTimestamp <> "] "
     hPutStr handle $ "[" <> show logMessageCategory <> "] "
     hPutStrLn handle $ T.unpack logMessageText
+
+flushLogMessageBuffer :: Handle -> St.StateT LogThreadState IO ()
+flushLogMessageBuffer handle = do
+    buf <- St.gets logThreadMessageBuffer
+    when (Seq.length buf > 0) $ do
+        liftIO $ do
+            hPutStrLn handle "<<< Log message buffer begin >>>"
+            forM_ buf (hPutLogMessage handle)
+            hPutStrLn handle "<<< Log message buffer end >>>"
+            hFlush handle
+        St.modify $ \s -> s { logThreadMessageBuffer = mempty }
