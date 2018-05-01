@@ -121,6 +121,7 @@ module Types
   , crConn
   , crConfiguration
   , crSyntaxMap
+  , crLoggingChannel
   , getSession
   , getResourceSession
 
@@ -147,9 +148,13 @@ module Types
   , mhHandleEventLensed
   , St.gets
   , mhError
+  , mhLog
   , LogContext(..)
   , withLogContext
   , getLogContext
+  , LogMessage(..)
+  , LogCommand(..)
+  , LogCategory(..)
 
   , requestQuit
   , clientPostToMessage
@@ -528,6 +533,30 @@ setUserPreferences = flip (F.foldr go)
                   preferenceValue p /= PreferenceValue "false" }
             | otherwise = u
 
+-- | Log message tags.
+data LogCategory =
+    LogGeneral
+    | LogAPI
+    deriving (Eq, Show)
+
+-- | A log message.
+data LogMessage =
+    LogMessage { logMessageText :: !Text
+               -- ^ The text of the log message.
+               , logMessageContext :: !(Maybe LogContext)
+               -- ^ The optional context information relevant to the log
+               -- message.
+               , logMessageCategory :: !LogCategory
+               -- ^ The category of the log message.
+               }
+               deriving (Show)
+
+-- | A logging thread command.
+data LogCommand =
+    LogToFile FilePath
+    | LogAMessage !LogMessage
+    deriving (Show)
+
 -- | 'ChatResources' represents configuration and connection-related
 -- information, as opposed to current model or view information.
 -- Information that goes in the 'ChatResources' value should be limited
@@ -547,6 +576,7 @@ data ChatResources =
                   , _crFlaggedPosts        :: Set PostId
                   , _crUserPreferences     :: UserPreferences
                   , _crSyntaxMap           :: SyntaxMap
+                  , _crLoggingChannel      :: STM.TChan LogCommand
                   }
 
 
@@ -849,6 +879,17 @@ withLogContext c act = MH $ R.withReaderT (const $ Just c) (fromMH act)
 -- | Get the current logging context.
 getLogContext :: MH (Maybe LogContext)
 getLogContext = MH R.ask
+
+-- | Log a message.
+mhLog :: LogCategory -> Text -> MH ()
+mhLog cat msg = do
+    ctx <- getLogContext
+    let lm = LogMessage { logMessageText = msg
+                        , logMessageContext = ctx
+                        , logMessageCategory = cat
+                        }
+    chan <- use (to (_crLoggingChannel . _csResources))
+    liftIO $ STM.atomically $ STM.writeTChan chan $ LogAMessage lm
 
 -- | Run an 'MM' computation, choosing whether to continue or halt based
 -- on the resulting

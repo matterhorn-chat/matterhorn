@@ -10,7 +10,6 @@ import           Prelude.MH
 import           Brick
 import           Control.Monad.Trans.Except ( runExceptT )
 import qualified Graphics.Vty as Vty
-import           System.IO ( IOMode(WriteMode), openFile, hClose )
 import           Text.Aspell ( stopAspell )
 
 import           Network.Mattermost
@@ -37,11 +36,7 @@ app = App
 
 runMatterhorn :: Options -> Config -> IO ChatState
 runMatterhorn opts config = do
-    logFile <- case optLogLocation opts of
-      Just path -> Just `fmap` openFile path WriteMode
-      Nothing   -> return Nothing
-
-    st <- setupState logFile config
+    st <- setupState (optLogLocation opts) config
 
     let mkVty = do
           vty <- Vty.mkVty Vty.defaultConfig
@@ -55,10 +50,6 @@ runMatterhorn opts config = do
     case finalSt^.csEditState.cedSpellChecker of
         Nothing -> return ()
         Just (s, _) -> stopAspell s
-
-    case logFile of
-      Nothing -> return ()
-      Just h -> hClose h
 
     return finalSt
 

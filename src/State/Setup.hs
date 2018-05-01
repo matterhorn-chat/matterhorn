@@ -18,11 +18,9 @@ import qualified Data.Text as T
 import           Lens.Micro.Platform ( (%~) )
 import           System.Exit ( exitFailure )
 import           System.FilePath ( (</>), isRelative, dropFileName )
-import           System.IO ( Handle )
 import           System.IO.Error ( catchIOError )
 
 import           Network.Mattermost.Endpoints
-import           Network.Mattermost.Logging ( mmLoggerDebug )
 import           Network.Mattermost.Types
 
 import           Config
@@ -56,16 +54,23 @@ convertLoginExceptions act =
         `catchIOError` (\e -> return $ Left $ AuthIOError e)
         `catch` (\e -> return $ Left $ OtherAuthError e)
 
-setupState :: Maybe Handle -> Config -> IO ChatState
-setupState logFile initialConfig = do
+setupState :: Maybe FilePath -> Config -> IO ChatState
+setupState mLogLocation initialConfig = do
   -- If we don't have enough credentials, ask for them.
   connInfo <- case getCredentials initialConfig of
       Nothing -> interactiveGatherCredentials (incompleteCredentials initialConfig) Nothing
       Just connInfo -> return connInfo
 
-  let setLogger = case logFile of
-        Nothing -> id
-        Just f  -> \ cd -> cd `withLogger` mmLoggerDebug f
+  logChan <- STM.newTChanIO
+
+  let logApiEvent ev = do
+          let lm = LogMessage { logMessageCategory = LogAPI
+                              , logMessageText = T.pack $ "[" <> (show $ logEventType ev) <> "] " <> logFunction ev
+                              , logMessageContext = Nothing
+                              }
+          STM.atomically $ STM.writeTChan logChan $ LogAMessage lm
+
+      setLogger cd = cd `withLogger` logApiEvent
 
       poolCfg = ConnectionPoolConfig { cpIdleConnTimeout = 60
                                      , cpStripesCount = 1
@@ -164,9 +169,16 @@ setupState logFile initialConfig = do
 
   let cr = ChatResources session cd requestChan eventChan
              slc wac (themeToAttrMap custTheme) userStatusLock
-             userIdSet config mempty userPrefs mempty
+             userIdSet config mempty userPrefs mempty logChan
 
-  initializeState cr myTeam me
+  st <- initializeState cr myTeam me
+
+  -- If we got an initial log location, start logging there.
+  case mLogLocation of
+      Nothing -> return ()
+      Just loc -> STM.atomically $ STM.writeTChan logChan (LogToFile loc)
+
+  return st
 
 initializeState :: ChatResources -> Team -> User -> IO ChatState
 initializeState cr myTeam me = do
@@ -214,6 +226,9 @@ initializeState cr myTeam me = do
   --
   -- * Syntax definition loader
   startSyntaxMapLoaderThread (cr^.crConfiguration) (cr^.crEventQueue)
+
+  -- * Logging thread
+  startLoggingThread (cr^.crEventQueue) (cr^.crLoggingChannel)
 
   -- * Main async queue worker thread
   startAsyncWorkerThread (cr^.crConfiguration) (cr^.crRequestQueue) (cr^.crEventQueue)

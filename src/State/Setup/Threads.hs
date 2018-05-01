@@ -7,6 +7,7 @@ module State.Setup.Threads
   , maybeStartSpellChecker
   , startAsyncWorkerThread
   , startSyntaxMapLoaderThread
+  , startLoggingThread
   )
 where
 
@@ -18,6 +19,7 @@ import           Control.Concurrent ( threadDelay, forkIO, MVar, putMVar, tryTak
 import qualified Control.Concurrent.STM as STM
 import           Control.Concurrent.STM.Delay
 import           Control.Exception ( SomeException, try, finally, fromException )
+import qualified Control.Monad.State as St
 import qualified Data.Foldable as F
 import           Data.List ( isInfixOf )
 import qualified Data.Map as M
@@ -26,8 +28,8 @@ import           Data.Time ( getCurrentTime, addUTCTime )
 import           Lens.Micro.Platform ( (.=), (%=), (%~), mapped )
 import           Skylighting.Loader ( loadSyntaxesFromDir )
 import           System.Directory ( getTemporaryDirectory )
-import           System.Exit ( ExitCode(ExitSuccess) )
-import           System.IO ( hPutStrLn, hFlush )
+import           System.Exit ( ExitCode(ExitSuccess), exitFailure )
+import           System.IO ( Handle, IOMode(AppendMode), stderr, hPutStrLn, hFlush, openFile, hClose )
 import           System.IO.Temp ( openTempFile )
 import           Text.Aspell ( Aspell, AspellOption(..), startAspell )
 
@@ -300,3 +302,57 @@ doAsyncWork config requestChan eventChan = do
 -- https://github.com/matterhorn-chat/matterhorn/issues/391
 shouldIgnore :: SomeException -> Bool
 shouldIgnore e = "getAddrInfo" `isInfixOf` show e
+
+data LogThreadState =
+    LogThreadState { logThreadDestination :: Maybe (FilePath, Handle)
+                   , logThreadEventChan :: BChan MHEvent
+                   , logThreadCommandChan :: STM.TChan LogCommand
+                   }
+
+-- | The logging thread.
+startLoggingThread :: BChan MHEvent -> STM.TChan LogCommand -> IO ()
+startLoggingThread eventChan logChan = do
+    let initialState = LogThreadState { logThreadDestination = Nothing
+                                      , logThreadEventChan = eventChan
+                                      , logThreadCommandChan = logChan
+                                      }
+    void $ forkIO $
+        void $ St.runStateT logThreadBody initialState
+
+logThreadBody :: St.StateT LogThreadState IO ()
+logThreadBody = forever $ nextLogCommand >>= handleLogCommand
+
+nextLogCommand :: St.StateT LogThreadState IO LogCommand
+nextLogCommand = do
+    chan <- St.gets logThreadCommandChan
+    liftIO $ STM.atomically $ STM.readTChan chan
+
+handleLogCommand :: LogCommand -> St.StateT LogThreadState IO ()
+handleLogCommand (LogToFile newPath) = do
+    oldDest <- St.gets logThreadDestination
+
+    shouldChange <- case oldDest of
+        Nothing -> return True
+        Just (oldPath, oldHandle) ->
+            if oldPath == newPath
+            then return False
+            else do
+                liftIO $ hClose oldHandle
+                return True
+
+    when shouldChange $ do
+        result <- liftIO $ try $ openFile newPath AppendMode
+        case result of
+            Left (e::SomeException) -> liftIO $ do
+                hPutStrLn stderr $ "Error in log thread: could not open " <> show newPath <> ": " <> show e
+                exitFailure
+            Right handle ->
+                St.modify $ \s -> s { logThreadDestination = Just (newPath, handle)
+                                    }
+handleLogCommand (LogAMessage lm) = do
+    dest <- St.gets logThreadDestination
+    case dest of
+        Nothing -> return ()
+        Just (_, handle) -> liftIO $ do
+            hPutStrLn handle $ show lm
+            hFlush handle
