@@ -66,8 +66,8 @@ setupState mLogLocation initialConfig = do
 
   let logApiEvent ev = do
           now <- getCurrentTime
-          let lm = LogMessage { logMessageCategory = LogAPI
-                              , logMessageText = T.pack $ "[" <> (show $ logEventType ev) <> "] " <> logFunction ev
+          let lm = LogMessage { logMessageCategory = LogAPI (logEventType ev)
+                              , logMessageText = T.pack $ logFunction ev
                               , logMessageContext = Nothing
                               , logMessageTimestamp = now
                               }
