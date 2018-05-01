@@ -21,7 +21,7 @@ import           Control.Concurrent ( threadDelay, forkIO, MVar, putMVar, tryTak
 import qualified Control.Concurrent.STM as STM
 import           Control.Concurrent.STM.Delay
 import           Control.Exception ( SomeException, try, finally, fromException )
-import qualified Control.Monad.State as St
+import qualified Control.Monad.State.Strict as St
 import qualified Data.Foldable as F
 import           Data.List ( isInfixOf )
 import qualified Data.Map as M
