@@ -8,7 +8,6 @@ module Markdown
   , renderMessage
   , renderText
   , renderText'
-  , blockGetURLs
   , cursorSentinel
   , addEllipsis
   , replyArrow
@@ -540,39 +539,6 @@ textWithCursor :: Text -> Widget a
 textWithCursor t
     | T.any (== cursorSentinel) t = B.visible $ B.txt $ removeCursor t
     | otherwise = B.txt t
-
-inlinesText :: Seq C.Inline -> Text
-inlinesText = F.fold . fmap go
-  where go (C.Str t)       = t
-        go C.Space         = " "
-        go C.SoftBreak     = " "
-        go C.LineBreak     = " "
-        go (C.Emph is)     = F.fold (fmap go is)
-        go (C.Strong is)   = F.fold (fmap go is)
-        go (C.Code t)      = t
-        go (C.Link is _ _) = F.fold (fmap go is)
-        go (C.Image is _ _) = "[image" <> altInlinesString is <> "]"
-        go (C.Entity t)    = t
-        go (C.RawHtml t)   = t
-
-altInlinesString :: Seq C.Inline -> Text
-altInlinesString is | S.null is = ""
-                    | otherwise = ":" <> inlinesText is
-
-blockGetURLs :: C.Block -> Seq (Text, Text)
-blockGetURLs (C.Para is) = mconcat $ inlineGetURLs <$> toList is
-blockGetURLs (C.Header _ is) = mconcat $ inlineGetURLs <$> toList is
-blockGetURLs (C.Blockquote bs) = mconcat $ blockGetURLs <$> toList bs
-blockGetURLs (C.List _ _ bss) = mconcat $ mconcat $ (blockGetURLs <$>) <$> (toList <$> bss)
-blockGetURLs _ = mempty
-
-inlineGetURLs :: C.Inline -> Seq (Text, Text)
-inlineGetURLs (C.Emph is) = mconcat $ inlineGetURLs <$> toList is
-inlineGetURLs (C.Strong is) = mconcat $ inlineGetURLs <$> toList is
-inlineGetURLs (C.Link is url "") = (url, inlinesText is) S.<| (mconcat $ inlineGetURLs <$> toList is)
-inlineGetURLs (C.Link is _ url) = (url, inlinesText is) S.<| (mconcat $ inlineGetURLs <$> toList is)
-inlineGetURLs (C.Image is url _) = S.singleton (url, inlinesText is)
-inlineGetURLs _ = mempty
 
 replyArrow :: Widget a
 replyArrow =

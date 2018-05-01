@@ -41,13 +41,6 @@ module Types
 
   , trimChannelSigil
 
-  , LinkChoice(LinkChoice)
-  , linkUser
-  , linkURL
-  , linkTime
-  , linkName
-  , linkFileId
-
   , ChannelSelectState(..)
   , userMatches
   , channelMatches
@@ -452,17 +445,6 @@ data PostRef
     = MMId PostId
     | CLId Int
     deriving (Eq, Show)
-
--- | This type represents links to things in the 'open links' view.
-data LinkChoice =
-    LinkChoice { _linkTime   :: ServerTime
-               , _linkUser   :: UserRef
-               , _linkName   :: Text
-               , _linkURL    :: Text
-               , _linkFileId :: Maybe FileId
-               } deriving (Eq, Show)
-
-makeLenses ''LinkChoice
 
 -- Sigils
 normalChannelSigil :: Text

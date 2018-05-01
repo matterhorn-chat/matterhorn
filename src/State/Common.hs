@@ -16,7 +16,6 @@ module State.Common
   , postErrorMessage'
   , addEmoteFormatting
   , removeEmoteFormatting
-  , msgURLs
 
   , module State.Async
   )
@@ -49,7 +48,6 @@ import           Network.Mattermost.Lenses
 import           Network.Mattermost.Types
 
 import           FilePaths ( xdgName )
-import           Markdown ( blockGetURLs )
 import           State.Async
 import           Types
 
@@ -135,23 +133,6 @@ postErrorMessageIO err st = do
       addEMsg = ccContents.cdMessages %~
           (addMessage $ clientMessageToMessage msg & mMessageId .~ Just (MessageUUID uuid))
   return $ st & csChannels %~ modifyChannelById cId addEMsg
-
-msgURLs :: Message -> Seq LinkChoice
-msgURLs msg
-  | NoUser <- msg^.mUser = mempty
-  | otherwise =
-  let uid = msg^.mUser
-      msgUrls = (\ (url, text) -> LinkChoice (msg^.mDate) uid text url Nothing) <$>
-                  (mconcat $ blockGetURLs <$> (toList $ msg^.mText))
-      attachmentURLs = (\ a ->
-                          LinkChoice
-                            (msg^.mDate)
-                            uid
-                            ("attachment `" <> (a^.attachmentName) <> "`")
-                            (a^.attachmentURL)
-                            (Just (a^.attachmentFileId)))
-                       <$> (msg^.mAttachments)
-  in msgUrls <> attachmentURLs
 
 openURL :: LinkChoice -> MH Bool
 openURL link = do
