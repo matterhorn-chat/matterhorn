@@ -38,6 +38,7 @@ executable matterhorn
                        Connection
                        Completion
                        App
+                       Clipboard
                        Constants
                        State.Async
                        State.Channels

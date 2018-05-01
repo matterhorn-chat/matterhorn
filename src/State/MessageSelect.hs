@@ -35,10 +35,10 @@ import           Lens.Micro.Platform
 import qualified Network.Mattermost.Endpoints as MM
 import           Network.Mattermost.Types
 
+import           Clipboard ( copyToClipboard )
 import           Markdown ( findVerbatimChunk )
 import           Types
 import           Types.Common
-
 import           State.Common
 
 
