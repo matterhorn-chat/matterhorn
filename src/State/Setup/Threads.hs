@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 module State.Setup.Threads
   ( startUserRefreshThread
   , startTypingUsersRefreshThread
@@ -29,7 +31,7 @@ import           Lens.Micro.Platform ( (.=), (%=), (%~), mapped )
 import           Skylighting.Loader ( loadSyntaxesFromDir )
 import           System.Directory ( getTemporaryDirectory )
 import           System.Exit ( ExitCode(ExitSuccess), exitFailure )
-import           System.IO ( Handle, IOMode(AppendMode), stderr, hPutStrLn, hFlush, openFile, hClose )
+import           System.IO ( Handle, IOMode(AppendMode), stderr, hPutStr, hPutStrLn, hFlush, openFile, hClose )
 import           System.IO.Temp ( openTempFile )
 import           Text.Aspell ( Aspell, AspellOption(..), startAspell )
 
@@ -354,5 +356,11 @@ handleLogCommand (LogAMessage lm) = do
     case dest of
         Nothing -> return ()
         Just (_, handle) -> liftIO $ do
-            hPutStrLn handle $ show lm
+            hPutLogMessage handle lm
             hFlush handle
+
+hPutLogMessage :: Handle -> LogMessage -> IO ()
+hPutLogMessage handle (LogMessage {..}) = do
+    hPutStr handle $ "[" <> show logMessageTimestamp <> "] "
+    hPutStr handle $ "[" <> show logMessageCategory <> "] "
+    hPutStrLn handle $ T.unpack logMessageText
