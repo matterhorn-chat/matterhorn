@@ -67,54 +67,74 @@ matchArgs spec@(TokenArg _ rs) t = case unwordHead t of
 commandList :: [Cmd]
 commandList =
   [ Cmd "quit" "Exit Matterhorn" NoArg $ \ () -> requestQuit
+
   , Cmd "right" "Focus on the next channel" NoArg $ \ () ->
       nextChannel
+
   , Cmd "left" "Focus on the previous channel" NoArg $ \ () ->
       prevChannel
+
   , Cmd "create-channel" "Create a new channel"
     (LineArg "channel name") $ \ name ->
       createOrdinaryChannel name
+
   , Cmd "delete-channel" "Delete the current channel"
     NoArg $ \ () ->
       beginCurrentChannelDeleteConfirm
+
   , Cmd "members" "Show the current channel's members"
     NoArg $ \ () ->
       enterChannelMembersUserList
+
   , Cmd "leave" "Leave the current channel" NoArg $ \ () ->
       startLeaveCurrentChannel
+
   , Cmd "join" "Browse the list of available channels" NoArg $ \ () ->
       startJoinChannel
+
   , Cmd "join" "Join the specified channel" (TokenArg "channel" NoArg) $ \(n, ()) ->
       joinChannelByName n
+
   , Cmd "theme" "List the available themes" NoArg $ \ () ->
       listThemes
+
   , Cmd "theme" "Set the color theme"
     (TokenArg "theme" NoArg) $ \ (themeName, ()) ->
       setTheme themeName
+
   , Cmd "topic" "Set the current channel's topic"
     (LineArg "topic") $ \ p ->
       if not (T.null p) then setChannelTopic p else return ()
+
   , Cmd "add-user" "Search for a user to add to the current channel"
     NoArg $ \ () ->
         enterChannelInviteUserList
+
   , Cmd "msg" "Chat with a user privately"
     NoArg $ \ () ->
         enterDMSearchUserList
+
   , Cmd "add-user" "Add a user to the current channel"
     (TokenArg "username" NoArg) $ \ (uname, ()) ->
         addUserToCurrentChannel uname
+
   , Cmd "remove-user" "Remove a user from the current channel"
     (TokenArg "username" NoArg) $ \ (uname, ()) ->
         removeUserFromCurrentChannel uname
+
   , Cmd "message-preview" "Toggle preview of the current message" NoArg $ \_ ->
         toggleMessagePreview
+
   , Cmd "focus" "Focus on a channel or user"
     (TokenArg "channel" NoArg) $ \ (name, ()) ->
         changeChannel name
+
   , Cmd "focus" "Select from available channels" NoArg $ \ () ->
         beginChannelSelect
+
   , Cmd "help" "Show this help screen" NoArg $ \ _ ->
         showHelpScreen mainHelpTopic
+
   , Cmd "help" "Show help about a particular topic"
       (TokenArg "topic" NoArg) $ \ (topicName, ()) ->
           case lookupHelpTopic topicName of
