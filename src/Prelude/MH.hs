@@ -7,56 +7,56 @@
 -}
 
 module Prelude.MH
-( module P
+  ( module P
 #if !MIN_VERSION_base(4,11,0)
-, (<>)
+  , (<>)
 #endif
-, (<|>)
--- commonly-used functions from Maybe
-, Maybe.isJust
-, Maybe.isNothing
-, Maybe.listToMaybe
-, Maybe.maybeToList
-, Maybe.fromMaybe
-, Maybe.catMaybes
+  , (<|>)
+  -- commonly-used functions from Maybe
+  , Maybe.isJust
+  , Maybe.isNothing
+  , Maybe.listToMaybe
+  , Maybe.maybeToList
+  , Maybe.fromMaybe
+  , Maybe.catMaybes
 
--- a non-partial Read function
-, Read.readMaybe
+  -- a non-partial Read function
+  , Read.readMaybe
 
--- commonly-used functions from Monad
-, Monad.forM
-, Monad.forM_
-, Monad.filterM
-, Monad.when
-, Monad.unless
-, Monad.void
-, Monad.join
-, Monad.forever
-, Monad.foldM
-, Monad.MonadIO(..)
+  -- commonly-used functions from Monad
+  , Monad.forM
+  , Monad.forM_
+  , Monad.filterM
+  , Monad.when
+  , Monad.unless
+  , Monad.void
+  , Monad.join
+  , Monad.forever
+  , Monad.foldM
+  , Monad.MonadIO(..)
 
--- commonly-used functions from List
-, Foldable.toList
-, List.find
-, List.sort
-, List.intercalate
-, Exts.sortWith
-, Exts.groupWith
+  -- commonly-used functions from List
+  , Foldable.toList
+  , List.find
+  , List.sort
+  , List.intercalate
+  , Exts.sortWith
+  , Exts.groupWith
 
--- common read-only lens operators
-, (Lens.&)
-, (Lens.^.)
-, Lens.use
+  -- common read-only lens operators
+  , (Lens.&)
+  , (Lens.^.)
+  , Lens.use
 
--- various type aliases
-, Text
-, HashMap
-, Seq
-, Set
-, Time.UTCTime
-, Time.TimeZoneSeries
-, Time.NominalDiffTime
-)
+  -- various type aliases
+  , Text
+  , HashMap
+  , Seq
+  , Set
+  , Time.UTCTime
+  , Time.TimeZoneSeries
+  , Time.NominalDiffTime
+  )
 where
 
 
