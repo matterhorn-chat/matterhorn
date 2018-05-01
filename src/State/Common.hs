@@ -18,9 +18,6 @@ module State.Common
   , removeEmoteFormatting
   , msgURLs
 
-  -- * Prefs
-  , channelHiddenPreference
-
   , module State.Async
   )
 where
@@ -296,9 +293,3 @@ removeEmoteFormatting t
 
 addEmoteFormatting :: T.Text -> T.Text
 addEmoteFormatting t = "*" <> t <> "*"
-
-channelHiddenPreference :: ChannelId -> MH Bool
-channelHiddenPreference cId = do
-    prefs <- use (csResources.crUserPreferences.userPrefGroupChannelPrefs)
-    let matching = filter (\p -> fst p == cId) (HM.toList prefs)
-    return $ any (not . snd) matching

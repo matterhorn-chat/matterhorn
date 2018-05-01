@@ -222,6 +222,12 @@ refreshChannel chan member = do
 
             updateChannelInfo cId chan member
 
+channelHiddenPreference :: ChannelId -> MH Bool
+channelHiddenPreference cId = do
+    prefs <- use (csResources.crUserPreferences.userPrefGroupChannelPrefs)
+    let matching = filter (\p -> fst p == cId) (HM.toList prefs)
+    return $ any (not . snd) matching
+
 handleNewChannel :: Bool -> Channel -> ChannelMember -> MH ()
 handleNewChannel = handleNewChannel_ True
 
