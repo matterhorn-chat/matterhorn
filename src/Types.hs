@@ -147,6 +147,9 @@ module Types
   , mhHandleEventLensed
   , St.gets
   , mhError
+  , LogContext(..)
+  , withLogContext
+  , getLogContext
 
   , requestQuit
   , clientPostToMessage
@@ -213,6 +216,7 @@ import           Control.Concurrent.MVar ( MVar )
 import qualified Control.Concurrent.STM as STM
 import           Control.Exception ( SomeException )
 import qualified Control.Monad.State as St
+import qualified Control.Monad.Reader as R
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
 import           Data.List ( partition, sortBy )
@@ -824,22 +828,38 @@ data WebsocketAction =
 
 -- * MH Monad
 
+-- | Logging context information, in the event that metadata should
+-- accompany a log message.
+data LogContext =
+    LogContext {
+               }
+               deriving (Eq, Show)
+
 -- | A value of type 'MH' @a@ represents a computation that can
 -- manipulate the application state and also request that the
 -- application quit
 newtype MH a =
-    MH { fromMH :: St.StateT (ChatState, ChatState -> EventM Name (Next ChatState)) (EventM Name) a }
+    MH { fromMH :: R.ReaderT (Maybe LogContext) (St.StateT (ChatState, ChatState -> EventM Name (Next ChatState)) (EventM Name)) a }
+
+-- | Set the logging context to the specified value for the duration of
+-- the specified MH action.
+withLogContext :: LogContext -> MH a -> MH a
+withLogContext c act = MH $ R.withReaderT (const $ Just c) (fromMH act)
+
+-- | Get the current logging context.
+getLogContext :: MH (Maybe LogContext)
+getLogContext = MH R.ask
 
 -- | Run an 'MM' computation, choosing whether to continue or halt based
 -- on the resulting
 runMHEvent :: ChatState -> MH () -> EventM Name (Next ChatState)
 runMHEvent st (MH mote) = do
-  ((), (st', rs)) <- St.runStateT mote (st, Brick.continue)
+  ((), (st', rs)) <- St.runStateT (R.runReaderT mote Nothing) (st, Brick.continue)
   rs st'
 
 -- | lift a computation in 'EventM' into 'MH'
 mh :: EventM Name a -> MH a
-mh = MH . St.lift
+mh = MH . R.lift . St.lift
 
 generateUUID :: MH UUID
 generateUUID = liftIO generateUUID_IO
@@ -850,7 +870,7 @@ generateUUID_IO = randomIO
 mhHandleEventLensed :: Lens' ChatState b -> (e -> b -> EventM Name b) -> e -> MH ()
 mhHandleEventLensed ln f event = MH $ do
     (st, b) <- St.get
-    n <- St.lift $ f event (st ^. ln)
+    n <- R.lift $ St.lift $ f event (st ^. ln)
     St.put (st & ln .~ n , b)
 
 mhSuspendAndResume :: (ChatState -> IO ChatState) -> MH ()
