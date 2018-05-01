@@ -21,9 +21,10 @@ import           Network.Mattermost.WebSocket
 import           Connection
 import           HelpTopics
 import           State.Channels
-import           State.Messages
-import           State.Flagging
 import           State.Common
+import           State.Flagging
+import           State.Messages
+import           State.Reactions
 import           State.Users
 import           Types
 import           Types.Common

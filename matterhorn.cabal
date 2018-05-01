@@ -39,16 +39,18 @@ executable matterhorn
                        Completion
                        App
                        Constants
-                       State.Help
+                       State.Async
                        State.Channels
                        State.ChannelScroll
                        State.ChannelSelect
                        State.Common
                        State.Editing
                        State.Flagging
+                       State.Help
                        State.Messages
                        State.MessageSelect
                        State.PostListOverlay
+                       State.Reactions
                        State.Setup
                        State.Setup.Threads
                        State.Themes

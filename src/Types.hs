@@ -153,6 +153,7 @@ module Types
   , mhSuspendAndResume
   , mhHandleEventLensed
   , St.gets
+  , mhError
 
   , requestQuit
   , clientPostToMessage
@@ -1022,6 +1023,10 @@ raiseInternalEvent :: InternalEvent -> MH ()
 raiseInternalEvent ev = do
     queue <- use (csResources.crEventQueue)
     St.liftIO $ writeBChan queue (IEvent ev)
+
+-- | Raise a rich error
+mhError :: MHError -> MH ()
+mhError err = raiseInternalEvent (DisplayError err)
 
 isMine :: ChatState -> Message -> Bool
 isMine st msg = (UserI $ myUserId st) == msg^.mUser

@@ -36,6 +36,7 @@ import           Network.Mattermost.Types
 import           Constants
 import           State.Common
 import           State.Channels
+import           State.Reactions
 import           State.Users
 import           TimeUtils
 import           Types
