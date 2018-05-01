@@ -538,6 +538,7 @@ setUserPreferences = flip (F.foldr go)
 data LogCategory =
     LogGeneral
     | LogAPI
+    | LogError
     deriving (Eq, Show)
 
 -- | A log message.
@@ -1005,6 +1006,7 @@ data MHError =
     -- ^ The specified help topic was not found
     | AsyncErrEvent SomeException
     -- ^ For errors that arise in the course of async IO operations
+    deriving (Show)
 
 -- ** Application State Lenses
 
@@ -1072,9 +1074,11 @@ raiseInternalEvent ev = do
     queue <- use (csResources.crEventQueue)
     St.liftIO $ writeBChan queue (IEvent ev)
 
--- | Raise a rich error
+-- | Log and raise an error.
 mhError :: MHError -> MH ()
-mhError err = raiseInternalEvent (DisplayError err)
+mhError err = do
+    mhLog LogError $ T.pack $ show err
+    raiseInternalEvent (DisplayError err)
 
 isMine :: ChatState -> Message -> Bool
 isMine st msg = (UserI $ myUserId st) == msg^.mUser

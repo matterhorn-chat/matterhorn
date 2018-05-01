@@ -89,6 +89,12 @@ addClientMessage msg = do
           (addMessage $ clientMessageToMessage msg & mMessageId .~ Just (MessageUUID uuid))
   csChannels %= modifyChannelById cid addCMsg
 
+  let msgTy = case msg^.cmType of
+        Error -> LogError
+        _     -> LogGeneral
+
+  mhLog msgTy $ T.pack $ show msg
+
 -- | Add a new 'ClientMessage' representing an error message to
 --   the current channel's message list
 postInfoMessage :: Text -> MH ()
