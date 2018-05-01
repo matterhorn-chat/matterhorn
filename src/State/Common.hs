@@ -4,9 +4,6 @@ module State.Common
     openURL
   , runLoggedCommand
 
-  -- * Attachments
-  , asyncFetchAttachments
-
   -- * Posts
   , messagesFromPosts
 
@@ -29,12 +26,11 @@ import           Control.Concurrent.Async ( concurrently )
 import qualified Control.Concurrent.STM as STM
 import           Control.Exception ( SomeException, try )
 import qualified Data.ByteString as BS
-import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
 import qualified Data.Text as T
-import           Lens.Micro.Platform ( (.=), (%=), (%~), (.~), traversed )
+import           Lens.Micro.Platform ( (.=), (%=), (%~), (.~) )
 import           System.Directory ( createDirectoryIfMissing )
 import           System.Environment.XDG.BaseDir ( getUserCacheDir )
 import           System.Exit ( ExitCode(..) )
@@ -83,28 +79,6 @@ messagesFromPosts p = do
         findPost pId = case HM.lookup pId (postsPosts p) of
             Nothing -> error $ "BUG: could not find post for post ID " <> show pId
             Just post -> post
-
-asyncFetchAttachments :: Post -> MH ()
-asyncFetchAttachments p = do
-  let cId = (p^.postChannelIdL)
-      pId = (p^.postIdL)
-  session <- getSession
-  host    <- use (csResources.crConn.cdHostnameL)
-  F.forM_ (p^.postFileIdsL) $ \fId -> doAsyncWith Normal $ do
-    info <- mmGetMetadataForFile fId session
-    let scheme = "https://"
-        attUrl = scheme <> host <> urlForFile fId
-        attachment = mkAttachment (fileInfoName info) attUrl fId
-        addIfMissing a as =
-            if isNothing $ Seq.elemIndexL a as
-            then a Seq.<| as
-            else as
-        addAttachment m
-          | m^.mMessageId == Just (MessagePostId pId) =
-            m & mAttachments %~ (addIfMissing attachment)
-          | otherwise              = m
-    return $
-      csChannel(cId).ccContents.cdMessages.traversed %= addAttachment
 
 -- | Add a 'ClientMessage' to the current channel's message list
 addClientMessage :: ClientMessage -> MH ()
