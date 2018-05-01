@@ -14,7 +14,6 @@ module State.Common
   , postInfoMessage
   , postErrorMessageIO
   , postErrorMessage'
-  , mhError
   , addEmoteFormatting
   , removeEmoteFormatting
   , msgURLs

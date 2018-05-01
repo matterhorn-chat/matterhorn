@@ -23,7 +23,6 @@ import           Scripts
 import           State.Help
 import           State.Channels
 import           State.ChannelSelect
-import           State.Common
 import           State.Editing ( toggleMessagePreview )
 import           State.PostListOverlay
 import           State.Themes

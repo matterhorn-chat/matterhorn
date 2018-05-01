@@ -35,7 +35,6 @@ import           Network.Mattermost.Endpoints
 import           Network.Mattermost.Types
 
 import           Constants
-import           State.Common
 import           State.Editing ( requestSpellCheck )
 import           TimeUtils ( lookupLocalTimeZone )
 import           Types
