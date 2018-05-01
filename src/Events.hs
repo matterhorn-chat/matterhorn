@@ -12,6 +12,7 @@ import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( (.=) )
 
+import qualified Network.Mattermost.Endpoints as MM
 import           Network.Mattermost.Exceptions ( mattermostErrorMessage )
 import           Network.Mattermost.Lenses
 import           Network.Mattermost.Types
@@ -19,7 +20,6 @@ import           Network.Mattermost.WebSocket
 
 import           Connection
 import           HelpTopics
-import           State
 import           State.Channels
 import           State.Messages
 import           State.Flagging
@@ -369,3 +369,13 @@ ensureKeybindingConsistency kc = mapM_ checkGroup allBindings
                , ("message select", messageSelectKeybindings kc)
                , ("post list overlay", postListOverlayKeybindings kc)
                ]
+
+-- | Refresh client-accessible server configuration information. This
+-- is usually triggered when a reconnect event for the WebSocket to the
+-- server occurs.
+refreshClientConfig :: MH ()
+refreshClientConfig = do
+    session <- getSession
+    doAsyncWith Preempt $ do
+        cfg <- MM.mmGetClientConfiguration (Just "old") session
+        return (csClientConfig .= Just cfg)
