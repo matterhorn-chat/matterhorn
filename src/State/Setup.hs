@@ -15,6 +15,7 @@ import           Control.Exception ( catch )
 import           Data.Maybe ( fromJust )
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
+import           Data.Time.Clock ( getCurrentTime )
 import           Lens.Micro.Platform ( (%~) )
 import           System.Exit ( exitFailure )
 import           System.FilePath ( (</>), isRelative, dropFileName )
@@ -64,9 +65,11 @@ setupState mLogLocation initialConfig = do
   logChan <- STM.newTChanIO
 
   let logApiEvent ev = do
+          now <- getCurrentTime
           let lm = LogMessage { logMessageCategory = LogAPI
                               , logMessageText = T.pack $ "[" <> (show $ logEventType ev) <> "] " <> logFunction ev
                               , logMessageContext = Nothing
+                              , logMessageTimestamp = now
                               }
           STM.atomically $ STM.writeTChan logChan $ LogAMessage lm
 

@@ -228,6 +228,7 @@ import           Data.List ( partition, sortBy )
 import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
 import qualified Data.Text as T
+import           Data.Time.Clock ( UTCTime, getCurrentTime )
 import           Data.UUID ( UUID )
 import qualified Data.Vector as Vec
 import           Lens.Micro.Platform ( at, makeLenses, lens, (%~), (^?!), (.=)
@@ -548,6 +549,8 @@ data LogMessage =
                -- message.
                , logMessageCategory :: !LogCategory
                -- ^ The category of the log message.
+               , logMessageTimestamp :: UTCTime
+               -- ^ The timestamp of the log message.
                }
                deriving (Show)
 
@@ -884,9 +887,11 @@ getLogContext = MH R.ask
 mhLog :: LogCategory -> Text -> MH ()
 mhLog cat msg = do
     ctx <- getLogContext
+    now <- liftIO getCurrentTime
     let lm = LogMessage { logMessageText = msg
                         , logMessageContext = ctx
                         , logMessageCategory = cat
+                        , logMessageTimestamp = now
                         }
     chan <- use (to (_crLoggingChannel . _csResources))
     liftIO $ STM.atomically $ STM.writeTChan chan $ LogAMessage lm
