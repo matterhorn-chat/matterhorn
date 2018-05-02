@@ -62,7 +62,7 @@ setupState mLogLocation initialConfig = do
       Nothing -> interactiveGatherCredentials (incompleteCredentials initialConfig) Nothing
       Just connInfo -> return connInfo
 
-  logMgr <- LogManager <$> STM.newTChanIO
+  logMgr <- newLogManager
 
   let logApiEvent ev = do
           now <- getCurrentTime
