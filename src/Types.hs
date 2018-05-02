@@ -581,16 +581,17 @@ data LogManager =
                }
 
 startLoggingToFile :: LogManager -> FilePath -> IO ()
-startLoggingToFile mgr loc =
-    STM.atomically $ STM.writeTChan (logManagerCommandChannel mgr) (LogToFile loc)
+startLoggingToFile mgr loc = sendLogCommand mgr $ LogToFile loc
 
 stopLoggingToFile :: LogManager -> IO ()
-stopLoggingToFile mgr =
-    STM.atomically $ STM.writeTChan (logManagerCommandChannel mgr) StopLogging
+stopLoggingToFile mgr = sendLogCommand mgr StopLogging
 
 sendLogMessage :: LogManager -> LogMessage -> IO ()
-sendLogMessage mgr lm =
-    STM.atomically $ STM.writeTChan (logManagerCommandChannel mgr) $ LogAMessage lm
+sendLogMessage mgr lm = sendLogCommand mgr $ LogAMessage lm
+
+sendLogCommand :: LogManager -> LogCommand -> IO ()
+sendLogCommand mgr c =
+    STM.atomically $ STM.writeTChan (logManagerCommandChannel mgr) c
 
 -- | 'ChatResources' represents configuration and connection-related
 -- information, as opposed to current model or view information.
