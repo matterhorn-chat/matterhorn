@@ -311,18 +311,17 @@ data LogThreadState =
                    , logThreadEventChan :: BChan MHEvent
                    , logThreadCommandChan :: STM.TChan LogCommand
                    , logThreadMessageBuffer :: Seq.Seq LogMessage
+                   , logThreadMaxBufferSize :: Int
                    }
 
-maxLogMessageBufferSize :: Int
-maxLogMessageBufferSize = 100
-
 -- | The logging thread.
-startLoggingThread :: BChan MHEvent -> LogManager -> IO ()
-startLoggingThread eventChan mgr = do
+startLoggingThread :: BChan MHEvent -> LogManager -> Int -> IO ()
+startLoggingThread eventChan mgr maxBufferSize = do
     let initialState = LogThreadState { logThreadDestination = Nothing
                                       , logThreadEventChan = eventChan
                                       , logThreadCommandChan = logManagerCommandChannel mgr
                                       , logThreadMessageBuffer = mempty
+                                      , logThreadMaxBufferSize = maxBufferSize
                                       }
     void $ forkIO $
         void $ St.runStateT logThreadBody initialState
@@ -387,8 +386,10 @@ handleLogCommand (LogToFile newPath) = do
                 liftIO $ putLogStartMarker handle
                 liftIO $ writeBChan eventChan $ IEvent $ LoggingStarted newPath
 handleLogCommand (LogAMessage lm) = do
+    maxBufSize <- St.gets logThreadMaxBufferSize
+
     let addMessageToBuffer s =
-            let newSeq = if Seq.length s >= maxLogMessageBufferSize
+            let newSeq = if Seq.length s >= maxBufSize
                          then Seq.drop 1 s
                          else s
             in newSeq Seq.|> lm

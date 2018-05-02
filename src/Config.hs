@@ -70,6 +70,8 @@ fromIni = do
     configPort           <- fieldDefOf "port" number (configPort defaultConfig)
     configChannelListWidth <- fieldDefOf "channelListWidth" number
                               (configChannelListWidth defaultConfig)
+    configLogMaxBufferSize <- fieldDefOf "logMaxBufferSize" number
+                              (configLogMaxBufferSize defaultConfig)
     configTimeFormat     <- fieldMbOf "timeFormat" stringField
     configDateFormat     <- fieldMbOf "dateFormat" stringField
     configTheme          <- fieldMbOf "theme" stringField
@@ -167,6 +169,7 @@ defaultConfig =
            , configAspellDictionary          = Nothing
            , configUnsafeUseHTTP             = False
            , configChannelListWidth          = 20
+           , configLogMaxBufferSize          = 200
            , configShowOlderEdits            = True
            , configUserKeys                  = mempty
            , configShowTypingIndicator       = False

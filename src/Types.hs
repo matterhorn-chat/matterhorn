@@ -320,6 +320,9 @@ data Config =
            -- ^ Whether to permit an insecure HTTP connection.
            , configChannelListWidth :: Int
            -- ^ The width, in columns, of the channel list sidebar.
+           , configLogMaxBufferSize :: Int
+           -- ^ The maximum size, in log entries, of the internal log
+           -- message buffer.
            , configShowOlderEdits :: Bool
            -- ^ Whether to highlight the edit indicator on edits made
            -- prior to the beginning of the current session.

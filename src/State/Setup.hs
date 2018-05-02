@@ -231,7 +231,7 @@ initializeState cr myTeam me = do
   startSyntaxMapLoaderThread (cr^.crConfiguration) (cr^.crEventQueue)
 
   -- * Logging thread
-  startLoggingThread (cr^.crEventQueue) (cr^.crLogManager)
+  startLoggingThread (cr^.crEventQueue) (cr^.crLogManager) (configLogMaxBufferSize $ cr^.crConfiguration)
 
   -- * Main async queue worker thread
   startAsyncWorkerThread (cr^.crConfiguration) (cr^.crRequestQueue) (cr^.crEventQueue)
