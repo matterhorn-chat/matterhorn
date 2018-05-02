@@ -55,6 +55,17 @@ convertLoginExceptions act =
         `catchIOError` (\e -> return $ Left $ AuthIOError e)
         `catch` (\e -> return $ Left $ OtherAuthError e)
 
+apiLogEventToLogMessage :: LogEvent -> IO LogMessage
+apiLogEventToLogMessage ev = do
+    now <- getCurrentTime
+    let msg = T.pack $ "Function: " <> logFunction ev <>
+                       ", event: " <> show (logEventType ev)
+    return $ LogMessage { logMessageCategory = LogAPI
+                        , logMessageText = msg
+                        , logMessageContext = Nothing
+                        , logMessageTimestamp = now
+                        }
+
 setupState :: Maybe FilePath -> Config -> IO ChatState
 setupState mLogLocation initialConfig = do
   -- If we don't have enough credentials, ask for them.
@@ -65,17 +76,8 @@ setupState mLogLocation initialConfig = do
   eventChan <- newBChan 25
   logMgr <- newLogManager eventChan (configLogMaxBufferSize initialConfig)
 
-  let logApiEvent ev = do
-          now <- getCurrentTime
-          let lm = LogMessage { logMessageCategory = LogAPI (logEventType ev)
-                              , logMessageText = T.pack $ logFunction ev
-                              , logMessageContext = Nothing
-                              , logMessageTimestamp = now
-                              }
-          sendLogMessage logMgr lm
-
+  let logApiEvent ev = apiLogEventToLogMessage ev >>= sendLogMessage logMgr
       setLogger cd = cd `withLogger` logApiEvent
-
       poolCfg = ConnectionPoolConfig { cpIdleConnTimeout = 60
                                      , cpStripesCount = 1
                                      , cpMaxConnCount = 5

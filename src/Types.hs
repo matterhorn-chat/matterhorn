@@ -547,7 +547,7 @@ setUserPreferences = flip (F.foldr go)
 -- | Log message tags.
 data LogCategory =
     LogGeneral
-    | LogAPI !LogEventType
+    | LogAPI
     | LogError
     deriving (Eq, Show)
 
