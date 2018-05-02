@@ -55,6 +55,7 @@ executable matterhorn
                        State.Reactions
                        State.Setup
                        State.Setup.Threads
+                       State.Setup.Threads.Logging
                        State.Themes
                        State.UrlSelect
                        State.UserListOverlay
