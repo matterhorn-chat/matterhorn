@@ -80,11 +80,23 @@ onAppEvent (IEvent e) = do
 handleIEvent :: InternalEvent -> MH ()
 handleIEvent (DisplayError e) = postErrorMessage' $ formatError e
 handleIEvent (LoggingStarted path) =
-    postInfoMessage $ "Logging started: " <> T.pack path
+    postInfoMessage $ "Logging to " <> T.pack path
+handleIEvent (LogDestination dest) =
+    case dest of
+        Nothing ->
+            postInfoMessage "Logging is currently disabled."
+        Just path ->
+            postInfoMessage $ T.pack $ "Logging to " <> path
+handleIEvent (LogSnapshotSucceeded path) =
+    postInfoMessage $ "Log snapshot written to " <> T.pack path
 handleIEvent (LoggingStopped path) =
-    postInfoMessage $ "Logging stopped: " <> T.pack path
+    postInfoMessage $ "Stopped logging to " <> T.pack path
 handleIEvent (LogStartFailed path err) =
-    postErrorMessage' $ "Could not start logging to " <> T.pack path <> ", error: " <> T.pack err
+    postErrorMessage' $ "Could not start logging to " <> T.pack path <>
+                        ", error: " <> T.pack err
+handleIEvent (LogSnapshotFailed path err) =
+    postErrorMessage' $ "Could not write log snapshot to " <> T.pack path <>
+                        ", error: " <> T.pack err
 
 formatError :: MHError -> T.Text
 formatError (GenericError msg) =

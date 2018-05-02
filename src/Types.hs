@@ -161,6 +161,8 @@ module Types
   , LogManager(..)
   , startLoggingToFile
   , stopLoggingToFile
+  , requestLogSnapshot
+  , requestLogDestination
   , sendLogMessage
 
   , requestQuit
@@ -561,7 +563,7 @@ data LogMessage =
                -- message.
                , logMessageCategory :: !LogCategory
                -- ^ The category of the log message.
-               , logMessageTimestamp :: UTCTime
+               , logMessageTimestamp :: !UTCTime
                -- ^ The timestamp of the log message.
                }
                deriving (Show)
@@ -576,6 +578,11 @@ data LogCommand =
     -- ^ Stop any active logging.
     | ShutdownLogging
     -- ^ Shut down.
+    | GetLogDestination
+    -- ^ Ask the logging thread about its active logging destination.
+    | LogSnapshot FilePath
+    -- ^ Ask the logging thread to dump the current buffer to the
+    -- specified destination.
     deriving (Show)
 
 -- | A handle to the log manager thread.
@@ -589,6 +596,12 @@ startLoggingToFile mgr loc = sendLogCommand mgr $ LogToFile loc
 
 stopLoggingToFile :: LogManager -> IO ()
 stopLoggingToFile mgr = sendLogCommand mgr StopLogging
+
+requestLogSnapshot :: LogManager -> FilePath -> IO ()
+requestLogSnapshot mgr path = sendLogCommand mgr $ LogSnapshot path
+
+requestLogDestination :: LogManager -> IO ()
+requestLogDestination mgr = sendLogCommand mgr GetLogDestination
 
 sendLogMessage :: LogManager -> LogMessage -> IO ()
 sendLogMessage mgr lm = sendLogCommand mgr $ LogAMessage lm
@@ -1025,6 +1038,9 @@ data InternalEvent =
     | LoggingStarted FilePath
     | LoggingStopped FilePath
     | LogStartFailed FilePath String
+    | LogDestination (Maybe FilePath)
+    | LogSnapshotSucceeded FilePath
+    | LogSnapshotFailed FilePath String
     -- ^ Logging events from the logging thread
 
 -- | Application errors.

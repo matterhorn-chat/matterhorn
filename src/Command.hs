@@ -114,13 +114,21 @@ commandList =
     NoArg $ \ () ->
         enterDMSearchUserList
 
-  , Cmd "start-logging" "Begin logging to the specified path"
+  , Cmd "log-start" "Begin logging to the specified path"
     (TokenArg "path" NoArg) $ \ (path, ()) ->
         startLogging $ T.unpack path
 
-  , Cmd "stop-logging" "Stop logging"
+  , Cmd "log-snapshot" "Dump the current log buffer to the specified path"
+    (TokenArg "path" NoArg) $ \ (path, ()) ->
+        logSnapshot $ T.unpack path
+
+  , Cmd "log-stop" "Stop logging"
     NoArg $ \ () ->
         stopLogging
+
+  , Cmd "log-status" "Show current logging status"
+    NoArg $ \ () ->
+        getLogDestination
 
   , Cmd "add-user" "Add a user to the current channel"
     (TokenArg "username" NoArg) $ \ (uname, ()) ->

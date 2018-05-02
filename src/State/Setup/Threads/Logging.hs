@@ -107,11 +107,13 @@ putLogStartMarker h = do
 
 -- | Emit a log stop marker to the file and close it, then notify the
 -- application that we have stopped logging.
-finishLog :: BChan MHEvent -> FilePath -> Handle -> IO ()
+finishLog :: BChan MHEvent -> FilePath -> Handle -> StateT LogThreadState IO ()
 finishLog eventChan oldPath oldHandle = do
-    putLogEndMarker oldHandle
-    hClose oldHandle
-    writeBChan eventChan $ IEvent $ LoggingStopped oldPath
+    liftIO $ do
+        putLogEndMarker oldHandle
+        hClose oldHandle
+        writeBChan eventChan $ IEvent $ LoggingStopped oldPath
+    modify $ \s -> s { logThreadDestination = Nothing }
 
 stopLogging :: StateT LogThreadState IO ()
 stopLogging = do
@@ -120,10 +122,34 @@ stopLogging = do
         Nothing -> return ()
         Just (oldPath, oldHandle) -> do
             eventChan <- gets logThreadEventChan
-            liftIO $ finishLog eventChan oldPath oldHandle
+            finishLog eventChan oldPath oldHandle
 
 -- | Handle a single logging command.
 handleLogCommand :: LogCommand -> StateT LogThreadState IO Bool
+handleLogCommand (LogSnapshot path) = do
+    eventChan <- gets logThreadEventChan
+    dest <- gets logThreadDestination
+
+    let shouldWrite = case dest of
+          Nothing -> True
+          Just (curPath, _) -> curPath /= path
+
+    when shouldWrite $ do
+        result <- liftIO $ try $ openFile path AppendMode
+        case result of
+            Left (e::SomeException) -> do
+                liftIO $ writeBChan eventChan $ IEvent $ LogSnapshotFailed path (show e)
+            Right handle -> do
+                flushLogMessageBuffer handle
+                liftIO $ hClose handle
+                liftIO $ writeBChan eventChan $ IEvent $ LogSnapshotSucceeded path
+
+    return True
+handleLogCommand GetLogDestination = do
+    dest <- gets logThreadDestination
+    eventChan <- gets logThreadEventChan
+    liftIO $ writeBChan eventChan $ IEvent $ LogDestination $ fst <$> dest
+    return True
 handleLogCommand ShutdownLogging = do
     -- ShutdownLogging: if we were logging to a file, close it. Then
     -- unlock the shutdown lock.
@@ -133,7 +159,6 @@ handleLogCommand StopLogging = do
     -- StopLogging: if we were logging to a file, close it and notify
     -- the application. Otherwise do nothing.
     stopLogging
-    modify $ \s -> s { logThreadDestination = Nothing }
     return True
 handleLogCommand (LogToFile newPath) = do
     -- LogToFile: if we were logging to a file, close that file, notify
@@ -144,21 +169,21 @@ handleLogCommand (LogToFile newPath) = do
     oldDest <- gets logThreadDestination
 
     shouldChange <- case oldDest of
-        Nothing -> return True
-        Just (oldPath, oldHandle) ->
-            if oldPath == newPath
-            then return False
-            else do
-                liftIO $ finishLog eventChan oldPath oldHandle
-                return True
+        Nothing ->
+            return True
+        Just (oldPath, _) ->
+            return (oldPath /= newPath)
 
     when shouldChange $ do
         result <- liftIO $ try $ openFile newPath AppendMode
         case result of
             Left (e::SomeException) -> liftIO $ do
-                let msg = "Error in log thread: could not open " <> show newPath <> ": " <> show e
+                let msg = "Error in log thread: could not open " <> show newPath <>
+                          ": " <> show e
                 writeBChan eventChan $ IEvent $ LogStartFailed newPath msg
             Right handle -> do
+                stopLogging
+
                 modify $ \s -> s { logThreadDestination = Just (newPath, handle) }
                 flushLogMessageBuffer handle
                 liftIO $ putLogStartMarker handle
@@ -173,10 +198,11 @@ handleLogCommand (LogAMessage lm) = do
     maxBufSize <- gets logThreadMaxBufferSize
 
     let addMessageToBuffer s =
-            let newSeq = if Seq.length s >= maxBufSize
-                         then Seq.drop 1 s
-                         else s
-            in newSeq Seq.|> lm
+            -- Ensure that newSeq is always at most maxBufSize elements
+            -- long.
+            let newSeq = s Seq.|> lm
+                toDrop = Seq.length s - maxBufSize
+            in Seq.drop toDrop newSeq
 
     -- Append the message to the internal buffer, maintaining the bound
     -- on the internal buffer size.
