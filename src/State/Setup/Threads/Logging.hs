@@ -29,7 +29,8 @@ import qualified Control.Monad.State.Strict as St
 import qualified Data.Text as T
 import           Data.Time ( getCurrentTime )
 import qualified Data.Sequence as Seq
-import           System.IO ( Handle, IOMode(AppendMode), hPutStr, hPutStrLn, hFlush, openFile, hClose )
+import           System.IO ( Handle, IOMode(AppendMode), hPutStr, hPutStrLn
+                           , hFlush, openFile, hClose )
 
 import           Types
 
