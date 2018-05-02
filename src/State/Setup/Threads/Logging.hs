@@ -141,4 +141,3 @@ flushLogMessageBuffer handle = do
             hPutStrLn handle "<<< Log message buffer end >>>"
             hFlush handle
         St.modify $ \s -> s { logThreadMessageBuffer = mempty }
-
