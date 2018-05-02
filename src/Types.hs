@@ -121,7 +121,7 @@ module Types
   , crConn
   , crConfiguration
   , crSyntaxMap
-  , crLoggingChannel
+  , crLogManager
   , getSession
   , getResourceSession
 
@@ -148,6 +148,7 @@ module Types
   , mhHandleEventLensed
   , St.gets
   , mhError
+
   , mhLog
   , LogContext(..)
   , withLogContext
@@ -156,6 +157,11 @@ module Types
   , LogMessage(..)
   , LogCommand(..)
   , LogCategory(..)
+
+  , LogManager(..)
+  , startLoggingToFile
+  , stopLoggingToFile
+  , sendLogMessage
 
   , requestQuit
   , clientPostToMessage
@@ -563,6 +569,23 @@ data LogCommand =
     | StopLogging
     deriving (Show)
 
+-- | A handle to the log manager thread.
+data LogManager =
+    LogManager { logManagerCommandChannel :: STM.TChan LogCommand
+               }
+
+startLoggingToFile :: LogManager -> FilePath -> IO ()
+startLoggingToFile mgr loc =
+    STM.atomically $ STM.writeTChan (logManagerCommandChannel mgr) (LogToFile loc)
+
+stopLoggingToFile :: LogManager -> IO ()
+stopLoggingToFile mgr =
+    STM.atomically $ STM.writeTChan (logManagerCommandChannel mgr) StopLogging
+
+sendLogMessage :: LogManager -> LogMessage -> IO ()
+sendLogMessage mgr lm =
+    STM.atomically $ STM.writeTChan (logManagerCommandChannel mgr) $ LogAMessage lm
+
 -- | 'ChatResources' represents configuration and connection-related
 -- information, as opposed to current model or view information.
 -- Information that goes in the 'ChatResources' value should be limited
@@ -582,7 +605,7 @@ data ChatResources =
                   , _crFlaggedPosts        :: Set PostId
                   , _crUserPreferences     :: UserPreferences
                   , _crSyntaxMap           :: SyntaxMap
-                  , _crLoggingChannel      :: STM.TChan LogCommand
+                  , _crLogManager          :: LogManager
                   }
 
 
@@ -903,8 +926,8 @@ mhLog cat msg = do
                         , logMessageCategory = cat
                         , logMessageTimestamp = now
                         }
-    chan <- use (to (_crLoggingChannel . _csResources))
-    liftIO $ STM.atomically $ STM.writeTChan chan $ LogAMessage lm
+    mgr <- use (to (_crLogManager . _csResources))
+    liftIO $ sendLogMessage mgr lm
 
 -- | Run an 'MM' computation, choosing whether to continue or halt based
 -- on the resulting

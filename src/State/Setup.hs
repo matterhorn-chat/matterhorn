@@ -62,7 +62,7 @@ setupState mLogLocation initialConfig = do
       Nothing -> interactiveGatherCredentials (incompleteCredentials initialConfig) Nothing
       Just connInfo -> return connInfo
 
-  logChan <- STM.newTChanIO
+  logMgr <- LogManager <$> STM.newTChanIO
 
   let logApiEvent ev = do
           now <- getCurrentTime
@@ -71,7 +71,7 @@ setupState mLogLocation initialConfig = do
                               , logMessageContext = Nothing
                               , logMessageTimestamp = now
                               }
-          STM.atomically $ STM.writeTChan logChan $ LogAMessage lm
+          sendLogMessage logMgr lm
 
       setLogger cd = cd `withLogger` logApiEvent
 
@@ -172,14 +172,14 @@ setupState mLogLocation initialConfig = do
 
   let cr = ChatResources session cd requestChan eventChan
              slc wac (themeToAttrMap custTheme) userStatusLock
-             userIdSet config mempty userPrefs mempty logChan
+             userIdSet config mempty userPrefs mempty logMgr
 
   st <- initializeState cr myTeam me
 
   -- If we got an initial log location, start logging there.
   case mLogLocation of
       Nothing -> return ()
-      Just loc -> startLoggingToFile logChan loc
+      Just loc -> startLoggingToFile logMgr loc
 
   return st
 
@@ -231,7 +231,7 @@ initializeState cr myTeam me = do
   startSyntaxMapLoaderThread (cr^.crConfiguration) (cr^.crEventQueue)
 
   -- * Logging thread
-  startLoggingThread (cr^.crEventQueue) (cr^.crLoggingChannel)
+  startLoggingThread (cr^.crEventQueue) (cr^.crLogManager)
 
   -- * Main async queue worker thread
   startAsyncWorkerThread (cr^.crConfiguration) (cr^.crRequestQueue) (cr^.crEventQueue)

@@ -8,15 +8,14 @@ import           Prelude ()
 import           Prelude.MH
 
 import           Types
-import           State.Setup.Threads ( startLoggingToFile, stopLoggingToFile )
 
 
 startLogging :: FilePath -> MH ()
 startLogging path = do
-    chan <- use (csResources.crLoggingChannel)
-    liftIO $ startLoggingToFile chan path
+    mgr <- use (csResources.crLogManager)
+    liftIO $ startLoggingToFile mgr path
 
 stopLogging :: MH ()
 stopLogging = do
-    chan <- use (csResources.crLoggingChannel)
-    liftIO $ stopLoggingToFile chan
+    mgr <- use (csResources.crLogManager)
+    liftIO $ stopLoggingToFile mgr

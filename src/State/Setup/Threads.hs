@@ -10,8 +10,6 @@ module State.Setup.Threads
   , startAsyncWorkerThread
   , startSyntaxMapLoaderThread
   , startLoggingThread
-  , startLoggingToFile
-  , stopLoggingToFile
   )
 where
 
@@ -319,11 +317,11 @@ maxLogMessageBufferSize :: Int
 maxLogMessageBufferSize = 100
 
 -- | The logging thread.
-startLoggingThread :: BChan MHEvent -> STM.TChan LogCommand -> IO ()
-startLoggingThread eventChan logChan = do
+startLoggingThread :: BChan MHEvent -> LogManager -> IO ()
+startLoggingThread eventChan mgr = do
     let initialState = LogThreadState { logThreadDestination = Nothing
                                       , logThreadEventChan = eventChan
-                                      , logThreadCommandChan = logChan
+                                      , logThreadCommandChan = logManagerCommandChannel mgr
                                       , logThreadMessageBuffer = mempty
                                       }
     void $ forkIO $
@@ -428,11 +426,3 @@ flushLogMessageBuffer handle = do
             hPutStrLn handle "<<< Log message buffer end >>>"
             hFlush handle
         St.modify $ \s -> s { logThreadMessageBuffer = mempty }
-
-startLoggingToFile :: STM.TChan LogCommand -> FilePath -> IO ()
-startLoggingToFile logChan loc =
-    STM.atomically $ STM.writeTChan logChan (LogToFile loc)
-
-stopLoggingToFile :: STM.TChan LogCommand -> IO ()
-stopLoggingToFile logChan =
-    STM.atomically $ STM.writeTChan logChan StopLogging
