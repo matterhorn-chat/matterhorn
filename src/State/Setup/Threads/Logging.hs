@@ -93,17 +93,18 @@ nextLogCommand = do
     chan <- gets logThreadCommandChan
     liftIO $ STM.atomically $ STM.readTChan chan
 
+putMarkerMessage :: String -> Handle -> IO ()
+putMarkerMessage msg h = do
+    now <- getCurrentTime
+    hPutStrLn h $ "[" <> show now <> "] " <> msg
+
 -- | Emit a log stop marker to the file.
 putLogEndMarker :: Handle -> IO ()
-putLogEndMarker h = do
-    now <- getCurrentTime
-    hPutStrLn h $ "[" <> show now <> "] <<< Logging end >>>"
+putLogEndMarker = putMarkerMessage "<<< Logging end >>>"
 
 -- | Emit a log start marker to the file.
 putLogStartMarker :: Handle -> IO ()
-putLogStartMarker h = do
-    now <- getCurrentTime
-    hPutStrLn h $ "[" <> show now <> "] <<< Logging start >>>"
+putLogStartMarker = putMarkerMessage "<<< Logging start >>>"
 
 -- | Emit a log stop marker to the file and close it, then notify the
 -- application that we have stopped logging.
@@ -235,7 +236,16 @@ flushLogMessageBuffer handle = do
     buf <- gets logThreadMessageBuffer
     when (Seq.length buf > 0) $ do
         liftIO $ do
-            hPutStrLn handle "<<< Log message buffer begin >>>"
+            let firstLm = Seq.index buf 0
+                lastLm = Seq.index buf (Seq.length buf - 1)
+                mkMsg t m = "[" <> show t <> "] " <> m
+
+            hPutStrLn handle $ mkMsg (logMessageTimestamp firstLm)
+                                     "<<< Log message buffer begin >>>"
+
             forM_ buf (hPutLogMessage handle)
-            hPutStrLn handle "<<< Log message buffer end >>>"
+
+            hPutStrLn handle $ mkMsg (logMessageTimestamp lastLm)
+                                     "<<< Log message buffer end >>>"
+
             hFlush handle
