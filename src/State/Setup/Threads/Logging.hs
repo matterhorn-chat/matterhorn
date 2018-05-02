@@ -56,16 +56,18 @@ data LogThreadState =
 -- | Create a new log manager and start a logging thread for it.
 newLogManager :: BChan MHEvent -> Int -> IO LogManager
 newLogManager eventChan maxBufferSize = do
-    mgr <- LogManager <$> STM.newTChanIO
-    startLoggingThread eventChan mgr maxBufferSize
+    chan <- STM.newTChanIO
+    let mgr = LogManager { logManagerCommandChannel = chan
+                         }
+    startLoggingThread eventChan chan maxBufferSize
     return mgr
 
 -- | The logging thread.
-startLoggingThread :: BChan MHEvent -> LogManager -> Int -> IO ()
-startLoggingThread eventChan mgr maxBufferSize = do
+startLoggingThread :: BChan MHEvent -> STM.TChan LogCommand -> Int -> IO ()
+startLoggingThread eventChan logChan maxBufferSize = do
     let initialState = LogThreadState { logThreadDestination = Nothing
                                       , logThreadEventChan = eventChan
-                                      , logThreadCommandChan = logManagerCommandChannel mgr
+                                      , logThreadCommandChan = logChan
                                       , logThreadMessageBuffer = mempty
                                       , logThreadMaxBufferSize = maxBufferSize
                                       }
