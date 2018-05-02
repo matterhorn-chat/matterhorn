@@ -151,6 +151,7 @@ module Types
   , mhLog
   , LogContext(..)
   , withLogContext
+  , withLogContextChannelId
   , getLogContext
   , LogMessage(..)
   , LogCommand(..)
@@ -865,7 +866,7 @@ data WebsocketAction =
 -- | Logging context information, in the event that metadata should
 -- accompany a log message.
 data LogContext =
-    LogContext {
+    LogContext { logContextChannelId :: Maybe ChannelId
                }
                deriving (Eq, Show)
 
@@ -875,10 +876,17 @@ data LogContext =
 newtype MH a =
     MH { fromMH :: R.ReaderT (Maybe LogContext) (St.StateT (ChatState, ChatState -> EventM Name (Next ChatState)) (EventM Name)) a }
 
--- | Set the logging context to the specified value for the duration of
--- the specified MH action.
-withLogContext :: LogContext -> MH a -> MH a
-withLogContext c act = MH $ R.withReaderT (const $ Just c) (fromMH act)
+-- | Use a modified logging context for the duration of the specified MH
+-- action.
+withLogContext :: (Maybe LogContext -> Maybe LogContext) -> MH a -> MH a
+withLogContext modifyContext act =
+    MH $ R.withReaderT modifyContext (fromMH act)
+
+withLogContextChannelId :: ChannelId -> MH a -> MH a
+withLogContextChannelId cId act =
+    let f Nothing = Just $ LogContext (Just cId)
+        f (Just c) = Just $ c { logContextChannelId = Just cId }
+    in withLogContext f act
 
 -- | Get the current logging context.
 getLogContext :: MH (Maybe LogContext)
