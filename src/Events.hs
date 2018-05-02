@@ -79,6 +79,12 @@ onAppEvent (IEvent e) = do
 
 handleIEvent :: InternalEvent -> MH ()
 handleIEvent (DisplayError e) = postErrorMessage' $ formatError e
+handleIEvent (LoggingStarted path) =
+    postInfoMessage $ "Logging started: " <> T.pack path
+handleIEvent (LoggingStopped path) =
+    postInfoMessage $ "Logging stopped: " <> T.pack path
+handleIEvent (LogStartFailed path err) =
+    postErrorMessage' $ "Could not start logging to " <> T.pack path <> ", error: " <> T.pack err
 
 formatError :: MHError -> T.Text
 formatError (GenericError msg) =

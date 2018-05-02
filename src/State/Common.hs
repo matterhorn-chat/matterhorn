@@ -46,6 +46,7 @@ import           Network.Mattermost.Types
 import           FilePaths ( xdgName )
 import           State.Async
 import           Types
+import           Types.Common
 
 
 -- * Client Messages

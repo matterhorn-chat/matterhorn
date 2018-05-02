@@ -10,6 +10,8 @@ module State.Setup.Threads
   , startAsyncWorkerThread
   , startSyntaxMapLoaderThread
   , startLoggingThread
+  , startLoggingToFile
+  , stopLoggingToFile
   )
 where
 
@@ -31,8 +33,8 @@ import           Data.Time ( getCurrentTime, addUTCTime )
 import           Lens.Micro.Platform ( (.=), (%=), (%~), mapped )
 import           Skylighting.Loader ( loadSyntaxesFromDir )
 import           System.Directory ( getTemporaryDirectory )
-import           System.Exit ( ExitCode(ExitSuccess), exitFailure )
-import           System.IO ( Handle, IOMode(AppendMode), stderr, hPutStr, hPutStrLn, hFlush, openFile, hClose )
+import           System.Exit ( ExitCode(ExitSuccess) )
+import           System.IO ( Handle, IOMode(AppendMode), hPutStr, hPutStrLn, hFlush, openFile, hClose )
 import           System.IO.Temp ( openTempFile )
 import           Text.Aspell ( Aspell, AspellOption(..), startAspell )
 
@@ -335,9 +337,34 @@ nextLogCommand = do
     chan <- St.gets logThreadCommandChan
     liftIO $ STM.atomically $ STM.readTChan chan
 
+putLogEndMarker :: Handle -> IO ()
+putLogEndMarker h = do
+    now <- getCurrentTime
+    hPutStrLn h $ "[" <> show now <> "] <<< Logging end >>>"
+
+putLogStartMarker :: Handle -> IO ()
+putLogStartMarker h = do
+    now <- getCurrentTime
+    hPutStrLn h $ "[" <> show now <> "] <<< Logging start >>>"
+
+finishLog :: BChan MHEvent -> FilePath -> Handle -> IO ()
+finishLog eventChan oldPath oldHandle = do
+    putLogEndMarker oldHandle
+    hClose oldHandle
+    writeBChan eventChan $ IEvent $ LoggingStopped oldPath
+
 handleLogCommand :: LogCommand -> St.StateT LogThreadState IO ()
+handleLogCommand StopLogging = do
+    oldDest <- St.gets logThreadDestination
+    case oldDest of
+        Nothing -> return ()
+        Just (oldPath, oldHandle) -> do
+            eventChan <- St.gets logThreadEventChan
+            liftIO $ finishLog eventChan oldPath oldHandle
+            St.modify $ \s -> s { logThreadDestination = Nothing
+                                }
 handleLogCommand (LogToFile newPath) = do
-    now <- liftIO getCurrentTime
+    eventChan <- St.gets logThreadEventChan
     oldDest <- St.gets logThreadDestination
 
     shouldChange <- case oldDest of
@@ -346,22 +373,21 @@ handleLogCommand (LogToFile newPath) = do
             if oldPath == newPath
             then return False
             else do
-                liftIO $ do
-                    hPutStrLn oldHandle $ "[" <> show now <> "] <<< Logging end >>>"
-                    hClose oldHandle
+                liftIO $ finishLog eventChan oldPath oldHandle
                 return True
 
     when shouldChange $ do
         result <- liftIO $ try $ openFile newPath AppendMode
         case result of
             Left (e::SomeException) -> liftIO $ do
-                hPutStrLn stderr $ "Error in log thread: could not open " <> show newPath <> ": " <> show e
-                exitFailure
+                let msg = "Error in log thread: could not open " <> show newPath <> ": " <> show e
+                writeBChan eventChan $ IEvent $ LogStartFailed newPath msg
             Right handle -> do
                 St.modify $ \s -> s { logThreadDestination = Just (newPath, handle)
                                     }
                 flushLogMessageBuffer handle
-                liftIO $ hPutStrLn handle $ "[" <> show now <> "] <<< Logging start >>>"
+                liftIO $ putLogStartMarker handle
+                liftIO $ writeBChan eventChan $ IEvent $ LoggingStarted newPath
 handleLogCommand (LogAMessage lm) = do
     let addMessageToBuffer s =
             let newSeq = if Seq.length s >= maxLogMessageBufferSize
@@ -402,3 +428,11 @@ flushLogMessageBuffer handle = do
             hPutStrLn handle "<<< Log message buffer end >>>"
             hFlush handle
         St.modify $ \s -> s { logThreadMessageBuffer = mempty }
+
+startLoggingToFile :: STM.TChan LogCommand -> FilePath -> IO ()
+startLoggingToFile logChan loc =
+    STM.atomically $ STM.writeTChan logChan (LogToFile loc)
+
+stopLoggingToFile :: STM.TChan LogCommand -> IO ()
+stopLoggingToFile logChan =
+    STM.atomically $ STM.writeTChan logChan StopLogging

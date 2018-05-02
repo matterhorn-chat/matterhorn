@@ -24,6 +24,7 @@ import           State.Help
 import           State.Channels
 import           State.ChannelSelect
 import           State.Editing ( toggleMessagePreview )
+import           State.Logging
 import           State.PostListOverlay
 import           State.Themes
 import           State.UserListOverlay
@@ -112,6 +113,14 @@ commandList =
   , Cmd "msg" "Chat with a user privately"
     NoArg $ \ () ->
         enterDMSearchUserList
+
+  , Cmd "start-logging" "Begin logging to the specified path"
+    (TokenArg "path" NoArg) $ \ (path, ()) ->
+        startLogging $ T.unpack path
+
+  , Cmd "stop-logging" "Stop logging"
+    NoArg $ \ () ->
+        stopLogging
 
   , Cmd "add-user" "Add a user to the current channel"
     (TokenArg "username" NoArg) $ \ (uname, ()) ->

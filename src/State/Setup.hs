@@ -179,7 +179,7 @@ setupState mLogLocation initialConfig = do
   -- If we got an initial log location, start logging there.
   case mLogLocation of
       Nothing -> return ()
-      Just loc -> STM.atomically $ STM.writeTChan logChan (LogToFile loc)
+      Just loc -> startLoggingToFile logChan loc
 
   return st
 

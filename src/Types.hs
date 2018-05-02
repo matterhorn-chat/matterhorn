@@ -560,6 +560,7 @@ data LogMessage =
 data LogCommand =
     LogToFile FilePath
     | LogAMessage !LogMessage
+    | StopLogging
     deriving (Show)
 
 -- | 'ChatResources' represents configuration and connection-related
@@ -987,6 +988,10 @@ data MHEvent =
 data InternalEvent =
     DisplayError MHError
     -- ^ Some kind of application error occurred
+    | LoggingStarted FilePath
+    | LoggingStopped FilePath
+    | LogStartFailed FilePath String
+    -- ^ Logging events from the logging thread
 
 -- | Application errors.
 data MHError =

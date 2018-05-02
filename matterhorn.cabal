@@ -48,6 +48,7 @@ executable matterhorn
                        State.Editing
                        State.Flagging
                        State.Help
+                       State.Logging
                        State.Messages
                        State.MessageSelect
                        State.PostListOverlay
