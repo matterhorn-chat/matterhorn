@@ -14,7 +14,7 @@
 -- cases where logging is turned on at runtime only once a problematic
 -- behavior is observed.
 module State.Setup.Threads.Logging
-  ( startLoggingThread
+  ( newLogManager
   )
 where
 
@@ -52,6 +52,13 @@ data LogThreadState =
                    , logThreadMaxBufferSize :: Int
                    -- ^ The size bound of the logThreadMessageBuffer.
                    }
+
+-- | Create a new log manager and start a logging thread for it.
+newLogManager :: BChan MHEvent -> Int -> IO LogManager
+newLogManager eventChan maxBufferSize = do
+    mgr <- LogManager <$> STM.newTChanIO
+    startLoggingThread eventChan mgr maxBufferSize
+    return mgr
 
 -- | The logging thread.
 startLoggingThread :: BChan MHEvent -> LogManager -> Int -> IO ()

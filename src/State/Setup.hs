@@ -62,7 +62,8 @@ setupState mLogLocation initialConfig = do
       Nothing -> interactiveGatherCredentials (incompleteCredentials initialConfig) Nothing
       Just connInfo -> return connInfo
 
-  logMgr <- newLogManager
+  eventChan <- newBChan 25
+  logMgr <- newLogManager eventChan (configLogMaxBufferSize initialConfig)
 
   let logApiEvent ev = do
           now <- getCurrentTime
@@ -168,7 +169,6 @@ setupState mLogLocation initialConfig = do
                      Right t -> return t
 
   requestChan <- STM.atomically STM.newTChan
-  eventChan <- newBChan 25
 
   let cr = ChatResources session cd requestChan eventChan
              slc wac (themeToAttrMap custTheme) userStatusLock
@@ -229,9 +229,6 @@ initializeState cr myTeam me = do
   --
   -- * Syntax definition loader
   startSyntaxMapLoaderThread (cr^.crConfiguration) (cr^.crEventQueue)
-
-  -- * Logging thread
-  startLoggingThread (cr^.crEventQueue) (cr^.crLogManager) (configLogMaxBufferSize $ cr^.crConfiguration)
 
   -- * Main async queue worker thread
   startAsyncWorkerThread (cr^.crConfiguration) (cr^.crRequestQueue) (cr^.crEventQueue)

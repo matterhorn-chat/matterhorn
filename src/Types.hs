@@ -159,7 +159,6 @@ module Types
   , LogCategory(..)
 
   , LogManager(..)
-  , newLogManager
   , startLoggingToFile
   , stopLoggingToFile
   , sendLogMessage
@@ -580,10 +579,6 @@ data LogCommand =
 data LogManager =
     LogManager { logManagerCommandChannel :: STM.TChan LogCommand
                }
-
-newLogManager :: IO LogManager
-newLogManager =
-    LogManager <$> STM.newTChanIO
 
 startLoggingToFile :: LogManager -> FilePath -> IO ()
 startLoggingToFile mgr loc = sendLogCommand mgr $ LogToFile loc
