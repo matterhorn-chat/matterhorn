@@ -568,8 +568,11 @@ data LogMessage =
 -- | A logging thread command.
 data LogCommand =
     LogToFile FilePath
+    -- ^ Start logging to the specified path.
     | LogAMessage !LogMessage
+    -- ^ Log the specified message.
     | StopLogging
+    -- ^ Stop any active logging.
     deriving (Show)
 
 -- | A handle to the log manager thread.
