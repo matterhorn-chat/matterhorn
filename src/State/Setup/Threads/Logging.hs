@@ -1,4 +1,18 @@
 {-# LANGUAGE RecordWildCards #-}
+-- | This module implements the logging thread. This thread can
+-- optionally write logged messages to an output file. When the thread
+-- is created, it is initially not writing to any output file and
+-- must be told to do so by issuing a LogCommand using the LogManager
+-- interface.
+--
+-- The logging thread has an internal bounded log message buffer. Logged
+-- messages always get written to the buffer (potentially evicting old
+-- messages to maintain the size bound). If the thread is also writing
+-- to a file, such messages also get written to the file. When the
+-- thread begins logging to a file, the entire buffer is written to the
+-- file so that a historical snapshot of log activity can be saved in
+-- cases where logging is turned on at runtime only once a problematic
+-- behavior is observed.
 module State.Setup.Threads.Logging
   ( startLoggingThread
   )
