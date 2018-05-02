@@ -99,12 +99,14 @@ addClientMessage msg = do
 -- | Add a new 'ClientMessage' representing an error message to
 --   the current channel's message list
 postInfoMessage :: Text -> MH ()
-postInfoMessage err = addClientMessage =<< newClientMessage Informative err
+postInfoMessage info =
+    addClientMessage =<< newClientMessage Informative (sanitizeUserText' info)
 
 -- | Add a new 'ClientMessage' representing an error message to
 --   the current channel's message list
 postErrorMessage' :: Text -> MH ()
-postErrorMessage' err = addClientMessage =<< newClientMessage Error err
+postErrorMessage' err =
+    addClientMessage =<< newClientMessage Error (sanitizeUserText' err)
 
 postErrorMessageIO :: Text -> ChatState -> IO ChatState
 postErrorMessageIO err st = do
