@@ -22,6 +22,7 @@ import           InputHistory
 import           LastRunState
 import           Options
 import           State.Setup
+import           State.Setup.Threads.Logging ( shutdownLogManager )
 import           Types
 
 
@@ -59,6 +60,7 @@ closeMatterhorn finalSt = do
   logIfError (mmCloseSession $ getResourceSession $ finalSt^.csResources) "Error in closing session"
   logIfError (writeHistory (finalSt^.csEditState.cedInputHistory)) "Error in writing history"
   logIfError (writeLastRunState finalSt) "Error in writing last run state"
+  shutdownLogManager $ finalSt^.csResources.crLogManager
   where
     logIfError action msg = do
       done <- runExceptT $ convertIOException $ action

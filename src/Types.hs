@@ -573,11 +573,14 @@ data LogCommand =
     -- ^ Log the specified message.
     | StopLogging
     -- ^ Stop any active logging.
+    | ShutdownLogging
+    -- ^ Shut down.
     deriving (Show)
 
 -- | A handle to the log manager thread.
 data LogManager =
     LogManager { logManagerCommandChannel :: STM.TChan LogCommand
+               , logManagerShutdownLock :: MVar ()
                }
 
 startLoggingToFile :: LogManager -> FilePath -> IO ()
