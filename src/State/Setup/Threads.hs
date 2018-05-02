@@ -387,6 +387,9 @@ hPutLogMessage :: Handle -> LogMessage -> IO ()
 hPutLogMessage handle (LogMessage {..}) = do
     hPutStr handle $ "[" <> show logMessageTimestamp <> "] "
     hPutStr handle $ "[" <> show logMessageCategory <> "] "
+    case logMessageContext of
+        Nothing -> hPutStr handle "[No context] "
+        Just c  -> hPutStr handle $ "[" <> show c <> "] "
     hPutStrLn handle $ T.unpack logMessageText
 
 flushLogMessageBuffer :: Handle -> St.StateT LogThreadState IO ()
