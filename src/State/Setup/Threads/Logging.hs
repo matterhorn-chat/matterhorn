@@ -20,12 +20,22 @@ import           System.IO ( Handle, IOMode(AppendMode), hPutStr, hPutStrLn, hFl
 import           Types
 
 
+-- | The state of the logging thread.
 data LogThreadState =
     LogThreadState { logThreadDestination :: Maybe (FilePath, Handle)
+                   -- ^ The logging thread's active logging destination.
+                   -- Nothing means log messages are not being written
+                   -- anywhere except the internal buffer.
                    , logThreadEventChan :: BChan MHEvent
+                   -- ^ The application event channel that we'll use to
+                   -- notify of logging events.
                    , logThreadCommandChan :: STM.TChan LogCommand
+                   -- ^ The channel on which the logging thread will
+                   -- wait for logging commands.
                    , logThreadMessageBuffer :: Seq.Seq LogMessage
+                   -- ^ The internal bounded log message buffer.
                    , logThreadMaxBufferSize :: Int
+                   -- ^ The size bound of the logThreadMessageBuffer.
                    }
 
 -- | The logging thread.
@@ -43,29 +53,37 @@ startLoggingThread eventChan mgr maxBufferSize = do
 logThreadBody :: St.StateT LogThreadState IO ()
 logThreadBody = forever $ nextLogCommand >>= handleLogCommand
 
+-- | Get the next pending log thread command.
 nextLogCommand :: St.StateT LogThreadState IO LogCommand
 nextLogCommand = do
     chan <- St.gets logThreadCommandChan
     liftIO $ STM.atomically $ STM.readTChan chan
 
+-- | Emit a log stop marker to the file.
 putLogEndMarker :: Handle -> IO ()
 putLogEndMarker h = do
     now <- getCurrentTime
     hPutStrLn h $ "[" <> show now <> "] <<< Logging end >>>"
 
+-- | Emit a log start marker to the file.
 putLogStartMarker :: Handle -> IO ()
 putLogStartMarker h = do
     now <- getCurrentTime
     hPutStrLn h $ "[" <> show now <> "] <<< Logging start >>>"
 
+-- | Emit a log stop marker to the file and close it, then notify the
+-- application that we have stopped logging.
 finishLog :: BChan MHEvent -> FilePath -> Handle -> IO ()
 finishLog eventChan oldPath oldHandle = do
     putLogEndMarker oldHandle
     hClose oldHandle
     writeBChan eventChan $ IEvent $ LoggingStopped oldPath
 
+-- | Handle a single logging command.
 handleLogCommand :: LogCommand -> St.StateT LogThreadState IO ()
 handleLogCommand StopLogging = do
+    -- StopLogging: if we were logging to a file, close it and notify
+    -- the application. Otherwise do nothing.
     oldDest <- St.gets logThreadDestination
     case oldDest of
         Nothing -> return ()
@@ -75,6 +93,10 @@ handleLogCommand StopLogging = do
             St.modify $ \s -> s { logThreadDestination = Nothing
                                 }
 handleLogCommand (LogToFile newPath) = do
+    -- LogToFile: if we were logging to a file, close that file, notify
+    -- the application, then attempt to open the new file. If that
+    -- failed, notify the application of the error. If it succeeded,
+    -- start logging and notify the application.
     eventChan <- St.gets logThreadEventChan
     oldDest <- St.gets logThreadDestination
 
@@ -100,6 +122,10 @@ handleLogCommand (LogToFile newPath) = do
                 liftIO $ putLogStartMarker handle
                 liftIO $ writeBChan eventChan $ IEvent $ LoggingStarted newPath
 handleLogCommand (LogAMessage lm) = do
+    -- LogAMessage: log a single message. Write the message to the
+    -- bounded internal buffer (which may cause an older message to be
+    -- evicted). Then, if we are actively logging to a file, write the
+    -- message to that file and flush the output stream.
     maxBufSize <- St.gets logThreadMaxBufferSize
 
     let addMessageToBuffer s =
@@ -122,6 +148,7 @@ handleLogCommand (LogAMessage lm) = do
             hPutLogMessage handle lm
             hFlush handle
 
+-- | Write a single log message to the output handle.
 hPutLogMessage :: Handle -> LogMessage -> IO ()
 hPutLogMessage handle (LogMessage {..}) = do
     hPutStr handle $ "[" <> show logMessageTimestamp <> "] "
@@ -131,6 +158,7 @@ hPutLogMessage handle (LogMessage {..}) = do
         Just c  -> hPutStr handle $ "[" <> show c <> "] "
     hPutStrLn handle $ T.unpack logMessageText
 
+-- | Flush the contents of the internal log message buffer.
 flushLogMessageBuffer :: Handle -> St.StateT LogThreadState IO ()
 flushLogMessageBuffer handle = do
     buf <- St.gets logThreadMessageBuffer
