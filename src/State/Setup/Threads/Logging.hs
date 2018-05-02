@@ -25,7 +25,7 @@ import           Brick.BChan
 import           Control.Concurrent ( forkIO )
 import qualified Control.Concurrent.STM as STM
 import           Control.Exception ( SomeException, try )
-import qualified Control.Monad.State.Strict as St
+import           Control.Monad.State.Strict
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Time ( getCurrentTime )
@@ -72,15 +72,15 @@ startLoggingThread eventChan logChan maxBufferSize = do
                                       , logThreadMaxBufferSize = maxBufferSize
                                       }
     void $ forkIO $
-        void $ St.runStateT logThreadBody initialState
+        void $ runStateT logThreadBody initialState
 
-logThreadBody :: St.StateT LogThreadState IO ()
+logThreadBody :: StateT LogThreadState IO ()
 logThreadBody = forever $ nextLogCommand >>= handleLogCommand
 
 -- | Get the next pending log thread command.
-nextLogCommand :: St.StateT LogThreadState IO LogCommand
+nextLogCommand :: StateT LogThreadState IO LogCommand
 nextLogCommand = do
-    chan <- St.gets logThreadCommandChan
+    chan <- gets logThreadCommandChan
     liftIO $ STM.atomically $ STM.readTChan chan
 
 -- | Emit a log stop marker to the file.
@@ -104,25 +104,24 @@ finishLog eventChan oldPath oldHandle = do
     writeBChan eventChan $ IEvent $ LoggingStopped oldPath
 
 -- | Handle a single logging command.
-handleLogCommand :: LogCommand -> St.StateT LogThreadState IO ()
+handleLogCommand :: LogCommand -> StateT LogThreadState IO ()
 handleLogCommand StopLogging = do
     -- StopLogging: if we were logging to a file, close it and notify
     -- the application. Otherwise do nothing.
-    oldDest <- St.gets logThreadDestination
+    oldDest <- gets logThreadDestination
     case oldDest of
         Nothing -> return ()
         Just (oldPath, oldHandle) -> do
-            eventChan <- St.gets logThreadEventChan
+            eventChan <- gets logThreadEventChan
             liftIO $ finishLog eventChan oldPath oldHandle
-            St.modify $ \s -> s { logThreadDestination = Nothing
-                                }
+            modify $ \s -> s { logThreadDestination = Nothing }
 handleLogCommand (LogToFile newPath) = do
     -- LogToFile: if we were logging to a file, close that file, notify
     -- the application, then attempt to open the new file. If that
     -- failed, notify the application of the error. If it succeeded,
     -- start logging and notify the application.
-    eventChan <- St.gets logThreadEventChan
-    oldDest <- St.gets logThreadDestination
+    eventChan <- gets logThreadEventChan
+    oldDest <- gets logThreadDestination
 
     shouldChange <- case oldDest of
         Nothing -> return True
@@ -140,8 +139,7 @@ handleLogCommand (LogToFile newPath) = do
                 let msg = "Error in log thread: could not open " <> show newPath <> ": " <> show e
                 writeBChan eventChan $ IEvent $ LogStartFailed newPath msg
             Right handle -> do
-                St.modify $ \s -> s { logThreadDestination = Just (newPath, handle)
-                                    }
+                modify $ \s -> s { logThreadDestination = Just (newPath, handle) }
                 flushLogMessageBuffer handle
                 liftIO $ putLogStartMarker handle
                 liftIO $ writeBChan eventChan $ IEvent $ LoggingStarted newPath
@@ -150,7 +148,7 @@ handleLogCommand (LogAMessage lm) = do
     -- bounded internal buffer (which may cause an older message to be
     -- evicted). Then, if we are actively logging to a file, write the
     -- message to that file and flush the output stream.
-    maxBufSize <- St.gets logThreadMaxBufferSize
+    maxBufSize <- gets logThreadMaxBufferSize
 
     let addMessageToBuffer s =
             let newSeq = if Seq.length s >= maxBufSize
@@ -160,12 +158,11 @@ handleLogCommand (LogAMessage lm) = do
 
     -- Append the message to the internal buffer, maintaining the bound
     -- on the internal buffer size.
-    St.modify $ \s -> s { logThreadMessageBuffer = addMessageToBuffer (logThreadMessageBuffer s)
-                        }
+    modify $ \s -> s { logThreadMessageBuffer = addMessageToBuffer (logThreadMessageBuffer s) }
 
     -- If we have an active log destination, write the message to the
     -- output file.
-    dest <- St.gets logThreadDestination
+    dest <- gets logThreadDestination
     case dest of
         Nothing -> return ()
         Just (_, handle) -> liftIO $ do
@@ -183,9 +180,9 @@ hPutLogMessage handle (LogMessage {..}) = do
     hPutStrLn handle $ T.unpack logMessageText
 
 -- | Flush the contents of the internal log message buffer.
-flushLogMessageBuffer :: Handle -> St.StateT LogThreadState IO ()
+flushLogMessageBuffer :: Handle -> StateT LogThreadState IO ()
 flushLogMessageBuffer handle = do
-    buf <- St.gets logThreadMessageBuffer
+    buf <- gets logThreadMessageBuffer
     when (Seq.length buf > 0) $ do
         liftIO $ do
             hPutStrLn handle "<<< Log message buffer begin >>>"
