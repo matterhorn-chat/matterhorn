@@ -128,6 +128,9 @@ stopLogging = do
 -- | Handle a single logging command.
 handleLogCommand :: LogCommand -> StateT LogThreadState IO Bool
 handleLogCommand (LogSnapshot path) = do
+    -- LogSnapshot: write the current log message buffer to the
+    -- specified path. Ignore the request if it is for the path that we
+    -- are already logging to.
     eventChan <- gets logThreadEventChan
     dest <- gets logThreadDestination
 
@@ -147,6 +150,8 @@ handleLogCommand (LogSnapshot path) = do
 
     return True
 handleLogCommand GetLogDestination = do
+    -- GetLogDestination: the application asked us to provide the
+    -- current log destination.
     dest <- gets logThreadDestination
     eventChan <- gets logThreadEventChan
     liftIO $ writeBChan eventChan $ IEvent $ LogDestination $ fst <$> dest
