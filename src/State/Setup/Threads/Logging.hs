@@ -23,7 +23,7 @@ import           Prelude ()
 import           Prelude.MH
 
 import           Brick.BChan
-import           Control.Concurrent ( MVar, newEmptyMVar, takeMVar, putMVar, forkIO )
+import           Control.Concurrent.Async ( Async, async, wait )
 import qualified Control.Concurrent.STM as STM
 import           Control.Exception ( SomeException, try )
 import           Control.Monad.State.Strict
@@ -52,39 +52,34 @@ data LogThreadState =
                    -- ^ The internal bounded log message buffer.
                    , logThreadMaxBufferSize :: Int
                    -- ^ The size bound of the logThreadMessageBuffer.
-                   , logThreadShutdownLock :: MVar ()
-                   -- ^ Shutdown lock (empty means thread is running).
                    }
 
 -- | Create a new log manager and start a logging thread for it.
 newLogManager :: BChan MHEvent -> Int -> IO LogManager
 newLogManager eventChan maxBufferSize = do
     chan <- STM.newTChanIO
-    lock <- newEmptyMVar
+    self <- startLoggingThread eventChan chan maxBufferSize
     let mgr = LogManager { logManagerCommandChannel = chan
-                         , logManagerShutdownLock = lock
+                         , logManagerHandle = self
                          }
-    startLoggingThread eventChan chan maxBufferSize lock
     return mgr
 
 -- | Shuts down the log manager and blocks until shutdown is complete.
 shutdownLogManager :: LogManager -> IO ()
 shutdownLogManager mgr = do
     STM.atomically $ STM.writeTChan (logManagerCommandChannel mgr) ShutdownLogging
-    takeMVar $ logManagerShutdownLock mgr
+    wait $ logManagerHandle mgr
 
 -- | The logging thread.
-startLoggingThread :: BChan MHEvent -> STM.TChan LogCommand -> Int -> MVar () -> IO ()
-startLoggingThread eventChan logChan maxBufferSize lock = do
+startLoggingThread :: BChan MHEvent -> STM.TChan LogCommand -> Int -> IO (Async ())
+startLoggingThread eventChan logChan maxBufferSize = do
     let initialState = LogThreadState { logThreadDestination = Nothing
                                       , logThreadEventChan = eventChan
                                       , logThreadCommandChan = logChan
                                       , logThreadMessageBuffer = mempty
                                       , logThreadMaxBufferSize = maxBufferSize
-                                      , logThreadShutdownLock = lock
                                       }
-    void $ forkIO $
-        void $ runStateT logThreadBody initialState
+    async $ void $ runStateT logThreadBody initialState
 
 logThreadBody :: StateT LogThreadState IO ()
 logThreadBody = do
@@ -133,8 +128,6 @@ handleLogCommand ShutdownLogging = do
     -- ShutdownLogging: if we were logging to a file, close it. Then
     -- unlock the shutdown lock.
     stopLogging
-    lock <- gets logThreadShutdownLock
-    liftIO $ putMVar lock ()
     return False
 handleLogCommand StopLogging = do
     -- StopLogging: if we were logging to a file, close it and notify

@@ -224,6 +224,7 @@ import           Brick.AttrMap ( AttrMap )
 import           Brick.BChan
 import           Brick.Widgets.Edit ( Editor, editor )
 import           Brick.Widgets.List ( List, list )
+import           Control.Concurrent.Async ( Async )
 import           Control.Concurrent.MVar ( MVar )
 import qualified Control.Concurrent.STM as STM
 import           Control.Exception ( SomeException )
@@ -580,7 +581,7 @@ data LogCommand =
 -- | A handle to the log manager thread.
 data LogManager =
     LogManager { logManagerCommandChannel :: STM.TChan LogCommand
-               , logManagerShutdownLock :: MVar ()
+               , logManagerHandle :: Async ()
                }
 
 startLoggingToFile :: LogManager -> FilePath -> IO ()
