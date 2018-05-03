@@ -1,4 +1,42 @@
 
+40901.0.0
+=========
+
+New features:
+ * Improved logging infrastructure. Matterhorn now keeps a running
+   bounded internal buffer of log messages that can be written to disk
+   at any time, in addition to supporting the usual mode where all
+   messages are logged to a file. This feature includes:
+   * Four new commands:
+     * `/log-status`: check on whether Matterhorn is currently logging
+       at all.
+     * `/log-start <path>`: start logging to the specified file.
+     * `/log-stop`: stop any active logging.
+     * `/log-snapshot <path>`: dump the internal log message buffer to
+       the specified file.
+   * A new optional configuration setting, `logMaxBufferSize`, which is
+     the number of entries in the internal log buffer.
+ * Added a new message selection mode keybinding to view individual
+   messages (default: `v`, keybinding name: `view-message`). This
+   keybinding causes the selected message to be displayed alone in a
+   pop-up window in which horizontal and vertical scrolling can be used
+   to view the entire message. This is especially useful in cases where
+   a message contains a code block with lines that could not be wrapped.
+   (#377)
+ * Message selection mode now supports selection of error and info
+   messages in addition to just user posts.
+ * Message selection mode now supports yanking the contents of all
+   messages, not just messages with verbatim content as before. The
+   keybinding name for this is `yank-whole-message` and defaults to `Y`.
+   When this binding is used, the entire message's Markdown source is
+   copied to the system clipboard. (#171)
+
+Other changes:
+ * The help screen now supports the `scroll-top` and `scroll-bottom`
+   events (defaulting to the `Home` and `End` keys, respectively).
+ * Exceptions related to spurious network problems with `getAddrInfo` no
+   longer cause client error reports (#391).
+
 40900.0.1
 =========
 
