@@ -10,6 +10,8 @@ import           Brick
 import           Brick.Widgets.Border
 import           Brick.Widgets.Center
 import           Brick.Widgets.List
+import qualified Data.Function as F
+import           Data.List ( sortBy )
 import qualified Data.Vector as V
 import           Graphics.Vty
 import           System.Exit ( exitSuccess )
@@ -24,7 +26,8 @@ type State = List () Team
 
 interactiveTeamSelection :: [Team] -> IO Team
 interactiveTeamSelection teams = do
-    let state = list () (V.fromList teams) 1
+    let state = list () (V.fromList sortedTeams) 1
+        sortedTeams = sortBy (compare `F.on` teamName) teams
     finalSt <- defaultMain app state
     let Just (_, t) = listSelectedElement finalSt
     return t
