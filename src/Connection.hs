@@ -10,6 +10,7 @@ import           Control.Exception ( SomeException, catch )
 import qualified Data.HashMap.Strict as HM
 import           Data.Int (Int64)
 import           Data.Semigroup ( Max(..) )
+import qualified Data.Text as T
 import           Data.Time ( UTCTime(..), secondsToDiffTime, getCurrentTime
                            , diffUTCTime )
 import           Data.Time.Calendar ( Day(..) )
@@ -25,14 +26,15 @@ connectWebsockets :: MH ()
 connectWebsockets = do
   st <- use id
   session <- getSession
+  logger <- mhGetIOLogger
   liftIO $ do
     let shunt (Left msg) = writeBChan (st^.csResources.crEventQueue) (WebsocketParseError msg)
         shunt (Right e) = writeBChan (st^.csResources.crEventQueue) (WSEvent e)
         runWS = WS.mmWithWebSocket session shunt $ \ws -> do
                   writeBChan (st^.csResources.crEventQueue) WebsocketConnect
                   processWebsocketActions st ws 1 HM.empty
-    void $ forkIO $ runWS `catch` handleTimeout 1 st
-                          `catch` handleError 5 st
+    void $ forkIO $ runWS `catch` handleTimeout logger 1 st
+                          `catch` handleError logger 5 st
 
 -- | Take websocket actions from the websocket action channel in the ChatState and
 -- | send them to the server over the websocket.
@@ -63,11 +65,15 @@ processWebsocketActions st ws s userTypingLastNotifTimeMap = do
     userTypingLastNotifTimeMap' (UserTyping _ cId _) now =
       HM.insertWith (<>) cId (Max now) userTypingLastNotifTimeMap
 
-handleTimeout :: Int -> ChatState -> WS.MMWebSocketTimeoutException -> IO ()
-handleTimeout seconds st _ = reconnectAfter seconds st
+handleTimeout :: (LogCategory -> Text -> IO ()) -> Int -> ChatState -> WS.MMWebSocketTimeoutException -> IO ()
+handleTimeout logger seconds st e = do
+    logger LogWebsocket $ T.pack $ "Websocket timeout exception: " <> show e
+    reconnectAfter seconds st
 
-handleError :: Int -> ChatState -> SomeException -> IO ()
-handleError seconds st _ = reconnectAfter seconds st
+handleError :: (LogCategory -> Text -> IO ()) -> Int -> ChatState -> SomeException -> IO ()
+handleError logger seconds st e = do
+    logger LogWebsocket $ T.pack $ "Websocket error: " <> show e
+    reconnectAfter seconds st
 
 reconnectAfter :: Int -> ChatState -> IO ()
 reconnectAfter seconds st = do

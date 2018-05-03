@@ -552,6 +552,7 @@ setUserPreferences = flip (F.foldr go)
 data LogCategory =
     LogGeneral
     | LogAPI
+    | LogWebsocket
     | LogError
     deriving (Eq, Show)
 
