@@ -150,6 +150,7 @@ module Types
   , mhError
 
   , mhLog
+  , mhGetIOLogger
   , LogContext(..)
   , withLogContext
   , withLogContextChannelId
@@ -943,15 +944,23 @@ getLogContext = MH R.ask
 -- | Log a message.
 mhLog :: LogCategory -> Text -> MH ()
 mhLog cat msg = do
+    logger <- mhGetIOLogger
+    liftIO $ logger cat msg
+
+-- | Get a logger suitable for use in IO. The logger always logs using
+-- the MH monad log context at the time of the call to mhGetIOLogger.
+mhGetIOLogger :: MH (LogCategory -> Text -> IO ())
+mhGetIOLogger = do
     ctx <- getLogContext
-    now <- liftIO getCurrentTime
-    let lm = LogMessage { logMessageText = msg
-                        , logMessageContext = ctx
-                        , logMessageCategory = cat
-                        , logMessageTimestamp = now
-                        }
     mgr <- use (to (_crLogManager . _csResources))
-    liftIO $ sendLogMessage mgr lm
+    return $ \cat msg -> do
+        now <- liftIO getCurrentTime
+        let lm = LogMessage { logMessageText = msg
+                            , logMessageContext = ctx
+                            , logMessageCategory = cat
+                            , logMessageTimestamp = now
+                            }
+        liftIO $ sendLogMessage mgr lm
 
 -- | Run an 'MM' computation, choosing whether to continue or halt based
 -- on the resulting
