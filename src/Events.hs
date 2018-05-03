@@ -84,7 +84,7 @@ handleIEvent (LoggingStarted path) =
 handleIEvent (LogDestination dest) =
     case dest of
         Nothing ->
-            postInfoMessage "Logging is currently disabled."
+            postInfoMessage "Logging is currently disabled. Enable it with /log-start."
         Just path ->
             postInfoMessage $ T.pack $ "Logging to " <> path
 handleIEvent (LogSnapshotSucceeded path) =
