@@ -33,6 +33,7 @@ function init {
         echo 'packages: deps/mattermost-api/mattermost-api.cabal'  >cabal.project.local
         echo '          deps/mattermost-api-qc/mattermost-api-qc.cabal' >>cabal.project.local
         echo '          deps/aspell-pipe/aspell-pipe.cabal' >>cabal.project.local
+        echo 'allow-newer: uuid-1.3.13:entropy' >>cabal.project.local
     fi
 }
 
