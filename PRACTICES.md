@@ -13,6 +13,11 @@ overall concerns:
  * We want to manage inevitable software evolution, and
  * We want to reduce waste through good team coordination.
 
+General
+-------
+
+Branches should be `-Wall` clean prior to merging.
+
 Aesthetics
 ----------
 
