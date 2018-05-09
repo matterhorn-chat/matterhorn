@@ -27,13 +27,16 @@ viewMessageBox st =
           Nothing -> str "BUG: no message to show, please report!"
           Just msg ->
               let hs = getHighlightSet st
+                  parent = case msg^.mInReplyToMsg of
+                       NotAReply -> Nothing
+                       InReplyTo pId -> getMessageForPostId st pId
               in cached ViewMessageArea $
                  renderMessage $ MessageData { mdEditThreshold     = Nothing
                                              , mdShowOlderEdits    = False
                                              , mdMessage           = msg
                                              , mdUserName          = msg^.mUser.to (nameForUserRef st)
-                                             , mdParentMessage     = Nothing
-                                             , mdParentUserName    = Nothing
+                                             , mdParentMessage     = parent
+                                             , mdParentUserName    = parent >>= (^.mUser.to (nameForUserRef st))
                                              , mdRenderReplyParent = True
                                              , mdHighlightSet      = hs
                                              , mdIndentBlocks      = True
