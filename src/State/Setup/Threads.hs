@@ -302,4 +302,9 @@ doAsyncWork config requestChan eventChan = do
 -- E.g.
 -- https://github.com/matterhorn-chat/matterhorn/issues/391
 shouldIgnore :: SomeException -> Bool
-shouldIgnore e = "getAddrInfo" `isInfixOf` show e
+shouldIgnore e =
+    let eStr = show e
+    in or [ "getAddrInfo" `isInfixOf` eStr
+          , "Network.Socket.recvBuf: timeout" `isInfixOf` eStr
+          , "resource vanished" `isInfixOf` eStr
+          ]
