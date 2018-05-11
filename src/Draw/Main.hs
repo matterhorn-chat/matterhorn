@@ -313,11 +313,8 @@ renderChannelHeader st hs chan =
          (T.map newlineToSpace (channelNameString <> maybeTopic))
 
 renderCurrentChannelDisplay :: ChatState -> HighlightSet -> Widget Name
-renderCurrentChannelDisplay st hs = (header <+> conn) <=> messages
+renderCurrentChannelDisplay st hs = header <=> messages
     where
-    conn = case st^.csConnectionStatus of
-      Connected -> emptyWidget
-      Disconnected  -> withDefAttr errorMessageAttr (str "[NOT CONNECTED]")
     header = withDefAttr channelHeaderAttr $
              padRight Max $
              renderChannelHeader st hs chan
@@ -434,7 +431,24 @@ renderChannelSelectPrompt st =
           else cstr))
 
 drawMain :: ChatState -> [Widget Name]
-drawMain st = [joinBorders $ mainInterface st]
+drawMain st =
+    [ connectionLayer st
+    , joinBorders $ mainInterface st
+    ]
+
+connectionLayer :: ChatState -> Widget Name
+connectionLayer st =
+    case st^.csConnectionStatus of
+        Connected -> emptyWidget
+        Disconnected ->
+            Widget Fixed Fixed $ do
+                ctx <- getContext
+                let aw = ctx^.availWidthL
+                    w = length msg + 2
+                    msg = "NOT CONNECTED"
+                render $ translateBy (Location (max 0 (aw - w), 0)) $
+                         withDefAttr errorMessageAttr $
+                         border $ str msg
 
 messageSelectBottomBar :: ChatState -> Widget Name
 messageSelectBottomBar st =
