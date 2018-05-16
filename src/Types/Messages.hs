@@ -490,7 +490,7 @@ validUserMessage m =
         _ -> False
 
 validSelectableMessage :: Message -> Bool
-validSelectableMessage m = isJust $ m^.mMessageId
+validSelectableMessage m = (not $ m^.mDeleted) && (isJust $ m^.mMessageId)
 
 -- ----------------------------------------------------------------------
 -- * Operations on any Message type
