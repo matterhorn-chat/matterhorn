@@ -31,11 +31,14 @@ getUrgencyHelper() {
     if [ "$mentioned" == "1" ]
     then
         echo "$1"
-    elif [ "$mentioned" == "2" ]
-        echo "$2"
     else
-        echo "Error: mentioned value '$mentioned' unexpected" > /dev/stderr
-        exit 1
+        if [ "$mentioned" == "2" ]
+        then
+            echo "$2"
+        else
+            echo "Error: mentioned value '$mentioned' unexpected" > /dev/stderr
+            exit 1
+        fi
     fi
 }
 
@@ -45,5 +48,10 @@ getUrgency() {
     getUrgencyHelper $notify_URGENCIES
 }
 
-test "$(getUrgency)" = "none" ||
-    notify-send -u "$(getUrgency)" -c "$notify_CATEGORY" "$notify_HEAD" "$notify_BODY"
+urgency=$(getUrgency)
+
+if [ ! -z "$urgency" ]
+then
+    test "$urgency" = "none" ||
+        notify-send -u "$urgency" -c "$notify_CATEGORY" "$notify_HEAD" "$notify_BODY"
+fi
