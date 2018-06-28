@@ -28,8 +28,15 @@ notify_HEAD="Matterhorn message from $sender"
 notify_BODY="$message"
 
 getUrgencyHelper() {
-    shift "$mentioned"
-    echo "$1"
+    if [ "$mentioned" == "1" ]
+    then
+        echo "$1"
+    elif [ "$mentioned" == "2" ]
+        echo "$2"
+    else
+        echo "Error: mentioned value '$mentioned' unexpected" > /dev/stderr
+        exit 1
+    fi
 }
 
 getUrgency() {
