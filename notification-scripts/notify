@@ -1,9 +1,9 @@
 #!/bin/sh
-#############################################################
-# Sample shell script for using notify-send with matterhorn #
-#############################################################
 
-# Positional parameters
+# Sample shell script for using notify-send with matterhorn This script
+# works on Linux only. It depends on the 'notify-send' command.
+
+# Positional parameters passed to this script by Matterhorn:
 mentioned="${1?}"
 sender="${2?}"
 message="${3?}"
