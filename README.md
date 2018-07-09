@@ -189,7 +189,7 @@ input. To use this feature:
 
 `matterhorn` is built with the provided `install.sh` script, which
 requires `git` and an appropriate `ghc`/`cabal` installation.
-(Although the name suggests installtion, this will just do a build in
+(Although the name suggests installation, this will just do a build in
 `dist-newstyle`.) This script will pull the appropriate repos and build
 the application. This is required for building Matterhorn since clones
 of some of our other dependencies may need to be locally available in
