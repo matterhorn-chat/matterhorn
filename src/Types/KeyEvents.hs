@@ -44,6 +44,7 @@ data KeyEvent
   | NextChannelEvent
   | PrevChannelEvent
   | NextUnreadChannelEvent
+  | NextUnreadUserOrChannelEvent
   | LastChannelEvent
   | EnterOpenURLModeEvent
   | ClearUnreadEvent
@@ -102,6 +103,7 @@ allEvents =
   , NextChannelEvent
   , PrevChannelEvent
   , NextUnreadChannelEvent
+  , NextUnreadUserOrChannelEvent
   , LastChannelEvent
 
   , EnterFlaggedPostsEvent
@@ -285,6 +287,7 @@ keyEventName ev = case ev of
   NextChannelEvent          -> "focus-next-channel"
   PrevChannelEvent          -> "focus-prev-channel"
   NextUnreadChannelEvent    -> "focus-next-unread"
+  NextUnreadUserOrChannelEvent  -> "focus-next-unread-user-or-channel"
   LastChannelEvent          -> "focus-last-channel"
 
   EnterFlaggedPostsEvent    -> "show-flagged-posts"

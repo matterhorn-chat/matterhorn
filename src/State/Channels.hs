@@ -13,7 +13,9 @@ module State.Channels
   , leaveChannelIfPossible
   , leaveCurrentChannel
   , getNextUnreadChannel
+  , getNextUnreadUserOrChannel
   , nextUnreadChannel
+  , nextUnreadUserOrChannel
   , prevChannel
   , nextChannel
   , recentChannel
@@ -507,6 +509,11 @@ nextUnreadChannel = do
     st <- use id
     setFocusWith (getNextUnreadChannel st)
 
+nextUnreadUserOrChannel :: MH ()
+nextUnreadUserOrChannel = do
+    st <- use id
+    setFocusWith (getNextUnreadUserOrChannel st)
+
 leaveChannel :: ChannelId -> MH ()
 leaveChannel cId = leaveChannelIfPossible cId False
 
@@ -570,18 +577,37 @@ getNextUnreadChannel st =
     -- for the next candidate channel.
     Z.findRight (\cId -> hasUnread st cId && (cId /= st^.csCurrentChannelId))
 
+getNextUnreadUserOrChannel :: ChatState
+                       -> Zipper ChannelId
+                       -> Zipper ChannelId
+getNextUnreadUserOrChannel st z =
+    -- Find the next unread channel, prefering direct messages
+    let isDM c = getChannelType st c == Direct
+        isFresh c = hasUnread st c && (c /= st^.csCurrentChannelId)
+    in fromMaybe (Z.findRight isFresh z) (Z.maybeFindRight (\cId -> isDM cId && isFresh cId) z)
+
+-- | Select the next channel in the channel zipper that is not a DM
+-- channel.
+--
+-- If the currently selected channel is a DM channel, do nothing because
+-- we want to prevent zipper navigation away from direct channels
+-- because we don't support navigating *back* to such channels using the
+-- same navigation bindings.
 getNextNonDMChannel :: ChatState
                     -> (Zipper ChannelId -> Zipper ChannelId)
                     -> (Zipper ChannelId -> Zipper ChannelId)
 getNextNonDMChannel st shift z =
-    if fType z == Direct
+    if getChannelType st (Z.focus z) == Direct
     then z
     else go (shift z)
   where go z'
           | fType z' /= Direct = z'
           | otherwise = go (shift z')
-        fType onz = st^.(csChannels.to
-                          (findChannelById (Z.focus onz))) ^?! _Just.ccInfo.cdType
+        fType onz = getChannelType st (Z.focus onz)
+
+getChannelType :: ChatState -> ChannelId -> Type
+getChannelType st cId =
+    st^.(csChannels.to (findChannelById cId)) ^?! _Just.ccInfo.cdType
 
 leaveCurrentChannel :: MH ()
 leaveCurrentChannel = use csCurrentChannelId >>= leaveChannel

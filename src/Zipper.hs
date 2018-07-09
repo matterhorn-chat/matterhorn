@@ -9,6 +9,7 @@ module Zipper
   , rightL
   , findLeft
   , findRight
+  , maybeFindRight
   , updateList
   , filterZipper
   )
@@ -61,12 +62,17 @@ fromList xs = Zipper { zFocus = 0, zElems = xs }
 -- Shift the focus until a given element is found, or return the
 -- same zipper if none applies
 findRight :: (a -> Bool) -> Zipper a -> Zipper a
-findRight f z
-  | f (focus z) = z
+findRight f z = fromMaybe z $ maybeFindRight f z
+
+-- Shift the focus until a given element is found, or return
+-- Nothing if none applies
+maybeFindRight :: (a -> Bool) -> Zipper a -> Maybe (Zipper a)
+maybeFindRight f z
+  | f (focus z) = Just z
   | otherwise   = go (right z) (zFocus z)
   where go zC n
-          | n == zFocus zC = zC
-          | f (focus zC)   = zC
+          | n == zFocus zC = Nothing
+          | f (focus zC)   = Just zC
           | otherwise      = go (right zC) n
 
 -- Shift the focus until a given element is found, or return the

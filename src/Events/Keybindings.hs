@@ -102,6 +102,7 @@ defaultBindings ev =
         NextChannelEvent -> [ ctrl (key 'n') ]
         PrevChannelEvent -> [ ctrl (key 'p') ]
         NextUnreadChannelEvent -> [ meta (key 'a') ]
+        NextUnreadUserOrChannelEvent -> [ ]
         LastChannelEvent -> [ meta (key 's') ]
         EnterOpenURLModeEvent -> [ ctrl (key 'o') ]
         ClearUnreadEvent -> [ meta (key 'l') ]
