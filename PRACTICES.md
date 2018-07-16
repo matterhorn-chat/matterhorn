@@ -59,15 +59,16 @@ not hard rules but help to explain the current overall appearance:
     shouldn't be used).
 
   * Modules with more than a few exports should have an explicit export
-    list to help us identify dead code.
+    list to help us identify dead code and capture API usage
+    expectations.
     
-
 Branching
 ---------
 
  * The `master` branch should be stable enough to be release-ready at
-   all times. This promise helps us be agile in the event of a need to
-   do an unplanned release.
+   all times. This promise helps us be agile in the event of a need
+   to do an unplanned release and it ensures that users who clone the
+   repository will get a working build by default.
 
  * The `develop` branch is where development occurs.
 
