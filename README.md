@@ -234,8 +234,8 @@ should consider to make submitting patches easier for all concerned:
   work?
 * A: Most terminfo files for typical terminal configurations do not
   provide support for italicized text. If your terminal emulator
-  supports italics, you must enable it in your terminfo database. For
-  more information, see these links:
+  supports italics, you must enable it in your terminfo database in
+  order to use it in Matterhorn. For more information, see these links:
   * http://www.nerdyweekly.com/posts/enable-italic-text-vim-tmux-gnome-terminal/
   * https://medium.com/@dubistkomisch/how-to-actually-get-italics-and-true-colour-to-work-in-iterm-tmux-vim-9ebe55ebc2be
   * https://github.com/tmux/tmux/blob/2.1/FAQ#L355-L383
