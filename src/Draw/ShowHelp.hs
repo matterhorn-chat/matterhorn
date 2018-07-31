@@ -301,6 +301,7 @@ themeHelp = overrideAttr codeAttr helpEmphAttr $ vBox
         "Available styles are:\n" <>
         " * standout\n" <>
         " * underline\n" <>
+        " * italic\n" <>
         " * reverseVideo\n" <>
         " * blink\n" <>
         " * dim\n" <>
