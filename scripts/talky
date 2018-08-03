@@ -2,6 +2,17 @@
 
 BASE_URL="https://talky.io"
 
+base64enc() {
+    if [[ -x $(which openssl) ]] ; then
+        retval=$(echo $1 | openssl enc -base64)
+    if [[ -x $(which base64) ]] ; then
+        retval=$(echo $1 | base64)
+    else
+        echo "Unable to base64 encode, install base64?"
+    fi
+    echo $retval
+}
+
 getroom() {
 if [[ -z "$1" ]]; then
     if [[ ! -a /dev/urandom ]] ; then
@@ -14,7 +25,8 @@ if [[ -z "$1" ]]; then
         echo "No `openssl` utility. Needed to not render random bytes."
         exit
     else
-        ROOM_NAME=$(dd if=/dev/urandom bs=1 count=32 2>/dev/null | openssl enc -base64)
+        ROOM_RAND=$(dd if=/dev/urandom bs=1 count=32 2>/dev/null)
+        ROOM_NAME=$( base64enc ${ROOM_RAND} )
     fi
 else
     ROOM_NAME=$1
