@@ -5,10 +5,11 @@ BASE_URL="https://talky.io"
 base64enc() {
     if [[ -x $(which openssl) ]] ; then
         retval=$(echo $1 | openssl enc -base64)
-    if [[ -x $(which base64) ]] ; then
+    elif [[ -x $(which base64) ]] ; then
         retval=$(echo $1 | base64)
     else
         echo "Unable to base64 encode, install base64?"
+        exit
     fi
     echo $retval
 }
@@ -20,9 +21,6 @@ if [[ -z "$1" ]]; then
         exit
     elif [[ ! -x $(which dd) ]] ; then
         echo "No `dd` utility, can not read random file."
-        exit
-    elif [[ ! -x $(which openssl) ]] ; then
-        echo "No `openssl` utility. Needed to not render random bytes."
         exit
     else
         ROOM_RAND=$(dd if=/dev/urandom bs=1 count=32 2>/dev/null)
