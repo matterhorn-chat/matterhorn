@@ -1,0 +1,26 @@
+#!/bin/bash -e
+
+BASE_URL="https://talky.io"
+
+getroom() {
+if [[ -z "$1" ]]; then
+    if [[ ! -a /dev/urandom ]] ; then
+        echo "No urandom! Can not make random room name."
+        exit
+    elif [[ ! -x $(which dd) ]] ; then
+        echo "No `dd` utility, can not read random file."
+        exit
+    elif [[ ! -x $(which openssl) ]] ; then
+        echo "No `openssl` utility. Needed to not render random bytes."
+        exit
+    else
+        ROOM_NAME=$(dd if=/dev/urandom bs=1 count=32 2>/dev/null | openssl enc -base64)
+    fi
+else
+    ROOM_NAME=$1
+fi
+}
+
+getroom
+
+echo "${BASE_URL}/${ROOM_NAME}"
