@@ -1,0 +1,36 @@
+#!/bin/bash -e
+
+BASE_URL="https://talky.io"
+
+base64enc() {
+    if [[ -x $(which openssl) ]] ; then
+        retval=$(echo $1 | openssl enc -base64)
+    elif [[ -x $(which base64) ]] ; then
+        retval=$(echo $1 | base64)
+    else
+        echo "Unable to base64 encode, install base64?"
+        exit
+    fi
+    echo $retval
+}
+
+getroom() {
+if [[ -z "$1" ]]; then
+    if [[ ! -a /dev/urandom ]] ; then
+        echo "No urandom! Can not make random room name."
+        exit
+    elif [[ ! -x $(which dd) ]] ; then
+        echo "No `dd` utility, can not read random file."
+        exit
+    else
+        ROOM_RAND=$(dd if=/dev/urandom bs=1 count=32 2>/dev/null)
+        ROOM_NAME=$( base64enc ${ROOM_RAND} )
+    fi
+else
+    ROOM_NAME=$1
+fi
+}
+
+getroom
+
+echo "${BASE_URL}/${ROOM_NAME}"
