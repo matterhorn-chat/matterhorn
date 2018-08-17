@@ -279,7 +279,9 @@ handleWSEvent we = do
         WMHello -> return ()
         WMAuthenticationChallenge -> return ()
         WMUserRoleUpdated -> return ()
-
+        WMPluginStatusesChanged -> return ()
+        WMPluginEnabled -> return ()
+        WMPluginDisabled -> return ()
 
 -- | Given a configuration, we want to check it for internal
 -- consistency (i.e. that a given keybinding isn't associated with
