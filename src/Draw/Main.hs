@@ -24,7 +24,7 @@ import           Data.Time.Clock ( UTCTime(..) )
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( (.~), (^?!), to, view, folding )
 
-import           Network.Mattermost.Types ( ChannelId, Type(Direct)
+import           Network.Mattermost.Types ( ChannelId, Type(Direct, Private, Group)
                                           , ServerTime(..), UserId )
 
 
@@ -304,7 +304,12 @@ renderChannelHeader st hs chan =
                 case foundUser of
                     Nothing -> mkChannelName (chan^.ccInfo)
                     Just u  -> userHeader u
-            _ -> mkChannelName (chan^.ccInfo)
+            Private ->
+                mkChannelName (chan^.ccInfo) <> " (Private)"
+            Group ->
+                mkChannelName (chan^.ccInfo) <> " (Private group)"
+            _ ->
+                mkChannelName (chan^.ccInfo)
         newlineToSpace '\n' = ' '
         newlineToSpace c = c
 
