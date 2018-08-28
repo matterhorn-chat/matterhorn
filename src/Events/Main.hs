@@ -193,10 +193,11 @@ tabComplete dir = do
           -- Only permit completion of channel names for non-Group channels
           ch <- channelByName cname st
           case ch^.ccInfo.cdType of
-              Group -> Nothing
-              _     -> Just [ CompletionAlternative cname (normalChannelSigil <> cname) cname
-                            , mkAlt $ normalChannelSigil <> cname
-                            ]
+              Group   -> Nothing
+              Private -> Nothing
+              _       -> Just [ CompletionAlternative cname (normalChannelSigil <> cname) cname
+                              , mkAlt $ normalChannelSigil <> cname
+                              ]
           )
 
       userCompletions = concat $ catMaybes (flip map allUIds $ \uId ->
