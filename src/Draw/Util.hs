@@ -69,11 +69,11 @@ userSigilFromInfo u = case u^.uiStatus of
 mkChannelName :: ChannelInfo -> Text
 mkChannelName c = T.append sigil (c^.cdName)
   where sigil =  case c^.cdType of
-          Private   -> T.singleton '?'
+          Private   -> T.singleton ' '
           Ordinary  -> normalChannelSigil
           Group     -> normalChannelSigil
           Direct    -> userSigil
-          _         -> T.singleton '!'
+          Unknown _ -> T.singleton ' '
 
 mkDMChannelName :: UserInfo -> Text
 mkDMChannelName u = T.cons (userSigilFromInfo u) (u^.uiName)
