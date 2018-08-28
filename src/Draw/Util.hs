@@ -71,7 +71,7 @@ mkChannelName c = T.append sigil (c^.cdName)
   where sigil =  case c^.cdType of
           Private   -> T.singleton ' '
           Ordinary  -> normalChannelSigil
-          Group     -> normalChannelSigil
+          Group     -> mempty
           Direct    -> userSigil
           Unknown _ -> T.singleton ' '
 
