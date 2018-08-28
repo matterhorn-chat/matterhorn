@@ -119,7 +119,7 @@ editMessage :: Post -> MH ()
 editMessage new = do
     myId <- gets myUserId
     let isEditedMessage m = m^.mMessageId == Just (MessagePostId $ new^.postIdL)
-        msg = clientPostToMessage (toClientPost new (new^.postParentIdL))
+        msg = clientPostToMessage (toClientPost new (new^.postRootIdL))
         chan = csChannel (new^.postChannelIdL)
     chan . ccContents . cdMessages . traversed . filtered isEditedMessage .= msg
 
@@ -312,7 +312,7 @@ addMessageToState newPostData = do
 
             return NoAction
         Just _ -> do
-            let cp = toClientPost new (new^.postParentIdL)
+            let cp = toClientPost new (new^.postRootIdL)
                 fromMe = (cp^.cpUser == (Just $ myUserId st)) &&
                          (isNothing $ cp^.cpUserOverride)
                 userPrefs = st^.csResources.crUserPreferences
@@ -359,7 +359,7 @@ addMessageToState newPostData = do
                                         (\_ p -> do
                                             let postMap = HM.fromList [ ( pId
                                                                         , clientPostToMessage
-                                                                          (toClientPost x (x^.postParentIdL))
+                                                                          (toClientPost x (x^.postRootIdL))
                                                                         )
                                                                       | (pId, x) <- HM.toList (p^.postsPostsL)
                                                                       ]

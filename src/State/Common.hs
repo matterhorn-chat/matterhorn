@@ -75,7 +75,7 @@ messagesFromPosts p = do
         clientPost :: Post -> ClientPost
         clientPost x = toClientPost x (postId <$> parent x)
         parent x = do
-            parentId <- x^.postParentIdL
+            parentId <- x^.postRootIdL
             HM.lookup parentId (p^.postsPostsL)
         findPost pId = case HM.lookup pId (postsPosts p) of
             Nothing -> error $ "BUG: could not find post for post ID " <> show pId
