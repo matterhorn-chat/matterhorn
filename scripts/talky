@@ -3,10 +3,12 @@
 BASE_URL="https://talky.io"
 
 base64enc() {
-    if [[ -x $(which openssl) ]] ; then
-        retval=$(echo $1 | openssl enc -base64)
+    if [[ -x $(which shasum) ]] ; then
+        retval=$(echo $1 | shasum | sed 's/ .*//g')
+    elif [[ -x $(which openssl) ]] ; then
+        retval=$(echo $1 | openssl enc -base64 | sed 's/\//x/g' | sed 's/+/x/g' | sed 's/=/x/g')
     elif [[ -x $(which base64) ]] ; then
-        retval=$(echo $1 | base64)
+        retval=$(echo $1 | base64 | sed 's/\//x/g' | sed 's/+/x/g' | sed 's/=/x/g')
     else
         echo "Unable to base64 encode, install base64?"
         exit
