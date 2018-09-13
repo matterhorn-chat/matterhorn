@@ -98,7 +98,7 @@ function install_deps {
 function current_branch {
   if [[ -z "$TRAVIS_BRANCH" ]]
   then
-      git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/'
+      git rev-parse --abbrev-ref HEAD 2> /dev/null
   else
       echo "$TRAVIS_BRANCH"
   fi
