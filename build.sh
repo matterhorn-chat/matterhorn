@@ -10,5 +10,4 @@ set -e
 
 HERE=$(cd `dirname $0`; pwd)
 cd $HERE
-git submodule update --init
 cabal new-build -j --enable-tests
