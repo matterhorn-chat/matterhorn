@@ -157,7 +157,7 @@ But we can only tackle so many things, and sometimes we don't even know
 enough about what's involved in a task to know its level of effort. So
 in the mean time, before we can investigate, the ticket lingers.
 
-Once we're learning what is inovlved, using the ticket as a place to
+Once we're learning what is involved, using the ticket as a place to
 hash out ideas or collect context is annoying because using ticket
 comments for that isn't effective.
 

@@ -1,0 +1,4 @@
+packages: ./matterhorn.cabal
+          submodules/mattermost-api/
+          submodules/mattermost-api-qc/
+          submodules/aspell-pipe/
