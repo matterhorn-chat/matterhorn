@@ -129,6 +129,7 @@ module Types
   , userPrefShowJoinLeave
   , userPrefFlaggedPostList
   , userPrefGroupChannelPrefs
+  , userPrefTeammateNameDisplayMode
 
   , defaultUserPreferences
   , setUserPreferences
@@ -520,6 +521,7 @@ data UserPreferences =
     UserPreferences { _userPrefShowJoinLeave     :: Bool
                     , _userPrefFlaggedPostList   :: Seq FlaggedPost
                     , _userPrefGroupChannelPrefs :: HashMap ChannelId Bool
+                    , _userPrefTeammateNameDisplayMode :: Maybe TeammateNameDisplayMode
                     }
 
 defaultUserPreferences :: UserPreferences
@@ -527,6 +529,7 @@ defaultUserPreferences =
     UserPreferences { _userPrefShowJoinLeave     = True
                     , _userPrefFlaggedPostList   = mempty
                     , _userPrefGroupChannelPrefs = mempty
+                    , _userPrefTeammateNameDisplayMode = Nothing
                     }
 
 setUserPreferences :: Seq Preference -> UserPreferences -> UserPreferences
@@ -546,6 +549,10 @@ setUserPreferences = flip (F.foldr go)
             | preferenceName p == PreferenceName "join_leave" =
               u { _userPrefShowJoinLeave =
                   preferenceValue p /= PreferenceValue "false" }
+            | preferenceCategory p == PreferenceCategoryDisplaySettings &&
+              preferenceName p == PreferenceName "name_format" =
+                  let PreferenceValue txt = preferenceValue p
+                  in u { _userPrefTeammateNameDisplayMode = Just $ teammateDisplayModeFromText txt }
             | otherwise = u
 
 -- | Log message tags.
@@ -1220,9 +1227,12 @@ channelIdByUsername name st =
 
 useNickname :: ChatState -> Bool
 useNickname st =
-    case st^?csClientConfig._Just.to clientConfigTeammateNameDisplay of
-        Just "nickname_full_name" -> True
-        _                         -> False
+    let serverSetting = case st^?csClientConfig._Just.to clientConfigTeammateNameDisplay of
+            Just TMNicknameOrFullname -> Just True
+            _                         -> Nothing
+        accountSetting = (== TMNicknameOrFullname) <$> st^.csResources.crUserPreferences.userPrefTeammateNameDisplayMode
+        fallback = False
+    in fromMaybe fallback $ accountSetting <|> serverSetting
 
 channelByName :: Text -> ChatState -> Maybe ClientChannel
 channelByName n st = do
