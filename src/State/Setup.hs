@@ -135,16 +135,13 @@ setupState mLogLocation initialConfig = do
               Just t -> return t
 
   userStatusLock <- newMVar ()
-
   userIdSet <- STM.atomically $ STM.newTVar mempty
-
   slc <- STM.newTChanIO
   wac <- STM.newTChanIO
 
   prefs <- mmGetUsersPreferences UserMe session
   let userPrefs = setUserPreferences prefs defaultUserPreferences
-
-  let themeName = case configTheme config of
+      themeName = case configTheme config of
           Nothing -> internalThemeName defaultTheme
           Just t -> t
       baseTheme = internalTheme $ fromMaybe defaultTheme (lookupTheme themeName)
@@ -219,8 +216,8 @@ initializeState cr myTeam me = do
       cChannel <- makeClientChannel c
       return (getId c, cChannel)
 
-  tz    <- lookupLocalTimeZone
-  hist  <- do
+  tz <- lookupLocalTimeZone
+  hist <- do
       result <- readHistory
       case result of
           Left _ -> return newHistory
