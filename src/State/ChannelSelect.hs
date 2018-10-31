@@ -10,6 +10,7 @@ where
 import           Prelude ()
 import           Prelude.MH
 
+import           Data.Char ( isUpper )
 import           Data.List ( findIndex )
 import qualified Data.Text as T
 import           Lens.Micro.Platform
@@ -92,30 +93,39 @@ updateChannelSelectMatches = do
 
 applySelectPattern :: ChannelSelectPattern -> Text -> Maybe ChannelSelectMatch
 applySelectPattern (CSP ty pat) chanName = do
-    let applyType Infix  | pat `T.isInfixOf`  chanName =
-            case T.breakOn pat chanName of
-                (pre, post) -> return (pre, pat, T.drop (T.length pat) post)
+    let applyType Infix  | pat `T.isInfixOf` normalizedChanName =
+            case T.breakOn pat normalizedChanName of
+                (pre, _) ->
+                    return ( T.take (T.length pre) chanName
+                           , T.take (T.length pat) $ T.drop (T.length pre) chanName
+                           , T.drop (T.length pat + T.length pre) chanName
+                           )
 
-        applyType Prefix | pat `T.isPrefixOf` chanName = do
+        applyType Prefix | pat `T.isPrefixOf` normalizedChanName = do
             let (b, a) = T.splitAt (T.length pat) chanName
             return ("", b, a)
 
-        applyType UsersOnly | pat `T.isPrefixOf` chanName = do
+        applyType UsersOnly | pat `T.isPrefixOf` normalizedChanName = do
             let (b, a) = T.splitAt (T.length pat) chanName
             return ("", b, a)
 
-        applyType ChannelsOnly | pat `T.isPrefixOf` chanName = do
+        applyType ChannelsOnly | pat `T.isPrefixOf` normalizedChanName = do
             let (b, a) = T.splitAt (T.length pat) chanName
             return ("", b, a)
 
-        applyType Suffix | pat `T.isSuffixOf` chanName = do
+        applyType Suffix | pat `T.isSuffixOf` normalizedChanName = do
             let (b, a) = T.splitAt (T.length chanName - T.length pat) chanName
             return (b, a, "")
 
-        applyType Equal  | pat == chanName =
+        applyType Equal  | pat == normalizedChanName =
             return ("", chanName, "")
 
         applyType _ = Nothing
+
+        caseSensitive = T.any isUpper pat
+        normalizedChanName = if caseSensitive
+                             then chanName
+                             else T.toLower chanName
 
     (pre, m, post) <- applyType ty
     return $ ChannelSelectMatch pre m post chanName
