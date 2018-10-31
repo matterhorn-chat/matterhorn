@@ -1219,11 +1219,10 @@ channelIdByUsername name st =
     in HM.lookup (trimUserSigil uName) nameToChanId
 
 useNickname :: ChatState -> Bool
-useNickname st = case st^?csClientConfig._Just.to clientConfigTeammateNameDisplay of
-                      Just "nickname_full_name" ->
-                          True
-                      _ ->
-                          False
+useNickname st =
+    case st^?csClientConfig._Just.to clientConfigTeammateNameDisplay of
+        Just "nickname_full_name" -> True
+        _                         -> False
 
 channelByName :: Text -> ChatState -> Maybe ClientChannel
 channelByName n st = do
