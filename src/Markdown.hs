@@ -344,7 +344,7 @@ blocksToList lt bs hSet = vBox
 data Fragment = Fragment
   { fTextual :: TextFragment
   , _fStyle  :: FragmentStyle
-  } deriving (Show)
+  } deriving (Show, Eq)
 
 data TextFragment
   = TStr Text
@@ -355,6 +355,7 @@ data TextFragment
   | TRawHtml Text
   | TEditSentinel
   | TEditRecentlySentinel
+  | TComplex (Seq Fragment)
     deriving (Show, Eq)
 
 data FragmentStyle
@@ -389,7 +390,7 @@ toFragments = go Normal
           C.Link label url _ :< xs ->
             case toList label of
               [C.Str s] | s == url -> Fragment (TLink url) (Link url) <| go n xs
-              _                    -> go (Link url) label <> go n xs
+              _                    -> Fragment (TComplex $ toFragments label) (Link url) <| go n xs
           C.RawHtml t :< xs ->
             Fragment (TRawHtml t) n <| go n xs
           C.Code t :< xs ->
@@ -496,6 +497,7 @@ fragmentSize f = case fTextual f of
   TSpace     -> 1
   TLineBreak -> 0
   TSoftBreak -> 0
+  TComplex fs -> sum $ fragmentSize <$> fs
 
 strOf :: TextFragment -> Text
 strOf f = case f of
@@ -505,6 +507,7 @@ strOf f = case f of
   TEditSentinel -> editMarking
   TEditRecentlySentinel -> editMarking
   TSpace     -> " "
+  TComplex fs -> T.concat $ F.toList $ (strOf . fTextual) <$> fs
   _          -> ""
 
 -- This finds adjacent string-ey fragments and concats them, so
@@ -523,8 +526,11 @@ gatherWidgets (viewl-> (Fragment frag style :< rs)) = go style (strOf frag) rs
                 Strong -> B.withDefAttr clientStrongAttr rawText
                 Code   -> B.withDefAttr codeAttr rawText
                 Link l ->
-                  B.modifyDefAttr (`V.withURL` l)
-                    (B.withDefAttr urlAttr rawText)
+                    B.hyperlink l $ B.withDefAttr urlAttr $ case frag of
+                        TComplex fs ->
+                            hBox $ gatherWidgets fs
+                        _ ->
+                            rawText
                 Emoji  -> B.withDefAttr emojiAttr rawText
                 User u -> colorUsername u t
                 Channel -> B.withDefAttr channelNameAttr rawText
