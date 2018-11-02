@@ -81,7 +81,6 @@ invokeExternalEditor = do
                     Right t -> do
                         let tmpLines = T.lines $ sanitizeUserText' t
                         return $ st & csEditState.cedEditor.editContentsL .~ (Z.textZipper tmpLines Nothing)
-                                    & csEditState.cedMultiline .~ (length tmpLines > 1)
             Sys.ExitFailure _ -> return st
 
 toggleMessagePreview :: MH ()
