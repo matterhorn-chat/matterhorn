@@ -113,7 +113,7 @@ executable matterhorn
   default-extensions:  OverloadedStrings,
                        ScopedTypeVariables,
                        NoImplicitPrelude
-  ghc-options:         -Wall -Werror -threaded -with-rtsopts=-I0
+  ghc-options:         -Wall -threaded -with-rtsopts=-I0
   build-depends:       base                 >=4.8     && <5
                      , mattermost-api       == 50200.0.0
                      , base-compat          >= 0.9    && < 0.11
@@ -172,7 +172,7 @@ test-suite test_messages
   default-language:   Haskell2010
   default-extensions: OverloadedStrings
                     , ScopedTypeVariables
-  ghc-options:        -Wall -Werror -fno-warn-orphans
+  ghc-options:        -Wall -fno-warn-orphans
   hs-source-dirs:     src, test
   build-depends:      base                 >=4.7     && <5
                     , base-compat          >= 0.9    && < 0.11
