@@ -1,4 +1,48 @@
 
+50200.0.0
+=========
+
+This release is compatible with server version 5.2.
+
+New features:
+
+ * The channel list sidebar can now be shown and hidden:
+   * With the `/toggle-channel-list` command
+   * With the default binding of `F2`
+   * With the customized keybinding name of
+     `toggle-channel-list-visibility`
+ * The account preference for teammate name display is now honored and
+   precedence over the server default; at present, only the "nickname"
+   and "username" settings are supported.
+ * Channel selection mode now matches case-insensitively if the input is
+   entirely lowercase and matches case-sensitively otherwise.
+ * Non-public channels now include their privacy level in the channel
+   header.
+ * A bundled "talky" script is now provided for working with the Talky
+   video chat service: https://talky.io/ (Thanks @tommd)
+ * Theme styles now support italics in terminals that support it. See
+   the Theme help info for details.
+ * A new key event, "focus-next-unread-user-or-channel", was added.
+   This event changes to the next channel with unread messages,
+   preferring direct message channels. This event has no default
+   binding. (Thanks Brent Carmer)
+
+Bug fixes:
+ * Multiline mode in the built-in message editor is now preserved upon
+   returning from editing with an external editor (#419)
+ * Mixed formatting in hyperlink labels is now supported (#418)
+ * When dealing with posts internally, we now use the post's root ID,
+   not its parent ID, everywhere since parent IDs are unused (#404)
+ * Private channels are no longer included in the tab-completion
+   alternative list
+ * Theme customization files can now use empty style lists.
+ * Message selection mode now disallows selection of deleted messages.
+ * The disconnection message is now displayed in a layer to avoid layout
+   reflowing in the channel header.
+ * Message view mode now properly displays reply parent (#397)
+ * The startup team listing is now sorted by team name.
+ * We now log websocket timeout and generic exceptions (#385)
+
 40901.0.0
 =========
 
