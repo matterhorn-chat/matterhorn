@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 # Sample shell script for using notify-send with matterhorn This script
 # works on Linux only. It depends on the 'notify-send' command.
