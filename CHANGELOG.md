@@ -12,8 +12,8 @@ New features:
    * With the customized keybinding name of
      `toggle-channel-list-visibility`
  * The account preference for teammate name display is now honored and
-   precedence over the server default; at present, only the "nickname"
-   and "username" settings are supported.
+   takes precedence over the server default; at present, only the
+   "nickname" and "username" settings are supported.
  * Channel selection mode now matches case-insensitively if the input is
    entirely lowercase and matches case-sensitively otherwise.
  * Non-public channels now include their privacy level in the channel
