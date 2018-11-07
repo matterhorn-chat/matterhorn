@@ -87,6 +87,8 @@ fromIni = do
       (configShowBackground defaultConfig)
     configShowMessagePreview <- fieldFlagDef "showMessagePreview"
       (configShowMessagePreview defaultConfig)
+    configShowChannelList <- fieldFlagDef "showChannelList"
+      (configShowChannelList defaultConfig)
     configShowTypingIndicator <- fieldFlagDef "showTypingIndicator"
       (configShowTypingIndicator defaultConfig)
     configEnableAspell <- fieldFlagDef "enableAspell"
@@ -165,6 +167,7 @@ defaultConfig =
            , configActivityBell              = False
            , configShowBackground            = Disabled
            , configShowMessagePreview        = False
+           , configShowChannelList           = True
            , configEnableAspell              = False
            , configAspellDictionary          = Nothing
            , configUnsafeUseHTTP             = False

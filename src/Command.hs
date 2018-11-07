@@ -141,6 +141,9 @@ commandList =
   , Cmd "message-preview" "Toggle preview of the current message" NoArg $ \_ ->
         toggleMessagePreview
 
+  , Cmd "toggle-channel-list" "Toggle channel list visibility" NoArg $ \_ ->
+        toggleChannelListVisibility
+
   , Cmd "focus" "Focus on a channel or user"
     (TokenArg "channel" NoArg) $ \ (name, ()) ->
         changeChannel name

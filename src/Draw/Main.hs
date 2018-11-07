@@ -607,7 +607,9 @@ renderDeleteConfirm =
 
 mainInterface :: ChatState -> Widget Name
 mainInterface st =
-    vBox [ hBox [hLimit channelListWidth (renderChannelList st), vBorder, mainDisplay]
+    vBox [ if st^.csShowChannelList || appMode st == ChannelSelect
+           then hBox [hLimit channelListWidth (renderChannelList st), vBorder, mainDisplay]
+           else mainDisplay
          , bottomBorder
          , inputPreview st hs
          , userInputArea st hs

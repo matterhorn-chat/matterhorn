@@ -56,6 +56,7 @@ module Types
   , csCurrentChannelId
   , csUrlList
   , csShowMessagePreview
+  , csShowChannelList
   , csPostMap
   , csRecentChannel
   , csPostListOverlay
@@ -317,6 +318,8 @@ data Config =
            -- ^ Whether to show async background worker thread info.
            , configShowMessagePreview :: Bool
            -- ^ Whether to show the message preview area.
+           , configShowChannelList :: Bool
+           -- ^ Whether to show the channel list.
            , configEnableAspell :: Bool
            -- ^ Whether to enable Aspell spell checking.
            , configAspellDictionary :: Maybe Text
@@ -770,6 +773,8 @@ data ChatState =
               -- routines.
               , _csShowMessagePreview :: Bool
               -- ^ Whether to show the message preview area.
+              , _csShowChannelList :: Bool
+              -- ^ Whether to show the channe list.
               , _csChannelSelectState :: ChannelSelectState
               -- ^ The state of the user's input and selection for
               -- channel selection mode.
@@ -830,6 +835,7 @@ newState (StartupStateInfo {..}) =
               , _csEditState                   = emptyEditState startupStateInitialHistory startupStateSpellChecker
               , _csMode                        = Main
               , _csShowMessagePreview          = configShowMessagePreview $ _crConfiguration startupStateResources
+              , _csShowChannelList             = configShowChannelList $ _crConfiguration startupStateResources
               , _csChannelSelectState          = emptyChannelSelectState
               , _csRecentChannel               = Nothing
               , _csUrlList                     = list UrlList mempty 2

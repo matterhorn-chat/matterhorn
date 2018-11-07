@@ -50,6 +50,7 @@ data KeyEvent
   | ClearUnreadEvent
   | ToggleMultiLineEvent
   | EnterFlaggedPostsEvent
+  | ToggleChannelListVisibleEvent
 
   -- generic cancel
   | CancelEvent
@@ -107,6 +108,7 @@ allEvents =
   , LastChannelEvent
 
   , EnterFlaggedPostsEvent
+  , ToggleChannelListVisibleEvent
   , ShowHelpEvent
   , EnterSelectModeEvent
   , EnterOpenURLModeEvent
@@ -291,6 +293,7 @@ keyEventName ev = case ev of
   LastChannelEvent          -> "focus-last-channel"
 
   EnterFlaggedPostsEvent    -> "show-flagged-posts"
+  ToggleChannelListVisibleEvent -> "toggle-channel-list-visibility"
   ShowHelpEvent             -> "show-help"
   EnterSelectModeEvent      -> "select-mode"
   EnterOpenURLModeEvent     -> "enter-url-open"

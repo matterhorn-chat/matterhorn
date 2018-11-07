@@ -57,6 +57,9 @@ mainKeybindings = mkKeybindings
     , mkKb ToggleMessagePreviewEvent "Toggle message preview"
         toggleMessagePreview
 
+    , mkKb ToggleChannelListVisibleEvent "Toggle channel list visibility"
+        toggleChannelListVisibility
+
     , mkKb
         InvokeEditorEvent
         "Invoke *$EDITOR* to edit the current message"

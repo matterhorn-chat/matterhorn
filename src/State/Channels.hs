@@ -39,13 +39,14 @@ module State.Channels
   , changeChannel
   , setChannelTopic
   , beginCurrentChannelDeleteConfirm
+  , toggleChannelListVisibility
   )
 where
 
 import           Prelude ()
 import           Prelude.MH
 
-import           Brick.Main ( viewportScroll, vScrollToBeginning )
+import           Brick.Main ( viewportScroll, vScrollToBeginning, invalidateCache )
 import           Brick.Widgets.Edit ( applyEdit, getEditContents, editContentsL )
 import           Brick.Widgets.List ( list )
 import           Control.Concurrent.Async ( runConcurrently, Concurrently(..) )
@@ -101,6 +102,11 @@ updateViewedChan cId = use csConnectionStatus >>= \case
         -- appropriate. If connectivity is permanently lost, managing
         -- this state is irrelevant.
         return ()
+
+toggleChannelListVisibility :: MH ()
+toggleChannelListVisibility = do
+    mh invalidateCache
+    csShowChannelList %= not
 
 -- | Called on async completion when the currently viewed channel has
 -- been updated (i.e., just switched to this channel) to update local

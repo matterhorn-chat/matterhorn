@@ -108,6 +108,7 @@ defaultBindings ev =
         ClearUnreadEvent -> [ meta (key 'l') ]
         ToggleMultiLineEvent -> [ meta (key 'e') ]
         EnterFlaggedPostsEvent -> [ meta (key '8') ]
+        ToggleChannelListVisibleEvent -> [ fn 2 ]
 
         CancelEvent -> [ kb Vty.KEsc
                        , ctrl (key 'c')
