@@ -72,7 +72,7 @@ package repository.
     uploading the release archives.
 
 11. Tweet about the release using the `@matterhorn_chat` account:
-    "We're pleased to announce the release of Matterhorn version <VERSION> for @mattermosthq!
+    "We're pleased to announce the release of Matterhorn version <VERSION> for @mattermost!
     Get it at https://github.com/matterhorn-chat/matterhorn/releases/tag/<VERSION>"
 
 Release Hosts
