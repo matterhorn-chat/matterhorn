@@ -13,3 +13,6 @@ We're also grateful to the many contributors who have submitted patches:
 - Ryan Scott <ryan.gl.scott@gmail.com>
 - Thomas M. DuBuisson <tommd@galois.com>
 - Tristan Ravitch <tristan@nochair.net>
+- Brent Carmer <bcarmer@galois.com>
+- @markus9122
+- @jakob
