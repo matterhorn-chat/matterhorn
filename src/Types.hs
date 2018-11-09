@@ -285,9 +285,12 @@ data PasswordSource =
     | PasswordCommand Text
     deriving (Eq, Read, Show)
 
+-- | The type of channel list group headings.
 data ChannelListGroup =
     ChannelGroupChannels
+    -- ^ Channels
     | ChannelGroupUsers
+    -- ^ Users
     deriving (Eq)
 
 -- | This is how we represent the user's configuration. Most fields
