@@ -74,7 +74,7 @@ type GroupName = Text
 -- mentioned above is in effect.
 channelListGroups :: [ ( GroupName
                        , Getting [ChannelSelectMatch] ChatState [ChannelSelectMatch]
-                       , ChatState -> Maybe Int -> (ChannelListEntry -> Bool) -> Seq ChannelListEntry
+                       , ChatState -> Maybe Int -> (ChannelListEntryData -> Bool) -> Seq ChannelListEntryData
                        , Text -> MatchValue
                        ) ]
 channelListGroups =
@@ -125,7 +125,7 @@ renderChannelList st =
 
 -- | Renders a specific group, given the name of the group and the
 -- list of entries in that group (which are expected to be either
--- ChannelListEntry or SelectedChannelListEntry elements).
+-- ChannelListEntryData or SelectedChannelListEntry elements).
 renderChannelGroup :: (a -> Widget Name) -> (GroupName, Seq a) -> Seq (Widget Name)
 renderChannelGroup eRender (groupName, entries) =
     let header label = hBorderWithLabel $
@@ -135,23 +135,23 @@ renderChannelGroup eRender (groupName, entries) =
 -- | Internal record describing each channel entry and its associated
 -- attributes.  This is the object passed to the rendering function so
 -- that it can determine how to render each channel.
-data ChannelListEntry =
-    ChannelListEntry { entrySigil       :: Text
-                     , entryLabel       :: Text
-                     , entryHasUnread   :: Bool
-                     , entryMentions    :: Int
-                     , entryIsRecent    :: Bool
-                     , entryIsCurrent   :: Bool
-                     , entryUserStatus  :: Maybe UserStatus
-                     }
+data ChannelListEntryData =
+    ChannelListEntryData { entrySigil       :: Text
+                         , entryLabel       :: Text
+                         , entryHasUnread   :: Bool
+                         , entryMentions    :: Int
+                         , entryIsRecent    :: Bool
+                         , entryIsCurrent   :: Bool
+                         , entryUserStatus  :: Maybe UserStatus
+                         }
 
--- | Similar to the ChannelListEntry, but also holds information about
--- the matching channel select specification.
-data SelectedChannelListEntry = SCLE ChannelListEntry ChannelSelectMatch
+-- | Similar to the ChannelListEntryData, but also holds information
+-- about the matching channel select specification.
+data SelectedChannelListEntry = SCLE ChannelListEntryData ChannelSelectMatch
 
 -- | Render an individual Channel List entry (in Normal mode) with
 -- appropriate visual decorations.
-renderChannelListEntry :: ChannelListEntry -> Widget Name
+renderChannelListEntry :: ChannelListEntryData -> Widget Name
 renderChannelListEntry entry =
     decorate $ decorateRecent entry $ decorateMentions $ padRight Max $
     entryWidget $ entrySigil entry <> entryLabel entry
@@ -195,16 +195,17 @@ renderChannelSelectListEntry selMatch mkMatchValue (SCLE entry match) =
 
 -- | If this channel is the most recently viewed channel (prior to the
 -- currently viewed channel), add a decoration to denote that.
-decorateRecent :: ChannelListEntry -> Widget n -> Widget n
+decorateRecent :: ChannelListEntryData -> Widget n -> Widget n
 decorateRecent entry = if entryIsRecent entry
                        then (<+> (withDefAttr recentMarkerAttr $ str "<"))
                        else id
 
 -- | Extract the names and information about normal channels to be
 -- displayed in the ChannelList sidebar.
-getOrdinaryChannels :: ChatState -> Maybe Int -> (ChannelListEntry -> Bool) -> Seq ChannelListEntry
+getOrdinaryChannels :: ChatState -> Maybe Int -> (ChannelListEntryData -> Bool)
+                    -> Seq ChannelListEntryData
 getOrdinaryChannels st _ _ =
-    Seq.fromList [ ChannelListEntry sigil n unread mentions recent current Nothing
+    Seq.fromList [ ChannelListEntryData sigil n unread mentions recent current Nothing
     | n <- allChannelNames st
     , let Just chan = channelIdByChannelName n st
           unread = hasUnread st chan
@@ -232,11 +233,12 @@ getOrdinaryChannels st _ _ =
 -- entries, there are enough entries before and after the selected
 -- channel to get the Brick viewport to position the final result in a
 -- way that is natural.
-getDmChannels :: ChatState -> Maybe Int -> (ChannelListEntry -> Bool) -> Seq ChannelListEntry
+getDmChannels :: ChatState -> Maybe Int -> (ChannelListEntryData -> Bool)
+              -> Seq ChannelListEntryData
 getDmChannels st height matches =
     let es = Seq.filter matches $
              Seq.fromList
-             [ ChannelListEntry (T.cons sigil " ") uname unread
+             [ ChannelListEntryData (T.cons sigil " ") uname unread
                                 mentions recent current (Just $ u^.uiStatus)
              | u <- sortedUserList st
              , let sigil =

@@ -19,6 +19,9 @@ module Types
   , StartupStateInfo(..)
   , MHError(..)
   , ConnectionInfo(..)
+  , ChannelListEntry(..)
+  , channelListEntryChannelId
+  , entryIsDMEntry
   , ciHostname
   , ciPort
   , ciUsername
@@ -246,7 +249,7 @@ import           Data.UUID ( UUID )
 import qualified Data.Vector as Vec
 import           Lens.Micro.Platform ( at, makeLenses, lens, (%~), (^?!), (.=)
                                      , (%=), (^?), (.~)
-                                     , _Just, Traversal', preuse, (^..), folded, to, view
+                                     , _Just, Traversal', preuse, (^..), folded, to
                                      , SimpleGetter
                                      )
 import           Network.Connection ( HostNotResolved, HostCannotConnect )
@@ -288,6 +291,14 @@ data ChannelListGroup =
     -- ^ Channels
     | ChannelGroupUsers
     -- ^ Users
+    deriving (Eq)
+
+-- | The type of channel list entries.
+data ChannelListEntry =
+    CLChannel ChannelId
+    -- ^ A non-DM entry
+    | CLUser ChannelId UserId
+    -- ^ A DM entry
     deriving (Eq)
 
 -- | This is how we represent the user's configuration. Most fields
@@ -369,26 +380,26 @@ data BackgroundInfo =
     -- thread's work queue length.
     deriving (Eq, Show)
 
-mkChannelZipperList :: ClientChannels -> Users -> [(ChannelListGroup, [ChannelId])]
+mkChannelZipperList :: ClientChannels -> Users -> [(ChannelListGroup, [ChannelListEntry])]
 mkChannelZipperList cs us =
     [ (ChannelGroupChannels, getChannelIdsInOrder cs)
     , (ChannelGroupUsers, getDMChannelIdsInOrder us cs)
     ]
 
-getChannelIdsInOrder :: ClientChannels -> [ChannelId]
+getChannelIdsInOrder :: ClientChannels -> [ChannelListEntry]
 getChannelIdsInOrder cs =
     let matches (_, info) = info^.ccInfo.cdType /= Direct
-    in fmap fst $
+    in fmap (CLChannel . fst) $
        sortBy (comparing ((^.ccInfo.cdName) . snd)) $
        filteredChannels matches cs
 
-getDMChannelIdsInOrder :: Users -> ClientChannels -> [ChannelId]
+getDMChannelIdsInOrder :: Users -> ClientChannels -> [ChannelListEntry]
 getDMChannelIdsInOrder us cs =
     let mapping = allDmChannelMappings cs
         mappingWithUserInfo = catMaybes $ getUserInfo <$> mapping
-        getUserInfo (uId, cId) = (cId,) <$> findUserById uId us
+        getUserInfo (uId, cId) = ((uId, cId),) <$> findUserById uId us
         sorted = sortBy (comparing (_uiName . snd)) mappingWithUserInfo
-    in fst <$> sorted
+    in (\((uId, cId), _) -> CLUser cId uId) <$> sorted
 
 -- * Internal Names and References
 
@@ -717,7 +728,7 @@ data ChatState =
     ChatState { _csResources :: ChatResources
               -- ^ Global application-wide resources that don't change
               -- much.
-              , _csFocus :: Zipper ChannelListGroup ChannelId
+              , _csFocus :: Zipper ChannelListGroup ChannelListEntry
               -- ^ The channel sidebar zipper that tracks which channel
               -- is selected.
               , _csMe :: User
@@ -783,7 +794,7 @@ data ChatState =
 -- ChatState.
 data StartupStateInfo =
     StartupStateInfo { startupStateResources      :: ChatResources
-                     , startupStateChannelZipper  :: Zipper ChannelListGroup ChannelId
+                     , startupStateChannelZipper  :: Zipper ChannelListGroup ChannelListEntry
                      , startupStateConnectedUser  :: User
                      , startupStateTeam           :: Team
                      , startupStateTimeZone       :: TimeZoneSeries
@@ -1101,7 +1112,15 @@ resetSpellCheckTimer s =
 
 -- ** Utility Lenses
 csCurrentChannelId :: SimpleGetter ChatState ChannelId
-csCurrentChannelId = csFocus.to focus
+csCurrentChannelId = csFocus.to focus.to channelListEntryChannelId
+
+channelListEntryChannelId :: ChannelListEntry -> ChannelId
+channelListEntryChannelId (CLChannel cId) = cId
+channelListEntryChannelId (CLUser cId _) = cId
+
+entryIsDMEntry :: ChannelListEntry -> Bool
+entryIsDMEntry (CLUser {}) = True
+entryIsDMEntry (CLChannel {}) = False
 
 csCurrentChannel :: Lens' ChatState ClientChannel
 csCurrentChannel =
