@@ -15,7 +15,7 @@ module Types.Channels
   -- * Lenses created for accessing ChannelInfo fields
   , cdViewed, cdNewMessageIndicator, cdEditedMessageThreshold, cdUpdated
   , cdName, cdHeader, cdPurpose, cdType
-  , cdMentionCount, cdTypingUsers, cdDMUserId
+  , cdMentionCount, cdTypingUsers, cdDMUserId, cdChannelId
   -- * Lenses created for accessing ChannelContents fields
   , cdMessages, cdFetchPending
   -- * Creating ClientChannel objects
@@ -101,7 +101,8 @@ data NewMessageIndicator =
 initialChannelInfo :: UserId -> Channel -> ChannelInfo
 initialChannelInfo myId chan =
     let updated  = chan ^. channelLastPostAtL
-    in ChannelInfo { _cdViewed                 = Nothing
+    in ChannelInfo { _cdChannelId              = chan^.channelIdL
+                   , _cdViewed                 = Nothing
                    , _cdNewMessageIndicator    = Hide
                    , _cdEditedMessageThreshold = Nothing
                    , _cdMentionCount           = 0
@@ -160,7 +161,9 @@ emptyChannelContents = do
 -- | The 'ChannelInfo' record represents metadata
 --   about a channel
 data ChannelInfo = ChannelInfo
-  { _cdViewed           :: Maybe ServerTime
+  { _cdChannelId        :: ChannelId
+    -- ^ The channel's ID
+  , _cdViewed           :: Maybe ServerTime
     -- ^ The last time we looked at a channel
   , _cdNewMessageIndicator :: NewMessageIndicator
     -- ^ The state of the channel's new message indicator.
