@@ -17,7 +17,7 @@ module Types.Users
   , trimUserSigil
   , statusFromText
   , findUserById
-  , findUserByName
+  , findUserByUsername
   , findUserByDMChannelName
   , findUserByNickname
   , noUsers, addUser, allUsers
@@ -162,8 +162,8 @@ findUserById uId = HM.lookup uId . _ofUsers
 -- | Get the User information given the user's name. This is an exact
 -- match on the username field, not necessarly the presented name. It
 -- will automatically trim a user sigil from the input.
-findUserByName :: Users -> Text -> Maybe (UserId, UserInfo)
-findUserByName allusers name =
+findUserByUsername :: Text -> Users -> Maybe (UserId, UserInfo)
+findUserByUsername name allusers =
   case filter ((== trimUserSigil name) . _uiName . snd) $ HM.toList $ _ofUsers allusers of
     (usr : []) -> Just usr
     _ -> Nothing
