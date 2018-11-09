@@ -15,7 +15,7 @@ module Types.Channels
   -- * Lenses created for accessing ChannelInfo fields
   , cdViewed, cdNewMessageIndicator, cdEditedMessageThreshold, cdUpdated
   , cdName, cdHeader, cdPurpose, cdType
-  , cdMentionCount, cdTypingUsers
+  , cdMentionCount, cdTypingUsers, cdDMUserId
   -- * Lenses created for accessing ChannelContents fields
   , cdMessages, cdFetchPending
   -- * Creating ClientChannel objects
@@ -96,8 +96,8 @@ data NewMessageIndicator =
     | NewPostsStartingAt ServerTime
     deriving (Eq, Show)
 
-initialChannelInfo :: Channel -> ChannelInfo
-initialChannelInfo chan =
+initialChannelInfo :: UserId -> Channel -> ChannelInfo
+initialChannelInfo myId chan =
     let updated  = chan ^. channelLastPostAtL
     in ChannelInfo { _cdViewed                 = Nothing
                    , _cdNewMessageIndicator    = Hide
@@ -110,6 +110,7 @@ initialChannelInfo chan =
                    , _cdType                   = chan^.channelTypeL
                    , _cdNotifyProps            = emptyChannelNotifyProps
                    , _cdTypingUsers            = noTypingUsers
+                   , _cdDMUserId               = userIdForDMChannel myId $ sanitizeUserText $ channelName chan
                    }
 
 channelInfoFromChannelWithData :: Channel -> ChannelMember -> ChannelInfo -> ChannelInfo
@@ -176,6 +177,8 @@ data ChannelInfo = ChannelInfo
     -- ^ The user's notification settings for this channel
   , _cdTypingUsers      :: TypingUsers
     -- ^ The users who are currently typing in this channel
+  , _cdDMUserId         :: Maybe UserId
+    -- ^ The user associated with this channel, if it is a DM channel
   }
 
 -- ** Channel-related Lenses
@@ -192,11 +195,11 @@ notifyPreference u cc =
 
 -- ** Miscellaneous channel operations
 
-makeClientChannel :: (MonadIO m) => Channel -> m ClientChannel
-makeClientChannel nc = emptyChannelContents >>= \contents ->
+makeClientChannel :: (MonadIO m) => UserId -> Channel -> m ClientChannel
+makeClientChannel myId nc = emptyChannelContents >>= \contents ->
   return ClientChannel
   { _ccContents = contents
-  , _ccInfo = initialChannelInfo nc
+  , _ccInfo = initialChannelInfo myId nc
   }
 
 canLeaveChannel :: ChannelInfo -> Bool

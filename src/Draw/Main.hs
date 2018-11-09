@@ -276,7 +276,6 @@ renderUserCommandBox st hs =
 renderChannelHeader :: ChatState -> HighlightSet -> ClientChannel -> Widget Name
 renderChannelHeader st hs chan =
     let chnType = chan^.ccInfo.cdType
-        chnName = chan^.ccInfo.cdName
         topicStr = chan^.ccInfo.cdHeader
         userHeader u = let s = T.intercalate " " $ filter (not . T.null) parts
                            parts = [ userSigil <> u^.uiName
@@ -295,15 +294,14 @@ renderChannelHeader st hs chan =
                            quote n = "\"" <> n <> "\""
                            nick = maybe "" quote $ u^.uiNickName
                        in s
-        foundUser = userByDMChannelName chnName (myUserId st) st
         maybeTopic = if T.null topicStr
                      then ""
                      else " - " <> topicStr
         channelNameString = case chnType of
             Direct ->
-                case foundUser of
+                case chan^.ccInfo.cdDMUserId >>= flip userById st of
                     Nothing -> mkChannelName (chan^.ccInfo)
-                    Just u  -> userHeader u
+                    Just u -> userHeader u
             Private ->
                 mkChannelName (chan^.ccInfo) <> " (Private)"
             Group ->

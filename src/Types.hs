@@ -186,7 +186,6 @@ module Types
   , myTeamId
   , usernameForUserId
   , userIdForUsername
-  , userByDMChannelName
   , userByUsername
   , channelIdByChannelName
   , channelIdByUsername
@@ -1372,16 +1371,6 @@ myTeamId st = st ^. csMyTeam . teamIdL
 
 myUser :: ChatState -> User
 myUser st = st^.csMe
-
-userByDMChannelName :: Text
-                    -- ^ the dm channel name
-                    -> UserId
-                    -- ^ me
-                    -> ChatState
-                    -> Maybe UserInfo
-                    -- ^ you
-userByDMChannelName name self st =
-    findUserByDMChannelName (st^.csUsers) name self
 
 userByUsername :: Text -> ChatState -> Maybe UserInfo
 userByUsername name st = do

@@ -213,7 +213,7 @@ initializeState cr myTeam me = do
   -- Since the only channel we are dealing with is by construction the
   -- last channel, we don't have to consider other cases here:
   chanPairs <- forM (toList chans) $ \c -> do
-      cChannel <- makeClientChannel c
+      cChannel <- makeClientChannel (userId me) c
       return (getId c, cChannel)
 
   tz <- lookupLocalTimeZone
