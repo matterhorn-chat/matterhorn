@@ -38,6 +38,8 @@ module Types
   , mkNames
   , refreshChannelZipper
   , getChannelIdsInOrder
+  , mkChannelZipperList
+  , ChannelListGroup(..)
 
   , trimChannelSigil
 
@@ -246,7 +248,9 @@ import           Data.UUID ( UUID )
 import qualified Data.Vector as Vec
 import           Lens.Micro.Platform ( at, makeLenses, lens, (%~), (^?!), (.=)
                                      , (%=), (^?), (.~)
-                                     , _Just, Traversal', preuse, (^..), folded, to, view )
+                                     , _Just, Traversal', preuse, (^..), folded, to, view
+                                     , SimpleGetter
+                                     )
 import           Network.Connection ( HostNotResolved, HostCannotConnect )
 import           Skylighting.Types ( SyntaxMap )
 import           System.Exit ( ExitCode )
@@ -269,7 +273,7 @@ import           Types.KeyEvents
 import           Types.Messages
 import           Types.Posts
 import           Types.Users
-import           Zipper ( Zipper, focusL, updateList )
+import           Zipper ( Zipper, focus, updateList )
 
 
 -- * Configuration
@@ -280,6 +284,11 @@ data PasswordSource =
     PasswordString Text
     | PasswordCommand Text
     deriving (Eq, Read, Show)
+
+data ChannelListGroup =
+    ChannelGroupChannels
+    | ChannelGroupUsers
+    deriving (Eq)
 
 -- | This is how we represent the user's configuration. Most fields
 -- correspond to configuration file settings (see Config.hs) but some
@@ -403,10 +412,11 @@ makeLenses ''MMNames
 
 -- ** 'MMNames' functions
 
-mkChannelZipperList :: MMNames -> [ChannelId]
+mkChannelZipperList :: MMNames -> [(ChannelListGroup, [ChannelId])]
 mkChannelZipperList chanNames =
-    getChannelIdsInOrder chanNames ++
-    getDMChannelIdsInOrder chanNames
+    [ (ChannelGroupChannels, getChannelIdsInOrder chanNames)
+    , (ChannelGroupUsers, getDMChannelIdsInOrder chanNames)
+    ]
 
 getChannelIdsInOrder :: MMNames -> [ChannelId]
 getChannelIdsInOrder n = [ (n ^. channelNameToChanId) HM.! i | i <- n ^. cnChans ]
@@ -744,7 +754,7 @@ data ChatState =
     ChatState { _csResources :: ChatResources
               -- ^ Global application-wide resources that don't change
               -- much.
-              , _csFocus :: Zipper ChannelId
+              , _csFocus :: Zipper ChannelListGroup ChannelId
               -- ^ The channel sidebar zipper that tracks which channel
               -- is selected.
               , _csNames :: MMNames
@@ -812,7 +822,7 @@ data ChatState =
 -- ChatState.
 data StartupStateInfo =
     StartupStateInfo { startupStateResources      :: ChatResources
-                     , startupStateChannelZipper  :: Zipper ChannelId
+                     , startupStateChannelZipper  :: Zipper ChannelListGroup ChannelId
                      , startupStateConnectedUser  :: User
                      , startupStateTeam           :: Team
                      , startupStateTimeZone       :: TimeZoneSeries
@@ -1131,8 +1141,8 @@ resetSpellCheckTimer s =
         Just (_, reset) -> reset
 
 -- ** Utility Lenses
-csCurrentChannelId :: Lens' ChatState ChannelId
-csCurrentChannelId = csFocus.focusL
+csCurrentChannelId :: SimpleGetter ChatState ChannelId
+csCurrentChannelId = csFocus.to focus
 
 csCurrentChannel :: Lens' ChatState ClientChannel
 csCurrentChannel =

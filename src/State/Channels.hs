@@ -358,7 +358,7 @@ updateChannelInfo cid new member = do
 setFocus :: ChannelId -> MH ()
 setFocus cId = setFocusWith (Z.findRight (== cId))
 
-setFocusWith :: (Zipper ChannelId -> Zipper ChannelId) -> MH ()
+setFocusWith :: (Zipper ChannelListGroup ChannelId -> Zipper ChannelListGroup ChannelId) -> MH ()
 setFocusWith f = do
     oldZipper <- use csFocus
     let newZipper = f oldZipper
@@ -574,7 +574,7 @@ leaveChannelIfPossible cId delete = do
                     )
 
 getNextUnreadChannel :: ChatState
-                     -> (Zipper ChannelId -> Zipper ChannelId)
+                     -> (Zipper a ChannelId -> Zipper a ChannelId)
 getNextUnreadChannel st =
     -- The next channel with unread messages must also be a channel
     -- other than the current one, since the zipper may be on a channel
@@ -584,8 +584,8 @@ getNextUnreadChannel st =
     Z.findRight (\cId -> hasUnread st cId && (cId /= st^.csCurrentChannelId))
 
 getNextUnreadUserOrChannel :: ChatState
-                       -> Zipper ChannelId
-                       -> Zipper ChannelId
+                           -> Zipper a ChannelId
+                           -> Zipper a ChannelId
 getNextUnreadUserOrChannel st z =
     -- Find the next unread channel, prefering direct messages
     let isDM c = getChannelType st c == Direct
@@ -600,8 +600,8 @@ getNextUnreadUserOrChannel st z =
 -- because we don't support navigating *back* to such channels using the
 -- same navigation bindings.
 getNextNonDMChannel :: ChatState
-                    -> (Zipper ChannelId -> Zipper ChannelId)
-                    -> (Zipper ChannelId -> Zipper ChannelId)
+                    -> (Zipper a ChannelId -> Zipper a ChannelId)
+                    -> (Zipper a ChannelId -> Zipper a ChannelId)
 getNextNonDMChannel st shift z =
     if getChannelType st (Z.focus z) == Direct
     then z

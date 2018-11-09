@@ -251,7 +251,7 @@ initializeState cr myTeam me = do
   -- End thread startup ----------------------------------------------
 
   let names = mkNames me mempty chans
-      chanIds = getChannelIdsInOrder names
+      chanIds = mkChannelZipperList names
       chanZip = Z.fromList chanIds
       startupState =
           StartupStateInfo { startupStateResources      = cr

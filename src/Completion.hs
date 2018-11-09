@@ -23,7 +23,7 @@ import qualified Zipper as Z
 -- A completer stores the stateful selection of a completion alternative
 -- from a sequence of alternatives.
 data Completer =
-    Completer { completionAlternatives :: Z.Zipper CompletionAlternative
+    Completer { completionAlternatives :: Z.Zipper () CompletionAlternative
               }
 
 -- A completion alternative is made up of various representations:
@@ -56,7 +56,7 @@ wordComplete options input =
        then Nothing
        else if length alts == 1
             then Just $ Left $ completionReplacement $ head alts
-            else Just $ Right $ Completer { completionAlternatives = Z.fromList alts
+            else Just $ Right $ Completer { completionAlternatives = Z.fromList [((), alts)]
                                           }
 
 currentAlternative :: Completer -> CompletionAlternative

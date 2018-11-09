@@ -2,12 +2,10 @@ module Zipper
   ( Zipper
   , fromList
   , focus
-  , focusL
   , left
   , leftL
   , right
   , rightL
-  , findLeft
   , findRight
   , maybeFindRight
   , updateList
@@ -18,81 +16,81 @@ where
 import           Prelude ()
 import           Prelude.MH
 
+import           Data.Maybe ( fromJust )
 import qualified Data.Foldable as F
 import qualified Data.Sequence as Seq
-import           Lens.Micro.Platform ( Lens, lens, ix, (.~) )
+import qualified Data.CircularList as C
+import           Lens.Micro.Platform
 
+data Zipper a b =
+    Zipper { zRing :: C.CList b
+           , zTrees :: Seq.Seq (a, Seq.Seq b)
+           }
 
-data Zipper a = Zipper
-  { zFocus :: Int
-  , zElems :: Seq.Seq a
-  }
+instance F.Foldable (Zipper a) where
+    foldMap f = foldMap f .
+                F.toList .
+                mconcat .
+                F.toList .
+                fmap snd .
+                zTrees
 
-instance F.Foldable Zipper where
-  foldMap f = foldMap f . zElems
+instance Functor (Zipper a) where
+    fmap f z =
+        Zipper { zRing = f <$> zRing z
+               , zTrees = zTrees z & mapped._2.mapped %~ f
+               }
 
 -- Move the focus one element to the left
-left :: Zipper a -> Zipper a
-left z = z { zFocus = (zFocus z - 1) `mod` length (zElems z) }
+left :: Zipper a b -> Zipper a b
+left z = z { zRing = C.rotL (zRing z) }
 
 -- A lens on the zipper moved to the left
-leftL :: Lens (Zipper a) (Zipper a) (Zipper a) (Zipper a)
+leftL :: Lens (Zipper a b) (Zipper a b) (Zipper a b) (Zipper a b)
 leftL = lens left (\ _ b -> right b)
 
 -- Move the focus one element to the right
-right :: Zipper a -> Zipper a
-right z = z { zFocus = (zFocus z + 1) `mod` length (zElems z) }
+right :: Zipper a b -> Zipper a b
+right z = z { zRing = C.rotR (zRing z) }
 
 -- A lens on the zipper moved to the right
-rightL :: Lens (Zipper a) (Zipper a) (Zipper a) (Zipper a)
+rightL :: Lens (Zipper a b) (Zipper a b) (Zipper a b) (Zipper a b)
 rightL = lens right (\ _ b -> left b)
 
 -- Return the focus element
-focus :: Zipper a -> a
-focus z = Seq.index (zElems z) (zFocus z)
-
--- A lens to return the focus element
-focusL :: Lens (Zipper a) (Zipper a) a a
-focusL = lens focus upd
-  where upd (Zipper n elems) x = Zipper n (elems & ix(n) .~ x)
+focus :: Zipper a b -> b
+focus = fromJust . C.focus . zRing
 
 -- Turn a list into a wraparound zipper, focusing on the head
-fromList :: [a] -> Zipper a
-fromList xs = Zipper { zFocus = 0, zElems = Seq.fromList xs }
+fromList :: (Eq b) => [(a, [b])] -> Zipper a b
+fromList xs =
+    let ts = Seq.fromList $ xs & mapped._2 %~ Seq.fromList
+        tsList = F.toList $ mconcat $ F.toList $ snd <$> ts
+        maybeFocus = if null tsList
+                     then id
+                     else fromJust . C.rotateTo (tsList !! 0)
+    in Zipper { zRing = maybeFocus $ C.fromList tsList
+              , zTrees = ts
+              }
 
 -- Shift the focus until a given element is found, or return the
 -- same zipper if none applies
-findRight :: (a -> Bool) -> Zipper a -> Zipper a
+findRight :: (b -> Bool) -> Zipper a b -> Zipper a b
 findRight f z = fromMaybe z $ maybeFindRight f z
 
 -- Shift the focus until a given element is found, or return
 -- Nothing if none applies
-maybeFindRight :: (a -> Bool) -> Zipper a -> Maybe (Zipper a)
-maybeFindRight f z
-  | f (focus z) = Just z
-  | otherwise   = go (right z) (zFocus z)
-  where go zC n
-          | n == zFocus zC = Nothing
-          | f (focus zC)   = Just zC
-          | otherwise      = go (right zC) n
+maybeFindRight :: (b -> Bool) -> Zipper a b -> Maybe (Zipper a b)
+maybeFindRight f z = do
+    newRing <- C.findRotateTo f (zRing z)
+    return z { zRing = newRing }
 
--- Shift the focus until a given element is found, or return the
--- same zipper if none applies
-findLeft :: (a -> Bool) -> Zipper a -> Zipper a
-findLeft f z
-  | f (focus z) = z
-  | otherwise   = go (left z) (zFocus z)
-  where go zC n
-          | n == zFocus zC = zC
-          | f (focus zC)   = zC
-          | otherwise      = go (left zC) n
+updateList :: (Eq b) => [(a, [b])] -> Zipper a b -> Zipper a b
+updateList newList oldZip = findRight (== focus oldZip) $ fromList newList
 
-updateList :: (Eq a) => [a] -> Zipper a -> Zipper a
-updateList newList oldZip = findLeft (== oldFocus) newZip
-  where oldFocus = focus oldZip
-        newZip   = oldZip { zElems = Seq.fromList newList }
-
-filterZipper :: (Eq a) => (a -> Bool) -> Zipper a -> Zipper a
-filterZipper f oldZip = findLeft (== oldFocus) newZip
-  where oldFocus = focus oldZip
-        newZip   = oldZip { zElems = Seq.filter f $ zElems oldZip }
+filterZipper :: (Eq b) => (b -> Bool) -> Zipper a b -> Zipper a b
+filterZipper f oldZip = maintainFocus newZip
+  where maintainFocus = findRight (== focus oldZip)
+        newZip = Zipper { zTrees = zTrees oldZip & mapped._2 %~ Seq.filter f
+                        , zRing = C.filterR f (zRing oldZip)
+                        }

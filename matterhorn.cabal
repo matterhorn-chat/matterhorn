@@ -119,6 +119,7 @@ executable matterhorn
                      , base-compat          >= 0.9    && < 0.11
                      , unordered-containers >= 0.2    && < 0.3
                      , containers           >= 0.5.7  && < 0.6
+                     , data-clist           >= 0.1.2  && < 0.2
                      , semigroups           >= 0.18   && < 0.19
                      , connection           >= 0.2    && < 0.3
                      , text                 >= 1.2    && < 1.3
