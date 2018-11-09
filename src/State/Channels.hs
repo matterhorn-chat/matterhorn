@@ -799,15 +799,13 @@ attemptCreateDMChannel name = do
     mCid <- gets (channelIdByUsername name)
     me <- gets myUser
     displayNick <- use (to useNickname)
-    uList       <- use (to sortedUserList)
+    uByNick     <- use (to (userByNickname name))
     let myName = if displayNick && not (T.null $ sanitizeUserText $ userNickname me)
                  then sanitizeUserText $ userNickname me
                  else me^.userUsernameL
     when (name /= myName) $ do
         let uName = if displayNick
-                    then
-                        maybe name (view uiName)
-                                  $ findUserByNickname uList name
+                    then maybe name (view uiName) uByNick
                     else name
         mUid <- gets (userIdForUsername uName)
         if isJust mUid && isNothing mCid

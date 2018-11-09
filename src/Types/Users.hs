@@ -167,11 +167,11 @@ findUserByUsername name allusers =
 -- | Get the User information given the user's name. This is an exact
 -- match on the nickname field, not necessarily the presented name. It
 -- will automatically trim a user sigil from the input.
-findUserByNickname :: [UserInfo] -> Text -> Maybe UserInfo
-findUserByNickname uList nick =
-  find (nickCheck nick) uList
-    where
-        nickCheck n = maybe False (== (trimUserSigil n)) . _uiNickName
+findUserByNickname:: Text -> Users -> Maybe (UserId, UserInfo)
+findUserByNickname nick us =
+  case filter ((== (Just $ trimUserSigil nick)) . _uiNickName . snd) $ HM.toList $ _ofUsers us of
+    (pair : []) -> Just pair
+    _ -> Nothing
 
 userSigil :: Text
 userSigil = "@"

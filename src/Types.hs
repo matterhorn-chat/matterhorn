@@ -185,7 +185,9 @@ module Types
   , myTeamId
   , usernameForUserId
   , userIdForUsername
+  , userIdForNickname
   , userByUsername
+  , userByNickname
   , channelIdByChannelName
   , channelIdByUsername
   , channelIdByName
@@ -1166,6 +1168,10 @@ userIdForUsername :: Text -> ChatState -> Maybe UserId
 userIdForUsername name st =
     fst <$> (findUserByUsername name $ st^.csUsers)
 
+userIdForNickname :: Text -> ChatState -> Maybe UserId
+userIdForNickname name st =
+    fst <$> (findUserByNickname name $ st^.csUsers)
+
 channelIdByChannelName :: Text -> ChatState -> Maybe ChannelId
 channelIdByChannelName name st =
     let matches (_, cc) = cc^.ccInfo.cdName == (trimChannelSigil name)
@@ -1190,16 +1196,9 @@ channelIdByName name st =
     in matches
 
 channelIdByUsername :: Text -> ChatState -> Maybe ChannelId
-channelIdByUsername name st =
-    let userInfos = st^.csUsers.to allUsers
-        uName = if useNickname st
-                then
-                    maybe name (view uiName)
-                              $ findUserByNickname userInfos name
-                else name
-    in do
-        uId <- userIdForUsername uName st
-        getDmChannelFor uId (st^.csChannels)
+channelIdByUsername name st = do
+    uId <- userIdForUsername name st
+    getDmChannelFor uId (st^.csChannels)
 
 useNickname :: ChatState -> Bool
 useNickname st =
@@ -1334,8 +1333,11 @@ myUser st = st^.csMe
 
 userByUsername :: Text -> ChatState -> Maybe UserInfo
 userByUsername name st = do
-    uId <- userIdForUsername name st
-    userById uId st
+    snd <$> (findUserByUsername name $ st^.csUsers)
+
+userByNickname :: Text -> ChatState -> Maybe UserInfo
+userByNickname name st =
+    snd <$> (findUserByNickname name $ st^.csUsers)
 
 sortedUserList :: ChatState -> [UserInfo]
 sortedUserList st = sortBy cmp yes <> sortBy cmp no
