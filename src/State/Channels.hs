@@ -271,21 +271,9 @@ handleNewChannel_ permitPostpone switch nc member = do
             -- Get the channel name. If we couldn't, that means we have
             -- async work to do before we can register this channel (in
             -- which case abort because we got rescheduled).
-            mName <- case chType of
+            register <- case chType of
                 Direct -> case userIdForDMChannel (myUserId st) (sanitizeUserText $ channelName nc) of
-                    -- If this is a direct channel but we can't extract
-                    -- a user ID from the name, then it failed to
-                    -- parse. We need to assign a channel name in our
-                    -- channel map, and the best we can do to preserve
-                    -- uniqueness is to use the channel name string.
-                    -- This is undesirable but direct channels never get
-                    -- rendered directly; they only get used by first
-                    -- looking up usernames. So this name should never
-                    -- appear anywhere, but at least we can go ahead and
-                    -- register the channel and handle events for it.
-                    -- That isn't very useful but it's probably better
-                    -- than ignoring this entirely.
-                    Nothing -> return $ Just $ sanitizeUserText $ channelName nc
+                    Nothing -> return True
                     Just otherUserId ->
                         case usernameForUserId otherUserId st of
                             -- If we found a user ID in the channel
@@ -306,53 +294,37 @@ handleNewChannel_ permitPostpone switch nc member = do
                             -- problems as above).
                             Nothing -> do
                                 case permitPostpone of
-                                    False -> return $ Just $ sanitizeUserText $ channelName nc
+                                    False -> return True
                                     True -> do
                                         handleNewUsers $ Seq.singleton otherUserId
                                         doAsyncWith Normal $
                                             return $ handleNewChannel_ False switch nc member
-                                        return Nothing
-                            Just ncUsername ->
-                                return $ Just $ ncUsername
-                _ -> return $ Just $ preferredChannelName nc
+                                        return False
+                            Just _ -> return True
+                _ -> return True
 
-            case mName of
-                Nothing -> return ()
-                Just name -> do
-                    addChannelName chType (getId nc) name
-                    csChannels %= addChannel (getId nc) cChannel
-                    refreshChannelZipper
+            when register $ do
+                csChannels %= addChannel (getId nc) cChannel
+                refreshChannelZipper
 
-                    -- Finally, set our focus to the newly created
-                    -- channel if the caller requested a change of
-                    -- channel. Also consider the last join request
-                    -- state field in case this is an asynchronous
-                    -- channel addition triggered by a /join.
-                    lastReq <- use csLastJoinRequest
-                    wasLast <- case lastReq of
-                        Just cId | cId == getId nc -> do
-                            csLastJoinRequest .= Nothing
-                            return True
-                        _ -> return False
+                -- Finally, set our focus to the newly created channel
+                -- if the caller requested a change of channel. Also
+                -- consider the last join request state field in case
+                -- this is an asynchronous channel addition triggered by
+                -- a /join.
+                lastReq <- use csLastJoinRequest
+                wasLast <- case lastReq of
+                    Just cId | cId == getId nc -> do
+                        csLastJoinRequest .= Nothing
+                        return True
+                    _ -> return False
 
-                    when (switch || wasLast) $ setFocus (getId nc)
+                when (switch || wasLast) $ setFocus (getId nc)
 
 -- | Update the indicated Channel entry with the new data retrieved from
 -- the Mattermost server. Also update the channel name if it changed.
 updateChannelInfo :: ChannelId -> Channel -> ChannelMember -> MH ()
 updateChannelInfo cid new member = do
-    mOldChannel <- preuse $ csChannel(cid)
-    case mOldChannel of
-        Nothing -> return ()
-        Just old ->
-            let oldName = old^.ccInfo.cdName
-                newName = preferredChannelName new
-            in if oldName == newName
-               then return ()
-               else do
-                   removeChannelName oldName
-                   addChannelName (channelType new) cid newName
-
     csChannel(cid).ccInfo %= channelInfoFromChannelWithData new member
 
 setFocus :: ChannelId -> MH ()
@@ -477,17 +449,13 @@ refreshChannelById cId = do
 removeChannelFromState :: ChannelId -> MH ()
 removeChannelFromState cId = do
     withChannel cId $ \ chan -> do
-        let cName = chan^.ccInfo.cdName
-            chType = chan^.ccInfo.cdType
-        when (chType /= Direct) $ do
+        when (chan^.ccInfo.cdType /= Direct) $ do
             origFocus <- use csCurrentChannelId
             when (origFocus == cId) nextChannel
             csEditState.cedInputHistoryPosition .at cId .= Nothing
             csEditState.cedLastChannelInput     .at cId .= Nothing
             -- Update input history
             csEditState.cedInputHistory         %= removeChannelHistory cId
-            -- Remove channel name mappings
-            removeChannelName cName
             -- Update msgMap
             csChannels                          %= removeChannel cId
             -- Remove from focus zipper

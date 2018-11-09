@@ -196,8 +196,6 @@ module Types
   , allUserIds
   , allChannelNames
   , sortedUserList
-  , removeChannelName
-  , addChannelName
   , addNewUser
   , setUserIdSet
   , channelMentionCount
@@ -377,9 +375,7 @@ data BackgroundInfo =
 -- | The 'MMNames' record is for listing human-readable names and
 -- mapping them back to internal IDs.
 data MMNames =
-    MMNames { _channelNameToChanId :: HashMap Text ChannelId
-            -- ^ Mapping from channel names to 'ChannelId' values
-            , _usernameToChanId :: HashMap Text ChannelId
+    MMNames { _usernameToChanId :: HashMap Text ChannelId
             -- ^ Mapping from user names to 'ChannelId' values. Only
             -- contains entries for which DM channel IDs are known.
             , _cnUsers :: [Text] -- ^ All users
@@ -391,8 +387,7 @@ data MMNames =
 -- user and channel metadata.
 mkNames :: User -> HashMap UserId User -> Seq Channel -> MMNames
 mkNames myUser users chans =
-    MMNames { _channelNameToChanId = HM.fromList [ (preferredChannelName c, channelId c) | c <- toList chans ]
-            , _usernameToChanId = HM.fromList $
+    MMNames { _usernameToChanId = HM.fromList $
                             [ (userUsername u, c)
                             | u <- HM.elems users
                             , c <- lookupChan (getDMChannelName (getId myUser) (getId u))
@@ -1213,7 +1208,8 @@ userIdForUsername name st = st^.csNames.cnToUserId.at (trimUserSigil name)
 
 channelIdByChannelName :: Text -> ChatState -> Maybe ChannelId
 channelIdByChannelName name st =
-    HM.lookup (trimChannelSigil name) $ st^.csNames.channelNameToChanId
+    let matches (_, cc) = cc^.ccInfo.cdName == (trimChannelSigil name)
+    in listToMaybe $ fst <$> filteredChannels matches (st^.csChannels)
 
 -- | Get a channel ID by username or channel name. Returns (channel
 -- match, user match). Note that this returns multiple results because
@@ -1280,12 +1276,6 @@ setUserIdSet ids = do
     userSet <- use (csResources.crUserIdSet)
     St.liftIO $ STM.atomically $ STM.writeTVar userSet ids
 
-addChannelName :: Type -> ChannelId -> Text -> MH ()
-addChannelName chType cid name = do
-    case chType of
-        Direct -> csNames.usernameToChanId.at(name) .= Just cid
-        _ -> csNames.channelNameToChanId.at(name) .= Just cid
-
 channelMentionCount :: ChannelId -> ChatState -> Int
 channelMentionCount cId st =
     maybe 0 id (st^?csChannel(cId).ccInfo.cdMentionCount)
@@ -1296,11 +1286,6 @@ allChannelNames st =
     in fmap (_cdName . _ccInfo . snd) $
        sortBy (comparing ((^.ccInfo.cdName) . snd)) $
        filteredChannels matches $ st^.csChannels
-
-removeChannelName :: Text -> MH ()
-removeChannelName name = do
-    -- Flush cnToChanId
-    csNames.channelNameToChanId.at name .= Nothing
 
 -- Rebuild the channel zipper contents from the current names collection.
 refreshChannelZipper :: MH ()
