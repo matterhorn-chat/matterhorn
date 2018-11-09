@@ -37,6 +37,23 @@ import           Types
 
 type GroupName = Text
 
+-- | Internal record describing each channel entry and its associated
+-- attributes.  This is the object passed to the rendering function so
+-- that it can determine how to render each channel.
+data ChannelListEntryData =
+    ChannelListEntryData { entrySigil       :: Text
+                         , entryLabel       :: Text
+                         , entryHasUnread   :: Bool
+                         , entryMentions    :: Int
+                         , entryIsRecent    :: Bool
+                         , entryIsCurrent   :: Bool
+                         , entryUserStatus  :: Maybe UserStatus
+                         }
+
+-- | Similar to the ChannelListEntryData, but also holds information
+-- about the matching channel select specification.
+data SelectedChannelListEntry = SCLE ChannelListEntryData ChannelSelectMatch
+
 -- | Specify the different groups of channels to be displayed
 -- vertically in the ChannelList sidebar.  This list provides the
 -- central control over what channels are displayed and how they are
@@ -131,23 +148,6 @@ renderChannelGroup eRender (groupName, entries) =
     let header label = hBorderWithLabel $
                        withDefAttr channelListHeaderAttr $ txt label
     in header groupName Seq.<| (eRender <$> entries)
-
--- | Internal record describing each channel entry and its associated
--- attributes.  This is the object passed to the rendering function so
--- that it can determine how to render each channel.
-data ChannelListEntryData =
-    ChannelListEntryData { entrySigil       :: Text
-                         , entryLabel       :: Text
-                         , entryHasUnread   :: Bool
-                         , entryMentions    :: Int
-                         , entryIsRecent    :: Bool
-                         , entryIsCurrent   :: Bool
-                         , entryUserStatus  :: Maybe UserStatus
-                         }
-
--- | Similar to the ChannelListEntryData, but also holds information
--- about the matching channel select specification.
-data SelectedChannelListEntry = SCLE ChannelListEntryData ChannelSelectMatch
 
 -- | Render an individual Channel List entry (in Normal mode) with
 -- appropriate visual decorations.
