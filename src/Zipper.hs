@@ -10,6 +10,7 @@ module Zipper
   , maybeFindRight
   , updateList
   , filterZipper
+  , maybeMapZipper
   )
 where
 
@@ -87,6 +88,12 @@ maybeFindRight f z = do
 
 updateList :: (Eq b) => [(a, [b])] -> Zipper a b -> Zipper a b
 updateList newList oldZip = findRight (== focus oldZip) $ fromList newList
+
+maybeMapZipper :: (Eq c) => (b -> Maybe c) -> Zipper a b -> Zipper a c
+maybeMapZipper f z =
+    let oldTrees = zTrees z
+        newTrees = F.toList $ oldTrees & mapped._2 %~ (catMaybes . F.toList . fmap f)
+    in fromList newTrees
 
 filterZipper :: (Eq b) => (b -> Bool) -> Zipper a b -> Zipper a b
 filterZipper f oldZip = maintainFocus newZip
