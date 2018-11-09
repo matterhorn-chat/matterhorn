@@ -34,7 +34,6 @@ import           State.Channels
 import           Themes
 import           Types
 
-
 type GroupName = Text
 
 -- | Internal record describing each channel entry and its associated
@@ -173,7 +172,6 @@ renderChannelListEntry entry =
       | entryMentions entry > 0 =
         (<+> str ("(" <> show (entryMentions entry) <> ")"))
       | otherwise = id
-
 
 -- | Render an individual entry when in Channel Select mode,
 -- highlighting the matching portion, or completely suppressing the
