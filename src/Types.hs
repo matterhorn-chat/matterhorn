@@ -5,6 +5,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TupleSections #-}
 module Types
   ( ConnectionStatus(..)
   , HelpTopic(..)
@@ -34,8 +35,6 @@ module Types
   , BackgroundInfo(..)
   , RequestChan
 
-  , MMNames
-  , mkNames
   , refreshChannelZipper
   , getChannelIdsInOrder
   , mkChannelZipperList
@@ -264,7 +263,6 @@ import           Network.Mattermost.WebSocket ( WebsocketEvent )
 import           Completion ( Completer )
 import           InputHistory
 import           Types.Channels
-import           Types.Common
 import           Types.DirectionalSeq ( emptyDirSeq )
 import           Types.KeyEvents
 import           Types.Messages
@@ -369,42 +367,10 @@ data BackgroundInfo =
     -- thread's work queue length.
     deriving (Eq, Show)
 
--- * 'MMNames' structures
-
--- | The 'MMNames' record is for listing human-readable names and
--- mapping them back to internal IDs.
-data MMNames =
-    MMNames { _usernameToChanId :: HashMap Text ChannelId
-            -- ^ Mapping from user names to 'ChannelId' values. Only
-            -- contains entries for which DM channel IDs are known.
-            , _cnUsers :: [Text] -- ^ All users
-            }
-
--- | MMNames constructor, seeded with an initial mapping of user ID to
--- user and channel metadata.
-mkNames :: User -> HashMap UserId User -> Seq Channel -> MMNames
-mkNames myUser users chans =
-    MMNames { _usernameToChanId = HM.fromList $
-                            [ (userUsername u, c)
-                            | u <- HM.elems users
-                            , c <- lookupChan (getDMChannelName (getId myUser) (getId u))
-                            ]
-            , _cnUsers = sort (map userUsername (HM.elems users))
-            }
-  where lookupChan n = [ c^.channelIdL
-                       | c <- toList chans, (sanitizeUserText $ c^.channelNameL) == n
-                       ]
-
--- ** 'MMNames' Lenses
-
-makeLenses ''MMNames
-
--- ** 'MMNames' functions
-
-mkChannelZipperList :: ClientChannels -> MMNames -> [(ChannelListGroup, [ChannelId])]
-mkChannelZipperList cs chanNames =
+mkChannelZipperList :: ClientChannels -> Users -> [(ChannelListGroup, [ChannelId])]
+mkChannelZipperList cs us =
     [ (ChannelGroupChannels, getChannelIdsInOrder cs)
-    , (ChannelGroupUsers, getDMChannelIdsInOrder chanNames)
+    , (ChannelGroupUsers, getDMChannelIdsInOrder us cs)
     ]
 
 getChannelIdsInOrder :: ClientChannels -> [ChannelId]
@@ -414,11 +380,13 @@ getChannelIdsInOrder cs =
        sortBy (comparing ((^.ccInfo.cdName) . snd)) $
        filteredChannels matches cs
 
-getDMChannelIdsInOrder :: MMNames -> [ChannelId]
-getDMChannelIdsInOrder n =
-    [ c | i <- n ^. cnUsers
-    , c <- maybeToList (HM.lookup i (n ^. usernameToChanId))
-    ]
+getDMChannelIdsInOrder :: Users -> ClientChannels -> [ChannelId]
+getDMChannelIdsInOrder us cs =
+    let mapping = allDmChannelMappings cs
+        mappingWithUserInfo = catMaybes $ getUserInfo <$> mapping
+        getUserInfo (uId, cId) = (cId,) <$> findUserById uId us
+        sorted = sortBy (comparing (_uiName . snd)) mappingWithUserInfo
+    in fst <$> sorted
 
 -- * Internal Names and References
 
@@ -750,8 +718,6 @@ data ChatState =
               , _csFocus :: Zipper ChannelListGroup ChannelId
               -- ^ The channel sidebar zipper that tracks which channel
               -- is selected.
-              , _csNames :: MMNames
-              -- ^ Mappings between names and user/channel IDs.
               , _csMe :: User
               -- ^ The authenticated user.
               , _csMyTeam :: Team
@@ -821,7 +787,6 @@ data StartupStateInfo =
                      , startupStateTimeZone       :: TimeZoneSeries
                      , startupStateInitialHistory :: InputHistory
                      , startupStateSpellChecker   :: Maybe (Aspell, IO ())
-                     , startupStateNames          :: MMNames
                      }
 
 newState :: StartupStateInfo -> ChatState
@@ -830,7 +795,6 @@ newState (StartupStateInfo {..}) =
               , _csFocus                       = startupStateChannelZipper
               , _csMe                          = startupStateConnectedUser
               , _csMyTeam                      = startupStateTeam
-              , _csNames                       = startupStateNames
               , _csChannels                    = noChannels
               , _csPostMap                     = HM.empty
               , _csUsers                       = noUsers
@@ -1233,8 +1197,9 @@ channelIdByUsername name st =
                     maybe name (view uiName)
                               $ findUserByNickname userInfos name
                 else name
-        nameToChanId = st^.csNames.usernameToChanId
-    in HM.lookup (trimUserSigil uName) nameToChanId
+    in do
+        uId <- userIdForUsername uName st
+        getDmChannelFor uId (st^.csChannels)
 
 useNickname :: ChatState -> Bool
 useNickname st =
@@ -1258,13 +1223,8 @@ trimChannelSigil n
 addNewUser :: UserInfo -> MH ()
 addNewUser u = do
     csUsers %= addUser u
-
-    let uname = u^.uiName
-        uid = u^.uiId
-    csNames.cnUsers %= (sort . (uname:))
-
     userSet <- use (csResources.crUserIdSet)
-    St.liftIO $ STM.atomically $ STM.modifyTVar userSet $ (uid Seq.<|)
+    St.liftIO $ STM.atomically $ STM.modifyTVar userSet $ ((u^.uiId) Seq.<|)
 
 setUserIdSet :: Seq UserId -> MH ()
 setUserIdSet ids = do
@@ -1288,9 +1248,9 @@ refreshChannelZipper = do
     -- We should figure out how to do this better: this adds it to the
     -- channel zipper in such a way that we don't ever change our focus
     -- to something else, which is kind of silly
-    names <- use csNames
     cs <- use csChannels
-    let newZip = updateList (mkChannelZipperList cs names)
+    us <- use csUsers
+    let newZip = updateList (mkChannelZipperList cs us)
     csFocus %= newZip
 
 clientPostToMessage :: ClientPost -> Message
@@ -1382,7 +1342,7 @@ sortedUserList st = sortBy cmp yes <> sortBy cmp no
     where
         cmp = compareUserInfo uiName
         dmHasUnread u =
-            case st^.csNames.usernameToChanId.at(u^.uiName) of
+            case getDmChannelFor (u^.uiId) (st^.csChannels) of
               Nothing  -> False
               Just cId
                 | (st^.csCurrentChannelId) == cId -> False

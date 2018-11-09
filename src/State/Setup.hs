@@ -250,8 +250,7 @@ initializeState cr myTeam me = do
 
   -- End thread startup ----------------------------------------------
 
-  let names = mkNames me mempty chans
-      chanIds = mkChannelZipperList clientChans names
+  let chanIds = mkChannelZipperList clientChans noUsers
       chanZip = Z.fromList chanIds
       clientChans = foldr (uncurry addChannel) noChannels chanPairs
       startupState =
@@ -262,7 +261,6 @@ initializeState cr myTeam me = do
                            , startupStateTimeZone       = tz
                            , startupStateInitialHistory = hist
                            , startupStateSpellChecker   = spResult
-                           , startupStateNames          = names
                            }
       st = newState startupState & csChannels .~ clientChans
 

@@ -41,6 +41,8 @@ module Types.Channels
   , preferredChannelName
   , isTownSquare
   , channelDeleted
+  , getDmChannelFor
+  , allDmChannelMappings
   )
 where
 
@@ -211,8 +213,11 @@ canLeaveChannel cInfo = not $ cInfo^.cdType `elem` [Direct]
 -- ** Manage the collection of all Channels
 
 -- | Define a binary kinded type to allow derivation of functor.
-newtype AllMyChannels a = AllChannels { _chanMap :: HashMap ChannelId a }
-    deriving (Functor, Foldable, Traversable)
+data AllMyChannels a =
+    AllChannels { _chanMap :: HashMap ChannelId a
+                , _userChannelMap :: HashMap UserId ChannelId
+                }
+                deriving (Functor, Foldable, Traversable)
 
 -- | Define the exported typename which universally binds the
 -- collection to the ChannelInfo type.
@@ -222,15 +227,28 @@ makeLenses ''AllMyChannels
 
 -- | Initial collection of Channels with no members
 noChannels :: ClientChannels
-noChannels = AllChannels HM.empty
+noChannels = AllChannels HM.empty HM.empty
 
 -- | Add a channel to the existing collection.
 addChannel :: ChannelId -> ClientChannel -> ClientChannels -> ClientChannels
-addChannel cId cinfo = AllChannels . HM.insert cId cinfo . _chanMap
+addChannel cId cinfo =
+    (chanMap %~ HM.insert cId cinfo) .
+    (case cinfo^.ccInfo.cdDMUserId of
+         Nothing -> id
+         Just uId -> userChannelMap %~ HM.insert uId cId
+    )
 
 -- | Remove a channel from the collection.
 removeChannel :: ChannelId -> ClientChannels -> ClientChannels
-removeChannel cId = AllChannels . HM.delete cId . _chanMap
+removeChannel cId =
+    (chanMap %~ HM.delete cId) .
+    (userChannelMap %~ HM.filter (/= cId))
+
+getDmChannelFor :: UserId -> ClientChannels -> Maybe ChannelId
+getDmChannelFor uId cs = cs^.userChannelMap.at uId
+
+allDmChannelMappings :: ClientChannels -> [(UserId, ChannelId)]
+allDmChannelMappings = HM.toList . _userChannelMap
 
 -- | Get the ChannelInfo information given the ChannelId
 findChannelById :: ChannelId -> ClientChannels -> Maybe ClientChannel
