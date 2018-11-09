@@ -226,8 +226,7 @@ addChannel cId cinfo = AllChannels . HM.insert cId cinfo . _ofChans
 findChannelById :: ChannelId -> ClientChannels -> Maybe ClientChannel
 findChannelById cId = HM.lookup cId . _ofChans
 
--- | Extract a specific channel from the collection and perform an
--- endomorphism operation on it, then put it back into the collection.
+-- | Transform the specified channel in place with provided function.
 modifyChannelById :: ChannelId -> (ClientChannel -> ClientChannel)
                   -> ClientChannels -> ClientChannels
 modifyChannelById cId f = ofChans.ix(cId) %~ f
