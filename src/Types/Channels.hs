@@ -253,9 +253,8 @@ filteredChannelIds f cc = fst <$> filter (f . snd) (HM.toList (cc^.ofChans))
 -- | Filter the ClientChannel collection, keeping only those for which
 -- the provided filter test function returns True.
 filteredChannels :: ((ChannelId, ClientChannel) -> Bool)
-                 -> ClientChannels -> ClientChannels
-filteredChannels f cc =
-    AllChannels . HM.fromList . filter f $ cc^.ofChans.to HM.toList
+                 -> ClientChannels -> [(ChannelId, ClientChannel)]
+filteredChannels f cc = filter f $ cc^.ofChans.to HM.toList
 
 ------------------------------------------------------------------------
 

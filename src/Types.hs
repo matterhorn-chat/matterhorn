@@ -237,6 +237,7 @@ import           Control.Exception ( SomeException )
 import qualified Control.Monad.State as St
 import qualified Control.Monad.Reader as R
 import qualified Data.Foldable as F
+import           Data.Ord ( comparing )
 import qualified Data.HashMap.Strict as HM
 import           Data.List ( partition, sortBy )
 import qualified Data.Sequence as Seq
@@ -376,8 +377,7 @@ data BackgroundInfo =
 -- | The 'MMNames' record is for listing human-readable names and
 -- mapping them back to internal IDs.
 data MMNames =
-    MMNames { _cnChans :: [Text] -- ^ All channel names
-            , _channelNameToChanId :: HashMap Text ChannelId
+    MMNames { _channelNameToChanId :: HashMap Text ChannelId
             -- ^ Mapping from channel names to 'ChannelId' values
             , _usernameToChanId :: HashMap Text ChannelId
             -- ^ Mapping from user names to 'ChannelId' values. Only
@@ -391,10 +391,7 @@ data MMNames =
 -- user and channel metadata.
 mkNames :: User -> HashMap UserId User -> Seq Channel -> MMNames
 mkNames myUser users chans =
-    MMNames { _cnChans = sort
-                         [ preferredChannelName c
-                         | c <- toList chans, channelType c /= Direct ]
-            , _channelNameToChanId = HM.fromList [ (preferredChannelName c, channelId c) | c <- toList chans ]
+    MMNames { _channelNameToChanId = HM.fromList [ (preferredChannelName c, channelId c) | c <- toList chans ]
             , _usernameToChanId = HM.fromList $
                             [ (userUsername u, c)
                             | u <- HM.elems users
@@ -414,14 +411,18 @@ makeLenses ''MMNames
 
 -- ** 'MMNames' functions
 
-mkChannelZipperList :: MMNames -> [(ChannelListGroup, [ChannelId])]
-mkChannelZipperList chanNames =
-    [ (ChannelGroupChannels, getChannelIdsInOrder chanNames)
+mkChannelZipperList :: ClientChannels -> MMNames -> [(ChannelListGroup, [ChannelId])]
+mkChannelZipperList cs chanNames =
+    [ (ChannelGroupChannels, getChannelIdsInOrder cs)
     , (ChannelGroupUsers, getDMChannelIdsInOrder chanNames)
     ]
 
-getChannelIdsInOrder :: MMNames -> [ChannelId]
-getChannelIdsInOrder n = [ (n ^. channelNameToChanId) HM.! i | i <- n ^. cnChans ]
+getChannelIdsInOrder :: ClientChannels -> [ChannelId]
+getChannelIdsInOrder cs =
+    let matches (_, info) = info^.ccInfo.cdType /= Direct
+    in fmap fst $
+       sortBy (comparing ((^.ccInfo.cdName) . snd)) $
+       filteredChannels matches cs
 
 getDMChannelIdsInOrder :: MMNames -> [ChannelId]
 getDMChannelIdsInOrder n =
@@ -1285,25 +1286,21 @@ addChannelName chType cid name = do
         Direct -> csNames.usernameToChanId.at(name) .= Just cid
         _ -> csNames.channelNameToChanId.at(name) .= Just cid
 
-    -- For direct channels the username is already in the user list so
-    -- do nothing
-    existingNames <- St.gets allChannelNames
-    when (chType /= Direct && (not $ name `elem` existingNames)) $
-        csNames.cnChans %= (sort . (name:))
-
 channelMentionCount :: ChannelId -> ChatState -> Int
 channelMentionCount cId st =
     maybe 0 id (st^?csChannel(cId).ccInfo.cdMentionCount)
 
 allChannelNames :: ChatState -> [Text]
-allChannelNames st = st^.csNames.cnChans
+allChannelNames st =
+    let matches (_, info) = info^.ccInfo.cdType /= Direct
+    in fmap (_cdName . _ccInfo . snd) $
+       sortBy (comparing ((^.ccInfo.cdName) . snd)) $
+       filteredChannels matches $ st^.csChannels
 
 removeChannelName :: Text -> MH ()
 removeChannelName name = do
     -- Flush cnToChanId
     csNames.channelNameToChanId.at name .= Nothing
-    -- Flush cnChans
-    csNames.cnChans %= filter (/= name)
 
 -- Rebuild the channel zipper contents from the current names collection.
 refreshChannelZipper :: MH ()
@@ -1312,7 +1309,8 @@ refreshChannelZipper = do
     -- channel zipper in such a way that we don't ever change our focus
     -- to something else, which is kind of silly
     names <- use csNames
-    let newZip = updateList (mkChannelZipperList names)
+    cs <- use csChannels
+    let newZip = updateList (mkChannelZipperList cs names)
     csFocus %= newZip
 
 clientPostToMessage :: ClientPost -> Message

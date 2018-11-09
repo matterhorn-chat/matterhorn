@@ -16,7 +16,7 @@ import           Data.Maybe ( fromJust )
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Time.Clock ( getCurrentTime )
-import           Lens.Micro.Platform ( (%~) )
+import           Lens.Micro.Platform ( (.~) )
 import           System.Exit ( exitFailure )
 import           System.FilePath ( (</>), isRelative, dropFileName )
 import           System.IO.Error ( catchIOError )
@@ -212,7 +212,7 @@ initializeState cr myTeam me = do
 
   -- Since the only channel we are dealing with is by construction the
   -- last channel, we don't have to consider other cases here:
-  msgs <- forM (toList chans) $ \c -> do
+  chanPairs <- forM (toList chans) $ \c -> do
       cChannel <- makeClientChannel c
       return (getId c, cChannel)
 
@@ -251,8 +251,9 @@ initializeState cr myTeam me = do
   -- End thread startup ----------------------------------------------
 
   let names = mkNames me mempty chans
-      chanIds = mkChannelZipperList names
+      chanIds = mkChannelZipperList clientChans names
       chanZip = Z.fromList chanIds
+      clientChans = foldr (uncurry addChannel) noChannels chanPairs
       startupState =
           StartupStateInfo { startupStateResources      = cr
                            , startupStateChannelZipper  = chanZip
@@ -263,8 +264,7 @@ initializeState cr myTeam me = do
                            , startupStateSpellChecker   = spResult
                            , startupStateNames          = names
                            }
-      st = newState startupState
-             & csChannels %~ flip (foldr (uncurry addChannel)) msgs
+      st = newState startupState & csChannels .~ clientChans
 
   loadFlaggedMessages (cr^.crUserPreferences.userPrefFlaggedPostList) st
 
