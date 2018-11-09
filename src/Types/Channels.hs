@@ -110,7 +110,10 @@ initialChannelInfo myId chan =
                    , _cdType                   = chan^.channelTypeL
                    , _cdNotifyProps            = emptyChannelNotifyProps
                    , _cdTypingUsers            = noTypingUsers
-                   , _cdDMUserId               = userIdForDMChannel myId $ sanitizeUserText $ channelName chan
+                   , _cdDMUserId               = if chan^.channelTypeL == Direct
+                                                 then userIdForDMChannel myId $
+                                                      sanitizeUserText $ channelName chan
+                                                 else Nothing
                    }
 
 channelInfoFromChannelWithData :: Channel -> ChannelMember -> ChannelInfo -> ChannelInfo
