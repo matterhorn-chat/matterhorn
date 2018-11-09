@@ -489,7 +489,7 @@ removeChannelFromState cId = do
             -- Remove channel name mappings
             removeChannelName cName
             -- Update msgMap
-            csChannels                          %= filteredChannels ((/=) cId . fst)
+            csChannels                          %= removeChannel cId
             -- Remove from focus zipper
             csFocus                             %= Z.filterZipper (/= cId)
 

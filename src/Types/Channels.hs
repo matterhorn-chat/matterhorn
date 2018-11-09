@@ -21,7 +21,7 @@ module Types.Channels
   -- * Creating ClientChannel objects
   , makeClientChannel
   -- * Managing ClientChannel collections
-  , noChannels, addChannel, findChannelById, modifyChannelById
+  , noChannels, addChannel, removeChannel, findChannelById, modifyChannelById
   , channelByIdL, maybeChannelByIdL
   , filteredChannelIds
   , filteredChannels
@@ -221,6 +221,10 @@ noChannels = AllChannels HM.empty
 -- | Add a channel to the existing collection.
 addChannel :: ChannelId -> ClientChannel -> ClientChannels -> ClientChannels
 addChannel cId cinfo = AllChannels . HM.insert cId cinfo . _ofChans
+
+-- | Remove a channel from the collection.
+removeChannel :: ChannelId -> ClientChannels -> ClientChannels
+removeChannel cId = AllChannels . HM.delete cId . _ofChans
 
 -- | Get the ChannelInfo information given the ChannelId
 findChannelById :: ChannelId -> ClientChannels -> Maybe ClientChannel
