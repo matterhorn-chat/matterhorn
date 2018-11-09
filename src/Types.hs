@@ -195,7 +195,6 @@ module Types
   , userById
   , allUserIds
   , allChannelNames
-  , allUsernames
   , sortedUserList
   , removeChannelName
   , addChannelName
@@ -1298,9 +1297,6 @@ channelMentionCount cId st =
 
 allChannelNames :: ChatState -> [Text]
 allChannelNames st = st^.csNames.cnChans
-
-allUsernames :: ChatState -> [Text]
-allUsernames st = st^.csNames.cnChans
 
 removeChannelName :: Text -> MH ()
 removeChannelName name = do
