@@ -379,8 +379,6 @@ data MMNames =
             -- ^ Mapping from user names to 'ChannelId' values. Only
             -- contains entries for which DM channel IDs are known.
             , _cnUsers :: [Text] -- ^ All users
-            , _cnToUserId :: HashMap Text UserId
-            -- ^ Mapping from user names to 'UserId' values
             }
 
 -- | MMNames constructor, seeded with an initial mapping of user ID to
@@ -393,8 +391,6 @@ mkNames myUser users chans =
                             , c <- lookupChan (getDMChannelName (getId myUser) (getId u))
                             ]
             , _cnUsers = sort (map userUsername (HM.elems users))
-            , _cnToUserId = HM.fromList
-                            [ (userUsername u, getId u) | u <- HM.elems users ]
             }
   where lookupChan n = [ c^.channelIdL
                        | c <- toList chans, (sanitizeUserText $ c^.channelNameL) == n
@@ -1204,7 +1200,8 @@ displaynameForUserId uId st
 
 
 userIdForUsername :: Text -> ChatState -> Maybe UserId
-userIdForUsername name st = st^.csNames.cnToUserId.at (trimUserSigil name)
+userIdForUsername name st =
+    fst <$> (findUserByUsername name $ st^.csUsers)
 
 channelIdByChannelName :: Text -> ChatState -> Maybe ChannelId
 channelIdByChannelName name st =
@@ -1266,7 +1263,6 @@ addNewUser u = do
     let uname = u^.uiName
         uid = u^.uiId
     csNames.cnUsers %= (sort . (uname:))
-    csNames.cnToUserId.at uname .= Just uid
 
     userSet <- use (csResources.crUserIdSet)
     St.liftIO $ STM.atomically $ STM.modifyTVar userSet $ (uid Seq.<|)
