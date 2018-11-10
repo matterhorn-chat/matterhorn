@@ -1,6 +1,7 @@
 module Zipper
   ( Zipper
   , fromList
+  , toList
   , focus
   , left
   , leftL
@@ -15,7 +16,7 @@ module Zipper
 where
 
 import           Prelude ()
-import           Prelude.MH
+import           Prelude.MH hiding (toList)
 
 import           Data.Maybe ( fromJust )
 import qualified Data.Foldable as F
@@ -73,6 +74,9 @@ fromList xs =
     in Zipper { zRing = maybeFocus $ C.fromList tsList
               , zTrees = ts
               }
+
+toList :: Zipper a b -> [(a, [b])]
+toList z = F.toList $ zTrees z & mapped._2 %~ F.toList
 
 -- Shift the focus until a given element is found, or return the
 -- same zipper if none applies
