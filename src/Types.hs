@@ -397,7 +397,11 @@ getDMChannelIdsInOrder :: Users -> ClientChannels -> [ChannelListEntry]
 getDMChannelIdsInOrder us cs =
     let mapping = allDmChannelMappings cs
         mappingWithUserInfo = catMaybes $ getUserInfo <$> mapping
-        getUserInfo (uId, cId) = ((uId, cId),) <$> findUserById uId us
+        getUserInfo (uId, cId) = do
+            u <- findUserById uId us
+            case u^.uiDeleted of
+                True -> Nothing
+                False -> return ((uId, cId), u)
         sorted = sortBy (comparing (_uiName . snd)) mappingWithUserInfo
     in (\((uId, cId), _) -> CLUser cId uId) <$> sorted
 
