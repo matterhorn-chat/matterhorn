@@ -519,7 +519,7 @@ drawCompletionAlternatives :: Completer -> Widget Name
 drawCompletionAlternatives c =
     let alternatives = intersperse (txt " ") $ mkAlternative <$> toList (completionAlternatives c)
         mkAlternative alt =
-            let format = if completionInput alt == (completionInput $ currentAlternative c)
+            let format = if Just (completionInput alt) == (completionInput <$> currentAlternative c)
                          then visible . withDefAttr completionAlternativeCurrentAttr
                          else id
             in format $ txt $ completionDisplay alt

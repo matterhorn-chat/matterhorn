@@ -264,5 +264,7 @@ tabComplete dir = do
   case mComp of
       Nothing -> return ()
       Just comp -> do
-          let replacement = completionReplacement $ currentAlternative comp
-          csEditState.cedEditor %= applyEdit (Z.insertMany replacement . Z.deletePrevWord)
+          case completionReplacement <$> currentAlternative comp of
+              Nothing -> return ()
+              Just replacement ->
+                  csEditState.cedEditor %= applyEdit (Z.insertMany replacement . Z.deletePrevWord)

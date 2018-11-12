@@ -59,7 +59,7 @@ wordComplete options input =
             else Just $ Right $ Completer { completionAlternatives = Z.fromList [((), alts)]
                                           }
 
-currentAlternative :: Completer -> CompletionAlternative
+currentAlternative :: Completer -> Maybe CompletionAlternative
 currentAlternative = Z.focus . completionAlternatives
 
 nextCompletion :: Completer -> Completer

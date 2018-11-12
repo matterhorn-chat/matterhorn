@@ -3,6 +3,7 @@ module Zipper
   , fromList
   , toList
   , focus
+  , unsafeFocus
   , left
   , leftL
   , right
@@ -60,8 +61,11 @@ rightL :: Lens (Zipper a b) (Zipper a b) (Zipper a b) (Zipper a b)
 rightL = lens right (\ _ b -> left b)
 
 -- Return the focus element
-focus :: Zipper a b -> b
-focus = fromJust . C.focus . zRing
+focus :: Zipper a b -> Maybe b
+focus = C.focus . zRing
+
+unsafeFocus :: Zipper a b -> b
+unsafeFocus = fromJust . focus
 
 -- Turn a list into a wraparound zipper, focusing on the head
 fromList :: (Eq b) => [(a, [b])] -> Zipper a b
@@ -91,7 +95,7 @@ maybeFindRight f z = do
     return z { zRing = newRing }
 
 updateList :: (Eq b) => [(a, [b])] -> Zipper a b -> Zipper a b
-updateList newList oldZip = findRight (== focus oldZip) $ fromList newList
+updateList newList oldZip = findRight ((== focus oldZip) . Just) $ fromList newList
 
 maybeMapZipper :: (Eq c) => (b -> Maybe c) -> Zipper a b -> Zipper a c
 maybeMapZipper f z =
@@ -101,7 +105,7 @@ maybeMapZipper f z =
 
 filterZipper :: (Eq b) => (b -> Bool) -> Zipper a b -> Zipper a b
 filterZipper f oldZip = maintainFocus newZip
-  where maintainFocus = findRight (== focus oldZip)
+  where maintainFocus = findRight ((== focus oldZip) . Just)
         newZip = Zipper { zTrees = zTrees oldZip & mapped._2 %~ Seq.filter f
                         , zRing = C.filterR f (zRing oldZip)
                         }

@@ -273,7 +273,7 @@ import           Types.KeyEvents
 import           Types.Messages
 import           Types.Posts
 import           Types.Users
-import           Zipper ( Zipper, focus, updateList )
+import           Zipper ( Zipper, unsafeFocus, updateList )
 
 
 -- * Configuration
@@ -1116,7 +1116,7 @@ resetSpellCheckTimer s =
 
 -- ** Utility Lenses
 csCurrentChannelId :: SimpleGetter ChatState ChannelId
-csCurrentChannelId = csFocus.to focus.to channelListEntryChannelId
+csCurrentChannelId = csFocus.to unsafeFocus.to channelListEntryChannelId
 
 channelListEntryChannelId :: ChannelListEntry -> ChannelId
 channelListEntryChannelId (CLChannel cId) = cId

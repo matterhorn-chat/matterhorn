@@ -572,11 +572,11 @@ getNextUnreadUserOrChannel st z =
 getNextNonDMChannel :: (Zipper a ChannelListEntry -> Zipper a ChannelListEntry)
                     -> (Zipper a ChannelListEntry -> Zipper a ChannelListEntry)
 getNextNonDMChannel shift z =
-    case Z.focus z of
+    case Z.unsafeFocus z of
         CLUser {} -> z
         CLChannel {} -> go (shift z)
   where go z'
-          | not (entryIsDMEntry $ Z.focus z') = z'
+          | not (entryIsDMEntry $ Z.unsafeFocus z') = z'
           | otherwise = go (shift z')
 
 leaveCurrentChannel :: MH ()
