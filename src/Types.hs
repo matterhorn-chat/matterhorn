@@ -299,7 +299,7 @@ data ChannelListEntry =
     -- ^ A non-DM entry
     | CLUser ChannelId UserId
     -- ^ A DM entry
-    deriving (Eq)
+    deriving (Eq, Show)
 
 -- | This is how we represent the user's configuration. Most fields
 -- correspond to configuration file settings (see Config.hs) but some
