@@ -12,6 +12,7 @@ module Types.Users
   -- * Creating UserInfo objects
   , userInfoFromUser
   -- * Miscellaneous
+  , getUsernameSet
   , userSigil
   , trimUserSigil
   , statusFromText
@@ -35,6 +36,7 @@ import           Prelude ()
 import           Prelude.MH
 
 import qualified Data.HashMap.Strict as HM
+import qualified Data.Set as S
 import           Data.Semigroup ( Max(..) )
 import qualified Data.Text as T
 import           Lens.Micro.Platform ( (%~), makeLenses, ix )
@@ -104,8 +106,11 @@ makeLenses ''UserInfo
 -- ** Manage the collection of all Users
 
 -- | Define a binary kinded type to allow derivation of functor.
-newtype AllMyUsers a = AllUsers { _ofUsers :: HashMap UserId a }
-    deriving Functor
+data AllMyUsers a =
+    AllUsers { _ofUsers :: HashMap UserId a
+             , _usernameSet :: S.Set Text
+             }
+             deriving Functor
 
 makeLenses ''AllMyUsers
 
@@ -113,16 +118,21 @@ makeLenses ''AllMyUsers
 -- collection to the UserInfo type.
 type Users = AllMyUsers UserInfo
 
+getUsernameSet :: Users -> S.Set Text
+getUsernameSet = _usernameSet
+
 -- | Initial collection of Users with no members
 noUsers :: Users
-noUsers = AllUsers HM.empty
+noUsers = AllUsers HM.empty mempty
 
 getAllUserIds :: Users -> [UserId]
 getAllUserIds = HM.keys . _ofUsers
 
 -- | Add a member to the existing collection of Users
 addUser :: UserInfo -> Users -> Users
-addUser userinfo = AllUsers . HM.insert (userinfo^.uiId) userinfo . _ofUsers
+addUser userinfo u =
+    u & ofUsers %~ HM.insert (userinfo^.uiId) userinfo
+      & usernameSet %~ S.insert (userinfo^.uiName)
 
 -- | Get a list of all known users
 allUsers :: Users -> [UserInfo]
@@ -135,11 +145,11 @@ type TypingUsers = AllMyUsers (Max UTCTime)
 
 -- | Initial collection of TypingUsers with no members
 noTypingUsers :: TypingUsers
-noTypingUsers = AllUsers HM.empty
+noTypingUsers = AllUsers HM.empty mempty
 
 -- | Add a member to the existing collection of TypingUsers
 addTypingUser :: UserId -> UTCTime -> TypingUsers -> TypingUsers
-addTypingUser uId ts = AllUsers . HM.insertWith (<>) uId (Max ts) . _ofUsers
+addTypingUser uId ts = ofUsers %~ HM.insertWith (<>) uId (Max ts)
 
 -- | Get a list of all typing users
 allTypingUsers :: TypingUsers -> [UserId]
@@ -149,7 +159,7 @@ allTypingUsers = HM.keys . _ofUsers
 -- | Expiry is decided by the given timestamp.
 expireTypingUsers :: UTCTime -> TypingUsers -> TypingUsers
 expireTypingUsers expiryTimestamp =
-  AllUsers . HM.filter (\(Max ts') -> ts' >= expiryTimestamp) . _ofUsers
+    ofUsers %~ HM.filter (\(Max ts') -> ts' >= expiryTimestamp)
 
 -- | Get the User information given the UserId
 findUserById :: UserId -> Users -> Maybe UserInfo

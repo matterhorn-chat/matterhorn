@@ -43,6 +43,7 @@ module Types.Channels
   , channelDeleted
   , getDmChannelFor
   , allDmChannelMappings
+  , getChannelNameSet
   )
 where
 
@@ -50,6 +51,7 @@ import           Prelude ()
 import           Prelude.MH
 
 import qualified Data.HashMap.Strict as HM
+import qualified Data.Set as S
 import           Lens.Micro.Platform ( (%~), (.~), Traversal', Lens'
                                      , makeLenses, ix, at
                                      , to, non )
@@ -219,6 +221,7 @@ canLeaveChannel cInfo = not $ cInfo^.cdType `elem` [Direct]
 data AllMyChannels a =
     AllChannels { _chanMap :: HashMap ChannelId a
                 , _userChannelMap :: HashMap UserId ChannelId
+                , _channelNameSet :: S.Set Text
                 }
                 deriving (Functor, Foldable, Traversable)
 
@@ -228,14 +231,18 @@ type ClientChannels = AllMyChannels ClientChannel
 
 makeLenses ''AllMyChannels
 
+getChannelNameSet :: ClientChannels -> S.Set Text
+getChannelNameSet = _channelNameSet
+
 -- | Initial collection of Channels with no members
 noChannels :: ClientChannels
-noChannels = AllChannels HM.empty HM.empty
+noChannels = AllChannels HM.empty HM.empty mempty
 
 -- | Add a channel to the existing collection.
 addChannel :: ChannelId -> ClientChannel -> ClientChannels -> ClientChannels
 addChannel cId cinfo =
     (chanMap %~ HM.insert cId cinfo) .
+    (channelNameSet %~ S.insert (cinfo^.ccInfo.cdName)) .
     (case cinfo^.ccInfo.cdDMUserId of
          Nothing -> id
          Just uId -> userChannelMap %~ HM.insert uId cId
@@ -243,9 +250,14 @@ addChannel cId cinfo =
 
 -- | Remove a channel from the collection.
 removeChannel :: ChannelId -> ClientChannels -> ClientChannels
-removeChannel cId =
-    (chanMap %~ HM.delete cId) .
-    (userChannelMap %~ HM.filter (/= cId))
+removeChannel cId cs =
+    let mChan = findChannelById cId cs
+        removeChannelName = case mChan of
+            Nothing -> id
+            Just ch -> channelNameSet %~ S.delete (ch^.ccInfo.cdName)
+    in cs & chanMap %~ HM.delete cId
+          & removeChannelName
+          & userChannelMap %~ HM.filter (/= cId)
 
 getDmChannelFor :: UserId -> ClientChannels -> Maybe ChannelId
 getDmChannelFor uId cs = cs^.userChannelMap.at uId

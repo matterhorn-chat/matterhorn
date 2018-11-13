@@ -238,14 +238,13 @@ import           Data.Ord ( comparing )
 import qualified Data.HashMap.Strict as HM
 import           Data.List ( sortBy )
 import qualified Data.Sequence as Seq
-import qualified Data.Set as Set
 import qualified Data.Text as T
 import           Data.Time.Clock ( UTCTime, getCurrentTime, nominalDay, addUTCTime )
 import           Data.UUID ( UUID )
 import qualified Data.Vector as Vec
 import           Lens.Micro.Platform ( at, makeLenses, lens, (%~), (^?!), (.=)
                                      , (%=), (^?), (.~)
-                                     , _Just, Traversal', preuse, (^..), folded, to
+                                     , _Just, Traversal', preuse, to
                                      , SimpleGetter
                                      )
 import           Network.Connection ( HostNotResolved, HostCannotConnect )
@@ -1378,8 +1377,8 @@ data HighlightSet =
 
 getHighlightSet :: ChatState -> HighlightSet
 getHighlightSet st =
-    HighlightSet { hUserSet = Set.fromList (st^..csUsers.to allUsers.folded.uiName)
-                 , hChannelSet = Set.fromList (st^..csChannels.folded.ccInfo.cdName)
+    HighlightSet { hUserSet = getUsernameSet $ st^.csUsers
+                 , hChannelSet = getChannelNameSet $ st^.csChannels
                  , hSyntaxMap = st^.csResources.crSyntaxMap
                  }
 
