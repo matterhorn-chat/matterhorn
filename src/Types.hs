@@ -1253,7 +1253,6 @@ allChannelNames st =
        sortBy (comparing ((^.ccInfo.cdName) . snd)) $
        filteredChannels matches $ st^.csChannels
 
--- Rebuild the channel zipper contents from the current names collection.
 refreshChannelZipper :: MH ()
 refreshChannelZipper = do
     -- We should figure out how to do this better: this adds it to the
