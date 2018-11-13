@@ -1261,13 +1261,6 @@ channelMentionCount :: ChannelId -> ChatState -> Int
 channelMentionCount cId st =
     maybe 0 id (st^?csChannel(cId).ccInfo.cdMentionCount)
 
-allChannelNames :: ChatState -> [Text]
-allChannelNames st =
-    let matches (_, info) = info^.ccInfo.cdType /= Direct
-    in fmap (_cdName . _ccInfo . snd) $
-       sortBy (comparing ((^.ccInfo.cdName) . snd)) $
-       filteredChannels matches $ st^.csChannels
-
 refreshChannelZipper :: MH ()
 refreshChannelZipper = do
     cs <- use csChannels

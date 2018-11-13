@@ -6,6 +6,7 @@ import           Prelude.MH
 
 import           Brick hiding ( Direction )
 import           Brick.Widgets.Edit
+import qualified Data.Foldable as F
 import qualified Data.Map as M
 import qualified Data.Set as Set
 import qualified Data.Text as T
@@ -189,7 +190,7 @@ tabComplete :: Direction -> MH ()
 tabComplete dir = do
   st <- use id
   allUIds <- gets allUserIds
-  allChanNames <- gets allChannelNames
+  allChanNames <- use (csChannels.to getChannelNameSet.to F.toList)
   displayNick <- use (to useNickname)
 
   let channelCompletions = concat $ catMaybes (flip map allChanNames $ \cname -> do
