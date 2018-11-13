@@ -11,88 +11,70 @@ import           Prelude ()
 import           Prelude.MH
 
 import           Data.Char ( isUpper )
-import           Data.List ( findIndex )
 import qualified Data.Text as T
 import           Lens.Micro.Platform
 
 import           Types
-
+import qualified Zipper as Z
 
 beginChannelSelect :: MH ()
 beginChannelSelect = do
     setMode ChannelSelect
     csChannelSelectState .= emptyChannelSelectState
+    updateChannelSelectMatches
+
+    -- Preserve the current channel selection when initializing channel
+    -- selection mode
+    zipper <- use csFocus
+    let isCurrentFocus m = Just (matchEntry m) == Z.focus zipper
+    csChannelSelectState.channelSelectMatches %= Z.findRight isCurrentFocus
 
 -- Select the next match in channel selection mode.
 channelSelectNext :: MH ()
-channelSelectNext = updateSelectedMatch succ
+channelSelectNext = updateSelectedMatch Z.right
 
 -- Select the previous match in channel selection mode.
 channelSelectPrevious :: MH ()
-channelSelectPrevious = updateSelectedMatch pred
+channelSelectPrevious = updateSelectedMatch Z.left
 
 updateChannelSelectMatches :: MH ()
 updateChannelSelectMatches = do
-    -- Given the current channel select string, find all the channel and
-    -- user matches and then update the match lists.
+    st <- use id
+
     input <- use (csChannelSelectState.channelSelectInput)
     let pat = parseChannelSelectPattern input
-        chanNameMatches = case pat of
+        chanNameMatches e = case pat of
             Nothing -> const Nothing
-            Just p -> if T.null input
-                      then const Nothing
-                      else applySelectPattern p
+            Just p -> applySelectPattern p e
         patTy = case pat of
             Nothing -> Nothing
+            Just CSPAny -> Nothing
             Just (CSP ty _) -> Just ty
 
-    chanNames   <- gets (sort . allChannelNames)
-    uList       <- use (to sortedUserList)
     displayNick <- use (to useNickname)
-    let chanMatches = if patTy == Just UsersOnly
-                      then mempty
-                      else catMaybes (fmap chanNameMatches chanNames)
-        displayName uInf
-            | displayNick = uInf^.uiNickName.non (uInf^.uiName)
-            | otherwise   = uInf^.uiName
-        usernameMatches = if patTy == Just ChannelsOnly
-                          then mempty
-                          else catMaybes (fmap (chanNameMatches . displayName) uList)
+    let chanMatches e chan =
+            if patTy == Just UsersOnly
+            then Nothing
+            else chanNameMatches e $ chan^.ccInfo.cdName
+        displayName uInfo
+            | displayNick = uInfo^.uiNickName.non (uInfo^.uiName)
+            | otherwise   = uInfo^.uiName
+        userMatches e uInfo =
+            if patTy == Just ChannelsOnly
+            then Nothing
+            else (chanNameMatches e . displayName) uInfo
+        matches e@(CLChannel cId) = findChannelById cId (st^.csChannels) >>= chanMatches e
+        matches e@(CLUser _ uId) = userById uId st >>= userMatches e
 
-    newInput <- use (csChannelSelectState.channelSelectInput)
-    csChannelSelectState.channelMatches .= chanMatches
-    csChannelSelectState.userMatches    .= usernameMatches
-    csChannelSelectState.selectedMatch  %= \oldMatch ->
-        -- If the user input exactly matches one of the matches, prefer
-        -- that one. Otherwise, if the previously selected match is
-        -- still a possible match, leave it selected. Otherwise revert
-        -- to the first available match.
-        let unames = matchFull <$> usernameMatches
-            cnames = matchFull <$> chanMatches
-            firstAvailableMatch =
-                if null chanMatches
-                then if null unames
-                     then Nothing
-                     else Just $ UserMatch $ head unames
-                else Just $ ChannelMatch $ head cnames
-            newMatch = case oldMatch of
-              Just (UserMatch u) ->
-                  if newInput `elem` unames
-                  then Just $ UserMatch newInput
-                  else if u `elem` unames
-                       then oldMatch
-                       else firstAvailableMatch
-              Just (ChannelMatch c) ->
-                  if newInput `elem` cnames
-                  then Just $ ChannelMatch $ newInput
-                  else if c `elem` cnames
-                       then oldMatch
-                       else firstAvailableMatch
-              Nothing -> firstAvailableMatch
-        in newMatch
+        preserveFocus Nothing _ = False
+        preserveFocus (Just m) m2 = matchEntry m == matchEntry m2
 
-applySelectPattern :: ChannelSelectPattern -> Text -> Maybe ChannelSelectMatch
-applySelectPattern (CSP ty pat) chanName = do
+    csChannelSelectState.channelSelectMatches %= (Z.updateListBy preserveFocus $ Z.toList $ Z.maybeMapZipper matches (st^.csFocus))
+
+applySelectPattern :: ChannelSelectPattern -> ChannelListEntry -> Text -> Maybe ChannelSelectMatch
+applySelectPattern CSPAny entry chanName = do
+    return $ ChannelSelectMatch "" "" chanName chanName entry
+applySelectPattern (CSP ty pat) entry chanName = do
     let applyType Infix  | pat `T.isInfixOf` normalizedChanName =
             case T.breakOn pat normalizedChanName of
                 (pre, _) ->
@@ -128,9 +110,10 @@ applySelectPattern (CSP ty pat) chanName = do
                              else T.toLower chanName
 
     (pre, m, post) <- applyType ty
-    return $ ChannelSelectMatch pre m post chanName
+    return $ ChannelSelectMatch pre m post chanName entry
 
 parseChannelSelectPattern :: Text -> Maybe ChannelSelectPattern
+parseChannelSelectPattern "" = return CSPAny
 parseChannelSelectPattern pat = do
     let only = if | userSigil `T.isPrefixOf` pat -> Just $ CSP UsersOnly $ T.tail pat
                   | normalChannelSigil `T.isPrefixOf` pat -> Just $ CSP ChannelsOnly $ T.tail pat
@@ -152,34 +135,8 @@ parseChannelSelectPattern pat = do
         tys                        -> error $ "BUG: invalid channel select case: " <> show tys
 
 -- Update the channel selection mode match cursor. The argument function
--- determines how the new cursor position is computed from the old
--- one. The new cursor position is automatically wrapped around to the
--- beginning or end of the channel selection match list, so cursor
--- transformations do not have to do index validation. If the current
--- match (e.g. the sentinel "") is not found in the match list, this
--- sets the cursor position to the first match, if any.
-updateSelectedMatch :: (Int -> Int) -> MH ()
-updateSelectedMatch nextIndex = do
-    chanMatches <- use (csChannelSelectState.channelMatches)
-    usernameMatches <- use (csChannelSelectState.userMatches)
-
-    csChannelSelectState.selectedMatch %= \oldMatch ->
-        -- Make the list of all matches, in display order.
-        let allMatches = concat [ (ChannelMatch . matchFull) <$> chanMatches
-                                , (UserMatch . matchFull) <$> usernameMatches
-                                ]
-            defaultMatch = if null allMatches
-                           then Nothing
-                           else Just $ allMatches !! 0
-        in case oldMatch of
-            Nothing -> defaultMatch
-            Just oldMatch' -> case findIndex (== oldMatch') allMatches of
-                Nothing -> defaultMatch
-                Just i ->
-                    let newIndex = if tmpIndex < 0
-                                   then length allMatches - 1
-                                   else if tmpIndex >= length allMatches
-                                        then 0
-                                        else tmpIndex
-                        tmpIndex = nextIndex i
-                    in Just $ allMatches !! newIndex
+-- determines how to navigate to the next item.
+updateSelectedMatch :: (Z.Zipper ChannelListGroup ChannelSelectMatch -> Z.Zipper ChannelListGroup ChannelSelectMatch)
+                    -> MH ()
+updateSelectedMatch nextItem =
+    csChannelSelectState.channelSelectMatches %= nextItem

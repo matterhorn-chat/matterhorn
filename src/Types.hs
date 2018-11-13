@@ -15,7 +15,6 @@ module Types
   , InternalEvent(..)
   , Name(..)
   , ChannelSelectMatch(..)
-  , MatchValue(..)
   , StartupStateInfo(..)
   , MHError(..)
   , ConnectionInfo(..)
@@ -46,10 +45,8 @@ module Types
   , trimChannelSigil
 
   , ChannelSelectState(..)
-  , userMatches
-  , channelMatches
+  , channelSelectMatches
   , channelSelectInput
-  , selectedMatch
   , emptyChannelSelectState
 
   , ChatState
@@ -273,7 +270,7 @@ import           Types.KeyEvents
 import           Types.Messages
 import           Types.Posts
 import           Types.Users
-import           Zipper ( Zipper, unsafeFocus, updateList )
+import           Zipper ( Zipper, fromList, unsafeFocus, updateList )
 
 
 -- * Configuration
@@ -482,10 +479,14 @@ data ChannelSelectMatch =
                        , matchFull      :: Text
                        -- ^ The full string for this entry so it doesn't
                        -- have to be reassembled from the parts above.
+                       , matchEntry     :: ChannelListEntry
+                       -- ^ The original entry data corresponding to the
+                       -- text match.
                        }
                        deriving (Eq, Show)
 
 data ChannelSelectPattern = CSP MatchType Text
+                          | CSPAny
                           deriving (Eq, Show)
 
 data MatchType =
@@ -851,28 +852,16 @@ listFromUserSearchResults rs =
     -- in Draw.UserListOverlay.
     list UserListSearchResults rs 1
 
--- | A match in channel selection mode. Constructors distinguish
--- between channel and user matches to ensure that a match of each type
--- is distinct.
-data MatchValue =
-    UserMatch Text
-    | ChannelMatch Text
-    deriving (Eq, Show)
-
 -- | The state of channel selection mode.
 data ChannelSelectState =
     ChannelSelectState { _channelSelectInput :: Text
-                       , _channelMatches     :: [ChannelSelectMatch]
-                       , _userMatches        :: [ChannelSelectMatch]
-                       , _selectedMatch      :: Maybe MatchValue
+                       , _channelSelectMatches :: Zipper ChannelListGroup ChannelSelectMatch
                        }
 
 emptyChannelSelectState :: ChannelSelectState
 emptyChannelSelectState =
     ChannelSelectState { _channelSelectInput = ""
-                       , _channelMatches     = mempty
-                       , _userMatches        = mempty
-                       , _selectedMatch      = Nothing
+                       , _channelSelectMatches = fromList []
                        }
 
 -- | The state of message selection mode.

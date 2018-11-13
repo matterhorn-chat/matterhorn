@@ -11,6 +11,7 @@ import           Events.Keybindings
 import           State.Channels
 import           State.ChannelSelect
 import           Types
+import qualified Zipper as Z
 
 
 onEventChannelSelect :: Vty.Event -> MH ()
@@ -28,13 +29,14 @@ channelSelectKeybindings :: KeyConfig -> [Keybinding]
 channelSelectKeybindings = mkKeybindings
     [ staticKb "Switch to selected channel"
          (Vty.EvKey Vty.KEnter []) $ do
-             selMatch <- use (csChannelSelectState.selectedMatch)
-
-             setMode Main
-
-             let switch (UserMatch m) = changeChannel (userSigil <> m)
-                 switch (ChannelMatch m) = changeChannel (normalChannelSigil <> m)
-             maybe (return ()) switch selMatch
+             matches <- use (csChannelSelectState.channelSelectMatches)
+             case Z.focus matches of
+                 Nothing -> return ()
+                 Just match -> do
+                     setMode Main
+                     case matchEntry match of
+                         CLChannel cId -> setFocus cId
+                         CLUser cId _ -> setFocus cId
 
     , mkKb CancelEvent "Cancel channel selection" $ setMode Main
     , mkKb NextChannelEvent "Select next match" channelSelectNext
