@@ -241,7 +241,7 @@ import           Data.List ( partition, sortBy )
 import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
 import qualified Data.Text as T
-import           Data.Time.Clock ( UTCTime, getCurrentTime )
+import           Data.Time.Clock ( UTCTime, getCurrentTime, nominalDay, addUTCTime )
 import           Data.UUID ( UUID )
 import qualified Data.Vector as Vec
 import           Lens.Micro.Platform ( at, makeLenses, lens, (%~), (^?!), (.=)
@@ -377,10 +377,10 @@ data BackgroundInfo =
     -- thread's work queue length.
     deriving (Eq, Show)
 
-mkChannelZipperList :: ClientChannels -> Users -> [(ChannelListGroup, [ChannelListEntry])]
-mkChannelZipperList cs us =
+mkChannelZipperList :: UTCTime -> ClientChannels -> Users -> [(ChannelListGroup, [ChannelListEntry])]
+mkChannelZipperList now cs us =
     [ (ChannelGroupChannels, getChannelIdsInOrder cs)
-    , (ChannelGroupUsers, getDMChannelIdsInOrder us cs)
+    , (ChannelGroupUsers, getDMChannelIdsInOrder now us cs)
     ]
 
 getChannelIdsInOrder :: ClientChannels -> [ChannelListEntry]
@@ -390,17 +390,36 @@ getChannelIdsInOrder cs =
        sortBy (comparing ((^.ccInfo.cdName) . snd)) $
        filteredChannels matches cs
 
-getDMChannelIdsInOrder :: Users -> ClientChannels -> [ChannelListEntry]
-getDMChannelIdsInOrder us cs =
+getDMChannelIdsInOrder :: UTCTime -> Users -> ClientChannels -> [ChannelListEntry]
+getDMChannelIdsInOrder now us cs =
     let mapping = allDmChannelMappings cs
-        mappingWithUserInfo = catMaybes $ getUserInfo <$> mapping
-        getUserInfo (uId, cId) = do
+        mappingWithUserInfo = catMaybes $ getInfo <$> mapping
+        getInfo (uId, cId) = do
+            c <- findChannelById cId cs
             u <- findUserById uId us
             case u^.uiDeleted of
                 True -> Nothing
-                False -> return ((uId, cId), u)
+                False ->
+                    if dmChannelShouldAppear now c
+                    then return ((uId, cId), u)
+                    else Nothing
         sorted = sortBy (comparing (_uiName . snd)) mappingWithUserInfo
     in (\((uId, cId), _) -> CLUser cId uId) <$> sorted
+
+dmChannelShouldAppear :: UTCTime -> ClientChannel -> Bool
+dmChannelShouldAppear now c =
+    let oneWeekAgo = nominalDay * (-7)
+        cutoff = ServerTime $ addUTCTime oneWeekAgo now
+        viewed = c^.ccInfo.cdViewed
+        updated = c^.ccInfo.cdUpdated
+    in or [
+          -- The channel was updated in the last week
+            updated >= cutoff
+          -- The channel was viewed in the last week
+          , maybe False (>= cutoff) viewed
+          -- The channel was updated since it was last viewed
+          , maybe False (updated >) viewed
+          ]
 
 -- * Internal Names and References
 
@@ -1257,7 +1276,8 @@ refreshChannelZipper :: MH ()
 refreshChannelZipper = do
     cs <- use csChannels
     us <- use csUsers
-    csFocus %= updateList (mkChannelZipperList cs us)
+    now <- liftIO getCurrentTime
+    csFocus %= updateList (mkChannelZipperList now cs us)
 
 clientPostToMessage :: ClientPost -> Message
 clientPostToMessage cp =
