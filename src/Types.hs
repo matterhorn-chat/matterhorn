@@ -1255,9 +1255,6 @@ allChannelNames st =
 
 refreshChannelZipper :: MH ()
 refreshChannelZipper = do
-    -- We should figure out how to do this better: this adds it to the
-    -- channel zipper in such a way that we don't ever change our focus
-    -- to something else, which is kind of silly
     cs <- use csChannels
     us <- use csUsers
     let newZip = updateList (mkChannelZipperList cs us)
