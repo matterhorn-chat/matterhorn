@@ -195,7 +195,6 @@ module Types
   , userById
   , allUserIds
   , allChannelNames
-  , sortedUserList
   , addNewUser
   , setUserIdSet
   , channelMentionCount
@@ -237,7 +236,7 @@ import qualified Control.Monad.Reader as R
 import qualified Data.Foldable as F
 import           Data.Ord ( comparing )
 import qualified Data.HashMap.Strict as HM
-import           Data.List ( partition, sortBy )
+import           Data.List ( sortBy )
 import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
 import qualified Data.Text as T
@@ -383,7 +382,7 @@ mkChannelZipperList now cs us =
 
 getChannelIdsInOrder :: ClientChannels -> [ChannelListEntry]
 getChannelIdsInOrder cs =
-    let matches (_, info) = info^.ccInfo.cdType /= Direct
+    let matches (_, info) = info^.ccInfo.cdType `notElem` [Direct, Group]
     in fmap (CLChannel . fst) $
        sortBy (comparing ((^.ccInfo.cdName) . snd)) $
        filteredChannels matches cs
@@ -1363,27 +1362,6 @@ userByUsername name st = do
 userByNickname :: Text -> ChatState -> Maybe UserInfo
 userByNickname name st =
     snd <$> (findUserByNickname name $ st^.csUsers)
-
-sortedUserList :: ChatState -> [UserInfo]
-sortedUserList st = sortBy cmp yes <> sortBy cmp no
-    where
-        cmp = compareUserInfo uiName
-        dmHasUnread u =
-            case getDmChannelFor (u^.uiId) (st^.csChannels) of
-              Nothing  -> False
-              Just cId
-                | (st^.csCurrentChannelId) == cId -> False
-                | otherwise -> hasUnread st cId
-        (yes, no) = partition dmHasUnread (filter (not . _uiDeleted) $ userList st)
-
-compareUserInfo :: (Ord a) => Lens' UserInfo a -> UserInfo -> UserInfo -> Ordering
-compareUserInfo field u1 u2
-    | u1^.uiStatus == Offline && u2^.uiStatus /= Offline =
-      GT
-    | u1^.uiStatus /= Offline && u2^.uiStatus == Offline =
-      LT
-    | otherwise =
-      (u1^.field) `compare` (u2^.field)
 
 -- * HighlightSet
 
