@@ -284,10 +284,8 @@ data PasswordSource =
 
 -- | The type of channel list group headings.
 data ChannelListGroup =
-    ChannelGroupChannels
-    -- ^ Channels
-    | ChannelGroupUsers
-    -- ^ Users
+    ChannelGroupPublicChannels
+    | ChannelGroupDirectMessages
     deriving (Eq)
 
 -- | The type of channel list entries.
@@ -379,8 +377,8 @@ data BackgroundInfo =
 
 mkChannelZipperList :: UTCTime -> ClientChannels -> Users -> [(ChannelListGroup, [ChannelListEntry])]
 mkChannelZipperList now cs us =
-    [ (ChannelGroupChannels, getChannelIdsInOrder cs)
-    , (ChannelGroupUsers, getDMChannelIdsInOrder now us cs)
+    [ (ChannelGroupPublicChannels, getChannelIdsInOrder cs)
+    , (ChannelGroupDirectMessages, getDMChannelIdsInOrder now us cs)
     ]
 
 getChannelIdsInOrder :: ClientChannels -> [ChannelListEntry]

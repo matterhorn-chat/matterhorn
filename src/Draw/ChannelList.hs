@@ -74,8 +74,8 @@ renderChannelList st =
 renderChannelListGroupHeading :: ChannelListGroup -> Widget Name
 renderChannelListGroupHeading g =
     let label = case g of
-            ChannelGroupChannels -> "Channels"
-            ChannelGroupUsers -> "Users"
+            ChannelGroupPublicChannels -> "Public Channels"
+            ChannelGroupDirectMessages -> "Direct Messages"
     in hBorderWithLabel $ withDefAttr channelListHeaderAttr $ txt label
 
 renderChannelListGroup :: ChatState
