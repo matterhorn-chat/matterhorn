@@ -242,7 +242,9 @@ noChannels = AllChannels HM.empty HM.empty mempty
 addChannel :: ChannelId -> ClientChannel -> ClientChannels -> ClientChannels
 addChannel cId cinfo =
     (chanMap %~ HM.insert cId cinfo) .
-    (channelNameSet %~ S.insert (cinfo^.ccInfo.cdName)) .
+    (if cinfo^.ccInfo.cdType `notElem` [Direct, Group]
+     then channelNameSet %~ S.insert (cinfo^.ccInfo.cdName)
+     else id) .
     (case cinfo^.ccInfo.cdDMUserId of
          Nothing -> id
          Just uId -> userChannelMap %~ HM.insert uId cId
