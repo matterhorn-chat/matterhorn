@@ -11,8 +11,10 @@ module Zipper
   , findRight
   , maybeFindRight
   , updateList
+  , updateListBy
   , filterZipper
   , maybeMapZipper
+  , isEmpty
   )
 where
 
@@ -43,6 +45,9 @@ instance Functor (Zipper a) where
         Zipper { zRing = f <$> zRing z
                , zTrees = zTrees z & mapped._2.mapped %~ f
                }
+
+isEmpty :: Zipper a b -> Bool
+isEmpty = C.isEmpty . zRing
 
 -- Move the focus one element to the left
 left :: Zipper a b -> Zipper a b
@@ -95,7 +100,10 @@ maybeFindRight f z = do
     return z { zRing = newRing }
 
 updateList :: (Eq b) => [(a, [b])] -> Zipper a b -> Zipper a b
-updateList newList oldZip = findRight ((== focus oldZip) . Just) $ fromList newList
+updateList newList oldZip = updateListBy (\old b -> old == Just b) newList oldZip
+
+updateListBy :: (Eq b) => (Maybe b -> b -> Bool) -> [(a, [b])] -> Zipper a b -> Zipper a b
+updateListBy f newList oldZip = findRight (f (focus oldZip)) $ fromList newList
 
 maybeMapZipper :: (Eq c) => (b -> Maybe c) -> Zipper a b -> Zipper a c
 maybeMapZipper f z =
