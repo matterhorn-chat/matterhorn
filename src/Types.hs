@@ -1257,8 +1257,7 @@ refreshChannelZipper :: MH ()
 refreshChannelZipper = do
     cs <- use csChannels
     us <- use csUsers
-    let newZip = updateList (mkChannelZipperList cs us)
-    csFocus %= newZip
+    csFocus %= updateList (mkChannelZipperList cs us)
 
 clientPostToMessage :: ClientPost -> Message
 clientPostToMessage cp =
