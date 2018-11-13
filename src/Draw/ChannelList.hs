@@ -153,8 +153,7 @@ renderChannelSelectListEntry curMatch st match =
     in maybeSelect $
        decorateRecent entryData $
        padRight Max $
-         hBox [ txt $ entrySigil entryData
-              , txt preMatch
+         hBox [ txt $ entrySigil entryData <> preMatch
               , forceAttr channelSelectMatchAttr $ txt inMatch
               , txt postMatch
               ]
