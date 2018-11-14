@@ -164,9 +164,6 @@ setLastViewedFor prevId cId = do
 -- occurs.
 refreshChannelsAndUsers :: MH ()
 refreshChannelsAndUsers = do
-    -- The below code is a duplicate of mmGetAllChannelsWithDataForUser
-    -- function, which has been inlined here to gain a concurrency
-    -- benefit.
     session <- getSession
     myTId <- gets myTeamId
     me <- gets myUser
