@@ -193,7 +193,8 @@ handleWSEvent we = do
             | otherwise -> return ()
 
         WMNewUser
-            | Just uId <- wepUserId $ weData we -> handleNewUsers (Seq.singleton uId)
+            | Just uId <- wepUserId $ weData we ->
+                handleNewUsers (Seq.singleton uId) (return ())
             | otherwise -> return ()
 
         WMUserRemoved

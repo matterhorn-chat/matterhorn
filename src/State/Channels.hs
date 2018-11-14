@@ -53,6 +53,7 @@ import           Control.Concurrent.Async ( runConcurrently, Concurrently(..) )
 import           Control.Exception ( SomeException, try )
 import           Data.Char ( isAlphaNum )
 import qualified Data.HashMap.Strict as HM
+import qualified Data.Foldable as F
 import           Data.Function ( on )
 import           Data.Maybe ( fromJust )
 import qualified Data.Sequence as Seq
@@ -168,40 +169,32 @@ refreshChannelsAndUsers = do
     -- benefit.
     session <- getSession
     myTId <- gets myTeamId
+    me <- gets myUser
     doAsyncWith Preempt $ do
       (chans, datas) <- runConcurrently $ (,)
                        <$> Concurrently (MM.mmGetChannelsForUser UserMe myTId session)
                        <*> Concurrently (MM.mmGetChannelMembersForUser UserMe myTId session)
 
-      let dataMap = HM.fromList $ toList $ (\d -> (channelMemberChannelId d, d)) <$> datas
+      -- Collect all user IDs associated with DM channels so we can
+      -- bulk-fetch their user records.
+      let uIdsToFetch = catMaybes $ flip map (F.toList chans) $ \chan ->
+              case chan^.channelTypeL of
+                  Direct -> case userIdForDMChannel (userId me) (sanitizeUserText $ channelName chan) of
+                        Nothing -> Nothing
+                        Just otherUserId -> Just otherUserId
+                  _ -> Nothing
+
+          dataMap = HM.fromList $ toList $ (\d -> (channelMemberChannelId d, d)) <$> datas
           mkPair chan = (chan, fromJust $ HM.lookup (channelId chan) dataMap)
           chansWithData = mkPair <$> chans
 
-          asyncFetchAllUsers page accum final = do
-              doAsyncWith Preempt $ do
-                  let pageSize = 200
-                      userQuery = MM.defaultUserQuery
-                        { MM.userQueryPage = Just page
-                        , MM.userQueryPerPage = Just pageSize
-                        , MM.userQueryInTeam = Just myTId
-                        }
-                  batch <- MM.mmGetUsers userQuery session
-
-                  return $ case length batch < pageSize of
-                      True -> do
-                          let users = accum <> batch
-                          forM_ users $ \u -> do
-                              when (not $ userDeleted u) $ do
-                                  result <- gets (userById (getId u))
-                                  when (isNothing result) $ handleNewUserDirect u
-                          setUserIdSet (userId <$> users)
-                          final
-                      False ->
-                          asyncFetchAllUsers (page + 1) (accum <> batch) final
-
-      return $ do
-          asyncFetchAllUsers 0 mempty $ do
+      return $
+          -- Fetch user data associated with DM channels
+          handleNewUsers (Seq.fromList uIdsToFetch) $ do
+              -- Then refresh all loaded channels
               forM_ chansWithData $ uncurry refreshChannel
+
+              -- Fetch user statuses
               lock <- use (csResources.crUserStatusLock)
               setVar <- use (csResources.crUserIdSet)
               doAsyncWith Preempt $ updateUserStatuses setVar lock session
@@ -297,7 +290,8 @@ handleNewChannel_ permitPostpone switch nc member = do
                                 case permitPostpone of
                                     False -> return True
                                     True -> do
-                                        handleNewUsers $ Seq.singleton otherUserId
+                                        mhLog LogAPI $ T.pack $ "handleNewChannel_: about to call handleNewUsers for " <> show otherUserId
+                                        handleNewUsers (Seq.singleton otherUserId) (return ())
                                         doAsyncWith Normal $
                                             return $ handleNewChannel_ False switch nc member
                                         return False

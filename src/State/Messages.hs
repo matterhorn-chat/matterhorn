@@ -258,7 +258,7 @@ addObtainedMessages cId reqCnt posts = do
                 let unknownUsers = Set.difference inputUserIds knownUserIds
                 if Set.null unknownUsers
                    then return ()
-                   else handleNewUsers $ Seq.fromList $ toList unknownUsers
+                   else handleNewUsers (Seq.fromList $ toList unknownUsers) (return ())
 
         addUnknownUsers users
 
