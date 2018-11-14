@@ -1190,7 +1190,6 @@ displaynameForUserId uId st
     | otherwise =
         usernameForUserId uId st
 
-
 userIdForUsername :: Text -> ChatState -> Maybe UserId
 userIdForUsername name st =
     fst <$> (findUserByUsername name $ st^.csUsers)
