@@ -40,7 +40,7 @@ import           Data.Semigroup ( Max(..) )
 import qualified Data.Text as T
 import           Lens.Micro.Platform ( (%~), makeLenses, ix )
 
-import           Network.Mattermost.Types ( UserId(..), User(..), idString )
+import           Network.Mattermost.Types ( UserId(..), User(..) )
 
 import           Types.Common
 
