@@ -1,6 +1,5 @@
 module State.Users
-  (
-    handleNewUsers
+  ( handleNewUsers
   , handleTypingUser
   , handleNewUserDirect
   )
@@ -24,7 +23,7 @@ import           State.Common
 handleNewUsers :: Seq UserId -> MH ()
 handleNewUsers newUserIds = doAsyncMM Preempt getUserInfo addNewUsers
     where getUserInfo session _ =
-              do nUsers  <- MM.mmGetUsersByIds newUserIds session
+              do nUsers <- MM.mmGetUsersByIds newUserIds session
                  let usrInfo u = userInfoFromUser u True
                      usrList = toList nUsers
                  return $ usrInfo <$> usrList
