@@ -55,6 +55,7 @@ import           Data.Char ( isAlphaNum )
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Foldable as F
 import           Data.Function ( on )
+import           Data.List ( nub )
 import           Data.Maybe ( fromJust )
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
@@ -167,6 +168,7 @@ refreshChannelsAndUsers = do
     session <- getSession
     myTId <- gets myTeamId
     me <- gets myUser
+    knownUsers <- gets allUserIds
     doAsyncWith Preempt $ do
       (chans, datas) <- runConcurrently $ (,)
                        <$> Concurrently (MM.mmGetChannelsForUser UserMe myTId session)
@@ -174,12 +176,13 @@ refreshChannelsAndUsers = do
 
       -- Collect all user IDs associated with DM channels so we can
       -- bulk-fetch their user records.
-      let uIdsToFetch = catMaybes $ flip map (F.toList chans) $ \chan ->
+      let dmUsers = catMaybes $ flip map (F.toList chans) $ \chan ->
               case chan^.channelTypeL of
                   Direct -> case userIdForDMChannel (userId me) (sanitizeUserText $ channelName chan) of
                         Nothing -> Nothing
                         Just otherUserId -> Just otherUserId
                   _ -> Nothing
+          uIdsToFetch = nub $ knownUsers <> dmUsers
 
           dataMap = HM.fromList $ toList $ (\d -> (channelMemberChannelId d, d)) <$> datas
           mkPair chan = (chan, fromJust $ HM.lookup (channelId chan) dataMap)
