@@ -203,7 +203,6 @@ initializeState cr myTeam me = do
   -- we don't know whether the server will give us a last-viewed preference.
   -- We first try to find a channel matching with the last selected channel ID,
   -- failing which we look for the Town Square channel by name.
-  -- This is not entirely correct since the Town Square channel can be renamed!
   userChans <- mmGetChannelsForUser UserMe myTId session
   let lastSelectedChans = Seq.filter isLastSelectedChannel userChans
       chans = if Seq.null lastSelectedChans
