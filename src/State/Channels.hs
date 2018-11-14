@@ -98,7 +98,7 @@ updateViewedChan cId = use csConnectionStatus >>= \case
           (\c () -> setLastViewedFor pId c)
     Disconnected ->
         -- Cannot update server; make no local updates to avoid getting
-        -- out-of-sync with the server. Assumes that this is a temporary
+        -- out of sync with the server. Assumes that this is a temporary
         -- break in connectivity and that after the connection is
         -- restored, the user's normal activities will update state as
         -- appropriate. If connectivity is permanently lost, managing
