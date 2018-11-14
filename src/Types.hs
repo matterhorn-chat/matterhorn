@@ -194,7 +194,6 @@ module Types
   , channelByName
   , userById
   , allUserIds
-  , allChannelNames
   , addNewUser
   , setUserIdSet
   , channelMentionCount
