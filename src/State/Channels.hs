@@ -464,10 +464,10 @@ removeChannelFromState cId = do
             csFocus %= Z.filterZipper ((/= cId) . channelListEntryChannelId)
 
 nextChannel :: MH ()
-nextChannel = setFocusWith (getNextNonDMChannel Z.right)
+nextChannel = setFocusWith Z.right
 
 prevChannel :: MH ()
-prevChannel = setFocusWith (getNextNonDMChannel Z.left)
+prevChannel = setFocusWith Z.left
 
 recentChannel :: MH ()
 recentChannel = do
@@ -561,23 +561,6 @@ getNextUnreadUserOrChannel st z =
         isFresh c = hasUnread st c && (c /= cur)
     in fromMaybe (Z.findRight (isFresh . channelListEntryChannelId) z)
                  (Z.maybeFindRight matches z)
-
--- | Select the next channel in the channel zipper that is not a DM
--- channel.
---
--- If the currently selected channel is a DM channel, do nothing because
--- we want to prevent zipper navigation away from direct channels
--- because we don't support navigating *back* to such channels using the
--- same navigation bindings.
-getNextNonDMChannel :: (Zipper a ChannelListEntry -> Zipper a ChannelListEntry)
-                    -> (Zipper a ChannelListEntry -> Zipper a ChannelListEntry)
-getNextNonDMChannel shift z =
-    case Z.unsafeFocus z of
-        CLUser {} -> z
-        CLChannel {} -> go (shift z)
-  where go z'
-          | not (entryIsDMEntry $ Z.unsafeFocus z') = z'
-          | otherwise = go (shift z')
 
 leaveCurrentChannel :: MH ()
 leaveCurrentChannel = use csCurrentChannelId >>= leaveChannel
