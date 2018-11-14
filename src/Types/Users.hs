@@ -21,7 +21,6 @@ module Types.Users
   , findUserByNickname
   , noUsers, addUser, allUsers
   , modifyUserById
-  , getDMChannelName
   , userDeleted
   , TypingUsers
   , noTypingUsers
@@ -195,9 +194,3 @@ trimUserSigil n
 -- endomorphism operation on it, then put it back into the collection.
 modifyUserById :: UserId -> (UserInfo -> UserInfo) -> Users -> Users
 modifyUserById uId f = ofUsers.ix(uId) %~ f
-
-getDMChannelName :: UserId -> UserId -> Text
-getDMChannelName me you = cname
-  where
-  [loUser, hiUser] = sort $ idString <$> [ you, me ]
-  cname = loUser <> "__" <> hiUser
