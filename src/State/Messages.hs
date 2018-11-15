@@ -539,22 +539,23 @@ fetchVisibleIfNeeded = do
 
 asyncFetchAttachments :: Post -> MH ()
 asyncFetchAttachments p = do
-  let cId = (p^.postChannelIdL)
-      pId = (p^.postIdL)
-  session <- getSession
-  host    <- use (csResources.crConn.cdHostnameL)
-  F.forM_ (p^.postFileIdsL) $ \fId -> doAsyncWith Normal $ do
-    info <- MM.mmGetMetadataForFile fId session
-    let scheme = "https://"
-        attUrl = scheme <> host <> urlForFile fId
-        attachment = mkAttachment (fileInfoName info) attUrl fId
-        addIfMissing a as =
-            if isNothing $ Seq.elemIndexL a as
-            then a Seq.<| as
-            else as
-        addAttachment m
-          | m^.mMessageId == Just (MessagePostId pId) =
-            m & mAttachments %~ (addIfMissing attachment)
-          | otherwise              = m
-    return $
-      csChannel(cId).ccContents.cdMessages.traversed %= addAttachment
+    let cId = p^.postChannelIdL
+        pId = p^.postIdL
+    session <- getSession
+    host <- use (csResources.crConn.cdHostnameL)
+    F.forM_ (p^.postFileIdsL) $ \fId -> doAsyncWith Normal $ do
+        info <- MM.mmGetMetadataForFile fId session
+        let scheme = "https://"
+            attUrl = scheme <> host <> urlForFile fId
+            attachment = mkAttachment (fileInfoName info) attUrl fId
+            addIfMissing a as =
+                if isNothing $ Seq.elemIndexL a as
+                then a Seq.<| as
+                else as
+            addAttachment m
+                | m^.mMessageId == Just (MessagePostId pId) =
+                    m & mAttachments %~ (addIfMissing attachment)
+                | otherwise =
+                    m
+        return $
+            csChannel(cId).ccContents.cdMessages.traversed %= addAttachment
