@@ -510,35 +510,32 @@ asyncFetchMoreMessages = do
 fetchVisibleIfNeeded :: MH ()
 fetchVisibleIfNeeded = do
     sts <- use csConnectionStatus
-    case sts of
-      Connected -> do
-         cId <- use csCurrentChannelId
-         withChannel cId $ \chan ->
-             let msgs = chan^.ccContents.cdMessages.to reverseMessages
-                 (numRemaining, gapInDisplayable, _, rel'pId, overlap) =
-                     foldl gapTrail (numScrollbackPosts, False, Nothing, Nothing, 2) msgs
-                 gapTrail a@(_,  True, _, _, _) _ = a
-                 gapTrail a@(0,     _, _, _, _) _ = a
-                 gapTrail   (a, False, b, c, d) m | isGap m = (a, True, b, c, d)
-                 gapTrail (remCnt, _, prev'pId, prev''pId, ovl) msg =
-                     (remCnt - 1, False, msg^.mMessageId <|> prev'pId, prev'pId <|> prev''pId,
-                      ovl + if not (isPostMessage msg) then 1 else 0)
-                 numToReq = numRemaining + overlap
-                 query = MM.defaultPostQuery
-                         { MM.postQueryPage    = Just 0
-                         , MM.postQueryPerPage = Just numToReq
-                         }
-                 finalQuery = case rel'pId of
-                                Just (MessagePostId pid) -> query { MM.postQueryBefore = Just pid }
-                                _ -> query
-                 op = \s _ c -> MM.mmGetPostsForChannel c finalQuery s
-             in when ((not $ chan^.ccContents.cdFetchPending) && gapInDisplayable) $ do
-                       csChannel(cId).ccContents.cdFetchPending .= True
-                       doAsyncChannelMM Preempt cId op
-                           (\c p -> do addObtainedMessages c (-numToReq) p >>= postProcessMessageAdd
-                                       csChannel(c).ccContents.cdFetchPending .= False)
-
-      _ -> return ()
+    when (sts == Connected) $ do
+        cId <- use csCurrentChannelId
+        withChannel cId $ \chan ->
+            let msgs = chan^.ccContents.cdMessages.to reverseMessages
+                (numRemaining, gapInDisplayable, _, rel'pId, overlap) =
+                    foldl gapTrail (numScrollbackPosts, False, Nothing, Nothing, 2) msgs
+                gapTrail a@(_,  True, _, _, _) _ = a
+                gapTrail a@(0,     _, _, _, _) _ = a
+                gapTrail   (a, False, b, c, d) m | isGap m = (a, True, b, c, d)
+                gapTrail (remCnt, _, prev'pId, prev''pId, ovl) msg =
+                    (remCnt - 1, False, msg^.mMessageId <|> prev'pId, prev'pId <|> prev''pId,
+                     ovl + if not (isPostMessage msg) then 1 else 0)
+                numToReq = numRemaining + overlap
+                query = MM.defaultPostQuery
+                        { MM.postQueryPage    = Just 0
+                        , MM.postQueryPerPage = Just numToReq
+                        }
+                finalQuery = case rel'pId of
+                               Just (MessagePostId pid) -> query { MM.postQueryBefore = Just pid }
+                               _ -> query
+                op = \s _ c -> MM.mmGetPostsForChannel c finalQuery s
+            in when ((not $ chan^.ccContents.cdFetchPending) && gapInDisplayable) $ do
+                      csChannel(cId).ccContents.cdFetchPending .= True
+                      doAsyncChannelMM Preempt cId op
+                          (\c p -> do addObtainedMessages c (-numToReq) p >>= postProcessMessageAdd
+                                      csChannel(c).ccContents.cdFetchPending .= False)
 
 asyncFetchAttachments :: Post -> MH ()
 asyncFetchAttachments p = do
