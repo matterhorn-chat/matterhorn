@@ -23,11 +23,9 @@ import           State.Common
 
 handleNewUsers :: Seq UserId -> MH () -> MH ()
 handleNewUsers newUserIds after = do
-    logger <- mhGetIOLogger
     doAsyncMM Preempt (getUserInfo logger) addNewUsers
     where getUserInfo logger session _ =
-              do logger LogAPI $ T.pack $ "handleNewUsers: " <> show newUserIds
-                 nUsers <- MM.mmGetUsersByIds newUserIds session
+              do nUsers <- MM.mmGetUsersByIds newUserIds session
                  let usrInfo u = userInfoFromUser u True
                      usrList = toList nUsers
                  return $ usrInfo <$> usrList
