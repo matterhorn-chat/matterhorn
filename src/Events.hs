@@ -46,14 +46,20 @@ import           Events.ViewMessage
 
 
 onEvent :: ChatState -> BrickEvent Name MHEvent -> EventM Name (Next ChatState)
-onEvent st ev = runMHEvent st (onEv >> fetchVisibleIfNeeded)
-    where onEv = do case ev of
-                      (AppEvent e) -> onAppEvent e
-                      (VtyEvent (Vty.EvKey (Vty.KChar 'l') [Vty.MCtrl])) -> do
-                           vty <- mh getVtyHandle
-                           liftIO $ Vty.refresh vty
-                      (VtyEvent e) -> onVtyEvent e
-                      _ -> return ()
+onEvent st ev = runMHEvent st $ do
+    onBrickEvent ev
+    fetchVisibleIfNeeded
+
+onBrickEvent :: BrickEvent Name MHEvent -> MH ()
+onBrickEvent (AppEvent e) =
+    onAppEvent e
+onBrickEvent (VtyEvent (Vty.EvKey (Vty.KChar 'l') [Vty.MCtrl])) = do
+    vty <- mh getVtyHandle
+    liftIO $ Vty.refresh vty
+onBrickEvent (VtyEvent e) =
+    onVtyEvent e
+onBrickEvent _ =
+    return ()
 
 onAppEvent :: MHEvent -> MH ()
 onAppEvent RefreshWebsocketEvent = connectWebsockets
