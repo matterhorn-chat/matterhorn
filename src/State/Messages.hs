@@ -468,8 +468,8 @@ runNotifyCommand post mentioned = do
 maybePostUsername :: ChatState -> Post -> T.Text
 maybePostUsername st p =
     fromMaybe T.empty $ do
-    uId <- postUserId p
-    usernameForUserId uId st
+        uId <- postUserId p
+        usernameForUserId uId st
 
 -- | Fetches additional message history for the current channel.  This
 -- is generally called when in ChannelScroll mode, in which state the
