@@ -38,7 +38,7 @@ handleTypingUser :: UserId -> ChannelId -> MH ()
 handleTypingUser uId cId = do
   config <- use (csResources.crConfiguration)
   when (configShowTypingIndicator config) $ do
-    ts <- liftIO getCurrentTime -- get time now
+    ts <- liftIO getCurrentTime
     csChannels %= modifyChannelById cId (addChannelTypingUser uId ts)
 
 handleNewUserDirect :: User -> MH ()
