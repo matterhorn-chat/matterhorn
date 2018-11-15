@@ -7,7 +7,6 @@ module State.Messages
   , editMessage
   , deleteMessage
   , addNewPostedMessage
-  , addMessageToState
   , addObtainedMessages
   , asyncFetchMoreMessages
   , fetchVisibleIfNeeded
