@@ -1,7 +1,6 @@
 module State.Users
   ( handleNewUsers
   , handleTypingUser
-  , handleNewUserDirect
   )
 where
 
@@ -40,8 +39,3 @@ handleTypingUser uId cId = do
   when (configShowTypingIndicator config) $ do
     ts <- liftIO getCurrentTime
     csChannels %= modifyChannelById cId (addChannelTypingUser uId ts)
-
-handleNewUserDirect :: User -> MH ()
-handleNewUserDirect newUser = do
-    let usrInfo = userInfoFromUser newUser True
-    addNewUser usrInfo
