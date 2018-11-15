@@ -163,8 +163,6 @@ handleWSEvent we = do
             | Just p <- wepPost (weData we) ->
                 when (wepTeamId (weData we) == Just myTId ||
                       wepTeamId (weData we) == Nothing) $ do
-                    -- If the message is a header change, also update
-                    -- the channel metadata.
                     let wasMentioned = case wepMentions (weData we) of
                           Just lst -> myId `Set.member` lst
                           _ -> False
