@@ -37,7 +37,7 @@ module Types
   , BackgroundInfo(..)
   , RequestChan
 
-  , refreshChannelZipper
+  , updateSidebar
   , getChannelIdsInOrder
   , mkChannelZipperList
   , ChannelListGroup(..)
@@ -1292,8 +1292,8 @@ channelMentionCount :: ChannelId -> ChatState -> Int
 channelMentionCount cId st =
     maybe 0 id (st^?csChannel(cId).ccInfo.cdMentionCount)
 
-refreshChannelZipper :: MH ()
-refreshChannelZipper = do
+updateSidebar :: MH ()
+updateSidebar = do
     cs <- use csChannels
     us <- use csUsers
     prefs <- use (csResources.crUserPreferences)

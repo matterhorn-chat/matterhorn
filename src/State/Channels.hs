@@ -300,7 +300,7 @@ handleNewChannel_ permitPostpone switch nc member = do
 
             when register $ do
                 csChannels %= addChannel (getId nc) cChannel
-                refreshChannelZipper
+                updateSidebar
 
                 -- Finally, set our focus to the newly created channel
                 -- if the caller requested a change of channel. Also
@@ -354,7 +354,7 @@ setFocus cId = do
             False -> return False
 
     when (not abort) $ do
-        refreshChannelZipper
+        updateSidebar
         setFocusWith (Z.findRight ((== cId) . channelListEntryChannelId))
 
 setFocusWith :: (Zipper ChannelListGroup ChannelListEntry
@@ -461,7 +461,7 @@ applyPreferenceChange pref = do
           updateMessageFlag (flaggedPostId f) (flaggedPostStatus f)
 
       | Just d <- preferenceToDirectChannelShowStatus pref -> do
-          refreshChannelZipper
+          updateSidebar
 
           cs <- use csChannels
 
