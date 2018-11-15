@@ -738,7 +738,7 @@ data Mode =
     deriving (Eq)
 
 -- | We're either connected or we're not.
-data ConnectionStatus = Connected | Disconnected
+data ConnectionStatus = Connected | Disconnected deriving (Eq)
 
 -- | This is the giant bundle of fields that represents the current
 -- state of our application at any given time. Some of this should be
