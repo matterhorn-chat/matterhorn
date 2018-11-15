@@ -199,7 +199,6 @@ module Types
   , allUserIds
   , addNewUser
   , setUserIdSet
-  , channelMentionCount
   , useNickname
   , displaynameForUserId
   , raiseInternalEvent
@@ -1287,10 +1286,6 @@ setUserIdSet :: Seq UserId -> MH ()
 setUserIdSet ids = do
     userSet <- use (csResources.crUserIdSet)
     St.liftIO $ STM.atomically $ STM.writeTVar userSet ids
-
-channelMentionCount :: ChannelId -> ChatState -> Int
-channelMentionCount cId st =
-    maybe 0 id (st^?csChannel(cId).ccInfo.cdMentionCount)
 
 updateSidebar :: MH ()
 updateSidebar = do
