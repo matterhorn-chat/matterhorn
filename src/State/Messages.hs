@@ -138,8 +138,6 @@ deleteMessage new = do
         chan = csChannel (new^.postChannelIdL)
     chan.ccContents.cdMessages.traversed.filtered isDeletedMessage %= (& mDeleted .~ True)
     chan %= adjustUpdated new
-    cId <- use csCurrentChannelId
-    when (postChannelId new == cId) updateViewed
 
 addNewPostedMessage :: PostToAdd -> MH ()
 addNewPostedMessage p =
