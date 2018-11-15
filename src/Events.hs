@@ -163,9 +163,7 @@ handleWSEvent we = do
             | Just p <- wepPost (weData we) ->
                 when (wepTeamId (weData we) == Just myTId ||
                       wepTeamId (weData we) == Nothing) $ do
-                    let wasMentioned = case wepMentions (weData we) of
-                          Just lst -> myId `Set.member` lst
-                          _ -> False
+                    let wasMentioned = maybe False (Set.member myId) $ wepMentions (weData we)
                     addNewPostedMessage $ RecentPost p wasMentioned
             | otherwise -> return ()
 
