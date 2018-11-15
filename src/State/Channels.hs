@@ -330,7 +330,32 @@ updateChannelInfo cid new member = do
     csChannel(cid).ccInfo %= channelInfoFromChannelWithData new member
 
 setFocus :: ChannelId -> MH ()
-setFocus cId = setFocusWith (Z.findRight ((== cId) . channelListEntryChannelId))
+setFocus cId = do
+    -- If the channel is a DM channel, set the preference to show it.
+    mChan <- preuse $ csChannel cId
+    session <- getSession
+    me <- gets myUser
+    prefs <- use (csResources.crUserPreferences)
+
+    abort <- case mChan of
+        Nothing -> return True
+        Just ch -> case ch^.ccInfo.cdType == Direct of
+            True -> do
+                let Just uId = ch^.ccInfo.cdDMUserId
+                case dmChannelShowPreference prefs uId of
+                    False -> do
+                        let pref = showDirectChannelPref (me^.userIdL) uId True
+                        csLastJoinRequest .= Just (ch^.ccInfo.cdChannelId)
+                        doAsyncWith Preempt $ do
+                            MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
+                            return (return ())
+                        return True
+                    True -> return False
+            False -> return False
+
+    when (not abort) $ do
+        refreshChannelZipper
+        setFocusWith (Z.findRight ((== cId) . channelListEntryChannelId))
 
 setFocusWith :: (Zipper ChannelListGroup ChannelListEntry
               -> Zipper ChannelListGroup ChannelListEntry) -> MH ()
@@ -418,6 +443,15 @@ showGroupChannelPref cId uId =
                , preferenceUserId = uId
                }
 
+showDirectChannelPref :: UserId -> UserId -> Bool -> Preference
+showDirectChannelPref myId otherId s =
+    Preference { preferenceCategory = PreferenceCategoryDirectChannelShow
+               , preferenceValue = if s then PreferenceValue "true"
+                                        else PreferenceValue "false"
+               , preferenceName = PreferenceName $ idString otherId
+               , preferenceUserId = myId
+               }
+
 applyPreferenceChange :: Preference -> MH ()
 applyPreferenceChange pref = do
     -- always update our user preferences accordingly
@@ -425,6 +459,24 @@ applyPreferenceChange pref = do
     if
       | Just f <- preferenceToFlaggedPost pref -> do
           updateMessageFlag (flaggedPostId f) (flaggedPostStatus f)
+
+      | Just d <- preferenceToDirectChannelShowStatus pref -> do
+          refreshChannelZipper
+
+          cs <- use csChannels
+
+          -- We need to check on whether this preference was to show a
+          -- channel and, if so, whether it was the one we attempted to
+          -- switch to (thus triggering the preference change). If so,
+          -- we need to switch to it now.
+          when (directChannelShowValue d) $ do
+              case getDmChannelFor (directChannelShowUserId d) cs of
+                  -- This shouldn't happen.
+                  Nothing -> return ()
+                  Just dmcId -> do
+                      wasLast <- checkLastJoinRequest dmcId
+                      when wasLast $ setFocus dmcId
+
       | Just g <- preferenceToGroupChannelPreference pref -> do
           let cId = groupChannelId g
           mChan <- preuse $ csChannel cId

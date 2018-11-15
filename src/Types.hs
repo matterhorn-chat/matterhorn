@@ -131,7 +131,9 @@ module Types
   , userPrefShowJoinLeave
   , userPrefFlaggedPostList
   , userPrefGroupChannelPrefs
+  , userPrefDirectChannelPrefs
   , userPrefTeammateNameDisplayMode
+  , dmChannelShowPreference
 
   , defaultUserPreferences
   , setUserPreferences
@@ -178,6 +180,7 @@ module Types
   , withChannelOrDefault
   , userList
   , hasUnread
+  , hasUnread'
   , isMine
   , setUserStatus
   , myUser
@@ -372,10 +375,29 @@ data BackgroundInfo =
     -- thread's work queue length.
     deriving (Eq, Show)
 
-mkChannelZipperList :: UTCTime -> ClientChannels -> Users -> [(ChannelListGroup, [ChannelListEntry])]
-mkChannelZipperList now cs us =
+data UserPreferences =
+    UserPreferences { _userPrefShowJoinLeave     :: Bool
+                    , _userPrefFlaggedPostList   :: Seq FlaggedPost
+                    , _userPrefGroupChannelPrefs :: HashMap ChannelId Bool
+                    , _userPrefDirectChannelPrefs :: HashMap UserId Bool
+                    , _userPrefTeammateNameDisplayMode :: Maybe TeammateNameDisplayMode
+                    }
+
+hasUnread :: ChatState -> ChannelId -> Bool
+hasUnread st cId = fromMaybe False $
+    hasUnread' <$> findChannelById cId (_csChannels st)
+
+hasUnread' :: ClientChannel -> Bool
+hasUnread' chan = fromMaybe False $ do
+    let info = _ccInfo chan
+    lastViewTime <- _cdViewed info
+    return $ ((_cdUpdated info) > lastViewTime) ||
+             (isJust $ _cdEditedMessageThreshold info)
+
+mkChannelZipperList :: UTCTime -> UserPreferences -> ClientChannels -> Users -> [(ChannelListGroup, [ChannelListEntry])]
+mkChannelZipperList now prefs cs us =
     [ (ChannelGroupPublicChannels, getChannelIdsInOrder cs)
-    , (ChannelGroupDirectMessages, getDMChannelIdsInOrder now us cs)
+    , (ChannelGroupDirectMessages, getDMChannelIdsInOrder now prefs us cs)
     ]
 
 getChannelIdsInOrder :: ClientChannels -> [ChannelListEntry]
@@ -385,8 +407,8 @@ getChannelIdsInOrder cs =
        sortBy (comparing ((^.ccInfo.cdName) . snd)) $
        filteredChannels matches cs
 
-getDMChannelIdsInOrder :: UTCTime -> Users -> ClientChannels -> [ChannelListEntry]
-getDMChannelIdsInOrder now us cs =
+getDMChannelIdsInOrder :: UTCTime -> UserPreferences -> Users -> ClientChannels -> [ChannelListEntry]
+getDMChannelIdsInOrder now prefs us cs =
     let mapping = allDmChannelMappings cs
         mappingWithUserInfo = catMaybes $ getInfo <$> mapping
         getInfo (uId, cId) = do
@@ -395,26 +417,37 @@ getDMChannelIdsInOrder now us cs =
             case u^.uiDeleted of
                 True -> Nothing
                 False ->
-                    if dmChannelShouldAppear now c
+                    if dmChannelShouldAppear now prefs c
                     then return ((uId, cId), u)
                     else Nothing
         sorted = sortBy (comparing (_uiName . snd)) mappingWithUserInfo
     in (\((uId, cId), _) -> CLUser cId uId) <$> sorted
 
-dmChannelShouldAppear :: UTCTime -> ClientChannel -> Bool
-dmChannelShouldAppear now c =
-    let oneWeekAgo = nominalDay * (-7)
+-- Always show a DM channel if it has unread activity.
+--
+-- If it has no unread activity and if the preferences explicitly say to
+-- hide it, hide it.
+--
+-- Otherwise, only show it if at least one of the other conditions are
+-- met (see 'or' below).
+dmChannelShouldAppear :: UTCTime -> UserPreferences -> ClientChannel -> Bool
+dmChannelShouldAppear now prefs c =
+    let oneWeekAgo = nominalDay * (-14)
         cutoff = ServerTime $ addUTCTime oneWeekAgo now
-        viewed = c^.ccInfo.cdViewed
         updated = c^.ccInfo.cdUpdated
-    in or [
-          -- The channel was updated in the last week
-            updated >= cutoff
-          -- The channel was viewed in the last week
-          , maybe False (>= cutoff) viewed
-          -- The channel was updated since it was last viewed
-          , maybe False (updated >) viewed
-          ]
+        Just uId = c^.ccInfo.cdDMUserId
+    in if hasUnread' c
+       then True
+       else if not $ dmChannelShowPreference prefs uId
+            then False
+            else or [
+                    -- The channel was updated in the last week
+                      updated >= cutoff
+                    ]
+
+dmChannelShowPreference :: UserPreferences -> UserId -> Bool
+dmChannelShowPreference ps uId =
+    fromMaybe True $ HM.lookup uId (_userPrefDirectChannelPrefs ps)
 
 -- * Internal Names and References
 
@@ -461,8 +494,6 @@ data ConnectionInfo =
                    , _ciUsername :: Text
                    , _ciPassword :: Text
                    }
-
-makeLenses ''ConnectionInfo
 
 -- | We want to continue referring to posts by their IDs, but we don't
 -- want to have to synthesize new valid IDs for messages from the client
@@ -523,18 +554,12 @@ data ProgramOutput =
                   , programExitCode :: ExitCode
                   }
 
-data UserPreferences =
-    UserPreferences { _userPrefShowJoinLeave     :: Bool
-                    , _userPrefFlaggedPostList   :: Seq FlaggedPost
-                    , _userPrefGroupChannelPrefs :: HashMap ChannelId Bool
-                    , _userPrefTeammateNameDisplayMode :: Maybe TeammateNameDisplayMode
-                    }
-
 defaultUserPreferences :: UserPreferences
 defaultUserPreferences =
     UserPreferences { _userPrefShowJoinLeave     = True
                     , _userPrefFlaggedPostList   = mempty
                     , _userPrefGroupChannelPrefs = mempty
+                    , _userPrefDirectChannelPrefs = mempty
                     , _userPrefTeammateNameDisplayMode = Nothing
                     }
 
@@ -544,6 +569,13 @@ setUserPreferences = flip (F.foldr go)
             | Just fp <- preferenceToFlaggedPost p =
               u { _userPrefFlaggedPostList =
                   _userPrefFlaggedPostList u Seq.|> fp
+                }
+            | Just gp <- preferenceToDirectChannelShowStatus p =
+              u { _userPrefDirectChannelPrefs =
+                  HM.insert
+                    (directChannelShowUserId gp)
+                    (directChannelShowValue gp)
+                    (_userPrefDirectChannelPrefs u)
                 }
             | Just gp <- preferenceToGroupChannelPreference p =
               u { _userPrefGroupChannelPrefs =
@@ -1090,6 +1122,7 @@ makeLenses ''PostListOverlayState
 makeLenses ''UserListOverlayState
 makeLenses ''ChannelSelectState
 makeLenses ''UserPreferences
+makeLenses ''ConnectionInfo
 
 getSession :: MH Session
 getSession = use (csResources.crSession)
@@ -1263,8 +1296,9 @@ refreshChannelZipper :: MH ()
 refreshChannelZipper = do
     cs <- use csChannels
     us <- use csUsers
+    prefs <- use (csResources.crUserPreferences)
     now <- liftIO getCurrentTime
-    csFocus %= updateList (mkChannelZipperList now cs us)
+    csFocus %= updateList (mkChannelZipperList now prefs cs us)
 
 clientPostToMessage :: ClientPost -> Message
 clientPostToMessage cp =
@@ -1317,13 +1351,6 @@ commandName :: Cmd -> Text
 commandName (Cmd name _ _ _ ) = name
 
 -- *  Channel Updates and Notifications
-
-hasUnread :: ChatState -> ChannelId -> Bool
-hasUnread st cId = maybe False id $ do
-    chan <- findChannelById cId (st^.csChannels)
-    lastViewTime <- chan^.ccInfo.cdViewed
-    return $ (chan^.ccInfo.cdUpdated > lastViewTime) ||
-             (isJust $ chan^.ccInfo.cdEditedMessageThreshold)
 
 userList :: ChatState -> [UserInfo]
 userList st = filter showUser $ allUsers (st^.csUsers)
