@@ -87,13 +87,13 @@ mkChannelEntryData st e =
     ChannelListEntryData sigil name unread mentions recent current status
     where
         cId = channelListEntryChannelId e
-        unread = hasUnread st cId
+        Just chan = findChannelById cId (st^.csChannels)
+        unread = hasUnread' chan
         recent = isRecentChannel st cId
         current = isCurrentChannel st cId
         (name, normalSigil, status) = case e of
             CLChannel _ ->
-                let Just chan = findChannelById cId (st^.csChannels)
-                in (chan^.ccInfo.cdName, normalChannelSigil, Nothing)
+                (chan^.ccInfo.cdName, normalChannelSigil, Nothing)
             CLUser _ uId ->
                 let Just u = userById uId st
                     uname = if useNickname st
@@ -104,7 +104,7 @@ mkChannelEntryData st e =
             Nothing      -> normalSigil
             Just ("", _) -> normalSigil
             _            -> "»"
-        mentions = channelMentionCount cId st
+        mentions = chan^.ccInfo.cdMentionCount
 
 -- | Render an individual Channel List entry (in Normal mode) with
 -- appropriate visual decorations.
