@@ -9,7 +9,6 @@ import           Prelude ()
 import           Prelude.MH
 
 import           Data.Time ( getCurrentTime )
-import qualified Data.Text as T
 import           Lens.Micro.Platform
 
 import qualified Network.Mattermost.Endpoints as MM
@@ -23,8 +22,8 @@ import           State.Common
 
 handleNewUsers :: Seq UserId -> MH () -> MH ()
 handleNewUsers newUserIds after = do
-    doAsyncMM Preempt (getUserInfo logger) addNewUsers
-    where getUserInfo logger session _ =
+    doAsyncMM Preempt getUserInfo addNewUsers
+    where getUserInfo session _ =
               do nUsers <- MM.mmGetUsersByIds newUserIds session
                  let usrInfo u = userInfoFromUser u True
                      usrList = toList nUsers
