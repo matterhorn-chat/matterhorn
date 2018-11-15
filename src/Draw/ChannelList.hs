@@ -24,19 +24,14 @@ import           Prelude.MH
 import           Brick
 import           Brick.Widgets.Border
 import           Brick.Widgets.Center (hCenter)
-import qualified Data.Sequence as Seq
-import qualified Data.Foldable as F
-import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
-import           Lens.Micro.Platform (Getting, at, non)
+import           Lens.Micro.Platform (at, non)
 
 import           Draw.Util
 import           State.Channels
 import           Themes
 import           Types
 import qualified Zipper as Z
-
-type GroupName = Text
 
 -- | Internal record describing each channel entry and its associated
 -- attributes.  This is the object passed to the rendering function so
@@ -51,10 +46,6 @@ data ChannelListEntryData =
                          , entryUserStatus  :: Maybe UserStatus
                          }
 
--- | Similar to the ChannelListEntryData, but also holds information
--- about the matching channel select specification.
-data SelectedChannelListEntry = SCLE ChannelListEntryData ChannelSelectMatch
-
 renderChannelList :: ChatState -> Widget Name
 renderChannelList st =
     viewport ChannelList Vertical $
@@ -68,7 +59,7 @@ renderChannelList st =
                    else renderChannelListGroup st (renderChannelSelectListEntry (Z.focus zipper)) <$>
                         Z.toList zipper
             _ ->
-                renderChannelListGroup st (\st e -> renderChannelListEntry $ mkChannelEntryData st e) <$>
+                renderChannelListGroup st (\s e -> renderChannelListEntry $ mkChannelEntryData s e) <$>
                     Z.toList (st^.csFocus)
 
 renderChannelListGroupHeading :: ChannelListGroup -> Widget Name
@@ -145,7 +136,7 @@ renderChannelListEntry entry =
 -- entry if it doesn't match.
 renderChannelSelectListEntry :: Maybe ChannelSelectMatch -> ChatState -> ChannelSelectMatch -> Widget Name
 renderChannelSelectListEntry curMatch st match =
-    let ChannelSelectMatch preMatch inMatch postMatch fullName entry = match
+    let ChannelSelectMatch preMatch inMatch postMatch _ entry = match
         maybeSelect = if (Just entry) == (matchEntry <$> curMatch)
                       then visible . withDefAttr currentChannelNameAttr
                       else id
