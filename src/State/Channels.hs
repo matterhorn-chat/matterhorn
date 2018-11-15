@@ -307,14 +307,21 @@ handleNewChannel_ permitPostpone switch nc member = do
                 -- consider the last join request state field in case
                 -- this is an asynchronous channel addition triggered by
                 -- a /join.
-                lastReq <- use csLastJoinRequest
-                wasLast <- case lastReq of
-                    Just cId | cId == getId nc -> do
-                        csLastJoinRequest .= Nothing
-                        return True
-                    _ -> return False
+                wasLast <- checkLastJoinRequest (getId nc)
 
                 when (switch || wasLast) $ setFocus (getId nc)
+
+-- | Check to see whether the specified channel has been queued up to
+-- be switched to now that the channel is registered in the state. If
+-- so, return True and clear the state. Otherwise return False.
+checkLastJoinRequest :: ChannelId -> MH Bool
+checkLastJoinRequest chanId = do
+    lastReq <- use csLastJoinRequest
+    case lastReq of
+        Just cId | cId == chanId -> do
+            csLastJoinRequest .= Nothing
+            return True
+        _ -> return False
 
 -- | Update the indicated Channel entry with the new data retrieved from
 -- the Mattermost server. Also update the channel name if it changed.
