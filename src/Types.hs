@@ -431,8 +431,8 @@ getDMChannelIdsInOrder now prefs us cs =
 -- met (see 'or' below).
 dmChannelShouldAppear :: UTCTime -> UserPreferences -> ClientChannel -> Bool
 dmChannelShouldAppear now prefs c =
-    let oneWeekAgo = nominalDay * (-14)
-        cutoff = ServerTime $ addUTCTime oneWeekAgo now
+    let weeksAgo n = nominalDay * (-1 * n)
+        cutoff = ServerTime $ addUTCTime (weeksAgo 1) now
         updated = c^.ccInfo.cdUpdated
         Just uId = c^.ccInfo.cdDMUserId
     in if hasUnread' c
@@ -440,7 +440,7 @@ dmChannelShouldAppear now prefs c =
        else if not $ dmChannelShowPreference prefs uId
             then False
             else or [
-                    -- The channel was updated in the last week
+                    -- The channel was updated recently enough
                       updated >= cutoff
                     ]
 
