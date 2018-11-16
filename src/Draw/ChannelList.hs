@@ -27,6 +27,8 @@ import           Brick.Widgets.Center (hCenter)
 import qualified Data.Text as T
 import           Lens.Micro.Platform (at, non)
 
+import qualified Network.Mattermost.Types as MM
+
 import           Draw.Util
 import           State.Channels
 import           Themes
@@ -84,25 +86,30 @@ mkChannelEntryData :: ChatState
                    -> ChannelListEntry
                    -> ChannelListEntryData
 mkChannelEntryData st e =
-    ChannelListEntryData sigil name unread mentions recent current status
+    ChannelListEntryData sigilWithSpace name unread mentions recent current status
     where
         cId = channelListEntryChannelId e
         Just chan = findChannelById cId (st^.csChannels)
         unread = hasUnread' chan
         recent = isRecentChannel st cId
         current = isCurrentChannel st cId
-        (name, normalSigil, status) = case e of
+        (name, normalSigil, addSpace, status) = case e of
             CLChannel _ ->
-                (chan^.ccInfo.cdName, normalChannelSigil, Nothing)
+                let (useSigil, space) = case chan^.ccInfo.cdType of
+                        MM.Ordinary -> (Just normalChannelSigil, False)
+                        MM.Group    -> (Just " ", True)
+                        _           -> (Nothing, False)
+                in (chan^.ccInfo.cdName, useSigil, space, Nothing)
             CLUser _ uId ->
                 let Just u = userById uId st
                     uname = if useNickname st
                             then u^.uiNickName.non (u^.uiName)
                             else u^.uiName
-                in (uname, T.cons (userSigilFromInfo u) " ", Just $ u^.uiStatus)
+                in (uname, Just $ T.singleton $ userSigilFromInfo u, True, Just $ u^.uiStatus)
+        sigilWithSpace = sigil <> if addSpace then " " else ""
         sigil = case st^.csEditState.cedLastChannelInput.at cId of
-            Nothing      -> normalSigil
-            Just ("", _) -> normalSigil
+            Nothing      -> fromMaybe "" normalSigil
+            Just ("", _) -> fromMaybe "" normalSigil
             _            -> "»"
         mentions = chan^.ccInfo.cdMentionCount
 

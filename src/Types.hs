@@ -401,7 +401,7 @@ mkChannelZipperList :: UTCTime
                     -> [(ChannelListGroup, [ChannelListEntry])]
 mkChannelZipperList now cconfig prefs cs us =
     [ (ChannelGroupPublicChannels, getNonDMChannelIdsInOrder cs)
-    , (ChannelGroupDirectMessages, getDMChannelIdsInOrder now cconfig prefs us cs)
+    , (ChannelGroupDirectMessages, getDMChannelsInOrder now cconfig prefs us cs)
     ]
 
 getNonDMChannelIdsInOrder :: ClientChannels -> [ChannelListEntry]
@@ -410,6 +410,19 @@ getNonDMChannelIdsInOrder cs =
     in fmap (CLChannel . fst) $
        sortBy (comparing ((^.ccInfo.cdName) . snd)) $
        filteredChannels matches cs
+
+getDMChannelsInOrder :: UTCTime
+                     -> Maybe ClientConfig
+                     -> UserPreferences
+                     -> Users
+                     -> ClientChannels
+                     -> [ChannelListEntry]
+getDMChannelsInOrder now cconfig prefs us cs =
+    let oneOnOneDmChans = getDMChannels now cconfig prefs us cs
+        groupChans = getGroupDMChannels cs
+        allDmChans = groupChans <> oneOnOneDmChans
+        sorted = sortBy (comparing fst) allDmChans
+    in snd <$> sorted
 
 useNickname' :: Maybe ClientConfig -> UserPreferences -> Bool
 useNickname' clientConfig prefs =
@@ -427,13 +440,20 @@ displayNameForUser u clientConfig prefs
     | otherwise =
         u^.uiName
 
-getDMChannelIdsInOrder :: UTCTime
-                       -> Maybe ClientConfig
-                       -> UserPreferences
-                       -> Users
-                       -> ClientChannels
-                       -> [ChannelListEntry]
-getDMChannelIdsInOrder now cconfig prefs us cs =
+getGroupDMChannels :: ClientChannels
+                   -> [(T.Text, ChannelListEntry)]
+getGroupDMChannels cs =
+    let matches (_, info) = info^.ccInfo.cdType == Group
+    in fmap (\(cId, ch) -> (ch^.ccInfo.cdName, CLChannel cId)) $
+       filteredChannels matches cs
+
+getDMChannels :: UTCTime
+              -> Maybe ClientConfig
+              -> UserPreferences
+              -> Users
+              -> ClientChannels
+              -> [(T.Text, ChannelListEntry)]
+getDMChannels now cconfig prefs us cs =
     let mapping = allDmChannelMappings cs
         mappingWithUserInfo = catMaybes $ getInfo <$> mapping
         getInfo (uId, cId) = do
@@ -443,10 +463,9 @@ getDMChannelIdsInOrder now cconfig prefs us cs =
                 True -> Nothing
                 False ->
                     if dmChannelShouldAppear now prefs c
-                    then return (CLUser cId uId, displayNameForUser u cconfig prefs)
+                    then return (displayNameForUser u cconfig prefs, CLUser cId uId)
                     else Nothing
-        sorted = sortBy (comparing snd) mappingWithUserInfo
-    in fst <$> sorted
+    in mappingWithUserInfo
 
 -- Always show a DM channel if it has unread activity.
 --
