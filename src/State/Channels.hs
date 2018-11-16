@@ -62,6 +62,7 @@ import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import qualified Data.Vector as V
 import           Data.Text.Zipper ( textZipper, clearZipper, insertMany, gotoEOL )
+import           Data.Time.Clock ( getCurrentTime )
 import           Lens.Micro.Platform
 
 import qualified Network.Mattermost.Endpoints as MM
@@ -354,7 +355,8 @@ showChannelInSidebar cId = do
                         MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
                         return Nothing
                 _ -> do
-                    csChannel(cId).ccInfo.cdSidebarShowOverride .= True
+                    now <- liftIO getCurrentTime
+                    csChannel(cId).ccInfo.cdSidebarShowOverride .= Just now
                     updateSidebar
 
 setFocusWith :: (Zipper ChannelListGroup ChannelListEntry

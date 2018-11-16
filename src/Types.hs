@@ -479,10 +479,11 @@ getDMChannels now cconfig prefs us cs =
 dmChannelShouldAppear :: UTCTime -> UserPreferences -> ClientChannel -> Bool
 dmChannelShouldAppear now prefs c =
     let weeksAgo n = nominalDay * (-7 * n)
-        cutoff = ServerTime $ addUTCTime (weeksAgo 1) now
+        localCutoff = addUTCTime (weeksAgo 1) now
+        cutoff = ServerTime localCutoff
         updated = c^.ccInfo.cdUpdated
         Just uId = c^.ccInfo.cdDMUserId
-    in if hasUnread' c || c^.ccInfo.cdSidebarShowOverride
+    in if hasUnread' c || maybe False (>= localCutoff) (c^.ccInfo.cdSidebarShowOverride)
        then True
        else case dmChannelShowPreference prefs uId of
            Just False -> False
