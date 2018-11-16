@@ -40,6 +40,7 @@ module State.Channels
   , setChannelTopic
   , beginCurrentChannelDeleteConfirm
   , toggleChannelListVisibility
+  , showChannelInSidebar
   )
 where
 
@@ -193,6 +194,7 @@ refreshChannelsAndUsers = do
           handleNewUsers (Seq.fromList uIdsToFetch) $ do
               -- Then refresh all loaded channels
               forM_ chansWithData $ uncurry refreshChannel
+              updateSidebar
 
               -- Fetch user statuses
               lock <- use (csResources.crUserStatusLock)
@@ -331,32 +333,29 @@ updateChannelInfo cid new member = do
 
 setFocus :: ChannelId -> MH ()
 setFocus cId = do
+    showChannelInSidebar cId
+    setFocusWith (Z.findRight ((== cId) . channelListEntryChannelId))
+
+showChannelInSidebar :: ChannelId -> MH ()
+showChannelInSidebar cId = do
     mChan <- preuse $ csChannel cId
-    session <- getSession
     me <- gets myUser
     prefs <- use (csResources.crUserPreferences)
-
-    continue <- case mChan of
-        Nothing -> return False
-        Just ch -> case ch^.ccInfo.cdType == Direct of
-            False -> return True
-            True -> do
-                let Just uId = ch^.ccInfo.cdDMUserId
-                case dmChannelShowPreference prefs uId of
-                    Just True ->
-                        return True
-                    Just False -> do
-                        let pref = showDirectChannelPref (me^.userIdL) uId True
-                        csLastJoinRequest .= Just (ch^.ccInfo.cdChannelId)
-                        doAsyncWith Preempt $ do
-                            MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
-                            return (return ())
-                        return False
-                    Nothing -> do
-                        return True
-
-    when continue $ do
-        setFocusWith (Z.findRight ((== cId) . channelListEntryChannelId))
+    session <- getSession
+    case mChan of
+        Nothing -> return ()
+        Just ch -> when (ch^.ccInfo.cdType == Direct) $ do
+            let Just uId = ch^.ccInfo.cdDMUserId
+            case dmChannelShowPreference prefs uId of
+                Just False -> do
+                    let pref = showDirectChannelPref (me^.userIdL) uId True
+                    csLastJoinRequest .= Just (ch^.ccInfo.cdChannelId)
+                    doAsyncWith Preempt $ do
+                        MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
+                        return (return ())
+                _ -> do
+                    csChannel(cId).ccInfo.cdSidebarShowOverride .= True
+                    updateSidebar
 
 setFocusWith :: (Zipper ChannelListGroup ChannelListEntry
               -> Zipper ChannelListGroup ChannelListEntry) -> MH ()
@@ -500,7 +499,9 @@ refreshChannelById cId = do
     doAsyncWith Preempt $ do
         cwd <- MM.mmGetChannel cId session
         member <- MM.mmGetChannelMember cId UserMe session
-        return $ refreshChannel cwd member
+        return $ do
+            refreshChannel cwd member
+            updateSidebar
 
 removeChannelFromState :: ChannelId -> MH ()
 removeChannelFromState cId = do

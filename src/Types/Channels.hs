@@ -16,6 +16,7 @@ module Types.Channels
   , cdViewed, cdNewMessageIndicator, cdEditedMessageThreshold, cdUpdated
   , cdName, cdHeader, cdPurpose, cdType
   , cdMentionCount, cdTypingUsers, cdDMUserId, cdChannelId
+  , cdSidebarShowOverride
   -- * Lenses created for accessing ChannelContents fields
   , cdMessages, cdFetchPending
   -- * Creating ClientChannel objects
@@ -119,6 +120,7 @@ initialChannelInfo myId chan =
                                                  then userIdForDMChannel myId $
                                                       sanitizeUserText $ channelName chan
                                                  else Nothing
+                   , _cdSidebarShowOverride    = False
                    }
 
 channelInfoFromChannelWithData :: Channel -> ChannelMember -> ChannelInfo -> ChannelInfo
@@ -189,6 +191,10 @@ data ChannelInfo = ChannelInfo
     -- ^ The users who are currently typing in this channel
   , _cdDMUserId         :: Maybe UserId
     -- ^ The user associated with this channel, if it is a DM channel
+  , _cdSidebarShowOverride :: Bool
+    -- ^ If true, show this channel in the sidebar regardless of other
+    -- considerations. Otherwise fall back to other application policy
+    -- to determine whether to show the channel.
   }
 
 -- ** Channel-related Lenses

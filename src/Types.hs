@@ -461,7 +461,7 @@ dmChannelShouldAppear now prefs c =
         cutoff = ServerTime $ addUTCTime (weeksAgo 1) now
         updated = c^.ccInfo.cdUpdated
         Just uId = c^.ccInfo.cdDMUserId
-    in if hasUnread' c
+    in if hasUnread' c || c^.ccInfo.cdSidebarShowOverride
        then True
        else case dmChannelShowPreference prefs uId of
            Just False -> False

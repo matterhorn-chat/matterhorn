@@ -171,13 +171,18 @@ handleWSEvent we = do
                       wepTeamId (weData we) == Nothing) $ do
                     let wasMentioned = maybe False (Set.member myId) $ wepMentions (weData we)
                     addNewPostedMessage $ RecentPost p wasMentioned
+                    cId <- use csCurrentChannelId
+                    when (postChannelId p /= cId) $
+                        showChannelInSidebar (p^.postChannelIdL)
             | otherwise -> return ()
 
         WMPostEdited
             | Just p <- wepPost (weData we) -> do
                 editMessage p
                 cId <- use csCurrentChannelId
-                when (postChannelId new == cId) updateViewed
+                when (postChannelId p == cId) updateViewed
+                when (postChannelId p /= cId) $
+                    showChannelInSidebar (p^.postChannelIdL)
             | otherwise -> return ()
 
         WMPostDeleted
@@ -185,6 +190,8 @@ handleWSEvent we = do
                 deleteMessage p
                 cId <- use csCurrentChannelId
                 when (postChannelId p == cId) updateViewed
+                when (postChannelId p /= cId) $
+                    showChannelInSidebar (p^.postChannelIdL)
             | otherwise -> return ()
 
         WMStatusChange
@@ -267,6 +274,7 @@ handleWSEvent we = do
                 mChan <- preuse (csChannel(cId))
                 when (isJust mChan) $ do
                     refreshChannelById cId
+                    updateSidebar
             | otherwise -> return ()
 
         WMGroupAdded
@@ -408,4 +416,6 @@ refreshClientConfig = do
     session <- getSession
     doAsyncWith Preempt $ do
         cfg <- MM.mmGetClientConfiguration (Just "old") session
-        return (csClientConfig .= Just cfg)
+        return $ do
+            csClientConfig .= Just cfg
+            updateSidebar
