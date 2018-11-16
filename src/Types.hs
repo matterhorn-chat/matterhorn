@@ -393,7 +393,11 @@ hasUnread' chan = fromMaybe False $ do
     return $ ((_cdUpdated info) > lastViewTime) ||
              (isJust $ _cdEditedMessageThreshold info)
 
-mkChannelZipperList :: UTCTime -> UserPreferences -> ClientChannels -> Users -> [(ChannelListGroup, [ChannelListEntry])]
+mkChannelZipperList :: UTCTime
+                    -> UserPreferences
+                    -> ClientChannels
+                    -> Users
+                    -> [(ChannelListGroup, [ChannelListEntry])]
 mkChannelZipperList now prefs cs us =
     [ (ChannelGroupPublicChannels, getChannelIdsInOrder cs)
     , (ChannelGroupDirectMessages, getDMChannelIdsInOrder now prefs us cs)
@@ -406,7 +410,11 @@ getChannelIdsInOrder cs =
        sortBy (comparing ((^.ccInfo.cdName) . snd)) $
        filteredChannels matches cs
 
-getDMChannelIdsInOrder :: UTCTime -> UserPreferences -> Users -> ClientChannels -> [ChannelListEntry]
+getDMChannelIdsInOrder :: UTCTime
+                       -> UserPreferences
+                       -> Users
+                       -> ClientChannels
+                       -> [ChannelListEntry]
 getDMChannelIdsInOrder now prefs us cs =
     let mapping = allDmChannelMappings cs
         mappingWithUserInfo = catMaybes $ getInfo <$> mapping
