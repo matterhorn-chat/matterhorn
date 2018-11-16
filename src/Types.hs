@@ -425,10 +425,10 @@ getDMChannelIdsInOrder now prefs us cs =
                 True -> Nothing
                 False ->
                     if dmChannelShouldAppear now prefs c
-                    then return ((uId, cId), u)
+                    then return (CLUser cId uId, _uiName u)
                     else Nothing
-        sorted = sortBy (comparing (_uiName . snd)) mappingWithUserInfo
-    in (\((uId, cId), _) -> CLUser cId uId) <$> sorted
+        sorted = sortBy (comparing snd) mappingWithUserInfo
+    in fst <$> sorted
 
 -- Always show a DM channel if it has unread activity.
 --
