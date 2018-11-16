@@ -438,7 +438,7 @@ getDMChannelIdsInOrder now prefs us cs =
 -- met (see 'or' below).
 dmChannelShouldAppear :: UTCTime -> UserPreferences -> ClientChannel -> Bool
 dmChannelShouldAppear now prefs c =
-    let weeksAgo n = nominalDay * (-1 * n)
+    let weeksAgo n = nominalDay * (-7 * n)
         cutoff = ServerTime $ addUTCTime (weeksAgo 1) now
         updated = c^.ccInfo.cdUpdated
         Just uId = c^.ccInfo.cdDMUserId
