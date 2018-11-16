@@ -199,7 +199,7 @@ module Types
   , addNewUser
   , setUserIdSet
   , useNickname
-  , displaynameForUserId
+  , displayNameForUserId
   , raiseInternalEvent
   , getNewMessageCutoff
   , getEditedMessageCutoff
@@ -1220,8 +1220,8 @@ nicknameForUserId uId st = _uiNickName =<< findUserById uId (st^.csUsers)
 usernameForUserId :: UserId -> ChatState -> Maybe Text
 usernameForUserId uId st = _uiName <$> findUserById uId (st^.csUsers)
 
-displaynameForUserId :: UserId -> ChatState -> Maybe Text
-displaynameForUserId uId st
+displayNameForUserId :: UserId -> ChatState -> Maybe Text
+displayNameForUserId uId st
     | useNickname st =
         nicknameForUserId uId st <|> usernameForUserId uId st
     | otherwise =
