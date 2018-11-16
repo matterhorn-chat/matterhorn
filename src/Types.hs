@@ -1307,7 +1307,7 @@ channelByName n st = do
 trimChannelSigil :: Text -> Text
 trimChannelSigil n
     | normalChannelSigil `T.isPrefixOf` n = T.tail n
-    | otherwise                           = n
+    | otherwise = n
 
 addNewUser :: UserInfo -> MH ()
 addNewUser u = do
