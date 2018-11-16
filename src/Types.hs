@@ -444,16 +444,15 @@ dmChannelShouldAppear now prefs c =
         Just uId = c^.ccInfo.cdDMUserId
     in if hasUnread' c
        then True
-       else if not $ dmChannelShowPreference prefs uId
-            then False
-            else or [
-                    -- The channel was updated recently enough
-                      updated >= cutoff
-                    ]
+       else case dmChannelShowPreference prefs uId of
+           Just False -> False
+           _ -> or [
+                   -- The channel was updated recently enough
+                     updated >= cutoff
+                   ]
 
-dmChannelShowPreference :: UserPreferences -> UserId -> Bool
-dmChannelShowPreference ps uId =
-    fromMaybe True $ HM.lookup uId (_userPrefDirectChannelPrefs ps)
+dmChannelShowPreference :: UserPreferences -> UserId -> Maybe Bool
+dmChannelShowPreference ps uId = HM.lookup uId (_userPrefDirectChannelPrefs ps)
 
 -- * Internal Names and References
 

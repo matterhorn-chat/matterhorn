@@ -343,14 +343,17 @@ setFocus cId = do
             True -> do
                 let Just uId = ch^.ccInfo.cdDMUserId
                 case dmChannelShowPreference prefs uId of
-                    False -> do
+                    Just True ->
+                        return False
+                    Just False -> do
                         let pref = showDirectChannelPref (me^.userIdL) uId True
                         csLastJoinRequest .= Just (ch^.ccInfo.cdChannelId)
                         doAsyncWith Preempt $ do
                             MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
                             return (return ())
                         return True
-                    True -> return False
+                    Nothing -> do
+                        return False
             False -> return False
 
     when (not abort) $ do
