@@ -127,8 +127,6 @@ editMessage new = do
     csPostMap.ix(postId new) .= msg
     asyncFetchReactionsForPost (postChannelId new) new
     asyncFetchAttachments new
-    cId <- use csCurrentChannelId
-    when (postChannelId new == cId) updateViewed
 
 deleteMessage :: Post -> MH ()
 deleteMessage new = do

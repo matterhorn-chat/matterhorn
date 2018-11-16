@@ -174,7 +174,10 @@ handleWSEvent we = do
             | otherwise -> return ()
 
         WMPostEdited
-            | Just p <- wepPost (weData we) -> editMessage p
+            | Just p <- wepPost (weData we) -> do
+                editMessage p
+                cId <- use csCurrentChannelId
+                when (postChannelId new == cId) updateViewed
             | otherwise -> return ()
 
         WMPostDeleted
