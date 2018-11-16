@@ -199,6 +199,7 @@ module Types
   , addNewUser
   , setUserIdSet
   , useNickname
+  , useNickname'
   , displayNameForUserId
   , raiseInternalEvent
   , getNewMessageCutoff
@@ -393,13 +394,14 @@ hasUnread' chan = fromMaybe False $ do
              (isJust $ _cdEditedMessageThreshold info)
 
 mkChannelZipperList :: UTCTime
+                    -> Maybe ClientConfig
                     -> UserPreferences
                     -> ClientChannels
                     -> Users
                     -> [(ChannelListGroup, [ChannelListEntry])]
-mkChannelZipperList now prefs cs us =
+mkChannelZipperList now cconfig prefs cs us =
     [ (ChannelGroupPublicChannels, getNonDMChannelIdsInOrder cs)
-    , (ChannelGroupDirectMessages, getDMChannelIdsInOrder now prefs us cs)
+    , (ChannelGroupDirectMessages, getDMChannelIdsInOrder now cconfig prefs us cs)
     ]
 
 getNonDMChannelIdsInOrder :: ClientChannels -> [ChannelListEntry]
@@ -409,12 +411,29 @@ getNonDMChannelIdsInOrder cs =
        sortBy (comparing ((^.ccInfo.cdName) . snd)) $
        filteredChannels matches cs
 
+useNickname' :: Maybe ClientConfig -> UserPreferences -> Bool
+useNickname' clientConfig prefs =
+    let serverSetting = case clientConfig^?_Just.to clientConfigTeammateNameDisplay of
+            Just TMNicknameOrFullname -> Just True
+            _                         -> Nothing
+        accountSetting = (== TMNicknameOrFullname) <$> (_userPrefTeammateNameDisplayMode prefs)
+        fallback = False
+    in fromMaybe fallback $ accountSetting <|> serverSetting
+
+displayNameForUser :: UserInfo -> Maybe ClientConfig -> UserPreferences -> Text
+displayNameForUser u clientConfig prefs
+    | useNickname' clientConfig prefs =
+        fromMaybe (u^.uiName) (u^.uiNickName)
+    | otherwise =
+        u^.uiName
+
 getDMChannelIdsInOrder :: UTCTime
+                       -> Maybe ClientConfig
                        -> UserPreferences
                        -> Users
                        -> ClientChannels
                        -> [ChannelListEntry]
-getDMChannelIdsInOrder now prefs us cs =
+getDMChannelIdsInOrder now cconfig prefs us cs =
     let mapping = allDmChannelMappings cs
         mappingWithUserInfo = catMaybes $ getInfo <$> mapping
         getInfo (uId, cId) = do
@@ -424,7 +443,7 @@ getDMChannelIdsInOrder now prefs us cs =
                 True -> Nothing
                 False ->
                     if dmChannelShouldAppear now prefs c
-                    then return (CLUser cId uId, _uiName u)
+                    then return (CLUser cId uId, displayNameForUser u cconfig prefs)
                     else Nothing
         sorted = sortBy (comparing snd) mappingWithUserInfo
     in fst <$> sorted
@@ -1214,18 +1233,13 @@ getParentMessage st msg
 setUserStatus :: UserId -> Text -> MH ()
 setUserStatus uId t = csUsers %= modifyUserById uId (uiStatus .~ statusFromText t)
 
-nicknameForUserId :: UserId -> ChatState -> Maybe Text
-nicknameForUserId uId st = _uiNickName =<< findUserById uId (st^.csUsers)
-
 usernameForUserId :: UserId -> ChatState -> Maybe Text
 usernameForUserId uId st = _uiName <$> findUserById uId (st^.csUsers)
 
 displayNameForUserId :: UserId -> ChatState -> Maybe Text
-displayNameForUserId uId st
-    | useNickname st =
-        nicknameForUserId uId st <|> usernameForUserId uId st
-    | otherwise =
-        usernameForUserId uId st
+displayNameForUserId uId st = do
+    u <- findUserById uId (st^.csUsers)
+    return $ displayNameForUser u (st^.csClientConfig) (st^.csResources.crUserPreferences)
 
 userIdForUsername :: Text -> ChatState -> Maybe UserId
 userIdForUsername name st =
@@ -1265,12 +1279,7 @@ channelIdByUsername name st = do
 
 useNickname :: ChatState -> Bool
 useNickname st =
-    let serverSetting = case st^?csClientConfig._Just.to clientConfigTeammateNameDisplay of
-            Just TMNicknameOrFullname -> Just True
-            _                         -> Nothing
-        accountSetting = (== TMNicknameOrFullname) <$> st^.csResources.crUserPreferences.userPrefTeammateNameDisplayMode
-        fallback = False
-    in fromMaybe fallback $ accountSetting <|> serverSetting
+    useNickname' (st^.csClientConfig) (st^.csResources.crUserPreferences)
 
 channelByName :: Text -> ChatState -> Maybe ClientChannel
 channelByName n st = do
@@ -1297,9 +1306,10 @@ updateSidebar :: MH ()
 updateSidebar = do
     cs <- use csChannels
     us <- use csUsers
+    cconfig <- use csClientConfig
     prefs <- use (csResources.crUserPreferences)
     now <- liftIO getCurrentTime
-    csFocus %= updateList (mkChannelZipperList now prefs cs us)
+    csFocus %= updateList (mkChannelZipperList now cconfig prefs cs us)
 
 clientPostToMessage :: ClientPost -> Message
 clientPostToMessage cp =
