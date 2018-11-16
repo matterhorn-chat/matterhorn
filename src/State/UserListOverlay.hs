@@ -112,7 +112,7 @@ resetUserListSearch = do
       myTId <- gets myTeamId
       doAsyncWith Preempt $ do
           results <- fetchInitialResults myTId scope session searchString
-          return $ do
+          return $ Just $ do
               let lst = listFromUserSearchResults results
               csUserListOverlay.userListSearchResults .= lst
               -- NOTE: Disabled for now. See the hack note below for
@@ -210,7 +210,7 @@ _maybePrefetchNextChunk = do
       myTId <- gets myTeamId
       doAsyncWith Preempt $ do
           newChunk <- getUserSearchResultsPage pageNum myTId scope session searchString
-          return $ do
+          return $ Just $ do
               -- Because we only ever append, this is safe to do w.r.t.
               -- the selected index of the list. If we ever prepended or
               -- removed, we'd also need to manage the selection index

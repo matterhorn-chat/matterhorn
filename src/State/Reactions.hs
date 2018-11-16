@@ -24,7 +24,7 @@ asyncFetchReactionsForPost cId p
   | not (p^.postHasReactionsL) = return ()
   | otherwise = doAsyncChannelMM Normal cId
         (\s _ _ -> fmap toList (mmGetReactionsForPost (p^.postIdL) s))
-        addReactions
+        (\_ rs -> Just $ addReactions cId rs)
 
 addReactions :: ChannelId -> [Reaction] -> MH ()
 addReactions cId rs = csChannel(cId).ccContents.cdMessages %= fmap upd

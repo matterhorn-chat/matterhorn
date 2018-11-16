@@ -19,10 +19,11 @@ import           Types
 
 loadFlaggedMessages :: Seq FlaggedPost -> ChatState -> IO ()
 loadFlaggedMessages prefs st = doAsyncWithIO Normal st $ do
-  return $ sequence_ [ updateMessageFlag (flaggedPostId fp) True
-                     | fp <- toList prefs
-                     , flaggedPostStatus fp
-                     ]
+  return $ Just $ do
+      sequence_ [ updateMessageFlag (flaggedPostId fp) True
+                | fp <- toList prefs
+                , flaggedPostStatus fp
+                ]
 
 
 -- | Update the UI to reflect the flagged/unflagged state of a

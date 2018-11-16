@@ -290,8 +290,8 @@ addMessageToState newPostData = do
                 -- If the channel has been archived, we don't want to
                 -- post this message or add the channel to the state.
                 case channelDeleted nc of
-                    True -> return $ return ()
-                    False -> return $ do
+                    True -> return Nothing
+                    False -> return $ Just $ do
                         -- If the incoming message is for a group
                         -- channel we don't know about, that's because
                         -- it was previously hidden by the user. We need
@@ -350,7 +350,7 @@ addMessageToState newPostData = do
                                 Nothing -> do
                                     doAsyncChannelMM Preempt cId
                                         (\s _ _ -> MM.mmGetThread parentId s)
-                                        (\_ p -> do
+                                        (\_ p -> Just $ do
                                             let postMap = HM.fromList [ ( pId
                                                                         , clientPostToMessage
                                                                           (toClientPost x (x^.postRootIdL))
@@ -459,7 +459,7 @@ runNotifyCommand post mentioned = do
                     sender = T.unpack $ maybePostUsername st post
                 runLoggedCommand False outputChan (T.unpack cmd)
                                  [notified, sender, messageString] Nothing Nothing
-                return $ return ()
+                return Nothing
 
 maybePostUsername :: ChatState -> Post -> T.Text
 maybePostUsername st p =
@@ -500,8 +500,9 @@ asyncFetchMoreMessages = do
                              _ -> q
         in doAsyncChannelMM Preempt cId
                (\s _ c -> MM.mmGetPostsForChannel c query s)
-               (\c p -> do addObtainedMessages c (-pageAmount) p >>= postProcessMessageAdd
-                           mh $ invalidateCacheEntry (ChannelMessages cId))
+               (\c p -> Just $ do
+                   addObtainedMessages c (-pageAmount) p >>= postProcessMessageAdd
+                   mh $ invalidateCacheEntry (ChannelMessages cId))
 
 fetchVisibleIfNeeded :: MH ()
 fetchVisibleIfNeeded = do
@@ -530,8 +531,9 @@ fetchVisibleIfNeeded = do
             in when ((not $ chan^.ccContents.cdFetchPending) && gapInDisplayable) $ do
                       csChannel(cId).ccContents.cdFetchPending .= True
                       doAsyncChannelMM Preempt cId op
-                          (\c p -> do addObtainedMessages c (-numToReq) p >>= postProcessMessageAdd
-                                      csChannel(c).ccContents.cdFetchPending .= False)
+                          (\c p -> Just $ do
+                              addObtainedMessages c (-numToReq) p >>= postProcessMessageAdd
+                              csChannel(c).ccContents.cdFetchPending .= False)
 
 asyncFetchAttachments :: Post -> MH ()
 asyncFetchAttachments p = do
@@ -553,5 +555,5 @@ asyncFetchAttachments p = do
                     m & mAttachments %~ (addIfMissing attachment)
                 | otherwise =
                     m
-        return $
+        return $ Just $
             csChannel(cId).ccContents.cdMessages.traversed %= addAttachment

@@ -178,8 +178,9 @@ deleteSelectedMessage = do
               Just p ->
                   doAsyncChannelMM Preempt cId
                       (\s _ _ -> MM.mmDeletePost (postId p) s)
-                      (\_ _ -> do csEditState.cedEditMode .= NewPost
-                                  setMode Main)
+                      (\_ _ -> Just $ do
+                          csEditState.cedEditMode .= NewPost
+                          setMode Main)
               Nothing -> return ()
         _ -> return ()
 
@@ -242,4 +243,4 @@ flagMessage pId f = do
   doAsyncWith Normal $ do
     let doFlag = if f then MM.mmFlagPost else MM.mmUnflagPost
     doFlag myId pId session
-    return $ return ()
+    return Nothing

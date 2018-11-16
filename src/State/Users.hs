@@ -28,8 +28,8 @@ handleNewUsers newUserIds after = do
                      usrList = toList nUsers
                  return $ usrInfo <$> usrList
 
-          addNewUsers :: [UserInfo] -> MH ()
-          addNewUsers is = mapM_ addNewUser is >> after
+          addNewUsers :: [UserInfo] -> Maybe (MH ())
+          addNewUsers is = Just $ mapM_ addNewUser is >> after
 
 -- | Handle the typing events from the websocket to show the currently
 -- typing users on UI

@@ -767,7 +767,7 @@ emptyEditState hist sp =
 
 -- | A 'RequestChan' is a queue of operations we have to perform in the
 -- background to avoid blocking on the main loop
-type RequestChan = STM.TChan (IO (MH ()))
+type RequestChan = STM.TChan (IO (Maybe (MH ())))
 
 -- | The 'HelpScreen' type represents the set of possible 'Help'
 -- dialogues we have to choose from.

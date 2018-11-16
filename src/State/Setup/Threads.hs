@@ -43,7 +43,7 @@ import           TimeUtils ( lookupLocalTimeZone )
 import           Types
 
 
-updateUserStatuses :: STM.TVar (Seq UserId) -> MVar () -> Session -> IO (MH ())
+updateUserStatuses :: STM.TVar (Seq UserId) -> MVar () -> Session -> IO (Maybe (MH ()))
 updateUserStatuses usersVar lock session = do
   lockResult <- tryTakeMVar lock
   users <- STM.atomically $ STM.readTVar usersVar
@@ -51,11 +51,11 @@ updateUserStatuses usersVar lock session = do
   case lockResult of
       Just () | not (F.null users) -> do
           statuses <- mmGetUserStatusByIds users session `finally` putMVar lock ()
-          return $ do
+          return $ Just $ do
               forM_ statuses $ \s ->
                   setUserStatus (statusUserId s) (statusStatus s)
-      Just () -> putMVar lock () >> return (return ())
-      _ -> return $ return ()
+      Just () -> putMVar lock () >> return Nothing
+      _ -> return Nothing
 
 startUserRefreshThread :: STM.TVar (Seq UserId) -> MVar () -> Session -> RequestChan -> IO ()
 startUserRefreshThread usersVar lock session requestChan = void $ forkIO $ forever refresh
@@ -66,7 +66,7 @@ startUserRefreshThread usersVar lock session requestChan = void $ forkIO $ forev
           STM.atomically $ STM.writeTChan requestChan $ do
             rs <- try $ updateUserStatuses usersVar lock session
             case rs of
-              Left (_ :: SomeException) -> return (return ())
+              Left (_ :: SomeException) -> return Nothing
               Right upd -> return upd
           threadDelay (seconds userRefreshInterval)
 
@@ -78,7 +78,7 @@ startTypingUsersRefreshThread requestChan = void $ forkIO $ forever refresh
     seconds = (* (1000 * 1000))
     refreshIntervalMicros = ceiling $ seconds $ userTypingExpiryInterval / 2
     refresh = do
-      STM.atomically $ STM.writeTChan requestChan $ return $ do
+      STM.atomically $ STM.writeTChan requestChan $ return $ Just $ do
         now <- liftIO getCurrentTime
         let expiry = addUTCTime (- userTypingExpiryInterval) now
         let expireUsers c = c & ccInfo.cdTypingUsers %~ expireTypingUsers expiry
@@ -119,7 +119,7 @@ startSubprocessLoggerThread logChan requestChan = do
                   hFlush logHandle
 
                   STM.atomically $ STM.writeTChan requestChan $ do
-                      return $ mhError $ ProgramExecutionFailed (T.pack progName) (T.pack logPath)
+                      return $ Just $ mhError $ ProgramExecutionFailed (T.pack progName) (T.pack logPath)
 
                   logMonitor (Just (logPath, logHandle))
 
@@ -137,7 +137,7 @@ startTimezoneMonitorThread tz requestChan = do
         newTz <- lookupLocalTimeZone
         when (newTz /= prevTz) $
             STM.atomically $ STM.writeTChan requestChan $ do
-                return $ timeZone .= newTz
+                return $ Just $ timeZone .= newTz
 
         timezoneMonitor newTz
 
@@ -253,13 +253,13 @@ startSyntaxMapLoaderThread config eventChan = void $ forkIO $ do
 -------------------------------------------------------------------
 -- Async worker thread
 
-startAsyncWorkerThread :: Config -> STM.TChan (IO (MH ())) -> BChan MHEvent -> IO ()
+startAsyncWorkerThread :: Config -> STM.TChan (IO (Maybe (MH ()))) -> BChan MHEvent -> IO ()
 startAsyncWorkerThread c r e = void $ forkIO $ asyncWorker c r e
 
-asyncWorker :: Config -> STM.TChan (IO (MH ())) -> BChan MHEvent -> IO ()
+asyncWorker :: Config -> STM.TChan (IO (Maybe (MH ()))) -> BChan MHEvent -> IO ()
 asyncWorker c r e = forever $ doAsyncWork c r e
 
-doAsyncWork :: Config -> STM.TChan (IO (MH ())) -> BChan MHEvent -> IO ()
+doAsyncWork :: Config -> STM.TChan (IO (Maybe (MH ()))) -> BChan MHEvent -> IO ()
 doAsyncWork config requestChan eventChan = do
     startWork <- case configShowBackground config of
         Disabled -> return $ return ()
@@ -293,7 +293,9 @@ doAsyncWork config requestChan eventChan = do
                     Just mmErr -> ServerError mmErr
               writeBChan eventChan $ IEvent $ DisplayError err
       Right upd ->
-          writeBChan eventChan (RespEvent upd)
+          case upd of
+              Nothing -> return ()
+              Just action -> writeBChan eventChan (RespEvent action)
 
 -- Filter for exceptions that we don't want to report to the user,
 -- probably because they are not actionable and/or contain no useful

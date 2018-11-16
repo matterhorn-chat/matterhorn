@@ -416,6 +416,6 @@ refreshClientConfig = do
     session <- getSession
     doAsyncWith Preempt $ do
         cfg <- MM.mmGetClientConfiguration (Just "old") session
-        return $ do
+        return $ Just $ do
             csClientConfig .= Just cfg
             updateSidebar

@@ -36,17 +36,19 @@ findAndRunScript scriptName input = do
       ScriptNotFound -> do
         mhError $ NoSuchScript scriptName
 
-runScript :: STM.TChan ProgramOutput -> FilePath -> Text -> IO (MH ())
+runScript :: STM.TChan ProgramOutput -> FilePath -> Text -> IO (Maybe (MH ()))
 runScript outputChan fp text = do
   outputVar <- newEmptyMVar
   runLoggedCommand True outputChan fp [] (Just $ T.unpack text) (Just outputVar)
   po <- takeMVar outputVar
   return $ case programExitCode po of
     ExitSuccess -> do
-        when (null $ programStderr po) $ do
-            mode <- use (csEditState.cedEditMode)
-            sendMessage mode (T.pack $ programStdout po)
-    ExitFailure _ -> return ()
+        case null $ programStderr po of
+            True -> Just $ do
+                mode <- use (csEditState.cedEditMode)
+                sendMessage mode (T.pack $ programStdout po)
+            False -> Nothing
+    ExitFailure _ -> Nothing
 
 listScripts :: MH ()
 listScripts = do

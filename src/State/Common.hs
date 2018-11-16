@@ -142,7 +142,7 @@ openURL link = do
                         args <- act
                         runLoggedCommand False outputChan (T.unpack urlOpenCommand)
                                          args Nothing Nothing
-                        return $ return ()
+                        return Nothing
                 True -> do
                     -- If there isn't a new message cutoff showing in
                     -- the current channel, set one. This way, while the

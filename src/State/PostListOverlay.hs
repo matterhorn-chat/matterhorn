@@ -43,7 +43,7 @@ enterFlaggedPostListMode = do
   session <- getSession
   doAsyncWith Preempt $ do
     posts <- mmGetListOfFlaggedPosts UserMe defaultFlaggedPostsQuery session
-    return $ do
+    return $ Just $ do
       messages <- messagesFromPosts posts
       enterPostListMode PostListFlagged messages
 
@@ -59,7 +59,7 @@ enterSearchResultPostListMode terms = do
         enterPostListMode (PostListSearch terms True) noMessages
         doAsyncWith Preempt $ do
           posts <- mmSearchForTeamPosts tId (SearchPosts terms False) session
-          return $ do
+          return $ Just $ do
             messages <- messagesFromPosts posts
             enterPostListMode (PostListSearch terms False) messages
 
