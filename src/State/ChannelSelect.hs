@@ -75,7 +75,7 @@ applySelectPattern :: ChannelSelectPattern -> ChannelListEntry -> Text -> Maybe 
 applySelectPattern CSPAny entry chanName = do
     return $ ChannelSelectMatch "" "" chanName chanName entry
 applySelectPattern (CSP ty pat) entry chanName = do
-    let applyType Infix  | pat `T.isInfixOf` normalizedChanName =
+    let applyType Infix | pat `T.isInfixOf` normalizedChanName =
             case T.breakOn pat normalizedChanName of
                 (pre, _) ->
                     return ( T.take (T.length pre) chanName
