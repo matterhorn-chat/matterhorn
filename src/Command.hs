@@ -146,7 +146,7 @@ commandList =
 
   , Cmd "focus" "Focus on a channel or user"
     (TokenArg "channel" NoArg) $ \ (name, ()) ->
-        changeChannel name
+        changeChannelByName name
 
   , Cmd "focus" "Select from available channels" NoArg $ \ () ->
         beginChannelSelect

@@ -31,7 +31,7 @@ import           Lens.Micro.Platform ( (.=), (%=), (.~), to )
 import qualified Network.Mattermost.Endpoints as MM
 import           Network.Mattermost.Types
 
-import           State.Channels ( changeChannel, addUserToCurrentChannel )
+import           State.Channels ( changeChannelByName, addUserToCurrentChannel )
 import           State.Common
 import           Types
 
@@ -44,7 +44,7 @@ enterChannelMembersUserList = do
   myId <- gets myUserId
   enterUserListMode (ChannelMembers cId)
     (\u -> case u^.uiId /= myId of
-      True -> changeChannel (u^.uiName) >> return True
+      True -> changeChannelByName (u^.uiName) >> return True
       False -> return False
     )
 
@@ -68,7 +68,7 @@ enterDMSearchUserList = do
   myId <- gets myUserId
   enterUserListMode AllUsers
     (\u -> case u^.uiId /= myId of
-      True -> changeChannel (u^.uiName) >> return True
+      True -> changeChannelByName (u^.uiName) >> return True
       False -> return False
     )
 

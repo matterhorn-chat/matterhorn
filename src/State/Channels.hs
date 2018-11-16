@@ -36,7 +36,7 @@ module State.Channels
   , joinChannel
   , joinChannelByName
   , startJoinChannel
-  , changeChannel
+  , changeChannelByName
   , setChannelTopic
   , beginCurrentChannelDeleteConfirm
   , toggleChannelListVisibility
@@ -860,8 +860,8 @@ attemptCreateDMChannel name = do
 
 -- | This switches to the named channel or creates it if it is a missing
 -- but valid user channel.
-changeChannel :: Text -> MH ()
-changeChannel name = do
+changeChannelByName :: Text -> MH ()
+changeChannelByName name = do
     result <- gets (channelIdByName name)
     user <- gets (userByUsername name)
     let err = mhError $ AmbiguousName name
