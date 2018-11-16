@@ -38,7 +38,6 @@ module Types
   , RequestChan
 
   , updateSidebar
-  , getChannelIdsInOrder
   , mkChannelZipperList
   , ChannelListGroup(..)
 
@@ -399,12 +398,12 @@ mkChannelZipperList :: UTCTime
                     -> Users
                     -> [(ChannelListGroup, [ChannelListEntry])]
 mkChannelZipperList now prefs cs us =
-    [ (ChannelGroupPublicChannels, getChannelIdsInOrder cs)
+    [ (ChannelGroupPublicChannels, getNonDMChannelIdsInOrder cs)
     , (ChannelGroupDirectMessages, getDMChannelIdsInOrder now prefs us cs)
     ]
 
-getChannelIdsInOrder :: ClientChannels -> [ChannelListEntry]
-getChannelIdsInOrder cs =
+getNonDMChannelIdsInOrder :: ClientChannels -> [ChannelListEntry]
+getNonDMChannelIdsInOrder cs =
     let matches (_, info) = info^.ccInfo.cdType `notElem` [Direct, Group]
     in fmap (CLChannel . fst) $
        sortBy (comparing ((^.ccInfo.cdName) . snd)) $
