@@ -10,7 +10,7 @@ import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
 import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
-import           Lens.Micro.Platform ( (.=) )
+import           Lens.Micro.Platform ( (.=), preuse )
 
 import qualified Network.Mattermost.Endpoints as MM
 import           Network.Mattermost.Exceptions ( mattermostErrorMessage )
@@ -263,8 +263,10 @@ handleWSEvent we = do
             | otherwise -> return ()
 
         WMChannelUpdated
-            | Just cId <- webChannelId $ weBroadcast we ->
-                when (webTeamId (weBroadcast we) == Just myTId) $ refreshChannelById cId
+            | Just cId <- webChannelId $ weBroadcast we -> do
+                mChan <- preuse (csChannel(cId))
+                when (isJust mChan) $ do
+                    refreshChannelById cId
             | otherwise -> return ()
 
         WMGroupAdded
