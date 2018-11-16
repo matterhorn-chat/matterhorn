@@ -356,7 +356,6 @@ setFocus cId = do
                         return True
 
     when continue $ do
-        updateSidebar
         setFocusWith (Z.findRight ((== cId) . channelListEntryChannelId))
 
 setFocusWith :: (Zipper ChannelListGroup ChannelListEntry
