@@ -200,6 +200,7 @@ module Types
   , useNickname
   , useNickname'
   , displayNameForUserId
+  , displayNameForUser
   , raiseInternalEvent
   , getNewMessageCutoff
   , getEditedMessageCutoff

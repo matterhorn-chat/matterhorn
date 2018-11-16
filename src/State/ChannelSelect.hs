@@ -44,6 +44,9 @@ updateChannelSelectMatches = do
     st <- use id
 
     input <- use (csChannelSelectState.channelSelectInput)
+    cconfig <- use csClientConfig
+    prefs <- use (csResources.crUserPreferences)
+
     let pat = parseChannelSelectPattern input
         chanNameMatches e = case pat of
             Nothing -> const Nothing
@@ -53,7 +56,6 @@ updateChannelSelectMatches = do
             Just CSPAny -> Nothing
             Just (CSP ty _) -> Just ty
 
-    displayNick <- use (to useNickname)
     let chanMatches e chan =
             if patTy == Just PrefixDMOnly
             then Nothing
@@ -66,9 +68,7 @@ updateChannelSelectMatches = do
             else if chan^.ccInfo.cdType == MM.Group
                  then chanNameMatches e $ chan^.ccInfo.cdName
                  else Nothing
-        displayName uInfo
-            | displayNick = uInfo^.uiNickName.non (uInfo^.uiName)
-            | otherwise   = uInfo^.uiName
+        displayName uInfo = displayNameForUser uInfo cconfig prefs
         userMatches e uInfo =
             if patTy == Just PrefixNonDMOnly
             then Nothing
