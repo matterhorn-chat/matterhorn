@@ -50,17 +50,18 @@ data ChannelListEntryData =
 
 renderChannelList :: ChatState -> Widget Name
 renderChannelList st =
-    viewport ChannelList Vertical $
-        vBox groups
+    viewport ChannelList Vertical body
     where
-        groups = case appMode st of
+        body = case appMode st of
             ChannelSelect ->
                 let zipper = st^.csChannelSelectState.channelSelectMatches
                 in if Z.isEmpty zipper
-                   then [hCenter $ txt "No matches"]
-                   else renderChannelListGroup st (renderChannelSelectListEntry (Z.focus zipper)) <$>
-                        Z.toList zipper
+                   then hCenter $ txt "No matches"
+                   else vBox $
+                        renderChannelListGroup st (renderChannelSelectListEntry (Z.focus zipper)) <$>
+                            Z.toList zipper
             _ ->
+                vBox $
                 renderChannelListGroup st (\s e -> renderChannelListEntry $ mkChannelEntryData s e) <$>
                     Z.toList (st^.csFocus)
 
