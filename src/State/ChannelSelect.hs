@@ -14,6 +14,8 @@ import           Data.Char ( isUpper )
 import qualified Data.Text as T
 import           Lens.Micro.Platform
 
+import qualified Network.Mattermost.Types as MM
+
 import           Types
 import qualified Zipper as Z
 
@@ -53,18 +55,27 @@ updateChannelSelectMatches = do
 
     displayNick <- use (to useNickname)
     let chanMatches e chan =
-            if patTy == Just UsersOnly
+            if patTy == Just PrefixDMOnly
             then Nothing
-            else chanNameMatches e $ chan^.ccInfo.cdName
+            else if chan^.ccInfo.cdType /= MM.Group
+                 then chanNameMatches e $ chan^.ccInfo.cdName
+                 else Nothing
+        groupChanMatches e chan =
+            if patTy == Just PrefixNonDMOnly
+            then Nothing
+            else if chan^.ccInfo.cdType == MM.Group
+                 then chanNameMatches e $ chan^.ccInfo.cdName
+                 else Nothing
         displayName uInfo
             | displayNick = uInfo^.uiNickName.non (uInfo^.uiName)
             | otherwise   = uInfo^.uiName
         userMatches e uInfo =
-            if patTy == Just ChannelsOnly
+            if patTy == Just PrefixNonDMOnly
             then Nothing
             else (chanNameMatches e . displayName) uInfo
         matches e@(CLChannel cId) = findChannelById cId (st^.csChannels) >>= chanMatches e
-        matches e@(CLUser _ uId) = userById uId st >>= userMatches e
+        matches e@(CLUserDM _ uId) = userById uId st >>= userMatches e
+        matches e@(CLGroupDM cId) = findChannelById cId (st^.csChannels) >>= groupChanMatches e
 
         preserveFocus Nothing _ = False
         preserveFocus (Just m) m2 = matchEntry m == matchEntry m2
@@ -87,11 +98,11 @@ applySelectPattern (CSP ty pat) entry chanName = do
             let (b, a) = T.splitAt (T.length pat) chanName
             return ("", b, a)
 
-        applyType UsersOnly | pat `T.isPrefixOf` normalizedChanName = do
+        applyType PrefixDMOnly | pat `T.isPrefixOf` normalizedChanName = do
             let (b, a) = T.splitAt (T.length pat) chanName
             return ("", b, a)
 
-        applyType ChannelsOnly | pat `T.isPrefixOf` normalizedChanName = do
+        applyType PrefixNonDMOnly | pat `T.isPrefixOf` normalizedChanName = do
             let (b, a) = T.splitAt (T.length pat) chanName
             return ("", b, a)
 
@@ -115,8 +126,8 @@ applySelectPattern (CSP ty pat) entry chanName = do
 parseChannelSelectPattern :: Text -> Maybe ChannelSelectPattern
 parseChannelSelectPattern "" = return CSPAny
 parseChannelSelectPattern pat = do
-    let only = if | userSigil `T.isPrefixOf` pat -> Just $ CSP UsersOnly $ T.tail pat
-                  | normalChannelSigil `T.isPrefixOf` pat -> Just $ CSP ChannelsOnly $ T.tail pat
+    let only = if | userSigil `T.isPrefixOf` pat -> Just $ CSP PrefixDMOnly $ T.tail pat
+                  | normalChannelSigil `T.isPrefixOf` pat -> Just $ CSP PrefixNonDMOnly $ T.tail pat
                   | otherwise -> Nothing
 
     (pat1, pfx) <- case "^" `T.isPrefixOf` pat of

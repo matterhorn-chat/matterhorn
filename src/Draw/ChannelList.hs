@@ -98,10 +98,11 @@ mkChannelEntryData st e =
                 let (useSigil, space) = case chan^.ccInfo.cdType of
                         MM.Ordinary -> (Just normalChannelSigil, False)
                         MM.Private  -> (Just normalChannelSigil, False)
-                        MM.Group    -> (Just " ", True)
                         _           -> (Nothing, False)
                 in (chan^.ccInfo.cdName, useSigil, space, Nothing)
-            CLUser _ uId ->
+            CLGroupDM _ ->
+                (chan^.ccInfo.cdName, Just " ", True, Nothing)
+            CLUserDM _ uId ->
                 let Just u = userById uId st
                     uname = if useNickname st
                             then u^.uiNickName.non (u^.uiName)

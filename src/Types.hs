@@ -290,8 +290,10 @@ data ChannelListGroup =
 data ChannelListEntry =
     CLChannel ChannelId
     -- ^ A non-DM entry
-    | CLUser ChannelId UserId
-    -- ^ A DM entry
+    | CLUserDM ChannelId UserId
+    -- ^ A single-user DM entry
+    | CLGroupDM ChannelId
+    -- ^ A multi-user DM entry
     deriving (Eq, Show)
 
 -- | This is how we represent the user's configuration. Most fields
@@ -443,7 +445,7 @@ getGroupDMChannels :: ClientChannels
                    -> [(T.Text, ChannelListEntry)]
 getGroupDMChannels cs =
     let matches (_, info) = info^.ccInfo.cdType == Group
-    in fmap (\(cId, ch) -> (ch^.ccInfo.cdName, CLChannel cId)) $
+    in fmap (\(cId, ch) -> (ch^.ccInfo.cdName, CLGroupDM cId)) $
        filteredChannels matches cs
 
 getDMChannels :: UTCTime
@@ -462,7 +464,7 @@ getDMChannels now cconfig prefs us cs =
                 True -> Nothing
                 False ->
                     if dmChannelShouldAppear now prefs c
-                    then return (displayNameForUser u cconfig prefs, CLUser cId uId)
+                    then return (displayNameForUser u cconfig prefs, CLUserDM cId uId)
                     else Nothing
     in mappingWithUserInfo
 
@@ -581,8 +583,8 @@ data MatchType =
     | Suffix
     | Infix
     | Equal
-    | UsersOnly
-    | ChannelsOnly
+    | PrefixDMOnly
+    | PrefixNonDMOnly
     deriving (Eq, Show)
 
 -- * Application State Values
@@ -1198,10 +1200,12 @@ csCurrentChannelId = csFocus.to unsafeFocus.to channelListEntryChannelId
 
 channelListEntryChannelId :: ChannelListEntry -> ChannelId
 channelListEntryChannelId (CLChannel cId) = cId
-channelListEntryChannelId (CLUser cId _) = cId
+channelListEntryChannelId (CLUserDM cId _) = cId
+channelListEntryChannelId (CLGroupDM cId) = cId
 
 entryIsDMEntry :: ChannelListEntry -> Bool
-entryIsDMEntry (CLUser {}) = True
+entryIsDMEntry (CLUserDM {}) = True
+entryIsDMEntry (CLGroupDM {}) = True
 entryIsDMEntry (CLChannel {}) = False
 
 csCurrentChannel :: Lens' ChatState ClientChannel
