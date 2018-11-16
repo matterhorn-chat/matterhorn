@@ -331,32 +331,31 @@ updateChannelInfo cid new member = do
 
 setFocus :: ChannelId -> MH ()
 setFocus cId = do
-    -- If the channel is a DM channel, set the preference to show it.
     mChan <- preuse $ csChannel cId
     session <- getSession
     me <- gets myUser
     prefs <- use (csResources.crUserPreferences)
 
-    abort <- case mChan of
-        Nothing -> return True
+    continue <- case mChan of
+        Nothing -> return False
         Just ch -> case ch^.ccInfo.cdType == Direct of
+            False -> return True
             True -> do
                 let Just uId = ch^.ccInfo.cdDMUserId
                 case dmChannelShowPreference prefs uId of
                     Just True ->
-                        return False
+                        return True
                     Just False -> do
                         let pref = showDirectChannelPref (me^.userIdL) uId True
                         csLastJoinRequest .= Just (ch^.ccInfo.cdChannelId)
                         doAsyncWith Preempt $ do
                             MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
                             return (return ())
-                        return True
-                    Nothing -> do
                         return False
-            False -> return False
+                    Nothing -> do
+                        return True
 
-    when (not abort) $ do
+    when continue $ do
         updateSidebar
         setFocusWith (Z.findRight ((== cId) . channelListEntryChannelId))
 
