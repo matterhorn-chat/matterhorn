@@ -197,7 +197,6 @@ module Types
   , userById
   , allUserIds
   , addNewUser
-  , setUserIdSet
   , useNickname
   , useNickname'
   , displayNameForUserId
@@ -1315,11 +1314,6 @@ addNewUser u = do
     csUsers %= addUser u
     userSet <- use (csResources.crUserIdSet)
     St.liftIO $ STM.atomically $ STM.modifyTVar userSet $ ((u^.uiId) Seq.<|)
-
-setUserIdSet :: Seq UserId -> MH ()
-setUserIdSet ids = do
-    userSet <- use (csResources.crUserIdSet)
-    St.liftIO $ STM.atomically $ STM.writeTVar userSet ids
 
 updateSidebar :: MH ()
 updateSidebar = do
