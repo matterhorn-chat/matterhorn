@@ -97,6 +97,7 @@ mkChannelEntryData st e =
             CLChannel _ ->
                 let (useSigil, space) = case chan^.ccInfo.cdType of
                         MM.Ordinary -> (Just normalChannelSigil, False)
+                        MM.Private  -> (Just normalChannelSigil, False)
                         MM.Group    -> (Just " ", True)
                         _           -> (Nothing, False)
                 in (chan^.ccInfo.cdName, useSigil, space, Nothing)
