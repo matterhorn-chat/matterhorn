@@ -34,9 +34,7 @@ channelSelectKeybindings = mkKeybindings
                  Nothing -> return ()
                  Just match -> do
                      setMode Main
-                     case matchEntry match of
-                         CLChannel cId -> setFocus cId
-                         CLUser cId _ -> setFocus cId
+                     setFocus $ channelListEntryChannelId $ matchEntry match
 
     , mkKb CancelEvent "Cancel channel selection" $ setMode Main
     , mkKb NextChannelEvent "Select next match" channelSelectNext
