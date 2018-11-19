@@ -312,16 +312,21 @@ handleNewChannel_ permitPostpone switch doSidebarUpdate nc member = do
 
             when register $ do
                 csChannels %= addChannel (getId nc) cChannel
-                when doSidebarUpdate updateSidebar
+                when doSidebarUpdate $ do
+                    -- Note that we only check for whether we should
+                    -- switch to this channel when doing a sidebar
+                    -- update, since that's the only case where it's
+                    -- possible to do so.
+                    updateSidebar
 
-                -- Finally, set our focus to the newly created channel
-                -- if the caller requested a change of channel. Also
-                -- consider the last join request state field in case
-                -- this is an asynchronous channel addition triggered by
-                -- a /join.
-                wasLast <- checkLastJoinRequest (getId nc)
+                    -- Finally, set our focus to the newly created
+                    -- channel if the caller requested a change of
+                    -- channel. Also consider the last join request
+                    -- state field in case this is an asynchronous
+                    -- channel addition triggered by a /join.
+                    wasLast <- checkLastJoinRequest (getId nc)
 
-                when (switch || wasLast) $ setFocus (getId nc)
+                    when (switch || wasLast) $ setFocus (getId nc)
 
 -- | Check to see whether the specified channel has been queued up to
 -- be switched to now that the channel is registered in the state. If
