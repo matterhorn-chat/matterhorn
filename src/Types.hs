@@ -20,6 +20,8 @@ module Types
   , ConnectionInfo(..)
   , ChannelListEntry(..)
   , channelListEntryChannelId
+  , channelListEntryUserId
+  , userIdsFromZipper
   , entryIsDMEntry
   , ciHostname
   , ciPort
@@ -267,7 +269,7 @@ import           Types.KeyEvents
 import           Types.Messages
 import           Types.Posts
 import           Types.Users
-import           Zipper ( Zipper, fromList, unsafeFocus, updateList )
+import           Zipper ( Zipper, toList, fromList, unsafeFocus, updateList )
 
 
 -- * Configuration
@@ -1201,6 +1203,14 @@ channelListEntryChannelId :: ChannelListEntry -> ChannelId
 channelListEntryChannelId (CLChannel cId) = cId
 channelListEntryChannelId (CLUserDM cId _) = cId
 channelListEntryChannelId (CLGroupDM cId) = cId
+
+channelListEntryUserId :: ChannelListEntry -> Maybe UserId
+channelListEntryUserId (CLUserDM _ uId) = Just uId
+channelListEntryUserId _ = Nothing
+
+userIdsFromZipper :: Zipper ChannelListGroup ChannelListEntry -> [UserId]
+userIdsFromZipper z =
+    concat $ (catMaybes . fmap channelListEntryUserId . snd) <$> Zipper.toList z
 
 entryIsDMEntry :: ChannelListEntry -> Bool
 entryIsDMEntry (CLUserDM {}) = True

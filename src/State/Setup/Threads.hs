@@ -44,12 +44,6 @@ import           Types
 import qualified Zipper as Z
 
 
-usersFromZipper :: Z.Zipper ChannelListGroup ChannelListEntry -> [UserId]
-usersFromZipper z =
-    let channelEntryUserId (CLUserDM _ uId) = Just uId
-        channelEntryUserId _ = Nothing
-    in concat $ (catMaybes . fmap channelEntryUserId . snd) <$> Z.toList z
-
 updateUserStatuses :: [UserId] -> Session -> IO (Maybe (MH ()))
 updateUserStatuses uIds session =
     case null uIds of
@@ -70,7 +64,7 @@ startUserStatusUpdateThread zipperChan session requestChan = void $ forkIO body
           result <- timeout (seconds userRefreshInterval) (STM.atomically $ STM.readTChan zipperChan)
           let (uIds, update) = case result of
                   Nothing -> (prev, True)
-                  Just z -> let ids = usersFromZipper z
+                  Just z -> let ids = userIdsFromZipper z
                             in (ids, ids /= prev)
 
           when update $ do
