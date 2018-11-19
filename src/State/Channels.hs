@@ -325,18 +325,18 @@ handleNewChannel_ permitPostpone switch sbUpdate nc member = do
                     -- channel. Also consider the last join request
                     -- state field in case this is an asynchronous
                     -- channel addition triggered by a /join.
-                    wasLast <- checkLastJoinRequest (getId nc)
+                    pending <- checkPendingChannelChange (ChangeByChannelId $ getId nc)
 
-                    when (switch || wasLast) $ setFocus (getId nc)
+                    when (switch || pending) $ setFocus (getId nc)
 
 -- | Check to see whether the specified channel has been queued up to
 -- be switched to now that the channel is registered in the state. If
 -- so, return True and clear the state. Otherwise return False.
-checkLastJoinRequest :: ChannelId -> MH Bool
-checkLastJoinRequest chanId = do
-    lastReq <- use csPendingChannelChange
-    case lastReq of
-        Just (ChangeByChannelId cId) | cId == chanId -> do
+checkPendingChannelChange :: PendingChannelChange -> MH Bool
+checkPendingChannelChange change = do
+    pending <- use csPendingChannelChange
+    case pending of
+        Just p | p == change -> do
             csPendingChannelChange .= Nothing
             return True
         _ -> return False
@@ -491,8 +491,8 @@ applyPreferenceChange pref = do
                   -- This shouldn't happen.
                   Nothing -> return ()
                   Just dmcId -> do
-                      wasLast <- checkLastJoinRequest dmcId
-                      when wasLast $ setFocus dmcId
+                      pending <- checkPendingChannelChange $ ChangeByChannelId dmcId
+                      when pending $ setFocus dmcId
 
       | Just g <- preferenceToGroupChannelPreference pref -> do
           let cId = groupChannelId g
