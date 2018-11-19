@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 module State.Setup.Threads
-  ( startUserRefreshThread
+  ( startUserStatusUpdateThread
   , startTypingUsersRefreshThread
   , updateUserStatuses
   , startSubprocessLoggerThread
@@ -57,8 +57,8 @@ updateUserStatuses usersVar lock session = do
       Just () -> putMVar lock () >> return Nothing
       _ -> return Nothing
 
-startUserRefreshThread :: STM.TVar (Seq UserId) -> MVar () -> Session -> RequestChan -> IO ()
-startUserRefreshThread usersVar lock session requestChan = void $ forkIO $ forever refresh
+startUserStatusUpdateThread :: STM.TVar (Seq UserId) -> MVar () -> Session -> RequestChan -> IO ()
+startUserStatusUpdateThread usersVar lock session requestChan = void $ forkIO $ forever refresh
   where
       seconds = (* (1000 * 1000))
       userRefreshInterval = 30

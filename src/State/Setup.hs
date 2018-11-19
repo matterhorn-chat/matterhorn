@@ -231,8 +231,8 @@ initializeState cr myTeam me = do
   -- * Main async queue worker thread
   startAsyncWorkerThread (cr^.crConfiguration) (cr^.crRequestQueue) (cr^.crEventQueue)
 
-  -- * User status refresher
-  startUserRefreshThread (cr^.crUserIdSet) (cr^.crUserStatusLock) session requestChan
+  -- * User status thread
+  startUserStatusUpdateThread (cr^.crUserIdSet) (cr^.crUserStatusLock) session requestChan
 
   -- * Refresher for users who are typing currently
   when (configShowTypingIndicator (cr^.crConfiguration)) $
