@@ -195,7 +195,6 @@ module Types
   , userByNickname
   , channelIdByChannelName
   , channelIdByUsername
-  , channelIdByName
   , channelByName
   , userById
   , allUserIds
@@ -1292,24 +1291,6 @@ channelIdByChannelName :: Text -> ChatState -> Maybe ChannelId
 channelIdByChannelName name st =
     let matches (_, cc) = cc^.ccInfo.cdName == (trimChannelSigil name)
     in listToMaybe $ fst <$> filteredChannels matches (st^.csChannels)
-
--- | Get a channel ID by username or channel name. Returns (channel
--- match, user match). Note that this returns multiple results because
--- it's possible for there to be a match for both users and channels.
--- Note that this function uses sigils on the input to guarantee clash
--- avoidance, i.e., that if the user sigil is present in the input,
--- only users will be searched. This allows callers (or the user) to
--- disambiguate by sigil, which may be necessary in cases where an input
--- with no sigil finds multiple matches.
-channelIdByName :: Text -> ChatState -> (Maybe ChannelId, Maybe ChannelId)
-channelIdByName name st =
-    let uMatch = channelIdByUsername name st
-        cMatch = channelIdByChannelName name st
-        matches =
-            if | userSigil `T.isPrefixOf` name          -> (Nothing, uMatch)
-               | normalChannelSigil `T.isPrefixOf` name -> (cMatch, Nothing)
-               | otherwise                              -> (cMatch, uMatch)
-    in matches
 
 channelIdByUsername :: Text -> ChatState -> Maybe ChannelId
 channelIdByUsername name st = do

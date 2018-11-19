@@ -843,64 +843,54 @@ joinChannel chanId = do
             csPendingChannelChange .= (Just $ ChangeByChannelId chanId)
             doAsyncChannelMM Preempt chanId (\ s _ c -> MM.mmAddUser c member s) endAsyncNOP
 
-attemptCreateDMChannel :: Text -> MH ()
-attemptCreateDMChannel name = do
-    mCid <- gets (channelIdByUsername name)
-    me <- gets myUser
-    displayNick <- use (to useNickname)
-    uByNick     <- use (to (userByNickname name))
-    let myName = if displayNick && not (T.null $ sanitizeUserText $ userNickname me)
-                 then sanitizeUserText $ userNickname me
-                 else me^.userUsernameL
-    when (name /= myName) $ do
-        let uName = if displayNick
-                    then maybe name (view uiName) uByNick
-                    else name
-        mUid <- gets (userIdForUsername uName)
-        if isJust mUid && isNothing mCid
-        then do
+createDMChannel :: UserInfo -> MH ()
+createDMChannel user = do
+    cs <- use csChannels
+    case getDmChannelFor (user^.uiId) cs of
+        Just cId -> setFocus cId
+        Nothing -> do
             -- We have a user of that name but no channel. Time to make one!
-            let Just uId = mUid
             myId <- gets myUserId
             session <- getSession
             doAsyncWith Normal $ do
                 -- create a new channel
-                nc <- MM.mmCreateDirectMessageChannel (uId, myId) session -- tId uId
+                nc <- MM.mmCreateDirectMessageChannel (user^.uiId, myId) session
                 cwd <- MM.mmGetChannel (getId nc) session
                 member <- MM.mmGetChannelMember (getId nc) UserMe session
                 return $ Just $ handleNewChannel True SidebarUpdateImmediate cwd member
-        else
-            mhError $ NoSuchUser name
 
 -- | This switches to the named channel or creates it if it is a missing
 -- but valid user channel.
 changeChannelByName :: Text -> MH ()
 changeChannelByName name = do
-    result <- gets (channelIdByName name)
-    user <- gets (userByUsername name)
+    mCId <- gets (channelIdByChannelName name)
+    mDMCId <- gets (channelIdByUsername name)
+    foundUser <- gets (userByUsername name)
+
     let err = mhError $ AmbiguousName name
 
-    case result of
-      (Nothing, Nothing)
-          -- We know about the user but there isn't already a DM
-          -- channel, so create one.
-          | Just _ <- user -> attemptCreateDMChannel name
-          -- There were no matches of any kind.
-          | otherwise -> mhError $ NoSuchChannel name
+    case (mCId, mDMCId) of
+      (Nothing, Nothing) ->
+          case foundUser of
+              -- We know about the user but there isn't already a DM
+              -- channel, so create one.
+              Just user -> createDMChannel user
+              -- There were no matches of any kind.
+              Nothing -> mhError $ NoSuchChannel name
       (Just cId, Nothing)
           -- We matched a channel and there was an explicit sigil, so we
           -- don't care about the username match.
           | normalChannelSigil `T.isPrefixOf` name -> setFocus cId
           -- We matched both a channel and a user, even though there is
           -- no DM channel.
-          | Just _ <- user -> err
+          | Just _ <- foundUser -> err
           -- We matched a channel only.
           | otherwise -> setFocus cId
       (Nothing, Just cId) ->
-          -- We matched a user only and there is already a DM channel.
+          -- We matched a DM channel only.
           setFocus cId
       (Just _, Just _) ->
-          -- We matched both a channel and a user.
+          -- We matched both a channel and a DM channel.
           err
 
 setChannelTopic :: Text -> MH ()
