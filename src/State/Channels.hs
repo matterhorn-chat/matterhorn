@@ -183,7 +183,7 @@ refreshChannelsAndUsers = do
                         Nothing -> Nothing
                         Just otherUserId -> Just otherUserId
                   _ -> Nothing
-          uIdsToFetch = nub $ knownUsers <> dmUsers
+          uIdsToFetch = nub $ userId me : knownUsers <> dmUsers
 
           dataMap = HM.fromList $ toList $ (\d -> (channelMemberChannelId d, d)) <$> datas
           mkPair chan = (chan, fromJust $ HM.lookup (channelId chan) dataMap)
