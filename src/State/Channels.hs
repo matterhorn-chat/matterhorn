@@ -73,7 +73,6 @@ import           InputHistory
 import           State.Common
 import           State.Users
 import           State.Flagging
-import           State.Setup.Threads ( updateUserStatuses )
 import           Types
 import           Types.Common
 import           Zipper ( Zipper )
@@ -194,19 +193,23 @@ refreshChannelsAndUsers = do
           -- Fetch user data associated with DM channels
           handleNewUsers (Seq.fromList uIdsToFetch) $ do
               -- Then refresh all loaded channels
-              forM_ chansWithData $ uncurry refreshChannel
+              forM_ chansWithData $ uncurry (refreshChannel False)
               updateSidebar
-
-              -- Fetch user statuses
-              lock <- use (csResources.crUserStatusLock)
-              setVar <- use (csResources.crUserIdSet)
-              doAsyncWith Preempt $ updateUserStatuses setVar lock session
 
 -- | Refresh information about a specific channel.  The channel
 -- metadata is refreshed, and if this is a loaded channel, the
 -- scrollback is updated as well.
-refreshChannel :: Channel -> ChannelMember -> MH ()
-refreshChannel chan member = do
+--
+-- The boolean argument indicates whether this refresh should also
+-- update the sidebar. Ordinarily you want this, so pass True unless you
+-- are very sure you know what you are doing, i.e., you are very sure
+-- that a call to refreshChannel will be followed immediately by a call
+-- to updateSidebar. We provide this control so that channel refreshes
+-- can be batched and then a single updateSidebar call can be used
+-- instead of the default behavior of calling it once per refreshChannel
+-- call, which is the behavior if True is passed here.
+refreshChannel :: Bool -> Channel -> ChannelMember -> MH ()
+refreshChannel doSidebarUpdate chan member = do
     let cId = getId chan
     myTId <- gets myTeamId
     let ourTeam = channelTeamId chan == Nothing ||
@@ -222,7 +225,7 @@ refreshChannel chan member = do
             -- If this channel is unknown, register it first.
             mChan <- preuse (csChannel(cId))
             when (isNothing mChan) $
-                handleNewChannel False chan member
+                handleNewChannel False doSidebarUpdate chan member
 
             updateChannelInfo cId chan member
 
@@ -232,7 +235,7 @@ channelHiddenPreference cId = do
     let matching = filter (\p -> fst p == cId) (HM.toList prefs)
     return $ any (not . snd) matching
 
-handleNewChannel :: Bool -> Channel -> ChannelMember -> MH ()
+handleNewChannel :: Bool -> Bool -> Channel -> ChannelMember -> MH ()
 handleNewChannel = handleNewChannel_ True
 
 handleNewChannel_ :: Bool
@@ -243,11 +246,17 @@ handleNewChannel_ :: Bool
                   -> Bool
                   -- ^ Whether to switch to the new channel once it has
                   -- been installed.
+                  -> Bool
+                  -- ^ Whether to update the sidebar, in case the caller
+                  -- wants to batch these before updating it. Pass True
+                  -- unless you know what you are doing, i.e., unless
+                  -- you intend to call updateSidebar yourself after
+                  -- calling this.
                   -> Channel
                   -- ^ The channel to install.
                   -> ChannelMember
                   -> MH ()
-handleNewChannel_ permitPostpone switch nc member = do
+handleNewChannel_ permitPostpone switch doSidebarUpdate nc member = do
     -- Only add the channel to the state if it isn't already known.
     me <- gets myUser
     mChan <- preuse (csChannel(getId nc))
@@ -296,14 +305,14 @@ handleNewChannel_ permitPostpone switch nc member = do
                                         mhLog LogAPI $ T.pack $ "handleNewChannel_: about to call handleNewUsers for " <> show otherUserId
                                         handleNewUsers (Seq.singleton otherUserId) (return ())
                                         doAsyncWith Normal $
-                                            return $ Just $ handleNewChannel_ False switch nc member
+                                            return $ Just $ handleNewChannel_ False switch doSidebarUpdate nc member
                                         return False
                             Just _ -> return True
                 _ -> return True
 
             when register $ do
                 csChannels %= addChannel (getId nc) cChannel
-                updateSidebar
+                when doSidebarUpdate updateSidebar
 
                 -- Finally, set our focus to the newly created channel
                 -- if the caller requested a change of channel. Also
@@ -502,8 +511,7 @@ refreshChannelById cId = do
         cwd <- MM.mmGetChannel cId session
         member <- MM.mmGetChannelMember cId UserMe session
         return $ Just $ do
-            refreshChannel cwd member
-            updateSidebar
+            refreshChannel True cwd member
 
 removeChannelFromState :: ChannelId -> MH ()
 removeChannelFromState cId = do
@@ -652,7 +660,7 @@ createGroupChannel usernameList = do
             member <- MM.mmGetChannelMember (channelId chan) UserMe session
             return $ Just $ do
                 applyPreferenceChange pref
-                handleNewChannel True cwd member
+                handleNewChannel True True cwd member
 
 channelHistoryForward :: MH ()
 channelHistoryForward = do
@@ -721,7 +729,7 @@ createOrdinaryChannel name  = do
                   member <- MM.mmGetChannelMember (getId c) UserMe session
                   return (chan, member)
               )
-              (return . Just . uncurry (handleNewChannel True))
+              (return . Just . uncurry (handleNewChannel True True))
 
 -- | When another user adds us to a channel, we need to fetch the
 -- channel info for that channel.
@@ -731,7 +739,7 @@ handleChannelInvite cId = do
     doAsyncWith Normal $ do
         member <- MM.mmGetChannelMember cId UserMe session
         tryMM (MM.mmGetChannel cId session)
-              (\cwd -> return $ Just $ handleNewChannel False cwd member)
+              (\cwd -> return $ Just $ handleNewChannel False True cwd member)
 
 addUserToCurrentChannel :: Text -> MH ()
 addUserToCurrentChannel uname = do
@@ -854,7 +862,7 @@ attemptCreateDMChannel name = do
                 nc <- MM.mmCreateDirectMessageChannel (uId, myId) session -- tId uId
                 cwd <- MM.mmGetChannel (getId nc) session
                 member <- MM.mmGetChannelMember (getId nc) UserMe session
-                return $ Just $ handleNewChannel True cwd member
+                return $ Just $ handleNewChannel True True cwd member
         else
             mhError $ NoSuchUser name
 

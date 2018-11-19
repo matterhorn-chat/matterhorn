@@ -113,11 +113,10 @@ module Types
   , crUserPreferences
   , crEventQueue
   , crTheme
+  , crStatusUpdateChan
   , crSubprocessLog
   , crWebsocketActionChan
   , crRequestQueue
-  , crUserStatusLock
-  , crUserIdSet
   , crFlaggedPosts
   , crConn
   , crConfiguration
@@ -229,7 +228,6 @@ import           Brick.BChan
 import           Brick.Widgets.Edit ( Editor, editor )
 import           Brick.Widgets.List ( List, list )
 import           Control.Concurrent.Async ( Async )
-import           Control.Concurrent.MVar ( MVar )
 import qualified Control.Concurrent.STM as STM
 import           Control.Exception ( SomeException )
 import qualified Control.Monad.State as St
@@ -716,8 +714,7 @@ data ChatResources =
                   , _crSubprocessLog       :: STM.TChan ProgramOutput
                   , _crWebsocketActionChan :: STM.TChan WebsocketAction
                   , _crTheme               :: AttrMap
-                  , _crUserStatusLock      :: MVar ()
-                  , _crUserIdSet           :: STM.TVar (Seq UserId)
+                  , _crStatusUpdateChan    :: STM.TChan (Zipper ChannelListGroup ChannelListEntry)
                   , _crConfiguration       :: Config
                   , _crFlaggedPosts        :: Set PostId
                   , _crUserPreferences     :: UserPreferences
@@ -1316,10 +1313,7 @@ trimChannelSigil n
     | otherwise = n
 
 addNewUser :: UserInfo -> MH ()
-addNewUser u = do
-    csUsers %= addUser u
-    userSet <- use (csResources.crUserIdSet)
-    St.liftIO $ STM.atomically $ STM.modifyTVar userSet $ ((u^.uiId) Seq.<|)
+addNewUser u = csUsers %= addUser u
 
 updateSidebar :: MH ()
 updateSidebar = do
@@ -1329,6 +1323,11 @@ updateSidebar = do
     prefs <- use (csResources.crUserPreferences)
     now <- liftIO getCurrentTime
     csFocus %= updateList (mkChannelZipperList now cconfig prefs cs us)
+    -- Send the new zipper to the status update thread so that we can
+    -- fetch the statuses for the users in the sidebar.
+    newZ <- use csFocus
+    statusChan <- use (csResources.crStatusUpdateChan)
+    liftIO $ STM.atomically $ STM.writeTChan statusChan newZ
 
 clientPostToMessage :: ClientPost -> Message
 clientPostToMessage cp =

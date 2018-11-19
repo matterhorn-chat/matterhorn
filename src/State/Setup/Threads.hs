@@ -2,7 +2,6 @@
 module State.Setup.Threads
   ( startUserStatusUpdateThread
   , startTypingUsersRefreshThread
-  , updateUserStatuses
   , startSubprocessLoggerThread
   , startTimezoneMonitorThread
   , maybeStartSpellChecker
@@ -16,13 +15,13 @@ import           Prelude ()
 import           Prelude.MH
 
 import           Brick.BChan
-import           Control.Concurrent ( threadDelay, forkIO, MVar, putMVar, tryTakeMVar )
+import           Control.Concurrent ( threadDelay, forkIO )
 import qualified Control.Concurrent.STM as STM
 import           Control.Concurrent.STM.Delay
-import           Control.Exception ( SomeException, try, finally, fromException )
-import qualified Data.Foldable as F
+import           Control.Exception ( SomeException, try, fromException )
 import           Data.List ( isInfixOf )
 import qualified Data.Map as M
+import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Time ( getCurrentTime, addUTCTime )
 import           Lens.Micro.Platform ( (.=), (%=), (%~), mapped )
@@ -31,6 +30,7 @@ import           System.Directory ( getTemporaryDirectory )
 import           System.Exit ( ExitCode(ExitSuccess) )
 import           System.IO ( hPutStrLn, hFlush )
 import           System.IO.Temp ( openTempFile )
+import           System.Timeout ( timeout )
 import           Text.Aspell ( Aspell, AspellOption(..), startAspell )
 
 import           Network.Mattermost.Endpoints
@@ -41,34 +41,46 @@ import           State.Editing ( requestSpellCheck )
 import           State.Setup.Threads.Logging
 import           TimeUtils ( lookupLocalTimeZone )
 import           Types
+import qualified Zipper as Z
 
 
-updateUserStatuses :: STM.TVar (Seq UserId) -> MVar () -> Session -> IO (Maybe (MH ()))
-updateUserStatuses usersVar lock session = do
-  lockResult <- tryTakeMVar lock
-  users <- STM.atomically $ STM.readTVar usersVar
+usersFromZipper :: Z.Zipper ChannelListGroup ChannelListEntry -> [UserId]
+usersFromZipper z =
+    let channelEntryUserId (CLUserDM _ uId) = Just uId
+        channelEntryUserId _ = Nothing
+    in concat $ (catMaybes . fmap channelEntryUserId . snd) <$> Z.toList z
 
-  case lockResult of
-      Just () | not (F.null users) -> do
-          statuses <- mmGetUserStatusByIds users session `finally` putMVar lock ()
-          return $ Just $ do
-              forM_ statuses $ \s ->
-                  setUserStatus (statusUserId s) (statusStatus s)
-      Just () -> putMVar lock () >> return Nothing
-      _ -> return Nothing
+updateUserStatuses :: [UserId] -> Session -> IO (Maybe (MH ()))
+updateUserStatuses uIds session =
+    case null uIds of
+        False -> do
+            statuses <- mmGetUserStatusByIds (Seq.fromList uIds) session
+            return $ Just $ do
+                forM_ statuses $ \s ->
+                    setUserStatus (statusUserId s) (statusStatus s)
+        True -> return Nothing
 
-startUserStatusUpdateThread :: STM.TVar (Seq UserId) -> MVar () -> Session -> RequestChan -> IO ()
-startUserStatusUpdateThread usersVar lock session requestChan = void $ forkIO $ forever refresh
+startUserStatusUpdateThread :: STM.TChan (Z.Zipper ChannelListGroup ChannelListEntry) -> Session -> RequestChan -> IO ()
+startUserStatusUpdateThread zipperChan session requestChan = void $ forkIO body
   where
       seconds = (* (1000 * 1000))
       userRefreshInterval = 30
-      refresh = do
-          STM.atomically $ STM.writeTChan requestChan $ do
-            rs <- try $ updateUserStatuses usersVar lock session
-            case rs of
-              Left (_ :: SomeException) -> return Nothing
-              Right upd -> return upd
-          threadDelay (seconds userRefreshInterval)
+      body = refresh []
+      refresh prev = do
+          result <- timeout (seconds userRefreshInterval) (STM.atomically $ STM.readTChan zipperChan)
+          let (uIds, update) = case result of
+                  Nothing -> (prev, True)
+                  Just z -> let ids = usersFromZipper z
+                            in (ids, ids /= prev)
+
+          when update $ do
+              STM.atomically $ STM.writeTChan requestChan $ do
+                  rs <- try $ updateUserStatuses uIds session
+                  case rs of
+                      Left (_ :: SomeException) -> return Nothing
+                      Right upd -> return upd
+
+          refresh uIds
 
 -- This thread refreshes the map of typing users every second, forever,
 -- to expire users who have stopped typing. Expiry time is 3 seconds.

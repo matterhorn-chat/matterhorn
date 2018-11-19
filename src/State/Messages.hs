@@ -300,7 +300,7 @@ addMessageToState newPostData = do
                         -- triggers a channel refresh.)
                         if chType == Group
                             then applyPreferenceChange pref
-                            else refreshChannel nc member
+                            else refreshChannel True nc member
 
                         addMessageToState newPostData >>= postProcessMessageAdd
 
