@@ -18,6 +18,7 @@ module Types
   , StartupStateInfo(..)
   , MHError(..)
   , ConnectionInfo(..)
+  , SidebarUpdate(..)
   , ChannelListEntry(..)
   , channelListEntryChannelId
   , channelListEntryUserId
@@ -1324,6 +1325,11 @@ trimChannelSigil n
 
 addNewUser :: UserInfo -> MH ()
 addNewUser u = csUsers %= addUser u
+
+data SidebarUpdate =
+    SidebarUpdateImmediate
+    | SidebarUpdateDeferred
+    deriving (Eq, Show)
 
 updateSidebar :: MH ()
 updateSidebar = do
