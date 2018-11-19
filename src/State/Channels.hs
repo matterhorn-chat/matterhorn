@@ -336,7 +336,7 @@ checkLastJoinRequest :: ChannelId -> MH Bool
 checkLastJoinRequest chanId = do
     lastReq <- use csPendingChannelChange
     case lastReq of
-        Just cId | cId == chanId -> do
+        Just (ChangeByChannelId cId) | cId == chanId -> do
             csPendingChannelChange .= Nothing
             return True
         _ -> return False
@@ -365,7 +365,7 @@ showChannelInSidebar cId = do
             case dmChannelShowPreference prefs uId of
                 Just False -> do
                     let pref = showDirectChannelPref (me^.userIdL) uId True
-                    csPendingChannelChange .= Just (ch^.ccInfo.cdChannelId)
+                    csPendingChannelChange .= Just (ChangeByChannelId $ ch^.ccInfo.cdChannelId)
                     doAsyncWith Preempt $ do
                         MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
                         return Nothing
@@ -840,7 +840,7 @@ joinChannel chanId = do
         Nothing -> do
             myId <- gets myUserId
             let member = MinChannelMember myId chanId
-            csPendingChannelChange .= Just chanId
+            csPendingChannelChange .= (Just $ ChangeByChannelId chanId)
             doAsyncChannelMM Preempt chanId (\ s _ c -> MM.mmAddUser c member s) endAsyncNOP
 
 attemptCreateDMChannel :: Text -> MH ()

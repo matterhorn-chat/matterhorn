@@ -19,6 +19,7 @@ module Types
   , MHError(..)
   , ConnectionInfo(..)
   , SidebarUpdate(..)
+  , PendingChannelChange(..)
   , ChannelListEntry(..)
   , channelListEntryChannelId
   , channelListEntryUserId
@@ -878,14 +879,20 @@ data ChatState =
               -- ^ The state of the user list overlay.
               , _csClientConfig :: Maybe ClientConfig
               -- ^ The Mattermost client configuration, as we understand it.
-              , _csPendingChannelChange :: Maybe ChannelId
-              -- ^ The most recently-joined channel ID that we look for
-              -- in an asynchronous join notification, so that we can
-              -- switch to it in the sidebar.
+              , _csPendingChannelChange :: Maybe PendingChannelChange
+              -- ^ A pending channel change that we need to apply once
+              -- the channel in question is available. We set this up
+              -- when we need to change to a channel in the sidebar, but
+              -- it isn't even there yet because we haven't loaded its
+              -- metadata.
               , _csViewedMessage :: Maybe Message
               -- ^ Set when the ViewMessage mode is active. The message
               -- being viewed.
               }
+
+data PendingChannelChange =
+    ChangeByChannelId ChannelId
+    deriving (Eq, Show)
 
 -- | Startup state information that is constructed prior to building a
 -- ChatState.
