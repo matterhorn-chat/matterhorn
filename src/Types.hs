@@ -74,7 +74,7 @@ module Types
   , csChannelSelectState
   , csEditState
   , csClientConfig
-  , csLastJoinRequest
+  , csPendingChannelChange
   , csViewedMessage
   , timeZone
   , whenMode
@@ -878,7 +878,7 @@ data ChatState =
               -- ^ The state of the user list overlay.
               , _csClientConfig :: Maybe ClientConfig
               -- ^ The Mattermost client configuration, as we understand it.
-              , _csLastJoinRequest :: Maybe ChannelId
+              , _csPendingChannelChange :: Maybe ChannelId
               -- ^ The most recently-joined channel ID that we look for
               -- in an asynchronous join notification, so that we can
               -- switch to it in the sidebar.
@@ -923,7 +923,7 @@ newState (StartupStateInfo {..}) =
               , _csPostListOverlay             = PostListOverlayState emptyDirSeq Nothing
               , _csUserListOverlay             = nullUserListOverlayState
               , _csClientConfig                = Nothing
-              , _csLastJoinRequest             = Nothing
+              , _csPendingChannelChange        = Nothing
               , _csViewedMessage               = Nothing
               }
 

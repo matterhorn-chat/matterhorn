@@ -334,10 +334,10 @@ handleNewChannel_ permitPostpone switch sbUpdate nc member = do
 -- so, return True and clear the state. Otherwise return False.
 checkLastJoinRequest :: ChannelId -> MH Bool
 checkLastJoinRequest chanId = do
-    lastReq <- use csLastJoinRequest
+    lastReq <- use csPendingChannelChange
     case lastReq of
         Just cId | cId == chanId -> do
-            csLastJoinRequest .= Nothing
+            csPendingChannelChange .= Nothing
             return True
         _ -> return False
 
@@ -365,7 +365,7 @@ showChannelInSidebar cId = do
             case dmChannelShowPreference prefs uId of
                 Just False -> do
                     let pref = showDirectChannelPref (me^.userIdL) uId True
-                    csLastJoinRequest .= Just (ch^.ccInfo.cdChannelId)
+                    csPendingChannelChange .= Just (ch^.ccInfo.cdChannelId)
                     doAsyncWith Preempt $ do
                         MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
                         return Nothing
@@ -840,7 +840,7 @@ joinChannel chanId = do
         Nothing -> do
             myId <- gets myUserId
             let member = MinChannelMember myId chanId
-            csLastJoinRequest .= Just chanId
+            csPendingChannelChange .= Just chanId
             doAsyncChannelMM Preempt chanId (\ s _ c -> MM.mmAddUser c member s) endAsyncNOP
 
 attemptCreateDMChannel :: Text -> MH ()
