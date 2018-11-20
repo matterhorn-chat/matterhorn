@@ -20,6 +20,8 @@ module State.Channels
   , prevChannel
   , nextChannel
   , recentChannel
+  , hideDMChannel
+  , hideCurrentDMChannel
   , createGroupChannel
   , showGroupChannelPref
   , channelHistoryForward
@@ -120,6 +122,31 @@ toggleChannelListVisibility :: MH ()
 toggleChannelListVisibility = do
     mh invalidateCache
     csShowChannelList %= not
+
+hideCurrentDMChannel :: MH ()
+hideCurrentDMChannel = hideDMChannel =<< use csCurrentChannelId
+
+hideDMChannel :: ChannelId -> MH ()
+hideDMChannel cId = do
+    me <- gets myUser
+    session <- getSession
+    withChannel cId $ \chan -> do
+        case chan^.ccInfo.cdType of
+            Direct -> do
+                let pref = showDirectChannelPref (me^.userIdL) uId False
+                    Just uId = chan^.ccInfo.cdDMUserId
+                csChannel(cId).ccInfo.cdSidebarShowOverride .= Nothing
+                doAsyncWith Preempt $ do
+                    MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
+                    return Nothing
+            Group -> do
+                let pref = hideGroupChannelPref cId (me^.userIdL)
+                csChannel(cId).ccInfo.cdSidebarShowOverride .= Nothing
+                doAsyncWith Preempt $ do
+                    MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
+                    return Nothing
+            _ -> do
+                mhError $ GenericError "Cannot hide this channel. Consider using /leave instead."
 
 -- | Called on async completion when the currently viewed channel has
 -- been updated (i.e., just switched to this channel) to update local

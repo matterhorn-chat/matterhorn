@@ -82,6 +82,10 @@ commandList =
     NoArg $ \ () ->
       beginCurrentChannelDeleteConfirm
 
+  , Cmd "hide" "Hide the current (DM) channel from the channel list"
+    NoArg $ \ () ->
+      hideCurrentDMChannel
+
   , Cmd "members" "Show the current channel's members"
     NoArg $ \ () ->
       enterChannelMembersUserList
