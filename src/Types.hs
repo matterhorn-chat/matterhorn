@@ -1391,6 +1391,10 @@ userList st = filter showUser $ allUsers (st^.csUsers)
 allUserIds :: ChatState -> [UserId]
 allUserIds st = getAllUserIds $ st^.csUsers
 
+-- BEWARE: you probably don't want this, but instead
+-- State.Users.withFetchedUser, since this only looks up users in the
+-- collection we have already loaded rather than all valid users on the
+-- server.
 userById :: UserId -> ChatState -> Maybe UserInfo
 userById uId st = findUserById uId (st^.csUsers)
 
@@ -1403,16 +1407,18 @@ myTeamId st = st ^. csMyTeam . teamIdL
 myUser :: ChatState -> User
 myUser st = st^.csMe
 
--- | Note: this only searches users we have already loaded. Be
--- aware that if you think you need a user we haven't fetched, use
--- withFetchedUser!
+-- BEWARE: you probably don't want this, but instead
+-- State.Users.withFetchedUser, since this only looks up users in the
+-- collection we have already loaded rather than all valid users on the
+-- server.
 userByUsername :: Text -> ChatState -> Maybe UserInfo
 userByUsername name st = do
     snd <$> (findUserByUsername name $ st^.csUsers)
 
--- | Note: this only searches users we have already loaded. Be
--- aware that if you think you need a user we haven't fetched, use
--- withFetchedUser!
+-- BEWARE: you probably don't want this, but instead
+-- State.Users.withFetchedUser, since this only looks up users in the
+-- collection we have already loaded rather than all valid users on the
+-- server.
 userByNickname :: Text -> ChatState -> Maybe UserInfo
 userByNickname name st =
     snd <$> (findUserByNickname name $ st^.csUsers)
