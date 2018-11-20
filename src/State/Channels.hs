@@ -655,7 +655,7 @@ createGroupChannel usernameList = do
     session <- getSession
 
     doAsyncWith Preempt $ do
-        let usernames = Seq.fromList $ T.words usernameList
+        let usernames = Seq.fromList $ fmap trimUserSigil $ T.words usernameList
         results <- MM.mmGetUsersByUsernames usernames session
 
         -- If we found all of the users mentioned, then create the group
