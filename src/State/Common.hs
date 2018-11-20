@@ -169,7 +169,9 @@ openURL link = do
                     mhSuspendAndResume $ \st -> do
                         args <- act
                         void $ runInteractiveCommand (T.unpack urlOpenCommand) args
-                        return $ setMode' Main st
+                        return st
+
+                    setMode Main
 
             return True
 
