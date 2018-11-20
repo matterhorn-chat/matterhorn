@@ -57,7 +57,7 @@ enterChannelInviteUserList = do
   myId <- gets myUserId
   enterUserListMode (ChannelNonMembers cId)
     (\u -> case u^.uiId /= myId of
-      True -> addUserToCurrentChannel (u^.uiName) >> return True
+      True -> addUserToCurrentChannel u >> return True
       False -> return False
     )
 

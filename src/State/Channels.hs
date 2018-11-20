@@ -27,6 +27,7 @@ module State.Channels
   , handleNewChannel
   , createOrdinaryChannel
   , handleChannelInvite
+  , addUserByNameToCurrentChannel
   , addUserToCurrentChannel
   , removeUserFromCurrentChannel
   , removeChannelFromState
@@ -751,15 +752,18 @@ handleChannelInvite cId = do
         tryMM (MM.mmGetChannel cId session)
               (\cwd -> return $ Just $ handleNewChannel False SidebarUpdateImmediate cwd member)
 
-addUserToCurrentChannel :: Text -> MH ()
-addUserToCurrentChannel uname =
-    withFetchedUser (UserFetchByUsername uname) $ \u -> do
-        cId <- use csCurrentChannelId
-        session <- getSession
-        let channelMember = MinChannelMember (u^.uiId) cId
-        doAsyncWith Normal $ do
-            tryMM (void $ MM.mmAddUser cId channelMember session)
-                  (const $ return Nothing)
+addUserByNameToCurrentChannel :: Text -> MH ()
+addUserByNameToCurrentChannel uname =
+    withFetchedUser (UserFetchByUsername uname) addUserToCurrentChannel
+
+addUserToCurrentChannel :: UserInfo -> MH ()
+addUserToCurrentChannel u = do
+    cId <- use csCurrentChannelId
+    session <- getSession
+    let channelMember = MinChannelMember (u^.uiId) cId
+    doAsyncWith Normal $ do
+        tryMM (void $ MM.mmAddUser cId channelMember session)
+              (const $ return Nothing)
 
 removeUserFromCurrentChannel :: Text -> MH ()
 removeUserFromCurrentChannel uname =
