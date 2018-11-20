@@ -130,7 +130,7 @@ editMessage new = do
     asyncFetchReactionsForPost (postChannelId new) new
     asyncFetchAttachments new
     cId <- use csCurrentChannelId
-    when (postChannelId new == cId) updateViewed
+    when (postChannelId new == cId) (updateViewed False)
 
 deleteMessage :: Post -> MH ()
 deleteMessage new = do
@@ -141,7 +141,7 @@ deleteMessage new = do
     chan.ccContents.cdMessages.traversed.filtered isDeletedMessage %= (& mDeleted .~ True)
     chan %= adjustUpdated new
     cId <- use csCurrentChannelId
-    when (postChannelId new == cId) updateViewed
+    when (postChannelId new == cId) (updateViewed False)
 
 addNewPostedMessage :: PostToAdd -> MH ()
 addNewPostedMessage p =
@@ -420,9 +420,9 @@ postProcessMessageAdd :: PostProcessMessageAdd -> MH ()
 postProcessMessageAdd ppma = postOp ppma
     where
         postOp NoAction                = return ()
-        postOp UpdateServerViewed      = updateViewed
+        postOp UpdateServerViewed      = updateViewed False
         postOp (NotifyUser p)          = maybeRingBell >> mapM_ maybeNotify p
-        postOp (NotifyUserAndServer p) = updateViewed >> maybeRingBell >> mapM_ maybeNotify p
+        postOp (NotifyUserAndServer p) = updateViewed False >> maybeRingBell >> mapM_ maybeNotify p
 
 maybeNotify :: PostToAdd -> MH ()
 maybeNotify (OldPost _) = do
