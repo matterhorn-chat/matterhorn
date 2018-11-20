@@ -225,6 +225,7 @@ import           Prelude.MH
 
 import qualified Brick
 import           Brick ( EventM, Next )
+import           Brick.Main ( invalidateCacheEntry )
 import           Brick.AttrMap ( AttrMap )
 import           Brick.BChan
 import           Brick.Widgets.Edit ( Editor, editor )
@@ -538,6 +539,7 @@ data Name =
     | UserListSearchInput
     | UserListSearchResults
     | ViewMessageArea
+    | ChannelSidebar
     deriving (Eq, Show, Ord)
 
 -- | The sum type of exceptions we expect to encounter on authentication
@@ -1341,6 +1343,7 @@ data SidebarUpdate =
 
 updateSidebar :: MH ()
 updateSidebar = do
+    mh $ invalidateCacheEntry ChannelSidebar
     cs <- use csChannels
     us <- use csUsers
     cconfig <- use csClientConfig

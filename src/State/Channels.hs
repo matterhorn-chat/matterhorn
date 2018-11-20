@@ -49,7 +49,7 @@ where
 import           Prelude ()
 import           Prelude.MH
 
-import           Brick.Main ( viewportScroll, vScrollToBeginning, invalidateCache )
+import           Brick.Main ( viewportScroll, vScrollToBeginning, invalidateCache, invalidateCacheEntry )
 import           Brick.Widgets.Edit ( applyEdit, getEditContents, editContentsL )
 import           Brick.Widgets.List ( list )
 import           Control.Concurrent.Async ( runConcurrently, Concurrently(..) )
@@ -404,6 +404,7 @@ setFocusWith f = do
     -- If we aren't changing anything, skip all the book-keeping because
     -- we'll end up clobbering things like csRecentChannel.
     when (newFocus /= oldFocus) $ do
+        mh $ invalidateCacheEntry ChannelSidebar
         preChangeChannelCommon
         csFocus .= newZipper
         updateViewed True
@@ -553,6 +554,7 @@ removeChannelFromState cId = do
             csChannels                          %= removeChannel cId
             -- Remove from focus zipper
             csFocus %= Z.filterZipper ((/= cId) . channelListEntryChannelId)
+            updateSidebar
 
 nextChannel :: MH ()
 nextChannel = setFocusWith Z.right

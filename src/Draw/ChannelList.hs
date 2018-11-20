@@ -61,6 +61,7 @@ renderChannelList st =
                         renderChannelListGroup st (renderChannelSelectListEntry (Z.focus zipper)) <$>
                             Z.toList zipper
             _ ->
+                cached ChannelSidebar $
                 vBox $
                 renderChannelListGroup st (\s e -> renderChannelListEntry $ mkChannelEntryData s e) <$>
                     Z.toList (st^.csFocus)
