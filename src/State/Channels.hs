@@ -748,33 +748,23 @@ handleChannelInvite cId = do
               (\cwd -> return $ Just $ handleNewChannel False SidebarUpdateImmediate cwd member)
 
 addUserToCurrentChannel :: Text -> MH ()
-addUserToCurrentChannel uname = do
-    -- First: is this a valid username?
-    result <- gets (userByUsername uname)
-    case result of
-        Just u -> do
-            cId <- use csCurrentChannelId
-            session <- getSession
-            let channelMember = MinChannelMember (u^.uiId) cId
-            doAsyncWith Normal $ do
-                tryMM (void $ MM.mmAddUser cId channelMember session)
-                      (const $ return Nothing)
-        _ -> do
-            mhError $ NoSuchUser uname
+addUserToCurrentChannel uname =
+    withFetchedUser (UserFetchByUsername uname) $ \u -> do
+        cId <- use csCurrentChannelId
+        session <- getSession
+        let channelMember = MinChannelMember (u^.uiId) cId
+        doAsyncWith Normal $ do
+            tryMM (void $ MM.mmAddUser cId channelMember session)
+                  (const $ return Nothing)
 
 removeUserFromCurrentChannel :: Text -> MH ()
-removeUserFromCurrentChannel uname = do
-    -- First: is this a valid username?
-    result <- gets (userByUsername uname)
-    case result of
-        Just u -> do
-            cId <- use csCurrentChannelId
-            session <- getSession
-            doAsyncWith Normal $ do
-                tryMM (void $ MM.mmRemoveUserFromChannel cId (UserById $ u^.uiId) session)
-                      (const $ return Nothing)
-        _ -> do
-            mhError $ NoSuchUser uname
+removeUserFromCurrentChannel uname =
+    withFetchedUser (UserFetchByUsername uname) $ \u -> do
+        cId <- use csCurrentChannelId
+        session <- getSession
+        doAsyncWith Normal $ do
+            tryMM (void $ MM.mmRemoveUserFromChannel cId (UserById $ u^.uiId) session)
+                  (const $ return Nothing)
 
 startLeaveCurrentChannel :: MH ()
 startLeaveCurrentChannel = do
@@ -865,33 +855,32 @@ changeChannelByName :: Text -> MH ()
 changeChannelByName name = do
     mCId <- gets (channelIdByChannelName name)
     mDMCId <- gets (channelIdByUsername name)
-    foundUser <- gets (userByUsername name)
 
-    let err = mhError $ AmbiguousName name
-
-    case (mCId, mDMCId) of
-      (Nothing, Nothing) ->
-          case foundUser of
-              -- We know about the user but there isn't already a DM
-              -- channel, so create one.
-              Just user -> createDMChannel user
-              -- There were no matches of any kind.
-              Nothing -> mhError $ NoSuchChannel name
-      (Just cId, Nothing)
-          -- We matched a channel and there was an explicit sigil, so we
-          -- don't care about the username match.
-          | normalChannelSigil `T.isPrefixOf` name -> setFocus cId
-          -- We matched both a channel and a user, even though there is
-          -- no DM channel.
-          | Just _ <- foundUser -> err
-          -- We matched a channel only.
-          | otherwise -> setFocus cId
-      (Nothing, Just cId) ->
-          -- We matched a DM channel only.
-          setFocus cId
-      (Just _, Just _) ->
-          -- We matched both a channel and a DM channel.
-          err
+    withFetchedUserMaybe (UserFetchByUsername name) $ \foundUser -> do
+        let err = mhError $ AmbiguousName name
+        case (mCId, mDMCId) of
+          (Nothing, Nothing) ->
+              case foundUser of
+                  -- We know about the user but there isn't already a DM
+                  -- channel, so create one.
+                  Just user -> createDMChannel user
+                  -- There were no matches of any kind.
+                  Nothing -> mhError $ NoSuchChannel name
+          (Just cId, Nothing)
+              -- We matched a channel and there was an explicit sigil, so we
+              -- don't care about the username match.
+              | normalChannelSigil `T.isPrefixOf` name -> setFocus cId
+              -- We matched both a channel and a user, even though there is
+              -- no DM channel.
+              | Just _ <- foundUser -> err
+              -- We matched a channel only.
+              | otherwise -> setFocus cId
+          (Nothing, Just cId) ->
+              -- We matched a DM channel only.
+              setFocus cId
+          (Just _, Just _) ->
+              -- We matched both a channel and a DM channel.
+              err
 
 setChannelTopic :: Text -> MH ()
 setChannelTopic msg = do

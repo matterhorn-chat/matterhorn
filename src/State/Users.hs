@@ -1,12 +1,18 @@
+{-# LANGUAGE OverloadedStrings #-}
 module State.Users
   ( handleNewUsers
   , handleTypingUser
+  , UserFetch(..)
+  , withFetchedUser
+  , withFetchedUserMaybe
   )
 where
 
 import           Prelude ()
 import           Prelude.MH
 
+import qualified Data.Foldable as F
+import qualified Data.Sequence as Seq
 import           Data.Time ( getCurrentTime )
 import           Lens.Micro.Platform
 
@@ -39,3 +45,59 @@ handleTypingUser uId cId = do
   when (configShowTypingIndicator config) $ do
     ts <- liftIO getCurrentTime
     csChannels %= modifyChannelById cId (addChannelTypingUser uId ts)
+
+data UserFetch =
+    UserFetchById UserId
+    | UserFetchByUsername Text
+    | UserFetchByNickname Text
+    deriving (Eq, Show)
+
+-- | Given a user fetching strategy, locate the user in the state or
+-- fetch it from the server, and pass the result to the specified
+-- action. Assumes a single match is the only expected/valid result.
+withFetchedUser :: UserFetch -> (UserInfo -> MH ()) -> MH ()
+withFetchedUser fetch handle =
+    withFetchedUserMaybe fetch $ \u -> do
+        case u of
+            Nothing -> postErrorMessage' "No such user"
+            Just user -> handle user
+
+withFetchedUserMaybe :: UserFetch -> (Maybe UserInfo -> MH ()) -> MH ()
+withFetchedUserMaybe fetch handle = do
+    st <- use id
+    session <- getSession
+
+    let localMatch = case fetch of
+            UserFetchById uId -> userById uId st
+            UserFetchByUsername uname -> userByUsername uname st
+            UserFetchByNickname nick -> userByNickname nick st
+
+    case localMatch of
+        Just user -> handle $ Just user
+        Nothing -> doAsyncWith Normal $ do
+            results <- case fetch of
+                UserFetchById uId ->
+                    MM.mmGetUsersByIds (Seq.singleton uId) session
+                UserFetchByUsername uname ->
+                    MM.mmGetUsersByUsernames (Seq.singleton uname) session
+                UserFetchByNickname nick -> do
+                    let req = UserSearch { userSearchTerm = nick
+                                         , userSearchAllowInactive = True
+                                         , userSearchWithoutTeam = True
+                                         , userSearchInChannelId = Nothing
+                                         , userSearchNotInTeamId = Nothing
+                                         , userSearchNotInChannelId = Nothing
+                                         , userSearchTeamId = Nothing
+                                         }
+                    MM.mmSearchUsers req session
+
+            return $ Just $ do
+                infos <- forM (F.toList results) $ \u -> do
+                    let info = userInfoFromUser u True
+                    addNewUser info
+                    return info
+
+                case infos of
+                    [match] -> handle $ Just match
+                    [] -> handle Nothing
+                    _ -> postErrorMessage' "Error: ambiguous user information"
