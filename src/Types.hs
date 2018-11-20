@@ -189,8 +189,6 @@ module Types
   , myUserId
   , myTeamId
   , usernameForUserId
-  , userIdForUsername
-  , userIdForNickname
   , userByUsername
   , userByNickname
   , channelIdByChannelName
@@ -1280,13 +1278,12 @@ displayNameForUserId uId st = do
     u <- findUserById uId (st^.csUsers)
     return $ displayNameForUser u (st^.csClientConfig) (st^.csResources.crUserPreferences)
 
+-- | Note: this only searches users we have already loaded. Be
+-- aware that if you think you need a user we haven't fetched, use
+-- withFetchedUser!
 userIdForUsername :: Text -> ChatState -> Maybe UserId
 userIdForUsername name st =
     fst <$> (findUserByUsername name $ st^.csUsers)
-
-userIdForNickname :: Text -> ChatState -> Maybe UserId
-userIdForNickname name st =
-    fst <$> (findUserByNickname name $ st^.csUsers)
 
 channelIdByChannelName :: Text -> ChatState -> Maybe ChannelId
 channelIdByChannelName name st =
@@ -1406,10 +1403,16 @@ myTeamId st = st ^. csMyTeam . teamIdL
 myUser :: ChatState -> User
 myUser st = st^.csMe
 
+-- | Note: this only searches users we have already loaded. Be
+-- aware that if you think you need a user we haven't fetched, use
+-- withFetchedUser!
 userByUsername :: Text -> ChatState -> Maybe UserInfo
 userByUsername name st = do
     snd <$> (findUserByUsername name $ st^.csUsers)
 
+-- | Note: this only searches users we have already loaded. Be
+-- aware that if you think you need a user we haven't fetched, use
+-- withFetchedUser!
 userByNickname :: Text -> ChatState -> Maybe UserInfo
 userByNickname name st =
     snd <$> (findUserByNickname name $ st^.csUsers)
