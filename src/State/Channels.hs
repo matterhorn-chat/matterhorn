@@ -16,6 +16,7 @@ module State.Channels
   , getNextUnreadUserOrChannel
   , nextUnreadChannel
   , nextUnreadUserOrChannel
+  , createOrFocusDMChannel
   , prevChannel
   , nextChannel
   , recentChannel
@@ -836,8 +837,8 @@ joinChannel chanId = do
             csPendingChannelChange .= (Just $ ChangeByChannelId chanId)
             doAsyncChannelMM Preempt chanId (\ s _ c -> MM.mmAddUser c member s) endAsyncNOP
 
-createDMChannel :: UserInfo -> MH ()
-createDMChannel user = do
+createOrFocusDMChannel :: UserInfo -> MH ()
+createOrFocusDMChannel user = do
     cs <- use csChannels
     case getDmChannelFor (user^.uiId) cs of
         Just cId -> setFocus cId
@@ -865,7 +866,7 @@ changeChannelByName name = do
               case foundUser of
                   -- We know about the user but there isn't already a DM
                   -- channel, so create one.
-                  Just user -> createDMChannel user
+                  Just user -> createOrFocusDMChannel user
                   -- There were no matches of any kind.
                   Nothing -> mhError $ NoSuchChannel name
           (Just cId, Nothing)
