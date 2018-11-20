@@ -423,8 +423,15 @@ getDMChannelsInOrder now cconfig prefs us cs =
     let oneOnOneDmChans = getDMChannels now cconfig prefs us cs
         groupChans = getGroupDMChannels now prefs cs
         allDmChans = groupChans <> oneOnOneDmChans
-        sorted = sortBy (comparing fst) allDmChans
-    in snd <$> sorted
+        sorter (u1, n1, _) (u2, n2, _) =
+            if u1 == u2
+            then compare n1 n2
+            else if u1 && not u2
+                 then LT
+                 else GT
+        sorted = sortBy sorter allDmChans
+        third (_, _, c) = c
+    in third <$> sorted
 
 useNickname' :: Maybe ClientConfig -> UserPreferences -> Bool
 useNickname' clientConfig prefs =
@@ -445,11 +452,11 @@ displayNameForUser u clientConfig prefs
 getGroupDMChannels :: UTCTime
                    -> UserPreferences
                    -> ClientChannels
-                   -> [(T.Text, ChannelListEntry)]
+                   -> [(Bool, T.Text, ChannelListEntry)]
 getGroupDMChannels now prefs cs =
     let matches (_, info) = info^.ccInfo.cdType == Group &&
                             groupChannelShouldAppear now prefs info
-    in fmap (\(cId, ch) -> (ch^.ccInfo.cdName, CLGroupDM cId)) $
+    in fmap (\(cId, ch) -> (hasUnread' ch, ch^.ccInfo.cdName, CLGroupDM cId)) $
        filteredChannels matches cs
 
 getDMChannels :: UTCTime
@@ -457,7 +464,7 @@ getDMChannels :: UTCTime
               -> UserPreferences
               -> Users
               -> ClientChannels
-              -> [(T.Text, ChannelListEntry)]
+              -> [(Bool, T.Text, ChannelListEntry)]
 getDMChannels now cconfig prefs us cs =
     let mapping = allDmChannelMappings cs
         mappingWithUserInfo = catMaybes $ getInfo <$> mapping
@@ -468,7 +475,7 @@ getDMChannels now cconfig prefs us cs =
                 True -> Nothing
                 False ->
                     if dmChannelShouldAppear now prefs c
-                    then return (displayNameForUser u cconfig prefs, CLUserDM cId uId)
+                    then return (hasUnread' c, displayNameForUser u cconfig prefs, CLUserDM cId uId)
                     else Nothing
     in mappingWithUserInfo
 
