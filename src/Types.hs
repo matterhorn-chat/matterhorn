@@ -891,6 +891,7 @@ data ChatState =
 
 data PendingChannelChange =
     ChangeByChannelId ChannelId
+    | ChangeByUserId UserId
     deriving (Eq, Show)
 
 -- | Startup state information that is constructed prior to building a

@@ -325,9 +325,12 @@ handleNewChannel_ permitPostpone switch sbUpdate nc member = do
                     -- channel. Also consider the last join request
                     -- state field in case this is an asynchronous
                     -- channel addition triggered by a /join.
-                    pending <- checkPendingChannelChange (ChangeByChannelId $ getId nc)
+                    pending1 <- checkPendingChannelChange (ChangeByChannelId $ getId nc)
+                    pending2 <- case cChannel^.ccInfo.cdDMUserId of
+                        Nothing -> return False
+                        Just uId -> checkPendingChannelChange (ChangeByUserId uId)
 
-                    when (switch || pending) $ setFocus (getId nc)
+                    when (switch || pending1 || pending2) $ setFocus (getId nc)
 
 -- | Check to see whether the specified channel has been queued up to
 -- be switched to now that the channel is registered in the state. If
@@ -842,12 +845,11 @@ createDMChannel user = do
             -- We have a user of that name but no channel. Time to make one!
             myId <- gets myUserId
             session <- getSession
+            csPendingChannelChange .= (Just $ ChangeByUserId $ user^.uiId)
             doAsyncWith Normal $ do
                 -- create a new channel
-                nc <- MM.mmCreateDirectMessageChannel (user^.uiId, myId) session
-                cwd <- MM.mmGetChannel (getId nc) session
-                member <- MM.mmGetChannelMember (getId nc) UserMe session
-                return $ Just $ handleNewChannel True SidebarUpdateImmediate cwd member
+                void $ MM.mmCreateDirectMessageChannel (user^.uiId, myId) session
+                return Nothing
 
 -- | This switches to the named channel or creates it if it is a missing
 -- but valid user channel.
