@@ -76,21 +76,28 @@ import           Zipper ( Zipper )
 import qualified Zipper as Z
 
 
-updateViewed :: MH ()
-updateViewed = do
+updateViewed :: Bool -> MH ()
+updateViewed updatePrev = do
     csCurrentChannel.ccInfo.cdMentionCount .= 0
-    updateViewedChan =<< use csCurrentChannelId
+    updateViewedChan updatePrev =<< use csCurrentChannelId
 
 -- | When a new channel has been selected for viewing, this will
 -- notify the server of the change, and also update the local channel
 -- state to set the last-viewed time for the previous channel and
 -- update the viewed time to now for the newly selected channel.
-updateViewedChan :: ChannelId -> MH ()
-updateViewedChan cId = use csConnectionStatus >>= \case
+--
+-- The boolean argument indicates whether the view time of the previous
+-- channel (if any) should be updated, too. We typically want to do that
+-- only on channel switching; when we just want to update the view time
+-- of the specified channel, False should be provided.
+updateViewedChan :: Bool -> ChannelId -> MH ()
+updateViewedChan updatePrev cId = use csConnectionStatus >>= \case
     Connected -> do
         -- Only do this if we're connected to avoid triggering noisy
         -- exceptions.
-        pId <- use csRecentChannel
+        pId <- if updatePrev
+               then use csRecentChannel
+               else return Nothing
         doAsyncChannelMM Preempt cId
           (\s _ c -> MM.mmViewChannel UserMe c pId s)
           (\c () -> setLastViewedFor pId c)
@@ -370,7 +377,7 @@ setFocusWith f = do
     when (newFocus /= oldFocus) $ do
         preChangeChannelCommon
         csFocus .= newZipper
-        updateViewed
+        updateViewed True
         postChangeChannelCommon
 
 postChangeChannelCommon :: MH ()
