@@ -84,7 +84,9 @@ invokeExternalEditor = do
             Sys.ExitFailure _ -> return st
 
 toggleMessagePreview :: MH ()
-toggleMessagePreview = csShowMessagePreview %= not
+toggleMessagePreview = do
+    mh invalidateCache
+    csShowMessagePreview %= not
 
 handlePaste :: BS.ByteString -> MH ()
 handlePaste bytes = do
