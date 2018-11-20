@@ -60,6 +60,7 @@ import qualified Data.Foldable as F
 import           Data.Function ( on )
 import           Data.List ( nub )
 import           Data.Maybe ( fromJust )
+import qualified Data.Set as S
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import qualified Data.Vector as V
@@ -650,35 +651,34 @@ leaveCurrentChannel = use csCurrentChannelId >>= leaveChannel
 
 createGroupChannel :: Text -> MH ()
 createGroupChannel usernameList = do
-    st <- use id
     me <- gets myUser
+    session <- getSession
 
-    let usernames = T.words usernameList
-        findUserIds [] = return []
-        findUserIds (n:ns) = do
-            case userByUsername n st of
-                Nothing -> do
-                    mhError $ NoSuchUser n
-                    return []
-                Just u -> (u^.uiId:) <$> findUserIds ns
+    doAsyncWith Preempt $ do
+        let usernames = Seq.fromList $ T.words usernameList
+        results <- MM.mmGetUsersByUsernames usernames session
 
-    results <- findUserIds usernames
-
-    -- If we found all of the users mentioned, then create the group
-    -- channel.
-    when (length results == length usernames) $ do
-        session <- getSession
-        doAsyncWith Preempt $ do
-            chan <- MM.mmCreateGroupMessageChannel (Seq.fromList results) session
-            let pref = showGroupChannelPref (channelId chan) (me^.userIdL)
-            -- It's possible that the channel already existed, in which
-            -- case we want to request a preference change to show it.
-            MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
-            cwd <- MM.mmGetChannel (channelId chan) session
-            member <- MM.mmGetChannelMember (channelId chan) UserMe session
-            return $ Just $ do
-                applyPreferenceChange pref
-                handleNewChannel True SidebarUpdateImmediate cwd member
+        -- If we found all of the users mentioned, then create the group
+        -- channel.
+        case length results == length usernames of
+            True -> do
+                chan <- MM.mmCreateGroupMessageChannel (userId <$> results) session
+                let pref = showGroupChannelPref (channelId chan) (me^.userIdL)
+                -- It's possible that the channel already existed, in which
+                -- case we want to request a preference change to show it.
+                MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
+                cwd <- MM.mmGetChannel (channelId chan) session
+                member <- MM.mmGetChannelMember (channelId chan) UserMe session
+                return $ Just $ do
+                    applyPreferenceChange pref
+                    handleNewChannel True SidebarUpdateImmediate cwd member
+            False -> do
+                let foundUsernames = userUsername <$> results
+                    missingUsernames = S.toList $
+                                       S.difference (S.fromList $ F.toList usernames)
+                                                    (S.fromList $ F.toList foundUsernames)
+                return $ Just $ do
+                    forM_ missingUsernames (mhError . NoSuchUser)
 
 channelHistoryForward :: MH ()
 channelHistoryForward = do
