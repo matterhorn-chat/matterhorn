@@ -41,10 +41,11 @@ handleNewUsers newUserIds after = do
 -- typing users on UI
 handleTypingUser :: UserId -> ChannelId -> MH ()
 handleTypingUser uId cId = do
-  config <- use (csResources.crConfiguration)
-  when (configShowTypingIndicator config) $ do
-    ts <- liftIO getCurrentTime
-    csChannels %= modifyChannelById cId (addChannelTypingUser uId ts)
+    config <- use (csResources.crConfiguration)
+    when (configShowTypingIndicator config) $ do
+        withFetchedUser (UserFetchById uId) $ const $ do
+            ts <- liftIO getCurrentTime
+            csChannels %= modifyChannelById cId (addChannelTypingUser uId ts)
 
 data UserFetch =
     UserFetchById UserId
