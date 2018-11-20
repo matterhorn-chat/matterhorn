@@ -47,10 +47,14 @@ handleTypingUser uId cId = do
             ts <- liftIO getCurrentTime
             csChannels %= modifyChannelById cId (addChannelTypingUser uId ts)
 
+-- | A user fetching strategy.
 data UserFetch =
     UserFetchById UserId
+    -- ^ Fetch the user with the specified ID.
     | UserFetchByUsername Text
+    -- ^ Fetch the user with the specified username.
     | UserFetchByNickname Text
+    -- ^ Fetch the user with the specified nickname.
     deriving (Eq, Show)
 
 -- | Given a user fetching strategy, locate the user in the state or
