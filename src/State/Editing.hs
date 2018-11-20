@@ -14,6 +14,7 @@ where
 import           Prelude ()
 import           Prelude.MH
 
+import           Brick.Main ( invalidateCache )
 import           Brick.Widgets.Edit ( Editor, applyEdit , handleEditorEvent
                                     , getEditContents, editContentsL )
 import qualified Codec.Binary.UTF8.Generic as UTF8
