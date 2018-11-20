@@ -136,6 +136,7 @@ module Types
   , userPrefDirectChannelPrefs
   , userPrefTeammateNameDisplayMode
   , dmChannelShowPreference
+  , groupChannelShowPreference
 
   , defaultUserPreferences
   , setUserPreferences
@@ -420,7 +421,7 @@ getDMChannelsInOrder :: UTCTime
                      -> [ChannelListEntry]
 getDMChannelsInOrder now cconfig prefs us cs =
     let oneOnOneDmChans = getDMChannels now cconfig prefs us cs
-        groupChans = getGroupDMChannels cs
+        groupChans = getGroupDMChannels now prefs cs
         allDmChans = groupChans <> oneOnOneDmChans
         sorted = sortBy (comparing fst) allDmChans
     in snd <$> sorted
@@ -441,10 +442,13 @@ displayNameForUser u clientConfig prefs
     | otherwise =
         u^.uiName
 
-getGroupDMChannels :: ClientChannels
+getGroupDMChannels :: UTCTime
+                   -> UserPreferences
+                   -> ClientChannels
                    -> [(T.Text, ChannelListEntry)]
-getGroupDMChannels cs =
-    let matches (_, info) = info^.ccInfo.cdType == Group
+getGroupDMChannels now prefs cs =
+    let matches (_, info) = info^.ccInfo.cdType == Group &&
+                            groupChannelShouldAppear now prefs info
     in fmap (\(cId, ch) -> (ch^.ccInfo.cdName, CLGroupDM cId)) $
        filteredChannels matches cs
 
@@ -491,8 +495,26 @@ dmChannelShouldAppear now prefs c =
                      updated >= cutoff
                    ]
 
+groupChannelShouldAppear :: UTCTime -> UserPreferences -> ClientChannel -> Bool
+groupChannelShouldAppear now prefs c =
+    let weeksAgo n = nominalDay * (-7 * n)
+        localCutoff = addUTCTime (weeksAgo 1) now
+        cutoff = ServerTime localCutoff
+        updated = c^.ccInfo.cdUpdated
+    in if hasUnread' c || maybe False (>= localCutoff) (c^.ccInfo.cdSidebarShowOverride)
+       then True
+       else case groupChannelShowPreference prefs (c^.ccInfo.cdChannelId) of
+           Just False -> False
+           _ -> or [
+                   -- The channel was updated recently enough
+                     updated >= cutoff
+                   ]
+
 dmChannelShowPreference :: UserPreferences -> UserId -> Maybe Bool
 dmChannelShowPreference ps uId = HM.lookup uId (_userPrefDirectChannelPrefs ps)
+
+groupChannelShowPreference :: UserPreferences -> ChannelId -> Maybe Bool
+groupChannelShowPreference ps cId = HM.lookup cId (_userPrefGroupChannelPrefs ps)
 
 -- * Internal Names and References
 

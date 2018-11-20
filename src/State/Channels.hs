@@ -226,11 +226,7 @@ refreshChannel upd chan member = do
     let ourTeam = channelTeamId chan == Nothing ||
                   Just myTId == channelTeamId chan
 
-    -- If this is a group channel that the user has chosen to hide or if
-    -- the channel is not a channel for the current session's team, ignore
-    -- the refresh request.
-    isHidden <- channelHiddenPreference cId
-    case isHidden || not ourTeam of
+    case not ourTeam of
         True -> return ()
         False -> do
             -- If this channel is unknown, register it first.
@@ -239,12 +235,6 @@ refreshChannel upd chan member = do
                 handleNewChannel False upd chan member
 
             updateChannelInfo cId chan member
-
-channelHiddenPreference :: ChannelId -> MH Bool
-channelHiddenPreference cId = do
-    prefs <- use (csResources.crUserPreferences.userPrefGroupChannelPrefs)
-    let matching = filter (\p -> fst p == cId) (HM.toList prefs)
-    return $ any (not . snd) matching
 
 handleNewChannel :: Bool -> SidebarUpdate -> Channel -> ChannelMember -> MH ()
 handleNewChannel = handleNewChannel_ True
@@ -371,21 +361,37 @@ showChannelInSidebar cId = do
     me <- gets myUser
     prefs <- use (csResources.crUserPreferences)
     session <- getSession
+
+    let showAndUpdate = do
+            now <- liftIO getCurrentTime
+            csChannel(cId).ccInfo.cdSidebarShowOverride .= Just now
+            updateSidebar
+
     case mChan of
         Nothing -> return ()
-        Just ch -> when (ch^.ccInfo.cdType == Direct) $ do
-            let Just uId = ch^.ccInfo.cdDMUserId
-            case dmChannelShowPreference prefs uId of
-                Just False -> do
-                    let pref = showDirectChannelPref (me^.userIdL) uId True
-                    csPendingChannelChange .= Just (ChangeByChannelId $ ch^.ccInfo.cdChannelId)
-                    doAsyncWith Preempt $ do
-                        MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
-                        return Nothing
-                _ -> do
-                    now <- liftIO getCurrentTime
-                    csChannel(cId).ccInfo.cdSidebarShowOverride .= Just now
-                    updateSidebar
+        Just ch
+            | ch^.ccInfo.cdType == Direct -> do
+                let Just uId = ch^.ccInfo.cdDMUserId
+                case dmChannelShowPreference prefs uId of
+                    Just False -> do
+                        let pref = showDirectChannelPref (me^.userIdL) uId True
+                        csPendingChannelChange .= Just (ChangeByChannelId $ ch^.ccInfo.cdChannelId)
+                        doAsyncWith Preempt $ do
+                            MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
+                            return Nothing
+                    _ -> showAndUpdate
+
+            | ch^.ccInfo.cdType == Group -> do
+                case groupChannelShowPreference prefs cId of
+                    Just False -> do
+                        let pref = showGroupChannelPref cId (me^.userIdL)
+                        csPendingChannelChange .= Just (ChangeByChannelId $ ch^.ccInfo.cdChannelId)
+                        doAsyncWith Preempt $ do
+                            MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
+                            return Nothing
+                    _ -> showAndUpdate
+
+        _ -> showAndUpdate
 
 setFocusWith :: (Zipper ChannelListGroup ChannelListEntry
               -> Zipper ChannelListGroup ChannelListEntry) -> MH ()
@@ -508,19 +514,17 @@ applyPreferenceChange pref = do
                       when pending $ setFocus dmcId
 
       | Just g <- preferenceToGroupChannelPreference pref -> do
-          let cId = groupChannelId g
-          mChan <- preuse $ csChannel cId
+          updateSidebar
 
-          case (mChan, groupChannelShow g) of
-              (Just _, False) ->
-                  -- If it has been set to hidden and we are showing it,
-                  -- remove it from the state.
-                  removeChannelFromState cId
-              (Nothing, True) ->
-                  -- If it has been set to showing and we are not showing
-                  -- it, ask for a load/refresh.
-                  refreshChannelById cId
-              _ -> return ()
+          -- We need to check on whether this preference was to show a
+          -- channel and, if so, whether it was the one we attempted to
+          -- switch to (thus triggering the preference change). If so,
+          -- we need to switch to it now.
+          let cId = groupChannelId g
+          when (groupChannelShow g) $ do
+              pending <- checkPendingChannelChange $ ChangeByChannelId cId
+              when pending $ setFocus cId
+
       | otherwise -> return ()
 
 refreshChannelById :: ChannelId -> MH ()
@@ -653,6 +657,7 @@ createGroupChannel :: Text -> MH ()
 createGroupChannel usernameList = do
     me <- gets myUser
     session <- getSession
+    cs <- use csChannels
 
     doAsyncWith Preempt $ do
         let usernames = Seq.fromList $ fmap trimUserSigil $ T.words usernameList
@@ -663,15 +668,16 @@ createGroupChannel usernameList = do
         case length results == length usernames of
             True -> do
                 chan <- MM.mmCreateGroupMessageChannel (userId <$> results) session
-                let pref = showGroupChannelPref (channelId chan) (me^.userIdL)
-                -- It's possible that the channel already existed, in which
-                -- case we want to request a preference change to show it.
-                MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
-                cwd <- MM.mmGetChannel (channelId chan) session
-                member <- MM.mmGetChannelMember (channelId chan) UserMe session
-                return $ Just $ do
-                    applyPreferenceChange pref
-                    handleNewChannel True SidebarUpdateImmediate cwd member
+                -- If we already know about the channel ID, that means
+                -- the channel already exists so we can just switch to
+                -- it.
+                case findChannelById (channelId chan) cs of
+                    Just _ -> return $ Just $ setFocus (channelId chan)
+                    Nothing -> do
+                        let pref = showGroupChannelPref (channelId chan) (me^.userIdL)
+                        MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
+                        return $ Just $ do
+                            applyPreferenceChange pref
             False -> do
                 let foundUsernames = userUsername <$> results
                     missingUsernames = S.toList $
