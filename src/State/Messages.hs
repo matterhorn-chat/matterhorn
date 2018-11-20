@@ -414,9 +414,9 @@ postProcessMessageAdd :: PostProcessMessageAdd -> MH ()
 postProcessMessageAdd ppma = postOp ppma
     where
         postOp NoAction                = return ()
-        postOp UpdateServerViewed      = updateViewed
+        postOp UpdateServerViewed      = updateViewed False
         postOp (NotifyUser p)          = maybeRingBell >> mapM_ maybeNotify p
-        postOp (NotifyUserAndServer p) = updateViewed >> maybeRingBell >> mapM_ maybeNotify p
+        postOp (NotifyUserAndServer p) = updateViewed False >> maybeRingBell >> mapM_ maybeNotify p
 
 maybeNotify :: PostToAdd -> MH ()
 maybeNotify (OldPost _) = do

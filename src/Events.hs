@@ -180,7 +180,7 @@ handleWSEvent we = do
             | Just p <- wepPost (weData we) -> do
                 editMessage p
                 cId <- use csCurrentChannelId
-                when (postChannelId p == cId) updateViewed
+                when (postChannelId p == cId) (updateViewed False)
                 when (postChannelId p /= cId) $
                     showChannelInSidebar (p^.postChannelIdL)
             | otherwise -> return ()
@@ -189,7 +189,7 @@ handleWSEvent we = do
             | Just p <- wepPost (weData we) -> do
                 deleteMessage p
                 cId <- use csCurrentChannelId
-                when (postChannelId p == cId) updateViewed
+                when (postChannelId p == cId) (updateViewed False)
                 when (postChannelId p /= cId) $
                     showChannelInSidebar (p^.postChannelIdL)
             | otherwise -> return ()
