@@ -224,7 +224,7 @@ import           Prelude.MH
 
 import qualified Brick
 import           Brick ( EventM, Next )
-import           Brick.Main ( invalidateCacheEntry )
+import           Brick.Main ( invalidateCache, invalidateCacheEntry )
 import           Brick.AttrMap ( AttrMap )
 import           Brick.BChan
 import           Brick.Widgets.Edit ( Editor, editor )
@@ -1210,7 +1210,9 @@ whenMode m act = do
     when (curMode == m) act
 
 setMode :: Mode -> MH ()
-setMode = (csMode .=)
+setMode m = do
+    csMode .= m
+    mh invalidateCache
 
 appMode :: ChatState -> Mode
 appMode = _csMode
@@ -1288,7 +1290,9 @@ getParentMessage st msg
     | otherwise = Nothing
 
 setUserStatus :: UserId -> Text -> MH ()
-setUserStatus uId t = csUsers %= modifyUserById uId (uiStatus .~ statusFromText t)
+setUserStatus uId t = do
+    csUsers %= modifyUserById uId (uiStatus .~ statusFromText t)
+    mh $ invalidateCacheEntry ChannelSidebar
 
 usernameForUserId :: UserId -> ChatState -> Maybe Text
 usernameForUserId uId st = _uiName <$> findUserById uId (st^.csUsers)
