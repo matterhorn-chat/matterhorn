@@ -362,36 +362,36 @@ showChannelInSidebar cId = do
     prefs <- use (csResources.crUserPreferences)
     session <- getSession
 
-    let showAndUpdate = do
+    case mChan of
+        Nothing -> return ()
+        Just ch -> do
             now <- liftIO getCurrentTime
             csChannel(cId).ccInfo.cdSidebarShowOverride .= Just now
             updateSidebar
 
-    case mChan of
-        Nothing -> return ()
-        Just ch
-            | ch^.ccInfo.cdType == Direct -> do
-                let Just uId = ch^.ccInfo.cdDMUserId
-                case dmChannelShowPreference prefs uId of
-                    Just False -> do
-                        let pref = showDirectChannelPref (me^.userIdL) uId True
-                        csPendingChannelChange .= Just (ChangeByChannelId $ ch^.ccInfo.cdChannelId)
-                        doAsyncWith Preempt $ do
-                            MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
-                            return Nothing
-                    _ -> showAndUpdate
+            case ch^.ccInfo.cdType of
+                Direct -> do
+                    let Just uId = ch^.ccInfo.cdDMUserId
+                    case dmChannelShowPreference prefs uId of
+                        Just False -> do
+                            let pref = showDirectChannelPref (me^.userIdL) uId True
+                            csPendingChannelChange .= Just (ChangeByChannelId $ ch^.ccInfo.cdChannelId)
+                            doAsyncWith Preempt $ do
+                                MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
+                                return Nothing
+                        _ -> return ()
 
-            | ch^.ccInfo.cdType == Group -> do
-                case groupChannelShowPreference prefs cId of
-                    Just False -> do
-                        let pref = showGroupChannelPref cId (me^.userIdL)
-                        csPendingChannelChange .= Just (ChangeByChannelId $ ch^.ccInfo.cdChannelId)
-                        doAsyncWith Preempt $ do
-                            MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
-                            return Nothing
-                    _ -> showAndUpdate
+                Group ->
+                    case groupChannelShowPreference prefs cId of
+                        Just False -> do
+                            let pref = showGroupChannelPref cId (me^.userIdL)
+                            csPendingChannelChange .= Just (ChangeByChannelId $ ch^.ccInfo.cdChannelId)
+                            doAsyncWith Preempt $ do
+                                MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
+                                return Nothing
+                        _ -> return ()
 
-        _ -> showAndUpdate
+                _ -> return ()
 
 setFocusWith :: (Zipper ChannelListGroup ChannelListEntry
               -> Zipper ChannelListGroup ChannelListEntry) -> MH ()
@@ -505,13 +505,13 @@ applyPreferenceChange pref = do
           -- channel and, if so, whether it was the one we attempted to
           -- switch to (thus triggering the preference change). If so,
           -- we need to switch to it now.
-          when (directChannelShowValue d) $ do
-              case getDmChannelFor (directChannelShowUserId d) cs of
-                  -- This shouldn't happen.
-                  Nothing -> return ()
-                  Just dmcId -> do
-                      pending <- checkPendingChannelChange $ ChangeByChannelId dmcId
-                      when pending $ setFocus dmcId
+          let Just cId = getDmChannelFor (directChannelShowUserId d) cs
+          case directChannelShowValue d of
+              True -> do
+                  pending <- checkPendingChannelChange $ ChangeByChannelId cId
+                  when pending $ setFocus cId
+              False -> do
+                  csChannel(cId).ccInfo.cdSidebarShowOverride .= Nothing
 
       | Just g <- preferenceToGroupChannelPreference pref -> do
           updateSidebar
@@ -521,9 +521,12 @@ applyPreferenceChange pref = do
           -- switch to (thus triggering the preference change). If so,
           -- we need to switch to it now.
           let cId = groupChannelId g
-          when (groupChannelShow g) $ do
-              pending <- checkPendingChannelChange $ ChangeByChannelId cId
-              when pending $ setFocus cId
+          case groupChannelShow g of
+              True -> do
+                  pending <- checkPendingChannelChange $ ChangeByChannelId cId
+                  when pending $ setFocus cId
+              False -> do
+                  csChannel(cId).ccInfo.cdSidebarShowOverride .= Nothing
 
       | otherwise -> return ()
 

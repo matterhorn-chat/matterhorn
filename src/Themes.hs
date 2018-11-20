@@ -13,6 +13,7 @@ module Themes
   , channelListHeaderAttr
   , currentChannelNameAttr
   , unreadChannelAttr
+  , unreadGroupMarkerAttr
   , mentionsChannelAttr
   , urlAttr
   , codeAttr
@@ -131,6 +132,9 @@ channelNameAttr = "channelName"
 unreadChannelAttr :: AttrName
 unreadChannelAttr = "unreadChannel"
 
+unreadGroupMarkerAttr :: AttrName
+unreadGroupMarkerAttr = "unreadChannelGroupMarker"
+
 mentionsChannelAttr :: AttrName
 mentionsChannelAttr = "channelWithMentions"
 
@@ -221,6 +225,7 @@ lightAttrs =
        , (channelListHeaderAttr,            fg cyan)
        , (currentChannelNameAttr,           black `on` yellow `withStyle` bold)
        , (unreadChannelAttr,                black `on` cyan   `withStyle` bold)
+       , (unreadGroupMarkerAttr,            fg black `withStyle` bold)
        , (mentionsChannelAttr,              black `on` red    `withStyle` bold)
        , (urlAttr,                          fg brightYellow)
        , (emailAttr,                        fg yellow)
@@ -264,6 +269,7 @@ darkAttrs =
      , (channelListHeaderAttr,            fg cyan)
      , (currentChannelNameAttr,           black `on` yellow `withStyle` bold)
      , (unreadChannelAttr,                black `on` cyan   `withStyle` bold)
+     , (unreadGroupMarkerAttr,            fg white `withStyle` bold)
      , (mentionsChannelAttr,              black `on` brightMagenta `withStyle` bold)
      , (urlAttr,                          fg yellow)
      , (emailAttr,                        fg yellow)
@@ -354,6 +360,9 @@ themeDocs = ThemeDocumentation $ M.fromList $
       )
     , ( unreadChannelAttr
       , "A channel in the channel list with unread messages"
+      )
+    , ( unreadGroupMarkerAttr
+      , "The channel group marker indicating unread messages"
       )
     , ( mentionsChannelAttr
       , "A channel in the channel list with unread mentions"
