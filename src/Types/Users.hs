@@ -165,8 +165,8 @@ findUserById :: UserId -> Users -> Maybe UserInfo
 findUserById uId = HM.lookup uId . _ofUsers
 
 -- | Get the User information given the user's name. This is an exact
--- match on the username field, not necessarly the presented name. It
--- will automatically trim a user sigil from the input.
+-- match on the username field. It will automatically trim a user sigil
+-- from the input.
 findUserByUsername :: Text -> Users -> Maybe (UserId, UserInfo)
 findUserByUsername name allusers =
   case filter ((== trimUserSigil name) . _uiName . snd) $ HM.toList $ _ofUsers allusers of
