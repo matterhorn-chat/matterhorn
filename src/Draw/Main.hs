@@ -458,7 +458,8 @@ renderAutocompleteBox st ac =
         maxListHeight = 5
         visibleHeight = min maxListHeight numResults
         numResults = length $ matchList^.listElementsL
-        label = txt $ _acListElementType ac <> ": " <> (T.pack $ show numResults) <>
+        label = withDefAttr clientMessageAttr $
+                txt $ _acListElementType ac <> ": " <> (T.pack $ show numResults) <>
                       " result" <> if numResults == 1 then "" else "s"
     in if numResults == 0
        then emptyWidget
@@ -466,13 +467,13 @@ renderAutocompleteBox st ac =
            ctx <- getContext
            let rowOffset = ctx^.availHeightL - 2 - editorOffset - visibleHeight
                editorOffset = if st^.csEditState.cedMultiline
-                              then multilineHeightLimit
+                              then multilineHeightLimit + 1
                               else 1
            render $ translateBy (Location (0, rowOffset)) $
-                    borderWithLabel label $
-                    vLimit visibleHeight $
-                    (maybe id hLimit (_acListWidth ac)) $
-                    renderList renderAutocompleteAlternative True matchList
+                    vBox [ hBorderWithLabel label
+                         , vLimit visibleHeight $
+                           renderList renderAutocompleteAlternative True matchList
+                         ]
 
 renderAutocompleteAlternative :: Bool -> AutocompleteAlternative -> Widget Name
 renderAutocompleteAlternative sel (UserCompletion u _) =
@@ -486,8 +487,8 @@ renderAutocompleteAlternative _ (CommandCompletion n args desc) =
 
 renderUserCompletion :: User -> Bool -> Widget Name
 renderUserCompletion u selected =
-    let usernameWidth = 20
-        fullNameWidth = 25
+    let usernameWidth = 30
+        fullNameWidth = 40
         padTo n a = hLimit n $ vLimit 1 (a <+> fill ' ')
         username = userUsername u
         fullName = (sanitizeUserText $ userFirstName u) <> " " <>

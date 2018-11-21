@@ -263,7 +263,7 @@ doSyntaxAutoCompletion searchString = do
     let allNames = Sky.sShortname <$> M.elems mapping
         match = (((T.toLower searchString) `T.isInfixOf`) . T.toLower)
         alts = SyntaxCompletion <$> (sort $ filter match allNames)
-    setCompletionAlternatives searchString alts (Just 60) "Languages"
+    setCompletionAlternatives searchString alts "Languages"
 
 doCommandAutoCompletion :: Text -> MH ()
 doCommandAutoCompletion searchString = do
@@ -273,7 +273,7 @@ doCommandAutoCompletion searchString = do
                     lowerSearch `T.isInfixOf` (T.toLower $ cmdDescr c)
         mkAlt (Cmd name desc args _) =
             CommandCompletion name (printArgSpec args) desc
-    setCompletionAlternatives searchString alts Nothing "Commands"
+    setCompletionAlternatives searchString alts "Commands"
 
 doUserAutoCompletion :: Text -> MH ()
 doUserAutoCompletion searchString = do
@@ -286,7 +286,7 @@ doUserAutoCompletion searchString = do
                    (maybe mempty (fmap (\u -> UserCompletion u False)) $
                           MM.userAutocompleteOutOfChannel ac)
 
-        return $ Just $ setCompletionAlternatives searchString alts (Just 60) "Users"
+        return $ Just $ setCompletionAlternatives searchString alts "Users"
 
 doChannelAutoCompletion :: Text -> MH ()
 doChannelAutoCompletion searchString = do
@@ -295,15 +295,14 @@ doChannelAutoCompletion searchString = do
     doAsyncWith Preempt $ do
         results <- MM.mmAutocompleteChannels tId searchString session
         let alts = F.toList $ ChannelCompletion <$> results
-        return $ Just $ setCompletionAlternatives searchString alts Nothing "Channels"
+        return $ Just $ setCompletionAlternatives searchString alts "Channels"
 
-setCompletionAlternatives :: Text -> [AutocompleteAlternative] -> Maybe Int -> Text -> MH ()
-setCompletionAlternatives searchString alts listWidth ty = do
+setCompletionAlternatives :: Text -> [AutocompleteAlternative] -> Text -> MH ()
+setCompletionAlternatives searchString alts ty = do
     let list = L.list CompletionList (V.fromList $ F.toList alts) 1
         state = AutocompleteState { _acPreviousSearchString = searchString
                                   , _acCompletionList =
                                       list & L.listSelectedL .~ Nothing
-                                  , _acListWidth = listWidth
                                   , _acListElementType = ty
                                   }
     csEditState.cedAutocomplete .= Just state

@@ -98,7 +98,6 @@ module Types
   , AutocompleteState(..)
   , acPreviousSearchString
   , acCompletionList
-  , acListWidth
   , acListElementType
 
   , AutocompleteAlternative(..)
@@ -789,7 +788,6 @@ autocompleteAlternativeReplacement (CommandCompletion t _ _) =
 data AutocompleteState =
     AutocompleteState { _acPreviousSearchString :: Text
                       , _acCompletionList :: List Name AutocompleteAlternative
-                      , _acListWidth :: Maybe Int
                       , _acListElementType :: Text
                       }
 
