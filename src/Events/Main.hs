@@ -173,6 +173,9 @@ handleInputSubmission = do
     Just ('/', cmd) -> dispatchCommand cmd
     _               -> sendMessage mode allLines
 
+  -- Reset the autocomplete UI
+  csEditState.cedAutocomplete .= Nothing
+
   -- Reset the edit mode *after* handling the input so that the input
   -- handler can tell whether we're editing, replying, etc.
   csEditState.cedEditMode       .= NewPost
