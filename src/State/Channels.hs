@@ -376,6 +376,7 @@ checkPendingChannelChange change = do
 updateChannelInfo :: ChannelId -> Channel -> ChannelMember -> MH ()
 updateChannelInfo cid new member = do
     csChannel(cid).ccInfo %= channelInfoFromChannelWithData new member
+    updateSidebar
 
 setFocus :: ChannelId -> MH ()
 setFocus cId = do
