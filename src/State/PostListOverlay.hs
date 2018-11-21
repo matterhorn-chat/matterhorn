@@ -44,7 +44,7 @@ enterFlaggedPostListMode = do
   doAsyncWith Preempt $ do
     posts <- mmGetListOfFlaggedPosts UserMe defaultFlaggedPostsQuery session
     return $ Just $ do
-      messages <- messagesFromPosts posts
+      messages <- fst <$> messagesFromPosts posts
       enterPostListMode PostListFlagged messages
 
 -- | Create a PostListOverlay with post search result messages from the
@@ -60,7 +60,7 @@ enterSearchResultPostListMode terms = do
         doAsyncWith Preempt $ do
           posts <- mmSearchForTeamPosts tId (SearchPosts terms False) session
           return $ Just $ do
-            messages <- messagesFromPosts posts
+            messages <- fst <$> messagesFromPosts posts
             enterPostListMode (PostListSearch terms False) messages
 
 -- | Move the selection up in the PostListOverlay, which corresponds

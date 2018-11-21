@@ -13,6 +13,7 @@ module State.Common
   , postErrorMessage'
   , addEmoteFormatting
   , removeEmoteFormatting
+  , fetchUsersByUsername
 
   , module State.Async
   )
@@ -51,18 +52,20 @@ import           Types.Common
 
 -- * Client Messages
 
-messagesFromPosts :: Posts -> MH Messages
+messagesFromPosts :: Posts -> MH (Messages, Set.Set Text)
 messagesFromPosts p = do
   flags <- use (csResources.crFlaggedPosts)
   csPostMap %= HM.union postMap
-  let msgs = postsToMessages (maybeFlag flags . clientPostToMessage) (clientPost <$> ps)
-      postsToMessages f = foldr (addMessage . f) noMessages
-  return msgs
+  let (msgs, allMentionedUsers) = postsToMessages (clientPost <$> ps)
+      postsToMessages = foldr (\cp (ms, us) -> let (m, mUsernames) = clientPostToMessage cp
+                                               in (addMessage (maybeFlag flags m) ms, Set.union us mUsernames))
+                              (noMessages, mempty)
+  return (msgs, allMentionedUsers)
     where
         postMap :: HashMap PostId Message
         postMap = HM.fromList
           [ ( pId
-            , clientPostToMessage (toClientPost x Nothing)
+            , fst $ clientPostToMessage (toClientPost x Nothing)
             )
           | (pId, x) <- HM.toList (p^.postsPostsL)
           ]
@@ -259,3 +262,19 @@ removeEmoteFormatting t
 
 addEmoteFormatting :: T.Text -> T.Text
 addEmoteFormatting t = "*" <> t <> "*"
+
+-- | Given a list of usernames, ensure that we have a user record for
+-- each one in the state, either by confirming that a local record
+-- exists or by issuing a request for user records.
+fetchUsersByUsername :: [Text] -> MH ()
+fetchUsersByUsername [] = return ()
+fetchUsersByUsername usernames = do
+    st <- use id
+    session <- getSession
+    let missing = filter (\n -> (not $ T.null n) && (isNothing $ userByUsername n st)) usernames
+    when (not $ null missing) $ do
+        mhLog LogGeneral $ T.pack $ "fetchUsersByUsername: getting " <> show usernames
+        doAsyncWith Normal $ do
+            results <- mmGetUsersByUsernames (Seq.fromList missing) session
+            return $ Just $ do
+                forM_ results (\u -> addNewUser $ userInfoFromUser u True)

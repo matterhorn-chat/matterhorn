@@ -229,6 +229,7 @@ import           Brick.AttrMap ( AttrMap )
 import           Brick.BChan
 import           Brick.Widgets.Edit ( Editor, editor )
 import           Brick.Widgets.List ( List, list )
+import qualified Cheapskate as C
 import           Control.Concurrent.Async ( Async )
 import qualified Control.Concurrent.STM as STM
 import           Control.Exception ( SomeException )
@@ -237,7 +238,8 @@ import qualified Control.Monad.Reader as R
 import qualified Data.Foldable as F
 import           Data.Ord ( comparing )
 import qualified Data.HashMap.Strict as HM
-import           Data.List ( sortBy )
+import           Data.List ( sortBy, break )
+import qualified Data.Set as S
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Time.Clock ( UTCTime, getCurrentTime, nominalDay, addUTCTime )
@@ -1363,29 +1365,62 @@ updateSidebar = do
     statusChan <- use (csResources.crStatusUpdateChan)
     liftIO $ STM.atomically $ STM.writeTChan statusChan newZ
 
-clientPostToMessage :: ClientPost -> Message
-clientPostToMessage cp =
-    Message { _mText = cp^.cpText
-            , _mMarkdownSource = cp^.cpMarkdownSource
-            , _mUser =
-                case cp^.cpUserOverride of
-                    Just n | cp^.cpType == NormalPost -> UserOverride (n <> "[BOT]")
-                    _ -> maybe NoUser UserI $ cp^.cpUser
-            , _mDate = cp^.cpDate
-            , _mType = CP $ cp^.cpType
-            , _mPending = cp^.cpPending
-            , _mDeleted = cp^.cpDeleted
-            , _mAttachments = cp^.cpAttachments
-            , _mInReplyToMsg =
-                case cp^.cpInReplyToPost of
-                    Nothing  -> NotAReply
-                    Just pId -> InReplyTo pId
-            , _mMessageId = Just $ MessagePostId $ cp^.cpPostId
-            , _mReactions = cp^.cpReactions
-            , _mOriginalPost = Just $ cp^.cpOriginalPost
-            , _mFlagged = False
-            , _mChannelId = Just $ cp^.cpChannelId
-            }
+-- | Builds a message from a ClientPost and also returns the set of
+-- usernames mentioned in the text of the message.
+clientPostToMessage :: ClientPost -> (Message, S.Set Text)
+clientPostToMessage cp = (m, usernames)
+    where
+        usernames = findUsernames $ cp^.cpText
+        m = Message { _mText = cp^.cpText
+                    , _mMarkdownSource = cp^.cpMarkdownSource
+                    , _mUser =
+                        case cp^.cpUserOverride of
+                            Just n | cp^.cpType == NormalPost -> UserOverride (n <> "[BOT]")
+                            _ -> maybe NoUser UserI $ cp^.cpUser
+                    , _mDate = cp^.cpDate
+                    , _mType = CP $ cp^.cpType
+                    , _mPending = cp^.cpPending
+                    , _mDeleted = cp^.cpDeleted
+                    , _mAttachments = cp^.cpAttachments
+                    , _mInReplyToMsg =
+                        case cp^.cpInReplyToPost of
+                            Nothing  -> NotAReply
+                            Just pId -> InReplyTo pId
+                    , _mMessageId = Just $ MessagePostId $ cp^.cpPostId
+                    , _mReactions = cp^.cpReactions
+                    , _mOriginalPost = Just $ cp^.cpOriginalPost
+                    , _mFlagged = False
+                    , _mChannelId = Just $ cp^.cpChannelId
+                    }
+
+findUsernames :: C.Blocks -> S.Set Text
+findUsernames = S.unions . F.toList . fmap blockFindUsernames
+
+blockFindUsernames :: C.Block -> S.Set Text
+blockFindUsernames (C.Para is) =
+    inlineFindUsernames $ F.toList is
+blockFindUsernames (C.Header _ is) =
+    inlineFindUsernames $ F.toList is
+blockFindUsernames (C.Blockquote bs) =
+    findUsernames bs
+blockFindUsernames (C.List _ _ bs) =
+    S.unions $ F.toList $ findUsernames <$> bs
+blockFindUsernames _ =
+    mempty
+
+inlineFindUsernames :: [C.Inline] -> S.Set Text
+inlineFindUsernames [] = mempty
+inlineFindUsernames (C.Str "@" : rest) =
+    let isStr (C.Str _) = True
+        isStr _ = False
+        (strs, remaining) = break (not . isStr) rest
+        getStr (C.Str s) = s
+        getStr _ = ""
+    in if null strs
+       then inlineFindUsernames rest
+       else S.insert (T.concat $ getStr <$> strs) $ inlineFindUsernames remaining
+inlineFindUsernames (_ : rest) =
+    inlineFindUsernames rest
 
 -- * Slash Commands
 

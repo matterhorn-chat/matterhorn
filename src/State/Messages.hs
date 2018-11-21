@@ -25,7 +25,7 @@ import qualified Data.Text as T
 import           Graphics.Vty ( outputIface )
 import           Graphics.Vty.Output.Interface ( ringTerminalBell )
 import           Lens.Micro.Platform ( Traversal', (.=), (%=), (%~), (.~), (^?)
-                                     , to, at, traversed, filtered, ix )
+                                     , to, at, traversed, filtered, ix, _1 )
 
 import           Network.Mattermost
 import qualified Network.Mattermost.Endpoints as MM
@@ -117,9 +117,11 @@ editMessage :: Post -> MH ()
 editMessage new = do
     myId <- gets myUserId
     let isEditedMessage m = m^.mMessageId == Just (MessagePostId $ new^.postIdL)
-        msg = clientPostToMessage (toClientPost new (new^.postRootIdL))
+        (msg, mentionedUsers) = clientPostToMessage (toClientPost new (new^.postRootIdL))
         chan = csChannel (new^.postChannelIdL)
     chan . ccContents . cdMessages . traversed . filtered isEditedMessage .= msg
+
+    fetchUsersByUsername $ F.toList mentionedUsers
 
     when (postUserId new /= Just myId) $
         chan %= adjustEditedThreshold new
@@ -139,7 +141,7 @@ deleteMessage new = do
 
 addNewPostedMessage :: PostToAdd -> MH ()
 addNewPostedMessage p =
-    addMessageToState p >>= postProcessMessageAdd
+    addMessageToState True p >>= postProcessMessageAdd
 
 addObtainedMessages :: ChannelId -> Int -> Posts -> MH PostProcessMessageAdd
 addObtainedMessages cId reqCnt posts = do
@@ -210,14 +212,16 @@ addObtainedMessages cId reqCnt posts = do
         -- the posts to Messages and stores those and also returns
         -- them, but we don't need them here. We just want the post map
         -- update.
-        void $ messagesFromPosts posts
+        (_, mentionedUsers) <- messagesFromPosts posts
+
+        fetchUsersByUsername $ F.toList mentionedUsers
 
         -- Add all the new *unique* posts into the existing channel
         -- corpus, generating needed fetches of data associated with
         -- the post, and determining an notification action to be
         -- taken (if any).
         action <- foldr andProcessWith NoAction <$>
-          mapM (addMessageToState . OldPost)
+          mapM (addMessageToState False . OldPost)
                    [ (posts^.postsPostsL) HM.! p
                    | p <- toList (posts^.postsOrderL)
                    , not (p `elem` dupPIds)
@@ -267,8 +271,17 @@ addObtainedMessages cId reqCnt posts = do
 -- mention of the user, etc.).  This operation has no effect on any
 -- existing UnknownGap entries and should be called when those are
 -- irrelevant.
-addMessageToState :: PostToAdd -> MH PostProcessMessageAdd
-addMessageToState newPostData = do
+--
+-- The boolean argument indicates whether this function should schedule
+-- a fetch for any mentioned users in the message. This is provided
+-- so that callers can batch this operation if a large collection of
+-- messages is being added together, in which case we don't want this
+-- function to schedule a single request per message (worst case). If
+-- you're calling this as part of scrollback processing, you should pass
+-- False. Otherwise if you're adding only a single message, you should
+-- pass True.
+addMessageToState :: Bool -> PostToAdd -> MH PostProcessMessageAdd
+addMessageToState fetchMentionedUsers newPostData = do
     let (new, wasMentioned) = case newPostData of
           -- A post from scrollback history has no mention data, and
           -- that's okay: we only need to track mentions to tell the
@@ -302,7 +315,7 @@ addMessageToState newPostData = do
                             then applyPreferenceChange pref
                             else refreshChannel SidebarUpdateImmediate nc member
 
-                        addMessageToState newPostData >>= postProcessMessageAdd
+                        addMessageToState fetchMentionedUsers newPostData >>= postProcessMessageAdd
 
             return NoAction
         Just _ -> do
@@ -321,8 +334,12 @@ addMessageToState newPostData = do
                 doAddMessage = do
                     currCId <- use csCurrentChannelId
                     flags <- use (csResources.crFlaggedPosts)
-                    let msg' = clientPostToMessage cp
-                                 & mFlagged .~ ((cp^.cpPostId) `Set.member` flags)
+                    let (msg', mentionedUsers) = clientPostToMessage cp
+                                 & _1.mFlagged .~ ((cp^.cpPostId) `Set.member` flags)
+
+                    when fetchMentionedUsers $
+                        fetchUsersByUsername $ F.toList mentionedUsers
+
                     csPostMap.at(postId new) .= Just msg'
                     csChannels %= modifyChannelById cId
                       ((ccContents.cdMessages %~ addMessage msg') .
@@ -351,13 +368,7 @@ addMessageToState newPostData = do
                                     doAsyncChannelMM Preempt cId
                                         (\s _ _ -> MM.mmGetThread parentId s)
                                         (\_ p -> Just $ do
-                                            let postMap = HM.fromList [ ( pId
-                                                                        , clientPostToMessage
-                                                                          (toClientPost x (x^.postRootIdL))
-                                                                        )
-                                                                      | (pId, x) <- HM.toList (p^.postsPostsL)
-                                                                      ]
-                                            csPostMap %= HM.union postMap
+                                            void $ messagesFromPosts p
                                         )
                                 _ -> return ()
                         _ -> return ()
