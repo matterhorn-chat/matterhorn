@@ -238,8 +238,9 @@ handleEditingInput e = do
 
     liftIO $ resetSpellCheckTimer $ st^.csEditState
 
--- | Send the user_typing action to the server asynchronously, over the connected websocket.
--- | If the websocket is not connected, drop the action silently.
+-- | Send the user_typing action to the server asynchronously, over the
+-- connected websocket. If the websocket is not connected, drop the
+-- action silently.
 sendUserTypingAction :: MH ()
 sendUserTypingAction = do
   st <- use id
