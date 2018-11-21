@@ -4,15 +4,18 @@ module Command
   ( commandList
   , dispatchCommand
   , printArgSpec
+  , toggleMessagePreview
   )
 where
 
 import           Prelude ()
 import           Prelude.MH
 
+import           Brick.Main ( invalidateCache )
 import qualified Control.Exception as Exn
 import qualified Data.Char as Char
 import qualified Data.Text as T
+import           Lens.Micro.Platform ( (%=) )
 
 import qualified Network.Mattermost.Endpoints as MM
 import qualified Network.Mattermost.Exceptions as MM
@@ -23,7 +26,6 @@ import           Scripts
 import           State.Help
 import           State.Channels
 import           State.ChannelSelect
-import           State.Editing ( toggleMessagePreview )
 import           State.Logging
 import           State.PostListOverlay
 import           State.Themes
@@ -250,3 +252,8 @@ dispatchCommand cmd =
                 Left e -> go (e:errs) cs
                 Right args -> exe args
     _ -> return ()
+
+toggleMessagePreview :: MH ()
+toggleMessagePreview = do
+    mh invalidateCache
+    csShowMessagePreview %= not

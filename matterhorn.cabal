@@ -36,7 +36,6 @@ executable matterhorn
   other-modules:       Config
                        Command
                        Connection
-                       Completion
                        App
                        Clipboard
                        Constants

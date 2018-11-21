@@ -3,32 +3,41 @@
 module State.Editing
   ( requestSpellCheck
   , editingKeybindings
-  , toggleMessagePreview
   , toggleMultilineEditing
   , invokeExternalEditor
   , handlePaste
   , handleEditingInput
+  , cancelAutocompleteOrReplyOrEdit
+  , replyToLatestMessage
   )
 where
 
 import           Prelude ()
 import           Prelude.MH
 
-import           Brick.Main ( invalidateCache )
+import           Brick.Main ( viewportScroll, vScrollToBeginning )
 import           Brick.Widgets.Edit ( Editor, applyEdit , handleEditorEvent
                                     , getEditContents, editContentsL )
+import qualified Brick.Widgets.List as L
 import qualified Codec.Binary.UTF8.Generic as UTF8
 import           Control.Arrow
 import qualified Control.Concurrent.STM as STM
 import qualified Data.ByteString as BS
+import           Data.Char ( isSpace )
+import qualified Data.Foldable as F
+import           Data.List ( sort, sortBy )
+import           Data.Ord ( comparing )
+import qualified Data.Map as M
 import qualified Data.Set as S
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Zipper as Z
 import qualified Data.Text.Zipper.Generic.Words as Z
 import           Data.Time ( getCurrentTime )
+import qualified Data.Vector as V
 import           Graphics.Vty ( Event(..), Key(..), Modifier(..) )
 import           Lens.Micro.Platform ( (%=), (.=), (.~), to )
+import qualified Skylighting.Types as Sky
 import qualified System.Environment as Sys
 import qualified System.Exit as Sys
 import qualified System.IO as Sys
@@ -37,7 +46,9 @@ import qualified System.Process as Sys
 import           Text.Aspell ( AspellResponse(..), mistakeWord, askAspell )
 
 import           Network.Mattermost.Types (Post(..))
+import qualified Network.Mattermost.Endpoints as MM
 
+import           Command ( commandList, printArgSpec )
 import           Config
 import           Events.Keybindings
 import           State.Common
@@ -84,11 +95,6 @@ invokeExternalEditor = do
                         return $ st & csEditState.cedEditor.editContentsL .~ (Z.textZipper tmpLines Nothing)
             Sys.ExitFailure _ -> return st
 
-toggleMessagePreview :: MH ()
-toggleMessagePreview = do
-    mh invalidateCache
-    csShowMessagePreview %= not
-
 handlePaste :: BS.ByteString -> MH ()
 handlePaste bytes = do
   let pasteStr = T.pack (UTF8.toString bytes)
@@ -110,7 +116,6 @@ editingKeybindings =
   [ kb "Transpose the final two characters"
     (EvKey (KChar 't') [MCtrl]) $ do
     csEditState.cedEditor %= applyEdit Z.transposeChars
-    csEditState.cedCompleter .= Nothing
   , kb "Go to the start of the current line"
     (EvKey (KChar 'a') [MCtrl]) $ do
     csEditState.cedEditor %= applyEdit Z.gotoBOL
@@ -120,39 +125,30 @@ editingKeybindings =
   , kb "Delete the character at the cursor"
     (EvKey (KChar 'd') [MCtrl]) $ do
     csEditState.cedEditor %= applyEdit Z.deleteChar
-    csEditState.cedCompleter .= Nothing
   , kb "Delete from the cursor to the start of the current line"
     (EvKey (KChar 'u') [MCtrl]) $ do
     csEditState.cedEditor %= applyEdit Z.killToBOL
-    csEditState.cedCompleter .= Nothing
   , kb "Move one character to the right"
     (EvKey (KChar 'f') [MCtrl]) $ do
     csEditState.cedEditor %= applyEdit Z.moveRight
-    csEditState.cedCompleter .= Nothing
   , kb "Move one character to the left"
     (EvKey (KChar 'b') [MCtrl]) $ do
     csEditState.cedEditor %= applyEdit Z.moveLeft
-    csEditState.cedCompleter .= Nothing
   , kb "Move one word to the right"
     (EvKey (KChar 'f') [MMeta]) $ do
     csEditState.cedEditor %= applyEdit Z.moveWordRight
-    csEditState.cedCompleter .= Nothing
   , kb "Move one word to the left"
     (EvKey (KChar 'b') [MMeta]) $ do
     csEditState.cedEditor %= applyEdit Z.moveWordLeft
-    csEditState.cedCompleter .= Nothing
   , kb "Delete the word to the left of the cursor"
     (EvKey KBS [MMeta]) $ do
     csEditState.cedEditor %= applyEdit Z.deletePrevWord
-    csEditState.cedCompleter .= Nothing
   , kb "Delete the word to the left of the cursor"
     (EvKey (KChar 'w') [MCtrl]) $ do
     csEditState.cedEditor %= applyEdit Z.deletePrevWord
-    csEditState.cedCompleter .= Nothing
   , kb "Delete the word to the right of the cursor"
     (EvKey (KChar 'd') [MMeta]) $ do
     csEditState.cedEditor %= applyEdit Z.deleteWord
-    csEditState.cedCompleter .= Nothing
   , kb "Move the cursor to the beginning of the input"
     (EvKey KHome []) $ do
     csEditState.cedEditor %= applyEdit gotoHome
@@ -165,12 +161,10 @@ editingKeybindings =
       let restOfLine = Z.currentLine (Z.killToBOL z)
       csEditState.cedYankBuffer .= restOfLine
       csEditState.cedEditor %= applyEdit Z.killToEOL
-      csEditState.cedCompleter .= Nothing
   , kb "Paste the current buffer contents at the cursor"
     (EvKey (KChar 'y') [MCtrl]) $ do
       buf <- use (csEditState.cedYankBuffer)
       csEditState.cedEditor %= applyEdit (Z.insertMany buf)
-      csEditState.cedCompleter .= Nothing
   ]
   where
     withUserTypingAction (KB {..}) =
@@ -234,9 +228,96 @@ handleEditingInput e = do
               sendUserTypingAction
             | otherwise -> return ()
 
-        csEditState.cedCompleter .= Nothing
-
+    checkForAutocompletion
     liftIO $ resetSpellCheckTimer $ st^.csEditState
+
+checkForAutocompletion :: MH ()
+checkForAutocompletion = do
+    z <- use (csEditState.cedEditor.editContentsL)
+    let col = snd $ Z.cursorPosition z
+        curLine = Z.currentLine z
+
+        result = case wordAtColumn col curLine of
+            Just w | userSigil `T.isPrefixOf` w ->
+                       Just (doUserAutoCompletion, T.tail w)
+                   | normalChannelSigil `T.isPrefixOf` w ->
+                       Just (doChannelAutoCompletion, T.tail w)
+                   | "```" `T.isPrefixOf` w ->
+                       Just (doSyntaxAutoCompletion, T.drop 3 w)
+                   | "/" `T.isPrefixOf` w ->
+                       Just (doCommandAutoCompletion, T.tail w)
+            _ -> Nothing
+
+    case result of
+        Nothing -> do
+            csEditState.cedAutocomplete .= Nothing
+        Just (runUpdater, searchString) -> do
+            prevResult <- use (csEditState.cedAutocomplete)
+            let shouldUpdate = maybe True ((/= searchString) . _acPreviousSearchString)
+                               prevResult
+            when shouldUpdate $ runUpdater searchString
+
+doSyntaxAutoCompletion :: Text -> MH ()
+doSyntaxAutoCompletion searchString = do
+    mapping <- use (csResources.crSyntaxMap)
+    let allNames = Sky.sShortname <$> M.elems mapping
+        match = (((T.toLower searchString) `T.isInfixOf`) . T.toLower)
+        alts = SyntaxCompletion <$> (sort $ filter match allNames)
+    setCompletionAlternatives searchString alts (Just 60) "Languages"
+
+doCommandAutoCompletion :: Text -> MH ()
+doCommandAutoCompletion searchString = do
+    let alts = mkAlt <$> sortBy (comparing cmdName) (filter matches commandList)
+        lowerSearch = T.toLower searchString
+        matches c = lowerSearch `T.isInfixOf` (cmdName c) ||
+                    lowerSearch `T.isInfixOf` (T.toLower $ cmdDescr c)
+        mkAlt (Cmd name desc args _) =
+            CommandCompletion name (printArgSpec args) desc
+    setCompletionAlternatives searchString alts Nothing "Commands"
+
+doUserAutoCompletion :: Text -> MH ()
+doUserAutoCompletion searchString = do
+    session <- getSession
+    doAsyncWith Preempt $ do
+        ac <- MM.mmAutocompleteUsers Nothing Nothing searchString session
+
+        let alts = F.toList $
+                   ((\u -> UserCompletion u True) <$> MM.userAutocompleteUsers ac) <>
+                   (maybe mempty (fmap (\u -> UserCompletion u False)) $
+                          MM.userAutocompleteOutOfChannel ac)
+
+        return $ Just $ setCompletionAlternatives searchString alts (Just 60) "Users"
+
+doChannelAutoCompletion :: Text -> MH ()
+doChannelAutoCompletion searchString = do
+    session <- getSession
+    tId <- gets myTeamId
+    doAsyncWith Preempt $ do
+        results <- MM.mmAutocompleteChannels tId searchString session
+        let alts = F.toList $ ChannelCompletion <$> results
+        return $ Just $ setCompletionAlternatives searchString alts Nothing "Channels"
+
+setCompletionAlternatives :: Text -> [AutocompleteAlternative] -> Maybe Int -> Text -> MH ()
+setCompletionAlternatives searchString alts listWidth ty = do
+    let list = L.list CompletionList (V.fromList $ F.toList alts) 1
+        state = AutocompleteState { _acPreviousSearchString = searchString
+                                  , _acCompletionList =
+                                      list & L.listSelectedL .~ Nothing
+                                  , _acListWidth = listWidth
+                                  , _acListElementType = ty
+                                  }
+    csEditState.cedAutocomplete .= Just state
+    mh $ vScrollToBeginning $ viewportScroll CompletionList
+
+wordAtColumn :: Int -> Text -> Maybe Text
+wordAtColumn i t =
+    let tokens = T.groupBy (\a b -> isSpace a == isSpace b) t
+        go j _ | j < 0 = Nothing
+        go j ts = case ts of
+            [] -> Nothing
+            (w:rest) | j <= T.length w && not (isSpace $ T.head w) -> Just w
+                     | otherwise -> go (j - T.length w) rest
+    in go i tokens
 
 -- | Send the user_typing action to the server asynchronously, over the
 -- connected websocket. If the websocket is not connected, drop the
@@ -320,3 +401,27 @@ gotoEnd z =
     in if numLines > 0
        then Z.moveCursor (numLines - 1, lastLineLength) z
        else z
+
+cancelAutocompleteOrReplyOrEdit :: MH ()
+cancelAutocompleteOrReplyOrEdit = do
+    ac <- use (csEditState.cedAutocomplete)
+    case ac of
+        Just _ -> do
+            csEditState.cedAutocomplete .= Nothing
+        Nothing -> do
+            mode <- use (csEditState.cedEditMode)
+            case mode of
+                NewPost -> return ()
+                _ -> do
+                    csEditState.cedEditMode .= NewPost
+                    csEditState.cedEditor %= applyEdit Z.clearZipper
+
+replyToLatestMessage :: MH ()
+replyToLatestMessage = do
+  msgs <- use (csCurrentChannel . ccContents . cdMessages)
+  case findLatestUserMessage isReplyable msgs of
+    Just msg | isReplyable msg ->
+        do let Just p = msg^.mOriginalPost
+           setMode Main
+           csEditState.cedEditMode .= Replying msg p
+    _ -> return ()

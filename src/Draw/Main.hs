@@ -9,12 +9,11 @@ import           Brick.Widgets.Border
 import           Brick.Widgets.Border.Style
 import           Brick.Widgets.Center ( hCenter )
 import           Brick.Widgets.Edit ( editContentsL, renderEditor, getEditContents )
-import           Brick.Widgets.List ( renderList )
+import           Brick.Widgets.List ( renderList, listElementsL, listSelectedFocusedAttr )
 import           Control.Arrow ( (>>>) )
 import           Control.Monad.Trans.Reader ( withReaderT )
 import           Data.Char ( isSpace, isPunctuation )
 import qualified Data.Foldable as F
-import           Data.List ( intersperse )
 import qualified Data.Sequence as Seq
 import qualified Data.Set as S
 import qualified Data.Text as T
@@ -25,10 +24,11 @@ import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( (.~), (^?!), to, view, folding )
 
 import           Network.Mattermost.Types ( ChannelId, Type(Direct, Private, Group)
-                                          , ServerTime(..), UserId )
+                                          , ServerTime(..), UserId, User(..)
+                                          , Channel(..)
+                                          )
 
 
-import           Completion ( Completer(..), CompletionAlternative(..), currentAlternative )
 import           Constants
 import           Draw.ChannelList ( renderChannelList )
 import           Draw.Messages
@@ -40,6 +40,7 @@ import           State.MessageSelect
 import           Themes
 import           TimeUtils ( justAfter, justBefore )
 import           Types
+import           Types.Common ( sanitizeUserText )
 import           Types.KeyEvents
 import           Types.Messages ( msgURLs )
 
@@ -270,8 +271,11 @@ renderUserCommandBox st hs =
                                  , showCursor MessageInput (Location (0,0)) $ str " "
                                  ]
                             else [inputBox]
-            True -> vLimit 5 inputBox <=> multilineHints
+            True -> vLimit multilineHeightLimit inputBox <=> multilineHints
     in replyDisplay <=> commandBox
+
+multilineHeightLimit :: Int
+multilineHeightLimit = 5
 
 renderChannelHeader :: ChatState -> HighlightSet -> ClientChannel -> Widget Name
 renderChannelHeader st hs chan =
@@ -436,8 +440,87 @@ renderChannelSelectPrompt st =
 drawMain :: ChatState -> [Widget Name]
 drawMain st =
     [ connectionLayer st
+    , autocompleteLayer st
     , joinBorders $ mainInterface st
     ]
+
+autocompleteLayer :: ChatState -> Widget Name
+autocompleteLayer st =
+    case st^.csEditState.cedAutocomplete of
+        Nothing ->
+            emptyWidget
+        Just ac ->
+            renderAutocompleteBox st ac
+
+renderAutocompleteBox :: ChatState -> AutocompleteState -> Widget Name
+renderAutocompleteBox st ac =
+    let matchList = _acCompletionList ac
+        maxListHeight = 5
+        visibleHeight = min maxListHeight numResults
+        numResults = length $ matchList^.listElementsL
+        label = txt $ _acListElementType ac <> ": " <> (T.pack $ show numResults) <>
+                      " result" <> if numResults == 1 then "" else "s"
+    in if numResults == 0
+       then emptyWidget
+       else Widget Greedy Greedy $ do
+           ctx <- getContext
+           let rowOffset = ctx^.availHeightL - 2 - editorOffset - visibleHeight
+               editorOffset = if st^.csEditState.cedMultiline
+                              then multilineHeightLimit
+                              else 1
+           render $ translateBy (Location (0, rowOffset)) $
+                    borderWithLabel label $
+                    vLimit visibleHeight $
+                    (maybe id hLimit (_acListWidth ac)) $
+                    renderList renderAutocompleteAlternative True matchList
+
+renderAutocompleteAlternative :: Bool -> AutocompleteAlternative -> Widget Name
+renderAutocompleteAlternative sel (UserCompletion u _) =
+    padRight Max $ renderUserCompletion u sel
+renderAutocompleteAlternative sel (ChannelCompletion c) =
+    padRight Max $ renderChannelCompletion c sel
+renderAutocompleteAlternative _ (SyntaxCompletion t) =
+    padRight Max $ txt t
+renderAutocompleteAlternative _ (CommandCompletion n args desc) =
+    padRight Max $ renderCommandCompletion n args desc
+
+renderUserCompletion :: User -> Bool -> Widget Name
+renderUserCompletion u selected =
+    let usernameWidth = 20
+        fullNameWidth = 25
+        padTo n a = hLimit n $ vLimit 1 (a <+> fill ' ')
+        username = userUsername u
+        fullName = (sanitizeUserText $ userFirstName u) <> " " <>
+                   (sanitizeUserText $ userLastName u)
+        nickname = sanitizeUserText $ userNickname u
+        maybeForce = if selected
+                     then forceAttr listSelectedFocusedAttr
+                     else id
+    in maybeForce $
+       hBox [ padTo usernameWidth $ colorUsername username ("@" <> username)
+            , padTo fullNameWidth $ txt fullName
+            , txt nickname
+            ]
+
+renderChannelCompletion :: Channel -> Bool -> Widget Name
+renderChannelCompletion c selected =
+    let nameWidth = 20
+        padTo n a = hLimit n $ vLimit 1 (a <+> fill ' ')
+        maybeForce = if selected
+                     then forceAttr listSelectedFocusedAttr
+                     else id
+    in maybeForce $
+       hBox [ padTo nameWidth $
+              withDefAttr channelNameAttr $
+              txt $ normalChannelSigil <> (sanitizeUserText $ channelName c)
+            , txt $ sanitizeUserText $ channelHeader c
+            ]
+
+renderCommandCompletion :: Text -> Text -> Text -> Widget Name
+renderCommandCompletion name args desc =
+    withDefAttr clientMessageAttr
+        (txt $ "/" <> name <> if T.null args then "" else " " <> args) <+>
+    (txt $ " - " <> desc)
 
 connectionLayer :: ChatState -> Widget Name
 connectionLayer st =
@@ -513,22 +596,6 @@ messageSelectBottomBar st =
               txt $ "Message select: " <> optionStr
             , txt "]"
             , hBorder
-            ]
-
-drawCompletionAlternatives :: Completer -> Widget Name
-drawCompletionAlternatives c =
-    let alternatives = intersperse (txt " ") $ mkAlternative <$> toList (completionAlternatives c)
-        mkAlternative alt =
-            let format = if Just (completionInput alt) == (completionInput <$> currentAlternative c)
-                         then visible . withDefAttr completionAlternativeCurrentAttr
-                         else id
-            in format $ txt $ completionDisplay alt
-    in hBox [ borderElem bsHorizontal
-            , txt "["
-            , withDefAttr completionAlternativeListAttr $
-              vLimit 1 $ viewport CompletionAlternatives Horizontal $ hBox alternatives
-            , txt "]"
-            , borderElem bsHorizontal
             ]
 
 maybePreviewViewport :: Widget Name -> Widget Name
@@ -621,13 +688,11 @@ mainInterface st =
 
     bottomBorder = case appMode st of
         MessageSelect -> messageSelectBottomBar st
-        _ -> case st^.csEditState.cedCompleter of
-            Just c -> drawCompletionAlternatives c
-            _ -> maybeSubdue $ hBox
-                 [ hBorder
-                 , showTypingUsers
-                 , showBusy
-                 ]
+        _ -> maybeSubdue $ hBox
+             [ hBorder
+             , showTypingUsers
+             , showBusy
+             ]
 
     showTypingUsers = case allTypingUsers (st^.csCurrentChannel.ccInfo.cdTypingUsers) of
                         [] -> emptyWidget

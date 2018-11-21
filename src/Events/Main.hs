@@ -6,20 +6,15 @@ import           Prelude.MH
 
 import           Brick hiding ( Direction )
 import           Brick.Widgets.Edit
-import qualified Data.Foldable as F
-import qualified Data.Map as M
-import qualified Data.Set as Set
+import qualified Brick.Widgets.List as L
+import           Data.Char ( isSpace )
 import qualified Data.Text as T
 import qualified Data.Text.Zipper as Z
 import qualified Data.Text.Zipper.Generic.Words as Z
 import qualified Graphics.Vty as Vty
-import           Lens.Micro.Platform ( (%=), (.=), to, at )
-import qualified Skylighting.Types as Sky
-
-import           Network.Mattermost.Types ( Type(..) )
+import           Lens.Micro.Platform ( (%=), (.=), to, at, _Just )
 
 import           Command
-import           Completion
 import           Constants
 import           Events.Keybindings
 import           HelpTopics ( mainHelpTopic )
@@ -138,9 +133,7 @@ mainKeybindings = mkKeybindings
                  -- mode.
                  True -> mhHandleEventLensed (csEditState.cedEditor) handleEditorEvent
                                            (Vty.EvKey Vty.KEnter [])
-                 False -> do
-                   csEditState.cedCompleter .= Nothing
-                   handleInputSubmission
+                 False -> handleInputSubmission
 
     , mkKb EnterOpenURLModeEvent "Select and open a URL posted to the current channel"
            startUrlSelect
@@ -152,8 +145,8 @@ mainKeybindings = mkKeybindings
     , mkKb ToggleMultiLineEvent "Toggle multi-line message compose mode"
            toggleMultilineEditing
 
-    , mkKb CancelEvent "Cancel message reply or update"
-         cancelReplyOrEdit
+    , mkKb CancelEvent "Cancel autocomplete, message reply, or edit, in that order"
+         cancelAutocompleteOrReplyOrEdit
 
     , mkKb EnterFlaggedPostsEvent "View currently flagged posts"
          enterFlaggedPostListMode
@@ -188,84 +181,33 @@ data Direction = Forwards | Backwards
 
 tabComplete :: Direction -> MH ()
 tabComplete dir = do
-  st <- use id
-  allUIds <- gets allUserIds
-  allChanNames <- use (csChannels.to getChannelNameSet.to F.toList)
-  displayNick <- use (to useNickname)
+    let transform list =
+            let len = list^.L.listElementsL.to length
+            in case dir of
+                Forwards ->
+                    if (L.listSelected list == Just (len - 1)) ||
+                       (L.listSelected list == Nothing && len > 0)
+                    then L.listMoveTo 0 list
+                    else L.listMoveBy 1 list
+                Backwards ->
+                    if (L.listSelected list == Just 0) ||
+                       (L.listSelected list == Nothing && len > 0)
+                    then L.listMoveTo (len - 1) list
+                    else L.listMoveBy (-1) list
+    csEditState.cedAutocomplete._Just.acCompletionList %= transform
 
-  let channelCompletions = concat $ catMaybes (flip map allChanNames $ \cname -> do
-          -- Only permit completion of channel names for non-Group channels
-          ch <- channelByName cname st
-          case ch^.ccInfo.cdType of
-              Group   -> Nothing
-              Private -> Nothing
-              _       -> Just [ CompletionAlternative cname (normalChannelSigil <> cname) cname
-                              , mkAlt $ normalChannelSigil <> cname
-                              ]
-          )
-
-      userCompletions = concat $ catMaybes (flip map allUIds $ \uId ->
-          -- Only permit completion of user names for non-deleted users
-          case userById uId st of
-              Nothing -> Nothing
-              Just u | u^.uiDeleted -> Nothing
-              Just u ->
-                  let mNick = case u^.uiNickName of
-                        Just nick | displayNick ->
-                            [ CompletionAlternative (userSigil <> nick) (userSigil <> u^.uiName) (userSigil <> nick)
-                            , CompletionAlternative nick (userSigil <> u^.uiName) nick
-                            ]
-                        _ -> []
-                  in Just $ [ CompletionAlternative (u^.uiName) (userSigil <> u^.uiName) (u^.uiName)
-                            , mkAlt $ userSigil <> u^.uiName
-                            ] <> mNick
-          )
-
-      commandCompletions = mkAlt <$> map ("/" <>) (commandName <$> commandList)
-      mkAlt a = CompletionAlternative a a a
-      completions = Set.fromList (userCompletions ++
-                                  channelCompletions ++
-                                  commandCompletions)
-
-  mCompleter <- use (csEditState.cedCompleter)
-  case mCompleter of
-      Just _ -> do
-          -- Since there is already a completion in progress, cycle it
-          -- according to the directional preference.
-          let func = case dir of
-                Forwards -> nextCompletion
-                Backwards -> previousCompletion
-          csEditState.cedCompleter %= fmap func
-      Nothing -> do
-          -- There is no completion in progress, so start a new
-          -- completion from the current input.
-          let line = Z.currentLine $ st^.csEditState.cedEditor.editContentsL
-              completionsToUse =
-                  if | "```" `T.isPrefixOf` line ->
-                         Set.fromList $ (\k -> (CompletionAlternative ("```" <> k) ("```" <> k) k)) <$>
-                             (Sky.sShortname <$> (M.elems $ st^.csResources.crSyntaxMap))
-                     | otherwise -> completions
-          case wordComplete completionsToUse line of
-              Nothing ->
-                  -- No matches were found, so do nothing.
-                  return ()
-              Just (Left single) ->
-                  -- Only a single match was found, so just replace the
-                  -- current word with the only match.
-                  csEditState.cedEditor %= applyEdit (Z.insertMany single . Z.deletePrevWord)
-              Just (Right many) -> do
-                  -- More than one match was found, so start a
-                  -- completion by storing the completer state.
-                  csEditState.cedCompleter .= Just many
-
-  -- Get the current completer state (potentially just cycled to
-  -- the next completion above) and update the editor with the current
-  -- alternative.
-  mComp <- use (csEditState.cedCompleter)
-  case mComp of
-      Nothing -> return ()
-      Just comp -> do
-          case completionReplacement <$> currentAlternative comp of
-              Nothing -> return ()
-              Just replacement ->
-                  csEditState.cedEditor %= applyEdit (Z.insertMany replacement . Z.deletePrevWord)
+    mac <- use (csEditState.cedAutocomplete)
+    case mac of
+        Nothing -> return ()
+        Just ac -> do
+            case ac^.acCompletionList.to L.listSelectedElement of
+                Nothing -> return ()
+                Just (_, alternative) -> do
+                    let replacement = autocompleteAlternativeReplacement alternative
+                        maybeEndOfWord z =
+                            if maybe True isSpace (Z.currentChar z)
+                            then z
+                            else Z.moveWordRight z
+                    csEditState.cedEditor %=
+                        applyEdit (Z.insertMany replacement . Z.deletePrevWord .
+                                   maybeEndOfWord)

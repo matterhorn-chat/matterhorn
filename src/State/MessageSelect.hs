@@ -15,10 +15,8 @@ module State.MessageSelect
   , deleteSelectedMessage
   , beginReplyCompose
   , beginEditMessage
-  , getSelectedMessage
-  , cancelReplyOrEdit
-  , replyToLatestMessage
   , flagMessage
+  , getSelectedMessage
   )
 where
 
@@ -215,25 +213,6 @@ beginEditMessage = do
                          else sanitizeUserText $ postMessage p
             csEditState.cedEditor %= applyEdit (clearZipper >> (insertMany toEdit))
         _ -> return ()
-
-cancelReplyOrEdit :: MH ()
-cancelReplyOrEdit = do
-    mode <- use (csEditState.cedEditMode)
-    case mode of
-        NewPost -> return ()
-        _ -> do
-            csEditState.cedEditMode .= NewPost
-            csEditState.cedEditor %= applyEdit clearZipper
-
-replyToLatestMessage :: MH ()
-replyToLatestMessage = do
-  msgs <- use (csCurrentChannel . ccContents . cdMessages)
-  case findLatestUserMessage isReplyable msgs of
-    Just msg | isReplyable msg ->
-        do let Just p = msg^.mOriginalPost
-           setMode Main
-           csEditState.cedEditMode .= Replying msg p
-    _ -> return ()
 
 -- | Tell the server that we have flagged or unflagged a message.
 flagMessage :: PostId -> Bool -> MH ()

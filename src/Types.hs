@@ -88,12 +88,21 @@ module Types
   , cedSpellChecker
   , cedMisspellings
   , cedEditMode
-  , cedCompleter
   , cedEditor
   , cedMultiline
   , cedInputHistory
   , cedInputHistoryPosition
   , cedLastChannelInput
+  , cedAutocomplete
+
+  , AutocompleteState(..)
+  , acPreviousSearchString
+  , acCompletionList
+  , acListWidth
+  , acListElementType
+
+  , AutocompleteAlternative(..)
+  , autocompleteAlternativeReplacement
 
   , PostListOverlayState
   , postListSelected
@@ -263,8 +272,8 @@ import           Network.Mattermost.Types
 import           Network.Mattermost.Types.Config
 import           Network.Mattermost.WebSocket ( WebsocketEvent )
 
-import           Completion ( Completer )
 import           InputHistory
+import           Types.Common
 import           Types.Channels
 import           Types.DirectionalSeq ( emptyDirSeq )
 import           Types.KeyEvents
@@ -541,6 +550,7 @@ data Name =
     | KeybindingHelpText
     | ChannelSelectString
     | CompletionAlternatives
+    | CompletionList
     | JoinChannelList
     | UrlList
     | MessagePreviewViewport
@@ -755,6 +765,33 @@ data ChatResources =
                   , _crLogManager          :: LogManager
                   }
 
+data AutocompleteAlternative =
+    UserCompletion User Bool
+    -- ^ User, plus whether the user is in the channel that triggered
+    -- the autocomplete
+    | ChannelCompletion Channel
+    -- ^ Channel
+    | SyntaxCompletion Text
+    -- ^ Name of a skylighting syntax definition
+    | CommandCompletion Text Text Text
+    -- ^ Name of a slash command, argspec, and description
+
+autocompleteAlternativeReplacement :: AutocompleteAlternative -> Text
+autocompleteAlternativeReplacement (UserCompletion u _) =
+    userSigil <> userUsername u
+autocompleteAlternativeReplacement (ChannelCompletion c) =
+    normalChannelSigil <> (sanitizeUserText $ channelName c)
+autocompleteAlternativeReplacement (SyntaxCompletion t) =
+    "```" <> t
+autocompleteAlternativeReplacement (CommandCompletion t _ _) =
+    "/" <> t
+
+data AutocompleteState =
+    AutocompleteState { _acPreviousSearchString :: Text
+                      , _acCompletionList :: List Name AutocompleteAlternative
+                      , _acListWidth :: Maybe Int
+                      , _acListElementType :: Text
+                      }
 
 -- | The 'ChatEditState' value contains the editor widget itself as well
 -- as history and metadata we need for editing-related operations.
@@ -765,10 +802,10 @@ data ChatEditState =
                   , _cedInputHistory         :: InputHistory
                   , _cedInputHistoryPosition :: HashMap ChannelId (Maybe Int)
                   , _cedLastChannelInput     :: HashMap ChannelId (Text, EditMode)
-                  , _cedCompleter            :: Maybe Completer
                   , _cedYankBuffer           :: Text
                   , _cedSpellChecker         :: Maybe (Aspell, IO ())
                   , _cedMisspellings         :: Set Text
+                  , _cedAutocomplete         :: Maybe AutocompleteState
                   }
 
 -- | The input mode.
@@ -792,11 +829,11 @@ emptyEditState hist sp =
                   , _cedInputHistory         = hist
                   , _cedInputHistoryPosition = mempty
                   , _cedLastChannelInput     = mempty
-                  , _cedCompleter            = Nothing
                   , _cedEditMode             = NewPost
                   , _cedYankBuffer           = ""
                   , _cedSpellChecker         = sp
                   , _cedMisspellings         = mempty
+                  , _cedAutocomplete         = Nothing
                   }
 
 -- | A 'RequestChan' is a queue of operations we have to perform in the
@@ -1201,6 +1238,7 @@ data MHError =
 makeLenses ''ChatResources
 makeLenses ''ChatState
 makeLenses ''ChatEditState
+makeLenses ''AutocompleteState
 makeLenses ''PostListOverlayState
 makeLenses ''UserListOverlayState
 makeLenses ''ChannelSelectState
