@@ -94,6 +94,7 @@ module Types
   , cedInputHistoryPosition
   , cedLastChannelInput
   , cedAutocomplete
+  , cedAutocompletePending
 
   , AutocompleteState(..)
   , acPreviousSearchString
@@ -804,6 +805,7 @@ data ChatEditState =
                   , _cedSpellChecker         :: Maybe (Aspell, IO ())
                   , _cedMisspellings         :: Set Text
                   , _cedAutocomplete         :: Maybe AutocompleteState
+                  , _cedAutocompletePending  :: Maybe Text
                   }
 
 -- | The input mode.
@@ -832,6 +834,7 @@ emptyEditState hist sp =
                   , _cedSpellChecker         = sp
                   , _cedMisspellings         = mempty
                   , _cedAutocomplete         = Nothing
+                  , _cedAutocompletePending  = Nothing
                   }
 
 -- | A 'RequestChan' is a queue of operations we have to perform in the

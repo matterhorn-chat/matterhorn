@@ -237,11 +237,14 @@ checkForAutocompletion = do
     case result of
         Nothing -> do
             csEditState.cedAutocomplete .= Nothing
+            csEditState.cedAutocompletePending .= Nothing
         Just (runUpdater, searchString) -> do
             prevResult <- use (csEditState.cedAutocomplete)
             let shouldUpdate = maybe True ((/= searchString) . _acPreviousSearchString)
                                prevResult
-            when shouldUpdate $ runUpdater searchString
+            when shouldUpdate $ do
+                csEditState.cedAutocompletePending .= Just searchString
+                runUpdater searchString
 
 getCompleterForInput :: MH (Maybe (Text -> MH (), Text))
 getCompleterForInput = do
@@ -309,8 +312,20 @@ setCompletionAlternatives searchString alts ty = do
                                       list & L.listSelectedL .~ Nothing
                                   , _acListElementType = ty
                                   }
-    csEditState.cedAutocomplete .= Just state
-    mh $ vScrollToBeginning $ viewportScroll CompletionList
+
+    pending <- use (csEditState.cedAutocompletePending)
+    case pending of
+        Just val | val == searchString -> do
+            csEditState.cedAutocomplete .= Just state
+            mh $ vScrollToBeginning $ viewportScroll CompletionList
+        _ ->
+            -- Do not update the state if this result does not
+            -- correspond to the search string we used most recently.
+            -- This happens when the editor changes faster than the
+            -- async completion responses arrive from the server. If we
+            -- don't check this, we show completion results that are
+            -- wrong for the editor state.
+            return ()
 
 wordAtColumn :: Int -> Text -> Maybe Text
 wordAtColumn i t =
