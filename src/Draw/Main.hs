@@ -467,14 +467,15 @@ renderAutocompleteBox st ac =
        then emptyWidget
        else Widget Greedy Greedy $ do
            ctx <- getContext
-           let rowOffset = ctx^.availHeightL - 2 - editorOffset - visibleHeight
+           let rowOffset = ctx^.availHeightL - 3 - editorOffset - visibleHeight
                editorOffset = if st^.csEditState.cedMultiline
-                              then multilineHeightLimit + 1
-                              else 1
+                              then multilineHeightLimit
+                              else 0
            render $ translateBy (Location (0, rowOffset)) $
                     vBox [ hBorderWithLabel label
                          , vLimit visibleHeight $
                            renderList renderAutocompleteAlternative True matchList
+                         , hBorder
                          ]
 
 renderAutocompleteAlternative :: Bool -> AutocompleteAlternative -> Widget Name
