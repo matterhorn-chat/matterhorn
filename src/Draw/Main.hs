@@ -505,7 +505,7 @@ renderUserCompletion u selected =
 
 renderChannelCompletion :: Channel -> Bool -> Widget Name
 renderChannelCompletion c selected =
-    let nameWidth = 20
+    let nameWidth = 30
         padTo n a = hLimit n $ vLimit 1 (a <+> fill ' ')
         maybeForce = if selected
                      then forceAttr listSelectedFocusedAttr
