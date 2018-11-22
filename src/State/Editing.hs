@@ -233,21 +233,7 @@ handleEditingInput e = do
 
 checkForAutocompletion :: MH ()
 checkForAutocompletion = do
-    z <- use (csEditState.cedEditor.editContentsL)
-    let col = snd $ Z.cursorPosition z
-        curLine = Z.currentLine z
-
-        result = case wordAtColumn col curLine of
-            Just w | userSigil `T.isPrefixOf` w ->
-                       Just (doUserAutoCompletion, T.tail w)
-                   | normalChannelSigil `T.isPrefixOf` w ->
-                       Just (doChannelAutoCompletion, T.tail w)
-                   | "```" `T.isPrefixOf` w ->
-                       Just (doSyntaxAutoCompletion, T.drop 3 w)
-                   | "/" `T.isPrefixOf` w ->
-                       Just (doCommandAutoCompletion, T.tail w)
-            _ -> Nothing
-
+    result <- getCompleterForInput
     case result of
         Nothing -> do
             csEditState.cedAutocomplete .= Nothing
@@ -256,6 +242,24 @@ checkForAutocompletion = do
             let shouldUpdate = maybe True ((/= searchString) . _acPreviousSearchString)
                                prevResult
             when shouldUpdate $ runUpdater searchString
+
+getCompleterForInput :: MH (Maybe (Text -> MH (), Text))
+getCompleterForInput = do
+    z <- use (csEditState.cedEditor.editContentsL)
+
+    let col = snd $ Z.cursorPosition z
+        curLine = Z.currentLine z
+
+    return $ case wordAtColumn col curLine of
+        Just w | userSigil `T.isPrefixOf` w ->
+                   Just (doUserAutoCompletion, T.tail w)
+               | normalChannelSigil `T.isPrefixOf` w ->
+                   Just (doChannelAutoCompletion, T.tail w)
+               | "```" `T.isPrefixOf` w ->
+                   Just (doSyntaxAutoCompletion, T.drop 3 w)
+               | "/" `T.isPrefixOf` w ->
+                   Just (doCommandAutoCompletion, T.tail w)
+        _ -> Nothing
 
 doSyntaxAutoCompletion :: Text -> MH ()
 doSyntaxAutoCompletion searchString = do
