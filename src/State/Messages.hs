@@ -58,6 +58,7 @@ addDisconnectGaps :: MH ()
 addDisconnectGaps = mapM_ onEach . filteredChannelIds (const True) =<< use csChannels
     where onEach c = do addEndGap c
                         clearPendingFlags c
+                        mh $ invalidateCacheEntry (ChannelMessages c)
 
 -- | Websocket was disconnected, so all channels may now miss some
 -- messages
@@ -120,6 +121,7 @@ editMessage new = do
         (msg, mentionedUsers) = clientPostToMessage (toClientPost new (new^.postRootIdL))
         chan = csChannel (new^.postChannelIdL)
     chan . ccContents . cdMessages . traversed . filtered isEditedMessage .= msg
+    mh $ invalidateCacheEntry (ChannelMessages $ new^.postChannelIdL)
 
     fetchUsersByUsername $ F.toList mentionedUsers
 
@@ -138,6 +140,7 @@ deleteMessage new = do
         chan = csChannel (new^.postChannelIdL)
     chan.ccContents.cdMessages.traversed.filtered isDeletedMessage %= (& mDeleted .~ True)
     chan %= adjustUpdated new
+    mh $ invalidateCacheEntry (ChannelMessages $ new^.postChannelIdL)
 
 addNewPostedMessage :: PostToAdd -> MH ()
 addNewPostedMessage p =
@@ -341,6 +344,7 @@ addMessageToState fetchMentionedUsers newPostData = do
                         fetchUsersByUsername $ F.toList mentionedUsers
 
                     csPostMap.at(postId new) .= Just msg'
+                    mh $ invalidateCacheEntry (ChannelMessages cId)
                     csChannels %= modifyChannelById cId
                       ((ccContents.cdMessages %~ addMessage msg') .
                        (adjustUpdated new) .

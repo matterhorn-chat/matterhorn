@@ -15,6 +15,7 @@ import           Prelude ()
 import           Prelude.MH
 
 import           Brick.BChan
+import           Brick.Main ( invalidateCache )
 import           Control.Concurrent ( threadDelay, forkIO )
 import qualified Control.Concurrent.STM as STM
 import           Control.Concurrent.STM.Delay
@@ -143,7 +144,9 @@ startTimezoneMonitorThread tz requestChan = do
         newTz <- lookupLocalTimeZone
         when (newTz /= prevTz) $
             STM.atomically $ STM.writeTChan requestChan $ do
-                return $ Just $ timeZone .= newTz
+                return $ Just $ do
+                    timeZone .= newTz
+                    mh invalidateCache
 
         timezoneMonitor newTz
 
@@ -255,6 +258,7 @@ startSyntaxMapLoaderThread config eventChan = void $ forkIO $ do
 
     writeBChan eventChan $ RespEvent $ do
         csResources.crSyntaxMap .= finalMap
+        mh invalidateCache
 
 -------------------------------------------------------------------
 -- Async worker thread

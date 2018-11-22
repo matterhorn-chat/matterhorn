@@ -17,6 +17,7 @@ module State.Channels
   , nextUnreadChannel
   , nextUnreadUserOrChannel
   , createOrFocusDMChannel
+  , clearChannelUnreadStatus
   , prevChannel
   , nextChannel
   , recentChannel
@@ -196,7 +197,13 @@ setLastViewedFor prevId cId = do
     -- new messages)
     case prevId of
       Nothing -> return ()
-      Just p -> csChannels %= (channelByIdL p %~ (clearNewMessageIndicator . clearEditedThreshold))
+      Just p -> clearChannelUnreadStatus p
+
+clearChannelUnreadStatus :: ChannelId -> MH ()
+clearChannelUnreadStatus cId = do
+    mh $ invalidateCacheEntry (ChannelMessages cId)
+    csChannel(cId) %= (clearNewMessageIndicator .
+                       clearEditedThreshold)
 
 -- | Refresh information about all channels and users. This is usually
 -- triggered when a reconnect event for the WebSocket to the server
@@ -375,6 +382,7 @@ checkPendingChannelChange change = do
 -- the Mattermost server. Also update the channel name if it changed.
 updateChannelInfo :: ChannelId -> Channel -> ChannelMember -> MH ()
 updateChannelInfo cid new member = do
+    mh $ invalidateCacheEntry $ ChannelMessages cid
     csChannel(cid).ccInfo %= channelInfoFromChannelWithData new member
     updateSidebar
 

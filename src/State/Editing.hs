@@ -15,7 +15,7 @@ where
 import           Prelude ()
 import           Prelude.MH
 
-import           Brick.Main ( viewportScroll, vScrollToBeginning )
+import           Brick.Main ( viewportScroll, vScrollToBeginning, invalidateCache )
 import           Brick.Widgets.Edit ( Editor, applyEdit , handleEditorEvent
                                     , getEditContents, editContentsL )
 import qualified Brick.Widgets.List as L
@@ -57,10 +57,14 @@ import           Types.Common ( sanitizeChar, sanitizeUserText' )
 
 
 startMultilineEditing :: MH ()
-startMultilineEditing = csEditState.cedMultiline .= True
+startMultilineEditing = do
+    mh invalidateCache
+    csEditState.cedMultiline .= True
 
 toggleMultilineEditing :: MH ()
-toggleMultilineEditing = csEditState.cedMultiline %= not
+toggleMultilineEditing = do
+    mh invalidateCache
+    csEditState.cedMultiline %= not
 
 invokeExternalEditor :: MH ()
 invokeExternalEditor = do

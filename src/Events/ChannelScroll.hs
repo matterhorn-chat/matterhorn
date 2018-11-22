@@ -26,8 +26,10 @@ channelScrollKeybindings = mkKeybindings
     channelPageUp
   , mkKb PageDownEvent "Scroll down"
     channelPageDown
-  , mkKb CancelEvent "Cancel scrolling and return to channel view" $
-    setMode Main
+  , mkKb CancelEvent "Cancel scrolling and return to channel view" $ do
+      cId <- use csCurrentChannelId
+      mh $ invalidateCacheEntry (ChannelMessages cId)
+      setMode Main
   , mkKb ScrollTopEvent "Scroll to top"
     channelScrollToTop
   , mkKb ScrollBottomEvent "Scroll to bottom"

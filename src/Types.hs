@@ -1383,7 +1383,11 @@ trimChannelSigil n
     | otherwise = n
 
 addNewUser :: UserInfo -> MH ()
-addNewUser u = csUsers %= addUser u
+addNewUser u = do
+    csUsers %= addUser u
+    -- Invalidate the cache because channel message rendering may need
+    -- to get updated if this user authored posts in any channels.
+    mh invalidateCache
 
 data SidebarUpdate =
     SidebarUpdateImmediate
