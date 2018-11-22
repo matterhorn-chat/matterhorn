@@ -190,6 +190,7 @@ module Types
   , withChannel
   , withChannelOrDefault
   , userList
+  , resetAutocomplete
   , hasUnread
   , hasUnread'
   , isMine
@@ -1431,6 +1432,11 @@ clientPostToMessage cp = (m, usernames)
                     , _mFlagged = False
                     , _mChannelId = Just $ cp^.cpChannelId
                     }
+
+resetAutocomplete :: MH ()
+resetAutocomplete = do
+    csEditState.cedAutocomplete .= Nothing
+    csEditState.cedAutocompletePending .= Nothing
 
 findUsernames :: C.Blocks -> S.Set Text
 findUsernames = S.unions . F.toList . fmap blockFindUsernames

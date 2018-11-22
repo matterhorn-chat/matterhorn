@@ -433,7 +433,7 @@ setFocusWith f = do
     -- we'll end up clobbering things like csRecentChannel.
     when (newFocus /= oldFocus) $ do
         mh $ invalidateCacheEntry ChannelSidebar
-        csEditState.cedAutocomplete .= Nothing
+        resetAutocomplete
         preChangeChannelCommon
         csFocus .= newZipper
         updateViewed True

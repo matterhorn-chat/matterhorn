@@ -235,9 +235,7 @@ checkForAutocompletion :: MH ()
 checkForAutocompletion = do
     result <- getCompleterForInput
     case result of
-        Nothing -> do
-            csEditState.cedAutocomplete .= Nothing
-            csEditState.cedAutocompletePending .= Nothing
+        Nothing -> resetAutocomplete
         Just (runUpdater, searchString) -> do
             prevResult <- use (csEditState.cedAutocomplete)
             let shouldUpdate = maybe True ((/= searchString) . _acPreviousSearchString)
