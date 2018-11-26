@@ -100,6 +100,7 @@ module Types
   , acPreviousSearchString
   , acCompletionList
   , acListElementType
+  , acCachedResponses
 
   , AutocompleteAlternative(..)
   , autocompleteAlternativeReplacement
@@ -791,6 +792,7 @@ data AutocompleteState =
     AutocompleteState { _acPreviousSearchString :: Text
                       , _acCompletionList :: List Name AutocompleteAlternative
                       , _acListElementType :: Text
+                      , _acCachedResponses :: HM.HashMap Text [AutocompleteAlternative]
                       }
 
 -- | The 'ChatEditState' value contains the editor widget itself as well

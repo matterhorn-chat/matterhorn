@@ -25,6 +25,7 @@ import qualified Control.Concurrent.STM as STM
 import qualified Data.ByteString as BS
 import           Data.Char ( isSpace )
 import qualified Data.Foldable as F
+import qualified Data.HashMap.Strict as HM
 import           Data.List ( sort, sortBy )
 import           Data.Ord ( comparing )
 import qualified Data.Map as M
@@ -37,7 +38,7 @@ import qualified Data.Text.Zipper.Generic.Words as Z
 import           Data.Time ( getCurrentTime )
 import qualified Data.Vector as V
 import           Graphics.Vty ( Event(..), Key(..), Modifier(..) )
-import           Lens.Micro.Platform ( (%=), (.=), (.~), to )
+import           Lens.Micro.Platform ( (%=), (.=), (.~), to, _Just, preuse )
 import qualified Skylighting.Types as Sky
 import qualified System.Environment as Sys
 import qualified System.Exit as Sys
@@ -53,7 +54,7 @@ import           Command ( commandList, printArgSpec )
 import           Config
 import           Events.Keybindings
 import           State.Common
-import           Types
+import           Types hiding ( newState )
 import           Types.Common ( sanitizeChar, sanitizeUserText' )
 
 
@@ -285,31 +286,47 @@ doCommandAutoCompletion searchString = do
             CommandCompletion name (printArgSpec args) desc
     setCompletionAlternatives searchString alts "Commands"
 
+withCachedAutocompleteResults :: Text -> Text -> MH () -> MH ()
+withCachedAutocompleteResults label searchString act = do
+    mCache <- preuse (csEditState.cedAutocomplete._Just.acCachedResponses)
+
+    -- Does the cache have results for this search string? If so, use
+    -- them; otherwise invoke the specified action.
+    case HM.lookup searchString =<< mCache of
+        Just alts -> setCompletionAlternatives searchString alts label
+        Nothing -> act
+
 doUserAutoCompletion :: Text -> MH ()
 doUserAutoCompletion searchString = do
     session <- getSession
     myTid <- gets myTeamId
     myUid <- gets myUserId
     cId <- use csCurrentChannelId
-    doAsyncWith Preempt $ do
-        ac <- MM.mmAutocompleteUsers (Just myTid) (Just cId) searchString session
+    let label = "Users"
 
-        let active = Seq.filter (\u -> userId u /= myUid && (not $ userDeleted u))
-            alts = F.toList $
-                   ((\u -> UserCompletion u True) <$> (active $ MM.userAutocompleteUsers ac)) <>
-                   (maybe mempty (fmap (\u -> UserCompletion u False) . active) $
-                          MM.userAutocompleteOutOfChannel ac)
+    withCachedAutocompleteResults label searchString $
+        doAsyncWith Preempt $ do
+            ac <- MM.mmAutocompleteUsers (Just myTid) (Just cId) searchString session
 
-        return $ Just $ setCompletionAlternatives searchString alts "Users"
+            let active = Seq.filter (\u -> userId u /= myUid && (not $ userDeleted u))
+                alts = F.toList $
+                       ((\u -> UserCompletion u True) <$> (active $ MM.userAutocompleteUsers ac)) <>
+                       (maybe mempty (fmap (\u -> UserCompletion u False) . active) $
+                              MM.userAutocompleteOutOfChannel ac)
+
+            return $ Just $ setCompletionAlternatives searchString alts label
 
 doChannelAutoCompletion :: Text -> MH ()
 doChannelAutoCompletion searchString = do
     session <- getSession
     tId <- gets myTeamId
-    doAsyncWith Preempt $ do
-        results <- MM.mmAutocompleteChannels tId searchString session
-        let alts = F.toList $ ChannelCompletion <$> results
-        return $ Just $ setCompletionAlternatives searchString alts "Channels"
+    let label = "Channels"
+
+    withCachedAutocompleteResults label searchString $ do
+        doAsyncWith Preempt $ do
+            results <- MM.mmAutocompleteChannels tId searchString session
+            let alts = F.toList $ ChannelCompletion <$> results
+            return $ Just $ setCompletionAlternatives searchString alts label
 
 setCompletionAlternatives :: Text -> [AutocompleteAlternative] -> Text -> MH ()
 setCompletionAlternatives searchString alts ty = do
@@ -318,12 +335,24 @@ setCompletionAlternatives searchString alts ty = do
                                   , _acCompletionList =
                                       list & L.listSelectedL .~ Nothing
                                   , _acListElementType = ty
+                                  , _acCachedResponses = HM.fromList [(searchString, alts)]
                                   }
 
     pending <- use (csEditState.cedAutocompletePending)
     case pending of
         Just val | val == searchString -> do
-            csEditState.cedAutocomplete .= Just state
+
+            -- If there is already state, update it, but also cache the
+            -- search results.
+            csEditState.cedAutocomplete %= \prev ->
+                let newState = case prev of
+                        Nothing ->
+                            state
+                        Just oldState ->
+                            state & acCachedResponses .~
+                                HM.insert searchString alts (oldState^.acCachedResponses)
+                in Just newState
+
             mh $ vScrollToBeginning $ viewportScroll CompletionList
         _ ->
             -- Do not update the state if this result does not
