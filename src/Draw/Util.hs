@@ -1,4 +1,14 @@
-module Draw.Util where
+module Draw.Util
+  ( withBrackets
+  , renderTime
+  , renderDate
+  , insertDateMarkers
+  , getDateFormat
+  , mkChannelName
+  , userSigilFromInfo
+  , multilineHeightLimit
+  )
+where
 
 import           Prelude ()
 import           Prelude.MH
@@ -19,6 +29,9 @@ defaultTimeFormat = "%R"
 
 defaultDateFormat :: Text
 defaultDateFormat = "%Y-%m-%d"
+
+multilineHeightLimit :: Int
+multilineHeightLimit = 5
 
 getTimeFormat :: ChatState -> Text
 getTimeFormat st =
@@ -75,6 +88,3 @@ mkChannelName c = T.append sigil (c^.cdName)
             Group     -> mempty
             Direct    -> userSigil
             Unknown _ -> mempty
-
-mkDMChannelName :: UserInfo -> Text
-mkDMChannelName u = T.cons (userSigilFromInfo u) (u^.uiName)

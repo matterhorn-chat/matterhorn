@@ -9,7 +9,7 @@ import           Brick.Widgets.Border
 import           Brick.Widgets.Border.Style
 import           Brick.Widgets.Center ( hCenter )
 import           Brick.Widgets.Edit ( editContentsL, renderEditor, getEditContents )
-import           Brick.Widgets.List ( renderList, listElementsL, listSelectedFocusedAttr )
+import           Brick.Widgets.List ( renderList )
 import           Control.Arrow ( (>>>) )
 import           Control.Monad.Trans.Reader ( withReaderT )
 import           Data.Char ( isSpace, isPunctuation )
@@ -20,19 +20,18 @@ import qualified Data.Text as T
 import           Data.Text.Zipper ( cursorPosition, insertChar, getText, gotoEOL )
 import           Data.Time.Calendar ( fromGregorian )
 import           Data.Time.Clock ( UTCTime(..) )
-import qualified Data.Vector as V
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( (.~), (^?!), to, view, folding )
 
 import           Network.Mattermost.Types ( ChannelId, Type(Direct, Private, Group)
-                                          , ServerTime(..), UserId, User(..)
-                                          , Channel(..)
+                                          , ServerTime(..), UserId
                                           )
 
 
 import           Constants
 import           Draw.ChannelList ( renderChannelList )
 import           Draw.Messages
+import           Draw.Autocomplete
 import           Draw.Util
 import           Events.Keybindings
 import           Events.MessageSelect
@@ -41,7 +40,6 @@ import           State.MessageSelect
 import           Themes
 import           TimeUtils ( justAfter, justBefore )
 import           Types
-import           Types.Common ( sanitizeUserText )
 import           Types.KeyEvents
 import           Types.Messages ( msgURLs )
 
@@ -275,9 +273,6 @@ renderUserCommandBox st hs =
             True -> vLimit multilineHeightLimit inputBox <=> multilineHints
     in replyDisplay <=> commandBox
 
-multilineHeightLimit :: Int
-multilineHeightLimit = 5
-
 renderChannelHeader :: ChatState -> HighlightSet -> ClientChannel -> Widget Name
 renderChannelHeader st hs chan =
     let chnType = chan^.ccInfo.cdType
@@ -446,104 +441,6 @@ drawMain st =
     , autocompleteLayer st
     , joinBorders $ mainInterface st
     ]
-
-autocompleteLayer :: ChatState -> Widget Name
-autocompleteLayer st =
-    case st^.csEditState.cedAutocomplete of
-        Nothing ->
-            emptyWidget
-        Just ac ->
-            renderAutocompleteBox st ac
-
-userNotInChannelMarker :: T.Text
-userNotInChannelMarker = "*"
-
-renderAutocompleteBox :: ChatState -> AutocompleteState -> Widget Name
-renderAutocompleteBox st ac =
-    let matchList = _acCompletionList ac
-        maxListHeight = 5
-        visibleHeight = min maxListHeight numResults
-        numResults = length elements
-        elements = matchList^.listElementsL
-        label = withDefAttr clientMessageAttr $
-                txt $ _acListElementType ac <> ": " <> (T.pack $ show numResults) <>
-                      " result" <> if numResults == 1 then "" else "s"
-        footer = case elements V.!? 0 of
-            Just (UserCompletion _ _) ->
-                hBorderWithLabel $
-                    hBox [ txt $ "("
-                         , withDefAttr clientEmphAttr (txt userNotInChannelMarker)
-                         , txt ": not in this channel)"
-                         ]
-            _ -> hBorder
-
-    in if numResults == 0
-       then emptyWidget
-       else Widget Greedy Greedy $ do
-           ctx <- getContext
-           let rowOffset = ctx^.availHeightL - 3 - editorOffset - visibleHeight
-               editorOffset = if st^.csEditState.cedMultiline
-                              then multilineHeightLimit
-                              else 0
-           render $ translateBy (Location (0, rowOffset)) $
-                    vBox [ hBorderWithLabel label
-                         , vLimit visibleHeight $
-                           renderList renderAutocompleteAlternative True matchList
-                         , footer
-                         ]
-
-renderAutocompleteAlternative :: Bool -> AutocompleteAlternative -> Widget Name
-renderAutocompleteAlternative sel (UserCompletion u inChan) =
-    padRight Max $ renderUserCompletion u inChan sel
-renderAutocompleteAlternative sel (ChannelCompletion c) =
-    padRight Max $ renderChannelCompletion c sel
-renderAutocompleteAlternative _ (SyntaxCompletion t) =
-    padRight Max $ txt t
-renderAutocompleteAlternative _ (CommandCompletion n args desc) =
-    padRight Max $ renderCommandCompletion n args desc
-
-renderUserCompletion :: User -> Bool -> Bool -> Widget Name
-renderUserCompletion u inChan selected =
-    let usernameWidth = 18
-        fullNameWidth = 25
-        padTo n a = hLimit n $ vLimit 1 (a <+> fill ' ')
-        username = userUsername u
-        fullName = (sanitizeUserText $ userFirstName u) <> " " <>
-                   (sanitizeUserText $ userLastName u)
-        nickname = sanitizeUserText $ userNickname u
-        maybeForce = if selected
-                     then forceAttr listSelectedFocusedAttr
-                     else id
-        memberDisplay = if inChan
-                        then txt "  "
-                        else withDefAttr clientEmphAttr $
-                             txt $ userNotInChannelMarker <> " "
-    in maybeForce $
-       hBox [ memberDisplay
-            , padTo usernameWidth $ colorUsername username ("@" <> username)
-            , padTo fullNameWidth $ txt fullName
-            , txt nickname
-            ]
-
-renderChannelCompletion :: Channel -> Bool -> Widget Name
-renderChannelCompletion c selected =
-    let nameWidth = 30
-        padTo n a = hLimit n $ vLimit 1 (a <+> fill ' ')
-        maybeForce = if selected
-                     then forceAttr listSelectedFocusedAttr
-                     else id
-    in maybeForce $
-       hBox [ padTo nameWidth $
-              withDefAttr channelNameAttr $
-              txt $ normalChannelSigil <> (sanitizeUserText $ channelName c)
-            , txt $ sanitizeUserText $ channelHeader c
-            ]
-
-renderCommandCompletion :: Text -> Text -> Text -> Widget Name
-renderCommandCompletion name args desc =
-    withDefAttr clientMessageAttr
-        (txt $ "/" <> name <> if T.null args then "" else " " <> args) <+>
-    (txt $ " - " <> desc)
 
 connectionLayer :: ChatState -> Widget Name
 connectionLayer st =

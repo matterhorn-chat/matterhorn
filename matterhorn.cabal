@@ -62,6 +62,7 @@ executable matterhorn
                        Zipper
                        Themes
                        Draw
+                       Draw.Autocomplete
                        Draw.Main
                        Draw.Messages
                        Draw.ChannelList
