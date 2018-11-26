@@ -9,11 +9,9 @@ import           Brick.Widgets.Border
 import           Brick.Widgets.Border.Style
 import           Brick.Widgets.Center ( hCenter )
 import           Brick.Widgets.Edit ( editContentsL, renderEditor, getEditContents )
-import           Brick.Widgets.List ( renderList )
 import           Control.Arrow ( (>>>) )
 import           Control.Monad.Trans.Reader ( withReaderT )
 import           Data.Char ( isSpace, isPunctuation )
-import qualified Data.Foldable as F
 import qualified Data.Sequence as Seq
 import qualified Data.Set as S
 import qualified Data.Text as T
@@ -32,6 +30,7 @@ import           Constants
 import           Draw.ChannelList ( renderChannelList )
 import           Draw.Messages
 import           Draw.Autocomplete
+import           Draw.URLList
 import           Draw.Util
 import           Events.Keybindings
 import           Events.MessageSelect
@@ -631,35 +630,3 @@ mainInterface st =
     maybeSubdue = if appMode st == ChannelSelect
                   then forceAttr ""
                   else id
-
-renderUrlList :: ChatState -> Widget Name
-renderUrlList st =
-    header <=> urlDisplay
-    where
-        header = withDefAttr channelHeaderAttr $ vLimit 1 $
-                 (txt $ "URLs: " <> (st^.csCurrentChannel.ccInfo.cdName)) <+>
-                 fill ' '
-
-        urlDisplay = if F.length urls == 0
-                     then str "No URLs found in this channel."
-                     else renderList renderItem True urls
-
-        urls = st^.csUrlList
-
-        renderItem sel link =
-          let time = link^.linkTime
-          in attr sel $ vLimit 2 $
-            (vLimit 1 $
-             hBox [ let u = maybe "" id (link^.linkUser.to (nameForUserRef st)) in colorUsername u u
-                  , if link^.linkName == link^.linkURL
-                      then emptyWidget
-                      else (txt ": " <+> (renderText $ link^.linkName))
-                  , fill ' '
-                  , renderDate st $ withServerTime time
-                  , str " "
-                  , renderTime st $ withServerTime time
-                  ] ) <=>
-            (vLimit 1 (renderText $ link^.linkURL))
-
-        attr True = forceAttr "urlListSelectedAttr"
-        attr False = id
