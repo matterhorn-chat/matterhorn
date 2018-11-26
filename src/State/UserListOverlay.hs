@@ -42,7 +42,8 @@ enterChannelMembersUserList :: MH ()
 enterChannelMembersUserList = do
   cId <- use csCurrentChannelId
   myId <- gets myUserId
-  enterUserListMode (ChannelMembers cId)
+  myTId <- gets myTeamId
+  enterUserListMode (ChannelMembers cId myTId)
     (\u -> case u^.uiId /= myId of
       True -> createOrFocusDMChannel u >> return True
       False -> return False
@@ -55,7 +56,8 @@ enterChannelInviteUserList :: MH ()
 enterChannelInviteUserList = do
   cId <- use csCurrentChannelId
   myId <- gets myUserId
-  enterUserListMode (ChannelNonMembers cId)
+  myTId <- gets myTeamId
+  enterUserListMode (ChannelNonMembers cId myTId)
     (\u -> case u^.uiId /= myId of
       True -> addUserToCurrentChannel u >> return True
       False -> return False
@@ -66,7 +68,12 @@ enterChannelInviteUserList = do
 enterDMSearchUserList :: MH ()
 enterDMSearchUserList = do
   myId <- gets myUserId
-  enterUserListMode AllUsers
+  myTId <- gets myTeamId
+  config <- use csClientConfig
+  let restrictTeam = case MM.clientConfigRestrictDirectMessage <$> config of
+          Just MM.RestrictTeam -> Just myTId
+          _ -> Nothing
+  enterUserListMode (AllUsers restrictTeam)
     (\u -> case u^.uiId /= myId of
       True -> createOrFocusDMChannel u >> return True
       False -> return False
@@ -109,13 +116,8 @@ resetUserListSearch = do
       csUserListOverlay.userListSearchResults .= listFromUserSearchResults mempty
       session <- getSession
       scope <- use (csUserListOverlay.userListSearchScope)
-      myTId <- gets myTeamId
-      config <- use csClientConfig
-      let restrictTeam = case MM.clientConfigRestrictDirectMessage <$> config of
-              Just MM.RestrictTeam -> Just myTId
-              _ -> Nothing
       doAsyncWith Preempt $ do
-          results <- fetchInitialResults restrictTeam scope session searchString
+          results <- fetchInitialResults scope session searchString
           return $ Just $ do
               let lst = listFromUserSearchResults results
               csUserListOverlay.userListSearchResults .= lst
@@ -236,7 +238,7 @@ userListPageSize = 10
 
 -- | Perform an initial request for search results in the specified
 -- scope.
-fetchInitialResults :: Maybe TeamId -> UserSearchScope -> Session -> Text -> IO (Vec.Vector UserInfo)
+fetchInitialResults :: UserSearchScope -> Session -> Text -> IO (Vec.Vector UserInfo)
 fetchInitialResults = getUserSearchResultsPage 0
 
 -- searchResultsChunkSize :: Int
@@ -244,8 +246,6 @@ fetchInitialResults = getUserSearchResultsPage 0
 
 getUserSearchResultsPage :: Int
                          -- ^ The page number of results to fetch, starting at zero.
-                         -> Maybe TeamId
-                         -- ^ Team ID to use to restrict search.
                          -> UserSearchScope
                          -- ^ The scope to search
                          -> Session
@@ -253,7 +253,7 @@ getUserSearchResultsPage :: Int
                          -> Text
                          -- ^ The search string
                          -> IO (Vec.Vector UserInfo)
-getUserSearchResultsPage _pageNum myTId scope s searchString = do
+getUserSearchResultsPage _pageNum scope s searchString = do
     -- Unfortunately, we don't get pagination control when there is a
     -- search string in effect. We'll get at most 100 results from a
     -- search.
@@ -274,13 +274,16 @@ getUserSearchResultsPage _pageNum myTId scope s searchString = do
                            , userSearchAllowInactive = False
                            , userSearchWithoutTeam = False
                            , userSearchInChannelId = case scope of
-                               ChannelMembers cId -> Just cId
-                               _                  -> Nothing
+                               ChannelMembers cId _ -> Just cId
+                               _                    -> Nothing
                            , userSearchNotInTeamId = Nothing
                            , userSearchNotInChannelId = case scope of
-                               ChannelNonMembers cId -> Just cId
-                               _                     -> Nothing
-                           , userSearchTeamId = myTId
+                               ChannelNonMembers cId _ -> Just cId
+                               _                       -> Nothing
+                           , userSearchTeamId = case scope of
+                               AllUsers tId            -> tId
+                               ChannelMembers _ tId    -> Just tId
+                               ChannelNonMembers _ tId -> Just tId
                            }
     users <- MM.mmSearchUsers query s
 

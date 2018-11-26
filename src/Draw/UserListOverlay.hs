@@ -71,9 +71,10 @@ drawUsersBox st =
 
       scope = st^.userListSearchScope
       promptMsg = case scope of
-          ChannelMembers _    -> "Search channel members:"
-          ChannelNonMembers _ -> "Search users:"
-          AllUsers            -> "Search users:"
+          ChannelMembers _ _    -> "Search channel members:"
+          ChannelNonMembers _ _ -> "Search users:"
+          AllUsers Nothing      -> "Search users:"
+          AllUsers (Just _)     -> "Search team members:"
 
       userResultList =
           if st^.userListSearching
@@ -85,15 +86,16 @@ drawUsersBox st =
       showResults
         | numSearchResults == 0 =
             showMessage $ case scope of
-              ChannelMembers _    -> "No users in channel."
-              ChannelNonMembers _ -> "All users in your team are already in this channel."
-              AllUsers            -> "No users found."
+              ChannelMembers _ _    -> "No users in channel."
+              ChannelNonMembers _ _ -> "All users in your team are already in this channel."
+              AllUsers _            -> "No users found."
         | otherwise = renderedUserList
 
       contentHeader = str $ case scope of
-          ChannelMembers _    -> "Channel Members"
-          ChannelNonMembers _ -> "Invite Users to Channel"
-          AllUsers            -> "Users On This Server"
+          ChannelMembers _ _    -> "Channel Members"
+          ChannelNonMembers _ _ -> "Invite Users to Channel"
+          AllUsers Nothing      -> "Users On This Server"
+          AllUsers (Just _)     -> "Users In My Team"
 
       renderedUserList = L.renderList renderUser True (st^.userListSearchResults)
       numSearchResults = F.length $ st^.userListSearchResults.L.listElementsL

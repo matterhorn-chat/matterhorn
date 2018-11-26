@@ -1035,7 +1035,7 @@ nullUserListOverlayState :: UserListOverlayState
 nullUserListOverlayState =
     UserListOverlayState { _userListSearchResults  = listFromUserSearchResults mempty
                          , _userListSearchInput    = editor UserListSearchInput (Just 1) ""
-                         , _userListSearchScope    = AllUsers
+                         , _userListSearchScope    = AllUsers Nothing
                          , _userListSearching      = False
                          , _userListRequestingMore = False
                          , _userListHasAllResults  = False
@@ -1084,9 +1084,9 @@ data UserListOverlayState =
 
 -- | The scope for searching for users in a user list overlay.
 data UserSearchScope =
-    ChannelMembers ChannelId
-    | ChannelNonMembers ChannelId
-    | AllUsers
+    ChannelMembers ChannelId TeamId
+    | ChannelNonMembers ChannelId TeamId
+    | AllUsers (Maybe TeamId)
 
 -- | Actions that can be sent on the websocket to the server.
 data WebsocketAction =
