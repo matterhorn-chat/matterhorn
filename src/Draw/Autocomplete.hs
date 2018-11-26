@@ -40,7 +40,7 @@ renderAutocompleteBox st ac =
         elements = matchList^.listElementsL
         label = withDefAttr clientMessageAttr $
                 txt $ _acListElementType ac <> ": " <> (T.pack $ show numResults) <>
-                      " result" <> if numResults == 1 then "" else "s"
+                      " match" <> if numResults == 1 then "" else "es"
         footer = case elements V.!? 0 of
             Just (UserCompletion _ _) ->
                 hBorderWithLabel $
