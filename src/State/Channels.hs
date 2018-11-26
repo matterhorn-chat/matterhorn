@@ -530,9 +530,11 @@ applyPreferenceChange :: Preference -> MH ()
 applyPreferenceChange pref = do
     -- always update our user preferences accordingly
     csResources.crUserPreferences %= setUserPreferences (Seq.singleton pref)
+
     -- Invalidate the entire rendering cache since many things depend on
     -- user preferences
     mh invalidateCache
+
     if
       | Just f <- preferenceToFlaggedPost pref -> do
           updateMessageFlag (flaggedPostId f) (flaggedPostStatus f)
