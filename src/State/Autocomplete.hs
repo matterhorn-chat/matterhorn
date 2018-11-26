@@ -30,6 +30,10 @@ import           State.Common
 import           Types hiding ( newState )
 
 
+-- | Check for whether the currently-edited word in the message editor
+-- should cause an autocompletion UI to appear. If so, initiate a server
+-- query or local cache lookup to present the completion alternatives
+-- for the word at the cursor.
 checkForAutocompletion :: MH ()
 checkForAutocompletion = do
     result <- getCompleterForInput
