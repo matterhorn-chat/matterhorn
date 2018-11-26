@@ -163,8 +163,8 @@ handleInputSubmission = do
   -- We clean up before dispatching the command or sending the message
   -- since otherwise the command could change the state and then doing
   -- cleanup afterwards could clean up the wrong things.
-  csEditState.cedEditor         %= applyEdit Z.clearZipper
-  csEditState.cedInputHistory   %= addHistoryEntry allLines cId
+  csEditState.cedEditor %= applyEdit Z.clearZipper
+  csEditState.cedInputHistory %= addHistoryEntry allLines cId
   csEditState.cedInputHistoryPosition.at cId .= Nothing
 
   case T.uncons allLines of
@@ -176,7 +176,7 @@ handleInputSubmission = do
 
   -- Reset the edit mode *after* handling the input so that the input
   -- handler can tell whether we're editing, replying, etc.
-  csEditState.cedEditMode       .= NewPost
+  csEditState.cedEditMode .= NewPost
 
 data Direction = Forwards | Backwards
 
