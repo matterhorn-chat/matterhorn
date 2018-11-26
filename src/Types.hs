@@ -815,19 +815,19 @@ data AutocompleteState =
 -- | The 'ChatEditState' value contains the editor widget itself as well
 -- as history and metadata we need for editing-related operations.
 data ChatEditState =
-    ChatEditState { _cedEditor               :: Editor Text Name
-                  , _cedEditMode             :: EditMode
-                  , _cedMultiline            :: Bool
-                  , _cedInputHistory         :: InputHistory
+    ChatEditState { _cedEditor :: Editor Text Name
+                  , _cedEditMode :: EditMode
+                  , _cedMultiline :: Bool
+                  , _cedInputHistory :: InputHistory
                   , _cedInputHistoryPosition :: HashMap ChannelId (Maybe Int)
-                  , _cedLastChannelInput     :: HashMap ChannelId (Text, EditMode)
-                  , _cedYankBuffer           :: Text
-                  , _cedSpellChecker         :: Maybe (Aspell, IO ())
-                  , _cedMisspellings         :: Set Text
-                  , _cedAutocomplete         :: Maybe AutocompleteState
+                  , _cedLastChannelInput :: HashMap ChannelId (Text, EditMode)
+                  , _cedYankBuffer :: Text
+                  , _cedSpellChecker :: Maybe (Aspell, IO ())
+                  , _cedMisspellings :: Set Text
+                  , _cedAutocomplete :: Maybe AutocompleteState
                   -- ^ The autocomplete state. The autocompletion UI is
                   -- showing only when this state is present.
-                  , _cedAutocompletePending  :: Maybe Text
+                  , _cedAutocompletePending :: Maybe Text
                   -- ^ The search string associated with the latest
                   -- in-flight autocompletion request. This is used to
                   -- determine whether any (potentially late-arriving)
