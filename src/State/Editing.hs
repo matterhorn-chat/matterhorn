@@ -46,7 +46,7 @@ import qualified System.IO.Temp as Sys
 import qualified System.Process as Sys
 import           Text.Aspell ( AspellResponse(..), mistakeWord, askAspell )
 
-import           Network.Mattermost.Types (Post(..))
+import           Network.Mattermost.Types (Post(..), userId)
 import qualified Network.Mattermost.Endpoints as MM
 
 import           Command ( commandList, printArgSpec )
@@ -289,11 +289,12 @@ doUserAutoCompletion :: Text -> MH ()
 doUserAutoCompletion searchString = do
     session <- getSession
     myTid <- gets myTeamId
+    myUid <- gets myUserId
     cId <- use csCurrentChannelId
     doAsyncWith Preempt $ do
         ac <- MM.mmAutocompleteUsers (Just myTid) (Just cId) searchString session
 
-        let active = Seq.filter (not . userDeleted)
+        let active = Seq.filter (\u -> userId u /= myUid && (not $ userDeleted u))
             alts = F.toList $
                    ((\u -> UserCompletion u True) <$> (active $ MM.userAutocompleteUsers ac)) <>
                    (maybe mempty (fmap (\u -> UserCompletion u False) . active) $
