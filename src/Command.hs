@@ -184,7 +184,7 @@ commandList =
     (LineArg "message") $
     \msg -> execMMCommand "shrug" msg
 
-  , Cmd "flags" "Open a window of your flagged posts"  NoArg $ \ () ->
+  , Cmd "flags" "Open a window of your flagged posts" NoArg $ \ () ->
       enterFlaggedPostListMode
 
   , Cmd "search" "Search for posts with given terms" (LineArg "terms") $
