@@ -20,6 +20,7 @@ import qualified Data.Text as T
 import           Data.Text.Zipper ( cursorPosition, insertChar, getText, gotoEOL )
 import           Data.Time.Calendar ( fromGregorian )
 import           Data.Time.Clock ( UTCTime(..) )
+import qualified Data.Vector as V
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( (.~), (^?!), to, view, folding )
 
@@ -454,15 +455,28 @@ autocompleteLayer st =
         Just ac ->
             renderAutocompleteBox st ac
 
+userNotInChannelMarker :: T.Text
+userNotInChannelMarker = "*"
+
 renderAutocompleteBox :: ChatState -> AutocompleteState -> Widget Name
 renderAutocompleteBox st ac =
     let matchList = _acCompletionList ac
         maxListHeight = 5
         visibleHeight = min maxListHeight numResults
-        numResults = length $ matchList^.listElementsL
+        numResults = length elements
+        elements = matchList^.listElementsL
         label = withDefAttr clientMessageAttr $
                 txt $ _acListElementType ac <> ": " <> (T.pack $ show numResults) <>
                       " result" <> if numResults == 1 then "" else "s"
+        footer = case elements V.!? 0 of
+            Just (UserCompletion _ _) ->
+                hBorderWithLabel $
+                    hBox [ txt $ "("
+                         , withDefAttr clientEmphAttr (txt userNotInChannelMarker)
+                         , txt ": not in this channel)"
+                         ]
+            _ -> hBorder
+
     in if numResults == 0
        then emptyWidget
        else Widget Greedy Greedy $ do
@@ -475,12 +489,12 @@ renderAutocompleteBox st ac =
                     vBox [ hBorderWithLabel label
                          , vLimit visibleHeight $
                            renderList renderAutocompleteAlternative True matchList
-                         , hBorder
+                         , footer
                          ]
 
 renderAutocompleteAlternative :: Bool -> AutocompleteAlternative -> Widget Name
-renderAutocompleteAlternative sel (UserCompletion u _) =
-    padRight Max $ renderUserCompletion u sel
+renderAutocompleteAlternative sel (UserCompletion u inChan) =
+    padRight Max $ renderUserCompletion u inChan sel
 renderAutocompleteAlternative sel (ChannelCompletion c) =
     padRight Max $ renderChannelCompletion c sel
 renderAutocompleteAlternative _ (SyntaxCompletion t) =
@@ -488,10 +502,10 @@ renderAutocompleteAlternative _ (SyntaxCompletion t) =
 renderAutocompleteAlternative _ (CommandCompletion n args desc) =
     padRight Max $ renderCommandCompletion n args desc
 
-renderUserCompletion :: User -> Bool -> Widget Name
-renderUserCompletion u selected =
-    let usernameWidth = 30
-        fullNameWidth = 40
+renderUserCompletion :: User -> Bool -> Bool -> Widget Name
+renderUserCompletion u inChan selected =
+    let usernameWidth = 18
+        fullNameWidth = 25
         padTo n a = hLimit n $ vLimit 1 (a <+> fill ' ')
         username = userUsername u
         fullName = (sanitizeUserText $ userFirstName u) <> " " <>
@@ -500,8 +514,13 @@ renderUserCompletion u selected =
         maybeForce = if selected
                      then forceAttr listSelectedFocusedAttr
                      else id
+        memberDisplay = if inChan
+                        then txt "  "
+                        else withDefAttr clientEmphAttr $
+                             txt $ userNotInChannelMarker <> " "
     in maybeForce $
-       hBox [ padTo usernameWidth $ colorUsername username ("@" <> username)
+       hBox [ memberDisplay
+            , padTo usernameWidth $ colorUsername username ("@" <> username)
             , padTo fullNameWidth $ txt fullName
             , txt nickname
             ]
