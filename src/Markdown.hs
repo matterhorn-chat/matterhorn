@@ -258,8 +258,6 @@ vBox = B.vBox . toList
 hBox :: F.Foldable f => f (Widget a) -> Widget a
 hBox = B.hBox . toList
 
---
-
 -- class ToWidget t where
 --   toWidget :: HighlightSet -> t -> Widget a
 
@@ -412,8 +410,6 @@ toFragments = go Normal
           C.Entity t :< xs ->
             Fragment (TStr t) (Link t) <| go n xs
           EmptyL -> S.empty
-
---
 
 data SplitState = SplitState
   { splitChunks  :: Seq (Seq Fragment)
