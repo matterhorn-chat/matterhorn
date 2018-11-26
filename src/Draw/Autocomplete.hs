@@ -117,4 +117,3 @@ renderCommandCompletion name args desc =
     withDefAttr clientMessageAttr
         (txt $ "/" <> name <> if T.null args then "" else " " <> args) <+>
     (txt $ " - " <> desc)
-
