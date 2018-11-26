@@ -6,6 +6,7 @@ module Config
   , PasswordSource(..)
   , findConfig
   , getCredentials
+  , defaultConfig
   )
 where
 

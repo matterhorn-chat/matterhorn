@@ -24,6 +24,7 @@ data Options = Options
   { optConfLocation :: Maybe FilePath
   , optLogLocation  :: Maybe FilePath
   , optBehaviour    :: Behaviour
+  , optIgnoreConfig :: Bool
   } deriving (Eq, Show)
 
 defaultOptions :: Options
@@ -31,6 +32,7 @@ defaultOptions = Options
   { optConfLocation = Nothing
   , optLogLocation  = Nothing
   , optBehaviour    = Normal
+  , optIgnoreConfig = False
   }
 
 optDescrs :: [OptDescr (Options -> Options)]
@@ -47,6 +49,9 @@ optDescrs =
   , Option ['h'] ["help"]
     (NoArg (\ c -> c { optBehaviour = ShowHelp }))
     "Print help for command-line flags and exit"
+  , Option ['i'] ["ignore-config"]
+    (NoArg (\ c -> c { optIgnoreConfig = True }))
+    "Start with no configuration"
   ]
 
 mhVersion :: String

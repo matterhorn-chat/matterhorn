@@ -14,7 +14,11 @@ import Events ( ensureKeybindingConsistency )
 main :: IO ()
 main = do
     opts <- grabOptions
-    configResult <- findConfig (optConfLocation opts)
+
+    configResult <- if optIgnoreConfig opts
+                    then return $ Right defaultConfig
+                    else findConfig (optConfLocation opts)
+
     config <- case configResult of
         Left err -> do
             putStrLn $ "Error loading config: " <> err
