@@ -29,6 +29,7 @@ import           Cheapskate.Types ( Block
                                   , Inlines
                                   , ListType
                                   )
+import           Data.Char ( isAlpha )
 import qualified Data.Foldable as F
 import           Data.Monoid (First(..))
 import           Data.Sequence ( ViewL(..)
@@ -316,7 +317,7 @@ toInlineChunk :: Inlines -> HighlightSet -> Widget a
 toInlineChunk is hSet = B.Widget B.Fixed B.Fixed $ do
   ctx <- B.getContext
   let width = ctx^.B.availWidthL
-      fs    = toFragments is
+      fs    = toFragments hSet is
       ws    = fmap gatherWidgets (split width hSet fs)
   B.render (vBox (fmap hBox ws))
 
@@ -366,13 +367,40 @@ data FragmentStyle
   | EditedRecently
     deriving (Eq, Show)
 
-toFragments :: Inlines -> Seq Fragment
-toFragments = go Normal
+isValidNameChar :: Char -> Bool
+isValidNameChar c = isAlpha c || c == '_' || c == '.' || c == '-'
+
+isNameFragment :: C.Inline -> Bool
+isNameFragment (C.Str t) =
+    not (T.null t) && isValidNameChar (T.head t)
+isNameFragment _ = False
+
+unsafeGetStr :: C.Inline -> Text
+unsafeGetStr (C.Str t) = t
+unsafeGetStr _ = error "BUG: unsafeGetStr called on non-Str Inline"
+
+toFragments :: HighlightSet -> Inlines -> Seq Fragment
+toFragments hSet = go Normal
   where go n c = case viewl c of
           C.Str t :< xs | t == editMarkingSentinel ->
             Fragment TEditSentinel Edited <| go n xs
           C.Str t :< xs | t == editRecentlyMarkingSentinel ->
             Fragment TEditRecentlySentinel EditedRecently <| go n xs
+          C.Str t :< xs | userSigil `T.isPrefixOf` t ->
+            let (uFrags, rest) = S.spanl isNameFragment xs
+                t' = T.concat $ t : (unsafeGetStr <$> F.toList uFrags)
+                u = T.drop 1 t'
+                sty = if u `Set.member` (hUserSet hSet)
+                      then User u
+                      else n
+            in Fragment (TStr t') sty <| go n rest
+          C.Str t :< xs | normalChannelSigil `T.isPrefixOf` t ->
+            let (cFrags, rest) = S.spanl isNameFragment xs
+                cn = T.concat $ t : (unsafeGetStr <$> F.toList cFrags)
+                sty = if cn `Set.member` (hChannelSet hSet)
+                      then Channel
+                      else n
+            in Fragment (TStr cn) sty <| go n rest
           C.Str t :< xs ->
             Fragment (TStr t) n <| go n xs
           C.Space :< xs ->
@@ -384,7 +412,7 @@ toFragments = go Normal
           C.Link label url _ :< xs ->
             case toList label of
               [C.Str s] | s == url -> Fragment (TLink url) (Link url) <| go n xs
-              _                    -> Fragment (TComplex $ toFragments label) (Link url) <| go n xs
+              _                    -> Fragment (TComplex $ toFragments hSet label) (Link url) <| go n xs
           C.RawHtml t :< xs ->
             Fragment (TRawHtml t) n <| go n xs
           C.Code t :< xs ->
