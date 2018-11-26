@@ -20,15 +20,15 @@ import           Prelude.MH
 
 import qualified Brick.Widgets.Edit as E
 import qualified Brick.Widgets.List as L
-import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import qualified Data.Text.Zipper as Z
 import qualified Data.Vector as Vec
-import           Lens.Micro.Platform ( (.=), (%=), (.~), to )
+import           Lens.Micro.Platform ( (.=), (%=), (.~) )
 
 import qualified Network.Mattermost.Endpoints as MM
+import qualified Network.Mattermost.Types.Config as MM
 import           Network.Mattermost.Types
 
 import           State.Channels ( createOrFocusDMChannel, addUserToCurrentChannel )
@@ -110,8 +110,12 @@ resetUserListSearch = do
       session <- getSession
       scope <- use (csUserListOverlay.userListSearchScope)
       myTId <- gets myTeamId
+      config <- use csClientConfig
+      let restrictTeam = case MM.clientConfigRestrictDirectMessage <$> config of
+              Just MM.RestrictTeam -> Just myTId
+              _ -> Nothing
       doAsyncWith Preempt $ do
-          results <- fetchInitialResults myTId scope session searchString
+          results <- fetchInitialResults restrictTeam scope session searchString
           return $ Just $ do
               let lst = listFromUserSearchResults results
               csUserListOverlay.userListSearchResults .= lst
@@ -170,8 +174,8 @@ userListMove f = do
 
 -- | We'll attempt to prefetch the next page of results if the cursor
 -- gets within this many positions of the last result we have.
-selectionPrefetchDelta :: Int
-selectionPrefetchDelta = 10
+-- selectionPrefetchDelta :: Int
+-- selectionPrefetchDelta = 10
 
 -- Prefetch the next chunk of user list search results if all of the
 -- following are true:
@@ -189,42 +193,42 @@ selectionPrefetchDelta = 10
 -- hack note in the getUserSearchResultsPage below for details. In the
 -- mean time, no pagination of results is possible so no prefetching
 -- should be done.
-_maybePrefetchNextChunk :: MH ()
-_maybePrefetchNextChunk = do
-  gettingMore <- use (csUserListOverlay.userListRequestingMore)
-  hasAll <- use (csUserListOverlay.userListHasAllResults)
-  searchString <- userListSearchString
-  curIdx <- use (csUserListOverlay.userListSearchResults.L.listSelectedL)
-  numResults <- use (csUserListOverlay.userListSearchResults.to F.length)
-
-  let selectionNearEnd = case curIdx of
-          Nothing -> False
-          Just i -> numResults - (i + 1) < selectionPrefetchDelta
-
-  when (not hasAll && T.null searchString && not gettingMore && selectionNearEnd) $ do
-      let pageNum = numResults `div` searchResultsChunkSize
-
-      csUserListOverlay.userListRequestingMore .= True
-      session <- getSession
-      scope <- use (csUserListOverlay.userListSearchScope)
-      myTId <- gets myTeamId
-      doAsyncWith Preempt $ do
-          newChunk <- getUserSearchResultsPage pageNum myTId scope session searchString
-          return $ Just $ do
-              -- Because we only ever append, this is safe to do w.r.t.
-              -- the selected index of the list. If we ever prepended or
-              -- removed, we'd also need to manage the selection index
-              -- to ensure it stays in bounds.
-              csUserListOverlay.userListSearchResults.L.listElementsL %= (<> newChunk)
-              csUserListOverlay.userListRequestingMore .= False
-
-              -- If we got fewer results than we asked for, then we have
-              -- them all!
-              --
-              -- NOTE: disabled for now, see the hack note below.
-              --
-              -- csUserListOverlay.userListHasAllResults .=
-              --     (length newChunk < searchResultsChunkSize)
+-- _maybePrefetchNextChunk :: MH ()
+-- _maybePrefetchNextChunk = do
+--   gettingMore <- use (csUserListOverlay.userListRequestingMore)
+--   hasAll <- use (csUserListOverlay.userListHasAllResults)
+--   searchString <- userListSearchString
+--   curIdx <- use (csUserListOverlay.userListSearchResults.L.listSelectedL)
+--   numResults <- use (csUserListOverlay.userListSearchResults.to F.length)
+--
+--   let selectionNearEnd = case curIdx of
+--           Nothing -> False
+--           Just i -> numResults - (i + 1) < selectionPrefetchDelta
+--
+--   when (not hasAll && T.null searchString && not gettingMore && selectionNearEnd) $ do
+--       let pageNum = numResults `div` searchResultsChunkSize
+--
+--       csUserListOverlay.userListRequestingMore .= True
+--       session <- getSession
+--       scope <- use (csUserListOverlay.userListSearchScope)
+--       myTId <- gets myTeamId
+--       doAsyncWith Preempt $ do
+--           newChunk <- getUserSearchResultsPage pageNum myTId scope session searchString
+--           return $ Just $ do
+--               -- Because we only ever append, this is safe to do w.r.t.
+--               -- the selected index of the list. If we ever prepended or
+--               -- removed, we'd also need to manage the selection index
+--               -- to ensure it stays in bounds.
+--               csUserListOverlay.userListSearchResults.L.listElementsL %= (<> newChunk)
+--               csUserListOverlay.userListRequestingMore .= False
+--
+--               -- If we got fewer results than we asked for, then we have
+--               -- them all!
+--               --
+--               -- NOTE: disabled for now, see the hack note below.
+--               --
+--               -- csUserListOverlay.userListHasAllResults .=
+--               --     (length newChunk < searchResultsChunkSize)
 
 -- | The number of users in a "page" for cursor movement purposes.
 userListPageSize :: Int
@@ -232,16 +236,16 @@ userListPageSize = 10
 
 -- | Perform an initial request for search results in the specified
 -- scope.
-fetchInitialResults :: TeamId -> UserSearchScope -> Session -> Text -> IO (Vec.Vector UserInfo)
+fetchInitialResults :: Maybe TeamId -> UserSearchScope -> Session -> Text -> IO (Vec.Vector UserInfo)
 fetchInitialResults = getUserSearchResultsPage 0
 
-searchResultsChunkSize :: Int
-searchResultsChunkSize = 40
+-- searchResultsChunkSize :: Int
+-- searchResultsChunkSize = 40
 
 getUserSearchResultsPage :: Int
                          -- ^ The page number of results to fetch, starting at zero.
-                         -> TeamId
-                         -- ^ My team ID.
+                         -> Maybe TeamId
+                         -- ^ Team ID to use to restrict search.
                          -> UserSearchScope
                          -- ^ The scope to search
                          -> Session
@@ -276,7 +280,7 @@ getUserSearchResultsPage _pageNum myTId scope s searchString = do
                            , userSearchNotInChannelId = case scope of
                                ChannelNonMembers cId -> Just cId
                                _                     -> Nothing
-                           , userSearchTeamId = Just myTId
+                           , userSearchTeamId = myTId
                            }
     users <- MM.mmSearchUsers query s
 
