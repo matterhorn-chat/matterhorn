@@ -371,7 +371,6 @@ data FragmentStyle
   | EditedRecently
     deriving (Eq, Show)
 
--- We convert it pretty mechanically:
 toFragments :: Inlines -> Seq Fragment
 toFragments = go Normal
   where go n c = case viewl c of
