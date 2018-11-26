@@ -131,8 +131,10 @@ mainKeybindings = mkKeybindings
                  -- Enter in multiline mode does the usual thing; we
                  -- only send on Enter when we're outside of multiline
                  -- mode.
-                 True -> mhHandleEventLensed (csEditState.cedEditor) handleEditorEvent
-                                           (Vty.EvKey Vty.KEnter [])
+                 True -> do
+                     mhHandleEventLensed (csEditState.cedEditor) handleEditorEvent
+                                         (Vty.EvKey Vty.KEnter [])
+                     resetAutocomplete
                  False -> handleInputSubmission
 
     , mkKb EnterOpenURLModeEvent "Select and open a URL posted to the current channel"
@@ -173,7 +175,7 @@ handleInputSubmission = do
     _               -> sendMessage mode allLines
 
   -- Reset the autocomplete UI
-  csEditState.cedAutocomplete .= Nothing
+  resetAutocomplete
 
   -- Reset the edit mode *after* handling the input so that the input
   -- handler can tell whether we're editing, replying, etc.
