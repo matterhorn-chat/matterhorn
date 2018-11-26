@@ -29,6 +29,7 @@ import           Data.List ( sort, sortBy )
 import           Data.Ord ( comparing )
 import qualified Data.Map as M
 import qualified Data.Set as S
+import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Zipper as Z
@@ -287,12 +288,15 @@ doCommandAutoCompletion searchString = do
 doUserAutoCompletion :: Text -> MH ()
 doUserAutoCompletion searchString = do
     session <- getSession
+    myTid <- gets myTeamId
+    cId <- use csCurrentChannelId
     doAsyncWith Preempt $ do
-        ac <- MM.mmAutocompleteUsers Nothing Nothing searchString session
+        ac <- MM.mmAutocompleteUsers (Just myTid) (Just cId) searchString session
 
-        let alts = F.toList $
-                   ((\u -> UserCompletion u True) <$> MM.userAutocompleteUsers ac) <>
-                   (maybe mempty (fmap (\u -> UserCompletion u False)) $
+        let active = Seq.filter (not . userDeleted)
+            alts = F.toList $
+                   ((\u -> UserCompletion u True) <$> (active $ MM.userAutocompleteUsers ac)) <>
+                   (maybe mempty (fmap (\u -> UserCompletion u False) . active) $
                           MM.userAutocompleteOutOfChannel ac)
 
         return $ Just $ setCompletionAlternatives searchString alts "Users"
