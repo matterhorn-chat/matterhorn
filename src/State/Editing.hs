@@ -473,7 +473,7 @@ cancelAutocompleteOrReplyOrEdit = do
     ac <- use (csEditState.cedAutocomplete)
     case ac of
         Just _ -> do
-            csEditState.cedAutocomplete .= Nothing
+            resetAutocomplete
         Nothing -> do
             mode <- use (csEditState.cedEditMode)
             case mode of
