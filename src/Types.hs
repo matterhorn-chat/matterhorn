@@ -790,9 +790,26 @@ autocompleteAlternativeReplacement (CommandCompletion t _ _) =
 
 data AutocompleteState =
     AutocompleteState { _acPreviousSearchString :: Text
+                      -- ^ The search string used for the
+                      -- currently-displayed autocomplete results, for
+                      -- use in deciding whether to issue another server
+                      -- query
                       , _acCompletionList :: List Name AutocompleteAlternative
+                      -- ^ The list of alternatives that the user
+                      -- selects from
                       , _acListElementType :: Text
+                      -- ^ The label (plural noun, e.g. "Users") used to
+                      -- display the result list to the user
                       , _acCachedResponses :: HM.HashMap Text [AutocompleteAlternative]
+                      -- ^ A cache of alternative lists, keyed on search
+                      -- string, for use in avoiding server requests.
+                      -- The idea here is that users type quickly enough
+                      -- (and edit their input) that would normally lead
+                      -- to rapid consecutive requests, some for the
+                      -- same strings during editing, that we can avoid
+                      -- that by caching them here. Note that this cache
+                      -- gets destroyed whenever autocompletion is not
+                      -- on, so this cache does not live very long.
                       }
 
 -- | The 'ChatEditState' value contains the editor widget itself as well
@@ -808,7 +825,16 @@ data ChatEditState =
                   , _cedSpellChecker         :: Maybe (Aspell, IO ())
                   , _cedMisspellings         :: Set Text
                   , _cedAutocomplete         :: Maybe AutocompleteState
+                  -- ^ The autocomplete state. The autocompletion UI is
+                  -- showing only when this state is present.
                   , _cedAutocompletePending  :: Maybe Text
+                  -- ^ The search string associated with the latest
+                  -- in-flight autocompletion request. This is used to
+                  -- determine whether any (potentially late-arriving)
+                  -- API responses are for stale queries since the user
+                  -- can type more quickly than the server can get us
+                  -- the results, and we wouldn't want to show results
+                  -- associated with old editor states.
                   }
 
 -- | The input mode.
