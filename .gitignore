@@ -1,5 +1,6 @@
 .*.swp
 .cabal-sandbox
+.ghc.environment*
 cabal.sandbox.config
 deps
 config.json
