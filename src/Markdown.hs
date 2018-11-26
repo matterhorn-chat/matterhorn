@@ -258,9 +258,6 @@ vBox = B.vBox . toList
 hBox :: F.Foldable f => f (Widget a) -> Widget a
 hBox = B.hBox . toList
 
--- class ToWidget t where
---   toWidget :: HighlightSet -> t -> Widget a
-
 header :: Int -> Widget a
 header n = B.txt (T.replicate n "#")
 
