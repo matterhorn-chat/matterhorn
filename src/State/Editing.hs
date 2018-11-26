@@ -286,7 +286,19 @@ doCommandAutoCompletion searchString = do
             CommandCompletion name (printArgSpec args) desc
     setCompletionAlternatives searchString alts "Commands"
 
-withCachedAutocompleteResults :: Text -> Text -> MH () -> MH ()
+-- | Attempt to re-use a cached autocomplete alternative list for
+-- a given search string. If the cache contains no such entry (keyed
+-- on search string), run the specified action, which is assumed to be
+-- responsible for fetching the completion results from the server.
+withCachedAutocompleteResults :: Text
+                              -- ^ The autocomplete UI label for the
+                              -- results to be used
+                              -> Text
+                              -- ^ The search string to look for in the
+                              -- cache
+                              -> MH ()
+                              -- ^ The action to execute on a cache miss
+                              -> MH ()
 withCachedAutocompleteResults label searchString act = do
     mCache <- preuse (csEditState.cedAutocomplete._Just.acCachedResponses)
 
