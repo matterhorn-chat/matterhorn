@@ -3,9 +3,8 @@ module Events.ChannelSelect where
 import           Prelude ()
 import           Prelude.MH
 
-import qualified Data.Text as T
+import           Brick.Widgets.Edit ( handleEditorEvent )
 import qualified Graphics.Vty as Vty
-import           Lens.Micro.Platform ( (%=) )
 
 import           Events.Keybindings
 import           State.Channels
@@ -16,14 +15,9 @@ import qualified Zipper as Z
 
 onEventChannelSelect :: Vty.Event -> MH ()
 onEventChannelSelect =
-  handleKeyboardEvent channelSelectKeybindings $ \ e -> case e of
-    (Vty.EvKey Vty.KBS []) -> do
-      csChannelSelectState.channelSelectInput %= (\s -> if T.null s then s else T.init s)
+  handleKeyboardEvent channelSelectKeybindings $ \e -> do
+      mhHandleEventLensed (csChannelSelectState.channelSelectInput) handleEditorEvent e
       updateChannelSelectMatches
-    (Vty.EvKey (Vty.KChar c) []) | c /= '\t' -> do
-      csChannelSelectState.channelSelectInput %= (flip T.snoc c)
-      updateChannelSelectMatches
-    _ -> return ()
 
 channelSelectKeybindings :: KeyConfig -> [Keybinding]
 channelSelectKeybindings = mkKeybindings

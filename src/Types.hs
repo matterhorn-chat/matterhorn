@@ -560,6 +560,7 @@ data Name =
     | UserListSearchResults
     | ViewMessageArea
     | ChannelSidebar
+    | ChannelSelectInput
     deriving (Eq, Show, Ord)
 
 -- | The sum type of exceptions we expect to encounter on authentication
@@ -1050,13 +1051,13 @@ listFromUserSearchResults rs =
 
 -- | The state of channel selection mode.
 data ChannelSelectState =
-    ChannelSelectState { _channelSelectInput :: Text
+    ChannelSelectState { _channelSelectInput :: Editor Text Name
                        , _channelSelectMatches :: Zipper ChannelListGroup ChannelSelectMatch
                        }
 
 emptyChannelSelectState :: ChannelSelectState
 emptyChannelSelectState =
-    ChannelSelectState { _channelSelectInput = ""
+    ChannelSelectState { _channelSelectInput = editor ChannelSelectInput (Just 1) ""
                        , _channelSelectMatches = fromList []
                        }
 

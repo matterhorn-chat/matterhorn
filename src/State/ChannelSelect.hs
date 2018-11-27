@@ -10,6 +10,7 @@ where
 import           Prelude ()
 import           Prelude.MH
 
+import           Brick.Widgets.Edit ( getEditContents )
 import           Data.Char ( isUpper )
 import qualified Data.Text as T
 import           Lens.Micro.Platform
@@ -47,7 +48,7 @@ updateChannelSelectMatches = do
     cconfig <- use csClientConfig
     prefs <- use (csResources.crUserPreferences)
 
-    let pat = parseChannelSelectPattern input
+    let pat = parseChannelSelectPattern $ T.concat $ getEditContents input
         chanNameMatches e = case pat of
             Nothing -> const Nothing
             Just p -> applySelectPattern p e
