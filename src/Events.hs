@@ -46,9 +46,7 @@ import           Events.ViewMessage
 
 
 onEvent :: ChatState -> BrickEvent Name MHEvent -> EventM Name (Next ChatState)
-onEvent st ev = runMHEvent st $ do
-    onBrickEvent ev
-    fetchVisibleIfNeeded
+onEvent st ev = runMHEvent st $ onBrickEvent ev
 
 onBrickEvent :: BrickEvent Name MHEvent -> MH ()
 onBrickEvent (AppEvent e) =

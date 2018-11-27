@@ -77,6 +77,7 @@ import           Network.Mattermost.Types
 
 import           InputHistory
 import           State.Common
+import {-# SOURCE #-} State.Messages ( fetchVisibleIfNeeded )
 import           State.Users
 import           State.Flagging
 import           Types
@@ -454,6 +455,7 @@ postChangeChannelCommon = do
     updateChannelListScroll
     loadLastEdit
     resetCurrentEdit
+    fetchVisibleIfNeeded
 
 resetCurrentEdit :: MH ()
 resetCurrentEdit = do

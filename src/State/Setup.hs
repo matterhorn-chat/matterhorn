@@ -28,6 +28,7 @@ import           InputHistory
 import           LastRunState
 import           Login
 import           State.Flagging
+import           State.Messages ( fetchVisibleIfNeeded )
 import           State.Setup.Threads
 import           TeamSelect
 import           Themes
@@ -266,5 +267,9 @@ initializeState cr myTeam me = do
 
   -- Trigger an initial websocket refresh
   writeBChan (cr^.crEventQueue) RefreshWebsocketEvent
+
+  -- Refresh initial channel(s)
+  writeBChan (cr^.crEventQueue) $ RespEvent $ do
+      fetchVisibleIfNeeded
 
   return st
