@@ -8,9 +8,10 @@ import           Prelude.MH
 
 import           Brick
 import           Brick.Widgets.Border
-import           Brick.Widgets.List ( renderList, listElementsL, listSelectedFocusedAttr )
+import           Brick.Widgets.List ( renderList, listElementsL, listSelectedFocusedAttr
+                                    , listSelectedElement
+                                    )
 import qualified Data.Text as T
-import qualified Data.Vector as V
 
 import           Network.Mattermost.Types ( User(..), Channel(..) )
 
@@ -41,13 +42,10 @@ renderAutocompleteBox st ac =
         label = withDefAttr clientMessageAttr $
                 txt $ _acListElementType ac <> ": " <> (T.pack $ show numResults) <>
                       " match" <> if numResults == 1 then "" else "es"
-        footer = case elements V.!? 0 of
-            Just (UserCompletion _ _) ->
-                hBorderWithLabel $
-                    hBox [ txt $ "("
-                         , withDefAttr clientEmphAttr (txt userNotInChannelMarker)
-                         , txt ": not in this channel)"
-                         ]
+
+        selElem = snd <$> listSelectedElement matchList
+        footer = case renderAutocompleteFooterFor =<< selElem of
+            Just w -> hBorderWithLabel w
             _ -> hBorder
 
     in if numResults == 0
@@ -64,6 +62,14 @@ renderAutocompleteBox st ac =
                            renderList renderAutocompleteAlternative True matchList
                          , footer
                          ]
+
+renderAutocompleteFooterFor :: AutocompleteAlternative -> Maybe (Widget Name)
+renderAutocompleteFooterFor (UserCompletion _ False) =
+    Just $ hBox [ txt $ "("
+                , withDefAttr clientEmphAttr (txt userNotInChannelMarker)
+                , txt ": not in this channel)"
+                ]
+renderAutocompleteFooterFor _ = Nothing
 
 renderAutocompleteAlternative :: Bool -> AutocompleteAlternative -> Widget Name
 renderAutocompleteAlternative sel (UserCompletion u inChan) =
