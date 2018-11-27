@@ -22,6 +22,7 @@ where
 import           Prelude ()
 import           Prelude.MH
 
+import           Brick.Main ( invalidateCacheEntry )
 import           Control.Concurrent ( MVar, putMVar, forkIO )
 import           Control.Concurrent.Async ( concurrently )
 import qualified Control.Concurrent.STM as STM
@@ -92,6 +93,7 @@ addClientMessage msg = do
   let addCMsg = ccContents.cdMessages %~
           (addMessage $ clientMessageToMessage msg & mMessageId .~ Just (MessageUUID uuid))
   csChannels %= modifyChannelById cid addCMsg
+  mh $ invalidateCacheEntry $ ChannelMessages cid
 
   let msgTy = case msg^.cmType of
         Error -> LogError
