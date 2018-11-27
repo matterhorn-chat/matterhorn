@@ -6,7 +6,6 @@ module State.Channels
   , refreshChannel
   , refreshChannelsAndUsers
   , setFocus
-  , setFocusWith
   , refreshChannelById
   , applyPreferenceChange
   , leaveChannel
