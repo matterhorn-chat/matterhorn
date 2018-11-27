@@ -149,7 +149,8 @@ name of the dictionary you'd like to use.
 * Edit messages with `$EDITOR`
 * Rebindable keys (see `/help keybindings`)
 * Message editor with kill/yank buffer and readline-style keybindings
-* Tab-completion of usernames, channel names, and commands
+* Tab-completion of usernames, channel names, commands, and fence code
+  block languages
 * Spell-checking via Aspell
 * Syntax highlighting of fenced code blocks in messages (works best in
   256-color terminals)
