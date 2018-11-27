@@ -13,7 +13,6 @@ import           Data.Char ( isSpace )
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
 import           Data.List ( sort, sortBy )
-import           Data.Ord ( comparing )
 import qualified Data.Map as M
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
@@ -75,7 +74,15 @@ doSyntaxAutoCompletion searchString = do
 
 doCommandAutoCompletion :: Text -> MH ()
 doCommandAutoCompletion searchString = do
-    let alts = mkAlt <$> sortBy (comparing cmdName) (filter matches commandList)
+    let alts = mkAlt <$> sortBy compareCommands (filter matches commandList)
+        compareCommands a b =
+            let isAPrefix = searchString `T.isPrefixOf` cmdName a
+                isBPrefix = searchString `T.isPrefixOf` cmdName b
+            in if isAPrefix && isBPrefix
+               then compare (cmdName a) (cmdName b)
+               else if isAPrefix
+                    then LT
+                    else GT
         lowerSearch = T.toLower searchString
         matches c = lowerSearch `T.isInfixOf` (cmdName c) ||
                     lowerSearch `T.isInfixOf` (T.toLower $ cmdDescr c)
