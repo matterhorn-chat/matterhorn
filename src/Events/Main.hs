@@ -118,7 +118,8 @@ mainKeybindings = mkKeybindings
     , mkKb NextUnreadChannelEvent "Change to the next channel with unread messages"
          nextUnreadChannel
 
-    , mkKb NextUnreadUserOrChannelEvent "Change to the next channel with unread messages preferring direct messages"
+    , mkKb NextUnreadUserOrChannelEvent
+         "Change to the next channel with unread messages preferring direct messages"
          nextUnreadUserOrChannel
 
     , mkKb LastChannelEvent "Change to the most recently-focused channel"
