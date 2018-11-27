@@ -389,7 +389,7 @@ updateChannelInfo cid new member = do
 setFocus :: ChannelId -> MH ()
 setFocus cId = do
     showChannelInSidebar cId
-    setFocusWith (Z.findRight ((== cId) . channelListEntryChannelId))
+    setFocusWith True (Z.findRight ((== cId) . channelListEntryChannelId))
 
 showChannelInSidebar :: ChannelId -> MH ()
 showChannelInSidebar cId = do
@@ -429,9 +429,10 @@ showChannelInSidebar cId = do
 
                 _ -> return ()
 
-setFocusWith :: (Zipper ChannelListGroup ChannelListEntry
-              -> Zipper ChannelListGroup ChannelListEntry) -> MH ()
-setFocusWith f = do
+setFocusWith :: Bool
+             -> (Zipper ChannelListGroup ChannelListEntry
+             -> Zipper ChannelListGroup ChannelListEntry) -> MH ()
+setFocusWith updatePrev f = do
     oldZipper <- use csFocus
     let newZipper = f oldZipper
         newFocus = Z.focus newZipper
@@ -444,7 +445,7 @@ setFocusWith f = do
         resetAutocomplete
         preChangeChannelCommon
         csFocus .= newZipper
-        updateViewed True
+        updateViewed updatePrev
         postChangeChannelCommon
 
 postChangeChannelCommon :: MH ()
@@ -588,7 +589,7 @@ removeChannelFromState cId = do
     withChannel cId $ \ chan -> do
         when (chan^.ccInfo.cdType /= Direct) $ do
             origFocus <- use csCurrentChannelId
-            when (origFocus == cId) nextChannel
+            when (origFocus == cId) nextChannelSkipPrevView
             csEditState.cedInputHistoryPosition .at cId .= Nothing
             csEditState.cedLastChannelInput     .at cId .= Nothing
             -- Update input history
@@ -600,10 +601,15 @@ removeChannelFromState cId = do
             updateSidebar
 
 nextChannel :: MH ()
-nextChannel = setFocusWith Z.right
+nextChannel = setFocusWith True Z.right
+
+-- | This is almost never what you want; we use this when we delete a
+-- channel and we don't want to update the deleted channel's view time.
+nextChannelSkipPrevView :: MH ()
+nextChannelSkipPrevView = setFocusWith False Z.right
 
 prevChannel :: MH ()
-prevChannel = setFocusWith Z.left
+prevChannel = setFocusWith True Z.left
 
 recentChannel :: MH ()
 recentChannel = do
@@ -615,12 +621,12 @@ recentChannel = do
 nextUnreadChannel :: MH ()
 nextUnreadChannel = do
     st <- use id
-    setFocusWith (getNextUnreadChannel st)
+    setFocusWith True (getNextUnreadChannel st)
 
 nextUnreadUserOrChannel :: MH ()
 nextUnreadUserOrChannel = do
     st <- use id
-    setFocusWith (getNextUnreadUserOrChannel st)
+    setFocusWith True (getNextUnreadUserOrChannel st)
 
 leaveChannel :: ChannelId -> MH ()
 leaveChannel cId = leaveChannelIfPossible cId False
