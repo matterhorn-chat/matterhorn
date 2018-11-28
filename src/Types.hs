@@ -183,6 +183,8 @@ module Types
   , requestLogDestination
   , sendLogMessage
 
+  , isNameFragment
+
   , requestQuit
   , clientPostToMessage
   , getMessageForPostId
@@ -246,6 +248,7 @@ import qualified Control.Concurrent.STM as STM
 import           Control.Exception ( SomeException )
 import qualified Control.Monad.State as St
 import qualified Control.Monad.Reader as R
+import           Data.Char ( isAlpha )
 import qualified Data.Foldable as F
 import           Data.Ord ( comparing )
 import qualified Data.HashMap.Strict as HM
@@ -1438,6 +1441,14 @@ updateSidebar = do
     statusChan <- use (csResources.crStatusUpdateChan)
     liftIO $ STM.atomically $ STM.writeTChan statusChan newZ
 
+isValidNameChar :: Char -> Bool
+isValidNameChar c = isAlpha c || c == '_' || c == '.' || c == '-'
+
+isNameFragment :: C.Inline -> Bool
+isNameFragment (C.Str t) =
+    not (T.null t) && isValidNameChar (T.head t)
+isNameFragment _ = False
+
 -- | Builds a message from a ClientPost and also returns the set of
 -- usernames mentioned in the text of the message.
 clientPostToMessage :: ClientPost -> (Message, S.Set Text)
@@ -1489,9 +1500,7 @@ blockFindUsernames _ =
 inlineFindUsernames :: [C.Inline] -> S.Set Text
 inlineFindUsernames [] = mempty
 inlineFindUsernames (C.Str "@" : rest) =
-    let isStr (C.Str _) = True
-        isStr _ = False
-        (strs, remaining) = break (not . isStr) rest
+    let (strs, remaining) = break (not . isNameFragment) rest
         getStr (C.Str s) = s
         getStr _ = ""
     in if null strs

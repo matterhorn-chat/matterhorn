@@ -48,7 +48,8 @@ import           Network.Mattermost.Lenses ( postEditAtL, postCreateAtL )
 import           Network.Mattermost.Types ( ServerTime(..) )
 
 import           Themes
-import           Types ( HighlightSet(..), userSigil, normalChannelSigil )
+import           Types ( HighlightSet(..), userSigil, normalChannelSigil
+                       , isNameFragment )
 import           Types.Posts
 import           Types.Messages
 
@@ -366,14 +367,6 @@ data FragmentStyle
   | Edited
   | EditedRecently
     deriving (Eq, Show)
-
-isValidNameChar :: Char -> Bool
-isValidNameChar c = isAlpha c || c == '_' || c == '.' || c == '-'
-
-isNameFragment :: C.Inline -> Bool
-isNameFragment (C.Str t) =
-    not (T.null t) && isValidNameChar (T.head t)
-isNameFragment _ = False
 
 unsafeGetStr :: C.Inline -> Text
 unsafeGetStr (C.Str t) = t
