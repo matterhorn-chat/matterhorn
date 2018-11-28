@@ -445,6 +445,11 @@ setFocusWith updatePrev f = do
         resetAutocomplete
         preChangeChannelCommon
         csFocus .= newZipper
+
+        now <- liftIO getCurrentTime
+        newCid <- use csCurrentChannelId
+        csChannel(newCid).ccInfo.cdSidebarShowOverride .= Just now
+
         updateViewed updatePrev
         postChangeChannelCommon
 
