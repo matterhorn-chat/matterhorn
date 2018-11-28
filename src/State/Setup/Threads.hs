@@ -317,6 +317,7 @@ shouldIgnore :: SomeException -> Bool
 shouldIgnore e =
     let eStr = show e
     in or [ "getAddrInfo" `isInfixOf` eStr
-          , "Network.Socket.recvBuf: timeout" `isInfixOf` eStr
+          , "Network.Socket.recvBuf" `isInfixOf` eStr
+          , "Network.Socket.sendBuf" `isInfixOf` eStr
           , "resource vanished" `isInfixOf` eStr
           ]
