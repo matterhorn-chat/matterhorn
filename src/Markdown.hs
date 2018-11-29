@@ -29,7 +29,6 @@ import           Cheapskate.Types ( Block
                                   , Inlines
                                   , ListType
                                   )
-import           Data.Char ( isAlpha )
 import qualified Data.Foldable as F
 import           Data.Monoid (First(..))
 import           Data.Sequence ( ViewL(..)
