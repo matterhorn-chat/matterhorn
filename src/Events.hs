@@ -135,11 +135,16 @@ formatError (AsyncErrEvent e) =
 
 onVtyEvent :: Vty.Event -> MH ()
 onVtyEvent e = do
-    -- Even if we aren't showing the help UI when a resize occurs, we
-    -- need to invalidate its cache entry anyway in case the new size
-    -- differs from the cached size.
     case e of
-        (Vty.EvResize _ _) -> mh invalidateCache
+        (Vty.EvResize _ _) ->
+            -- On resize, invalidate the entire rendering cache since
+            -- many things depend on the window size.
+            --
+            -- Note: we fall through after this because it is sometimes
+            -- important for modes to have their own additional logic
+            -- to run when a resize occurs, so we don't want to stop
+            -- processing here.
+            mh invalidateCache
         _ -> return ()
 
     mode <- gets appMode
