@@ -152,7 +152,6 @@ startTimezoneMonitorThread tz requestChan = do
 
   void $ forkIO (timezoneMonitor tz)
 
-
 maybeStartSpellChecker :: Config -> BChan MHEvent -> IO (Maybe (Aspell, IO ()))
 maybeStartSpellChecker config eventQueue = do
   case configEnableAspell config of
