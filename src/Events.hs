@@ -171,7 +171,7 @@ handleWSEvent we = do
                     addNewPostedMessage $ RecentPost p wasMentioned
                     cId <- use csCurrentChannelId
                     when (postChannelId p /= cId) $
-                        showChannelInSidebar (p^.postChannelIdL)
+                        showChannelInSidebar (p^.postChannelIdL) False
             | otherwise -> return ()
 
         WMPostEdited
@@ -180,7 +180,7 @@ handleWSEvent we = do
                 cId <- use csCurrentChannelId
                 when (postChannelId p == cId) (updateViewed False)
                 when (postChannelId p /= cId) $
-                    showChannelInSidebar (p^.postChannelIdL)
+                    showChannelInSidebar (p^.postChannelIdL) False
             | otherwise -> return ()
 
         WMPostDeleted
@@ -189,7 +189,7 @@ handleWSEvent we = do
                 cId <- use csCurrentChannelId
                 when (postChannelId p == cId) (updateViewed False)
                 when (postChannelId p /= cId) $
-                    showChannelInSidebar (p^.postChannelIdL)
+                    showChannelInSidebar (p^.postChannelIdL) False
             | otherwise -> return ()
 
         WMStatusChange

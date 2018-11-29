@@ -388,11 +388,11 @@ updateChannelInfo cid new member = do
 
 setFocus :: ChannelId -> MH ()
 setFocus cId = do
-    showChannelInSidebar cId
+    showChannelInSidebar cId True
     setFocusWith True (Z.findRight ((== cId) . channelListEntryChannelId))
 
-showChannelInSidebar :: ChannelId -> MH ()
-showChannelInSidebar cId = do
+showChannelInSidebar :: ChannelId -> Bool -> MH ()
+showChannelInSidebar cId setPending = do
     mChan <- preuse $ csChannel cId
     me <- gets myUser
     prefs <- use (csResources.crUserPreferences)
@@ -411,7 +411,8 @@ showChannelInSidebar cId = do
                     case dmChannelShowPreference prefs uId of
                         Just False -> do
                             let pref = showDirectChannelPref (me^.userIdL) uId True
-                            csPendingChannelChange .= Just (ChangeByChannelId $ ch^.ccInfo.cdChannelId)
+                            when setPending $
+                                csPendingChannelChange .= Just (ChangeByChannelId $ ch^.ccInfo.cdChannelId)
                             doAsyncWith Preempt $ do
                                 MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
                                 return Nothing
@@ -421,7 +422,8 @@ showChannelInSidebar cId = do
                     case groupChannelShowPreference prefs cId of
                         Just False -> do
                             let pref = showGroupChannelPref cId (me^.userIdL)
-                            csPendingChannelChange .= Just (ChangeByChannelId $ ch^.ccInfo.cdChannelId)
+                            when setPending $
+                                csPendingChannelChange .= Just (ChangeByChannelId $ ch^.ccInfo.cdChannelId)
                             doAsyncWith Preempt $ do
                                 MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
                                 return Nothing
