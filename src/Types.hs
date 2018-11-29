@@ -41,7 +41,6 @@ module Types
   , BackgroundInfo(..)
   , RequestChan
 
-  , updateSidebar
   , mkChannelZipperList
   , ChannelListGroup(..)
 
@@ -121,6 +120,8 @@ module Types
   , userListEnterHandler
 
   , listFromUserSearchResults
+
+  , getUsers
 
   , ChatResources(ChatResources)
   , crUserPreferences
@@ -285,7 +286,7 @@ import           Types.KeyEvents
 import           Types.Messages
 import           Types.Posts
 import           Types.Users
-import           Zipper ( Zipper, toList, fromList, unsafeFocus, updateList )
+import           Zipper ( Zipper, toList, fromList, unsafeFocus )
 
 
 -- * Configuration
@@ -1426,21 +1427,6 @@ data SidebarUpdate =
     | SidebarUpdateDeferred
     deriving (Eq, Show)
 
-updateSidebar :: MH ()
-updateSidebar = do
-    mh $ invalidateCacheEntry ChannelSidebar
-    cs <- use csChannels
-    us <- use csUsers
-    cconfig <- use csClientConfig
-    prefs <- use (csResources.crUserPreferences)
-    now <- liftIO getCurrentTime
-    csFocus %= updateList (mkChannelZipperList now cconfig prefs cs us)
-    -- Send the new zipper to the status update thread so that we can
-    -- fetch the statuses for the users in the sidebar.
-    newZ <- use csFocus
-    statusChan <- use (csResources.crStatusUpdateChan)
-    liftIO $ STM.atomically $ STM.writeTChan statusChan newZ
-
 isValidNameChar :: Char -> Bool
 isValidNameChar c = isAlpha c || c == '_' || c == '.' || c == '-'
 
@@ -1576,6 +1562,9 @@ userByUsername name st = do
 userByNickname :: Text -> ChatState -> Maybe UserInfo
 userByNickname name st =
     snd <$> (findUserByNickname name $ st^.csUsers)
+
+getUsers :: MH Users
+getUsers = use csUsers
 
 -- * HighlightSet
 

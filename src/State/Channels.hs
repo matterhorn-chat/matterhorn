@@ -1,7 +1,8 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiWayIf #-}
 module State.Channels
-  ( updateViewed
+  ( updateSidebar
+  , updateViewed
   , updateViewedChan
   , refreshChannel
   , refreshChannelsAndUsers
@@ -55,6 +56,7 @@ import           Brick.Main ( viewportScroll, vScrollToBeginning, invalidateCach
 import           Brick.Widgets.Edit ( applyEdit, getEditContents, editContentsL )
 import           Brick.Widgets.List ( list )
 import           Control.Concurrent.Async ( runConcurrently, Concurrently(..) )
+import qualified Control.Concurrent.STM as STM
 import           Control.Exception ( SomeException, try )
 import           Data.Char ( isAlphaNum )
 import qualified Data.HashMap.Strict as HM
@@ -84,6 +86,38 @@ import           Types.Common
 import           Zipper ( Zipper )
 import qualified Zipper as Z
 
+
+updateSidebar :: MH ()
+updateSidebar = do
+    -- Invalidate the cached sidebar rendering since we are about to
+    -- change the underlying state
+    mh $ invalidateCacheEntry ChannelSidebar
+
+    -- Get the currently-focused channel ID so we can compare after the
+    -- zipper is rebuilt
+    cconfig <- use csClientConfig
+    oldCid <- use csCurrentChannelId
+
+    -- Update the zipper
+    cs <- use csChannels
+    us <- getUsers
+    prefs <- use (csResources.crUserPreferences)
+    now <- liftIO getCurrentTime
+    csFocus %= Z.updateList (mkChannelZipperList now cconfig prefs cs us)
+
+    -- Send the new zipper to the status update thread so that we can
+    -- fetch the statuses for the users in the new sidebar.
+    newZ <- use csFocus
+    statusChan <- use (csResources.crStatusUpdateChan)
+    liftIO $ STM.atomically $ STM.writeTChan statusChan newZ
+
+    -- If the zipper rebuild caused the current channel to change, such
+    -- as when the previously-focused channel was removed, we need to
+    -- call fetchVisibleIfNeeded on the newly-focused channel to ensure
+    -- that it gets loaded.
+    newCid <- use csCurrentChannelId
+    when (newCid /= oldCid) $
+        fetchVisibleIfNeeded
 
 updateViewed :: Bool -> MH ()
 updateViewed updatePrev = do
