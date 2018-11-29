@@ -93,6 +93,7 @@ executable matterhorn
                        Events.DeleteChannelConfirm
                        Events.ViewMessage
                        HelpTopics
+                       KeyMap
                        LastRunState
                        Scripts
                        TimeUtils

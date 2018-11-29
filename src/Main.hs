@@ -8,7 +8,8 @@ import System.Exit ( exitFailure )
 import Config
 import Options
 import App
-import Events ( ensureKeybindingConsistency )
+import Events.Keybindings ( ensureKeybindingConsistency )
+import KeyMap ( keybindingModeMap )
 
 
 main :: IO ()
@@ -25,7 +26,7 @@ main = do
             exitFailure
         Right c -> return c
 
-    case ensureKeybindingConsistency (configUserKeys config) of
+    case ensureKeybindingConsistency (configUserKeys config) keybindingModeMap of
         Right () -> return ()
         Left err -> do
             putStrLn $ "Configuration error: " <> err
