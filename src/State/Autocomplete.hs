@@ -12,7 +12,7 @@ import qualified Brick.Widgets.List as L
 import           Data.Char ( isSpace )
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
-import           Data.List ( sort, sortBy )
+import           Data.List ( sort, sortBy, partition )
 import qualified Data.Map as M
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
@@ -68,8 +68,10 @@ doSyntaxAutoCompletion :: Text -> MH ()
 doSyntaxAutoCompletion searchString = do
     mapping <- use (csResources.crSyntaxMap)
     let allNames = Sky.sShortname <$> M.elems mapping
+        (prefixed, notPrefixed) = partition isPrefixed $ filter match allNames
         match = (((T.toLower searchString) `T.isInfixOf`) . T.toLower)
-        alts = SyntaxCompletion <$> (sort $ filter match allNames)
+        isPrefixed = (((T.toLower searchString) `T.isPrefixOf`) . T.toLower)
+        alts = SyntaxCompletion <$> (sort prefixed <> sort notPrefixed)
     setCompletionAlternatives searchString alts "Languages"
 
 doCommandAutoCompletion :: Text -> MH ()
