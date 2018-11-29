@@ -84,7 +84,7 @@ commandList =
     NoArg $ \ () ->
       beginCurrentChannelDeleteConfirm
 
-  , Cmd "hide" "Hide the current (DM) channel from the channel list"
+  , Cmd "hide" "Hide the current DM or group channel from the channel list"
     NoArg $ \ () ->
       hideCurrentDMChannel
 
