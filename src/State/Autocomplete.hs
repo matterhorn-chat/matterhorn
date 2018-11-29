@@ -21,7 +21,7 @@ import qualified Data.Vector as V
 import           Lens.Micro.Platform ( (%=), (.=), (.~), _Just, preuse )
 import qualified Skylighting.Types as Sky
 
-import           Network.Mattermost.Types (userId)
+import           Network.Mattermost.Types (userId, channelId)
 import qualified Network.Mattermost.Endpoints as MM
 
 import           Command ( commandList, printArgSpec )
@@ -137,11 +137,15 @@ doChannelAutoCompletion searchString = do
     session <- getSession
     tId <- gets myTeamId
     let label = "Channels"
+    cs <- use csChannels
 
     withCachedAutocompleteResults label searchString $ do
         doAsyncWith Preempt $ do
             results <- MM.mmAutocompleteChannels tId searchString session
-            let alts = F.toList $ ChannelCompletion <$> results
+            let alts = F.toList $ (ChannelCompletion True <$> inChannels) <>
+                                  (ChannelCompletion False <$> notInChannels)
+                (inChannels, notInChannels) = Seq.partition isMember results
+                isMember c = isJust $ findChannelById (channelId c) cs
             return $ Just $ setCompletionAlternatives searchString alts label
 
 setCompletionAlternatives :: Text -> [AutocompleteAlternative] -> Text -> MH ()

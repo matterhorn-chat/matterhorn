@@ -69,13 +69,18 @@ renderAutocompleteFooterFor (UserCompletion _ False) =
                 , withDefAttr clientEmphAttr (txt userNotInChannelMarker)
                 , txt ": not in this channel)"
                 ]
+renderAutocompleteFooterFor (ChannelCompletion False _) =
+    Just $ hBox [ txt $ "("
+                , withDefAttr clientEmphAttr (txt userNotInChannelMarker)
+                , txt ": not in this channel)"
+                ]
 renderAutocompleteFooterFor _ = Nothing
 
 renderAutocompleteAlternative :: Bool -> AutocompleteAlternative -> Widget Name
 renderAutocompleteAlternative sel (UserCompletion u inChan) =
     padRight Max $ renderUserCompletion u inChan sel
-renderAutocompleteAlternative sel (ChannelCompletion c) =
-    padRight Max $ renderChannelCompletion c sel
+renderAutocompleteAlternative sel (ChannelCompletion inChan c) =
+    padRight Max $ renderChannelCompletion c inChan sel
 renderAutocompleteAlternative _ (SyntaxCompletion t) =
     padRight Max $ txt t
 renderAutocompleteAlternative _ (CommandCompletion n args desc) =
@@ -104,15 +109,20 @@ renderUserCompletion u inChan selected =
             , txt nickname
             ]
 
-renderChannelCompletion :: Channel -> Bool -> Widget Name
-renderChannelCompletion c selected =
+renderChannelCompletion :: Channel -> Bool -> Bool -> Widget Name
+renderChannelCompletion c inChan selected =
     let nameWidth = 30
         padTo n a = hLimit n $ vLimit 1 (a <+> fill ' ')
         maybeForce = if selected
                      then forceAttr listSelectedFocusedAttr
                      else id
+        memberDisplay = if inChan
+                        then txt "  "
+                        else withDefAttr clientEmphAttr $
+                             txt $ userNotInChannelMarker <> " "
     in maybeForce $
-       hBox [ padTo nameWidth $
+       hBox [ memberDisplay
+            , padTo nameWidth $
               withDefAttr channelNameAttr $
               txt $ normalChannelSigil <> (sanitizeUserText $ channelName c)
             , txt $ sanitizeUserText $ channelHeader c

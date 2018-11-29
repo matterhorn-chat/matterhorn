@@ -775,8 +775,8 @@ data AutocompleteAlternative =
     UserCompletion User Bool
     -- ^ User, plus whether the user is in the channel that triggered
     -- the autocomplete
-    | ChannelCompletion Channel
-    -- ^ Channel
+    | ChannelCompletion Bool Channel
+    -- ^ Channel, plus whether the user is a member of the channel
     | SyntaxCompletion Text
     -- ^ Name of a skylighting syntax definition
     | CommandCompletion Text Text Text
@@ -785,7 +785,7 @@ data AutocompleteAlternative =
 autocompleteAlternativeReplacement :: AutocompleteAlternative -> Text
 autocompleteAlternativeReplacement (UserCompletion u _) =
     userSigil <> userUsername u
-autocompleteAlternativeReplacement (ChannelCompletion c) =
+autocompleteAlternativeReplacement (ChannelCompletion _ c) =
     normalChannelSigil <> (sanitizeUserText $ channelName c)
 autocompleteAlternativeReplacement (SyntaxCompletion t) =
     "```" <> t
