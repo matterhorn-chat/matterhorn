@@ -1,4 +1,3 @@
-{-# LANGUAGE MultiWayIf #-}
 module Events
   ( onEvent
   )
