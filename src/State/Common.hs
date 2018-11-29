@@ -198,7 +198,23 @@ openURL link = do
 
                     mhSuspendAndResume $ \st -> do
                         args <- act
-                        void $ runInteractiveCommand (T.unpack urlOpenCommand) args
+                        result <- runInteractiveCommand (T.unpack urlOpenCommand) args
+
+                        let waitForKeypress = do
+                                putStrLn "Press any key to return to Matterhorn."
+                                void getChar
+
+                        case result of
+                            Right ExitSuccess -> return ()
+                            Left err -> do
+                                putStrLn $ "URL opener subprocess " <> (show urlOpenCommand) <>
+                                           " could not be run: " <> err
+                                waitForKeypress
+                            Right (ExitFailure code) -> do
+                                putStrLn $ "URL opener subprocess " <> (show urlOpenCommand) <>
+                                           " exited with non-zero status " <> show code
+                                waitForKeypress
+
                         return st
 
                     setMode Main
