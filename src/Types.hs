@@ -80,6 +80,7 @@ module Types
   , timeZone
   , whenMode
   , setMode
+  , setMode'
   , appMode
 
   , ChatEditState
@@ -1299,6 +1300,9 @@ setMode :: Mode -> MH ()
 setMode m = do
     csMode .= m
     mh invalidateCache
+
+setMode' :: Mode -> ChatState -> ChatState
+setMode' m = csMode .~ m
 
 appMode :: ChatState -> Mode
 appMode = _csMode

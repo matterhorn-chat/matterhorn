@@ -215,9 +215,7 @@ openURL link = do
                                            " exited with non-zero status " <> show code
                                 waitForKeypress
 
-                        return st
-
-                    setMode Main
+                        return $ setMode' Main st
 
             return True
 
