@@ -59,29 +59,33 @@ onBrickEvent _ =
     return ()
 
 onAppEvent :: MHEvent -> MH ()
-onAppEvent RefreshWebsocketEvent = connectWebsockets
+onAppEvent RefreshWebsocketEvent =
+    connectWebsockets
 onAppEvent WebsocketDisconnect = do
-  csConnectionStatus .= Disconnected
-  disconnectChannels
+    csConnectionStatus .= Disconnected
+    disconnectChannels
 onAppEvent WebsocketConnect = do
-  csConnectionStatus .= Connected
-  refreshChannelsAndUsers
-  refreshClientConfig
-onAppEvent BGIdle     = csWorkerIsBusy .= Nothing
-onAppEvent (BGBusy n) = csWorkerIsBusy .= Just n
+    csConnectionStatus .= Connected
+    refreshChannelsAndUsers
+    refreshClientConfig
+onAppEvent BGIdle =
+    csWorkerIsBusy .= Nothing
+onAppEvent (BGBusy n) =
+    csWorkerIsBusy .= Just n
 onAppEvent (WSEvent we) =
-  handleWSEvent we
+    handleWSEvent we
 onAppEvent (RespEvent f) = f
 onAppEvent (WebsocketParseError e) = do
-  let msg = "A websocket message could not be parsed:\n  " <>
-            T.pack e <>
-            "\nPlease report this error at https://github.com/matterhorn-chat/matterhorn/issues"
-  mhError $ GenericError msg
+    let msg = "A websocket message could not be parsed:\n  " <>
+              T.pack e <>
+              "\nPlease report this error at https://github.com/matterhorn-chat/matterhorn/issues"
+    mhError $ GenericError msg
 onAppEvent (IEvent e) = do
-  handleIEvent e
+    handleIEvent e
 
 handleIEvent :: InternalEvent -> MH ()
-handleIEvent (DisplayError e) = postErrorMessage' $ formatError e
+handleIEvent (DisplayError e) =
+    postErrorMessage' $ formatError e
 handleIEvent (LoggingStarted path) =
     postInfoMessage $ "Logging to " <> T.pack path
 handleIEvent (LogDestination dest) =
