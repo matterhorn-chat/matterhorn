@@ -233,12 +233,6 @@ setLastViewedFor prevId cId = do
       Nothing -> return ()
       Just p -> clearChannelUnreadStatus p
 
-clearChannelUnreadStatus :: ChannelId -> MH ()
-clearChannelUnreadStatus cId = do
-    mh $ invalidateCacheEntry (ChannelMessages cId)
-    csChannel(cId) %= (clearNewMessageIndicator .
-                       clearEditedThreshold)
-
 -- | Refresh information about all channels and users. This is usually
 -- triggered when a reconnect event for the WebSocket to the server
 -- occurs.

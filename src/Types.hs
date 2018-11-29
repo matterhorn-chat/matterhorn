@@ -20,6 +20,7 @@ module Types
   , ConnectionInfo(..)
   , SidebarUpdate(..)
   , PendingChannelChange(..)
+  , clearChannelUnreadStatus
   , ChannelListEntry(..)
   , channelListEntryChannelId
   , channelListEntryUserId
@@ -1595,3 +1596,9 @@ getEditedMessageCutoff :: ChannelId -> ChatState -> Maybe ServerTime
 getEditedMessageCutoff cId st = do
     cc <- st^?csChannel(cId)
     cc^.ccInfo.cdEditedMessageThreshold
+
+clearChannelUnreadStatus :: ChannelId -> MH ()
+clearChannelUnreadStatus cId = do
+    mh $ invalidateCacheEntry (ChannelMessages cId)
+    csChannel(cId) %= (clearNewMessageIndicator .
+                       clearEditedThreshold)
