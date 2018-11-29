@@ -224,7 +224,7 @@ startSpellCheckerThread eventChan spellCheckTimeout = do
             -- the updateDelay below, the timer will expire -- at which
             -- point this will mean that we won't extend the timer as
             -- originally desired. But that's alright, because future
-            -- keystroke will trigger another timer anyway.
+            -- keystrokes will trigger another timer anyway.
             expired <- tryWaitDelayIO del
             case expired of
                 True -> Just <$> newDelay spellCheckTimeout
