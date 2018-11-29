@@ -208,14 +208,17 @@ addObtainedMessages cId reqCnt posts = do
 
         -- The post map returned by the server will *already* have
         -- all thread messages for each post that is part of a
-        -- thread. By calling messagesFromPosts here, we go ahead and
-        -- populate the csPostMap with those posts so that below, in
+        -- thread. By calling installMessagesFromPosts here, we go ahead
+        -- and populate the csPostMap with those posts so that below, in
         -- addMessageToState, we notice that we already know about reply
         -- parent messages and can avoid fetching them. This converts
         -- the posts to Messages and stores those and also returns
-        -- them, but we don't need them here. We just want the post map
-        -- update.
-        (_, mentionedUsers) <- messagesFromPosts posts
+        -- them, but we don't need them here. We just want the post
+        -- map update. This also gathers up the set of all mentioned
+        -- usernames in the text of the messages which we need to use to
+        -- submit a single batch request for user metadata so we don't
+        -- submit one request per mention.
+        (_, mentionedUsers) <- installMessagesFromPosts posts
 
         fetchUsersByUsername $ F.toList mentionedUsers
 
@@ -371,9 +374,7 @@ addMessageToState fetchMentionedUsers newPostData = do
                                 Nothing -> do
                                     doAsyncChannelMM Preempt cId
                                         (\s _ _ -> MM.mmGetThread parentId s)
-                                        (\_ p -> Just $ do
-                                            void $ messagesFromPosts p
-                                        )
+                                        (\_ p -> Just $ updatePostMap p)
                                 _ -> return ()
                         _ -> return ()
 

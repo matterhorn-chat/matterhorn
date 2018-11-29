@@ -5,7 +5,8 @@ module State.Common
   , runLoggedCommand
 
   -- * Posts
-  , messagesFromPosts
+  , installMessagesFromPosts
+  , updatePostMap
 
   -- * Utilities
   , postInfoMessage
@@ -53,37 +54,61 @@ import           Types.Common
 
 -- * Client Messages
 
-messagesFromPosts :: Posts -> MH (Messages, Set.Set Text)
-messagesFromPosts p = do
+-- | Given a collection of posts from the server, save the posts in the
+-- global post map. Also convert the posts to Matterhorn's Message type
+-- and return them along with the set of all usernames mentioned in the
+-- text of the resulting messages.
+--
+-- This also sets the mFlagged field of each message based on whether
+-- its post ID is a flagged post according to crFlaggedPosts at the time
+-- of this call.
+installMessagesFromPosts :: Posts -> MH (Messages, Set.Set Text)
+installMessagesFromPosts postCollection = do
   flags <- use (csResources.crFlaggedPosts)
-  csPostMap %= HM.union postMap
-  let (msgs, allMentionedUsers) = postsToMessages (clientPost <$> ps)
-      postsToMessages = foldr (\cp (ms, us) -> let (m, mUsernames) = clientPostToMessage cp
-                                               in (addMessage (maybeFlag flags m) ms, Set.union us mUsernames))
-                              (noMessages, mempty)
-  return (msgs, allMentionedUsers)
+
+  -- Add all posts in this collection to the global post cache
+  updatePostMap postCollection
+
+  -- Build the ordered list of posts. Note that postsOrder lists the
+  -- posts most recent first, but we want most recent last.
+  let postsInOrder = findPost <$> (Seq.reverse $ postsOrder postCollection)
+      mkClientPost p = toClientPost p (postId <$> parent p)
+      clientPosts = mkClientPost <$> postsInOrder
+
+      addNext cp (msgs, us) =
+          let (msg, mUsernames) = clientPostToMessage cp
+          in (addMessage (maybeFlag flags msg) msgs, Set.union us mUsernames)
+      postsToMessages = foldr addNext (noMessages, mempty)
+
+  return $ postsToMessages clientPosts
     where
-        postMap :: HashMap PostId Message
-        postMap = HM.fromList
-          [ ( pId
-            , fst $ clientPostToMessage (toClientPost x Nothing)
-            )
-          | (pId, x) <- HM.toList (p^.postsPostsL)
-          ]
         maybeFlag flagSet msg
           | Just (MessagePostId pId) <- msg^.mMessageId, pId `Set.member` flagSet
             = msg & mFlagged .~ True
           | otherwise = msg
-        -- n.b. postsOrder is most recent first
-        ps   = findPost <$> (Seq.reverse $ postsOrder p)
-        clientPost :: Post -> ClientPost
-        clientPost x = toClientPost x (postId <$> parent x)
         parent x = do
             parentId <- x^.postRootIdL
-            HM.lookup parentId (p^.postsPostsL)
-        findPost pId = case HM.lookup pId (postsPosts p) of
+            HM.lookup parentId (postCollection^.postsPostsL)
+        findPost pId = case HM.lookup pId (postsPosts postCollection) of
             Nothing -> error $ "BUG: could not find post for post ID " <> show pId
             Just post -> post
+
+-- Add all posts in this collection to the global post cache
+updatePostMap :: Posts -> MH ()
+updatePostMap postCollection = do
+  -- Build a map from post ID to Matterhorn message, then add the new
+  -- messages to the global post map. We use the "postsPosts" field for
+  -- this because that might contain more messages than the "postsOrder"
+  -- list, since the former can contain other messages in threads that
+  -- the server sent us, even if those messages are not part of the
+  -- ordered post listing of "postsOrder."
+  let postMap = HM.fromList
+          [ ( pId
+            , fst $ clientPostToMessage (toClientPost x Nothing)
+            )
+          | (pId, x) <- HM.toList (postCollection^.postsPostsL)
+          ]
+  csPostMap %= HM.union postMap
 
 -- | Add a 'ClientMessage' to the current channel's message list
 addClientMessage :: ClientMessage -> MH ()
