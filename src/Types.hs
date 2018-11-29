@@ -131,6 +131,7 @@ module Types
   , crStatusUpdateChan
   , crSubprocessLog
   , crWebsocketActionChan
+  , crWebsocketThreadId
   , crRequestQueue
   , crFlaggedPosts
   , crConn
@@ -245,6 +246,7 @@ import           Brick.BChan
 import           Brick.Widgets.Edit ( Editor, editor )
 import           Brick.Widgets.List ( List, list )
 import qualified Cheapskate as C
+import           Control.Concurrent ( ThreadId )
 import           Control.Concurrent.Async ( Async )
 import qualified Control.Concurrent.STM as STM
 import           Control.Exception ( SomeException )
@@ -759,6 +761,7 @@ sendLogCommand mgr c =
 -- the application state.
 data ChatResources =
     ChatResources { _crSession             :: Session
+                  , _crWebsocketThreadId   :: Maybe ThreadId
                   , _crConn                :: ConnectionData
                   , _crRequestQueue        :: RequestChan
                   , _crEventQueue          :: BChan MHEvent

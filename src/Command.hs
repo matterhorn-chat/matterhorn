@@ -21,6 +21,7 @@ import qualified Network.Mattermost.Endpoints as MM
 import qualified Network.Mattermost.Exceptions as MM
 import qualified Network.Mattermost.Types as MM
 
+import           Connection ( connectWebsockets )
 import           HelpTopics
 import           Scripts
 import           State.Help
@@ -87,6 +88,10 @@ commandList =
   , Cmd "hide" "Hide the current DM or group channel from the channel list"
     NoArg $ \ () ->
       hideCurrentDMChannel
+
+  , Cmd "reconnect" "Force a reconnection attempt to the server"
+    NoArg $ \ () ->
+      connectWebsockets
 
   , Cmd "members" "Show the current channel's members"
     NoArg $ \ () ->

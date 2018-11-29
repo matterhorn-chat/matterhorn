@@ -168,7 +168,7 @@ setupState mLogLocation initialConfig = do
 
   requestChan <- STM.atomically STM.newTChan
 
-  let cr = ChatResources session cd requestChan eventChan
+  let cr = ChatResources session Nothing cd requestChan eventChan
              slc wac (themeToAttrMap custTheme)
              userStatusChan config mempty userPrefs mempty logMgr
 

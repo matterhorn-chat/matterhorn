@@ -4,9 +4,9 @@ import           Prelude ()
 import           Prelude.MH
 
 import           Brick.BChan
-import           Control.Concurrent ( forkIO, threadDelay )
+import           Control.Concurrent ( forkIO, threadDelay, killThread )
 import qualified Control.Concurrent.STM as STM
-import           Control.Exception ( SomeException, catch )
+import           Control.Exception ( SomeException, catch, AsyncException(..), throwIO )
 import qualified Data.HashMap.Strict as HM
 import           Data.Int (Int64)
 import           Data.Semigroup ( Max(..) )
@@ -14,6 +14,7 @@ import qualified Data.Text as T
 import           Data.Time ( UTCTime(..), secondsToDiffTime, getCurrentTime
                            , diffUTCTime )
 import           Data.Time.Calendar ( Day(..) )
+import           Lens.Micro.Platform ( (.=) )
 
 import           Network.Mattermost.Types ( ChannelId )
 import qualified Network.Mattermost.WebSocket as WS
@@ -24,17 +25,35 @@ import           Types
 
 connectWebsockets :: MH ()
 connectWebsockets = do
+  logger <- mhGetIOLogger
+
+  -- If we have an old websocket thread, kill it.
+  mOldTid <- use (csResources.crWebsocketThreadId)
+  case mOldTid of
+      Nothing -> return ()
+      Just oldTid -> liftIO $ do
+          logger LogWebsocket "Terminating previous websocket thread"
+          killThread oldTid
+
   st <- use id
   session <- getSession
-  logger <- mhGetIOLogger
-  liftIO $ do
+
+  tid <- liftIO $ do
     let shunt (Left msg) = writeBChan (st^.csResources.crEventQueue) (WebsocketParseError msg)
         shunt (Right e) = writeBChan (st^.csResources.crEventQueue) (WSEvent e)
         runWS = WS.mmWithWebSocket session shunt $ \ws -> do
                   writeBChan (st^.csResources.crEventQueue) WebsocketConnect
                   processWebsocketActions st ws 1 HM.empty
-    void $ forkIO $ runWS `catch` handleTimeout logger 1 st
-                          `catch` handleError logger 5 st
+    logger LogWebsocket "Starting new websocket thread"
+    forkIO $ runWS `catch` ignoreThreadKilled
+                   `catch` handleTimeout logger 1 st
+                   `catch` handleError logger 5 st
+
+  csResources.crWebsocketThreadId .= Just tid
+
+ignoreThreadKilled :: AsyncException -> IO ()
+ignoreThreadKilled ThreadKilled = return ()
+ignoreThreadKilled e = throwIO e
 
 -- | Take websocket actions from the websocket action channel in the
 -- ChatState and send them to the server over the websocket.
