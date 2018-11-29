@@ -194,4 +194,3 @@ wordAtColumn i t =
             (w:rest) | j <= T.length w && not (isSpace $ T.head w) -> Just w
                      | otherwise -> go (j - T.length w) rest
     in go i tokens
-
