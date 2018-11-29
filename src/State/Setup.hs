@@ -168,9 +168,21 @@ setupState mLogLocation initialConfig = do
 
   requestChan <- STM.atomically STM.newTChan
 
-  let cr = ChatResources session Nothing cd requestChan eventChan
-             slc wac (themeToAttrMap custTheme)
-             userStatusChan config mempty userPrefs mempty logMgr
+  let cr = ChatResources { _crSession             = session
+                         , _crWebsocketThreadId   = Nothing
+                         , _crConn                = cd
+                         , _crRequestQueue        = requestChan
+                         , _crEventQueue          = eventChan
+                         , _crSubprocessLog       = slc
+                         , _crWebsocketActionChan = wac
+                         , _crTheme               = themeToAttrMap custTheme
+                         , _crStatusUpdateChan    = userStatusChan
+                         , _crConfiguration       = config
+                         , _crFlaggedPosts        = mempty
+                         , _crUserPreferences     = userPrefs
+                         , _crSyntaxMap           = mempty
+                         , _crLogManager          = logMgr
+                         }
 
   st <- initializeState cr myTeam me
 

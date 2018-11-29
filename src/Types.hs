@@ -125,7 +125,7 @@ module Types
 
   , getUsers
 
-  , ChatResources(ChatResources)
+  , ChatResources(..)
   , crUserPreferences
   , crEventQueue
   , crTheme
