@@ -54,14 +54,15 @@ getCompleterForInput = do
         curLine = Z.currentLine z
 
     return $ case wordAtColumn col curLine of
-        Just w | userSigil `T.isPrefixOf` w ->
-                   Just (doUserAutoCompletion, T.tail w)
-               | normalChannelSigil `T.isPrefixOf` w ->
-                   Just (doChannelAutoCompletion, T.tail w)
-               | "```" `T.isPrefixOf` w ->
-                   Just (doSyntaxAutoCompletion, T.drop 3 w)
-               | "/" `T.isPrefixOf` w ->
-                   Just (doCommandAutoCompletion, T.tail w)
+        Just (startCol, w)
+            | userSigil `T.isPrefixOf` w ->
+                Just (doUserAutoCompletion, T.tail w)
+            | normalChannelSigil `T.isPrefixOf` w ->
+                Just (doChannelAutoCompletion, T.tail w)
+            | "```" `T.isPrefixOf` w ->
+                Just (doSyntaxAutoCompletion, T.drop 3 w)
+            | "/" `T.isPrefixOf` w && startCol == 0 ->
+                Just (doCommandAutoCompletion, T.tail w)
         _ -> Nothing
 
 doSyntaxAutoCompletion :: Text -> MH ()
@@ -185,12 +186,12 @@ setCompletionAlternatives searchString alts ty = do
             -- wrong for the editor state.
             return ()
 
-wordAtColumn :: Int -> Text -> Maybe Text
+wordAtColumn :: Int -> Text -> Maybe (Int, Text)
 wordAtColumn i t =
     let tokens = T.groupBy (\a b -> isSpace a == isSpace b) t
-        go j _ | j < 0 = Nothing
-        go j ts = case ts of
+        go _ j _ | j < 0 = Nothing
+        go col j ts = case ts of
             [] -> Nothing
-            (w:rest) | j <= T.length w && not (isSpace $ T.head w) -> Just w
-                     | otherwise -> go (j - T.length w) rest
-    in go i tokens
+            (w:rest) | j <= T.length w && not (isSpace $ T.head w) -> Just (col, w)
+                     | otherwise -> go (col + T.length w) (j - T.length w) rest
+    in go 0 i tokens
