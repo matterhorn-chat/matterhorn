@@ -144,7 +144,7 @@ deleteMessage new = do
 
 addNewPostedMessage :: PostToAdd -> MH ()
 addNewPostedMessage p =
-    addMessageToState True p >>= postProcessMessageAdd
+    addMessageToState True True p >>= postProcessMessageAdd
 
 addObtainedMessages :: ChannelId -> Int -> Posts -> MH PostProcessMessageAdd
 addObtainedMessages cId reqCnt posts = do
@@ -227,7 +227,7 @@ addObtainedMessages cId reqCnt posts = do
         -- the post, and determining an notification action to be
         -- taken (if any).
         action <- foldr andProcessWith NoAction <$>
-          mapM (addMessageToState False . OldPost)
+          mapM (addMessageToState False False . OldPost)
                    [ (posts^.postsPostsL) HM.! p
                    | p <- toList (posts^.postsOrderL)
                    , not (p `elem` dupPIds)
@@ -286,8 +286,8 @@ addObtainedMessages cId reqCnt posts = do
 -- you're calling this as part of scrollback processing, you should pass
 -- False. Otherwise if you're adding only a single message, you should
 -- pass True.
-addMessageToState :: Bool -> PostToAdd -> MH PostProcessMessageAdd
-addMessageToState fetchMentionedUsers newPostData = do
+addMessageToState :: Bool -> Bool -> PostToAdd -> MH PostProcessMessageAdd
+addMessageToState fetchMentionedUsers fetchAuthor newPostData = do
     let (new, wasMentioned) = case newPostData of
           -- A post from scrollback history has no mention data, and
           -- that's okay: we only need to track mentions to tell the
@@ -321,7 +321,7 @@ addMessageToState fetchMentionedUsers newPostData = do
                             then applyPreferenceChange pref
                             else refreshChannel SidebarUpdateImmediate nc member
 
-                        addMessageToState fetchMentionedUsers newPostData >>= postProcessMessageAdd
+                        addMessageToState fetchMentionedUsers fetchAuthor newPostData >>= postProcessMessageAdd
 
             return NoAction
         Just _ -> do
@@ -338,6 +338,14 @@ addMessageToState fetchMentionedUsers newPostData = do
                 cId = postChannelId new
 
                 doAddMessage = do
+                    -- Do we have the user data for the post author?
+                    case cp^.cpUser of
+                        Nothing -> return ()
+                        Just authorId -> when fetchAuthor $ do
+                            authorResult <- gets (userById authorId)
+                            when (isNothing authorResult) $
+                                handleNewUsers (Seq.singleton authorId) (return ())
+
                     currCId <- use csCurrentChannelId
                     flags <- use (csResources.crFlaggedPosts)
                     let (msg', mentionedUsers) = clientPostToMessage cp
