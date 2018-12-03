@@ -96,6 +96,7 @@ sendMessage mode msg =
                 Connected -> do
                     let chanId = st^.csCurrentChannelId
                     session <- getSession
+                    -- TODO: attach files in attachment list
                     doAsync Preempt $ do
                       case mode of
                         NewPost -> do

@@ -19,6 +19,7 @@ import           Constants
 import           Events.Keybindings
 import           HelpTopics ( mainHelpTopic )
 import           InputHistory
+import           State.Attachments
 import           State.Help
 import           State.Channels
 import           State.ChannelSelect
@@ -174,6 +175,9 @@ handleInputSubmission = do
 
   -- Reset the autocomplete UI
   resetAutocomplete
+
+  -- Empty the attachment list
+  resetAttachmentList
 
   -- Reset the edit mode *after* handling the input so that the input
   -- handler can tell whether we're editing, replying, etc.

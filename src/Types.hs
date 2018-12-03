@@ -85,6 +85,7 @@ module Types
 
   , ChatEditState
   , emptyEditState
+  , cedAttachmentList
   , cedYankBuffer
   , cedSpellChecker
   , cedMisspellings
@@ -255,6 +256,7 @@ import qualified Control.Concurrent.STM as STM
 import           Control.Exception ( SomeException )
 import qualified Control.Monad.State as St
 import qualified Control.Monad.Reader as R
+import qualified Data.ByteString as BS
 import           Data.Char ( isAlpha )
 import qualified Data.Foldable as F
 import           Data.Ord ( comparing )
@@ -571,6 +573,7 @@ data Name =
     | ViewMessageArea
     | ChannelSidebar
     | ChannelSelectInput
+    | AttachmentList
     deriving (Eq, Show, Ord)
 
 -- | The sum type of exceptions we expect to encounter on authentication
@@ -847,7 +850,17 @@ data ChatEditState =
                   -- can type more quickly than the server can get us
                   -- the results, and we wouldn't want to show results
                   -- associated with old editor states.
+                  , _cedAttachmentList :: List Name Attachment
+                  -- ^ The list of attachments to be uploaded with the
+                  -- post being edited.
                   }
+
+-- | An attachment.
+data AttachmentData =
+    AttachmentData { attachmentFilename :: String
+                   , attachmentBytes :: BS.ByteString
+                   }
+                   deriving (Eq, Show, Read)
 
 -- | The input mode.
 data EditMode =
@@ -876,6 +889,7 @@ emptyEditState hist sp =
                   , _cedMisspellings         = mempty
                   , _cedAutocomplete         = Nothing
                   , _cedAutocompletePending  = Nothing
+                  , _cedAttachmentList       = list AttachmentList mempty 1
                   }
 
 -- | A 'RequestChan' is a queue of operations we have to perform in the
