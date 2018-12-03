@@ -6,7 +6,7 @@ import           Prelude.MH
 import           Brick
 import           Brick.Themes ( themeDescriptions )
 import           Brick.Widgets.Border
-import           Brick.Widgets.Center ( hCenter, centerLayer )
+import           Brick.Widgets.Center ( hCenter )
 import           Brick.Widgets.List ( listSelectedFocusedAttr )
 import qualified Data.Map as M
 import qualified Data.Text as T
@@ -338,14 +338,6 @@ themeHelp = overrideAttr codeAttr helpEmphAttr $ vBox
 attrNameToConfig :: AttrName -> Text
 attrNameToConfig = T.pack . intercalate "." . attrNameComponents
 
-withMargins :: (Int, Int) -> Widget a -> Widget a
-withMargins (hMargin, vMargin) w =
-    Widget (hSize w) (vSize w) $ do
-        ctx <- getContext
-        let wl = ctx^.availWidthL - (2 * hMargin)
-            hl = ctx^.availHeightL - (2 * vMargin)
-        render $ hLimit wl $ vLimit hl w
-
 keybindSections :: KeyConfig -> [(Text, [Keybinding])]
 keybindSections kc =
     [ ("This Help Page", helpKeybindings kc)
@@ -362,12 +354,10 @@ keybindSections kc =
 
 helpBox :: Name -> Widget Name -> Widget Name
 helpBox n helpText =
-    centerLayer $ withMargins (2, 1) $
-      (withDefAttr helpAttr $ borderWithLabel (withDefAttr helpEmphAttr $ txt "Matterhorn Help") $
-       (viewport HelpViewport Vertical $ cached n helpText)) <=>
-      quitMessage
-    where
-    quitMessage = padTop (Pad 1) $ hCenter $ txt "Press Esc to exit the help screen."
+    withDefAttr helpAttr $
+    borderWithLabel (withDefAttr helpEmphAttr $ txt "Matterhorn Help") $
+    viewport HelpViewport Vertical $
+    cached n helpText
 
 kbColumnWidth :: Int
 kbColumnWidth = 12
