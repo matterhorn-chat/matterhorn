@@ -49,5 +49,5 @@ drawFileBrowser st =
     centerLayer $
     hLimit 60 $
     vLimit 20 $
-    borderWithLabel (txt "Find file") $
+    borderWithLabel (txt "Attach File") $
     FB.renderFileBrowser True (st^.csEditState.cedFileBrowser)
