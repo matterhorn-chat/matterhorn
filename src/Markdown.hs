@@ -48,7 +48,7 @@ import           Network.Mattermost.Types ( ServerTime(..) )
 
 import           Themes
 import           Types ( HighlightSet(..), userSigil, normalChannelSigil
-                       , isNameFragment )
+                       , isNameFragment, takeWhileNameFragment )
 import           Types.Posts
 import           Types.Messages
 
@@ -379,13 +379,13 @@ toFragments hSet = go Normal
           C.Str t :< xs | t == editRecentlyMarkingSentinel ->
             Fragment TEditRecentlySentinel EditedRecently <| go n xs
           C.Str t :< xs | userSigil `T.isPrefixOf` t ->
-            let (uFrags, rest) = S.spanl isNameFragment xs
+            let (uFrags, rest) = takeWhileNameFragment $ F.toList xs
                 t' = T.concat $ t : (unsafeGetStr <$> F.toList uFrags)
                 u = T.drop 1 t'
                 sty = if u `Set.member` (hUserSet hSet)
                       then User u
                       else n
-            in Fragment (TStr t') sty <| go n rest
+            in Fragment (TStr t') sty <| go n (S.fromList rest)
           C.Str t :< xs | normalChannelSigil `T.isPrefixOf` t ->
             let (cFrags, rest) = S.spanl isNameFragment xs
                 cn = T.concat $ t : (unsafeGetStr <$> F.toList cFrags)

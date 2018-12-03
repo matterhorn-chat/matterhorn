@@ -229,6 +229,8 @@ module Types
   , ChannelSet
   , getHighlightSet
 
+  , takeWhileNameFragment
+
   , module Types.Channels
   , module Types.Messages
   , module Types.Posts
@@ -1494,14 +1496,33 @@ blockFindUsernames _ =
 inlineFindUsernames :: [C.Inline] -> S.Set Text
 inlineFindUsernames [] = mempty
 inlineFindUsernames (C.Str "@" : rest) =
-    let (strs, remaining) = break (not . isNameFragment) rest
-        getStr (C.Str s) = s
-        getStr _ = ""
+    let (strs, remaining) = takeWhileNameFragment rest
     in if null strs
-       then inlineFindUsernames rest
-       else S.insert (T.concat $ getStr <$> strs) $ inlineFindUsernames remaining
+       then inlineFindUsernames remaining
+       else S.insert (T.concat $ getInlineStr <$> strs) $ inlineFindUsernames remaining
 inlineFindUsernames (_ : rest) =
     inlineFindUsernames rest
+
+getInlineStr :: C.Inline -> T.Text
+getInlineStr (C.Str s) = s
+getInlineStr _ = ""
+
+takeWhileNameFragment :: [C.Inline] -> ([C.Inline], [C.Inline])
+takeWhileNameFragment [] = ([], [])
+takeWhileNameFragment rest =
+    let (strs, remaining) = break (not . isNameFragment) rest
+        -- Does the last element in strs start with a letter? If
+        -- not, move it to the remaining list. This avoids pulling
+        -- punctuation-only tokens into usernames, e.g. "Hello,
+        -- @foobar."
+        (strs', remaining') =
+            if length strs <= 1
+            then (strs, remaining)
+            else let (initStrs, [lastStr]) = splitAt (length strs - 1) strs
+                 in if isAlpha $ T.head $ getInlineStr lastStr
+                    then (strs, remaining)
+                    else (initStrs, lastStr : remaining)
+    in (strs', remaining')
 
 -- * Slash Commands
 
