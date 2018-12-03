@@ -87,6 +87,7 @@ module Types
   , ChatEditState
   , emptyEditState
   , cedAttachmentList
+  , cedFileBrowser
   , cedYankBuffer
   , cedSpellChecker
   , cedMisspellings
@@ -250,6 +251,7 @@ import           Brick.AttrMap ( AttrMap )
 import           Brick.BChan
 import           Brick.Widgets.Edit ( Editor, editor )
 import           Brick.Widgets.List ( List, list )
+import qualified Brick.Widgets.FileBrowser as FB
 import qualified Cheapskate as C
 import           Control.Concurrent ( ThreadId )
 import           Control.Concurrent.Async ( Async )
@@ -575,6 +577,7 @@ data Name =
     | ChannelSidebar
     | ChannelSelectInput
     | AttachmentList
+    | AttachmentFileBrowser
     deriving (Eq, Show, Ord)
 
 -- | The sum type of exceptions we expect to encounter on authentication
@@ -854,12 +857,13 @@ data ChatEditState =
                   , _cedAttachmentList :: List Name AttachmentData
                   -- ^ The list of attachments to be uploaded with the
                   -- post being edited.
+                  , _cedFileBrowser :: FB.FileBrowser Name
+                  -- ^ The browser for selecting attachment files.
                   }
 
 -- | An attachment.
 data AttachmentData =
-    AttachmentData { attachmentDataFilename :: String
-                   , attachmentDataFilepath :: FilePath
+    AttachmentData { attachmentDataFileInfo :: FB.FileInfo
                    , attachmentDataBytes :: BS.ByteString
                    }
                    deriving (Eq, Show, Read)
@@ -878,21 +882,23 @@ data EditMode =
 
 -- | We can initialize a new 'ChatEditState' value with just an edit
 -- history, which we save locally.
-emptyEditState :: InputHistory -> Maybe (Aspell, IO ()) -> ChatEditState
-emptyEditState hist sp =
-    ChatEditState { _cedEditor               = editor MessageInput Nothing ""
-                  , _cedMultiline            = False
-                  , _cedInputHistory         = hist
-                  , _cedInputHistoryPosition = mempty
-                  , _cedLastChannelInput     = mempty
-                  , _cedEditMode             = NewPost
-                  , _cedYankBuffer           = ""
-                  , _cedSpellChecker         = sp
-                  , _cedMisspellings         = mempty
-                  , _cedAutocomplete         = Nothing
-                  , _cedAutocompletePending  = Nothing
-                  , _cedAttachmentList       = list AttachmentList mempty 1
-                  }
+emptyEditState :: InputHistory -> Maybe (Aspell, IO ()) -> IO ChatEditState
+emptyEditState hist sp = do
+    browser <- FB.newFileBrowser FB.selectNonDirectories AttachmentFileBrowser Nothing
+    return ChatEditState { _cedEditor               = editor MessageInput Nothing ""
+                         , _cedMultiline            = False
+                         , _cedInputHistory         = hist
+                         , _cedInputHistoryPosition = mempty
+                         , _cedLastChannelInput     = mempty
+                         , _cedEditMode             = NewPost
+                         , _cedYankBuffer           = ""
+                         , _cedSpellChecker         = sp
+                         , _cedMisspellings         = mempty
+                         , _cedAutocomplete         = Nothing
+                         , _cedAutocompletePending  = Nothing
+                         , _cedAttachmentList       = list AttachmentList mempty 1
+                         , _cedFileBrowser          = browser
+                         }
 
 -- | A 'RequestChan' is a queue of operations we have to perform in the
 -- background to avoid blocking on the main loop
@@ -939,6 +945,7 @@ data Mode =
     | UserListOverlay
     | ViewMessage
     | ManageAttachments
+    | ManageAttachmentsBrowseFiles
     deriving (Eq)
 
 -- | We're either connected or we're not.
@@ -1032,33 +1039,34 @@ data StartupStateInfo =
                      , startupStateSpellChecker   :: Maybe (Aspell, IO ())
                      }
 
-newState :: StartupStateInfo -> ChatState
-newState (StartupStateInfo {..}) =
-    ChatState { _csResources                   = startupStateResources
-              , _csFocus                       = startupStateChannelZipper
-              , _csMe                          = startupStateConnectedUser
-              , _csMyTeam                      = startupStateTeam
-              , _csChannels                    = noChannels
-              , _csPostMap                     = HM.empty
-              , _csUsers                       = noUsers
-              , _timeZone                      = startupStateTimeZone
-              , _csEditState                   = emptyEditState startupStateInitialHistory startupStateSpellChecker
-              , _csMode                        = Main
-              , _csShowMessagePreview          = configShowMessagePreview $ _crConfiguration startupStateResources
-              , _csShowChannelList             = configShowChannelList $ _crConfiguration startupStateResources
-              , _csChannelSelectState          = emptyChannelSelectState
-              , _csRecentChannel               = Nothing
-              , _csUrlList                     = list UrlList mempty 2
-              , _csConnectionStatus            = Connected
-              , _csWorkerIsBusy                = Nothing
-              , _csJoinChannelList             = Nothing
-              , _csMessageSelect               = MessageSelectState Nothing
-              , _csPostListOverlay             = PostListOverlayState emptyDirSeq Nothing
-              , _csUserListOverlay             = nullUserListOverlayState
-              , _csClientConfig                = Nothing
-              , _csPendingChannelChange        = Nothing
-              , _csViewedMessage               = Nothing
-              }
+newState :: StartupStateInfo -> IO ChatState
+newState (StartupStateInfo {..}) = do
+    editState <- emptyEditState startupStateInitialHistory startupStateSpellChecker
+    return ChatState { _csResources                   = startupStateResources
+                     , _csFocus                       = startupStateChannelZipper
+                     , _csMe                          = startupStateConnectedUser
+                     , _csMyTeam                      = startupStateTeam
+                     , _csChannels                    = noChannels
+                     , _csPostMap                     = HM.empty
+                     , _csUsers                       = noUsers
+                     , _timeZone                      = startupStateTimeZone
+                     , _csEditState                   = editState
+                     , _csMode                        = Main
+                     , _csShowMessagePreview          = configShowMessagePreview $ _crConfiguration startupStateResources
+                     , _csShowChannelList             = configShowChannelList $ _crConfiguration startupStateResources
+                     , _csChannelSelectState          = emptyChannelSelectState
+                     , _csRecentChannel               = Nothing
+                     , _csUrlList                     = list UrlList mempty 2
+                     , _csConnectionStatus            = Connected
+                     , _csWorkerIsBusy                = Nothing
+                     , _csJoinChannelList             = Nothing
+                     , _csMessageSelect               = MessageSelectState Nothing
+                     , _csPostListOverlay             = PostListOverlayState emptyDirSeq Nothing
+                     , _csUserListOverlay             = nullUserListOverlayState
+                     , _csClientConfig                = Nothing
+                     , _csPendingChannelChange        = Nothing
+                     , _csViewedMessage               = Nothing
+                     }
 
 nullUserListOverlayState :: UserListOverlayState
 nullUserListOverlayState =

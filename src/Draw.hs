@@ -33,3 +33,4 @@ draw st =
         UserListOverlay            -> drawUserListOverlay st
         ViewMessage                -> drawViewMessage st
         ManageAttachments          -> drawManageAttachments st
+        ManageAttachmentsBrowseFiles -> drawManageAttachments st

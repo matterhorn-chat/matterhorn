@@ -167,6 +167,7 @@ onVtyEvent e = do
         UserListOverlay            -> onEventUserListOverlay e
         ViewMessage                -> onEventViewMessage e
         ManageAttachments          -> onEventManageAttachments e
+        ManageAttachmentsBrowseFiles -> onEventManageAttachments e
 
 handleWSEvent :: WebsocketEvent -> MH ()
 handleWSEvent we = do

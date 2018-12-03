@@ -273,7 +273,9 @@ initializeState cr myTeam me = do
                            , startupStateInitialHistory = hist
                            , startupStateSpellChecker   = spResult
                            }
-      st = newState startupState & csChannels .~ clientChans
+
+  initialState <- newState startupState
+  let st = initialState & csChannels .~ clientChans
 
   loadFlaggedMessages (cr^.crUserPreferences.userPrefFlaggedPostList) st
 
