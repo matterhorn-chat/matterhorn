@@ -8,6 +8,7 @@ import           Brick
 import           Brick.Widgets.Border
 import           Brick.Widgets.Border.Style
 import           Brick.Widgets.Center ( hCenter )
+import           Brick.Widgets.List ( listElements )
 import           Brick.Widgets.Edit ( editContentsL, renderEditor, getEditContents )
 import           Control.Arrow ( (>>>) )
 import           Control.Monad.Trans.Reader ( withReaderT )
@@ -604,10 +605,21 @@ mainInterface st =
     bottomBorder = case appMode st of
         MessageSelect -> messageSelectBottomBar st
         _ -> maybeSubdue $ hBox
-             [ hBorder
+             [ showAttachmentCount
+             , hBorder
              , showTypingUsers
              , showBusy
              ]
+
+    showAttachmentCount =
+        let count = length $ listElements $ st^.csEditState.cedAttachmentList
+        in if count == 0
+           then emptyWidget
+           else hBox [ borderElem bsHorizontal
+                     , withDefAttr clientMessageAttr $
+                       txt $ "(" <> (T.pack $ show count) <> " attachment" <>
+                             if count == 1 then "" else "s" <> ")"
+                     ]
 
     showTypingUsers = case allTypingUsers (st^.csCurrentChannel.ccInfo.cdTypingUsers) of
                         [] -> emptyWidget
