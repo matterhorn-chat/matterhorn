@@ -14,6 +14,7 @@ import qualified Brick.Widgets.FileBrowser as FB
 import           Lens.Micro.Platform ( (^.) )
 
 import           Types
+import           Themes
 import           Draw.Main ( drawMain )
 
 

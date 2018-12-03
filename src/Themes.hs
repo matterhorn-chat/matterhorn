@@ -57,6 +57,7 @@ import           Prelude.MH
 import           Brick
 import           Brick.Themes
 import           Brick.Widgets.List
+import qualified Brick.Widgets.FileBrowser as FB
 import           Brick.Widgets.Skylighting ( attrNameForTokenType
                                            , attrMappingsForStyle
                                            , highlightedCodeBlockAttr
@@ -257,6 +258,14 @@ lightAttrs =
        , (misspellingAttr,                  fg red `withStyle` underline)
        , (editedMarkingAttr,                fg yellow)
        , (editedRecentlyMarkingAttr,        black `on` yellow)
+       , (FB.fileBrowserCurrentDirectoryAttr, white `on` blue)
+       , (FB.fileBrowserSelectionInfoAttr,  white `on` blue)
+       , (FB.fileBrowserDirectoryAttr,      fg blue)
+       , (FB.fileBrowserBlockDeviceAttr,    fg magenta)
+       , (FB.fileBrowserCharacterDeviceAttr, fg green)
+       , (FB.fileBrowserNamedPipeAttr,      fg yellow)
+       , (FB.fileBrowserSymbolicLinkAttr,   fg cyan)
+       , (FB.fileBrowserUnixSocketAttr,     fg red)
        ] <>
        ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors) <>
        (filter skipBaseCodeblockAttr $ attrMappingsForStyle sty)
@@ -301,6 +310,14 @@ darkAttrs =
      , (misspellingAttr,                  fg red `withStyle` underline)
      , (editedMarkingAttr,                fg yellow)
      , (editedRecentlyMarkingAttr,        black `on` yellow)
+     , (FB.fileBrowserCurrentDirectoryAttr, white `on` blue)
+     , (FB.fileBrowserSelectionInfoAttr,  white `on` blue)
+     , (FB.fileBrowserDirectoryAttr,      fg blue)
+     , (FB.fileBrowserBlockDeviceAttr,    fg magenta)
+     , (FB.fileBrowserCharacterDeviceAttr, fg green)
+     , (FB.fileBrowserNamedPipeAttr,      fg yellow)
+     , (FB.fileBrowserSymbolicLinkAttr,   fg cyan)
+     , (FB.fileBrowserUnixSocketAttr,     fg red)
      ] <>
      ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors) <>
      (filter skipBaseCodeblockAttr $ attrMappingsForStyle sty)
@@ -555,6 +572,36 @@ themeDocs = ThemeDocumentation $ M.fromList $
       )
     , ( listSelectedFocusedAttr
       , "The selected channel"
+      )
+    , ( FB.fileBrowserAttr
+      , "The base file browser attribute"
+      )
+    , ( FB.fileBrowserCurrentDirectoryAttr
+      , "The file browser current directory attribute"
+      )
+    , ( FB.fileBrowserSelectionInfoAttr
+      , "The file browser selection information attribute"
+      )
+    , ( FB.fileBrowserDirectoryAttr
+      , "Attribute for directories in the file browser"
+      )
+    , ( FB.fileBrowserBlockDeviceAttr
+      , "Attribute for block devices in the file browser"
+      )
+    , ( FB.fileBrowserRegularFileAttr
+      , "Attribute for regular files in the file browser"
+      )
+    , ( FB.fileBrowserCharacterDeviceAttr
+      , "Attribute for character devices in the file browser"
+      )
+    , ( FB.fileBrowserNamedPipeAttr
+      , "Attribute for named pipes in the file browser"
+      )
+    , ( FB.fileBrowserSymbolicLinkAttr
+      , "Attribute for symbolic links in the file browser"
+      )
+    , ( FB.fileBrowserUnixSocketAttr
+      , "Attribute for Unix sockets in the file browser"
       )
     ] <> [ (usernameAttr i, T.pack $ "Username color " <> show i)
          | i <- [0..(length usernameColors)-1]
