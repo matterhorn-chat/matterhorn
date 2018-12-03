@@ -618,7 +618,7 @@ mainInterface st =
            else hBox [ borderElem bsHorizontal
                      , withDefAttr clientMessageAttr $
                        txt $ "(" <> (T.pack $ show count) <> " attachment" <>
-                             if count == 1 then "" else "s" <> ")"
+                             (if count == 1 then "" else "s") <> ")"
                      ]
 
     showTypingUsers = case allTypingUsers (st^.csCurrentChannel.ccInfo.cdTypingUsers) of
