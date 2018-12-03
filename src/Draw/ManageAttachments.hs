@@ -15,6 +15,7 @@ import           Lens.Micro.Platform ( (^.) )
 import           Types
 import           Draw.Main ( drawMain )
 
+
 drawManageAttachments :: ChatState -> [Widget Name]
 drawManageAttachments st =
     drawAttachmentList st : drawMain st
