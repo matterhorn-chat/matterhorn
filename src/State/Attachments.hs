@@ -19,5 +19,5 @@ showAttachmentList = setMode ManageAttachments
 
 resetAttachmentList :: MH ()
 resetAttachmentList = do
-  csEditState.cedAttachmentList .= L.list AttachmentList mempty 1
-  mh $ vScrollToBeginning $ viewportScroll AttachmentList
+    csEditState.cedAttachmentList .= L.list AttachmentList mempty 1
+    mh $ vScrollToBeginning $ viewportScroll AttachmentList
