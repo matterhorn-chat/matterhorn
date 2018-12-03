@@ -51,6 +51,7 @@ data KeyEvent
   | ToggleMultiLineEvent
   | EnterFlaggedPostsEvent
   | ToggleChannelListVisibleEvent
+  | ShowAttachmentListEvent
 
   -- generic cancel
   | CancelEvent
@@ -106,6 +107,8 @@ allEvents =
   , NextUnreadChannelEvent
   , NextUnreadUserOrChannelEvent
   , LastChannelEvent
+
+  , ShowAttachmentListEvent
 
   , EnterFlaggedPostsEvent
   , ToggleChannelListVisibleEvent
@@ -291,6 +294,8 @@ keyEventName ev = case ev of
   NextUnreadChannelEvent    -> "focus-next-unread"
   NextUnreadUserOrChannelEvent  -> "focus-next-unread-user-or-channel"
   LastChannelEvent          -> "focus-last-channel"
+
+  ShowAttachmentListEvent   -> "show-attachment-list"
 
   EnterFlaggedPostsEvent    -> "show-flagged-posts"
   ToggleChannelListVisibleEvent -> "toggle-channel-list-visibility"

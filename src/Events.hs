@@ -42,6 +42,7 @@ import           Events.ShowHelp
 import           Events.UrlSelect
 import           Events.UserListOverlay
 import           Events.ViewMessage
+import           Events.ManageAttachments
 
 
 onEvent :: ChatState -> BrickEvent Name MHEvent -> EventM Name (Next ChatState)
@@ -165,6 +166,7 @@ onVtyEvent e = do
         PostListOverlay _          -> onEventPostListOverlay e
         UserListOverlay            -> onEventUserListOverlay e
         ViewMessage                -> onEventViewMessage e
+        ManageAttachments          -> onEventManageAttachments e
 
 handleWSEvent :: WebsocketEvent -> MH ()
 handleWSEvent we = do

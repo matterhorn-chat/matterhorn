@@ -12,6 +12,7 @@ import Draw.PostListOverlay
 import Draw.ShowHelp
 import Draw.UserListOverlay
 import Draw.ViewMessage
+import Draw.ManageAttachments
 import Types
 
 
@@ -31,3 +32,4 @@ draw st =
         PostListOverlay contents   -> drawPostListOverlay contents st
         UserListOverlay            -> drawUserListOverlay st
         ViewMessage                -> drawViewMessage st
+        ManageAttachments          -> drawManageAttachments st

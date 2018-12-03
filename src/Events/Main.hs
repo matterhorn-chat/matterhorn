@@ -119,6 +119,9 @@ mainKeybindings = mkKeybindings
     , mkKb NextUnreadChannelEvent "Change to the next channel with unread messages"
          nextUnreadChannel
 
+    , mkKb ShowAttachmentListEvent "Show the attachment list"
+         showAttachmentList
+
     , mkKb NextUnreadUserOrChannelEvent
          "Change to the next channel with unread messages preferring direct messages"
          nextUnreadUserOrChannel

@@ -17,6 +17,7 @@ module Types
   , ChannelSelectMatch(..)
   , StartupStateInfo(..)
   , MHError(..)
+  , AttachmentData(..)
   , ConnectionInfo(..)
   , SidebarUpdate(..)
   , PendingChannelChange(..)
@@ -850,15 +851,16 @@ data ChatEditState =
                   -- can type more quickly than the server can get us
                   -- the results, and we wouldn't want to show results
                   -- associated with old editor states.
-                  , _cedAttachmentList :: List Name Attachment
+                  , _cedAttachmentList :: List Name AttachmentData
                   -- ^ The list of attachments to be uploaded with the
                   -- post being edited.
                   }
 
 -- | An attachment.
 data AttachmentData =
-    AttachmentData { attachmentFilename :: String
-                   , attachmentBytes :: BS.ByteString
+    AttachmentData { attachmentDataFilename :: String
+                   , attachmentDataFilepath :: FilePath
+                   , attachmentDataBytes :: BS.ByteString
                    }
                    deriving (Eq, Show, Read)
 
@@ -936,6 +938,7 @@ data Mode =
     | PostListOverlay PostListContents
     | UserListOverlay
     | ViewMessage
+    | ManageAttachments
     deriving (Eq)
 
 -- | We're either connected or we're not.
