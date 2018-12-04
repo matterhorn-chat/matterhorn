@@ -43,6 +43,7 @@ import           Config
 import           Events.Keybindings
 import           State.Common
 import           State.Autocomplete
+import           State.Attachments
 import           Types hiding ( newState )
 import           Types.Common ( sanitizeChar, sanitizeUserText' )
 
@@ -322,6 +323,7 @@ cancelAutocompleteOrReplyOrEdit = do
                 _ -> do
                     csEditState.cedEditMode .= NewPost
                     csEditState.cedEditor %= applyEdit Z.clearZipper
+                    resetAttachmentList
 
 replyToLatestMessage :: MH ()
 replyToLatestMessage = do
