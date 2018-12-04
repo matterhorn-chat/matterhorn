@@ -87,3 +87,6 @@ Ubuntu:
 
 Fedora:
 * `vm-35-58.eic.galois.com`
+
+CentOS 7:
+* `vm-35-a7.eic.galois.com`
