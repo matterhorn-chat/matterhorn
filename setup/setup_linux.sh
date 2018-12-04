@@ -12,6 +12,10 @@ function fedora {
     grep -i fedora /etc/redhat-release 2>/dev/null >/dev/null
 }
 
+function centos {
+    grep -i centos /etc/redhat-release 2>/dev/null >/dev/null
+}
+
 function install_packages {
     if ubuntu
     then
@@ -27,6 +31,10 @@ function install_packages {
             happy \
             alex \
             zlib-devel
+    elif centos
+    then
+        sudo yum install -y gmp-devel gmp zlib-devel ncurses-devel
+        sudo yum groupinstall -y "Development Tools"
     else
         echo "Unsupported Linux distribution"
         exit 1

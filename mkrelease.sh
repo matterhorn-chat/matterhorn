@@ -10,6 +10,9 @@ function get_platform {
         if grep Fedora /etc/redhat-release >/dev/null
         then
             echo "Fedora"
+        elif grep CentOS /etc/redhat-release >/dev/null
+        then
+            echo "CentOS"
         else
             echo "Unknown-Redhat"
         fi
