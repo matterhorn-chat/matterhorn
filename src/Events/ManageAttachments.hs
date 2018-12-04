@@ -98,3 +98,4 @@ onEventBrowseFile e = do
                                                  then Just 0
                                                  else oldIdx
                                     csEditState.cedAttachmentList %= L.listReplace (Vector.snoc es a) newIdx
+                                    setMode Main
