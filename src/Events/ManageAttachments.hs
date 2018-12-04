@@ -40,9 +40,9 @@ attachmentListKeybindings :: KeyConfig -> [Keybinding]
 attachmentListKeybindings = mkKeybindings
     [ mkKb CancelEvent "Close attachment list"
           (setMode Main)
-    , mkKb AttachmentListAdd "Add a new attachment to the attachment list"
+    , mkKb AttachmentListAddEvent "Add a new attachment to the attachment list"
           showAttachmentFileBrowser
-    , mkKb AttachmentListDelete "Delete the selected attachment from the attachment list"
+    , mkKb AttachmentListDeleteEvent "Delete the selected attachment from the attachment list"
           deleteSelectedAttachment
     ]
 

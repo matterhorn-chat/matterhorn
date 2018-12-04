@@ -31,8 +31,9 @@ drawManageAttachments st =
 
 drawAttachmentList :: ChatState -> Widget Name
 drawAttachmentList st =
-    let addBinding = ppBinding $ getFirstDefaultBinding AttachmentListAdd
-        delBinding = ppBinding $ getFirstDefaultBinding AttachmentListDelete
+    let addBinding = ppBinding $ getFirstDefaultBinding AttachmentListAddEvent
+        delBinding = ppBinding $ getFirstDefaultBinding AttachmentListDeleteEvent
+        escBinding = ppBinding $ getFirstDefaultBinding CancelEvent
     in centerLayer $
        hLimit 60 $
        vLimit 15 $
@@ -41,7 +42,9 @@ drawAttachmentList st =
        vBox [ renderList renderAttachmentItem True (st^.csEditState.cedAttachmentList)
             , hBorder
             , hCenter $ withDefAttr clientMessageAttr $
-                        txt $ addBinding <> ":add " <> delBinding <> ":delete"
+                        txt $ addBinding <> ":add " <>
+                              delBinding <> ":delete " <>
+                              escBinding <> ":close"
             ]
 
 renderAttachmentItem :: Bool -> AttachmentData -> Widget Name

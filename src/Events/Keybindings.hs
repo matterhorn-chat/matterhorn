@@ -147,9 +147,9 @@ defaultBindings ev =
         ReplyMessageEvent   -> [ key 'r' ]
         OpenMessageURLEvent -> [ key 'o' ]
 
-        AddNewAttachment     -> [ ctrl (key 'x') ]
-        AttachmentListAdd    -> [ key 'a' ]
-        AttachmentListDelete -> [ key 'd' ]
+        AddNewAttachmentEvent     -> [ ctrl (key 'x') ]
+        AttachmentListAddEvent    -> [ key 'a' ]
+        AttachmentListDeleteEvent -> [ key 'd' ]
 
 -- | Given a configuration, we want to check it for internal
 -- consistency (i.e. that a given keybinding isn't associated with
