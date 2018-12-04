@@ -14,6 +14,8 @@ import qualified Brick.Widgets.FileBrowser as FB
 import           Lens.Micro.Platform ( (^.) )
 
 import           Types
+import           Types.KeyEvents
+import           Events.Keybindings ( getFirstDefaultBinding )
 import           Themes
 import           Draw.Main ( drawMain )
 
@@ -29,16 +31,18 @@ drawManageAttachments st =
 
 drawAttachmentList :: ChatState -> Widget Name
 drawAttachmentList st =
-    centerLayer $
-    hLimit 60 $
-    vLimit 15 $
-    joinBorders $
-    borderWithLabel (txt "Attachments") $
-    vBox [ renderList renderAttachmentItem True (st^.csEditState.cedAttachmentList)
-         , hBorder
-         , hCenter $ withDefAttr clientMessageAttr $
-                     txt "a:add d:delete"
-         ]
+    let addBinding = ppBinding $ getFirstDefaultBinding AttachmentListAdd
+        delBinding = ppBinding $ getFirstDefaultBinding AttachmentListDelete
+    in centerLayer $
+       hLimit 60 $
+       vLimit 15 $
+       joinBorders $
+       borderWithLabel (txt "Attachments") $
+       vBox [ renderList renderAttachmentItem True (st^.csEditState.cedAttachmentList)
+            , hBorder
+            , hCenter $ withDefAttr clientMessageAttr $
+                        txt $ addBinding <> ":add " <> delBinding <> ":delete"
+            ]
 
 renderAttachmentItem :: Bool -> AttachmentData -> Widget Name
 renderAttachmentItem _ d =

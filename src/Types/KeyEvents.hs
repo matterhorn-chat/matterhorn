@@ -87,6 +87,11 @@ data KeyEvent
   | DeleteMessageEvent
   | EditMessageEvent
   | ReplyMessageEvent
+
+  -- Attachments
+  | AddNewAttachment
+  | AttachmentListAdd
+  | AttachmentListDelete
     deriving (Eq, Show, Ord, Enum)
 
 allEvents :: [KeyEvent]
@@ -141,6 +146,9 @@ allEvents =
   , DeleteMessageEvent
   , EditMessageEvent
   , ReplyMessageEvent
+  , AddNewAttachment
+  , AttachmentListAdd
+  , AttachmentListDelete
   ]
 
 eventToBinding :: Vty.Event -> Binding
@@ -328,3 +336,7 @@ keyEventName ev = case ev of
   DeleteMessageEvent -> "delete-message"
   EditMessageEvent   -> "edit-message"
   ReplyMessageEvent  -> "reply-message"
+
+  AddNewAttachment     -> "add-new-attachment"
+  AttachmentListAdd    -> "add-to-attachment-list"
+  AttachmentListDelete -> "delete-from-attachment-list"

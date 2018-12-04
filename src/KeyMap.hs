@@ -14,6 +14,7 @@ import           Events.MessageSelect
 import           Events.PostListOverlay
 import           Events.ShowHelp
 import           Events.UrlSelect
+import           Events.ManageAttachments
 
 keybindingModeMap :: [(String, KeyConfig -> [Keybinding])]
 keybindingModeMap =
@@ -24,4 +25,6 @@ keybindingModeMap =
     , ("channel scroll", channelScrollKeybindings)
     , ("message select", messageSelectKeybindings)
     , ("post list overlay", postListOverlayKeybindings)
+    , ("attachment list", attachmentListKeybindings)
+    , ("attachment file browse", attachmentBrowseKeybindings)
     ]
