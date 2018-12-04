@@ -32,6 +32,8 @@ onEventAttachmentList e =
     case e of
         V.EvKey V.KEsc [] ->
             setMode Main
+        V.EvKey (V.KChar 'c') [V.MCtrl] ->
+            setMode Main
         V.EvKey (V.KChar 'a') [] -> do
             showAttachmentFileBrowser
         V.EvKey (V.KChar 'd') [] -> do
@@ -62,6 +64,11 @@ onEventBrowseFile :: V.Event -> MH ()
 onEventBrowseFile e = do
     b <- use (csEditState.cedFileBrowser)
     case e of
+        V.EvKey (V.KChar 'c') [V.MCtrl] | not (FB.fileBrowserIsSearching b) -> do
+            es <- use (csEditState.cedAttachmentList.L.listElementsL)
+            case length es of
+                0 -> setMode Main
+                _ -> setMode ManageAttachments
         V.EvKey V.KEsc [] | not (FB.fileBrowserIsSearching b) -> do
             es <- use (csEditState.cedAttachmentList.L.listElementsL)
             case length es of
