@@ -10,6 +10,7 @@ import           Prelude ()
 import           Prelude.MH
 
 import qualified Control.Exception as E
+import           Control.Monad ( void )
 import qualified Brick.Widgets.FileBrowser as FB
 import qualified Brick.Widgets.List as L
 import qualified Data.ByteString as BS
@@ -21,6 +22,7 @@ import           Types
 import           Types.KeyEvents
 import           Events.Keybindings
 import           State.Attachments
+import           State.Common
 
 
 onEventManageAttachments :: V.Event -> MH ()
@@ -42,6 +44,8 @@ attachmentListKeybindings = mkKeybindings
           (setMode Main)
     , mkKb AttachmentListAddEvent "Add a new attachment to the attachment list"
           showAttachmentFileBrowser
+    , mkKb AttachmentOpenEvent "Open the selected attachment using the URL open command"
+          openSelectedAttachment
     , mkKb AttachmentListDeleteEvent "Delete the selected attachment from the attachment list"
           deleteSelectedAttachment
     ]
@@ -50,7 +54,24 @@ attachmentBrowseKeybindings :: KeyConfig -> [Keybinding]
 attachmentBrowseKeybindings = mkKeybindings
     [ mkKb CancelEvent "Cancel attachment file browse"
       cancelAttachmentBrowse
+    , mkKb AttachmentOpenEvent "Open the selected file using the URL open command"
+          openSelectedBrowserEntry
     ]
+
+openSelectedAttachment :: MH ()
+openSelectedAttachment = do
+    cur <- use (csEditState.cedAttachmentList.to L.listSelectedElement)
+    case cur of
+        Nothing -> return ()
+        Just (_, entry) -> void $ openURL (OpenLocalFile $ FB.fileInfoFilePath $
+                                           attachmentDataFileInfo entry)
+
+openSelectedBrowserEntry :: MH ()
+openSelectedBrowserEntry = do
+    b <- use (csEditState.cedFileBrowser)
+    case FB.fileBrowserCursor b of
+        Nothing -> return ()
+        Just entry -> void $ openURL (OpenLocalFile $ FB.fileInfoFilePath entry)
 
 onEventBrowseFile :: V.Event -> MH ()
 onEventBrowseFile e = do

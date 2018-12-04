@@ -147,8 +147,8 @@ postErrorMessageIO err st = do
           (addMessage $ clientMessageToMessage msg & mMessageId .~ Just (MessageUUID uuid))
   return $ st & csChannels %~ modifyChannelById cId addEMsg
 
-openURL :: LinkChoice -> MH Bool
-openURL link = do
+openURL :: OpenInBrowser -> MH Bool
+openURL thing = do
     cfg <- use (csResources.crConfiguration)
     case configURLOpenCommand cfg of
         Nothing ->
@@ -157,9 +157,13 @@ openURL link = do
             session <- getSession
 
             -- Is the URL referring to an attachment?
-            let act = case link^.linkFileId of
-                    Nothing -> prepareLink link
-                    Just fId -> prepareAttachment fId session
+            let act = case thing of
+                    OpenLinkChoice link ->
+                        case link^.linkFileId of
+                            Nothing -> prepareLink link
+                            Just fId -> prepareAttachment fId session
+                    OpenLocalFile path ->
+                        return [path]
 
             -- Is the URL-opening command interactive? If so, pause
             -- Matterhorn and run the opener interactively. Otherwise

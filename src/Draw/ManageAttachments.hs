@@ -34,6 +34,7 @@ drawAttachmentList st =
     let addBinding = ppBinding $ getFirstDefaultBinding AttachmentListAddEvent
         delBinding = ppBinding $ getFirstDefaultBinding AttachmentListDeleteEvent
         escBinding = ppBinding $ getFirstDefaultBinding CancelEvent
+        openBinding = ppBinding $ getFirstDefaultBinding AttachmentOpenEvent
     in centerLayer $
        hLimit 60 $
        vLimit 15 $
@@ -44,6 +45,7 @@ drawAttachmentList st =
             , hCenter $ withDefAttr clientMessageAttr $
                         txt $ addBinding <> ":add " <>
                               delBinding <> ":delete " <>
+                              openBinding <> ":open " <>
                               escBinding <> ":close"
             ]
 

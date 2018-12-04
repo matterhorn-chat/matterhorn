@@ -92,6 +92,7 @@ data KeyEvent
   | AddNewAttachmentEvent
   | AttachmentListAddEvent
   | AttachmentListDeleteEvent
+  | AttachmentOpenEvent
     deriving (Eq, Show, Ord, Enum)
 
 allEvents :: [KeyEvent]
@@ -149,6 +150,7 @@ allEvents =
   , AddNewAttachmentEvent
   , AttachmentListAddEvent
   , AttachmentListDeleteEvent
+  , AttachmentOpenEvent
   ]
 
 eventToBinding :: Vty.Event -> Binding
@@ -340,3 +342,4 @@ keyEventName ev = case ev of
   AddNewAttachmentEvent     -> "add-new-attachment"
   AttachmentListAddEvent    -> "add-to-attachment-list"
   AttachmentListDeleteEvent -> "delete-from-attachment-list"
+  AttachmentOpenEvent       -> "open-attachment"

@@ -150,6 +150,7 @@ defaultBindings ev =
         AddNewAttachmentEvent     -> [ ctrl (key 'x') ]
         AttachmentListAddEvent    -> [ key 'a' ]
         AttachmentListDeleteEvent -> [ key 'd' ]
+        AttachmentOpenEvent       -> [ key 'o' ]
 
 -- | Given a configuration, we want to check it for internal
 -- consistency (i.e. that a given keybinding isn't associated with
