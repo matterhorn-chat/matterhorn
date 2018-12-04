@@ -17,6 +17,7 @@ import           Prelude ()
 import           Prelude.MH
 
 import           Brick.Main ( getVtyHandle, invalidateCacheEntry )
+import qualified Brick.Widgets.FileBrowser as FB
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Set as Set
@@ -82,34 +83,47 @@ addEndGap cId = withChannel cId $ \chan ->
 lastMsg :: RetrogradeMessages -> Maybe Message
 lastMsg = withFirstMessage id
 
-sendMessage :: EditMode -> Text -> MH ()
-sendMessage mode msg =
-    case shouldSkipMessage msg of
-        True -> return ()
-        False -> do
-            status <- use csConnectionStatus
-            st <- use id
-            case status of
-                Disconnected -> do
-                    let m = "Cannot send messages while disconnected."
-                    mhError $ GenericError m
-                Connected -> do
-                    let chanId = st^.csCurrentChannelId
-                    session <- getSession
-                    -- TODO: attach files in attachment list
-                    doAsync Preempt $ do
-                      case mode of
+sendMessage :: EditMode -> Text -> [AttachmentData] -> MH ()
+sendMessage mode msg attachments =
+    when (not $ shouldSkipMessage msg) $ do
+        status <- use csConnectionStatus
+        st <- use id
+        case status of
+            Disconnected -> do
+                let m = "Cannot send messages while disconnected."
+                mhError $ GenericError m
+            Connected -> do
+                let chanId = st^.csCurrentChannelId
+                session <- getSession
+                doAsync Preempt $ do
+                    -- Upload attachments
+                    fileInfos <- forM attachments $ \a -> do
+                        MM.mmUploadFile chanId (FB.fileInfoFilename $ attachmentDataFileInfo a)
+                            (attachmentDataBytes a) session
+
+                    let fileIds = Seq.fromList $
+                                  fmap fileInfoId $
+                                  concat $
+                                  (F.toList . MM.uploadResponseFileInfos) <$> fileInfos
+
+                    case mode of
                         NewPost -> do
-                            let pendingPost = rawPost msg chanId
+                            let pendingPost = (rawPost msg chanId) { rawPostFileIds = fileIds }
                             void $ MM.mmCreatePost pendingPost session
                         Replying _ p -> do
-                            let pendingPost = (rawPost msg chanId) { rawPostRootId = postRootId p <|> (Just $ postId p) }
+                            let pendingPost = (rawPost msg chanId) { rawPostRootId = postRootId p <|> (Just $ postId p)
+                                                                   , rawPostFileIds = fileIds
+                                                                   }
                             void $ MM.mmCreatePost pendingPost session
                         Editing p ty -> do
                             let body = if ty == CP Emote
                                        then addEmoteFormatting msg
                                        else msg
-                            void $ MM.mmPatchPost (postId p) (postUpdateBody body) session
+                                update = (postUpdateBody body) { postUpdateFileIds = if null fileIds
+                                                                                     then Nothing
+                                                                                     else Just fileIds
+                                                               }
+                            void $ MM.mmPatchPost (postId p) update session
 
 shouldSkipMessage :: Text -> Bool
 shouldSkipMessage "" = True
@@ -580,5 +594,6 @@ asyncFetchAttachments p = do
                     m & mAttachments %~ (addIfMissing attachment)
                 | otherwise =
                     m
-        return $ Just $
+        return $ Just $ do
             csChannel(cId).ccContents.cdMessages.traversed %= addAttachment
+            mh $ invalidateCacheEntry $ ChannelMessages cId

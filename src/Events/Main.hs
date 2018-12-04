@@ -8,6 +8,7 @@ import           Brick hiding ( Direction )
 import           Brick.Widgets.Edit
 import qualified Brick.Widgets.List as L
 import           Data.Char ( isSpace )
+import qualified Data.Foldable as F
 import qualified Data.Text as T
 import qualified Data.Text.Zipper as Z
 import qualified Data.Text.Zipper.Generic.Words as Z
@@ -173,8 +174,11 @@ handleInputSubmission = do
   csEditState.cedInputHistoryPosition.at cId .= Nothing
 
   case T.uncons allLines of
-    Just ('/', cmd) -> dispatchCommand cmd
-    _               -> sendMessage mode allLines
+    Just ('/', cmd) ->
+        dispatchCommand cmd
+    _ -> do
+        attachments <- use (csEditState.cedAttachmentList.L.listElementsL)
+        sendMessage mode allLines $ F.toList attachments
 
   -- Reset the autocomplete UI
   resetAutocomplete

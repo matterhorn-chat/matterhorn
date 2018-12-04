@@ -46,7 +46,7 @@ runScript outputChan fp text = do
         case null $ programStderr po of
             True -> Just $ do
                 mode <- use (csEditState.cedEditMode)
-                sendMessage mode (T.pack $ programStdout po)
+                sendMessage mode (T.pack $ programStdout po) []
             False -> Nothing
     ExitFailure _ -> Nothing
 
