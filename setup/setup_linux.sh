@@ -45,11 +45,11 @@ function install_packages {
         CABAL_DIR=cabal-install-$CABAL_VER
         CABAL_PKG=$CABAL_DIR.tar.gz
 
-        wget -C https://downloads.haskell.org/~ghc/$GHC_VER/$GHC_PKG
-        wget -C http://hackage.haskell.org/package/$CABAL_DIR/$CABAL_PKG
+        wget -c https://downloads.haskell.org/~ghc/$GHC_VER/$GHC_PKG
+        wget -c http://hackage.haskell.org/package/$CABAL_DIR/$CABAL_PKG
 
         tar -xf $GHC_PKG
-        cd $GHC_DIR && ./configure --prefix=/usr/local/ && make install && cd ..
+        cd $GHC_DIR && ./configure --prefix=/usr/local/ && sudo make install && cd ..
 
         tar -xf $CABAL_PKG
         cd $CABAL_DIR && ./bootstrap.sh && cd ..
