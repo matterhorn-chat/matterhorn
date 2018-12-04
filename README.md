@@ -151,6 +151,7 @@ name of the dictionary you'd like to use.
 * Message editor with kill/yank buffer and readline-style keybindings
 * Tab-completion of usernames, channel names, commands, and fence code
   block languages
+* Support for attachment upload and download
 * Spell-checking via Aspell
 * Syntax highlighting of fenced code blocks in messages (works best in
   256-color terminals)
