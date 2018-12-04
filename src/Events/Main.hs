@@ -134,9 +134,9 @@ mainKeybindings = mkKeybindings
          (Vty.EvKey Vty.KEnter []) $ do
              isMultiline <- use (csEditState.cedMultiline)
              case isMultiline of
-                 -- Enter in multiline mode does the usual thing; we
-                 -- only send on Enter when we're outside of multiline
-                 -- mode.
+                 -- Normally, this event causes the current message to
+                 -- be sent. But in multiline mode we want to insert a
+                 -- newline instead.
                  True -> handleEditingInput (Vty.EvKey Vty.KEnter [])
                  False -> handleInputSubmission
 
