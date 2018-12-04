@@ -29,7 +29,10 @@ import           Types
 app :: App ChatState MHEvent Name
 app = App
   { appDraw         = draw
-  , appChooseCursor = showFirstCursor
+  , appChooseCursor = \s cs -> case appMode s of
+      ManageAttachments -> Nothing
+      ManageAttachmentsBrowseFiles -> Nothing
+      _ -> showFirstCursor s cs
   , appHandleEvent  = onEvent
   , appStartEvent   = return
   , appAttrMap      = (^.csResources.crTheme)
