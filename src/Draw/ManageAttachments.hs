@@ -37,7 +37,7 @@ drawAttachmentList st =
     vBox [ renderList renderAttachmentItem True (st^.csEditState.cedAttachmentList)
          , hBorder
          , hCenter $ withDefAttr clientMessageAttr $
-                     txt "n:new d:delete"
+                     txt "a:add d:delete"
          ]
 
 renderAttachmentItem :: Bool -> AttachmentData -> Widget Name

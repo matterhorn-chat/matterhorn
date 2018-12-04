@@ -32,7 +32,7 @@ onEventAttachmentList e =
     case e of
         V.EvKey V.KEsc [] ->
             setMode Main
-        V.EvKey (V.KChar 'n') [] -> do
+        V.EvKey (V.KChar 'a') [] -> do
             showAttachmentFileBrowser
         V.EvKey (V.KChar 'd') [] -> do
             -- Delete the selected element and update the list
