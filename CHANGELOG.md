@@ -1,4 +1,148 @@
 
+50200.1.0
+=========
+
+This release contains many new features and changes. Please read
+carefully!
+
+New features:
+
+ * Matterhorn is now supported on CentOS 7. See the GitHub release tag
+   for a prebuilt CentOS 7 binary.
+ * Matterhorn's channel sidebar has changed significantly:
+   * Matterhorn now only shows recently-active DM channels in the
+     sidebar rather than showing all users. This change brings
+     Matterhorn closer to the behavior of the official web client and
+     reduces clutter. However, this change may be disorienting since
+     previously all users were shown in the sidebar. To begin a chat
+     with a user absent from your sidebar, use the `/msg` command.
+   * The sidebar channel group headings have been renamed to reflect the
+     new changes and to match those of the official web client.
+   * Group DM channels are now displayed in the new Direct Messages
+     section along with one-on-one DM channels.
+   * Each channel group heading now displays an asterisk if any channels
+     in that group have unread activity.
+ * The autocompletion user interface has been dramatically improved.
+   * The command completion UI now appears automatically if the user
+     types a slash at the beginning of the prompt. Any text typed after
+     the slash is matched case-insensitively on all client-side command
+     names and descriptions, with a preference for matching command
+     names. Tab then cycles through the displayed alternatives.
+   * The user completion UI now appears automatically if the user enters
+     a user sigil ("@"). Text typed after the sigil searches usernames,
+     nicknames, and full names. Users in the current channel appear
+     first and users not in the current channel appear next, marked with
+     an asterisk and a help hint. Tab cycles through completion of the
+     alternatives.
+   * The channel completion UI now appears automatically if the user
+     enters a channel sigil ("~"). Text typed after the sigil searches
+     channel names, headers, and purposes. Channels of which the user
+     is a member are listed first, with other channels following. Tab
+     cycles through completion of the alternatives.
+   * The fenced code block language name completion UI now appears
+     automatically if the user types three backticks to begin a code
+     block. Text following the backticks searches known language names
+     case-insensitively with a preference for prefix match. Tab cycles
+     through the alternatives.
+ * Matterhorn now supports adding attachments to posts:
+   * The default binding of `C-x` shows a file browser.
+   * `Enter` in the file browser selects a regular file for attachment
+     (or, if used on a directory, navigates to that directory in the
+     browser).
+   * The default cancellation binding of `Esc` closes the browser.
+   * The default binding of `o` opens the selected browser entry using
+     the URL opening command.
+   * Once a file is attached, an attachment count is displayed above the
+     message editor.
+   * Pressing `C-x` again will open the attachment list for the current
+     post, where existing attachments can be removed (`d`) or new ones
+     can be added (`a`).
+ * The channel selection mode (`C-g`) user input is now performed with a
+   line editor, meaning that all of the text-editing keybindings that
+   are supported in the message editor are now supported in channel
+   selection mode.
+ * Channel sidebar cycling keys (`C-n`, `C-p`) now cycle through all
+   channels including DM channels, not just non-DM channels as before.
+
+New commands:
+
+ * `/reconnect`: forces a disconnection and reconnection of Matterhorn's
+   websocket connection in case of network connection trouble.
+   Ordinarily Matterhorn will time out and determine that its connection
+   needs to be reestablished, but this command may be useful for other
+   situations.
+ * `/hide`: hides the current single-user or group direct message
+   channel from the sidebar. The channel will reappear later if new
+   messages arrive in the channel.
+
+New key events:
+
+  * `show-attachment-list` (default `C-x`): show the attachment list or
+    file browser to attach a file to the current post.
+  * `add-to-attachment-list` (default `a`): in the attachment list, open
+    the file browser to select an additional file to attach to the
+    current post.
+  * `delete-from-attachment-list` (default `d`): in the attachment list,
+    delete the selected pending attachment. (This does not affect the
+    original disk file.)
+  * `open-attachment` (default `o`): in the attachment list or file
+    browser, open the selected file or attachment with the URL opening
+    command, if one is configured.
+
+New theme attributes:
+
+ * `fileBrowser`: the base attribute for the attachment file browser.
+ * `fileBrowser.currentDirectory`: the attribute for the file browser's
+    heading displaying its working directory.
+ * `fileBrowser.selectionInfo`: the attribute for the file browser's
+    footer displaying information about the selected file or directory.
+ * `fileBrowser.directory`: the attribute used for directories in the
+    file browser.
+ * `fileBrowser.block`: the attribute used for block devices in the file
+    browser.
+ * `fileBrowser.regular`: the attribute used for regular files in the
+    file browser.
+ * `fileBrowser.char`: the attribute used for character devices in the
+    file browser.
+ * `fileBrowser.pipe`: the attribute used for named pipes in the file
+    browser.
+ * `fileBrowser.symlink`: the attribute used for symbolic links in the
+    file browser.
+ * `fileBrowser.unixSocket`: the attribute used for Unix sockets in the
+    file browser.
+
+New command-line options:
+
+ * `-i`/`--ignore-config`: start Matterhorn with no configuration, i.e.,
+   ignore the default configuration.
+
+Performance improvements:
+
+ * Matterhorn now renders its user interface more efficiently, resulting
+   in improved input latency, especially on larger window sizes.
+ * Matterhorn now makes fewer requests on startup, resulting in lower
+   server API burden and improved startup performance.
+ * Message username and channel name highlighting is now more efficient.
+
+Bug fixes:
+
+ * Username highlighting in messages now supports usernames containing
+   periods and underscores (#373)
+ * Matterhorn will now ask for a keypress if an interactive URL opener
+   exits with a non-zero exit status, to allow the user to observe any
+   error output before returning to Matterhorn (#462)
+ * `/group-msg` now supports username arguments with sigils.
+ * Matterhorn now properly updates channel view timestamps under the
+   right conditions (#449)
+ * The bundled `notify` script now uses `bash`, not `sh`, to get
+   extended `[` functionality.
+
+Miscellaneous:
+
+ * The help interface now takes up the entire screen when it is active.
+ * The user list overlay for `/msg` now respects the direct message
+   restriction server setting (#378).
+
 50200.0.0
 =========
 
