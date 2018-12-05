@@ -12,7 +12,7 @@ import qualified Brick.Widgets.List as L
 import           Data.Char ( isSpace )
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
-import           Data.List ( sort, sortBy, partition )
+import           Data.List ( sortBy, partition )
 import qualified Data.Map as M
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T

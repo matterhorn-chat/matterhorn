@@ -41,7 +41,6 @@ import           Themes
 import           TimeUtils ( justAfter, justBefore )
 import           Types
 import           Types.KeyEvents
-import           Types.Messages ( msgURLs )
 
 
 previewFromInput :: Maybe MessageType -> UserId -> Text -> Maybe Message

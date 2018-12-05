@@ -11,7 +11,6 @@ import           Brick.Widgets.List
 import           Brick.Widgets.Center
 import           Brick.Widgets.Border
 import qualified Brick.Widgets.FileBrowser as FB
-import           Lens.Micro.Platform ( (^.) )
 
 import           Types
 import           Types.KeyEvents
