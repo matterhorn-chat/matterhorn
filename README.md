@@ -135,6 +135,15 @@ To enable spell-checking in the message editor, install Aspell and set
 choice of master dictionary, set the `aspellDictionary` option to the
 name of the dictionary you'd like to use.
 
+To attach a file to the post being edited, use the default binding of
+`C-x`. The window that appears will let you browse the filesystem to
+find a file to attach. In this window, `o` opens the selected file with
+your URL open command to let you preview your choice, `Enter` enters the
+selected directory or selects the current file for attachment, and arrow
+keys change selection. Once you've attached a file, you'll see the text
+`(1 attachment)` above your message editor. You can attach additional
+files or remove existing attachments by pressing `C-x` again.
+
 # Features
 
 * Channel creation, deletion, and membership management commands
