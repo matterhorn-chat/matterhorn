@@ -147,7 +147,6 @@ defaultBindings ev =
         ReplyMessageEvent   -> [ key 'r' ]
         OpenMessageURLEvent -> [ key 'o' ]
 
-        AddNewAttachmentEvent     -> [ ctrl (key 'x') ]
         AttachmentListAddEvent    -> [ key 'a' ]
         AttachmentListDeleteEvent -> [ key 'd' ]
         AttachmentOpenEvent       -> [ key 'o' ]
