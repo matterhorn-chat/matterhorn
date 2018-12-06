@@ -1,4 +1,11 @@
 
+50200.1.1
+=========
+
+Bug fixes:
+ * The file browser now deals gracefully with directories containing
+   broken symlinks.
+
 50200.1.0
 =========
 
