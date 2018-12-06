@@ -14,6 +14,7 @@ import           Control.Monad ( void )
 import qualified Brick.Widgets.FileBrowser as FB
 import qualified Brick.Widgets.List as L
 import qualified Data.ByteString as BS
+import qualified Data.Text as T
 import qualified Data.Vector as Vector
 import qualified Graphics.Vty as V
 import           Lens.Micro.Platform ( (%=), to )
@@ -81,6 +82,12 @@ onEventBrowseFile e = do
             handleKeyboardEvent attachmentBrowseKeybindings handleFileBrowserEvent e
         True ->
             handleFileBrowserEvent e
+
+    b' <- use (csEditState.cedFileBrowser)
+    case FB.fileBrowserException b' of
+        Nothing -> return ()
+        Just ex -> do
+            mhLog LogError $ T.pack $ "FileBrowser exception: " <> show ex
 
 cancelAttachmentBrowse :: MH ()
 cancelAttachmentBrowse = do
