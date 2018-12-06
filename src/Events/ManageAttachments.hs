@@ -100,35 +100,35 @@ handleFileBrowserEvent :: V.Event -> MH ()
 handleFileBrowserEvent e = do
     mhHandleEventLensed (csEditState.cedFileBrowser) FB.handleFileBrowserEvent e
     b <- use (csEditState.cedFileBrowser)
+
     -- TODO: Check file browser exception state
-    case FB.fileBrowserSelection b of
-        Nothing -> return ()
-        Just entry -> do
-            -- Is the entry already present? If so, ignore the selection.
-            es <- use (csEditState.cedAttachmentList.L.listElementsL)
-            let matches = (== (FB.fileInfoFilePath entry)) .
-                          FB.fileInfoFilePath .
-                          attachmentDataFileInfo
-            case Vector.find matches es of
-                Just _ -> return ()
-                Nothing -> do
-                    let path = FB.fileInfoFilePath entry
-                    readResult <- liftIO $ E.try $ BS.readFile path
-                    setMode ManageAttachments
-                    case readResult of
-                        Left (_::E.SomeException) ->
-                            -- TODO: report the error
-                            return ()
-                        Right bytes -> do
-                            let a = AttachmentData { attachmentDataFileInfo = entry
-                                                   , attachmentDataBytes = bytes
-                                                   }
-                            oldIdx <- use (csEditState.cedAttachmentList.L.listSelectedL)
-                            let newIdx = if Vector.null es
-                                         then Just 0
-                                         else oldIdx
-                            csEditState.cedAttachmentList %= L.listReplace (Vector.snoc es a) newIdx
-                            setMode Main
+    let entries = FB.fileBrowserSelection b
+    forM_ entries $ \entry -> do
+        -- Is the entry already present? If so, ignore the selection.
+        es <- use (csEditState.cedAttachmentList.L.listElementsL)
+        let matches = (== (FB.fileInfoFilePath entry)) .
+                      FB.fileInfoFilePath .
+                      attachmentDataFileInfo
+        case Vector.find matches es of
+            Just _ -> return ()
+            Nothing -> do
+                let path = FB.fileInfoFilePath entry
+                readResult <- liftIO $ E.try $ BS.readFile path
+                case readResult of
+                    Left (_::E.SomeException) ->
+                        -- TODO: report the error
+                        return ()
+                    Right bytes -> do
+                        let a = AttachmentData { attachmentDataFileInfo = entry
+                                               , attachmentDataBytes = bytes
+                                               }
+                        oldIdx <- use (csEditState.cedAttachmentList.L.listSelectedL)
+                        let newIdx = if Vector.null es
+                                     then Just 0
+                                     else oldIdx
+                        csEditState.cedAttachmentList %= L.listReplace (Vector.snoc es a) newIdx
+
+    when (not $ null entries) $ setMode Main
 
 deleteSelectedAttachment :: MH ()
 deleteSelectedAttachment = do

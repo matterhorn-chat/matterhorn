@@ -867,7 +867,7 @@ data AttachmentData =
     AttachmentData { attachmentDataFileInfo :: FB.FileInfo
                    , attachmentDataBytes :: BS.ByteString
                    }
-                   deriving (Eq, Show, Read)
+                   deriving (Eq, Show)
 
 -- | The input mode.
 data EditMode =
