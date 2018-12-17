@@ -121,7 +121,7 @@ commandList =
     NoArg $ \ () ->
         enterChannelInviteUserList
 
-  , Cmd "msg" "Chat with a user privately"
+  , Cmd "msg" "Chat with a user privately via a DM channel (will prompt for the user)"
     NoArg $ \ () ->
         enterDMSearchUserList
 
@@ -148,6 +148,12 @@ commandList =
   , Cmd "remove-user" "Remove a user from the current channel"
     (TokenArg "username" NoArg) $ \ (uname, ()) ->
         removeUserFromCurrentChannel uname
+
+  , Cmd "user" "Show users to initiate a private DM chat channel"
+    -- n.b. this is identical to "msg", but is provided as an
+    -- alternative mental model for useability.
+    NoArg $ \ () ->
+        enterDMSearchUserList
 
   , Cmd "message-preview" "Toggle preview of the current message" NoArg $ \_ ->
         toggleMessagePreview
