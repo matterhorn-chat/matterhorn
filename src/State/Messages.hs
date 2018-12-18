@@ -296,14 +296,24 @@ addObtainedMessages cId reqCnt posts = do
 -- existing UnknownGap entries and should be called when those are
 -- irrelevant.
 --
--- The boolean argument indicates whether this function should schedule
--- a fetch for any mentioned users in the message. This is provided
--- so that callers can batch this operation if a large collection of
--- messages is being added together, in which case we don't want this
--- function to schedule a single request per message (worst case). If
--- you're calling this as part of scrollback processing, you should pass
--- False. Otherwise if you're adding only a single message, you should
--- pass True.
+-- The first boolean argument ('fetchMentionedUsers') indicates
+-- whether this function should schedule a fetch for any mentioned
+-- users in the message. This is provided so that callers can batch
+-- this operation if a large collection of messages is being added
+-- together, in which case we don't want this function to schedule a
+-- single request per message (worst case). If you're calling this as
+-- part of scrollback processing, you should pass False. Otherwise if
+-- you're adding only a single message, you should pass True.
+--
+-- The second boolean argument ('fetchAuthor') is similar to the first
+-- boolean argument but it refers to the author of the message instead
+-- of any user mentions within the message body.
+--
+-- The third argument ('newPostData') indicates whether this message
+-- is being added as part of a fetch of old messages (e.g. scrollback)
+-- or if ti is a new message and affects things like whether
+-- notifications are generated and if the "New Messages" marker gets
+-- updated.
 addMessageToState :: Bool -> Bool -> PostToAdd -> MH PostProcessMessageAdd
 addMessageToState fetchMentionedUsers fetchAuthor newPostData = do
     let (new, wasMentioned) = case newPostData of
