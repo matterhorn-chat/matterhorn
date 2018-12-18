@@ -253,3 +253,7 @@ should consider to make submitting patches easier for all concerned:
   * http://www.nerdyweekly.com/posts/enable-italic-text-vim-tmux-gnome-terminal/
   * https://medium.com/@dubistkomisch/how-to-actually-get-italics-and-true-colour-to-work-in-iterm-tmux-vim-9ebe55ebc2be
   * https://github.com/tmux/tmux/blob/2.1/FAQ#L355-L383
+  
+* Q: I am seeing malformed characters when I run matterhorn in my terminal. What could be causing this?
+* A: Some terminal emulators cannot handle the extra escaping that occurs when the URL hyperlinking mode
+  is enabled. Try setting `hyperlinkUrls = False` in your `config.ini` file.
