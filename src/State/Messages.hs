@@ -213,10 +213,10 @@ addObtainedMessages cId reqCnt posts = do
             -- location, so adding the gap here would cause an
             -- infinite update loop.
 
-            addingAtEnd = maybe True ((<=) latestDate) $
+            addingAtEnd = maybe True (latestDate >=) $
                           (^.mDate) <$> getLatestPostMsg localMessages
 
-            addingAtStart = maybe True ((>=) earliestDate) $
+            addingAtStart = maybe True (earliestDate <=) $
                             (^.mDate) <$> getEarliestPostMsg localMessages
             removeStart = if addingAtStart && noMoreBefore then Nothing else Just (MessagePostId earliestPId)
             removeEnd = if addingAtEnd then Nothing else Just (MessagePostId latestPId)
