@@ -161,8 +161,12 @@ addNewPostedMessage :: PostToAdd -> MH ()
 addNewPostedMessage p =
     addMessageToState True True p >>= postProcessMessageAdd
 
-addObtainedMessages :: ChannelId -> Int -> Posts -> MH PostProcessMessageAdd
-addObtainedMessages cId reqCnt posts = do
+-- | Adds the set of Posts to the indicated channel.  The Posts must
+-- all be for the specified Channel.  The reqCnt argument indicates
+-- how many posts were requested, which will determine whether a gap
+-- message is added to either end of the posts list or not.
+addObtainedMessages :: ChannelId -> Int -> Bool -> Posts -> MH PostProcessMessageAdd
+addObtainedMessages cId reqCnt reqLatest posts =
   if null $ posts^.postsOrderL
   then return NoAction
   else
@@ -219,10 +223,10 @@ addObtainedMessages cId reqCnt posts = do
             addingAtStart = maybe True (earliestDate <=) $
                             (^.mDate) <$> getEarliestPostMsg localMessages
             removeStart = if addingAtStart && noMoreBefore then Nothing else Just (MessagePostId earliestPId)
-            removeEnd = if addingAtEnd then Nothing else Just (MessagePostId latestPId)
+            removeEnd = if reqLatest || (addingAtEnd && noMoreAfter) then Nothing else Just (MessagePostId latestPId)
 
             noMoreBefore = reqCnt < 0 && length pIdList < (-reqCnt)
-            noMoreAfter = reqCnt > 0 && length pIdList < reqCnt
+            noMoreAfter = reqLatest || reqCnt > 0 && length pIdList < reqCnt
 
         -- The post map returned by the server will *already* have
         -- all thread messages for each post that is part of a
@@ -266,7 +270,7 @@ addObtainedMessages cId reqCnt posts = do
                in csChannels %= modifyChannelById cId
                        (ccContents.cdMessages %~ addMessage gapMsg)
 
-        unless (latestPId `elem` dupPIds || addingAtEnd || noMoreAfter) $
+        unless (latestPId `elem` dupPIds || {- addingAtEnd || -} noMoreAfter) $
                let gapMsg = newGapMessage (justAfter latestDate)
                in csChannels %= modifyChannelById cId
                                  (ccContents.cdMessages %~ addMessage gapMsg)
@@ -567,10 +571,13 @@ asyncFetchMoreMessages = do
                       , MM.postQueryPerPage = Just pageAmount
                       , MM.postQueryBefore = sndOldestId
                       }
+            reqLatest = MM.postQueryBefore query == Nothing &&
+                        MM.postQueryPage query == Just 0
         in doAsyncChannelMM Preempt cId
                (\s _ c -> MM.mmGetPostsForChannel c query s)
                (\c p -> Just $ do
-                   addObtainedMessages c (-pageAmount) p >>= postProcessMessageAdd
+                   pp <- addObtainedMessages c (-pageAmount) reqLatest p
+                   postProcessMessageAdd pp
                    mh $ invalidateCacheEntry (ChannelMessages cId))
       where
         secondOldestContiguous msgs =
@@ -611,11 +618,13 @@ fetchVisibleIfNeeded = do
                                Just (MessagePostId pid) -> query { MM.postQueryBefore = Just pid }
                                _ -> query
                 op = \s _ c -> MM.mmGetPostsForChannel c finalQuery s
+                reqLatest = MM.postQueryBefore finalQuery == Nothing &&
+                            MM.postQueryPage finalQuery == Just 0
             in when ((not $ chan^.ccContents.cdFetchPending) && gapInDisplayable) $ do
                       csChannel(cId).ccContents.cdFetchPending .= True
                       doAsyncChannelMM Preempt cId op
                           (\c p -> Just $ do
-                              addObtainedMessages c (-numToReq) p >>= postProcessMessageAdd
+                              addObtainedMessages c (-numToReq) reqLatest p >>= postProcessMessageAdd
                               csChannel(c).ccContents.cdFetchPending .= False)
 
 asyncFetchAttachments :: Post -> MH ()
