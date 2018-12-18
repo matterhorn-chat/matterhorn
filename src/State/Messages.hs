@@ -379,7 +379,10 @@ addMessageToState fetchMentionedUsers fetchAuthor newPostData = do
                        (adjustUpdated new) .
                        (\c -> if currCId == cId
                               then c
-                              else updateNewMessageIndicator new c) .
+                              else case newPostData of
+                                     OldPost _ -> c
+                                     RecentPost _ _ ->
+                                       updateNewMessageIndicator new c) .
                        (\c -> if wasMentioned
                               then c & ccInfo.cdMentionCount %~ succ
                               else c)
