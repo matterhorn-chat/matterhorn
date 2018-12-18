@@ -163,6 +163,9 @@ addNewPostedMessage p =
 
 addObtainedMessages :: ChannelId -> Int -> Posts -> MH PostProcessMessageAdd
 addObtainedMessages cId reqCnt posts = do
+  if null $ posts^.postsOrderL
+  then return NoAction
+  else
     -- Adding a block of server-provided messages, which are known to
     -- be contiguous.  Locally this may overlap with some UnknownGap
     -- messages, which can therefore be removed.  Alternatively the
