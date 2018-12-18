@@ -515,36 +515,64 @@ maybePostUsername st p =
 -- received in this mode are not normally shown, but this explicit
 -- user-driven fetch should be displayed, so this also invalidates the
 -- cache.
+--
+-- This function assumes it is being called to add "older" messages to
+-- the message history (i.e. near the beginning of the known
+-- messages).  It will normally try to overlap the fetch with the
+-- known existing messages so that when the fetch results are
+-- processed (which should be a contiguous set of messages as provided
+-- by the server) there will be an overlap with existing messages; if
+-- there is no overlap, then a special "gap" must be inserted in the
+-- area between the existing messages and the newly fetched messages
+-- to indicate that this client does not know if there are missing
+-- messages there or not.
+--
+-- In order to achieve an overlap, this code attempts to get the
+-- second oldest messages as the message ID to pass to the server as
+-- the "older than" marker ('postQueryBefore'), so that the oldest
+-- message here overlaps with the fetched results to ensure no gap
+-- needs to be inserted.  However, there may already be a gap between
+-- the oldest and second-oldest messages, so this code must actually
+-- search for the first set of two *contiguous* messages it is aware
+-- of to avoid adding additional gaps. (It's OK if gaps are added, but
+-- the user must explicitly request a check for messages in order to
+-- eliminate them, so it's better to avoid adding them in the first
+-- place).  This code is nearly always used to extend the older
+-- history of a channel that information has already been retrieved
+-- from, so it's almost certain that there are at least two contiguous
+-- messages to use as a starting point, but exceptions are new
+-- channels and empty channels.
 asyncFetchMoreMessages :: MH ()
 asyncFetchMoreMessages = do
     cId  <- use csCurrentChannelId
     withChannel cId $ \chan ->
         let offset = max 0 $ length (chan^.ccContents.cdMessages) - 2
-            -- Fetch more messages prior to any existing messages, but
-            -- attempt to overlap with existing messages for
-            -- determining contiguity or gaps.  Back up two messages
-            -- and request from there backward, which should include
-            -- the last message in the response.  This is an attempt
-            -- to fetch *more* messages, so it's expected that there
-            -- are at least 2 messages already here, but in case there
-            -- aren't, just get another page from roughly the right
-            -- location.
-            first' = splitMessagesOn (isJust . messagePostId) (chan^.ccContents.cdMessages)
-            second' = splitMessagesOn (isJust . messagePostId) $ snd $ snd first'
+            page = offset `div` pageAmount
+            sndOldestId = secondOldestContiguous (chan^.ccContents.cdMessages)
             query = MM.defaultPostQuery
-                      { MM.postQueryPage = Just (offset `div` pageAmount)
+                      { MM.postQueryPage = (const 0 <$> sndOldestId) <|> Just page
                       , MM.postQueryPerPage = Just pageAmount
+                      , MM.postQueryBefore = sndOldestId
                       }
-                    & \q -> case (fst first', fst second' >>= messagePostId) of
-                             (Just _, Just i) -> q { MM.postQueryBefore = Just i
-                                                   , MM.postQueryPage   = Just 0
-                                                   }
-                             _ -> q
         in doAsyncChannelMM Preempt cId
                (\s _ c -> MM.mmGetPostsForChannel c query s)
                (\c p -> Just $ do
                    addObtainedMessages c (-pageAmount) p >>= postProcessMessageAdd
                    mh $ invalidateCacheEntry (ChannelMessages cId))
+      where
+        secondOldestContiguous msgs =
+          let oldest = splitMessagesOn isPostMessage msgs
+              older = splitMessagesOn (\m -> isPostMessage m || isGap m) (newerThan oldest)
+              newerThan = snd . snd
+          in if length msgs < 2
+             then Nothing
+             else case (fst oldest, fst older) of
+                    (Just _, Just almostOldest) ->
+                      if isGap almostOldest
+                      then secondOldestContiguous $ newerThan older
+                      else messagePostId almostOldest
+                    _ -> secondOldestContiguous $ newerThan older
+
 
 fetchVisibleIfNeeded :: MH ()
 fetchVisibleIfNeeded = do
