@@ -8,16 +8,20 @@ module State.PostListOverlay
   )
 where
 
+import           GHC.Exts ( IsList(..) )
 import           Prelude ()
 import           Prelude.MH
 
+import qualified Data.Foldable as F
 import qualified Data.Text as T
 import           Lens.Micro.Platform ( (.=) )
 import           Network.Mattermost.Endpoints
 import           Network.Mattermost.Types
 
+import           State.Channels
 import           State.Common
 import           State.MessageSelect
+import           State.Messages ( addObtainedMessages )
 import           Types
 import           Types.DirectionalSeq (emptyDirSeq)
 
@@ -37,31 +41,42 @@ exitPostListMode = do
   csPostListOverlay.postListSelected .= Nothing
   setMode Main
 
--- | Create a PostListOverlay with flagged messages from the server.
-enterFlaggedPostListMode :: MH ()
-enterFlaggedPostListMode = do
+
+createPostList :: PostListContents -> (Session -> IO Posts) -> MH ()
+createPostList contentsType fetchOp = do
   session <- getSession
   doAsyncWith Preempt $ do
-    posts <- mmGetListOfFlaggedPosts UserMe defaultFlaggedPostsQuery session
+    posts <- fetchOp session
     return $ Just $ do
       messages <- fst <$> installMessagesFromPosts posts
-      enterPostListMode PostListFlagged messages
+      -- n.b. do not use addNewPostedMessage because these messages
+      -- are not new, and so no notifications or channel highlighting
+      -- or other post-processing should be performed.
+      let plist = F.toList $ postsPosts posts
+          postsSpec p = Posts { postsPosts = fromList [(postId p, p)]
+                              , postsOrder = fromList [postId p]
+                              }
+      mapM_ (\p -> addObtainedMessages (postChannelId p) 0 False $ postsSpec p) plist
+      enterPostListMode contentsType messages
+
+
+-- | Create a PostListOverlay with flagged messages from the server.
+enterFlaggedPostListMode :: MH ()
+enterFlaggedPostListMode = createPostList PostListFlagged $
+                           mmGetListOfFlaggedPosts UserMe defaultFlaggedPostsQuery
+
 
 -- | Create a PostListOverlay with post search result messages from the
 -- server.
 enterSearchResultPostListMode :: Text -> MH ()
-enterSearchResultPostListMode terms = do
-  session <- getSession
-  tId <- gets myTeamId
-  case T.null $ T.strip terms of
-      True -> postInfoMessage "Search command requires at least one search term."
-      False -> do
-        enterPostListMode (PostListSearch terms True) noMessages
-        doAsyncWith Preempt $ do
-          posts <- mmSearchForTeamPosts tId (SearchPosts terms False) session
-          return $ Just $ do
-            messages <- fst <$> installMessagesFromPosts posts
-            enterPostListMode (PostListSearch terms False) messages
+enterSearchResultPostListMode terms
+  | T.null (T.strip terms) = postInfoMessage "Search command requires at least one search term."
+  | otherwise = do
+      enterPostListMode (PostListSearch terms True) noMessages
+      tId <- gets myTeamId
+      createPostList (PostListSearch terms False) $
+        mmSearchForTeamPosts tId (SearchPosts terms False)
+
 
 -- | Move the selection up in the PostListOverlay, which corresponds
 -- to finding a chronologically /newer/ message.
