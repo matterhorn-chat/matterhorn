@@ -96,6 +96,7 @@ import           Prelude.MH
 
 import           Cheapskate ( Blocks )
 import qualified Cheapskate as C
+import           Control.Monad
 import qualified Data.Foldable as F
 import           Data.Hashable ( Hashable )
 import qualified Data.Map.Strict as Map
@@ -381,72 +382,49 @@ findMessage mid msgs =
     findIndexR (\m -> m^.mMessageId == Just mid) (dseq msgs)
     >>= Just . Seq.index (dseq msgs)
 
+data MoveDir = MoveToNext | MoveToPrev
+
 -- | Look forward for the first Message with an ID that follows the
 -- specified PostId
 getNextMessageId :: Maybe MessageId -> Messages -> Maybe MessageId
-getNextMessageId = getRelMessageId foldl
+getNextMessageId mId =
+  let isMId = const ((==) mId . _mMessageId) <$> mId
+  in _mMessageId <=< getRelMessage MoveToNext isMId
 
 -- | Look backwards for the first Message with an ID that comes before
 -- the specified MessageId.
 getPrevMessageId :: Maybe MessageId -> Messages -> Maybe MessageId
-getPrevMessageId = getRelMessageId $ foldr . flip
+getPrevMessageId mId =
+  let isMId = const ((==) mId . _mMessageId) <$> mId
+  in _mMessageId <=< getRelMessage MoveToPrev isMId
 
 -- | Look forward for the first Message with an ID that follows the
 -- specified PostId
 getNextPostId :: Maybe PostId -> Messages -> Maybe PostId
-getNextPostId = getRelPostId foldl
+getNextPostId pid =
+  let isPId = const ((==) pid . messagePostId) <$> pid
+  in messagePostId <=< getRelMessage MoveToNext isPId
 
 -- | Look backwards for the first Post with an ID that comes before
 -- the specified PostId.
 getPrevPostId :: Maybe PostId -> Messages -> Maybe PostId
-getPrevPostId = getRelPostId $ foldr . flip
+getPrevPostId pid =
+  let isPId = const ((==) pid . messagePostId) <$> pid
+  in messagePostId <=< getRelMessage MoveToPrev isPId
 
--- | Find the next MessageId after the specified MessageId (if there is
--- one) by folding in the specified direction
-getRelMessageId :: ((Either MessageId (Maybe MessageId)
-                         -> Message
-                         -> Either MessageId (Maybe MessageId))
-                   -> Either MessageId (Maybe MessageId)
-                   -> Messages
-                   -> Either MessageId (Maybe MessageId))
-                -> Maybe MessageId
-                -> Messages
-                -> Maybe MessageId
-getRelMessageId folD jp = case jp of
-                         Nothing -> \msgs -> (getLatestPostMsg msgs >>= _mMessageId)
-                         Just p -> either (const Nothing) id . folD fnd (Left p)
-    where fnd = either fndp fndnext
-          fndp c v = if v^.mMessageId == Just c then Right Nothing else Left c
-          idOfPost m = if m^.mDeleted then Nothing else m^.mMessageId
-          fndnext n m = Right (n <|> idOfPost m)
+-- | Internal worker function to return a different user message in
+-- relation to either the latest point or a specific message.
+getRelMessage :: MoveDir -> Maybe (Message -> Bool) -> Messages -> Maybe Message
+getRelMessage _ Nothing msgs = getLatestPostMsg msgs
+getRelMessage dir (Just matchFun) msgs =
+  let (_, (before, after)) = splitMessagesOn matchFun msgs
+      nextUseful :: SeqDirection dir =>
+                    DirectionalSeq dir Message -> Maybe Message
+      nextUseful = withDirSeqHead id . filterMessages validSelectableMessage
+  in case dir of
+    MoveToNext -> nextUseful after
+    MoveToPrev -> nextUseful before
 
--- | Find the next PostId after the specified PostId (if there is
--- one) by folding in the specified direction
-getRelPostId :: ((Either PostId (Maybe PostId)
-                      -> Message
-                      -> Either PostId (Maybe PostId))
-                -> Either PostId (Maybe PostId)
-                -> Messages
-                -> Either PostId (Maybe PostId))
-             -> Maybe PostId
-             -> Messages
-             -> Maybe PostId
-getRelPostId folD jp = case jp of
-                         Nothing -> \msgs -> do
-                             latest <- getLatestPostMsg msgs
-                             mId <- latest^.mMessageId
-                             case mId of
-                                 MessagePostId pId -> return pId
-                                 _ -> Nothing
-                         Just p -> either (const Nothing) id . folD fnd (Left p)
-    where fnd = either fndp fndnext
-          fndp c v = if v^.mMessageId == Just (MessagePostId c) then Right Nothing else Left c
-          idOfPost m = if m^.mDeleted
-                       then Nothing
-                       else case m^.mMessageId of
-                           Just (MessagePostId pId) -> Just pId
-                           _ -> Nothing
-          fndnext n m = Right (n <|> idOfPost m)
 
 -- | Find the most recent message that is a Post (as opposed to a
 -- local message) (if any).
