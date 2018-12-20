@@ -22,7 +22,8 @@ import           Network.Mattermost.Types
 import           State.Channels
 import           State.Common
 import           State.MessageSelect
-import           State.Messages ( addObtainedMessages )
+import           State.Messages ( addObtainedMessages
+                                , asyncFetchMessagesSurrounding )
 import           Types
 import           Types.DirectionalSeq (emptyDirSeq)
 
@@ -32,8 +33,14 @@ import           Types.DirectionalSeq (emptyDirSeq)
 enterPostListMode ::  PostListContents -> Messages -> MH ()
 enterPostListMode contents msgs = do
   csPostListOverlay.postListPosts .= msgs
-  csPostListOverlay.postListSelected .= (getLatestPostMsg msgs >>= messagePostId)
+  let mlatest = getLatestPostMsg msgs
+      pId = mlatest >>= messagePostId
+      cId = mlatest >>= \m -> m^.mChannelId
+  csPostListOverlay.postListSelected .= pId
   setMode $ PostListOverlay contents
+  case (pId, cId) of
+    (Just p, Just c) -> asyncFetchMessagesSurrounding c p
+    _ -> return ()
 
 -- | Clear out the state of a PostListOverlay
 exitPostListMode :: MH ()
@@ -83,25 +90,37 @@ enterSearchResultPostListMode terms
 -- to finding a chronologically /newer/ message.
 postListSelectUp :: MH ()
 postListSelectUp = do
-  msgId <- use (csPostListOverlay.postListSelected)
+  selId <- use (csPostListOverlay.postListSelected)
   posts <- use (csPostListOverlay.postListPosts)
-  let nextId = (getNextPostId msgId posts)
-  case nextId of
+  let nextMsg = getNextMessage selId posts
+  case nextMsg of
     Nothing -> return ()
-    Just _ ->
-      csPostListOverlay.postListSelected .= nextId
+    Just m -> do
+      let pId = m^.mMessageId >>= messageIdPostId
+      csPostListOverlay.postListSelected .= pId
+      case (m^.mChannelId, pId) of
+        (Just c, Just p) -> asyncFetchMessagesSurrounding c p
+        o -> mhLog LogError
+             (T.pack $ "postListSelectUp" <>
+              " unable to get channel or post ID: " <> show o)
 
 -- | Move the selection down in the PostListOverlay, which corresponds
 -- to finding a chronologically /old/ message.
 postListSelectDown :: MH ()
 postListSelectDown = do
-  msgId <- use (csPostListOverlay.postListSelected)
+  selId <- use (csPostListOverlay.postListSelected)
   posts <- use (csPostListOverlay.postListPosts)
-  let prevId = (getPrevPostId msgId posts)
-  case prevId of
+  let prevMsg = getPrevMessage selId posts
+  case prevMsg of
     Nothing -> return ()
-    Just _ ->
-      csPostListOverlay.postListSelected .= prevId
+    Just m -> do
+      let pId = m^.mMessageId >>= messageIdPostId
+      csPostListOverlay.postListSelected .= pId
+      case (m^.mChannelId, pId) of
+        (Just c, Just p) -> asyncFetchMessagesSurrounding c p
+        o -> mhLog LogError
+             (T.pack $ "postListSelectDown" <>
+              " unable to get channel or post ID: " <> show o)
 
 -- | Unflag the post currently selected in the PostListOverlay, if any
 postListUnflagSelected :: MH ()

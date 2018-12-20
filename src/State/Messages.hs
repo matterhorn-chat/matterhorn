@@ -9,6 +9,7 @@ module State.Messages
   , addNewPostedMessage
   , addObtainedMessages
   , asyncFetchMoreMessages
+  , asyncFetchMessagesSurrounding
   , fetchVisibleIfNeeded
   , disconnectChannels
   )
@@ -593,6 +594,50 @@ asyncFetchMoreMessages = do
                       then secondOldestContiguous $ newerThan older
                       else messagePostId almostOldest
                     _ -> secondOldestContiguous $ newerThan older
+
+
+-- | Given a particular message ID, this fetches a few messages
+-- immediately before and after the specified message in order to
+-- establish some context for that message.  This is frequently used
+-- as a background operation when looking at search or flag results so
+-- that jumping to message select mode for one of those messages will
+-- show a bit of context (and it also prevents showing gap messages
+-- for adjacent targets).  Note that this fetch will add messages to
+-- the channel, but it performs no notifications or updates of
+-- new-unread indicators because it is assumed to be used for
+-- non-current (previously-seen) messages in background mode.
+asyncFetchMessagesSurrounding :: ChannelId -> PostId -> MH ()
+asyncFetchMessagesSurrounding cId pId = do
+    let query = MM.defaultPostQuery
+          { MM.postQueryBefore = Just pId
+          , MM.postQueryPerPage = Just reqAmt
+          }
+        reqAmt = 5  -- both before and after
+    doAsyncChannelMM Preempt cId
+      -- first get some messages before the target, no overlap
+      (\s _ c -> MM.mmGetPostsForChannel c query s)
+      (\c p -> Just $ do
+          let last2ndId = secondToLastPostId p
+          void $ addObtainedMessages c (-reqAmt) False p
+          mh $ invalidateCacheEntry (ChannelMessages cId)
+          -- now start 2nd from end of this fetch to fetch some
+          -- messages forward, also overlapping with this fetch and
+          -- the original message ID to eliminate all gaps in this
+          -- surrounding set of messages.
+          let query' = MM.defaultPostQuery
+                       { MM.postQueryAfter = last2ndId
+                       , MM.postQueryPerPage = Just $ reqAmt + 2
+                       }
+          doAsyncChannelMM Preempt cId
+            (\s' _ c' -> MM.mmGetPostsForChannel c' query' s')
+            (\c' p' -> Just $ do
+                void $ addObtainedMessages c' (reqAmt + 2) False p'
+                mh $ invalidateCacheEntry (ChannelMessages cId)
+            )
+      )
+      where secondToLastPostId posts =
+              let pl = toList $ postsOrder posts
+              in if length pl > 1 then Just $ last $ init pl else Nothing
 
 
 fetchVisibleIfNeeded :: MH ()
