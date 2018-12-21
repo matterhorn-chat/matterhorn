@@ -53,6 +53,7 @@ module Types.Messages
   , UserRef(..)
   , ReplyState(..)
   , clientMessageToMessage
+  , clientPostToMessage
   , newMessageOfType
     -- * Message Collections
   , Messages
@@ -104,6 +105,7 @@ import qualified Data.Foldable as F
 import           Data.Hashable ( Hashable )
 import qualified Data.Map.Strict as Map
 import           Data.Sequence as Seq
+import qualified Data.Set as S
 import           Data.Tuple
 import           Data.UUID ( UUID )
 import           GHC.Generics ( Generic )
@@ -114,6 +116,7 @@ import           Network.Mattermost.Types ( ChannelId, PostId, Post
 
 import           Types.DirectionalSeq
 import           Types.Posts
+import           Types.UserNames
 
 
 -- ----------------------------------------------------------------------
@@ -247,6 +250,36 @@ clientMessageToMessage cm = Message
   , _mFlagged       = False
   , _mChannelId     = Nothing
   }
+
+
+-- | Builds a message from a ClientPost and also returns the set of
+-- usernames mentioned in the text of the message.
+clientPostToMessage :: ClientPost -> (Message, S.Set Text)
+clientPostToMessage cp = (m, usernames)
+    where
+        usernames = findUsernames $ cp^.cpText
+        m = Message { _mText = cp^.cpText
+                    , _mMarkdownSource = cp^.cpMarkdownSource
+                    , _mUser =
+                        case cp^.cpUserOverride of
+                            Just n | cp^.cpType == NormalPost -> UserOverride (n <> "[BOT]")
+                            _ -> maybe NoUser UserI $ cp^.cpUser
+                    , _mDate = cp^.cpDate
+                    , _mType = CP $ cp^.cpType
+                    , _mPending = cp^.cpPending
+                    , _mDeleted = cp^.cpDeleted
+                    , _mAttachments = cp^.cpAttachments
+                    , _mInReplyToMsg =
+                        case cp^.cpInReplyToPost of
+                            Nothing  -> NotAReply
+                            Just pId -> InReplyTo pId
+                    , _mMessageId = Just $ MessagePostId $ cp^.cpPostId
+                    , _mReactions = cp^.cpReactions
+                    , _mOriginalPost = Just $ cp^.cpOriginalPost
+                    , _mFlagged = False
+                    , _mChannelId = Just $ cp^.cpChannelId
+                    }
+
 
 newMessageOfType :: Text -> MessageType -> ServerTime -> Message
 newMessageOfType text typ d = Message
