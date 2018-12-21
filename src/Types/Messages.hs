@@ -77,6 +77,7 @@ module Types.Messages
   , getPrevPostId
   , getEarliestPostMsg
   , getLatestPostMsg
+  , getEarliestSelectableMessage
   , getLatestSelectableMessage
   , findLatestUserMessage
   -- * Operations on any Message type
@@ -519,6 +520,14 @@ getLatestPostMsg msgs =
     case viewr $ dropWhileR (not . validUserMessage) (dseq msgs) of
       EmptyR -> Nothing
       _ :> m -> Just m
+
+-- | Find the oldest message that is a message with an ID.
+getEarliestSelectableMessage :: Messages -> Maybe Message
+getEarliestSelectableMessage msgs =
+    case viewl $ dropWhileL (not . validSelectableMessage) (dseq msgs) of
+      EmptyL -> Nothing
+      m :< _ -> Just m
+
 
 -- | Find the most recent message that is a message with an ID.
 getLatestSelectableMessage :: Messages -> Maybe Message

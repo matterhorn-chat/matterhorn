@@ -12,6 +12,8 @@ module State.MessageSelect
   , messageSelectUpBy
   , messageSelectDown
   , messageSelectDownBy
+  , messageSelectFirst
+  , messageSelectLast
   , deleteSelectedMessage
   , beginReplyCompose
   , beginEditMessage
@@ -164,6 +166,30 @@ messageSelectUpBy amt
     | amt <= 0 = return ()
     | otherwise =
       messageSelectUp >> messageSelectUpBy (amt - 1)
+
+messageSelectFirst :: MH ()
+messageSelectFirst = do
+    selected <- use (csMessageSelect.to selectMessageId)
+    case selected of
+        Just _ -> whenMode MessageSelect $ do
+            chanMsgs <- use (csCurrentChannel.ccContents.cdMessages)
+            case getEarliestSelectableMessage chanMsgs of
+              Just firstMsg ->
+                csMessageSelect .= MessageSelectState (firstMsg^.mMessageId <|> selected)
+              Nothing -> mhLog LogError "No first message found from current message?!"
+        _ -> return ()
+
+messageSelectLast :: MH ()
+messageSelectLast = do
+    selected <- use (csMessageSelect.to selectMessageId)
+    case selected of
+        Just _ -> whenMode MessageSelect $ do
+            chanMsgs <- use (csCurrentChannel.ccContents.cdMessages)
+            case getLatestSelectableMessage chanMsgs of
+              Just lastMsg ->
+                csMessageSelect .= MessageSelectState (lastMsg^.mMessageId <|> selected)
+              Nothing -> mhLog LogError "No last message found from current message?!"
+        _ -> return ()
 
 deleteSelectedMessage :: MH ()
 deleteSelectedMessage = do
