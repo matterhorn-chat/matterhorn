@@ -389,45 +389,45 @@ data MoveDir = MoveToNext | MoveToPrev
 -- | Look forward for the first Message with an ID that follows the
 -- specified Id and return it.  If no input Id supplied, get the
 -- latest (most recent chronologically) Message in the input set.
-getNextMessage :: Maybe PostId -> Messages -> Maybe Message
-getNextMessage pId =
-  let isPId = const ((==) pId . messagePostId) <$> pId
-  in getRelMessage MoveToNext isPId
+getNextMessage :: Maybe MessageId -> Messages -> Maybe Message
+getNextMessage mId =
+  let isMId = const ((==) mId . _mMessageId) <$> mId
+  in getRelMessage MoveToNext isMId
 
 -- | Look backward for the first Message with an ID that follows the
 -- specified MessageId and return it.  If no input MessageId supplied,
 -- get the latest (most recent chronologically) Message in the input
 -- set.
-getPrevMessage :: Maybe PostId -> Messages -> Maybe Message
-getPrevMessage pId =
-  let isPId = const ((==) pId . messagePostId) <$> pId
-  in getRelMessage MoveToPrev isPId
+getPrevMessage :: Maybe MessageId -> Messages -> Maybe Message
+getPrevMessage mId =
+  let isMId = const ((==) mId . _mMessageId) <$> mId
+  in getRelMessage MoveToPrev isMId
 
 -- | Look forward for the first Message with an ID that follows the
 -- specified MessageId and return that found Message's ID; if no input
 -- MessageId is specified, return the latest (most recent
 -- chronologically) MessageId (if any) in the input set.
 getNextMessageId :: Maybe MessageId -> Messages -> Maybe MessageId
-getNextMessageId mId = _mMessageId <=< getNextMessage (messageIdPostId =<< mId)
+getNextMessageId mId = _mMessageId <=< getNextMessage mId
 
 -- | Look backwards for the first Message with an ID that comes before
 -- the specified MessageId and return that found Message's ID; if no
 -- input MessageId is specified, return the latest (most recent
 -- chronologically) MessageId (if any) in the input set.
 getPrevMessageId :: Maybe MessageId -> Messages -> Maybe MessageId
-getPrevMessageId mId = _mMessageId <=< getPrevMessage (messageIdPostId =<< mId)
+getPrevMessageId mId = _mMessageId <=< getPrevMessage mId
 
 -- | Look forward for the first Message with an ID that follows the
 -- specified PostId and return that found Message's PostID; if no
 -- input PostId is specified, return the latest (most recent
 -- chronologically) PostId (if any) in the input set.
 getNextPostId :: Maybe PostId -> Messages -> Maybe PostId
-getNextPostId pid = messagePostId <=< getNextMessage pid
+getNextPostId pid = messagePostId <=< getNextMessage (MessagePostId <$> pid)
 
 -- | Look backwards for the first Post with an ID that comes before
 -- the specified PostId.
 getPrevPostId :: Maybe PostId -> Messages -> Maybe PostId
-getPrevPostId pid = messagePostId <=< getPrevMessage pid
+getPrevPostId pid = messagePostId <=< getPrevMessage (MessagePostId <$> pid)
 
 -- | Internal worker function to return a different user message in
 -- relation to either the latest point or a specific message.

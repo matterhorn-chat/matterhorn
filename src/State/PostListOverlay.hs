@@ -92,7 +92,7 @@ postListSelectUp :: MH ()
 postListSelectUp = do
   selId <- use (csPostListOverlay.postListSelected)
   posts <- use (csPostListOverlay.postListPosts)
-  let nextMsg = getNextMessage selId posts
+  let nextMsg = getNextMessage (MessagePostId <$> selId) posts
   case nextMsg of
     Nothing -> return ()
     Just m -> do
@@ -110,7 +110,7 @@ postListSelectDown :: MH ()
 postListSelectDown = do
   selId <- use (csPostListOverlay.postListSelected)
   posts <- use (csPostListOverlay.postListPosts)
-  let prevMsg = getPrevMessage selId posts
+  let prevMsg = getPrevMessage (MessagePostId <$> selId) posts
   case prevMsg of
     Nothing -> return ()
     Just m -> do

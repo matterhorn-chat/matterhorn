@@ -207,7 +207,10 @@ addObtainedMessages cId reqCnt reqLatest posts =
             -- do not signal action needed for notifications), and
             -- remove any gaps in the overlapping region.
 
-            newGapMessage d = newMessageOfType "Additional messages???" (C UnknownGap) d
+            newGapMessage d =
+              do uuid <- generateUUID  -- make these selectable
+                 return (newMessageOfType "Additional messages???" (C UnknownGap) d
+                         & mMessageId .~ Just (MessageUUID uuid))
 
             -- If this batch contains the latest known messages, do
             -- not add a following gap.  A gap at this point is added
@@ -267,14 +270,14 @@ addObtainedMessages cId reqCnt reqLatest posts =
         --         held messages (see note above re 'addingAtEnd').
         --      b. the amount returned was less than the amount requested
 
-        unless (earliestPId `elem` dupPIds || noMoreBefore) $
-               let gapMsg = newGapMessage (justBefore earliestDate)
-               in csChannels %= modifyChannelById cId
+        unless (earliestPId `elem` dupPIds || noMoreBefore) $ do
+               gapMsg <- newGapMessage (justBefore earliestDate)
+               csChannels %= modifyChannelById cId
                        (ccContents.cdMessages %~ addMessage gapMsg)
 
-        unless (latestPId `elem` dupPIds || {- addingAtEnd || -} noMoreAfter) $
-               let gapMsg = newGapMessage (justAfter latestDate)
-               in csChannels %= modifyChannelById cId
+        unless (latestPId `elem` dupPIds || {- addingAtEnd || -} noMoreAfter) $ do
+               gapMsg <- newGapMessage (justAfter latestDate)
+               csChannels %= modifyChannelById cId
                                  (ccContents.cdMessages %~ addMessage gapMsg)
 
         -- Now initiate fetches for use information for any
