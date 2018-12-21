@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiWayIf       #-}
 {-# LANGUAGE ParallelListComp #-}
 {-# LANGUAGE RecordWildCards  #-}
@@ -56,12 +57,13 @@ import           Types.Messages
 emptyHSet :: HighlightSet
 emptyHSet = HighlightSet Set.empty Set.empty mempty
 
-omitUsernameTypes :: [MessageType]
-omitUsernameTypes =
-    [ CP Join
-    , CP Leave
-    , CP TopicChange
-    ]
+omittedUsernameType :: MessageType -> Bool
+omittedUsernameType = \case
+  CP Join -> True
+  CP Leave -> True
+  CP TopicChange -> True
+  _ -> False
+
 
 -- The special string we use to indicate the placement of a styled
 -- indication that a message has been edited.
@@ -125,9 +127,7 @@ data MessageData = MessageData
 renderMessage :: MessageData -> Widget a
 renderMessage md@MessageData { mdMessage = msg, .. } =
     let msgUsr = case mdUserName of
-          Just u
-            | msg^.mType `elem` omitUsernameTypes -> Nothing
-            | otherwise -> Just u
+          Just u -> if omittedUsernameType (msg^.mType) then Nothing else Just u
           Nothing -> Nothing
         nameElems = case msgUsr of
           Just un
