@@ -48,10 +48,10 @@ import           Network.Mattermost.Lenses ( postEditAtL, postCreateAtL )
 import           Network.Mattermost.Types ( ServerTime(..) )
 
 import           Themes
-import           Types ( HighlightSet(..), userSigil, normalChannelSigil
-                       , isNameFragment, takeWhileNameFragment )
-import           Types.Posts
+import           Types ( HighlightSet(..), userSigil, normalChannelSigil )
 import           Types.Messages
+import           Types.Posts
+import           Types.UserNames ( isNameFragment, takeWhileNameFragment )
 
 
 emptyHSet :: HighlightSet

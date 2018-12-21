@@ -191,8 +191,6 @@ module Types
   , requestLogDestination
   , sendLogMessage
 
-  , isNameFragment
-
   , requestQuit
   , clientPostToMessage
   , getMessageForPostId
@@ -233,8 +231,6 @@ module Types
   , ChannelSet
   , getHighlightSet
 
-  , takeWhileNameFragment
-
   , module Types.Channels
   , module Types.Messages
   , module Types.Posts
@@ -253,7 +249,6 @@ import           Brick.BChan
 import           Brick.Widgets.Edit ( Editor, editor )
 import           Brick.Widgets.List ( List, list )
 import qualified Brick.Widgets.FileBrowser as FB
-import qualified Cheapskate as C
 import           Control.Concurrent ( ThreadId )
 import           Control.Concurrent.Async ( Async )
 import qualified Control.Concurrent.STM as STM
@@ -261,12 +256,11 @@ import           Control.Exception ( SomeException )
 import qualified Control.Monad.State as St
 import qualified Control.Monad.Reader as R
 import qualified Data.ByteString as BS
-import           Data.Char ( isAlpha )
 import qualified Data.Foldable as F
 import           Data.Ord ( comparing )
 import qualified Data.HashMap.Strict as HM
-import           Data.List ( sortBy, break )
 import qualified Data.Set as S
+import           Data.List ( sortBy )
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Time.Clock ( UTCTime, getCurrentTime, nominalDay, addUTCTime )
@@ -1463,14 +1457,6 @@ data SidebarUpdate =
     | SidebarUpdateDeferred
     deriving (Eq, Show)
 
-isValidNameChar :: Char -> Bool
-isValidNameChar c = isAlpha c || c == '_' || c == '.' || c == '-'
-
-isNameFragment :: C.Inline -> Bool
-isNameFragment (C.Str t) =
-    not (T.null t) && isValidNameChar (T.head t)
-isNameFragment _ = False
-
 -- | Builds a message from a ClientPost and also returns the set of
 -- usernames mentioned in the text of the message.
 clientPostToMessage :: ClientPost -> (Message, S.Set Text)
@@ -1504,51 +1490,6 @@ resetAutocomplete = do
     csEditState.cedAutocomplete .= Nothing
     csEditState.cedAutocompletePending .= Nothing
 
-findUsernames :: C.Blocks -> S.Set Text
-findUsernames = S.unions . F.toList . fmap blockFindUsernames
-
-blockFindUsernames :: C.Block -> S.Set Text
-blockFindUsernames (C.Para is) =
-    inlineFindUsernames $ F.toList is
-blockFindUsernames (C.Header _ is) =
-    inlineFindUsernames $ F.toList is
-blockFindUsernames (C.Blockquote bs) =
-    findUsernames bs
-blockFindUsernames (C.List _ _ bs) =
-    S.unions $ F.toList $ findUsernames <$> bs
-blockFindUsernames _ =
-    mempty
-
-inlineFindUsernames :: [C.Inline] -> S.Set Text
-inlineFindUsernames [] = mempty
-inlineFindUsernames (C.Str "@" : rest) =
-    let (strs, remaining) = takeWhileNameFragment rest
-    in if null strs
-       then inlineFindUsernames remaining
-       else S.insert (T.concat $ getInlineStr <$> strs) $ inlineFindUsernames remaining
-inlineFindUsernames (_ : rest) =
-    inlineFindUsernames rest
-
-getInlineStr :: C.Inline -> T.Text
-getInlineStr (C.Str s) = s
-getInlineStr _ = ""
-
-takeWhileNameFragment :: [C.Inline] -> ([C.Inline], [C.Inline])
-takeWhileNameFragment [] = ([], [])
-takeWhileNameFragment rest =
-    let (strs, remaining) = break (not . isNameFragment) rest
-        -- Does the last element in strs start with a letter? If
-        -- not, move it to the remaining list. This avoids pulling
-        -- punctuation-only tokens into usernames, e.g. "Hello,
-        -- @foobar."
-        (strs', remaining') =
-            if length strs <= 1
-            then (strs, remaining)
-            else let (initStrs, [lastStr]) = splitAt (length strs - 1) strs
-                 in if isAlpha $ T.head $ getInlineStr lastStr
-                    then (strs, remaining)
-                    else (initStrs, lastStr : remaining)
-    in (strs', remaining')
 
 -- * Slash Commands
 
