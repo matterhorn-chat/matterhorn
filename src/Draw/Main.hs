@@ -49,12 +49,12 @@ previewFromInput overrideTy uId s =
     -- If it starts with a slash but not /me, this has no preview
     -- representation
     let isCommand = "/" `T.isPrefixOf` s
-        isEmote = "/me " `T.isPrefixOf` s
-        content = if isEmote
+        isEmoteCmd = "/me " `T.isPrefixOf` s
+        content = if isEmoteCmd
                   then T.stripStart $ T.drop 3 s
                   else s
-        msgTy = fromMaybe (if isEmote then CP Emote else CP NormalPost) overrideTy
-    in if isCommand && not isEmote
+        msgTy = fromMaybe (if isEmoteCmd then CP Emote else CP NormalPost) overrideTy
+    in if isCommand && not isEmoteCmd
        then Nothing
        else Just $ Message { _mText          = getBlocks content
                            , _mMarkdownSource = content
