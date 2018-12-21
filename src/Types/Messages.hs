@@ -41,7 +41,7 @@ module Types.Messages
   ( -- * Message and operations on a single Message
     Message(..)
   , isDeletable, isReplyable, isEditable, isReplyTo, isGap, isFlaggable
-  , isEmote
+  , isEmote, isJoinLeave
   , mText, mUser, mDate, mType, mPending, mDeleted
   , mAttachments, mInReplyToMsg, mMessageId, mReactions, mFlagged
   , mOriginalPost, mChannelId, mMarkdownSource
@@ -187,6 +187,12 @@ isEmote :: Message -> Bool
 isEmote m = case _mType m of
               CP Emote -> True
               _ -> False
+
+isJoinLeave :: Message -> Bool
+isJoinLeave m = case _mType m of
+                  CP Join -> True
+                  CP Leave -> True
+                  _ -> False
 
 -- | A 'Message' is the representation we use for storage and
 --   rendering, so it must be able to represent either a

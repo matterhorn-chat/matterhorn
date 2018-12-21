@@ -84,8 +84,7 @@ renderChatMessage st hs ind renderTimeFunc msg =
                     C Error -> withDefAttr errorMessageAttr m
                     C UnknownGap -> withDefAttr gapMessageAttr m
                     _ -> withDefAttr clientMessageAttr m
-            _ | msg^.mType == CP Join || msg^.mType == CP Leave ->
-                  withDefAttr clientMessageAttr m
+            _ | isJoinLeave msg -> withDefAttr clientMessageAttr m
               | otherwise -> m
         fullMsg = vBox $ msgTxt : catMaybes [msgAtch, msgReac]
         maybeRenderTime w = hBox [renderTimeFunc (msg^.mDate), txt " ", w]
