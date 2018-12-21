@@ -131,7 +131,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
           Nothing -> Nothing
         nameElems = case msgUsr of
           Just un
-            | msg^.mType == CP Emote ->
+            | isEmote msg ->
                 [ B.txt "*", colorUsername un un
                 , B.txt " "
                 ]

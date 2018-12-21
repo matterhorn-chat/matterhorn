@@ -208,9 +208,10 @@ beginEditMessage = do
             -- value of "emote" that we can look at. Note that the
             -- removed formatting needs to be reinstated just prior to
             -- issuing the API call to update the post.
-            let toEdit = if msg^.mType == CP Emote
-                         then removeEmoteFormatting $ sanitizeUserText $ postMessage p
-                         else sanitizeUserText $ postMessage p
+            let sanitized = sanitizeUserText $ postMessage p
+            let toEdit = if isEmote msg
+                         then removeEmoteFormatting sanitized
+                         else sanitized
             csEditState.cedEditor %= applyEdit (clearZipper >> (insertMany toEdit))
         _ -> return ()
 

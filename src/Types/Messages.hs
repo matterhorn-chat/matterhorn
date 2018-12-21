@@ -41,6 +41,7 @@ module Types.Messages
   ( -- * Message and operations on a single Message
     Message(..)
   , isDeletable, isReplyable, isEditable, isReplyTo, isGap, isFlaggable
+  , isEmote
   , mText, mUser, mDate, mType, mPending, mDeleted
   , mAttachments, mInReplyToMsg, mMessageId, mReactions, mFlagged
   , mOriginalPost, mChannelId, mMarkdownSource
@@ -180,6 +181,12 @@ isReplyTo expectedParentId m =
 
 isGap :: Message -> Bool
 isGap m = _mType m == C UnknownGap
+
+
+isEmote :: Message -> Bool
+isEmote m = case _mType m of
+              CP Emote -> True
+              _ -> False
 
 -- | A 'Message' is the representation we use for storage and
 --   rendering, so it must be able to represent either a
