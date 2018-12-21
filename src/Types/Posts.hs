@@ -92,7 +92,12 @@ data ClientMessageType =
     | Error
     | DateTransition
     | NewMessagesTransition
-    | UnknownGap  -- ^ marks region where server may have messages unknown locally
+    | UnknownGapBefore -- ^ a region where the server may have
+                       -- messages before the given timestamp that are
+                       -- not known locally by this client
+    | UnknownGapAfter  -- ^ a region where server may have messages
+                       -- after the given timestamp that are not known
+                       -- locally by this client
     deriving (Show)
 
 -- ** 'ClientMessage' Lenses

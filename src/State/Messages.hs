@@ -78,7 +78,9 @@ addEndGap cId = withChannel cId $ \chan ->
         gapMsg = newGapMessage timeJustAfterLast
         timeJustAfterLast = maybe t0 (justAfter . _mDate) lastmsg_
         t0 = ServerTime $ originTime  -- use any time for a channel with no messages yet
-        newGapMessage = newMessageOfType (T.pack "Disconnected. Will refresh when connected.") (C UnknownGap)
+        newGapMessage = newMessageOfType
+                        (T.pack "Disconnected. Will refresh when connected.")
+                        (C UnknownGapAfter)
     in unless lastIsGap
            (csChannels %= modifyChannelById cId (ccContents.cdMessages %~ addMessage gapMsg))
 
@@ -207,9 +209,16 @@ addObtainedMessages cId reqCnt reqLatest posts =
             -- do not signal action needed for notifications), and
             -- remove any gaps in the overlapping region.
 
-            newGapMessage d =
+            newGapMessage d isOlder =
               do uuid <- generateUUID  -- make these selectable
-                 return (newMessageOfType "Additional messages???" (C UnknownGap) d
+                 let txt = "Additional " <>
+                           (if isOlder then "older" else "newer") <>
+                           " messages??" <>
+                           (if isOlder then "  ↥↥↥" else "  ↧↧↧")
+                     ty = if isOlder
+                          then C UnknownGapBefore
+                          else C UnknownGapAfter
+                 return (newMessageOfType txt ty d
                          & mMessageId .~ Just (MessageUUID uuid))
 
             -- If this batch contains the latest known messages, do
@@ -271,12 +280,12 @@ addObtainedMessages cId reqCnt reqLatest posts =
         --      b. the amount returned was less than the amount requested
 
         unless (earliestPId `elem` dupPIds || noMoreBefore) $ do
-               gapMsg <- newGapMessage (justBefore earliestDate)
+               gapMsg <- newGapMessage (justBefore earliestDate) True
                csChannels %= modifyChannelById cId
                        (ccContents.cdMessages %~ addMessage gapMsg)
 
         unless (latestPId `elem` dupPIds || {- addingAtEnd || -} noMoreAfter) $ do
-               gapMsg <- newGapMessage (justAfter latestDate)
+               gapMsg <- newGapMessage (justAfter latestDate) False
                csChannels %= modifyChannelById cId
                                  (ccContents.cdMessages %~ addMessage gapMsg)
 

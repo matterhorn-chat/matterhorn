@@ -199,7 +199,8 @@ isReplyTo expectedParentId m =
 
 isGap :: Message -> Bool
 isGap m = case _mType m of
-            C UnknownGap -> True
+            C UnknownGapBefore -> True
+            C UnknownGapAfter -> True
             _ -> False
 
 

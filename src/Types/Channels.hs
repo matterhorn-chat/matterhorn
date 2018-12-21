@@ -72,7 +72,7 @@ import           Network.Mattermost.Types ( Channel(..), UserId, ChannelId
 
 import           Types.Messages ( Messages, noMessages, addMessage
                                 , clientMessageToMessage )
-import           Types.Posts ( ClientMessageType(UnknownGap)
+import           Types.Posts ( ClientMessageType(UnknownGapBefore)
                              , newClientMessage, postIsLeave, postIsJoin )
 import           Types.Users ( TypingUsers, noTypingUsers, addTypingUser )
 import           Types.Common
@@ -148,13 +148,13 @@ data ChannelContents = ChannelContents
   }
 
 -- | An initial empty 'ChannelContents' value.  This also contains an
--- UnknownGap, which is a signal that causes actual content fetching.
+-- UnknownGapBefore, which is a signal that causes actual content fetching.
 -- The initial Gap's timestamp is the local client time, but
 -- subsequent fetches will synchronize with the server (and eventually
 -- eliminate this Gap as well).
 emptyChannelContents :: MonadIO m => m ChannelContents
 emptyChannelContents = do
-  gapMsg <- clientMessageToMessage <$> newClientMessage UnknownGap "--Fetching messages--"
+  gapMsg <- clientMessageToMessage <$> newClientMessage UnknownGapBefore "--Fetching messages--"
   return $ ChannelContents { _cdMessages = addMessage gapMsg noMessages
                            , _cdFetchPending = False
                            }
