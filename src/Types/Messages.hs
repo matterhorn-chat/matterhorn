@@ -161,20 +161,33 @@ messagePostId m = do
 isDeletable :: Message -> Bool
 isDeletable m =
     isJust (messagePostId m) &&
-    _mType m `elem` [CP NormalPost, CP Emote]
+    case _mType m of
+      CP NormalPost -> True
+      CP Emote -> True
+      _ -> False
+
 
 isFlaggable :: Message -> Bool
 isFlaggable = isJust . messagePostId
 
+
 isReplyable :: Message -> Bool
 isReplyable m =
     isJust (messagePostId m) &&
-    (_mType m `elem` [CP NormalPost, CP Emote])
+    case _mType m of
+      CP NormalPost -> True
+      CP Emote -> True
+      _ -> False
+
 
 isEditable :: Message -> Bool
 isEditable m =
     isJust (messagePostId m) &&
-    _mType m `elem` [CP NormalPost, CP Emote]
+    case _mType m of
+      CP NormalPost -> True
+      CP Emote -> True
+      _ -> False
+
 
 isReplyTo :: PostId -> Message -> Bool
 isReplyTo expectedParentId m =
@@ -182,8 +195,11 @@ isReplyTo expectedParentId m =
         NotAReply                -> False
         InReplyTo actualParentId -> actualParentId == expectedParentId
 
+
 isGap :: Message -> Bool
-isGap m = _mType m == C UnknownGap
+isGap m = case _mType m of
+            C UnknownGap -> True
+            _ -> False
 
 
 isEmote :: Message -> Bool
@@ -203,7 +219,7 @@ isJoinLeave m = case _mType m of
 --   the union of both kinds of post types.
 data MessageType = C ClientMessageType
                  | CP ClientPostType
-                 deriving (Eq, Show)
+                 deriving (Show)
 
 -- | There may be no user (usually an internal message), a reference
 -- to a user (by Id), or the server may have supplied a specific
