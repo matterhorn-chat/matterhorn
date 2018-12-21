@@ -88,10 +88,7 @@ renderChatMessage st hs ind renderTimeFunc msg =
               | otherwise -> m
         fullMsg = vBox $ msgTxt : catMaybes [msgAtch, msgReac]
         maybeRenderTime w = hBox [renderTimeFunc (msg^.mDate), txt " ", w]
-        maybeRenderTimeWith f = case msg^.mType of
-            C DateTransition -> id
-            C NewMessagesTransition -> id
-            _ -> f
+        maybeRenderTimeWith f = if isTransition msg then id else f
     in maybeRenderTimeWith maybeRenderTime fullMsg
 
 -- | Render a selected message with focus, including the messages

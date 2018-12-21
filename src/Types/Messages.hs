@@ -41,7 +41,7 @@ module Types.Messages
   ( -- * Message and operations on a single Message
     Message(..)
   , isDeletable, isReplyable, isEditable, isReplyTo, isGap, isFlaggable
-  , isEmote, isJoinLeave
+  , isEmote, isJoinLeave, isTransition
   , mText, mUser, mDate, mType, mPending, mDeleted
   , mAttachments, mInReplyToMsg, mMessageId, mReactions, mFlagged
   , mOriginalPost, mChannelId, mMarkdownSource
@@ -200,6 +200,13 @@ isGap :: Message -> Bool
 isGap m = case _mType m of
             C UnknownGap -> True
             _ -> False
+
+
+isTransition :: Message -> Bool
+isTransition m = case _mType m of
+                   C DateTransition -> True
+                   C NewMessagesTransition -> True
+                   _ -> False
 
 
 isEmote :: Message -> Bool
