@@ -405,7 +405,7 @@ getMessageListing cId st =
     st ^?! csChannels.folding (findChannelById cId) . ccContents . cdMessages . to (filterMessages isShown)
     where isShown m
             | st^.csResources.crUserPreferences.userPrefShowJoinLeave = True
-            | otherwise = not isJoinLeave m
+            | otherwise = not $ isJoinLeave m
 
 insertTransitions :: Messages -> Maybe NewMessageIndicator -> Text -> TimeZoneSeries -> Messages
 insertTransitions ms cutoff = insertDateMarkers $ foldr addMessage ms newMessagesT
