@@ -118,9 +118,9 @@ sendMessage mode msg attachments =
                                                                    }
                             void $ MM.mmCreatePost pendingPost session
                         Editing p ty -> do
-                            let body = if ty == CP Emote
-                                       then addEmoteFormatting msg
-                                       else msg
+                            let body = case ty of
+                                         CP Emote -> addEmoteFormatting msg
+                                         _ -> msg
                                 update = (postUpdateBody body) { postUpdateFileIds = if null fileIds
                                                                                      then Nothing
                                                                                      else Just fileIds
