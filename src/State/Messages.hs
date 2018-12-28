@@ -242,6 +242,9 @@ addObtainedMessages cId reqCnt reqLatest posts =
             noMoreBefore = reqCnt < 0 && length pIdList < (-reqCnt)
             noMoreAfter = reqLatest || reqCnt > 0 && length pIdList < reqCnt
 
+            reAddGapBefore = earliestPId `elem` dupPIds || noMoreBefore
+            reAddGapAfter = latestPId `elem` dupPIds || {- addingAtEnd || -} noMoreAfter
+
         -- The post map returned by the server will *already* have
         -- all thread messages for each post that is part of a
         -- thread. By calling installMessagesFromPosts here, we go ahead
@@ -269,28 +272,115 @@ addObtainedMessages cId reqCnt reqLatest posts =
                    , not (p `elem` dupPIds)
                    ]
 
-        csChannels %= modifyChannelById cId
-                           (ccContents.cdMessages %~ (fst . removeMatchesFromSubset isGap removeStart removeEnd))
+        -- The channel messages now include all the fetched messages.
+        -- Things to do at this point are:
+        --
+        --   1. Remove any duplicates just added, as well as any gaps
+        --   2. Add new gaps (if needed) at either end of the added
+        --      messages.
+        --   3. Update the "current selection" if it was on a removed message.
+        --
+        -- Do this with the updated copy of the channel's messages.
 
-        -- Add a gap at each end of the newly fetched data, unless:
-        --   1. there is an overlap
-        --   2. there is no more in the indicated direction
-        --      a. indicated by adding messages later than any currently
-        --         held messages (see note above re 'addingAtEnd').
-        --      b. the amount returned was less than the amount requested
+        withChannelOrDefault cId () $ \updchan -> do
+          let updMsgs = updchan ^. ccContents . cdMessages
 
-        unless (earliestPId `elem` dupPIds || noMoreBefore) $ do
-               gapMsg <- newGapMessage (justBefore earliestDate) True
-               csChannels %= modifyChannelById cId
-                       (ccContents.cdMessages %~ addMessage gapMsg)
+          -- Remove any gaps in the added region.  If there was an
+          -- active message selection and it is one of the removed
+          -- gaps, reset the selection to the beginning or end of the
+          -- added region (if there are any added selectable messages,
+          -- otherwise just the end if the message list in it's
+          -- entirety, or no selection at all).
 
-        unless (latestPId `elem` dupPIds || {- addingAtEnd || -} noMoreAfter) $ do
-               gapMsg <- newGapMessage (justAfter latestDate) False
-               csChannels %= modifyChannelById cId
-                                 (ccContents.cdMessages %~ addMessage gapMsg)
+          let (resultMessages, removedMessages) =
+                removeMatchesFromSubset isGap removeStart removeEnd updMsgs
+          csChannels %= modifyChannelById cId
+            (ccContents.cdMessages .~ resultMessages)
+
+          -- Determine if the current selected message was one of the
+          -- removed messages.
+
+          selMsgId <- use (csMessageSelect.to selectMessageId)
+          rmvdSel <- return $ do
+            i <- selMsgId -- :: Maybe MessageId
+            findMessage i removedMessages
+          rmvdSelType <- return (rmvdSel >>= pure . _mType)
+
+          case rmvdSel of
+            Nothing -> return ()
+            Just rm ->
+              if isGap rm
+              then return ()  -- handled during gap insertion below
+              else do
+                -- Replaced a selected message that wasn't a gap.
+                -- This is unlikely, but may occur if the previously
+                -- selected message was just deleted by another user
+                -- and is in the fetched region.  The choices here are
+                -- to move the selection, or cancel the selection.
+                -- Both will be unpleasant surprises for the user, but
+                -- cancelling the selection is probably the better
+                -- choice than allowing the user to perform select
+                -- actions on a message that isn't the one they just
+                -- selected.
+                setMode Main
+                csMessageSelect .= MessageSelectState Nothing
+
+          -- Add a gap at each end of the newly fetched data, unless:
+          --   1. there is an overlap
+          --   2. there is no more in the indicated direction
+          --      a. indicated by adding messages later than any currently
+          --         held messages (see note above re 'addingAtEnd').
+          --      b. the amount returned was less than the amount requested
+
+          if reAddGapBefore
+            then
+              -- No more gaps.  If the selected gap was removed, move
+              -- select to first (earliest) message)
+              case rmvdSelType of
+                Just (C UnknownGapBefore) ->
+                          csMessageSelect .= MessageSelectState
+                            (_mMessageId =<<
+                             getEarliestSelectableMessage resultMessages)
+                _ -> return ()
+            else do
+              -- add a gap at the start of the newly fetched block and
+              -- make that the active selection if this fetch removed
+              -- the previously selected gap in this direction.
+              gapMsg <- newGapMessage (justBefore earliestDate) True
+              csChannels %= modifyChannelById cId
+                (ccContents.cdMessages %~ addMessage gapMsg)
+              -- Move selection from old gap to new gap
+              case rmvdSelType of
+                Just (C UnknownGapBefore) -> do
+                  csMessageSelect .= MessageSelectState (gapMsg^.mMessageId)
+                _ -> return ()
+
+          if reAddGapAfter
+            then
+              -- No more gaps.  If the selected gap was removed, move
+              -- select to last (latest) message.
+              case rmvdSelType of
+                Just (C UnknownGapAfter) ->
+                          csMessageSelect .= MessageSelectState
+                            (_mMessageId =<<
+                             getLatestSelectableMessage resultMessages)
+                _ -> return ()
+            else do
+              -- add a gap at the end of the newly fetched block and
+              -- make that the active selection if this fetch removed
+              -- the previously selected gap in this direction.
+              gapMsg <- newGapMessage (justAfter latestDate) False
+              csChannels %= modifyChannelById cId
+                (ccContents.cdMessages %~ addMessage gapMsg)
+              -- Move selection from old gap to new gap
+              case rmvdSelType of
+                Just (C UnknownGapAfter) ->
+                  csMessageSelect .= MessageSelectState (gapMsg^.mMessageId)
+                _ -> return ()
 
         -- Now initiate fetches for use information for any
         -- as-yet-unknown users related to this new set of messages
+
         let users = foldr (\post s -> maybe s (flip Set.insert s) (postUserId post))
                           Set.empty (posts^.postsPostsL)
             addUnknownUsers inputUserIds = do
