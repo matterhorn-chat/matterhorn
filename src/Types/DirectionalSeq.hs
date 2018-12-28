@@ -1,6 +1,7 @@
-{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveFoldable #-}
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveTraversable #-}
+{-# LANGUAGE TypeFamilies #-}
 
 {- | These declarations allow the use of a DirectionalSeq, which is a
    Seq that uses a phantom type to identify the ordering of the
@@ -19,9 +20,12 @@ import qualified Data.Sequence as Seq
 
 data Chronological
 data Retrograde
-class SeqDirection a
+class SeqDirection a where
+  type ReverseDirection a
 instance SeqDirection Chronological
+  where type ReverseDirection Chronological = Retrograde
 instance SeqDirection Retrograde
+  where type ReverseDirection Retrograde = Chronological
 
 data SeqDirection dir => DirectionalSeq dir a =
     DSeq { dseq :: Seq a }
