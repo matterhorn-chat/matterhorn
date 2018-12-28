@@ -69,6 +69,7 @@ module Types.Messages
   , splitMessagesOn
   , splitRetrogradeMessagesOn
   , findMessage
+  , getRelMessageId
   , getNextMessage
   , getPrevMessage
   , getNextMessageId
@@ -421,10 +422,11 @@ splitRetrogradeMessagesOn = splitMsgSeqOn
 -- unified into the following, but that will require TypeFamilies or
 -- similar to relate d and r SeqDirection types.  For now, it's
 -- simplier to just have two API endpoints.
-splitMsgSeqOn :: (SeqDirection d, SeqDirection r) =>
-                  (Message -> Bool)
-                -> DirectionalSeq d Message
-                -> (Maybe Message, (DirectionalSeq r Message, DirectionalSeq d Message))
+splitMsgSeqOn :: SeqDirection d =>
+                 (Message -> Bool)
+              -> DirectionalSeq d Message
+              -> (Maybe Message, (DirectionalSeq (ReverseDirection d) Message,
+                                  DirectionalSeq d Message))
 splitMsgSeqOn f msgs =
     let (removed, remaining) = dirSeqBreakl f msgs
         devomer = DSeq $ Seq.reverse $ dseq removed
@@ -455,24 +457,18 @@ findMessage mid msgs =
     findIndexR (\m -> m^.mMessageId == Just mid) (dseq msgs)
     >>= Just . Seq.index (dseq msgs)
 
-data MoveDir = MoveToNext | MoveToPrev
-
 -- | Look forward for the first Message with an ID that follows the
 -- specified Id and return it.  If no input Id supplied, get the
 -- latest (most recent chronologically) Message in the input set.
 getNextMessage :: Maybe MessageId -> Messages -> Maybe Message
-getNextMessage mId =
-  let isMId = const ((==) mId . _mMessageId) <$> mId
-  in getRelMessage MoveToNext isMId
+getNextMessage = getRelMessageId
 
 -- | Look backward for the first Message with an ID that follows the
 -- specified MessageId and return it.  If no input MessageId supplied,
 -- get the latest (most recent chronologically) Message in the input
 -- set.
 getPrevMessage :: Maybe MessageId -> Messages -> Maybe Message
-getPrevMessage mId =
-  let isMId = const ((==) mId . _mMessageId) <$> mId
-  in getRelMessage MoveToPrev isMId
+getPrevMessage mId = getRelMessageId mId . reverseMessages
 
 -- | Look forward for the first Message with an ID that follows the
 -- specified MessageId and return that found Message's ID; if no input
@@ -500,18 +496,27 @@ getNextPostId pid = messagePostId <=< getNextMessage (MessagePostId <$> pid)
 getPrevPostId :: Maybe PostId -> Messages -> Maybe PostId
 getPrevPostId pid = messagePostId <=< getPrevMessage (MessagePostId <$> pid)
 
+
+getRelMessageId :: SeqDirection dir =>
+                   Maybe MessageId
+                -> DirectionalSeq dir Message
+                -> Maybe Message
+getRelMessageId mId =
+  let isMId = const ((==) mId . _mMessageId) <$> mId
+  in getRelMessage isMId
+
 -- | Internal worker function to return a different user message in
 -- relation to either the latest point or a specific message.
-getRelMessage :: MoveDir -> Maybe (Message -> Bool) -> Messages -> Maybe Message
-getRelMessage _ Nothing msgs = getLatestPostMsg msgs
-getRelMessage dir (Just matchFun) msgs =
-  let (_, (before, after)) = splitMessagesOn matchFun msgs
-      nextUseful :: SeqDirection dir =>
-                    DirectionalSeq dir Message -> Maybe Message
-      nextUseful = withDirSeqHead id . filterMessages validSelectableMessage
-  in case dir of
-    MoveToNext -> nextUseful after
-    MoveToPrev -> nextUseful before
+getRelMessage :: SeqDirection dir =>
+                 Maybe (Message -> Bool)
+              -> DirectionalSeq dir Message
+              -> Maybe Message
+getRelMessage matcher msgs =
+  let after = case matcher of
+                Just matchFun -> case splitMsgSeqOn matchFun msgs of
+                                   (_, (_, ms)) -> ms
+                Nothing -> msgs
+  in withDirSeqHead id $ filterMessages validSelectableMessage after
 
 
 -- | Find the most recent message that is a Post (as opposed to a
