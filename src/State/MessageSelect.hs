@@ -37,9 +37,10 @@ import           Network.Mattermost.Types
 
 import           Clipboard ( copyToClipboard )
 import           Markdown ( findVerbatimChunk )
+import           State.Common
+import           State.Messages
 import           Types
 import           Types.Common
-import           State.Common
 
 
 getSelectedMessage :: ChatState -> Maybe Message
@@ -81,7 +82,10 @@ viewSelectedMessage :: MH ()
 viewSelectedMessage = do
   selected <- use (to getSelectedMessage)
   case selected of
-    Just msg -> viewMessage msg
+    Just msg
+      | isGap msg -> do cId <- use csCurrentChannelId
+                        asyncFetchMessagesForGap cId msg
+      | otherwise -> viewMessage msg
     _        -> return ()
 
 viewMessage :: Message -> MH ()
@@ -186,8 +190,8 @@ messageSelectLast = do
         Just _ -> whenMode MessageSelect $ do
             chanMsgs <- use (csCurrentChannel.ccContents.cdMessages)
             case getLatestSelectableMessage chanMsgs of
-              Just lastMsg ->
-                csMessageSelect .= MessageSelectState (lastMsg^.mMessageId <|> selected)
+              Just lastSelMsg ->
+                csMessageSelect .= MessageSelectState (lastSelMsg^.mMessageId <|> selected)
               Nothing -> mhLog LogError "No last message found from current message?!"
         _ -> return ()
 

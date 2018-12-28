@@ -475,7 +475,7 @@ messageSelectBottomBar st =
                     , kbEvent       = b
                     } <- keymap
                , e' == e ]
-        options = [ ( const True
+        options = [ ( not . isGap
                     , ev YankWholeMessageEvent
                     , "yank-all" )
                   , ( \m -> isFlaggable m && not (m^.mFlagged)
@@ -487,9 +487,12 @@ messageSelectBottomBar st =
                   , ( isReplyable
                     , ev ReplyMessageEvent
                     , "reply" )
-                  , ( const True
+                  , ( not . isGap
                     , ev ViewMessageEvent
                     , "view" )
+                  , ( isGap
+                    , ev ViewMessageEvent
+                    , "view (fetch) messages for this gap" )
                   , ( \m -> isMine st m && isEditable m
                     , ev EditMessageEvent
                     , "edit" )

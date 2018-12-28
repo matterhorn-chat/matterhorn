@@ -9,6 +9,7 @@ module State.Messages
   , addNewPostedMessage
   , addObtainedMessages
   , asyncFetchMoreMessages
+  , asyncFetchMessagesForGap
   , asyncFetchMessagesSurrounding
   , fetchVisibleIfNeeded
   , disconnectChannels
@@ -36,13 +37,14 @@ import           Network.Mattermost.Lenses
 import           Network.Mattermost.Types
 
 import           Constants
-import           State.Common
 import           State.Channels
+import           State.Common
 import           State.Reactions
 import           State.Users
 import           TimeUtils
 import           Types
 import           Types.Common ( sanitizeUserText )
+import           Types.DirectionalSeq ( DirectionalSeq, SeqDirection )
 
 
 -- ----------------------------------------------------------------------
@@ -669,9 +671,10 @@ asyncFetchMoreMessages = do
     withChannel cId $ \chan ->
         let offset = max 0 $ length (chan^.ccContents.cdMessages) - 2
             page = offset `div` pageAmount
-            sndOldestId = secondOldestContiguous (chan^.ccContents.cdMessages)
+            usefulMsgs = getTwoContiguousPosts Nothing (chan^.ccContents.cdMessages.to reverseMessages)
+            sndOldestId = (messagePostId . snd) =<< usefulMsgs
             query = MM.defaultPostQuery
-                      { MM.postQueryPage = (const 0 <$> sndOldestId) <|> Just page
+                      { MM.postQueryPage = maybe (Just page) (const Nothing) sndOldestId
                       , MM.postQueryPerPage = Just pageAmount
                       , MM.postQueryBefore = sndOldestId
                       }
@@ -683,20 +686,57 @@ asyncFetchMoreMessages = do
                    pp <- addObtainedMessages c (-pageAmount) reqLatest p
                    postProcessMessageAdd pp
                    mh $ invalidateCacheEntry (ChannelMessages cId))
-      where
-        secondOldestContiguous msgs =
-          let oldest = splitMessagesOn isPostMessage msgs
-              older = splitMessagesOn (\m -> isPostMessage m || isGap m) (newerThan oldest)
-              newerThan = snd . snd
-          in if length msgs < 2
-             then Nothing
-             else case (fst oldest, fst older) of
-                    (Just _, Just almostOldest) ->
-                      if isGap almostOldest
-                      then secondOldestContiguous $ newerThan older
-                      else messagePostId almostOldest
-                    _ -> secondOldestContiguous $ newerThan older
 
+
+-- | Given a starting point and a direction to move from that point,
+-- returns the closest two adjacent messages on that direction (as a
+-- tuple of closest and next-closest), or Nothing if there are no
+-- adjacent messages in the indicated direction.
+getTwoContiguousPosts :: SeqDirection dir =>
+                         Maybe Message
+                      -> DirectionalSeq dir Message
+                      -> Maybe (Message, Message)
+getTwoContiguousPosts startMsg msgs =
+  let go start =
+        do anchor <- getRelMessageId (_mMessageId =<< start) msgs
+           hinge <- getRelMessageId (anchor^.mMessageId) msgs
+           if isGap anchor || isGap hinge
+             then go $ Just anchor
+             else Just (anchor, hinge)
+  in go startMsg
+
+
+asyncFetchMessagesForGap :: ChannelId -> Message -> MH ()
+asyncFetchMessagesForGap cId gapMessage =
+  when (isGap gapMessage) $
+  withChannel cId $ \chan ->
+    let offset = max 0 $ length (chan^.ccContents.cdMessages) - 2
+        page = offset `div` pageAmount
+        chanMsgs = chan^.ccContents.cdMessages
+        fromMsg = Just gapMessage
+        fetchNewer = case gapMessage^.mType of
+                       C UnknownGapAfter -> True
+                       C UnknownGapBefore -> False
+                       _ -> error "fetch gap messages: unknown gap message type"
+        baseId = messagePostId . snd =<<
+                 case gapMessage^.mType of
+                    C UnknownGapAfter -> getTwoContiguousPosts fromMsg $
+                                         reverseMessages chanMsgs
+                    C UnknownGapBefore -> getTwoContiguousPosts fromMsg chanMsgs
+                    _ -> error "fetch gap messages: unknown gap message type"
+        query = MM.defaultPostQuery
+                { MM.postQueryPage = maybe (Just page) (const Nothing) baseId
+                , MM.postQueryPerPage = Just pageAmount
+                , MM.postQueryBefore = if fetchNewer then Nothing else baseId
+                , MM.postQueryAfter = if fetchNewer then baseId else Nothing
+                }
+        reqLatest = MM.postQueryBefore query == Nothing &&
+                    MM.postQueryPage query == Just 0
+    in doAsyncChannelMM Preempt cId
+       (\s _ c -> MM.mmGetPostsForChannel c query s)
+       (\c p -> Just $ do
+           void $ addObtainedMessages c (-pageAmount) reqLatest p
+           mh $ invalidateCacheEntry (ChannelMessages cId))
 
 -- | Given a particular message ID, this fetches a few messages
 -- immediately before and after the specified message in order to
