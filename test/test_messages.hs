@@ -523,14 +523,14 @@ splitTests = testGroup "Split"
                           counterexample info $ null $ unreverseMessages before
              , testProperty "remaining after when found at first position"
                    $ \(w', x', y', z') ->
-                       let (_, (_, after)) = splitMessages (w^.mMessageId) msgs
+                       let (_, (_, afterMsgs)) = splitMessages (w^.mMessageId) msgs
                            msgs = makeMsgs inpl
                            inpl = [w, x, y, z]
                            [w, x, y, z] = setDateOrderMessages [w', x', y', z']
-                           info = show (idlist inpl) <> " ==> " <> (show $ idlist after)
+                           info = show (idlist inpl) <> " ==> " <> (show $ idlist afterMsgs)
                        in validIds inpl && uniqueIds inpl ==>
                           counterexample info $
-                                         idlist (tail inpl) == idlist after
+                                         idlist (tail inpl) == idlist afterMsgs
 
              , testProperty "found at last position"
                    $ \(w', x', y', z') ->
@@ -554,13 +554,13 @@ splitTests = testGroup "Split"
 
              , testProperty "no after when found at last position"
                    $ \(w', x', y', z') ->
-                       let (_, (_, after)) = splitMessages (z^.mMessageId) msgs
+                       let (_, (_, afterMsgs)) = splitMessages (z^.mMessageId) msgs
                            msgs = makeMsgs inpl
                            inpl = [w, x, y, z]
                            [w, x, y, z] = setDateOrderMessages [w', x', y', z']
-                           info = show (idlist inpl) <> " ==> " <> (show $ idlist after)
+                           info = show (idlist inpl) <> " ==> " <> (show $ idlist afterMsgs)
                        in validIds inpl && uniqueIds inpl ==>
-                          counterexample info $ null after
+                          counterexample info $ null afterMsgs
 
              , testProperty "found at midpoint position"
                    $ \(v', w', x', y', z') ->
@@ -586,15 +586,15 @@ splitTests = testGroup "Split"
 
              , testProperty "after when found at midpoint position"
                    $ \(v', w', x', y', z') ->
-                       let (_, (_, after)) = splitMessages (x^.mMessageId) msgs
+                       let (_, (_, afterMsgs)) = splitMessages (x^.mMessageId) msgs
                            msgs = makeMsgs inpl
                            inpl = [v, w, x, y, z]
                            [v, w, x, y, z] = setDateOrderMessages
                                              [v', w', x', y', z']
-                           info = show (idlist inpl) <> " ==> " <> (show $ idlist after)
+                           info = show (idlist inpl) <> " ==> " <> (show $ idlist afterMsgs)
                        in validIds inpl && uniqueIds inpl ==>
                           counterexample info $
-                                         idlist [y, z] == idlist after
+                                         idlist [y, z] == idlist afterMsgs
              ]
 
 
