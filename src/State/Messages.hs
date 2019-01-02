@@ -171,8 +171,12 @@ addNewPostedMessage p =
 -- all be for the specified Channel.  The reqCnt argument indicates
 -- how many posts were requested, which will determine whether a gap
 -- message is added to either end of the posts list or not.
+--
+-- The addTrailingGap is only True when fetching the very latest messages
+-- for the channel, and will suppress the generation of a Gap message
+-- following the added block of messages.
 addObtainedMessages :: ChannelId -> Int -> Bool -> Posts -> MH PostProcessMessageAdd
-addObtainedMessages cId reqCnt reqLatest posts =
+addObtainedMessages cId reqCnt addTrailingGap posts =
   if null $ posts^.postsOrderL
   then return NoAction
   else
@@ -190,6 +194,10 @@ addObtainedMessages cId reqCnt reqLatest posts =
             latestDate = postCreateAt $ (posts^.postsPostsL) HM.! latestPId
 
             localMessages = chan^.ccContents . cdMessages
+
+            -- Get a list of the duplicated message PostIds between
+            -- the messages already in the channel and the new posts
+            -- to be added.
 
             match = snd $ removeMatchesFromSubset
                           (\m -> maybe False (\p -> p `elem` pIdList) (messagePostId m))
@@ -212,7 +220,9 @@ addObtainedMessages cId reqCnt reqLatest posts =
             -- remove any gaps in the overlapping region.
 
             newGapMessage d isOlder =
-              do uuid <- generateUUID  -- make these selectable
+              -- newGapMessage is a helper for generating a gap
+              -- message
+              do uuid <- generateUUID
                  let txt = "Additional " <>
                            (if isOlder then "older" else "newer") <>
                            " messages??" <>
@@ -238,13 +248,21 @@ addObtainedMessages cId reqCnt reqLatest posts =
 
             addingAtStart = maybe True (earliestDate <=) $
                             (^.mDate) <$> getEarliestPostMsg localMessages
-            removeStart = if addingAtStart && noMoreBefore then Nothing else Just (MessagePostId earliestPId)
-            removeEnd = if reqLatest || (addingAtEnd && noMoreAfter) then Nothing else Just (MessagePostId latestPId)
+            removeStart = if addingAtStart && noMoreBefore
+                          then Nothing
+                          else Just (MessagePostId earliestPId)
+            removeEnd = if addTrailingGap || (addingAtEnd && noMoreAfter)
+                        then Nothing
+                        else Just (MessagePostId latestPId)
 
             noMoreBefore = reqCnt < 0 && length pIdList < (-reqCnt)
-            noMoreAfter = reqLatest || reqCnt > 0 && length pIdList < reqCnt
+            noMoreAfter = addTrailingGap || reqCnt > 0 && length pIdList < reqCnt
 
             reAddGapBefore = earliestPId `elem` dupPIds || noMoreBefore
+            -- addingAtEnd used to be in reAddGapAfter but does not
+            -- seem to be needed.  I may have missed a specific use
+            -- case/scenario, so I've left it commented out here for
+            -- debug assistance.
             reAddGapAfter = latestPId `elem` dupPIds || {- addingAtEnd || -} noMoreAfter
 
         -- The post map returned by the server will *already* have
@@ -303,10 +321,10 @@ addObtainedMessages cId reqCnt reqLatest posts =
           -- removed messages.
 
           selMsgId <- use (csMessageSelect.to selectMessageId)
-          rmvdSel <- return $ do
-            i <- selMsgId -- :: Maybe MessageId
-            findMessage i removedMessages
-          rmvdSelType <- return (rmvdSel >>= pure . _mType)
+          let rmvdSel = do
+                i <- selMsgId -- :: Maybe MessageId
+                findMessage i removedMessages
+              rmvdSelType = _mType <$> rmvdSel
 
           case rmvdSel of
             Nothing -> return ()
@@ -678,12 +696,12 @@ asyncFetchMoreMessages = do
                       , MM.postQueryPerPage = Just pageAmount
                       , MM.postQueryBefore = sndOldestId
                       }
-            reqLatest = MM.postQueryBefore query == Nothing &&
-                        MM.postQueryPage query == Just 0
+            addTrailingGap = MM.postQueryBefore query == Nothing &&
+                             MM.postQueryPage query == Just 0
         in doAsyncChannelMM Preempt cId
                (\s _ c -> MM.mmGetPostsForChannel c query s)
                (\c p -> Just $ do
-                   pp <- addObtainedMessages c (-pageAmount) reqLatest p
+                   pp <- addObtainedMessages c (-pageAmount) addTrailingGap p
                    postProcessMessageAdd pp
                    mh $ invalidateCacheEntry (ChannelMessages cId))
 
@@ -730,24 +748,30 @@ asyncFetchMessagesForGap cId gapMessage =
                 , MM.postQueryBefore = if fetchNewer then Nothing else baseId
                 , MM.postQueryAfter = if fetchNewer then baseId else Nothing
                 }
-        reqLatest = MM.postQueryBefore query == Nothing &&
-                    MM.postQueryPage query == Just 0
+        addTrailingGap = MM.postQueryBefore query == Nothing &&
+                         MM.postQueryPage query == Just 0
     in doAsyncChannelMM Preempt cId
        (\s _ c -> MM.mmGetPostsForChannel c query s)
        (\c p -> Just $ do
-           void $ addObtainedMessages c (-pageAmount) reqLatest p
+           void $ addObtainedMessages c (-pageAmount) addTrailingGap p
            mh $ invalidateCacheEntry (ChannelMessages cId))
 
--- | Given a particular message ID, this fetches a few messages
--- immediately before and after the specified message in order to
--- establish some context for that message.  This is frequently used
--- as a background operation when looking at search or flag results so
--- that jumping to message select mode for one of those messages will
--- show a bit of context (and it also prevents showing gap messages
--- for adjacent targets).  Note that this fetch will add messages to
--- the channel, but it performs no notifications or updates of
--- new-unread indicators because it is assumed to be used for
--- non-current (previously-seen) messages in background mode.
+-- | Given a particular message ID, this fetches n messages before and
+-- after immediately before and after the specified message in order
+-- to establish some context for that message.  This is frequently
+-- used as a background operation when looking at search or flag
+-- results so that jumping to message select mode for one of those
+-- messages will show a bit of context (and it also prevents showing
+-- gap messages for adjacent targets).
+--
+-- The result will be adding at most 2n messages to the channel, with
+-- the input post ID being somewhere in the middle of the added
+-- messages.
+--
+-- Note that this fetch will add messages to the channel, but it
+-- performs no notifications or updates of new-unread indicators
+-- because it is assumed to be used for non-current (previously-seen)
+-- messages in background mode.
 asyncFetchMessagesSurrounding :: ChannelId -> PostId -> MH ()
 asyncFetchMessagesSurrounding cId pId = do
     let query = MM.defaultPostQuery
@@ -806,13 +830,13 @@ fetchVisibleIfNeeded = do
                                Just (MessagePostId pid) -> query { MM.postQueryBefore = Just pid }
                                _ -> query
                 op = \s _ c -> MM.mmGetPostsForChannel c finalQuery s
-                reqLatest = MM.postQueryBefore finalQuery == Nothing &&
-                            MM.postQueryPage finalQuery == Just 0
+                addTrailingGap = MM.postQueryBefore finalQuery == Nothing &&
+                                 MM.postQueryPage finalQuery == Just 0
             in when ((not $ chan^.ccContents.cdFetchPending) && gapInDisplayable) $ do
                       csChannel(cId).ccContents.cdFetchPending .= True
                       doAsyncChannelMM Preempt cId op
                           (\c p -> Just $ do
-                              addObtainedMessages c (-numToReq) reqLatest p >>= postProcessMessageAdd
+                              addObtainedMessages c (-numToReq) addTrailingGap p >>= postProcessMessageAdd
                               csChannel(c).ccContents.cdFetchPending .= False)
 
 asyncFetchAttachments :: Post -> MH ()
