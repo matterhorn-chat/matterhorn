@@ -85,7 +85,7 @@ import           Types.Common
 data ClientChannel = ClientChannel
   { _ccContents :: ChannelContents
     -- ^ A list of 'Message's in the channel
-  , _ccInfo     :: ChannelInfo
+  , _ccInfo :: ChannelInfo
     -- ^ The 'ChannelInfo' for the channel
   }
 
