@@ -168,10 +168,8 @@ isDeletable m =
       CP Emote -> True
       _ -> False
 
-
 isFlaggable :: Message -> Bool
 isFlaggable = isJust . messagePostId
-
 
 isReplyable :: Message -> Bool
 isReplyable m =
@@ -181,7 +179,6 @@ isReplyable m =
       CP Emote -> True
       _ -> False
 
-
 isEditable :: Message -> Bool
 isEditable m =
     isJust (messagePostId m) &&
@@ -190,13 +187,11 @@ isEditable m =
       CP Emote -> True
       _ -> False
 
-
 isReplyTo :: PostId -> Message -> Bool
 isReplyTo expectedParentId m =
     case _mInReplyToMsg m of
         NotAReply                -> False
         InReplyTo actualParentId -> actualParentId == expectedParentId
-
 
 isGap :: Message -> Bool
 isGap m = case _mType m of
@@ -204,13 +199,11 @@ isGap m = case _mType m of
             C UnknownGapAfter -> True
             _ -> False
 
-
 isTransition :: Message -> Bool
 isTransition m = case _mType m of
                    C DateTransition -> True
                    C NewMessagesTransition -> True
                    _ -> False
-
 
 isEmote :: Message -> Bool
 isEmote m = case _mType m of
