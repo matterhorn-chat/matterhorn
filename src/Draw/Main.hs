@@ -256,7 +256,7 @@ renderUserCommandBox st hs =
                         ]
             _ -> emptyWidget
 
-        commandBox = case st^.csEditState.cedMultiline of
+        commandBox = case st^.csEditState.cedEphemeral.eesMultiline of
             False ->
                 let linesStr = "line" <> if numLines == 1 then "" else "s"
                     numLines = length curContents

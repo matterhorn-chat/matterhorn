@@ -93,8 +93,8 @@ module Types
   , cedSpellChecker
   , cedMisspellings
   , cedEditMode
+  , cedEphemeral
   , cedEditor
-  , cedMultiline
   , cedInputHistory
   , cedInputHistoryPosition
   , cedLastChannelInput
@@ -837,7 +837,7 @@ data AutocompleteState =
 data ChatEditState =
     ChatEditState { _cedEditor :: Editor Text Name
                   , _cedEditMode :: EditMode
-                  , _cedMultiline :: Bool
+                  , _cedEphemeral :: EphemeralEditState
                   , _cedInputHistory :: InputHistory
                   , _cedInputHistoryPosition :: HashMap ChannelId (Maybe Int)
                   , _cedLastChannelInput :: HashMap ChannelId (Text, EditMode)
@@ -887,7 +887,7 @@ emptyEditState :: InputHistory -> Maybe (Aspell, IO ()) -> IO ChatEditState
 emptyEditState hist sp = do
     browser <- FB.newFileBrowser FB.selectNonDirectories AttachmentFileBrowser Nothing
     return ChatEditState { _cedEditor               = editor MessageInput Nothing ""
-                         , _cedMultiline            = False
+                         , _cedEphemeral            = defaultEphemeralEditState
                          , _cedInputHistory         = hist
                          , _cedInputHistoryPosition = mempty
                          , _cedLastChannelInput     = mempty

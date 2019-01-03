@@ -53,7 +53,7 @@ renderAutocompleteBox st ac =
        else Widget Greedy Greedy $ do
            ctx <- getContext
            let rowOffset = ctx^.availHeightL - 3 - editorOffset - visibleHeight
-               editorOffset = if st^.csEditState.cedMultiline
+               editorOffset = if st^.csEditState.cedEphemeral.eesMultiline
                               then multilineHeightLimit
                               else 0
            render $ translateBy (Location (0, rowOffset)) $

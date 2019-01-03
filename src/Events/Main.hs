@@ -82,7 +82,7 @@ mainKeybindings = mkKeybindings
         "Scroll up in the channel input history" $ do
              -- Up in multiline mode does the usual thing; otherwise we
              -- navigate the history.
-             isMultiline <- use (csEditState.cedMultiline)
+             isMultiline <- use (csEditState.cedEphemeral.eesMultiline)
              case isMultiline of
                  True -> mhHandleEventLensed (csEditState.cedEditor) handleEditorEvent
                                            (Vty.EvKey Vty.KUp [])
@@ -93,7 +93,7 @@ mainKeybindings = mkKeybindings
         "Scroll down in the channel input history" $ do
              -- Down in multiline mode does the usual thing; otherwise
              -- we navigate the history.
-             isMultiline <- use (csEditState.cedMultiline)
+             isMultiline <- use (csEditState.cedEphemeral.eesMultiline)
              case isMultiline of
                  True -> mhHandleEventLensed (csEditState.cedEditor) handleEditorEvent
                                            (Vty.EvKey Vty.KDown [])
@@ -128,7 +128,7 @@ mainKeybindings = mkKeybindings
 
     , staticKb "Send the current message"
          (Vty.EvKey Vty.KEnter []) $ do
-             isMultiline <- use (csEditState.cedMultiline)
+             isMultiline <- use (csEditState.cedEphemeral.eesMultiline)
              case isMultiline of
                  -- Normally, this event causes the current message to
                  -- be sent. But in multiline mode we want to insert a

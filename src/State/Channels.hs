@@ -500,6 +500,12 @@ resetCurrentEdit = do
 loadLastEdit :: MH ()
 loadLastEdit = do
     cId <- use csCurrentChannelId
+
+    oldEphemeral <- preuse (csChannel(cId).ccEditState)
+    case oldEphemeral of
+        Nothing -> return ()
+        Just e -> csEditState.cedEphemeral .= e
+
     lastInput <- use (csEditState.cedLastChannelInput.at cId)
     case lastInput of
         Nothing -> return ()
@@ -537,6 +543,9 @@ saveCurrentEdit = do
     mode <- use (csEditState.cedEditMode)
     csEditState.cedLastChannelInput.at cId .=
       Just (T.intercalate "\n" $ getEditContents $ cmdLine, mode)
+
+    oldEphemeral <- use (csEditState.cedEphemeral)
+    csChannel(cId).ccEditState .= oldEphemeral
 
 hideGroupChannelPref :: ChannelId -> UserId -> Preference
 hideGroupChannelPref cId uId =

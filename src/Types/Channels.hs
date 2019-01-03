@@ -10,8 +10,11 @@ module Types.Channels
   , ChannelInfo(..)
   , ClientChannels -- constructor remains internal
   , NewMessageIndicator(..)
+  , EphemeralEditState(..)
+  , eesMultiline
+  , defaultEphemeralEditState
   -- * Lenses created for accessing ClientChannel fields
-  , ccContents, ccInfo
+  , ccContents, ccInfo, ccEditState
   -- * Lenses created for accessing ChannelInfo fields
   , cdViewed, cdNewMessageIndicator, cdEditedMessageThreshold, cdUpdated
   , cdName, cdHeader, cdPurpose, cdType
@@ -87,7 +90,15 @@ data ClientChannel = ClientChannel
     -- ^ A list of 'Message's in the channel
   , _ccInfo :: ChannelInfo
     -- ^ The 'ChannelInfo' for the channel
+  , _ccEditState :: EphemeralEditState
+    -- ^ Editor state that we swap in and out as the current channel is
+    -- changed.
   }
+
+data EphemeralEditState =
+    EphemeralEditState { _eesMultiline :: Bool
+                       -- ^ Whether the editor is in multiline mode
+                       }
 
 -- Get a channel's name, depending on its type
 preferredChannelName :: Channel -> Text
@@ -203,6 +214,7 @@ data ChannelInfo = ChannelInfo
 makeLenses ''ChannelContents
 makeLenses ''ChannelInfo
 makeLenses ''ClientChannel
+makeLenses ''EphemeralEditState
 
 notifyPreference :: User -> ClientChannel -> NotifyOption
 notifyPreference u cc =
@@ -217,7 +229,13 @@ makeClientChannel myId nc = emptyChannelContents >>= \contents ->
   return ClientChannel
   { _ccContents = contents
   , _ccInfo = initialChannelInfo myId nc
+  , _ccEditState = defaultEphemeralEditState
   }
+
+defaultEphemeralEditState :: EphemeralEditState
+defaultEphemeralEditState =
+    EphemeralEditState { _eesMultiline = False
+                       }
 
 canLeaveChannel :: ChannelInfo -> Bool
 canLeaveChannel cInfo = not $ cInfo^.cdType `elem` [Direct]

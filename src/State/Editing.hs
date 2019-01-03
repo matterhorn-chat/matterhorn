@@ -58,12 +58,12 @@ import           Types.Common ( sanitizeChar, sanitizeUserText' )
 startMultilineEditing :: MH ()
 startMultilineEditing = do
     mh invalidateCache
-    csEditState.cedMultiline .= True
+    csEditState.cedEphemeral.eesMultiline .= True
 
 toggleMultilineEditing :: MH ()
 toggleMultilineEditing = do
     mh invalidateCache
-    csEditState.cedMultiline %= not
+    csEditState.cedEphemeral.eesMultiline %= not
 
 invokeExternalEditor :: MH ()
 invokeExternalEditor = do
@@ -110,7 +110,7 @@ handlePaste bytes = do
 editingPermitted :: ChatState -> Bool
 editingPermitted st =
     (length (getEditContents $ st^.csEditState.cedEditor) == 1) ||
-    st^.csEditState.cedMultiline
+    st^.csEditState.cedEphemeral.eesMultiline
 
 editingKeybindings :: [Keybinding]
 editingKeybindings =
@@ -268,7 +268,7 @@ handleEditingInput e = do
                          curLine == "``" &&
                          ch == '`' -> do
                         csEditState.cedEditor %= applyEdit (Z.insertMany (T.singleton ch))
-                        csEditState.cedMultiline .= True
+                        csEditState.cedEphemeral.eesMultiline .= True
                     -- Second case: user entered some smart character
                     -- (don't care which) on an empty line or at the end
                     -- of the line after whitespace, so enter a pair of
