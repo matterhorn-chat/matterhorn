@@ -6,6 +6,8 @@ module State.Editing
   , toggleMultilineEditing
   , invokeExternalEditor
   , handlePaste
+  , handleInputSubmission
+  , getEditorContent
   , handleEditingInput
   , cancelAutocompleteOrReplyOrEdit
   , replyToLatestMessage
@@ -18,10 +20,12 @@ import           Prelude.MH
 import           Brick.Main ( invalidateCache )
 import           Brick.Widgets.Edit ( Editor, applyEdit , handleEditorEvent
                                     , getEditContents, editContentsL )
+import qualified Brick.Widgets.List as L
 import qualified Codec.Binary.UTF8.Generic as UTF8
 import           Control.Arrow
 import qualified Control.Concurrent.STM as STM
 import qualified Data.ByteString as BS
+import qualified Data.Foldable as F
 import qualified Data.Set as S
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -29,7 +33,7 @@ import qualified Data.Text.Zipper as Z
 import qualified Data.Text.Zipper.Generic.Words as Z
 import           Data.Time ( getCurrentTime )
 import           Graphics.Vty ( Event(..), Key(..), Modifier(..) )
-import           Lens.Micro.Platform ( (%=), (.=), (.~), to )
+import           Lens.Micro.Platform ( (%=), (.=), (.~), to, at )
 import qualified System.Environment as Sys
 import qualified System.Exit as Sys
 import qualified System.IO as Sys
@@ -37,13 +41,16 @@ import qualified System.IO.Temp as Sys
 import qualified System.Process as Sys
 import           Text.Aspell ( AspellResponse(..), mistakeWord, askAspell )
 
-import           Network.Mattermost.Types ( Post(..) )
+import           Network.Mattermost.Types ( Post(..), ChannelId )
 
 import           Config
+import {-# SOURCE #-} Command ( dispatchCommand )
+import           InputHistory
 import           Events.Keybindings
 import           State.Common
 import           State.Autocomplete
 import           State.Attachments
+import           State.Messages
 import           Types hiding ( newState )
 import           Types.Common ( sanitizeChar, sanitizeUserText' )
 
@@ -167,6 +174,50 @@ editingKeybindings =
       KB kbDescription kbEvent
          (kbAction >> sendUserTypingAction)
          kbBindingInfo
+
+getEditorContent :: MH Text
+getEditorContent = do
+    cmdLine <- use (csEditState.cedEditor)
+    let (line:rest) = getEditContents cmdLine
+    return $ T.intercalate "\n" $ line : rest
+
+-- | Handle an input submission in the message editor.
+--
+-- This handles the specified input text as if it were user input for
+-- the specified channel. This means that if the specified input text
+-- contains a command ("/...") then it is executed as normal. Otherwise
+-- the text is sent as a message to the specified channel.
+--
+-- However, this function assumes that the message editor is the
+-- *source* of the text, so it also takes care of clearing the editor,
+-- resetting the edit mode, updating the input history for the specified
+-- channel, etc.
+handleInputSubmission :: ChannelId -> Text -> MH ()
+handleInputSubmission cId content = do
+    -- We clean up before dispatching the command or sending the message
+    -- since otherwise the command could change the state and then doing
+    -- cleanup afterwards could clean up the wrong things.
+    csEditState.cedEditor %= applyEdit Z.clearZipper
+    csEditState.cedInputHistory %= addHistoryEntry content cId
+    csEditState.cedInputHistoryPosition.at cId .= Nothing
+
+    case T.uncons content of
+      Just ('/', cmd) ->
+          dispatchCommand cmd
+      _ -> do
+          attachments <- use (csEditState.cedAttachmentList.L.listElementsL)
+          mode <- use (csEditState.cedEditMode)
+          sendMessage cId mode content $ F.toList attachments
+
+    -- Reset the autocomplete UI
+    resetAutocomplete
+
+    -- Empty the attachment list
+    resetAttachmentList
+
+    -- Reset the edit mode *after* handling the input so that the input
+    -- handler can tell whether we're editing, replying, etc.
+    csEditState.cedEditMode .= NewPost
 
 handleEditingInput :: Event -> MH ()
 handleEditingInput e = do

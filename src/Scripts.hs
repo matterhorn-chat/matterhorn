@@ -46,7 +46,8 @@ runScript outputChan fp text = do
         case null $ programStderr po of
             True -> Just $ do
                 mode <- use (csEditState.cedEditMode)
-                sendMessage mode (T.pack $ programStdout po) []
+                cId <- use csCurrentChannelId
+                sendMessage cId mode (T.pack $ programStdout po) []
             False -> Nothing
     ExitFailure _ -> Nothing
 

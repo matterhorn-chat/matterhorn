@@ -45,7 +45,7 @@ enterChannelMembersUserList = do
   myTId <- gets myTeamId
   enterUserListMode (ChannelMembers cId myTId)
     (\u -> case u^.uiId /= myId of
-      True -> createOrFocusDMChannel u >> return True
+      True -> createOrFocusDMChannel u Nothing >> return True
       False -> return False
     )
 
@@ -75,7 +75,7 @@ enterDMSearchUserList = do
           _ -> Nothing
   enterUserListMode (AllUsers restrictTeam)
     (\u -> case u^.uiId /= myId of
-      True -> createOrFocusDMChannel u >> return True
+      True -> createOrFocusDMChannel u Nothing >> return True
       False -> return False
     )
 

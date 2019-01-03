@@ -89,17 +89,16 @@ addEndGap cId = withChannel cId $ \chan ->
 lastMsg :: RetrogradeMessages -> Maybe Message
 lastMsg = withFirstMessage id
 
-sendMessage :: EditMode -> Text -> [AttachmentData] -> MH ()
-sendMessage mode msg attachments =
+-- | Send a message and attachments to the specified channel.
+sendMessage :: ChannelId -> EditMode -> Text -> [AttachmentData] -> MH ()
+sendMessage chanId mode msg attachments =
     when (not $ shouldSkipMessage msg) $ do
         status <- use csConnectionStatus
-        st <- use id
         case status of
             Disconnected -> do
                 let m = "Cannot send messages while disconnected."
                 mhError $ GenericError m
             Connected -> do
-                let chanId = st^.csCurrentChannelId
                 session <- getSession
                 doAsync Preempt $ do
                     -- Upload attachments
