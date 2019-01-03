@@ -25,12 +25,14 @@ import           Connection ( connectWebsockets )
 import           HelpTopics
 import           Scripts
 import           State.Help
+import           State.Editing
 import           State.Channels
 import           State.ChannelSelect
 import           State.Logging
 import           State.PostListOverlay
 import           State.Themes
 import           State.UserListOverlay
+import           State.Users
 import           Types
 
 
@@ -128,6 +130,14 @@ commandList =
   , Cmd "msg" "Chat with the specified user"
     (TokenArg "user" NoArg) $ \ (name, ()) ->
         changeChannelByName name
+
+  , Cmd "msg" "Chat with the specified user"
+    (TokenArg "user" $ LineArg "message") $ \ (name, msg) -> do
+        withFetchedUserMaybe (UserFetchByUsername name) $ \foundUser -> do
+            case foundUser of
+                Just user -> createOrFocusDMChannel user $ Just $ \cId ->
+                    handleInputSubmission cId msg
+                Nothing -> mhError $ NoSuchUser name
 
   , Cmd "log-start" "Begin logging to the specified path"
     (TokenArg "path" NoArg) $ \ (path, ()) ->

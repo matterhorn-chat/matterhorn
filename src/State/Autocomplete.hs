@@ -24,7 +24,7 @@ import qualified Skylighting.Types as Sky
 import           Network.Mattermost.Types (userId, channelId)
 import qualified Network.Mattermost.Endpoints as MM
 
-import           Command ( commandList, printArgSpec )
+import {-# SOURCE #-} Command ( commandList, printArgSpec )
 import           State.Common
 import           Types hiding ( newState )
 

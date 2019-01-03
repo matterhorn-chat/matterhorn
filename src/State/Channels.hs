@@ -943,11 +943,15 @@ joinChannel chanId = do
             csPendingChannelChange .= (Just $ ChangeByChannelId chanId)
             doAsyncChannelMM Preempt chanId (\ s _ c -> MM.mmAddUser c member s) endAsyncNOP
 
-createOrFocusDMChannel :: UserInfo -> MH ()
-createOrFocusDMChannel user = do
+createOrFocusDMChannel :: UserInfo -> Maybe (ChannelId -> MH ()) -> MH ()
+createOrFocusDMChannel user successAct = do
     cs <- use csChannels
     case getDmChannelFor (user^.uiId) cs of
-        Just cId -> setFocus cId
+        Just cId -> do
+            setFocus cId
+            case successAct of
+                Nothing -> return ()
+                Just act -> act cId
         Nothing -> do
             -- We have a user of that name but no channel. Time to make one!
             myId <- gets myUserId
@@ -955,8 +959,8 @@ createOrFocusDMChannel user = do
             csPendingChannelChange .= (Just $ ChangeByUserId $ user^.uiId)
             doAsyncWith Normal $ do
                 -- create a new channel
-                void $ MM.mmCreateDirectMessageChannel (user^.uiId, myId) session
-                return Nothing
+                chan <- MM.mmCreateDirectMessageChannel (user^.uiId, myId) session
+                return $ successAct <*> pure (channelId chan)
 
 -- | This switches to the named channel or creates it if it is a missing
 -- but valid user channel.
@@ -972,7 +976,7 @@ changeChannelByName name = do
               case foundUser of
                   -- We know about the user but there isn't already a DM
                   -- channel, so create one.
-                  Just user -> createOrFocusDMChannel user
+                  Just user -> createOrFocusDMChannel user Nothing
                   -- There were no matches of any kind.
                   Nothing -> mhError $ NoSuchChannel name
           (Just cId, Nothing)
