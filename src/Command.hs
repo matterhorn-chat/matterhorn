@@ -131,7 +131,7 @@ commandList =
     (TokenArg "user" NoArg) $ \ (name, ()) ->
         changeChannelByName name
 
-  , Cmd "msg" "Chat with the specified user"
+  , Cmd "msg" "Go to a user's channel and send the specified message"
     (TokenArg "user" $ LineArg "message") $ \ (name, msg) -> do
         withFetchedUserMaybe (UserFetchByUsername name) $ \foundUser -> do
             case foundUser of
