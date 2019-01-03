@@ -259,7 +259,13 @@ handleEditingInput e = do
               let doInsertChar = do
                     csEditState.cedEditor %= applyEdit (Z.insertChar ch)
                     sendUserTypingAction
-              in if | (editorEmpty $ st^.csEditState.cedEditor) ||
+                  curLine = Z.currentLine $ st^.csEditState.cedEditor.editContentsL
+              in if | (cursorIsAtEnd $ st^.csEditState.cedEditor) &&
+                         curLine == "``" &&
+                         ch == '`' -> do
+                        csEditState.cedEditor %= applyEdit (Z.insertMany (T.singleton ch))
+                        csEditState.cedMultiline .= True
+                    | (editorEmpty $ st^.csEditState.cedEditor) ||
                          ((cursorAtChar ' ' (applyEdit Z.moveLeft $ st^.csEditState.cedEditor)) &&
                           (cursorIsAtEnd $ st^.csEditState.cedEditor)) ->
                         csEditState.cedEditor %= applyEdit (Z.insertMany (T.pack $ ch:ch:[]) >>> Z.moveLeft)
