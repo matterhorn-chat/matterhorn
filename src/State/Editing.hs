@@ -269,13 +269,23 @@ handleEditingInput e = do
                          ch == '`' -> do
                         csEditState.cedEditor %= applyEdit (Z.insertMany (T.singleton ch))
                         csEditState.cedMultiline .= True
+                    -- Second case: user entered some smart character
+                    -- (don't care which) on an empty line or at the end
+                    -- of the line after whitespace, so enter a pair of
+                    -- the smart chars and put the cursor between them.
                     | (editorEmpty $ st^.csEditState.cedEditor) ||
                          ((cursorAtChar ' ' (applyEdit Z.moveLeft $ st^.csEditState.cedEditor)) &&
                           (cursorIsAtEnd $ st^.csEditState.cedEditor)) ->
                         csEditState.cedEditor %= applyEdit (Z.insertMany (T.pack $ ch:ch:[]) >>> Z.moveLeft)
+                    -- Third case: the cursor is already on a smart
+                    -- character and that character is the last one
+                    -- on the line, so instead of inserting a new
+                    -- character, just move past it.
                     | (cursorAtChar ch $ st^.csEditState.cedEditor) &&
                       (cursorIsAtEnd $ applyEdit Z.moveRight $ st^.csEditState.cedEditor) ->
                         csEditState.cedEditor %= applyEdit Z.moveRight
+                    -- Fall-through case: just insert one of the chars
+                    -- without doing anything smart.
                     | otherwise -> doInsertChar
             | editingPermitted st -> do
               csEditState.cedEditor %= applyEdit (Z.insertMany (sanitizeChar ch))
