@@ -260,6 +260,10 @@ handleEditingInput e = do
                     csEditState.cedEditor %= applyEdit (Z.insertChar ch)
                     sendUserTypingAction
                   curLine = Z.currentLine $ st^.csEditState.cedEditor.editContentsL
+              -- First case: if the cursor is at the end of the current
+              -- line and it contains "``" and the user entered a third
+              -- "`", enable multi-line mode since they're likely typing
+              -- a code block.
               in if | (cursorIsAtEnd $ st^.csEditState.cedEditor) &&
                          curLine == "``" &&
                          ch == '`' -> do
