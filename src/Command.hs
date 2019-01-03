@@ -121,9 +121,13 @@ commandList =
     NoArg $ \ () ->
         enterChannelInviteUserList
 
-  , Cmd "msg" "Chat with a user privately"
+  , Cmd "msg" "Find a user to enter a private chat"
     NoArg $ \ () ->
         enterDMSearchUserList
+
+  , Cmd "msg" "Chat with the specified user"
+    (TokenArg "user" NoArg) $ \ (name, ()) ->
+        changeChannelByName name
 
   , Cmd "log-start" "Begin logging to the specified path"
     (TokenArg "path" NoArg) $ \ (path, ()) ->
