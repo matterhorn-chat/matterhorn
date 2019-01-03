@@ -69,4 +69,7 @@ messageSelectKeybindings = mkKeybindings
     , mkKb ViewMessageEvent "View the selected message"
          viewSelectedMessage
 
+    , mkKb FillGapEvent "Fetch messages for the selected gap"
+         fillSelectedGap
+
     ]

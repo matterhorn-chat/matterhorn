@@ -138,7 +138,8 @@ defaultBindings ev =
         SearchSelectUpEvent -> [ ctrl (key 'p'), kb Vty.KUp ]
         SearchSelectDownEvent -> [  ctrl (key 'n'), kb Vty.KDown ]
 
-        ViewMessageEvent    -> [ key 'v', kb Vty.KEnter ]
+        ViewMessageEvent    -> [ key 'v' ]
+        FillGapEvent        -> [ kb Vty.KEnter ]
         FlagMessageEvent    -> [ key 'f' ]
         YankMessageEvent    -> [ key 'y' ]
         YankWholeMessageEvent -> [ key 'Y' ]

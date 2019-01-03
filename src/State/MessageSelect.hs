@@ -4,6 +4,7 @@ module State.MessageSelect
     beginMessageSelect
   , flagSelectedMessage
   , viewSelectedMessage
+  , fillSelectedGap
   , yankSelectedMessageVerbatim
   , yankSelectedMessage
   , openSelectedMessageURLs
@@ -83,9 +84,16 @@ viewSelectedMessage = do
   selected <- use (to getSelectedMessage)
   case selected of
     Just msg
+      | not (isGap msg) -> viewMessage msg
+    _        -> return ()
+
+fillSelectedGap :: MH ()
+fillSelectedGap = do
+  selected <- use (to getSelectedMessage)
+  case selected of
+    Just msg
       | isGap msg -> do cId <- use csCurrentChannelId
                         asyncFetchMessagesForGap cId msg
-      | otherwise -> viewMessage msg
     _        -> return ()
 
 viewMessage :: Message -> MH ()
