@@ -158,37 +158,37 @@ mainKeybindings = mkKeybindings
 
 handleInputSubmission :: MH ()
 handleInputSubmission = do
-  cmdLine <- use (csEditState.cedEditor)
-  cId <- use csCurrentChannelId
+    cmdLine <- use (csEditState.cedEditor)
+    cId <- use csCurrentChannelId
 
-  -- send the relevant message
-  mode <- use (csEditState.cedEditMode)
-  let (line:rest) = getEditContents cmdLine
-      allLines = T.intercalate "\n" $ line : rest
+    -- send the relevant message
+    mode <- use (csEditState.cedEditMode)
+    let (line:rest) = getEditContents cmdLine
+        allLines = T.intercalate "\n" $ line : rest
 
-  -- We clean up before dispatching the command or sending the message
-  -- since otherwise the command could change the state and then doing
-  -- cleanup afterwards could clean up the wrong things.
-  csEditState.cedEditor %= applyEdit Z.clearZipper
-  csEditState.cedInputHistory %= addHistoryEntry allLines cId
-  csEditState.cedInputHistoryPosition.at cId .= Nothing
+    -- We clean up before dispatching the command or sending the message
+    -- since otherwise the command could change the state and then doing
+    -- cleanup afterwards could clean up the wrong things.
+    csEditState.cedEditor %= applyEdit Z.clearZipper
+    csEditState.cedInputHistory %= addHistoryEntry allLines cId
+    csEditState.cedInputHistoryPosition.at cId .= Nothing
 
-  case T.uncons allLines of
-    Just ('/', cmd) ->
-        dispatchCommand cmd
-    _ -> do
-        attachments <- use (csEditState.cedAttachmentList.L.listElementsL)
-        sendMessage mode allLines $ F.toList attachments
+    case T.uncons allLines of
+      Just ('/', cmd) ->
+          dispatchCommand cmd
+      _ -> do
+          attachments <- use (csEditState.cedAttachmentList.L.listElementsL)
+          sendMessage mode allLines $ F.toList attachments
 
-  -- Reset the autocomplete UI
-  resetAutocomplete
+    -- Reset the autocomplete UI
+    resetAutocomplete
 
-  -- Empty the attachment list
-  resetAttachmentList
+    -- Empty the attachment list
+    resetAttachmentList
 
-  -- Reset the edit mode *after* handling the input so that the input
-  -- handler can tell whether we're editing, replying, etc.
-  csEditState.cedEditMode .= NewPost
+    -- Reset the edit mode *after* handling the input so that the input
+    -- handler can tell whether we're editing, replying, etc.
+    csEditState.cedEditMode .= NewPost
 
 data Direction = Forwards | Backwards
 
