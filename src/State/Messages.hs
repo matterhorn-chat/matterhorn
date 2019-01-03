@@ -358,9 +358,7 @@ addObtainedMessages cId reqCnt addTrailingGap posts =
               -- select to first (earliest) message)
               case rmvdSelType of
                 Just (C UnknownGapBefore) ->
-                          csMessageSelect .= MessageSelectState
-                            (_mMessageId =<<
-                             getEarliestSelectableMessage resultMessages)
+                  csMessageSelect .= MessageSelectState (pure $ MessagePostId earliestPId)
                 _ -> return ()
             else do
               -- add a gap at the start of the newly fetched block and
@@ -381,9 +379,7 @@ addObtainedMessages cId reqCnt addTrailingGap posts =
               -- select to last (latest) message.
               case rmvdSelType of
                 Just (C UnknownGapAfter) ->
-                          csMessageSelect .= MessageSelectState
-                            (_mMessageId =<<
-                             getLatestSelectableMessage resultMessages)
+                  csMessageSelect .= MessageSelectState (pure $ MessagePostId latestPId)
                 _ -> return ()
             else do
               -- add a gap at the end of the newly fetched block and
