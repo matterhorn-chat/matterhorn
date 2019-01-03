@@ -222,6 +222,29 @@ the first component should increment if the package undergoes major code
 changes or functionality changes. The second component alone should
 change only if the package undergoes security fixes or other bug fixes.
 
+# Our Design Philosophy
+
+Overall, we strive to build a terminal client that provides the same
+basic feature set as the web client. This is reflected in the state
+of the client, our issue backlog, and the content of our wiki feature
+design discussions.
+
+We intend to add web client features to Matterhorn to the extent that
+they can be added sensibly in a terminal setting. Our goal is to do
+so in a way that minimizes surprise to web client users migrating to
+Matterhorn while also providing the best terminal user experience that
+we can think of. That might entail adding the web client features but
+changing their designs to ones better suited for terminal use or it
+might mean omitting aspects of web client features that rely heavily on
+mouse- or DOM-related UI idioms. It might also entail adding web client
+features but deviating slightly on specific behaviors.
+
+If you are used to a web client feature and don't see it in Matterhorn,
+that's probably because we just haven't gotten to it yet. We would
+be happy to hear from people wanting to contribute! If you can't
+contribute, search existing issues to see if we already have an issue
+for it, or create a new issue and let us know!
+
 # Contributing
 
 If you decide to contribute, that's great! Here are some guidelines you
