@@ -83,6 +83,7 @@ addEndGap cId = withChannel cId $ \chan ->
 lastMsg :: RetrogradeMessages -> Maybe Message
 lastMsg = withFirstMessage id
 
+-- | Send a message and attachments to the specified channel.
 sendMessage :: ChannelId -> EditMode -> Text -> [AttachmentData] -> MH ()
 sendMessage chanId mode msg attachments =
     when (not $ shouldSkipMessage msg) $ do

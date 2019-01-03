@@ -181,6 +181,17 @@ getEditorContent = do
     let (line:rest) = getEditContents cmdLine
     return $ T.intercalate "\n" $ line : rest
 
+-- | Handle an input submission in the message editor.
+--
+-- This handles the specified input text as if it were user input for
+-- the specified channel. This means that if the specified input text
+-- contains a command ("/...") then it is executed as normal. Otherwise
+-- the text is sent as a message to the specified channel.
+--
+-- However, this function assumes that the message editor is the
+-- *source* of the text, so it also takes care of clearing the editor,
+-- resetting the edit mode, updating the input history for the specified
+-- channel, etc.
 handleInputSubmission :: ChannelId -> Text -> MH ()
 handleInputSubmission cId content = do
     -- We clean up before dispatching the command or sending the message
