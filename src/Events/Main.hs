@@ -22,7 +22,6 @@ import           State.Channels
 import           State.Editing
 import           State.Help
 import           State.MessageSelect
-import           State.Messages ( sendMessage )
 import           State.PostListOverlay ( enterFlaggedPostListMode )
 import           State.UrlSelect
 import           Types
