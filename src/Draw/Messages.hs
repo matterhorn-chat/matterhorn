@@ -77,22 +77,19 @@ renderChatMessage st hs ind renderTimeFunc msg =
                in Just $ withDefAttr emojiAttr $ txt ("   " <> reacMsg)
         msgTxt =
           case msg^.mUser of
-            NoUser ->
+            NoUser
+              | isGap msg -> withDefAttr gapMessageAttr m
+              | otherwise ->
                 case msg^.mType of
                     C DateTransition -> withDefAttr dateTransitionAttr (hBorderWithLabel m)
                     C NewMessagesTransition -> withDefAttr newMessageTransitionAttr (hBorderWithLabel m)
                     C Error -> withDefAttr errorMessageAttr m
-                    C UnknownGap -> withDefAttr gapMessageAttr m
                     _ -> withDefAttr clientMessageAttr m
-            _ | msg^.mType == CP Join || msg^.mType == CP Leave ->
-                  withDefAttr clientMessageAttr m
+            _ | isJoinLeave msg -> withDefAttr clientMessageAttr m
               | otherwise -> m
         fullMsg = vBox $ msgTxt : catMaybes [msgAtch, msgReac]
         maybeRenderTime w = hBox [renderTimeFunc (msg^.mDate), txt " ", w]
-        maybeRenderTimeWith f = case msg^.mType of
-            C DateTransition -> id
-            C NewMessagesTransition -> id
-            _ -> f
+        maybeRenderTimeWith f = if isTransition msg then id else f
     in maybeRenderTimeWith maybeRenderTime fullMsg
 
 -- | Render a selected message with focus, including the messages

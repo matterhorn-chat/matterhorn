@@ -70,7 +70,7 @@ data ClientMessage = ClientMessage
   { _cmText :: Text
   , _cmDate :: ServerTime
   , _cmType :: ClientMessageType
-  } deriving (Eq, Show)
+  } deriving (Show)
 
 -- | Create a new 'ClientMessage' value.  This is a message generated
 -- by this Matterhorn client and not by (or visible to) the Server.
@@ -92,8 +92,13 @@ data ClientMessageType =
     | Error
     | DateTransition
     | NewMessagesTransition
-    | UnknownGap  -- ^ marks region where server may have messages unknown locally
-    deriving (Eq, Show)
+    | UnknownGapBefore -- ^ a region where the server may have
+                       -- messages before the given timestamp that are
+                       -- not known locally by this client
+    | UnknownGapAfter  -- ^ a region where server may have messages
+                       -- after the given timestamp that are not known
+                       -- locally by this client
+    deriving (Show)
 
 -- ** 'ClientMessage' Lenses
 

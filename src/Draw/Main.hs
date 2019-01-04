@@ -49,12 +49,12 @@ previewFromInput overrideTy uId s =
     -- If it starts with a slash but not /me, this has no preview
     -- representation
     let isCommand = "/" `T.isPrefixOf` s
-        isEmote = "/me " `T.isPrefixOf` s
-        content = if isEmote
+        isEmoteCmd = "/me " `T.isPrefixOf` s
+        content = if isEmoteCmd
                   then T.stripStart $ T.drop 3 s
                   else s
-        msgTy = fromMaybe (if isEmote then CP Emote else CP NormalPost) overrideTy
-    in if isCommand && not isEmote
+        msgTy = fromMaybe (if isEmoteCmd then CP Emote else CP NormalPost) overrideTy
+    in if isCommand && not isEmoteCmd
        then Nothing
        else Just $ Message { _mText          = getBlocks content
                            , _mMarkdownSource = content
@@ -405,7 +405,7 @@ getMessageListing cId st =
     st ^?! csChannels.folding (findChannelById cId) . ccContents . cdMessages . to (filterMessages isShown)
     where isShown m
             | st^.csResources.crUserPreferences.userPrefShowJoinLeave = True
-            | otherwise = m^.mType /= CP Join && m^.mType /= CP Leave
+            | otherwise = not $ isJoinLeave m
 
 insertTransitions :: Messages -> Maybe NewMessageIndicator -> Text -> TimeZoneSeries -> Messages
 insertTransitions ms cutoff = insertDateMarkers $ foldr addMessage ms newMessagesT
@@ -475,7 +475,7 @@ messageSelectBottomBar st =
                     , kbEvent       = b
                     } <- keymap
                , e' == e ]
-        options = [ ( const True
+        options = [ ( not . isGap
                     , ev YankWholeMessageEvent
                     , "yank-all" )
                   , ( \m -> isFlaggable m && not (m^.mFlagged)
@@ -487,9 +487,12 @@ messageSelectBottomBar st =
                   , ( isReplyable
                     , ev ReplyMessageEvent
                     , "reply" )
-                  , ( const True
+                  , ( not . isGap
                     , ev ViewMessageEvent
                     , "view" )
+                  , ( isGap
+                    , ev FillGapEvent
+                    , "view (fetch) messages for this gap" )
                   , ( \m -> isMine st m && isEditable m
                     , ev EditMessageEvent
                     , "edit" )

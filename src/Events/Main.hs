@@ -4,7 +4,6 @@ module Events.Main where
 import           Prelude ()
 import           Prelude.MH
 
-import           Brick hiding ( Direction )
 import           Brick.Widgets.Edit
 import qualified Brick.Widgets.List as L
 import           Data.Char ( isSpace )
@@ -14,15 +13,16 @@ import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( (%=), to, _Just )
 
 import           Command
-import           Constants
 import           Events.Keybindings
+import           Events.MessageSelect ( messagesPerPageOperation )
 import           HelpTopics ( mainHelpTopic )
 import           State.Attachments
-import           State.Help
-import           State.Channels
 import           State.ChannelSelect
+import           State.Channels
 import           State.Editing
+import           State.Help
 import           State.MessageSelect
+import           State.Messages ( sendMessage )
 import           State.PostListOverlay ( enterFlaggedPostListMode )
 import           State.UrlSelect
 import           Types
@@ -99,13 +99,22 @@ mainKeybindings = mkKeybindings
                                            (Vty.EvKey Vty.KDown [])
                  False -> channelHistoryForward
 
-    , mkKb PageUpEvent "Page up in the channel message list" $ do
-             cId <- use csCurrentChannelId
-             let vp = ChannelMessages cId
-             mh $ invalidateCacheEntry vp
-             mh $ vScrollToEnd $ viewportScroll vp
-             mh $ vScrollBy (viewportScroll vp) (-1 * pageAmount)
-             setMode ChannelScroll
+    , mkKb PageUpEvent "Page up in the channel message list (enters message select mode)" $ do
+             beginMessageSelect
+             messageSelectUpBy messagesPerPageOperation
+
+             -- Old functionality using separate ChannelScroll state;
+             -- remove this when that functionality is no longer wanted.
+             -- cId <- use csCurrentChannelId
+             -- let vp = ChannelMessages cId
+             -- mh $ invalidateCacheEntry vp
+             -- mh $ vScrollToEnd $ viewportScroll vp
+             -- mh $ vScrollBy (viewportScroll vp) (-1 * pageAmount)
+             -- setMode ChannelScroll
+
+    , mkKb ScrollTopEvent "Scroll to top of channel message list (enters message select mode)" $ do
+             beginMessageSelect
+             messageSelectFirst
 
     , mkKb NextChannelEvent "Change to the next channel in the channel list"
          nextChannel

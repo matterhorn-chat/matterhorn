@@ -4,6 +4,7 @@ module State.MessageSelect
     beginMessageSelect
   , flagSelectedMessage
   , viewSelectedMessage
+  , fillSelectedGap
   , yankSelectedMessageVerbatim
   , yankSelectedMessage
   , openSelectedMessageURLs
@@ -12,6 +13,8 @@ module State.MessageSelect
   , messageSelectUpBy
   , messageSelectDown
   , messageSelectDownBy
+  , messageSelectFirst
+  , messageSelectLast
   , deleteSelectedMessage
   , beginReplyCompose
   , beginEditMessage
@@ -35,9 +38,10 @@ import           Network.Mattermost.Types
 
 import           Clipboard ( copyToClipboard )
 import           Markdown ( findVerbatimChunk )
+import           State.Common
+import           State.Messages
 import           Types
 import           Types.Common
-import           State.Common
 
 
 getSelectedMessage :: ChatState -> Maybe Message
@@ -79,7 +83,17 @@ viewSelectedMessage :: MH ()
 viewSelectedMessage = do
   selected <- use (to getSelectedMessage)
   case selected of
-    Just msg -> viewMessage msg
+    Just msg
+      | not (isGap msg) -> viewMessage msg
+    _        -> return ()
+
+fillSelectedGap :: MH ()
+fillSelectedGap = do
+  selected <- use (to getSelectedMessage)
+  case selected of
+    Just msg
+      | isGap msg -> do cId <- use csCurrentChannelId
+                        asyncFetchMessagesForGap cId msg
     _        -> return ()
 
 viewMessage :: Message -> MH ()
@@ -165,6 +179,30 @@ messageSelectUpBy amt
     | otherwise =
       messageSelectUp >> messageSelectUpBy (amt - 1)
 
+messageSelectFirst :: MH ()
+messageSelectFirst = do
+    selected <- use (csMessageSelect.to selectMessageId)
+    case selected of
+        Just _ -> whenMode MessageSelect $ do
+            chanMsgs <- use (csCurrentChannel.ccContents.cdMessages)
+            case getEarliestSelectableMessage chanMsgs of
+              Just firstMsg ->
+                csMessageSelect .= MessageSelectState (firstMsg^.mMessageId <|> selected)
+              Nothing -> mhLog LogError "No first message found from current message?!"
+        _ -> return ()
+
+messageSelectLast :: MH ()
+messageSelectLast = do
+    selected <- use (csMessageSelect.to selectMessageId)
+    case selected of
+        Just _ -> whenMode MessageSelect $ do
+            chanMsgs <- use (csCurrentChannel.ccContents.cdMessages)
+            case getLatestSelectableMessage chanMsgs of
+              Just lastSelMsg ->
+                csMessageSelect .= MessageSelectState (lastSelMsg^.mMessageId <|> selected)
+              Nothing -> mhLog LogError "No last message found from current message?!"
+        _ -> return ()
+
 deleteSelectedMessage :: MH ()
 deleteSelectedMessage = do
     selectedMessage <- use (to getSelectedMessage)
@@ -208,9 +246,10 @@ beginEditMessage = do
             -- value of "emote" that we can look at. Note that the
             -- removed formatting needs to be reinstated just prior to
             -- issuing the API call to update the post.
-            let toEdit = if msg^.mType == CP Emote
-                         then removeEmoteFormatting $ sanitizeUserText $ postMessage p
-                         else sanitizeUserText $ postMessage p
+            let sanitized = sanitizeUserText $ postMessage p
+            let toEdit = if isEmote msg
+                         then removeEmoteFormatting sanitized
+                         else sanitized
             csEditState.cedEditor %= applyEdit (clearZipper >> (insertMany toEdit))
         _ -> return ()
 

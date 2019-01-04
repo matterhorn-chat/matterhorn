@@ -1,8 +1,8 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 {-|
 
@@ -41,6 +41,7 @@ module Types.Messages
   ( -- * Message and operations on a single Message
     Message(..)
   , isDeletable, isReplyable, isEditable, isReplyTo, isGap, isFlaggable
+  , isEmote, isJoinLeave, isTransition
   , mText, mUser, mDate, mType, mPending, mDeleted
   , mAttachments, mInReplyToMsg, mMessageId, mReactions, mFlagged
   , mOriginalPost, mChannelId, mMarkdownSource
@@ -52,6 +53,7 @@ module Types.Messages
   , UserRef(..)
   , ReplyState(..)
   , clientMessageToMessage
+  , clientPostToMessage
   , newMessageOfType
     -- * Message Collections
   , Messages
@@ -67,12 +69,16 @@ module Types.Messages
   , splitMessagesOn
   , splitRetrogradeMessagesOn
   , findMessage
+  , getRelMessageId
+  , getNextMessage
+  , getPrevMessage
   , getNextMessageId
   , getPrevMessageId
   , getNextPostId
   , getPrevPostId
   , getEarliestPostMsg
   , getLatestPostMsg
+  , getEarliestSelectableMessage
   , getLatestSelectableMessage
   , findLatestUserMessage
   -- * Operations on any Message type
@@ -96,10 +102,12 @@ import           Prelude.MH
 
 import           Cheapskate ( Blocks )
 import qualified Cheapskate as C
+import           Control.Monad
 import qualified Data.Foldable as F
 import           Data.Hashable ( Hashable )
 import qualified Data.Map.Strict as Map
 import           Data.Sequence as Seq
+import qualified Data.Set as S
 import           Data.Tuple
 import           Data.UUID ( UUID )
 import           GHC.Generics ( Generic )
@@ -110,6 +118,7 @@ import           Network.Mattermost.Types ( ChannelId, PostId, Post
 
 import           Types.DirectionalSeq
 import           Types.Posts
+import           Types.UserNames
 
 
 -- ----------------------------------------------------------------------
@@ -154,7 +163,10 @@ messagePostId m = do
 isDeletable :: Message -> Bool
 isDeletable m =
     isJust (messagePostId m) &&
-    _mType m `elem` [CP NormalPost, CP Emote]
+    case _mType m of
+      CP NormalPost -> True
+      CP Emote -> True
+      _ -> False
 
 isFlaggable :: Message -> Bool
 isFlaggable = isJust . messagePostId
@@ -162,12 +174,18 @@ isFlaggable = isJust . messagePostId
 isReplyable :: Message -> Bool
 isReplyable m =
     isJust (messagePostId m) &&
-    (_mType m `elem` [CP NormalPost, CP Emote])
+    case _mType m of
+      CP NormalPost -> True
+      CP Emote -> True
+      _ -> False
 
 isEditable :: Message -> Bool
 isEditable m =
     isJust (messagePostId m) &&
-    _mType m `elem` [CP NormalPost, CP Emote]
+    case _mType m of
+      CP NormalPost -> True
+      CP Emote -> True
+      _ -> False
 
 isReplyTo :: PostId -> Message -> Bool
 isReplyTo expectedParentId m =
@@ -176,7 +194,27 @@ isReplyTo expectedParentId m =
         InReplyTo actualParentId -> actualParentId == expectedParentId
 
 isGap :: Message -> Bool
-isGap m = _mType m == C UnknownGap
+isGap m = case _mType m of
+            C UnknownGapBefore -> True
+            C UnknownGapAfter -> True
+            _ -> False
+
+isTransition :: Message -> Bool
+isTransition m = case _mType m of
+                   C DateTransition -> True
+                   C NewMessagesTransition -> True
+                   _ -> False
+
+isEmote :: Message -> Bool
+isEmote m = case _mType m of
+              CP Emote -> True
+              _ -> False
+
+isJoinLeave :: Message -> Bool
+isJoinLeave m = case _mType m of
+                  CP Join -> True
+                  CP Leave -> True
+                  _ -> False
 
 -- | A 'Message' is the representation we use for storage and
 --   rendering, so it must be able to represent either a
@@ -184,7 +222,7 @@ isGap m = _mType m == C UnknownGap
 --   the union of both kinds of post types.
 data MessageType = C ClientMessageType
                  | CP ClientPostType
-                 deriving (Eq, Show)
+                 deriving (Show)
 
 -- | There may be no user (usually an internal message), a reference
 -- to a user (by Id), or the server may have supplied a specific
@@ -231,6 +269,36 @@ clientMessageToMessage cm = Message
   , _mFlagged       = False
   , _mChannelId     = Nothing
   }
+
+
+-- | Builds a message from a ClientPost and also returns the set of
+-- usernames mentioned in the text of the message.
+clientPostToMessage :: ClientPost -> (Message, S.Set Text)
+clientPostToMessage cp = (m, usernames)
+    where
+        usernames = findUsernames $ cp^.cpText
+        m = Message { _mText = cp^.cpText
+                    , _mMarkdownSource = cp^.cpMarkdownSource
+                    , _mUser =
+                        case cp^.cpUserOverride of
+                            Just n | cp^.cpType == NormalPost -> UserOverride (n <> "[BOT]")
+                            _ -> maybe NoUser UserI $ cp^.cpUser
+                    , _mDate = cp^.cpDate
+                    , _mType = CP $ cp^.cpType
+                    , _mPending = cp^.cpPending
+                    , _mDeleted = cp^.cpDeleted
+                    , _mAttachments = cp^.cpAttachments
+                    , _mInReplyToMsg =
+                        case cp^.cpInReplyToPost of
+                            Nothing  -> NotAReply
+                            Just pId -> InReplyTo pId
+                    , _mMessageId = Just $ MessagePostId $ cp^.cpPostId
+                    , _mReactions = cp^.cpReactions
+                    , _mOriginalPost = Just $ cp^.cpOriginalPost
+                    , _mFlagged = False
+                    , _mChannelId = Just $ cp^.cpChannelId
+                    }
+
 
 newMessageOfType :: Text -> MessageType -> ServerTime -> Message
 newMessageOfType text typ d = Message
@@ -347,10 +415,11 @@ splitRetrogradeMessagesOn = splitMsgSeqOn
 -- unified into the following, but that will require TypeFamilies or
 -- similar to relate d and r SeqDirection types.  For now, it's
 -- simplier to just have two API endpoints.
-splitMsgSeqOn :: (SeqDirection d, SeqDirection r) =>
-                  (Message -> Bool)
-                -> DirectionalSeq d Message
-                -> (Maybe Message, (DirectionalSeq r Message, DirectionalSeq d Message))
+splitMsgSeqOn :: SeqDirection d =>
+                 (Message -> Bool)
+              -> DirectionalSeq d Message
+              -> (Maybe Message, (DirectionalSeq (ReverseDirection d) Message,
+                                  DirectionalSeq d Message))
 splitMsgSeqOn f msgs =
     let (removed, remaining) = dirSeqBreakl f msgs
         devomer = DSeq $ Seq.reverse $ dseq removed
@@ -382,71 +451,66 @@ findMessage mid msgs =
     >>= Just . Seq.index (dseq msgs)
 
 -- | Look forward for the first Message with an ID that follows the
--- specified PostId
-getNextMessageId :: Maybe MessageId -> Messages -> Maybe MessageId
-getNextMessageId = getRelMessageId foldl
+-- specified Id and return it.  If no input Id supplied, get the
+-- latest (most recent chronologically) Message in the input set.
+getNextMessage :: Maybe MessageId -> Messages -> Maybe Message
+getNextMessage = getRelMessageId
 
--- | Look backwards for the first Message with an ID that comes before
--- the specified MessageId.
-getPrevMessageId :: Maybe MessageId -> Messages -> Maybe MessageId
-getPrevMessageId = getRelMessageId $ foldr . flip
+-- | Look backward for the first Message with an ID that follows the
+-- specified MessageId and return it.  If no input MessageId supplied,
+-- get the latest (most recent chronologically) Message in the input
+-- set.
+getPrevMessage :: Maybe MessageId -> Messages -> Maybe Message
+getPrevMessage mId = getRelMessageId mId . reverseMessages
 
 -- | Look forward for the first Message with an ID that follows the
--- specified PostId
+-- specified MessageId and return that found Message's ID; if no input
+-- MessageId is specified, return the latest (most recent
+-- chronologically) MessageId (if any) in the input set.
+getNextMessageId :: Maybe MessageId -> Messages -> Maybe MessageId
+getNextMessageId mId = _mMessageId <=< getNextMessage mId
+
+-- | Look backwards for the first Message with an ID that comes before
+-- the specified MessageId and return that found Message's ID; if no
+-- input MessageId is specified, return the latest (most recent
+-- chronologically) MessageId (if any) in the input set.
+getPrevMessageId :: Maybe MessageId -> Messages -> Maybe MessageId
+getPrevMessageId mId = _mMessageId <=< getPrevMessage mId
+
+-- | Look forward for the first Message with an ID that follows the
+-- specified PostId and return that found Message's PostID; if no
+-- input PostId is specified, return the latest (most recent
+-- chronologically) PostId (if any) in the input set.
 getNextPostId :: Maybe PostId -> Messages -> Maybe PostId
-getNextPostId = getRelPostId foldl
+getNextPostId pid = messagePostId <=< getNextMessage (MessagePostId <$> pid)
 
 -- | Look backwards for the first Post with an ID that comes before
 -- the specified PostId.
 getPrevPostId :: Maybe PostId -> Messages -> Maybe PostId
-getPrevPostId = getRelPostId $ foldr . flip
+getPrevPostId pid = messagePostId <=< getPrevMessage (MessagePostId <$> pid)
 
--- | Find the next MessageId after the specified MessageId (if there is
--- one) by folding in the specified direction
-getRelMessageId :: ((Either MessageId (Maybe MessageId)
-                         -> Message
-                         -> Either MessageId (Maybe MessageId))
-                   -> Either MessageId (Maybe MessageId)
-                   -> Messages
-                   -> Either MessageId (Maybe MessageId))
-                -> Maybe MessageId
-                -> Messages
-                -> Maybe MessageId
-getRelMessageId folD jp = case jp of
-                         Nothing -> \msgs -> (getLatestPostMsg msgs >>= _mMessageId)
-                         Just p -> either (const Nothing) id . folD fnd (Left p)
-    where fnd = either fndp fndnext
-          fndp c v = if v^.mMessageId == Just c then Right Nothing else Left c
-          idOfPost m = if m^.mDeleted then Nothing else m^.mMessageId
-          fndnext n m = Right (n <|> idOfPost m)
 
--- | Find the next PostId after the specified PostId (if there is
--- one) by folding in the specified direction
-getRelPostId :: ((Either PostId (Maybe PostId)
-                      -> Message
-                      -> Either PostId (Maybe PostId))
-                -> Either PostId (Maybe PostId)
-                -> Messages
-                -> Either PostId (Maybe PostId))
-             -> Maybe PostId
-             -> Messages
-             -> Maybe PostId
-getRelPostId folD jp = case jp of
-                         Nothing -> \msgs -> do
-                             latest <- getLatestPostMsg msgs
-                             mId <- latest^.mMessageId
-                             case mId of
-                                 MessagePostId pId -> return pId
-                                 _ -> Nothing
-                         Just p -> either (const Nothing) id . folD fnd (Left p)
-    where fnd = either fndp fndnext
-          fndp c v = if v^.mMessageId == Just (MessagePostId c) then Right Nothing else Left c
-          idOfPost m = if m^.mDeleted
-                       then Nothing
-                       else case m^.mMessageId of
-                           Just (MessagePostId pId) -> Just pId
-                           _ -> Nothing
-          fndnext n m = Right (n <|> idOfPost m)
+getRelMessageId :: SeqDirection dir =>
+                   Maybe MessageId
+                -> DirectionalSeq dir Message
+                -> Maybe Message
+getRelMessageId mId =
+  let isMId = const ((==) mId . _mMessageId) <$> mId
+  in getRelMessage isMId
+
+-- | Internal worker function to return a different user message in
+-- relation to either the latest point or a specific message.
+getRelMessage :: SeqDirection dir =>
+                 Maybe (Message -> Bool)
+              -> DirectionalSeq dir Message
+              -> Maybe Message
+getRelMessage matcher msgs =
+  let after = case matcher of
+                Just matchFun -> case splitMsgSeqOn matchFun msgs of
+                                   (_, (_, ms)) -> ms
+                Nothing -> msgs
+  in withDirSeqHead id $ filterMessages validSelectableMessage after
+
 
 -- | Find the most recent message that is a Post (as opposed to a
 -- local message) (if any).
@@ -455,6 +519,14 @@ getLatestPostMsg msgs =
     case viewr $ dropWhileR (not . validUserMessage) (dseq msgs) of
       EmptyR -> Nothing
       _ :> m -> Just m
+
+-- | Find the oldest message that is a message with an ID.
+getEarliestSelectableMessage :: Messages -> Maybe Message
+getEarliestSelectableMessage msgs =
+    case viewl $ dropWhileL (not . validSelectableMessage) (dseq msgs) of
+      EmptyL -> Nothing
+      m :< _ -> Just m
+
 
 -- | Find the most recent message that is a message with an ID.
 getLatestSelectableMessage :: Messages -> Maybe Message

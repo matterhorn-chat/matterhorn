@@ -21,4 +21,5 @@ postListOverlayKeybindings = mkKeybindings
   , mkKb SelectUpEvent "Select the previous message" postListSelectUp
   , mkKb SelectDownEvent "Select the next message" postListSelectDown
   , mkKb FlagMessageEvent "Toggle the selected message flag" postListUnflagSelected
+  , mkKb ActivateListItemEvent "Jump to and select current message" postListJumpToCurrent
   ]

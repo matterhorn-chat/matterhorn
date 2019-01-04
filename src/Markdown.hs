@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiWayIf       #-}
 {-# LANGUAGE ParallelListComp #-}
 {-# LANGUAGE RecordWildCards  #-}
@@ -47,21 +48,22 @@ import           Network.Mattermost.Lenses ( postEditAtL, postCreateAtL )
 import           Network.Mattermost.Types ( ServerTime(..) )
 
 import           Themes
-import           Types ( HighlightSet(..), userSigil, normalChannelSigil
-                       , isNameFragment, takeWhileNameFragment )
-import           Types.Posts
+import           Types ( HighlightSet(..), userSigil, normalChannelSigil )
 import           Types.Messages
+import           Types.Posts
+import           Types.UserNames ( isNameFragment, takeWhileNameFragment )
 
 
 emptyHSet :: HighlightSet
 emptyHSet = HighlightSet Set.empty Set.empty mempty
 
-omitUsernameTypes :: [MessageType]
-omitUsernameTypes =
-    [ CP Join
-    , CP Leave
-    , CP TopicChange
-    ]
+omittedUsernameType :: MessageType -> Bool
+omittedUsernameType = \case
+  CP Join -> True
+  CP Leave -> True
+  CP TopicChange -> True
+  _ -> False
+
 
 -- The special string we use to indicate the placement of a styled
 -- indication that a message has been edited.
@@ -125,13 +127,11 @@ data MessageData = MessageData
 renderMessage :: MessageData -> Widget a
 renderMessage md@MessageData { mdMessage = msg, .. } =
     let msgUsr = case mdUserName of
-          Just u
-            | msg^.mType `elem` omitUsernameTypes -> Nothing
-            | otherwise -> Just u
+          Just u -> if omittedUsernameType (msg^.mType) then Nothing else Just u
           Nothing -> Nothing
         nameElems = case msgUsr of
           Just un
-            | msg^.mType == CP Emote ->
+            | isEmote msg ->
                 [ B.txt "*", colorUsername un un
                 , B.txt " "
                 ]

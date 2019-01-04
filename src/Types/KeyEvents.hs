@@ -81,6 +81,7 @@ data KeyEvent
   | ActivateListItemEvent
 
   | ViewMessageEvent
+  | FillGapEvent
   | FlagMessageEvent
   | YankMessageEvent
   | YankWholeMessageEvent
@@ -141,6 +142,7 @@ allEvents =
 
   , FlagMessageEvent
   , ViewMessageEvent
+  , FillGapEvent
   , YankMessageEvent
   , YankWholeMessageEvent
   , DeleteMessageEvent
@@ -331,6 +333,7 @@ keyEventName ev = case ev of
 
   FlagMessageEvent   -> "flag-message"
   ViewMessageEvent   -> "view-message"
+  FillGapEvent       -> "fetch-for-gap"
   YankMessageEvent   -> "yank-message"
   YankWholeMessageEvent   -> "yank-whole-message"
   DeleteMessageEvent -> "delete-message"

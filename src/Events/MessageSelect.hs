@@ -32,6 +32,10 @@ messageSelectKeybindings = mkKeybindings
 
     , mkKb SelectUpEvent "Select the previous message" messageSelectUp
     , mkKb SelectDownEvent "Select the next message" messageSelectDown
+    , mkKb ScrollTopEvent "Scroll to top and select the oldest message"
+        messageSelectFirst
+    , mkKb ScrollBottomEvent "Scroll to bottom and select the latest message"
+        messageSelectLast
     , mkKb
         PageUpEvent
         (T.pack $ "Move the cursor up by " <> show messagesPerPageOperation <> " messages")
@@ -64,5 +68,8 @@ messageSelectKeybindings = mkKeybindings
 
     , mkKb ViewMessageEvent "View the selected message"
          viewSelectedMessage
+
+    , mkKb FillGapEvent "Fetch messages for the selected gap"
+         fillSelectedGap
 
     ]
