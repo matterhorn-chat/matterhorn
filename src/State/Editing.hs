@@ -65,6 +65,15 @@ toggleMultilineEditing = do
     mh invalidateCache
     csEditState.cedEphemeral.eesMultiline %= not
 
+    -- If multiline is now disabled and there is more than one line in
+    -- the editor, that means we're showing the multiline message status
+    -- (see Draw.Main.renderUserCommandBox.commandBox) so we want to be
+    -- sure no autocomplete UI is present in case the cursor was left on
+    -- a word that would otherwise show completion alternatives.
+    multiline <- use (csEditState.cedEphemeral.eesMultiline)
+    numLines <- use (csEditState.cedEditor.to getEditContents.to length)
+    when (not multiline && numLines > 1) resetAutocomplete
+
 invokeExternalEditor :: MH ()
 invokeExternalEditor = do
     -- If EDITOR is in the environment, write the current message to a
