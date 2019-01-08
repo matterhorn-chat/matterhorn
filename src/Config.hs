@@ -105,6 +105,8 @@ fromIni = do
                   pure Nothing
     configUnsafeUseHTTP <-
       fieldFlagDef "unsafeUseUnauthenticatedConnection" False
+    configDirectChannelExpirationDays <- fieldDefOf "directChannelExpirationDays" number
+      (configDirectChannelExpirationDays defaultConfig)
 
     let configAbsPath = Nothing
         configUserKeys = mempty
@@ -151,34 +153,35 @@ isQuoted t =
 
 defaultConfig :: Config
 defaultConfig =
-    Config { configAbsPath                   = Nothing
-           , configUser                      = Nothing
-           , configHost                      = Nothing
-           , configTeam                      = Nothing
-           , configPort                      = defaultPort
-           , configPass                      = Nothing
-           , configTimeFormat                = Nothing
-           , configDateFormat                = Nothing
-           , configTheme                     = Nothing
-           , configThemeCustomizationFile    = Nothing
-           , configSmartBacktick             = True
-           , configURLOpenCommand            = Nothing
-           , configURLOpenCommandInteractive = False
-           , configActivityNotifyCommand     = Nothing
-           , configActivityBell              = False
-           , configShowBackground            = Disabled
-           , configShowMessagePreview        = False
-           , configShowChannelList           = True
-           , configEnableAspell              = False
-           , configAspellDictionary          = Nothing
-           , configUnsafeUseHTTP             = False
-           , configChannelListWidth          = 20
-           , configLogMaxBufferSize          = 200
-           , configShowOlderEdits            = True
-           , configUserKeys                  = mempty
-           , configShowTypingIndicator       = False
-           , configHyperlinkingMode          = True
-           , configSyntaxDirs                = []
+    Config { configAbsPath                     = Nothing
+           , configUser                        = Nothing
+           , configHost                        = Nothing
+           , configTeam                        = Nothing
+           , configPort                        = defaultPort
+           , configPass                        = Nothing
+           , configTimeFormat                  = Nothing
+           , configDateFormat                  = Nothing
+           , configTheme                       = Nothing
+           , configThemeCustomizationFile      = Nothing
+           , configSmartBacktick               = True
+           , configURLOpenCommand              = Nothing
+           , configURLOpenCommandInteractive   = False
+           , configActivityNotifyCommand       = Nothing
+           , configActivityBell                = False
+           , configShowBackground              = Disabled
+           , configShowMessagePreview          = False
+           , configShowChannelList             = True
+           , configEnableAspell                = False
+           , configAspellDictionary            = Nothing
+           , configUnsafeUseHTTP               = False
+           , configChannelListWidth            = 20
+           , configLogMaxBufferSize            = 200
+           , configShowOlderEdits              = True
+           , configUserKeys                    = mempty
+           , configShowTypingIndicator         = False
+           , configHyperlinkingMode            = True
+           , configSyntaxDirs                  = []
+           , configDirectChannelExpirationDays = 7
            }
 
 findConfig :: Maybe FilePath -> IO (Either String Config)

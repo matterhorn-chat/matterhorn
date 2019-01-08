@@ -383,6 +383,9 @@ data Config =
            -- ^ Whether to enable terminal hyperlinking mode.
            , configSyntaxDirs :: [FilePath]
            -- ^ The search path for syntax description XML files.
+           , configDirectChannelExpirationDays :: Int
+           -- ^ The number of days to show a user in the channel menu after a direct
+           -- message with them.
            } deriving (Eq, Show)
 
 -- | The state of the UI diagnostic indicator for the async worker
@@ -417,14 +420,15 @@ hasUnread' chan = fromMaybe False $ do
              (isJust $ _cdEditedMessageThreshold info)
 
 mkChannelZipperList :: UTCTime
+                    -> Config
                     -> Maybe ClientConfig
                     -> UserPreferences
                     -> ClientChannels
                     -> Users
                     -> [(ChannelListGroup, [ChannelListEntry])]
-mkChannelZipperList now cconfig prefs cs us =
+mkChannelZipperList now config cconfig prefs cs us =
     [ (ChannelGroupPublicChannels, getNonDMChannelIdsInOrder cs)
-    , (ChannelGroupDirectMessages, getDMChannelsInOrder now cconfig prefs us cs)
+    , (ChannelGroupDirectMessages, getDMChannelsInOrder now config cconfig prefs us cs)
     ]
 
 getNonDMChannelIdsInOrder :: ClientChannels -> [ChannelListEntry]
@@ -435,14 +439,15 @@ getNonDMChannelIdsInOrder cs =
        filteredChannels matches cs
 
 getDMChannelsInOrder :: UTCTime
+                     -> Config
                      -> Maybe ClientConfig
                      -> UserPreferences
                      -> Users
                      -> ClientChannels
                      -> [ChannelListEntry]
-getDMChannelsInOrder now cconfig prefs us cs =
-    let oneOnOneDmChans = getDMChannels now cconfig prefs us cs
-        groupChans = getGroupDMChannels now prefs cs
+getDMChannelsInOrder now config cconfig prefs us cs =
+    let oneOnOneDmChans = getDMChannels now config cconfig prefs us cs
+        groupChans = getGroupDMChannels now config prefs cs
         allDmChans = groupChans <> oneOnOneDmChans
         sorter (u1, n1, _) (u2, n2, _) =
             if u1 == u2
@@ -471,22 +476,24 @@ displayNameForUser u clientConfig prefs
         u^.uiName
 
 getGroupDMChannels :: UTCTime
+                   -> Config
                    -> UserPreferences
                    -> ClientChannels
                    -> [(Bool, T.Text, ChannelListEntry)]
-getGroupDMChannels now prefs cs =
+getGroupDMChannels now config prefs cs =
     let matches (_, info) = info^.ccInfo.cdType == Group &&
-                            groupChannelShouldAppear now prefs info
+                            groupChannelShouldAppear now config prefs info
     in fmap (\(cId, ch) -> (hasUnread' ch, ch^.ccInfo.cdName, CLGroupDM cId)) $
        filteredChannels matches cs
 
 getDMChannels :: UTCTime
+              -> Config
               -> Maybe ClientConfig
               -> UserPreferences
               -> Users
               -> ClientChannels
               -> [(Bool, T.Text, ChannelListEntry)]
-getDMChannels now cconfig prefs us cs =
+getDMChannels now config cconfig prefs us cs =
     let mapping = allDmChannelMappings cs
         mappingWithUserInfo = catMaybes $ getInfo <$> mapping
         getInfo (uId, cId) = do
@@ -495,7 +502,7 @@ getDMChannels now cconfig prefs us cs =
             case u^.uiDeleted of
                 True -> Nothing
                 False ->
-                    if dmChannelShouldAppear now prefs c
+                    if dmChannelShouldAppear now config prefs c
                     then return (hasUnread' c, displayNameForUser u cconfig prefs, CLUserDM cId uId)
                     else Nothing
     in mappingWithUserInfo
@@ -507,10 +514,10 @@ getDMChannels now cconfig prefs us cs =
 --
 -- Otherwise, only show it if at least one of the other conditions are
 -- met (see 'or' below).
-dmChannelShouldAppear :: UTCTime -> UserPreferences -> ClientChannel -> Bool
-dmChannelShouldAppear now prefs c =
-    let weeksAgo n = nominalDay * (-7 * n)
-        localCutoff = addUTCTime (weeksAgo 1) now
+dmChannelShouldAppear :: UTCTime -> Config -> UserPreferences -> ClientChannel -> Bool
+dmChannelShouldAppear now config prefs c =
+    let ndays = configDirectChannelExpirationDays config
+        localCutoff = addUTCTime (nominalDay * (-(fromIntegral ndays))) now
         cutoff = ServerTime localCutoff
         updated = c^.ccInfo.cdUpdated
         Just uId = c^.ccInfo.cdDMUserId
@@ -523,10 +530,10 @@ dmChannelShouldAppear now prefs c =
                      updated >= cutoff
                    ]
 
-groupChannelShouldAppear :: UTCTime -> UserPreferences -> ClientChannel -> Bool
-groupChannelShouldAppear now prefs c =
-    let weeksAgo n = nominalDay * (-7 * n)
-        localCutoff = addUTCTime (weeksAgo 1) now
+groupChannelShouldAppear :: UTCTime -> Config -> UserPreferences -> ClientChannel -> Bool
+groupChannelShouldAppear now config prefs c =
+    let ndays = configDirectChannelExpirationDays config
+        localCutoff = addUTCTime (nominalDay * (-(fromIntegral ndays))) now
         cutoff = ServerTime localCutoff
         updated = c^.ccInfo.cdUpdated
     in if hasUnread' c || maybe False (>= localCutoff) (c^.ccInfo.cdSidebarShowOverride)

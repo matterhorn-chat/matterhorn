@@ -103,7 +103,8 @@ updateSidebar = do
     us <- getUsers
     prefs <- use (csResources.crUserPreferences)
     now <- liftIO getCurrentTime
-    csFocus %= Z.updateList (mkChannelZipperList now cconfig prefs cs us)
+    config <- use (csResources.crConfiguration)
+    csFocus %= Z.updateList (mkChannelZipperList now config cconfig prefs cs us)
 
     -- Send the new zipper to the status update thread so that we can
     -- fetch the statuses for the users in the new sidebar.
