@@ -474,37 +474,48 @@ messageSelectBottomBar st =
                | KB { kbBindingInfo = Just e'
                     , kbEvent       = b
                     } <- keymap
-               , e' == e ]
+               , e' == e
+               ]
         options = [ ( not . isGap
                     , ev YankWholeMessageEvent
-                    , "yank-all" )
+                    , "yank-all"
+                    )
                   , ( \m -> isFlaggable m && not (m^.mFlagged)
                     , ev FlagMessageEvent
-                    , "flag" )
+                    , "flag"
+                    )
                   , ( \m -> isFlaggable m && m^.mFlagged
                     , ev FlagMessageEvent
-                    , "unflag" )
+                    , "unflag"
+                    )
                   , ( isReplyable
                     , ev ReplyMessageEvent
-                    , "reply" )
+                    , "reply"
+                    )
                   , ( not . isGap
                     , ev ViewMessageEvent
-                    , "view" )
+                    , "view"
+                    )
                   , ( isGap
                     , ev FillGapEvent
-                    , "load messages" )
+                    , "load messages"
+                    )
                   , ( \m -> isMine st m && isEditable m
                     , ev EditMessageEvent
-                    , "edit" )
+                    , "edit"
+                    )
                   , ( \m -> isMine st m && isDeletable m
                     , ev DeleteMessageEvent
-                    , "delete" )
+                    , "delete"
+                    )
                   , ( const hasURLs
                     , ev OpenMessageURLEvent
-                    , openUrlsMsg )
+                    , openUrlsMsg
+                    )
                   , ( const hasVerb
                     , ev YankMessageEvent
-                    , "yank-code" )
+                    , "yank-code"
+                    )
                   ]
         Just postMsg = getSelectedMessage st
 
