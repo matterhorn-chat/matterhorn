@@ -222,9 +222,9 @@ addObtainedMessages cId reqCnt addTrailingGap posts =
               -- newGapMessage is a helper for generating a gap
               -- message
               do uuid <- generateUUID
-                 let txt = "Additional " <>
+                 let txt = "Load " <>
                            (if isOlder then "older" else "newer") <>
-                           " messages??" <>
+                           " messages" <>
                            (if isOlder then "  ↥↥↥" else "  ↧↧↧")
                      ty = if isOlder
                           then C UnknownGapBefore

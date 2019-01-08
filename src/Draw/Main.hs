@@ -492,7 +492,7 @@ messageSelectBottomBar st =
                     , "view" )
                   , ( isGap
                     , ev FillGapEvent
-                    , "view (fetch) messages for this gap" )
+                    , "load messages" )
                   , ( \m -> isMine st m && isEditable m
                     , ev EditMessageEvent
                     , "edit" )
