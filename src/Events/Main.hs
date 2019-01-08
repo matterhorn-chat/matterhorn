@@ -111,7 +111,7 @@ mainKeybindings = mkKeybindings
              -- mh $ vScrollBy (viewportScroll vp) (-1 * pageAmount)
              -- setMode ChannelScroll
 
-    , mkKb ScrollTopEvent "Scroll to top of channel message list (enters message select mode)" $ do
+    , mkKb ScrollTopEvent "Scroll to top of channel message list" $ do
              beginMessageSelect
              messageSelectFirst
 
