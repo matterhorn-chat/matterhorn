@@ -44,7 +44,8 @@ renderAutocompleteBox st ac =
                       " match" <> if numResults == 1 then "" else "es"
 
         selElem = snd <$> listSelectedElement matchList
-        footer = case renderAutocompleteFooterFor =<< selElem of
+        curChan = st^.csCurrentChannel
+        footer = case renderAutocompleteFooterFor curChan =<< selElem of
             Just w -> hBorderWithLabel w
             _ -> hBorder
 
@@ -63,18 +64,22 @@ renderAutocompleteBox st ac =
                          , footer
                          ]
 
-renderAutocompleteFooterFor :: AutocompleteAlternative -> Maybe (Widget Name)
-renderAutocompleteFooterFor (UserCompletion _ False) =
+renderAutocompleteFooterFor :: ClientChannel -> AutocompleteAlternative -> Maybe (Widget Name)
+renderAutocompleteFooterFor ch (UserCompletion _ False) =
     Just $ hBox [ txt $ "("
                 , withDefAttr clientEmphAttr (txt userNotInChannelMarker)
-                , txt ": not in this channel)"
+                , txt ": not a member of "
+                , withDefAttr channelNameAttr (txt $ normalChannelSigil <> ch^.ccInfo.cdName)
+                , txt ")"
                 ]
-renderAutocompleteFooterFor (ChannelCompletion False _) =
+renderAutocompleteFooterFor _ (ChannelCompletion False ch) =
     Just $ hBox [ txt $ "("
                 , withDefAttr clientEmphAttr (txt userNotInChannelMarker)
-                , txt ": not in this channel)"
+                , txt ": you are not a member of "
+                , withDefAttr channelNameAttr (txt $ normalChannelSigil <> sanitizeUserText (channelName ch))
+                , txt ")"
                 ]
-renderAutocompleteFooterFor _ = Nothing
+renderAutocompleteFooterFor _ _ = Nothing
 
 renderAutocompleteAlternative :: Bool -> AutocompleteAlternative -> Widget Name
 renderAutocompleteAlternative sel (UserCompletion u inChan) =
