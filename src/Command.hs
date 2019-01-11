@@ -123,7 +123,7 @@ commandList =
     NoArg $ \ () ->
         enterChannelInviteUserList
 
-  , Cmd "msg" "Find a user to enter a private chat (will prompt for the user)"
+  , Cmd "msg" "Search for a user to enter a private chat"
     NoArg $ \ () ->
         enterDMSearchUserList
 
