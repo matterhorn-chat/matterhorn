@@ -18,6 +18,49 @@ General
 
 Branches should be `-Wall` clean prior to merging.
 
+Commit Hygiene
+--------------
+
+Each commit should ideally make one logical, self-contained change. For
+example, by this reasoning a commit should add one new feature, fix one
+bug, or do one incremental refactoring step. A single commit maintains
+a successful build and working software whenever possible. Commits that
+break things that are intended to be fixed at a much later date should
+be avoided if possible. When unavoidable they should be indicated very
+clearly by their commit message.
+
+A commit should have a concise commit message describing the purpose
+of the change, the salient code elements to bring to the reader's
+attention, any motivations or context for the change, any caveats, and
+any intentions about the future. A good commit message template is:
+
+```
+<scope>: <concise one-line high-level description>
+
+<paragraph describing in greater detail all of the above>
+```
+
+where `scope` is the name of a module, file, function, etc. that plays
+the most central role in the change.
+
+We want commit messages to be a good reference for someone (maybe you!)
+wanting to understand a code change (maybe your own!) in the future.
+Capturing reasoning and other context makes the commit history useful in
+this way.
+
+One way to support this workflow is to always use hunk prompting with
+git:
+
+```
+$ git add -p
+```
+
+and only add hunks relevant to your logical change and split large hunks
+into small ones with the `s` choice to ensure that incidental unrelated
+changes don't make it into the commit. You should only ever use `git
+add <file>` if you are *absolutely sure* the entire file belongs in the
+commit.
+
 Aesthetics
 ----------
 
