@@ -2,6 +2,9 @@
 # https://github.com/hvr/multi-ghc-travis
 language: c
 sudo: false
+os:
+  - osx
+  - linux
 
 matrix:
   include:
