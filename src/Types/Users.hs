@@ -62,7 +62,10 @@ data UserInfo = UserInfo
 
 -- | Is this user deleted?
 userDeleted :: User -> Bool
-userDeleted u = userDeleteAt u > userCreateAt u
+userDeleted u =
+    case userCreateAt u of
+        Nothing -> False
+        Just c -> userDeleteAt u > c
 
 -- | Create a 'UserInfo' value from a Mattermost 'User' value
 userInfoFromUser :: User -> Bool -> UserInfo
