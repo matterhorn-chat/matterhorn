@@ -1,4 +1,11 @@
 
+50200.1.2
+=========
+
+Bug fixes:
+ * Permit user creation timestamp to be optional in server responses
+   (#483)
+
 50200.1.1
 =========
 
