@@ -29,10 +29,14 @@ break things that are intended to be fixed at a much later date should
 be avoided if possible. When unavoidable they should be indicated very
 clearly by their commit message.
 
-A commit should have a concise commit message describing the purpose
-of the change, the salient code elements to bring to the reader's
-attention, any motivations or context for the change, any caveats, and
-any intentions about the future. A good commit message template is:
+Commits should also be concise so that if something has to be reverted
+or updated it's easy to focus on the origin of the change in its
+minimum form. Commits should not be squashed (no mega-commits, please).
+
+A commit should have a commit message describing the purpose of the
+change, the salient code elements to bring to the reader's attention,
+any motivations or context for the change, any caveats, and any
+intentions about the future. A good commit message template is:
 
 ```
 <scope>: <concise one-line high-level description>
