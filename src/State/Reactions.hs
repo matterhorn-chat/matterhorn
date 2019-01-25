@@ -8,6 +8,7 @@ where
 import           Prelude ()
 import           Prelude.MH
 
+import           Brick.Main ( invalidateCacheEntry )
 import qualified Data.Map.Strict as Map
 import           Lens.Micro.Platform
 
@@ -27,7 +28,9 @@ asyncFetchReactionsForPost cId p
         (\_ rs -> Just $ addReactions cId rs)
 
 addReactions :: ChannelId -> [Reaction] -> MH ()
-addReactions cId rs = csChannel(cId).ccContents.cdMessages %= fmap upd
+addReactions cId rs = do
+    mh $ invalidateCacheEntry $ ChannelMessages cId
+    csChannel(cId).ccContents.cdMessages %= fmap upd
   where upd msg = msg & mReactions %~ insertAll (msg^.mMessageId)
         insert mId r
           | mId == Just (MessagePostId (r^.reactionPostIdL)) = Map.insertWith (+) (r^.reactionEmojiNameL) 1
@@ -35,7 +38,9 @@ addReactions cId rs = csChannel(cId).ccContents.cdMessages %= fmap upd
         insertAll mId msg = foldr (insert mId) msg rs
 
 removeReaction :: Reaction -> ChannelId -> MH ()
-removeReaction r cId = csChannel(cId).ccContents.cdMessages %= fmap upd
+removeReaction r cId = do
+    mh $ invalidateCacheEntry $ ChannelMessages cId
+    csChannel(cId).ccContents.cdMessages %= fmap upd
   where upd m | m^.mMessageId == Just (MessagePostId $ r^.reactionPostIdL) =
                   m & mReactions %~ (Map.insertWith (+) (r^.reactionEmojiNameL) (-1))
               | otherwise = m
