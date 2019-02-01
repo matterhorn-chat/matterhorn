@@ -128,7 +128,11 @@ yankSelectedMessage = do
 
 openSelectedMessageURLs :: MH ()
 openSelectedMessageURLs = whenMode MessageSelect $ do
-    Just curMsg <- use (to getSelectedMessage)
+    mCurMsg <- use (to getSelectedMessage)
+    curMsg <- case mCurMsg of
+        Nothing -> error "BUG: openSelectedMessageURLs: no selected message available"
+        Just m -> return m
+
     let urls = msgURLs curMsg
     when (not (null urls)) $ do
         openedAll <- and <$> mapM (openURL . OpenLinkChoice) urls
