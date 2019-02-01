@@ -13,13 +13,25 @@ overall concerns:
  * We want to manage inevitable software evolution, and
  * We want to reduce waste through good team coordination.
 
-General
--------
+Design Philosophy
+-----------------
 
-Branches should be `-Wall` clean prior to merging.
+We aim to take care of the following concerns when adding new features:
+
+ * We want Matterhorn to be responsive.
+ * We want Matterhorn to use available system resources when possible.
+ * We want Matterhorn's system resource usage to be user-constrainable.
+ * We want Matterhorn to default to using only as much system resources
+   as necessary.
+ * We want to avoid exposing or leaking Haskell internals (such as RTS
+   options) to the end user. Instead, we want to use our own idioms.
+ * We want configuration to be as clear, simple, and future-proof as
+   possible. (Avoid: confusing, complex, error-prone, future-brittle.)
 
 Commit Hygiene
 --------------
+
+Before committing or merging, strive for a `-Wall`-clean build.
 
 Each commit should ideally make one logical, self-contained change. For
 example, by this reasoning a commit should add one new feature, fix one
