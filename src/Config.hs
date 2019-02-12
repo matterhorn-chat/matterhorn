@@ -71,6 +71,8 @@ fromIni = do
     configPort           <- fieldDefOf "port" number (configPort defaultConfig)
     configChannelListWidth <- fieldDefOf "channelListWidth" number
                               (configChannelListWidth defaultConfig)
+    configCpuUsagePolicy <- fieldDefOf "cpuUsagePolicy" cpuUsagePolicy
+                            (configCpuUsagePolicy defaultConfig)
     configLogMaxBufferSize <- fieldDefOf "logMaxBufferSize" number
                               (configLogMaxBufferSize defaultConfig)
     configTimeFormat     <- fieldMbOf "timeFormat" stringField
@@ -131,6 +133,13 @@ backgroundField t =
     _ -> Left ("Invalid value " <> show t
               <> "; must be one of: Disabled, Active, ActiveCount")
 
+cpuUsagePolicy :: Text -> Either String CPUUsagePolicy
+cpuUsagePolicy t =
+    case T.toLower t of
+        "single" -> return SingleCPU
+        "multiple" -> return MultipleCPUs
+        _ -> Left $ "Invalid CPU usage policy value: " <> show t
+
 stringField :: Text -> Either String Text
 stringField t =
     case isQuoted t of
@@ -182,6 +191,7 @@ defaultConfig =
            , configHyperlinkingMode            = True
            , configSyntaxDirs                  = []
            , configDirectChannelExpirationDays = 7
+           , configCpuUsagePolicy              = MultipleCPUs
            }
 
 findConfig :: Maybe FilePath -> IO (Either String Config)

@@ -11,6 +11,7 @@ import           Brick
 import           Control.Monad.Trans.Except ( runExceptT )
 import qualified Graphics.Vty as Vty
 import           Text.Aspell ( stopAspell )
+import           GHC.Conc (getNumProcessors, setNumCapabilities)
 
 import           Network.Mattermost
 
@@ -38,8 +39,23 @@ app = App
   , appAttrMap      = (^.csResources.crTheme)
   }
 
+applicationMaxCPUs :: Int
+applicationMaxCPUs = 2
+
+setupCpuUsage :: Config -> IO ()
+setupCpuUsage config = do
+    actualNumCpus <- getNumProcessors
+
+    let requestedCPUs = case configCpuUsagePolicy config of
+            SingleCPU -> 1
+            MultipleCPUs -> min applicationMaxCPUs actualNumCpus
+
+    setNumCapabilities requestedCPUs
+
 runMatterhorn :: Options -> Config -> IO ChatState
 runMatterhorn opts config = do
+    setupCpuUsage config
+
     st <- setupState (optLogLocation opts) config
 
     let mkVty = do

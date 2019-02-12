@@ -18,6 +18,7 @@ module Types
   , StartupStateInfo(..)
   , MHError(..)
   , AttachmentData(..)
+  , CPUUsagePolicy(..)
   , OpenInBrowser(..)
   , ConnectionInfo(..)
   , SidebarUpdate(..)
@@ -386,7 +387,22 @@ data Config =
            , configDirectChannelExpirationDays :: Int
            -- ^ The number of days to show a user in the channel menu after a direct
            -- message with them.
+           , configCpuUsagePolicy :: CPUUsagePolicy
+           -- ^ The CPU usage policy for the application.
            } deriving (Eq, Show)
+
+-- | The policy for CPU usage.
+--
+-- The idea is that Matterhorn can benefit from using multiple CPUs,
+-- but the exact number is application-determined. We expose this policy
+-- setting to the user in the configuration.
+data CPUUsagePolicy =
+    SingleCPU
+    -- ^ Constrain the application to use one CPU.
+    | MultipleCPUs
+    -- ^ Permit the usage of multiple CPUs (the exact number is
+    -- determined by the application).
+    deriving (Eq, Show)
 
 -- | The state of the UI diagnostic indicator for the async worker
 -- thread.
