@@ -14,7 +14,6 @@ import           Lens.Micro.Platform ( (%=), to, _Just )
 
 import           Command
 import           Events.Keybindings
-import           Events.MessageSelect ( messagesPerPageOperation )
 import           HelpTopics ( mainHelpTopic )
 import           State.Attachments
 import           State.ChannelSelect
@@ -100,16 +99,6 @@ mainKeybindings = mkKeybindings
 
     , mkKb PageUpEvent "Page up in the channel message list (enters message select mode)" $ do
              beginMessageSelect
-             messageSelectUpBy messagesPerPageOperation
-
-             -- Old functionality using separate ChannelScroll state;
-             -- remove this when that functionality is no longer wanted.
-             -- cId <- use csCurrentChannelId
-             -- let vp = ChannelMessages cId
-             -- mh $ invalidateCacheEntry vp
-             -- mh $ vScrollToEnd $ viewportScroll vp
-             -- mh $ vScrollBy (viewportScroll vp) (-1 * pageAmount)
-             -- setMode ChannelScroll
 
     , mkKb ScrollTopEvent "Scroll to top of channel message list" $ do
              beginMessageSelect
