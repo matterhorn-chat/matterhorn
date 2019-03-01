@@ -854,7 +854,7 @@ data ChatEditState =
                   , _cedEditMode :: EditMode
                   , _cedEphemeral :: EphemeralEditState
                   , _cedInputHistory :: InputHistory
-                  , _cedInputHistoryPosition :: HashMap ChannelId (Maybe Int)
+                  , _cedInputHistoryPosition :: HashMap ChannelId Int
                   , _cedLastChannelInput :: HashMap ChannelId (Text, EditMode)
                   , _cedYankBuffer :: Text
                   , _cedSpellChecker :: Maybe (Aspell, IO ())
