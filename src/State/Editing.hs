@@ -240,6 +240,9 @@ handleEditingInput e = do
     smartBacktick <- use (csResources.crConfiguration.to configSmartBacktick)
     let smartChars = "*`_"
     st <- use id
+    cId <- use csCurrentChannelId
+    csEditState.cedInputHistoryPosition.at cId .= Nothing
+
     case lookupKeybinding e editingKeybindings of
       Just kb | editingPermitted st -> kbAction kb
       _ -> do
