@@ -115,6 +115,9 @@ data EphemeralEditState =
                        , _eesInputHistoryPosition :: Maybe Int
                        -- ^ The input history position, if any
                        , _eesLastInput :: (T.Text, EditMode)
+                       -- ^ The input entered into the text editor last
+                       -- time the user was focused on the channel
+                       -- associated with this state.
                        }
 
 -- Get a channel's name, depending on its type
