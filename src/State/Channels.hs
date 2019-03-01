@@ -810,27 +810,17 @@ channelHistoryBackward = do
     cId <- use csCurrentChannelId
     inputHistoryPos <- use (csEditState.cedInputHistoryPosition.at cId)
     inputHistory <- use (csEditState.cedInputHistory)
-    case inputHistoryPos of
-        Just (Just i) ->
-            let newI = i + 1
-            in case getHistoryEntry cId newI inputHistory of
-                Nothing -> return ()
-                Just entry -> do
-                    let eLines = T.lines entry
-                        mv = if length eLines == 1 then gotoEOL else id
-                    csEditState.cedEditor.editContentsL .= (mv $ textZipper eLines Nothing)
-                    csEditState.cedInputHistoryPosition.at cId .= (Just $ Just newI)
-        _ ->
-            let newI = 0
-            in case getHistoryEntry cId newI inputHistory of
-                Nothing -> return ()
-                Just entry ->
-                    let eLines = T.lines entry
-                        mv = if length eLines == 1 then gotoEOL else id
-                    in do
-                      saveCurrentEdit
-                      csEditState.cedEditor.editContentsL .= (mv $ textZipper eLines Nothing)
-                      csEditState.cedInputHistoryPosition.at cId .= (Just $ Just newI)
+    let newI = maybe 0 (+ 1) (join inputHistoryPos)
+
+    case getHistoryEntry cId newI inputHistory of
+        Nothing -> return ()
+        Just entry -> do
+            let eLines = T.lines entry
+                mv = if length eLines == 1 then gotoEOL else id
+            when (join inputHistoryPos == Nothing) $
+                saveCurrentEdit
+            csEditState.cedEditor.editContentsL .= (mv $ textZipper eLines Nothing)
+            csEditState.cedInputHistoryPosition.at cId .= (Just $ Just newI)
 
 createOrdinaryChannel :: Text -> MH ()
 createOrdinaryChannel name  = do
