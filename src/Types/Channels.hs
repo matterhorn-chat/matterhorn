@@ -97,13 +97,13 @@ data ClientChannel = ClientChannel
     -- changed.
   }
 
--- | The input mode.
+-- | The input state associated with the message editor.
 data EditMode =
     NewPost
     -- ^ The input is for a new post.
     | Editing Post MessageType
-    -- ^ The input is to be used as a new body for an existing post of
-    -- the specified type.
+    -- ^ The input is ultimately to replace the body of an existing post
+    -- of the specified type.
     | Replying Message Post
     -- ^ The input is to be used as a new post in reply to the specified
     -- post.
