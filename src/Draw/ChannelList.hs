@@ -117,14 +117,15 @@ mkChannelEntryData st e =
                             else u^.uiName
                 in (uname, Just $ T.singleton $ userSigilFromInfo u, True, Just $ u^.uiStatus)
         sigilWithSpace = sigil <> if addSpace then " " else ""
+        prevEditSigil = "»"
         sigil = if current
                 then fromMaybe "" normalSigil
                 else case chan^.ccEditState.eesInputHistoryPosition of
-                    Just _ -> "»"
+                    Just _ -> prevEditSigil
                     Nothing ->
                         case chan^.ccEditState.eesLastInput of
                             ("", _) -> fromMaybe "" normalSigil
-                            _       -> "»"
+                            _       -> prevEditSigil
         mentions = chan^.ccInfo.cdMentionCount
 
 -- | Render an individual Channel List entry (in Normal mode) with
