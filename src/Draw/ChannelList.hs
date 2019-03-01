@@ -25,7 +25,7 @@ import           Brick
 import           Brick.Widgets.Border
 import           Brick.Widgets.Center (hCenter)
 import qualified Data.Text as T
-import           Lens.Micro.Platform (at, non)
+import           Lens.Micro.Platform (non)
 
 import qualified Network.Mattermost.Types as MM
 
@@ -117,10 +117,14 @@ mkChannelEntryData st e =
                             else u^.uiName
                 in (uname, Just $ T.singleton $ userSigilFromInfo u, True, Just $ u^.uiStatus)
         sigilWithSpace = sigil <> if addSpace then " " else ""
-        sigil = case st^.csEditState.cedLastChannelInput.at cId of
-            Nothing      -> fromMaybe "" normalSigil
-            Just ("", _) -> fromMaybe "" normalSigil
-            _            -> "»"
+        sigil = if current
+                then fromMaybe "" normalSigil
+                else case chan^.ccEditState.eesInputHistoryPosition of
+                    Just _ -> "»"
+                    Nothing ->
+                        case chan^.ccEditState.eesLastInput of
+                            ("", _) -> fromMaybe "" normalSigil
+                            _       -> "»"
         mentions = chan^.ccInfo.cdMentionCount
 
 -- | Render an individual Channel List entry (in Normal mode) with

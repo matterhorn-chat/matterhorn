@@ -494,8 +494,7 @@ postChangeChannelCommon = do
 
 resetCurrentEdit :: MH ()
 resetCurrentEdit = do
-    cId <- use csCurrentChannelId
-    csEditState.cedLastChannelInput.at cId .= Nothing
+    csEditState.cedEphemeral.eesLastInput .= ("", NewPost)
 
 loadLastEdit :: MH ()
 loadLastEdit = do
@@ -511,15 +510,12 @@ loadLastEdit = do
 loadLastChannelInput :: MH ()
 loadLastChannelInput = do
     cId <- use csCurrentChannelId
-    lastInput <- use (csEditState.cedLastChannelInput.at cId)
-    case lastInput of
+    inputHistoryPos <- use (csEditState.cedEphemeral.eesInputHistoryPosition)
+    case inputHistoryPos of
+        Just i -> loadHistoryEntryToEditor cId i
         Nothing -> do
-            inputHistoryPos <- use (csEditState.cedEphemeral.eesInputHistoryPosition)
-            case inputHistoryPos of
-                Just i -> loadHistoryEntryToEditor cId i
-                Nothing -> csEditState.cedEditor %= (applyEdit clearZipper)
-        Just (lastEdit, lastEditMode) -> do
-            csEditState.cedEditor %= (applyEdit $ insertMany (lastEdit) . clearZipper)
+            (lastEdit, lastEditMode) <- use (csEditState.cedEphemeral.eesLastInput)
+            csEditState.cedEditor %= (applyEdit $ insertMany lastEdit . clearZipper)
             csEditState.cedEditMode .= lastEditMode
 
 updateChannelListScroll :: MH ()
@@ -550,17 +546,16 @@ saveCurrentEdit = do
 
 saveCurrentChannelInput :: MH ()
 saveCurrentChannelInput = do
-    cId <- use csCurrentChannelId
     cmdLine <- use (csEditState.cedEditor)
     mode <- use (csEditState.cedEditMode)
 
     -- Only save the editor contents if the user is not navigating the
     -- history.
     inputHistoryPos <- use (csEditState.cedEphemeral.eesInputHistoryPosition)
-    csEditState.cedLastChannelInput.at cId .=
+    csEditState.cedEphemeral.eesLastInput .=
         if (isNothing inputHistoryPos)
-           then Just (T.intercalate "\n" $ getEditContents $ cmdLine, mode)
-           else Nothing
+           then (T.intercalate "\n" $ getEditContents $ cmdLine, mode)
+           else ("", NewPost)
 
 hideGroupChannelPref :: ChannelId -> UserId -> Preference
 hideGroupChannelPref cId uId =
@@ -649,7 +644,6 @@ removeChannelFromState cId = do
         when (chan^.ccInfo.cdType /= Direct) $ do
             origFocus <- use csCurrentChannelId
             when (origFocus == cId) nextChannelSkipPrevView
-            csEditState.cedLastChannelInput     .at cId .= Nothing
             -- Update input history
             csEditState.cedInputHistory         %= removeChannelHistory cId
             -- Update msgMap

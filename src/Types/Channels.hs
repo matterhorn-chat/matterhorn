@@ -11,7 +11,8 @@ module Types.Channels
   , ClientChannels -- constructor remains internal
   , NewMessageIndicator(..)
   , EphemeralEditState(..)
-  , eesMultiline, eesInputHistoryPosition
+  , EditMode(..)
+  , eesMultiline, eesInputHistoryPosition, eesLastInput
   , defaultEphemeralEditState
   -- * Lenses created for accessing ClientChannel fields
   , ccContents, ccInfo, ccEditState
@@ -56,6 +57,7 @@ import           Prelude.MH
 
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Set as S
+import qualified Data.Text as T
 import           Lens.Micro.Platform ( (%~), (.~), Traversal', Lens'
                                      , makeLenses, ix, at
                                      , to, non )
@@ -74,7 +76,7 @@ import           Network.Mattermost.Types ( Channel(..), UserId, ChannelId
                                           )
 
 import           Types.Messages ( Messages, noMessages, addMessage
-                                , clientMessageToMessage )
+                                , clientMessageToMessage, Message, MessageType )
 import           Types.Posts ( ClientMessageType(UnknownGapBefore)
                              , newClientMessage, postIsLeave, postIsJoin )
 import           Types.Users ( TypingUsers, noTypingUsers, addTypingUser )
@@ -95,11 +97,24 @@ data ClientChannel = ClientChannel
     -- changed.
   }
 
+-- | The input mode.
+data EditMode =
+    NewPost
+    -- ^ The input is for a new post.
+    | Editing Post MessageType
+    -- ^ The input is to be used as a new body for an existing post of
+    -- the specified type.
+    | Replying Message Post
+    -- ^ The input is to be used as a new post in reply to the specified
+    -- post.
+    deriving (Show)
+
 data EphemeralEditState =
     EphemeralEditState { _eesMultiline :: Bool
                        -- ^ Whether the editor is in multiline mode
                        , _eesInputHistoryPosition :: Maybe Int
                        -- ^ The input history position, if any
+                       , _eesLastInput :: (T.Text, EditMode)
                        }
 
 -- Get a channel's name, depending on its type
@@ -238,6 +253,7 @@ defaultEphemeralEditState :: EphemeralEditState
 defaultEphemeralEditState =
     EphemeralEditState { _eesMultiline = False
                        , _eesInputHistoryPosition = Nothing
+                       , _eesLastInput = ("", NewPost)
                        }
 
 canLeaveChannel :: ChannelInfo -> Bool
