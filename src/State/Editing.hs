@@ -33,7 +33,7 @@ import qualified Data.Text.Zipper as Z
 import qualified Data.Text.Zipper.Generic.Words as Z
 import           Data.Time ( getCurrentTime )
 import           Graphics.Vty ( Event(..), Key(..), Modifier(..) )
-import           Lens.Micro.Platform ( (%=), (.=), (.~), to, at )
+import           Lens.Micro.Platform ( (%=), (.=), (.~), to )
 import qualified System.Environment as Sys
 import qualified System.Exit as Sys
 import qualified System.IO as Sys
@@ -208,7 +208,7 @@ handleInputSubmission cId content = do
     -- cleanup afterwards could clean up the wrong things.
     csEditState.cedEditor %= applyEdit Z.clearZipper
     csEditState.cedInputHistory %= addHistoryEntry content cId
-    csEditState.cedInputHistoryPosition.at cId .= Nothing
+    csEditState.cedEphemeral.eesInputHistoryPosition .= Nothing
 
     case T.uncons content of
       Just ('/', cmd) ->
@@ -240,8 +240,7 @@ handleEditingInput e = do
     smartBacktick <- use (csResources.crConfiguration.to configSmartBacktick)
     let smartChars = "*`_"
     st <- use id
-    cId <- use csCurrentChannelId
-    csEditState.cedInputHistoryPosition.at cId .= Nothing
+    csEditState.cedEphemeral.eesInputHistoryPosition .= Nothing
 
     case lookupKeybinding e editingKeybindings of
       Just kb | editingPermitted st -> kbAction kb

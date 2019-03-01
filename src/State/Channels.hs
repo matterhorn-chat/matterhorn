@@ -514,7 +514,7 @@ loadLastChannelInput = do
     lastInput <- use (csEditState.cedLastChannelInput.at cId)
     case lastInput of
         Nothing -> do
-            inputHistoryPos <- use (csEditState.cedInputHistoryPosition.at cId)
+            inputHistoryPos <- use (csEditState.cedEphemeral.eesInputHistoryPosition)
             case inputHistoryPos of
                 Just i -> loadHistoryEntryToEditor cId i
                 Nothing -> csEditState.cedEditor %= (applyEdit clearZipper)
@@ -556,7 +556,7 @@ saveCurrentChannelInput = do
 
     -- Only save the editor contents if the user is not navigating the
     -- history.
-    inputHistoryPos <- use (csEditState.cedInputHistoryPosition.at cId)
+    inputHistoryPos <- use (csEditState.cedEphemeral.eesInputHistoryPosition)
     csEditState.cedLastChannelInput.at cId .=
         if (isNothing inputHistoryPos)
            then Just (T.intercalate "\n" $ getEditContents $ cmdLine, mode)
@@ -649,7 +649,6 @@ removeChannelFromState cId = do
         when (chan^.ccInfo.cdType /= Direct) $ do
             origFocus <- use csCurrentChannelId
             when (origFocus == cId) nextChannelSkipPrevView
-            csEditState.cedInputHistoryPosition .at cId .= Nothing
             csEditState.cedLastChannelInput     .at cId .= Nothing
             -- Update input history
             csEditState.cedInputHistory         %= removeChannelHistory cId
@@ -802,17 +801,17 @@ createGroupChannel usernameList = do
 channelHistoryForward :: MH ()
 channelHistoryForward = do
     cId <- use csCurrentChannelId
-    inputHistoryPos <- use (csEditState.cedInputHistoryPosition.at cId)
+    inputHistoryPos <- use (csEditState.cedEphemeral.eesInputHistoryPosition)
     case inputHistoryPos of
         Just i
           | i == 0 -> do
             -- Transition out of history navigation
-            csEditState.cedInputHistoryPosition.at cId .= Nothing
+            csEditState.cedEphemeral.eesInputHistoryPosition .= Nothing
             loadLastChannelInput
           | otherwise -> do
             let newI = i - 1
             loadHistoryEntryToEditor cId newI
-            csEditState.cedInputHistoryPosition.at cId .= (Just newI)
+            csEditState.cedEphemeral.eesInputHistoryPosition .= (Just newI)
         _ -> return ()
 
 loadHistoryEntryToEditor :: ChannelId -> Int -> MH ()
@@ -828,14 +827,14 @@ loadHistoryEntryToEditor cId idx = do
 channelHistoryBackward :: MH ()
 channelHistoryBackward = do
     cId <- use csCurrentChannelId
-    inputHistoryPos <- use (csEditState.cedInputHistoryPosition.at cId)
+    inputHistoryPos <- use (csEditState.cedEphemeral.eesInputHistoryPosition)
 
     when (inputHistoryPos == Nothing) $
         saveCurrentChannelInput
 
     let newI = maybe 0 (+ 1) inputHistoryPos
     loadHistoryEntryToEditor cId newI
-    csEditState.cedInputHistoryPosition.at cId .= (Just newI)
+    csEditState.cedEphemeral.eesInputHistoryPosition .= (Just newI)
 
 createOrdinaryChannel :: Text -> MH ()
 createOrdinaryChannel name  = do

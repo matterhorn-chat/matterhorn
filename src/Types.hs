@@ -97,7 +97,6 @@ module Types
   , cedEphemeral
   , cedEditor
   , cedInputHistory
-  , cedInputHistoryPosition
   , cedLastChannelInput
   , cedAutocomplete
   , cedAutocompletePending
@@ -854,7 +853,6 @@ data ChatEditState =
                   , _cedEditMode :: EditMode
                   , _cedEphemeral :: EphemeralEditState
                   , _cedInputHistory :: InputHistory
-                  , _cedInputHistoryPosition :: HashMap ChannelId Int
                   , _cedLastChannelInput :: HashMap ChannelId (Text, EditMode)
                   , _cedYankBuffer :: Text
                   , _cedSpellChecker :: Maybe (Aspell, IO ())
@@ -904,7 +902,6 @@ emptyEditState hist sp = do
     return ChatEditState { _cedEditor               = editor MessageInput Nothing ""
                          , _cedEphemeral            = defaultEphemeralEditState
                          , _cedInputHistory         = hist
-                         , _cedInputHistoryPosition = mempty
                          , _cedLastChannelInput     = mempty
                          , _cedEditMode             = NewPost
                          , _cedYankBuffer           = ""

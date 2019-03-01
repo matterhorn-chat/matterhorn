@@ -11,7 +11,7 @@ module Types.Channels
   , ClientChannels -- constructor remains internal
   , NewMessageIndicator(..)
   , EphemeralEditState(..)
-  , eesMultiline
+  , eesMultiline, eesInputHistoryPosition
   , defaultEphemeralEditState
   -- * Lenses created for accessing ClientChannel fields
   , ccContents, ccInfo, ccEditState
@@ -98,6 +98,8 @@ data ClientChannel = ClientChannel
 data EphemeralEditState =
     EphemeralEditState { _eesMultiline :: Bool
                        -- ^ Whether the editor is in multiline mode
+                       , _eesInputHistoryPosition :: Maybe Int
+                       -- ^ The input history position, if any
                        }
 
 -- Get a channel's name, depending on its type
@@ -235,6 +237,7 @@ makeClientChannel myId nc = emptyChannelContents >>= \contents ->
 defaultEphemeralEditState :: EphemeralEditState
 defaultEphemeralEditState =
     EphemeralEditState { _eesMultiline = False
+                       , _eesInputHistoryPosition = Nothing
                        }
 
 canLeaveChannel :: ChannelInfo -> Bool
