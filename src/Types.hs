@@ -851,6 +851,12 @@ data ChatEditState =
                   , _cedEditMode :: EditMode
                   , _cedEphemeral :: EphemeralEditState
                   , _cedInputHistory :: InputHistory
+                  -- ^ The map of per-channel input history for the
+                  -- application. We don't distribute the per-channel
+                  -- history into the per-channel states (like we do
+                  -- for other per-channel state) since keeping it
+                  -- under the InputHistory banner lets us use a nicer
+                  -- startup/shutdown disk file management API.
                   , _cedYankBuffer :: Text
                   , _cedSpellChecker :: Maybe (Aspell, IO ())
                   , _cedMisspellings :: Set Text
