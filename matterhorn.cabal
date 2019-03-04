@@ -8,11 +8,11 @@ license:             BSD3
 license-file:        LICENSE
 author:              matterhorn@galois.com
 maintainer:          matterhorn@galois.com
-copyright:           ©2016-2018 AUTHORS.txt
+copyright:           ©2016-2019 AUTHORS.txt
 category:            Chat
 build-type:          Simple
 cabal-version:       >= 1.18
-tested-with:         GHC == 7.10.3, GHC == 8.0.1
+tested-with:         GHC == 7.10.3, GHC == 8.0.1, GHC == 8.2.2, GHC == 8.4.4, GHC == 8.6.3
 
 data-files:          syntax/*.xml
                      syntax/language.dtd
@@ -125,7 +125,7 @@ executable matterhorn
                      , mattermost-api       == 50200.1.1
                      , base-compat          >= 0.9    && < 0.11
                      , unordered-containers >= 0.2    && < 0.3
-                     , containers           >= 0.5.7  && < 0.6
+                     , containers           >= 0.5.7  && < 0.7
                      , data-clist           >= 0.1.2  && < 0.2
                      , semigroups           >= 0.18   && < 0.19
                      , connection           >= 0.2    && < 0.3
@@ -191,7 +191,7 @@ test-suite test_messages
                     , checkers             >= 0.4    && < 0.5
                     , config-ini           >= 0.2.2.0 && < 0.3
                     , connection           >= 0.2    && < 0.3
-                    , containers           >= 0.5.7  && < 0.6
+                    , containers           >= 0.5.7  && < 0.7
                     , directory            >= 1.3    && < 1.4
                     , filepath             >= 1.4    && < 1.5
                     , hashable             >= 1.2    && < 1.3
