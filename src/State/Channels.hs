@@ -489,12 +489,7 @@ postChangeChannelCommon = do
     resetEditorState
     updateChannelListScroll
     loadLastEdit
-    resetCurrentEdit
     fetchVisibleIfNeeded
-
-resetCurrentEdit :: MH ()
-resetCurrentEdit = do
-    csEditState.cedEphemeral.eesLastInput .= ("", NewPost)
 
 loadLastEdit :: MH ()
 loadLastEdit = do
@@ -552,10 +547,10 @@ saveCurrentChannelInput = do
     -- Only save the editor contents if the user is not navigating the
     -- history.
     inputHistoryPos <- use (csEditState.cedEphemeral.eesInputHistoryPosition)
-    csEditState.cedEphemeral.eesLastInput .=
-        if (isNothing inputHistoryPos)
-           then (T.intercalate "\n" $ getEditContents $ cmdLine, mode)
-           else ("", NewPost)
+
+    when (isNothing inputHistoryPos) $
+        csEditState.cedEphemeral.eesLastInput .=
+           (T.intercalate "\n" $ getEditContents $ cmdLine, mode)
 
 hideGroupChannelPref :: ChannelId -> UserId -> Preference
 hideGroupChannelPref cId uId =
@@ -822,9 +817,7 @@ channelHistoryBackward :: MH ()
 channelHistoryBackward = do
     cId <- use csCurrentChannelId
     inputHistoryPos <- use (csEditState.cedEphemeral.eesInputHistoryPosition)
-
-    when (inputHistoryPos == Nothing) $
-        saveCurrentChannelInput
+    saveCurrentChannelInput
 
     let newI = maybe 0 (+ 1) inputHistoryPos
     loadHistoryEntryToEditor cId newI
