@@ -213,14 +213,19 @@ $ ./build.sh
 # Our Versioning Scheme
 
 Matterhorn version strings will be of the form `ABBCC.X.Y` where ABBCC
-corresponds to the Mattermost server version supported by the release.
-For example, if a release supports Mattermost server version 1.2.3, the
-ABBCC portion of the `matterhorn` version will be `10203`. The `X.Y`
-portion of the version corresponds to our own version namespace for the
-package. If the server version changes, `X.Y` SHOULD be `0.0`. Otherwise
-the first component should increment if the package undergoes major code
-changes or functionality changes. The second component alone should
-change only if the package undergoes security fixes or other bug fixes.
+corresponds to the lowest Mattermost server version expected to be
+supported by the release.  For example, if a release supports
+Mattermost server version 1.2.3, the ABBCC portion of the `matterhorn`
+version will be `10203`.  There may be later versions of the
+Mattermost server that are supported (e.g. Matterhorn 50200.X.Y
+supports Mattermost server versions 5.2 through at least 5.8).
+
+The `X.Y` portion of the version corresponds to our own version
+namespace for the package. If the server version changes, `X.Y` SHOULD
+be `0.0`. Otherwise the first component should increment if the
+package undergoes major code changes or functionality changes. The
+second component alone should change only if the package undergoes
+security fixes or other bug fixes.
 
 # Our Design Philosophy
 
