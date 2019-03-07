@@ -10,17 +10,17 @@ platforms on which binary distributions will be built.
 All operations in this process start from the `develop` branch of each
 package repository.
 
-1. Set the `matterhorn` package version. The version string must be of
-   the form `ABBCC.X.Y` where ABBCC corresponds to the Mattermost
-   server version supported by the release. For example, if the release
-   supports Mattermost server version 1.2.3, the ABBCC portion of the
-   `matterhorn` version should be `10203`. The `X.Y` portion of the
-   version corresponds to our own version namespace for the package.
-   If the server version changes, `X.Y` SHOULD be `0.0`. Otherwise the
-   first component should increment if the package undergoes major code
-   changes or functionality changes. The second component alone should
-   change only if the package undergoes security fixes or other bug
-   fixes.
+1. Set the `matterhorn` package version in the cabal file. The version
+   string must be of the form `ABBCC.X.Y` where ABBCC corresponds to
+   the Mattermost server version supported by the release. For
+   example, if the release supports Mattermost server version 1.2.3,
+   the ABBCC portion of the `matterhorn` version should be
+   `10203`. The `X.Y` portion of the version corresponds to our own
+   version namespace for the package.  If the server version changes,
+   `X.Y` SHOULD be `0.0`. Otherwise the first component should
+   increment if the package undergoes major code changes or
+   functionality changes. The second component alone should change
+   only if the package undergoes security fixes or other bug fixes.
 
    Also set the versions of the API packages similary depending on what
    changed in each one.
