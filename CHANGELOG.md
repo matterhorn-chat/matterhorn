@@ -1,3 +1,55 @@
+50200.2.0
+=========
+
+New features:
+ * Channel scrolling mode has been merged with message select mode.
+   There are no longer two separate modes that the user must switched
+   between for fetching additional messages and operating on displayed
+   messages.
+   * As part of this change, gaps in the local client history where
+     the server may contain additional messages are displayed as
+     special entries in the message history, along with specific key
+     commands that can be used to fetch additional messages at that
+     point.
+ * The `/msg` command now takes optional user and message arguments to
+   make it faster and easier to initiate discussions with specific
+   users: `/msg [@user [message]]`.  This resolves enhancement issue
+   #471.
+ * If smart editing is enabled and a triple backtick is typed at the
+   start of a line, input automatically switches to multi-line mode.
+   Fixes issue #467.
+ * Status is now tracked on a per-channel basis.  Previously some
+   things (like incomplete message entries) were global, and others
+   were simply reset when moving away from and back to a channel.  In
+   this version, much of this state is automatically saved and
+   restored on a per-channel basis:
+   * Incomplete message (editor) entries.
+   * Multi-line mode for incomplete message entries.
+   * Input history scrollback position.
+   * Incomplete message reply-to or editing-previous-post status.
+   This resolves enhancement issue #445.
+ * Adds the `/user` command as an alias for the `/msg` command.
+ * Channel auto-completion mode indication of the user's membership in
+   the channel is more clearly indicated.
+ * A new configuration item (`directChannelExpirationDays`) is added.
+   In release 50200.1.0, the channel sidebar management was updated to
+   automatically remove direct channels if there had been no activity
+   for 7 days.  This configuration item allows overriding that time
+   period, (thanks, Brent Carmer).
+ * A new configuration item (`cpuUsagePolicy`) is added.  Valid values
+   are `single` and `multiple` which determines how many of the
+   available processors Matterhorn will make use of.  The default is
+   `multiple`.  This resolves enhancement issue #484.
+ * Additional information on managing attachments (relative to issue #485).
+
+Documentation updates:
+ * The FAQ is updated to help users with terminals that don't support
+   hyperlinks (thanks, Bob Arezina).
+ * Updated the Design notes and development Practices documentation
+   for Matterhorn.
+
+Dependency updates:
+ * Added support for building with GHC 8.6 (thanks, Adam Wick).
 
 50200.1.2
 =========
