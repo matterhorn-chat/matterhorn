@@ -72,7 +72,7 @@ install_tools
 
 echo Version: $VERSION
 echo Filename: $FILENAME
-cd $HERE && git submodule update && ./build.sh
+cd $HERE && git submodule update --init && ./build.sh
 
 TMPDIR=$(mktemp -d)
 function cleanup {
