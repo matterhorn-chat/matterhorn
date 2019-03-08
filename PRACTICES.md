@@ -154,6 +154,33 @@ Branching
    that bug fixes are not held up by other development work in case a
    bugfix release is desired.
 
+Compatibility
+-------------
+
+Matterhorn is primarily distributed to users as binaries that have
+been built for that purpose; the primary compatibility support goal is
+the set of operating systems binaries are built for.
+
+From an operating system perspective, the "current stable release"
+versions of those operating systems are the primary targets.  We
+support many of the more popular operating systems, including: CentOS,
+Fedoria, Ubuntu, and MacOS.
+
+Those wishing to use Matterhorn on a different operating system (that
+is not compatible with one of the pre-built binaries) or work with the
+code directly by building from source will need to obtain the source
+directly and follow the build instructions described in the README
+document. The GHC compiler version documented in the build
+instructions is the primary supported version.
+
+Continuous Integration (CI) systems (e.g. Travis and/or Hydra) are
+used for determining the viability of builds for different GHC
+compiler versions, and in some cases on different operating systems.
+The general intent is to support 3 GHC compiler versions (the current
+and the two most previous versions) to allow flexibility for developer
+configurations, but we cannot commit to supporting any version other
+than the one documented in the README.
+
 Issue Tracking
 --------------
 
