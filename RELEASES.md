@@ -8,7 +8,9 @@ beginning, the person making the release should have access to the
 platforms on which binary distributions will be built.
 
 All operations in this process start from the `develop` branch of each
-package repository.
+package repository.  It's recommended that the release engineer create
+a `staging_ABBCC.X.Y` branch to protect against other developer
+commits during the release process.
 
 1. Set the `matterhorn` package version in the cabal file. The version
    string must be of the form `ABBCC.X.Y` where ABBCC corresponds to
