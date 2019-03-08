@@ -11,12 +11,15 @@ matrix:
     - env: CABALVER=1.24 GHCVER=8.0.2
       compiler: ": #GHC 8.0.2"
       addons: {apt: {packages: [cabal-install-1.24,ghc-8.0.2,alex-3.1.7,happy-1.19.5], sources: [hvr-ghc]}}
-    - env: CABALVER=2.0 GHCVER=8.2.1
-      compiler: ": #GHC 8.2.1"
-      addons: {apt: {packages: [cabal-install-2.0,ghc-8.2.1,alex-3.1.7,happy-1.19.5], sources: [hvr-ghc]}}
-    - env: CABALVER=2.0 GHCVER=8.4.1
-      compiler: ": #GHC 8.4.1"
-      addons: {apt: {packages: [cabal-install-2.0,ghc-8.4.1,alex-3.1.7,happy-1.19.5], sources: [hvr-ghc]}}
+    - env: CABALVER=2.0 GHCVER=8.2.2
+      compiler: ": #GHC 8.2.2"
+      addons: {apt: {packages: [cabal-install-2.0,ghc-8.2.2,alex-3.1.7,happy-1.19.5], sources: [hvr-ghc]}}
+    - env: CABALVER=2.0 GHCVER=8.4.4
+      compiler: ": #GHC 8.4.4"
+      addons: {apt: {packages: [cabal-install-2.0,ghc-8.4.4,alex-3.1.7,happy-1.19.5], sources: [hvr-ghc]}}
+    - env: CABALVER=2.0 GHCVER=8.6.3
+      compiler: ": #GHC 8.6.3"
+      addons: {apt: {packages: [cabal-install-2.0,ghc-8.6.3,alex-3.1.7,happy-1.19.5], sources: [hvr-ghc]}}
 
 before_install:
  - unset CC
