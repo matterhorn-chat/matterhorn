@@ -8,7 +8,7 @@
 
 module Prelude.MH
   ( module P
-#if !MIN_VERSION_base(4,11,0)
+#if !MIN_VERSION_base(4,10,0)
   , (<>)
 #endif
   , (<|>)
