@@ -24,8 +24,11 @@ commits during the release process.
    functionality changes. The second component alone should change
    only if the package undergoes security fixes or other bug fixes.
 
-   Also set the versions of the API packages similary depending on what
-   changed in each one.
+   Also set the versions of the API packages similarly depending on
+   what changed in each one.  Note: originally the API packages were
+   synchronized with Matterhorn via identical version numbers; this is
+   no longer the case and the git submodules references are used for
+   synchronization.
 
 2. Generate a changelog entry list from the git log since the last
    release tag. In the changelog, include
