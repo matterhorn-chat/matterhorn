@@ -1,5 +1,22 @@
 #!/usr/bin/env bash
 
+# This script will generate a release image appropriate to the local
+# platform type.  These are not natively packaged (e.g. an RPM or DEB
+# file) but are instead tarballs containing the binary as built on/for
+# that platform.
+#
+# 1. git clone -b develop https://github.com/matterhorn-chat/matterhorn
+# 2. cd matterhorn
+# 3. ./mkrelease.sh
+# 4. Copy the generated FILENAME result to the appropriate location.
+#
+# Note that this script will perform a submodule update; the default
+# submodule access is via git/ssh, which requires a local key.  If
+# this script is run from an automated build process, it is
+# recommended to convert the git/ssh submodule url references in
+# .gitmodules to https references itself (e.g.
+#   $ sed -i -e /url/s,git@github.com:,https://github.com/, .gitmodules
+
 set -e
 
 HERE=$(cd `dirname $0`; pwd)
@@ -72,7 +89,11 @@ install_tools
 
 echo Version: $VERSION
 echo Filename: $FILENAME
-cd $HERE && git submodule update --init && ./build.sh
+
+# Perform a build
+cd $HERE
+git submodule update --init
+./build.sh
 
 TMPDIR=$(mktemp -d)
 function cleanup {
@@ -80,6 +101,7 @@ function cleanup {
 }
 trap cleanup EXIT
 
+# Package the build results into a tarball
 mkdir $TMPDIR/$DIRNAME
 prepare_dist $VERSION $TMPDIR/$DIRNAME
 cd $TMPDIR && tar -cj $DIRNAME > $HERE/$FILENAME
