@@ -77,18 +77,9 @@ commits during the release process.
     "We're pleased to announce the release of Matterhorn version <VERSION> for @mattermost!
     Get it at https://github.com/matterhorn-chat/matterhorn/releases/tag/<VERSION>"
 
-Release Hosts
-=============
-
-OS X:
-* `gala.galois.com`
-* `fuji.galois.com`
-
-Ubuntu:
-* `vm-35-59.eic.galois.com`
-
-Fedora:
-* `vm-35-58.eic.galois.com`
-
-CentOS 7:
-* `vm-35-a7.eic.galois.com`
+The above process should be sufficient to generate a release on any of
+the supported platforms (e.g. CentOS, Fedora, Ubuntu, MacOS).  A Linux
+platform can usually be initialized via the `$ bash
+setup/setup_linux.sh` script.  Information about which hosts are used
+internally to Galois to generate the release binaries are not publicly
+useful and is contained on our internal Galois git repository.
