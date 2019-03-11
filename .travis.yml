@@ -25,7 +25,10 @@ before_install:
  - export HAPPYVER=1.19.5
  - export ALEXVER=3.1.7
  - export PATH=/opt/ghc/$GHCVER/bin:/opt/cabal/$CABALVER/bin:/opt/happy/$HAPPYVER/bin:/opt/alex/$ALEXVER/bin:$PATH
+ - set -x
+ - cat .gitmodules
  - sed -i -e /url/s,git@github.com:,https://github.com/, .gitmodules
+ - cat .gitmodules
  - git submodule update --init
 
 install:
