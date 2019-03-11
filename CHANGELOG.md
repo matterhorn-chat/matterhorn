@@ -48,6 +48,14 @@ Documentation updates:
  * Updated the Design notes and development Practices documentation
    for Matterhorn.
 
+Bug fixes:
+ * Updated to mattermost-api 50200.1.2 which includes a bugfix for a
+   server "UploadResponse" with a null client_ids field.  This
+   manifested as an error report when attempting to post a message
+   with an attachment to a general channel.
+ * Misc process and maintenance changes to re-enable and update the
+   Travis builds (fully passing now).
+
 Dependency updates:
  * Added support for building with GHC 8.6 (thanks, Adam Wick).
 
