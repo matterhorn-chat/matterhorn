@@ -15,11 +15,18 @@ matrix:
       compiler: ": #GHC 8.6.3"
       addons: {apt: {packages: [cabal-install-2.0,ghc-8.6.3,alex-3.1.7,happy-1.19.5], sources: [hvr-ghc]}}
 
+# Manually checkout git submodules; .gitmodules must be adjusted to
+# use https protocol instead of git/ssh protocol first.
+git:
+  submodules: false
+
 before_install:
  - unset CC
  - export HAPPYVER=1.19.5
  - export ALEXVER=3.1.7
  - export PATH=/opt/ghc/$GHCVER/bin:/opt/cabal/$CABALVER/bin:/opt/happy/$HAPPYVER/bin:/opt/alex/$ALEXVER/bin:$PATH
+ - sed -i -e /url/s,git@github.com:,https://github.com/, .gitmodules
+ - git submodule update --init
 
 install:
  - cabal --version
