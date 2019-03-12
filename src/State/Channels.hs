@@ -22,7 +22,6 @@ module State.Channels
   , nextChannel
   , recentChannel
   , hideDMChannel
-  , hideCurrentDMChannel
   , createGroupChannel
   , showGroupChannelPref
   , channelHistoryForward
@@ -158,9 +157,6 @@ toggleChannelListVisibility :: MH ()
 toggleChannelListVisibility = do
     mh invalidateCache
     csShowChannelList %= not
-
-hideCurrentDMChannel :: MH ()
-hideCurrentDMChannel = hideDMChannel =<< use csCurrentChannelId
 
 hideDMChannel :: ChannelId -> MH ()
 hideDMChannel cId = do
