@@ -377,7 +377,6 @@ mkKeybindHelp (KB desc ev _ _) =
     (withDefAttr helpEmphAttr $ txt $ padTo kbColumnWidth $ ppBinding $ eventToBinding ev) <+>
     (vLimit 1 $ hLimit kbDescColumnWidth $ renderText desc <+> fill ' ')
 
-
 mkKeybindEventSectionHelp :: (Text, [Keybinding]) -> Widget Name
 mkKeybindEventSectionHelp (sectionName, kbs) =
   let lst = sortWith (fmap keyEventName . kbBindingInfo . head) $ groupWith kbBindingInfo kbs
