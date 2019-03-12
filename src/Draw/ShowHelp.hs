@@ -1,4 +1,9 @@
-module Draw.ShowHelp (drawShowHelp) where
+module Draw.ShowHelp
+  ( drawShowHelp
+  , keybindingMarkdownTable
+  , keybindingTextTable
+  )
+where
 
 import           Prelude ()
 import           Prelude.MH
@@ -125,16 +130,38 @@ scriptHelp = vBox
            , [ "> *> /sh rot13 Hello, world!*\n" ]
            ]
 
+keybindingMarkdownTable :: KeyConfig -> Text
+keybindingMarkdownTable kc = keybindSectionStrings
+    where keybindSectionStrings = T.concat $ catMaybes $ sectionText <$> keybindSections kc
+          sectionText = mkKeybindEventSectionHelp keybindEventHelpMarkdown T.unlines mkHeading
+          mkHeading n =
+              "\n# " <> n <>
+              "\n| Keybinding | Description |" <>
+              "\n| ---------- | ----------- |"
+
+keybindingTextTable :: KeyConfig -> Text
+keybindingTextTable kc = keybindSectionStrings
+    where keybindSectionStrings = T.concat $ catMaybes $ sectionText <$> keybindSections kc
+          sectionText = mkKeybindEventSectionHelp (keybindEventHelpText keybindingWidth) T.unlines mkHeading
+          keybindingWidth = 20
+          mkHeading n =
+              "\n" <> n <>
+              "\n" <> (T.replicate (T.length n) "=")
+
 keybindingHelp :: KeyConfig -> Widget Name
-keybindingHelp kc = vBox $
+keybindingHelp kc = hCenter $ hLimit 100 $ vBox $
   [ padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Configurable Keybindings"
-  , padTop (Pad 1) $ hCenter $ hLimit 100 $ vBox keybindingHelpText
-  ] ++ map mkKeybindEventSectionHelp (keybindSections kc)
+  , padTop (Pad 1) $ hCenter $ vBox keybindingHelpText
+  ] ++ keybindSectionWidgets
     ++
   [ padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Keybinding Syntax"
-  , padTop (Pad 1) $ hCenter $ hLimit 100 $ vBox validKeys
+  , padTop (Pad 1) $ hCenter $ vBox validKeys
   ]
-  where keybindingHelpText = map (padTop (Pad 1) . renderText . mconcat)
+  where keybindSectionWidgets = catMaybes $ sectionWidget <$> keybindSections kc
+        sectionWidget = mkKeybindEventSectionHelp keybindEventHelpWidget vBox mkSectionHeading
+        mkSectionHeading = hCenter . padTop (Pad 1) . withDefAttr helpEmphAttr . txt
+
+        keybindingHelpText = map (padTop (Pad 1) . renderText . mconcat)
           [ [ "Many of the keybindings used in Matterhorn can be "
             , "modified from within Matterhorn's **config.ini** file. "
             , "To do this, include a section called **[KEYBINDINGS]** "
@@ -377,24 +404,41 @@ mkKeybindHelp (KB desc ev _ _) =
     (withDefAttr helpEmphAttr $ txt $ padTo kbColumnWidth $ ppBinding $ eventToBinding ev) <+>
     (vLimit 1 $ hLimit kbDescColumnWidth $ renderText desc <+> fill ' ')
 
-mkKeybindEventSectionHelp :: (Text, [Keybinding]) -> Widget Name
-mkKeybindEventSectionHelp (sectionName, kbs) =
+mkKeybindEventSectionHelp :: ((Text, Text, Text) -> a)
+                          -> ([a] -> a)
+                          -> (Text -> a)
+                          -> (Text, [Keybinding])
+                          -> Maybe a
+mkKeybindEventSectionHelp mkKeybindHelpFunc vertCat mkHeading (sectionName, kbs) =
   let lst = sortWith (fmap keyEventName . kbBindingInfo . head) $ groupWith kbBindingInfo kbs
   in if all (all (isNothing . kbBindingInfo)) lst
-       then emptyWidget
-       else (hCenter $ padTop (Pad 1) $ withDefAttr helpEmphAttr $ txt $ "Keybindings: " <> sectionName) <=>
-            (hCenter $ vBox $ concat $ mkKeybindEventHelp <$> lst)
+       then Nothing
+       else Just $
+           vertCat $ (mkHeading $ "Keybindings: " <> sectionName) :
+                     (mkKeybindHelpFunc <$> (catMaybes $ mkKeybindEventHelp <$> lst))
 
-mkKeybindEventHelp :: [Keybinding] -> [Widget Name]
+keybindEventHelpWidget :: (Text, Text, Text) -> Widget Name
+keybindEventHelpWidget (evName, desc, evText) =
+    vBox [ txt (padTo 72 ("; " <> desc))
+         , (withDefAttr helpEmphAttr $ txt evName) <+> txt (" = " <> evText)
+         , str " "
+         ]
+
+keybindEventHelpMarkdown :: (Text, Text, Text) -> Text
+keybindEventHelpMarkdown (_evName, desc, evText) =
+    "| " <> evText <>
+    " | " <> desc <> " |"
+
+keybindEventHelpText :: Int -> (Text, Text, Text) -> Text
+keybindEventHelpText width (_evName, desc, evText) =
+    padTo width evText <> " " <> desc
+
+mkKeybindEventHelp :: [Keybinding] -> Maybe (Text, Text, Text)
 mkKeybindEventHelp ks@(KB desc _ _ (Just e):_) =
   let evs = [ ev | KB _ ev _ _ <- ks ]
       evText = T.intercalate ", " (map (ppBinding . eventToBinding) evs)
-  in [ txt (padTo 72 ("; " <> desc))
-     , (withDefAttr helpEmphAttr $ txt $ keyEventName e) <+>
-       txt (" = " <> evText)
-     , str " "
-     ]
-mkKeybindEventHelp _ = []
+  in Just (keyEventName e, desc, evText)
+mkKeybindEventHelp _ = Nothing
 
 padTo :: Int -> Text -> Text
 padTo n s = s <> T.replicate (n - T.length s) " "

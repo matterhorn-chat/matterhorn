@@ -20,19 +20,24 @@ data Behaviour
   | ShowHelp
     deriving (Eq, Show)
 
+data KeybindingPrintMode =
+    Markdown | Plain deriving (Eq, Show)
+
 data Options = Options
-  { optConfLocation :: Maybe FilePath
-  , optLogLocation  :: Maybe FilePath
-  , optBehaviour    :: Behaviour
-  , optIgnoreConfig :: Bool
+  { optConfLocation     :: Maybe FilePath
+  , optLogLocation      :: Maybe FilePath
+  , optBehaviour        :: Behaviour
+  , optIgnoreConfig     :: Bool
+  , optPrintKeybindings :: Maybe KeybindingPrintMode
   } deriving (Eq, Show)
 
 defaultOptions :: Options
 defaultOptions = Options
-  { optConfLocation = Nothing
-  , optLogLocation  = Nothing
-  , optBehaviour    = Normal
-  , optIgnoreConfig = False
+  { optConfLocation     = Nothing
+  , optLogLocation      = Nothing
+  , optBehaviour        = Normal
+  , optIgnoreConfig     = False
+  , optPrintKeybindings = Nothing
   }
 
 optDescrs :: [OptDescr (Options -> Options)]
@@ -52,6 +57,12 @@ optDescrs =
   , Option ['i'] ["ignore-config"]
     (NoArg (\ c -> c { optIgnoreConfig = True }))
     "Start with no configuration"
+  , Option ['k'] ["keybindings-text"]
+    (NoArg (\ c -> c { optPrintKeybindings = Just Plain }))
+    "Print all keybinding information in plain text format"
+  , Option ['K'] ["keybindings-markdown"]
+    (NoArg (\ c -> c { optPrintKeybindings = Just Markdown }))
+    "Print all keybinding information in Markdown format"
   ]
 
 mhVersion :: String

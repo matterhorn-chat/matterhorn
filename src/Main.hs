@@ -2,14 +2,16 @@ module Main where
 
 import Prelude ()
 import Prelude.MH
+import qualified Data.Text.IO as T
 
-import System.Exit ( exitFailure )
+import System.Exit ( exitFailure, exitSuccess )
 
 import Config
 import Options
 import App
 import Events.Keybindings ( ensureKeybindingConsistency )
 import KeyMap ( keybindingModeMap )
+import Draw.ShowHelp ( keybindingMarkdownTable, keybindingTextTable )
 
 
 main :: IO ()
@@ -26,7 +28,17 @@ main = do
             exitFailure
         Right c -> return c
 
-    case ensureKeybindingConsistency (configUserKeys config) keybindingModeMap of
+    let keyConfig = configUserKeys config
+
+    case optPrintKeybindings opts of
+        Nothing -> return ()
+        Just ty -> do
+            case ty of
+                Markdown -> T.putStrLn $ keybindingMarkdownTable keyConfig
+                Plain -> T.putStrLn $ keybindingTextTable keyConfig
+            exitSuccess
+
+    case ensureKeybindingConsistency keyConfig keybindingModeMap of
         Right () -> return ()
         Left err -> do
             putStrLn $ "Configuration error: " <> err
