@@ -22,20 +22,12 @@ set -e
 HERE=$(cd `dirname $0`; pwd)
 
 function get_platform {
-    if [ -f "/etc/redhat-release" ]
+    if [ -f "/etc/os-release" ]
     then
-        if grep Fedora /etc/redhat-release >/dev/null
-        then
-            echo "Fedora"
-        elif grep CentOS /etc/redhat-release >/dev/null
-        then
-            echo "CentOS"
-        else
-            echo "Unknown-Redhat"
-        fi
-    elif grep -i ubuntu /etc/apt/sources.list 2>/dev/null >/dev/null
-    then
-        echo "Ubuntu"
+        # Use ID from /etc/os-release because it is a valid
+        # single-word element, whereas NAME may contain spaces.
+        . /etc/os-release
+        echo $ID
     else
         uname -s
     fi
@@ -45,13 +37,23 @@ function get_arch {
     uname -m
 }
 
-VERSION=$(grep "^version:" matterhorn.cabal | awk '{ print $2 }')
+function output_dirname {
+    if [ -f /etc/os-release ]
+    then
+        . /etc/os-release # sets vars, incl VERSION_ID and VERSION_CODENAME
+        echo $BASENAME-$MHVERSION-$PLATFORM-$VERSION_ID-$VERSION_CODENAME-$ARCH
+    else
+        echo $BASENAME-$MHVERSION-$PLATFORM-$ARCH
+    fi
+}
+
+MHVERSION=$(grep "^version:" matterhorn.cabal | awk '{ print $2 }')
 BASENAME=matterhorn
 ARCH=$(get_arch)
 PLATFORM=$(get_platform)
 LONG_HEAD=$(git log | head -1 | awk '{ print $2 }')
 SHORT_HEAD=${LONG_HEAD:0:8}
-DIRNAME=$BASENAME-$VERSION-$PLATFORM-$ARCH
+DIRNAME=$(output_dirname)
 FILENAME=$DIRNAME.tar.bz2
 CABAL_DEPS_REPO=https://github.com/matterhorn-chat/cabal-dependency-licenses.git
 CABAL_DEPS_TOOL_DIR=$HOME/.cabal/bin
@@ -87,7 +89,7 @@ function install_tools {
 
 install_tools
 
-echo Version: $VERSION
+echo Version: $MHVERSION
 echo Filename: $FILENAME
 
 # Perform a build
@@ -103,5 +105,5 @@ trap cleanup EXIT
 
 # Package the build results into a tarball
 mkdir $TMPDIR/$DIRNAME
-prepare_dist $VERSION $TMPDIR/$DIRNAME
+prepare_dist $MHVERSION $TMPDIR/$DIRNAME
 cd $TMPDIR && tar -cj $DIRNAME > $HERE/$FILENAME
