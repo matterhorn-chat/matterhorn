@@ -107,3 +107,7 @@ trap cleanup EXIT
 mkdir $TMPDIR/$DIRNAME
 prepare_dist $MHVERSION $TMPDIR/$DIRNAME
 cd $TMPDIR && tar -cj $DIRNAME > $HERE/$FILENAME
+
+echo %%%%%%%%%% completed package build %%%%%%%%%%
+echo Version: $MHVERSION
+echo Filename: $FILENAME
