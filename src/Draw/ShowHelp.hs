@@ -404,7 +404,7 @@ mkKeybindHelp (KB desc ev _ _) =
     (withDefAttr helpEmphAttr $ txt $ padTo kbColumnWidth $ ppBinding $ eventToBinding ev) <+>
     (vLimit 1 $ hLimit kbDescColumnWidth $ renderText desc <+> fill ' ')
 
-mkKeybindEventSectionHelp :: ((Text, Text, Text) -> a)
+mkKeybindEventSectionHelp :: ((Text, Text, [Text]) -> a)
                           -> ([a] -> a)
                           -> (Text -> a)
                           -> (Text, [Keybinding])
@@ -417,26 +417,27 @@ mkKeybindEventSectionHelp mkKeybindHelpFunc vertCat mkHeading (sectionName, kbs)
            vertCat $ (mkHeading $ "Keybindings: " <> sectionName) :
                      (mkKeybindHelpFunc <$> (catMaybes $ mkKeybindEventHelp <$> lst))
 
-keybindEventHelpWidget :: (Text, Text, Text) -> Widget Name
-keybindEventHelpWidget (evName, desc, evText) =
-    vBox [ txt (padTo 72 ("; " <> desc))
-         , (withDefAttr helpEmphAttr $ txt evName) <+> txt (" = " <> evText)
-         , str " "
-         ]
+keybindEventHelpWidget :: (Text, Text, [Text]) -> Widget Name
+keybindEventHelpWidget (evName, desc, evs) =
+    let evText = T.intercalate ", " evs
+    in vBox [ txt (padTo 72 ("; " <> desc))
+            , (withDefAttr helpEmphAttr $ txt evName) <+> txt (" = " <> evText)
+            , str " "
+            ]
 
-keybindEventHelpMarkdown :: (Text, Text, Text) -> Text
-keybindEventHelpMarkdown (_evName, desc, evText) =
-    "| " <> evText <>
-    " | " <> desc <> " |"
+keybindEventHelpMarkdown :: (Text, Text, [Text]) -> Text
+keybindEventHelpMarkdown (_evName, desc, evs) =
+    let quote s = "`" <> s <> "`"
+    in "| " <> (T.intercalate ", " $ quote <$> evs) <> " | " <> desc <> " |"
 
-keybindEventHelpText :: Int -> (Text, Text, Text) -> Text
-keybindEventHelpText width (_evName, desc, evText) =
-    padTo width evText <> " " <> desc
+keybindEventHelpText :: Int -> (Text, Text, [Text]) -> Text
+keybindEventHelpText width (_evName, desc, evs) =
+    padTo width (T.intercalate ", " evs) <> " " <> desc
 
-mkKeybindEventHelp :: [Keybinding] -> Maybe (Text, Text, Text)
+mkKeybindEventHelp :: [Keybinding] -> Maybe (Text, Text, [Text])
 mkKeybindEventHelp ks@(KB desc _ _ (Just e):_) =
   let evs = [ ev | KB _ ev _ _ <- ks ]
-      evText = T.intercalate ", " (map (ppBinding . eventToBinding) evs)
+      evText = map (ppBinding . eventToBinding) evs
   in Just (keyEventName e, desc, evText)
 mkKeybindEventHelp _ = Nothing
 
