@@ -101,3 +101,11 @@ setup script:
 ```
 $ bash setup/setup_linux.sh
 ```
+
+Galois-Internal Release Notes
+=============================
+
+The Matterhorn development team thanks Galois, Inc. for supporting the
+development and maintenance of Matterhorn. The internal Galois computing
+resources used to make Matterhorn releases are described in our internal
+repository.
