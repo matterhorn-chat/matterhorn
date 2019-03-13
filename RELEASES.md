@@ -55,10 +55,14 @@ commits during the release process.
 
 4. Check for a passing Travis CI build.
 
-5. Ensure that the latest keybindings.md is committed
+5. Ensure that the latest `keybindings.md` is committed. Note that the
+   `-i` argument *MUST* be provided because it causes Matterhorn to
+   ignore your local configuration. The generated keybinding table
+   includes any customized bindings, so your local config must be
+   ignored so that the generated table contains only default bindings.
 
    ```
-   $ matterhorn -K > keybindings.md
+   $ matterhorn -i -K > keybindings.md
    $ git add keybindings.md
    $ git commit
    $ git push
