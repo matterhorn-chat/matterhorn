@@ -6,6 +6,21 @@
   putting changed functions behind CPP in a single place.
 -}
 
+{-
+  GHC version <--> base version (https://wiki.haskell.org/Base_package) includes:
+     8.0.1      4.9.0.0
+     8.2.1      4.10.0.0
+     8.4.1      4.11.0.0
+
+  GHC distributions include a set of core packages; overriding these
+  with new versions is unwise.  Core packages include (see
+  https://downloads.haskell.org/~ghc/X.Y.Z/docs/html/users_guide/X.Y.Z-notes.html#included-libraries
+  ):
+
+    base, Cabal, array, bytestring, containers, deepseq, directory,
+    filepath, mtl, parsec, process, text, time, unix
+-}
+
 module Prelude.MH
   ( module P
 #if !MIN_VERSION_base(4,9,0)
