@@ -1,7 +1,3 @@
-Preprocessing executable 'matterhorn' for matterhorn-50200.2.0..
-Building executable 'matterhorn' for matterhorn-50200.2.0..
-Running matterhorn...
-
 # Keybindings: This Help Page
 | Keybinding | Description |
 | ---------- | ----------- |
