@@ -368,7 +368,7 @@ attrNameToConfig = T.pack . intercalate "." . attrNameComponents
 
 keybindSections :: KeyConfig -> [(Text, [Keybinding])]
 keybindSections kc =
-    [ ("This Help Page", helpKeybindings kc)
+    [ ("Help Page", helpKeybindings kc)
     , ("Main Interface", mainKeybindings kc)
     , ("Channel Select Mode", channelSelectKeybindings kc)
     , ("URL Select Mode", urlSelectKeybindings kc)
