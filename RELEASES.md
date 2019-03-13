@@ -55,10 +55,19 @@ commits during the release process.
 
 4. Check for a passing Travis CI build.
 
-5. Generate platform binary distributions using `mkrelease.sh` on the
+5. Ensure that the latest keybindings.md is committed
+
+   ```
+   $ matterhorn -K > keybindings.md
+   $ git add keybindings.md
+   $ git commit
+   $ git push
+   ```
+
+6. Generate platform binary distributions using `mkrelease.sh` on the
    relevant platforms.
 
-6. Upload each package to Hackage, starting with `mattermost-api`:
+7. Upload each package to Hackage, starting with `mattermost-api`:
 
    * Generate a `cabal sdist`
    * Unpack the `sdist` archive
@@ -66,17 +75,17 @@ commits during the release process.
    * If any issues arise, repair and go to (2)
    * Otherwise, `cabal upload` the package
 
-7. Tag the release commit using the package version as the tag string.
+8. Tag the release commit using the package version as the tag string.
 
-8. `git push --tags`
+9. `git push --tags`
 
-9. Merge the `develop` branch to the `master` branch for each
+10. Merge the `develop` branch to the `master` branch for each
    repository.
 
-10. Make binary release available on GitHub by editing the pushed tag and
+11. Make binary release available on GitHub by editing the pushed tag and
     uploading the release archives.
 
-11. Tweet about the release using the `@matterhorn_chat` account:
+12. Tweet about the release using the `@matterhorn_chat` account:
     "We're pleased to announce the release of Matterhorn version <VERSION> for @mattermost!
     Get it at https://github.com/matterhorn-chat/matterhorn/releases/tag/<VERSION>"
 
