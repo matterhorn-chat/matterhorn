@@ -59,10 +59,10 @@ optDescrs =
     "Start with no configuration"
   , Option ['k'] ["keybindings-text"]
     (NoArg (\ c -> c { optPrintKeybindings = Just Plain }))
-    "Print all keybinding information in plain text format"
+    "Print keybindings effective for the current configuration in plain text format"
   , Option ['K'] ["keybindings-markdown"]
     (NoArg (\ c -> c { optPrintKeybindings = Just Markdown }))
-    "Print all keybinding information in Markdown format"
+    "Print keybindings effective for the current configuration in Markdown format"
   ]
 
 mhVersion :: String
