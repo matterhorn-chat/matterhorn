@@ -60,7 +60,7 @@ Documentation updates:
 
 Bug fixes:
  * Updated to mattermost-api 50200.1.2 which includes a bugfix for a
-   server "UploadResponse" with a null client_ids field.  This
+   server "UploadResponse" with a null `client_ids` field.  This
    manifested as an error report when attempting to post a message
    with an attachment to a general channel.
  * Misc process and maintenance changes to re-enable and update the
