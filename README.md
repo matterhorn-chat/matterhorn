@@ -29,7 +29,13 @@ your server version:
 https://github.com/matterhorn-chat/matterhorn/releases
 
 To run Matterhorn, unpack the binary release archive and run the
-`matterhorn` binary within.
+`matterhorn` binary within.  Help is available via the `--help` or
+`-h` flag.
+
+    ```
+    $ matterhorn --help
+    $ matterhorn
+    ```
 
 When you run Matterhorn you'll be prompted for your server information
 and credentials. At present `matterhorn` supports only username/password
