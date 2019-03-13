@@ -22,7 +22,6 @@ module State.Channels
   , nextChannel
   , recentChannel
   , hideDMChannel
-  , hideCurrentDMChannel
   , createGroupChannel
   , showGroupChannelPref
   , channelHistoryForward
@@ -159,9 +158,12 @@ toggleChannelListVisibility = do
     mh invalidateCache
     csShowChannelList %= not
 
-hideCurrentDMChannel :: MH ()
-hideCurrentDMChannel = hideDMChannel =<< use csCurrentChannelId
-
+-- | If the current channel is a DM channel with a single user or a
+-- group of users, hide it from the sidebar and adjust the server-side
+-- preference to hide it persistently.
+--
+-- If the current channel is any other kind of channel, complain with a
+-- usage error.
 hideDMChannel :: ChannelId -> MH ()
 hideDMChannel cId = do
     me <- gets myUser
