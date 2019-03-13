@@ -30,7 +30,6 @@ import           State.Users
 import           Types
 import           Types.Common
 
-import           Events.ChannelScroll
 import           Events.ChannelSelect
 import           Events.DeleteChannelConfirm
 import           Events.JoinChannel
@@ -160,7 +159,6 @@ onVtyEvent e = do
         UrlSelect                  -> onEventUrlSelect e
         LeaveChannelConfirm        -> onEventLeaveChannelConfirm e
         JoinChannel                -> onEventJoinChannel e
-        ChannelScroll              -> onEventChannelScroll e
         MessageSelect              -> onEventMessageSelect e
         MessageSelectDeleteConfirm -> onEventMessageSelectDeleteConfirm e
         DeleteChannelConfirm       -> onEventDeleteChannelConfirm e

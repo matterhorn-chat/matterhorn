@@ -20,7 +20,6 @@ import qualified Graphics.Vty as Vty
 import           Network.Mattermost.Version ( mmApiVersion )
 
 import           Command
-import           Events.ChannelScroll
 import           Events.ChannelSelect
 import           Events.Keybindings
 import           Events.Main
@@ -372,7 +371,6 @@ keybindSections kc =
     , ("Main Interface", mainKeybindings kc)
     , ("Channel Select Mode", channelSelectKeybindings kc)
     , ("URL Select Mode", urlSelectKeybindings kc)
-    , ("Channel Scroll Mode", channelScrollKeybindings kc)
     , ("Message Select Mode", messageSelectKeybindings kc)
     , ("Text Editing", editingKeybindings)
     , ("Flagged Messages", postListOverlayKeybindings kc)

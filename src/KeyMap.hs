@@ -7,7 +7,6 @@ import           Prelude ()
 import           Prelude.MH
 
 import           Events.Keybindings
-import           Events.ChannelScroll
 import           Events.ChannelSelect
 import           Events.Main
 import           Events.MessageSelect
@@ -22,7 +21,6 @@ keybindingModeMap =
     , ("help screen", helpKeybindings)
     , ("channel select", channelSelectKeybindings)
     , ("url select", urlSelectKeybindings)
-    , ("channel scroll", channelScrollKeybindings)
     , ("message select", messageSelectKeybindings)
     , ("post list overlay", postListOverlayKeybindings)
     , ("attachment list", attachmentListKeybindings)

@@ -43,7 +43,6 @@ executable matterhorn
                        State.Attachments
                        State.Autocomplete
                        State.Channels
-                       State.ChannelScroll
                        State.ChannelSelect
                        State.Common
                        State.Editing
@@ -87,7 +86,6 @@ executable matterhorn
                        Events.MessageSelect
                        Events.Main
                        Events.JoinChannel
-                       Events.ChannelScroll
                        Events.ChannelSelect
                        Events.PostListOverlay
                        Events.UrlSelect

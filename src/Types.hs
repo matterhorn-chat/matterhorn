@@ -941,7 +941,6 @@ data Mode =
     | LeaveChannelConfirm
     | DeleteChannelConfirm
     | JoinChannel
-    | ChannelScroll
     | MessageSelect
     | MessageSelectDeleteConfirm
     | PostListOverlay PostListContents

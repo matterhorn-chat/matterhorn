@@ -325,17 +325,6 @@ renderCurrentChannelDisplay st hs = header <=> messages
     body = chatText
 
     chatText = case appMode st of
-        ChannelScroll ->
-            -- n.b., In this mode, the output is cached and scrolled
-            -- via the viewport.  This means that newly received
-            -- messages are *not* displayed, but this preserves the
-            -- stability of the scrolling, which provides a better
-            -- user experience.
-            viewport (ChannelMessages cId) Vertical $
-            cached (ChannelMessages cId) $
-            vBox $ (withDefAttr loadMoreAttr $ hCenter $
-                    str "<< Press C-b to load more messages >>") :
-                   (toList $ renderSingleMessage st hs editCutoff <$> channelMessages)
         MessageSelect ->
             renderMessagesWithSelect (st^.csMessageSelect) channelMessages
         MessageSelectDeleteConfirm ->
@@ -587,10 +576,6 @@ userInputArea st hs =
                                         , txt " to open the selected URL or "
                                         , withDefAttr clientEmphAttr $ txt "Escape"
                                         , txt " to cancel."
-                                        ]
-        ChannelScroll -> hCenter $ hBox [ txt "Press "
-                                        , withDefAttr clientEmphAttr $ txt "Escape"
-                                        , txt " to stop scrolling and resume chatting."
                                         ]
         MessageSelectDeleteConfirm -> renderDeleteConfirm
         _             -> renderUserCommandBox st hs

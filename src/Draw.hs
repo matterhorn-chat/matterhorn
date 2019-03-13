@@ -20,7 +20,6 @@ draw :: ChatState -> [Widget Name]
 draw st =
     case appMode st of
         Main                       -> drawMain st
-        ChannelScroll              -> drawMain st
         UrlSelect                  -> drawMain st
         ShowHelp topic             -> drawShowHelp topic st
         ChannelSelect              -> drawMain st
