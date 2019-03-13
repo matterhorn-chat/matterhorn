@@ -42,11 +42,21 @@ New features:
    `multiple`.  This resolves enhancement issue #484.
  * Additional information on managing attachments (relative to issue #485).
 
+New command-line options:
+ * `-k`: print the active keybindings in plain text format. The output
+   includes customized bindings in the current configuration, or the
+   defaults if `-i` is used.
+ * `-K`: print the active keybindings in Markdown format. The output
+   includes customized bindings in the current configuration, or the
+   defaults if `-i` is used.
+
 Documentation updates:
  * The FAQ is updated to help users with terminals that don't support
    hyperlinks (thanks, Bob Arezina).
  * Updated the Design notes and development Practices documentation
    for Matterhorn.
+ * Matterhorn releases now include the default keybindings in a Markdown
+   document, `keybindings.md`.
 
 Bug fixes:
  * Updated to mattermost-api 50200.1.2 which includes a bugfix for a
