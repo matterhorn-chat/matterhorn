@@ -63,6 +63,13 @@ module Prelude.MH
   , (Lens.^.)
   , Lens.use
 
+  -- not available in all versions of GHC currently in use
+#if MIN_VERSION_base(4,10,0)
+  , Clock.nominalDay
+#else
+  , nominalDay
+#endif
+
   -- various type aliases
   , Text
   , HashMap
@@ -86,6 +93,9 @@ import qualified Data.Foldable as Foldable
 import qualified Data.List as List
 import qualified Data.Maybe as Maybe
 import qualified Data.Time as Time
+#if MIN_VERSION_base(4,10,0)
+import qualified Data.Time.Clock as Clock
+#endif
 import qualified Data.Time.LocalTime.TimeZone.Series as Time
 import qualified GHC.Exts as Exts
 import qualified Lens.Micro.Platform as Lens
@@ -98,3 +108,8 @@ import           Data.HashMap.Strict ( HashMap )
 import           Data.Sequence ( Seq )
 import           Data.Set ( Set )
 import           Data.Text ( Text )
+
+#if !MIN_VERSION_base(4,10,0)
+nominalDay :: Time.NominalDiffTime
+nominalDay = 86400
+#endif
