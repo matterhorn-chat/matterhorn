@@ -97,8 +97,11 @@ cd $HERE
 git submodule update --init
 ./build.sh
 
-# Verify that the keybindings are up-to-date
-diff keybindings.md <(cabal new-run matterhorn -- -K)
+echo %
+echo % Verify that the keybindings are up-to-date
+echo %
+diff keybindings.md <(./run.sh -i -K)
+echo
 
 TMPDIR=$(mktemp -d)
 function cleanup {
