@@ -82,6 +82,11 @@ the client.  Keybinding information may be obtained in a number of ways:
 * Running matterhorn with the `-k` argument for text keybindings
 * Running matterhorn with the `-K` argument for [Markdown keybindings](keybindings.md)
 
+    Note: The latter two commands do not start the client but simply
+    print to stdout and exit.  The bindings shown include any user
+    overrides from the config files; use the `-i` flag to skip loading
+    the local config files and see the Matterhorn default keybindings.
+
 Keybindings may include modifiers such as Control (indicated with a
 `C-` prefix) or Meta (indicated with a `M-` prefix). If your keyboard
 has an `Alt` key, that will work as `Meta`. If it does not, you may be
