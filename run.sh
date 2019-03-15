@@ -11,7 +11,7 @@ HERE=$(cd `dirname $0`; pwd)
 
 # Portability note: -executable is only compatible with GNU find but
 # this invocation should be more portable.
-OPTIONS=$(find $HERE/dist-newstyle -name matterhorn -type f \( -perm -u=x -o -perm -g=x -o -perm -o=x \) )
+OPTIONS=$(find $HERE/dist-newstyle $HERE/dist -name matterhorn -type f \( -perm -u=x -o -perm -g=x -o -perm -o=x \) )
 if [ -z ${OPTIONS} ] ; then
     echo "No matterhorn executable found; try $ cabal new-build"
     exit 2
