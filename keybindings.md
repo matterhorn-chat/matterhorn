@@ -50,19 +50,6 @@
 | `j`, `Down` | Move cursor down |
 | `k`, `Up` | Move cursor up |
 
-# Keybindings: Channel Scroll Mode
-| Keybinding | Description |
-| ---------- | ----------- |
-| `Esc`, `C-c` | Cancel scrolling and return to channel view |
-| `C-o` | Select and open a URL posted to the current channel |
-| `C-b` | Load more messages in the current channel |
-| `PgDown` | Scroll down |
-| `PgUp` | Scroll up |
-| `End` | Scroll to bottom |
-| `Down` | Scroll down |
-| `Home` | Scroll to top |
-| `Up` | Scroll up |
-
 # Keybindings: Message Select Mode
 | Keybinding | Description |
 | ---------- | ----------- |
