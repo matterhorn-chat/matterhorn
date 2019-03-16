@@ -57,7 +57,15 @@ function get_arch {
 function output_dirname {
     if [ -f /etc/os-release ]
     then
-        . /etc/os-release # sets vars, incl VERSION_ID and VERSION_CODENAME
+        # sets vars, incl VERSION_ID and potentially VERSION_CODENAME
+        . /etc/os-release
+
+        # Sometimes this one isn't set, so we only want to put a "-" in
+        # the directory name if it actually is.
+        if ! [ -z "$VERSION_CODENAME" ]
+        then
+            VERSION_CODENAME="-$VERSION_CODENAME"
+        fi
         echo $BASENAME-$MHVERSION-$PLATFORM-$VERSION_ID-$VERSION_CODENAME-$ARCH
     else
         echo $BASENAME-$MHVERSION-$PLATFORM-$ARCH
