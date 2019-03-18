@@ -131,8 +131,8 @@ commandList =
     (TokenArg "user" NoArg) $ \ (name, ()) ->
         changeChannelByName name
 
-  , Cmd "msg" "Go to a user's channel and send the specified message"
-    (TokenArg "user" $ LineArg "message") $ \ (name, msg) -> do
+  , Cmd "msg" "Go to a user's channel and send the specified message or command"
+    (TokenArg "user" $ LineArg "message or command") $ \ (name, msg) -> do
         withFetchedUserMaybe (UserFetchByUsername name) $ \foundUser -> do
             case foundUser of
                 Just user -> createOrFocusDMChannel user $ Just $ \cId ->
