@@ -13,7 +13,7 @@ HERE=$(cd `dirname $0`; pwd)
 # this invocation should be more portable.  Also be flexible about old
 # and new cabal output locations, preferring new, but avoiding
 # slurping up the entire current directory.
-DIRS=$(for D in $HERE/dist-newstyle $HERE/dist; do [ -d $D ] && echo $D; done)
+DIRS=$(for D in $HERE/dist-newstyle $HERE/dist; do [ -d $D ] && echo $D; done; true)
 OPTIONS=$(find $DIRS -name matterhorn -type f \( -perm -u=x -o -perm -g=x -o -perm -o=x \) )
 if [ -z "${OPTIONS}" ] ; then
     echo "No matterhorn executable found; try $ cabal new-build"
