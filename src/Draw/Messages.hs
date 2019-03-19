@@ -1,6 +1,5 @@
 module Draw.Messages
   ( nameForUserRef
-  , maxMessageHeight
   , renderSingleMessage
   , unsafeRenderMessageSelection
   , renderLastMessages
