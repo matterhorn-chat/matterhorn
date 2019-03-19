@@ -173,13 +173,15 @@ msgsWithThreadStates msgs = DSeq $ checkAdjacentMessages (dseq msgs)
     where
         checkAdjacentMessages s = case Seq.viewl s of
             Seq.EmptyL -> mempty
-            h Seq.:< t ->
+            m Seq.:< t ->
                 case Seq.viewl t of
                     prev Seq.:< _ ->
-                        (h, threadStateFor h prev) Seq.<| checkAdjacentMessages t
-                    Seq.EmptyL -> case h^.mInReplyToMsg of
-                        InReplyTo _ -> Seq.singleton (h, InThreadShowParent)
-                        _ -> Seq.singleton (h, NoThread)
+                        (m, threadStateFor m prev) Seq.<| checkAdjacentMessages t
+                    Seq.EmptyL -> case m^.mInReplyToMsg of
+                        InReplyTo _ ->
+                            Seq.singleton (m, InThreadShowParent)
+                        _ ->
+                            Seq.singleton (m, NoThread)
 
 -- | Given a message and its chronological predecessor, return
 -- the thread state of the specified message with respect to its
