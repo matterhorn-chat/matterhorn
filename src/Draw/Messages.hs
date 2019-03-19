@@ -40,11 +40,20 @@ nameForUserRef st uref = case uref of
 -- The `ind` argument specifies an "indicator boundary".  Showing
 -- various indicators (e.g. "edited") is not typically done for
 -- messages that are older than this boundary value.
-renderSingleMessage :: ChatState -> HighlightSet -> Maybe ServerTime -> Message -> Widget Name
+renderSingleMessage :: ChatState
+                    -> HighlightSet
+                    -> Maybe ServerTime
+                    -> Message
+                    -> Widget Name
 renderSingleMessage st hs ind =
   renderChatMessage st hs ind (withBrackets . renderTime st . withServerTime)
 
-renderChatMessage :: ChatState -> HighlightSet -> Maybe ServerTime -> (ServerTime -> Widget Name) -> Message -> Widget Name
+renderChatMessage :: ChatState
+                  -> HighlightSet
+                  -> Maybe ServerTime
+                  -> (ServerTime -> Widget Name)
+                  -> Message
+                  -> Widget Name
 renderChatMessage st hs ind renderTimeFunc msg =
     let showOlderEdits = configShowOlderEdits $ st^.csResources.crConfiguration
         parent = case msg^.mInReplyToMsg of
