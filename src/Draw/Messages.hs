@@ -171,26 +171,26 @@ renderLastMessages st hs editCutoff msgs =
 msgsWithThreadStates :: RetrogradeMessages -> DirectionalSeq Retrograde (Message, ThreadState)
 msgsWithThreadStates msgs = DSeq $ checkAdjacentMessages (dseq msgs)
     where
-        checkAdjacentMessages s =
-            case Seq.viewl s of
-                h Seq.:< t ->
-                    case Seq.viewl t of
-                        next Seq.:< _ ->
-                            let tState = case h^.mInReplyToMsg of
-                                    InReplyTo rootId ->
-                                        if (next^.mMessageId) == Just (MessagePostId rootId)
-                                        then InThread
-                                        else if next^.mInReplyToMsg == h^.mInReplyToMsg
-                                             then InThread
-                                             else InThreadShowParent
-                                    _ -> NoThread
-                            in (h, tState) Seq.<| checkAdjacentMessages t
-                        Seq.EmptyL ->
-                            case h^.mInReplyToMsg of
-                                InReplyTo _ -> Seq.singleton (h, InThreadShowParent)
-                                _ -> Seq.singleton (h, NoThread)
-                Seq.EmptyL ->
-                    mempty
+        checkAdjacentMessages s = case Seq.viewl s of
+            Seq.EmptyL -> mempty
+            h Seq.:< t ->
+                case Seq.viewl t of
+                    next Seq.:< _ ->
+                        (h, threadStateFor h next) Seq.<| checkAdjacentMessages t
+                    Seq.EmptyL -> case h^.mInReplyToMsg of
+                        InReplyTo _ -> Seq.singleton (h, InThreadShowParent)
+                        _ -> Seq.singleton (h, NoThread)
+
+threadStateFor :: Message -> Message -> ThreadState
+threadStateFor msg prev = case msg^.mInReplyToMsg of
+    InReplyTo rootId ->
+        if | (prev^.mMessageId) == Just (MessagePostId rootId) ->
+               InThread
+           | prev^.mInReplyToMsg == msg^.mInReplyToMsg ->
+               InThread
+           | otherwise ->
+               InThreadShowParent
+    _ -> NoThread
 
 relaxHeight :: Context -> Context
 relaxHeight c = c & availHeightL .~ (max maxMessageHeight (c^.availHeightL))
