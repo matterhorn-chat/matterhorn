@@ -165,11 +165,11 @@ renderLastMessages st hs editCutoff msgs =
                 render1HLimit (doMsgRender threadState) (flip Vty.vertJoin) targetHeight img m
             doMsgRender = renderSingleMessage st hs editCutoff
 
-        img <- foldM renderBuild Vty.emptyImage $ msgsWithThreadStates msgs
+        img <- foldM renderBuild Vty.emptyImage $ retrogradeMsgsWithThreadStates msgs
         return $ emptyResult & imageL .~ (Vty.cropTop targetHeight img)
 
-msgsWithThreadStates :: RetrogradeMessages -> DirectionalSeq Retrograde (Message, ThreadState)
-msgsWithThreadStates msgs = DSeq $ checkAdjacentMessages (dseq msgs)
+retrogradeMsgsWithThreadStates :: RetrogradeMessages -> DirectionalSeq Retrograde (Message, ThreadState)
+retrogradeMsgsWithThreadStates msgs = DSeq $ checkAdjacentMessages (dseq msgs)
     where
         checkAdjacentMessages s = case Seq.viewl s of
             Seq.EmptyL -> mempty
