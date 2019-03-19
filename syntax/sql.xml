@@ -5,8 +5,31 @@
      v3 fix comments by Gene Thomas <gene@genethomas.com>
   -->
 <!-- kate: space-indent on; indent-width 2; replace-tabs on; -->
-<language name="SQL" version="3" kateversion="2.4" section="Database" extensions="*.sql;*.SQL;*.ddl;*.DDL" mimetype="text/x-sql" casesensitive="0" author="Yury Lebedev (yurylebedev@mail.ru)" license="LGPL">
+<language name="SQL" version="5" kateversion="5.0" section="Database" extensions="*.sql;*.SQL;*.ddl;*.DDL" mimetype="text/x-sql" casesensitive="0" author="Yury Lebedev (yurylebedev@mail.ru)" license="LGPL">
   <highlighting>
+    <list name="controlFlow">
+      <item>BEGIN</item>
+      <item>CASE</item>
+      <item>ELSE</item>
+      <item>ELSIF</item>
+      <item>END</item>
+      <item>FOR</item>
+      <item>IF</item>
+      <item>LOOP</item>
+      <item>RETURN</item>
+      <item>THEN</item>
+      <item>WHEN</item>
+      <item>WHILE</item>
+    </list>
+    <list name="operators">
+      <item>AND</item>
+      <item>BETWEEN</item>
+      <item>IN</item>
+      <item>IS</item>
+      <item>LIKE</item>
+      <item>NOT</item>
+      <item>OR</item>
+    </list>
     <list name="keywords">
       <item>ACCESS</item>
       <item>ACCOUNT</item>
@@ -22,7 +45,6 @@
       <item>ALTER</item>
       <item>ANALYZE</item>
       <item>ANCILLARY</item>
-      <item>AND</item>
       <item>ANY</item>
       <item>ARCHIVE</item>
       <item>ARCHIVELOG</item>
@@ -43,9 +65,7 @@
       <item>BACKUP</item>
       <item>BECOME</item>
       <item>BEFORE</item>
-      <item>BEGIN</item>
       <item>BEHALF</item>
-      <item>BETWEEN</item>
       <item>BINDING</item>
       <item>BITMAP</item>
       <item>BLOCK</item>
@@ -65,7 +85,6 @@
       <item>CALL</item>
       <item>CANCEL</item>
       <item>CASCADE</item>
-      <item>CASE</item>
       <item>CATEGORY</item>
       <item>CHAINED</item>
       <item>CHANGE</item>
@@ -80,7 +99,6 @@
       <item>CLOSE</item>
       <item>CLOSE_CACHED_OPEN_CURSORS</item>
       <item>CLUSTER</item>
-      <item>COALESCE</item>
       <item>COLUMN</item>
       <item>COLUMNS</item>
       <item>COLUMN_VALUE</item>
@@ -101,6 +119,7 @@
       <item>CONSTRAINT</item>
       <item>CONSTRAINTS</item>
       <item>CONTAINER</item>
+      <item>CONTAINS</item>
       <item>CONTENTS</item>
       <item>CONTEXT</item>
       <item>CONTINUE</item>
@@ -149,11 +168,8 @@
       <item>DROP</item>
       <item>DYNAMIC</item>
       <item>EACH</item>
-      <item>ELSE</item>
-      <item>ELSIF</item>
       <item>EMPTY</item>
       <item>ENABLE</item>
-      <item>END</item>
       <item>ENFORCE</item>
       <item>ENTRY</item>
       <item>ESCAPE</item>
@@ -185,7 +201,6 @@
       <item>FLASHBACK</item>
       <item>FLUSH</item>
       <item>FOLLOWING</item>
-      <item>FOR</item>
       <item>FORCE</item>
       <item>FOREIGN</item>
       <item>FREELIST</item>
@@ -214,9 +229,7 @@
       <item>IDENTIFIER</item>
       <item>IDGENERATORS</item>
       <item>IDLE_TIME</item>
-      <item>IF</item>
       <item>IMMEDIATE</item>
-      <item>IN</item>
       <item>INCLUDING</item>
       <item>INCREMENT</item>
       <item>INCREMENTAL</item>
@@ -239,7 +252,6 @@
       <item>INTERSECT</item>
       <item>INTO</item>
       <item>INVALIDATE</item>
-      <item>IS</item>
       <item>ISOLATION</item>
       <item>ISOLATION_LEVEL</item>
       <item>JAVA</item>
@@ -254,7 +266,6 @@
       <item>LESS</item>
       <item>LEVEL</item>
       <item>LIBRARY</item>
-      <item>LIKE</item>
       <item>LIMIT</item>
       <item>LINK</item>
       <item>LIST</item>
@@ -268,7 +279,6 @@
       <item>LOGICAL_READS_PER_SESSION</item>
       <item>LOGOFF</item>
       <item>LOGON</item>
-      <item>LOOP</item>
       <item>MANAGE</item>
       <item>MANAGED</item>
       <item>MANAGEMENT</item>
@@ -345,7 +355,6 @@
       <item>NORMAL</item>
       <item>NOSEGMENT</item>
       <item>NOSORT</item>
-      <item>NOT</item>
       <item>NOTHING</item>
       <item>NOVALIDATE</item>
       <item>NOWAIT</item>
@@ -368,7 +377,6 @@
       <item>OPTIMAL</item>
       <item>OPTIMIZER_GOAL</item>
       <item>OPTION</item>
-      <item>OR</item>
       <item>ORDER</item>
       <item>ORGANIZATION</item>
       <item>OUT</item>
@@ -538,7 +546,6 @@
       <item>TEMPORARY</item>
       <item>THAN</item>
       <item>THE</item>
-      <item>THEN</item>
       <item>THREAD</item>
       <item>THROUGH</item>
       <item>TIMEOUT</item>
@@ -584,34 +591,12 @@
       <item>VALIDATION</item>
       <item>VALUES</item>
       <item>VIEW</item>
-      <item>WHEN</item>
       <item>WHENEVER</item>
       <item>WHERE</item>
-      <item>WHILE</item>
       <item>WITH</item>
       <item>WITHOUT</item>
       <item>WORK</item>
       <item>WRITE</item>
-    </list>
-    <list name="operators">
-      <item>+</item>
-      <item>-</item>
-      <item>*</item>
-      <item>/</item>
-      <item>||</item>
-      <item>=</item>
-      <item>!=</item>
-      <item>&lt;&gt;</item>
-      <item>&lt;</item>
-      <item>&lt;=</item>
-      <item>&gt;</item>
-      <item>&gt;=</item>
-      <item>~=</item>
-      <item>^=</item>
-      <item>:=</item>
-      <item>=&gt;</item>
-      <item>**</item>
-      <item>..</item>
     </list>
     <list name="functions">
       <item>ABS</item>
@@ -894,8 +879,18 @@
         <Detect2Chars attribute="Comment" context="Multiline C-style comment" char="/" char1="*" beginRegion="Comment"/>
         <RegExpr attribute="Comment" context="SQL*Plus remark directive" String="^rem\b" insensitive="true" column="0"/>
 
+        <LineContinue attribute="Symbol" context="#stay" char="/" column="0"/> <!-- conflict with "operators" keywords -->
         <keyword attribute="Keyword" String="keywords" context="#stay"/>
-        <keyword attribute="Operator" String="operators" context="#stay"/>
+        <LineContinue attribute="Symbol" context="#stay" char="/" column="0"/>
+        <keyword attribute="Operator Keyword" context="#stay" String="operators"/>
+        <keyword attribute="ControlFlow" context="#stay" String="controlFlow"/>
+        <AnyChar attribute="Operator" context="#stay" String="+-*/=&lt;&gt;"/>
+        <Detect2Chars attribute="Operator" context="#stay" char="!" char1="="/>
+        <Detect2Chars attribute="Operator" context="#stay" char="~" char1="="/>
+        <Detect2Chars attribute="Operator" context="#stay" char="^" char1="="/>
+        <Detect2Chars attribute="Operator" context="#stay" char=":" char1="="/>
+        <Detect2Chars attribute="Operator" context="#stay" char="." char1="."/>
+        <Detect2Chars attribute="Operator" context="#stay" char="|" char1="|"/>
         <keyword attribute="Function" String="functions" context="#stay"/>
         <keyword attribute="Data Type" String="types" context="#stay"/>
 
@@ -911,7 +906,6 @@
 
         <DetectChar attribute="Identifier" context="User-defined identifier" char="&quot;"/>
         <RegExpr attribute="External Variable" context="#stay" String="(:|&amp;&amp;?)\w+"/>
-        <RegExpr attribute="Symbol" context="#stay" String="^/$" column="0"/>
         <RegExpr attribute="Preprocessor" context="SQL*Plus directive to include file" String="^@@?[^@ \t\r\n]" column="0"/>
       </context>
       <context name="String literal" attribute="String" lineEndContext="#stay">
@@ -932,21 +926,23 @@
       <context name="SQL*Plus directive to include file" attribute="Preprocessor" lineEndContext="#pop"/>
     </contexts>
     <itemDatas>
-      <itemData name="Normal Text"       defStyleNum="dsNormal"/>
-      <itemData name="Keyword"           defStyleNum="dsKeyword"/>
-      <itemData name="Operator"          defStyleNum="dsNormal"/>
-      <itemData name="Function"          defStyleNum="dsFunction"/>
-      <itemData name="Data Type"         defStyleNum="dsDataType"/>
-      <itemData name="Decimal"           defStyleNum="dsDecVal"/>
-      <itemData name="Hex"               defStyleNum="dsBaseN"/>
-      <itemData name="Float"             defStyleNum="dsFloat"/>
+      <itemData name="Normal Text"       defStyleNum="dsNormal" spellChecking="false"/>
+      <itemData name="Keyword"           defStyleNum="dsKeyword" spellChecking="false"/>
+      <itemData name="ControlFlow"       defStyleNum="dsControlFlow" spellChecking="false"/>
+      <itemData name="Operator"          defStyleNum="dsOperator" spellChecking="false"/>
+      <itemData name="Operator Keyword"  defStyleNum="dsKeyword" spellChecking="false"/>
+      <itemData name="Function"          defStyleNum="dsFunction" spellChecking="false"/>
+      <itemData name="Data Type"         defStyleNum="dsDataType" spellChecking="false"/>
+      <itemData name="Decimal"           defStyleNum="dsDecVal" spellChecking="false"/>
+      <itemData name="Hex"               defStyleNum="dsBaseN" spellChecking="false"/>
+      <itemData name="Float"             defStyleNum="dsFloat" spellChecking="false"/>
       <itemData name="String"            defStyleNum="dsString"/>
-      <itemData name="String Char"       defStyleNum="dsChar"/>
+      <itemData name="String Char"       defStyleNum="dsChar" spellChecking="false"/>
       <itemData name="Comment"           defStyleNum="dsComment"/>
-      <itemData name="Identifier"        defStyleNum="dsOthers"/>
-      <itemData name="External Variable" defStyleNum="dsChar"/>
-      <itemData name="Symbol"            defStyleNum="dsChar"/>
-      <itemData name="Preprocessor"      defStyleNum="dsOthers"/>
+      <itemData name="Identifier"        defStyleNum="dsOthers" spellChecking="false"/>
+      <itemData name="External Variable" defStyleNum="dsChar" spellChecking="false"/>
+      <itemData name="Symbol"            defStyleNum="dsChar" spellChecking="false"/>
+      <itemData name="Preprocessor"      defStyleNum="dsOthers" spellChecking="false"/>
     </itemDatas>
   </highlighting>
   <general>
@@ -954,6 +950,6 @@
       <comment name="singleLine" start="--"/>
       <comment name="multiLine" start="/*" end="*/"/>
     </comments>
-    <keywords casesensitive="0" weakDeliminator="+-*/|=!&lt;&gt;~^:."/>
+    <keywords casesensitive="0"/>
   </general>
 </language>

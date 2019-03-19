@@ -30,7 +30,7 @@
           name="Elixir"
           section="Sources"
           style="elixir"
-          version="2">
+          version="4">
   <highlighting>
     <list name="control-flow">
       <item>catch</item>
@@ -144,10 +144,6 @@
         <DetectChar attribute="Normal Text" char=")" context="#stay"/>
         <DetectIdentifier attribute="Normal Text" context="#stay"/>
       </context>
-      <context attribute="Normal Text" lineEndContext="#stay" name="Find closing block brace">
-        <DetectChar attribute="Operator" char="}" context="#pop" endRegion="def bracketed block"/>
-        <IncludeRules context="Normal"/>
-      </context>
       <context attribute="DocComment" lineEndContext="#stay" name="Documentation">
         <StringDetect String="&quot;&quot;&quot;" attribute="Attribute" context="#pop"/>
         <RegExpr attribute="MarkdownHead" String="^\s*#+\s.*[#]?$"/>
@@ -183,15 +179,7 @@
         <RegExpr String="#@{1,2}" attribute="Substitution" context="#stay"/>
         <RegExpr String="\w(?!\w)" attribute="Substitution" context="#pop"/>
       </context>
-      <context attribute="Comment" lineEndContext="#pop" name="Comment Line">
-      </context>
       <context attribute="Comment" lineEndContext="#pop" name="General Comment">
-      </context>
-      <!-- rules to be included in all regexpr contexts -->
-      <context attribute="Regular Expression" lineEndContext="#stay" name="regexpr_rules">
-        <Detect2Chars attribute="Regular Expression" char="\" char1="\" context="#stay"/>
-        <RegExpr String="#@{1,2}" attribute="Substitution" context="Short Subst"/>
-        <Detect2Chars attribute="Substitution" char="#" char1="{" context="Subst"/>
       </context>
       <context attribute="MarkdownCode" lineEndContext="#stay" name="Markdown Code">
         <RegExpr String="^\s*\`\`\`\s*$" attribute="MarkdownCode" context="#pop"/>
@@ -215,14 +203,11 @@
       <itemData defStyleNum="dsVariable" name="Symbol"/>
       <itemData defStyleNum="dsString" name="String"/>
       <itemData defStyleNum="dsVerbatimString" name="Raw String"/>
-      <itemData defStyleNum="dsSpecialString" name="Regular Expression"/>
       <itemData defStyleNum="dsOthers" name="Substitution"/>
-      <itemData defStyleNum="dsNormal" name="Data"/>
       <itemData defStyleNum="dsOthers" name="Attribute"/>
       <itemData defStyleNum="dsComment" name="Comment"/>
       <itemData defStyleNum="dsComment" name="DocComment"/>
       <!-- use these to mark errors and alerts things -->
-      <itemData defStyleNum="dsError" name="Error"/>
       <itemData color="#FF9FEC" defStyleNum="dsNormal" name="Delimiter"/>
       <itemData defStyleNum="dsOperator" name="Operator"/>
       <itemData name="MarkdownHead" defStyleNum="dsFunction" bold="true"/>

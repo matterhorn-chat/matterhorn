@@ -15,7 +15,7 @@
 -->
 
 
-<language name="Octave" version="2" kateversion="3.4" section="Scientific" extensions="*.octave;*.m;*.M" mimetype="text/octave" casesensitive="1" license="GPL" author="Luis Silvestre and Federico Zenith">
+<language name="Octave" version="3" kateversion="3.4" section="Scientific" extensions="*.octave;*.m;*.M" mimetype="text/octave" casesensitive="1" license="GPL" author="Luis Silvestre and Federico Zenith">
 
   <highlighting>
 
@@ -2195,7 +2195,6 @@
       <itemData name="Number" defStyleNum="dsFloat" spellChecking="false"/>
       <itemData name="Delimiter" defStyleNum="dsNormal" spellChecking="false"/>
       <itemData name="String" defStyleNum="dsString" color="#b20000"/>
-      <itemData name="String Char"  defStyleNum="dsChar"/>
       <itemData name="Incomplete String" defStyleNum="dsChar" color="#a020f0" spellChecking="false"/>
       <itemData name="Keyword"  defStyleNum="dsNormal" color="#0000ff" spellChecking="false"/>
       <itemData name="Comment" defStyleNum="dsComment" color="#009900"/>

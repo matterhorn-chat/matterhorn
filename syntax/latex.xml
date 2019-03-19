@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
-<language name="LaTeX" version="5" section="Markup" kateversion="5.0" priority="10" extensions="*.tex;*.ltx;*.dtx;*.sty;*.cls;*.bbx;*.cbx;*.lbx;*.tikz" mimetype="text/x-tex" casesensitive="1" author="Jeroen Wijnhout (Jeroen.Wijnhout@kdemail.net)+Holger Danielsson (holger.danielsson@versanet.de)+Michel Ludwig (michel.ludwig@kdemail.net)+Thomas Braun (thomas.braun@virtuell-zuhause.de)" license="LGPL" >
+<language name="LaTeX" version="8" section="Markup" kateversion="5.0" priority="10" extensions="*.tex;*.ltx;*.dtx;*.sty;*.cls;*.bbx;*.cbx;*.lbx;*.tikz;*.pgf" mimetype="text/x-tex" casesensitive="1" author="Jeroen Wijnhout (Jeroen.Wijnhout@kdemail.net)+Holger Danielsson (holger.danielsson@versanet.de)+Michel Ludwig (michel.ludwig@kdemail.net)+Thomas Braun (thomas.braun@virtuell-zuhause.de)" license="LGPL" >
   <highlighting>
     <contexts>
       <!-- Normal text -->
@@ -132,8 +132,6 @@
         <DetectChar char="&#xd7;" attribute="Bullet" context="#stay"/>
         <RegExpr String="[a-zA-Z@]+(\+?|\*{0,3})" attribute="Macro" context="#pop"/>
         <RegExpr String="[^a-zA-Z]" attribute="Macro" context="#pop" />
-      </context>
-      <context name="ToEndOfLine" attribute="Normal Text" lineEndContext="#pop">
       </context>
 
       <!-- \mint command with parameter-->
@@ -580,7 +578,6 @@
   </general>
 
   <spellchecking>
-    <configuration encodingReplacementPolicy="EncodeWhenPresent"/>
     <encodings>
       <encoding char="&#192;" string="\`{A}" />
       <encoding char="&#192;" string="\`A" />

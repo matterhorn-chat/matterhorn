@@ -6,7 +6,7 @@
   <!ENTITY wikiLinkWithDescription "\[\[[^]|]*\|[^]]*\]\]">
   <!ENTITY wikiLinkWithoutDescription "\[\[[^]|]*\]\]">
 ]>
-<language name="MediaWiki" section="Markup" version="4" kateversion="3.4" extensions="*.mediawiki" mimetype="" license="FDL" >
+<language name="MediaWiki" section="Markup" version="5" kateversion="3.4" extensions="*.mediawiki" mimetype="" license="FDL" >
   <highlighting>
     <contexts>
       <context attribute="Normal" lineEndContext="#stay" name="normal" >
@@ -618,6 +618,5 @@
       <comment end="//-->" start="&lt;!--" name="multiLine" />
     </comments>
     <keywords casesensitive="0" />
-    <indentation mode="normal" />
   </general>
 </language>

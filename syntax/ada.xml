@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
 <language name="Ada"
-          version="2"
+          version="3"
           kateversion="5.0"
           section="Sources"
           extensions="*.adb;*.ads;*.ada;*.a"
@@ -183,7 +183,6 @@
       <itemData name="Pragmas"     defStyleNum="dsExtension" bold="1" />
       <itemData name="Data Type"   defStyleNum="dsDataType"/>
       <itemData name="Decimal"     defStyleNum="dsDecVal" />
-      <itemData name="Base-N"      defStyleNum="dsBaseN" />
       <itemData name="Float"       defStyleNum="dsFloat" />
       <itemData name="Char"        defStyleNum="dsChar" />
       <itemData name="String"      defStyleNum="dsString" />

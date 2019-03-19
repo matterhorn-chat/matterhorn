@@ -28,7 +28,7 @@
 	    - Fixed detection of varaibles with names containing serval namespace delimiters (::)
 -->
 
-<language name="Tcl/Tk" version="3" kateversion="2.4" section="Scripts" extensions="*.tcl;*.tk" mimetype="text/x-tcl" license="BSD">
+<language name="Tcl/Tk" version="4" kateversion="2.4" section="Scripts" extensions="*.tcl;*.tk" mimetype="text/x-tcl" license="BSD">
   <highlighting>
     <list name="keywords">
       <item>after</item>
@@ -511,8 +511,8 @@
         <RegExpr String = "\$(::|\w)+" attribute = "Variable" context="#stay"/>
         
         <!-- Strings -->
-        <RegExpr String = "&quot;{2}" attribute = "String" context="#stay"/>
-        <RegExpr String = "&quot;" attribute = "String" context="String"/>
+        <Detect2Chars char = "&quot;" char1 = "&quot;" attribute = "String" context="#stay"/>
+        <DetectChar char = "&quot;" attribute = "String" context="String"/>
         
         <!-- Comments -->
         <DetectChar char = ";" attribute = "Normal Text" context="New command line" />

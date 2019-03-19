@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
-<language version="4" kateversion="2.4" name="Scheme" section="Scripts" extensions="*.scm;*.ss;*.scheme;*.guile" mimetype="text/x-scheme" author="Dominik Haumann (dhaumann@kde.org)" license="MIT" priority="9">
+<language version="6" kateversion="5.0" name="Scheme" section="Scripts" extensions="*.scm;*.ss;*.scheme;*.guile" mimetype="text/x-scheme" author="Dominik Haumann (dhaumann@kde.org)" license="MIT" priority="9">
   <highlighting>
     <list name="operators">
       <item>&lt;=</item>
@@ -367,23 +367,21 @@
     <itemDatas>
       <itemData name="Normal"      defStyleNum="dsNormal"/>
       <itemData name="Keyword"     defStyleNum="dsKeyword"/>
-      <itemData name="Definition"  defStyleNum="dsKeyword" color="#d22811"/>
-      <itemData name="Operator"    defStyleNum="dsKeyword" color="#d22811"/>
+      <itemData name="Definition"  defStyleNum="dsExtension"/>
+      <itemData name="Operator"    defStyleNum="dsOperator"/>
       <itemData name="Function"    defStyleNum="dsFunction"/>
-      <itemData name="Data"        defStyleNum="dsDataType"/>
       <itemData name="Decimal"     defStyleNum="dsDecVal"/>
-      <itemData name="BaseN"       defStyleNum="dsBaseN"/>
       <itemData name="Float"       defStyleNum="dsFloat"/>
       <itemData name="Char"        defStyleNum="dsChar"/>
       <itemData name="String"      defStyleNum="dsString"/>
       <itemData name="Comment"     defStyleNum="dsComment"/>
       <itemData name="Region Marker" defStyleNum="dsRegionMarker"/>
-      <itemData name="Brackets1"    defStyleNum="dsNormal" color="#ff0000" selColor="#000000" bold="1" italic="0"/>
-      <itemData name="Brackets2"    defStyleNum="dsNormal" color="#ff8800" selColor="#000000" bold="1" italic="0"/>
-      <itemData name="Brackets3"    defStyleNum="dsNormal" color="#888800" selColor="#000000" bold="1" italic="0"/>
-      <itemData name="Brackets4"    defStyleNum="dsNormal" color="#008800" selColor="#000000" bold="1" italic="0"/>
-      <itemData name="Brackets5"    defStyleNum="dsNormal" color="#000088" selColor="#000000" bold="1" italic="0"/>
-      <itemData name="Brackets6"    defStyleNum="dsNormal" color="#880088" selColor="#000000" bold="1" italic="0"/>
+      <itemData name="Brackets1"    defStyleNum="dsNormal" color="#ff0000" bold="1"/>
+      <itemData name="Brackets2"    defStyleNum="dsNormal" color="#ff8800" bold="1"/>
+      <itemData name="Brackets3"    defStyleNum="dsNormal" color="#888800" bold="1"/>
+      <itemData name="Brackets4"    defStyleNum="dsNormal" color="#008800" bold="1"/>
+      <itemData name="Brackets5"    defStyleNum="dsNormal" color="#000088" bold="1"/>
+      <itemData name="Brackets6"    defStyleNum="dsNormal" color="#880088" bold="1"/>
     </itemDatas>
   </highlighting>
   <general>

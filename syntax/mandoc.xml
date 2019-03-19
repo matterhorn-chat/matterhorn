@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
-<language name="Troff Mandoc" section="Markup" version="1" kateversion="2.4" extensions="*.1;*.2;*.3;*.4;*.5;*.6;*.7;*.8;*.1m;*.3x;*.tmac" mimetype="" author="Matthew Woehlke (mw_triad@users.sourceforge.net)" license="GPL">
+<language name="Troff Mandoc" section="Markup" version="2" kateversion="2.4" extensions="*.1;*.2;*.3;*.4;*.5;*.6;*.7;*.8;*.1m;*.3x;*.tmac" mimetype="" author="Matthew Woehlke (mw_triad@users.sourceforge.net)" license="GPL">
 
   <highlighting>
 
@@ -65,7 +65,6 @@
 
     <itemDatas>
       <itemData name="Normal Text"    defStyleNum="dsNormal"/>
-      <itemData name="Comment"        defStyleNum="dsComment"/>
       <itemData name="Macros"         defStyleNum="dsFunction"/>
       <itemData name="Headings"       defStyleNum="dsKeyword"/>
       <itemData name="Paragraphs"     defStyleNum="dsDataType"/>

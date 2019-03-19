@@ -96,12 +96,10 @@
   2003.08.11 - D.XML 1.10           - updated.
   2003.07.18 - D.XML 1.00           - First released.
 
-  TODO:- Deliminated strings and Token strings (D2.0) are not supported.
-
    ========================================================================
 -->
 
-<language name="D" version="2" kateversion="5.0" section="Sources" extensions="*.d;*.D;*.di;*.DI;" mimetype="text/x-dsrc" casesensitive="true" author="Diggory Hardy (diggory.hardy@gmail.com), Aziz Köksal (aziz.koeksal@gmail.com), Jari-Matti Mäkelä (jmjm@iki.fi), Simon J Mackenzie (project.katedxml@smackoz.fastmail.fm)" license="LGPL">
+<language name="D" version="5" kateversion="5.0" section="Sources" extensions="*.d;*.D;*.di;*.DI;" mimetype="text/x-dsrc" casesensitive="true" author="Diggory Hardy (diggory.hardy@gmail.com), Aziz Köksal (aziz.koeksal@gmail.com), Jari-Matti Mäkelä (jmjm@iki.fi), Simon J Mackenzie (project.katedxml@smackoz.fastmail.fm)" license="LGPL">
   <highlighting>
     <!-- User-defined keywords (add identifiers you'd like highlighted here) -->
     <list name="userkeywords">
@@ -155,12 +153,15 @@
       <item>public</item>
       <item>pure</item>
       <item>ref</item>
+      <item>shared</item>
       <item>static</item>
       
       <!-- these may be statements -->
       <!-- in (more common to use as an expression since in attribute is only ever the default) -->
       <item>out</item>
       <item>scope</item>
+      
+      <item>__gshared</item>
     </list>
     
     <list name="expressions">
@@ -311,11 +312,16 @@
       <item>Windows</item>
       <item>Pascal</item>
       <item>System</item>
+      <!-- <item>Objective-C</item> --><!-- is handled specially in Linkage rule -->
     </list>
 
     <list name="ptypes">
-      <item>msg</item>
+      <item>inline</item>
       <item>lib</item>
+      <item>linkerDirective</item>
+      <item>mangle</item>
+      <item>msg</item>
+      <item>startaddress</item>
     </list>
     
     <list name="scope_keywords">
@@ -402,15 +408,19 @@
         <DetectChar char="." attribute="Normal Text" context="Properties"/>
 
         <!-- Look ahead for a digit and switch to NumberLiteral context if found. -->
-        <RegExpr context="NumberLiteral" String="\d" attribute="" lookAhead="true"/>
+        <RegExpr context="NumberLiteral" String="\d" attribute="Normal Text" lookAhead="true"/>
 
         <!-- #line Integer [Filespec] -->
         <StringDetect attribute="Pragma" context="LinePragma" String="#line"/>
         
         <!-- Rules for the C-style indenter. Currently problems with /// and /++ comments. -->
-        <DetectChar attribute="Symbol" context="#stay" char="{" beginRegion="BraceA" />
-        <DetectChar attribute="Symbol" context="#stay" char="}" endRegion="BraceA" />
+        <DetectChar attribute="Symbol" context="BraceA" char="{" beginRegion="BraceA" />
         <AnyChar attribute="Symbol" context="#stay" String=":!%&amp;()+,-/.*&lt;=&gt;?[]|~^&#59;"/>
+      </context>
+
+      <context name="BraceA" attribute="Normal Text" lineEndContext="#stay">
+        <DetectChar attribute="Symbol" context="#pop" char="}" endRegion="BraceA" />
+        <IncludeRules context="normal"/>
       </context>
 
       <context name="StartingLetter" attribute="Normal Text" lineEndContext="#pop">
@@ -446,6 +456,13 @@
           
           <Detect2Chars attribute="RawString" context="RawString" char="r" char1="&quot;"/>
           <Detect2Chars attribute="HexString" context="HexString" char="x" char1="&quot;"/>
+          <Detect2Chars attribute="Token String Delimiter" context="TokenString" char="q" char1="{"/>
+          <RegExpr attribute="Delimited String Delimiter" context="DelimStrHeredoc" String="q&quot;([A-Za-z_][A-Za-z0-9_]*)$" />
+          <StringDetect attribute="Delimited String Delimiter" context="DelimStrBracket" String="q&quot;[" />
+          <StringDetect attribute="Delimited String Delimiter" context="DelimStrParen" String="q&quot;(" />
+          <StringDetect attribute="Delimited String Delimiter" context="DelimStrLtGt" String="q&quot;&lt;" />
+          <StringDetect attribute="Delimited String Delimiter" context="DelimStrBrace" String="q&quot;{" />
+          <RegExpr attribute="Delimited String Delimiter" context="DelimStrSimple" String="q&quot;([^A-Za-z_[(&lt;{])" />
           
           <!-- user highlighting: last so as not to interfere with anything else -->
           <keyword String="userkeywords"    attribute="UserKeywords"   context="#stay"     />
@@ -511,27 +528,50 @@
       </context>
       <context name="Linkage2" attribute="Normal Text" lineEndContext="#stay">
         <DetectSpaces/>
-        <StringDetect attribute="Linkage Type" context="#pop#pop" String="C++"/>
-        <keyword    attribute="Linkage Type" context="#pop#pop" String="ltypes"/>
+        <StringDetect attribute="Linkage Type" context="Linkage-C++" String="C++"/>
+        <StringDetect attribute="Linkage Type" context="#stay" String="Objective-C"/>
+        <keyword    attribute="Linkage Type" context="#stay" String="ltypes"/>
         <IncludeRules context="CommentRules" />
         <!-- Fall-through rules, highlighting errors: -->
         <DetectChar char=")" attribute="Normal Text" context="#pop#pop"/>
         <RegExpr String="[^)\s\n]+" attribute="Error" context="#pop#pop"/>
       </context>
+      <context name="Linkage-C++" attribute="Normal Text" lineEndContext="#stay">
+        <DetectSpaces/>
+        <IncludeRules context="CommentRules" />
+        <DetectChar char="," attribute="Normal Text" context="Linkage-C++2"/>
+        <DetectChar char=")" attribute="Normal Text" context="#pop#pop#pop"/>
+        <RegExpr String="." attribute="Error" context="#stay"/>
+      </context>
+      <context name="Linkage-C++2" attribute="Normal Text" lineEndContext="#stay">
+        <DetectSpaces/>
+        <IncludeRules context="CommentRules" />
+        <DetectIdentifier attribute="Normal Text" context="#stay"/>
+        <DetectChar char="." attribute="Normal Text" context="#stay"/>
+        <DetectChar char=")" attribute="Normal Text" context="#pop#pop#pop"/>
+        <RegExpr String="." attribute="Error" context="#stay"/>
+      </context>
 
       <context name="Version" attribute="Normal Text" lineEndContext="#stay">
         <DetectSpaces/>
-        <DetectChar attribute="Normal Text"  context="Version2"  char="="/>
-        <DetectChar attribute="Normal Text"  context="Version2" char="("/>
+        <DetectChar attribute="Normal Text" context="VersionSpec" char="="/>
+        <DetectChar attribute="Normal Text" context="VersionCond" char="("/>
         <IncludeRules context="CommentRules" />
         <!-- Fall-through rules, highlighting errors: -->
         <RegExpr String="[^\s\n]+" attribute="Error" context="#pop"/>
       </context>
-      <context name="Version2" attribute="Normal Text" lineEndContext="#stay">
+      <context name="VersionSpec" attribute="Normal Text" lineEndContext="#stay">
         <DetectSpaces/>
-        <keyword    attribute="Version Type" context="#pop#pop" String="vtypes"/>
-        <DetectIdentifier attribute="Normal Text" context="#pop#pop"/>
-        <RegExpr attribute="Integer" context="#pop#pop" String="\d+[\d_]*(L[uU]?|[uU]L?)?"/>
+        <DetectIdentifier attribute="Normal Text" context="#stay"/>
+        <RegExpr attribute="Integer" context="#stay" String="\d+[\d_]*(L[uU]?|[uU]L?)?"/>
+        <DetectChar char=";" attribute="Normal Text" context="#pop#pop"/>
+        <RegExpr String="." attribute="Error" context="#pop#pop"/>
+      </context>
+      <context name="VersionCond" attribute="Normal Text" lineEndContext="#stay">
+        <DetectSpaces/>
+        <keyword    attribute="Version Type" context="#stay" String="vtypes"/>
+        <DetectIdentifier attribute="Normal Text" context="#stay"/>
+        <RegExpr attribute="Integer" context="#stay" String="\d+[\d_]*(L[uU]?|[uU]L?)?"/>
         <IncludeRules context="CommentRules" />
         <!-- Fall-through rules, highlighting errors: -->
         <DetectChar char=")" attribute="Normal Text" context="#pop#pop"/>
@@ -545,7 +585,7 @@
       </context>
       <context name="Scope2" attribute="Normal Text" lineEndContext="#stay">
         <DetectSpaces/>
-        <keyword String="scope_keywords" attribute="Expression" context="#pop#pop"/>
+        <keyword String="scope_keywords" attribute="Expression" context="#stay"/>
         <IncludeRules context="CommentRules" />
         <!-- Fall-through rules, highlighting errors: -->
         <DetectChar char=")" attribute="Normal Text" context="#pop#pop"/>
@@ -561,12 +601,28 @@
       </context>
       <context name="Pragma2" attribute="Pragma" lineEndContext="#stay">
         <DetectSpaces/>
-        <keyword    attribute="Version Type" context="#pop#pop" String="ptypes"/>
-        <DetectIdentifier attribute="Normal Text" context="#pop#pop"/>
+        <keyword    attribute="Version Type" context="Pragma3" String="ptypes"/>
+        <DetectIdentifier attribute="Normal Text" context="Pragma3"/>
         <IncludeRules context="CommentRules" />
         <!-- Fall-through rules, highlighting errors: -->
         <DetectChar char=")" attribute="Normal Text" context="#pop#pop"/>
         <RegExpr String="[^)\s\n]+" attribute="Error" context="#pop#pop"/>
+      </context>
+      <context name="Pragma3" attribute="Pragma" lineEndContext="#stay">
+        <DetectSpaces/>
+        <DetectChar char="," attribute="Normal Text" context="Pragma4"/>
+        <DetectChar char=")" attribute="Normal Text" context="#pop#pop#pop"/>
+        <RegExpr String="." attribute="Error" context="#pop#pop#pop"/>
+      </context>
+      <context name="Pragma4" attribute="Pragma" lineEndContext="#stay">
+        <DetectChar char="(" attribute="Normal Text" context="Parenthetical"/>
+        <DetectChar char=")" attribute="Normal Text" context="#pop#pop#pop#pop"/>
+        <IncludeRules context="normal" />
+      </context>
+      <context name="Parenthetical" attribute="Normal Text" lineEndContext="#stay">
+        <DetectChar char="(" attribute="Normal Text" context="Parenthetical"/>
+        <DetectChar char=")" attribute="Normal Text" context="#pop"/>
+        <IncludeRules context="normal" />
       </context>
 
       <!-- Strings -->
@@ -610,6 +666,62 @@
         <Detect2Chars attribute="EscapeSequence" context="UnicodeShort"   char="\" char1="u"/>
         <Detect2Chars attribute="EscapeSequence" context="UnicodeLong"   char="\" char1="U"/>
         <Detect2Chars attribute="EscapeSequence" context="HTMLEntity"   char="\" char1="&amp;"/>
+      </context>
+      <!-- token strings: q{...} -->
+      <context name="TokenString" attribute="Normal Text" lineEndContext="#stay">
+        <DetectChar attribute="Token String Delimiter" context="#pop" char="}" />
+        <IncludeRules context="normal" />
+      </context>
+      <!-- delimited strings -->
+      <!-- q"IDENTIFIER...IDENTIFIER" -->
+      <context name="DelimStrHeredoc" attribute="Delimited String Content" lineEndContext="#stay">
+        <RegExpr attribute="Delimited String Delimiter" context="#pop" String="^%1&quot;" dynamic="true" />
+        <RegExpr attribute="Error" context="#pop" String="^%1" dynamic="true" />
+      </context>
+      <!-- q"[...]" -->
+      <context name="DelimStrBracket" attribute="Delimited String Content" lineEndContext="#stay">
+        <DetectChar attribute="Delimited String Content" context="DelimStrBracket2" char="[" />
+        <Detect2Chars attribute="Delimited String Delimiter" context="#pop" char="]" char1="&quot;" />
+        <DetectChar attribute="Error" context="#pop" char="]" />
+      </context>
+      <context name="DelimStrBracket2" attribute="Delimited String Content" lineEndContext="#stay">
+        <DetectChar attribute="Delimited String Content" context="DelimStrBracket2" char="[" />
+        <DetectChar attribute="Delimited String Content" context="#pop" char="]" />
+      </context>
+      <!-- q"(...)" -->
+      <context name="DelimStrParen" attribute="Delimited String Content" lineEndContext="#stay">
+        <DetectChar attribute="Delimited String Content" context="DelimStrParen2" char="(" />
+        <Detect2Chars attribute="Delimited String Delimiter" context="#pop" char=")" char1="&quot;" />
+        <DetectChar attribute="Error" context="#pop" char=")" />
+      </context>
+      <context name="DelimStrParen2" attribute="Delimited String Content" lineEndContext="#stay">
+        <DetectChar attribute="Delimited String Content" context="DelimStrParen2" char="(" />
+        <DetectChar attribute="Delimited String Content" context="#pop" char=")" />
+      </context>
+      <!-- q"<...>" -->
+      <context name="DelimStrLtGt" attribute="Delimited String Content" lineEndContext="#stay">
+        <DetectChar attribute="Delimited String Content" context="DelimStrLtGt2" char="&lt;" />
+        <Detect2Chars attribute="Delimited String Delimiter" context="#pop" char="&gt;" char1="&quot;" />
+        <DetectChar attribute="Error" context="#pop" char="&gt;" />
+      </context>
+      <context name="DelimStrLtGt2" attribute="Delimited String Content" lineEndContext="#stay">
+        <DetectChar attribute="Delimited String Content" context="DelimStrLtGt2" char="&lt;" />
+        <DetectChar attribute="Delimited String Content" context="#pop" char="&gt;" />
+      </context>
+      <!-- q"{...}" -->
+      <context name="DelimStrBrace" attribute="Delimited String Content" lineEndContext="#stay">
+        <DetectChar attribute="Delimited String Content" context="DelimStrBrace2" char="{" />
+        <Detect2Chars attribute="Delimited String Delimiter" context="#pop" char="}" char1="&quot;" />
+        <DetectChar attribute="Error" context="#pop" char="}" />
+      </context>
+      <context name="DelimStrBrace2" attribute="Delimited String Content" lineEndContext="#stay">
+        <DetectChar attribute="Delimited String Content" context="DelimStrBrace2" char="{" />
+        <DetectChar attribute="Delimited String Content" context="#pop" char="}" />
+      </context>
+      <!-- q"*...*" -->
+      <context name="DelimStrSimple" attribute="Delimited String Content" lineEndContext="#stay">
+        <RegExpr attribute="Delimited String Delimiter" context="#pop" String="%1&quot;" dynamic="true" />
+        <RegExpr attribute="Error" context="#pop" String="%1" dynamic="true" />
       </context>
 
       <!-- Comments -->
@@ -800,6 +912,9 @@
       <itemData name="RawString"      defStyleNum="dsVerbatimString"/>
       <itemData name="BQString"       defStyleNum="dsSpecialString"/>
       <itemData name="HexString"      defStyleNum="dsSpecialString"/>
+      <itemData name="Token String Delimiter" defStyleNum="dsKeyword"/>
+      <itemData name="Delimited String Content" defStyleNum="dsVerbatimString"/>
+      <itemData name="Delimited String Delimiter" defStyleNum="dsKeyword"/>
       
       <!-- Ddoc specific -->
       <itemData name="Macros"      defStyleNum="dsOthers" color="#bf5fbf" selColor="#ffffff" bold="1" italic="0" />

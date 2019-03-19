@@ -16,7 +16,7 @@
    - Namespace rules
 -->
 
-<language version="2"
+<language version="3"
           kateversion="2.4"
           name="RELAX NG"
           section="Markup"
@@ -71,36 +71,37 @@
          <RegExpr attribute="Attribute" context="attributes" String="\s*" />
          <DetectChar attribute="Tag" context="#pop" char="&gt;" />
       </context>
-      
+
       <context name="attributes" attribute="Attribute" lineEndContext="#stay">
          <Detect2Chars attribute="Tag" context="#pop#pop" char="/" char1="&gt;" />
          <DetectChar attribute="Tag" context="#pop#pop" char="&gt;" />
          <RegExpr attribute="Normal Text" context="attrValue" String="\s*=\s*" />
       </context>
-      
+
       <context name="attrValue" attribute="Invalid" lineEndContext="#stay">
          <Detect2Chars attribute="Invalid" context="#pop#pop#pop" char="/" char1="&gt;" />
          <DetectChar attribute="Invalid" context="#pop#pop#pop" char="&gt;" />
          <DetectChar attribute="Attribute Value" context="string" char="&quot;" />
       </context>
-      
+
       <context name="string" attribute="Attribute Value" lineEndContext="#stay">
          <DetectChar attribute="Attribute Value" context="#pop#pop" char="&quot;" />
          <IncludeRules context="detectEntRef" />
       </context>
-      
+
       <context name="comment" attribute="Comment" lineEndContext="#stay">
         <DetectSpaces/>
         <StringDetect attribute="Comment" context="#pop"  String="--&gt;" endRegion="comment"/>
         <RegExpr attribute="Error" context="#stay" String="-(-(?!-&gt;))+"/>
         <IncludeRules context="##Alerts"/>
         <DetectIdentifier/>
-      </context>      
+      </context>
     </contexts>
-    
+
     <itemDatas>
       <itemData name="Normal Text" defStyleNum="dsNormal"/>
       <itemData name="Tag" defStyleNum="dsKeyword"/>
+      <itemData name="Entity Reference" defStyleNum="dsOthers"/>
       <itemData name="Invalid" defStyleNum="dsError"/>
       <itemData name="Attribute" defStyleNum="dsOthers"/>
       <itemData name="Attribute Value" defStyleNum="dsString" color="#800000" selColor="#ffffff" bold="0" italic="0"/>

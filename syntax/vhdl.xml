@@ -8,7 +8,7 @@
   <!ENTITY label     "((&varname;)\s*:\s*)?">
 
 ]>
-<language name="VHDL" version="3" kateversion="3.0" section="Hardware" extensions="*.vhdl;*.vhd" mimetype="text/x-vhdl" author="Rocky Scaletta (rocky@purdue.edu), Stefan Endrullis (stefan@endrullis.de), Florent Ouchet (outchy@users.sourceforge.net), Chris Higgs (chiggs.99@gmail.com), Jan Michel (jan@mueschelsoft.de), Luigi Calligaris (luigi.calligaris@stfc.ac.uk)">
+<language name="VHDL" version="6" kateversion="3.0" section="Hardware" extensions="*.vhdl;*.vhd" mimetype="text/x-vhdl" author="Rocky Scaletta (rocky@purdue.edu), Stefan Endrullis (stefan@endrullis.de), Florent Ouchet (outchy@users.sourceforge.net), Chris Higgs (chiggs.99@gmail.com), Jan Michel (jan@mueschelsoft.de), Luigi Calligaris (luigi.calligaris@stfc.ac.uk)">
   <highlighting>
     <list name="keywordsToplevel">
       <item>file</item>
@@ -130,18 +130,6 @@
       <item>else</item>
       <item>elsif</item>
       <item>then</item>
-    </list>
-
-    <list name="forOrWhile">
-      <item>loop</item>
-    </list>
-
-    <list name="directions">
-      <item>in</item>
-      <item>inout</item>
-      <item>out</item>
-      <item>buffer</item>
-      <item>linkage</item>
     </list>
 
     <list name="signals">
@@ -520,10 +508,8 @@
 
       <context name="caseWhen2" attribute="Normal Text" lineEndContext="#stay" dynamic="true">
         <IncludeRules context="preDetection"/>
-        <RegExpr attribute="Control" context="#pop#pop" lookAhead="true" insensitive="true" endRegion="CaseWhenRegion1"
-                 String="^\s*when&eos;"/>
-        <RegExpr attribute="Control" context="#pop#pop" lookAhead="true" insensitive="true" endRegion="CaseWhenRegion1"
-                 String="^\s*end\s+case&eos;"/>
+        <RegExpr attribute="Control" context="#pop#pop" lookAhead="true" insensitive="true" endRegion="CaseWhenRegion1" firstNonSpace="true"
+                 String="(when|end\s+case)&eos;"/>
         <IncludeRules context="proc_rules"/>
       </context>
       <!-- 'when' and 'end case' are checked at the beginning of the line for better code folding -->
@@ -548,8 +534,8 @@
                  String="&bos;end(\s+(entity|component))?(\s+%1)?\s*;"/>
         <RegExpr attribute="Error" context="#pop#pop" dynamic="true" insensitive="true" endRegion="EntityRegion1"
                  String="&bos;end(\s+(entity|component))?(\s+&varname;)?\s*;"/>
-        <RegExpr attribute="Control" context="#stay" insensitive="true" String="generic"/>
-        <RegExpr attribute="Control" context="#stay" insensitive="true" String="port"/>
+        <StringDetect attribute="Control" context="#stay" insensitive="true" String="generic"/>
+        <StringDetect attribute="Control" context="#stay" insensitive="true" String="port"/>
         <IncludeRules context="generalDetection"/>
       </context>
 
@@ -651,7 +637,6 @@
       <itemData name="Vector" defStyleNum="dsString"/>
       <itemData name="Operator" defStyleNum="dsOthers"/>
       <itemData name="Attribute" defStyleNum="dsBaseN"/>
-      <itemData name="Region Marker" defStyleNum="dsRegionMarker"/>
       <itemData name="Signal" defStyleNum="dsOthers"/>
       <itemData name="Range" defStyleNum="dsOthers"/>
       <itemData name="Redirection" defStyleNum="dsKeyword" color="#223388"/>

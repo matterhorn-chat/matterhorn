@@ -2,7 +2,7 @@
 <!DOCTYPE language SYSTEM "language.dtd">
 <!-- Andrea Primiani - primiani at dag dot it
  	version1.10 - 12 december 2005 -->
-<language name="ABC" version="3" kateversion="2.4" section="Other" extensions="*.abc;*.ABC" mimetype="text/vnd.abc" casesensitive="1" author="Andrea Primiani (primiani@dag.it)" license="LGPL">
+<language name="ABC" version="5" kateversion="2.4" section="Other" extensions="*.abc;*.ABC" mimetype="text/vnd.abc" casesensitive="1" author="Andrea Primiani (primiani@dag.it)" license="LGPL">
     <highlighting>
         <contexts>
            <context name="Normal" attribute="Normal Text" lineEndContext="#stay">
@@ -38,7 +38,6 @@
 <!-- returns to Normal context at the end of line -->	   
 	   <context name="Preprocessor" attribute="Preprocessor" lineEndContext="#pop" />
 	   <context name="Lyrics" attribute="Lyrics" lineEndContext="#pop" />
-	   <context name="Part" attribute="Header" lineEndContext="#pop" />
 	   <context name="Comment" attribute="Comment" lineEndContext="#pop" />
 <!-- returns to Normal context after the end of bar symbols or at EOL -->
 	   <context name="Bar" attribute="Bar" lineEndContext="#pop" >
@@ -66,7 +65,6 @@
        </contexts>
         <itemDatas>
           <itemData name="Normal Text" defStyleNum="dsNormal"/>
-          <itemData name="Notes" defStyleNum="dsKeyword" bold="true"/>
 	  <itemData name="Comment" defStyleNum="dsComment"/>
 	  <itemData name="Decoration" defStyleNum="dsFloat" color="#00bbaa" />
 	  <itemData name="String" defStyleNum="dsString" bold="true"/>

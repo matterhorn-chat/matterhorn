@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
-<language name="ActionScript 2.0" version="2" kateversion="5.0" section="Sources" extensions="*.as" mimetype="text/x-actionscript" license="LGPL" author="Aaron Miller (armantic101@gmail.com)">
+<language name="ActionScript 2.0" version="3" kateversion="5.0" section="Sources" extensions="*.as" mimetype="text/x-actionscript" license="LGPL" author="Aaron Miller (armantic101@gmail.com)">
   <highlighting>
     
     <list name="properties">
@@ -253,21 +253,10 @@
         <keyword attribute="Keyword" context="#stay" String="keywords"/>
         <keyword attribute="Constants" context="#stay" String="const"/>
         <keyword attribute="Data Type" context="#stay" String="types"/>
-        <Float attribute="Float" context="#stay">
-          <AnyChar String="fF" attribute="Float" context="#stay"/>
-        </Float>
+        <Float attribute="Float" context="Float Suffixes"/>
         <HlCOct attribute="Octal" context="#stay"/>
         <HlCHex attribute="Hex" context="#stay"/>
-        <Int attribute="Decimal" context="#stay">
-          <StringDetect attribute="Decimal" context="#stay" String="ULL" insensitive="true"/>
-          <StringDetect attribute="Decimal" context="#stay" String="LUL" insensitive="true"/>
-          <StringDetect attribute="Decimal" context="#stay" String="LLU" insensitive="true"/>
-          <StringDetect attribute="Decimal" context="#stay" String="UL" insensitive="true"/>
-          <StringDetect attribute="Decimal" context="#stay" String="LU" insensitive="true"/>
-          <StringDetect attribute="Decimal" context="#stay" String="LL" insensitive="true"/>
-          <StringDetect attribute="Decimal" context="#stay" String="U" insensitive="true"/>
-          <StringDetect attribute="Decimal" context="#stay" String="L" insensitive="true"/>
-        </Int>
+        <Int attribute="Decimal" context="Int Suffixes"/>
         <HlCChar attribute="Char" context="#stay"/>
         <RegExpr attribute="Decimal" context="#stay" String="//\s*BEGIN.*$" beginRegion="Region1"/>
         <RegExpr attribute="Decimal" context="#stay" String="//\s*END.*$" endRegion="Region1"/>
@@ -282,6 +271,19 @@
         <RegExpr attribute="Function" context="#stay" String="\b[_\w][_\w\d]*(?=[\s]*(/\*\s*\d+\s*\*/\s*)?[(])" />
         <RegExpr attribute="Symbol" context="Member" String="[.]{1,1}" /> 
         <AnyChar attribute="Symbol" context="#stay" String=":!%&amp;()+,-/.*&lt;=&gt;?[]|~^&#59;"/>
+      </context>
+      <context name="Float Suffixes" attribute="Float" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">
+          <AnyChar String="fF" attribute="Float" context="#pop"/>
+      </context>
+      <context name="Int Suffixes" attribute="Decimal" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">
+          <StringDetect attribute="Decimal" context="#pop" String="ULL" insensitive="true"/>
+          <StringDetect attribute="Decimal" context="#pop" String="LUL" insensitive="true"/>
+          <StringDetect attribute="Decimal" context="#pop" String="LLU" insensitive="true"/>
+          <StringDetect attribute="Decimal" context="#pop" String="UL" insensitive="true"/>
+          <StringDetect attribute="Decimal" context="#pop" String="LU" insensitive="true"/>
+          <StringDetect attribute="Decimal" context="#pop" String="LL" insensitive="true"/>
+          <StringDetect attribute="Decimal" context="#pop" String="U" insensitive="true"/>
+          <StringDetect attribute="Decimal" context="#pop" String="L" insensitive="true"/>
       </context>
       <context attribute="String" lineEndContext="#pop" name="String">
         <LineContinue attribute="String" context="#stay"/>

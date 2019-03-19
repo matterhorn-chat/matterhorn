@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
 <!-- kotlin language syntax http://kotlinlang.org -->
-<language name="Kotlin" version="2" kateversion="5.0" section="Sources" extensions="*.kt;*.kts" license="LGPLv2+" author="Sergey Mashkov (sergey.mashkov@jetbrains.com)" style="cstyle" indenter="cstyle">
+<language name="Kotlin" version="5" kateversion="5.0" section="Sources" extensions="*.kt;*.kts" license="LGPLv2+" author="Sergey Mashkov (sergey.mashkov@jetbrains.com)" style="cstyle" indenter="cstyle">
     <highlighting>
         <list name="keywords">
             <item>package</item>
@@ -114,18 +114,22 @@
                 <Detect2Chars attribute="Comment" context="CommentSingleLine" char="/" char1="/"/>
                 <Detect2Chars attribute="Comment" context="CommentMultiline" char="/" char1="*" beginRegion="Comment"/>
 
-                <Float attribute="Float" context="#stay">
-                    <AnyChar String="fF" attribute="Float" context="#stay"/>
-                </Float>
-                <Int attribute="Decimal" context="#stay">
-                    <StringDetect attribute="Decimal" context="#stay" String="L" insensitive="true"/>
-                </Int>
+                <Float attribute="Float" context="Float Suffixes"/>
+                <Int attribute="Decimal" context="Int Suffixes"/>
 
                 <RegExpr attribute="Annotation" context="#stay" String="@[_\w][_\w\d]*"/>
                 <RegExpr attribute="TODO" context="#stay" String="TODO\s*\([^)]*\)" />
                 <DetectChar attribute="Symbol" context="#stay" char="{" beginRegion="Brace1" />
                 <DetectChar attribute="Symbol" context="#stay" char="}" endRegion="Brace1" />
                 <Detect2Chars attribute="Comment" context="CommentSingleLine" char="#" char1="!" />
+            </context>
+
+            <context name="Float Suffixes" attribute="Float" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">
+                <AnyChar String="fF" attribute="Float" context="#pop"/>
+            </context>
+
+            <context name="Int Suffixes" attribute="Decimal" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">
+                <StringDetect attribute="Decimal" context="#pop" String="L" insensitive="true"/>
             </context>
 
             <context attribute="Normal Text" lineEndContext="#pop" name="Imports">
@@ -263,9 +267,6 @@
                 <Detect2Chars attribute="Comment" context="#pop" char="*" char1="/" endRegion="Comment"/>
             </context>
 
-            <context attribute="Symbol" lineEndContext="#stay" name="symbols">
-                <AnyChar attribute="Symbol" context="#stay" String=":!%&amp;+,-/.*&lt;=&gt;?[]|~^&#59;" />
-            </context>
         </contexts>
 
         <itemDatas>
@@ -278,7 +279,6 @@
             <itemData name="Annotation"   defStyleNum="dsAttribute"/>
             <itemData name="Data Type"    defStyleNum="dsDataType" bold="true" />
             <itemData name="Decimal"      defStyleNum="dsDecVal"/>
-            <itemData name="Hex"          defStyleNum="dsBaseN"/>
             <itemData name="Float"        defStyleNum="dsFloat"/>
             <itemData name="Char"         defStyleNum="dsChar"/>
             <itemData name="String"       defStyleNum="dsString"/>

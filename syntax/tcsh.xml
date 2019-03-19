@@ -8,7 +8,7 @@
         <!ENTITY noword   "(?![\w$+-])">		<!-- no word, $, + or - following -->
         <!ENTITY pathpart "([\w_@.&#37;*?+-]|\\ )">     <!-- valid character in a file name -->
 ]>
-<language name="Tcsh" version="1" kateversion="2.4" section="Scripts" extensions="*.csh;*.tcsh;csh.cshrc;csh.login;.tcshrc;.cshrc;.login" mimetype="application/x-csh" casesensitive="1" author="Matthew Woehlke (mw_triad@users.sourceforge.net)" license="LGPL">
+<language name="Tcsh" version="5" kateversion="5.0" section="Scripts" extensions="*.csh;*.tcsh;csh.cshrc;csh.login;.tcshrc;.cshrc;.login" mimetype="application/x-csh" casesensitive="1" author="Matthew Woehlke (mw_triad@users.sourceforge.net)" license="LGPL">
 
 <!-- (c) 2006 Matthew Woehlke (mw_triad@users.sourceforge.net)
     Based on the bash highlighter by Wilbert Berendsen (wilbert@kde.nl)
@@ -472,14 +472,14 @@
       </context>
 
       <!-- FindCommentsParen consumes shell comments till EOL or a closing parenthese -->
-      <context attribute="Normal Text" lineEndContext="#pop" name="FindCommentsParen">
+<!--      <context attribute="Normal Text" lineEndContext="#pop" name="FindCommentsParen">
         <DetectChar attribute="Comment" context="CommentParen" char="#" firstNonSpace="true"/>
         <RegExpr attribute="Normal Text" context="CommentParen" String="[\s;](?=#)" />
       </context>
       <context attribute="Comment" lineEndContext="#pop" name="CommentParen">
         <RegExpr attribute="Comment" context="#pop" String="[^)](?=\))" />
         <IncludeRules context="##Alerts" />
-      </context>
+      </context> -->
 
       <!-- FindCommentsBackq consumes shell comments till EOL or a backquote -->
       <context attribute="Normal Text" lineEndContext="#pop" name="FindCommentsBackq">
@@ -522,11 +522,11 @@
         <RegExpr attribute="Option" context="#stay" String="--[a-z][A-Za-z0-9_-]*" />
         <!-- handle variable assignments -->
 <!--R--><RegExpr attribute="Keyword" context="#stay" String="\b@\s" />
-<!--R--><RegExpr attribute="Keyword" context="#stay" String="\bset\s" />
-        <RegExpr attribute="Keyword" context="CmdSetEnv" String="\bsetenv\s" />
+<!--R--><WordDetect attribute="Keyword" context="#stay" String="set" />
+        <WordDetect attribute="Keyword" context="CmdSetEnv" String="setenv" />
         <!-- handle functions with function keyword before keywords -->
 <!--!--><StringDetect attribute="Function" context="#stay" String=":()" />
-<!--!--><RegExpr attribute="Keyword" context="FunctionDef" String="\bfunction\b" />
+<!--!--><WordDetect attribute="Keyword" context="FunctionDef" String="function" />
         <!-- handle keywords -->
         <keyword attribute="Keyword" context="#stay" String="keywords" />
         <keyword attribute="Builtin" context="#stay" String="builtins" />
@@ -657,15 +657,6 @@
         <IncludeRules context="FindMost" />
       </context>
 
-      <!-- AssignSubscr first expects a [ then parses subscript and continues with '=value' -->
-      <context attribute="Normal Text" lineEndContext="#pop" name="AssignSubscr" fallthrough="true" fallthroughContext="#pop">
-        <DetectChar attribute="Variable" context="Subscript" char="[" />
-        <DetectChar attribute="Variable" context="Assign" char="=" />
-        <IncludeRules context="FindStrings" />
-        <IncludeRules context="FindSubstitutions" />
-        <IncludeRules context="FindOthers" />
-      </context>
-
       <!-- Subscript consumes anything till ], marks as Variable -->
       <context attribute="Variable" lineEndContext="#stay" name="Subscript">
         <DetectChar attribute="Variable" context="#pop" char="]" />
@@ -683,7 +674,7 @@
       <context attribute="Normal Text" lineEndContext="#pop" name="CmdSetEnv" fallthrough="true" fallthroughContext="#pop">
         <!-- handle command line options -->
         <RegExpr attribute="Variable" context="#pop" String="\b&varname;" />
-        <DetectChar attribute="Variable" context="Assign" char=" " />
+        <RegExpr attribute="Variable" context="Assign" String=" " />
         <IncludeRules context="FindMost" />
       </context>
 
@@ -698,16 +689,6 @@
         <IncludeRules context="FindMost" />
         <!-- stay here in spaces and other safe characters -->
         <RegExpr attribute="Normal Text" context="#stay" String="[^]})|;`&amp;&gt;&lt;]" />
-      </context>
-
-      <!-- ProcessSubst handles <(command) and >(command) -->
-      <context attribute="Normal Text" lineEndContext="#stay" name="ProcessSubst">
-        <DetectChar attribute="Redirection" context="#pop" char=")" />
-        <IncludeRules context="FindCommentsParen" />
-        <IncludeRules context="FindCommands" />
-        <IncludeRules context="FindStrings" />
-        <IncludeRules context="FindSubstitutions" />
-        <IncludeRules context="FindOthers" />
       </context>
 
       <!-- StringSQ consumes anything till ' -->
@@ -739,16 +720,16 @@
       </context>
 
       <!-- SubstFile is called after a <( or >( is encoutered -->
-      <context attribute="Normal Text" lineEndContext="#stay" name="SubstFile">
+<!--      <context attribute="Normal Text" lineEndContext="#stay" name="SubstFile">
         <DetectChar attribute="Redirection" context="#pop" char=")" />
         <IncludeRules context="FindCommentsParen" />
         <IncludeRules context="FindStrings" />
         <IncludeRules context="FindSubstitutions" />
         <IncludeRules context="FindOthers" />
       </context>
-
+-->
       <!-- SubstCommand is called after a $( is encountered -->
-      <context attribute="Normal Text" lineEndContext="#stay" name="SubstCommand">
+<!--      <context attribute="Normal Text" lineEndContext="#stay" name="SubstCommand">
         <DetectChar attribute="Variable" context="#pop" char=")" />
         <IncludeRules context="FindCommentsParen" />
         <IncludeRules context="FindCommands" />
@@ -756,6 +737,7 @@
         <IncludeRules context="FindSubstitutions" />
         <IncludeRules context="FindOthers" />
       </context>
+-->
 
       <!-- SubstBackq is called when a backquote is encountered -->
       <context attribute="Normal Text" lineEndContext="#stay" name="SubstBackq">
@@ -796,45 +778,6 @@
         <IncludeRules context="FindAll" />
       </context>
 
-      <!-- HereDoc consumes Here-documents. It is called at the beginning of the "<<" construct. -->
-      <context attribute="Normal Text" lineEndContext="#stay" name="HereDoc">
-        <RegExpr attribute="Redirection" context="HereDocIQ"  String="(&lt;&lt;-\s*&quot;(&word;)&quot;)" lookAhead="true" />
-        <RegExpr attribute="Redirection" context="HereDocIQ"  String="(&lt;&lt;-\s*'(&word;)')" lookAhead="true" />
-        <RegExpr attribute="Redirection" context="HereDocIQ"  String="(&lt;&lt;-\s*\\(&word;))" lookAhead="true" />
-        <RegExpr attribute="Redirection" context="HereDocINQ" String="(&lt;&lt;-\s*(&word;))" lookAhead="true" />
-        <RegExpr attribute="Redirection" context="HereDocQ"   String="(&lt;&lt;\s*&quot;(&word;)&quot;)" lookAhead="true" />
-        <RegExpr attribute="Redirection" context="HereDocQ"   String="(&lt;&lt;\s*'(&word;)')" lookAhead="true" />
-        <RegExpr attribute="Redirection" context="HereDocQ"   String="(&lt;&lt;\s*\\(&word;))" lookAhead="true" />
-        <RegExpr attribute="Redirection" context="HereDocNQ"  String="(&lt;&lt;\s*(&word;))" lookAhead="true" />
-        <StringDetect attribute="Redirection" context="#pop"  String="&lt;&lt;" /><!-- always met -->
-      </context>
-
-      <context attribute="Normal Text" lineEndContext="#pop" name="HereDocRemainder">
-        <IncludeRules context="FindAll" />
-      </context>
-
-      <context attribute="Normal Text" lineEndContext="#stay" name="HereDocQ" dynamic="true">
-        <RegExpr attribute="Redirection" context="HereDocRemainder" String="%1" dynamic="true" />
-        <RegExpr attribute="Redirection" context="#pop#pop" String="%2[\s;]*$" dynamic="true" column="0"/>
-      </context>
-
-      <context attribute="Normal Text" lineEndContext="#stay" name="HereDocNQ" dynamic="true">
-        <RegExpr attribute="Redirection" context="HereDocRemainder" String="%1" dynamic="true" />
-        <RegExpr attribute="Redirection" context="#pop#pop" String="%2[\s;]*$" dynamic="true" column="0"/>
-        <IncludeRules context="FindSubstitutions" />
-      </context>
-
-      <context attribute="Normal Text" lineEndContext="#stay" name="HereDocIQ" dynamic="true">
-        <RegExpr attribute="Redirection" context="HereDocRemainder" String="%1" dynamic="true" />
-        <RegExpr attribute="Redirection" context="#pop#pop" String="\s*%2[\s;]*$" dynamic="true" column="0"/>
-      </context>
-
-      <context attribute="Normal Text" lineEndContext="#stay" name="HereDocINQ" dynamic="true">
-        <RegExpr attribute="Redirection" context="HereDocRemainder" String="%1" dynamic="true" />
-        <RegExpr attribute="Redirection" context="#pop#pop" String="\s*%2[\s;]*$" dynamic="true" column="0"/>
-        <IncludeRules context="FindSubstitutions" />
-      </context>
-
     </contexts>
 
     <itemDatas>
@@ -842,7 +785,6 @@
       <itemData name="Comment"		defStyleNum="dsComment" />
       <itemData name="Keyword" 		defStyleNum="dsKeyword" />
       <itemData name="Control" 		defStyleNum="dsKeyword" />
-      <itemData name="Label"            defStyleNum="dsOthers" />
       <itemData name="Builtin" 		defStyleNum="dsKeyword" />
       <itemData name="Command" 		defStyleNum="dsKeyword" />
       <itemData name="Redirection" 	defStyleNum="dsKeyword" />

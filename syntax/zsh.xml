@@ -8,7 +8,7 @@
         <!ENTITY noword   "(?![\w$+-])">                <!-- no word, $, + or - following -->
         <!ENTITY pathpart "([\w_@.&#37;*?+-]|\\ )">     <!-- valid character in a file name -->
 ]>
-<language name="Zsh" version="2" kateversion="2.4" section="Scripts" extensions="*.sh;*.zsh;.zshrc;.zprofile;.zlogin;.zlogout;.profile" mimetype="application/x-shellscript" casesensitive="1" author="Jonathan Kolberg (bulldog98@kubuntu-de.org)" license="LGPL">
+<language name="Zsh" version="3" kateversion="2.4" section="Scripts" extensions="*.sh;*.zsh;.zshrc;.zprofile;.zlogin;.zlogout;.profile" mimetype="application/x-shellscript" casesensitive="1" author="Jonathan Kolberg (bulldog98@kubuntu-de.org)" license="LGPL">
 
 <!-- (c) 2011 by Jonathan Kolberg (bulldog98@kubuntu-de.org)
   modified for zsh -->
@@ -598,7 +598,7 @@
         <!-- handle here-string -->
         <RegExpr attribute="Redirection" context="#stay" String="\d*&lt;&lt;&lt;" />
         <!-- handle here document -->
-        <StringDetect attribute="Redirection" context="HereDoc" String="&lt;&lt;" lookAhead="true" />
+        <Detect2Chars attribute="Redirection" context="HereDoc" char="&lt;" char1="&lt;" lookAhead="true" />
         <!-- handle process subst -->
         <RegExpr attribute="Redirection" context="ProcessSubst" String="[&lt;&gt;]\(" />
         <!-- handle redirection -->
@@ -622,8 +622,8 @@
 
       <!-- FindStrings looks for single and double quoted strings, also with $-prefix -->
       <context attribute="Normal Text" lineEndContext="#stay" name="FindStrings">
-        <Detect2Chars attribute="Escape" context="#stay" char="\\" char1="'" />
-        <Detect2Chars attribute="Escape" context="#stay" char="\\" char1="&quot;" />
+        <Detect2Chars attribute="Escape" context="#stay" char="\" char1="'" />
+        <Detect2Chars attribute="Escape" context="#stay" char="\" char1="&quot;" />
         <DetectChar attribute="String SingleQ" context="StringSQ" char="'" />
         <DetectChar attribute="String DoubleQ" context="StringDQ" char="&quot;" />
         <Detect2Chars attribute="String SingleQ" context="StringEsc" char="$" char1="'" />
@@ -642,7 +642,7 @@
         <RegExpr attribute="Variable" context="VarBrace" String="\$\{[*@#?$!_0-9-](?=[:#%/=?+-])" />
         <StringDetect attribute="Variable" context="ExprDblParenSubst" String="$((" beginRegion="expression" />
         <StringDetect attribute="Redirection" context="SubstFile" String="$(&lt;" />
-        <StringDetect attribute="Variable" context="SubstCommand" String="$(" />
+        <Detect2Chars attribute="Variable" context="SubstCommand" char="$" char1="(" />
         <DetectChar attribute="Backquote" context="SubstBackq" char="`" />
         <RegExpr attribute="Escape" context="#stay" String="\\[`$\\]" />
       </context>

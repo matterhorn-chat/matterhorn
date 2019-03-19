@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
 <!-- Adapted from the VIM highlighter, by Markus Mottl (markus@oefai.at) -->
-<language name="dot" version="2" kateversion="5.0" section="Scientific" extensions="*.dot" mimetype="text/x-dot" author="Postula Loïs (lois.postula@live.be)" priority="0">
+<language name="dot" version="3" kateversion="5.0" section="Scientific" extensions="*.dot" mimetype="text/x-dot" author="Postula Loïs (lois.postula@live.be)" priority="0">
 
   <highlighting>
 
@@ -127,8 +127,8 @@
 
       <!-- other contexts -->
       <context attribute="String" lineEndContext="#pop" name="String">
-        <Detect2Chars attribute="String Char" context="#stay" char="\\" char1="\\"/>
-        <Detect2Chars attribute="String Char" context="#stay" char="\\" char1="&quot;"/>
+        <Detect2Chars attribute="String Char" context="#stay" char="\" char1="\"/>
+        <Detect2Chars attribute="String Char" context="#stay" char="\" char1="&quot;"/>
         <DetectChar attribute="String" context="#pop" char="&quot;"/>
       </context>
 

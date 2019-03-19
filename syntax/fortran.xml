@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
-<language name="Fortran" version="2" kateversion="5.0" section="Sources" extensions="*.f;*.F;*.for;*.FOR;*.f90;*.F90;*.fpp;*.FPP;*.f95;*.F95;" mimetype="text/x-fortran-src" casesensitive="0" author="Franchin Matteo (fnch@libero.it)" license="LGPL" priority="9">
+<language name="Fortran" version="3" kateversion="5.0" section="Sources" extensions="*.f;*.F;*.for;*.FOR;*.f90;*.F90;*.fpp;*.FPP;*.f95;*.F95;" mimetype="text/x-fortran-src" casesensitive="0" author="Franchin Matteo (fnch@libero.it)" license="LGPL" priority="9">
 <!-- by Franchin Matteo, fnch@libero.it -->
   <highlighting>
 
@@ -402,8 +402,12 @@
 
 <!-- This context highlights comments -->
       <context attribute="Normal Text" lineEndContext="#stay" name="find_comments">
-        <RegExpr attribute="Comment" context="#stay" String="[cC\*].*$" column="0"/>
-        <RegExpr attribute="Comment" context="#stay" String="!.*$"/>
+        <AnyChar attribute="Comment" context="comment" String="cC*" column="0"/>
+        <DetectChar attribute="Comment" context="comment" char="!"/>
+      </context>
+
+      <context attribute="Comment" lineEndContext="#pop" name="comment">
+        <IncludeRules context="##Alerts"/>
       </context>
 
 <!-- This context highlights symbols -->

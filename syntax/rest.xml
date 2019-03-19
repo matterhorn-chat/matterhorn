@@ -11,7 +11,7 @@
   Copyright 2010 Matt Williams (matt@milliams.com)
   Copyright 2014 Matthew Woehlke (mw_triad@users.sourceforge.net)
   -->
-<language name="reStructuredText" extensions="*.rst" section="Markup" mimetype="text/x-rst" version="3" kateversion="2.4" casesensitive="1">
+<language name="reStructuredText" extensions="*.rst" section="Markup" mimetype="text/x-rst" version="4" kateversion="2.4" casesensitive="1">
 
   <highlighting>
 
@@ -23,7 +23,7 @@
         <RegExpr attribute="Footnote" context="#stay" String="^\s*\.\. \[(\d+|#|\*|#[&SimpleReferenceNameChars;]+)\]\s" minimal="true" column="0"/>
         <RegExpr attribute="Citation" context="#stay" String="^\s*\.\. \[[&SimpleReferenceNameChars;]+\]\s" minimal="true" column="0"/>
         <RegExpr attribute="HyperlinkTarget" context="#stay" String="^\s*(\.\. (__:|_[&SimpleReferenceNameChars; ]+:(\s|$))|__ )" minimal="true" column="0"/>
-        <RegExpr attribute="Code" String="^\s*\.\. code-block::" context="CodeBlock" column="0"/>
+        <StringDetect attribute="Code" String=".. code-block::" context="CodeBlock" firstNonSpace="true"/>
         <RegExpr attribute="Directive" context="#stay" String="^\s*\.\. [\w\-_\.]+::(\s|$)" minimal="true" column="0"/>
         <RegExpr attribute="Code" String="::$" context="CodeBlock" />
         <RegExpr attribute="SubstitutionDefinition" context="#stay" String="^\s*\.\. \|[&SimpleReferenceNameChars; ]+\|\s+[&SimpleReferenceNameChars;]+::\s" minimal="true" column="0"/>
@@ -36,8 +36,7 @@
         <RegExpr attribute="SubstitutionReference" context="#stay" String="&inlinestart;\|[^\s].*\|&inlineend;" minimal="true"/>
         <RegExpr attribute="InlineInternalTarget" context="#stay" String="&inlinestart;_`[^\s].*`&inlineend;" minimal="true"/>
         <RegExpr attribute="FootnoteReference" context="#stay" String="&inlinestart;\[[&SimpleReferenceNameChars;]+\]_&inlineend;" minimal="true"/>
-        <RegExpr attribute="HyperlinkReference" context="#stay" String="&inlinestart;`[^\s].*`_&inlineend;" minimal="true"/>
-        <RegExpr attribute="HyperlinkReference" context="#stay" String="&inlinestart;\w+_&inlineend;" minimal="true"/>
+        <RegExpr attribute="HyperlinkReference" context="#stay" String="&inlinestart;(`[^\s].*`|\w+)_&inlineend;" minimal="true"/>
         <RegExpr attribute="InterpretedText" context="TrailingRole" String="&inlinestart;`[^\s].*`(?=:[\w\-_\.\+]+:)" minimal="true"/>
         <RegExpr attribute="Role" String=":[\w\-_\.\+]+:(?=`)" context="Role"/>
       </context>

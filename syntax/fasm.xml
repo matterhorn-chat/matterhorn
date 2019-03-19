@@ -13,7 +13,7 @@ Notes:
 * "used" and "defined" are treated opperators and are not highlighted.
 -->
 
-<language name="Intel x86 (FASM)" section="Assembler" version="1" kateversion="5.0" extensions="*.asm;*.inc;*.fasm" mimetype="" author="rCX (rCX12@yahoo.com)" license="GPL">
+<language name="Intel x86 (FASM)" section="Assembler" version="2" kateversion="5.0" extensions="*.asm;*.inc;*.fasm" mimetype="" author="rCX (rCX12@yahoo.com)" license="GPL">
   <highlighting>
     <list name="registers">
       <!-- General purpose registers -->
@@ -868,7 +868,6 @@ Notes:
         <HlCChar attribute="Char" context="#stay"/>
       </context>
       <context name="Comment" attribute="Comment" lineEndContext="#pop"/>
-      <context name="Preprocessor" attribute="Preprocessor" lineEndContext="#pop"/>
       <context name="String" attribute="String" lineEndContext="#pop">
         <AnyChar attribute="String" context="#pop" String="&quot;'"/>
       </context>

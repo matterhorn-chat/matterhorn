@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE  language SYSTEM "language.dtd">
-<language name="ASP" version="2" kateversion="5.0" section="Markup" extensions="*.asp;" mimetype="text/x-asp-src;text/x-asp-src" author="Antonio Salazar (savedfastcool@gmail.com)" license="LGPL">
+<language name="ASP" version="4" kateversion="5.0" section="Markup" extensions="*.asp;" mimetype="text/x-asp-src;text/x-asp-src" author="Antonio Salazar (savedfastcool@gmail.com)" license="LGPL">
     <highlighting>
         <list name="control structures">
             <item>select</item>
@@ -245,14 +245,12 @@
                 <DetectChar attribute="String" context="doublequotestring" char="&quot;" />
                 <DetectChar attribute="String" context="singlequotestring" char="&#39;" />
                 <DetectChar attribute="Keyword" context="#stay" char="&amp;" />
-                <RegExpr attribute="String" context="" String="" />
                 <RegExpr attribute="String" context="#stay" String="[0123456789]*\.\.\.[0123456789]*" />
                 <HlCOct attribute="Octal" context="#stay" />
                 <HlCHex attribute="Hex" context="#stay" />
                 <Float attribute="Float" context="#stay" />
                 <Int attribute="Decimal" context="#stay" />
                 <AnyChar attribute="Other" context="#stay" String=";()}{:,[]" />
-                <keyword attribute="Other" context="#stay" String="Others" />
 
                 <RegExpr attribute="Control Structures" context="#stay" String="\belseif\b" insensitive="true" beginRegion="iffi1" endRegion="iffi1"/>
                 <RegExpr attribute="Control Structures" context="#stay" String="\belse\b" insensitive="true" beginRegion="iffi1" endRegion="iffi1"/>
@@ -351,7 +349,6 @@
                 <DetectChar attribute="Normal Text" context="#stay" char="{" beginRegion="Brace1" />
                 <DetectChar attribute="Normal Text" context="#stay" char="}" endRegion="Brace1" />
                 <AnyChar attribute="Other" context="#stay" String=";()}{:,[]" />
-                <keyword attribute="Other" context="#stay" String="Others" />
             </context>
             <context name="scripts_onelinecomment" attribute="Comment" lineEndContext="#pop">
                 <RegExpr attribute="HTML Tag" context="#pop#pop" String="&lt;\s*\/\s*script\s*&gt;" insensitive="true" />
@@ -372,7 +369,6 @@
             <itemData name="Float" defStyleNum="dsFloat" />
             <itemData name="String" defStyleNum="dsString" />
             <itemData name="Comment" defStyleNum="dsComment" />
-            <itemData name="Variable" defStyleNum="dsVariable" />
             <itemData name="Control Structures" defStyleNum="dsControlFlow" bold="0" />
             <itemData name="Escape Code" defStyleNum="dsKeyword" color="#0F0F8F" selColor="#ffffff" bold="1" italic="0" />
             <itemData name="Other" defStyleNum="dsOthers" />

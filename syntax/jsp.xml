@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
-<language version="2" kateversion="2.4" name="JSP" section="Markup" extensions="*.jsp;*.JSP" mimetype="text/html" casesensitive="false" author="Rob Martin (rob@gamepimp.com)" license="LGPL">
+<language version="4" kateversion="2.4" name="JSP" section="Markup" extensions="*.jsp;*.JSP" mimetype="text/html" casesensitive="false" author="Rob Martin (rob@gamepimp.com)" license="LGPL">
   <highlighting>
 
     <list name="java-1.4.2-classes">
@@ -2912,21 +2912,10 @@
         <keyword String="jsp-reserved-words" attribute="Keyword" context="#stay"/>
         <keyword String="java-1.4.2-types" attribute="Types" context="#stay"/>
         <keyword String="java-1.4.2-classes" attribute="Java 1.4.2 Classes" context="#stay"/>
-        <Float attribute="Float" context="#stay">
-          <AnyChar String="fF" attribute="Float" context="#stay"/>
-        </Float>
+        <Float attribute="Float" context="Float Suffixes"/>
         <HlCOct attribute="Octal" context="#stay"/>
         <HlCHex attribute="Hex" context="#stay"/>
-        <Int attribute="Decimal" context="#stay">
-          <StringDetect String="ULL" attribute="Decimal" context="#stay" insensitive="true"/>
-          <StringDetect String="LUL" attribute="Decimal" context="#stay" insensitive="true"/>
-          <StringDetect String="LLU" attribute="Decimal" context="#stay" insensitive="true"/>
-          <StringDetect String="UL" attribute="Decimal" context="#stay" insensitive="true"/>
-          <StringDetect String="LU" attribute="Decimal" context="#stay" insensitive="true"/>
-          <StringDetect String="LL" attribute="Decimal" context="#stay" insensitive="true"/>
-          <StringDetect String="U" attribute="Decimal" context="#stay" insensitive="true"/>
-          <StringDetect String="L" attribute="Decimal" context="#stay" insensitive="true"/>
-        </Int>
+        <Int attribute="Decimal" context="Int Suffixes"/>
         <HlCChar attribute="Char" context="#stay"/>
         <RegExpr String="//\s*BEGIN.*$" attribute="Decimal" context="#stay" beginRegion="Region1" firstNonSpace="true"/>
         <RegExpr String="//\s*END.*$" attribute="Decimal" context="#stay" endRegion="Region1" firstNonSpace="true"/>
@@ -2938,6 +2927,21 @@
         <Detect2Chars char="/" char1="*" attribute="Java Comment" context="Java Multi-Line Comment"/>
       </context>
 
+      <context name="Float Suffixes" attribute="Float" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">
+          <AnyChar String="fF" attribute="Float" context="#pop"/>
+      </context>
+
+      <context name="Int Suffixes" attribute="Decimal" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">
+          <StringDetect attribute="Decimal" context="#pop" String="ULL" insensitive="true"/>
+          <StringDetect attribute="Decimal" context="#pop" String="LUL" insensitive="true"/>
+          <StringDetect attribute="Decimal" context="#pop" String="LLU" insensitive="true"/>
+          <StringDetect attribute="Decimal" context="#pop" String="UL" insensitive="true"/>
+          <StringDetect attribute="Decimal" context="#pop" String="LU" insensitive="true"/>
+          <StringDetect attribute="Decimal" context="#pop" String="LL" insensitive="true"/>
+          <StringDetect attribute="Decimal" context="#pop" String="U" insensitive="true"/>
+          <StringDetect attribute="Decimal" context="#pop" String="L" insensitive="true"/>
+      </context>
+
       <context name="Jsp Expression" attribute="Normal Text" lineEndContext="#stay">
         <StringDetect String="'${'" attribute="Normal Text" context="#stay"/>
         <DetectChar char="}" attribute="Jsp Scriptlet" context="#pop"/>
@@ -2945,21 +2949,10 @@
         <keyword String="jsp-reserved-words" attribute="Keyword" context="#stay"/>
         <keyword String="java-1.4.2-types" attribute="Types" context="#stay"/>
         <keyword String="java-1.4.2-classes" attribute="Java 1.4.2 Classes" context="#stay"/>
-        <Float attribute="Float" context="#stay">
-          <AnyChar String="fF" attribute="Float" context="#stay"/>
-        </Float>
+        <Float attribute="Float" context="Float Suffixes"/>
         <HlCOct attribute="Octal" context="#stay"/>
         <HlCHex attribute="Hex" context="#stay"/>
-        <Int attribute="Decimal" context="#stay">
-          <StringDetect String="ULL" attribute="Decimal" context="#stay" insensitive="true"/>
-          <StringDetect String="LUL" attribute="Decimal" context="#stay" insensitive="true"/>
-          <StringDetect String="LLU" attribute="Decimal" context="#stay" insensitive="true"/>
-          <StringDetect String="UL" attribute="Decimal" context="#stay" insensitive="true"/>
-          <StringDetect String="LU" attribute="Decimal" context="#stay" insensitive="true"/>
-          <StringDetect String="LL" attribute="Decimal" context="#stay" insensitive="true"/>
-          <StringDetect String="U" attribute="Decimal" context="#stay" insensitive="true"/>
-          <StringDetect String="L" attribute="Decimal" context="#stay" insensitive="true"/>
-        </Int>
+        <Int attribute="Decimal" context="Int Suffixes"/>
         <HlCChar attribute="Char" context="#stay"/>
         <DetectChar char="&quot;" attribute="String" context="Java String"/>
         <AnyChar String="!%&amp;()+,-&lt;=&gt;?[]^{|}~" attribute="Symbol" context="#stay"/>
@@ -3036,7 +3029,6 @@
       <itemData name="Identifier" defStyleNum="dsOthers"/>
       <itemData name="Types" defStyleNum="dsDataType"/>
       <itemData name="String" defStyleNum="dsString"/>
-      <itemData name="Comment" defStyleNum="dsComment"/>
 
       <itemData name="Html Comment" defStyleNum="dsComment"/>
 
@@ -3045,7 +3037,6 @@
       <itemData name="Hex" defStyleNum="dsBaseN"/>
       <itemData name="Float" defStyleNum="dsFloat"/>
       <itemData name="Char" defStyleNum="dsChar"/>
-      <itemData name="String Char" defStyleNum="dsChar"/>
       <itemData name="Symbol" defStyleNum="dsNormal"/>
       <itemData name="Java 1.4.2 Classes" defStyleNum="dsNormal" color="#0095FF" selColor="#FFFFFF" bold="1" italic="0"/>
 

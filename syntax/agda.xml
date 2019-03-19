@@ -3,7 +3,7 @@
   <!ENTITY charsdelim "_;.&#34;(){}@">
   <!ENTITY wordsep "(?=([&charsdelim;]|\s|$))">
 ]>
-<language name="Agda" version="2" kateversion="5.0" section="Sources" extensions="*.agda" mimetype="text/x-agda" author="Matthias C. M. Troffaes" license="LGPL">
+<language name="Agda" version="5" kateversion="5.0" section="Sources" extensions="*.agda" mimetype="text/x-agda" author="Matthias C. M. Troffaes" license="LGPL">
   <highlighting>
     <list name="reserved keywords">
       <item>abstract</item>
@@ -72,11 +72,11 @@
         <Detect2Chars attribute="Hole" context="#pop" char="!" char1="}" />
       </context>
       <context attribute="Char" lineEndContext="#pop" name="char">
-        <Detect2Chars attribute="Char" context="#stay" char="\\" char1="'" />
+        <Detect2Chars attribute="Char" context="#stay" char="\" char1="'" />
         <DetectChar   attribute="Char" context="#pop"  char="'" />
       </context>
       <context attribute="String" lineEndContext="#stay" name="string">
-        <Detect2Chars attribute="String" context="#stay" char="\\" char1="&quot;" />
+        <Detect2Chars attribute="String" context="#stay" char="\" char1="&quot;" />
         <DetectChar   attribute="String" context="#pop"  char="&quot;" />
       </context>
     </contexts>

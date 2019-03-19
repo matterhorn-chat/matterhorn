@@ -28,13 +28,12 @@
 -->
 <!DOCTYPE language SYSTEM "language.dtd"
 [
-	<!-- FIXME: Kate's regex engine has very limited support for
-	predefined char classes, so making rustIdent consistent with actual
-	Rust identifiers will be a bit difficult -->
-	<!ENTITY rustIdent "[a-zA-Z_][a-zA-Z_0-9]*">
-	<!ENTITY rustIntSuf "([iu](8|16|32|64)?)?">
+	<!ENTITY rustIdent "([a-zA-Z_]|[^[:ascii:]])(\w|[^[:ascii:]])*">
+	<!ENTITY rustIntSuf "([iu](8|16|32|64|128|size)?)?">
+	<!ENTITY commonEscape "([trn0&apos;&quot;\\]|x[0-9a-fA-F]{2})">
+	<!ENTITY unicodeEscape "u\{([0-9a-fA-F]_*){1,6}\}">
 ]>
-<language name="Rust" version="4" kateversion="5.0" section="Sources" extensions="*.rs" mimetype="text/rust" priority="15" license="MIT" author="The Rust Project Developers">
+<language name="Rust" version="6" kateversion="5.0" section="Sources" extensions="*.rs" mimetype="text/rust" priority="15" license="MIT" author="The Rust Project Developers">
 <highlighting>
 	<list name="fn">
 		<item>fn</item>
@@ -52,6 +51,7 @@
 		<item>const</item>
 		<item>continue</item>
 		<item>crate</item>
+		<item>default</item>
 		<item>do</item>
 		<item>else</item>
 		<item>enum</item>
@@ -85,6 +85,7 @@
 		<item>trait</item>
 		<item>type</item>
 		<item>typeof</item>
+		<item>union</item>
 		<item>unsafe</item>
 		<item>unsized</item>
 		<item>use</item>
@@ -94,6 +95,9 @@
 		<item>yield</item>
 	</list>
 	<list name="traits">
+		<!-- FIXME: Some traits may be obsolete and must be removed -->
+		<item>AsMut</item>
+		<item>AsRef</item>
 		<item>AsSlice</item>
 		<item>CharExt</item>
 		<item>Clone</item>
@@ -106,13 +110,16 @@
 		<item>Drop</item>
 		<item>Encodable</item>
 		<item>Eq</item>
-		<item>Default</item>
+		<item>ExactSizeIterator</item>
 		<item>Extend</item>
 		<item>Fn</item>
 		<item>FnMut</item>
 		<item>FnOnce</item>
+		<item>From</item>
 		<item>FromPrimitive</item>
 		<item>Hash</item>
+		<item>Into</item>
+		<item>IntoIterator</item>
 		<item>Iterator</item>
 		<item>IteratorExt</item>
 		<item>MutPtrExt</item>
@@ -121,6 +128,8 @@
 		<item>PartialOrd</item>
 		<item>PtrExt</item>
 		<item>Rand</item>
+		<item>RustcDecodable</item>
+		<item>RustcEncodable</item>
 		<item>Send</item>
 		<item>Sized</item>
 		<item>SliceConcatExt</item>
@@ -128,25 +137,25 @@
 		<item>Str</item>
 		<item>StrExt</item>
 		<item>Sync</item>
+		<item>ToOwned</item>
 		<item>ToString</item>
 	</list>
 	<list name="types">
 		<item>bool</item>
-		<item>int</item>
 		<item>isize</item>
-		<item>uint</item>
 		<item>usize</item>
 		<item>i8</item>
 		<item>i16</item>
 		<item>i32</item>
 		<item>i64</item>
+		<item>i128</item>
 		<item>u8</item>
 		<item>u16</item>
 		<item>u32</item>
 		<item>u64</item>
+		<item>u128</item>
 		<item>f32</item>
 		<item>f64</item>
-		<item>float</item>
 		<item>char</item>
 		<item>str</item>
 		<item>Option</item>
@@ -155,6 +164,8 @@
 		<item>Box</item>
 		<item>Vec</item>
 		<item>String</item>
+		<item>Path</item>
+		<item>PathBuf</item>
 	</list>
 	<list name="ctypes">
 		<item>c_float</item>
@@ -261,11 +272,9 @@
 			<keyword String="cconstants" attribute="CConstant" context="#stay"/>
 			<Detect2Chars char="/" char1="/" attribute="Comment" context="Commentar 1"/>
 			<Detect2Chars char="/" char1="*" attribute="Comment" context="Commentar 2" beginRegion="Comment"/>
-			<RegExpr String="0x[0-9a-fA-F_]+&rustIntSuf;" attribute="Number" context="#stay"/>
-			<RegExpr String="0o[0-7_]+&rustIntSuf;" attribute="Number" context="#stay"/>
-			<RegExpr String="0b[0-1_]+&rustIntSuf;" attribute="Number" context="#stay"/>
-			<RegExpr String="[0-9][0-9_]*\.[0-9_]*([eE][+-]?[0-9_]+)?(f32|f64|f)?" attribute="Number" context="#stay"/>
-			<RegExpr String="[0-9][0-9_]*&rustIntSuf;" attribute="Number" context="#stay"/>
+			<RegExpr String="\b0(x[0-9a-fA-F_]+|o[0-7_]+|b[01_]+)&rustIntSuf;\b" attribute="Number" context="#stay"/> <!-- Hexadecimal, Octal & Binary -->
+			<RegExpr String="\b[0-9][0-9_]*((\.[0-9][0-9_]*)?([eE][\+\-]?[0-9_]+)?(f32|f64)?|&rustIntSuf;)\b" attribute="Number" context="#stay"/> <!-- Float & Decimal -->
+			<RegExpr String="\b0(b[01_]*[^01_]|o[0-7_]*[^0-7_]|x[0-9a-fA-F_]*[^0-9a-fA-F_])\w*&rustIntSuf;\b" attribute="Error" context="#stay"/> <!-- Invalid number -->
 			<Detect2Chars char="#" char1="[" attribute="Attribute" context="Attribute" beginRegion="Attribute"/>
 			<StringDetect String="#![" attribute="Attribute" context="Attribute" beginRegion="Attribute"/>
 			<RegExpr String="&rustIdent;::" attribute="Scope"/>
@@ -273,10 +282,10 @@
 			<RegExpr String="&apos;&rustIdent;(?!&apos;)" attribute="Lifetime"/>
 			<DetectChar char="{" attribute="Symbol" context="#stay" beginRegion="Brace" />
 			<DetectChar char="}" attribute="Symbol" context="#stay" endRegion="Brace" />
-                        <Detect2Chars char="r" char1="&quot;" attribute="String" context="RawString"/>
-                        <StringDetect String="r##&quot;" attribute="String" context="RawHashed2"/>
-                        <StringDetect String="r#&quot;" attribute="String" context="RawHashed1"/>
+			<RegExpr String="b?r(#*)&quot;" attribute="String" context="RawString" dynamic="true"/>
+			<Detect2Chars char="b" char1="&quot;" attribute="String" context="ByteString"/>
 			<DetectChar char="&quot;" attribute="String" context="String"/>
+			<RegExpr String="b&apos;(?=([^&apos;\\]|\\&commonEscape;)&apos;)" attribute="Character" context="Character"/> <!-- Byte -->
 			<DetectChar char="&apos;" attribute="Character" context="Character"/>
 			<DetectChar char="[" attribute="Symbol" context="#stay" beginRegion="Bracket" />
 			<DetectChar char="]" attribute="Symbol" context="#stay" endRegion="Bracket" />
@@ -300,36 +309,40 @@
                 <!-- Rustc allows strings to extend over multiple lines, and the
                 only thing a backshash at end-of-line does is remove the whitespace. -->
                 <context attribute="String" lineEndContext="#stay" name="String">
-                        <DetectChar char="\" attribute="CharEscape" context="CharEscape"/>
+                        <DetectChar char="\" attribute="CharEscape" context="CharEscapeWithUnicode"/>
                         <DetectChar attribute="String" context="#pop" char="&quot;"/>
                 </context>
-		<context attribute="String" lineEndContext="#stay" name="RawString">
+		<context attribute="String" lineEndContext="#stay" name="ByteString">
+			<DetectChar char="\" attribute="CharEscape" context="CharEscape"/>
 			<DetectChar attribute="String" context="#pop" char="&quot;"/>
 		</context>
-                <!-- These rules are't complete: they won't match r###"abc"### -->
-                <context attribute="String" lineEndContext="#stay" name="RawHashed1">
-                        <Detect2Chars attribute="String" context="#pop" char="&quot;" char1="#"/>
-                </context>
-                <context attribute="String" lineEndContext="#stay" name="RawHashed2">
-                        <StringDetect attribute="String" context="#pop" String="&quot;##"/>
-                </context>
-		<context attribute="Character" lineEndContext="#pop" name="Character">
-			<DetectChar char="\" attribute="CharEscape" context="CharEscape"/>
+		<context attribute="String" lineEndContext="#stay" name="RawString" dynamic="true">
+			<RegExpr String="&quot;%1" attribute="String" context="#pop" dynamic="true"/>
+		</context>		
+		<context attribute="Character" lineEndContext="#pop" name="Character" fallthrough="true" fallthroughContext="#pop">
+			<RegExpr String="[^&apos;\\](?=&apos;)" attribute="Character" context="#stay"/>
+			<RegExpr String="\\(&unicodeEscape;|&commonEscape;)(?=&apos;)" attribute="CharEscape" context="#stay"/>
 			<DetectChar attribute="Character" context="#pop" char="&apos;"/>
+			<RegExpr String="(\\.|[^&apos;\\])[^&apos;]*(?=&apos;([\d\s!&quot;#&#036;&#037;&amp;&#039;\(\)\*\+,\-\./:;&lt;\=&gt;\?@\[\\\]\^&#096;\{\|\}~[:cntrl:]]|$))" attribute="Error" context="#stay"/>
 		</context>
 		<context attribute="CharEscape" lineEndContext="#pop" name="CharEscape">
-			<AnyChar String="nrt\&apos;&quot;" attribute="CharEscape" context="#pop"/>
-			<RegExpr String="x[0-9a-fA-F]{2}" attribute="CharEscape" context="#pop"/>
-			<RegExpr String="u\{[0-9a-fA-F]{1,6}\}" attribute="CharEscape" context="#pop"/>
-			<RegExpr String="u[0-9a-fA-F]{4}" attribute="CharEscape" context="#pop"/>
-			<RegExpr String="U[0-9a-fA-F]{8}" attribute="CharEscape" context="#pop"/>
+			<RegExpr String="&commonEscape;" attribute="CharEscape" context="#pop"/>
 			<RegExpr String="." attribute="Error" context="#pop"/>
 		</context>
-		<context attribute="Comment" lineEndContext="#pop" name="Commentar 1"/>
+		<context attribute="CharEscape" lineEndContext="#pop" name="CharEscapeWithUnicode">
+			<RegExpr String="&unicodeEscape;" attribute="CharEscape" context="#pop"/>
+			<IncludeRules context="CharEscape"/>
+		</context>
+		<context attribute="Comment" lineEndContext="#pop" name="Commentar 1">
+			<IncludeRules context="##Alerts" />
+			<IncludeRules context="##Modelines" />
+		</context>
 		<context attribute="Comment" lineEndContext="#stay" name="Commentar 2">
 			<DetectSpaces/>
 			<Detect2Chars char="/" char1="*" attribute="Comment" context="Commentar 2" beginRegion="Comment"/>
 			<Detect2Chars char="*" char1="/" attribute="Comment" context="#pop" endRegion="Comment"/>
+			<IncludeRules context="##Alerts" />
+			<IncludeRules context="##Modelines" />
 		</context>
 	</contexts>
 	<itemDatas>
@@ -343,7 +356,7 @@
 		<itemData name="CConstant"    defStyleNum="dsConstant" spellChecking="0"/>
 		<itemData name="Definition"   defStyleNum="dsNormal"/>
 		<itemData name="Comment"      defStyleNum="dsComment"/>
-		<itemData name="Scope"        defStyleNum="dsNormal"/>
+		<itemData name="Scope"        defStyleNum="dsPreprocessor"/>
 		<itemData name="Number"       defStyleNum="dsDecVal"/>
 		<itemData name="String"       defStyleNum="dsString"/>
 		<itemData name="CharEscape"   defStyleNum="dsSpecialChar"/>

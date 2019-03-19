@@ -8,15 +8,15 @@
   Copyright (c) 2012-2014 by Alex Turbov (i.zaufi@gmail.com)
   -->
 <language name="Modelines"
-          version="3"
+          version="4"
           kateversion="5.0"
           section="Other"
           extensions=""
           mimetype=""
           author="Alex Turbov (i.zaufi@gmail.com)"
-          license="LGPL"
+          license="MIT"
           hidden="true"
-          priority="5">
+          priority="6">
 <!--
   The main purpose of this file is to be included into other syntax files.
 
@@ -40,6 +40,7 @@
     <item>bookmark-sorting</item>
     <item>bom</item>
     <item>byte-order-marker</item>
+    <item>byte-order-mark</item>
     <item>dynamic-word-wrap</item>
     <item>folding-markers</item>
     <item>folding-preview</item>                          <!-- Since KTextEditor 5.24 -->
@@ -130,7 +131,6 @@
       <DetectSpaces />
       <keyword String="ModelineStartKeyword" context="Modeline" attribute="Keyword" />
       <RegExpr String="kate-(mimetype|wildcard)\(.*\):" context="Modeline" attribute="Keyword" />
-      <LineContinue context="#pop" />
     </context>
 
     <context name="Modeline" attribute="Comment" lineEndContext="#pop">
@@ -166,9 +166,12 @@
 
     <context name="RemoveSpaces" attribute="Comment" lineEndContext="#pop">
       <DetectSpaces />
-      <keyword String="RemoveSpacesOptions" attribute="Value" context="#pop" />
+      <keyword String="RemoveSpacesOptions" attribute="Value" context="#pop!RemoveSpacesEnd" />
       <DetectChar char="&end;" context="#pop" attribute="Variable" />
       <LineContinue context="#pop" />
+    </context>
+    <context name="RemoveSpacesEnd" attribute="Comment" lineEndContext="#pop">
+      <DetectChar char="&end;" context="#pop" attribute="Variable" />
     </context>
 
   </contexts>
@@ -187,7 +190,7 @@
 </highlighting>
 
 <general>
-  <keywords casesensitive="1" weakDeliminator=":-" />
+  <keywords casesensitive="1" weakDeliminator=":-+*" />
 </general>
 
 </language>

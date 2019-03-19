@@ -1,13 +1,13 @@
 <!DOCTYPE language SYSTEM "language.dtd">
 <language
   name="PowerShell"
-  version="2"
+  version="4"
   kateversion="5.0"
   extensions="*.ps1;*.ps1m;*.ps1d"
   section="Scripts"
   author="Motoki Kashihara (motoki8791@gmail.com); Michael Lombardi (Michael.T.Lombardi@outlook.com)"
   casesensitive="0"
-  license="LGPLv2+">
+  license="MIT">
   <highlighting>
     <list name="keywords">
       <item>Begin</item>
@@ -47,7 +47,8 @@
       <item>Param</item>
       <item>Workflow</item>
     </list>
-    <list name="attributes">
+<!-- TODO: Seems unused?!
+      <list name="attributes">
       <item>CmdletBinding</item>
       <item>ConfirmImpact</item>
       <item>DefaultParameterSetName</item>
@@ -55,7 +56,7 @@
       <item>SupportsPaging</item>
       <item>SupportsShouldProcess</item>
       <item>PositionalBinding</item>
-    </list>
+    </list>-->
     <list name="types">
       <item>bool</item>
       <item>byte</item>
@@ -74,7 +75,8 @@
       <item>ulong</item>
       <item>ushort</item>
     </list>
-    <list name="operators">
+<!-- TODO: Seems unused?!
+      <list name="operators">
       <item>-split</item>
       <item>-isplit</item>
       <item>-csplit</item>
@@ -135,7 +137,7 @@
       <item>*=</item>
       <item>/=</item>
       <item>%=</item>
-    </list>
+    </list>-->
     <list name="cmdlets">
       <item>Add-Content</item>
       <item>Add-ADComputerServiceAccount</item>

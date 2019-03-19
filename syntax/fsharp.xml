@@ -9,7 +9,7 @@
 <!ENTITY ESC    "(\\[ntbr'&quot;\\]|\\[0-9]{3}|\\x[0-9A-Fa-f]{2})"> <!-- OCaml character code escapes. -->
 <!ENTITY DEC    "[0-9][0-9_]*">                                     <!-- Decimal digits with underscores. -->
 ]>
-<language name="FSharp" version="3" kateversion="5.0" section="Sources" extensions="*.fs;*.fsi;*.fsx" mimetype="" priority="10" author="Bas Bossink (bas.bossink@gmail.com)" license="LGPL">
+<language name="FSharp" version="5" kateversion="5.0" section="Sources" extensions="*.fs;*.fsi;*.fsx" mimetype="" priority="10" author="Bas Bossink (bas.bossink@gmail.com)" license="LGPL">
 
   <highlighting>
     <list name="keywords">
@@ -104,9 +104,6 @@
       <item>bigint</item>
       <item>option</item>
       <item>seq</item>
-    </list>
-    <list name="symbols">
-      <item>?</item>
     </list>
     <list name="end">
       <item>end</item>
@@ -256,7 +253,6 @@
       <itemData name="Identifier" defStyleNum="dsNormal"/>
       <itemData name="Symbol" defStyleNum="dsNormal"/>
       <itemData name="Keyword"  defStyleNum="dsKeyword"/>
-      <itemData name="Revised Syntax Keyword"  defStyleNum="dsNormal"/>
       <itemData name="Core Data Type"  defStyleNum="dsDataType"/>
       <itemData name="Decimal"  defStyleNum="dsDecVal"/>
       <itemData name="Hexadecimal"  defStyleNum="dsBaseN"/>

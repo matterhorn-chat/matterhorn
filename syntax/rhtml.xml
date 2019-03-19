@@ -44,7 +44,7 @@
 -->
 	
 <!-- Hold the "language" opening tag on a single line, as mentioned in "language.dtd". -->
-<language name="Ruby/Rails/RHTML" version="6" kateversion="2.4" section="Markup" extensions="*.rhtml;*.RHTML;*.html.erb" mimetype="" author="Richard Dale rdale@foton.es" license="LGPLv2+">
+<language name="Ruby/Rails/RHTML" version="9" kateversion="5.0" section="Markup" extensions="*.rhtml;*.RHTML;*.html.erb" mimetype="" author="Richard Dale rdale@foton.es" license="LGPLv2+">
 	
 	<highlighting>
 	
@@ -333,7 +333,7 @@
 				<DetectIdentifier/>
 				
 				<RegExpr attribute="Keyword" context="rubysource" String="&lt;%=?" />
-				<StringDetect attribute="Keyword" context="rubysourceline" String="%" />
+				<DetectChar attribute="Keyword" context="rubysourceline" char="%" />
 				
 				<StringDetect attribute="Comment" context="Comment" String="&lt;!--" beginRegion="comment" />
 				<StringDetect attribute="CDATA" context="CDATA" String="&lt;![CDATA[" beginRegion="cdata" />
@@ -550,16 +550,17 @@
 				<RegExpr attribute="Keyword" String="(\=|\(|\[|\{)\s*(if|unless|while|until)\b" context="#stay" beginRegion="def block"/>
 				<RegExpr attribute="Keyword" String="(while|until)\b(?!.*\bdo\b)" context="#stay" beginRegion="def block" firstNonSpace="true"/>
 				<RegExpr attribute="Keyword" String="\;\s*(while|until)\b(?!.*\bdo\b)" context="#stay" beginRegion="def block"/>
-				<RegExpr attribute="Keyword" String="(if|unless)\b" context="#stay" beginRegion="def block" firstNonSpace="true"/>
+				<WordDetect attribute="Keyword" String="if" context="#stay" beginRegion="def block" firstNonSpace="true"/>
+				<WordDetect attribute="Keyword" String="unless" context="#stay" beginRegion="def block" firstNonSpace="true"/>
 				<RegExpr attribute="Keyword" String="\;\s*(if|unless)\b" context="#stay" beginRegion="def block"/>
-				<RegExpr attribute="Keyword" String="\bclass\b" context="#stay" beginRegion="def block"/>
-				<RegExpr attribute="Keyword" String="\bmodule\b" context="#stay" beginRegion="def block"/>
-				<RegExpr attribute="Keyword" String="\bbegin\b" context="#stay" beginRegion="def block"/>
+				<WordDetect attribute="Keyword" String="class" context="#stay" beginRegion="def block"/>
+				<WordDetect attribute="Keyword" String="module" context="#stay" beginRegion="def block"/>
+				<WordDetect attribute="Keyword" String="begin" context="#stay" beginRegion="def block"/>
 				<RegExpr attribute="Keyword" String="\bfor\b(?!.*\bdo\b)" context="#stay" beginRegion="def block"/>
-				<RegExpr attribute="Keyword" String="\bcase\b" context="#stay" beginRegion="def block"/>
-				<RegExpr attribute="Keyword" String="\bdo\b" context="#stay" beginRegion="def block"/>
-				<RegExpr attribute="Keyword" String="\bdef\b" context="#stay" beginRegion="def block"/>
-				<RegExpr attribute="Keyword" String="\bend\b" context="#stay" endRegion="def block"/>
+				<WordDetect attribute="Keyword" String="case" context="#stay" beginRegion="def block"/>
+				<WordDetect attribute="Keyword" String="do" context="#stay" beginRegion="def block"/>
+				<WordDetect attribute="Keyword" String="def" context="#stay" beginRegion="def block"/>
+				<WordDetect attribute="Keyword" String="end" context="#stay" endRegion="def block"/>
 				<!-- elsif/else close the current block and start a new one -->
 				<RegExpr attribute="Keyword" String="(\b|^\s*)(else|elsif|rescue|ensure)(\s+|$)" context="#stay" endRegion="def block" beginRegion="def block"/>
 				
@@ -583,8 +584,7 @@
 				<!-- (global) vars starting with $
 					Match them before $_.
 					-->
-				<RegExpr attribute="Global Variable" String="\$[a-zA-Z_0-9]+" context="#stay"/>
-				<RegExpr attribute="Global Variable" String="\$\-[a-zA-Z_]\b" context="#stay"/>
+				<RegExpr attribute="Global Variable" String="\$(\w+|\-[a-zA-Z_]\b)" context="#stay"/>
 				<!-- special-character globals -->
 				<RegExpr attribute="Default globals" String="\$[\d_*`\!:?'/\\\-\&amp;]" context="#stay"/>
 				<RegExpr attribute="Global Constant" String="\b[_A-Z]+[A-Z_0-9]+\b" context="#stay"/>
@@ -620,7 +620,7 @@
 				<!-- regexp hack -->
 				<RegExpr attribute="Operator" String="\s!" context="#stay"/>
 				<RegExpr attribute="Operator" String="/=\s" context="#stay" insensitive="0"/>
-				<StringDetect attribute="Operator" String="%=" context="#stay" insensitive="0"/>
+				<Detect2Chars attribute="Operator" char="%" char1="=" context="#stay"/>
 				<Detect2Chars attribute="Operator" char=":" char1=":" context="Member Access"/>
 				
 				<RegExpr attribute="Symbol" String=":[a-zA-Z_][a-zA-Z0-9_]*" context="#stay"/>
@@ -629,11 +629,11 @@
 				<DetectChar attribute="Raw String" char="'" context="Apostrophed String"/>
 				<DetectChar attribute="Command" char="`" context="Command String"/>
 				
-				<StringDetect attribute="Normal Text" String="?#" context="#stay"/>
+				<Detect2Chars attribute="Normal Text" char="?" char1="#" context="#stay"/>
 				
 				<RegExpr attribute="Comment" String="#\s*BEGIN.*$"  context="#stay" beginRegion="marker" column="0"/>
 				<RegExpr attribute="Comment" String="#\s*END.*$"  context="#stay" endRegion="marker" column="0"/>
-				<RegExpr attribute="Comment" String="#"  context="Comment Line" firstNonSpace="true"/>
+				<DetectChar attribute="Comment" char="#"  context="Comment Line" firstNonSpace="true"/>
 				<RegExpr attribute="Comment" String="\s#"  context="General Comment"/>
 				
 				<RegExpr attribute="Delimiter" String="[\[\]]+"  context="#stay"/>
@@ -653,13 +653,14 @@
 			
 			<context name="Line Continue" attribute="Ruby Normal Text" lineEndContext="#pop">
 				<RegExpr attribute="Keyword" String="(while|until)\b(?!.*\bdo\b)" context="#stay" firstNonSpace="true"/>
-				<RegExpr attribute="Keyword" String="(if|unless)\b" context="#stay" firstNonSpace="true"/>
+				<WordDetect attribute="Keyword" String="if" context="#stay" firstNonSpace="true"/>
+				<WordDetect attribute="Keyword" String="unless" context="#stay" firstNonSpace="true"/>
 				<IncludeRules context="rubysource"/>
 			</context>
 			
 			<context name="Quoted String" attribute="String" lineEndContext="#stay">
-				<StringDetect attribute="String" String="\\" context="#stay"/>
-				<RegExpr attribute="String" String="\\\&quot;" context="#stay"/>
+				<Detect2Chars attribute="String" char="\" char1="\" context="#stay"/>
+				<Detect2Chars attribute="String" char="\" char1="&quot;" context="#stay"/>
 				<RegExpr attribute="Substitution" String="#@{1,2}" context="Short Subst"/>
 				<Detect2Chars attribute="Substitution" char="#" char1="{" context="Subst"/>
 				<!--HlCChar attribute="Char" context="#pop"/-->
@@ -668,14 +669,14 @@
 			
 			<context name="Apostrophed String" attribute="Raw String" lineEndContext="#stay">
 				<!-- <HlCChar attribute="Char" context="#pop"/> -->
-				<StringDetect attribute="String" String="\\" context="#stay"/>
-				<RegExpr attribute="String" String="\\\'" context="#stay"/>
+				<Detect2Chars attribute="String" char="\" char1="\" context="#stay"/>
+				<Detect2Chars attribute="String" char="\" char1="'" context="#stay"/>
 				<DetectChar char="'" attribute="Raw String" context="#pop"/>
 			</context>
 			
 			<context name="Command String" attribute="Command" lineEndContext="#stay">
-				<StringDetect attribute="String" String="\\" context="#stay"/>
-				<RegExpr attribute="String" String="\\\`" context="#stay"/>
+				<Detect2Chars attribute="String" char="\" char1="\" context="#stay"/>
+				<Detect2Chars attribute="String" char="\" char1="`" context="#stay"/>
 				<RegExpr attribute="Substitution" String="#@{1,2}" context="Short Subst"/>
 				<Detect2Chars attribute="Substitution" char="#" char1="{" context="Subst"/>
 				<HlCChar attribute="Char" context="#pop"/>
@@ -687,7 +688,7 @@
 			</context>
 			
 			<context name="RegEx 1" attribute="Regular Expression" lineEndContext="#stay">
-				<RegExpr attribute="Regular Expression" String="\\\/" context="#stay"/>
+				<Detect2Chars attribute="Regular Expression" char="\" char1="/" context="#stay"/>
 				<RegExpr attribute="Regular Expression" String="[^\\]$" context="#pop"/>
 				<RegExpr attribute="Substitution" String="#@{1,2}" context="Short Subst"/>
 				<Detect2Chars attribute="Substitution" char="#" char1="{" context="Subst"/>
@@ -782,34 +783,34 @@
 			<context name="find_gdl_input" attribute="Ruby Normal Text" lineEndContext="#pop">
 				
 				<!-- handle token arrays -->
-				<RegExpr attribute="GDL input" context="gdl_token_array_1" String="w\(" />
-				<RegExpr attribute="GDL input" context="gdl_token_array_2" String="w\{" />
-				<RegExpr attribute="GDL input" context="gdl_token_array_3" String="w\[" />
-				<RegExpr attribute="GDL input" context="gdl_token_array_4" String="w&lt;" />
+				<Detect2Chars attribute="GDL input" context="gdl_token_array_1" char="w" char1="(" />
+				<Detect2Chars attribute="GDL input" context="gdl_token_array_2" char="w" char1="{" />
+				<Detect2Chars attribute="GDL input" context="gdl_token_array_3" char="w" char1="[" />
+				<Detect2Chars attribute="GDL input" context="gdl_token_array_4" char="w" char1="&lt;" />
 				<!-- then we handle the 'any char' format -->
 				<RegExpr attribute="GDL input" context="gdl_token_array_5" String="w([^\s\w])" />
 				
 				<!-- handle apostrophed strings -->
-				<RegExpr attribute="GDL input" context="gdl_apostrophed_1" String="q\(" />
-				<RegExpr attribute="GDL input" context="gdl_apostrophed_2" String="q\{" />
-				<RegExpr attribute="GDL input" context="gdl_apostrophed_3" String="q\[" />
-				<RegExpr attribute="GDL input" context="gdl_apostrophed_4" String="q&lt;" />
+				<Detect2Chars attribute="GDL input" context="gdl_apostrophed_1" char="q" char1="(" />
+				<Detect2Chars attribute="GDL input" context="gdl_apostrophed_2" char="q" char1="{" />
+				<Detect2Chars attribute="GDL input" context="gdl_apostrophed_3" char="q" char1="[" />
+				<Detect2Chars attribute="GDL input" context="gdl_apostrophed_4" char="q" char1="&lt;" />
 				<!-- then we handle the 'any char' format -->
 				<RegExpr attribute="GDL input" context="gdl_apostrophed_5" String="q([^\s\w])" />
 				
 				<!-- handle shell commands -->
-				<RegExpr attribute="GDL input" context="gdl_shell_command_1" String="x\(" />
-				<RegExpr attribute="GDL input" context="gdl_shell_command_2" String="x\{" />
-				<RegExpr attribute="GDL input" context="gdl_shell_command_3" String="x\[" />
-				<RegExpr attribute="GDL input" context="gdl_shell_command_4" String="x&lt;" />
+				<Detect2Chars attribute="GDL input" context="gdl_shell_command_1" char="x" char1="(" />
+				<Detect2Chars attribute="GDL input" context="gdl_shell_command_2" char="x" char1="{" />
+				<Detect2Chars attribute="GDL input" context="gdl_shell_command_3" char="x" char1="[" />
+				<Detect2Chars attribute="GDL input" context="gdl_shell_command_4" char="x" char1="&lt;" />
 				<!-- then we handle the 'any char' format -->
 				<RegExpr attribute="GDL input" context="gdl_shell_command_5" String="x([^\s\w])" />
 				
 				<!-- handle regular expressions -->
-				<RegExpr attribute="GDL input" context="gdl_regexpr_1" String="r\(" />
-				<RegExpr attribute="GDL input" context="gdl_regexpr_2" String="r\{" />
-				<RegExpr attribute="GDL input" context="gdl_regexpr_3" String="r\[" />
-				<RegExpr attribute="GDL input" context="gdl_regexpr_4" String="r&lt;" />
+				<Detect2Chars attribute="GDL input" context="gdl_regexpr_1" char="r" char1="(" />
+				<Detect2Chars attribute="GDL input" context="gdl_regexpr_2" char="r" char1="{" />
+				<Detect2Chars attribute="GDL input" context="gdl_regexpr_3" char="r" char1="[" />
+				<Detect2Chars attribute="GDL input" context="gdl_regexpr_4" char="r" char1="&lt;" />
 				<!-- then we handle the 'any char' format -->
 				<RegExpr attribute="GDL input" context="gdl_regexpr_5" String="r([^\s\w])" />
 				
@@ -818,10 +819,14 @@
 					be careful to make this the last GDL ruleset, because the rule for
 					the short form %?foo? will otherwise catch any of the other formats
 					-->
-				<RegExpr attribute="GDL input" context="gdl_dq_string_1" String="Q?\(" />
-				<RegExpr attribute="GDL input" context="gdl_dq_string_2" String="Q?\{" />
-				<RegExpr attribute="GDL input" context="gdl_dq_string_3" String="Q?\[" />
-				<RegExpr attribute="GDL input" context="gdl_dq_string_4" String="Q?&lt;" />
+				<Detect2Chars attribute="GDL input" context="gdl_dq_string_1" char="Q" char1="(" />
+				<Detect2Chars attribute="GDL input" context="gdl_dq_string_2" char="Q" char1="{" />
+				<Detect2Chars attribute="GDL input" context="gdl_dq_string_3" char="Q" char1="[" />
+				<Detect2Chars attribute="GDL input" context="gdl_dq_string_4" char="Q" char1="&lt;" />
+				<DetectChar attribute="GDL input" context="gdl_dq_string_1" char="(" />
+				<DetectChar attribute="GDL input" context="gdl_dq_string_2" char="{" />
+				<DetectChar attribute="GDL input" context="gdl_dq_string_3" char="[" />
+				<DetectChar attribute="GDL input" context="gdl_dq_string_4" char="&lt;" />
 				<!-- then we handle the 'any char' format -->
 				<RegExpr attribute="GDL input" context="gdl_dq_string_5" String="Q?([^\s\w])" />
 				
@@ -1160,6 +1165,7 @@
 		<itemDatas>
 		<!-- BEGIN Ruby itemData -->
 			<itemData name="Ruby Normal Text" defStyleNum="dsNormal"/>
+			<itemData name="RUBY RAILS ERB Text" defStyleNum="dsExtension"/>
 			
 			<itemData name="Keyword" defStyleNum="dsKeyword"/>
 			<itemData name="Attribute Definition" defStyleNum="dsOthers"/>
@@ -1197,7 +1203,6 @@
 			
 			<itemData name="Ruby Comment" defStyleNum="dsComment"/>
 			<itemData name="Blockcomment" defStyleNum="dsComment"/>
-			<itemData name="Region Marker" defStyleNum="dsNormal" color="#0000ff"/>
 			<itemData name="RDoc Value" defStyleNum="dsOthers"/>
 			
 			<!-- use these to mark errors and alerts things -->
@@ -1205,7 +1210,6 @@
 			<itemData name="Alert" defStyleNum="dsAlert" />
 
 			<itemData name="Delimiter" defStyleNum="dsChar"/>
-			<itemData name="Expression" defStyleNum="dsOthers"/>
 			<itemData name="Operator" defStyleNum="dsChar"/>
 		<!-- END Ruby itemData -->
 			
@@ -1220,7 +1224,6 @@
 			<itemData name="Value" defStyleNum="dsString" />
 			<itemData name="EntityRef" defStyleNum="dsDecVal" />
 			<itemData name="PEntityRef" defStyleNum="dsDecVal" />
-			<itemData name="Error" defStyleNum="dsError" />
 		<!-- END HTML itemData -->
 		
 		</itemDatas>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE language SYSTEM "language.dtd">
+<language version="1" kateversion="3.1" name="Default" section="Other" extensions="*.txt" mimetype="text/plain" author="John MacFarlane" license="MIT" hidden="true">
+    <!-- This syntax definition just causes everything to be highlighted
+         as Normal Text. It is intended to be used when highlighting
+         isn't desired, but the other formatting elements added by
+         skylighting are. -->
+  <highlighting>
+    <contexts>
+      <context attribute="Normal Text" lineEndContext="#stay" name="Normal Text" >
+      </context>
+    </contexts>
+    <itemDatas>
+      <itemData name="Normal Text"   defStyleNum="dsNormal"/>
+    </itemDatas>
+  </highlighting>
+  <general>
+    <keywords casesensitive="1"/>
+  </general>
+</language>
+<!-- kate: indent-width 2; -->

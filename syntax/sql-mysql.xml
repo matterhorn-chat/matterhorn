@@ -6,25 +6,46 @@
   modifications by Milian Wolff (mail@milianw.de)
   v3 fix comments by Gene Thomas <gene@genethomas.com>
 -->
-<language name="SQL (MySQL)" version="3" kateversion="3.4" section="Database" extensions="*.sql;*.SQL;*.ddl;*.DDL" mimetype="text/x-sql" casesensitive="0" author="Shane Wright (me@shanewright.co.uk)" license="">
+<language name="SQL (MySQL)" version="5" kateversion="5.0" section="Database" extensions="*.sql;*.SQL;*.ddl;*.DDL" mimetype="text/x-sql" casesensitive="0" author="Shane Wright (me@shanewright.co.uk)" license="">
   <highlighting>
+    <list name="controlFlow">
+      <item>BEGIN</item>
+      <item>CASE</item>
+      <item>DO</item>
+      <item>ELSE</item>
+      <item>ELSEIF</item>
+      <item>END</item>
+      <item>FOR</item>
+      <item>IF</item>
+      <item>LOOP</item>
+      <item>RETURN</item>
+      <item>THEN</item>
+      <item>WHEN</item>
+      <item>WHILE</item>
+    </list>
+    <list name="operators">
+      <item>AND</item>
+      <item>BETWEEN</item>
+      <item>IN</item>
+      <item>IS</item>
+      <item>LIKE</item>
+      <item>NOT</item>
+      <item>OR</item>
+    </list>
     <list name="keywords">
       <item>ACCESS</item>
       <item>ADD</item>
       <item>ALL</item>
       <item>ALTER</item>
       <item>ANALYZE</item>
-      <item>AND</item>
       <item>AS</item>
       <item>ASC</item>
       <item>AUTO_INCREMENT</item>
       <item>BDB</item>
       <item>BERKELEYDB</item>
-      <item>BETWEEN</item>
       <item>BOTH</item>
       <item>BY</item>
       <item>CASCADE</item>
-      <item>CASE</item>
       <item>CHANGE</item>
       <!-- <item> CHARACTER SET </item>
         needs special regexp (see below) -->
@@ -43,6 +64,7 @@
       <item>DAY_MINUTE</item>
       <item>DAY_SECOND</item>
       <item>DEC</item>
+      <item>DECLARE</item>
       <item>DEFAULT</item>
       <item>DELAYED</item>
       <item>DELETE</item>
@@ -51,13 +73,11 @@
       <item>DISTINCT</item>
       <item>DISTINCTROW</item>
       <item>DROP</item>
-      <item>ELSE</item>
       <item>ENCLOSED</item>
       <item>ESCAPED</item>
       <item>EXISTS</item>
       <item>EXPLAIN</item>
       <item>FIELDS</item>
-      <item>FOR</item>
       <item>FOREIGN</item>
       <item>FROM</item>
       <item>FULLTEXT</item>
@@ -66,9 +86,7 @@
       <item>GROUP</item>
       <item>HAVING</item>
       <item>HIGH_PRIORITY</item>
-      <item>IF</item>
       <item>IGNORE</item>
-      <item>IN</item>
       <item>INDEX</item>
       <item>INFILE</item>
       <item>INNER</item>
@@ -76,14 +94,12 @@
       <item>INSERT</item>
       <item>INTERVAL</item>
       <item>INTO</item>
-      <item>IS</item>
       <item>JOIN</item>
       <item>KEY</item>
       <item>KEYS</item>
       <item>KILL</item>
       <item>LEADING</item>
       <item>LEFT</item>
-      <item>LIKE</item>
       <item>LIMIT</item>
       <item>LINES</item>
       <item>LOAD</item>
@@ -94,14 +110,12 @@
       <item>MRG_MYISAM</item>
       <item>NATIONAL</item>
       <item>NATURAL</item>
-      <item>NOT</item>
       <item>NULL</item>
       <item>NUMERIC</item>
       <item>ON</item>
       <item>OPTIMIZE</item>
       <item>OPTION</item>
       <item>OPTIONALLY</item>
-      <item>OR</item>
       <item>ORDER</item>
       <item>OUTER</item>
       <item>OUTFILE</item>
@@ -136,7 +150,6 @@
       <item>TABLE</item>
       <item>TABLES</item>
       <item>TERMINATED</item>
-      <item>THEN</item>
       <item>TO</item>
       <item>TRAILING</item>
       <item>TRUNCATE</item>
@@ -152,34 +165,12 @@
       <item>USING</item>
       <item>VALUES</item>
       <item>VARYING</item>
-      <item>WHEN</item>
-      <item>WHERE</item>
-      <item>WHILE</item>
       <item>WITH</item>
+      <item>WHERE</item>
       <item>WRITE</item>
       <item>XOR</item>
       <item>YEAR_MONTH</item>
       <item>ZEROFILL</item>
-    </list>
-    <list name="operators">
-      <item>+</item>
-      <item>-</item>
-      <item>*</item>
-      <item>/</item>
-      <item>||</item>
-      <item>=</item>
-      <item>!=</item>
-      <item>&lt;&gt;</item>
-      <item>&lt;</item>
-      <item>&lt;=</item>
-      <item>&gt;</item>
-      <item>&gt;=</item>
-      <item>~=</item>
-      <item>^=</item>
-      <item>:=</item>
-      <item>=&gt;</item>
-      <item>**</item>
-      <item>..</item>
     </list>
     <list name="functions">
       <!-- string functions -->
@@ -189,6 +180,7 @@
       <item>CHAR</item>
       <item>CHARACTER_LENGTH</item>
       <item>CHAR_LENGTH</item>
+      <item>COALESCE</item>
       <item>CONCAT</item>
       <item>CONCAT_WS</item>
       <item>CONV</item>
@@ -391,14 +383,26 @@
         <Detect2Chars attribute="Comment" context="MultiLineComment" char="/" char1="*" beginRegion="Comment"/>
         <RegExpr attribute="Comment" context="SingleLineComment" String="rem\b" insensitive="true" column="0"/>
 
+        <LineContinue attribute="Symbol" context="#stay" char="/" column="0"/> <!-- conflict with "operators" keywords -->
+
         <!-- problematic special cases -->
         <!-- SET type -->
         <RegExpr attribute="Data Type" context="#stay" insensitive="true" String="SET(?=\s*\()"/>
         <!-- keyword character set -->
-        <RegExpr attribute="Keyword" context="#stay" insensitive="true" String="\bCHARACTER SET\b"/>
+        <WordDetect attribute="Keyword" context="#stay" insensitive="true" String="CHARACTER SET"/>
         <!-- using the lists -->
         <keyword attribute="Keyword" context="#stay" String="keywords"/>
-        <keyword attribute="Operator" context="#stay" String="operators"/>
+        <LineContinue attribute="Symbol" context="#stay" char="/" column="0"/>
+        <keyword attribute="Operator Keyword" context="#stay" String="operators"/>
+        <keyword attribute="ControlFlow" context="#stay" String="controlFlow"/>
+        <AnyChar attribute="Operator" context="#stay" String="+-*/=&lt;&gt;"/>
+        <Detect2Chars attribute="Operator" context="#stay" char="!" char1="="/>
+        <Detect2Chars attribute="Operator" context="#stay" char="~" char1="="/>
+        <Detect2Chars attribute="Operator" context="#stay" char="^" char1="="/>
+        <Detect2Chars attribute="Operator" context="#stay" char=":" char1="="/>
+        <Detect2Chars attribute="Operator" context="#stay" char="." char1="."/>
+        <Detect2Chars attribute="Operator" context="#stay" char="|" char1="|"/>
+        <AnyChar attribute="Symbol" context="#stay" String=":&#38;"/>
         <keyword attribute="Function" context="#stay" String="functions"/>
         <keyword attribute="Data Type" context="#stay" String="types"/>
 
@@ -414,8 +418,6 @@
         <DetectChar attribute="String" context="String2" char="&quot;"/>
         <DetectChar attribute="Name" context="Name" char="`"/>
 
-        <AnyChar attribute="Symbol" context="#stay" String=":&#38;"/>
-        <RegExpr attribute="Symbol" context="#stay" String="/$" column="0"/>
         <RegExpr attribute="Preprocessor" context="Preprocessor" String="@@?[^@ \t\r\n]" column="0"/>
         <!-- for something like : SELECT DB.TABLE.ROW ... -->
         <DetectChar attribute="String Char" context="#stay" char="."/>
@@ -452,7 +454,9 @@
     <itemDatas>
       <itemData name="Normal Text"       defStyleNum="dsNormal" spellChecking="false"/>
       <itemData name="Keyword"           defStyleNum="dsKeyword" spellChecking="false"/>
-      <itemData name="Operator"          defStyleNum="dsNormal" spellChecking="false"/>
+      <itemData name="ControlFlow"       defStyleNum="dsControlFlow" spellChecking="false"/>
+      <itemData name="Operator"          defStyleNum="dsOperator" spellChecking="false"/>
+      <itemData name="Operator Keyword"  defStyleNum="dsKeyword" spellChecking="false"/>
       <itemData name="Function"          defStyleNum="dsFunction" spellChecking="false"/>
       <itemData name="Data Type"         defStyleNum="dsDataType" spellChecking="false"/>
       <itemData name="Decimal"           defStyleNum="dsDecVal" spellChecking="false"/>
@@ -471,7 +475,7 @@
       <comment name="singleLine" start="--"/>
       <comment name="multiLine" start="/*" end="*/"/>
     </comments>
-    <keywords casesensitive="0" weakDeliminator="+-*/|=!&lt;&gt;~^:."/>
+    <keywords casesensitive="0"/>
     <folding indentationsensitive="true"/>
   </general>
 </language>

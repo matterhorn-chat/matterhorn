@@ -11,12 +11,12 @@
 <language
     name="C++"
     section="Sources"
-    version="5"
+    version="7"
     kateversion="5.0"
     indenter="cstyle"
     style="C++"
     mimetype="text/x-c++src;text/x-c++hdr;text/x-chdr"
-    extensions="*.c++;*.cxx;*.cpp;*.cc;*.C;*.h;*.hh;*.H;*.h++;*.hxx;*.hpp;*.hcc;*.ino;*.pde;*.moc"
+    extensions="*.c++;*.cxx;*.cpp;*.cc;*.C;*.cu;*.h;*.hh;*.H;*.h++;*.hxx;*.hpp;*.hcc;*.cuh;*.ino;*.pde;*.moc"
     author="Alex Turbov (i.zaufi@gmail.com)"
     license="LGPL"
     priority="9"
@@ -2005,7 +2005,6 @@
     <context lineEndContext="#pop" name="DetectNSEnd" attribute="Normal Text">
       <DetectIdentifier context="#stay" />
       <AnyChar context="#pop" String="&ns_punctuators;" lookAhead="true" />
-      <AnyChar context="#stay" String="&space;" lookAhead="true" />
     </context>
 
   </contexts>

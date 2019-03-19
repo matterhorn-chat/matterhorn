@@ -56,7 +56,7 @@
 ]>
 <language name="LilyPond" section="Other"
           style="lilypond" indenter="lilypond"
-          version="4" kateversion="3.3"
+          version="6" kateversion="3.3"
           extensions="*.ly;*.LY;*.ily;*.ILY;*.lyi;*.LYI"
           mimetype="text/x-lilypond"
           author="Wilbert Berendsen (info@wilbertberendsen.nl)" license="LGPL">
@@ -1155,7 +1155,7 @@
       <itemData name="Chord" defStyleNum="dsDataType" bold="true"/>
       <itemData name="Beam" defStyleNum="dsDataType" bold="true"/>
       <itemData name="Check" defStyleNum="dsDecVal"/>
-      <itemData name="Repeat" defStyleNum="dsDataType" italic="true"/>
+      <itemData name="Tremolo" defStyleNum="dsOthers"/>
       <itemData name="Keyword" defStyleNum="dsKeyword"/>
       <itemData name="Command" defStyleNum="dsFunction" bold="true"/>
       <itemData name="User Command" defStyleNum="dsFunction"/>

@@ -13,7 +13,7 @@
   -->
 <language
     name="GCCExtensions"
-    version="1"
+    version="4"
     kateversion="5.0"
     section="Sources"
     extensions="*.c++;*.cxx;*.cpp;*.cc;*.C;*.h;*.hh;*.H;*.h++;*.hxx;*.hpp;*.hcc;"
@@ -421,7 +421,6 @@
     <item>__UINT_LEAST8_TYPE__</item>
     <item>__USER_LABEL_PREFIX__</item>
     <item>__USING_SJLJ_EXCEPTIONS__</item>
-    <item>__VA_ARGS__</item>
     <item>__VERSION__</item>
     <item>__WCHAR_MAX__</item>
     <item>__WCHAR_MIN__</item>
@@ -532,12 +531,20 @@
       <keyword attribute="GNU Macros" context="#stay" String="GNUMacros" />
       <keyword attribute="GNU Functions" context="#stay" String="GNUFunctions" />
       <keyword attribute="GNU Types" context="#stay" String="GNUTypes" />
-      <StringDetect attribute="GNU Extensions" context="AttrArgs" String="__attribute__" />
-      <StringDetect attribute="GNU Extensions" context="AttrArgs" String="__declspec" />
+      <WordDetect attribute="GNU Extensions" context="AttrArgs" String="__attribute__" />
+      <WordDetect attribute="GNU Extensions" context="AttrArgs" String="__declspec" />
       <keyword attribute="GNU Extensions" context="#stay" String="GNUKeywords" />
       <RegExpr attribute="GNU Functions" context="#stay" String="__builtin_[a-zA-Z0-9_]+" />
-      <!-- (gcc info 6.57) Binary constants using the `0b' prefix -->
-      <RegExpr attribute="GNU Extensions" context="#stay" String="0[Bb][01]+([Uu][Ll]{0,2}|[Ll]{0,2}[Uu]?|_[_0-9A-Za-z]*)?\b" />
+    </context>
+
+    <context name="DetectGccExtensionsInPP" attribute="Normal Text" lineEndContext="#stay">
+      <keyword attribute="GNU Macros" context="#stay" String="GNUMacros" />
+      <keyword attribute="GNU Functions" context="#stay" String="GNUFunctions" />
+      <keyword attribute="GNU Types" context="#stay" String="GNUTypes" />
+      <WordDetect attribute="GNU Extensions" context="AttrArgsInPP" String="__attribute__" />
+      <WordDetect attribute="GNU Extensions" context="AttrArgsInPP" String="__declspec" />
+      <keyword attribute="GNU Extensions" context="#stay" String="GNUKeywords" />
+      <RegExpr attribute="GNU Functions" context="#stay" String="__builtin_[a-zA-Z0-9_]+" />
     </context>
 
     <context name="GNUMacros" attribute="Normal Text" lineEndContext="#stay">
@@ -550,6 +557,11 @@
       <DetectChar attribute="GNU Extensions" context="Close" char="(" />
     </context>
 
+    <context name="AttrArgsInPP" attribute="GNU Extensions" lineEndContext="#pop">
+      <DetectChar attribute="Error" context="#pop" char="\" lookAhead="true" />
+      <IncludeRules context="AttrArgs" />
+    </context>
+
     <context name="Close" attribute="GNU Extensions" lineEndContext="#stay">
       <DetectChar attribute="GNU Extensions" context="#pop" char=")" />
       <DetectChar attribute="String" context="AttrStringArg" char="&quot;" />
@@ -559,15 +571,32 @@
       <DetectChar attribute="String" context="#pop" char="&quot;" />
     </context>
 
+
+    <context name="DetectGccAttributes" attribute="Normal Text" lineEndContext="#stay">
+      <StringDetect attribute="GNU Extensions" context="CppAttr" String="gnu::" />
+      <StringDetect attribute="GNU Extensions" context="CppAttr" String="clang::" />
+    </context>
+
+    <context name="DetectNamespaceGccAttributes" attribute="Normal Text" lineEndContext="#stay">
+      <WordDetect attribute="GNU Extensions" context="#pop" String="gnu" />
+      <WordDetect attribute="GNU Extensions" context="#pop" String="clang" />
+    </context>
+
+    <context name="CppAttr" attribute="Error" lineEndContext="#stay">
+      <DetectSpaces/>
+      <DetectIdentifier attribute="GNU Extensions" context="#pop" />
+    </context>
+
   </contexts>
 
   <itemDatas>
-    <itemData name="Normal Text"    defStyleNum="dsNormal" spellChecking="false" />
+    <itemData name="Normal Text"    defStyleNum="dsNormal"    spellChecking="false" />
     <itemData name="GNU Extensions" defStyleNum="dsExtension" spellChecking="false" italic="1" />
-    <itemData name="GNU Functions"  defStyleNum="dsFunction" spellChecking="false" />
-    <itemData name="GNU Macros"     defStyleNum="dsOthers" spellChecking="false" />
-    <itemData name="GNU Types"      defStyleNum="dsDataType" spellChecking="false" />
-    <itemData name="String"         defStyleNum="dsString" spellChecking="false" />
+    <itemData name="GNU Functions"  defStyleNum="dsFunction"  spellChecking="false" />
+    <itemData name="GNU Macros"     defStyleNum="dsOthers"    spellChecking="false" />
+    <itemData name="GNU Types"      defStyleNum="dsDataType"  spellChecking="false" />
+    <itemData name="String"         defStyleNum="dsString"    spellChecking="false" />
+    <itemData name="Error"          defStyleNum="dsError"     spellChecking="false" />
   </itemDatas>
 </highlighting>
 

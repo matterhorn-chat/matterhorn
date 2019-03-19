@@ -6,9 +6,9 @@
 	license: GPL v2
 	Kate   : http://kate.kde.org/
 	R      : http://www.r-project.org/
-	RKWard : http://rkward.sourceforge.net/
+	RKWard : http://rkward.kde.org/
 	-->
-<language version="7" kateversion="5.0" name="R Script" section="Scientific" extensions="*.R;*.r;*.S;*.s;*.q" mimetype="" license="GPLv2">
+<language version="8" kateversion="5.0" name="R Script" section="Scientific" extensions="*.R;*.r;*.S;*.s;*.q" mimetype="" license="GPLv2">
 <highlighting>
 
 	<list name="controls">
@@ -56,7 +56,7 @@
 			<LineContinue attribute="Operator" context="#stay"/>
 			<DetectChar attribute="Symbol" context="#pop" char=")"/>
 
-			<RegExpr attribute="Identifier" context="#stay" String="[a-zA-Z_\.][0-9a-zA-Z_\.]*[\s]*=(?=([^=]|$))"/>
+			<RegExpr attribute="Identifier" context="#stay" String="[a-zA-Z_\.][0-9a-zA-Z_\.]*[\s]*[:]?=(?=([^=]|$))"/>
 
 			<IncludeRules context="CommonRules"/>
 			<DetectChar attribute="Error" context="#stay" char="}" />
@@ -79,7 +79,7 @@
 
 		<context attribute="Normal Text" lineEndContext="#stay" name="operator_rhs" fallthrough="true" fallthroughContext="#pop">
 			<!-- While there is nothing of interest, stay in the context -->
-			<StringDetect attribute="Headline" context="Headline" String="##"/>
+			<Detect2Chars attribute="Headline" context="Headline" char="#" char1="#"/>
 			<DetectChar attribute="Comment" context="Comment" char="#"/>
 			<DetectChar attribute="String" context="#stay" char=" "/>
 			<!-- Operators other than +, -, and ! directly after another operator are an error. -->
@@ -104,8 +104,8 @@
 			<Int attribute="Int" context="#stay"/>
 			<RegExpr attribute="Keyword" context="#stay" String="[a-zA-Z_]+[a-zA-Z_\.0-9]*(?=[\s]*[(])"/>
 			<RegExpr attribute="Keyword" context="#stay" String="\.[a-zA-Z_\.]+[a-zA-Z_\.0-9]*(?=[\s]*[(])"/>
-			<RegExpr attribute="Symbol" context="parenthesis" String="\("/>
-			<StringDetect attribute="Headline" context="Headline" String="##"/>
+			<DetectChar attribute="Symbol" context="parenthesis" char="("/>
+			<Detect2Chars attribute="Headline" context="Headline" char="#" char1="#"/>
 			<DetectChar attribute="Comment" context="Comment" char="#"/>
 
 			<!-- For (assignment) operators, enter a new context operator_rhs to check what follows (generally, that should not be another op) -->
@@ -124,13 +124,13 @@
 	</contexts>
 
 	<itemDatas>
-	<!-- KDE default colors: http://accessibility.kde.org/oxygen.php?color=white -->
+		<!-- KDE default colors: http://accessibility.kde.org/oxygen.php?color=white -->
 		<itemData name="Normal Text" defStyleNum="dsNormal"/>
 		<itemData name="Symbol" defStyleNum="dsNormal"/>
 		<itemData name="Keyword" defStyleNum="dsKeyword"/>
 		<itemData name="Identifier" defStyleNum="dsDataType"/>
 		<itemData name="String" defStyleNum="dsString"/>
-		<itemData name="Headline" defStyleNum="dsNormal" color="#b00000" selColor="#b00000" bold="1" italic="0"/> <!-- KDE default color: text 5 -->
+		<itemData name="Headline" defStyleNum="dsComment" color="#b00000" selColor="#b00000" bold="1" italic="0"/> <!-- KDE default color: text 5 -->
 		<itemData name="Comment" defStyleNum="dsComment"/>
 		<itemData name="Assign" defStyleNum="dsNormal" color="#336366" selColor="#ccc099" bold="1" italic="0"/> <!-- KDE default color: text 7 -->
 		<itemData name="Control Structure" defStyleNum="dsControlFlow"/>

@@ -35,7 +35,7 @@
 <!ENTITY strikeoutregex "[~]{2}[^~].*[^~][~]{2}">
 <!-- pandoc style -->
 ]>
-<language name="Markdown" version="2" kateversion="3.8" section="Markup" extensions="*.md;*.mmd;*.markdown" priority="15" author="Darrin Yeager, Claes Holmerson" license="GPL,BSD">
+<language name="Markdown" version="3" kateversion="3.8" section="Markup" extensions="*.md;*.mmd;*.markdown" priority="15" author="Darrin Yeager, Claes Holmerson" license="GPL,BSD">
   <highlighting>
     <contexts>
       <context attribute="Normal Text" lineEndContext="#stay" name="Normal Text">
@@ -74,6 +74,17 @@
       <context attribute="comment" lineEndContext="#stay" name="comment">
         <RegExpr String="--&gt;" attribute="comment" context="#pop" endRegion="comment"/>
       </context>
+      <context attribute="code" lineEndContext="#stay" name="php-code">
+        <WordDetect attribute="code" context="#pop" String="```"/>
+        <IncludeRules context="phpsource##PHP/PHP"/>
+      </context>
+      <context attribute="code" lineEndContext="#stay" name="python-code">
+        <WordDetect attribute="code" context="#pop" String="```"/>
+        <IncludeRules context="##Python"/>
+      </context>
+      <context attribute="code" lineEndContext="#stay" name="code">
+        <WordDetect attribute="code" context="#pop" String="```"/>
+      </context>
       <context attribute="common" name="inc" lineEndContext="#stay">
         <RegExpr attribute="code" String="`[^`]+`"/>
         <RegExpr context="comment" String="&lt;!--" beginRegion="comment"/>
@@ -87,6 +98,9 @@
         <RegExpr attribute="mailtolink" String="&mailtolinkregex;"/>
         <RegExpr attribute="strikeout" minimal="true" String="&strikeoutregex;"/>
         <RegExpr attribute="linebreak" minimal="true" String="&linebreakregex;"/>
+        <WordDetect attribute="code" context="php-code" String="```php"/>
+        <WordDetect attribute="code" context="python-code" String="```python"/>
+        <StringDetect attribute="code" context="code" String="```"/>
       </context>
     </contexts>
     <itemDatas>

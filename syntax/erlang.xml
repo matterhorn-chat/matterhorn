@@ -213,7 +213,7 @@
 
       <!-- finish off the atom in quoted string (allow for escaped single quotes -->
       <context name="stringquote" attribute="String" lineEndContext="#pop">
-        <RegExpr attribute="String" context="#pop" String="(?:(?:\\&quot;)?[^&quot;]*)*&quot;" />
+        <RegExpr attribute="String" context="#pop" String="(?:\\&quot;|[^&quot;])*&quot;" />
       </context>
       
       <!-- finish off the comment (allows for alerts) -->

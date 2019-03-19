@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
-<language name="Scala" version="4" kateversion="2.3" section="Sources"
+<language name="Scala" version="6" kateversion="2.3" section="Sources"
           extensions="*.scala;*.sbt" mimetype="text/x-scala" license="LGPL"
           author="Stephane Micheloud (stephane.micheloud@epfl.ch)">
 <!--
@@ -3406,21 +3406,10 @@ adapted from "java.xml" by Alfredo Luiz Foltran Fialho (alfoltran@ig.com.br)
         <keyword attribute="Data Type" context="#stay" String="types"/>
         <keyword attribute="Java15" context="#stay" String="java15"/>
         <keyword attribute="Scala2" context="#stay" String="scala2"/>
-        <Float attribute="Float" context="#stay">
-          <AnyChar String="fF" attribute="Float" context="#stay"/>
-        </Float>
+        <Float attribute="Float" context="Float Suffixes"/>
         <HlCOct attribute="Octal" context="#stay"/>
         <HlCHex attribute="Hex" context="#stay"/>
-        <Int attribute="Decimal" context="#stay">
-          <StringDetect attribute="Decimal" context="#stay" String="ULL" insensitive="true"/>
-          <StringDetect attribute="Decimal" context="#stay" String="LUL" insensitive="true"/>
-          <StringDetect attribute="Decimal" context="#stay" String="LLU" insensitive="true"/>
-          <StringDetect attribute="Decimal" context="#stay" String="UL" insensitive="true"/>
-          <StringDetect attribute="Decimal" context="#stay" String="LU" insensitive="true"/>
-          <StringDetect attribute="Decimal" context="#stay" String="LL" insensitive="true"/>
-          <StringDetect attribute="Decimal" context="#stay" String="U" insensitive="true"/>
-          <StringDetect attribute="Decimal" context="#stay" String="L" insensitive="true"/>
-        </Int>
+        <Int attribute="Decimal" context="Int Suffixes"/>
         <HlCChar attribute="Char" context="#stay"/>
         <RegExpr attribute="Decimal" context="#stay" String="//\s*BEGIN.*$" beginRegion="Region1"/>
         <RegExpr attribute="Decimal" context="#stay" String="//\s*END.*$" endRegion="Region1"/>
@@ -3438,6 +3427,19 @@ adapted from "java.xml" by Alfredo Luiz Foltran Fialho (alfoltran@ig.com.br)
         <RegExpr attribute="Function" context="#stay" String="\b[_\w][_\w\d]*(?=[\s]*(/\*\s*\d+\s*\*/\s*)?[(])" />
         <RegExpr attribute="Symbol" context="Member" String="[.]{1,1}" />
         <AnyChar attribute="Symbol" context="#stay" String=":!%&amp;()+,-/.*&lt;=&gt;?[]|~^&#59;"/>
+      </context>
+      <context name="Float Suffixes" attribute="Float" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">
+          <AnyChar String="fF" attribute="Float" context="#pop"/>
+      </context>
+      <context name="Int Suffixes" attribute="Decimal" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">
+          <StringDetect attribute="Decimal" context="#pop" String="ULL" insensitive="true"/>
+          <StringDetect attribute="Decimal" context="#pop" String="LUL" insensitive="true"/>
+          <StringDetect attribute="Decimal" context="#pop" String="LLU" insensitive="true"/>
+          <StringDetect attribute="Decimal" context="#pop" String="UL" insensitive="true"/>
+          <StringDetect attribute="Decimal" context="#pop" String="LU" insensitive="true"/>
+          <StringDetect attribute="Decimal" context="#pop" String="LL" insensitive="true"/>
+          <StringDetect attribute="Decimal" context="#pop" String="U" insensitive="true"/>
+          <StringDetect attribute="Decimal" context="#pop" String="L" insensitive="true"/>
       </context>
       <context attribute="String" lineEndContext="#pop" name="String">
         <LineContinue attribute="String" context="#stay"/>
@@ -3476,8 +3478,8 @@ adapted from "java.xml" by Alfredo Luiz Foltran Fialho (alfoltran@ig.com.br)
       <itemData name="Normal Text"  defStyleNum="dsNormal"/>
       <itemData name="Keyword"      defStyleNum="dsKeyword"/>
       <itemData name="Function"     defStyleNum="dsFunction"/>
-      <itemData name="StaticImports"      defStyleNum="dsKeyword" color="#800080" selColor="#FFFFFF" bold="0" italic="0"/>
-      <itemData name="Imports"      defStyleNum="dsKeyword" color="#808000" selColor="#FFFFFF" bold="0" italic="0"/>
+<!--       <itemData name="StaticImports"      defStyleNum="dsKeyword" color="#800080" selColor="#FFFFFF" bold="0" italic="0"/> -->
+<!--       <itemData name="Imports"      defStyleNum="dsKeyword" color="#808000" selColor="#FFFFFF" bold="0" italic="0"/> -->
       <itemData name="Data Type"    defStyleNum="dsDataType"/>
       <itemData name="Decimal"      defStyleNum="dsDecVal"/>
       <itemData name="Octal"        defStyleNum="dsBaseN"/>

@@ -1,20 +1,54 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd">
+<!DOCTYPE language SYSTEM "language.dtd"
+[
+  <!ENTITY null "(null|Null|NULL|~)">
+  <!ENTITY bool "(y|Y|yes|Yes|YES|n|N|no|No|NO|true|True|TRUE|false|False|FALSE|on|On|ON|off|Off|OFF)">
+
+  <!ENTITY int         "(0|[\-\+]?[1-9][0-9_]*)">
+  <!ENTITY intOther    "[\-\+]?0(x_*[0-9a-fA-F][0-9a-fA-F_]*|o?_*[0-7][0-7_]*|b_*[01][01_]*)"> <!-- Hex, Octal, Binary -->
+  <!ENTITY intBase60   "[\-\+]?[1-9][0-9_]*(:[0-5]?[0-9])+">
+  <!ENTITY allInt      "(&intBase60;|&intOther;|&int;)">
+
+  <!ENTITY float       "[\-\+]?([0-9][0-9_]*\.[0-9\._]*|\._*[0-9][0-9\._]*)([eE][\-\+]?[0-9]+)?">
+  <!ENTITY floatExp    "[\-\+]?[0-9][0-9_]*[eE][\-\+]?[0-9]+">
+  <!ENTITY floatBase60 "[\-\+]?[0-9][0-9_]*(:[0-5]?[0-9])+\.[0-9_]*">
+  <!ENTITY inf         "[\-\+]?\.(inf|Inf|INF)\b">
+  <!ENTITY nan         "\.(nan|NaN|NAN)\b">
+  <!ENTITY allFloat    "(&float;|&floatExp;|&floatBase60;|&inf;|&nan;)">
+
+  <!ENTITY endValue       "(?:\s*$|\s+#)">
+  <!ENTITY endValueInline "\s*[:,\[\]\{\}]">
+  <!ENTITY space          "[ ]">
+
+  <!-- Key quoted -->
+  <!ENTITY keyDQ          "&quot;(?:\\.|[^&quot;])+&quot;\s*">
+  <!ENTITY keySQ          "'(?:[^']|'')+'\s*">
+  <!-- Literal/folded operator -->
+  <!ENTITY literalOp      "[\|&gt;][\-\+]?">
+  <!-- Key after "?" or "-", used to detect literal/folded operator -->
+  <!ENTITY keyAfterOp     "(?:[^&quot;'#\-\?\s][^:#]*|\-(?:[^\s:#][^:#]*)?|&keyDQ;|&keySQ;)">
+]>
+
 <!-- Author: Dr Orlovsky MA <maxim@orlovsky.info> //-->
-<language name="YAML" version="3" kateversion="5.0" section="Markup"
+<!-- Modifications, values & support for literal/folded style:
+       Nibaldo González S. <nibgonz@gmail.com> //-->
+<language name="YAML" version="5" kateversion="5.0" section="Markup"
           extensions="*.yaml;*.yml" mimetype="text/yaml"
           author="Dr Orlovsky MA (dr.orlovsky@gmail.com)" license="LGPL">
   <highlighting>
     <contexts>
       <context attribute="Normal Text" lineEndContext="#stay" name="normal" >
-        <RegExpr attribute="Document Header" context="header" String="^---"/>
+        <StringDetect attribute="Document Header" context="header" String="---" column="0"/>
         <RegExpr attribute="End of Document" context="EOD" String="^\.\.\.$"/>
-        <RegExpr attribute="Directive" context="directive" String="^%"/>
+        <DetectChar attribute="Directive" context="directive" char="%" column="0"/>
 
-        <DetectSpaces/>
         <DetectChar attribute="Comment" context="comment" char="#" />
 
-        <DetectChar attribute="Operator" firstNonSpace="true"  context="dash" char="-" />
+        <!-- Literal/Folded Style -->
+        <IncludeRules context="find-literal-block" />
+
+        <RegExpr attribute="Operator" firstNonSpace="true" context="dash" String="\-(?=\s|$)" />
+        <DetectChar attribute="Operator" firstNonSpace="true" context="mapping-key" char="?" />
 
         <DetectChar attribute="Operator" context="list" char="[" beginRegion="List" />
         <DetectChar attribute="Operator" context="hash" char="{" beginRegion="Hash" />
@@ -23,26 +57,40 @@
         <RegExpr attribute="Alias" firstNonSpace="true" context="#stay" String="&amp;\S+" />
         <RegExpr attribute="Reference" firstNonSpace="true" context="#stay" String="\*\S+" />
 
-        <RegExpr attribute="Key" context="attribute-pre" String="\??\s*[^&quot;'#-][^:#]*:"/>
-        <RegExpr attribute="Key" context="attribute-pre" String="\??\s*&quot;[^&quot;#]+&quot;\s*:"/>
-        <RegExpr attribute="Key" context="attribute-pre" String="\??\s*'[^'#]+'\s*:"/>
+        <RegExpr attribute="Key" context="attribute-pre" String="[^&quot;'#\-\s][^:#]*:(?=\s|$)"/>
+        <RegExpr attribute="Key" context="attribute-pre" String="\-([^\s:#][^:#]*)?\:(?=\s|$)"/>
+        <RegExpr attribute="Key" context="attribute-pre" String="&keyDQ;:(?=\s|$)"/>
+        <RegExpr attribute="Key" context="attribute-pre" String="&keySQ;:(?=\s|$)"/>
+        <RegExpr attribute="Key" context="attribute-pre" String=":(?=\s|$)"/>
 
         <DetectChar attribute="String" context="string" char="'" beginRegion="String" />
         <DetectChar attribute="String" context="stringx" char="&quot;" beginRegion="String" />
+        <IncludeRules context="values-firstnonspace" />
+        <DetectSpaces/>
       </context>
 
-      <context attribute="List" lineEndContext="#pop" name="dash">
+      <context attribute="Normal Text" lineEndContext="#pop" name="mapping-key" fallthrough="true" fallthroughContext="#pop">
+        <DetectSpaces />
+        <RegExpr attribute="Operator" context="#pop!dash" String="\-(?=\s|$)" />
+        <RegExpr attribute="Data Types" context="#pop" String="!!\S+" />
+        <RegExpr attribute="Alias" context="#pop" String="&amp;\S+" />
+        <RegExpr attribute="Reference" context="#pop" String="\*\S+" />
+      </context>
+
+      <context attribute="List" lineEndContext="#pop" name="dash" fallthrough="true" fallthroughContext="#pop">
         <DetectSpaces/>
         <DetectChar attribute="Comment" context="comment" char="#" />
-        <RegExpr attribute="Data Types" context="#stay" String="null$" />
         <RegExpr attribute="Data Types" context="#stay" String="!!\S+" />
         <RegExpr attribute="Alias" context="#stay" String="&amp;\S+" />
         <RegExpr attribute="Reference" context="#stay" String="\*\S+" />
-        <RegExpr attribute="Normal Text" lookAhead="true" context="#pop" String="." />
+        <IncludeRules context="values" />
+        <DetectChar attribute="Operator" context="#pop!mapping-key" char="?" />
+        <RegExpr attribute="Operator" context="#stay" String="\-(?=\s|$)" />
       </context>
 
       <context attribute="Document Header" lineEndContext="#pop" name="header">
         <DetectChar attribute="Comment" context="comment" char="#" />
+        <RegExpr attribute="Literal/Folded Operator" context="#pop!literal-block-simple" String="&literalOp;(?=&endValue;)" beginRegion="Literal" />
       </context>
 
       <context attribute="End of Document" lineEndContext="#stay" name="EOD">
@@ -55,119 +103,436 @@
         <DetectChar attribute="Comment" context="comment" char="#" />
       </context>
 
-      <context attribute="Attribute" lineEndContext="#stay" name="attribute-inline">
-        <DetectChar attribute="Operator" context="#pop#pop" char="," />
-        <DetectChar attribute="Operator" context="#pop#pop" lookAhead="true" char="}" />
+      <context attribute="Attribute" lineEndContext="#stay" name="list-attribute-inline">
+        <AnyChar attribute="Operator" context="#pop#pop" lookAhead="true" String=",]" />
+        <DetectChar attribute="Comment" context="comment" char="#" />
+      </context>
+      <context attribute="Attribute" lineEndContext="#stay" name="hash-attribute-inline">
+        <AnyChar attribute="Operator" context="#pop#pop" lookAhead="true" String=",}" />
         <DetectChar attribute="Comment" context="comment" char="#" />
       </context>
 
-      <context attribute="Attribute" lineEndContext="#pop" name="attribute-pre">
+      <context attribute="Attribute" lineEndContext="#pop" name="attribute-pre" fallthrough="true" fallthroughContext="attribute">
         <DetectSpaces/>
         <DetectChar attribute="Comment" context="comment" char="#" />
-        <RegExpr attribute="Data Types" context="#stay" String="null$" />
+        <DetectChar attribute="Operator" context="#stay" char="?" />
         <RegExpr attribute="Data Types" context="#stay" String="!!\S+" />
         <DetectChar attribute="Operator" context="list" char="[" beginRegion="List" />
         <DetectChar attribute="Operator" context="hash" char="{" beginRegion="Hash" />
         <DetectChar attribute="String" context="attribute-string" char="'" beginRegion="String" />
         <DetectChar attribute="String" context="attribute-stringx" char="&quot;" beginRegion="String" />
+        <RegExpr attribute="Alias" context="#stay" String="&amp;\S+(?=\s+[\[\{])" />
+        <RegExpr attribute="Reference" context="#stay" String="\*\S+(?=\s+[\[\{])" />
         <RegExpr attribute="Alias" context="attribute" String="&amp;\S+" />
         <RegExpr attribute="Reference" context="attribute" String="\*\S+" />
-        <RegExpr attribute="Attribute" context="attribute" String="." />
+        <IncludeRules context="values" />
       </context>
 
-      <context attribute="Attribute" lineEndContext="#pop" name="attribute-pre-inline">
+      <context attribute="Attribute" lineEndContext="#pop" name="default-attribute-pre-inline">
         <DetectSpaces/>
         <DetectChar attribute="Comment" context="comment" char="#" />
 
-        <StringDetect attribute="Data Types" context="#stay" String="null" />
+        <DetectChar attribute="Operator" context="#stay" char="?" />
         <RegExpr attribute="Data Types" context="#stay" String="!!\S+" />
         <DetectChar attribute="Operator" context="list" char="[" beginRegion="List" />
         <DetectChar attribute="Operator" context="hash" char="{" beginRegion="Hash" />
         <DetectChar attribute="String" context="attribute-string-inline" char="'" beginRegion="String" />
         <DetectChar attribute="String" context="attribute-stringx-inline" char="&quot;" beginRegion="String" />
-        <RegExpr attribute="Alias" context="attribute-inline" String="&amp;\S+" />
-        <RegExpr attribute="Reference" context="attribute-inline" String="\*\S+" />
-
-        <DetectChar attribute="Operator" context="#pop" char="," />
-        <DetectChar attribute="Operator" context="#pop" lookAhead="true" char="}" />
-        <RegExpr attribute="Attribute" context="attribute-inline" String="." />
+        <RegExpr attribute="Alias" context="#stay" String="&amp;\S+(?=\s+[\[\{])" />
+        <RegExpr attribute="Reference" context="#stay" String="\*\S+(?=\s+[\[\{])" />
       </context>
 
-      <context attribute="List" lineEndContext="#stay" name="list">
-        <DetectSpaces/>
+      <context attribute="Attribute" lineEndContext="#pop" name="list-attribute-pre-inline" fallthrough="true" fallthroughContext="list-attribute-inline">
+        <IncludeRules context="default-attribute-pre-inline" />
+        <RegExpr attribute="Alias" context="list-attribute-inline" String="&amp;\S+" />
+        <RegExpr attribute="Reference" context="list-attribute-inline" String="\*\S+" />
+
+        <AnyChar attribute="Operator" context="#pop" lookAhead="true" String=",]" />
+        <IncludeRules context="values-inline" />
+      </context>
+      <context attribute="Attribute" lineEndContext="#pop" name="hash-attribute-pre-inline" fallthrough="true" fallthroughContext="hash-attribute-inline">
+        <IncludeRules context="default-attribute-pre-inline" />
+        <RegExpr attribute="Alias" context="hash-attribute-inline" String="&amp;\S+" />
+        <RegExpr attribute="Reference" context="hash-attribute-inline" String="\*\S+" />
+
+        <AnyChar attribute="Operator" context="#pop" lookAhead="true" String=",}" />
+        <IncludeRules context="values-inline" />
+      </context>
+
+      <!-- Context "find-values-list" highlights values and then sends to "list-element" -->
+      <context attribute="List" lineEndContext="#stay" name="list" fallthrough="true" fallthroughContext="#pop!find-values-list">
+        <DetectSpaces />
+        <DetectChar attribute="Operator" context="#pop!find-values-list" char="?" />
+        <DetectChar attribute="Comment" context="comment" char="#" />
+      </context>
+      <context attribute="List" lineEndContext="#stay" name="list-element">
         <DetectChar attribute="Comment" context="comment" char="#" />
 
         <DetectChar attribute="Operator" context="#pop" char="]" endRegion="List" />
-
-        <RegExpr attribute="Key" context="attribute-pre" String="\??\s*[^&quot;'#-][^:#]*:"/>
-        <RegExpr attribute="Key" context="attribute-pre" String="\??\s*&quot;[^&quot;#]+&quot;\s*:"/>
-        <RegExpr attribute="Key" context="attribute-pre" String="\??\s*'[^'#]+'\s*:"/>
-
-        <StringDetect attribute="Data Types" context="#stay" String="null" />
-        <RegExpr attribute="Data Types" context="#stay" String="!!\S+" />
         <DetectChar attribute="Operator" context="list" char="[" beginRegion="List" />
         <DetectChar attribute="Operator" context="hash" char="{" beginRegion="Hash" />
+
+        <RegExpr attribute="Key" context="list-attribute-pre-inline" String="[^&quot;'#\-,\]\s][^:#,\]]*:(?=\s|$)"/>
+        <RegExpr attribute="Key" context="list-attribute-pre-inline" String="\-([^\s:#,\]][^:#,\]]*)?\:(?=\s|$)"/>
+        <RegExpr attribute="Key" context="list-attribute-pre-inline" String="&keyDQ;:(?=\s|$)"/>
+        <RegExpr attribute="Key" context="list-attribute-pre-inline" String="&keySQ;:(?=\s|$)"/>
+        <RegExpr attribute="Key" context="list-attribute-pre-inline" String=":(?=\s|$)" firstNonSpace="true" />
+
+        <RegExpr attribute="Data Types" context="#stay" String="!!\S+" />
         <RegExpr attribute="Alias" context="#stay" String="&amp;\S+" />
         <RegExpr attribute="Reference" context="#stay" String="\*\S+" />
         <DetectChar attribute="String" context="string" char="'" beginRegion="String" />
         <DetectChar attribute="String" context="stringx" char="&quot;" beginRegion="String" />
 
-        <DetectChar attribute="Operator" context="#stay" char="," />
+        <DetectChar attribute="Operator" context="#pop!list" char="," />
+        <IncludeRules context="values-list" />
       </context>
 
-      <context attribute="Hash" lineEndContext="#stay" name="hash">
+      <context attribute="Hash" lineEndContext="#stay" name="hash" fallthrough="true" fallthroughContext="#pop!hash-element">
+        <DetectSpaces />
+        <DetectChar attribute="Operator" context="#pop!hash-element" char="?" />
+        <DetectChar attribute="Comment" context="comment" char="#" />
+      </context>
+      <context attribute="Hash" lineEndContext="#stay" name="hash-element">
         <DetectSpaces/>
         <DetectChar attribute="Comment" context="comment" char="#" />
 
-        <RegExpr attribute="Key" context="attribute-pre-inline" String="\??\s*[^&quot;'#-][^:#]*:"/>
-        <RegExpr attribute="Key" context="attribute-pre-inline" String="\??\s*&quot;[^&quot;#]+&quot;\s*:"/>
-        <RegExpr attribute="Key" context="attribute-pre-inline" String="\??\s*'[^'#]+'\s*:"/>
+        <RegExpr attribute="Key" context="hash-attribute-pre-inline" String="[^\s&quot;'#\-,\}\s][^:#,\}]*:(?=\s|$)"/>
+        <RegExpr attribute="Key" context="hash-attribute-pre-inline" String="\-([^\s:#,\}][^:#,\}]*)?\:(?=\s|$)"/>
+        <RegExpr attribute="Key" context="hash-attribute-pre-inline" String="&keyDQ;:(?=\s|$)"/>
+        <RegExpr attribute="Key" context="hash-attribute-pre-inline" String="&keySQ;:(?=\s|$)"/>
+        <RegExpr attribute="Key" context="hash-attribute-pre-inline" String=":(?=\s|$)"/>
 
         <DetectChar attribute="Operator" context="#pop" char="}" endRegion="Hash" />
+        <DetectChar attribute="Operator" context="#pop!hash" char="," />
+
+        <!-- This improves highlighting in keys with multiple lines -->
+        <RegExpr attribute="Data Types" context="#stay" String="!!\S+" />
+        <RegExpr attribute="Alias" context="#stay" String="&amp;\S+" />
+        <RegExpr attribute="Reference" context="#stay" String="\*\S+" />
+        <DetectChar attribute="String" context="string" char="'" beginRegion="String" />
+        <DetectChar attribute="String" context="stringx" char="&quot;" beginRegion="String" />
       </context>
 
       <context attribute="String" lineEndContext="#stay" name="attribute-string">
         <DetectIdentifier />
+        <IncludeRules context="escaped-char-singleq" />
         <DetectChar attribute="String" context="attribute-end" char="'" endRegion="String" />
       </context>
 
       <context attribute="String" lineEndContext="#stay" name="attribute-stringx">
         <DetectIdentifier />
+        <IncludeRules context="escaped-char-doubleq" />
         <DetectChar attribute="String" context="attribute-end" char="&quot;" endRegion="String" />
       </context>
 
       <context attribute="String" lineEndContext="#stay" name="attribute-string-inline">
           <DetectIdentifier />
+          <IncludeRules context="escaped-char-singleq" />
           <DetectChar attribute="String" context="attribute-end-inline" char="'" endRegion="String" />
       </context>
 
       <context attribute="String" lineEndContext="#stay" name="attribute-stringx-inline">
           <DetectIdentifier />
+          <IncludeRules context="escaped-char-doubleq" />
           <DetectChar attribute="String" context="attribute-end-inline" char="&quot;" endRegion="String" />
       </context>
 
       <context attribute="Error" lineEndContext="#pop#pop#pop" name="attribute-end">
+          <DetectSpaces attribute="Normal Text" context="#stay"/>
+          <DetectChar attribute="Comment" context="comment" char="#" />
       </context>
 
       <context attribute="Error" lineEndContext="#pop#pop#pop" name="attribute-end-inline">
-          <RegExpr attribute="Normal Text" context="#stay" String="\s*"/>
-          <DetectChar attribute="String" context="#pop#pop#pop"  lookAhead="true" char="}"/>
-          <RegExpr attribute="Operator" context="#pop#pop#pop"  String=",\s"/>
+          <DetectSpaces attribute="Normal Text" context="#stay"/>
+          <AnyChar attribute="String" context="#pop#pop#pop"  lookAhead="true" String="}]"/>
+          <DetectChar attribute="Operator" context="#pop#pop#pop" lookAhead="true" char="," />
+          <DetectChar attribute="Comment" context="comment" char="#" />
       </context>
 
       <context attribute="String" lineEndContext="#stay" name="string">
         <DetectIdentifier />
+        <IncludeRules context="escaped-char-singleq" />
         <DetectChar attribute="String" context="#pop" char="'" endRegion="String" />
       </context>
 
       <context attribute="String" lineEndContext="#stay" name="stringx">
         <DetectIdentifier />
+        <IncludeRules context="escaped-char-doubleq" />
         <DetectChar attribute="String" context="#pop" char="&quot;" endRegion="String" />
+      </context>
+
+      <context attribute="Normal Text" lineEndContext="#stay" name="escaped-char-doubleq">
+        <RegExpr attribute="Escaped Character" context="#stay" String="\\([\s0abtnvfre&quot;/\\N_Lp]|x[a-fA-F0-9]{2}|u[a-fA-F0-9]{4}|U[a-fA-F0-9]{8})"/>
+      </context>
+
+      <context attribute="Normal Text" lineEndContext="#stay" name="escaped-char-singleq">
+        <Detect2Chars attribute="Escaped Character" context="#stay" char="'" char1="'" />
       </context>
 
       <context attribute="Comment" lineEndContext="#pop" name="comment">
         <IncludeRules context="##Alerts" />
         <IncludeRules context="##Modelines" />
+      </context>
+
+      <!-- Values -->
+      <context attribute="Normal Text" lineEndContext="#stay" name="values">
+        <RegExpr attribute="Null" context="#stay" String="&null;(?=&endValue;)"/>
+        <RegExpr attribute="Boolean" context="#stay" String="&bool;(?=&endValue;)"/>
+        <RegExpr attribute="Float" context="#stay" String="&allFloat;(?=&endValue;)"/>
+        <RegExpr attribute="Integer" context="#stay" String="&allInt;(?=&endValue;)"/>
+      </context>
+      <context attribute="Normal Text" lineEndContext="#stay" name="values-firstnonspace">
+        <RegExpr attribute="Null" firstNonSpace="true" context="#stay" String="&null;(?=&endValue;)"/>
+        <RegExpr attribute="Boolean" firstNonSpace="true" context="#stay" String="&bool;(?=&endValue;)"/>
+        <RegExpr attribute="Float" firstNonSpace="true" context="#stay" String="&allFloat;(?=&endValue;)"/>
+        <RegExpr attribute="Integer" firstNonSpace="true" context="#stay" String="&allInt;(?=&endValue;)"/>
+      </context>
+      <context attribute="Normal Text" lineEndContext="#stay" name="values-inline">
+        <RegExpr attribute="Null" context="#stay" String="&null;(?=&endValueInline;|&endValue;)"/>
+        <RegExpr attribute="Boolean" context="#stay" String="&bool;(?=&endValueInline;|&endValue;)"/>
+        <RegExpr attribute="Float" context="#stay" String="&allFloat;(?=&endValueInline;|&endValue;)"/>
+        <RegExpr attribute="Integer" context="#stay" String="&allInt;(?=&endValueInline;|&endValue;)"/>
+      </context>
+
+      <context attribute="Normal Text" lineEndContext="#stay" name="values-list">
+        <RegExpr attribute="Null" context="#stay" String="(\s|^)&null;(?=&endValueInline;|&endValue;)"/>
+        <RegExpr attribute="Boolean" context="#stay" String="(\s|^)&bool;(?=&endValueInline;|&endValue;)"/>
+        <RegExpr attribute="Float" context="#stay" String="(\s|^)&allFloat;(?=&endValueInline;|&endValue;)"/>
+        <RegExpr attribute="Integer" context="#stay" String="(\s|^)&allInt;(?=&endValueInline;|&endValue;)"/>
+      </context>
+      <!-- If the value is found immediately at the beginning of the list item -->
+      <context attribute="Normal Text" lineEndContext="#pop!list-element" name="find-values-list" fallthrough="true" fallthroughContext="#pop!list-element">
+        <RegExpr attribute="Null" context="#pop!list-element" String="&null;(?=&endValueInline;|&endValue;)"/>
+        <RegExpr attribute="Boolean" context="#pop!list-element" String="&bool;(?=&endValueInline;|&endValue;)"/>
+        <RegExpr attribute="Float" context="#pop!list-element" String="&allFloat;(?=&endValueInline;|&endValue;)"/>
+        <RegExpr attribute="Integer" context="#pop!list-element" String="&allInt;(?=&endValueInline;|&endValue;)"/>
+      </context>
+
+      <!-- Literal/Folded Style: http://yaml.org/spec/1.2/spec.html#id2795688 -->
+
+      <context attribute="Normal Text" lineEndContext="#stay" name="find-literal-block">
+        <!-- Do not allow indentation with tabs: -->
+        <RegExpr attribute="Alert" context="#stay" column="0"
+                 String="^&space;*\t+\s*(?=((&keyDQ;|&keySQ;|[^#])*[^#\w\|&lt;&gt;&quot;'])?&literalOp;&endValue;)" />
+
+        <!-- CASE 1: The literal/folded operator is the first character of a line.
+             The text after a space is considered literal.
+             Ex:
+             > |
+             >  ^Start the literal text
+        -->
+        <RegExpr attribute="Literal/Folded Operator" context="literal-block-simple" column="0"
+                 String="^&literalOp;(?=&endValue;)" beginRegion="Literal" />
+
+        <!-- CASE 2: Only the literal/folded operator is present in a line, after a space (the indentation
+             is captured). The text with the same indentation of the operator will be highlighted as literal.
+             Ex:
+             >  key:
+             >    |
+             >    ^Start the literal text
+
+             However, in this case, the correct way is to use the indentation of the block, not the
+             indentation of the the operator. The problem is that it is difficult to capture.
+             >  key1:
+             >   key2:
+             >    key3:
+             >          |
+             >     ^Block indentation (correct literal text)
+        -->
+        <RegExpr attribute="Literal/Folded Operator" context="literal-block-only-operator" column="0"
+                 String="^(&space;+)&literalOp;(?=&endValue;)" beginRegion="Literal" />
+
+        <!-- CASE 3: There is a Key before the literal/folded operator (Key indentation is captured).
+             The text with the Key's indentation plus a space is considered literal.
+             Ex:
+             >    key: |
+             >     ^Start the literal text
+             >  key: !!type >-
+             >   ^Start the folded text
+        -->
+        <RegExpr attribute="Key" context="literal-block-key" column="0"
+                 String="^(&space;*)(?:[^&quot;'#\-\?\s][^:#]*|\-(?:[^\s:#][^:#]*)?|&keyDQ;|&keySQ;)?\:(?=\s+(?:(?:&keyDQ;|&keySQ;|[^#])*[^#\w\|&lt;&gt;&quot;'])?&literalOp;&endValue;)" />
+
+        <!-- CASE 4: Is there an operator "?" or "-" at the beginning of the line.
+             NOTE: Nested characters "-" and "?" are considered as part of the indentation.
+             Therefore, the indentation of the Key or the last operator "?" or "-" is captured.
+             Ex:
+             >  ? |
+             >   ^Start the literal Text
+             >  ? - - |
+             >       ^Start the literal text
+             >  - Key: |
+             >     ^Start the literal text
+             >  ? - - - - Key: |
+             >             ^Start the literal text
+        -->
+        <RegExpr context="start-literal-block-withdash" lookAhead="true" column="0"
+                 String="^&space;*(\?&space;*|\-&space;+){1,6}((&keyDQ;|&keySQ;|[^#\-\?\s]|\-[^\s#])((&keyDQ;|&keySQ;|[^#])*[^#\w\|&lt;&gt;&quot;'])?)?&literalOp;&endValue;" />
+
+        <!-- CASE 5: Literal/folded operator after a data type or other content.
+             Ex:
+             >  !!type |
+             >   ^Start the literal text
+             >  key1:
+             >   key2:
+             >    !!type |
+             >    ^Start the literal text
+        -->
+        <RegExpr context="start-literal-block-other" lookAhead="true" column="0"
+                 String="^&space;*(([&amp;\*]|!!)\S+\s+)+&literalOp;&endValue;" />
+      </context>
+
+      <!-- If the line with the literal operator starts with the "-" or "?" operator.
+           NOTE: The indentation capture is limited to 6 nested operators. -->
+      <context attribute="Normal Text" lineEndContext="#pop" name="start-literal-block-withdash">
+        <!-- With Key: Capture the Key indentation -->
+        <RegExpr attribute="Operator" context="#pop!literal-block-key-withdash-s2" String="^(&space;*)[\?\-](&space;*)(?=&keyAfterOp;:\s)" column="0"/>
+        <RegExpr attribute="Operator" context="#pop!literal-block-key-withdash-s3" String="^(&space;*)[\?\-](&space;*)[\?\-](&space;*)(?=&keyAfterOp;:\s)" column="0"/>
+        <RegExpr attribute="Operator" context="#pop!literal-block-key-withdash-s4" String="^(&space;*)[\?\-](&space;*)[\?\-](&space;*)[\?\-](&space;*)(?=&keyAfterOp;:\s)" column="0"/>
+        <RegExpr attribute="Operator" context="#pop!literal-block-key-withdash-s5" String="^(&space;*)[\?\-](&space;*)[\?\-](&space;*)[\?\-](&space;*)[\?\-](&space;*)(?=&keyAfterOp;:\s)" column="0"/>
+        <RegExpr attribute="Operator" context="#pop!literal-block-key-withdash-s6" String="^(&space;*)[\?\-](&space;*)[\?\-](&space;*)[\?\-](&space;*)[\?\-](&space;*)[\?\-](&space;*)(?=&keyAfterOp;:\s)" column="0"/>
+        <RegExpr attribute="Operator" context="#pop!literal-block-key-withdash-s7" String="^(&space;*)[\?\-](&space;*)[\?\-](&space;*)[\?\-](&space;*)[\?\-](&space;*)[\?\-](&space;*)[\?\-](&space;*)(?=&keyAfterOp;:\s)" column="0"/>
+        <!-- Without Key: Capture the indentation of the last operator "?" or "-" -->
+        <RegExpr attribute="Operator" context="#pop!literal-block-withdash-s1" String="^(&space;*)[\?\-]\s*(?=[^#\-\?\s]|\-[^\s#])" column="0"/>
+        <RegExpr attribute="Operator" context="#pop!literal-block-withdash-s2" String="^(&space;*)[\?\-](&space;*)[\?\-]\s*(?=[^#\-\?\s]|\-[^\s#])" column="0"/>
+        <RegExpr attribute="Operator" context="#pop!literal-block-withdash-s3" String="^(&space;*)[\?\-](&space;*)[\?\-](&space;*)[\?\-]\s*(?=[^#\-\?\s]|\-[^\s#])" column="0"/>
+        <RegExpr attribute="Operator" context="#pop!literal-block-withdash-s4" String="^(&space;*)[\?\-](&space;*)[\?\-](&space;*)[\?\-](&space;*)[\?\-]\s*(?=[^#\-\?\s]|\-[^\s#])" column="0"/>
+        <RegExpr attribute="Operator" context="#pop!literal-block-withdash-s5" String="^(&space;*)[\?\-](&space;*)[\?\-](&space;*)[\?\-](&space;*)[\?\-](&space;*)[\?\-]\s*(?=[^#\-\?\s]|\-[^\s#])" column="0"/>
+        <RegExpr attribute="Operator" context="#pop!literal-block-withdash-s6" String="^(&space;*)[\?\-](&space;*)[\?\-](&space;*)[\?\-](&space;*)[\?\-](&space;*)[\?\-](&space;*)[\?\-]\s*(?=[^#\-\?\s]|\-[^\s#])" column="0"/>
+      </context>
+      <!-- Capture the indentation of data type, reference or alias  -->
+      <context attribute="Normal Text" lineEndContext="#pop" name="start-literal-block-other">
+        <!-- The text with the same indentation will be considered literal -->
+        <RegExpr attribute="Data Types" context="#pop!literal-block-after-data" String="^(&space;+)!!\S+" column="0" />
+        <RegExpr attribute="Alias" context="#pop!literal-block-after-data" String="^(&space;+)&amp;\S+" column="0" />
+        <RegExpr attribute="Reference" context="#pop!literal-block-after-data" String="^(&space;+)\*\S+" column="0" />
+        <!-- The text after a space will be considered literal (empty text is captured) -->
+        <RegExpr attribute="Data Types" context="#pop!literal-block-withdash-s1" String="^()!!\S+" column="0" />
+        <RegExpr attribute="Alias" context="#pop!literal-block-withdash-s1" String="^()&amp;\S+" column="0" />
+        <RegExpr attribute="Reference" context="#pop!literal-block-withdash-s1" String="^()\*\S+" column="0" />
+      </context>
+
+      <!-- Highlight data/attribute before the literal operator (Note that if there is a line
+           break within a string or bracket, the literal line will not be highlighted). -->
+      <context attribute="Normal Text" lineEndContext="#pop#pop" name="before-literal-operator">
+        <RegExpr attribute="Literal/Folded Operator" context="#pop!end-literal-operator" String="&literalOp;(?=&endValue;)" beginRegion="Literal" />
+
+        <RegExpr attribute="Error" context="#pop#pop" String="([&amp;\*]|!!)\S*&literalOp;(?=&endValue;)" />
+        <RegExpr attribute="Data Types" context="#stay" String="!!\S+" />
+        <RegExpr attribute="Alias" context="#stay" String="&amp;\S+" />
+        <RegExpr attribute="Reference" context="#stay" String="\*\S+" />
+
+        <DetectChar attribute="Operator" context="list" char="[" beginRegion="List" />
+        <DetectChar attribute="Operator" context="hash" char="{" beginRegion="Hash" />
+        <DetectChar attribute="String" context="string" char="'" beginRegion="String" />
+        <DetectChar attribute="String" context="stringx" char="&quot;" beginRegion="String" />
+      </context>
+      <context attribute="Attribute" lineEndContext="#pop#pop" name="key-before-literal-operator">
+        <IncludeRules context="before-literal-operator" />
+        <DetectChar attribute="Operator" context="#stay" char="?" />
+      </context>
+      <context attribute="Normal Text" lineEndContext="#pop" name="end-literal-operator">
+        <DetectChar attribute="Comment" context="#pop!comment" char="#" />
+      </context>
+
+      <!-- Common rules for the content of the literal blocks -->
+      <context attribute="Normal Text" lineEndContext="#stay" name="literal-block-default">
+        <!-- End literal/folded block -->
+        <RegExpr attribute="Normal Text" context="#pop" String="^\s*\S" lookAhead="true" column="0" endRegion="Literal" />
+        <!-- Find literal/folded operator -->
+        <RegExpr context="before-literal-operator" String="\S" lookAhead="true" />
+      </context>
+      <context attribute="Normal Text" lineEndContext="#pop" name="literal-block-key-default">
+        <!-- End literal/folded block -->
+        <RegExpr attribute="Normal Text" context="#pop" String="^\s*\S" lookAhead="true" column="0" endRegion="Literal" />
+        <!-- Detect Key before the literal/folded operator -->
+        <RegExpr attribute="Key" context="key-before-literal-operator" String="&keyAfterOp;:(?=\s)" />
+        <RegExpr attribute="Normal Text" context="#pop" String="\S" lookAhead="true" endRegion="Literal" />
+      </context>
+
+      <!-- Content of the literal block: -->
+
+      <!-- If the literal operator is starting the line (after a space, use block indentation) -->
+      <context attribute="Normal Text" lineEndContext="#stay" name="literal-block-only-operator" dynamic="true">
+        <RegExpr attribute="Literal/Folded Block" context="#stay" String="^%1.*$" dynamic="true" column="0" />
+
+        <RegExpr attribute="Normal Text" context="#pop" String="^\s*\S" lookAhead="true" column="0" endRegion="Literal" />
+        <DetectChar attribute="Comment" context="comment" char="#" />
+        <RegExpr context="#pop" String="\S" lookAhead="true" endRegion="Literal" />
+      </context>
+      <!-- If the literal operator is the first character of a line (or after header) -->
+      <context attribute="Normal Text" lineEndContext="#stay" name="literal-block-simple">
+        <RegExpr attribute="Literal/Folded Block" context="#stay" String="^\s.*$" column="0" />
+
+        <RegExpr attribute="Normal Text" context="#pop" String="^\s*\S" lookAhead="true" column="0" endRegion="Literal" />
+        <DetectChar attribute="Comment" context="comment" char="#" />
+      </context>
+      <!-- If there is a data type or other content before the liretal operator (use block indentation) -->
+      <context attribute="Normal Text" lineEndContext="#stay" name="literal-block-after-data" dynamic="true">
+        <RegExpr attribute="Literal/Folded Block" context="#stay" String="^%1.*$" dynamic="true" column="0" />
+
+        <RegExpr attribute="Normal Text" context="#pop" String="^\s*\S" lookAhead="true" column="0" endRegion="Literal" />
+        <RegExpr context="before-literal-operator" String="\S" lookAhead="true" />
+      </context>
+      <!-- If there is a key before the literal operator -->
+      <context attribute="Normal Text" lineEndContext="#stay" name="literal-block-key" dynamic="true">
+        <RegExpr attribute="Literal/Folded Block" context="#stay" String="^%1\s.*$" dynamic="true" column="0" />
+
+        <RegExpr attribute="Normal Text" context="#pop" String="^\s*\S" lookAhead="true" column="0" endRegion="Literal" />
+        <!-- Attribute of the Key (the Key was previously highlighted) -->
+        <RegExpr context="key-before-literal-operator" String="\S" lookAhead="true" />
+      </context>
+
+      <!-- If there are dashes/"?" before the literal operator -->
+      <context attribute="Normal Text" lineEndContext="#stay" name="literal-block-withdash-s1" dynamic="true">
+        <RegExpr attribute="Literal/Folded Block" context="#stay" String="^%1\s.*$" dynamic="true" column="0" />
+        <IncludeRules context="literal-block-default" />
+      </context>
+      <context attribute="Normal Text" lineEndContext="#stay" name="literal-block-withdash-s2" dynamic="true">
+        <RegExpr attribute="Literal/Folded Block" context="#stay" String="^%1%2&space;\s.*$" dynamic="true" column="0" />
+        <IncludeRules context="literal-block-default" />
+      </context>
+      <context attribute="Normal Text" lineEndContext="#stay" name="literal-block-withdash-s3" dynamic="true">
+        <RegExpr attribute="Literal/Folded Block" context="#stay" String="^%1%2%3&space;{2}\s.*$" dynamic="true" column="0" />
+        <IncludeRules context="literal-block-default" />
+      </context>
+      <context attribute="Normal Text" lineEndContext="#stay" name="literal-block-withdash-s4" dynamic="true">
+        <RegExpr attribute="Literal/Folded Block" context="#stay" String="^%1%2%3%4&space;{3}\s.*$" dynamic="true" column="0" />
+        <IncludeRules context="literal-block-default" />
+      </context>
+      <context attribute="Normal Text" lineEndContext="#stay" name="literal-block-withdash-s5" dynamic="true">
+        <RegExpr attribute="Literal/Folded Block" context="#stay" String="^%1%2%3%4%5&space;{4}\s.*$" dynamic="true" column="0" />
+        <IncludeRules context="literal-block-default" />
+      </context>
+      <context attribute="Normal Text" lineEndContext="#stay" name="literal-block-withdash-s6" dynamic="true">
+        <RegExpr attribute="Literal/Folded Block" context="#stay" String="^%1%2%3%4%5%6&space;{5}\s.*$" dynamic="true" column="0" />
+        <IncludeRules context="literal-block-default" />
+      </context>
+      <!-- If there are dashes/"?" and a Key before the literal operator -->
+      <context attribute="Normal Text" lineEndContext="#stay" name="literal-block-key-withdash-s2" dynamic="true">
+        <RegExpr attribute="Literal/Folded Block" context="#stay" String="^%1%2&space;\s.*$" dynamic="true" column="0" />
+        <IncludeRules context="literal-block-key-default" />
+      </context>
+      <context attribute="Normal Text" lineEndContext="#stay" name="literal-block-key-withdash-s3" dynamic="true">
+        <RegExpr attribute="Literal/Folded Block" context="#stay" String="^%1%2%3&space;{2}\s.*$" dynamic="true" column="0" />
+        <IncludeRules context="literal-block-key-default" />
+      </context>
+      <context attribute="Normal Text" lineEndContext="#stay" name="literal-block-key-withdash-s4" dynamic="true">
+        <RegExpr attribute="Literal/Folded Block" context="#stay" String="^%1%2%3%4&space;{3}\s.*$" dynamic="true" column="0" />
+        <IncludeRules context="literal-block-key-default" />
+      </context>
+      <context attribute="Normal Text" lineEndContext="#stay" name="literal-block-key-withdash-s5" dynamic="true">
+        <RegExpr attribute="Literal/Folded Block" context="#stay" String="^%1%2%3%4%5&space;{4}\s.*$" dynamic="true" column="0" />
+        <IncludeRules context="literal-block-key-default" />
+      </context>
+      <context attribute="Normal Text" lineEndContext="#stay" name="literal-block-key-withdash-s6" dynamic="true">
+        <RegExpr attribute="Literal/Folded Block" context="#stay" String="^%1%2%3%4%5%6&space;{5}\s.*$" dynamic="true" column="0" />
+        <IncludeRules context="literal-block-key-default" />
+      </context>
+      <context attribute="Normal Text" lineEndContext="#stay" name="literal-block-key-withdash-s7" dynamic="true">
+        <RegExpr attribute="Literal/Folded Block" context="#stay" String="^%1%2%3%4%5%6%7&space;{6}\s.*$" dynamic="true" column="0" />
+        <IncludeRules context="literal-block-key-default" />
       </context>
     </contexts>
 
@@ -186,7 +551,15 @@
       <itemData name="Directive" defStyleNum="dsOthers" />
       <itemData name="Operator" defStyleNum="dsKeyword" />
       <itemData name="String" defStyleNum="dsString" />
+      <itemData name="Escaped Character" defStyleNum="dsSpecialChar" />
+      <itemData name="Literal/Folded Operator" defStyleNum="dsString" bold="1" />
+      <itemData name="Literal/Folded Block" defStyleNum="dsNormal" />
+      <itemData name="Null" defStyleNum="dsChar" />
+      <itemData name="Boolean" defStyleNum="dsChar" />
+      <itemData name="Integer" defStyleNum="dsDecVal" />
+      <itemData name="Float" defStyleNum="dsFloat" />
       <itemData name="Error" defStyleNum="dsError" />
+      <itemData name="Alert" defStyleNum="dsAlert" backgroundColor="#EF9A9A" />
     </itemDatas>
   </highlighting>
 

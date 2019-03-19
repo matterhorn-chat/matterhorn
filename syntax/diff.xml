@@ -15,7 +15,7 @@
     2008-02-13: 1.11 Eduardo Robles Elvira <edulix AT gmail DOT com>
      Fixed folding.
 -->
-<language name="Diff" version="3" kateversion="5.0" section="Other" extensions="*.diff;*patch" mimetype="text/x-patch">
+<language name="Diff" version="4" kateversion="5.0" section="Other" extensions="*.diff;*patch" mimetype="text/x-patch">
 
   <highlighting>
 
@@ -96,7 +96,6 @@
       </context>
 
       <!-- line contexts -->
-      <context attribute="File" lineEndContext="#pop" name="File"/>
       <context attribute="Removed line" lineEndContext="#pop" name="Removed"/>
       <context attribute="Added line" lineEndContext="#pop" name="Added"/>
       <context attribute="Changed line (old)" lineEndContext="#pop" name="ChangedOld"/>

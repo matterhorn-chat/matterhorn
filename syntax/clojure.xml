@@ -22,7 +22,7 @@
  * Boston, MA  02110-1301, USA.                                       *
  **********************************************************************
  -->
-<language version="8" kateversion="5.0" name="Clojure" section="Sources" extensions="*.clj;*.cljs;*.cljc" mimetype="" author="Dominik Haumann [lisp] modified for clojure by Caspar Hasenclever" license="LGPLv2+">
+<language version="10" kateversion="5.0" name="Clojure" section="Sources" extensions="*.clj;*.cljs;*.cljc" mimetype="" author="Dominik Haumann [lisp] modified for clojure by Caspar Hasenclever" license="LGPLv2+">
   <highlighting>
     <list name="definitions">
       <item>def</item>
@@ -736,13 +736,15 @@
         <RegExpr attribute="BaseN" context="#stay" String="0[xX][0-9A-Fa-f]+"/>
         <RegExpr attribute="BaseN" context="#stay" String="([12]?[0-9]|3[0-6])[rR][0-9a-zA-Z]+"/>
         <RegExpr attribute="Error" context="#stay" String="(3[7-9]|[0-9]*[4-9][0-9]+)[rR][0-9a-zA-Z]+"/>
-        <Float attribute="Float" context="#stay">
-            <StringDetect attribute="Decimal" context="#stay" String="M" insensitive="false"/>
-        </Float>
-        <Int attribute="Decimal" context="#stay">
-            <StringDetect attribute="Decimal" context="#stay" String="N" insensitive="false"/>
-        </Int>
+        <Float attribute="Float" context="Float Suffixes"/>
+        <Int attribute="Decimal" context="Int Suffixes"/>
         <DetectChar attribute="Brackets1" context="Level1" char="("/>
+      </context>
+      <context name="Float Suffixes" attribute="Float" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">
+            <StringDetect attribute="Float" context="#pop" String="M" insensitive="false"/>
+      </context>
+      <context name="Int Suffixes" attribute="Decimal" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">
+            <StringDetect attribute="Decimal" context="#pop" String="N" insensitive="false"/>
       </context>
       <context name="Comment" attribute="Comment" lineEndContext="#pop">
         <RegExpr String="(FIXME|TODO):?" attribute="Alert" context="#stay"/>
@@ -843,12 +845,10 @@
     <itemDatas>
       <itemData name="Normal" defStyleNum="dsNormal" spellChecking="false"/>
       <itemData name="Keyword" defStyleNum="dsKeyword" spellChecking="false"/>
-      <itemData name="Operator" defStyleNum="dsOperator" spellChecking="false"/>
       <itemData name="Modifier" defStyleNum="dsAttribute" spellChecking="false"/>
       <itemData name="Modifier2" defStyleNum="dsAttribute" spellChecking="false"/>
       <itemData name="Variable" defStyleNum="dsVariable" spellChecking="false"/>
       <itemData name="Definition" defStyleNum="dsBuiltIn" spellChecking="false"/>
-      <itemData name="Data" defStyleNum="dsDataType" spellChecking="false"/>
       <itemData name="Decimal" defStyleNum="dsDecVal" spellChecking="false"/>
       <itemData name="BaseN" defStyleNum="dsBaseN" spellChecking="false"/>
       <itemData name="Float" defStyleNum="dsFloat" spellChecking="false"/>

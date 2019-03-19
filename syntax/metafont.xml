@@ -6,7 +6,7 @@ We have moved some keywords for consistency
 -->
 
 <!DOCTYPE language SYSTEM "language.dtd">
-<language name="Metapost/Metafont" section="Markup" version="1" kateversion="2.4"
+<language name="Metapost/Metafont" section="Markup" version="5" kateversion="5.0"
 extensions="*.mp;*.mps;*.mpost;*.mf" mimetype="text/x-metapost" 
 author="Yedvilun (yedvilun@gmail.com)" license="LGPL">
   <highlighting>
@@ -240,6 +240,7 @@ author="Yedvilun (yedvilun@gmail.com)" license="LGPL">
 
     <!--Page 155: 'grouping'-->
 
+<!--     commented out, since these keywords are in RegExpr rules-->
 <!--     <list name="mfStatement"> -->
 <!--       <item>begingroup</item> -->
 <!--       <item>endgroup</item> -->
@@ -548,27 +549,6 @@ author="Yedvilun (yedvilun@gmail.com)" license="LGPL">
       <item>withcolor</item>
     </list>
 
-    <!--Metafont primitives not found in MetaPost-->
-    <list name="notDefined">
-      <item>autorounding</item>
-      <item>chardx</item>
-
-      <item>chardy</item>
-      <item>fillin</item>
-      <item>granularity</item>
-      <item>hppp</item>
-      <item>proofing</item>
-      <item>smoothing</item>
-
-      <item>tracingedges</item>
-      <item>tracingpens</item>
-      <item>turningcheck</item>
-      <item>vppp</item>
-      <item>xoffset</item>
-      <item>yoffset</item>
-
-    </list>
-
     <!--Keywords defined by plain.mp-->
     <list name="mpMacro">
       <item>ahangle</item>
@@ -826,8 +806,9 @@ author="Yedvilun (yedvilun@gmail.com)" license="LGPL">
 
     </list>
 
-    <!--We put all the delimiters here. They will be treated apart, for code folding-->
-    <list name="EnvDelimiters">
+    <!--We put all the delimiters here. They will be treated apart, for code folding.
+        Commented out, since these keywords are already matched by RegExpr rules.-->
+<!--    <list name="EnvDelimiters">
       <item>beginchar</item>
       <item>endchar</item>
       <item>extra_beginchar</item>
@@ -838,7 +819,7 @@ author="Yedvilun (yedvilun@gmail.com)" license="LGPL">
       <item>endfig</item>
       <item>extra_beginfig</item>
       <item>extra_endfig</item>
-    </list>
+    </list>-->
 
     <contexts>
       <context name="Normal Text"    attribute="Normal Text" lineEndContext="#stay">
@@ -853,7 +834,7 @@ author="Yedvilun (yedvilun@gmail.com)" license="LGPL">
         <keyword String="mfStringExp" attribute="Statement" context="#stay"/>
         <keyword String="mfCommand"  attribute="Statement" context="#stay"/>
         <keyword String="mfType"     attribute="Type" context="#stay"/>
-        <keyword String="mfStatement" attribute="Statement" context="#stay"/>
+<!--         <keyword String="mfStatement" attribute="Statement" context="#stay"/> -->
         <keyword String="mfDefinition" attribute="Statement" context="#stay"/>
         <keyword String="mfCondition" attribute="Conditional" context="#stay"/>
         <keyword String="mfPrimitive" attribute="Statement" context="#stay"/>
@@ -918,7 +899,7 @@ author="Yedvilun (yedvilun@gmail.com)" license="LGPL">
 
       <!--TeX mode : we just define generic TeX commands-->
       <!--syntax from highlighting file latex.xml-->
-      <context name="TeXMode" attribute="Tex" lineEndContext="#stay">
+      <context name="TeXMode" attribute="TeX" lineEndContext="#stay">
         <DetectChar char="\" attribute="Keyword" context="ContrSeq"/>
         <DetectChar char="$" attribute="Math" context="MathMode" beginRegion="mathMode" />
 
@@ -931,9 +912,6 @@ author="Yedvilun (yedvilun@gmail.com)" license="LGPL">
         <DetectChar char="&#xd7;" attribute="Bullet" context="#stay"/>
         <RegExpr String="[a-zA-Z]+(\+?|\*{0,3})" attribute="Keyword" context="#pop"/>
         <RegExpr String="[^a-zA-Z]" attribute="Keyword" context="#pop" />
-
-      </context>
-      <context name="ToEndOfLine" attribute="Normal Text" lineEndContext="#pop">
       </context>
       <context name="Verb" attribute="Verbatim" lineEndContext="#pop#pop" >
         <RegExpr String="(.)" attribute="Normal Text" dynamic="true" context="VerbEnd" />
@@ -962,8 +940,7 @@ author="Yedvilun (yedvilun@gmail.com)" license="LGPL">
 
       <!-- comment -->
       <context name="Comment" attribute="Comment" lineEndContext="#pop">
-
-        <RegExpr String="(FIXME|TODO):?" attribute="Alert" context="#stay"/>
+        <IncludeRules context="##Alerts" />
         <DetectChar char="&#xd7;" attribute="Bullet" context="#stay"/>
       </context>
 
@@ -978,22 +955,22 @@ author="Yedvilun (yedvilun@gmail.com)" license="LGPL">
       <itemData name="Math" defStyleNum="dsNormal" color="#00A000" selColor="#FF40FF"  bold="0" italic="0"/>
       <itemData name="TeX" defStyleNum="dsNormal"/>
       <itemData name="String" defStyleNum="dsString"/>
-      <itemData name="Alert" defStyleNum="dsAlert"/>
+      <itemData name="Verbatim" defStyleNum="dsVerbatimString"/>
       <itemData name="Macro"  defStyleNum="dsKeyword" color="#770000" selColor="#99FFFF" bold="0" italic="0"/>
-      <itemData name="Operator" defStyleNum="dsKeyword" color="#244CFF" bold="0"/>
+      <itemData name="Operator" defStyleNum="dsOperator"/>
       <itemData name="Special" defStyleNum="dsKeyword" color="#008000" bold="0"/>
       <itemData name="Conditional" defStyleNum="dsKeyword"/>
 
       <itemData name="Statement" defStyleNum="dsNormal" color="#0000FF" selColor="#FFFF00" bold="0" italic="0"/>
       <itemData name="BoolExp" defStyleNum="dsKeyword" italic="1" bold="0" color="#AA00AA" selColor="#FFFF00"/>
       <itemData name="NumExp" defStyleNum="dsFunction"/>
-      <itemData name="Variable" defStyleNum="dsKeyword" color="#550022"/>
+      <itemData name="Variable" defStyleNum="dsVariable"/>
       <itemData name="Identifier" defStyleNum="dsKeyword"/>
       <itemData name="Type" defStyleNum="dsDataType"/>
       <itemData name="Decimal" defStyleNum="dsDecVal"/>
       <itemData name="Octal" defStyleNum="dsBaseN"/>
       <itemData name="Hex" defStyleNum="dsBaseN"/>
-
+      <itemData name="Bullet" defStyleNum="dsExtension"/>
       <itemData name="Float" defStyleNum="dsFloat"/>
  </itemDatas>
   </highlighting>

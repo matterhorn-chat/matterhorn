@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
 <!-- Dockerfile syntaxfile v1.0 by James Turnbull <james@lovedthanlost.net> -->
-<language name="Dockerfile" section="Other" version="6" kateversion="3.4" extensions="Dockerfile" author="James Turnbull (james@lovedthanlost.net)" license="LGPLv2+">
+<language name="Dockerfile" section="Other" version="7" kateversion="3.4" extensions="Dockerfile" author="James Turnbull (james@lovedthanlost.net)" license="MIT">
   <highlighting>
     <list name="keywords">
       <item>ADD</item>

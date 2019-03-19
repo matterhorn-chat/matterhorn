@@ -105,7 +105,7 @@ to make the rules more expressive. -->
     <!ENTITY bs         "\">
 ]>
 <language name="Prolog" section="Sources"
-	  version="5" kateversion="3.4"
+	  version="10" kateversion="3.4"
 	  mimetype="text/x-prolog"
 	  extensions="*.prolog;*.dcg;*.pro"
 	  author="Torsten Eichstädt (torsten.eichstaedt@web.de)"
@@ -129,13 +129,12 @@ All bugs except three by the author. !FOLD THIS AWAY if long comments annoy you.
 
 BUG - Nobody's perfect - If I knew about the bug you found, it would have been
       fixed already.
- one- Takes a "shebang" at the start of text on other than the 1st line (Kate).
- two- Indentation-based folding is not reliable (Kate; fixed in KDE 4.9?).
- three- Folding is sometimes broken (Kate?).  See SOLUTIONS below.
-  4 - An optional leading sign is not highlighted as part of the number.
-  5 - A float w/o fractional part and exponent is highlighted as an integer.
-  6 - Detection of whitespace may not be 100% correct, only space/tab/newline.
-  7 - Handling inside arithmetic expressions might not be 100%.  See "AL GUSTO".
+ one- Indentation-based folding is not reliable (Kate; fixed in KDE 4.9?).
+ two- Folding is sometimes broken (Kate?).  See SOLUTIONS below.
+ three- An optional leading sign is not highlighted as part of the number.
+  4 - A float w/o fractional part and exponent is highlighted as an integer.
+  5 - Detection of whitespace may not be 100% correct, only space/tab/newline.
+  6 - Handling inside arithmetic expressions might not be 100%.  See "AL GUSTO".
  inf- see TODOs below.
 
 LIMITS of this parser
@@ -223,7 +222,7 @@ DONE- Parse (m)any (!) conforming Prolog texts w/ correct highlighting (LIMITS)
     - Incl. Sep2012 DRAFT Technical Corrigendum 2: Prolog - Part 1: General Core
     - Incl. honourable Richard O'Keefe's remarks as warnings as "ISO Bogus".
     - Detect 'shebang' shell scripts, see BUGs
-    - Includes alert_indent.xml to highlight alert keywords in comments.
+    - Includes alert.xml to highlight alert keywords in comments.
     - Dot "." may be an _unquoted_ user-defined operator in nested terms (but is
       highlighted as "Warning" 'cause it's more likely a typo than an user-def'd
       op) and is only taken as fullstop and highlighted as "Logic & Control" in
@@ -236,6 +235,7 @@ DONE- Parse (m)any (!) conforming Prolog texts w/ correct highlighting (LIMITS)
 	editors may convert them to space and it is easy to use "\t" instead.
     - Preliminary: most names end w/ ISO; prepared to be included in syntax
       files adapted for Prolog dialects.
+    - The Shebang is highlighted only in the first line (with lineEmptyContext).
 
 FIXME	When katepart can supply line numbers, fix the "shebang" rule.
 
@@ -335,19 +335,6 @@ TODO sorted by priority
 	    <!-- Unspecified integer representation/format -->
 	    <item>xor</item>
 	</list>
-	<list name="directives non-ISO">
-	    <!-- FIXME is this a top_level goal only? (consult :- include) -->
-	    <item>consult</item>
-	    <item>built_in</item>
-<!--GNU            <item>foreign</item> -->
-<!--GNU            <item>ensure_linked</item> -->
-<!--GNU            <item>built_in_fd</item> -->
-<!--             <item>if</item> -->
-<!-- 	    <item>else</item> -->
-<!-- 	    <item>endif</item> -->
-<!--             <item>elif</item> -->
-        </list>
-
         <!-- including directive "initialization" -->
         <list name="logic+control ISO">
 	    <item>initialization</item>
@@ -374,11 +361,6 @@ TODO sorted by priority
 <!-- 	    <item>numbervars</item> -->
 <!-- 	    <item>current_predicate</item> -->
 	</list>
-	<list name="listing non-ISO">
-	    <!-- FIXME is this a top_level goal? -->
-	    <item>listing</item>
-<!-- standard/compatible	    <item>public</item> -->
-	</list>
 	<list name="terms ISO">
 	    <!-- keep tokens with same prefix sorted by length? -->
 	    <item>atom_concat</item>
@@ -398,46 +380,8 @@ TODO sorted by priority
 	    <item>term_variables</item>
 	    <item>unify_with_occurs_check</item>
 	</list>
-	<list name="terms non-ISO">
-	    <!-- keep tokens with same prefix sorted by length? -->
-	    <item>number_atom</item>
-	    <item>expand_term</item>
-	    <item>term_expansion</item>
-
-	    <!--FIXME These go to streams non-ISO: -->
-	    <item>display</item>
-	    <item>print</item>
-	    <item>format</item>
-	    <item>portray_clause</item>
-	    <item>portray</item>
-	    <item>term_expansion</item>
-	</list>
 	<list name="DCG non-ISO">
 	    <item>phrase</item>
-	</list>
-	<list name="lists ISO">
-	    <item>sort</item>
-	    <item>keysort</item>
-	</list>
-	<list name="lists non-ISO">
-	    <item>append</item>
-	    <item>delete</item>
-	    <item>length</item>
-	    <item>last</item>
-	    <item>map_list</item>
-	    <item>min_list</item>
-	    <item>maplist</item>
-	    <item>msort</item>
-	    <item>memberchk</item>
-	    <item>member</item>
-	    <item>nth</item>
-	    <item>permutation</item>
-	    <item>reverse</item>
-	    <item>select</item>
-	    <item>prefix</item>
-	    <item>suffix</item>
-	    <item>sublist</item>
-	    <item>sum_list</item>
 	</list>
 	<list name="streams ISO">
 	    <item>open</item>
@@ -460,20 +404,6 @@ TODO sorted by priority
 	    <item>write_canonical</item>
 	    <item>writeq</item>
 	    <item>write</item>
-	</list>
-	<list name="streams deprecated">
-	    <item>append</item>
-	    <item>seeing</item>
-	    <item>seen</item>
-	    <item>see</item>
-	    <item>telling</item>
-	    <item>tell</item>
-	    <item>told</item>
-	    <item>get0</item>
-	    <item>get</item>
-	    <item>skip</item>
-	    <item>put</item>
-	    <item>tab</item>
 	</list>
 	<list name="arith eval ISO">
 	    <item>is</item>
@@ -537,13 +467,6 @@ TODO sorted by priority
 	    <item>callable</item>
 	    <item>ground</item>
 	</list>
-	<!-- FIXME rename to "types non-ISO"? -->
-	<list name="list+is_list non-ISO">
-	    <item>list</item>
-	    <item>is_list</item>
-	<!--GNU            <item>partial_list</item> -->
-	    <!--GNU            <item>list_or_partial_list</item> -->
-	</list>
 	<list name="built-ins ISO">
 	    <item>current_op</item>
 	    <item>current_prolog_flag</item>
@@ -579,7 +502,7 @@ TODO sorted by priority
 	    clause      := layout term_seq fullstop | term_seq fullstop
 	-->
 	    <!-- shebang: ("#!") Detect shebang and fallthrough to clause_seq -->
-	    <context name="shebang" lineEndContext="clause" attribute="Syntax Error" >
+	    <context name="shebang" lineEndContext="clause" lineEmptyContext="clause" attribute="Syntax Error" >
 		<!-- no way: fallthrough="1" fallthroughContext="clause_seq" > -->
 		<Detect2Chars column="0" char="#" char1="!" context="1-comment" attribute="% italic predicates: w/ side effects" />
 		<!-- else fallthrough (workaround broken fallthrough) -->
@@ -751,15 +674,15 @@ TODO sorted by priority
 		<IncludeRules context="quoted_last"/>
 	    </context>
 	    <context name="single-quoted" lineEndContext="#stay" attribute="'quo Ted'" >
-		<RegExpr String="'$" context="sq" beginRegion="quoted" attribute="Syntax Error" />
+		<LineContinue char="'" context="sq" beginRegion="quoted" attribute="Syntax Error" />
 		<DetectChar char="'" context="sq" beginRegion="quoted" attribute="'quo Ted'" />
 	    </context>
 	    <context name="double-quoted" lineEndContext="#stay" attribute="&quot;double-quoted&quot;" >
-		<RegExpr String="&quot;$" context="dq" beginRegion="quoted" attribute="Syntax Error" />
+		<LineContinue char="&quot;" context="dq" beginRegion="quoted" attribute="Syntax Error" />
 		<DetectChar char="&quot;" context="dq" beginRegion="quoted" attribute="&quot;double-quoted&quot;" />
 	    </context>
 	    <context name="back-quoted" lineEndContext="#stay" attribute="`back-quoted`" >
-		<RegExpr String="`$" context="bq" beginRegion="quoted" attribute="Syntax Error" />
+		<LineContinue char="`" context="bq" beginRegion="quoted" attribute="Syntax Error" />
 		<DetectChar char="`" context="bq" beginRegion="quoted" attribute="`back-quoted`" />
 	    </context>
 
@@ -854,7 +777,7 @@ TODO sorted by priority
 		<Detect2Chars char="*" char1="/" context="#pop" endRegion="comment"
 			    attribute="% italic predicates: w/ side effects" />
 		<DetectSpaces />
-		<IncludeRules context="##Alerts_indent" />
+		<IncludeRules context="##Alerts" />
 		<DetectIdentifier />
 	    </context>
 
@@ -862,7 +785,7 @@ TODO sorted by priority
 	    <!-- Folding for consecutive 1-line comments: let indentation-based auto-folding work -->
 	    <context name="1-comment" lineEndContext="#pop" attribute="% italic predicates: w/ side effects" >
 		<DetectSpaces />
-		<IncludeRules context="##Alerts_indent" />
+		<IncludeRules context="##Alerts" />
 		<DetectIdentifier />
 	    </context>
 	    <context name="region_marker" lineEndContext="#pop" attribute="%BEGIN folding region" noIndentationBasedFolding="true" >
@@ -1043,7 +966,6 @@ TODO sorted by priority
 
 	    <!-- Comments (2nd not used, just a hint) -->
 	    <itemData name="% italic predicates: w/ side effects" defStyleNum="dsComment" />
-	    <itemData name="/* !avoid leading * to have folding */" defStyleNum="dsComment" />
 
 	    <!-- Predicates affected by 'outside world' -->
 	    <itemData name="Dynamic Clause Management" defStyleNum="dsKeyword" italic="true" spellChecking="false" />

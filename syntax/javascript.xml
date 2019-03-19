@@ -1,13 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd">
+<!DOCTYPE language SYSTEM "language.dtd"
+[
+  <!ENTITY identifier "([a-zA-Z_$]|[^[:ascii:]])([\w$]|[^[:ascii:]])*">
+]>
 <!-- Author: Anders Lund <anders@alweb.dk> //-->
 <!-- Minor changes: Joseph Wenninger <jowenn@kde.org> //-->
 <!-- Full JavaScript 1.0 support by Whitehawk Stormchaser //-->
-<language name="JavaScript" version="6" kateversion="5.0" section="Scripts" extensions="*.js;*.kwinscript;*.julius"
+<language name="JavaScript" version="10" kateversion="5.0" section="Scripts" extensions="*.js;*.kwinscript;*.julius"
           mimetype="text/x-javascript;application/x-javascript;application/javascript;text/javascript" indenter="cstyle"
           author="Anders Lund (anders@alweb.dk), Joseph Wenninger (jowenn@kde.org), Whitehawk Stormchaser (zerokode@gmx.net)" license="">
   <highlighting>
     <list name="controlflow">
+      <item>await</item>
       <item>break</item>
       <item>case</item>
       <item>catch</item>
@@ -32,18 +36,21 @@
       <item>in</item>
       <item>instanceof</item>
       <item>new</item>
+      <item>of</item>
       <item>this</item>
       <item>typeof</item>
       <item>var</item>
       <item>void</item>
     </list>
     <list name="reserved">
+      <item>async</item>
       <item>class</item>
       <item>enum</item>
       <item>extends</item>
       <item>super</item>
 
       <!-- The following keywords are reserved only in strict-mode -->
+      <item>arguments</item>
       <item>implements</item>
       <item>interface</item>
       <item>let</item>
@@ -72,13 +79,13 @@
     <contexts>
 
       <!-- Shebang: ("#!") Detect shebang and fallthrough to Normal -->
-      <!-- Based on the similar clause from prolog.xml, which notes the following BUG:
-        If the file starts with whitespace and a shebang on a line other than the first line,
-        this rule will still match it as a shebang, even tough the shebang is only valid on
-        the very first line.
+      <!-- Based on the similar clause from prolog.xml.
+        This uses "lineEmptyContext" & "lineEndContext" to force the highlight only on the first line.
       -->
-      <context name="Shebang" lineEndContext="Normal" attribute="Normal Text" fallthrough="true" fallthroughContext="Normal" >
-        <Detect2Chars column="0" char="#" char1="!" context="Comment" attribute="Comment" />
+      <context name="Shebang" attribute="Normal Text" lineEndContext="Normal" lineEmptyContext="Normal" fallthrough="true" fallthroughContext="Normal" >
+        <Detect2Chars column="0" char="#" char1="!" context="Shebang Line" attribute="Comment" />
+      </context>
+      <context name="Shebang Line" attribute="Comment" lineEndContext="#pop!Normal">
       </context>
 
       <context attribute="Normal Text" lineEndContext="#stay" name="Normal">
@@ -87,8 +94,11 @@
         <StringDetect attribute="Region Marker" context="region_marker" String="//END" endRegion="Region1" />
 
         <Float attribute="Float" context="NoRegExp" />
-        <HlCOct attribute="Octal" context="NoRegExp" />
+        <!-- Invalid Binary, Octal or Hex -->
+        <RegExpr attribute="Error" context="NoRegExp" String="\b0(b[01]*[2-9a-z]|o[0-7]*[89a-z]|x[0-9a-f]*[g-z])\w*\b" insensitive="true" />
         <HlCHex attribute="Hex" context="NoRegExp" />
+        <RegExpr attribute="Octal" context="NoRegExp" String="\b0[oO][0-7]+" />
+        <RegExpr attribute="Binary" context="NoRegExp" String="\b0[bB][01]+" />
         <Int attribute="Decimal" context="NoRegExp" />
         <AnyChar context="NoRegExp" String="])" />
 
@@ -98,23 +108,19 @@
         <keyword attribute="Keyword" context="NoRegExp" String="primitives" />
         <keyword attribute="Module" String="module" />
 
-        <DetectChar attribute="Template" context="Template" char="`" />
-        <StringDetect attribute="Template" context="RawTemplate" String="String.raw`" />
+        <IncludeRules context="FindStrings" />
 
         <!--DetectIdentifier-->
-        <RegExpr attribute="Objects" context="Object Member" String="[a-zA-Z_$][\w$]*(?=\s*\.)" />
+        <RegExpr attribute="Objects" context="Object Member" String="&identifier;(?=\s*\.)" />
         <!--DetectIdentifier-->
-        <RegExpr attribute="Object Member" context="NoRegExp" String="[a-zA-Z_$][\w$]*(?=\s*\()" />
+        <RegExpr attribute="Object Member" context="NoRegExp" String="&identifier;(?=\s*\()" />
         <DetectChar context="Object Member" char="." />
         <!--DetectIdentifier-->
+        <!-- Do not start RegExp after non-ASCII characters (see bug #393633) -->
+        <RegExpr context="NoRegExp" String="&identifier;" />
         <RegExpr context="NoRegExp" String="[a-zA-Z_$][\w$]*" />
 
-        <DetectChar attribute="String" context="String" char="&quot;" />
-        <DetectChar attribute="String" context="String SQ" char="'" />
-
-        <IncludeRules context="##Doxygen" />
-        <Detect2Chars attribute="Comment" context="Comment" char="/" char1="/" />
-        <Detect2Chars attribute="Comment" context="Multi/inline Comment" char="/" char1="*" beginRegion="Comment" />
+        <IncludeRules context="FindComments" />
 
         <!-- E4X extension (=xml inside JavaScript), see bug #373713 -->
         <Detect2Chars attribute="Normal Text" context="NoRegExp" char="&lt;" char1="/" />
@@ -124,15 +130,16 @@
         <DetectChar attribute="Symbol" context="Object" char="{" beginRegion="Brace" />
         <DetectChar attribute="Symbol" context="Conditional Expression" char="?" />
 
+        <Detect2Chars context="#stay" attribute="Special Operators" char="=" char1="&gt;" />
         <AnyChar attribute="Symbol" String=":!%&amp;+,-/.*&lt;=&gt;?|~^&#59;" />
       </context>
 
       <context attribute="Normal Text" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop" name="Object Member">
-        <DetectChar char="." />
+        <DetectChar context="#stay" char="." />
         <!--DetectIdentifier-->
-        <RegExpr attribute="Objects" context="Object Member" String="[a-zA-Z_$][\w$]*(?=\s*\.)" />
+        <RegExpr attribute="Objects" context="#stay" String="&identifier;(?=\s*\.)" />
         <!--DetectIdentifier-->
-        <RegExpr attribute="Object Member" String="[a-zA-Z_$][\w$]*" />
+        <RegExpr attribute="Object Member" context="#pop!NoRegExp" String="&identifier;" />
         <IncludeRules context="NoRegExp" />
       </context>
 
@@ -151,28 +158,45 @@
       <context attribute="Normal Text" lineEndContext="#stay" name="Object">
         <!-- Mostly required for define: in switch blocks -->
         <keyword attribute="Keyword" String="keywords" />
+        <RegExpr attribute="ControlFlow" String="\bdefault(?=\s*:)" />
         <!--DetectIdentifier-->
-        <RegExpr attribute="JSON" String="[a-zA-Z_$][\w$]*\s*(?=:)" />
+        <RegExpr attribute="JSON" String="&identifier;\s*(?=:)" />
         <DetectChar attribute="Symbol" char="}" endRegion="Brace" context="#pop" />
         <IncludeRules context="Normal" />
       </context>
 
+      <context name="FindStrings" attribute="Normal Text" lineEndContext="#stay">
+        <DetectChar attribute="Template" context="Template" char="`" />
+        <StringDetect attribute="Template" context="RawTemplate" String="String.raw`" />
+
+        <DetectChar attribute="String" context="String" char="&quot;" />
+        <DetectChar attribute="String" context="String SQ" char="'" />
+      </context>
+
       <context attribute="String" lineEndContext="#pop" name="String">
-        <HlCStringChar attribute="Escape" />
-        <RegExpr attribute="Escape" String="\\u[0-9a-fA-F]{4}" />
-        <LineContinue/>
+        <IncludeRules context="Escape" />
         <DetectChar attribute="String" context="#pop" char="&quot;" />
       </context>
       <context attribute="String" lineEndContext="#pop" name="String SQ">
-        <HlCStringChar attribute="Escape" />
-        <RegExpr attribute="Escape" String="\\u[0-9a-fA-F]{4}" />
-        <LineContinue/>
+        <IncludeRules context="Escape" />
         <DetectChar attribute="String" context="#pop" char="'" />
+      </context>
+      
+      <context attribute="Normal Text" lineEndContext="#stay" name="Escape">
+        <LineContinue attribute="Escape" context="#stay" />
+        <!-- Hexadecimal, unicode & octal -->
+        <RegExpr attribute="Escape" context="#stay" String="\\(x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4}|u\{[0-9a-fA-F]+\}|[0-3][0-7]{1,2}|[4-7][0-7]|[1-7])" />
+        <Detect2Chars attribute="Error" context="#stay" char="\" char1="x" />
+        <Detect2Chars attribute="Error" context="#stay" char="\" char1="u" />
+        <DetectChar attribute="Escape" context="Character Escape" char="\" />
+      </context>
+      <context attribute="Escape" lineEndContext="#pop" name="Character Escape">
+        <AnyChar attribute="Reserved Char. Escape" context="#pop" String="0bfnrtv" /> <!-- Reserved Char. Escape. Also: "'/ -->
+        <RegExpr attribute="Escape" context="#pop" String="." /> <!-- Literal Char. Escape -->
       </context>
 
       <context attribute="Template" lineEndContext="#stay" name="Template">
-        <HlCStringChar attribute="Escape" />
-        <Detect2Chars attribute="Escape" char="\" char1="`" />
+        <IncludeRules context="Escape" />
         <Detect2Chars attribute="Substitution" context="Substitution" char="$" char1="{" />
         <DetectChar attribute="Template" context="#pop" char="`" />
       </context>
@@ -184,6 +208,11 @@
           <IncludeRules context="Normal"/>
       </context>
 
+      <context name="FindComments" attribute="Normal Text" lineEndContext="#stay">
+        <IncludeRules context="##Doxygen" />
+        <Detect2Chars attribute="Comment" context="Comment" char="/" char1="/" />
+        <Detect2Chars attribute="Comment" context="Multi/inline Comment" char="/" char1="*" beginRegion="Comment" />
+      </context>
       <context attribute="Comment" lineEndContext="#pop" name="Comment">
         <IncludeRules context="##Alerts" />
         <IncludeRules context="##Modelines" />
@@ -227,15 +256,17 @@
       <itemData name="ControlFlow"  defStyleNum="dsControlFlow" spellChecking="false" />
       <itemData name="Reserved"     defStyleNum="dsKeyword" italic="true" spellChecking="false" />
       <itemData name="Module"       defStyleNum="dsImport" spellChecking="false" />
-      <itemData name="Function"     defStyleNum="dsFunction" spellChecking="false" />
       <itemData name="Objects"      defStyleNum="dsVariable" spellChecking="false" />
       <itemData name="Object Member" defStyleNum="dsAttribute" spellChecking="false" />
+      <itemData name="Special Operators" defStyleNum="dsKeyword" spellChecking="false" />
 
       <itemData name="Decimal"      defStyleNum="dsDecVal" spellChecking="false" />
       <itemData name="Octal"        defStyleNum="dsBaseN" spellChecking="false" />
       <itemData name="Hex"          defStyleNum="dsBaseN" spellChecking="false" />
+      <itemData name="Binary"       defStyleNum="dsBaseN" spellChecking="false" />
       <itemData name="Float"        defStyleNum="dsFloat" spellChecking="false" />
       <itemData name="Escape"       defStyleNum="dsSpecialChar" spellChecking="false" />
+      <itemData name="Reserved Char. Escape" defStyleNum="dsSpecialChar" bold="1" spellChecking="false" />
       <itemData name="String"       defStyleNum="dsString" />
       <itemData name="Template"     defStyleNum="dsVerbatimString" />
       <itemData name="Substitution" defStyleNum="dsSpecialChar" spellChecking="false" />
@@ -247,6 +278,7 @@
       <itemData name="Pattern Character Class" defStyleNum="dsSpecialChar" spellChecking="false" />
       <itemData name="Region Marker" defStyleNum="dsRegionMarker" spellChecking="false" />
       <itemData name="JSON"         defStyleNum="dsDataType" spellChecking="false" />
+      <itemData name="Error"        defStyleNum="dsError" spellChecking="false"/>
     </itemDatas>
   </highlighting>
   <general>

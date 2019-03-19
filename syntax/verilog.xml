@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
-<language name="Verilog" version="2" kateversion="2.4" section="Hardware" extensions="*.v;*.V;*.vl" mimetype="text/x-verilog-src" author="Yevgen Voronenko (ysv22@drexel.edu), Ryan Dalzell (ryan@tullyroan.com)" license="">
+<language name="Verilog" version="4" kateversion="2.4" section="Hardware" extensions="*.v;*.V;*.vl" mimetype="text/x-verilog-src" author="Yevgen Voronenko (ysv22@drexel.edu), Ryan Dalzell (ryan@tullyroan.com)" license="">
   <highlighting>
     <list name="keywords">
       <item>macromodule</item>
@@ -204,18 +204,14 @@
         <Detect2Chars attribute="Comment" context="#pop" char="*" char1="/" />
       </context>
       <context attribute="Normal Text" lineEndContext="#pop" name="Some Context"/>
-      <context attribute="Comment" lineEndContext="#stay" name="Some Context2">
-          <IncludeRules context="##Alerts" />
-          <StringDetect attribute="Comment" context="#pop" String="#endif" firstNonSpace="true"/>
-      </context>
 
       <context attribute="Block name" lineEndContext="#pop" name="Block name">
           <DetectIdentifier attribute="Data Type" context="#pop"/>
       </context>
 
-      <context attribute="Normal Text" lineEndContext="#stay" name="Port">
+<!--      <context attribute="Normal Text" lineEndContext="#stay" name="Port">
           <DetectIdentifier attribute="Normal Text" context="#pop"/>
-      </context>
+      </context>-->
     </contexts>
 
     <itemDatas>
@@ -232,7 +228,6 @@
       <itemData name="String"  defStyleNum="dsString"/>
       <itemData name="String Char"  defStyleNum="dsChar"/>
       <itemData name="Comment"  defStyleNum="dsComment"/>
-      <itemData name="Alert"        defStyleNum="dsAlert" />
       <itemData name="Symbol"  defStyleNum="dsNormal"/>
       <itemData name="Preprocessor"  defStyleNum="dsOthers"/>
       <itemData name="Prep. Lib"  defStyleNum="dsFloat"/>
@@ -243,7 +238,7 @@
       <itemData name="Block name" defStyleNum="dsDataType"/>
       <itemData name="Drive/charge strength" defStyleNum="dsBaseN"/>
       <itemData name="Gate instantiation" defStyleNum="dsDataType"/>
-      <itemData name="Port map" defStyleNum="dsDataType"/>
+<!--       <itemData name="Port map" defStyleNum="dsDataType"/> -->
       <itemData name="Case label" defStyleNum="dsDecVal"/>
     </itemDatas>
   </highlighting>
