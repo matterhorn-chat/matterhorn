@@ -26,7 +26,6 @@ import           Types
 maxMessageHeight :: Int
 maxMessageHeight = 200
 
-
 -- | nameForUserRef converts the UserRef into a printable name, based
 -- on the current known user data.
 nameForUserRef :: ChatState -> UserRef -> Maybe Text
