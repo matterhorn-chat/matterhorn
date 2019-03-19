@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 
 module Draw.PostListOverlay where
 
@@ -95,7 +96,7 @@ drawPostsBox contents st =
         renderedMessageList =
           let (s, (before, after)) = splitDirSeqOn matchesMessage messagesWithStates
               matchesMessage (m, _) = m^.mMessageId == (MessagePostId <$> st^.csPostListOverlay.postListSelected)
-              messagesWithStates = chronologicalMsgsWithThreadStates messages
+              messagesWithStates = (, InThreadShowParent) <$> messages
           in case s of
             Nothing ->
                 map (uncurry renderMessageForOverlay) (reverse (toList messagesWithStates))
