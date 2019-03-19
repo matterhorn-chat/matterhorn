@@ -90,10 +90,14 @@ renderChatMessage st hs ind renderTimeFunc msg =
               | isGap msg -> withDefAttr gapMessageAttr m
               | otherwise ->
                 case msg^.mType of
-                    C DateTransition -> withDefAttr dateTransitionAttr (hBorderWithLabel m)
-                    C NewMessagesTransition -> withDefAttr newMessageTransitionAttr (hBorderWithLabel m)
-                    C Error -> withDefAttr errorMessageAttr m
-                    _ -> withDefAttr clientMessageAttr m
+                    C DateTransition ->
+                        withDefAttr dateTransitionAttr (hBorderWithLabel m)
+                    C NewMessagesTransition ->
+                        withDefAttr newMessageTransitionAttr (hBorderWithLabel m)
+                    C Error ->
+                        withDefAttr errorMessageAttr m
+                    _ ->
+                        withDefAttr clientMessageAttr m
             _ | isJoinLeave msg -> withDefAttr clientMessageAttr m
               | otherwise -> m
         fullMsg = vBox $ msgTxt : catMaybes [msgAtch, msgReac]
