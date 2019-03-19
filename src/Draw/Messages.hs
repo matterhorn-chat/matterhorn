@@ -164,31 +164,33 @@ renderLastMessages st hs editCutoff msgs =
             renderBuild img (m, threadState) =
                 render1HLimit (doMsgRender threadState) (flip Vty.vertJoin) targetHeight img m
             doMsgRender = renderSingleMessage st hs editCutoff
-            msgsWithThreadStates :: DirectionalSeq Retrograde (Message, ThreadState)
-            msgsWithThreadStates = DSeq $ checkAdjacentParents (dseq msgs)
-            checkAdjacentParents s =
-                case Seq.viewl s of
-                    h Seq.:< t ->
-                        case Seq.viewl t of
-                            next Seq.:< _ ->
-                                let tState = case h^.mInReplyToMsg of
-                                        InReplyTo rootId ->
-                                            if (next^.mMessageId) == Just (MessagePostId rootId)
-                                            then InThread
-                                            else if next^.mInReplyToMsg == h^.mInReplyToMsg
-                                                 then InThread
-                                                 else InThreadShowParent
-                                        _ -> NoThread
-                                in (h, tState) Seq.<| checkAdjacentParents t
-                            Seq.EmptyL ->
-                                case h^.mInReplyToMsg of
-                                    InReplyTo _ -> Seq.singleton (h, InThreadShowParent)
-                                    _ -> Seq.singleton (h, NoThread)
-                    Seq.EmptyL ->
-                        mempty
 
-        img <- foldM renderBuild Vty.emptyImage msgsWithThreadStates
+        img <- foldM renderBuild Vty.emptyImage $ msgsWithThreadStates msgs
         return $ emptyResult & imageL .~ (Vty.cropTop targetHeight img)
+
+msgsWithThreadStates :: RetrogradeMessages -> DirectionalSeq Retrograde (Message, ThreadState)
+msgsWithThreadStates msgs = DSeq $ checkAdjacentMessages (dseq msgs)
+    where
+        checkAdjacentMessages s =
+            case Seq.viewl s of
+                h Seq.:< t ->
+                    case Seq.viewl t of
+                        next Seq.:< _ ->
+                            let tState = case h^.mInReplyToMsg of
+                                    InReplyTo rootId ->
+                                        if (next^.mMessageId) == Just (MessagePostId rootId)
+                                        then InThread
+                                        else if next^.mInReplyToMsg == h^.mInReplyToMsg
+                                             then InThread
+                                             else InThreadShowParent
+                                    _ -> NoThread
+                            in (h, tState) Seq.<| checkAdjacentMessages t
+                        Seq.EmptyL ->
+                            case h^.mInReplyToMsg of
+                                InReplyTo _ -> Seq.singleton (h, InThreadShowParent)
+                                _ -> Seq.singleton (h, NoThread)
+                Seq.EmptyL ->
+                    mempty
 
 relaxHeight :: Context -> Context
 relaxHeight c = c & availHeightL .~ (max maxMessageHeight (c^.availHeightL))
