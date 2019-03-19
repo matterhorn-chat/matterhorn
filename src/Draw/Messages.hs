@@ -30,10 +30,11 @@ maxMessageHeight = 200
 -- | nameForUserRef converts the UserRef into a printable name, based
 -- on the current known user data.
 nameForUserRef :: ChatState -> UserRef -> Maybe Text
-nameForUserRef st uref = case uref of
-                           NoUser -> Nothing
-                           UserOverride t -> Just t
-                           UserI uId -> displayNameForUserId uId st
+nameForUserRef st uref =
+    case uref of
+        NoUser -> Nothing
+        UserOverride t -> Just t
+        UserI uId -> displayNameForUserId uId st
 
 -- | renderSingleMessage is the main message drawing function.
 --
@@ -106,11 +107,10 @@ renderChatMessage st hs ind renderTimeFunc msg =
 -- because (depending on the situation) we might use either of the
 -- message list types for the 'before' and 'after' (i.e. the
 -- chronological or retrograde message sequences).
-unsafeRenderMessageSelection ::
-  (Foldable f, Foldable g) =>
-  (Message, (f Message, g Message)) ->
-  (Message -> Widget Name) ->
-  Widget Name
+unsafeRenderMessageSelection :: (Foldable f, Foldable g)
+                             => (Message, (f Message, g Message))
+                             -> (Message -> Widget Name)
+                             -> Widget Name
 unsafeRenderMessageSelection (curMsg, (before, after)) doMsgRender =
   Widget Greedy Greedy $ do
     ctx <- getContext
