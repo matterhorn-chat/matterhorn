@@ -15,6 +15,7 @@ import           Data.Maybe ( fromJust )
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Time.Clock ( getCurrentTime )
+import           Graphics.Vty (Vty)
 import           Lens.Micro.Platform ( (.~) )
 import           System.Exit ( exitFailure )
 import           System.FilePath ( (</>), isRelative, dropFileName )
@@ -66,12 +67,14 @@ apiLogEventToLogMessage ev = do
                         , logMessageTimestamp = now
                         }
 
-setupState :: Maybe FilePath -> Config -> IO ChatState
-setupState mLogLocation initialConfig = do
+setupState :: IO Vty -> Maybe FilePath -> Config -> IO (ChatState, Vty)
+setupState mkVty mLogLocation initialConfig = do
+  initialVty <- mkVty
+
   -- If we don't have enough credentials, ask for them.
-  connInfo <- case getCredentials initialConfig of
-      Nothing -> interactiveGatherCredentials (incompleteCredentials initialConfig) Nothing
-      Just connInfo -> return connInfo
+  (connInfo, loginVty) <- case getCredentials initialConfig of
+      Nothing -> interactiveGatherCredentials initialVty mkVty (incompleteCredentials initialConfig) Nothing
+      Just connInfo -> return (connInfo, initialVty)
 
   eventChan <- newBChan 25
   logMgr <- newLogManager eventChan (configLogMaxBufferSize initialConfig)
@@ -82,7 +85,7 @@ setupState mLogLocation initialConfig = do
                                      , cpStripesCount = 1
                                      , cpMaxConnCount = 5
                                      }
-      loginLoop cInfo = do
+      loginLoop (cInfo, iVty) = do
         cd <- fmap setLogger $
                 if (configUnsafeUseHTTP initialConfig)
                   then initConnectionDataInsecure (cInfo^.ciHostname)
@@ -111,28 +114,28 @@ setupState mLogLocation initialConfig = do
             Right (Right (sess, user)) ->
                 return (sess, user, cd, config)
             Right (Left e) ->
-                interactiveGatherCredentials cInfo (Just $ LoginError e) >>=
+                interactiveGatherCredentials iVty mkVty cInfo (Just $ LoginError e) >>=
                     loginLoop
             Left e ->
-                interactiveGatherCredentials cInfo (Just e) >>=
+                interactiveGatherCredentials iVty mkVty cInfo (Just e) >>=
                     loginLoop
 
-  (session, me, cd, config) <- loginLoop connInfo
+  (session, me, cd, config) <- loginLoop (connInfo, loginVty)
 
   teams <- mmGetUsersTeams UserMe session
   when (Seq.null teams) $ do
       putStrLn "Error: your account is not a member of any teams"
       exitFailure
 
-  myTeam <- case configTeam config of
+  (myTeam, teamSelVty) <- case configTeam config of
       Nothing -> do
-          interactiveTeamSelection $ toList teams
+          interactiveTeamSelection loginVty mkVty $ toList teams
       Just tName -> do
           let matchingTeam = listToMaybe $ filter matches $ toList teams
               matches t = (sanitizeUserText $ teamName t) == tName
           case matchingTeam of
-              Nothing -> interactiveTeamSelection (toList teams)
-              Just t -> return t
+              Nothing -> interactiveTeamSelection loginVty mkVty (toList teams)
+              Just t -> return (t, loginVty)
 
   userStatusChan <- STM.newTChanIO
   slc <- STM.newTChanIO
@@ -191,7 +194,7 @@ setupState mLogLocation initialConfig = do
       Nothing -> return ()
       Just loc -> startLoggingToFile logMgr loc
 
-  return st
+  return (st, teamSelVty)
 
 initializeState :: ChatResources -> Team -> User -> IO ChatState
 initializeState cr myTeam me = do

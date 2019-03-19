@@ -13,7 +13,7 @@ import           Brick.Widgets.List
 import qualified Data.Function as F
 import           Data.List ( sortBy )
 import qualified Data.Vector as V
-import           Graphics.Vty
+import           Graphics.Vty hiding (mkVty)
 import           System.Exit ( exitSuccess )
 
 import           Network.Mattermost.Types
@@ -24,13 +24,13 @@ import           Types.Common
 
 type State = List () Team
 
-interactiveTeamSelection :: [Team] -> IO Team
-interactiveTeamSelection teams = do
+interactiveTeamSelection :: Vty -> IO Vty -> [Team] -> IO (Team, Vty)
+interactiveTeamSelection vty mkVty teams = do
     let state = list () (V.fromList sortedTeams) 1
         sortedTeams = sortBy (compare `F.on` teamName) teams
-    finalSt <- defaultMain app state
+    (finalSt, finalVty) <- customMainWithVty vty mkVty Nothing app state
     let Just (_, t) = listSelectedElement finalSt
-    return t
+    return (t, finalVty)
 
 app :: App State e ()
 app = App

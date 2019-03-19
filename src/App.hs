@@ -56,8 +56,6 @@ runMatterhorn :: Options -> Config -> IO ChatState
 runMatterhorn opts config = do
     setupCpuUsage config
 
-    st <- setupState (optLogLocation opts) config
-
     let mkVty = do
           vty <- Vty.mkVty Vty.defaultConfig
           let output = Vty.outputIface vty
@@ -65,7 +63,8 @@ runMatterhorn opts config = do
           Vty.setMode output Vty.Hyperlink $ configHyperlinkingMode config
           return vty
 
-    finalSt <- customMain mkVty (Just $ st^.csResources.crEventQueue) app st
+    (st, vty) <- setupState mkVty (optLogLocation opts) config
+    finalSt <- customMain vty mkVty (Just $ st^.csResources.crEventQueue) app st
 
     case finalSt^.csEditState.cedSpellChecker of
         Nothing -> return ()

@@ -16,7 +16,7 @@ import           Brick.Widgets.Border
 import           Brick.Widgets.Center
 import           Brick.Widgets.Edit
 import qualified Data.Text as T
-import           Graphics.Vty
+import           Graphics.Vty hiding (mkVty)
 import           Lens.Micro.Platform ( (.~), Lens', makeLenses )
 import           System.Exit ( exitSuccess )
 import qualified System.IO.Error as Err
@@ -47,13 +47,15 @@ validHostname ls =
        then Just t
        else Nothing
 
-interactiveGatherCredentials :: ConnectionInfo
+interactiveGatherCredentials :: Vty
+                             -> IO Vty
+                             -> ConnectionInfo
                              -> Maybe AuthenticationException
-                             -> IO ConnectionInfo
-interactiveGatherCredentials config authError = do
+                             -> IO (ConnectionInfo, Vty)
+interactiveGatherCredentials vty mkVty config authError = do
     let state = newState config authError
-    finalSt <- defaultMain app state
-    return $ formState $ finalSt^.loginForm
+    (finalSt, finalVty) <- customMainWithVty vty mkVty Nothing app state
+    return (formState $ finalSt^.loginForm, finalVty)
 
 newState :: ConnectionInfo -> Maybe AuthenticationException -> State
 newState cInfo authError = state
