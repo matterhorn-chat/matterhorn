@@ -4,6 +4,8 @@ module Draw.Messages
   , renderSingleMessage
   , unsafeRenderMessageSelection
   , renderLastMessages
+  , chronologicalMsgsWithThreadStates
+  , retrogradeMsgsWithThreadStates
   )
 where
 
@@ -45,11 +47,11 @@ nameForUserRef st uref =
 renderSingleMessage :: ChatState
                     -> HighlightSet
                     -> Maybe ServerTime
-                    -> ThreadState
                     -> Message
+                    -> ThreadState
                     -> Widget Name
-renderSingleMessage st hs ind threadState =
-  renderChatMessage st hs ind threadState (withBrackets . renderTime st . withServerTime)
+renderSingleMessage st hs ind m threadState =
+  renderChatMessage st hs ind threadState (withBrackets . renderTime st . withServerTime) m
 
 renderChatMessage :: ChatState
                   -> HighlightSet
@@ -119,22 +121,22 @@ renderChatMessage st hs ind threadState renderTimeFunc msg =
 -- message list types for the 'before' and 'after' (i.e. the
 -- chronological or retrograde message sequences).
 unsafeRenderMessageSelection :: (Foldable f, Foldable g)
-                             => (Message, (f Message, g Message))
-                             -> (Message -> Widget Name)
+                             => ((Message, ThreadState), (f (Message, ThreadState), g (Message, ThreadState)))
+                             -> (Message -> ThreadState -> Widget Name)
                              -> Widget Name
-unsafeRenderMessageSelection (curMsg, (before, after)) doMsgRender =
+unsafeRenderMessageSelection ((curMsg, curThreadState), (before, after)) doMsgRender =
   Widget Greedy Greedy $ do
     ctx <- getContext
     curMsgResult <- withReaderT relaxHeight $ render $
                     forceAttr messageSelectAttr $
-                    padRight Max $ doMsgRender curMsg
+                    padRight Max $ doMsgRender curMsg curThreadState
 
     let targetHeight = ctx^.availHeightL
         upperHeight = targetHeight `div` 2
         lowerHeight = targetHeight - upperHeight
 
-        lowerRender = render1HLimit doMsgRender Vty.vertJoin targetHeight
-        upperRender = render1HLimit doMsgRender (flip Vty.vertJoin) targetHeight
+        lowerRender img (m, tState) = render1HLimit doMsgRender Vty.vertJoin targetHeight img tState m
+        upperRender img (m, tState) = render1HLimit doMsgRender (flip Vty.vertJoin) targetHeight img tState m
 
     lowerHalf <- foldM lowerRender Vty.emptyImage after
     upperHalf <- foldM upperRender Vty.emptyImage before
@@ -155,17 +157,17 @@ unsafeRenderMessageSelection (curMsg, (before, after)) doMsgRender =
 renderLastMessages :: ChatState
                    -> HighlightSet
                    -> Maybe ServerTime
-                   -> RetrogradeMessages
+                   -> DirectionalSeq Retrograde (Message, ThreadState)
                    -> Widget Name
 renderLastMessages st hs editCutoff msgs =
     Widget Greedy Greedy $ do
         ctx <- getContext
         let targetHeight = ctx^.availHeightL
             renderBuild img (m, threadState) =
-                render1HLimit (doMsgRender threadState) (flip Vty.vertJoin) targetHeight img m
+                render1HLimit doMsgRender (flip Vty.vertJoin) targetHeight img threadState m
             doMsgRender = renderSingleMessage st hs editCutoff
 
-        img <- foldM renderBuild Vty.emptyImage $ retrogradeMsgsWithThreadStates msgs
+        img <- foldM renderBuild Vty.emptyImage msgs
         return $ emptyResult & imageL .~ (Vty.cropTop targetHeight img)
 
 retrogradeMsgsWithThreadStates :: RetrogradeMessages -> DirectionalSeq Retrograde (Message, ThreadState)
@@ -178,6 +180,21 @@ retrogradeMsgsWithThreadStates msgs = DSeq $ checkAdjacentMessages (dseq msgs)
                     prev Seq.:< _ ->
                         (m, threadStateFor m prev) Seq.<| checkAdjacentMessages t
                     Seq.EmptyL -> case m^.mInReplyToMsg of
+                        InReplyTo _ ->
+                            Seq.singleton (m, InThreadShowParent)
+                        _ ->
+                            Seq.singleton (m, NoThread)
+
+chronologicalMsgsWithThreadStates :: Messages -> DirectionalSeq Chronological (Message, ThreadState)
+chronologicalMsgsWithThreadStates msgs = DSeq $ checkAdjacentMessages (dseq msgs)
+    where
+        checkAdjacentMessages s = case Seq.viewr s of
+            Seq.EmptyR -> mempty
+            t Seq.:> m ->
+                case Seq.viewr t of
+                    _ Seq.:> prev ->
+                        checkAdjacentMessages t Seq.|> (m, threadStateFor m prev)
+                    Seq.EmptyR -> case m^.mInReplyToMsg of
                         InReplyTo _ ->
                             Seq.singleton (m, InThreadShowParent)
                         _ ->
@@ -204,23 +221,25 @@ threadStateFor msg prev = case msg^.mInReplyToMsg of
 relaxHeight :: Context -> Context
 relaxHeight c = c & availHeightL .~ (max maxMessageHeight (c^.availHeightL))
 
-render1HLimit :: (Message -> Widget Name)
+render1HLimit :: (Message -> ThreadState -> Widget Name)
               -> (Vty.Image -> Vty.Image -> Vty.Image)
               -> Int
               -> Vty.Image
+              -> ThreadState
               -> Message
               -> RenderM Name Vty.Image
-render1HLimit doMsgRender fjoin lim img msg
+render1HLimit doMsgRender fjoin lim img threadState msg
   | Vty.imageHeight img >= lim = return img
-  | otherwise = fjoin img <$> render1 doMsgRender msg
+  | otherwise = fjoin img <$> render1 doMsgRender threadState msg
 
-render1 :: (Message -> Widget Name)
+render1 :: (Message -> ThreadState -> Widget Name)
+        -> ThreadState
         -> Message
         -> RenderM Name Vty.Image
-render1 doMsgRender msg = case msg^.mDeleted of
+render1 doMsgRender threadState msg = case msg^.mDeleted of
     True -> return Vty.emptyImage
     False -> do
         r <- withReaderT relaxHeight $
              render $ padRight Max $
-             doMsgRender msg
+             doMsgRender msg threadState
         return $ r^.imageL

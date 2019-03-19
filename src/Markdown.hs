@@ -6,7 +6,6 @@
 
 module Markdown
   ( MessageData(..)
-  , ThreadState(..)
   , renderMessage
   , renderText
   , renderText'
@@ -98,12 +97,6 @@ appendEditSentinel sentinel b =
     in case b of
         C.Para is -> S.singleton $ C.Para (is |> C.Str " " |> m)
         _ -> S.fromList [b, s]
-
-data ThreadState =
-    NoThread
-    | InThreadShowParent
-    | InThread
-    deriving (Show, Eq)
 
 -- | A bundled structure that includes all the information necessary
 -- to render a given message

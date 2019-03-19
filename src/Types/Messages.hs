@@ -47,6 +47,7 @@ module Types.Messages
   , mOriginalPost, mChannelId, mMarkdownSource
   , MessageType(..)
   , MessageId(..)
+  , ThreadState(..)
   , isPostMessage
   , messagePostId
   , messageIdPostId
@@ -66,8 +67,7 @@ module Types.Messages
   , unreverseMessages
     -- * Operations on Posted Messages
   , splitMessages
-  , splitMessagesOn
-  , splitRetrogradeMessagesOn
+  , splitDirSeqOn
   , findMessage
   , getRelMessageId
   , getNextMessage
@@ -120,6 +120,12 @@ import           Types.DirectionalSeq
 import           Types.Posts
 import           Types.UserNames
 
+
+data ThreadState =
+    NoThread
+    | InThreadShowParent
+    | InThread
+    deriving (Show, Eq)
 
 -- ----------------------------------------------------------------------
 -- * Messages
@@ -391,34 +397,12 @@ reverseMessages = DSeq . Seq.reverse . dseq
 unreverseMessages :: RetrogradeMessages -> Messages
 unreverseMessages = DSeq . Seq.reverse . dseq
 
--- | Splits the message list at first message where the specified
--- predicate returns true.  The result is the message where the split
--- occurred, followed by the messages preceeding the split point (in
--- retrograde order) and the messages following the split point).  If
--- the predicate never matches a message before reaching the end of
--- the list, then the matched message is None and all of the messages
--- are in the first (retrograde) collection of of messages.
-splitMessagesOn :: (Message -> Bool)
-                -> Messages
-                -> (Maybe Message, (RetrogradeMessages, Messages))
-splitMessagesOn = splitMsgSeqOn
-
--- | Similar to 'splitMessagesOn', but taking RetrogradeMessages as input.
-splitRetrogradeMessagesOn :: (Message -> Bool)
-                          -> RetrogradeMessages
-                          -> (Maybe Message, (Messages, RetrogradeMessages))
-splitRetrogradeMessagesOn = splitMsgSeqOn
-
--- n.b., the splitMessagesOn and splitRetrogradeMessagesOn could be
--- unified into the following, but that will require TypeFamilies or
--- similar to relate d and r SeqDirection types.  For now, it's
--- simplier to just have two API endpoints.
-splitMsgSeqOn :: SeqDirection d =>
-                 (Message -> Bool)
-              -> DirectionalSeq d Message
-              -> (Maybe Message, (DirectionalSeq (ReverseDirection d) Message,
-                                  DirectionalSeq d Message))
-splitMsgSeqOn f msgs =
+splitDirSeqOn :: SeqDirection d
+              => (a -> Bool)
+              -> DirectionalSeq d a
+              -> (Maybe a, (DirectionalSeq (ReverseDirection d) a,
+                            DirectionalSeq d a))
+splitDirSeqOn f msgs =
     let (removed, remaining) = dirSeqBreakl f msgs
         devomer = DSeq $ Seq.reverse $ dseq removed
     in (withDirSeqHead id remaining, (devomer, onDirectedSeq (Seq.drop 1) remaining))
@@ -435,9 +419,9 @@ splitMsgSeqOn f msgs =
 -- all the messages that follow the found message (none if the message
 -- was never found) in *forward* order.
 splitMessages :: Maybe MessageId
-              -> Messages
-              -> (Maybe Message, (RetrogradeMessages, Messages))
-splitMessages mid msgs = splitMessagesOn (\m -> isJust mid && m^.mMessageId == mid) msgs
+              -> DirectionalSeq Chronological (Message, ThreadState)
+              -> (Maybe (Message, ThreadState), (DirectionalSeq Retrograde (Message, ThreadState), DirectionalSeq Chronological (Message, ThreadState)))
+splitMessages mid msgs = splitDirSeqOn (\(m, _) -> isJust mid && m^.mMessageId == mid) msgs
 
 -- | findMessage searches for a specific message as identified by the
 -- PostId.  The search starts from the most recent messages because
@@ -503,7 +487,7 @@ getRelMessage :: SeqDirection dir =>
               -> Maybe Message
 getRelMessage matcher msgs =
   let after = case matcher of
-                Just matchFun -> case splitMsgSeqOn matchFun msgs of
+                Just matchFun -> case splitDirSeqOn matchFun msgs of
                                    (_, (_, ms)) -> ms
                 Nothing -> msgs
   in withDirSeqHead id $ filterMessages validSelectableMessage after

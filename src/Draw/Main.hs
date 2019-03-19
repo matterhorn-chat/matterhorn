@@ -331,7 +331,9 @@ renderCurrentChannelDisplay st hs = header <=> messages
             renderMessagesWithSelect (st^.csMessageSelect) channelMessages
         _ ->
             cached (ChannelMessages cId) $
-            renderLastMessages st hs editCutoff $ reverseMessages channelMessages
+            renderLastMessages st hs editCutoff $
+            retrogradeMsgsWithThreadStates $
+            reverseMessages channelMessages
 
     renderMessagesWithSelect (MessageSelectState selMsgId) msgs =
         -- In this case, we want to fill the message list with messages
@@ -347,13 +349,13 @@ renderCurrentChannelDisplay st hs = header <=> messages
         -- First, we sanity-check the application state because under
         -- some conditions, the selected message might be gone (e.g.
         -- deleted).
-        let (s, (before, after)) = splitMessages selMsgId msgs
+        let (s, (before, after)) = splitDirSeqOn (\(m, _) -> m^.mMessageId == selMsgId) msgsWithStates
+            msgsWithStates = chronologicalMsgsWithThreadStates msgs
         in case s of
              Nothing ->
                  renderLastMessages st hs editCutoff before
              Just m ->
-                 -- FIXME
-                 unsafeRenderMessageSelection (m, (before, after)) (renderSingleMessage st hs Nothing NoThread)
+                 unsafeRenderMessageSelection (m, (before, after)) (renderSingleMessage st hs Nothing)
 
     cutoff = getNewMessageCutoff cId st
     editCutoff = getEditedMessageCutoff cId st

@@ -18,7 +18,6 @@ import           Network.Mattermost.Types
 import           Draw.Main
 import           Draw.Messages
 import           Draw.Util
-import           Markdown ( ThreadState(NoThread) )
 import           Themes
 import           Types
 
@@ -75,8 +74,8 @@ drawPostsBox contents st =
           | otherwise = vBox renderedMessageList
 
         -- The render-message function we're using
-        renderMessageForOverlay msg =
-          let renderedMsg = renderSingleMessage st hs Nothing NoThread msg
+        renderMessageForOverlay msg tState =
+          let renderedMsg = renderSingleMessage st hs Nothing msg tState
           in case msg^.mOriginalPost of
             -- We should factor out some of the channel name logic at
             -- some point, but we can do that later
@@ -94,8 +93,11 @@ drawPostsBox contents st =
 
         -- The full message list, rendered with the current selection
         renderedMessageList =
-          let (s, (before, after)) = splitMessages (MessagePostId <$> st^.csPostListOverlay.postListSelected) messages
+          let (s, (before, after)) = splitDirSeqOn matchesMessage messagesWithStates
+              matchesMessage (m, _) = m^.mMessageId == (MessagePostId <$> st^.csPostListOverlay.postListSelected)
+              messagesWithStates = chronologicalMsgsWithThreadStates messages
           in case s of
-            Nothing -> map renderMessageForOverlay (reverse (toList messages))
+            Nothing ->
+                map (uncurry renderMessageForOverlay) (reverse (toList messagesWithStates))
             Just curMsg ->
               [unsafeRenderMessageSelection (curMsg, (after, before)) renderMessageForOverlay]

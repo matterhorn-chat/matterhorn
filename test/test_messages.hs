@@ -464,19 +464,19 @@ lookupTests = testGroup "Lookup"
 splitTests :: TestTree
 splitTests = testGroup "Split"
              [ testCase "split nothing on empty" $
-                        let (m, _) = splitMessages Nothing noMessages
+                        let (m, _) = splitDirSeqOn (const False) noMessages
                         in isNothing m @? "must be nothing"
 
              , testProperty "split just on empty" $ \x ->
-                   let (m, _) = splitMessages (Just x) noMessages
+                   let (m, _) = splitDirSeqOn (\m2 -> m2^.mMessageId == x) noMessages
                    in isNothing m
 
-             , testProperty "split nothing on list" $ \x ->
-                 let (m, _) = splitMessages Nothing x
+             , testProperty "split nothing on list" $ \(x::Messages) ->
+                 let (m, _) = splitDirSeqOn (const False) x
                  in isNothing m
 
              , testProperty "split nothing on not found" $ \(w', x', y', z') ->
-                 let (m, _) = splitMessages (w^.mMessageId) msgs
+                 let (m, _) = splitDirSeqOn (\m2 -> m2^.mMessageId == w^.mMessageId) msgs
                      [w, x, y, z] = setDateOrderMessages [w', x', y', z']
                      msgs = makeMsgs [x, y, z]
                      idents = postids "wxyz" msgs
@@ -486,7 +486,7 @@ splitTests = testGroup "Split"
 
              , testProperty "all before reversed on split nothing"
                    $ \(w, x, y, z) ->
-                       let (_, (before, _)) = splitMessages Nothing msgs
+                       let (_, (before, _)) = splitDirSeqOn (const False) msgs
                            msgs = makeMsgs inpl
                            inpl = setDateOrderMessages [w, x, y, z]
                            control = idlist (reverse inpl)
@@ -496,7 +496,7 @@ splitTests = testGroup "Split"
 
              , testProperty "all before reversed on not found"
                    $ \(w', x', y', z') ->
-                       let (_, (before, _)) = splitMessages (w^.mMessageId) msgs
+                       let (_, (before, _)) = splitDirSeqOn (\m2 -> m2^.mMessageId == w^.mMessageId) msgs
                            msgs = makeMsgs inpl
                            inpl = [x, y, z]
                            [w, x, y, z] = setDateOrderMessages [w', x', y', z']
@@ -505,7 +505,7 @@ splitTests = testGroup "Split"
 
              , testProperty "found at first position"
                    $ \(w', x', y', z') ->
-                       let (m, _) = splitMessages (w^.mMessageId) msgs
+                       let (m, _) = splitDirSeqOn (\m2 -> m2^.mMessageId == w^.mMessageId) msgs
                            msgs = makeMsgs inpl
                            inpl = [w, x, y, z]
                            [w, x, y, z] = setDateOrderMessages [w', x', y', z']
@@ -514,7 +514,7 @@ splitTests = testGroup "Split"
 
              , testProperty "no before when found at first position"
                    $ \(w', x', y', z') ->
-                       let (_, (before, _)) = splitMessages (w^.mMessageId) msgs
+                       let (_, (before, _)) = splitDirSeqOn (\m2 -> m2^.mMessageId == w^.mMessageId) msgs
                            msgs = makeMsgs inpl
                            inpl = [w, x, y, z]
                            [w, x, y, z] = setDateOrderMessages [w', x', y', z']
@@ -523,7 +523,7 @@ splitTests = testGroup "Split"
                           counterexample info $ null $ unreverseMessages before
              , testProperty "remaining after when found at first position"
                    $ \(w', x', y', z') ->
-                       let (_, (_, afterMsgs)) = splitMessages (w^.mMessageId) msgs
+                       let (_, (_, afterMsgs)) = splitDirSeqOn (\m2 -> m2^.mMessageId == w^.mMessageId) msgs
                            msgs = makeMsgs inpl
                            inpl = [w, x, y, z]
                            [w, x, y, z] = setDateOrderMessages [w', x', y', z']
@@ -534,7 +534,7 @@ splitTests = testGroup "Split"
 
              , testProperty "found at last position"
                    $ \(w', x', y', z') ->
-                       let (m, _) = splitMessages (z^.mMessageId) msgs
+                       let (m, _) = splitDirSeqOn (\m2 -> m2^.mMessageId == z^.mMessageId) msgs
                            msgs = makeMsgs inpl
                            inpl = [w, x, y, z]
                            [w, x, y, z] = setDateOrderMessages [w', x', y', z']
@@ -543,7 +543,7 @@ splitTests = testGroup "Split"
 
              , testProperty "reversed before when found at last position"
                    $ \(w', x', y', z') ->
-                       let (_, (before, _)) = splitMessages (z^.mMessageId) msgs
+                       let (_, (before, _)) = splitDirSeqOn (\m2 -> m2^.mMessageId == z^.mMessageId) msgs
                            msgs = makeMsgs inpl
                            inpl = [w, x, y, z]
                            [w, x, y, z] = setDateOrderMessages [w', x', y', z']
@@ -554,7 +554,7 @@ splitTests = testGroup "Split"
 
              , testProperty "no after when found at last position"
                    $ \(w', x', y', z') ->
-                       let (_, (_, afterMsgs)) = splitMessages (z^.mMessageId) msgs
+                       let (_, (_, afterMsgs)) = splitDirSeqOn (\m2 -> m2^.mMessageId == z^.mMessageId) msgs
                            msgs = makeMsgs inpl
                            inpl = [w, x, y, z]
                            [w, x, y, z] = setDateOrderMessages [w', x', y', z']
@@ -564,7 +564,7 @@ splitTests = testGroup "Split"
 
              , testProperty "found at midpoint position"
                    $ \(v', w', x', y', z') ->
-                       let (m, _) = splitMessages (x^.mMessageId) msgs
+                       let (m, _) = splitDirSeqOn (\m2 -> m2^.mMessageId == x^.mMessageId) msgs
                            msgs = makeMsgs inpl
                            inpl = [v, w, x, y, z]
                            [v, w, x, y, z] = setDateOrderMessages
@@ -574,7 +574,7 @@ splitTests = testGroup "Split"
 
              , testProperty "reversed before when found at midpoint position"
                    $ \(v', w', x', y', z') ->
-                       let (_, (before, _)) = splitMessages (x^.mMessageId) msgs
+                       let (_, (before, _)) = splitDirSeqOn (\m2 -> m2^.mMessageId == x^.mMessageId) msgs
                            msgs = makeMsgs inpl
                            inpl = [v, w, x, y, z]
                            [v, w, x, y, z] = setDateOrderMessages
@@ -586,7 +586,7 @@ splitTests = testGroup "Split"
 
              , testProperty "after when found at midpoint position"
                    $ \(v', w', x', y', z') ->
-                       let (_, (_, afterMsgs)) = splitMessages (x^.mMessageId) msgs
+                       let (_, (_, afterMsgs)) = splitDirSeqOn (\m2 -> m2^.mMessageId == x^.mMessageId) msgs
                            msgs = makeMsgs inpl
                            inpl = [v, w, x, y, z]
                            [v, w, x, y, z] = setDateOrderMessages
