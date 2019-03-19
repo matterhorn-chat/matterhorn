@@ -348,9 +348,10 @@ renderCurrentChannelDisplay st hs = header <=> messages
         -- deleted).
         let (s, (before, after)) = splitMessages selMsgId msgs
         in case s of
-             Nothing -> renderLastMessages st hs editCutoff before
+             Nothing ->
+                 renderLastMessages st hs editCutoff before
              Just m ->
-               unsafeRenderMessageSelection (m, (before, after)) (renderSingleMessage st hs Nothing)
+                 unsafeRenderMessageSelection (m, (before, after)) (renderSingleMessage st hs Nothing)
 
     cutoff = getNewMessageCutoff cId st
     editCutoff = getEditedMessageCutoff cId st
@@ -362,7 +363,6 @@ renderCurrentChannelDisplay st hs = header <=> messages
 
     cId = st^.csCurrentChannelId
     chan = st^.csCurrentChannel
-
 
 getMessageListing :: ChannelId -> ChatState -> Messages
 getMessageListing cId st =
