@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -69,6 +70,8 @@ module Types.Messages
   , splitMessages
   , splitDirSeqOn
   , findMessage
+  , chronologicalMsgsWithThreadStates
+  , retrogradeMsgsWithThreadStates
   , getRelMessageId
   , getNextMessage
   , getPrevMessage
@@ -422,6 +425,54 @@ splitMessages :: Maybe MessageId
               -> DirectionalSeq Chronological (Message, ThreadState)
               -> (Maybe (Message, ThreadState), (DirectionalSeq Retrograde (Message, ThreadState), DirectionalSeq Chronological (Message, ThreadState)))
 splitMessages mid msgs = splitDirSeqOn (\(m, _) -> isJust mid && m^.mMessageId == mid) msgs
+
+-- | Given a message and its chronological predecessor, return
+-- the thread state of the specified message with respect to its
+-- predecessor.
+threadStateFor :: Message
+               -- ^ The message whose state is to be obtained.
+               -> Message
+               -- ^ The message's predecessor.
+               -> ThreadState
+threadStateFor msg prev = case msg^.mInReplyToMsg of
+    InReplyTo rootId ->
+        if | (prev^.mMessageId) == Just (MessagePostId rootId) ->
+               InThread
+           | prev^.mInReplyToMsg == msg^.mInReplyToMsg ->
+               InThread
+           | otherwise ->
+               InThreadShowParent
+    _ -> NoThread
+
+retrogradeMsgsWithThreadStates :: RetrogradeMessages -> DirectionalSeq Retrograde (Message, ThreadState)
+retrogradeMsgsWithThreadStates msgs = DSeq $ checkAdjacentMessages (dseq msgs)
+    where
+        checkAdjacentMessages s = case Seq.viewl s of
+            Seq.EmptyL -> mempty
+            m Seq.:< t ->
+                case Seq.viewl t of
+                    prev Seq.:< _ ->
+                        (m, threadStateFor m prev) Seq.<| checkAdjacentMessages t
+                    Seq.EmptyL -> case m^.mInReplyToMsg of
+                        InReplyTo _ ->
+                            Seq.singleton (m, InThreadShowParent)
+                        _ ->
+                            Seq.singleton (m, NoThread)
+
+chronologicalMsgsWithThreadStates :: Messages -> DirectionalSeq Chronological (Message, ThreadState)
+chronologicalMsgsWithThreadStates msgs = DSeq $ checkAdjacentMessages (dseq msgs)
+    where
+        checkAdjacentMessages s = case Seq.viewr s of
+            Seq.EmptyR -> mempty
+            t Seq.:> m ->
+                case Seq.viewr t of
+                    _ Seq.:> prev ->
+                        checkAdjacentMessages t Seq.|> (m, threadStateFor m prev)
+                    Seq.EmptyR -> case m^.mInReplyToMsg of
+                        InReplyTo _ ->
+                            Seq.singleton (m, InThreadShowParent)
+                        _ ->
+                            Seq.singleton (m, NoThread)
 
 -- | findMessage searches for a specific message as identified by the
 -- PostId.  The search starts from the most recent messages because
