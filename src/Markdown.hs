@@ -168,7 +168,6 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                     w <- B.render msgWidget
                     B.render $ B.vLimit (V.imageHeight $ w^.B.imageL) $
                         B.padRight (B.Pad 1) B.vBorder B.<+> (B.Widget B.Fixed B.Fixed $ return w)
-            -- in (B.txt "[reply] " <+> p) B.<=> withBorder
             in p B.<=> withBorder
     in if not mdRenderReplyParent
        then (msgWidget, False)
