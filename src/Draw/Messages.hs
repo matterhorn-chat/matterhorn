@@ -3,6 +3,7 @@ module Draw.Messages
   , maxMessageHeight
   , renderSingleMessage
   , unsafeRenderMessageSelection
+  , renderLastMessages
   )
 where
 
@@ -153,3 +154,32 @@ unsafeRenderMessageSelection (curMsg, (before, after)) doMsgRender =
                           then Vty.cropBottom (lowerHeight - curHeight) lowerHalf
                           else Vty.cropBottom lowerHeight lowerHalf)
     return $ emptyResult & imageL .~ img
+
+renderLastMessages :: ChatState
+                   -> HighlightSet
+                   -> Maybe ServerTime
+                   -> RetrogradeMessages
+                   -> Widget Name
+renderLastMessages st hs editCutoff msgs =
+    Widget Greedy Greedy $ do
+        ctx <- getContext
+        let targetHeight = ctx^.availHeightL
+            renderBuild = render1HLimit (flip Vty.vertJoin) targetHeight
+        img <- foldM renderBuild Vty.emptyImage msgs
+        return $ emptyResult & imageL .~ (Vty.cropTop targetHeight img)
+
+    where
+
+    relaxHeight c = c & availHeightL .~ (max maxMessageHeight (c^.availHeightL))
+
+    render1HLimit fjoin lim img msg
+      | Vty.imageHeight img >= lim = return img
+      | otherwise = fjoin img <$> render1 msg
+
+    render1 msg = case msg^.mDeleted of
+                    True -> return Vty.emptyImage
+                    False -> do
+                      r <- withReaderT relaxHeight $
+                           render $ padRight Max $
+                                  renderSingleMessage st hs editCutoff msg
+                      return $ r^.imageL

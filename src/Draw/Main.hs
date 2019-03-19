@@ -11,7 +11,6 @@ import           Brick.Widgets.Center ( hCenter )
 import           Brick.Widgets.List ( listElements )
 import           Brick.Widgets.Edit ( editContentsL, renderEditor, getEditContents )
 import           Control.Arrow ( (>>>) )
-import           Control.Monad.Trans.Reader ( withReaderT )
 import           Data.Char ( isSpace, isPunctuation )
 import qualified Data.Sequence as Seq
 import qualified Data.Set as S
@@ -331,7 +330,7 @@ renderCurrentChannelDisplay st hs = header <=> messages
             renderMessagesWithSelect (st^.csMessageSelect) channelMessages
         _ ->
             cached (ChannelMessages cId) $
-            renderLastMessages $ reverseMessages channelMessages
+            renderLastMessages st hs editCutoff $ reverseMessages channelMessages
 
     renderMessagesWithSelect (MessageSelectState selMsgId) msgs =
         -- In this case, we want to fill the message list with messages
@@ -349,7 +348,7 @@ renderCurrentChannelDisplay st hs = header <=> messages
         -- deleted).
         let (s, (before, after)) = splitMessages selMsgId msgs
         in case s of
-             Nothing -> renderLastMessages before
+             Nothing -> renderLastMessages st hs editCutoff before
              Just m ->
                unsafeRenderMessageSelection (m, (before, after)) (renderSingleMessage st hs Nothing)
 
@@ -360,30 +359,6 @@ renderCurrentChannelDisplay st hs = header <=> messages
                           cutoff
                           (getDateFormat st)
                           (st ^. timeZone)
-
-
-    renderLastMessages :: RetrogradeMessages -> Widget Name
-    renderLastMessages msgs =
-        Widget Greedy Greedy $ do
-            ctx <- getContext
-            let targetHeight = ctx^.availHeightL
-                renderBuild = render1HLimit (flip Vty.vertJoin) targetHeight
-            img <- foldM renderBuild Vty.emptyImage msgs
-            return $ emptyResult & imageL .~ (Vty.cropTop targetHeight img)
-
-    relaxHeight c = c & availHeightL .~ (max maxMessageHeight (c^.availHeightL))
-
-    render1HLimit fjoin lim img msg
-      | Vty.imageHeight img >= lim = return img
-      | otherwise = fjoin img <$> render1 msg
-
-    render1 msg = case msg^.mDeleted of
-                    True -> return Vty.emptyImage
-                    False -> do
-                      r <- withReaderT relaxHeight $
-                           render $ padRight Max $
-                                  renderSingleMessage st hs editCutoff msg
-                      return $ r^.imageL
 
     cId = st^.csCurrentChannelId
     chan = st^.csCurrentChannel
