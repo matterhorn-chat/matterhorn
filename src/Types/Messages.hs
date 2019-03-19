@@ -354,7 +354,6 @@ class MessageOps a where
     --     * no duplication (adjacent UnknownGap entries)
     addMessage :: Message -> a -> a
 
-
 instance MessageOps ChronologicalMessages where
     addMessage m ml =
         case viewr (dseq ml) of
@@ -366,7 +365,6 @@ instance MessageOps ChronologicalMessages where
                         then ml
                         else dirDateInsert m ml
                   LT -> dirDateInsert m ml
-
 
 dirDateInsert :: Message -> ChronologicalMessages -> ChronologicalMessages
 dirDateInsert m = onDirectedSeq $ finalize . foldr insAfter initial
@@ -424,7 +422,6 @@ splitMsgSeqOn f msgs =
     let (removed, remaining) = dirSeqBreakl f msgs
         devomer = DSeq $ Seq.reverse $ dseq removed
     in (withDirSeqHead id remaining, (devomer, onDirectedSeq (Seq.drop 1) remaining))
-
 
 -- ----------------------------------------------------------------------
 -- * Operations on Posted Messages
@@ -511,7 +508,6 @@ getRelMessage matcher msgs =
                 Nothing -> msgs
   in withDirSeqHead id $ filterMessages validSelectableMessage after
 
-
 -- | Find the most recent message that is a Post (as opposed to a
 -- local message) (if any).
 getLatestPostMsg :: Messages -> Maybe Message
@@ -527,14 +523,12 @@ getEarliestSelectableMessage msgs =
       EmptyL -> Nothing
       m :< _ -> Just m
 
-
 -- | Find the most recent message that is a message with an ID.
 getLatestSelectableMessage :: Messages -> Maybe Message
 getLatestSelectableMessage msgs =
     case viewr $ dropWhileR (not . validSelectableMessage) (dseq msgs) of
       EmptyR -> Nothing
       _ :> m -> Just m
-
 
 -- | Find the earliest message that is a Post (as opposed to a
 -- local message) (if any).
@@ -543,7 +537,6 @@ getEarliestPostMsg msgs =
     case viewl $ dropWhileL (not . validUserMessage) (dseq msgs) of
       EmptyL -> Nothing
       m :< _ -> Just m
-
 
 -- | Find the most recent message that is a message posted by a user
 -- that matches the test (if any), skipping local client messages and
