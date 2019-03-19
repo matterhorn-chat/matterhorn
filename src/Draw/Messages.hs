@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiWayIf #-}
 module Draw.Messages
   ( nameForUserRef
   , renderSingleMessage
@@ -133,12 +134,12 @@ unsafeRenderMessageSelection (curMsg, (before, after)) doMsgRender =
 
     let curHeight = Vty.imageHeight $ curMsgResult^.imageL
         uncropped = upperHalf Vty.<-> curMsgResult^.imageL Vty.<-> lowerHalf
-        img = if Vty.imageHeight lowerHalf < (lowerHeight - curHeight)
-              then Vty.cropTop targetHeight uncropped
-              else if Vty.imageHeight upperHalf < upperHeight
-                   then Vty.cropBottom targetHeight uncropped
-                   else Vty.cropTop upperHeight upperHalf Vty.<->
-                        curMsgResult^.imageL Vty.<->
+        img = if | Vty.imageHeight lowerHalf < (lowerHeight - curHeight) ->
+                     Vty.cropTop targetHeight uncropped
+                 | Vty.imageHeight upperHalf < upperHeight ->
+                     Vty.cropBottom targetHeight uncropped
+                 | otherwise ->
+                     Vty.cropTop upperHeight upperHalf Vty.<-> curMsgResult^.imageL Vty.<->
                         (if curHeight < lowerHeight
                           then Vty.cropBottom (lowerHeight - curHeight) lowerHalf
                           else Vty.cropBottom lowerHeight lowerHalf)
