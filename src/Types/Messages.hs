@@ -235,7 +235,7 @@ data UserRef = NoUser | UserI UserId | UserOverride Text
 data ReplyState =
     NotAReply
     | InReplyTo PostId
-    deriving (Show)
+    deriving (Show, Eq)
 
 -- | This type represents links to things in the 'open links' view.
 data LinkChoice =

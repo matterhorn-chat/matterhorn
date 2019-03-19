@@ -6,6 +6,7 @@
 
 module Markdown
   ( MessageData(..)
+  , ThreadState(..)
   , renderMessage
   , renderText
   , renderText'
@@ -98,6 +99,12 @@ appendEditSentinel sentinel b =
         C.Para is -> S.singleton $ C.Para (is |> C.Str " " |> m)
         _ -> S.fromList [b, s]
 
+data ThreadState =
+    NoThread
+    | InThreadShowParent
+    | InThread
+    deriving (Show, Eq)
+
 -- | A bundled structure that includes all the information necessary
 -- to render a given message
 data MessageData = MessageData
@@ -107,6 +114,7 @@ data MessageData = MessageData
   , mdUserName          :: Maybe Text
   , mdParentMessage     :: Maybe Message
   , mdParentUserName    :: Maybe Text
+  , mdThreadState       :: ThreadState
   , mdRenderReplyParent :: Bool
   , mdHighlightSet      :: HighlightSet
   , mdIndentBlocks      :: Bool
@@ -124,7 +132,7 @@ data MessageData = MessageData
 -- The 'mdShowOlderEdits' argument is a value read from the user's
 -- configuration file that indicates that "edited" markers should be
 -- shown for old messages (i.e., ignore the mdEditThreshold value).
-renderMessage :: MessageData -> (Widget a, Bool)
+renderMessage :: MessageData -> Widget a
 renderMessage md@MessageData { mdMessage = msg, .. } =
     let msgUsr = case mdUserName of
           Just u -> if omittedUsernameType (msg^.mType) then Nothing else Just u
@@ -163,21 +171,24 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
         rmd = renderMarkdown mdHighlightSet augmentedText
         msgWidget =
             (layout nameElems rmd . viewl) augmentedText
+        replyIndent = B.Widget B.Fixed B.Fixed $ do
+            w <- B.render msgWidget
+            B.render $ B.vLimit (V.imageHeight $ w^.B.imageL) $
+                B.padRight (B.Pad 1) B.vBorder B.<+> (B.Widget B.Fixed B.Fixed $ return w)
         withParent p =
-            let withBorder = B.Widget B.Fixed B.Fixed $ do
-                    w <- B.render msgWidget
-                    B.render $ B.vLimit (V.imageHeight $ w^.B.imageL) $
-                        B.padRight (B.Pad 1) B.vBorder B.<+> (B.Widget B.Fixed B.Fixed $ return w)
-            in p B.<=> withBorder
+            case mdThreadState of
+                NoThread -> msgWidget
+                InThreadShowParent -> p B.<=> replyIndent
+                InThread -> replyIndent
     in if not mdRenderReplyParent
-       then (msgWidget, False)
+       then msgWidget
        else case msg^.mInReplyToMsg of
-          NotAReply -> (msgWidget, False)
+          NotAReply -> msgWidget
           InReplyTo _ ->
               case mdParentMessage of
-                  Nothing -> (withParent (B.str "[loading...]"), True)
+                  Nothing -> withParent (B.str "[loading...]")
                   Just pm ->
-                      let (parentMsg, _) = renderMessage md
+                      let parentMsg = renderMessage md
                             { mdShowOlderEdits    = False
                             , mdMessage           = pm
                             , mdUserName          = mdParentUserName
@@ -185,7 +196,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                             , mdRenderReplyParent = False
                             , mdIndentBlocks      = False
                             }
-                      in (withParent (addEllipsis $ B.forceAttr replyParentAttr parentMsg), True)
+                      in withParent (addEllipsis $ B.forceAttr replyParentAttr parentMsg)
 
     where
         layout n m xs

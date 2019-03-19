@@ -18,6 +18,7 @@ import           Network.Mattermost.Types
 import           Draw.Main
 import           Draw.Messages
 import           Draw.Util
+import           Markdown ( ThreadState(NoThread) )
 import           Themes
 import           Types
 
@@ -75,7 +76,7 @@ drawPostsBox contents st =
 
         -- The render-message function we're using
         renderMessageForOverlay msg =
-          let renderedMsg = renderSingleMessage st hs Nothing msg
+          let renderedMsg = renderSingleMessage st hs Nothing NoThread msg
           in case msg^.mOriginalPost of
             -- We should factor out some of the channel name logic at
             -- some point, but we can do that later

@@ -23,6 +23,7 @@ import           Draw.Util
 import           Markdown
 import           Themes
 import           Types
+import           Types.DirectionalSeq
 
 maxMessageHeight :: Int
 maxMessageHeight = 200
@@ -44,23 +45,25 @@ nameForUserRef st uref =
 renderSingleMessage :: ChatState
                     -> HighlightSet
                     -> Maybe ServerTime
+                    -> ThreadState
                     -> Message
                     -> Widget Name
-renderSingleMessage st hs ind =
-  renderChatMessage st hs ind (withBrackets . renderTime st . withServerTime)
+renderSingleMessage st hs ind threadState =
+  renderChatMessage st hs ind threadState (withBrackets . renderTime st . withServerTime)
 
 renderChatMessage :: ChatState
                   -> HighlightSet
                   -> Maybe ServerTime
+                  -> ThreadState
                   -> (ServerTime -> Widget Name)
                   -> Message
                   -> Widget Name
-renderChatMessage st hs ind renderTimeFunc msg =
+renderChatMessage st hs ind threadState renderTimeFunc msg =
     let showOlderEdits = configShowOlderEdits $ st^.csResources.crConfiguration
         parent = case msg^.mInReplyToMsg of
           NotAReply -> Nothing
           InReplyTo pId -> getMessageForPostId st pId
-        (m, isReply) = renderMessage MessageData
+        m = renderMessage MessageData
               { mdMessage           = msg
               , mdUserName          = msg^.mUser.to (nameForUserRef st)
               , mdParentMessage     = parent
@@ -70,6 +73,7 @@ renderChatMessage st hs ind renderTimeFunc msg =
               , mdShowOlderEdits    = showOlderEdits
               , mdRenderReplyParent = True
               , mdIndentBlocks      = True
+              , mdThreadState       = threadState
               }
         msgAtch = if Seq.null (msg^.mAttachments)
           then Nothing
@@ -103,7 +107,8 @@ renderChatMessage st hs ind renderTimeFunc msg =
               | otherwise -> m
         fullMsg = vBox $ msgTxt : catMaybes [msgAtch, msgReac]
         maybeRenderTime w =
-            let maybePadTime = if isReply then (txt " " <=>) else id
+            let maybePadTime = if threadState == InThreadShowParent
+                               then (txt " " <=>) else id
             in hBox [maybePadTime $ renderTimeFunc (msg^.mDate), txt " ", w]
         maybeRenderTimeWith f = if isTransition msg then id else f
     in maybeRenderTimeWith maybeRenderTime fullMsg
@@ -156,9 +161,33 @@ renderLastMessages st hs editCutoff msgs =
     Widget Greedy Greedy $ do
         ctx <- getContext
         let targetHeight = ctx^.availHeightL
-            renderBuild = render1HLimit doMsgRender (flip Vty.vertJoin) targetHeight
+            renderBuild img (m, threadState) =
+                render1HLimit (doMsgRender threadState) (flip Vty.vertJoin) targetHeight img m
             doMsgRender = renderSingleMessage st hs editCutoff
-        img <- foldM renderBuild Vty.emptyImage msgs
+            msgsWithThreadStates :: DirectionalSeq Retrograde (Message, ThreadState)
+            msgsWithThreadStates = DSeq $ checkAdjacentParents (dseq msgs)
+            checkAdjacentParents s =
+                case Seq.viewl s of
+                    h Seq.:< t ->
+                        case Seq.viewl t of
+                            next Seq.:< _ ->
+                                let tState = case h^.mInReplyToMsg of
+                                        InReplyTo rootId ->
+                                            if (next^.mMessageId) == Just (MessagePostId rootId)
+                                            then InThread
+                                            else if next^.mInReplyToMsg == h^.mInReplyToMsg
+                                                 then InThread
+                                                 else InThreadShowParent
+                                        _ -> NoThread
+                                in (h, tState) Seq.<| checkAdjacentParents t
+                            Seq.EmptyL ->
+                                case h^.mInReplyToMsg of
+                                    InReplyTo _ -> Seq.singleton (h, InThreadShowParent)
+                                    _ -> Seq.singleton (h, NoThread)
+                    Seq.EmptyL ->
+                        mempty
+
+        img <- foldM renderBuild Vty.emptyImage msgsWithThreadStates
         return $ emptyResult & imageL .~ (Vty.cropTop targetHeight img)
 
 relaxHeight :: Context -> Context

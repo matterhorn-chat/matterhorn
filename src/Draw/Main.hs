@@ -241,7 +241,7 @@ renderUserCommandBox st hs =
             Replying msg _ ->
                 let msgWithoutParent = msg & mInReplyToMsg .~ NotAReply
                 in hBox [ replyArrow
-                        , addEllipsis $ fst $ renderMessage MessageData
+                        , addEllipsis $ renderMessage MessageData
                           { mdMessage           = msgWithoutParent
                           , mdUserName          = msgWithoutParent^.mUser.to (nameForUserRef st)
                           , mdParentMessage     = Nothing
@@ -251,6 +251,7 @@ renderUserCommandBox st hs =
                           , mdShowOlderEdits    = False
                           , mdRenderReplyParent = True
                           , mdIndentBlocks      = False
+                          , mdThreadState       = NoThread
                           }
                         ]
             _ -> emptyWidget
@@ -351,7 +352,8 @@ renderCurrentChannelDisplay st hs = header <=> messages
              Nothing ->
                  renderLastMessages st hs editCutoff before
              Just m ->
-                 unsafeRenderMessageSelection (m, (before, after)) (renderSingleMessage st hs Nothing)
+                 -- FIXME
+                 unsafeRenderMessageSelection (m, (before, after)) (renderSingleMessage st hs Nothing NoThread)
 
     cutoff = getNewMessageCutoff cId st
     editCutoff = getEditedMessageCutoff cId st
@@ -528,7 +530,7 @@ inputPreview st hs | not $ st^.csShowMessagePreview = emptyWidget
                        Just pm -> if T.null curStr
                                   then noPreview
                                   else prview pm $ getParentMessage st pm
-                     prview m p = fst $ renderMessage MessageData
+                     prview m p = renderMessage MessageData
                                   { mdMessage           = m
                                   , mdUserName          = m^.mUser.to (nameForUserRef st)
                                   , mdParentMessage     = p
@@ -538,6 +540,7 @@ inputPreview st hs | not $ st^.csShowMessagePreview = emptyWidget
                                   , mdShowOlderEdits    = False
                                   , mdRenderReplyParent = True
                                   , mdIndentBlocks      = True
+                                  , mdThreadState       = NoThread
                                   }
                  in (maybePreviewViewport msgPreview) <=>
                     hBorderWithLabel (withDefAttr clientEmphAttr $ str "[Preview ↑]")
