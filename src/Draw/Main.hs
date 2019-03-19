@@ -241,7 +241,7 @@ renderUserCommandBox st hs =
             Replying msg _ ->
                 let msgWithoutParent = msg & mInReplyToMsg .~ NotAReply
                 in hBox [ replyArrow
-                        , addEllipsis $ renderMessage MessageData
+                        , addEllipsis $ fst $ renderMessage MessageData
                           { mdMessage           = msgWithoutParent
                           , mdUserName          = msgWithoutParent^.mUser.to (nameForUserRef st)
                           , mdParentMessage     = Nothing
@@ -528,7 +528,7 @@ inputPreview st hs | not $ st^.csShowMessagePreview = emptyWidget
                        Just pm -> if T.null curStr
                                   then noPreview
                                   else prview pm $ getParentMessage st pm
-                     prview m p = renderMessage MessageData
+                     prview m p = fst $ renderMessage MessageData
                                   { mdMessage           = m
                                   , mdUserName          = m^.mUser.to (nameForUserRef st)
                                   , mdParentMessage     = p

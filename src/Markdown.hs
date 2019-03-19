@@ -124,7 +124,7 @@ data MessageData = MessageData
 -- The 'mdShowOlderEdits' argument is a value read from the user's
 -- configuration file that indicates that "edited" markers should be
 -- shown for old messages (i.e., ignore the mdEditThreshold value).
-renderMessage :: MessageData -> Widget a
+renderMessage :: MessageData -> (Widget a, Bool)
 renderMessage md@MessageData { mdMessage = msg, .. } =
     let msgUsr = case mdUserName of
           Just u -> if omittedUsernameType (msg^.mType) then Nothing else Just u
@@ -163,16 +163,22 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
         rmd = renderMarkdown mdHighlightSet augmentedText
         msgWidget =
             (layout nameElems rmd . viewl) augmentedText
-        withParent p = (replyArrow <+> p) B.<=> msgWidget
+        withParent p =
+            let withBorder = B.Widget B.Fixed B.Fixed $ do
+                    w <- B.render msgWidget
+                    B.render $ B.vLimit (V.imageHeight $ w^.B.imageL) $
+                        B.padRight (B.Pad 1) B.vBorder B.<+> (B.Widget B.Fixed B.Fixed $ return w)
+            -- in (B.txt "[reply] " <+> p) B.<=> withBorder
+            in p B.<=> withBorder
     in if not mdRenderReplyParent
-       then msgWidget
+       then (msgWidget, False)
        else case msg^.mInReplyToMsg of
-          NotAReply -> msgWidget
+          NotAReply -> (msgWidget, False)
           InReplyTo _ ->
               case mdParentMessage of
-                  Nothing -> withParent (B.str "[loading...]")
+                  Nothing -> (withParent (B.str "[loading...]"), True)
                   Just pm ->
-                      let parentMsg = renderMessage md
+                      let (parentMsg, _) = renderMessage md
                             { mdShowOlderEdits    = False
                             , mdMessage           = pm
                             , mdUserName          = mdParentUserName
@@ -180,7 +186,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                             , mdRenderReplyParent = False
                             , mdIndentBlocks      = False
                             }
-                      in withParent (addEllipsis $ B.forceAttr replyParentAttr parentMsg)
+                      in (withParent (addEllipsis $ B.forceAttr replyParentAttr parentMsg), True)
 
     where
         layout n m xs

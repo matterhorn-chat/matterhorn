@@ -30,7 +30,7 @@ viewMessageBox st =
                   parent = case msg^.mInReplyToMsg of
                        NotAReply -> Nothing
                        InReplyTo pId -> getMessageForPostId st pId
-              in cached ViewMessageArea $
+              in cached ViewMessageArea $ fst $
                  renderMessage $ MessageData { mdEditThreshold     = Nothing
                                              , mdShowOlderEdits    = False
                                              , mdMessage           = msg

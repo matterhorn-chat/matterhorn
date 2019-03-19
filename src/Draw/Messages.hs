@@ -60,7 +60,7 @@ renderChatMessage st hs ind renderTimeFunc msg =
         parent = case msg^.mInReplyToMsg of
           NotAReply -> Nothing
           InReplyTo pId -> getMessageForPostId st pId
-        m = renderMessage MessageData
+        (m, isReply) = renderMessage MessageData
               { mdMessage           = msg
               , mdUserName          = msg^.mUser.to (nameForUserRef st)
               , mdParentMessage     = parent
@@ -102,7 +102,9 @@ renderChatMessage st hs ind renderTimeFunc msg =
             _ | isJoinLeave msg -> withDefAttr clientMessageAttr m
               | otherwise -> m
         fullMsg = vBox $ msgTxt : catMaybes [msgAtch, msgReac]
-        maybeRenderTime w = hBox [renderTimeFunc (msg^.mDate), txt " ", w]
+        maybeRenderTime w =
+            let maybePadTime = if isReply then (txt " " <=>) else id
+            in hBox [maybePadTime $ renderTimeFunc (msg^.mDate), txt " ", w]
         maybeRenderTimeWith f = if isTransition msg then id else f
     in maybeRenderTimeWith maybeRenderTime fullMsg
 
