@@ -113,20 +113,6 @@ unsafeRenderMessageSelection ::
   Widget Name
 unsafeRenderMessageSelection (curMsg, (before, after)) doMsgRender =
   Widget Greedy Greedy $ do
-    let relaxHeight c = c & availHeightL .~ (max maxMessageHeight (c^.availHeightL))
-
-        render1HLimit fjoin lim img msg
-          | Vty.imageHeight img >= lim = return img
-          | otherwise = fjoin img <$> render1 msg
-
-        render1 msg = case msg^.mDeleted of
-                        True -> return Vty.emptyImage
-                        False -> do
-                          r <- withReaderT relaxHeight $
-                               render $ padRight Max $
-                               doMsgRender msg
-                          return $ r^.imageL
-
     ctx <- getContext
     curMsgResult <- withReaderT relaxHeight $ render $
                     forceAttr messageSelectAttr $
@@ -136,8 +122,8 @@ unsafeRenderMessageSelection (curMsg, (before, after)) doMsgRender =
         upperHeight = targetHeight `div` 2
         lowerHeight = targetHeight - upperHeight
 
-        lowerRender = render1HLimit Vty.vertJoin targetHeight
-        upperRender = render1HLimit (flip Vty.vertJoin) targetHeight
+        lowerRender = render1HLimit doMsgRender Vty.vertJoin targetHeight
+        upperRender = render1HLimit doMsgRender (flip Vty.vertJoin) targetHeight
 
     lowerHalf <- foldM lowerRender Vty.emptyImage after
     upperHalf <- foldM upperRender Vty.emptyImage before
@@ -164,22 +150,31 @@ renderLastMessages st hs editCutoff msgs =
     Widget Greedy Greedy $ do
         ctx <- getContext
         let targetHeight = ctx^.availHeightL
-            renderBuild = render1HLimit (flip Vty.vertJoin) targetHeight
+            renderBuild = render1HLimit doMsgRender (flip Vty.vertJoin) targetHeight
+            doMsgRender = renderSingleMessage st hs editCutoff
         img <- foldM renderBuild Vty.emptyImage msgs
         return $ emptyResult & imageL .~ (Vty.cropTop targetHeight img)
 
-    where
+relaxHeight :: Context -> Context
+relaxHeight c = c & availHeightL .~ (max maxMessageHeight (c^.availHeightL))
 
-    relaxHeight c = c & availHeightL .~ (max maxMessageHeight (c^.availHeightL))
+render1HLimit :: (Message -> Widget Name)
+              -> (Vty.Image -> Vty.Image -> Vty.Image)
+              -> Int
+              -> Vty.Image
+              -> Message
+              -> RenderM Name Vty.Image
+render1HLimit doMsgRender fjoin lim img msg
+  | Vty.imageHeight img >= lim = return img
+  | otherwise = fjoin img <$> render1 doMsgRender msg
 
-    render1HLimit fjoin lim img msg
-      | Vty.imageHeight img >= lim = return img
-      | otherwise = fjoin img <$> render1 msg
-
-    render1 msg = case msg^.mDeleted of
-                    True -> return Vty.emptyImage
-                    False -> do
-                      r <- withReaderT relaxHeight $
-                           render $ padRight Max $
-                                  renderSingleMessage st hs editCutoff msg
-                      return $ r^.imageL
+render1 :: (Message -> Widget Name)
+        -> Message
+        -> RenderM Name Vty.Image
+render1 doMsgRender msg = case msg^.mDeleted of
+    True -> return Vty.emptyImage
+    False -> do
+        r <- withReaderT relaxHeight $
+             render $ padRight Max $
+             doMsgRender msg
+        return $ r^.imageL
