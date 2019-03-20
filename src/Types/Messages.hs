@@ -66,12 +66,11 @@ module Types.Messages
   , filterMessages
   , reverseMessages
   , unreverseMessages
-    -- * Operations on Posted Messages
   , splitMessages
   , splitDirSeqOn
-  , findMessage
   , chronologicalMsgsWithThreadStates
   , retrogradeMsgsWithThreadStates
+  , findMessage
   , getRelMessageId
   , getNextMessage
   , getPrevMessage
