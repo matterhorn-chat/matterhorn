@@ -31,7 +31,9 @@ import           Cheapskate.Types ( Block
                                   , ListType
                                   )
 import qualified Data.Foldable as F
+import qualified Data.Map.Strict as Map
 import           Data.Monoid (First(..))
+import qualified Data.Sequence as Seq
 import           Data.Sequence ( ViewL(..)
                                , ViewR(..)
                                , (<|)
@@ -163,7 +165,8 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
         augmentedText = maybeAugment $ msg^.mText
         rmd = renderMarkdown mdHighlightSet augmentedText
         msgWidget =
-            (layout nameElems rmd . viewl) augmentedText
+            vBox $ (layout nameElems rmd . viewl) augmentedText :
+                   catMaybes [msgAtch, msgReac]
         replyIndent = B.Widget B.Fixed B.Fixed $ do
             ctx <- B.getContext
             -- NB: The amount subtracted here must be the total padding
@@ -171,6 +174,20 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
             w <- B.render $ B.hLimit (ctx^.B.availWidthL - 2) msgWidget
             B.render $ B.vLimit (V.imageHeight $ w^.B.imageL) $
                 B.padRight (B.Pad 1) B.vBorder B.<+> (B.Widget B.Fixed B.Fixed $ return w)
+        msgAtch = if Seq.null (msg^.mAttachments)
+          then Nothing
+          else Just $ B.withDefAttr clientMessageAttr $ vBox
+                 [ B.txt ("  [attached: `" <> a^.attachmentName <> "`]")
+                 | a <- toList (msg^.mAttachments)
+                 ]
+        msgReac = if Map.null (msg^.mReactions)
+          then Nothing
+          else let renderR e 1 = " [" <> e <> "]"
+                   renderR e n
+                     | n > 1     = " [" <> e <> " " <> T.pack (show n) <> "]"
+                     | otherwise = ""
+                   reacMsg = Map.foldMapWithKey renderR (msg^.mReactions)
+               in Just $ B.withDefAttr emojiAttr $ B.txt ("   " <> reacMsg)
         withParent p =
             case mdThreadState of
                 NoThread -> msgWidget

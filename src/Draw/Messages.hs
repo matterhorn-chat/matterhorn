@@ -10,9 +10,6 @@ where
 import           Brick
 import           Brick.Widgets.Border
 import           Control.Monad.Trans.Reader ( withReaderT )
-import qualified Data.Map.Strict as Map
-import qualified Data.Sequence as Seq
-import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( (.~), to )
 import           Network.Mattermost.Types ( ServerTime(..) )
@@ -75,21 +72,7 @@ renderChatMessage st hs ind threadState renderTimeFunc msg =
               , mdIndentBlocks      = True
               , mdThreadState       = threadState
               }
-        msgAtch = if Seq.null (msg^.mAttachments)
-          then Nothing
-          else Just $ withDefAttr clientMessageAttr $ vBox
-                 [ txt ("  [attached: `" <> a^.attachmentName <> "`]")
-                 | a <- toList (msg^.mAttachments)
-                 ]
-        msgReac = if Map.null (msg^.mReactions)
-          then Nothing
-          else let renderR e 1 = " [" <> e <> "]"
-                   renderR e n
-                     | n > 1     = " [" <> e <> " " <> T.pack (show n) <> "]"
-                     | otherwise = ""
-                   reacMsg = Map.foldMapWithKey renderR (msg^.mReactions)
-               in Just $ withDefAttr emojiAttr $ txt ("   " <> reacMsg)
-        msgTxt =
+        fullMsg =
           case msg^.mUser of
             NoUser
               | isGap msg -> withDefAttr gapMessageAttr m
@@ -105,7 +88,6 @@ renderChatMessage st hs ind threadState renderTimeFunc msg =
                         withDefAttr clientMessageAttr m
             _ | isJoinLeave msg -> withDefAttr clientMessageAttr m
               | otherwise -> m
-        fullMsg = vBox $ msgTxt : catMaybes [msgAtch, msgReac]
         maybeRenderTime w =
             let maybePadTime = if threadState == InThreadShowParent
                                then (txt " " <=>) else id
