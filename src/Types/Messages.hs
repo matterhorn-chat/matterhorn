@@ -446,13 +446,21 @@ threadStateFor msg prev = case msg^.mInReplyToMsg of
 retrogradeMsgsWithThreadStates :: RetrogradeMessages -> DirectionalSeq Retrograde (Message, ThreadState)
 retrogradeMsgsWithThreadStates msgs = DSeq $ checkAdjacentMessages (dseq msgs)
     where
+        getPredecessor ms =
+                case Seq.viewl ms of
+                    prev Seq.:< rest ->
+                        if not $ isTransition prev
+                        then Just prev
+                        else getPredecessor rest
+                    Seq.EmptyL -> Nothing
+
         checkAdjacentMessages s = case Seq.viewl s of
             Seq.EmptyL -> mempty
             m Seq.:< t ->
-                case Seq.viewl t of
-                    prev Seq.:< _ ->
+                case getPredecessor t of
+                    Just prev ->
                         (m, threadStateFor m prev) Seq.<| checkAdjacentMessages t
-                    Seq.EmptyL -> case m^.mInReplyToMsg of
+                    Nothing -> case m^.mInReplyToMsg of
                         InReplyTo _ ->
                             Seq.singleton (m, InThreadShowParent)
                         _ ->
@@ -461,13 +469,21 @@ retrogradeMsgsWithThreadStates msgs = DSeq $ checkAdjacentMessages (dseq msgs)
 chronologicalMsgsWithThreadStates :: Messages -> DirectionalSeq Chronological (Message, ThreadState)
 chronologicalMsgsWithThreadStates msgs = DSeq $ checkAdjacentMessages (dseq msgs)
     where
+        getPredecessor ms =
+                case Seq.viewr ms of
+                    rest Seq.:> prev ->
+                        if not $ isTransition prev
+                        then Just prev
+                        else getPredecessor rest
+                    Seq.EmptyR -> Nothing
+
         checkAdjacentMessages s = case Seq.viewr s of
             Seq.EmptyR -> mempty
             t Seq.:> m ->
-                case Seq.viewr t of
-                    _ Seq.:> prev ->
+                case getPredecessor t of
+                    Just prev ->
                         checkAdjacentMessages t Seq.|> (m, threadStateFor m prev)
-                    Seq.EmptyR -> case m^.mInReplyToMsg of
+                    Nothing -> case m^.mInReplyToMsg of
                         InReplyTo _ ->
                             Seq.singleton (m, InThreadShowParent)
                         _ ->
