@@ -165,7 +165,10 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
         msgWidget =
             (layout nameElems rmd . viewl) augmentedText
         replyIndent = B.Widget B.Fixed B.Fixed $ do
-            w <- B.render msgWidget
+            ctx <- B.getContext
+            -- NB: The amount subtracted here must be the total padding
+            -- added below (pad 1 + vBorder)
+            w <- B.render $ B.hLimit (ctx^.B.availWidthL - 2) msgWidget
             B.render $ B.vLimit (V.imageHeight $ w^.B.imageL) $
                 B.padRight (B.Pad 1) B.vBorder B.<+> (B.Widget B.Fixed B.Fixed $ return w)
         withParent p =
