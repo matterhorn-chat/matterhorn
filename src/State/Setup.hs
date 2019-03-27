@@ -10,16 +10,14 @@ import           Prelude.MH
 import           Brick.BChan
 import           Brick.Themes ( themeToAttrMap, loadCustomizations )
 import qualified Control.Concurrent.STM as STM
-import           Control.Exception ( catch )
 import           Data.Maybe ( fromJust )
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Time.Clock ( getCurrentTime )
 import           Graphics.Vty (Vty)
 import           Lens.Micro.Platform ( (.~) )
-import           System.Exit ( exitFailure )
+import           System.Exit ( exitFailure, exitSuccess )
 import           System.FilePath ( (</>), isRelative, dropFileName )
-import           System.IO.Error ( catchIOError )
 
 import           Network.Mattermost.Endpoints
 import           Network.Mattermost.Types
@@ -48,14 +46,6 @@ incompleteCredentials config = ConnectionInfo hStr (configPort config) uStr pStr
             Just (PasswordString s) -> s
             _                       -> ""
 
-convertLoginExceptions :: IO a -> IO (Either AuthenticationException a)
-convertLoginExceptions act =
-    (Right <$> act)
-        `catch` (\e -> return $ Left $ ResolveError e)
-        `catch` (\e -> return $ Left $ ConnectError e)
-        `catchIOError` (\e -> return $ Left $ AuthIOError e)
-        `catch` (\e -> return $ Left $ OtherAuthError e)
-
 apiLogEventToLogMessage :: LogEvent -> IO LogMessage
 apiLogEventToLogMessage ev = do
     now <- getCurrentTime
@@ -68,59 +58,21 @@ apiLogEventToLogMessage ev = do
                         }
 
 setupState :: IO Vty -> Maybe FilePath -> Config -> IO (ChatState, Vty)
-setupState mkVty mLogLocation initialConfig = do
+setupState mkVty mLogLocation config = do
   initialVty <- mkVty
 
-  -- If we don't have enough credentials, ask for them.
-  (connInfo, loginVty) <- case getCredentials initialConfig of
-      Nothing -> interactiveGatherCredentials initialVty mkVty (incompleteCredentials initialConfig) Nothing
-      Just connInfo -> return (connInfo, initialVty)
-
   eventChan <- newBChan 25
-  logMgr <- newLogManager eventChan (configLogMaxBufferSize initialConfig)
+  logMgr <- newLogManager eventChan (configLogMaxBufferSize config)
 
   let logApiEvent ev = apiLogEventToLogMessage ev >>= sendLogMessage logMgr
       setLogger cd = cd `withLogger` logApiEvent
-      poolCfg = ConnectionPoolConfig { cpIdleConnTimeout = 60
-                                     , cpStripesCount = 1
-                                     , cpMaxConnCount = 5
-                                     }
-      loginLoop (cInfo, iVty) = do
-        cd <- fmap setLogger $
-                if (configUnsafeUseHTTP initialConfig)
-                  then initConnectionDataInsecure (cInfo^.ciHostname)
-                         (fromIntegral (cInfo^.ciPort))
-                         poolCfg
-                  else initConnectionData (cInfo^.ciHostname)
-                         (fromIntegral (cInfo^.ciPort))
-                         poolCfg
 
-        let login = Login { username = cInfo^.ciUsername
-                          , password = cInfo^.ciPassword
-                          }
-        result <- convertLoginExceptions $ mmLogin cd login
+  (mLastAttempt, loginVty) <- interactiveGetLoginSession initialVty mkVty (configUnsafeUseHTTP config) setLogger (incompleteCredentials config)
 
-        -- Update the config with the entered settings so that later,
-        -- when we offer the option of saving the entered credentials to
-        -- disk, we can do so with an updated config.
-        let config =
-                initialConfig { configUser = Just $ cInfo^.ciUsername
-                              , configPass = Just $ PasswordString $ cInfo^.ciPassword
-                              , configPort = cInfo^.ciPort
-                              , configHost = Just $ cInfo^.ciHostname
-                              }
-
-        case result of
-            Right (Right (sess, user)) ->
-                return (sess, user, cd, config)
-            Right (Left e) ->
-                interactiveGatherCredentials iVty mkVty cInfo (Just $ LoginError e) >>=
-                    loginLoop
-            Left e ->
-                interactiveGatherCredentials iVty mkVty cInfo (Just e) >>=
-                    loginLoop
-
-  (session, me, cd, config) <- loginLoop (connInfo, loginVty)
+  (session, me, cd) <- case mLastAttempt of
+      Nothing -> exitSuccess
+      Just (AttemptFailed {}) -> exitFailure
+      Just (AttemptSucceeded ci sess user) -> return (sess, user, ci)
 
   teams <- mmGetUsersTeams UserMe session
   when (Seq.null teams) $ do
