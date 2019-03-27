@@ -11,7 +11,6 @@ module Markdown
   , renderText'
   , cursorSentinel
   , addEllipsis
-  , replyArrow
   , findVerbatimChunk
   )
 where
@@ -19,10 +18,9 @@ where
 import           Prelude ()
 import           Prelude.MH
 
-import           Brick ( (<+>), Widget(Widget), textWidth )
+import           Brick ( (<+>), Widget, textWidth )
 import qualified Brick as B
 import qualified Brick.Widgets.Border as B
-import qualified Brick.Widgets.Border.Style as B
 import qualified Brick.Widgets.Skylighting as BS
 import qualified Cheapskate as C
 import           Cheapskate.Types ( Block
@@ -586,13 +584,6 @@ textWithCursor :: Text -> Widget a
 textWithCursor t
     | T.any (== cursorSentinel) t = B.visible $ B.txt $ removeCursor t
     | otherwise = B.txt t
-
-replyArrow :: Widget a
-replyArrow =
-    Widget B.Fixed B.Fixed $ do
-        ctx <- B.getContext
-        let bs = ctx^.B.ctxBorderStyleL
-        B.render $ B.str [' ', B.bsCornerTL bs, '▸']
 
 findVerbatimChunk :: C.Blocks -> Maybe Text
 findVerbatimChunk = getFirst . F.foldMap go

@@ -619,3 +619,10 @@ mainInterface st =
     maybeSubdue = if appMode st == ChannelSelect
                   then forceAttr ""
                   else id
+
+replyArrow :: Widget a
+replyArrow =
+    Widget Fixed Fixed $ do
+        ctx <- getContext
+        let bs = ctx^.ctxBorderStyleL
+        render $ str [' ', bsCornerTL bs, '▸']
