@@ -65,14 +65,6 @@ data State =
 
 makeLenses ''State
 
-validHostname :: [Text] -> Maybe Text
-validHostname ls =
-    let s = T.unpack t
-        t = T.concat ls
-    in if all (flip notElem (":/"::String)) s
-       then Just t
-       else Nothing
-
 poolCfg :: ConnectionPoolConfig
 poolCfg = ConnectionPoolConfig { cpIdleConnTimeout = 60
                                , cpStripesCount = 1
@@ -180,13 +172,41 @@ app = App
   , appAttrMap      = const colorTheme
   }
 
-editHostname :: (Show n, Ord n) => Lens' s Text -> n -> s -> FormFieldState s e n
-editHostname stLens n =
-    let ini = id
-        val = validHostname
-        limit = Just 1
-        renderTxt = txt . T.unlines
-    in editField stLens n limit ini val renderTxt id
+onEvent :: State -> BrickEvent Name LoginEvent -> EventM Name (Next State)
+onEvent _  (VtyEvent (EvKey KEsc [])) = liftIO exitSuccess
+onEvent st (AppEvent (StartConnect initial host)) = do
+    continue $ st & currentState .~ Connecting initial host
+                  & lastAttempt .~ Nothing
+onEvent st (AppEvent StartupTimeout) = do
+    -- If the startup timer fired and we have already succeeded, halt.
+    case st^.lastAttempt of
+        Just (AttemptSucceeded {}) -> halt st
+        _ -> continue $ st & timeoutFired .~ True
+onEvent st (AppEvent (LoginResult attempt)) = do
+    let st' = st & lastAttempt .~ Just attempt
+                 & currentState .~ Idle
+
+    case attempt of
+        AttemptSucceeded {} -> do
+            -- If the startup timer already fired, halt. Otherwise wait
+            -- until that timer fires.
+            case st^.timeoutFired of
+                True -> halt st'
+                False -> continue st'
+        AttemptFailed {} -> continue st'
+
+onEvent st (VtyEvent (EvKey KEnter [])) = do
+    case st^.currentState of
+        Connecting {} -> return ()
+        Idle -> do
+            let ci = formState $ st^.loginForm
+            when (populatedConnectionInfo ci) $ do
+                liftIO $ writeBChan (st^.reqChan) $ DoLogin False ci
+
+    continue st
+onEvent st e = do
+    f' <- handleFormEvent e (st^.loginForm)
+    continue $ st & loginForm .~ f'
 
 mkForm :: ConnectionInfo -> Form ConnectionInfo e Name
 mkForm =
@@ -201,6 +221,22 @@ mkForm =
                , label "Password:" @@=
                    editPasswordField ciPassword Password
                ]
+
+editHostname :: (Show n, Ord n) => Lens' s Text -> n -> s -> FormFieldState s e n
+editHostname stLens n =
+    let ini = id
+        val = validHostname
+        limit = Just 1
+        renderTxt = txt . T.unlines
+    in editField stLens n limit ini val renderTxt id
+
+validHostname :: [Text] -> Maybe Text
+validHostname ls =
+    let s = T.unpack t
+        t = T.concat ls
+    in if all (flip notElem (":/"::String)) s
+       then Just t
+       else Nothing
 
 errorAttr :: AttrName
 errorAttr = "errorMessage"
@@ -277,39 +313,3 @@ credentialsForm st =
          , padTop (Pad 1) $ renderForm (st^.loginForm)
          , hCenter $ renderText "Press Enter to log in or Esc to exit."
          ]
-
-onEvent :: State -> BrickEvent Name LoginEvent -> EventM Name (Next State)
-onEvent _  (VtyEvent (EvKey KEsc [])) = liftIO exitSuccess
-onEvent st (AppEvent (StartConnect initial host)) = do
-    continue $ st & currentState .~ Connecting initial host
-                  & lastAttempt .~ Nothing
-onEvent st (AppEvent StartupTimeout) = do
-    -- If the startup timer fired and we have already succeeded, halt.
-    case st^.lastAttempt of
-        Just (AttemptSucceeded {}) -> halt st
-        _ -> continue $ st & timeoutFired .~ True
-onEvent st (AppEvent (LoginResult attempt)) = do
-    let st' = st & lastAttempt .~ Just attempt
-                 & currentState .~ Idle
-
-    case attempt of
-        AttemptSucceeded {} -> do
-            -- If the startup timer already fired, halt. Otherwise wait
-            -- until that timer fires.
-            case st^.timeoutFired of
-                True -> halt st'
-                False -> continue st'
-        AttemptFailed {} -> continue st'
-
-onEvent st (VtyEvent (EvKey KEnter [])) = do
-    case st^.currentState of
-        Connecting {} -> return ()
-        Idle -> do
-            let ci = formState $ st^.loginForm
-            when (populatedConnectionInfo ci) $ do
-                liftIO $ writeBChan (st^.reqChan) $ DoLogin False ci
-
-    continue st
-onEvent st e = do
-    f' <- handleFormEvent e (st^.loginForm)
-    continue $ st & loginForm .~ f'
