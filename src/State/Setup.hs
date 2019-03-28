@@ -72,7 +72,7 @@ setupState mkVty mLogLocation config = do
   (session, me, cd) <- case mLastAttempt of
       Nothing -> exitSuccess
       Just (AttemptFailed {}) -> exitFailure
-      Just (AttemptSucceeded ci sess user) -> return (sess, user, ci)
+      Just (AttemptSucceeded _ cd sess user) -> return (sess, user, cd)
 
   teams <- mmGetUsersTeams UserMe session
   when (Seq.null teams) $ do

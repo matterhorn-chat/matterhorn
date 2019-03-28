@@ -17,7 +17,7 @@ import           Brick.Forms
 import           Brick.Widgets.Border
 import           Brick.Widgets.Center
 import           Brick.Widgets.Edit
-import           Control.Concurrent ( forkIO )
+import           Control.Concurrent ( forkIO, threadDelay )
 import           Control.Exception ( catch )
 import           System.IO.Error ( catchIOError )
 import qualified Data.Text as T
@@ -43,7 +43,7 @@ import           Types ( ConnectionInfo(..)
 data Name = Hostname | Port | Username | Password deriving (Ord, Eq, Show)
 
 data LoginAttempt = AttemptFailed AuthenticationException
-                  | AttemptSucceeded ConnectionData Session User
+                  | AttemptSucceeded ConnectionInfo ConnectionData Session User
 
 data LoginState = Idle
                 | Connecting Bool Text
@@ -53,12 +53,14 @@ data LoginRequest = DoLogin Bool ConnectionInfo
 
 data LoginEvent = StartConnect Bool Text
                 | LoginResult LoginAttempt
+                | StartupTimeout
 
 data State =
     State { _loginForm :: Form ConnectionInfo LoginEvent Name
           , _lastAttempt :: Maybe LoginAttempt
           , _currentState :: LoginState
           , _reqChan :: BChan LoginRequest
+          , _timeoutFired :: Bool
           }
 
 makeLenses ''State
@@ -108,7 +110,15 @@ loginWorker setLogger unsafeUseHTTP requestChan respChan = forever $ do
                 Right (Left e) ->
                     writeBChan respChan $ LoginResult $ AttemptFailed $ LoginError e
                 Right (Right (sess, user)) ->
-                    writeBChan respChan $ LoginResult $ AttemptSucceeded cd sess user
+                    writeBChan respChan $ LoginResult $ AttemptSucceeded connInfo cd sess user
+
+startupTimerMilliseconds :: Int
+startupTimerMilliseconds = 750
+
+startupTimer :: BChan LoginEvent -> IO ()
+startupTimer respChan = do
+    threadDelay $ startupTimerMilliseconds * 1000
+    writeBChan respChan StartupTimeout
 
 interactiveGetLoginSession :: Vty
                            -> IO Vty
@@ -121,13 +131,18 @@ interactiveGetLoginSession vty mkVty unsafeUseHTTP setLogger initialConfig = do
     respChan <- newBChan 10
 
     void $ forkIO $ loginWorker setLogger unsafeUseHTTP requestChan respChan
+    void $ forkIO $ startupTimer respChan
 
-    let initialState = newState initialConfig requestChan
+    let initialState = mkState initialConfig requestChan
 
-    when (populatedConnectionInfo initialConfig) $ do
-        writeBChan requestChan $ DoLogin True initialConfig
+    startState <- case (populatedConnectionInfo initialConfig) of
+        True -> do
+            writeBChan requestChan $ DoLogin True initialConfig
+            return $ initialState & currentState .~ Connecting True (initialConfig^.ciHostname)
+        False -> do
+            return initialState
 
-    (finalSt, finalVty) <- customMainWithVty vty mkVty (Just respChan) app initialState
+    (finalSt, finalVty) <- customMainWithVty vty mkVty (Just respChan) app startState
 
     -- return (formState $ finalSt^.loginForm, finalVty)
     return (finalSt^.lastAttempt, finalVty)
@@ -140,14 +155,15 @@ populatedConnectionInfo ci =
         , ci^.ciPort > 0
         ]
 
-newState :: ConnectionInfo -> BChan LoginRequest -> State
-newState cInfo chan = state
+mkState :: ConnectionInfo -> BChan LoginRequest -> State
+mkState cInfo chan = state
     where
         state = State { _loginForm = form { formFocus = focusSetCurrent initialFocus (formFocus form)
                                           }
                       , _currentState = Idle
                       , _lastAttempt = Nothing
                       , _reqChan = chan
+                      , _timeoutFired = False
                       }
         form = mkForm cInfo
         initialFocus = if | T.null (cInfo^.ciHostname) -> Hostname
@@ -202,7 +218,7 @@ colorTheme = attrMap defAttr
 credsDraw :: State -> [Widget Name]
 credsDraw st =
     [ center $ vBox [ if shouldShowForm st then credentialsForm st else emptyWidget
-                    , currentStateDisplay (st^.currentState)
+                    , currentStateDisplay st
                     , lastAttemptDisplay (st^.lastAttempt)
                     ]
     ]
@@ -211,14 +227,19 @@ shouldShowForm :: State -> Bool
 shouldShowForm st =
     case st^.currentState of
         Connecting initial _ -> not initial
-        _ -> True
+        Idle -> case st^.lastAttempt of
+            Just (AttemptSucceeded {}) -> st^.timeoutFired
+            _ -> True
 
-currentStateDisplay :: LoginState -> Widget Name
-currentStateDisplay Idle =
-    emptyWidget
-currentStateDisplay (Connecting _ host) =
-    let msg = txt "Connecting to " <+> withDefAttr clientEmphAttr (txt host) <+> txt "..."
-    in padTop (Pad 1) $ hCenter msg
+currentStateDisplay :: State -> Widget Name
+currentStateDisplay st =
+    let msg host = padTop (Pad 1) $ hCenter $
+                   txt "Connecting to " <+> withDefAttr clientEmphAttr (txt host) <+> txt "..."
+    in case st^.currentState of
+          Idle -> case st^.lastAttempt of
+              Just (AttemptSucceeded ci _ _ _) -> msg (ci^.ciHostname)
+              _ -> emptyWidget
+          (Connecting _ host) -> msg host
 
 lastAttemptDisplay :: Maybe LoginAttempt -> Widget Name
 lastAttemptDisplay Nothing = emptyWidget
@@ -262,18 +283,31 @@ onEvent _  (VtyEvent (EvKey KEsc [])) = liftIO exitSuccess
 onEvent st (AppEvent (StartConnect initial host)) = do
     continue $ st & currentState .~ Connecting initial host
                   & lastAttempt .~ Nothing
+onEvent st (AppEvent StartupTimeout) = do
+    -- If the startup timer fired and we have already succeeded, halt.
+    case st^.lastAttempt of
+        Just (AttemptSucceeded {}) -> halt st
+        _ -> continue $ st & timeoutFired .~ True
 onEvent st (AppEvent (LoginResult attempt)) = do
     let st' = st & lastAttempt .~ Just attempt
                  & currentState .~ Idle
 
     case attempt of
-        AttemptSucceeded {} -> halt st'
+        AttemptSucceeded {} -> do
+            -- If the startup timer already fired, halt. Otherwise wait
+            -- until that timer fires.
+            case st^.timeoutFired of
+                True -> halt st'
+                False -> continue st'
         AttemptFailed {} -> continue st'
 
 onEvent st (VtyEvent (EvKey KEnter [])) = do
-    let ci = formState $ st^.loginForm
-    when (populatedConnectionInfo ci) $ do
-        liftIO $ writeBChan (st^.reqChan) $ DoLogin False ci
+    case st^.currentState of
+        Connecting {} -> return ()
+        Idle -> do
+            let ci = formState $ st^.loginForm
+            when (populatedConnectionInfo ci) $ do
+                liftIO $ writeBChan (st^.reqChan) $ DoLogin False ci
 
     continue st
 onEvent st e = do
