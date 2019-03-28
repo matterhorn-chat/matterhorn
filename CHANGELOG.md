@@ -3,14 +3,13 @@
 
 New features:
  * Channel scrolling mode has been merged with message select mode.
-   There are no longer two separate modes that the user must switched
+   There are no longer two separate modes that the user must switch
    between for fetching additional messages and operating on displayed
    messages.
-   * As part of this change, gaps in the local client history where
-     the server may contain additional messages are displayed as
-     special entries in the message history, along with specific key
-     commands that can be used to fetch additional messages at that
-     point.
+   * As part of this change, message gaps in the local client history
+     are displayed as special entries in the message history, along with
+     specific key commands that can be used to fetch additional messages
+     at those points.
  * The `/msg` command now takes optional user and message arguments to
    make it faster and easier to initiate discussions with specific
    users: `/msg [@user [message]]`.  This resolves enhancement issue
@@ -18,13 +17,11 @@ New features:
  * If smart editing is enabled and a triple backtick is typed at the
    start of a line, input automatically switches to multi-line mode.
    Fixes issue #467.
- * Status is now tracked on a per-channel basis.  Previously some
-   things (like incomplete message entries) were global, and others
-   were simply reset when moving away from and back to a channel.  In
-   this version, much of this state is automatically saved and
-   restored on a per-channel basis:
+ * Editor status is now tracked on a per-channel basis. The following
+   editor state is tracked on a per-channel basis and is restored
+   between channel changes:
    * Incomplete message (editor) entries.
-   * Multi-line mode for incomplete message entries.
+   * Multi-line editor mode.
    * Input history scrollback position.
    * Incomplete message reply-to or editing-previous-post status.
    This resolves enhancement issue #445.
@@ -40,7 +37,8 @@ New features:
    are `single` and `multiple` which determines how many of the
    available processors Matterhorn will make use of.  The default is
    `multiple`.  This resolves enhancement issue #484.
- * Additional information on managing attachments (relative to issue #485).
+ * Additional information on managing attachments (relevant to issue
+   #485).
 
 New command-line options:
  * `-k`: print the active keybindings in plain text format. The output
