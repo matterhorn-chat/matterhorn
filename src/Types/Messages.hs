@@ -123,10 +123,16 @@ import           Types.Posts
 import           Types.UserNames
 
 
+-- | The state of a message's thread context.
 data ThreadState =
     NoThread
+    -- ^ The message is not in a thread at all.
     | InThreadShowParent
+    -- ^ The message is in a thread, and the thread's root message
+    -- (parent) should be displayed above this message.
     | InThread
+    -- ^ The message is in a thread but the thread's root message should
+    -- not be displayed above this message.
     deriving (Show, Eq)
 
 -- ----------------------------------------------------------------------
@@ -422,7 +428,9 @@ splitDirSeqOn f msgs =
 -- was never found) in *forward* order.
 splitMessages :: Maybe MessageId
               -> DirectionalSeq Chronological (Message, ThreadState)
-              -> (Maybe (Message, ThreadState), (DirectionalSeq Retrograde (Message, ThreadState), DirectionalSeq Chronological (Message, ThreadState)))
+              -> (Maybe (Message, ThreadState),
+                   ( DirectionalSeq Retrograde (Message, ThreadState),
+                     DirectionalSeq Chronological (Message, ThreadState)))
 splitMessages mid msgs = splitDirSeqOn (\(m, _) -> isJust mid && m^.mMessageId == mid) msgs
 
 -- | Given a message and its chronological predecessor, return
@@ -446,18 +454,18 @@ threadStateFor msg prev = case msg^.mInReplyToMsg of
 retrogradeMsgsWithThreadStates :: RetrogradeMessages -> DirectionalSeq Retrograde (Message, ThreadState)
 retrogradeMsgsWithThreadStates msgs = DSeq $ checkAdjacentMessages (dseq msgs)
     where
-        getPredecessor ms =
+        getMessagePredecessor ms =
                 case Seq.viewl ms of
                     prev Seq.:< rest ->
                         if not $ isTransition prev
                         then Just prev
-                        else getPredecessor rest
+                        else getMessagePredecessor rest
                     Seq.EmptyL -> Nothing
 
         checkAdjacentMessages s = case Seq.viewl s of
             Seq.EmptyL -> mempty
             m Seq.:< t ->
-                case getPredecessor t of
+                case getMessagePredecessor t of
                     Just prev ->
                         (m, threadStateFor m prev) Seq.<| checkAdjacentMessages t
                     Nothing -> case m^.mInReplyToMsg of
@@ -469,18 +477,18 @@ retrogradeMsgsWithThreadStates msgs = DSeq $ checkAdjacentMessages (dseq msgs)
 chronologicalMsgsWithThreadStates :: Messages -> DirectionalSeq Chronological (Message, ThreadState)
 chronologicalMsgsWithThreadStates msgs = DSeq $ checkAdjacentMessages (dseq msgs)
     where
-        getPredecessor ms =
+        getMessagePredecessor ms =
                 case Seq.viewr ms of
                     rest Seq.:> prev ->
                         if not $ isTransition prev
                         then Just prev
-                        else getPredecessor rest
+                        else getMessagePredecessor rest
                     Seq.EmptyR -> Nothing
 
         checkAdjacentMessages s = case Seq.viewr s of
             Seq.EmptyR -> mempty
             t Seq.:> m ->
-                case getPredecessor t of
+                case getMessagePredecessor t of
                     Just prev ->
                         checkAdjacentMessages t Seq.|> (m, threadStateFor m prev)
                     Nothing -> case m^.mInReplyToMsg of
