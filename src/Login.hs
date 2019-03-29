@@ -3,12 +3,16 @@
 {-# LANGUAGE RankNTypes #-}
 -- | This module provides the login interface for Matterhorn.
 --
+-- * Overview
+--
 -- The interface provides a set of form fields for the user to use to
 -- enter their server information and credentials. The user enters
 -- this information and presses Enter, and then this module
 -- attempts to connect to the server. The module's main function,
 -- interactiveGetLoginSession, returns the result of that connection
 -- attempt, if any.
+--
+-- * Details
 --
 -- The interactiveGetLoginSession function takes the Matterhorn
 -- configuration's initial connection information as input. If the
@@ -19,16 +23,20 @@
 -- server host name, port, username, and password. When the interface
 -- immediately makes a login attempt under these conditions, this is
 -- referred to as an "initial" attempt in various docstrings below.
---
 -- Otherwise, the user is prompted to fill out the form to enter any
--- missing values. On pressing Enter, a login attempt is made. While the
--- attempt is underway, the interface shows a status message.
+-- missing values. On pressing Enter, a login attempt is made.
+--
+-- A status message about whether a connection is underway is shown in
+-- both cases: in the case where the user has edited the credentials and
+-- pressed Enter, and in the case where the original credentials
+-- provided to interactiveGetLoginSession caused an initial connection
+-- attempt.
 --
 -- The "initial" login case is special because in addition to not
 -- showing the form, we want to ensure that the "connecting to..."
 -- status message that is shown is shown long enough for the user to
--- see what is happening (rather than just flashing by) in the case
--- of a fast server connection. For this usability reason, we have
+-- see what is happening (rather than just flashing by in the case
+-- of a fast server connection). For this usability reason, we have
 -- a "startup timer" thread: the thread waits a specified number of
 -- milliseconds (see below) and then notifies the interface that it has
 -- timed out. If there is an initial connection attempt underway that
