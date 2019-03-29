@@ -310,6 +310,9 @@ onEvent st (AppEvent (LoginResult attempt)) = do
         AttemptFailed {} -> continue st'
 
 onEvent st (VtyEvent (EvKey KEnter [])) = do
+    -- Ignore the keypress if we are already attempting a connection, or
+    -- if have already successfully connected but are waiting on the
+    -- startup timer.
     case st^.currentState of
         Connecting {} -> return ()
         Idle ->
