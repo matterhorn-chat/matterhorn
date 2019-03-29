@@ -68,7 +68,6 @@ import           System.IO.Error ( catchIOError )
 import qualified Data.Text as T
 import           Graphics.Vty hiding (mkVty)
 import           Lens.Micro.Platform ( (.~), Lens', makeLenses )
-import           System.Exit ( exitSuccess )
 import qualified System.IO.Error as Err
 
 import           Network.Mattermost ( ConnectionData )
@@ -295,7 +294,8 @@ app = App
   }
 
 onEvent :: State -> BrickEvent Name LoginEvent -> EventM Name (Next State)
-onEvent _  (VtyEvent (EvKey KEsc [])) = liftIO exitSuccess
+onEvent st (VtyEvent (EvKey KEsc [])) = do
+    halt $ st & lastAttempt .~ Nothing
 onEvent st (AppEvent (StartConnect initial host)) = do
     continue $ st & currentState .~ Connecting initial host
                   & lastAttempt .~ Nothing

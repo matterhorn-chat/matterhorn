@@ -14,7 +14,7 @@ import           Data.Maybe ( fromJust )
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Time.Clock ( getCurrentTime )
-import           Graphics.Vty (Vty)
+import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( (.~) )
 import           System.Exit ( exitFailure, exitSuccess )
 import           System.FilePath ( (</>), isRelative, dropFileName )
@@ -57,7 +57,7 @@ apiLogEventToLogMessage ev = do
                         , logMessageTimestamp = now
                         }
 
-setupState :: IO Vty -> Maybe FilePath -> Config -> IO (ChatState, Vty)
+setupState :: IO Vty.Vty -> Maybe FilePath -> Config -> IO (ChatState, Vty.Vty)
 setupState mkVty mLogLocation config = do
   initialVty <- mkVty
 
@@ -69,15 +69,19 @@ setupState mkVty mLogLocation config = do
 
   (mLastAttempt, loginVty) <- interactiveGetLoginSession initialVty mkVty (configUnsafeUseHTTP config) setLogger (incompleteCredentials config)
 
+  let shutdown vty = do
+          Vty.shutdown vty
+          exitSuccess
+
   (session, me, cd) <- case mLastAttempt of
       Nothing ->
           -- The user never attempted a connection and just chose to
           -- quit.
-          exitSuccess
+          shutdown loginVty
       Just (AttemptFailed {}) ->
           -- The user attempted a connection and failed, and then chose
           -- to quit.
-          exitSuccess
+          shutdown loginVty
       Just (AttemptSucceeded _ cd sess user) ->
           -- The user attempted a connection and succeeded so continue
           -- with setup.
@@ -88,15 +92,20 @@ setupState mkVty mLogLocation config = do
       putStrLn "Error: your account is not a member of any teams"
       exitFailure
 
-  (myTeam, teamSelVty) <- case configTeam config of
-      Nothing -> do
-          interactiveTeamSelection loginVty mkVty $ toList teams
-      Just tName -> do
-          let matchingTeam = listToMaybe $ filter matches $ toList teams
-              matches t = (sanitizeUserText $ teamName t) == tName
-          case matchingTeam of
-              Nothing -> interactiveTeamSelection loginVty mkVty (toList teams)
-              Just t -> return (t, loginVty)
+  (myTeam, teamSelVty) <- do
+      let foundTeam = do
+             tName <- configTeam config
+             let matchingTeam = listToMaybe $ filter matches $ toList teams
+                 matches t = (sanitizeUserText $ teamName t) == tName
+             matchingTeam
+
+      case foundTeam of
+          Just t -> return (t, loginVty)
+          Nothing -> do
+              (mTeam, vty) <- interactiveTeamSelection loginVty mkVty $ toList teams
+              case mTeam of
+                  Nothing -> shutdown vty
+                  Just team -> return (team, vty)
 
   userStatusChan <- STM.newTChanIO
   slc <- STM.newTChanIO
