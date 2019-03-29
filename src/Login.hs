@@ -312,10 +312,13 @@ onEvent st (AppEvent (LoginResult attempt)) = do
 onEvent st (VtyEvent (EvKey KEnter [])) = do
     case st^.currentState of
         Connecting {} -> return ()
-        Idle -> do
-            let ci = formState $ st^.loginForm
-            when (populatedConnectionInfo ci) $ do
-                liftIO $ writeBChan (st^.reqChan) $ DoLogin False ci
+        Idle ->
+            case st^.lastAttempt of
+                Just (AttemptSucceeded {}) -> return ()
+                _ -> do
+                    let ci = formState $ st^.loginForm
+                    when (populatedConnectionInfo ci) $ do
+                        liftIO $ writeBChan (st^.reqChan) $ DoLogin False ci
 
     continue st
 onEvent st e = do
