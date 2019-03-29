@@ -10,16 +10,14 @@ import           Prelude.MH
 import           Brick.BChan
 import           Brick.Themes ( themeToAttrMap, loadCustomizations )
 import qualified Control.Concurrent.STM as STM
-import           Control.Exception ( catch )
 import           Data.Maybe ( fromJust )
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Time.Clock ( getCurrentTime )
-import           Graphics.Vty (Vty)
+import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( (.~) )
-import           System.Exit ( exitFailure )
+import           System.Exit ( exitFailure, exitSuccess )
 import           System.FilePath ( (</>), isRelative, dropFileName )
-import           System.IO.Error ( catchIOError )
 
 import           Network.Mattermost.Endpoints
 import           Network.Mattermost.Types
@@ -48,14 +46,6 @@ incompleteCredentials config = ConnectionInfo hStr (configPort config) uStr pStr
             Just (PasswordString s) -> s
             _                       -> ""
 
-convertLoginExceptions :: IO a -> IO (Either AuthenticationException a)
-convertLoginExceptions act =
-    (Right <$> act)
-        `catch` (\e -> return $ Left $ ResolveError e)
-        `catch` (\e -> return $ Left $ ConnectError e)
-        `catchIOError` (\e -> return $ Left $ AuthIOError e)
-        `catch` (\e -> return $ Left $ OtherAuthError e)
-
 apiLogEventToLogMessage :: LogEvent -> IO LogMessage
 apiLogEventToLogMessage ev = do
     now <- getCurrentTime
@@ -67,75 +57,55 @@ apiLogEventToLogMessage ev = do
                         , logMessageTimestamp = now
                         }
 
-setupState :: IO Vty -> Maybe FilePath -> Config -> IO (ChatState, Vty)
-setupState mkVty mLogLocation initialConfig = do
+setupState :: IO Vty.Vty -> Maybe FilePath -> Config -> IO (ChatState, Vty.Vty)
+setupState mkVty mLogLocation config = do
   initialVty <- mkVty
 
-  -- If we don't have enough credentials, ask for them.
-  (connInfo, loginVty) <- case getCredentials initialConfig of
-      Nothing -> interactiveGatherCredentials initialVty mkVty (incompleteCredentials initialConfig) Nothing
-      Just connInfo -> return (connInfo, initialVty)
-
   eventChan <- newBChan 25
-  logMgr <- newLogManager eventChan (configLogMaxBufferSize initialConfig)
+  logMgr <- newLogManager eventChan (configLogMaxBufferSize config)
 
   let logApiEvent ev = apiLogEventToLogMessage ev >>= sendLogMessage logMgr
       setLogger cd = cd `withLogger` logApiEvent
-      poolCfg = ConnectionPoolConfig { cpIdleConnTimeout = 60
-                                     , cpStripesCount = 1
-                                     , cpMaxConnCount = 5
-                                     }
-      loginLoop (cInfo, iVty) = do
-        cd <- fmap setLogger $
-                if (configUnsafeUseHTTP initialConfig)
-                  then initConnectionDataInsecure (cInfo^.ciHostname)
-                         (fromIntegral (cInfo^.ciPort))
-                         poolCfg
-                  else initConnectionData (cInfo^.ciHostname)
-                         (fromIntegral (cInfo^.ciPort))
-                         poolCfg
 
-        let login = Login { username = cInfo^.ciUsername
-                          , password = cInfo^.ciPassword
-                          }
-        result <- convertLoginExceptions $ mmLogin cd login
+  (mLastAttempt, loginVty) <- interactiveGetLoginSession initialVty mkVty (configUnsafeUseHTTP config) setLogger (incompleteCredentials config)
 
-        -- Update the config with the entered settings so that later,
-        -- when we offer the option of saving the entered credentials to
-        -- disk, we can do so with an updated config.
-        let config =
-                initialConfig { configUser = Just $ cInfo^.ciUsername
-                              , configPass = Just $ PasswordString $ cInfo^.ciPassword
-                              , configPort = cInfo^.ciPort
-                              , configHost = Just $ cInfo^.ciHostname
-                              }
+  let shutdown vty = do
+          Vty.shutdown vty
+          exitSuccess
 
-        case result of
-            Right (Right (sess, user)) ->
-                return (sess, user, cd, config)
-            Right (Left e) ->
-                interactiveGatherCredentials iVty mkVty cInfo (Just $ LoginError e) >>=
-                    loginLoop
-            Left e ->
-                interactiveGatherCredentials iVty mkVty cInfo (Just e) >>=
-                    loginLoop
-
-  (session, me, cd, config) <- loginLoop (connInfo, loginVty)
+  (session, me, cd) <- case mLastAttempt of
+      Nothing ->
+          -- The user never attempted a connection and just chose to
+          -- quit.
+          shutdown loginVty
+      Just (AttemptFailed {}) ->
+          -- The user attempted a connection and failed, and then chose
+          -- to quit.
+          shutdown loginVty
+      Just (AttemptSucceeded _ cd sess user) ->
+          -- The user attempted a connection and succeeded so continue
+          -- with setup.
+          return (sess, user, cd)
 
   teams <- mmGetUsersTeams UserMe session
   when (Seq.null teams) $ do
       putStrLn "Error: your account is not a member of any teams"
       exitFailure
 
-  (myTeam, teamSelVty) <- case configTeam config of
-      Nothing -> do
-          interactiveTeamSelection loginVty mkVty $ toList teams
-      Just tName -> do
-          let matchingTeam = listToMaybe $ filter matches $ toList teams
-              matches t = (sanitizeUserText $ teamName t) == tName
-          case matchingTeam of
-              Nothing -> interactiveTeamSelection loginVty mkVty (toList teams)
-              Just t -> return (t, loginVty)
+  (myTeam, teamSelVty) <- do
+      let foundTeam = do
+             tName <- configTeam config
+             let matchingTeam = listToMaybe $ filter matches $ toList teams
+                 matches t = (sanitizeUserText $ teamName t) == tName
+             matchingTeam
+
+      case foundTeam of
+          Just t -> return (t, loginVty)
+          Nothing -> do
+              (mTeam, vty) <- interactiveTeamSelection loginVty mkVty $ toList teams
+              case mTeam of
+                  Nothing -> shutdown vty
+                  Just team -> return (team, vty)
 
   userStatusChan <- STM.newTChanIO
   slc <- STM.newTChanIO

@@ -14,7 +14,6 @@ import qualified Data.Function as F
 import           Data.List ( sortBy )
 import qualified Data.Vector as V
 import           Graphics.Vty hiding (mkVty)
-import           System.Exit ( exitSuccess )
 
 import           Network.Mattermost.Types
 
@@ -22,15 +21,25 @@ import           Markdown
 import           Types.Common
 
 
-type State = List () Team
+data State =
+    State { appList :: List () Team
+          , appCancelled :: Bool
+          }
 
-interactiveTeamSelection :: Vty -> IO Vty -> [Team] -> IO (Team, Vty)
+interactiveTeamSelection :: Vty -> IO Vty -> [Team] -> IO (Maybe Team, Vty)
 interactiveTeamSelection vty mkVty teams = do
-    let state = list () (V.fromList sortedTeams) 1
+    let state = State { appList = list () (V.fromList sortedTeams) 1
+                      , appCancelled = False
+                      }
         sortedTeams = sortBy (compare `F.on` teamName) teams
+
     (finalSt, finalVty) <- customMainWithVty vty mkVty Nothing app state
-    let Just (_, t) = listSelectedElement finalSt
-    return (t, finalVty)
+
+    let result = if appCancelled finalSt
+                 then Nothing
+                 else snd <$> listSelectedElement (appList finalSt)
+
+    return (result, finalVty)
 
 app :: App State e ()
 app = App
@@ -61,14 +70,17 @@ teamSelect st =
          , renderText "Press Enter to select a team and connect or Esc to exit."
          ]
     where
-    theList = renderList renderTeamItem True st
+    theList = renderList renderTeamItem True (appList st)
 
 renderTeamItem :: Bool -> Team -> Widget ()
 renderTeamItem _ t =
     padRight Max $ txt $ sanitizeUserText $ teamName t
 
 onEvent :: State -> BrickEvent () e -> EventM () (Next State)
-onEvent _  (VtyEvent (EvKey KEsc [])) = liftIO exitSuccess
+onEvent st (VtyEvent (EvKey KEsc [])) = do
+    halt $ st { appCancelled = True }
 onEvent st (VtyEvent (EvKey KEnter [])) = halt st
-onEvent st (VtyEvent e) = continue =<< handleListEvent e st
+onEvent st (VtyEvent e) = do
+    list' <- handleListEvent e (appList st)
+    continue $ st { appList = list' }
 onEvent st _ = continue st
