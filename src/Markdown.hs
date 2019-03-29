@@ -184,8 +184,8 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                    renderR e n
                      | n > 1     = " [" <> e <> " " <> T.pack (show n) <> "]"
                      | otherwise = ""
-                   reacMsg = Map.foldMapWithKey renderR (msg^.mReactions)
-               in Just $ B.withDefAttr emojiAttr $ B.txt ("   " <> reacMsg)
+                   reactionMsg = Map.foldMapWithKey renderR (msg^.mReactions)
+               in Just $ B.withDefAttr emojiAttr $ B.txt ("   " <> reactionMsg)
         withParent p =
             case mdThreadState of
                 NoThread -> msgWidget
