@@ -254,7 +254,6 @@ interactiveGetLoginSession vty mkVty unsafeUseHTTP setLogger initialConfig = do
 
     (finalSt, finalVty) <- customMainWithVty vty mkVty (Just respChan) app startState
 
-    -- return (formState $ finalSt^.loginForm, finalVty)
     return (finalSt^.lastAttempt, finalVty)
 
 -- | Is the specified ConnectionInfo sufficiently populated for us to
