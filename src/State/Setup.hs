@@ -70,9 +70,18 @@ setupState mkVty mLogLocation config = do
   (mLastAttempt, loginVty) <- interactiveGetLoginSession initialVty mkVty (configUnsafeUseHTTP config) setLogger (incompleteCredentials config)
 
   (session, me, cd) <- case mLastAttempt of
-      Nothing -> exitSuccess
-      Just (AttemptFailed {}) -> exitFailure
-      Just (AttemptSucceeded _ cd sess user) -> return (sess, user, cd)
+      Nothing ->
+          -- The user never attempted a connection and just chose to
+          -- quit.
+          exitSuccess
+      Just (AttemptFailed {}) ->
+          -- The user attempted a connection and failed, and then chose
+          -- to quit.
+          exitSuccess
+      Just (AttemptSucceeded _ cd sess user) ->
+          -- The user attempted a connection and succeeded so continue
+          -- with setup.
+          return (sess, user, cd)
 
   teams <- mmGetUsersTeams UserMe session
   when (Seq.null teams) $ do
