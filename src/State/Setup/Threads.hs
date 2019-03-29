@@ -319,4 +319,5 @@ shouldIgnore e =
           , "Network.Socket.recvBuf" `isInfixOf` eStr
           , "Network.Socket.sendBuf" `isInfixOf` eStr
           , "resource vanished" `isInfixOf` eStr
+          , "timeout" `isInfixOf` eStr
           ]
