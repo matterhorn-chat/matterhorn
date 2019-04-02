@@ -57,7 +57,7 @@ previewFromInput overrideTy uId s =
        then Nothing
        else Just $ Message { _mText          = getBlocks content
                            , _mMarkdownSource = content
-                           , _mUser          = UserI uId
+                           , _mUser          = UserI False uId
                            , _mDate          = ServerTime $ UTCTime (fromGregorian 1970 1 1) 0
                            -- The date is not used for preview
                            -- rendering, but we need to provide one.
@@ -244,6 +244,7 @@ renderUserCommandBox st hs =
                         , addEllipsis $ renderMessage MessageData
                           { mdMessage           = msgWithoutParent
                           , mdUserName          = msgWithoutParent^.mUser.to (nameForUserRef st)
+                          , mdIsBot             = isBotMessage msg
                           , mdParentMessage     = Nothing
                           , mdParentUserName    = Nothing
                           , mdHighlightSet      = hs
@@ -536,6 +537,7 @@ inputPreview st hs | not $ st^.csShowMessagePreview = emptyWidget
                                   { mdMessage           = m
                                   , mdUserName          = m^.mUser.to (nameForUserRef st)
                                   , mdParentMessage     = p
+                                  , mdIsBot             = isBotMessage m
                                   , mdParentUserName    = p >>= (^.mUser.to (nameForUserRef st))
                                   , mdHighlightSet      = hs
                                   , mdEditThreshold     = Nothing

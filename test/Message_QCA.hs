@@ -20,8 +20,8 @@ genMap gk gv = let kv = (,) <$> gk <*> gv in fromList <$> listOf kv
 
 genUserRef :: Gen UserRef
 genUserRef = oneof [ return NoUser
-                   , UserI <$> genUserId
-                   , UserOverride <$> genText
+                   , UserI <$> arbitrary <*> genUserId
+                   , UserOverride <$> arbitrary <*> genText
                    ]
 
 genMessage :: Gen Message

@@ -27,6 +27,7 @@ module Types.Posts
   , cpReactions
   , cpPending
   , cpOriginalPost
+  , cpFromWebhook
   , cpInReplyToPost
   , cpDate
   , cpChannelId
@@ -124,6 +125,7 @@ data ClientPost = ClientPost
   , _cpChannelId     :: ChannelId
   , _cpReactions     :: Map.Map Text Int
   , _cpOriginalPost  :: Post
+  , _cpFromWebhook   :: Bool
   } deriving (Show)
 
 -- | An attachment has a very long URL associated, as well as
@@ -210,6 +212,7 @@ toClientPost p parentId =
                 , _cpChannelId     = p^.postChannelIdL
                 , _cpReactions     = Map.empty
                 , _cpOriginalPost  = p
+                , _cpFromWebhook   = fromMaybe False $ p^.postPropsL.postPropsFromWebhookL
                 }
 
 -- | Right now, instead of treating 'attachment' properties specially, we're

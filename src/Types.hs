@@ -1397,7 +1397,10 @@ mhError err = do
     raiseInternalEvent (DisplayError err)
 
 isMine :: ChatState -> Message -> Bool
-isMine st msg = (UserI $ myUserId st) == msg^.mUser
+isMine st msg =
+    case msg^.mUser of
+        UserI _ uid -> uid == myUserId st
+        _ -> False
 
 getMessageForPostId :: ChatState -> PostId -> Maybe Message
 getMessageForPostId st pId = st^.csPostMap.at(pId)

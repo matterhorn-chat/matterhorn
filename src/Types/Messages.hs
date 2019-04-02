@@ -46,6 +46,7 @@ module Types.Messages
   , mText, mUser, mDate, mType, mPending, mDeleted
   , mAttachments, mInReplyToMsg, mMessageId, mReactions, mFlagged
   , mOriginalPost, mChannelId, mMarkdownSource
+  , isBotMessage
   , MessageType(..)
   , MessageId(..)
   , ThreadState(..)
@@ -238,11 +239,19 @@ data MessageType = C ClientMessageType
                  | CP ClientPostType
                  deriving (Show)
 
--- | There may be no user (usually an internal message), a reference
--- to a user (by Id), or the server may have supplied a specific
--- username (often associated with bots).
-data UserRef = NoUser | UserI UserId | UserOverride Text
+-- | There may be no user (usually an internal message), a reference to
+-- a user (by Id), or the server may have supplied a specific username
+-- (often associated with bots). The boolean flag indicates whether the
+-- user reference is for a message from a bot.
+data UserRef = NoUser | UserI Bool UserId | UserOverride Bool Text
                deriving (Eq, Show, Ord)
+
+isBotMessage :: Message -> Bool
+isBotMessage m =
+    case _mUser m of
+        UserI bot _        -> bot
+        UserOverride bot _ -> bot
+        NoUser             -> False
 
 -- | The 'ReplyState' of a message represents whether a message
 --   is a reply, and if so, to what message
@@ -295,8 +304,8 @@ clientPostToMessage cp = (m, usernames)
                     , _mMarkdownSource = cp^.cpMarkdownSource
                     , _mUser =
                         case cp^.cpUserOverride of
-                            Just n | cp^.cpType == NormalPost -> UserOverride (n <> "[BOT]")
-                            _ -> maybe NoUser UserI $ cp^.cpUser
+                            Just n | cp^.cpType == NormalPost -> UserOverride (cp^.cpFromWebhook) n
+                            _ -> maybe NoUser (UserI (cp^.cpFromWebhook)) $ cp^.cpUser
                     , _mDate = cp^.cpDate
                     , _mType = CP $ cp^.cpType
                     , _mPending = cp^.cpPending

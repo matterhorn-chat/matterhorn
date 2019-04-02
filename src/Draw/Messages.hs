@@ -31,8 +31,8 @@ nameForUserRef :: ChatState -> UserRef -> Maybe Text
 nameForUserRef st uref =
     case uref of
         NoUser -> Nothing
-        UserOverride t -> Just t
-        UserI uId -> displayNameForUserId uId st
+        UserOverride _ t -> Just t
+        UserI _ uId -> displayNameForUserId uId st
 
 -- | renderSingleMessage is the main message drawing function.
 --
@@ -63,6 +63,7 @@ renderChatMessage st hs ind threadState renderTimeFunc msg =
         m = renderMessage MessageData
               { mdMessage           = msg
               , mdUserName          = msg^.mUser.to (nameForUserRef st)
+              , mdIsBot             = isBotMessage msg
               , mdParentMessage     = parent
               , mdParentUserName    = parent >>= (^.mUser.to (nameForUserRef st))
               , mdEditThreshold     = ind
