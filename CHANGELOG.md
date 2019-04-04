@@ -14,6 +14,10 @@ New features:
    make it faster and easier to initiate discussions with specific
    users: `/msg [@user [message]]`.  This resolves enhancement issue
    #471.
+ * The `/search` and `/flags` post listings now support navigating to a
+   post by pressing `Enter` when it is selected. This causes the client
+   to switch to the post's channel and select the post in message
+   selection mode.
  * If smart editing is enabled and a triple backtick is typed at the
    start of a line, input automatically switches to multi-line mode.
    Fixes issue #467.
