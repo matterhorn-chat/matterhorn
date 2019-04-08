@@ -1,3 +1,39 @@
+
+50200.3.0
+=========
+
+New features:
+ * Message reply rendering has been improved. Matterhorn now uses a
+   rendering almost identical to that of the web client: rather than
+   rendering an arrow from the reply to its parent, Matterhorn now
+   indents the reply with a vertical border to its left. Matterhorn now
+   also only renders the reply's parent message if it is not already
+   adjacent or if it is not in the same thread as the previous message.
+   This greatly reduces clutter in channels with a lot of threaded
+   message activity. (#490)
+ * At startup, Matterhorn no longer restores the terminal state to the
+   pre-startup state in between authentication attempts.
+ * At startup, if Matterhorn immediately attempts a connection (due to
+   credentials being available in the configuration), a "Connecting to
+   ..." message is displayed while the connection attempt is underway.
+ * The syntax highlighting XML specification files included with
+   Matterhorn were updated to the versions in the upstream Skylighting
+   package as of commit `bf3e5d163c3e7b9f98d1cd3b9aeb6780a6f76572`. For
+   more details, see
+
+   * https://github.com/matterhorn-chat/matterhorn/commit/70929a5bb029b9c37bf0cdcf4365328b3e8e43d6
+   * https://github.com/jgm/skylighting
+
+ * The help and usage messages for the `/msg` command were improved.
+ * The `run.sh` script got various bug fixes and portability
+   improvements.
+
+Bug fixes:
+ * Messages from bots now properly display a "[BOT]" indicator next to
+   the post author username (#494)
+ * Matterhorn no longer reports timeout-related network socket
+   exceptions to the user (#492)
+
 50200.2.0
 =========
 
