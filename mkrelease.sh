@@ -69,7 +69,7 @@ function output_dirname {
 
         if ! [ -z "$VERSION_ID" ]
         then
-            VERSION_ID="-$VERSION_CODENAME"
+            VERSION_ID="-$VERSION_ID"
         fi
 
         echo $BASENAME-$MHVERSION-$PLATFORM${VERSION_ID}${VERSION_CODENAME}-$ARCH
