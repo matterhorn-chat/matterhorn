@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 # Run the most recently-modified matterhorn binary in the matterhorn
 # working tree.
