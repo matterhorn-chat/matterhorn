@@ -1,4 +1,11 @@
 
+50200.3.1
+=========
+
+Bug fixes:
+ * Matterhorn now correctly handles server API responses with
+   Content-type parameters (#496).
+
 50200.3.0
 =========
 
