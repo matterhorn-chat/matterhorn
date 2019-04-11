@@ -313,10 +313,11 @@ addEmoteFormatting t = "*" <> t <> "*"
 -- exists or by issuing a request for user records.
 fetchUsersByUsername :: [Text] -> MH ()
 fetchUsersByUsername [] = return ()
-fetchUsersByUsername usernames = do
+fetchUsersByUsername rawUsernames = do
     st <- use id
     session <- getSession
-    let missing = filter (\n -> (not $ T.null n) && (isNothing $ userByUsername n st)) usernames
+    let usernames = trimUserSigil <$> rawUsernames
+        missing = filter (\n -> (not $ T.null n) && (isNothing $ userByUsername n st)) usernames
     when (not $ null missing) $ do
         mhLog LogGeneral $ T.pack $ "fetchUsersByUsername: getting " <> show usernames
         doAsyncWith Normal $ do

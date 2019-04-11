@@ -84,9 +84,9 @@ withFetchedUserMaybe fetch handle = do
                 UserFetchById uId ->
                     MM.mmGetUsersByIds (Seq.singleton uId) session
                 UserFetchByUsername uname ->
-                    MM.mmGetUsersByUsernames (Seq.singleton uname) session
+                    MM.mmGetUsersByUsernames (Seq.singleton $ trimUserSigil uname) session
                 UserFetchByNickname nick -> do
-                    let req = UserSearch { userSearchTerm = nick
+                    let req = UserSearch { userSearchTerm = trimUserSigil nick
                                          , userSearchAllowInactive = True
                                          , userSearchWithoutTeam = True
                                          , userSearchInChannelId = Nothing
