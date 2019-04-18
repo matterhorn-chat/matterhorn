@@ -17,7 +17,7 @@ where
 import           Prelude ()
 import           Prelude.MH
 
-import           Brick.Main ( invalidateCache )
+import           Brick.Main ( invalidateCache, invalidateCacheEntry )
 import           Brick.Widgets.Edit ( Editor, applyEdit , handleEditorEvent
                                     , getEditContents, editContentsL )
 import qualified Brick.Widgets.List as L
@@ -394,6 +394,8 @@ gotoEnd z =
 
 cancelAutocompleteOrReplyOrEdit :: MH ()
 cancelAutocompleteOrReplyOrEdit = do
+    cId <- use csCurrentChannelId
+    mh $ invalidateCacheEntry $ ChannelMessages cId
     ac <- use (csEditState.cedAutocomplete)
     case ac of
         Just _ -> do
@@ -414,5 +416,7 @@ replyToLatestMessage = do
     Just msg | isReplyable msg ->
         do let Just p = msg^.mOriginalPost
            setMode Main
+           cId <- use csCurrentChannelId
+           mh $ invalidateCacheEntry $ ChannelMessages cId
            csEditState.cedEditMode .= Replying msg p
     _ -> return ()
