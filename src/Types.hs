@@ -144,6 +144,8 @@ module Types
   , getSession
   , getResourceSession
 
+  , specialUserMentions
+
   , UserPreferences(UserPreferences)
   , userPrefShowJoinLeave
   , userPrefFlaggedPostList
@@ -252,6 +254,7 @@ import qualified Control.Concurrent.STM as STM
 import           Control.Exception ( SomeException )
 import qualified Control.Monad.State as St
 import qualified Control.Monad.Reader as R
+import qualified Data.Set as Set
 import qualified Data.ByteString as BS
 import qualified Data.Foldable as F
 import           Data.Ord ( comparing )
@@ -1560,10 +1563,17 @@ data HighlightSet =
 
 getHighlightSet :: ChatState -> HighlightSet
 getHighlightSet st =
-    HighlightSet { hUserSet = getUsernameSet $ st^.csUsers
+    HighlightSet { hUserSet = addSpecialUserMentions $ getUsernameSet $ st^.csUsers
                  , hChannelSet = getChannelNameSet $ st^.csChannels
                  , hSyntaxMap = st^.csResources.crSyntaxMap
                  }
+
+-- From: https://docs.mattermost.com/help/messaging/mentioning-teammates.html
+specialUserMentions :: [T.Text]
+specialUserMentions = ["all", "channel", "here"]
+
+addSpecialUserMentions :: Set Text -> Set Text
+addSpecialUserMentions s = foldr Set.insert s specialUserMentions
 
 getNewMessageCutoff :: ChannelId -> ChatState -> Maybe NewMessageIndicator
 getNewMessageCutoff cId st = do

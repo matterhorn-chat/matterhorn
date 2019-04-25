@@ -69,6 +69,8 @@ import           Graphics.Vty
 import qualified Skylighting.Styles as Sky
 import           Skylighting.Types ( TokenType(..) )
 
+import           Types ( specialUserMentions )
+
 
 helpAttr :: AttrName
 helpAttr = "help"
@@ -337,8 +339,12 @@ usernameAttr i = "username" <> (attrName $ show i)
 
 colorUsername :: Text -> Text -> Widget a
 colorUsername username display =
-  withDefAttr (usernameAttr h) $ txt (display)
-    where h = hash username `mod` length usernameColors
+    let normalizedUsername = T.toLower username
+        aName = if normalizedUsername `elem` specialUserMentions
+                then clientEmphAttr
+                else usernameAttr h
+        h = hash normalizedUsername `mod` length usernameColors
+    in withDefAttr aName $ txt (display)
 
 usernameColors :: [Attr]
 usernameColors =
