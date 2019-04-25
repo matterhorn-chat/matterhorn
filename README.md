@@ -111,9 +111,9 @@ binding `M-e`. Markdown syntax is accepted.
 To edit your current message in an external editor (`$EDITOR`), use the
 default binding of `M-k`.
 
-To preview the message you're about to send while you compose it (e.g.
-to check on how your Markdown syntax will be rendered), toggle preview
-mode with the default binding `M-p`.
+To see a live preview of the message you're about to send while you
+compose it (e.g. to check on how your Markdown syntax will be rendered),
+toggle preview mode with the default binding `M-p`.
 
 To change channels, use `/focus` or one of the default bindings `C-n`
 (next channel), `C-p` (previous channel), `C-g` (fast channel switch).
@@ -167,7 +167,7 @@ files or remove existing attachments by pressing `C-x` again.
 * Convenient URL-opening with local browser
 * Secure password entry via external command (e.g. OSX keychain)
 * Yank verbatim content from messages into the system clipboard
-* Preview message rendering before sending
+* Optional live preview during message editing
 * Optional smart quoting for efficient Markdown entry
 * Edit messages with `$EDITOR`
 * Rebindable keys (see `/help keybindings`)
