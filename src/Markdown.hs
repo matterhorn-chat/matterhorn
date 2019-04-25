@@ -474,7 +474,7 @@ separate hSet sq = case viewl sq of
         gatherStrings s n rs =
           let s' = removeCursor s
           in case viewl rs of
-            _ | (userSigil `T.isPrefixOf` s' && (T.drop 1 s' `Set.member` uSet)) ->
+            _ | (userSigil `T.isPrefixOf` s' && (T.toLower (T.drop 1 s') `Set.member` uSet)) ->
                 buildString s n <| separate hSet rs
             _ | (normalChannelSigil `T.isPrefixOf` s' && (T.drop 1 s' `Set.member` cSet)) ->
                 buildString s n <| separate hSet rs
@@ -493,7 +493,7 @@ separate hSet sq = case viewl sq of
                     textWidth s' > 2 ->
                       Fragment (TStr s) Emoji
                   | Just uname <- userSigil `T.stripPrefix` removeCursor s
-                    , removeCursor uname `Set.member` uSet ->
+                    , removeCursor (T.toLower uname) `Set.member` uSet ->
                       Fragment (TStr s) (User uname)
                   | normalChannelSigil `T.isPrefixOf` (removeCursor s) &&
                     (T.drop 1 (removeCursor s) `Set.member` cSet) ->
