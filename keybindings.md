@@ -109,3 +109,14 @@
 | `d` | Delete the selected attachment from the attachment list |
 | `o` | Open the selected attachment using the URL open command |
 
+# Keybindings: Message Reaction List
+| Keybinding | Description |
+| ---------- | ----------- |
+| `Esc`, `C-c` | Close reactions window |
+| `PgDown` | Scroll the reaction list down |
+| `PgUp` | Scroll the reaction list up |
+| `End` | Scroll to the bottom of the reaction list |
+| `Down` | Scroll the reaction list down |
+| `Home` | Scroll to the top of the reaction list |
+| `Up` | Scroll the reaction list up |
+

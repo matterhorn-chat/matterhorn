@@ -30,6 +30,7 @@ import           Events.UrlSelect
 import           Events.UserListOverlay
 import           Events.ManageAttachments
 import           Events.ViewMessage
+import           Events.MessageReactions
 import           HelpTopics ( helpTopics )
 import           Markdown ( renderText )
 import           Options ( mhVersion )
@@ -377,6 +378,7 @@ keybindSections kc =
     , ("User Listings", userListOverlayKeybindings kc)
     , ("Message Viewer", viewMessageKeybindings kc)
     , ("Attachment List", attachmentListKeybindings kc)
+    , ("Message Reaction List", messageReactionsKeybindings kc)
     ]
 
 helpBox :: Name -> Widget Name -> Widget Name
