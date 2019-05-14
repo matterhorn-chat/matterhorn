@@ -160,7 +160,7 @@ data Message = Message
   , _mAttachments   :: Seq Attachment
   , _mInReplyToMsg  :: ReplyState
   , _mMessageId     :: Maybe MessageId
-  , _mReactions     :: Map.Map Text Int
+  , _mReactions     :: Map.Map Text (S.Set UserId)
   , _mOriginalPost  :: Maybe Post
   , _mFlagged       :: Bool
   , _mChannelId     :: Maybe ChannelId

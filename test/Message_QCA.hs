@@ -9,6 +9,7 @@ import Data.Map hiding (foldr)
 import Data.Maybe (fromMaybe)
 import Data.UUID (UUID, fromByteString)
 import qualified Data.ByteString.Lazy as BSL
+import qualified Data.Set as S
 import Network.Mattermost.QuickCheck
 import Network.Mattermost.Types
 import Test.Tasty.QuickCheck
@@ -17,6 +18,9 @@ import Types.Posts
 
 genMap :: Ord key => Gen key -> Gen value -> Gen (Map key value)
 genMap gk gv = let kv = (,) <$> gk <*> gv in fromList <$> listOf kv
+
+genSet :: (Ord v) => Gen v -> Gen (S.Set v)
+genSet gv = S.fromList <$> listOf gv
 
 genUserRef :: Gen UserRef
 genUserRef = oneof [ return NoUser
@@ -36,7 +40,7 @@ genMessage = Message
              <*> genSeq genAttachment
              <*> genReplyState
              <*> (fmap MessagePostId <$> genMaybe genPostId)
-             <*> genMap genText arbitrary
+             <*> genMap genText (genSet genUserId)
              <*> genMaybe genPost
              <*> arbitrary
              <*> (Just <$> genChannelId)
@@ -63,7 +67,7 @@ genMessage__DeletedPost = Message__DeletedPost
                               <*> genSeq genAttachment
                               <*> genReplyState
                               <*> (Just <$> MessagePostId <$> genPostId)  -- must have been Posted if deleted
-                              <*> genMap genText arbitrary
+                              <*> genMap genText (genSet genUserId)
                               <*> genMaybe genPost
                               <*> arbitrary
                               <*> (Just <$> genChannelId))
@@ -84,7 +88,7 @@ genMessage__Posted = Message__Posted
                          <*> genSeq genAttachment
                          <*> genReplyState
                          <*> (Just <$> MessagePostId <$> genPostId)
-                         <*> genMap genText arbitrary
+                         <*> genMap genText (genSet genUserId)
                          <*> genMaybe genPost
                          <*> arbitrary
                          <*> (Just <$> genChannelId))
