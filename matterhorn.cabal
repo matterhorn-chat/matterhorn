@@ -63,6 +63,7 @@ executable matterhorn
                        Zipper
                        Themes
                        Draw
+                       Draw.MessageReactions
                        Draw.ManageAttachments
                        Draw.Autocomplete
                        Draw.Main
@@ -80,6 +81,7 @@ executable matterhorn
                        InputHistory
                        IOUtil
                        Events
+                       Events.MessageReactions
                        Events.ManageAttachments
                        Events.Keybindings
                        Events.ShowHelp

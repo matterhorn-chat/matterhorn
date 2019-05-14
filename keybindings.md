@@ -66,6 +66,7 @@
 | `Home` | Scroll to top and select the oldest message |
 | `j`, `Down` | Select the next message |
 | `k`, `Up` | Select the previous message |
+| `R` | Show reactions for the selected message |
 | `v` | View the selected message |
 | `y` | Copy a verbatim section or message to the clipboard |
 | `Y` | Copy an entire message to the clipboard |

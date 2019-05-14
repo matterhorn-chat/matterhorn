@@ -594,6 +594,7 @@ data Name =
     | ChannelSelectInput
     | AttachmentList
     | AttachmentFileBrowser
+    | MessageReactionsArea
     deriving (Eq, Show, Ord)
 
 -- | The sum type of exceptions we expect to encounter on authentication
@@ -951,6 +952,7 @@ data Mode =
     | ViewMessage
     | ManageAttachments
     | ManageAttachmentsBrowseFiles
+    | MessageReactions
     deriving (Eq)
 
 -- | We're either connected or we're not.

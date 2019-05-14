@@ -20,6 +20,7 @@ module State.MessageSelect
   , beginEditMessage
   , flagMessage
   , getSelectedMessage
+  , showMessageReactions
   )
 where
 
@@ -32,6 +33,7 @@ import           Brick.Main ( viewportScroll, hScrollToBeginning
 import           Brick.Widgets.Edit ( applyEdit )
 import           Data.Text.Zipper ( clearZipper, insertMany )
 import           Lens.Micro.Platform
+import qualified Data.Map as M
 
 import qualified Network.Mattermost.Endpoints as MM
 import           Network.Mattermost.Types
@@ -46,7 +48,7 @@ import           Types.Common
 
 getSelectedMessage :: ChatState -> Maybe Message
 getSelectedMessage st
-    | appMode st /= MessageSelect && appMode st /= MessageSelectDeleteConfirm = Nothing
+    | not (appMode st `elem` [MessageSelect, MessageSelectDeleteConfirm, MessageReactions]) = Nothing
     | otherwise = do
         selMsgId <- selectMessageId $ st^.csMessageSelect
         let chanMsgs = st ^. csCurrentChannel . ccContents . cdMessages
@@ -266,3 +268,11 @@ flagMessage pId f = do
     let doFlag = if f then MM.mmFlagPost else MM.mmUnflagPost
     doFlag myId pId session
     return Nothing
+
+showMessageReactions :: MH ()
+showMessageReactions = do
+    sel <- use (to getSelectedMessage)
+    case sel of
+        Nothing -> return ()
+        Just m -> when (not $ M.null $ m^.mReactions) $
+            setMode MessageReactions

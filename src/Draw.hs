@@ -13,6 +13,7 @@ import Draw.ShowHelp
 import Draw.UserListOverlay
 import Draw.ViewMessage
 import Draw.ManageAttachments
+import Draw.MessageReactions
 import Types
 
 
@@ -33,3 +34,4 @@ draw st =
         ViewMessage                -> drawViewMessage st
         ManageAttachments          -> drawManageAttachments st
         ManageAttachmentsBrowseFiles -> drawManageAttachments st
+        MessageReactions            -> drawMessageReactions st

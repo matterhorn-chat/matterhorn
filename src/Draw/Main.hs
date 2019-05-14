@@ -18,6 +18,7 @@ import qualified Data.Text as T
 import           Data.Text.Zipper ( cursorPosition, insertChar, getText, gotoEOL )
 import           Data.Time.Calendar ( fromGregorian )
 import           Data.Time.Clock ( UTCTime(..) )
+import qualified Data.Map as M
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( (.~), (^?!), to, view, folding )
 
@@ -434,6 +435,7 @@ messageSelectBottomBar st =
         hasURLs = numURLs > 0
         openUrlsMsg = "open " <> (T.pack $ show numURLs) <> " URL" <> s
         hasVerb = isJust (findVerbatimChunk (postMsg^.mText))
+        hasReactions = not . M.null . _mReactions
         -- make sure these keybinding pieces are up-to-date!
         ev e =
           let keyconf = st^.csResources.crConfiguration.to configUserKeys
@@ -484,6 +486,10 @@ messageSelectBottomBar st =
                   , ( const hasVerb
                     , ev YankMessageEvent
                     , "yank-code"
+                    )
+                  , ( hasReactions
+                    , ev ShowMessageReactions
+                    , "reactions"
                     )
                   ]
         Just postMsg = getSelectedMessage st
