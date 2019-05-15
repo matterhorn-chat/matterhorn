@@ -18,6 +18,7 @@ import           Network.Mattermost.Lenses
 import           Network.Mattermost.Types
 
 import           State.Async
+import           State.Common ( fetchMentionedUsers )
 import           Types
 
 
@@ -32,6 +33,8 @@ addReactions :: ChannelId -> [Reaction] -> MH ()
 addReactions cId rs = do
     mh $ invalidateCacheEntry $ ChannelMessages cId
     csChannel(cId).ccContents.cdMessages %= fmap upd
+    let mentions = S.fromList $ UserIdMention <$> reactionUserId <$> rs
+    fetchMentionedUsers mentions
   where upd msg = msg & mReactions %~ insertAll (msg^.mMessageId)
         insert mId r
           | mId == Just (MessagePostId (r^.reactionPostIdL)) =
