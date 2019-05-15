@@ -24,8 +24,8 @@ vs = viewportScroll MessageReactionsArea
 
 messageReactionsKeybindings :: KeyConfig -> [Keybinding]
 messageReactionsKeybindings = mkKeybindings
-    [ mkKb CancelEvent "Close reactions window" $
-        setMode Main
+    [ mkKb CancelEvent "Close reactions window and return to message selection" $
+        setMode MessageSelect
 
     , mkKb ScrollUpEvent
         "Scroll the reaction list up"
