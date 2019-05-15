@@ -50,6 +50,7 @@ module Types.Messages
   , MessageType(..)
   , MessageId(..)
   , ThreadState(..)
+  , MentionedUser(..)
   , isPostMessage
   , messagePostId
   , messageIdPostId
@@ -57,6 +58,7 @@ module Types.Messages
   , ReplyState(..)
   , clientMessageToMessage
   , clientPostToMessage
+  , clientPostReactionUserIds
   , newMessageOfType
     -- * Message Collections
   , Messages
@@ -294,12 +296,24 @@ clientMessageToMessage cm = Message
   }
 
 
+data MentionedUser =
+    UsernameMention Text
+    | UserIdMention UserId
+    deriving (Eq, Show, Ord)
+
+clientPostReactionUserIds :: ClientPost -> S.Set UserId
+clientPostReactionUserIds cp =
+    S.unions $ F.toList $ cp^.cpReactions
+
 -- | Builds a message from a ClientPost and also returns the set of
 -- usernames mentioned in the text of the message.
-clientPostToMessage :: ClientPost -> (Message, S.Set Text)
-clientPostToMessage cp = (m, usernames)
+clientPostToMessage :: ClientPost -> (Message, S.Set MentionedUser)
+clientPostToMessage cp = (m, mentions)
     where
-        usernames = findUsernames $ cp^.cpText
+        mentions =
+            S.fromList $
+                (UsernameMention <$> (F.toList $ findUsernames $ cp^.cpText)) <>
+                (UserIdMention <$> (F.toList $ clientPostReactionUserIds cp))
         m = Message { _mText = cp^.cpText
                     , _mMarkdownSource = cp^.cpMarkdownSource
                     , _mUser =

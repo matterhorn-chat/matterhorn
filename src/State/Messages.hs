@@ -143,7 +143,7 @@ editMessage new = do
     chan . ccContents . cdMessages . traversed . filtered isEditedMessage .= msg
     mh $ invalidateCacheEntry (ChannelMessages $ new^.postChannelIdL)
 
-    fetchUsersByUsername $ F.toList mentionedUsers
+    fetchMentionedUsers mentionedUsers
 
     when (postUserId new /= Just myId) $
         chan %= adjustEditedThreshold new
@@ -278,7 +278,7 @@ addObtainedMessages cId reqCnt addTrailingGap posts =
         -- submit one request per mention.
         (_, mentionedUsers) <- installMessagesFromPosts posts
 
-        fetchUsersByUsername $ F.toList mentionedUsers
+        fetchMentionedUsers mentionedUsers
 
         -- Add all the new *unique* posts into the existing channel
         -- corpus, generating needed fetches of data associated with
@@ -419,7 +419,7 @@ addObtainedMessages cId reqCnt addTrailingGap posts =
 -- existing UnknownGap entries and should be called when those are
 -- irrelevant.
 --
--- The first boolean argument ('fetchMentionedUsers') indicates
+-- The first boolean argument ('doFetchMentionedUsers') indicates
 -- whether this function should schedule a fetch for any mentioned
 -- users in the message. This is provided so that callers can batch
 -- this operation if a large collection of messages is being added
@@ -438,7 +438,7 @@ addObtainedMessages cId reqCnt addTrailingGap posts =
 -- notifications are generated and if the "New Messages" marker gets
 -- updated.
 addMessageToState :: Bool -> Bool -> PostToAdd -> MH PostProcessMessageAdd
-addMessageToState fetchMentionedUsers fetchAuthor newPostData = do
+addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
     let (new, wasMentioned) = case newPostData of
           -- A post from scrollback history has no mention data, and
           -- that's okay: we only need to track mentions to tell the
@@ -472,7 +472,8 @@ addMessageToState fetchMentionedUsers fetchAuthor newPostData = do
                             then applyPreferenceChange pref
                             else refreshChannel SidebarUpdateImmediate nc member
 
-                        addMessageToState fetchMentionedUsers fetchAuthor newPostData >>= postProcessMessageAdd
+                        addMessageToState doFetchMentionedUsers fetchAuthor newPostData >>=
+                            postProcessMessageAdd
 
             return NoAction
         Just _ -> do
@@ -502,8 +503,8 @@ addMessageToState fetchMentionedUsers fetchAuthor newPostData = do
                     let (msg', mentionedUsers) = clientPostToMessage cp
                                  & _1.mFlagged .~ ((cp^.cpPostId) `Set.member` flags)
 
-                    when fetchMentionedUsers $
-                        fetchUsersByUsername $ F.toList mentionedUsers
+                    when doFetchMentionedUsers $
+                        fetchMentionedUsers mentionedUsers
 
                     csPostMap.at(postId new) .= Just msg'
                     mh $ invalidateCacheEntry (ChannelMessages cId)
