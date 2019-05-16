@@ -33,17 +33,22 @@ hLimitWithPadding pad contents = Widget
 
 drawUserListOverlay :: ChatState -> [Widget Name]
 drawUserListOverlay st =
-  (joinBorders $ drawUsersBox (st^.csUserListOverlay)) :
+  (joinBorders $ drawListOverlay (st^.csUserListOverlay) userSearchScopeHeader userSearchScopeNoResults userSearchScopePrompt renderUser) :
   (forceAttr "invalid" <$> drawMain st)
 
--- | Draw a PostListOverlay as a floating overlay on top of whatever
--- is rendered beneath it
-drawUsersBox :: ListOverlayState UserInfo UserSearchScope -> Widget Name
-drawUsersBox st =
+-- | Draw a ListOverlayState as a floating overlay on top of whatever is
+-- rendered beneath it
+drawListOverlay :: ListOverlayState a b
+                -> (b -> Widget Name)
+                -> (b -> Widget Name)
+                -> (b -> Widget Name)
+                -> (Bool -> a -> Widget Name)
+                -> Widget Name
+drawListOverlay st scopeHeader scopeNoResults scopePrompt renderItem =
   centerLayer $ hLimitWithPadding 10 $ vLimit 25 $
-  borderWithLabel contentHeader body
+  borderWithLabel (scopeHeader scope) body
   where
-      body = vBox [ (padRight (Pad 1) $ str promptMsg) <+>
+      body = vBox [ (padRight (Pad 1) promptMsg) <+>
                     renderEditor (txt . T.unlines) True (st^.listOverlaySearchInput)
                   , cursorPositionBorder
                   , userResultList
@@ -70,54 +75,64 @@ drawUsersBox st =
               in hBorderWithLabel $ str $ "[" <> msg <> "]"
 
       scope = st^.listOverlaySearchScope
-      promptMsg = case scope of
-          ChannelMembers _ _    -> "Search channel members:"
-          ChannelNonMembers _ _ -> "Search users:"
-          AllUsers Nothing      -> "Search users:"
-          AllUsers (Just _)     -> "Search team members:"
+      promptMsg = scopePrompt scope
 
       userResultList =
           if st^.listOverlaySearching
-          then showMessage "Searching..."
+          then showMessage $ txt "Searching..."
           else showResults
 
-      showMessage = center . withDefAttr clientEmphAttr . str
+      showMessage = center . withDefAttr clientEmphAttr
 
       showResults
-        | numSearchResults == 0 =
-            showMessage $ case scope of
-              ChannelMembers _ _    -> "No users in channel."
-              ChannelNonMembers _ _ -> "All users in your team are already in this channel."
-              AllUsers _            -> "No users found."
+        | numSearchResults == 0 = showMessage $ scopeNoResults scope
         | otherwise = renderedUserList
 
-      contentHeader = str $ case scope of
-          ChannelMembers _ _    -> "Channel Members"
-          ChannelNonMembers _ _ -> "Invite Users to Channel"
-          AllUsers Nothing      -> "Users On This Server"
-          AllUsers (Just _)     -> "Users In My Team"
-
-      renderedUserList = L.renderList renderUser True (st^.listOverlaySearchResults)
+      renderedUserList = L.renderList renderItem True (st^.listOverlaySearchResults)
       numSearchResults = F.length $ st^.listOverlaySearchResults.L.listElementsL
 
-      sanitize = T.strip . T.replace "\t" " "
-      usernameWidth = 20
-      renderUser foc ui =
-          (if foc then forceAttr L.listSelectedFocusedAttr else id) $
-          vLimit 2 $
-          padRight Max $
-          hBox $ (padRight (Pad 1) $ colorUsername (ui^.uiName) (T.singleton $ userSigilFromInfo ui))
-                 : (hLimit usernameWidth $ padRight Max $ colorUsername (ui^.uiName) (ui^.uiName))
-                 : extras
-          where
-              extras = padRight (Pad 1) <$> catMaybes [mFullname, mNickname, mEmail]
-              mFullname = if (not (T.null (ui^.uiFirstName)) || not (T.null (ui^.uiLastName)))
-                          then Just $ txt $ (sanitize $ ui^.uiFirstName) <> " " <> (sanitize $ ui^.uiLastName)
-                          else Nothing
-              mNickname = case ui^.uiNickName of
-                            Just n | n /= (ui^.uiName) -> Just $ txt $ "(" <> n <> ")"
-                            _ -> Nothing
-              mEmail = if (T.null $ ui^.uiEmail)
-                       then Nothing
-                       else Just $ modifyDefAttr (`V.withURL` ("mailto:" <> ui^.uiEmail)) $
-                                   withDefAttr urlAttr (txt ("<" <> ui^.uiEmail <> ">"))
+userSearchScopePrompt :: UserSearchScope -> Widget Name
+userSearchScopePrompt scope =
+    txt $ case scope of
+        ChannelMembers _ _    -> "Search channel members:"
+        ChannelNonMembers _ _ -> "Search users:"
+        AllUsers Nothing      -> "Search users:"
+        AllUsers (Just _)     -> "Search team members:"
+
+userSearchScopeNoResults :: UserSearchScope -> Widget Name
+userSearchScopeNoResults scope =
+    txt $ case scope of
+        ChannelMembers _ _    -> "No users in channel."
+        ChannelNonMembers _ _ -> "All users in your team are already in this channel."
+        AllUsers _            -> "No users found."
+
+userSearchScopeHeader :: UserSearchScope -> Widget Name
+userSearchScopeHeader scope =
+    txt $ case scope of
+        ChannelMembers {}    -> "Channel Members"
+        ChannelNonMembers {} -> "Invite Users to Channel"
+        AllUsers Nothing     -> "Users On This Server"
+        AllUsers (Just _)    -> "Users In My Team"
+
+renderUser :: Bool -> UserInfo -> Widget Name
+renderUser foc ui =
+    (if foc then forceAttr L.listSelectedFocusedAttr else id) $
+    vLimit 2 $
+    padRight Max $
+    hBox $ (padRight (Pad 1) $ colorUsername (ui^.uiName) (T.singleton $ userSigilFromInfo ui))
+           : (hLimit usernameWidth $ padRight Max $ colorUsername (ui^.uiName) (ui^.uiName))
+           : extras
+    where
+        sanitize = T.strip . T.replace "\t" " "
+        usernameWidth = 20
+        extras = padRight (Pad 1) <$> catMaybes [mFullname, mNickname, mEmail]
+        mFullname = if (not (T.null (ui^.uiFirstName)) || not (T.null (ui^.uiLastName)))
+                    then Just $ txt $ (sanitize $ ui^.uiFirstName) <> " " <> (sanitize $ ui^.uiLastName)
+                    else Nothing
+        mNickname = case ui^.uiNickName of
+                      Just n | n /= (ui^.uiName) -> Just $ txt $ "(" <> n <> ")"
+                      _ -> Nothing
+        mEmail = if (T.null $ ui^.uiEmail)
+                 then Nothing
+                 else Just $ modifyDefAttr (`V.withURL` ("mailto:" <> ui^.uiEmail)) $
+                             withDefAttr urlAttr (txt ("<" <> ui^.uiEmail <> ">"))
