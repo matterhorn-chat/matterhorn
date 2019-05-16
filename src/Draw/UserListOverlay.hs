@@ -1,17 +1,18 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module Draw.UserListOverlay where
+module Draw.UserListOverlay
+  ( drawUserListOverlay
+  )
+where
 
 import           Prelude ()
 import           Prelude.MH
 
 import           Brick
 import qualified Brick.Widgets.List as L
-import           Control.Monad.Trans.Reader ( withReaderT )
 import qualified Data.Text as T
 import qualified Graphics.Vty as V
-import           Lens.Micro.Platform ( (%~) )
 
 import           Draw.Main
 import           Draw.Util ( userSigilFromInfo )
@@ -19,14 +20,6 @@ import           Draw.ListOverlay ( drawListOverlay )
 import           Themes
 import           Types
 
-
-hLimitWithPadding :: Int -> Widget n -> Widget n
-hLimitWithPadding pad contents = Widget
-  { hSize  = Fixed
-  , vSize  = (vSize contents)
-  , render =
-      withReaderT (& availWidthL  %~ (\ n -> n - (2 * pad))) $ render $ cropToContext contents
-  }
 
 drawUserListOverlay :: ChatState -> [Widget Name]
 drawUserListOverlay st =
