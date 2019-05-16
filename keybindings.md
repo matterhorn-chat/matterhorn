@@ -66,7 +66,6 @@
 | `Home` | Scroll to top and select the oldest message |
 | `j`, `Down` | Select the next message |
 | `k`, `Up` | Select the previous message |
-| `R` | Show reactions for the selected message |
 | `v` | View the selected message |
 | `y` | Copy a verbatim section or message to the clipboard |
 | `Y` | Copy an entire message to the clipboard |
@@ -108,15 +107,4 @@
 | `Esc`, `C-c` | Close attachment list |
 | `d` | Delete the selected attachment from the attachment list |
 | `o` | Open the selected attachment using the URL open command |
-
-# Keybindings: Message Reaction List
-| Keybinding | Description |
-| ---------- | ----------- |
-| `Esc`, `C-c` | Close reactions window |
-| `PgDown` | Scroll the reaction list down |
-| `PgUp` | Scroll the reaction list up |
-| `End` | Scroll to the bottom of the reaction list |
-| `Down` | Scroll the reaction list down |
-| `Home` | Scroll to the top of the reaction list |
-| `Up` | Scroll the reaction list up |
 

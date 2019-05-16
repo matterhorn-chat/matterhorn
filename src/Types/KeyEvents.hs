@@ -88,7 +88,6 @@ data KeyEvent
   | DeleteMessageEvent
   | EditMessageEvent
   | ReplyMessageEvent
-  | ShowMessageReactions
 
   -- Attachments
   | AttachmentListAddEvent
@@ -149,7 +148,6 @@ allEvents =
   , DeleteMessageEvent
   , EditMessageEvent
   , ReplyMessageEvent
-  , ShowMessageReactions
   , AttachmentListAddEvent
   , AttachmentListDeleteEvent
   , AttachmentOpenEvent
@@ -341,7 +339,6 @@ keyEventName ev = case ev of
   DeleteMessageEvent -> "delete-message"
   EditMessageEvent   -> "edit-message"
   ReplyMessageEvent  -> "reply-message"
-  ShowMessageReactions  -> "show-message-reactions"
 
   AttachmentListAddEvent    -> "add-to-attachment-list"
   AttachmentListDeleteEvent -> "delete-from-attachment-list"

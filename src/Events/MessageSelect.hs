@@ -51,9 +51,6 @@ messageSelectKeybindings = mkKeybindings
     , mkKb ReplyMessageEvent "Begin composing a reply to the selected message"
          beginReplyCompose
 
-    , mkKb ShowMessageReactions "Show reactions for the selected message"
-         showMessageReactions
-
     , mkKb EditMessageEvent "Begin editing the selected message"
          beginEditMessage
 

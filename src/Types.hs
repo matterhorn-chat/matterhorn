@@ -952,7 +952,6 @@ data Mode =
     | ViewMessage
     | ManageAttachments
     | ManageAttachmentsBrowseFiles
-    | MessageReactions
     deriving (Eq)
 
 -- | We're either connected or we're not.

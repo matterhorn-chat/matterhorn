@@ -103,6 +103,7 @@ appendEditSentinel sentinel b =
 data MessageData = MessageData
   { mdEditThreshold     :: Maybe ServerTime
   , mdShowOlderEdits    :: Bool
+  , mdShowReactions     :: Bool
   , mdMessage           :: Message
   , mdUserName          :: Maybe Text
   , mdIsBot             :: Bool
@@ -183,7 +184,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                  [ B.txt ("  [attached: `" <> a^.attachmentName <> "`]")
                  | a <- toList (msg^.mAttachments)
                  ]
-        msgReac = if Map.null (msg^.mReactions)
+        msgReac = if Map.null (msg^.mReactions) || (not mdShowReactions)
           then Nothing
           else let renderR e us =
                        let n = Set.size us
