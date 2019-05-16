@@ -73,6 +73,7 @@ executable matterhorn
                        Draw.DeleteChannelConfirm
                        Draw.PostListOverlay
                        Draw.UserListOverlay
+                       Draw.ListOverlay
                        Draw.JoinChannel
                        Draw.URLList
                        Draw.Util
