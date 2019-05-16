@@ -19,7 +19,7 @@ import           Types
 
 
 drawViewMessage :: ChatState -> [Widget Name]
-drawViewMessage st = (viewMessageBox st) : (forceAttr "invalid" <$> drawMain st)
+drawViewMessage st = (viewMessageBox st) : (drawMain False st)
 
 viewMessageBox :: ChatState -> Widget Name
 viewMessageBox st =

@@ -399,12 +399,14 @@ renderChannelSelectPrompt st =
        (txt "Switch to channel [use ^ and $ to anchor]: ") <+>
        (renderEditor (txt . T.concat) True e)
 
-drawMain :: ChatState -> [Widget Name]
-drawMain st =
-    [ connectionLayer st
-    , autocompleteLayer st
-    , joinBorders $ mainInterface st
-    ]
+drawMain :: Bool -> ChatState -> [Widget Name]
+drawMain useColor st =
+    let maybeColor = if useColor then id else forceAttr "invalid"
+    in maybeColor <$>
+           [ connectionLayer st
+           , autocompleteLayer st
+           , joinBorders $ mainInterface st
+           ]
 
 connectionLayer :: ChatState -> Widget Name
 connectionLayer st =

@@ -33,7 +33,7 @@ hLimitWithPadding pad contents = Widget
 
 drawPostListOverlay :: PostListContents -> ChatState -> [Widget Name]
 drawPostListOverlay contents st =
-  (joinBorders $ drawPostsBox contents st) : (forceAttr "invalid" <$> drawMain st)
+  (joinBorders $ drawPostsBox contents st) : (drawMain False st)
 
 -- | Draw a PostListOverlay as a floating overlay on top of whatever
 -- is rendered beneath it

@@ -21,7 +21,7 @@ import           Draw.Main ( drawMain )
 
 drawManageAttachments :: ChatState -> [Widget Name]
 drawManageAttachments st =
-    topLayer : drawMain st
+    topLayer : drawMain True st
     where
         topLayer = case appMode st of
             ManageAttachments -> drawAttachmentList st

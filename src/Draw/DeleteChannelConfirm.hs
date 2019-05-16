@@ -18,7 +18,7 @@ import Types
 
 drawDeleteChannelConfirm :: ChatState -> [Widget Name]
 drawDeleteChannelConfirm st =
-    confirmBox st : (forceAttr "invalid" <$> drawMain st)
+    confirmBox st : (drawMain False st)
 
 confirmBox :: ChatState -> Widget Name
 confirmBox st =

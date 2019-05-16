@@ -24,7 +24,7 @@ import           Types
 drawUserListOverlay :: ChatState -> [Widget Name]
 drawUserListOverlay st =
   (joinBorders $ drawListOverlay (st^.csUserListOverlay) userSearchScopeHeader userSearchScopeNoResults userSearchScopePrompt renderUser) :
-  (forceAttr "invalid" <$> drawMain st)
+  (drawMain False st)
 
 userSearchScopePrompt :: UserSearchScope -> Widget Name
 userSearchScopePrompt scope =

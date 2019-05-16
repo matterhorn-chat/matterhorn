@@ -26,7 +26,7 @@ import           Types.Common
 
 
 drawJoinChannel :: ChatState -> [Widget Name]
-drawJoinChannel st = (joinBorders $ joinChannelBox st) : (forceAttr "invalid" <$> drawMain st)
+drawJoinChannel st = (joinBorders $ joinChannelBox st) : (drawMain False st)
 
 joinChannelBox :: ChatState -> Widget Name
 joinChannelBox st =

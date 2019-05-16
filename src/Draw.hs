@@ -2,6 +2,9 @@
 {-# LANGUAGE PackageImports #-}
 module Draw (draw) where
 
+import Prelude ()
+import Prelude.MH
+
 import Brick
 
 import Draw.DeleteChannelConfirm
@@ -19,14 +22,14 @@ import Types
 draw :: ChatState -> [Widget Name]
 draw st =
     case appMode st of
-        Main                       -> drawMain st
-        UrlSelect                  -> drawMain st
+        Main                       -> drawMain True st
+        UrlSelect                  -> drawMain True st
         ShowHelp topic             -> drawShowHelp topic st
-        ChannelSelect              -> drawMain st
+        ChannelSelect              -> drawMain True st
         LeaveChannelConfirm        -> drawLeaveChannelConfirm st
         JoinChannel                -> drawJoinChannel st
-        MessageSelect              -> drawMain st
-        MessageSelectDeleteConfirm -> drawMain st
+        MessageSelect              -> drawMain True st
+        MessageSelectDeleteConfirm -> drawMain True st
         DeleteChannelConfirm       -> drawDeleteChannelConfirm st
         PostListOverlay contents   -> drawPostListOverlay contents st
         UserListOverlay            -> drawUserListOverlay st
