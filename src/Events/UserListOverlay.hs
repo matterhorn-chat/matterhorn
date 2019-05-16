@@ -18,7 +18,7 @@ onEventUserListOverlay =
       before <- userListSearchString
 
       -- Handle the editor input event.
-      mhHandleEventLensed (csUserListOverlay.userListSearchInput) handleEditorEvent e
+      mhHandleEventLensed (csUserListOverlay.listOverlaySearchInput) handleEditorEvent e
 
       -- Get the editor content after the event. If the string changed,
       -- start a new search.

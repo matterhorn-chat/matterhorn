@@ -38,22 +38,22 @@ drawUserListOverlay st =
 
 -- | Draw a PostListOverlay as a floating overlay on top of whatever
 -- is rendered beneath it
-drawUsersBox :: UserListOverlayState -> Widget Name
+drawUsersBox :: ListOverlayState UserInfo UserSearchScope -> Widget Name
 drawUsersBox st =
   centerLayer $ hLimitWithPadding 10 $ vLimit 25 $
   borderWithLabel contentHeader body
   where
       body = vBox [ (padRight (Pad 1) $ str promptMsg) <+>
-                    renderEditor (txt . T.unlines) True (st^.userListSearchInput)
+                    renderEditor (txt . T.unlines) True (st^.listOverlaySearchInput)
                   , cursorPositionBorder
                   , userResultList
                   ]
       plural 1 = ""
       plural _ = "s"
-      cursorPositionBorder = case st^.userListSearchResults.L.listSelectedL of
+      cursorPositionBorder = case st^.listOverlaySearchResults.L.listSelectedL of
           Nothing -> hBorder
           Just _ ->
-              let msg = case st^.userListRequestingMore of
+              let msg = case st^.listOverlayRequestingMore of
                           True -> "Fetching more results..."
                           False -> "Showing " <> show numSearchResults <> " result" <> plural numSearchResults
                           -- NOTE: one day when we resume doing
@@ -69,7 +69,7 @@ drawUsersBox st =
                           --              " result" <> plural numSearchResults
               in hBorderWithLabel $ str $ "[" <> msg <> "]"
 
-      scope = st^.userListSearchScope
+      scope = st^.listOverlaySearchScope
       promptMsg = case scope of
           ChannelMembers _ _    -> "Search channel members:"
           ChannelNonMembers _ _ -> "Search users:"
@@ -77,7 +77,7 @@ drawUsersBox st =
           AllUsers (Just _)     -> "Search team members:"
 
       userResultList =
-          if st^.userListSearching
+          if st^.listOverlaySearching
           then showMessage "Searching..."
           else showResults
 
@@ -97,8 +97,8 @@ drawUsersBox st =
           AllUsers Nothing      -> "Users On This Server"
           AllUsers (Just _)     -> "Users In My Team"
 
-      renderedUserList = L.renderList renderUser True (st^.userListSearchResults)
-      numSearchResults = F.length $ st^.userListSearchResults.L.listElementsL
+      renderedUserList = L.renderList renderUser True (st^.listOverlaySearchResults)
+      numSearchResults = F.length $ st^.listOverlaySearchResults.L.listElementsL
 
       sanitize = T.strip . T.replace "\t" " "
       usernameWidth = 20

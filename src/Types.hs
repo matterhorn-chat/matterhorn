@@ -114,14 +114,14 @@ module Types
 
   , UserSearchScope(..)
 
-  , UserListOverlayState
-  , userListSearchResults
-  , userListSearchInput
-  , userListSearchScope
-  , userListSearching
-  , userListRequestingMore
-  , userListHasAllResults
-  , userListEnterHandler
+  , ListOverlayState
+  , listOverlaySearchResults
+  , listOverlaySearchInput
+  , listOverlaySearchScope
+  , listOverlaySearching
+  , listOverlayRequestingMore
+  , listOverlayHasAllResults
+  , listOverlayEnterHandler
 
   , listFromUserSearchResults
 
@@ -1012,7 +1012,7 @@ data ChatState =
               -- ^ The state of message selection mode.
               , _csPostListOverlay :: PostListOverlayState
               -- ^ The state of the post list overlay.
-              , _csUserListOverlay :: UserListOverlayState
+              , _csUserListOverlay :: ListOverlayState UserInfo UserSearchScope
               -- ^ The state of the user list overlay.
               , _csClientConfig :: Maybe ClientConfig
               -- ^ The Mattermost client configuration, as we understand it.
@@ -1073,16 +1073,16 @@ newState (StartupStateInfo {..}) = do
                      , _csViewedMessage               = Nothing
                      }
 
-nullUserListOverlayState :: UserListOverlayState
+nullUserListOverlayState :: ListOverlayState UserInfo UserSearchScope
 nullUserListOverlayState =
-    UserListOverlayState { _userListSearchResults  = listFromUserSearchResults mempty
-                         , _userListSearchInput    = editor UserListSearchInput (Just 1) ""
-                         , _userListSearchScope    = AllUsers Nothing
-                         , _userListSearching      = False
-                         , _userListRequestingMore = False
-                         , _userListHasAllResults  = False
-                         , _userListEnterHandler   = const $ return False
-                         }
+    ListOverlayState { _listOverlaySearchResults  = listFromUserSearchResults mempty
+                     , _listOverlaySearchInput    = editor UserListSearchInput (Just 1) ""
+                     , _listOverlaySearchScope    = AllUsers Nothing
+                     , _listOverlaySearching      = False
+                     , _listOverlayRequestingMore = False
+                     , _listOverlayHasAllResults  = False
+                     , _listOverlayEnterHandler   = const $ return False
+                     }
 
 listFromUserSearchResults :: Vec.Vector UserInfo -> List Name UserInfo
 listFromUserSearchResults rs =
@@ -1113,16 +1113,17 @@ data PostListOverlayState =
                          , _postListSelected :: Maybe PostId
                          }
 
--- | The state of the user list overlay.
-data UserListOverlayState =
-    UserListOverlayState { _userListSearchResults :: List Name UserInfo
-                         , _userListSearchInput :: Editor Text Name
-                         , _userListSearchScope :: UserSearchScope
-                         , _userListSearching :: Bool
-                         , _userListRequestingMore :: Bool
-                         , _userListHasAllResults :: Bool
-                         , _userListEnterHandler :: UserInfo -> MH Bool
-                         }
+-- | The state of the user list overlay. Type 'a' is the type of data in
+-- the list. Type 'b' is the search scope type.
+data ListOverlayState a b =
+    ListOverlayState { _listOverlaySearchResults :: List Name a
+                     , _listOverlaySearchInput :: Editor Text Name
+                     , _listOverlaySearchScope :: b
+                     , _listOverlaySearching :: Bool
+                     , _listOverlayRequestingMore :: Bool
+                     , _listOverlayHasAllResults :: Bool
+                     , _listOverlayEnterHandler :: a -> MH Bool
+                     }
 
 -- | The scope for searching for users in a user list overlay.
 data UserSearchScope =
@@ -1312,7 +1313,7 @@ makeLenses ''ChatState
 makeLenses ''ChatEditState
 makeLenses ''AutocompleteState
 makeLenses ''PostListOverlayState
-makeLenses ''UserListOverlayState
+makeLenses ''ListOverlayState
 makeLenses ''ChannelSelectState
 makeLenses ''UserPreferences
 makeLenses ''ConnectionInfo

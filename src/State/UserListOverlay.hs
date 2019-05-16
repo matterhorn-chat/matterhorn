@@ -83,11 +83,11 @@ enterDMSearchUserList = do
 -- overlay is configured).
 userListActivateCurrent :: MH ()
 userListActivateCurrent = do
-  mItem <- L.listSelectedElement <$> use (csUserListOverlay.userListSearchResults)
+  mItem <- L.listSelectedElement <$> use (csUserListOverlay.listOverlaySearchResults)
   case mItem of
       Nothing -> return ()
       Just (_, user) -> do
-          handler <- use (csUserListOverlay.userListEnterHandler)
+          handler <- use (csUserListOverlay.listOverlayEnterHandler)
           activated <- handler user
           if activated
              then setMode Main
@@ -97,35 +97,35 @@ userListActivateCurrent = do
 -- request to gather the first search results.
 enterUserListMode :: UserSearchScope -> (UserInfo -> MH Bool) -> MH ()
 enterUserListMode scope enterHandler = do
-  csUserListOverlay.userListSearchScope .= scope
-  csUserListOverlay.userListSearchInput.E.editContentsL %= Z.clearZipper
-  csUserListOverlay.userListEnterHandler .= enterHandler
-  csUserListOverlay.userListSearching .= False
-  csUserListOverlay.userListHasAllResults .= False
+  csUserListOverlay.listOverlaySearchScope .= scope
+  csUserListOverlay.listOverlaySearchInput.E.editContentsL %= Z.clearZipper
+  csUserListOverlay.listOverlayEnterHandler .= enterHandler
+  csUserListOverlay.listOverlaySearching .= False
+  csUserListOverlay.listOverlayHasAllResults .= False
   setMode UserListOverlay
   resetUserListSearch
 
 resetUserListSearch :: MH ()
 resetUserListSearch = do
-  searchPending <- use (csUserListOverlay.userListSearching)
+  searchPending <- use (csUserListOverlay.listOverlaySearching)
 
   when (not searchPending) $ do
       searchString <- userListSearchString
-      csUserListOverlay.userListSearching .= True
-      csUserListOverlay.userListHasAllResults .= False
-      csUserListOverlay.userListSearchResults .= listFromUserSearchResults mempty
+      csUserListOverlay.listOverlaySearching .= True
+      csUserListOverlay.listOverlayHasAllResults .= False
+      csUserListOverlay.listOverlaySearchResults .= listFromUserSearchResults mempty
       session <- getSession
-      scope <- use (csUserListOverlay.userListSearchScope)
+      scope <- use (csUserListOverlay.listOverlaySearchScope)
       doAsyncWith Preempt $ do
           results <- fetchInitialResults scope session searchString
           return $ Just $ do
               let lst = listFromUserSearchResults results
-              csUserListOverlay.userListSearchResults .= lst
+              csUserListOverlay.listOverlaySearchResults .= lst
               -- NOTE: Disabled for now. See the hack note below for
               -- details.
               --
               -- csUserListOverlay.userListHasAllResults .= (length results < searchResultsChunkSize)
-              csUserListOverlay.userListSearching .= False
+              csUserListOverlay.listOverlaySearching .= False
 
               -- Now that the results are available, check to see if the
               -- search string changed since this request was submitted.
@@ -141,8 +141,8 @@ userInfoFromPair u status =
 -- mode.
 exitUserListMode :: MH ()
 exitUserListMode = do
-  csUserListOverlay.userListSearchResults .= listFromUserSearchResults mempty
-  csUserListOverlay.userListEnterHandler .= (const $ return False)
+  csUserListOverlay.listOverlaySearchResults .= listFromUserSearchResults mempty
+  csUserListOverlay.listOverlayEnterHandler .= (const $ return False)
   setMode Main
 
 -- | Move the selection up in the user list overlay by one user.
@@ -168,7 +168,7 @@ userListPageDown = userListMove (L.listMoveBy userListPageSize)
 -- prefetch of more search results.
 userListMove :: (L.List Name UserInfo -> L.List Name UserInfo) -> MH ()
 userListMove f = do
-  csUserListOverlay.userListSearchResults %= f
+  csUserListOverlay.listOverlaySearchResults %= f
   -- NOTE! Do not enable this. See the docs for maybePrefetchNextChunk.
   -- For now we want to keep the code around in case it can be
   -- reinstated in the future.
@@ -304,4 +304,4 @@ getUserSearchResultsPage _pageNum scope s searchString = do
 
 userListSearchString :: MH Text
 userListSearchString =
-    (head . E.getEditContents) <$> use (csUserListOverlay.userListSearchInput)
+    (head . E.getEditContents) <$> use (csUserListOverlay.listOverlaySearchInput)
