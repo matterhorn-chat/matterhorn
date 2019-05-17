@@ -7,8 +7,6 @@ module State.UserListOverlay
   , userListSelectUp
   , userListPageDown
   , userListPageUp
-
-  , userListSearchString
   )
 where
 
@@ -177,6 +175,3 @@ getUserSearchResultsPage _pageNum scope s searchString = do
 
             return $ Vec.fromList usersWithStatus
         True -> return mempty
-
-userListSearchString :: MH Text
-userListSearchString = listOverlaySearchString csUserListOverlay
