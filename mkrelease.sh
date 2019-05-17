@@ -96,6 +96,7 @@ function prepare_dist {
     strip $dest/matterhorn
     cp $HERE/sample-config.ini $dest
     cp $HERE/README.md $dest
+    cp $HERE/keybindings.md $dest
     cp $HERE/CHANGELOG.md $dest
     cp -r $HERE/syntax $dest/
     cp -r $HERE/notification-scripts $dest/
