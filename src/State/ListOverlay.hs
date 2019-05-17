@@ -82,7 +82,6 @@ resetListOverlaySearch which = do
         which.listOverlaySearching .= True
         which.listOverlayHasAllResults .= False
         newList <- use (which.listOverlayNewList)
-        which.listOverlaySearchResults .= newList mempty
         session <- getSession
         scope <- use (which.listOverlaySearchScope)
         fetcher <- use (which.listOverlayFetchResults)

@@ -46,7 +46,7 @@ drawListOverlay st scopeHeader scopeNoResults scopePrompt renderItem =
       body = vBox [ (padRight (Pad 1) promptMsg) <+>
                     renderEditor (txt . T.unlines) True (st^.listOverlaySearchInput)
                   , cursorPositionBorder
-                  , userResultList
+                  , showResults
                   ]
       plural 1 = ""
       plural _ = "s"
@@ -71,11 +71,6 @@ drawListOverlay st scopeHeader scopeNoResults scopePrompt renderItem =
 
       scope = st^.listOverlaySearchScope
       promptMsg = scopePrompt scope
-
-      userResultList =
-          if st^.listOverlaySearching
-          then showMessage $ txt "Searching..."
-          else showResults
 
       showMessage = center . withDefAttr clientEmphAttr
 
