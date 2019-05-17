@@ -1130,14 +1130,27 @@ data PostListOverlayState =
 -- of data in the list. Type 'b' is the search scope type.
 data ListOverlayState a b =
     ListOverlayState { _listOverlaySearchResults :: List Name a
+                     -- ^ The list of search results currently shown in
+                     -- the overlay.
                      , _listOverlaySearchInput :: Editor Text Name
+                     -- ^ The editor for the overlay's search input.
                      , _listOverlaySearchScope :: b
+                     -- ^ The overlay's current search scope.
                      , _listOverlaySearching :: Bool
+                     -- ^ Whether a search is in progress (i.e. whether
+                     -- we are currently awaiting a response from a
+                     -- search query to the server).
                      , _listOverlayRequestingMore :: Bool
                      , _listOverlayHasAllResults :: Bool
                      , _listOverlayEnterHandler :: a -> MH Bool
+                     -- ^ The handler to invoke on the selected element
+                     -- when the user presses Enter.
                      , _listOverlayNewList :: Vec.Vector a -> List Name a
+                     -- ^ The function to build a new brick List from a
+                     -- vector of search results.
                      , _listOverlayFetchResults :: b -> Session -> Text -> IO (Vec.Vector a)
+                     -- ^ The function to call to issue a search query
+                     -- to the server.
                      }
 
 -- | The scope for searching for users in a user list overlay.
