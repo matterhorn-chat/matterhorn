@@ -33,6 +33,7 @@ import           Network.Mattermost.Types
 
 import           State.Channels ( createOrFocusDMChannel, addUserToCurrentChannel )
 import           State.Common
+import           State.ListOverlay
 import           Types
 
 
@@ -82,16 +83,7 @@ enterDMSearchUserList = do
 -- | Interact with the currently-selected user (depending on how the
 -- overlay is configured).
 userListActivateCurrent :: MH ()
-userListActivateCurrent = do
-  mItem <- L.listSelectedElement <$> use (csUserListOverlay.listOverlaySearchResults)
-  case mItem of
-      Nothing -> return ()
-      Just (_, user) -> do
-          handler <- use (csUserListOverlay.listOverlayEnterHandler)
-          activated <- handler user
-          if activated
-             then setMode Main
-             else return ()
+userListActivateCurrent = listOverlayActivateCurrent csUserListOverlay
 
 -- | Show the user list overlay with the given search scope, and issue a
 -- request to gather the first search results.

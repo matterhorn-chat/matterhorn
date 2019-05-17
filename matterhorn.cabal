@@ -58,6 +58,7 @@ executable matterhorn
                        State.Setup.Threads.Logging
                        State.Themes
                        State.UrlSelect
+                       State.ListOverlay
                        State.UserListOverlay
                        State.Users
                        Zipper
