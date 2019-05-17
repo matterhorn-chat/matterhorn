@@ -26,6 +26,8 @@ import           State.Common
 import           Events.Keybindings ( KeyConfig, Keybinding, handleKeyboardEvent )
 
 
+-- | Activate the specified list overlay's selected item by invoking the
+-- overlay's configured enter keypress handler function.
 listOverlayActivateCurrent :: Lens' ChatState (ListOverlayState a b) -> MH ()
 listOverlayActivateCurrent which = do
   mItem <- L.listSelectedElement <$> use (which.listOverlaySearchResults)
@@ -38,30 +40,42 @@ listOverlayActivateCurrent which = do
              then setMode Main
              else return ()
 
+-- | Get the current search string for the specified overlay.
 listOverlaySearchString :: Lens' ChatState (ListOverlayState a b) -> MH Text
 listOverlaySearchString which =
     (head . E.getEditContents) <$> use (which.listOverlaySearchInput)
 
+-- | Move the list cursor in the specified overlay.
 listOverlayMove :: Lens' ChatState (ListOverlayState a b)
+                -- ^ Which overlay
                 -> (L.List Name a -> L.List Name a)
+                -- ^ How to transform the list in the overlay
                 -> MH ()
-listOverlayMove which how =
-    which.listOverlaySearchResults %= how
+listOverlayMove which how = which.listOverlaySearchResults %= how
 
--- | Clear out the state of the list overlay and return to the Main
--- mode.
-exitListOverlay :: Lens' ChatState (ListOverlayState a b) -> MH ()
+-- | Clear the state of the specified list overlay and return to the
+-- Main mode.
+exitListOverlay :: Lens' ChatState (ListOverlayState a b)
+                -- ^ Which overlay to reset
+                -> MH ()
 exitListOverlay which = do
     newList <- use (which.listOverlayNewList)
     which.listOverlaySearchResults .= newList mempty
     which.listOverlayEnterHandler .= (const $ return False)
     setMode Main
 
+-- | Initialize a list overlay with the specified arguments and switch
+-- to the specified mode.
 enterListOverlayMode :: (Lens' ChatState (ListOverlayState a b))
+                     -- ^ Which overlay to initialize
                      -> Mode
+                     -- ^ The mode to change to
                      -> b
+                     -- ^ The overlay's initial search scope
                      -> (a -> MH Bool)
+                     -- ^ The overlay's enter keypress handler
                      -> (b -> Session -> Text -> IO (Vec.Vector a))
+                     -- ^ The overlay's results fetcher function
                      -> MH ()
 enterListOverlayMode which mode scope enterHandler fetcher = do
     which.listOverlaySearchScope .= scope
@@ -73,6 +87,9 @@ enterListOverlayMode which mode scope enterHandler fetcher = do
     setMode mode
     resetListOverlaySearch which
 
+-- | Reset the overlay's search by initiating a new search request for
+-- the string that is currently in the overlay's editor. This does
+-- nothing if a search for this overlay is already in progress.
 resetListOverlaySearch :: Lens' ChatState (ListOverlayState a b) -> MH ()
 resetListOverlaySearch which = do
     searchPending <- use (which.listOverlaySearching)
@@ -97,9 +114,15 @@ resetListOverlaySearch which = do
                 afterSearchString <- listOverlaySearchString which
                 when (searchString /= afterSearchString) $ resetListOverlaySearch which
 
+-- | Generically handle an event for the list overlay state targeted
+-- by the specified lens. Automatically dispatches new searches in the
+-- overlay's editor if the editor contents change.
 onEventListOverlay :: Lens' ChatState (ListOverlayState a b)
+                   -- ^ Which overlay to dispatch to?
                    -> (KeyConfig -> [Keybinding])
+                   -- ^ The keybinding builder
                    -> Vty.Event
+                   -- ^ The event
                    -> MH ()
 onEventListOverlay which keybindings =
     handleKeyboardEvent keybindings $ \e -> do
