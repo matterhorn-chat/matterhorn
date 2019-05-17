@@ -299,6 +299,8 @@ and in `~/.config/matterhorn/config.ini`,
 themeCustomizationFile: theme.ini
 ```
 
+This is known to work on `gnome-terminal` version `3.32.2`, VTE version `0.56.3`; it may work for you, too. Many terminal emulators do not support italics at all or without various hacks. Let us know what works for you!
+
 ## I enabled italicized text in my theme configuration. Why doesn't it work?
 
 Most terminfo files for typical terminal configurations do not
