@@ -1111,8 +1111,8 @@ data PostListOverlayState =
                          , _postListSelected :: Maybe PostId
                          }
 
--- | The state of the user list overlay. Type 'a' is the type of data in
--- the list. Type 'b' is the search scope type.
+-- | The state of the search result list overlay. Type 'a' is the type
+-- of data in the list. Type 'b' is the search scope type.
 data ListOverlayState a b =
     ListOverlayState { _listOverlaySearchResults :: List Name a
                      , _listOverlaySearchInput :: Editor Text Name
