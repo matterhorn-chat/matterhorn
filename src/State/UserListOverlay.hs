@@ -115,9 +115,6 @@ userListPageSize = 10
 fetchInitialResults :: UserSearchScope -> Session -> Text -> IO (Vec.Vector UserInfo)
 fetchInitialResults = getUserSearchResultsPage 0
 
--- searchResultsChunkSize :: Int
--- searchResultsChunkSize = 40
-
 getUserSearchResultsPage :: Int
                          -- ^ The page number of results to fetch, starting at zero.
                          -> UserSearchScope
