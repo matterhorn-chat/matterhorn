@@ -76,7 +76,7 @@ enterDMSearchUserList = do
 -- request to gather the first search results.
 enterUserListMode :: UserSearchScope -> (UserInfo -> MH Bool) -> MH ()
 enterUserListMode scope enterHandler =
-    enterListOverlayMode csUserListOverlay UserListOverlay scope enterHandler fetchInitialResults
+    enterListOverlayMode csUserListOverlay UserListOverlay scope enterHandler getUserSearchResults
 
 userInfoFromPair :: User -> Text -> UserInfo
 userInfoFromPair u status =
@@ -110,21 +110,14 @@ userListMove = listOverlayMove csUserListOverlay
 userListPageSize :: Int
 userListPageSize = 10
 
--- | Perform an initial request for search results in the specified
--- scope.
-fetchInitialResults :: UserSearchScope -> Session -> Text -> IO (Vec.Vector UserInfo)
-fetchInitialResults = getUserSearchResultsPage 0
-
-getUserSearchResultsPage :: Int
-                         -- ^ The page number of results to fetch, starting at zero.
-                         -> UserSearchScope
-                         -- ^ The scope to search
-                         -> Session
-                         -- ^ The connection session
-                         -> Text
-                         -- ^ The search string
-                         -> IO (Vec.Vector UserInfo)
-getUserSearchResultsPage _pageNum scope s searchString = do
+getUserSearchResults :: UserSearchScope
+                     -- ^ The scope to search
+                     -> Session
+                     -- ^ The connection session
+                     -> Text
+                     -- ^ The search string
+                     -> IO (Vec.Vector UserInfo)
+getUserSearchResults scope s searchString = do
     -- Unfortunately, we don't get pagination control when there is a
     -- search string in effect. We'll get at most 100 results from a
     -- search.
