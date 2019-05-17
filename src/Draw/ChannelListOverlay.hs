@@ -17,6 +17,7 @@ import           Draw.Main
 import           Draw.ListOverlay ( drawListOverlay )
 import           Types
 import           Types.Common ( sanitizeUserText )
+import           Themes
 
 
 drawChannelListOverlay :: ChatState -> [Widget Name]
@@ -46,5 +47,5 @@ renderChannel _ chan =
     let baseStr = (sanitizeUserText $ chan^.channelNameL) <> " (" <>
                   (sanitizeUserText $ chan^.channelDisplayNameL) <> ")"
         s = "  " <> (T.strip $ sanitizeUserText $ chan^.channelPurposeL)
-    in (vLimit 1 $ padRight Max $ txt baseStr) <=>
+    in (vLimit 1 $ padRight Max $ withDefAttr clientEmphAttr $ txt baseStr) <=>
        (vLimit 1 $ txtWrapWith (defaultWrapSettings { preserveIndentation = True }) s)
