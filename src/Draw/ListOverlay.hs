@@ -62,20 +62,7 @@ drawListOverlay st scopeHeader scopeNoResults scopePrompt renderItem =
       cursorPositionBorder = case st^.listOverlaySearchResults.L.listSelectedL of
           Nothing -> hBorder
           Just _ ->
-              let msg = case st^.listOverlayRequestingMore of
-                          True -> "Fetching more results..."
-                          False -> "Showing " <> show numSearchResults <> " result" <> plural numSearchResults
-                          -- NOTE: one day when we resume doing
-                          -- pagination, we want to reinstate the
-                          -- following logic instead of the False case
-                          -- above. Please see State.UserListOverlay for
-                          -- details.
-                          --
-                          -- False -> case st^.userListHasAllResults of
-                          --     True -> "Showing all results (" <> show numSearchResults <> ")"
-                          --     False -> "Showing first " <>
-                          --              show numSearchResults <>
-                          --              " result" <> plural numSearchResults
+              let msg = "Showing " <> show numSearchResults <> " result" <> plural numSearchResults
               in hBorderWithLabel $ str $ "[" <> msg <> "]"
 
       scope = st^.listOverlaySearchScope

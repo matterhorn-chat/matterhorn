@@ -83,7 +83,6 @@ enterListOverlayMode which mode scope enterHandler fetcher = do
     which.listOverlayEnterHandler .= enterHandler
     which.listOverlayFetchResults .= fetcher
     which.listOverlaySearching .= False
-    which.listOverlayHasAllResults .= False
     setMode mode
     resetListOverlaySearch which
 
@@ -97,7 +96,6 @@ resetListOverlaySearch which = do
     when (not searchPending) $ do
         searchString <- listOverlaySearchString which
         which.listOverlaySearching .= True
-        which.listOverlayHasAllResults .= False
         newList <- use (which.listOverlayNewList)
         session <- getSession
         scope <- use (which.listOverlaySearchScope)

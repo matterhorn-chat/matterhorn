@@ -120,8 +120,6 @@ module Types
   , listOverlaySearchInput
   , listOverlaySearchScope
   , listOverlaySearching
-  , listOverlayRequestingMore
-  , listOverlayHasAllResults
   , listOverlayEnterHandler
   , listOverlayNewList
   , listOverlayFetchResults
@@ -1082,8 +1080,6 @@ nullChannelListOverlayState =
                         , _listOverlaySearchInput    = editor JoinChannelListSearchInput (Just 1) ""
                         , _listOverlaySearchScope    = AllChannels
                         , _listOverlaySearching      = False
-                        , _listOverlayRequestingMore = False
-                        , _listOverlayHasAllResults  = False
                         , _listOverlayEnterHandler   = const $ return False
                         , _listOverlayNewList        = newList
                         , _listOverlayFetchResults   = const $ const $ const $ return mempty
@@ -1096,8 +1092,6 @@ nullUserListOverlayState =
                         , _listOverlaySearchInput    = editor UserListSearchInput (Just 1) ""
                         , _listOverlaySearchScope    = AllUsers Nothing
                         , _listOverlaySearching      = False
-                        , _listOverlayRequestingMore = False
-                        , _listOverlayHasAllResults  = False
                         , _listOverlayEnterHandler   = const $ return False
                         , _listOverlayNewList        = newList
                         , _listOverlayFetchResults   = const $ const $ const $ return mempty
@@ -1140,8 +1134,6 @@ data ListOverlayState a b =
                      -- ^ Whether a search is in progress (i.e. whether
                      -- we are currently awaiting a response from a
                      -- search query to the server).
-                     , _listOverlayRequestingMore :: Bool
-                     , _listOverlayHasAllResults :: Bool
                      , _listOverlayEnterHandler :: a -> MH Bool
                      -- ^ The handler to invoke on the selected element
                      -- when the user presses Enter.
