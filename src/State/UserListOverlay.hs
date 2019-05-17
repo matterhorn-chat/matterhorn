@@ -113,10 +113,6 @@ resetUserListSearch = do
           return $ Just $ do
               let lst = listFromUserSearchResults results
               csUserListOverlay.listOverlaySearchResults .= lst
-              -- NOTE: Disabled for now. See the hack note below for
-              -- details.
-              --
-              -- csUserListOverlay.userListHasAllResults .= (length results < searchResultsChunkSize)
               csUserListOverlay.listOverlaySearching .= False
 
               -- Now that the results are available, check to see if the
@@ -161,68 +157,6 @@ userListPageDown = userListMove (L.listMoveBy userListPageSize)
 userListMove :: (L.List Name UserInfo -> L.List Name UserInfo) -> MH ()
 userListMove f = do
   csUserListOverlay.listOverlaySearchResults %= f
-  -- NOTE! Do not enable this. See the docs for maybePrefetchNextChunk.
-  -- For now we want to keep the code around in case it can be
-  -- reinstated in the future.
-  -- maybePrefetchNextChunk
-
--- | We'll attempt to prefetch the next page of results if the cursor
--- gets within this many positions of the last result we have.
--- selectionPrefetchDelta :: Int
--- selectionPrefetchDelta = 10
-
--- Prefetch the next chunk of user list search results if all of the
--- following are true:
---
---  * the search string is empty (because we can't paginate searches,
---    just fetches for all users), and
---  * cursor is within selectionPrefetchDelta positions of the end of
---    list, and
---  * the length of the current results list is exactly a multiple of
---    fetching chunk size (thus indicating a very high probability that
---    there are more results to be fetched).
---
--- NOTE: this function should be reinstated and called in 'userListMove'
--- if we start using the /users endpoint again in the future. See the
--- hack note in the getUserSearchResultsPage below for details. In the
--- mean time, no pagination of results is possible so no prefetching
--- should be done.
--- _maybePrefetchNextChunk :: MH ()
--- _maybePrefetchNextChunk = do
---   gettingMore <- use (csUserListOverlay.userListRequestingMore)
---   hasAll <- use (csUserListOverlay.userListHasAllResults)
---   searchString <- userListSearchString
---   curIdx <- use (csUserListOverlay.userListSearchResults.L.listSelectedL)
---   numResults <- use (csUserListOverlay.userListSearchResults.to F.length)
---
---   let selectionNearEnd = case curIdx of
---           Nothing -> False
---           Just i -> numResults - (i + 1) < selectionPrefetchDelta
---
---   when (not hasAll && T.null searchString && not gettingMore && selectionNearEnd) $ do
---       let pageNum = numResults `div` searchResultsChunkSize
---
---       csUserListOverlay.userListRequestingMore .= True
---       session <- getSession
---       scope <- use (csUserListOverlay.userListSearchScope)
---       myTId <- gets myTeamId
---       doAsyncWith Preempt $ do
---           newChunk <- getUserSearchResultsPage pageNum myTId scope session searchString
---           return $ Just $ do
---               -- Because we only ever append, this is safe to do w.r.t.
---               -- the selected index of the list. If we ever prepended or
---               -- removed, we'd also need to manage the selection index
---               -- to ensure it stays in bounds.
---               csUserListOverlay.userListSearchResults.L.listElementsL %= (<> newChunk)
---               csUserListOverlay.userListRequestingMore .= False
---
---               -- If we got fewer results than we asked for, then we have
---               -- them all!
---               --
---               -- NOTE: disabled for now, see the hack note below.
---               --
---               -- csUserListOverlay.userListHasAllResults .=
---               --     (length newChunk < searchResultsChunkSize)
 
 -- | The number of users in a "page" for cursor movement purposes.
 userListPageSize :: Int
