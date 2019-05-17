@@ -40,81 +40,81 @@ import           Types
 -- current channel.
 enterChannelMembersUserList :: MH ()
 enterChannelMembersUserList = do
-  cId <- use csCurrentChannelId
-  myId <- gets myUserId
-  myTId <- gets myTeamId
-  enterUserListMode (ChannelMembers cId myTId)
-    (\u -> case u^.uiId /= myId of
-      True -> createOrFocusDMChannel u Nothing >> return True
-      False -> return False
-    )
+    cId <- use csCurrentChannelId
+    myId <- gets myUserId
+    myTId <- gets myTeamId
+    enterUserListMode (ChannelMembers cId myTId)
+      (\u -> case u^.uiId /= myId of
+        True -> createOrFocusDMChannel u Nothing >> return True
+        False -> return False
+      )
 
 -- | Show the user list overlay for showing users that are not members
 -- of the current channel for the purpose of adding them to the
 -- channel.
 enterChannelInviteUserList :: MH ()
 enterChannelInviteUserList = do
-  cId <- use csCurrentChannelId
-  myId <- gets myUserId
-  myTId <- gets myTeamId
-  enterUserListMode (ChannelNonMembers cId myTId)
-    (\u -> case u^.uiId /= myId of
-      True -> addUserToCurrentChannel u >> return True
-      False -> return False
-    )
+    cId <- use csCurrentChannelId
+    myId <- gets myUserId
+    myTId <- gets myTeamId
+    enterUserListMode (ChannelNonMembers cId myTId)
+      (\u -> case u^.uiId /= myId of
+        True -> addUserToCurrentChannel u >> return True
+        False -> return False
+      )
 
 -- | Show the user list overlay for showing all users for the purpose of
 -- starting a direct message channel with another user.
 enterDMSearchUserList :: MH ()
 enterDMSearchUserList = do
-  myId <- gets myUserId
-  myTId <- gets myTeamId
-  config <- use csClientConfig
-  let restrictTeam = case MM.clientConfigRestrictDirectMessage <$> config of
-          Just MM.RestrictTeam -> Just myTId
-          _ -> Nothing
-  enterUserListMode (AllUsers restrictTeam)
-    (\u -> case u^.uiId /= myId of
-      True -> createOrFocusDMChannel u Nothing >> return True
-      False -> return False
-    )
+    myId <- gets myUserId
+    myTId <- gets myTeamId
+    config <- use csClientConfig
+    let restrictTeam = case MM.clientConfigRestrictDirectMessage <$> config of
+            Just MM.RestrictTeam -> Just myTId
+            _ -> Nothing
+    enterUserListMode (AllUsers restrictTeam)
+      (\u -> case u^.uiId /= myId of
+        True -> createOrFocusDMChannel u Nothing >> return True
+        False -> return False
+      )
 
 -- | Show the user list overlay with the given search scope, and issue a
 -- request to gather the first search results.
 enterUserListMode :: UserSearchScope -> (UserInfo -> MH Bool) -> MH ()
 enterUserListMode scope enterHandler = do
-  csUserListOverlay.listOverlaySearchScope .= scope
-  csUserListOverlay.listOverlaySearchInput.E.editContentsL %= Z.clearZipper
-  csUserListOverlay.listOverlayEnterHandler .= enterHandler
-  csUserListOverlay.listOverlaySearching .= False
-  csUserListOverlay.listOverlayHasAllResults .= False
-  setMode UserListOverlay
-  resetUserListSearch
+    csUserListOverlay.listOverlaySearchScope .= scope
+    csUserListOverlay.listOverlaySearchInput.E.editContentsL %= Z.clearZipper
+    csUserListOverlay.listOverlayEnterHandler .= enterHandler
+    csUserListOverlay.listOverlaySearching .= False
+    csUserListOverlay.listOverlayHasAllResults .= False
+    setMode UserListOverlay
+    resetUserListSearch
 
 resetUserListSearch :: MH ()
 resetUserListSearch = do
-  searchPending <- use (csUserListOverlay.listOverlaySearching)
+    searchPending <- use (csUserListOverlay.listOverlaySearching)
 
-  when (not searchPending) $ do
-      searchString <- userListSearchString
-      csUserListOverlay.listOverlaySearching .= True
-      csUserListOverlay.listOverlayHasAllResults .= False
-      newList <- use (csUserListOverlay.listOverlayNewList)
-      csUserListOverlay.listOverlaySearchResults .= newList mempty
-      session <- getSession
-      scope <- use (csUserListOverlay.listOverlaySearchScope)
-      doAsyncWith Preempt $ do
-          results <- fetchInitialResults scope session searchString
-          return $ Just $ do
-              let lst = newList results
-              csUserListOverlay.listOverlaySearchResults .= lst
-              csUserListOverlay.listOverlaySearching .= False
+    when (not searchPending) $ do
+        searchString <- userListSearchString
+        csUserListOverlay.listOverlaySearching .= True
+        csUserListOverlay.listOverlayHasAllResults .= False
+        newList <- use (csUserListOverlay.listOverlayNewList)
+        csUserListOverlay.listOverlaySearchResults .= newList mempty
+        session <- getSession
+        scope <- use (csUserListOverlay.listOverlaySearchScope)
+        doAsyncWith Preempt $ do
+            results <- fetchInitialResults scope session searchString
+            return $ Just $ do
+                let lst = newList results
+                csUserListOverlay.listOverlaySearchResults .= lst
+                csUserListOverlay.listOverlaySearching .= False
 
-              -- Now that the results are available, check to see if the
-              -- search string changed since this request was submitted.
-              -- If so, issue another search.
-              afterSearchString <- userListSearchString
-              when (searchString /= afterSearchString) resetUserListSearch
+                -- Now that the results are available, check to see if the
+                -- search string changed since this request was submitted.
+                -- If so, issue another search.
+                afterSearchString <- userListSearchString
+                when (searchString /= afterSearchString) resetUserListSearch
 
 userInfoFromPair :: User -> Text -> UserInfo
 userInfoFromPair u status =
@@ -124,10 +124,10 @@ userInfoFromPair u status =
 -- mode.
 exitUserListMode :: MH ()
 exitUserListMode = do
-  newList <- use (csUserListOverlay.listOverlayNewList)
-  csUserListOverlay.listOverlaySearchResults .= newList mempty
-  csUserListOverlay.listOverlayEnterHandler .= (const $ return False)
-  setMode Main
+    newList <- use (csUserListOverlay.listOverlayNewList)
+    csUserListOverlay.listOverlaySearchResults .= newList mempty
+    csUserListOverlay.listOverlayEnterHandler .= (const $ return False)
+    setMode Main
 
 -- | Move the selection up in the user list overlay by one user.
 userListSelectUp :: MH ()
