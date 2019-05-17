@@ -32,6 +32,7 @@ import           State.Logging
 import           State.PostListOverlay
 import           State.Themes
 import           State.UserListOverlay
+import           State.ChannelListOverlay
 import           State.Users
 import           Types
 
@@ -102,8 +103,8 @@ commandList =
   , Cmd "leave" "Leave the current channel" NoArg $ \ () ->
       startLeaveCurrentChannel
 
-  , Cmd "join" "Browse the list of available channels" NoArg $ \ () ->
-      startJoinChannel
+  , Cmd "join" "Find a channel to join" NoArg $ \ () ->
+      enterChannelListOverlayMode
 
   , Cmd "join" "Join the specified channel" (TokenArg "channel" NoArg) $ \(n, ()) ->
       joinChannelByName n

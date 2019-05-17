@@ -67,9 +67,9 @@ module Types
   , csRecentChannel
   , csPostListOverlay
   , csUserListOverlay
+  , csChannelListOverlay
   , csMyTeam
   , csMessageSelect
-  , csJoinChannelList
   , csConnectionStatus
   , csWorkerIsBusy
   , csChannel
@@ -113,6 +113,7 @@ module Types
   , postListPosts
 
   , UserSearchScope(..)
+  , ChannelSearchScope(..)
 
   , ListOverlayState
   , listOverlaySearchResults
@@ -588,6 +589,7 @@ data Name =
     | UrlList
     | MessagePreviewViewport
     | UserListSearchInput
+    | JoinChannelListSearchInput
     | UserListSearchResults
     | ViewMessageArea
     | ChannelSidebar
@@ -944,11 +946,11 @@ data Mode =
     | UrlSelect
     | LeaveChannelConfirm
     | DeleteChannelConfirm
-    | JoinChannel
     | MessageSelect
     | MessageSelectDeleteConfirm
     | PostListOverlay PostListContents
     | UserListOverlay
+    | ChannelListOverlay
     | ViewMessage
     | ManageAttachments
     | ManageAttachmentsBrowseFiles
@@ -1006,14 +1008,13 @@ data ChatState =
               , _csWorkerIsBusy :: Maybe (Maybe Int)
               -- ^ Whether the async worker thread is busy, and its
               -- queue length if so.
-              , _csJoinChannelList :: Maybe (List Name Channel)
-              -- ^ The list of channels presented in the channel join
-              -- window.
               , _csMessageSelect :: MessageSelectState
               -- ^ The state of message selection mode.
               , _csPostListOverlay :: PostListOverlayState
               -- ^ The state of the post list overlay.
               , _csUserListOverlay :: ListOverlayState UserInfo UserSearchScope
+              -- ^ The state of the user list overlay.
+              , _csChannelListOverlay :: ListOverlayState Channel ChannelSearchScope
               -- ^ The state of the user list overlay.
               , _csClientConfig :: Maybe ClientConfig
               -- ^ The Mattermost client configuration, as we understand it.
@@ -1065,14 +1066,28 @@ newState (StartupStateInfo {..}) = do
                      , _csUrlList                     = list UrlList mempty 2
                      , _csConnectionStatus            = Connected
                      , _csWorkerIsBusy                = Nothing
-                     , _csJoinChannelList             = Nothing
                      , _csMessageSelect               = MessageSelectState Nothing
                      , _csPostListOverlay             = PostListOverlayState emptyDirSeq Nothing
                      , _csUserListOverlay             = nullUserListOverlayState
+                     , _csChannelListOverlay          = nullChannelListOverlayState
                      , _csClientConfig                = Nothing
                      , _csPendingChannelChange        = Nothing
                      , _csViewedMessage               = Nothing
                      }
+
+nullChannelListOverlayState :: ListOverlayState Channel ChannelSearchScope
+nullChannelListOverlayState =
+    let newList rs = list JoinChannelList rs 2
+    in ListOverlayState { _listOverlaySearchResults  = newList mempty
+                        , _listOverlaySearchInput    = editor JoinChannelListSearchInput (Just 1) ""
+                        , _listOverlaySearchScope    = AllChannels
+                        , _listOverlaySearching      = False
+                        , _listOverlayRequestingMore = False
+                        , _listOverlayHasAllResults  = False
+                        , _listOverlayEnterHandler   = const $ return False
+                        , _listOverlayNewList        = newList
+                        , _listOverlayFetchResults   = const $ const $ const $ return mempty
+                        }
 
 nullUserListOverlayState :: ListOverlayState UserInfo UserSearchScope
 nullUserListOverlayState =
@@ -1130,6 +1145,10 @@ data UserSearchScope =
     ChannelMembers ChannelId TeamId
     | ChannelNonMembers ChannelId TeamId
     | AllUsers (Maybe TeamId)
+
+-- | The scope for searching for channels to join.
+data ChannelSearchScope =
+    AllChannels
 
 -- | Actions that can be sent on the websocket to the server.
 data WebsocketAction =

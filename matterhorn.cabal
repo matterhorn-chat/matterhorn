@@ -60,6 +60,7 @@ executable matterhorn
                        State.UrlSelect
                        State.ListOverlay
                        State.UserListOverlay
+                       State.ChannelListOverlay
                        State.Users
                        Zipper
                        Themes
@@ -69,13 +70,13 @@ executable matterhorn
                        Draw.Main
                        Draw.Messages
                        Draw.ChannelList
+                       Draw.ChannelListOverlay
                        Draw.ShowHelp
                        Draw.LeaveChannelConfirm
                        Draw.DeleteChannelConfirm
                        Draw.PostListOverlay
                        Draw.UserListOverlay
                        Draw.ListOverlay
-                       Draw.JoinChannel
                        Draw.URLList
                        Draw.Util
                        Draw.ViewMessage
@@ -87,11 +88,11 @@ executable matterhorn
                        Events.ShowHelp
                        Events.MessageSelect
                        Events.Main
-                       Events.JoinChannel
                        Events.ChannelSelect
                        Events.PostListOverlay
                        Events.UrlSelect
                        Events.UserListOverlay
+                       Events.ChannelListOverlay
                        Events.LeaveChannelConfirm
                        Events.DeleteChannelConfirm
                        Events.ViewMessage

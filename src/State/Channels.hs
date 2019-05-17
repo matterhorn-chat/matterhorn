@@ -39,7 +39,6 @@ module State.Channels
   , startLeaveCurrentChannel
   , joinChannel
   , joinChannelByName
-  , startJoinChannel
   , changeChannelByName
   , setChannelTopic
   , beginCurrentChannelDeleteConfirm
@@ -53,20 +52,17 @@ import           Prelude.MH
 
 import           Brick.Main ( viewportScroll, vScrollToBeginning, invalidateCache, invalidateCacheEntry )
 import           Brick.Widgets.Edit ( applyEdit, getEditContents, editContentsL )
-import           Brick.Widgets.List ( list )
 import           Control.Concurrent.Async ( runConcurrently, Concurrently(..) )
 import qualified Control.Concurrent.STM as STM
 import           Control.Exception ( SomeException, try )
 import           Data.Char ( isAlphaNum )
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Foldable as F
-import           Data.Function ( on )
 import           Data.List ( nub )
 import           Data.Maybe ( fromJust )
 import qualified Data.Set as S
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
-import qualified Data.Vector as V
 import           Data.Text.Zipper ( textZipper, clearZipper, insertMany, gotoEOL )
 import           Data.Time.Clock ( getCurrentTime )
 import           Lens.Micro.Platform
@@ -907,30 +903,6 @@ joinChannelByName rawName = do
         return $ Just $ case result of
             Left (_::SomeException) -> mhError $ NoSuchChannel rawName
             Right chan -> joinChannel $ getId chan
-
-startJoinChannel :: MH ()
-startJoinChannel = do
-    session <- getSession
-    myTId <- gets myTeamId
-    myChannels <- use (csChannels.to (filteredChannelIds (const True)))
-    doAsyncWith Preempt $ do
-        -- We don't get to just request all channels, so we request channels in
-        -- chunks of 50.  A better UI might be to request an initial set and
-        -- then wait for the user to demand more.
-        let fetchCount     = 50
-            loop acc start = do
-              newChans <- MM.mmGetPublicChannels myTId (Just start) (Just fetchCount) session
-              let chans = acc <> newChans
-              if length newChans < fetchCount
-                then return chans
-                else loop chans (start+1)
-        chans <- Seq.filter (\ c -> not (channelId c `elem` myChannels)) <$> loop mempty 0
-        let sortedChans = V.fromList $ toList $ Seq.sortBy (compare `on` channelName) chans
-        return $ Just $ do
-            csJoinChannelList .= (Just $ list JoinChannelList sortedChans 2)
-
-    setMode JoinChannel
-    csJoinChannelList .= Nothing
 
 -- | If the user is not a member of the specified channel, submit a
 -- request to join it. Otherwise switch to the channel.

@@ -32,7 +32,6 @@ import           Types.Common
 
 import           Events.ChannelSelect
 import           Events.DeleteChannelConfirm
-import           Events.JoinChannel
 import           Events.LeaveChannelConfirm
 import           Events.Main
 import           Events.MessageSelect
@@ -40,6 +39,7 @@ import           Events.PostListOverlay
 import           Events.ShowHelp
 import           Events.UrlSelect
 import           Events.UserListOverlay
+import           Events.ChannelListOverlay
 import           Events.ViewMessage
 import           Events.ManageAttachments
 
@@ -158,12 +158,12 @@ onVtyEvent e = do
         ChannelSelect              -> onEventChannelSelect e
         UrlSelect                  -> onEventUrlSelect e
         LeaveChannelConfirm        -> onEventLeaveChannelConfirm e
-        JoinChannel                -> onEventJoinChannel e
         MessageSelect              -> onEventMessageSelect e
         MessageSelectDeleteConfirm -> onEventMessageSelectDeleteConfirm e
         DeleteChannelConfirm       -> onEventDeleteChannelConfirm e
         PostListOverlay _          -> onEventPostListOverlay e
         UserListOverlay            -> onEventUserListOverlay e
+        ChannelListOverlay         -> onEventChannelListOverlay e
         ViewMessage                -> onEventViewMessage e
         ManageAttachments          -> onEventManageAttachments e
         ManageAttachmentsBrowseFiles -> onEventManageAttachments e
