@@ -34,10 +34,19 @@ hLimitWithPadding pad contents = Widget
 -- | Draw a ListOverlayState as a floating overlay on top of whatever is
 -- rendered beneath it
 drawListOverlay :: ListOverlayState a b
+                -- ^ The overlay state
                 -> (b -> Widget Name)
+                -- ^ The function to build the window title from the
+                -- current search scope
                 -> (b -> Widget Name)
+                -- ^ The function to generate a message for the search
+                -- scope indicating that no results were found
                 -> (b -> Widget Name)
+                -- ^ The function to generate the editor prompt for the
+                -- search scope
                 -> (Bool -> a -> Widget Name)
+                -- ^ The function to render an item from the overlay's
+                -- list
                 -> Widget Name
 drawListOverlay st scopeHeader scopeNoResults scopePrompt renderItem =
   centerLayer $ hLimitWithPadding 10 $ vLimit 25 $
