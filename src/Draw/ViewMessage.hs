@@ -10,6 +10,7 @@ import           Brick
 import           Brick.Widgets.Border
 import           Brick.Widgets.Center
 import           Lens.Micro.Platform ( to )
+import qualified Data.Set as S
 import qualified Data.Map as M
 import qualified Data.Text as T
 import qualified Data.Foldable as F
@@ -77,8 +78,11 @@ reactionsText st m =
                      (hBorderWithLabel (withDefAttr clientEmphAttr $ txt "Reactions")) : (mkEntry <$> reacList)
         reacList = M.toList (m^.mReactions)
         mkEntry (reactionName, userIdSet) =
-            (withDefAttr emojiAttr $ txt $ ":" <> reactionName <> ":") <=>
-            (padLeft (Pad 2) $ usernameText userIdSet)
+            let count = str $ "(" <> show (S.size userIdSet) <> ")"
+                name = withDefAttr emojiAttr $ txt $ ":" <> reactionName <> ":"
+                usernameList = usernameText userIdSet
+            in (name <+> (padLeft (Pad 1) count)) <=>
+               (padLeft (Pad 2) usernameList)
 
         hs = getHighlightSet st
 
