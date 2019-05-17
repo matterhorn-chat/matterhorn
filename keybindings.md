@@ -89,6 +89,16 @@
 | `C-n`, `Down` | Select the next user |
 | `C-p`, `Up` | Select the previous user |
 
+# Keybindings: Channel Search Window
+| Keybinding | Description |
+| ---------- | ----------- |
+| `Enter` | Join the selected channel |
+| `Esc`, `C-c` | Close the channel search list |
+| `PgDown` | Page down in the channel list |
+| `PgUp` | Page up in the channel list |
+| `C-n`, `Down` | Select the next channel |
+| `C-p`, `Up` | Select the previous channel |
+
 # Keybindings: Message Viewer
 | Keybinding | Description |
 | ---------- | ----------- |
