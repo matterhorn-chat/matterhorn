@@ -5,7 +5,6 @@ module State.UserListOverlay
   , resetUserListSearch
   , exitUserListMode
 
-  , userListActivateCurrent
   , userListSelectDown
   , userListSelectUp
   , userListPageDown
@@ -80,11 +79,6 @@ enterDMSearchUserList = do
       False -> return False
     )
 
--- | Interact with the currently-selected user (depending on how the
--- overlay is configured).
-userListActivateCurrent :: MH ()
-userListActivateCurrent = listOverlayActivateCurrent csUserListOverlay
-
 -- | Show the user list overlay with the given search scope, and issue a
 -- request to gather the first search results.
 enterUserListMode :: UserSearchScope -> (UserInfo -> MH Bool) -> MH ()
@@ -155,8 +149,7 @@ userListPageDown = userListMove (L.listMoveBy userListPageSize)
 -- cursor, and then check to see whether the modification warrants a
 -- prefetch of more search results.
 userListMove :: (L.List Name UserInfo -> L.List Name UserInfo) -> MH ()
-userListMove f = do
-  csUserListOverlay.listOverlaySearchResults %= f
+userListMove = listOverlayMove csUserListOverlay
 
 -- | The number of users in a "page" for cursor movement purposes.
 userListPageSize :: Int
