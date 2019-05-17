@@ -295,5 +295,4 @@ getUserSearchResultsPage _pageNum scope s searchString = do
         True -> return mempty
 
 userListSearchString :: MH Text
-userListSearchString =
-    (head . E.getEditContents) <$> use (csUserListOverlay.listOverlaySearchInput)
+userListSearchString = listOverlaySearchString csUserListOverlay
