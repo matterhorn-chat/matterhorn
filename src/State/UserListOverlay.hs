@@ -3,7 +3,6 @@ module State.UserListOverlay
   , enterChannelInviteUserList
   , enterDMSearchUserList
   , resetUserListSearch
-  , exitUserListMode
 
   , userListSelectDown
   , userListSelectUp
@@ -119,15 +118,6 @@ resetUserListSearch = do
 userInfoFromPair :: User -> Text -> UserInfo
 userInfoFromPair u status =
     userInfoFromUser u True & uiStatus .~ statusFromText status
-
--- | Clear out the state of the user list overlay and return to the Main
--- mode.
-exitUserListMode :: MH ()
-exitUserListMode = do
-    newList <- use (csUserListOverlay.listOverlayNewList)
-    csUserListOverlay.listOverlaySearchResults .= newList mempty
-    csUserListOverlay.listOverlayEnterHandler .= (const $ return False)
-    setMode Main
 
 -- | Move the selection up in the user list overlay by one user.
 userListSelectUp :: MH ()

@@ -3,6 +3,7 @@ module State.ListOverlay
   ( listOverlayActivateCurrent
   , listOverlaySearchString
   , listOverlayMove
+  , exitListOverlay
   )
 where
 
@@ -11,7 +12,7 @@ import           Prelude.MH
 
 import qualified Brick.Widgets.List as L
 import qualified Brick.Widgets.Edit as E
-import           Lens.Micro.Platform ( Lens', (%=) )
+import           Lens.Micro.Platform ( Lens', (%=), (.=) )
 
 import           Types
 
@@ -37,3 +38,12 @@ listOverlayMove :: Lens' ChatState (ListOverlayState a b)
                 -> MH ()
 listOverlayMove which how =
     which.listOverlaySearchResults %= how
+
+-- | Clear out the state of the user list overlay and return to the Main
+-- mode.
+exitListOverlay :: Lens' ChatState (ListOverlayState a b) -> MH ()
+exitListOverlay which = do
+    newList <- use (which.listOverlayNewList)
+    which.listOverlaySearchResults .= newList mempty
+    which.listOverlayEnterHandler .= (const $ return False)
+    setMode Main
