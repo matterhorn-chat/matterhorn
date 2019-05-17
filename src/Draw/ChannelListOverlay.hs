@@ -43,7 +43,8 @@ channelSearchScopeHeader scope =
 
 renderChannel :: Bool -> Channel -> Widget Name
 renderChannel _ chan =
-    let baseStr = (sanitizeUserText $ chan^.channelNameL) <> " (" <> (sanitizeUserText $ chan^.channelDisplayNameL) <> ")"
+    let baseStr = (sanitizeUserText $ chan^.channelNameL) <> " (" <>
+                  (sanitizeUserText $ chan^.channelDisplayNameL) <> ")"
         s = "  " <> (T.strip $ sanitizeUserText $ chan^.channelPurposeL)
     in (vLimit 1 $ padRight Max $ txt baseStr) <=>
        (vLimit 1 $ txtWrapWith (defaultWrapSettings { preserveIndentation = True }) s)
