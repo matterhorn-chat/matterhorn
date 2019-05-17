@@ -99,13 +99,14 @@ resetUserListSearch = do
       searchString <- userListSearchString
       csUserListOverlay.listOverlaySearching .= True
       csUserListOverlay.listOverlayHasAllResults .= False
-      csUserListOverlay.listOverlaySearchResults .= listFromUserSearchResults mempty
+      newList <- use (csUserListOverlay.listOverlayNewList)
+      csUserListOverlay.listOverlaySearchResults .= newList mempty
       session <- getSession
       scope <- use (csUserListOverlay.listOverlaySearchScope)
       doAsyncWith Preempt $ do
           results <- fetchInitialResults scope session searchString
           return $ Just $ do
-              let lst = listFromUserSearchResults results
+              let lst = newList results
               csUserListOverlay.listOverlaySearchResults .= lst
               csUserListOverlay.listOverlaySearching .= False
 
@@ -123,7 +124,8 @@ userInfoFromPair u status =
 -- mode.
 exitUserListMode :: MH ()
 exitUserListMode = do
-  csUserListOverlay.listOverlaySearchResults .= listFromUserSearchResults mempty
+  newList <- use (csUserListOverlay.listOverlayNewList)
+  csUserListOverlay.listOverlaySearchResults .= newList mempty
   csUserListOverlay.listOverlayEnterHandler .= (const $ return False)
   setMode Main
 

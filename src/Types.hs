@@ -122,8 +122,7 @@ module Types
   , listOverlayRequestingMore
   , listOverlayHasAllResults
   , listOverlayEnterHandler
-
-  , listFromUserSearchResults
+  , listOverlayNewList
 
   , getUsers
 
@@ -1076,20 +1075,16 @@ newState (StartupStateInfo {..}) = do
 
 nullUserListOverlayState :: ListOverlayState UserInfo UserSearchScope
 nullUserListOverlayState =
-    ListOverlayState { _listOverlaySearchResults  = listFromUserSearchResults mempty
-                     , _listOverlaySearchInput    = editor UserListSearchInput (Just 1) ""
-                     , _listOverlaySearchScope    = AllUsers Nothing
-                     , _listOverlaySearching      = False
-                     , _listOverlayRequestingMore = False
-                     , _listOverlayHasAllResults  = False
-                     , _listOverlayEnterHandler   = const $ return False
-                     }
-
-listFromUserSearchResults :: Vec.Vector UserInfo -> List Name UserInfo
-listFromUserSearchResults rs =
-    -- NB: The item height here needs to actually match the UI drawing
-    -- in Draw.UserListOverlay.
-    list UserListSearchResults rs 1
+    let newList rs = list UserListSearchResults rs 1
+    in ListOverlayState { _listOverlaySearchResults  = newList mempty
+                        , _listOverlaySearchInput    = editor UserListSearchInput (Just 1) ""
+                        , _listOverlaySearchScope    = AllUsers Nothing
+                        , _listOverlaySearching      = False
+                        , _listOverlayRequestingMore = False
+                        , _listOverlayHasAllResults  = False
+                        , _listOverlayEnterHandler   = const $ return False
+                        , _listOverlayNewList        = newList
+                        }
 
 -- | The state of channel selection mode.
 data ChannelSelectState =
@@ -1124,6 +1119,7 @@ data ListOverlayState a b =
                      , _listOverlayRequestingMore :: Bool
                      , _listOverlayHasAllResults :: Bool
                      , _listOverlayEnterHandler :: a -> MH Bool
+                     , _listOverlayNewList :: Vec.Vector a -> List Name a
                      }
 
 -- | The scope for searching for users in a user list overlay.
