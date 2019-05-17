@@ -286,6 +286,18 @@ should consider to make submitting patches easier for all concerned:
   interested in investigating what this would take and/or implementing
   it.  See the Contributing section for details.
 
+* Q: How can I get Matterhorn to render emphasized Markdown text with an
+  italic font?
+* A: In `~/.config/matterhorn/theme.ini`,
+  ```
+  [other]
+  markdownEmph.style = [italic]
+  ```
+  and in `~/.config/matterhorn/config.ini`,
+  ```
+  themeCustomizationFile: theme.ini
+  ```
+
 * Q: I enabled italicized text in my theme configuration. Why doesn't it
   work?
 * A: Most terminfo files for typical terminal configurations do not
