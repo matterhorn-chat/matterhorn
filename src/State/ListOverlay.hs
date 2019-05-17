@@ -6,6 +6,7 @@ module State.ListOverlay
   , exitListOverlay
   , enterListOverlayMode
   , resetListOverlaySearch
+  , onEventListOverlay
   )
 where
 
@@ -18,9 +19,11 @@ import qualified Data.Text.Zipper as Z
 import qualified Data.Vector as Vec
 import           Lens.Micro.Platform ( Lens', (%=), (.=) )
 import           Network.Mattermost.Types ( Session )
+import qualified Graphics.Vty as Vty
 
 import           Types
 import           State.Common
+import           Events.Keybindings ( KeyConfig, Keybinding, handleKeyboardEvent )
 
 
 listOverlayActivateCurrent :: Lens' ChatState (ListOverlayState a b) -> MH ()
@@ -94,3 +97,20 @@ resetListOverlaySearch which = do
                 -- If so, issue another search.
                 afterSearchString <- listOverlaySearchString which
                 when (searchString /= afterSearchString) $ resetListOverlaySearch which
+
+onEventListOverlay :: Lens' ChatState (ListOverlayState a b)
+                   -> (KeyConfig -> [Keybinding])
+                   -> Vty.Event
+                   -> MH ()
+onEventListOverlay which keybindings =
+    handleKeyboardEvent keybindings $ \e -> do
+        -- Get the editor content before the event.
+        before <- listOverlaySearchString which
+
+        -- Handle the editor input event.
+        mhHandleEventLensed (which.listOverlaySearchInput) E.handleEditorEvent e
+
+        -- Get the editor content after the event. If the string changed,
+        -- start a new search.
+        after <- listOverlaySearchString which
+        when (before /= after) $ resetListOverlaySearch which
