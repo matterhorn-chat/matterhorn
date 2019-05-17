@@ -2,7 +2,6 @@ module State.UserListOverlay
   ( enterChannelMembersUserList
   , enterChannelInviteUserList
   , enterDMSearchUserList
-  , resetUserListSearch
 
   , userListSelectDown
   , userListSelectUp
@@ -16,21 +15,18 @@ where
 import           Prelude ()
 import           Prelude.MH
 
-import qualified Brick.Widgets.Edit as E
 import qualified Brick.Widgets.List as L
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
-import qualified Data.Text.Zipper as Z
 import qualified Data.Vector as Vec
-import           Lens.Micro.Platform ( (.=), (%=), (.~) )
+import           Lens.Micro.Platform ( (.~) )
 
 import qualified Network.Mattermost.Endpoints as MM
 import qualified Network.Mattermost.Types.Config as MM
 import           Network.Mattermost.Types
 
 import           State.Channels ( createOrFocusDMChannel, addUserToCurrentChannel )
-import           State.Common
 import           State.ListOverlay
 import           Types
 
@@ -81,39 +77,8 @@ enterDMSearchUserList = do
 -- | Show the user list overlay with the given search scope, and issue a
 -- request to gather the first search results.
 enterUserListMode :: UserSearchScope -> (UserInfo -> MH Bool) -> MH ()
-enterUserListMode scope enterHandler = do
-    csUserListOverlay.listOverlaySearchScope .= scope
-    csUserListOverlay.listOverlaySearchInput.E.editContentsL %= Z.clearZipper
-    csUserListOverlay.listOverlayEnterHandler .= enterHandler
-    csUserListOverlay.listOverlaySearching .= False
-    csUserListOverlay.listOverlayHasAllResults .= False
-    setMode UserListOverlay
-    resetUserListSearch
-
-resetUserListSearch :: MH ()
-resetUserListSearch = do
-    searchPending <- use (csUserListOverlay.listOverlaySearching)
-
-    when (not searchPending) $ do
-        searchString <- userListSearchString
-        csUserListOverlay.listOverlaySearching .= True
-        csUserListOverlay.listOverlayHasAllResults .= False
-        newList <- use (csUserListOverlay.listOverlayNewList)
-        csUserListOverlay.listOverlaySearchResults .= newList mempty
-        session <- getSession
-        scope <- use (csUserListOverlay.listOverlaySearchScope)
-        doAsyncWith Preempt $ do
-            results <- fetchInitialResults scope session searchString
-            return $ Just $ do
-                let lst = newList results
-                csUserListOverlay.listOverlaySearchResults .= lst
-                csUserListOverlay.listOverlaySearching .= False
-
-                -- Now that the results are available, check to see if the
-                -- search string changed since this request was submitted.
-                -- If so, issue another search.
-                afterSearchString <- userListSearchString
-                when (searchString /= afterSearchString) resetUserListSearch
+enterUserListMode scope enterHandler =
+    enterListOverlayMode csUserListOverlay UserListOverlay scope enterHandler fetchInitialResults
 
 userInfoFromPair :: User -> Text -> UserInfo
 userInfoFromPair u status =

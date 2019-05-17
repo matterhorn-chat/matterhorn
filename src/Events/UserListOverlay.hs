@@ -24,7 +24,7 @@ onEventUserListOverlay =
         -- Get the editor content after the event. If the string changed,
         -- start a new search.
         after <- userListSearchString
-        when (before /= after) resetUserListSearch
+        when (before /= after) $ resetListOverlaySearch csUserListOverlay
 
 -- | The keybindings we want to use while viewing a user list overlay
 userListOverlayKeybindings :: KeyConfig -> [Keybinding]

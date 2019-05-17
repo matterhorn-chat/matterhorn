@@ -123,6 +123,7 @@ module Types
   , listOverlayHasAllResults
   , listOverlayEnterHandler
   , listOverlayNewList
+  , listOverlayFetchResults
 
   , getUsers
 
@@ -1084,6 +1085,7 @@ nullUserListOverlayState =
                         , _listOverlayHasAllResults  = False
                         , _listOverlayEnterHandler   = const $ return False
                         , _listOverlayNewList        = newList
+                        , _listOverlayFetchResults   = const $ const $ const $ return mempty
                         }
 
 -- | The state of channel selection mode.
@@ -1120,6 +1122,7 @@ data ListOverlayState a b =
                      , _listOverlayHasAllResults :: Bool
                      , _listOverlayEnterHandler :: a -> MH Bool
                      , _listOverlayNewList :: Vec.Vector a -> List Name a
+                     , _listOverlayFetchResults :: b -> Session -> Text -> IO (Vec.Vector a)
                      }
 
 -- | The scope for searching for users in a user list overlay.
