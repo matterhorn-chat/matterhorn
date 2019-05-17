@@ -23,10 +23,10 @@ import           Types
 
 drawUserListOverlay :: ChatState -> [Widget Name]
 drawUserListOverlay st =
-  let overlay = drawListOverlay (st^.csUserListOverlay) userSearchScopeHeader
-                                userSearchScopeNoResults userSearchScopePrompt
-                                renderUser
-  in joinBorders overlay : drawMain False st
+    let overlay = drawListOverlay (st^.csUserListOverlay) userSearchScopeHeader
+                                  userSearchScopeNoResults userSearchScopePrompt
+                                  renderUser
+    in joinBorders overlay : drawMain False st
 
 userSearchScopePrompt :: UserSearchScope -> Widget Name
 userSearchScopePrompt scope =
