@@ -72,6 +72,7 @@ renderChatMessage st hs ind threadState renderTimeFunc msg =
               , mdRenderReplyParent = True
               , mdIndentBlocks      = True
               , mdThreadState       = threadState
+              , mdShowReactions     = True
               }
         fullMsg =
           case msg^.mUser of

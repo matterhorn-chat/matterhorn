@@ -594,6 +594,7 @@ data Name =
     | ChannelSelectInput
     | AttachmentList
     | AttachmentFileBrowser
+    | MessageReactionsArea
     deriving (Eq, Show, Ord)
 
 -- | The sum type of exceptions we expect to encounter on authentication

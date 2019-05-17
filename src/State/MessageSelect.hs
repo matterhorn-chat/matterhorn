@@ -46,7 +46,7 @@ import           Types.Common
 
 getSelectedMessage :: ChatState -> Maybe Message
 getSelectedMessage st
-    | appMode st /= MessageSelect && appMode st /= MessageSelectDeleteConfirm = Nothing
+    | not (appMode st `elem` [MessageSelect, MessageSelectDeleteConfirm]) = Nothing
     | otherwise = do
         selMsgId <- selectMessageId $ st^.csMessageSelect
         let chanMsgs = st ^. csCurrentChannel . ccContents . cdMessages

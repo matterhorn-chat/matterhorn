@@ -14,7 +14,7 @@ module State.Common
   , postErrorMessage'
   , addEmoteFormatting
   , removeEmoteFormatting
-  , fetchUsersByUsername
+  , fetchMentionedUsers
 
   , module State.Async
   )
@@ -62,7 +62,7 @@ import           Types.Common
 -- This also sets the mFlagged field of each message based on whether
 -- its post ID is a flagged post according to crFlaggedPosts at the time
 -- of this call.
-installMessagesFromPosts :: Posts -> MH (Messages, Set.Set Text)
+installMessagesFromPosts :: Posts -> MH (Messages, Set.Set MentionedUser)
 installMessagesFromPosts postCollection = do
   flags <- use (csResources.crFlaggedPosts)
 
@@ -308,6 +308,23 @@ removeEmoteFormatting t
 addEmoteFormatting :: T.Text -> T.Text
 addEmoteFormatting t = "*" <> t <> "*"
 
+fetchMentionedUsers :: Set.Set MentionedUser -> MH ()
+fetchMentionedUsers ms
+    | Set.null ms = return ()
+    | otherwise = do
+        let usernames = catMaybes $ getUsername <$> lst
+            uids = catMaybes $ getUserId <$> lst
+            lst = Set.toList ms
+
+            getUsername (UsernameMention u) = Just u
+            getUsername (UserIdMention {}) = Nothing
+
+            getUserId (UserIdMention i) = Just i
+            getUserId (UsernameMention {}) = Nothing
+
+        fetchUsersByUsername usernames
+        fetchUsersById uids
+
 -- | Given a list of usernames, ensure that we have a user record for
 -- each one in the state, either by confirming that a local record
 -- exists or by issuing a request for user records.
@@ -319,8 +336,24 @@ fetchUsersByUsername rawUsernames = do
     let usernames = trimUserSigil <$> rawUsernames
         missing = filter (\n -> (not $ T.null n) && (isNothing $ userByUsername n st)) usernames
     when (not $ null missing) $ do
-        mhLog LogGeneral $ T.pack $ "fetchUsersByUsername: getting " <> show usernames
+        mhLog LogGeneral $ T.pack $ "fetchUsersByUsername: getting " <> show missing
         doAsyncWith Normal $ do
             results <- mmGetUsersByUsernames (Seq.fromList missing) session
+            return $ Just $ do
+                forM_ results (\u -> addNewUser $ userInfoFromUser u True)
+
+-- | Given a list of user IDs, ensure that we have a user record for
+-- each one in the state, either by confirming that a local record
+-- exists or by issuing a request for user records.
+fetchUsersById :: [UserId] -> MH ()
+fetchUsersById [] = return ()
+fetchUsersById uids = do
+    st <- use id
+    session <- getSession
+    let missing = filter (\i -> isNothing $ userById i st) uids
+    when (not $ null missing) $ do
+        mhLog LogGeneral $ T.pack $ "fetchUsersById: getting " <> show missing
+        doAsyncWith Normal $ do
+            results <- mmGetUsersByIds (Seq.fromList missing) session
             return $ Just $ do
                 forM_ results (\u -> addNewUser $ userInfoFromUser u True)

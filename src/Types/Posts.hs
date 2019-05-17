@@ -54,6 +54,7 @@ import qualified Cheapskate as C
 import qualified Data.Map.Strict as Map
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
+import qualified Data.Set as S
 import           Data.Time.Clock ( getCurrentTime )
 import           Lens.Micro.Platform ( makeLenses )
 
@@ -123,7 +124,7 @@ data ClientPost = ClientPost
   , _cpInReplyToPost :: Maybe PostId
   , _cpPostId        :: PostId
   , _cpChannelId     :: ChannelId
-  , _cpReactions     :: Map.Map Text Int
+  , _cpReactions     :: Map.Map Text (S.Set UserId)
   , _cpOriginalPost  :: Post
   , _cpFromWebhook   :: Bool
   } deriving (Show)
