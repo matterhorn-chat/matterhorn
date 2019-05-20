@@ -59,11 +59,16 @@ drawListOverlay st scopeHeader scopeNoResults scopePrompt renderItem =
                   ]
       plural 1 = ""
       plural _ = "s"
-      cursorPositionBorder = case st^.listOverlaySearchResults.L.listSelectedL of
-          Nothing -> hBorder
-          Just _ ->
-              let msg = "Showing " <> show numSearchResults <> " result" <> plural numSearchResults
-              in hBorderWithLabel $ str $ "[" <> msg <> "]"
+      cursorPositionBorder =
+              case st^.listOverlaySearching of
+                  True ->
+                     hBorderWithLabel $ txt "[Searching...]"
+                  False ->
+                      case st^.listOverlaySearchResults.L.listSelectedL of
+                          Nothing -> hBorder
+                          Just _ ->
+                              let msg = "Showing " <> show numSearchResults <> " result" <> plural numSearchResults
+                              in hBorderWithLabel $ str $ "[" <> msg <> "]"
 
       scope = st^.listOverlaySearchScope
       promptMsg = scopePrompt scope
