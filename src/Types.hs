@@ -1527,6 +1527,8 @@ resetAutocomplete = do
 data CmdArgs :: * -> * where
     NoArg    :: CmdArgs ()
     LineArg  :: Text -> CmdArgs Text
+    UserArg  :: CmdArgs rest -> CmdArgs (Text, rest)
+    ChannelArg :: CmdArgs rest -> CmdArgs (Text, rest)
     TokenArg :: Text -> CmdArgs rest -> CmdArgs (Text, rest)
 
 -- | A 'CmdExec' value represents the implementation of a command when

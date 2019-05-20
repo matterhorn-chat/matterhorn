@@ -53,9 +53,11 @@ unwordHead t =
 
 printArgSpec :: CmdArgs a -> Text
 printArgSpec NoArg = ""
-printArgSpec (LineArg ts) = "[" <> ts <> "]"
-printArgSpec (TokenArg t NoArg) = "[" <> t <> "]"
-printArgSpec (TokenArg t rs) = "[" <> t <> "] " <> printArgSpec rs
+printArgSpec (LineArg ts) = "<" <> ts <> ">"
+printArgSpec (TokenArg t NoArg) = "<" <> t <> ">"
+printArgSpec (UserArg rs) = "<" <> userSigil <> "user> " <> printArgSpec rs
+printArgSpec (ChannelArg rs) = "<" <> normalChannelSigil <> "channel> " <> printArgSpec rs
+printArgSpec (TokenArg t rs) = "<" <> t <> "> " <> printArgSpec rs
 
 matchArgs :: CmdArgs a -> Text -> Either Text a
 matchArgs NoArg t = case unwordHead t of
@@ -64,6 +66,16 @@ matchArgs NoArg t = case unwordHead t of
     | not (T.all Char.isSpace as) -> Left ("Unexpected arguments '" <> t <> "'")
     | otherwise -> Left ("Unexpected argument '" <> a <> "'")
 matchArgs (LineArg _) t = return t
+matchArgs spec@(UserArg rs) t = case unwordHead t of
+  Nothing -> case rs of
+    NoArg -> Left ("Missing argument: " <> printArgSpec spec)
+    _     -> Left ("Missing arguments: " <> printArgSpec spec)
+  Just (a, as) -> (,) <$> pure a <*> matchArgs rs as
+matchArgs spec@(ChannelArg rs) t = case unwordHead t of
+  Nothing -> case rs of
+    NoArg -> Left ("Missing argument: " <> printArgSpec spec)
+    _     -> Left ("Missing arguments: " <> printArgSpec spec)
+  Just (a, as) -> (,) <$> pure a <*> matchArgs rs as
 matchArgs spec@(TokenArg _ rs) t = case unwordHead t of
   Nothing -> case rs of
     NoArg -> Left ("Missing argument: " <> printArgSpec spec)
@@ -106,7 +118,7 @@ commandList =
   , Cmd "join" "Find a channel to join" NoArg $ \ () ->
       enterChannelListOverlayMode
 
-  , Cmd "join" "Join the specified channel" (TokenArg "channel" NoArg) $ \(n, ()) ->
+  , Cmd "join" "Join the specified channel" (ChannelArg NoArg) $ \(n, ()) ->
       joinChannelByName n
 
   , Cmd "theme" "List the available themes" NoArg $ \ () ->
@@ -129,11 +141,11 @@ commandList =
         enterDMSearchUserList
 
   , Cmd "msg" "Chat with the specified user"
-    (TokenArg "user" NoArg) $ \ (name, ()) ->
+    (UserArg NoArg) $ \ (name, ()) ->
         changeChannelByName name
 
   , Cmd "msg" "Go to a user's channel and send the specified message or command"
-    (TokenArg "user" $ LineArg "message or command") $ \ (name, msg) -> do
+    (UserArg $ LineArg "message or command") $ \ (name, msg) -> do
         withFetchedUserMaybe (UserFetchByUsername name) $ \foundUser -> do
             case foundUser of
                 Just user -> createOrFocusDMChannel user $ Just $ \cId ->
@@ -157,11 +169,11 @@ commandList =
         getLogDestination
 
   , Cmd "add-user" "Add a user to the current channel"
-    (TokenArg "username" NoArg) $ \ (uname, ()) ->
+    (UserArg NoArg) $ \ (uname, ()) ->
         addUserByNameToCurrentChannel uname
 
   , Cmd "remove-user" "Remove a user from the current channel"
-    (TokenArg "username" NoArg) $ \ (uname, ()) ->
+    (UserArg NoArg) $ \ (uname, ()) ->
         removeUserFromCurrentChannel uname
 
   , Cmd "user" "Show users to initiate a private DM chat channel"
@@ -177,7 +189,7 @@ commandList =
         toggleChannelListVisibility
 
   , Cmd "focus" "Focus on a channel or user"
-    (TokenArg "channel" NoArg) $ \ (name, ()) ->
+    (ChannelArg NoArg) $ \ (name, ()) ->
         changeChannelByName name
 
   , Cmd "focus" "Select from available channels" NoArg $ \ () ->
@@ -196,7 +208,7 @@ commandList =
       listScripts
 
   , Cmd "group-msg" "Create a group chat"
-    (LineArg "user1 user2 ...") createGroupChannel
+    (LineArg (userSigil <> "user [" <> userSigil <> "user ...]")) createGroupChannel
 
   , Cmd "sh" "Run a prewritten shell script"
     (TokenArg "script" (LineArg "message")) $ \ (script, text) ->
