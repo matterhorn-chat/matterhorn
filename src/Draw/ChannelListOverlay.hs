@@ -39,7 +39,7 @@ channelSearchScopeNoResults scope =
 
 channelSearchScopeHeader :: ChannelSearchScope -> Widget Name
 channelSearchScopeHeader scope =
-    txt $ case scope of
+    withDefAttr clientEmphAttr $ txt $ case scope of
         AllChannels -> "Join a Channel"
 
 renderChannel :: Bool -> Channel -> Widget Name
