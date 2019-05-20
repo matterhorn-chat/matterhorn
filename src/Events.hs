@@ -45,7 +45,9 @@ import           Events.ManageAttachments
 
 
 onEvent :: ChatState -> BrickEvent Name MHEvent -> EventM Name (Next ChatState)
-onEvent st ev = runMHEvent st $ onBrickEvent ev
+onEvent st ev = runMHEvent st $ do
+    onBrickEvent ev
+    doPendingUserFetches
 
 onBrickEvent :: BrickEvent Name MHEvent -> MH ()
 onBrickEvent (AppEvent e) =

@@ -169,7 +169,8 @@ module Types
 
   , MH
   , runMHEvent
-  , scheduleUserFetch
+  , scheduleUserFetches
+  , getScheduledUserFetches
   , mh
   , generateUUID
   , generateUUID_IO
@@ -1235,9 +1236,12 @@ runMHEvent st (MH mote) = do
   ((), st') <- St.runStateT (R.runReaderT mote Nothing) mhSt
   (mhNextAction st') (mhCurrentState st')
 
-scheduleUserFetch :: UserFetch -> MH ()
-scheduleUserFetch f = MH $ do
-    St.modify $ \s -> s { mhUsersToFetch = f : mhUsersToFetch s }
+scheduleUserFetches :: [UserFetch] -> MH ()
+scheduleUserFetches fs = MH $ do
+    St.modify $ \s -> s { mhUsersToFetch = fs <> mhUsersToFetch s }
+
+getScheduledUserFetches :: MH [UserFetch]
+getScheduledUserFetches = MH $ St.gets mhUsersToFetch
 
 -- | lift a computation in 'EventM' into 'MH'
 mh :: EventM Name a -> MH a
