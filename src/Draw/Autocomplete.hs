@@ -105,7 +105,7 @@ renderSpecialMention m sel =
         t = autocompleteAlternativeReplacement $ SpecialMention m
         desc = case m of
             MentionChannel -> "Notifies all users in this channel"
-            MentionAll -> "Mentions all users in this channel"
+            MentionAll     -> "Mentions all users in this channel"
     in maybeForce $
        hBox [ txt "  "
             , padTo usernameWidth $ withDefAttr clientEmphAttr $ txt t
