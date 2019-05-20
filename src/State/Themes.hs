@@ -8,6 +8,7 @@ where
 import           Prelude ()
 import           Prelude.MH
 
+import           Brick ( invalidateCache )
 import           Brick.Themes ( themeToAttrMap )
 import qualified Data.Text as T
 import           Lens.Micro.Platform ( (.=) )
@@ -28,6 +29,6 @@ setTheme :: Text -> MH ()
 setTheme name =
     case lookupTheme name of
         Nothing -> listThemes
-        Just it -> csResources.crTheme .=
-            (themeToAttrMap $ internalTheme it)
-
+        Just it -> do
+            mh invalidateCache
+            csResources.crTheme .= (themeToAttrMap $ internalTheme it)
