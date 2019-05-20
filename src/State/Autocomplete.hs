@@ -133,7 +133,14 @@ doUserAutoCompletion searchString = do
                        (maybe mempty (fmap (\u -> UserCompletion u False) . active) $
                               MM.userAutocompleteOutOfChannel ac)
 
-            return $ Just $ setCompletionAlternatives searchString alts label
+                specials = [ MentionAll
+                           , MentionChannel
+                           ]
+                extras = [ SpecialMention m | m <- specials
+                         , (T.toLower searchString) `T.isInfixOf` specialMentionName m
+                         ]
+
+            return $ Just $ setCompletionAlternatives searchString (extras <> alts) label
 
 doChannelAutoCompletion :: Text -> MH ()
 doChannelAutoCompletion searchString = do
