@@ -14,7 +14,10 @@ module State.Common
   , postErrorMessage'
   , addEmoteFormatting
   , removeEmoteFormatting
+
   , fetchMentionedUsers
+  , doPendingUserFetches
+  , doPendingUserStatusFetches
 
   , module State.Async
   )
@@ -62,7 +65,7 @@ import           Types.Common
 -- This also sets the mFlagged field of each message based on whether
 -- its post ID is a flagged post according to crFlaggedPosts at the time
 -- of this call.
-installMessagesFromPosts :: Posts -> MH (Messages, Set.Set MentionedUser)
+installMessagesFromPosts :: Posts -> MH Messages
 installMessagesFromPosts postCollection = do
   flags <- use (csResources.crFlaggedPosts)
 
@@ -78,9 +81,10 @@ installMessagesFromPosts postCollection = do
       addNext cp (msgs, us) =
           let (msg, mUsernames) = clientPostToMessage cp
           in (addMessage (maybeFlag flags msg) msgs, Set.union us mUsernames)
-      postsToMessages = foldr addNext (noMessages, mempty)
+      (ms, mentions) = foldr addNext (noMessages, mempty) clientPosts
 
-  return $ postsToMessages clientPosts
+  fetchMentionedUsers mentions
+  return ms
     where
         maybeFlag flagSet msg
           | Just (MessagePostId pId) <- msg^.mMessageId, pId `Set.member` flagSet
@@ -312,48 +316,66 @@ fetchMentionedUsers :: Set.Set MentionedUser -> MH ()
 fetchMentionedUsers ms
     | Set.null ms = return ()
     | otherwise = do
-        let usernames = catMaybes $ getUsername <$> lst
-            uids = catMaybes $ getUserId <$> lst
-            lst = Set.toList ms
+        let convertMention (UsernameMention u) = UserFetchByUsername u
+            convertMention (UserIdMention i) = UserFetchById i
+        scheduleUserFetches $ convertMention <$> Set.toList ms
 
-            getUsername (UsernameMention u) = Just u
-            getUsername (UserIdMention {}) = Nothing
+doPendingUserStatusFetches :: MH ()
+doPendingUserStatusFetches = do
+    mz <- getScheduledUserStatusFetches
+    case mz of
+        Nothing -> return ()
+        Just z -> do
+            statusChan <- use (csResources.crStatusUpdateChan)
+            liftIO $ STM.atomically $ STM.writeTChan statusChan z
 
-            getUserId (UserIdMention i) = Just i
-            getUserId (UsernameMention {}) = Nothing
+doPendingUserFetches :: MH ()
+doPendingUserFetches = do
+    fs <- getScheduledUserFetches
 
-        fetchUsersByUsername usernames
-        fetchUsersById uids
+    let getUsername (UserFetchByUsername u) = Just u
+        getUsername _ = Nothing
+
+        getUserId (UserFetchById i) = Just i
+        getUserId _ = Nothing
+
+    fetchUsers (catMaybes $ getUsername <$> fs) (catMaybes $ getUserId <$> fs)
 
 -- | Given a list of usernames, ensure that we have a user record for
 -- each one in the state, either by confirming that a local record
 -- exists or by issuing a request for user records.
-fetchUsersByUsername :: [Text] -> MH ()
-fetchUsersByUsername [] = return ()
-fetchUsersByUsername rawUsernames = do
+fetchUsers :: [Text] -> [UserId] -> MH ()
+fetchUsers rawUsernames uids = do
     st <- use id
     session <- getSession
     let usernames = trimUserSigil <$> rawUsernames
-        missing = filter (\n -> (not $ T.null n) && (isNothing $ userByUsername n st)) usernames
-    when (not $ null missing) $ do
-        mhLog LogGeneral $ T.pack $ "fetchUsersByUsername: getting " <> show missing
-        doAsyncWith Normal $ do
-            results <- mmGetUsersByUsernames (Seq.fromList missing) session
-            return $ Just $ do
-                forM_ results (\u -> addNewUser $ userInfoFromUser u True)
+        missingUsernames = filter isMissing usernames
+        isMissing n = and [ not $ T.null n
+                          , not $ isSpecialMention n
+                          , isNothing $ userByUsername n st
+                          ]
+        missingIds = filter (\i -> isNothing $ userById i st) uids
 
--- | Given a list of user IDs, ensure that we have a user record for
--- each one in the state, either by confirming that a local record
--- exists or by issuing a request for user records.
-fetchUsersById :: [UserId] -> MH ()
-fetchUsersById [] = return ()
-fetchUsersById uids = do
-    st <- use id
-    session <- getSession
-    let missing = filter (\i -> isNothing $ userById i st) uids
-    when (not $ null missing) $ do
-        mhLog LogGeneral $ T.pack $ "fetchUsersById: getting " <> show missing
+    when (not $ null missingUsernames) $ do
+        mhLog LogGeneral $ T.pack $ "fetchUsers: getting " <> show missingUsernames
+
+    when (not $ null missingIds) $ do
+        mhLog LogGeneral $ T.pack $ "fetchUsers: getting " <> show missingIds
+
+    when ((not $ null missingUsernames) || (not $ null missingIds)) $ do
         doAsyncWith Normal $ do
-            results <- mmGetUsersByIds (Seq.fromList missing) session
-            return $ Just $ do
-                forM_ results (\u -> addNewUser $ userInfoFromUser u True)
+            act1 <- case null missingUsernames of
+                True -> return $ return ()
+                False -> do
+                    results <- mmGetUsersByUsernames (Seq.fromList missingUsernames) session
+                    return $ do
+                        forM_ results (\u -> addNewUser $ userInfoFromUser u True)
+
+            act2 <- case null missingIds of
+                True -> return $ return ()
+                False -> do
+                    results <- mmGetUsersByIds (Seq.fromList missingIds) session
+                    return $ do
+                        forM_ results (\u -> addNewUser $ userInfoFromUser u True)
+
+            return $ Just $ act1 >> act2

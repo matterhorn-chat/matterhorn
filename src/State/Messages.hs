@@ -276,9 +276,7 @@ addObtainedMessages cId reqCnt addTrailingGap posts =
         -- usernames in the text of the messages which we need to use to
         -- submit a single batch request for user metadata so we don't
         -- submit one request per mention.
-        (_, mentionedUsers) <- installMessagesFromPosts posts
-
-        fetchMentionedUsers mentionedUsers
+        void $ installMessagesFromPosts posts
 
         -- Add all the new *unique* posts into the existing channel
         -- corpus, generating needed fetches of data associated with

@@ -2,7 +2,6 @@
 module State.Users
   ( handleNewUsers
   , handleTypingUser
-  , UserFetch(..)
   , withFetchedUser
   , withFetchedUserMaybe
   )
@@ -11,6 +10,7 @@ where
 import           Prelude ()
 import           Prelude.MH
 
+import qualified Data.Text as T
 import qualified Data.Foldable as F
 import qualified Data.Sequence as Seq
 import           Data.Time ( getCurrentTime )
@@ -47,16 +47,6 @@ handleTypingUser uId cId = do
             ts <- liftIO getCurrentTime
             csChannels %= modifyChannelById cId (addChannelTypingUser uId ts)
 
--- | A user fetching strategy.
-data UserFetch =
-    UserFetchById UserId
-    -- ^ Fetch the user with the specified ID.
-    | UserFetchByUsername Text
-    -- ^ Fetch the user with the specified username.
-    | UserFetchByNickname Text
-    -- ^ Fetch the user with the specified nickname.
-    deriving (Eq, Show)
-
 -- | Given a user fetching strategy, locate the user in the state or
 -- fetch it from the server, and pass the result to the specified
 -- action. Assumes a single match is the only expected/valid result.
@@ -79,30 +69,32 @@ withFetchedUserMaybe fetch handle = do
 
     case localMatch of
         Just user -> handle $ Just user
-        Nothing -> doAsyncWith Normal $ do
-            results <- case fetch of
-                UserFetchById uId ->
-                    MM.mmGetUsersByIds (Seq.singleton uId) session
-                UserFetchByUsername uname ->
-                    MM.mmGetUsersByUsernames (Seq.singleton $ trimUserSigil uname) session
-                UserFetchByNickname nick -> do
-                    let req = UserSearch { userSearchTerm = trimUserSigil nick
-                                         , userSearchAllowInactive = True
-                                         , userSearchWithoutTeam = True
-                                         , userSearchInChannelId = Nothing
-                                         , userSearchNotInTeamId = Nothing
-                                         , userSearchNotInChannelId = Nothing
-                                         , userSearchTeamId = Nothing
-                                         }
-                    MM.mmSearchUsers req session
+        Nothing -> do
+            mhLog LogGeneral $ T.pack $ "withFetchedUserMaybe: getting " <> show fetch
+            doAsyncWith Normal $ do
+                results <- case fetch of
+                    UserFetchById uId ->
+                        MM.mmGetUsersByIds (Seq.singleton uId) session
+                    UserFetchByUsername uname ->
+                        MM.mmGetUsersByUsernames (Seq.singleton $ trimUserSigil uname) session
+                    UserFetchByNickname nick -> do
+                        let req = UserSearch { userSearchTerm = trimUserSigil nick
+                                             , userSearchAllowInactive = True
+                                             , userSearchWithoutTeam = True
+                                             , userSearchInChannelId = Nothing
+                                             , userSearchNotInTeamId = Nothing
+                                             , userSearchNotInChannelId = Nothing
+                                             , userSearchTeamId = Nothing
+                                             }
+                        MM.mmSearchUsers req session
 
-            return $ Just $ do
-                infos <- forM (F.toList results) $ \u -> do
-                    let info = userInfoFromUser u True
-                    addNewUser info
-                    return info
+                return $ Just $ do
+                    infos <- forM (F.toList results) $ \u -> do
+                        let info = userInfoFromUser u True
+                        addNewUser info
+                        return info
 
-                case infos of
-                    [match] -> handle $ Just match
-                    [] -> handle Nothing
-                    _ -> postErrorMessage' "Error: ambiguous user information"
+                    case infos of
+                        [match] -> handle $ Just match
+                        [] -> handle Nothing
+                        _ -> postErrorMessage' "Error: ambiguous user information"

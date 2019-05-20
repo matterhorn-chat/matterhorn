@@ -53,7 +53,6 @@ import           Prelude.MH
 import           Brick.Main ( viewportScroll, vScrollToBeginning, invalidateCache, invalidateCacheEntry )
 import           Brick.Widgets.Edit ( applyEdit, getEditContents, editContentsL )
 import           Control.Concurrent.Async ( runConcurrently, Concurrently(..) )
-import qualified Control.Concurrent.STM as STM
 import           Control.Exception ( SomeException, try )
 import           Data.Char ( isAlphaNum )
 import qualified Data.HashMap.Strict as HM
@@ -101,11 +100,10 @@ updateSidebar = do
     config <- use (csResources.crConfiguration)
     csFocus %= Z.updateList (mkChannelZipperList now config cconfig prefs cs us)
 
-    -- Send the new zipper to the status update thread so that we can
-    -- fetch the statuses for the users in the new sidebar.
+    -- Schedule the current sidebar for user status updates at the end
+    -- of this MH action.
     newZ <- use csFocus
-    statusChan <- use (csResources.crStatusUpdateChan)
-    liftIO $ STM.atomically $ STM.writeTChan statusChan newZ
+    scheduleUserStatusFetches newZ
 
     -- If the zipper rebuild caused the current channel to change, such
     -- as when the previously-focused channel was removed, we need to

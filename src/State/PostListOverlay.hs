@@ -56,7 +56,7 @@ createPostList contentsType fetchOp = do
   doAsyncWith Preempt $ do
     posts <- fetchOp session
     return $ Just $ do
-      messages <- fst <$> installMessagesFromPosts posts
+      messages <- installMessagesFromPosts posts
       -- n.b. do not use addNewPostedMessage because these messages
       -- are not new, and so no notifications or channel highlighting
       -- or other post-processing should be performed.
