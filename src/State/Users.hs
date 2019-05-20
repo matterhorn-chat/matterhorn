@@ -68,30 +68,32 @@ withFetchedUserMaybe fetch handle = do
 
     case localMatch of
         Just user -> handle $ Just user
-        Nothing -> doAsyncWith Normal $ do
-            results <- case fetch of
-                UserFetchById uId ->
-                    MM.mmGetUsersByIds (Seq.singleton uId) session
-                UserFetchByUsername uname ->
-                    MM.mmGetUsersByUsernames (Seq.singleton $ trimUserSigil uname) session
-                UserFetchByNickname nick -> do
-                    let req = UserSearch { userSearchTerm = trimUserSigil nick
-                                         , userSearchAllowInactive = True
-                                         , userSearchWithoutTeam = True
-                                         , userSearchInChannelId = Nothing
-                                         , userSearchNotInTeamId = Nothing
-                                         , userSearchNotInChannelId = Nothing
-                                         , userSearchTeamId = Nothing
-                                         }
-                    MM.mmSearchUsers req session
+        Nothing -> do
+            mhLog LogGeneral $ T.pack $ "withFetchedUserMaybe: getting " <> show fetch
+            doAsyncWith Normal $ do
+                results <- case fetch of
+                    UserFetchById uId ->
+                        MM.mmGetUsersByIds (Seq.singleton uId) session
+                    UserFetchByUsername uname ->
+                        MM.mmGetUsersByUsernames (Seq.singleton $ trimUserSigil uname) session
+                    UserFetchByNickname nick -> do
+                        let req = UserSearch { userSearchTerm = trimUserSigil nick
+                                             , userSearchAllowInactive = True
+                                             , userSearchWithoutTeam = True
+                                             , userSearchInChannelId = Nothing
+                                             , userSearchNotInTeamId = Nothing
+                                             , userSearchNotInChannelId = Nothing
+                                             , userSearchTeamId = Nothing
+                                             }
+                        MM.mmSearchUsers req session
 
-            return $ Just $ do
-                infos <- forM (F.toList results) $ \u -> do
-                    let info = userInfoFromUser u True
-                    addNewUser info
-                    return info
+                return $ Just $ do
+                    infos <- forM (F.toList results) $ \u -> do
+                        let info = userInfoFromUser u True
+                        addNewUser info
+                        return info
 
-                case infos of
-                    [match] -> handle $ Just match
-                    [] -> handle Nothing
-                    _ -> postErrorMessage' "Error: ambiguous user information"
+                    case infos of
+                        [match] -> handle $ Just match
+                        [] -> handle Nothing
+                        _ -> postErrorMessage' "Error: ambiguous user information"
