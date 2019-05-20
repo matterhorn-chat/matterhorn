@@ -65,7 +65,7 @@ import           Types.Common
 -- This also sets the mFlagged field of each message based on whether
 -- its post ID is a flagged post according to crFlaggedPosts at the time
 -- of this call.
-installMessagesFromPosts :: Posts -> MH (Messages, Set.Set MentionedUser)
+installMessagesFromPosts :: Posts -> MH Messages
 installMessagesFromPosts postCollection = do
   flags <- use (csResources.crFlaggedPosts)
 
@@ -81,9 +81,10 @@ installMessagesFromPosts postCollection = do
       addNext cp (msgs, us) =
           let (msg, mUsernames) = clientPostToMessage cp
           in (addMessage (maybeFlag flags msg) msgs, Set.union us mUsernames)
-      postsToMessages = foldr addNext (noMessages, mempty)
+      (ms, mentions) = foldr addNext (noMessages, mempty) clientPosts
 
-  return $ postsToMessages clientPosts
+  fetchMentionedUsers mentions
+  return ms
     where
         maybeFlag flagSet msg
           | Just (MessagePostId pId) <- msg^.mMessageId, pId `Set.member` flagSet
