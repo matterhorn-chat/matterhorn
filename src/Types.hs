@@ -43,6 +43,7 @@ module Types
   , AuthenticationException(..)
   , BackgroundInfo(..)
   , RequestChan
+  , UserFetch(..)
 
   , mkChannelZipperList
   , ChannelListGroup(..)
@@ -168,6 +169,7 @@ module Types
 
   , MH
   , runMHEvent
+  , scheduleUserFetch
   , mh
   , generateUUID
   , generateUUID_IO
@@ -1163,9 +1165,20 @@ data LogContext =
                }
                deriving (Eq, Show)
 
+-- | A user fetching strategy.
+data UserFetch =
+    UserFetchById UserId
+    -- ^ Fetch the user with the specified ID.
+    | UserFetchByUsername Text
+    -- ^ Fetch the user with the specified username.
+    | UserFetchByNickname Text
+    -- ^ Fetch the user with the specified nickname.
+    deriving (Eq, Show)
+
 data MHState =
     MHState { mhCurrentState :: ChatState
             , mhNextAction :: ChatState -> EventM Name (Next ChatState)
+            , mhUsersToFetch :: [UserFetch]
             }
 
 -- | A value of type 'MH' @a@ represents a computation that can
@@ -1217,9 +1230,14 @@ runMHEvent :: ChatState -> MH () -> EventM Name (Next ChatState)
 runMHEvent st (MH mote) = do
   let mhSt = MHState { mhCurrentState = st
                      , mhNextAction = Brick.continue
+                     , mhUsersToFetch = []
                      }
   ((), st') <- St.runStateT (R.runReaderT mote Nothing) mhSt
   (mhNextAction st') (mhCurrentState st')
+
+scheduleUserFetch :: UserFetch -> MH ()
+scheduleUserFetch f = MH $ do
+    St.modify $ \s -> s { mhUsersToFetch = f : mhUsersToFetch s }
 
 -- | lift a computation in 'EventM' into 'MH'
 mh :: EventM Name a -> MH a
