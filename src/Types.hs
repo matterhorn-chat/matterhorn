@@ -805,18 +805,20 @@ data ChatResources =
                   , _crLogManager          :: LogManager
                   }
 
+-- | A "special" mention that does not map to a specific user, but is an
+-- alias that the server uses to notify users.
 data SpecialMention =
     MentionAll
-    -- ^ @all
+    -- ^ @all: notify everyone in the channel.
     | MentionChannel
-    -- ^ @channel
+    -- ^ @channel: notify everyone in the channel.
 
 data AutocompleteAlternative =
     UserCompletion User Bool
     -- ^ User, plus whether the user is in the channel that triggered
     -- the autocomplete
     | SpecialMention SpecialMention
-    -- ^ A special mention
+    -- ^ A special mention.
     | ChannelCompletion Bool Channel
     -- ^ Channel, plus whether the user is a member of the channel
     | SyntaxCompletion Text
