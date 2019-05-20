@@ -1163,11 +1163,16 @@ data LogContext =
                }
                deriving (Eq, Show)
 
+data MHState =
+    MHState { mhCurrentState :: ChatState
+            , mhNextAction :: ChatState -> EventM Name (Next ChatState)
+            }
+
 -- | A value of type 'MH' @a@ represents a computation that can
 -- manipulate the application state and also request that the
 -- application quit
 newtype MH a =
-    MH { fromMH :: R.ReaderT (Maybe LogContext) (St.StateT (ChatState, ChatState -> EventM Name (Next ChatState)) (EventM Name)) a }
+    MH { fromMH :: R.ReaderT (Maybe LogContext) (St.StateT MHState (EventM Name)) a }
 
 -- | Use a modified logging context for the duration of the specified MH
 -- action.
@@ -1210,8 +1215,11 @@ mhGetIOLogger = do
 -- on the resulting
 runMHEvent :: ChatState -> MH () -> EventM Name (Next ChatState)
 runMHEvent st (MH mote) = do
-  ((), (st', rs)) <- St.runStateT (R.runReaderT mote Nothing) (st, Brick.continue)
-  rs st'
+  let mhSt = MHState { mhCurrentState = st
+                     , mhNextAction = Brick.continue
+                     }
+  ((), st') <- St.runStateT (R.runReaderT mote Nothing) mhSt
+  (mhNextAction st') (mhCurrentState st')
 
 -- | lift a computation in 'EventM' into 'MH'
 mh :: EventM Name a -> MH a
@@ -1225,21 +1233,22 @@ generateUUID_IO = randomIO
 
 mhHandleEventLensed :: Lens' ChatState b -> (e -> b -> EventM Name b) -> e -> MH ()
 mhHandleEventLensed ln f event = MH $ do
-    (st, b) <- St.get
+    s <- St.get
+    let st = mhCurrentState s
     n <- R.lift $ St.lift $ f event (st ^. ln)
-    St.put (st & ln .~ n , b)
+    St.put (s { mhCurrentState = st & ln .~ n })
 
 mhSuspendAndResume :: (ChatState -> IO ChatState) -> MH ()
 mhSuspendAndResume mote = MH $ do
-    (st, _) <- St.get
-    St.put (st, \ _ -> Brick.suspendAndResume (mote st))
+    s <- St.get
+    St.put $ s { mhNextAction = \ _ -> Brick.suspendAndResume (mote $ mhCurrentState s) }
 
 -- | This will request that after this computation finishes the
 -- application should exit
 requestQuit :: MH ()
 requestQuit = MH $ do
-    (st, _) <- St.get
-    St.put (st, Brick.halt)
+    s <- St.get
+    St.put $ s { mhNextAction = Brick.halt }
 
 instance Functor MH where
     fmap f (MH x) = MH (fmap f x)
@@ -1255,10 +1264,10 @@ instance Monad MH where
 -- We want to pretend that the state is only the ChatState, rather
 -- than the ChatState and the Brick continuation
 instance St.MonadState ChatState MH where
-    get = fst `fmap` MH St.get
+    get = mhCurrentState `fmap` MH St.get
     put st = MH $ do
-        (_, c) <- St.get
-        St.put (st, c)
+        s <- St.get
+        St.put $ s { mhCurrentState = st }
 
 instance St.MonadIO MH where
     liftIO = MH . St.liftIO
