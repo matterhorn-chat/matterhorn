@@ -110,6 +110,7 @@ module Types
   , autocompleteAlternativeReplacement
   , SpecialMention(..)
   , specialMentionName
+  , isSpecialMention
 
   , PostListOverlayState
   , postListSelected
@@ -834,6 +835,15 @@ data AutocompleteAlternative =
 specialMentionName :: SpecialMention -> Text
 specialMentionName MentionChannel = "channel"
 specialMentionName MentionAll = "all"
+
+isSpecialMention :: T.Text -> Bool
+isSpecialMention n = isJust $ lookup (T.toLower $ trimUserSigil n) pairs
+    where
+        pairs = mkPair <$> mentions
+        mentions = [ MentionChannel
+                   , MentionAll
+                   ]
+        mkPair v = (specialMentionName v, v)
 
 autocompleteAlternativeReplacement :: AutocompleteAlternative -> Text
 autocompleteAlternativeReplacement (SpecialMention m) =

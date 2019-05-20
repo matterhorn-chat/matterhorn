@@ -349,7 +349,11 @@ fetchUsers rawUsernames uids = do
     st <- use id
     session <- getSession
     let usernames = trimUserSigil <$> rawUsernames
-        missingUsernames = filter (\n -> (not $ T.null n) && (isNothing $ userByUsername n st)) usernames
+        missingUsernames = filter isMissing usernames
+        isMissing n = and [ not $ T.null n
+                          , not $ isSpecialMention n
+                          , isNothing $ userByUsername n st
+                          ]
         missingIds = filter (\i -> isNothing $ userById i st) uids
 
     when (not $ null missingUsernames) $ do
