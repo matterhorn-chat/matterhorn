@@ -108,6 +108,7 @@ module Types
   , AutocompleteAlternative(..)
   , autocompleteAlternativeReplacement
   , SpecialMention(..)
+  , specialMentionName
 
   , PostListOverlayState
   , postListSelected
@@ -823,11 +824,13 @@ data AutocompleteAlternative =
     | CommandCompletion Text Text Text
     -- ^ Name of a slash command, argspec, and description
 
+specialMentionName :: SpecialMention -> Text
+specialMentionName MentionChannel = "channel"
+specialMentionName MentionAll = "all"
+
 autocompleteAlternativeReplacement :: AutocompleteAlternative -> Text
 autocompleteAlternativeReplacement (SpecialMention m) =
-    case m of
-        MentionChannel -> userSigil <> "channel"
-        MentionAll -> userSigil <> "all"
+    userSigil <> specialMentionName m
 autocompleteAlternativeReplacement (UserCompletion u _) =
     userSigil <> userUsername u
 autocompleteAlternativeReplacement (ChannelCompletion _ c) =
