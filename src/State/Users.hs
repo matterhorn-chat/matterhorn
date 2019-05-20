@@ -10,6 +10,7 @@ where
 import           Prelude ()
 import           Prelude.MH
 
+import qualified Data.Text as T
 import qualified Data.Foldable as F
 import qualified Data.Sequence as Seq
 import           Data.Time ( getCurrentTime )
