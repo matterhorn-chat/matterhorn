@@ -65,6 +65,8 @@ renderAutocompleteBox st ac =
                          ]
 
 renderAutocompleteFooterFor :: ClientChannel -> AutocompleteAlternative -> Maybe (Widget Name)
+renderAutocompleteFooterFor _ (SpecialMention MentionChannel) = Nothing
+renderAutocompleteFooterFor _ (SpecialMention MentionAll) = Nothing
 renderAutocompleteFooterFor ch (UserCompletion _ False) =
     Just $ hBox [ txt $ "("
                 , withDefAttr clientEmphAttr (txt userNotInChannelMarker)
@@ -82,6 +84,8 @@ renderAutocompleteFooterFor _ (ChannelCompletion False ch) =
 renderAutocompleteFooterFor _ _ = Nothing
 
 renderAutocompleteAlternative :: Bool -> AutocompleteAlternative -> Widget Name
+renderAutocompleteAlternative sel (SpecialMention m) =
+    padRight Max $ renderSpecialMention m sel
 renderAutocompleteAlternative sel (UserCompletion u inChan) =
     padRight Max $ renderUserCompletion u inChan sel
 renderAutocompleteAlternative sel (ChannelCompletion inChan c) =
@@ -90,6 +94,23 @@ renderAutocompleteAlternative _ (SyntaxCompletion t) =
     padRight Max $ txt t
 renderAutocompleteAlternative _ (CommandCompletion n args desc) =
     padRight Max $ renderCommandCompletion n args desc
+
+renderSpecialMention :: SpecialMention -> Bool -> Widget Name
+renderSpecialMention m sel =
+    let usernameWidth = 18
+        padTo n a = hLimit n $ vLimit 1 (a <+> fill ' ')
+        maybeForce = if sel
+                     then forceAttr listSelectedFocusedAttr
+                     else id
+        t = autocompleteAlternativeReplacement $ SpecialMention m
+        desc = case m of
+            MentionChannel -> "All users in this channel"
+            MentionAll -> "All users in this channel"
+    in maybeForce $
+       hBox [ txt "  "
+            , padTo usernameWidth $ withDefAttr clientEmphAttr $ txt t
+            , txt desc
+            ]
 
 renderUserCompletion :: User -> Bool -> Bool -> Widget Name
 renderUserCompletion u inChan selected =

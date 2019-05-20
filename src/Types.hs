@@ -107,6 +107,7 @@ module Types
 
   , AutocompleteAlternative(..)
   , autocompleteAlternativeReplacement
+  , SpecialMention(..)
 
   , PostListOverlayState
   , postListSelected
@@ -803,10 +804,18 @@ data ChatResources =
                   , _crLogManager          :: LogManager
                   }
 
+data SpecialMention =
+    MentionAll
+    -- ^ @all
+    | MentionChannel
+    -- ^ @channel
+
 data AutocompleteAlternative =
     UserCompletion User Bool
     -- ^ User, plus whether the user is in the channel that triggered
     -- the autocomplete
+    | SpecialMention SpecialMention
+    -- ^ A special mention
     | ChannelCompletion Bool Channel
     -- ^ Channel, plus whether the user is a member of the channel
     | SyntaxCompletion Text
@@ -815,6 +824,10 @@ data AutocompleteAlternative =
     -- ^ Name of a slash command, argspec, and description
 
 autocompleteAlternativeReplacement :: AutocompleteAlternative -> Text
+autocompleteAlternativeReplacement (SpecialMention m) =
+    case m of
+        MentionChannel -> userSigil <> "channel"
+        MentionAll -> userSigil <> "all"
 autocompleteAlternativeReplacement (UserCompletion u _) =
     userSigil <> userUsername u
 autocompleteAlternativeReplacement (ChannelCompletion _ c) =
