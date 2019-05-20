@@ -170,7 +170,9 @@ module Types
   , MH
   , runMHEvent
   , scheduleUserFetches
+  , scheduleUserStatusFetches
   , getScheduledUserFetches
+  , getScheduledUserStatusFetches
   , mh
   , generateUUID
   , generateUUID_IO
@@ -1180,6 +1182,7 @@ data MHState =
     MHState { mhCurrentState :: ChatState
             , mhNextAction :: ChatState -> EventM Name (Next ChatState)
             , mhUsersToFetch :: [UserFetch]
+            , mhPendingStatusZipper :: Maybe (Zipper ChannelListGroup ChannelListEntry)
             }
 
 -- | A value of type 'MH' @a@ represents a computation that can
@@ -1232,6 +1235,7 @@ runMHEvent st (MH mote) = do
   let mhSt = MHState { mhCurrentState = st
                      , mhNextAction = Brick.continue
                      , mhUsersToFetch = []
+                     , mhPendingStatusZipper = Nothing
                      }
   ((), st') <- St.runStateT (R.runReaderT mote Nothing) mhSt
   (mhNextAction st') (mhCurrentState st')
@@ -1240,8 +1244,15 @@ scheduleUserFetches :: [UserFetch] -> MH ()
 scheduleUserFetches fs = MH $ do
     St.modify $ \s -> s { mhUsersToFetch = fs <> mhUsersToFetch s }
 
+scheduleUserStatusFetches :: Zipper ChannelListGroup ChannelListEntry -> MH ()
+scheduleUserStatusFetches z = MH $ do
+    St.modify $ \s -> s { mhPendingStatusZipper = Just z }
+
 getScheduledUserFetches :: MH [UserFetch]
 getScheduledUserFetches = MH $ St.gets mhUsersToFetch
+
+getScheduledUserStatusFetches :: MH (Maybe (Zipper ChannelListGroup ChannelListEntry))
+getScheduledUserStatusFetches = MH $ St.gets mhPendingStatusZipper
 
 -- | lift a computation in 'EventM' into 'MH'
 mh :: EventM Name a -> MH a

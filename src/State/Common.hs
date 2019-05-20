@@ -17,6 +17,7 @@ module State.Common
 
   , fetchMentionedUsers
   , doPendingUserFetches
+  , doPendingUserStatusFetches
 
   , module State.Async
   )
@@ -317,6 +318,15 @@ fetchMentionedUsers ms
         let convertMention (UsernameMention u) = UserFetchByUsername u
             convertMention (UserIdMention i) = UserFetchById i
         scheduleUserFetches $ convertMention <$> Set.toList ms
+
+doPendingUserStatusFetches :: MH ()
+doPendingUserStatusFetches = do
+    mz <- getScheduledUserStatusFetches
+    case mz of
+        Nothing -> return ()
+        Just z -> do
+            statusChan <- use (csResources.crStatusUpdateChan)
+            liftIO $ STM.atomically $ STM.writeTChan statusChan z
 
 doPendingUserFetches :: MH ()
 doPendingUserFetches = do

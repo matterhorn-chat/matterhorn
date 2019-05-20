@@ -48,6 +48,7 @@ onEvent :: ChatState -> BrickEvent Name MHEvent -> EventM Name (Next ChatState)
 onEvent st ev = runMHEvent st $ do
     onBrickEvent ev
     doPendingUserFetches
+    doPendingUserStatusFetches
 
 onBrickEvent :: BrickEvent Name MHEvent -> MH ()
 onBrickEvent (AppEvent e) =
