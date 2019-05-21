@@ -84,6 +84,8 @@ renderAutocompleteFooterFor _ (ChannelCompletion False ch) =
 renderAutocompleteFooterFor _ _ = Nothing
 
 renderAutocompleteAlternative :: Bool -> AutocompleteAlternative -> Widget Name
+renderAutocompleteAlternative sel (EmojiCompletion e) =
+    padRight Max $ renderEmojiCompletion sel e
 renderAutocompleteAlternative sel (SpecialMention m) =
     padRight Max $ renderSpecialMention m sel
 renderAutocompleteAlternative sel (UserCompletion u inChan) =
@@ -111,6 +113,17 @@ renderSpecialMention m sel =
             , padTo usernameWidth $ withDefAttr clientEmphAttr $ txt t
             , txt desc
             ]
+
+renderEmojiCompletion :: Bool -> T.Text -> Widget Name
+renderEmojiCompletion sel e =
+    let maybeForce = if sel
+                     then forceAttr listSelectedFocusedAttr
+                     else id
+    in maybeForce $
+       padLeft (Pad 2) $
+       withDefAttr emojiAttr $
+       txt $
+       autocompleteAlternativeReplacement $ EmojiCompletion e
 
 renderUserCompletion :: User -> Bool -> Bool -> Widget Name
 renderUserCompletion u inChan selected =

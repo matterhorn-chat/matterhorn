@@ -98,6 +98,7 @@ function prepare_dist {
     cp $HERE/README.md $dest
     cp $HERE/keybindings.md $dest
     cp $HERE/CHANGELOG.md $dest
+    cp -r $HERE/emoji $dest/
     cp -r $HERE/syntax $dest/
     cp -r $HERE/notification-scripts $dest/
     echo $LONG_HEAD > $dest/COMMIT

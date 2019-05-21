@@ -1,0 +1,4 @@
+The Emoji list in this directory was obtained from the Mattermost
+project. Also see the included LICENSE.txt file.
+
+https://github.com/mattermost/mattermost-webapp

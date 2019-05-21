@@ -144,6 +144,7 @@ module Types
   , crConfiguration
   , crSyntaxMap
   , crLogManager
+  , crEmoji
   , getSession
   , getResourceSession
 
@@ -291,6 +292,7 @@ import           Network.Mattermost.Types.Config
 import           Network.Mattermost.WebSocket ( WebsocketEvent )
 
 import           InputHistory
+import           Emoji
 import           Types.Common
 import           Types.Channels
 import           Types.DirectionalSeq ( emptyDirSeq )
@@ -809,6 +811,7 @@ data ChatResources =
                   , _crUserPreferences     :: UserPreferences
                   , _crSyntaxMap           :: SyntaxMap
                   , _crLogManager          :: LogManager
+                  , _crEmoji               :: EmojiCollection
                   }
 
 -- | A "special" mention that does not map to a specific user, but is an
@@ -831,6 +834,8 @@ data AutocompleteAlternative =
     -- ^ Name of a skylighting syntax definition
     | CommandCompletion Text Text Text
     -- ^ Name of a slash command, argspec, and description
+    | EmojiCompletion Text
+    -- ^ The text of an emoji completion
 
 specialMentionName :: SpecialMention -> Text
 specialMentionName MentionChannel = "channel"
@@ -846,6 +851,8 @@ isSpecialMention n = isJust $ lookup (T.toLower $ trimUserSigil n) pairs
         mkPair v = (specialMentionName v, v)
 
 autocompleteAlternativeReplacement :: AutocompleteAlternative -> Text
+autocompleteAlternativeReplacement (EmojiCompletion e) =
+    ":" <> e <> ":"
 autocompleteAlternativeReplacement (SpecialMention m) =
     userSigil <> specialMentionName m
 autocompleteAlternativeReplacement (UserCompletion u _) =

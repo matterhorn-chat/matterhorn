@@ -210,6 +210,22 @@ input. To use this feature:
  * Enter any message input in the message editor in `matterhorn`. After
    a short delay after you stop typing, misspelled words will turn red.
 
+# Emoji
+
+Matterhorn loads its emoji list (for auto-completion of `:...:`) at
+startup. It looks for an `emoji.json` file in the following locations
+and in the following order:
+
+* `~/.config/matterhorn/emoji.json`. This option is to support emoji
+  list installation and customization.
+* `MHBIN/emoji/emoji.json`, where `MHBIN` is the directory containing
+  the `matterhorn` binary. This option is to make it convenient to use
+  emoji with `matterhorn` from releases.
+
+The `emoji.json` is included in the Matterhorn releases
+and is obtained from [the Mattermost web client source
+tree](https://github.com/mattermost/mattermost-webapp/blob/master/utils/emoji.json).
+
 # Building
 
 To build Matterhorn, you'll need an appropriate `ghc`/`cabal`

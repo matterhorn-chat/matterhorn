@@ -27,6 +27,7 @@ import qualified Network.Mattermost.Endpoints as MM
 import {-# SOURCE #-} Command ( commandList, printArgSpec )
 import           State.Common
 import           Types hiding ( newState )
+import           Emoji
 
 
 -- | Check for whether the currently-edited word in the message editor
@@ -59,11 +60,28 @@ getCompleterForInput = do
                 Just (doUserAutoCompletion, T.tail w)
             | normalChannelSigil `T.isPrefixOf` w ->
                 Just (doChannelAutoCompletion, T.tail w)
+            | ":" `T.isPrefixOf` w ->
+                Just (doEmojiAutoCompletion, T.tail w)
             | "```" `T.isPrefixOf` w ->
                 Just (doSyntaxAutoCompletion, T.drop 3 w)
             | "/" `T.isPrefixOf` w && startCol == 0 ->
                 Just (doCommandAutoCompletion, T.tail w)
         _ -> Nothing
+
+doEmojiAutoCompletion :: Text -> MH ()
+doEmojiAutoCompletion searchString = do
+    session <- getSession
+    em <- use (csResources.crEmoji)
+    let localAlts = lookupEmoji em searchString
+        label = "Emoji"
+
+    withCachedAutocompleteResults label searchString $
+        doAsyncWith Preempt $ do
+            custom <- case T.null searchString of
+                True -> MM.mmGetListOfCustomEmoji Nothing Nothing session
+                False -> MM.mmSearchCustomEmoji searchString session
+            let alts = EmojiCompletion <$> (sort $ (MM.emojiName <$> custom) <> localAlts)
+            return $ Just $ setCompletionAlternatives searchString alts label
 
 doSyntaxAutoCompletion :: Text -> MH ()
 doSyntaxAutoCompletion searchString = do

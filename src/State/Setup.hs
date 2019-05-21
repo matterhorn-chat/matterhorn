@@ -34,6 +34,8 @@ import           Themes
 import           TimeUtils ( lookupLocalTimeZone )
 import           Types
 import           Types.Common
+import           Emoji
+import           FilePaths ( userEmojiJsonPath, bundledEmojiJsonPath )
 import qualified Zipper as Z
 
 
@@ -141,6 +143,12 @@ setupState mkVty mLogLocation config = do
 
   requestChan <- STM.atomically STM.newTChan
 
+  emoji <- either (const emptyEmojiCollection) id <$> do
+      result1 <- loadEmoji =<< userEmojiJsonPath
+      case result1 of
+          Right e -> return $ Right e
+          Left _ -> loadEmoji =<< bundledEmojiJsonPath
+
   let cr = ChatResources { _crSession             = session
                          , _crWebsocketThreadId   = Nothing
                          , _crConn                = cd
@@ -155,6 +163,7 @@ setupState mkVty mLogLocation config = do
                          , _crUserPreferences     = userPrefs
                          , _crSyntaxMap           = mempty
                          , _crLogManager          = logMgr
+                         , _crEmoji               = emoji
                          }
 
   st <- initializeState cr myTeam me

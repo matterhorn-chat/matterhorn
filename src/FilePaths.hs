@@ -12,6 +12,9 @@ module FilePaths
   , locateConfig
   , xdgSyntaxDir
   , syntaxDirName
+  , userEmojiJsonPath
+  , bundledEmojiJsonPath
+  , emojiJsonFilename
 
   , Script(..)
   , locateScriptPath
@@ -29,11 +32,12 @@ import System.Directory ( doesFileExist
                         , getPermissions
                         , executable
                         )
+import System.Environment ( getExecutablePath )
 import System.Environment.XDG.BaseDir ( getUserConfigFile
                                       , getAllConfigFiles
                                       , getUserConfigDir
                                       )
-import System.FilePath ( (</>), takeBaseName )
+import System.FilePath ( (</>), takeBaseName, takeDirectory, splitPath, joinPath )
 
 
 xdgName :: String
@@ -59,6 +63,37 @@ lastRunStateFilePath teamId =
 -- The path does not necessarily exist.
 xdgSyntaxDir :: IO FilePath
 xdgSyntaxDir = (</> syntaxDirName) <$> getUserConfigDir xdgName
+
+-- | Get the XDG path to the user-specific emoji JSON file. The path
+-- does not necessarily exist.
+userEmojiJsonPath :: IO FilePath
+userEmojiJsonPath = (</> emojiJsonFilename) <$> getUserConfigDir xdgName
+
+-- | Get the emoji JSON path relative to the development binary location
+-- or the release binary location.
+bundledEmojiJsonPath :: IO FilePath
+bundledEmojiJsonPath = do
+    selfPath <- getExecutablePath
+    let distDir = "dist-newstyle/"
+        pathBits = splitPath selfPath
+
+    return $ if distDir `elem` pathBits
+             then
+                 -- We're in development, so use the development
+                 -- executable path to locate the emoji path in the
+                 -- development tree.
+                 (joinPath $ takeWhile (/= distDir) pathBits) </> emojiDirName </> emojiJsonFilename
+             else
+                 -- In this case we assume the binary is being run from
+                 -- a release, in which case the syntax directory is a
+                 -- sibling of the executable path.
+                 takeDirectory selfPath </> emojiDirName </> emojiJsonFilename
+
+emojiJsonFilename :: FilePath
+emojiJsonFilename = "emoji.json"
+
+emojiDirName :: FilePath
+emojiDirName = "emoji"
 
 syntaxDirName :: FilePath
 syntaxDirName = "syntax"
