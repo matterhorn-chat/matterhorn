@@ -55,7 +55,7 @@ loadEmoji path = runExceptT $ do
         Left (e::E.SomeException) -> throwError $ show e
         Right bs -> do
             EmojiData es <- ExceptT $ return $ A.eitherDecode bs
-            return $ EmojiCollection $ F.toList es
+            return $ EmojiCollection $ T.toLower <$> F.toList es
 
 -- | Look up an emoji in the collection. This does a case-insensitive
 -- infix match.
