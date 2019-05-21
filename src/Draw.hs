@@ -14,6 +14,7 @@ import Draw.PostListOverlay
 import Draw.ShowHelp
 import Draw.UserListOverlay
 import Draw.ChannelListOverlay
+import Draw.ReactionEmojiListOverlay
 import Draw.ViewMessage
 import Draw.ManageAttachments
 import Types
@@ -33,6 +34,7 @@ draw st =
         PostListOverlay contents   -> drawPostListOverlay contents st
         UserListOverlay            -> drawUserListOverlay st
         ChannelListOverlay         -> drawChannelListOverlay st
+        ReactionEmojiListOverlay   -> drawReactionEmojiListOverlay st
         ViewMessage                -> drawViewMessage st
         ManageAttachments          -> drawManageAttachments st
         ManageAttachmentsBrowseFiles -> drawManageAttachments st

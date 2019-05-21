@@ -40,6 +40,7 @@ import           Events.ShowHelp
 import           Events.UrlSelect
 import           Events.UserListOverlay
 import           Events.ChannelListOverlay
+import           Events.ReactionEmojiListOverlay
 import           Events.ViewMessage
 import           Events.ManageAttachments
 
@@ -167,6 +168,7 @@ onVtyEvent e = do
         PostListOverlay _          -> onEventPostListOverlay e
         UserListOverlay            -> onEventUserListOverlay e
         ChannelListOverlay         -> onEventChannelListOverlay e
+        ReactionEmojiListOverlay   -> onEventReactionEmojiListOverlay e
         ViewMessage                -> onEventViewMessage e
         ManageAttachments          -> onEventManageAttachments e
         ManageAttachmentsBrowseFiles -> onEventManageAttachments e

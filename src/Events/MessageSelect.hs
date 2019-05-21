@@ -8,6 +8,7 @@ import qualified Graphics.Vty as Vty
 
 import           Events.Keybindings
 import           State.MessageSelect
+import           State.ReactionEmojiListOverlay
 import           Types
 
 
@@ -71,5 +72,8 @@ messageSelectKeybindings = mkKeybindings
 
     , mkKb FillGapEvent "Fetch messages for the selected gap"
          fillSelectedGap
+
+    , mkKb ReactToMessageEvent "Post a reaction to the selected message"
+         enterReactionEmojiListOverlayMode
 
     ]

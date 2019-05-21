@@ -488,6 +488,10 @@ messageSelectBottomBar st =
                     , ev YankMessageEvent
                     , "yank-code"
                     )
+                  , ( isReactable
+                    , ev ReactToMessageEvent
+                    , "react"
+                    )
                   ]
         Just postMsg = getSelectedMessage st
 

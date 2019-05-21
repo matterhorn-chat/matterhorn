@@ -4,6 +4,7 @@ module Emoji
   , loadEmoji
   , emptyEmojiCollection
   , lookupEmoji
+  , getMatchingEmoji
   )
 where
 
@@ -19,6 +20,9 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Trie as DT
 import qualified Data.Sequence as Seq
+
+import           Network.Mattermost.Types ( Session )
+import qualified Network.Mattermost.Endpoints as MM
 
 
 newtype EmojiData = EmojiData (Seq.Seq T.Text)
@@ -52,3 +56,11 @@ lookupEmoji (EmojiCollection tr) search =
     where
         f Nothing sub = F.toList sub
         f (Just v) sub = v : F.toList sub
+
+getMatchingEmoji :: Session -> EmojiCollection -> T.Text -> IO [T.Text]
+getMatchingEmoji session em searchString = do
+    let localAlts = lookupEmoji em searchString
+    custom <- case T.null searchString of
+        True -> MM.mmGetListOfCustomEmoji Nothing Nothing session
+        False -> MM.mmSearchCustomEmoji searchString session
+    return $ sort $ (MM.emojiName <$> custom) <> localAlts

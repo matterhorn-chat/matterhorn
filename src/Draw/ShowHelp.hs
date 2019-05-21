@@ -29,6 +29,7 @@ import           Events.ShowHelp
 import           Events.UrlSelect
 import           Events.UserListOverlay
 import           Events.ChannelListOverlay
+import           Events.ReactionEmojiListOverlay
 import           Events.ManageAttachments
 import           Events.ViewMessage
 import           HelpTopics ( helpTopics )
@@ -377,6 +378,7 @@ keybindSections kc =
     , ("Flagged Messages", postListOverlayKeybindings kc)
     , ("User Listings", userListOverlayKeybindings kc)
     , ("Channel Search Window", channelListOverlayKeybindings kc)
+    , ("Reaction Emoji Search Window", reactionEmojiListOverlayKeybindings kc)
     , ("Message Viewer", viewMessageKeybindings kc)
     , ("Attachment List", attachmentListKeybindings kc)
     ]

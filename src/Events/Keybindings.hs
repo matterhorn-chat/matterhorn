@@ -146,6 +146,7 @@ defaultBindings ev =
         DeleteMessageEvent  -> [ key 'd' ]
         EditMessageEvent    -> [ key 'e' ]
         ReplyMessageEvent   -> [ key 'r' ]
+        ReactToMessageEvent -> [ key 'a' ]
         OpenMessageURLEvent -> [ key 'o' ]
 
         AttachmentListAddEvent    -> [ key 'a' ]

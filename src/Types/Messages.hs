@@ -41,7 +41,7 @@ of Nothing@ or @case mType of C _@).
 module Types.Messages
   ( -- * Message and operations on a single Message
     Message(..)
-  , isDeletable, isReplyable, isEditable, isReplyTo, isGap, isFlaggable
+  , isDeletable, isReplyable, isReactable, isEditable, isReplyTo, isGap, isFlaggable
   , isEmote, isJoinLeave, isTransition
   , mText, mUser, mDate, mType, mPending, mDeleted
   , mAttachments, mInReplyToMsg, mMessageId, mReactions, mFlagged
@@ -190,6 +190,14 @@ isFlaggable = isJust . messagePostId
 
 isReplyable :: Message -> Bool
 isReplyable m =
+    isJust (messagePostId m) &&
+    case _mType m of
+      CP NormalPost -> True
+      CP Emote -> True
+      _ -> False
+
+isReactable :: Message -> Bool
+isReactable m =
     isJust (messagePostId m) &&
     case _mType m of
       CP NormalPost -> True

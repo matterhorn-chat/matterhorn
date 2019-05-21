@@ -69,6 +69,7 @@ module Types
   , csPostListOverlay
   , csUserListOverlay
   , csChannelListOverlay
+  , csReactionEmojiListOverlay
   , csMyTeam
   , csMessageSelect
   , csConnectionStatus
@@ -605,6 +606,8 @@ data Name =
     | AttachmentList
     | AttachmentFileBrowser
     | MessageReactionsArea
+    | ReactionEmojiList
+    | ReactionEmojiListInput
     deriving (Eq, Show, Ord)
 
 -- | The sum type of exceptions we expect to encounter on authentication
@@ -988,6 +991,7 @@ data Mode =
     | MessageSelectDeleteConfirm
     | PostListOverlay PostListContents
     | UserListOverlay
+    | ReactionEmojiListOverlay
     | ChannelListOverlay
     | ViewMessage
     | ManageAttachments
@@ -1054,6 +1058,8 @@ data ChatState =
               -- ^ The state of the user list overlay.
               , _csChannelListOverlay :: ListOverlayState Channel ChannelSearchScope
               -- ^ The state of the user list overlay.
+              , _csReactionEmojiListOverlay :: ListOverlayState T.Text ()
+              -- ^ The state of the reaction emoji list overlay.
               , _csClientConfig :: Maybe ClientConfig
               -- ^ The Mattermost client configuration, as we understand it.
               , _csPendingChannelChange :: Maybe PendingChannelChange
@@ -1108,6 +1114,7 @@ newState (StartupStateInfo {..}) = do
                      , _csPostListOverlay             = PostListOverlayState emptyDirSeq Nothing
                      , _csUserListOverlay             = nullUserListOverlayState
                      , _csChannelListOverlay          = nullChannelListOverlayState
+                     , _csReactionEmojiListOverlay    = nullEmojiListOverlayState
                      , _csClientConfig                = Nothing
                      , _csPendingChannelChange        = Nothing
                      , _csViewedMessage               = Nothing
@@ -1131,6 +1138,18 @@ nullUserListOverlayState =
     in ListOverlayState { _listOverlaySearchResults  = newList mempty
                         , _listOverlaySearchInput    = editor UserListSearchInput (Just 1) ""
                         , _listOverlaySearchScope    = AllUsers Nothing
+                        , _listOverlaySearching      = False
+                        , _listOverlayEnterHandler   = const $ return False
+                        , _listOverlayNewList        = newList
+                        , _listOverlayFetchResults   = const $ const $ const $ return mempty
+                        }
+
+nullEmojiListOverlayState :: ListOverlayState T.Text ()
+nullEmojiListOverlayState =
+    let newList rs = list ReactionEmojiList rs 1
+    in ListOverlayState { _listOverlaySearchResults  = newList mempty
+                        , _listOverlaySearchInput    = editor ReactionEmojiListInput (Just 1) ""
+                        , _listOverlaySearchScope    = ()
                         , _listOverlaySearching      = False
                         , _listOverlayEnterHandler   = const $ return False
                         , _listOverlayNewList        = newList

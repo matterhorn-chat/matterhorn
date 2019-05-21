@@ -72,15 +72,11 @@ doEmojiAutoCompletion :: Text -> MH ()
 doEmojiAutoCompletion searchString = do
     session <- getSession
     em <- use (csResources.crEmoji)
-    let localAlts = lookupEmoji em searchString
-        label = "Emoji"
-
+    let label = "Emoji"
     withCachedAutocompleteResults label searchString $
         doAsyncWith Preempt $ do
-            custom <- case T.null searchString of
-                True -> MM.mmGetListOfCustomEmoji Nothing Nothing session
-                False -> MM.mmSearchCustomEmoji searchString session
-            let alts = EmojiCompletion <$> (sort $ (MM.emojiName <$> custom) <> localAlts)
+            results <- getMatchingEmoji session em searchString
+            let alts = EmojiCompletion <$> results
             return $ Just $ setCompletionAlternatives searchString alts label
 
 doSyntaxAutoCompletion :: Text -> MH ()

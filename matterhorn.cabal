@@ -55,6 +55,7 @@ executable matterhorn
                        State.Messages
                        State.MessageSelect
                        State.PostListOverlay
+                       State.ReactionEmojiListOverlay
                        State.Reactions
                        State.Setup
                        State.Setup.Threads
@@ -75,6 +76,7 @@ executable matterhorn
                        Draw.Messages
                        Draw.ChannelList
                        Draw.ChannelListOverlay
+                       Draw.ReactionEmojiListOverlay
                        Draw.ShowHelp
                        Draw.LeaveChannelConfirm
                        Draw.DeleteChannelConfirm
@@ -97,6 +99,7 @@ executable matterhorn
                        Events.UrlSelect
                        Events.UserListOverlay
                        Events.ChannelListOverlay
+                       Events.ReactionEmojiListOverlay
                        Events.LeaveChannelConfirm
                        Events.DeleteChannelConfirm
                        Events.ViewMessage
