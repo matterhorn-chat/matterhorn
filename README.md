@@ -172,8 +172,9 @@ files or remove existing attachments by pressing `C-x` again.
 * Edit messages with `$EDITOR`
 * Rebindable keys (see `/help keybindings`)
 * Message editor with kill/yank buffer and readline-style keybindings
-* Tab-completion of usernames, channel names, commands, and fence code
-  block languages
+* Support for adding and removing emoji post reactions
+* Tab-completion of usernames, channel names, commands, emoji, and fence
+  code block languages
 * Support for attachment upload and download
 * Spell-checking via Aspell
 * Syntax highlighting of fenced code blocks in messages (works best in
