@@ -1058,7 +1058,7 @@ data ChatState =
               -- ^ The state of the user list overlay.
               , _csChannelListOverlay :: ListOverlayState Channel ChannelSearchScope
               -- ^ The state of the user list overlay.
-              , _csReactionEmojiListOverlay :: ListOverlayState T.Text ()
+              , _csReactionEmojiListOverlay :: ListOverlayState (Bool, T.Text) ()
               -- ^ The state of the reaction emoji list overlay.
               , _csClientConfig :: Maybe ClientConfig
               -- ^ The Mattermost client configuration, as we understand it.
@@ -1144,7 +1144,7 @@ nullUserListOverlayState =
                         , _listOverlayFetchResults   = const $ const $ const $ return mempty
                         }
 
-nullEmojiListOverlayState :: ListOverlayState T.Text ()
+nullEmojiListOverlayState :: ListOverlayState (Bool, T.Text) ()
 nullEmojiListOverlayState =
     let newList rs = list ReactionEmojiList rs 1
     in ListOverlayState { _listOverlaySearchResults  = newList mempty

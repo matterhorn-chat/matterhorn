@@ -25,12 +25,13 @@ drawReactionEmojiListOverlay st =
                                   renderEmoji
     in joinBorders overlay : drawMain False st
 
-renderEmoji :: Bool -> T.Text -> Widget Name
-renderEmoji sel e =
+renderEmoji :: Bool -> (Bool, T.Text) -> Widget Name
+renderEmoji sel (mine, e) =
     let maybeForce = if sel
                      then forceAttr listSelectedFocusedAttr
                      else id
     in maybeForce $
        padRight Max $
-       withDefAttr emojiAttr $
-       txt $ ":" <> e <> ":"
+       hBox [ if mine then txt " * " else txt "   "
+            , withDefAttr emojiAttr $ txt $ ":" <> e <> ":"
+            ]

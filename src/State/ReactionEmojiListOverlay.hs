@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 module State.ReactionEmojiListOverlay
   ( enterReactionEmojiListOverlayMode
 
@@ -16,11 +17,12 @@ import qualified Data.Vector as Vec
 import qualified Data.Text as T
 import qualified Data.Map as M
 import qualified Data.Set as Set
-import           Data.List ( nub )
+import           Data.Function ( on )
+import           Data.List ( nubBy )
 import           Lens.Micro.Platform ( to )
 
 import           Network.Mattermost.Types
-import           Network.Mattermost.Endpoints ( mmPostReaction )
+import           Network.Mattermost.Endpoints ( mmPostReaction, mmDeleteReaction )
 
 import           Emoji
 import           State.ListOverlay
@@ -40,8 +42,8 @@ enterReactionEmojiListOverlayMode = do
             enterListOverlayMode csReactionEmojiListOverlay ReactionEmojiListOverlay
                 () enterHandler (fetchResults myId msg em)
 
-enterHandler :: T.Text -> MH Bool
-enterHandler e = do
+enterHandler :: (Bool, T.Text) -> MH Bool
+enterHandler (mine, e) = do
     session <- getSession
     myId <- gets myUserId
 
@@ -52,9 +54,15 @@ enterHandler e = do
             case m^.mOriginalPost of
                 Nothing -> return False
                 Just p -> do
-                    doAsyncWith Preempt $ do
-                        mmPostReaction (postId p) myId e session
-                        return Nothing
+                    case mine of
+                        False ->
+                            doAsyncWith Preempt $ do
+                                mmPostReaction (postId p) myId e session
+                                return Nothing
+                        True ->
+                            doAsyncWith Preempt $ do
+                                mmDeleteReaction (postId p) myId e session
+                                return Nothing
                     return True
 
 fetchResults :: UserId
@@ -71,17 +79,22 @@ fetchResults :: UserId
              -- ^ The connection session
              -> Text
              -- ^ The search string
-             -> IO (Vec.Vector T.Text)
+             -> IO (Vec.Vector (Bool, T.Text))
 fetchResults myId msg em () session searchString = do
-    let currentReactions = [ k
+    let currentReactions = [ (myId `Set.member` uIds, k)
                            | (k, uIds) <- M.toList (msg^.mReactions)
-                           , not $ myId `Set.member` uIds
                            ]
-        matchingCurrentReactions = [ r | r <- currentReactions
-                                   , matchesEmoji searchString r
-                                   ]
+        matchingCurrentOtherReactions = [ (mine, r) | (mine, r) <- currentReactions
+                                        , matchesEmoji searchString r
+                                        , not mine
+                                        ]
+        matchingCurrentMyReactions = [ (mine, r) | (mine, r) <- currentReactions
+                                     , matchesEmoji searchString r
+                                     , mine
+                                     ]
     serverMatches <- getMatchingEmoji session em searchString
-    return $ Vec.fromList $ nub $ matchingCurrentReactions <> serverMatches
+    return $ Vec.fromList $ nubBy ((==) `on` snd) $
+        matchingCurrentOtherReactions <> matchingCurrentMyReactions <> ((False,) <$> serverMatches)
 
 -- | Move the selection up in the emoji list overlay by one emoji.
 reactionEmojiListSelectUp :: MH ()
@@ -104,7 +117,7 @@ reactionEmojiListPageDown = reactionEmojiListMove (L.listMoveBy reactionEmojiLis
 -- | Transform the emoji list results in some way, e.g. by moving the
 -- cursor, and then check to see whether the modification warrants a
 -- prefetch of more search results.
-reactionEmojiListMove :: (L.List Name T.Text -> L.List Name T.Text) -> MH ()
+reactionEmojiListMove :: (L.List Name (Bool, T.Text) -> L.List Name (Bool, T.Text)) -> MH ()
 reactionEmojiListMove = listOverlayMove csReactionEmojiListOverlay
 
 -- | The number of emoji in a "page" for cursor movement purposes.
