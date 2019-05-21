@@ -17,8 +17,6 @@ import qualified Data.Aeson as A
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Foldable as F
 import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
-import qualified Data.Trie as DT
 import qualified Data.Sequence as Seq
 
 import           Network.Mattermost.Types ( Session )
@@ -26,7 +24,16 @@ import qualified Network.Mattermost.Endpoints as MM
 
 
 newtype EmojiData = EmojiData (Seq.Seq T.Text)
-newtype EmojiCollection = EmojiCollection (DT.Trie T.Text)
+
+-- | The collection of all emoji names we loaded from a JSON disk file.
+-- You might rightly ask: why don't we use a Trie here, for efficient
+-- lookups? The answer is that we need infix lookups; prefix matches are
+-- not enough. In practice it seems not to matter that much; despite the
+-- O(n) search we get good enough performance that we aren't worried
+-- about this. If at some point this becomes an issue, other data
+-- structures with good infix lookup performance should be identified
+-- (full-text search, perhaps?).
+newtype EmojiCollection = EmojiCollection [T.Text]
 
 instance A.FromJSON EmojiData where
     parseJSON = A.withArray "EmojiData" $ \v -> do
@@ -47,15 +54,11 @@ loadEmoji path = runExceptT $ do
         Left (e::E.SomeException) -> throwError $ show e
         Right bs -> do
             EmojiData es <- ExceptT $ return $ A.eitherDecode bs
-            let entries = [(T.encodeUtf8 t, t) | t <- F.toList es]
-            return $ EmojiCollection $ DT.fromList entries
+            return $ EmojiCollection $ F.toList es
 
 lookupEmoji :: EmojiCollection -> T.Text -> [T.Text]
-lookupEmoji (EmojiCollection tr) search =
-    DT.lookupBy f (T.encodeUtf8 search) tr
-    where
-        f Nothing sub = F.toList sub
-        f (Just v) sub = v : F.toList sub
+lookupEmoji (EmojiCollection es) search =
+    filter (\e -> T.toLower search `T.isInfixOf` e) es
 
 getMatchingEmoji :: Session -> EmojiCollection -> T.Text -> IO [T.Text]
 getMatchingEmoji session em searchString = do
