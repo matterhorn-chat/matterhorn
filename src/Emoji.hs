@@ -3,7 +3,6 @@ module Emoji
   ( EmojiCollection
   , loadEmoji
   , emptyEmojiCollection
-  , lookupEmoji
   , getMatchingEmoji
   )
 where
