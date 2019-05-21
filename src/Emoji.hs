@@ -47,6 +47,7 @@ instance A.FromJSON EmojiData where
 emptyEmojiCollection :: EmojiCollection
 emptyEmojiCollection = EmojiCollection mempty
 
+-- | Load an EmojiCollection from a JSON disk file.
 loadEmoji :: FilePath -> IO (Either String EmojiCollection)
 loadEmoji path = runExceptT $ do
     result <- lift $ E.try $ BSL.readFile path
@@ -56,10 +57,16 @@ loadEmoji path = runExceptT $ do
             EmojiData es <- ExceptT $ return $ A.eitherDecode bs
             return $ EmojiCollection $ F.toList es
 
+-- | Look up an emoji in the collection. This does a case-insensitive
+-- infix match.
 lookupEmoji :: EmojiCollection -> T.Text -> [T.Text]
 lookupEmoji (EmojiCollection es) search =
     filter (\e -> T.toLower search `T.isInfixOf` e) es
 
+-- | Perform an emoji search against both the local EmojiCollection as
+-- well as the server's custom emoji. Return the results, sorted. If the
+-- empty string is specified, all local and all custom emoji will be
+-- included in the returned list.
 getMatchingEmoji :: Session -> EmojiCollection -> T.Text -> IO [T.Text]
 getMatchingEmoji session em searchString = do
     let localAlts = lookupEmoji em searchString
