@@ -44,9 +44,17 @@ import           Types
 import           Types.Common
 
 
+-- | In these modes, we allow access to the selected message state.
+messageSelectCompatibleModes :: [Mode]
+messageSelectCompatibleModes =
+    [ MessageSelect
+    , MessageSelectDeleteConfirm
+    , ReactionEmojiListOverlay
+    ]
+
 getSelectedMessage :: ChatState -> Maybe Message
 getSelectedMessage st
-    | not (appMode st `elem` [MessageSelect, MessageSelectDeleteConfirm, ReactionEmojiListOverlay]) = Nothing
+    | not (appMode st `elem` messageSelectCompatibleModes) = Nothing
     | otherwise = do
         selMsgId <- selectMessageId $ st^.csMessageSelect
         let chanMsgs = st ^. csCurrentChannel . ccContents . cdMessages
