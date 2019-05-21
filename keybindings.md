@@ -61,6 +61,7 @@
 | `o` | Open all URLs in the selected message |
 | `PgDown` | Move the cursor down by 10 messages |
 | `PgUp` | Move the cursor up by 10 messages |
+| `a` | Post a reaction to the selected message |
 | `r` | Begin composing a reply to the selected message |
 | `End` | Scroll to bottom and select the latest message |
 | `Home` | Scroll to top and select the oldest message |
@@ -98,6 +99,16 @@
 | `PgUp` | Page up in the channel list |
 | `C-n`, `Down` | Select the next channel |
 | `C-p`, `Up` | Select the previous channel |
+
+# Keybindings: Reaction Emoji Search Window
+| Keybinding | Description |
+| ---------- | ----------- |
+| `Enter` | Post the selected emoji reaction |
+| `Esc`, `C-c` | Close the emoji search window |
+| `PgDown` | Page down in the emoji list |
+| `PgUp` | Page up in the emoji list |
+| `C-n`, `Down` | Select the next emoji |
+| `C-p`, `Up` | Select the previous emoji |
 
 # Keybindings: Message Viewer
 | Keybinding | Description |
