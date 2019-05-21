@@ -4,6 +4,7 @@ module Emoji
   , loadEmoji
   , emptyEmojiCollection
   , getMatchingEmoji
+  , matchesEmoji
   )
 where
 
@@ -60,16 +61,42 @@ loadEmoji path = runExceptT $ do
 -- infix match.
 lookupEmoji :: EmojiCollection -> T.Text -> [T.Text]
 lookupEmoji (EmojiCollection es) search =
-    filter (\e -> T.toLower search `T.isInfixOf` e) es
+    filter (matchesEmoji search) es
+
+-- | Match a search string against an emoji.
+matchesEmoji :: T.Text
+             -- ^ The search string (will be converted to lowercase and
+             -- colons will be removed)
+             -> T.Text
+             -- ^ The emoji string (assumed to be lowercase and without
+             -- leading/trailing colons)
+             -> Bool
+matchesEmoji searchString e =
+    sanitizeEmojiSearch searchString `T.isInfixOf` e
+
+sanitizeEmojiSearch :: T.Text -> T.Text
+sanitizeEmojiSearch = stripColons . T.toLower . T.strip
 
 -- | Perform an emoji search against both the local EmojiCollection as
 -- well as the server's custom emoji. Return the results, sorted. If the
 -- empty string is specified, all local and all custom emoji will be
 -- included in the returned list.
 getMatchingEmoji :: Session -> EmojiCollection -> T.Text -> IO [T.Text]
-getMatchingEmoji session em searchString = do
-    let localAlts = lookupEmoji em searchString
-    custom <- case T.null searchString of
+getMatchingEmoji session em rawSearchString = do
+    let localAlts = lookupEmoji em rawSearchString
+        sanitized = sanitizeEmojiSearch rawSearchString
+    custom <- case T.null sanitized of
         True -> MM.mmGetListOfCustomEmoji Nothing Nothing session
-        False -> MM.mmSearchCustomEmoji searchString session
+        False -> MM.mmSearchCustomEmoji sanitized session
     return $ sort $ (MM.emojiName <$> custom) <> localAlts
+
+stripColons :: T.Text -> T.Text
+stripColons t =
+    stripHeadColon $ stripTailColon t
+    where
+        stripHeadColon v = if ":" `T.isPrefixOf` v
+                           then T.tail v
+                           else v
+        stripTailColon v = if ":" `T.isSuffixOf` v
+                           then T.init v
+                           else v

@@ -78,7 +78,7 @@ fetchResults myId msg em () session searchString = do
                            , not $ myId `Set.member` uIds
                            ]
         matchingCurrentReactions = [ r | r <- currentReactions
-                                   , T.toLower searchString `T.isInfixOf` r
+                                   , matchesEmoji searchString r
                                    ]
     serverMatches <- getMatchingEmoji session em searchString
     return $ Vec.fromList $ nub $ matchingCurrentReactions <> serverMatches
