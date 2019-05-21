@@ -83,6 +83,8 @@ enterListOverlayMode which mode scope enterHandler fetcher = do
     which.listOverlayEnterHandler .= enterHandler
     which.listOverlayFetchResults .= fetcher
     which.listOverlaySearching .= False
+    newList <- use (which.listOverlayNewList)
+    which.listOverlaySearchResults .= newList mempty
     setMode mode
     resetListOverlaySearch which
 
