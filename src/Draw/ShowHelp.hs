@@ -137,14 +137,15 @@ keybindingMarkdownTable kc = keybindSectionStrings
           sectionText = mkKeybindEventSectionHelp keybindEventHelpMarkdown T.unlines mkHeading
           mkHeading n =
               "\n# " <> n <>
-              "\n| Keybinding | Description |" <>
-              "\n| ---------- | ----------- |"
+              "\n| Keybinding | Event Name | Description |" <>
+              "\n| ---------- | ---------- | ----------- |"
 
 keybindingTextTable :: KeyConfig -> Text
 keybindingTextTable kc = keybindSectionStrings
     where keybindSectionStrings = T.concat $ catMaybes $ sectionText <$> keybindSections kc
-          sectionText = mkKeybindEventSectionHelp (keybindEventHelpText keybindingWidth) T.unlines mkHeading
-          keybindingWidth = 20
+          sectionText = mkKeybindEventSectionHelp (keybindEventHelpText keybindingWidth eventNameWidth) T.unlines mkHeading
+          keybindingWidth = 15
+          eventNameWidth = 30
           mkHeading n =
               "\n" <> n <>
               "\n" <> (T.replicate (T.length n) "=")
@@ -428,13 +429,15 @@ keybindEventHelpWidget (evName, desc, evs) =
             ]
 
 keybindEventHelpMarkdown :: (Text, Text, [Text]) -> Text
-keybindEventHelpMarkdown (_evName, desc, evs) =
+keybindEventHelpMarkdown (evName, desc, evs) =
     let quote s = "`" <> s <> "`"
-    in "| " <> (T.intercalate ", " $ quote <$> evs) <> " | " <> desc <> " |"
+    in "| " <> (T.intercalate ", " $ quote <$> evs) <> " | " <> quote evName <> " | " <> desc <> " |"
 
-keybindEventHelpText :: Int -> (Text, Text, [Text]) -> Text
-keybindEventHelpText width (_evName, desc, evs) =
-    padTo width (T.intercalate ", " evs) <> " " <> desc
+keybindEventHelpText :: Int -> Int -> (Text, Text, [Text]) -> Text
+keybindEventHelpText width eventNameWidth (evName, desc, evs) =
+    padTo width (T.intercalate ", " evs) <> " " <>
+    padTo eventNameWidth evName <> " " <>
+    desc
 
 mkKeybindEventHelp :: [Keybinding] -> Maybe (Text, Text, [Text])
 mkKeybindEventHelp ks@(KB desc _ _ (Just e):_) =
