@@ -57,8 +57,9 @@ loadEmoji path = runExceptT $ do
             EmojiData es <- ExceptT $ return $ A.eitherDecode bs
             return $ EmojiCollection $ T.toLower <$> F.toList es
 
--- | Look up an emoji in the collection. This does a case-insensitive
--- infix match.
+-- | Look up matching emoji in the collection using the provided search
+-- string. This does a case-insensitive infix match. The search string
+-- may be provided with or without leading and trailing colons.
 lookupEmoji :: EmojiCollection -> T.Text -> [T.Text]
 lookupEmoji (EmojiCollection es) search =
     filter (matchesEmoji search) es
