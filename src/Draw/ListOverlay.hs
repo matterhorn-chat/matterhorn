@@ -31,8 +31,9 @@ hLimitWithPadding pad contents = Widget
       withReaderT (& availWidthL  %~ (\ n -> n - (2 * pad))) $ render $ cropToContext contents
   }
 
--- | Draw a ListOverlayState as a floating overlay on top of whatever is
--- rendered beneath it
+-- | Draw a ListOverlayState. This draws a bordered box with the
+-- overlay's search input and results list inside the box. The provided
+-- functions determine how to render the overlay in various states.
 drawListOverlay :: ListOverlayState a b
                 -- ^ The overlay state
                 -> (b -> Widget Name)
