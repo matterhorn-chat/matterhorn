@@ -16,6 +16,7 @@ import           Command
 import           Events.Keybindings
 import           HelpTopics ( mainHelpTopic )
 import           State.Attachments
+import           State.Autocomplete
 import           State.ChannelSelect
 import           State.Channels
 import           State.Editing
@@ -173,7 +174,7 @@ tabComplete dir = do
 
     mac <- use (csEditState.cedAutocomplete)
     case mac of
-        Nothing -> return ()
+        Nothing -> checkForAutocompletion True
         Just ac -> do
             case ac^.acCompletionList.to L.listSelectedElement of
                 Nothing -> return ()

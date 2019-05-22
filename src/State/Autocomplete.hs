@@ -34,9 +34,9 @@ import           Emoji
 -- should cause an autocompletion UI to appear. If so, initiate a server
 -- query or local cache lookup to present the completion alternatives
 -- for the word at the cursor.
-checkForAutocompletion :: MH ()
-checkForAutocompletion = do
-    result <- getCompleterForInput
+checkForAutocompletion :: Bool -> MH ()
+checkForAutocompletion manual = do
+    result <- getCompleterForInput manual
     case result of
         Nothing -> resetAutocomplete
         Just (runUpdater, searchString) -> do
@@ -47,8 +47,8 @@ checkForAutocompletion = do
                 csEditState.cedAutocompletePending .= Just searchString
                 runUpdater searchString
 
-getCompleterForInput :: MH (Maybe (Text -> MH (), Text))
-getCompleterForInput = do
+getCompleterForInput :: Bool -> MH (Maybe (Text -> MH (), Text))
+getCompleterForInput manual = do
     z <- use (csEditState.cedEditor.editContentsL)
 
     let col = snd $ Z.cursorPosition z
@@ -60,7 +60,7 @@ getCompleterForInput = do
                 Just (doUserAutoCompletion, T.tail w)
             | normalChannelSigil `T.isPrefixOf` w ->
                 Just (doChannelAutoCompletion, T.tail w)
-            | ":" `T.isPrefixOf` w ->
+            | ":" `T.isPrefixOf` w && manual ->
                 Just (doEmojiAutoCompletion, T.tail w)
             | "```" `T.isPrefixOf` w ->
                 Just (doSyntaxAutoCompletion, T.drop 3 w)

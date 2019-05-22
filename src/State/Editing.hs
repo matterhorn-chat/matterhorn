@@ -306,7 +306,7 @@ handleEditingInput e = do
               sendUserTypingAction
             | otherwise -> return ()
 
-    checkForAutocompletion
+    checkForAutocompletion False
     liftIO $ resetSpellCheckTimer $ st^.csEditState
 
 -- | Send the user_typing action to the server asynchronously, over the
