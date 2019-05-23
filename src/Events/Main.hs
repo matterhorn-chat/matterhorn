@@ -174,7 +174,10 @@ tabComplete dir = do
 
     mac <- use (csEditState.cedAutocomplete)
     case mac of
-        Nothing -> checkForAutocompletion True
+        Nothing -> do
+            let ctx = AutocompleteContext { autocompleteManual = True
+                                          }
+            checkForAutocompletion ctx
         Just ac -> do
             case ac^.acCompletionList.to L.listSelectedElement of
                 Nothing -> return ()

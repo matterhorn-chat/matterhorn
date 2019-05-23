@@ -1,5 +1,6 @@
 module State.Autocomplete
-  ( checkForAutocompletion
+  ( AutocompleteContext(..)
+  , checkForAutocompletion
   )
 where
 
@@ -30,13 +31,25 @@ import           Types hiding ( newState )
 import           Emoji
 
 
+data AutocompleteContext =
+    AutocompleteContext { autocompleteManual :: Bool
+                        -- ^ Whether the autocompletion was manual
+                        -- (True) or automatic (False). The automatic
+                        -- case is the case where the autocomplete
+                        -- lookups and UI are triggered merely by
+                        -- entering some initial text (such as "@").
+                        -- The manual case is the case where the
+                        -- autocomplete lookups and UI are triggered
+                        -- explicitly by a user's TAB keypress.
+                        }
+
 -- | Check for whether the currently-edited word in the message editor
 -- should cause an autocompletion UI to appear. If so, initiate a server
 -- query or local cache lookup to present the completion alternatives
 -- for the word at the cursor.
-checkForAutocompletion :: Bool -> MH ()
-checkForAutocompletion manual = do
-    result <- getCompleterForInput manual
+checkForAutocompletion :: AutocompleteContext -> MH ()
+checkForAutocompletion ctx = do
+    result <- getCompleterForInput ctx
     case result of
         Nothing -> resetAutocomplete
         Just (runUpdater, searchString) -> do
@@ -47,8 +60,8 @@ checkForAutocompletion manual = do
                 csEditState.cedAutocompletePending .= Just searchString
                 runUpdater searchString
 
-getCompleterForInput :: Bool -> MH (Maybe (Text -> MH (), Text))
-getCompleterForInput manual = do
+getCompleterForInput :: AutocompleteContext -> MH (Maybe (Text -> MH (), Text))
+getCompleterForInput ctx = do
     z <- use (csEditState.cedEditor.editContentsL)
 
     let col = snd $ Z.cursorPosition z
@@ -60,7 +73,7 @@ getCompleterForInput manual = do
                 Just (doUserAutoCompletion, T.tail w)
             | normalChannelSigil `T.isPrefixOf` w ->
                 Just (doChannelAutoCompletion, T.tail w)
-            | ":" `T.isPrefixOf` w && manual ->
+            | ":" `T.isPrefixOf` w && autocompleteManual ctx ->
                 Just (doEmojiAutoCompletion, T.tail w)
             | "```" `T.isPrefixOf` w ->
                 Just (doSyntaxAutoCompletion, T.drop 3 w)

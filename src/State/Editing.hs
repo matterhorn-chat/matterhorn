@@ -306,7 +306,9 @@ handleEditingInput e = do
               sendUserTypingAction
             | otherwise -> return ()
 
-    checkForAutocompletion False
+    let ctx = AutocompleteContext { autocompleteManual = False
+                                  }
+    checkForAutocompletion ctx
     liftIO $ resetSpellCheckTimer $ st^.csEditState
 
 -- | Send the user_typing action to the server asynchronously, over the
