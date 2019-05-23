@@ -79,8 +79,8 @@ the client.  Keybinding information may be obtained in a number of ways:
 
 * The `/help` command within Matterhorn.
 * The `F1` key within Matterhorn.
-* Running matterhorn with the `-k` argument for text keybindings
-* Running matterhorn with the `-K` argument for [Markdown keybindings](keybindings.md)
+* Running matterhorn with the `-k` argument to get a text table of available keybindings
+* Running matterhorn with the `-K` argument to get a [Markdown table of available keybindings](keybindings.md)
 
     Note: The latter two commands do not start the client but simply
     print to stdout and exit.  The bindings shown include any user
