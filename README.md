@@ -181,9 +181,9 @@ files or remove existing attachments by pressing `C-x` again.
   256-color terminals)
 * Flagging and unflagging of posts, which are then viewable with `M-8`
   or `/flags`
-* Support for SOCKS 4 and 5 proxies via the `ALL_PROXY`, `HTTP_PROXY`,
-  and `HTTPS_PROXY` environment variables. (Plain HTTP proxies are not
-  yet supported.)
+* Support for SOCKS 4 and 5 proxies via the `ALL_PROXY` and
+  `HTTPS_PROXY` environment variables. (Plain HTTP proxies are not yet
+  supported.) Also supports `NO_PROXY`.
 * Multiple color themes with color theme customization support
 * Custom notifications via notification scripts (see the
   `activityNotifyCommand` configuration setting).
