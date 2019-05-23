@@ -10,6 +10,7 @@ where
 import           Brick
 import           Brick.Widgets.Border
 import           Control.Monad.Trans.Reader ( withReaderT )
+import qualified Data.Foldable as F
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( (.~), to )
 import           Network.Mattermost.Types ( ServerTime(..) )
@@ -145,11 +146,34 @@ renderLastMessages st hs editCutoff msgs =
     Widget Greedy Greedy $ do
         ctx <- getContext
         let targetHeight = ctx^.availHeightL
-            renderBuild img (m, threadState) =
-                render1HLimit doMsgRender (flip Vty.vertJoin) targetHeight img threadState m
             doMsgRender = renderSingleMessage st hs editCutoff
 
-        img <- foldM renderBuild Vty.emptyImage msgs
+            newMessagesTransitions = filterMessages (isNewMessagesTransition . fst) msgs
+            newMessageTransition = fst <$> (listToMaybe $ F.toList newMessagesTransitions)
+
+            isBelow m transition = m^.mDate > transition^.mDate
+
+            go :: Vty.Image -> DirectionalSeq Retrograde (Message, ThreadState) -> RenderM Name Vty.Image
+            go img ms | messagesLength ms == 0 = return img
+            go img ms = do
+                let Just (m, threadState) = messagesHead ms
+                    newMessagesAbove = maybe False (isBelow m) newMessageTransition
+                newImg <- render1HLimit doMsgRender (flip Vty.vertJoin) targetHeight img threadState m
+                -- If the new message fills the window, check whether
+                -- there is still a "New Messages" transition that is
+                -- not displayed. If there is, then we need to replace
+                -- the top line of the new image with a "New Messages"
+                -- indicator.
+                if Vty.imageHeight newImg >= targetHeight && newMessagesAbove
+                then do
+                    transitionResult <- render $ withDefAttr newMessageTransitionAttr $
+                                                 hBorderWithLabel (txt "New Messages ↑")
+                    let newImg2 = Vty.vertJoin (transitionResult^.imageL)
+                                               (Vty.cropTop (targetHeight - 1) newImg)
+                    return newImg2
+                else go newImg $ messagesDrop 1 ms
+
+        img <- go Vty.emptyImage msgs
         return $ emptyResult & imageL .~ (Vty.cropTop targetHeight img)
 
 relaxHeight :: Context -> Context

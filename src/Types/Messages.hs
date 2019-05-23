@@ -42,7 +42,7 @@ module Types.Messages
   ( -- * Message and operations on a single Message
     Message(..)
   , isDeletable, isReplyable, isReactable, isEditable, isReplyTo, isGap, isFlaggable
-  , isEmote, isJoinLeave, isTransition
+  , isEmote, isJoinLeave, isTransition, isNewMessagesTransition
   , mText, mUser, mDate, mType, mPending, mDeleted
   , mAttachments, mInReplyToMsg, mMessageId, mReactions, mFlagged
   , mOriginalPost, mChannelId, mMarkdownSource
@@ -66,6 +66,7 @@ module Types.Messages
   , RetrogradeMessages
   , MessageOps (..)
   , noMessages
+  , messagesLength
   , filterMessages
   , reverseMessages
   , unreverseMessages
@@ -75,6 +76,8 @@ module Types.Messages
   , retrogradeMsgsWithThreadStates
   , findMessage
   , getRelMessageId
+  , messagesHead
+  , messagesDrop
   , getNextMessage
   , getPrevMessage
   , getNextMessageId
@@ -229,6 +232,11 @@ isTransition m = case _mType m of
                    C DateTransition -> True
                    C NewMessagesTransition -> True
                    _ -> False
+
+isNewMessagesTransition :: Message -> Bool
+isNewMessagesTransition m = case _mType m of
+    C NewMessagesTransition -> True
+    _ -> False
 
 isEmote :: Message -> Bool
 isEmote m = case _mType m of
@@ -385,12 +393,11 @@ type RetrogradeMessages = DirectionalSeq Retrograde Message
 
 -- ** Common operations on Messages
 
-filterMessages ::
-  SeqDirection seq =>
-  (Message -> Bool) ->
-  DirectionalSeq seq Message ->
-  DirectionalSeq seq Message
-filterMessages p = onDirectedSeq (Seq.filter p)
+filterMessages :: SeqDirection seq
+               => (a -> Bool)
+               -> DirectionalSeq seq a
+               -> DirectionalSeq seq a
+filterMessages f = onDirectedSeq (Seq.filter f)
 
 class MessageOps a where
     -- | addMessage inserts a date in proper chronological order, with
@@ -427,6 +434,9 @@ dirDateInsert m = onDirectedSeq $ finalize . foldr insAfter initial
 
 noMessages :: Messages
 noMessages = DSeq mempty
+
+messagesLength :: DirectionalSeq seq a -> Int
+messagesLength (DSeq ms) = Seq.length ms
 
 -- | Reverse the order of the messages
 reverseMessages :: Messages -> RetrogradeMessages
@@ -548,6 +558,12 @@ getNextMessage = getRelMessageId
 -- set.
 getPrevMessage :: Maybe MessageId -> Messages -> Maybe Message
 getPrevMessage mId = getRelMessageId mId . reverseMessages
+
+messagesHead :: (SeqDirection seq) => DirectionalSeq seq a -> Maybe a
+messagesHead = withDirSeqHead id
+
+messagesDrop :: (SeqDirection seq) => Int -> DirectionalSeq seq a -> DirectionalSeq seq a
+messagesDrop i = onDirectedSeq (Seq.drop i)
 
 -- | Look forward for the first Message with an ID that follows the
 -- specified MessageId and return that found Message's ID; if no input
