@@ -5,18 +5,12 @@ import           Prelude ()
 import           Prelude.MH
 
 import           Brick.Widgets.Edit
-import qualified Brick.Widgets.List as L
-import           Data.Char ( isSpace )
-import qualified Data.Text.Zipper as Z
-import qualified Data.Text.Zipper.Generic.Words as Z
 import qualified Graphics.Vty as Vty
-import           Lens.Micro.Platform ( (%=), to, _Just )
 
 import           Command
 import           Events.Keybindings
 import           HelpTopics ( mainHelpTopic )
 import           State.Attachments
-import           State.Autocomplete
 import           State.ChannelSelect
 import           State.Channels
 import           State.Editing
@@ -152,41 +146,3 @@ mainKeybindings = mkKeybindings
     , mkKb EnterFlaggedPostsEvent "View currently flagged posts"
          enterFlaggedPostListMode
     ]
-
-data Direction = Forwards | Backwards
-
-tabComplete :: Direction -> MH ()
-tabComplete dir = do
-    let transform list =
-            let len = list^.L.listElementsL.to length
-            in case dir of
-                Forwards ->
-                    if (L.listSelected list == Just (len - 1)) ||
-                       (L.listSelected list == Nothing && len > 0)
-                    then L.listMoveTo 0 list
-                    else L.listMoveBy 1 list
-                Backwards ->
-                    if (L.listSelected list == Just 0) ||
-                       (L.listSelected list == Nothing && len > 0)
-                    then L.listMoveTo (len - 1) list
-                    else L.listMoveBy (-1) list
-    csEditState.cedAutocomplete._Just.acCompletionList %= transform
-
-    mac <- use (csEditState.cedAutocomplete)
-    case mac of
-        Nothing -> do
-            let ctx = AutocompleteContext { autocompleteManual = True
-                                          }
-            checkForAutocompletion ctx
-        Just ac -> do
-            case ac^.acCompletionList.to L.listSelectedElement of
-                Nothing -> return ()
-                Just (_, alternative) -> do
-                    let replacement = autocompleteAlternativeReplacement alternative
-                        maybeEndOfWord z =
-                            if maybe True isSpace (Z.currentChar z)
-                            then z
-                            else Z.moveWordRight z
-                    csEditState.cedEditor %=
-                        applyEdit (Z.insertMany replacement . Z.deletePrevWord .
-                                   maybeEndOfWord)

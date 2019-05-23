@@ -27,6 +27,7 @@ import qualified Network.Mattermost.Endpoints as MM
 
 import {-# SOURCE #-} Command ( commandList, printArgSpec )
 import           State.Common
+import {-# SOURCE #-} State.Editing ( Direction(..), tabComplete )
 import           Types hiding ( newState )
 import           Emoji
 

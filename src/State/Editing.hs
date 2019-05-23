@@ -11,6 +11,8 @@ module State.Editing
   , handleEditingInput
   , cancelAutocompleteOrReplyOrEdit
   , replyToLatestMessage
+  , Direction(..)
+  , tabComplete
   )
 where
 
@@ -25,6 +27,7 @@ import qualified Codec.Binary.UTF8.Generic as UTF8
 import           Control.Arrow
 import qualified Control.Concurrent.STM as STM
 import qualified Data.ByteString as BS
+import           Data.Char ( isSpace )
 import qualified Data.Foldable as F
 import qualified Data.Set as S
 import qualified Data.Text as T
@@ -33,7 +36,7 @@ import qualified Data.Text.Zipper as Z
 import qualified Data.Text.Zipper.Generic.Words as Z
 import           Data.Time ( getCurrentTime )
 import           Graphics.Vty ( Event(..), Key(..), Modifier(..) )
-import           Lens.Micro.Platform ( (%=), (.=), (.~), to )
+import           Lens.Micro.Platform ( (%=), (.=), (.~), to, _Just )
 import qualified System.Environment as Sys
 import qualified System.Exit as Sys
 import qualified System.IO as Sys
@@ -422,3 +425,42 @@ replyToLatestMessage = do
            mh $ invalidateCacheEntry $ ChannelMessages cId
            csEditState.cedEditMode .= Replying msg p
     _ -> return ()
+
+data Direction = Forwards | Backwards
+
+tabComplete :: Direction -> MH ()
+tabComplete dir = do
+    let transform list =
+            let len = list^.L.listElementsL.to length
+            in case dir of
+                Forwards ->
+                    if (L.listSelected list == Just (len - 1)) ||
+                       (L.listSelected list == Nothing && len > 0)
+                    then L.listMoveTo 0 list
+                    else L.listMoveBy 1 list
+                Backwards ->
+                    if (L.listSelected list == Just 0) ||
+                       (L.listSelected list == Nothing && len > 0)
+                    then L.listMoveTo (len - 1) list
+                    else L.listMoveBy (-1) list
+    csEditState.cedAutocomplete._Just.acCompletionList %= transform
+
+    mac <- use (csEditState.cedAutocomplete)
+    case mac of
+        Nothing -> do
+            let ctx = AutocompleteContext { autocompleteManual = True
+                                          , autocompleteFirstMatch = True
+                                          }
+            checkForAutocompletion ctx
+        Just ac -> do
+            case ac^.acCompletionList.to L.listSelectedElement of
+                Nothing -> return ()
+                Just (_, alternative) -> do
+                    let replacement = autocompleteAlternativeReplacement alternative
+                        maybeEndOfWord z =
+                            if maybe True isSpace (Z.currentChar z)
+                            then z
+                            else Z.moveWordRight z
+                    csEditState.cedEditor %=
+                        applyEdit (Z.insertMany replacement . Z.deletePrevWord .
+                                   maybeEndOfWord)
