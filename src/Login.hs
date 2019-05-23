@@ -81,6 +81,7 @@ import           Themes ( clientEmphAttr )
 import           Types ( ConnectionInfo(..)
                        , ciPassword, ciUsername, ciHostname
                        , ciPort, AuthenticationException(..)
+                       , LogManager, LogCategory(..), ioLogWithManager
                        )
 
 
@@ -164,6 +165,8 @@ loginWorker :: (ConnectionData -> ConnectionData)
             -- ^ The function used to set the logger on the
             -- ConnectionData that results from a successful login
             -- attempt.
+            -> LogManager
+            -- ^ The log manager used to do logging.
             -> Bool
             -- ^ Whether the login attempts should use HTTP (True) or
             -- not (False, HTTPS only)
@@ -172,11 +175,12 @@ loginWorker :: (ConnectionData -> ConnectionData)
             -> BChan LoginEvent
             -- ^ The channel to which we'll send login attempt results.
             -> IO ()
-loginWorker setLogger unsafeUseHTTP requestChan respChan = forever $ do
+loginWorker setLogger logMgr unsafeUseHTTP requestChan respChan = forever $ do
     req <- readBChan requestChan
     case req of
         DoLogin initial connInfo -> do
             writeBChan respChan $ StartConnect initial $ connInfo^.ciHostname
+            ioLogWithManager logMgr Nothing LogGeneral $ "Attempting authentication to " <> connInfo^.ciHostname
 
             let connectFunc = if unsafeUseHTTP
                               then initConnectionDataInsecure
@@ -189,11 +193,17 @@ loginWorker setLogger unsafeUseHTTP requestChan respChan = forever $ do
 
             result <- convertLoginExceptions $ mmLogin cd login
             case result of
-                Left e ->
+                Left e -> do
+                    ioLogWithManager logMgr Nothing LogGeneral $
+                        "Error authenticating to " <> connInfo^.ciHostname <> ": " <> (T.pack $ show e)
                     writeBChan respChan $ LoginResult $ AttemptFailed e
-                Right (Left e) ->
+                Right (Left e) -> do
+                    ioLogWithManager logMgr Nothing LogGeneral $
+                        "Error authenticating to " <> connInfo^.ciHostname <> ": " <> (T.pack $ show e)
                     writeBChan respChan $ LoginResult $ AttemptFailed $ LoginError e
-                Right (Right (sess, user)) ->
+                Right (Right (sess, user)) -> do
+                    ioLogWithManager logMgr Nothing LogGeneral $
+                        "Authenticated successfully to " <> connInfo^.ciHostname <> " as " <> connInfo^.ciUsername
                     writeBChan respChan $ LoginResult $ AttemptSucceeded connInfo cd sess user
 
 -- | The amount of time that the startup timer thread will wait before
@@ -229,6 +239,8 @@ interactiveGetLoginSession :: Vty
                            -> (ConnectionData -> ConnectionData)
                            -- ^ The function to set the logger on
                            -- connection handles.
+                           -> LogManager
+                           -- ^ The log manager used to do logging.
                            -> ConnectionInfo
                            -- ^ Initial connection info to use to
                            -- populate the login form. If the connection
@@ -236,11 +248,11 @@ interactiveGetLoginSession :: Vty
                            -- initial connection attempt is made without
                            -- first getting the user to hit Enter.
                            -> IO (Maybe LoginAttempt, Vty)
-interactiveGetLoginSession vty mkVty unsafeUseHTTP setLogger initialConfig = do
+interactiveGetLoginSession vty mkVty unsafeUseHTTP setLogger logMgr initialConfig = do
     requestChan <- newBChan 10
     respChan <- newBChan 10
 
-    void $ forkIO $ loginWorker setLogger unsafeUseHTTP requestChan respChan
+    void $ forkIO $ loginWorker setLogger logMgr unsafeUseHTTP requestChan respChan
     void $ forkIO $ startupTimer respChan
 
     let initialState = mkState initialConfig requestChan

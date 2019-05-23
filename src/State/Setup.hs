@@ -77,6 +77,7 @@ setupState mkVty mLogLocation config = do
   (mLastAttempt, loginVty) <- interactiveGetLoginSession initialVty mkVty
                                                          (configUnsafeUseHTTP config)
                                                          setLogger
+                                                         logMgr
                                                          (incompleteCredentials config)
 
   let shutdown vty = do
