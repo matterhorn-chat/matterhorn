@@ -185,6 +185,7 @@ module Types
 
   , mhLog
   , mhGetIOLogger
+  , ioLogWithManager
   , LogContext(..)
   , withLogContext
   , withLogContextChannelId
@@ -1279,14 +1280,17 @@ mhGetIOLogger :: MH (LogCategory -> Text -> IO ())
 mhGetIOLogger = do
     ctx <- getLogContext
     mgr <- use (to (_crLogManager . _csResources))
-    return $ \cat msg -> do
-        now <- liftIO getCurrentTime
-        let lm = LogMessage { logMessageText = msg
-                            , logMessageContext = ctx
-                            , logMessageCategory = cat
-                            , logMessageTimestamp = now
-                            }
-        liftIO $ sendLogMessage mgr lm
+    return $ ioLogWithManager mgr ctx
+
+ioLogWithManager :: LogManager -> Maybe LogContext -> LogCategory -> Text -> IO ()
+ioLogWithManager mgr ctx cat msg = do
+    now <- getCurrentTime
+    let lm = LogMessage { logMessageText = msg
+                        , logMessageContext = ctx
+                        , logMessageCategory = cat
+                        , logMessageTimestamp = now
+                        }
+    sendLogMessage mgr lm
 
 -- | Run an 'MM' computation, choosing whether to continue or halt based
 -- on the resulting
