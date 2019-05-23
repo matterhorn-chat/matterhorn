@@ -66,6 +66,11 @@ setupState mkVty mLogLocation config = do
   eventChan <- newBChan 25
   logMgr <- newLogManager eventChan (configLogMaxBufferSize config)
 
+  -- If we got an initial log location, start logging there.
+  case mLogLocation of
+      Nothing -> return ()
+      Just loc -> startLoggingToFile logMgr loc
+
   let logApiEvent ev = apiLogEventToLogMessage ev >>= sendLogMessage logMgr
       setLogger cd = cd `withLogger` logApiEvent
 
@@ -170,11 +175,6 @@ setupState mkVty mLogLocation config = do
                          }
 
   st <- initializeState cr myTeam me
-
-  -- If we got an initial log location, start logging there.
-  case mLogLocation of
-      Nothing -> return ()
-      Just loc -> startLoggingToFile logMgr loc
 
   return (st, teamSelVty)
 
