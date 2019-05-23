@@ -69,7 +69,10 @@ setupState mkVty mLogLocation config = do
   let logApiEvent ev = apiLogEventToLogMessage ev >>= sendLogMessage logMgr
       setLogger cd = cd `withLogger` logApiEvent
 
-  (mLastAttempt, loginVty) <- interactiveGetLoginSession initialVty mkVty (configUnsafeUseHTTP config) setLogger (incompleteCredentials config)
+  (mLastAttempt, loginVty) <- interactiveGetLoginSession initialVty mkVty
+                                                         (configUnsafeUseHTTP config)
+                                                         setLogger
+                                                         (incompleteCredentials config)
 
   let shutdown vty = do
           Vty.shutdown vty
