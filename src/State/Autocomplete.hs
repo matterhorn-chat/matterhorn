@@ -42,6 +42,12 @@ data AutocompleteContext =
                         -- The manual case is the case where the
                         -- autocomplete lookups and UI are triggered
                         -- explicitly by a user's TAB keypress.
+                        , autocompleteFirstMatch :: Bool
+                        -- ^ Once the results of the autocomplete lookup
+                        -- are available, this flag determines whether
+                        -- the user's input is replaced immediately
+                        -- with the first available match (True) or not
+                        -- (False).
                         }
 
 -- | Check for whether the currently-edited word in the message editor
@@ -59,9 +65,9 @@ checkForAutocompletion ctx = do
                                prevResult
             when shouldUpdate $ do
                 csEditState.cedAutocompletePending .= Just searchString
-                runUpdater searchString
+                runUpdater ctx searchString
 
-getCompleterForInput :: AutocompleteContext -> MH (Maybe (Text -> MH (), Text))
+getCompleterForInput :: AutocompleteContext -> MH (Maybe (AutocompleteContext -> Text -> MH (), Text))
 getCompleterForInput ctx = do
     z <- use (csEditState.cedEditor.editContentsL)
 
@@ -82,29 +88,29 @@ getCompleterForInput ctx = do
                 Just (doCommandAutoCompletion, T.tail w)
         _ -> Nothing
 
-doEmojiAutoCompletion :: Text -> MH ()
-doEmojiAutoCompletion searchString = do
+doEmojiAutoCompletion :: AutocompleteContext -> Text -> MH ()
+doEmojiAutoCompletion ctx searchString = do
     session <- getSession
     em <- use (csResources.crEmoji)
     let label = "Emoji"
-    withCachedAutocompleteResults label searchString $
+    withCachedAutocompleteResults ctx label searchString $
         doAsyncWith Preempt $ do
             results <- getMatchingEmoji session em searchString
             let alts = EmojiCompletion <$> results
-            return $ Just $ setCompletionAlternatives searchString alts label
+            return $ Just $ setCompletionAlternatives ctx searchString alts label
 
-doSyntaxAutoCompletion :: Text -> MH ()
-doSyntaxAutoCompletion searchString = do
+doSyntaxAutoCompletion :: AutocompleteContext -> Text -> MH ()
+doSyntaxAutoCompletion ctx searchString = do
     mapping <- use (csResources.crSyntaxMap)
     let allNames = Sky.sShortname <$> M.elems mapping
         (prefixed, notPrefixed) = partition isPrefixed $ filter match allNames
         match = (((T.toLower searchString) `T.isInfixOf`) . T.toLower)
         isPrefixed = (((T.toLower searchString) `T.isPrefixOf`) . T.toLower)
         alts = SyntaxCompletion <$> (sort prefixed <> sort notPrefixed)
-    setCompletionAlternatives searchString alts "Languages"
+    setCompletionAlternatives ctx searchString alts "Languages"
 
-doCommandAutoCompletion :: Text -> MH ()
-doCommandAutoCompletion searchString = do
+doCommandAutoCompletion :: AutocompleteContext -> Text -> MH ()
+doCommandAutoCompletion ctx searchString = do
     let alts = mkAlt <$> sortBy compareCommands (filter matches commandList)
         compareCommands a b =
             let isAPrefix = searchString `T.isPrefixOf` cmdName a
@@ -119,13 +125,15 @@ doCommandAutoCompletion searchString = do
                     lowerSearch `T.isInfixOf` (T.toLower $ cmdDescr c)
         mkAlt (Cmd name desc args _) =
             CommandCompletion name (printArgSpec args) desc
-    setCompletionAlternatives searchString alts "Commands"
+    setCompletionAlternatives ctx searchString alts "Commands"
 
 -- | Attempt to re-use a cached autocomplete alternative list for
 -- a given search string. If the cache contains no such entry (keyed
 -- on search string), run the specified action, which is assumed to be
 -- responsible for fetching the completion results from the server.
-withCachedAutocompleteResults :: Text
+withCachedAutocompleteResults :: AutocompleteContext
+                              -- ^ The autocomplete context
+                              -> Text
                               -- ^ The autocomplete UI label for the
                               -- results to be used
                               -> Text
@@ -134,24 +142,24 @@ withCachedAutocompleteResults :: Text
                               -> MH ()
                               -- ^ The action to execute on a cache miss
                               -> MH ()
-withCachedAutocompleteResults label searchString act = do
+withCachedAutocompleteResults ctx label searchString act = do
     mCache <- preuse (csEditState.cedAutocomplete._Just.acCachedResponses)
 
     -- Does the cache have results for this search string? If so, use
     -- them; otherwise invoke the specified action.
     case HM.lookup searchString =<< mCache of
-        Just alts -> setCompletionAlternatives searchString alts label
+        Just alts -> setCompletionAlternatives ctx searchString alts label
         Nothing -> act
 
-doUserAutoCompletion :: Text -> MH ()
-doUserAutoCompletion searchString = do
+doUserAutoCompletion :: AutocompleteContext -> Text -> MH ()
+doUserAutoCompletion ctx searchString = do
     session <- getSession
     myTid <- gets myTeamId
     myUid <- gets myUserId
     cId <- use csCurrentChannelId
     let label = "Users"
 
-    withCachedAutocompleteResults label searchString $
+    withCachedAutocompleteResults ctx label searchString $
         doAsyncWith Preempt $ do
             ac <- MM.mmAutocompleteUsers (Just myTid) (Just cId) searchString session
 
@@ -168,26 +176,26 @@ doUserAutoCompletion searchString = do
                          , (T.toLower searchString) `T.isInfixOf` specialMentionName m
                          ]
 
-            return $ Just $ setCompletionAlternatives searchString (extras <> alts) label
+            return $ Just $ setCompletionAlternatives ctx searchString (extras <> alts) label
 
-doChannelAutoCompletion :: Text -> MH ()
-doChannelAutoCompletion searchString = do
+doChannelAutoCompletion :: AutocompleteContext -> Text -> MH ()
+doChannelAutoCompletion ctx searchString = do
     session <- getSession
     tId <- gets myTeamId
     let label = "Channels"
     cs <- use csChannels
 
-    withCachedAutocompleteResults label searchString $ do
+    withCachedAutocompleteResults ctx label searchString $ do
         doAsyncWith Preempt $ do
             results <- MM.mmAutocompleteChannels tId searchString session
             let alts = F.toList $ (ChannelCompletion True <$> inChannels) <>
                                   (ChannelCompletion False <$> notInChannels)
                 (inChannels, notInChannels) = Seq.partition isMember results
                 isMember c = isJust $ findChannelById (channelId c) cs
-            return $ Just $ setCompletionAlternatives searchString alts label
+            return $ Just $ setCompletionAlternatives ctx searchString alts label
 
-setCompletionAlternatives :: Text -> [AutocompleteAlternative] -> Text -> MH ()
-setCompletionAlternatives searchString alts ty = do
+setCompletionAlternatives :: AutocompleteContext -> Text -> [AutocompleteAlternative] -> Text -> MH ()
+setCompletionAlternatives ctx searchString alts ty = do
     let list = L.list CompletionList (V.fromList $ F.toList alts) 1
         state = AutocompleteState { _acPreviousSearchString = searchString
                                   , _acCompletionList =
@@ -212,6 +220,9 @@ setCompletionAlternatives searchString alts ty = do
                 in Just newState
 
             mh $ vScrollToBeginning $ viewportScroll CompletionList
+
+            when (autocompleteFirstMatch ctx) $
+                tabComplete Forwards
         _ ->
             -- Do not update the state if this result does not
             -- correspond to the search string we used most recently.

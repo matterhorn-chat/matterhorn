@@ -310,6 +310,7 @@ handleEditingInput e = do
             | otherwise -> return ()
 
     let ctx = AutocompleteContext { autocompleteManual = False
+                                  , autocompleteFirstMatch = False
                                   }
     checkForAutocompletion ctx
     liftIO $ resetSpellCheckTimer $ st^.csEditState
