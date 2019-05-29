@@ -114,11 +114,15 @@ startSubprocessLoggerThread logChan requestChan = do
                           tmp <- getTemporaryDirectory
                           openTempFile tmp "matterhorn-subprocess.log"
 
+                  let unexpectedStdout = ec == ExitSuccess && (not $ emptyOutput out) && not stdoutOkay
+
                   hPutStrLn logHandle $
                       unlines [ "Program: " <> progName
                               , "Arguments: " <> show args
                               , "Exit code: " <> show ec
-                              , "Stdout:"
+                              , if unexpectedStdout
+                                then "Stdout (unexpected due to successful exit):"
+                                else "Stdout:"
                               , out
                               , "Stderr:"
                               , err
