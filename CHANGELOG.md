@@ -5,16 +5,19 @@
 New features:
  * This release includes support for viewing, adding, and removing post
    emoji reactions:
-    * A new message select keybinding (default 'a', event
+    * A new message select keybinding (default `a`, event
       'react-to-message') opens an emoji search window.
     * Pressing 'Enter' in the emoji search window posts the selected
       reaction to the selected message if you have not already posted
       that reaction, or removes it from the message otherwise.
     * Emoji reactions posted to a message are now displayed in the
-      message view window (message select binding 'v').
+      message view window (message select binding `v`).
  * Emoji are now supported in autocompletion by pressing `TAB` after a
    colon (`:`). The autocompletion list also includes custom emoji
-   obtained from the server.
+   obtained from the server. The standard emoji are sourced from the
+   file `emoji.json` located in the same directory as the Matterhorn
+   configuration file `config.ini`, or at the path `emoji/emoji.json`
+   relative to the location of the `matterhorn` binary (as in releases).
  * The channel list shown by the `/join` command has been redesigned to
    support incremental search similar to the UI for `/msg`.
  * Special `@all` and `@channel` mentions are now highlighted and
