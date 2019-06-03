@@ -1,4 +1,46 @@
 
+50200.4.0
+=========
+
+New features:
+ * This release includes support for viewing, adding, and removing post
+   emoji reactions:
+    * A new message select keybinding (default 'a', event
+      'react-to-message') opens an emoji search window.
+    * Pressing 'Enter' in the emoji search window posts the selected
+      reaction to the selected message if you have not already posted
+      that reaction, or removes it from the message otherwise.
+    * Emoji reactions posted to a message are now displayed in the
+      message view window (message select binding 'v').
+ * Emoji are now supported in autocompletion by pressing `TAB` after a
+   colon (`:`). The autocompletion list also includes custom emoji
+   obtained from the server.
+ * The channel list shown by the `/join` command has been redesigned to
+   support incremental search similar to the UI for `/msg`.
+ * Special `@all` and `@channel` mentions are now highlighted and
+   included in autocompletion. (#491)
+ * If a channel has new messages that go beyond the top of the displayed
+   message area, a `New Messages` line appears at the top of the window
+   to indicate that more unread messages precede it. (#131)
+
+Bug fixes:
+ * Theme changes now invalidate the rendering cache, fixing color
+   artifacts left over in the channel message area.
+ * When searching for users, username sigils are always trimed first.
+   (#497)
+
+Other improvements:
+ * The subprocess logger indicates when unexpected stdout output was
+   received. (#503)
+ * The log manager thread is now started before authentication begins so
+   that the authentication code can do logging.
+ * Keybinding event names are now included in auto-generated text and
+   Markdown keybinding tables.
+ * User status updates are automatically batched, resulting in O(1) user
+   status requests on startup rather than O(n).
+ * Command help text now includes "@" and "~" in arguments to more
+   clearly indicate user and channel arguments respectively.
+
 50200.3.1
 =========
 
