@@ -28,7 +28,7 @@ function none_found {
 # this invocation should be more portable.  Also be flexible about old
 # and new cabal output locations, preferring new, but avoiding
 # slurping up the entire current directory.
-FOUND_DIRS=$(for D in ${TRY_DIRS[@]}; do [ -d $D ] && echo $D; done)
+FOUND_DIRS=$(for D in ${TRY_DIRS[@]}; do ([ -d "$D" ] && echo $D) || :; done)
 if [ -z "${FOUND_DIRS}" ] ; then
     none_found
 fi
