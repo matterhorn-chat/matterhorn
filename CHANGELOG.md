@@ -30,12 +30,6 @@ New features:
    message area, a `New Messages` line appears at the top of the window
    to indicate that more unread messages precede it. (#131)
 
-Bug fixes:
- * Theme changes now invalidate the rendering cache, fixing color
-   artifacts left over in the channel message area.
- * When searching for users, username sigils are always trimed first.
-   (#497)
-
 Other improvements:
  * The subprocess logger indicates when unexpected stdout output was
    received. (#503)
@@ -47,6 +41,12 @@ Other improvements:
    user status requests on startup rather than `O(n)`.
  * Command help text now includes `@` and `~` in arguments to more
    clearly indicate user and channel arguments respectively.
+
+Bug fixes:
+ * Theme changes now invalidate the rendering cache, fixing color
+   artifacts left over in the channel message area.
+ * When searching for users, username sigils are always trimed first.
+   (#497)
 
 50200.3.1
 =========
