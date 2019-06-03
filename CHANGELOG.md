@@ -10,6 +10,10 @@ New features:
     * Pressing 'Enter' in the emoji search window posts the selected
       reaction to the selected message if you have not already posted
       that reaction, or removes it from the message otherwise.
+    * The emoji search window automatically lists reactions that other
+      users have posted before other emoji, along with your own posted
+      reactions. This allows you to easily add your vote to (or remove)
+      reactions.
     * Emoji reactions posted to a message are now displayed in the
       message view window (message select binding `v`).
  * Emoji are now supported in autocompletion by pressing `TAB` after a
