@@ -39,9 +39,9 @@ Other improvements:
    that the authentication code can do logging.
  * Keybinding event names are now included in auto-generated text and
    Markdown keybinding tables.
- * User status updates are automatically batched, resulting in O(1) user
-   status requests on startup rather than O(n).
- * Command help text now includes "@" and "~" in arguments to more
+ * User status updates are automatically batched, resulting in `O(1)`
+   user status requests on startup rather than `O(n)`.
+ * Command help text now includes `@` and `~` in arguments to more
    clearly indicate user and channel arguments respectively.
 
 50200.3.1
