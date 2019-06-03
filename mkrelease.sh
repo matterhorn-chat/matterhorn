@@ -114,6 +114,21 @@ function install_tools {
         git clone $CABAL_DEPS_REPO
 
         cd cabal-dependency-licenses
+
+        # NB: If the version of Cabal that comes with your GHC does not
+        # match the one that was used to build your cabal-install tool,
+        # then this tool will get built with the wrong version of Cabal.
+        # Then later it will complain about that version mismatch. If
+        # that happens, try setting the Cabal constraint during this
+        # tool's build to match your cabal-install's reported library
+        # version, e.g.,
+        #
+        #   $ cabal --version
+        #   cabal-install version 2.4.1.0
+        #   compiled using version 2.4.1.0 of the Cabal library
+        #
+        # cabal install --constraint="Cabal==2.4.1.0"
+
         cabal install
         mkdir -p $CABAL_DEPS_TOOL_DIR
         cd $HERE && rm -rf $BUILD
