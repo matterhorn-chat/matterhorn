@@ -43,6 +43,10 @@ attachmentListKeybindings :: KeyConfig -> [Keybinding]
 attachmentListKeybindings = mkKeybindings
     [ mkKb CancelEvent "Close attachment list"
           (setMode Main)
+    , mkKb SelectUpEvent "Move cursor up" $
+          mhHandleEventLensed (csEditState.cedAttachmentList) L.handleListEvent (V.EvKey V.KUp [])
+    , mkKb SelectDownEvent "Move cursor down" $
+          mhHandleEventLensed (csEditState.cedAttachmentList) L.handleListEvent (V.EvKey V.KDown [])
     , mkKb AttachmentListAddEvent "Add a new attachment to the attachment list"
           showAttachmentFileBrowser
     , mkKb AttachmentOpenEvent "Open the selected attachment using the URL open command"
