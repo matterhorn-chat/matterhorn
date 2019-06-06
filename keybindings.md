@@ -128,4 +128,6 @@
 | `Esc`, `C-c` | `cancel` | Close attachment list |
 | `d` | `delete-from-attachment-list` | Delete the selected attachment from the attachment list |
 | `o` | `open-attachment` | Open the selected attachment using the URL open command |
+| `j`, `Down` | `select-down` | Move cursor down |
+| `k`, `Up` | `select-up` | Move cursor up |
 
