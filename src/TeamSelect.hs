@@ -14,6 +14,7 @@ import qualified Data.Function as F
 import           Data.List ( sortBy )
 import qualified Data.Vector as V
 import           Graphics.Vty hiding (mkVty)
+import qualified Data.Text as T
 
 import           Network.Mattermost.Types
 
@@ -74,7 +75,10 @@ teamSelect st =
 
 renderTeamItem :: Bool -> Team -> Widget ()
 renderTeamItem _ t =
-    padRight Max $ txt $ sanitizeUserText $ teamName t
+    padRight Max $ txt $ (sanitizeUserText $ teamName t) <>
+        if not $ T.null (sanitizeUserText $ teamDisplayName t)
+        then " (" <> (sanitizeUserText $ teamDisplayName t) <> ")"
+        else ""
 
 onEvent :: State -> BrickEvent () e -> EventM () (Next State)
 onEvent st (VtyEvent (EvKey KEsc [])) = do
