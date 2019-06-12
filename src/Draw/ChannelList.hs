@@ -33,6 +33,7 @@ import           Draw.Util
 import           State.Channels
 import           Themes
 import           Types
+import           Types.Common ( sanitizeUserText )
 import qualified Zipper as Z
 
 -- | Internal record describing each channel entry and its associated
@@ -52,6 +53,13 @@ renderChannelList :: ChatState -> Widget Name
 renderChannelList st =
     viewport ChannelList Vertical body
     where
+        teamHeader = hCenter $
+                     withDefAttr clientEmphAttr $
+                     txt $ "Team: " <> teamNameStr
+        myUsername = MM.userUsername $ myUser st
+        selfHeader = hCenter $
+                     colorUsername myUsername (userSigil <> myUsername)
+        teamNameStr = sanitizeUserText $ MM.teamDisplayName $ st^.csMyTeam
         body = case appMode st of
             ChannelSelect ->
                 let zipper = st^.csChannelSelectState.channelSelectMatches
@@ -63,8 +71,10 @@ renderChannelList st =
             _ ->
                 cached ChannelSidebar $
                 vBox $
-                renderChannelListGroup st (\s e -> renderChannelListEntry $ mkChannelEntryData s e) <$>
-                    Z.toList (st^.csFocus)
+                teamHeader :
+                selfHeader :
+                (renderChannelListGroup st (\s e -> renderChannelListEntry $ mkChannelEntryData s e) <$>
+                    Z.toList (st^.csFocus))
 
 renderChannelListGroupHeading :: ChannelListGroup -> Bool -> Widget Name
 renderChannelListGroupHeading g anyUnread =
