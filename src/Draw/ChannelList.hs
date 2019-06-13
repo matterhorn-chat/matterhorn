@@ -66,8 +66,10 @@ renderChannelList st =
                 in if Z.isEmpty zipper
                    then hCenter $ txt "No matches"
                    else vBox $
-                        renderChannelListGroup st (renderChannelSelectListEntry (Z.focus zipper)) <$>
-                            Z.toList zipper
+                        teamHeader :
+                        selfHeader :
+                        (renderChannelListGroup st (renderChannelSelectListEntry (Z.focus zipper)) <$>
+                            Z.toList zipper)
             _ ->
                 cached ChannelSidebar $
                 vBox $
