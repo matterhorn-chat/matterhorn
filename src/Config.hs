@@ -14,11 +14,13 @@ import           Prelude ()
 import           Prelude.MH
 
 import           Control.Monad.Trans.Except
+import           Control.Monad.Trans.Class ( lift )
+import           Control.Monad.IO.Class ( liftIO )
 import           Data.Ini.Config
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
-import           System.Directory ( makeAbsolute )
+import           System.Directory ( makeAbsolute, getHomeDirectory )
 import           System.Environment ( getExecutablePath )
 import           System.FilePath ( (</>), takeDirectory, splitPath, joinPath )
 import           System.Process ( readProcess )
@@ -124,6 +126,13 @@ fromIni = do
 syntaxDirsField :: Text -> Either String [FilePath]
 syntaxDirsField = listWithSeparator ":" string
 
+expandTilde :: FilePath -> FilePath -> FilePath
+expandTilde homeDir p =
+    let parts = splitPath p
+        f part | part == "~/" = homeDir <> "/"
+               | otherwise    = part
+    in joinPath $ f <$> parts
+
 backgroundField :: Text -> Either String BackgroundInfo
 backgroundField t =
   case t of
@@ -195,34 +204,50 @@ defaultConfig =
            }
 
 findConfig :: Maybe FilePath -> IO (Either String Config)
-findConfig Nothing = do
-    cfg <- locateConfig configFileName
-    fixupSyntaxDirs =<< case cfg of
-        Nothing -> return $ Right defaultConfig
+findConfig Nothing = runExceptT $ do
+    cfg <- lift $ locateConfig configFileName
+    fixupPaths =<< case cfg of
+        Nothing -> return defaultConfig
         Just path -> getConfig path
-findConfig (Just path) = fixupSyntaxDirs =<< getConfig path
+findConfig (Just path) =
+    runExceptT $ fixupPaths =<< getConfig path
+
+-- | Fix path references in the configuration:
+--
+-- * Rewrite the syntax directory path list with 'fixupSyntaxDirs'
+-- * Expand "~" encountered in any setting that contains a path value
+fixupPaths :: Config -> ExceptT String IO Config
+fixupPaths initial = do
+    new <- fixupSyntaxDirs initial
+    homeDir <- liftIO getHomeDirectory
+    let fixP = expandTilde homeDir
+        fixPText = T.pack . expandTilde homeDir . T.unpack
+    return $ new { configThemeCustomizationFile = fixPText <$> configThemeCustomizationFile new
+                 , configSyntaxDirs             = fixP <$> configSyntaxDirs new
+                 , configURLOpenCommand         = fixPText <$> configURLOpenCommand new
+                 , configActivityNotifyCommand  = fixPText <$> configActivityNotifyCommand new
+                 }
 
 -- | If the configuration has no syntax directories specified (the
 -- default if the user did not provide the setting), fill in the
 -- list with the defaults. Otherwise replace any bundled directory
 -- placeholders in the config's syntax path list.
-fixupSyntaxDirs :: Either String Config -> IO (Either String Config)
-fixupSyntaxDirs (Left e) = return $ Left e
-fixupSyntaxDirs (Right c) =
+fixupSyntaxDirs :: Config -> ExceptT String IO Config
+fixupSyntaxDirs c =
     if configSyntaxDirs c == []
     then do
-        dirs <- defaultSkylightingPaths
-        return $ Right c { configSyntaxDirs = dirs }
+        dirs <- liftIO defaultSkylightingPaths
+        return $ c { configSyntaxDirs = dirs }
     else do
         newDirs <- forM (configSyntaxDirs c) $ \dir ->
-            if | dir == bundledSyntaxPlaceholderName -> getBundledSyntaxPath
-               | dir == userSyntaxPlaceholderName    -> xdgSyntaxDir
+            if | dir == bundledSyntaxPlaceholderName -> liftIO getBundledSyntaxPath
+               | dir == userSyntaxPlaceholderName    -> liftIO xdgSyntaxDir
                | otherwise                           -> return dir
 
-        return $ Right $ c { configSyntaxDirs = newDirs }
+        return $ c { configSyntaxDirs = newDirs }
 
-getConfig :: FilePath -> IO (Either String Config)
-getConfig fp = runExceptT $ do
+getConfig :: FilePath -> ExceptT String IO Config
+getConfig fp = do
   absPath <- convertIOException $ makeAbsolute fp
   t <- (convertIOException $ T.readFile absPath) `catchE`
        (\e -> throwE $ "Could not read " <> show absPath <> ": " <> e)
