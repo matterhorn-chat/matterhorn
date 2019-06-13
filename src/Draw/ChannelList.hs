@@ -63,13 +63,14 @@ renderChannelList st =
         body = case appMode st of
             ChannelSelect ->
                 let zipper = st^.csChannelSelectState.channelSelectMatches
-                in if Z.isEmpty zipper
-                   then hCenter $ txt "No matches"
-                   else vBox $
-                        teamHeader :
-                        selfHeader :
-                        (renderChannelListGroup st (renderChannelSelectListEntry (Z.focus zipper)) <$>
-                            Z.toList zipper)
+                    matches = if Z.isEmpty zipper
+                              then [hCenter $ txt "No matches"]
+                              else (renderChannelListGroup st (renderChannelSelectListEntry (Z.focus zipper)) <$>
+                                   Z.toList zipper)
+                in vBox $
+                   teamHeader :
+                   selfHeader :
+                   matches
             _ ->
                 cached ChannelSidebar $
                 vBox $
