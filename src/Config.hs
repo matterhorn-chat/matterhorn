@@ -116,11 +116,11 @@ fromIni = do
         configUserKeys = mempty
     return Config { .. }
   keys <- sectionMb "keybindings" $ do
-    fmap (M.fromList . catMaybes) $ forM allEvents $ \ ev -> do
-      kb <- fieldMbOf (keyEventName ev) parseBindingList
-      case kb of
-        Nothing      -> return Nothing
-        Just binding -> return (Just (ev, binding))
+      fmap (M.fromList . catMaybes) $ forM allEvents $ \ ev -> do
+          kb <- fieldMbOf (keyEventName ev) parseBindingList
+          case kb of
+              Nothing      -> return Nothing
+              Just binding -> return (Just (ev, binding))
   return conf { configUserKeys = fromMaybe mempty keys }
 
 syntaxDirsField :: Text -> Either String [FilePath]
@@ -135,12 +135,12 @@ expandTilde homeDir p =
 
 backgroundField :: Text -> Either String BackgroundInfo
 backgroundField t =
-  case t of
-    "Disabled" -> Right Disabled
-    "Active" -> Right Active
-    "ActiveCount" -> Right ActiveCount
-    _ -> Left ("Invalid value " <> show t
-              <> "; must be one of: Disabled, Active, ActiveCount")
+    case t of
+        "Disabled" -> Right Disabled
+        "Active" -> Right Active
+        "ActiveCount" -> Right ActiveCount
+        _ -> Left ("Invalid value " <> show t
+                  <> "; must be one of: Disabled, Active, ActiveCount")
 
 cpuUsagePolicy :: Text -> Either String CPUUsagePolicy
 cpuUsagePolicy t =
@@ -248,25 +248,25 @@ fixupSyntaxDirs c =
 
 getConfig :: FilePath -> ExceptT String IO Config
 getConfig fp = do
-  absPath <- convertIOException $ makeAbsolute fp
-  t <- (convertIOException $ T.readFile absPath) `catchE`
-       (\e -> throwE $ "Could not read " <> show absPath <> ": " <> e)
-  case parseIniFile t fromIni of
-    Left err -> do
-      throwE $ "Unable to parse " ++ absPath ++ ":" ++ err
-    Right conf -> do
-      actualPass <- case configPass conf of
-        Just (PasswordCommand cmdString) -> do
-          let (cmd:rest) = T.unpack <$> T.words cmdString
-          output <- convertIOException (readProcess cmd rest "") `catchE`
-                    (\e -> throwE $ "Could not execute password command: " <> e)
-          return $ Just $ T.pack (takeWhile (/= '\n') output)
-        Just (PasswordString pass) -> return $ Just pass
-        Nothing -> return Nothing
+    absPath <- convertIOException $ makeAbsolute fp
+    t <- (convertIOException $ T.readFile absPath) `catchE`
+         (\e -> throwE $ "Could not read " <> show absPath <> ": " <> e)
+    case parseIniFile t fromIni of
+        Left err -> do
+            throwE $ "Unable to parse " ++ absPath ++ ":" ++ err
+        Right conf -> do
+            actualPass <- case configPass conf of
+                Just (PasswordCommand cmdString) -> do
+                    let (cmd:rest) = T.unpack <$> T.words cmdString
+                    output <- convertIOException (readProcess cmd rest "") `catchE`
+                              (\e -> throwE $ "Could not execute password command: " <> e)
+                    return $ Just $ T.pack (takeWhile (/= '\n') output)
+                Just (PasswordString pass) -> return $ Just pass
+                Nothing -> return Nothing
 
-      return conf { configPass = PasswordString <$> actualPass
-                  , configAbsPath = Just absPath
-                  }
+            return conf { configPass = PasswordString <$> actualPass
+                        , configAbsPath = Just absPath
+                        }
 
 -- | Returns the hostname, username, and password from the config. Only
 -- returns Just if all three have been provided. The idea is that if
