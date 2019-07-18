@@ -94,6 +94,8 @@ these match the editor tooling and or your personal aesthetics.
 The following are some of the aesthetic choices we've made; these are
 not hard rules but help to explain the current overall appearance:
 
+  * Indentation increment is four spaces. No tabs.
+
   * Imports are usually in alphabetical order and separated into 4-5
     sections from the most global/generic to the most local/specific.
     Because there can be a number of sections, we separate the imports
