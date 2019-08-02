@@ -22,7 +22,6 @@ import           Data.Time.LocalTime.TimeZone.Series ( localTimeToUTC'
 import           Network.Mattermost.Types ( ServerTime(..) )
 
 
-
 -- | Get the timezone series that should be used for converting UTC
 -- times into local times with appropriate DST adjustments.
 lookupLocalTimeZone :: IO TimeZoneSeries
