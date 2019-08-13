@@ -400,8 +400,8 @@ data Config =
            -- message with them.
            , configCpuUsagePolicy :: CPUUsagePolicy
            -- ^ The CPU usage policy for the application.
-           , configAttachmentsPath :: Maybe FilePath
-           -- ^ The path for browsing attachments
+           , configDefaultAttachmentPath :: Maybe FilePath
+           -- ^ The default path for browsing attachments
            } deriving (Eq, Show)
 
 -- | The policy for CPU usage.

@@ -111,7 +111,7 @@ fromIni = do
       fieldFlagDef "unsafeUseUnauthenticatedConnection" False
     configDirectChannelExpirationDays <- fieldDefOf "directChannelExpirationDays" number
       (configDirectChannelExpirationDays defaultConfig)
-    configAttachmentsPath <- fieldMbOf "attachmentsPath" filePathField
+    configDefaultAttachmentPath <- fieldMbOf "defaultAttachmentPath" filePathField
 
     let configAbsPath = Nothing
         configUserKeys = mempty
@@ -205,7 +205,7 @@ defaultConfig =
            , configSyntaxDirs                  = []
            , configDirectChannelExpirationDays = 7
            , configCpuUsagePolicy              = MultipleCPUs
-           , configAttachmentsPath             = Nothing
+           , configDefaultAttachmentPath       = Nothing
            }
 
 findConfig :: Maybe FilePath -> IO (Either String Config)
@@ -231,7 +231,7 @@ fixupPaths initial = do
                  , configSyntaxDirs             = fixP <$> configSyntaxDirs new
                  , configURLOpenCommand         = fixPText <$> configURLOpenCommand new
                  , configActivityNotifyCommand  = fixPText <$> configActivityNotifyCommand new
-                 , configAttachmentsPath        = fixP <$> configAttachmentsPath new
+                 , configDefaultAttachmentPath  = fixP <$> configDefaultAttachmentPath new
                  }
 
 -- | If the configuration has no syntax directories specified (the

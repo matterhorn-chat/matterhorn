@@ -31,7 +31,7 @@ resetAttachmentList = do
 showAttachmentFileBrowser :: MH ()
 showAttachmentFileBrowser = do
     config <- use (csResources.crConfiguration)
-    let filePath = configAttachmentsPath config
+    let filePath = configDefaultAttachmentPath config
     browser <- liftIO $ FB.newFileBrowser FB.selectNonDirectories AttachmentFileBrowser filePath
     csEditState.cedFileBrowser .= browser
     setMode ManageAttachmentsBrowseFiles
