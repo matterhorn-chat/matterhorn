@@ -7,6 +7,8 @@ where
 
 import           Prelude ()
 import           Prelude.MH
+import           System.Directory
+import           Data.Bool (bool)
 
 import           Brick ( vScrollToBeginning, viewportScroll )
 import qualified Brick.Widgets.List as L
@@ -15,6 +17,11 @@ import           Lens.Micro.Platform ( (.=) )
 
 import           Types
 
+validateFilePath :: FilePath -> IO (Maybe FilePath)
+validateFilePath path = bool Nothing (Just path) <$> doesDirectoryExist path
+
+defaultAttachmentsPath :: Config -> IO (Maybe FilePath)
+defaultAttachmentsPath = maybe (return Nothing) validateFilePath . configDefaultAttachmentPath
 
 showAttachmentList :: MH ()
 showAttachmentList = do
@@ -31,7 +38,7 @@ resetAttachmentList = do
 showAttachmentFileBrowser :: MH ()
 showAttachmentFileBrowser = do
     config <- use (csResources.crConfiguration)
-    let filePath = configDefaultAttachmentPath config
+    filePath <- liftIO $ defaultAttachmentsPath config
     browser <- liftIO $ FB.newFileBrowser FB.selectNonDirectories AttachmentFileBrowser filePath
     csEditState.cedFileBrowser .= browser
     setMode ManageAttachmentsBrowseFiles
