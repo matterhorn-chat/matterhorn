@@ -7,8 +7,10 @@ where
 
 import           Prelude ()
 import           Prelude.MH
-import           System.Directory
-import           Data.Bool (bool)
+import qualified Control.Exception as E
+import           Data.Either ( isRight )
+import           System.Directory ( doesDirectoryExist, getDirectoryContents )
+import           Data.Bool ( bool )
 
 import           Brick ( vScrollToBeginning, viewportScroll )
 import qualified Brick.Widgets.List as L
@@ -17,11 +19,18 @@ import           Lens.Micro.Platform ( (.=) )
 
 import           Types
 
-validateFilePath :: FilePath -> IO (Maybe FilePath)
-validateFilePath path = bool Nothing (Just path) <$> doesDirectoryExist path
+validateAttachmentPath :: FilePath -> IO (Maybe FilePath)
+validateAttachmentPath path = bool Nothing (Just path) <$> do
+    ex <- doesDirectoryExist path
+    case ex of
+        False -> return False
+        True -> do
+            result :: Either E.SomeException [FilePath]
+                   <- E.try $ getDirectoryContents path
+            return $ isRight result
 
 defaultAttachmentsPath :: Config -> IO (Maybe FilePath)
-defaultAttachmentsPath = maybe (return Nothing) validateFilePath . configDefaultAttachmentPath
+defaultAttachmentsPath = maybe (return Nothing) validateAttachmentPath . configDefaultAttachmentPath
 
 showAttachmentList :: MH ()
 showAttachmentList = do
