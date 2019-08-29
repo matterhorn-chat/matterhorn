@@ -253,7 +253,7 @@ hPutLogMessage handle (LogMessage {..}) = do
     hPutStr handle $ "[" <> show logMessageTimestamp <> "] "
     hPutStr handle $ "[" <> show logMessageCategory <> "] "
     case logMessageContext of
-        Nothing -> hPutStr handle "[No context] "
+        Nothing -> hPutStr handle "[*] "
         Just c  -> hPutStr handle $ "[" <> show c <> "] "
     hPutStrLn handle $ T.unpack logMessageText
 
