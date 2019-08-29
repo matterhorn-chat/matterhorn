@@ -36,6 +36,9 @@ import           System.IO ( Handle, IOMode(AppendMode), hPutStr, hPutStrLn
 import           Types
 
 
+-- | Used to remember the last logging output point for various log output targets.
+type LogMemory = [(FilePath, LogMessage)]
+
 -- | The state of the logging thread.
 data LogThreadState =
     LogThreadState { logThreadDestination :: Maybe (FilePath, Handle)
@@ -52,6 +55,10 @@ data LogThreadState =
                    -- ^ The internal bounded log message buffer.
                    , logThreadMaxBufferSize :: Int
                    -- ^ The size bound of the logThreadMessageBuffer.
+                   , logPreviousStopPoint :: LogMemory
+                   -- ^ Previous logging stop points to avoid
+                   -- duplication if logging is re-enabled to the same
+                   -- output
                    }
 
 -- | Create a new log manager and start a logging thread for it.
@@ -78,6 +85,7 @@ startLoggingThread eventChan logChan maxBufferSize = do
                                       , logThreadCommandChan = logChan
                                       , logThreadMessageBuffer = mempty
                                       , logThreadMaxBufferSize = maxBufferSize
+                                      , logPreviousStopPoint = []
                                       }
     async $ void $ runStateT logThreadBody initialState
 
@@ -114,7 +122,21 @@ finishLog eventChan oldPath oldHandle = do
         putLogEndMarker oldHandle
         hClose oldHandle
         writeBChan eventChan $ IEvent $ LoggingStopped oldPath
-    modify $ \s -> s { logThreadDestination = Nothing }
+    modify $ \s ->
+      let buf = logThreadMessageBuffer s
+          lastLm = Seq.index buf (Seq.length buf - 1) -- n.b. putLogEndMarker ensures buf not empty
+          stops = rememberOutputPoint oldPath lastLm $ logPreviousStopPoint s
+      in s { logThreadDestination = Nothing
+           , logPreviousStopPoint = stops
+           }
+
+-- | Adds or updates the last log message output to this destination.
+-- This is used for the case when logging is re-enabled to that
+-- destination to avoid repeating logging output.
+rememberOutputPoint :: FilePath -> LogMessage -> LogMemory -> LogMemory
+rememberOutputPoint logPath logMsg oldLogMem =
+  take 50 $ -- Just to keep this from getting out of hand
+  (logPath, logMsg) : filter ((/=) logPath . fst) oldLogMem
 
 stopLogOutput :: StateT LogThreadState IO ()
 stopLogOutput = do
@@ -144,7 +166,7 @@ handleLogCommand (LogSnapshot path) = do
             Left (e::SomeException) -> do
                 liftIO $ writeBChan eventChan $ IEvent $ LogSnapshotFailed path (show e)
             Right handle -> do
-                flushLogMessageBuffer handle
+                flushLogMessageBuffer path handle
                 liftIO $ hClose handle
                 liftIO $ writeBChan eventChan $ IEvent $ LogSnapshotSucceeded path
 
@@ -191,7 +213,7 @@ handleLogCommand (LogToFile newPath) = do
                 stopLogOutput
 
                 modify $ \s -> s { logThreadDestination = Just (newPath, handle) }
-                flushLogMessageBuffer handle
+                flushLogMessageBuffer newPath handle
                 liftIO $ putLogStartMarker handle
                 liftIO $ writeBChan eventChan $ IEvent $ LoggingStarted newPath
 
@@ -236,21 +258,41 @@ hPutLogMessage handle (LogMessage {..}) = do
     hPutStrLn handle $ T.unpack logMessageText
 
 -- | Flush the contents of the internal log message buffer.
-flushLogMessageBuffer :: Handle -> StateT LogThreadState IO ()
-flushLogMessageBuffer handle = do
+flushLogMessageBuffer :: FilePath -> Handle -> StateT LogThreadState IO ()
+flushLogMessageBuffer pathOfHandle handle = do
     buf <- gets logThreadMessageBuffer
-    when (Seq.length buf > 0) $ do
-        liftIO $ do
-            let firstLm = Seq.index buf 0
-                lastLm = Seq.index buf (Seq.length buf - 1)
-                mkMsg t m = "[" <> show t <> "] " <> m
+    when (not $ Seq.null buf) $ do
+      lastPoint <- lookup pathOfHandle <$> gets logPreviousStopPoint
+      case lastPoint of
+        Nothing ->
+          -- never logged to this output point before, so dump the
+          -- current internal buffer of log messages to the beginning of
+          -- the output file.
+          dumpBuf buf
+        Just lm ->
+          -- There was previous logging to this file.  If the log buffer
+          -- contains the entirety of the log messages during the
+          -- logging disable, then just dump that portion; otherwise
+          -- dump the entire buffer and indicate there may be missing
+          -- entries before the buffer.
+          let unseen = Seq.takeWhileR (not . (==) lm) buf
+              firstM = Seq.index buf 0 -- above ensures that buf is not empty here
+          in do when (Seq.length buf == Seq.length unseen) $ liftIO $
+                  hPutStrLn handle $ mkMsg (logMessageTimestamp firstM)
+                                     "<<< Potentially missing log messages here... >>>"
+                dumpBuf unseen
+      where
+        mkMsg t m = "[" <> show t <> "] " <> m
+        dumpBuf buf = liftIO $ do
+          let firstLm = Seq.index buf 0
+              lastLm = Seq.index buf (Seq.length buf - 1)
 
-            hPutStrLn handle $ mkMsg (logMessageTimestamp firstLm)
-                                     "<<< Log message buffer begin >>>"
+          hPutStrLn handle $ mkMsg (logMessageTimestamp firstLm)
+                             "<<< Log message buffer begin >>>"
 
-            forM_ buf (hPutLogMessage handle)
+          forM_ buf (hPutLogMessage handle)
 
-            hPutStrLn handle $ mkMsg (logMessageTimestamp lastLm)
-                                     "<<< Log message buffer end >>>"
+          hPutStrLn handle $ mkMsg (logMessageTimestamp lastLm)
+                                   "<<< Log message buffer end >>>"
 
-            hFlush handle
+          hFlush handle

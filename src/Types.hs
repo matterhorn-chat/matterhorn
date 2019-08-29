@@ -753,7 +753,7 @@ data LogMessage =
                , logMessageTimestamp :: !UTCTime
                -- ^ The timestamp of the log message.
                }
-               deriving (Show)
+               deriving (Eq, Show)
 
 -- | A logging thread command.
 data LogCommand =
