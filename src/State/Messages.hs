@@ -177,7 +177,16 @@ addNewPostedMessage p =
 addObtainedMessages :: ChannelId -> Int -> Bool -> Posts -> MH PostProcessMessageAdd
 addObtainedMessages cId reqCnt addTrailingGap posts =
   if null $ posts^.postsOrderL
-  then return NoAction
+  then do when addTrailingGap $
+            -- Fetched at the end of the channel, but nothing was
+            -- available.  This is common if this is a new channel
+            -- with no messages in it.  Need to remove any gaps that
+            -- exist at the end of the channel.
+            csChannels %= modifyChannelById cId
+              (ccContents.cdMessages %~
+               \msgs -> let startPoint = join $ _mMessageId <$> getLatestPostMsg msgs
+                        in fst $ removeMatchesFromSubset isGap startPoint Nothing msgs)
+          return NoAction
   else
     -- Adding a block of server-provided messages, which are known to
     -- be contiguous.  Locally this may overlap with some UnknownGap
