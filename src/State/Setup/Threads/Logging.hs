@@ -116,8 +116,8 @@ finishLog eventChan oldPath oldHandle = do
         writeBChan eventChan $ IEvent $ LoggingStopped oldPath
     modify $ \s -> s { logThreadDestination = Nothing }
 
-stopLogging :: StateT LogThreadState IO ()
-stopLogging = do
+stopLogOutput :: StateT LogThreadState IO ()
+stopLogOutput = do
     oldDest <- gets logThreadDestination
     case oldDest of
         Nothing -> return ()
@@ -159,12 +159,12 @@ handleLogCommand GetLogDestination = do
 handleLogCommand ShutdownLogging = do
     -- ShutdownLogging: if we were logging to a file, close it. Then
     -- unlock the shutdown lock.
-    stopLogging
+    stopLogOutput
     return False
 handleLogCommand StopLogging = do
     -- StopLogging: if we were logging to a file, close it and notify
     -- the application. Otherwise do nothing.
-    stopLogging
+    stopLogOutput
     return True
 handleLogCommand (LogToFile newPath) = do
     -- LogToFile: if we were logging to a file, close that file, notify
@@ -188,7 +188,7 @@ handleLogCommand (LogToFile newPath) = do
                           ": " <> show e
                 writeBChan eventChan $ IEvent $ LogStartFailed newPath msg
             Right handle -> do
-                stopLogging
+                stopLogOutput
 
                 modify $ \s -> s { logThreadDestination = Just (newPath, handle) }
                 flushLogMessageBuffer handle
