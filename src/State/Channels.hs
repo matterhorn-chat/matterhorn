@@ -424,8 +424,27 @@ showChannelInSidebar cId setPending = do
     session <- getSession
 
     case mChan of
-        Nothing -> return ()
+        Nothing ->
+          -- The requested channel doesn't actually exist yet, so no
+          -- action can be taken.  It's likely that this is a
+          -- pendingChannel situation and not all of the operations to
+          -- locally define the channel have completed, in which case
+          -- this code will be re-entered later and the mChan will be
+          -- known.
+          return ()
         Just ch -> do
+
+            -- Able to successfully switch to a known channel.  This
+            -- should clear any pending channel intention.  If the
+            -- intention was for this channel, then: done.  If the
+            -- intention was for a different channel, reaching this
+            -- point means that the pending is still outstanding but
+            -- that the user identified a new channel which *was*
+            -- displayable, and the UI should always prefer to SATISFY
+            -- the user's latest request over any pending/background
+            -- task.
+            csPendingChannelChange .= Nothing
+
             now <- liftIO getCurrentTime
             csChannel(cId).ccInfo.cdSidebarShowOverride .= Just now
             updateSidebar
