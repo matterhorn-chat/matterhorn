@@ -863,15 +863,17 @@ createOrdinaryChannel name  = do
               )
               (return . Just . uncurry (handleNewChannel True SidebarUpdateImmediate))
 
--- | When another user adds us to a channel, we need to fetch the
--- channel info for that channel.
+-- | When we are added to a channel not locally known about, we need
+-- to fetch the channel info for that channel.
 handleChannelInvite :: ChannelId -> MH ()
 handleChannelInvite cId = do
     session <- getSession
     doAsyncWith Normal $ do
         member <- MM.mmGetChannelMember cId UserMe session
         tryMM (MM.mmGetChannel cId session)
-              (\cwd -> return $ Just $ handleNewChannel False SidebarUpdateImmediate cwd member)
+              (\cwd -> return $ Just $ do
+                  pending <- checkPendingChannelChange $ ChangeByChannelId cId
+                  handleNewChannel pending SidebarUpdateImmediate cwd member)
 
 addUserByNameToCurrentChannel :: Text -> MH ()
 addUserByNameToCurrentChannel uname =
