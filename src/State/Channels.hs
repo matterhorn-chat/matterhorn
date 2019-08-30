@@ -392,16 +392,12 @@ handleNewChannel_ permitPostpone switch sbUpdate nc member = do
                     when (switch || pending1 || pending2) $ setFocus (getId nc)
 
 -- | Check to see whether the specified channel has been queued up to
--- be switched to now that the channel is registered in the state. If
--- so, return True and clear the state. Otherwise return False.
+-- be switched to.  Note that this condition is only cleared by the
+-- actual setFocus switch to the channel because there may be multiple
+-- operations that must complete before the channel is fully ready for
+-- display/use.
 checkPendingChannelChange :: PendingChannelChange -> MH Bool
-checkPendingChannelChange change = do
-    pending <- use csPendingChannelChange
-    case pending of
-        Just p | p == change -> do
-            csPendingChannelChange .= Nothing
-            return True
-        _ -> return False
+checkPendingChannelChange change = (==) (Just change) <$> use csPendingChannelChange
 
 -- | Update the indicated Channel entry with the new data retrieved from
 -- the Mattermost server. Also update the channel name if it changed.
@@ -424,8 +420,27 @@ showChannelInSidebar cId setPending = do
     session <- getSession
 
     case mChan of
-        Nothing -> return ()
+        Nothing ->
+          -- The requested channel doesn't actually exist yet, so no
+          -- action can be taken.  It's likely that this is a
+          -- pendingChannel situation and not all of the operations to
+          -- locally define the channel have completed, in which case
+          -- this code will be re-entered later and the mChan will be
+          -- known.
+          return ()
         Just ch -> do
+
+            -- Able to successfully switch to a known channel.  This
+            -- should clear any pending channel intention.  If the
+            -- intention was for this channel, then: done.  If the
+            -- intention was for a different channel, reaching this
+            -- point means that the pending is still outstanding but
+            -- that the user identified a new channel which *was*
+            -- displayable, and the UI should always prefer to SATISFY
+            -- the user's latest request over any pending/background
+            -- task.
+            csPendingChannelChange .= Nothing
+
             now <- liftIO getCurrentTime
             csChannel(cId).ccInfo.cdSidebarShowOverride .= Just now
             updateSidebar
@@ -765,16 +780,19 @@ createGroupChannel usernameList = do
         case length results == length usernames of
             True -> do
                 chan <- MM.mmCreateGroupMessageChannel (userId <$> results) session
-                -- If we already know about the channel ID, that means
-                -- the channel already exists so we can just switch to
-                -- it.
-                case findChannelById (channelId chan) cs of
-                    Just _ -> return $ Just $ setFocus (channelId chan)
-                    Nothing -> do
-                        let pref = showGroupChannelPref (channelId chan) (me^.userIdL)
-                        MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
-                        return $ Just $ do
-                            applyPreferenceChange pref
+                return $ Just $ do
+                    case findChannelById (channelId chan) cs of
+                      Just _ ->
+                          -- If we already know about the channel ID,
+                          -- that means the channel already exists so
+                          -- we can just switch to it.
+                          setFocus (channelId chan)
+                      Nothing -> do
+                          csPendingChannelChange .= (Just $ ChangeByChannelId $ channelId chan)
+                          let pref = showGroupChannelPref (channelId chan) (me^.userIdL)
+                          doAsyncWith Normal $ do
+                            MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
+                            return $ Just $ applyPreferenceChange pref
             False -> do
                 let foundUsernames = userUsername <$> results
                     missingUsernames = S.toList $
@@ -841,15 +859,17 @@ createOrdinaryChannel public name = do
               )
               (return . Just . uncurry (handleNewChannel True SidebarUpdateImmediate))
 
--- | When another user adds us to a channel, we need to fetch the
--- channel info for that channel.
+-- | When we are added to a channel not locally known about, we need
+-- to fetch the channel info for that channel.
 handleChannelInvite :: ChannelId -> MH ()
 handleChannelInvite cId = do
     session <- getSession
     doAsyncWith Normal $ do
         member <- MM.mmGetChannelMember cId UserMe session
         tryMM (MM.mmGetChannel cId session)
-              (\cwd -> return $ Just $ handleNewChannel False SidebarUpdateImmediate cwd member)
+              (\cwd -> return $ Just $ do
+                  pending <- checkPendingChannelChange $ ChangeByChannelId cId
+                  handleNewChannel pending SidebarUpdateImmediate cwd member)
 
 addUserByNameToCurrentChannel :: Text -> MH ()
 addUserByNameToCurrentChannel uname =
