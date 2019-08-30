@@ -168,6 +168,10 @@ commandList =
     NoArg $ \ () ->
         stopLogging
 
+  , Cmd "log-mark" "Add marker message to the current log"
+    (LineArg "log marking message") $ \ markMsg ->
+        mhLog LogUserMark markMsg
+
   , Cmd "log-status" "Show current logging status"
     NoArg $ \ () ->
         getLogDestination
