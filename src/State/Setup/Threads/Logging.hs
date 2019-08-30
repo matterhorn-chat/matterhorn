@@ -37,7 +37,34 @@ import           Types
 
 
 -- | Used to remember the last logging output point for various log output targets.
-type LogMemory = [(FilePath, LogMessage)]
+newtype LogMemory = LogMemory { logMem :: [(FilePath, LogMessage)] }
+
+blankLogMemory :: LogMemory
+blankLogMemory = LogMemory []
+
+-- | Adds or updates the last log message output to this destination.
+-- This is used for the case when logging is re-enabled to that
+-- destination to avoid repeating logging output.
+--
+-- The number of log memories is limited by forgetting the oldest ones
+-- if over a threshold.  This handles a pathological case where the
+-- user has redirected output to a very large number of logfiles.
+-- This is very unlikely to happen (a script or bad paste buffer
+-- maybe?) but this provides defensive behavior to prevent
+-- uncontrolled memory consumption in this case.  The limit here is
+-- arbitrary, but it should suffice and once it's reached the
+-- degradation case is simply the potential for duplicated messages
+-- when returning to logfiles that haven't been recently logged to.
+rememberOutputPoint :: FilePath -> LogMessage -> LogMemory -> LogMemory
+rememberOutputPoint logPath logMsg oldLogMem =
+  LogMemory $
+  take 50 $ -- upper limit on number of logpath+message memories retained
+  (logPath, logMsg) : filter ((/=) logPath . fst) (logMem oldLogMem)
+
+-- | Returns the last LogMessage logged to the specified output log
+-- file path if it was previously logged to.
+memoryOfOutputPath :: FilePath -> LogMemory -> Maybe LogMessage
+memoryOfOutputPath p = lookup p . logMem
 
 -- | The state of the logging thread.
 data LogThreadState =
@@ -85,7 +112,7 @@ startLoggingThread eventChan logChan maxBufferSize = do
                                       , logThreadCommandChan = logChan
                                       , logThreadMessageBuffer = mempty
                                       , logThreadMaxBufferSize = maxBufferSize
-                                      , logPreviousStopPoint = []
+                                      , logPreviousStopPoint = blankLogMemory
                                       }
     async $ void $ runStateT logThreadBody initialState
 
@@ -129,14 +156,6 @@ finishLog eventChan oldPath oldHandle = do
       in s { logThreadDestination = Nothing
            , logPreviousStopPoint = stops
            }
-
--- | Adds or updates the last log message output to this destination.
--- This is used for the case when logging is re-enabled to that
--- destination to avoid repeating logging output.
-rememberOutputPoint :: FilePath -> LogMessage -> LogMemory -> LogMemory
-rememberOutputPoint logPath logMsg oldLogMem =
-  take 50 $ -- Just to keep this from getting out of hand
-  (logPath, logMsg) : filter ((/=) logPath . fst) oldLogMem
 
 stopLogOutput :: StateT LogThreadState IO ()
 stopLogOutput = do
@@ -262,7 +281,7 @@ flushLogMessageBuffer :: FilePath -> Handle -> StateT LogThreadState IO ()
 flushLogMessageBuffer pathOfHandle handle = do
     buf <- gets logThreadMessageBuffer
     when (not $ Seq.null buf) $ do
-      lastPoint <- lookup pathOfHandle <$> gets logPreviousStopPoint
+      lastPoint <- memoryOfOutputPath pathOfHandle <$> gets logPreviousStopPoint
       case lastPoint of
         Nothing ->
           -- never logged to this output point before, so dump the
