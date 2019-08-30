@@ -392,16 +392,12 @@ handleNewChannel_ permitPostpone switch sbUpdate nc member = do
                     when (switch || pending1 || pending2) $ setFocus (getId nc)
 
 -- | Check to see whether the specified channel has been queued up to
--- be switched to now that the channel is registered in the state. If
--- so, return True and clear the state. Otherwise return False.
+-- be switched to.  Note that this condition is only cleared by the
+-- actual setFocus switch to the channel because there may be multiple
+-- operations that must complete before the channel is fully ready for
+-- display/use.
 checkPendingChannelChange :: PendingChannelChange -> MH Bool
-checkPendingChannelChange change = do
-    pending <- use csPendingChannelChange
-    case pending of
-        Just p | p == change -> do
-            csPendingChannelChange .= Nothing
-            return True
-        _ -> return False
+checkPendingChannelChange change = (==) (Just change) <$> use csPendingChannelChange
 
 -- | Update the indicated Channel entry with the new data retrieved from
 -- the Mattermost server. Also update the channel name if it changed.
