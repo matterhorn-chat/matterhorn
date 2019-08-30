@@ -739,6 +739,7 @@ data LogCategory =
     | LogAPI
     | LogWebsocket
     | LogError
+    | LogUserMark
     deriving (Eq, Show)
 
 -- | A log message.
