@@ -765,16 +765,19 @@ createGroupChannel usernameList = do
         case length results == length usernames of
             True -> do
                 chan <- MM.mmCreateGroupMessageChannel (userId <$> results) session
-                -- If we already know about the channel ID, that means
-                -- the channel already exists so we can just switch to
-                -- it.
-                case findChannelById (channelId chan) cs of
-                    Just _ -> return $ Just $ setFocus (channelId chan)
-                    Nothing -> do
-                        let pref = showGroupChannelPref (channelId chan) (me^.userIdL)
-                        MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
-                        return $ Just $ do
-                            applyPreferenceChange pref
+                return $ Just $ do
+                    case findChannelById (channelId chan) cs of
+                      Just _ ->
+                          -- If we already know about the channel ID,
+                          -- that means the channel already exists so
+                          -- we can just switch to it.
+                          setFocus (channelId chan)
+                      Nothing -> do
+                          csPendingChannelChange .= (Just $ ChangeByChannelId $ channelId chan)
+                          let pref = showGroupChannelPref (channelId chan) (me^.userIdL)
+                          doAsyncWith Normal $ do
+                            MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
+                            return $ Just $ applyPreferenceChange pref
             False -> do
                 let foundUsernames = userUsername <$> results
                     missingUsernames = S.toList $
