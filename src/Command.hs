@@ -92,9 +92,13 @@ commandList =
   , Cmd "left" "Focus on the previous channel" NoArg $ \ () ->
       prevChannel
 
-  , Cmd "create-channel" "Create a new channel"
+  , Cmd "create-channel" "Create a new public channel"
     (LineArg "channel name") $ \ name ->
-      createOrdinaryChannel name
+      createOrdinaryChannel True name
+
+  , Cmd "create-private-channel" "Create a new private channel"
+    (LineArg "channel name") $ \ name ->
+      createOrdinaryChannel False name
 
   , Cmd "delete-channel" "Delete the current channel"
     NoArg $ \ () ->

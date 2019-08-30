@@ -819,8 +819,8 @@ channelHistoryBackward = do
     loadHistoryEntryToEditor cId newI
     csEditState.cedEphemeral.eesInputHistoryPosition .= (Just newI)
 
-createOrdinaryChannel :: Text -> MH ()
-createOrdinaryChannel name  = do
+createOrdinaryChannel :: Bool -> Text -> MH ()
+createOrdinaryChannel public name = do
     session <- getSession
     myTId <- gets myTeamId
     doAsyncWith Preempt $ do
@@ -831,7 +831,7 @@ createOrdinaryChannel name  = do
               , minChannelDisplayName = name
               , minChannelPurpose     = Nothing
               , minChannelHeader      = Nothing
-              , minChannelType        = Ordinary
+              , minChannelType        = if public then Ordinary else Private
               , minChannelTeamId      = myTId
               }
         tryMM (do c <- MM.mmCreateChannel minChannel session
