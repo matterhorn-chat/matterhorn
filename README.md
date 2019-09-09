@@ -337,3 +337,11 @@ Matterhorn. For more information, see these links:
 Some terminal emulators cannot handle the extra escaping that occurs
 when the URL hyperlinking mode is enabled. Try setting `hyperlinkUrls =
 False` in your `config.ini` file.
+
+## Does Matterhorn support graphical emoji?
+
+At present Matterhorn does not reliably support graphical emoji due to
+the lack of consistent support for wide Unicode characters in various
+terminal emulators. Results may vary, and use of emoji characters may
+cause terminal rendering issues depending on the terminal emulator in
+use.
