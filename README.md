@@ -55,8 +55,8 @@ The first option is useful when trying out the program because you can
 get up and running without worrying about making a configuration. Once
 you're ready to make your settings persistent, they can be added to
 a configuration file. An example configuration file can be found at
-`sample-config.ini`. Any settings omitted from the configuration will be
-obtained interactively at startup.
+`docs/sample-config.ini`. Any settings omitted from the configuration
+will be obtained interactively at startup.
 
 When looking for configuration files, matterhorn will prefer
 `config.ini` in the current working directory, but will look in the
@@ -80,7 +80,7 @@ the client.  Keybinding information may be obtained in a number of ways:
 * The `/help` command within Matterhorn.
 * The `F1` key within Matterhorn.
 * Running matterhorn with the `-k` argument to get a text table of available keybindings
-* Running matterhorn with the `-K` argument to get a [Markdown table of available keybindings](keybindings.md)
+* Running matterhorn with the `-K` argument to get a [Markdown table of available keybindings](docs/keybindings.md)
 
     Note: The latter two commands do not start the client but simply
     print to stdout and exit.  The bindings shown include any user
@@ -293,8 +293,8 @@ should consider to make submitting patches easier for all concerned:
  - Please make changes consistent with the conventions already used in
    the codebase.
  - We follow a few development practices to support our project and it
-   helps when contributors are aware of these. Please see `PRACTICES.md`
-   for more information.
+   helps when contributors are aware of these. Please see
+   `docs/PRACTICES.md` for more information.
 
 # Frequently Asked Questions
 

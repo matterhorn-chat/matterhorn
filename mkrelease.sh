@@ -94,10 +94,14 @@ function prepare_dist {
     local dest=$2
     cp $(find dist-newstyle -type f -name matterhorn | grep $ver) $dest
     strip $dest/matterhorn
-    cp $HERE/sample-config.ini $dest
+
     cp $HERE/README.md $dest
-    cp $HERE/keybindings.md $dest
     cp $HERE/CHANGELOG.md $dest
+
+    mkdir $dest/docs
+    cp $HERE/docs/sample-config.ini $dest/docs/
+    cp $HERE/docs/keybindings.md $dest/docs/
+
     cp -r $HERE/emoji $dest/
     cp -r $HERE/syntax $dest/
     cp -r $HERE/notification-scripts $dest/
@@ -148,7 +152,7 @@ git submodule update --init
 echo %
 echo % Verify that the keybindings are up-to-date
 echo %
-diff keybindings.md <(./run.sh -i -K)
+diff docs/keybindings.md <(./run.sh -i -K)
 echo
 
 TMPDIR=$(mktemp -d)
