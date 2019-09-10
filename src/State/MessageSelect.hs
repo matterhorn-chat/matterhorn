@@ -42,6 +42,7 @@ import           State.Common
 import           State.Messages
 import           Types
 import           Types.Common
+import           Windows.ViewMessage
 
 
 -- | In these modes, we allow access to the selected message state.
@@ -106,7 +107,7 @@ fillSelectedGap = do
 
 viewMessage :: Message -> MH ()
 viewMessage m = do
-    csViewedMessage .= Just m
+    csViewedMessage .= Just (m, TabbedWindow VMTabMessage Main viewMessageWindowTemplate)
     let vs = viewportScroll ViewMessageArea
     mh $ do
         vScrollToBeginning vs

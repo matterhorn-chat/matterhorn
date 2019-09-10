@@ -35,7 +35,7 @@ viewMessageBox :: ChatState -> Widget Name
 viewMessageBox st =
     let body = case st^.csViewedMessage of
           Nothing -> str "BUG: no message to show, please report!"
-          Just msg ->
+          Just (msg, _) ->
               let hs = getHighlightSet st
                   parent = case msg^.mInReplyToMsg of
                        NotAReply -> Nothing

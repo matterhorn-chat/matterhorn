@@ -26,6 +26,7 @@ module Types
   , ConnectionInfo(..)
   , SidebarUpdate(..)
   , PendingChannelChange(..)
+  , ViewMessageWindowTab(..)
   , clearChannelUnreadStatus
   , ChannelListEntry(..)
   , channelListEntryChannelId
@@ -1114,10 +1115,15 @@ data ChatState =
               -- when we need to change to a channel in the sidebar, but
               -- it isn't even there yet because we haven't loaded its
               -- metadata.
-              , _csViewedMessage :: Maybe Message
+              , _csViewedMessage :: Maybe (Message, TabbedWindow ViewMessageWindowTab)
               -- ^ Set when the ViewMessage mode is active. The message
               -- being viewed.
               }
+
+data ViewMessageWindowTab =
+    VMTabMessage
+    | VMTabReactions
+    deriving (Eq, Show)
 
 data PendingChannelChange =
     ChangeByChannelId ChannelId
