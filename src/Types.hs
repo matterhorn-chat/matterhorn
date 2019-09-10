@@ -1008,6 +1008,45 @@ data Mode =
 -- | We're either connected or we're not.
 data ConnectionStatus = Connected | Disconnected deriving (Eq)
 
+-- | An entry in a tabbed window corresponding to a tab and its
+-- corresponding content. Parameterized over an abstract value type for
+-- the tabs so we can give each a unique handle.
+data TabbedWindowEntry a =
+    TabbedWindowEntry { tweValue :: a
+                      -- ^ The handle for this tab.
+                      , tweRender :: a -> ChatState -> Widget Name
+                      -- ^ The rendering function to use when this tab
+                      -- is selected.
+                      , tweHandleEvent :: a -> ChatState -> BrickEvent Name MHEvent -> EventM Name (Next ChatState)
+                      -- ^ The event-handling function to use when this
+                      -- tab is selected.
+                      }
+
+-- | The definition of a tabbed window. Note that this does not track
+-- the *state* of the window; it merely provides a collection of tab
+-- window entries (see above). To track the state of a tabbed window,
+-- use a TabbedWindow.
+data TabbedWindowTemplate a =
+    TabbedWindowTemplate { twtEntries :: [TabbedWindowEntry a]
+                         -- ^ The entries in tabbed windows with this
+                         -- structure.
+                         , twtTitle :: a -> Widget Name
+                         -- ^ The title-rendering function for this kind
+                         -- of tabbed window.
+                         }
+
+-- | An instantiated tab window. This is based on a template and tracks
+-- the state of the tabbed window (current tab).
+data TabbedWindow a =
+    TabbedWindow { twValue :: a
+                 -- ^ The handle of the currently-selected tab.
+                 , twReturnMode :: Mode
+                 -- ^ The mode to return to when the tab is closed.
+                 , twTemplate :: TabbedWindowTemplate a
+                 -- ^ The template to use as a basis for rendering the
+                 -- window and handling user input.
+                 }
+
 -- | This is the giant bundle of fields that represents the current
 -- state of our application at any given time. Some of this should be
 -- broken out further, but hasn't yet been.
@@ -1728,42 +1767,3 @@ data OpenInBrowser =
     OpenLinkChoice LinkChoice
     | OpenLocalFile FilePath
     deriving (Eq, Show)
-
--- | An entry in a tabbed window corresponding to a tab and its
--- corresponding content. Parameterized over an abstract value type for
--- the tabs so we can give each a unique handle.
-data TabbedWindowEntry a =
-    TabbedWindowEntry { tweValue :: a
-                      -- ^ The handle for this tab.
-                      , tweRender :: a -> ChatState -> Widget Name
-                      -- ^ The rendering function to use when this tab
-                      -- is selected.
-                      , tweHandleEvent :: a -> ChatState -> BrickEvent Name MHEvent -> EventM Name (Next ChatState)
-                      -- ^ The event-handling function to use when this
-                      -- tab is selected.
-                      }
-
--- | The definition of a tabbed window. Note that this does not track
--- the *state* of the window; it merely provides a collection of tab
--- window entries (see above). To track the state of a tabbed window,
--- use a TabbedWindow.
-data TabbedWindowTemplate a =
-    TabbedWindowTemplate { twtEntries :: [TabbedWindowEntry a]
-                         -- ^ The entries in tabbed windows with this
-                         -- structure.
-                         , twtTitle :: a -> Widget Name
-                         -- ^ The title-rendering function for this kind
-                         -- of tabbed window.
-                         }
-
--- | An instantiated tab window. This is based on a template and tracks
--- the state of the tabbed window (current tab).
-data TabbedWindow a =
-    TabbedWindow { twValue :: a
-                 -- ^ The handle of the currently-selected tab.
-                 , twReturnMode :: Mode
-                 -- ^ The mode to return to when the tab is closed.
-                 , twTemplate :: TabbedWindowTemplate a
-                 -- ^ The template to use as a basis for rendering the
-                 -- window and handling user input.
-                 }
