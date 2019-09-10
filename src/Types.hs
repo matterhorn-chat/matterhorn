@@ -19,6 +19,7 @@ module Types
   , MHError(..)
   , AttachmentData(..)
   , CPUUsagePolicy(..)
+  , tabbedWindow
   , TabbedWindow(..)
   , TabbedWindowEntry(..)
   , TabbedWindowTemplate(..)
@@ -273,7 +274,7 @@ import qualified Data.ByteString as BS
 import qualified Data.Foldable as F
 import           Data.Ord ( comparing )
 import qualified Data.HashMap.Strict as HM
-import           Data.List ( sortBy )
+import           Data.List ( sortBy, nub )
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Time.Clock ( UTCTime, getCurrentTime, addUTCTime )
@@ -1047,6 +1048,18 @@ data TabbedWindow a =
                  -- ^ The template to use as a basis for rendering the
                  -- window and handling user input.
                  }
+
+tabbedWindow :: (Show a, Eq a) => a -> TabbedWindowTemplate a -> Mode -> TabbedWindow a
+tabbedWindow initialVal t retMode =
+    let handles = tweValue <$> twtEntries t
+    in if length handles /= length (nub handles)
+       then error "BUG: tabbed window should have one entry per handle"
+       else if not (initialVal `elem` handles)
+            then error $ "BUG: tabbed window handle " <> show initialVal <> " not present in template"
+            else TabbedWindow { twTemplate = t
+                              , twValue = initialVal
+                              , twReturnMode = retMode
+                              }
 
 -- | This is the giant bundle of fields that represents the current
 -- state of our application at any given time. Some of this should be
