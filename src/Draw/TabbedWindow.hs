@@ -24,7 +24,7 @@ drawTabbedWindow :: (Eq a, Show a)
                  -> ChatState
                  -> Widget Name
 drawTabbedWindow w cs =
-    let cur = getCurrentEntry w
+    let cur = getCurrentTabbedWindowEntry w
         body = tabBody <=> fill ' '
         tabBody = tweRender cur (twValue w) cs
         title = twtTitle (twTemplate w) (tweValue cur)
@@ -38,7 +38,7 @@ tabBar :: (Eq a, Show a)
        => TabbedWindow a
        -> Widget Name
 tabBar w =
-    let cur = getCurrentEntry w
+    let cur = getCurrentTabbedWindowEntry w
         entries = twtEntries (twTemplate w)
         renderEntry e =
             let maybeForce = if isCurrent
@@ -50,13 +50,3 @@ tabBar w =
                tweTitle e (tweValue e) isCurrent
         renderings = renderEntry <$> entries
     in hBox renderings
-
-getCurrentEntry :: (Show a, Eq a)
-                => TabbedWindow a
-                -> TabbedWindowEntry a
-getCurrentEntry w =
-    let matchesVal e = tweValue e == twValue w
-    in case filter matchesVal (twtEntries $ twTemplate w) of
-        [e] -> e
-        _ -> error $ "BUG: tabbed window entry for " <> show (twValue w) <>
-                     " should have matched a single entry"

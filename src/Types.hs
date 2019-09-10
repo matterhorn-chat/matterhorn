@@ -20,6 +20,9 @@ module Types
   , AttachmentData(..)
   , CPUUsagePolicy(..)
   , tabbedWindow
+  , getCurrentTabbedWindowEntry
+  , tabbedWindowNextTab
+  , tabbedWindowPreviousTab
   , TabbedWindow(..)
   , TabbedWindowEntry(..)
   , TabbedWindowTemplate(..)
@@ -255,8 +258,9 @@ where
 import           Prelude ()
 import           Prelude.MH
 
+import qualified Graphics.Vty as Vty
 import qualified Brick
-import           Brick ( EventM, Next, Widget, BrickEvent )
+import           Brick ( EventM, Next, Widget )
 import           Brick.Main ( invalidateCache, invalidateCacheEntry )
 import           Brick.AttrMap ( AttrMap )
 import           Brick.BChan
@@ -274,7 +278,7 @@ import qualified Data.ByteString as BS
 import qualified Data.Foldable as F
 import           Data.Ord ( comparing )
 import qualified Data.HashMap.Strict as HM
-import           Data.List ( sortBy, nub )
+import           Data.List ( sortBy, nub, elemIndex )
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Time.Clock ( UTCTime, getCurrentTime, addUTCTime )
@@ -1019,7 +1023,7 @@ data TabbedWindowEntry a =
                       , tweRender :: a -> ChatState -> Widget Name
                       -- ^ The rendering function to use when this tab
                       -- is selected.
-                      , tweHandleEvent :: a -> BrickEvent Name MHEvent -> MH ()
+                      , tweHandleEvent :: a -> Vty.Event -> MH ()
                       -- ^ The event-handling function to use when this
                       -- tab is selected.
                       , tweTitle :: a -> Bool -> Widget Name
@@ -1063,6 +1067,42 @@ tabbedWindow initialVal t retMode =
                               , twValue = initialVal
                               , twReturnMode = retMode
                               }
+
+getCurrentTabbedWindowEntry :: (Show a, Eq a)
+                            => TabbedWindow a
+                            -> TabbedWindowEntry a
+getCurrentTabbedWindowEntry w =
+    let matchesVal e = tweValue e == twValue w
+    in case filter matchesVal (twtEntries $ twTemplate w) of
+        [e] -> e
+        _ -> error $ "BUG: tabbed window entry for " <> show (twValue w) <>
+                     " should have matched a single entry"
+
+tabbedWindowNextTab :: (Show a, Eq a) => TabbedWindow a -> TabbedWindow a
+tabbedWindowNextTab w =
+    let curIdx = case elemIndex cur allHandles of
+            Nothing -> error "BUG: tabbedWindowNextTab: could not find current handle in handle list"
+            Just i -> i
+        nextIdx = if curIdx == length allHandles - 1
+                  then 0
+                  else nextIdx + 1
+        newHandle = allHandles !! nextIdx
+        allHandles = tweValue <$> twtEntries (twTemplate w)
+        cur = tweValue $ getCurrentTabbedWindowEntry w
+    in w { twValue = newHandle }
+
+tabbedWindowPreviousTab :: (Show a, Eq a) => TabbedWindow a -> TabbedWindow a
+tabbedWindowPreviousTab w =
+    let curIdx = case elemIndex cur allHandles of
+            Nothing -> error "BUG: tabbedWindowPreviousTab: could not find current handle in handle list"
+            Just i -> i
+        nextIdx = if curIdx == 0
+                  then length allHandles - 1
+                  else nextIdx - 1
+        newHandle = allHandles !! nextIdx
+        allHandles = tweValue <$> twtEntries (twTemplate w)
+        cur = tweValue $ getCurrentTabbedWindowEntry w
+    in w { twValue = newHandle }
 
 -- | This is the giant bundle of fields that represents the current
 -- state of our application at any given time. Some of this should be

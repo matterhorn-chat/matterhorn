@@ -6,6 +6,7 @@ where
 import           Prelude ()
 import           Prelude.MH
 
+import qualified Graphics.Vty as Vty
 import           Brick
 
 import           Types
@@ -40,8 +41,8 @@ renderMessageTab _ _ = txt ""
 renderReactionsTab :: ViewMessageWindowTab -> ChatState -> Widget Name
 renderReactionsTab _ _ = txt ""
 
-handleEventMessageTab :: ViewMessageWindowTab -> BrickEvent Name MHEvent -> MH ()
+handleEventMessageTab :: ViewMessageWindowTab -> Vty.Event -> MH ()
 handleEventMessageTab _ _ = return ()
 
-handleEventReactionsTab :: ViewMessageWindowTab -> BrickEvent Name MHEvent -> MH ()
+handleEventReactionsTab :: ViewMessageWindowTab -> Vty.Event -> MH ()
 handleEventReactionsTab _ _ = return ()

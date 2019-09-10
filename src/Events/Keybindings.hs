@@ -117,6 +117,9 @@ defaultBindings ev =
                        , ctrl (key 'c')
                        ]
 
+        SelectNextTabEvent -> [ key '\t' ]
+        SelectPreviousTabEvent -> [ kb Vty.KBackTab ]
+
         -- channel-scroll-specific
         LoadMoreEvent -> [ ctrl (key 'b') ]
 

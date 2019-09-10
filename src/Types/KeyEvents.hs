@@ -53,6 +53,9 @@ data KeyEvent
   | ToggleChannelListVisibleEvent
   | ShowAttachmentListEvent
 
+  | SelectNextTabEvent
+  | SelectPreviousTabEvent
+
   -- generic cancel
   | CancelEvent
 
@@ -107,6 +110,8 @@ allEvents =
   , ToggleMultiLineEvent
   , CancelEvent
   , ReplyRecentEvent
+  , SelectNextTabEvent
+  , SelectPreviousTabEvent
 
   , EnterFastSelectModeEvent
   , NextChannelEvent
@@ -306,6 +311,9 @@ keyEventName ev = case ev of
   NextUnreadChannelEvent    -> "focus-next-unread"
   NextUnreadUserOrChannelEvent  -> "focus-next-unread-user-or-channel"
   LastChannelEvent          -> "focus-last-channel"
+
+  SelectNextTabEvent        -> "select-next-tab"
+  SelectPreviousTabEvent    -> "select-previous-tab"
 
   ShowAttachmentListEvent   -> "show-attachment-list"
 
