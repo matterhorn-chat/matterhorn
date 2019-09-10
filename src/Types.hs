@@ -1010,9 +1010,9 @@ data Mode =
 -- | We're either connected or we're not.
 data ConnectionStatus = Connected | Disconnected deriving (Eq)
 
--- | An entry in a tabbed window corresponding to a tab and its
--- corresponding content. Parameterized over an abstract value type for
--- the tabs so we can give each a unique handle.
+-- | An entry in a tabbed window corresponding to a tab and its content.
+-- Parameterized over an abstract value type for the tabs so we can give
+-- each a unique handle.
 data TabbedWindowEntry a =
     TabbedWindowEntry { tweValue :: a
                       -- ^ The handle for this tab.
