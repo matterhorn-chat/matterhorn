@@ -45,6 +45,8 @@ module Themes
   , misspellingAttr
   , editedMarkingAttr
   , editedRecentlyMarkingAttr
+  , tabSelectedAttr
+  , tabUnselectedAttr
 
   -- * Username formatting
   , colorUsername
@@ -140,6 +142,12 @@ unreadGroupMarkerAttr = "unreadChannelGroupMarker"
 
 mentionsChannelAttr :: AttrName
 mentionsChannelAttr = "channelWithMentions"
+
+tabSelectedAttr :: AttrName
+tabSelectedAttr = "tabSelected"
+
+tabUnselectedAttr :: AttrName
+tabUnselectedAttr = "tabUnselected"
 
 dateTransitionAttr :: AttrName
 dateTransitionAttr = "dateTransition"
@@ -260,6 +268,7 @@ lightAttrs =
        , (misspellingAttr,                  fg red `withStyle` underline)
        , (editedMarkingAttr,                fg yellow)
        , (editedRecentlyMarkingAttr,        black `on` yellow)
+       , (tabSelectedAttr,                  black `on` yellow)
        , (FB.fileBrowserCurrentDirectoryAttr, white `on` blue)
        , (FB.fileBrowserSelectionInfoAttr,  white `on` blue)
        , (FB.fileBrowserDirectoryAttr,      fg blue)
@@ -312,6 +321,7 @@ darkAttrs =
      , (misspellingAttr,                  fg red `withStyle` underline)
      , (editedMarkingAttr,                fg yellow)
      , (editedRecentlyMarkingAttr,        black `on` yellow)
+     , (tabSelectedAttr,                  black `on` yellow)
      , (FB.fileBrowserCurrentDirectoryAttr, white `on` blue)
      , (FB.fileBrowserSelectionInfoAttr,  white `on` blue)
      , (FB.fileBrowserDirectoryAttr,      fg blue)
