@@ -1019,7 +1019,7 @@ data TabbedWindowEntry a =
                       , tweRender :: a -> ChatState -> Widget Name
                       -- ^ The rendering function to use when this tab
                       -- is selected.
-                      , tweHandleEvent :: a -> ChatState -> BrickEvent Name MHEvent -> EventM Name (Next ChatState)
+                      , tweHandleEvent :: a -> BrickEvent Name MHEvent -> MH ()
                       -- ^ The event-handling function to use when this
                       -- tab is selected.
                       }

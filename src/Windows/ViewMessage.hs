@@ -38,8 +38,8 @@ renderMessageTab _ _ = txt ""
 renderReactionsTab :: ViewMessageWindowTab -> ChatState -> Widget Name
 renderReactionsTab _ _ = txt ""
 
-handleEventMessageTab :: ViewMessageWindowTab -> ChatState -> BrickEvent Name MHEvent -> EventM Name (Next ChatState)
-handleEventMessageTab _ s _ = continue s
+handleEventMessageTab :: ViewMessageWindowTab -> BrickEvent Name MHEvent -> MH ()
+handleEventMessageTab _ _ = return ()
 
-handleEventReactionsTab :: ViewMessageWindowTab -> ChatState -> BrickEvent Name MHEvent -> EventM Name (Next ChatState)
-handleEventReactionsTab _ s _ = continue s
+handleEventReactionsTab :: ViewMessageWindowTab -> BrickEvent Name MHEvent -> MH ()
+handleEventReactionsTab _ _ = return ()
