@@ -23,6 +23,7 @@ messageEntry =
     TabbedWindowEntry { tweValue = VMTabMessage
                       , tweRender = renderMessageTab
                       , tweHandleEvent = handleEventMessageTab
+                      , tweTitle = const $ const $ txt "Message"
                       }
 
 reactionsEntry :: TabbedWindowEntry ViewMessageWindowTab
@@ -30,6 +31,7 @@ reactionsEntry =
     TabbedWindowEntry { tweValue = VMTabReactions
                       , tweRender = renderReactionsTab
                       , tweHandleEvent = handleEventReactionsTab
+                      , tweTitle = const $ const $ txt "Reactions"
                       }
 
 renderMessageTab :: ViewMessageWindowTab -> ChatState -> Widget Name

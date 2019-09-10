@@ -1022,6 +1022,9 @@ data TabbedWindowEntry a =
                       , tweHandleEvent :: a -> BrickEvent Name MHEvent -> MH ()
                       -- ^ The event-handling function to use when this
                       -- tab is selected.
+                      , tweTitle :: a -> Bool -> Widget Name
+                      -- ^ Title-rendering for this tab, with a boolean
+                      -- indicating whether this is the current tab.
                       }
 
 -- | The definition of a tabbed window. Note that this does not track
