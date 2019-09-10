@@ -1,0 +1,5 @@
+module Events.TabbedWindow
+  (
+  )
+where
+

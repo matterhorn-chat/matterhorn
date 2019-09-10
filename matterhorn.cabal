@@ -87,6 +87,7 @@ executable matterhorn
                        Draw.URLList
                        Draw.Util
                        Draw.ViewMessage
+                       Draw.TabbedWindow
                        InputHistory
                        IOUtil
                        Events
@@ -104,6 +105,7 @@ executable matterhorn
                        Events.LeaveChannelConfirm
                        Events.DeleteChannelConfirm
                        Events.ViewMessage
+                       Events.TabbedWindow
                        Windows.ViewMessage
                        HelpTopics
                        KeyMap
