@@ -27,7 +27,7 @@ drawTabbedWindow w cs =
     let cur = getCurrentTabbedWindowEntry w
         body = tabBody <=> fill ' '
         tabBody = tweRender cur (twValue w) cs
-        title = twtTitle (twTemplate w) (tweValue cur)
+        title = forceAttr clientEmphAttr $ twtTitle (twTemplate w) (tweValue cur)
     in centerLayer $
        vLimit tabbedWindowHeight $
        hLimit tabbedWindowWidth $
