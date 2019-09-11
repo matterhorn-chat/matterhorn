@@ -1085,7 +1085,7 @@ tabbedWindowNextTab w =
             Just i -> i
         nextIdx = if curIdx == length allHandles - 1
                   then 0
-                  else nextIdx + 1
+                  else curIdx + 1
         newHandle = allHandles !! nextIdx
         allHandles = tweValue <$> twtEntries (twTemplate w)
         cur = tweValue $ getCurrentTabbedWindowEntry w
@@ -1098,7 +1098,7 @@ tabbedWindowPreviousTab w =
             Just i -> i
         nextIdx = if curIdx == 0
                   then length allHandles - 1
-                  else nextIdx - 1
+                  else curIdx - 1
         newHandle = allHandles !! nextIdx
         allHandles = tweValue <$> twtEntries (twTemplate w)
         cur = tweValue $ getCurrentTabbedWindowEntry w
