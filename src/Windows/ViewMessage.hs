@@ -36,10 +36,10 @@ reactionsEntry =
                       }
 
 renderMessageTab :: ViewMessageWindowTab -> ChatState -> Widget Name
-renderMessageTab _ _ = txt ""
+renderMessageTab _ _ = txt "message"
 
 renderReactionsTab :: ViewMessageWindowTab -> ChatState -> Widget Name
-renderReactionsTab _ _ = txt ""
+renderReactionsTab _ _ = txt "reactions"
 
 handleEventMessageTab :: ViewMessageWindowTab -> Vty.Event -> MH ()
 handleEventMessageTab _ _ = return ()
