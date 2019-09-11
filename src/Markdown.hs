@@ -18,7 +18,9 @@ where
 import           Prelude ()
 import           Prelude.MH
 
-import           Brick ( (<+>), Widget, textWidth, hLimit, imageL, raw, render, Size(..), Widget(..) )
+import           Brick ( (<+>), Widget, textWidth, hLimit, imageL
+                       , raw, render, Size(..), Widget(..)
+                       )
 import qualified Brick as B
 import qualified Brick.Widgets.Border as B
 import qualified Brick.Widgets.Skylighting as BS
