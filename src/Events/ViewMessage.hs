@@ -17,7 +17,7 @@ import           Types
 
 onEventViewMessage :: Vty.Event -> MH ()
 onEventViewMessage =
-  handleKeyboardEvent viewMessageKeybindings handleMessageViewEvent
+    handleKeyboardEvent viewMessageKeybindings handleMessageViewEvent
 
 vs :: ViewportScroll Name
 vs = viewportScroll ViewMessageArea
