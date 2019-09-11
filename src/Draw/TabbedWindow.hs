@@ -14,10 +14,10 @@ import           Types
 import           Themes
 
 tabbedWindowWidth :: Int
-tabbedWindowWidth = 60
+tabbedWindowWidth = 78
 
 tabbedWindowHeight :: Int
-tabbedWindowHeight = 20
+tabbedWindowHeight = 25
 
 drawTabbedWindow :: (Eq a, Show a)
                  => TabbedWindow a
