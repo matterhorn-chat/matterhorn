@@ -42,11 +42,11 @@ tabBar w =
     let cur = getCurrentTabbedWindowEntry w
         entries = twtEntries (twTemplate w)
         renderEntry e =
-            let maybeForce = if isCurrent
-                             then withDefAttr tabSelectedAttr
-                             else withDefAttr tabUnselectedAttr
+            let useAttr = if isCurrent
+                          then withDefAttr tabSelectedAttr
+                          else withDefAttr tabUnselectedAttr
                 isCurrent = tweValue e == tweValue cur
-            in maybeForce $
+            in useAttr $
                padLeftRight 2 $
                tweTitle e (tweValue e) isCurrent
         renderings = renderEntry <$> entries
