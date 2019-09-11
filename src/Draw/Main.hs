@@ -254,6 +254,7 @@ renderUserCommandBox st hs =
                           , mdIndentBlocks      = False
                           , mdThreadState       = NoThread
                           , mdShowReactions     = True
+                          , mdMessageWidthLimit = Nothing
                           }
                         ]
             _ -> emptyWidget
@@ -553,6 +554,7 @@ inputPreview st hs | not $ st^.csShowMessagePreview = emptyWidget
                                   , mdIndentBlocks      = True
                                   , mdThreadState       = NoThread
                                   , mdShowReactions     = True
+                                  , mdMessageWidthLimit = Nothing
                                   }
                  in (maybePreviewViewport msgPreview) <=>
                     hBorderWithLabel (withDefAttr clientEmphAttr $ str "[Preview ↑]")

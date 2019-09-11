@@ -18,7 +18,7 @@ where
 import           Prelude ()
 import           Prelude.MH
 
-import           Brick ( (<+>), Widget, textWidth )
+import           Brick ( (<+>), Widget, textWidth, hLimit, imageL, raw, render, Size(..), Widget(..) )
 import qualified Brick as B
 import qualified Brick.Widgets.Border as B
 import qualified Brick.Widgets.Skylighting as BS
@@ -48,7 +48,7 @@ import           Network.Mattermost.Lenses ( postEditAtL, postCreateAtL )
 import           Network.Mattermost.Types ( ServerTime(..) )
 
 import           Themes
-import           Types ( HighlightSet(..), userSigil, normalChannelSigil )
+import           Types ( Name, HighlightSet(..), userSigil, normalChannelSigil )
 import           Types.Messages
 import           Types.Posts
 import           Types.UserNames ( isNameFragment, takeWhileNameFragment )
@@ -113,6 +113,7 @@ data MessageData = MessageData
   , mdRenderReplyParent :: Bool
   , mdHighlightSet      :: HighlightSet
   , mdIndentBlocks      :: Bool
+  , mdMessageWidthLimit :: Maybe Int
   }
 
 -- | renderMessage performs markdown rendering of the specified message.
@@ -127,7 +128,7 @@ data MessageData = MessageData
 -- The 'mdShowOlderEdits' argument is a value read from the user's
 -- configuration file that indicates that "edited" markers should be
 -- shown for old messages (i.e., ignore the mdEditThreshold value).
-renderMessage :: MessageData -> Widget a
+renderMessage :: MessageData -> Widget Name
 renderMessage md@MessageData { mdMessage = msg, .. } =
     let msgUsr = case mdUserName of
           Just u -> if omittedUsernameType (msg^.mType) then Nothing else Just u
@@ -167,9 +168,8 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                 else bs
 
         augmentedText = maybeAugment $ msg^.mText
-        rmd = renderMarkdown mdHighlightSet augmentedText
         msgWidget =
-            vBox $ (layout nameElems rmd . viewl) augmentedText :
+            vBox $ (layout mdHighlightSet mdMessageWidthLimit nameElems augmentedText . viewl) augmentedText :
                    catMaybes [msgAtch, msgReac]
         replyIndent = B.Widget B.Fixed B.Fixed $ do
             ctx <- B.getContext
@@ -217,25 +217,32 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                       in withParent (addEllipsis $ B.forceAttr replyParentAttr parentMsg)
 
     where
-        layout n m xs
-            | length xs > 1               = multiLnLayout n m
-        layout n m (C.Blockquote {} :< _) = multiLnLayout n m
-        layout n m (C.CodeBlock {} :< _)  = multiLnLayout n m
-        layout n m (C.HtmlBlock {} :< _)  = multiLnLayout n m
-        layout n m (C.List {} :< _)       = multiLnLayout n m
-        layout n m (C.Para inlns :< _)
-            | F.any breakCheck inlns      = multiLnLayout n m
-        layout n m _                      = hBox $ join [n, return m]
-        multiLnLayout n m =
+        layout :: HighlightSet -> Maybe Int -> [Widget Name] -> Blocks -> ViewL Block -> Widget Name
+        layout hs w nameElems bs xs | length xs > 1     = multiLnLayout hs w nameElems bs
+        layout hs w nameElems bs (C.Blockquote {} :< _) = multiLnLayout hs w nameElems bs
+        layout hs w nameElems bs (C.CodeBlock {} :< _)  = multiLnLayout hs w nameElems bs
+        layout hs w nameElems bs (C.HtmlBlock {} :< _)  = multiLnLayout hs w nameElems bs
+        layout hs w nameElems bs (C.List {} :< _)       = multiLnLayout hs w nameElems bs
+        layout hs w nameElems bs (C.Para inlns :< _)
+            | F.any breakCheck inlns                    = multiLnLayout hs w nameElems bs
+        layout hs w nameElems bs _                      = nameNextToMessage hs w nameElems bs
+
+        multiLnLayout hs w nameElems bs =
             if mdIndentBlocks
-               then vBox [ hBox n
-                         , hBox [B.txt "  ", m]
+               then vBox [ hBox nameElems
+                         , hBox [B.txt "  ", renderMarkdown hs ((subtract 2) <$> w) bs]
                          ]
-               else hBox $ n <> [m]
+               else nameNextToMessage hs w nameElems bs
+
+        nameNextToMessage hs w nameElems bs =
+            Widget Fixed Fixed $ do
+                nameResult <- render $ hBox nameElems
+                let newW = subtract (V.imageWidth (nameResult^.imageL)) <$> w
+                render $ hBox [raw (nameResult^.imageL), renderMarkdown hs newW bs]
+
         breakCheck C.LineBreak = True
         breakCheck C.SoftBreak = True
         breakCheck _ = False
-
 
 addEllipsis :: Widget a -> Widget a
 addEllipsis w = B.Widget (B.hSize w) (B.vSize w) $ do
@@ -253,9 +260,9 @@ cursorSentinel :: Char
 cursorSentinel = '‸'
 
 -- Render markdown with username highlighting
-renderMarkdown :: HighlightSet -> Blocks -> Widget a
-renderMarkdown hSet =
-  B.vBox . toList . fmap (blockToWidget hSet) . addBlankLines
+renderMarkdown :: HighlightSet -> Maybe Int -> Blocks -> Widget a
+renderMarkdown hSet w =
+  B.vBox . toList . fmap (blockToWidget hSet w) . addBlankLines
 
 -- Add blank lines only between adjacent elements of the same type, to
 -- save space
@@ -284,7 +291,7 @@ renderText :: Text -> Widget a
 renderText txt = renderText' emptyHSet txt
 
 renderText' :: HighlightSet -> Text -> Widget a
-renderText' hSet txt = renderMarkdown hSet bs
+renderText' hSet txt = renderMarkdown hSet Nothing bs
   where C.Doc _ bs = C.markdown C.def txt
 
 vBox :: F.Foldable f => f (Widget a) -> Widget a
@@ -296,20 +303,33 @@ hBox = B.hBox . toList
 header :: Int -> Widget a
 header n = B.txt (T.replicate n "#")
 
-blockToWidget :: HighlightSet -> Block -> Widget a
-blockToWidget hSet (C.Para is) = toInlineChunk is hSet
-blockToWidget hSet (C.Header n is) =
+maybeHLimit :: Maybe Int -> Widget a -> Widget a
+maybeHLimit Nothing w = w
+maybeHLimit (Just i) w = hLimit i w
+
+blockToWidget :: HighlightSet -> Maybe Int -> Block -> Widget a
+blockToWidget hSet w (C.Para is) =
+    maybeHLimit w $ toInlineChunk is hSet
+blockToWidget hSet w (C.Header n is) =
+    maybeHLimit w $
     B.withDefAttr clientHeaderAttr $
       hBox [B.padRight (B.Pad 1) $ header n, toInlineChunk is hSet]
-blockToWidget hSet (C.Blockquote is) =
-    addQuoting (vBox $ fmap (blockToWidget hSet) is)
-blockToWidget hSet (C.List _ l bs) = blocksToList l bs hSet
-blockToWidget hSet (C.CodeBlock ci tx) =
-      let f = maybe rawCodeBlockToWidget (codeBlockToWidget (hSyntaxMap hSet)) mSyntax
-          mSyntax = Sky.lookupSyntax (C.codeLang ci) (hSyntaxMap hSet)
-      in f tx
-blockToWidget _ (C.HtmlBlock txt) = textWithCursor txt
-blockToWidget _ (C.HRule) = B.vLimit 1 (B.fill '*')
+blockToWidget hSet w (C.Blockquote is) =
+    maybeHLimit w $
+    addQuoting (vBox $ fmap (blockToWidget hSet w) is)
+blockToWidget hSet w (C.List _ l bs) =
+    maybeHLimit w $
+    blocksToList l w bs hSet
+blockToWidget hSet _ (C.CodeBlock ci tx) =
+    let f = maybe rawCodeBlockToWidget (codeBlockToWidget (hSyntaxMap hSet)) mSyntax
+        mSyntax = Sky.lookupSyntax (C.codeLang ci) (hSyntaxMap hSet)
+    in f tx
+blockToWidget _ w (C.HtmlBlock txt) =
+    maybeHLimit w $
+    textWithCursor txt
+blockToWidget _ w (C.HRule) =
+    maybeHLimit w $
+    B.vLimit 1 (B.fill '*')
 
 quoteChar :: Char
 quoteChar = '>'
@@ -355,9 +375,9 @@ toInlineChunk is hSet = B.Widget B.Fixed B.Fixed $ do
       ws    = fmap gatherWidgets (split width hSet fs)
   B.render (vBox (fmap hBox ws))
 
-blocksToList :: ListType -> [Blocks] -> HighlightSet -> Widget a
-blocksToList lt bs hSet = vBox
-  [ B.txt i <+> (vBox (fmap (blockToWidget hSet) b))
+blocksToList :: ListType -> Maybe Int -> [Blocks] -> HighlightSet -> Widget a
+blocksToList lt w bs hSet = vBox
+  [ B.txt i <+> (vBox (fmap (blockToWidget hSet w) b))
   | b <- bs | i <- is ]
   where is = case lt of
           C.Bullet _ -> repeat ("• ")

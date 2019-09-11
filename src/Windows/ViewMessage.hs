@@ -109,7 +109,7 @@ reactionsText st m = viewport ViewMessageReactionsArea Vertical $
 
 viewMessageBox :: ChatState -> Widget Name
 viewMessageBox st =
-    let body = case st^.csViewedMessage of
+    let mkBody vpWidth = case st^.csViewedMessage of
           Nothing -> str "BUG: no message to show, please report!"
           Just (msg, _) ->
               let hs = getHighlightSet st
@@ -128,10 +128,13 @@ viewMessageBox st =
                                                      , mdIndentBlocks      = True
                                                      , mdThreadState       = NoThread
                                                      , mdShowReactions     = False
+                                                     , mdMessageWidthLimit = Just vpWidth
                                                      }
               in cached ViewMessageArea msgW
 
-    in viewport ViewMessageArea Both body
+    in Widget Greedy Greedy $ do
+        ctx <- getContext
+        render $ viewport ViewMessageArea Both $ mkBody (ctx^.availWidthL)
 
 viewMessageKeybindings :: KeyConfig -> [Keybinding]
 viewMessageKeybindings =
