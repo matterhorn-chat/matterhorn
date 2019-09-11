@@ -11,7 +11,7 @@ import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
 import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
-import           Lens.Micro.Platform ( (.=), preuse )
+import           Lens.Micro.Platform ( (.=), preuse, _2, singular, _Just )
 
 import qualified Network.Mattermost.Endpoints as MM
 import           Network.Mattermost.Exceptions ( mattermostErrorMessage )
@@ -41,7 +41,7 @@ import           Events.UrlSelect
 import           Events.UserListOverlay
 import           Events.ChannelListOverlay
 import           Events.ReactionEmojiListOverlay
-import           Events.ViewMessage
+import           Events.TabbedWindow
 import           Events.ManageAttachments
 
 
@@ -169,7 +169,7 @@ onVtyEvent e = do
         UserListOverlay            -> onEventUserListOverlay e
         ChannelListOverlay         -> onEventChannelListOverlay e
         ReactionEmojiListOverlay   -> onEventReactionEmojiListOverlay e
-        ViewMessage                -> onEventViewMessage e
+        ViewMessage                -> handleTabbedWindowEvent (csViewedMessage.singular _Just._2) e
         ManageAttachments          -> onEventManageAttachments e
         ManageAttachmentsBrowseFiles -> onEventManageAttachments e
 

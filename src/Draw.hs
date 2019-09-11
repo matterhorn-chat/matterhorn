@@ -7,6 +7,8 @@ import Prelude.MH
 
 import Brick
 
+import Lens.Micro.Platform ( _2, singular, _Just )
+
 import Draw.DeleteChannelConfirm
 import Draw.LeaveChannelConfirm
 import Draw.Main
@@ -15,7 +17,7 @@ import Draw.ShowHelp
 import Draw.UserListOverlay
 import Draw.ChannelListOverlay
 import Draw.ReactionEmojiListOverlay
-import Draw.ViewMessage
+import Draw.TabbedWindow
 import Draw.ManageAttachments
 import Types
 
@@ -35,6 +37,6 @@ draw st =
         UserListOverlay            -> drawUserListOverlay st
         ChannelListOverlay         -> drawChannelListOverlay st
         ReactionEmojiListOverlay   -> drawReactionEmojiListOverlay st
-        ViewMessage                -> drawViewMessage st
+        ViewMessage                -> drawTabbedWindow (st^.csViewedMessage.singular _Just._2) st : drawMain False st
         ManageAttachments          -> drawManageAttachments st
         ManageAttachmentsBrowseFiles -> drawManageAttachments st
