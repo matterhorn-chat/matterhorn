@@ -10,6 +10,7 @@ import           Brick
 import           Brick.Widgets.Border
 import           Brick.Widgets.Center
 import           Data.List ( intersperse )
+import qualified Graphics.Vty as Vty
 
 import           Types
 import           Themes
@@ -29,7 +30,7 @@ drawTabbedWindow w cs =
        hLimit (twWindowWidth w) $
        joinBorders $
        borderWithLabel title $
-       (tabBar w <=> hBorder <=> tabBody <=> hBorder <=> hCenter keybindingHelp)
+       (tabBar w <=> tabBody <=> hBorder <=> hCenter keybindingHelp)
 
 keybindingHelp :: Widget Name
 keybindingHelp =
@@ -52,8 +53,19 @@ tabBar w =
                           then withDefAttr tabSelectedAttr
                           else withDefAttr tabUnselectedAttr
                 isCurrent = tweValue e == tweValue cur
-            in useAttr $
+                decorateTab v = Widget Fixed Fixed $ do
+                    result <- render v
+                    let width = Vty.imageWidth (result^.imageL)
+                    if isCurrent
+                       then
+                           render $ padBottom (Pad 1) $ raw $ result^.imageL
+                       else
+                           render $ vBox [raw $ result^.imageL, hLimit width hBorder]
+            in decorateTab $
+               useAttr $
                padLeftRight 2 $
                tweTitle e (tweValue e) isCurrent
-        renderings = renderEntry <$> entries
+        renderings = (intersperse divider $ renderEntry <$> entries) <>
+                     [divider, padTop (Pad 1) hBorder]
+        divider = vLimit 1 vBorder <=> joinableBorder (Edges True False False False)
     in hBox renderings
