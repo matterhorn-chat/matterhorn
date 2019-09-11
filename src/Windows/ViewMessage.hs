@@ -178,9 +178,9 @@ viewMessageReactionsKeybindings =
            , mkKb ScrollDownEvent "Scroll down" $
                mh $ vScrollBy vs 1
 
-           , mkKb ScrollBottomEvent "Scroll to the end of the message" $
+           , mkKb ScrollBottomEvent "Scroll to the end of the reactions list" $
                mh $ vScrollToEnd vs
 
-           , mkKb ScrollTopEvent "Scroll to the beginning of the message" $
+           , mkKb ScrollTopEvent "Scroll to the beginning of the reactions list" $
                mh $ vScrollToBeginning vs
            ]
