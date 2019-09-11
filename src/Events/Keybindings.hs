@@ -126,6 +126,8 @@ defaultBindings ev =
         -- scrolling events
         ScrollUpEvent -> [ kb Vty.KUp ]
         ScrollDownEvent -> [ kb Vty.KDown ]
+        ScrollLeftEvent -> [ kb Vty.KLeft ]
+        ScrollRightEvent -> [ kb Vty.KRight ]
         PageUpEvent -> [ kb Vty.KPageUp ]
         PageDownEvent -> [ kb Vty.KPageDown ]
         ScrollTopEvent -> [ kb Vty.KHome ]

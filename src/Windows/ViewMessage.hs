@@ -15,6 +15,8 @@ import qualified Data.Foldable as F
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( to )
 
+import           Constants
+import           Events.Keybindings
 import           Themes
 import           Types
 import           Markdown
@@ -71,10 +73,12 @@ renderReactionsTab _ cs = case cs^.csViewedMessage of
     Just (m, _) -> reactionsText cs m
 
 handleEventMessageTab :: ViewMessageWindowTab -> Vty.Event -> MH ()
-handleEventMessageTab _ _ = return ()
+handleEventMessageTab _ =
+    handleKeyboardEvent viewMessageKeybindings (const $ return ())
 
 handleEventReactionsTab :: ViewMessageWindowTab -> Vty.Event -> MH ()
-handleEventReactionsTab _ _ = return ()
+handleEventReactionsTab _ =
+    handleKeyboardEvent viewMessageReactionsKeybindings (const $ return ())
 
 reactionsText :: ChatState -> Message -> Widget Name
 reactionsText st m = viewport ViewMessageReactionsArea Vertical $
@@ -126,3 +130,55 @@ viewMessageBox st =
               in cached ViewMessageArea msgW
 
     in viewport ViewMessageArea Both body
+
+viewMessageKeybindings :: KeyConfig -> [Keybinding]
+viewMessageKeybindings =
+    let vs = viewportScroll ViewMessageArea
+    in mkKeybindings
+           [ mkKb PageUpEvent "Page up" $
+               mh $ vScrollBy vs (-1 * pageAmount)
+
+           , mkKb PageDownEvent "Page down" $
+               mh $ vScrollBy vs pageAmount
+
+           , mkKb ScrollUpEvent "Scroll up" $
+               mh $ vScrollBy vs (-1)
+
+           , mkKb ScrollDownEvent "Scroll down" $
+               mh $ vScrollBy vs 1
+
+           , mkKb ScrollLeftEvent "Scroll left" $
+               mh $ hScrollBy vs (-1)
+
+           , mkKb ScrollRightEvent "Scroll right" $
+               mh $ hScrollBy vs 1
+
+           , mkKb ScrollBottomEvent "Scroll to the end of the message" $
+               mh $ vScrollToEnd vs
+
+           , mkKb ScrollTopEvent "Scroll to the beginning of the message" $
+               mh $ vScrollToBeginning vs
+           ]
+
+viewMessageReactionsKeybindings :: KeyConfig -> [Keybinding]
+viewMessageReactionsKeybindings =
+    let vs = viewportScroll ViewMessageReactionsArea
+    in mkKeybindings
+           [ mkKb PageUpEvent "Page up" $
+               mh $ vScrollBy vs (-1 * pageAmount)
+
+           , mkKb PageDownEvent "Page down" $
+               mh $ vScrollBy vs pageAmount
+
+           , mkKb ScrollUpEvent "Scroll up" $
+               mh $ vScrollBy vs (-1)
+
+           , mkKb ScrollDownEvent "Scroll down" $
+               mh $ vScrollBy vs 1
+
+           , mkKb ScrollBottomEvent "Scroll to the end of the message" $
+               mh $ vScrollToEnd vs
+
+           , mkKb ScrollTopEvent "Scroll to the beginning of the message" $
+               mh $ vScrollToBeginning vs
+           ]

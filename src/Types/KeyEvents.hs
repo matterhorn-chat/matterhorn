@@ -66,6 +66,8 @@ data KeyEvent
   -- scrolling events---maybe rebindable?
   | ScrollUpEvent
   | ScrollDownEvent
+  | ScrollLeftEvent
+  | ScrollRightEvent
   | PageUpEvent
   | PageDownEvent
   | ScrollTopEvent
@@ -133,6 +135,8 @@ allEvents =
 
   , ScrollUpEvent
   , ScrollDownEvent
+  , ScrollLeftEvent
+  , ScrollRightEvent
   , PageUpEvent
   , PageDownEvent
   , ScrollTopEvent
@@ -328,6 +332,8 @@ keyEventName ev = case ev of
 
   ScrollUpEvent     -> "scroll-up"
   ScrollDownEvent   -> "scroll-down"
+  ScrollLeftEvent   -> "scroll-left"
+  ScrollRightEvent  -> "scroll-right"
   PageUpEvent       -> "page-up"
   PageDownEvent     -> "page-down"
   ScrollTopEvent    -> "scroll-top"

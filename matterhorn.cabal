@@ -103,7 +103,6 @@ executable matterhorn
                        Events.ReactionEmojiListOverlay
                        Events.LeaveChannelConfirm
                        Events.DeleteChannelConfirm
-                       Events.ViewMessage
                        Events.TabbedWindow
                        Windows.ViewMessage
                        HelpTopics
