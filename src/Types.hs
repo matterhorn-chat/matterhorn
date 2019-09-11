@@ -23,6 +23,7 @@ module Types
   , getCurrentTabbedWindowEntry
   , tabbedWindowNextTab
   , tabbedWindowPreviousTab
+  , runTabShowHandlerFor
   , TabbedWindow(..)
   , TabbedWindowEntry(..)
   , TabbedWindowTemplate(..)
@@ -1081,14 +1082,20 @@ getCurrentTabbedWindowEntry :: (Show a, Eq a)
                             => TabbedWindow a
                             -> TabbedWindowEntry a
 getCurrentTabbedWindowEntry w =
-    let matchesVal e = tweValue e == twValue w
+    lookupTabbedWindowEntry (twValue w) w
+
+runTabShowHandlerFor :: (Eq a, Show a) => a -> TabbedWindow a -> MH ()
+runTabShowHandlerFor handle w = do
+    let entry = lookupTabbedWindowEntry handle w
+    tweShowHandler entry handle
+
+lookupTabbedWindowEntry :: (Eq a, Show a) => a -> TabbedWindow a -> TabbedWindowEntry a
+lookupTabbedWindowEntry handle w =
+    let matchesVal e = tweValue e == handle
     in case filter matchesVal (twtEntries $ twTemplate w) of
         [e] -> e
         _ -> error $ "BUG: tabbed window entry for " <> show (twValue w) <>
                      " should have matched a single entry"
-
-runTabShowHandler :: a -> TabbedWindowEntry a -> MH ()
-runTabShowHandler handle e = tweShowHandler e handle
 
 tabbedWindowNextTab :: (Show a, Eq a) => TabbedWindow a -> MH (TabbedWindow a)
 tabbedWindowNextTab w = do
@@ -1102,8 +1109,7 @@ tabbedWindowNextTab w = do
         allHandles = tweValue <$> twtEntries (twTemplate w)
         curEntry = getCurrentTabbedWindowEntry w
         newWin = w { twValue = newHandle }
-        newEntry = getCurrentTabbedWindowEntry newWin
-    runTabShowHandler newHandle newEntry
+    runTabShowHandlerFor newHandle newWin
     return newWin
 
 tabbedWindowPreviousTab :: (Show a, Eq a) => TabbedWindow a -> MH (TabbedWindow a)
@@ -1118,8 +1124,7 @@ tabbedWindowPreviousTab w = do
         allHandles = tweValue <$> twtEntries (twTemplate w)
         curEntry = getCurrentTabbedWindowEntry w
         newWin = w { twValue = newHandle }
-        newEntry = getCurrentTabbedWindowEntry newWin
-    runTabShowHandler newHandle newEntry
+    runTabShowHandlerFor newHandle newWin
     return newWin
 
 -- | This is the giant bundle of fields that represents the current
