@@ -54,6 +54,14 @@ reactionsEntry =
                       , tweShowHandler = const $ return ()
                       }
 
+onShowReactions :: ViewMessageWindowTab -> MH ()
+onShowReactions _ = do
+    let vs = viewportScroll ViewMessageReactionsArea
+    mh $ do
+        vScrollToBeginning vs
+        hScrollToBeginning vs
+        invalidateCacheEntry ViewMessageReactionsArea
+
 renderMessageTab :: ViewMessageWindowTab -> ChatState -> Widget Name
 renderMessageTab _ cs = viewMessageBox cs
 
@@ -69,7 +77,8 @@ handleEventReactionsTab :: ViewMessageWindowTab -> Vty.Event -> MH ()
 handleEventReactionsTab _ _ = return ()
 
 reactionsText :: ChatState -> Message -> Widget Name
-reactionsText st m = body <=> fill ' '
+reactionsText st m = viewport ViewMessageReactionsArea Vertical $
+                     cached ViewMessageReactionsArea body
     where
         body = case null reacList of
             True -> emptyWidget

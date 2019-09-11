@@ -613,6 +613,7 @@ data Name =
     | JoinChannelListSearchInput
     | UserListSearchResults
     | ViewMessageArea
+    | ViewMessageReactionsArea
     | ChannelSidebar
     | ChannelSelectInput
     | AttachmentList
