@@ -13,12 +13,6 @@ import           Brick.Widgets.Center
 import           Types
 import           Themes
 
-tabbedWindowWidth :: Int
-tabbedWindowWidth = 78
-
-tabbedWindowHeight :: Int
-tabbedWindowHeight = 25
-
 drawTabbedWindow :: (Eq a, Show a)
                  => TabbedWindow a
                  -> ChatState
@@ -29,8 +23,8 @@ drawTabbedWindow w cs =
         tabBody = tweRender cur (twValue w) cs
         title = forceAttr clientEmphAttr $ twtTitle (twTemplate w) (tweValue cur)
     in centerLayer $
-       vLimit tabbedWindowHeight $
-       hLimit tabbedWindowWidth $
+       vLimit (twWindowHeight w) $
+       hLimit (twWindowWidth w) $
        joinBorders $
        borderWithLabel title $
        (tabBar w <=> hBorder <=> body)

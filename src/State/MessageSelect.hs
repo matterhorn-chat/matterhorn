@@ -107,7 +107,7 @@ fillSelectedGap = do
 
 viewMessage :: Message -> MH ()
 viewMessage m = do
-    csViewedMessage .= Just (m, tabbedWindow VMTabMessage viewMessageWindowTemplate Main)
+    csViewedMessage .= Just (m, tabbedWindow VMTabMessage viewMessageWindowTemplate Main (78, 25))
     let vs = viewportScroll ViewMessageArea
     mh $ do
         vScrollToBeginning vs

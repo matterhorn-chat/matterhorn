@@ -1054,10 +1054,13 @@ data TabbedWindow a =
                  , twTemplate :: TabbedWindowTemplate a
                  -- ^ The template to use as a basis for rendering the
                  -- window and handling user input.
+                 , twWindowWidth :: Int
+                 , twWindowHeight :: Int
+                 -- ^ Window dimensions
                  }
 
-tabbedWindow :: (Show a, Eq a) => a -> TabbedWindowTemplate a -> Mode -> TabbedWindow a
-tabbedWindow initialVal t retMode =
+tabbedWindow :: (Show a, Eq a) => a -> TabbedWindowTemplate a -> Mode -> (Int, Int) -> TabbedWindow a
+tabbedWindow initialVal t retMode (width, height) =
     let handles = tweValue <$> twtEntries t
     in if length handles /= length (nub handles)
        then error "BUG: tabbed window should have one entry per handle"
@@ -1066,6 +1069,8 @@ tabbedWindow initialVal t retMode =
             else TabbedWindow { twTemplate = t
                               , twValue = initialVal
                               , twReturnMode = retMode
+                              , twWindowWidth = width
+                              , twWindowHeight = height
                               }
 
 getCurrentTabbedWindowEntry :: (Show a, Eq a)
