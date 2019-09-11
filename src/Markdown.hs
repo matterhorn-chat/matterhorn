@@ -309,11 +309,10 @@ maybeHLimit (Just i) w = hLimit i w
 
 blockToWidget :: HighlightSet -> Maybe Int -> Block -> Widget a
 blockToWidget hSet w (C.Para is) =
-    maybeHLimit w $ toInlineChunk is hSet
+    toInlineChunk w is hSet
 blockToWidget hSet w (C.Header n is) =
-    maybeHLimit w $
     B.withDefAttr clientHeaderAttr $
-      hBox [B.padRight (B.Pad 1) $ header n, toInlineChunk is hSet]
+      hBox [B.padRight (B.Pad 1) $ header n, toInlineChunk (subtract 1 <$> w) is hSet]
 blockToWidget hSet w (C.Blockquote is) =
     maybeHLimit w $
     addQuoting (vBox $ fmap (blockToWidget hSet w) is)
@@ -367,13 +366,15 @@ rawCodeBlockToWidget tx =
             expandEmpty s  = s
         in padding <+> (B.vBox $ textWithCursor <$> theLines)
 
-toInlineChunk :: Inlines -> HighlightSet -> Widget a
-toInlineChunk is hSet = B.Widget B.Fixed B.Fixed $ do
+toInlineChunk :: Maybe Int -> Inlines -> HighlightSet -> Widget a
+toInlineChunk w is hSet = B.Widget B.Fixed B.Fixed $ do
   ctx <- B.getContext
-  let width = ctx^.B.availWidthL
+  let width = fromMaybe (ctx^.B.availWidthL) w
       fs    = toFragments hSet is
       ws    = fmap gatherWidgets (split width hSet fs)
-  B.render (vBox (fmap hBox ws))
+      mkBox [single] = single
+      mkBox many = hBox many
+  B.render (vBox (fmap (mkBox . F.toList) ws))
 
 blocksToList :: ListType -> Maybe Int -> [Blocks] -> HighlightSet -> Widget a
 blocksToList lt w bs hSet = vBox
