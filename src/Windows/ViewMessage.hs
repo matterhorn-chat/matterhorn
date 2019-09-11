@@ -51,7 +51,7 @@ reactionsEntry =
                       , tweRender = renderReactionsTab
                       , tweHandleEvent = handleEventReactionsTab
                       , tweTitle = const $ const $ txt "Reactions"
-                      , tweShowHandler = const $ return ()
+                      , tweShowHandler = onShowReactions
                       }
 
 onShowReactions :: ViewMessageWindowTab -> MH ()
