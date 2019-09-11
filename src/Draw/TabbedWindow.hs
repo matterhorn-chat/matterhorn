@@ -9,9 +9,12 @@ import           Prelude.MH
 import           Brick
 import           Brick.Widgets.Border
 import           Brick.Widgets.Center
+import           Data.List ( intersperse )
 
 import           Types
 import           Themes
+import           Types.KeyEvents
+import           Events.Keybindings ( getFirstDefaultBinding )
 
 drawTabbedWindow :: (Eq a, Show a)
                  => TabbedWindow a
@@ -26,7 +29,17 @@ drawTabbedWindow w cs =
        hLimit (twWindowWidth w) $
        joinBorders $
        borderWithLabel title $
-       (tabBar w <=> hBorder <=> tabBody)
+       (tabBar w <=> hBorder <=> tabBody <=> hBorder <=> hCenter keybindingHelp)
+
+keybindingHelp :: Widget Name
+keybindingHelp =
+    let ppPair (label, evs) = hBox $ (intersperse (txt "/") $ ppEv <$> evs) <> [txt (":" <> label)]
+        ppEv ev = withDefAttr clientEmphAttr $ txt (ppBinding (getFirstDefaultBinding ev))
+        pairs = [ ("Switch tabs", [SelectNextTabEvent, SelectPreviousTabEvent])
+                , ("Scroll", [ScrollUpEvent, ScrollDownEvent, ScrollLeftEvent, ScrollRightEvent])
+                , ("Close", [CancelEvent])
+                ]
+    in hBox $ intersperse (txt "  ") $ ppPair <$> pairs
 
 tabBar :: (Eq a, Show a)
        => TabbedWindow a
