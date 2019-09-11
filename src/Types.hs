@@ -1029,6 +1029,9 @@ data TabbedWindowEntry a =
                       , tweTitle :: a -> Bool -> Widget Name
                       -- ^ Title-rendering for this tab, with a boolean
                       -- indicating whether this is the current tab.
+                      , tweShowHandler :: a -> MH ()
+                      -- ^ A handler to be invoked when this tab is
+                      -- shown.
                       }
 
 -- | The definition of a tabbed window. Note that this does not track
@@ -1083,9 +1086,12 @@ getCurrentTabbedWindowEntry w =
         _ -> error $ "BUG: tabbed window entry for " <> show (twValue w) <>
                      " should have matched a single entry"
 
-tabbedWindowNextTab :: (Show a, Eq a) => TabbedWindow a -> TabbedWindow a
-tabbedWindowNextTab w =
-    let curIdx = case elemIndex cur allHandles of
+runTabShowHandler :: a -> TabbedWindowEntry a -> MH ()
+runTabShowHandler handle e = tweShowHandler e handle
+
+tabbedWindowNextTab :: (Show a, Eq a) => TabbedWindow a -> MH (TabbedWindow a)
+tabbedWindowNextTab w = do
+    let curIdx = case elemIndex (tweValue curEntry) allHandles of
             Nothing -> error "BUG: tabbedWindowNextTab: could not find current handle in handle list"
             Just i -> i
         nextIdx = if curIdx == length allHandles - 1
@@ -1093,12 +1099,15 @@ tabbedWindowNextTab w =
                   else curIdx + 1
         newHandle = allHandles !! nextIdx
         allHandles = tweValue <$> twtEntries (twTemplate w)
-        cur = tweValue $ getCurrentTabbedWindowEntry w
-    in w { twValue = newHandle }
+        curEntry = getCurrentTabbedWindowEntry w
+        newWin = w { twValue = newHandle }
+        newEntry = getCurrentTabbedWindowEntry newWin
+    runTabShowHandler newHandle newEntry
+    return newWin
 
-tabbedWindowPreviousTab :: (Show a, Eq a) => TabbedWindow a -> TabbedWindow a
-tabbedWindowPreviousTab w =
-    let curIdx = case elemIndex cur allHandles of
+tabbedWindowPreviousTab :: (Show a, Eq a) => TabbedWindow a -> MH (TabbedWindow a)
+tabbedWindowPreviousTab w = do
+    let curIdx = case elemIndex (tweValue curEntry) allHandles of
             Nothing -> error "BUG: tabbedWindowPreviousTab: could not find current handle in handle list"
             Just i -> i
         nextIdx = if curIdx == 0
@@ -1106,8 +1115,11 @@ tabbedWindowPreviousTab w =
                   else curIdx - 1
         newHandle = allHandles !! nextIdx
         allHandles = tweValue <$> twtEntries (twTemplate w)
-        cur = tweValue $ getCurrentTabbedWindowEntry w
-    in w { twValue = newHandle }
+        curEntry = getCurrentTabbedWindowEntry w
+        newWin = w { twValue = newHandle }
+        newEntry = getCurrentTabbedWindowEntry newWin
+    runTabShowHandler newHandle newEntry
+    return newWin
 
 -- | This is the giant bundle of fields that represents the current
 -- state of our application at any given time. Some of this should be

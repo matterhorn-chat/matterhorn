@@ -26,9 +26,6 @@ where
 import           Prelude ()
 import           Prelude.MH
 
-import           Brick ( invalidateCacheEntry )
-import           Brick.Main ( viewportScroll, hScrollToBeginning
-                            , vScrollToBeginning )
 import           Brick.Widgets.Edit ( applyEdit )
 import           Data.Text.Zipper ( clearZipper, insertMany )
 import           Lens.Micro.Platform
@@ -108,11 +105,6 @@ fillSelectedGap = do
 viewMessage :: Message -> MH ()
 viewMessage m = do
     csViewedMessage .= Just (m, tabbedWindow VMTabMessage viewMessageWindowTemplate Main (78, 25))
-    let vs = viewportScroll ViewMessageArea
-    mh $ do
-        vScrollToBeginning vs
-        hScrollToBeginning vs
-        invalidateCacheEntry ViewMessageArea
     setMode ViewMessage
 
 yankSelectedMessageVerbatim :: MH ()

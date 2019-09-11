@@ -8,7 +8,7 @@ import           Prelude ()
 import           Prelude.MH
 
 import qualified Graphics.Vty as Vty
-import           Lens.Micro.Platform ( Lens', (%=) )
+import           Lens.Micro.Platform ( Lens', (.=) )
 
 import           Types
 import           Types.KeyEvents
@@ -40,8 +40,10 @@ keybindings target = mkKeybindings
         setMode (twReturnMode w)
 
     , mkKb SelectNextTabEvent "Select next tab" $ do
-        target %= tabbedWindowNextTab
+        w' <- tabbedWindowNextTab =<< use target
+        target .= w'
 
     , mkKb SelectPreviousTabEvent "Select previous tab" $ do
-        target %= tabbedWindowPreviousTab
+        w' <- tabbedWindowPreviousTab =<< use target
+        target .= w'
     ]

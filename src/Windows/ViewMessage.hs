@@ -34,7 +34,16 @@ messageEntry =
                       , tweRender = renderMessageTab
                       , tweHandleEvent = handleEventMessageTab
                       , tweTitle = const $ const $ txt "Message"
+                      , tweShowHandler = onShowMessage
                       }
+
+onShowMessage :: ViewMessageWindowTab -> MH ()
+onShowMessage _ = do
+    let vs = viewportScroll ViewMessageArea
+    mh $ do
+        vScrollToBeginning vs
+        hScrollToBeginning vs
+        invalidateCacheEntry ViewMessageArea
 
 reactionsEntry :: TabbedWindowEntry ViewMessageWindowTab
 reactionsEntry =
@@ -42,6 +51,7 @@ reactionsEntry =
                       , tweRender = renderReactionsTab
                       , tweHandleEvent = handleEventReactionsTab
                       , tweTitle = const $ const $ txt "Reactions"
+                      , tweShowHandler = const $ return ()
                       }
 
 renderMessageTab :: ViewMessageWindowTab -> ChatState -> Widget Name
