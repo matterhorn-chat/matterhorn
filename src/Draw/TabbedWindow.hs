@@ -19,7 +19,6 @@ drawTabbedWindow :: (Eq a, Show a)
                  -> Widget Name
 drawTabbedWindow w cs =
     let cur = getCurrentTabbedWindowEntry w
-        body = tabBody <=> fill ' '
         tabBody = tweRender cur (twValue w) cs
         title = forceAttr clientEmphAttr $ twtTitle (twTemplate w) (tweValue cur)
     in centerLayer $
@@ -27,7 +26,7 @@ drawTabbedWindow w cs =
        hLimit (twWindowWidth w) $
        joinBorders $
        borderWithLabel title $
-       (tabBar w <=> hBorder <=> body)
+       (tabBar w <=> hBorder <=> tabBody)
 
 tabBar :: (Eq a, Show a)
        => TabbedWindow a
