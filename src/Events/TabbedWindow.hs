@@ -1,6 +1,7 @@
 {-# LANGUAGE RankNTypes #-}
 module Events.TabbedWindow
   ( handleTabbedWindowEvent
+  , tabbedWindowKeybindings
   )
 where
 
@@ -20,7 +21,7 @@ handleTabbedWindowEvent :: (Show a, Eq a)
                         -> MH ()
 handleTabbedWindowEvent target e = do
     w <- use target
-    handleKeyboardEvent (keybindings target) (forwardEvent w) e
+    handleKeyboardEvent (tabbedWindowKeybindings target) (forwardEvent w) e
 
 forwardEvent :: (Show a, Eq a)
              => TabbedWindow a
@@ -30,11 +31,11 @@ forwardEvent w e = do
     let cur = getCurrentTabbedWindowEntry w
     tweHandleEvent cur (twValue w) e
 
-keybindings :: (Show a, Eq a)
-            => Lens' ChatState (TabbedWindow a)
-            -> KeyConfig
-            -> [Keybinding]
-keybindings target = mkKeybindings
+tabbedWindowKeybindings :: (Show a, Eq a)
+                        => Lens' ChatState (TabbedWindow a)
+                        -> KeyConfig
+                        -> [Keybinding]
+tabbedWindowKeybindings target = mkKeybindings
     [ mkKb CancelEvent "Close window" $ do
         w <- use target
         setMode (twReturnMode w)

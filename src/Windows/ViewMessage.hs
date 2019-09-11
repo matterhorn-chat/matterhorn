@@ -1,5 +1,7 @@
 module Windows.ViewMessage
   ( viewMessageWindowTemplate
+  , viewMessageKeybindings
+  , viewMessageReactionsKeybindings
   )
 where
 

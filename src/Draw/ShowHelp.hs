@@ -16,6 +16,7 @@ import           Brick.Widgets.List ( listSelectedFocusedAttr )
 import qualified Data.Map as M
 import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
+import           Lens.Micro.Platform ( singular, _Just, _2 )
 
 import           Network.Mattermost.Version ( mmApiVersion )
 
@@ -31,6 +32,8 @@ import           Events.UserListOverlay
 import           Events.ChannelListOverlay
 import           Events.ReactionEmojiListOverlay
 import           Events.ManageAttachments
+import           Events.TabbedWindow
+import           Windows.ViewMessage
 import           HelpTopics ( helpTopics )
 import           Markdown ( renderText )
 import           Options ( mhVersion )
@@ -379,7 +382,9 @@ keybindSections kc =
     , ("User Listings", userListOverlayKeybindings kc)
     , ("Channel Search Window", channelListOverlayKeybindings kc)
     , ("Reaction Emoji Search Window", reactionEmojiListOverlayKeybindings kc)
-    -- , ("Message Viewer", viewMessageKeybindings kc)
+    , ("Message Viewer: Common", tabbedWindowKeybindings (csViewedMessage.singular _Just._2) kc)
+    , ("Message Viewer: Message tab", viewMessageKeybindings kc)
+    , ("Message Viewer: Reactions tab", viewMessageReactionsKeybindings kc)
     , ("Attachment List", attachmentListKeybindings kc)
     ]
 
