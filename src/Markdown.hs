@@ -372,9 +372,7 @@ toInlineChunk w is hSet = B.Widget B.Fixed B.Fixed $ do
   let width = fromMaybe (ctx^.B.availWidthL) w
       fs    = toFragments hSet is
       ws    = fmap gatherWidgets (split width hSet fs)
-      mkBox [single] = single
-      mkBox many = hBox many
-  B.render (vBox (fmap (mkBox . F.toList) ws))
+  B.render (vBox (fmap hBox ws))
 
 blocksToList :: ListType -> Maybe Int -> [Blocks] -> HighlightSet -> Widget a
 blocksToList lt w bs hSet = vBox
