@@ -33,6 +33,7 @@ app = App
   , appChooseCursor = \s cs -> case appMode s of
       ManageAttachments -> Nothing
       ManageAttachmentsBrowseFiles -> Nothing
+      ViewMessage -> Nothing
       _ -> showFirstCursor s cs
   , appHandleEvent  = onEvent
   , appStartEvent   = return
