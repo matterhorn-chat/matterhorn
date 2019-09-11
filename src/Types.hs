@@ -1067,16 +1067,17 @@ data TabbedWindow a =
 tabbedWindow :: (Show a, Eq a) => a -> TabbedWindowTemplate a -> Mode -> (Int, Int) -> TabbedWindow a
 tabbedWindow initialVal t retMode (width, height) =
     let handles = tweValue <$> twtEntries t
-    in if length handles /= length (nub handles)
-       then error "BUG: tabbed window should have one entry per handle"
-       else if not (initialVal `elem` handles)
-            then error $ "BUG: tabbed window handle " <> show initialVal <> " not present in template"
-            else TabbedWindow { twTemplate = t
-                              , twValue = initialVal
-                              , twReturnMode = retMode
-                              , twWindowWidth = width
-                              , twWindowHeight = height
-                              }
+    in if | length handles /= length (nub handles) ->
+              error "BUG: tabbed window should have one entry per handle"
+          | not (initialVal `elem` handles) ->
+              error $ "BUG: tabbed window handle " <> show initialVal <> " not present in template"
+          | otherwise ->
+              TabbedWindow { twTemplate = t
+                           , twValue = initialVal
+                           , twReturnMode = retMode
+                           , twWindowWidth = width
+                           , twWindowHeight = height
+                           }
 
 getCurrentTabbedWindowEntry :: (Show a, Eq a)
                             => TabbedWindow a
