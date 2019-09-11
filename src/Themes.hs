@@ -433,6 +433,12 @@ themeDocs = ThemeDocumentation $ M.fromList $
     , ( newMessageTransitionAttr
       , "The 'New Messages' line that appears above unread messages"
       )
+    , ( tabSelectedAttr
+      , "Selected tabs in tabbed windows"
+      )
+    , ( tabUnselectedAttr
+      , "Unselected tabs in tabbed windows"
+      )
     , ( errorMessageAttr
       , "Matterhorn error messages"
       )
