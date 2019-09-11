@@ -31,6 +31,7 @@ drawTabbedWindow w cs =
     in centerLayer $
        vLimit tabbedWindowHeight $
        hLimit tabbedWindowWidth $
+       joinBorders $
        borderWithLabel title $
        (tabBar w <=> hBorder <=> body)
 
@@ -42,11 +43,11 @@ tabBar w =
         entries = twtEntries (twTemplate w)
         renderEntry e =
             let maybeForce = if isCurrent
-                             then forceAttr tabSelectedAttr
-                             else id
+                             then withDefAttr tabSelectedAttr
+                             else withDefAttr tabUnselectedAttr
                 isCurrent = tweValue e == tweValue cur
             in maybeForce $
-               padRight (Pad 3) $
+               padLeftRight 2 $
                tweTitle e (tweValue e) isCurrent
         renderings = renderEntry <$> entries
     in hBox renderings
