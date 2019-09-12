@@ -1065,7 +1065,24 @@ data TabbedWindow a =
                  -- ^ Window dimensions
                  }
 
-tabbedWindow :: (Show a, Eq a) => a -> TabbedWindowTemplate a -> Mode -> (Int, Int) -> TabbedWindow a
+-- | Construct a new tabbed window from a template. This will raise an
+-- exception if the initially-selected tab does not exist in the window
+-- template, or if the window template has any duplicated tab handles.
+--
+-- Note that the caller is responsible for determining whether to call
+-- the initially-selected tab's on-show handler.
+tabbedWindow :: (Show a, Eq a)
+             => a
+             -- ^ The handle corresponding to the tab that should be
+             -- selected initially.
+             -> TabbedWindowTemplate a
+             -- ^ The template for the window to construct.
+             -> Mode
+             -- ^ When the window is closed, return to this application
+             -- mode.
+             -> (Int, Int)
+             -- ^ The window dimensions (width, height).
+             -> TabbedWindow a
 tabbedWindow initialVal t retMode (width, height) =
     let handles = tweValue <$> twtEntries t
     in if | length handles /= length (nub handles) ->
@@ -1080,17 +1097,24 @@ tabbedWindow initialVal t retMode (width, height) =
                            , twWindowHeight = height
                            }
 
+-- | Get the currently-selected tab entry for a tabbed window. Raise
+-- an exception if the window's selected tab handle is not found in its
+-- template (which is a bug in the tabbed window infrastructure).
 getCurrentTabbedWindowEntry :: (Show a, Eq a)
                             => TabbedWindow a
                             -> TabbedWindowEntry a
 getCurrentTabbedWindowEntry w =
     lookupTabbedWindowEntry (twValue w) w
 
+-- | Run the on-show handler for the window tab entry with the specified
+-- handle.
 runTabShowHandlerFor :: (Eq a, Show a) => a -> TabbedWindow a -> MH ()
 runTabShowHandlerFor handle w = do
     let entry = lookupTabbedWindowEntry handle w
     tweShowHandler entry handle
 
+-- | Look up a tabbed window entry by handle. Raises an exception if no
+-- such entry exists.
 lookupTabbedWindowEntry :: (Eq a, Show a) => a -> TabbedWindow a -> TabbedWindowEntry a
 lookupTabbedWindowEntry handle w =
     let matchesVal e = tweValue e == handle
@@ -1099,6 +1123,9 @@ lookupTabbedWindowEntry handle w =
         _ -> error $ "BUG: tabbed window entry for " <> show (twValue w) <>
                      " should have matched a single entry"
 
+-- | Switch a tabbed window's selected tab to its next tab, cycling back
+-- to the first tab if the last tab is the selected tab. This also
+-- invokes he on-show handler for the newly-selected tab.
 tabbedWindowNextTab :: (Show a, Eq a) => TabbedWindow a -> MH (TabbedWindow a)
 tabbedWindowNextTab w = do
     let curIdx = case elemIndex (tweValue curEntry) allHandles of
@@ -1114,6 +1141,9 @@ tabbedWindowNextTab w = do
     runTabShowHandlerFor newHandle newWin
     return newWin
 
+-- | Switch a tabbed window's selected tab to its previous tab, cycling
+-- to the last tab if the first tab is the selected tab. This also
+-- invokes he on-show handler for the newly-selected tab.
 tabbedWindowPreviousTab :: (Show a, Eq a) => TabbedWindow a -> MH (TabbedWindow a)
 tabbedWindowPreviousTab w = do
     let curIdx = case elemIndex (tweValue curEntry) allHandles of
@@ -1201,9 +1231,12 @@ data ChatState =
               -- being viewed.
               }
 
+-- | Handles for the View Message window's tabs.
 data ViewMessageWindowTab =
     VMTabMessage
+    -- ^ The message tab.
     | VMTabReactions
+    -- ^ The reactions tab.
     deriving (Eq, Show)
 
 data PendingChannelChange =
