@@ -132,20 +132,21 @@ viewMessageBox st =
                   parent = case msg^.mInReplyToMsg of
                        NotAReply -> Nothing
                        InReplyTo pId -> getMessageForPostId st pId
-                  msgW = renderMessage $ MessageData { mdEditThreshold     = Nothing
-                                                     , mdShowOlderEdits    = False
-                                                     , mdMessage           = msg
-                                                     , mdIsBot             = isBotMessage msg
-                                                     , mdUserName          = msg^.mUser.to (nameForUserRef st)
-                                                     , mdParentMessage     = parent
-                                                     , mdParentUserName    = parent >>= (^.mUser.to (nameForUserRef st))
-                                                     , mdRenderReplyParent = True
-                                                     , mdHighlightSet      = hs
-                                                     , mdIndentBlocks      = True
-                                                     , mdThreadState       = NoThread
-                                                     , mdShowReactions     = False
-                                                     , mdMessageWidthLimit = Just vpWidth
-                                                     }
+                  msgW = renderMessage md
+                  md = MessageData { mdEditThreshold     = Nothing
+                                   , mdShowOlderEdits    = False
+                                   , mdMessage           = msg
+                                   , mdIsBot             = isBotMessage msg
+                                   , mdUserName          = msg^.mUser.to (nameForUserRef st)
+                                   , mdParentMessage     = parent
+                                   , mdParentUserName    = parent >>= (^.mUser.to (nameForUserRef st))
+                                   , mdRenderReplyParent = True
+                                   , mdHighlightSet      = hs
+                                   , mdIndentBlocks      = True
+                                   , mdThreadState       = NoThread
+                                   , mdShowReactions     = False
+                                   , mdMessageWidthLimit = Just vpWidth
+                                   }
               in cached ViewMessageArea msgW
 
     in Widget Greedy Greedy $ do
