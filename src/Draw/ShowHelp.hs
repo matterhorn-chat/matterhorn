@@ -65,6 +65,7 @@ mainHelp kc = commandHelp
                          , drawHelpTopics
                          , padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Commands"
                          , mkCommandHelpText $ sortWith commandName commandList
+                         , padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Keybindings"
                          ] <>
                          (mkKeybindingHelp <$> keybindSections kc)
 
@@ -134,8 +135,9 @@ scriptHelp = vBox
            ]
 
 keybindingMarkdownTable :: KeyConfig -> Text
-keybindingMarkdownTable kc = keybindSectionStrings
-    where keybindSectionStrings = T.concat $ catMaybes $ sectionText <$> keybindSections kc
+keybindingMarkdownTable kc = title <> keybindSectionStrings
+    where title = "# Keybindings\n"
+          keybindSectionStrings = T.concat $ catMaybes $ sectionText <$> keybindSections kc
           sectionText = mkKeybindEventSectionHelp keybindEventHelpMarkdown T.unlines mkHeading
           mkHeading n =
               "\n# " <> n <>
@@ -143,8 +145,9 @@ keybindingMarkdownTable kc = keybindSectionStrings
               "\n| ---------- | ---------- | ----------- |"
 
 keybindingTextTable :: KeyConfig -> Text
-keybindingTextTable kc = keybindSectionStrings
-    where keybindSectionStrings = T.concat $ catMaybes $ sectionText <$> keybindSections kc
+keybindingTextTable kc = title <> keybindSectionStrings
+    where title = "Keybindings\n===========\n"
+          keybindSectionStrings = T.concat $ catMaybes $ sectionText <$> keybindSections kc
           sectionText = mkKeybindEventSectionHelp (keybindEventHelpText keybindingWidth eventNameWidth) T.unlines mkHeading
           keybindingWidth = 15
           eventNameWidth = 30
@@ -403,7 +406,7 @@ kbDescColumnWidth = 60
 
 mkKeybindingHelp :: (Text, [Keybinding]) -> Widget Name
 mkKeybindingHelp (sectionName, kbs) =
-    (hCenter $ padTop (Pad 1) $ withDefAttr helpEmphAttr $ txt $ "Keybindings: " <> sectionName) <=>
+    (hCenter $ padTop (Pad 1) $ withDefAttr helpEmphAttr $ txt sectionName) <=>
     (hCenter $ vBox $ mkKeybindHelp <$> (sortWith (ppBinding.eventToBinding.kbEvent) kbs))
 
 mkKeybindHelp :: Keybinding -> Widget Name
@@ -421,7 +424,7 @@ mkKeybindEventSectionHelp mkKeybindHelpFunc vertCat mkHeading (sectionName, kbs)
   in if all (all (isNothing . kbBindingInfo)) lst
        then Nothing
        else Just $
-           vertCat $ (mkHeading $ "Keybindings: " <> sectionName) :
+           vertCat $ (mkHeading sectionName) :
                      (mkKeybindHelpFunc <$> (catMaybes $ mkKeybindEventHelp <$> lst))
 
 keybindEventHelpWidget :: (Text, Text, [Text]) -> Widget Name
