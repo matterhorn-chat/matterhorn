@@ -12,6 +12,7 @@ import           Brick
 
 import qualified Data.Set as S
 import qualified Data.Map as M
+import           Data.Maybe ( fromJust )
 import qualified Data.Text as T
 import qualified Data.Foldable as F
 import qualified Graphics.Vty as Vty
@@ -21,6 +22,7 @@ import           Constants
 import           Events.Keybindings
 import           Themes
 import           Types
+import           Types.Messages ( findMessage )
 import           Markdown
 import           Draw.Messages ( nameForUserRef )
 
@@ -60,37 +62,40 @@ onShow :: ViewMessageWindowTab -> MH ()
 onShow VMTabMessage = do
     let vs = viewportScroll ViewMessageArea
 
-    -- When we show the message tab, we need to reset the rendering
-    -- cache of the tab's contents and reset the viewport scroll
-    -- position. This is because an older View Message window used the
-    -- same handle for the viewport and we don't want that old state
-    -- affecting this window. This also means that switching tabs in an
-    -- existing window resets this state, too.
+    -- When we show the message tab, we need to reset the viewport
+    -- scroll position. This is because an older View Message window
+    -- used the same handle for the viewport and we don't want that old
+    -- state affecting this window. This also means that switching tabs
+    -- in an existing window resets this state, too.
     mh $ do
         vScrollToBeginning vs
         hScrollToBeginning vs
-        invalidateCacheEntry ViewMessageArea
 onShow VMTabReactions = do
     let vs = viewportScroll ViewMessageReactionsArea
 
-    -- When we show the reactions tab, we need to reset the rendering
-    -- cache of the tab's contents and reset the viewport scroll
-    -- position. This is because an older View Message window used the
-    -- same handle for the viewport and we don't want that old state
-    -- affecting this window. This also means that switching tabs in an
-    -- existing window resets this state, too.
+    -- When we show the reactions tab, we need to reset the viewport
+    -- scroll position. This is because an older View Message window
+    -- used the same handle for the viewport and we don't want that old
+    -- state affecting this window. This also means that switching tabs
+    -- in an existing window resets this state, too.
     mh $ do
         vScrollToBeginning vs
         hScrollToBeginning vs
-        invalidateCacheEntry ViewMessageReactionsArea
 
 renderTab :: ViewMessageWindowTab -> ChatState -> Widget Name
-renderTab VMTabMessage cs =
-    viewMessageBox cs
-renderTab VMTabReactions cs =
-    case cs^.csViewedMessage of
-        Nothing -> error "BUG: renderReactionsTab: nothing found"
-        Just (m, _) -> reactionsText cs m
+renderTab tab cs =
+    let latestMessage = case cs^.csViewedMessage of
+          Nothing -> error "BUG: no message to show, please report!"
+          Just (m, _) -> getLatestMessage cs m
+    in case tab of
+        VMTabMessage -> viewMessageBox cs latestMessage
+        VMTabReactions -> reactionsText cs latestMessage
+
+getLatestMessage :: ChatState -> Message -> Message
+getLatestMessage cs m =
+    case m^.mMessageId of
+        Nothing -> m
+        Just mId -> fromJust $ findMessage mId $ cs^.csCurrentChannel.ccContents.cdMessages
 
 handleEvent :: ViewMessageWindowTab -> Vty.Event -> MH ()
 handleEvent VMTabMessage =
@@ -99,8 +104,7 @@ handleEvent VMTabReactions =
     handleKeyboardEvent viewMessageReactionsKeybindings (const $ return ())
 
 reactionsText :: ChatState -> Message -> Widget Name
-reactionsText st m = viewport ViewMessageReactionsArea Vertical $
-                     cached ViewMessageReactionsArea body
+reactionsText st m = viewport ViewMessageReactionsArea Vertical body
     where
         body = case null reacList of
             True -> txt "This message has no reactions."
@@ -123,31 +127,28 @@ reactionsText st m = viewport ViewMessageReactionsArea Vertical $
 
         lookupUsername uid = usernameForUserId uid st
 
-viewMessageBox :: ChatState -> Widget Name
-viewMessageBox st =
-    let mkBody vpWidth = case st^.csViewedMessage of
-          Nothing -> str "BUG: no message to show, please report!"
-          Just (msg, _) ->
-              let hs = getHighlightSet st
-                  parent = case msg^.mInReplyToMsg of
-                       NotAReply -> Nothing
-                       InReplyTo pId -> getMessageForPostId st pId
-                  msgW = renderMessage md
-                  md = MessageData { mdEditThreshold     = Nothing
-                                   , mdShowOlderEdits    = False
-                                   , mdMessage           = msg
-                                   , mdIsBot             = isBotMessage msg
-                                   , mdUserName          = msg^.mUser.to (nameForUserRef st)
-                                   , mdParentMessage     = parent
-                                   , mdParentUserName    = parent >>= (^.mUser.to (nameForUserRef st))
-                                   , mdRenderReplyParent = True
-                                   , mdHighlightSet      = hs
-                                   , mdIndentBlocks      = True
-                                   , mdThreadState       = NoThread
-                                   , mdShowReactions     = False
-                                   , mdMessageWidthLimit = Just vpWidth
-                                   }
-              in cached ViewMessageArea msgW
+viewMessageBox :: ChatState -> Message -> Widget Name
+viewMessageBox st msg =
+    let mkBody vpWidth =
+            let hs = getHighlightSet st
+                parent = case msg^.mInReplyToMsg of
+                     NotAReply -> Nothing
+                     InReplyTo pId -> getMessageForPostId st pId
+                md = MessageData { mdEditThreshold     = Nothing
+                                 , mdShowOlderEdits    = False
+                                 , mdMessage           = msg
+                                 , mdIsBot             = isBotMessage msg
+                                 , mdUserName          = msg^.mUser.to (nameForUserRef st)
+                                 , mdParentMessage     = parent
+                                 , mdParentUserName    = parent >>= (^.mUser.to (nameForUserRef st))
+                                 , mdRenderReplyParent = True
+                                 , mdHighlightSet      = hs
+                                 , mdIndentBlocks      = True
+                                 , mdThreadState       = NoThread
+                                 , mdShowReactions     = False
+                                 , mdMessageWidthLimit = Just vpWidth
+                                 }
+            in renderMessage md
 
     in Widget Greedy Greedy $ do
         ctx <- getContext
