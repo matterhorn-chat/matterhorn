@@ -1018,8 +1018,8 @@ data Mode =
 data ConnectionStatus = Connected | Disconnected deriving (Eq)
 
 -- | An entry in a tabbed window corresponding to a tab and its content.
--- Parameterized over an abstract value type for the tabs so we can give
--- each a unique handle.
+-- Parameterized over an abstract handle type ('a') for the tabs so we
+-- can give each a unique handle.
 data TabbedWindowEntry a =
     TabbedWindowEntry { tweValue :: a
                       -- ^ The handle for this tab.
@@ -1041,6 +1041,9 @@ data TabbedWindowEntry a =
 -- the *state* of the window; it merely provides a collection of tab
 -- window entries (see above). To track the state of a tabbed window,
 -- use a TabbedWindow.
+--
+-- Parameterized over an abstract handle type ('a') for the tabs so we
+-- can give each a unique handle.
 data TabbedWindowTemplate a =
     TabbedWindowTemplate { twtEntries :: [TabbedWindowEntry a]
                          -- ^ The entries in tabbed windows with this
@@ -1052,6 +1055,9 @@ data TabbedWindowTemplate a =
 
 -- | An instantiated tab window. This is based on a template and tracks
 -- the state of the tabbed window (current tab).
+--
+-- Parameterized over an abstract handle type ('a') for the tabs so we
+-- can give each a unique handle.
 data TabbedWindow a =
     TabbedWindow { twValue :: a
                  -- ^ The handle of the currently-selected tab.
