@@ -102,20 +102,20 @@ appendEditSentinel sentinel b =
 
 -- | A bundled structure that includes all the information necessary
 -- to render a given message
-data MessageData = MessageData
-  { mdEditThreshold     :: Maybe ServerTime
-  , mdShowOlderEdits    :: Bool
-  , mdShowReactions     :: Bool
-  , mdMessage           :: Message
-  , mdUserName          :: Maybe Text
-  , mdParentMessage     :: Maybe Message
-  , mdParentUserName    :: Maybe Text
-  , mdThreadState       :: ThreadState
-  , mdRenderReplyParent :: Bool
-  , mdHighlightSet      :: HighlightSet
-  , mdIndentBlocks      :: Bool
-  , mdMessageWidthLimit :: Maybe Int
-  }
+data MessageData =
+    MessageData { mdEditThreshold :: Maybe ServerTime
+                , mdShowOlderEdits :: Bool
+                , mdShowReactions :: Bool
+                , mdMessage :: Message
+                , mdUserName :: Maybe Text
+                , mdParentMessage :: Maybe Message
+                , mdParentUserName :: Maybe Text
+                , mdThreadState :: ThreadState
+                , mdRenderReplyParent :: Bool
+                , mdHighlightSet :: HighlightSet
+                , mdIndentBlocks :: Bool
+                , mdMessageWidthLimit :: Maybe Int
+                }
 
 -- | renderMessage performs markdown rendering of the specified message.
 --
