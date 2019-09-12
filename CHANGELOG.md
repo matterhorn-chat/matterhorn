@@ -1,4 +1,57 @@
 
+50200.5.0
+=========
+
+New features:
+ * The configuration file now supports tilde expansion in the following
+   fields, where a tilde ("~") will be expanded to the path to the
+   user's home directory:
+   * `urlOpenCommand`
+   * `syntaxDirectories`
+   * `activityNotifyCommand`
+   * `themeCustomizationFile`
+ * The "message view" window (accessible in message selection mode by
+   default with the `v` binding) has been redesigned.
+   * The window now shows the message and the message's user reactions
+     in separate tabs in a tabbed interface.
+   * New key events, `select-next-tab` (default: `Tab`) and
+     `select-previous-tab` (default: `Shift-Tab`), were added to control
+     tab-switching behavior.
+   * The window got some keybinding help text.
+   * Message text is now wrapped in this view, whereas before long lines
+     were not wrapped and had to be scrolled horizontally to be read.
+     In addition, code blocks are not wrapped, making wide code blocks
+     readable by scrolling as originally intended.
+   * New theme attribute names, `tabSelected` and `tabUnselected`, were
+     added to style the currently-selected and other tabs, respectively.
+ * The application's default attachment browser path can now be
+   configured, thanks to Victor Shamanov (@wiruzx). See the
+   `defaultAttachmentPath` setting in `sample-config.ini` for details.
+ * Added the `/log-mark` command to add user-specified marker messages
+   to the log to aid in debugging.
+ * Added the `/create-private-channel` command to support creating
+   private channels. (#512)
+ * The attachment list now supports the `select-up` and `select-down`
+   key events.
+ * All editors in Matterhorn now support bracketed pastes if your
+   terminal emulator supports bracketed paste mode.
+
+Other improvements:
+ * The message-viewing window now wraps text while preserving wide code
+   blocks, making messages much easier to read in this mode than before.
+ * Various files (e.g. `keybindings.md`) were moved to `docs/` in the
+   repository as well as in releases.
+ * The team selection interface at startup now shows team display names.
+ * The main user interface now shows the current team and user at the
+   top of the channel list sidebar.
+
+Bug fixes:
+ * The attachment file browser will now no longer disappear if the user
+   attempts to navigate a symlinked directory. Instead, the symlinked
+   directory will be navigated as expected. (#507)
+ * The "Fetching messages" message that appears in channels with pending
+   server responses now gets cleaned up properly. (#498)
+
 50200.4.0
 =========
 
