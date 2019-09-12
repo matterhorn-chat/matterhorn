@@ -24,6 +24,8 @@ import           Types
 import           Markdown
 import           Draw.Messages ( nameForUserRef )
 
+-- | The template for "View Message" windows triggered by message
+-- selection mode.
 viewMessageWindowTemplate :: TabbedWindowTemplate ViewMessageWindowTab
 viewMessageWindowTemplate =
     TabbedWindowTemplate { twtEntries = [ messageEntry
@@ -44,6 +46,13 @@ messageEntry =
 onShowMessage :: ViewMessageWindowTab -> MH ()
 onShowMessage _ = do
     let vs = viewportScroll ViewMessageArea
+
+    -- When we show the message tab, we need to reset the rendering
+    -- cache of the tab's contents and reset the viewport scroll
+    -- position. This is because an older View Message window used the
+    -- same handle for the viewport and we don't want that old state
+    -- affecting this window. This also means that switching tabs in an
+    -- existing window resets this state, too.
     mh $ do
         vScrollToBeginning vs
         hScrollToBeginning vs
@@ -61,6 +70,13 @@ reactionsEntry =
 onShowReactions :: ViewMessageWindowTab -> MH ()
 onShowReactions _ = do
     let vs = viewportScroll ViewMessageReactionsArea
+
+    -- When we show the reactions tab, we need to reset the rendering
+    -- cache of the tab's contents and reset the viewport scroll
+    -- position. This is because an older View Message window used the
+    -- same handle for the viewport and we don't want that old state
+    -- affecting this window. This also means that switching tabs in an
+    -- existing window resets this state, too.
     mh $ do
         vScrollToBeginning vs
         hScrollToBeginning vs
