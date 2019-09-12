@@ -1091,7 +1091,9 @@ tabbedWindow :: (Show a, Eq a)
              -> TabbedWindow a
 tabbedWindow initialVal t retMode (width, height) =
     let handles = tweValue <$> twtEntries t
-    in if | length handles /= length (nub handles) ->
+    in if | length handles == [] ->
+              error "BUG: tabbed window template must provide at least one entry"
+          | length handles /= length (nub handles) ->
               error "BUG: tabbed window should have one entry per handle"
           | not (initialVal `elem` handles) ->
               error $ "BUG: tabbed window handle " <>
