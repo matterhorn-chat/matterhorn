@@ -21,7 +21,7 @@ import           Events
 import           IOUtil
 import           InputHistory
 import           LastRunState
-import           Options
+import           Options hiding ( ShowHelp )
 import           State.Setup
 import           State.Setup.Threads.Logging ( shutdownLogManager )
 import           Types
@@ -31,10 +31,21 @@ app :: App ChatState MHEvent Name
 app = App
   { appDraw         = draw
   , appChooseCursor = \s cs -> case appMode s of
-      ManageAttachments -> Nothing
-      ManageAttachmentsBrowseFiles -> Nothing
-      ViewMessage -> Nothing
-      _ -> showFirstCursor s cs
+      Main                          -> showFirstCursor s cs
+      ChannelSelect                 -> showFirstCursor s cs
+      UserListOverlay               -> showFirstCursor s cs
+      ReactionEmojiListOverlay      -> showFirstCursor s cs
+      ChannelListOverlay            -> showFirstCursor s cs
+      ManageAttachmentsBrowseFiles  -> showFirstCursor s cs
+      LeaveChannelConfirm           -> Nothing
+      DeleteChannelConfirm          -> Nothing
+      MessageSelect                 -> Nothing
+      MessageSelectDeleteConfirm    -> Nothing
+      PostListOverlay _             -> Nothing
+      ManageAttachments             -> Nothing
+      ViewMessage                   -> Nothing
+      ShowHelp _                    -> Nothing
+      UrlSelect                     -> Nothing
   , appHandleEvent  = onEvent
   , appStartEvent   = return
   , appAttrMap      = (^.csResources.crTheme)
