@@ -37,14 +37,27 @@ viewMessageWindowTemplate =
 messageEntry :: TabbedWindowEntry ViewMessageWindowTab
 messageEntry =
     TabbedWindowEntry { tweValue = VMTabMessage
-                      , tweRender = renderMessageTab
-                      , tweHandleEvent = handleEventMessageTab
-                      , tweTitle = const $ const $ txt "Message"
-                      , tweShowHandler = onShowMessage
+                      , tweRender = renderTab
+                      , tweHandleEvent = handleEvent
+                      , tweTitle = tabTitle
+                      , tweShowHandler = onShow
                       }
 
-onShowMessage :: ViewMessageWindowTab -> MH ()
-onShowMessage _ = do
+reactionsEntry :: TabbedWindowEntry ViewMessageWindowTab
+reactionsEntry =
+    TabbedWindowEntry { tweValue = VMTabReactions
+                      , tweRender = renderTab
+                      , tweHandleEvent = handleEvent
+                      , tweTitle = tabTitle
+                      , tweShowHandler = onShow
+                      }
+
+tabTitle :: ViewMessageWindowTab -> Bool -> Widget Name
+tabTitle VMTabMessage _ = txt "Message"
+tabTitle VMTabReactions _ = txt "Reactions"
+
+onShow :: ViewMessageWindowTab -> MH ()
+onShow VMTabMessage = do
     let vs = viewportScroll ViewMessageArea
 
     -- When we show the message tab, we need to reset the rendering
@@ -57,18 +70,7 @@ onShowMessage _ = do
         vScrollToBeginning vs
         hScrollToBeginning vs
         invalidateCacheEntry ViewMessageArea
-
-reactionsEntry :: TabbedWindowEntry ViewMessageWindowTab
-reactionsEntry =
-    TabbedWindowEntry { tweValue = VMTabReactions
-                      , tweRender = renderReactionsTab
-                      , tweHandleEvent = handleEventReactionsTab
-                      , tweTitle = const $ const $ txt "Reactions"
-                      , tweShowHandler = onShowReactions
-                      }
-
-onShowReactions :: ViewMessageWindowTab -> MH ()
-onShowReactions _ = do
+onShow VMTabReactions = do
     let vs = viewportScroll ViewMessageReactionsArea
 
     -- When we show the reactions tab, we need to reset the rendering
@@ -82,20 +84,18 @@ onShowReactions _ = do
         hScrollToBeginning vs
         invalidateCacheEntry ViewMessageReactionsArea
 
-renderMessageTab :: ViewMessageWindowTab -> ChatState -> Widget Name
-renderMessageTab _ cs = viewMessageBox cs
+renderTab :: ViewMessageWindowTab -> ChatState -> Widget Name
+renderTab VMTabMessage cs =
+    viewMessageBox cs
+renderTab VMTabReactions cs =
+    case cs^.csViewedMessage of
+        Nothing -> error "BUG: renderReactionsTab: nothing found"
+        Just (m, _) -> reactionsText cs m
 
-renderReactionsTab :: ViewMessageWindowTab -> ChatState -> Widget Name
-renderReactionsTab _ cs = case cs^.csViewedMessage of
-    Nothing -> error "BUG: renderReactionsTab: nothing found"
-    Just (m, _) -> reactionsText cs m
-
-handleEventMessageTab :: ViewMessageWindowTab -> Vty.Event -> MH ()
-handleEventMessageTab _ =
+handleEvent :: ViewMessageWindowTab -> Vty.Event -> MH ()
+handleEvent VMTabMessage =
     handleKeyboardEvent viewMessageKeybindings (const $ return ())
-
-handleEventReactionsTab :: ViewMessageWindowTab -> Vty.Event -> MH ()
-handleEventReactionsTab _ =
+handleEvent VMTabReactions =
     handleKeyboardEvent viewMessageReactionsKeybindings (const $ return ())
 
 reactionsText :: ChatState -> Message -> Widget Name
