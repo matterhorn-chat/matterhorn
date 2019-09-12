@@ -59,26 +59,18 @@ tabTitle :: ViewMessageWindowTab -> Bool -> T.Text
 tabTitle VMTabMessage _ = "Message"
 tabTitle VMTabReactions _ = "Reactions"
 
+-- When we show the tabs, we need to reset the viewport scroll position
+-- for viewports in that tab. This is because an older View Message
+-- window used the same handle for the viewport and we don't want that
+-- old state affecting this window. This also means that switching tabs
+-- in an existing window resets this state, too.
 onShow :: ViewMessageWindowTab -> MH ()
-onShow VMTabMessage = do
-    let vs = viewportScroll ViewMessageArea
+onShow VMTabMessage = resetVp ViewMessageArea
+onShow VMTabReactions = resetVp ViewMessageArea
 
-    -- When we show the message tab, we need to reset the viewport
-    -- scroll position. This is because an older View Message window
-    -- used the same handle for the viewport and we don't want that old
-    -- state affecting this window. This also means that switching tabs
-    -- in an existing window resets this state, too.
-    mh $ do
-        vScrollToBeginning vs
-        hScrollToBeginning vs
-onShow VMTabReactions = do
-    let vs = viewportScroll ViewMessageReactionsArea
-
-    -- When we show the reactions tab, we need to reset the viewport
-    -- scroll position. This is because an older View Message window
-    -- used the same handle for the viewport and we don't want that old
-    -- state affecting this window. This also means that switching tabs
-    -- in an existing window resets this state, too.
+resetVp :: Name -> MH ()
+resetVp n = do
+    let vs = viewportScroll n
     mh $ do
         vScrollToBeginning vs
         hScrollToBeginning vs
