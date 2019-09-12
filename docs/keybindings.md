@@ -1,5 +1,6 @@
+# Keybindings
 
-# Keybindings: Help Page
+# Help Page
 | Keybinding | Event Name | Description |
 | ---------- | ---------- | ----------- |
 | `Esc`, `C-c` | `cancel` | Return to the main interface |
@@ -10,7 +11,7 @@
 | `Home` | `scroll-top` | Scroll to the beginning of the help |
 | `Up` | `scroll-up` | Scroll up |
 
-# Keybindings: Main Interface
+# Main Interface
 | Keybinding | Event Name | Description |
 | ---------- | ---------- | ----------- |
 | `Esc`, `C-c` | `cancel` | Cancel autocomplete, message reply, or edit, in that order |
@@ -36,21 +37,21 @@
 | `M-p` | `toggle-message-preview` | Toggle message preview |
 | `M-e` | `toggle-multiline` | Toggle multi-line message compose mode |
 
-# Keybindings: Channel Select Mode
+# Channel Select Mode
 | Keybinding | Event Name | Description |
 | ---------- | ---------- | ----------- |
 | `Esc`, `C-c` | `cancel` | Cancel channel selection |
 | `C-n` | `focus-next-channel` | Select next match |
 | `C-p` | `focus-prev-channel` | Select previous match |
 
-# Keybindings: URL Select Mode
+# URL Select Mode
 | Keybinding | Event Name | Description |
 | ---------- | ---------- | ----------- |
 | `Esc`, `C-c` | `cancel` | Cancel URL selection |
 | `j`, `Down` | `select-down` | Move cursor down |
 | `k`, `Up` | `select-up` | Move cursor up |
 
-# Keybindings: Message Select Mode
+# Message Select Mode
 | Keybinding | Event Name | Description |
 | ---------- | ---------- | ----------- |
 | `Esc`, `C-c` | `cancel` | Cancel message selection |
@@ -71,7 +72,7 @@
 | `y` | `yank-message` | Copy a verbatim section or message to the clipboard |
 | `Y` | `yank-whole-message` | Copy an entire message to the clipboard |
 
-# Keybindings: Flagged Messages
+# Flagged Messages
 | Keybinding | Event Name | Description |
 | ---------- | ---------- | ----------- |
 | `Enter` | `activate-list-item` | Jump to and select current message |
@@ -80,7 +81,7 @@
 | `j`, `Down` | `select-down` | Select the next message |
 | `k`, `Up` | `select-up` | Select the previous message |
 
-# Keybindings: User Listings
+# User Listings
 | Keybinding | Event Name | Description |
 | ---------- | ---------- | ----------- |
 | `Enter` | `activate-list-item` | Interact with the selected user |
@@ -90,7 +91,7 @@
 | `C-n`, `Down` | `search-select-down` | Select the next user |
 | `C-p`, `Up` | `search-select-up` | Select the previous user |
 
-# Keybindings: Channel Search Window
+# Channel Search Window
 | Keybinding | Event Name | Description |
 | ---------- | ---------- | ----------- |
 | `Enter` | `activate-list-item` | Join the selected channel |
@@ -100,7 +101,7 @@
 | `C-n`, `Down` | `search-select-down` | Select the next channel |
 | `C-p`, `Up` | `search-select-up` | Select the previous channel |
 
-# Keybindings: Reaction Emoji Search Window
+# Reaction Emoji Search Window
 | Keybinding | Event Name | Description |
 | ---------- | ---------- | ----------- |
 | `Enter` | `activate-list-item` | Post the selected emoji reaction |
@@ -110,14 +111,14 @@
 | `C-n`, `Down` | `search-select-down` | Select the next emoji |
 | `C-p`, `Up` | `search-select-up` | Select the previous emoji |
 
-# Keybindings: Message Viewer: Common
+# Message Viewer: Common
 | Keybinding | Event Name | Description |
 | ---------- | ---------- | ----------- |
 | `Esc`, `C-c` | `cancel` | Close window |
 | `Tab` | `select-next-tab` | Select next tab |
 | `BackTab` | `select-previous-tab` | Select previous tab |
 
-# Keybindings: Message Viewer: Message tab
+# Message Viewer: Message tab
 | Keybinding | Event Name | Description |
 | ---------- | ---------- | ----------- |
 | `PgDown` | `page-down` | Page down |
@@ -129,7 +130,7 @@
 | `Home` | `scroll-top` | Scroll to the beginning of the message |
 | `Up` | `scroll-up` | Scroll up |
 
-# Keybindings: Message Viewer: Reactions tab
+# Message Viewer: Reactions tab
 | Keybinding | Event Name | Description |
 | ---------- | ---------- | ----------- |
 | `PgDown` | `page-down` | Page down |
@@ -139,7 +140,7 @@
 | `Home` | `scroll-top` | Scroll to the beginning of the reactions list |
 | `Up` | `scroll-up` | Scroll up |
 
-# Keybindings: Attachment List
+# Attachment List
 | Keybinding | Event Name | Description |
 | ---------- | ---------- | ----------- |
 | `a` | `add-to-attachment-list` | Add a new attachment to the attachment list |
