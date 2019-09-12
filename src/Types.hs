@@ -1029,8 +1029,8 @@ data TabbedWindowEntry a =
                       , tweHandleEvent :: a -> Vty.Event -> MH ()
                       -- ^ The event-handling function to use when this
                       -- tab is selected.
-                      , tweTitle :: a -> Bool -> Widget Name
-                      -- ^ Title-rendering for this tab, with a boolean
+                      , tweTitle :: a -> Bool -> T.Text
+                      -- ^ Title function for this tab, with a boolean
                       -- indicating whether this is the current tab.
                       , tweShowHandler :: a -> MH ()
                       -- ^ A handler to be invoked when this tab is

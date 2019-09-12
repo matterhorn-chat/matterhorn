@@ -69,6 +69,7 @@ tabBar w =
                decorateTab $
                useAttr $
                padLeftRight 2 $
+               txt $
                tweTitle e (tweValue e) isCurrent
         contents = Widget Fixed Fixed $ do
             ctx <- getContext

@@ -52,9 +52,9 @@ reactionsEntry =
                       , tweShowHandler = onShow
                       }
 
-tabTitle :: ViewMessageWindowTab -> Bool -> Widget Name
-tabTitle VMTabMessage _ = txt "Message"
-tabTitle VMTabReactions _ = txt "Reactions"
+tabTitle :: ViewMessageWindowTab -> Bool -> T.Text
+tabTitle VMTabMessage _ = "Message"
+tabTitle VMTabReactions _ = "Reactions"
 
 onShow :: ViewMessageWindowTab -> MH ()
 onShow VMTabMessage = do
