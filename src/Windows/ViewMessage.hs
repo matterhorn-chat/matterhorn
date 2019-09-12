@@ -9,6 +9,7 @@ import           Prelude ()
 import           Prelude.MH
 
 import           Brick
+import           Brick.Widgets.Border
 
 import qualified Data.Set as S
 import qualified Data.Map as M
@@ -129,7 +130,13 @@ reactionsText st m = viewport ViewMessageReactionsArea Vertical body
 
 viewMessageBox :: ChatState -> Message -> Widget Name
 viewMessageBox st msg =
-    let mkBody vpWidth =
+    let maybeWarn = if not (msg^.mDeleted) then id else warn
+        warn w = vBox [w, hBorder, deleteWarning]
+        deleteWarning = withDefAttr errorMessageAttr $
+                        txtWrap $ "Alert: this message has been deleted and " <>
+                                  "will no longer be accessible once this window " <>
+                                  "is closed."
+        mkBody vpWidth =
             let hs = getHighlightSet st
                 parent = case msg^.mInReplyToMsg of
                      NotAReply -> Nothing
@@ -152,7 +159,7 @@ viewMessageBox st msg =
 
     in Widget Greedy Greedy $ do
         ctx <- getContext
-        render $ viewport ViewMessageArea Both $ mkBody (ctx^.availWidthL)
+        render $ maybeWarn $ viewport ViewMessageArea Both $ mkBody (ctx^.availWidthL)
 
 viewMessageKeybindings :: KeyConfig -> [Keybinding]
 viewMessageKeybindings =
