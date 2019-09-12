@@ -103,7 +103,7 @@ reactionsText st m = viewport ViewMessageReactionsArea Vertical $
                      cached ViewMessageReactionsArea body
     where
         body = case null reacList of
-            True -> emptyWidget
+            True -> txt "This message has no reactions."
             False -> vBox $ mkEntry <$> reacList
         reacList = M.toList (m^.mReactions)
         mkEntry (reactionName, userIdSet) =
