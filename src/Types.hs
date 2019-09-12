@@ -1126,7 +1126,10 @@ lookupTabbedWindowEntry handle w =
 -- | Switch a tabbed window's selected tab to its next tab, cycling back
 -- to the first tab if the last tab is the selected tab. This also
 -- invokes the on-show handler for the newly-selected tab.
+--
+-- Note that this does nothing if the window has only one tab.
 tabbedWindowNextTab :: (Show a, Eq a) => TabbedWindow a -> MH (TabbedWindow a)
+tabbedWindowNextTab w | length (twtEntries $ twTemplate w) == 1 = return w
 tabbedWindowNextTab w = do
     let curIdx = case elemIndex (tweValue curEntry) allHandles of
             Nothing -> error "BUG: tabbedWindowNextTab: could not find current handle in handle list"
@@ -1138,13 +1141,17 @@ tabbedWindowNextTab w = do
         allHandles = tweValue <$> twtEntries (twTemplate w)
         curEntry = getCurrentTabbedWindowEntry w
         newWin = w { twValue = newHandle }
+
     runTabShowHandlerFor newHandle newWin
     return newWin
 
 -- | Switch a tabbed window's selected tab to its previous tab, cycling
 -- to the last tab if the first tab is the selected tab. This also
 -- invokes the on-show handler for the newly-selected tab.
+--
+-- Note that this does nothing if the window has only one tab.
 tabbedWindowPreviousTab :: (Show a, Eq a) => TabbedWindow a -> MH (TabbedWindow a)
+tabbedWindowPreviousTab w | length (twtEntries $ twTemplate w) == 1 = return w
 tabbedWindowPreviousTab w = do
     let curIdx = case elemIndex (tweValue curEntry) allHandles of
             Nothing -> error "BUG: tabbedWindowPreviousTab: could not find current handle in handle list"
@@ -1156,6 +1163,7 @@ tabbedWindowPreviousTab w = do
         allHandles = tweValue <$> twtEntries (twTemplate w)
         curEntry = getCurrentTabbedWindowEntry w
         newWin = w { twValue = newHandle }
+
     runTabShowHandlerFor newHandle newWin
     return newWin
 
