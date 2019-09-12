@@ -40,8 +40,6 @@ New features:
    terminal emulator supports bracketed paste mode.
 
 Other improvements:
- * The message-viewing window now wraps text while preserving wide code
-   blocks, making messages much easier to read in this mode than before.
  * Various files (e.g. `keybindings.md`) were moved to `docs/` in the
    repository as well as in releases.
  * The team selection interface at startup now shows team display names.
