@@ -17,6 +17,7 @@ import           Themes
 import           Types.KeyEvents
 import           Events.Keybindings ( getFirstDefaultBinding )
 
+-- | Render a tabbed window.
 drawTabbedWindow :: (Eq a, Show a)
                  => TabbedWindow a
                  -> ChatState
@@ -32,6 +33,7 @@ drawTabbedWindow w cs =
        borderWithLabel title $
        (tabBar w <=> tabBody <=> hBorder <=> hCenter keybindingHelp)
 
+-- | Keybinding help to show at the bottom of a tabbed window.
 keybindingHelp :: Widget Name
 keybindingHelp =
     let ppPair (label, evs) = hBox $ (intersperse (txt "/") $ ppEv <$> evs) <> [txt (":" <> label)]
@@ -42,6 +44,7 @@ keybindingHelp =
                 ]
     in hBox $ intersperse (txt "  ") $ ppPair <$> pairs
 
+-- | The scrollable tab bar to show at the top of a tabbed window.
 tabBar :: (Eq a, Show a)
        => TabbedWindow a
        -> Widget Name
