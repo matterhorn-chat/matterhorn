@@ -53,6 +53,7 @@ tabBar w =
                           then withDefAttr tabSelectedAttr
                           else withDefAttr tabUnselectedAttr
                 isCurrent = tweValue e == tweValue cur
+                makeVisible = if isCurrent then visible else id
                 decorateTab v = Widget Fixed Fixed $ do
                     result <- render v
                     let width = Vty.imageWidth (result^.imageL)
@@ -61,11 +62,15 @@ tabBar w =
                            render $ padBottom (Pad 1) $ raw $ result^.imageL
                        else
                            render $ vBox [raw $ result^.imageL, hLimit width hBorder]
-            in decorateTab $
+            in makeVisible $
+               decorateTab $
                useAttr $
                padLeftRight 2 $
                tweTitle e (tweValue e) isCurrent
-        renderings = (intersperse divider $ renderEntry <$> entries) <>
-                     [divider, padTop (Pad 1) hBorder]
+        contents = Widget Fixed Fixed $ do
+            ctx <- getContext
+            let width = ctx^.availWidthL
+            render $ hBox $ (intersperse divider $ renderEntry <$> entries) <>
+                            [divider, padTop (Pad 1) $ hLimit width hBorder]
         divider = vLimit 1 vBorder <=> joinableBorder (Edges True False False False)
-    in hBox renderings
+    in viewport TabbedWindowTabBar Horizontal contents

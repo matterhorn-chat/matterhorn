@@ -622,6 +622,7 @@ data Name =
     | MessageReactionsArea
     | ReactionEmojiList
     | ReactionEmojiListInput
+    | TabbedWindowTabBar
     deriving (Eq, Show, Ord)
 
 -- | The sum type of exceptions we expect to encounter on authentication
