@@ -76,4 +76,4 @@ tabBar w =
             render $ hBox $ (intersperse divider $ renderEntry <$> entries) <>
                             [divider, padTop (Pad 1) $ hLimit width hBorder]
         divider = vLimit 1 vBorder <=> joinableBorder (Edges True False False False)
-    in viewport TabbedWindowTabBar Horizontal contents
+    in vLimit 2 $ viewport TabbedWindowTabBar Horizontal contents
