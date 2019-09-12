@@ -24,6 +24,9 @@ New features:
      readable by scrolling as originally intended.
    * New theme attribute names, `tabSelected` and `tabUnselected`, were
      added to style the currently-selected and other tabs, respectively.
+   * Sections on the available keybindings in the various tabs for this
+     interface were added to the interactive help section on keybindings
+     as well as the generated keybindings file provided with Matterhorn.
  * The application's default attachment browser path can now be
    configured, thanks to Victor Shamanov (@wiruzx). See the
    `defaultAttachmentPath` setting in `sample-config.ini` for details.
