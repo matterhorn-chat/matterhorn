@@ -110,15 +110,33 @@
 | `C-n`, `Down` | `search-select-down` | Select the next emoji |
 | `C-p`, `Up` | `search-select-up` | Select the previous emoji |
 
-# Keybindings: Message Viewer
+# Keybindings: Message Viewer: Common
 | Keybinding | Event Name | Description |
 | ---------- | ---------- | ----------- |
 | `Esc`, `C-c` | `cancel` | Close window |
+| `Tab` | `select-next-tab` | Select next tab |
+| `BackTab` | `select-previous-tab` | Select previous tab |
+
+# Keybindings: Message Viewer: Message tab
+| Keybinding | Event Name | Description |
+| ---------- | ---------- | ----------- |
 | `PgDown` | `page-down` | Page down |
 | `PgUp` | `page-up` | Page up |
 | `End` | `scroll-bottom` | Scroll to the end of the message |
 | `Down` | `scroll-down` | Scroll down |
+| `Left` | `scroll-left` | Scroll left |
+| `Right` | `scroll-right` | Scroll right |
 | `Home` | `scroll-top` | Scroll to the beginning of the message |
+| `Up` | `scroll-up` | Scroll up |
+
+# Keybindings: Message Viewer: Reactions tab
+| Keybinding | Event Name | Description |
+| ---------- | ---------- | ----------- |
+| `PgDown` | `page-down` | Page down |
+| `PgUp` | `page-up` | Page up |
+| `End` | `scroll-bottom` | Scroll to the end of the reactions list |
+| `Down` | `scroll-down` | Scroll down |
+| `Home` | `scroll-top` | Scroll to the beginning of the reactions list |
 | `Up` | `scroll-up` | Scroll up |
 
 # Keybindings: Attachment List
