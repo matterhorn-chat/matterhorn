@@ -1125,7 +1125,7 @@ lookupTabbedWindowEntry handle w =
 
 -- | Switch a tabbed window's selected tab to its next tab, cycling back
 -- to the first tab if the last tab is the selected tab. This also
--- invokes he on-show handler for the newly-selected tab.
+-- invokes the on-show handler for the newly-selected tab.
 tabbedWindowNextTab :: (Show a, Eq a) => TabbedWindow a -> MH (TabbedWindow a)
 tabbedWindowNextTab w = do
     let curIdx = case elemIndex (tweValue curEntry) allHandles of
@@ -1143,7 +1143,7 @@ tabbedWindowNextTab w = do
 
 -- | Switch a tabbed window's selected tab to its previous tab, cycling
 -- to the last tab if the first tab is the selected tab. This also
--- invokes he on-show handler for the newly-selected tab.
+-- invokes the on-show handler for the newly-selected tab.
 tabbedWindowPreviousTab :: (Show a, Eq a) => TabbedWindow a -> MH (TabbedWindow a)
 tabbedWindowPreviousTab w = do
     let curIdx = case elemIndex (tweValue curEntry) allHandles of
