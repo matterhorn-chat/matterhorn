@@ -1088,7 +1088,8 @@ tabbedWindow initialVal t retMode (width, height) =
     in if | length handles /= length (nub handles) ->
               error "BUG: tabbed window should have one entry per handle"
           | not (initialVal `elem` handles) ->
-              error $ "BUG: tabbed window handle " <> show initialVal <> " not present in template"
+              error $ "BUG: tabbed window handle " <>
+                      show initialVal <> " not present in template"
           | otherwise ->
               TabbedWindow { twTemplate = t
                            , twValue = initialVal
@@ -1115,7 +1116,10 @@ runTabShowHandlerFor handle w = do
 
 -- | Look up a tabbed window entry by handle. Raises an exception if no
 -- such entry exists.
-lookupTabbedWindowEntry :: (Eq a, Show a) => a -> TabbedWindow a -> TabbedWindowEntry a
+lookupTabbedWindowEntry :: (Eq a, Show a)
+                        => a
+                        -> TabbedWindow a
+                        -> TabbedWindowEntry a
 lookupTabbedWindowEntry handle w =
     let matchesVal e = tweValue e == handle
     in case filter matchesVal (twtEntries $ twTemplate w) of
@@ -1128,11 +1132,15 @@ lookupTabbedWindowEntry handle w =
 -- invokes the on-show handler for the newly-selected tab.
 --
 -- Note that this does nothing if the window has only one tab.
-tabbedWindowNextTab :: (Show a, Eq a) => TabbedWindow a -> MH (TabbedWindow a)
+tabbedWindowNextTab :: (Show a, Eq a)
+                    => TabbedWindow a
+                    -> MH (TabbedWindow a)
 tabbedWindowNextTab w | length (twtEntries $ twTemplate w) == 1 = return w
 tabbedWindowNextTab w = do
     let curIdx = case elemIndex (tweValue curEntry) allHandles of
-            Nothing -> error "BUG: tabbedWindowNextTab: could not find current handle in handle list"
+            Nothing ->
+                error $ "BUG: tabbedWindowNextTab: could not find " <>
+                        "current handle in handle list"
             Just i -> i
         nextIdx = if curIdx == length allHandles - 1
                   then 0
@@ -1150,11 +1158,15 @@ tabbedWindowNextTab w = do
 -- invokes the on-show handler for the newly-selected tab.
 --
 -- Note that this does nothing if the window has only one tab.
-tabbedWindowPreviousTab :: (Show a, Eq a) => TabbedWindow a -> MH (TabbedWindow a)
+tabbedWindowPreviousTab :: (Show a, Eq a)
+                        => TabbedWindow a
+                        -> MH (TabbedWindow a)
 tabbedWindowPreviousTab w | length (twtEntries $ twTemplate w) == 1 = return w
 tabbedWindowPreviousTab w = do
     let curIdx = case elemIndex (tweValue curEntry) allHandles of
-            Nothing -> error "BUG: tabbedWindowPreviousTab: could not find current handle in handle list"
+            Nothing ->
+                error $ "BUG: tabbedWindowPreviousTab: could not find " <>
+                        "current handle in handle list"
             Just i -> i
         nextIdx = if curIdx == 0
                   then length allHandles - 1
