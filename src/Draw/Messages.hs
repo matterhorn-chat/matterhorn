@@ -64,7 +64,6 @@ renderChatMessage st hs ind threadState renderTimeFunc msg =
         m = renderMessage MessageData
               { mdMessage           = msg
               , mdUserName          = msg^.mUser.to (nameForUserRef st)
-              , mdIsBot             = isBotMessage msg
               , mdParentMessage     = parent
               , mdParentUserName    = parent >>= (^.mUser.to (nameForUserRef st))
               , mdEditThreshold     = ind

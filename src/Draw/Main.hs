@@ -244,7 +244,6 @@ renderUserCommandBox st hs =
                         , addEllipsis $ renderMessage MessageData
                           { mdMessage           = msgWithoutParent
                           , mdUserName          = msgWithoutParent^.mUser.to (nameForUserRef st)
-                          , mdIsBot             = isBotMessage msg
                           , mdParentMessage     = Nothing
                           , mdParentUserName    = Nothing
                           , mdHighlightSet      = hs
@@ -545,7 +544,6 @@ inputPreview st hs | not $ st^.csShowMessagePreview = emptyWidget
                                   { mdMessage           = m
                                   , mdUserName          = m^.mUser.to (nameForUserRef st)
                                   , mdParentMessage     = p
-                                  , mdIsBot             = isBotMessage m
                                   , mdParentUserName    = p >>= (^.mUser.to (nameForUserRef st))
                                   , mdHighlightSet      = hs
                                   , mdEditThreshold     = Nothing

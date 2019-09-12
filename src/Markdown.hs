@@ -108,7 +108,6 @@ data MessageData = MessageData
   , mdShowReactions     :: Bool
   , mdMessage           :: Message
   , mdUserName          :: Maybe Text
-  , mdIsBot             :: Bool
   , mdParentMessage     :: Maybe Message
   , mdParentUserName    :: Maybe Text
   , mdThreadState       :: ThreadState
@@ -135,7 +134,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
     let msgUsr = case mdUserName of
           Just u -> if omittedUsernameType (msg^.mType) then Nothing else Just u
           Nothing -> Nothing
-        botElem = if mdIsBot then B.txt "[BOT]" else B.emptyWidget
+        botElem = if isBotMessage msg then B.txt "[BOT]" else B.emptyWidget
         nameElems = case msgUsr of
           Just un
             | isEmote msg ->

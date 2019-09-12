@@ -136,7 +136,6 @@ viewMessageBox st msg =
                 md = MessageData { mdEditThreshold     = Nothing
                                  , mdShowOlderEdits    = False
                                  , mdMessage           = msg
-                                 , mdIsBot             = isBotMessage msg
                                  , mdUserName          = msg^.mUser.to (nameForUserRef st)
                                  , mdParentMessage     = parent
                                  , mdParentUserName    = parent >>= (^.mUser.to (nameForUserRef st))
