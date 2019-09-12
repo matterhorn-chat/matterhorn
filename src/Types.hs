@@ -1256,7 +1256,14 @@ data ChatState =
               -- metadata.
               , _csViewedMessage :: Maybe (Message, TabbedWindow ViewMessageWindowTab)
               -- ^ Set when the ViewMessage mode is active. The message
-              -- being viewed.
+              -- being viewed. Note that this stores a message, not
+              -- a message ID. That's because not all messages have
+              -- message IDs (e.g. client messages) and we still
+              -- want to support viewing of those messages. It's the
+              -- responsibility of code that uses this message to always
+              -- consult the chat state for the latest *version* of any
+              -- message with an ID here, to be sure that the latest
+              -- version is used (e.g. if it gets edited, etc.).
               }
 
 -- | Handles for the View Message window's tabs.
