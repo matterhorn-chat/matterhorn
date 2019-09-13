@@ -52,9 +52,9 @@ Bug fixes:
    directory will be navigated as expected. (#507)
  * The "Fetching messages" message that appears in channels with pending
    server responses now gets cleaned up properly. (#498)
- * Creating new /group-msg channels now properly shows the new group
-   immediately; previously the /group-msg command had to be issued a
-   second time or Matterhorn had to be restarted (#477)
+ * Creating new `/group-msg` channels now properly shows the new group
+   immediately; previously the `/group-msg` command had to be issued a
+   second time or Matterhorn had to be restarted. (#477)
 
 50200.4.0
 =========
