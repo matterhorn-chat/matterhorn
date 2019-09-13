@@ -53,6 +53,7 @@ module Types
   , BackgroundInfo(..)
   , RequestChan
   , UserFetch(..)
+  , writeBChan
 
   , mkChannelZipperList
   , ChannelListGroup(..)
@@ -264,7 +265,7 @@ import qualified Brick
 import           Brick ( EventM, Next, Widget )
 import           Brick.Main ( invalidateCache, invalidateCacheEntry )
 import           Brick.AttrMap ( AttrMap )
-import           Brick.BChan
+import qualified Brick.BChan as BCH
 import           Brick.Widgets.Edit ( Editor, editor )
 import           Brick.Widgets.List ( List, list )
 import qualified Brick.Widgets.FileBrowser as FB
@@ -820,7 +821,7 @@ data ChatResources =
                   , _crWebsocketThreadId   :: Maybe ThreadId
                   , _crConn                :: ConnectionData
                   , _crRequestQueue        :: RequestChan
-                  , _crEventQueue          :: BChan MHEvent
+                  , _crEventQueue          :: BCH.BChan MHEvent
                   , _crSubprocessLog       :: STM.TChan ProgramOutput
                   , _crWebsocketActionChan :: STM.TChan WebsocketAction
                   , _crTheme               :: AttrMap
@@ -1715,7 +1716,13 @@ withChannelOrDefault cId deflt mote = do
 raiseInternalEvent :: InternalEvent -> MH ()
 raiseInternalEvent ev = do
     queue <- use (csResources.crEventQueue)
-    St.liftIO $ writeBChan queue (IEvent ev)
+    writeBChan queue (IEvent ev)
+
+writeBChan :: (MonadIO m) => BCH.BChan MHEvent -> MHEvent -> m ()
+writeBChan chan e = do
+    written <- liftIO $ BCH.writeBChanNonBlocking chan e
+    when (not written) $
+        error $ "mhSendEvent: BChan full, please report this as a bug!"
 
 -- | Log and raise an error.
 mhError :: MHError -> MH ()

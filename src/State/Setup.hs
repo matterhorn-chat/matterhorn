@@ -7,7 +7,7 @@ where
 import           Prelude ()
 import           Prelude.MH
 
-import           Brick.BChan
+import           Brick.BChan ( newBChan )
 import           Brick.Themes ( themeToAttrMap, loadCustomizations )
 import qualified Control.Concurrent.STM as STM
 import           Data.Maybe ( fromJust )

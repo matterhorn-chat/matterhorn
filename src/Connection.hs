@@ -3,7 +3,6 @@ module Connection where
 import           Prelude ()
 import           Prelude.MH
 
-import           Brick.BChan
 import           Control.Concurrent ( forkIO, threadDelay, killThread )
 import qualified Control.Concurrent.STM as STM
 import           Control.Exception ( SomeException, catch, AsyncException(..), throwIO )

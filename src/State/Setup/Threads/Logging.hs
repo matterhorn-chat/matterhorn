@@ -22,7 +22,7 @@ where
 import           Prelude ()
 import           Prelude.MH
 
-import           Brick.BChan
+import           Brick.BChan ( BChan )
 import           Control.Concurrent.Async ( Async, async, wait )
 import qualified Control.Concurrent.STM as STM
 import           Control.Exception ( SomeException, try )

@@ -14,7 +14,7 @@ where
 import           Prelude ()
 import           Prelude.MH
 
-import           Brick.BChan
+import           Brick.BChan ( BChan )
 import           Brick.Main ( invalidateCache )
 import           Control.Concurrent ( threadDelay, forkIO )
 import qualified Control.Concurrent.STM as STM
