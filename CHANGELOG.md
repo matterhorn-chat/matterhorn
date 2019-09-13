@@ -32,6 +32,8 @@ New features:
    `defaultAttachmentPath` setting in `sample-config.ini` for details.
  * Added the `/log-mark` command to add user-specified marker messages
    to the log to aid in debugging.
+ * Logging no longer includes duplicate overlapping messages when paused
+   and resumed.
  * Added the `/create-private-channel` command to support creating
    private channels. (#512)
  * The attachment list now supports the `select-up` and `select-down`
