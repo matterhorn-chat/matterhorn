@@ -219,8 +219,9 @@ commandList =
     (LineArg (userSigil <> "user [" <> userSigil <> "user ...]")) createGroupChannel
 
   , Cmd "sh" "Run a prewritten shell script"
-    (TokenArg "script" (LineArg "message")) $ \ (script, text) ->
-      findAndRunScript script text
+    (TokenArg "script" (LineArg "message")) $ \ (script, text) -> do
+        cId <- use csCurrentChannelId
+        findAndRunScript cId script text
 
   , Cmd "me" "Send an emote message"
     (LineArg "message") $

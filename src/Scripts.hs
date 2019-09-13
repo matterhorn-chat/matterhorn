@@ -12,19 +12,21 @@ import qualified Control.Concurrent.STM as STM
 import qualified Data.Text as T
 import           System.Exit ( ExitCode(..) )
 
+import           Network.Mattermost.Types ( ChannelId )
+
 import           FilePaths ( Script(..), getAllScripts, locateScriptPath )
 import           State.Common
 import           State.Messages ( sendMessage )
 import           Types
 
 
-findAndRunScript :: Text -> Text -> MH ()
-findAndRunScript scriptName input = do
+findAndRunScript :: ChannelId -> Text -> Text -> MH ()
+findAndRunScript cId scriptName input = do
     fpMb <- liftIO $ locateScriptPath (T.unpack scriptName)
     outputChan <- use (csResources.crSubprocessLog)
     case fpMb of
       ScriptPath scriptPath -> do
-        doAsyncWith Preempt $ runScript outputChan scriptPath input
+        doAsyncWith Preempt $ runScript cId outputChan scriptPath input
       NonexecScriptPath scriptPath -> do
         let msg = ("The script `" <> T.pack scriptPath <> "` cannot be " <>
              "executed. Try running\n" <>
@@ -36,8 +38,8 @@ findAndRunScript scriptName input = do
       ScriptNotFound -> do
         mhError $ NoSuchScript scriptName
 
-runScript :: STM.TChan ProgramOutput -> FilePath -> Text -> IO (Maybe (MH ()))
-runScript outputChan fp text = do
+runScript :: ChannelId -> STM.TChan ProgramOutput -> FilePath -> Text -> IO (Maybe (MH ()))
+runScript cId outputChan fp text = do
   outputVar <- newEmptyMVar
   runLoggedCommand True outputChan fp [] (Just $ T.unpack text) (Just outputVar)
   po <- takeMVar outputVar
@@ -46,7 +48,6 @@ runScript outputChan fp text = do
         case null $ programStderr po of
             True -> Just $ do
                 mode <- use (csEditState.cedEditMode)
-                cId <- use csCurrentChannelId
                 sendMessage cId mode (T.pack $ programStdout po) []
             False -> Nothing
     ExitFailure _ -> Nothing
