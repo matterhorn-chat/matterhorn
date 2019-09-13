@@ -63,7 +63,7 @@ setupState :: IO Vty.Vty -> Maybe FilePath -> Config -> IO (ChatState, Vty.Vty)
 setupState mkVty mLogLocation config = do
   initialVty <- mkVty
 
-  eventChan <- newBChan 25
+  eventChan <- newBChan 2500
   logMgr <- newLogManager eventChan (configLogMaxBufferSize config)
 
   -- If we got an initial log location, start logging there.
