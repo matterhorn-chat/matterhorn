@@ -222,7 +222,7 @@ keybindingHelp kc = hCenter $ hLimit 100 $ vBox $
         prevChanBinding = ppBinding (getFirstDefaultBinding PrevChannelEvent)
         validKeys = map (padTop (Pad 1) . renderText . mconcat)
           [ [ "The syntax used for key sequences consists of zero or more "
-            , "single-character modifier characters followed by a keystroke "
+            , "single-character modifier characters followed by a keystroke, "
             , "all separated by dashes. The available modifier keys are "
             , "**S** for Shift, **C** for Ctrl, **A** for Alt, and **M** for "
             , "Meta. So, for example, **"
