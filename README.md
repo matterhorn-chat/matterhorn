@@ -229,9 +229,14 @@ tree](https://github.com/mattermost/mattermost-webapp/blob/master/utils/emoji.js
 
 # Building
 
-To build Matterhorn, you'll need an appropriate `ghc`/`cabal`
-installation. We currently build on GHC 8.4. We suggest you use a binary
-release if possible.
+If you just want to run Matterhorn, we strongly suggest running a binary
+release (see above).
+
+If you want to contribute changes to Matterhorn, you'll need to build
+it from source. To do that you'll need an appropriate `ghc`/`cabal`
+installation (see the latest Travis-CI builds for tested versions).
+You'll also need a GitHub account, since our Git submodules are set up
+to use SSH with GitHub.
 
 `matterhorn` is built by running the following commands:
 
