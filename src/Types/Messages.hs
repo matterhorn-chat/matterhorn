@@ -496,9 +496,10 @@ retrogradeMsgsWithThreadStates :: RetrogradeMessages -> DirectionalSeq Retrograd
 retrogradeMsgsWithThreadStates msgs = DSeq $ checkAdjacentMessages (dseq msgs)
     where
         getMessagePredecessor ms =
+                let visiblePredMsg m = not (isTransition m || m^.mDeleted) in
                 case Seq.viewl ms of
                     prev Seq.:< rest ->
-                        if not $ isTransition prev
+                        if visiblePredMsg prev
                         then Just prev
                         else getMessagePredecessor rest
                     Seq.EmptyL -> Nothing
@@ -519,9 +520,10 @@ chronologicalMsgsWithThreadStates :: Messages -> DirectionalSeq Chronological (M
 chronologicalMsgsWithThreadStates msgs = DSeq $ checkAdjacentMessages (dseq msgs)
     where
         getMessagePredecessor ms =
+                let visiblePredMsg m = not (isTransition m || m^.mDeleted) in
                 case Seq.viewr ms of
                     rest Seq.:> prev ->
-                        if not $ isTransition prev
+                        if visiblePredMsg prev
                         then Just prev
                         else getMessagePredecessor rest
                     Seq.EmptyR -> Nothing
