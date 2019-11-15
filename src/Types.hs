@@ -938,8 +938,12 @@ data ChatEditState =
                   , _cedAttachmentList :: List Name AttachmentData
                   -- ^ The list of attachments to be uploaded with the
                   -- post being edited.
-                  , _cedFileBrowser :: FB.FileBrowser Name
+                  , _cedFileBrowser :: Maybe (FB.FileBrowser Name)
                   -- ^ The browser for selecting attachment files.
+                  -- This is a Maybe because the instantiation of the
+                  -- FileBrowser causes it to read and ingest the
+                  -- target directory, so this action is deferred
+                  -- until the browser is needed.
                   }
 
 -- | An attachment.
@@ -952,8 +956,7 @@ data AttachmentData =
 -- | We can initialize a new 'ChatEditState' value with just an edit
 -- history, which we save locally.
 emptyEditState :: InputHistory -> Maybe (Aspell, IO ()) -> IO ChatEditState
-emptyEditState hist sp = do
-    browser <- FB.newFileBrowser FB.selectNonDirectories AttachmentFileBrowser Nothing
+emptyEditState hist sp =
     return ChatEditState { _cedEditor               = editor MessageInput Nothing ""
                          , _cedEphemeral            = defaultEphemeralEditState
                          , _cedInputHistory         = hist
@@ -964,7 +967,7 @@ emptyEditState hist sp = do
                          , _cedAutocomplete         = Nothing
                          , _cedAutocompletePending  = Nothing
                          , _cedAttachmentList       = list AttachmentList mempty 1
-                         , _cedFileBrowser          = browser
+                         , _cedFileBrowser          = Nothing
                          }
 
 -- | A 'RequestChan' is a queue of operations we have to perform in the

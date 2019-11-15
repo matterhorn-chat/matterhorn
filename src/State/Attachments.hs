@@ -48,6 +48,6 @@ showAttachmentFileBrowser :: MH ()
 showAttachmentFileBrowser = do
     config <- use (csResources.crConfiguration)
     filePath <- liftIO $ defaultAttachmentsPath config
-    browser <- liftIO $ FB.newFileBrowser FB.selectNonDirectories AttachmentFileBrowser filePath
+    browser <- liftIO $ Just <$> FB.newFileBrowser FB.selectNonDirectories AttachmentFileBrowser filePath
     csEditState.cedFileBrowser .= browser
     setMode ManageAttachmentsBrowseFiles
