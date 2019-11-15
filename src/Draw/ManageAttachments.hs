@@ -7,10 +7,11 @@ import           Prelude ()
 import           Prelude.MH
 
 import           Brick
-import           Brick.Widgets.List
-import           Brick.Widgets.Center
 import           Brick.Widgets.Border
+import           Brick.Widgets.Center
 import qualified Brick.Widgets.FileBrowser as FB
+import           Brick.Widgets.List
+import           Data.Maybe ( fromJust )
 
 import           Types
 import           Types.KeyEvents
@@ -58,4 +59,7 @@ drawFileBrowser st =
     hLimit 60 $
     vLimit 20 $
     borderWithLabel (txt "Attach File") $
-    FB.renderFileBrowser True (st^.csEditState.cedFileBrowser)
+    -- invariant: cedFileBrowser is not Nothing if appMode is
+    -- ManageAttachmentsBrowseFiles, and that is the only way to reach
+    -- this code, ergo the fromJust.
+    FB.renderFileBrowser True $ fromJust (st^.csEditState.cedFileBrowser)

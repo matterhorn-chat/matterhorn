@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module Events.ManageAttachments
   ( onEventManageAttachments
@@ -17,7 +18,7 @@ import qualified Data.ByteString as BS
 import qualified Data.Text as T
 import qualified Data.Vector as Vector
 import qualified Graphics.Vty as V
-import           Lens.Micro.Platform ( (%=), to )
+import           Lens.Micro.Platform ( (?=), (%=), to )
 
 import           Types
 import           Types.KeyEvents
@@ -63,6 +64,22 @@ attachmentBrowseKeybindings = mkKeybindings
           openSelectedBrowserEntry
     ]
 
+withFileBrowser :: ((FB.FileBrowser Name) -> MH ()) -> MH ()
+withFileBrowser f = do
+    use (csEditState.cedFileBrowser) >>= \case
+        Nothing -> do
+            -- The widget has not been created yet.  This should
+            -- normally not occur, because the ManageAttachments
+            -- events should not fire when there is no FileBrowser
+            -- Widget active to cause Brick to generate these events.
+            -- This could therefore be implemented as an `error "BUG:
+            -- ..."` handler, but the more benign approach is to
+            -- simply create an available FileBrowser at this stage.
+            new_b <- liftIO $ FB.newFileBrowser FB.selectNonDirectories AttachmentFileBrowser Nothing
+            csEditState.cedFileBrowser ?= new_b
+            f new_b
+        Just b -> f b
+
 openSelectedAttachment :: MH ()
 openSelectedAttachment = do
     cur <- use (csEditState.cedAttachmentList.to L.listSelectedElement)
@@ -72,26 +89,26 @@ openSelectedAttachment = do
                                            attachmentDataFileInfo entry)
 
 openSelectedBrowserEntry :: MH ()
-openSelectedBrowserEntry = do
-    b <- use (csEditState.cedFileBrowser)
+openSelectedBrowserEntry = withFileBrowser $ \b ->
     case FB.fileBrowserCursor b of
         Nothing -> return ()
         Just entry -> void $ openURL (OpenLocalFile $ FB.fileInfoFilePath entry)
 
 onEventBrowseFile :: V.Event -> MH ()
 onEventBrowseFile e = do
-    b <- use (csEditState.cedFileBrowser)
-    case FB.fileBrowserIsSearching b of
-        False ->
-            handleKeyboardEvent attachmentBrowseKeybindings handleFileBrowserEvent e
-        True ->
-            handleFileBrowserEvent e
+    withFileBrowser $ \b -> do
+        case FB.fileBrowserIsSearching b of
+            False ->
+                handleKeyboardEvent attachmentBrowseKeybindings handleFileBrowserEvent e
+            True ->
+                handleFileBrowserEvent e
 
-    b' <- use (csEditState.cedFileBrowser)
-    case FB.fileBrowserException b' of
-        Nothing -> return ()
-        Just ex -> do
-            mhLog LogError $ T.pack $ "FileBrowser exception: " <> show ex
+    -- n.b. the FileBrowser may have been updated above, so re-acquire it
+    withFileBrowser $ \b -> do
+        case FB.fileBrowserException b of
+            Nothing -> return ()
+            Just ex -> do
+                mhLog LogError $ T.pack $ "FileBrowser exception: " <> show ex
 
 cancelAttachmentBrowse :: MH ()
 cancelAttachmentBrowse = do
@@ -102,9 +119,10 @@ cancelAttachmentBrowse = do
 
 handleFileBrowserEvent :: V.Event -> MH ()
 handleFileBrowserEvent e = do
-    mhHandleEventLensed (csEditState.cedFileBrowser) FB.handleFileBrowserEvent e
-    b <- use (csEditState.cedFileBrowser)
+  let fbHandle ev = sequence . (fmap (FB.handleFileBrowserEvent ev))
+  mhHandleEventLensed (csEditState.cedFileBrowser) fbHandle e
 
+  withFileBrowser $ \b -> do
     -- TODO: Check file browser exception state
     let entries = FB.fileBrowserSelection b
     forM_ entries $ \entry -> do
