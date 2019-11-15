@@ -17,7 +17,7 @@ import           Network.Mattermost
 
 import           Config
 import           Draw
-import           Events
+import qualified Events
 import           IOUtil
 import           InputHistory
 import           LastRunState
@@ -46,7 +46,7 @@ app = App
       ViewMessage                   -> Nothing
       ShowHelp _                    -> Nothing
       UrlSelect                     -> Nothing
-  , appHandleEvent  = onEvent
+  , appHandleEvent  = Events.onEvent
   , appStartEvent   = return
   , appAttrMap      = (^.csResources.crTheme)
   }
