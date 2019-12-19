@@ -5,7 +5,6 @@ module Config
   ( Config(..)
   , PasswordSource(..)
   , findConfig
-  , getCredentials
   , defaultConfig
   )
 where
@@ -107,6 +106,8 @@ fromIni = do
     configPass <- (Just . PasswordCommand <$> field "passcmd") <|>
                   (Just . PasswordString  <$> field "pass") <|>
                   pure Nothing
+    configToken <- (Just . TokenCommand  <$> field "tokencmd") <|>
+                  pure Nothing
     configUnsafeUseHTTP <-
       fieldFlagDef "unsafeUseUnauthenticatedConnection" False
     configValidateServerCertificate <-
@@ -183,6 +184,7 @@ defaultConfig =
            , configTeam                        = Nothing
            , configPort                        = defaultPort
            , configPass                        = Nothing
+           , configToken                       = Nothing
            , configTimeFormat                  = Nothing
            , configDateFormat                  = Nothing
            , configTheme                       = Nothing
@@ -285,23 +287,16 @@ getConfig fp = do
                 Just (PasswordString pass) -> return $ Just pass
                 Nothing -> return Nothing
 
+            actualToken <- case configToken conf of
+                Just (TokenCommand cmdString) -> do
+                    let (cmd:rest) = T.unpack <$> T.words cmdString
+                    output <- convertIOException (readProcess cmd rest "") `catchE`
+                              (\e -> throwE $ "Could not execute token command: " <> e)
+                    return $ Just $ T.pack (takeWhile (/= '\n') output)
+                Just (TokenString pass) -> error $ "getConfig: Token was provided as plain text. This is a bug!"
+                Nothing -> return Nothing
+
             return conf { configPass = PasswordString <$> actualPass
+                        , configToken = TokenString <$> actualToken
                         , configAbsPath = Just absPath
                         }
-
--- | Returns the hostname, username, and password from the config. Only
--- returns Just if all three have been provided. The idea is that if
--- this returns Nothing, we're missing at least some of these values.
-getCredentials :: Config -> Maybe ConnectionInfo
-getCredentials config = do
-    pass <- configPass config
-    passStr <- case pass of
-        PasswordString p -> return p
-        PasswordCommand _ ->
-            error $ "BUG: unexpected credentials state: " <>
-                    show (configPass config)
-
-    ConnectionInfo <$> configHost config
-                   <*> (pure $ configPort config)
-                   <*> configUser config
-                   <*> (pure passStr)

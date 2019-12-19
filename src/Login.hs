@@ -66,21 +66,25 @@ import           Control.Concurrent ( forkIO, threadDelay )
 import           Control.Exception ( catch )
 import           System.IO.Error ( catchIOError )
 import qualified Data.Text as T
+import           Data.Text (unpack)
 import           Graphics.Vty hiding (mkVty)
 import           Lens.Micro.Platform ( (.~), Lens', makeLenses )
 import qualified System.IO.Error as Err
 
 import           Network.Mattermost ( ConnectionData )
-import           Network.Mattermost.Types ( Session, User, Login(..), ConnectionPoolConfig(..)
-                                          , initConnectionData, ConnectionType(..) )
+import           Network.Mattermost.Types ( Session(..), User, UserParam(..), Login(..), ConnectionPoolConfig(..)
+                                          , initConnectionData, ConnectionType(..))
+import           Network.Mattermost.Types.Internal ( Token(..) )
 import           Network.Mattermost.Exceptions ( LoginFailureException(..) )
-import           Network.Mattermost.Endpoints ( mmLogin )
+import           Network.Mattermost.Endpoints ( mmLogin, mmGetUser )
 
 import           Markdown
 import           Themes ( clientEmphAttr )
 import           Types ( ConnectionInfo(..)
-                       , ciPassword, ciUsername, ciHostname
-                       , ciPort, AuthenticationException(..)
+                       , ConnectionInfoUsernamePassword(..)
+                       , ConnectionInfoToken(..)
+                       , cipPassword, cipUsername, cipHostname, cipPort
+                       , citToken, citHostname, citPort, getHostname, getPort, AuthenticationException(..)
                        , LogManager, LogCategory(..), ioLogWithManager
                        )
 
@@ -134,7 +138,7 @@ data LoginEvent =
 
 -- | The login application state.
 data State =
-    State { _loginForm :: Form ConnectionInfo LoginEvent Name
+    State { _loginForm :: Form ConnectionInfoUsernamePassword LoginEvent Name
           , _lastAttempt :: Maybe LoginAttempt
           , _currentState :: LoginState
           , _reqChan :: BChan LoginRequest
@@ -178,29 +182,38 @@ loginWorker setLogger logMgr connTy requestChan respChan = forever $ do
     req <- readBChan requestChan
     case req of
         DoLogin initial connInfo -> do
-            writeBChan respChan $ StartConnect initial $ connInfo^.ciHostname
-            ioLogWithManager logMgr Nothing LogGeneral $ "Attempting authentication to " <> connInfo^.ciHostname
+            let hostname = getHostname connInfo
+            let port = getPort connInfo
+            writeBChan respChan $ StartConnect initial $ hostname
+            ioLogWithManager logMgr Nothing LogGeneral $ "Attempting authentication to " <> hostname
 
-            let login = Login { username = connInfo^.ciUsername
-                              , password = connInfo^.ciPassword
-                              }
+            cd <- fmap setLogger $ initConnectionData hostname (fromIntegral port) connTy poolCfg
 
-            cd <- fmap setLogger $ initConnectionData (connInfo^.ciHostname) (fromIntegral (connInfo^.ciPort)) connTy poolCfg
+            case connInfo of
+                UsernamePassword cip -> do
+                    let login = Login { username = cip^.cipUsername
+                                      , password = cip^.cipPassword
+                                      }
+                    result <- convertLoginExceptions $ mmLogin cd login
+                    case result of
+                        Left e -> do
+                            ioLogWithManager logMgr Nothing LogGeneral $
+                                "Error authenticating to " <> hostname <> ": " <> (T.pack $ show e)
+                            writeBChan respChan $ LoginResult $ AttemptFailed e
+                        Right (Left e) -> do
+                            ioLogWithManager logMgr Nothing LogGeneral $
+                                "Error authenticating to " <> hostname <> ": " <> (T.pack $ show e)
+                            writeBChan respChan $ LoginResult $ AttemptFailed $ LoginError e
+                        Right (Right (sess, user)) -> do
+                            ioLogWithManager logMgr Nothing LogGeneral $
+                                "Authenticated successfully to " <> hostname <> " as " <> cip^.cipUsername
+                            writeBChan respChan $ LoginResult $ AttemptSucceeded connInfo cd sess user
+                Types.Token cit -> do
+                    let sess = Session cd $ Network.Mattermost.Types.Internal.Token $ unpack $ cit^.citToken
 
-            result <- convertLoginExceptions $ mmLogin cd login
-            case result of
-                Left e -> do
-                    ioLogWithManager logMgr Nothing LogGeneral $
-                        "Error authenticating to " <> connInfo^.ciHostname <> ": " <> (T.pack $ show e)
-                    writeBChan respChan $ LoginResult $ AttemptFailed e
-                Right (Left e) -> do
-                    ioLogWithManager logMgr Nothing LogGeneral $
-                        "Error authenticating to " <> connInfo^.ciHostname <> ": " <> (T.pack $ show e)
-                    writeBChan respChan $ LoginResult $ AttemptFailed $ LoginError e
-                Right (Right (sess, user)) -> do
-                    ioLogWithManager logMgr Nothing LogGeneral $
-                        "Authenticated successfully to " <> connInfo^.ciHostname <> " as " <> connInfo^.ciUsername
+                    user <- mmGetUser UserMe sess
                     writeBChan respChan $ LoginResult $ AttemptSucceeded connInfo cd sess user
+
 
 -- | The amount of time that the startup timer thread will wait before
 -- firing.
@@ -250,12 +263,25 @@ interactiveGetLoginSession vty mkVty connTy setLogger logMgr initialConfig = do
     void $ forkIO $ loginWorker setLogger logMgr connTy requestChan respChan
     void $ forkIO $ startupTimer respChan
 
-    let initialState = mkState initialConfig requestChan
+
+    -- The TUI can only be used to make a login attempt using username and password
+    -- Hence, if the config specified a token login, we convert the connection info
+    -- to the username/password variant first.
+    let tuiConfig = case initialConfig of
+                         UsernamePassword up -> up
+                         Types.Token t -> ConnectionInfoUsernamePassword
+                                              { _cipHostname = t^.citHostname
+                                              , _cipPort = t^.citPort
+                                              , _cipUsername = ""
+                                              , _cipPassword = ""
+                                              }
+
+    let initialState = mkState tuiConfig requestChan
 
     startState <- case (populatedConnectionInfo initialConfig) of
         True -> do
             writeBChan requestChan $ DoLogin True initialConfig
-            return $ initialState & currentState .~ Connecting True (initialConfig^.ciHostname)
+            return $ initialState & currentState .~ Connecting True (getHostname initialConfig)
         False -> do
             return initialState
 
@@ -267,14 +293,17 @@ interactiveGetLoginSession vty mkVty connTy setLogger logMgr initialConfig = do
 -- bother attempting to use it to connect?
 populatedConnectionInfo :: ConnectionInfo -> Bool
 populatedConnectionInfo ci =
-    and [ not $ T.null $ ci^.ciHostname
-        , not $ T.null $ ci^.ciUsername
-        , not $ T.null $ ci^.ciPassword
-        , ci^.ciPort > 0
+    and [ not $ T.null $ getHostname ci
+        , (getPort ci) > 0
+        , case ci of
+          UsernamePassword cip -> and [ not $ T.null $ cip^.cipUsername
+                                      , not $ T.null $ cip^.cipPassword
+                                      ]
+          Types.Token cit -> not $ T.null $ cit^.citToken
         ]
 
 -- | Make an initial login application state.
-mkState :: ConnectionInfo -> BChan LoginRequest -> State
+mkState :: ConnectionInfoUsernamePassword -> BChan LoginRequest -> State
 mkState cInfo chan = state
     where
         state = State { _loginForm = form { formFocus = focusSetCurrent initialFocus (formFocus form)
@@ -285,9 +314,9 @@ mkState cInfo chan = state
                       , _timeoutFired = False
                       }
         form = mkForm cInfo
-        initialFocus = if | T.null (cInfo^.ciHostname) -> Hostname
-                          | T.null (cInfo^.ciUsername) -> Username
-                          | T.null (cInfo^.ciPassword) -> Password
+        initialFocus = if | T.null (cInfo^.cipHostname) -> Hostname
+                          | T.null (cInfo^.cipUsername) -> Username
+                          | T.null (cInfo^.cipPassword) -> Password
                           | otherwise                  -> Hostname
 
 app :: App State LoginEvent Name
@@ -334,26 +363,26 @@ onEvent st (VtyEvent (EvKey KEnter [])) = do
                 Just (AttemptSucceeded {}) -> return ()
                 _ -> do
                     let ci = formState $ st^.loginForm
-                    when (populatedConnectionInfo ci) $ do
-                        liftIO $ writeBChan (st^.reqChan) $ DoLogin False ci
+                    when (populatedConnectionInfo (UsernamePassword ci)) $ do
+                        liftIO $ writeBChan (st^.reqChan) $ DoLogin False (UsernamePassword ci)
 
     continue st
 onEvent st e = do
     f' <- handleFormEvent e (st^.loginForm)
     continue $ st & loginForm .~ f'
 
-mkForm :: ConnectionInfo -> Form ConnectionInfo e Name
+mkForm :: ConnectionInfoUsernamePassword -> Form ConnectionInfoUsernamePassword e Name
 mkForm =
     let label s w = padBottom (Pad 1) $
                     (vLimit 1 $ hLimit 18 $ str s <+> fill ' ') <+> w
     in newForm [ label "Server hostname:" @@=
-                   editHostname ciHostname Hostname
+                   editHostname cipHostname Hostname
                , label "Server port:" @@=
-                   editShowableField ciPort Port
+                   editShowableField cipPort Port
                , label "Username:" @@=
-                   editTextField ciUsername Username (Just 1)
+                   editTextField cipUsername Username (Just 1)
                , label "Password:" @@=
-                   editPasswordField ciPassword Password
+                   editPasswordField cipPassword Password
                ]
 
 editHostname :: (Show n, Ord n) => Lens' s Text -> n -> s -> FormFieldState s e n
@@ -417,7 +446,7 @@ currentStateDisplay st =
                    txt "Connecting to " <+> withDefAttr clientEmphAttr (txt host) <+> txt "..."
     in case st^.currentState of
           Idle -> case st^.lastAttempt of
-              Just (AttemptSucceeded ci _ _ _) -> msg (ci^.ciHostname)
+              Just (AttemptSucceeded ci _ _ _) -> msg (getHostname ci)
               _ -> emptyWidget
           (Connecting _ host) -> msg host
 

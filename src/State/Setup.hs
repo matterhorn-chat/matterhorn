@@ -40,7 +40,11 @@ import qualified Zipper as Z
 
 
 incompleteCredentials :: Config -> ConnectionInfo
-incompleteCredentials config = ConnectionInfo hStr (configPort config) uStr pStr
+incompleteCredentials config =
+    case configToken config of
+        Just (TokenString tok) -> Token (ConnectionInfoToken hStr (configPort config) tok)
+        Just (TokenCommand _) -> error $ "TokenCommand was not executed. This is a bug!"
+        Nothing -> UsernamePassword (ConnectionInfoUsernamePassword hStr (configPort config) uStr pStr)
     where
         hStr = maybe "" id $ configHost config
         uStr = maybe "" id $ configUser config

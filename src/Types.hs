@@ -29,6 +29,8 @@ module Types
   , TabbedWindowTemplate(..)
   , OpenInBrowser(..)
   , ConnectionInfo(..)
+  , ConnectionInfoUsernamePassword(..)
+  , ConnectionInfoToken(..)
   , SidebarUpdate(..)
   , PendingChannelChange(..)
   , ViewMessageWindowTab(..)
@@ -38,13 +40,19 @@ module Types
   , channelListEntryUserId
   , userIdsFromZipper
   , entryIsDMEntry
-  , ciHostname
-  , ciPort
-  , ciUsername
-  , ciPassword
+  , cipHostname
+  , cipPort
+  , cipUsername
+  , cipPassword
+  , citHostname
+  , citPort
+  , citToken
+  , getHostname
+  , getPort
   , Config(..)
   , HelpScreen(..)
   , PasswordSource(..)
+  , TokenSource(..)
   , MatchType(..)
   , Mode(..)
   , ChannelSelectPattern(..)
@@ -326,6 +334,11 @@ data PasswordSource =
     | PasswordCommand Text
     deriving (Eq, Read, Show)
 
+data TokenSource =
+    TokenString Text
+    | TokenCommand Text
+    deriving (Eq, Read, Show)
+
 -- | The type of channel list group headings.
 data ChannelListGroup =
     ChannelGroupPublicChannels
@@ -357,6 +370,8 @@ data Config =
            -- ^ The port to use when connecting.
            , configPass :: Maybe PasswordSource
            -- ^ The password source to use when connecting.
+           , configToken :: Maybe TokenSource
+           -- ^ The token to use when connecting without username/passwort.
            , configTimeFormat :: Maybe Text
            -- ^ The format string for timestamps.
            , configDateFormat :: Maybe Text
@@ -644,14 +659,27 @@ data AuthenticationException =
 
 -- | Our 'ConnectionInfo' contains exactly as much information as is
 -- necessary to start a connection with a Mattermost server. This is
--- built up during interactive authentication and then is used to log
--- in.
+-- built up either from config or during interactive authentication and
+-- then is used to log in.
 data ConnectionInfo =
-    ConnectionInfo { _ciHostname :: Text
-                   , _ciPort     :: Int
-                   , _ciUsername :: Text
-                   , _ciPassword :: Text
-                   }
+     UsernamePassword ConnectionInfoUsernamePassword
+     | Token ConnectionInfoToken
+
+-- | All Information required for login via username and password.
+data ConnectionInfoUsernamePassword =
+    ConnectionInfoUsernamePassword { _cipHostname :: Text
+                                   , _cipPort     :: Int
+                                   , _cipUsername :: Text
+                                   , _cipPassword :: Text
+                                   }
+
+-- | All Information required for a connection if authentication is
+-- done using an OAUTH or personal access token.
+data ConnectionInfoToken =
+    ConnectionInfoToken { _citHostname :: Text
+                        , _citPort     :: Int
+                        , _citToken    :: Text
+                        }
 
 -- | We want to continue referring to posts by their IDs, but we don't
 -- want to have to synthesize new valid IDs for messages from the client
@@ -1655,6 +1683,16 @@ makeLenses ''ListOverlayState
 makeLenses ''ChannelSelectState
 makeLenses ''UserPreferences
 makeLenses ''ConnectionInfo
+makeLenses ''ConnectionInfoUsernamePassword
+makeLenses ''ConnectionInfoToken
+
+getHostname :: ConnectionInfo -> Text
+getHostname (UsernamePassword ci) = _cipHostname ci
+getHostname (Token ci) = _citHostname ci
+
+getPort :: ConnectionInfo -> Int
+getPort (UsernamePassword ci) = _cipPort ci
+getPort (Token ci) = _citPort ci
 
 getSession :: MH Session
 getSession = use (csResources.crSession)
