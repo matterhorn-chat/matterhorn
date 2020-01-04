@@ -220,7 +220,7 @@ deleteSelectedMessage = do
             case msg^.mOriginalPost of
               Just p ->
                   doAsyncChannelMM Preempt cId
-                      (\s _ _ -> MM.mmDeletePost (postId p) s)
+                      (\s _ -> MM.mmDeletePost (postId p) s)
                       (\_ _ -> Just $ do
                           csEditState.cedEditMode .= NewPost
                           setMode Main)

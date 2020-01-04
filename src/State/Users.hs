@@ -28,7 +28,7 @@ import           State.Common
 handleNewUsers :: Seq UserId -> MH () -> MH ()
 handleNewUsers newUserIds after = do
     doAsyncMM Preempt getUserInfo addNewUsers
-    where getUserInfo session _ =
+    where getUserInfo session =
               do nUsers <- MM.mmGetUsersByIds newUserIds session
                  let usrInfo u = userInfoFromUser u True
                      usrList = toList nUsers
