@@ -243,6 +243,7 @@ module Types
   , raiseInternalEvent
   , getNewMessageCutoff
   , getEditedMessageCutoff
+  , teamIdForChannel
 
   , normalChannelSigil
 
@@ -1933,3 +1934,9 @@ data OpenInBrowser =
     OpenLinkChoice LinkChoice
     | OpenLocalFile FilePath
     deriving (Eq, Show)
+
+
+teamIdForChannel :: ChannelId -> ChatState -> Maybe TeamId
+teamIdForChannel cId st = do
+  clientChannel <- st ^? (csChannels . channelByIdL cId)
+  clientChannel ^. ccInfo . cdTeamId

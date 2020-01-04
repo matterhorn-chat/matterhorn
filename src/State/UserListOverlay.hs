@@ -35,12 +35,15 @@ enterChannelMembersUserList :: MH ()
 enterChannelMembersUserList = do
     cId <- use csCurrentChannelId
     myId <- gets myUserId
-    myTId <- gets myTeamId
-    enterUserListMode (ChannelMembers cId myTId)
-      (\u -> case u^.uiId /= myId of
-        True -> createOrFocusDMChannel u Nothing >> return True
-        False -> return False
-      )
+    tIdMb <- gets (teamIdForChannel cId)
+    case tIdMb of
+      Nothing -> pure ()
+      Just tId ->
+        enterUserListMode (ChannelMembers cId tId)
+          (\u -> case u^.uiId /= myId of
+              True -> createOrFocusDMChannel u Nothing >> return True
+              False -> return False
+          )
 
 -- | Show the user list overlay for showing users that are not members
 -- of the current channel for the purpose of adding them to the
