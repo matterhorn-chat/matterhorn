@@ -75,7 +75,7 @@ writeLastRunState :: ChatState -> IO ()
 writeLastRunState cs =
   when (cs^.csCurrentChannel.ccInfo.cdType `elem` [Ordinary, Private]) $ do
     let runState = toLastRunState cs
-        tId      = myTeamId cs
+        tId      = focusedTeamId cs
 
     lastRunStateFile <- lastRunStateFilePath $ unId $ toId tId
     createDirectoryIfMissing True $ dropFileName lastRunStateFile

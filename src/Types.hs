@@ -226,7 +226,7 @@ module Types
   , myUser
   , myUserId
   , myTeam
-  , myTeamId
+  , focusedTeamId
   , usernameForUserId
   , userByUsername
   , userByNickname
@@ -1858,8 +1858,8 @@ userById uId st = findUserById uId (st^.csUsers)
 myUserId :: ChatState -> UserId
 myUserId st = myUser st ^. userIdL
 
-myTeamId :: ChatState -> TeamId
-myTeamId st = myTeam st ^. teamIdL
+focusedTeamId :: ChatState -> TeamId
+focusedTeamId st = myTeam st ^. teamIdL
 
 myTeam :: ChatState -> Team
 myTeam st = st ^. csMyTeams . to (fromMaybe (error "no teams") . CList.focus)

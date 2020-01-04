@@ -26,7 +26,7 @@ import           Types
 
 enterChannelListOverlayMode :: MH ()
 enterChannelListOverlayMode = do
-    myTId <- gets myTeamId
+    myTId <- gets focusedTeamId
     enterListOverlayMode csChannelListOverlay ChannelListOverlay
         AllChannels enterHandler (fetchResults myTId)
 

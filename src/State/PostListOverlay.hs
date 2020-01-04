@@ -81,7 +81,7 @@ enterSearchResultPostListMode terms
   | T.null (T.strip terms) = postInfoMessage "Search command requires at least one search term."
   | otherwise = do
       enterPostListMode (PostListSearch terms True) noMessages
-      tId <- gets myTeamId
+      tId <- gets focusedTeamId
       createPostList (PostListSearch terms False) $
         mmSearchForTeamPosts tId (SearchPosts terms False)
 

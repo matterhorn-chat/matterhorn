@@ -49,19 +49,22 @@ enterChannelInviteUserList :: MH ()
 enterChannelInviteUserList = do
     cId <- use csCurrentChannelId
     myId <- gets myUserId
-    myTId <- gets myTeamId
-    enterUserListMode (ChannelNonMembers cId myTId)
-      (\u -> case u^.uiId /= myId of
-        True -> addUserToCurrentChannel u >> return True
-        False -> return False
-      )
+    tIdMb <- gets (teamIdForChannel cId)
+    case tIdMb of
+      Nothing -> pure ()
+      Just tId ->
+        enterUserListMode (ChannelNonMembers cId tId)
+          (\u -> case u^.uiId /= myId of
+              True -> addUserToCurrentChannel u >> return True
+              False -> return False
+          )
 
 -- | Show the user list overlay for showing all users for the purpose of
 -- starting a direct message channel with another user.
 enterDMSearchUserList :: MH ()
 enterDMSearchUserList = do
     myId <- gets myUserId
-    myTId <- gets myTeamId
+    myTId <- gets focusedTeamId
     config <- use csClientConfig
     let restrictTeam = case MM.clientConfigRestrictDirectMessage <$> config of
             Just MM.RestrictTeam -> Just myTId

@@ -154,7 +154,7 @@ withCachedAutocompleteResults ctx label searchString act = do
 doUserAutoCompletion :: AutocompleteContext -> Text -> MH ()
 doUserAutoCompletion ctx searchString = do
     session <- getSession
-    myTid <- gets myTeamId
+    myTid <- gets focusedTeamId
     myUid <- gets myUserId
     cId <- use csCurrentChannelId
     let label = "Users"
@@ -181,7 +181,7 @@ doUserAutoCompletion ctx searchString = do
 doChannelAutoCompletion :: AutocompleteContext -> Text -> MH ()
 doChannelAutoCompletion ctx searchString = do
     session <- getSession
-    tId <- gets myTeamId
+    tId <- gets focusedTeamId
     let label = "Channels"
     cs <- use csChannels
 

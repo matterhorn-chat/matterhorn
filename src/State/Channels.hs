@@ -236,7 +236,7 @@ setLastViewedFor prevId cId = do
 refreshChannelsAndUsers :: MH ()
 refreshChannelsAndUsers = do
     session <- getSession
-    myTId <- gets myTeamId
+    myTId <- gets focusedTeamId
     me <- gets myUser
     knownUsers <- gets allUserIds
     doAsyncWith Preempt $ do
@@ -840,7 +840,7 @@ channelHistoryBackward = do
 createOrdinaryChannel :: Bool -> Text -> MH ()
 createOrdinaryChannel public name = do
     session <- getSession
-    myTId <- gets myTeamId
+    myTId <- gets focusedTeamId
     doAsyncWith Preempt $ do
         -- create a new chat channel
         let slug = T.map (\ c -> if isAlphaNum c then c else '-') (T.toLower name)
@@ -915,7 +915,7 @@ isRecentChannel st cId = st^.csRecentChannel == Just cId
 joinChannelByName :: Text -> MH ()
 joinChannelByName rawName = do
     session <- getSession
-    tId <- gets myTeamId
+    tId <- gets focusedTeamId
     doAsyncWith Preempt $ do
         result <- try $ MM.mmGetChannelByName tId (trimChannelSigil rawName) session
         return $ Just $ case result of
