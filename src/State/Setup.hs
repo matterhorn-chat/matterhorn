@@ -10,6 +10,7 @@ import           Prelude.MH
 import           Brick.BChan ( newBChan )
 import           Brick.Themes ( themeToAttrMap, loadCustomizations )
 import qualified Control.Concurrent.STM as STM
+import qualified Data.CircularList as CList
 import           Data.Maybe ( fromJust )
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
@@ -103,20 +104,10 @@ setupState mkVty mLogLocation config = do
       putStrLn "Error: your account is not a member of any teams"
       exitFailure
 
-  (myTeam, teamSelVty) <- do
-      let foundTeam = do
-             tName <- configTeam config
-             let matchingTeam = listToMaybe $ filter matches $ toList teams
-                 matches t = (sanitizeUserText $ teamName t) == tName
-             matchingTeam
-
-      case foundTeam of
-          Just t -> return (t, loginVty)
-          Nothing -> do
-              (mTeam, vty) <- interactiveTeamSelection loginVty mkVty $ toList teams
-              case mTeam of
-                  Nothing -> shutdown vty
-                  Just team -> return (team, vty)
+  let teamCList = CList.fromList (toList teams)
+  let myTeams = fromMaybe teamCList $ do
+        t <- configTeam config
+        CList.findRotateTo (\ team -> sanitizeUserText (teamName team) == t) teamCList
 
   userStatusChan <- STM.newTChanIO
   slc <- STM.newTChanIO
@@ -175,21 +166,21 @@ setupState mkVty mLogLocation config = do
                          , _crEmoji               = emoji
                          }
 
-  st <- initializeState cr myTeam me
+  st <- initializeState cr myTeams me
 
-  return (st, teamSelVty)
+  return (st, loginVty)
 
-initializeState :: ChatResources -> Team -> User -> IO ChatState
-initializeState cr myTeam me = do
+initializeState :: ChatResources -> CList.CList Team -> User -> IO ChatState
+initializeState cr myTeams me = do
   let session = getResourceSession cr
       requestChan = cr^.crRequestQueue
-      myTId = getId myTeam
+      myTId = getId (fromMaybe undefined (CList.focus myTeams))
 
   -- Create a predicate to find the last selected channel by reading the
   -- run state file. If unable to read or decode or validate the file, this
   -- predicate is just `isTownSquare`.
   isLastSelectedChannel <- do
-    result <- readLastRunState $ teamId myTeam
+    result <- readLastRunState myTId
     case result of
       Right lrs | isValidLastRunState cr me lrs -> return $ \c ->
            channelId c == lrs^.lrsSelectedChannelId
@@ -254,7 +245,7 @@ initializeState cr myTeam me = do
           StartupStateInfo { startupStateResources      = cr
                            , startupStateChannelZipper  = chanZip
                            , startupStateConnectedUser  = me
-                           , startupStateTeam           = myTeam
+                           , startupStateTeams          = myTeams
                            , startupStateTimeZone       = tz
                            , startupStateInitialHistory = hist
                            , startupStateSpellChecker   = spResult

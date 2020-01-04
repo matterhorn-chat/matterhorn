@@ -80,7 +80,7 @@ module Types
   , csUserListOverlay
   , csChannelListOverlay
   , csReactionEmojiListOverlay
-  , csMyTeam
+  , csMyTeams
   , csMessageSelect
   , csConnectionStatus
   , csWorkerIsBusy
@@ -225,6 +225,7 @@ module Types
   , setUserStatus
   , myUser
   , myUserId
+  , myTeam
   , myTeamId
   , usernameForUserId
   , userByUsername
@@ -277,6 +278,7 @@ import qualified Control.Monad.State as St
 import qualified Control.Monad.Reader as R
 import qualified Data.Set as Set
 import qualified Data.ByteString as BS
+import qualified Data.CircularList as CList
 import qualified Data.Foldable as F
 import           Data.Ord ( comparing )
 import qualified Data.HashMap.Strict as HM
@@ -1199,7 +1201,7 @@ data ChatState =
               -- is selected.
               , _csMe :: User
               -- ^ The authenticated user.
-              , _csMyTeam :: Team
+              , _csMyTeams :: CList.CList Team
               -- ^ The active team of the authenticated user.
               , _csChannels :: ClientChannels
               -- ^ The channels that we are showing, including their
@@ -1285,7 +1287,7 @@ data StartupStateInfo =
     StartupStateInfo { startupStateResources      :: ChatResources
                      , startupStateChannelZipper  :: Zipper ChannelListGroup ChannelListEntry
                      , startupStateConnectedUser  :: User
-                     , startupStateTeam           :: Team
+                     , startupStateTeams          :: CList.CList Team
                      , startupStateTimeZone       :: TimeZoneSeries
                      , startupStateInitialHistory :: InputHistory
                      , startupStateSpellChecker   :: Maybe (Aspell, IO ())
@@ -1297,7 +1299,7 @@ newState (StartupStateInfo {..}) = do
     return ChatState { _csResources                   = startupStateResources
                      , _csFocus                       = startupStateChannelZipper
                      , _csMe                          = startupStateConnectedUser
-                     , _csMyTeam                      = startupStateTeam
+                     , _csMyTeams                     = startupStateTeams
                      , _csChannels                    = noChannels
                      , _csPostMap                     = HM.empty
                      , _csUsers                       = noUsers
@@ -1857,7 +1859,10 @@ myUserId :: ChatState -> UserId
 myUserId st = myUser st ^. userIdL
 
 myTeamId :: ChatState -> TeamId
-myTeamId st = st ^. csMyTeam . teamIdL
+myTeamId st = myTeam st ^. teamIdL
+
+myTeam :: ChatState -> Team
+myTeam st = st ^. csMyTeams . to (fromMaybe (error "no teams") . CList.focus)
 
 myUser :: ChatState -> User
 myUser st = st^.csMe

@@ -59,7 +59,7 @@ renderChannelList st =
         myUsername = MM.userUsername $ myUser st
         selfHeader = hCenter $
                      colorUsername myUsername (userSigil <> myUsername)
-        teamNameStr = sanitizeUserText $ MM.teamDisplayName $ st^.csMyTeam
+        teamNameStr = sanitizeUserText $ MM.teamDisplayName $ myTeam st
         body = case appMode st of
             ChannelSelect ->
                 let zipper = st^.csChannelSelectState.channelSelectMatches
