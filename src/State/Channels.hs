@@ -281,19 +281,12 @@ refreshChannelsAndUsers = do
 refreshChannel :: SidebarUpdate -> Channel -> ChannelMember -> MH ()
 refreshChannel upd chan member = do
     let cId = getId chan
-    myTId <- gets myTeamId
-    let ourTeam = channelTeamId chan == Nothing ||
-                  Just myTId == channelTeamId chan
+    -- If this channel is unknown, register it first.
+    mChan <- preuse (csChannel(cId))
+    when (isNothing mChan) $
+        handleNewChannel False upd chan member
 
-    case not ourTeam of
-        True -> return ()
-        False -> do
-            -- If this channel is unknown, register it first.
-            mChan <- preuse (csChannel(cId))
-            when (isNothing mChan) $
-                handleNewChannel False upd chan member
-
-            updateChannelInfo cId chan member
+    updateChannelInfo cId chan member
 
 handleNewChannel :: Bool -> SidebarUpdate -> Channel -> ChannelMember -> MH ()
 handleNewChannel = handleNewChannel_ True

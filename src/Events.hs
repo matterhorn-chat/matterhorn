@@ -176,17 +176,14 @@ onVtyEvent e = do
 handleWSEvent :: WebsocketEvent -> MH ()
 handleWSEvent we = do
     myId <- gets myUserId
-    myTId <- gets myTeamId
     case weEvent we of
         WMPosted
-            | Just p <- wepPost (weData we) ->
-                when (wepTeamId (weData we) == Just myTId ||
-                      wepTeamId (weData we) == Nothing) $ do
-                    let wasMentioned = maybe False (Set.member myId) $ wepMentions (weData we)
-                    addNewPostedMessage $ RecentPost p wasMentioned
-                    cId <- use csCurrentChannelId
-                    when (postChannelId p /= cId) $
-                        showChannelInSidebar (p^.postChannelIdL) False
+            | Just p <- wepPost (weData we) -> do
+                let wasMentioned = maybe False (Set.member myId) $ wepMentions (weData we)
+                addNewPostedMessage $ RecentPost p wasMentioned
+                cId <- use csCurrentChannelId
+                when (postChannelId p /= cId) $
+                  showChannelInSidebar (p^.postChannelIdL) False
             | otherwise -> return ()
 
         WMPostEdited
@@ -215,8 +212,7 @@ handleWSEvent we = do
 
         WMUserAdded
             | Just cId <- webChannelId (weBroadcast we) ->
-                when (wepUserId (weData we) == Just myId &&
-                      wepTeamId (weData we) == Just myTId) $
+                when (wepUserId (weData we) == Just myId) $
                     handleChannelInvite cId
             | otherwise -> return ()
 
@@ -238,8 +234,7 @@ handleWSEvent we = do
 
         WMChannelDeleted
             | Just cId <- wepChannelId (weData we) ->
-                when (webTeamId (weBroadcast we) == Just myTId) $
-                    removeChannelFromState cId
+                removeChannelFromState cId
             | otherwise -> return ()
 
         WMDirectAdded
