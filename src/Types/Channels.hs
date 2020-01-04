@@ -18,7 +18,7 @@ module Types.Channels
   , ccContents, ccInfo, ccEditState
   -- * Lenses created for accessing ChannelInfo fields
   , cdViewed, cdNewMessageIndicator, cdEditedMessageThreshold, cdUpdated
-  , cdName, cdHeader, cdPurpose, cdType
+  , cdName, cdHeader, cdPurpose, cdType, cdTeamId
   , cdMentionCount, cdTypingUsers, cdDMUserId, cdChannelId
   , cdSidebarShowOverride
   -- * Lenses created for accessing ChannelContents fields
@@ -64,6 +64,7 @@ import           Lens.Micro.Platform ( (%~), (.~), Traversal', Lens'
 
 import           Network.Mattermost.Lenses hiding ( Lens' )
 import           Network.Mattermost.Types ( Channel(..), UserId, ChannelId
+                                          , TeamId
                                           , ChannelMember(..)
                                           , Type(..)
                                           , Post
@@ -136,6 +137,7 @@ initialChannelInfo :: UserId -> Channel -> ChannelInfo
 initialChannelInfo myId chan =
     let updated  = chan ^. channelLastPostAtL
     in ChannelInfo { _cdChannelId              = chan^.channelIdL
+                   , _cdTeamId                 = chan^.channelTeamIdL
                    , _cdViewed                 = Nothing
                    , _cdNewMessageIndicator    = Hide
                    , _cdEditedMessageThreshold = Nothing
@@ -198,6 +200,8 @@ emptyChannelContents = do
 data ChannelInfo = ChannelInfo
   { _cdChannelId        :: ChannelId
     -- ^ The channel's ID
+  , _cdTeamId           :: Maybe TeamId
+    -- ^ The team to which the channel belongs
   , _cdViewed           :: Maybe ServerTime
     -- ^ The last time we looked at a channel
   , _cdNewMessageIndicator :: NewMessageIndicator
