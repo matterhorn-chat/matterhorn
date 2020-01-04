@@ -11,6 +11,7 @@ import           Brick.BChan ( newBChan )
 import           Brick.Themes ( themeToAttrMap, loadCustomizations )
 import qualified Control.Concurrent.STM as STM
 import qualified Data.CircularList as CList
+import qualified Data.HashMap.Strict as HM
 import           Data.Maybe ( fromJust )
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
@@ -237,12 +238,16 @@ initializeState cr myTeams me = do
   -- End thread startup ----------------------------------------------
 
   now <- getCurrentTime
-  let chanIds = mkChannelZipperList now (cr^.crConfiguration) Nothing (cr^.crUserPreferences) clientChans noUsers
-      chanZip = Z.fromList chanIds
+  let chanZips = HM.fromList
+        [ (tId, Z.fromList chanIds)
+        | team <- CList.toList myTeams
+        , let tId = getId team
+        , let chanIds = mkChannelZipperList now (cr^.crConfiguration) Nothing (cr^.crUserPreferences) clientChans noUsers (Just tId)
+        ]
       clientChans = foldr (uncurry addChannel) noChannels chanPairs
       startupState =
           StartupStateInfo { startupStateResources      = cr
-                           , startupStateChannelZipper  = chanZip
+                           , startupStateChannelZippers = chanZips
                            , startupStateConnectedUser  = me
                            , startupStateTeams          = myTeams
                            , startupStateTimeZone       = tz

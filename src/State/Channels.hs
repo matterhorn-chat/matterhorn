@@ -91,6 +91,7 @@ updateSidebar = do
     -- zipper is rebuilt
     cconfig <- use csClientConfig
     oldCid <- use csCurrentChannelId
+    tId <- gets (teamIdForChannel oldCid)
 
     -- Update the zipper
     cs <- use csChannels
@@ -98,7 +99,7 @@ updateSidebar = do
     prefs <- use (csResources.crUserPreferences)
     now <- liftIO getCurrentTime
     config <- use (csResources.crConfiguration)
-    csFocus %= Z.updateList (mkChannelZipperList now config cconfig prefs cs us)
+    csFocus %= Z.updateList (mkChannelZipperList now config cconfig prefs cs us tId)
 
     -- Schedule the current sidebar for user status updates at the end
     -- of this MH action.

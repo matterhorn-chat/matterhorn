@@ -244,6 +244,7 @@ module Types
   , getNewMessageCutoff
   , getEditedMessageCutoff
   , teamIdForChannel
+  , focusedChannelList
 
   , normalChannelSigil
 
@@ -468,15 +469,16 @@ mkChannelZipperList :: UTCTime
                     -> UserPreferences
                     -> ClientChannels
                     -> Users
+                    -> Maybe TeamId
                     -> [(ChannelListGroup, [ChannelListEntry])]
-mkChannelZipperList now config cconfig prefs cs us =
-    [ (ChannelGroupPublicChannels, getNonDMChannelIdsInOrder cs)
+mkChannelZipperList now config cconfig prefs cs us tId =
+    [ (ChannelGroupPublicChannels, getNonDMChannelIdsInOrder cs tId)
     , (ChannelGroupDirectMessages, getDMChannelsInOrder now config cconfig prefs us cs)
     ]
 
-getNonDMChannelIdsInOrder :: ClientChannels -> [ChannelListEntry]
-getNonDMChannelIdsInOrder cs =
-    let matches (_, info) = info^.ccInfo.cdType `notElem` [Direct, Group]
+getNonDMChannelIdsInOrder :: ClientChannels -> Maybe TeamId -> [ChannelListEntry]
+getNonDMChannelIdsInOrder cs tId =
+    let matches (_, info) = info^.ccInfo.cdType `notElem` [Direct, Group] && info^.ccInfo.cdTeamId == tId
     in fmap (CLChannel . fst) $
        sortBy (comparing ((^.ccInfo.cdName) . snd)) $
        filteredChannels matches cs
@@ -1197,7 +1199,7 @@ data ChatState =
     ChatState { _csResources :: ChatResources
               -- ^ Global application-wide resources that don't change
               -- much.
-              , _csFocus :: Zipper ChannelListGroup ChannelListEntry
+              , _csFoci :: HashMap TeamId (Zipper ChannelListGroup ChannelListEntry)
               -- ^ The channel sidebar zipper that tracks which channel
               -- is selected.
               , _csMe :: User
@@ -1286,7 +1288,7 @@ data PendingChannelChange =
 -- ChatState.
 data StartupStateInfo =
     StartupStateInfo { startupStateResources      :: ChatResources
-                     , startupStateChannelZipper  :: Zipper ChannelListGroup ChannelListEntry
+                     , startupStateChannelZippers :: HashMap TeamId (Zipper ChannelListGroup ChannelListEntry)
                      , startupStateConnectedUser  :: User
                      , startupStateTeams          :: CList.CList Team
                      , startupStateTimeZone       :: TimeZoneSeries
@@ -1298,7 +1300,7 @@ newState :: StartupStateInfo -> IO ChatState
 newState (StartupStateInfo {..}) = do
     editState <- emptyEditState startupStateInitialHistory startupStateSpellChecker
     return ChatState { _csResources                   = startupStateResources
-                     , _csFocus                       = startupStateChannelZipper
+                     , _csFoci                        = startupStateChannelZippers
                      , _csMe                          = startupStateConnectedUser
                      , _csMyTeams                     = startupStateTeams
                      , _csChannels                    = noChannels
@@ -1940,3 +1942,11 @@ teamIdForChannel :: ChannelId -> ChatState -> Maybe TeamId
 teamIdForChannel cId st = do
   clientChannel <- st ^? (csChannels . channelByIdL cId)
   clientChannel ^. ccInfo . cdTeamId
+
+csFocus :: Lens' ChatState (Zipper ChannelListGroup ChannelListEntry)
+csFocus =
+  lens (\ st -> (st^.csFoci) HM.! focusedTeamId st)
+       (\ st z -> st { _csFoci = HM.insert (focusedTeamId st) z (st^.csFoci) })
+
+focusedChannelList :: ChatState -> [(ChannelListGroup, [ChannelListEntry])]
+focusedChannelList st = Zipper.toList (st^.csFocus)

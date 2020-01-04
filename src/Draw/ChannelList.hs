@@ -77,7 +77,7 @@ renderChannelList st =
                 teamHeader :
                 selfHeader :
                 (renderChannelListGroup st (\s e -> renderChannelListEntry $ mkChannelEntryData s e) <$>
-                    Z.toList (st^.csFocus))
+                    focusedChannelList st)
 
 renderChannelListGroupHeading :: ChannelListGroup -> Bool -> Widget Name
 renderChannelListGroupHeading g anyUnread =
