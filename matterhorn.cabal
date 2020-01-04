@@ -121,7 +121,6 @@ executable matterhorn
                        Types.UserNames
                        Types.Posts
                        FilePaths
-                       TeamSelect
                        Login
                        Markdown
                        Options

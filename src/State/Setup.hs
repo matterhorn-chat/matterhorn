@@ -30,7 +30,6 @@ import           Login
 import           State.Flagging
 import           State.Messages ( fetchVisibleIfNeeded )
 import           State.Setup.Threads
-import           TeamSelect
 import           Themes
 import           TimeUtils ( lookupLocalTimeZone )
 import           Types
