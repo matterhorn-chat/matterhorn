@@ -44,6 +44,7 @@ module State.Channels
   , beginCurrentChannelDeleteConfirm
   , toggleChannelListVisibility
   , showChannelInSidebar
+  , nextTeam
   )
 where
 
@@ -55,6 +56,7 @@ import           Brick.Widgets.Edit ( applyEdit, getEditContents, editContentsL 
 import           Control.Concurrent.Async ( runConcurrently, Concurrently(..) )
 import           Control.Exception ( SomeException, try )
 import           Data.Char ( isAlphaNum )
+import qualified Data.CircularList as CList
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Foldable as F
 import           Data.List ( nub )
@@ -237,13 +239,13 @@ setLastViewedFor prevId cId = do
 refreshChannelsAndUsers :: MH ()
 refreshChannelsAndUsers = do
     session <- getSession
-    myTId <- gets focusedTeamId
+    tids <- gets allTeams
     me <- gets myUser
     knownUsers <- gets allUserIds
     doAsyncWith Preempt $ do
       (chans, datas) <- runConcurrently $ (,)
-                       <$> Concurrently (MM.mmGetChannelsForUser UserMe myTId session)
-                       <*> Concurrently (MM.mmGetChannelMembersForUser UserMe myTId session)
+                       <$> Concurrently (mconcat <$> sequence [ MM.mmGetChannelsForUser UserMe t session | t <- tids ])
+                       <*> Concurrently (mconcat <$> sequence [ MM.mmGetChannelMembersForUser UserMe t session | t <- tids ])
 
       -- Collect all user IDs associated with DM channels so we can
       -- bulk-fetch their user records.
@@ -998,3 +1000,8 @@ beginCurrentChannelDeleteConfirm = do
         if chType /= Direct
             then setMode DeleteChannelConfirm
             else mhError $ GenericError "Direct message channels cannot be deleted."
+
+nextTeam :: MH ()
+nextTeam = do
+  modifying csMyTeams CList.rotR
+  refreshChannelsAndUsers

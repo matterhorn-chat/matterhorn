@@ -56,6 +56,8 @@ data KeyEvent
   | SelectNextTabEvent
   | SelectPreviousTabEvent
 
+  | NextTeamEvent
+
   -- generic cancel
   | CancelEvent
 
@@ -360,3 +362,5 @@ keyEventName ev = case ev of
   AttachmentListAddEvent    -> "add-to-attachment-list"
   AttachmentListDeleteEvent -> "delete-from-attachment-list"
   AttachmentOpenEvent       -> "open-attachment"
+
+  NextTeamEvent -> "next-team"

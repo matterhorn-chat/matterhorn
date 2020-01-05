@@ -145,4 +145,7 @@ mainKeybindings = mkKeybindings
 
     , mkKb EnterFlaggedPostsEvent "View currently flagged posts"
          enterFlaggedPostListMode
+
+    , mkKb NextTeamEvent "Go to the next team"
+         nextTeam
     ]

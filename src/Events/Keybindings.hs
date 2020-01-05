@@ -158,6 +158,8 @@ defaultBindings ev =
         AttachmentListDeleteEvent -> [ key 'd' ]
         AttachmentOpenEvent       -> [ key 'o' ]
 
+        NextTeamEvent -> [ ctrl (key 't') ]
+
 -- | Given a configuration, we want to check it for internal
 -- consistency (i.e. that a given keybinding isn't associated with
 -- multiple events which both need to get generated in the same UI

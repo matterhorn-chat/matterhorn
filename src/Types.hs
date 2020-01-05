@@ -245,6 +245,7 @@ module Types
   , getEditedMessageCutoff
   , teamIdForChannel
   , focusedChannelList
+  , allTeams
 
   , normalChannelSigil
 
@@ -472,9 +473,8 @@ mkChannelZipperList :: UTCTime
                     -> Maybe TeamId
                     -> [(ChannelListGroup, [ChannelListEntry])]
 mkChannelZipperList now config cconfig prefs cs us tId =
-    [ (ChannelGroupPublicChannels, getNonDMChannelIdsInOrder cs tId)
-    , (ChannelGroupDirectMessages, getDMChannelsInOrder now config cconfig prefs us cs)
-    ]
+    [ (ChannelGroupPublicChannels, channels) | let channels = getNonDMChannelIdsInOrder cs tId, not (null channels) ] ++
+    [ (ChannelGroupDirectMessages, channels) | let channels = getDMChannelsInOrder now config cconfig prefs us cs, not (null channels) ]
 
 getNonDMChannelIdsInOrder :: ClientChannels -> Maybe TeamId -> [ChannelListEntry]
 getNonDMChannelIdsInOrder cs tId =
@@ -1950,3 +1950,6 @@ csFocus =
 
 focusedChannelList :: ChatState -> [(ChannelListGroup, [ChannelListEntry])]
 focusedChannelList st = Zipper.toList (st^.csFocus)
+
+allTeams :: ChatState -> [TeamId]
+allTeams st = st ^. csMyTeams . to (map getId . CList.toList)

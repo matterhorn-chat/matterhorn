@@ -191,7 +191,11 @@ initializeState cr myTeams me = do
   -- we don't know whether the server will give us a last-viewed preference.
   -- We first try to find a channel matching with the last selected channel ID,
   -- failing which we look for the Town Square channel by name.
-  userChans <- mmGetChannelsForUser UserMe myTId session
+  allChans <- mapM (\ team -> mmGetChannelsForUser UserMe (getId team) session) (CList.toList myTeams)
+  let userChans = mconcat allChans
+  -- userChans <- msum [ mmGetChannelsForUser UserMe (getId team) session
+  --                   | team <- CList.toList myTeams
+  --                   ]
   let lastSelectedChans = Seq.filter isLastSelectedChannel userChans
       chans = if Seq.null lastSelectedChans
                 then Seq.filter isTownSquare userChans
@@ -199,7 +203,7 @@ initializeState cr myTeams me = do
 
   -- Since the only channel we are dealing with is by construction the
   -- last channel, we don't have to consider other cases here:
-  chanPairs <- forM (toList chans) $ \c -> do
+  chanPairs <- forM (toList userChans) $ \c -> do
       cChannel <- makeClientChannel (userId me) c
       return (getId c, cChannel)
 
