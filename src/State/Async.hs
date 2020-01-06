@@ -123,7 +123,7 @@ doAsyncWithIO prio st act = do
 -- main (brick) thread.
 doAsyncMM :: AsyncPriority
           -- ^ the priority for this async operation
-          -> (Session -> TeamId -> IO a)
+          -> (Session -> IO a)
           -- ^ the async MM channel-based IO operation
           -> (a -> Maybe (MH ()))
           -- ^ function to process the results in brick event handling
@@ -131,9 +131,8 @@ doAsyncMM :: AsyncPriority
           -> MH ()
 doAsyncMM prio mmOp eventHandler = do
   session <- getSession
-  tId <- gets myTeamId
   doAsyncWith prio $ do
-    r <- mmOp session tId
+    r <- mmOp session
     return $ eventHandler r
 
 -- | Helper type for a function to perform an asynchronous MM operation
@@ -143,7 +142,7 @@ type DoAsyncChannelMM a =
     -- ^ the priority for this async operation
     -> ChannelId
     -- ^ The channel
-    -> (Session -> TeamId -> ChannelId -> IO a)
+    -> (Session -> ChannelId -> IO a)
     -- ^ the asynchronous Mattermost channel-based IO operation
     -> (ChannelId -> a -> Maybe (MH ()))
     -- ^ function to process the results in brick event handling context
@@ -154,7 +153,7 @@ type DoAsyncChannelMM a =
 -- an MH () context in the main (brick) thread.
 doAsyncChannelMM :: DoAsyncChannelMM a
 doAsyncChannelMM prio cId mmOp eventHandler =
-  doAsyncMM prio (\s t -> mmOp s t cId) (eventHandler cId)
+  doAsyncMM prio (\s -> mmOp s cId) (eventHandler cId)
 
 -- | Use this convenience function if no operation needs to be
 -- performed in the MH state after an async operation completes.

@@ -136,7 +136,7 @@ updateViewedChan updatePrev cId = use csConnectionStatus >>= \case
                then use csRecentChannel
                else return Nothing
         doAsyncChannelMM Preempt cId
-          (\s _ c -> MM.mmViewChannel UserMe c pId s)
+          (\s c -> MM.mmViewChannel UserMe c pId s)
           (\c () -> Just $ setLastViewedFor pId c)
     Disconnected ->
         -- Cannot update server; make no local updates to avoid getting
@@ -219,7 +219,7 @@ setLastViewedFor prevId cId = do
           -- updating the client data, but it's also immune to any new
           -- or removed Message date fields, or anything else that would
           -- contribute to the viewed/updated times on the server.
-          doAsyncChannelMM Preempt cId (\ s _ _ ->
+          doAsyncChannelMM Preempt cId (\ s _ ->
                                            (,) <$> MM.mmGetChannel cId s
                                                <*> MM.mmGetChannelMember cId UserMe s)
           (\pcid (cwd, member) -> Just $ csChannel(pcid).ccInfo %= channelInfoFromChannelWithData cwd member)
@@ -709,7 +709,7 @@ leaveChannelIfPossible cId delete = do
                 -- that we aren't the only remaining member, so we can't
                 -- delete the channel.
                 doAsyncChannelMM Preempt cId
-                    (\s _ _ ->
+                    (\s _ ->
                       let query = MM.defaultUserQuery
                            { MM.userQueryPage = Just 0
                            , MM.userQueryPerPage = Just 2
@@ -726,15 +726,15 @@ leaveChannelIfPossible cId delete = do
                         -- by the delete argument.
                         let func = case cInfo^.cdType of
                                 Private -> case all isMe members of
-                                    True -> (\ s _ c -> MM.mmDeleteChannel c s)
-                                    False -> (\ s _ c -> MM.mmRemoveUserFromChannel c UserMe s)
+                                    True -> (\ s c -> MM.mmDeleteChannel c s)
+                                    False -> (\ s c -> MM.mmRemoveUserFromChannel c UserMe s)
                                 Group ->
-                                    \s _ _ ->
+                                    \s _ ->
                                         let pref = hideGroupChannelPref cId (me^.userIdL)
                                         in MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) s
                                 _ -> if delete
-                                     then (\ s _ c -> MM.mmDeleteChannel c s)
-                                     else (\ s _ c -> MM.mmRemoveUserFromChannel c UserMe s)
+                                     then (\ s c -> MM.mmDeleteChannel c s)
+                                     else (\ s c -> MM.mmRemoveUserFromChannel c UserMe s)
 
                         doAsyncChannelMM Preempt cId func endAsyncNOP
                     )
@@ -934,7 +934,7 @@ joinChannel chanId = do
             myId <- gets myUserId
             let member = MinChannelMember myId chanId
             csPendingChannelChange .= (Just $ ChangeByChannelId chanId)
-            doAsyncChannelMM Preempt chanId (\ s _ c -> MM.mmAddUser c member s) endAsyncNOP
+            doAsyncChannelMM Preempt chanId (\ s c -> MM.mmAddUser c member s) endAsyncNOP
 
 createOrFocusDMChannel :: UserInfo -> Maybe (ChannelId -> MH ()) -> MH ()
 createOrFocusDMChannel user successAct = do
@@ -993,7 +993,7 @@ setChannelTopic msg = do
     cId <- use csCurrentChannelId
     let patch = defaultChannelPatch { channelPatchHeader = Just msg }
     doAsyncChannelMM Preempt cId
-        (\s _ _ -> MM.mmPatchChannel cId patch s)
+        (\s _ -> MM.mmPatchChannel cId patch s)
         (\_ _ -> Nothing)
 
 beginCurrentChannelDeleteConfirm :: MH ()
