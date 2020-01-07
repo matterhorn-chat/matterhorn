@@ -1,9 +1,9 @@
 [submodule "submodules/aspell-pipe"]
 	path = submodules/aspell-pipe
-	url = git@github.com:matterhorn-chat/aspell-pipe.git
+	url = https://github.com/matterhorn-chat/aspell-pipe.git
 [submodule "submodules/mattermost-api-qc"]
 	path = submodules/mattermost-api-qc
-	url = git@github.com:matterhorn-chat/mattermost-api-qc.git
+	url = https://github.com/matterhorn-chat/mattermost-api-qc.git
 [submodule "submodules/mattermost-api"]
 	path = submodules/mattermost-api
-	url = git@github.com:matterhorn-chat/mattermost-api.git
+	url = https://github.com/matterhorn-chat/mattermost-api.git
