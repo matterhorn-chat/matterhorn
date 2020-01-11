@@ -543,7 +543,7 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
                             case getMessageForPostId st parentId of
                                 Nothing -> do
                                     doAsyncChannelMM Preempt cId
-                                        (\s _ _ -> MM.mmGetThread parentId s)
+                                        (\s _ -> MM.mmGetThread parentId s)
                                         (\_ p -> Just $ updatePostMap p)
                                 _ -> return ()
                         _ -> return ()
@@ -702,7 +702,7 @@ asyncFetchMoreMessages = do
             addTrailingGap = MM.postQueryBefore query == Nothing &&
                              MM.postQueryPage query == Just 0
         in doAsyncChannelMM Preempt cId
-               (\s _ c -> MM.mmGetPostsForChannel c query s)
+               (\s c -> MM.mmGetPostsForChannel c query s)
                (\c p -> Just $ do
                    pp <- addObtainedMessages c (-pageAmount) addTrailingGap p
                    postProcessMessageAdd pp
@@ -754,7 +754,7 @@ asyncFetchMessagesForGap cId gapMessage =
         addTrailingGap = MM.postQueryBefore query == Nothing &&
                          MM.postQueryPage query == Just 0
     in doAsyncChannelMM Preempt cId
-       (\s _ c -> MM.mmGetPostsForChannel c query s)
+       (\s c -> MM.mmGetPostsForChannel c query s)
        (\c p -> Just $ do
            void $ addObtainedMessages c (-pageAmount) addTrailingGap p
            mh $ invalidateCacheEntry (ChannelMessages cId))
@@ -784,7 +784,7 @@ asyncFetchMessagesSurrounding cId pId = do
         reqAmt = 5  -- both before and after
     doAsyncChannelMM Preempt cId
       -- first get some messages before the target, no overlap
-      (\s _ c -> MM.mmGetPostsForChannel c query s)
+      (\s c -> MM.mmGetPostsForChannel c query s)
       (\c p -> Just $ do
           let last2ndId = secondToLastPostId p
           void $ addObtainedMessages c (-reqAmt) False p
@@ -798,7 +798,7 @@ asyncFetchMessagesSurrounding cId pId = do
                        , MM.postQueryPerPage = Just $ reqAmt + 2
                        }
           doAsyncChannelMM Preempt cId
-            (\s' _ c' -> MM.mmGetPostsForChannel c' query' s')
+            (\s' c' -> MM.mmGetPostsForChannel c' query' s')
             (\c' p' -> Just $ do
                 void $ addObtainedMessages c' (reqAmt + 2) False p'
                 mh $ invalidateCacheEntry (ChannelMessages cId)
@@ -832,7 +832,7 @@ fetchVisibleIfNeeded = do
                 finalQuery = case rel'pId of
                                Just (MessagePostId pid) -> query { MM.postQueryBefore = Just pid }
                                _ -> query
-                op = \s _ c -> MM.mmGetPostsForChannel c finalQuery s
+                op = \s c -> MM.mmGetPostsForChannel c finalQuery s
                 addTrailingGap = MM.postQueryBefore finalQuery == Nothing &&
                                  MM.postQueryPage finalQuery == Just 0
             in when ((not $ chan^.ccContents.cdFetchPending) && gapInDisplayable) $ do

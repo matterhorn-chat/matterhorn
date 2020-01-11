@@ -26,7 +26,7 @@ asyncFetchReactionsForPost :: ChannelId -> Post -> MH ()
 asyncFetchReactionsForPost cId p
   | not (p^.postHasReactionsL) = return ()
   | otherwise = doAsyncChannelMM Normal cId
-        (\s _ _ -> fmap toList (mmGetReactionsForPost (p^.postIdL) s))
+        (\s _ -> fmap toList (mmGetReactionsForPost (p^.postIdL) s))
         (\_ rs -> Just $ addReactions cId rs)
 
 addReactions :: ChannelId -> [Reaction] -> MH ()
