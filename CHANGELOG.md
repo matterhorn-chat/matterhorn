@@ -1,4 +1,20 @@
 
+50200.6.0
+=========
+
+Bug fixes:
+ * Initialization of the attachment file browser is delayed until it is
+   needed.
+ * Reply message coalescing now occurs if a non-reply intervening
+   message is deleted.
+ * When showing the attachment management window, the main UI is dimmed.
+ * Fixed a race condition where a script completes after the user
+   changes channels.
+
+Other improvements:
+ * README: improve mention of display corruption (relevant to #544)
+ * README: clarify source build instructions (relevant to #536)
+
 50200.5.0
 =========
 
