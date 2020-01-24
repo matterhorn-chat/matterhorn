@@ -507,14 +507,12 @@ retrogradeMsgsWithThreadStates msgs = DSeq $ checkAdjacentMessages (dseq msgs)
         checkAdjacentMessages s = case Seq.viewl s of
             Seq.EmptyL -> mempty
             m Seq.:< t ->
-                case getMessagePredecessor t of
-                    Just prev ->
-                        (m, threadStateFor m prev) Seq.<| checkAdjacentMessages t
-                    Nothing -> case m^.mInReplyToMsg of
-                        InReplyTo _ ->
-                            Seq.singleton (m, InThreadShowParent)
-                        _ ->
-                            Seq.singleton (m, NoThread)
+                let new_m = case getMessagePredecessor t of
+                        Just prev -> (m, threadStateFor m prev)
+                        Nothing -> case m^.mInReplyToMsg of
+                            InReplyTo _ -> (m, InThreadShowParent)
+                            _           -> (m, NoThread)
+                in new_m Seq.<| checkAdjacentMessages t
 
 chronologicalMsgsWithThreadStates :: Messages -> DirectionalSeq Chronological (Message, ThreadState)
 chronologicalMsgsWithThreadStates msgs = DSeq $ checkAdjacentMessages (dseq msgs)
@@ -531,14 +529,12 @@ chronologicalMsgsWithThreadStates msgs = DSeq $ checkAdjacentMessages (dseq msgs
         checkAdjacentMessages s = case Seq.viewr s of
             Seq.EmptyR -> mempty
             t Seq.:> m ->
-                case getMessagePredecessor t of
-                    Just prev ->
-                        checkAdjacentMessages t Seq.|> (m, threadStateFor m prev)
-                    Nothing -> case m^.mInReplyToMsg of
-                        InReplyTo _ ->
-                            Seq.singleton (m, InThreadShowParent)
-                        _ ->
-                            Seq.singleton (m, NoThread)
+                let new_m = case getMessagePredecessor t of
+                        Just prev -> (m, threadStateFor m prev)
+                        Nothing -> case m^.mInReplyToMsg of
+                            InReplyTo _ -> (m, InThreadShowParent)
+                            _           -> (m, NoThread)
+                in checkAdjacentMessages t Seq.|> new_m
 
 -- | findMessage searches for a specific message as identified by the
 -- PostId.  The search starts from the most recent messages because
