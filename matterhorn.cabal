@@ -145,7 +145,7 @@ executable matterhorn
                      , config-ini           >= 0.2.2.0 && < 0.3
                      , process              >= 1.4    && < 1.7
                      , microlens-platform   >= 0.3    && < 0.5
-                     , brick                >= 0.50   && < 0.51
+                     , brick                >= 0.51   && < 0.52
                      , brick-skylighting    >= 0.2    && < 0.4
                      , vty                  >= 5.26   && < 5.27
                      , word-wrap            >= 0.4.0  && < 0.5
@@ -195,7 +195,7 @@ test-suite test_messages
   hs-source-dirs:     src, test
   build-depends:      base                 >=4.7     && <5
                     , base-compat          >= 0.9    && < 0.11
-                    , brick                >= 0.50   && < 0.51
+                    , brick                >= 0.51   && < 0.52
                     , bytestring           >= 0.10   && < 0.11
                     , cheapskate           >= 0.1    && < 0.2
                     , checkers             >= 0.4    && < 0.6
