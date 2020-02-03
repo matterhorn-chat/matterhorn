@@ -154,19 +154,15 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
         nameElems = case msgUsr of
           Just un
             | isEmote msg ->
-                [ B.txt "*", colorUsername un un
+                [ B.txt $ (if msg^.mFlagged then "[!] " else "") <> "*"
+                , colorUsername un un
                 , botElem
                 , B.txt " "
-                ]
-            | msg^.mFlagged ->
-                [ colorUsername un un
-                , botElem
-                , B.txt "[!]: "
                 ]
             | otherwise ->
                 [ colorUsername un un
                 , botElem
-                , B.txt ": "
+                , B.txt $ (if msg^.mFlagged then "[!]" else "") <> ": "
                 ]
           Nothing -> []
 
