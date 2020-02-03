@@ -55,9 +55,13 @@ printArgSpec :: CmdArgs a -> Text
 printArgSpec NoArg = ""
 printArgSpec (LineArg ts) = "<" <> ts <> ">"
 printArgSpec (TokenArg t NoArg) = "<" <> t <> ">"
-printArgSpec (UserArg rs) = "<" <> userSigil <> "user> " <> printArgSpec rs
-printArgSpec (ChannelArg rs) = "<" <> normalChannelSigil <> "channel> " <> printArgSpec rs
-printArgSpec (TokenArg t rs) = "<" <> t <> "> " <> printArgSpec rs
+printArgSpec (UserArg rs) = "<" <> userSigil <> "user>" <> addSpace (printArgSpec rs)
+printArgSpec (ChannelArg rs) = "<" <> normalChannelSigil <> "channel>" <> addSpace (printArgSpec rs)
+printArgSpec (TokenArg t rs) = "<" <> t <> ">" <> addSpace (printArgSpec rs)
+
+addSpace :: Text -> Text
+addSpace "" = ""
+addSpace t = " " <> t
 
 matchArgs :: CmdArgs a -> Text -> Either Text a
 matchArgs NoArg t = case unwordHead t of
