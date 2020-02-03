@@ -302,7 +302,7 @@ import           Network.Mattermost.Exceptions
 import           Network.Mattermost.Lenses
 import           Network.Mattermost.Types
 import           Network.Mattermost.Types.Config
-import           Network.Mattermost.WebSocket ( WebsocketEvent )
+import           Network.Mattermost.WebSocket ( WebsocketEvent, WebsocketActionResponse )
 
 import           InputHistory
 import           Emoji
@@ -1576,6 +1576,8 @@ instance St.MonadIO MH where
 data MHEvent =
     WSEvent WebsocketEvent
     -- ^ For events that arise from the websocket
+    | WSActionResponse WebsocketActionResponse
+    -- ^ For responses to websocket actions
     | RespEvent (MH ())
     -- ^ For the result values of async IO operations
     | RefreshWebsocketEvent

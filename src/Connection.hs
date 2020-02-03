@@ -39,7 +39,8 @@ connectWebsockets = do
 
   tid <- liftIO $ do
     let shunt (Left msg) = writeBChan (st^.csResources.crEventQueue) (WebsocketParseError msg)
-        shunt (Right e) = writeBChan (st^.csResources.crEventQueue) (WSEvent e)
+        shunt (Right (Right e)) = writeBChan (st^.csResources.crEventQueue) (WSEvent e)
+        shunt (Right (Left e)) = writeBChan (st^.csResources.crEventQueue) (WSActionResponse e)
         runWS = WS.mmWithWebSocket session shunt $ \ws -> do
                   writeBChan (st^.csResources.crEventQueue) WebsocketConnect
                   processWebsocketActions st ws 1 HM.empty

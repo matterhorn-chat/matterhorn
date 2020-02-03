@@ -79,6 +79,8 @@ onAppEvent (BGBusy n) =
     csWorkerIsBusy .= Just n
 onAppEvent (WSEvent we) =
     handleWSEvent we
+onAppEvent (WSActionResponse r) =
+    handleWSActionResponse r
 onAppEvent (RespEvent f) = f
 onAppEvent (WebsocketParseError e) = do
     let msg = "A websocket message could not be parsed:\n  " <>
@@ -172,6 +174,11 @@ onVtyEvent e = do
         ViewMessage                -> handleTabbedWindowEvent (csViewedMessage.singular _Just._2) e
         ManageAttachments          -> onEventManageAttachments e
         ManageAttachmentsBrowseFiles -> onEventManageAttachments e
+
+handleWSActionResponse :: WebsocketActionResponse -> MH ()
+handleWSActionResponse r =
+    case warStatus r of
+        WebsocketActionStatusOK -> return ()
 
 handleWSEvent :: WebsocketEvent -> MH ()
 handleWSEvent we = do
