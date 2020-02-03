@@ -150,7 +150,7 @@ git submodule update --init
 ./build.sh
 
 echo %
-echo % Verify that the keybindings are up-to-date
+echo % Verify that the keybinding document is current
 echo %
 diff docs/keybindings.md <(./run.sh -i -K)
 echo
