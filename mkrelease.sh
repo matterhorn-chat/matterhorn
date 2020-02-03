@@ -101,6 +101,7 @@ function prepare_dist {
     mkdir $dest/docs
     cp $HERE/docs/sample-config.ini $dest/docs/
     cp $HERE/docs/keybindings.md $dest/docs/
+    cp $HERE/docs/commands.md $dest/docs/
 
     cp -r $HERE/emoji $dest/
     cp -r $HERE/syntax $dest/
@@ -153,6 +154,12 @@ echo %
 echo % Verify that the keybinding document is current
 echo %
 diff docs/keybindings.md <(./run.sh -i -K)
+echo
+
+echo %
+echo % Verify that the command document is current
+echo %
+diff docs/commands.md <(./run.sh -M)
 echo
 
 TMPDIR=$(mktemp -d)

@@ -2,6 +2,8 @@ module Draw.ShowHelp
   ( drawShowHelp
   , keybindingMarkdownTable
   , keybindingTextTable
+  , commandTextTable
+  , commandMarkdownTable
   )
 where
 
@@ -64,23 +66,49 @@ mainHelp kc = commandHelp
                          , padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Help Topics"
                          , drawHelpTopics
                          , padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Commands"
-                         , mkCommandHelpText $ sortWith commandName commandList
+                         , mkCommandHelpText
                          , padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Keybindings"
                          ] <>
                          (mkKeybindingHelp <$> keybindSections kc)
 
-    mkCommandHelpText :: [Cmd] -> Widget Name
-    mkCommandHelpText cs =
-      let helpInfo = [ (info, desc)
-                     | Cmd cmd desc args _ <- cs
-                     , let argSpec = printArgSpec args
-                           info = T.cons '/' cmd <> " " <> argSpec
-                     ]
-          commandNameWidth = 4 + (maximum $ T.length <$> fst <$> helpInfo)
+    mkCommandHelpText :: Widget Name
+    mkCommandHelpText =
+      let commandNameWidth = 4 + (maximum $ T.length <$> fst <$> commandHelpInfo)
       in hCenter $
          vBox [ (withDefAttr helpEmphAttr $ txt $ padTo commandNameWidth info) <+> renderText desc
-              | (info, desc) <- helpInfo
+              | (info, desc) <- commandHelpInfo
               ]
+
+commandHelpInfo :: [(T.Text, T.Text)]
+commandHelpInfo = pairs
+    where
+        pairs = [ (info, desc)
+                | Cmd cmd desc args _ <- cs
+                , let argSpec = printArgSpec args
+                      spc = if T.null argSpec then "" else " "
+                      info = T.cons '/' cmd <> spc <> argSpec
+                ]
+        cs = sortWith commandName commandList
+
+commandTextTable :: T.Text
+commandTextTable =
+    let commandNameWidth = 4 + (maximum $ T.length <$> fst <$> commandHelpInfo)
+    in T.intercalate "\n" $
+       [ padTo commandNameWidth info <> desc
+       | (info, desc) <- commandHelpInfo
+       ]
+
+commandMarkdownTable :: T.Text
+commandMarkdownTable =
+    T.intercalate "\n" $
+    [ "# Commands"
+    , ""
+    , "| Command | Description |"
+    , "| ------- | ----------- |"
+    ] <>
+    [ "| `" <> info <> "` | " <> desc <> " |"
+    | (info, desc) <- commandHelpInfo
+    ]
 
 drawHelpTopics :: Widget Name
 drawHelpTopics =

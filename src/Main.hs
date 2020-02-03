@@ -11,7 +11,8 @@ import Options
 import App
 import Events.Keybindings ( ensureKeybindingConsistency )
 import KeyMap ( keybindingModeMap )
-import Draw.ShowHelp ( keybindingMarkdownTable, keybindingTextTable )
+import Draw.ShowHelp ( keybindingMarkdownTable, keybindingTextTable
+                     , commandMarkdownTable, commandTextTable )
 
 
 main :: IO ()
@@ -30,13 +31,23 @@ main = do
 
     let keyConfig = configUserKeys config
 
-    case optPrintKeybindings opts of
-        Nothing -> return ()
+    printedCommands <- case optPrintCommands opts of
+        Nothing -> return False
+        Just ty -> do
+            case ty of
+                Markdown -> T.putStrLn commandMarkdownTable
+                Plain -> T.putStrLn commandTextTable
+            return True
+
+    printedKeybindings <- case optPrintKeybindings opts of
+        Nothing -> return False
         Just ty -> do
             case ty of
                 Markdown -> T.putStrLn $ keybindingMarkdownTable keyConfig
                 Plain -> T.putStrLn $ keybindingTextTable keyConfig
-            exitSuccess
+            return True
+
+    when (printedKeybindings || printedCommands) exitSuccess
 
     case ensureKeybindingConsistency keyConfig keybindingModeMap of
         Right () -> return ()

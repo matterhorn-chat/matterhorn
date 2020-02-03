@@ -21,6 +21,7 @@ data-files:          syntax/*.xml
 extra-doc-files:     CHANGELOG.md
                      README.md
                      docs/keybindings.md
+                     docs/commands.md
                      docs/AUTHORS.txt
                      docs/PRACTICES.md
                      scripts/cowsay
