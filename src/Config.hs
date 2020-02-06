@@ -257,7 +257,19 @@ getConfig fp = do
     absPath <- convertIOException $ makeAbsolute fp
     t <- (convertIOException $ T.readFile absPath) `catchE`
          (\e -> throwE $ "Could not read " <> show absPath <> ": " <> e)
-    case parseIniFile t fromIni of
+
+    -- HACK ALERT FIXME:
+    --
+    -- The config parser library we use, config-ini (as of 0.2.4.0)
+    -- cannot handle configuration files without trailing newlines.
+    -- Since that's not a really good reason for this function to raise
+    -- an exception (and is fixable on the fly), we have the following
+    -- check. This check is admittedly not a great thing to have to do,
+    -- and we should definitely get rid of it when config-ini fixes this
+    -- issue.
+    let t' = if "\n" `T.isSuffixOf` t then t else t <> "\n"
+
+    case parseIniFile t' fromIni of
         Left err -> do
             throwE $ "Unable to parse " ++ absPath ++ ":" ++ err
         Right conf -> do
