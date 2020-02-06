@@ -328,6 +328,7 @@ data PasswordSource =
 -- | The type of channel list group headings.
 data ChannelListGroup =
     ChannelGroupPublicChannels
+    | ChannelGroupPrivateChannels
     | ChannelGroupDirectMessages
     deriving (Eq)
 
@@ -467,13 +468,14 @@ mkChannelZipperList :: UTCTime
                     -> Users
                     -> [(ChannelListGroup, [ChannelListEntry])]
 mkChannelZipperList now config cconfig prefs cs us =
-    [ (ChannelGroupPublicChannels, getNonDMChannelIdsInOrder cs)
+    [ (ChannelGroupPublicChannels, getChannelIdsInOrder cs Ordinary)
+    , (ChannelGroupPrivateChannels, getChannelIdsInOrder cs Private)
     , (ChannelGroupDirectMessages, getDMChannelsInOrder now config cconfig prefs us cs)
     ]
 
-getNonDMChannelIdsInOrder :: ClientChannels -> [ChannelListEntry]
-getNonDMChannelIdsInOrder cs =
-    let matches (_, info) = info^.ccInfo.cdType `notElem` [Direct, Group]
+getChannelIdsInOrder :: ClientChannels -> Type -> [ChannelListEntry]
+getChannelIdsInOrder cs ty =
+    let matches (_, info) = info^.ccInfo.cdType == ty
     in fmap (CLChannel . fst) $
        sortBy (comparing ((^.ccInfo.cdName) . snd)) $
        filteredChannels matches cs

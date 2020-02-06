@@ -83,6 +83,7 @@ renderChannelListGroupHeading :: ChannelListGroup -> Bool -> Widget Name
 renderChannelListGroupHeading g anyUnread =
     let label = case g of
             ChannelGroupPublicChannels -> "Public Channels"
+            ChannelGroupPrivateChannels -> "Private Channels"
             ChannelGroupDirectMessages -> "Direct Messages"
         addUnread = if anyUnread
                     then (<+> (withDefAttr unreadGroupMarkerAttr $ txt "*"))
