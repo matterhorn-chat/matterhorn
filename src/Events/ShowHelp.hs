@@ -34,23 +34,3 @@ helpKeybindings = mkKeybindings
     , mkKb ScrollTopEvent "Scroll to the beginning of the help" $
         mh $ vScrollToBeginning (viewportScroll HelpViewport)
     ]
-
--- KB "Scroll up"
---          (Vty.EvKey Vty.KUp []) $ do
---              mh $ vScrollBy (viewportScroll HelpViewport) (-1)
---     , KB "Scroll down"
---          (Vty.EvKey Vty.KDown []) $ do
---              mh $ vScrollBy (viewportScroll HelpViewport) 1
---     , KB "Page up"
---          (Vty.EvKey Vty.KPageUp []) $ do
---              mh $ vScrollBy (viewportScroll HelpViewport) (-1 * pageAmount)
---     , KB "Page down"
---          (Vty.EvKey Vty.KPageDown []) $ do
---              mh $ vScrollBy (viewportScroll HelpViewport) pageAmount
---     , KB "Page down"
---          (Vty.EvKey (Vty.KChar ' ') []) $ do
---              mh $ vScrollBy (viewportScroll HelpViewport) pageAmount
---     , KB "Return to the main interface"
---          (Vty.EvKey Vty.KEsc []) $ do
---            csMode .= Main
---     ]
