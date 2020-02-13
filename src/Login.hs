@@ -72,7 +72,7 @@ import qualified System.IO.Error as Err
 
 import           Network.Mattermost ( ConnectionData )
 import           Network.Mattermost.Types ( Session, User, Login(..), ConnectionPoolConfig(..)
-                                          , initConnectionData, initConnectionDataInsecure )
+                                          , initConnectionData, ConnectionType(..) )
 import           Network.Mattermost.Exceptions ( LoginFailureException(..) )
 import           Network.Mattermost.Endpoints ( mmLogin )
 
@@ -182,14 +182,14 @@ loginWorker setLogger logMgr unsafeUseHTTP requestChan respChan = forever $ do
             writeBChan respChan $ StartConnect initial $ connInfo^.ciHostname
             ioLogWithManager logMgr Nothing LogGeneral $ "Attempting authentication to " <> connInfo^.ciHostname
 
-            let connectFunc = if unsafeUseHTTP
-                              then initConnectionDataInsecure
-                              else initConnectionData
+            let connTy = if unsafeUseHTTP
+                         then ConnectHTTP
+                         else ConnectHTTPS True
                 login = Login { username = connInfo^.ciUsername
                               , password = connInfo^.ciPassword
                               }
 
-            cd <- fmap setLogger $ connectFunc (connInfo^.ciHostname) (fromIntegral (connInfo^.ciPort)) poolCfg
+            cd <- fmap setLogger $ initConnectionData (connInfo^.ciHostname) (fromIntegral (connInfo^.ciPort)) connTy poolCfg
 
             result <- convertLoginExceptions $ mmLogin cd login
             case result of
