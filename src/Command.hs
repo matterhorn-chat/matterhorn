@@ -140,6 +140,10 @@ commandList =
     (LineArg "topic") $ \ p ->
       if not (T.null p) then setChannelTopic p else return ()
 
+  , Cmd "purpose" "Set the current channel's purpose"
+    (LineArg "purpose") $ \ p ->
+      if not (T.null p) then setChannelPurpose p else return ()
+
   , Cmd "add-user" "Search for a user to add to the current channel"
     NoArg $ \ () ->
         enterChannelInviteUserList

@@ -41,6 +41,7 @@ module State.Channels
   , joinChannelByName
   , changeChannelByName
   , setChannelTopic
+  , setChannelPurpose
   , beginCurrentChannelDeleteConfirm
   , toggleChannelListVisibility
   , showChannelInSidebar
@@ -992,6 +993,14 @@ setChannelTopic :: Text -> MH ()
 setChannelTopic msg = do
     cId <- use csCurrentChannelId
     let patch = defaultChannelPatch { channelPatchHeader = Just msg }
+    doAsyncChannelMM Preempt cId
+        (\s _ -> MM.mmPatchChannel cId patch s)
+        (\_ _ -> Nothing)
+
+setChannelPurpose :: Text -> MH ()
+setChannelPurpose msg = do
+    cId <- use csCurrentChannelId
+    let patch = defaultChannelPatch { channelPatchPurpose = Just msg }
     doAsyncChannelMM Preempt cId
         (\s _ -> MM.mmPatchChannel cId patch s)
         (\_ _ -> Nothing)
