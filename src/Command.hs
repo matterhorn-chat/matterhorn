@@ -136,7 +136,7 @@ commandList =
     (TokenArg "theme" NoArg) $ \ (themeName, ()) ->
       setTheme themeName
 
-  , Cmd "topic" "Set the current channel's topic"
+  , Cmd "topic" "Set the current channel's topic (header)"
     (LineArg "topic") $ \ p ->
       if not (T.null p) then setChannelTopic p else return ()
 
