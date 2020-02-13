@@ -187,7 +187,8 @@ files or remove existing attachments by pressing `C-x` again.
   supported.) Also supports `NO_PROXY`.
 * Multiple color themes with color theme customization support
 * Custom notifications via notification scripts (see the
-  `activityNotifyCommand` configuration setting).
+  `activityNotifyCommand` configuration setting and
+  `docs/notification-scripts.md` for details).
 
 # Spell Checking Support
 
