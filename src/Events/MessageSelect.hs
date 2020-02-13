@@ -64,6 +64,9 @@ messageSelectKeybindings = mkKeybindings
     , mkKb YankWholeMessageEvent "Copy an entire message to the clipboard"
          yankSelectedMessage
 
+    , mkKb PinMessageEvent "Pin the selected message"
+         pinSelectedMessage
+
     , mkKb FlagMessageEvent "Flag the selected message"
          flagSelectedMessage
 

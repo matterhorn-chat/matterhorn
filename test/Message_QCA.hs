@@ -43,6 +43,7 @@ genMessage = Message
              <*> genMap genText (genSet genUserId)
              <*> genMaybe genPost
              <*> arbitrary
+             <*> arbitrary
              <*> (Just <$> genChannelId)
 
 genUUID :: Gen UUID
@@ -70,6 +71,7 @@ genMessage__DeletedPost = Message__DeletedPost
                               <*> genMap genText (genSet genUserId)
                               <*> genMaybe genPost
                               <*> arbitrary
+                              <*> arbitrary
                               <*> (Just <$> genChannelId))
 
 newtype Message__Posted = Message__Posted { postMsg :: Message }
@@ -90,6 +92,7 @@ genMessage__Posted = Message__Posted
                          <*> (Just <$> MessagePostId <$> genPostId)
                          <*> genMap genText (genSet genUserId)
                          <*> genMaybe genPost
+                         <*> arbitrary
                          <*> arbitrary
                          <*> (Just <$> genChannelId))
 

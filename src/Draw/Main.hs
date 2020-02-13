@@ -73,6 +73,7 @@ previewFromInput overrideTy uId s =
                            , _mReactions     = mempty
                            , _mOriginalPost  = Nothing
                            , _mFlagged       = False
+                           , _mPinned        = False
                            , _mChannelId     = Nothing
                            }
 
@@ -459,6 +460,14 @@ messageSelectBottomBar st =
                   , ( \m -> isFlaggable m && m^.mFlagged
                     , ev FlagMessageEvent
                     , "unflag"
+                    )
+                  , ( \m -> isPinnable m && not (m^.mPinned)
+                    , ev PinMessageEvent
+                    , "pin"
+                    )
+                  , ( \m -> isPinnable m && m^.mPinned
+                    , ev PinMessageEvent
+                    , "unpin"
                     )
                   , ( isReplyable
                     , ev ReplyMessageEvent

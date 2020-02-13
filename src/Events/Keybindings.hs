@@ -146,6 +146,7 @@ defaultBindings ev =
         ViewMessageEvent    -> [ key 'v' ]
         FillGapEvent        -> [ kb Vty.KEnter ]
         FlagMessageEvent    -> [ key 'f' ]
+        PinMessageEvent    -> [ key 'p' ]
         YankMessageEvent    -> [ key 'y' ]
         YankWholeMessageEvent -> [ key 'Y' ]
         DeleteMessageEvent  -> [ key 'd' ]

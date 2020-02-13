@@ -25,6 +25,7 @@ module Themes
   , clientEmphAttr
   , clientStrongAttr
   , dateTransitionAttr
+  , pinnedMessageIndicatorAttr
   , newMessageTransitionAttr
   , gapMessageAttr
   , errorMessageAttr
@@ -85,6 +86,9 @@ recentMarkerAttr = "recentChannelMarker"
 
 replyParentAttr :: AttrName
 replyParentAttr = "replyParentPreview"
+
+pinnedMessageIndicatorAttr :: AttrName
+pinnedMessageIndicatorAttr = "pinnedMessageIndicator"
 
 loadMoreAttr :: AttrName
 loadMoreAttr = "loadMoreMessages"
@@ -252,6 +256,7 @@ lightAttrs =
        , (errorMessageAttr,                 fg red)
        , (gapMessageAttr,                   fg red)
        , (helpAttr,                         black `on` cyan)
+       , (pinnedMessageIndicatorAttr,       black `on` cyan)
        , (helpEmphAttr,                     fg white)
        , (channelSelectMatchAttr,           black `on` magenta)
        , (channelSelectPromptAttr,          fg black)
@@ -296,6 +301,7 @@ darkAttrs =
      , (codeAttr,                         fg magenta)
      , (emojiAttr,                        fg yellow)
      , (channelNameAttr,                  fg cyan)
+     , (pinnedMessageIndicatorAttr,       fg cyan `withStyle` bold)
      , (clientMessageAttr,                fg white)
      , (clientEmphAttr,                   fg white `withStyle` bold)
      , (clientStrongAttr,                 fg white `withStyle` bold `withStyle` underline)
@@ -429,6 +435,9 @@ themeDocs = ThemeDocumentation $ M.fromList $
       )
     , ( dateTransitionAttr
       , "Date transition lines between chat messages on different days"
+      )
+    , ( pinnedMessageIndicatorAttr
+      , "The indicator for messages that have been pinned"
       )
     , ( newMessageTransitionAttr
       , "The 'New Messages' line that appears above unread messages"

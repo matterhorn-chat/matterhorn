@@ -34,6 +34,7 @@ module Types.Posts
   , cpAttachments
   , cpDeleted
   , cpPostId
+  , cpPinned
 
   , unEmote
 
@@ -127,6 +128,7 @@ data ClientPost = ClientPost
   , _cpReactions     :: Map.Map Text (S.Set UserId)
   , _cpOriginalPost  :: Post
   , _cpFromWebhook   :: Bool
+  , _cpPinned        :: Bool
   } deriving (Show)
 
 -- | An attachment has a very long URL associated, as well as
@@ -207,6 +209,7 @@ toClientPost p parentId =
                 , _cpType          = postClientPostType p
                 , _cpPending       = False
                 , _cpDeleted       = False
+                , _cpPinned        = fromMaybe False $ postPinned p
                 , _cpAttachments   = Seq.empty
                 , _cpInReplyToPost = parentId
                 , _cpPostId        = p^.postIdL
