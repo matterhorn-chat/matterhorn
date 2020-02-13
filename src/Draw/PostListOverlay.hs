@@ -44,7 +44,18 @@ drawPostsBox contents st =
   where -- The 'window title' of the overlay
         hs = getHighlightSet st
         contentHeader = withAttr channelListHeaderAttr $ txt $ case contents of
-          PostListFlagged                -> "Flagged posts"
+          PostListFlagged -> "Flagged posts"
+          PostListPinned cId ->
+              let cName = case findChannelById cId (st^.csChannels) of
+                      Nothing -> "<UNKNOWN>"
+                      Just cc ->
+                          case cc^.ccInfo.cdType of
+                              Direct ->
+                                  case cc^.ccInfo.cdDMUserId >>= flip userById st of
+                                      Nothing -> mkChannelName (cc^.ccInfo)
+                                      Just u -> userSigil <> u^.uiName
+                              _ -> mkChannelName (cc^.ccInfo)
+              in "Posts pinned in " <> cName
           PostListSearch terms searching -> "Search results" <> if searching
             then ": " <> terms
             else " (" <> (T.pack . show . length) messages <> "): " <> terms
@@ -67,7 +78,8 @@ drawPostsBox contents st =
             hCenter $
             withDefAttr clientEmphAttr $
             str $ case contents of
-              PostListFlagged            -> "You have no flagged messages."
+              PostListFlagged -> "You have no flagged messages."
+              PostListPinned _ -> "This channel has no pinned messages."
               PostListSearch _ searching ->
                 if searching
                   then "Searching ..."

@@ -242,6 +242,9 @@ commandList =
   , Cmd "flags" "Open a window of your flagged posts" NoArg $ \ () ->
       enterFlaggedPostListMode
 
+  , Cmd "pinned-posts" "Open a window of this channel's pinned posts" NoArg $ \ () ->
+      enterPinnedPostListMode
+
   , Cmd "search" "Search for posts with given terms" (LineArg "terms") $
       enterSearchResultPostListMode
 

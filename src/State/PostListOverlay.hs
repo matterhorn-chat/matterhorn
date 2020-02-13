@@ -1,5 +1,6 @@
 module State.PostListOverlay
   ( enterFlaggedPostListMode
+  , enterPinnedPostListMode
   , enterSearchResultPostListMode
   , postListJumpToCurrent
   , postListSelectUp
@@ -73,6 +74,12 @@ enterFlaggedPostListMode :: MH ()
 enterFlaggedPostListMode = createPostList PostListFlagged $
                            mmGetListOfFlaggedPosts UserMe defaultFlaggedPostsQuery
 
+-- | Create a PostListOverlay with pinned messages from the server for
+-- the current channel.
+enterPinnedPostListMode :: MH ()
+enterPinnedPostListMode = do
+    cId <- use csCurrentChannelId
+    createPostList (PostListPinned cId) $ mmGetChannelPinnedPosts cId
 
 -- | Create a PostListOverlay with post search result messages from the
 -- server.
