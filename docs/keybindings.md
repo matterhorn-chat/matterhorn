@@ -66,6 +66,7 @@
 | `o` | `open-message-url` | Open all URLs in the selected message |
 | `PgDown` | `page-down` | Move the cursor down by 10 messages |
 | `PgUp` | `page-up` | Move the cursor up by 10 messages |
+| `p` | `pin-message` | Toggle whether the selected message is pinned |
 | `a` | `react-to-message` | Post a reaction to the selected message |
 | `r` | `reply-message` | Begin composing a reply to the selected message |
 | `End` | `scroll-bottom` | Scroll to bottom and select the latest message |

@@ -29,6 +29,7 @@
 | `/msg` | Search for a user to enter a private chat |
 | `/msg <@user>` | Chat with the specified user |
 | `/msg <@user> <message or command>` | Go to a user's channel and send the specified message or command |
+| `/pinned-posts` | Open a window of this channel's pinned posts |
 | `/purpose <purpose>` | Set the current channel's purpose |
 | `/quit` | Exit Matterhorn |
 | `/reconnect` | Force a reconnection attempt to the server |
