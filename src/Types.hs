@@ -388,6 +388,8 @@ data Config =
            -- ^ A specific Aspell dictionary name to use.
            , configUnsafeUseHTTP :: Bool
            -- ^ Whether to permit an insecure HTTP connection.
+           , configValidateServerCertificate :: Bool
+           -- ^ Whether to validate TLS certificates.
            , configChannelListWidth :: Int
            -- ^ The width, in columns, of the channel list sidebar.
            , configLogMaxBufferSize :: Int

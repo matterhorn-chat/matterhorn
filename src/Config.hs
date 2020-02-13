@@ -109,6 +109,8 @@ fromIni = do
                   pure Nothing
     configUnsafeUseHTTP <-
       fieldFlagDef "unsafeUseUnauthenticatedConnection" False
+    configValidateServerCertificate <-
+      fieldFlagDef "validateServerCertificate" True
     configDirectChannelExpirationDays <- fieldDefOf "directChannelExpirationDays" number
       (configDirectChannelExpirationDays defaultConfig)
     configDefaultAttachmentPath <- fieldMbOf "defaultAttachmentPath" filePathField
@@ -196,6 +198,7 @@ defaultConfig =
            , configEnableAspell                = False
            , configAspellDictionary            = Nothing
            , configUnsafeUseHTTP               = False
+           , configValidateServerCertificate   = True
            , configChannelListWidth            = 20
            , configLogMaxBufferSize            = 200
            , configShowOlderEdits              = True
