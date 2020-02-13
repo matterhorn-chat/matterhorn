@@ -164,7 +164,7 @@ renderChannelCompletion c inChan selected =
             , padTo nameWidth $
               withDefAttr channelNameAttr $
               txt $ normalChannelSigil <> (sanitizeUserText $ channelName c)
-            , txt $ sanitizeUserText $ channelHeader c
+            , txt $ sanitizeUserText $ channelPurpose c
             ]
 
 renderCommandCompletion :: Text -> Text -> Text -> Widget Name
