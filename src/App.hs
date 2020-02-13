@@ -44,7 +44,7 @@ app = App
       PostListOverlay _             -> Nothing
       ManageAttachments             -> Nothing
       ViewMessage                   -> Nothing
-      ShowHelp _                    -> Nothing
+      ShowHelp _ _                  -> Nothing
       UrlSelect                     -> Nothing
   , appHandleEvent  = Events.onEvent
   , appStartEvent   = return

@@ -23,6 +23,7 @@ import           Lens.Micro.Platform ( singular, _Just, _2 )
 import           Network.Mattermost.Version ( mmApiVersion )
 
 import           Command
+import           Events
 import           Events.ChannelSelect
 import           Events.Keybindings
 import           Events.Main
@@ -403,7 +404,8 @@ attrNameToConfig = T.pack . intercalate "." . attrNameComponents
 
 keybindSections :: KeyConfig -> [(Text, [Keybinding])]
 keybindSections kc =
-    [ ("Help Page", helpKeybindings kc)
+    [ ("Global Keybindings", globalKeybindings kc)
+    , ("Help Page", helpKeybindings kc)
     , ("Main Interface", mainKeybindings kc)
     , ("Channel Select Mode", channelSelectKeybindings kc)
     , ("URL Select Mode", urlSelectKeybindings kc)

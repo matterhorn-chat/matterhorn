@@ -273,6 +273,7 @@ import           Control.Concurrent ( ThreadId )
 import           Control.Concurrent.Async ( Async )
 import qualified Control.Concurrent.STM as STM
 import           Control.Exception ( SomeException )
+import qualified Control.Monad.Fail as MHF
 import qualified Control.Monad.State as St
 import qualified Control.Monad.Reader as R
 import qualified Data.Set as Set
@@ -1004,7 +1005,7 @@ data PostListContents =
 -- | The 'Mode' represents the current dominant UI activity
 data Mode =
     Main
-    | ShowHelp HelpTopic
+    | ShowHelp HelpTopic Mode
     | ChannelSelect
     | UrlSelect
     | LeaveChannelConfirm
@@ -1456,6 +1457,9 @@ data MHState =
 -- application quit
 newtype MH a =
     MH { fromMH :: R.ReaderT (Maybe LogContext) (St.StateT MHState (EventM Name)) a }
+
+instance MHF.MonadFail MH where
+    fail = MH . fail
 
 -- | Use a modified logging context for the duration of the specified MH
 -- action.

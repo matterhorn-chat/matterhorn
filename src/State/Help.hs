@@ -13,5 +13,9 @@ import           Types
 
 showHelpScreen :: HelpTopic -> MH ()
 showHelpScreen topic = do
-    mh $ vScrollToBeginning (viewportScroll HelpViewport)
-    setMode $ ShowHelp topic
+    curMode <- gets appMode
+    case curMode of
+        ShowHelp {} -> return ()
+        _ -> do
+            mh $ vScrollToBeginning (viewportScroll HelpViewport)
+            setMode $ ShowHelp topic curMode
