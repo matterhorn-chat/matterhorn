@@ -1461,9 +1461,6 @@ data MHState =
 newtype MH a =
     MH { fromMH :: R.ReaderT (Maybe LogContext) (St.StateT MHState (EventM Name)) a }
 
-instance MHF.MonadFail MH where
-    fail = MH . fail
-
 -- | Use a modified logging context for the duration of the specified MH
 -- action.
 withLogContext :: (Maybe LogContext -> Maybe LogContext) -> MH a -> MH a
@@ -1565,6 +1562,9 @@ instance Functor MH where
 instance Applicative MH where
     pure x = MH (pure x)
     MH f <*> MH x = MH (f <*> x)
+
+instance MHF.MonadFail MH where
+    fail = MH . MHF.fail
 
 instance Monad MH where
     return x = MH (return x)
