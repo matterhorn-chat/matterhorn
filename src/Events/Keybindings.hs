@@ -159,19 +159,18 @@ defaultBindings ev =
         AttachmentListDeleteEvent -> [ key 'd' ]
         AttachmentOpenEvent       -> [ key 'o' ]
 
--- | Given a configuration, we want to check it for internal
--- consistency (i.e. that a given keybinding isn't associated with
--- multiple events which both need to get generated in the same UI
--- mode) and also for basic usability (i.e. we shouldn't be binding
--- events which can appear in the main UI to a key like @e@, which
--- would prevent us from being able to type messages containing an @e@
--- in them!
+-- | Given a configuration, we want to check it for internal consistency
+-- (i.e. that a given keybinding isn't associated with multiple events
+-- which both need to get generated in the same UI mode) and also for
+-- basic usability (i.e. we shouldn't be binding events which can appear
+-- in the main UI to a key like @e@, which would prevent us from being
+-- able to type messages containing an @e@ in them!
 ensureKeybindingConsistency :: KeyConfig -> [(String, KeyConfig -> [Keybinding])] -> Either String ()
 ensureKeybindingConsistency kc modeMaps = mapM_ checkGroup allBindings
   where
     -- This is a list of lists, grouped by keybinding, of all the
-    -- keybinding/event associations that are going to be used with
-    -- the provided key configuration.
+    -- keybinding/event associations that are going to be used with the
+    -- provided key configuration.
     allBindings = groupWith fst $ concat
       [ case M.lookup ev kc of
           Nothing -> zip (defaultBindings ev) (repeat (False, ev))
@@ -180,29 +179,28 @@ ensureKeybindingConsistency kc modeMaps = mapM_ checkGroup allBindings
       | ev <- allEvents
       ]
 
-    -- The invariant here is that each call to checkGroup is made with
-    -- a list where the first element of every list is the same
-    -- binding. The Bool value in these is True if the event was
-    -- associated with the binding by the user, and False if it's a
-    -- Matterhorn default.
+    -- The invariant here is that each call to checkGroup is made with a
+    -- list where the first element of every list is the same binding.
+    -- The Bool value in these is True if the event was associated with
+    -- the binding by the user, and False if it's a Matterhorn default.
     checkGroup :: [(Binding, (Bool, KeyEvent))] -> Either String ()
     checkGroup [] = error "[ensureKeybindingConsistency: unreachable]"
     checkGroup evs@((b, _):_) = do
 
-      -- We find out which modes an event can be used in and then
-      -- invert the map, so this is a map from mode to the events
-      -- contains which are bound by the binding included above.
+      -- We find out which modes an event can be used in and then invert
+      -- the map, so this is a map from mode to the events contains
+      -- which are bound by the binding included above.
       let modesFor :: M.Map String [(Bool, KeyEvent)]
           modesFor = M.unionsWith (++)
             [ M.fromList [ (m, [(i, ev)]) | m <- modeMap ev ]
             | (_, (i, ev)) <- evs
             ]
 
-      -- If there is ever a situation where the same key is bound to
-      -- two events which can appear in the same mode, then we want to
-      -- throw an error, and also be informative about why. It is
-      -- still okay to bind the same key to two events, so long as
-      -- those events never appear in the same UI mode.
+      -- If there is ever a situation where the same key is bound to two
+      -- events which can appear in the same mode, then we want to throw
+      -- an error, and also be informative about why. It is still okay
+      -- to bind the same key to two events, so long as those events
+      -- never appear in the same UI mode.
       forM_ (M.assocs modesFor) $ \ (_, vs) ->
          when (length vs > 1) $
            Left $ concat $
@@ -220,9 +218,9 @@ ensureKeybindingConsistency kc modeMaps = mapM_ checkGroup allBindings
                     | (isFromUser, ev) <- vs
                     ]
 
-      -- Check for overlap a set of built-in keybindings when we're in
-      -- a mode where the user is typing. (These are perfectly fine
-      -- when we're in other modes.)
+      -- Check for overlap a set of built-in keybindings when we're in a
+      -- mode where the user is typing. (These are perfectly fine when
+      -- we're in other modes.)
       when ("main" `M.member` modesFor && isBareBinding b) $ do
         Left $ concat $
           [ "The keybinding `"
@@ -240,9 +238,8 @@ ensureKeybindingConsistency kc modeMaps = mapM_ checkGroup allBindings
     -- Events get some nice formatting!
     ppEvent ev = "`" ++ T.unpack (keyEventName ev) ++ "`"
 
-    -- This check should get more nuanced, but as a first
-    -- approximation, we shouldn't bind to any bare character key in
-    -- the main mode.
+    -- This check should get more nuanced, but as a first approximation,
+    -- we shouldn't bind to any bare character key in the main mode.
     isBareBinding (Binding [] (Vty.KChar {})) = True
     isBareBinding _ = False
 
