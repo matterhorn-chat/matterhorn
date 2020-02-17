@@ -480,7 +480,7 @@ getChannelIdsInOrder :: ClientChannels -> Type -> [ChannelListEntry]
 getChannelIdsInOrder cs ty =
     let matches (_, info) = info^.ccInfo.cdType == ty
     in fmap (CLChannel . fst) $
-       sortBy (comparing ((^.ccInfo.cdDisplayName) . snd)) $
+       sortBy (comparing ((^.ccInfo.cdDisplayName.to T.toLower) . snd)) $
        filteredChannels matches cs
 
 getDMChannelsInOrder :: UTCTime
