@@ -180,7 +180,7 @@ ensureKeybindingConsistency kc modeMaps = mapM_ checkGroup allBindings
       | ev <- allEvents
       ]
 
-    -- the invariant here is that each call to checkGroup is made with
+    -- The invariant here is that each call to checkGroup is made with
     -- a list where the first element of every list is the same
     -- binding. The Bool value in these is True if the event was
     -- associated with the binding by the user, and False if it's a
@@ -220,7 +220,7 @@ ensureKeybindingConsistency kc modeMaps = mapM_ checkGroup allBindings
                     | (isFromUser, ev) <- vs
                     ]
 
-      -- check for overlap a set of built-in keybindings when we're in
+      -- Check for overlap a set of built-in keybindings when we're in
       -- a mode where the user is typing. (These are perfectly fine
       -- when we're in other modes.)
       when ("main" `M.member` modesFor && isBareBinding b) $ do
