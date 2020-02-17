@@ -480,7 +480,7 @@ getChannelIdsInOrder :: ClientChannels -> Type -> [ChannelListEntry]
 getChannelIdsInOrder cs ty =
     let matches (_, info) = info^.ccInfo.cdType == ty
     in fmap (CLChannel . fst) $
-       sortBy (comparing ((^.ccInfo.cdName) . snd)) $
+       sortBy (comparing ((^.ccInfo.cdDisplayName) . snd)) $
        filteredChannels matches cs
 
 getDMChannelsInOrder :: UTCTime
@@ -528,7 +528,7 @@ getGroupDMChannels :: UTCTime
 getGroupDMChannels now config prefs cs =
     let matches (_, info) = info^.ccInfo.cdType == Group &&
                             groupChannelShouldAppear now config prefs info
-    in fmap (\(cId, ch) -> (hasUnread' ch, ch^.ccInfo.cdName, CLGroupDM cId)) $
+    in fmap (\(cId, ch) -> (hasUnread' ch, ch^.ccInfo.cdDisplayName, CLGroupDM cId)) $
        filteredChannels matches cs
 
 getDMChannels :: UTCTime

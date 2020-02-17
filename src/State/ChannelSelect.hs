@@ -61,13 +61,13 @@ updateChannelSelectMatches = do
             if patTy == Just PrefixDMOnly
             then Nothing
             else if chan^.ccInfo.cdType /= MM.Group
-                 then chanNameMatches e $ chan^.ccInfo.cdName
+                 then chanNameMatches e $ chan^.ccInfo.cdDisplayName
                  else Nothing
         groupChanMatches e chan =
             if patTy == Just PrefixNonDMOnly
             then Nothing
             else if chan^.ccInfo.cdType == MM.Group
-                 then chanNameMatches e $ chan^.ccInfo.cdName
+                 then chanNameMatches e $ chan^.ccInfo.cdDisplayName
                  else Nothing
         displayName uInfo = displayNameForUser uInfo cconfig prefs
         userMatches e uInfo =

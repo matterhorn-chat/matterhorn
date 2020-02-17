@@ -117,13 +117,9 @@ mkChannelEntryData st e =
         current = isCurrentChannel st cId
         (name, normalSigil, addSpace, status) = case e of
             CLChannel _ ->
-                let (useSigil, space) = case chan^.ccInfo.cdType of
-                        MM.Ordinary -> (Just normalChannelSigil, False)
-                        MM.Private  -> (Just normalChannelSigil, False)
-                        _           -> (Nothing, False)
-                in (chan^.ccInfo.cdName, useSigil, space, Nothing)
+                (chan^.ccInfo.cdDisplayName, Nothing, False, Nothing)
             CLGroupDM _ ->
-                (chan^.ccInfo.cdName, Just " ", True, Nothing)
+                (chan^.ccInfo.cdDisplayName, Just " ", True, Nothing)
             CLUserDM _ uId ->
                 let Just u = userById uId st
                     uname = if useNickname st
