@@ -18,7 +18,7 @@ module Types.Channels
   , ccContents, ccInfo, ccEditState
   -- * Lenses created for accessing ChannelInfo fields
   , cdViewed, cdNewMessageIndicator, cdEditedMessageThreshold, cdUpdated
-  , cdName, cdHeader, cdPurpose, cdType
+  , cdName, cdDisplayName, cdHeader, cdPurpose, cdType
   , cdMentionCount, cdTypingUsers, cdDMUserId, cdChannelId
   , cdSidebarShowOverride
   -- * Lenses created for accessing ChannelContents fields
@@ -142,6 +142,7 @@ initialChannelInfo myId chan =
                    , _cdMentionCount           = 0
                    , _cdUpdated                = updated
                    , _cdName                   = preferredChannelName chan
+                   , _cdDisplayName            = sanitizeUserText $ channelDisplayName chan
                    , _cdHeader                 = sanitizeUserText $ chan^.channelHeaderL
                    , _cdPurpose                = sanitizeUserText $ chan^.channelPurposeL
                    , _cdType                   = chan^.channelTypeL
@@ -164,6 +165,7 @@ channelInfoFromChannelWithData chan chanMember ci =
               v -> v
           , _cdUpdated          = updated
           , _cdName             = preferredChannelName chan
+          , _cdDisplayName      = sanitizeUserText $ channelDisplayName chan
           , _cdHeader           = (sanitizeUserText $ chan^.channelHeaderL)
           , _cdPurpose          = (sanitizeUserText $ chan^.channelPurposeL)
           , _cdType             = (chan^.channelTypeL)
@@ -210,6 +212,8 @@ data ChannelInfo = ChannelInfo
     -- ^ The last time a message showed up in the channel
   , _cdName             :: Text
     -- ^ The name of the channel
+  , _cdDisplayName      :: Text
+    -- ^ The display name of the channel
   , _cdHeader           :: Text
     -- ^ The header text of a channel
   , _cdPurpose          :: Text
