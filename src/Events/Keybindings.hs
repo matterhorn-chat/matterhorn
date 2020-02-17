@@ -231,7 +231,7 @@ ensureKeybindingConsistency kc modeMaps = mapM_ checkGroup allBindings
               [e] -> "event " ++ e
               es  -> "events " ++ intercalate " and " es
           , "\n"
-          , "This is probably not what you want, as it will interfere\n"
+          , "This is probably not what you want, as it will interfere "
           , "with the ability to write messages!\n"
           ]
 
