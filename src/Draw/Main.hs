@@ -305,13 +305,14 @@ renderChannelHeader st hs chan =
                     Nothing -> mkChannelName (chan^.ccInfo)
                     Just u -> userHeader u
             Private ->
-                mkChannelName (chan^.ccInfo) <> " - " <> (chan^.ccInfo.cdDisplayName) <> " (Private)"
+                channelNamePair <> " (Private)"
             Group ->
-                mkChannelName (chan^.ccInfo) <> " - " <> (chan^.ccInfo.cdDisplayName) <> " (Private group)"
+                channelNamePair <> " (Private group)"
             _ ->
-                mkChannelName (chan^.ccInfo) <> " - " <> (chan^.ccInfo.cdDisplayName)
+                channelNamePair
         newlineToSpace '\n' = ' '
         newlineToSpace c = c
+        channelNamePair = mkChannelName (chan^.ccInfo) <> " - " <> (chan^.ccInfo.cdDisplayName)
 
     in renderText'
          hs
