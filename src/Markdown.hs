@@ -120,6 +120,8 @@ data MessageData =
                 -- because we need to do lookups in the ChatState to
                 -- compute this, and we don't pass the ChatState into
                 -- renderMessage.
+                , mdIsOutgoing :: Bool
+                -- ^ Shows wether current user is author of this message
                 , mdParentMessage :: Maybe Message
                 -- ^ The parent message of this message, if any.
                 , mdParentUserName :: Maybe Text

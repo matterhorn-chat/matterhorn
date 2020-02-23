@@ -55,6 +55,7 @@ module Types.Messages
   , messagePostId
   , messageIdPostId
   , UserRef(..)
+  , idForUserRef
   , ReplyState(..)
   , clientMessageToMessage
   , clientPostToMessage
@@ -263,6 +264,13 @@ data MessageType = C ClientMessageType
 -- user reference is for a message from a bot.
 data UserRef = NoUser | UserI Bool UserId | UserOverride Bool Text
                deriving (Eq, Show, Ord)
+
+idForUserRef :: UserRef -> Maybe UserId
+idForUserRef uref =
+    case uref of
+         NoUser -> Nothing
+         UserOverride _ _ -> Nothing
+         UserI _ uId -> Just uId
 
 isBotMessage :: Message -> Bool
 isBotMessage m =

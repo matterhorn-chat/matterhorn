@@ -4,6 +4,7 @@ module Draw.Messages
   , renderSingleMessage
   , unsafeRenderMessageSelection
   , renderLastMessages
+  , isMessageOutgoing
   )
 where
 
@@ -64,6 +65,7 @@ renderChatMessage st hs ind threadState renderTimeFunc msg =
         m = renderMessage MessageData
               { mdMessage           = msg
               , mdUserName          = msg^.mUser.to (nameForUserRef st)
+              , mdIsOutgoing        = isMessageOutgoing msg st
               , mdParentMessage     = parent
               , mdParentUserName    = parent >>= (^.mUser.to (nameForUserRef st))
               , mdEditThreshold     = ind
@@ -97,6 +99,10 @@ renderChatMessage st hs ind threadState renderTimeFunc msg =
             in hBox [maybePadTime $ renderTimeFunc (msg^.mDate), txt " ", w]
         maybeRenderTimeWith f = if isTransition msg then id else f
     in maybeRenderTimeWith maybeRenderTime fullMsg
+
+
+isMessageOutgoing :: Message -> ChatState -> Bool
+isMessageOutgoing msg st = maybe False (== myUserId st) (msg^.mUser.to idForUserRef)
 
 -- | Render a selected message with focus, including the messages
 -- before and the messages after it. The foldable parameters exist

@@ -25,7 +25,7 @@ import           Themes
 import           Types
 import           Types.Messages ( findMessage )
 import           Markdown
-import           Draw.Messages ( nameForUserRef )
+import           Draw.Messages ( nameForUserRef, isMessageOutgoing )
 
 -- | The template for "View Message" windows triggered by message
 -- selection mode.
@@ -137,6 +137,7 @@ viewMessageBox st msg =
                                  , mdShowOlderEdits    = False
                                  , mdMessage           = msg
                                  , mdUserName          = msg^.mUser.to (nameForUserRef st)
+                                 , mdIsOutgoing        = isMessageOutgoing msg st
                                  , mdParentMessage     = parent
                                  , mdParentUserName    = parent >>= (^.mUser.to (nameForUserRef st))
                                  , mdRenderReplyParent = True

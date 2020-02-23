@@ -244,6 +244,7 @@ renderUserCommandBox st hs =
                         , addEllipsis $ renderMessage MessageData
                           { mdMessage           = msgWithoutParent
                           , mdUserName          = msgWithoutParent^.mUser.to (nameForUserRef st)
+                          , mdIsOutgoing        = isMessageOutgoing msgWithoutParent st
                           , mdParentMessage     = Nothing
                           , mdParentUserName    = Nothing
                           , mdHighlightSet      = hs
@@ -543,6 +544,7 @@ inputPreview st hs | not $ st^.csShowMessagePreview = emptyWidget
                      prview m p = renderMessage MessageData
                                   { mdMessage           = m
                                   , mdUserName          = m^.mUser.to (nameForUserRef st)
+                                  , mdIsOutgoing        = isMessageOutgoing m st
                                   , mdParentMessage     = p
                                   , mdParentUserName    = p >>= (^.mUser.to (nameForUserRef st))
                                   , mdHighlightSet      = hs
