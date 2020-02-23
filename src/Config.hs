@@ -112,6 +112,7 @@ fromIni = do
     configDirectChannelExpirationDays <- fieldDefOf "directChannelExpirationDays" number
       (configDirectChannelExpirationDays defaultConfig)
     configDefaultAttachmentPath <- fieldMbOf "defaultAttachmentPath" filePathField
+    configCurrentUsernameSuffix <- fieldDefOf "currentUsernameSuffix" stringField ""
 
     let configAbsPath = Nothing
         configUserKeys = mempty
@@ -206,6 +207,7 @@ defaultConfig =
            , configDirectChannelExpirationDays = 7
            , configCpuUsagePolicy              = MultipleCPUs
            , configDefaultAttachmentPath       = Nothing
+           , configCurrentUsernameSuffix       = ""
            }
 
 findConfig :: Maybe FilePath -> IO (Either String Config)

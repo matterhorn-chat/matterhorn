@@ -414,6 +414,8 @@ data Config =
            -- ^ The CPU usage policy for the application.
            , configDefaultAttachmentPath :: Maybe FilePath
            -- ^ The default path for browsing attachments
+           , configCurrentUsernameSuffix :: Text
+           -- ^ Additional text after current user's name
            } deriving (Eq, Show)
 
 -- | The policy for CPU usage.
@@ -1763,7 +1765,14 @@ usernameForUserId uId st = _uiName <$> findUserById uId (st^.csUsers)
 displayNameForUserId :: UserId -> ChatState -> Maybe Text
 displayNameForUserId uId st = do
     u <- findUserById uId (st^.csUsers)
-    return $ displayNameForUser u (st^.csClientConfig) (st^.csResources.crUserPreferences)
+    let name = displayNameForUser u (st^.csClientConfig) (st^.csResources.crUserPreferences)
+    return $ addUsernameSuffix uId st name
+
+addUsernameSuffix :: UserId -> ChatState -> Text -> Text
+addUsernameSuffix uId st name =
+    if uId == myUserId st
+    then name <> st^.csResources.crConfiguration.to configCurrentUsernameSuffix
+    else name
 
 -- | Note: this only searches users we have already loaded. Be
 -- aware that if you think you need a user we haven't fetched, use
