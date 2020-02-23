@@ -50,7 +50,8 @@ module Themes
 
   -- * Username formatting
   , colorUsername
-  )
+  , colorMessageAuthorName
+)
 where
 
 import           Prelude ()
@@ -279,6 +280,7 @@ lightAttrs =
        , (FB.fileBrowserUnixSocketAttr,     fg red)
        ] <>
        ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors) <>
+       ((\(i, a) -> (currentUsernameAttr i, a <> currentUserAdditionalAttr)) <$> zip [0..] usernameColors) <>
        (filter skipBaseCodeblockAttr $ attrMappingsForStyle sty)
 
 darkAttrs :: [(AttrName, Attr)]
@@ -332,6 +334,7 @@ darkAttrs =
      , (FB.fileBrowserUnixSocketAttr,     fg red)
      ] <>
      ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors) <>
+     ((\(i, a) -> (currentUsernameAttr i, a <> currentUserAdditionalAttr)) <$> zip [0..] usernameColors) <>
      (filter skipBaseCodeblockAttr $ attrMappingsForStyle sty)
 
 skipBaseCodeblockAttr :: (AttrName, Attr) -> Bool
@@ -347,14 +350,24 @@ darkColorTheme = InternalTheme name theme
 usernameAttr :: Int -> AttrName
 usernameAttr i = "username" <> (attrName $ show i)
 
-colorUsername :: Text -> Text -> Widget a
-colorUsername username display =
+currentUsernameAttr :: Int -> AttrName
+currentUsernameAttr i = "currentUser" <> (attrName $ show i)
+
+currentUserAdditionalAttr :: Attr
+currentUserAdditionalAttr = currentAttr `withStyle` underline
+
+colorMessageAuthorName :: Bool -> Text -> Text -> Widget a
+colorMessageAuthorName isMine username display =
     let normalizedUsername = T.toLower username
+        attr = if isMine then currentUsernameAttr else usernameAttr
         aName = if normalizedUsername `elem` specialUserMentions
                 then clientEmphAttr
-                else usernameAttr h
+                else attr h
         h = hash normalizedUsername `mod` length usernameColors
     in withDefAttr aName $ txt (display)
+
+colorUsername :: Text -> Text -> Widget a
+colorUsername = colorMessageAuthorName False
 
 usernameColors :: [Attr]
 usernameColors =
@@ -626,5 +639,8 @@ themeDocs = ThemeDocumentation $ M.fromList $
       , "Attribute for Unix sockets in the file browser"
       )
     ] <> [ (usernameAttr i, T.pack $ "Username color " <> show i)
+         | i <- [0..(length usernameColors)-1]
+         ]
+      <> [ (currentUsernameAttr i, T.pack $ "Current username color " <> show i)
          | i <- [0..(length usernameColors)-1]
          ]
