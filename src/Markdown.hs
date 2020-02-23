@@ -120,6 +120,8 @@ data MessageData =
                 -- because we need to do lookups in the ChatState to
                 -- compute this, and we don't pass the ChatState into
                 -- renderMessage.
+                , mdDisplayName :: Maybe Text
+                -- ^ The display name of the message's author
                 , mdParentMessage :: Maybe Message
                 -- ^ The parent message of this message, if any.
                 , mdParentUserName :: Maybe Text
@@ -155,12 +157,12 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
           Just un
             | isEmote msg ->
                 [ B.txt $ (if msg^.mFlagged then "[!] " else "") <> "*"
-                , colorUsername un un
+                , colorUsername un $ maybe un id mdDisplayName
                 , botElem
                 , B.txt " "
                 ]
             | otherwise ->
-                [ colorUsername un un
+                [ colorUsername un $ maybe un id mdDisplayName
                 , botElem
                 , B.txt $ (if msg^.mFlagged then "[!]" else "") <> ": "
                 ]

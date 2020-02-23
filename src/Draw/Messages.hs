@@ -1,6 +1,7 @@
 {-# LANGUAGE MultiWayIf #-}
 module Draw.Messages
   ( nameForUserRef
+  , displayNameForUserRef
   , renderSingleMessage
   , unsafeRenderMessageSelection
   , renderLastMessages
@@ -33,7 +34,14 @@ nameForUserRef st uref =
     case uref of
         NoUser -> Nothing
         UserOverride _ t -> Just t
-        UserI _ uId -> displayNameForUserId uId st
+        UserI _ uId -> usernameForUserId uId st
+
+displayNameForUserRef :: ChatState -> UserRef -> Maybe Text
+displayNameForUserRef st uref =
+    case uref of
+         NoUser -> Nothing
+         UserOverride _ t -> Just t
+         UserI _ uId -> displayNameForUserId uId st
 
 -- | renderSingleMessage is the main message drawing function.
 --
@@ -64,6 +72,7 @@ renderChatMessage st hs ind threadState renderTimeFunc msg =
         m = renderMessage MessageData
               { mdMessage           = msg
               , mdUserName          = msg^.mUser.to (nameForUserRef st)
+              , mdDisplayName       = msg^.mUser.to (displayNameForUserRef st)
               , mdParentMessage     = parent
               , mdParentUserName    = parent >>= (^.mUser.to (nameForUserRef st))
               , mdEditThreshold     = ind
