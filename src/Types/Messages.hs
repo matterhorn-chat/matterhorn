@@ -42,8 +42,8 @@ module Types.Messages
   ( -- * Message and operations on a single Message
     Message(..)
   , isDeletable, isReplyable, isReactable, isEditable, isReplyTo, isGap, isFlaggable
-  , isEmote, isJoinLeave, isTransition, isNewMessagesTransition
-  , mText, mUser, mDate, mType, mPending, mDeleted
+  , isPinnable, isEmote, isJoinLeave, isTransition, isNewMessagesTransition
+  , mText, mUser, mDate, mType, mPending, mDeleted, mPinned
   , mAttachments, mInReplyToMsg, mMessageId, mReactions, mFlagged
   , mOriginalPost, mChannelId, mMarkdownSource
   , isBotMessage
@@ -168,6 +168,7 @@ data Message = Message
   , _mReactions     :: Map.Map Text (S.Set UserId)
   , _mOriginalPost  :: Maybe Post
   , _mFlagged       :: Bool
+  , _mPinned        :: Bool
   , _mChannelId     :: Maybe ChannelId
   } deriving (Show)
 
@@ -190,6 +191,9 @@ isDeletable m =
 
 isFlaggable :: Message -> Bool
 isFlaggable = isJust . messagePostId
+
+isPinnable :: Message -> Bool
+isPinnable = isJust . messagePostId
 
 isReplyable :: Message -> Bool
 isReplyable m =
@@ -308,6 +312,7 @@ clientMessageToMessage cm = Message
   , _mReactions     = Map.empty
   , _mOriginalPost  = Nothing
   , _mFlagged       = False
+  , _mPinned        = False
   , _mChannelId     = Nothing
   }
 
@@ -349,6 +354,7 @@ clientPostToMessage cp = (m, mentions)
                     , _mReactions = cp^.cpReactions
                     , _mOriginalPost = Just $ cp^.cpOriginalPost
                     , _mFlagged = False
+                    , _mPinned = cp^.cpPinned
                     , _mChannelId = Just $ cp^.cpChannelId
                     }
 
@@ -368,6 +374,7 @@ newMessageOfType text typ d = Message
   , _mReactions    = Map.empty
   , _mOriginalPost = Nothing
   , _mFlagged      = False
+  , _mPinned       = False
   , _mChannelId    = Nothing
   }
 

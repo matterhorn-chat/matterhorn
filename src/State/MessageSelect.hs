@@ -3,6 +3,7 @@ module State.MessageSelect
   -- * Message selection mode
     beginMessageSelect
   , flagSelectedMessage
+  , pinSelectedMessage
   , viewSelectedMessage
   , fillSelectedGap
   , yankSelectedMessageVerbatim
@@ -84,6 +85,17 @@ flagSelectedMessage = do
       | isFlaggable msg, Just pId <- messagePostId msg ->
         flagMessage pId (not (msg^.mFlagged))
     _        -> return ()
+
+-- | Tell the server that the message we currently have selected
+-- should have its pinned state toggled.
+pinSelectedMessage :: MH ()
+pinSelectedMessage = do
+  selected <- use (to getSelectedMessage)
+  case selected of
+    Just msg
+      | isPinnable msg, Just pId <- messagePostId msg ->
+        pinMessage pId (not (msg^.mPinned))
+    _ -> return ()
 
 viewSelectedMessage :: MH ()
 viewSelectedMessage = do
@@ -268,4 +280,13 @@ flagMessage pId f = do
   doAsyncWith Normal $ do
     let doFlag = if f then MM.mmFlagPost else MM.mmUnflagPost
     doFlag myId pId session
+    return Nothing
+
+-- | Tell the server that we have pinned or unpinned a message.
+pinMessage :: PostId -> Bool -> MH ()
+pinMessage pId f = do
+  session <- getSession
+  doAsyncWith Normal $ do
+    let doPin = if f then MM.mmPinPostToChannel else MM.mmUnpinPostToChannel
+    void $ doPin pId session
     return Nothing

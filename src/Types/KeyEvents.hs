@@ -88,6 +88,7 @@ data KeyEvent
   | ViewMessageEvent
   | FillGapEvent
   | FlagMessageEvent
+  | PinMessageEvent
   | YankMessageEvent
   | YankWholeMessageEvent
   | DeleteMessageEvent
@@ -151,6 +152,7 @@ allEvents =
   , SearchSelectDownEvent
 
   , FlagMessageEvent
+  , PinMessageEvent
   , ViewMessageEvent
   , FillGapEvent
   , YankMessageEvent
@@ -348,6 +350,7 @@ keyEventName ev = case ev of
   ActivateListItemEvent -> "activate-list-item"
 
   FlagMessageEvent   -> "flag-message"
+  PinMessageEvent   -> "pin-message"
   ViewMessageEvent   -> "view-message"
   FillGapEvent       -> "fetch-for-gap"
   YankMessageEvent   -> "yank-message"

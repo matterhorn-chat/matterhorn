@@ -156,13 +156,15 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
         nameElems = case msgUsr of
           Just un
             | isEmote msg ->
-                [ B.txt $ (if msg^.mFlagged then "[!] " else "") <> "*"
+                [ B.withDefAttr pinnedMessageIndicatorAttr $ B.txt $ if msg^.mPinned then "[PIN]" else ""
+                , B.txt $ (if msg^.mFlagged then "[!] " else "") <> "*"
                 , colorUsername un $ maybe un id mdDisplayName
                 , botElem
                 , B.txt " "
                 ]
             | otherwise ->
-                [ colorUsername un $ maybe un id mdDisplayName
+                [ B.withDefAttr pinnedMessageIndicatorAttr $ B.txt $ if msg^.mPinned then "[PIN] " else ""
+                , colorUsername un $ maybe un id mdDisplayName
                 , botElem
                 , B.txt $ (if msg^.mFlagged then "[!]" else "") <> ": "
                 ]

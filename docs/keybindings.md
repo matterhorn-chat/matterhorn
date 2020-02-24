@@ -1,5 +1,10 @@
 # Keybindings
 
+# Global Keybindings
+| Keybinding | Event Name | Description |
+| ---------- | ---------- | ----------- |
+| `F1` | `show-help` | Show this help screen |
+
 # Help Page
 | Keybinding | Event Name | Description |
 | ---------- | ---------- | ----------- |
@@ -32,7 +37,6 @@
 | `C-s` | `select-mode` | Select a message to edit/reply/delete |
 | `C-x` | `show-attachment-list` | Show the attachment list |
 | `M-8` | `show-flagged-posts` | View currently flagged posts |
-| `F1` | `show-help` | Show this help screen |
 | `F2` | `toggle-channel-list-visibility` | Toggle channel list visibility |
 | `M-p` | `toggle-message-preview` | Toggle message preview |
 | `M-e` | `toggle-multiline` | Toggle multi-line message compose mode |
@@ -62,6 +66,7 @@
 | `o` | `open-message-url` | Open all URLs in the selected message |
 | `PgDown` | `page-down` | Move the cursor down by 10 messages |
 | `PgUp` | `page-up` | Move the cursor up by 10 messages |
+| `p` | `pin-message` | Toggle whether the selected message is pinned |
 | `a` | `react-to-message` | Post a reaction to the selected message |
 | `r` | `reply-message` | Begin composing a reply to the selected message |
 | `End` | `scroll-bottom` | Scroll to bottom and select the latest message |

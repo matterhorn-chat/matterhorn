@@ -73,6 +73,7 @@ previewFromInput overrideTy uId s =
                            , _mReactions     = mempty
                            , _mOriginalPost  = Nothing
                            , _mFlagged       = False
+                           , _mPinned        = False
                            , _mChannelId     = Nothing
                            }
 
@@ -305,13 +306,14 @@ renderChannelHeader st hs chan =
                     Nothing -> mkChannelName (chan^.ccInfo)
                     Just u -> userHeader u
             Private ->
-                mkChannelName (chan^.ccInfo) <> " (Private)"
+                channelNamePair <> " (Private)"
             Group ->
-                mkChannelName (chan^.ccInfo) <> " (Private group)"
+                channelNamePair <> " (Private group)"
             _ ->
-                mkChannelName (chan^.ccInfo)
+                channelNamePair
         newlineToSpace '\n' = ' '
         newlineToSpace c = c
+        channelNamePair = mkChannelName (chan^.ccInfo) <> " - " <> (chan^.ccInfo.cdDisplayName)
 
     in renderText'
          hs
@@ -460,6 +462,14 @@ messageSelectBottomBar st =
                   , ( \m -> isFlaggable m && m^.mFlagged
                     , ev FlagMessageEvent
                     , "unflag"
+                    )
+                  , ( \m -> isPinnable m && not (m^.mPinned)
+                    , ev PinMessageEvent
+                    , "pin"
+                    )
+                  , ( \m -> isPinnable m && m^.mPinned
+                    , ev PinMessageEvent
+                    , "unpin"
                     )
                   , ( isReplyable
                     , ev ReplyMessageEvent

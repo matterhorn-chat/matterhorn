@@ -27,7 +27,7 @@ draw st =
     case appMode st of
         Main                       -> drawMain True st
         UrlSelect                  -> drawMain True st
-        ShowHelp topic             -> drawShowHelp topic st
+        ShowHelp topic _           -> drawShowHelp topic st
         ChannelSelect              -> drawMain True st
         LeaveChannelConfirm        -> drawLeaveChannelConfirm st
         MessageSelect              -> drawMain True st

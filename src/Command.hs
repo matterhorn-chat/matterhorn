@@ -136,9 +136,13 @@ commandList =
     (TokenArg "theme" NoArg) $ \ (themeName, ()) ->
       setTheme themeName
 
-  , Cmd "topic" "Set the current channel's topic"
+  , Cmd "topic" "Set the current channel's topic (header)"
     (LineArg "topic") $ \ p ->
       if not (T.null p) then setChannelTopic p else return ()
+
+  , Cmd "purpose" "Set the current channel's purpose"
+    (LineArg "purpose") $ \ p ->
+      if not (T.null p) then setChannelPurpose p else return ()
 
   , Cmd "add-user" "Search for a user to add to the current channel"
     NoArg $ \ () ->
@@ -237,6 +241,9 @@ commandList =
 
   , Cmd "flags" "Open a window of your flagged posts" NoArg $ \ () ->
       enterFlaggedPostListMode
+
+  , Cmd "pinned-posts" "Open a window of this channel's pinned posts" NoArg $ \ () ->
+      enterPinnedPostListMode
 
   , Cmd "search" "Search for posts with given terms" (LineArg "terms") $
       enterSearchResultPostListMode

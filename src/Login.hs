@@ -72,7 +72,7 @@ import qualified System.IO.Error as Err
 
 import           Network.Mattermost ( ConnectionData )
 import           Network.Mattermost.Types ( Session, User, Login(..), ConnectionPoolConfig(..)
-                                          , initConnectionData, initConnectionDataInsecure )
+                                          , initConnectionData, ConnectionType(..) )
 import           Network.Mattermost.Exceptions ( LoginFailureException(..) )
 import           Network.Mattermost.Endpoints ( mmLogin )
 
@@ -167,29 +167,25 @@ loginWorker :: (ConnectionData -> ConnectionData)
             -- attempt.
             -> LogManager
             -- ^ The log manager used to do logging.
-            -> Bool
-            -- ^ Whether the login attempts should use HTTP (True) or
-            -- not (False, HTTPS only)
+            -> ConnectionType
+            -- ^ The kind of connection to make to the server.
             -> BChan LoginRequest
             -- ^ The channel on which we'll await requests.
             -> BChan LoginEvent
             -- ^ The channel to which we'll send login attempt results.
             -> IO ()
-loginWorker setLogger logMgr unsafeUseHTTP requestChan respChan = forever $ do
+loginWorker setLogger logMgr connTy requestChan respChan = forever $ do
     req <- readBChan requestChan
     case req of
         DoLogin initial connInfo -> do
             writeBChan respChan $ StartConnect initial $ connInfo^.ciHostname
             ioLogWithManager logMgr Nothing LogGeneral $ "Attempting authentication to " <> connInfo^.ciHostname
 
-            let connectFunc = if unsafeUseHTTP
-                              then initConnectionDataInsecure
-                              else initConnectionData
-                login = Login { username = connInfo^.ciUsername
+            let login = Login { username = connInfo^.ciUsername
                               , password = connInfo^.ciPassword
                               }
 
-            cd <- fmap setLogger $ connectFunc (connInfo^.ciHostname) (fromIntegral (connInfo^.ciPort)) poolCfg
+            cd <- fmap setLogger $ initConnectionData (connInfo^.ciHostname) (fromIntegral (connInfo^.ciPort)) connTy poolCfg
 
             result <- convertLoginExceptions $ mmLogin cd login
             case result of
@@ -232,10 +228,9 @@ interactiveGetLoginSession :: Vty
                            -- never fires since the login app doesn't
                            -- use suspendAndResume, but we need it to
                            -- satisfy the Brick API.)
-                           -> Bool
-                           -- ^ Whether to use HTTP connections to log
-                           -- in (True) or HTTPS only (False). This
-                           -- comes from the Matterhorn configuration.
+                           -> ConnectionType
+                           -- ^ The kind of connection to make to the
+                           -- mattermost server.
                            -> (ConnectionData -> ConnectionData)
                            -- ^ The function to set the logger on
                            -- connection handles.
@@ -248,11 +243,11 @@ interactiveGetLoginSession :: Vty
                            -- initial connection attempt is made without
                            -- first getting the user to hit Enter.
                            -> IO (Maybe LoginAttempt, Vty)
-interactiveGetLoginSession vty mkVty unsafeUseHTTP setLogger logMgr initialConfig = do
+interactiveGetLoginSession vty mkVty connTy setLogger logMgr initialConfig = do
     requestChan <- newBChan 10
     respChan <- newBChan 10
 
-    void $ forkIO $ loginWorker setLogger logMgr unsafeUseHTTP requestChan respChan
+    void $ forkIO $ loginWorker setLogger logMgr connTy requestChan respChan
     void $ forkIO $ startupTimer respChan
 
     let initialState = mkState initialConfig requestChan

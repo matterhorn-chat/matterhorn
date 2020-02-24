@@ -9,12 +9,10 @@ import qualified Graphics.Vty as Vty
 
 import           Command
 import           Events.Keybindings
-import           HelpTopics ( mainHelpTopic )
 import           State.Attachments
 import           State.ChannelSelect
 import           State.Channels
 import           State.Editing
-import           State.Help
 import           State.MessageSelect
 import           State.PostListOverlay ( enterFlaggedPostListMode )
 import           State.UrlSelect
@@ -29,11 +27,7 @@ onEventMain =
 
 mainKeybindings :: KeyConfig -> [Keybinding]
 mainKeybindings = mkKeybindings
-    [ mkKb ShowHelpEvent
-        "Show this help screen"
-        (showHelpScreen mainHelpTopic)
-
-    , mkKb EnterSelectModeEvent
+    [ mkKb EnterSelectModeEvent
         "Select a message to edit/reply/delete"
         beginMessageSelect
 

@@ -65,10 +65,10 @@ optDescrs =
   , Option ['K'] ["keybindings-markdown"]
     (NoArg (\ c -> c { optPrintKeybindings = Just Markdown }))
     "Print keybindings effective for the current configuration in Markdown format"
-  , Option ['m'] ["keybindings-text"]
+  , Option ['m'] ["commands-text"]
     (NoArg (\ c -> c { optPrintCommands = Just Plain }))
     "Print available commands in plain text format"
-  , Option ['M'] ["keybindings-markdown"]
+  , Option ['M'] ["commands-markdown"]
     (NoArg (\ c -> c { optPrintCommands = Just Markdown }))
     "Print available commands in Markdown format"
   ]

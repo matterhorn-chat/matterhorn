@@ -14,7 +14,7 @@ import           Types
 onEventShowHelp :: Vty.Event -> MH ()
 onEventShowHelp =
   handleKeyboardEvent helpKeybindings $ \ e -> case e of
-    Vty.EvKey _ _ -> setMode Main
+    Vty.EvKey _ _ -> popMode
     _ -> return ()
 
 helpKeybindings :: KeyConfig -> [Keybinding]
@@ -27,30 +27,15 @@ helpKeybindings = mkKeybindings
         mh $ vScrollBy (viewportScroll HelpViewport) (-1 * pageAmount)
     , mkKb PageDownEvent "Page down" $
         mh $ vScrollBy (viewportScroll HelpViewport) (1 * pageAmount)
-    , mkKb CancelEvent "Return to the main interface" $
-        setMode Main
+    , mkKb CancelEvent "Return to the previous interface" $
+        popMode
     , mkKb ScrollBottomEvent "Scroll to the end of the help" $
         mh $ vScrollToEnd (viewportScroll HelpViewport)
     , mkKb ScrollTopEvent "Scroll to the beginning of the help" $
         mh $ vScrollToBeginning (viewportScroll HelpViewport)
     ]
 
--- KB "Scroll up"
---          (Vty.EvKey Vty.KUp []) $ do
---              mh $ vScrollBy (viewportScroll HelpViewport) (-1)
---     , KB "Scroll down"
---          (Vty.EvKey Vty.KDown []) $ do
---              mh $ vScrollBy (viewportScroll HelpViewport) 1
---     , KB "Page up"
---          (Vty.EvKey Vty.KPageUp []) $ do
---              mh $ vScrollBy (viewportScroll HelpViewport) (-1 * pageAmount)
---     , KB "Page down"
---          (Vty.EvKey Vty.KPageDown []) $ do
---              mh $ vScrollBy (viewportScroll HelpViewport) pageAmount
---     , KB "Page down"
---          (Vty.EvKey (Vty.KChar ' ') []) $ do
---              mh $ vScrollBy (viewportScroll HelpViewport) pageAmount
---     , KB "Return to the main interface"
---          (Vty.EvKey Vty.KEsc []) $ do
---            csMode .= Main
---     ]
+popMode :: MH ()
+popMode = do
+    ShowHelp _ prevMode <- gets appMode
+    setMode prevMode

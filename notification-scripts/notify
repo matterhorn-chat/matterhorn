@@ -2,6 +2,9 @@
 
 # Sample shell script for using notify-send with matterhorn This script
 # works on Linux only. It depends on the 'notify-send' command.
+#
+# See docs/notification-scripts.md for details on the notification
+# script API used with this script.
 
 # Positional parameters passed to this script by Matterhorn:
 mentioned="${1?}"

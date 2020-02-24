@@ -93,84 +93,69 @@ defaultBindings ev =
       key c = Binding { kbMods = [], kbKey = Vty.KChar c }
       fn n = Binding { kbMods = [], kbKey = Vty.KFun n }
   in case ev of
-        VtyRefreshEvent -> [ ctrl (key 'l') ]
-        ShowHelpEvent -> [ fn 1 ]
-        EnterSelectModeEvent -> [ ctrl (key 's') ]
-        ReplyRecentEvent -> [ ctrl (key 'r') ]
-        ToggleMessagePreviewEvent -> [ meta (key 'p') ]
-        InvokeEditorEvent -> [ meta (key 'k') ]
-        EnterFastSelectModeEvent -> [ ctrl (key 'g') ]
-        QuitEvent -> [ ctrl (key 'q') ]
-        NextChannelEvent -> [ ctrl (key 'n') ]
-        PrevChannelEvent -> [ ctrl (key 'p') ]
-        NextUnreadChannelEvent -> [ meta (key 'a') ]
-        ShowAttachmentListEvent -> [ ctrl (key 'x') ]
-        NextUnreadUserOrChannelEvent -> [ ]
-        LastChannelEvent -> [ meta (key 's') ]
-        EnterOpenURLModeEvent -> [ ctrl (key 'o') ]
-        ClearUnreadEvent -> [ meta (key 'l') ]
-        ToggleMultiLineEvent -> [ meta (key 'e') ]
-        EnterFlaggedPostsEvent -> [ meta (key '8') ]
+        VtyRefreshEvent               -> [ ctrl (key 'l') ]
+        ShowHelpEvent                 -> [ fn 1 ]
+        EnterSelectModeEvent          -> [ ctrl (key 's') ]
+        ReplyRecentEvent              -> [ ctrl (key 'r') ]
+        ToggleMessagePreviewEvent     -> [ meta (key 'p') ]
+        InvokeEditorEvent             -> [ meta (key 'k') ]
+        EnterFastSelectModeEvent      -> [ ctrl (key 'g') ]
+        QuitEvent                     -> [ ctrl (key 'q') ]
+        NextChannelEvent              -> [ ctrl (key 'n') ]
+        PrevChannelEvent              -> [ ctrl (key 'p') ]
+        NextUnreadChannelEvent        -> [ meta (key 'a') ]
+        ShowAttachmentListEvent       -> [ ctrl (key 'x') ]
+        NextUnreadUserOrChannelEvent  -> [ ]
+        LastChannelEvent              -> [ meta (key 's') ]
+        EnterOpenURLModeEvent         -> [ ctrl (key 'o') ]
+        ClearUnreadEvent              -> [ meta (key 'l') ]
+        ToggleMultiLineEvent          -> [ meta (key 'e') ]
+        EnterFlaggedPostsEvent        -> [ meta (key '8') ]
         ToggleChannelListVisibleEvent -> [ fn 2 ]
+        SelectNextTabEvent            -> [ key '\t' ]
+        SelectPreviousTabEvent        -> [ kb Vty.KBackTab ]
+        LoadMoreEvent                 -> [ ctrl (key 'b') ]
+        ScrollUpEvent                 -> [ kb Vty.KUp ]
+        ScrollDownEvent               -> [ kb Vty.KDown ]
+        ScrollLeftEvent               -> [ kb Vty.KLeft ]
+        ScrollRightEvent              -> [ kb Vty.KRight ]
+        PageUpEvent                   -> [ kb Vty.KPageUp ]
+        PageDownEvent                 -> [ kb Vty.KPageDown ]
+        ScrollTopEvent                -> [ kb Vty.KHome ]
+        ScrollBottomEvent             -> [ kb Vty.KEnd ]
+        SelectUpEvent                 -> [ key 'k', kb Vty.KUp ]
+        SelectDownEvent               -> [ key 'j', kb Vty.KDown ]
+        ActivateListItemEvent         -> [ kb Vty.KEnter ]
+        SearchSelectUpEvent           -> [ ctrl (key 'p'), kb Vty.KUp ]
+        SearchSelectDownEvent         -> [  ctrl (key 'n'), kb Vty.KDown ]
+        ViewMessageEvent              -> [ key 'v' ]
+        FillGapEvent                  -> [ kb Vty.KEnter ]
+        FlagMessageEvent              -> [ key 'f' ]
+        PinMessageEvent               -> [ key 'p' ]
+        YankMessageEvent              -> [ key 'y' ]
+        YankWholeMessageEvent         -> [ key 'Y' ]
+        DeleteMessageEvent            -> [ key 'd' ]
+        EditMessageEvent              -> [ key 'e' ]
+        ReplyMessageEvent             -> [ key 'r' ]
+        ReactToMessageEvent           -> [ key 'a' ]
+        OpenMessageURLEvent           -> [ key 'o' ]
+        AttachmentListAddEvent        -> [ key 'a' ]
+        AttachmentListDeleteEvent     -> [ key 'd' ]
+        AttachmentOpenEvent           -> [ key 'o' ]
+        CancelEvent                   -> [ kb Vty.KEsc, ctrl (key 'c') ]
 
-        CancelEvent -> [ kb Vty.KEsc
-                       , ctrl (key 'c')
-                       ]
-
-        SelectNextTabEvent -> [ key '\t' ]
-        SelectPreviousTabEvent -> [ kb Vty.KBackTab ]
-
-        -- channel-scroll-specific
-        LoadMoreEvent -> [ ctrl (key 'b') ]
-
-        -- scrolling events
-        ScrollUpEvent -> [ kb Vty.KUp ]
-        ScrollDownEvent -> [ kb Vty.KDown ]
-        ScrollLeftEvent -> [ kb Vty.KLeft ]
-        ScrollRightEvent -> [ kb Vty.KRight ]
-        PageUpEvent -> [ kb Vty.KPageUp ]
-        PageDownEvent -> [ kb Vty.KPageDown ]
-        ScrollTopEvent -> [ kb Vty.KHome ]
-        ScrollBottomEvent -> [ kb Vty.KEnd ]
-
-        SelectUpEvent -> [ key 'k', kb Vty.KUp ]
-        SelectDownEvent -> [ key 'j', kb Vty.KDown ]
-
-        ActivateListItemEvent -> [ kb Vty.KEnter ]
-
-        -- search selection - like SelectUp/Down above but need to not
-        -- conflict with editor inputs
-        SearchSelectUpEvent -> [ ctrl (key 'p'), kb Vty.KUp ]
-        SearchSelectDownEvent -> [  ctrl (key 'n'), kb Vty.KDown ]
-
-        ViewMessageEvent    -> [ key 'v' ]
-        FillGapEvent        -> [ kb Vty.KEnter ]
-        FlagMessageEvent    -> [ key 'f' ]
-        YankMessageEvent    -> [ key 'y' ]
-        YankWholeMessageEvent -> [ key 'Y' ]
-        DeleteMessageEvent  -> [ key 'd' ]
-        EditMessageEvent    -> [ key 'e' ]
-        ReplyMessageEvent   -> [ key 'r' ]
-        ReactToMessageEvent -> [ key 'a' ]
-        OpenMessageURLEvent -> [ key 'o' ]
-
-        AttachmentListAddEvent    -> [ key 'a' ]
-        AttachmentListDeleteEvent -> [ key 'd' ]
-        AttachmentOpenEvent       -> [ key 'o' ]
-
--- | Given a configuration, we want to check it for internal
--- consistency (i.e. that a given keybinding isn't associated with
--- multiple events which both need to get generated in the same UI
--- mode) and also for basic usability (i.e. we shouldn't be binding
--- events which can appear in the main UI to a key like @e@, which
--- would prevent us from being able to type messages containing an @e@
--- in them!
+-- | Given a configuration, we want to check it for internal consistency
+-- (i.e. that a given keybinding isn't associated with multiple events
+-- which both need to get generated in the same UI mode) and also for
+-- basic usability (i.e. we shouldn't be binding events which can appear
+-- in the main UI to a key like @e@, which would prevent us from being
+-- able to type messages containing an @e@ in them!
 ensureKeybindingConsistency :: KeyConfig -> [(String, KeyConfig -> [Keybinding])] -> Either String ()
 ensureKeybindingConsistency kc modeMaps = mapM_ checkGroup allBindings
   where
     -- This is a list of lists, grouped by keybinding, of all the
-    -- keybinding/event associations that are going to be used with
-    -- the provided key configuration.
+    -- keybinding/event associations that are going to be used with the
+    -- provided key configuration.
     allBindings = groupWith fst $ concat
       [ case M.lookup ev kc of
           Nothing -> zip (defaultBindings ev) (repeat (False, ev))
@@ -179,29 +164,28 @@ ensureKeybindingConsistency kc modeMaps = mapM_ checkGroup allBindings
       | ev <- allEvents
       ]
 
-    -- the invariant here is that each call to checkGroup is made with
-    -- a list where the first element of every list is the same
-    -- binding. The Bool value in these is True if the event was
-    -- associated with the binding by the user, and False if it's a
-    -- Matterhorn default.
+    -- The invariant here is that each call to checkGroup is made with a
+    -- list where the first element of every list is the same binding.
+    -- The Bool value in these is True if the event was associated with
+    -- the binding by the user, and False if it's a Matterhorn default.
     checkGroup :: [(Binding, (Bool, KeyEvent))] -> Either String ()
     checkGroup [] = error "[ensureKeybindingConsistency: unreachable]"
     checkGroup evs@((b, _):_) = do
 
-      -- We find out which modes an event can be used in and then
-      -- invert the map, so this is a map from mode to the events
-      -- contains which are bound by the binding included above.
+      -- We find out which modes an event can be used in and then invert
+      -- the map, so this is a map from mode to the events contains
+      -- which are bound by the binding included above.
       let modesFor :: M.Map String [(Bool, KeyEvent)]
           modesFor = M.unionsWith (++)
             [ M.fromList [ (m, [(i, ev)]) | m <- modeMap ev ]
             | (_, (i, ev)) <- evs
             ]
 
-      -- If there is ever a situation where the same key is bound to
-      -- two events which can appear in the same mode, then we want to
-      -- throw an error, and also be informative about why. It is
-      -- still okay to bind the same key to two events, so long as
-      -- those events never appear in the same UI mode.
+      -- If there is ever a situation where the same key is bound to two
+      -- events which can appear in the same mode, then we want to throw
+      -- an error, and also be informative about why. It is still okay
+      -- to bind the same key to two events, so long as those events
+      -- never appear in the same UI mode.
       forM_ (M.assocs modesFor) $ \ (_, vs) ->
          when (length vs > 1) $
            Left $ concat $
@@ -219,9 +203,9 @@ ensureKeybindingConsistency kc modeMaps = mapM_ checkGroup allBindings
                     | (isFromUser, ev) <- vs
                     ]
 
-      -- check for overlap a set of built-in keybindings when we're in
-      -- a mode where the user is typing. (These are perfectly fine
-      -- when we're in other modes.)
+      -- Check for overlap a set of built-in keybindings when we're in a
+      -- mode where the user is typing. (These are perfectly fine when
+      -- we're in other modes.)
       when ("main" `M.member` modesFor && isBareBinding b) $ do
         Left $ concat $
           [ "The keybinding `"
@@ -232,16 +216,15 @@ ensureKeybindingConsistency kc modeMaps = mapM_ checkGroup allBindings
               [e] -> "event " ++ e
               es  -> "events " ++ intercalate " and " es
           , "\n"
-          , "This is probably not what you want, as it will interfere\n"
+          , "This is probably not what you want, as it will interfere "
           , "with the ability to write messages!\n"
           ]
 
     -- Events get some nice formatting!
     ppEvent ev = "`" ++ T.unpack (keyEventName ev) ++ "`"
 
-    -- This check should get more nuanced, but as a first
-    -- approximation, we shouldn't bind to any bare character key in
-    -- the main mode.
+    -- This check should get more nuanced, but as a first approximation,
+    -- we shouldn't bind to any bare character key in the main mode.
     isBareBinding (Binding [] (Vty.KChar {})) = True
     isBareBinding _ = False
 

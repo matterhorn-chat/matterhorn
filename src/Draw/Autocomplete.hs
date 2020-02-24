@@ -150,7 +150,8 @@ renderUserCompletion u inChan selected =
 
 renderChannelCompletion :: Channel -> Bool -> Bool -> Widget Name
 renderChannelCompletion c inChan selected =
-    let nameWidth = 30
+    let urlNameWidth = 30
+        displayNameWidth = 30
         padTo n a = hLimit n $ vLimit 1 (a <+> fill ' ')
         maybeForce = if selected
                      then forceAttr listSelectedFocusedAttr
@@ -161,10 +162,13 @@ renderChannelCompletion c inChan selected =
                              txt $ userNotInChannelMarker <> " "
     in maybeForce $
        hBox [ memberDisplay
-            , padTo nameWidth $
+            , padTo urlNameWidth $
               withDefAttr channelNameAttr $
               txt $ normalChannelSigil <> (sanitizeUserText $ channelName c)
-            , txt $ sanitizeUserText $ channelHeader c
+            , padTo displayNameWidth $
+              withDefAttr channelNameAttr $
+              txt $ sanitizeUserText $ channelDisplayName c
+            , txt $ sanitizeUserText $ channelPurpose c
             ]
 
 renderCommandCompletion :: Text -> Text -> Text -> Widget Name

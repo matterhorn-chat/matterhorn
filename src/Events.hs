@@ -1,5 +1,6 @@
 module Events
   ( onEvent
+  , globalKeybindings
   )
 where
 
@@ -24,6 +25,7 @@ import           HelpTopics
 import           State.Channels
 import           State.Common
 import           State.Flagging
+import           State.Help
 import           State.Messages
 import           State.Reactions
 import           State.Users
@@ -32,6 +34,7 @@ import           Types.Common
 
 import           Events.ChannelSelect
 import           Events.DeleteChannelConfirm
+import           Events.Keybindings
 import           Events.LeaveChannelConfirm
 import           Events.Main
 import           Events.MessageSelect
@@ -157,10 +160,14 @@ onVtyEvent e = do
             mh invalidateCache
         _ -> return ()
 
+    handleKeyboardEvent globalKeybindings handleGlobalEvent e
+
+handleGlobalEvent :: Vty.Event -> MH ()
+handleGlobalEvent e = do
     mode <- gets appMode
     case mode of
         Main                       -> onEventMain e
-        ShowHelp _                 -> onEventShowHelp e
+        ShowHelp _ _               -> onEventShowHelp e
         ChannelSelect              -> onEventChannelSelect e
         UrlSelect                  -> onEventUrlSelect e
         LeaveChannelConfirm        -> onEventLeaveChannelConfirm e
@@ -174,6 +181,13 @@ onVtyEvent e = do
         ViewMessage                -> handleTabbedWindowEvent (csViewedMessage.singular _Just._2) e
         ManageAttachments          -> onEventManageAttachments e
         ManageAttachmentsBrowseFiles -> onEventManageAttachments e
+
+globalKeybindings :: KeyConfig -> [Keybinding]
+globalKeybindings = mkKeybindings
+    [ mkKb ShowHelpEvent
+        "Show this help screen"
+        (showHelpScreen mainHelpTopic)
+    ]
 
 handleWSActionResponse :: WebsocketActionResponse -> MH ()
 handleWSActionResponse r =

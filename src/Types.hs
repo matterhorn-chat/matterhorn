@@ -273,6 +273,7 @@ import           Control.Concurrent ( ThreadId )
 import           Control.Concurrent.Async ( Async )
 import qualified Control.Concurrent.STM as STM
 import           Control.Exception ( SomeException )
+import qualified Control.Monad.Fail as MHF
 import qualified Control.Monad.State as St
 import qualified Control.Monad.Reader as R
 import qualified Data.Set as Set
@@ -387,6 +388,8 @@ data Config =
            -- ^ A specific Aspell dictionary name to use.
            , configUnsafeUseHTTP :: Bool
            -- ^ Whether to permit an insecure HTTP connection.
+           , configValidateServerCertificate :: Bool
+           -- ^ Whether to validate TLS certificates.
            , configChannelListWidth :: Int
            -- ^ The width, in columns, of the channel list sidebar.
            , configLogMaxBufferSize :: Int
@@ -479,7 +482,7 @@ getChannelIdsInOrder :: ClientChannels -> Type -> [ChannelListEntry]
 getChannelIdsInOrder cs ty =
     let matches (_, info) = info^.ccInfo.cdType == ty
     in fmap (CLChannel . fst) $
-       sortBy (comparing ((^.ccInfo.cdName) . snd)) $
+       sortBy (comparing ((^.ccInfo.cdDisplayName.to T.toLower) . snd)) $
        filteredChannels matches cs
 
 getDMChannelsInOrder :: UTCTime
@@ -527,7 +530,7 @@ getGroupDMChannels :: UTCTime
 getGroupDMChannels now config prefs cs =
     let matches (_, info) = info^.ccInfo.cdType == Group &&
                             groupChannelShouldAppear now config prefs info
-    in fmap (\(cId, ch) -> (hasUnread' ch, ch^.ccInfo.cdName, CLGroupDM cId)) $
+    in fmap (\(cId, ch) -> (hasUnread' ch, ch^.ccInfo.cdDisplayName, CLGroupDM cId)) $
        filteredChannels matches cs
 
 getDMChannels :: UTCTime
@@ -1000,13 +1003,14 @@ data HelpTopic =
 -- | Mode type for the current contents of the post list overlay
 data PostListContents =
     PostListFlagged
+    | PostListPinned ChannelId
     | PostListSearch Text Bool -- for the query and search status
     deriving (Eq)
 
 -- | The 'Mode' represents the current dominant UI activity
 data Mode =
     Main
-    | ShowHelp HelpTopic
+    | ShowHelp HelpTopic Mode
     | ChannelSelect
     | UrlSelect
     | LeaveChannelConfirm
@@ -1560,6 +1564,9 @@ instance Functor MH where
 instance Applicative MH where
     pure x = MH (pure x)
     MH f <*> MH x = MH (f <*> x)
+
+instance MHF.MonadFail MH where
+    fail = MH . MHF.fail
 
 instance Monad MH where
     return x = MH (return x)

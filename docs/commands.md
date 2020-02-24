@@ -29,6 +29,8 @@
 | `/msg` | Search for a user to enter a private chat |
 | `/msg <@user>` | Chat with the specified user |
 | `/msg <@user> <message or command>` | Go to a user's channel and send the specified message or command |
+| `/pinned-posts` | Open a window of this channel's pinned posts |
+| `/purpose <purpose>` | Set the current channel's purpose |
 | `/quit` | Exit Matterhorn |
 | `/reconnect` | Force a reconnection attempt to the server |
 | `/remove-user <@user>` | Remove a user from the current channel |
@@ -40,5 +42,5 @@
 | `/theme` | List the available themes |
 | `/theme <theme>` | Set the color theme |
 | `/toggle-channel-list` | Toggle channel list visibility |
-| `/topic <topic>` | Set the current channel's topic |
+| `/topic <topic>` | Set the current channel's topic (header) |
 | `/user` | Show users to initiate a private DM chat channel |

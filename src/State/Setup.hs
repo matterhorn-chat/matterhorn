@@ -73,9 +73,11 @@ setupState mkVty mLogLocation config = do
 
   let logApiEvent ev = apiLogEventToLogMessage ev >>= sendLogMessage logMgr
       setLogger cd = cd `withLogger` logApiEvent
+      connTy = if configUnsafeUseHTTP config
+               then ConnectHTTP
+               else ConnectHTTPS $ configValidateServerCertificate config
 
-  (mLastAttempt, loginVty) <- interactiveGetLoginSession initialVty mkVty
-                                                         (configUnsafeUseHTTP config)
+  (mLastAttempt, loginVty) <- interactiveGetLoginSession initialVty mkVty connTy
                                                          setLogger
                                                          logMgr
                                                          (incompleteCredentials config)
