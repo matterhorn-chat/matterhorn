@@ -39,7 +39,7 @@ drawAttachmentList st =
        hLimit 60 $
        vLimit 15 $
        joinBorders $
-       borderWithLabel (txt "Attachments") $
+       borderWithLabel (withDefAttr clientEmphAttr $ txt "Attachments") $
        vBox [ renderList renderAttachmentItem True (st^.csEditState.cedAttachmentList)
             , hBorder
             , hCenter $ withDefAttr clientMessageAttr $
@@ -58,7 +58,7 @@ drawFileBrowser st =
     centerLayer $
     hLimit 60 $
     vLimit 20 $
-    borderWithLabel (txt "Attach File") $
+    borderWithLabel (withDefAttr clientEmphAttr $ txt "Attach File") $
     -- invariant: cedFileBrowser is not Nothing if appMode is
     -- ManageAttachmentsBrowseFiles, and that is the only way to reach
     -- this code, ergo the fromJust.
