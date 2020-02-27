@@ -40,10 +40,11 @@ import qualified Zipper as Z
 
 
 incompleteCredentials :: Config -> ConnectionInfo
-incompleteCredentials config = ConnectionInfo hStr (configPort config) uStr pStr
+incompleteCredentials config = ConnectionInfo hStr (configPort config) dStr uStr pStr
     where
         hStr = maybe "" id $ configHost config
         uStr = maybe "" id $ configUser config
+        dStr = maybe "" id $ configUrlPath config
         pStr = case configPass config of
             Just (PasswordString s) -> s
             _                       -> ""

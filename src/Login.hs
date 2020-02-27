@@ -79,7 +79,7 @@ import           Network.Mattermost.Endpoints ( mmLogin )
 import           Markdown
 import           Themes ( clientEmphAttr )
 import           Types ( ConnectionInfo(..)
-                       , ciPassword, ciUsername, ciHostname
+                       , ciPassword, ciUsername, ciHostname, ciUrlPath
                        , ciPort, AuthenticationException(..)
                        , LogManager, LogCategory(..), ioLogWithManager
                        )
@@ -89,6 +89,7 @@ import           Types ( ConnectionInfo(..)
 data Name =
     Hostname
     | Port
+    | UrlPath
     | Username
     | Password
     deriving (Ord, Eq, Show)
@@ -350,6 +351,8 @@ mkForm =
                    editHostname ciHostname Hostname
                , label "Server port:" @@=
                    editShowableField ciPort Port
+               , label "Server URL path:" @@=
+                   editTextField ciUrlPath UrlPath (Just 1)
                , label "Username:" @@=
                    editTextField ciUsername Username (Just 1)
                , label "Password:" @@=
