@@ -20,9 +20,9 @@ import           Types
 
 listThemes :: MH ()
 listThemes = do
-    let themeList = T.intercalate "\n\n" $
-                    "Available built-in themes:" :
-                    (("  " <>) <$> internalThemeName <$> internalThemes)
+    let themeList = T.intercalate "\n" $
+                    "Available built-in themes:\n" :
+                    (("* " <>) <$> internalThemeName <$> internalThemes)
     postInfoMessage themeList
 
 setTheme :: Text -> MH ()
