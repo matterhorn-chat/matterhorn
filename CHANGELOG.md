@@ -1,4 +1,54 @@
 
+50200.7.0
+=========
+
+New features:
+ * The channel sidebar now displays channels by display name, not URL name (#522).
+   * The channel autocompletion list now includes channel display names.
+ * Matterhorn now adds the character set with "stty erase" to the Vty
+   input map so that the erase character translates to a backspace key
+   event.
+ * Matterhorn now supports viewing pinned posts and changing pinning status (#213)
+   * This change adds a new command, `/pinned-posts`, that will show a
+     post list of pinned posts in the current channel.
+   * This change adds a new message select key event, `pin-message`
+     (default: `p`) to toggle the pinning state of the selected post.
+   * A new `[PIN]` indicator is now displayed to the left of pinned posts.
+   * A new theme attribute, `pinnedMessageIndicator`, was added to
+     render the pinning indicator.
+ * A new configuration option now controls certificate validation (#263).
+   This change adds a new config setting, `validateServerCertificate`.
+   Its default is `True`. The sample config also includes documentation
+   about the setting.
+ * A new `/purpose` command was added to set channel purpose strings
+   (#524).
+ * A new example notification script for Mac OS systems was added at
+   `notification-scripts/notify-macos`.
+ * The help screen (default binding: `F1`) is now reachable from any
+   Matterhorn screen (#525).
+ * Private channels are now displayed as their own sidebar group (#510).
+
+Other changes:
+ * The `markdownEmph` attribute is now being used to render user list
+   window and attachment window titles.
+ * The output of the `/theme` command was improved.
+ * The help UI's default colors were changed to improve contrast (#564)
+ * Matterhorn now shows channel purpose strings, not headers, in channel
+   autocompletion matches to match the official client's behavior (#524).
+ * The notification script API is now documented in
+   `docs/notification-scripts.md`.
+ * Configuration files without trailing newlines are now supported
+   (#540).
+ * Websocket action responses are now supported, which fixed a bug where
+   typing notifications would cause websockets to get disconnected (#529).
+ * Emote messages that get flagged now properly display a flagging
+   indicator (#530).
+ * Matterhorn now supports generation of a command table similar to its
+    support for generating keybinding tables. This is done with the new
+   `-m`/`-M` command-line options.
+ * Date transition lines at the beginning of channels are now preserved
+   (#534).
+
 50200.6.0
 =========
 
