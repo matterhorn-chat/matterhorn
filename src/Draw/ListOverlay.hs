@@ -51,7 +51,7 @@ drawListOverlay :: ListOverlayState a b
                 -> Widget Name
 drawListOverlay st scopeHeader scopeNoResults scopePrompt renderItem =
   centerLayer $ hLimitWithPadding 10 $ vLimit 25 $
-  borderWithLabel (scopeHeader scope) body
+  borderWithLabel (withDefAttr clientEmphAttr $ scopeHeader scope) body
   where
       body = vBox [ (padRight (Pad 1) promptMsg) <+>
                     renderEditor (txt . T.unlines) True (st^.listOverlaySearchInput)
