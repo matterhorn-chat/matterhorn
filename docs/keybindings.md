@@ -8,7 +8,7 @@
 # Help Page
 | Keybinding | Event Name | Description |
 | ---------- | ---------- | ----------- |
-| `Esc`, `C-c` | `cancel` | Return to the main interface |
+| `Esc`, `C-c` | `cancel` | Return to the previous interface |
 | `PgDown` | `page-down` | Page down |
 | `PgUp` | `page-up` | Page up |
 | `End` | `scroll-bottom` | Scroll to the end of the help |
