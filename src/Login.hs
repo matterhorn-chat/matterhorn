@@ -186,7 +186,7 @@ loginWorker setLogger logMgr connTy requestChan respChan = forever $ do
                               , password = connInfo^.ciPassword
                               }
 
-            cd <- fmap setLogger $ initConnectionData (connInfo^.ciHostname) (fromIntegral (connInfo^.ciPort)) connTy poolCfg
+            cd <- fmap setLogger $ initConnectionData (connInfo^.ciHostname) (fromIntegral (connInfo^.ciPort)) (connInfo^.ciUrlPath) connTy poolCfg
 
             result <- convertLoginExceptions $ mmLogin cd login
             case result of
