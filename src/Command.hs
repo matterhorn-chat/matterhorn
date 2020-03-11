@@ -176,8 +176,8 @@ commandList =
     NoArg $ \ () ->
         stopLogging
 
-  , Cmd "log-mark" "Add marker message to the current log"
-    (LineArg "log marking message") $ \ markMsg ->
+  , Cmd "log-mark" "Add a custom marker message to the Matterhorn log"
+    (LineArg "message") $ \ markMsg ->
         mhLog LogUserMark markMsg
 
   , Cmd "log-status" "Show current logging status"
