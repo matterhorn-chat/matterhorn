@@ -180,7 +180,9 @@ loginWorker setLogger logMgr connTy requestChan respChan = forever $ do
     case req of
         DoLogin initial connInfo -> do
             writeBChan respChan $ StartConnect initial $ connInfo^.ciHostname
-            ioLogWithManager logMgr Nothing LogGeneral $ "Attempting authentication to " <> connInfo^.ciHostname
+            let doLog = ioLogWithManager logMgr Nothing LogGeneral
+
+            doLog $ "Attempting authentication to " <> connInfo^.ciHostname
 
             let login = Login { username = connInfo^.ciUsername
                               , password = connInfo^.ciPassword
@@ -192,16 +194,13 @@ loginWorker setLogger logMgr connTy requestChan respChan = forever $ do
             result <- convertLoginExceptions $ mmLogin cd login
             case result of
                 Left e -> do
-                    ioLogWithManager logMgr Nothing LogGeneral $
-                        "Error authenticating to " <> connInfo^.ciHostname <> ": " <> (T.pack $ show e)
+                    doLog $ "Error authenticating to " <> connInfo^.ciHostname <> ": " <> (T.pack $ show e)
                     writeBChan respChan $ LoginResult $ AttemptFailed e
                 Right (Left e) -> do
-                    ioLogWithManager logMgr Nothing LogGeneral $
-                        "Error authenticating to " <> connInfo^.ciHostname <> ": " <> (T.pack $ show e)
+                    doLog $ "Error authenticating to " <> connInfo^.ciHostname <> ": " <> (T.pack $ show e)
                     writeBChan respChan $ LoginResult $ AttemptFailed $ LoginError e
                 Right (Right (sess, user)) -> do
-                    ioLogWithManager logMgr Nothing LogGeneral $
-                        "Authenticated successfully to " <> connInfo^.ciHostname <> " as " <> connInfo^.ciUsername
+                    doLog $ "Authenticated successfully to " <> connInfo^.ciHostname <> " as " <> connInfo^.ciUsername
                     writeBChan respChan $ LoginResult $ AttemptSucceeded connInfo cd sess user
 
 -- | The amount of time that the startup timer thread will wait before
