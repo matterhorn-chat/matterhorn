@@ -40,6 +40,7 @@ module Types
   , entryIsDMEntry
   , ciHostname
   , ciPort
+  , ciUrlPath
   , ciUsername
   , ciPassword
   , Config(..)
@@ -355,6 +356,8 @@ data Config =
            -- ^ The team name to use when connecting.
            , configPort :: Int
            -- ^ The port to use when connecting.
+           , configUrlPath :: Maybe Text
+           -- ^ The server path to use when connecting.
            , configPass :: Maybe PasswordSource
            -- ^ The password source to use when connecting.
            , configTimeFormat :: Maybe Text
@@ -649,6 +652,7 @@ data AuthenticationException =
 data ConnectionInfo =
     ConnectionInfo { _ciHostname :: Text
                    , _ciPort     :: Int
+                   , _ciUrlPath  :: Text
                    , _ciUsername :: Text
                    , _ciPassword :: Text
                    }

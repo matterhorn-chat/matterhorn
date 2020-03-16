@@ -79,7 +79,7 @@ import           Network.Mattermost.Endpoints ( mmLogin )
 import           Markdown
 import           Themes ( clientEmphAttr )
 import           Types ( ConnectionInfo(..)
-                       , ciPassword, ciUsername, ciHostname
+                       , ciPassword, ciUsername, ciHostname, ciUrlPath
                        , ciPort, AuthenticationException(..)
                        , LogManager, LogCategory(..), ioLogWithManager
                        )
@@ -89,6 +89,7 @@ import           Types ( ConnectionInfo(..)
 data Name =
     Hostname
     | Port
+    | UrlPath
     | Username
     | Password
     deriving (Ord, Eq, Show)
@@ -185,7 +186,7 @@ loginWorker setLogger logMgr connTy requestChan respChan = forever $ do
                               , password = connInfo^.ciPassword
                               }
 
-            cd <- fmap setLogger $ initConnectionData (connInfo^.ciHostname) (fromIntegral (connInfo^.ciPort)) connTy poolCfg
+            cd <- fmap setLogger $ initConnectionData (connInfo^.ciHostname) (fromIntegral (connInfo^.ciPort)) (connInfo^.ciUrlPath) connTy poolCfg
 
             result <- convertLoginExceptions $ mmLogin cd login
             case result of
@@ -350,6 +351,8 @@ mkForm =
                    editHostname ciHostname Hostname
                , label "Server port:" @@=
                    editShowableField ciPort Port
+               , label "Server URL path:" @@=
+                   editTextField ciUrlPath UrlPath (Just 1)
                , label "Username:" @@=
                    editTextField ciUsername Username (Just 1)
                , label "Password:" @@=

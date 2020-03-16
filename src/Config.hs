@@ -71,6 +71,7 @@ fromIni = do
     configHost           <- fieldMbOf "host" stringField
     configTeam           <- fieldMbOf "team" stringField
     configPort           <- fieldDefOf "port" number (configPort defaultConfig)
+    configUrlPath        <- fieldMbOf "urlPath" stringField
     configChannelListWidth <- fieldDefOf "channelListWidth" number
                               (configChannelListWidth defaultConfig)
     configCpuUsagePolicy <- fieldDefOf "cpuUsagePolicy" cpuUsagePolicy
@@ -182,6 +183,7 @@ defaultConfig =
            , configHost                        = Nothing
            , configTeam                        = Nothing
            , configPort                        = defaultPort
+           , configUrlPath                     = Nothing
            , configPass                        = Nothing
            , configTimeFormat                  = Nothing
            , configDateFormat                  = Nothing
@@ -303,5 +305,6 @@ getCredentials config = do
 
     ConnectionInfo <$> configHost config
                    <*> (pure $ configPort config)
+                   <*> configUrlPath config
                    <*> configUser config
                    <*> (pure passStr)
