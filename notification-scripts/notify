@@ -56,5 +56,5 @@ urgency=$(getUrgency)
 if [ ! -z "$urgency" ]
 then
     test "$urgency" = "none" ||
-        notify-send -u "$urgency" -c "$notify_CATEGORY" "$notify_HEAD" "$notify_BODY"
+        notify-send -u "$urgency" -c "$notify_CATEGORY" -- "$notify_HEAD" "$notify_BODY"
 fi
