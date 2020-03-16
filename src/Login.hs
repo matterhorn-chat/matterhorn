@@ -63,33 +63,34 @@ import           Brick.Widgets.Border
 import           Brick.Widgets.Center
 import           Brick.Widgets.Edit
 import           Control.Concurrent ( forkIO, threadDelay )
-import           Control.Exception ( catch )
+import           Control.Exception ( SomeException, catch, try )
+import           Data.Char (isHexDigit)
+import           Data.List (inits)
 import           System.IO.Error ( catchIOError )
 import qualified Data.Text as T
 import           Graphics.Vty hiding (mkVty)
 import           Lens.Micro.Platform ( (.~), Lens', makeLenses )
 import qualified System.IO.Error as Err
+import           Network.URI ( URI(..), URIAuth(..), parseURI )
 
 import           Network.Mattermost ( ConnectionData )
 import           Network.Mattermost.Types ( Session, User, Login(..), ConnectionPoolConfig(..)
                                           , initConnectionData, ConnectionType(..) )
 import           Network.Mattermost.Exceptions ( LoginFailureException(..) )
-import           Network.Mattermost.Endpoints ( mmLogin )
+import           Network.Mattermost.Endpoints ( mmGetLimitedClientConfiguration, mmLogin )
 
 import           Markdown
 import           Themes ( clientEmphAttr )
 import           Types ( ConnectionInfo(..)
                        , ciPassword, ciUsername, ciHostname, ciUrlPath
-                       , ciPort, AuthenticationException(..)
+                       , ciPort, ciType, AuthenticationException(..)
                        , LogManager, LogCategory(..), ioLogWithManager
                        )
 
 
 -- | Resource names for the login interface.
 data Name =
-    Hostname
-    | Port
-    | UrlPath
+      Server
     | Username
     | Password
     deriving (Ord, Eq, Show)
@@ -168,14 +169,12 @@ loginWorker :: (ConnectionData -> ConnectionData)
             -- attempt.
             -> LogManager
             -- ^ The log manager used to do logging.
-            -> ConnectionType
-            -- ^ The kind of connection to make to the server.
             -> BChan LoginRequest
             -- ^ The channel on which we'll await requests.
             -> BChan LoginEvent
             -- ^ The channel to which we'll send login attempt results.
             -> IO ()
-loginWorker setLogger logMgr connTy requestChan respChan = forever $ do
+loginWorker setLogger logMgr requestChan respChan = forever $ do
     req <- readBChan requestChan
     case req of
         DoLogin initial connInfo -> do
@@ -188,20 +187,57 @@ loginWorker setLogger logMgr connTy requestChan respChan = forever $ do
                               , password = connInfo^.ciPassword
                               }
 
-            cd <- fmap setLogger $ initConnectionData (connInfo^.ciHostname) (fromIntegral (connInfo^.ciPort))
-                                                      (connInfo^.ciUrlPath) connTy poolCfg
+            mbCd <- findConnectionData connInfo
+            case mbCd of
+              Left e ->
+                do writeBChan respChan $ LoginResult $ AttemptFailed $ OtherAuthError e
+              Right cd_ ->
+                do let cd = setLogger cd_
+                   result <- convertLoginExceptions $ mmLogin cd login
+                   case result of
+                       Left e -> do
+                           doLog $ "Error authenticating to " <> connInfo^.ciHostname <> ": " <> (T.pack $ show e)
+                           writeBChan respChan $ LoginResult $ AttemptFailed e
+                       Right (Left e) -> do
+                           doLog $ "Error authenticating to " <> connInfo^.ciHostname <> ": " <> (T.pack $ show e)
+                           writeBChan respChan $ LoginResult $ AttemptFailed $ LoginError e
+                       Right (Right (sess, user)) -> do
+                           doLog $ "Authenticated successfully to " <> connInfo^.ciHostname <> " as " <> connInfo^.ciUsername
+                           writeBChan respChan $ LoginResult $ AttemptSucceeded connInfo cd sess user
 
-            result <- convertLoginExceptions $ mmLogin cd login
-            case result of
-                Left e -> do
-                    doLog $ "Error authenticating to " <> connInfo^.ciHostname <> ": " <> (T.pack $ show e)
-                    writeBChan respChan $ LoginResult $ AttemptFailed e
-                Right (Left e) -> do
-                    doLog $ "Error authenticating to " <> connInfo^.ciHostname <> ": " <> (T.pack $ show e)
-                    writeBChan respChan $ LoginResult $ AttemptFailed $ LoginError e
-                Right (Right (sess, user)) -> do
-                    doLog $ "Authenticated successfully to " <> connInfo^.ciHostname <> " as " <> connInfo^.ciUsername
-                    writeBChan respChan $ LoginResult $ AttemptSucceeded connInfo cd sess user
+
+findConnectionData :: ConnectionInfo -> IO (Either SomeException ConnectionData)
+findConnectionData connInfo = startSearch
+
+  where
+    components = filter (not . T.null) (T.split ('/'==) (connInfo^.ciUrlPath))
+
+    -- the candidates list is never empty because inits never returns an empty list
+    primary:alternatives = reverse (T.intercalate "/" <$> inits components)
+
+    tryCandidate :: Text -> IO (Either SomeException ConnectionData)
+    tryCandidate x =
+       do cd  <- initConnectionData (connInfo^.ciHostname) (fromIntegral (connInfo^.ciPort)) x (connInfo^.ciType) poolCfg
+          res <- try (mmGetLimitedClientConfiguration cd)
+          pure $! case res of
+                    Left e  -> Left e
+                    Right{} -> Right cd
+
+    -- This code prefers to report the error from the URL corresponding to what the user
+    -- actually provided. Errors from derived URLs are lost in favor of this first error.
+    startSearch =
+      do res1 <- tryCandidate primary
+         case res1 of
+           Left e -> search e alternatives
+           Right cd -> pure (Right cd)
+
+    search e [] = pure (Left e)
+    search e (x:xs) =
+      do res <- tryCandidate x
+         case res of
+           Left {}  -> search e xs
+           Right cd -> pure (Right cd)
+
 
 -- | The amount of time that the startup timer thread will wait before
 -- firing.
@@ -229,9 +265,6 @@ interactiveGetLoginSession :: Vty
                            -- never fires since the login app doesn't
                            -- use suspendAndResume, but we need it to
                            -- satisfy the Brick API.)
-                           -> ConnectionType
-                           -- ^ The kind of connection to make to the
-                           -- mattermost server.
                            -> (ConnectionData -> ConnectionData)
                            -- ^ The function to set the logger on
                            -- connection handles.
@@ -244,11 +277,11 @@ interactiveGetLoginSession :: Vty
                            -- initial connection attempt is made without
                            -- first getting the user to hit Enter.
                            -> IO (Maybe LoginAttempt, Vty)
-interactiveGetLoginSession vty mkVty connTy setLogger logMgr initialConfig = do
+interactiveGetLoginSession vty mkVty setLogger logMgr initialConfig = do
     requestChan <- newBChan 10
     respChan <- newBChan 10
 
-    void $ forkIO $ loginWorker setLogger logMgr connTy requestChan respChan
+    void $ forkIO $ loginWorker setLogger logMgr requestChan respChan
     void $ forkIO $ startupTimer respChan
 
     let initialState = mkState initialConfig requestChan
@@ -286,10 +319,10 @@ mkState cInfo chan = state
                       , _timeoutFired = False
                       }
         form = mkForm cInfo
-        initialFocus = if | T.null (cInfo^.ciHostname) -> Hostname
+        initialFocus = if | T.null (cInfo^.ciHostname) -> Server
                           | T.null (cInfo^.ciUsername) -> Username
                           | T.null (cInfo^.ciPassword) -> Password
-                          | otherwise                  -> Hostname
+                          | otherwise                  -> Server
 
 app :: App State LoginEvent Name
 app = App
@@ -347,33 +380,98 @@ mkForm :: ConnectionInfo -> Form ConnectionInfo e Name
 mkForm =
     let label s w = padBottom (Pad 1) $
                     (vLimit 1 $ hLimit 18 $ str s <+> fill ' ') <+> w
-    in newForm [ label "Server hostname:" @@=
-                   editHostname ciHostname Hostname
-               , label "Server port:" @@=
-                   editShowableField ciPort Port
-               , label "Server URL path:" @@=
-                   editTextField ciUrlPath UrlPath (Just 1)
-               , label "Username:" @@=
-                   editTextField ciUsername Username (Just 1)
-               , label "Password:" @@=
-                   editPasswordField ciPassword Password
+    in newForm [ label "Server URL:" @@= editServer
+               , label "Username:"   @@= editTextField ciUsername Username (Just 1)
+               , label "Password:"   @@= editPasswordField ciPassword Password
                ]
 
-editHostname :: (Show n, Ord n) => Lens' s Text -> n -> s -> FormFieldState s e n
-editHostname stLens n =
-    let ini = id
-        val = validHostname
-        limit = Just 1
-        renderTxt = txt . T.unlines
-    in editField stLens n limit ini val renderTxt id
+serverLens :: Lens' ConnectionInfo (Text, Int, Text, ConnectionType)
+serverLens f ci = fmap (\(x,y,z,w) -> ci { _ciHostname = x, _ciPort = y, _ciUrlPath = z, _ciType = w})
+                       (f (ci^.ciHostname, ci^.ciPort, ci^.ciUrlPath, ci^.ciType))
 
-validHostname :: [Text] -> Maybe Text
-validHostname ls =
-    let s = T.unpack t
-        t = T.concat ls
-    in if all (flip notElem (":/"::String)) s
-       then Just t
-       else Nothing
+-- | Validate a server URI @hostname[:port][/path]@. Result is either an error message
+-- indicating why validation failed or a tuple of (hostname, port, path)
+validServer :: [Text] -> Either String (Text, Int, Text, ConnectionType)
+validServer ts =
+
+  do t <- case ts of
+            []  -> Left "No input"
+            [t] -> Right t
+            _   -> Left "Too many lines"
+
+     let inputWithScheme
+           | "://" `T.isInfixOf` t = t
+           | otherwise = "https://" <> t
+
+     uri <- case parseURI (T.unpack inputWithScheme) of
+              Nothing  -> Left "Unable to parse URI"
+              Just uri -> Right uri
+
+     auth <- case uriAuthority uri of
+               Nothing   -> Left "Missing authority part"
+               Just auth -> Right auth
+
+     ty <- case uriScheme uri of
+             "http:"           -> Right ConnectHTTP
+             "https:"          -> Right (ConnectHTTPS True)
+             "https-insecure:" -> Right (ConnectHTTPS False)
+             _                 -> Left "Unknown scheme"
+
+     port <- case (ty, uriPort auth) of
+               (ConnectHTTP   , "") -> Right 80
+               (ConnectHTTPS{}, "") -> Right 443
+               (_, ':':portStr)
+                 | Just port <- readMaybe portStr -> Right port
+               _ -> Left "Invalid port"
+
+     let host
+           | not (null (uriRegName auth))
+           , '[' == head (uriRegName auth)
+           , ']' == last (uriRegName auth)
+           = init (tail (uriRegName auth))
+           | otherwise = uriRegName auth
+
+     if null (uriRegName auth) then Left "Missing server name" else Right ()
+     if null (uriQuery uri) then Right () else Left "Unexpected URI query"
+     if null (uriFragment uri) then Right () else Left "Unexpected URI fragment"
+     if null (uriUserInfo auth) then Right () else Left "Unexpected credentials"
+
+     Right (T.pack host, port, T.pack (uriPath uri), ty)
+
+
+renderServer :: (Text, Int, Text, ConnectionType) -> Text
+renderServer (h,p,u,t) = scheme <> hStr <> portStr <> uStr
+  where
+    hStr
+      | T.all (\x -> isHexDigit x || ':'==x) h
+      , T.any (':'==) h = "[" <> h <> "]"
+      | otherwise = h
+
+    scheme =
+      case t of
+        ConnectHTTP        -> "http://"
+        ConnectHTTPS True  -> ""
+        ConnectHTTPS False -> "https-insecure://"
+
+    uStr
+      | T.null u = u
+      | otherwise = T.cons '/' (T.dropWhile ('/'==) u)
+
+    portStr =
+      case t of
+        ConnectHTTP    | p ==  80 -> T.empty
+        ConnectHTTPS{} | p == 443 -> T.empty
+        _                         -> T.pack (':':show p)
+
+editServer :: ConnectionInfo -> FormFieldState ConnectionInfo e Name
+editServer =
+    let val ts = case validServer ts of
+                   Left{} -> Nothing
+                   Right x-> Just x
+        limit = Just 1
+        renderTxt [""] = str "(Paste your Mattermost URL here)"
+        renderTxt ts = txt (T.unlines ts)
+    in editField serverLens Server limit renderServer val renderTxt id
 
 errorAttr :: AttrName
 errorAttr = "errorMessage"

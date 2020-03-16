@@ -7,6 +7,7 @@ module Config
   , findConfig
   , getCredentials
   , defaultConfig
+  , configConnectionType
   )
 where
 
@@ -15,7 +16,6 @@ import           Prelude.MH
 
 import           Control.Monad.Trans.Except
 import           Control.Monad.Trans.Class ( lift )
-import           Control.Monad.IO.Class ( liftIO )
 import           Data.Ini.Config
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
@@ -24,6 +24,7 @@ import           System.Directory ( makeAbsolute, getHomeDirectory )
 import           System.Environment ( getExecutablePath )
 import           System.FilePath ( (</>), takeDirectory, splitPath, joinPath )
 import           System.Process ( readProcess )
+import           Network.Mattermost.Types (ConnectionType(..))
 
 import           FilePaths
 import           IOUtil
@@ -304,7 +305,13 @@ getCredentials config = do
                     show (configPass config)
 
     ConnectionInfo <$> configHost config
-                   <*> (pure $ configPort config)
+                   <*> pure (configPort config)
                    <*> configUrlPath config
                    <*> configUser config
-                   <*> (pure passStr)
+                   <*> pure passStr
+                   <*> pure (configConnectionType config)
+
+configConnectionType :: Config -> ConnectionType
+configConnectionType config
+  | configUnsafeUseHTTP config = ConnectHTTP
+  | otherwise = ConnectHTTPS (configValidateServerCertificate config)
