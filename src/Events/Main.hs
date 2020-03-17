@@ -21,9 +21,11 @@ import           Types
 
 onEventMain :: Vty.Event -> MH ()
 onEventMain =
-  handleKeyboardEvent mainKeybindings $ \ ev -> case ev of
-    (Vty.EvPaste bytes) -> handlePaste bytes
-    _ -> resetReturnChannel >> handleEditingInput ev
+  handleKeyboardEvent mainKeybindings $ \ ev -> do
+      resetReturnChannel
+      case ev of
+          (Vty.EvPaste bytes) -> handlePaste bytes
+          _ -> handleEditingInput ev
 
 mainKeybindings :: KeyConfig -> [Keybinding]
 mainKeybindings = mkKeybindings
