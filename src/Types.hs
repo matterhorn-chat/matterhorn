@@ -77,6 +77,7 @@ module Types
   , csShowChannelList
   , csPostMap
   , csRecentChannel
+  , csReturnChannel
   , csPostListOverlay
   , csUserListOverlay
   , csChannelListOverlay
@@ -1241,6 +1242,9 @@ data ChatState =
               -- channel selection mode.
               , _csRecentChannel :: Maybe ChannelId
               -- ^ The most recently-selected channel, if any.
+              , _csReturnChannel :: Maybe ChannelId
+              -- ^ The channel to return to after visiting one or more
+              -- unread channels.
               , _csUrlList :: List Name LinkChoice
               -- ^ The URL list used to show URLs drawn from messages in
               -- a channel.
@@ -1321,6 +1325,7 @@ newState (StartupStateInfo {..}) = do
                      , _csShowChannelList             = configShowChannelList $ _crConfiguration startupStateResources
                      , _csChannelSelectState          = emptyChannelSelectState
                      , _csRecentChannel               = Nothing
+                     , _csReturnChannel               = Nothing
                      , _csUrlList                     = list UrlList mempty 2
                      , _csConnectionStatus            = Connected
                      , _csWorkerIsBusy                = Nothing

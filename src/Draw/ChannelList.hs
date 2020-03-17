@@ -45,6 +45,7 @@ data ChannelListEntryData =
                          , entryHasUnread   :: Bool
                          , entryMentions    :: Int
                          , entryIsRecent    :: Bool
+                         , entryIsReturn    :: Bool
                          , entryIsCurrent   :: Bool
                          , entryUserStatus  :: Maybe UserStatus
                          }
@@ -108,12 +109,13 @@ mkChannelEntryData :: ChatState
                    -> ChannelListEntry
                    -> ChannelListEntryData
 mkChannelEntryData st e =
-    ChannelListEntryData sigilWithSpace name unread mentions recent current status
+    ChannelListEntryData sigilWithSpace name unread mentions recent ret current status
     where
         cId = channelListEntryChannelId e
         Just chan = findChannelById cId (st^.csChannels)
         unread = hasUnread' chan
         recent = isRecentChannel st cId
+        ret = isReturnChannel st cId
         current = isCurrentChannel st cId
         (name, normalSigil, addSpace, status) = case e of
             CLChannel _ ->
@@ -143,7 +145,7 @@ mkChannelEntryData st e =
 renderChannelListEntry :: ChannelListEntryData -> (Bool, Widget Name)
 renderChannelListEntry entry = (entryHasUnread entry, body)
     where
-    body = decorate $ decorateRecent entry $ decorateMentions $ padRight Max $
+    body = decorate $ decorateEntry entry $ decorateMentions $ padRight Max $
            entryWidget $ entrySigil entry <> entryLabel entry
     decorate = if | entryIsCurrent entry ->
                       visible . forceAttr currentChannelNameAttr
@@ -174,16 +176,28 @@ renderChannelSelectListEntry curMatch st match =
                       else id
         entryData = mkChannelEntryData st entry
     in (False, maybeSelect $
-               decorateRecent entryData $
+               decorateEntry entryData $
                padRight Max $
                  hBox [ txt $ entrySigil entryData <> preMatch
                       , forceAttr channelSelectMatchAttr $ txt inMatch
                       , txt postMatch
                       ])
 
--- | If this channel is the most recently viewed channel (prior to the
--- currently viewed channel), add a decoration to denote that.
-decorateRecent :: ChannelListEntryData -> Widget n -> Widget n
-decorateRecent entry = if entryIsRecent entry
-                       then (<+> (withDefAttr recentMarkerAttr $ str "<"))
-                       else id
+-- If this channel is the return channel, add a decoration to denote
+-- that.
+--
+-- Otherwise, if this channel is the most recently viewed channel (prior
+-- to the currently viewed channel), add a decoration to denote that.
+decorateEntry :: ChannelListEntryData -> Widget n -> Widget n
+decorateEntry entry =
+    if entryIsReturn entry
+    then (<+> (withDefAttr recentMarkerAttr $ str returnChannelSigil))
+    else if entryIsRecent entry
+         then (<+> (withDefAttr recentMarkerAttr $ str recentChannelSigil))
+         else id
+
+recentChannelSigil :: String
+recentChannelSigil = "<"
+
+returnChannelSigil :: String
+returnChannelSigil = "~"

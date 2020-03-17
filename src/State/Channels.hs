@@ -21,6 +21,8 @@ module State.Channels
   , prevChannel
   , nextChannel
   , recentChannel
+  , setReturnChannel
+  , resetReturnChannel
   , hideDMChannel
   , createGroupChannel
   , showGroupChannelPref
@@ -34,6 +36,7 @@ module State.Channels
   , removeUserFromCurrentChannel
   , removeChannelFromState
   , isRecentChannel
+  , isReturnChannel
   , isCurrentChannel
   , deleteCurrentChannel
   , startLeaveCurrentChannel
@@ -411,7 +414,7 @@ updateChannelInfo cid new member = do
 setFocus :: ChannelId -> MH ()
 setFocus cId = do
     showChannelInSidebar cId True
-    setFocusWith True (Z.findRight ((== cId) . channelListEntryChannelId))
+    setFocusWith True (Z.findRight ((== cId) . channelListEntryChannelId)) (return ())
 
 showChannelInSidebar :: ChannelId -> Bool -> MH ()
 showChannelInSidebar cId setPending = do
@@ -474,8 +477,10 @@ showChannelInSidebar cId setPending = do
 
 setFocusWith :: Bool
              -> (Zipper ChannelListGroup ChannelListEntry
-             -> Zipper ChannelListGroup ChannelListEntry) -> MH ()
-setFocusWith updatePrev f = do
+             -> Zipper ChannelListGroup ChannelListEntry)
+             -> MH ()
+             -> MH ()
+setFocusWith updatePrev f onNoChange = do
     oldZipper <- use csFocus
     let newZipper = f oldZipper
         newFocus = Z.focus newZipper
@@ -483,18 +488,20 @@ setFocusWith updatePrev f = do
 
     -- If we aren't changing anything, skip all the book-keeping because
     -- we'll end up clobbering things like csRecentChannel.
-    when (newFocus /= oldFocus) $ do
-        mh $ invalidateCacheEntry ChannelSidebar
-        resetAutocomplete
-        preChangeChannelCommon
-        csFocus .= newZipper
+    if newFocus /= oldFocus
+       then do
+          mh $ invalidateCacheEntry ChannelSidebar
+          resetAutocomplete
+          preChangeChannelCommon
+          csFocus .= newZipper
 
-        now <- liftIO getCurrentTime
-        newCid <- use csCurrentChannelId
-        csChannel(newCid).ccInfo.cdSidebarShowOverride .= Just now
+          now <- liftIO getCurrentTime
+          newCid <- use csCurrentChannelId
+          csChannel(newCid).ccInfo.cdSidebarShowOverride .= Just now
 
-        updateViewed updatePrev
-        postChangeChannelCommon
+          updateViewed updatePrev
+          postChangeChannelCommon
+       else onNoChange
 
 postChangeChannelCommon :: MH ()
 postChangeChannelCommon = do
@@ -660,32 +667,67 @@ removeChannelFromState cId = do
             updateSidebar
 
 nextChannel :: MH ()
-nextChannel = setFocusWith True Z.right
+nextChannel = do
+    resetReturnChannel
+    setFocusWith True Z.right (return ())
 
 -- | This is almost never what you want; we use this when we delete a
 -- channel and we don't want to update the deleted channel's view time.
 nextChannelSkipPrevView :: MH ()
-nextChannelSkipPrevView = setFocusWith False Z.right
+nextChannelSkipPrevView = setFocusWith False Z.right (return ())
 
 prevChannel :: MH ()
-prevChannel = setFocusWith True Z.left
+prevChannel = do
+    resetReturnChannel
+    setFocusWith True Z.left (return ())
 
 recentChannel :: MH ()
 recentChannel = do
   recent <- use csRecentChannel
   case recent of
     Nothing  -> return ()
-    Just cId -> setFocus cId
+    Just cId -> do
+        resetReturnChannel
+        setFocus cId
+
+resetReturnChannel :: MH ()
+resetReturnChannel = do
+  val <- use csReturnChannel
+  case val of
+      Nothing -> return ()
+      Just _ -> do
+          mh $ invalidateCacheEntry ChannelSidebar
+          csReturnChannel .= Nothing
+
+gotoReturnChannel :: MH ()
+gotoReturnChannel = do
+  ret <- use csReturnChannel
+  case ret of
+    Nothing  -> return ()
+    Just cId -> do
+        csReturnChannel .= Nothing
+        setFocus cId
+
+setReturnChannel :: MH ()
+setReturnChannel = do
+  ret <- use csReturnChannel
+  case ret of
+    Nothing  -> do
+        cId <- use csCurrentChannelId
+        csReturnChannel .= Just cId
+    Just _ -> return ()
 
 nextUnreadChannel :: MH ()
 nextUnreadChannel = do
     st <- use id
-    setFocusWith True (getNextUnreadChannel st)
+    setReturnChannel
+    setFocusWith True (getNextUnreadChannel st) gotoReturnChannel
 
 nextUnreadUserOrChannel :: MH ()
 nextUnreadUserOrChannel = do
     st <- use id
-    setFocusWith True (getNextUnreadUserOrChannel st)
+    setReturnChannel
+    setFocusWith True (getNextUnreadUserOrChannel st) gotoReturnChannel
 
 leaveChannel :: ChannelId -> MH ()
 leaveChannel cId = leaveChannelIfPossible cId False
@@ -912,6 +954,9 @@ isCurrentChannel st cId = st^.csCurrentChannelId == cId
 
 isRecentChannel :: ChatState -> ChannelId -> Bool
 isRecentChannel st cId = st^.csRecentChannel == Just cId
+
+isReturnChannel :: ChatState -> ChannelId -> Bool
+isReturnChannel st cId = st^.csReturnChannel == Just cId
 
 joinChannelByName :: Text -> MH ()
 joinChannelByName rawName = do
