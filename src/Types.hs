@@ -43,6 +43,7 @@ module Types
   , ciUrlPath
   , ciUsername
   , ciPassword
+  , ciType
   , Config(..)
   , HelpScreen(..)
   , PasswordSource(..)
@@ -286,7 +287,7 @@ import qualified Data.HashMap.Strict as HM
 import           Data.List ( sortBy, nub, elemIndex )
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
-import           Data.Time.Clock ( UTCTime, getCurrentTime, addUTCTime )
+import           Data.Time.Clock ( getCurrentTime, addUTCTime )
 import           Data.UUID ( UUID )
 import qualified Data.Vector as Vec
 import           Lens.Micro.Platform ( at, makeLenses, lens, (%~), (^?!), (.=)
@@ -656,6 +657,7 @@ data ConnectionInfo =
                    , _ciUrlPath  :: Text
                    , _ciUsername :: Text
                    , _ciPassword :: Text
+                   , _ciType     :: ConnectionType
                    }
 
 -- | We want to continue referring to posts by their IDs, but we don't
@@ -1236,7 +1238,7 @@ data ChatState =
               , _csShowMessagePreview :: Bool
               -- ^ Whether to show the message preview area.
               , _csShowChannelList :: Bool
-              -- ^ Whether to show the channe list.
+              -- ^ Whether to show the channel list.
               , _csChannelSelectState :: ChannelSelectState
               -- ^ The state of the user's input and selection for
               -- channel selection mode.

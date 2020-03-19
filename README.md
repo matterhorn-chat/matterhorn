@@ -35,9 +35,10 @@ To run Matterhorn, unpack the binary release archive and run the
     $ matterhorn --help
     $ matterhorn
 
-When you run Matterhorn you'll be prompted for your server information
-and credentials. At present `matterhorn` supports only username/password
-authentication.
+When you run Matterhorn you'll be prompted for your server URL and
+credentials. To connect, just paste your web client's Mattermost
+URL into the Server URL box and enter your credentials. At present
+`matterhorn` supports only username/password authentication.
 
 Note: Version `ABBCC.X.Y` matches Mattermost server version `A.BB.CC`.
 For example, if your Mattermost server version is `3.6.0` then you

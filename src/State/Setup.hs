@@ -40,14 +40,16 @@ import qualified Zipper as Z
 
 
 incompleteCredentials :: Config -> ConnectionInfo
-incompleteCredentials config = ConnectionInfo hStr (configPort config) dStr uStr pStr
-    where
-        hStr = maybe "" id $ configHost config
-        uStr = maybe "" id $ configUser config
-        dStr = maybe "" id $ configUrlPath config
-        pStr = case configPass config of
-            Just (PasswordString s) -> s
-            _                       -> ""
+incompleteCredentials config = ConnectionInfo
+  { _ciHostname = fromMaybe "" (configHost config)
+  , _ciPort     = configPort config
+  , _ciUrlPath  = fromMaybe "" (configUrlPath config)
+  , _ciUsername = fromMaybe "" (configUser config)
+  , _ciPassword = case configPass config of
+                    Just (PasswordString s) -> s
+                    _                       -> ""
+  , _ciType     = configConnectionType config
+  }
 
 apiLogEventToLogMessage :: LogEvent -> IO LogMessage
 apiLogEventToLogMessage ev = do
@@ -74,11 +76,8 @@ setupState mkVty mLogLocation config = do
 
   let logApiEvent ev = apiLogEventToLogMessage ev >>= sendLogMessage logMgr
       setLogger cd = cd `withLogger` logApiEvent
-      connTy = if configUnsafeUseHTTP config
-               then ConnectHTTP
-               else ConnectHTTPS $ configValidateServerCertificate config
 
-  (mLastAttempt, loginVty) <- interactiveGetLoginSession initialVty mkVty connTy
+  (mLastAttempt, loginVty) <- interactiveGetLoginSession initialVty mkVty
                                                          setLogger
                                                          logMgr
                                                          (incompleteCredentials config)
