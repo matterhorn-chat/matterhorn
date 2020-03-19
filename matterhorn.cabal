@@ -12,7 +12,7 @@ copyright:           ©2016-2019 docs/AUTHORS.txt
 category:            Chat
 build-type:          Simple
 cabal-version:       >= 1.18
-tested-with:         GHC == 7.10.3, GHC == 8.0.1, GHC == 8.2.2, GHC == 8.4.4, GHC == 8.6.3
+tested-with:         GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4, GHC == 8.6.5, GHC == 8.8.3
 
 data-files:          syntax/*.xml
                      syntax/language.dtd
