@@ -37,15 +37,16 @@
 -- status message that is shown is shown long enough for the user to
 -- see what is happening (rather than just flashing by in the case
 -- of a fast server connection). For this usability reason, we have
--- a "startup timer" thread: the thread waits a specified number of
--- milliseconds (see below) and then notifies the interface that it has
--- timed out. If there is an initial connection attempt underway that
--- succeeds *before* the timer fires, we wait until the timer fires
--- before quitting the application. This ensures that the "connecting
--- to..." message stays on the screen long enough to not be jarring, and
--- to show the user what is happening. If the connection fails before
--- the timer fires, we just resume normal operation and show the login
--- form so the user can intervene.
+-- a "startup timer" thread: the thread waits a specified number
+-- of milliseconds (see 'startupTimerMilliseconds' below) and then
+-- notifies the interface that it has timed out. If there is an initial
+-- connection attempt underway that succeeds *before* the timer
+-- fires, we wait until the timer fires before quitting the Login
+-- application and returning control to Matterhorn. This ensures that
+-- the "connecting to..." message stays on the screen long enough to not
+-- be jarring, and to show the user what is happening. If the connection
+-- fails before the timer fires, we just resume normal operation and
+-- show the login form so the user can intervene.
 module Login
   ( LoginAttempt(..)
   , interactiveGetLoginSession
