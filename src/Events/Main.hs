@@ -101,7 +101,7 @@ mainKeybindings = mkKeybindings
     , mkKb PrevChannelEvent "Change to the previous channel in the channel list"
          prevChannel
 
-    , mkKb NextUnreadChannelEvent "Change to the next channel with unread messages"
+    , mkKb NextUnreadChannelEvent "Change to the next channel with unread messages or return to the channel marked '~'"
          nextUnreadChannel
 
     , mkKb ShowAttachmentListEvent "Show the attachment list"
