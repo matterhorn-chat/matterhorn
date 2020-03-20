@@ -153,13 +153,13 @@ git submodule update --init
 echo %
 echo % Verify that the keybinding document is current
 echo %
-diff docs/keybindings.md <(./run.sh -i -K)
+diff docs/keybindings.md <(./run.sh -i -k -f markdown)
 echo
 
 echo %
 echo % Verify that the command document is current
 echo %
-diff docs/commands.md <(./run.sh -M)
+diff docs/commands.md <(./run.sh -m -f markdown)
 echo
 
 TMPDIR=$(mktemp -d)

@@ -5,6 +5,8 @@ module Options where
 import Prelude ()
 import Prelude.MH
 
+import Data.Char ( toLower )
+import Data.Tuple ( swap )
 import Data.Version ( showVersion )
 import Development.GitRev
 import Network.Mattermost.Version ( mmApiVersion )
@@ -20,7 +22,7 @@ data Behaviour
   | ShowHelp
     deriving (Eq, Show)
 
-data PrintMode =
+data PrintFormat =
     Markdown | Plain deriving (Eq, Show)
 
 data Options = Options
@@ -28,8 +30,9 @@ data Options = Options
   , optLogLocation      :: Maybe FilePath
   , optBehaviour        :: Behaviour
   , optIgnoreConfig     :: Bool
-  , optPrintKeybindings :: Maybe PrintMode
-  , optPrintCommands    :: Maybe PrintMode
+  , optPrintKeybindings :: Bool
+  , optPrintCommands    :: Bool
+  , optPrintFormat      :: PrintFormat
   } deriving (Eq, Show)
 
 defaultOptions :: Options
@@ -38,8 +41,9 @@ defaultOptions = Options
   , optLogLocation      = Nothing
   , optBehaviour        = Normal
   , optIgnoreConfig     = False
-  , optPrintKeybindings = Nothing
-  , optPrintCommands    = Nothing
+  , optPrintKeybindings = False
+  , optPrintCommands    = False
+  , optPrintFormat      = Plain
   }
 
 optDescrs :: [OptDescr (Options -> Options)]
@@ -59,19 +63,42 @@ optDescrs =
   , Option ['i'] ["ignore-config"]
     (NoArg (\ c -> c { optIgnoreConfig = True }))
     "Start with no configuration"
-  , Option ['k'] ["keybindings-text"]
-    (NoArg (\ c -> c { optPrintKeybindings = Just Plain }))
-    "Print keybindings effective for the current configuration in plain text format"
-  , Option ['K'] ["keybindings-markdown"]
-    (NoArg (\ c -> c { optPrintKeybindings = Just Markdown }))
-    "Print keybindings effective for the current configuration in Markdown format"
-  , Option ['m'] ["commands-text"]
-    (NoArg (\ c -> c { optPrintCommands = Just Plain }))
-    "Print available commands in plain text format"
-  , Option ['M'] ["commands-markdown"]
-    (NoArg (\ c -> c { optPrintCommands = Just Markdown }))
-    "Print available commands in Markdown format"
+  , Option ['k'] ["keybindings"]
+    (NoArg (\ c -> c { optPrintKeybindings = True }))
+    "Print keybindings effective for the current configuration"
+  , Option ['m'] ["commands"]
+    (NoArg (\ c -> c { optPrintCommands = True }))
+    "Print available commands"
+  , Option ['f'] ["format"]
+    (ReqArg handleFormat "FORMAT")
+    ("Print keybinding or command output in the specified format " <>
+     "(options: " <> formatChoicesStr <> ", default: " <>
+     formatStringFor (optPrintFormat defaultOptions) <> ")")
   ]
+
+formatChoices :: [(String, PrintFormat)]
+formatChoices =
+    [ ("plain", Plain)
+    , ("markdown", Markdown)
+    ]
+
+formatStringFor :: PrintFormat -> String
+formatStringFor fmt =
+    case lookup fmt (swap <$> formatChoices) of
+        Nothing -> error $ "BUG: no format string for " <> show fmt
+        Just s -> s
+
+formatChoicesStr :: String
+formatChoicesStr = intercalate ", " $ fst <$> formatChoices
+
+handleFormat :: String -> Options -> Options
+handleFormat fmtStr c =
+    let fmt = case lookup (toLower <$> fmtStr) formatChoices of
+            Just f -> f
+            Nothing ->
+                error $ "Invalid format: " <> show fmtStr <> ", choices: " <>
+                        formatChoicesStr
+    in c { optPrintFormat = fmt }
 
 mhVersion :: String
 mhVersion

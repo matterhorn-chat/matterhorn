@@ -30,19 +30,20 @@ main = do
         Right c -> return c
 
     let keyConfig = configUserKeys config
+        format = optPrintFormat opts
 
     printedCommands <- case optPrintCommands opts of
-        Nothing -> return False
-        Just ty -> do
-            case ty of
+        False -> return False
+        True -> do
+            case format of
                 Markdown -> T.putStrLn commandMarkdownTable
                 Plain -> T.putStrLn commandTextTable
             return True
 
     printedKeybindings <- case optPrintKeybindings opts of
-        Nothing -> return False
-        Just ty -> do
-            case ty of
+        False -> return False
+        True -> do
+            case format of
                 Markdown -> T.putStrLn $ keybindingMarkdownTable keyConfig
                 Plain -> T.putStrLn $ keybindingTextTable keyConfig
             return True

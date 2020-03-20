@@ -80,14 +80,14 @@ client. Keybinding and command help may be obtained in a number of ways:
 
 * The `/help` command within Matterhorn.
 * The `F1` key within Matterhorn.
-* Running matterhorn with the `-k` argument to get a text table of available keybindings.
-* Running matterhorn with the `-K` argument to get a [Markdown table of available keybindings](docs/keybindings.md).
-* Running matterhorn with the `-M` argument to get a [Markdown table of available commands](docs/commands.md).
+* Running matterhorn with the `-k` or `-m` arguments to get a text table of available keybindings or commands respectively.
+* Running matterhorn with the `-k` or `-m` arguments with `-f markdown` to get a [Markdown table of available keybindings](docs/keybindings.md) or [Markdown table of available commands](docs/commands.md).
 
-    Note: The latter three commands do not start the client but simply
-    print to stdout and exit. The keybindings shown include any user
-    overrides from the config files; use the `-i` flag to skip loading
-    the local config files and see the Matterhorn default keybindings.
+    Note: The keyboard and command output commands do not start the
+    client but simply print to stdout and exit. The keybindings shown
+    include any user overrides from the config files; use the `-i`
+    flag to skip loading the local config files and see the Matterhorn
+    default keybindings.
 
 Keybindings may include modifiers such as Control (indicated with a
 `C-` prefix) or Meta (indicated with a `M-` prefix). If your keyboard
