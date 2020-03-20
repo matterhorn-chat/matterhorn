@@ -715,6 +715,7 @@ setReturnChannel = do
     Nothing  -> do
         cId <- use csCurrentChannelId
         csReturnChannel .= Just cId
+        mh $ invalidateCacheEntry ChannelSidebar
     Just _ -> return ()
 
 nextUnreadChannel :: MH ()
