@@ -23,7 +23,6 @@ import           Constants
 import           Events.Keybindings
 import           Themes
 import           Types
-import           Types.Messages ( findMessage )
 import           Markdown
 import           Draw.Messages ( nameForUserRef )
 
