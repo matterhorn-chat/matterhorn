@@ -687,7 +687,8 @@ recentChannel = do
   case recent of
     Nothing  -> return ()
     Just cId -> do
-        resetReturnChannel
+        ret <- use csReturnChannel
+        when (ret == Just cId) resetReturnChannel
         setFocus cId
 
 resetReturnChannel :: MH ()
