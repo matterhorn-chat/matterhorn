@@ -132,7 +132,11 @@ the default binding `M-s` (swap). The most recent channel is marked in
 the channel list with a "`<`" indicator.
 
 To switch to the next channel with unread messages, use the default
-binding `M-a`.
+binding `M-a`. Pressing `M-a` repeatedly will visit other channels with
+unread messages, and the channel you started in when first pressing
+`M-a` will be marked with `~` in the sidebar. Pressing `M-a` will return
+to that channel after other channels with unread messages have been
+visited.
 
 To quickly show a list of URLs mentioned in the current channel and then
 open one in your local browser, use the default binding of `C-o` and
