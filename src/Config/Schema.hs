@@ -1,3 +1,10 @@
+{- |
+
+This module provides an INI schema validator that is able to track unused
+sections and fields in order to report warning messages to the user.
+
+
+ -}
 module Config.Schema
   ( IniParser
   , parseIniFile

@@ -214,14 +214,19 @@ defaultConfig =
            , configDefaultAttachmentPath       = Nothing
            }
 
-findConfig :: Maybe FilePath -> IO (Either String Config)
+findConfig :: Maybe FilePath -> IO (Either String ([String], Config))
 findConfig Nothing = runExceptT $ do
     cfg <- lift $ locateConfig configFileName
-    fixupPaths =<< case cfg of
-        Nothing -> return defaultConfig
+    (warns, config) <-
+      case cfg of
+        Nothing -> return ([], defaultConfig)
         Just path -> getConfig path
+    config' <- fixupPaths config
+    return (warns, config')
 findConfig (Just path) =
-    runExceptT $ fixupPaths =<< getConfig path
+    runExceptT $ do (warns, config) <- getConfig path
+                    config' <- fixupPaths config
+                    return (warns, config')
 
 -- | Fix path references in the configuration:
 --
@@ -258,7 +263,7 @@ fixupSyntaxDirs c =
 
         return $ c { configSyntaxDirs = newDirs }
 
-getConfig :: FilePath -> ExceptT String IO Config
+getConfig :: FilePath -> ExceptT String IO ([String], Config)
 getConfig fp = do
     absPath <- convertIOException $ makeAbsolute fp
     t <- (convertIOException $ T.readFile absPath) `catchE`
@@ -278,7 +283,7 @@ getConfig fp = do
     case parseIniFile t' fromIni of
         Left err -> do
             throwE $ "Unable to parse " ++ absPath ++ ":" ++ fatalString err
-        Right (warn, conf) -> do
+        Right (warns, conf) -> do
             actualPass <- case configPass conf of
                 Just (PasswordCommand cmdString) -> do
                     let (cmd:rest) = T.unpack <$> T.words cmdString
@@ -288,9 +293,11 @@ getConfig fp = do
                 Just (PasswordString pass) -> return $ Just pass
                 Nothing -> return Nothing
 
-            return conf { configPass = PasswordString <$> actualPass
-                        , configAbsPath = Just absPath
-                        }
+            let conf' = conf
+                  { configPass = PasswordString <$> actualPass
+                  , configAbsPath = Just absPath
+                  }
+            return (map warningString warns, conf')
 
 -- | Returns the hostname, username, and password from the config. Only
 -- returns Just if all three have been provided. The idea is that if

@@ -5,7 +5,9 @@ module Options where
 import Prelude ()
 import Prelude.MH
 
+import Config
 import Data.Char ( toLower )
+import Data.Foldable (traverse_)
 import Data.Tuple ( swap )
 import Data.Version ( showVersion )
 import Development.GitRev
@@ -20,6 +22,7 @@ data Behaviour
   = Normal
   | ShowVersion
   | ShowHelp
+  | CheckConfig
     deriving (Eq, Show)
 
 data PrintFormat =
@@ -74,6 +77,9 @@ optDescrs =
     ("Print keybinding or command output in the specified format " <>
      "(options: " <> formatChoicesStr <> ", default: " <>
      formatStringFor (optPrintFormat defaultOptions) <> ")")
+  , Option [] ["check-config"]
+    (NoArg (\ c -> c { optBehaviour = CheckConfig }))
+    "Validate configuration file"
   ]
 
 formatChoices :: [(String, PrintFormat)]
@@ -122,10 +128,28 @@ grabOptions = do
         Normal -> return rs
         ShowHelp -> usage >> exitSuccess
         ShowVersion -> putStrLn fullVersionString >> exitSuccess
-    (_, _, []) -> do
-      usage
-      exitFailure
+        CheckConfig -> checkConfiguration (optConfLocation rs)
     (_, _, errs) -> do
       mapM_ putStr errs
       usage
       exitFailure
+
+checkConfiguration :: Maybe FilePath -> IO a
+checkConfiguration mb =
+  do res <- findConfig mb
+     let printLocation Nothing = "No configuration file"
+         printLocation (Just fp) = "Location: " ++ fp
+     case res of
+       Left e ->
+         do putStrLn e
+            exitFailure
+       Right ([], config) ->
+         do putStrLn "Configuration file valid"
+            putStrLn (printLocation (configAbsPath config))
+            exitSuccess
+       Right (ws, config) ->
+         do putStrLn "Configuration file generated warnings"
+            putStrLn (printLocation (configAbsPath config))
+            traverse_ putStrLn ws
+            exitFailure
+
