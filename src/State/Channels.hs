@@ -705,7 +705,7 @@ gotoReturnChannel = do
   case ret of
     Nothing  -> return ()
     Just cId -> do
-        csReturnChannel .= Nothing
+        resetReturnChannel
         setFocus cId
 
 setReturnChannel :: MH ()
