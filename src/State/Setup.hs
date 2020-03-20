@@ -86,7 +86,7 @@ setupState mkVty mLogLocation config = do
           Vty.shutdown vty
           exitSuccess
 
-  (session, me, cd) <- case mLastAttempt of
+  (session, me, cd, mbTeam) <- case mLastAttempt of
       Nothing ->
           -- The user never attempted a connection and just chose to
           -- quit.
@@ -95,10 +95,10 @@ setupState mkVty mLogLocation config = do
           -- The user attempted a connection and failed, and then chose
           -- to quit.
           shutdown loginVty
-      Just (AttemptSucceeded _ cd sess user) ->
+      Just (AttemptSucceeded _ cd sess user mbTeam) ->
           -- The user attempted a connection and succeeded so continue
           -- with setup.
-          return (sess, user, cd)
+          return (sess, user, cd, mbTeam)
 
   teams <- mmGetUsersTeams UserMe session
   when (Seq.null teams) $ do
@@ -107,7 +107,7 @@ setupState mkVty mLogLocation config = do
 
   (myTeam, teamSelVty) <- do
       let foundTeam = do
-             tName <- configTeam config
+             tName <- mbTeam <|> configTeam config
              let matchingTeam = listToMaybe $ filter matches $ toList teams
                  matches t = (sanitizeUserText $ teamName t) == tName
              matchingTeam

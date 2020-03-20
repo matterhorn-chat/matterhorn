@@ -66,7 +66,7 @@ import           Brick.Widgets.Edit
 import           Control.Concurrent ( forkIO, threadDelay )
 import           Control.Exception ( SomeException, catch, try )
 import           Data.Char (isHexDigit)
-import           Data.List (inits)
+import           Data.List (tails, inits)
 import           System.IO.Error ( catchIOError )
 import qualified Data.Text as T
 import           Graphics.Vty hiding (mkVty)
@@ -100,7 +100,7 @@ data Name =
 data LoginAttempt =
     AttemptFailed AuthenticationException
     -- ^ The attempt failed with the corresponding error.
-    | AttemptSucceeded ConnectionInfo ConnectionData Session User
+    | AttemptSucceeded ConnectionInfo ConnectionData Session User (Maybe Text) --team
     -- ^ The attempt succeeded.
 
 -- | The state of the login interface: whether a login attempt is
@@ -188,11 +188,11 @@ loginWorker setLogger logMgr requestChan respChan = forever $ do
                               , password = connInfo^.ciPassword
                               }
 
-            mbCd <- findConnectionData connInfo
-            case mbCd of
+            cdResult <- findConnectionData connInfo
+            case cdResult of
               Left e ->
                 do writeBChan respChan $ LoginResult $ AttemptFailed $ OtherAuthError e
-              Right cd_ ->
+              Right (cd_, mbTeam) ->
                 do let cd = setLogger cd_
                    result <- convertLoginExceptions $ mmLogin cd login
                    case result of
@@ -204,25 +204,28 @@ loginWorker setLogger logMgr requestChan respChan = forever $ do
                            writeBChan respChan $ LoginResult $ AttemptFailed $ LoginError e
                        Right (Right (sess, user)) -> do
                            doLog $ "Authenticated successfully to " <> connInfo^.ciHostname <> " as " <> connInfo^.ciUsername
-                           writeBChan respChan $ LoginResult $ AttemptSucceeded connInfo cd sess user
+                           writeBChan respChan $ LoginResult $ AttemptSucceeded connInfo cd sess user mbTeam
 
 
-findConnectionData :: ConnectionInfo -> IO (Either SomeException ConnectionData)
+-- | Searches prefixes of the given URL to determine Mattermost API URL path and team name
+findConnectionData :: ConnectionInfo -> IO (Either SomeException (ConnectionData, Maybe Text))
 findConnectionData connInfo = startSearch
 
   where
     components = filter (not . T.null) (T.split ('/'==) (connInfo^.ciUrlPath))
 
     -- the candidates list is never empty because inits never returns an empty list
-    primary:alternatives = reverse (T.intercalate "/" <$> inits components)
+    primary:alternatives =
+        reverse
+        [ (T.intercalate "/" l, listToMaybe r) | (l,r) <- zip (inits components) (tails components) ]
 
-    tryCandidate :: Text -> IO (Either SomeException ConnectionData)
-    tryCandidate x =
-       do cd  <- initConnectionData (connInfo^.ciHostname) (fromIntegral (connInfo^.ciPort)) x (connInfo^.ciType) poolCfg
+    tryCandidate :: (Text, Maybe Text) -> IO (Either SomeException (ConnectionData, Maybe Text))
+    tryCandidate (path, team) =
+       do cd  <- initConnectionData (connInfo^.ciHostname) (fromIntegral (connInfo^.ciPort)) path (connInfo^.ciType) poolCfg
           res <- try (mmGetLimitedClientConfiguration cd)
           pure $! case res of
                     Left e  -> Left e
-                    Right{} -> Right cd
+                    Right{} -> Right (cd, team)
 
     -- This code prefers to report the error from the URL corresponding to what the user
     -- actually provided. Errors from derived URLs are lost in favor of this first error.
@@ -519,7 +522,7 @@ currentStateDisplay st =
                    txt "Connecting to " <+> withDefAttr clientEmphAttr (txt host) <+> txt "..."
     in case st^.currentState of
           Idle -> case st^.lastAttempt of
-              Just (AttemptSucceeded ci _ _ _) -> msg (ci^.ciHostname)
+              Just (AttemptSucceeded ci _ _ _ _) -> msg (ci^.ciHostname)
               _ -> emptyWidget
           (Connecting _ host) -> msg host
 
