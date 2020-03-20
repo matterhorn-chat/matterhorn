@@ -16,7 +16,7 @@ import           Prelude.MH
 
 import           Control.Monad.Trans.Except
 import           Control.Monad.Trans.Class ( lift )
-import           Data.Ini.Config
+import           Config.Schema
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
@@ -106,8 +106,8 @@ fromIni = do
       (configActivityBell defaultConfig)
     configHyperlinkingMode <- fieldFlagDef "hyperlinkURLs"
       (configHyperlinkingMode defaultConfig)
-    configPass <- (Just . PasswordCommand <$> field "passcmd") <|>
-                  (Just . PasswordString  <$> field "pass") <|>
+    configPass <- (Just . PasswordCommand <$> field "passcmd") <!>
+                  (Just . PasswordString  <$> field "pass") <!>
                   pure Nothing
     configUnsafeUseHTTP <-
       fieldFlagDef "unsafeUseUnauthenticatedConnection" False
@@ -154,13 +154,13 @@ cpuUsagePolicy t =
         "multiple" -> return MultipleCPUs
         _ -> Left $ "Invalid CPU usage policy value: " <> show t
 
-stringField :: Text -> Either String Text
+stringField :: Text -> Either e Text
 stringField t =
     case isQuoted t of
         True -> Right $ parseQuotedString t
         False -> Right t
 
-filePathField :: Text -> Either String FilePath
+filePathField :: Text -> Either e FilePath
 filePathField t = let path = T.unpack t in Right path
 
 parseQuotedString :: Text -> Text
@@ -277,8 +277,8 @@ getConfig fp = do
 
     case parseIniFile t' fromIni of
         Left err -> do
-            throwE $ "Unable to parse " ++ absPath ++ ":" ++ err
-        Right conf -> do
+            throwE $ "Unable to parse " ++ absPath ++ ":" ++ fatalString err
+        Right (warn, conf) -> do
             actualPass <- case configPass conf of
                 Just (PasswordCommand cmdString) -> do
                     let (cmd:rest) = T.unpack <$> T.words cmdString
