@@ -16,6 +16,7 @@ import Paths_matterhorn ( version )
 import System.Console.GetOpt
 import System.Environment ( getArgs )
 import System.Exit ( exitFailure, exitSuccess )
+import System.IO ( hPutStrLn, stderr )
 
 
 data Behaviour
@@ -137,19 +138,19 @@ grabOptions = do
 checkConfiguration :: Maybe FilePath -> IO a
 checkConfiguration mb =
   do res <- findConfig mb
-     let printLocation Nothing = "No configuration file"
+     let writeLn = hPutStrLn stderr
+         printLocation Nothing = "No configuration file"
          printLocation (Just fp) = "Location: " ++ fp
      case res of
        Left e ->
-         do putStrLn e
+         do writeLn e
             exitFailure
        Right ([], config) ->
-         do putStrLn "Configuration file valid"
-            putStrLn (printLocation (configAbsPath config))
+         do writeLn "Configuration file valid"
+            writeLn (printLocation (configAbsPath config))
             exitSuccess
        Right (ws, config) ->
-         do putStrLn "Configuration file generated warnings"
-            putStrLn (printLocation (configAbsPath config))
-            traverse_ putStrLn ws
+         do writeLn "Configuration file generated warnings"
+            writeLn (printLocation (configAbsPath config))
+            traverse_ writeLn ws
             exitFailure
-
