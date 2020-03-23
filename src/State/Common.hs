@@ -123,6 +123,7 @@ addClientMessage msg = do
           (addMessage $ clientMessageToMessage msg & mMessageId .~ Just (MessageUUID uuid))
   csChannels %= modifyChannelById cid addCMsg
   mh $ invalidateCacheEntry $ ChannelMessages cid
+  mh $ invalidateCacheEntry ChannelSidebar
 
   let msgTy = case msg^.cmType of
         Error -> LogError
