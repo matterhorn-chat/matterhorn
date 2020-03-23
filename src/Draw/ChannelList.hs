@@ -57,9 +57,9 @@ renderChannelList st =
         teamHeader = hCenter $
                      withDefAttr clientEmphAttr $
                      txt $ "Team: " <> teamNameStr
-        myUsername = MM.userUsername $ myUser st
+        myUsername_ = myUsername st
         selfHeader = hCenter $
-                     colorUsername myUsername (userSigil <> myUsername)
+                     colorUsername myUsername_ myUsername_ (userSigil <> myUsername_)
         teamNameStr = sanitizeUserText $ MM.teamDisplayName $ st^.csMyTeam
         body = case appMode st of
             ChannelSelect ->
@@ -77,7 +77,7 @@ renderChannelList st =
                 vBox $
                 teamHeader :
                 selfHeader :
-                (renderChannelListGroup st (\s e -> renderChannelListEntry $ mkChannelEntryData s e) <$>
+                (renderChannelListGroup st (\s e -> renderChannelListEntry myUsername_ $ mkChannelEntryData s e) <$>
                     Z.toList (st^.csFocus))
 
 renderChannelListGroupHeading :: ChannelListGroup -> Bool -> Widget Name
@@ -142,8 +142,8 @@ mkChannelEntryData st e =
 
 -- | Render an individual Channel List entry (in Normal mode) with
 -- appropriate visual decorations.
-renderChannelListEntry :: ChannelListEntryData -> (Bool, Widget Name)
-renderChannelListEntry entry = (entryHasUnread entry, body)
+renderChannelListEntry :: Text -> ChannelListEntryData -> (Bool, Widget Name)
+renderChannelListEntry myUName entry = (entryHasUnread entry, body)
     where
     body = decorate $ decorateEntry entry $ decorateMentions $ padRight Max $
            entryWidget $ entrySigil entry <> entryLabel entry
@@ -156,7 +156,7 @@ renderChannelListEntry entry = (entryHasUnread entry, body)
                   | otherwise -> id
     entryWidget = case entryUserStatus entry of
                     Just Offline -> withDefAttr clientMessageAttr . txt
-                    Just _       -> colorUsername (entryLabel entry)
+                    Just _       -> colorUsername myUName (entryLabel entry)
                     Nothing      -> txt
     decorateMentions
       | entryMentions entry > 9 =

@@ -25,7 +25,7 @@ drawUserListOverlay :: ChatState -> [Widget Name]
 drawUserListOverlay st =
     let overlay = drawListOverlay (st^.csUserListOverlay) userSearchScopeHeader
                                   userSearchScopeNoResults userSearchScopePrompt
-                                  renderUser
+                                  (renderUser (myUsername st))
     in joinBorders overlay : drawMain False st
 
 userSearchScopePrompt :: UserSearchScope -> Widget Name
@@ -51,13 +51,13 @@ userSearchScopeHeader scope =
         AllUsers Nothing     -> "Users On This Server"
         AllUsers (Just _)    -> "Users In My Team"
 
-renderUser :: Bool -> UserInfo -> Widget Name
-renderUser foc ui =
+renderUser :: Text -> Bool -> UserInfo -> Widget Name
+renderUser myUName foc ui =
     (if foc then forceAttr L.listSelectedFocusedAttr else id) $
     vLimit 2 $
     padRight Max $
-    hBox $ (padRight (Pad 1) $ colorUsername (ui^.uiName) (T.singleton $ userSigilFromInfo ui))
-           : (hLimit usernameWidth $ padRight Max $ colorUsername (ui^.uiName) (ui^.uiName))
+    hBox $ (padRight (Pad 1) $ colorUsername myUName (ui^.uiName) (T.singleton $ userSigilFromInfo ui))
+           : (hLimit usernameWidth $ padRight Max $ colorUsername myUName (ui^.uiName) (ui^.uiName))
            : extras
     where
         sanitize = T.strip . T.replace "\t" " "

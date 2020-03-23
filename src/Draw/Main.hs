@@ -255,6 +255,7 @@ renderUserCommandBox st hs =
                           , mdThreadState       = NoThread
                           , mdShowReactions     = True
                           , mdMessageWidthLimit = Nothing
+                          , mdMyUsername        = myUsername st
                           }
                         ]
             _ -> emptyWidget
@@ -314,7 +315,7 @@ renderChannelHeader st hs chan =
         newlineToSpace c = c
         channelNamePair = mkChannelName (chan^.ccInfo) <> " - " <> (chan^.ccInfo.cdDisplayName)
 
-    in renderText'
+    in renderText' (myUsername st)
          hs
          (T.map newlineToSpace (channelNameString <> maybeTopic))
 
@@ -563,6 +564,7 @@ inputPreview st hs | not $ st^.csShowMessagePreview = emptyWidget
                                   , mdThreadState       = NoThread
                                   , mdShowReactions     = True
                                   , mdMessageWidthLimit = Nothing
+                                  , mdMyUsername        = myUsername st
                                   }
                  in (maybePreviewViewport msgPreview) <=>
                     hBorderWithLabel (withDefAttr clientEmphAttr $ str "[Preview ↑]")
