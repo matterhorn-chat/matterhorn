@@ -136,11 +136,11 @@ executable matterhorn
   ghc-options:         -Wall -threaded -with-rtsopts=-I0 -Wcompat
   build-depends:       base                 >=4.8      && <5
                      , mattermost-api       == 50200.4.0
-                     , base-compat          >= 0.9     && < 0.11
+                     , base-compat          >= 0.9     && < 0.12
                      , unordered-containers >= 0.2     && < 0.3
                      , containers           >= 0.5.7   && < 0.7
                      , data-clist           >= 0.1.2   && < 0.2
-                     , semigroups           >= 0.18    && < 0.19
+                     , semigroups           >= 0.18    && < 0.20
                      , connection           >= 0.2     && < 0.4
                      , text                 >= 1.2     && < 1.3
                      , bytestring           >= 0.10    && < 0.11
@@ -198,7 +198,7 @@ test-suite test_messages
   ghc-options:        -Wall -fno-warn-orphans -Wcompat
   hs-source-dirs:     src, test
   build-depends:      base                 >=4.7      && <5
-                    , base-compat          >= 0.9     && < 0.11
+                    , base-compat          >= 0.9     && < 0.12
                     , brick                >= 0.52    && < 0.53
                     , bytestring           >= 0.10    && < 0.11
                     , cheapskate           >= 0.1     && < 0.2
@@ -233,5 +233,5 @@ test-suite test_messages
                     , vector               <  0.13
                     , vty                  >= 5.28    && < 5.29
                     , xdg-basedir          >= 0.2     && < 0.3
-                    , semigroups           >= 0.18    && < 0.19
+                    , semigroups           >= 0.18    && < 0.20
                     , uuid                 >= 1.3     && < 1.4
