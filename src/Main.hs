@@ -21,7 +21,7 @@ main = do
 
     configResult <- if optIgnoreConfig opts
                     then return $ Right defaultConfig
-                    else findConfig (optConfLocation opts)
+                    else fmap snd <$> findConfig (optConfLocation opts)
 
     config <- case configResult of
         Left err -> do
