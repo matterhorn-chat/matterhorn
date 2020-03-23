@@ -442,7 +442,7 @@ mkKeybindingHelp (sectionName, kbs) =
 mkKeybindHelp :: Keybinding -> Widget Name
 mkKeybindHelp (KB desc ev _ _) =
     (withDefAttr helpEmphAttr $ txt $ padTo kbColumnWidth $ ppBinding $ eventToBinding ev) <+>
-    (vLimit 1 $ hLimit kbDescColumnWidth $ renderText desc <+> fill ' ')
+    (hLimit kbDescColumnWidth $ padRight Max $ renderText desc)
 
 mkKeybindEventSectionHelp :: ((Text, Text, [Text]) -> a)
                           -> ([a] -> a)
