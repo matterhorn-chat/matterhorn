@@ -112,7 +112,7 @@ reactionsText st m = viewport ViewMessageReactionsArea Vertical body
         hs = getHighlightSet st
 
         usernameText uids =
-            renderText' hs $
+            renderText' (myUsername st) hs $
             T.intercalate ", " $
             fmap (userSigil <>) $
             catMaybes (lookupUsername <$> F.toList uids)
@@ -144,6 +144,7 @@ viewMessageBox st msg =
                                  , mdThreadState       = NoThread
                                  , mdShowReactions     = False
                                  , mdMessageWidthLimit = Just vpWidth
+                                 , mdMyUsername        = myUsername st
                                  }
             in renderMessage md
 

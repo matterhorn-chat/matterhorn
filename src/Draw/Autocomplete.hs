@@ -48,6 +48,7 @@ renderAutocompleteBox st ac =
         footer = case renderAutocompleteFooterFor curChan =<< selElem of
             Just w -> hBorderWithLabel w
             _ -> hBorder
+        curUser = myUsername st
 
     in if numResults == 0
        then emptyWidget
@@ -60,7 +61,7 @@ renderAutocompleteBox st ac =
            render $ translateBy (Location (0, rowOffset)) $
                     vBox [ hBorderWithLabel label
                          , vLimit visibleHeight $
-                           renderList renderAutocompleteAlternative True matchList
+                           renderList (renderAutocompleteAlternative curUser) True matchList
                          , footer
                          ]
 
@@ -83,18 +84,18 @@ renderAutocompleteFooterFor _ (ChannelCompletion False ch) =
                 ]
 renderAutocompleteFooterFor _ _ = Nothing
 
-renderAutocompleteAlternative :: Bool -> AutocompleteAlternative -> Widget Name
-renderAutocompleteAlternative sel (EmojiCompletion e) =
+renderAutocompleteAlternative :: Text -> Bool -> AutocompleteAlternative -> Widget Name
+renderAutocompleteAlternative _ sel (EmojiCompletion e) =
     padRight Max $ renderEmojiCompletion sel e
-renderAutocompleteAlternative sel (SpecialMention m) =
+renderAutocompleteAlternative _ sel (SpecialMention m) =
     padRight Max $ renderSpecialMention m sel
-renderAutocompleteAlternative sel (UserCompletion u inChan) =
-    padRight Max $ renderUserCompletion u inChan sel
-renderAutocompleteAlternative sel (ChannelCompletion inChan c) =
+renderAutocompleteAlternative curUser sel (UserCompletion u inChan) =
+    padRight Max $ renderUserCompletion curUser u inChan sel
+renderAutocompleteAlternative _ sel (ChannelCompletion inChan c) =
     padRight Max $ renderChannelCompletion c inChan sel
-renderAutocompleteAlternative _ (SyntaxCompletion t) =
+renderAutocompleteAlternative _ _ (SyntaxCompletion t) =
     padRight Max $ txt t
-renderAutocompleteAlternative _ (CommandCompletion n args desc) =
+renderAutocompleteAlternative _ _ (CommandCompletion n args desc) =
     padRight Max $ renderCommandCompletion n args desc
 
 renderSpecialMention :: SpecialMention -> Bool -> Widget Name
@@ -125,8 +126,8 @@ renderEmojiCompletion sel e =
        txt $
        autocompleteAlternativeReplacement $ EmojiCompletion e
 
-renderUserCompletion :: User -> Bool -> Bool -> Widget Name
-renderUserCompletion u inChan selected =
+renderUserCompletion :: Text -> User -> Bool -> Bool -> Widget Name
+renderUserCompletion curUser u inChan selected =
     let usernameWidth = 18
         fullNameWidth = 25
         padTo n a = hLimit n $ vLimit 1 (a <+> fill ' ')
@@ -143,7 +144,7 @@ renderUserCompletion u inChan selected =
                              txt $ userNotInChannelMarker <> " "
     in maybeForce $
        hBox [ memberDisplay
-            , padTo usernameWidth $ colorUsername username ("@" <> username)
+            , padTo usernameWidth $ colorUsername curUser username ("@" <> username)
             , padTo fullNameWidth $ txt fullName
             , txt nickname
             ]

@@ -8,6 +8,7 @@ module Themes
   , themeDocs
 
   -- * Attribute names
+  , currentUserAttr
   , timeAttr
   , channelHeaderAttr
   , channelListHeaderAttr
@@ -126,6 +127,9 @@ completionAlternativeCurrentAttr = "tabCompletionCursor"
 timeAttr :: AttrName
 timeAttr = "time"
 
+currentUserAttr :: AttrName
+currentUserAttr = "currentUser"
+
 channelHeaderAttr :: AttrName
 channelHeaderAttr = "channelHeader"
 
@@ -236,6 +240,7 @@ lightAttrs :: [(AttrName, Attr)]
 lightAttrs =
     let sty = Sky.kate
     in [ (timeAttr,                         fg black)
+       , (currentUserAttr,                  defAttr `withStyle` bold)
        , (channelHeaderAttr,                fg black `withStyle` underline)
        , (channelListHeaderAttr,            fg cyan)
        , (currentChannelNameAttr,           black `on` yellow `withStyle` bold)
@@ -290,6 +295,7 @@ darkAttrs :: [(AttrName, Attr)]
 darkAttrs =
   let sty = Sky.espresso
   in [ (timeAttr,                         fg white)
+     , (currentUserAttr,                  defAttr `withStyle` bold)
      , (channelHeaderAttr,                fg white `withStyle` underline)
      , (channelListHeaderAttr,            fg cyan)
      , (currentChannelNameAttr,           black `on` yellow `withStyle` bold)
@@ -353,14 +359,46 @@ darkColorTheme = InternalTheme name theme
 usernameAttr :: Int -> AttrName
 usernameAttr i = "username" <> (attrName $ show i)
 
-colorUsername :: Text -> Text -> Widget a
-colorUsername username display =
+-- | Render a string with a color chosen based on the text of a
+-- username.
+--
+-- This function takes some display text and renders it using an
+-- attribute based on the username associated with the text. If the
+-- username associated with the text is equal to the username of
+-- the user running Matterhorn, the display text is formatted with
+-- 'currentAttr'. Otherwise it is formatted with an attribute chosen
+-- by hashing the associated username and choosing from amongst the
+-- username color hash buckets with 'usernameAttr'.
+--
+-- Usually the first argument to this function will be @myUsername st@,
+-- where @st@ is a 'ChatState'.
+--
+-- The most common way to call this function is
+--
+-- @colorUsername (myUsername st) u u
+--
+-- The third argument is allowed to vary from the second since sometimes
+-- we call this with the user's status sigil as the third argument.
+colorUsername :: Text
+              -- ^ The username for the user currently running
+              -- Matterhorn
+              -> Text
+              -- ^ The username associated with the text to render
+              -> Text
+              -- ^ The text to render
+              -> Widget a
+colorUsername current username display =
     let normalizedUsername = T.toLower username
         aName = if normalizedUsername `elem` specialUserMentions
                 then clientEmphAttr
                 else usernameAttr h
         h = hash normalizedUsername `mod` length usernameColors
-    in withDefAttr aName $ txt (display)
+        maybeWithCurrentAttr = if current == username
+                               then withAttr currentUserAttr
+                               else id
+    in withDefAttr aName $
+       maybeWithCurrentAttr $
+       txt (display)
 
 usernameColors :: [Attr]
 usernameColors =
@@ -633,6 +671,9 @@ themeDocs = ThemeDocumentation $ M.fromList $
       )
     , ( FB.fileBrowserUnixSocketAttr
       , "Attribute for Unix sockets in the file browser"
+      )
+    , ( currentUserAttr
+      , "Attribute for the username of the user running Matterhorn"
       )
     ] <> [ (usernameAttr i, T.pack $ "Username color " <> show i)
          | i <- [0..(length usernameColors)-1]

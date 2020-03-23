@@ -13,7 +13,7 @@ import           Control.Monad.Trans.Reader ( withReaderT )
 import qualified Data.Foldable as F
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( (.~), to )
-import           Network.Mattermost.Types ( ServerTime(..) )
+import           Network.Mattermost.Types ( ServerTime(..), userUsername )
 import           Prelude ()
 import           Prelude.MH
 
@@ -74,6 +74,7 @@ renderChatMessage st hs ind threadState renderTimeFunc msg =
               , mdThreadState       = threadState
               , mdShowReactions     = True
               , mdMessageWidthLimit = Nothing
+              , mdMyUsername        = userUsername $ myUser st
               }
         fullMsg =
           case msg^.mUser of

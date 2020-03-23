@@ -227,6 +227,7 @@ module Types
   , isMine
   , setUserStatus
   , myUser
+  , myUsername
   , myUserId
   , myTeamId
   , usernameForUserId
@@ -1886,6 +1887,9 @@ myTeamId st = st ^. csMyTeam . teamIdL
 
 myUser :: ChatState -> User
 myUser st = st^.csMe
+
+myUsername :: ChatState -> Text
+myUsername st = userUsername $ st^.csMe
 
 -- BEWARE: you probably don't want this, but instead
 -- State.Users.withFetchedUser, since this only looks up users in the
