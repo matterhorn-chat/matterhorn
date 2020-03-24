@@ -82,7 +82,6 @@ import           Markdown
 import           Themes ( clientEmphAttr )
 import           Types ( ConnectionInfo(..)
                        , ConnectionInfoUsernamePassword(..)
-                       , ConnectionInfoToken(..)
                        , cipPassword, cipUsername, cipHostname, cipPort
                        , citToken, citHostname, citPort, getHostname, getPort, AuthenticationException(..)
                        , LogManager, LogCategory(..), ioLogWithManager
