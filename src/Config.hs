@@ -5,7 +5,6 @@ module Config
   ( Config(..)
   , PasswordSource(..)
   , findConfig
-  , getCredentials
   , defaultConfig
   , configConnectionType
   )
@@ -298,25 +297,6 @@ getConfig fp = do
                   , configAbsPath = Just absPath
                   }
             return (map warningString warns, conf')
-
--- | Returns the hostname, username, and password from the config. Only
--- returns Just if all three have been provided. The idea is that if
--- this returns Nothing, we're missing at least some of these values.
-getCredentials :: Config -> Maybe ConnectionInfo
-getCredentials config = do
-    pass <- configPass config
-    passStr <- case pass of
-        PasswordString p -> return p
-        PasswordCommand _ ->
-            error $ "BUG: unexpected credentials state: " <>
-                    show (configPass config)
-
-    ConnectionInfo <$> configHost config
-                   <*> pure (configPort config)
-                   <*> configUrlPath config
-                   <*> configUser config
-                   <*> pure passStr
-                   <*> pure (configConnectionType config)
 
 configConnectionType :: Config -> ConnectionType
 configConnectionType config
