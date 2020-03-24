@@ -293,6 +293,9 @@ for it, or create a new issue and let us know!
 If you decide to contribute, that's great! Here are some guidelines you
 should consider to make submitting patches easier for all concerned:
 
+ - Please base all patches against the `develop` branch unless you are
+   specifically fixing a bug in a released version, in which case
+   `master` is a fine place to start.
  - If you want to take on big things, let's have a design/vision
    discussion before you start coding. Create a GitHub issue and we can
    use that as the place to hash things out. We'll be interested to
