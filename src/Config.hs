@@ -293,7 +293,7 @@ getConfig fp = do
                     output <- convertIOException (readProcess cmd rest "") `catchE`
                               (\e -> throwE $ "Could not execute token command: " <> e)
                     return $ Just $ T.pack (takeWhile (/= '\n') output)
-                Just (TokenString pass) -> error $ "getConfig: Token was provided as plain text. This is a bug!"
+                Just (TokenString _) -> error $ "getConfig: Token was provided as plain text. This is a bug!"
                 Nothing -> return Nothing
 
             return conf { configPass = PasswordString <$> actualPass
