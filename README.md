@@ -355,3 +355,18 @@ the lack of consistent support for wide Unicode characters in various
 terminal emulators. Results may vary, and use of emoji characters may
 cause terminal rendering issues depending on the terminal emulator in
 use.
+
+## I'm running Matterhorn in Tmux. How can I paste tmux buffers into Matterhorn's editor?
+
+By default, `tmux`'s `paste-buffer` binding, `prefix-]`, pastes buffer
+text by replaying it as terminal input. This will cause unwanted
+behavior when Matterhorn receives that text and sends out each input
+line as a separate message. But `tmux` supports bracketed paste mode
+to make a `tmux` paste a block of text as *one* Matterhorn message.
+It can be enabled by changing the behavior of `prefix-]` in the Tmux
+configuration:
+
+```
+unbind-key -T prefix ]
+bind-key -T prefix ] paste-buffer -p
+```
