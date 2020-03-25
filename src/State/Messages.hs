@@ -517,7 +517,7 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
                     mh $ invalidateCacheEntry (ChannelMessages cId)
                     csChannels %= modifyChannelById cId
                       ((ccContents.cdMessages %~ addMessage msg') .
-                       (adjustUpdated new) .
+                       (if not ignoredJoinLeaveMessage then adjustUpdated new else id) .
                        (\c -> if currCId == cId
                               then c
                               else case newPostData of
