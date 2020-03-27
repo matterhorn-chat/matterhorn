@@ -47,6 +47,7 @@ module Types
   , Config(..)
   , HelpScreen(..)
   , PasswordSource(..)
+  , TokenSource(..)
   , MatchType(..)
   , Mode(..)
   , ChannelSelectPattern(..)
@@ -330,6 +331,12 @@ data PasswordSource =
     | PasswordCommand Text
     deriving (Eq, Read, Show)
 
+-- | An access token source.
+data TokenSource =
+    TokenString Text
+    | TokenCommand Text
+    deriving (Eq, Read, Show)
+
 -- | The type of channel list group headings.
 data ChannelListGroup =
     ChannelGroupPublicChannels
@@ -363,6 +370,8 @@ data Config =
            -- ^ The server path to use when connecting.
            , configPass :: Maybe PasswordSource
            -- ^ The password source to use when connecting.
+           , configToken :: Maybe TokenSource
+           -- ^ The token source to use when connecting.
            , configTimeFormat :: Maybe Text
            -- ^ The format string for timestamps.
            , configDateFormat :: Maybe Text

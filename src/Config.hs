@@ -108,6 +108,8 @@ fromIni = do
     configPass <- (Just . PasswordCommand <$> field "passcmd") <!>
                   (Just . PasswordString  <$> field "pass") <!>
                   pure Nothing
+    configToken <- (Just . TokenCommand  <$> field "tokencmd") <!>
+                  pure Nothing
     configUnsafeUseHTTP <-
       fieldFlagDef "unsafeUseUnauthenticatedConnection" False
     configValidateServerCertificate <-
@@ -185,6 +187,7 @@ defaultConfig =
            , configPort                        = defaultPort
            , configUrlPath                     = Nothing
            , configPass                        = Nothing
+           , configToken                       = Nothing
            , configTimeFormat                  = Nothing
            , configDateFormat                  = Nothing
            , configTheme                       = Nothing
@@ -292,8 +295,18 @@ getConfig fp = do
                 Just (PasswordString pass) -> return $ Just pass
                 Nothing -> return Nothing
 
+            actualToken <- case configToken conf of
+                Just (TokenCommand cmdString) -> do
+                    let (cmd:rest) = T.unpack <$> T.words cmdString
+                    output <- convertIOException (readProcess cmd rest "") `catchE`
+                              (\e -> throwE $ "Could not execute token command: " <> e)
+                    return $ Just $ T.pack (takeWhile (/= '\n') output)
+                Just (TokenString _) -> error $ "BUG: getConfig: token in the Config was already a TokenString"
+                Nothing -> return Nothing
+
             let conf' = conf
                   { configPass = PasswordString <$> actualPass
+                  , configToken = TokenString <$> actualToken
                   , configAbsPath = Just absPath
                   }
             return (map warningString warns, conf')
