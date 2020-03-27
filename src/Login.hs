@@ -198,8 +198,12 @@ loginWorker setLogger logMgr requestChan respChan = forever $ do
                       False -> do
                           let sess = Session cd $ Token $ T.unpack token
 
-                          user <- mmGetUser UserMe sess
-                          writeBChan respChan $ LoginResult $ AttemptSucceeded connInfo cd sess user mbTeam
+                          userResult <- try $ mmGetUser UserMe sess
+                          writeBChan respChan $ case userResult of
+                              Left (e::SomeException) ->
+                                  LoginResult $ AttemptFailed $ OtherAuthError e
+                              Right user ->
+                                  LoginResult $ AttemptSucceeded connInfo cd sess user mbTeam
                       True -> do
                           let login = Login { username = connInfo^.ciUsername
                                             , password = connInfo^.ciPassword
