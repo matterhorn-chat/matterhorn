@@ -404,7 +404,7 @@ mkForm =
                , (above "Provide a username and password:" .
                   label "Username:")     @@= editTextField ciUsername Username (Just 1)
                , label "Password:"       @@= editPasswordField ciPassword Password
-               , (above "Or provide an Access Token:" .
+               , (above "Or provide an OAuth or Personal Access Token:" .
                   label "Access Token:") @@= editPasswordField ciAccessToken AccessToken
                ]
 
