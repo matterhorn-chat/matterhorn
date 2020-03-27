@@ -36,14 +36,62 @@ To run Matterhorn, unpack the binary release archive and run the
     $ matterhorn
 
 When you run Matterhorn you'll be prompted for your server URL and
-credentials. To connect, just paste your web client's Mattermost
-URL into the Server URL box and enter your credentials. At present
-`matterhorn` supports only username/password authentication.
+credentials. To connect, just paste your web client's Mattermost URL
+into the Server URL box and enter your credentials. See the next section
+on the details for providing each kind of supported credentials.
 
 Note: Version `ABBCC.X.Y` matches Mattermost server version `A.BB.CC`.
 For example, if your Mattermost server version is `3.6.0` then you
 would download matterhorn version `30600.2.4`. See [Our Versioning
 Scheme](#our-versioning-scheme) for details.
+
+# Authentication
+
+`matterhorn` supports username/password authentication as well as
+authentication by Personal Access Token or OAuth token. The following
+subsections provide details on using each method.
+
+## Username / Password Authentication
+
+Matterhorn's start-up login user interface will allow you to provide
+a username and password for authentication. We recommend that you
+put the username in your Matterhorn configuration file and configure
+Matterhorn to obtain your password from your system keychain. See the
+`docs/sample-config.ini` file for documentation on the `user` and
+`passcmd` settings, respectively.
+
+## Personal Access Token Authentication
+
+Matterhorn's start-up login user interface will also allow you to
+provide an OAuth or Personal Access Token. If a token is provided, it
+will take precedence over a username and password.
+
+We recommend Personal Access Tokens because they don't expire except
+when revoked. To use a Personal Access Token:
+
+* Ask your Mattermost server administrator to enable Personal Access
+  Tokens on your Mattermost account.
+* Create a Personal Access Token.
+* Add the new token to your system keychain. (Details on how to do this
+  depend on your platform.)
+* Configure Matterhorn's `tokencmd` configuration option to query the
+  system keychain to get the token. See `docs/sample-config.ini` for
+  examples of how to do this with `passcmd` and `tokencmd`.
+
+The steps for configuring Matterhorn can be found in [the Mattermost
+documentation](https://docs.mattermost.com/developer/personal-access-tokens.html).
+
+## OAuth Token Authentication
+
+If your server supports only OAuth tokens (such as via GitLab
+authentication), follow these steps to authenticate with an OAuth token:
+
+* Authenticate to GitLab using the Mattermost web client.
+* Once your browser has returned to the Mattermost interace, obtain the
+  value of the `MMAUTHTOKEN` browser cookie.
+* Start Matterhorn and enter the value of the `MMAUTHTOKEN` token in the
+  login interface field labeled `Access token:` or add the token to the
+  system keychain as described above.
 
 # Configuring
 
@@ -172,6 +220,8 @@ files or remove existing attachments by pressing `C-x` again.
 * Markdown rendering
 * Convenient URL-opening with local browser
 * Secure password entry via external command (e.g. OSX keychain)
+* Secure authentication token entry via external command (e.g. OSX
+  keychain)
 * Yank verbatim content from messages into the system clipboard
 * Optional live preview during message editing
 * Optional smart quoting for efficient Markdown entry
@@ -315,9 +365,13 @@ should consider to make submitting patches easier for all concerned:
 
 ## Does matterhorn support Gitlab authentication?
 
-No. But we would be happy to work with contributors who are interested
-in investigating what this would take and/or implementing it. See the
-Contributing section for details.
+Matterhorn supports GitLab authentication indirectly. In order to use
+Matterhorn with GitLab authentication, see the Authentication section on
+Matterhorn details for use of OAuth tokens.
+
+## Does matterhorn support Mattermost Personal Access Tokens?
+
+Yes. See the Authentication section above.
 
 ## How can I get Matterhorn to render emphasized Markdown text with an italic font?
 
