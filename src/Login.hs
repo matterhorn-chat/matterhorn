@@ -75,10 +75,11 @@ import qualified System.IO.Error as Err
 import           Network.URI ( URI(..), URIAuth(..), parseURI )
 
 import           Network.Mattermost ( ConnectionData )
-import           Network.Mattermost.Types ( Session, User, Login(..), ConnectionPoolConfig(..)
-                                          , initConnectionData, ConnectionType(..) )
+import           Network.Mattermost.Types.Internal ( Token(..) )
+import           Network.Mattermost.Types ( Session(..), User, Login(..), ConnectionPoolConfig(..)
+                                          , initConnectionData, ConnectionType(..), UserParam(..) )
 import           Network.Mattermost.Exceptions ( LoginFailureException(..) )
-import           Network.Mattermost.Endpoints ( mmGetLimitedClientConfiguration, mmLogin )
+import           Network.Mattermost.Endpoints ( mmGetUser, mmGetLimitedClientConfiguration, mmLogin )
 
 import           Markdown
 import           Themes ( clientEmphAttr )
@@ -86,6 +87,7 @@ import           Types ( ConnectionInfo(..)
                        , ciPassword, ciUsername, ciHostname, ciUrlPath
                        , ciPort, ciType, AuthenticationException(..)
                        , LogManager, LogCategory(..), ioLogWithManager
+                       , ciAccessToken
                        )
 
 
@@ -94,6 +96,7 @@ data Name =
       Server
     | Username
     | Password
+    | AccessToken
     deriving (Ord, Eq, Show)
 
 -- | The result of an authentication attempt.
@@ -184,27 +187,36 @@ loginWorker setLogger logMgr requestChan respChan = forever $ do
 
             doLog $ "Attempting authentication to " <> connInfo^.ciHostname
 
-            let login = Login { username = connInfo^.ciUsername
-                              , password = connInfo^.ciPassword
-                              }
-
             cdResult <- findConnectionData connInfo
             case cdResult of
               Left e ->
                 do writeBChan respChan $ LoginResult $ AttemptFailed $ OtherAuthError e
-              Right (cd_, mbTeam) ->
-                do let cd = setLogger cd_
-                   result <- convertLoginExceptions $ mmLogin cd login
-                   case result of
-                       Left e -> do
-                           doLog $ "Error authenticating to " <> connInfo^.ciHostname <> ": " <> (T.pack $ show e)
-                           writeBChan respChan $ LoginResult $ AttemptFailed e
-                       Right (Left e) -> do
-                           doLog $ "Error authenticating to " <> connInfo^.ciHostname <> ": " <> (T.pack $ show e)
-                           writeBChan respChan $ LoginResult $ AttemptFailed $ LoginError e
-                       Right (Right (sess, user)) -> do
-                           doLog $ "Authenticated successfully to " <> connInfo^.ciHostname <> " as " <> connInfo^.ciUsername
-                           writeBChan respChan $ LoginResult $ AttemptSucceeded connInfo cd sess user mbTeam
+              Right (cd_, mbTeam) -> do
+                  let cd = setLogger cd_
+                      token = connInfo^.ciAccessToken
+                  case T.null token of
+                      False -> do
+                          let sess = Session cd $ Token $ T.unpack token
+
+                          user <- mmGetUser UserMe sess
+                          writeBChan respChan $ LoginResult $ AttemptSucceeded connInfo cd sess user mbTeam
+                      True -> do
+                          let login = Login { username = connInfo^.ciUsername
+                                            , password = connInfo^.ciPassword
+                                            }
+
+                          result <- convertLoginExceptions $ mmLogin cd login
+                          case result of
+                              Left e -> do
+                                  doLog $ "Error authenticating to " <> connInfo^.ciHostname <> ": " <> (T.pack $ show e)
+                                  writeBChan respChan $ LoginResult $ AttemptFailed e
+                              Right (Left e) -> do
+                                  doLog $ "Error authenticating to " <> connInfo^.ciHostname <> ": " <> (T.pack $ show e)
+                                  writeBChan respChan $ LoginResult $ AttemptFailed $ LoginError e
+                              Right (Right (sess, user)) -> do
+                                  doLog $ "Authenticated successfully to " <> connInfo^.ciHostname <> " as " <> connInfo^.ciUsername
+                                  writeBChan respChan $ LoginResult $ AttemptSucceeded connInfo cd sess user mbTeam
+
 
 
 -- | Searches prefixes of the given URL to determine Mattermost API URL path and team name
@@ -306,8 +318,11 @@ interactiveGetLoginSession vty mkVty setLogger logMgr initialConfig = do
 populatedConnectionInfo :: ConnectionInfo -> Bool
 populatedConnectionInfo ci =
     and [ not $ T.null $ ci^.ciHostname
-        , not $ T.null $ ci^.ciUsername
-        , not $ T.null $ ci^.ciPassword
+        , or [ and [ not $ T.null $ ci^.ciUsername
+                   , not $ T.null $ ci^.ciPassword
+                   ]
+             , not $ T.null $ ci^.ciAccessToken
+             ]
         , ci^.ciPort > 0
         ]
 

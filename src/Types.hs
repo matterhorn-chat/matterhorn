@@ -44,6 +44,7 @@ module Types
   , ciUsername
   , ciPassword
   , ciType
+  , ciAccessToken
   , Config(..)
   , HelpScreen(..)
   , PasswordSource(..)
@@ -661,12 +662,16 @@ data AuthenticationException =
 -- necessary to start a connection with a Mattermost server. This is
 -- built up during interactive authentication and then is used to log
 -- in.
+--
+-- If the access token field is non-empty, that value is used and the
+-- username and password values are ignored.
 data ConnectionInfo =
     ConnectionInfo { _ciHostname :: Text
                    , _ciPort     :: Int
                    , _ciUrlPath  :: Text
                    , _ciUsername :: Text
                    , _ciPassword :: Text
+                   , _ciAccessToken :: Text
                    , _ciType     :: ConnectionType
                    }
 
