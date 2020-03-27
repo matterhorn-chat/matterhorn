@@ -78,8 +78,8 @@ when revoked. To use a Personal Access Token:
   system keychain to get the token. See `docs/sample-config.ini` for
   examples of how to do this with `passcmd` and `tokencmd`.
 
-The steps for configuring Matterhorn can be found in [the Mattermost
-documentation](https://docs.mattermost.com/developer/personal-access-tokens.html).
+The steps for configuring Personal Access Tokens can be found in [the
+Mattermost documentation](https://docs.mattermost.com/developer/personal-access-tokens.html).
 
 ## OAuth Token Authentication
 
