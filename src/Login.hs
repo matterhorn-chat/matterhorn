@@ -398,10 +398,14 @@ onEvent st e = do
 mkForm :: ConnectionInfo -> Form ConnectionInfo e Name
 mkForm =
     let label s w = padBottom (Pad 1) $
-                    (vLimit 1 $ hLimit 18 $ str s <+> fill ' ') <+> w
-    in newForm [ label "Server URL:" @@= editServer
-               , label "Username:"   @@= editTextField ciUsername Username (Just 1)
-               , label "Password:"   @@= editPasswordField ciPassword Password
+                    (vLimit 1 $ hLimit 22 $ str s <+> fill ' ') <+> w
+        above s w = hCenter (str s) <=> w
+    in newForm [ label "Server URL:"     @@= editServer
+               , (above "Provide a username and password:" .
+                  label "Username:")     @@= editTextField ciUsername Username (Just 1)
+               , label "Password:"       @@= editPasswordField ciPassword Password
+               , (above "Or provide an Access Token:" .
+                  label "Access Token:") @@= editPasswordField ciAccessToken AccessToken
                ]
 
 serverLens :: Lens' ConnectionInfo (Text, Int, Text, ConnectionType)
