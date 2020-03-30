@@ -48,7 +48,7 @@ Scheme](#our-versioning-scheme) for details.
 # Authentication
 
 `matterhorn` supports username/password authentication as well as
-authentication by Personal Access Token or OAuth token. The following
+authentication by Personal Access Token or session token. The following
 subsections provide details on using each method.
 
 ## Username / Password Authentication
@@ -63,7 +63,7 @@ Matterhorn to obtain your password from your system keychain. See the
 ## Personal Access Token Authentication
 
 Matterhorn's start-up login user interface will also allow you to
-provide an OAuth or Personal Access Token. If a token is provided, it
+provide an session or Personal Access Token. If a token is provided, it
 will take precedence over a username and password.
 
 We recommend Personal Access Tokens because they don't expire except
@@ -374,7 +374,7 @@ should consider to make submitting patches easier for all concerned:
 
 Matterhorn supports GitLab authentication indirectly. In order to use
 Matterhorn with GitLab authentication, see the Authentication section on
-Matterhorn details for use of OAuth tokens.
+Matterhorn details for use of session tokens.
 
 ## Does matterhorn support Mattermost Personal Access Tokens?
 
