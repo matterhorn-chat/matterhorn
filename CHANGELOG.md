@@ -1,4 +1,59 @@
 
+50200.8.0
+=========
+
+New features:
+ * Support for Personal Access Tokens and OAuth tokens was added. To
+   take advantage of this feature, paste either type of token in the
+   new "Access Token" field of the login user interface or set up the
+   new `tokencmd` configuration file setting. See the "Authentication"
+   section of the README for help and see `docs/sample-config.ini` for
+   documentation on `tokencmd`.
+ * The attribute used to render the current user's username can now be
+   customized. By default the attribute still uses the same color as
+   before (chosen based on the username) but is bold. The new theme
+   attribute `currentUser` can be customized just like other attributes;
+   for details, see `/help themes`.
+ * The `focus-next-unread` (default: `M-a`) and
+   `focus-next-unread-user-or-channel` (default: no binding) events can
+   now be repeatedly triggered to cycle through channels with unread
+   activity and then return to the original channel where you started,
+   which is now marked with `~` in the channel sidebar.
+ * Matterhorn got a new `--check-config` argument that triggers a
+   configuration file validation check (thanks @glguy).
+ * The Matterhorn login user interface was greatly improved and
+   simplified. Now, instead of providing individual fields for server
+   hostname and port, the user interface provides a single "Server URL"
+   field that is capable of accepting server hostnames with or without
+   ports as well as full Mattermost web client browser URLs, complete
+   with team names and URL paths. This adds support for servers that run
+   at URL paths other than "/" and auto-detects teams in URLs to improve
+   the web client user's migration experience. As part of this change,
+   the configuration got a new setting, `urlPath`, that corresponds to
+   the URL path of the server URL in the login interface. Thanks, @glguy
+   and @immindich!
+
+Other improvements:
+ * The XML syntax highlighting descriptions were updated.
+ * Channels with unread join or leave messages now appear as unread in
+   the sidebar as intended.
+ * The format-specific command-line options for markdown and plain text
+   for generated command and keybinding tables were merged. The old
+   interface was:
+
+   * `-k`/`-K` to output configured keybindings in plain and markdown
+     formats, respectively
+   * `-m`/`-M` to output commands in plain and markdown formats,
+     respectively
+
+   And the new interface is:
+
+   * `-f` to set the output format (default: plain)
+   * `-k` to output configured keybindings in the active format
+   * `-m` to output commands in the active format
+ * The macOS example notification script was improved (thanks Geir
+   Skjotskift)
+
 50200.7.0
 =========
 
