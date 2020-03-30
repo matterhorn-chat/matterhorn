@@ -81,17 +81,24 @@ when revoked. To use a Personal Access Token:
 The steps for configuring Personal Access Tokens can be found in [the
 Mattermost documentation](https://docs.mattermost.com/developer/personal-access-tokens.html).
 
-## OAuth Token Authentication
+## Token Cookie Authentication
 
-If your server supports only OAuth tokens (such as via GitLab
-authentication), follow these steps to authenticate with an OAuth token:
+If your server does not support username and password authentication
+(e.g. if GitLab authentication is the only supported method), you can
+use your browser client's token cookie to authenticate:
 
-* Authenticate to GitLab using the Mattermost web client.
+* Authenticate to GitLab (or other identity provider) using the
+  Mattermost web client.
 * Once your browser has returned to the Mattermost interace, obtain the
   value of the `MMAUTHTOKEN` browser cookie.
 * Start Matterhorn and enter the value of the `MMAUTHTOKEN` token in the
   login interface field labeled `Access token:` or add the token to the
   system keychain as described above.
+
+Please note that unlike a Personal Access Token, the web client's token
+cookie will expire, so these steps will need to be repeated each time
+you log in with Matterhorn. As a result, we strongly recommend the use
+of a Personal Access Token instead if at all possible.
 
 # Configuring
 
