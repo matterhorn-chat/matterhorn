@@ -18,7 +18,7 @@
 | `/join <~channel>` | Join the specified channel |
 | `/leave` | Leave the current channel |
 | `/left` | Focus on the previous channel |
-| `/log-mark <log marking message>` | Add marker message to the current log |
+| `/log-mark <message>` | Add a custom marker message to the Matterhorn log |
 | `/log-snapshot <path>` | Dump the current log buffer to the specified path |
 | `/log-start <path>` | Begin logging to the specified path |
 | `/log-status` | Show current logging status |

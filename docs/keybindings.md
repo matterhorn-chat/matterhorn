@@ -25,7 +25,7 @@
 | `C-o` | `enter-url-open` | Select and open a URL posted to the current channel |
 | `M-s` | `focus-last-channel` | Change to the most recently-focused channel |
 | `C-n` | `focus-next-channel` | Change to the next channel in the channel list |
-| `M-a` | `focus-next-unread` | Change to the next channel with unread messages |
+| `M-a` | `focus-next-unread` | Change to the next channel with unread messages or return to the channel marked '~' |
 | `C-p` | `focus-prev-channel` | Change to the previous channel in the channel list |
 | `M-k` | `invoke-editor` | Invoke *$EDITOR* to edit the current message |
 | `PgUp` | `page-up` | Page up in the channel message list (enters message select mode) |
