@@ -8,7 +8,7 @@
         <!ENTITY noword   "(?![\w$+-])">		<!-- no word, $, + or - following -->
         <!ENTITY pathpart "([\w_@.&#37;*?+-]|\\ )">     <!-- valid character in a file name -->
 ]>
-<language name="Tcsh" version="5" kateversion="5.0" section="Scripts" extensions="*.csh;*.tcsh;csh.cshrc;csh.login;.tcshrc;.cshrc;.login" mimetype="application/x-csh" casesensitive="1" author="Matthew Woehlke (mw_triad@users.sourceforge.net)" license="LGPL">
+<language name="Tcsh" version="6" kateversion="5.0" section="Scripts" extensions="*.csh;*.tcsh;csh.cshrc;csh.login;.tcshrc;.cshrc;.login" mimetype="application/x-csh" casesensitive="1" author="Matthew Woehlke (mw_triad@users.sourceforge.net)" license="LGPL">
 
 <!-- (c) 2006 Matthew Woehlke (mw_triad@users.sourceforge.net)
     Based on the bash highlighter by Wilbert Berendsen (wilbert@kde.nl)
@@ -16,15 +16,9 @@
 
   <highlighting>
     <list name="keywords">
-      <item>else</item>
-      <item>for</item>
       <item>function</item>
       <item>in</item>
-      <item>select</item>
-      <item>until</item>
-      <item>while</item>
       <item>.</item>
-      <item>then</item>
     </list>
 
     <list name="builtins">
@@ -499,9 +493,6 @@
       <context attribute="Normal Text" lineEndContext="#stay" name="FindCommands">
         <!-- start expression in double parentheses -->
 <!--!--><Detect2Chars attribute="Keyword" context="ExprDblParen" char="(" char1="(" beginRegion="expression" />
-        <!-- start expression in double brackets -->
-<!--!--><RegExpr attribute="Keyword" context="ExprDblBracket" String="\[\[&eos;" beginRegion="expression" column="0"/>
-<!--!--><RegExpr attribute="Keyword" context="ExprDblBracket" String="\s\[\[&eos;" beginRegion="expression" />
         <!-- start expression in single brackets -->
 <!--!--><RegExpr attribute="Builtin" context="ExprBracket" String="\[&eos;" beginRegion="expression" column="0"/>
 <!--!--><RegExpr attribute="Builtin" context="ExprBracket" String="\s\[&eos;" beginRegion="expression" />
@@ -510,13 +501,14 @@
         <!-- start a subshell -->
 <!--!--><DetectChar attribute="Keyword" context="SubShell" char="(" beginRegion="subshell" />
         <!-- match do and if blocks -->
-<!--!--><RegExpr attribute="Keyword" context="#stay" String="\bdo&noword;" beginRegion="do" />
-<!--!--><RegExpr attribute="Keyword" context="#stay" String="\bdone&noword;" endRegion="do" />
-<!--!--><RegExpr attribute="Keyword" context="#stay" String="\belse\s+if&noword;" />
-<!--!--><RegExpr attribute="Keyword" context="#stay" String="\bif&noword;" beginRegion="if" />
-<!--!--><RegExpr attribute="Keyword" context="#stay" String="\bendif&noword;" endRegion="if" />
+<!--!--><RegExpr attribute="Control Flow" context="If" String="\bif&noword;" />
+<!--!--><RegExpr attribute="Control Flow" context="ElseIf" String="\belse\s+if&noword;" />
+<!--!--><RegExpr attribute="Control Flow" context="#stay" String="\belse&noword;" />
+<!--!--><RegExpr attribute="Control Flow" context="#stay" String="\bendif&noword;" endRegion="if" />
         <!-- handle switch as a special case -->
-<!--!--><RegExpr attribute="Keyword" context="Switch" String="\bswitch&noword;" beginRegion="switch" />
+<!--!--><RegExpr attribute="Control Flow" context="Switch" String="\bswitch&noword;" beginRegion="switch" />
+<!--!--><RegExpr attribute="Control Flow" context="#stay" String="\b(foreach|while)&noword;" beginRegion="loop" />
+<!--!--><RegExpr attribute="Control Flow" context="#stay" String="\bend&noword;" endRegion="loop" />
         <!-- handle command line options -->
         <RegExpr attribute="Option" context="#stay" String="-[A-Za-z0-9][A-Za-z0-9_]*" />
         <RegExpr attribute="Option" context="#stay" String="--[a-z][A-Za-z0-9_-]*" />
@@ -581,9 +573,7 @@
         <RegExpr attribute="Expression" context="#stay" String="-[rwxXeozsfdlbcpSugktRLDIFNZ](?=\s)"/>
         <RegExpr attribute="Expression" context="#stay" String="-[AMCUG]:?(?=\s)"/>
         <RegExpr attribute="Expression" context="#stay" String="-P[0-7]{,3}:?(?=\s)"/>
-        <RegExpr attribute="Expression" context="#stay" String="([|&amp;=&gt;&lt;])\1"/>
-        <RegExpr attribute="Expression" context="#stay" String="[|^&amp;&gt;&lt;+\-*/%!~]"/>
-        <RegExpr attribute="Expression" context="#stay" String="([!=]~|[!&gt;&lt;]=)"/>
+        <RegExpr attribute="Expression" context="#stay" String="[=!][~=]|[*>&lt;!~]"/>
       </context>
 
 
@@ -614,15 +604,6 @@
       <context attribute="Normal Text" lineEndContext="#stay" name="ExprBracket">
         <RegExpr attribute="Builtin" context="#pop" String="\s\](?=($|[\s;|&amp;]))" endRegion="expression" />
         <RegExpr attribute="Builtin" context="#pop" String="\](?=($|[\s;|&amp;]))" endRegion="expression" column="0"/>
-        <DetectChar attribute="Normal Text" context="ExprSubParen" char="(" />
-        <IncludeRules context="FindTests" />
-        <IncludeRules context="FindMost" />
-      </context>
-
-      <!-- ExprDblBracket consumes an expression till ]] -->
-      <context attribute="Normal Text" lineEndContext="#stay" name="ExprDblBracket">
-        <RegExpr attribute="Keyword" context="#pop" String="\s\]\](?=($|[\s;|&amp;]))" endRegion="expression" />
-        <RegExpr attribute="Keyword" context="#pop" String="\]\](?=($|[\s;|&amp;]))" endRegion="expression" column="0"/>
         <DetectChar attribute="Normal Text" context="ExprSubParen" char="(" />
         <IncludeRules context="FindTests" />
         <IncludeRules context="FindMost" />
@@ -760,6 +741,31 @@
         <IncludeRules context="FindMost" />
       </context>
 
+      <context attribute="Normal Text" lineEndContext="#pop" name="If" fallthrough="true" fallthroughContext="#pop">
+        <DetectSpaces/>
+        <DetectChar attribute="Keyword" context="ArithmeticCondition" char="(" beginRegion="cond" />
+        <DetectChar attribute="Variable" context="Subscript" char="[" />
+        <StringDetect attribute="Control Flow" context="#pop" String="then" beginRegion="if" />
+      </context>
+
+      <context attribute="Normal Text" lineEndContext="#pop" name="ElseIf" fallthrough="true" fallthroughContext="#pop">
+        <DetectSpaces/>
+        <DetectChar attribute="Keyword" context="ArithmeticCondition" char="(" beginRegion="cond" />
+        <DetectChar attribute="Variable" context="Subscript" char="[" />
+        <StringDetect attribute="Control Flow" context="#pop" String="then" />
+      </context>
+
+      <context attribute="Normal Text" lineEndContext="#stay" name="ArithmeticCondition">
+        <DetectChar attribute="Keyword" context="#pop" char=")" endRegion="cond" />
+        <DetectChar attribute="Keyword" context="ArithmeticCondition" char="(" beginRegion="cond" />
+        <RegExpr attribute="Expression" context="#stay" String="[=!]~|[=!>&lt;]="/>
+        <AnyChar attribute="Expression" context="#stay" String="|^&amp;>&lt;+-*/%!~"/>
+        <IncludeRules context="FindComments" />
+        <IncludeRules context="FindStrings" />
+        <IncludeRules context="FindSubstitutions" />
+        <IncludeRules context="FindOthers" />
+      </context>
+
       <!-- SwitchCase is called when the construct 'switch ... case' has been found. -->
       <context attribute="Normal Text" lineEndContext="#stay" name="SwitchCase">
         <DetectChar attribute="Keyword" context="SwitchExpr" char=":" beginRegion="switchexpr" />
@@ -783,22 +789,23 @@
     <itemDatas>
       <itemData name="Normal Text"	defStyleNum="dsNormal" />
       <itemData name="Comment"		defStyleNum="dsComment" />
-      <itemData name="Keyword" 		defStyleNum="dsKeyword" />
-      <itemData name="Control" 		defStyleNum="dsKeyword" />
-      <itemData name="Builtin" 		defStyleNum="dsKeyword" />
-      <itemData name="Command" 		defStyleNum="dsKeyword" />
-      <itemData name="Redirection" 	defStyleNum="dsKeyword" />
-      <itemData name="Escape" 		defStyleNum="dsDataType" />
+      <itemData name="Control Flow" 	defStyleNum="dsControlFlow" spellChecking="false" />
+      <itemData name="Keyword" 		defStyleNum="dsKeyword" spellChecking="false" />
+      <itemData name="Control" 		defStyleNum="dsKeyword" spellChecking="false" />
+      <itemData name="Builtin" 		defStyleNum="dsKeyword" spellChecking="false" />
+      <itemData name="Command" 		defStyleNum="dsKeyword" spellChecking="false" />
+      <itemData name="Redirection" 	defStyleNum="dsKeyword" spellChecking="false" />
+      <itemData name="Escape" 		defStyleNum="dsDataType" spellChecking="false" />
       <itemData name="String SingleQ" 	defStyleNum="dsString" />
       <itemData name="String DoubleQ" 	defStyleNum="dsString" />
-      <itemData name="Backquote" 	defStyleNum="dsKeyword" />
-      <itemData name="String Transl." 	defStyleNum="dsString" />
-      <itemData name="String Escape" 	defStyleNum="dsDataType" />
-      <itemData name="Variable" 	defStyleNum="dsOthers" />
-      <itemData name="Expression" 	defStyleNum="dsOthers" />
-      <itemData name="Function" 	defStyleNum="dsFunction" />
-      <itemData name="Path" 		defStyleNum="dsNormal" />
-      <itemData name="Option" 		defStyleNum="dsNormal" />
+      <itemData name="Backquote" 	defStyleNum="dsKeyword" spellChecking="false" />
+      <itemData name="String Transl." 	defStyleNum="dsString" spellChecking="false" />
+      <itemData name="String Escape" 	defStyleNum="dsDataType" spellChecking="false" />
+      <itemData name="Variable" 	defStyleNum="dsOthers" spellChecking="false" />
+      <itemData name="Expression" 	defStyleNum="dsOthers" spellChecking="false" />
+      <itemData name="Function" 	defStyleNum="dsFunction" spellChecking="false" />
+      <itemData name="Path" 		defStyleNum="dsNormal" spellChecking="false" />
+      <itemData name="Option" 		defStyleNum="dsNormal" spellChecking="false" />
     </itemDatas>
   </highlighting>
   <general>

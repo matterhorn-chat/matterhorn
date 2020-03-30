@@ -2,8 +2,8 @@
 <!DOCTYPE language SYSTEM "language.dtd">
 
 <language name="CoffeeScript"
-          version="8"
-          kateversion="3.4"
+          version="10"
+          kateversion="5.0"
           section="Scripts"
           extensions="Cakefile;*.coffee;*.coco;*.cson"
           mimetype="text/x-coffeescript;application/x-coffeescript;application/vnd.coffeescript"
@@ -251,27 +251,27 @@
         <RegExpr attribute="Error" context="#stay" String="String\.raw(?=`)"/>
         <StringDetect attribute="JavaScript Template" context="Javascript RawTemplate" String="String.raw\`"/>
         <!-- Contexts of javascript.xml. -->
-        <DetectChar attribute="JavaScript Symbol" context="JavaScript Object" char="{" beginRegion="Brace" />
+        <DetectChar context="JavaScript Object" char="{" beginRegion="Brace" />
       </context>
       <context name="JavaScript Object" attribute="Normal" lineEndContext="#stay" noIndentationBasedFolding="1">
         <DetectChar context="#pop" char="`" lookAhead="true"/>
-        <DetectChar attribute="JavaScript Symbol" context="#pop" char="}" endRegion="Brace"/>
+        <DetectChar context="#pop" char="}" endRegion="Brace"/>
         <IncludeRules context="Overwrite Javascript"/>
         <IncludeRules context="Object##JavaScript"/>
       </context>
       <context name="Javascript Template" attribute="JavaScript Template" lineEndContext="#stay" noIndentationBasedFolding="1">
         <RegExpr attribute="Escape" context="#stay" String="\\\\\\`"/>
-        <Detect2Chars attribute="JavaScript Template" context="#pop" char="\" char1="`"/> <!-- End template. -->
+        <Detect2Chars attribute="JavaScript Template" context="RegExpAfterString##JavaScript" char="\" char1="`"/> <!-- End template. -->
         <DetectChar context="#pop" char="`" lookAhead="true"/>
         <Detect2Chars attribute="JavaScript Substitution" context="Javascript Substitution" char="$" char1="{"/>
         <IncludeRules context="Template##JavaScript"/>
-        <RegExpr attribute="Error" context="#stay" String="([^\\\s](?=`)|\S(?=\s+`))"/>
+        <RegExpr attribute="Error" context="#stay" String="(?:[^\\\s](?=`)|\S(?=\s+`))"/>
       </context>
       <context name="Javascript RawTemplate" attribute="JavaScript Template" lineEndContext="#stay">
         <Detect2Chars attribute="JavaScript Template" context="#stay" char="\" char1="\"/>
-        <Detect2Chars attribute="JavaScript Template" context="#pop" char="\" char1="`"/>
+        <Detect2Chars attribute="JavaScript Template" context="RegExpAfterString##JavaScript" char="\" char1="`"/> <!-- End template. -->
         <DetectChar context="#pop" char="`" lookAhead="true"/>
-        <RegExpr attribute="Error" context="#stay" String="([^\\\s](?=`)|\S(?=\s+`))"/>
+        <RegExpr attribute="Error" context="#stay" String="(?:[^\\\s](?=`)|\S(?=\s+`))"/>
       </context>
       <context name="Javascript Substitution" attribute="Normal" lineEndContext="#stay" noIndentationBasedFolding="1">
         <DetectChar attribute="Javascript" context="#pop" char="`" lookAhead="true"/>
@@ -279,16 +279,17 @@
         <IncludeRules context="Overwrite Javascript"/>
         <IncludeRules context="Substitution##JavaScript"/>
       </context>
+
       <!-- Embedded Javascript (triple backticks). -->
       <context name="Javascript Triple Backticks" attribute="Normal" lineEndContext="#stay" noIndentationBasedFolding="1">
         <StringDetect attribute="Javascript" context="#pop" String="```" endRegion="Javascript TB"/>
-        <DetectChar attribute="JavaScript Symbol" context="JavaScript-TB Object" char="{" beginRegion="Brace"/>
+        <DetectChar context="JavaScript-TB Object" char="{" beginRegion="Brace"/>
         <IncludeRules context="Normal##JavaScript" includeAttrib="true"/>
       </context>
       <context name="JavaScript-TB Object" attribute="Normal" lineEndContext="#stay" noIndentationBasedFolding="1">
         <StringDetect attribute="Javascript" context="#pop" String="```" lookAhead="true"/>
-        <DetectChar attribute="JavaScript Symbol" context="#pop" char="}" endRegion="Brace"/>
-        <DetectChar attribute="JavaScript Symbol" context="JavaScript-TB Object" char="{" beginRegion="Brace"/>
+        <DetectChar context="#pop" char="}" endRegion="Brace"/>
+        <DetectChar context="JavaScript-TB Object" char="{" beginRegion="Brace"/>
         <IncludeRules context="Object##JavaScript"/>
       </context>
     </contexts>
@@ -320,7 +321,6 @@
       <itemData name="Literal Character Escape" defStyleNum="dsChar" spellChecking="false" />
       <itemData name="Error" defStyleNum="dsError" spellChecking="false"/>
 
-      <itemData name="JavaScript Symbol" defStyleNum="dsOperator" spellChecking="false"/>
       <itemData name="JavaScript Template" defStyleNum="dsVerbatimString"/>
       <itemData name="JavaScript Substitution" defStyleNum="dsSpecialChar" spellChecking="false"/>
     </itemDatas>

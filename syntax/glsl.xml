@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
-<language name="GLSL" section="3D" extensions="*.glsl;*.vert;*.frag;*.geom;*.tcs;*.tes" mimetype="text/x-glslsrc" version="3" kateversion="5.0" author="Oliver Richers (o.richers@tu-bs.de)" license="LGPL">
+<language name="GLSL" section="3D" extensions="*.glsl;*.vert;*.vs;*.frag;*.fs;*.geom;*.gs;*.tcs;*.tes" mimetype="text/x-glslsrc" version="4" kateversion="5.0" author="Oliver Richers (o.richers@tu-bs.de)" license="LGPL">
 	<highlighting>
 		<list name="keywords">
 			<item>break</item>

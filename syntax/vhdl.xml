@@ -8,7 +8,7 @@
   <!ENTITY label     "((&varname;)\s*:\s*)?">
 
 ]>
-<language name="VHDL" version="6" kateversion="3.0" section="Hardware" extensions="*.vhdl;*.vhd" mimetype="text/x-vhdl" author="Rocky Scaletta (rocky@purdue.edu), Stefan Endrullis (stefan@endrullis.de), Florent Ouchet (outchy@users.sourceforge.net), Chris Higgs (chiggs.99@gmail.com), Jan Michel (jan@mueschelsoft.de), Luigi Calligaris (luigi.calligaris@stfc.ac.uk)">
+<language name="VHDL" version="7" kateversion="3.0" section="Hardware" extensions="*.vhdl;*.vhd" mimetype="text/x-vhdl" author="Rocky Scaletta (rocky@purdue.edu), Stefan Endrullis (stefan@endrullis.de), Florent Ouchet (outchy@users.sourceforge.net), Chris Higgs (chiggs.99@gmail.com), Jan Michel (jan@mueschelsoft.de), Luigi Calligaris (luigi.calligaris@stfc.ac.uk)">
   <highlighting>
     <list name="keywordsToplevel">
       <item>file</item>
@@ -220,7 +220,7 @@
 
         <RegExpr attribute="Control" context="architecture_main" insensitive="true" dynamic="true" lookAhead="true"
                  String="&bos;architecture\s+(&varname;)&eos;"/>
-        <StringDetect attribute="Control" context="entity"
+        <StringDetect attribute="Control" context="entity" insensitive="true"
                  String="entity"/>
         <RegExpr attribute="Control" context="package" insensitive="true" lookAhead="true" dynamic="true" beginRegion="PackageRegion1"
                  String="&bos;package\s+(&varname;)\s+is&eos;"/>
@@ -414,7 +414,7 @@
         <IncludeRules context="preDetection"/>
         <RegExpr attribute="Reference"   context="#stay" String="&bos;%4&eos;" dynamic="true"/>
         <RegExpr attribute="Name"        context="#stay" String="&bos;%3&eos;" dynamic="true"/>
-        <RegExpr attribute="Keyword"     context="instanceMap" beginRegion="InstanceMapRegion"
+        <RegExpr attribute="Keyword"     context="instanceMap" insensitive="true" beginRegion="InstanceMapRegion"
                  String="&bos;(port|generic)\s+map\s*\(" />
         <DetectChar attribute="Normal Text" context="#pop" char=";" endRegion="InstanceRegion1"/>
         <IncludeRules context="generalDetection"/>
@@ -598,7 +598,9 @@
       </context>
 
 <!-- other environments -->
-      <context name="comment" attribute="Comment" lineEndContext="#pop"/>
+      <context name="comment" attribute="Comment" lineEndContext="#pop">
+        <IncludeRules context="##Alerts"/>
+      </context>
 
       <context name="string" attribute="Vector" lineEndContext="#stay">
         <DetectChar attribute="Vector" context="#pop" char="&quot;"/>

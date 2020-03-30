@@ -24,13 +24,13 @@
 <language author="Rubén Caro (ruben.caro.estevez@gmail.com), Boris Egorov (egorov@linux.com)"
           extensions="*.ex;*.exs;*.eex;*.xml.eex;*.js.eex"
           indenter="elixir"
-          kateversion="5.0"
+          kateversion="5.53"
           license="LGPLv2+"
           mimetype="text/x-elixir"
           name="Elixir"
           section="Sources"
           style="elixir"
-          version="4">
+          version="5">
   <highlighting>
     <list name="control-flow">
       <item>catch</item>

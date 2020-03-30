@@ -171,7 +171,7 @@ executable matterhorn
                      , aspell-pipe          >= 0.3     && < 0.4
                      , stm-delay            >= 0.1     && < 0.2
                      , unix                 >= 2.7.1.0 && < 2.7.3.0
-                     , skylighting-core     >= 0.7     && < 0.9
+                     , skylighting-core     >= 0.8     && < 0.9
                      , timezone-olson       >= 0.1.7   && < 0.2
                      , timezone-series      >= 0.1.6.1 && < 0.2
                      , aeson                >= 1.2.3.0 && < 1.5

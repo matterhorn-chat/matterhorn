@@ -8,6 +8,11 @@
 
     CHANGES
 
+    [ Version 1.05 (2019-06-03) by Jonathan Poelen ]
+
+    - warn and coroutine.kill (Lua 5.4)
+    - end of a function as Keyword rather than Control
+
     [ Version 1.04 (2018-04-30) by Jonathan Poelen ]
 
     - based on Lua 5.3
@@ -43,7 +48,7 @@
     - NOTE, FIXME, TODO alerts added on comments
     - improved highlighting
 -->
-<language name="Lua" version="5" indenter="lua" kateversion="5.0" section="Scripts" extensions="*.lua" mimetype="text/x-lua">
+<language name="Lua" version="7" indenter="lua" kateversion="5.0" section="Scripts" extensions="*.lua" mimetype="text/x-lua">
   <highlighting>
     <list name="keywords">
       <item>and</item>
@@ -72,6 +77,22 @@
       <item>then</item>
       <item>until</item>
       <item>while</item>
+    </list>
+
+    <list name="startcontrol">
+      <item>do</item>
+      <item>if</item>
+      <item>repeat</item>
+    </list>
+
+    <list name="elsecontrol">
+      <item>else</item>
+      <item>elseif</item>
+    </list>
+
+    <list name="endcontrol">
+      <item>end</item>
+      <item>until</item>
     </list>
 
     <list name="basevar">
@@ -121,12 +142,14 @@
       <item>tonumber</item>
       <item>tostring</item>
       <item>type</item>
+      <item>warn</item>
       <item>xpcall</item>
 
       <!-- Coroutine manipulation -->
       <item>coroutine.create</item>
       <item>coroutine.isyieldable</item>
       <item>coroutine.resume</item>
+      <item>coroutine.kill</item>
       <item>coroutine.running</item>
       <item>coroutine.status</item>
       <item>coroutine.wrap</item>
@@ -453,13 +476,9 @@
         <keyword      attribute="Metamethod" context="#stay"       String="metamethod"/>
         <keyword      attribute="BVar"     context="#stay"         String="basevar"/>
 
-        <WordDetect   attribute="Keyword"  context="#stay" beginRegion="chunk" String="function" />
+        <WordDetect   attribute="Keyword"  context="Function" beginRegion="chunk" String="function" />
         <keyword      attribute="Keyword"  context="#stay" String="keywords" />
-        <WordDetect   attribute="Control"  context="#stay" endRegion="chunk"   beginRegion="chunk" String="else" />
-        <WordDetect   attribute="Control"  context="#stay" endRegion="chunk"   beginRegion="chunk" String="elseif" />
-        <WordDetect   attribute="Control"  context="#stay" beginRegion="chunk" String="do" />
-        <WordDetect   attribute="Control"  context="#stay" beginRegion="chunk" String="if" />
-        <WordDetect   attribute="Control"  context="#stay" endRegion="chunk"   String="end" />
+        <keyword      attribute="Control"  context="StartControl" beginRegion="chunk" String="startcontrol" />
         <keyword      attribute="Control"  context="#stay" String="control" />
 
         <DetectChar   attribute="Symbols"  context="#stay" beginRegion="table" char="{" />
@@ -477,6 +496,17 @@
         <Detect2Chars attribute="Error"    context="#stay" char="+" char1="+"/>
         <Detect2Chars attribute="Error"    context="#stay" char="." char1="="/>
         <AnyChar      attribute="Symbols"  context="#stay" String=":[]().,=~+-*/%&amp;|^&gt;&lt;#;" />
+      </context>
+
+      <context name="StartControl" attribute="Normal Text"  lineEndContext="#stay">
+        <keyword      attribute="Control"  context="#stay" endRegion="chunk"   beginRegion="chunk" String="elsecontrol" />
+        <keyword      attribute="Control"  context="#pop"  endRegion="chunk"   String="endcontrol" />
+        <IncludeRules context="Normal" />
+      </context>
+
+      <context name="Function" attribute="Normal Text"      lineEndContext="#stay">
+        <WordDetect   attribute="Keyword"  context="#pop"  endRegion="chunk"   String="end" />
+        <IncludeRules context="Normal" />
       </context>
 
       <context name="String_single" attribute="Strings"     lineEndContext="Error">
@@ -536,3 +566,4 @@
     <keywords casesensitive="1" weakDeliminator="." additionalDeliminator="'&quot;"/>
   </general>
 </language>
+<!-- kate: space-indent on; indent-width 2; replace-tabs on; -->

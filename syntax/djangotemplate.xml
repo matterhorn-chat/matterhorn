@@ -4,7 +4,7 @@
 	<!ENTITY name    "[A-Za-z_:][\w.:_-]*">
 	<!ENTITY entref  "&amp;(#[0-9]+|#[xX][0-9A-Fa-f]+|&name;);">
 ]>
-<language name="Django HTML Template" version="3" kateversion="2.4" section="Markup" extensions="*.htm;*.html" mimetype="text/html"  author="Matthew Marshall (matthew@matthewmarshall.org)" license="LGPL" priority="9">
+<language name="Django HTML Template" version="4" kateversion="5.0" section="Markup" extensions="*.htm;*.html" mimetype="text/html"  author="Matthew Marshall (matthew@matthewmarshall.org)" license="LGPL" priority="9">
 
 <!--
     Based off of the katepart html syntax highlighting by Wilbert Berendsen.

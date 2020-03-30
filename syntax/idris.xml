@@ -9,13 +9,16 @@
     <item> case </item>
     <item> class </item>
     <item> codata </item>
+    <item> constructor </item>
     <item> covering </item>
     <item> data </item>
     <item> default </item>
     <item> do </item>
     <item> dsl </item>
     <item> else </item>
+    <item> export </item>
     <item> if </item>
+    <item> implementation </item>
     <item> implicit </item>
     <item> import </item>
     <item> impossible </item>
@@ -26,10 +29,11 @@
     <item> infixl </item>
     <item> infixr </item>
     <item> instance </item>
+    <item> interface </item>
     <item> lambda </item>
     <item> let </item>
     <item> module </item>
-    <item> mututal </item>
+    <item> mutual </item>
     <item> namespace </item>
     <item> of </item>
     <item> parameters </item>

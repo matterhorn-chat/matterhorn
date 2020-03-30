@@ -1,73 +1,92 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
 <!--
-  ====================================================================
+  =====================================================================================================
   Octave syntax highlighting file for the KDE editors Kate and Kwrite
-  ====================================================================
-      based on Octave 2.1.64
-      function and variable list obtained by dispatch_help()'s output
+  =====================================================================================================
+      based on Octave 4.2.0
+      keywords, functions list bases on __builtins__ and __keywords__ commands. For details see
+      https://stackoverflow.com/questions/49840280/list-of-all-built-in-symbols-in-matlab-octave
+      Commands list bases on parsing source code (search inside embedded into code documentation
+      (by "@deftypefn") for commands, used without brackets).
+      (grep '@deftypefn' -r * | grep -v '@deftypefnx' | grep -v '(')
+
 
   Change log:
   16-Dec-04  Created from Matlab and Scilab files.
+  19-Feb-04  Update from Octave 4.2.0 (updated by sirgienko.n <warquark@gmail.com>)
 
   Author: Federico Zenith, Norwegian University of Science and Technology
   Thanks to Luis Silvestre for previous version and suggestions
 -->
 
 
-<language name="Octave" version="3" kateversion="3.4" section="Scientific" extensions="*.octave;*.m;*.M" mimetype="text/octave" casesensitive="1" license="GPL" author="Luis Silvestre and Federico Zenith">
+<language name="Octave" version="5" kateversion="5.0" section="Scientific" extensions="*.octave;*.m;*.M" mimetype="text/octave" casesensitive="1" license="GPL" author="Luis Silvestre and Federico Zenith">
 
   <highlighting>
 
     <!-- Reserved keywords in Octave -->
     <list name="keywords">
-      <item>all_va_args</item>
-      <item>break</item>
       <item>case</item>
+      <item>catch</item>
       <item>continue</item>
       <item>else</item>
       <item>elseif</item>
-      <item>end_unwind_protect</item>
       <item>global</item>
-      <item>gplot</item>
-      <item>gsplot</item>
       <item>otherwise</item>
-      <item>persistent</item>
-      <item>replot</item>
       <item>return</item>
       <item>static</item>
-      <item>until</item>
-      <item>unwind_protect</item>
+      <item>persistent</item>
       <item>unwind_protect_cleanup</item>
       <item>varargin</item>
       <item>varargout</item>
+      <item>break</item>
+      <item>for</item>
+      <item>endfor</item>
+      <item>if</item>
+      <item>endif</item>
+      <item>do</item>
+      <item>until</item>
+      <item>while</item>
+      <item>endwhile</item>
+      <item>function</item>
+      <item>endfunction</item>
+      <item>unwind_protect</item>
+      <item>end_unwind_protect</item>
+      <item>parfor</item>
+      <item>endparfor</item>
+      <item>classdef</item>
+      <item>endclassdef</item>
+      <item>enumeration</item>
+      <item>endenumeration</item>
+      <item>events</item>
+      <item>endevents</item>
+      <item>methods</item>
+      <item>endmethods</item>
+      <item>properties</item>
+      <item>endproperties</item>
+      <item>switch</item>
+      <item>endswitch</item>
+      <item>try</item>
+      <item>end_try_catch</item>
+      <item>end</item>
     </list>
 
     <list name="builtin">
-      <item>argv</item>
-      <item>e</item>
-      <item>eps</item>
-      <item>false</item>
+      <item>EDITOR</item>
+      <item>EXEC_PATH</item>
       <item>F_DUPFD</item>
       <item>F_GETFD</item>
       <item>F_GETFL</item>
-      <item>filesep</item>
       <item>F_SETFD</item>
       <item>F_SETFL</item>
-      <item>i</item>
-      <item>I</item>
-      <item>inf</item>
-      <item>Inf</item>
-      <item>j</item>
+      <item>IMAGE_PATH</item>
       <item>J</item>
-      <item>NA</item>
-      <item>nan</item>
-      <item>NaN</item>
+      <item>OCTAVE_HOME</item>
+      <item>OCTAVE_VERSION</item>
       <item>O_APPEND</item>
       <item>O_ASYNC</item>
       <item>O_CREAT</item>
-      <item>OCTAVE_HOME</item>
-      <item>OCTAVE_VERSION</item>
       <item>O_EXCL</item>
       <item>O_NONBLOCK</item>
       <item>O_RDONLY</item>
@@ -75,1135 +94,1717 @@
       <item>O_SYNC</item>
       <item>O_TRUNC</item>
       <item>O_WRONLY</item>
-      <item>pi</item>
-      <item>program_invocation_name</item>
-      <item>program_name</item>
+      <item>PAGER</item>
+      <item>PAGER_FLAGS</item>
+      <item>PS1</item>
+      <item>PS2</item>
+      <item>PS4</item>
       <item>P_tmpdir</item>
-      <item>realmax</item>
-      <item>realmin</item>
       <item>SEEK_CUR</item>
       <item>SEEK_END</item>
       <item>SEEK_SET</item>
       <item>SIG</item>
-      <item>stderr</item>
-      <item>stdin</item>
-      <item>stdout</item>
-      <item>true</item>
-      <item>ans</item>
-      <item>automatic_replot</item>
-      <item>beep_on_error</item>
-      <item>completion_append_char</item>
-      <item>crash_dumps_octave_core</item>
-      <item>current_script_file_name</item>
-      <item>debug_on_error</item>
-      <item>debug_on_interrupt</item>
-      <item>debug_on_warning</item>
-      <item>debug_symtab_lookups</item>
-      <item>DEFAULT_EXEC_PATH</item>
-      <item>DEFAULT_LOADPATH</item>
-      <item>default_save_format</item>
-      <item>echo_executing_commands</item>
-      <item>EDITOR</item>
-      <item>EXEC_PATH</item>
-      <item>FFTW_WISDOM_PROGRAM</item>
-      <item>fixed_point_format</item>
-      <item>gnuplot_binary</item>
-      <item>gnuplot_command_axes</item>
-      <item>gnuplot_command_end</item>
-      <item>gnuplot_command_plot</item>
-      <item>gnuplot_command_replot</item>
-      <item>gnuplot_command_splot</item>
-      <item>gnuplot_command_title</item>
-      <item>gnuplot_command_using</item>
-      <item>gnuplot_command_with</item>
-      <item>gnuplot_has_frames</item>
-      <item>history_file</item>
-      <item>history_size</item>
-      <item>ignore_function_time_stamp</item>
-      <item>IMAGEPATH</item>
-      <item>INFO_FILE</item>
-      <item>INFO_PROGRAM</item>
-      <item>__kluge_procbuf_delay__</item>
-      <item>LOADPATH</item>
-      <item>MAKEINFO_PROGRAM</item>
-      <item>max_recursion_depth</item>
-      <item>octave_core_file_format</item>
-      <item>octave_core_file_limit</item>
-      <item>octave_core_file_name</item>
-      <item>output_max_field_width</item>
-      <item>output_precision</item>
-      <item>page_output_immediately</item>
-      <item>PAGER</item>
-      <item>page_screen_output</item>
-      <item>print_answer_id_name</item>
-      <item>print_empty_dimensions</item>
-      <item>print_rhs_assign_val</item>
-      <item>PS1</item>
-      <item>PS2</item>
-      <item>PS4</item>
-      <item>save_header_format_string</item>
-      <item>save_precision</item>
-      <item>saving_history</item>
-      <item>sighup_dumps_octave_core</item>
-      <item>sigterm_dumps_octave_core</item>
-      <item>silent_functions</item>
-      <item>split_long_rows</item>
-      <item>string_fill_char</item>
-      <item>struct_levels_to_print</item>
-      <item>suppress_verbose_help_message</item>
-      <item>variables_can_hide_functions</item>
-      <item>warn_assign_as_truth_value</item>
-      <item>warn_divide_by_zero</item>
-      <item>warn_empty_list_elements</item>
-      <item>warn_fortran_indexing</item>
-      <item>warn_function_name_clash</item>
-      <item>warn_future_time_stamp</item>
-      <item>warn_imag_to_real</item>
-      <item>warn_matlab_incompatible</item>
-      <item>warn_missing_semicolon</item>
-      <item>warn_neg_dim_as_zero</item>
-      <item>warn_num_to_str</item>
-      <item>warn_precedence_change</item>
-      <item>warn_reload_forces_clear</item>
-      <item>warn_resize_on_range_error</item>
-      <item>warn_separator_insert</item>
-      <item>warn_single_quote_string</item>
-      <item>warn_str_to_num</item>
-      <item>warn_undefined_return_values</item>
-      <item>warn_variable_switch_label</item>
-      <item>whos_line_format</item>
+      <item>S_ISBLK</item>
+      <item>S_ISCHR</item>
+      <item>S_ISDIR</item>
+      <item>S_ISFIFO</item>
+      <item>S_ISLNK</item>
+      <item>S_ISREG</item>
+      <item>S_ISSOCK</item>
+      <item>WCONTINUE</item>
+      <item>WCOREDUMP</item>
+      <item>WEXITSTATUS</item>
+      <item>WIFCONTINUED</item>
+      <item>WIFEXITED</item>
+      <item>WIFSIGNALED</item>
+      <item>WIFSTOPPED</item>
+      <item>WNOHANG</item>
+      <item>WSTOPSIG</item>
+      <item>WTERMSIG</item>
+      <item>WUNTRACED</item>
+      <item>__accumarray_max__</item>
+      <item>__accumarray_min__</item>
+      <item>__accumarray_sum__</item>
+      <item>__accumdim_sum__</item>
+      <item>__builtins__</item>
+      <item>__calc_dimensions__</item>
+      <item>__compactformat__</item>
+      <item>__contourc__</item>
+      <item>__current_scope__</item>
+      <item>__db_next_breakpoint_quiet__</item>
+      <item>__diaryfile__</item>
+      <item>__diarystate__</item>
+      <item>__dispatch__</item>
+      <item>__display_tokens__</item>
+      <item>__dsearchn__</item>
+      <item>__dump_load_path__</item>
+      <item>__dump_symtab_info__</item>
+      <item>__dump_typeinfo__</item>
+      <item>__echostate__</item>
+      <item>__fieldnames__</item>
+      <item>__fnmatch__</item>
+      <item>__formatstring__</item>
+      <item>__ftp__</item>
+      <item>__ftp_ascii__</item>
+      <item>__ftp_binary__</item>
+      <item>__ftp_close__</item>
+      <item>__ftp_cwd__</item>
+      <item>__ftp_delete__</item>
+      <item>__ftp_dir__</item>
+      <item>__ftp_mget__</item>
+      <item>__ftp_mkdir__</item>
+      <item>__ftp_mode__</item>
+      <item>__ftp_mput__</item>
+      <item>__ftp_pwd__</item>
+      <item>__ftp_rename__</item>
+      <item>__ftp_rmdir__</item>
+      <item>__get__</item>
+      <item>__get_cmdline_fcn_txt__</item>
+      <item>__go_axes__</item>
+      <item>__go_axes_init__</item>
+      <item>__go_delete__</item>
+      <item>__go_execute_callback__</item>
+      <item>__go_figure__</item>
+      <item>__go_figure_handles__</item>
+      <item>__go_handles__</item>
+      <item>__go_hggroup__</item>
+      <item>__go_image__</item>
+      <item>__go_light__</item>
+      <item>__go_line__</item>
+      <item>__go_patch__</item>
+      <item>__go_surface__</item>
+      <item>__go_text__</item>
+      <item>__go_uibuttongroup__</item>
+      <item>__go_uicontextmenu__</item>
+      <item>__go_uicontrol__</item>
+      <item>__go_uimenu__</item>
+      <item>__go_uipanel__</item>
+      <item>__go_uipushtool__</item>
+      <item>__go_uitoggletool__</item>
+      <item>__go_uitoolbar__</item>
+      <item>__gud_mode__</item>
+      <item>__ichol0__</item>
+      <item>__icholt__</item>
+      <item>__ilu0__</item>
+      <item>__iluc__</item>
+      <item>__ilutp__</item>
+      <item>__image_pixel_size__</item>
+      <item>__is_handle_visible__</item>
+      <item>__java_exit__</item>
+      <item>__java_get__</item>
+      <item>__java_init__</item>
+      <item>__java_set__</item>
+      <item>__keywords__</item>
+      <item>__lexer_debug_flag__</item>
+      <item>__lin_interpn__</item>
+      <item>__list_functions__</item>
+      <item>__luinc__</item>
+      <item>__magick_finfo__</item>
+      <item>__magick_formats__</item>
+      <item>__magick_ping__</item>
+      <item>__magick_read__</item>
+      <item>__magick_write__</item>
+      <item>__meta_class_query__</item>
+      <item>__meta_get_package__</item>
+      <item>__methods__</item>
+      <item>__mkdir__</item>
+      <item>__octave_config_info__</item>
+      <item>__octave_link_edit_file__</item>
+      <item>__octave_link_enabled__</item>
+      <item>__octave_link_file_dialog__</item>
+      <item>__octave_link_input_dialog__</item>
+      <item>__octave_link_list_dialog__</item>
+      <item>__octave_link_message_dialog__</item>
+      <item>__octave_link_question_dialog__</item>
+      <item>__octave_link_show_doc__</item>
+      <item>__octave_link_show_preferences__</item>
+      <item>__open_with_system_app__</item>
+      <item>__operators__</item>
+      <item>__parent_classes__</item>
+      <item>__parse_file__</item>
+      <item>__parser_debug_flag__</item>
+      <item>__pathorig__</item>
+      <item>__pchip_deriv__</item>
+      <item>__profiler_data__</item>
+      <item>__profiler_enable__</item>
+      <item>__profiler_reset__</item>
+      <item>__qp__</item>
+      <item>__request_drawnow__</item>
+      <item>__sort_rows_idx__</item>
+      <item>__superclass_reference__</item>
+      <item>__textscan__</item>
+      <item>__token_count__</item>
+      <item>__usage__</item>
+      <item>__varval__</item>
+      <item>__version_info__</item>
+      <item>__wglob__</item>
+      <item>__which__</item>
+      <item>__zoom__</item>
     </list>
     
     <list name="commands">
-      <item>casesen</item>
-      <item>cd</item>
-      <item>chdir</item>
-      <item>clear</item>
+      <item>Inf</item>
+      <item>NaN</item>
+      <item>e</item>
+      <item>eps</item>
+      <item>pi</item>
+      <item>realmax</item>
+      <item>realmin</item>
+      <item>I</item>
+      <item>NA</item>
+      <item>dbstop</item>
       <item>dbclear</item>
       <item>dbstatus</item>
-      <item>dbstop</item>
-      <item>dbtype</item>
       <item>dbwhere</item>
+      <item>dbtype</item>
+      <item>dblist</item>
+      <item>dbstack</item>
+      <item>dbup</item>
+      <item>dbdown</item>
+      <item>dbstep</item>
+      <item>dbcont</item>
+      <item>dbquit</item>
+      <item>cd</item>
+      <item>rmdir</item>
+      <item>link</item>
+      <item>symlink</item>
+      <item>readlink</item>
+      <item>rename</item>
       <item>diary</item>
-      <item>echo</item>
-      <item>edit_history</item>
-      <item>__end__</item>
-      <item>format</item>
-      <item>gset</item>
-      <item>gshow</item>
-      <item>help</item>
-      <item>history</item>
-      <item>hold</item>
-      <item>iskeyword</item>
-      <item>isvarname</item>
-      <item>load</item>
-      <item>ls</item>
-      <item>mark_as_command</item>
-      <item>mislocked</item>
-      <item>mlock</item>
       <item>more</item>
-      <item>munlock</item>
-      <item>run_history</item>
+      <item>exit</item>
+      <item>load</item>
       <item>save</item>
-      <item>set</item>
-      <item>show</item>
-      <item>type</item>
-      <item>unmark_command</item>
-      <item>which</item>
+      <item>edit_history</item>
+      <item>history</item>
+      <item>run_history</item>
       <item>who</item>
       <item>whos</item>
+      <item>clear</item>
+      <item>format</item>
+      <item>echo</item>
     </list>
     
     <list name="functions">
+      <item>__actual_axis_position__</item>
+      <item>__all_opts__</item>
+      <item>__clabel__</item>
+      <item>__default_plot_options__</item>
+      <item>__delaunayn__</item>
+      <item>__eigs__</item>
+      <item>__finish__</item>
+      <item>__fltk_check__</item>
+      <item>__fltk_uigetfile__</item>
+      <item>__getlegenddata__</item>
+      <item>__glpk__</item>
+      <item>__gnuplot_drawnow__</item>
+      <item>__gripe_missing_component__</item>
+      <item>__have_feature__</item>
+      <item>__have_gnuplot__</item>
+      <item>__init_fltk__</item>
+      <item>__init_gnuplot__</item>
+      <item>__makeinfo__</item>
+      <item>__next_line_color__</item>
+      <item>__next_line_style__</item>
+      <item>__opengl_info__</item>
+      <item>__osmesa_print__</item>
+      <item>__player_audioplayer__</item>
+      <item>__player_get_channels__</item>
+      <item>__player_get_fs__</item>
+      <item>__player_get_id__</item>
+      <item>__player_get_nbits__</item>
+      <item>__player_get_sample_number__</item>
+      <item>__player_get_tag__</item>
+      <item>__player_get_total_samples__</item>
+      <item>__player_get_userdata__</item>
+      <item>__player_isplaying__</item>
+      <item>__player_pause__</item>
+      <item>__player_play__</item>
+      <item>__player_playblocking__</item>
+      <item>__player_resume__</item>
+      <item>__player_set_fs__</item>
+      <item>__player_set_tag__</item>
+      <item>__player_set_userdata__</item>
+      <item>__player_stop__</item>
+      <item>__plt_get_axis_arg__</item>
+      <item>__pltopt__</item>
+      <item>__printf_assert__</item>
+      <item>__prog_output_assert__</item>
+      <item>__recorder_audiorecorder__</item>
+      <item>__recorder_get_channels__</item>
+      <item>__recorder_get_fs__</item>
+      <item>__recorder_get_id__</item>
+      <item>__recorder_get_nbits__</item>
+      <item>__recorder_get_sample_number__</item>
+      <item>__recorder_get_tag__</item>
+      <item>__recorder_get_total_samples__</item>
+      <item>__recorder_get_userdata__</item>
+      <item>__recorder_getaudiodata__</item>
+      <item>__recorder_isrecording__</item>
+      <item>__recorder_pause__</item>
+      <item>__recorder_record__</item>
+      <item>__recorder_recordblocking__</item>
+      <item>__recorder_resume__</item>
+      <item>__recorder_set_fs__</item>
+      <item>__recorder_set_tag__</item>
+      <item>__recorder_set_userdata__</item>
+      <item>__recorder_stop__</item>
+      <item>__run_test_suite__</item>
+      <item>__unimplemented__</item>
+      <item>__voronoi__</item>
       <item>abs</item>
+      <item>accumarray</item>
+      <item>accumdim</item>
       <item>acos</item>
+      <item>acosd</item>
       <item>acosh</item>
+      <item>acot</item>
+      <item>acotd</item>
+      <item>acoth</item>
+      <item>acsc</item>
+      <item>acscd</item>
+      <item>acsch</item>
+      <item>add_input_event_hook</item>
+      <item>addlistener</item>
+      <item>addpath</item>
+      <item>addpref</item>
+      <item>addproperty</item>
+      <item>addtodate</item>
+      <item>airy</item>
       <item>all</item>
+      <item>allchild</item>
+      <item>allow_noninteger_range_as_index</item>
+      <item>amd</item>
+      <item>ancestor</item>
+      <item>and</item>
       <item>angle</item>
+      <item>annotation</item>
+      <item>anova</item>
+      <item>ans</item>
       <item>any</item>
-      <item>append</item>
+      <item>arch_fit</item>
+      <item>arch_rnd</item>
+      <item>arch_test</item>
+      <item>area</item>
       <item>arg</item>
       <item>argnames</item>
+      <item>argv</item>
+      <item>arma_rnd</item>
+      <item>arrayfun</item>
+      <item>asctime</item>
+      <item>asec</item>
+      <item>asecd</item>
+      <item>asech</item>
       <item>asin</item>
+      <item>asind</item>
       <item>asinh</item>
+      <item>assert</item>
       <item>assignin</item>
       <item>atan</item>
       <item>atan2</item>
+      <item>atan2d</item>
+      <item>atand</item>
       <item>atanh</item>
       <item>atexit</item>
-      <item>bitand</item>
-      <item>bitmax</item>
-      <item>bitor</item>
-      <item>bitshift</item>
-      <item>bitxor</item>
-      <item>casesen</item>
-      <item>cat</item>
-      <item>cd</item>
-      <item>ceil</item>
-      <item>cell</item>
-      <item>cell2struct</item>
-      <item>cellstr</item>
-      <item>char</item>
-      <item>chdir</item>
-      <item>class</item>
-      <item>clc</item>
-      <item>clear</item>
-      <item>clearplot</item>
-      <item>clg</item>
-      <item>closeplot</item>
-      <item>completion_matches</item>
-      <item>conj</item>
-      <item>conv</item>
-      <item>convmtx</item>
-      <item>cos</item>
-      <item>cosh</item>
-      <item>cumprod</item>
-      <item>cumsum</item>
-      <item>dbclear</item>
-      <item>dbstatus</item>
-      <item>dbstop</item>
-      <item>dbtype</item>
-      <item>dbwhere</item>
-      <item>deconv</item>
-      <item>det</item>
-      <item>dftmtx</item>
-      <item>diag</item>
-      <item>diary</item>
-      <item>disp</item>
-      <item>document</item>
-      <item>do_string_escapes</item>
-      <item>double</item>
-      <item>dup2</item>
-      <item>echo</item>
-      <item>edit_history</item>
-      <item>__end__</item>
-      <item>erf</item>
-      <item>erfc</item>
-      <item>ERRNO</item>
-      <item>error</item>
-      <item>__error_text__</item>
-      <item>error_text</item>
-      <item>eval</item>
-      <item>evalin</item>
-      <item>exec</item>
-      <item>exist</item>
-      <item>exit</item>
-      <item>exp</item>
-      <item>eye</item>
-      <item>fclose</item>
-      <item>fcntl</item>
-      <item>fdisp</item>
-      <item>feof</item>
-      <item>ferror</item>
-      <item>feval</item>
-      <item>fflush</item>
-      <item>fft</item>
-      <item>fgetl</item>
-      <item>fgets</item>
-      <item>fieldnames</item>
-      <item>file_in_loadpath</item>
-      <item>file_in_path</item>
-      <item>filter</item>
-      <item>find</item>
-      <item>find_first_of_in_loadpath</item>
-      <item>finite</item>
-      <item>fix</item>
-      <item>floor</item>
-      <item>fmod</item>
-      <item>fnmatch</item>
-      <item>fopen</item>
-      <item>fork</item>
-      <item>format</item>
-      <item>formula</item>
-      <item>fprintf</item>
-      <item>fputs</item>
-      <item>fread</item>
-      <item>freport</item>
-      <item>frewind</item>
-      <item>fscanf</item>
-      <item>fseek</item>
-      <item>ftell</item>
-      <item>func2str</item>
-      <item>functions</item>
-      <item>fwrite</item>
-      <item>gamma</item>
-      <item>gammaln</item>
-      <item>getegid</item>
-      <item>getenv</item>
-      <item>geteuid</item>
-      <item>getgid</item>
-      <item>getpgrp</item>
-      <item>getpid</item>
-      <item>getppid</item>
-      <item>getuid</item>
-      <item>glob</item>
-      <item>graw</item>
-      <item>gset</item>
-      <item>gshow</item>
-      <item>help</item>
-      <item>history</item>
-      <item>hold</item>
-      <item>home</item>
-      <item>horzcat</item>
-      <item>ifft</item>
-      <item>imag</item>
-      <item>inline</item>
-      <item>input</item>
-      <item>input_event_hook</item>
-      <item>int16</item>
-      <item>int32</item>
-      <item>int64</item>
-      <item>int8</item>
-      <item>intmax</item>
-      <item>intmin</item>
-      <item>inv</item>
-      <item>inverse</item>
-      <item>ipermute</item>
-      <item>isalnum</item>
-      <item>isalpha</item>
-      <item>isascii</item>
-      <item>isbool</item>
-      <item>iscell</item>
-      <item>iscellstr</item>
-      <item>ischar</item>
-      <item>iscntrl</item>
-      <item>iscomplex</item>
-      <item>isdigit</item>
-      <item>isempty</item>
-      <item>isfield</item>
-      <item>isfinite</item>
-      <item>isglobal</item>
-      <item>isgraph</item>
-      <item>ishold</item>
-      <item>isieee</item>
-      <item>isinf</item>
-      <item>iskeyword</item>
-      <item>islist</item>
-      <item>islogical</item>
-      <item>islower</item>
-      <item>ismatrix</item>
-      <item>isna</item>
-      <item>isnan</item>
-      <item>is_nan_or_na</item>
-      <item>isnumeric</item>
-      <item>isprint</item>
-      <item>ispunct</item>
-      <item>isreal</item>
-      <item>isspace</item>
-      <item>isstream</item>
-      <item>isstreamoff</item>
-      <item>isstruct</item>
-      <item>isupper</item>
-      <item>isvarname</item>
-      <item>isxdigit</item>
-      <item>kbhit</item>
-      <item>keyboard</item>
-      <item>kill</item>
-      <item>lasterr</item>
-      <item>lastwarn</item>
-      <item>length</item>
-      <item>lgamma</item>
-      <item>link</item>
-      <item>linspace</item>
-      <item>list</item>
-      <item>load</item>
-      <item>log</item>
-      <item>log10</item>
-      <item>ls</item>
-      <item>lstat</item>
-      <item>lu</item>
-      <item>mark_as_command</item>
-      <item>mislocked</item>
-      <item>mkdir</item>
-      <item>mkfifo</item>
-      <item>mkstemp</item>
-      <item>mlock</item>
-      <item>more</item>
-      <item>munlock</item>
-      <item>nargin</item>
-      <item>nargout</item>
-      <item>native_float_format</item>
-      <item>ndims</item>
-      <item>nth</item>
-      <item>numel</item>
-      <item>octave_config_info</item>
-      <item>octave_tmp_file_name</item>
-      <item>ones</item>
-      <item>pause</item>
-      <item>pclose</item>
-      <item>permute</item>
-      <item>pipe</item>
-      <item>popen</item>
-      <item>printf</item>
-      <item>__print_symbol_info__</item>
-      <item>__print_symtab_info__</item>
-      <item>prod</item>
-      <item>purge_tmp_files</item>
-      <item>putenv</item>
-      <item>puts</item>
-      <item>pwd</item>
-      <item>quit</item>
-      <item>rank</item>
-      <item>readdir</item>
-      <item>readlink</item>
-      <item>read_readline_init_file</item>
-      <item>real</item>
-      <item>rehash</item>
-      <item>rename</item>
-      <item>reshape</item>
-      <item>reverse</item>
-      <item>rmdir</item>
-      <item>rmfield</item>
-      <item>roots</item>
-      <item>round</item>
-      <item>run_history</item>
-      <item>save</item>
-      <item>scanf</item>
-      <item>set</item>
-      <item>shell_cmd</item>
-      <item>show</item>
-      <item>sign</item>
-      <item>sin</item>
-      <item>sinh</item>
-      <item>size</item>
-      <item>sizeof</item>
-      <item>sleep</item>
-      <item>sort</item>
-      <item>source</item>
-      <item>splice</item>
-      <item>sprintf</item>
-      <item>sqrt</item>
-      <item>squeeze</item>
-      <item>sscanf</item>
-      <item>stat</item>
-      <item>str2func</item>
-      <item>streamoff</item>
-      <item>struct</item>
-      <item>struct2cell</item>
-      <item>sum</item>
-      <item>sumsq</item>
-      <item>symlink</item>
-      <item>system</item>
-      <item>tan</item>
-      <item>tanh</item>
-      <item>tilde_expand</item>
-      <item>tmpfile</item>
-      <item>tmpnam</item>
-      <item>toascii</item>
-      <item>__token_count__</item>
-      <item>tolower</item>
-      <item>toupper</item>
-      <item>type</item>
-      <item>typeinfo</item>
-      <item>uint16</item>
-      <item>uint32</item>
-      <item>uint64</item>
-      <item>uint8</item>
-      <item>umask</item>
-      <item>undo_string_escapes</item>
-      <item>unlink</item>
-      <item>unmark_command</item>
-      <item>usage</item>
-      <item>usleep</item>
-      <item>va_arg</item>
-      <item>va_start</item>
-      <item>vectorize</item>
-      <item>vertcat</item>
-      <item>vr_val</item>
-      <item>waitpid</item>
-      <item>warning</item>
-      <item>warranty</item>
-      <item>which</item>
-      <item>who</item>
-      <item>whos</item>
-      <item>zeros</item>
-      <item>airy</item>
+      <item>audiodevinfo</item>
+      <item>audioformats</item>
+      <item>audioinfo</item>
+      <item>audioread</item>
+      <item>audiowrite</item>
+      <item>autoload</item>
+      <item>autoreg_matrix</item>
+      <item>autumn</item>
+      <item>available_graphics_toolkits</item>
+      <item>axes</item>
+      <item>axis</item>
       <item>balance</item>
+      <item>bandwidth</item>
+      <item>bar</item>
+      <item>barh</item>
+      <item>bartlett</item>
+      <item>bartlett_test</item>
+      <item>base2dec</item>
+      <item>base64_decode</item>
+      <item>base64_encode</item>
+      <item>beep</item>
+      <item>beep_on_error</item>
+      <item>bessel</item>
       <item>besselh</item>
       <item>besseli</item>
       <item>besselj</item>
       <item>besselk</item>
       <item>bessely</item>
+      <item>beta</item>
+      <item>betacdf</item>
       <item>betainc</item>
+      <item>betaincinv</item>
+      <item>betainv</item>
+      <item>betaln</item>
+      <item>betapdf</item>
+      <item>betarnd</item>
+      <item>bicg</item>
+      <item>bicgstab</item>
+      <item>bicubic</item>
+      <item>bin2dec</item>
+      <item>bincoeff</item>
+      <item>binocdf</item>
+      <item>binoinv</item>
+      <item>binopdf</item>
+      <item>binornd</item>
+      <item>bitand</item>
+      <item>bitcmp</item>
+      <item>bitget</item>
+      <item>bitmax</item>
+      <item>bitor</item>
+      <item>bitpack</item>
+      <item>bitset</item>
+      <item>bitshift</item>
+      <item>bitunpack</item>
+      <item>bitxor</item>
+      <item>blackman</item>
+      <item>blanks</item>
+      <item>blkdiag</item>
+      <item>blkmm</item>
+      <item>bone</item>
+      <item>box</item>
+      <item>brighten</item>
+      <item>bsxfun</item>
+      <item>bug_report</item>
+      <item>built_in_docstrings_file</item>
+      <item>builtin</item>
+      <item>bunzip2</item>
+      <item>bzip2</item>
+      <item>calendar</item>
+      <item>camlight</item>
+      <item>canonicalize_file_name</item>
+      <item>cart2pol</item>
+      <item>cart2sph</item>
+      <item>cast</item>
+      <item>cat</item>
+      <item>cauchy_cdf</item>
+      <item>cauchy_inv</item>
+      <item>cauchy_pdf</item>
+      <item>cauchy_rnd</item>
+      <item>caxis</item>
+      <item>cbrt</item>
+      <item>ccolamd</item>
+      <item>ceil</item>
+      <item>cell</item>
+      <item>cell2mat</item>
+      <item>cell2struct</item>
+      <item>celldisp</item>
+      <item>cellfun</item>
+      <item>cellindexmat</item>
+      <item>cellslices</item>
+      <item>cellstr</item>
+      <item>center</item>
+      <item>cgs</item>
+      <item>char</item>
+      <item>chdir</item>
+      <item>chi2cdf</item>
+      <item>chi2inv</item>
+      <item>chi2pdf</item>
+      <item>chi2rnd</item>
+      <item>chisquare_test_homogeneity</item>
+      <item>chisquare_test_independence</item>
       <item>chol</item>
+      <item>chol2inv</item>
+      <item>choldelete</item>
+      <item>cholinsert</item>
+      <item>cholinv</item>
+      <item>cholshift</item>
+      <item>cholupdate</item>
+      <item>chop</item>
+      <item>circshift</item>
+      <item>citation</item>
+      <item>cla</item>
+      <item>clabel</item>
+      <item>class</item>
+      <item>clc</item>
+      <item>clf</item>
+      <item>clock</item>
+      <item>cloglog</item>
+      <item>close</item>
+      <item>closereq</item>
+      <item>cmpermute</item>
+      <item>cmunique</item>
+      <item>colamd</item>
       <item>colloc</item>
+      <item>colon</item>
+      <item>colorbar</item>
+      <item>colorcube</item>
+      <item>colormap</item>
+      <item>colperm</item>
+      <item>colstyle</item>
+      <item>columns</item>
+      <item>comet</item>
+      <item>comet3</item>
+      <item>comma</item>
+      <item>command_line_path</item>
+      <item>common_size</item>
+      <item>commutation_matrix</item>
+      <item>compan</item>
+      <item>compare_versions</item>
+      <item>compass</item>
+      <item>completion_append_char</item>
+      <item>completion_matches</item>
+      <item>complex</item>
+      <item>computer</item>
+      <item>cond</item>
+      <item>condeig</item>
+      <item>condest</item>
+      <item>confirm_recursive_rmdir</item>
+      <item>conj</item>
+      <item>contour</item>
+      <item>contour3</item>
+      <item>contourc</item>
+      <item>contourf</item>
+      <item>contrast</item>
+      <item>conv</item>
+      <item>conv2</item>
+      <item>convhull</item>
+      <item>convhulln</item>
+      <item>convn</item>
+      <item>cool</item>
+      <item>copper</item>
+      <item>copyfile</item>
+      <item>copyobj</item>
+      <item>cor_test</item>
+      <item>corr</item>
+      <item>corrcoef</item>
+      <item>cos</item>
+      <item>cosd</item>
+      <item>cosh</item>
+      <item>cot</item>
+      <item>cotd</item>
+      <item>coth</item>
+      <item>cov</item>
+      <item>cplxpair</item>
+      <item>cputime</item>
+      <item>crash_dumps_octave_core</item>
+      <item>cross</item>
+      <item>csc</item>
+      <item>cscd</item>
+      <item>csch</item>
+      <item>cstrcat</item>
+      <item>csvread</item>
+      <item>csvwrite</item>
+      <item>csymamd</item>
+      <item>ctime</item>
+      <item>ctranspose</item>
+      <item>cubehelix</item>
+      <item>cummax</item>
+      <item>cummin</item>
+      <item>cumprod</item>
+      <item>cumsum</item>
+      <item>cumtrapz</item>
+      <item>curl</item>
+      <item>cylinder</item>
+      <item>daspect</item>
       <item>daspk</item>
       <item>daspk_options</item>
       <item>dasrt</item>
       <item>dasrt_options</item>
       <item>dassl</item>
       <item>dassl_options</item>
-      <item>det</item>
-      <item>eig</item>
-      <item>endgrent</item>
-      <item>endpwent</item>
-      <item>expm</item>
-      <item>fft</item>
-      <item>fft2</item>
-      <item>fftn</item>
-      <item>fftw_wisdom</item>
-      <item>filter</item>
-      <item>find</item>
-      <item>fsolve</item>
-      <item>fsolve_options</item>
-      <item>gammainc</item>
-      <item>gcd</item>
-      <item>getgrent</item>
-      <item>getgrgid</item>
-      <item>getgrnam</item>
-      <item>getpwent</item>
-      <item>getpwnam</item>
-      <item>getpwuid</item>
-      <item>getrusage</item>
-      <item>givens</item>
-      <item>gmtime</item>
-      <item>hess</item>
-      <item>ifft</item>
-      <item>ifft2</item>
-      <item>ifftn</item>
-      <item>inv</item>
-      <item>inverse</item>
-      <item>kron</item>
-      <item>localtime</item>
-      <item>lpsolve</item>
-      <item>lpsolve_options</item>
-      <item>lsode</item>
-      <item>lsode_options</item>
-      <item>lu</item>
-      <item>max</item>
-      <item>min</item>
-      <item>minmax</item>
-      <item>mktime</item>
-      <item>odessa</item>
-      <item>odessa_options</item>
-      <item>pinv</item>
-      <item>qr</item>
-      <item>quad</item>
-      <item>quad_options</item>
-      <item>qz</item>
-      <item>rand</item>
-      <item>randn</item>
-      <item>schur</item>
-      <item>setgrent</item>
-      <item>setpwent</item>
-      <item>sort</item>
-      <item>sqrtm</item>
-      <item>strftime</item>
-      <item>strptime</item>
-      <item>svd</item>
-      <item>syl</item>
-      <item>time</item>
-      <item>abcddim</item>
-      <item>__abcddims__</item>
-      <item>acot</item>
-      <item>acoth</item>
-      <item>acsc</item>
-      <item>acsch</item>
-      <item>analdemo</item>
-      <item>anova</item>
-      <item>arch_fit</item>
-      <item>arch_rnd</item>
-      <item>arch_test</item>
-      <item>are</item>
-      <item>arma_rnd</item>
-      <item>asctime</item>
-      <item>asec</item>
-      <item>asech</item>
-      <item>autocor</item>
-      <item>autocov</item>
-      <item>autoreg_matrix</item>
-      <item>axis</item>
-      <item>axis2dlim</item>
-      <item>__axis_label__</item>
-      <item>bar</item>
-      <item>bartlett</item>
-      <item>bartlett_test</item>
-      <item>base2dec</item>
-      <item>bddemo</item>
-      <item>beep</item>
-      <item>bessel</item>
-      <item>beta</item>
-      <item>beta_cdf</item>
-      <item>betai</item>
-      <item>beta_inv</item>
-      <item>beta_pdf</item>
-      <item>beta_rnd</item>
-      <item>bin2dec</item>
-      <item>bincoeff</item>
-      <item>binomial_cdf</item>
-      <item>binomial_inv</item>
-      <item>binomial_pdf</item>
-      <item>binomial_rnd</item>
-      <item>bitcmp</item>
-      <item>bitget</item>
-      <item>bitset</item>
-      <item>blackman</item>
-      <item>blanks</item>
-      <item>bode</item>
-      <item>bode_bounds</item>
-      <item>__bodquist__</item>
-      <item>bottom_title</item>
-      <item>bug_report</item>
-      <item>buildssic</item>
-      <item>c2d</item>
-      <item>cart2pol</item>
-      <item>cart2sph</item>
-      <item>cauchy_cdf</item>
-      <item>cauchy_inv</item>
-      <item>cauchy_pdf</item>
-      <item>cauchy_rnd</item>
-      <item>cellidx</item>
-      <item>center</item>
-      <item>chisquare_cdf</item>
-      <item>chisquare_inv</item>
-      <item>chisquare_pdf</item>
-      <item>chisquare_rnd</item>
-      <item>chisquare_test_homogeneity</item>
-      <item>chisquare_test_independence</item>
-      <item>circshift</item>
-      <item>clock</item>
-      <item>cloglog</item>
-      <item>close</item>
-      <item>colormap</item>
-      <item>columns</item>
-      <item>com2str</item>
-      <item>comma</item>
-      <item>common_size</item>
-      <item>commutation_matrix</item>
-      <item>compan</item>
-      <item>complement</item>
-      <item>computer</item>
-      <item>cond</item>
-      <item>contour</item>
-      <item>controldemo</item>
-      <item>conv</item>
-      <item>cor</item>
-      <item>corrcoef</item>
-      <item>cor_test</item>
-      <item>cot</item>
-      <item>coth</item>
-      <item>cov</item>
-      <item>cputime</item>
-      <item>create_set</item>
-      <item>cross</item>
-      <item>csc</item>
-      <item>csch</item>
-      <item>ctime</item>
-      <item>ctrb</item>
-      <item>cut</item>
-      <item>d2c</item>
-      <item>damp</item>
-      <item>dare</item>
       <item>date</item>
-      <item>dcgain</item>
+      <item>datenum</item>
+      <item>datestr</item>
+      <item>datetick</item>
+      <item>datevec</item>
+      <item>dawson</item>
+      <item>dblquad</item>
+      <item>dbnext</item>
       <item>deal</item>
+      <item>debian_missing_handler</item>
       <item>deblank</item>
+      <item>debug</item>
+      <item>debug_java</item>
+      <item>debug_jit</item>
+      <item>debug_on_error</item>
+      <item>debug_on_interrupt</item>
+      <item>debug_on_warning</item>
       <item>dec2base</item>
       <item>dec2bin</item>
       <item>dec2hex</item>
       <item>deconv</item>
+      <item>deg2rad</item>
+      <item>del2</item>
+      <item>delaunay</item>
+      <item>delaunay3</item>
+      <item>delaunayn</item>
       <item>delete</item>
-      <item>DEMOcontrol</item>
-      <item>demoquat</item>
+      <item>dellistener</item>
+      <item>demo</item>
+      <item>desktop</item>
+      <item>det</item>
       <item>detrend</item>
-      <item>dezero</item>
-      <item>dgkfdemo</item>
-      <item>dgram</item>
-      <item>dhinfdemo</item>
+      <item>diag</item>
+      <item>dialog</item>
       <item>diff</item>
       <item>diffpara</item>
+      <item>diffuse</item>
       <item>dir</item>
+      <item>dir_in_loadpath</item>
+      <item>disable_diagonal_matrix</item>
+      <item>disable_permutation_matrix</item>
+      <item>disable_range</item>
       <item>discrete_cdf</item>
       <item>discrete_inv</item>
       <item>discrete_pdf</item>
       <item>discrete_rnd</item>
-      <item>dkalman</item>
-      <item>dlqe</item>
-      <item>dlqg</item>
-      <item>dlqr</item>
-      <item>dlyap</item>
-      <item>dmr2d</item>
-      <item>dmult</item>
+      <item>disp</item>
+      <item>display</item>
+      <item>divergence</item>
+      <item>dlmread</item>
+      <item>dlmwrite</item>
+      <item>dmperm</item>
+      <item>do_braindead_shortcircuit_evaluation</item>
+      <item>do_string_escapes</item>
+      <item>doc</item>
+      <item>doc_cache_create</item>
+      <item>doc_cache_file</item>
+      <item>dos</item>
       <item>dot</item>
-      <item>dre</item>
+      <item>double</item>
+      <item>drawnow</item>
+      <item>dsearch</item>
+      <item>dsearchn</item>
       <item>dump_prefs</item>
+      <item>dup2</item>
       <item>duplication_matrix</item>
       <item>durbinlevinson</item>
+      <item>echo_executing_commands</item>
+      <item>edit</item>
+      <item>eig</item>
+      <item>eigs</item>
+      <item>ellipj</item>
+      <item>ellipke</item>
+      <item>ellipsoid</item>
       <item>empirical_cdf</item>
       <item>empirical_inv</item>
       <item>empirical_pdf</item>
       <item>empirical_rnd</item>
+      <item>end</item>
+      <item>endgrent</item>
+      <item>endpwent</item>
+      <item>eomday</item>
+      <item>eq</item>
+      <item>erf</item>
+      <item>erfc</item>
+      <item>erfcinv</item>
+      <item>erfcx</item>
+      <item>erfi</item>
       <item>erfinv</item>
-      <item>__errcomm__</item>
+      <item>errno</item>
+      <item>errno_list</item>
+      <item>error</item>
+      <item>error_ids</item>
       <item>errorbar</item>
-      <item>__errplot__</item>
+      <item>errordlg</item>
       <item>etime</item>
-      <item>exponential_cdf</item>
-      <item>exponential_inv</item>
-      <item>exponential_pdf</item>
-      <item>exponential_rnd</item>
-      <item>f_cdf</item>
+      <item>etree</item>
+      <item>etreeplot</item>
+      <item>eval</item>
+      <item>evalc</item>
+      <item>evalin</item>
+      <item>example</item>
+      <item>exec</item>
+      <item>exist</item>
+      <item>exp</item>
+      <item>expcdf</item>
+      <item>expint</item>
+      <item>expinv</item>
+      <item>expm</item>
+      <item>expm1</item>
+      <item>exppdf</item>
+      <item>exprnd</item>
+      <item>eye</item>
+      <item>ezcontour</item>
+      <item>ezcontourf</item>
+      <item>ezmesh</item>
+      <item>ezmeshc</item>
+      <item>ezplot</item>
+      <item>ezplot3</item>
+      <item>ezpolar</item>
+      <item>ezsurf</item>
+      <item>ezsurfc</item>
+      <item>f_test_regression</item>
+      <item>fact</item>
+      <item>factor</item>
+      <item>factorial</item>
+      <item>fail</item>
+      <item>false</item>
+      <item>fcdf</item>
+      <item>fclear</item>
+      <item>fclose</item>
+      <item>fcntl</item>
+      <item>fdisp</item>
+      <item>feather</item>
+      <item>feof</item>
+      <item>ferror</item>
+      <item>feval</item>
+      <item>fflush</item>
+      <item>fft</item>
+      <item>fft2</item>
       <item>fftconv</item>
       <item>fftfilt</item>
+      <item>fftn</item>
       <item>fftshift</item>
+      <item>fftw</item>
+      <item>fgetl</item>
+      <item>fgets</item>
+      <item>fieldnames</item>
       <item>figure</item>
+      <item>file_in_loadpath</item>
+      <item>file_in_path</item>
+      <item>fileattrib</item>
+      <item>filemarker</item>
       <item>fileparts</item>
+      <item>fileread</item>
+      <item>filesep</item>
+      <item>fill</item>
+      <item>filter</item>
+      <item>filter2</item>
+      <item>find</item>
+      <item>find_dir_in_path</item>
+      <item>findall</item>
+      <item>findfigs</item>
+      <item>findobj</item>
       <item>findstr</item>
-      <item>f_inv</item>
-      <item>fir2sys</item>
+      <item>finite</item>
+      <item>finv</item>
+      <item>fix</item>
+      <item>fixed_point_format</item>
+      <item>flag</item>
+      <item>flintmax</item>
+      <item>flip</item>
       <item>flipdim</item>
       <item>fliplr</item>
       <item>flipud</item>
-      <item>flops</item>
-      <item>f_pdf</item>
+      <item>floor</item>
+      <item>fminbnd</item>
+      <item>fminsearch</item>
+      <item>fminunc</item>
+      <item>fmod</item>
+      <item>fnmatch</item>
+      <item>fopen</item>
+      <item>fork</item>
+      <item>formula</item>
+      <item>fpdf</item>
+      <item>fplot</item>
+      <item>fprintf</item>
+      <item>fputs</item>
       <item>fractdiff</item>
-      <item>frdemo</item>
-      <item>freqchkw</item>
-      <item>__freqresp__</item>
+      <item>frame2im</item>
+      <item>fread</item>
+      <item>freport</item>
       <item>freqz</item>
       <item>freqz_plot</item>
-      <item>f_rnd</item>
-      <item>f_test_regression</item>
+      <item>frewind</item>
+      <item>frnd</item>
+      <item>fscanf</item>
+      <item>fseek</item>
+      <item>fskipl</item>
+      <item>fsolve</item>
+      <item>ftell</item>
+      <item>full</item>
       <item>fullfile</item>
-      <item>fv</item>
-      <item>fvl</item>
-      <item>gamma_cdf</item>
-      <item>gammai</item>
-      <item>gamma_inv</item>
-      <item>gamma_pdf</item>
-      <item>gamma_rnd</item>
-      <item>geometric_cdf</item>
-      <item>geometric_inv</item>
-      <item>geometric_pdf</item>
-      <item>geometric_rnd</item>
+      <item>func2str</item>
+      <item>functions</item>
+      <item>fwrite</item>
+      <item>fzero</item>
+      <item>gallery</item>
+      <item>gamcdf</item>
+      <item>gaminv</item>
+      <item>gamma</item>
+      <item>gammainc</item>
+      <item>gammaln</item>
+      <item>gampdf</item>
+      <item>gamrnd</item>
+      <item>gca</item>
+      <item>gcbf</item>
+      <item>gcbo</item>
+      <item>gcd</item>
+      <item>gcf</item>
+      <item>gco</item>
+      <item>ge</item>
+      <item>genpath</item>
+      <item>genvarname</item>
+      <item>geocdf</item>
+      <item>geoinv</item>
+      <item>geopdf</item>
+      <item>geornd</item>
+      <item>get</item>
+      <item>get_first_help_sentence</item>
+      <item>get_help_text</item>
+      <item>get_help_text_from_file</item>
+      <item>get_home_directory</item>
+      <item>getappdata</item>
+      <item>getegid</item>
+      <item>getenv</item>
+      <item>geteuid</item>
+      <item>getfield</item>
+      <item>getgid</item>
+      <item>getgrent</item>
+      <item>getgrgid</item>
+      <item>getgrnam</item>
+      <item>gethostname</item>
+      <item>getpgrp</item>
+      <item>getpid</item>
+      <item>getppid</item>
+      <item>getpref</item>
+      <item>getpwent</item>
+      <item>getpwnam</item>
+      <item>getpwuid</item>
+      <item>getrusage</item>
+      <item>getuid</item>
+      <item>ginput</item>
+      <item>givens</item>
+      <item>glob</item>
+      <item>glpk</item>
       <item>gls</item>
-      <item>gram</item>
+      <item>gmap40</item>
+      <item>gmres</item>
+      <item>gmtime</item>
+      <item>gnuplot_binary</item>
+      <item>gplot</item>
+      <item>grabcode</item>
+      <item>gradient</item>
+      <item>graphics_toolkit</item>
       <item>gray</item>
       <item>gray2ind</item>
       <item>grid</item>
-      <item>h2norm</item>
-      <item>h2syn</item>
+      <item>griddata</item>
+      <item>griddata3</item>
+      <item>griddatan</item>
+      <item>gt</item>
+      <item>gtext</item>
+      <item>guidata</item>
+      <item>guihandles</item>
+      <item>gunzip</item>
+      <item>gzip</item>
+      <item>hadamard</item>
       <item>hamming</item>
       <item>hankel</item>
       <item>hanning</item>
+      <item>hash</item>
+      <item>have_window_system</item>
+      <item>hdl2struct</item>
+      <item>help</item>
+      <item>helpdlg</item>
+      <item>hess</item>
       <item>hex2dec</item>
+      <item>hex2num</item>
+      <item>hggroup</item>
+      <item>hgload</item>
+      <item>hgsave</item>
+      <item>hidden</item>
       <item>hilb</item>
-      <item>hinf_ctr</item>
-      <item>hinfdemo</item>
-      <item>hinfnorm</item>
-      <item>hinfsyn</item>
-      <item>hinfsyn_chk</item>
-      <item>hinfsyn_ric</item>
       <item>hist</item>
+      <item>histc</item>
+      <item>history_control</item>
+      <item>history_file</item>
+      <item>history_save</item>
+      <item>history_size</item>
+      <item>history_timestamp_format_string</item>
+      <item>hold</item>
+      <item>home</item>
+      <item>horzcat</item>
+      <item>hot</item>
       <item>hotelling_test</item>
       <item>hotelling_test_2</item>
       <item>housh</item>
+      <item>hsv</item>
       <item>hsv2rgb</item>
       <item>hurst</item>
-      <item>hypergeometric_cdf</item>
-      <item>hypergeometric_inv</item>
-      <item>hypergeometric_pdf</item>
-      <item>hypergeometric_rnd</item>
+      <item>hygecdf</item>
+      <item>hygeinv</item>
+      <item>hygepdf</item>
+      <item>hygernd</item>
+      <item>hypot</item>
+      <item>i</item>
+      <item>ichol</item>
+      <item>idivide</item>
+      <item>ifelse</item>
+      <item>ifft</item>
+      <item>ifft2</item>
+      <item>ifftn</item>
+      <item>ifftshift</item>
+      <item>ignore_function_time_stamp</item>
+      <item>ilu</item>
+      <item>im2double</item>
+      <item>im2frame</item>
+      <item>imag</item>
       <item>image</item>
       <item>imagesc</item>
-      <item>impulse</item>
+      <item>imfinfo</item>
+      <item>imformats</item>
+      <item>importdata</item>
+      <item>imread</item>
       <item>imshow</item>
+      <item>imwrite</item>
       <item>ind2gray</item>
       <item>ind2rgb</item>
       <item>ind2sub</item>
       <item>index</item>
+      <item>inf</item>
+      <item>inferiorto</item>
+      <item>info</item>
+      <item>info_file</item>
+      <item>info_program</item>
+      <item>inline</item>
+      <item>inpolygon</item>
+      <item>input</item>
+      <item>inputParser</item>
+      <item>inputdlg</item>
+      <item>inputname</item>
+      <item>int16</item>
       <item>int2str</item>
-      <item>intersection</item>
+      <item>int32</item>
+      <item>int64</item>
+      <item>int8</item>
+      <item>interp1</item>
+      <item>interp2</item>
+      <item>interp3</item>
+      <item>interpft</item>
+      <item>interpn</item>
+      <item>intersect</item>
+      <item>intmax</item>
+      <item>intmin</item>
+      <item>inv</item>
+      <item>inverse</item>
       <item>invhilb</item>
+      <item>ipermute</item>
       <item>iqr</item>
-      <item>irr</item>
-      <item>isa</item>
-      <item>is_abcd</item>
-      <item>is_bool</item>
-      <item>is_complex</item>
-      <item>is_controllable</item>
-      <item>isdefinite</item>
-      <item>is_detectable</item>
-      <item>is_dgkf</item>
-      <item>is_digital</item>
-      <item>is_duplicate_entry</item>
-      <item>is_global</item>
+      <item>is_absolute_filename</item>
+      <item>is_dq_string</item>
+      <item>is_function_handle</item>
       <item>is_leap_year</item>
+      <item>is_rooted_relative_filename</item>
+      <item>is_sq_string</item>
+      <item>is_valid_file_id</item>
+      <item>isa</item>
+      <item>isalnum</item>
+      <item>isalpha</item>
+      <item>isappdata</item>
+      <item>isargout</item>
+      <item>isascii</item>
+      <item>isaxes</item>
+      <item>isbanded</item>
+      <item>isbool</item>
+      <item>iscell</item>
+      <item>iscellstr</item>
+      <item>ischar</item>
+      <item>iscntrl</item>
+      <item>iscolormap</item>
+      <item>iscolumn</item>
+      <item>iscomplex</item>
+      <item>isdebugmode</item>
+      <item>isdefinite</item>
+      <item>isdeployed</item>
+      <item>isdiag</item>
+      <item>isdigit</item>
+      <item>isdir</item>
+      <item>isempty</item>
+      <item>isequal</item>
+      <item>isequaln</item>
+      <item>isfield</item>
+      <item>isfigure</item>
+      <item>isfinite</item>
+      <item>isfloat</item>
+      <item>isglobal</item>
+      <item>isgraph</item>
+      <item>isguirunning</item>
+      <item>ishandle</item>
+      <item>ishermitian</item>
+      <item>ishghandle</item>
+      <item>ishold</item>
+      <item>isieee</item>
+      <item>isindex</item>
+      <item>isinf</item>
+      <item>isinteger</item>
+      <item>isjava</item>
+      <item>iskeyword</item>
       <item>isletter</item>
-      <item>is_list</item>
-      <item>is_matrix</item>
-      <item>is_observable</item>
+      <item>islogical</item>
+      <item>islower</item>
+      <item>ismac</item>
+      <item>ismatrix</item>
+      <item>ismember</item>
+      <item>ismethod</item>
+      <item>isna</item>
+      <item>isnan</item>
+      <item>isnull</item>
+      <item>isnumeric</item>
+      <item>isobject</item>
+      <item>isocaps</item>
+      <item>isocolors</item>
+      <item>isonormals</item>
+      <item>isosurface</item>
       <item>ispc</item>
-      <item>is_sample</item>
-      <item>is_scalar</item>
+      <item>ispref</item>
+      <item>isprime</item>
+      <item>isprint</item>
+      <item>isprop</item>
+      <item>ispunct</item>
+      <item>isreal</item>
+      <item>isrow</item>
       <item>isscalar</item>
-      <item>is_signal_list</item>
-      <item>is_siso</item>
-      <item>is_square</item>
+      <item>issorted</item>
+      <item>isspace</item>
+      <item>issparse</item>
       <item>issquare</item>
-      <item>is_stabilizable</item>
-      <item>is_stable</item>
       <item>isstr</item>
-      <item>is_stream</item>
-      <item>is_struct</item>
-      <item>is_symmetric</item>
+      <item>isstrprop</item>
+      <item>isstruct</item>
+      <item>isstudent</item>
       <item>issymmetric</item>
+      <item>istril</item>
+      <item>istriu</item>
       <item>isunix</item>
-      <item>is_vector</item>
+      <item>isupper</item>
+      <item>isvarname</item>
       <item>isvector</item>
-      <item>jet707</item>
+      <item>isxdigit</item>
+      <item>j</item>
+      <item>java2mat</item>
+      <item>javaArray</item>
+      <item>javaMethod</item>
+      <item>javaObject</item>
+      <item>java_get</item>
+      <item>java_matrix_autoconversion</item>
+      <item>java_set</item>
+      <item>java_unsigned_autoconversion</item>
+      <item>javaaddpath</item>
+      <item>javachk</item>
+      <item>javaclasspath</item>
+      <item>javamem</item>
+      <item>javarmpath</item>
+      <item>jet</item>
+      <item>jit_enable</item>
+      <item>jit_failcnt</item>
+      <item>jit_startcnt</item>
+      <item>kbhit</item>
       <item>kendall</item>
+      <item>keyboard</item>
+      <item>keywords</item>
+      <item>kill</item>
       <item>kolmogorov_smirnov_cdf</item>
       <item>kolmogorov_smirnov_test</item>
       <item>kolmogorov_smirnov_test_2</item>
+      <item>kron</item>
       <item>kruskal_wallis_test</item>
       <item>krylov</item>
-      <item>krylovb</item>
       <item>kurtosis</item>
       <item>laplace_cdf</item>
       <item>laplace_inv</item>
       <item>laplace_pdf</item>
       <item>laplace_rnd</item>
+      <item>lasterr</item>
+      <item>lasterror</item>
+      <item>lastwarn</item>
       <item>lcm</item>
+      <item>ldivide</item>
+      <item>le</item>
+      <item>legend</item>
+      <item>legendre</item>
+      <item>length</item>
+      <item>lgamma</item>
+      <item>license</item>
+      <item>light</item>
+      <item>lighting</item>
       <item>lin2mu</item>
-      <item>listidx</item>
+      <item>line</item>
+      <item>lines</item>
+      <item>linkaxes</item>
+      <item>linkprop</item>
+      <item>linsolve</item>
+      <item>linspace</item>
+      <item>list_in_columns</item>
       <item>list_primes</item>
+      <item>listdlg</item>
       <item>loadaudio</item>
-      <item>loadimage</item>
+      <item>loaded_graphics_toolkits</item>
+      <item>loadobj</item>
+      <item>localfunctions</item>
+      <item>localtime</item>
+      <item>log</item>
+      <item>log10</item>
+      <item>log1p</item>
       <item>log2</item>
       <item>logical</item>
       <item>logistic_cdf</item>
       <item>logistic_inv</item>
       <item>logistic_pdf</item>
       <item>logistic_regression</item>
-      <item>logistic_regression_derivatives</item>
-      <item>logistic_regression_likelihood</item>
       <item>logistic_rnd</item>
       <item>logit</item>
       <item>loglog</item>
       <item>loglogerr</item>
       <item>logm</item>
-      <item>lognormal_cdf</item>
-      <item>lognormal_inv</item>
-      <item>lognormal_pdf</item>
-      <item>lognormal_rnd</item>
+      <item>logncdf</item>
+      <item>logninv</item>
+      <item>lognpdf</item>
+      <item>lognrnd</item>
       <item>logspace</item>
+      <item>lookfor</item>
+      <item>lookup</item>
       <item>lower</item>
-      <item>lqe</item>
-      <item>lqg</item>
-      <item>lqr</item>
-      <item>lsim</item>
-      <item>ltifr</item>
-      <item>lyap</item>
+      <item>ls</item>
+      <item>ls_command</item>
+      <item>lscov</item>
+      <item>lsode</item>
+      <item>lsode_options</item>
+      <item>lsqnonneg</item>
+      <item>lstat</item>
+      <item>lt</item>
+      <item>lu</item>
+      <item>luinc</item>
+      <item>luupdate</item>
+      <item>magic</item>
       <item>mahalanobis</item>
+      <item>make_absolute_filename</item>
+      <item>makeinfo_program</item>
       <item>manova</item>
+      <item>mat2cell</item>
+      <item>mat2str</item>
+      <item>material</item>
+      <item>matlabroot</item>
+      <item>matrix_type</item>
+      <item>max</item>
+      <item>max_recursion_depth</item>
       <item>mcnemar_test</item>
+      <item>md5sum</item>
       <item>mean</item>
       <item>meansq</item>
       <item>median</item>
       <item>menu</item>
+      <item>merge</item>
       <item>mesh</item>
-      <item>meshdom</item>
+      <item>meshc</item>
       <item>meshgrid</item>
-      <item>minfo</item>
+      <item>meshz</item>
+      <item>meta.class</item>
+      <item>meta.dynproperty</item>
+      <item>meta.event</item>
+      <item>meta.method</item>
+      <item>meta.package</item>
+      <item>meta.property</item>
+      <item>metaclass</item>
+      <item>methods</item>
+      <item>mex</item>
+      <item>mexext</item>
+      <item>mfilename</item>
+      <item>mgorth</item>
+      <item>min</item>
+      <item>minus</item>
+      <item>mislocked</item>
+      <item>missing_component_hook</item>
+      <item>missing_function_hook</item>
+      <item>mkdir</item>
+      <item>mkfifo</item>
+      <item>mkoctfile</item>
+      <item>mkpp</item>
+      <item>mkstemp</item>
+      <item>mktime</item>
+      <item>mldivide</item>
+      <item>mlock</item>
       <item>mod</item>
-      <item>moddemo</item>
+      <item>mode</item>
       <item>moment</item>
-      <item>mplot</item>
+      <item>mouse_wheel_zoom</item>
+      <item>movefile</item>
+      <item>mpoles</item>
+      <item>mpower</item>
+      <item>mrdivide</item>
+      <item>msgbox</item>
+      <item>mtimes</item>
       <item>mu2lin</item>
-      <item>multiplot</item>
+      <item>munlock</item>
+      <item>namelengthmax</item>
+      <item>nan</item>
       <item>nargchk</item>
+      <item>nargin</item>
+      <item>narginchk</item>
+      <item>nargout</item>
+      <item>nargoutchk</item>
+      <item>native_float_format</item>
+      <item>nbincdf</item>
+      <item>nbininv</item>
+      <item>nbinpdf</item>
+      <item>nbinrnd</item>
+      <item>nchoosek</item>
+      <item>ndgrid</item>
+      <item>ndims</item>
+      <item>ne</item>
+      <item>newplot</item>
+      <item>news</item>
       <item>nextpow2</item>
-      <item>nichols</item>
+      <item>nfields</item>
+      <item>nnz</item>
+      <item>nonzeros</item>
       <item>norm</item>
-      <item>normal_cdf</item>
-      <item>normal_inv</item>
-      <item>normal_pdf</item>
-      <item>normal_rnd</item>
+      <item>normcdf</item>
+      <item>normest</item>
+      <item>normest1</item>
+      <item>norminv</item>
+      <item>normpdf</item>
+      <item>normrnd</item>
       <item>not</item>
-      <item>nper</item>
-      <item>npv</item>
+      <item>now</item>
+      <item>nproc</item>
+      <item>nth_element</item>
+      <item>nthargout</item>
+      <item>nthroot</item>
       <item>ntsc2rgb</item>
       <item>null</item>
+      <item>num2cell</item>
+      <item>num2hex</item>
       <item>num2str</item>
-      <item>nyquist</item>
-      <item>obsv</item>
+      <item>numel</item>
+      <item>numfields</item>
+      <item>nzmax</item>
       <item>ocean</item>
+      <item>octave_config_info</item>
+      <item>octave_core_file_limit</item>
+      <item>octave_core_file_name</item>
+      <item>octave_core_file_options</item>
+      <item>octave_tmp_file_name</item>
+      <item>ode23</item>
+      <item>ode45</item>
+      <item>odeget</item>
+      <item>odeplot</item>
+      <item>odeset</item>
       <item>ols</item>
-      <item>oneplot</item>
-      <item>ord2</item>
+      <item>onCleanup</item>
+      <item>onenormest</item>
+      <item>ones</item>
+      <item>open</item>
+      <item>optimget</item>
+      <item>optimize_subsasgn_calls</item>
+      <item>optimset</item>
+      <item>or</item>
+      <item>orderfields</item>
+      <item>ordschur</item>
+      <item>orient</item>
       <item>orth</item>
-      <item>__outlist__</item>
+      <item>ostrsplit</item>
+      <item>output_precision</item>
       <item>pack</item>
-      <item>packedform</item>
-      <item>packsys</item>
-      <item>parallel</item>
+      <item>padecoef</item>
+      <item>page_output_immediately</item>
+      <item>page_screen_output</item>
+      <item>pan</item>
       <item>paren</item>
-      <item>pascal_cdf</item>
-      <item>pascal_inv</item>
-      <item>pascal_pdf</item>
-      <item>pascal_rnd</item>
+      <item>pareto</item>
+      <item>parseparams</item>
+      <item>pascal</item>
+      <item>patch</item>
       <item>path</item>
+      <item>pathdef</item>
+      <item>pathsep</item>
+      <item>pause</item>
+      <item>pbaspect</item>
+      <item>pcg</item>
+      <item>pchip</item>
+      <item>pclose</item>
+      <item>pcolor</item>
+      <item>pcr</item>
+      <item>peaks</item>
       <item>periodogram</item>
-      <item>perror</item>
-      <item>place</item>
+      <item>perl</item>
+      <item>perms</item>
+      <item>permute</item>
+      <item>pie</item>
+      <item>pie3</item>
+      <item>pink</item>
+      <item>pinv</item>
+      <item>pipe</item>
+      <item>pkg</item>
+      <item>planerot</item>
       <item>playaudio</item>
       <item>plot</item>
-      <item>plot_border</item>
-      <item>__plr__</item>
-      <item>__plr1__</item>
-      <item>__plr2__</item>
-      <item>__plt__</item>
-      <item>__plt1__</item>
-      <item>__plt2__</item>
-      <item>__plt2mm__</item>
-      <item>__plt2mv__</item>
-      <item>__plt2ss__</item>
-      <item>__plt2vm__</item>
-      <item>__plt2vv__</item>
-      <item>__pltopt__</item>
-      <item>__pltopt1__</item>
-      <item>pmt</item>
-      <item>poisson_cdf</item>
-      <item>poisson_inv</item>
-      <item>poisson_pdf</item>
-      <item>poisson_rnd</item>
+      <item>plot3</item>
+      <item>plotmatrix</item>
+      <item>plotyy</item>
+      <item>plus</item>
+      <item>poisscdf</item>
+      <item>poissinv</item>
+      <item>poisspdf</item>
+      <item>poissrnd</item>
       <item>pol2cart</item>
       <item>polar</item>
       <item>poly</item>
+      <item>polyaffine</item>
+      <item>polyarea</item>
       <item>polyder</item>
-      <item>polyderiv</item>
+      <item>polyeig</item>
       <item>polyfit</item>
-      <item>polyinteg</item>
+      <item>polygcd</item>
+      <item>polyint</item>
       <item>polyout</item>
       <item>polyreduce</item>
       <item>polyval</item>
       <item>polyvalm</item>
+      <item>popen</item>
       <item>popen2</item>
       <item>postpad</item>
       <item>pow2</item>
+      <item>power</item>
+      <item>powerset</item>
+      <item>ppder</item>
+      <item>ppint</item>
+      <item>ppjumps</item>
       <item>ppplot</item>
+      <item>ppval</item>
+      <item>pqpnonneg</item>
+      <item>prctile</item>
+      <item>prefdir</item>
+      <item>preferences</item>
       <item>prepad</item>
+      <item>primes</item>
+      <item>print</item>
+      <item>print_empty_dimensions</item>
+      <item>print_struct_array_contents</item>
+      <item>print_usage</item>
+      <item>printd</item>
+      <item>printf</item>
+      <item>prism</item>
       <item>probit</item>
-      <item>prompt</item>
+      <item>prod</item>
+      <item>profexplore</item>
+      <item>profexport</item>
+      <item>profile</item>
+      <item>profshow</item>
+      <item>program_invocation_name</item>
+      <item>program_name</item>
       <item>prop_test_2</item>
-      <item>pv</item>
-      <item>pvl</item>
-      <item>pzmap</item>
-      <item>qconj</item>
-      <item>qcoordinate_plot</item>
-      <item>qderiv</item>
-      <item>qderivmat</item>
-      <item>qinv</item>
-      <item>qmult</item>
+      <item>psi</item>
+      <item>publish</item>
+      <item>putenv</item>
+      <item>puts</item>
+      <item>pwd</item>
+      <item>python</item>
+      <item>qmr</item>
+      <item>qp</item>
       <item>qqplot</item>
-      <item>qtrans</item>
-      <item>qtransv</item>
-      <item>qtransvmat</item>
-      <item>quaternion</item>
+      <item>qr</item>
+      <item>qrdelete</item>
+      <item>qrinsert</item>
+      <item>qrshift</item>
+      <item>qrupdate</item>
+      <item>quad</item>
+      <item>quad_options</item>
+      <item>quadcc</item>
+      <item>quadgk</item>
+      <item>quadl</item>
+      <item>quadv</item>
+      <item>quantile</item>
+      <item>questdlg</item>
+      <item>quit</item>
+      <item>quiver</item>
+      <item>quiver3</item>
+      <item>qz</item>
       <item>qzhess</item>
-      <item>qzval</item>
+      <item>rad2deg</item>
+      <item>rainbow</item>
+      <item>rand</item>
+      <item>rande</item>
+      <item>randg</item>
+      <item>randi</item>
+      <item>randn</item>
+      <item>randp</item>
       <item>randperm</item>
       <item>range</item>
       <item>rank</item>
       <item>ranks</item>
-      <item>rate</item>
+      <item>rat</item>
+      <item>rats</item>
+      <item>rcond</item>
+      <item>rdivide</item>
+      <item>readdir</item>
+      <item>readline_re_read_init_file</item>
+      <item>readline_read_init_file</item>
+      <item>real</item>
+      <item>reallog</item>
+      <item>realpow</item>
+      <item>realsqrt</item>
       <item>record</item>
-      <item>rectangle_lw</item>
-      <item>rectangle_sw</item>
+      <item>rectangle</item>
+      <item>rectint</item>
+      <item>recycle</item>
+      <item>reducepatch</item>
+      <item>reducevolume</item>
+      <item>refresh</item>
+      <item>refreshdata</item>
+      <item>regexp</item>
+      <item>regexpi</item>
+      <item>regexprep</item>
+      <item>regexptranslate</item>
+      <item>register_graphics_toolkit</item>
+      <item>rehash</item>
       <item>rem</item>
+      <item>remove_input_event_hook</item>
+      <item>repelems</item>
       <item>repmat</item>
+      <item>reset</item>
+      <item>reshape</item>
       <item>residue</item>
+      <item>resize</item>
+      <item>restoredefaultpath</item>
+      <item>rethrow</item>
       <item>rgb2hsv</item>
       <item>rgb2ind</item>
       <item>rgb2ntsc</item>
+      <item>rgbplot</item>
+      <item>ribbon</item>
       <item>rindex</item>
-      <item>rldemo</item>
-      <item>rlocus</item>
+      <item>rmappdata</item>
+      <item>rmfield</item>
+      <item>rmpath</item>
+      <item>rmpref</item>
       <item>roots</item>
+      <item>rose</item>
+      <item>rosser</item>
       <item>rot90</item>
+      <item>rotate</item>
+      <item>rotate3d</item>
       <item>rotdim</item>
-      <item>rotg</item>
+      <item>round</item>
+      <item>roundb</item>
       <item>rows</item>
-      <item>run_cmd</item>
+      <item>rref</item>
+      <item>rsf2csf</item>
+      <item>run</item>
       <item>run_count</item>
       <item>run_test</item>
+      <item>rundemos</item>
+      <item>runlength</item>
+      <item>runtests</item>
+      <item>save_default_options</item>
+      <item>save_header_format_string</item>
+      <item>save_precision</item>
+      <item>saveas</item>
       <item>saveaudio</item>
-      <item>saveimage</item>
+      <item>saveobj</item>
+      <item>savepath</item>
+      <item>scanf</item>
+      <item>scatter</item>
+      <item>scatter3</item>
+      <item>schur</item>
       <item>sec</item>
+      <item>secd</item>
       <item>sech</item>
       <item>semicolon</item>
       <item>semilogx</item>
       <item>semilogxerr</item>
       <item>semilogy</item>
       <item>semilogyerr</item>
-      <item>series</item>
+      <item>set</item>
+      <item>setappdata</item>
       <item>setaudio</item>
-      <item>setstr</item>
+      <item>setdiff</item>
+      <item>setenv</item>
+      <item>setfield</item>
+      <item>setgrent</item>
+      <item>setpref</item>
+      <item>setpwent</item>
+      <item>setxor</item>
+      <item>shading</item>
       <item>shg</item>
       <item>shift</item>
       <item>shiftdim</item>
+      <item>shrinkfaces</item>
+      <item>sighup_dumps_octave_core</item>
+      <item>sign</item>
       <item>sign_test</item>
+      <item>signbit</item>
+      <item>sigterm_dumps_octave_core</item>
+      <item>silent_functions</item>
+      <item>sin</item>
       <item>sinc</item>
+      <item>sind</item>
       <item>sinetone</item>
       <item>sinewave</item>
+      <item>single</item>
+      <item>sinh</item>
+      <item>size</item>
+      <item>size_equal</item>
+      <item>sizemax</item>
+      <item>sizeof</item>
       <item>skewness</item>
+      <item>sleep</item>
+      <item>slice</item>
+      <item>smooth3</item>
       <item>sombrero</item>
-      <item>sortcom</item>
+      <item>sort</item>
+      <item>sortrows</item>
+      <item>sound</item>
+      <item>soundsc</item>
+      <item>source</item>
+      <item>spalloc</item>
+      <item>sparse</item>
+      <item>sparse_auto_mutate</item>
+      <item>spaugment</item>
+      <item>spconvert</item>
+      <item>spdiags</item>
       <item>spearman</item>
       <item>spectral_adf</item>
       <item>spectral_xdf</item>
+      <item>specular</item>
+      <item>speed</item>
       <item>spencer</item>
+      <item>speye</item>
+      <item>spfun</item>
       <item>sph2cart</item>
-      <item>split</item>
-      <item>ss</item>
-      <item>ss2sys</item>
-      <item>ss2tf</item>
-      <item>ss2zp</item>
+      <item>sphere</item>
+      <item>spinmap</item>
+      <item>spline</item>
+      <item>splinefit</item>
+      <item>split_long_rows</item>
+      <item>spones</item>
+      <item>spparms</item>
+      <item>sprand</item>
+      <item>sprandn</item>
+      <item>sprandsym</item>
+      <item>sprank</item>
+      <item>spring</item>
+      <item>sprintf</item>
+      <item>spstats</item>
+      <item>spy</item>
+      <item>sqp</item>
+      <item>sqrt</item>
+      <item>sqrtm</item>
+      <item>squeeze</item>
+      <item>sscanf</item>
       <item>stairs</item>
-      <item>starp</item>
+      <item>stat</item>
       <item>statistics</item>
       <item>std</item>
+      <item>stderr</item>
+      <item>stdin</item>
       <item>stdnormal_cdf</item>
       <item>stdnormal_inv</item>
       <item>stdnormal_pdf</item>
       <item>stdnormal_rnd</item>
-      <item>step</item>
-      <item>__stepimp__</item>
+      <item>stdout</item>
+      <item>stem</item>
+      <item>stem3</item>
+      <item>stemleaf</item>
       <item>stft</item>
-      <item>str2mat</item>
+      <item>str2double</item>
+      <item>str2func</item>
       <item>str2num</item>
-      <item>strappend</item>
       <item>strcat</item>
+      <item>strchr</item>
       <item>strcmp</item>
-      <item>strerror</item>
+      <item>strcmpi</item>
+      <item>strfind</item>
+      <item>strftime</item>
+      <item>string_fill_char</item>
+      <item>strjoin</item>
       <item>strjust</item>
+      <item>strmatch</item>
+      <item>strncmp</item>
+      <item>strncmpi</item>
+      <item>strptime</item>
+      <item>strread</item>
       <item>strrep</item>
-      <item>struct_contains</item>
-      <item>struct_elements</item>
-      <item>studentize</item>
+      <item>strsplit</item>
+      <item>strtok</item>
+      <item>strtrim</item>
+      <item>strtrunc</item>
+      <item>struct</item>
+      <item>struct2cell</item>
+      <item>struct2hdl</item>
+      <item>struct_levels_to_print</item>
+      <item>structfun</item>
+      <item>strvcat</item>
       <item>sub2ind</item>
       <item>subplot</item>
+      <item>subsasgn</item>
+      <item>subsindex</item>
+      <item>subspace</item>
+      <item>subsref</item>
       <item>substr</item>
-      <item>subwindow</item>
-      <item>swap</item>
-      <item>swapcols</item>
-      <item>swaprows</item>
-      <item>sylvester_matrix</item>
+      <item>substruct</item>
+      <item>sum</item>
+      <item>summer</item>
+      <item>sumsq</item>
+      <item>superiorto</item>
+      <item>suppress_verbose_help_message</item>
+      <item>surf</item>
+      <item>surface</item>
+      <item>surfc</item>
+      <item>surfl</item>
+      <item>surfnorm</item>
+      <item>svd</item>
+      <item>svd_driver</item>
+      <item>svds</item>
+      <item>swapbytes</item>
+      <item>syl</item>
+      <item>sylvester</item>
+      <item>symamd</item>
+      <item>symbfact</item>
+      <item>symrcm</item>
+      <item>symvar</item>
       <item>synthesis</item>
-      <item>sys2fir</item>
-      <item>sys2ss</item>
-      <item>sys2tf</item>
-      <item>sys2zp</item>
-      <item>sysadd</item>
-      <item>sysappend</item>
-      <item>syschnames</item>
-      <item>__syschnamesl__</item>
-      <item>syschtsam</item>
-      <item>__sysconcat__</item>
-      <item>sysconnect</item>
-      <item>syscont</item>
-      <item>__syscont_disc__</item>
-      <item>__sysdefioname__</item>
-      <item>__sysdefstname__</item>
-      <item>sysdimensions</item>
-      <item>sysdisc</item>
-      <item>sysdup</item>
-      <item>sysgetsignals</item>
-      <item>sysgettsam</item>
-      <item>sysgettype</item>
-      <item>sysgroup</item>
-      <item>__sysgroupn__</item>
-      <item>sysidx</item>
-      <item>sysmin</item>
-      <item>sysmult</item>
-      <item>sysout</item>
-      <item>sysprune</item>
-      <item>sysreorder</item>
-      <item>sysrepdemo</item>
-      <item>sysscale</item>
-      <item>syssetsignals</item>
-      <item>syssub</item>
-      <item>sysupdate</item>
-      <item>table</item>
-      <item>t_cdf</item>
-      <item>tempdir</item>
-      <item>tempname</item>
-      <item>texas_lotto</item>
-      <item>tf</item>
-      <item>tf2ss</item>
-      <item>tf2sys</item>
-      <item>__tf2sysl__</item>
-      <item>tf2zp</item>
-      <item>__tfl__</item>
-      <item>tfout</item>
-      <item>tic</item>
-      <item>t_inv</item>
-      <item>title</item>
-      <item>toc</item>
-      <item>toeplitz</item>
-      <item>top_title</item>
-      <item>t_pdf</item>
-      <item>trace</item>
-      <item>triangle_lw</item>
-      <item>triangle_sw</item>
-      <item>tril</item>
-      <item>triu</item>
-      <item>t_rnd</item>
+      <item>system</item>
       <item>t_test</item>
       <item>t_test_2</item>
       <item>t_test_regression</item>
-      <item>tzero</item>
-      <item>tzero2</item>
-      <item>ugain</item>
-      <item>uniform_cdf</item>
-      <item>uniform_inv</item>
-      <item>uniform_pdf</item>
-      <item>uniform_rnd</item>
-      <item>union</item>
-      <item>unix</item>
-      <item>unpacksys</item>
-      <item>unwrap</item>
-      <item>upper</item>
+      <item>table</item>
+      <item>tan</item>
+      <item>tand</item>
+      <item>tanh</item>
+      <item>tar</item>
+      <item>tcdf</item>
+      <item>tempdir</item>
+      <item>tempname</item>
+      <item>terminal_size</item>
+      <item>test</item>
+      <item>tetramesh</item>
+      <item>texi_macros_file</item>
+      <item>text</item>
+      <item>textread</item>
+      <item>textscan</item>
+      <item>tic</item>
+      <item>tilde_expand</item>
+      <item>time</item>
+      <item>times</item>
+      <item>tinv</item>
+      <item>title</item>
+      <item>tmpfile</item>
+      <item>tmpnam</item>
+      <item>toascii</item>
+      <item>toc</item>
+      <item>toeplitz</item>
+      <item>tolower</item>
+      <item>toupper</item>
+      <item>tpdf</item>
+      <item>trace</item>
+      <item>transpose</item>
+      <item>trapz</item>
+      <item>treelayout</item>
+      <item>treeplot</item>
+      <item>tril</item>
+      <item>trimesh</item>
+      <item>triplequad</item>
+      <item>triplot</item>
+      <item>trisurf</item>
+      <item>triu</item>
+      <item>trnd</item>
+      <item>true</item>
+      <item>tsearch</item>
+      <item>tsearchn</item>
+      <item>type</item>
+      <item>typecast</item>
+      <item>typeinfo</item>
       <item>u_test</item>
-      <item>values</item>
+      <item>uibuttongroup</item>
+      <item>uicontextmenu</item>
+      <item>uicontrol</item>
+      <item>uigetdir</item>
+      <item>uigetfile</item>
+      <item>uimenu</item>
+      <item>uint16</item>
+      <item>uint32</item>
+      <item>uint64</item>
+      <item>uint8</item>
+      <item>uipanel</item>
+      <item>uipushtool</item>
+      <item>uiputfile</item>
+      <item>uiresume</item>
+      <item>uitoggletool</item>
+      <item>uitoolbar</item>
+      <item>uiwait</item>
+      <item>umask</item>
+      <item>uminus</item>
+      <item>uname</item>
+      <item>undo_string_escapes</item>
+      <item>unidcdf</item>
+      <item>unidinv</item>
+      <item>unidpdf</item>
+      <item>unidrnd</item>
+      <item>unifcdf</item>
+      <item>unifinv</item>
+      <item>unifpdf</item>
+      <item>unifrnd</item>
+      <item>union</item>
+      <item>unique</item>
+      <item>unix</item>
+      <item>unlink</item>
+      <item>unmkpp</item>
+      <item>unpack</item>
+      <item>unsetenv</item>
+      <item>untabify</item>
+      <item>untar</item>
+      <item>unwrap</item>
+      <item>unzip</item>
+      <item>uplus</item>
+      <item>upper</item>
+      <item>urlread</item>
+      <item>urlwrite</item>
+      <item>usage</item>
+      <item>usejava</item>
+      <item>usleep</item>
+      <item>validateattributes</item>
+      <item>validatestring</item>
       <item>vander</item>
       <item>var</item>
       <item>var_test</item>
       <item>vec</item>
       <item>vech</item>
+      <item>vectorize</item>
+      <item>ver</item>
       <item>version</item>
-      <item>vol</item>
-      <item>weibull_cdf</item>
-      <item>weibull_inv</item>
-      <item>weibull_pdf</item>
-      <item>weibull_rnd</item>
+      <item>vertcat</item>
+      <item>view</item>
+      <item>viridis</item>
+      <item>voronoi</item>
+      <item>voronoin</item>
+      <item>waitbar</item>
+      <item>waitfor</item>
+      <item>waitforbuttonpress</item>
+      <item>waitpid</item>
+      <item>warndlg</item>
+      <item>warning</item>
+      <item>warning_ids</item>
+      <item>warranty</item>
+      <item>waterfall</item>
+      <item>wavread</item>
+      <item>wavwrite</item>
+      <item>wblcdf</item>
+      <item>wblinv</item>
+      <item>wblpdf</item>
+      <item>wblrnd</item>
+      <item>weekday</item>
       <item>welch_test</item>
-      <item>wgt1o</item>
-      <item>wiener_rnd</item>
+      <item>what</item>
+      <item>which</item>
+      <item>white</item>
+      <item>whitebg</item>
+      <item>whos_line_format</item>
+      <item>wienrnd</item>
       <item>wilcoxon_test</item>
+      <item>wilkinson</item>
+      <item>winter</item>
       <item>xlabel</item>
+      <item>xlim</item>
       <item>xor</item>
+      <item>yes_or_no</item>
       <item>ylabel</item>
+      <item>ylim</item>
       <item>yulewalker</item>
-      <item>zgfmul</item>
-      <item>zgfslv</item>
-      <item>zginit</item>
-      <item>__zgpbal__</item>
-      <item>zgreduce</item>
-      <item>zgrownorm</item>
-      <item>zgscal</item>
-      <item>zgsgiv</item>
-      <item>zgshsr</item>
-      <item>zlabel</item>
-      <item>zp</item>
-      <item>zp2ss</item>
-      <item>__zp2ssg2__</item>
-      <item>zp2sys</item>
-      <item>zp2tf</item>
-      <item>zpout</item>
       <item>z_test</item>
       <item>z_test_2</item>
+      <item>zeros</item>
+      <item>zip</item>
+      <item>zlabel</item>
+      <item>zlim</item>
+      <item>zoom</item>
+      <item>zscore</item>
     </list>
     
     <list name="forge">
@@ -2113,23 +2714,37 @@
         end*: for istance, for can be closed by endif. This is done because the catchall end 
         keyword is widely used to close a number of blocks (including if and for).
         If you have an improvement, please contribute it!-->
-        <RegExpr context="#stay" attribute="Keyword" String="\b(for)\b" beginRegion="block" />
-        <RegExpr context="#stay" attribute="Keyword" String="\b(endfor)\b" endRegion="block" />
-        <RegExpr context="#stay" attribute="Keyword" String="\b(if)\b" beginRegion="block" />
-        <RegExpr context="#stay" attribute="Keyword" String="\b(endif)\b" endRegion="block" />
-        <RegExpr context="#stay" attribute="Keyword" String="\b(do)\b" beginRegion="block" />
-        <RegExpr context="#stay" attribute="Keyword" String="\b(until)\b" endRegion="block" />
-        <RegExpr context="#stay" attribute="Keyword" String="\b(while)\b" beginRegion="block" />
-        <RegExpr context="#stay" attribute="Keyword" String="\b(endwhile)\b" endRegion="block" />
-        <RegExpr context="#stay" attribute="Keyword" String="\b(function)\b" beginRegion="block" />
-        <RegExpr context="#stay" attribute="Keyword" String="\b(endfunction)\b" endRegion="block" />
-        <RegExpr context="#stay" attribute="Keyword" String="\b(switch)\b" beginRegion="Switch" />
-        <RegExpr context="#stay" attribute="Keyword" String="\b(endswitch)\b" endRegion="Switch" />
-        <RegExpr context="#stay" attribute="Keyword" String="\b(try)\b" beginRegion="Try" />
-        <RegExpr context="#stay" attribute="Keyword" String="\b(end_try_catch)\b" endRegion="Try" />
+        <WordDetect context="#stay" attribute="Keyword" String="for" beginRegion="block" />
+        <WordDetect context="#stay" attribute="Keyword" String="endfor" endRegion="block" />
+        <WordDetect context="#stay" attribute="Keyword" String="if" beginRegion="block" />
+        <WordDetect context="#stay" attribute="Keyword" String="endif" endRegion="block" />
+        <WordDetect context="#stay" attribute="Keyword" String="do" beginRegion="block" />
+        <WordDetect context="#stay" attribute="Keyword" String="until" endRegion="block" />
+        <WordDetect context="#stay" attribute="Keyword" String="while" beginRegion="block" />
+        <WordDetect context="#stay" attribute="Keyword" String="endwhile" endRegion="block" />
+        <WordDetect context="#stay" attribute="Keyword" String="function" beginRegion="block" />
+        <WordDetect context="#stay" attribute="Keyword" String="endfunction" endRegion="block" />
+        <WordDetect context="#stay" attribute="Keyword" String="unwind_protect" beginRegion="block" />
+        <WordDetect context="#stay" attribute="Keyword" String="end_unwind_protect" endRegion="block" />
+        <WordDetect context="#stay" attribute="Keyword" String="parfor" beginRegion="block" />
+        <WordDetect context="#stay" attribute="Keyword" String="endparfor" endRegion="block" />
+        <WordDetect context="#stay" attribute="Keyword" String="classdef" beginRegion="block" />
+        <WordDetect context="#stay" attribute="Keyword" String="endclassdef" endRegion="block" />
+        <WordDetect context="#stay" attribute="Keyword" String="enumeration" beginRegion="block" />
+        <WordDetect context="#stay" attribute="Keyword" String="endenumeration" endRegion="block" />
+        <WordDetect context="#stay" attribute="Keyword" String="events" beginRegion="block" />
+        <WordDetect context="#stay" attribute="Keyword" String="endevents" endRegion="block" />
+        <WordDetect context="#stay" attribute="Keyword" String="methods" beginRegion="block" />
+        <WordDetect context="#stay" attribute="Keyword" String="endmethods" endRegion="block" />
+        <WordDetect context="#stay" attribute="Keyword" String="properties" beginRegion="block" />
+        <WordDetect context="#stay" attribute="Keyword" String="endproperties" endRegion="block" />
+        <WordDetect context="#stay" attribute="Keyword" String="switch" beginRegion="Switch" />
+        <WordDetect context="#stay" attribute="Keyword" String="endswitch" endRegion="Switch" />
+        <WordDetect context="#stay" attribute="Keyword" String="try" beginRegion="Try" />
+        <WordDetect context="#stay" attribute="Keyword" String="end_try_catch" endRegion="Try" />
         <!-- Catchall end keyword -->
-        <RegExpr context="#stay" attribute="Keyword" String="\b(end)\b" endRegion="block" />
-        
+        <WordDetect context="#stay" attribute="Keyword" String="end" endRegion="block" />
+
         <!-- Look-ahead for adjoint ' after variable, number literal, closing braces and .' -->
         <RegExpr context="_adjoint" attribute="Variable" String="[a-zA-Z]\w*(?=')" />
         <RegExpr context="_adjoint" attribute="Number" String="(\d+(\.\d+)?|\.\d+)([eE][+-]?\d+)?[ij]?(?=')" />
@@ -2154,7 +2769,7 @@
         <RegExpr context="#stay" attribute="Variable" String="[a-zA-Z]\w*" />
         <RegExpr context="#stay" attribute="Number" String="(\d+(\.\d+)?|\.\d+)([eE][+-]?\d+)?[ij]?" />
         <AnyChar context="#stay" attribute="Delimiter" String="()[]{}"/>
-              
+
         <!-- Three- and two-character operators -->
         <StringDetect context="#stay" attribute="Operator" String="..."/>
         <StringDetect context="#stay" attribute="Operator" String="=="/>
@@ -2191,17 +2806,17 @@
     <itemDatas>
       <itemData name="Normal Text" defStyleNum="dsNormal" spellChecking="false"/>
       <itemData name="Variable" defStyleNum="dsNormal" spellChecking="false"/>
-      <itemData name="Operator" defStyleNum="dsNormal" spellChecking="false"/>
+      <itemData name="Operator" defStyleNum="dsOperator" spellChecking="false"/>
       <itemData name="Number" defStyleNum="dsFloat" spellChecking="false"/>
       <itemData name="Delimiter" defStyleNum="dsNormal" spellChecking="false"/>
-      <itemData name="String" defStyleNum="dsString" color="#b20000"/>
-      <itemData name="Incomplete String" defStyleNum="dsChar" color="#a020f0" spellChecking="false"/>
-      <itemData name="Keyword"  defStyleNum="dsNormal" color="#0000ff" spellChecking="false"/>
-      <itemData name="Comment" defStyleNum="dsComment" color="#009900"/>
-      <itemData name="Functions" defStyleNum="dsFunction" color="#0000ff" selColor="#00ff00" bold="1" italic="1" spellChecking="false"/>
-      <itemData name="Forge" defStyleNum="dsFunction" color="#000099" selColor="#009900" bold="1" italic="1" spellChecking="false"/>
-      <itemData name="Builtin" defStyleNum="dsBaseN" color="#b28c00" spellChecking="false"/>
-      <itemData name="Commands" defStyleNum="dsFunction" color="#b28c00" spellChecking="false"/>
+      <itemData name="String" defStyleNum="dsString"/>
+      <itemData name="Incomplete String" defStyleNum="dsChar" spellChecking="false"/>
+      <itemData name="Keyword"  defStyleNum="dsControlFlow" spellChecking="false"/>
+      <itemData name="Comment" defStyleNum="dsComment"/>
+      <itemData name="Functions" defStyleNum="dsFunction" spellChecking="false"/>
+      <itemData name="Forge" defStyleNum="dsFunction" spellChecking="false"/>
+      <itemData name="Builtin" defStyleNum="dsBuiltIn" spellChecking="false"/>
+      <itemData name="Commands" defStyleNum="dsBuiltIn" spellChecking="false"/>
     </itemDatas>
 
   </highlighting>
@@ -2211,7 +2826,7 @@
       <comment name="singleLine" start="%" />
       <comment name="singleLine" start="#" />
     </comments>
-    <keywords casesensitive="1"/>
+    <keywords weakDeliminator="." casesensitive="1"/>
   </general>
 
 </language>

@@ -22,7 +22,7 @@
 <language
     name="ISO C++"
     section="Sources"
-    version="14"
+    version="17"
     kateversion="5.0"
     indenter="cstyle"
     style="C++"
@@ -38,6 +38,7 @@
     http://kde-files.org/content/show.php?content=90660
   -->
   <highlighting>
+    <!-- https://en.cppreference.com/w/cpp/keyword -->
     <list name="controlflow">
       <item>break</item>
       <item>case</item>
@@ -55,14 +56,14 @@
       <item>try</item>
       <item>while</item>
     </list>
+
     <list name="keywords">
       <item>alignof</item>
       <item>alignas</item>
       <item>asm</item>
       <item>auto</item>
       <item>class</item>
-      <item>concept</item> <!-- C++20 -->
-      <item>requires</item> <!-- C++20 -->
+      <item>consteval</item> <!-- C++20 -->
       <item>constexpr</item>
       <item>const_cast</item>
       <item>decltype</item>
@@ -70,7 +71,6 @@
       <item>dynamic_cast</item>
       <item>enum</item>
       <item>explicit</item>
-      <item>export</item> <!-- Unused but reserved for future use -->
       <item>false</item>
       <item>final</item> <!-- According N3272 -->
       <item>friend</item>
@@ -110,20 +110,26 @@
       <item>or_eq</item>
       <item>xor</item>
       <item>xor_eq</item>
+      <!-- Concept -->
+      <item>concept</item>
+      <item>requires</item>
       <!-- TM TS -->
-      <!-- <list>atomic_cancel</list>
-      <list>atomic_commit</list>
-      <list>atomic_noexcept</list>
-      <list>synchronized</list>
-      <list>transaction_safe</list>
-      <list>transaction_safe_dynamic</list> -->
-      <!-- module TS -->
-      <!-- <list>import</list>
-      <list>module</list> -->
-      <!-- coroutine TS -->
-      <!-- <list>co_await</list>
-      <list>co_return</list>
-      <list>co_yield</list> -->
+      <!-- <item>atomic_cancel</item>
+      <item>atomic_commit</item>
+      <item>atomic_noexcept</item>
+      <item>synchronized</item>
+      <item>transaction_safe</item>
+      <item>transaction_safe_dynamic</item> -->
+      <!-- module -->
+      <item>import</item>
+      <item>module</item>
+      <item>export</item> <!-- Unused but reserved, keyword since c++20 -->
+      <!-- coroutine -->
+      <item>co_await</item>
+      <item>co_return</item>
+      <item>co_yield</item>
+      <!-- reflexion TS -->
+      <!-- <item>reflexpr</item> -->
     </list>
     <!-- This keyword may appear in InternalsNS context. For example in code:
       details::some_class::template some_templated_static();
@@ -160,9 +166,11 @@
       <item>using</item>
     </list>
 
+    <!-- https://en.cppreference.com/w/cpp/keyword -->
     <list name="types">
       <item>bool</item>
       <item>char</item>
+      <item>char8_t</item> <!-- C++20 -->
       <item>char16_t</item>
       <item>char32_t</item>
       <item>double</item>
@@ -216,7 +224,7 @@
       <item>const</item>
       <item>extern</item>
       <item>mutable</item>
-      <item>register</item>
+      <item>register</item> <!-- The keyword is unused and reserved (c++17) -->
       <item>static</item>
       <item>thread_local</item>
       <item>volatile</item>
@@ -239,7 +247,10 @@
       <item>__func__</item>
       <item>assert</item>
       <item>_Pragma</item>
+      <!-- C++17 -->
       <item>__has_include</item>
+      <!-- C++20 -->
+      <item>__has_cpp_attribute</item>
     </list>
     <list name="InMacro">
       <item>__VA_ARGS__</item>
@@ -283,15 +294,15 @@
         <!-- Match scope regions -->
         <DetectChar attribute="Symbol" context="#stay" char="{" beginRegion="Brace1" />
         <DetectChar attribute="Symbol" context="#stay" char="}" endRegion="Brace1" />
+        <Detect2Chars attribute="Symbol" context="#stay" char="&lt;" char1="%" beginRegion="Brace1" /> <!-- Digraph: { -->
+        <Detect2Chars attribute="Symbol" context="#stay" char="%" char1="&gt;" endRegion="Brace1" /> <!-- Digraph: } -->
         <!-- Detect attributes -->
         <Detect2Chars attribute="Symbol" context="Attribute" char="[" char1="[" />
+        <StringDetect attribute="Symbol" context="Attribute" String="&lt;:&lt;:" /> <!-- Digraph: [[ -->
         <!-- Match numbers -->
         <RegExpr attribute="Decimal" context="Number" String="\.?[0-9]" lookAhead="true" />
         <!-- Match comments -->
         <IncludeRules context="match comments and region markers" />
-        <!-- Match punctuators -->
-        <AnyChar attribute="Separator Symbol" context="#stay" String="&separators;" />
-        <AnyChar attribute="Symbol" context="#stay" String="&punctuators;" />
         <!-- Match keywords -->
         <IncludeRules context="match keywords" />
         <!-- Match string literals -->
@@ -309,6 +320,9 @@
         <IncludeRules context="match identifier" />
         <!-- Match preprocessor directives -->
         <RegExpr attribute="Preprocessor" context="AfterHash" String="&ispphash;" lookAhead="true" />
+        <!-- Match punctuators -->
+        <AnyChar attribute="Separator Symbol" context="#stay" String="&separators;" />
+        <AnyChar attribute="Symbol" context="#stay" String="&punctuators;" />
         <!-- Match invalid symbols -->
         <AnyChar attribute="Error" context="#stay" String="$@`" />
       </context>
@@ -505,8 +519,10 @@
 
 
       <context name="Attribute" attribute="Attribute" lineEndContext="#stay">
+        <DetectSpaces/>
         <keyword attribute="Standard Attribute" context="#stay" String="attributes" />
         <Detect2Chars attribute="Symbol" context="#pop" char="]" char1="]" />
+        <StringDetect attribute="Symbol" context="#pop" String=":&gt;:&gt;" /> <!-- Digraph: ]] -->
         <DetectChar attribute="Separator Symbol" context="#stay" char="," />
         <AnyChar attribute="Symbol" context="#stay" String="&punctuators;" />
         <!-- Attributes may contain some text: [[deprecated("Reason text")]] -->
@@ -684,6 +700,7 @@
         <AnyChar attribute="Symbol" context="#stay" String="{}" />
         <!-- Detect attributes -->
         <Detect2Chars attribute="Symbol" context="Attribute In PP" char="[" char1="[" />
+        <StringDetect attribute="Symbol" context="Attribute In PP" String="&lt;:&lt;:" /> <!-- Digraph: [[ -->
         <!-- Match numbers -->
         <RegExpr attribute="Decimal" context="Number" String="\.?[0-9]" lookAhead="true" />
         <!-- Match comments -->

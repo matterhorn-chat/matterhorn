@@ -5,9 +5,12 @@
     <!ENTITY hex_int "(?:[0-9A-Fa-f](?:'?[0-9A-Fa-f]+)*)">
     <!ENTITY exp_float "(?:[eE][+-]?&int;)">
     <!ENTITY exp_hexfloat "(?:[pP][-+]?&int;)">
+
+    <!ENTITY ispphash "(?:#|&#37;\:|\?\?=)">
+    <!ENTITY pphash "&ispphash;\s*">
 ]>
 <language name="C" section="Sources"
-          version="6" kateversion="5.0"
+          version="7" kateversion="5.0"
           indenter="cstyle"
           extensions="*.c;*.C;*.h"
           mimetype="text/x-csrc;text/x-c++src;text/x-chdr"
@@ -116,8 +119,8 @@
     <contexts>
       <context attribute="Normal Text" lineEndContext="#stay" name="Normal">
         <DetectSpaces />
-	<RegExpr attribute="Preprocessor" context="Outscoped" String="#\s*if\s+0\s*$" beginRegion="PP" firstNonSpace="true" />
-        <DetectChar context="AfterHash" char="#" firstNonSpace="true" lookAhead="true" />
+	<RegExpr attribute="Preprocessor" context="Outscoped" String="&pphash;if\s+0\s*$" beginRegion="PP" firstNonSpace="true" />
+        <RegExpr context="AfterHash" String="&ispphash;" firstNonSpace="true" lookAhead="true" />
         <StringDetect attribute="Region Marker" context="Region Marker" String="//BEGIN" beginRegion="Region1" firstNonSpace="true" />
         <StringDetect attribute="Region Marker" context="Region Marker" String="//END" endRegion="Region1" firstNonSpace="true" />
         <keyword attribute="Control Flow" context="#stay" String="controlflow"/>
@@ -126,6 +129,8 @@
         <DetectIdentifier />
         <DetectChar attribute="Symbol" context="#stay" char="{" beginRegion="Brace1" />
         <DetectChar attribute="Symbol" context="#stay" char="}" endRegion="Brace1" />
+        <Detect2Chars attribute="Symbol" context="#stay" char="&lt;" char1="%" beginRegion="Brace1" /> <!-- Digraph: { -->
+        <Detect2Chars attribute="Symbol" context="#stay" char="%" char1="&gt;" endRegion="Brace1" /> <!-- Digraph: } -->
 
         <!-- Match numbers -->
         <RegExpr attribute="Decimal" context="Number" String="\.?[0-9]" lookAhead="true" />
@@ -158,19 +163,19 @@
       </context>
 
       <context attribute="Error" lineEndContext="#pop" name="AfterHash">
-        <RegExpr attribute="Preprocessor" context="Include" String="#\s*(?:include|include_next)" insensitive="true" firstNonSpace="true" />
+        <RegExpr attribute="Preprocessor" context="Include" String="&pphash;(?:include|include_next)" insensitive="true" firstNonSpace="true" />
 
         <!-- define, elif, else, endif, error, if, ifdef, ifndef, line, pragma, undef, warning -->
-        <RegExpr attribute="Preprocessor" context="Preprocessor" String="#\s*if(?:def|ndef)?(?=\s+\S)" insensitive="true" beginRegion="PP" firstNonSpace="true" />
-        <RegExpr attribute="Preprocessor" context="Preprocessor" String="#\s*endif" insensitive="true" endRegion="PP" firstNonSpace="true" />
-        <RegExpr attribute="Preprocessor" context="Define" String="#\s*define.*((?=\\))" insensitive="true" firstNonSpace="true" />
+        <RegExpr attribute="Preprocessor" context="Preprocessor" String="&pphash;if(?:def|ndef)?(?=\s+\S)" insensitive="true" beginRegion="PP" firstNonSpace="true" />
+        <RegExpr attribute="Preprocessor" context="Preprocessor" String="&pphash;endif" insensitive="true" endRegion="PP" firstNonSpace="true" />
+        <RegExpr attribute="Preprocessor" context="Define" String="&pphash;define.*((?=\\))" insensitive="true" firstNonSpace="true" />
 
         <!-- folding for apple style #pragma mark - label -->
-        <RegExpr attribute="Preprocessor" context="Preprocessor" String="#\s*pragma\s+mark\s+-\s*$" insensitive="true" firstNonSpace="true" endRegion="pragma_mark" />
-        <RegExpr attribute="Preprocessor" context="Preprocessor" String="#\s*pragma\s+mark" insensitive="true" firstNonSpace="true" endRegion="pragma_mark" beginRegion="pragma_mark" />
+        <RegExpr attribute="Preprocessor" context="Preprocessor" String="&pphash;pragma\s+mark\s+-\s*$" insensitive="true" firstNonSpace="true" endRegion="pragma_mark" />
+        <RegExpr attribute="Preprocessor" context="Preprocessor" String="&pphash;pragma\s+mark" insensitive="true" firstNonSpace="true" endRegion="pragma_mark" beginRegion="pragma_mark" />
 
-        <RegExpr attribute="Preprocessor" context="Preprocessor" String="#\s*(?:el(?:se|if)|define|undef|line|error|warning|pragma)" insensitive="true" firstNonSpace="true" />
-        <RegExpr attribute="Preprocessor" context="Preprocessor" String="#\s+[0-9]+" insensitive="true" firstNonSpace="true" />
+        <RegExpr attribute="Preprocessor" context="Preprocessor" String="&pphash;(?:el(?:se|if)|define|undef|line|error|warning|pragma)" insensitive="true" firstNonSpace="true" />
+        <RegExpr attribute="Preprocessor" context="Preprocessor" String="&ispphash;\s+[0-9]+" insensitive="true" firstNonSpace="true" />
       </context>
 
       <context attribute="Preprocessor" lineEndContext="#pop" name="Include">
@@ -203,9 +208,9 @@
         <IncludeRules context="##Doxygen" />
         <Detect2Chars attribute="Comment" context="Commentar 1" char="/" char1="/"/>
         <Detect2Chars attribute="Comment" context="Commentar 2" char="/" char1="*" beginRegion="Comment"/>
-        <RegExpr attribute="Comment" context="Outscoped intern" String="#\s*if" beginRegion="PP" firstNonSpace="true" />
-        <RegExpr attribute="Preprocessor" context="#pop" String="#\s*el(?:se|if)" firstNonSpace="true" />
-        <RegExpr attribute="Preprocessor" context="#pop" String="#\s*endif" endRegion="PP" firstNonSpace="true" />
+        <RegExpr attribute="Comment" context="Outscoped intern" String="&pphash;if" beginRegion="PP" firstNonSpace="true" />
+        <RegExpr attribute="Preprocessor" context="#pop" String="&pphash;el(?:se|if)" firstNonSpace="true" />
+        <RegExpr attribute="Preprocessor" context="#pop" String="&pphash;endif" endRegion="PP" firstNonSpace="true" />
       </context>
 
       <context attribute="Comment" lineEndContext="#stay" name="Outscoped intern">
@@ -216,8 +221,8 @@
         <IncludeRules context="##Doxygen" />
         <Detect2Chars attribute="Comment" context="Commentar 1" char="/" char1="/"/>
         <Detect2Chars attribute="Comment" context="Commentar 2" char="/" char1="*" beginRegion="Comment"/>
-        <RegExpr attribute="Comment" context="Outscoped intern" String="#\s*if" beginRegion="PP" firstNonSpace="true" />
-        <RegExpr attribute="Comment" context="#pop" String="#\s*endif" endRegion="PP" firstNonSpace="true" />
+        <RegExpr attribute="Comment" context="Outscoped intern" String="&pphash;if" beginRegion="PP" firstNonSpace="true" />
+        <RegExpr attribute="Comment" context="#pop" String="&pphash;endif" endRegion="PP" firstNonSpace="true" />
       </context>
 
       <context name="Number" attribute="Normal Text" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">

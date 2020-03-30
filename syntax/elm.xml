@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
-<language name="Elm" version="1.0" kateversion="5.0" section="Sources" extensions="*.elm" author="Bonghyun Kim (bonghyun.d.kim@gmail.com)" license="MIT" style="elm">
+<language name="Elm" version="2" kateversion="5.0" section="Sources" extensions="*.elm" author="Bonghyun Kim (bonghyun.d.kim@gmail.com)" license="MIT" style="elm">
   <highlighting>
     <list name="declarations">
       <item>type</item>
@@ -40,7 +40,7 @@
       <context attribute="Normal" lineEndContext="#stay" name="code">
         <Detect2Chars attribute="Comment" context="comments" char="{" char1="-" />
         <Detect2Chars attribute="Comment" context="comment" char="-" char1="-" />
-        <WordDetect attribute="Comment" context="documentation" string="{-|" />
+        <StringDetect attribute="Comment" context="documentation" String="{-|" />
 
         <keyword attribute="Keyword"          context="#stay" String="declarations" />
         <keyword attribute="Keyword"          context="#stay" String="letExpressions" />
@@ -81,16 +81,16 @@
       <context attribute="String" lineEndContext="#stay" name="multilineString">
         <RegExpr attribute="String" context="#stay" String="\s*" />
         <RegExpr attribute="String" context="#stay" String="\.*" />
-        <StringDetect attribute="String" context="#pop" char="&quot;&quot;&quot;" />
+        <StringDetect attribute="String" context="#pop" String="&quot;&quot;&quot;" />
       </context>
-      <context attribute="Normal" name="module">
+      <context attribute="Normal" lineEndContext="#stay" name="module">
         <DetectChar attribute="Normal" context="moduleParentheses" char="(" />
         <keyword attribute="Keyword"          context="#stay" String="imports" />
         <RegExpr attribute="Name"         context="#stay" String="\b[a-z][\w]*" />
         <RegExpr attribute="Type"             context="#stay" String="\b[A-Z][\w]*" />
         <DetectChar attribute="Normal" context="#pop" char=")" />
       </context>
-      <context attribute="Normal" name="moduleParentheses">
+      <context attribute="Normal" lineEndContext="#stay" name="moduleParentheses">
         <DetectChar attribute="Normal" context="moduleParentheses" char="(" />
         <RegExpr attribute="Name"         context="#stay" String="\b[a-z][\w]*" />
         <RegExpr attribute="Type"             context="#stay" String="\b[A-Z][\w]*" />
@@ -99,7 +99,7 @@
       <context attribute="Normal" lineEndContext="#stay" name="port">
         <WordDetect attribute="Import" context="module" String="imports" />
       </context>
-      <context attribute="Normal" name="import">
+      <context attribute="Normal" lineEndContext="#stay" name="import">
         <DetectChar attribute="Normal" context="moduleParentheses" char="(" />
         <keyword attribute="Keyword"          context="#stay" String="imports" />
         <RegExpr attribute="Name"         context="#stay" String="\b[a-z][\w]*" />
@@ -110,27 +110,27 @@
         <WordDetect attribute="Comment" context="#stay" String="@docs" />
         <Detect2Chars attribute="Comment" context="#pop" char="-" char1="}" />
       </context>
-
-      <itemDatas>
-        <itemData name="Normal"           defStyleNum="dsNormal"   spellChecking="false" />
-        <itemData name="Comment"          defStyleNum="dsComment" />
-
-        <itemData name="Keyword"          defStyleNum="dsKeyword"  spellChecking="false" />
-        <itemData name="ControlFlowKeyword" defStyleNum="dsControlFlow"  spellChecking="false" />
-
-        <itemData name="Name"         defStyleNum="dsFunction"   spellChecking="false" />
-        <itemData name="Port"         defStyleNum="dsNormal"   spellChecking="false" />
-        <itemData name="Import"         defStyleNum="dsImport"   spellChecking="false" />
-        <itemData name="Operator"         defStyleNum="dsOperator" spellChecking="false" />
-        <itemData name="Type"             defStyleNum="dsDataType" spellChecking="false" />
-
-        <itemData name="Decimal"          defStyleNum="dsDecVal"   spellChecking="false" />
-        <itemData name="Hex"          defStyleNum="dsHexVal"   spellChecking="false" />
-        <itemData name="Float"            defStyleNum="dsFloat"    spellChecking="false" />
-        <itemData name="Char"             defStyleNum="dsChar"     spellChecking="false" />
-        <itemData name="String"           defStyleNum="dsString" />
-      </itemDatas>
     </contexts>
+
+    <itemDatas>
+      <itemData name="Normal"           defStyleNum="dsNormal"   spellChecking="false" />
+      <itemData name="Comment"          defStyleNum="dsComment" />
+
+      <itemData name="Keyword"          defStyleNum="dsKeyword"  spellChecking="false" />
+      <itemData name="ControlFlowKeyword" defStyleNum="dsControlFlow"  spellChecking="false" />
+
+      <itemData name="Name"         defStyleNum="dsFunction"   spellChecking="false" />
+      <itemData name="Port"         defStyleNum="dsNormal"   spellChecking="false" />
+      <itemData name="Import"         defStyleNum="dsImport"   spellChecking="false" />
+      <itemData name="Operator"         defStyleNum="dsOperator" spellChecking="false" />
+      <itemData name="Type"             defStyleNum="dsDataType" spellChecking="false" />
+
+      <itemData name="Decimal"          defStyleNum="dsDecVal"   spellChecking="false" />
+      <itemData name="Hex"          defStyleNum="dsBaseN"   spellChecking="false" />
+      <itemData name="Float"            defStyleNum="dsFloat"    spellChecking="false" />
+      <itemData name="Char"             defStyleNum="dsChar"     spellChecking="false" />
+      <itemData name="String"           defStyleNum="dsString" />
+    </itemDatas>
   </highlighting>
   <general>
     <folding indentationsensitive="1"/>

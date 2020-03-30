@@ -57,7 +57,7 @@
 
 <!DOCTYPE language SYSTEM "language.dtd">
 
-<language name="Matlab" version="2" kateversion="2.2" section="Scientific" extensions="*.m;*.M" mimetype="text/mfile" casesensitive="1">
+<language name="Matlab" version="3" kateversion="5.0" section="Scientific" extensions="*.m;*.M" mimetype="text/mfile" casesensitive="1">
   <highlighting>
 
     <!-- Reserved keywords in MATLAB -->
@@ -98,8 +98,10 @@
         <RegExpr context="_adjoint" attribute="Operator" String="\.'(?=')" />
 
         <!-- If ' is not the adjoint operator, it starts a string or an unterminated string -->
-        <RegExpr context="#stay" attribute="String" String="'[^']*(''[^']*)*'(?=[^']|$)" />
-        <RegExpr context="#stay" attribute="Incomplete String" String="'[^']*(''[^']*)*" />
+        <RegExpr context="#stay" attribute="CharVector" String="'[^']*(''[^']*)*'(?=[^']|$)" />
+        <RegExpr context="#stay" attribute="Incomplete CharVector" String="'[^']*(''[^']*)*" />
+        <RegExpr context="#stay" attribute="String" String="&quot;[^&quot;]*(&quot;&quot;[^&quot;]*)*&quot;(?=[^&quot;]|$)" />
+        <RegExpr context="#stay" attribute="Incomplete String" String="&quot;[^&quot;]*(&quot;&quot;[^&quot;]*)*" />
 
         <!-- Handling of keywords, comments, system commands, identifiers, numbers and braces -->
         <keyword context="#stay" attribute="Keyword" String="KeywordsList" />
@@ -136,25 +138,18 @@
 
     <itemDatas>
       <itemData name="Normal Text" defStyleNum="dsNormal" />
-      <itemData name="Variable" defStyleNum="dsNormal" />
-      <itemData name="Operator" defStyleNum="dsNormal"/>
+      <itemData name="Variable" defStyleNum="dsVariable" />
+      <itemData name="Operator" defStyleNum="dsOperator"/>
       <itemData name="Number" defStyleNum="dsFloat" />
       <itemData name="Delimiter" defStyleNum="dsNormal" />
-      <itemData name="String" defStyleNum="dsString" color="#b20000"/>
-      <itemData name="System" defStyleNum="dsBaseN" color="#b28c00"/>
-      <itemData name="Incomplete String" defStyleNum="dsChar" color="#a020f0"/>
-      <itemData name="Keyword"  defStyleNum="dsNormal" color="#0000ff"/>
-      <itemData name="Comment" defStyleNum="dsComment" color="#009900"/>
+      <itemData name="CharVector" defStyleNum="dsSpecialString" />
+      <itemData name="String" defStyleNum="dsString" />
+      <itemData name="System" defStyleNum="dsBaseN" />
+      <itemData name="Incomplete CharVector" defStyleNum="dsError" />
+      <itemData name="Incomplete String" defStyleNum="dsError" />
+      <itemData name="Keyword"  defStyleNum="dsKeyword" />
+      <itemData name="Comment" defStyleNum="dsComment" />
     </itemDatas>
-    <!-- MATLAB 6.5 default color scheme
-          keywords             #0000ff
-          comments             #228b22
-          strings              #b20000
-          unterminated strings #a020f0
-          system commands      #b28c00
-          errors               #ff0000
-          all others           #000000
-    -->
 
   </highlighting>
 
@@ -166,65 +161,3 @@
   </general>
 
 </language>
-<!--
-%%=====================================================
-% MATLAB test code for Kate/Kwrite syntax highlighting
-%%=====================================================
-
-% Numbers _____________________________________________
-5, 5.5, .1, 0.1, 0.4e5, 1.2e-5, 5i, 5.3i, 6j, .345+3i
-5', 5.5', .1', 0.1', 0.4e5', 1.2e-5', 5i', 5.3i', 6j', .345+3i'
-
-% Operators ___________________________________________
-% relational operators
-'asdf'~=4, c<=4, d>=4, a<b, a>b, a==b, b||c, b&&c
-% elementwise arithmetic operators
-a.^b, a.*b a./b, 1:4:5
-% single-character binary arithmetic
-a+3, a-3, a*2, a^3, a/3, a\3, a|b, a&b
-% unary operators
-a = ~g; g = @sfdgdsf(sdfsd,345); g.' + 1i.' - ('asdf').'
-% separators and delimiter
-(asd),[sadf];{asdf},;;,;;;()
-% continuation
-a = 1+ ...
-  2;
-
-% Strings and adjoint _________________________________
-% incomplete strings
-'string
-'str''
-'str''ing
-% complete strings
-'string' % simple string
-'''' % string containing '
-'str''ing' % one string containing '
-'string' 'string'  % two strings
-'asdf'  'asdf''' variable  % two strings and a variable
-'asdf''asdf''   fsgdfg' + (asdf)' - 'asdf'.' + []''''.';''
-'sadf'.' % string transpose
-% adjoint
-{'asdf'}' + 1
-('asdf')' + 1
-['asdf']' + 1
-'' var''' % empty string, var with >1 adjoints
-[5]'*{5}'*('asd')'.'+(5)'*6'*asdf'*asdf'.'  % many adjoints
-A'*B + 1      % adjoint
-A.'*B + 1     % transpose
-A.'.'*B + 1   % double transpose
-A'.' + 1      % adjoint, then transpose
-A.''          % transpose, then adjoint
-
-% System command ______________________________________
-!hostname
-!cp * /tmp
-
-% Reserved keywords ___________________________________
-function, persistent, global
-switch, case, otherwise
-if, else, elseif
-try, catch
-for, while, break, continue
-end, return
-function, FUNCTION, Function  % case sensitive!
--->
