@@ -240,7 +240,8 @@ files or remove existing attachments by pressing `C-x` again.
   * Usernames: type `@`, then `Tab` to cycle through matches
   * Channel names: type `~`, then `Tab` to cycle through matches
   * Commands: type `/`, then `Tab` to cycle through matches
-  * Emoji: type `:`, then `Tab` to display and cycle through matches
+  * Emoji: type `:` and then some text, then `Tab` to display and cycle
+    through matches
   * Fenced code block languages: type three backticks to begin typing a
     code block, then `Tab` to cycle through available languages
 * Support for attachment upload and download
