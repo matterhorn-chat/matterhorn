@@ -429,3 +429,8 @@ configuration:
 unbind-key -T prefix ]
 bind-key -T prefix ] paste-buffer -p
 ```
+
+## I'm using Mattermost through an Nginx proxy and I keep getting disconnected.
+
+You might need to adjust your Nginx proxy settings.
+For context, see [this potentially related report](https://github.com/matterhorn-chat/matterhorn/issues/578).
