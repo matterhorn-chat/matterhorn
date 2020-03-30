@@ -3,13 +3,13 @@
 =========
 
 New features:
- * Support for Personal Access Tokens and OAuth tokens was added. To
-   take advantage of this feature, paste either type of token in the
-   new "Access Token" field of the login user interface or set up the
-   new `tokencmd` configuration file setting. See the "Authentication"
-   section of the README for help and see `docs/sample-config.ini` for
-   documentation on `tokencmd`. Thanks to @ftilde for early work on this
-   feature!
+ * Support for Personal Access Tokens and browser session tokens was
+   added. To take advantage of this feature, paste either type of
+   token in the new "Access Token" field of the login user interface
+   or set up the new `tokencmd` configuration file setting. See
+   the "Authentication" section of the README for help and see
+   `docs/sample-config.ini` for documentation on `tokencmd`. Thanks to
+   @ftilde for early work on this feature!
  * The attribute used to render the current user's username can now be
    customized. By default the attribute still uses the same color as
    before (chosen based on the username) but is bold. The new theme
