@@ -236,8 +236,13 @@ files or remove existing attachments by pressing `C-x` again.
 * Rebindable keys (see `/help keybindings`)
 * Message editor with kill/yank buffer and readline-style keybindings
 * Support for adding and removing emoji post reactions
-* Tab-completion of usernames, channel names, commands, emoji, and
-  fenced code block languages
+* Tab-completion of:
+  * Usernames: type `@`, then `Tab` to cycle through matches
+  * Channel names: type `~`, then `Tab` to cycle through matches
+  * Commands: type `/`, then `Tab` to cycle through matches
+  * Emoji: type `:`, then `Tab` to display and cycle through matches
+  * Fenced code block languages: type three backticks to begin typing a
+    code block, then `Tab` to cycle through available languages
 * Support for attachment upload and download
 * Spell-checking via Aspell
 * Syntax highlighting of fenced code blocks in messages (works best in
