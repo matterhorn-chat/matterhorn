@@ -96,15 +96,13 @@ install:
     echo "packages: ." >> cabal.project
     echo "packages: submodules/mattermost-api" >> cabal.project
     echo "packages: submodules/mattermost-api-qc" >> cabal.project
-    echo "packages: submodules/aspell-pipe" >> cabal.project
   - |
-  - "for pkg in $($HCPKG list --simple-output); do echo $pkg | sed 's/-[^-]*$//' | (grep -vE -- '^(aspell-pipe|matterhorn|mattermost-api|mattermost-api-qc)$' || true) | sed 's/^/constraints: /' | sed 's/$/ installed/' >> cabal.project.local; done"
+  - "for pkg in $($HCPKG list --simple-output); do echo $pkg | sed 's/-[^-]*$//' | (grep -vE -- '^(matterhorn|mattermost-api|mattermost-api-qc)$' || true) | sed 's/^/constraints: /' | sed 's/$/ installed/' >> cabal.project.local; done"
   - cat cabal.project || true
   - cat cabal.project.local || true
   - if [ -f "./configure.ac" ]; then (cd "." && autoreconf -i); fi
   - if [ -f "submodules/mattermost-api/configure.ac" ]; then (cd "submodules/mattermost-api" && autoreconf -i); fi
   - if [ -f "submodules/mattermost-api-qc/configure.ac" ]; then (cd "submodules/mattermost-api-qc" && autoreconf -i); fi
-  - if [ -f "submodules/aspell-pipe/configure.ac" ]; then (cd "submodules/aspell-pipe" && autoreconf -i); fi
   - ${CABAL} v2-freeze $WITHCOMPILER ${TEST} ${BENCH}
   - "cat cabal.project.freeze | sed -E 's/^(constraints: *| *)//' | sed 's/any.//'"
   - rm  cabal.project.freeze
@@ -122,7 +120,6 @@ script:
   - PKGDIR_matterhorn="$(find . -maxdepth 1 -type d -regex '.*/matterhorn-[0-9.]*')"
   - PKGDIR_mattermost_api="$(find . -maxdepth 1 -type d -regex '.*/mattermost-api-[0-9.]*')"
   - PKGDIR_mattermost_api_qc="$(find . -maxdepth 1 -type d -regex '.*/mattermost-api-qc-[0-9.]*')"
-  - PKGDIR_aspell_pipe="$(find . -maxdepth 1 -type d -regex '.*/aspell-pipe-[0-9.]*')"
   # Generate cabal.project
   - rm -rf cabal.project cabal.project.local cabal.project.freeze
   - touch cabal.project
@@ -130,9 +127,8 @@ script:
     echo "packages: ${PKGDIR_matterhorn}" >> cabal.project
     echo "packages: ${PKGDIR_mattermost_api}" >> cabal.project
     echo "packages: ${PKGDIR_mattermost_api_qc}" >> cabal.project
-    echo "packages: ${PKGDIR_aspell_pipe}" >> cabal.project
   - |
-  - "for pkg in $($HCPKG list --simple-output); do echo $pkg | sed 's/-[^-]*$//' | (grep -vE -- '^(aspell-pipe|matterhorn|mattermost-api|mattermost-api-qc)$' || true) | sed 's/^/constraints: /' | sed 's/$/ installed/' >> cabal.project.local; done"
+  - "for pkg in $($HCPKG list --simple-output); do echo $pkg | sed 's/-[^-]*$//' | (grep -vE -- '^(matterhorn|mattermost-api|mattermost-api-qc)$' || true) | sed 's/^/constraints: /' | sed 's/$/ installed/' >> cabal.project.local; done"
   - cat cabal.project || true
   - cat cabal.project.local || true
   # Building...
@@ -147,7 +143,6 @@ script:
   - (cd ${PKGDIR_matterhorn} && ${CABAL} -vnormal check)
   - (cd ${PKGDIR_mattermost_api} && ${CABAL} -vnormal check)
   - (cd ${PKGDIR_mattermost_api_qc} && ${CABAL} -vnormal check)
-  - (cd ${PKGDIR_aspell_pipe} && ${CABAL} -vnormal check)
   # haddock...
   - ${CABAL} v2-haddock $WITHCOMPILER --with-haddock $HADDOCK ${TEST} ${BENCH} all
   # Building without installed constraints for packages in global-db...
