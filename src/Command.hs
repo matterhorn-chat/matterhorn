@@ -164,11 +164,11 @@ commandList =
                     handleInputSubmission cId msg
                 Nothing -> mhError $ NoSuchUser name
 
-  , Cmd "log-start" "Begin logging to the specified path"
+  , Cmd "log-start" "Begin logging debug information to the specified path"
     (TokenArg "path" NoArg) $ \ (path, ()) ->
         startLogging $ T.unpack path
 
-  , Cmd "log-snapshot" "Dump the current log buffer to the specified path"
+  , Cmd "log-snapshot" "Dump the current debug log buffer to the specified path"
     (TokenArg "path" NoArg) $ \ (path, ()) ->
         logSnapshot $ T.unpack path
 
@@ -176,11 +176,11 @@ commandList =
     NoArg $ \ () ->
         stopLogging
 
-  , Cmd "log-mark" "Add a custom marker message to the Matterhorn log"
+  , Cmd "log-mark" "Add a custom marker message to the Matterhorn debug log"
     (LineArg "message") $ \ markMsg ->
         mhLog LogUserMark markMsg
 
-  , Cmd "log-status" "Show current logging status"
+  , Cmd "log-status" "Show current debug logging status"
     NoArg $ \ () ->
         getLogDestination
 
