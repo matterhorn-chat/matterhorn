@@ -57,7 +57,7 @@ optDescrs =
     "Path to the configuration file"
   , Option ['l'] ["logs"]
     (ReqArg (\ path c -> c { optLogLocation = Just path }) "PATH")
-    "Path to the desired debug logs"
+    "Debug log output path"
   , Option ['v'] ["version"]
     (NoArg (\ c -> c { optBehaviour = ShowVersion }))
     "Print version information and exit"
