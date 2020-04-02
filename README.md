@@ -100,6 +100,10 @@ cookie will expire, so these steps will need to be repeated each time
 you log in with Matterhorn. As a result, we strongly recommend the use
 of a Personal Access Token instead if at all possible.
 
+Firefox users: you might consider using the
+[mattermost-session-cookie-firefox](https://github.com/ftilde/mattermost-session-cookie-firefox)
+script to make this process easier.
+
 # Configuring
 
 For configuration options you have two choices:
