@@ -88,7 +88,7 @@ invokeExternalEditor = do
     let editorProgram = maybe "vi" id mEnv
 
     mhSuspendAndResume $ \ st -> do
-      Sys.withSystemTempFile "matterhorn_editor.tmp" $ \tmpFileName tmpFileHandle -> do
+      Sys.withSystemTempFile "matterhorn_editor.md" $ \tmpFileName tmpFileHandle -> do
         -- Write the current message to the temp file
         Sys.hPutStr tmpFileHandle $ T.unpack $ T.intercalate "\n" $
             getEditContents $ st^.csEditState.cedEditor
