@@ -6,4 +6,7 @@ mentioned="${1?}"
 sender="${2?}"
 message="${3?}"
 
+# quote double quotes in the message text
+message="${message//\"/\\\"}"
+
 osascript -e "display notification \"$message\" with title \"Mattermost message from $sender\""
