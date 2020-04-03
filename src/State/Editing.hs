@@ -240,6 +240,11 @@ handleEditingInput e = do
     -- i.e., we are showing the user the status message about the
     -- current editor state and editing is not permitted.
 
+    -- Record the input line count before handling the editing event
+    -- so we can tell whether the editing event changes the line count
+    -- later.
+    beforeLineCount <- use (csEditState.cedEditor.to getEditContents.to length)
+
     smartBacktick <- use (csResources.crConfiguration.to configSmartBacktick)
     let smartChars = "*`_"
     st <- use id
@@ -314,6 +319,17 @@ handleEditingInput e = do
                                   }
     checkForAutocompletion ctx
     liftIO $ resetSpellCheckTimer $ st^.csEditState
+
+    -- If the preview is enabled and multi-line editing is enabled and
+    -- the line count changed, we need to invalidate the rendering cache
+    -- entry for the channel messages because we want to redraw them to
+    -- fit in the space just changed by the size of the preview area.
+    afterLineCount <- use (csEditState.cedEditor.to getEditContents.to length)
+    isMultiline <- use (csEditState.cedEphemeral.eesMultiline)
+    isPreviewing <- use csShowMessagePreview
+    when (beforeLineCount /= afterLineCount && isMultiline && isPreviewing) $ do
+        cId <- use csCurrentChannelId
+        mh $ invalidateCacheEntry $ ChannelMessages cId
 
 -- | Send the user_typing action to the server asynchronously, over the
 -- connected websocket. If the websocket is not connected, drop the
