@@ -115,6 +115,7 @@ module Types
   , cedInputHistory
   , cedAutocomplete
   , cedAutocompletePending
+  , cedJustCompleted
 
   , AutocompleteState(..)
   , acPreviousSearchString
@@ -971,6 +972,10 @@ data ChatEditState =
                   -- FileBrowser causes it to read and ingest the
                   -- target directory, so this action is deferred
                   -- until the browser is needed.
+                  , _cedJustCompleted :: Bool
+                  -- A flag that indicates whether the most recent
+                  -- editing event was a tab-completion. This is used by
+                  -- the smart trailing space handling.
                   }
 
 -- | An attachment.
@@ -995,6 +1000,7 @@ emptyEditState hist sp =
                          , _cedAutocompletePending  = Nothing
                          , _cedAttachmentList       = list AttachmentList mempty 1
                          , _cedFileBrowser          = Nothing
+                         , _cedJustCompleted        = False
                          }
 
 -- | A 'RequestChan' is a queue of operations we have to perform in the
