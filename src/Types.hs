@@ -384,6 +384,8 @@ data Config =
            -- ^ The path to the theme customization file, if any.
            , configSmartBacktick :: Bool
            -- ^ Whether to enable smart quoting characters.
+           , configSmartEditing :: Bool
+           -- ^ Whether to enable smart editing behaviors.
            , configURLOpenCommand :: Maybe Text
            -- ^ The command to use to open URLs.
            , configURLOpenCommandInteractive :: Bool

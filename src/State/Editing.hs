@@ -250,6 +250,7 @@ handleEditingInput e = do
     st <- use id
     csEditState.cedEphemeral.eesInputHistoryPosition .= Nothing
 
+    smartEditing <- use (csResources.crConfiguration.to configSmartEditing)
     justCompleted <- use (csEditState.cedJustCompleted)
     let isClosingPunctuation (EvKey (KChar c) []) = c `elem` (".,'\";:)]"::String)
         isClosingPunctuation _ = False
@@ -315,7 +316,7 @@ handleEditingInput e = do
               -- If the most recent editing event was a tab completion,
               -- there is a trailing space that we want to remove if the
               -- next input character is punctuation.
-              when (justCompleted && isClosingPunctuation e) $
+              when (smartEditing && justCompleted && isClosingPunctuation e) $
                   csEditState.cedEditor %= applyEdit Z.deletePrevChar
 
               csEditState.cedEditor %= applyEdit (Z.insertMany (sanitizeChar ch))
