@@ -345,7 +345,8 @@ handleEditingInput e = do
 
     -- Reset the recent autocompletion flag to stop smart punctuation
     -- handling.
-    csEditState.cedJustCompleted .= False
+    when justCompleted $
+        csEditState.cedJustCompleted .= False
 
 -- | Send the user_typing action to the server asynchronously, over the
 -- connected websocket. If the websocket is not connected, drop the
