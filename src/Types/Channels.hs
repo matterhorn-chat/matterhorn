@@ -41,6 +41,7 @@ module Types.Channels
   , addChannelTypingUser
   -- * Notification settings
   , notifyPreference
+  , isMuted
   -- * Miscellaneous channel-related operations
   , canLeaveChannel
   , preferredChannelName
