@@ -252,7 +252,7 @@ handleEditingInput e = do
 
     smartEditing <- use (csResources.crConfiguration.to configSmartEditing)
     justCompleted <- use (csEditState.cedJustCompleted)
-    let isClosingPunctuation (EvKey (KChar c) []) = c `elem` (".,'\";:)]"::String)
+    let isClosingPunctuation (EvKey (KChar c) []) = c `elem` (".,'\";:)]!"::String)
         isClosingPunctuation _ = False
 
     case lookupKeybinding e editingKeybindings of
