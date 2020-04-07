@@ -499,3 +499,8 @@ tabComplete dir = do
                         applyEdit (Z.insertChar ' ' . Z.insertMany replacement . Z.deletePrevWord .
                                    maybeEndOfWord)
                     csEditState.cedJustCompleted .= True
+
+                    -- If there was only one completion alternative,
+                    -- hide the autocomplete listing now that we've
+                    -- completed the only completion.
+                    when (ac^.acCompletionList.to L.listElements.to length == 1) resetAutocomplete
