@@ -46,9 +46,7 @@ data Keybinding =
 
 -- | Find a keybinding that matches a Vty Event
 lookupKeybinding :: Vty.Event -> [Keybinding] -> Maybe Keybinding
-lookupKeybinding e kbs = case filter ((== e) . kbEvent) kbs of
-  []    -> Nothing
-  (x:_) -> Just x
+lookupKeybinding e kbs = listToMaybe $ filter ((== e) . kbEvent) kbs
 
 handleKeyboardEvent
   :: (KeyConfig -> [Keybinding])
