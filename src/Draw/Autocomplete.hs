@@ -41,7 +41,7 @@ renderAutocompleteBox st ac =
         elements = matchList^.listElementsL
         label = withDefAttr clientMessageAttr $
                 txt $ _acListElementType ac <> ": " <> (T.pack $ show numResults) <>
-                     " match" <> if numResults == 1 then "" else "es" <>
+                     " match" <> (if numResults == 1 then "" else "es") <>
                      " (Tab/Shift-Tab to select)"
 
         selElem = snd <$> listSelectedElement matchList
