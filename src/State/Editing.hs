@@ -231,6 +231,13 @@ handleInputSubmission cId content = do
     -- handler can tell whether we're editing, replying, etc.
     csEditState.cedEditMode .= NewPost
 
+closingPunctuationMarks :: String
+closingPunctuationMarks = ".,'\";:)]!"
+
+isSmartClosingPunctuation :: Event -> Bool
+isSmartClosingPunctuation (EvKey (KChar c) []) = c `elem` closingPunctuationMarks
+isSmartClosingPunctuation _ = False
+
 handleEditingInput :: Event -> MH ()
 handleEditingInput e = do
     -- Only handle input events to the editor if we permit editing:
@@ -252,8 +259,6 @@ handleEditingInput e = do
 
     smartEditing <- use (csResources.crConfiguration.to configSmartEditing)
     justCompleted <- use (csEditState.cedJustCompleted)
-    let isClosingPunctuation (EvKey (KChar c) []) = c `elem` (".,'\";:)]!"::String)
-        isClosingPunctuation _ = False
 
     case lookupKeybinding e editingKeybindings of
       Just kb | editingPermitted st -> kbAction kb
@@ -316,7 +321,7 @@ handleEditingInput e = do
               -- If the most recent editing event was a tab completion,
               -- there is a trailing space that we want to remove if the
               -- next input character is punctuation.
-              when (smartEditing && justCompleted && isClosingPunctuation e) $
+              when (smartEditing && justCompleted && isSmartClosingPunctuation e) $
                   csEditState.cedEditor %= applyEdit Z.deletePrevChar
 
               csEditState.cedEditor %= applyEdit (Z.insertMany (sanitizeChar ch))
