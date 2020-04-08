@@ -59,15 +59,17 @@ checkForAutocompletion ctx = do
     result <- getCompleterForInput ctx
     case result of
         Nothing -> resetAutocomplete
-        Just (runUpdater, searchString) -> do
+        Just (ty, runUpdater, searchString) -> do
             prevResult <- use (csEditState.cedAutocomplete)
-            let shouldUpdate = maybe True ((/= searchString) . _acPreviousSearchString)
-                               prevResult
+            let shouldUpdate = ((maybe True ((/= searchString) . _acPreviousSearchString)
+                                 prevResult) &&
+                                (maybe True ((== ty) . _acType) prevResult)) ||
+                               (maybe False ((/= ty) . _acType) prevResult)
             when shouldUpdate $ do
                 csEditState.cedAutocompletePending .= Just searchString
                 runUpdater ctx searchString
 
-getCompleterForInput :: AutocompleteContext -> MH (Maybe (AutocompleteContext -> Text -> MH (), Text))
+getCompleterForInput :: AutocompleteContext -> MH (Maybe (AutocompletionType, AutocompleteContext -> Text -> MH (), Text))
 getCompleterForInput ctx = do
     z <- use (csEditState.cedEditor.editContentsL)
 
@@ -77,15 +79,15 @@ getCompleterForInput ctx = do
     return $ case wordAtColumn col curLine of
         Just (startCol, w)
             | userSigil `T.isPrefixOf` w ->
-                Just (doUserAutoCompletion, T.tail w)
+                Just (ACUsers, doUserAutoCompletion, T.tail w)
             | normalChannelSigil `T.isPrefixOf` w ->
-                Just (doChannelAutoCompletion, T.tail w)
+                Just (ACChannels, doChannelAutoCompletion, T.tail w)
             | ":" `T.isPrefixOf` w && autocompleteManual ctx ->
-                Just (doEmojiAutoCompletion, T.tail w)
+                Just (ACEmoji, doEmojiAutoCompletion, T.tail w)
             | "```" `T.isPrefixOf` w ->
-                Just (doSyntaxAutoCompletion, T.drop 3 w)
+                Just (ACCodeBlockLanguage, doSyntaxAutoCompletion, T.drop 3 w)
             | "/" `T.isPrefixOf` w && startCol == 0 ->
-                Just (doCommandAutoCompletion, T.tail w)
+                Just (ACCommands, doCommandAutoCompletion, T.tail w)
         _ -> Nothing
 
 doEmojiAutoCompletion :: AutocompleteContext -> Text -> MH ()
