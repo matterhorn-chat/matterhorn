@@ -232,7 +232,7 @@ handleInputSubmission cId content = do
     csEditState.cedEditMode .= NewPost
 
 closingPunctuationMarks :: String
-closingPunctuationMarks = ".,'\";:)]!"
+closingPunctuationMarks = ".,'\";:)]!?"
 
 isSmartClosingPunctuation :: Event -> Bool
 isSmartClosingPunctuation (EvKey (KChar c) []) = c `elem` closingPunctuationMarks
