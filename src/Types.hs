@@ -120,7 +120,6 @@ module Types
   , AutocompleteState(..)
   , acPreviousSearchString
   , acCompletionList
-  , acListElementType
   , acCachedResponses
   , acType
 
@@ -937,9 +936,6 @@ data AutocompleteState =
                       , _acCompletionList :: List Name AutocompleteAlternative
                       -- ^ The list of alternatives that the user
                       -- selects from
-                      , _acListElementType :: Text
-                      -- ^ The label (plural noun, e.g. "Users") used to
-                      -- display the result list to the user
                       , _acType :: AutocompletionType
                       -- ^ The type of data that we're completing
                       , _acCachedResponses :: HM.HashMap Text [AutocompleteAlternative]
