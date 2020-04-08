@@ -32,6 +32,13 @@ autocompleteLayer st =
 userNotInChannelMarker :: T.Text
 userNotInChannelMarker = "*"
 
+elementTypeLabel :: AutocompletionType -> Text
+elementTypeLabel ACUsers = "Users"
+elementTypeLabel ACChannels = "Channels"
+elementTypeLabel ACCodeBlockLanguage = "Languages"
+elementTypeLabel ACEmoji = "Emoji"
+elementTypeLabel ACCommands = "Commands"
+
 renderAutocompleteBox :: ChatState -> AutocompleteState -> Widget Name
 renderAutocompleteBox st ac =
     let matchList = _acCompletionList ac
@@ -40,8 +47,9 @@ renderAutocompleteBox st ac =
         numResults = length elements
         elements = matchList^.listElementsL
         label = withDefAttr clientMessageAttr $
-                txt $ _acListElementType ac <> ": " <> (T.pack $ show numResults) <>
-                      " match" <> if numResults == 1 then "" else "es"
+                txt $ elementTypeLabel (ac^.acType) <> ": " <> (T.pack $ show numResults) <>
+                     " match" <> (if numResults == 1 then "" else "es") <>
+                     " (Tab/Shift-Tab to select)"
 
         selElem = snd <$> listSelectedElement matchList
         curChan = st^.csCurrentChannel

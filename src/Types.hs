@@ -115,12 +115,15 @@ module Types
   , cedInputHistory
   , cedAutocomplete
   , cedAutocompletePending
+  , cedJustCompleted
 
   , AutocompleteState(..)
   , acPreviousSearchString
   , acCompletionList
-  , acListElementType
   , acCachedResponses
+  , acType
+
+  , AutocompletionType(..)
 
   , AutocompleteAlternative(..)
   , autocompleteAlternativeReplacement
@@ -383,6 +386,8 @@ data Config =
            -- ^ The path to the theme customization file, if any.
            , configSmartBacktick :: Bool
            -- ^ Whether to enable smart quoting characters.
+           , configSmartEditing :: Bool
+           -- ^ Whether to enable smart editing behaviors.
            , configURLOpenCommand :: Maybe Text
            -- ^ The command to use to open URLs.
            , configURLOpenCommandInteractive :: Bool
@@ -911,6 +916,17 @@ autocompleteAlternativeReplacement (SyntaxCompletion t) =
 autocompleteAlternativeReplacement (CommandCompletion t _ _) =
     "/" <> t
 
+-- | The type of data that the autocompletion logic supports. We use
+-- this to track the kind of completion underway in case the type of
+-- completion needs to change.
+data AutocompletionType =
+    ACUsers
+    | ACChannels
+    | ACCodeBlockLanguage
+    | ACEmoji
+    | ACCommands
+    deriving (Eq, Show)
+
 data AutocompleteState =
     AutocompleteState { _acPreviousSearchString :: Text
                       -- ^ The search string used for the
@@ -920,9 +936,8 @@ data AutocompleteState =
                       , _acCompletionList :: List Name AutocompleteAlternative
                       -- ^ The list of alternatives that the user
                       -- selects from
-                      , _acListElementType :: Text
-                      -- ^ The label (plural noun, e.g. "Users") used to
-                      -- display the result list to the user
+                      , _acType :: AutocompletionType
+                      -- ^ The type of data that we're completing
                       , _acCachedResponses :: HM.HashMap Text [AutocompleteAlternative]
                       -- ^ A cache of alternative lists, keyed on search
                       -- string, for use in avoiding server requests.
@@ -971,6 +986,10 @@ data ChatEditState =
                   -- FileBrowser causes it to read and ingest the
                   -- target directory, so this action is deferred
                   -- until the browser is needed.
+                  , _cedJustCompleted :: Bool
+                  -- A flag that indicates whether the most recent
+                  -- editing event was a tab-completion. This is used by
+                  -- the smart trailing space handling.
                   }
 
 -- | An attachment.
@@ -995,6 +1014,7 @@ emptyEditState hist sp =
                          , _cedAutocompletePending  = Nothing
                          , _cedAttachmentList       = list AttachmentList mempty 1
                          , _cedFileBrowser          = Nothing
+                         , _cedJustCompleted        = False
                          }
 
 -- | A 'RequestChan' is a queue of operations we have to perform in the

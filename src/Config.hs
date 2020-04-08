@@ -87,6 +87,8 @@ fromIni = do
     configURLOpenCommandInteractive <- fieldFlagDef "urlOpenCommandIsInteractive" False
     configSmartBacktick  <- fieldFlagDef "smartbacktick"
       (configSmartBacktick defaultConfig)
+    configSmartEditing <- fieldFlagDef "smartediting"
+      (configSmartEditing defaultConfig)
     configShowOlderEdits <- fieldFlagDef "showOlderEdits"
       (configShowOlderEdits defaultConfig)
     configShowBackground <- fieldDefOf "showBackgroundActivity" backgroundField
@@ -193,6 +195,7 @@ defaultConfig =
            , configTheme                       = Nothing
            , configThemeCustomizationFile      = Nothing
            , configSmartBacktick               = True
+           , configSmartEditing                = True
            , configURLOpenCommand              = Nothing
            , configURLOpenCommandInteractive   = False
            , configActivityNotifyCommand       = Nothing

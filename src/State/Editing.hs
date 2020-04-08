@@ -231,6 +231,13 @@ handleInputSubmission cId content = do
     -- handler can tell whether we're editing, replying, etc.
     csEditState.cedEditMode .= NewPost
 
+closingPunctuationMarks :: String
+closingPunctuationMarks = ".,'\";:)]!?"
+
+isSmartClosingPunctuation :: Event -> Bool
+isSmartClosingPunctuation (EvKey (KChar c) []) = c `elem` closingPunctuationMarks
+isSmartClosingPunctuation _ = False
+
 handleEditingInput :: Event -> MH ()
 handleEditingInput e = do
     -- Only handle input events to the editor if we permit editing:
@@ -249,6 +256,9 @@ handleEditingInput e = do
     let smartChars = "*`_"
     st <- use id
     csEditState.cedEphemeral.eesInputHistoryPosition .= Nothing
+
+    smartEditing <- use (csResources.crConfiguration.to configSmartEditing)
+    justCompleted <- use (csEditState.cedJustCompleted)
 
     case lookupKeybinding e editingKeybindings of
       Just kb | editingPermitted st -> kbAction kb
@@ -307,6 +317,13 @@ handleEditingInput e = do
                     -- without doing anything smart.
                     | otherwise -> doInsertChar
             | editingPermitted st -> do
+
+              -- If the most recent editing event was a tab completion,
+              -- there is a trailing space that we want to remove if the
+              -- next input character is punctuation.
+              when (smartEditing && justCompleted && isSmartClosingPunctuation e) $
+                  csEditState.cedEditor %= applyEdit Z.deletePrevChar
+
               csEditState.cedEditor %= applyEdit (Z.insertMany (sanitizeChar ch))
               sendUserTypingAction
           _ | editingPermitted st -> do
@@ -330,6 +347,11 @@ handleEditingInput e = do
     when (beforeLineCount /= afterLineCount && isMultiline && isPreviewing) $ do
         cId <- use csCurrentChannelId
         mh $ invalidateCacheEntry $ ChannelMessages cId
+
+    -- Reset the recent autocompletion flag to stop smart punctuation
+    -- handling.
+    when justCompleted $
+        csEditState.cedJustCompleted .= False
 
 -- | Send the user_typing action to the server asynchronously, over the
 -- connected websocket. If the websocket is not connected, drop the
@@ -479,5 +501,11 @@ tabComplete dir = do
                             then z
                             else Z.moveWordRight z
                     csEditState.cedEditor %=
-                        applyEdit (Z.insertMany replacement . Z.deletePrevWord .
+                        applyEdit (Z.insertChar ' ' . Z.insertMany replacement . Z.deletePrevWord .
                                    maybeEndOfWord)
+                    csEditState.cedJustCompleted .= True
+
+                    -- If there was only one completion alternative,
+                    -- hide the autocomplete listing now that we've
+                    -- completed the only completion.
+                    when (ac^.acCompletionList.to L.listElements.to length == 1) resetAutocomplete

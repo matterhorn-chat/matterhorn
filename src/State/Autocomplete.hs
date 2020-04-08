@@ -59,15 +59,25 @@ checkForAutocompletion ctx = do
     result <- getCompleterForInput ctx
     case result of
         Nothing -> resetAutocomplete
-        Just (runUpdater, searchString) -> do
+        Just (ty, runUpdater, searchString) -> do
             prevResult <- use (csEditState.cedAutocomplete)
-            let shouldUpdate = maybe True ((/= searchString) . _acPreviousSearchString)
-                               prevResult
+            -- We should update the completion state if EITHER:
+            --
+            -- 1) The type changed
+            --
+            -- or
+            --
+            -- 2) The search string changed but the type did NOT change
+            let shouldUpdate = ((maybe True ((/= searchString) . _acPreviousSearchString)
+                                 prevResult) &&
+                                (maybe True ((== ty) . _acType) prevResult)) ||
+                               (maybe False ((/= ty) . _acType) prevResult)
             when shouldUpdate $ do
                 csEditState.cedAutocompletePending .= Just searchString
-                runUpdater ctx searchString
+                runUpdater ty ctx searchString
 
-getCompleterForInput :: AutocompleteContext -> MH (Maybe (AutocompleteContext -> Text -> MH (), Text))
+getCompleterForInput :: AutocompleteContext
+                     -> MH (Maybe (AutocompletionType, AutocompletionType -> AutocompleteContext -> Text -> MH (), Text))
 getCompleterForInput ctx = do
     z <- use (csEditState.cedEditor.editContentsL)
 
@@ -77,40 +87,41 @@ getCompleterForInput ctx = do
     return $ case wordAtColumn col curLine of
         Just (startCol, w)
             | userSigil `T.isPrefixOf` w ->
-                Just (doUserAutoCompletion, T.tail w)
+                Just (ACUsers, doUserAutoCompletion, T.tail w)
             | normalChannelSigil `T.isPrefixOf` w ->
-                Just (doChannelAutoCompletion, T.tail w)
+                Just (ACChannels, doChannelAutoCompletion, T.tail w)
             | ":" `T.isPrefixOf` w && autocompleteManual ctx ->
-                Just (doEmojiAutoCompletion, T.tail w)
+                Just (ACEmoji, doEmojiAutoCompletion, T.tail w)
             | "```" `T.isPrefixOf` w ->
-                Just (doSyntaxAutoCompletion, T.drop 3 w)
+                Just (ACCodeBlockLanguage, doSyntaxAutoCompletion, T.drop 3 w)
             | "/" `T.isPrefixOf` w && startCol == 0 ->
-                Just (doCommandAutoCompletion, T.tail w)
+                Just (ACCommands, doCommandAutoCompletion, T.tail w)
         _ -> Nothing
 
-doEmojiAutoCompletion :: AutocompleteContext -> Text -> MH ()
-doEmojiAutoCompletion ctx searchString = do
+-- Completion implementations
+
+doEmojiAutoCompletion :: AutocompletionType -> AutocompleteContext -> Text -> MH ()
+doEmojiAutoCompletion ty ctx searchString = do
     session <- getSession
     em <- use (csResources.crEmoji)
-    let label = "Emoji"
-    withCachedAutocompleteResults ctx label searchString $
+    withCachedAutocompleteResults ctx ty searchString $
         doAsyncWith Preempt $ do
             results <- getMatchingEmoji session em searchString
             let alts = EmojiCompletion <$> results
-            return $ Just $ setCompletionAlternatives ctx searchString alts label
+            return $ Just $ setCompletionAlternatives ctx searchString alts ty
 
-doSyntaxAutoCompletion :: AutocompleteContext -> Text -> MH ()
-doSyntaxAutoCompletion ctx searchString = do
+doSyntaxAutoCompletion :: AutocompletionType -> AutocompleteContext -> Text -> MH ()
+doSyntaxAutoCompletion ty ctx searchString = do
     mapping <- use (csResources.crSyntaxMap)
     let allNames = Sky.sShortname <$> M.elems mapping
         (prefixed, notPrefixed) = partition isPrefixed $ filter match allNames
         match = (((T.toLower searchString) `T.isInfixOf`) . T.toLower)
         isPrefixed = (((T.toLower searchString) `T.isPrefixOf`) . T.toLower)
         alts = SyntaxCompletion <$> (sort prefixed <> sort notPrefixed)
-    setCompletionAlternatives ctx searchString alts "Languages"
+    setCompletionAlternatives ctx searchString alts ty
 
-doCommandAutoCompletion :: AutocompleteContext -> Text -> MH ()
-doCommandAutoCompletion ctx searchString = do
+doCommandAutoCompletion :: AutocompletionType -> AutocompleteContext -> Text -> MH ()
+doCommandAutoCompletion ty ctx searchString = do
     let alts = mkAlt <$> sortBy compareCommands (filter matches commandList)
         compareCommands a b =
             let isAPrefix = searchString `T.isPrefixOf` cmdName a
@@ -125,41 +136,16 @@ doCommandAutoCompletion ctx searchString = do
                     lowerSearch `T.isInfixOf` (T.toLower $ cmdDescr c)
         mkAlt (Cmd name desc args _) =
             CommandCompletion name (printArgSpec args) desc
-    setCompletionAlternatives ctx searchString alts "Commands"
+    setCompletionAlternatives ctx searchString alts ty
 
--- | Attempt to re-use a cached autocomplete alternative list for
--- a given search string. If the cache contains no such entry (keyed
--- on search string), run the specified action, which is assumed to be
--- responsible for fetching the completion results from the server.
-withCachedAutocompleteResults :: AutocompleteContext
-                              -- ^ The autocomplete context
-                              -> Text
-                              -- ^ The autocomplete UI label for the
-                              -- results to be used
-                              -> Text
-                              -- ^ The search string to look for in the
-                              -- cache
-                              -> MH ()
-                              -- ^ The action to execute on a cache miss
-                              -> MH ()
-withCachedAutocompleteResults ctx label searchString act = do
-    mCache <- preuse (csEditState.cedAutocomplete._Just.acCachedResponses)
-
-    -- Does the cache have results for this search string? If so, use
-    -- them; otherwise invoke the specified action.
-    case HM.lookup searchString =<< mCache of
-        Just alts -> setCompletionAlternatives ctx searchString alts label
-        Nothing -> act
-
-doUserAutoCompletion :: AutocompleteContext -> Text -> MH ()
-doUserAutoCompletion ctx searchString = do
+doUserAutoCompletion :: AutocompletionType -> AutocompleteContext -> Text -> MH ()
+doUserAutoCompletion ty ctx searchString = do
     session <- getSession
     myTid <- gets myTeamId
     myUid <- gets myUserId
     cId <- use csCurrentChannelId
-    let label = "Users"
 
-    withCachedAutocompleteResults ctx label searchString $
+    withCachedAutocompleteResults ctx ty searchString $
         doAsyncWith Preempt $ do
             ac <- MM.mmAutocompleteUsers (Just myTid) (Just cId) searchString session
 
@@ -176,32 +162,65 @@ doUserAutoCompletion ctx searchString = do
                          , (T.toLower searchString) `T.isInfixOf` specialMentionName m
                          ]
 
-            return $ Just $ setCompletionAlternatives ctx searchString (extras <> alts) label
+            return $ Just $ setCompletionAlternatives ctx searchString (extras <> alts) ty
 
-doChannelAutoCompletion :: AutocompleteContext -> Text -> MH ()
-doChannelAutoCompletion ctx searchString = do
+doChannelAutoCompletion :: AutocompletionType -> AutocompleteContext -> Text -> MH ()
+doChannelAutoCompletion ty ctx searchString = do
     session <- getSession
     tId <- gets myTeamId
-    let label = "Channels"
     cs <- use csChannels
 
-    withCachedAutocompleteResults ctx label searchString $ do
+    withCachedAutocompleteResults ctx ty searchString $ do
         doAsyncWith Preempt $ do
             results <- MM.mmAutocompleteChannels tId searchString session
             let alts = F.toList $ (ChannelCompletion True <$> inChannels) <>
                                   (ChannelCompletion False <$> notInChannels)
                 (inChannels, notInChannels) = Seq.partition isMember results
                 isMember c = isJust $ findChannelById (channelId c) cs
-            return $ Just $ setCompletionAlternatives ctx searchString alts label
+            return $ Just $ setCompletionAlternatives ctx searchString alts ty
 
-setCompletionAlternatives :: AutocompleteContext -> Text -> [AutocompleteAlternative] -> Text -> MH ()
+-- Utility functions
+
+-- | Attempt to re-use a cached autocomplete alternative list for
+-- a given search string. If the cache contains no such entry (keyed
+-- on search string), run the specified action, which is assumed to be
+-- responsible for fetching the completion results from the server.
+withCachedAutocompleteResults :: AutocompleteContext
+                              -- ^ The autocomplete context
+                              -> AutocompletionType
+                              -- ^ The type of autocompletion we're
+                              -- doing
+                              -> Text
+                              -- ^ The search string to look for in the
+                              -- cache
+                              -> MH ()
+                              -- ^ The action to execute on a cache miss
+                              -> MH ()
+withCachedAutocompleteResults ctx ty searchString act = do
+    mCache <- preuse (csEditState.cedAutocomplete._Just.acCachedResponses)
+    mActiveTy <- preuse (csEditState.cedAutocomplete._Just.acType)
+
+    case Just ty == mActiveTy of
+        True ->
+            -- Does the cache have results for this search string? If
+            -- so, use them; otherwise invoke the specified action.
+            case HM.lookup searchString =<< mCache of
+                Just alts -> setCompletionAlternatives ctx searchString alts ty
+                Nothing -> act
+        False -> act
+
+setCompletionAlternatives :: AutocompleteContext
+                          -> Text
+                          -> [AutocompleteAlternative]
+                          -> AutocompletionType
+                          -> MH ()
 setCompletionAlternatives ctx searchString alts ty = do
     let list = L.list CompletionList (V.fromList $ F.toList alts) 1
         state = AutocompleteState { _acPreviousSearchString = searchString
                                   , _acCompletionList =
                                       list & L.listSelectedL .~ Nothing
-                                  , _acListElementType = ty
                                   , _acCachedResponses = HM.fromList [(searchString, alts)]
+                                  , _acType = ty
                                   }
 
     pending <- use (csEditState.cedAutocompletePending)
