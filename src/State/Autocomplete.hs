@@ -202,7 +202,11 @@ withCachedAutocompleteResults ctx ty searchString act = do
                 Nothing -> act
         False -> act
 
-setCompletionAlternatives :: AutocompleteContext -> Text -> [AutocompleteAlternative] -> AutocompletionType -> MH ()
+setCompletionAlternatives :: AutocompleteContext
+                          -> Text
+                          -> [AutocompleteAlternative]
+                          -> AutocompletionType
+                          -> MH ()
 setCompletionAlternatives ctx searchString alts ty = do
     let list = L.list CompletionList (V.fromList $ F.toList alts) 1
         state = AutocompleteState { _acPreviousSearchString = searchString
