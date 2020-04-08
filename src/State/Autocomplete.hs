@@ -69,7 +69,8 @@ checkForAutocompletion ctx = do
                 csEditState.cedAutocompletePending .= Just searchString
                 runUpdater ty ctx searchString
 
-getCompleterForInput :: AutocompleteContext -> MH (Maybe (AutocompletionType, AutocompletionType -> AutocompleteContext -> Text -> MH (), Text))
+getCompleterForInput :: AutocompleteContext
+                     -> MH (Maybe (AutocompletionType, AutocompletionType -> AutocompleteContext -> Text -> MH (), Text))
 getCompleterForInput ctx = do
     z <- use (csEditState.cedEditor.editContentsL)
 
@@ -89,6 +90,8 @@ getCompleterForInput ctx = do
             | "/" `T.isPrefixOf` w && startCol == 0 ->
                 Just (ACCommands, doCommandAutoCompletion, T.tail w)
         _ -> Nothing
+
+-- Completion implementations
 
 doEmojiAutoCompletion :: AutocompletionType -> AutocompleteContext -> Text -> MH ()
 doEmojiAutoCompletion ty ctx searchString = do
@@ -127,34 +130,6 @@ doCommandAutoCompletion ty ctx searchString = do
         mkAlt (Cmd name desc args _) =
             CommandCompletion name (printArgSpec args) desc
     setCompletionAlternatives ctx searchString alts ty
-
--- | Attempt to re-use a cached autocomplete alternative list for
--- a given search string. If the cache contains no such entry (keyed
--- on search string), run the specified action, which is assumed to be
--- responsible for fetching the completion results from the server.
-withCachedAutocompleteResults :: AutocompleteContext
-                              -- ^ The autocomplete context
-                              -> AutocompletionType
-                              -- ^ The type of autocompletion we're
-                              -- doing
-                              -> Text
-                              -- ^ The search string to look for in the
-                              -- cache
-                              -> MH ()
-                              -- ^ The action to execute on a cache miss
-                              -> MH ()
-withCachedAutocompleteResults ctx ty searchString act = do
-    mCache <- preuse (csEditState.cedAutocomplete._Just.acCachedResponses)
-    mActiveTy <- preuse (csEditState.cedAutocomplete._Just.acType)
-
-    case Just ty == mActiveTy of
-        True ->
-            -- Does the cache have results for this search string? If
-            -- so, use them; otherwise invoke the specified action.
-            case HM.lookup searchString =<< mCache of
-                Just alts -> setCompletionAlternatives ctx searchString alts ty
-                Nothing -> act
-        False -> act
 
 doUserAutoCompletion :: AutocompletionType -> AutocompleteContext -> Text -> MH ()
 doUserAutoCompletion ty ctx searchString = do
@@ -196,6 +171,36 @@ doChannelAutoCompletion ty ctx searchString = do
                 (inChannels, notInChannels) = Seq.partition isMember results
                 isMember c = isJust $ findChannelById (channelId c) cs
             return $ Just $ setCompletionAlternatives ctx searchString alts ty
+
+-- Utility functions
+
+-- | Attempt to re-use a cached autocomplete alternative list for
+-- a given search string. If the cache contains no such entry (keyed
+-- on search string), run the specified action, which is assumed to be
+-- responsible for fetching the completion results from the server.
+withCachedAutocompleteResults :: AutocompleteContext
+                              -- ^ The autocomplete context
+                              -> AutocompletionType
+                              -- ^ The type of autocompletion we're
+                              -- doing
+                              -> Text
+                              -- ^ The search string to look for in the
+                              -- cache
+                              -> MH ()
+                              -- ^ The action to execute on a cache miss
+                              -> MH ()
+withCachedAutocompleteResults ctx ty searchString act = do
+    mCache <- preuse (csEditState.cedAutocomplete._Just.acCachedResponses)
+    mActiveTy <- preuse (csEditState.cedAutocomplete._Just.acType)
+
+    case Just ty == mActiveTy of
+        True ->
+            -- Does the cache have results for this search string? If
+            -- so, use them; otherwise invoke the specified action.
+            case HM.lookup searchString =<< mCache of
+                Just alts -> setCompletionAlternatives ctx searchString alts ty
+                Nothing -> act
+        False -> act
 
 setCompletionAlternatives :: AutocompleteContext -> Text -> [AutocompleteAlternative] -> AutocompletionType -> MH ()
 setCompletionAlternatives ctx searchString alts ty = do
