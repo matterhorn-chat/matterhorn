@@ -67,9 +67,9 @@ checkForAutocompletion ctx = do
                                (maybe False ((/= ty) . _acType) prevResult)
             when shouldUpdate $ do
                 csEditState.cedAutocompletePending .= Just searchString
-                runUpdater ctx searchString
+                runUpdater ty ctx searchString
 
-getCompleterForInput :: AutocompleteContext -> MH (Maybe (AutocompletionType, AutocompleteContext -> Text -> MH (), Text))
+getCompleterForInput :: AutocompleteContext -> MH (Maybe (AutocompletionType, AutocompletionType -> AutocompleteContext -> Text -> MH (), Text))
 getCompleterForInput ctx = do
     z <- use (csEditState.cedEditor.editContentsL)
 
@@ -90,29 +90,28 @@ getCompleterForInput ctx = do
                 Just (ACCommands, doCommandAutoCompletion, T.tail w)
         _ -> Nothing
 
-doEmojiAutoCompletion :: AutocompleteContext -> Text -> MH ()
-doEmojiAutoCompletion ctx searchString = do
+doEmojiAutoCompletion :: AutocompletionType -> AutocompleteContext -> Text -> MH ()
+doEmojiAutoCompletion ty ctx searchString = do
     session <- getSession
     em <- use (csResources.crEmoji)
-    let ty = ACEmoji
     withCachedAutocompleteResults ctx ty searchString $
         doAsyncWith Preempt $ do
             results <- getMatchingEmoji session em searchString
             let alts = EmojiCompletion <$> results
             return $ Just $ setCompletionAlternatives ctx searchString alts ty
 
-doSyntaxAutoCompletion :: AutocompleteContext -> Text -> MH ()
-doSyntaxAutoCompletion ctx searchString = do
+doSyntaxAutoCompletion :: AutocompletionType -> AutocompleteContext -> Text -> MH ()
+doSyntaxAutoCompletion ty ctx searchString = do
     mapping <- use (csResources.crSyntaxMap)
     let allNames = Sky.sShortname <$> M.elems mapping
         (prefixed, notPrefixed) = partition isPrefixed $ filter match allNames
         match = (((T.toLower searchString) `T.isInfixOf`) . T.toLower)
         isPrefixed = (((T.toLower searchString) `T.isPrefixOf`) . T.toLower)
         alts = SyntaxCompletion <$> (sort prefixed <> sort notPrefixed)
-    setCompletionAlternatives ctx searchString alts ACCodeBlockLanguage
+    setCompletionAlternatives ctx searchString alts ty
 
-doCommandAutoCompletion :: AutocompleteContext -> Text -> MH ()
-doCommandAutoCompletion ctx searchString = do
+doCommandAutoCompletion :: AutocompletionType -> AutocompleteContext -> Text -> MH ()
+doCommandAutoCompletion ty ctx searchString = do
     let alts = mkAlt <$> sortBy compareCommands (filter matches commandList)
         compareCommands a b =
             let isAPrefix = searchString `T.isPrefixOf` cmdName a
@@ -127,7 +126,7 @@ doCommandAutoCompletion ctx searchString = do
                     lowerSearch `T.isInfixOf` (T.toLower $ cmdDescr c)
         mkAlt (Cmd name desc args _) =
             CommandCompletion name (printArgSpec args) desc
-    setCompletionAlternatives ctx searchString alts ACCommands
+    setCompletionAlternatives ctx searchString alts ty
 
 -- | Attempt to re-use a cached autocomplete alternative list for
 -- a given search string. If the cache contains no such entry (keyed
@@ -157,13 +156,12 @@ withCachedAutocompleteResults ctx ty searchString act = do
                 Nothing -> act
         False -> act
 
-doUserAutoCompletion :: AutocompleteContext -> Text -> MH ()
-doUserAutoCompletion ctx searchString = do
+doUserAutoCompletion :: AutocompletionType -> AutocompleteContext -> Text -> MH ()
+doUserAutoCompletion ty ctx searchString = do
     session <- getSession
     myTid <- gets myTeamId
     myUid <- gets myUserId
     cId <- use csCurrentChannelId
-    let ty = ACUsers
 
     withCachedAutocompleteResults ctx ty searchString $
         doAsyncWith Preempt $ do
@@ -184,11 +182,10 @@ doUserAutoCompletion ctx searchString = do
 
             return $ Just $ setCompletionAlternatives ctx searchString (extras <> alts) ty
 
-doChannelAutoCompletion :: AutocompleteContext -> Text -> MH ()
-doChannelAutoCompletion ctx searchString = do
+doChannelAutoCompletion :: AutocompletionType -> AutocompleteContext -> Text -> MH ()
+doChannelAutoCompletion ty ctx searchString = do
     session <- getSession
     tId <- gets myTeamId
-    let ty = ACChannels
     cs <- use csChannels
 
     withCachedAutocompleteResults ctx ty searchString $ do
