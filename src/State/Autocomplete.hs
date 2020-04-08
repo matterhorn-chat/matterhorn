@@ -61,6 +61,13 @@ checkForAutocompletion ctx = do
         Nothing -> resetAutocomplete
         Just (ty, runUpdater, searchString) -> do
             prevResult <- use (csEditState.cedAutocomplete)
+            -- We should update the completion state if EITHER:
+            --
+            -- 1) The type changed
+            --
+            -- or
+            --
+            -- 2) The search string changed but the type did NOT change
             let shouldUpdate = ((maybe True ((/= searchString) . _acPreviousSearchString)
                                  prevResult) &&
                                 (maybe True ((== ty) . _acType) prevResult)) ||
