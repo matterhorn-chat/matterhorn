@@ -122,6 +122,9 @@ module Types
   , acCompletionList
   , acListElementType
   , acCachedResponses
+  , acType
+
+  , AutocompletionType(..)
 
   , AutocompleteAlternative(..)
   , autocompleteAlternativeReplacement
@@ -914,6 +917,17 @@ autocompleteAlternativeReplacement (SyntaxCompletion t) =
 autocompleteAlternativeReplacement (CommandCompletion t _ _) =
     "/" <> t
 
+-- | The type of data that the autocompletion logic supports. We use
+-- this to track the kind of completion underway in case the type of
+-- completion needs to change.
+data AutocompletionType =
+    ACUsers
+    | ACChannels
+    | ACCodeBlockLanguage
+    | ACEmoji
+    | ACCommands
+    deriving (Eq, Show)
+
 data AutocompleteState =
     AutocompleteState { _acPreviousSearchString :: Text
                       -- ^ The search string used for the
@@ -926,6 +940,8 @@ data AutocompleteState =
                       , _acListElementType :: Text
                       -- ^ The label (plural noun, e.g. "Users") used to
                       -- display the result list to the user
+                      , _acType :: AutocompletionType
+                      -- ^ The type of data that we're completing
                       , _acCachedResponses :: HM.HashMap Text [AutocompleteAlternative]
                       -- ^ A cache of alternative lists, keyed on search
                       -- string, for use in avoiding server requests.
