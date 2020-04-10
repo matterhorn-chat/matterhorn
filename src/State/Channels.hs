@@ -107,7 +107,7 @@ updateSidebar = do
     -- Schedule the current sidebar for user status updates at the end
     -- of this MH action.
     newZ <- use csFocus
-    scheduleUserStatusFetches newZ
+    scheduleUserStatusFetches $ userIdsFromZipper newZ
 
     -- If the zipper rebuild caused the current channel to change, such
     -- as when the previously-focused channel was removed, we need to

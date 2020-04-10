@@ -42,7 +42,6 @@ import           State.Editing ( requestSpellCheck )
 import           State.Setup.Threads.Logging
 import           TimeUtils ( lookupLocalTimeZone )
 import           Types
-import qualified Zipper as Z
 
 
 updateUserStatuses :: [UserId] -> Session -> IO (Maybe (MH ()))
@@ -55,7 +54,7 @@ updateUserStatuses uIds session =
                     setUserStatus (statusUserId s) (statusStatus s)
         True -> return Nothing
 
-startUserStatusUpdateThread :: STM.TChan (Z.Zipper ChannelListGroup ChannelListEntry) -> Session -> RequestChan -> IO ()
+startUserStatusUpdateThread :: STM.TChan [UserId] -> Session -> RequestChan -> IO ()
 startUserStatusUpdateThread zipperChan session requestChan = void $ forkIO body
   where
       seconds = (* (1000 * 1000))
@@ -65,8 +64,7 @@ startUserStatusUpdateThread zipperChan session requestChan = void $ forkIO body
           result <- timeout (seconds userRefreshInterval) (STM.atomically $ STM.readTChan zipperChan)
           let (uIds, update) = case result of
                   Nothing -> (prev, True)
-                  Just z -> let ids = userIdsFromZipper z
-                            in (ids, ids /= prev)
+                  Just ids -> (ids, ids /= prev)
 
           when update $ do
               STM.atomically $ STM.writeTChan requestChan $ do

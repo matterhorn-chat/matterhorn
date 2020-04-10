@@ -857,7 +857,7 @@ data ChatResources =
                   , _crSubprocessLog       :: STM.TChan ProgramOutput
                   , _crWebsocketActionChan :: STM.TChan WebsocketAction
                   , _crTheme               :: AttrMap
-                  , _crStatusUpdateChan    :: STM.TChan (Zipper ChannelListGroup ChannelListEntry)
+                  , _crStatusUpdateChan    :: STM.TChan [UserId]
                   , _crConfiguration       :: Config
                   , _crFlaggedPosts        :: Set PostId
                   , _crUserPreferences     :: UserPreferences
@@ -1498,7 +1498,7 @@ data MHState =
     MHState { mhCurrentState :: ChatState
             , mhNextAction :: ChatState -> EventM Name (Next ChatState)
             , mhUsersToFetch :: [UserFetch]
-            , mhPendingStatusZipper :: Maybe (Zipper ChannelListGroup ChannelListEntry)
+            , mhPendingStatusList :: Maybe [UserId]
             }
 
 -- | A value of type 'MH' @a@ represents a computation that can
@@ -1554,7 +1554,7 @@ runMHEvent st (MH mote) = do
   let mhSt = MHState { mhCurrentState = st
                      , mhNextAction = Brick.continue
                      , mhUsersToFetch = []
-                     , mhPendingStatusZipper = Nothing
+                     , mhPendingStatusList = Nothing
                      }
   ((), st') <- St.runStateT (R.runReaderT mote Nothing) mhSt
   (mhNextAction st') (mhCurrentState st')
@@ -1563,15 +1563,15 @@ scheduleUserFetches :: [UserFetch] -> MH ()
 scheduleUserFetches fs = MH $ do
     St.modify $ \s -> s { mhUsersToFetch = fs <> mhUsersToFetch s }
 
-scheduleUserStatusFetches :: Zipper ChannelListGroup ChannelListEntry -> MH ()
-scheduleUserStatusFetches z = MH $ do
-    St.modify $ \s -> s { mhPendingStatusZipper = Just z }
+scheduleUserStatusFetches :: [UserId] -> MH ()
+scheduleUserStatusFetches is = MH $ do
+    St.modify $ \s -> s { mhPendingStatusList = Just is }
 
 getScheduledUserFetches :: MH [UserFetch]
 getScheduledUserFetches = MH $ St.gets mhUsersToFetch
 
-getScheduledUserStatusFetches :: MH (Maybe (Zipper ChannelListGroup ChannelListEntry))
-getScheduledUserStatusFetches = MH $ St.gets mhPendingStatusZipper
+getScheduledUserStatusFetches :: MH (Maybe [UserId])
+getScheduledUserStatusFetches = MH $ St.gets mhPendingStatusList
 
 -- | lift a computation in 'EventM' into 'MH'
 mh :: EventM Name a -> MH a
