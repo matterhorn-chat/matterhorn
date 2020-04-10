@@ -58,8 +58,10 @@ renderChannelList st =
                      withDefAttr clientEmphAttr $
                      txt $ "Team: " <> teamNameStr
         myUsername_ = myUsername st
+        me = userById (myUserId st) st
+        statusSigil = maybe ' ' userSigilFromInfo me
         selfHeader = hCenter $
-                     colorUsername myUsername_ myUsername_ (userSigil <> myUsername_)
+                     colorUsername myUsername_ myUsername_ (T.singleton statusSigil <> " " <> userSigil <> myUsername_)
         teamNameStr = sanitizeUserText $ MM.teamDisplayName $ st^.csMyTeam
         body = case appMode st of
             ChannelSelect ->
