@@ -39,14 +39,14 @@ import           Types.KeyEvents
 --   implementation
 data Keybinding =
     KB { kbDescription :: Text
-       , kbEvent :: Vty.Event
+       , kbEvent :: Maybe Vty.Event
        , kbAction :: MH ()
        , kbBindingInfo :: Maybe KeyEvent
        }
 
 -- | Find a keybinding that matches a Vty Event
 lookupKeybinding :: Vty.Event -> [Keybinding] -> Maybe Keybinding
-lookupKeybinding e kbs = listToMaybe $ filter ((== e) . kbEvent) kbs
+lookupKeybinding e kbs = listToMaybe $ filter ((== Just e) . kbEvent) kbs
 
 handleKeyboardEvent
   :: (KeyConfig -> [Keybinding])
@@ -62,13 +62,15 @@ handleKeyboardEvent keyList fallthrough e = do
 
 mkKb :: KeyEvent -> Text -> MH () -> KeyConfig -> [Keybinding]
 mkKb ev msg action conf =
-  [ KB msg (bindingToEvent key) action (Just ev) | key <- allKeys ]
+  if null allKeys
+  then [ KB msg Nothing action (Just ev) ]
+  else [ KB msg (Just $ bindingToEvent key) action (Just ev) | key <- allKeys ]
   where allKeys | Just (BindingList ks) <- M.lookup ev conf = ks
                 | Just Unbound <- M.lookup ev conf = []
                 | otherwise = defaultBindings ev
 
 staticKb :: Text -> Vty.Event -> MH () -> KeyConfig -> [Keybinding]
-staticKb msg event action _ = [KB msg event action Nothing]
+staticKb msg event action _ = [KB msg (Just event) action Nothing]
 
 mkKeybindings :: [KeyConfig -> [Keybinding]] -> KeyConfig -> [Keybinding]
 mkKeybindings ks conf = concat [ k conf | k <- ks ]

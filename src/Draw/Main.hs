@@ -447,7 +447,7 @@ messageSelectBottomBar st =
           in T.intercalate ","
                [ ppBinding (eventToBinding b)
                | KB { kbBindingInfo = Just e'
-                    , kbEvent       = b
+                    , kbEvent       = Just b
                     } <- keymap
                , e' == e
                ]

@@ -437,11 +437,11 @@ kbDescColumnWidth = 60
 mkKeybindingHelp :: (Text, [Keybinding]) -> Widget Name
 mkKeybindingHelp (sectionName, kbs) =
     (hCenter $ padTop (Pad 1) $ withDefAttr helpEmphAttr $ txt sectionName) <=>
-    (hCenter $ vBox $ mkKeybindHelp <$> (sortWith (ppBinding.eventToBinding.kbEvent) kbs))
+    (hCenter $ vBox $ mkKeybindHelp <$> (sortWith (fmap ppBinding.fmap eventToBinding.kbEvent) kbs))
 
 mkKeybindHelp :: Keybinding -> Widget Name
 mkKeybindHelp (KB desc ev _ _) =
-    (withDefAttr helpEmphAttr $ txt $ padTo kbColumnWidth $ ppBinding $ eventToBinding ev) <+>
+    (withDefAttr helpEmphAttr $ txt $ padTo kbColumnWidth $ maybe "unbound" (ppBinding . eventToBinding) ev) <+>
     (hLimit kbDescColumnWidth $ padRight Max $ renderText desc)
 
 mkKeybindEventSectionHelp :: ((Text, Text, [Text]) -> a)
@@ -479,7 +479,7 @@ keybindEventHelpText width eventNameWidth (evName, desc, evs) =
 mkKeybindEventHelp :: [Keybinding] -> Maybe (Text, Text, [Text])
 mkKeybindEventHelp ks@(KB desc _ _ (Just e):_) =
   let evs = [ ev | KB _ ev _ _ <- ks ]
-      evText = map (ppBinding . eventToBinding) evs
+      evText = map (maybe "unbound" (ppBinding . eventToBinding)) evs
   in Just (keyEventName e, desc, evText)
 mkKeybindEventHelp _ = Nothing
 

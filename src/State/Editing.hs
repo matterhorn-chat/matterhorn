@@ -126,7 +126,7 @@ editingPermitted st =
 
 editingKeybindings :: [Keybinding]
 editingKeybindings =
-  let kb desc ev mote = KB desc ev mote Nothing in
+  let kb desc ev mote = KB desc (Just ev) mote Nothing in
   map withUserTypingAction
   [ kb "Transpose the final two characters"
     (EvKey (KChar 't') [MCtrl]) $ do
