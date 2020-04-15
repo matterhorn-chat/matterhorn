@@ -152,8 +152,14 @@ editingKeybindings =
   , kb "Move one word to the right"
     (EvKey (KChar 'f') [MMeta]) $ do
     csEditState.cedEditor %= applyEdit Z.moveWordRight
+  , kb "Move one word to the right"
+    (EvKey KRight [MCtrl]) $ do
+    csEditState.cedEditor %= applyEdit Z.moveWordRight
   , kb "Move one word to the left"
     (EvKey (KChar 'b') [MMeta]) $ do
+    csEditState.cedEditor %= applyEdit Z.moveWordLeft
+  , kb "Move one word to the left"
+    (EvKey KLeft [MCtrl]) $ do
     csEditState.cedEditor %= applyEdit Z.moveWordLeft
   , kb "Delete the word to the left of the cursor"
     (EvKey KBS [MMeta]) $ do
