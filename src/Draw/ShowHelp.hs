@@ -410,7 +410,7 @@ keybindSections kc =
     , ("Channel Select Mode", channelSelectKeybindings kc)
     , ("URL Select Mode", urlSelectKeybindings kc)
     , ("Message Select Mode", messageSelectKeybindings kc)
-    , ("Text Editing", editingKeybindings)
+    , ("Text Editing", editingKeybindings kc)
     , ("Flagged Messages", postListOverlayKeybindings kc)
     , ("User Listings", userListOverlayKeybindings kc)
     , ("Channel Search Window", channelListOverlayKeybindings kc)

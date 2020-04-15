@@ -53,6 +53,22 @@ data KeyEvent
   | ToggleChannelListVisibleEvent
   | ShowAttachmentListEvent
 
+  | EditorKillToBolEvent
+  | EditorKillToEolEvent
+  | EditorBolEvent
+  | EditorEolEvent
+  | EditorTransposeCharsEvent
+  | EditorDeleteCharacter
+  | EditorPrevCharEvent
+  | EditorNextCharEvent
+  | EditorPrevWordEvent
+  | EditorNextWordEvent
+  | EditorDeleteNextWordEvent
+  | EditorDeletePrevWordEvent
+  | EditorHomeEvent
+  | EditorEndEvent
+  | EditorYankEvent
+
   | SelectNextTabEvent
   | SelectPreviousTabEvent
 
@@ -124,6 +140,22 @@ allEvents =
   , LastChannelEvent
 
   , ShowAttachmentListEvent
+
+  , EditorKillToBolEvent
+  , EditorKillToEolEvent
+  , EditorBolEvent
+  , EditorEolEvent
+  , EditorTransposeCharsEvent
+  , EditorDeleteCharacter
+  , EditorPrevCharEvent
+  , EditorNextCharEvent
+  , EditorPrevWordEvent
+  , EditorNextWordEvent
+  , EditorDeleteNextWordEvent
+  , EditorDeletePrevWordEvent
+  , EditorHomeEvent
+  , EditorEndEvent
+  , EditorYankEvent
 
   , EnterFlaggedPostsEvent
   , ToggleChannelListVisibleEvent
@@ -322,6 +354,22 @@ keyEventName ev = case ev of
   SelectPreviousTabEvent    -> "select-previous-tab"
 
   ShowAttachmentListEvent   -> "show-attachment-list"
+
+  EditorKillToBolEvent        -> "editor-kill-to-beginning-of-line"
+  EditorKillToEolEvent        -> "editor-kill-to-end-of-line"
+  EditorBolEvent              -> "editor-beginning-of-line"
+  EditorEolEvent              -> "editor-end-of-line"
+  EditorTransposeCharsEvent   -> "editor-transpose-chars"
+  EditorDeleteCharacter       -> "editor-delete-char"
+  EditorPrevCharEvent         -> "editor-prev-char"
+  EditorNextCharEvent         -> "editor-next-char"
+  EditorPrevWordEvent         -> "editor-prev-word"
+  EditorNextWordEvent         -> "editor-next-word"
+  EditorDeleteNextWordEvent   -> "editor-delete-next-word"
+  EditorDeletePrevWordEvent   -> "editor-delete-prev-word"
+  EditorHomeEvent             -> "editor-home"
+  EditorEndEvent              -> "editor-end"
+  EditorYankEvent             -> "editor-yank"
 
   EnterFlaggedPostsEvent    -> "show-flagged-posts"
   ToggleChannelListVisibleEvent -> "toggle-channel-list-visibility"

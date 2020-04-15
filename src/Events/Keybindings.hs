@@ -143,6 +143,21 @@ defaultBindings ev =
         AttachmentListDeleteEvent     -> [ key 'd' ]
         AttachmentOpenEvent           -> [ key 'o' ]
         CancelEvent                   -> [ kb Vty.KEsc, ctrl (key 'c') ]
+        EditorBolEvent                -> [ ctrl (key 'a') ]
+        EditorEolEvent                -> [ ctrl (key 'e') ]
+        EditorTransposeCharsEvent     -> [ ctrl (key 't') ]
+        EditorDeleteCharacter         -> [ ctrl (key 'd') ]
+        EditorKillToBolEvent          -> [ ctrl (key 'u') ]
+        EditorKillToEolEvent          -> [ ctrl (key 'k') ]
+        EditorPrevCharEvent           -> [ ctrl (key 'b') ]
+        EditorNextCharEvent           -> [ ctrl (key 'f') ]
+        EditorPrevWordEvent           -> [ meta (key 'b') ]
+        EditorNextWordEvent           -> [ meta (key 'f') ]
+        EditorDeleteNextWordEvent     -> [ meta (key 'd') ]
+        EditorDeletePrevWordEvent     -> [ ctrl (key 'w'), meta (kb Vty.KBS) ]
+        EditorHomeEvent               -> [ kb Vty.KHome ]
+        EditorEndEvent                -> [ kb Vty.KEnd ]
+        EditorYankEvent               -> [ ctrl (key 'y') ]
 
 -- | Given a configuration, we want to check it for internal consistency
 -- (i.e. that a given keybinding isn't associated with multiple events
