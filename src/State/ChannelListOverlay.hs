@@ -15,6 +15,7 @@ import qualified Brick.Widgets.List as L
 import qualified Data.Vector as Vec
 import qualified Data.Sequence as Seq
 import           Data.Function ( on )
+import           Lens.Micro.Platform ( to )
 
 import           Network.Mattermost.Types
 import qualified Network.Mattermost.Endpoints as MM
@@ -27,8 +28,9 @@ import           Types
 enterChannelListOverlayMode :: MH ()
 enterChannelListOverlayMode = do
     myTId <- gets myTeamId
+    myChannels <- use (csChannels.to (filteredChannelIds (const True)))
     enterListOverlayMode csChannelListOverlay ChannelListOverlay
-        AllChannels enterHandler (fetchResults myTId)
+        AllChannels enterHandler (fetchResults myTId myChannels)
 
 enterHandler :: Channel -> MH Bool
 enterHandler chan = do
@@ -36,6 +38,8 @@ enterHandler chan = do
     return True
 
 fetchResults :: TeamId
+             -> [ChannelId]
+             -- ^ The channels to exclude from the results
              -> ChannelSearchScope
              -- ^ The scope to search
              -> Session
@@ -43,10 +47,10 @@ fetchResults :: TeamId
              -> Text
              -- ^ The search string
              -> IO (Vec.Vector Channel)
-fetchResults myTId AllChannels session searchString = do
+fetchResults myTId exclude AllChannels session searchString = do
     resultChans <- MM.mmSearchChannels myTId searchString session
-    -- chans <- Seq.filter (\ c -> not (channelId c `elem` myChannels)) <$> loop mempty 0
-    let sortedChans = Vec.fromList $ toList $ Seq.sortBy (compare `on` channelName) resultChans
+    let filteredChans = Seq.filter (\ c -> not (channelId c `elem` exclude)) resultChans
+        sortedChans = Vec.fromList $ toList $ Seq.sortBy (compare `on` channelName) filteredChans
     return sortedChans
 
 -- | Move the selection up in the channel list overlay by one channel.
