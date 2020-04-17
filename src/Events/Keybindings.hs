@@ -48,9 +48,19 @@ data Keybinding =
 lookupKeybinding :: Vty.Event -> [Keybinding] -> Maybe Keybinding
 lookupKeybinding e kbs = listToMaybe $ filter ((== Just e) . kbEvent) kbs
 
+-- | Handle a keyboard event by matching it against a list of bindings
+-- and invoking the matching binding's handler. If no match can be
+-- found, invoke a fallback action instead. Return True if the key event
+-- was handled with a matching binding; False if not (the fallback
+-- case).
 handleKeyboardEvent :: (KeyConfig -> [Keybinding])
+                    -- ^ The function to build a keybinding list from a
+                    -- key configuration.
                     -> (Vty.Event -> MH ())
+                    -- ^ The fallback action to invoke if no matching
+                    -- binding can be found.
                     -> Vty.Event
+                    -- ^ The event to handle.
                     -> MH Bool
 handleKeyboardEvent keyList fallthrough e = do
   conf <- use (csResources.crConfiguration)
