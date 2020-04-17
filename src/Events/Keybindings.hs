@@ -48,11 +48,10 @@ data Keybinding =
 lookupKeybinding :: Vty.Event -> [Keybinding] -> Maybe Keybinding
 lookupKeybinding e kbs = listToMaybe $ filter ((== Just e) . kbEvent) kbs
 
-handleKeyboardEvent
-  :: (KeyConfig -> [Keybinding])
-  -> (Vty.Event -> MH ())
-  -> Vty.Event
-  -> MH Bool
+handleKeyboardEvent :: (KeyConfig -> [Keybinding])
+                    -> (Vty.Event -> MH ())
+                    -> Vty.Event
+                    -> MH Bool
 handleKeyboardEvent keyList fallthrough e = do
   conf <- use (csResources.crConfiguration)
   let keyMap = keyList (configUserKeys conf)
