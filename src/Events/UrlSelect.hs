@@ -11,7 +11,7 @@ import           State.UrlSelect
 import           Types
 
 
-onEventUrlSelect :: Vty.Event -> MH ()
+onEventUrlSelect :: Vty.Event -> MH Bool
 onEventUrlSelect =
   handleKeyboardEvent urlSelectKeybindings $ \ ev ->
     mhHandleEventLensed csUrlList handleListEvent ev

@@ -12,7 +12,7 @@ import           State.PostListOverlay
 
 onEventPostListOverlay :: Vty.Event -> MH ()
 onEventPostListOverlay =
-  handleKeyboardEvent postListOverlayKeybindings $ \ _ -> return ()
+  void . handleKeyboardEvent postListOverlayKeybindings (const $ return ())
 
 -- | The keybindings we want to use while viewing a post list overlay
 postListOverlayKeybindings :: KeyConfig -> [Keybinding]

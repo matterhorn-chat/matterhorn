@@ -9,14 +9,18 @@ import qualified Graphics.Vty as Vty
 import           Events.Keybindings
 import           State.Channels
 import           State.ChannelSelect
+import           State.Editing ( editingKeybindings )
 import           Types
 import qualified Zipper as Z
 
 
-onEventChannelSelect :: Vty.Event -> MH ()
+onEventChannelSelect :: Vty.Event -> MH Bool
 onEventChannelSelect =
   handleKeyboardEvent channelSelectKeybindings $ \e -> do
-      mhHandleEventLensed (csChannelSelectState.channelSelectInput) handleEditorEvent e
+      handled <- handleKeyboardEvent (editingKeybindings (csChannelSelectState.channelSelectInput)) (const $ return ()) e
+      when (not handled) $
+          mhHandleEventLensed (csChannelSelectState.channelSelectInput) handleEditorEvent e
+
       updateChannelSelectMatches
 
 channelSelectKeybindings :: KeyConfig -> [Keybinding]

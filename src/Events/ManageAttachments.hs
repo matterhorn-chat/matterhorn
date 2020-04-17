@@ -31,11 +31,11 @@ onEventManageAttachments :: V.Event -> MH ()
 onEventManageAttachments e = do
     mode <- gets appMode
     case mode of
-        ManageAttachments -> onEventAttachmentList e
+        ManageAttachments -> void $ onEventAttachmentList e
         ManageAttachmentsBrowseFiles -> onEventBrowseFile e
         _ -> error "BUG: onEventManageAttachments called in invalid mode"
 
-onEventAttachmentList :: V.Event -> MH ()
+onEventAttachmentList :: V.Event -> MH Bool
 onEventAttachmentList =
     handleKeyboardEvent attachmentListKeybindings $
         mhHandleEventLensed (csEditState.cedAttachmentList) L.handleListEvent
@@ -99,7 +99,7 @@ onEventBrowseFile e = do
     withFileBrowser $ \b -> do
         case FB.fileBrowserIsSearching b of
             False ->
-                handleKeyboardEvent attachmentBrowseKeybindings handleFileBrowserEvent e
+                void $ handleKeyboardEvent attachmentBrowseKeybindings handleFileBrowserEvent e
             True ->
                 handleFileBrowserEvent e
 

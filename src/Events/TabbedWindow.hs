@@ -18,7 +18,7 @@ import           Events.Keybindings
 handleTabbedWindowEvent :: (Show a, Eq a)
                         => Lens' ChatState (TabbedWindow a)
                         -> Vty.Event
-                        -> MH ()
+                        -> MH Bool
 handleTabbedWindowEvent target e = do
     w <- use target
     handleKeyboardEvent (tabbedWindowKeybindings target) (forwardEvent w) e

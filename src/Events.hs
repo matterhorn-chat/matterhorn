@@ -160,16 +160,16 @@ onVtyEvent e = do
             mh invalidateCache
         _ -> return ()
 
-    handleKeyboardEvent globalKeybindings handleGlobalEvent e
+    void $ handleKeyboardEvent globalKeybindings handleGlobalEvent e
 
 handleGlobalEvent :: Vty.Event -> MH ()
 handleGlobalEvent e = do
     mode <- gets appMode
     case mode of
         Main                       -> onEventMain e
-        ShowHelp _ _               -> onEventShowHelp e
-        ChannelSelect              -> onEventChannelSelect e
-        UrlSelect                  -> onEventUrlSelect e
+        ShowHelp _ _               -> void $ onEventShowHelp e
+        ChannelSelect              -> void $ onEventChannelSelect e
+        UrlSelect                  -> void $ onEventUrlSelect e
         LeaveChannelConfirm        -> onEventLeaveChannelConfirm e
         MessageSelect              -> onEventMessageSelect e
         MessageSelectDeleteConfirm -> onEventMessageSelectDeleteConfirm e
@@ -178,7 +178,7 @@ handleGlobalEvent e = do
         UserListOverlay            -> onEventUserListOverlay e
         ChannelListOverlay         -> onEventChannelListOverlay e
         ReactionEmojiListOverlay   -> onEventReactionEmojiListOverlay e
-        ViewMessage                -> handleTabbedWindowEvent (csViewedMessage.singular _Just._2) e
+        ViewMessage                -> void $ handleTabbedWindowEvent (csViewedMessage.singular _Just._2) e
         ManageAttachments          -> onEventManageAttachments e
         ManageAttachmentsBrowseFiles -> onEventManageAttachments e
 

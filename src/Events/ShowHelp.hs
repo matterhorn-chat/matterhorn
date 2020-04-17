@@ -11,7 +11,7 @@ import           Events.Keybindings
 import           Types
 
 
-onEventShowHelp :: Vty.Event -> MH ()
+onEventShowHelp :: Vty.Event -> MH Bool
 onEventShowHelp =
   handleKeyboardEvent helpKeybindings $ \ e -> case e of
     Vty.EvKey _ _ -> popMode

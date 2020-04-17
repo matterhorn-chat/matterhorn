@@ -4,6 +4,9 @@ module Events.ChannelListOverlay
   )
 where
 
+import           Prelude ()
+import           Prelude.MH
+
 import qualified Graphics.Vty as Vty
 
 import           Events.Keybindings
@@ -14,7 +17,7 @@ import           Types
 
 onEventChannelListOverlay :: Vty.Event -> MH ()
 onEventChannelListOverlay =
-    onEventListOverlay csChannelListOverlay channelListOverlayKeybindings
+    void . onEventListOverlay csChannelListOverlay channelListOverlayKeybindings
 
 -- | The keybindings we want to use while viewing a channel list overlay
 channelListOverlayKeybindings :: KeyConfig -> [Keybinding]

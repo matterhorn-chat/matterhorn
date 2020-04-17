@@ -4,6 +4,9 @@ module Events.ReactionEmojiListOverlay
   )
 where
 
+import           Prelude ()
+import           Prelude.MH
+
 import qualified Graphics.Vty as Vty
 
 import           Events.Keybindings
@@ -14,7 +17,7 @@ import           Types
 
 onEventReactionEmojiListOverlay :: Vty.Event -> MH ()
 onEventReactionEmojiListOverlay =
-    onEventListOverlay csReactionEmojiListOverlay reactionEmojiListOverlayKeybindings
+    void . onEventListOverlay csReactionEmojiListOverlay reactionEmojiListOverlayKeybindings
 
 -- | The keybindings we want to use while viewing an emoji list overlay
 reactionEmojiListOverlayKeybindings :: KeyConfig -> [Keybinding]

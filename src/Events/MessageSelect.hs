@@ -17,7 +17,7 @@ messagesPerPageOperation = 10
 
 onEventMessageSelect :: Vty.Event -> MH ()
 onEventMessageSelect =
-  handleKeyboardEvent messageSelectKeybindings $ \ _ -> return ()
+  void . handleKeyboardEvent messageSelectKeybindings (const $ return ())
 
 onEventMessageSelectDeleteConfirm :: Vty.Event -> MH ()
 onEventMessageSelectDeleteConfirm (Vty.EvKey (Vty.KChar 'y') []) = do

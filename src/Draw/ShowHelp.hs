@@ -40,7 +40,7 @@ import           Windows.ViewMessage
 import           HelpTopics ( helpTopics )
 import           Markdown ( renderText )
 import           Options ( mhVersion )
-import           State.Editing ( editingKeybindings )
+import           State.Editing ( messageEditingKeybindings )
 import           Themes
 import           Types
 import           Types.KeyEvents ( Binding(..), ppBinding, nonCharKeys, eventToBinding )
@@ -410,7 +410,7 @@ keybindSections kc =
     , ("Channel Select Mode", channelSelectKeybindings kc)
     , ("URL Select Mode", urlSelectKeybindings kc)
     , ("Message Select Mode", messageSelectKeybindings kc)
-    , ("Text Editing", editingKeybindings kc)
+    , ("Text Editing", messageEditingKeybindings kc)
     , ("Flagged Messages", postListOverlayKeybindings kc)
     , ("User Listings", userListOverlayKeybindings kc)
     , ("Channel Search Window", channelListOverlayKeybindings kc)

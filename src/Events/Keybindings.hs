@@ -52,13 +52,13 @@ handleKeyboardEvent
   :: (KeyConfig -> [Keybinding])
   -> (Vty.Event -> MH ())
   -> Vty.Event
-  -> MH ()
+  -> MH Bool
 handleKeyboardEvent keyList fallthrough e = do
   conf <- use (csResources.crConfiguration)
   let keyMap = keyList (configUserKeys conf)
   case lookupKeybinding e keyMap of
-    Just kb -> kbAction kb
-    Nothing -> fallthrough e
+    Just kb -> kbAction kb >> return True
+    Nothing -> fallthrough e >> return False
 
 mkKb :: KeyEvent -> Text -> MH () -> KeyConfig -> [Keybinding]
 mkKb ev msg action conf =

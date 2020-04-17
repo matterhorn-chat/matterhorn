@@ -91,9 +91,9 @@ getLatestMessage cs m =
 
 handleEvent :: ViewMessageWindowTab -> Vty.Event -> MH ()
 handleEvent VMTabMessage =
-    handleKeyboardEvent viewMessageKeybindings (const $ return ())
+    void . handleKeyboardEvent viewMessageKeybindings (const $ return ())
 handleEvent VMTabReactions =
-    handleKeyboardEvent viewMessageReactionsKeybindings (const $ return ())
+    void . handleKeyboardEvent viewMessageReactionsKeybindings (const $ return ())
 
 reactionsText :: ChatState -> Message -> Widget Name
 reactionsText st m = viewport ViewMessageReactionsArea Vertical body

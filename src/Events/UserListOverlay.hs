@@ -1,5 +1,8 @@
 module Events.UserListOverlay where
 
+import           Prelude ()
+import           Prelude.MH
+
 import qualified Graphics.Vty as Vty
 
 import           Events.Keybindings
@@ -10,7 +13,7 @@ import           Types
 
 onEventUserListOverlay :: Vty.Event -> MH ()
 onEventUserListOverlay =
-    onEventListOverlay csUserListOverlay userListOverlayKeybindings
+    void . onEventListOverlay csUserListOverlay userListOverlayKeybindings
 
 -- | The keybindings we want to use while viewing a user list overlay
 userListOverlayKeybindings :: KeyConfig -> [Keybinding]

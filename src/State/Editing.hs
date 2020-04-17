@@ -1,8 +1,10 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RankNTypes #-}
 module State.Editing
   ( requestSpellCheck
   , editingKeybindings
+  , messageEditingKeybindings
   , toggleMultilineEditing
   , invokeExternalEditor
   , handlePaste
@@ -36,7 +38,7 @@ import qualified Data.Text.Zipper as Z
 import qualified Data.Text.Zipper.Generic.Words as Z
 import           Data.Time ( getCurrentTime )
 import           Graphics.Vty ( Event(..), Key(..) )
-import           Lens.Micro.Platform ( (%=), (.=), (.~), to, _Just )
+import           Lens.Micro.Platform ( Lens', (%=), (.=), (.~), to, _Just )
 import qualified System.Environment as Sys
 import qualified System.Exit as Sys
 import qualified System.IO as Sys
@@ -124,65 +126,68 @@ editingPermitted st =
     (length (getEditContents $ st^.csEditState.cedEditor) == 1) ||
     st^.csEditState.cedEphemeral.eesMultiline
 
-editingKeybindings :: KeyConfig -> [Keybinding]
-editingKeybindings =
-  map withUserTypingAction .
+messageEditingKeybindings :: KeyConfig -> [Keybinding]
+messageEditingKeybindings =
+    map withUserTypingAction .
+    editingKeybindings (csEditState.cedEditor)
+
+withUserTypingAction :: Keybinding -> Keybinding
+withUserTypingAction kb =
+    kb { kbAction = kbAction kb >> sendUserTypingAction }
+
+editingKeybindings :: Lens' ChatState (Editor T.Text Name) -> KeyConfig -> [Keybinding]
+editingKeybindings editor =
   mkKeybindings
   [ mkKb EditorTransposeCharsEvent
     "Transpose the final two characters"
-    (csEditState.cedEditor %= applyEdit Z.transposeChars)
+    (editor %= applyEdit Z.transposeChars)
   , mkKb EditorBolEvent
     "Go to the start of the current line"
-    (csEditState.cedEditor %= applyEdit Z.gotoBOL)
+    (editor %= applyEdit Z.gotoBOL)
   , mkKb EditorEolEvent
     "Go to the end of the current line"
-    (csEditState.cedEditor %= applyEdit Z.gotoEOL)
+    (editor %= applyEdit Z.gotoEOL)
   , mkKb EditorDeleteCharacter
     "Delete the character at the cursor"
-    (csEditState.cedEditor %= applyEdit Z.deleteChar)
+    (editor %= applyEdit Z.deleteChar)
   , mkKb EditorKillToBolEvent
     "Delete from the cursor to the start of the current line"
-    (csEditState.cedEditor %= applyEdit Z.killToBOL)
+    (editor %= applyEdit Z.killToBOL)
   , mkKb EditorKillToEolEvent
     "Kill the line to the right of the current position and copy it" $ do
-      z <- use (csEditState.cedEditor.editContentsL)
+      z <- use (editor.editContentsL)
       let restOfLine = Z.currentLine (Z.killToBOL z)
       csEditState.cedYankBuffer .= restOfLine
-      csEditState.cedEditor %= applyEdit Z.killToEOL
+      editor %= applyEdit Z.killToEOL
   , mkKb EditorNextCharEvent
     "Move one character to the right"
-    (csEditState.cedEditor %= applyEdit Z.moveRight)
+    (editor %= applyEdit Z.moveRight)
   , mkKb EditorPrevCharEvent
     "Move one character to the left"
-    (csEditState.cedEditor %= applyEdit Z.moveLeft)
+    (editor %= applyEdit Z.moveLeft)
   , mkKb EditorNextWordEvent
     "Move one word to the right"
-    (csEditState.cedEditor %= applyEdit Z.moveWordRight)
+    (editor %= applyEdit Z.moveWordRight)
   , mkKb EditorPrevWordEvent
     "Move one word to the left"
-    (csEditState.cedEditor %= applyEdit Z.moveWordLeft)
+    (editor %= applyEdit Z.moveWordLeft)
   , mkKb EditorDeletePrevWordEvent
     "Delete the word to the left of the cursor" $ do
-    csEditState.cedEditor %= applyEdit Z.deletePrevWord
+    editor %= applyEdit Z.deletePrevWord
   , mkKb EditorDeleteNextWordEvent
     "Delete the word to the right of the cursor" $ do
-    csEditState.cedEditor %= applyEdit Z.deleteWord
+    editor %= applyEdit Z.deleteWord
   , mkKb EditorHomeEvent
     "Move the cursor to the beginning of the input" $ do
-    csEditState.cedEditor %= applyEdit gotoHome
+    editor %= applyEdit gotoHome
   , mkKb EditorEndEvent
     "Move the cursor to the end of the input" $ do
-    csEditState.cedEditor %= applyEdit gotoEnd
+    editor %= applyEdit gotoEnd
   , mkKb EditorYankEvent
     "Paste the current buffer contents at the cursor" $ do
       buf <- use (csEditState.cedYankBuffer)
-      csEditState.cedEditor %= applyEdit (Z.insertMany buf)
+      editor %= applyEdit (Z.insertMany buf)
   ]
-  where
-    withUserTypingAction (KB {..}) =
-      KB kbDescription kbEvent
-         (kbAction >> sendUserTypingAction)
-         kbBindingInfo
 
 getEditorContent :: MH Text
 getEditorContent = do
@@ -258,7 +263,7 @@ handleEditingInput e = do
     justCompleted <- use (csEditState.cedJustCompleted)
 
     conf <- use (csResources.crConfiguration)
-    let keyMap = editingKeybindings (configUserKeys conf)
+    let keyMap = editingKeybindings (csEditState.cedEditor) (configUserKeys conf)
     case lookupKeybinding e keyMap of
       Just kb | editingPermitted st -> kbAction kb
       _ -> do

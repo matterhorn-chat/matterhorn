@@ -23,6 +23,7 @@ import qualified Graphics.Vty as Vty
 
 import           Types
 import           State.Common
+import           State.Editing ( editingKeybindings )
 import           Events.Keybindings ( KeyConfig, Keybinding, handleKeyboardEvent )
 
 
@@ -123,14 +124,19 @@ onEventListOverlay :: Lens' ChatState (ListOverlayState a b)
                    -- ^ The keybinding builder
                    -> Vty.Event
                    -- ^ The event
-                   -> MH ()
+                   -> MH Bool
 onEventListOverlay which keybindings =
     handleKeyboardEvent keybindings $ \e -> do
         -- Get the editor content before the event.
         before <- listOverlaySearchString which
 
-        -- Handle the editor input event.
-        mhHandleEventLensed (which.listOverlaySearchInput) E.handleEditorEvent e
+        -- First find a matching keybinding in the keybinding list.
+        handled <- handleKeyboardEvent (editingKeybindings (which.listOverlaySearchInput)) (const $ return ()) e
+
+        -- If we didn't find a matching binding, just handle the event
+        -- as a normal editor input event.
+        when (not handled) $
+            mhHandleEventLensed (which.listOverlaySearchInput) E.handleEditorEvent e
 
         -- Get the editor content after the event. If the string changed,
         -- start a new search.
