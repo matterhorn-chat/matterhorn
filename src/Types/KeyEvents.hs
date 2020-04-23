@@ -43,6 +43,8 @@ data KeyEvent
   | QuitEvent
   | NextChannelEvent
   | PrevChannelEvent
+  | NextChannelEventAlternate
+  | PrevChannelEventAlternate
   | NextUnreadChannelEvent
   | NextUnreadUserOrChannelEvent
   | LastChannelEvent
@@ -119,6 +121,8 @@ allEvents =
   , EnterFastSelectModeEvent
   , NextChannelEvent
   , PrevChannelEvent
+  , NextChannelEventAlternate
+  , PrevChannelEventAlternate
   , NextUnreadChannelEvent
   , NextUnreadUserOrChannelEvent
   , LastChannelEvent
@@ -314,6 +318,8 @@ keyEventName ev = case ev of
   EnterFastSelectModeEvent  -> "enter-fast-select"
   NextChannelEvent          -> "focus-next-channel"
   PrevChannelEvent          -> "focus-prev-channel"
+  NextChannelEventAlternate -> "focus-next-channel-alternate"
+  PrevChannelEventAlternate -> "focus-prev-channel-alternate"
   NextUnreadChannelEvent    -> "focus-next-unread"
   NextUnreadUserOrChannelEvent  -> "focus-next-unread-user-or-channel"
   LastChannelEvent          -> "focus-last-channel"

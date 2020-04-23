@@ -103,6 +103,8 @@ defaultBindings ev =
         QuitEvent                     -> [ ctrl (key 'q') ]
         NextChannelEvent              -> [ ctrl (key 'n') ]
         PrevChannelEvent              -> [ ctrl (key 'p') ]
+        NextChannelEventAlternate     -> [ kb Vty.KDown ]
+        PrevChannelEventAlternate     -> [ kb Vty.KUp ]
         NextUnreadChannelEvent        -> [ meta (key 'a') ]
         ShowAttachmentListEvent       -> [ ctrl (key 'x') ]
         NextUnreadUserOrChannelEvent  -> [ ]
