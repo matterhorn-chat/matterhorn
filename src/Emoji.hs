@@ -86,9 +86,14 @@ getMatchingEmoji :: Session -> EmojiCollection -> T.Text -> IO [T.Text]
 getMatchingEmoji session em rawSearchString = do
     let localAlts = lookupEmoji em rawSearchString
         sanitized = sanitizeEmojiSearch rawSearchString
-    custom <- case T.null sanitized of
+    customResult <- E.try $ case T.null sanitized of
         True -> MM.mmGetListOfCustomEmoji Nothing Nothing session
         False -> MM.mmSearchCustomEmoji sanitized session
+
+    let custom = case customResult of
+            Left (_::E.SomeException) -> []
+            Right result -> result
+
     return $ sort $ (MM.emojiName <$> custom) <> localAlts
 
 stripColons :: T.Text -> T.Text
