@@ -301,25 +301,6 @@ The `emoji.json` is included in the Matterhorn releases
 and is obtained from [the Mattermost web client source
 tree](https://github.com/mattermost/mattermost-webapp/blob/master/utils/emoji.json).
 
-# Building
-
-If you just want to run Matterhorn, we strongly suggest running a binary
-release (see above).
-
-If you want to contribute changes to Matterhorn, you'll need to build
-it from source. To do that you'll need an appropriate `ghc`/`cabal`
-installation (see the latest Travis-CI builds for tested versions).
-You'll also need a GitHub account, since our Git submodules are set up
-to use SSH with GitHub.
-
-`matterhorn` is built by running the following commands:
-
-```
-$ git pull
-$ git submodule update --init
-$ ./build.sh
-```
-
 # Our Versioning Scheme
 
 Matterhorn version strings will be of the form `ABBCC.X.Y` where ABBCC
@@ -365,9 +346,14 @@ for it, or create a new issue and let us know!
 If you decide to contribute, that's great! Here are some guidelines you
 should consider to make submitting patches easier for all concerned:
 
+ - If you are new to Haskell and are unsure how much Haskell you need
+   to know in order to contribute, please see [our list of Haskell
+   skills needed](HASKELL.md).
  - Please base all patches against the `develop` branch unless you are
    specifically fixing a bug in a released version, in which case
-   `master` is a fine place to start.
+   `master` is a fine place to start. Please also do this for submodules
+   that have a `develop` branch if you need to contribute changes to
+   submodules.
  - If you want to take on big things, let's have a design/vision
    discussion before you start coding. Create a GitHub issue and we can
    use that as the place to hash things out. We'll be interested to
@@ -377,6 +363,27 @@ should consider to make submitting patches easier for all concerned:
  - We follow a few development practices to support our project and it
    helps when contributors are aware of these. Please see
    `docs/PRACTICES.md` for more information.
+
+## Building
+
+If you just want to run Matterhorn, we strongly suggest running a binary
+release (see above). *Building from source is only recommended if you
+intend to contribute.*
+
+If you want to contribute changes to Matterhorn, you'll need to build
+it from source. To do that you'll need an appropriate `ghc`/`cabal`
+installation (see the latest Travis-CI builds for tested versions).
+You'll also need a GitHub account, since our Git submodules are set up
+to use SSH with GitHub. (But that should be fine since you'll need a
+GitHub account to contribute anyway.)
+
+`matterhorn` is built by running the following commands:
+
+```
+$ git pull
+$ git submodule update --init
+$ ./build.sh
+```
 
 # Frequently Asked Questions
 

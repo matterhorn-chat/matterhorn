@@ -37,4 +37,6 @@ channelSelectKeybindings = mkKeybindings
     , mkKb CancelEvent "Cancel channel selection" $ setMode Main
     , mkKb NextChannelEvent "Select next match" channelSelectNext
     , mkKb PrevChannelEvent "Select previous match" channelSelectPrevious
+    , mkKb NextChannelEventAlternate "Select next match (alternate binding)" channelSelectNext
+    , mkKb PrevChannelEventAlternate "Select previous match (alternate binding)" channelSelectPrevious
     ]
