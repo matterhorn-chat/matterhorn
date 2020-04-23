@@ -127,7 +127,7 @@ defaultBindings ev =
         SelectDownEvent               -> [ key 'j', kb Vty.KDown ]
         ActivateListItemEvent         -> [ kb Vty.KEnter ]
         SearchSelectUpEvent           -> [ ctrl (key 'p'), kb Vty.KUp ]
-        SearchSelectDownEvent         -> [  ctrl (key 'n'), kb Vty.KDown ]
+        SearchSelectDownEvent         -> [ ctrl (key 'n'), kb Vty.KDown ]
         ViewMessageEvent              -> [ key 'v' ]
         FillGapEvent                  -> [ kb Vty.KEnter ]
         FlagMessageEvent              -> [ key 'f' ]
