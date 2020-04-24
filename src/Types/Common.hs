@@ -18,9 +18,10 @@ sanitizeUserText :: UserText -> T.Text
 sanitizeUserText = sanitizeUserText' . unsafeUserText
 
 sanitizeUserText' :: T.Text -> T.Text
-sanitizeUserText' t =
-    T.replace "\ESC" "<ESC>" $
-    T.replace "\t" " " t
+sanitizeUserText' =
+    T.replace "\ESC" "<ESC>" .
+    T.replace "\t" " " .
+    T.filter (\c -> c >= ' ' || c == '\n')  -- remove non-printable
 
 sanitizeChar :: Char -> T.Text
 sanitizeChar '\ESC' = "<ESC>"
