@@ -66,7 +66,7 @@ drawListOverlay st scopeHeader scopeNoResults scopePrompt renderItem =
           else case st^.listOverlaySearchResults.L.listSelectedL of
               Nothing -> hBorder
               Just _ ->
-                  let msg = "Showing " <> show numSearchResults <> " result" <> plural numSearchResults
+                  let msg = "Found " <> show numSearchResults <> " result" <> plural numSearchResults
                   in hBorderWithLabel $ str $ "[" <> msg <> "]"
 
       scope = st^.listOverlaySearchScope
