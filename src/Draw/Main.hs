@@ -203,7 +203,8 @@ doHighlightMisspellings hSet misspellings contents =
                  then Left t
                  else Right t
 
-        ignoreChar c = isSpace c || isPunctuation c || c == '`'
+        ignoreChar c = isSpace c || isPunctuation c || c == '`' || c == '/' ||
+                       T.singleton c == userSigil || T.singleton c == normalChannelSigil
 
         tokenize t curTok
             | T.null t = [curTok]
