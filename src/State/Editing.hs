@@ -57,7 +57,7 @@ import           State.Autocomplete
 import           State.Attachments
 import           State.Messages
 import           Types hiding ( newState )
-import           Types.Common ( sanitizeChar, sanitizeUserText' )
+import           Types.Common ( sanitizeUserText' )
 
 
 startMultilineEditing :: MH ()
@@ -328,7 +328,7 @@ handleEditingInput e = do
               when (smartEditing && justCompleted && isSmartClosingPunctuation e) $
                   csEditState.cedEditor %= applyEdit Z.deletePrevChar
 
-              csEditState.cedEditor %= applyEdit (Z.insertMany (sanitizeChar ch))
+              csEditState.cedEditor %= applyEdit (Z.insertMany (sanitizeUserText' $ T.singleton ch))
               sendUserTypingAction
           _ | editingPermitted st -> do
               mhHandleEventLensed (csEditState.cedEditor) handleEditorEvent e

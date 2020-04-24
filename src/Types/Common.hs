@@ -2,7 +2,6 @@
 module Types.Common
   ( sanitizeUserText
   , sanitizeUserText'
-  , sanitizeChar
   , userIdForDMChannel
   )
 where
@@ -22,11 +21,6 @@ sanitizeUserText' =
     T.replace "\ESC" "<ESC>" .
     T.replace "\t" " " .
     T.filter (\c -> c >= ' ' || c == '\n')  -- remove non-printable
-
-sanitizeChar :: Char -> T.Text
-sanitizeChar '\ESC' = "<ESC>"
-sanitizeChar '\t' = " "
-sanitizeChar c = T.singleton c
 
 -- | Extract the corresponding other user from a direct channel name.
 -- Returns Nothing if the string is not a direct channel name or if it
