@@ -6,6 +6,9 @@ mentioned="${1?}"
 sender="${2?}"
 message="${3?}"
 
+# Escape backslashes
+message="${message//\\/\\\\}"
+
 # quote double quotes in the message text
 message="${message//\"/\\\"}"
 
