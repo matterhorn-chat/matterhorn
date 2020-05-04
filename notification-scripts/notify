@@ -27,6 +27,9 @@ notify_CATEGORY="im.received"
 # Notification header
 notify_HEAD="Matterhorn message from $sender"
 
+# Escape backslashes in the message
+message="${message//\\/\\\\}"
+
 # Escape double quotes in the message
 message="${message//\"/\\\"}"
 
