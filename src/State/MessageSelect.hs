@@ -269,7 +269,7 @@ beginEditMessage = do
             let toEdit = if isEmote msg
                          then removeEmoteFormatting sanitized
                          else sanitized
-            csEditState.cedEditor %= applyEdit (clearZipper >> (insertMany toEdit))
+            csEditState.cedEditor %= applyEdit (insertMany toEdit . clearZipper)
         _ -> return ()
 
 -- | Tell the server that we have flagged or unflagged a message.
