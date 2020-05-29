@@ -16,6 +16,9 @@ import           Prelude.MH
 import           Control.Monad.Trans.Except
 import           Control.Monad.Trans.Class ( lift )
 import           Config.Schema
+import           Data.Char ( isDigit, isAlpha )
+import           Data.List ( isPrefixOf )
+import           Data.List.Split ( splitOn )
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
@@ -24,6 +27,7 @@ import           System.Environment ( getExecutablePath )
 import           System.FilePath ( (</>), takeDirectory, splitPath, joinPath )
 import           System.Process ( readProcess )
 import           Network.Mattermost.Types (ConnectionType(..))
+import           Network.URI ( isIPv4address, isIPv6address )
 
 import           FilePaths
 import           IOUtil
@@ -68,7 +72,7 @@ fromIni :: IniParser Config
 fromIni = do
   conf <- section "mattermost" $ do
     configUser           <- fieldMbOf "user" stringField
-    configHost           <- fieldMbOf "host" stringField
+    configHost           <- fieldMbOf "host" hostField
     configTeam           <- fieldMbOf "team" stringField
     configPort           <- fieldDefOf "port" number (configPort defaultConfig)
     configUrlPath        <- fieldMbOf "urlPath" stringField
@@ -133,6 +137,30 @@ fromIni = do
 
 syntaxDirsField :: Text -> Either String [FilePath]
 syntaxDirsField = listWithSeparator ":" string
+
+validHostnameFragmentChar :: Char -> Bool
+validHostnameFragmentChar c = isAlpha c || isDigit c || c == '-'
+
+isHostnameFragment :: String -> Bool
+isHostnameFragment "" = False
+isHostnameFragment s = all validHostnameFragmentChar s
+
+isHostname :: String -> Bool
+isHostname "" = False
+isHostname s =
+    let parts@(h:_) = splitOn "." s
+    in all isHostnameFragment parts && not ("-" `isPrefixOf` h)
+
+hostField :: Text -> Either String Text
+hostField t =
+    let s = T.unpack t
+        valid = or [ isIPv4address s
+                   , isIPv6address s
+                   , isHostname s
+                   ]
+    in if valid
+       then Right t
+       else Left "Invalid 'host' value, must be a hostname or IPv4/IPv6 address"
 
 expandTilde :: FilePath -> FilePath -> FilePath
 expandTilde homeDir p =
