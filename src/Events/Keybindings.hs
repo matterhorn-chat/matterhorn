@@ -62,9 +62,9 @@ handleKeyboardEvent :: (KeyConfig -> [Keybinding])
                     -> Vty.Event
                     -- ^ The event to handle.
                     -> MH Bool
-handleKeyboardEvent keyList fallthrough e = do
+handleKeyboardEvent mkKeyList fallthrough e = do
   conf <- use (csResources.crConfiguration)
-  let keyMap = keyList (configUserKeys conf)
+  let keyMap = mkKeyList (configUserKeys conf)
   case lookupKeybinding e keyMap of
     Just kb -> kbAction kb >> return True
     Nothing -> fallthrough e >> return False
