@@ -9,8 +9,9 @@ module Events.Keybindings
 
   , handleKeyboardEvent
 
-  -- Re-exports:
   , Keybinding (..)
+
+  -- Re-exports:
   , KeyEvent (..)
   , KeyConfig
   , allEvents
