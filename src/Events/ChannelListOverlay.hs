@@ -1,6 +1,7 @@
 module Events.ChannelListOverlay
   ( onEventChannelListOverlay
   , channelListOverlayKeybindings
+  , channelListOverlayKeyHandlers
   )
 where
 
@@ -20,8 +21,11 @@ onEventChannelListOverlay =
     void . onEventListOverlay csChannelListOverlay channelListOverlayKeybindings
 
 -- | The keybindings we want to use while viewing a channel list overlay
-channelListOverlayKeybindings :: KeyConfig -> [Keybinding]
-channelListOverlayKeybindings = mkKeybindings
+channelListOverlayKeybindings :: KeyConfig -> [KeyHandler]
+channelListOverlayKeybindings = mkKeybindings channelListOverlayKeyHandlers
+
+channelListOverlayKeyHandlers :: [KeyEventHandler]
+channelListOverlayKeyHandlers =
     [ mkKb CancelEvent "Close the channel search list" (exitListOverlay csChannelListOverlay)
     , mkKb SearchSelectUpEvent "Select the previous channel" channelListSelectUp
     , mkKb SearchSelectDownEvent "Select the next channel" channelListSelectDown

@@ -15,8 +15,11 @@ onEventPostListOverlay =
   void . handleKeyboardEvent postListOverlayKeybindings (const $ return ())
 
 -- | The keybindings we want to use while viewing a post list overlay
-postListOverlayKeybindings :: KeyConfig -> [Keybinding]
-postListOverlayKeybindings = mkKeybindings
+postListOverlayKeybindings :: KeyConfig -> [KeyHandler]
+postListOverlayKeybindings = mkKeybindings postListOverlayKeyHandlers
+
+postListOverlayKeyHandlers :: [KeyEventHandler]
+postListOverlayKeyHandlers =
   [ mkKb CancelEvent "Exit post browsing" exitPostListMode
   , mkKb SelectUpEvent "Select the previous message" postListSelectUp
   , mkKb SelectDownEvent "Select the next message" postListSelectDown

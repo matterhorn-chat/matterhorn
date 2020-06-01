@@ -446,11 +446,11 @@ messageSelectBottomBar st =
           let keyconf = st^.csResources.crConfiguration.to configUserKeys
               keymap = messageSelectKeybindings keyconf
           in T.intercalate ","
-               [ ppBinding (eventToBinding b)
-               | KB { kbBindingInfo = Just e'
-                    , kbEvent       = Just b
+               [ ppBinding (eventToBinding k)
+               | KH { khKey     = k
+                    , khHandler = h
                     } <- keymap
-               , e' == e
+               , kehEventTrigger h == ByEvent e
                ]
         options = [ ( not . isGap
                     , ev YankWholeMessageEvent

@@ -1,6 +1,7 @@
 module Events
   ( onEvent
   , globalKeybindings
+  , globalKeyHandlers
   )
 where
 
@@ -182,8 +183,11 @@ handleGlobalEvent e = do
         ManageAttachments          -> onEventManageAttachments e
         ManageAttachmentsBrowseFiles -> onEventManageAttachments e
 
-globalKeybindings :: KeyConfig -> [Keybinding]
-globalKeybindings = mkKeybindings
+globalKeybindings :: KeyConfig -> [KeyHandler]
+globalKeybindings = mkKeybindings globalKeyHandlers
+
+globalKeyHandlers :: [KeyEventHandler]
+globalKeyHandlers =
     [ mkKb ShowHelpEvent
         "Show this help screen"
         (showHelpScreen mainHelpTopic)

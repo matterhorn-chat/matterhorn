@@ -16,8 +16,11 @@ onEventUserListOverlay =
     void . onEventListOverlay csUserListOverlay userListOverlayKeybindings
 
 -- | The keybindings we want to use while viewing a user list overlay
-userListOverlayKeybindings :: KeyConfig -> [Keybinding]
-userListOverlayKeybindings = mkKeybindings
+userListOverlayKeybindings :: KeyConfig -> [KeyHandler]
+userListOverlayKeybindings = mkKeybindings userListOverlayKeyHandlers
+
+userListOverlayKeyHandlers :: [KeyEventHandler]
+userListOverlayKeyHandlers =
     [ mkKb CancelEvent "Close the user search list" (exitListOverlay csUserListOverlay)
     , mkKb SearchSelectUpEvent "Select the previous user" userListSelectUp
     , mkKb SearchSelectDownEvent "Select the next user" userListSelectDown

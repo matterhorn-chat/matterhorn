@@ -4,6 +4,7 @@
 module State.Editing
   ( requestSpellCheck
   , editingKeybindings
+  , editingKeyHandlers
   , messageEditingKeybindings
   , toggleMultilineEditing
   , invokeExternalEditor
@@ -126,18 +127,25 @@ editingPermitted st =
     (length (getEditContents $ st^.csEditState.cedEditor) == 1) ||
     st^.csEditState.cedEphemeral.eesMultiline
 
-messageEditingKeybindings :: KeyConfig -> [Keybinding]
+messageEditingKeybindings :: KeyConfig -> [KeyHandler]
 messageEditingKeybindings =
     map withUserTypingAction .
     editingKeybindings (csEditState.cedEditor)
 
-withUserTypingAction :: Keybinding -> Keybinding
-withUserTypingAction kb =
-    kb { kbAction = kbAction kb >> sendUserTypingAction }
+withUserTypingAction :: KeyHandler -> KeyHandler
+withUserTypingAction kh =
+    kh { khHandler = newH }
+    where
+        oldH = khHandler kh
+        newH = oldH { kehHandler = newKEH }
+        oldKEH = kehHandler oldH
+        newKEH = oldKEH { ehAction = ehAction oldKEH >> sendUserTypingAction }
 
-editingKeybindings :: Lens' ChatState (Editor T.Text Name) -> KeyConfig -> [Keybinding]
-editingKeybindings editor =
-  mkKeybindings
+editingKeybindings :: Lens' ChatState (Editor T.Text Name) -> KeyConfig -> [KeyHandler]
+editingKeybindings editor = mkKeybindings $ editingKeyHandlers editor
+
+editingKeyHandlers :: Lens' ChatState (Editor T.Text Name) -> [KeyEventHandler]
+editingKeyHandlers editor =
   [ mkKb EditorTransposeCharsEvent
     "Transpose the final two characters"
     (editor %= applyEdit Z.transposeChars)
@@ -265,7 +273,7 @@ handleEditingInput e = do
     conf <- use (csResources.crConfiguration)
     let keyMap = editingKeybindings (csEditState.cedEditor) (configUserKeys conf)
     case lookupKeybinding e keyMap of
-      Just kb | editingPermitted st -> kbAction kb
+      Just kb | editingPermitted st -> (ehAction $ kehHandler $ khHandler kb)
       _ -> do
         case e of
           -- Not editing; backspace here means cancel multi-line message
