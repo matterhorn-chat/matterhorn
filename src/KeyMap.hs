@@ -15,7 +15,7 @@ import           Events.ShowHelp
 import           Events.UrlSelect
 import           Events.ManageAttachments
 
-keybindingModeMap :: [(String, KeyConfig -> [KeyHandler])]
+keybindingModeMap :: [(String, KeyConfig -> KeyHandlerMap)]
 keybindingModeMap =
     [ ("main", mainKeybindings)
     , ("help screen", helpKeybindings)

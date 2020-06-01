@@ -24,7 +24,7 @@ import qualified Graphics.Vty as Vty
 import           Types
 import           State.Common
 import           State.Editing ( editingKeybindings )
-import           Events.Keybindings ( KeyConfig, KeyHandler, handleKeyboardEvent )
+import           Events.Keybindings ( KeyConfig, KeyHandlerMap, handleKeyboardEvent )
 
 
 -- | Activate the specified list overlay's selected item by invoking the
@@ -120,7 +120,7 @@ resetListOverlaySearch which = do
 -- overlay's editor if the editor contents change.
 onEventListOverlay :: Lens' ChatState (ListOverlayState a b)
                    -- ^ Which overlay to dispatch to?
-                   -> (KeyConfig -> [KeyHandler])
+                   -> (KeyConfig -> KeyHandlerMap)
                    -- ^ The keybinding builder
                    -> Vty.Event
                    -- ^ The event

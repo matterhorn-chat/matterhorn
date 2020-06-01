@@ -12,6 +12,7 @@ import           Brick.Widgets.List ( listElements )
 import           Brick.Widgets.Edit ( editContentsL, renderEditor, getEditContents )
 import           Control.Arrow ( (>>>) )
 import           Data.Char ( isSpace, isPunctuation )
+import qualified Data.Map as M
 import qualified Data.Sequence as Seq
 import qualified Data.Set as S
 import qualified Data.Text as T
@@ -444,12 +445,12 @@ messageSelectBottomBar st =
         -- make sure these keybinding pieces are up-to-date!
         ev e =
           let keyconf = st^.csResources.crConfiguration.to configUserKeys
-              keymap = messageSelectKeybindings keyconf
+              KeyHandlerMap keymap = messageSelectKeybindings keyconf
           in T.intercalate ","
                [ ppBinding (eventToBinding k)
                | KH { khKey     = k
                     , khHandler = h
-                    } <- keymap
+                    } <- M.elems keymap
                , kehEventTrigger h == ByEvent e
                ]
         options = [ ( not . isGap

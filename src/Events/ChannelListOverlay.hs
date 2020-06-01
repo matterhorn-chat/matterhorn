@@ -21,7 +21,7 @@ onEventChannelListOverlay =
     void . onEventListOverlay csChannelListOverlay channelListOverlayKeybindings
 
 -- | The keybindings we want to use while viewing a channel list overlay
-channelListOverlayKeybindings :: KeyConfig -> [KeyHandler]
+channelListOverlayKeybindings :: KeyConfig -> KeyHandlerMap
 channelListOverlayKeybindings = mkKeybindings channelListOverlayKeyHandlers
 
 channelListOverlayKeyHandlers :: [KeyEventHandler]

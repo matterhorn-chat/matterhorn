@@ -41,7 +41,7 @@ onEventAttachmentList =
     handleKeyboardEvent attachmentListKeybindings $
         mhHandleEventLensed (csEditState.cedAttachmentList) L.handleListEvent
 
-attachmentListKeybindings :: KeyConfig -> [KeyHandler]
+attachmentListKeybindings :: KeyConfig -> KeyHandlerMap
 attachmentListKeybindings = mkKeybindings attachmentListKeyHandlers
 
 attachmentListKeyHandlers :: [KeyEventHandler]
@@ -60,7 +60,7 @@ attachmentListKeyHandlers =
           deleteSelectedAttachment
     ]
 
-attachmentBrowseKeybindings :: KeyConfig -> [KeyHandler]
+attachmentBrowseKeybindings :: KeyConfig -> KeyHandlerMap
 attachmentBrowseKeybindings = mkKeybindings
     [ mkKb CancelEvent "Cancel attachment file browse"
       cancelAttachmentBrowse

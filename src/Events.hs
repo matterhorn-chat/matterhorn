@@ -183,7 +183,7 @@ handleGlobalEvent e = do
         ManageAttachments          -> onEventManageAttachments e
         ManageAttachmentsBrowseFiles -> onEventManageAttachments e
 
-globalKeybindings :: KeyConfig -> [KeyHandler]
+globalKeybindings :: KeyConfig -> KeyHandlerMap
 globalKeybindings = mkKeybindings globalKeyHandlers
 
 globalKeyHandlers :: [KeyEventHandler]

@@ -21,7 +21,7 @@ onEventReactionEmojiListOverlay =
     void . onEventListOverlay csReactionEmojiListOverlay reactionEmojiListOverlayKeybindings
 
 -- | The keybindings we want to use while viewing an emoji list overlay
-reactionEmojiListOverlayKeybindings :: KeyConfig -> [KeyHandler]
+reactionEmojiListOverlayKeybindings :: KeyConfig -> KeyHandlerMap
 reactionEmojiListOverlayKeybindings = mkKeybindings reactionEmojiListOverlayKeyHandlers
 
 reactionEmojiListOverlayKeyHandlers :: [KeyEventHandler]

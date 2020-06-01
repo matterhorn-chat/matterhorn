@@ -16,7 +16,7 @@ onEventUrlSelect =
   handleKeyboardEvent urlSelectKeybindings $ \ ev ->
     mhHandleEventLensed csUrlList handleListEvent ev
 
-urlSelectKeybindings :: KeyConfig -> [KeyHandler]
+urlSelectKeybindings :: KeyConfig -> KeyHandlerMap
 urlSelectKeybindings = mkKeybindings urlSelectKeyHandlers
 
 urlSelectKeyHandlers :: [KeyEventHandler]

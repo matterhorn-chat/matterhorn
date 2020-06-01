@@ -23,7 +23,7 @@ onEventChannelSelect =
 
       updateChannelSelectMatches
 
-channelSelectKeybindings :: KeyConfig -> [KeyHandler]
+channelSelectKeybindings :: KeyConfig -> KeyHandlerMap
 channelSelectKeybindings = mkKeybindings channelSelectKeyHandlers
 
 channelSelectKeyHandlers :: [KeyEventHandler]

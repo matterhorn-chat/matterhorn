@@ -32,6 +32,7 @@ import qualified Control.Concurrent.STM as STM
 import qualified Data.ByteString as BS
 import           Data.Char ( isSpace )
 import qualified Data.Foldable as F
+import qualified Data.Map as M
 import qualified Data.Set as S
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -127,10 +128,10 @@ editingPermitted st =
     (length (getEditContents $ st^.csEditState.cedEditor) == 1) ||
     st^.csEditState.cedEphemeral.eesMultiline
 
-messageEditingKeybindings :: KeyConfig -> [KeyHandler]
-messageEditingKeybindings =
-    map withUserTypingAction .
-    editingKeybindings (csEditState.cedEditor)
+messageEditingKeybindings :: KeyConfig -> KeyHandlerMap
+messageEditingKeybindings kc =
+    let KeyHandlerMap m = editingKeybindings (csEditState.cedEditor) kc
+    in KeyHandlerMap $ M.map withUserTypingAction m
 
 withUserTypingAction :: KeyHandler -> KeyHandler
 withUserTypingAction kh =
@@ -141,7 +142,7 @@ withUserTypingAction kh =
         oldKEH = kehHandler oldH
         newKEH = oldKEH { ehAction = ehAction oldKEH >> sendUserTypingAction }
 
-editingKeybindings :: Lens' ChatState (Editor T.Text Name) -> KeyConfig -> [KeyHandler]
+editingKeybindings :: Lens' ChatState (Editor T.Text Name) -> KeyConfig -> KeyHandlerMap
 editingKeybindings editor = mkKeybindings $ editingKeyHandlers editor
 
 editingKeyHandlers :: Lens' ChatState (Editor T.Text Name) -> [KeyEventHandler]

@@ -15,7 +15,7 @@ onEventPostListOverlay =
   void . handleKeyboardEvent postListOverlayKeybindings (const $ return ())
 
 -- | The keybindings we want to use while viewing a post list overlay
-postListOverlayKeybindings :: KeyConfig -> [KeyHandler]
+postListOverlayKeybindings :: KeyConfig -> KeyHandlerMap
 postListOverlayKeybindings = mkKeybindings postListOverlayKeyHandlers
 
 postListOverlayKeyHandlers :: [KeyEventHandler]

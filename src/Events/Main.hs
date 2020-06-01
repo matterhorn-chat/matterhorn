@@ -28,7 +28,7 @@ onEventMain =
           _ -> handleEditingInput ev
   )
 
-mainKeybindings :: KeyConfig -> [KeyHandler]
+mainKeybindings :: KeyConfig -> KeyHandlerMap
 mainKeybindings = mkKeybindings mainKeyHandlers
 
 mainKeyHandlers :: [KeyEventHandler]

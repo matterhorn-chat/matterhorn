@@ -16,7 +16,7 @@ onEventUserListOverlay =
     void . onEventListOverlay csUserListOverlay userListOverlayKeybindings
 
 -- | The keybindings we want to use while viewing a user list overlay
-userListOverlayKeybindings :: KeyConfig -> [KeyHandler]
+userListOverlayKeybindings :: KeyConfig -> KeyHandlerMap
 userListOverlayKeybindings = mkKeybindings userListOverlayKeyHandlers
 
 userListOverlayKeyHandlers :: [KeyEventHandler]

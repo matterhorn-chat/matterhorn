@@ -154,7 +154,7 @@ viewMessageBox st msg =
         ctx <- getContext
         render $ maybeWarn $ viewport ViewMessageArea Both $ mkBody (ctx^.availWidthL)
 
-viewMessageKeybindings :: KeyConfig -> [KeyHandler]
+viewMessageKeybindings :: KeyConfig -> KeyHandlerMap
 viewMessageKeybindings = mkKeybindings viewMessageKeyHandlers
 
 viewMessageKeyHandlers :: [KeyEventHandler]
@@ -185,7 +185,7 @@ viewMessageKeyHandlers =
            mh $ vScrollToBeginning vs
        ]
 
-viewMessageReactionsKeybindings :: KeyConfig -> [KeyHandler]
+viewMessageReactionsKeybindings :: KeyConfig -> KeyHandlerMap
 viewMessageReactionsKeybindings = mkKeybindings viewMessageReactionsKeyHandlers
 
 viewMessageReactionsKeyHandlers :: [KeyEventHandler]

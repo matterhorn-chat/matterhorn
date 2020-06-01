@@ -17,7 +17,7 @@ onEventShowHelp =
     Vty.EvKey _ _ -> popMode
     _ -> return ()
 
-helpKeybindings :: KeyConfig -> [KeyHandler]
+helpKeybindings :: KeyConfig -> KeyHandlerMap
 helpKeybindings = mkKeybindings helpKeyHandlers
 
 helpKeyHandlers :: [KeyEventHandler]
