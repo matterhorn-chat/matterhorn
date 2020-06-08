@@ -76,6 +76,22 @@ onAppEvent WebsocketConnect = do
     refreshChannelsAndUsers
     refreshClientConfig
     fetchVisibleIfNeeded
+onAppEvent (RateLimitExceeded winSz) =
+    mhError $ GenericError $ T.pack $
+        let s = if winSz == 1 then "" else "s"
+        in "The server's API request rate limit was exceeded; Matterhorn will " <>
+           "retry the failed request in " <> show winSz <> " second" <> s <>
+           ". Please contact your Mattermost administrator " <>
+           "about API rate limiting issues."
+onAppEvent RateLimitSettingsMissing =
+    mhError $ GenericError $
+        "A request was rate-limited but could not be retried due to rate " <>
+        "limit settings missing"
+onAppEvent RequestDropped =
+    mhError $ GenericError $
+        "An API request was retried and dropped due to a rate limit. Matterhorn " <>
+        "may now be inconsistent with the server. Please contact your " <>
+        "Mattermost administrator about API rate limiting issues."
 onAppEvent BGIdle =
     csWorkerIsBusy .= Nothing
 onAppEvent (BGBusy n) =

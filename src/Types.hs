@@ -1647,6 +1647,16 @@ data MHEvent =
     -- ^ background worker is idle
     | BGBusy (Maybe Int)
     -- ^ background worker is busy (with n requests)
+    | RateLimitExceeded Int
+    -- ^ A request initially failed due to a rate limit but will be
+    -- retried if possible. The argument is the number of seconds in
+    -- which the retry will be attempted.
+    | RateLimitSettingsMissing
+    -- ^ A request denied by a rate limit could not be retried because
+    -- the response contained no rate limit metadata
+    | RequestDropped
+    -- ^ A request was reattempted due to a rate limit and was rate
+    -- limited again
     | IEvent InternalEvent
     -- ^ MH-internal events
 

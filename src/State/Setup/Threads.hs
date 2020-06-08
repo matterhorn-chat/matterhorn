@@ -19,7 +19,7 @@ import           Brick.Main ( invalidateCache )
 import           Control.Concurrent ( threadDelay, forkIO )
 import qualified Control.Concurrent.STM as STM
 import           Control.Concurrent.STM.Delay
-import           Control.Exception ( SomeException, try, fromException )
+import           Control.Exception ( SomeException, try, fromException, catch )
 import           Data.List ( isInfixOf )
 import qualified Data.Map as M
 import qualified Data.Sequence as Seq
@@ -34,6 +34,8 @@ import           System.IO.Temp ( openTempFile )
 import           System.Timeout ( timeout )
 import           Text.Aspell ( Aspell, AspellOption(..), startAspell )
 
+import           Network.Mattermost.Exceptions ( RateLimitException
+                                               , rateLimitExceptionReset )
 import           Network.Mattermost.Endpoints
 import           Network.Mattermost.Types
 
@@ -272,6 +274,9 @@ asyncWorker c r e = forever $ doAsyncWork c r e
 
 doAsyncWork :: Config -> STM.TChan (IO (Maybe (MH ()))) -> BChan MHEvent -> IO ()
 doAsyncWork config requestChan eventChan = do
+    let rateLimitNotify sec = do
+            writeBChan eventChan $ RateLimitExceeded sec
+
     startWork <- case configShowBackground config of
         Disabled -> return $ return ()
         Active -> do chk <- STM.atomically $ STM.tryPeekTChan requestChan
@@ -295,18 +300,41 @@ doAsyncWork config requestChan eventChan = do
 
     req <- STM.atomically $ STM.readTChan requestChan
     startWork
-    res <- try req
+    res <- try $ rateLimitRetry rateLimitNotify req
     case res of
       Left e -> do
           when (not $ shouldIgnore e) $ do
-              let err = case fromException e of
-                    Nothing -> AsyncErrEvent e
-                    Just mmErr -> ServerError mmErr
-              writeBChan eventChan $ IEvent $ DisplayError err
+              case fromException e of
+                  Just (_::RateLimitException) ->
+                      writeBChan eventChan RequestDropped
+                  Nothing -> do
+                      let err = case fromException e of
+                            Nothing -> AsyncErrEvent e
+                            Just mmErr -> ServerError mmErr
+                      writeBChan eventChan $ IEvent $ DisplayError err
       Right upd ->
           case upd of
-              Nothing -> return ()
-              Just action -> writeBChan eventChan (RespEvent action)
+              -- The request could not be retried due to rate limiting
+              -- information being missing.
+              Nothing -> do
+                  -- Notify the application that we had to completely
+                  -- drop this request!
+                  writeBChan eventChan RateLimitSettingsMissing
+              Just Nothing -> return ()
+              Just (Just action) -> writeBChan eventChan (RespEvent action)
+
+rateLimitRetry :: (Int -> IO ()) -> IO a -> IO (Maybe a)
+rateLimitRetry rateLimitNotify act = do
+    let retry e = do
+            case rateLimitExceptionReset e of
+                Nothing -> return Nothing
+                Just sec -> do
+                    let adjusted = sec + 1
+                    rateLimitNotify adjusted
+                    threadDelay $ adjusted * 1000000
+                    Just <$> act
+
+    (Just <$> act) `catch` retry
 
 -- Filter for exceptions that we don't want to report to the user,
 -- probably because they are not actionable and/or contain no useful
