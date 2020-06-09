@@ -79,11 +79,10 @@ newtype KeyHandlerMap = KeyHandlerMap (M.Map Vty.Event KeyHandler)
 lookupKeybinding :: Vty.Event -> KeyHandlerMap -> Maybe KeyHandler
 lookupKeybinding e (KeyHandlerMap m) = M.lookup e m
 
--- | Handle a keyboard event by matching it against a list of bindings
--- and invoking the matching binding's handler. If no match can be
--- found, invoke a fallback action instead. Return True if the key event
--- was handled with a matching binding; False if not (the fallback
--- case).
+-- | Handle a keyboard event by looking it up in a map of bindings and
+-- invoking the matching binding's handler. If no match can be found,
+-- invoke a fallback action instead. Return True if the key event was
+-- handled with a matching binding; False if not (the fallback case).
 handleKeyboardEvent :: (KeyConfig -> KeyHandlerMap)
                     -- ^ The function to build a key handler map from a
                     -- key configuration.
