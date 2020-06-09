@@ -300,6 +300,8 @@ doAsyncWork config requestChan eventChan = do
 
     req <- STM.atomically $ STM.readTChan requestChan
     startWork
+    -- Run the IO action with up to one additional attempt if it makes
+    -- rate-limited API requests.
     res <- try $ rateLimitRetry rateLimitNotify req
     case res of
       Left e -> do
@@ -314,20 +316,37 @@ doAsyncWork config requestChan eventChan = do
                       writeBChan eventChan $ IEvent $ DisplayError err
       Right upd ->
           case upd of
-              -- The request could not be retried due to rate limiting
-              -- information being missing.
-              Nothing -> do
-                  -- Notify the application that we had to completely
-                  -- drop this request!
-                  writeBChan eventChan RateLimitSettingsMissing
+              -- The IO action triggered a rate limit error but could
+              -- not be retried due to rate limiting information being
+              -- missing.
+              Nothing -> writeBChan eventChan RateLimitSettingsMissing
+
+              -- The IO action was run successfully but returned no
+              -- state transformation.
               Just Nothing -> return ()
+
+              -- The IO action was run successfully and returned a state
+              -- transformation.
               Just (Just action) -> writeBChan eventChan (RespEvent action)
 
+-- | Run an IO action. If the action raises a RateLimitException, invoke
+-- the provided rate limit exception handler with the rate limit window
+-- size (time in seconds until rate limit resets). Then block until the
+-- rate limit resets and attempt to run the action one more time.
+--
+-- If the rate limit exception does not contain a rate limit reset
+-- interval, return Nothing. Otherwise return IO action's result.
 rateLimitRetry :: (Int -> IO ()) -> IO a -> IO (Maybe a)
 rateLimitRetry rateLimitNotify act = do
     let retry e = do
             case rateLimitExceptionReset e of
+                -- The rate limit exception contains no metadata so we
+                -- cannot retry the action.
                 Nothing -> return Nothing
+
+                -- The rate limit exception contains the size of the
+                -- rate limit reset interval, so block until that has
+                -- passed and retry the action (only) one more time.
                 Just sec -> do
                     let adjusted = sec + 1
                     rateLimitNotify adjusted
