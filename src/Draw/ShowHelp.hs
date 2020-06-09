@@ -444,13 +444,19 @@ mkKeybindingHelp kc (sectionName, kbs) =
 
 mkKeybindHelp :: KeyConfig -> KeyEventHandler -> (Text, Widget Name)
 mkKeybindHelp kc h =
-    let label = case kehEventTrigger h of
+    let unbound = ["(unbound)"]
+        label = case kehEventTrigger h of
             Static k -> ppBinding $ eventToBinding k
             ByEvent ev ->
                 let bindings = case M.lookup ev kc of
-                        Nothing -> ppBinding <$> defaultBindings ev
-                        Just Unbound -> ["unbound"]
-                        Just (BindingList bs) -> ppBinding <$> bs
+                        Nothing ->
+                            let bs = defaultBindings ev
+                            in if not $ null bs
+                               then ppBinding <$> defaultBindings ev
+                               else unbound
+                        Just Unbound -> unbound
+                        Just (BindingList bs) | not (null bs) -> ppBinding <$> bs
+                                              | otherwise -> unbound
                 in T.intercalate ", " bindings
 
         rendering = (withDefAttr helpEmphAttr $ txt $ padTo kbColumnWidth $
