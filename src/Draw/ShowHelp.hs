@@ -466,7 +466,7 @@ mkKeybindHelp kc h =
     in (label, rendering)
 
 mkKeybindEventSectionHelp :: KeyConfig
-                          -> ((Text, Text, [Text]) -> a)
+                          -> ((Either Text Text, Text, [Text]) -> a)
                           -> ([a] -> a)
                           -> (Text -> a)
                           -> (Text, [KeyEventHandler])
@@ -475,34 +475,46 @@ mkKeybindEventSectionHelp kc mkKeybindHelpFunc vertCat mkHeading (sectionName, k
   vertCat $ (mkHeading sectionName) :
             (mkKeybindHelpFunc <$> (mkKeybindEventHelp kc <$> kbs))
 
-keybindEventHelpWidget :: (Text, Text, [Text]) -> Widget Name
+keybindEventHelpWidget :: (Either Text Text, Text, [Text]) -> Widget Name
 keybindEventHelpWidget (evName, desc, evs) =
     let evText = T.intercalate ", " evs
+        label = case evName of
+            Left s -> txt $ "; " <> s
+            Right s -> withDefAttr helpEmphAttr $ txt s
     in vBox [ txt (padTo 72 ("; " <> desc))
-            , (withDefAttr helpEmphAttr $ txt evName) <+> txt (" = " <> evText)
+            , label <+> txt (" = " <> evText)
             , str " "
             ]
 
-keybindEventHelpMarkdown :: (Text, Text, [Text]) -> Text
+keybindEventHelpMarkdown :: (Either Text Text, Text, [Text]) -> Text
 keybindEventHelpMarkdown (evName, desc, evs) =
     let quote s = "`" <> s <> "`"
-    in "| " <> (T.intercalate ", " $ quote <$> evs) <> " | " <> quote evName <> " | " <> desc <> " |"
+        name = case evName of
+            Left s -> s
+            Right s -> quote s
+    in "| " <> (T.intercalate ", " $ quote <$> evs) <>
+       " | " <> name <>
+       " | " <> desc <>
+       " |"
 
-keybindEventHelpText :: Int -> Int -> (Text, Text, [Text]) -> Text
+keybindEventHelpText :: Int -> Int -> (Either Text Text, Text, [Text]) -> Text
 keybindEventHelpText width eventNameWidth (evName, desc, evs) =
-    padTo width (T.intercalate ", " evs) <> " " <>
-    padTo eventNameWidth evName <> " " <>
-    desc
+    let name = case evName of
+            Left s -> s
+            Right s -> s
+    in padTo width (T.intercalate ", " evs) <> " " <>
+       padTo eventNameWidth name <> " " <>
+       desc
 
-mkKeybindEventHelp :: KeyConfig -> KeyEventHandler -> (Text, Text, [Text])
+mkKeybindEventHelp :: KeyConfig -> KeyEventHandler -> (Either Text Text, Text, [Text])
 mkKeybindEventHelp kc h =
   let trig = kehEventTrigger h
       (label, evText) = case trig of
-          Static key -> ("(static)", [ppBinding $ eventToBinding key])
+          Static key -> (Left "(non-customizable key)", [ppBinding $ eventToBinding key])
           ByEvent ev -> case M.lookup ev kc of
-              Nothing -> (keyEventName ev, ppBinding <$> defaultBindings ev)
-              Just Unbound -> (keyEventName ev, ["(unbound)"])
-              Just (BindingList bs) -> (keyEventName ev, ppBinding <$> bs)
+              Nothing -> (Right $ keyEventName ev, ppBinding <$> defaultBindings ev)
+              Just Unbound -> (Right $ keyEventName ev, ["(unbound)"])
+              Just (BindingList bs) -> (Right $ keyEventName ev, ppBinding <$> bs)
   in (label, ehDescription $ kehHandler h, evText)
 
 padTo :: Int -> Text -> Text
