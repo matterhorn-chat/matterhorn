@@ -4,6 +4,7 @@ module Events.ManageAttachments
   ( onEventManageAttachments
   , attachmentListKeybindings
   , attachmentBrowseKeybindings
+  , attachmentListKeyHandlers
   )
 where
 
@@ -40,8 +41,11 @@ onEventAttachmentList =
     handleKeyboardEvent attachmentListKeybindings $
         mhHandleEventLensed (csEditState.cedAttachmentList) L.handleListEvent
 
-attachmentListKeybindings :: KeyConfig -> [Keybinding]
-attachmentListKeybindings = mkKeybindings
+attachmentListKeybindings :: KeyConfig -> KeyHandlerMap
+attachmentListKeybindings = mkKeybindings attachmentListKeyHandlers
+
+attachmentListKeyHandlers :: [KeyEventHandler]
+attachmentListKeyHandlers =
     [ mkKb CancelEvent "Close attachment list"
           (setMode Main)
     , mkKb SelectUpEvent "Move cursor up" $
@@ -56,7 +60,7 @@ attachmentListKeybindings = mkKeybindings
           deleteSelectedAttachment
     ]
 
-attachmentBrowseKeybindings :: KeyConfig -> [Keybinding]
+attachmentBrowseKeybindings :: KeyConfig -> KeyHandlerMap
 attachmentBrowseKeybindings = mkKeybindings
     [ mkKb CancelEvent "Cancel attachment file browse"
       cancelAttachmentBrowse

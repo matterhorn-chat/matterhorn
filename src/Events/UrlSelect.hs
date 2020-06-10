@@ -16,8 +16,11 @@ onEventUrlSelect =
   handleKeyboardEvent urlSelectKeybindings $ \ ev ->
     mhHandleEventLensed csUrlList handleListEvent ev
 
-urlSelectKeybindings :: KeyConfig -> [Keybinding]
-urlSelectKeybindings = mkKeybindings
+urlSelectKeybindings :: KeyConfig -> KeyHandlerMap
+urlSelectKeybindings = mkKeybindings urlSelectKeyHandlers
+
+urlSelectKeyHandlers :: [KeyEventHandler]
+urlSelectKeyHandlers =
     [ staticKb "Open the selected URL, if any"
          (Vty.EvKey Vty.KEnter []) $ do
              openSelectedURL

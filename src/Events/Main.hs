@@ -28,8 +28,11 @@ onEventMain =
           _ -> handleEditingInput ev
   )
 
-mainKeybindings :: KeyConfig -> [Keybinding]
-mainKeybindings = mkKeybindings
+mainKeybindings :: KeyConfig -> KeyHandlerMap
+mainKeybindings = mkKeybindings mainKeyHandlers
+
+mainKeyHandlers :: [KeyEventHandler]
+mainKeyHandlers =
     [ mkKb EnterSelectModeEvent
         "Select a message to edit/reply/delete"
         beginMessageSelect

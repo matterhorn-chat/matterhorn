@@ -9,8 +9,13 @@ module Events.Keybindings
 
   , handleKeyboardEvent
 
+  , EventHandler(..)
+  , KeyHandler(..)
+  , KeyEventHandler(..)
+  , KeyEventTrigger(..)
+  , KeyHandlerMap(..)
+
   -- Re-exports:
-  , Keybinding (..)
   , KeyEvent (..)
   , KeyConfig
   , allEvents
@@ -35,26 +40,51 @@ import           Types.KeyEvents
 
 -- * Keybindings
 
--- | A 'Keybinding' represents a keybinding along with its
---   implementation
-data Keybinding =
-    KB { kbDescription :: Text
-       , kbEvent :: Maybe Vty.Event
-       , kbAction :: MH ()
-       , kbBindingInfo :: Maybe KeyEvent
+-- | An 'EventHandler' represents a event handler.
+data EventHandler =
+    EH { ehDescription :: Text
+       -- ^ The description of this handler's behavior.
+       , ehAction :: MH ()
+       -- ^ The action to take when this handler is invoked.
        }
 
--- | Find a keybinding that matches a Vty Event
-lookupKeybinding :: Vty.Event -> [Keybinding] -> Maybe Keybinding
-lookupKeybinding e kbs = listToMaybe $ filter ((== Just e) . kbEvent) kbs
+-- | A trigger for a key event.
+data KeyEventTrigger =
+    Static Vty.Event
+    -- ^ The key event is always triggered by a specific key.
+    | ByEvent KeyEvent
+    -- ^ The key event is always triggered by an abstract key event (and
+    -- thus configured to be bound to specific key(s) in the KeyConfig).
+    deriving (Show, Eq, Ord)
 
--- | Handle a keyboard event by matching it against a list of bindings
--- and invoking the matching binding's handler. If no match can be
--- found, invoke a fallback action instead. Return True if the key event
--- was handled with a matching binding; False if not (the fallback
--- case).
-handleKeyboardEvent :: (KeyConfig -> [Keybinding])
-                    -- ^ The function to build a keybinding list from a
+-- | A handler for an abstract key event.
+data KeyEventHandler =
+    KEH { kehHandler :: EventHandler
+        -- ^ The handler to invoke.
+        , kehEventTrigger :: KeyEventTrigger
+        -- ^ The trigger for the handler.
+        }
+
+-- | A handler for a specific key.
+data KeyHandler =
+    KH { khHandler :: KeyEventHandler
+       -- ^ The handler to invoke.
+       , khKey :: Vty.Event
+       -- ^ The specific key that should trigger this handler.
+       }
+
+newtype KeyHandlerMap = KeyHandlerMap (M.Map Vty.Event KeyHandler)
+
+-- | Find a keybinding that matches a Vty Event
+lookupKeybinding :: Vty.Event -> KeyHandlerMap -> Maybe KeyHandler
+lookupKeybinding e (KeyHandlerMap m) = M.lookup e m
+
+-- | Handle a keyboard event by looking it up in a map of bindings and
+-- invoking the matching binding's handler. If no match can be found,
+-- invoke a fallback action instead. Return True if the key event was
+-- handled with a matching binding; False if not (the fallback case).
+handleKeyboardEvent :: (KeyConfig -> KeyHandlerMap)
+                    -- ^ The function to build a key handler map from a
                     -- key configuration.
                     -> (Vty.Event -> MH ())
                     -- ^ The fallback action to invoke if no matching
@@ -62,27 +92,48 @@ handleKeyboardEvent :: (KeyConfig -> [Keybinding])
                     -> Vty.Event
                     -- ^ The event to handle.
                     -> MH Bool
-handleKeyboardEvent mkKeyList fallthrough e = do
+handleKeyboardEvent mkKeyMap fallthrough e = do
   conf <- use (csResources.crConfiguration)
-  let keyMap = mkKeyList (configUserKeys conf)
+  let keyMap = mkKeyMap (configUserKeys conf)
   case lookupKeybinding e keyMap of
-    Just kb -> kbAction kb >> return True
+    Just kh -> (ehAction $ kehHandler $ khHandler kh) >> return True
     Nothing -> fallthrough e >> return False
 
-mkKb :: KeyEvent -> Text -> MH () -> KeyConfig -> [Keybinding]
-mkKb ev msg action conf =
-  if null allKeys
-  then [ KB msg Nothing action (Just ev) ]
-  else [ KB msg (Just $ bindingToEvent key) action (Just ev) | key <- allKeys ]
-  where allKeys | Just (BindingList ks) <- M.lookup ev conf = ks
-                | Just Unbound <- M.lookup ev conf = []
-                | otherwise = defaultBindings ev
+mkHandler :: Text -> MH () -> EventHandler
+mkHandler msg action =
+    EH { ehDescription = msg
+       , ehAction = action
+       }
 
-staticKb :: Text -> Vty.Event -> MH () -> KeyConfig -> [Keybinding]
-staticKb msg event action _ = [KB msg (Just event) action Nothing]
+mkKb :: KeyEvent -> Text -> MH () -> KeyEventHandler
+mkKb ev msg action =
+    KEH { kehHandler = mkHandler msg action
+        , kehEventTrigger = ByEvent ev
+        }
 
-mkKeybindings :: [KeyConfig -> [Keybinding]] -> KeyConfig -> [Keybinding]
-mkKeybindings ks conf = concat [ k conf | k <- ks ]
+keyHandlerFromConfig :: KeyConfig -> KeyEventHandler -> [KeyHandler]
+keyHandlerFromConfig conf eh =
+    case kehEventTrigger eh of
+        Static key ->
+            [ KH eh key ]
+        ByEvent ev ->
+            [ KH eh (bindingToEvent b) | b <- allBindings ]
+            where allBindings | Just (BindingList ks) <- M.lookup ev conf = ks
+                              | Just Unbound <- M.lookup ev conf = []
+                              | otherwise = defaultBindings ev
+
+staticKb :: Text -> Vty.Event -> MH () -> KeyEventHandler
+staticKb msg event action =
+    KEH { kehHandler = mkHandler msg action
+        , kehEventTrigger = Static event
+        }
+
+mkKeybindings :: [KeyEventHandler] -> KeyConfig -> KeyHandlerMap
+mkKeybindings ks conf = KeyHandlerMap $ M.fromList pairs
+    where
+        pairs = mkPair <$> handlers
+        mkPair h = (khKey h, h)
+        handlers = concat $ keyHandlerFromConfig conf <$> ks
 
 bindingToEvent :: Binding -> Vty.Event
 bindingToEvent binding =
@@ -176,7 +227,7 @@ defaultBindings ev =
 -- basic usability (i.e. we shouldn't be binding events which can appear
 -- in the main UI to a key like @e@, which would prevent us from being
 -- able to type messages containing an @e@ in them!
-ensureKeybindingConsistency :: KeyConfig -> [(String, KeyConfig -> [Keybinding])] -> Either String ()
+ensureKeybindingConsistency :: KeyConfig -> [(String, KeyConfig -> KeyHandlerMap)] -> Either String ()
 ensureKeybindingConsistency kc modeMaps = mapM_ checkGroup allBindings
   where
     -- This is a list of lists, grouped by keybinding, of all the
@@ -256,10 +307,11 @@ ensureKeybindingConsistency kc modeMaps = mapM_ checkGroup allBindings
 
     -- We generate the which-events-are-valid-in-which-modes map from
     -- our actual keybinding set, so this should never get out of date.
+    modeMap :: KeyEvent -> [String]
     modeMap ev =
-      let bindingHasEvent (KB _ _ _ (Just ev')) = ev == ev'
-          bindingHasEvent _ = False
+      let matches kh = ByEvent ev == (kehEventTrigger $ khHandler kh)
       in [ mode
          | (mode, mkBindings) <- modeMaps
-         , any bindingHasEvent (mkBindings kc)
+         , let KeyHandlerMap m = mkBindings kc
+           in not $ null $ M.filter matches m
          ]

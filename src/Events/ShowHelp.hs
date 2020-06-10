@@ -17,8 +17,11 @@ onEventShowHelp =
     Vty.EvKey _ _ -> popMode
     _ -> return ()
 
-helpKeybindings :: KeyConfig -> [Keybinding]
-helpKeybindings = mkKeybindings
+helpKeybindings :: KeyConfig -> KeyHandlerMap
+helpKeybindings = mkKeybindings helpKeyHandlers
+
+helpKeyHandlers :: [KeyEventHandler]
+helpKeyHandlers =
     [ mkKb ScrollUpEvent "Scroll up" $
         mh $ vScrollBy (viewportScroll HelpViewport) (-1)
     , mkKb ScrollDownEvent "Scroll down" $

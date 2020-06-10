@@ -1,6 +1,7 @@
 module Events.ReactionEmojiListOverlay
   ( onEventReactionEmojiListOverlay
   , reactionEmojiListOverlayKeybindings
+  , reactionEmojiListOverlayKeyHandlers
   )
 where
 
@@ -20,8 +21,11 @@ onEventReactionEmojiListOverlay =
     void . onEventListOverlay csReactionEmojiListOverlay reactionEmojiListOverlayKeybindings
 
 -- | The keybindings we want to use while viewing an emoji list overlay
-reactionEmojiListOverlayKeybindings :: KeyConfig -> [Keybinding]
-reactionEmojiListOverlayKeybindings = mkKeybindings
+reactionEmojiListOverlayKeybindings :: KeyConfig -> KeyHandlerMap
+reactionEmojiListOverlayKeybindings = mkKeybindings reactionEmojiListOverlayKeyHandlers
+
+reactionEmojiListOverlayKeyHandlers :: [KeyEventHandler]
+reactionEmojiListOverlayKeyHandlers =
     [ mkKb CancelEvent "Close the emoji search window" (exitListOverlay csReactionEmojiListOverlay)
     , mkKb SearchSelectUpEvent "Select the previous emoji" reactionEmojiListSelectUp
     , mkKb SearchSelectDownEvent "Select the next emoji" reactionEmojiListSelectDown

@@ -26,8 +26,11 @@ onEventMessageSelectDeleteConfirm (Vty.EvKey (Vty.KChar 'y') []) = do
 onEventMessageSelectDeleteConfirm _ =
     setMode Main
 
-messageSelectKeybindings :: KeyConfig -> [Keybinding]
-messageSelectKeybindings = mkKeybindings
+messageSelectKeybindings :: KeyConfig -> KeyHandlerMap
+messageSelectKeybindings = mkKeybindings messageSelectKeyHandlers
+
+messageSelectKeyHandlers :: [KeyEventHandler]
+messageSelectKeyHandlers =
     [ mkKb CancelEvent "Cancel message selection" $
         setMode Main
 

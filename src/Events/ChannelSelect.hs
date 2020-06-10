@@ -23,8 +23,11 @@ onEventChannelSelect =
 
       updateChannelSelectMatches
 
-channelSelectKeybindings :: KeyConfig -> [Keybinding]
-channelSelectKeybindings = mkKeybindings
+channelSelectKeybindings :: KeyConfig -> KeyHandlerMap
+channelSelectKeybindings = mkKeybindings channelSelectKeyHandlers
+
+channelSelectKeyHandlers :: [KeyEventHandler]
+channelSelectKeyHandlers =
     [ staticKb "Switch to selected channel"
          (Vty.EvKey Vty.KEnter []) $ do
              matches <- use (csChannelSelectState.channelSelectMatches)
