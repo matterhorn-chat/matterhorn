@@ -509,12 +509,21 @@ keybindEventHelpText width eventNameWidth (evName, desc, evs) =
 mkKeybindEventHelp :: KeyConfig -> KeyEventHandler -> (Either Text Text, Text, [Text])
 mkKeybindEventHelp kc h =
   let trig = kehEventTrigger h
+      unbound = ["(unbound)"]
       (label, evText) = case trig of
           Static key -> (Left "(non-customizable key)", [ppBinding $ eventToBinding key])
           ByEvent ev -> case M.lookup ev kc of
-              Nothing -> (Right $ keyEventName ev, ppBinding <$> defaultBindings ev)
-              Just Unbound -> (Right $ keyEventName ev, ["(unbound)"])
-              Just (BindingList bs) -> (Right $ keyEventName ev, ppBinding <$> bs)
+              Nothing ->
+                  let name = keyEventName ev
+                  in if not (null (defaultBindings ev))
+                     then (Right name, ppBinding <$> defaultBindings ev)
+                     else (Left name, unbound)
+              Just Unbound -> (Right $ keyEventName ev, unbound)
+              Just (BindingList bs) -> (Right $ keyEventName ev,
+                                        if not (null bs)
+                                        then ppBinding <$> bs
+                                        else unbound
+                                        )
   in (label, ehDescription $ kehHandler h, evText)
 
 padTo :: Int -> Text -> Text
