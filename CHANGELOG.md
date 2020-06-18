@@ -1,4 +1,84 @@
 
+50200.9.0
+=========
+
+New features:
+ * More text-editing keybindings are now rebindable rather than being
+   hard-coded. In addition, the keybinding events for text editing are
+   now respected by editors for the `/join` window, the `/msg` window,
+   the `/members` window, as well as channel selection mode (`C-g`). For
+   the complete list of supported configurable keybindings, please see
+   the `Text Editing` section of `/help` and `/help keybindings` as well
+   as the keybinding tables provided by `matterhorn -k`.
+ * Matterhorn now has support for dealing with server API request rate
+   limiting. When Matterhorn is denied an API request due to rate
+   limiting it will now attempt to reissue the request once the server's
+   rate limit has reset. Matterhorn will indicate when it does this by
+   displaying an informative message in the current channel. If for
+   some reason the second attempt fails, the user will be notified. We
+   recommend that users encountering rate limiting issues (e.g. on fast
+   connections to their servers) contact their server administrators.
+ * Channel selection mode (triggered by event `enter-fast-select` /
+   default key: `C-g`) now provides two alternative key events for
+   changing the selected entry (#609). These new events are alternatives
+   for the existing events:
+   * `focus-prev-channel-alternate`, default key: `Up`, alternative to
+     `focus-prev-channel`
+   * `focus-next-channel-alternate`, default key: `Down`, alternative to
+     `focus-next-channel`
+ * The message editor's tab completion now supports more intelligent
+   completion by detecting punctuation following completions.
+   Previously, tab completion would insert the completion followed by
+   a trailing space; for example, `@u<TAB>` might complete to `@user`
+   followed by a space. While this is often desirable behavior, it
+   also meant that if the very next input character was a punctuation
+   character such as a period, the final text would be `@user .` Based
+   on the observation that usally the intention is to end up with
+   `@user.`, the editor now automatically replaces the trailing space
+   when such a punctuation character is entered. This behavior is
+   configurable with the `smartediting` configuration setting which
+   defaults to On. The list of characters that trigger this behavior is:
+   `.,'";:)]!?`.
+
+Other improvements:
+ * The current user's status is now displayed next to the current user's
+   username at the top of the channel sidebar (#594).
+ * Help for keybindings was improved to list all available bindings for
+   each event. The help text also now makes it clear when an event has a
+   non-bindable (fixed) key or has no binding at all. These improvements
+   affected the output of `/help`, `/help keybindings`, and the output
+   of the command-line options to print keybinding tables.
+ * The sample configuration documentation clarified how to use the
+   `host` field and also how to use Matterhorn without TLS.
+ * The message editor's spell checking no longer checks the spelling of
+   tokens that start with slashes or user/channel sigils (#611).
+ * Matterhorn now sets the Markdown file extension when editing messages
+   in external editors in order to help the external editors detect the
+   file type and do syntax highlighting (#590).
+ * The help text for the logging commands now makes it clear that the
+   logging commands log application debug information, not chat
+   messages.
+ * The autocompletion list no longer appears if only a single completion
+   is available when the user autocompletes input text.
+
+Bug fixes:
+ * Parsing for the configuration file's `host` field has been improved
+   to accept only valid hostnames and IPv4/IPv6 addresses.
+ * Editing a message now properly clears the message editor of any
+   preexisting input (#614).
+ * The example notification scripts for Linux and macOS have been
+   improved with backslash and quote escaping (#613, thanks Bernhard
+   Walle).
+ * Incoming messages are now sanitized of unprintable characters (#604).
+ * Matterhorn is now better behaved when the server has disabled custom
+   emoji (#600).
+ * Matterhorn's parsing of timezone data is now improved platforms where
+   it previously could not parse the timezone files (#542).
+ * The `/join` channel list no longer includes channels of which the
+   user is already a member (#602).
+ * The channel messages now render properly whenever the editor's
+   multiline preview changes size (#587).
+
 50200.8.0
 =========
 

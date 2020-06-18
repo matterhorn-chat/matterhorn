@@ -1,5 +1,5 @@
 name:                matterhorn
-version:             50200.8.0
+version:             50200.9.0
 synopsis:            Terminal client for the Mattermost chat system
 description:         This is a terminal client for the Mattermost chat
                      system. Please see the README for a list of
@@ -136,7 +136,7 @@ executable matterhorn
                        NoImplicitPrelude
   ghc-options:         -Wall -threaded -with-rtsopts=-I0 -Wcompat
   build-depends:       base                 >=4.8      && <5
-                     , mattermost-api       == 50200.5.0
+                     , mattermost-api       == 50200.6.0
                      , base-compat          >= 0.9     && < 0.12
                      , unordered-containers >= 0.2     && < 0.3
                      , containers           >= 0.5.7   && < 0.7
@@ -212,8 +212,8 @@ test-suite test_messages
                     , filepath             >= 1.4     && < 1.5
                     , hashable             >= 1.2     && < 1.4
                     , Hclip                >= 3.0     && < 3.1
-                    , mattermost-api       == 50200.5.0
-                    , mattermost-api-qc    == 50200.5.0
+                    , mattermost-api       == 50200.6.0
+                    , mattermost-api-qc    == 50200.6.0
                     , microlens-platform   >= 0.3     && < 0.5
                     , mtl                  >= 2.2     && < 2.3
                     , process              >= 1.4     && < 1.7
