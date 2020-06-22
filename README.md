@@ -458,3 +458,14 @@ bind-key -T prefix ] paste-buffer -p
 
 You might need to adjust your Nginx proxy settings.
 For context, see [this potentially related report](https://github.com/matterhorn-chat/matterhorn/issues/578).
+
+## Why doesn't Matterhorn support my desired keybindings?
+
+In many terminal emulators, some key and modifier combinations do not
+work at all or do not behave as expected. In fact, there is frankly no
+single simple answer to the question, "Why doesn't key combo X work
+for me?" If you would like Matterhorn to support a particular key
+combination that is not working for you, please file a ticket and we
+will investigate. Bear in mind that we may not be able to do anything
+about some combinations due to terminal emulator and input encoding
+technology limitations.
