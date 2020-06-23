@@ -484,11 +484,11 @@ the example key combination (which is commonly not supported):
 2) Create a file `~/.vty/config` and add to it the line `map _
    "\ESC[3;5~" KBS [MCtrl]`. This configuration file is loaded by
    the `vty` library, the library that Matterhorn uses to translate
-   terminal input into key events. This configuration line tells `vty`
-   to translate the input sequence `\ESC[3;5~` to the
-   `KBS` (backspace) key with the modifier list `[MCtrl]`
-   (control). The list of valid keys and modifiers usable
-   in `map` lines can be found [in the vty Haskell
+   terminal input into key events. This configuration line tells
+   `vty` to translate the input sequence `\ESC[3;5~` to the `KBS`
+   (backspace) key with the modifier list `[MCtrl]` (control) regardless
+   of the value of `TERM` (underscore). The list of valid keys and
+   modifiers usable in `map` lines can be found [in the vty Haskell
    documentation](http://hackage.haskell.org/package/vty-5.28.2/docs/Gra
    phics-Vty-Input.html).
 3) Set up the desired event in `~/.config/matterhorn/config`'s
