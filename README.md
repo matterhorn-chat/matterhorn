@@ -462,10 +462,34 @@ For context, see [this potentially related report](https://github.com/matterhorn
 ## Why doesn't Matterhorn support my desired keybindings?
 
 In many terminal emulators, some key and modifier combinations do not
-work at all or do not behave as expected. In fact, there is frankly no
-single simple answer to the question, "Why doesn't key combo X work
-for me?" If you would like Matterhorn to support a particular key
-combination that is not working for you, please file a ticket and we
-will investigate. Bear in mind that we may not be able to do anything
-about some combinations due to terminal emulator and input encoding
-technology limitations.
+work at all or do not behave as expected. In these cases it will be
+necessary to configure Matterhorn to intepret the appropriate escape
+sequences in order to translate them into the desired key and modifier
+combinations.
+
+To configure Matterhorn to support a particular key combination, some
+steps must be followed. Here are the steps, using `Control-Backspace` as
+the example key combination (which is commonly not supported):
+
+1) Determine the escape sequence that your terminal sends for the
+   desired key combination. This can usually be done by consulting
+   the terminal settings or by running `cat >/dev/null`, pressing the
+   desired key combination, and observing the escape sequence that is
+   printed. For example, for `Control-Backspace` on my terminal I get:
+   ```
+   $ cat >/dev/null
+   ^[[3;5~
+   ```
+   This indicates that the sequence is `\ESC[3;5~`.
+2) Create a file `~/.vty/config` and add to it the line `map _
+   "\ESC[3;5~" KBS [MCtrl]`. This configuration file is loaded by
+   the `vty` library, the library that Matterhorn uses to translate
+   terminal input into key events. This configuration line tells `vty`
+   to translate the input sequence `\ESC[3;5~` to the
+   `KBS` (backspace) key with the modifier list `[MCtrl]`
+   (control). The list of valid keys and modifiers usable
+   in `map` lines can be found [in the vty Haskell
+   documentation](http://hackage.haskell.org/package/vty-5.28.2/docs/Gra
+   phics-Vty-Input.html).
+3) Set up the desired event in `~/.config/matterhorn/config`'s
+   `[keybindings]` section to be triggered by `C-Backspace`.
