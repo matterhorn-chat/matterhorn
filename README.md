@@ -489,7 +489,6 @@ the example key combination (which is commonly not supported):
    (backspace) key with the modifier list `[MCtrl]` (control) regardless
    of the value of `TERM` (underscore). The list of valid keys and
    modifiers usable in `map` lines can be found [in the vty Haskell
-   documentation](http://hackage.haskell.org/package/vty-5.28.2/docs/Gra
-   phics-Vty-Input.html).
+   documentation](http://hackage.haskell.org/package/vty-5.28.2/docs/Graphics-Vty-Input.html).
 3) Set up the desired event in `~/.config/matterhorn/config`'s
    `[keybindings]` section to be triggered by `C-Backspace`.
