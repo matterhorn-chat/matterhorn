@@ -626,14 +626,16 @@ mainInterface st =
                      , txt " to manage)"
                      ]
 
-    showTypingUsers = case allTypingUsers (st^.csCurrentChannel.ccInfo.cdTypingUsers) of
-                        [] -> emptyWidget
-                        [uId] | Just un <- usernameForUserId uId st ->
-                           txt $ un <> " is typing"
-                        [uId1, uId2] | Just un1 <- usernameForUserId uId1 st
-                                     , Just un2 <- usernameForUserId uId2 st ->
-                           txt $ un1 <> " and " <> un2 <> " are typing"
-                        _ -> txt "several people are typing"
+    showTypingUsers =
+        let format = renderText' (myUsername st) hs
+        in case allTypingUsers (st^.csCurrentChannel.ccInfo.cdTypingUsers) of
+            [] -> emptyWidget
+            [uId] | Just un <- usernameForUserId uId st ->
+               format $ "[" <> userSigil <> un <> " is typing]"
+            [uId1, uId2] | Just un1 <- usernameForUserId uId1 st
+                         , Just un2 <- usernameForUserId uId2 st ->
+               format $ "[" <> userSigil <> un1 <> " and " <> userSigil <> un2 <> " are typing]"
+            _ -> format "[several people are typing]"
 
     showBusy = case st^.csWorkerIsBusy of
                  Just (Just n) -> hLimit 2 hBorder <+> txt (T.pack $ "*" <> show n)
