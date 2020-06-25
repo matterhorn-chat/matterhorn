@@ -120,7 +120,7 @@ commandList =
     NoArg $ \ () ->
       enterChannelMembersUserList
 
-  , Cmd "leave" "Leave the current channel" NoArg $ \ () ->
+  , Cmd "leave" "Leave a normal channel or hide a DM channel" NoArg $ \ () ->
       startLeaveCurrentChannel
 
   , Cmd "join" "Find a channel to join" NoArg $ \ () ->

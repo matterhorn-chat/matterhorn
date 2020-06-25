@@ -941,9 +941,10 @@ removeUserFromCurrentChannel uname =
 startLeaveCurrentChannel :: MH ()
 startLeaveCurrentChannel = do
     cInfo <- use (csCurrentChannel.ccInfo)
-    case canLeaveChannel cInfo of
-        True -> setMode LeaveChannelConfirm
-        False -> mhError $ GenericError "The /leave command cannot be used with this channel."
+    case cInfo^.cdType of
+        Direct -> hideDMChannel (cInfo^.cdChannelId)
+        Group -> hideDMChannel (cInfo^.cdChannelId)
+        _ -> setMode LeaveChannelConfirm
 
 deleteCurrentChannel :: MH ()
 deleteCurrentChannel = do
