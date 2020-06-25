@@ -10,7 +10,6 @@ module State.Channels
   , refreshChannelById
   , applyPreferenceChange
   , leaveChannel
-  , leaveChannelIfPossible
   , leaveCurrentChannel
   , getNextUnreadChannel
   , getNextUnreadUserOrChannel
