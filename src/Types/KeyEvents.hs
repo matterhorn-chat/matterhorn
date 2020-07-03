@@ -90,6 +90,7 @@ data KeyEvent
   | PageDownEvent
   | ScrollTopEvent
   | ScrollBottomEvent
+  | SelectOldestMessageEvent
 
   -- select events---not the same as scrolling sometimes!
   | SelectUpEvent
@@ -178,6 +179,7 @@ allEvents =
   , PageDownEvent
   , ScrollTopEvent
   , ScrollBottomEvent
+  , SelectOldestMessageEvent
 
   , SelectUpEvent
   , SelectDownEvent
@@ -394,6 +396,7 @@ keyEventName ev = case ev of
   PageDownEvent     -> "page-down"
   ScrollTopEvent    -> "scroll-top"
   ScrollBottomEvent -> "scroll-bottom"
+  SelectOldestMessageEvent -> "select-oldest-message"
 
   SelectUpEvent   -> "select-up"
   SelectDownEvent -> "select-down"

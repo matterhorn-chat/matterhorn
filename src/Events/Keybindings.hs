@@ -149,6 +149,7 @@ defaultBindings :: KeyEvent -> [Binding]
 defaultBindings ev =
   let meta binding = binding { kbMods = Vty.MMeta : kbMods binding }
       ctrl binding = binding { kbMods = Vty.MCtrl : kbMods binding }
+      shift binding = binding { kbMods = Vty.MShift : kbMods binding }
       kb k = Binding { kbMods = [], kbKey = k }
       key c = Binding { kbMods = [], kbKey = Vty.KChar c }
       fn n = Binding { kbMods = [], kbKey = Vty.KFun n }
@@ -185,6 +186,7 @@ defaultBindings ev =
         PageDownEvent                 -> [ kb Vty.KPageDown ]
         ScrollTopEvent                -> [ kb Vty.KHome ]
         ScrollBottomEvent             -> [ kb Vty.KEnd ]
+        SelectOldestMessageEvent      -> [ shift (kb Vty.KHome) ]
         SelectUpEvent                 -> [ key 'k', kb Vty.KUp ]
         SelectDownEvent               -> [ key 'j', kb Vty.KDown ]
         ActivateListItemEvent         -> [ kb Vty.KEnter ]

@@ -95,7 +95,7 @@ mainKeyHandlers =
     , mkKb PageUpEvent "Page up in the channel message list (enters message select mode)" $ do
              beginMessageSelect
 
-    , mkKb ScrollTopEvent "Scroll to top of channel message list" $ do
+    , mkKb SelectOldestMessageEvent "Scroll to top of channel message list" $ do
              beginMessageSelect
              messageSelectFirst
 
