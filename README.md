@@ -458,3 +458,15 @@ bind-key -T prefix ] paste-buffer -p
 
 You might need to adjust your Nginx proxy settings.
 For context, see [this potentially related report](https://github.com/matterhorn-chat/matterhorn/issues/578).
+
+## Will you add support for my favorite GNU `readline` key to the message editor?
+
+Please open a ticket to discuss support for any editing features that
+you would like to see added. But please bear in mind that while we do
+want Matterhorn's built-in text editor to provide a reasonable feature
+set for editing messages, we do not intend to support all features
+supported by other applications, and Matterhorn's editor is *not*
+intended to provide the full feature set provided by `readline` even
+though some of its features and behaviors are informed by `readline`.
+This is also why we provide the ability to invoke an application of your
+choosing to edit messages with `M-k` (`invoke-editor`).
