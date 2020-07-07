@@ -352,7 +352,6 @@ handleWSEvent we = do
         WMTeamDeleted -> return ()
         WMUserUpdated -> return ()
         WMLeaveTeam -> return ()
-        WMChannelMemberUpdated {} -> return ()
 
         -- We deliberately ignore these events:
         WMChannelCreated -> return ()
