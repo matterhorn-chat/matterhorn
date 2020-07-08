@@ -719,16 +719,14 @@ withFirstMessage :: SeqDirection dir => (Message -> r) -> DirectionalSeq dir Mes
 withFirstMessage = withDirSeqHead
 
 msgURLs :: Message -> Seq LinkChoice
-msgURLs msg
-  | NoUser <- msg^.mUser = mempty
-  | otherwise =
-  let uid = msg^.mUser
-      msgUrls = (\ (url, text) -> LinkChoice (msg^.mDate) uid text url Nothing) <$>
+msgURLs msg =
+  let uRef = msg^.mUser
+      msgUrls = (\ (url, text) -> LinkChoice (msg^.mDate) uRef text url Nothing) <$>
                   (mconcat $ blockGetURLs <$> (toList $ msg^.mText))
       attachmentURLs = (\ a ->
                           LinkChoice
                             (msg^.mDate)
-                            uid
+                            uRef
                             ("attachment `" <> (a^.attachmentName) <> "`")
                             (a^.attachmentURL)
                             (Just (a^.attachmentFileId)))
