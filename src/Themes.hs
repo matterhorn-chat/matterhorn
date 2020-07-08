@@ -52,6 +52,8 @@ module Themes
 
   -- * Username formatting
   , colorUsername
+  , attrForUsername
+  , usernameColorHashBuckets
   )
 where
 
@@ -232,12 +234,12 @@ defaultTheme = darkColorTheme
 lightColorTheme :: InternalTheme
 lightColorTheme = InternalTheme name theme
     where
-        theme = newTheme def lightAttrs
+        theme = newTheme def $ lightAttrs usernameColors16
         name = "builtin:light"
         def = black `on` white
 
-lightAttrs :: [(AttrName, Attr)]
-lightAttrs =
+lightAttrs :: [Attr] -> [(AttrName, Attr)]
+lightAttrs usernameColors =
     let sty = Sky.kate
     in [ (timeAttr,                         fg black)
        , (currentUserAttr,                  defAttr `withStyle` bold)
@@ -288,11 +290,11 @@ lightAttrs =
        , (FB.fileBrowserSymbolicLinkAttr,   fg cyan)
        , (FB.fileBrowserUnixSocketAttr,     fg red)
        ] <>
-       ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors) <>
+       ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..usernameColorHashBuckets-1] (cycle usernameColors)) <>
        (filter skipBaseCodeblockAttr $ attrMappingsForStyle sty)
 
-darkAttrs :: [(AttrName, Attr)]
-darkAttrs =
+darkAttrs :: [Attr] -> [(AttrName, Attr)]
+darkAttrs usernameColors =
   let sty = Sky.espresso
   in [ (timeAttr,                         fg white)
      , (currentUserAttr,                  defAttr `withStyle` bold)
@@ -343,7 +345,7 @@ darkAttrs =
      , (FB.fileBrowserSymbolicLinkAttr,   fg cyan)
      , (FB.fileBrowserUnixSocketAttr,     fg red)
      ] <>
-     ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..] usernameColors) <>
+     ((\(i, a) -> (usernameAttr i, a)) <$> zip [0..usernameColorHashBuckets-1] (cycle usernameColors)) <>
      (filter skipBaseCodeblockAttr $ attrMappingsForStyle sty)
 
 skipBaseCodeblockAttr :: (AttrName, Attr) -> Bool
@@ -352,7 +354,7 @@ skipBaseCodeblockAttr = ((/= highlightedCodeBlockAttr) . fst)
 darkColorTheme :: InternalTheme
 darkColorTheme = InternalTheme name theme
     where
-        theme = newTheme def darkAttrs
+        theme = newTheme def $ darkAttrs usernameColors16
         name = "builtin:dark"
         def = defAttr
 
@@ -388,11 +390,7 @@ colorUsername :: Text
               -- ^ The text to render
               -> Widget a
 colorUsername current username display =
-    let normalizedUsername = T.toLower username
-        aName = if normalizedUsername `elem` specialUserMentions
-                then clientEmphAttr
-                else usernameAttr h
-        h = hash normalizedUsername `mod` length usernameColors
+    let aName = attrForUsername username
         maybeWithCurrentAttr = if current == username
                                then withAttr currentUserAttr
                                else id
@@ -400,8 +398,33 @@ colorUsername current username display =
        maybeWithCurrentAttr $
        txt (display)
 
-usernameColors :: [Attr]
-usernameColors =
+-- | Return the attribute name to use for the specified username.
+-- The input username is expected to be the username only (i.e. no
+-- sigil).
+--
+-- If the input username is a special reserved username such as "all",
+-- the @clientEmphAttr@ attribute name will be returned. Otherwise
+-- a hash-bucket username attribute name will be returned based on
+-- the hash value of the username and the number of hash buckets
+-- (@usernameColorHashBuckets@).
+attrForUsername :: Text
+                -- ^ The username to get an attribute for
+                -> AttrName
+attrForUsername username =
+    let normalizedUsername = T.toLower username
+        aName = if normalizedUsername `elem` specialUserMentions
+                then clientEmphAttr
+                else usernameAttr h
+        h = hash normalizedUsername `mod` usernameColorHashBuckets
+    in aName
+
+-- | The number of hash buckets to use when hashing usernames to choose
+-- their colors.
+usernameColorHashBuckets :: Int
+usernameColorHashBuckets = 50
+
+usernameColors16 :: [Attr]
+usernameColors16 =
     [ fg red
     , fg green
     , fg yellow
@@ -676,5 +699,5 @@ themeDocs = ThemeDocumentation $ M.fromList $
       , "Attribute for the username of the user running Matterhorn"
       )
     ] <> [ (usernameAttr i, T.pack $ "Username color " <> show i)
-         | i <- [0..(length usernameColors)-1]
+         | i <- [0..usernameColorHashBuckets-1]
          ]
