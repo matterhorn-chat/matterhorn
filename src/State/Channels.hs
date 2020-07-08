@@ -47,6 +47,7 @@ module State.Channels
   , beginCurrentChannelDeleteConfirm
   , toggleChannelListVisibility
   , showChannelInSidebar
+  , updateChannelNotifyProps
   )
 where
 
@@ -1061,3 +1062,8 @@ beginCurrentChannelDeleteConfirm = do
         if chType /= Direct
             then setMode DeleteChannelConfirm
             else mhError $ GenericError "Direct message channels cannot be deleted."
+
+updateChannelNotifyProps :: ChannelId -> ChannelNotifyProps -> MH ()
+updateChannelNotifyProps cId notifyProps = do
+    mh $ invalidateCacheEntry ChannelSidebar
+    csChannel(cId).ccInfo.cdNotifyProps .= notifyProps

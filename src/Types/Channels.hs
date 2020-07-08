@@ -20,7 +20,7 @@ module Types.Channels
   , cdViewed, cdNewMessageIndicator, cdEditedMessageThreshold, cdUpdated
   , cdName, cdDisplayName, cdHeader, cdPurpose, cdType
   , cdMentionCount, cdTypingUsers, cdDMUserId, cdChannelId
-  , cdSidebarShowOverride
+  , cdSidebarShowOverride, cdNotifyProps
   -- * Lenses created for accessing ChannelContents fields
   , cdMessages, cdFetchPending
   -- * Creating ClientChannel objects
@@ -41,6 +41,7 @@ module Types.Channels
   , addChannelTypingUser
   -- * Notification settings
   , notifyPreference
+  , isMuted
   -- * Miscellaneous channel-related operations
   , canLeaveChannel
   , preferredChannelName
@@ -240,11 +241,16 @@ makeLenses ''ChannelInfo
 makeLenses ''ClientChannel
 makeLenses ''EphemeralEditState
 
+isMuted :: ClientChannel -> Bool
+isMuted cc = cc^.ccInfo.cdNotifyProps.channelNotifyPropsMarkUnreadL ==
+             IsValue NotifyOptionMention
+
 notifyPreference :: User -> ClientChannel -> NotifyOption
 notifyPreference u cc =
-    case cc^.ccInfo.cdNotifyProps.channelNotifyPropsDesktopL of
-        IsValue v -> v
-        Default   -> (userNotifyProps u)^.userNotifyPropsDesktopL
+    if isMuted cc then NotifyOptionNone
+    else case cc^.ccInfo.cdNotifyProps.channelNotifyPropsDesktopL of
+             IsValue v -> v
+             Default   -> (userNotifyProps u)^.userNotifyPropsDesktopL
 
 -- ** Miscellaneous channel operations
 

@@ -47,6 +47,7 @@ data ChannelListEntryData =
                          , entryIsRecent    :: Bool
                          , entryIsReturn    :: Bool
                          , entryIsCurrent   :: Bool
+                         , entryIsMuted     :: Bool
                          , entryUserStatus  :: Maybe UserStatus
                          }
 
@@ -111,7 +112,7 @@ mkChannelEntryData :: ChatState
                    -> ChannelListEntry
                    -> ChannelListEntryData
 mkChannelEntryData st e =
-    ChannelListEntryData sigilWithSpace name unread mentions recent ret current status
+    ChannelListEntryData sigilWithSpace name unread mentions recent ret current muted status
     where
         cId = channelListEntryChannelId e
         Just chan = findChannelById cId (st^.csChannels)
@@ -119,6 +120,7 @@ mkChannelEntryData st e =
         recent = isRecentChannel st cId
         ret = isReturnChannel st cId
         current = isCurrentChannel st cId
+        muted = isMuted chan
         (name, normalSigil, addSpace, status) = case e of
             CLChannel _ ->
                 (chan^.ccInfo.cdDisplayName, Nothing, False, Nothing)
@@ -151,7 +153,7 @@ renderChannelListEntry myUName entry = (entryHasUnread entry, body)
            entryWidget $ entrySigil entry <> entryLabel entry
     decorate = if | entryIsCurrent entry ->
                       visible . forceAttr currentChannelNameAttr
-                  | entryMentions entry > 0 ->
+                  | entryMentions entry > 0 && not (entryIsMuted entry) ->
                       forceAttr mentionsChannelAttr
                   | entryHasUnread entry ->
                       forceAttr unreadChannelAttr
@@ -165,6 +167,8 @@ renderChannelListEntry myUName entry = (entryHasUnread entry, body)
         (<+> str "(9+)")
       | entryMentions entry > 0 =
         (<+> str ("(" <> show (entryMentions entry) <> ")"))
+      | entryIsMuted entry =
+        (<+> str "(m)")
       | otherwise = id
 
 -- | Render an individual entry when in Channel Select mode,
