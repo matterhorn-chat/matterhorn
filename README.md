@@ -197,6 +197,10 @@ unread messages, and the channel you started in when first pressing
 to that channel after other channels with unread messages have been
 visited.
 
+To mute or unmute a channel, use the server command `/mute` in that
+channel. When muted, a channel will appear with `(m)` next to it in the
+sidebar.
+
 To quickly show a list of URLs mentioned in the current channel and then
 open one in your local browser, use the default binding of `C-o` and
 configure the `urlOpenCommand` configuration setting.
@@ -240,6 +244,7 @@ files or remove existing attachments by pressing `C-x` again.
 * Rebindable keys (see `/help keybindings`)
 * Message editor with kill/yank buffer and readline-style keybindings
 * Support for adding and removing emoji post reactions
+* Support for channel muting
 * Tab-completion of:
   * Usernames: type `@`, then `Tab` to cycle through matches
   * Channel names: type `~`, then `Tab` to cycle through matches
