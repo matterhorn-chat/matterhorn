@@ -335,6 +335,14 @@ handleWSEvent we = do
             | Just cId <- webChannelId (weBroadcast we) -> handleChannelInvite cId
             | otherwise -> return ()
 
+        WMChannelMemberUpdated
+            | Just channelMember <- wepChannelMember $ weData we ->
+                  when (channelMemberUserId channelMember == myId) $
+                      updateChannelNotifyProps
+                      (channelMemberChannelId channelMember)
+                      (channelMemberNotifyProps channelMember)
+            | otherwise -> return ()
+
         -- We are pretty sure we should do something about these:
         WMAddedToTeam -> return ()
 
@@ -344,7 +352,6 @@ handleWSEvent we = do
         WMTeamDeleted -> return ()
         WMUserUpdated -> return ()
         WMLeaveTeam -> return ()
-        WMChannelMemberUpdated {} -> return ()
 
         -- We deliberately ignore these events:
         WMChannelCreated -> return ()

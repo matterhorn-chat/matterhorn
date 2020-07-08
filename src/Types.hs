@@ -481,8 +481,10 @@ hasUnread' :: ClientChannel -> Bool
 hasUnread' chan = fromMaybe False $ do
     let info = _ccInfo chan
     lastViewTime <- _cdViewed info
-    return $ ((_cdUpdated info) > lastViewTime) ||
-             (isJust $ _cdEditedMessageThreshold info)
+    return $ _cdMentionCount info > 0 ||
+             (not (isMuted chan) &&
+              ((_cdUpdated info) > lastViewTime) ||
+              (isJust $ _cdEditedMessageThreshold info))
 
 mkChannelZipperList :: UTCTime
                     -> Config
