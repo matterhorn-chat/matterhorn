@@ -50,5 +50,5 @@ renderUrlList st =
                   ] ) <=>
             (vLimit 1 (renderText $ link^.linkURL))
 
-        attr True = forceAttr "urlListSelectedAttr"
+        attr True = forceAttr urlListSelectedAttr
         attr False = id
