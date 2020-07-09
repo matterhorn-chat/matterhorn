@@ -147,7 +147,7 @@ should consider to make submitting patches easier for all concerned:
    helps when contributors are aware of these. Please see
    [our practices document](docs/PRACTICES.md) for more information.
 
-## Building
+# Building
 
 If you just want to run Matterhorn, we strongly suggest running a binary
 release (see above). *Building from source is only recommended if you
