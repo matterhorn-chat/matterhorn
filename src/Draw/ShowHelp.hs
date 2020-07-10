@@ -392,12 +392,18 @@ themeHelp = overrideAttr codeAttr helpEmphAttr $ vBox
         " * *<option>.bg = <color>*\n" <>
         " * *<option>.style = <style>* or *<option>.style = [<style>, ...]*\n"
 
-  , padTop (Pad 1) $ hCenter $ hLimit 72 $ renderText $
+  , padTop (Pad 1) $ hCenter $ hLimit 72 $
         let names = sort $
-                    (\(n, msg) -> (attrNameToConfig n, msg)) <$>
+                    (\(n, msg) -> (n, attrNameToConfig n, msg)) <$>
                     (M.toList $ themeDescriptions themeDocs)
-            mkEntry (opt, msg) = "*" <> opt <> "*\n" <> msg <> "\n"
-        in T.concat $ mkEntry <$> names
+            mkEntry (n, opt, msg) =
+                vBox [ hBox [ withDefAttr clientEmphAttr $ txt opt
+                            , txt " "
+                            , forceAttr n $ txt "(demo)"
+                            ]
+                     , txt msg
+                     ]
+        in vBox $ mkEntry <$> names
   ]
 
 attrNameToConfig :: AttrName -> Text
