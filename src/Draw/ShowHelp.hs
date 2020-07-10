@@ -397,9 +397,11 @@ themeHelp = overrideAttr codeAttr helpEmphAttr $ vBox
                     (\(n, msg) -> (n, attrNameToConfig n, msg)) <$>
                     (M.toList $ themeDescriptions themeDocs)
             mkEntry (n, opt, msg) =
+                padBottom (Pad 1) $
                 vBox [ hBox [ withDefAttr clientEmphAttr $ txt opt
                             , txt " "
-                            , forceAttr n $ txt "(demo)"
+                            , vLimit 1 $
+                              fill ' ' <+> (forceAttr n $ txt "(demo)")
                             ]
                      , txt msg
                      ]
