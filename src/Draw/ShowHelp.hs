@@ -399,9 +399,7 @@ themeHelp = overrideAttr codeAttr helpEmphAttr $ vBox
             mkEntry (n, opt, msg) =
                 padBottom (Pad 1) $
                 vBox [ hBox [ withDefAttr clientEmphAttr $ txt opt
-                            , txt " "
-                            , vLimit 1 $
-                              fill ' ' <+> (forceAttr n $ txt "(demo)")
+                            , padLeft Max $ forceAttr n $ txt "(demo)"
                             ]
                      , txt msg
                      ]
