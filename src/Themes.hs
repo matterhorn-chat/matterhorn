@@ -229,18 +229,20 @@ defaultTheme :: InternalTheme
 defaultTheme = darkColorTheme
 
 lightColorTheme :: InternalTheme
-lightColorTheme = InternalTheme name theme
+lightColorTheme = InternalTheme name theme desc
     where
         theme = newTheme def $ lightAttrs usernameColors16
         name = "builtin:light"
         def = black `on` white
+        desc = "A color theme for terminal windows with light background colors"
 
 lightColor256Theme :: InternalTheme
-lightColor256Theme = InternalTheme name theme
+lightColor256Theme = InternalTheme name theme desc
     where
         theme = newTheme def $ lightAttrs usernameColors256
         name = "builtin:light256"
         def = black `on` white
+        desc = "Like builtin:light, but with 256-color username colors"
 
 lightAttrs :: [Attr] -> [(AttrName, Attr)]
 lightAttrs usernameColors =
@@ -356,18 +358,20 @@ skipBaseCodeblockAttr :: (AttrName, Attr) -> Bool
 skipBaseCodeblockAttr = ((/= highlightedCodeBlockAttr) . fst)
 
 darkColorTheme :: InternalTheme
-darkColorTheme = InternalTheme name theme
+darkColorTheme = InternalTheme name theme desc
     where
         theme = newTheme def $ darkAttrs usernameColors16
         name = "builtin:dark"
         def = defAttr
+        desc = "A color theme for terminal windows with dark background colors"
 
 darkColor256Theme :: InternalTheme
-darkColor256Theme = InternalTheme name theme
+darkColor256Theme = InternalTheme name theme desc
     where
         theme = newTheme def $ darkAttrs usernameColors256
         name = "builtin:dark256"
         def = defAttr
+        desc = "Like builtin:dark, but with 256-color username colors"
 
 usernameAttr :: Int -> AttrName
 usernameAttr i = "username" <> (attrName $ show i)

@@ -30,5 +30,7 @@ drawThemeListOverlay st =
 renderInternalTheme :: Bool -> InternalTheme -> Widget Name
 renderInternalTheme foc it =
     (if foc then forceAttr L.listSelectedFocusedAttr else id) $
-    padRight Max $
-    txt $ internalThemeName it
+    (padRight Max $
+     txt $ internalThemeName it) <=>
+    (vLimit 2 $
+     (padLeft (Pad 2) $ txtWrap $ internalThemeDesc it) <=> fill ' ')

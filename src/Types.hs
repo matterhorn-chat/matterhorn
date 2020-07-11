@@ -1403,7 +1403,7 @@ nullChannelListOverlayState =
 
 nullThemeListOverlayState :: ListOverlayState InternalTheme ()
 nullThemeListOverlayState =
-    let newList rs = list ThemeListSearchResults rs 1
+    let newList rs = list ThemeListSearchResults rs 3
     in ListOverlayState { _listOverlaySearchResults  = newList mempty
                         , _listOverlaySearchInput    = editor ThemeListSearchInput (Just 1) ""
                         , _listOverlaySearchScope    = ()
@@ -1463,6 +1463,7 @@ data PostListOverlayState =
 data InternalTheme =
     InternalTheme { internalThemeName :: Text
                   , internalTheme :: Theme
+                  , internalThemeDesc :: Text
                   }
 
 -- | The state of the search result list overlay. Type 'a' is the type

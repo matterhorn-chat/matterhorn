@@ -67,7 +67,9 @@ getThemesMatching :: ()
                   -> IO (Vec.Vector InternalTheme)
 getThemesMatching _ _ searchString = do
     let matching = filter matches internalThemes
-        matches t = T.toLower searchString `T.isInfixOf` T.toLower (internalThemeName t)
+        search = T.toLower searchString
+        matches t = search `T.isInfixOf` T.toLower (internalThemeName t) ||
+                    search `T.isInfixOf` T.toLower (internalThemeDesc t)
     return $ Vec.fromList matching
 
 setInternalTheme :: InternalTheme -> MH Bool
