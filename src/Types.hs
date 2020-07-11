@@ -58,6 +58,7 @@ module Types
   , RequestChan
   , UserFetch(..)
   , writeBChan
+  , InternalTheme(..)
 
   , attrNameToConfig
 
@@ -83,6 +84,7 @@ module Types
   , csPostMap
   , csRecentChannel
   , csReturnChannel
+  , csThemeListOverlay
   , csPostListOverlay
   , csUserListOverlay
   , csChannelListOverlay
@@ -274,6 +276,7 @@ import           Prelude.MH
 import qualified Graphics.Vty as Vty
 import qualified Brick
 import           Brick ( EventM, Next, Widget )
+import           Brick.Themes ( Theme )
 import           Brick.Main ( invalidateCache, invalidateCacheEntry )
 import           Brick.AttrMap ( AttrMap )
 import qualified Brick.BChan as BCH
@@ -641,9 +644,11 @@ data Name =
     | JoinChannelList
     | UrlList
     | MessagePreviewViewport
+    | ThemeListSearchInput
     | UserListSearchInput
     | JoinChannelListSearchInput
     | UserListSearchResults
+    | ThemeListSearchResults
     | ViewMessageArea
     | ViewMessageReactionsArea
     | ChannelSidebar
@@ -1065,6 +1070,7 @@ data Mode =
     | UserListOverlay
     | ReactionEmojiListOverlay
     | ChannelListOverlay
+    | ThemeListOverlay
     | ViewMessage
     | ManageAttachments
     | ManageAttachmentsBrowseFiles
@@ -1296,6 +1302,8 @@ data ChatState =
               -- queue length if so.
               , _csMessageSelect :: MessageSelectState
               -- ^ The state of message selection mode.
+              , _csThemeListOverlay :: ListOverlayState InternalTheme ()
+              -- ^ The state of the theme list overlay.
               , _csPostListOverlay :: PostListOverlayState
               -- ^ The state of the post list overlay.
               , _csUserListOverlay :: ListOverlayState UserInfo UserSearchScope
@@ -1371,6 +1379,7 @@ newState (StartupStateInfo {..}) = do
                      , _csConnectionStatus            = Connected
                      , _csWorkerIsBusy                = Nothing
                      , _csMessageSelect               = MessageSelectState Nothing
+                     , _csThemeListOverlay            = nullThemeListOverlayState
                      , _csPostListOverlay             = PostListOverlayState emptyDirSeq Nothing
                      , _csUserListOverlay             = nullUserListOverlayState
                      , _csChannelListOverlay          = nullChannelListOverlayState
@@ -1386,6 +1395,18 @@ nullChannelListOverlayState =
     in ListOverlayState { _listOverlaySearchResults  = newList mempty
                         , _listOverlaySearchInput    = editor JoinChannelListSearchInput (Just 1) ""
                         , _listOverlaySearchScope    = AllChannels
+                        , _listOverlaySearching      = False
+                        , _listOverlayEnterHandler   = const $ return False
+                        , _listOverlayNewList        = newList
+                        , _listOverlayFetchResults   = const $ const $ const $ return mempty
+                        }
+
+nullThemeListOverlayState :: ListOverlayState InternalTheme ()
+nullThemeListOverlayState =
+    let newList rs = list ThemeListSearchResults rs 1
+    in ListOverlayState { _listOverlaySearchResults  = newList mempty
+                        , _listOverlaySearchInput    = editor ThemeListSearchInput (Just 1) ""
+                        , _listOverlaySearchScope    = ()
                         , _listOverlaySearching      = False
                         , _listOverlayEnterHandler   = const $ return False
                         , _listOverlayNewList        = newList
@@ -1438,6 +1459,11 @@ data PostListOverlayState =
     PostListOverlayState { _postListPosts    :: Messages
                          , _postListSelected :: Maybe PostId
                          }
+
+data InternalTheme =
+    InternalTheme { internalThemeName :: Text
+                  , internalTheme :: Theme
+                  }
 
 -- | The state of the search result list overlay. Type 'a' is the type
 -- of data in the list. Type 'b' is the search scope type.

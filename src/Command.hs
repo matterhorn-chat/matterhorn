@@ -30,9 +30,9 @@ import           State.Channels
 import           State.ChannelSelect
 import           State.Logging
 import           State.PostListOverlay
-import           State.Themes
 import           State.UserListOverlay
 import           State.ChannelListOverlay
+import           State.ThemeListOverlay
 import           State.Common ( postInfoMessage )
 import           State.Users
 import           Themes ( attrForUsername )
@@ -132,7 +132,7 @@ commandList =
       joinChannelByName n
 
   , Cmd "theme" "List the available themes" NoArg $ \ () ->
-      listThemes
+      enterThemeListMode
 
   , Cmd "theme" "Set the color theme"
     (TokenArg "theme" NoArg) $ \ (themeName, ()) ->

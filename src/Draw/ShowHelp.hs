@@ -28,6 +28,7 @@ import           Events.ChannelSelect
 import           Events.Keybindings
 import           Events.Main
 import           Events.MessageSelect
+import           Events.ThemeListOverlay
 import           Events.PostListOverlay
 import           Events.ShowHelp
 import           Events.UrlSelect
@@ -416,6 +417,7 @@ keybindSections =
     , ("Message Select Mode", messageSelectKeyHandlers)
     , ("Text Editing", editingKeyHandlers (csEditState.cedEditor))
     , ("Flagged Messages", postListOverlayKeyHandlers)
+    , ("Theme List Window", themeListOverlayKeyHandlers)
     , ("User Listings", userListOverlayKeyHandlers)
     , ("Channel Search Window", channelListOverlayKeyHandlers)
     , ("Reaction Emoji Search Window", reactionEmojiListOverlayKeyHandlers)

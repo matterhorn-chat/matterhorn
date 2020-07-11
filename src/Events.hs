@@ -39,6 +39,7 @@ import           Events.Keybindings
 import           Events.LeaveChannelConfirm
 import           Events.Main
 import           Events.MessageSelect
+import           Events.ThemeListOverlay
 import           Events.PostListOverlay
 import           Events.ShowHelp
 import           Events.UrlSelect
@@ -191,6 +192,7 @@ handleGlobalEvent e = do
         MessageSelect              -> onEventMessageSelect e
         MessageSelectDeleteConfirm -> onEventMessageSelectDeleteConfirm e
         DeleteChannelConfirm       -> onEventDeleteChannelConfirm e
+        ThemeListOverlay           -> onEventThemeListOverlay e
         PostListOverlay _          -> onEventPostListOverlay e
         UserListOverlay            -> onEventUserListOverlay e
         ChannelListOverlay         -> onEventChannelListOverlay e

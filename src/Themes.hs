@@ -75,7 +75,7 @@ import           Graphics.Vty
 import qualified Skylighting.Styles as Sky
 import           Skylighting.Types ( TokenType(..) )
 
-import           Types ( specialUserMentions )
+import           Types ( InternalTheme(..), specialUserMentions )
 
 
 helpAttr :: AttrName
@@ -200,11 +200,6 @@ misspellingAttr = "misspelling"
 
 messageSelectStatusAttr :: AttrName
 messageSelectStatusAttr = "messageSelectStatus"
-
-data InternalTheme =
-    InternalTheme { internalThemeName :: Text
-                  , internalTheme     :: Theme
-                  }
 
 lookupTheme :: Text -> Maybe InternalTheme
 lookupTheme n = find ((== n) . internalThemeName) internalThemes

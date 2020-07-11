@@ -60,12 +60,12 @@ executable matterhorn
                        State.Messages
                        State.MessageSelect
                        State.PostListOverlay
+                       State.ThemeListOverlay
                        State.ReactionEmojiListOverlay
                        State.Reactions
                        State.Setup
                        State.Setup.Threads
                        State.Setup.Threads.Logging
-                       State.Themes
                        State.UrlSelect
                        State.ListOverlay
                        State.UserListOverlay
@@ -86,6 +86,7 @@ executable matterhorn
                        Draw.LeaveChannelConfirm
                        Draw.DeleteChannelConfirm
                        Draw.PostListOverlay
+                       Draw.ThemeListOverlay
                        Draw.UserListOverlay
                        Draw.ListOverlay
                        Draw.URLList
@@ -101,6 +102,7 @@ executable matterhorn
                        Events.Main
                        Events.ChannelSelect
                        Events.PostListOverlay
+                       Events.ThemeListOverlay
                        Events.UrlSelect
                        Events.UserListOverlay
                        Events.ChannelListOverlay

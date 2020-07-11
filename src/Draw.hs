@@ -12,6 +12,7 @@ import Lens.Micro.Platform ( _2, singular, _Just )
 import Draw.DeleteChannelConfirm
 import Draw.LeaveChannelConfirm
 import Draw.Main
+import Draw.ThemeListOverlay
 import Draw.PostListOverlay
 import Draw.ShowHelp
 import Draw.UserListOverlay
@@ -33,6 +34,7 @@ draw st =
         MessageSelect              -> drawMain True st
         MessageSelectDeleteConfirm -> drawMain True st
         DeleteChannelConfirm       -> drawDeleteChannelConfirm st
+        ThemeListOverlay           -> drawThemeListOverlay st
         PostListOverlay contents   -> drawPostListOverlay contents st
         UserListOverlay            -> drawUserListOverlay st
         ChannelListOverlay         -> drawChannelListOverlay st
