@@ -25,7 +25,7 @@ drawThemeListOverlay st =
                                   (const $ txt "No matching themes found.")
                                   (const $ txt "Search built-in themes:")
                                   renderInternalTheme
-    in joinBorders overlay : drawMain False st
+    in joinBorders overlay : drawMain True st
 
 renderInternalTheme :: Bool -> InternalTheme -> Widget Name
 renderInternalTheme foc it =
