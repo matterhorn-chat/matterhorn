@@ -33,7 +33,9 @@ import           State.PostListOverlay
 import           State.Themes
 import           State.UserListOverlay
 import           State.ChannelListOverlay
+import           State.Common ( postInfoMessage )
 import           State.Users
+import           Themes ( attrForUsername )
 import           Types
 
 
@@ -156,6 +158,10 @@ commandList =
     (UserArg NoArg) $ \ (name, ()) ->
         changeChannelByName name
 
+  , Cmd "username-attribute" "Display the attribute used to color the specified username"
+    (UserArg NoArg) $ \ (name, ()) ->
+        displayUsernameAttribute name
+
   , Cmd "msg" "Go to a user's channel and send the specified message or command"
     (UserArg $ LineArg "message or command") $ \ (name, msg) -> do
         withFetchedUserMaybe (UserFetchByUsername name) $ \foundUser -> do
@@ -249,6 +255,13 @@ commandList =
       enterSearchResultPostListMode
 
   ]
+
+displayUsernameAttribute :: Text -> MH ()
+displayUsernameAttribute name = do
+    let an = attrForUsername trimmed
+        trimmed = trimUserSigil name
+    postInfoMessage $ "The attribute used for " <> userSigil <> trimmed <>
+                      " is " <> (attrNameToConfig an)
 
 execMMCommand :: Text -> Text -> MH ()
 execMMCommand name rest = do

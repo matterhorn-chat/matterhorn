@@ -406,9 +406,6 @@ themeHelp = overrideAttr codeAttr helpEmphAttr $ vBox
         in vBox $ mkEntry <$> names
   ]
 
-attrNameToConfig :: AttrName -> Text
-attrNameToConfig = T.pack . intercalate "." . attrNameComponents
-
 keybindSections :: [(Text, [KeyEventHandler])]
 keybindSections =
     [ ("Global Keybindings", globalKeyHandlers)
