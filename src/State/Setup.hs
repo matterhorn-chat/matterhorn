@@ -151,6 +151,7 @@ setupState mkVty mLogLocation config = do
                  result <- loadCustomizations absPath baseTheme
                  case result of
                      Left e -> do
+                         Vty.shutdown teamSelVty
                          putStrLn $ "Error loading theme customization from " <> show absPath <> ": " <> e
                          exitFailure
                      Right t -> return t
