@@ -96,7 +96,11 @@ sendMessage chanId mode msg attachments =
         status <- use csConnectionStatus
         case status of
             Disconnected -> do
-                let m = "Cannot send messages while disconnected."
+                let m = T.concat [ "Cannot send messages while disconnected. Enable logging to "
+                                 , "get disconnection information. If Matterhorn's reconnection "
+                                 , "attempts are failing, use `/reconnect` to attempt to "
+                                 , "reconnect manually."
+                                 ]
                 mhError $ GenericError m
             Connected -> do
                 session <- getSession
