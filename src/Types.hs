@@ -59,6 +59,8 @@ module Types
   , UserFetch(..)
   , writeBChan
 
+  , attrNameToConfig
+
   , mkChannelZipperList
   , ChannelListGroup(..)
 
@@ -1975,6 +1977,9 @@ getHighlightSet st =
                  , hChannelSet = getChannelNameSet $ st^.csChannels
                  , hSyntaxMap = st^.csResources.crSyntaxMap
                  }
+
+attrNameToConfig :: Brick.AttrName -> Text
+attrNameToConfig = T.pack . intercalate "." . Brick.attrNameComponents
 
 -- From: https://docs.mattermost.com/help/messaging/mentioning-teammates.html
 specialUserMentions :: [T.Text]
