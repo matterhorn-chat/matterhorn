@@ -73,7 +73,7 @@ getThemesMatching _ _ searchString = do
 setInternalTheme :: InternalTheme -> MH Bool
 setInternalTheme t = do
     setTheme $ internalThemeName t
-    return True
+    return False
 
 setTheme :: Text -> MH ()
 setTheme name =
