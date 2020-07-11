@@ -31,7 +31,7 @@
 | `Up` | `scroll-up` | Scroll up in the channel input history |
 | `Down` | `scroll-down` | Scroll down in the channel input history |
 | `PgUp` | `page-up` | Page up in the channel message list (enters message select mode) |
-| `Home` | `scroll-top` | Scroll to top of channel message list |
+| `S-Home` | `select-oldest-message` | Scroll to top of channel message list |
 | `C-n` | `focus-next-channel` | Change to the next channel in the channel list |
 | `C-p` | `focus-prev-channel` | Change to the previous channel in the channel list |
 | `M-a` | `focus-next-unread` | Change to the next channel with unread messages or return to the channel marked '~' |
@@ -113,6 +113,16 @@
 | `j`, `Down` | `select-down` | Select the next message |
 | `f` | `flag-message` | Toggle the selected message flag |
 | `Enter` | `activate-list-item` | Jump to and select current message |
+
+# Theme List Window
+| Keybinding | Event Name | Description |
+| ---------- | ---------- | ----------- |
+| `Esc`, `C-c` | `cancel` | Close the theme list |
+| `C-p`, `Up` | `search-select-up` | Select the previous theme |
+| `C-n`, `Down` | `search-select-down` | Select the next theme |
+| `PgDown` | `page-down` | Page down in the theme list |
+| `PgUp` | `page-up` | Page up in the theme list |
+| `Enter` | `activate-list-item` | Switch to the selected color theme |
 
 # User Listings
 | Keybinding | Event Name | Description |

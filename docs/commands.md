@@ -16,7 +16,7 @@
 | `/hide` | Hide the current DM or group channel from the channel list |
 | `/join` | Find a channel to join |
 | `/join <~channel>` | Join the specified channel |
-| `/leave` | Leave the current channel |
+| `/leave` | Leave a normal channel or hide a DM channel |
 | `/left` | Focus on the previous channel |
 | `/log-mark <message>` | Add a custom marker message to the Matterhorn debug log |
 | `/log-snapshot <path>` | Dump the current debug log buffer to the specified path |
@@ -44,3 +44,4 @@
 | `/toggle-channel-list` | Toggle channel list visibility |
 | `/topic <topic>` | Set the current channel's topic (header) |
 | `/user` | Show users to initiate a private DM chat channel |
+| `/username-attribute <@user>` | Display the attribute used to color the specified username |
