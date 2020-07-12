@@ -327,7 +327,9 @@ themeHelp = overrideAttr codeAttr helpEmphAttr $ vBox
         "  \n" <>
         "Theme customization files are INI-style files that can customize any " <>
         "foreground color, background color, or style of any aspect of the " <>
-        "Matterhorn user interface. Here is an example:\n" <>
+        "Matterhorn user interface. Here is an example:"
+
+  , padTop (Pad 1) $ hCenter $ hLimit 72 $ padRight Max $ renderText $
         "```\n" <>
         "[default]\n" <>
         "default.fg = blue\n" <>
@@ -339,13 +341,17 @@ themeHelp = overrideAttr codeAttr helpEmphAttr $ vBox
         attrNameToConfig clientEmphAttr <> ".fg = cyan\n" <>
         attrNameToConfig clientEmphAttr <> ".style = [bold, underline]\n" <>
         attrNameToConfig listSelectedFocusedAttr <> ".fg = brightGreen\n" <>
-        "```\n" <>
+        "```"
+
+  , padTop (Pad 1) $ hCenter $ hLimit 72 $ padRight Max $ renderText $
         "In the example above, the theme's default foreground and background colors " <>
         "are both customized to *blue* and *black*, respectively. The *default* section " <>
         "contains only customizations for the *default* attribute. All other customizations " <>
         "go in the *other* section. We can also set the style for attributes; we can either " <>
         "set just one style (as with the bold setting above) or multiple styles at once " <>
-        "(as in the bold/underline example).\n\n" <>
+        "(as in the bold/underline example).\n"
+
+  , padTop (Pad 1) $ hCenter $ hLimit 72 $ padRight Max $ renderText $
         "Available colors are:\n" <>
         " * black\n" <>
         " * red\n" <>
@@ -362,8 +368,9 @@ themeHelp = overrideAttr codeAttr helpEmphAttr $ vBox
         " * brightBlue\n" <>
         " * brightMagenta\n" <>
         " * brightCyan\n" <>
-        " * brightWhite\n" <>
-        "  \n" <>
+        " * brightWhite"
+
+  , padTop (Pad 1) $ hCenter $ hLimit 72 $ padRight Max $ renderText $
         "Available styles are:\n" <>
         " * standout\n" <>
         " * underline\n" <>
@@ -392,7 +399,9 @@ themeHelp = overrideAttr codeAttr helpEmphAttr $ vBox
         "This section lists all possible theme attributes for use in customization " <>
         "files along with a description of how each one is used in Matterhorn. Each " <>
         "option listed can be set in the *other* section of the customization file. " <>
-        "Each provides three customization settings:\n" <>
+        "Each provides three customization settings:"
+
+  , padTop (Pad 1) $ hCenter $ hLimit 72 $ padRight Max $ renderText $
         " * *<option>.fg = <color>*\n" <>
         " * *<option>.bg = <color>*\n" <>
         " * *<option>.style = <style>* or *<option>.style = [<style>, ...]*\n"
