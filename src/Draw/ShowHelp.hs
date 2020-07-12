@@ -123,10 +123,13 @@ drawHelpTopics =
         hCenter $ renderText "Learn more about these topics with `/help <topic>`:") <=>
        (hCenter $ vBox allHelpTopics)
 
+helpContentWidth :: Int
+helpContentWidth = 72
+
 scriptHelp :: Widget Name
 scriptHelp = vBox
   [ padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Using Scripts"
-  , padTop (Pad 1) $ hCenter $ hLimit 100 $ vBox scriptHelpText
+  , padTop (Pad 1) $ hCenter $ hLimit helpContentWidth $ vBox scriptHelpText
   ]
   where scriptHelpText = map (padTop (Pad 1) . renderText . mconcat)
           [ [ "Matterhorn has a special feature that allows you to use "
@@ -187,7 +190,7 @@ keybindingTextTable kc = title <> keybindSectionStrings
               "\n" <> (T.replicate (T.length n) "=")
 
 keybindingHelp :: KeyConfig -> Widget Name
-keybindingHelp kc = hCenter $ hLimit 100 $ vBox $
+keybindingHelp kc = hCenter $ hLimit helpContentWidth $ vBox $
   [ padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Configurable Keybindings"
   , padTop (Pad 1) $ hCenter $ vBox keybindingHelpText
   ] ++ keybindSectionWidgets
@@ -284,7 +287,7 @@ keybindingHelp kc = hCenter $ hLimit 100 $ vBox $
           ]
 
 para :: Text -> Widget a
-para t = padTop (Pad 1) $ hCenter (hLimit 72 $ padRight Max $ renderText t)
+para t = padTop (Pad 1) $ hCenter (hLimit helpContentWidth $ padRight Max $ renderText t)
 
 syntaxHighlightHelp :: [FilePath] -> Widget a
 syntaxHighlightHelp dirs = overrideAttr codeAttr helpEmphAttr $ vBox
@@ -313,12 +316,12 @@ themeHelp = overrideAttr codeAttr helpEmphAttr $ vBox
   , padTop (Pad 1) $ hCenter $ renderText "Matterhorn provides these built-in color themes:"
   , padTop (Pad 1) $ vBox $ hCenter <$> withDefAttr helpEmphAttr <$>
                             txt <$> internalThemeName <$> internalThemes
-  , padTop (Pad 1) $ hCenter $ hLimit 72 $ renderText $
+  , padTop (Pad 1) $ hCenter $ hLimit helpContentWidth $ renderText $
         "These themes can be selected with the */theme* command. To automatically " <>
         "select a theme at startup, set the *theme* configuration file option to one " <>
         "of the themes listed above."
   , padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Customizing the Theme"
-  , padTop (Pad 1) $ hCenter $ hLimit 72 $ renderText $
+  , padTop (Pad 1) $ hCenter $ hLimit helpContentWidth $ renderText $
         "Theme customization is also supported. To customize the selected theme, " <>
         "create a theme customization file and set the `themeCustomizationFile` " <>
         "configuration option to the path to the customization file. If the path " <>
@@ -329,7 +332,7 @@ themeHelp = overrideAttr codeAttr helpEmphAttr $ vBox
         "foreground color, background color, or style of any aspect of the " <>
         "Matterhorn user interface. Here is an example:"
 
-  , padTop (Pad 1) $ hCenter $ hLimit 72 $ padRight Max $ renderText $
+  , padTop (Pad 1) $ hCenter $ hLimit helpContentWidth $ padRight Max $ renderText $
         "```\n" <>
         "[default]\n" <>
         "default.fg = blue\n" <>
@@ -343,7 +346,7 @@ themeHelp = overrideAttr codeAttr helpEmphAttr $ vBox
         attrNameToConfig listSelectedFocusedAttr <> ".fg = brightGreen\n" <>
         "```"
 
-  , padTop (Pad 1) $ hCenter $ hLimit 72 $ padRight Max $ renderText $
+  , padTop (Pad 1) $ hCenter $ hLimit helpContentWidth $ padRight Max $ renderText $
         "In the example above, the theme's default foreground and background colors " <>
         "are both customized to *blue* and *black*, respectively. The *default* section " <>
         "contains only customizations for the *default* attribute. All other customizations " <>
@@ -351,7 +354,7 @@ themeHelp = overrideAttr codeAttr helpEmphAttr $ vBox
         "set just one style (as with the bold setting above) or multiple styles at once " <>
         "(as in the bold/underline example).\n"
 
-  , padTop (Pad 1) $ hCenter $ hLimit 72 $ padRight Max $ renderText $
+  , padTop (Pad 1) $ hCenter $ hLimit helpContentWidth $ padRight Max $ renderText $
         "Available colors are:\n" <>
         " * black\n" <>
         " * red\n" <>
@@ -370,7 +373,7 @@ themeHelp = overrideAttr codeAttr helpEmphAttr $ vBox
         " * brightCyan\n" <>
         " * brightWhite"
 
-  , padTop (Pad 1) $ hCenter $ hLimit 72 $ padRight Max $ renderText $
+  , padTop (Pad 1) $ hCenter $ hLimit helpContentWidth $ padRight Max $ renderText $
         "Available styles are:\n" <>
         " * standout\n" <>
         " * underline\n" <>
@@ -380,7 +383,7 @@ themeHelp = overrideAttr codeAttr helpEmphAttr $ vBox
         " * dim\n" <>
         " * bold\n"
 
-  , padTop (Pad 1) $ hCenter $ hLimit 72 $ renderText $
+  , padTop (Pad 1) $ hCenter $ hLimit helpContentWidth $ renderText $
         "It is also possible to specify RGB values using HTML syntax: `#RRGGBB`. " <>
         "Bear in mind that such colors are clamped to the nearest 256-color palette " <>
         "entry, so it is not possible to get the exact color specified.\n\n" <>
@@ -389,24 +392,24 @@ themeHelp = overrideAttr codeAttr helpEmphAttr $ vBox
         "use the terminal emulator's default foreground or background color of " <>
         "choice rather than a specific ANSI color."
   , padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Username Highlighting"
-  , padTop (Pad 1) $ hCenter $ hLimit 72 $ renderText $
+  , padTop (Pad 1) $ hCenter $ hLimit helpContentWidth $ renderText $
         "Username colors are chosen by hashing each username and then using the hash " <>
         "to choose a color from a list of predefined username colors. If you would like " <>
         "to change the color in a given entry of this list, we provide the " <>
         "\"username.N\" attributes, where N is the index in the username color list."
   , padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Theme Attributes"
-  , padTop (Pad 1) $ hCenter $ hLimit 72 $ renderText $
+  , padTop (Pad 1) $ hCenter $ hLimit helpContentWidth $ renderText $
         "This section lists all possible theme attributes for use in customization " <>
         "files along with a description of how each one is used in Matterhorn. Each " <>
         "option listed can be set in the *other* section of the customization file. " <>
         "Each provides three customization settings:"
 
-  , padTop (Pad 1) $ hCenter $ hLimit 72 $ padRight Max $ renderText $
+  , padTop (Pad 1) $ hCenter $ hLimit helpContentWidth $ padRight Max $ renderText $
         " * *<option>.fg = <color>*\n" <>
         " * *<option>.bg = <color>*\n" <>
         " * *<option>.style = <style>* or *<option>.style = [<style>, ...]*\n"
 
-  , padTop (Pad 1) $ hCenter $ hLimit 72 $
+  , padTop (Pad 1) $ hCenter $ hLimit helpContentWidth $
         let names = sort $
                     (\(n, msg) -> (n, attrNameToConfig n, msg)) <$>
                     (M.toList $ themeDescriptions themeDocs)
@@ -499,7 +502,7 @@ keybindEventHelpWidget (evName, desc, evs) =
         label = case evName of
             Left s -> txt $ "; " <> s
             Right s -> withDefAttr helpEmphAttr $ txt s
-    in vBox [ txt (padTo 72 ("; " <> desc))
+    in vBox [ txt (padTo helpContentWidth ("; " <> desc))
             , label <+> txt (" = " <> evText)
             , str " "
             ]
