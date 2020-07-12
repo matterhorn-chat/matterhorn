@@ -64,13 +64,13 @@ helpTopicDraw topic st =
 mainHelp :: KeyConfig -> Widget Name
 mainHelp kc = commandHelp
   where
-    commandHelp = vBox $ [ padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ str mhVersion
-                         , hCenter $ withDefAttr helpEmphAttr $ str mmApiVersion
-                         , padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Help Topics"
-                         , drawHelpTopics
-                         , padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Commands"
-                         , mkCommandHelpText
-                         , padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Keybindings"
+    commandHelp = vBox $ [ heading $ T.pack mhVersion
+                         , headingNoPad $ T.pack mmApiVersion
+                         , heading "Help Topics"
+                         , padTop (Pad 1) drawHelpTopics
+                         , heading "Commands"
+                         , padTop (Pad 1) mkCommandHelpText
+                         , heading "Keybindings"
                          ] <>
                          (mkKeybindingHelp kc <$> keybindSections)
 
@@ -128,7 +128,7 @@ helpContentWidth = 72
 
 scriptHelp :: Widget Name
 scriptHelp = vBox
-  [ padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Using Scripts"
+  [ heading "Using Scripts"
   , padTop (Pad 1) $ hCenter $ hLimit helpContentWidth $ vBox scriptHelpText
   ]
   where scriptHelpText = map (para . mconcat)
@@ -191,16 +191,15 @@ keybindingTextTable kc = title <> keybindSectionStrings
 
 keybindingHelp :: KeyConfig -> Widget Name
 keybindingHelp kc = hCenter $ hLimit helpContentWidth $ vBox $
-  [ padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Configurable Keybindings"
-  , padTop (Pad 1) $ hCenter $ vBox keybindingHelpText
+  [ heading "Configurable Keybindings"
+  , padBottom (Pad 1) $ vBox keybindingHelpText
   ] ++ keybindSectionWidgets
     ++
-  [ padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Keybinding Syntax"
-  , padTop (Pad 1) $ hCenter $ vBox validKeys
+  [ headingNoPad "Keybinding Syntax"
+  , vBox validKeys
   ]
   where keybindSectionWidgets = sectionWidget <$> keybindSections
-        sectionWidget = mkKeybindEventSectionHelp kc keybindEventHelpWidget vBox mkSectionHeading
-        mkSectionHeading = hCenter . padTop (Pad 1) . withDefAttr helpEmphAttr . txt
+        sectionWidget = mkKeybindEventSectionHelp kc keybindEventHelpWidget vBox headingNoPad
 
         keybindingHelpText = map (para . mconcat)
           [ [ "Many of the keybindings used in Matterhorn can be "
@@ -289,9 +288,16 @@ keybindingHelp kc = hCenter $ hLimit helpContentWidth $ vBox $
 para :: Text -> Widget a
 para t = padTop (Pad 1) $ renderText t
 
+heading :: Text -> Widget a
+heading = padTop (Pad 1) . headingNoPad
+
+headingNoPad :: Text -> Widget a
+headingNoPad t = hCenter $ withDefAttr helpEmphAttr $ renderText t
+
 syntaxHighlightHelp :: [FilePath] -> Widget a
 syntaxHighlightHelp dirs = overrideAttr codeAttr helpEmphAttr $ hCenter $ hLimit helpContentWidth $ vBox
-  [ hCenter $ withDefAttr helpEmphAttr $ para "Syntax Highlighting"
+  [ heading "Syntax Highlighting"
+
   , para $ "Matterhorn supports syntax highlighting in Markdown code blocks when the " <>
            "name of the code block language follows the block opening sytnax:"
   , para $ "```<language>"
@@ -312,7 +318,7 @@ syntaxHighlightHelp dirs = overrideAttr codeAttr helpEmphAttr $ hCenter $ hLimit
 
 themeHelp :: Widget a
 themeHelp = overrideAttr codeAttr helpEmphAttr $ hCenter $ hLimit helpContentWidth $ vBox
-  [ padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Using Themes"
+  [ heading "Using Themes"
   , padTop (Pad 1) $ hCenter $ renderText "Matterhorn provides these built-in color themes:"
   , padTop (Pad 1) $ vBox $ hCenter <$> withDefAttr helpEmphAttr <$>
                             txt <$> internalThemeName <$> internalThemes
@@ -320,7 +326,8 @@ themeHelp = overrideAttr codeAttr helpEmphAttr $ hCenter $ hLimit helpContentWid
         "These themes can be selected with the */theme* command. To automatically " <>
         "select a theme at startup, set the *theme* configuration file option to one " <>
         "of the themes listed above."
-  , padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Customizing the Theme"
+
+  , heading "Customizing the Theme"
   , para $
         "Theme customization is also supported. To customize the selected theme, " <>
         "create a theme customization file and set the `themeCustomizationFile` " <>
@@ -391,13 +398,15 @@ themeHelp = overrideAttr codeAttr helpEmphAttr $ hCenter $ hLimit helpContentWid
         "setting of an attribute. This value indicates that the attribute should " <>
         "use the terminal emulator's default foreground or background color of " <>
         "choice rather than a specific ANSI color."
-  , padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Username Highlighting"
+
+  , heading "Username Highlighting"
   , para $
         "Username colors are chosen by hashing each username and then using the hash " <>
         "to choose a color from a list of predefined username colors. If you would like " <>
         "to change the color in a given entry of this list, we provide the " <>
         "\"username.N\" attributes, where N is the index in the username color list."
-  , padTop (Pad 1) $ hCenter $ withDefAttr helpEmphAttr $ txt "Theme Attributes"
+
+  , heading "Theme Attributes"
   , para $
         "This section lists all possible theme attributes for use in customization " <>
         "files along with a description of how each one is used in Matterhorn. Each " <>
@@ -409,18 +418,17 @@ themeHelp = overrideAttr codeAttr helpEmphAttr $ hCenter $ hLimit helpContentWid
         " * *<option>.bg = <color>*\n" <>
         " * *<option>.style = <style>* or *<option>.style = [<style>, ...]*\n"
 
-  , padTop (Pad 1) $
-        let names = sort $
-                    (\(n, msg) -> (n, attrNameToConfig n, msg)) <$>
-                    (M.toList $ themeDescriptions themeDocs)
-            mkEntry (n, opt, msg) =
-                padBottom (Pad 1) $
-                vBox [ hBox [ withDefAttr clientEmphAttr $ txt opt
-                            , padLeft Max $ forceAttr n $ txt "(demo)"
-                            ]
-                     , txt msg
-                     ]
-        in vBox $ mkEntry <$> names
+  , let names = sort $
+                 (\(n, msg) -> (n, attrNameToConfig n, msg)) <$>
+                 (M.toList $ themeDescriptions themeDocs)
+        mkEntry (n, opt, msg) =
+            padTop (Pad 1) $
+            vBox [ hBox [ withDefAttr clientEmphAttr $ txt opt
+                        , padLeft Max $ forceAttr n $ txt "(demo)"
+                        ]
+                 , txt msg
+                 ]
+    in vBox $ mkEntry <$> names
   ]
 
 keybindSections :: [(Text, [KeyEventHandler])]
@@ -458,8 +466,8 @@ kbDescColumnWidth = 60
 
 mkKeybindingHelp :: KeyConfig -> (Text, [KeyEventHandler]) -> Widget Name
 mkKeybindingHelp kc (sectionName, kbs) =
-    (hCenter $ padTop (Pad 1) $ withDefAttr helpEmphAttr $ txt sectionName) <=>
-    (hCenter $ vBox $ snd <$> sortWith fst results)
+    (heading sectionName) <=>
+    (padTop (Pad 1) $ hCenter $ vBox $ snd <$> sortWith fst results)
     where
         results = mkKeybindHelp kc <$> kbs
 
