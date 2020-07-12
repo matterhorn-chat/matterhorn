@@ -508,9 +508,9 @@ keybindEventHelpWidget (evName, desc, evs) =
         label = case evName of
             Left s -> txt $ "; " <> s
             Right s -> withDefAttr helpEmphAttr $ txt s
-    in vBox [ txt (padTo helpContentWidth ("; " <> desc))
+    in padBottom (Pad 1) $
+       vBox [ txtWrap ("; " <> desc)
             , label <+> txt (" = " <> evText)
-            , str " "
             ]
 
 keybindEventHelpMarkdown :: (Either Text Text, Text, [Text]) -> Text
