@@ -30,7 +30,7 @@ drawThemeListOverlay st =
                                   (const $ txt "Search built-in themes:")
                                   renderInternalTheme
                                   (Just footer)
-                                  OverlayCenter
+                                  OverlayUpperRight
         footer = hBorder <=>
                  (hCenter $ hBox [ enter
                                  , txt $ " to change themes, "
