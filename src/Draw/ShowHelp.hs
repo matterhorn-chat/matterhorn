@@ -136,7 +136,7 @@ scriptHelp = heading "Using Scripts" <=> vBox scriptHelpText
              , "prewritten shell scripts to preprocess messages. "
              , "For example, this can allow you to run various filters over "
              , "your written text, do certain kinds of automated formatting, "
-             , "or just automatically cowsay-ify a message.\n" ]
+             , "or just automatically cowsay-ify a message." ]
            , [ "These scripts can be any kind of executable file, "
              , "as long as the file lives in "
              , "*~/.config/matterhorn/scripts* (unless you've explicitly "
@@ -148,24 +148,24 @@ scriptHelp = heading "Using Scripts" <=> vBox scriptHelpText
              , "that appeared on *stderr* is discarded; if it instead exits with "
              , "a failing exit code, your message is *not* sent, and you are "
              , "presented with whatever was printed on stderr as a "
-             , "local error message.\n" ]
-           , [ "To run a script, simply type\n" ]
-           , [ "> *> /sh [script-name] [my-message]*\n" ]
+             , "local error message." ]
+           , [ "To run a script, simply type" ]
+           , [ "> *> /sh [script-name] [my-message]*" ]
            , [ "And the script named *[script-name]* will be invoked with "
              , "the text of *[my-message]*. If the script does not exist, "
              , "or if it exists but is not marked as executable, you'll be "
-             , "presented with an appropriate error message.\n" ]
+             , "presented with an appropriate error message." ]
            , [ "For example, if you want to use a basic script to "
              , "automatically ROT13 your message, you can write a shell "
-             , "script using the standard Unix *tr* utility, like this:\n" ]
-           , [ "> *#!/bin/bash -e*\n"
-             , "> *tr '[A-Za-z]' '[N-ZA-Mn-za-m]'*\n\n" ]
+             , "script using the standard Unix *tr* utility, like this:" ]
+           , [ "> *#!/bin/bash -e*"
+             , "> *tr '[A-Za-z]' '[N-ZA-Mn-za-m]'*" ]
            , [ "Move this script to *~/.config/matterhorn/scripts/rot13* "
-             , "and be sure it's executable with\n" ]
-           , [ "> *$ chmod u+x ~/.config/matterhorn/scripts/rot13*\n\n" ]
+             , "and be sure it's executable with" ]
+           , [ "> *$ chmod u+x ~/.config/matterhorn/scripts/rot13*" ]
            , [ "after which you can send ROT13 messages with the "
              , "Matterhorn command " ]
-           , [ "> *> /sh rot13 Hello, world!*\n" ]
+           , [ "> *> /sh rot13 Hello, world!*" ]
            ]
 
 keybindingMarkdownTable :: KeyConfig -> Text
@@ -208,7 +208,7 @@ keybindingHelp kc = vBox $
             , "in your config file and use the event names listed below as "
             , "keys and the desired key sequence as values. "
             , "See the end of this page for documentation on the valid "
-            , "syntax for key sequences.\n"
+            , "syntax for key sequences."
             ]
           , [ "For example, by default, the keybinding to move to the next "
             , "channel in the public channel list is **"
@@ -218,34 +218,34 @@ keybindingHelp kc = vBox $
             , prevChanBinding
             , "**. You might want to remap these "
             , "to other keys: say, **C-j** and **C-k**. We can do this with the following "
-            , "configuration snippet:\n"
+            , "configuration snippet:"
             ]
           , [ "```ini\n"
             , "[KEYBINDINGS]\n"
             , "focus-next-channel = C-j\n"
             , "focus-prev-channel = C-k\n"
-            , "```\n"
+            , "```"
             ]
           , [ "You can remap a command to more than one key sequence, in which "
             , "case any one of the key sequences provided can be used to invoke "
             , "the relevant command. To do this, provide the desired bindings as "
             , "a comma-separated list. Additionally, some key combinations are "
             , "used in multiple modes (such as URL select or help viewing) and "
-            , "therefore share the same name, such as **cancel** or **scroll-up**.\n"
+            , "therefore share the same name, such as **cancel** or **scroll-up**."
             ]
           , [ "Additionally, some keys simply cannot be remapped, mostly in the "
             , "case of editing keybindings. If you feel that a particular key "
             , "event should be rebindable and isn't, then please feel free to "
-            , "let us know by posting an issue in the Matterhorn issue tracker.\n"
+            , "let us know by posting an issue in the Matterhorn issue tracker."
             ]
           , [ "It is also possible to entirely unbind a key event by setting its "
             , "key to **unbound**, thus avoiding conflicts between default bindings "
-            , "and new ones:\n"
+            , "and new ones:"
             ]
           , [ "```ini\n"
             , "[KEYBINDINGS]\n"
             , "focus-next-channel = unbound\n"
-            , "```\n"
+            , "```"
             ]
           , [ "The rebindable key events, along with their **current** "
             , "values, are as follows:"
@@ -339,8 +339,9 @@ themeHelp = vBox
         "create a theme customization file and set the `themeCustomizationFile` " <>
         "configuration option to the path to the customization file. If the path " <>
         "to the file is relative, Matterhorn will look for it in the same directory " <>
-        "as the Matterhorn configuration file.\n" <>
-        "  \n" <>
+        "as the Matterhorn configuration file."
+
+  , para $
         "Theme customization files are INI-style files that can customize any " <>
         "foreground color, background color, or style of any aspect of the " <>
         "Matterhorn user interface. Here is an example:"
