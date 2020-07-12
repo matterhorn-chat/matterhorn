@@ -371,8 +371,12 @@ themeHelp = overrideAttr codeAttr helpEmphAttr $ vBox
         " * reverseVideo\n" <>
         " * blink\n" <>
         " * dim\n" <>
-        " * bold\n" <>
-        "  \n" <>
+        " * bold\n"
+
+  , padTop (Pad 1) $ hCenter $ hLimit 72 $ renderText $
+        "It is also possible to specify RGB values using HTML syntax: `#RRGGBB`. " <>
+        "Bear in mind that such colors are clamped to the nearest 256-color palette " <>
+        "entry, so it is not possible to get the exact color specified.\n\n" <>
         "In addition, a special value of *default* is possible for either color " <>
         "setting of an attribute. This value indicates that the attribute should " <>
         "use the terminal emulator's default foreground or background color of " <>
