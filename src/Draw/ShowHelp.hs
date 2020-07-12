@@ -80,7 +80,7 @@ mainHelp kc = summary
 
     mkCommandHelpText :: Widget Name
     mkCommandHelpText =
-      let commandNameWidth = 4 + (maximum $ T.length <$> fst <$> commandHelpInfo)
+      let commandNameWidth = 2 + (maximum $ T.length <$> fst <$> commandHelpInfo)
       in vBox [ (withDefAttr helpEmphAttr $ txt $ padTo commandNameWidth info) <+> renderText desc
               | (info, desc) <- commandHelpInfo
               ]
