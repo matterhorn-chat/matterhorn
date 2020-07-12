@@ -31,7 +31,7 @@ drawThemeListOverlay st =
                                   renderInternalTheme
                                   (Just footer)
                                   OverlayUpperRight
-                                  40
+                                  50
         footer = hBorder <=>
                  (hCenter $ hBox [ enter
                                  , txt $ " to change themes, "
