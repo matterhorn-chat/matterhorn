@@ -65,17 +65,18 @@ helpTopicDraw topic st =
         KeybindingHelp -> keybindingHelp (configUserKeys (st^.csResources.crConfiguration))
 
 mainHelp :: KeyConfig -> Widget Name
-mainHelp kc = commandHelp
+mainHelp kc = summary
   where
-    commandHelp = vBox $ [ heading $ T.pack mhVersion
-                         , headingNoPad $ T.pack mmApiVersion
-                         , heading "Help Topics"
-                         , drawHelpTopics
-                         , heading "Commands"
-                         , padTop (Pad 1) mkCommandHelpText
-                         , heading "Keybindings"
-                         ] <>
-                         (mkKeybindingHelp kc <$> keybindSections)
+    summary = vBox entries
+    entries = [ heading $ T.pack mhVersion
+              , headingNoPad $ T.pack mmApiVersion
+              , heading "Help Topics"
+              , drawHelpTopics
+              , heading "Commands"
+              , padTop (Pad 1) mkCommandHelpText
+              , heading "Keybindings"
+              ] <>
+              (mkKeybindingHelp kc <$> keybindSections)
 
     mkCommandHelpText :: Widget Name
     mkCommandHelpText =
@@ -121,7 +122,8 @@ drawHelpTopics =
         topicNameWidth = 4 + (maximum $ T.length <$> helpTopicName <$> helpTopics)
         drawTopic t = (withDefAttr helpEmphAttr $ txt (padTo topicNameWidth $ helpTopicName t)) <+>
                       txt (helpTopicDescription t)
-    in vBox $ para "Learn more about these topics with `/help <topic>`:"
+    in vBox $ (padBottom (Pad 1) $
+               para "Learn more about these topics with `/help <topic>`:")
             : allHelpTopics
 
 helpContentWidth :: Int
