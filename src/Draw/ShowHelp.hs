@@ -81,7 +81,7 @@ mainHelp kc = summary
     mkCommandHelpText :: Widget Name
     mkCommandHelpText =
       let commandNameWidth = 2 + (maximum $ T.length <$> fst <$> commandHelpInfo)
-      in vBox [ (withDefAttr helpEmphAttr $ txt $ padTo commandNameWidth info) <+> renderText desc
+      in vBox [ (emph $ txt $ padTo commandNameWidth info) <+> renderText desc
               | (info, desc) <- commandHelpInfo
               ]
 
@@ -120,7 +120,7 @@ drawHelpTopics :: Widget Name
 drawHelpTopics =
     let allHelpTopics = drawTopic <$> helpTopics
         topicNameWidth = 4 + (maximum $ T.length <$> helpTopicName <$> helpTopics)
-        drawTopic t = (withDefAttr helpEmphAttr $ txt (padTo topicNameWidth $ helpTopicName t)) <+>
+        drawTopic t = (emph $ txt (padTo topicNameWidth $ helpTopicName t)) <+>
                       txt (helpTopicDescription t)
     in vBox $ (padBottom (Pad 1) $
                para "Learn more about these topics with `/help <topic>`:")
@@ -285,6 +285,9 @@ keybindingHelp kc = vBox $
             ]
           ]
 
+emph :: Widget a -> Widget a
+emph = withDefAttr helpEmphAttr
+
 para :: Text -> Widget a
 para t = padTop (Pad 1) $ renderText t
 
@@ -295,7 +298,7 @@ heading :: Text -> Widget a
 heading = padTop (Pad 1) . headingNoPad
 
 headingNoPad :: Text -> Widget a
-headingNoPad t = hCenter $ withDefAttr helpEmphAttr $ renderText t
+headingNoPad t = hCenter $ emph $ renderText t
 
 syntaxHighlightHelp :: [FilePath] -> Widget a
 syntaxHighlightHelp dirs = vBox
@@ -323,7 +326,7 @@ themeHelp :: Widget a
 themeHelp = vBox
   [ heading "Using Themes"
   , para "Matterhorn provides these built-in color themes:"
-  , padTop (Pad 1) $ vBox $ hCenter <$> withDefAttr helpEmphAttr <$>
+  , padTop (Pad 1) $ vBox $ hCenter <$> emph <$>
                             txt <$> internalThemeName <$> internalThemes
   , para $
         "These themes can be selected with the */theme* command. To automatically " <>
@@ -457,7 +460,7 @@ keybindSections =
 helpBox :: Name -> Widget Name -> Widget Name
 helpBox n helpText =
     withDefAttr helpAttr $
-    borderWithLabel (withDefAttr helpEmphAttr $ txt "Matterhorn Help") $
+    borderWithLabel (emph $ txt "Matterhorn Help") $
     viewport HelpViewport Vertical $
     cached n helpText
 
@@ -491,7 +494,7 @@ mkKeybindHelp kc h =
                                               | otherwise -> unbound
                 in T.intercalate ", " bindings
 
-        rendering = (withDefAttr helpEmphAttr $ txt $ padTo kbColumnWidth $
+        rendering = (emph $ txt $ padTo kbColumnWidth $
                       label) <+> txt " " <+>
                     (hLimit kbDescColumnWidth $ padRight Max $ renderText $
                      ehDescription $ kehHandler h)
@@ -512,7 +515,7 @@ keybindEventHelpWidget (evName, desc, evs) =
     let evText = T.intercalate ", " evs
         label = case evName of
             Left s -> txt $ "; " <> s
-            Right s -> withDefAttr helpEmphAttr $ txt s
+            Right s -> emph $ txt s
     in padBottom (Pad 1) $
        vBox [ txtWrap ("; " <> desc)
             , label <+> txt (" = " <> evText)
