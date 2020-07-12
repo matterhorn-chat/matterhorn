@@ -25,6 +25,7 @@ drawReactionEmojiListOverlay st =
                                   renderEmoji
                                   Nothing
                                   OverlayCenter
+                                  80
     in joinBorders overlay : drawMain False st
 
 renderEmoji :: Bool -> (Bool, T.Text) -> Widget Name

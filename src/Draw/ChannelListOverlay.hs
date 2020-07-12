@@ -27,6 +27,7 @@ drawChannelListOverlay st =
                                   renderChannel
                                   Nothing
                                   OverlayCenter
+                                  80
     in joinBorders overlay : drawMain False st
 
 channelSearchScopePrompt :: ChannelSearchScope -> Widget Name

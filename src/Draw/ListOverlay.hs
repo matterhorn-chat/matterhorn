@@ -60,9 +60,12 @@ drawListOverlay :: ListOverlayState a b
                 -- results
                 -> OverlayPosition
                 -- ^ How to position the overlay layer
+                -> Int
+                -- ^ The maximum window width in columns
                 -> Widget Name
-drawListOverlay st scopeHeader scopeNoResults scopePrompt renderItem footer layerPos =
+drawListOverlay st scopeHeader scopeNoResults scopePrompt renderItem footer layerPos maxWinWidth =
   positionLayer $ hLimitWithPadding 10 $ vLimit 25 $
+  hLimit maxWinWidth $
   borderWithLabel (withDefAttr clientEmphAttr $ scopeHeader scope) body
   where
       positionLayer = case layerPos of

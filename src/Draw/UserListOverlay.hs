@@ -28,6 +28,7 @@ drawUserListOverlay st =
                                   (renderUser (myUsername st))
                                   Nothing
                                   OverlayCenter
+                                  80
     in joinBorders overlay : drawMain False st
 
 userSearchScopePrompt :: UserSearchScope -> Widget Name
