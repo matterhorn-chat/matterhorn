@@ -131,7 +131,7 @@ helpContentWidth = 72
 
 scriptHelp :: Widget Name
 scriptHelp = heading "Using Scripts" <=> vBox scriptHelpText
-  where scriptHelpText = map (para . mconcat)
+  where scriptHelpText = map paraL
           [ [ "Matterhorn has a special feature that allows you to use "
              , "prewritten shell scripts to preprocess messages. "
              , "For example, this can allow you to run various filters over "
@@ -201,7 +201,7 @@ keybindingHelp kc = vBox $
   where keybindSectionWidgets = sectionWidget <$> keybindSections
         sectionWidget = mkKeybindEventSectionHelp kc keybindEventHelpWidget vBox headingNoPad
 
-        keybindingHelpText = map (para . mconcat)
+        keybindingHelpText = map paraL
           [ [ "Many of the keybindings used in Matterhorn can be "
             , "modified from within Matterhorn's **config.ini** file. "
             , "To do this, include a section called **[KEYBINDINGS]** "
@@ -253,7 +253,7 @@ keybindingHelp kc = vBox $
            ]
         nextChanBinding = ppBinding (getFirstDefaultBinding NextChannelEvent)
         prevChanBinding = ppBinding (getFirstDefaultBinding PrevChannelEvent)
-        validKeys = map (para . mconcat)
+        validKeys = map paraL
           [ [ "The syntax used for key sequences consists of zero or more "
             , "single-character modifier characters followed by a keystroke, "
             , "all separated by dashes. The available modifier keys are "
@@ -287,6 +287,9 @@ keybindingHelp kc = vBox $
 
 para :: Text -> Widget a
 para t = padTop (Pad 1) $ renderText t
+
+paraL :: [Text] -> Widget a
+paraL = para . mconcat
 
 heading :: Text -> Widget a
 heading = padTop (Pad 1) . headingNoPad
