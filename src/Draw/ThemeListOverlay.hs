@@ -31,6 +31,7 @@ renderInternalTheme :: Bool -> InternalTheme -> Widget Name
 renderInternalTheme foc it =
     (if foc then forceAttr L.listSelectedFocusedAttr else id) $
     (padRight Max $
+     withDefAttr clientEmphAttr $
      txt $ internalThemeName it) <=>
     (vLimit 2 $
      (padLeft (Pad 2) $ txtWrap $ internalThemeDesc it) <=> fill ' ')
