@@ -54,6 +54,9 @@ drawShowHelp topic st =
 
 helpTopicDraw :: HelpTopic -> ChatState -> Widget Name
 helpTopicDraw topic st =
+    overrideAttr codeAttr helpEmphAttr $
+    hCenter $
+    hLimit helpContentWidth $
     case helpTopicScreen topic of
         MainHelp -> mainHelp (configUserKeys (st^.csResources.crConfiguration))
         ScriptHelp -> scriptHelp
@@ -67,7 +70,7 @@ mainHelp kc = commandHelp
     commandHelp = vBox $ [ heading $ T.pack mhVersion
                          , headingNoPad $ T.pack mmApiVersion
                          , heading "Help Topics"
-                         , padTop (Pad 1) drawHelpTopics
+                         , drawHelpTopics
                          , heading "Commands"
                          , padTop (Pad 1) mkCommandHelpText
                          , heading "Keybindings"
@@ -77,8 +80,7 @@ mainHelp kc = commandHelp
     mkCommandHelpText :: Widget Name
     mkCommandHelpText =
       let commandNameWidth = 4 + (maximum $ T.length <$> fst <$> commandHelpInfo)
-      in hCenter $
-         vBox [ (withDefAttr helpEmphAttr $ txt $ padTo commandNameWidth info) <+> renderText desc
+      in vBox [ (withDefAttr helpEmphAttr $ txt $ padTo commandNameWidth info) <+> renderText desc
               | (info, desc) <- commandHelpInfo
               ]
 
@@ -119,18 +121,14 @@ drawHelpTopics =
         topicNameWidth = 4 + (maximum $ T.length <$> helpTopicName <$> helpTopics)
         drawTopic t = (withDefAttr helpEmphAttr $ txt (padTo topicNameWidth $ helpTopicName t)) <+>
                       txt (helpTopicDescription t)
-    in (padBottom (Pad 1) $
-        hCenter $ renderText "Learn more about these topics with `/help <topic>`:") <=>
-       (hCenter $ vBox allHelpTopics)
+    in vBox $ para "Learn more about these topics with `/help <topic>`:"
+            : allHelpTopics
 
 helpContentWidth :: Int
 helpContentWidth = 72
 
 scriptHelp :: Widget Name
-scriptHelp = vBox
-  [ heading "Using Scripts"
-  , padTop (Pad 1) $ hCenter $ hLimit helpContentWidth $ vBox scriptHelpText
-  ]
+scriptHelp = heading "Using Scripts" <=> vBox scriptHelpText
   where scriptHelpText = map (para . mconcat)
           [ [ "Matterhorn has a special feature that allows you to use "
              , "prewritten shell scripts to preprocess messages. "
@@ -190,7 +188,7 @@ keybindingTextTable kc = title <> keybindSectionStrings
               "\n" <> (T.replicate (T.length n) "=")
 
 keybindingHelp :: KeyConfig -> Widget Name
-keybindingHelp kc = hCenter $ hLimit helpContentWidth $ vBox $
+keybindingHelp kc = vBox $
   [ heading "Configurable Keybindings"
   , padBottom (Pad 1) $ vBox keybindingHelpText
   ] ++ keybindSectionWidgets
@@ -295,7 +293,7 @@ headingNoPad :: Text -> Widget a
 headingNoPad t = hCenter $ withDefAttr helpEmphAttr $ renderText t
 
 syntaxHighlightHelp :: [FilePath] -> Widget a
-syntaxHighlightHelp dirs = overrideAttr codeAttr helpEmphAttr $ hCenter $ hLimit helpContentWidth $ vBox
+syntaxHighlightHelp dirs = vBox
   [ heading "Syntax Highlighting"
 
   , para $ "Matterhorn supports syntax highlighting in Markdown code blocks when the " <>
@@ -317,9 +315,9 @@ syntaxHighlightHelp dirs = overrideAttr codeAttr helpEmphAttr $ hCenter $ hLimit
   ]
 
 themeHelp :: Widget a
-themeHelp = overrideAttr codeAttr helpEmphAttr $ hCenter $ hLimit helpContentWidth $ vBox
+themeHelp = vBox
   [ heading "Using Themes"
-  , padTop (Pad 1) $ hCenter $ renderText "Matterhorn provides these built-in color themes:"
+  , para "Matterhorn provides these built-in color themes:"
   , padTop (Pad 1) $ vBox $ hCenter <$> withDefAttr helpEmphAttr <$>
                             txt <$> internalThemeName <$> internalThemes
   , para $
