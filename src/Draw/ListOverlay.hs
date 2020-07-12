@@ -18,7 +18,8 @@ import qualified Brick.Widgets.List as L
 import           Control.Monad.Trans.Reader ( withReaderT )
 import qualified Data.Foldable as F
 import qualified Data.Text as T
-import           Lens.Micro.Platform ( (%~) )
+import           Graphics.Vty ( imageWidth, translateX)
+import           Lens.Micro.Platform ( (%~), (.~), to )
 
 import           Themes
 import           Types
@@ -34,6 +35,7 @@ hLimitWithPadding pad contents = Widget
 
 data OverlayPosition =
     OverlayCenter
+    | OverlayUpperRight
     deriving (Eq, Show)
 
 -- | Draw a ListOverlayState. This draws a bordered box with the
@@ -65,6 +67,7 @@ drawListOverlay st scopeHeader scopeNoResults scopePrompt renderItem footer laye
   where
       positionLayer = case layerPos of
           OverlayCenter -> centerLayer
+          OverlayUpperRight -> upperRightLayer
       body = vBox [ (padRight (Pad 1) promptMsg) <+>
                     renderEditor (txt . T.unlines) True (st^.listOverlaySearchInput)
                   , cursorPositionBorder
@@ -93,3 +96,17 @@ drawListOverlay st scopeHeader scopeNoResults scopePrompt renderItem footer laye
 
       renderedUserList = L.renderList renderItem True (st^.listOverlaySearchResults)
       numSearchResults = F.length $ st^.listOverlaySearchResults.L.listElementsL
+
+upperRightLayer :: Widget a -> Widget a
+upperRightLayer w =
+    Widget (hSize w) (vSize w) $ do
+        result <- render w
+        c <- getContext
+        let rWidth = result^.imageL.to imageWidth
+            leftPaddingAmount = max 0 $ c^.availWidthL - rWidth
+            paddedImage = translateX leftPaddingAmount $ result^.imageL
+            off = Location (leftPaddingAmount, 0)
+        if leftPaddingAmount == 0 then
+            return result else
+            return $ addResultOffset off
+                   $ result & imageL .~ paddedImage
