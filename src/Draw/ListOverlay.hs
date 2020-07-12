@@ -3,6 +3,7 @@
 
 module Draw.ListOverlay
   ( drawListOverlay
+  , OverlayPosition(..)
   )
 where
 
@@ -31,6 +32,10 @@ hLimitWithPadding pad contents = Widget
       withReaderT (& availWidthL  %~ (\ n -> n - (2 * pad))) $ render $ cropToContext contents
   }
 
+data OverlayPosition =
+    OverlayCenter
+    deriving (Eq, Show)
+
 -- | Draw a ListOverlayState. This draws a bordered box with the
 -- overlay's search input and results list inside the box. The provided
 -- functions determine how to render the overlay in various states.
@@ -51,11 +56,15 @@ drawListOverlay :: ListOverlayState a b
                 -> Maybe (Widget Name)
                 -- ^ The footer widget to render underneath the search
                 -- results
+                -> OverlayPosition
+                -- ^ How to position the overlay layer
                 -> Widget Name
-drawListOverlay st scopeHeader scopeNoResults scopePrompt renderItem footer =
-  centerLayer $ hLimitWithPadding 10 $ vLimit 25 $
+drawListOverlay st scopeHeader scopeNoResults scopePrompt renderItem footer layerPos =
+  positionLayer $ hLimitWithPadding 10 $ vLimit 25 $
   borderWithLabel (withDefAttr clientEmphAttr $ scopeHeader scope) body
   where
+      positionLayer = case layerPos of
+          OverlayCenter -> centerLayer
       body = vBox [ (padRight (Pad 1) promptMsg) <+>
                     renderEditor (txt . T.unlines) True (st^.listOverlaySearchInput)
                   , cursorPositionBorder

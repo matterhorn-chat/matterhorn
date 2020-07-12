@@ -11,7 +11,7 @@ import           Brick.Widgets.List ( listSelectedFocusedAttr )
 import qualified Data.Text as T
 
 import           Draw.Main
-import           Draw.ListOverlay ( drawListOverlay )
+import           Draw.ListOverlay ( drawListOverlay, OverlayPosition(..) )
 import           Types
 import           Themes
 
@@ -24,6 +24,7 @@ drawReactionEmojiListOverlay st =
                                   (const $ txt "Search emoji:")
                                   renderEmoji
                                   Nothing
+                                  OverlayCenter
     in joinBorders overlay : drawMain False st
 
 renderEmoji :: Bool -> (Bool, T.Text) -> Widget Name

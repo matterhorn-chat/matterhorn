@@ -14,7 +14,7 @@ import           Network.Mattermost.Types
 import           Network.Mattermost.Lenses
 
 import           Draw.Main
-import           Draw.ListOverlay ( drawListOverlay )
+import           Draw.ListOverlay ( drawListOverlay, OverlayPosition(..) )
 import           Types
 import           Types.Common ( sanitizeUserText )
 import           Themes
@@ -26,6 +26,7 @@ drawChannelListOverlay st =
                                   channelSearchScopeNoResults channelSearchScopePrompt
                                   renderChannel
                                   Nothing
+                                  OverlayCenter
     in joinBorders overlay : drawMain False st
 
 channelSearchScopePrompt :: ChannelSearchScope -> Widget Name

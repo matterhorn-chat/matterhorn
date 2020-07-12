@@ -16,7 +16,7 @@ import qualified Graphics.Vty as V
 
 import           Draw.Main
 import           Draw.Util ( userSigilFromInfo )
-import           Draw.ListOverlay ( drawListOverlay )
+import           Draw.ListOverlay ( drawListOverlay, OverlayPosition(..) )
 import           Themes
 import           Types
 
@@ -27,6 +27,7 @@ drawUserListOverlay st =
                                   userSearchScopeNoResults userSearchScopePrompt
                                   (renderUser (myUsername st))
                                   Nothing
+                                  OverlayCenter
     in joinBorders overlay : drawMain False st
 
 userSearchScopePrompt :: UserSearchScope -> Widget Name

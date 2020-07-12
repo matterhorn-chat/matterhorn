@@ -15,7 +15,7 @@ import           Brick.Widgets.Border ( hBorder )
 import           Brick.Widgets.Center ( hCenter )
 
 import           Draw.Main
-import           Draw.ListOverlay ( drawListOverlay )
+import           Draw.ListOverlay ( drawListOverlay, OverlayPosition(..) )
 import           Themes
 import           Types
 import           Types.KeyEvents ( ppBinding )
@@ -30,6 +30,7 @@ drawThemeListOverlay st =
                                   (const $ txt "Search built-in themes:")
                                   renderInternalTheme
                                   (Just footer)
+                                  OverlayCenter
         footer = hBorder <=>
                  (hCenter $ hBox [ enter
                                  , txt $ " to change themes, "
