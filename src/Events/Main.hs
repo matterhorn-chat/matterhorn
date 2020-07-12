@@ -49,7 +49,7 @@ mainKeyHandlers =
 
     , mkKb
         InvokeEditorEvent
-        "Invoke *$EDITOR* to edit the current message"
+        "Invoke `$EDITOR` to edit the current message"
         invokeExternalEditor
 
     , mkKb
