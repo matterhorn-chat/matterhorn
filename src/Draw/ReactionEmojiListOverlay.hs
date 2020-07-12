@@ -23,6 +23,7 @@ drawReactionEmojiListOverlay st =
                                   (const $ txt "No matching emoji found.")
                                   (const $ txt "Search emoji:")
                                   renderEmoji
+                                  Nothing
     in joinBorders overlay : drawMain False st
 
 renderEmoji :: Bool -> (Bool, T.Text) -> Widget Name

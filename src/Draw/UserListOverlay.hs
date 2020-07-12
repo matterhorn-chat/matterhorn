@@ -26,6 +26,7 @@ drawUserListOverlay st =
     let overlay = drawListOverlay (st^.csUserListOverlay) userSearchScopeHeader
                                   userSearchScopeNoResults userSearchScopePrompt
                                   (renderUser (myUsername st))
+                                  Nothing
     in joinBorders overlay : drawMain False st
 
 userSearchScopePrompt :: UserSearchScope -> Widget Name

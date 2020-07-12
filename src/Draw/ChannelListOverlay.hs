@@ -25,6 +25,7 @@ drawChannelListOverlay st =
     let overlay = drawListOverlay (st^.csChannelListOverlay) channelSearchScopeHeader
                                   channelSearchScopeNoResults channelSearchScopePrompt
                                   renderChannel
+                                  Nothing
     in joinBorders overlay : drawMain False st
 
 channelSearchScopePrompt :: ChannelSearchScope -> Widget Name

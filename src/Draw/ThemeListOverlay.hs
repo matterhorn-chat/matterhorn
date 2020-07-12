@@ -11,11 +11,15 @@ import           Prelude.MH
 
 import           Brick
 import qualified Brick.Widgets.List as L
+import           Brick.Widgets.Border ( hBorder )
+import           Brick.Widgets.Center ( hCenter )
 
 import           Draw.Main
 import           Draw.ListOverlay ( drawListOverlay )
 import           Themes
 import           Types
+import           Types.KeyEvents ( ppBinding )
+import           Events.Keybindings
 
 
 drawThemeListOverlay :: ChatState -> [Widget Name]
@@ -25,6 +29,16 @@ drawThemeListOverlay st =
                                   (const $ txt "No matching themes found.")
                                   (const $ txt "Search built-in themes:")
                                   renderInternalTheme
+                                  (Just footer)
+        footer = hBorder <=>
+                 (hCenter $ hBox [ enter
+                                 , txt $ " to change themes, "
+                                 , close
+                                 , txt " to close"
+                                 ])
+        enter = emph $ txt $ ppBinding (getFirstDefaultBinding ActivateListItemEvent)
+        close = emph $ txt $ ppBinding (getFirstDefaultBinding CancelEvent)
+        emph = withDefAttr clientEmphAttr
     in joinBorders overlay : drawMain True st
 
 renderInternalTheme :: Bool -> InternalTheme -> Widget Name

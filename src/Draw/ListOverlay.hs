@@ -48,8 +48,11 @@ drawListOverlay :: ListOverlayState a b
                 -> (Bool -> a -> Widget Name)
                 -- ^ The function to render an item from the overlay's
                 -- list
+                -> Maybe (Widget Name)
+                -- ^ The footer widget to render underneath the search
+                -- results
                 -> Widget Name
-drawListOverlay st scopeHeader scopeNoResults scopePrompt renderItem =
+drawListOverlay st scopeHeader scopeNoResults scopePrompt renderItem footer =
   centerLayer $ hLimitWithPadding 10 $ vLimit 25 $
   borderWithLabel (withDefAttr clientEmphAttr $ scopeHeader scope) body
   where
@@ -57,6 +60,7 @@ drawListOverlay st scopeHeader scopeNoResults scopePrompt renderItem =
                     renderEditor (txt . T.unlines) True (st^.listOverlaySearchInput)
                   , cursorPositionBorder
                   , showResults
+                  , fromMaybe emptyWidget footer
                   ]
       plural 1 = ""
       plural _ = "s"
