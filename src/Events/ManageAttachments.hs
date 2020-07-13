@@ -3,6 +3,7 @@
 module Events.ManageAttachments
   ( onEventManageAttachments
   , attachmentListKeybindings
+  , attachmentBrowseKeyHandlers
   , attachmentBrowseKeybindings
   , attachmentListKeyHandlers
   )
@@ -61,7 +62,10 @@ attachmentListKeyHandlers =
     ]
 
 attachmentBrowseKeybindings :: KeyConfig -> KeyHandlerMap
-attachmentBrowseKeybindings = mkKeybindings
+attachmentBrowseKeybindings = mkKeybindings attachmentBrowseKeyHandlers
+
+attachmentBrowseKeyHandlers :: [KeyEventHandler]
+attachmentBrowseKeyHandlers =
     [ mkKb CancelEvent "Cancel attachment file browse"
       cancelAttachmentBrowse
     , mkKb AttachmentOpenEvent "Open the selected file using the URL open command"

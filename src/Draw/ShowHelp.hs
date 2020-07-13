@@ -456,6 +456,7 @@ keybindSections =
     , ("Message Viewer: Message tab", viewMessageKeyHandlers)
     , ("Message Viewer: Reactions tab", viewMessageReactionsKeyHandlers)
     , ("Attachment List", attachmentListKeyHandlers)
+    , ("Attachment File Browser", attachmentBrowseKeyHandlers)
     ]
 
 helpBox :: Name -> Widget Name -> Widget Name
