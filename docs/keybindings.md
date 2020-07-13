@@ -193,3 +193,9 @@
 | `o` | `open-attachment` | Open the selected attachment using the URL open command |
 | `d` | `delete-from-attachment-list` | Delete the selected attachment from the attachment list |
 
+# Attachment File Browser
+| Keybinding | Event Name | Description |
+| ---------- | ---------- | ----------- |
+| `Esc`, `C-c` | `cancel` | Cancel attachment file browse |
+| `o` | `open-attachment` | Open the selected file using the URL open command |
+
