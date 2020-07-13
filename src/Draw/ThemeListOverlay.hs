@@ -34,9 +34,9 @@ drawThemeListOverlay st =
                                   50
         footer = hBorder <=>
                  (hCenter $ hBox [ enter
-                                 , txt $ " to change themes, "
+                                 , txt $ ":choose theme  "
                                  , close
-                                 , txt " to close"
+                                 , txt ":close"
                                  ])
         enter = emph $ txt $ ppBinding (getFirstDefaultBinding ActivateListItemEvent)
         close = emph $ txt $ ppBinding (getFirstDefaultBinding CancelEvent)
