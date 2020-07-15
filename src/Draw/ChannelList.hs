@@ -83,12 +83,12 @@ renderChannelList st =
                 (renderChannelListGroup st (\s e -> renderChannelListEntry myUsername_ $ mkChannelEntryData s e) <$>
                     Z.toList (st^.csFocus))
 
-renderChannelListGroupHeading :: ChannelListGroup -> Bool -> Widget Name
-renderChannelListGroupHeading g anyUnread =
-    let label = case g of
-            ChannelGroupPublicChannels -> "Public Channels"
-            ChannelGroupPrivateChannels -> "Private Channels"
-            ChannelGroupDirectMessages -> "Direct Messages"
+renderChannelListGroupHeading :: ChannelListGroup -> Widget Name
+renderChannelListGroupHeading g =
+    let (anyUnread, label) = case g of
+            ChannelGroupPublicChannels u -> (u, "Public Channels")
+            ChannelGroupPrivateChannels u -> (u, "Private Channels")
+            ChannelGroupDirectMessages u -> (u, "Direct Messages")
         addUnread = if anyUnread
                     then (<+> (withDefAttr unreadGroupMarkerAttr $ txt "*"))
                     else id
@@ -96,14 +96,12 @@ renderChannelListGroupHeading g anyUnread =
     in hBorderWithLabel labelWidget
 
 renderChannelListGroup :: ChatState
-                       -> (ChatState -> e -> (Bool, Widget Name))
+                       -> (ChatState -> e -> Widget Name)
                        -> (ChannelListGroup, [e])
                        -> Widget Name
 renderChannelListGroup st renderEntry (group, es) =
-    let heading = renderChannelListGroupHeading group anyUnread
-        entryResults = renderEntry st <$> es
-        (unreadFlags, entryWidgets) = unzip entryResults
-        anyUnread = or unreadFlags
+    let heading = renderChannelListGroupHeading group
+        entryWidgets = renderEntry st <$> es
     in if null entryWidgets
        then emptyWidget
        else vBox (heading : entryWidgets)
@@ -146,8 +144,8 @@ mkChannelEntryData st e =
 
 -- | Render an individual Channel List entry (in Normal mode) with
 -- appropriate visual decorations.
-renderChannelListEntry :: Text -> ChannelListEntryData -> (Bool, Widget Name)
-renderChannelListEntry myUName entry = (entryHasUnread entry, body)
+renderChannelListEntry :: Text -> ChannelListEntryData -> Widget Name
+renderChannelListEntry myUName entry = body
     where
     body = decorate $ decorateEntry entry $ decorateMentions $ padRight Max $
            entryWidget $ entrySigil entry <> entryLabel entry
@@ -174,20 +172,20 @@ renderChannelListEntry myUName entry = (entryHasUnread entry, body)
 -- | Render an individual entry when in Channel Select mode,
 -- highlighting the matching portion, or completely suppressing the
 -- entry if it doesn't match.
-renderChannelSelectListEntry :: Maybe ChannelSelectMatch -> ChatState -> ChannelSelectMatch -> (Bool, Widget Name)
+renderChannelSelectListEntry :: Maybe ChannelSelectMatch -> ChatState -> ChannelSelectMatch -> Widget Name
 renderChannelSelectListEntry curMatch st match =
     let ChannelSelectMatch preMatch inMatch postMatch _ entry = match
         maybeSelect = if (Just entry) == (matchEntry <$> curMatch)
                       then visible . withDefAttr currentChannelNameAttr
                       else id
         entryData = mkChannelEntryData st entry
-    in (False, maybeSelect $
-               decorateEntry entryData $
-               padRight Max $
-                 hBox [ txt $ entrySigil entryData <> preMatch
-                      , forceAttr channelSelectMatchAttr $ txt inMatch
-                      , txt postMatch
-                      ])
+    in maybeSelect $
+       decorateEntry entryData $
+       padRight Max $
+         hBox [ txt $ entrySigil entryData <> preMatch
+              , forceAttr channelSelectMatchAttr $ txt inMatch
+              , txt postMatch
+              ]
 
 -- If this channel is the return channel, add a decoration to denote
 -- that.

@@ -346,11 +346,12 @@ data TokenSource =
     | TokenCommand Text
     deriving (Eq, Read, Show)
 
--- | The type of channel list group headings.
+-- | The type of channel list group headings. Booleans indicate whether
+-- any channels in the group have unread activity.
 data ChannelListGroup =
-    ChannelGroupPublicChannels
-    | ChannelGroupPrivateChannels
-    | ChannelGroupDirectMessages
+    ChannelGroupPublicChannels Bool
+    | ChannelGroupPrivateChannels Bool
+    | ChannelGroupDirectMessages Bool
     deriving (Eq)
 
 -- | The type of channel list entries.
@@ -499,17 +500,21 @@ mkChannelZipperList :: UTCTime
                     -> Users
                     -> [(ChannelListGroup, [ChannelListEntry])]
 mkChannelZipperList now config cconfig prefs cs us =
-    [ (ChannelGroupPublicChannels, getChannelEntriesInOrder cs Ordinary)
-    , (ChannelGroupPrivateChannels, getChannelEntriesInOrder cs Private)
-    , (ChannelGroupDirectMessages, getDMChannelEntriesInOrder now config cconfig prefs us cs)
+    [ let (anyUnread, entries) = getChannelEntriesInOrder cs Ordinary
+      in (ChannelGroupPublicChannels anyUnread, entries)
+    , let (anyUnread, entries) = getChannelEntriesInOrder cs Private
+      in (ChannelGroupPrivateChannels anyUnread, entries)
+    , (ChannelGroupDirectMessages False, getDMChannelEntriesInOrder now config cconfig prefs us cs)
     ]
 
-getChannelEntriesInOrder :: ClientChannels -> Type -> [ChannelListEntry]
+getChannelEntriesInOrder :: ClientChannels -> Type -> (Bool, [ChannelListEntry])
 getChannelEntriesInOrder cs ty =
     let matches (_, info) = info^.ccInfo.cdType == ty
-    in fmap (CLChannel . fst) $
-       sortBy (comparing ((^.ccInfo.cdDisplayName.to T.toLower) . snd)) $
-       filteredChannels matches cs
+        pairs = filteredChannels matches cs
+        anyUnread = or $ (hasUnread' . snd) <$> pairs
+        entries = fmap (CLChannel . fst) $
+                  sortBy (comparing ((^.ccInfo.cdDisplayName.to T.toLower) . snd)) pairs
+    in (anyUnread, entries)
 
 getDMChannelEntriesInOrder :: UTCTime
                            -> Config
