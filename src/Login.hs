@@ -223,28 +223,35 @@ loginWorker setLogger logMgr requestChan respChan = forever $ do
 
 
 
--- | Searches prefixes of the given URL to determine Mattermost API URL path and team name
+-- | Searches prefixes of the given URL to determine Mattermost API URL
+-- path and team name
 findConnectionData :: ConnectionInfo -> IO (Either SomeException (ConnectionData, Maybe Text))
 findConnectionData connInfo = startSearch
-
   where
     components = filter (not . T.null) (T.split ('/'==) (connInfo^.ciUrlPath))
 
-    -- the candidates list is never empty because inits never returns an empty list
+    -- the candidates list is never empty because inits never returns an
+    -- empty list
     primary:alternatives =
         reverse
-        [ (T.intercalate "/" l, listToMaybe r) | (l,r) <- zip (inits components) (tails components) ]
+        [ (T.intercalate "/" l, listToMaybe r)
+        | (l,r) <- zip (inits components) (tails components)
+        ]
 
-    tryCandidate :: (Text, Maybe Text) -> IO (Either SomeException (ConnectionData, Maybe Text))
+    tryCandidate :: (Text, Maybe Text)
+                 -> IO (Either SomeException (ConnectionData, Maybe Text))
     tryCandidate (path, team) =
-       do cd  <- initConnectionData (connInfo^.ciHostname) (fromIntegral (connInfo^.ciPort)) path (connInfo^.ciType) poolCfg
+       do cd  <- initConnectionData (connInfo^.ciHostname)
+                                    (fromIntegral (connInfo^.ciPort))
+                                    path (connInfo^.ciType) poolCfg
           res <- try (mmGetLimitedClientConfiguration cd)
           pure $! case res of
                     Left e  -> Left e
                     Right{} -> Right (cd, team)
 
-    -- This code prefers to report the error from the URL corresponding to what the user
-    -- actually provided. Errors from derived URLs are lost in favor of this first error.
+    -- This code prefers to report the error from the URL corresponding
+    -- to what the user actually provided. Errors from derived URLs are
+    -- lost in favor of this first error.
     startSearch =
       do res1 <- tryCandidate primary
          case res1 of
