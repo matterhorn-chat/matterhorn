@@ -64,6 +64,7 @@ module Types
 
   , mkChannelZipperList
   , ChannelListGroup(..)
+  , channelListGroupHasUnread
 
   , trimChannelSigil
 
@@ -353,6 +354,11 @@ data ChannelListGroup =
     | ChannelGroupPrivateChannels Bool
     | ChannelGroupDirectMessages Bool
     deriving (Eq)
+
+channelListGroupHasUnread :: ChannelListGroup -> Bool
+channelListGroupHasUnread (ChannelGroupPublicChannels u) = u
+channelListGroupHasUnread (ChannelGroupPrivateChannels u) = u
+channelListGroupHasUnread (ChannelGroupDirectMessages u) = u
 
 -- | The type of channel list entries.
 data ChannelListEntry =
