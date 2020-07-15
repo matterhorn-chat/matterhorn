@@ -499,28 +499,28 @@ mkChannelZipperList :: UTCTime
                     -> Users
                     -> [(ChannelListGroup, [ChannelListEntry])]
 mkChannelZipperList now config cconfig prefs cs us =
-    [ (ChannelGroupPublicChannels, getChannelIdsInOrder cs Ordinary)
-    , (ChannelGroupPrivateChannels, getChannelIdsInOrder cs Private)
-    , (ChannelGroupDirectMessages, getDMChannelsInOrder now config cconfig prefs us cs)
+    [ (ChannelGroupPublicChannels, getChannelEntriesInOrder cs Ordinary)
+    , (ChannelGroupPrivateChannels, getChannelEntriesInOrder cs Private)
+    , (ChannelGroupDirectMessages, getDMChannelEntriesInOrder now config cconfig prefs us cs)
     ]
 
-getChannelIdsInOrder :: ClientChannels -> Type -> [ChannelListEntry]
-getChannelIdsInOrder cs ty =
+getChannelEntriesInOrder :: ClientChannels -> Type -> [ChannelListEntry]
+getChannelEntriesInOrder cs ty =
     let matches (_, info) = info^.ccInfo.cdType == ty
     in fmap (CLChannel . fst) $
        sortBy (comparing ((^.ccInfo.cdDisplayName.to T.toLower) . snd)) $
        filteredChannels matches cs
 
-getDMChannelsInOrder :: UTCTime
-                     -> Config
-                     -> Maybe ClientConfig
-                     -> UserPreferences
-                     -> Users
-                     -> ClientChannels
-                     -> [ChannelListEntry]
-getDMChannelsInOrder now config cconfig prefs us cs =
-    let oneOnOneDmChans = getDMChannels now config cconfig prefs us cs
-        groupChans = getGroupDMChannels now config prefs cs
+getDMChannelEntriesInOrder :: UTCTime
+                           -> Config
+                           -> Maybe ClientConfig
+                           -> UserPreferences
+                           -> Users
+                           -> ClientChannels
+                           -> [ChannelListEntry]
+getDMChannelEntriesInOrder now config cconfig prefs us cs =
+    let oneOnOneDmChans = getDMChannelEntries now config cconfig prefs us cs
+        groupChans = getGroupDMChannelEntries now config prefs cs
         allDmChans = groupChans <> oneOnOneDmChans
         sorter (u1, n1, _) (u2, n2, _) =
             if u1 == u2
@@ -548,25 +548,25 @@ displayNameForUser u clientConfig prefs
     | otherwise =
         u^.uiName
 
-getGroupDMChannels :: UTCTime
-                   -> Config
-                   -> UserPreferences
-                   -> ClientChannels
-                   -> [(Bool, T.Text, ChannelListEntry)]
-getGroupDMChannels now config prefs cs =
+getGroupDMChannelEntries :: UTCTime
+                         -> Config
+                         -> UserPreferences
+                         -> ClientChannels
+                         -> [(Bool, T.Text, ChannelListEntry)]
+getGroupDMChannelEntries now config prefs cs =
     let matches (_, info) = info^.ccInfo.cdType == Group &&
                             groupChannelShouldAppear now config prefs info
     in fmap (\(cId, ch) -> (hasUnread' ch, ch^.ccInfo.cdDisplayName, CLGroupDM cId)) $
        filteredChannels matches cs
 
-getDMChannels :: UTCTime
-              -> Config
-              -> Maybe ClientConfig
-              -> UserPreferences
-              -> Users
-              -> ClientChannels
-              -> [(Bool, T.Text, ChannelListEntry)]
-getDMChannels now config cconfig prefs us cs =
+getDMChannelEntries :: UTCTime
+                    -> Config
+                    -> Maybe ClientConfig
+                    -> UserPreferences
+                    -> Users
+                    -> ClientChannels
+                    -> [(Bool, T.Text, ChannelListEntry)]
+getDMChannelEntries now config cconfig prefs us cs =
     let mapping = allDmChannelMappings cs
         mappingWithUserInfo = catMaybes $ getInfo <$> mapping
         getInfo (uId, cId) = do
