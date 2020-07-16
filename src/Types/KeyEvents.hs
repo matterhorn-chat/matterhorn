@@ -88,6 +88,8 @@ data KeyEvent
   | ScrollRightEvent
   | PageUpEvent
   | PageDownEvent
+  | PageRightEvent
+  | PageLeftEvent
   | ScrollTopEvent
   | ScrollBottomEvent
   | SelectOldestMessageEvent
@@ -177,6 +179,8 @@ allEvents =
   , ScrollRightEvent
   , PageUpEvent
   , PageDownEvent
+  , PageLeftEvent
+  , PageRightEvent
   , ScrollTopEvent
   , ScrollBottomEvent
   , SelectOldestMessageEvent
@@ -394,6 +398,8 @@ keyEventName ev = case ev of
   ScrollRightEvent  -> "scroll-right"
   PageUpEvent       -> "page-up"
   PageDownEvent     -> "page-down"
+  PageLeftEvent     -> "page-left"
+  PageRightEvent    -> "page-right"
   ScrollTopEvent    -> "scroll-top"
   ScrollBottomEvent -> "scroll-bottom"
   SelectOldestMessageEvent -> "select-oldest-message"
