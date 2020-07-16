@@ -184,6 +184,8 @@ defaultBindings ev =
         ScrollRightEvent              -> [ kb Vty.KRight ]
         PageUpEvent                   -> [ kb Vty.KPageUp ]
         PageDownEvent                 -> [ kb Vty.KPageDown ]
+        PageLeftEvent                 -> [ shift (kb Vty.KLeft) ]
+        PageRightEvent                -> [ shift (kb Vty.KRight) ]
         ScrollTopEvent                -> [ kb Vty.KHome ]
         ScrollBottomEvent             -> [ kb Vty.KEnd ]
         SelectOldestMessageEvent      -> [ shift (kb Vty.KHome) ]

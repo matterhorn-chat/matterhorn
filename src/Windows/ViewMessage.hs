@@ -166,6 +166,12 @@ viewMessageKeyHandlers =
        , mkKb PageDownEvent "Page down" $
            mh $ vScrollBy vs pageAmount
 
+       , mkKb PageLeftEvent "Page left" $
+           mh $ hScrollBy vs (-2 * pageAmount)
+
+       , mkKb PageRightEvent "Page right" $
+           mh $ hScrollBy vs (2 * pageAmount)
+
        , mkKb ScrollUpEvent "Scroll up" $
            mh $ vScrollBy vs (-1)
 

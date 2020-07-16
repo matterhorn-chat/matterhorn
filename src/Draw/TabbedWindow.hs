@@ -39,8 +39,7 @@ keybindingHelp =
     let ppPair (label, evs) = hBox $ (intersperse (txt "/") $ ppEv <$> evs) <> [txt (":" <> label)]
         ppEv ev = withDefAttr clientEmphAttr $ txt (ppBinding (getFirstDefaultBinding ev))
         pairs = [ ("Switch tabs", [SelectNextTabEvent, SelectPreviousTabEvent])
-                , ("Scroll", [ScrollUpEvent, ScrollDownEvent, ScrollLeftEvent, ScrollRightEvent])
-                , ("Close", [CancelEvent])
+                , ("Scroll", [ScrollUpEvent, ScrollDownEvent, ScrollLeftEvent, ScrollRightEvent, PageLeftEvent, PageRightEvent])
                 ]
     in hBox $ intersperse (txt "  ") $ ppPair <$> pairs
 
