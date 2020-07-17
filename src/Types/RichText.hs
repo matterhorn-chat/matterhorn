@@ -63,7 +63,6 @@ data ElementData =
     | ESpace
     | ESoftBreak
     | ELineBreak
-    | EEntity Text
     | ERawHtml Text
     | EEditSentinel
     | EEditRecentlySentinel
@@ -132,7 +131,7 @@ fromMarkdownInline s (C.Str t) =
 fromMarkdownInline _ (C.Code t) =
     Seq.singleton $ Element Code $ EText t
 fromMarkdownInline s (C.Entity t) =
-    Seq.singleton $ Element s $ EEntity t
+    Seq.singleton $ Element s $ EText t
 fromMarkdownInline s (C.RawHtml body) =
     Seq.singleton $ Element s $ ERawHtml body
 fromMarkdownInline _ (C.Link labelIs url _) =
@@ -145,7 +144,6 @@ elementWidth e =
     case eData e of
         EText t               -> textWidth t
         ERawHtml t            -> textWidth t
-        EEntity t             -> textWidth t
         EUser t               -> textWidth t
         EChannel t            -> textWidth t
         EEditSentinel         -> textWidth editMarking
