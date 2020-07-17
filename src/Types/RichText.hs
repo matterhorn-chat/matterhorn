@@ -23,7 +23,7 @@ data RichTextBlock =
     Para (Seq Element)
     | Header Int (Seq Element)
     | Blockquote (Seq Element)
-    | List Bool ListType (Seq RichTextBlock)
+    | List Bool ListType (Seq (Seq RichTextBlock))
     | CodeBlock CodeBlockInfo Text
     | HTMLBlock Text
     | HRule
