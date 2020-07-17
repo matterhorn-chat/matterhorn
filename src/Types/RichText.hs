@@ -5,6 +5,7 @@ module Types.RichText
   , CodeBlockInfo(..)
   , NumDecoration(..)
   , Element(..)
+  , ElementData(..)
   , ElementStyle(..)
 
   , fromMarkdownBlocks
@@ -50,11 +51,17 @@ data NumDecoration =
     deriving (Eq, Show)
 
 data Element =
+    Element { eStyle :: ElementStyle
+            , eData :: ElementData
+            }
+            deriving (Show)
+
+data ElementData =
     EText Text
     | ESpace
     | ESoftBreak
     | ELineBreak
-    | ELink (Seq Element) Text
+    | ELink (Seq Element)
     | EEntity Text
     | ERawHtml Text
     | EEditSentinel
@@ -62,8 +69,7 @@ data Element =
     | ESequence (Seq Element)
     | EUser Text
     | EChannel Text
-    | EStyled ElementStyle Element
-    deriving (Show, Eq)
+    deriving (Show)
 
 data ElementStyle =
     Normal
@@ -72,6 +78,8 @@ data ElementStyle =
     | Code
     | Edited
     | EditedRecently
+    | Link Text
+    -- ^ URL
     deriving (Eq, Show)
 
 fromMarkdownBlocks :: C.Blocks -> RichText
@@ -80,9 +88,9 @@ fromMarkdownBlocks bs =
 
 fromMarkdownBlock :: C.Block -> RichTextBlock
 fromMarkdownBlock (C.Para is) =
-    Para $ fromMarkdownInline <$> is
+    Para $ seqConcat $ fromMarkdownInline Normal <$> is
 fromMarkdownBlock (C.Header level is) =
-    Header level $ fromMarkdownInline <$> is
+    Header level $ seqConcat $ fromMarkdownInline Normal <$> is
 fromMarkdownBlock (C.Blockquote bs) =
     Blockquote $ fromMarkdownBlock <$> bs
 fromMarkdownBlock (C.List f ty bss) =
@@ -107,26 +115,31 @@ fromMarkdownListType (C.Numbered wrap i) =
                   C.ParenFollowing -> Paren
     in Numbered dec i
 
-fromMarkdownInline :: C.Inline -> Element
-fromMarkdownInline C.Space =
-    ESpace
-fromMarkdownInline C.SoftBreak =
-    ESoftBreak
-fromMarkdownInline C.LineBreak =
-    ELineBreak
-fromMarkdownInline (C.Str t) =
-    EText t
-fromMarkdownInline (C.Emph is) =
-    EStyled Emph $ ESequence $ fromMarkdownInline <$> is
-fromMarkdownInline (C.Strong is) =
-    EStyled Strong $ ESequence $ fromMarkdownInline <$> is
-fromMarkdownInline (C.Code t) =
-    EStyled Code $ EText t
-fromMarkdownInline (C.Link labelIs url _) =
-    ELink (fromMarkdownInline <$> labelIs) url
-fromMarkdownInline (C.Image altIs url _) =
-    ELink (fromMarkdownInline <$> altIs) url
-fromMarkdownInline (C.Entity t) =
-    EEntity t
-fromMarkdownInline (C.RawHtml body) =
-    ERawHtml body
+fromMarkdownInline :: ElementStyle -> C.Inline -> Seq Element
+fromMarkdownInline _ (C.Emph is) =
+    seqConcat $ fromMarkdownInline Emph <$> is
+fromMarkdownInline _ (C.Strong is) =
+    seqConcat $ fromMarkdownInline Strong <$> is
+fromMarkdownInline s C.Space =
+    Seq.singleton $ Element s ESpace
+fromMarkdownInline s C.SoftBreak =
+    Seq.singleton $ Element s ESoftBreak
+fromMarkdownInline s C.LineBreak =
+    Seq.singleton $ Element s ELineBreak
+fromMarkdownInline s (C.Str t) =
+    Seq.singleton $ Element s (EText t)
+fromMarkdownInline _ (C.Code t) =
+    Seq.singleton $ Element Code $ EText t
+fromMarkdownInline s (C.Entity t) =
+    Seq.singleton $ Element s $ EEntity t
+fromMarkdownInline s (C.RawHtml body) =
+    Seq.singleton $ Element s $ ERawHtml body
+fromMarkdownInline _ (C.Link labelIs url _) =
+    Seq.singleton $ Element (Link url) $
+        ELink (seqConcat $ fromMarkdownInline Normal <$> labelIs)
+fromMarkdownInline _ (C.Image altIs url _) =
+    Seq.singleton $ Element (Link url) $
+        ELink (seqConcat $ fromMarkdownInline Normal <$> altIs)
+
+seqConcat :: Seq (Seq a) -> Seq a
+seqConcat ss = Seq.foldrWithIndex (\_ s rest -> s Seq.>< rest) mempty ss
