@@ -159,10 +159,10 @@ doUserAutoCompletion ty ctx searchString = do
                            , MentionChannel
                            ]
                 extras = [ SpecialMention m | m <- specials
-                         , (T.toLower searchString) `T.isInfixOf` specialMentionName m
+                         , (T.toLower searchString) `T.isPrefixOf` specialMentionName m
                          ]
 
-            return $ Just $ setCompletionAlternatives ctx searchString (extras <> alts) ty
+            return $ Just $ setCompletionAlternatives ctx searchString (alts <> extras) ty
 
 doChannelAutoCompletion :: AutocompletionType -> AutocompleteContext -> Text -> MH ()
 doChannelAutoCompletion ty ctx searchString = do
