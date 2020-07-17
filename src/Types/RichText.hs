@@ -9,12 +9,14 @@ module Types.RichText
   , ElementStyle(..)
 
   , fromMarkdownBlocks
+  , elementWidth
   )
 where
 
 import           Prelude ()
 import           Prelude.MH
 
+import           Brick ( textWidth )
 import qualified Cheapskate as C
 import qualified Data.Sequence as Seq
 
@@ -140,3 +142,21 @@ fromMarkdownInline _ (C.Image altIs url _) =
 
 seqConcat :: Seq (Seq a) -> Seq a
 seqConcat ss = Seq.foldrWithIndex (\_ s rest -> s Seq.>< rest) mempty ss
+
+elementWidth :: Element -> Int
+elementWidth e =
+    case eData e of
+        EText t               -> textWidth t
+        ERawHtml t            -> textWidth t
+        EEntity t             -> textWidth t
+        EUser t               -> textWidth t
+        EChannel t            -> textWidth t
+        EEditSentinel         -> textWidth editMarking
+        EEditRecentlySentinel -> textWidth editMarking
+        ESequence es          -> sum $ elementWidth <$> es
+        ESpace                -> 1
+        ELineBreak            -> 0
+        ESoftBreak            -> 0
+
+editMarking :: Text
+editMarking = "(edited)"
