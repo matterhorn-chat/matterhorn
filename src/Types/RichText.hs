@@ -66,6 +66,8 @@ data ElementData =
     | ERawHtml Text
     | EEditSentinel
     | EEditRecentlySentinel
+    -- TODO: do we even need this? It seems like places where we need
+    -- sequences of elements already use the 'Seq Element' type.
     | ESequence (Seq Element)
     | EUser Text
     | EChannel Text
@@ -155,6 +157,16 @@ elementWidth e =
 
 editMarking :: Text
 editMarking = "(edited)"
+
+-- The special string we use to indicate the placement of a styled
+-- indication that a message has been edited.
+editMarkingSentinel :: Text
+editMarkingSentinel = "#__mh_edit"
+
+-- The special string we use to indicate the placement of a styled
+-- indication that a message has been edited recently.
+editRecentlyMarkingSentinel :: Text
+editRecentlyMarkingSentinel = "#__mh_edit_r"
 
 seqConcat :: Seq (Seq a) -> Seq a
 seqConcat ss = Seq.foldrWithIndex (\_ s rest -> s Seq.>< rest) mempty ss
