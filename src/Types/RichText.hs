@@ -140,9 +140,6 @@ fromMarkdownInline _ (C.Link labelIs url _) =
 fromMarkdownInline _ (C.Image altIs url _) =
     seqConcat $ fromMarkdownInline (Link url) <$> altIs
 
-seqConcat :: Seq (Seq a) -> Seq a
-seqConcat ss = Seq.foldrWithIndex (\_ s rest -> s Seq.>< rest) mempty ss
-
 elementWidth :: Element -> Int
 elementWidth e =
     case eData e of
@@ -160,3 +157,6 @@ elementWidth e =
 
 editMarking :: Text
 editMarking = "(edited)"
+
+seqConcat :: Seq (Seq a) -> Seq a
+seqConcat ss = Seq.foldrWithIndex (\_ s rest -> s Seq.>< rest) mempty ss
