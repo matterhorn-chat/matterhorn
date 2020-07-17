@@ -61,7 +61,6 @@ data ElementData =
     | ESpace
     | ESoftBreak
     | ELineBreak
-    | ELink (Seq Element)
     | EEntity Text
     | ERawHtml Text
     | EEditSentinel
@@ -135,11 +134,9 @@ fromMarkdownInline s (C.Entity t) =
 fromMarkdownInline s (C.RawHtml body) =
     Seq.singleton $ Element s $ ERawHtml body
 fromMarkdownInline _ (C.Link labelIs url _) =
-    Seq.singleton $ Element (Link url) $
-        ELink (seqConcat $ fromMarkdownInline Normal <$> labelIs)
+    seqConcat $ fromMarkdownInline (Link url) <$> labelIs
 fromMarkdownInline _ (C.Image altIs url _) =
-    Seq.singleton $ Element (Link url) $
-        ELink (seqConcat $ fromMarkdownInline Normal <$> altIs)
+    seqConcat $ fromMarkdownInline (Link url) <$> altIs
 
 seqConcat :: Seq (Seq a) -> Seq a
 seqConcat ss = Seq.foldrWithIndex (\_ s rest -> s Seq.>< rest) mempty ss
