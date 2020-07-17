@@ -123,6 +123,7 @@ executable matterhorn
                        Types.DirectionalSeq
                        Types.KeyEvents
                        Types.Messages
+                       Types.RichText
                        Types.Users
                        Types.UserNames
                        Types.Posts
