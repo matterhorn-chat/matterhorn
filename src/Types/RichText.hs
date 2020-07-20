@@ -82,7 +82,7 @@ data ElementStyle =
     | Code
     | Edited
     | EditedRecently
-    | Hyperlink Text
+    | Hyperlink URL
     -- ^ URL
     deriving (Eq, Show)
 
@@ -173,16 +173,18 @@ fromMarkdownInlines inlines =
               Element sty ESoftBreak <| go sty xs
           C.LineBreak :< xs ->
               Element sty ELineBreak <| go sty xs
-          C.Link label url _ :< xs ->
+          C.Link label theUrl _ :< xs ->
               let mLabel = if Seq.null label
                            then Nothing
                            else Just $ fromMarkdownInlines label
-              in (Element (Hyperlink url) $ EHyperlink (URL url) mLabel) <| go sty xs
-          C.Image altIs url _ :< xs ->
+                  url = URL theUrl
+              in (Element (Hyperlink url) $ EHyperlink url mLabel) <| go sty xs
+          C.Image altIs theUrl _ :< xs ->
               let mLabel = if Seq.null altIs
                            then Nothing
                            else Just $ fromMarkdownInlines altIs
-              in (Element (Hyperlink url) $ EImage (URL url) mLabel) <| go sty xs
+                  url = URL theUrl
+              in (Element (Hyperlink url) $ EImage url mLabel) <| go sty xs
           C.RawHtml t :< xs ->
               Element sty (ERawHtml t) <| go sty xs
           C.Code t :< xs ->
