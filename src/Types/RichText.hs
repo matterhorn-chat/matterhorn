@@ -79,7 +79,7 @@ data ElementStyle =
     | Code
     | Edited
     | EditedRecently
-    | Link Text
+    | Hyperlink Text
     -- ^ URL
     deriving (Eq, Show)
 
@@ -140,7 +140,7 @@ fromMarkdownInlines inlines =
           C.LineBreak :< xs ->
               Element sty ELineBreak <| go sty xs
           C.Link label url _ :< xs ->
-              (setStyle (Link url) <$> fromMarkdownInlines label) <> go sty xs
+              (setStyle (Hyperlink url) <$> fromMarkdownInlines label) <> go sty xs
           C.RawHtml t :< xs ->
               Element sty (ERawHtml t) <| go sty xs
           C.Code t :< xs ->
@@ -162,7 +162,7 @@ fromMarkdownInlines inlines =
           C.Strong as :< xs ->
               go Strong as <> go sty xs
           C.Image altIs url _ :< xs ->
-              (setStyle (Link url) <$> fromMarkdownInlines altIs) <> go sty xs
+              (setStyle (Hyperlink url) <$> fromMarkdownInlines altIs) <> go sty xs
           C.Entity t :< xs ->
               Element sty (EText t) <| go sty xs
           Seq.EmptyL -> mempty
