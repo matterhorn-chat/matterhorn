@@ -118,6 +118,37 @@ fromMarkdownListType (C.Numbered wrap i) =
                   C.ParenFollowing -> Paren
     in Numbered dec i
 
+-- | Convert a sequence of Markdown inline values to a sequence of
+-- Elements.
+--
+-- This conversion converts sequences of Markdown AST fragments into
+-- RichText elements. In particular, this function may determine that
+-- some sequences of Markdown text fragments belong together, such as
+-- the sequence @["@", "joe", "-", "user"]@, which should be treated as
+-- a single "@joe-user" token due to username character validation. When
+-- appropriate, this function does such consolidation when converting to
+-- RichText elements.
+--
+-- This function is also responsible for paving the way for
+-- line-wrapping later on when RichText is rendered. This means that,
+-- when possible, the elements produced by this function need to be as
+-- small as possible, without losing structure information. An example
+-- of this is Markdown inline code fragments, such as "`this is code`".
+-- This function will convert that one Markdown inline code fragment
+-- into a sequence of five RichText elements, each with a "Code" style
+-- assigned: @[EText "this", ESpace, EText "is", ESpace, EText "code"]@.
+-- This "flattening" of the original Markdown structure makes it much
+-- easier to do line-wrapping without losing style information, which is
+-- key to rendering the text with the right terminal attributes.
+--
+-- However, there are a couple of cases where such flattening does *not*
+-- happen: hyperlinks and images. In these cases we do not flatten the
+-- (arbitrary) text label structure of links and images because we need
+-- to be able to recover those labels to gather up URLs to show to the
+-- user in the URL list. So we leave the complete text structure of
+-- those labels behind in the EHyperlink and EImage constructors as
+-- sequences of Elements. This means that logic to do line-wrapping will
+-- have to explicitly break up link and image labels across line breaks.
 fromMarkdownInlines :: Seq C.Inline -> Seq Element
 fromMarkdownInlines inlines =
     let go sty is = case Seq.viewl is of
