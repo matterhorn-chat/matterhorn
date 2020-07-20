@@ -83,7 +83,6 @@ data ElementStyle =
     | Edited
     | EditedRecently
     | Hyperlink URL
-    -- ^ URL
     deriving (Eq, Show)
 
 fromMarkdownBlocks :: C.Blocks -> Seq RichTextBlock
