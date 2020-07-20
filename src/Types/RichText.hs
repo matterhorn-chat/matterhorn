@@ -136,7 +136,7 @@ fromMarkdownInlines inlines =
               in Element sty (EUser u) <| go sty rest
           C.Str t :< xs | normalChannelSigil `T.isPrefixOf` t ->
               let (cFrags, rest) = Seq.spanl isNameFragment xs
-                  cn = T.concat $ t : (unsafeGetStr <$> F.toList cFrags)
+                  cn = T.drop 1 $ T.concat $ t : (unsafeGetStr <$> F.toList cFrags)
               in Element sty (EChannel cn) <| go sty rest
           C.Str t :< xs ->
               Element sty (EText t) <| go sty xs
