@@ -74,9 +74,6 @@ data ElementData =
     | ERawHtml Text
     | EEditSentinel
     | EEditRecentlySentinel
-    -- TODO: do we even need this? It seems like places where we need
-    -- sequences of elements already use the 'Seq Element' type.
-    | ESequence (Seq Element)
     | EUser Text
     | EChannel Text
     deriving (Show)
@@ -188,7 +185,6 @@ elementWidth e =
         EChannel t            -> textWidth t
         EEditSentinel         -> textWidth editMarking
         EEditRecentlySentinel -> textWidth editMarking
-        ESequence es          -> sum $ elementWidth <$> es
         ESpace                -> 1
         ELineBreak            -> 0
         ESoftBreak            -> 0
