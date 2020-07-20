@@ -218,13 +218,13 @@ elementWidth e =
         EChannel t                   -> textWidth t
         EEditSentinel                -> textWidth editMarking
         EEditRecentlySentinel        -> textWidth editMarking
-        ESpace                       -> 1
-        ELineBreak                   -> 0
-        ESoftBreak                   -> 0
         EImage (URL url) Nothing     -> textWidth url
         EImage _ (Just is)           -> sum $ elementWidth <$> is
         EHyperlink (URL url) Nothing -> textWidth url
         EHyperlink _ (Just is)       -> sum $ elementWidth <$> is
+        ESpace                       -> 1
+        ELineBreak                   -> 0
+        ESoftBreak                   -> 0
 
 editMarking :: Text
 editMarking = "(edited)"
