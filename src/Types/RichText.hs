@@ -1,6 +1,5 @@
 module Types.RichText
-  ( RichText(..)
-  , RichTextBlock(..)
+  ( RichTextBlock(..)
   , ListType(..)
   , CodeBlockInfo(..)
   , NumDecoration(..)
@@ -25,11 +24,6 @@ import qualified Data.Text as T
 
 import           Types.UserNames ( isNameFragment )
 import           Constants ( userSigil, normalChannelSigil )
-
-data RichText =
-    RichText { richTextBlocks :: Seq RichTextBlock
-             }
-             deriving (Show)
 
 data RichTextBlock =
     Para (Seq Element)
@@ -89,9 +83,8 @@ data ElementStyle =
     -- ^ URL
     deriving (Eq, Show)
 
-fromMarkdownBlocks :: C.Blocks -> RichText
-fromMarkdownBlocks bs =
-    RichText $ fromMarkdownBlock <$> bs
+fromMarkdownBlocks :: C.Blocks -> Seq RichTextBlock
+fromMarkdownBlocks = fmap fromMarkdownBlock
 
 fromMarkdownBlock :: C.Block -> RichTextBlock
 fromMarkdownBlock (C.Para is) =
