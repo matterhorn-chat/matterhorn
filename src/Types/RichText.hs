@@ -18,8 +18,13 @@ import           Prelude.MH
 
 import           Brick ( textWidth )
 import qualified Cheapskate as C
+import qualified Data.Foldable as F
 import qualified Data.Sequence as Seq
+import           Data.Sequence ( (<|), ViewL((:<)) )
+import qualified Data.Text as T
 
+import           Types.UserNames ( isNameFragment )
+import           Types ( userSigil, normalChannelSigil )
 
 data RichText =
     RichText { richTextBlocks :: Seq RichTextBlock
@@ -58,6 +63,9 @@ data Element =
             }
             deriving (Show)
 
+setStyle :: ElementStyle -> Element -> Element
+setStyle sty e = e { eStyle = sty }
+
 data ElementData =
     EText Text
     | ESpace
@@ -90,9 +98,9 @@ fromMarkdownBlocks bs =
 
 fromMarkdownBlock :: C.Block -> RichTextBlock
 fromMarkdownBlock (C.Para is) =
-    Para $ seqConcat $ fromMarkdownInline Normal <$> is
+    Para $ fromMarkdownInlines is
 fromMarkdownBlock (C.Header level is) =
-    Header level $ seqConcat $ fromMarkdownInline Normal <$> is
+    Header level $ fromMarkdownInlines is
 fromMarkdownBlock (C.Blockquote bs) =
     Blockquote $ fromMarkdownBlock <$> bs
 fromMarkdownBlock (C.List f ty bss) =
@@ -117,29 +125,59 @@ fromMarkdownListType (C.Numbered wrap i) =
                   C.ParenFollowing -> Paren
     in Numbered dec i
 
-fromMarkdownInline :: ElementStyle -> C.Inline -> Seq Element
-fromMarkdownInline _ (C.Emph is) =
-    seqConcat $ fromMarkdownInline Emph <$> is
-fromMarkdownInline _ (C.Strong is) =
-    seqConcat $ fromMarkdownInline Strong <$> is
-fromMarkdownInline s C.Space =
-    Seq.singleton $ Element s ESpace
-fromMarkdownInline s C.SoftBreak =
-    Seq.singleton $ Element s ESoftBreak
-fromMarkdownInline s C.LineBreak =
-    Seq.singleton $ Element s ELineBreak
-fromMarkdownInline s (C.Str t) =
-    Seq.singleton $ Element s (EText t)
-fromMarkdownInline _ (C.Code t) =
-    Seq.singleton $ Element Code $ EText t
-fromMarkdownInline s (C.Entity t) =
-    Seq.singleton $ Element s $ EText t
-fromMarkdownInline s (C.RawHtml body) =
-    Seq.singleton $ Element s $ ERawHtml body
-fromMarkdownInline _ (C.Link labelIs url _) =
-    seqConcat $ fromMarkdownInline (Link url) <$> labelIs
-fromMarkdownInline _ (C.Image altIs url _) =
-    seqConcat $ fromMarkdownInline (Link url) <$> altIs
+fromMarkdownInlines :: Seq C.Inline -> Seq Element
+fromMarkdownInlines inlines =
+    let go sty is = case Seq.viewl is of
+          C.Str t :< xs | t == editMarkingSentinel ->
+              Element Edited EEditSentinel <| go sty xs
+          C.Str t :< xs | t == editRecentlyMarkingSentinel ->
+              Element EditedRecently EEditRecentlySentinel <| go sty xs
+          C.Str t :< xs | userSigil `T.isPrefixOf` t ->
+              let (uFrags, rest) = Seq.spanl isNameFragment xs
+                  t' = T.concat $ t : (unsafeGetStr <$> F.toList uFrags)
+                  u = T.drop 1 t'
+              in Element sty (EUser u) <| go sty rest
+          C.Str t :< xs | normalChannelSigil `T.isPrefixOf` t ->
+              let (cFrags, rest) = Seq.spanl isNameFragment xs
+                  cn = T.concat $ t : (unsafeGetStr <$> F.toList cFrags)
+              in Element sty (EChannel cn) <| go sty rest
+          C.Str t :< xs ->
+              Element sty (EText t) <| go sty xs
+          C.Space :< xs ->
+              Element sty ESpace <| go sty xs
+          C.SoftBreak :< xs ->
+              Element sty ESoftBreak <| go sty xs
+          C.LineBreak :< xs ->
+              Element sty ELineBreak <| go sty xs
+          C.Link label url _ :< xs ->
+              (setStyle (Link url) <$> fromMarkdownInlines label) <> go sty xs
+          C.RawHtml t :< xs ->
+              Element sty (ERawHtml t) <| go sty xs
+          C.Code t :< xs ->
+              -- We turn a single code string into individual Elements
+              -- so we can perform line-wrapping on the inline code
+              -- text.
+              let ts = [ Element Code frag
+                       | wd <- T.split (== ' ') t
+                       , frag <- case wd of
+                           "" -> [ESpace]
+                           _  -> [ESpace, EText wd]
+                       ]
+                  ts' = case ts of
+                    (Element _ ESpace:rs) -> rs
+                    _                     -> ts
+              in Seq.fromList ts' <> go sty xs
+          C.Emph as :< xs ->
+              go Emph as <> go sty xs
+          C.Strong as :< xs ->
+              go Strong as <> go sty xs
+          C.Image altIs url _ :< xs ->
+              (setStyle (Link url) <$> fromMarkdownInlines altIs) <> go sty xs
+          C.Entity t :< xs ->
+              Element sty (EText t) <| go sty xs
+          Seq.EmptyL -> mempty
+
+    in go Normal inlines
 
 elementWidth :: Element -> Int
 elementWidth e =
@@ -168,5 +206,6 @@ editMarkingSentinel = "#__mh_edit"
 editRecentlyMarkingSentinel :: Text
 editRecentlyMarkingSentinel = "#__mh_edit_r"
 
-seqConcat :: Seq (Seq a) -> Seq a
-seqConcat ss = Seq.foldrWithIndex (\_ s rest -> s Seq.>< rest) mempty ss
+unsafeGetStr :: C.Inline -> Text
+unsafeGetStr (C.Str t) = t
+unsafeGetStr _ = error "BUG: unsafeGetStr called on non-Str Inline"
