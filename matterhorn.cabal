@@ -111,6 +111,7 @@ executable matterhorn
                        Events.LeaveChannelConfirm
                        Events.DeleteChannelConfirm
                        Events.TabbedWindow
+                       Events.EditNotifyPrefs
                        Windows.ViewMessage
                        HelpTopics
                        KeyMap

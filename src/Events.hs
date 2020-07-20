@@ -48,6 +48,7 @@ import           Events.ChannelListOverlay
 import           Events.ReactionEmojiListOverlay
 import           Events.TabbedWindow
 import           Events.ManageAttachments
+import           Events.EditNotifyPrefs
 
 
 onEvent :: ChatState -> BrickEvent Name MHEvent -> EventM Name (Next ChatState)
@@ -200,7 +201,7 @@ handleGlobalEvent e = do
         ViewMessage                -> void $ handleTabbedWindowEvent (csViewedMessage.singular _Just._2) e
         ManageAttachments          -> onEventManageAttachments e
         ManageAttachmentsBrowseFiles -> onEventManageAttachments e
-        EditNotifyPrefs            -> onEventMain e
+        EditNotifyPrefs            -> void $ onEventEditNotifyPrefs e
 
 globalKeybindings :: KeyConfig -> KeyHandlerMap
 globalKeybindings = mkKeybindings globalKeyHandlers

@@ -2,6 +2,7 @@
 {-# LANGUAGE RankNTypes #-}
 module State.NotifyPrefs
     ( enterEditNotifyPrefsMode
+    , exitEditNotifyPrefsMode
     )
 where
 
@@ -52,7 +53,7 @@ mkNotifyButtons mkName l =
                  , (IsValue NotifyOptionMention, mkName $ IsValue NotifyOptionMention, "Mentions")
                  , (IsValue NotifyOptionNone, mkName $ IsValue NotifyOptionNone, "Never")
                  ]
-    
+
 notifyPrefsForm :: ChannelNotifyProps -> Form ChannelNotifyProps e Name
 notifyPrefsForm =
     newForm [ checkboxField muteLens MuteToggleField "Mute channel"
@@ -62,3 +63,13 @@ notifyPrefsForm =
             , (str "Push notifications" <=>) . (padLeft $ Pad 1) @@=
                 mkNotifyButtons PushNotificationsField channelNotifyPropsPushL
             ]
+
+enterEditNotifyPrefsMode :: MH ()
+enterEditNotifyPrefsMode = do
+    props <- use (csCurrentChannel.ccInfo.cdNotifyProps)
+    csNotifyPrefs .= Just (notifyPrefsForm props)
+    setMode EditNotifyPrefs
+
+exitEditNotifyPrefsMode :: MH ()
+exitEditNotifyPrefsMode = do
+    setMode Main
