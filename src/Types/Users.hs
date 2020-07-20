@@ -13,7 +13,6 @@ module Types.Users
   , userInfoFromUser
   -- * Miscellaneous
   , getUsernameSet
-  , userSigil
   , trimUserSigil
   , statusFromText
   , findUserById
@@ -43,6 +42,7 @@ import           Lens.Micro.Platform ( (%~), makeLenses, ix )
 import           Network.Mattermost.Types ( UserId(..), User(..) )
 
 import           Types.Common
+import           Constants ( userSigil )
 
 -- * 'UserInfo' Values
 
@@ -184,9 +184,6 @@ findUserByNickname nick us =
   case filter ((== (Just $ trimUserSigil nick)) . _uiNickName . snd) $ HM.toList $ _ofUsers us of
     (pair : []) -> Just pair
     _ -> Nothing
-
-userSigil :: Text
-userSigil = "@"
 
 trimUserSigil :: Text -> Text
 trimUserSigil n

@@ -76,6 +76,7 @@ import qualified Network.Mattermost.Endpoints as MM
 import           Network.Mattermost.Lenses
 import           Network.Mattermost.Types
 
+import           Constants ( normalChannelSigil )
 import           InputHistory
 import           State.Common
 import {-# SOURCE #-} State.Messages ( fetchVisibleIfNeeded )

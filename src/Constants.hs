@@ -3,6 +3,8 @@ module Constants
   , userTypingExpiryInterval
   , numScrollbackPosts
   , previewMaxHeight
+  , normalChannelSigil
+  , userSigil
   )
 where
 
@@ -24,3 +26,10 @@ numScrollbackPosts = 100
 -- | The maximum height of the message preview, in lines.
 previewMaxHeight :: Int
 previewMaxHeight = 5
+
+-- Sigils
+normalChannelSigil :: Text
+normalChannelSigil = "~"
+
+userSigil :: Text
+userSigil = "@"

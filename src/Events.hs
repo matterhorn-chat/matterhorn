@@ -22,6 +22,7 @@ import           Network.Mattermost.Types
 import           Network.Mattermost.WebSocket
 
 import           Connection
+import           Constants ( userSigil, normalChannelSigil )
 import           HelpTopics
 import           State.Channels
 import           State.Common

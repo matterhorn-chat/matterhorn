@@ -257,8 +257,6 @@ module Types
   , getNewMessageCutoff
   , getEditedMessageCutoff
 
-  , normalChannelSigil
-
   , HighlightSet(..)
   , UserSet
   , ChannelSet
@@ -320,6 +318,7 @@ import           Network.Mattermost.Types
 import           Network.Mattermost.Types.Config
 import           Network.Mattermost.WebSocket ( WebsocketEvent, WebsocketActionResponse )
 
+import           Constants ( userSigil, normalChannelSigil )
 import           InputHistory
 import           Emoji
 import           Types.Common
@@ -708,10 +707,6 @@ data PostRef
     = MMId PostId
     | CLId Int
     deriving (Eq, Show)
-
--- Sigils
-normalChannelSigil :: Text
-normalChannelSigil = "~"
 
 -- ** Channel-matching types
 

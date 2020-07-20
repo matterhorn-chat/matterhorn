@@ -49,8 +49,9 @@ import qualified Skylighting.Core as Sky
 import           Network.Mattermost.Lenses ( postEditAtL, postCreateAtL )
 import           Network.Mattermost.Types ( ServerTime(..) )
 
+import           Constants ( userSigil, normalChannelSigil )
 import           Themes
-import           Types ( Name, HighlightSet(..), userSigil, normalChannelSigil )
+import           Types ( Name, HighlightSet(..) )
 import           Types.Messages
 import           Types.Posts
 import           Types.UserNames ( isNameFragment, takeWhileNameFragment )

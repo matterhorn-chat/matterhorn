@@ -29,6 +29,7 @@ import           Lens.Micro.Platform (non)
 
 import qualified Network.Mattermost.Types as MM
 
+import           Constants ( userSigil )
 import           Draw.Util
 import           State.Channels
 import           Themes

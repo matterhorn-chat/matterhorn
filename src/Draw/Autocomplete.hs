@@ -15,6 +15,7 @@ import qualified Data.Text as T
 
 import           Network.Mattermost.Types ( User(..), Channel(..) )
 
+import           Constants ( normalChannelSigil )
 import           Draw.Util
 import           Themes
 import           Types

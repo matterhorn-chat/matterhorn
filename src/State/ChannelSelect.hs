@@ -17,6 +17,7 @@ import           Lens.Micro.Platform
 
 import qualified Network.Mattermost.Types as MM
 
+import           Constants ( userSigil, normalChannelSigil )
 import           Types
 import qualified Zipper as Z
 

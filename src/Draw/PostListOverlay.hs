@@ -16,6 +16,7 @@ import           Lens.Micro.Platform ( (^?), (%~), to )
 import           Network.Mattermost.Lenses
 import           Network.Mattermost.Types
 
+import           Constants ( userSigil )
 import           Draw.Main
 import           Draw.Messages
 import           Draw.Util

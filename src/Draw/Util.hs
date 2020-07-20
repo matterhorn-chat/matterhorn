@@ -19,6 +19,7 @@ import qualified Data.Text as T
 import           Lens.Micro.Platform ( to )
 import           Network.Mattermost.Types
 
+import           Constants ( userSigil, normalChannelSigil )
 import           Themes
 import           TimeUtils
 import           Types

@@ -24,7 +24,7 @@ import           Data.Sequence ( (<|), ViewL((:<)) )
 import qualified Data.Text as T
 
 import           Types.UserNames ( isNameFragment )
-import           Types ( userSigil, normalChannelSigil )
+import           Constants ( userSigil, normalChannelSigil )
 
 data RichText =
     RichText { richTextBlocks :: Seq RichTextBlock

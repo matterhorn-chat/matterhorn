@@ -25,6 +25,7 @@ import qualified Skylighting.Types as Sky
 import           Network.Mattermost.Types (userId, channelId)
 import qualified Network.Mattermost.Endpoints as MM
 
+import           Constants ( userSigil, normalChannelSigil )
 import {-# SOURCE #-} Command ( commandList, printArgSpec )
 import           State.Common
 import {-# SOURCE #-} State.Editing ( Direction(..), tabComplete )

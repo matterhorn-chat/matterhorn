@@ -22,6 +22,7 @@ import qualified Network.Mattermost.Exceptions as MM
 import qualified Network.Mattermost.Types as MM
 
 import           Connection ( connectWebsockets )
+import           Constants ( userSigil, normalChannelSigil )
 import           HelpTopics
 import           Scripts
 import           State.Help
