@@ -93,6 +93,7 @@ executable matterhorn
                        Draw.URLList
                        Draw.Util
                        Draw.TabbedWindow
+                       Draw.NotifyPrefs
                        InputHistory
                        IOUtil
                        Events

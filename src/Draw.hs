@@ -6,7 +6,6 @@ import Prelude ()
 import Prelude.MH
 
 import Brick
-import Brick.Forms (renderForm)
 
 import Lens.Micro.Platform ( _2, singular, _Just )
 
@@ -21,6 +20,7 @@ import Draw.ChannelListOverlay
 import Draw.ReactionEmojiListOverlay
 import Draw.TabbedWindow
 import Draw.ManageAttachments
+import Draw.NotifyPrefs
 import Types
 
 
@@ -43,4 +43,4 @@ draw st =
         ViewMessage                -> drawTabbedWindow (st^.csViewedMessage.singular _Just._2) st : drawMain False st
         ManageAttachments          -> drawManageAttachments st
         ManageAttachmentsBrowseFiles -> drawManageAttachments st
-        EditNotifyPrefs            -> [renderForm (st^.csNotifyPrefs.singular _Just)]
+        EditNotifyPrefs            -> drawNotifyPrefs st : drawMain False st
