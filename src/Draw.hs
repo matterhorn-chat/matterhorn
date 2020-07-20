@@ -6,6 +6,7 @@ import Prelude ()
 import Prelude.MH
 
 import Brick
+import Brick.Forms (renderForm)
 
 import Lens.Micro.Platform ( _2, singular, _Just )
 
@@ -42,4 +43,4 @@ draw st =
         ViewMessage                -> drawTabbedWindow (st^.csViewedMessage.singular _Just._2) st : drawMain False st
         ManageAttachments          -> drawManageAttachments st
         ManageAttachmentsBrowseFiles -> drawManageAttachments st
-        EditNotifyPrefs            -> drawMain True st
+        EditNotifyPrefs            -> [renderForm (st^.csNotifyPrefs.singular _Just)]
