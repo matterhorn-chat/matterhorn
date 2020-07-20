@@ -6,6 +6,7 @@ module Types.RichText
   , Element(..)
   , ElementData(..)
   , ElementStyle(..)
+  , URL(..)
 
   , fromMarkdownBlocks
   , elementWidth
@@ -57,8 +58,8 @@ data Element =
             }
             deriving (Show)
 
-setStyle :: ElementStyle -> Element -> Element
-setStyle sty e = e { eStyle = sty }
+newtype URL = URL Text
+            deriving (Eq, Show)
 
 data ElementData =
     EText Text
@@ -70,6 +71,8 @@ data ElementData =
     | EEditRecentlySentinel
     | EUser Text
     | EChannel Text
+    | EHyperlink URL (Maybe (Seq Element))
+    | EImage URL (Maybe (Seq Element))
     deriving (Show)
 
 data ElementStyle =
@@ -140,7 +143,15 @@ fromMarkdownInlines inlines =
           C.LineBreak :< xs ->
               Element sty ELineBreak <| go sty xs
           C.Link label url _ :< xs ->
-              (setStyle (Hyperlink url) <$> fromMarkdownInlines label) <> go sty xs
+              let mLabel = if Seq.null label
+                           then Nothing
+                           else Just $ fromMarkdownInlines label
+              in (Element (Hyperlink url) $ EHyperlink (URL url) mLabel) <| go sty xs
+          C.Image altIs url _ :< xs ->
+              let mLabel = if Seq.null altIs
+                           then Nothing
+                           else Just $ fromMarkdownInlines altIs
+              in (Element (Hyperlink url) $ EImage (URL url) mLabel) <| go sty xs
           C.RawHtml t :< xs ->
               Element sty (ERawHtml t) <| go sty xs
           C.Code t :< xs ->
@@ -161,8 +172,6 @@ fromMarkdownInlines inlines =
               go Emph as <> go sty xs
           C.Strong as :< xs ->
               go Strong as <> go sty xs
-          C.Image altIs url _ :< xs ->
-              (setStyle (Hyperlink url) <$> fromMarkdownInlines altIs) <> go sty xs
           C.Entity t :< xs ->
               Element sty (EText t) <| go sty xs
           Seq.EmptyL -> mempty
@@ -181,6 +190,10 @@ elementWidth e =
         ESpace                -> 1
         ELineBreak            -> 0
         ESoftBreak            -> 0
+        EImage (URL url) Nothing -> textWidth url
+        EImage _ (Just is) -> sum $ elementWidth <$> is
+        EHyperlink (URL url) Nothing -> textWidth url
+        EHyperlink _ (Just is) -> sum $ elementWidth <$> is
 
 editMarking :: Text
 editMarking = "(edited)"
