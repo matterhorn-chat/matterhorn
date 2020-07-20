@@ -59,6 +59,7 @@ executable matterhorn
                        State.Logging
                        State.Messages
                        State.MessageSelect
+                       State.NotifyPrefs
                        State.PostListOverlay
                        State.ThemeListOverlay
                        State.ReactionEmojiListOverlay
