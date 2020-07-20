@@ -212,19 +212,19 @@ fromMarkdownInlines inlines =
 elementWidth :: Element -> Int
 elementWidth e =
     case eData e of
-        EText t               -> textWidth t
-        ERawHtml t            -> textWidth t
-        EUser t               -> textWidth t
-        EChannel t            -> textWidth t
-        EEditSentinel         -> textWidth editMarking
-        EEditRecentlySentinel -> textWidth editMarking
-        ESpace                -> 1
-        ELineBreak            -> 0
-        ESoftBreak            -> 0
-        EImage (URL url) Nothing -> textWidth url
-        EImage _ (Just is) -> sum $ elementWidth <$> is
+        EText t                      -> textWidth t
+        ERawHtml t                   -> textWidth t
+        EUser t                      -> textWidth t
+        EChannel t                   -> textWidth t
+        EEditSentinel                -> textWidth editMarking
+        EEditRecentlySentinel        -> textWidth editMarking
+        ESpace                       -> 1
+        ELineBreak                   -> 0
+        ESoftBreak                   -> 0
+        EImage (URL url) Nothing     -> textWidth url
+        EImage _ (Just is)           -> sum $ elementWidth <$> is
         EHyperlink (URL url) Nothing -> textWidth url
-        EHyperlink _ (Just is) -> sum $ elementWidth <$> is
+        EHyperlink _ (Just is)       -> sum $ elementWidth <$> is
 
 editMarking :: Text
 editMarking = "(edited)"
