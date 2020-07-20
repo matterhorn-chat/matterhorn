@@ -42,3 +42,4 @@ draw st =
         ViewMessage                -> drawTabbedWindow (st^.csViewedMessage.singular _Just._2) st : drawMain False st
         ManageAttachments          -> drawManageAttachments st
         ManageAttachmentsBrowseFiles -> drawManageAttachments st
+        EditNotifyPrefs            -> drawMain True st

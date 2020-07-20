@@ -101,6 +101,7 @@ module Types
   , csClientConfig
   , csPendingChannelChange
   , csViewedMessage
+  , csNotifyPrefs
   , timeZone
   , whenMode
   , setMode
@@ -281,6 +282,7 @@ import           Brick.Themes ( Theme )
 import           Brick.Main ( invalidateCache, invalidateCacheEntry )
 import           Brick.AttrMap ( AttrMap )
 import qualified Brick.BChan as BCH
+import           Brick.Forms (Form)
 import           Brick.Widgets.Edit ( Editor, editor )
 import           Brick.Widgets.List ( List, list )
 import qualified Brick.Widgets.FileBrowser as FB
@@ -670,6 +672,10 @@ data Name =
     | ReactionEmojiList
     | ReactionEmojiListInput
     | TabbedWindowTabBar
+    | MuteToggleField
+    | ChannelMentionsField
+    | DesktopNotificationsField (WithDefault NotifyOption)
+    | PushNotificationsField (WithDefault NotifyOption)
     deriving (Eq, Show, Ord)
 
 -- | The sum type of exceptions we expect to encounter on authentication
@@ -1085,6 +1091,7 @@ data Mode =
     | ViewMessage
     | ManageAttachments
     | ManageAttachmentsBrowseFiles
+    | EditNotifyPrefs
     deriving (Eq)
 
 -- | We're either connected or we're not.
@@ -1341,6 +1348,7 @@ data ChatState =
               -- consult the chat state for the latest *version* of any
               -- message with an ID here, to be sure that the latest
               -- version is used (e.g. if it gets edited, etc.).
+              , _csNotifyPrefs :: Maybe (Form ChannelNotifyProps MHEvent Name)
               }
 
 -- | Handles for the View Message window's tabs.
@@ -1398,6 +1406,7 @@ newState (StartupStateInfo {..}) = do
                      , _csClientConfig                = Nothing
                      , _csPendingChannelChange        = Nothing
                      , _csViewedMessage               = Nothing
+                     , _csNotifyPrefs                 = Nothing
                      }
 
 nullChannelListOverlayState :: ListOverlayState Channel ChannelSearchScope

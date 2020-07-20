@@ -200,6 +200,7 @@ handleGlobalEvent e = do
         ViewMessage                -> void $ handleTabbedWindowEvent (csViewedMessage.singular _Just._2) e
         ManageAttachments          -> onEventManageAttachments e
         ManageAttachmentsBrowseFiles -> onEventManageAttachments e
+        EditNotifyPrefs            -> onEventMain e
 
 globalKeybindings :: KeyConfig -> KeyHandlerMap
 globalKeybindings = mkKeybindings globalKeyHandlers

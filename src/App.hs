@@ -48,6 +48,7 @@ app = App
       ViewMessage                   -> Nothing
       ShowHelp _ _                  -> Nothing
       UrlSelect                     -> Nothing
+      EditNotifyPrefs               -> Nothing
   , appHandleEvent  = Events.onEvent
   , appStartEvent   = return
   , appAttrMap      = (^.csResources.crTheme)

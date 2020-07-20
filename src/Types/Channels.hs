@@ -42,6 +42,10 @@ module Types.Channels
   -- * Notification settings
   , notifyPreference
   , isMuted
+  , channelNotifyPropsMarkUnreadL
+  , channelNotifyPropsIgnoreChannelMentionsL
+  , channelNotifyPropsDesktopL
+  , channelNotifyPropsPushL
   -- * Miscellaneous channel-related operations
   , canLeaveChannel
   , preferredChannelName
