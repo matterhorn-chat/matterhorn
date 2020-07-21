@@ -18,6 +18,7 @@ import           Prelude.MH
 
 import           Brick ( textWidth )
 import qualified Cheapskate as C
+import           Data.Char ( isAlphaNum )
 import qualified Data.Foldable as F
 import qualified Data.Sequence as Seq
 import           Data.Sequence ( (<|), ViewL((:<)) )
@@ -73,6 +74,7 @@ data ElementData =
     | EChannel Text
     | EHyperlink URL (Maybe (Seq Element))
     | EImage URL (Maybe (Seq Element))
+    | EEmoji Text
     deriving (Show)
 
 data ElementStyle =
@@ -83,6 +85,7 @@ data ElementStyle =
     | Edited
     | EditedRecently
     | Hyperlink URL
+    | Emoji
     deriving (Eq, Show)
 
 fromMarkdownBlocks :: C.Blocks -> Seq RichTextBlock
@@ -155,6 +158,16 @@ fromMarkdownInlines inlines =
               Element Edited EEditSentinel <| go sty xs
           C.Str t :< xs | t == editRecentlyMarkingSentinel ->
               Element EditedRecently EEditRecentlySentinel <| go sty xs
+          C.Str ":" :< xs ->
+              let validEmojiFragment (C.Str f) =
+                      f `elem` ["_", "-"] || T.all isAlphaNum f
+                  validEmojiFragment _ = False
+                  (emojiFrags, rest) = Seq.spanl validEmojiFragment xs
+              in case Seq.viewl rest of
+                  C.Str ":" :< rest2 ->
+                      Element Emoji (EEmoji $ T.concat $ unsafeGetStr <$> F.toList emojiFrags) <| go sty rest2
+                  _ ->
+                      Element sty (EText ":") <| go sty xs
           C.Str t :< xs | userSigil `T.isPrefixOf` t ->
               let (uFrags, rest) = Seq.spanl isNameFragment xs
                   t' = T.concat $ t : (unsafeGetStr <$> F.toList uFrags)
@@ -223,6 +236,7 @@ elementWidth e =
         EImage _ (Just is)           -> sum $ elementWidth <$> is
         EHyperlink (URL url) Nothing -> textWidth url
         EHyperlink _ (Just is)       -> sum $ elementWidth <$> is
+        EEmoji t                     -> textWidth t + 2
         ESpace                       -> 1
         ELineBreak                   -> 0
         ESoftBreak                   -> 0
