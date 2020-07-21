@@ -228,8 +228,8 @@ elementWidth e =
     case eData e of
         EText t                      -> textWidth t
         ERawHtml t                   -> textWidth t
-        EUser t                      -> 1 + textWidth t
-        EChannel t                   -> 1 + textWidth t
+        EUser t                      -> T.length userSigil + textWidth t
+        EChannel t                   -> T.length normalChannelSigil + textWidth t
         EEditSentinel                -> textWidth editMarking
         EEditRecentlySentinel        -> textWidth editMarking
         EImage (URL url) Nothing     -> textWidth url
