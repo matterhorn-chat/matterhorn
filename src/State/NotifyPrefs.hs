@@ -57,12 +57,13 @@ mkNotifyButtons mkName l =
 notifyPrefsForm :: ChannelNotifyProps -> Form ChannelNotifyProps e Name
 notifyPrefsForm =
     newForm [ checkboxField muteLens MuteToggleField "Mute channel"
-            , checkboxField channelMentionLens ChannelMentionsField "Ignore channel mentions"
-            , (str "Desktop notifications" <=>) . (padLeft $ Pad 1) @@=
+            , (padTop $ Pad 1) @@= checkboxField channelMentionLens ChannelMentionsField "Ignore channel mentions"
+            , radioStyle "Desktop notifications" @@=
                 mkNotifyButtons DesktopNotificationsField channelNotifyPropsDesktopL
-            , (str "Push notifications" <=>) . (padLeft $ Pad 1) @@=
+            , radioStyle "Push notifications" @@=
                 mkNotifyButtons PushNotificationsField channelNotifyPropsPushL
             ]
+    where radioStyle label = (padTop $ Pad 1 ) . (str label <=>) . (padLeft $ Pad 1)
 
 enterEditNotifyPrefsMode :: MH ()
 enterEditNotifyPrefsMode = do
