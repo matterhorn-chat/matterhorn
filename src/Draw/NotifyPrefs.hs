@@ -6,7 +6,6 @@ where
 import Prelude ()
 import Prelude.MH
 
-import Data.Maybe (fromJust)
 import Brick
 import Brick.Widgets.Border
 import Brick.Widgets.Center
@@ -16,9 +15,10 @@ import Types
 
 drawNotifyPrefs :: ChatState -> Widget Name
 drawNotifyPrefs st =
-    let form = fromJust $ st^.csNotifyPrefs
+    let Just form = st^.csNotifyPrefs
+        label = str "Notification Preferences"
     in centerLayer $
        vLimit 20 $
        hLimit 60 $
-       border $
+       borderWithLabel label $
        renderForm form
