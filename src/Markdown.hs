@@ -67,7 +67,6 @@ omittedUsernameType = \case
   CP TopicChange -> True
   _ -> False
 
-
 -- The special string we use to indicate the placement of a styled
 -- indication that a message has been edited.
 editMarkingSentinel :: Text
