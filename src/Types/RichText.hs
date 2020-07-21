@@ -57,7 +57,7 @@ data Element =
     Element { eStyle :: ElementStyle
             , eData :: ElementData
             }
-            deriving (Show)
+            deriving (Show, Eq)
 
 newtype URL = URL Text
             deriving (Eq, Show)
@@ -75,7 +75,7 @@ data ElementData =
     | EHyperlink URL (Maybe (Seq Element))
     | EImage URL (Maybe (Seq Element))
     | EEmoji Text
-    deriving (Show)
+    deriving (Show, Eq)
 
 data ElementStyle =
     Normal
