@@ -35,10 +35,10 @@ import qualified Network.Mattermost.Endpoints as MM
 import           Network.Mattermost.Types
 
 import           Clipboard ( copyToClipboard )
-import           Markdown ( findVerbatimChunk )
 import           State.Common
 import           State.Messages
 import           Types
+import           Types.RichText ( findVerbatimChunk )
 import           Types.Common
 import           Windows.ViewMessage
 

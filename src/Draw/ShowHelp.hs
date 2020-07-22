@@ -39,7 +39,7 @@ import           Events.ManageAttachments
 import           Events.TabbedWindow
 import           Windows.ViewMessage
 import           HelpTopics ( helpTopics )
-import           Markdown ( renderText )
+import           Draw.RichText ( renderText )
 import           Options ( mhVersion )
 import           State.Editing ( editingKeyHandlers )
 import           Themes

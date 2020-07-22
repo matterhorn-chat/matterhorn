@@ -81,7 +81,7 @@ import           Network.Mattermost.Types ( Session(..), User, Login(..), Connec
 import           Network.Mattermost.Exceptions ( LoginFailureException(..) )
 import           Network.Mattermost.Endpoints ( mmGetUser, mmGetLimitedClientConfiguration, mmLogin )
 
-import           Markdown
+import           Draw.RichText
 import           Themes ( clientEmphAttr )
 import           Types ( ConnectionInfo(..)
                        , ciPassword, ciUsername, ciHostname, ciUrlPath

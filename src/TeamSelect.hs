@@ -18,7 +18,7 @@ import qualified Data.Text as T
 
 import           Network.Mattermost.Types
 
-import           Markdown
+import           Draw.RichText
 import           Types.Common
 
 

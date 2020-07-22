@@ -50,7 +50,6 @@ where
 import           Prelude ()
 import           Prelude.MH
 
-import           Cheapskate ( Blocks )
 import qualified Cheapskate as C
 import qualified Data.Map.Strict as Map
 import qualified Data.Sequence as Seq
@@ -63,6 +62,7 @@ import           Network.Mattermost.Lenses
 import           Network.Mattermost.Types
 
 import           Types.Common
+import           Types.RichText ( RichTextBlock(Blockquote), fromMarkdownBlocks )
 
 
 -- * Client Messages
@@ -113,7 +113,7 @@ makeLenses ''ClientMessage
 --   the Mattermost 'Post' type, with unnecessary information
 --   removed and some preprocessing done.
 data ClientPost = ClientPost
-  { _cpText          :: Blocks
+  { _cpText          :: Seq RichTextBlock
   , _cpMarkdownSource :: Text
   , _cpUser          :: Maybe UserId
   , _cpUserOverride  :: Maybe Text
@@ -155,8 +155,8 @@ data ClientPostType =
 -- ** Creating 'ClientPost' Values
 
 -- | Parse text as Markdown and extract the AST
-getBlocks :: Text -> Blocks
-getBlocks s = bs where C.Doc _ bs = C.markdown C.def s
+getBlocks :: Text -> Seq RichTextBlock
+getBlocks s = fromMarkdownBlocks bs where C.Doc _ bs = C.markdown C.def s
 
 -- | Determine the internal 'PostType' based on a 'Post'
 postClientPostType :: Post -> ClientPostType
@@ -221,12 +221,12 @@ toClientPost p parentId =
 
 -- | Right now, instead of treating 'attachment' properties specially, we're
 --   just going to roll them directly into the message text
-getAttachmentText :: Post -> Blocks
+getAttachmentText :: Post -> Seq RichTextBlock
 getAttachmentText p =
   case p^.postPropsL.postPropsAttachmentsL of
     Nothing -> Seq.empty
     Just attachments ->
-      fmap (C.Blockquote . render) attachments
+      fmap (Blockquote . render) attachments
   where render att = getBlocks (att^.ppaTextL) <> getBlocks (att^.ppaFallbackL)
 
 -- ** 'ClientPost' Lenses

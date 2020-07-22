@@ -27,7 +27,6 @@ import qualified Brick.Widgets.Skylighting as BS
 import qualified Cheapskate as C
 import qualified Data.Foldable as F
 import qualified Data.Map.Strict as Map
-import           Data.Monoid (First(..))
 import qualified Data.Sequence as Seq
 import           Data.Sequence ( ViewL(..)
                                , ViewR(..)
@@ -164,9 +163,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                          else bs
                 else bs
 
-        -- TODO FIXME do not use fromMarkdownBlocks here; change the
-        -- text type from Blocks to Seq RichTextBlock instead.
-        augmentedText = maybeAugment $ fromMarkdownBlocks $ msg^.mText
+        augmentedText = maybeAugment $ msg^.mText
         msgWidget =
             vBox $ (layout mdHighlightSet mdMessageWidthLimit nameElems augmentedText . viewl) augmentedText :
                    catMaybes [msgAtch, msgReac]
@@ -463,8 +460,3 @@ textWithCursor t
 
 removeCursor :: Text -> Text
 removeCursor = T.filter (/= cursorSentinel)
-
-findVerbatimChunk :: Seq RichTextBlock -> Maybe Text
-findVerbatimChunk = getFirst . F.foldMap go
-  where go (CodeBlock _ t) = First (Just t)
-        go _               = First Nothing

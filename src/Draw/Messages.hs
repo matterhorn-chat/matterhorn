@@ -18,7 +18,7 @@ import           Prelude ()
 import           Prelude.MH
 
 import           Draw.Util
-import           Markdown
+import           Draw.RichText
 import           Themes
 import           Types
 import           Types.DirectionalSeq

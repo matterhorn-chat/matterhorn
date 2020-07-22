@@ -33,9 +33,9 @@ import           Draw.Messages
 import           Draw.Autocomplete
 import           Draw.URLList
 import           Draw.Util
+import           Draw.RichText
 import           Events.Keybindings
 import           Events.MessageSelect
-import           Markdown
 import           State.MessageSelect
 import           Themes
 import           TimeUtils ( justAfter, justBefore )

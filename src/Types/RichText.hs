@@ -11,6 +11,10 @@ module Types.RichText
   , fromMarkdownBlocks
   , elementWidth
 
+  , findUsernames
+  , blockGetURLs
+  , findVerbatimChunk
+
   , editMarkingSentinel
   , editRecentlyMarkingSentinel
   , editMarking
@@ -24,6 +28,8 @@ import           Brick ( textWidth )
 import qualified Cheapskate as C
 import           Data.Char ( isAlphaNum )
 import qualified Data.Foldable as F
+import           Data.Monoid (First(..))
+import qualified Data.Set as S
 import qualified Data.Sequence as Seq
 import           Data.Sequence ( (<|), ViewL((:<)) )
 import qualified Data.Text as T
@@ -261,3 +267,46 @@ editRecentlyMarkingSentinel = "#__mh_edit_r"
 unsafeGetStr :: C.Inline -> Text
 unsafeGetStr (C.Str t) = t
 unsafeGetStr _ = error "BUG: unsafeGetStr called on non-Str Inline"
+
+findUsernames :: Seq RichTextBlock -> S.Set T.Text
+findUsernames = S.unions . F.toList . fmap blockFindUsernames
+
+blockFindUsernames :: RichTextBlock -> S.Set T.Text
+blockFindUsernames (Para is) =
+    elementFindUsernames $ F.toList is
+blockFindUsernames (Header _ is) =
+    elementFindUsernames $ F.toList is
+blockFindUsernames (Blockquote bs) =
+    findUsernames bs
+blockFindUsernames (List _ _ bs) =
+    S.unions $ F.toList $ findUsernames <$> bs
+blockFindUsernames _ =
+    mempty
+
+elementFindUsernames :: [Element] -> S.Set T.Text
+elementFindUsernames [] = mempty
+elementFindUsernames (e : es) =
+    case eData e of
+        EUser u -> S.insert u $ elementFindUsernames es
+        _ -> elementFindUsernames es
+
+blockGetURLs :: RichTextBlock -> [(Text, Text)]
+blockGetURLs (Para is) = catMaybes $ elementGetURL <$> toList is
+blockGetURLs (Header _ is) = catMaybes $ elementGetURL <$> toList is
+blockGetURLs (Blockquote bs) = mconcat $ blockGetURLs <$> toList bs
+blockGetURLs (List _ _ bss) =
+    mconcat $ mconcat $
+    (fmap blockGetURLs . F.toList) <$> F.toList bss
+blockGetURLs _ = mempty
+
+elementGetURL :: Element -> Maybe (Text, Text)
+elementGetURL (Element _ (EHyperlink (URL url) Nothing)) = Just (url, url)
+elementGetURL (Element _ (EHyperlink (URL url) (Just _))) = Just (url, "FIXME[elementGetURLs]")
+elementGetURL (Element _ (EImage (URL url) Nothing)) = Just (url, url)
+elementGetURL (Element _ (EImage (URL url) (Just _))) = Just (url, "FIXME[elementGetURLs]")
+elementGetURL _ = mempty
+
+findVerbatimChunk :: Seq RichTextBlock -> Maybe Text
+findVerbatimChunk = getFirst . F.foldMap go
+  where go (CodeBlock _ t) = First (Just t)
+        go _               = First Nothing

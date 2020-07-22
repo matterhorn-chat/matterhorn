@@ -15,7 +15,7 @@ import           Network.Mattermost.Types ( ServerTime(..) )
 
 import           Draw.Messages
 import           Draw.Util
-import           Markdown
+import           Draw.RichText
 import           Themes
 import           Types
 

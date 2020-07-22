@@ -25,7 +25,7 @@ import           Constants
 import           Events.Keybindings
 import           Themes
 import           Types
-import           Markdown
+import           Draw.RichText
 import           Draw.Messages ( nameForUserRef )
 
 -- | The template for "View Message" windows triggered by message

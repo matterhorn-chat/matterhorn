@@ -131,7 +131,6 @@ executable matterhorn
                        FilePaths
                        TeamSelect
                        Login
-                       Markdown
                        Options
                        Util
                        Paths_matterhorn

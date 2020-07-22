@@ -108,7 +108,6 @@ where
 import           Prelude ()
 import           Prelude.MH
 
-import           Cheapskate ( Blocks )
 import qualified Cheapskate as C
 import           Control.Monad
 import qualified Data.Foldable as F
@@ -126,7 +125,7 @@ import           Network.Mattermost.Types ( ChannelId, PostId, Post
 
 import           Types.DirectionalSeq
 import           Types.Posts
-import           Types.UserNames
+import           Types.RichText ( RichTextBlock(..), findUsernames, blockGetURLs )
 
 
 -- | The state of a message's thread context.
@@ -155,7 +154,7 @@ messageIdPostId _ = Nothing
 -- | A 'Message' is any message we might want to render, either from
 --   Mattermost itself or from a client-internal source.
 data Message = Message
-  { _mText          :: Blocks
+  { _mText          :: Seq RichTextBlock
   , _mMarkdownSource :: Text
   , _mUser          :: UserRef
   , _mDate          :: ServerTime
@@ -722,7 +721,7 @@ msgURLs :: Message -> Seq LinkChoice
 msgURLs msg =
   let uRef = msg^.mUser
       msgUrls = (\ (url, text) -> LinkChoice (msg^.mDate) uRef text url Nothing) <$>
-                  (mconcat $ blockGetURLs <$> (toList $ msg^.mText))
+                  (Seq.fromList $ mconcat $ blockGetURLs <$> (toList $ msg^.mText))
       attachmentURLs = (\ a ->
                           LinkChoice
                             (msg^.mDate)
@@ -732,21 +731,6 @@ msgURLs msg =
                             (Just (a^.attachmentFileId)))
                        <$> (msg^.mAttachments)
   in msgUrls <> attachmentURLs
-
-blockGetURLs :: C.Block -> Seq.Seq (Text, Text)
-blockGetURLs (C.Para is) = mconcat $ inlineGetURLs <$> toList is
-blockGetURLs (C.Header _ is) = mconcat $ inlineGetURLs <$> toList is
-blockGetURLs (C.Blockquote bs) = mconcat $ blockGetURLs <$> toList bs
-blockGetURLs (C.List _ _ bss) = mconcat $ mconcat $ (blockGetURLs <$>) <$> (toList <$> bss)
-blockGetURLs _ = mempty
-
-inlineGetURLs :: C.Inline -> Seq.Seq (Text, Text)
-inlineGetURLs (C.Emph is) = mconcat $ inlineGetURLs <$> toList is
-inlineGetURLs (C.Strong is) = mconcat $ inlineGetURLs <$> toList is
-inlineGetURLs (C.Link is url "") = (url, inlinesText is) Seq.<| (mconcat $ inlineGetURLs <$> toList is)
-inlineGetURLs (C.Link is _ url) = (url, inlinesText is) Seq.<| (mconcat $ inlineGetURLs <$> toList is)
-inlineGetURLs (C.Image is url _) = Seq.singleton (url, inlinesText is)
-inlineGetURLs _ = mempty
 
 inlinesText :: Seq C.Inline -> Text
 inlinesText = F.fold . fmap go
