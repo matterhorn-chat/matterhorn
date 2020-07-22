@@ -15,6 +15,7 @@ import Network.Mattermost.Types
 import Test.Tasty.QuickCheck
 import Types.Messages
 import Types.Posts
+import Types.RichText
 
 genMap :: Ord key => Gen key -> Gen value -> Gen (Map key value)
 genMap gk gv = let kv = (,) <$> gk <*> gv in fromList <$> listOf kv
@@ -30,7 +31,7 @@ genUserRef = oneof [ return NoUser
 
 genMessage :: Gen Message
 genMessage = Message
-             <$> genBlocks
+             <$> (fromMarkdownBlocks <$> genBlocks)
              <*> genText
              <*> genUserRef
              <*> genTime
@@ -58,7 +59,7 @@ newtype Message__DeletedPost  = Message__DeletedPost { delMsg :: Message }
 genMessage__DeletedPost :: Gen Message__DeletedPost
 genMessage__DeletedPost = Message__DeletedPost
                           <$> (Message
-                              <$> genBlocks
+                              <$> (fromMarkdownBlocks <$> genBlocks)
                               <*> genText
                               <*> genUserRef
                               <*> genTime
@@ -80,7 +81,7 @@ newtype Message__Posted = Message__Posted { postMsg :: Message }
 genMessage__Posted :: Gen Message__Posted
 genMessage__Posted = Message__Posted
                      <$> (Message
-                         <$> genBlocks
+                         <$> (fromMarkdownBlocks <$> genBlocks)
                          <*> genText
                          <*> genUserRef
                          <*> genTime
