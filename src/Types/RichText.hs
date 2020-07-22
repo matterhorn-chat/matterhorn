@@ -26,7 +26,7 @@ import           Prelude.MH
 
 import           Brick ( textWidth )
 import qualified Cheapskate as C
-import           Data.Char ( isAlphaNum )
+import           Data.Char ( isAlphaNum, isAlpha )
 import qualified Data.Foldable as F
 import           Data.Monoid (First(..))
 import qualified Data.Set as S
@@ -34,7 +34,6 @@ import qualified Data.Sequence as Seq
 import           Data.Sequence ( (<|), ViewL((:<)) )
 import qualified Data.Text as T
 
-import           Types.UserNames ( isNameFragment )
 import           Constants ( userSigil, normalChannelSigil )
 
 data RichTextBlock =
@@ -310,3 +309,11 @@ findVerbatimChunk :: Seq RichTextBlock -> Maybe Text
 findVerbatimChunk = getFirst . F.foldMap go
   where go (CodeBlock _ t) = First (Just t)
         go _               = First Nothing
+
+isValidNameChar :: Char -> Bool
+isValidNameChar c = isAlpha c || c == '_' || c == '.' || c == '-'
+
+isNameFragment :: C.Inline -> Bool
+isNameFragment (C.Str t) =
+    not (T.null t) && isValidNameChar (T.head t)
+isNameFragment _ = False
