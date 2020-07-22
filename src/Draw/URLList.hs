@@ -18,6 +18,7 @@ import           Draw.Util
 import           Draw.RichText
 import           Themes
 import           Types
+import           Types.RichText ( unURL )
 
 
 renderUrlList :: ChatState -> Widget Name
@@ -34,21 +35,23 @@ renderUrlList st =
 
         urls = st^.csUrlList
 
+        me = myUsername st
+
         renderItem sel link =
           let time = link^.linkTime
           in attr sel $ vLimit 2 $
             (vLimit 1 $
              hBox [ let u = maybe "<server>" id (link^.linkUser.to (nameForUserRef st))
-                    in colorUsername (myUsername st) u u
-                  , if link^.linkName == link^.linkURL
-                      then emptyWidget
-                      else (txt ": " <+> (renderText $ link^.linkName))
+                    in colorUsername me u u
+                  , case link^.linkLabel of
+                      Nothing -> emptyWidget
+                      Just label -> txt ": " <+> hBox (F.toList $ renderElementSeq me label)
                   , fill ' '
                   , renderDate st $ withServerTime time
                   , str " "
                   , renderTime st $ withServerTime time
                   ] ) <=>
-            (vLimit 1 (renderText $ link^.linkURL))
+            (vLimit 1 (renderText $ unURL $ link^.linkURL))
 
         attr True = forceAttr urlListSelectedAttr
         attr False = id

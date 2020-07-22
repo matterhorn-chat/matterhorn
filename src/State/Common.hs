@@ -53,6 +53,7 @@ import           FilePaths ( xdgName )
 import           State.Async
 import           Types
 import           Types.Common
+import           Types.RichText ( unURL )
 
 
 -- * Client Messages
@@ -287,7 +288,7 @@ runLoggedCommand stdoutOkay outputChan cmd args mInput mOutputVar = void $ forkI
                     "https://github.com/matterhorn-chat/matterhorn"
 
 prepareLink :: LinkChoice -> IO [String]
-prepareLink link = return [T.unpack $ link^.linkURL]
+prepareLink link = return [T.unpack $ unURL $ link^.linkURL]
 
 prepareAttachment :: FileId -> Session -> IO [String]
 prepareAttachment fId sess = do

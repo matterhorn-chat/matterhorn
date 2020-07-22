@@ -6,7 +6,9 @@ module Types.RichText
   , Element(..)
   , ElementData(..)
   , ElementStyle(..)
+
   , URL(..)
+  , unURL
 
   , fromMarkdownBlocks
   , setElementStyle
@@ -67,7 +69,10 @@ setElementStyle :: ElementStyle -> Element -> Element
 setElementStyle s e = e { eStyle = s }
 
 newtype URL = URL Text
-            deriving (Eq, Show)
+            deriving (Eq, Show, Ord)
+
+unURL :: URL -> Text
+unURL (URL url) = url
 
 data ElementData =
     EText Text
@@ -252,7 +257,7 @@ elementFindUsernames (e : es) =
         EUser u -> S.insert u $ elementFindUsernames es
         _ -> elementFindUsernames es
 
-blockGetURLs :: RichTextBlock -> [(Text, Text)]
+blockGetURLs :: RichTextBlock -> [(URL, Maybe (Seq Element))]
 blockGetURLs (Para is) = catMaybes $ elementGetURL <$> toList is
 blockGetURLs (Header _ is) = catMaybes $ elementGetURL <$> toList is
 blockGetURLs (Blockquote bs) = mconcat $ blockGetURLs <$> toList bs
@@ -261,12 +266,13 @@ blockGetURLs (List _ _ bss) =
     (fmap blockGetURLs . F.toList) <$> F.toList bss
 blockGetURLs _ = mempty
 
-elementGetURL :: Element -> Maybe (Text, Text)
-elementGetURL (Element _ (EHyperlink (URL url) Nothing)) = Just (url, url)
-elementGetURL (Element _ (EHyperlink (URL url) (Just _))) = Just (url, "FIXME[elementGetURLs/1]")
-elementGetURL (Element _ (EImage (URL url) Nothing)) = Just (url, url)
-elementGetURL (Element _ (EImage (URL url) (Just _))) = Just (url, "FIXME[elementGetURLs/2]")
-elementGetURL _ = mempty
+elementGetURL :: Element -> Maybe (URL, Maybe (Seq Element))
+elementGetURL (Element _ (EHyperlink url label)) =
+    Just (url, label)
+elementGetURL (Element _ (EImage url label)) =
+    Just (url, label)
+elementGetURL _ =
+    Nothing
 
 findVerbatimChunk :: Seq RichTextBlock -> Maybe Text
 findVerbatimChunk = getFirst . F.foldMap go

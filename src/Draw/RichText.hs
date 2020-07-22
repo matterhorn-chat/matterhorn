@@ -9,6 +9,7 @@ module Draw.RichText
   , renderMessage
   , renderText
   , renderText'
+  , renderElementSeq
   , cursorSentinel
   , addEllipsis
   , findVerbatimChunk

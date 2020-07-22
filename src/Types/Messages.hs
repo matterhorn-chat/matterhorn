@@ -100,7 +100,7 @@ module Types.Messages
   , linkUser
   , linkURL
   , linkTime
-  , linkName
+  , linkLabel
   , linkFileId
   )
 where
@@ -125,7 +125,10 @@ import           Network.Mattermost.Types ( ChannelId, PostId, Post
 
 import           Types.DirectionalSeq
 import           Types.Posts
-import           Types.RichText ( RichTextBlock(..), findUsernames, blockGetURLs )
+import           Types.RichText ( RichTextBlock(..), Element(..)
+                                , ElementData(..), findUsernames, blockGetURLs
+                                , ElementStyle(..), URL(..)
+                                )
 
 
 -- | The state of a message's thread context.
@@ -285,8 +288,8 @@ data ReplyState =
 data LinkChoice =
     LinkChoice { _linkTime   :: ServerTime
                , _linkUser   :: UserRef
-               , _linkName   :: Text
-               , _linkURL    :: Text
+               , _linkLabel  :: Maybe (Seq Element)
+               , _linkURL    :: URL
                , _linkFileId :: Maybe FileId
                } deriving (Eq, Show)
 
@@ -726,10 +729,15 @@ msgURLs msg =
                           LinkChoice
                             (msg^.mDate)
                             uRef
-                            ("attachment `" <> (a^.attachmentName) <> "`")
-                            (a^.attachmentURL)
+                            (Just $ attachmentLabel a)
+                            (URL $ a^.attachmentURL)
                             (Just (a^.attachmentFileId)))
                        <$> (msg^.mAttachments)
+      attachmentLabel a =
+          Seq.fromList [ Element Normal $ EText "attachment"
+                       , Element Normal ESpace
+                       , Element Code $ EText $ a^.attachmentName
+                       ]
   in msgUrls <> attachmentURLs
 
 inlinesText :: Seq C.Inline -> Text
