@@ -442,8 +442,8 @@ renderElement curUser e = addStyle widget
             ESpace                       -> B.txt " "
             -- Line breaks should never need to get rendered since the
             -- line-wrapping algorithm removes them.
-            ESoftBreak                   -> emptyWidget
-            ELineBreak                   -> emptyWidget
+            ESoftBreak                   -> B.emptyWidget
+            ELineBreak                   -> B.emptyWidget
             ERawHtml t                   -> rawText t
             EEditSentinel                -> B.txt editMarking
             EEditRecentlySentinel        -> B.txt editMarking
