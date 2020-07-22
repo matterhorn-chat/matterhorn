@@ -388,35 +388,56 @@ data SplitState = SplitState
   }
 
 split :: Int -> HighlightSet -> Seq Element -> Seq (Seq Element)
-split maxCols _hSet = splitChunks . go (SplitState (S.singleton S.empty) 0)
+split maxCols hSet = splitChunks . go (SplitState (S.singleton S.empty) 0)
   where go st (viewl-> e :< es) = go st' es
-          where st' =
-                  case eData e of
+          where
+              HighlightSet { hUserSet = uSet, hChannelSet = cSet } = hSet
+
+              -- Right before we check the width of the token, we see
+              -- if the token is a user or channel reference. If so, we
+              -- check if it is valid. If it is valid, we leave it in
+              -- place; otherwise we translate it into an ordinary text
+              -- element so that it does not render highlighted as a
+              -- valid user or channel reference.
+              newElement = e { eData = newEData }
+              newEData = case eData e of
+                  EUser u ->
+                      if u `Set.member` uSet
+                      then EUser u
+                      else EText $ userSigil <> u
+                  EChannel c ->
+                      if c `Set.member` cSet
+                      then EChannel c
+                      else EText $ normalChannelSigil <> c
+                  d -> d
+
+              st' =
+                  case newEData of
                       EHyperlink url (Just labelEs) ->
                           go st $ setElementStyle (Hyperlink url) <$> labelEs
                       EImage url (Just labelEs) ->
                           go st $ setElementStyle (Hyperlink url) <$> labelEs
                       _ ->
-                          if | eData e == ESoftBreak || eData e == ELineBreak ->
+                          if | newEData == ESoftBreak || newEData == ELineBreak ->
                                  st { splitChunks = splitChunks st |> S.empty
                                     , splitCurrCol = 0
                                     }
                              | available >= eWidth ->
-                                 st { splitChunks  = addElement e (splitChunks st)
+                                 st { splitChunks  = addElement newElement (splitChunks st)
                                     , splitCurrCol = splitCurrCol st + eWidth
                                     }
-                             | eData e == ESpace ->
+                             | newEData == ESpace ->
                                  st { splitChunks = splitChunks st |> S.empty
                                     , splitCurrCol = 0
                                     }
                              | otherwise ->
-                                 st { splitChunks  = splitChunks st |> S.singleton e
+                                 st { splitChunks  = splitChunks st |> S.singleton newElement
                                     , splitCurrCol = eWidth
                                     }
-                available = maxCols - splitCurrCol st
-                eWidth = elementWidth e
-                addElement x (viewr-> ls :> l) = ( ls |> (l |> x))
-                addElement _ _ = error "[unreachable]"
+              available = maxCols - splitCurrCol st
+              eWidth = elementWidth newElement
+              addElement x (viewr-> ls :> l) = ( ls |> (l |> x))
+              addElement _ _ = error "[unreachable]"
         go st _                 = st
 
 renderElementSeq :: Text -> Seq Element -> Seq (Widget a)
