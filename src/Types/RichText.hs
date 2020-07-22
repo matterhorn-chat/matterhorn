@@ -171,9 +171,10 @@ fromMarkdownInlines inlines =
                       f `elem` ["_", "-"] || T.all isAlphaNum f
                   validEmojiFragment _ = False
                   (emojiFrags, rest) = Seq.spanl validEmojiFragment xs
+                  em = T.concat $ unsafeGetStr <$> F.toList emojiFrags
               in case Seq.viewl rest of
                   C.Str ":" :< rest2 ->
-                      Element Emoji (EEmoji $ T.concat $ unsafeGetStr <$> F.toList emojiFrags) <| go sty rest2
+                      Element Emoji (EEmoji em) <| go sty rest2
                   _ ->
                       Element sty (EText ":") <| go sty xs
           C.Str t :< xs | userSigil `T.isPrefixOf` t ->
