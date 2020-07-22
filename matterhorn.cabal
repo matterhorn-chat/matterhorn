@@ -197,6 +197,8 @@ test-suite test_messages
                     , Types.UserNames
                     , Types.Common
                     , Types.DirectionalSeq
+                    , Types.RichText
+                    , Constants
                     , Prelude.MH
   default-language:   Haskell2010
   default-extensions: OverloadedStrings
