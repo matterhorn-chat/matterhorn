@@ -65,16 +65,16 @@ omittedUsernameType = \case
 -- If the last block is a paragraph, append it to that paragraph.
 -- Otherwise, append a new block so it appears beneath the last
 -- block-level element.
-addEditSentinel :: Text -> ElementStyle -> Seq RichTextBlock -> Seq RichTextBlock
-addEditSentinel s sty bs =
+addEditSentinel :: ElementData -> ElementStyle -> Seq RichTextBlock -> Seq RichTextBlock
+addEditSentinel d sty bs =
     case viewr bs of
         EmptyR -> bs
-        (rest :> b) -> rest <> appendEditSentinel s sty b
+        (rest :> b) -> rest <> appendEditSentinel d sty b
 
-appendEditSentinel :: Text -> ElementStyle -> RichTextBlock -> Seq RichTextBlock
+appendEditSentinel :: ElementData -> ElementStyle -> RichTextBlock -> Seq RichTextBlock
 appendEditSentinel sentinel sty b =
     let s = Para (S.singleton m)
-        m = Element sty (EText sentinel)
+        m = Element sty sentinel
     in case b of
         Para is -> S.singleton $ Para (is |> Element Normal ESpace |> m)
         _ -> S.fromList [b, s]
@@ -157,9 +157,9 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                 if p^.postEditAtL > p^.postCreateAtL
                 then case mdEditThreshold of
                     Just cutoff | p^.postEditAtL >= cutoff ->
-                        addEditSentinel editRecentlyMarkingSentinel EditedRecently bs
+                        addEditSentinel EEditRecentlySentinel EditedRecently bs
                     _ -> if mdShowOlderEdits
-                         then addEditSentinel editMarkingSentinel Edited bs
+                         then addEditSentinel EEditSentinel Edited bs
                          else bs
                 else bs
 
@@ -460,3 +460,24 @@ textWithCursor t
 
 removeCursor :: Text -> Text
 removeCursor = T.filter (/= cursorSentinel)
+
+editMarking :: Text
+editMarking = "(edited)"
+
+elementWidth :: Element -> Int
+elementWidth e =
+    case eData e of
+        EText t                      -> B.textWidth t
+        ERawHtml t                   -> B.textWidth t
+        EUser t                      -> T.length userSigil + B.textWidth t
+        EChannel t                   -> T.length normalChannelSigil + B.textWidth t
+        EEditSentinel                -> B.textWidth editMarking
+        EEditRecentlySentinel        -> B.textWidth editMarking
+        EImage (URL url) Nothing     -> B.textWidth url
+        EImage _ (Just is)           -> sum $ elementWidth <$> is
+        EHyperlink (URL url) Nothing -> B.textWidth url
+        EHyperlink _ (Just is)       -> sum $ elementWidth <$> is
+        EEmoji t                     -> B.textWidth t + 2
+        ESpace                       -> 1
+        ELineBreak                   -> 0
+        ESoftBreak                   -> 0

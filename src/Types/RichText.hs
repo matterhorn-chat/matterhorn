@@ -9,22 +9,16 @@ module Types.RichText
   , URL(..)
 
   , fromMarkdownBlocks
-  , elementWidth
 
   , findUsernames
   , blockGetURLs
   , findVerbatimChunk
-
-  , editMarkingSentinel
-  , editRecentlyMarkingSentinel
-  , editMarking
   )
 where
 
 import           Prelude ()
 import           Prelude.MH
 
-import           Brick ( textWidth )
 import qualified Cheapskate as C
 import           Data.Char ( isAlphaNum, isAlpha )
 import qualified Data.Foldable as F
@@ -163,10 +157,6 @@ fromMarkdownListType (C.Numbered wrap i) =
 fromMarkdownInlines :: Seq C.Inline -> Seq Element
 fromMarkdownInlines inlines =
     let go sty is = case Seq.viewl is of
-          C.Str t :< xs | t == editMarkingSentinel ->
-              Element Edited EEditSentinel <| go sty xs
-          C.Str t :< xs | t == editRecentlyMarkingSentinel ->
-              Element EditedRecently EEditRecentlySentinel <| go sty xs
           C.Str ":" :< xs ->
               let validEmojiFragment (C.Str f) =
                       f `elem` ["_", "-"] || T.all isAlphaNum f
@@ -231,37 +221,6 @@ fromMarkdownInlines inlines =
           Seq.EmptyL -> mempty
 
     in go Normal inlines
-
-elementWidth :: Element -> Int
-elementWidth e =
-    case eData e of
-        EText t                      -> textWidth t
-        ERawHtml t                   -> textWidth t
-        EUser t                      -> T.length userSigil + textWidth t
-        EChannel t                   -> T.length normalChannelSigil + textWidth t
-        EEditSentinel                -> textWidth editMarking
-        EEditRecentlySentinel        -> textWidth editMarking
-        EImage (URL url) Nothing     -> textWidth url
-        EImage _ (Just is)           -> sum $ elementWidth <$> is
-        EHyperlink (URL url) Nothing -> textWidth url
-        EHyperlink _ (Just is)       -> sum $ elementWidth <$> is
-        EEmoji t                     -> textWidth t + 2
-        ESpace                       -> 1
-        ELineBreak                   -> 0
-        ESoftBreak                   -> 0
-
-editMarking :: Text
-editMarking = "(edited)"
-
--- The special string we use to indicate the placement of a styled
--- indication that a message has been edited.
-editMarkingSentinel :: Text
-editMarkingSentinel = "#__mh_edit"
-
--- The special string we use to indicate the placement of a styled
--- indication that a message has been edited recently.
-editRecentlyMarkingSentinel :: Text
-editRecentlyMarkingSentinel = "#__mh_edit_r"
 
 unsafeGetStr :: C.Inline -> Text
 unsafeGetStr (C.Str t) = t
