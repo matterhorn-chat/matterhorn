@@ -452,8 +452,9 @@ renderElement curUser e = addStyle widget
             -- at this point because line-wrapping should break them up
             -- into normal text node sequences with hyperlink styles
             -- attached.
-            EHyperlink {}                -> rawText "FIXME[renderElement/1]"
-            EImage {}                    -> rawText "FIXME[renderElement/2]"
+            EHyperlink {}                -> rawText "(Report renderElement bug #1)"
+            EImage {}                    -> rawText "(Report renderElement bug #2)"
+
             -- Line breaks should never need to get rendered since the
             -- line-wrapping algorithm removes them.
             ESoftBreak                   -> B.emptyWidget
