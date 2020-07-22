@@ -43,7 +43,7 @@ import qualified Skylighting.Core as Sky
 import           Network.Mattermost.Lenses ( postEditAtL, postCreateAtL )
 import           Network.Mattermost.Types ( ServerTime(..) )
 
-import           Constants ( normalChannelSigil )
+import           Constants ( normalChannelSigil, userSigil )
 import           Themes
 import           Types ( Name, HighlightSet(..) )
 import           Types.Messages
@@ -444,7 +444,7 @@ renderElement curUser e = addStyle widget
             ERawHtml t                   -> rawText t
             EEditSentinel                -> B.txt editMarking
             EEditRecentlySentinel        -> B.txt editMarking
-            EUser u                      -> colorUsername curUser u u
+            EUser u                      -> colorUsername curUser u $ userSigil <> u
             EChannel c                   -> B.txt $ normalChannelSigil <> c
             -- TODO: support links and images with labels
             EHyperlink (URL url) Nothing -> rawText url
