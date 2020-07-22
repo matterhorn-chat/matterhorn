@@ -300,9 +300,9 @@ blockGetURLs _ = mempty
 
 elementGetURL :: Element -> Maybe (Text, Text)
 elementGetURL (Element _ (EHyperlink (URL url) Nothing)) = Just (url, url)
-elementGetURL (Element _ (EHyperlink (URL url) (Just _))) = Just (url, "FIXME[elementGetURLs]")
+elementGetURL (Element _ (EHyperlink (URL url) (Just _))) = Just (url, "FIXME[elementGetURLs/1]")
 elementGetURL (Element _ (EImage (URL url) Nothing)) = Just (url, url)
-elementGetURL (Element _ (EImage (URL url) (Just _))) = Just (url, "FIXME[elementGetURLs]")
+elementGetURL (Element _ (EImage (URL url) (Just _))) = Just (url, "FIXME[elementGetURLs/2]")
 elementGetURL _ = mempty
 
 findVerbatimChunk :: Seq RichTextBlock -> Maybe Text

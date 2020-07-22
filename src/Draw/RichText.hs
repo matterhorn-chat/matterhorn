@@ -449,8 +449,8 @@ renderElement curUser e = addStyle widget
             -- TODO: support links and images with labels
             EHyperlink (URL url) Nothing -> rawText url
             EImage (URL url) Nothing     -> rawText url
-            EHyperlink {}                -> rawText "FIXME[1]"
-            EImage {}                    -> rawText "FIXME[2]"
+            EHyperlink {}                -> rawText "FIXME[renderElement/1]"
+            EImage {}                    -> rawText "FIXME[renderElement/2]"
             EEmoji em                    -> B.txt $ ":" <> em <> ":"
 
 textWithCursor :: Text -> Widget a
