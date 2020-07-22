@@ -75,6 +75,7 @@ executable matterhorn
                        Themes
                        Draw
                        Emoji
+                       Draw.RichText
                        Draw.ManageAttachments
                        Draw.Autocomplete
                        Draw.Main

@@ -10,6 +10,10 @@ module Types.RichText
 
   , fromMarkdownBlocks
   , elementWidth
+
+  , editMarkingSentinel
+  , editRecentlyMarkingSentinel
+  , editMarking
   )
 where
 
