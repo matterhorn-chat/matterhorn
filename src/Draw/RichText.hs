@@ -390,26 +390,28 @@ split :: Int -> HighlightSet -> Seq Element -> Seq (Seq Element)
 split maxCols _hSet = splitChunks . go (SplitState (S.singleton S.empty) 0)
   where go st (viewl-> e :< es) = go st' es
           where st' =
-                  -- TODO: FIXME: when we encounter an image or URL with
-                  -- a label element sequence, break up that sequence
-                  -- rather than taking the width of the whole URL or
-                  -- image element
-                  if | eData e == ESoftBreak || eData e == ELineBreak ->
-                         st { splitChunks = splitChunks st |> S.empty
-                            , splitCurrCol = 0
-                            }
-                     | available >= eWidth ->
-                         st { splitChunks  = addElement e (splitChunks st)
-                            , splitCurrCol = splitCurrCol st + eWidth
-                            }
-                     | eData e == ESpace ->
-                         st { splitChunks = splitChunks st |> S.empty
-                            , splitCurrCol = 0
-                            }
-                     | otherwise ->
-                         st { splitChunks  = splitChunks st |> S.singleton e
-                            , splitCurrCol = eWidth
-                            }
+                  case eData e of
+                      EHyperlink url (Just labelEs) ->
+                          go st $ setElementStyle (Hyperlink url) <$> labelEs
+                      EImage url (Just labelEs) ->
+                          go st $ setElementStyle (Hyperlink url) <$> labelEs
+                      _ ->
+                          if | eData e == ESoftBreak || eData e == ELineBreak ->
+                                 st { splitChunks = splitChunks st |> S.empty
+                                    , splitCurrCol = 0
+                                    }
+                             | available >= eWidth ->
+                                 st { splitChunks  = addElement e (splitChunks st)
+                                    , splitCurrCol = splitCurrCol st + eWidth
+                                    }
+                             | eData e == ESpace ->
+                                 st { splitChunks = splitChunks st |> S.empty
+                                    , splitCurrCol = 0
+                                    }
+                             | otherwise ->
+                                 st { splitChunks  = splitChunks st |> S.singleton e
+                                    , splitCurrCol = eWidth
+                                    }
                 available = maxCols - splitCurrCol st
                 eWidth = elementWidth e
                 addElement x (viewr-> ls :> l) = ( ls |> (l |> x))
@@ -437,21 +439,25 @@ renderElement curUser e = addStyle widget
         widget = case dat of
             EText t                      -> rawText t
             ESpace                       -> B.txt " "
-            -- Line breaks should never need to get rendered since the
-            -- line-wrapping algorithm removes them.
-            ESoftBreak                   -> B.emptyWidget
-            ELineBreak                   -> B.emptyWidget
             ERawHtml t                   -> rawText t
             EEditSentinel                -> B.txt editMarking
             EEditRecentlySentinel        -> B.txt editMarking
             EUser u                      -> colorUsername curUser u $ userSigil <> u
             EChannel c                   -> B.txt $ normalChannelSigil <> c
-            -- TODO: support links and images with labels
             EHyperlink (URL url) Nothing -> rawText url
             EImage (URL url) Nothing     -> rawText url
+            EEmoji em                    -> B.txt $ ":" <> em <> ":"
+
+            -- Hyperlink and image nodes with labels should not appear
+            -- at this point because line-wrapping should break them up
+            -- into normal text node sequences with hyperlink styles
+            -- attached.
             EHyperlink {}                -> rawText "FIXME[renderElement/1]"
             EImage {}                    -> rawText "FIXME[renderElement/2]"
-            EEmoji em                    -> B.txt $ ":" <> em <> ":"
+            -- Line breaks should never need to get rendered since the
+            -- line-wrapping algorithm removes them.
+            ESoftBreak                   -> B.emptyWidget
+            ELineBreak                   -> B.emptyWidget
 
 textWithCursor :: Text -> Widget a
 textWithCursor t

@@ -9,6 +9,7 @@ module Types.RichText
   , URL(..)
 
   , fromMarkdownBlocks
+  , setElementStyle
 
   , findUsernames
   , blockGetURLs
@@ -61,6 +62,9 @@ data Element =
             , eData :: ElementData
             }
             deriving (Show, Eq)
+
+setElementStyle :: ElementStyle -> Element -> Element
+setElementStyle s e = e { eStyle = s }
 
 newtype URL = URL Text
             deriving (Eq, Show)
