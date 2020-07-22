@@ -367,7 +367,7 @@ toElementChunk :: Text -> Maybe Int -> Seq Element -> HighlightSet -> Widget a
 toElementChunk curUser w es hSet = B.Widget B.Fixed B.Fixed $ do
   ctx <- B.getContext
   let width = fromMaybe (ctx^.B.availWidthL) w
-      ws    = fmap (renderElementSeq curUser) (split width hSet es)
+      ws    = fmap (renderElementSeq curUser) (wrapLine width hSet es)
   B.render (vBox (fmap hBox ws))
 
 blocksToList :: Text -> ListType -> Maybe Int -> Seq (Seq RichTextBlock) -> HighlightSet -> Widget a
@@ -387,8 +387,8 @@ data SplitState = SplitState
   , splitCurrCol :: Int
   }
 
-split :: Int -> HighlightSet -> Seq Element -> Seq (Seq Element)
-split maxCols hSet = splitChunks . go (SplitState (S.singleton S.empty) 0)
+wrapLine :: Int -> HighlightSet -> Seq Element -> Seq (Seq Element)
+wrapLine maxCols hSet = splitChunks . go (SplitState (S.singleton S.empty) 0)
   where go st (viewl-> e :< es) = go st' es
           where
               HighlightSet { hUserSet = uSet, hChannelSet = cSet } = hSet
