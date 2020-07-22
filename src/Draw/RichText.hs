@@ -459,9 +459,17 @@ renderElement curUser e = addStyle widget
                 Hyperlink (URL url) -> B.hyperlink url . B.withDefAttr urlAttr
         rawText = B.txt . removeCursor
         widget = case dat of
-            EText t                      -> if T.any (== cursorSentinel) t
+            -- Cursor sentinels get parsed as individual text nodes by
+            -- Cheapskate, meaning that we get a text node with exactly
+            -- one character in it. That's why we compare accordingly
+            -- above. In addition, since that character has no width, we
+            -- have to replace it with something that has a size (such
+            -- as a space) to get Brick's visibility logic to scroll the
+            -- viewport to get it into view.
+            EText t                      -> if t == T.singleton (cursorSentinel)
                                             then B.visible $ B.txt " "
                                             else rawText t
+
             ESpace                       -> B.txt " "
             ERawHtml t                   -> rawText t
             EEditSentinel                -> B.txt editMarking
