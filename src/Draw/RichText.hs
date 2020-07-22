@@ -459,7 +459,9 @@ renderElement curUser e = addStyle widget
                 Hyperlink (URL url) -> B.hyperlink url . B.withDefAttr urlAttr
         rawText = B.txt . removeCursor
         widget = case dat of
-            EText t                      -> rawText t
+            EText t                      -> if T.any (== cursorSentinel) t
+                                            then B.visible $ B.txt " "
+                                            else rawText t
             ESpace                       -> B.txt " "
             ERawHtml t                   -> rawText t
             EEditSentinel                -> B.txt editMarking
