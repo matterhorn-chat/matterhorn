@@ -158,7 +158,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                 if p^.postEditAtL > p^.postCreateAtL
                 then case mdEditThreshold of
                     Just cutoff | p^.postEditAtL >= cutoff ->
-                        addEditSentinel EEditRecentlySentinel EditedRecently bs
+                        addEditSentinel EEditSentinel EditedRecently bs
                     _ -> if mdShowOlderEdits
                          then addEditSentinel EEditSentinel Edited bs
                          else bs
@@ -473,7 +473,6 @@ renderElement curUser e = addStyle widget
             ESpace                       -> B.txt " "
             ERawHtml t                   -> rawText t
             EEditSentinel                -> B.txt editMarking
-            EEditRecentlySentinel        -> B.txt editMarking
             EUser u                      -> colorUsername curUser u $ userSigil <> u
             EChannel c                   -> B.txt $ normalChannelSigil <> c
             EHyperlink (URL url) Nothing -> rawText url
@@ -511,7 +510,6 @@ elementWidth e =
         EUser t                      -> T.length userSigil + B.textWidth t
         EChannel t                   -> T.length normalChannelSigil + B.textWidth t
         EEditSentinel                -> B.textWidth editMarking
-        EEditRecentlySentinel        -> B.textWidth editMarking
         EImage (URL url) Nothing     -> B.textWidth url
         EImage _ (Just is)           -> sum $ elementWidth <$> is
         EHyperlink (URL url) Nothing -> B.textWidth url

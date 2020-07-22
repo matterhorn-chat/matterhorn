@@ -81,7 +81,6 @@ data ElementData =
     | ELineBreak
     | ERawHtml Text
     | EEditSentinel
-    | EEditRecentlySentinel
     | EUser Text
     | EChannel Text
     | EHyperlink URL (Maybe (Seq Element))
