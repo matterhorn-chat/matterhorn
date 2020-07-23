@@ -155,16 +155,5 @@ release (see above). *Building from source is only recommended if you
 intend to contribute.*
 
 If you want to contribute changes to Matterhorn, you'll need to build
-it from source. To do that you'll need an appropriate `ghc`/`cabal`
-installation (see the latest Travis-CI builds for tested versions).
-You'll also need a GitHub account, since our Git submodules are set up
-to use SSH with GitHub. (But that should be fine since you'll need a
-GitHub account to contribute anyway.)
-
-`matterhorn` is built by running the following commands:
-
-```
-$ git pull
-$ git submodule update --init
-$ ./build.sh
-```
+it from source. See [our building instructions](docs/BUILDING.md) for
+details.
