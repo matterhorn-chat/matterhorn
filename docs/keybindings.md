@@ -166,6 +166,8 @@
 | ---------- | ---------- | ----------- |
 | `PgUp` | `page-up` | Page up |
 | `PgDown` | `page-down` | Page down |
+| `S-Left` | `page-left` | Page left |
+| `S-Right` | `page-right` | Page right |
 | `Up` | `scroll-up` | Scroll up |
 | `Down` | `scroll-down` | Scroll down |
 | `Left` | `scroll-left` | Scroll left |
