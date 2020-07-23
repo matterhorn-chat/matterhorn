@@ -66,8 +66,14 @@ drawListOverlay :: ListOverlayState a b
 drawListOverlay st scopeHeader scopeNoResults scopePrompt renderItem footer layerPos maxWinWidth =
   positionLayer $ hLimitWithPadding 10 $ vLimit 25 $
   hLimit maxWinWidth $
-  borderWithLabel (withDefAttr clientEmphAttr $ scopeHeader scope) body
+  borderWithLabel title body
   where
+      title = withDefAttr clientEmphAttr $
+              hBox [ scopeHeader scope
+                   , case st^.listOverlayRecordCount of
+                         Nothing -> emptyWidget
+                         Just c -> txt " (" <+> str (show c) <+> txt ")"
+                   ]
       positionLayer = case layerPos of
           OverlayCenter -> centerLayer
           OverlayUpperRight -> upperRightLayer
@@ -85,7 +91,20 @@ drawListOverlay st scopeHeader scopeNoResults scopePrompt renderItem footer laye
           else case st^.listOverlaySearchResults.L.listSelectedL of
               Nothing -> hBorder
               Just _ ->
-                  let msg = "Found " <> show numSearchResults <> " result" <> plural numSearchResults
+                  let showingFirst = "Showing first " <> show numSearchResults <>
+                                     " result" <> plural numSearchResults
+                      showingAll = "Showing all " <> show numSearchResults <>
+                                   " result" <> plural numSearchResults
+                      showing = "Showing " <> show numSearchResults <>
+                                " result" <> plural numSearchResults
+                      msg = case getEditContents (st^.listOverlaySearchInput) of
+                          [""] ->
+                              case st^.listOverlayRecordCount of
+                                  Nothing -> showing
+                                  Just total -> if numSearchResults < total
+                                                then showingFirst
+                                                else showingAll
+                          _ -> showing
                   in hBorderWithLabel $ str $ "[" <> msg <> "]"
 
       scope = st^.listOverlaySearchScope

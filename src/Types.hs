@@ -151,6 +151,7 @@ module Types
   , listOverlayEnterHandler
   , listOverlayNewList
   , listOverlayFetchResults
+  , listOverlayRecordCount
 
   , getUsers
 
@@ -1410,6 +1411,7 @@ nullChannelListOverlayState =
                         , _listOverlayEnterHandler   = const $ return False
                         , _listOverlayNewList        = newList
                         , _listOverlayFetchResults   = const $ const $ const $ return mempty
+                        , _listOverlayRecordCount    = Nothing
                         }
 
 nullThemeListOverlayState :: ListOverlayState InternalTheme ()
@@ -1422,6 +1424,7 @@ nullThemeListOverlayState =
                         , _listOverlayEnterHandler   = const $ return False
                         , _listOverlayNewList        = newList
                         , _listOverlayFetchResults   = const $ const $ const $ return mempty
+                        , _listOverlayRecordCount    = Nothing
                         }
 
 nullUserListOverlayState :: ListOverlayState UserInfo UserSearchScope
@@ -1434,6 +1437,7 @@ nullUserListOverlayState =
                         , _listOverlayEnterHandler   = const $ return False
                         , _listOverlayNewList        = newList
                         , _listOverlayFetchResults   = const $ const $ const $ return mempty
+                        , _listOverlayRecordCount    = Nothing
                         }
 
 nullEmojiListOverlayState :: ListOverlayState (Bool, T.Text) ()
@@ -1446,6 +1450,7 @@ nullEmojiListOverlayState =
                         , _listOverlayEnterHandler   = const $ return False
                         , _listOverlayNewList        = newList
                         , _listOverlayFetchResults   = const $ const $ const $ return mempty
+                        , _listOverlayRecordCount    = Nothing
                         }
 
 -- | The state of channel selection mode.
@@ -1500,6 +1505,8 @@ data ListOverlayState a b =
                      , _listOverlayFetchResults :: b -> Session -> Text -> IO (Vec.Vector a)
                      -- ^ The function to call to issue a search query
                      -- to the server.
+                     , _listOverlayRecordCount :: Maybe Int
+                     -- ^ The total number of available records, if known.
                      }
 
 -- | The scope for searching for users in a user list overlay.
