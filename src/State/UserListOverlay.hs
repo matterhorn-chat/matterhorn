@@ -18,12 +18,13 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import qualified Data.Vector as Vec
-import           Lens.Micro.Platform ( (.~) )
+import           Lens.Micro.Platform ( (.~), (.=) )
 
 import qualified Network.Mattermost.Endpoints as MM
 import qualified Network.Mattermost.Types.Config as MM
 import           Network.Mattermost.Types
 
+import           State.Async ( doAsyncWith, AsyncPriority(Preempt) )
 import           State.Channels ( createOrFocusDMChannel, addUserToCurrentChannel )
 import           State.ListOverlay
 import           Types
@@ -36,11 +37,16 @@ enterChannelMembersUserList = do
     cId <- use csCurrentChannelId
     myId <- gets myUserId
     myTId <- gets myTeamId
-    enterUserListMode (ChannelMembers cId myTId)
-      (\u -> case u^.uiId /= myId of
-        True -> createOrFocusDMChannel u Nothing >> return True
-        False -> return False
-      )
+    session <- getSession
+
+    doAsyncWith Preempt $ do
+        stats <- MM.mmGetChannelStatistics cId session
+        return $ Just $ do
+            enterUserListMode (ChannelMembers cId myTId) (Just $ channelStatsMemberCount stats)
+              (\u -> case u^.uiId /= myId of
+                True -> createOrFocusDMChannel u Nothing >> return True
+                False -> return False
+              )
 
 -- | Show the user list overlay for showing users that are not members
 -- of the current channel for the purpose of adding them to the
@@ -50,7 +56,7 @@ enterChannelInviteUserList = do
     cId <- use csCurrentChannelId
     myId <- gets myUserId
     myTId <- gets myTeamId
-    enterUserListMode (ChannelNonMembers cId myTId)
+    enterUserListMode (ChannelNonMembers cId myTId) Nothing
       (\u -> case u^.uiId /= myId of
         True -> addUserToCurrentChannel u >> return True
         False -> return False
@@ -66,7 +72,7 @@ enterDMSearchUserList = do
     let restrictTeam = case MM.clientConfigRestrictDirectMessage <$> config of
             Just MM.RestrictTeam -> Just myTId
             _ -> Nothing
-    enterUserListMode (AllUsers restrictTeam)
+    enterUserListMode (AllUsers restrictTeam) Nothing
       (\u -> case u^.uiId /= myId of
         True -> createOrFocusDMChannel u Nothing >> return True
         False -> return False
@@ -74,8 +80,9 @@ enterDMSearchUserList = do
 
 -- | Show the user list overlay with the given search scope, and issue a
 -- request to gather the first search results.
-enterUserListMode :: UserSearchScope -> (UserInfo -> MH Bool) -> MH ()
-enterUserListMode scope enterHandler =
+enterUserListMode :: UserSearchScope -> Maybe Int -> (UserInfo -> MH Bool) -> MH ()
+enterUserListMode scope resultCount enterHandler = do
+    csUserListOverlay.listOverlayRecordCount .= resultCount
     enterListOverlayMode csUserListOverlay UserListOverlay scope enterHandler getUserSearchResults
 
 userInfoFromPair :: User -> Text -> UserInfo
