@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+# This script is a 'fast-tags' wrapper to generate or update a tag file.
+
+set -e
+
+TAGS=fast-tags
+HERE=$(cd `dirname $0`; pwd)
+REPO_ROOT=$HERE
+DIRS="src submodules test"
+
+if ! which $TAGS 2>/dev/null >/dev/null
+then
+    pushd $HOME && cabal install fast-tags
+fi
+
+flags="--fully-qualified"
+targets=$@
+
+cd $REPO_ROOT
+fast-tags $flags -R $DIRS
