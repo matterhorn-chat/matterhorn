@@ -1,3 +1,11 @@
+-- | This module provides a set of data types to represent message text.
+-- The types here are based loosely on the 'cheapskate' package's types
+-- but provide higher-level support for the kinds of things we find in
+-- Mattermost messages such as user and channel references.
+--
+-- To convert from Cheapskate's representation, use
+-- 'fromMarkdownBlocks'. To actually render text in this representation,
+-- see the module 'Draw.RichText'.
 module Types.RichText
   ( RichTextBlock(..)
   , ListType(..)
@@ -33,75 +41,132 @@ import qualified Data.Text as T
 
 import           Constants ( userSigil, normalChannelSigil )
 
+-- | A block in a rich text document.
 data RichTextBlock =
     Para (Seq Element)
+    -- ^ A paragraph.
     | Header Int (Seq Element)
+    -- ^ A section header with specified depth and contents.
     | Blockquote (Seq RichTextBlock)
+    -- ^ A blockquote.
     | List Bool ListType (Seq (Seq RichTextBlock))
+    -- ^ An itemized list.
     | CodeBlock CodeBlockInfo Text
+    -- ^ A code block.
     | HTMLBlock Text
+    -- ^ A fragment of raw HTML.
     | HRule
+    -- ^ A horizontal rule.
     deriving (Show)
 
+-- | The type of itemized list items.
 data ListType =
     Bullet Char
+    -- ^ Decorate the items with bullet using the specified character.
     | Numbered NumDecoration Int
+    -- ^ Number the items starting at the specified number and use the
+    -- indicated decoration.
     deriving (Eq, Show)
 
+-- | Information about a code block.
 data CodeBlockInfo =
     CodeBlockInfo { codeBlockLanguage :: Text
+                  -- ^ The language of the source code in the code block.
                   , codeBlockInfo :: Text
+                  -- ^ Any text that comes after the language in the
+                  -- code block header.
                   }
                   deriving (Eq, Show)
 
+-- | Ways to decorate numbered itemized list items. The decoration
+-- follows the list item number.
 data NumDecoration =
     Paren
     | Period
     deriving (Eq, Show)
 
+-- | A single logical inline element in a rich text block.
 data Element =
     Element { eStyle :: ElementStyle
+            -- ^ The element's visual style.
             , eData :: ElementData
+            -- ^ The element's data.
             }
             deriving (Show, Eq)
 
 setElementStyle :: ElementStyle -> Element -> Element
 setElementStyle s e = e { eStyle = s }
 
+-- | A URL.
 newtype URL = URL Text
             deriving (Eq, Show, Ord)
 
 unURL :: URL -> Text
 unURL (URL url) = url
 
+-- | The kinds of data that can appear in rich text elements.
 data ElementData =
     EText Text
+    -- ^ A sequence of non-whitespace characters.
     | ESpace
+    -- ^ A single space.
     | ESoftBreak
+    -- ^ A soft line break.
     | ELineBreak
+    -- ^ A hard line break.
     | ERawHtml Text
+    -- ^ Raw HTML.
     | EEditSentinel
+    -- ^ A sentinel indicating that some text has been edited (used
+    -- to indicate that mattermost messages have been edited by their
+    -- authors). This has no parsable representation; it is only used
+    -- to annotate a message prior to rendering to add a visual editing
+    -- indicator.
     | EUser Text
+    -- ^ A user reference. The text here includes only the username, not
+    -- the sigil.
     | EChannel Text
+    -- ^ A channel reference. The text here includes only the channel
+    -- name, not the sigil.
     | EHyperlink URL (Maybe (Seq Element))
+    -- ^ A hyperlink to the specified URL. Optionally provides an
+    -- element sequence indicating the URL's text label; if absent, the
+    -- label is just the URL itself.
     | EImage URL (Maybe (Seq Element))
+    -- ^ An image at the specified URL. Optionally provides an element
+    -- sequence indicating the image's "alt" text label; if absent, the
+    -- label is just the URL itself.
     | EEmoji Text
+    -- ^ An emoji reference. The text here includes only the text
+    -- portion, not the colons, e.g. "foo" instead of ":foo:".
     deriving (Show, Eq)
 
+-- | Element visual styles.
 data ElementStyle =
     Normal
+    -- ^ Normal text
     | Emph
+    -- ^ Emphasized text
     | Strong
+    -- ^ Bold text
     | Code
+    -- ^ Inline code segment or code block
     | Edited
+    -- ^ An editing marker's default style
     | EditedRecently
+    -- ^ An editing marker's style when edited "recently"
     | Hyperlink URL
+    -- ^ A terminal hyperlink to the specified URL
     | Emoji
+    -- ^ An emoji reference
     deriving (Eq, Show)
 
+-- | Convert a sequence of markdown (Cheapskate) blocks into rich text
+-- blocks.
 fromMarkdownBlocks :: C.Blocks -> Seq RichTextBlock
 fromMarkdownBlocks = fmap fromMarkdownBlock
 
+-- | Convert a single markdown block into a single rich text block.
 fromMarkdownBlock :: C.Block -> RichTextBlock
 fromMarkdownBlock (C.Para is) =
     Para $ fromMarkdownInlines is
@@ -235,6 +300,7 @@ unsafeGetStr :: C.Inline -> Text
 unsafeGetStr (C.Str t) = t
 unsafeGetStr _ = error "BUG: unsafeGetStr called on non-Str Inline"
 
+-- | Obtain all username references in a sequence of rich text blocks.
 findUsernames :: Seq RichTextBlock -> S.Set T.Text
 findUsernames = S.unions . F.toList . fmap blockFindUsernames
 
@@ -257,6 +323,7 @@ elementFindUsernames (e : es) =
         EUser u -> S.insert u $ elementFindUsernames es
         _ -> elementFindUsernames es
 
+-- | Obtain all URLs (and optional labels) in a rich text block.
 blockGetURLs :: RichTextBlock -> [(URL, Maybe (Seq Element))]
 blockGetURLs (Para is) = catMaybes $ elementGetURL <$> toList is
 blockGetURLs (Header _ is) = catMaybes $ elementGetURL <$> toList is
@@ -274,6 +341,7 @@ elementGetURL (Element _ (EImage url label)) =
 elementGetURL _ =
     Nothing
 
+-- | Find the first code block in a sequence of rich text blocks.
 findVerbatimChunk :: Seq RichTextBlock -> Maybe Text
 findVerbatimChunk = getFirst . F.foldMap go
   where go (CodeBlock _ t) = First (Just t)
