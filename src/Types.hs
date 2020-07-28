@@ -451,6 +451,9 @@ data Config =
            -- ^ The CPU usage policy for the application.
            , configDefaultAttachmentPath :: Maybe FilePath
            -- ^ The default path for browsing attachments
+           , configMessageSelectAfterURLOpen :: Bool
+           -- ^ Whether to remain in message selection mode after
+           -- opening URL(s)
            } deriving (Eq, Show)
 
 -- | The policy for CPU usage.
