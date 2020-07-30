@@ -116,12 +116,13 @@ data ElementData =
     -- ^ A hard line break.
     | ERawHtml Text
     -- ^ Raw HTML.
-    | EEditSentinel
+    | EEditSentinel Bool
     -- ^ A sentinel indicating that some text has been edited (used
     -- to indicate that mattermost messages have been edited by their
     -- authors). This has no parsable representation; it is only used
     -- to annotate a message prior to rendering to add a visual editing
-    -- indicator.
+    -- indicator. The boolean indicates whether the edit was "recent"
+    -- (True) or not (False).
     | EUser Text
     -- ^ A user reference. The text here includes only the username, not
     -- the sigil.
@@ -151,10 +152,6 @@ data ElementStyle =
     -- ^ Bold text
     | Code
     -- ^ Inline code segment or code block
-    | Edited
-    -- ^ An editing marker's default style
-    | EditedRecently
-    -- ^ An editing marker's style when edited "recently"
     | Hyperlink URL
     -- ^ A terminal hyperlink to the specified URL
     | Emoji

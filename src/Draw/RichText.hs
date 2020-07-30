@@ -66,16 +66,16 @@ omittedUsernameType = \case
 -- If the last block is a paragraph, append it to that paragraph.
 -- Otherwise, append a new block so it appears beneath the last
 -- block-level element.
-addEditSentinel :: ElementData -> ElementStyle -> Seq RichTextBlock -> Seq RichTextBlock
-addEditSentinel d sty bs =
+addEditSentinel :: ElementData -> Seq RichTextBlock -> Seq RichTextBlock
+addEditSentinel d bs =
     case viewr bs of
         EmptyR -> bs
-        (rest :> b) -> rest <> appendEditSentinel d sty b
+        (rest :> b) -> rest <> appendEditSentinel d b
 
-appendEditSentinel :: ElementData -> ElementStyle -> RichTextBlock -> Seq RichTextBlock
-appendEditSentinel sentinel sty b =
+appendEditSentinel :: ElementData -> RichTextBlock -> Seq RichTextBlock
+appendEditSentinel sentinel b =
     let s = Para (S.singleton m)
-        m = Element sty sentinel
+        m = Element Normal sentinel
     in case b of
         Para is -> S.singleton $ Para (is |> Element Normal ESpace |> m)
         _ -> S.fromList [b, s]
@@ -158,9 +158,9 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                 if p^.postEditAtL > p^.postCreateAtL
                 then case mdEditThreshold of
                     Just cutoff | p^.postEditAtL >= cutoff ->
-                        addEditSentinel EEditSentinel EditedRecently bs
+                        addEditSentinel (EEditSentinel True) bs
                     _ -> if mdShowOlderEdits
-                         then addEditSentinel EEditSentinel Edited bs
+                         then addEditSentinel (EEditSentinel False) bs
                          else bs
                 else bs
 
@@ -451,8 +451,6 @@ renderElement curUser e = addStyle widget
         addStyle = case sty of
                 Normal              -> id
                 Emph                -> B.withDefAttr clientEmphAttr
-                Edited              -> B.withDefAttr editedMarkingAttr
-                EditedRecently      -> B.withDefAttr editedRecentlyMarkingAttr
                 Strong              -> B.withDefAttr clientStrongAttr
                 Code                -> B.withDefAttr codeAttr
                 Emoji               -> B.withDefAttr emojiAttr
@@ -472,7 +470,10 @@ renderElement curUser e = addStyle widget
 
             ESpace                       -> B.txt " "
             ERawHtml t                   -> rawText t
-            EEditSentinel                -> B.txt editMarking
+            EEditSentinel recent         -> let attr = if recent
+                                                       then editedRecentlyMarkingAttr
+                                                       else editedMarkingAttr
+                                            in B.withDefAttr attr $ B.txt editMarking
             EUser u                      -> colorUsername curUser u $ userSigil <> u
             EChannel c                   -> B.txt $ normalChannelSigil <> c
             EHyperlink (URL url) Nothing -> rawText url
@@ -509,7 +510,7 @@ elementWidth e =
         ERawHtml t                   -> B.textWidth t
         EUser t                      -> T.length userSigil + B.textWidth t
         EChannel t                   -> T.length normalChannelSigil + B.textWidth t
-        EEditSentinel                -> B.textWidth editMarking
+        EEditSentinel _              -> B.textWidth editMarking
         EImage (URL url) Nothing     -> B.textWidth url
         EImage _ (Just is)           -> sum $ elementWidth <$> is
         EHyperlink (URL url) Nothing -> B.textWidth url
