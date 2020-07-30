@@ -453,7 +453,6 @@ renderElement curUser e = addStyle widget
                 Emph                -> B.withDefAttr clientEmphAttr
                 Strong              -> B.withDefAttr clientStrongAttr
                 Code                -> B.withDefAttr codeAttr
-                Emoji               -> B.withDefAttr emojiAttr
                 Hyperlink (URL url) -> B.hyperlink url . B.withDefAttr urlAttr
         rawText = B.txt . removeCursor
         widget = case dat of
@@ -478,7 +477,8 @@ renderElement curUser e = addStyle widget
             EChannel c                   -> B.txt $ normalChannelSigil <> c
             EHyperlink (URL url) Nothing -> rawText url
             EImage (URL url) Nothing     -> rawText url
-            EEmoji em                    -> B.txt $ ":" <> em <> ":"
+            EEmoji em                    -> B.withDefAttr emojiAttr $
+                                            B.txt $ ":" <> em <> ":"
 
             -- Hyperlink and image nodes with labels should not appear
             -- at this point because line-wrapping should break them up

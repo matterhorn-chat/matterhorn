@@ -154,8 +154,6 @@ data ElementStyle =
     -- ^ Inline code segment or code block
     | Hyperlink URL
     -- ^ A terminal hyperlink to the specified URL
-    | Emoji
-    -- ^ An emoji reference
     deriving (Eq, Show)
 
 -- | Convert a sequence of markdown (Cheapskate) blocks into rich text
@@ -235,7 +233,7 @@ fromMarkdownInlines inlines =
                   em = T.concat $ unsafeGetStr <$> F.toList emojiFrags
               in case Seq.viewl rest of
                   C.Str ":" :< rest2 ->
-                      Element Emoji (EEmoji em) <| go sty rest2
+                      Element Normal (EEmoji em) <| go sty rest2
                   _ ->
                       Element sty (EText ":") <| go sty xs
           C.Str t :< xs | userSigil `T.isPrefixOf` t ->
