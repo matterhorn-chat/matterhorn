@@ -411,12 +411,14 @@ wrapLine maxCols hSet = splitChunks . go (SplitState (S.singleton S.empty) 0)
                       else EText $ normalChannelSigil <> c
                   d -> d
 
+              addHyperlink url el = setElementStyle (Hyperlink url (eStyle el)) el
+
               st' =
                   case newEData of
                       EHyperlink url (Just labelEs) ->
-                          go st $ setElementStyle (Hyperlink url) <$> labelEs
+                          go st $ addHyperlink url <$> labelEs
                       EImage url (Just labelEs) ->
-                          go st $ setElementStyle (Hyperlink url) <$> labelEs
+                          go st $ addHyperlink url <$> labelEs
                       _ ->
                           if | newEData == ESoftBreak || newEData == ELineBreak ->
                                  st { splitChunks = splitChunks st |> S.empty
@@ -444,16 +446,17 @@ renderElementSeq :: Text -> Seq Element -> Seq (Widget a)
 renderElementSeq curUser es = renderElement curUser <$> es
 
 renderElement :: Text -> Element -> Widget a
-renderElement curUser e = addStyle widget
+renderElement curUser e = addStyle sty widget
     where
         sty = eStyle e
         dat = eData e
-        addStyle = case sty of
-                Normal              -> id
-                Emph                -> B.withDefAttr clientEmphAttr
-                Strong              -> B.withDefAttr clientStrongAttr
-                Code                -> B.withDefAttr codeAttr
-                Hyperlink (URL url) -> B.hyperlink url . B.withDefAttr urlAttr
+        addStyle s = case s of
+                Normal                  -> id
+                Emph                    -> B.withDefAttr clientEmphAttr
+                Strong                  -> B.withDefAttr clientStrongAttr
+                Code                    -> B.withDefAttr codeAttr
+                Hyperlink (URL url) innerSty ->
+                    B.hyperlink url . B.withDefAttr urlAttr .  addStyle innerSty
         rawText = B.txt . removeCursor
         widget = case dat of
             -- Cursor sentinels get parsed as individual text nodes by

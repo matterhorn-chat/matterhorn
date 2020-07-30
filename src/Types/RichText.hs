@@ -152,8 +152,9 @@ data ElementStyle =
     -- ^ Bold text
     | Code
     -- ^ Inline code segment or code block
-    | Hyperlink URL
-    -- ^ A terminal hyperlink to the specified URL
+    | Hyperlink URL ElementStyle
+    -- ^ A terminal hyperlink to the specified URL, composed with
+    -- another element style
     deriving (Eq, Show)
 
 -- | Convert a sequence of markdown (Cheapskate) blocks into rich text
@@ -258,13 +259,13 @@ fromMarkdownInlines inlines =
                            then Nothing
                            else Just $ fromMarkdownInlines label
                   url = URL theUrl
-              in (Element (Hyperlink url) $ EHyperlink url mLabel) <| go sty xs
+              in (Element (Hyperlink url sty) $ EHyperlink url mLabel) <| go sty xs
           C.Image altIs theUrl _ :< xs ->
               let mLabel = if Seq.null altIs
                            then Nothing
                            else Just $ fromMarkdownInlines altIs
                   url = URL theUrl
-              in (Element (Hyperlink url) $ EImage url mLabel) <| go sty xs
+              in (Element (Hyperlink url sty) $ EImage url mLabel) <| go sty xs
           C.RawHtml t :< xs ->
               Element sty (ERawHtml t) <| go sty xs
           C.Code t :< xs ->
