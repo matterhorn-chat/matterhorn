@@ -132,7 +132,7 @@ should consider to make submitting patches easier for all concerned:
 
  - If you are new to Haskell and are unsure how much Haskell you need
    to know in order to contribute, please see [our list of Haskell
-   skills needed](HASKELL.md).
+   skills needed](docs/HASKELL.md).
  - Please base all patches against the `develop` branch unless you are
    specifically fixing a bug in a released version, in which case
    `master` is a fine place to start. Please also do this for submodules
