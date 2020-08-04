@@ -36,7 +36,7 @@ muteLens = lens (\props -> props^.channelNotifyPropsMarkUnreadL == IsValue Notif
                                   })
 
 channelMentionLens :: Lens' ChannelNotifyProps Bool
-channelMentionLens = lens (\props -> (props^.channelNotifyPropsIgnoreChannelMentionsL) == (IsValue True))
+channelMentionLens = lens (\props -> props^.channelNotifyPropsIgnoreChannelMentionsL == IsValue True)
                      (\props ignoreChannelMentions ->
                           props { channelNotifyPropsIgnoreChannelMentions = if ignoreChannelMentions
                                                                             then IsValue True
