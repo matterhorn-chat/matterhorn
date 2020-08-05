@@ -66,16 +66,16 @@ omittedUsernameType = \case
 -- If the last block is a paragraph, append it to that paragraph.
 -- Otherwise, append a new block so it appears beneath the last
 -- block-level element.
-addEditSentinel :: ElementData -> ElementStyle -> Seq RichTextBlock -> Seq RichTextBlock
-addEditSentinel d sty bs =
+addEditSentinel :: ElementData -> Seq RichTextBlock -> Seq RichTextBlock
+addEditSentinel d bs =
     case viewr bs of
         EmptyR -> bs
-        (rest :> b) -> rest <> appendEditSentinel d sty b
+        (rest :> b) -> rest <> appendEditSentinel d b
 
-appendEditSentinel :: ElementData -> ElementStyle -> RichTextBlock -> Seq RichTextBlock
-appendEditSentinel sentinel sty b =
+appendEditSentinel :: ElementData -> RichTextBlock -> Seq RichTextBlock
+appendEditSentinel sentinel b =
     let s = Para (S.singleton m)
-        m = Element sty sentinel
+        m = Element Normal sentinel
     in case b of
         Para is -> S.singleton $ Para (is |> Element Normal ESpace |> m)
         _ -> S.fromList [b, s]
@@ -158,9 +158,9 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                 if p^.postEditAtL > p^.postCreateAtL
                 then case mdEditThreshold of
                     Just cutoff | p^.postEditAtL >= cutoff ->
-                        addEditSentinel EEditSentinel EditedRecently bs
+                        addEditSentinel (EEditSentinel True) bs
                     _ -> if mdShowOlderEdits
-                         then addEditSentinel EEditSentinel Edited bs
+                         then addEditSentinel (EEditSentinel False) bs
                          else bs
                 else bs
 
@@ -413,12 +413,14 @@ wrapLine maxCols hSet = splitChunks . go (SplitState (S.singleton S.empty) 0)
                       else EText $ normalChannelSigil <> c
                   d -> d
 
+              addHyperlink url el = setElementStyle (Hyperlink url (eStyle el)) el
+
               st' =
                   case newEData of
                       EHyperlink url (Just labelEs) ->
-                          go st $ setElementStyle (Hyperlink url) <$> labelEs
+                          go st $ addHyperlink url <$> labelEs
                       EImage url (Just labelEs) ->
-                          go st $ setElementStyle (Hyperlink url) <$> labelEs
+                          go st $ addHyperlink url <$> labelEs
                       _ ->
                           if | newEData == ESoftBreak || newEData == ELineBreak ->
                                  st { splitChunks = splitChunks st |> S.empty
@@ -446,19 +448,17 @@ renderElementSeq :: Text -> Seq Element -> Seq (Widget a)
 renderElementSeq curUser es = renderElement curUser <$> es
 
 renderElement :: Text -> Element -> Widget a
-renderElement curUser e = addStyle widget
+renderElement curUser e = addStyle sty widget
     where
         sty = eStyle e
         dat = eData e
-        addStyle = case sty of
-                Normal              -> id
-                Emph                -> B.withDefAttr clientEmphAttr
-                Edited              -> B.withDefAttr editedMarkingAttr
-                EditedRecently      -> B.withDefAttr editedRecentlyMarkingAttr
-                Strong              -> B.withDefAttr clientStrongAttr
-                Code                -> B.withDefAttr codeAttr
-                Emoji               -> B.withDefAttr emojiAttr
-                Hyperlink (URL url) -> B.hyperlink url . B.withDefAttr urlAttr
+        addStyle s = case s of
+                Normal                  -> id
+                Emph                    -> B.withDefAttr clientEmphAttr
+                Strong                  -> B.withDefAttr clientStrongAttr
+                Code                    -> B.withDefAttr codeAttr
+                Hyperlink (URL url) innerSty ->
+                    B.hyperlink url . B.withDefAttr urlAttr .  addStyle innerSty
         rawText = B.txt . removeCursor
         widget = case dat of
             -- Cursor sentinels get parsed as individual text nodes by
@@ -474,12 +474,16 @@ renderElement curUser e = addStyle widget
 
             ESpace                       -> B.txt " "
             ERawHtml t                   -> rawText t
-            EEditSentinel                -> B.txt editMarking
+            EEditSentinel recent         -> let attr = if recent
+                                                       then editedRecentlyMarkingAttr
+                                                       else editedMarkingAttr
+                                            in B.withDefAttr attr $ B.txt editMarking
             EUser u                      -> colorUsername curUser u $ userSigil <> u
             EChannel c                   -> B.txt $ normalChannelSigil <> c
             EHyperlink (URL url) Nothing -> rawText url
             EImage (URL url) Nothing     -> rawText url
-            EEmoji em                    -> B.txt $ ":" <> em <> ":"
+            EEmoji em                    -> B.withDefAttr emojiAttr $
+                                            B.txt $ ":" <> em <> ":"
 
             -- Hyperlink and image nodes with labels should not appear
             -- at this point because line-wrapping should break them up
@@ -511,7 +515,7 @@ elementWidth e =
         ERawHtml t                   -> B.textWidth t
         EUser t                      -> T.length userSigil + B.textWidth t
         EChannel t                   -> T.length normalChannelSigil + B.textWidth t
-        EEditSentinel                -> B.textWidth editMarking
+        EEditSentinel _              -> B.textWidth editMarking
         EImage (URL url) Nothing     -> B.textWidth url
         EImage _ (Just is)           -> sum $ elementWidth <$> is
         EHyperlink (URL url) Nothing -> B.textWidth url

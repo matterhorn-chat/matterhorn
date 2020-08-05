@@ -117,12 +117,13 @@ data ElementData =
     -- ^ A hard line break.
     | ERawHtml Text
     -- ^ Raw HTML.
-    | EEditSentinel
+    | EEditSentinel Bool
     -- ^ A sentinel indicating that some text has been edited (used
     -- to indicate that mattermost messages have been edited by their
     -- authors). This has no parsable representation; it is only used
     -- to annotate a message prior to rendering to add a visual editing
-    -- indicator.
+    -- indicator. The boolean indicates whether the edit was "recent"
+    -- (True) or not (False).
     | EUser Text
     -- ^ A user reference. The text here includes only the username, not
     -- the sigil.
@@ -152,14 +153,9 @@ data ElementStyle =
     -- ^ Bold text
     | Code
     -- ^ Inline code segment or code block
-    | Edited
-    -- ^ An editing marker's default style
-    | EditedRecently
-    -- ^ An editing marker's style when edited "recently"
-    | Hyperlink URL
-    -- ^ A terminal hyperlink to the specified URL
-    | Emoji
-    -- ^ An emoji reference
+    | Hyperlink URL ElementStyle
+    -- ^ A terminal hyperlink to the specified URL, composed with
+    -- another element style
     deriving (Eq, Show)
 
 -- | Convert a sequence of markdown (Cheapskate) blocks into rich text
@@ -243,7 +239,7 @@ fromMarkdownInlines inlines =
                   em = T.concat $ unsafeGetStr <$> F.toList emojiFrags
               in case Seq.viewl rest of
                   C.Str ":" :< rest2 ->
-                      Element Emoji (EEmoji em) <| go sty rest2
+                      Element Normal (EEmoji em) <| go sty rest2
                   _ ->
                       Element sty (EText ":") <| go sty xs
           C.Str t :< xs | userSigil `T.isPrefixOf` t ->
@@ -268,13 +264,13 @@ fromMarkdownInlines inlines =
                            then Nothing
                            else Just $ fromMarkdownInlines label
                   url = URL theUrl
-              in (Element (Hyperlink url) $ EHyperlink url mLabel) <| go sty xs
+              in (Element (Hyperlink url sty) $ EHyperlink url mLabel) <| go sty xs
           C.Image altIs theUrl _ :< xs ->
               let mLabel = if Seq.null altIs
                            then Nothing
                            else Just $ fromMarkdownInlines altIs
                   url = URL theUrl
-              in (Element (Hyperlink url) $ EImage url mLabel) <| go sty xs
+              in (Element (Hyperlink url sty) $ EImage url mLabel) <| go sty xs
           C.RawHtml t :< xs ->
               Element sty (ERawHtml t) <| go sty xs
           C.Code t :< xs ->
