@@ -23,6 +23,9 @@ module Types.RichText
   , findUsernames
   , blockGetURLs
   , findVerbatimChunk
+
+  -- Exposed for testing only:
+  , fromMarkdownBlocks
   )
 where
 
