@@ -94,7 +94,6 @@ module Types.Messages
   , removeMatchesFromSubset
   , withFirstMessage
   , msgURLs
-  , altInlinesString
 
   , LinkChoice(LinkChoice)
   , linkUser
@@ -108,7 +107,6 @@ where
 import           Prelude ()
 import           Prelude.MH
 
-import qualified Cheapskate as C
 import           Control.Monad
 import qualified Data.Foldable as F
 import           Data.Hashable ( Hashable )
@@ -739,21 +737,3 @@ msgURLs msg =
                        , Element Code $ EText $ a^.attachmentName
                        ]
   in msgUrls <> attachmentURLs
-
-inlinesText :: Seq C.Inline -> Text
-inlinesText = F.fold . fmap go
-  where go (C.Str t)       = t
-        go C.Space         = " "
-        go C.SoftBreak     = " "
-        go C.LineBreak     = " "
-        go (C.Emph is)     = F.fold (fmap go is)
-        go (C.Strong is)   = F.fold (fmap go is)
-        go (C.Code t)      = t
-        go (C.Link is _ _) = F.fold (fmap go is)
-        go (C.Image is _ _) = "[image" <> altInlinesString is <> "]"
-        go (C.Entity t)    = t
-        go (C.RawHtml t)   = t
-
-altInlinesString :: Seq C.Inline -> Text
-altInlinesString is | Seq.null is = ""
-                    | otherwise = ":" <> inlinesText is
