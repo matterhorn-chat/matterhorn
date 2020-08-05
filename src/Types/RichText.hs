@@ -136,11 +136,11 @@ data ElementData =
     | EHyperlink URL (Maybe (Seq Element))
     -- ^ A hyperlink to the specified URL. Optionally provides an
     -- element sequence indicating the URL's text label; if absent, the
-    -- label is just the URL itself.
+    -- label is understood to be the URL itself.
     | EImage URL (Maybe (Seq Element))
     -- ^ An image at the specified URL. Optionally provides an element
     -- sequence indicating the image's "alt" text label; if absent, the
-    -- label is just the URL itself.
+    -- label is understood to be the URL itself.
     | EEmoji Text
     -- ^ An emoji reference. The text here includes only the text
     -- portion, not the colons, e.g. "foo" instead of ":foo:".
