@@ -329,13 +329,17 @@ elementFindUsernames (e : es) =
 
 -- | Obtain all URLs (and optional labels) in a rich text block.
 blockGetURLs :: RichTextBlock -> [(URL, Maybe (Seq Element))]
-blockGetURLs (Para is) = catMaybes $ elementGetURL <$> toList is
-blockGetURLs (Header _ is) = catMaybes $ elementGetURL <$> toList is
-blockGetURLs (Blockquote bs) = mconcat $ blockGetURLs <$> toList bs
+blockGetURLs (Para is) =
+    catMaybes $ elementGetURL <$> toList is
+blockGetURLs (Header _ is) =
+    catMaybes $ elementGetURL <$> toList is
+blockGetURLs (Blockquote bs) =
+    mconcat $ blockGetURLs <$> toList bs
 blockGetURLs (List _ _ bss) =
     mconcat $ mconcat $
     (fmap blockGetURLs . F.toList) <$> F.toList bss
-blockGetURLs _ = mempty
+blockGetURLs _ =
+    mempty
 
 elementGetURL :: Element -> Maybe (URL, Maybe (Seq Element))
 elementGetURL (Element _ (EHyperlink url label)) =
