@@ -64,14 +64,15 @@ data ListType =
     Bullet Char
     -- ^ Decorate the items with bullet using the specified character.
     | Numbered NumDecoration Int
-    -- ^ Number the items starting at the specified number and use the
-    -- indicated decoration.
+    -- ^ Number the items starting at the specified number; use the
+    -- indicated decoration following the number.
     deriving (Eq, Show)
 
 -- | Information about a code block.
 data CodeBlockInfo =
     CodeBlockInfo { codeBlockLanguage :: Text
-                  -- ^ The language of the source code in the code block.
+                  -- ^ The language of the source code in the code
+                  -- block.
                   , codeBlockInfo :: Text
                   -- ^ Any text that comes after the language in the
                   -- code block header.
