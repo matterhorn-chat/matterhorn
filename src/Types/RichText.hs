@@ -70,12 +70,12 @@ data ListType =
 
 -- | Information about a code block.
 data CodeBlockInfo =
-    CodeBlockInfo { codeBlockLanguage :: Text
+    CodeBlockInfo { codeBlockLanguage :: Maybe Text
                   -- ^ The language of the source code in the code
-                  -- block.
-                  , codeBlockInfo :: Text
+                  -- block, if any.
+                  , codeBlockInfo :: Maybe Text
                   -- ^ Any text that comes after the language in the
-                  -- code block header.
+                  -- code block header, if any.
                   }
                   deriving (Eq, Show)
 
@@ -186,7 +186,11 @@ fromMarkdownBlock C.HRule =
 
 fromMarkdownCodeAttr :: C.CodeAttr -> CodeBlockInfo
 fromMarkdownCodeAttr (C.CodeAttr lang info) =
-    CodeBlockInfo lang info
+    let strippedLang = T.strip lang
+        strippedInfo = T.strip info
+        maybeText t = if T.null t then Nothing else Just t
+    in CodeBlockInfo (maybeText strippedLang)
+                     (maybeText strippedInfo)
 
 fromMarkdownListType :: C.ListType -> ListType
 fromMarkdownListType (C.Bullet c) =

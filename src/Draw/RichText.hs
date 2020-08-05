@@ -318,7 +318,9 @@ blockToWidget curUser hSet w (List _ l bs) =
     blocksToList curUser l w bs hSet
 blockToWidget _ hSet _ (CodeBlock ci tx) =
     let f = maybe rawCodeBlockToWidget (codeBlockToWidget (hSyntaxMap hSet)) mSyntax
-        mSyntax = Sky.lookupSyntax (codeBlockLanguage ci) (hSyntaxMap hSet)
+        mSyntax = do
+            lang <- codeBlockLanguage ci
+            Sky.lookupSyntax lang (hSyntaxMap hSet)
     in f tx
 blockToWidget _ _ w (HTMLBlock t) =
     maybeHLimit w $
