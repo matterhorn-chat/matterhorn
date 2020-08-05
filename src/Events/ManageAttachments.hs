@@ -13,7 +13,6 @@ import           Prelude ()
 import           Prelude.MH
 
 import qualified Control.Exception as E
-import           Control.Monad ( void )
 import qualified Brick.Widgets.FileBrowser as FB
 import qualified Brick.Widgets.List as L
 import qualified Data.ByteString as BS

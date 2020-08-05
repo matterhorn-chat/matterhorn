@@ -293,6 +293,7 @@ import qualified Control.Monad.Reader as R
 import qualified Data.Set as Set
 import qualified Data.ByteString as BS
 import qualified Data.Foldable as F
+import qualified Data.Kind as K
 import           Data.Ord ( comparing )
 import qualified Data.HashMap.Strict as HM
 import           Data.List ( sortBy, nub, elemIndex )
@@ -1929,7 +1930,7 @@ resetAutocomplete = do
 
 -- | The 'CmdArgs' type represents the arguments to a slash-command; the
 -- type parameter represents the argument structure.
-data CmdArgs :: * -> * where
+data CmdArgs :: K.Type -> K.Type where
     NoArg    :: CmdArgs ()
     LineArg  :: Text -> CmdArgs Text
     UserArg  :: CmdArgs rest -> CmdArgs (Text, rest)
