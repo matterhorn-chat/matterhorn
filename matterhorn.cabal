@@ -126,7 +126,6 @@ executable matterhorn
                        Types.Messages
                        Types.RichText
                        Types.Users
-                       Types.UserNames
                        Types.Posts
                        FilePaths
                        TeamSelect
@@ -193,7 +192,6 @@ test-suite test_messages
                     , TimeUtils
                     , Types.Messages
                     , Types.Posts
-                    , Types.UserNames
                     , Types.Common
                     , Types.DirectionalSeq
                     , Types.RichText
