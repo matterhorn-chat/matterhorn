@@ -1,5 +1,5 @@
 -- | This module provides a set of data types to represent message text.
--- The types here are based loosely on the 'cheapskate' package's types
+-- The types here are based loosely on the @cheapskate@ package's types
 -- but provide higher-level support for the kinds of things we find in
 -- Mattermost messages such as user and channel references.
 --
