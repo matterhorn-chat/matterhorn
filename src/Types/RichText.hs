@@ -72,10 +72,13 @@ data ListType =
 data CodeBlockInfo =
     CodeBlockInfo { codeBlockLanguage :: Maybe Text
                   -- ^ The language of the source code in the code
-                  -- block, if any.
+                  -- block, if any. This is encoded in Markdown as a
+                  -- sequence of non-whitespace characters following the
+                  -- fenced code block opening backticks.
                   , codeBlockInfo :: Maybe Text
-                  -- ^ Any text that comes after the language in the
-                  -- code block header, if any.
+                  -- ^ Any text that comes after the language token.
+                  -- This text is separated from the language token by
+                  -- whitespace.
                   }
                   deriving (Eq, Show)
 
