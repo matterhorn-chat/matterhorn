@@ -40,6 +40,7 @@ import           State.MessageSelect
 import           Themes
 import           TimeUtils ( justAfter, justBefore )
 import           Types
+import           Types.RichText ( parseMarkdown )
 import           Types.KeyEvents
 
 
@@ -56,7 +57,7 @@ previewFromInput overrideTy uId s =
         msgTy = fromMaybe (if isEmoteCmd then CP Emote else CP NormalPost) overrideTy
     in if isCommand && not isEmoteCmd
        then Nothing
-       else Just $ Message { _mText          = getBlocks content
+       else Just $ Message { _mText          = parseMarkdown content
                            , _mMarkdownSource = content
                            , _mUser          = UserI False uId
                            , _mDate          = ServerTime $ UTCTime (fromGregorian 1970 1 1) 0

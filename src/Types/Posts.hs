@@ -42,15 +42,12 @@ module Types.Posts
   , postIsJoin
   , postIsTopicChange
   , postIsEmote
-
-  , getBlocks
   )
 where
 
 import           Prelude ()
 import           Prelude.MH
 
-import qualified Cheapskate as C
 import qualified Data.Map.Strict as Map
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
@@ -62,7 +59,7 @@ import           Network.Mattermost.Lenses
 import           Network.Mattermost.Types
 
 import           Types.Common
-import           Types.RichText ( RichTextBlock(Blockquote), fromMarkdownBlocks )
+import           Types.RichText ( RichTextBlock(Blockquote), parseMarkdown )
 
 
 -- * Client Messages
@@ -154,10 +151,6 @@ data ClientPostType =
 
 -- ** Creating 'ClientPost' Values
 
--- | Parse text as Markdown and extract the AST
-getBlocks :: Text -> Seq RichTextBlock
-getBlocks s = fromMarkdownBlocks bs where C.Doc _ bs = C.markdown C.def s
-
 -- | Determine the internal 'PostType' based on a 'Post'
 postClientPostType :: Post -> ClientPostType
 postClientPostType cp =
@@ -201,7 +194,7 @@ unEmote _ t = t
 toClientPost :: Post -> Maybe PostId -> ClientPost
 toClientPost p parentId =
   let src = unEmote (postClientPostType p) $ sanitizeUserText $ postMessage p
-  in ClientPost { _cpText          = getBlocks src <> getAttachmentText p
+  in ClientPost { _cpText          = parseMarkdown src <> getAttachmentText p
                 , _cpMarkdownSource = src
                 , _cpUser          = postUserId p
                 , _cpUserOverride  = p^.postPropsL.postPropsOverrideUsernameL
@@ -227,7 +220,7 @@ getAttachmentText p =
     Nothing -> Seq.empty
     Just attachments ->
       fmap (Blockquote . render) attachments
-  where render att = getBlocks (att^.ppaTextL) <> getBlocks (att^.ppaFallbackL)
+  where render att = parseMarkdown (att^.ppaTextL) <> parseMarkdown (att^.ppaFallbackL)
 
 -- ** 'ClientPost' Lenses
 

@@ -125,7 +125,7 @@ import           Types.DirectionalSeq
 import           Types.Posts
 import           Types.RichText ( RichTextBlock(..), Element(..)
                                 , ElementData(..), findUsernames, blockGetURLs
-                                , ElementStyle(..), URL(..)
+                                , ElementStyle(..), URL(..), parseMarkdown
                                 )
 
 
@@ -299,7 +299,7 @@ makeLenses ''LinkChoice
 -- associated with passing a link to the local browser.
 clientMessageToMessage :: ClientMessage -> Message
 clientMessageToMessage cm = Message
-  { _mText          = getBlocks (cm^.cmText)
+  { _mText          = parseMarkdown (cm^.cmText)
   , _mMarkdownSource = cm^.cmText
   , _mUser          = NoUser
   , _mDate          = cm^.cmDate
@@ -361,7 +361,7 @@ clientPostToMessage cp = (m, mentions)
 
 newMessageOfType :: Text -> MessageType -> ServerTime -> Message
 newMessageOfType text typ d = Message
-  { _mText         = getBlocks text
+  { _mText         = parseMarkdown text
   , _mMarkdownSource = text
   , _mUser         = NoUser
   , _mDate         = d

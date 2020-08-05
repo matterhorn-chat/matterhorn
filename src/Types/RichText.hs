@@ -3,9 +3,8 @@
 -- but provide higher-level support for the kinds of things we find in
 -- Mattermost messages such as user and channel references.
 --
--- To convert from Cheapskate's representation, use
--- 'fromMarkdownBlocks'. To actually render text in this representation,
--- see the module 'Draw.RichText'.
+-- To parse a Markdown document, use 'parseMarkdown'. To actually render
+-- text in this representation, see the module 'Draw.RichText'.
 module Types.RichText
   ( RichTextBlock(..)
   , ListType(..)
@@ -18,7 +17,7 @@ module Types.RichText
   , URL(..)
   , unURL
 
-  , fromMarkdownBlocks
+  , parseMarkdown
   , setElementStyle
 
   , findUsernames
@@ -160,6 +159,9 @@ data ElementStyle =
     -- ^ A terminal hyperlink to the specified URL, composed with
     -- another element style
     deriving (Eq, Show)
+
+parseMarkdown :: T.Text -> Seq RichTextBlock
+parseMarkdown t = fromMarkdownBlocks bs where C.Doc _ bs = C.markdown C.def t
 
 -- | Convert a sequence of markdown (Cheapskate) blocks into rich text
 -- blocks.

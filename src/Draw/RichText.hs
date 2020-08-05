@@ -25,7 +25,6 @@ import           Brick ( (<+>), Widget, hLimit, imageL
 import qualified Brick as B
 import qualified Brick.Widgets.Border as B
 import qualified Brick.Widgets.Skylighting as BS
-import qualified Cheapskate as C
 import qualified Data.Foldable as F
 import qualified Data.Map.Strict as Map
 import qualified Data.Sequence as Seq
@@ -287,9 +286,8 @@ renderText :: Text -> Widget a
 renderText txt = renderText' "" emptyHSet txt
 
 renderText' :: Text -> HighlightSet -> Text -> Widget a
-renderText' curUser hSet txt = renderRichText curUser hSet Nothing rtBs
-  where C.Doc _ mdBs = C.markdown C.def txt
-        rtBs = fromMarkdownBlocks mdBs
+renderText' curUser hSet t = renderRichText curUser hSet Nothing rtBs
+  where rtBs = parseMarkdown t
 
 vBox :: F.Foldable f => f (Widget a) -> Widget a
 vBox = B.vBox . toList
