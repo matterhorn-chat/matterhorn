@@ -211,7 +211,7 @@ fromMarkdownListType (C.Numbered wrap i) =
 -- appropriate, this function does such consolidation when converting to
 -- RichText elements.
 --
--- This function is also responsible for paving the way for
+-- This function is also partially responsible for paving the way for
 -- line-wrapping later on when RichText is rendered. This means that,
 -- when possible, the elements produced by this function need to be as
 -- small as possible, without losing structure information. An example
@@ -220,17 +220,20 @@ fromMarkdownListType (C.Numbered wrap i) =
 -- into a sequence of five RichText elements, each with a "Code" style
 -- assigned: @[EText "this", ESpace, EText "is", ESpace, EText "code"]@.
 -- This "flattening" of the original Markdown structure makes it much
--- easier to do line-wrapping without losing style information, which is
--- key to rendering the text with the right terminal attributes.
+-- easier to do line-wrapping without losing style information because
+-- it is possible to gather up tokens that do not exceed line widths
+-- without losing style information. This is key to rendering the text
+-- with the right terminal attributes.
 --
 -- However, there are a couple of cases where such flattening does *not*
 -- happen: hyperlinks and images. In these cases we do not flatten the
 -- (arbitrary) text label structure of links and images because we need
 -- to be able to recover those labels to gather up URLs to show to the
 -- user in the URL list. So we leave the complete text structure of
--- those labels behind in the EHyperlink and EImage constructors as
--- sequences of Elements. This means that logic to do line-wrapping will
--- have to explicitly break up link and image labels across line breaks.
+-- those labels behind in the 'EHyperlink' and 'EImage' constructors as
+-- sequences of Elements. This means that logic in 'Draw.RichText' that
+-- does line-wrapping will have to explicitly break up link and image
+-- labels across line breaks.
 fromMarkdownInlines :: Seq C.Inline -> Seq Element
 fromMarkdownInlines inlines =
     let go sty is = case Seq.viewl is of
