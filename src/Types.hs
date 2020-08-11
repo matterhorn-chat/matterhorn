@@ -1350,6 +1350,10 @@ data ChatState =
               -- message with an ID here, to be sure that the latest
               -- version is used (e.g. if it gets edited, etc.).
               , _csNotifyPrefs :: Maybe (Form ChannelNotifyProps MHEvent Name)
+              -- ^ A form for editing the notification preferences for
+              -- the current channel. This is set when entering
+              -- EditNotifyPrefs mode and updated when the user
+              -- changes the form state.
               }
 
 -- | Handles for the View Message window's tabs.
