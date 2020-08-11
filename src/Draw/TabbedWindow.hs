@@ -12,10 +12,10 @@ import           Brick.Widgets.Center
 import           Data.List ( intersperse )
 import qualified Graphics.Vty as Vty
 
+import           Draw.Util ( renderKeybindingHelp )
 import           Types
 import           Themes
 import           Types.KeyEvents
-import           Events.Keybindings ( getFirstDefaultBinding )
 
 -- | Render a tabbed window.
 drawTabbedWindow :: (Eq a, Show a)
@@ -36,12 +36,10 @@ drawTabbedWindow w cs =
 -- | Keybinding help to show at the bottom of a tabbed window.
 keybindingHelp :: Widget Name
 keybindingHelp =
-    let ppPair (label, evs) = hBox $ (intersperse (txt "/") $ ppEv <$> evs) <> [txt (":" <> label)]
-        ppEv ev = withDefAttr clientEmphAttr $ txt (ppBinding (getFirstDefaultBinding ev))
-        pairs = [ ("Switch tabs", [SelectNextTabEvent, SelectPreviousTabEvent])
+    let pairs = [ ("Switch tabs", [SelectNextTabEvent, SelectPreviousTabEvent])
                 , ("Scroll", [ScrollUpEvent, ScrollDownEvent, ScrollLeftEvent, ScrollRightEvent, PageLeftEvent, PageRightEvent])
                 ]
-    in hBox $ intersperse (txt "  ") $ ppPair <$> pairs
+    in hBox $ intersperse (txt "  ") $ (uncurry renderKeybindingHelp) <$> pairs
 
 -- | The scrollable tab bar to show at the top of a tabbed window.
 tabBar :: (Eq a, Show a)
