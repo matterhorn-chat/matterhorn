@@ -19,6 +19,7 @@ import Types.Channels ( channelNotifyPropsMarkUnreadL
 import Network.Mattermost.Types ( ChannelNotifyProps
                                 , User(..)
                                 , UserNotifyProps(..)
+                                , Type(..)
                                 , channelNotifyPropsMarkUnread
                                 , channelNotifyPropsIgnoreChannelMentions
                                 , WithDefault(..)
@@ -77,10 +78,14 @@ notifyPrefsForm globalDefaults =
 
 enterEditNotifyPrefsMode :: MH ()
 enterEditNotifyPrefsMode = do
-    props <- use (csCurrentChannel.ccInfo.cdNotifyProps)
-    user <- use csMe
-    csNotifyPrefs .= (Just (notifyPrefsForm (userNotifyProps user) props))
-    setMode EditNotifyPrefs
+    chanInfo <- use (csCurrentChannel.ccInfo)
+    case chanInfo^.cdType of
+      Direct -> mhError $ GenericError "Cannot open notification preferences for DM channel."
+      _ -> do
+        let props = chanInfo^.cdNotifyProps
+        user <- use csMe
+        csNotifyPrefs .= (Just (notifyPrefsForm (userNotifyProps user) props))
+        setMode EditNotifyPrefs
 
 exitEditNotifyPrefsMode :: MH ()
 exitEditNotifyPrefsMode = do
