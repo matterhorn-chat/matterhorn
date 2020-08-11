@@ -102,6 +102,7 @@ module Types
   , csPendingChannelChange
   , csViewedMessage
   , csNotifyPrefs
+  , csMe
   , timeZone
   , whenMode
   , setMode

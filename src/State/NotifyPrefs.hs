@@ -17,6 +17,8 @@ import Types.Channels ( channelNotifyPropsMarkUnreadL
                       )
 
 import Network.Mattermost.Types ( ChannelNotifyProps
+                                , User(..)
+                                , UserNotifyProps(..)
                                 , channelNotifyPropsMarkUnread
                                 , channelNotifyPropsIgnoreChannelMentions
                                 , WithDefault(..)
@@ -43,32 +45,41 @@ channelMentionLens = lens (\props -> props^.channelNotifyPropsIgnoreChannelMenti
                                                                             else Default
                                 })
 
+notifyOptionName :: NotifyOption -> Text
+notifyOptionName NotifyOptionAll = "All activity"
+notifyOptionName NotifyOptionMention = "Mentions"
+notifyOptionName NotifyOptionNone = "Never"
+
 mkNotifyButtons :: ((WithDefault NotifyOption) -> Name)
                 -> Lens' ChannelNotifyProps (WithDefault NotifyOption)
+                -> NotifyOption
                 -> ChannelNotifyProps
                 -> FormFieldState ChannelNotifyProps e Name
-mkNotifyButtons mkName l =
-    radioField l [ (Default, mkName Default, "Global default")
-                 , (IsValue NotifyOptionAll, mkName $ IsValue NotifyOptionAll, "All activity")
-                 , (IsValue NotifyOptionMention, mkName $ IsValue NotifyOptionMention, "Mentions")
-                 , (IsValue NotifyOptionNone, mkName $ IsValue NotifyOptionNone, "Never")
-                 ]
+mkNotifyButtons mkName l globalDefault =
+    let optTuple opt = (IsValue opt, mkName $ IsValue opt, notifyOptionName opt)
+        defaultField = (Default, mkName Default, "Global default (" <> notifyOptionName globalDefault <> ")")
+        nonDefault = optTuple <$> [ NotifyOptionAll
+                                  , NotifyOptionMention
+                                  , NotifyOptionNone
+                                  ]
+    in radioField l (defaultField : nonDefault)
 
-notifyPrefsForm :: ChannelNotifyProps -> Form ChannelNotifyProps e Name
-notifyPrefsForm =
+notifyPrefsForm :: UserNotifyProps -> ChannelNotifyProps -> Form ChannelNotifyProps e Name
+notifyPrefsForm globalDefaults =
     newForm [ checkboxField muteLens MuteToggleField "Mute channel"
             , (padTop $ Pad 1) @@= checkboxField channelMentionLens ChannelMentionsField "Ignore channel mentions"
             , radioStyle "Desktop notifications" @@=
-                mkNotifyButtons DesktopNotificationsField channelNotifyPropsDesktopL
+                mkNotifyButtons DesktopNotificationsField channelNotifyPropsDesktopL (userNotifyPropsDesktop globalDefaults)
             , radioStyle "Push notifications" @@=
-                mkNotifyButtons PushNotificationsField channelNotifyPropsPushL
+                mkNotifyButtons PushNotificationsField channelNotifyPropsPushL (userNotifyPropsPush globalDefaults)
             ]
     where radioStyle label = (padTop $ Pad 1 ) . (str label <=>) . (padLeft $ Pad 1)
 
 enterEditNotifyPrefsMode :: MH ()
 enterEditNotifyPrefsMode = do
     props <- use (csCurrentChannel.ccInfo.cdNotifyProps)
-    csNotifyPrefs .= Just (notifyPrefsForm props)
+    user <- use csMe
+    csNotifyPrefs .= (Just (notifyPrefsForm (userNotifyProps user) props))
     setMode EditNotifyPrefs
 
 exitEditNotifyPrefsMode :: MH ()
