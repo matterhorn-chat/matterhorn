@@ -12,13 +12,15 @@ import Brick.Widgets.Center
 import Brick.Forms (renderForm)
 
 import Types
+import Themes
 
 drawNotifyPrefs :: ChatState -> Widget Name
 drawNotifyPrefs st =
     let Just form = st^.csNotifyPrefs
-        label = str "Notification Preferences"
+        label = forceAttr clientEmphAttr $ str "Notification Preferences"
     in centerLayer $
        vLimit 20 $
        hLimit 60 $
        borderWithLabel label $
+       padAll 1 $
        renderForm form
