@@ -59,6 +59,7 @@ executable matterhorn
                        State.Logging
                        State.Messages
                        State.MessageSelect
+                       State.NotifyPrefs
                        State.PostListOverlay
                        State.ThemeListOverlay
                        State.ReactionEmojiListOverlay
@@ -93,6 +94,7 @@ executable matterhorn
                        Draw.URLList
                        Draw.Util
                        Draw.TabbedWindow
+                       Draw.NotifyPrefs
                        InputHistory
                        IOUtil
                        Events
@@ -111,6 +113,7 @@ executable matterhorn
                        Events.LeaveChannelConfirm
                        Events.DeleteChannelConfirm
                        Events.TabbedWindow
+                       Events.EditNotifyPrefs
                        Windows.ViewMessage
                        HelpTopics
                        KeyMap

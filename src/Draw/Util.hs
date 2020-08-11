@@ -2,6 +2,7 @@ module Draw.Util
   ( withBrackets
   , renderTime
   , renderDate
+  , renderKeybindingHelp
   , insertDateMarkers
   , getDateFormat
   , mkChannelName
@@ -14,6 +15,7 @@ import           Prelude ()
 import           Prelude.MH
 
 import           Brick
+import           Data.List ( intersperse )
 import qualified Data.Set as Set
 import qualified Data.Text as T
 import           Lens.Micro.Platform ( to )
@@ -23,6 +25,8 @@ import           Constants ( userSigil, normalChannelSigil )
 import           Themes
 import           TimeUtils
 import           Types
+import           Types.KeyEvents
+import           Events.Keybindings ( getFirstDefaultBinding )
 
 
 defaultTimeFormat :: Text
@@ -53,6 +57,11 @@ renderUTCTime fmt tz t =
     if T.null fmt
     then emptyWidget
     else withDefAttr timeAttr (txt $ localTimeText fmt $ asLocalTime tz t)
+
+renderKeybindingHelp :: Text -> [KeyEvent] -> Widget Name
+renderKeybindingHelp label evs =
+  let ppEv ev = withDefAttr clientEmphAttr $ txt (ppBinding (getFirstDefaultBinding ev))
+  in hBox $ (intersperse (txt "/") $ ppEv <$> evs) <> [txt (":" <> label)]
 
 -- | Generates a local matterhorn-only client message that creates a
 -- date marker.  The server date is converted to a local time (via

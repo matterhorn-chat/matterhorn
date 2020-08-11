@@ -34,6 +34,7 @@ import           State.PostListOverlay
 import           State.UserListOverlay
 import           State.ChannelListOverlay
 import           State.ThemeListOverlay
+import           State.NotifyPrefs
 import           State.Common ( postInfoMessage )
 import           State.Users
 import           Themes ( attrForUsername )
@@ -254,6 +255,9 @@ commandList =
 
   , Cmd "search" "Search for posts with given terms" (LineArg "terms") $
       enterSearchResultPostListMode
+
+  , Cmd "notify-prefs" "Edit channel notification preferences" NoArg $ \_ ->
+          enterEditNotifyPrefsMode
 
   ]
 

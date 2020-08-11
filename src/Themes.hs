@@ -68,6 +68,7 @@ import           Brick.Widgets.Skylighting ( attrNameForTokenType
                                            , attrMappingsForStyle
                                            , highlightedCodeBlockAttr
                                            )
+import           Brick.Forms ( focusedFormInputAttr )
 import           Data.Hashable ( hash )
 import qualified Data.Map as M
 import qualified Data.Text as T
@@ -287,6 +288,7 @@ lightAttrs usernameColors =
        , (editedMarkingAttr,                fg yellow)
        , (editedRecentlyMarkingAttr,        black `on` yellow)
        , (tabSelectedAttr,                  black `on` yellow)
+       , (focusedFormInputAttr,             black `on` yellow)
        , (FB.fileBrowserCurrentDirectoryAttr, white `on` blue)
        , (FB.fileBrowserSelectionInfoAttr,  white `on` blue)
        , (FB.fileBrowserDirectoryAttr,      fg blue)
@@ -342,6 +344,7 @@ darkAttrs usernameColors =
      , (editedMarkingAttr,                fg yellow)
      , (editedRecentlyMarkingAttr,        black `on` yellow)
      , (tabSelectedAttr,                  black `on` yellow)
+     , (focusedFormInputAttr,             black `on` yellow)
      , (FB.fileBrowserCurrentDirectoryAttr, white `on` blue)
      , (FB.fileBrowserSelectionInfoAttr,  white `on` blue)
      , (FB.fileBrowserDirectoryAttr,      fg blue)
@@ -727,6 +730,9 @@ themeDocs = ThemeDocumentation $ M.fromList $
       )
     , ( listSelectedFocusedAttr
       , "The selected channel"
+      )
+    , ( focusedFormInputAttr
+      , "A form input that has focus"
       )
     , ( FB.fileBrowserAttr
       , "The base file browser attribute"

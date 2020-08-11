@@ -224,6 +224,7 @@ defaultBindings ev =
         EditorHomeEvent               -> [ kb Vty.KHome ]
         EditorEndEvent                -> [ kb Vty.KEnd ]
         EditorYankEvent               -> [ ctrl (key 'y') ]
+        FormSubmitEvent               -> [ kb Vty.KEnter ]
 
 -- | Given a configuration, we want to check it for internal consistency
 -- (i.e. that a given keybinding isn't associated with multiple events
