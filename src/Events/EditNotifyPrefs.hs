@@ -36,14 +36,13 @@ editNotifyPrefsKeybindings = mkKeybindings editNotifyPrefsKeyHandlers
 editNotifyPrefsKeyHandlers :: [KeyEventHandler]
 editNotifyPrefsKeyHandlers =
     [ mkKb CancelEvent "Close channel notification preferences" exitEditNotifyPrefsMode
-    , staticKb "Save channel notification preferences"
-        (V.EvKey V.KEnter []) $ do
-            st <- use id
-            let form = fromJust $ st^.csNotifyPrefs
-                cId = st^.csCurrentChannelId
+    , mkKb FormSubmitEvent "Save channel notification preferences" $ do
+        st <- use id
+        let form = fromJust $ st^.csNotifyPrefs
+            cId = st^.csCurrentChannelId
 
-            doAsyncChannelMM Preempt cId
-                (\s _ -> MM.mmUpdateChannelNotifications cId (myUserId st) (formState form) s)
-                (\_ _ -> Nothing)
-            exitEditNotifyPrefsMode
+        doAsyncChannelMM Preempt cId
+          (\s _ -> MM.mmUpdateChannelNotifications cId (myUserId st) (formState form) s)
+          (\_ _ -> Nothing)
+        exitEditNotifyPrefsMode
     ]

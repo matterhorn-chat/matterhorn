@@ -121,6 +121,9 @@ data KeyEvent
   | AttachmentListAddEvent
   | AttachmentListDeleteEvent
   | AttachmentOpenEvent
+
+  -- Form submission
+  | FormSubmitEvent
     deriving (Eq, Show, Ord, Enum)
 
 allEvents :: [KeyEvent]
@@ -206,6 +209,7 @@ allEvents =
   , AttachmentListAddEvent
   , AttachmentListDeleteEvent
   , AttachmentOpenEvent
+  , FormSubmitEvent
   ]
 
 eventToBinding :: Vty.Event -> Binding
@@ -426,3 +430,5 @@ keyEventName ev = case ev of
   AttachmentListAddEvent    -> "add-to-attachment-list"
   AttachmentListDeleteEvent -> "delete-from-attachment-list"
   AttachmentOpenEvent       -> "open-attachment"
+
+  FormSubmitEvent -> "submit-form"
