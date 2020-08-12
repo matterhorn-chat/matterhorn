@@ -10,11 +10,6 @@ import Prelude ()
 import Prelude.MH
 
 import Types
-import Types.Channels ( channelNotifyPropsMarkUnreadL
-                      , channelNotifyPropsIgnoreChannelMentionsL
-                      , channelNotifyPropsDesktopL
-                      , channelNotifyPropsPushL
-                      )
 
 import Network.Mattermost.Types ( ChannelNotifyProps
                                 , User(..)
