@@ -724,19 +724,19 @@ data PostRef
 
 -- | A match in channel selection mode.
 data ChannelSelectMatch =
-    ChannelSelectMatch { nameBefore     :: Text
+    ChannelSelectMatch { nameBefore :: Text
                        -- ^ The content of the match before the user's
                        -- matching input.
-                       , nameMatched    :: Text
+                       , nameMatched :: Text
                        -- ^ The potion of the name that matched the
                        -- user's input.
-                       , nameAfter      :: Text
+                       , nameAfter :: Text
                        -- ^ The portion of the name that came after the
                        -- user's matching input.
-                       , matchFull      :: Text
+                       , matchFull :: Text
                        -- ^ The full string for this entry so it doesn't
                        -- have to be reassembled from the parts above.
-                       , matchEntry     :: ChannelListEntry
+                       , matchEntry :: ChannelListEntry
                        -- ^ The original entry data corresponding to the
                        -- text match.
                        }
