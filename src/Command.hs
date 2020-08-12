@@ -256,7 +256,7 @@ commandList =
   , Cmd "search" "Search for posts with given terms" (LineArg "terms") $
       enterSearchResultPostListMode
 
-  , Cmd "notify-prefs" "Edit channel notification preferences" NoArg $ \_ ->
+  , Cmd "notify-prefs" "Edit the current channel's notification preferences" NoArg $ \_ ->
           enterEditNotifyPrefsMode
 
   ]
