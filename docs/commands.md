@@ -29,7 +29,7 @@
 | `/msg` | Search for a user to enter a private chat |
 | `/msg <@user>` | Chat with the specified user |
 | `/msg <@user> <message or command>` | Go to a user's channel and send the specified message or command |
-| `/notify-prefs` | Edit channel notification preferences |
+| `/notify-prefs` | Edit the current channel's notification preferences |
 | `/pinned-posts` | Open a window of this channel's pinned posts |
 | `/purpose <purpose>` | Set the current channel's purpose |
 | `/quit` | Exit Matterhorn |
