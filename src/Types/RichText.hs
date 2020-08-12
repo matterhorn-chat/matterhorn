@@ -263,7 +263,25 @@ fromMarkdownInlines inlines =
                   cn = T.drop 1 $ T.concat $ t : (unsafeGetStr <$> F.toList cFrags)
               in Element sty (EChannel cn) <| go sty rest
           C.Str t :< xs ->
-              Element sty (EText t) <| go sty xs
+              -- When we encounter a string node, we go ahead and
+              -- process the rest of the nodes in the sequence. If the
+              -- new sequence starts with *another* string node with
+              -- the same style, we merge them. We do this because
+              -- Cheapskate will parse things like punctuation as
+              -- individual string nodes, but we want to keep those
+              -- together with any text is adjacent to them to avoid
+              -- e.g. breaking up quotes from quoted text when doing
+              -- line-wrapping. It's important to make sure we only do
+              -- this for adjacent string (i.e. not whitespace) nodes
+              -- and that we make sure we only merge when they have the
+              -- same style.
+              let rest = go sty xs
+                  e = Element sty (EText t)
+              in case Seq.viewl rest of
+                  Element sty2 (EText t2) :< tail_ | sty2 == sty ->
+                      (Element sty (EText (t <> t2))) <| tail_
+                  _ ->
+                      e <| rest
           C.Space :< xs ->
               Element sty ESpace <| go sty xs
           C.SoftBreak :< xs ->
