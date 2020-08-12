@@ -477,7 +477,8 @@ renderElement curUser e = addStyle sty widget
                                                        else editedMarkingAttr
                                             in B.withDefAttr attr $ B.txt editMarking
             EUser u                      -> colorUsername curUser u $ userSigil <> u
-            EChannel c                   -> B.txt $ normalChannelSigil <> c
+            EChannel c                   -> B.withDefAttr channelNameAttr $
+                                            B.txt $ normalChannelSigil <> c
             EHyperlink (URL url) Nothing -> rawText url
             EImage (URL url) Nothing     -> rawText url
             EEmoji em                    -> B.withDefAttr emojiAttr $
