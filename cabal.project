@@ -1,3 +1,5 @@
 packages: ./matterhorn.cabal
           submodules/mattermost-api/
           submodules/mattermost-api-qc/
+
+constraints: cryptonite -use_target_attributes
