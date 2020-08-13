@@ -1,4 +1,76 @@
 
+50200.10.0
+==========
+
+New features:
+ * Per-channel notification settings for non-DM channels can now be
+   managed with the `/notify-prefs` command. As part of that change,
+   themes got a new attribute, `brickForm.focusedInput`, that governs
+   how focused form inputs are styled. (Thanks to Isaiah Mindich for
+   this feature)
+ * A new configuration file setting, `messageSelectAfterURLOpen`, was
+   added to govern how URL opening works in message selection mode. When
+   `False` (the default), opening URLs from a selected message returns
+   the application to the main UI (the behavior prior to this release).
+   When `True`, opening URLs leaves the application in message selection
+   mode, allowing the user to continue opening URLs from other messages
+   before returning to main mode manually.
+ * The message viewing window now supports paging horizontally. This
+   change adds two new key events:
+    * `page-left` with default binding `Shift-Left`
+    * `page-right` with default binding: `Shift-Right`
+ * Matterhorn now sets the terminal window title based on unread
+   activity (`matterhorn*` when there are unread messages; `matterhorn`
+   otherwise.)
+ * The `/theme` command now opens an interactive theme list window to
+   choose between available built-in themes.
+ * Added support for handling muted channels and respecting the `/mute`
+   server command (thanks to Isaiah Mindich for this feature)
+ * Make `Shift-Home`, not `Home`, selected the oldest message when in
+   normal mode (#258). This change:
+    * Changes the default keybinding for entering message selection mode
+      and selecting the oldest message from `Home` to `Shift-Home`.
+    * Adds a new key event, `select-oldest-message`, that `Shift-Home`
+      triggers by default.
+    * `Home` now triggers the `editor-home` event. Users wanting the
+      old behavior can simply unbind the `editor-home` key event and
+      bind `select-oldest-message` to `Home`.
+ * New 256-color variants of the built-in light and dark themes were
+   added. Those themes are identical to the 16-color variants except
+   that larger pools of 256-color values are used to assign colors
+   to usernames. If a username color chosen by the new themes is
+   objectionable, it can be customized by first using the new
+   `/username-attribute` command to find out which attribute is used
+   to render a username and then setting it in the theme customization
+   config. As part of this change the number of theme attributes for
+   usernames was extended to 50, meaning attributes from `username.0` to
+   `username.49` now govern the assignment of colors.
+
+Other improvements:
+ * The `/members` window now displays the total server user count in
+   the title bar to avoid confusion about the number of displayed search
+   results, which is capped by the server's API response.
+ * Autocompletion now completes `@all` and `@channel` with prefix
+   matches only and puts them after all other alternatives in the
+   alternative list.
+ * The help documentation on themes now documents the `#RRGGBB` theme
+   color syntax that was already supported but not documented.
+ * Key events now supported in the attachment management UI are now
+   included in the keybinding help list.
+ * The help documentation on themes now shows an attribute demo for each
+   theme attribute using the current theme's colors.
+ * Some documentation in the `README` was factored out into other
+   documents in `docs/`.
+ * The UI for showing typing notifications was improved.
+ * The `/leave` command now hide DM and group channels instead of
+   reporting an error (#626)
+
+Bug fixes:
+ * Matterhorn now properly restores the terminal state before crashing
+   with unhandled exceptions (#622)
+ * The URL list accessible with `C-o` now shows URLs from messages
+   regardless of what kind of user reference they contain (#638)
+
 50200.9.0
 =========
 
