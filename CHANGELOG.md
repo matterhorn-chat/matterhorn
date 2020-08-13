@@ -105,7 +105,7 @@ New features:
    followed by a space. While this is often desirable behavior, it
    also meant that if the very next input character was a punctuation
    character such as a period, the final text would be `@user .` Based
-   on the observation that usally the intention is to end up with
+   on the observation that usually the intention is to end up with
    `@user.`, the editor now automatically replaces the trailing space
    when such a punctuation character is entered. This behavior is
    configurable with the `smartediting` configuration setting which
