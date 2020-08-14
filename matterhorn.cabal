@@ -37,10 +37,9 @@ source-repository    head
   type: git
   location: https://github.com/matterhorn-chat/matterhorn.git
 
-executable matterhorn
+library
   hs-source-dirs:      src
-  main-is:             Main.hs
-  other-modules:       Config
+  exposed-modules:     Config
                        Config.Schema
                        Command
                        Connection
@@ -140,7 +139,7 @@ executable matterhorn
                        ScopedTypeVariables,
                        NoImplicitPrelude
 
-  ghc-options:         -Wall -threaded -with-rtsopts=-I0 -Wcompat
+  ghc-options:         -Wall -Wcompat
   if impl(ghc >= 8.2)
     ghc-options: -fhide-source-paths
 
@@ -191,19 +190,24 @@ executable matterhorn
                      , network-uri          >= 2.6     && < 2.7
   default-language:    Haskell2010
 
+executable matterhorn
+  hs-source-dirs:      programs
+  main-is:             Main.hs
+
+  ghc-options:         -Wall -threaded -with-rtsopts=-I0 -Wcompat
+  if impl(ghc >= 8.2)
+    ghc-options: -fhide-source-paths
+
+  build-depends:       base                 >=4.8      && <5
+                     , matterhorn
+                     , text
+  default-language:    Haskell2010
+
 test-suite test_messages
   type:               exitcode-stdio-1.0
   main-is:            test_messages.hs
   other-modules:      Cheapskate_QCA
                     , Message_QCA
-                    , TimeUtils
-                    , Types.Messages
-                    , Types.Posts
-                    , Types.Common
-                    , Types.DirectionalSeq
-                    , Types.RichText
-                    , Constants
-                    , Prelude.MH
   default-language:   Haskell2010
   default-extensions: OverloadedStrings
                     , ScopedTypeVariables
@@ -211,42 +215,19 @@ test-suite test_messages
   if impl(ghc >= 8.2)
     ghc-options: -fhide-source-paths
 
-  hs-source-dirs:     src, test
+  hs-source-dirs:     test
   build-depends:      base                 >=4.7      && <5
-                    , base-compat          >= 0.9     && < 0.12
-                    , brick                >= 0.55    && < 0.56
-                    , bytestring           >= 0.10    && < 0.11
-                    , cheapskate           >= 0.1     && < 0.2
+                    , Unique               >= 0.4     && < 0.5
                     , checkers             >= 0.4     && < 0.6
-                    , config-ini           >= 0.2.2.0 && < 0.3
-                    , connection           >= 0.2     && < 0.4
-                    , containers           >= 0.5.7   && < 0.7
-                    , directory            >= 1.3     && < 1.4
-                    , filepath             >= 1.4     && < 1.5
-                    , hashable             >= 1.2     && < 1.4
-                    , Hclip                >= 3.0     && < 3.1
-                    , mattermost-api       == 50200.7.0
-                    , mattermost-api-qc    == 50200.7.0
-                    , microlens-platform   >= 0.3     && < 0.5
-                    , mtl                  >= 2.2     && < 2.3
-                    , process              >= 1.4     && < 1.7
-                    , quickcheck-text      >= 0.1     && < 0.2
-                    , stm                  >= 2.4     && < 2.6
-                    , strict               >= 0.3     && < 0.4
-                    , string-conversions   >= 0.4     && < 0.5
                     , tasty                >= 0.11    && < 1.3
                     , tasty-hunit          >= 0.9     && < 0.12
                     , tasty-quickcheck     >= 0.8     && < 0.12
-                    , text                 >= 1.2     && < 1.3
-                    , text-zipper          >= 0.10    && < 0.11
-                    , time                 >= 1.6     && < 2.0
-                    , timezone-olson       >= 0.2     && < 0.3
-                    , timezone-series      >= 0.1.6.1 && < 0.2
-                    , transformers         >= 0.4     && < 0.6
-                    , Unique               >= 0.4     && < 0.5
-                    , unordered-containers >= 0.2     && < 0.3
-                    , vector               <  0.13
-                    , vty                  >= 5.30    && < 5.31
-                    , xdg-basedir          >= 0.2     && < 0.3
-                    , semigroups           >= 0.18    && < 0.20
-                    , uuid                 >= 1.3     && < 1.4
+                    , bytestring
+                    , cheapskate
+                    , containers
+                    , matterhorn
+                    , mattermost-api
+                    , mattermost-api-qc
+                    , text
+                    , time
+                    , uuid
