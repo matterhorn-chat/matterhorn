@@ -1,18 +1,18 @@
 module Main where
 
 import Prelude ()
-import Prelude.MH
 import qualified Data.Text.IO as T
 
 import System.Exit ( exitFailure, exitSuccess )
 
-import Config
-import Options
-import App
-import Events.Keybindings ( ensureKeybindingConsistency )
-import KeyMap ( keybindingModeMap )
-import Draw.ShowHelp ( keybindingMarkdownTable, keybindingTextTable
-                     , commandMarkdownTable, commandTextTable )
+import Matterhorn.Prelude
+import Matterhorn.Config
+import Matterhorn.Options
+import Matterhorn.App
+import Matterhorn.Events.Keybindings ( ensureKeybindingConsistency )
+import Matterhorn.KeyMap ( keybindingModeMap )
+import Matterhorn.Draw.ShowHelp ( keybindingMarkdownTable, keybindingTextTable
+                                , commandMarkdownTable, commandTextTable )
 
 
 main :: IO ()

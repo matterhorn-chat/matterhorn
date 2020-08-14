@@ -14,18 +14,22 @@ import qualified Data.Text as T
 import           Data.Time.Calendar (Day(..))
 import           Data.Time.Clock (UTCTime(..), getCurrentTime
                                  , secondsToDiffTime)
-import           Message_QCA
-import           Network.Mattermost.Types
 import           System.Exit
-import           Test.QuickCheck.Checkers
+
 import           Test.Tasty
 import           Test.Tasty.HUnit
 import           Test.Tasty.QuickCheck
-import           TimeUtils
-import           Types.DirectionalSeq
-import           Types.Messages
-import           Types.Posts
-import           Prelude.MH
+import           Test.QuickCheck.Checkers
+
+import           Network.Mattermost.Types
+
+import           Message_QCA
+
+import           Matterhorn.Types.DirectionalSeq
+import           Matterhorn.Types.Messages
+import           Matterhorn.Types.Posts
+import           Matterhorn.Prelude
+import           Matterhorn.TimeUtils
 
 main :: IO ()
 main = defaultMain tests `catch` (\e -> do

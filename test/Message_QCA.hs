@@ -13,9 +13,10 @@ import qualified Data.Set as S
 import Network.Mattermost.QuickCheck
 import Network.Mattermost.Types
 import Test.Tasty.QuickCheck
-import Types.Messages
-import Types.Posts
-import Types.RichText
+
+import Matterhorn.Types.Messages
+import Matterhorn.Types.Posts
+import Matterhorn.Types.RichText
 
 genMap :: Ord key => Gen key -> Gen value -> Gen (Map key value)
 genMap gk gv = let kv = (,) <$> gk <*> gv in fromList <$> listOf kv
