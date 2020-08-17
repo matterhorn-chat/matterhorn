@@ -60,10 +60,11 @@ exitListOverlay :: Lens' ChatState (ListOverlayState a b)
                 -- ^ Which overlay to reset
                 -> MH ()
 exitListOverlay which = do
+    st <- use which
     newList <- use (which.listOverlayNewList)
     which.listOverlaySearchResults .= newList mempty
     which.listOverlayEnterHandler .= (const $ return False)
-    setMode Main
+    setMode (st^.listOverlayReturnMode)
 
 -- | Initialize a list overlay with the specified arguments and switch
 -- to the specified mode.

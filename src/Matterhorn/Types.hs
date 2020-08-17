@@ -154,6 +154,7 @@ module Matterhorn.Types
   , listOverlayNewList
   , listOverlayFetchResults
   , listOverlayRecordCount
+  , listOverlayReturnMode
 
   , getUsers
 
@@ -1422,6 +1423,7 @@ nullChannelListOverlayState =
                         , _listOverlayNewList        = newList
                         , _listOverlayFetchResults   = const $ const $ const $ return mempty
                         , _listOverlayRecordCount    = Nothing
+                        , _listOverlayReturnMode     = Main
                         }
 
 nullThemeListOverlayState :: ListOverlayState InternalTheme ()
@@ -1435,6 +1437,7 @@ nullThemeListOverlayState =
                         , _listOverlayNewList        = newList
                         , _listOverlayFetchResults   = const $ const $ const $ return mempty
                         , _listOverlayRecordCount    = Nothing
+                        , _listOverlayReturnMode     = Main
                         }
 
 nullUserListOverlayState :: ListOverlayState UserInfo UserSearchScope
@@ -1448,6 +1451,7 @@ nullUserListOverlayState =
                         , _listOverlayNewList        = newList
                         , _listOverlayFetchResults   = const $ const $ const $ return mempty
                         , _listOverlayRecordCount    = Nothing
+                        , _listOverlayReturnMode     = Main
                         }
 
 nullEmojiListOverlayState :: ListOverlayState (Bool, T.Text) ()
@@ -1461,6 +1465,7 @@ nullEmojiListOverlayState =
                         , _listOverlayNewList        = newList
                         , _listOverlayFetchResults   = const $ const $ const $ return mempty
                         , _listOverlayRecordCount    = Nothing
+                        , _listOverlayReturnMode     = MessageSelect
                         }
 
 -- | The state of channel selection mode.
@@ -1517,6 +1522,8 @@ data ListOverlayState a b =
                      -- to the server.
                      , _listOverlayRecordCount :: Maybe Int
                      -- ^ The total number of available records, if known.
+                     , _listOverlayReturnMode :: Mode
+                     -- ^ The mode to return to when the window closes.
                      }
 
 -- | The scope for searching for users in a user list overlay.
