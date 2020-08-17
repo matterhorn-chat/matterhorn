@@ -145,13 +145,14 @@ doCommandAutoCompletion ty ctx searchString = do
         doAsyncWith Preempt $ do
             serverCommands <- MM.mmListCommandsForTeam myTid False session
             -- TODO:
-            -- * Eliminate deleted commands
             -- * Sort full alt list by command display name
             -- * Somehow deal with name clashes and disambiguation
             let matchingCommands = filter matchesServerCommand $ F.toList serverCommands
                 matchesServerCommand cmd =
-                    lowerSearch `T.isInfixOf` (T.toLower $ commandDisplayName cmd) ||
-                    lowerSearch `T.isInfixOf` (T.toLower $ commandAutoCompleteDesc cmd)
+                    (lowerSearch `T.isInfixOf` (T.toLower $ commandDisplayName cmd) ||
+                    lowerSearch `T.isInfixOf` (T.toLower $ commandAutoCompleteDesc cmd)) &&
+                    (not $ deletedCommand cmd)
+                deletedCommand cmd = commandDeleteAt cmd < commandCreateAt cmd
                 serverAlts = mkCommandCompletion <$> matchingCommands
                 mkCommandCompletion cmd =
                     CommandCompletion Server
