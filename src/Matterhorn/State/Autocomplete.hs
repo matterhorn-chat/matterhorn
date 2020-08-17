@@ -22,7 +22,7 @@ import qualified Data.Vector as V
 import           Lens.Micro.Platform ( (%=), (.=), (.~), _Just, preuse )
 import qualified Skylighting.Types as Sky
 
-import           Network.Mattermost.Types (userId, channelId, Command(..))
+import           Network.Mattermost.Types (userId, channelId)
 import qualified Network.Mattermost.Endpoints as MM
 
 import           Matterhorn.Constants ( userSigil, normalChannelSigil )
@@ -123,10 +123,7 @@ doSyntaxAutoCompletion ty ctx searchString = do
 
 doCommandAutoCompletion :: AutocompletionType -> AutocompleteContext -> Text -> MH ()
 doCommandAutoCompletion ty ctx searchString = do
-    session <- getSession
-    myTid <- gets myTeamId
-
-    let clientAlts = mkAlt <$> sortBy compareCommands (filter matches commandList)
+    let alts = mkAlt <$> sortBy compareCommands (filter matches commandList)
         compareCommands a b =
             let isAPrefix = searchString `T.isPrefixOf` cmdName a
                 isBPrefix = searchString `T.isPrefixOf` cmdName b
@@ -139,27 +136,8 @@ doCommandAutoCompletion ty ctx searchString = do
         matches c = lowerSearch `T.isInfixOf` (cmdName c) ||
                     lowerSearch `T.isInfixOf` (T.toLower $ cmdDescr c)
         mkAlt (Cmd name desc args _) =
-            CommandCompletion Client name (printArgSpec args) desc
-
-    withCachedAutocompleteResults ctx ty searchString $
-        doAsyncWith Preempt $ do
-            serverCommands <- MM.mmListCommandsForTeam myTid False session
-            -- TODO:
-            -- * Eliminate deleted commands
-            -- * Sort full alt list by command display name
-            -- * Somehow deal with name clashes and disambiguation
-            let matchingCommands = filter matchesServerCommand $ F.toList serverCommands
-                matchesServerCommand cmd =
-                    lowerSearch `T.isInfixOf` (T.toLower $ commandDisplayName cmd) ||
-                    lowerSearch `T.isInfixOf` (T.toLower $ commandAutoCompleteDesc cmd)
-                serverAlts = mkCommandCompletion <$> matchingCommands
-                mkCommandCompletion cmd =
-                    CommandCompletion Server
-                                      (commandDisplayName cmd)
-                                      (commandAutoCompleteHint cmd)
-                                      (commandAutoCompleteDesc cmd)
-                alts = clientAlts <> serverAlts
-            return $ Just $ setCompletionAlternatives ctx searchString alts ty
+            CommandCompletion name (printArgSpec args) desc
+    setCompletionAlternatives ctx searchString alts ty
 
 doUserAutoCompletion :: AutocompletionType -> AutocompleteContext -> Text -> MH ()
 doUserAutoCompletion ty ctx searchString = do
