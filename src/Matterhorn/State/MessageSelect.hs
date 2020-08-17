@@ -116,7 +116,7 @@ fillSelectedGap = do
 
 viewMessage :: Message -> MH ()
 viewMessage m = do
-    let w = tabbedWindow VMTabMessage viewMessageWindowTemplate Main (78, 25)
+    let w = tabbedWindow VMTabMessage viewMessageWindowTemplate MessageSelect (78, 25)
     csViewedMessage .= Just (m, w)
     runTabShowHandlerFor (twValue w) w
     setMode ViewMessage
