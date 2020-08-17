@@ -111,8 +111,6 @@ fromIni = do
       (configActivityBell defaultConfig)
     configHyperlinkingMode <- fieldFlagDef "hyperlinkURLs"
       (configHyperlinkingMode defaultConfig)
-    configMessageSelectAfterURLOpen <- fieldFlagDef "messageSelectAfterURLOpen"
-      (configMessageSelectAfterURLOpen defaultConfig)
     configPass <- (Just . PasswordCommand <$> field "passcmd") <!>
                   (Just . PasswordString  <$> field "pass") <!>
                   pure Nothing
@@ -243,7 +241,6 @@ defaultConfig =
            , configUserKeys                    = mempty
            , configShowTypingIndicator         = False
            , configHyperlinkingMode            = True
-           , configMessageSelectAfterURLOpen   = False
            , configSyntaxDirs                  = []
            , configDirectChannelExpirationDays = 7
            , configCpuUsagePolicy              = MultipleCPUs

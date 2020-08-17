@@ -148,13 +148,11 @@ openSelectedMessageURLs = whenMode MessageSelect $ do
         Nothing -> error "BUG: openSelectedMessageURLs: no selected message available"
         Just m -> return m
 
-    remainInSelectMode <- use (csResources.crConfiguration.to configMessageSelectAfterURLOpen)
-
     let urls = msgURLs curMsg
     when (not (null urls)) $ do
         openedAll <- and <$> mapM (openURL . OpenLinkChoice) urls
         case openedAll of
-            True -> when (not remainInSelectMode) $ setMode Main
+            True -> setMode Main
             False ->
                 mhError $ ConfigOptionMissing "urlOpenCommand"
 
