@@ -132,6 +132,7 @@ module Matterhorn.Types
 
   , AutocompletionType(..)
 
+  , CompletionSource(..)
   , AutocompleteAlternative(..)
   , autocompleteAlternativeReplacement
   , SpecialMention(..)
@@ -909,10 +910,14 @@ data AutocompleteAlternative =
     -- ^ Channel, plus whether the user is a member of the channel
     | SyntaxCompletion Text
     -- ^ Name of a skylighting syntax definition
-    | CommandCompletion Text Text Text
-    -- ^ Name of a slash command, argspec, and description
+    | CommandCompletion CompletionSource Text Text Text
+    -- ^ Source, name of a slash command, argspec, and description
     | EmojiCompletion Text
     -- ^ The text of an emoji completion
+
+-- | The source of an autocompletion alternative.
+data CompletionSource = Server | Client
+                      deriving (Eq, Show)
 
 specialMentionName :: SpecialMention -> Text
 specialMentionName MentionChannel = "channel"
@@ -938,7 +943,7 @@ autocompleteAlternativeReplacement (ChannelCompletion _ c) =
     normalChannelSigil <> (sanitizeUserText $ channelName c)
 autocompleteAlternativeReplacement (SyntaxCompletion t) =
     "```" <> t
-autocompleteAlternativeReplacement (CommandCompletion t _ _) =
+autocompleteAlternativeReplacement (CommandCompletion _ t _ _) =
     "/" <> t
 
 -- | The type of data that the autocompletion logic supports. We use

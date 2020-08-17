@@ -91,7 +91,19 @@ renderAutocompleteFooterFor _ (ChannelCompletion False ch) =
                 , withDefAttr channelNameAttr (txt $ normalChannelSigil <> sanitizeUserText (channelName ch))
                 , txt ")"
                 ]
-renderAutocompleteFooterFor _ _ = Nothing
+renderAutocompleteFooterFor _ (CommandCompletion src _ _ _) =
+    case src of
+        Server ->
+            Just $ hBox [ txt $ "("
+                        , withDefAttr clientEmphAttr (txt serverCommandMarker)
+                        , txt ": command provided by the server)"
+                        ]
+        Client -> Nothing
+renderAutocompleteFooterFor _ _ =
+    Nothing
+
+serverCommandMarker :: Text
+serverCommandMarker = "*"
 
 renderAutocompleteAlternative :: Text -> Bool -> AutocompleteAlternative -> Widget Name
 renderAutocompleteAlternative _ sel (EmojiCompletion e) =
@@ -104,8 +116,8 @@ renderAutocompleteAlternative _ sel (ChannelCompletion inChan c) =
     padRight Max $ renderChannelCompletion c inChan sel
 renderAutocompleteAlternative _ _ (SyntaxCompletion t) =
     padRight Max $ txt t
-renderAutocompleteAlternative _ _ (CommandCompletion n args desc) =
-    padRight Max $ renderCommandCompletion n args desc
+renderAutocompleteAlternative _ _ (CommandCompletion src n args desc) =
+    padRight Max $ renderCommandCompletion src n args desc
 
 renderSpecialMention :: SpecialMention -> Bool -> Widget Name
 renderSpecialMention m sel =
@@ -181,8 +193,13 @@ renderChannelCompletion c inChan selected =
             , txt $ sanitizeUserText $ channelPurpose c
             ]
 
-renderCommandCompletion :: Text -> Text -> Text -> Widget Name
-renderCommandCompletion name args desc =
+renderCommandCompletion :: CompletionSource -> Text -> Text -> Text -> Widget Name
+renderCommandCompletion src name args desc =
+    (txt $ " " <> srcTxt <> " ") <+>
     withDefAttr clientMessageAttr
         (txt $ "/" <> name <> if T.null args then "" else " " <> args) <+>
     (txt $ " - " <> desc)
+    where
+        srcTxt = case src of
+            Server -> serverCommandMarker
+            Client -> " "
