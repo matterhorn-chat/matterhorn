@@ -126,18 +126,7 @@ doCommandAutoCompletion ty ctx searchString = do
     session <- getSession
     myTid <- gets myTeamId
 
-    let clientAlts = mkAlt <$> sortBy compareCommands (filter matches commandList)
-        compareCommands a b =
-            let isAPrefix = searchString `T.isPrefixOf` cmdName a
-                isBPrefix = searchString `T.isPrefixOf` cmdName b
-            in if isAPrefix && isBPrefix
-               then compare (cmdName a) (cmdName b)
-               else if isAPrefix
-                    then LT
-                    else GT
-        lowerSearch = T.toLower searchString
-        matches c = lowerSearch `T.isInfixOf` (cmdName c) ||
-                    lowerSearch `T.isInfixOf` (T.toLower $ cmdDescr c)
+    let clientAlts = mkAlt <$> commandList
         mkAlt (Cmd name desc args _) =
             CommandCompletion Client name (printArgSpec args) desc
 
@@ -145,13 +134,8 @@ doCommandAutoCompletion ty ctx searchString = do
         doAsyncWith Preempt $ do
             serverCommands <- MM.mmListCommandsForTeam myTid False session
             -- TODO:
-            -- * Sort full alt list by command display name
             -- * Somehow deal with name clashes and disambiguation
-            let matchingCommands = filter matchesServerCommand $ F.toList serverCommands
-                matchesServerCommand cmd =
-                    (lowerSearch `T.isInfixOf` (T.toLower $ commandDisplayName cmd) ||
-                    lowerSearch `T.isInfixOf` (T.toLower $ commandAutoCompleteDesc cmd)) &&
-                    (not $ deletedCommand cmd)
+            let matchingCommands = filter (not . deletedCommand) $ F.toList serverCommands
                 deletedCommand cmd = commandDeleteAt cmd < commandCreateAt cmd
                 serverAlts = mkCommandCompletion <$> matchingCommands
                 mkCommandCompletion cmd =
@@ -159,7 +143,24 @@ doCommandAutoCompletion ty ctx searchString = do
                                       (commandDisplayName cmd)
                                       (commandAutoCompleteHint cmd)
                                       (commandAutoCompleteDesc cmd)
-                alts = clientAlts <> serverAlts
+                alts = sortBy compareCompletions $
+                       filter matches $
+                       clientAlts <> serverAlts
+                compareCompletions (CommandCompletion _ nameA _ _)
+                                   (CommandCompletion _ nameB _ _) =
+                    let isAPrefix = searchString `T.isPrefixOf` nameA
+                        isBPrefix = searchString `T.isPrefixOf` nameB
+                    in if isAPrefix == isBPrefix
+                       then compare nameA nameB
+                       else if isAPrefix
+                            then LT
+                            else GT
+                compareCompletions _ _ = error "BUG in doCommandAutoCompletion [1]"
+                lowerSearch = T.toLower searchString
+                matches (CommandCompletion _ name _ desc) =
+                    lowerSearch `T.isInfixOf` (T.toLower name) ||
+                    lowerSearch `T.isInfixOf` (T.toLower desc)
+                matches _ = error "BUG in doCommandAutoCompletion [2]"
             return $ Just $ setCompletionAlternatives ctx searchString alts ty
 
 doUserAutoCompletion :: AutocompletionType -> AutocompleteContext -> Text -> MH ()
