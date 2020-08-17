@@ -152,7 +152,7 @@ openSelectedMessageURLs = whenMode MessageSelect $ do
     when (not (null urls)) $ do
         openedAll <- and <$> mapM (openURL . OpenLinkChoice) urls
         case openedAll of
-            True -> setMode Main
+            True -> return ()
             False ->
                 mhError $ ConfigOptionMissing "urlOpenCommand"
 
