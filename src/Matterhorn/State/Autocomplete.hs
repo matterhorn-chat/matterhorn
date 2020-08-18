@@ -155,7 +155,7 @@ doCommandAutoCompletion ty ctx searchString = do
     withCachedAutocompleteResults ctx ty searchString $
         doAsyncWith Preempt $ do
             serverCommands <- MM.mmListCommandsForTeam myTid False session
-            let matchingCommands = filter (\c -> not (hiddenCommand c) && not (deletedCommand c)) $
+            let matchingCommands = filter (\c -> not (hiddenCommand c || deletedCommand c)) $
                                    F.toList serverCommands
                 deletedCommand cmd = commandDeleteAt cmd < commandCreateAt cmd
                 serverAlts = mkCommandCompletion <$> matchingCommands
