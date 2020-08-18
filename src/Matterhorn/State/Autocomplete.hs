@@ -124,6 +124,12 @@ doSyntaxAutoCompletion ty ctx searchString = do
 -- | This list of server commands should be hidden because they make
 -- assumptions about a web-based client or otherwise just don't make
 -- sense for Matterhorn.
+--
+-- It's worth mentioning that other official mattermost client
+-- implementations use this technique, too. The web client maintains
+-- a list of commands to exclude when they aren't supported in the
+-- mobile client. (Really this is a design flaw; they should never be
+-- advertised by the server to begin with.)
 hiddenServerCommands :: [Text]
 hiddenServerCommands =
     [ "settings"
