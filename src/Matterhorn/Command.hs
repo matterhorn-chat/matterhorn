@@ -235,14 +235,6 @@ commandList =
         cId <- use csCurrentChannelId
         findAndRunScript cId script text
 
-  , Cmd "me" "Send an emote message"
-    (LineArg "message") $
-    \msg -> execMMCommand "me" msg
-
-  , Cmd "shrug" "Send a message followed by a shrug emoticon"
-    (LineArg "message") $
-    \msg -> execMMCommand "shrug" msg
-
   , Cmd "flags" "Open a window of your flagged posts" NoArg $ \ () ->
       enterFlaggedPostListMode
 
