@@ -121,6 +121,20 @@ doSyntaxAutoCompletion ty ctx searchString = do
         alts = SyntaxCompletion <$> (sort prefixed <> sort notPrefixed)
     setCompletionAlternatives ctx searchString alts ty
 
+-- | This list of server commands should be hidden because they make
+-- assumptions about a web-based client or otherwise just don't make
+-- sense for Matterhorn.
+hiddenServerCommands :: [Text]
+hiddenServerCommands =
+    [ "settings"
+    , "help"
+    , "logout"
+    , "leave"
+    ]
+
+hiddenCommand :: Command -> Bool
+hiddenCommand c = commandDisplayName c `elem` hiddenServerCommands
+
 doCommandAutoCompletion :: AutocompletionType -> AutocompleteContext -> Text -> MH ()
 doCommandAutoCompletion ty ctx searchString = do
     session <- getSession
@@ -133,9 +147,8 @@ doCommandAutoCompletion ty ctx searchString = do
     withCachedAutocompleteResults ctx ty searchString $
         doAsyncWith Preempt $ do
             serverCommands <- MM.mmListCommandsForTeam myTid False session
-            -- TODO:
-            -- * Somehow deal with name clashes and disambiguation
-            let matchingCommands = filter (not . deletedCommand) $ F.toList serverCommands
+            let matchingCommands = filter (\c -> not (hiddenCommand c) && not (deletedCommand c)) $
+                                   F.toList serverCommands
                 deletedCommand cmd = commandDeleteAt cmd < commandCreateAt cmd
                 serverAlts = mkCommandCompletion <$> matchingCommands
                 mkCommandCompletion cmd =
