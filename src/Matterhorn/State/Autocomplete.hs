@@ -150,7 +150,7 @@ doCommandAutoCompletion ty ctx searchString = do
 
     let clientAlts = mkAlt <$> commandList
         mkAlt (Cmd name desc args _) =
-            CommandCompletion Client name (printArgSpec args) desc
+            (Client, name, printArgSpec args, desc)
 
     withCachedAutocompleteResults ctx ty searchString $
         doAsyncWith Preempt $ do
@@ -158,17 +158,21 @@ doCommandAutoCompletion ty ctx searchString = do
             let matchingCommands = filter (\c -> not (hiddenCommand c || deletedCommand c)) $
                                    F.toList serverCommands
                 deletedCommand cmd = commandDeleteAt cmd < commandCreateAt cmd
-                serverAlts = mkCommandCompletion <$> matchingCommands
-                mkCommandCompletion cmd =
-                    CommandCompletion Server
-                                      (commandTrigger cmd)
-                                      (commandAutoCompleteHint cmd)
-                                      (commandAutoCompleteDesc cmd)
-                alts = sortBy compareCompletions $
+                serverAlts = mkTuple <$> matchingCommands
+                mkTuple cmd =
+                    ( Server
+                    , commandTrigger cmd
+                    , commandAutoCompleteHint cmd
+                    , commandAutoCompleteDesc cmd
+                    )
+                mkCompletion (src, name, args, desc) =
+                    CommandCompletion src name args desc
+                alts = fmap mkCompletion $
+                       sortBy compareCompletions $
                        filter matches $
                        clientAlts <> serverAlts
-                compareCompletions (CommandCompletion _ nameA _ _)
-                                   (CommandCompletion _ nameB _ _) =
+                compareCompletions (_, nameA, _, _)
+                                   (_, nameB, _, _) =
                     let isAPrefix = searchString `T.isPrefixOf` nameA
                         isBPrefix = searchString `T.isPrefixOf` nameB
                     in if isAPrefix == isBPrefix
@@ -176,12 +180,10 @@ doCommandAutoCompletion ty ctx searchString = do
                        else if isAPrefix
                             then LT
                             else GT
-                compareCompletions _ _ = error "BUG in doCommandAutoCompletion [1]"
                 lowerSearch = T.toLower searchString
-                matches (CommandCompletion _ name _ desc) =
+                matches (_, name, _, desc) =
                     lowerSearch `T.isInfixOf` (T.toLower name) ||
                     lowerSearch `T.isInfixOf` (T.toLower desc)
-                matches _ = error "BUG in doCommandAutoCompletion [2]"
             return $ Just $ setCompletionAlternatives ctx searchString alts ty
 
 doUserAutoCompletion :: AutocompletionType -> AutocompleteContext -> Text -> MH ()
