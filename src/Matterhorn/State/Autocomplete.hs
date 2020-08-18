@@ -141,7 +141,7 @@ hiddenServerCommands =
     ]
 
 hiddenCommand :: Command -> Bool
-hiddenCommand c = commandDisplayName c `elem` hiddenServerCommands
+hiddenCommand c = commandTrigger c `elem` hiddenServerCommands
 
 doCommandAutoCompletion :: AutocompletionType -> AutocompleteContext -> Text -> MH ()
 doCommandAutoCompletion ty ctx searchString = do
@@ -161,7 +161,7 @@ doCommandAutoCompletion ty ctx searchString = do
                 serverAlts = mkCommandCompletion <$> matchingCommands
                 mkCommandCompletion cmd =
                     CommandCompletion Server
-                                      (commandDisplayName cmd)
+                                      (commandTrigger cmd)
                                       (commandAutoCompleteHint cmd)
                                       (commandAutoCompleteDesc cmd)
                 alts = sortBy compareCompletions $
