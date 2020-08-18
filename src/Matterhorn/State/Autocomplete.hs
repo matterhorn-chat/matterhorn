@@ -136,6 +136,7 @@ hiddenServerCommands =
     , "help"
     , "logout"
     , "leave"
+    , "join"
     ]
 
 hiddenCommand :: Command -> Bool
