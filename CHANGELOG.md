@@ -1,4 +1,11 @@
 
+50200.10.1
+==========
+
+Bug fixes:
+ * Muted channels no longer appear to have unread messages when a
+   message in such a channel is edited (#655)
+
 50200.10.0
 ==========
 
