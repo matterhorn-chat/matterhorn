@@ -501,8 +501,8 @@ hasUnread' chan = fromMaybe False $ do
     lastViewTime <- _cdViewed info
     return $ _cdMentionCount info > 0 ||
              (not (isMuted chan) &&
-              ((_cdUpdated info) > lastViewTime) ||
-              (isJust $ _cdEditedMessageThreshold info))
+              (((_cdUpdated info) > lastViewTime) ||
+               (isJust $ _cdEditedMessageThreshold info)))
 
 mkChannelZipperList :: UTCTime
                     -> Config
