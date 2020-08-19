@@ -776,12 +776,12 @@ leaveChannelIfPossible cId delete = do
                       in toList <$> MM.mmGetUsers query s)
                     (\_ members -> Just $ do
                         -- If the channel is private:
-                        -- * leave it if we aren't the last member.
-                        -- * delete it if we are.
+                        --  * leave it if we aren't the last member.
+                        --  * delete it if we are.
                         --
                         -- Otherwise:
-                        -- * leave (or delete) the channel as specified
-                        -- by the delete argument.
+                        --  * leave (or delete) the channel as specified
+                        --    by the delete argument.
                         let func = case cInfo^.cdType of
                                 Private -> case all isMe members of
                                     True -> (\ s c -> MM.mmDeleteChannel c s)
