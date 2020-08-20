@@ -24,8 +24,9 @@ To run Matterhorn, unpack the binary release archive and run the
 
 When you run Matterhorn you'll be prompted for your server URL and
 credentials. To connect, just paste your web client's Mattermost URL
-into the Server URL box and enter your credentials. See the next section
-on the details for providing each kind of supported credentials.
+into the Server URL box and enter your credentials. See the [Matterhorn
+User Guide](docs/UserGuide.md) on the details for providing each kind of
+supported credentials.
 
 Note: Version `ABBCC.X.Y` matches Mattermost server version `A.BB.CC`.
 For example, if your Mattermost server version is `3.6.0` then you
