@@ -139,6 +139,7 @@ hiddenServerCommands =
     , "join"
     , "open"
     , "collapse"
+    , "expand"
     ]
 
 hiddenCommand :: Command -> Bool
