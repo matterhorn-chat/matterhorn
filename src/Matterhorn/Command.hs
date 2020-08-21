@@ -218,6 +218,9 @@ commandList =
   , Cmd "help" "Show this help screen" NoArg $ \ _ ->
         showHelpScreen mainHelpTopic
 
+  , Cmd "shortcuts" "Show keyboard shortcuts" NoArg $ \ _ ->
+        showHelpScreen mainHelpTopic
+
   , Cmd "help" "Show help about a particular topic"
       (TokenArg "topic" NoArg) $ \ (topicName, ()) ->
           case lookupHelpTopic topicName of

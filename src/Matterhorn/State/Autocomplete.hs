@@ -140,6 +140,7 @@ hiddenServerCommands =
     , "open"
     , "collapse"
     , "expand"
+    , "shortcuts"
     ]
 
 hiddenCommand :: Command -> Bool
