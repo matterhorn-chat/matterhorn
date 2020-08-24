@@ -160,7 +160,7 @@ doCommandAutoCompletion ty ctx searchString = do
             serverCommands <- MM.mmListCommandsForTeam myTid False session
             let matchingCommands = filter (\c -> not (hiddenCommand c || deletedCommand c)) $
                                    F.toList serverCommands
-                deletedCommand cmd = commandDeleteAt cmd < commandCreateAt cmd
+                deletedCommand cmd = commandDeleteAt cmd > commandCreateAt cmd
                 serverAlts = mkTuple <$> matchingCommands
                 mkTuple cmd =
                     ( Server
