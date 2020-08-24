@@ -132,15 +132,28 @@ doSyntaxAutoCompletion ty ctx searchString = do
 -- advertised by the server to begin with.)
 hiddenServerCommands :: [Text]
 hiddenServerCommands =
+    -- These commands all only work in the web client.
     [ "settings"
     , "help"
-    , "logout"
-    , "leave"
-    , "join"
-    , "open"
     , "collapse"
     , "expand"
+
+    -- We don't think this command makes sense for Matterhorn.
+    , "logout"
+
+    -- We provide a version of /leave with confirmation.
+    , "leave"
+
+    -- We provide our own join UI.
+    , "join"
+
+    -- We provide our own version of this command that opens our own
+    -- help UI.
     , "shortcuts"
+
+    -- Hidden because we provide other mechanisms to switch between
+    -- channels.
+    , "open"
     ]
 
 hiddenCommand :: Command -> Bool
