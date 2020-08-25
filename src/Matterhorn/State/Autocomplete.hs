@@ -157,7 +157,7 @@ hiddenServerCommands =
     ]
 
 hiddenCommand :: Command -> Bool
-hiddenCommand c = commandTrigger c `elem` hiddenServerCommands
+hiddenCommand c = (T.toLower $ commandTrigger c) `elem` hiddenServerCommands
 
 isDeletedCommand :: Command -> Bool
 isDeletedCommand cmd = commandDeleteAt cmd > commandCreateAt cmd
