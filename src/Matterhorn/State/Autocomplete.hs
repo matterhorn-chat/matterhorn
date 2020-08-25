@@ -174,9 +174,10 @@ doCommandAutoCompletion ty ctx searchString = do
     withCachedAutocompleteResults ctx ty searchString $
         doAsyncWith Preempt $ do
             serverCommands <- MM.mmListCommandsForTeam myTid False session
-            let matchingCommands = filter (\c -> not (hiddenCommand c || isDeletedCommand c)) $
-                                   F.toList serverCommands
-                serverAlts = mkTuple <$> matchingCommands
+            let filteredServerCommands =
+                    filter (\c -> not (hiddenCommand c || isDeletedCommand c)) $
+                    F.toList serverCommands
+                serverAlts = mkTuple <$> filteredServerCommands
                 mkTuple cmd =
                     ( Server
                     , commandTrigger cmd
