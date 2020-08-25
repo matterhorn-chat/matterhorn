@@ -159,6 +159,9 @@ hiddenServerCommands =
 hiddenCommand :: Command -> Bool
 hiddenCommand c = commandTrigger c `elem` hiddenServerCommands
 
+isDeletedCommand :: Command -> Bool
+isDeletedCommand cmd = commandDeleteAt cmd > commandCreateAt cmd
+
 doCommandAutoCompletion :: AutocompletionType -> AutocompleteContext -> Text -> MH ()
 doCommandAutoCompletion ty ctx searchString = do
     session <- getSession
@@ -171,9 +174,8 @@ doCommandAutoCompletion ty ctx searchString = do
     withCachedAutocompleteResults ctx ty searchString $
         doAsyncWith Preempt $ do
             serverCommands <- MM.mmListCommandsForTeam myTid False session
-            let matchingCommands = filter (\c -> not (hiddenCommand c || deletedCommand c)) $
+            let matchingCommands = filter (\c -> not (hiddenCommand c || isDeletedCommand c)) $
                                    F.toList serverCommands
-                deletedCommand cmd = commandDeleteAt cmd > commandCreateAt cmd
                 serverAlts = mkTuple <$> matchingCommands
                 mkTuple cmd =
                     ( Server
