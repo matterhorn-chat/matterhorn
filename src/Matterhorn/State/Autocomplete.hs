@@ -196,7 +196,7 @@ doCommandAutoCompletion ty ctx searchString = do
         matches (CommandCompletion _ name _ desc) =
             lowerSearch `T.isInfixOf` (T.toLower name) ||
             lowerSearch `T.isInfixOf` (T.toLower desc)
-        matches _ = error "BUG: doChannelAutoCompletion (please report)"
+        matches _ = False
 
     if (isNothing entry || (mActiveTy /= (Just ACCommands)))
        then doAsyncWith Preempt $ do
@@ -234,8 +234,9 @@ doCommandAutoCompletion ty ctx searchString = do
                     setCompletionAlternatives ctx searchString (filter matches alts) ty
 
        else case entry of
-           Just alts -> setCompletionAlternatives ctx searchString (filter matches alts) ty
-           Nothing -> return ()
+           Just alts | mActiveTy == Just ACCommands ->
+               setCompletionAlternatives ctx searchString (filter matches alts) ty
+           _ -> return ()
 
 doUserAutoCompletion :: AutocompletionType -> AutocompleteContext -> Text -> MH ()
 doUserAutoCompletion ty ctx searchString = do
