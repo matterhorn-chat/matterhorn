@@ -167,43 +167,75 @@ doCommandAutoCompletion ty ctx searchString = do
     session <- getSession
     myTid <- gets myTeamId
 
-    let clientAlts = mkAlt <$> commandList
-        mkAlt (Cmd name desc args _) =
-            (Client, name, printArgSpec args, desc)
+    mCache <- preuse (csEditState.cedAutocomplete._Just.acCachedResponses)
+    mActiveTy <- preuse (csEditState.cedAutocomplete._Just.acType)
 
-    withCachedAutocompleteResults ctx ty searchString $
-        doAsyncWith Preempt $ do
-            serverCommands <- MM.mmListCommandsForTeam myTid False session
-            let filteredServerCommands =
-                    filter (\c -> not (hiddenCommand c || isDeletedCommand c)) $
-                    F.toList serverCommands
-                serverAlts = mkTuple <$> filteredServerCommands
-                mkTuple cmd =
-                    ( Server
-                    , commandTrigger cmd
-                    , commandAutoCompleteHint cmd
-                    , commandAutoCompleteDesc cmd
-                    )
-                mkCompletion (src, name, args, desc) =
-                    CommandCompletion src name args desc
-                alts = fmap mkCompletion $
-                       sortBy compareCompletions $
-                       filter matches $
-                       clientAlts <> serverAlts
-                compareCompletions (_, nameA, _, _)
-                                   (_, nameB, _, _) =
-                    let isAPrefix = searchString `T.isPrefixOf` nameA
-                        isBPrefix = searchString `T.isPrefixOf` nameB
-                    in if isAPrefix == isBPrefix
-                       then compare nameA nameB
-                       else if isAPrefix
-                            then LT
-                            else GT
-                lowerSearch = T.toLower searchString
-                matches (_, name, _, desc) =
-                    lowerSearch `T.isInfixOf` (T.toLower name) ||
-                    lowerSearch `T.isInfixOf` (T.toLower desc)
-            return $ Just $ setCompletionAlternatives ctx searchString alts ty
+    -- Command completion works a little differently than the other
+    -- modes. To do command autocompletion, we want to query the server
+    -- for the list of available commands and merge that list with
+    -- our own list of client-provided commands. But the server's API
+    -- doesn't support *searching* commands; we can only ask for the
+    -- full list. That means that, unlike the other completion modes
+    -- where we want to ask the server repeatedly as the search string
+    -- is refined, in this case we want to ask the server only once
+    -- and avoid repeating the request for the same data as the user
+    -- types more of the search string. To accomplish that, we use a
+    -- special cache key -- the empty string, which normal user input
+    -- processing will never use -- as the cache key for the "full" list
+    -- of commands obtained by merging the server's list with our own.
+    -- We populate that cache entry when completion starts and then
+    -- subsequent completions consult *that* list instead of asking the
+    -- server again. Subsequent completions then filter and match the
+    -- cached list against the user's search string.
+    let entry = HM.lookup serverResponseKey =<< mCache
+        -- The special cache key to use to store the merged server and
+        -- client command list, sorted but otherwise unfiltered except
+        -- for eliminating deleted or hidden commands.
+        serverResponseKey = ""
+        lowerSearch = T.toLower searchString
+        matches (CommandCompletion _ name _ desc) =
+            lowerSearch `T.isInfixOf` (T.toLower name) ||
+            lowerSearch `T.isInfixOf` (T.toLower desc)
+        matches _ = error "BUG: doChannelAutoCompletion (please report)"
+
+    if (isNothing entry || (mActiveTy /= (Just ACCommands)))
+       then doAsyncWith Preempt $ do
+                let clientAlts = mkAlt <$> commandList
+                    mkAlt (Cmd name desc args _) =
+                        (Client, name, printArgSpec args, desc)
+
+                serverCommands <- MM.mmListCommandsForTeam myTid False session
+                let filteredServerCommands =
+                        filter (\c -> not (hiddenCommand c || isDeletedCommand c)) $
+                        F.toList serverCommands
+                    serverAlts = mkTuple <$> filteredServerCommands
+                    mkTuple cmd =
+                        ( Server
+                        , commandTrigger cmd
+                        , commandAutoCompleteHint cmd
+                        , commandAutoCompleteDesc cmd
+                        )
+                    mkCompletion (src, name, args, desc) =
+                        CommandCompletion src name args desc
+                    alts = fmap mkCompletion $
+                           sortBy compareCompletions $
+                           clientAlts <> serverAlts
+                    compareCompletions (_, nameA, _, _)
+                                       (_, nameB, _, _) =
+                        let isAPrefix = searchString `T.isPrefixOf` nameA
+                            isBPrefix = searchString `T.isPrefixOf` nameB
+                        in if isAPrefix == isBPrefix
+                           then compare nameA nameB
+                           else if isAPrefix
+                                then LT
+                                else GT
+                return $ Just $ do
+                    setCompletionAlternatives ctx "" alts ty
+                    setCompletionAlternatives ctx searchString (filter matches alts) ty
+
+       else case entry of
+           Just alts -> setCompletionAlternatives ctx searchString (filter matches alts) ty
+           Nothing -> return ()
 
 doUserAutoCompletion :: AutocompletionType -> AutocompleteContext -> Text -> MH ()
 doUserAutoCompletion ty ctx searchString = do
