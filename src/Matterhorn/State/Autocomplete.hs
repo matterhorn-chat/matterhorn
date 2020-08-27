@@ -235,8 +235,22 @@ doCommandAutoCompletion ty ctx searchString = do
 
        else case entry of
            Just alts | mActiveTy == Just ACCommands ->
-               setCompletionAlternatives ctx searchString (filter matches alts) ty
+               let newAlts = sortBy (compareCommandAlts searchString) $
+                             filter matches alts
+               in setCompletionAlternatives ctx searchString newAlts ty
            _ -> return ()
+
+compareCommandAlts :: Text -> AutocompleteAlternative -> AutocompleteAlternative -> Ordering
+compareCommandAlts s (CommandCompletion _ nameA _ _)
+                     (CommandCompletion _ nameB _ _) =
+    let isAPrefix = s `T.isPrefixOf` nameA
+        isBPrefix = s `T.isPrefixOf` nameB
+    in if isAPrefix == isBPrefix
+       then compare nameA nameB
+       else if isAPrefix
+            then LT
+            else GT
+compareCommandAlts _ _ _ = LT
 
 doUserAutoCompletion :: AutocompletionType -> AutocompleteContext -> Text -> MH ()
 doUserAutoCompletion ty ctx searchString = do
