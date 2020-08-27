@@ -861,6 +861,8 @@ createGroupChannel usernameList = do
 
 channelHistoryForward :: MH ()
 channelHistoryForward = do
+    resetAutocomplete
+
     cId <- use csCurrentChannelId
     inputHistoryPos <- use (csEditState.cedEphemeral.eesInputHistoryPosition)
     case inputHistoryPos of
@@ -887,6 +889,8 @@ loadHistoryEntryToEditor cId idx = do
 
 channelHistoryBackward :: MH ()
 channelHistoryBackward = do
+    resetAutocomplete
+
     cId <- use csCurrentChannelId
     inputHistoryPos <- use (csEditState.cedEphemeral.eesInputHistoryPosition)
     saveCurrentChannelInput
