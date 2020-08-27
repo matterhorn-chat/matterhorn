@@ -218,20 +218,12 @@ doCommandAutoCompletion ty ctx searchString = do
                     mkCompletion (src, name, args, desc) =
                         CommandCompletion src name args desc
                     alts = fmap mkCompletion $
-                           sortBy compareCompletions $
                            clientAlts <> serverAlts
-                    compareCompletions (_, nameA, _, _)
-                                       (_, nameB, _, _) =
-                        let isAPrefix = searchString `T.isPrefixOf` nameA
-                            isBPrefix = searchString `T.isPrefixOf` nameB
-                        in if isAPrefix == isBPrefix
-                           then compare nameA nameB
-                           else if isAPrefix
-                                then LT
-                                else GT
                 return $ Just $ do
                     setCompletionAlternatives ctx "" alts ty
-                    setCompletionAlternatives ctx searchString (filter matches alts) ty
+                    let newAlts = sortBy (compareCommandAlts searchString) $
+                                  filter matches alts
+                    setCompletionAlternatives ctx searchString newAlts ty
 
        else case entry of
            Just alts | mActiveTy == Just ACCommands ->
