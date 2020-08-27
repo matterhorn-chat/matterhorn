@@ -220,7 +220,11 @@ doCommandAutoCompletion ty ctx searchString = do
                     alts = fmap mkCompletion $
                            clientAlts <> serverAlts
                 return $ Just $ do
-                    setCompletionAlternatives ctx "" alts ty
+                    -- Store the complete list of alterantives in the cache
+                    setCompletionAlternatives ctx serverResponseKey alts ty
+
+                    -- Also store the list of alternatives specific to
+                    -- this search string
                     let newAlts = sortBy (compareCommandAlts searchString) $
                                   filter matches alts
                     setCompletionAlternatives ctx searchString newAlts ty
