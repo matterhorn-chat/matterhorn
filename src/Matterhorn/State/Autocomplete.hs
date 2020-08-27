@@ -219,6 +219,7 @@ doCommandAutoCompletion ty ctx searchString = do
                         CommandCompletion src name args desc
                     alts = fmap mkCompletion $
                            clientAlts <> serverAlts
+
                 return $ Just $ do
                     -- Store the complete list of alterantives in the cache
                     setCompletionAlternatives ctx serverResponseKey alts ty
