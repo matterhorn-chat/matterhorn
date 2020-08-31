@@ -228,26 +228,26 @@ initializeState cr myTeam me = do
   --------------------------------------------------------------------
   -- Start background worker threads:
   --
-  -- * Syntax definition loader
+  --  * Syntax definition loader
   startSyntaxMapLoaderThread (cr^.crConfiguration) (cr^.crEventQueue)
 
-  -- * Main async queue worker thread
+  --  * Main async queue worker thread
   startAsyncWorkerThread (cr^.crConfiguration) (cr^.crRequestQueue) (cr^.crEventQueue)
 
-  -- * User status thread
+  --  * User status thread
   startUserStatusUpdateThread (cr^.crStatusUpdateChan) session requestChan
 
-  -- * Refresher for users who are typing currently
+  --  * Refresher for users who are typing currently
   when (configShowTypingIndicator (cr^.crConfiguration)) $
     startTypingUsersRefreshThread requestChan
 
-  -- * Timezone change monitor
+  --  * Timezone change monitor
   startTimezoneMonitorThread tz requestChan
 
-  -- * Subprocess logger
+  --  * Subprocess logger
   startSubprocessLoggerThread (cr^.crSubprocessLog) requestChan
 
-  -- * Spell checker and spell check timer, if configured
+  --  * Spell checker and spell check timer, if configured
   spResult <- maybeStartSpellChecker (cr^.crConfiguration) (cr^.crEventQueue)
 
   -- End thread startup ----------------------------------------------
