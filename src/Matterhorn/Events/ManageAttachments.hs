@@ -92,14 +92,14 @@ openSelectedAttachment = do
     cur <- use (csEditState.cedAttachmentList.to L.listSelectedElement)
     case cur of
         Nothing -> return ()
-        Just (_, entry) -> void $ openURL (OpenLocalFile $ FB.fileInfoFilePath $
-                                           attachmentDataFileInfo entry)
+        Just (_, entry) -> void $ openFilePath (FB.fileInfoFilePath $
+                                                attachmentDataFileInfo entry)
 
 openSelectedBrowserEntry :: MH ()
 openSelectedBrowserEntry = withFileBrowser $ \b ->
     case FB.fileBrowserCursor b of
         Nothing -> return ()
-        Just entry -> void $ openURL (OpenLocalFile $ FB.fileInfoFilePath entry)
+        Just entry -> void $ openFilePath (FB.fileInfoFilePath entry)
 
 onEventBrowseFile :: V.Event -> MH ()
 onEventBrowseFile e = do

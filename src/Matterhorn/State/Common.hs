@@ -1,7 +1,8 @@
 module Matterhorn.State.Common
   (
   -- * System interface
-    openURL
+    openLinkChoice
+  , openFilePath
   , runLoggedCommand
 
   -- * Posts
@@ -153,23 +154,24 @@ postErrorMessageIO err st = do
           (addMessage $ clientMessageToMessage msg & mMessageId .~ Just (MessageUUID uuid))
   return $ st & csChannels %~ modifyChannelById cId addEMsg
 
-openURL :: OpenInBrowser -> MH Bool
-openURL thing = do
+openLinkChoice :: LinkChoice -> MH Bool
+openLinkChoice link = do
+    session <- getSession
+    case link^.linkTarget of
+        LinkURL url -> openWithOpener (return $ T.unpack $ unURL url)
+        LinkFileId fId -> openWithOpener (liftIO $ prepareAttachment fId session)
+
+openFilePath :: FilePath -> MH Bool
+openFilePath path = openWithOpener (return path)
+
+openWithOpener :: MH String -> MH Bool
+openWithOpener getTarget = do
     cfg <- use (csResources.crConfiguration)
     case configURLOpenCommand cfg of
         Nothing ->
             return False
         Just urlOpenCommand -> do
-            session <- getSession
-
-            -- Is the URL referring to an attachment?
-            let act = case thing of
-                    OpenLinkChoice link ->
-                        case link^.linkTarget of
-                            LinkURL url -> return [T.unpack $ unURL url]
-                            LinkFileId fId -> prepareAttachment fId session
-                    OpenLocalFile path ->
-                        return [path]
+            target <- getTarget
 
             -- Is the URL-opening command interactive? If so, pause
             -- Matterhorn and run the opener interactively. Otherwise
@@ -179,9 +181,8 @@ openURL thing = do
                 False -> do
                     outputChan <- use (csResources.crSubprocessLog)
                     doAsyncWith Preempt $ do
-                        args <- act
                         runLoggedCommand False outputChan (T.unpack urlOpenCommand)
-                                         args Nothing Nothing
+                                         [target] Nothing Nothing
                         return Nothing
                 True -> do
                     -- If there isn't a new message cutoff showing in
@@ -207,8 +208,7 @@ openURL thing = do
                     -- suspended.
 
                     mhSuspendAndResume $ \st -> do
-                        args <- act
-                        result <- runInteractiveCommand (T.unpack urlOpenCommand) args
+                        result <- runInteractiveCommand (T.unpack urlOpenCommand) [target]
 
                         let waitForKeypress = do
                                 putStrLn "Press any key to return to Matterhorn."
@@ -287,7 +287,7 @@ runLoggedCommand stdoutOkay outputChan cmd args mInput mOutputVar = void $ forkI
             error $ "BUG: createProcess returned unexpected result, report this at " <>
                     "https://github.com/matterhorn-chat/matterhorn"
 
-prepareAttachment :: FileId -> Session -> IO [String]
+prepareAttachment :: FileId -> Session -> IO String
 prepareAttachment fId sess = do
     -- The link is for an attachment, so fetch it and then
     -- open the local copy.
@@ -300,7 +300,7 @@ prepareAttachment fId sess = do
 
     createDirectoryIfMissing True dir
     BS.writeFile fname contents
-    return [fname]
+    return fname
 
 removeEmoteFormatting :: T.Text -> T.Text
 removeEmoteFormatting t

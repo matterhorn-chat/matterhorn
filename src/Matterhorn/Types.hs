@@ -27,7 +27,6 @@ module Matterhorn.Types
   , TabbedWindow(..)
   , TabbedWindowEntry(..)
   , TabbedWindowTemplate(..)
-  , OpenInBrowser(..)
   , ConnectionInfo(..)
   , SidebarUpdate(..)
   , PendingChannelChange(..)
@@ -2070,8 +2069,3 @@ clearChannelUnreadStatus cId = do
     mh $ invalidateCacheEntry (ChannelMessages cId)
     csChannel(cId) %= (clearNewMessageIndicator .
                        clearEditedThreshold)
-
-data OpenInBrowser =
-    OpenLinkChoice LinkChoice
-    | OpenLocalFile FilePath
-    deriving (Eq, Show)

@@ -150,7 +150,7 @@ openSelectedMessageURLs = whenMode MessageSelect $ do
 
     let urls = msgURLs curMsg
     when (not (null urls)) $ do
-        openedAll <- and <$> mapM (openURL . OpenLinkChoice) urls
+        openedAll <- and <$> mapM openLinkChoice urls
         case openedAll of
             True -> return ()
             False ->

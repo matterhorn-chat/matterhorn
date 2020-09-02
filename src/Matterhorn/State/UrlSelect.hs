@@ -34,7 +34,7 @@ openSelectedURL = whenMode UrlSelect $ do
     case selected of
         Nothing -> return ()
         Just (_, link) -> do
-            opened <- openURL (OpenLinkChoice link)
+            opened <- openLinkChoice link
             when (not opened) $ do
                 mhError $ ConfigOptionMissing "urlOpenCommand"
                 setMode Main
