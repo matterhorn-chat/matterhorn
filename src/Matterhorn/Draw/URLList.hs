@@ -51,7 +51,10 @@ renderUrlList st =
                   , str " "
                   , renderTime st $ withServerTime time
                   ] ) <=>
-            (vLimit 1 (renderText $ unURL $ link^.linkURL))
+            (vLimit 1 (renderLinkTarget (link^.linkTarget)))
+
+        renderLinkTarget (LinkURL url) = renderText $ unURL url
+        renderLinkTarget (LinkFileId _) = txt " "
 
         attr True = forceAttr urlListSelectedAttr
         attr False = id

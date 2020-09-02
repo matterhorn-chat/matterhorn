@@ -165,9 +165,9 @@ openURL thing = do
             -- Is the URL referring to an attachment?
             let act = case thing of
                     OpenLinkChoice link ->
-                        case link^.linkFileId of
-                            Nothing -> prepareLink link
-                            Just fId -> prepareAttachment fId session
+                        case link^.linkTarget of
+                            LinkURL url -> return [T.unpack $ unURL url]
+                            LinkFileId fId -> prepareAttachment fId session
                     OpenLocalFile path ->
                         return [path]
 
@@ -286,9 +286,6 @@ runLoggedCommand stdoutOkay outputChan cmd args mInput mOutputVar = void $ forkI
         Right _ ->
             error $ "BUG: createProcess returned unexpected result, report this at " <>
                     "https://github.com/matterhorn-chat/matterhorn"
-
-prepareLink :: LinkChoice -> IO [String]
-prepareLink link = return [T.unpack $ unURL $ link^.linkURL]
 
 prepareAttachment :: FileId -> Session -> IO [String]
 prepareAttachment fId sess = do

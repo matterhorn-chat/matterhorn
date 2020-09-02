@@ -95,12 +95,12 @@ module Matterhorn.Types.Messages
   , withFirstMessage
   , msgURLs
 
+  , LinkTarget(..)
   , LinkChoice(LinkChoice)
   , linkUser
-  , linkURL
+  , linkTarget
   , linkTime
   , linkLabel
-  , linkFileId
   )
 where
 
@@ -282,13 +282,17 @@ data ReplyState =
     | InReplyTo PostId
     deriving (Show, Eq)
 
+data LinkTarget =
+    LinkURL URL
+    | LinkFileId FileId
+    deriving (Eq, Show, Ord)
+
 -- | This type represents links to things in the 'open links' view.
 data LinkChoice =
     LinkChoice { _linkTime   :: ServerTime
                , _linkUser   :: UserRef
                , _linkLabel  :: Maybe (Seq Element)
-               , _linkURL    :: URL
-               , _linkFileId :: Maybe FileId
+               , _linkTarget :: LinkTarget
                } deriving (Eq, Show)
 
 makeLenses ''LinkChoice
@@ -721,15 +725,14 @@ withFirstMessage = withDirSeqHead
 msgURLs :: Message -> Seq LinkChoice
 msgURLs msg =
   let uRef = msg^.mUser
-      msgUrls = (\ (url, text) -> LinkChoice (msg^.mDate) uRef text url Nothing) <$>
+      msgUrls = (\ (url, text) -> LinkChoice (msg^.mDate) uRef text (LinkURL url)) <$>
                   (Seq.fromList $ mconcat $ blockGetURLs <$> (toList $ msg^.mText))
       attachmentURLs = (\ a ->
                           LinkChoice
                             (msg^.mDate)
                             uRef
                             (Just $ attachmentLabel a)
-                            (URL $ a^.attachmentURL)
-                            (Just (a^.attachmentFileId)))
+                            (LinkFileId $ a^.attachmentFileId))
                        <$> (msg^.mAttachments)
       attachmentLabel a =
           Seq.fromList [ Element Normal $ EText "attachment"

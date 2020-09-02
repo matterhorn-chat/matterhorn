@@ -45,4 +45,4 @@ findUrls chan =
     in removeDuplicates $ concat $ toList $ toList <$> msgURLs <$> msgs
 
 removeDuplicates :: [LinkChoice] -> [LinkChoice]
-removeDuplicates = nubOn (\ l -> (l^.linkURL, l^.linkUser))
+removeDuplicates = nubOn (\ l -> (l^.linkTarget, l^.linkUser))
