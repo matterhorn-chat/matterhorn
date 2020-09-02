@@ -719,7 +719,10 @@ removeMatchesFromSubset matching firstId lastId msgs =
 -- | Performs an operation on the first Message, returning just the
 -- result of that operation, or Nothing if there were no messages.
 -- Note that the message is not necessarily a posted user message.
-withFirstMessage :: SeqDirection dir => (Message -> r) -> DirectionalSeq dir Message -> Maybe r
+withFirstMessage :: SeqDirection dir
+                 => (Message -> r)
+                 -> DirectionalSeq dir Message
+                 -> Maybe r
 withFirstMessage = withDirSeqHead
 
 msgURLs :: Message -> Seq LinkChoice
