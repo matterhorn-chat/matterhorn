@@ -96,7 +96,7 @@ module Matterhorn.Types.Messages
   , msgURLs
 
   , LinkTarget(..)
-  , LinkChoice(LinkChoice)
+  , LinkChoice(LinkChoice, _linkTarget)
   , linkUser
   , linkTarget
   , linkTime

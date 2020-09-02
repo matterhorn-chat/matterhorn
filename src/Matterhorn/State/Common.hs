@@ -1,7 +1,7 @@
 module Matterhorn.State.Common
   (
   -- * System interface
-    openLinkChoice
+    openLinkTarget
   , openFilePath
   , runLoggedCommand
 
@@ -154,10 +154,10 @@ postErrorMessageIO err st = do
           (addMessage $ clientMessageToMessage msg & mMessageId .~ Just (MessageUUID uuid))
   return $ st & csChannels %~ modifyChannelById cId addEMsg
 
-openLinkChoice :: LinkChoice -> MH Bool
-openLinkChoice link = do
+openLinkTarget :: LinkTarget -> MH Bool
+openLinkTarget target = do
     session <- getSession
-    case link^.linkTarget of
+    case target of
         LinkURL url -> openWithOpener (return $ T.unpack $ unURL url)
         LinkFileId fId -> openWithOpener (liftIO $ prepareAttachment fId session)
 
