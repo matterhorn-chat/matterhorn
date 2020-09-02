@@ -12,6 +12,7 @@ import           Brick.Widgets.List ( listElements )
 import           Brick.Widgets.Edit ( editContentsL, renderEditor, getEditContents )
 import           Control.Arrow ( (>>>) )
 import           Data.Char ( isSpace, isPunctuation )
+import           Data.List ( intersperse )
 import qualified Data.Map as M
 import qualified Data.Sequence as Seq
 import qualified Data.Set as S
@@ -431,12 +432,13 @@ connectionLayer st =
 
 messageSelectBottomBar :: ChatState -> Widget Name
 messageSelectBottomBar st =
-    let optionStr = if null usableOptions
-                    then "(no actions available for this message)"
-                    else T.intercalate " " usableOptions
+    let optionList = if null usableOptions
+                     then txt "(no actions available for this message)"
+                     else hBox $ intersperse (txt " ") usableOptions
         usableOptions = catMaybes $ mkOption <$> options
         mkOption (f, k, desc) = if f postMsg
-                                then Just $ k <> ":" <> desc
+                                then Just $ withDefAttr messageSelectStatusAttr (txt k) <+>
+                                            txt (":" <> desc)
                                 else Nothing
         numURLs = Seq.length $ msgURLs postMsg
         s = if numURLs == 1 then "" else "s"
@@ -511,8 +513,8 @@ messageSelectBottomBar st =
 
     in hBox [ borderElem bsHorizontal
             , txt "["
-            , withDefAttr messageSelectStatusAttr $
-              txt $ "Message select: " <> optionStr
+            , txt "Message select: "
+            , optionList
             , txt "]"
             , hBorder
             ]
