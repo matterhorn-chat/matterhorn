@@ -94,7 +94,7 @@ client. Keybinding and command help may be obtained in a number of ways:
 * The `/help` command within Matterhorn.
 * The `F1` key within Matterhorn.
 * Running matterhorn with the `-k` or `-m` arguments to get a text table of available keybindings or commands respectively.
-* Running matterhorn with the `-k` or `-m` arguments with `-f markdown` to get a [Markdown table of available keybindings](docs/keybindings.md) or [Markdown table of available commands](docs/commands.md).
+* Running matterhorn with the `-k` or `-m` arguments with `-f markdown` to get a [Markdown table of available keybindings](keybindings.md) or [Markdown table of available commands](commands.md).
 
     Note: The keyboard and command output commands do not start the
     client but simply print to stdout and exit. The keybindings shown
