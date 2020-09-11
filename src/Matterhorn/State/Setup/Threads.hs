@@ -63,7 +63,8 @@ startUserStatusUpdateThread zipperChan session requestChan = void $ forkIO body
       userRefreshInterval = 30
       body = refresh []
       refresh prev = do
-          result <- timeout (seconds userRefreshInterval) (STM.atomically $ STM.readTChan zipperChan)
+          result <- timeout (seconds userRefreshInterval)
+                            (STM.atomically $ STM.readTChan zipperChan)
           let (uIds, update) = case result of
                   Nothing -> (prev, True)
                   Just ids -> (ids, ids /= prev)
@@ -114,7 +115,10 @@ startSubprocessLoggerThread logChan requestChan = do
                           tmp <- getTemporaryDirectory
                           openTempFile tmp "matterhorn-subprocess.log"
 
-                  let unexpectedStdout = ec == ExitSuccess && (not $ emptyOutput out) && not stdoutOkay
+                  let unexpectedStdout = and [ ec == ExitSuccess
+                                             , not $ emptyOutput out
+                                             , not stdoutOkay
+                                             ]
 
                   hPutStrLn logHandle $
                       unlines [ "Program: " <> progName
@@ -130,7 +134,8 @@ startSubprocessLoggerThread logChan requestChan = do
                   hFlush logHandle
 
                   STM.atomically $ STM.writeTChan requestChan $ do
-                      return $ Just $ mhError $ ProgramExecutionFailed (T.pack progName) (T.pack logPath)
+                      return $ Just $ mhError $ ProgramExecutionFailed (T.pack progName)
+                                                                       (T.pack logPath)
 
                   logMonitor (Just (logPath, logHandle))
 
