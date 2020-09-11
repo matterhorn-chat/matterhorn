@@ -369,4 +369,5 @@ shouldIgnore e =
           , "Network.Socket.sendBuf" `isInfixOf` eStr
           , "resource vanished" `isInfixOf` eStr
           , "timeout" `isInfixOf` eStr
+          , "partial packet" `isInfixOf` eStr
           ]
