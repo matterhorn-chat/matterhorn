@@ -7,7 +7,7 @@
 #
 # 1. git clone -b develop https://github.com/matterhorn-chat/matterhorn
 # 2. cd matterhorn
-# 3. ./mkrelease.sh
+# 3. ./scripts/mkrelease.sh
 # 4. Copy the generated FILENAME result to the appropriate location.
 #
 # Note that this script will perform a submodule update; the default
@@ -37,6 +37,7 @@
 set -e
 
 HERE=$(cd `dirname $0`; pwd)
+ROOT=$HERE/..
 
 function get_platform {
     if [ -f "/etc/os-release" ]
@@ -95,21 +96,21 @@ function prepare_dist {
     cp $(find dist-newstyle -type f -name matterhorn | grep $ver) $dest
     strip $dest/matterhorn
 
-    cp $HERE/README.md $dest
-    cp $HERE/CHANGELOG.md $dest
+    cp $ROOT/README.md $dest
+    cp $ROOT/CHANGELOG.md $dest
 
     mkdir $dest/docs
-    cp $HERE/docs/sample-config.ini $dest/docs/
-    cp $HERE/docs/keybindings.md $dest/docs/
-    cp $HERE/docs/commands.md $dest/docs/
+    cp $ROOT/docs/sample-config.ini $dest/docs/
+    cp $ROOT/docs/keybindings.md $dest/docs/
+    cp $ROOT/docs/commands.md $dest/docs/
 
-    cp -r $HERE/emoji $dest/
-    cp -r $HERE/syntax $dest/
-    cp -r $HERE/notification-scripts $dest/
-    cp -r $HERE/client-scripts $dest/
+    cp -r $ROOT/emoji $dest/
+    cp -r $ROOT/syntax $dest/
+    cp -r $ROOT/notification-scripts $dest/
+    cp -r $ROOT/client-scripts $dest/
     echo $LONG_HEAD > $dest/COMMIT
 
-    cd $HERE && $CABAL_DEPS_TOOL_DIR/cabal-dependency-licenses > $dest/COPYRIGHT
+    cd $ROOT && $CABAL_DEPS_TOOL_DIR/cabal-dependency-licenses > $dest/COPYRIGHT
 }
 
 function install_tools {
@@ -137,7 +138,7 @@ function install_tools {
 
         cabal install
         mkdir -p $CABAL_DEPS_TOOL_DIR
-        cd $HERE && rm -rf $BUILD
+        cd $ROOT && rm -rf $BUILD
     fi
 }
 
@@ -147,7 +148,7 @@ echo Version: $MHVERSION
 echo Filename: $FILENAME
 
 # Perform a build
-cd $HERE
+cd $ROOT
 git submodule update --init
 ./build.sh
 
@@ -172,7 +173,7 @@ trap cleanup EXIT
 # Package the build results into a tarball
 mkdir $TMPDIR/$DIRNAME
 prepare_dist $MHVERSION $TMPDIR/$DIRNAME
-cd $TMPDIR && tar -cj $DIRNAME > $HERE/$FILENAME
+cd $TMPDIR && tar -cj $DIRNAME > $ROOT/$FILENAME
 
 echo %%%%%%%%%% completed package build %%%%%%%%%%
 echo Version: $MHVERSION

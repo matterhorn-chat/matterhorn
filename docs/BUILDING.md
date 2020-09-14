@@ -12,6 +12,6 @@ GitHub account is necessary to fetch the submodule sources.
 6. Clone the `matterhorn` source: `git clone git@github.com:matterhorn-chat/matterhorn.git`
 7. `cd matterhorn`
 8. Fetch submodules with `git submodule update --init`
-9. Do a local build with `./build.sh` or build a release with `./mkrelease.sh`.
+9. Do a local build with `./build.sh` or build a release with `./scripts/mkrelease.sh`.
 10. Local builds can be run with `./run.sh`; to run a binary release,
 just unpack the archive and run the `matterhorn` binary found therein.

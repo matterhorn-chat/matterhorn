@@ -6,7 +6,8 @@
 set -e
 
 HERE=$(cd `dirname $0`; pwd)
-CABALFILE=$HERE/matterhorn.cabal
+ROOT=$HERE/..
+CABALFILE=$ROOT/matterhorn.cabal
 VER=$(grep "^version:" $CABALFILE | awk '{ print $2 }')
 
 function compute_sha {
@@ -30,13 +31,13 @@ then
     exit 1
 fi
 
-cd $HERE
+cd $ROOT
 first=""
-for tarball in $HERE/matterhorn-$VER-*.tar.bz2
+for tarball in $ROOT/matterhorn-$VER-*.tar.bz2
 do
     if [ ! -f "$tarball" ]
     then
-        echo "Error: no matterhorn release tarballs found in $HERE"
+        echo "Error: no matterhorn release tarballs found in $ROOT"
         exit 1
     fi
 

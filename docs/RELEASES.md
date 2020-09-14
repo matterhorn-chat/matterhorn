@@ -87,9 +87,10 @@ commits during the release process.
    repository.
 
 11. Make binary release available on GitHub by editing the pushed tag
-    and uploading the release archives. When editing the notes for the
-    new tag, generate release checksums by running `checksums.sh`. Paste
-    the output of this script into the tag notes.
+    and uploading the release archives. When editing the notes
+    for the new tag, generate release checksums by running
+    `scripts/checksums.sh`. Paste the output of this script into the tag
+    notes.
 
 12. Tweet about the release using the `@matterhorn_chat` account:
     "We're pleased to announce the release of Matterhorn version <VERSION> for @mattermost!
