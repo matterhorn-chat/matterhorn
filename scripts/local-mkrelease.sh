@@ -7,7 +7,7 @@
 #
 # 1. git clone -b develop https://github.com/matterhorn-chat/matterhorn
 # 2. cd matterhorn
-# 3. ./scripts/mkrelease.sh
+# 3. ./scripts/local-mkrelease.sh
 # 4. Copy the generated FILENAME result to the appropriate location.
 #
 # Note that this script will perform a submodule update; the default

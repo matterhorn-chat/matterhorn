@@ -68,8 +68,8 @@ commits during the release process.
    $ git push
    ```
 
-6. Generate platform binary distributions using `mkrelease.sh` on the
-   relevant platforms.
+6. Generate platform binary distributions using `local-mkrelease.sh` on
+   the relevant platforms.
 
 7. Upload each package to Hackage, starting with `mattermost-api`:
 
