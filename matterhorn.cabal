@@ -25,9 +25,10 @@ extra-doc-files:     CHANGELOG.md
                      docs/commands.md
                      docs/AUTHORS.txt
                      docs/PRACTICES.md
-                     scripts/cowsay
-                     scripts/figlet
-                     scripts/rot13
+                     client-scripts/cowsay
+                     client-scripts/figlet
+                     client-scripts/rot13
+                     client-scripts/talky
                      notification-scripts/notify
                      emoji/LICENSE.txt
                      emoji/emoji.json
