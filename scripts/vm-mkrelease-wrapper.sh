@@ -8,10 +8,11 @@ set -e
 
 HERE=$(cd `dirname $0`; pwd)
 ROOT=$HERE/..
+RELEASE_BRANCH=develop
 
 cd $ROOT
 cabal new-update || cabal update
-git checkout master
+git checkout $RELEASE_BRANCH
 git pull
 git submodule update --init
 scripts/local-mkrelease.sh
