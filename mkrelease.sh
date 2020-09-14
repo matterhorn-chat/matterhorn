@@ -106,6 +106,7 @@ function prepare_dist {
     cp -r $HERE/emoji $dest/
     cp -r $HERE/syntax $dest/
     cp -r $HERE/notification-scripts $dest/
+    cp -r $HERE/client-scripts $dest/
     echo $LONG_HEAD > $dest/COMMIT
 
     cd $HERE && $CABAL_DEPS_TOOL_DIR/cabal-dependency-licenses > $dest/COPYRIGHT
