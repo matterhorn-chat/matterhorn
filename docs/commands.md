@@ -23,7 +23,6 @@
 | `/log-start <path>` | Begin logging debug information to the specified path |
 | `/log-status` | Show current debug logging status |
 | `/log-stop` | Stop logging |
-| `/me <message>` | Send an emote message |
 | `/members` | Show the current channel's members |
 | `/message-preview` | Toggle preview of the current message |
 | `/msg` | Search for a user to enter a private chat |
@@ -31,7 +30,6 @@
 | `/msg <@user> <message or command>` | Go to a user's channel and send the specified message or command |
 | `/notify-prefs` | Edit the current channel's notification preferences |
 | `/pinned-posts` | Open a window of this channel's pinned posts |
-| `/purpose <purpose>` | Set the current channel's purpose |
 | `/quit` | Exit Matterhorn |
 | `/reconnect` | Force a reconnection attempt to the server |
 | `/remove-user <@user>` | Remove a user from the current channel |
@@ -39,7 +37,7 @@
 | `/search <terms>` | Search for posts with given terms |
 | `/sh` | List the available shell scripts |
 | `/sh <script> <message>` | Run a prewritten shell script |
-| `/shrug <message>` | Send a message followed by a shrug emoticon |
+| `/shortcuts` | Show keyboard shortcuts |
 | `/theme` | List the available themes |
 | `/theme <theme>` | Set the color theme |
 | `/toggle-channel-list` | Toggle channel list visibility |

@@ -45,6 +45,25 @@
 | `Esc`, `C-c` | `cancel` | Cancel autocomplete, message reply, or edit, in that order |
 | `M-8` | `show-flagged-posts` | View currently flagged posts |
 
+# Text Editing
+| Keybinding | Event Name | Description |
+| ---------- | ---------- | ----------- |
+| `C-t` | `editor-transpose-chars` | Transpose the final two characters |
+| `C-a` | `editor-beginning-of-line` | Go to the start of the current line |
+| `C-e` | `editor-end-of-line` | Go to the end of the current line |
+| `C-d` | `editor-delete-char` | Delete the character at the cursor |
+| `C-u` | `editor-kill-to-beginning-of-line` | Delete from the cursor to the start of the current line |
+| `C-k` | `editor-kill-to-end-of-line` | Kill the line to the right of the current position and copy it |
+| `C-f` | `editor-next-char` | Move one character to the right |
+| `C-b` | `editor-prev-char` | Move one character to the left |
+| `M-f` | `editor-next-word` | Move one word to the right |
+| `M-b` | `editor-prev-word` | Move one word to the left |
+| `C-w`, `M-Backspace` | `editor-delete-prev-word` | Delete the word to the left of the cursor |
+| `M-d` | `editor-delete-next-word` | Delete the word to the right of the cursor |
+| `Home` | `editor-home` | Move the cursor to the beginning of the input |
+| `End` | `editor-end` | Move the cursor to the end of the input |
+| `C-y` | `editor-yank` | Paste the current buffer contents at the cursor |
+
 # Channel Select Mode
 | Keybinding | Event Name | Description |
 | ---------- | ---------- | ----------- |
@@ -54,15 +73,6 @@
 | `C-p` | `focus-prev-channel` | Select previous match |
 | `Down` | `focus-next-channel-alternate` | Select next match (alternate binding) |
 | `Up` | `focus-prev-channel-alternate` | Select previous match (alternate binding) |
-
-# URL Select Mode
-| Keybinding | Event Name | Description |
-| ---------- | ---------- | ----------- |
-| `Enter` | (non-customizable key) | Open the selected URL, if any |
-| `Esc`, `C-c` | `cancel` | Cancel URL selection |
-| `k`, `Up` | `select-up` | Move cursor up |
-| `j`, `Down` | `select-down` | Move cursor down |
-| `q` | (non-customizable key) | Cancel URL selection |
 
 # Message Select Mode
 | Keybinding | Event Name | Description |
@@ -86,33 +96,24 @@
 | `Enter` | `fetch-for-gap` | Fetch messages for the selected gap |
 | `a` | `react-to-message` | Post a reaction to the selected message |
 
-# Text Editing
+# User Listings
 | Keybinding | Event Name | Description |
 | ---------- | ---------- | ----------- |
-| `C-t` | `editor-transpose-chars` | Transpose the final two characters |
-| `C-a` | `editor-beginning-of-line` | Go to the start of the current line |
-| `C-e` | `editor-end-of-line` | Go to the end of the current line |
-| `C-d` | `editor-delete-char` | Delete the character at the cursor |
-| `C-u` | `editor-kill-to-beginning-of-line` | Delete from the cursor to the start of the current line |
-| `C-k` | `editor-kill-to-end-of-line` | Kill the line to the right of the current position and copy it |
-| `C-f` | `editor-next-char` | Move one character to the right |
-| `C-b` | `editor-prev-char` | Move one character to the left |
-| `M-f` | `editor-next-word` | Move one word to the right |
-| `M-b` | `editor-prev-word` | Move one word to the left |
-| `C-w`, `M-Backspace` | `editor-delete-prev-word` | Delete the word to the left of the cursor |
-| `M-d` | `editor-delete-next-word` | Delete the word to the right of the cursor |
-| `Home` | `editor-home` | Move the cursor to the beginning of the input |
-| `End` | `editor-end` | Move the cursor to the end of the input |
-| `C-y` | `editor-yank` | Paste the current buffer contents at the cursor |
+| `Esc`, `C-c` | `cancel` | Close the user search list |
+| `C-p`, `Up` | `search-select-up` | Select the previous user |
+| `C-n`, `Down` | `search-select-down` | Select the next user |
+| `PgDown` | `page-down` | Page down in the user list |
+| `PgUp` | `page-up` | Page up in the user list |
+| `Enter` | `activate-list-item` | Interact with the selected user |
 
-# Flagged Messages
+# URL Select Mode
 | Keybinding | Event Name | Description |
 | ---------- | ---------- | ----------- |
-| `Esc`, `C-c` | `cancel` | Exit post browsing |
-| `k`, `Up` | `select-up` | Select the previous message |
-| `j`, `Down` | `select-down` | Select the next message |
-| `f` | `flag-message` | Toggle the selected message flag |
-| `Enter` | `activate-list-item` | Jump to and select current message |
+| `Enter` | (non-customizable key) | Open the selected URL, if any |
+| `Esc`, `C-c` | `cancel` | Cancel URL selection |
+| `k`, `Up` | `select-up` | Move cursor up |
+| `j`, `Down` | `select-down` | Move cursor down |
+| `q` | (non-customizable key) | Cancel URL selection |
 
 # Theme List Window
 | Keybinding | Event Name | Description |
@@ -124,16 +125,6 @@
 | `PgUp` | `page-up` | Page up in the theme list |
 | `Enter` | `activate-list-item` | Switch to the selected color theme |
 
-# User Listings
-| Keybinding | Event Name | Description |
-| ---------- | ---------- | ----------- |
-| `Esc`, `C-c` | `cancel` | Close the user search list |
-| `C-p`, `Up` | `search-select-up` | Select the previous user |
-| `C-n`, `Down` | `search-select-down` | Select the next user |
-| `PgDown` | `page-down` | Page down in the user list |
-| `PgUp` | `page-up` | Page up in the user list |
-| `Enter` | `activate-list-item` | Interact with the selected user |
-
 # Channel Search Window
 | Keybinding | Event Name | Description |
 | ---------- | ---------- | ----------- |
@@ -143,16 +134,6 @@
 | `PgDown` | `page-down` | Page down in the channel list |
 | `PgUp` | `page-up` | Page up in the channel list |
 | `Enter` | `activate-list-item` | Join the selected channel |
-
-# Reaction Emoji Search Window
-| Keybinding | Event Name | Description |
-| ---------- | ---------- | ----------- |
-| `Esc`, `C-c` | `cancel` | Close the emoji search window |
-| `C-p`, `Up` | `search-select-up` | Select the previous emoji |
-| `C-n`, `Down` | `search-select-down` | Select the next emoji |
-| `PgDown` | `page-down` | Page down in the emoji list |
-| `PgUp` | `page-up` | Page up in the emoji list |
-| `Enter` | `activate-list-item` | Post the selected emoji reaction |
 
 # Message Viewer: Common
 | Keybinding | Event Name | Description |
@@ -200,4 +181,23 @@
 | ---------- | ---------- | ----------- |
 | `Esc`, `C-c` | `cancel` | Cancel attachment file browse |
 | `o` | `open-attachment` | Open the selected file using the URL open command |
+
+# Flagged Messages
+| Keybinding | Event Name | Description |
+| ---------- | ---------- | ----------- |
+| `Esc`, `C-c` | `cancel` | Exit post browsing |
+| `k`, `Up` | `select-up` | Select the previous message |
+| `j`, `Down` | `select-down` | Select the next message |
+| `f` | `flag-message` | Toggle the selected message flag |
+| `Enter` | `activate-list-item` | Jump to and select current message |
+
+# Reaction Emoji Search Window
+| Keybinding | Event Name | Description |
+| ---------- | ---------- | ----------- |
+| `Esc`, `C-c` | `cancel` | Close the emoji search window |
+| `C-p`, `Up` | `search-select-up` | Select the previous emoji |
+| `C-n`, `Down` | `search-select-down` | Select the next emoji |
+| `PgDown` | `page-down` | Page down in the emoji list |
+| `PgUp` | `page-up` | Page up in the emoji list |
+| `Enter` | `activate-list-item` | Post the selected emoji reaction |
 
