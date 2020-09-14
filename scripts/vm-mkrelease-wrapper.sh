@@ -10,6 +10,14 @@ HERE=$(cd `dirname $0`; pwd)
 ROOT=$HERE/..
 RELEASE_BRANCH=develop
 
+if ! which cabal >/dev/null 2>/dev/null
+then
+    if [ -d $HOME/.cabal/bin ]
+    then
+        PATH=$HOME/.cabal/bin:$PATH
+    fi
+fi
+
 cd $ROOT
 cabal new-update || cabal update
 git checkout $RELEASE_BRANCH
