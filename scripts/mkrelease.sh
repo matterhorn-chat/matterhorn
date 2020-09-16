@@ -25,6 +25,12 @@ RELEASE_BRANCH=develop
 
 CMD="([ -d matterhorn ] || git clone $REPO) && cd matterhorn && git checkout $RELEASE_BRANCH && git pull && bash scripts/vm-mkrelease-wrapper.sh"
 
+if tmux list-sessions | grep $SESSION >/dev/null
+then
+    echo "A release build is already running in tmux session $SESSION"
+    exit 1
+fi
+
 tmux \
     new-session -d -s $SESSION -n "ubuntu-1804" "ssh -A galois@vm-35-dd.eic.galois.com '$CMD'" \; \
     set-option -t $SESSION:0 remain-on-exit on \; \
@@ -36,3 +42,5 @@ tmux \
     set-option -t $SESSION:3 remain-on-exit on \; \
     new-window -d -t $SESSION -n "macos" "ssh -A grannysmith.galois.com '$CMD'" \; \
     set-option -t $SESSION:4 remain-on-exit on
+
+echo "Release builds are now running in tmux session $SESSION"
