@@ -237,8 +237,7 @@ renderUserCommandBox st hs =
                                         st^.csEditState.cedEditor.editContentsL) <>
                          "/" <> (show $ length curContents) <> "]"
                  , hBorderWithLabel $ withDefAttr clientEmphAttr $
-                   txt $ "In multi-line mode. Press " <>
-                         (ppBinding (getFirstDefaultBinding ToggleMultiLineEvent)) <>
+                   txt $ "In multi-line mode. Press " <> multiLineToggleKey <>
                          " to finish."
                  ]
 
@@ -264,6 +263,8 @@ renderUserCommandBox st hs =
                         ]
             _ -> emptyWidget
 
+        multiLineToggleKey = ppBinding $ getFirstDefaultBinding ToggleMultiLineEvent
+
         commandBox = case st^.csEditState.cedEphemeral.eesMultiline of
             False ->
                 let linesStr = "line" <> if numLines == 1 then "" else "s"
@@ -272,7 +273,8 @@ renderUserCommandBox st hs =
                    prompt : if multilineContent
                             then [ withDefAttr clientEmphAttr $
                                    str $ "[" <> show numLines <> " " <> linesStr <>
-                                         "; Enter: send, M-e: edit, Backspace: cancel] "
+                                         "; Enter: send, " <> T.unpack multiLineToggleKey <>
+                                         ": edit, Backspace: cancel] "
                                  , txt $ head curContents
                                  , showCursor MessageInput (Location (0,0)) $ str " "
                                  ]
