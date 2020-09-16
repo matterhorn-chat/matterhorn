@@ -33,4 +33,6 @@ tmux \
     new-window -d -t $SESSION -n "fedora" "ssh -A galois@vm-35-de.eic.galois.com '$CMD'" \; \
     set-option -t $SESSION:2 remain-on-exit on \; \
     new-window -d -t $SESSION -n "centos" "ssh -A galois@vm-35-a7.eic.galois.com '$CMD'" \; \
-    set-option -t $SESSION:3 remain-on-exit on
+    set-option -t $SESSION:3 remain-on-exit on \; \
+    new-window -d -t $SESSION -n "macos" "ssh -A grannysmith.galois.com '$CMD'" \; \
+    set-option -t $SESSION:4 remain-on-exit on
