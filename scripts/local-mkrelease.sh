@@ -27,7 +27,8 @@
 #
 #    Please make sure you have the correct access rights
 #    and the repository exists.
-#    Clone of 'git@github.com:matterhorn-chat/aspell-pipe.git' into submodule path 'submodules/aspell-pipe' failed
+#    Clone of 'git@github.com:matterhorn-chat/aspell-pipe.git' into
+#        submodule path 'submodules/aspell-pipe' failed
 #
 # When this occurs, the above sed update to gitmodules will fix the
 # references, but the cached URL's must also be dismissed:
