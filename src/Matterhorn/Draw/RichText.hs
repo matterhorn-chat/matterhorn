@@ -476,10 +476,10 @@ renderElement curUser e = addStyle sty widget
             -- viewport to get it into view.
             EText t                      -> if t == T.singleton (cursorSentinel)
                                             then B.visible $ B.txt " "
-                                            else rawText t
+                                            else textWithCursor t
 
             ESpace                       -> B.txt " "
-            ERawHtml t                   -> rawText t
+            ERawHtml t                   -> textWithCursor t
             EEditSentinel recent         -> let attr = if recent
                                                        then editedRecentlyMarkingAttr
                                                        else editedMarkingAttr
