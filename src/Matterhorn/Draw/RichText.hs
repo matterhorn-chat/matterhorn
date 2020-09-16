@@ -115,12 +115,13 @@ data MessageData =
                 -- author's name (True) or just display it to the right
                 -- of the author's name (False).
                 , mdMessageWidthLimit :: Maybe Int
-                -- ^ A width override to use to wrap non-code blocks. If
+                -- ^ A width override to use to wrap non-code blocks
+                -- and code blocks without syntax highlighting. If
                 -- unspecified, all blocks in the message will be
                 -- wrapped and truncated at the width specified by the
                 -- rendering context. If specified, all non-code blocks
-                -- will be wrapped at this width and code blocks will be
-                -- rendered using the context's width.
+                -- will be wrapped at this width and highlighted code
+                -- blocks will be rendered using the context's width.
                 , mdMyUsername :: Text
                 -- ^ The username of the user running Matterhorn.
                 }
@@ -357,11 +358,18 @@ codeBlockToWidget syntaxMap syntax tx =
 rawCodeBlockToWidget :: Text -> Widget a
 rawCodeBlockToWidget tx =
     B.withDefAttr codeAttr $
-        let padding = B.padLeftRight 1 (B.vLimit (length theLines) B.vBorder)
-            theLines = expandEmpty <$> T.lines tx
-            expandEmpty "" = " "
-            expandEmpty s  = s
-        in padding <+> (B.vBox $ textWithCursor <$> theLines)
+        Widget Greedy Fixed $ do
+            c <- B.getContext
+            let theLines = expandEmpty <$> T.lines tx
+                expandEmpty "" = " "
+                expandEmpty s  = s
+            renderedText <- render (B.hLimit (c^.B.availWidthL - 3) $ B.vBox $
+                                    wrappedTextWithCursor <$> theLines)
+
+            let textHeight = V.imageHeight $ renderedText^.imageL
+                padding = B.padLeftRight 1 (B.vLimit textHeight B.vBorder)
+
+            render $ padding <+> (Widget Fixed Fixed $ return renderedText)
 
 toElementChunk :: Text -> Maybe Int -> Seq Element -> HighlightSet -> Widget a
 toElementChunk curUser w es hSet = B.Widget B.Fixed B.Fixed $ do
@@ -500,6 +508,11 @@ textWithCursor :: Text -> Widget a
 textWithCursor t
     | T.any (== cursorSentinel) t = B.visible $ B.txt $ removeCursor t
     | otherwise = B.txt t
+
+wrappedTextWithCursor :: Text -> Widget a
+wrappedTextWithCursor t
+    | T.any (== cursorSentinel) t = B.visible $ B.txtWrap $ removeCursor t
+    | otherwise = B.txtWrap t
 
 removeCursor :: Text -> Text
 removeCursor = T.filter (/= cursorSentinel)
