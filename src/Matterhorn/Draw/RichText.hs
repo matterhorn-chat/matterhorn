@@ -124,6 +124,9 @@ data MessageData =
                 -- blocks will be rendered using the context's width.
                 , mdMyUsername :: Text
                 -- ^ The username of the user running Matterhorn.
+                , mdWrapNonhighlightedCodeBlocks :: Bool
+                -- ^ Whether to wrap text in non-highlighted code
+                -- blocks.
                 }
 
 -- | renderMessage performs markdown rendering of the specified message.
@@ -228,7 +231,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
         multiLnLayout hs w nameElems bs =
             if mdIndentBlocks
                then vBox [ hBox nameElems
-                         , hBox [B.txt "  ", renderRichText mdMyUsername hs ((subtract 2) <$> w) bs]
+                         , hBox [B.txt "  ", renderRichText mdMyUsername hs ((subtract 2) <$> w) mdWrapNonhighlightedCodeBlocks bs]
                          ]
                else nameNextToMessage hs w nameElems bs
 
@@ -236,7 +239,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
             Widget Fixed Fixed $ do
                 nameResult <- render $ hBox nameElems
                 let newW = subtract (V.imageWidth (nameResult^.imageL)) <$> w
-                render $ hBox [raw (nameResult^.imageL), renderRichText mdMyUsername hs newW bs]
+                render $ hBox [raw (nameResult^.imageL), renderRichText mdMyUsername hs newW mdWrapNonhighlightedCodeBlocks bs]
 
         breakCheck e = eData e `elem` [ELineBreak, ESoftBreak]
 
@@ -256,9 +259,9 @@ cursorSentinel :: Char
 cursorSentinel = '‸'
 
 -- Render markdown with username highlighting
-renderRichText :: Text -> HighlightSet -> Maybe Int -> Seq RichTextBlock -> Widget a
-renderRichText curUser hSet w =
-  B.vBox . toList . fmap (blockToWidget curUser hSet w) . addBlankLines
+renderRichText :: Text -> HighlightSet -> Maybe Int -> Bool -> Seq RichTextBlock -> Widget a
+renderRichText curUser hSet w wrap =
+  B.vBox . toList . fmap (blockToWidget curUser hSet w wrap) . addBlankLines
 
 -- Add blank lines only between adjacent elements of the same type, to
 -- save space
@@ -287,7 +290,7 @@ renderText :: Text -> Widget a
 renderText txt = renderText' "" emptyHSet txt
 
 renderText' :: Text -> HighlightSet -> Text -> Widget a
-renderText' curUser hSet t = renderRichText curUser hSet Nothing rtBs
+renderText' curUser hSet t = renderRichText curUser hSet Nothing True rtBs
   where rtBs = parseMarkdown t
 
 vBox :: F.Foldable f => f (Widget a) -> Widget a
@@ -303,28 +306,30 @@ maybeHLimit :: Maybe Int -> Widget a -> Widget a
 maybeHLimit Nothing w = w
 maybeHLimit (Just i) w = hLimit i w
 
-blockToWidget :: Text -> HighlightSet -> Maybe Int -> RichTextBlock -> Widget a
-blockToWidget curUser hSet w (Para is) =
+blockToWidget :: Text -> HighlightSet -> Maybe Int -> Bool -> RichTextBlock -> Widget a
+blockToWidget curUser hSet w _ (Para is) =
     toElementChunk curUser w is hSet
-blockToWidget curUser hSet w (Header n is) =
+blockToWidget curUser hSet w _ (Header n is) =
     B.withDefAttr clientHeaderAttr $
         hBox [B.padRight (B.Pad 1) $ header n, toElementChunk curUser (subtract 1 <$> w) is hSet]
-blockToWidget curUser hSet w (Blockquote is) =
+blockToWidget curUser hSet w wrap (Blockquote is) =
     maybeHLimit w $
-    addQuoting (vBox $ fmap (blockToWidget curUser hSet w) is)
-blockToWidget curUser hSet w (List _ l bs) =
+    addQuoting (vBox $ fmap (blockToWidget curUser hSet w wrap) is)
+blockToWidget curUser hSet w wrap (List _ l bs) =
     maybeHLimit w $
-    blocksToList curUser l w bs hSet
-blockToWidget _ hSet _ (CodeBlock ci tx) =
-    let f = maybe rawCodeBlockToWidget (codeBlockToWidget (hSyntaxMap hSet)) mSyntax
+    blocksToList curUser l w wrap bs hSet
+blockToWidget _ hSet _ wrap (CodeBlock ci tx) =
+    let f = maybe (rawCodeBlockToWidget wrap)
+                  (codeBlockToWidget (hSyntaxMap hSet) wrap)
+                  mSyntax
         mSyntax = do
             lang <- codeBlockLanguage ci
             Sky.lookupSyntax lang (hSyntaxMap hSet)
     in f tx
-blockToWidget _ _ w (HTMLBlock t) =
+blockToWidget _ _ w _ (HTMLBlock t) =
     maybeHLimit w $
     textWithCursor t
-blockToWidget _ _ w (HRule) =
+blockToWidget _ _ w _ (HRule) =
     maybeHLimit w $
     B.vLimit 1 (B.fill '*')
 
@@ -344,27 +349,30 @@ addQuoting w =
                           , B.Widget B.Fixed B.Fixed $ return childResult
                           ]
 
-codeBlockToWidget :: Sky.SyntaxMap -> Sky.Syntax -> Text -> Widget a
-codeBlockToWidget syntaxMap syntax tx =
+codeBlockToWidget :: Sky.SyntaxMap -> Bool -> Sky.Syntax -> Text -> Widget a
+codeBlockToWidget syntaxMap wrap syntax tx =
     let result = Sky.tokenize cfg syntax tx
         cfg = Sky.TokenizerConfig syntaxMap False
     in case result of
-        Left _ -> rawCodeBlockToWidget tx
+        Left _ -> rawCodeBlockToWidget wrap tx
         Right tokLines ->
             let padding = B.padLeftRight 1 (B.vLimit (length tokLines) B.vBorder)
             in (B.txt $ "[" <> Sky.sName syntax <> "]") B.<=>
                (padding <+> BS.renderRawSource textWithCursor tokLines)
 
-rawCodeBlockToWidget :: Text -> Widget a
-rawCodeBlockToWidget tx =
-    B.withDefAttr codeAttr $
-        Widget Greedy Fixed $ do
+rawCodeBlockToWidget :: Bool -> Text -> Widget a
+rawCodeBlockToWidget wrap tx =
+    let hPolicy = if wrap then Greedy else Fixed
+    in B.withDefAttr codeAttr $
+        Widget hPolicy Fixed $ do
             c <- B.getContext
             let theLines = expandEmpty <$> T.lines tx
                 expandEmpty "" = " "
                 expandEmpty s  = s
+                wrapFunc = if wrap then wrappedTextWithCursor
+                                   else textWithCursor
             renderedText <- render (B.hLimit (c^.B.availWidthL - 3) $ B.vBox $
-                                    wrappedTextWithCursor <$> theLines)
+                                    wrapFunc <$> theLines)
 
             let textHeight = V.imageHeight $ renderedText^.imageL
                 padding = B.padLeftRight 1 (B.vLimit textHeight B.vBorder)
@@ -378,9 +386,9 @@ toElementChunk curUser w es hSet = B.Widget B.Fixed B.Fixed $ do
       ws    = fmap (renderElementSeq curUser) (wrapLine width hSet es)
   B.render (vBox (fmap hBox ws))
 
-blocksToList :: Text -> ListType -> Maybe Int -> Seq (Seq RichTextBlock) -> HighlightSet -> Widget a
-blocksToList curUser lt w bs hSet = vBox
-  [ B.txt i <+> (vBox (fmap (blockToWidget curUser hSet w) b))
+blocksToList :: Text -> ListType -> Maybe Int -> Bool -> Seq (Seq RichTextBlock) -> HighlightSet -> Widget a
+blocksToList curUser lt w wrap bs hSet = vBox
+  [ B.txt i <+> (vBox (fmap (blockToWidget curUser hSet w wrap) b))
   | b <- F.toList bs
   | i <- is ]
   where is = case lt of

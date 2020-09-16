@@ -259,6 +259,7 @@ renderUserCommandBox st hs =
                           , mdShowReactions     = True
                           , mdMessageWidthLimit = Nothing
                           , mdMyUsername        = myUsername st
+                          , mdWrapNonhighlightedCodeBlocks = True
                           }
                         ]
             _ -> emptyWidget
@@ -572,6 +573,7 @@ inputPreview st hs | not $ st^.csShowMessagePreview = emptyWidget
                                   , mdShowReactions     = True
                                   , mdMessageWidthLimit = Nothing
                                   , mdMyUsername        = myUsername st
+                                  , mdWrapNonhighlightedCodeBlocks = True
                                   }
                  in (maybePreviewViewport msgPreview) <=>
                     hBorderWithLabel (withDefAttr clientEmphAttr $ str "[Preview ↑]")
