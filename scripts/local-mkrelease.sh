@@ -126,8 +126,8 @@ function install_tools {
         # NB: If the version of Cabal that comes with your GHC does not
         # match the one that was used to build your cabal-install tool,
         # then this tool will get built with the wrong version of Cabal.
-        # Then later it will complain about that version mismatch. If
-        # that happens, try setting the Cabal constraint during this
+        # Then later it will complain about that version mismatch. To
+        # account for that, we set the Cabal constraint during this
         # tool's build to match your cabal-install's reported library
         # version, e.g.,
         #
@@ -137,7 +137,8 @@ function install_tools {
         #
         # cabal install --constraint="Cabal==2.4.1.0"
 
-        cabal install
+        CABAL_VER=$(cabal --version | grep compiled | awk '{ print $4 }')
+        cabal install --constraint="Cabal==$CABAL_VER"
         mkdir -p $CABAL_DEPS_TOOL_DIR
         cd $ROOT && rm -rf $BUILD
     fi
