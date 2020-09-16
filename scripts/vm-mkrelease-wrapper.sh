@@ -19,8 +19,8 @@ then
 fi
 
 cd $ROOT
-cabal new-update || cabal update
 git checkout $RELEASE_BRANCH
 git pull
 git submodule update --init
+cabal new-update || cabal update
 scripts/local-mkrelease.sh
