@@ -29,7 +29,7 @@ import           Network.Mattermost.Types ( ChannelId, Type(Direct, Private, Gro
 
 
 import           Matterhorn.Constants
-import           Matterhorn.Draw.ChannelList ( renderChannelList )
+import           Matterhorn.Draw.ChannelList ( renderChannelList, renderChannelListHeader )
 import           Matterhorn.Draw.Messages
 import           Matterhorn.Draw.Autocomplete
 import           Matterhorn.Draw.URLList
@@ -329,9 +329,45 @@ renderChannelHeader st hs chan =
 renderCurrentChannelDisplay :: ChatState -> HighlightSet -> Widget Name
 renderCurrentChannelDisplay st hs = header <=> messages
     where
-    header = withDefAttr channelHeaderAttr $
-             padRight Max $
-             renderChannelHeader st hs chan
+    header =
+        if st^.csShowChannelList
+        then channelHeader
+        else vBox [ headerWithStatus
+                  , hBorder
+                  ]
+
+    headerWithStatus =
+        -- Render the channel list header next to the channel header
+        -- itself. We want them to be separated by a vertical border,
+        -- but we want the border to be as high as the tallest of the
+        -- two. To make that work we need to render the two and then
+        -- render a border between them that is the same height as the
+        -- taller of the two. We can't do that without making a custom
+        -- widget which is why we take this approach here rather than
+        -- just putting them all in an hBox.
+        Widget Fixed Fixed $ do
+            ctx <- getContext
+            statusBox <- render $
+                hLimit (configChannelListWidth $ st^.csResources.crConfiguration) $
+                       (renderChannelListHeader st)
+
+            let channelHeaderWidth = ctx^.availWidthL -
+                                     (Vty.imageWidth $ statusBox^.imageL) - 1
+
+            channelHeaderResult <- render $ hLimit channelHeaderWidth channelHeader
+
+            let maxHeight = max (Vty.imageHeight $ statusBox^.imageL)
+                                (Vty.imageHeight $ channelHeaderResult^.imageL)
+
+            render $ hBox [ Widget Fixed Fixed $ return statusBox
+                          , vLimit maxHeight vBorder
+                          , Widget Fixed Fixed $ return channelHeaderResult
+                          ]
+
+    channelHeader =
+        withDefAttr channelHeaderAttr $
+        renderChannelHeader st hs chan
+
     messages = padTop Max $ padRight (Pad 1) body
 
     body = chatText
