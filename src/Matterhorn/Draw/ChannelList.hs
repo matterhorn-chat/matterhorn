@@ -53,7 +53,11 @@ data ChannelListEntryData =
                          }
 
 renderChannelListHeader :: ChatState -> Widget Name
-renderChannelListHeader st = teamHeader <=> selfHeader
+renderChannelListHeader st =
+    vBox [ teamHeader
+         , selfHeader
+         , unreadCountHeader
+         ]
     where
         myUsername_ = myUsername st
         teamHeader = hCenter $
@@ -65,6 +69,8 @@ renderChannelListHeader st = teamHeader <=> selfHeader
         teamNameStr = sanitizeUserText $ MM.teamDisplayName $ st^.csMyTeam
         statusSigil = maybe ' ' userSigilFromInfo me
         me = userById (myUserId st) st
+        unreadCountHeader = hCenter $ txt $ "Unread: " <> (T.pack $ show unreadCount)
+        unreadCount = sum $ (channelListGroupUnread . fst) <$> Z.toList (st^.csFocus)
 
 renderChannelList :: ChatState -> Widget Name
 renderChannelList st =
