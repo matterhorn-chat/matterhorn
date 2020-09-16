@@ -352,18 +352,18 @@ data TokenSource =
     | TokenCommand Text
     deriving (Eq, Read, Show)
 
--- | The type of channel list group headings. Booleans indicate whether
--- any channels in the group have unread activity.
+-- | The type of channel list group headings. Integer arguments indicate
+-- total number of channels in the group that have unread activity.
 data ChannelListGroup =
-    ChannelGroupPublicChannels Bool
-    | ChannelGroupPrivateChannels Bool
-    | ChannelGroupDirectMessages Bool
+    ChannelGroupPublicChannels Int
+    | ChannelGroupPrivateChannels Int
+    | ChannelGroupDirectMessages Int
     deriving (Eq)
 
 channelListGroupHasUnread :: ChannelListGroup -> Bool
-channelListGroupHasUnread (ChannelGroupPublicChannels u) = u
-channelListGroupHasUnread (ChannelGroupPrivateChannels u) = u
-channelListGroupHasUnread (ChannelGroupDirectMessages u) = u
+channelListGroupHasUnread (ChannelGroupPublicChannels n)  = n > 0
+channelListGroupHasUnread (ChannelGroupPrivateChannels n) = n > 0
+channelListGroupHasUnread (ChannelGroupDirectMessages n)  = n > 0
 
 -- | The type of channel list entries.
 data ChannelListEntry =
@@ -511,21 +511,21 @@ mkChannelZipperList :: UTCTime
                     -> Users
                     -> [(ChannelListGroup, [ChannelListEntry])]
 mkChannelZipperList now config cconfig prefs cs us =
-    [ let (anyUnread, entries) = getChannelEntriesInOrder cs Ordinary
-      in (ChannelGroupPublicChannels anyUnread, entries)
-    , let (anyUnread, entries) = getChannelEntriesInOrder cs Private
-      in (ChannelGroupPrivateChannels anyUnread, entries)
-    , (ChannelGroupDirectMessages False, getDMChannelEntriesInOrder now config cconfig prefs us cs)
+    [ let (unread, entries) = getChannelEntriesInOrder cs Ordinary
+      in (ChannelGroupPublicChannels unread, entries)
+    , let (unread, entries) = getChannelEntriesInOrder cs Private
+      in (ChannelGroupPrivateChannels unread, entries)
+    , (ChannelGroupDirectMessages 0, getDMChannelEntriesInOrder now config cconfig prefs us cs)
     ]
 
-getChannelEntriesInOrder :: ClientChannels -> Type -> (Bool, [ChannelListEntry])
+getChannelEntriesInOrder :: ClientChannels -> Type -> (Int, [ChannelListEntry])
 getChannelEntriesInOrder cs ty =
     let matches (_, info) = info^.ccInfo.cdType == ty
         pairs = filteredChannels matches cs
-        anyUnread = or $ (hasUnread' . snd) <$> pairs
+        unread = length $ filter (== True) $ (hasUnread' . snd) <$> pairs
         entries = fmap (CLChannel . fst) $
                   sortBy (comparing ((^.ccInfo.cdDisplayName.to T.toLower) . snd)) pairs
-    in (anyUnread, entries)
+    in (unread, entries)
 
 getDMChannelEntriesInOrder :: UTCTime
                            -> Config
