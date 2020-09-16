@@ -63,7 +63,6 @@ module Matterhorn.Types
 
   , mkChannelZipperList
   , ChannelListGroup(..)
-  , channelListGroupHasUnread
   , channelListGroupUnread
 
   , trimChannelSigil
@@ -365,9 +364,6 @@ channelListGroupUnread :: ChannelListGroup -> Int
 channelListGroupUnread (ChannelGroupPublicChannels n)  = n
 channelListGroupUnread (ChannelGroupPrivateChannels n) = n
 channelListGroupUnread (ChannelGroupDirectMessages n)  = n
-
-channelListGroupHasUnread :: ChannelListGroup -> Bool
-channelListGroupHasUnread = (> 0) . channelListGroupUnread
 
 -- | The type of channel list entries.
 data ChannelListEntry =
