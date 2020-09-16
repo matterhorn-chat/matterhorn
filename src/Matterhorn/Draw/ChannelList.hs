@@ -16,7 +16,7 @@
 --     channels matching the entered text (and highlighting the
 --     matching portion).
 
-module Matterhorn.Draw.ChannelList (renderChannelList) where
+module Matterhorn.Draw.ChannelList (renderChannelList, renderChannelListHeader) where
 
 import           Prelude ()
 import           Matterhorn.Prelude
@@ -52,19 +52,25 @@ data ChannelListEntryData =
                          , entryUserStatus  :: Maybe UserStatus
                          }
 
+renderChannelListHeader :: ChatState -> Widget Name
+renderChannelListHeader st = teamHeader <=> selfHeader
+    where
+        myUsername_ = myUsername st
+        teamHeader = hCenter $
+                     withDefAttr clientEmphAttr $
+                     txt $ "Team: " <> teamNameStr
+        selfHeader = hCenter $
+                     colorUsername myUsername_ myUsername_
+                         (T.singleton statusSigil <> " " <> userSigil <> myUsername_)
+        teamNameStr = sanitizeUserText $ MM.teamDisplayName $ st^.csMyTeam
+        statusSigil = maybe ' ' userSigilFromInfo me
+        me = userById (myUserId st) st
+
 renderChannelList :: ChatState -> Widget Name
 renderChannelList st =
     viewport ChannelList Vertical body
     where
-        teamHeader = hCenter $
-                     withDefAttr clientEmphAttr $
-                     txt $ "Team: " <> teamNameStr
         myUsername_ = myUsername st
-        me = userById (myUserId st) st
-        statusSigil = maybe ' ' userSigilFromInfo me
-        selfHeader = hCenter $
-                     colorUsername myUsername_ myUsername_ (T.singleton statusSigil <> " " <> userSigil <> myUsername_)
-        teamNameStr = sanitizeUserText $ MM.teamDisplayName $ st^.csMyTeam
         body = case appMode st of
             ChannelSelect ->
                 let zipper = st^.csChannelSelectState.channelSelectMatches
@@ -73,14 +79,12 @@ renderChannelList st =
                               else (renderChannelListGroup st (renderChannelSelectListEntry (Z.focus zipper)) <$>
                                    Z.toList zipper)
                 in vBox $
-                   teamHeader :
-                   selfHeader :
+                   renderChannelListHeader st :
                    matches
             _ ->
                 cached ChannelSidebar $
                 vBox $
-                teamHeader :
-                selfHeader :
+                renderChannelListHeader st :
                 (renderChannelListGroup st (\s e -> renderChannelListEntry myUsername_ $ mkChannelEntryData s e) <$>
                     Z.toList (st^.csFocus))
 
