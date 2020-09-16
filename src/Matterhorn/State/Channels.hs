@@ -116,8 +116,8 @@ updateSidebar = do
 
     -- Update the window title based on the unread status of the
     -- channels.
-    let anyUnread = any channelListGroupHasUnread $ fst <$> zl
-        title = "matterhorn" <> if anyUnread then "(*)" else ""
+    let unread = sum $ (channelListGroupUnread . fst) <$> zl
+        title = "matterhorn" <> if unread > 0 then "(" <> show unread <> ")" else ""
 
     vty <- mh getVtyHandle
     liftIO $ Vty.setWindowTitle vty title
