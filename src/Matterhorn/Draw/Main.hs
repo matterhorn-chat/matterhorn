@@ -366,6 +366,7 @@ renderCurrentChannelDisplay st hs = header <=> messages
 
     channelHeader =
         withDefAttr channelHeaderAttr $
+        padRight Max $
         renderChannelHeader st hs chan
 
     messages = padTop Max $ padRight (Pad 1) body
