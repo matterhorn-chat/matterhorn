@@ -759,7 +759,6 @@ data ProgramOutput =
     ProgramOutput { program :: FilePath
                   , programArgs :: [String]
                   , programStdout :: String
-                  , programStdoutExpected :: Bool
                   , programStderr :: String
                   , programExitCode :: ExitCode
                   }

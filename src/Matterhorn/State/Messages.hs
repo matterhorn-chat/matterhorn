@@ -647,7 +647,7 @@ runNotifyCommand post mentioned = do
                 let messageString = T.unpack $ sanitizeUserText $ postMessage post
                     notified = if mentioned then "1" else "2"
                     sender = T.unpack $ maybePostUsername st post
-                runLoggedCommand False outputChan (T.unpack cmd)
+                runLoggedCommand outputChan (T.unpack cmd)
                                  [notified, sender, messageString] Nothing Nothing
                 return Nothing
 

@@ -41,7 +41,7 @@ findAndRunScript cId scriptName input = do
 runScript :: ChannelId -> STM.TChan ProgramOutput -> FilePath -> Text -> IO (Maybe (MH ()))
 runScript cId outputChan fp text = do
   outputVar <- newEmptyMVar
-  runLoggedCommand True outputChan fp [] (Just $ T.unpack text) (Just outputVar)
+  runLoggedCommand outputChan fp [] (Just $ T.unpack text) (Just outputVar)
   po <- takeMVar outputVar
   return $ case programExitCode po of
     ExitSuccess -> do

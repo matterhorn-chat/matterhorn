@@ -181,7 +181,7 @@ openWithOpener getTarget = do
                 False -> do
                     outputChan <- use (csResources.crSubprocessLog)
                     doAsyncWith Preempt $ do
-                        runLoggedCommand False outputChan (T.unpack urlOpenCommand)
+                        runLoggedCommand outputChan (T.unpack urlOpenCommand)
                                          [target] Nothing Nothing
                         return Nothing
                 True -> do
@@ -244,9 +244,7 @@ runInteractiveCommand cmd args = do
             ec <- waitForProcess ph
             return $ Right ec
 
-runLoggedCommand :: Bool
-                 -- ^ Whether stdout output is expected for this program
-                 -> STM.TChan ProgramOutput
+runLoggedCommand :: STM.TChan ProgramOutput
                  -- ^ The output channel to send the output to
                  -> String
                  -- ^ The program name
@@ -257,7 +255,7 @@ runLoggedCommand :: Bool
                  -> Maybe (MVar ProgramOutput)
                  -- ^ Where to put the program output when it is ready
                  -> IO ()
-runLoggedCommand stdoutOkay outputChan cmd args mInput mOutputVar = void $ forkIO $ do
+runLoggedCommand outputChan cmd args mInput mOutputVar = void $ forkIO $ do
     let stdIn = maybe NoStream (const CreatePipe) mInput
         opener = (proc cmd args) { std_in = stdIn
                                  , std_out = CreatePipe
@@ -266,7 +264,7 @@ runLoggedCommand stdoutOkay outputChan cmd args mInput mOutputVar = void $ forkI
     result <- try $ createProcess opener
     case result of
         Left (e::SomeException) -> do
-            let po = ProgramOutput cmd args "" stdoutOkay (show e) (ExitFailure 1)
+            let po = ProgramOutput cmd args "" (show e) (ExitFailure 1)
             STM.atomically $ STM.writeTChan outputChan po
             maybe (return ()) (flip putMVar po) mOutputVar
         Right (stdinResult, Just outh, Just errh, ph) -> do
@@ -280,7 +278,7 @@ runLoggedCommand stdoutOkay outputChan cmd args mInput mOutputVar = void $ forkI
             ec <- waitForProcess ph
             outResult <- hGetContents outh
             errResult <- hGetContents errh
-            let po = ProgramOutput cmd args outResult stdoutOkay errResult ec
+            let po = ProgramOutput cmd args outResult errResult ec
             STM.atomically $ STM.writeTChan outputChan po
             maybe (return ()) (flip putMVar po) mOutputVar
         Right _ ->

@@ -97,14 +97,10 @@ startTypingUsersRefreshThread requestChan = void $ forkIO $ forever refresh
 startSubprocessLoggerThread :: STM.TChan ProgramOutput -> RequestChan -> IO ()
 startSubprocessLoggerThread logChan requestChan = do
     let logMonitor mPair = do
-          ProgramOutput progName args out stdoutOkay err ec <-
+          ProgramOutput progName args out err ec <-
               STM.atomically $ STM.readTChan logChan
 
-          -- If either stdout or stderr is non-empty or there was an exit
-          -- failure, log it and notify the user.
-          let emptyOutput s = null s || s == "\n"
-
-          case ec == ExitSuccess && (emptyOutput out || stdoutOkay) && emptyOutput err of
+          case ec == ExitSuccess of
               -- the "good" case, no output and exit sucess
               True -> logMonitor mPair
               False -> do
@@ -115,18 +111,11 @@ startSubprocessLoggerThread logChan requestChan = do
                           tmp <- getTemporaryDirectory
                           openTempFile tmp "matterhorn-subprocess.log"
 
-                  let unexpectedStdout = and [ ec == ExitSuccess
-                                             , not $ emptyOutput out
-                                             , not stdoutOkay
-                                             ]
-
                   hPutStrLn logHandle $
                       unlines [ "Program: " <> progName
                               , "Arguments: " <> show args
                               , "Exit code: " <> show ec
-                              , if unexpectedStdout
-                                then "Stdout (unexpected due to successful exit):"
-                                else "Stdout:"
+                              , "Stdout:"
                               , out
                               , "Stderr:"
                               , err
