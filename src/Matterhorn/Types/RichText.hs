@@ -258,7 +258,8 @@ fromMarkdownInlines inlines =
                   t' = T.concat $ t : (unsafeGetStr <$> F.toList uFrags)
                   u = T.drop 1 t'
               in Element sty (EUser u) <| go sty rest
-          C.Str t :< xs | normalChannelSigil `T.isPrefixOf` t ->
+          C.Str t :< xs | normalChannelSigil `T.isPrefixOf` t &&
+                          (T.length t > T.length normalChannelSigil) ->
               let (cFrags, rest) = Seq.spanl isNameFragment xs
                   cn = T.drop 1 $ T.concat $ t : (unsafeGetStr <$> F.toList cFrags)
               in Element sty (EChannel cn) <| go sty rest
