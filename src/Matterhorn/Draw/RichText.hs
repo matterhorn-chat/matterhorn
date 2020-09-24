@@ -429,12 +429,30 @@ wrapLine maxCols hSet = splitChunks . go (SplitState (S.singleton S.empty) 0)
 
               addHyperlink url el = setElementStyle (Hyperlink url (eStyle el)) el
 
+              linkOpenBracket = Element Normal (EText "<")
+              linkCloseBracket = Element Normal (EText ">")
+              addOpenBracket l =
+                  case Seq.viewl l of
+                      EmptyL -> l
+                      h :< t ->
+                          let h' = Element Normal
+                                           (ENonBreaking $ Seq.fromList [linkOpenBracket, h])
+                          in h' <| t
+              addCloseBracket l =
+                  case Seq.viewr l of
+                      EmptyR -> l
+                      h :> t ->
+                          let t' = Element Normal
+                                           (ENonBreaking $ Seq.fromList [t, linkCloseBracket])
+                          in h |> t'
+              decorateLinkLabel = addOpenBracket .  addCloseBracket
+
               st' =
                   case newEData of
                       EHyperlink url (Just labelEs) ->
-                          go st $ addHyperlink url <$> labelEs
+                          go st $ addHyperlink url <$> decorateLinkLabel labelEs
                       EImage url (Just labelEs) ->
-                          go st $ addHyperlink url <$> labelEs
+                          go st $ addHyperlink url <$> decorateLinkLabel labelEs
                       _ ->
                           if | newEData == ESoftBreak || newEData == ELineBreak ->
                                  st { splitChunks = splitChunks st |> S.empty
@@ -487,6 +505,7 @@ renderElement curUser e = addStyle sty widget
                                             else textWithCursor t
 
             ESpace                       -> B.txt " "
+            ENonBreaking es              -> hBox $ renderElement curUser <$> es
             ERawHtml t                   -> textWithCursor t
             EEditSentinel recent         -> let attr = if recent
                                                        then editedRecentlyMarkingAttr
@@ -531,6 +550,7 @@ editMarking = "(edited)"
 elementWidth :: Element -> Int
 elementWidth e =
     case eData e of
+        ENonBreaking es              -> sum $ elementWidth <$> es
         EText t                      -> B.textWidth t
         ERawHtml t                   -> B.textWidth t
         EUser t                      -> T.length userSigil + B.textWidth t

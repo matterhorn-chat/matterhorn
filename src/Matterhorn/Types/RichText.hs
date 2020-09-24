@@ -146,6 +146,9 @@ data ElementData =
     | EEmoji Text
     -- ^ An emoji reference. The text here includes only the text
     -- portion, not the colons, e.g. "foo" instead of ":foo:".
+    | ENonBreaking (Seq Element)
+    -- ^ A sequence of elements that must never be separated during line
+    -- wrapping.
     deriving (Show, Eq)
 
 -- | Element visual styles.
