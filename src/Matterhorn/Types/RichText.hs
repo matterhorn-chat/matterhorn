@@ -264,7 +264,9 @@ fromMarkdownInlines inlines =
           C.Str t :< xs | normalChannelSigil `T.isPrefixOf` t ->
               let (cFrags, rest) = Seq.spanl isNameFragment xs
                   cn = T.drop 1 $ T.concat $ t : (unsafeGetStr <$> F.toList cFrags)
-              in Element sty (EChannel cn) <| go sty rest
+              in if not (T.null cn)
+                 then Element sty (EChannel cn) <| go sty rest
+                 else Element sty (EText normalChannelSigil) <| go sty xs
           C.Str t :< xs ->
               -- When we encounter a string node, we go ahead and
               -- process the rest of the nodes in the sequence. If the
