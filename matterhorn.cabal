@@ -49,6 +49,7 @@ library
                        Matterhorn.Constants
                        Matterhorn.Draw
                        Matterhorn.Draw.Autocomplete
+                       Matterhorn.Draw.Buttons
                        Matterhorn.Draw.ChannelList
                        Matterhorn.Draw.ChannelListOverlay
                        Matterhorn.Draw.ChannelTopicWindow
