@@ -3,9 +3,6 @@ module Matterhorn.State.ChannelTopicWindow
   )
 where
 
-import           Prelude ()
-import           Matterhorn.Prelude
-
 import           Lens.Micro.Platform ( (.=) )
 
 import           Matterhorn.Types
