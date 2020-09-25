@@ -17,7 +17,6 @@ import           Network.Mattermost.Lenses
 import           Network.Mattermost.Types
 
 import           Matterhorn.Constants ( userSigil )
-import           Matterhorn.Draw.Main
 import           Matterhorn.Draw.Messages
 import           Matterhorn.Draw.Util
 import           Matterhorn.Themes
@@ -32,9 +31,8 @@ hLimitWithPadding pad contents = Widget
       withReaderT (& availWidthL  %~ (\ n -> n - (2 * pad))) $ render $ cropToContext contents
   }
 
-drawPostListOverlay :: PostListContents -> ChatState -> [Widget Name]
-drawPostListOverlay contents st =
-  (joinBorders $ drawPostsBox contents st) : (drawMain False st)
+drawPostListOverlay :: PostListContents -> ChatState -> Widget Name
+drawPostListOverlay contents st = joinBorders $ drawPostsBox contents st
 
 -- | Draw a PostListOverlay as a floating overlay on top of whatever
 -- is rendered beneath it

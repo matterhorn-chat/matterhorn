@@ -11,17 +11,12 @@ import Brick
 import Brick.Widgets.Border
 import Brick.Widgets.Center
 
-import Matterhorn.Draw.Main
 import Matterhorn.Themes
 import Matterhorn.Types
 
 
-drawDeleteChannelConfirm :: ChatState -> [Widget Name]
+drawDeleteChannelConfirm :: ChatState -> Widget Name
 drawDeleteChannelConfirm st =
-    confirmBox st : (drawMain False st)
-
-confirmBox :: ChatState -> Widget Name
-confirmBox st =
     let cName = st^.csCurrentChannel.ccInfo.cdName
     in centerLayer $ hLimit 50 $ vLimit 15 $
        withDefAttr dialogAttr $

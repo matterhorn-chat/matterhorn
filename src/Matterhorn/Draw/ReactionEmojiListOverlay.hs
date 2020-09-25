@@ -10,13 +10,12 @@ import           Brick
 import           Brick.Widgets.List ( listSelectedFocusedAttr )
 import qualified Data.Text as T
 
-import           Matterhorn.Draw.Main
 import           Matterhorn.Draw.ListOverlay ( drawListOverlay, OverlayPosition(..) )
 import           Matterhorn.Types
 import           Matterhorn.Themes
 
 
-drawReactionEmojiListOverlay :: ChatState -> [Widget Name]
+drawReactionEmojiListOverlay :: ChatState -> Widget Name
 drawReactionEmojiListOverlay st =
     let overlay = drawListOverlay (st^.csReactionEmojiListOverlay)
                                   (const $ txt "Search Emoji")
@@ -26,7 +25,7 @@ drawReactionEmojiListOverlay st =
                                   Nothing
                                   OverlayCenter
                                   80
-    in joinBorders overlay : drawMain False st
+    in joinBorders overlay
 
 renderEmoji :: Bool -> (Bool, T.Text) -> Widget Name
 renderEmoji sel (mine, e) =

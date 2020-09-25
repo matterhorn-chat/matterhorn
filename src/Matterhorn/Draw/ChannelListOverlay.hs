@@ -13,14 +13,13 @@ import           Text.Wrap ( defaultWrapSettings, preserveIndentation )
 import           Network.Mattermost.Types
 import           Network.Mattermost.Lenses
 
-import           Matterhorn.Draw.Main
 import           Matterhorn.Draw.ListOverlay ( drawListOverlay, OverlayPosition(..) )
 import           Matterhorn.Types
 import           Matterhorn.Types.Common ( sanitizeUserText )
 import           Matterhorn.Themes
 
 
-drawChannelListOverlay :: ChatState -> [Widget Name]
+drawChannelListOverlay :: ChatState -> Widget Name
 drawChannelListOverlay st =
     let overlay = drawListOverlay (st^.csChannelListOverlay) channelSearchScopeHeader
                                   channelSearchScopeNoResults channelSearchScopePrompt
@@ -28,7 +27,7 @@ drawChannelListOverlay st =
                                   Nothing
                                   OverlayCenter
                                   80
-    in joinBorders overlay : drawMain False st
+    in joinBorders overlay
 
 channelSearchScopePrompt :: ChannelSearchScope -> Widget Name
 channelSearchScopePrompt scope =

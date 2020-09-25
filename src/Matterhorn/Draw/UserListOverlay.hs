@@ -14,14 +14,13 @@ import qualified Brick.Widgets.List as L
 import qualified Data.Text as T
 import qualified Graphics.Vty as V
 
-import           Matterhorn.Draw.Main
 import           Matterhorn.Draw.Util ( userSigilFromInfo )
 import           Matterhorn.Draw.ListOverlay ( drawListOverlay, OverlayPosition(..) )
 import           Matterhorn.Themes
 import           Matterhorn.Types
 
 
-drawUserListOverlay :: ChatState -> [Widget Name]
+drawUserListOverlay :: ChatState -> Widget Name
 drawUserListOverlay st =
     let overlay = drawListOverlay (st^.csUserListOverlay) userSearchScopeHeader
                                   userSearchScopeNoResults userSearchScopePrompt
@@ -29,7 +28,7 @@ drawUserListOverlay st =
                                   Nothing
                                   OverlayCenter
                                   80
-    in joinBorders overlay : drawMain False st
+    in joinBorders overlay
 
 userSearchScopePrompt :: UserSearchScope -> Widget Name
 userSearchScopePrompt scope =
