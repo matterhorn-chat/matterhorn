@@ -17,12 +17,11 @@ import           Matterhorn.Types
 import           Matterhorn.Types.KeyEvents
 import           Matterhorn.Events.Keybindings ( getFirstDefaultBinding )
 import           Matterhorn.Themes
-import           Matterhorn.Draw.Main ( drawMain )
 
 
-drawManageAttachments :: ChatState -> [Widget Name]
+drawManageAttachments :: ChatState -> Widget Name
 drawManageAttachments st =
-    topLayer : drawMain False st
+    topLayer
     where
         topLayer = case appMode st of
             ManageAttachments -> drawAttachmentList st

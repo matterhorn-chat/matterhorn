@@ -27,20 +27,24 @@ import Matterhorn.Types
 draw :: ChatState -> [Widget Name]
 draw st =
     case appMode st of
-        Main                       -> drawMain True st
-        UrlSelect                  -> drawMain True st
-        ShowHelp topic _           -> drawShowHelp topic st
-        ChannelSelect              -> drawMain True st
-        LeaveChannelConfirm        -> drawLeaveChannelConfirm st
-        MessageSelect              -> drawMain True st
-        MessageSelectDeleteConfirm -> drawMain True st
-        DeleteChannelConfirm       -> drawDeleteChannelConfirm st
-        ThemeListOverlay           -> drawThemeListOverlay st
-        PostListOverlay contents   -> drawPostListOverlay contents st
-        UserListOverlay            -> drawUserListOverlay st
-        ChannelListOverlay         -> drawChannelListOverlay st
-        ReactionEmojiListOverlay   -> drawReactionEmojiListOverlay st
-        ViewMessage                -> drawTabbedWindow (st^.csViewedMessage.singular _Just._2) st : drawMain False st
-        ManageAttachments          -> drawManageAttachments st
-        ManageAttachmentsBrowseFiles -> drawManageAttachments st
-        EditNotifyPrefs            -> drawNotifyPrefs st : drawMain False st
+        Main                         -> mainLayers
+        UrlSelect                    -> mainLayers
+        ChannelSelect                -> mainLayers
+        MessageSelect                -> mainLayers
+        MessageSelectDeleteConfirm   -> mainLayers
+        ShowHelp topic _             -> drawShowHelp topic st
+        ThemeListOverlay             -> drawThemeListOverlay st : mainLayers
+        LeaveChannelConfirm          -> drawLeaveChannelConfirm st : mainLayersMonochrome
+        DeleteChannelConfirm         -> drawDeleteChannelConfirm st : mainLayersMonochrome
+        PostListOverlay contents     -> drawPostListOverlay contents st : mainLayersMonochrome
+        UserListOverlay              -> drawUserListOverlay st : mainLayersMonochrome
+        ChannelListOverlay           -> drawChannelListOverlay st : mainLayersMonochrome
+        ReactionEmojiListOverlay     -> drawReactionEmojiListOverlay st : mainLayersMonochrome
+        ViewMessage                  -> drawTabbedWindow messageViewWindow st : mainLayersMonochrome
+        ManageAttachments            -> drawManageAttachments st : mainLayersMonochrome
+        ManageAttachmentsBrowseFiles -> drawManageAttachments st : mainLayersMonochrome
+        EditNotifyPrefs              -> drawNotifyPrefs st : mainLayersMonochrome
+    where
+        mainLayers = drawMain True st
+        mainLayersMonochrome = drawMain False st
+        messageViewWindow = st^.csViewedMessage.singular _Just._2

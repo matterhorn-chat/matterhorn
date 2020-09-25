@@ -14,7 +14,6 @@ import qualified Brick.Widgets.List as L
 import           Brick.Widgets.Border ( hBorder )
 import           Brick.Widgets.Center ( hCenter )
 
-import           Matterhorn.Draw.Main
 import           Matterhorn.Draw.ListOverlay ( drawListOverlay, OverlayPosition(..) )
 import           Matterhorn.Themes
 import           Matterhorn.Types
@@ -22,7 +21,7 @@ import           Matterhorn.Types.KeyEvents ( ppBinding )
 import           Matterhorn.Events.Keybindings
 
 
-drawThemeListOverlay :: ChatState -> [Widget Name]
+drawThemeListOverlay :: ChatState -> Widget Name
 drawThemeListOverlay st =
     let overlay = drawListOverlay (st^.csThemeListOverlay)
                                   (const $ txt "Themes")
@@ -41,7 +40,7 @@ drawThemeListOverlay st =
         enter = emph $ txt $ ppBinding (getFirstDefaultBinding ActivateListItemEvent)
         close = emph $ txt $ ppBinding (getFirstDefaultBinding CancelEvent)
         emph = withDefAttr clientEmphAttr
-    in joinBorders overlay : drawMain True st
+    in joinBorders overlay
 
 renderInternalTheme :: Bool -> InternalTheme -> Widget Name
 renderInternalTheme foc it =
