@@ -25,21 +25,15 @@ import           Matterhorn.Themes
 drawChannelTopicWindow :: ChatState -> Widget Name
 drawChannelTopicWindow st =
     centerLayer $
-    hLimit 70 $
+    hLimit windowWidth $
     joinBorders $
     borderWithLabel (withDefAttr clientEmphAttr $ txt "Edit Channel Topic") $
-    vBox [ vLimit 5 $
-           withFocusRing foc (renderEditor (txt . T.unlines))
-                             (st^.csChannelTopicDialog.channelTopicDialogEditor)
+    vBox [ vLimit editorHeight $
+           withFocusRing foc (renderEditor drawTopicEditorTxt) ed
          , hBorderWithLabel (withDefAttr clientEmphAttr $ txt "Preview")
-         , vLimit 5 $
+         , vLimit previewHeight $
            viewport ChannelTopicEditorPreview Vertical $
-           renderText' ""
-                       (getHighlightSet st)
-                       (T.unlines $
-                        getEditContents $
-                        (applyEdit (gotoEOL >>> insertChar cursorSentinel)
-                         (st^.csChannelTopicDialog.channelTopicDialogEditor)))
+           renderText' "" hSet topicTxtWithCursor
          , hBorder
          , hBox [ padRight Max $
                   padLeft (Pad 1) $
@@ -49,4 +43,13 @@ drawChannelTopicWindow st =
                 ]
          ]
     where
+        editorHeight = 5
+        previewHeight = 5
+        windowWidth = 70
         foc = st^.csChannelTopicDialog.channelTopicDialogFocus
+        ed = st^.csChannelTopicDialog.channelTopicDialogEditor
+        hSet = getHighlightSet st
+        topicTxtWithCursor = T.unlines $
+                             getEditContents $
+                             applyEdit (gotoEOL >>> insertChar cursorSentinel) ed
+        drawTopicEditorTxt = txt . T.unlines
