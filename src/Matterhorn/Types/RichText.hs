@@ -68,7 +68,7 @@ data ListType =
     | Numbered NumDecoration Int
     -- ^ Number the items starting at the specified number; use the
     -- indicated decoration following the number.
-    deriving (Eq, Show)
+    deriving (Eq, Show, Ord)
 
 -- | Information about a code block.
 data CodeBlockInfo =
@@ -82,14 +82,14 @@ data CodeBlockInfo =
                   -- This text is separated from the language token by
                   -- whitespace.
                   }
-                  deriving (Eq, Show)
+                  deriving (Eq, Show, Ord)
 
 -- | Ways to decorate numbered itemized list items. The decoration
 -- follows the list item number.
 data NumDecoration =
     Paren
     | Period
-    deriving (Eq, Show)
+    deriving (Eq, Show, Ord)
 
 -- | A single logical inline element in a rich text block.
 data Element =
@@ -98,7 +98,7 @@ data Element =
             , eData :: ElementData
             -- ^ The element's data.
             }
-            deriving (Show, Eq)
+            deriving (Show, Eq, Ord)
 
 setElementStyle :: ElementStyle -> Element -> Element
 setElementStyle s e = e { eStyle = s }
@@ -149,7 +149,7 @@ data ElementData =
     | ENonBreaking (Seq Element)
     -- ^ A sequence of elements that must never be separated during line
     -- wrapping.
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- | Element visual styles.
 data ElementStyle =
@@ -164,7 +164,7 @@ data ElementStyle =
     | Hyperlink URL ElementStyle
     -- ^ A terminal hyperlink to the specified URL, composed with
     -- another element style
-    deriving (Eq, Show)
+    deriving (Eq, Show, Ord)
 
 parseMarkdown :: T.Text -> Seq RichTextBlock
 parseMarkdown t = fromMarkdownBlocks bs where C.Doc _ bs = C.markdown C.def t
