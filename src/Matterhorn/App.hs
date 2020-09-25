@@ -39,6 +39,7 @@ app = App
       ChannelListOverlay            -> showFirstCursor s cs
       ManageAttachmentsBrowseFiles  -> showFirstCursor s cs
       ThemeListOverlay              -> showFirstCursor s cs
+      ChannelTopicWindow            -> showCursorNamed ChannelTopicEditor cs
       LeaveChannelConfirm           -> Nothing
       DeleteChannelConfirm          -> Nothing
       MessageSelect                 -> Nothing

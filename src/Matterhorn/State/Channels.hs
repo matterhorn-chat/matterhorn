@@ -43,6 +43,7 @@ module Matterhorn.State.Channels
   , joinChannelByName
   , changeChannelByName
   , setChannelTopic
+  , getCurrentChannelTopic
   , beginCurrentChannelDeleteConfirm
   , toggleChannelListVisibility
   , showChannelInSidebar
@@ -1061,6 +1062,11 @@ setChannelTopic msg = do
     doAsyncChannelMM Preempt cId
         (\s _ -> MM.mmPatchChannel cId patch s)
         (\_ _ -> Nothing)
+
+getCurrentChannelTopic :: MH Text
+getCurrentChannelTopic = do
+    ch <- use csCurrentChannel
+    return $ ch^.ccInfo.cdHeader
 
 beginCurrentChannelDeleteConfirm :: MH ()
 beginCurrentChannelDeleteConfirm = do

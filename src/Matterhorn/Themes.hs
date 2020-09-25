@@ -49,6 +49,8 @@ module Matterhorn.Themes
   , editedRecentlyMarkingAttr
   , tabSelectedAttr
   , tabUnselectedAttr
+  , buttonAttr
+  , buttonFocusedAttr
 
   -- * Username formatting
   , colorUsername
@@ -202,6 +204,12 @@ misspellingAttr = "misspelling"
 messageSelectStatusAttr :: AttrName
 messageSelectStatusAttr = "messageSelectStatus"
 
+buttonAttr :: AttrName
+buttonAttr = "button"
+
+buttonFocusedAttr :: AttrName
+buttonFocusedAttr = buttonAttr <> "focused"
+
 lookupTheme :: Text -> Maybe InternalTheme
 lookupTheme n = find ((== n) . internalThemeName) internalThemes
 
@@ -249,6 +257,8 @@ lightAttrs :: [Attr] -> [(AttrName, Attr)]
 lightAttrs usernameColors =
     let sty = Sky.kate
     in [ (timeAttr,                         fg black)
+       , (buttonAttr,                       black `on` cyan)
+       , (buttonFocusedAttr,                black `on` yellow)
        , (currentUserAttr,                  defAttr `withStyle` bold)
        , (channelHeaderAttr,                fg black `withStyle` underline)
        , (channelListHeaderAttr,            fg cyan)
@@ -305,6 +315,8 @@ darkAttrs :: [Attr] -> [(AttrName, Attr)]
 darkAttrs usernameColors =
   let sty = Sky.espresso
   in [ (timeAttr,                         fg white)
+     , (buttonAttr,                       black `on` cyan)
+     , (buttonFocusedAttr,                black `on` yellow)
      , (currentUserAttr,                  defAttr `withStyle` bold)
      , (channelHeaderAttr,                fg white `withStyle` underline)
      , (channelListHeaderAttr,            fg cyan)
@@ -763,6 +775,12 @@ themeDocs = ThemeDocumentation $ M.fromList $
       )
     , ( FB.fileBrowserUnixSocketAttr
       , "Attribute for Unix sockets in the file browser"
+      )
+    , ( buttonAttr
+      , "Attribute for input form buttons"
+      )
+    , ( buttonFocusedAttr
+      , "Attribute for focused input form buttons"
       )
     , ( currentUserAttr
       , "Attribute for the username of the user running Matterhorn"

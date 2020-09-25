@@ -51,6 +51,7 @@ library
                        Matterhorn.Draw.Autocomplete
                        Matterhorn.Draw.ChannelList
                        Matterhorn.Draw.ChannelListOverlay
+                       Matterhorn.Draw.ChannelTopicWindow
                        Matterhorn.Draw.DeleteChannelConfirm
                        Matterhorn.Draw.LeaveChannelConfirm
                        Matterhorn.Draw.ListOverlay
@@ -71,6 +72,7 @@ library
                        Matterhorn.Events
                        Matterhorn.Events.ChannelListOverlay
                        Matterhorn.Events.ChannelSelect
+                       Matterhorn.Events.ChannelTopicWindow
                        Matterhorn.Events.DeleteChannelConfirm
                        Matterhorn.Events.EditNotifyPrefs
                        Matterhorn.Events.Keybindings
@@ -101,6 +103,7 @@ library
                        Matterhorn.State.ChannelListOverlay
                        Matterhorn.State.ChannelSelect
                        Matterhorn.State.Channels
+                       Matterhorn.State.ChannelTopicWindow
                        Matterhorn.State.Common
                        Matterhorn.State.Editing
                        Matterhorn.State.Flagging

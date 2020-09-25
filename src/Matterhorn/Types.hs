@@ -44,6 +44,10 @@ module Matterhorn.Types
   , ciPassword
   , ciType
   , ciAccessToken
+  , newChannelTopicDialog
+  , ChannelTopicDialogState(..)
+  , channelTopicDialogEditor
+  , channelTopicDialogFocus
   , Config(..)
   , HelpScreen(..)
   , PasswordSource(..)
@@ -74,6 +78,7 @@ module Matterhorn.Types
 
   , ChatState
   , newState
+  , csChannelTopicDialog
   , csResources
   , csFocus
   , csCurrentChannel
@@ -279,6 +284,7 @@ import           Matterhorn.Prelude
 import qualified Graphics.Vty as Vty
 import qualified Brick
 import           Brick ( EventM, Next, Widget )
+import           Brick.Focus ( FocusRing, focusRing )
 import           Brick.Themes ( Theme )
 import           Brick.Main ( invalidateCache, invalidateCacheEntry )
 import           Brick.AttrMap ( AttrMap )
@@ -679,6 +685,10 @@ data Name =
     | ChannelMentionsField
     | DesktopNotificationsField (WithDefault NotifyOption)
     | PushNotificationsField (WithDefault NotifyOption)
+    | ChannelTopicEditor
+    | ChannelTopicSaveButton
+    | ChannelTopicCancelButton
+    | ChannelTopicEditorPreview
     deriving (Eq, Show, Ord)
 
 -- | The sum type of exceptions we expect to encounter on authentication
@@ -1094,6 +1104,7 @@ data Mode =
     | ManageAttachments
     | ManageAttachmentsBrowseFiles
     | EditNotifyPrefs
+    | ChannelTopicWindow
     deriving (Eq)
 
 -- | We're either connected or we're not.
@@ -1355,6 +1366,9 @@ data ChatState =
               -- the current channel. This is set when entering
               -- EditNotifyPrefs mode and updated when the user
               -- changes the form state.
+              , _csChannelTopicDialog :: ChannelTopicDialogState
+              -- ^ The state for the interactive channel topic editor
+              -- window.
               }
 
 -- | Handles for the View Message window's tabs.
@@ -1381,6 +1395,11 @@ data StartupStateInfo =
                      , startupStateInitialHistory :: InputHistory
                      , startupStateSpellChecker   :: Maybe (Aspell, IO ())
                      }
+
+data ChannelTopicDialogState =
+    ChannelTopicDialogState { _channelTopicDialogEditor :: Editor T.Text Name
+                            , _channelTopicDialogFocus :: FocusRing Name
+                            }
 
 newState :: StartupStateInfo -> IO ChatState
 newState (StartupStateInfo {..}) = do
@@ -1413,7 +1432,17 @@ newState (StartupStateInfo {..}) = do
                      , _csPendingChannelChange        = Nothing
                      , _csViewedMessage               = Nothing
                      , _csNotifyPrefs                 = Nothing
+                     , _csChannelTopicDialog          = newChannelTopicDialog ""
                      }
+
+newChannelTopicDialog :: T.Text -> ChannelTopicDialogState
+newChannelTopicDialog t =
+    ChannelTopicDialogState { _channelTopicDialogEditor = editor ChannelTopicEditor Nothing t
+                            , _channelTopicDialogFocus = focusRing [ ChannelTopicEditor
+                                                                   , ChannelTopicSaveButton
+                                                                   , ChannelTopicCancelButton
+                                                                   ]
+                            }
 
 nullChannelListOverlayState :: ListOverlayState Channel ChannelSearchScope
 nullChannelListOverlayState =
@@ -1780,6 +1809,7 @@ makeLenses ''ListOverlayState
 makeLenses ''ChannelSelectState
 makeLenses ''UserPreferences
 makeLenses ''ConnectionInfo
+makeLenses ''ChannelTopicDialogState
 
 getSession :: MH Session
 getSession = use (csResources.crSession)

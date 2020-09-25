@@ -28,6 +28,7 @@ import           Matterhorn.Scripts
 import           Matterhorn.State.Help
 import           Matterhorn.State.Editing
 import           Matterhorn.State.Channels
+import           Matterhorn.State.ChannelTopicWindow
 import           Matterhorn.State.ChannelSelect
 import           Matterhorn.State.Logging
 import           Matterhorn.State.PostListOverlay
@@ -139,6 +140,10 @@ commandList =
   , Cmd "theme" "Set the color theme"
     (TokenArg "theme" NoArg) $ \ (themeName, ()) ->
       setTheme themeName
+
+  , Cmd "topic" "Set the current channel's topic (header) interactively"
+    NoArg $ \ () ->
+      openChannelTopicWindow
 
   , Cmd "topic" "Set the current channel's topic (header)"
     (LineArg "topic") $ \ p ->

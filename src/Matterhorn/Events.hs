@@ -35,6 +35,7 @@ import           Matterhorn.Types
 import           Matterhorn.Types.Common
 
 import           Matterhorn.Events.ChannelSelect
+import           Matterhorn.Events.ChannelTopicWindow
 import           Matterhorn.Events.DeleteChannelConfirm
 import           Matterhorn.Events.Keybindings
 import           Matterhorn.Events.LeaveChannelConfirm
@@ -203,6 +204,7 @@ handleGlobalEvent e = do
         ManageAttachments          -> onEventManageAttachments e
         ManageAttachmentsBrowseFiles -> onEventManageAttachments e
         EditNotifyPrefs            -> void $ onEventEditNotifyPrefs e
+        ChannelTopicWindow         -> onEventChannelTopicWindow e
 
 globalKeybindings :: KeyConfig -> KeyHandlerMap
 globalKeybindings = mkKeybindings globalKeyHandlers

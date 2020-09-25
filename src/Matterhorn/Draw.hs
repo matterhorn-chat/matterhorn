@@ -9,6 +9,7 @@ import Brick
 
 import Lens.Micro.Platform ( _2, singular, _Just )
 
+import Matterhorn.Draw.ChannelTopicWindow
 import Matterhorn.Draw.DeleteChannelConfirm
 import Matterhorn.Draw.LeaveChannelConfirm
 import Matterhorn.Draw.Main
@@ -44,3 +45,4 @@ draw st =
         ManageAttachments          -> drawManageAttachments st
         ManageAttachmentsBrowseFiles -> drawManageAttachments st
         EditNotifyPrefs            -> drawNotifyPrefs st : drawMain False st
+        ChannelTopicWindow         -> drawChannelTopicWindow st : drawMain False st
