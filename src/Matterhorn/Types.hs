@@ -1396,9 +1396,12 @@ data StartupStateInfo =
                      , startupStateSpellChecker   :: Maybe (Aspell, IO ())
                      }
 
+-- | The state of the channel topic editor window.
 data ChannelTopicDialogState =
     ChannelTopicDialogState { _channelTopicDialogEditor :: Editor T.Text Name
+                            -- ^ The topic string editor state.
                             , _channelTopicDialogFocus :: FocusRing Name
+                            -- ^ The window focus state (editor/buttons)
                             }
 
 newState :: StartupStateInfo -> IO ChatState
@@ -1435,6 +1438,7 @@ newState (StartupStateInfo {..}) = do
                      , _csChannelTopicDialog          = newChannelTopicDialog ""
                      }
 
+-- | Make a new channel topic editor window state.
 newChannelTopicDialog :: T.Text -> ChannelTopicDialogState
 newChannelTopicDialog t =
     ChannelTopicDialogState { _channelTopicDialogEditor = editor ChannelTopicEditor Nothing t
