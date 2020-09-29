@@ -25,7 +25,7 @@ import           Matterhorn.Themes
 drawChannelTopicWindow :: ChatState -> Widget Name
 drawChannelTopicWindow st =
     centerLayer $
-    hLimit windowWidth $
+    hLimit maxWindowWidth $
     joinBorders $
     borderWithLabel (withDefAttr clientEmphAttr $ txt "Edit Channel Topic") $
     vBox [ vLimit editorHeight $
@@ -45,7 +45,7 @@ drawChannelTopicWindow st =
     where
         editorHeight = 5
         previewHeight = 5
-        windowWidth = 70
+        maxWindowWidth = 70
         foc = st^.csChannelTopicDialog.channelTopicDialogFocus
         ed = st^.csChannelTopicDialog.channelTopicDialogEditor
         hSet = getHighlightSet st
