@@ -244,9 +244,10 @@ beginReplyCompose = do
     selected <- use (to getSelectedMessage)
     case selected of
         Just msg | isReplyable msg -> do
-            let Just p = msg^.mOriginalPost
+            rootMsg <- getReplyRootMessage msg
+            let Just p = rootMsg^.mOriginalPost
             setMode Main
-            csEditState.cedEditMode .= Replying msg p
+            csEditState.cedEditMode .= Replying rootMsg p
         _ -> return ()
 
 beginEditMessage :: MH ()

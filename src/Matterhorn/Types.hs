@@ -231,6 +231,7 @@ module Matterhorn.Types
   , requestQuit
   , getMessageForPostId
   , getParentMessage
+  , getReplyRootMessage
   , resetSpellCheckTimer
   , withChannel
   , withChannelOrDefault
@@ -1883,6 +1884,27 @@ getParentMessage st msg
     | InReplyTo pId <- msg^.mInReplyToMsg
       = st^.csPostMap.at(pId)
     | otherwise = Nothing
+
+getReplyRootMessage :: Message -> MH Message
+getReplyRootMessage msg = do
+    case postRootId =<< (msg^.mOriginalPost) of
+        Nothing -> return msg
+        Just rootId -> do
+            st <- use id
+            case getMessageForPostId st rootId of
+                -- NOTE: this case should never happen. This is the
+                -- case where a message has a root post ID but we
+                -- don't have a copy of the root post in storage. This
+                -- shouldn't happen because whenever we add a message
+                -- to a channel, we always fetch the parent post and
+                -- store it if it is in a thread. That should mean that
+                -- whenever we reply to a post, if that post is itself
+                -- a reply, we should have its root post in storage
+                -- and this case should never match. Even though it
+                -- shouldn't happen, rather than raising a BUG exception
+                -- here we'll just fall back to the input message.
+                Nothing -> return msg
+                Just m -> return m
 
 setUserStatus :: UserId -> Text -> MH ()
 setUserStatus uId t = do

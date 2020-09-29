@@ -33,6 +33,7 @@ import qualified Data.ByteString as BS
 import           Data.Char ( isSpace )
 import qualified Data.Foldable as F
 import qualified Data.Map as M
+import           Data.Maybe ( fromJust )
 import qualified Data.Set as S
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -471,11 +472,11 @@ replyToLatestMessage = do
   msgs <- use (csCurrentChannel . ccContents . cdMessages)
   case findLatestUserMessage isReplyable msgs of
     Just msg | isReplyable msg ->
-        do let Just p = msg^.mOriginalPost
+        do rootMsg <- getReplyRootMessage msg
            setMode Main
            cId <- use csCurrentChannelId
            mh $ invalidateCacheEntry $ ChannelMessages cId
-           csEditState.cedEditMode .= Replying msg p
+           csEditState.cedEditMode .= Replying rootMsg (fromJust $ rootMsg^.mOriginalPost)
     _ -> return ()
 
 data Direction = Forwards | Backwards
