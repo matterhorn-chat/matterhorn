@@ -13,7 +13,7 @@ Yes. See the Authentication section above.
 
 ## How can I get Matterhorn to render strikethrough Markdown text?
 
-Your terminal's termino settings may not expose the right capabilities
+Your terminal's terminfo settings may not expose the right capabilities
 to draw strikethrough text. The necessary capabilities are `smxx` (begin
 strikethrough) and `rmxx` (end strikethrough) and can be found by
 looking at the output of `infocmp -a`.
