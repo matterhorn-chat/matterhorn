@@ -256,7 +256,12 @@ fromMarkdownInlines inlines =
                           Just (strikethroughInlines, rest) ->
                               go Strikethrough strikethroughInlines <>
                               go sty rest
-                  _ -> Element sty (EText "~") <| go sty xs
+                  _ ->
+                      let (cFrags, rest) = Seq.spanl isNameFragment xs
+                          cn = T.drop 1 $ T.concat $ "~" : (unsafeGetStr <$> F.toList cFrags)
+                      in if not (T.null cn)
+                         then Element sty (EChannel cn) <| go sty rest
+                         else Element sty (EText normalChannelSigil) <| go sty xs
           C.Str ":" :< xs ->
               let validEmojiFragment (C.Str f) =
                       f `elem` ["_", "-"] || T.all isAlphaNum f
@@ -273,12 +278,6 @@ fromMarkdownInlines inlines =
                   t' = T.concat $ t : (unsafeGetStr <$> F.toList uFrags)
                   u = T.drop 1 t'
               in Element sty (EUser u) <| go sty rest
-          C.Str t :< xs | normalChannelSigil `T.isPrefixOf` t ->
-              let (cFrags, rest) = Seq.spanl isNameFragment xs
-                  cn = T.drop 1 $ T.concat $ t : (unsafeGetStr <$> F.toList cFrags)
-              in if not (T.null cn)
-                 then Element sty (EChannel cn) <| go sty rest
-                 else Element sty (EText normalChannelSigil) <| go sty xs
           C.Str t :< xs ->
               -- When we encounter a string node, we go ahead and
               -- process the rest of the nodes in the sequence. If the
