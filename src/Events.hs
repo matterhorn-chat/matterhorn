@@ -368,6 +368,7 @@ handleWSEvent we = do
         WMPluginStatusesChanged -> return ()
         WMPluginEnabled -> return ()
         WMPluginDisabled -> return ()
+        WMUnknownEvent {} -> return ()
 
 -- | Refresh client-accessible server configuration information. This
 -- is usually triggered when a reconnect event for the WebSocket to the
