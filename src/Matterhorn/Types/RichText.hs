@@ -157,6 +157,8 @@ data ElementStyle =
     -- ^ Normal text
     | Emph
     -- ^ Emphasized text
+    | Strikethrough
+    -- ^ Strikethrough text
     | Strong
     -- ^ Bold text
     | Code
@@ -245,6 +247,16 @@ fromMarkdownListType (C.Numbered wrap i) =
 fromMarkdownInlines :: Seq C.Inline -> Seq Element
 fromMarkdownInlines inlines =
     let go sty is = case Seq.viewl is of
+          C.Str "~" :< xs ->
+              case Seq.viewl xs of
+                  C.Str "~" :< xs2 ->
+                      case takeUntilStrikethroughEnd xs2 of
+                          Nothing -> Element sty (EText "~") <|
+                                     go sty xs
+                          Just (strikethroughInlines, rest) ->
+                              go Strikethrough strikethroughInlines <>
+                              go sty rest
+                  _ -> Element sty (EText "~") <| go sty xs
           C.Str ":" :< xs ->
               let validEmojiFragment (C.Str f) =
                       f `elem` ["_", "-"] || T.all isAlphaNum f
@@ -330,6 +342,21 @@ fromMarkdownInlines inlines =
           Seq.EmptyL -> mempty
 
     in go Normal inlines
+
+takeUntilStrikethroughEnd :: Seq C.Inline -> Maybe (Seq C.Inline, Seq C.Inline)
+takeUntilStrikethroughEnd is =
+    let go pos s = case Seq.viewl s of
+            C.Str "~" :< rest ->
+                case Seq.viewl rest of
+                    C.Str "~" :< _ ->
+                        Just pos
+                    _ -> go (pos + 1) rest
+            _ :< rest -> go (pos + 1) rest
+            Seq.EmptyL -> Nothing
+    in do
+        pos <- go 0 is
+        let (h, t) = Seq.splitAt pos is
+        return (h, Seq.drop 2 t)
 
 unsafeGetStr :: C.Inline -> Text
 unsafeGetStr (C.Str t) = t

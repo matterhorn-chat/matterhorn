@@ -522,6 +522,7 @@ renderElement curUser e = addStyle sty widget
         addStyle s = case s of
                 Normal                  -> id
                 Emph                    -> B.withDefAttr clientEmphAttr
+                Strikethrough           -> B.modifyDefAttr (`V.withStyle` V.strikethrough)
                 Strong                  -> B.withDefAttr clientStrongAttr
                 Code                    -> B.withDefAttr codeAttr
                 Hyperlink (URL url) innerSty ->
