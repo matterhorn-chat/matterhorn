@@ -11,6 +11,32 @@ Matterhorn details for use of session tokens.
 
 Yes. See the Authentication section above.
 
+## How can I get Matterhorn to render strikethrough Markdown text?
+
+Your terminal's termino settings may not expose the right capabilities
+to draw strikethrough text. The necessary capabilities are `smxx` (begin
+strikethrough) and `rmxx` (end strikethrough) and can be found by
+looking at the output of `infocmp -a`.
+
+To ensure that Matterhorn knows how to render strikethrough text
+for your terminal, you may need to modify your terminfo settings to
+advertise the right capabilities. The steps to do this are:
+
+1. Make a new terminfo file based on your current value of `TERM`.
+   For example, if `TERM` is `screen-256color`, then a good name is
+   `screen-256color-strike.terminfo`. Then add the capabilities to the
+   file and be sure to set `use` to the current value of `TERM`:
+```
+screen-256color-strike|screen with 256 colors and strikethrough,
+  smxx=\E[9m, rmxx=\E[29m,
+    use=screen-256color,
+```
+1. Then install the new terminfo profile with
+```
+tic -x screen-256color-strike.terminfo
+```
+1. Finally, run `matterhorn` with `TERM` set to `screen-256color-strike`.
+
 ## How can I get Matterhorn to render emphasized Markdown text with an italic font?
 
 In `~/.config/matterhorn/theme.ini`,
