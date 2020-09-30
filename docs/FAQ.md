@@ -26,15 +26,15 @@ advertise the right capabilities. The steps to do this are:
    For example, if `TERM` is `screen-256color`, then a good name is
    `screen-256color-strike.terminfo`. Then add the capabilities to the
    file and be sure to set `use` to the current value of `TERM`:
-```
-screen-256color-strike|screen with 256 colors and strikethrough,
-  smxx=\E[9m, rmxx=\E[29m,
-    use=screen-256color,
-```
+   ```
+   screen-256color-strike|screen with 256 colors and strikethrough,
+     smxx=\E[9m, rmxx=\E[29m,
+       use=screen-256color,
+   ```
 1. Then install the new terminfo profile with
-```
-tic -x screen-256color-strike.terminfo
-```
+   ```
+   tic -x screen-256color-strike.terminfo
+   ```
 1. Finally, run `matterhorn` with `TERM` set to `screen-256color-strike`.
 
 ## How can I get Matterhorn to render emphasized Markdown text with an italic font?
