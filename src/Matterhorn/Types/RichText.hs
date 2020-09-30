@@ -258,7 +258,7 @@ fromMarkdownInlines inlines =
                               go sty rest
                   _ ->
                       let (cFrags, rest) = Seq.spanl isNameFragment xs
-                          cn = T.drop 1 $ T.concat $ "~" : (unsafeGetStr <$> F.toList cFrags)
+                          cn = T.concat (unsafeGetStr <$> F.toList cFrags)
                       in if not (T.null cn)
                          then Element sty (EChannel cn) <| go sty rest
                          else Element sty (EText normalChannelSigil) <| go sty xs
