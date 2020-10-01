@@ -1,4 +1,12 @@
 
+50200.10.2
+==========
+
+Bug fixes:
+ * New websocket event types will no longer trigger JSON parsing
+   exceptions. This issue was causing websocket disconnections which led
+   to the client not getting server events.
+
 50200.10.1
 ==========
 
