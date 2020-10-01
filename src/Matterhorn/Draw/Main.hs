@@ -327,14 +327,12 @@ renderChannelHeader st hs chan =
          (T.map newlineToSpace (channelNameString <> maybeTopic))
 
 renderCurrentChannelDisplay :: ChatState -> HighlightSet -> Widget Name
-renderCurrentChannelDisplay st hs = header <=> messages
+renderCurrentChannelDisplay st hs = header <=> hBorder <=> messages
     where
     header =
         if st^.csShowChannelList
         then channelHeader
-        else vBox [ headerWithStatus
-                  , hBorder
-                  ]
+        else headerWithStatus
 
     headerWithStatus =
         -- Render the channel list header next to the channel header
