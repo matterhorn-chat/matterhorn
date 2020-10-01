@@ -370,7 +370,9 @@ handleWSEvent we = do
         WMPluginStatusesChanged -> return ()
         WMPluginEnabled -> return ()
         WMPluginDisabled -> return ()
-        WMUnknownEvent {} -> return ()
+        WMUnknownEvent {} ->
+            mhLog LogWebsocket $ T.pack $
+                "Websocket event not handled due to unknown event type: " <> show we
 
 -- | Refresh client-accessible server configuration information. This
 -- is usually triggered when a reconnect event for the WebSocket to the
