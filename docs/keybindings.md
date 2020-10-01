@@ -23,6 +23,7 @@
 | `C-r` | `reply-recent` | Reply to the most recent message |
 | `M-p` | `toggle-message-preview` | Toggle message preview |
 | `F2` | `toggle-channel-list-visibility` | Toggle channel list visibility |
+| `F3` | `toggle-expanded-channel-topics` | Toggle display of expanded channel topics |
 | `M-k` | `invoke-editor` | Invoke `$EDITOR` to edit the current message |
 | `C-g` | `enter-fast-select` | Enter fast channel selection mode |
 | `C-q` | `quit` | Quit |
