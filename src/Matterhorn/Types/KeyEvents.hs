@@ -53,6 +53,7 @@ data KeyEvent
   | ToggleMultiLineEvent
   | EnterFlaggedPostsEvent
   | ToggleChannelListVisibleEvent
+  | ToggleExpandedChannelTopicsEvent
   | ShowAttachmentListEvent
 
   | EditorKillToBolEvent
@@ -169,6 +170,7 @@ allEvents =
 
   , EnterFlaggedPostsEvent
   , ToggleChannelListVisibleEvent
+  , ToggleExpandedChannelTopicsEvent
   , ShowHelpEvent
   , EnterSelectModeEvent
   , EnterOpenURLModeEvent
@@ -389,6 +391,7 @@ keyEventName ev = case ev of
 
   EnterFlaggedPostsEvent    -> "show-flagged-posts"
   ToggleChannelListVisibleEvent -> "toggle-channel-list-visibility"
+  ToggleExpandedChannelTopicsEvent -> "toggle-expanded-channel-topics"
   ShowHelpEvent             -> "show-help"
   EnterSelectModeEvent      -> "select-mode"
   EnterOpenURLModeEvent     -> "enter-url-open"

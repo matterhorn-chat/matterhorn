@@ -213,6 +213,9 @@ commandList =
   , Cmd "toggle-channel-list" "Toggle channel list visibility" NoArg $ \_ ->
         toggleChannelListVisibility
 
+  , Cmd "toggle-expanded-topics" "Toggle expanded channel topics" NoArg $ \_ ->
+        toggleExpandedChannelTopics
+
   , Cmd "focus" "Focus on a channel or user"
     (ChannelArg NoArg) $ \ (name, ()) ->
         changeChannelByName name

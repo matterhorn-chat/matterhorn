@@ -101,6 +101,8 @@ fromIni = do
       (configShowMessagePreview defaultConfig)
     configShowChannelList <- fieldFlagDef "showChannelList"
       (configShowChannelList defaultConfig)
+    configShowExpandedChannelTopics <- fieldFlagDef "showExpandedChannelTopics"
+      (configShowExpandedChannelTopics defaultConfig)
     configShowTypingIndicator <- fieldFlagDef "showTypingIndicator"
       (configShowTypingIndicator defaultConfig)
     configEnableAspell <- fieldFlagDef "enableAspell"
@@ -231,6 +233,7 @@ defaultConfig =
            , configShowBackground              = Disabled
            , configShowMessagePreview          = False
            , configShowChannelList             = True
+           , configShowExpandedChannelTopics   = True
            , configEnableAspell                = False
            , configAspellDictionary            = Nothing
            , configUnsafeUseHTTP               = False

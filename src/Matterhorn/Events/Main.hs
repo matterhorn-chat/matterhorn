@@ -47,6 +47,9 @@ mainKeyHandlers =
     , mkKb ToggleChannelListVisibleEvent "Toggle channel list visibility"
         toggleChannelListVisibility
 
+    , mkKb ToggleExpandedChannelTopicsEvent "Toggle display of expanded channel topics"
+        toggleExpandedChannelTopics
+
     , mkKb
         InvokeEditorEvent
         "Invoke `$EDITOR` to edit the current message"

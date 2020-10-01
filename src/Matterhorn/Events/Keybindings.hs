@@ -175,6 +175,7 @@ defaultBindings ev =
         ToggleMultiLineEvent          -> [ meta (key 'e') ]
         EnterFlaggedPostsEvent        -> [ meta (key '8') ]
         ToggleChannelListVisibleEvent -> [ fn 2 ]
+        ToggleExpandedChannelTopicsEvent -> [ fn 3 ]
         SelectNextTabEvent            -> [ key '\t' ]
         SelectPreviousTabEvent        -> [ kb Vty.KBackTab ]
         LoadMoreEvent                 -> [ ctrl (key 'b') ]

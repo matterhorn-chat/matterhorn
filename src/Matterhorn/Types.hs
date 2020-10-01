@@ -86,6 +86,7 @@ module Matterhorn.Types
   , csUrlList
   , csShowMessagePreview
   , csShowChannelList
+  , csShowExpandedChannelTopics
   , csPostMap
   , csRecentChannel
   , csReturnChannel
@@ -427,6 +428,8 @@ data Config =
            -- ^ Whether to show the message preview area.
            , configShowChannelList :: Bool
            -- ^ Whether to show the channel list.
+           , configShowExpandedChannelTopics :: Bool
+           -- ^ Whether to show expanded channel topics.
            , configEnableAspell :: Bool
            -- ^ Whether to enable Aspell spell checking.
            , configAspellDictionary :: Maybe Text
@@ -1316,6 +1319,8 @@ data ChatState =
               -- ^ Whether to show the message preview area.
               , _csShowChannelList :: Bool
               -- ^ Whether to show the channel list.
+              , _csShowExpandedChannelTopics :: Bool
+              -- ^ Whether to show expanded channel topics.
               , _csChannelSelectState :: ChannelSelectState
               -- ^ The state of the user's input and selection for
               -- channel selection mode.
@@ -1420,6 +1425,7 @@ newState (StartupStateInfo {..}) = do
                      , _csMode                        = Main
                      , _csShowMessagePreview          = configShowMessagePreview $ _crConfiguration startupStateResources
                      , _csShowChannelList             = configShowChannelList $ _crConfiguration startupStateResources
+                     , _csShowExpandedChannelTopics   = configShowExpandedChannelTopics $ _crConn startupStateResources
                      , _csChannelSelectState          = emptyChannelSelectState
                      , _csRecentChannel               = Nothing
                      , _csReturnChannel               = Nothing
