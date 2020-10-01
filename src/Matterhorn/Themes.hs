@@ -23,6 +23,7 @@ module Matterhorn.Themes
   , channelNameAttr
   , clientMessageAttr
   , clientHeaderAttr
+  , strikeThroughAttr
   , clientEmphAttr
   , clientStrongAttr
   , dateTransitionAttr
@@ -186,6 +187,9 @@ clientMessageAttr = "clientMessage"
 clientHeaderAttr :: AttrName
 clientHeaderAttr = "markdownHeader"
 
+strikeThroughAttr :: AttrName
+strikeThroughAttr = "markdownStrikethrough"
+
 clientEmphAttr :: AttrName
 clientEmphAttr = "markdownEmph"
 
@@ -275,6 +279,7 @@ lightAttrs usernameColors =
        , (clientEmphAttr,                   fg black `withStyle` bold)
        , (clientStrongAttr,                 fg black `withStyle` bold `withStyle` underline)
        , (clientHeaderAttr,                 fg red `withStyle` bold)
+       , (strikeThroughAttr,                defAttr `withStyle` strikethrough)
        , (dateTransitionAttr,               fg green)
        , (newMessageTransitionAttr,         black `on` yellow)
        , (errorMessageAttr,                 fg red)
@@ -334,6 +339,7 @@ darkAttrs usernameColors =
      , (clientEmphAttr,                   fg white `withStyle` bold)
      , (clientStrongAttr,                 fg white `withStyle` bold `withStyle` underline)
      , (clientHeaderAttr,                 fg red `withStyle` bold)
+     , (strikeThroughAttr,                defAttr `withStyle` strikethrough)
      , (dateTransitionAttr,               fg green)
      , (newMessageTransitionAttr,         fg yellow `withStyle` bold)
      , (errorMessageAttr,                 fg red)
@@ -565,6 +571,9 @@ themeDocs = ThemeDocumentation $ M.fromList $
       )
     , ( clientHeaderAttr
       , "Markdown heading"
+      )
+    , ( strikeThroughAttr
+      , "Markdown strikethrough text"
       )
     , ( clientEmphAttr
       , "Markdown 'emphasized' text"

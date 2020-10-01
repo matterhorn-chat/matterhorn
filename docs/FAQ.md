@@ -37,6 +37,15 @@ advertise the right capabilities. The steps to do this are:
    ```
 1. Finally, run `matterhorn` with `TERM` set to `screen-256color-strike`.
 
+If your terminal does not support strikethrough, we recommend
+customizing the `markdownStrikethrough` theme attribute so that it has a
+different color to distinguish it from normal text, e.g.,
+
+```
+[other]
+markdownStrikethrough.fg = red
+```
+
 ## How can I get Matterhorn to render emphasized Markdown text with an italic font?
 
 In `~/.config/matterhorn/theme.ini`,
