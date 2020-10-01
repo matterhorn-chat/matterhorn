@@ -165,7 +165,7 @@ library
                      , microlens-platform   >= 0.3     && < 0.5
                      , brick                >= 0.57    && < 0.58
                      , brick-skylighting    >= 0.2     && < 0.4
-                     , vty                  >= 5.30    && < 5.31
+                     , vty                  >= 5.31    && < 5.32
                      , word-wrap            >= 0.4.0   && < 0.5
                      , transformers         >= 0.4     && < 0.6
                      , text-zipper          >= 0.10    && < 0.11
