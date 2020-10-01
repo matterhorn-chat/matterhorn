@@ -3,12 +3,13 @@
 set -e
 
 HERE=$(cd `dirname $0`; pwd)
+ROOT=$HERE/..
 
-COMMANDS=$HERE/docs/commands.md
-KEYBINDINGS=$HERE/docs/keybindings.md
+COMMANDS=$ROOT/docs/commands.md
+KEYBINDINGS=$ROOT/docs/keybindings.md
 
-$HERE/run.sh -m -f markdown > $COMMANDS
-$HERE/run.sh -k -f markdown > $KEYBINDINGS
+$ROOT/run.sh -m -f markdown > $COMMANDS
+$ROOT/run.sh -k -f markdown > $KEYBINDINGS
 
 if ! git diff --exit-code $COMMANDS $KEYBINDINGS >/dev/null
 then

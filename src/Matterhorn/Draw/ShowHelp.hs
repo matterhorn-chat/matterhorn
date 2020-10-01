@@ -392,6 +392,7 @@ themeHelp = vBox
         " * standout\n" <>
         " * underline\n" <>
         " * italic\n" <>
+        " * strikethrough\n" <>
         " * reverseVideo\n" <>
         " * blink\n" <>
         " * dim\n" <>

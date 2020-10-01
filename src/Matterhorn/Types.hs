@@ -86,6 +86,7 @@ module Matterhorn.Types
   , csUrlList
   , csShowMessagePreview
   , csShowChannelList
+  , csShowExpandedChannelTopics
   , csPostMap
   , csRecentChannel
   , csReturnChannel
@@ -427,6 +428,8 @@ data Config =
            -- ^ Whether to show the message preview area.
            , configShowChannelList :: Bool
            -- ^ Whether to show the channel list.
+           , configShowExpandedChannelTopics :: Bool
+           -- ^ Whether to show expanded channel topics.
            , configEnableAspell :: Bool
            -- ^ Whether to enable Aspell spell checking.
            , configAspellDictionary :: Maybe Text
@@ -1316,6 +1319,8 @@ data ChatState =
               -- ^ Whether to show the message preview area.
               , _csShowChannelList :: Bool
               -- ^ Whether to show the channel list.
+              , _csShowExpandedChannelTopics :: Bool
+              -- ^ Whether to show expanded channel topics.
               , _csChannelSelectState :: ChannelSelectState
               -- ^ The state of the user's input and selection for
               -- channel selection mode.
@@ -1408,6 +1413,7 @@ data ChannelTopicDialogState =
 newState :: StartupStateInfo -> IO ChatState
 newState (StartupStateInfo {..}) = do
     editState <- emptyEditState startupStateInitialHistory startupStateSpellChecker
+    let config = _crConfiguration startupStateResources
     return ChatState { _csResources                   = startupStateResources
                      , _csFocus                       = startupStateChannelZipper
                      , _csMe                          = startupStateConnectedUser
@@ -1418,8 +1424,9 @@ newState (StartupStateInfo {..}) = do
                      , _timeZone                      = startupStateTimeZone
                      , _csEditState                   = editState
                      , _csMode                        = Main
-                     , _csShowMessagePreview          = configShowMessagePreview $ _crConfiguration startupStateResources
-                     , _csShowChannelList             = configShowChannelList $ _crConfiguration startupStateResources
+                     , _csShowMessagePreview          = configShowMessagePreview config
+                     , _csShowChannelList             = configShowChannelList config
+                     , _csShowExpandedChannelTopics   = configShowExpandedChannelTopics config
                      , _csChannelSelectState          = emptyChannelSelectState
                      , _csRecentChannel               = Nothing
                      , _csReturnChannel               = Nothing

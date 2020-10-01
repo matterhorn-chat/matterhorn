@@ -41,6 +41,8 @@
 | `/theme` | List the available themes |
 | `/theme <theme>` | Set the color theme |
 | `/toggle-channel-list` | Toggle channel list visibility |
+| `/toggle-expanded-topics` | Toggle expanded channel topics |
+| `/topic` | Set the current channel's topic (header) interactively |
 | `/topic <topic>` | Set the current channel's topic (header) |
 | `/user` | Show users to initiate a private DM chat channel |
 | `/username-attribute <@user>` | Display the attribute used to color the specified username |

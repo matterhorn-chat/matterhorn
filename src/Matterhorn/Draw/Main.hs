@@ -304,9 +304,15 @@ renderChannelHeader st hs chan =
                            quote n = "\"" <> n <> "\""
                            nick = maybe "" quote $ u^.uiNickName
                        in s
+        firstTopicLine = case T.lines topicStr of
+            [h] -> h
+            (h:_:_) -> h
+            _ -> ""
         maybeTopic = if T.null topicStr
                      then ""
-                     else " - " <> topicStr
+                     else " - " <> if st^.csShowExpandedChannelTopics
+                                   then topicStr
+                                   else firstTopicLine
         channelNameString = case chnType of
             Direct ->
                 case chan^.ccInfo.cdDMUserId >>= flip userById st of
@@ -318,23 +324,19 @@ renderChannelHeader st hs chan =
                 channelNamePair <> " (Private group)"
             _ ->
                 channelNamePair
-        newlineToSpace '\n' = ' '
-        newlineToSpace c = c
         channelNamePair = mkChannelName (chan^.ccInfo) <> " - " <> (chan^.ccInfo.cdDisplayName)
 
     in renderText' (myUsername st)
          hs
-         (T.map newlineToSpace (channelNameString <> maybeTopic))
+         (channelNameString <> maybeTopic)
 
 renderCurrentChannelDisplay :: ChatState -> HighlightSet -> Widget Name
-renderCurrentChannelDisplay st hs = header <=> messages
+renderCurrentChannelDisplay st hs = header <=> hBorder <=> messages
     where
     header =
         if st^.csShowChannelList
         then channelHeader
-        else vBox [ headerWithStatus
-                  , hBorder
-                  ]
+        else headerWithStatus
 
     headerWithStatus =
         -- Render the channel list header next to the channel header
