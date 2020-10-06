@@ -12,7 +12,6 @@ import           Matterhorn.Prelude
 
 import           Brick
 import           Brick.Themes ( themeDescriptions )
-import           Brick.Widgets.Border
 import           Brick.Widgets.Center ( hCenter )
 import           Brick.Widgets.List ( listSelectedFocusedAttr )
 import qualified Data.Map as M
@@ -463,7 +462,6 @@ keybindSections =
 helpBox :: Name -> Widget Name -> Widget Name
 helpBox n helpText =
     withDefAttr helpAttr $
-    borderWithLabel (emph $ txt "Matterhorn Help") $
     viewport HelpViewport Vertical $
     cached n helpText
 
