@@ -197,7 +197,7 @@ renderChannelSelectListEntry curMatch st match =
                       else id
         entryData = mkChannelEntryData st entry
         decorate = if | entryMentions entryData > 0 && not (entryIsMuted entryData) ->
-                          forceAttr mentionsChannelAttr
+                          withDefAttr mentionsChannelAttr
                       | entryHasUnread entryData ->
                           withDefAttr unreadChannelAttr
                       | otherwise -> id
