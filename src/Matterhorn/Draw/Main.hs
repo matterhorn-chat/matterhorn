@@ -646,18 +646,19 @@ renderDeleteConfirm =
 
 mainInterface :: ChatState -> Widget Name
 mainInterface st =
-    vBox [ if st^.csShowChannelList || appMode st == ChannelSelect
+    vBox [ body
+         , bottomBorder
+         , inputPreview st hs
+         , userInputArea st hs
+         ]
+    where
+    body = if st^.csShowChannelList || appMode st == ChannelSelect
            then case st^.csChannelListOrientation of
                ChannelListLeft ->
                    hBox [channelList, vBorder, mainDisplay]
                ChannelListRight ->
                    hBox [mainDisplay, vBorder, channelList]
            else mainDisplay
-         , bottomBorder
-         , inputPreview st hs
-         , userInputArea st hs
-         ]
-    where
     channelList = hLimit channelListWidth (renderChannelList st)
     hs = getHighlightSet st
     channelListWidth = configChannelListWidth $ st^.csResources.crConfiguration
