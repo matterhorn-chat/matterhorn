@@ -204,8 +204,10 @@ renderChannelSelectListEntry curMatch st match =
                       then visible . withDefAttr currentChannelNameAttr
                       else id
         entryData = mkChannelEntryData st entry
+        decorate = if | entryHasUnread entryData -> withDefAttr unreadChannelAttr
+                      | otherwise -> id
     in maybeSelect $
-       decorateEntry entryData $
+       decorate $ decorateEntry entryData $
        padRight Max $
          hBox [ txt $ entrySigil entryData <> preMatch
               , forceAttr channelSelectMatchAttr $ txt inMatch
