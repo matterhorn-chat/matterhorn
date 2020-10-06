@@ -202,7 +202,7 @@ renderChannelSelectListEntry curMatch st match =
                           withDefAttr unreadChannelAttr
                       | otherwise -> id
     in maybeSelect $
-       decorate $ decorateEntry entryData $
+       decorate $ decorateEntry entryData $ decorateMentions entryData $
        padRight Max $
          hBox [ txt $ entrySigil entryData <> preMatch
               , forceAttr channelSelectMatchAttr $ txt inMatch
