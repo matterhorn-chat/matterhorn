@@ -360,17 +360,20 @@ renderCurrentChannelDisplay st hs = header <=> hBorder <=> messages
 
             let maxHeight = max (Vty.imageHeight $ statusBox^.imageL)
                                 (Vty.imageHeight $ channelHeaderResult^.imageL)
+                statusBoxWidget = Widget Fixed Fixed $ return statusBox
+                headerWidget = Widget Fixed Fixed $ return channelHeaderResult
+                borderWidget = vLimit maxHeight vBorder
 
             render $ hBox $ case st^.csChannelListOrientation of
                 ChannelListLeft ->
-                    [ Widget Fixed Fixed $ return statusBox
-                    , vLimit maxHeight vBorder
-                    , Widget Fixed Fixed $ return channelHeaderResult
+                    [ statusBoxWidget
+                    , borderWidget
+                    , headerWidget
                     ]
                 ChannelListRight ->
-                    [ Widget Fixed Fixed $ return channelHeaderResult
-                    , vLimit maxHeight vBorder
-                    , Widget Fixed Fixed $ return statusBox
+                    [ headerWidget
+                    , borderWidget
+                    , statusBoxWidget
                     ]
 
     channelHeader =
@@ -646,15 +649,16 @@ mainInterface st =
     vBox [ if st^.csShowChannelList || appMode st == ChannelSelect
            then case st^.csChannelListOrientation of
                ChannelListLeft ->
-                   hBox [hLimit channelListWidth (renderChannelList st), vBorder, mainDisplay]
+                   hBox [channelList, vBorder, mainDisplay]
                ChannelListRight ->
-                   hBox [mainDisplay, vBorder, hLimit channelListWidth (renderChannelList st)]
+                   hBox [mainDisplay, vBorder, channelList]
            else mainDisplay
          , bottomBorder
          , inputPreview st hs
          , userInputArea st hs
          ]
     where
+    channelList = hLimit channelListWidth (renderChannelList st)
     hs = getHighlightSet st
     channelListWidth = configChannelListWidth $ st^.csResources.crConfiguration
     mainDisplay = case appMode st of
