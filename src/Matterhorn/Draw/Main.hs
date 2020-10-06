@@ -361,10 +361,17 @@ renderCurrentChannelDisplay st hs = header <=> hBorder <=> messages
             let maxHeight = max (Vty.imageHeight $ statusBox^.imageL)
                                 (Vty.imageHeight $ channelHeaderResult^.imageL)
 
-            render $ hBox [ Widget Fixed Fixed $ return statusBox
-                          , vLimit maxHeight vBorder
-                          , Widget Fixed Fixed $ return channelHeaderResult
-                          ]
+            render $ hBox $ case st^.csChannelListOrientation of
+                ChannelListLeft ->
+                    [ Widget Fixed Fixed $ return statusBox
+                    , vLimit maxHeight vBorder
+                    , Widget Fixed Fixed $ return channelHeaderResult
+                    ]
+                ChannelListRight ->
+                    [ Widget Fixed Fixed $ return channelHeaderResult
+                    , vLimit maxHeight vBorder
+                    , Widget Fixed Fixed $ return statusBox
+                    ]
 
     channelHeader =
         withDefAttr channelHeaderAttr $
@@ -637,7 +644,11 @@ renderDeleteConfirm =
 mainInterface :: ChatState -> Widget Name
 mainInterface st =
     vBox [ if st^.csShowChannelList || appMode st == ChannelSelect
-           then hBox [hLimit channelListWidth (renderChannelList st), vBorder, mainDisplay]
+           then case st^.csChannelListOrientation of
+               ChannelListLeft ->
+                   hBox [hLimit channelListWidth (renderChannelList st), vBorder, mainDisplay]
+               ChannelListRight ->
+                   hBox [mainDisplay, vBorder, hLimit channelListWidth (renderChannelList st)]
            else mainDisplay
          , bottomBorder
          , inputPreview st hs

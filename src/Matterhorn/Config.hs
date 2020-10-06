@@ -116,6 +116,9 @@ fromIni = do
     configPass <- (Just . PasswordCommand <$> field "passcmd") <!>
                   (Just . PasswordString  <$> field "pass") <!>
                   pure Nothing
+    configChannelListOrientation <- fieldDefOf "channelListOrientation"
+        channelListOrientationField
+        (configChannelListOrientation defaultConfig)
     configToken <- (Just . TokenCommand  <$> field "tokencmd") <!>
                   pure Nothing
     configUnsafeUseHTTP <-
@@ -136,6 +139,13 @@ fromIni = do
               Nothing      -> return Nothing
               Just binding -> return (Just (ev, binding))
   return conf { configUserKeys = fromMaybe mempty keys }
+
+channelListOrientationField :: Text -> Either String ChannelListOrientation
+channelListOrientationField t =
+    case T.toLower t of
+        "left" -> return ChannelListLeft
+        "right" -> return ChannelListRight
+        _ -> Left $ "Invalid value for channelListOrientation: " <> show t
 
 syntaxDirsField :: Text -> Either String [FilePath]
 syntaxDirsField = listWithSeparator ":" string
@@ -248,6 +258,7 @@ defaultConfig =
            , configDirectChannelExpirationDays = 7
            , configCpuUsagePolicy              = MultipleCPUs
            , configDefaultAttachmentPath       = Nothing
+           , configChannelListOrientation      = ChannelListLeft
            }
 
 findConfig :: Maybe FilePath -> IO (Either String ([String], Config))

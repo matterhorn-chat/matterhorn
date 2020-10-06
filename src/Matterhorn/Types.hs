@@ -33,6 +33,7 @@ module Matterhorn.Types
   , ViewMessageWindowTab(..)
   , clearChannelUnreadStatus
   , ChannelListEntry(..)
+  , ChannelListOrientation(..)
   , channelListEntryChannelId
   , channelListEntryUserId
   , userIdsFromZipper
@@ -79,6 +80,7 @@ module Matterhorn.Types
   , ChatState
   , newState
   , csChannelTopicDialog
+  , csChannelListOrientation
   , csResources
   , csFocus
   , csCurrentChannel
@@ -465,6 +467,8 @@ data Config =
            -- ^ The CPU usage policy for the application.
            , configDefaultAttachmentPath :: Maybe FilePath
            -- ^ The default path for browsing attachments
+           , configChannelListOrientation :: ChannelListOrientation
+           -- ^ The orientation of the channel list.
            } deriving (Eq, Show)
 
 -- | The policy for CPU usage.
@@ -1284,6 +1288,13 @@ tabbedWindowPreviousTab w = do
     runTabShowHandlerFor newHandle newWin
     return newWin
 
+data ChannelListOrientation =
+    ChannelListLeft
+    -- ^ Show the channel list to the left of the message area.
+    | ChannelListRight
+    -- ^ Show the channel list to the right of the message area.
+    deriving (Eq, Show)
+
 -- | This is the giant bundle of fields that represents the current
 -- state of our application at any given time.
 data ChatState =
@@ -1293,6 +1304,8 @@ data ChatState =
               , _csFocus :: Z.Zipper ChannelListGroup ChannelListEntry
               -- ^ The channel sidebar zipper that tracks which channel
               -- is selected.
+              , _csChannelListOrientation :: ChannelListOrientation
+              -- ^ The orientation of the channel list.
               , _csMe :: User
               -- ^ The authenticated user.
               , _csMyTeam :: Team
@@ -1416,6 +1429,7 @@ newState (StartupStateInfo {..}) = do
     let config = _crConfiguration startupStateResources
     return ChatState { _csResources                   = startupStateResources
                      , _csFocus                       = startupStateChannelZipper
+                     , _csChannelListOrientation      = configChannelListOrientation config
                      , _csMe                          = startupStateConnectedUser
                      , _csMyTeam                      = startupStateTeam
                      , _csChannels                    = noChannels
