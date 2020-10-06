@@ -169,7 +169,7 @@ mkChannelEntryData st e =
 renderChannelListEntry :: Text -> ChannelListEntryData -> Widget Name
 renderChannelListEntry myUName entry = body
     where
-    body = decorate $ decorateEntry entry $ decorateMentions $ padRight Max $
+    body = decorate $ decorateEntry entry $ decorateMentions entry $ padRight Max $
            entryWidget $ entrySigil entry <> entryLabel entry
     decorate = if | entryIsCurrent entry ->
                       visible . forceAttr currentChannelNameAttr
@@ -182,14 +182,6 @@ renderChannelListEntry myUName entry = body
                     Just Offline -> withDefAttr clientMessageAttr . txt
                     Just _       -> colorUsername myUName (entryLabel entry)
                     Nothing      -> txt
-    decorateMentions
-      | entryMentions entry > 9 =
-        (<+> str "(9+)")
-      | entryMentions entry > 0 =
-        (<+> str ("(" <> show (entryMentions entry) <> ")"))
-      | entryIsMuted entry =
-        (<+> str "(m)")
-      | otherwise = id
 
 -- | Render an individual entry when in Channel Select mode,
 -- highlighting the matching portion, or completely suppressing the
@@ -204,7 +196,10 @@ renderChannelSelectListEntry curMatch st match =
                       then visible . withDefAttr currentChannelNameAttr
                       else id
         entryData = mkChannelEntryData st entry
-        decorate = if | entryHasUnread entryData -> withDefAttr unreadChannelAttr
+        decorate = if | entryMentions entryData > 0 && not (entryIsMuted entryData) ->
+                          forceAttr mentionsChannelAttr
+                      | entryHasUnread entryData ->
+                          withDefAttr unreadChannelAttr
                       | otherwise -> id
     in maybeSelect $
        decorate $ decorateEntry entryData $
@@ -226,6 +221,16 @@ decorateEntry entry =
     else if entryIsRecent entry
          then (<+> (withDefAttr recentMarkerAttr $ str recentChannelSigil))
          else id
+
+decorateMentions :: ChannelListEntryData -> Widget n -> Widget n
+decorateMentions entry
+  | entryMentions entry > 9 =
+      (<+> str "(9+)")
+  | entryMentions entry > 0 =
+      (<+> str ("(" <> show (entryMentions entry) <> ")"))
+  | entryIsMuted entry =
+      (<+> str "(m)")
+  | otherwise = id
 
 recentChannelSigil :: String
 recentChannelSigil = "<"
