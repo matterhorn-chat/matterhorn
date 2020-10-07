@@ -364,19 +364,19 @@ renderCurrentChannelDisplay st hs = header <=> hBorder <=> messages
                 headerWidget = Widget Fixed Fixed $ return channelHeaderResult
                 borderWidget = vLimit maxHeight vBorder
 
-            render $ hBox $ case st^.csChannelListOrientation of
-                ChannelListLeft ->
-                    [ if appMode st == ChannelSelect
-                      then emptyWidget
-                      else statusBoxWidget <+> borderWidget
-                    , headerWidget
-                    ]
-                ChannelListRight ->
-                    [ headerWidget
-                    , if appMode st == ChannelSelect
-                      then emptyWidget
-                      else borderWidget <+> statusBoxWidget
-                    ]
+            render $ if appMode st == ChannelSelect
+                        then headerWidget
+                        else hBox $ case st^.csChannelListOrientation of
+                            ChannelListLeft ->
+                                [ statusBoxWidget
+                                , borderWidget
+                                , headerWidget
+                                ]
+                            ChannelListRight ->
+                                [ headerWidget
+                                , borderWidget
+                                , statusBoxWidget
+                                ]
 
     channelHeader =
         withDefAttr channelHeaderAttr $
