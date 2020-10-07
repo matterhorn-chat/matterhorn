@@ -366,14 +366,16 @@ renderCurrentChannelDisplay st hs = header <=> hBorder <=> messages
 
             render $ hBox $ case st^.csChannelListOrientation of
                 ChannelListLeft ->
-                    [ statusBoxWidget
-                    , borderWidget
+                    [ if appMode st == ChannelSelect
+                      then emptyWidget
+                      else statusBoxWidget <+> borderWidget
                     , headerWidget
                     ]
                 ChannelListRight ->
                     [ headerWidget
-                    , borderWidget
-                    , statusBoxWidget
+                    , if appMode st == ChannelSelect
+                      then emptyWidget
+                      else borderWidget <+> statusBoxWidget
                     ]
 
     channelHeader =
