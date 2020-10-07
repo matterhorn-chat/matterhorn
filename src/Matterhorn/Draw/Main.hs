@@ -381,7 +381,7 @@ renderCurrentChannelDisplay st hs = header <=> hBorder <=> messages
         padRight Max $
         renderChannelHeader st hs chan
 
-    messages = padTop Max $ padRight (Pad 1) body
+    messages = padTop Max body
 
     body = chatText
 
