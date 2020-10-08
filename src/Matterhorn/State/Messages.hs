@@ -882,6 +882,14 @@ asyncFetchAttachments p = do
             csChannel(cId).ccContents.cdMessages.traversed %= addAttachment
             mh $ invalidateCacheEntry $ ChannelMessages cId
 
+-- | Given a post ID, switch to that post's channel and select the post
+-- in message selection mode.
+--
+-- This function will do what it can to honor the request even when we
+-- don't know about the post because it hasn't been fetched, or when
+-- the post is in a channel that we aren't a member of. In each case a
+-- reasonable effort will be made (fetch the post, join the channel)
+-- before giving up.
 jumpToPost :: PostId -> MH ()
 jumpToPost pId = do
     st <- use id
