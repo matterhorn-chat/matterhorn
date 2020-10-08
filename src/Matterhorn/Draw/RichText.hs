@@ -486,7 +486,7 @@ wrapLine maxCols hSet = splitChunks . go (SplitState (S.singleton S.empty) 0)
                   case newEData of
                       EHyperlink url (Just labelEs) ->
                           go st $ addHyperlink url <$> decorateLinkLabel labelEs
-                      EPermalink tName pId (Just labelEs) ->
+                      EPermalink _tName _pId (Just labelEs) ->
                           go st $ setElementStyle Permalink <$> decorateLinkLabel labelEs
                       EImage url (Just labelEs) ->
                           go st $ addHyperlink url <$> decorateLinkLabel labelEs
@@ -572,9 +572,9 @@ renderElement curUser e = addStyle sty widget
             ELineBreak                   -> B.emptyWidget
 
 drawPermalink :: Text -> PostId -> Maybe (Seq Element) -> Widget a
-drawPermalink _ pId Nothing =
+drawPermalink _ _ Nothing =
     B.txt "<post link>"
-drawPermalink curUser pId (Just label) =
+drawPermalink curUser _ (Just label) =
     hBox $ F.toList $ B.txt "<" <| (renderElementSeq curUser label |> B.txt ">")
 
 textWithCursor :: Text -> Widget a
