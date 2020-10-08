@@ -41,13 +41,13 @@ import           Matterhorn.State.MessageSelect
 import           Matterhorn.Themes
 import           Matterhorn.TimeUtils ( justAfter, justBefore )
 import           Matterhorn.Types
-import           Matterhorn.Types.RichText ( parseMarkdown )
+import           Matterhorn.Types.RichText ( parseMarkdown, TeamBaseURL )
 import           Matterhorn.Types.KeyEvents
 
 
-previewFromInput :: Maybe MessageType -> UserId -> Text -> Maybe Message
-previewFromInput _ _ s | s == T.singleton cursorSentinel = Nothing
-previewFromInput overrideTy uId s =
+previewFromInput :: TeamBaseURL -> Maybe MessageType -> UserId -> Text -> Maybe Message
+previewFromInput _ _ _ s | s == T.singleton cursorSentinel = Nothing
+previewFromInput baseUrl overrideTy uId s =
     -- If it starts with a slash but not /me, this has no preview
     -- representation
     let isCommand = "/" `T.isPrefixOf` s
@@ -58,7 +58,7 @@ previewFromInput overrideTy uId s =
         msgTy = fromMaybe (if isEmoteCmd then CP Emote else CP NormalPost) overrideTy
     in if isCommand && not isEmoteCmd
        then Nothing
-       else Just $ Message { _mText          = parseMarkdown content
+       else Just $ Message { _mText          = parseMarkdown (Just baseUrl) content
                            , _mMarkdownSource = content
                            , _mUser          = UserI False uId
                            , _mDate          = ServerTime $ UTCTime (fromGregorian 1970 1 1) 0
@@ -325,8 +325,9 @@ renderChannelHeader st hs chan =
             _ ->
                 channelNamePair
         channelNamePair = mkChannelName (chan^.ccInfo) <> " - " <> (chan^.ccInfo.cdDisplayName)
+        baseUrl = serverBaseUrl st
 
-    in renderText' (myUsername st)
+    in renderText' (Just baseUrl) (myUsername st)
          hs
          (channelNameString <> maybeTopic)
 
@@ -601,7 +602,8 @@ inputPreview st hs | not $ st^.csShowMessagePreview = emptyWidget
     overrideTy = case st^.csEditState.cedEditMode of
         Editing _ ty -> Just ty
         _ -> Nothing
-    previewMsg = previewFromInput overrideTy uId curStr
+    baseUrl = serverBaseUrl st
+    previewMsg = previewFromInput baseUrl overrideTy uId curStr
     thePreview = let noPreview = str "(No preview)"
                      msgPreview = case previewMsg of
                        Nothing -> noPreview
@@ -689,7 +691,7 @@ mainInterface st =
                      ]
 
     showTypingUsers =
-        let format = renderText' (myUsername st) hs
+        let format = renderText' Nothing (myUsername st) hs
         in case allTypingUsers (st^.csCurrentChannel.ccInfo.cdTypingUsers) of
             [] -> emptyWidget
             [uId] | Just un <- usernameForUserId uId st ->

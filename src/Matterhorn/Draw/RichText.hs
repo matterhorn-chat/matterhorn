@@ -42,7 +42,7 @@ import qualified Graphics.Vty as V
 import qualified Skylighting.Core as Sky
 
 import           Network.Mattermost.Lenses ( postEditAtL, postCreateAtL )
-import           Network.Mattermost.Types ( ServerTime(..) )
+import           Network.Mattermost.Types ( ServerTime(..), PostId )
 
 import           Matterhorn.Constants ( normalChannelSigil, userSigil )
 import           Matterhorn.Themes
@@ -293,13 +293,13 @@ addBlankLines = go' . viewl
         go x (EmptyL) = S.singleton x
         blank = Para (S.singleton (Element Normal ESpace))
 
--- Render text to markdown without username highlighting
+-- Render text to markdown without username highlighting or permalink detection
 renderText :: Text -> Widget a
-renderText txt = renderText' "" emptyHSet txt
+renderText txt = renderText' Nothing "" emptyHSet txt
 
-renderText' :: Text -> HighlightSet -> Text -> Widget a
-renderText' curUser hSet t = renderRichText curUser hSet Nothing True rtBs
-  where rtBs = parseMarkdown t
+renderText' :: Maybe TeamBaseURL -> Text -> HighlightSet -> Text -> Widget a
+renderText' baseUrl curUser hSet t = renderRichText curUser hSet Nothing True rtBs
+  where rtBs = parseMarkdown baseUrl t
 
 vBox :: F.Foldable f => f (Widget a) -> Widget a
 vBox = B.vBox . toList
@@ -486,6 +486,8 @@ wrapLine maxCols hSet = splitChunks . go (SplitState (S.singleton S.empty) 0)
                   case newEData of
                       EHyperlink url (Just labelEs) ->
                           go st $ addHyperlink url <$> decorateLinkLabel labelEs
+                      EPermalink tName pId (Just labelEs) ->
+                          go st $ setElementStyle Permalink <$> decorateLinkLabel labelEs
                       EImage url (Just labelEs) ->
                           go st $ addHyperlink url <$> decorateLinkLabel labelEs
                       _ ->
@@ -525,6 +527,7 @@ renderElement curUser e = addStyle sty widget
                 Strikethrough           -> B.withDefAttr strikeThroughAttr
                 Strong                  -> B.withDefAttr clientStrongAttr
                 Code                    -> B.withDefAttr codeAttr
+                Permalink               -> B.withDefAttr permalinkAttr
                 Hyperlink (URL url) innerSty ->
                     B.hyperlink url . B.withDefAttr urlAttr .  addStyle innerSty
         rawText = B.txt . removeCursor
@@ -541,6 +544,7 @@ renderElement curUser e = addStyle sty widget
                                             else textWithCursor t
 
             ESpace                       -> B.txt " "
+            EPermalink _ pId mLabel      -> drawPermalink curUser pId mLabel
             ENonBreaking es              -> hBox $ renderElement curUser <$> es
             ERawHtml t                   -> textWithCursor t
             EEditSentinel recent         -> let attr = if recent
@@ -566,6 +570,12 @@ renderElement curUser e = addStyle sty widget
             -- line-wrapping algorithm removes them.
             ESoftBreak                   -> B.emptyWidget
             ELineBreak                   -> B.emptyWidget
+
+drawPermalink :: Text -> PostId -> Maybe (Seq Element) -> Widget a
+drawPermalink _ pId Nothing =
+    B.txt "<post link>"
+drawPermalink curUser pId (Just label) =
+    hBox $ F.toList $ B.txt "<" <| (renderElementSeq curUser label |> B.txt ">")
 
 textWithCursor :: Text -> Widget a
 textWithCursor t
@@ -597,6 +607,8 @@ elementWidth e =
         EHyperlink (URL url) Nothing -> B.textWidth url
         EHyperlink _ (Just is)       -> sum $ elementWidth <$> is
         EEmoji t                     -> B.textWidth t + 2
+        EPermalink _ _ Nothing       -> 11
+        EPermalink _ _ (Just label)  -> 2 + (sum $ elementWidth <$> label)
         ESpace                       -> 1
         ELineBreak                   -> 0
         ESoftBreak                   -> 0

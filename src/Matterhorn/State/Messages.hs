@@ -149,8 +149,9 @@ shouldSkipMessage s = T.all (`elem` (" \t"::String)) s
 editMessage :: Post -> MH ()
 editMessage new = do
     myId <- gets myUserId
+    baseUrl <- getServerBaseUrl
     let isEditedMessage m = m^.mMessageId == Just (MessagePostId $ new^.postIdL)
-        (msg, mentionedUsers) = clientPostToMessage (toClientPost new (new^.postRootIdL))
+        (msg, mentionedUsers) = clientPostToMessage (toClientPost baseUrl new (new^.postRootIdL))
         chan = csChannel (new^.postChannelIdL)
     chan . ccContents . cdMessages . traversed . filtered isEditedMessage .= msg
     mh $ invalidateCacheEntry (ChannelMessages $ new^.postChannelIdL)
@@ -496,7 +497,8 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
 
             return NoAction
         Just _ -> do
-            let cp = toClientPost new (new^.postRootIdL)
+            baseUrl <- getServerBaseUrl
+            let cp = toClientPost baseUrl new (new^.postRootIdL)
                 fromMe = (cp^.cpUser == (Just $ myUserId st)) &&
                          (isNothing $ cp^.cpUserOverride)
                 userPrefs = st^.csResources.crUserPreferences

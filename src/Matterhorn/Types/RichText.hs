@@ -13,6 +13,7 @@ module Matterhorn.Types.RichText
   , Element(..)
   , ElementData(..)
   , ElementStyle(..)
+  , TeamBaseURL(..)
 
   , URL(..)
   , unURL
@@ -41,7 +42,13 @@ import qualified Data.Sequence as Seq
 import           Data.Sequence ( (<|), ViewL((:<)) )
 import qualified Data.Text as T
 
+import           Network.Mattermost.Types ( PostId(..), Id(..), ServerBaseURL(..) )
+
 import           Matterhorn.Constants ( userSigil, normalChannelSigil )
+
+-- | A server base URL with a team name.
+data TeamBaseURL = TeamBaseURL Text ServerBaseURL
+                 deriving (Eq, Show)
 
 -- | A block in a rich text document.
 data RichTextBlock =
@@ -149,6 +156,9 @@ data ElementData =
     | ENonBreaking (Seq Element)
     -- ^ A sequence of elements that must never be separated during line
     -- wrapping.
+    | EPermalink Text PostId (Maybe (Seq Element))
+    -- ^ A permalink to the specified team (name) and post ID with an
+    -- optional label.
     deriving (Show, Eq, Ord)
 
 -- | Element visual styles.
@@ -166,31 +176,34 @@ data ElementStyle =
     | Hyperlink URL ElementStyle
     -- ^ A terminal hyperlink to the specified URL, composed with
     -- another element style
+    | Permalink
+    -- ^ A post permalink
     deriving (Eq, Show, Ord)
 
-parseMarkdown :: T.Text -> Seq RichTextBlock
-parseMarkdown t = fromMarkdownBlocks bs where C.Doc _ bs = C.markdown C.def t
+parseMarkdown :: Maybe TeamBaseURL -> T.Text -> Seq RichTextBlock
+parseMarkdown baseUrl t =
+    fromMarkdownBlocks baseUrl bs where C.Doc _ bs = C.markdown C.def t
 
 -- | Convert a sequence of markdown (Cheapskate) blocks into rich text
 -- blocks.
-fromMarkdownBlocks :: C.Blocks -> Seq RichTextBlock
-fromMarkdownBlocks = fmap fromMarkdownBlock
+fromMarkdownBlocks :: Maybe TeamBaseURL -> C.Blocks -> Seq RichTextBlock
+fromMarkdownBlocks baseUrl = fmap (fromMarkdownBlock baseUrl)
 
 -- | Convert a single markdown block into a single rich text block.
-fromMarkdownBlock :: C.Block -> RichTextBlock
-fromMarkdownBlock (C.Para is) =
-    Para $ fromMarkdownInlines is
-fromMarkdownBlock (C.Header level is) =
-    Header level $ fromMarkdownInlines is
-fromMarkdownBlock (C.Blockquote bs) =
-    Blockquote $ fromMarkdownBlock <$> bs
-fromMarkdownBlock (C.List f ty bss) =
-    List f (fromMarkdownListType ty) $ fmap fromMarkdownBlock <$> Seq.fromList bss
-fromMarkdownBlock (C.CodeBlock attr body) =
+fromMarkdownBlock :: Maybe TeamBaseURL -> C.Block -> RichTextBlock
+fromMarkdownBlock baseUrl (C.Para is) =
+    Para $ fromMarkdownInlines baseUrl is
+fromMarkdownBlock baseUrl (C.Header level is) =
+    Header level $ fromMarkdownInlines baseUrl is
+fromMarkdownBlock baseUrl (C.Blockquote bs) =
+    Blockquote $ fromMarkdownBlock baseUrl <$> bs
+fromMarkdownBlock baseUrl (C.List f ty bss) =
+    List f (fromMarkdownListType ty) $ fmap (fromMarkdownBlock baseUrl) <$> Seq.fromList bss
+fromMarkdownBlock _ (C.CodeBlock attr body) =
     CodeBlock (fromMarkdownCodeAttr attr) body
-fromMarkdownBlock (C.HtmlBlock body) =
+fromMarkdownBlock _ (C.HtmlBlock body) =
     HTMLBlock body
-fromMarkdownBlock C.HRule =
+fromMarkdownBlock _ C.HRule =
     HRule
 
 fromMarkdownCodeAttr :: C.CodeAttr -> CodeBlockInfo
@@ -244,8 +257,8 @@ fromMarkdownListType (C.Numbered wrap i) =
 -- sequences of Elements. This means that logic in 'Draw.RichText' that
 -- does line-wrapping will have to explicitly break up link and image
 -- labels across line breaks.
-fromMarkdownInlines :: Seq C.Inline -> Seq Element
-fromMarkdownInlines inlines =
+fromMarkdownInlines :: Maybe TeamBaseURL -> Seq C.Inline -> Seq Element
+fromMarkdownInlines baseUrl inlines =
     let go sty is = case Seq.viewl is of
           C.Str "~" :< xs ->
               case Seq.viewl xs of
@@ -307,13 +320,19 @@ fromMarkdownInlines inlines =
           C.Link label theUrl _ :< xs ->
               let mLabel = if Seq.null label
                            then Nothing
-                           else Just $ fromMarkdownInlines label
-                  url = URL theUrl
-              in (Element (Hyperlink url sty) $ EHyperlink url mLabel) <| go sty xs
+                           else case F.toList label of
+                               [C.Str u] | u == theUrl -> Nothing
+                               _ -> Just $ fromMarkdownInlines baseUrl label
+              in case flip getPermalink theUrl =<< baseUrl of
+                  Nothing ->
+                      let url = URL theUrl
+                      in (Element (Hyperlink url sty) $ EHyperlink url mLabel) <| go sty xs
+                  Just (tName, pId) ->
+                      (Element Permalink $ EPermalink tName pId mLabel) <| go sty xs
           C.Image altIs theUrl _ :< xs ->
               let mLabel = if Seq.null altIs
                            then Nothing
-                           else Just $ fromMarkdownInlines altIs
+                           else Just $ fromMarkdownInlines baseUrl altIs
                   url = URL theUrl
               in (Element (Hyperlink url sty) $ EImage url mLabel) <| go sty xs
           C.RawHtml t :< xs ->
@@ -356,6 +375,20 @@ takeUntilStrikethroughEnd is =
         pos <- go 0 is
         let (h, t) = Seq.splitAt pos is
         return (h, Seq.drop 2 t)
+
+getPermalink :: TeamBaseURL -> Text -> Maybe (Text, PostId)
+getPermalink (TeamBaseURL tName (ServerBaseURL baseUrl)) url =
+    let newBaseUrl = if "/" `T.isSuffixOf` baseUrl
+                     then baseUrl
+                     else baseUrl <> "/"
+    in if not $ newBaseUrl `T.isPrefixOf` url
+       then Nothing
+       else let rest = T.drop (T.length newBaseUrl) url
+                (tName', pIdStr) = T.breakOn "/pl/" rest
+            in if tName == tName' && not (T.null pIdStr)
+               then Just (tName, PI $ Id pIdStr)
+               else Nothing
+
 
 unsafeGetStr :: C.Inline -> Text
 unsafeGetStr (C.Str t) = t

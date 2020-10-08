@@ -119,7 +119,8 @@ import           GHC.Generics ( Generic )
 import           Lens.Micro.Platform ( makeLenses )
 
 import           Network.Mattermost.Types ( ChannelId, PostId, Post
-                                          , ServerTime, UserId, FileId )
+                                          , ServerTime, UserId, FileId
+                                          )
 
 import           Matterhorn.Types.DirectionalSeq
 import           Matterhorn.Types.Posts
@@ -303,7 +304,7 @@ makeLenses ''LinkChoice
 -- associated with passing a link to the local browser.
 clientMessageToMessage :: ClientMessage -> Message
 clientMessageToMessage cm = Message
-  { _mText          = parseMarkdown (cm^.cmText)
+  { _mText          = parseMarkdown Nothing (cm^.cmText)
   , _mMarkdownSource = cm^.cmText
   , _mUser          = NoUser
   , _mDate          = cm^.cmDate
@@ -365,7 +366,7 @@ clientPostToMessage cp = (m, mentions)
 
 newMessageOfType :: Text -> MessageType -> ServerTime -> Message
 newMessageOfType text typ d = Message
-  { _mText         = parseMarkdown text
+  { _mText         = parseMarkdown Nothing text
   , _mMarkdownSource = text
   , _mUser         = NoUser
   , _mDate         = d

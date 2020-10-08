@@ -33,7 +33,7 @@ drawChannelTopicWindow st =
          , hBorderWithLabel (withDefAttr clientEmphAttr $ txt "Preview")
          , vLimit previewHeight $
            viewport ChannelTopicEditorPreview Vertical $
-           renderText' "" hSet topicTxtWithCursor
+           renderText' (Just baseUrl) "" hSet topicTxtWithCursor
          , hBorder
          , hBox [ padRight Max $
                   padLeft (Pad 1) $
@@ -43,6 +43,7 @@ drawChannelTopicWindow st =
                 ]
          ]
     where
+        baseUrl = serverBaseUrl st
         editorHeight = 5
         previewHeight = 5
         maxWindowWidth = 70

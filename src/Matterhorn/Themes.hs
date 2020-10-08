@@ -37,6 +37,7 @@ module Matterhorn.Themes
   , channelSelectMatchAttr
   , completionAlternativeListAttr
   , completionAlternativeCurrentAttr
+  , permalinkAttr
   , dialogAttr
   , dialogEmphAttr
   , recentMarkerAttr
@@ -111,6 +112,9 @@ editedMarkingAttr = "editedMarking"
 
 editedRecentlyMarkingAttr :: AttrName
 editedRecentlyMarkingAttr = "editedRecentlyMarking"
+
+permalinkAttr :: AttrName
+permalinkAttr = "permalink"
 
 dialogAttr :: AttrName
 dialogAttr = "dialog"
@@ -293,6 +297,7 @@ lightAttrs usernameColors =
        , (completionAlternativeCurrentAttr, black `on` yellow)
        , (dialogAttr,                       black `on` cyan)
        , (dialogEmphAttr,                   fg white)
+       , (permalinkAttr,                    fg green)
        , (listSelectedFocusedAttr,          black `on` yellow)
        , (recentMarkerAttr,                 fg black `withStyle` bold)
        , (loadMoreAttr,                     black `on` cyan)
@@ -352,6 +357,7 @@ darkAttrs usernameColors =
      , (completionAlternativeCurrentAttr, black `on` yellow)
      , (dialogAttr,                       black `on` cyan)
      , (dialogEmphAttr,                   fg white)
+     , (permalinkAttr,                    fg brightCyan)
      , (listSelectedFocusedAttr,          black `on` yellow)
      , (recentMarkerAttr,                 fg yellow `withStyle` bold)
      , (loadMoreAttr,                     black `on` cyan)
@@ -619,6 +625,9 @@ themeDocs = ThemeDocumentation $ M.fromList $
       )
     , ( completionAlternativeCurrentAttr
       , "The currently-selected tab completion alternative"
+      )
+    , ( permalinkAttr
+      , "A post permalink"
       )
     , ( dialogAttr
       , "Dialog box text"

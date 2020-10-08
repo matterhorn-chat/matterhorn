@@ -59,7 +59,9 @@ import           Network.Mattermost.Lenses
 import           Network.Mattermost.Types
 
 import           Matterhorn.Types.Common
-import           Matterhorn.Types.RichText ( RichTextBlock(Blockquote), parseMarkdown )
+import           Matterhorn.Types.RichText ( RichTextBlock(Blockquote), parseMarkdown
+                                           , TeamBaseURL
+                                           )
 
 
 -- * Client Messages
@@ -191,10 +193,10 @@ unEmote _ t = t
 
 -- | Convert a Mattermost 'Post' to a 'ClientPost', passing in a
 --   'ParentId' if it has a known one.
-toClientPost :: Post -> Maybe PostId -> ClientPost
-toClientPost p parentId =
+toClientPost :: TeamBaseURL -> Post -> Maybe PostId -> ClientPost
+toClientPost baseUrl p parentId =
   let src = unEmote (postClientPostType p) $ sanitizeUserText $ postMessage p
-  in ClientPost { _cpText          = parseMarkdown src <> getAttachmentText p
+  in ClientPost { _cpText          = parseMarkdown (Just baseUrl) src <> getAttachmentText p
                 , _cpMarkdownSource = src
                 , _cpUser          = postUserId p
                 , _cpUserOverride  = p^.postPropsL.postPropsOverrideUsernameL
@@ -220,7 +222,8 @@ getAttachmentText p =
     Nothing -> Seq.empty
     Just attachments ->
       fmap (Blockquote . render) attachments
-  where render att = parseMarkdown (att^.ppaTextL) <> parseMarkdown (att^.ppaFallbackL)
+  where render att = parseMarkdown Nothing (att^.ppaTextL) <>
+                     parseMarkdown Nothing (att^.ppaFallbackL)
 
 -- ** 'ClientPost' Lenses
 

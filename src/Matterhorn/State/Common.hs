@@ -74,10 +74,12 @@ installMessagesFromPosts postCollection = do
   -- Add all posts in this collection to the global post cache
   updatePostMap postCollection
 
+  baseUrl <- getServerBaseUrl
+
   -- Build the ordered list of posts. Note that postsOrder lists the
   -- posts most recent first, but we want most recent last.
   let postsInOrder = findPost <$> (Seq.reverse $ postsOrder postCollection)
-      mkClientPost p = toClientPost p (postId <$> parent p)
+      mkClientPost p = toClientPost baseUrl p (postId <$> parent p)
       clientPosts = mkClientPost <$> postsInOrder
 
       addNext cp (msgs, us) =
@@ -108,9 +110,10 @@ updatePostMap postCollection = do
   -- list, since the former can contain other messages in threads that
   -- the server sent us, even if those messages are not part of the
   -- ordered post listing of "postsOrder."
+  baseUrl <- getServerBaseUrl
   let postMap = HM.fromList
           [ ( pId
-            , fst $ clientPostToMessage (toClientPost x Nothing)
+            , fst $ clientPostToMessage (toClientPost baseUrl x Nothing)
             )
           | (pId, x) <- HM.toList (postCollection^.postsPostsL)
           ]

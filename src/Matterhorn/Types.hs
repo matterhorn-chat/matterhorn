@@ -24,6 +24,8 @@ module Matterhorn.Types
   , tabbedWindowNextTab
   , tabbedWindowPreviousTab
   , runTabShowHandlerFor
+  , getServerBaseUrl
+  , serverBaseUrl
   , TabbedWindow(..)
   , TabbedWindowEntry(..)
   , TabbedWindowTemplate(..)
@@ -343,6 +345,7 @@ import           Matterhorn.Types.DirectionalSeq ( emptyDirSeq )
 import           Matterhorn.Types.KeyEvents
 import           Matterhorn.Types.Messages
 import           Matterhorn.Types.Posts
+import           Matterhorn.Types.RichText ( TeamBaseURL(..) )
 import           Matterhorn.Types.Users
 import qualified Matterhorn.Zipper as Z
 
@@ -1530,6 +1533,17 @@ nullEmojiListOverlayState =
                         , _listOverlayRecordCount    = Nothing
                         , _listOverlayReturnMode     = MessageSelect
                         }
+
+getServerBaseUrl :: MH TeamBaseURL
+getServerBaseUrl = do
+    st <- use id
+    return $ serverBaseUrl st
+
+serverBaseUrl :: ChatState -> TeamBaseURL
+serverBaseUrl st =
+    let baseUrl = connectionDataURL $ _crConn $ _csResources st
+        tName = teamName $ _csMyTeam st
+    in TeamBaseURL (sanitizeUserText tName) baseUrl
 
 -- | The state of channel selection mode.
 data ChannelSelectState =
