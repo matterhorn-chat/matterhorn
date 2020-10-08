@@ -903,9 +903,12 @@ jumpToPost pId = do
                       Right p -> do
                           -- Are we a member of the channel?
                           case findChannelById (postChannelId p) (st^.csChannels) of
-                              -- If not, join it and then try jumping to the post.
+                              -- If not, join it and then try jumping to
+                              -- the post if the channel join is successful.
                               Nothing -> do
                                   joinChannel' (postChannelId p) (Just $ jumpToPost pId)
+                              -- Otherwise add the post to the state and
+                              -- then jump.
                               Just _ -> do
                                   void $ addMessageToState True True (OldPost p)
                                   jumpToPost pId
