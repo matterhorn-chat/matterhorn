@@ -35,6 +35,7 @@ import           Matterhorn.State.PostListOverlay
 import           Matterhorn.State.UserListOverlay
 import           Matterhorn.State.ChannelListOverlay
 import           Matterhorn.State.ThemeListOverlay
+import           Matterhorn.State.Messages
 import           Matterhorn.State.NotifyPrefs
 import           Matterhorn.State.Common ( postInfoMessage )
 import           Matterhorn.State.Users
@@ -212,6 +213,9 @@ commandList =
 
   , Cmd "toggle-channel-list" "Toggle channel list visibility" NoArg $ \_ ->
         toggleChannelListVisibility
+
+  , Cmd "toggle-message-timestamps" "Toggle message timestamps" NoArg $ \_ ->
+        toggleMessageTimestamps
 
   , Cmd "toggle-expanded-topics" "Toggle expanded channel topics" NoArg $ \_ ->
         toggleExpandedChannelTopics

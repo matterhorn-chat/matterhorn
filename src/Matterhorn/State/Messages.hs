@@ -13,13 +13,14 @@ module Matterhorn.State.Messages
   , asyncFetchMessagesSurrounding
   , fetchVisibleIfNeeded
   , disconnectChannels
+  , toggleMessageTimestamps
   )
 where
 
 import           Prelude ()
 import           Matterhorn.Prelude
 
-import           Brick.Main ( getVtyHandle, invalidateCacheEntry )
+import           Brick.Main ( getVtyHandle, invalidateCacheEntry, invalidateCache )
 import qualified Brick.Widgets.FileBrowser as FB
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
@@ -69,6 +70,13 @@ addDisconnectGaps = mapM_ onEach . filteredChannelIds (const True) =<< use csCha
 -- messages
 disconnectChannels :: MH ()
 disconnectChannels = addDisconnectGaps
+
+toggleMessageTimestamps :: MH ()
+toggleMessageTimestamps = do
+    mh invalidateCache
+    let toggle c = c { configShowMessageTimestamps = not (configShowMessageTimestamps c)
+                     }
+    csResources.crConfiguration %= toggle
 
 clearPendingFlags :: ChannelId -> MH ()
 clearPendingFlags c = csChannel(c).ccContents.cdFetchPending .= False

@@ -424,6 +424,8 @@ data Config =
            -- ^ The command to run for activity notifications.
            , configActivityBell :: Bool
            -- ^ Whether to ring the terminal bell on activity.
+           , configShowMessageTimestamps :: Bool
+           -- ^ Whether to show timestamps on messages.
            , configShowBackground :: BackgroundInfo
            -- ^ Whether to show async background worker thread info.
            , configShowMessagePreview :: Bool

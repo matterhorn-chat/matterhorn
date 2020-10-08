@@ -57,7 +57,9 @@ renderChatMessage :: ChatState
                   -> Message
                   -> Widget Name
 renderChatMessage st hs ind threadState renderTimeFunc msg =
-    let showOlderEdits = configShowOlderEdits $ st^.csResources.crConfiguration
+    let showOlderEdits = configShowOlderEdits config
+        showTimestamp = configShowMessageTimestamps config
+        config = st^.csResources.crConfiguration
         parent = case msg^.mInReplyToMsg of
           NotAReply -> Nothing
           InReplyTo pId -> getMessageForPostId st pId
@@ -94,9 +96,11 @@ renderChatMessage st hs ind threadState renderTimeFunc msg =
             _ | isJoinLeave msg -> withDefAttr clientMessageAttr m
               | otherwise -> m
         maybeRenderTime w =
-            let maybePadTime = if threadState == InThreadShowParent
-                               then (txt " " <=>) else id
-            in hBox [maybePadTime $ renderTimeFunc (msg^.mDate), txt " ", w]
+            if showTimestamp
+            then let maybePadTime = if threadState == InThreadShowParent
+                                    then (txt " " <=>) else id
+                 in hBox [maybePadTime $ renderTimeFunc (msg^.mDate), txt " ", w]
+            else w
         maybeRenderTimeWith f = if isTransition msg then id else f
     in maybeRenderTimeWith maybeRenderTime fullMsg
 
