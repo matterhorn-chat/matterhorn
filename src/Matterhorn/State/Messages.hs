@@ -897,9 +897,14 @@ jumpToPost pId = do
       Just msg ->
         case msg ^. mChannelId of
           Just cId -> do
-            setFocus cId
-            setMode MessageSelect
-            csMessageSelect .= MessageSelectState (msg^.mMessageId)
+              -- Are we a member of the channel?
+              case findChannelById cId (st^.csChannels) of
+                  Nothing ->
+                      joinChannel' cId (Just $ jumpToPost pId)
+                  Just _ -> do
+                      setFocus cId
+                      setMode MessageSelect
+                      csMessageSelect .= MessageSelectState (msg^.mMessageId)
           Nothing ->
             error "INTERNAL: selected Post ID not associated with a channel"
       Nothing -> do
