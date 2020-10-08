@@ -11,7 +11,7 @@ import           Brick.Widgets.List ( renderList )
 import qualified Data.Foldable as F
 import           Lens.Micro.Platform ( to )
 
-import           Network.Mattermost.Types ( ServerTime(..) )
+import           Network.Mattermost.Types ( ServerTime(..), idString )
 
 import           Matterhorn.Draw.Messages
 import           Matterhorn.Draw.Util
@@ -53,6 +53,8 @@ renderUrlList st =
                   ] ) <=>
             (vLimit 1 (renderLinkTarget (link^.linkTarget)))
 
+        renderLinkTarget (LinkPermalink tName pId) =
+            renderText $ "Team: " <> tName <> ", post " <> idString pId
         renderLinkTarget (LinkURL url) = renderText $ unURL url
         renderLinkTarget (LinkFileId _) = txt " "
 

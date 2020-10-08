@@ -286,6 +286,7 @@ data ReplyState =
 data LinkTarget =
     LinkURL URL
     | LinkFileId FileId
+    | LinkPermalink Text PostId
     deriving (Eq, Show, Ord)
 
 -- | This type represents links to things in the 'open links' view.
@@ -729,8 +730,10 @@ withFirstMessage = withDirSeqHead
 msgURLs :: Message -> Seq LinkChoice
 msgURLs msg =
   let uRef = msg^.mUser
-      msgUrls = (\ (url, text) -> LinkChoice (msg^.mDate) uRef text (LinkURL url)) <$>
-                  (Seq.fromList $ mconcat $ blockGetURLs <$> (toList $ msg^.mText))
+      mkTarget (Right url) = LinkURL url
+      mkTarget (Left (tName, pId)) = LinkPermalink tName pId
+      mkEntry (val, text) = LinkChoice (msg^.mDate) uRef text (mkTarget val)
+      msgUrls = mkEntry <$> (Seq.fromList $ mconcat $ blockGetURLs <$> (toList $ msg^.mText))
       attachmentURLs = (\ a ->
                           LinkChoice
                             (msg^.mDate)

@@ -14,7 +14,7 @@ import           Brick.Widgets.List ( list, listMoveTo, listSelectedElement )
 import qualified Data.Vector as V
 import           Lens.Micro.Platform ( (.=), to )
 
-import           Matterhorn.State.Common
+import           Matterhorn.State.Links
 import           Matterhorn.Types
 import           Matterhorn.Util
 

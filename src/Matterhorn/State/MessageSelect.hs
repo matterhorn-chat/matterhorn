@@ -36,6 +36,7 @@ import           Network.Mattermost.Types
 
 import           Matterhorn.Clipboard ( copyToClipboard )
 import           Matterhorn.State.Common
+import           Matterhorn.State.Links
 import           Matterhorn.State.Messages
 import           Matterhorn.Types
 import           Matterhorn.Types.RichText ( findVerbatimChunk )

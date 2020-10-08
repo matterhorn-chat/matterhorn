@@ -1,9 +1,10 @@
 module Matterhorn.State.Common
   (
   -- * System interface
-    openLinkTarget
-  , openFilePath
+    openFilePath
+  , openWithOpener
   , runLoggedCommand
+  , prepareAttachment
 
   -- * Posts
   , installMessagesFromPosts
@@ -54,7 +55,6 @@ import           Matterhorn.FilePaths ( xdgName )
 import           Matterhorn.State.Async
 import           Matterhorn.Types
 import           Matterhorn.Types.Common
-import           Matterhorn.Types.RichText ( unURL )
 
 
 -- * Client Messages
@@ -156,13 +156,6 @@ postErrorMessageIO err st = do
       addEMsg = ccContents.cdMessages %~
           (addMessage $ clientMessageToMessage msg & mMessageId .~ Just (MessageUUID uuid))
   return $ st & csChannels %~ modifyChannelById cId addEMsg
-
-openLinkTarget :: LinkTarget -> MH Bool
-openLinkTarget target = do
-    session <- getSession
-    case target of
-        LinkURL url -> openWithOpener (return $ T.unpack $ unURL url)
-        LinkFileId fId -> openWithOpener (liftIO $ prepareAttachment fId session)
 
 openFilePath :: FilePath -> MH Bool
 openFilePath path = openWithOpener (return path)

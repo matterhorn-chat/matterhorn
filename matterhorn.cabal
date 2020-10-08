@@ -109,6 +109,7 @@ library
                        Matterhorn.State.Editing
                        Matterhorn.State.Flagging
                        Matterhorn.State.Help
+                       Matterhorn.State.Links
                        Matterhorn.State.ListOverlay
                        Matterhorn.State.Logging
                        Matterhorn.State.MessageSelect

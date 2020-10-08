@@ -384,7 +384,8 @@ getPermalink (TeamBaseURL tName (ServerBaseURL baseUrl)) url =
     in if not $ newBaseUrl `T.isPrefixOf` url
        then Nothing
        else let rest = T.drop (T.length newBaseUrl) url
-                (tName', pIdStr) = T.breakOn "/pl/" rest
+                (tName', rawPIdStr) = T.breakOn "/pl/" rest
+                pIdStr = T.drop 4 rawPIdStr
             in if tName == tName' && not (T.null pIdStr)
                then Just (tName, PI $ Id pIdStr)
                else Nothing
@@ -418,7 +419,7 @@ elementFindUsernames (e : es) =
         _ -> elementFindUsernames es
 
 -- | Obtain all URLs (and optional labels) in a rich text block.
-blockGetURLs :: RichTextBlock -> [(URL, Maybe (Seq Element))]
+blockGetURLs :: RichTextBlock -> [(Either (Text, PostId) URL, Maybe (Seq Element))]
 blockGetURLs (Para is) =
     catMaybes $ elementGetURL <$> toList is
 blockGetURLs (Header _ is) =
@@ -431,11 +432,13 @@ blockGetURLs (List _ _ bss) =
 blockGetURLs _ =
     mempty
 
-elementGetURL :: Element -> Maybe (URL, Maybe (Seq Element))
+elementGetURL :: Element -> Maybe (Either (Text, PostId) URL, Maybe (Seq Element))
 elementGetURL (Element _ (EHyperlink url label)) =
-    Just (url, label)
+    Just (Right url, label)
 elementGetURL (Element _ (EImage url label)) =
-    Just (url, label)
+    Just (Right url, label)
+elementGetURL (Element _ (EPermalink tName pId label)) =
+    Just (Left (tName, pId), label)
 elementGetURL _ =
     Nothing
 
