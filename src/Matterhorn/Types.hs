@@ -531,7 +531,8 @@ mkChannelZipperList now config cconfig prefs cs us =
       in (ChannelGroupPublicChannels unread, entries)
     , let (unread, entries) = getChannelEntriesInOrder cs Private
       in (ChannelGroupPrivateChannels unread, entries)
-    , (ChannelGroupDirectMessages 0, getDMChannelEntriesInOrder now config cconfig prefs us cs)
+    , let (unread, entries) = getDMChannelEntriesInOrder now config cconfig prefs us cs
+      in (ChannelGroupDirectMessages unread, entries)
     ]
 
 getChannelEntriesInOrder :: ClientChannels -> Type -> (Int, [ChannelListEntry])
@@ -549,7 +550,7 @@ getDMChannelEntriesInOrder :: UTCTime
                            -> UserPreferences
                            -> Users
                            -> ClientChannels
-                           -> [ChannelListEntry]
+                           -> (Int, [ChannelListEntry])
 getDMChannelEntriesInOrder now config cconfig prefs us cs =
     let oneOnOneDmChans = getDMChannelEntries now config cconfig prefs us cs
         groupChans = getGroupDMChannelEntries now config prefs cs
@@ -562,7 +563,9 @@ getDMChannelEntriesInOrder now config cconfig prefs us cs =
                  else GT
         sorted = sortBy sorter allDmChans
         third (_, _, c) = c
-    in third <$> sorted
+        fst3 (a, _, _) = a
+        unread = length $ filter id $ fst3 <$> sorted
+    in (unread, third <$> sorted)
 
 useNickname' :: Maybe ClientConfig -> UserPreferences -> Bool
 useNickname' clientConfig prefs =
