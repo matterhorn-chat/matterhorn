@@ -376,6 +376,9 @@ takeUntilStrikethroughEnd is =
         let (h, t) = Seq.splitAt pos is
         return (h, Seq.drop 2 t)
 
+-- | If the specified URL matches the active server base URL and team
+-- and refers to a post, extract the team name and post ID values and
+-- return them.
 getPermalink :: TeamBaseURL -> Text -> Maybe (Text, PostId)
 getPermalink (TeamBaseURL tName (ServerBaseURL baseUrl)) url =
     let newBaseUrl = if "/" `T.isSuffixOf` baseUrl
