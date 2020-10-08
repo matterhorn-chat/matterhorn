@@ -22,9 +22,8 @@ urlSelectKeybindings = mkKeybindings urlSelectKeyHandlers
 urlSelectKeyHandlers :: [KeyEventHandler]
 urlSelectKeyHandlers =
     [ staticKb "Open the selected URL, if any"
-         (Vty.EvKey Vty.KEnter []) $ do
+         (Vty.EvKey Vty.KEnter []) $
              openSelectedURL
-             setMode Main
 
     , mkKb CancelEvent "Cancel URL selection" stopUrlSelect
 

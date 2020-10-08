@@ -32,7 +32,7 @@ openSelectedURL :: MH ()
 openSelectedURL = whenMode UrlSelect $ do
     selected <- use (csUrlList.to listSelectedElement)
     case selected of
-        Nothing -> return ()
+        Nothing -> setMode Main
         Just (_, link) -> do
             opened <- openLinkTarget (link^.linkTarget)
             when (not opened) $ do
