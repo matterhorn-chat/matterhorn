@@ -40,6 +40,7 @@ module Matterhorn.State.Channels
   , deleteCurrentChannel
   , startLeaveCurrentChannel
   , joinChannel
+  , joinChannel'
   , joinChannelByName
   , changeChannelByName
   , setChannelTopic
@@ -998,7 +999,10 @@ joinChannelByName rawName = do
 -- | If the user is not a member of the specified channel, submit a
 -- request to join it. Otherwise switch to the channel.
 joinChannel :: ChannelId -> MH ()
-joinChannel chanId = do
+joinChannel chanId = joinChannel' chanId Nothing
+
+joinChannel' :: ChannelId -> Maybe (MH ()) -> MH ()
+joinChannel' chanId act = do
     setMode Main
     mChan <- preuse (csChannel(chanId))
     case mChan of
@@ -1007,7 +1011,7 @@ joinChannel chanId = do
             myId <- gets myUserId
             let member = MinChannelMember myId chanId
             csPendingChannelChange .= (Just $ ChangeByChannelId chanId)
-            doAsyncChannelMM Preempt chanId (\ s c -> MM.mmAddUser c member s) endAsyncNOP
+            doAsyncChannelMM Preempt chanId (\ s c -> MM.mmAddUser c member s) (const $ return act)
 
 createOrFocusDMChannel :: UserInfo -> Maybe (ChannelId -> MH ()) -> MH ()
 createOrFocusDMChannel user successAct = do

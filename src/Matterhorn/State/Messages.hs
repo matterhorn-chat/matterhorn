@@ -901,7 +901,13 @@ jumpToPost pId = do
               return $ Just $ do
                   case result of
                       Right p -> do
-                          void $ addMessageToState True True (OldPost p)
-                          jumpToPost pId
+                          -- Are we a member of the channel?
+                          case findChannelById (postChannelId p) (st^.csChannels) of
+                              -- If not, join it and then try jumping to the post.
+                              Nothing -> do
+                                  joinChannel' (postChannelId p) (Just $ jumpToPost pId)
+                              Just _ -> do
+                                  void $ addMessageToState True True (OldPost p)
+                                  jumpToPost pId
                       Left (_::SomeException) ->
                           postErrorMessage' "Could not fetch linked post"
