@@ -14,6 +14,7 @@ module Matterhorn.State.Messages
   , fetchVisibleIfNeeded
   , disconnectChannels
   , toggleMessageTimestamps
+  , jumpToPost
   )
 where
 
@@ -22,6 +23,7 @@ import           Matterhorn.Prelude
 
 import           Brick.Main ( getVtyHandle, invalidateCacheEntry, invalidateCache )
 import qualified Brick.Widgets.FileBrowser as FB
+import           Control.Exception ( SomeException, try )
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Set as Set
@@ -879,3 +881,27 @@ asyncFetchAttachments p = do
         return $ Just $ do
             csChannel(cId).ccContents.cdMessages.traversed %= addAttachment
             mh $ invalidateCacheEntry $ ChannelMessages cId
+
+jumpToPost :: PostId -> MH ()
+jumpToPost pId = do
+    st <- use id
+    case getMessageForPostId st pId of
+      Just msg ->
+        case msg ^. mChannelId of
+          Just cId -> do
+            setFocus cId
+            setMode MessageSelect
+            csMessageSelect .= MessageSelectState (msg^.mMessageId)
+          Nothing ->
+            error "INTERNAL: selected Post ID not associated with a channel"
+      Nothing -> do
+          session <- getSession
+          doAsyncWith Preempt $ do
+              result <- try $ MM.mmGetPost pId session
+              return $ Just $ do
+                  case result of
+                      Right p -> do
+                          void $ addMessageToState True True (OldPost p)
+                          jumpToPost pId
+                      Left (_::SomeException) ->
+                          postErrorMessage' "Could not fetch linked post"

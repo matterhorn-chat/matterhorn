@@ -12,7 +12,6 @@ module Matterhorn.State.Channels
   , leaveChannel
   , leaveCurrentChannel
   , getNextUnreadChannel
-  , jumpToPost
   , getNextUnreadUserOrChannel
   , nextUnreadChannel
   , nextUnreadUserOrChannel
@@ -1088,18 +1087,3 @@ updateChannelNotifyProps :: ChannelId -> ChannelNotifyProps -> MH ()
 updateChannelNotifyProps cId notifyProps = do
     mh $ invalidateCacheEntry ChannelSidebar
     csChannel(cId).ccInfo.cdNotifyProps .= notifyProps
-
-jumpToPost :: PostId -> MH ()
-jumpToPost pId = do
-    st <- use id
-    case getMessageForPostId st pId of
-      Just msg ->
-        case msg ^. mChannelId of
-          Just cId -> do
-            setFocus cId
-            setMode MessageSelect
-            csMessageSelect .= MessageSelectState (msg^.mMessageId)
-          Nothing ->
-            error "INTERNAL: selected Post ID not associated with a channel"
-      Nothing ->
-        error "INTERNAL: selected Post ID not added to global state!"

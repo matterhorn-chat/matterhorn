@@ -9,7 +9,7 @@ import           Matterhorn.Prelude
 import qualified Data.Text as T
 
 import           Matterhorn.State.Common
-import           Matterhorn.State.Channels
+import           Matterhorn.State.Messages ( jumpToPost )
 import           Matterhorn.Types
 import           Matterhorn.Types.RichText ( unURL )
 
