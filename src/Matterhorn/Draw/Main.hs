@@ -485,92 +485,94 @@ connectionLayer st =
 
 messageSelectBottomBar :: ChatState -> Widget Name
 messageSelectBottomBar st =
-    let optionList = if null usableOptions
-                     then txt "(no actions available for this message)"
-                     else hBox $ intersperse (txt " ") usableOptions
-        usableOptions = catMaybes $ mkOption <$> options
-        mkOption (f, k, desc) = if f postMsg
-                                then Just $ withDefAttr messageSelectStatusAttr (txt k) <+>
-                                            txt (":" <> desc)
-                                else Nothing
-        numURLs = Seq.length $ msgURLs postMsg
-        s = if numURLs == 1 then "" else "s"
-        hasURLs = numURLs > 0
-        openUrlsMsg = "open " <> (T.pack $ show numURLs) <> " URL" <> s
-        hasVerb = isJust (findVerbatimChunk (postMsg^.mText))
-        -- make sure these keybinding pieces are up-to-date!
-        ev e =
-          let keyconf = st^.csResources.crConfiguration.to configUserKeys
-              KeyHandlerMap keymap = messageSelectKeybindings keyconf
-          in T.intercalate ","
-               [ ppBinding (eventToBinding k)
-               | KH { khKey     = k
-                    , khHandler = h
-                    } <- M.elems keymap
-               , kehEventTrigger h == ByEvent e
-               ]
-        options = [ ( not . isGap
-                    , ev YankWholeMessageEvent
-                    , "yank-all"
-                    )
-                  , ( \m -> isFlaggable m && not (m^.mFlagged)
-                    , ev FlagMessageEvent
-                    , "flag"
-                    )
-                  , ( \m -> isFlaggable m && m^.mFlagged
-                    , ev FlagMessageEvent
-                    , "unflag"
-                    )
-                  , ( \m -> isPinnable m && not (m^.mPinned)
-                    , ev PinMessageEvent
-                    , "pin"
-                    )
-                  , ( \m -> isPinnable m && m^.mPinned
-                    , ev PinMessageEvent
-                    , "unpin"
-                    )
-                  , ( isReplyable
-                    , ev ReplyMessageEvent
-                    , "reply"
-                    )
-                  , ( not . isGap
-                    , ev ViewMessageEvent
-                    , "view"
-                    )
-                  , ( isGap
-                    , ev FillGapEvent
-                    , "load messages"
-                    )
-                  , ( \m -> isMine st m && isEditable m
-                    , ev EditMessageEvent
-                    , "edit"
-                    )
-                  , ( \m -> isMine st m && isDeletable m
-                    , ev DeleteMessageEvent
-                    , "delete"
-                    )
-                  , ( const hasURLs
-                    , ev OpenMessageURLEvent
-                    , openUrlsMsg
-                    )
-                  , ( const hasVerb
-                    , ev YankMessageEvent
-                    , "yank-code"
-                    )
-                  , ( isReactable
-                    , ev ReactToMessageEvent
-                    , "react"
-                    )
-                  ]
-        Just postMsg = getSelectedMessage st
+    case getSelectedMessage st of
+        Nothing -> emptyWidget
+        Just postMsg ->
+            let optionList = if null usableOptions
+                             then txt "(no actions available for this message)"
+                             else hBox $ intersperse (txt " ") usableOptions
+                usableOptions = catMaybes $ mkOption <$> options
+                mkOption (f, k, desc) = if f postMsg
+                                        then Just $ withDefAttr messageSelectStatusAttr (txt k) <+>
+                                                    txt (":" <> desc)
+                                        else Nothing
+                numURLs = Seq.length $ msgURLs postMsg
+                s = if numURLs == 1 then "" else "s"
+                hasURLs = numURLs > 0
+                openUrlsMsg = "open " <> (T.pack $ show numURLs) <> " URL" <> s
+                hasVerb = isJust (findVerbatimChunk (postMsg^.mText))
+                -- make sure these keybinding pieces are up-to-date!
+                ev e =
+                  let keyconf = st^.csResources.crConfiguration.to configUserKeys
+                      KeyHandlerMap keymap = messageSelectKeybindings keyconf
+                  in T.intercalate ","
+                       [ ppBinding (eventToBinding k)
+                       | KH { khKey     = k
+                            , khHandler = h
+                            } <- M.elems keymap
+                       , kehEventTrigger h == ByEvent e
+                       ]
+                options = [ ( not . isGap
+                            , ev YankWholeMessageEvent
+                            , "yank-all"
+                            )
+                          , ( \m -> isFlaggable m && not (m^.mFlagged)
+                            , ev FlagMessageEvent
+                            , "flag"
+                            )
+                          , ( \m -> isFlaggable m && m^.mFlagged
+                            , ev FlagMessageEvent
+                            , "unflag"
+                            )
+                          , ( \m -> isPinnable m && not (m^.mPinned)
+                            , ev PinMessageEvent
+                            , "pin"
+                            )
+                          , ( \m -> isPinnable m && m^.mPinned
+                            , ev PinMessageEvent
+                            , "unpin"
+                            )
+                          , ( isReplyable
+                            , ev ReplyMessageEvent
+                            , "reply"
+                            )
+                          , ( not . isGap
+                            , ev ViewMessageEvent
+                            , "view"
+                            )
+                          , ( isGap
+                            , ev FillGapEvent
+                            , "load messages"
+                            )
+                          , ( \m -> isMine st m && isEditable m
+                            , ev EditMessageEvent
+                            , "edit"
+                            )
+                          , ( \m -> isMine st m && isDeletable m
+                            , ev DeleteMessageEvent
+                            , "delete"
+                            )
+                          , ( const hasURLs
+                            , ev OpenMessageURLEvent
+                            , openUrlsMsg
+                            )
+                          , ( const hasVerb
+                            , ev YankMessageEvent
+                            , "yank-code"
+                            )
+                          , ( isReactable
+                            , ev ReactToMessageEvent
+                            , "react"
+                            )
+                          ]
 
-    in hBox [ borderElem bsHorizontal
-            , txt "["
-            , txt "Message select: "
-            , optionList
-            , txt "]"
-            , hBorder
-            ]
+            in hBox [ borderElem bsHorizontal
+                    , txt "["
+                    , txt "Message select: "
+                    , optionList
+                    , txt "]"
+                    , hBorder
+                    ]
 
 maybePreviewViewport :: Widget Name -> Widget Name
 maybePreviewViewport w =
