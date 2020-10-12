@@ -573,9 +573,12 @@ renderElement curUser e = addStyle sty widget
 
 drawPermalink :: Text -> PostId -> Maybe (Seq Element) -> Widget a
 drawPermalink _ _ Nothing =
-    B.txt "<post link>"
+    B.txt permalinkPlaceholder
 drawPermalink curUser _ (Just label) =
     hBox $ F.toList $ B.txt "<" <| (renderElementSeq curUser label |> B.txt ">")
+
+permalinkPlaceholder :: Text
+permalinkPlaceholder = "<post link>"
 
 textWithCursor :: Text -> Widget a
 textWithCursor t
@@ -607,7 +610,7 @@ elementWidth e =
         EHyperlink (URL url) Nothing -> B.textWidth url
         EHyperlink _ (Just is)       -> sum $ elementWidth <$> is
         EEmoji t                     -> B.textWidth t + 2
-        EPermalink _ _ Nothing       -> 11
+        EPermalink _ _ Nothing       -> T.length permalinkPlaceholder
         EPermalink _ _ (Just label)  -> 2 + (sum $ elementWidth <$> label)
         ESpace                       -> 1
         ELineBreak                   -> 0
