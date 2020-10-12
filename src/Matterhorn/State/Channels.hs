@@ -409,20 +409,51 @@ handleNewChannel_ permitPostpone switch sbUpdate nc member = do
                     -- channel. Also consider the last join request
                     -- state field in case this is an asynchronous
                     -- channel addition triggered by a /join.
-                    pending1 <- checkPendingChannelChange (ChangeByChannelId $ getId nc)
+                    pending1 <- checkPendingChannelChange (getId nc)
                     pending2 <- case cChannel^.ccInfo.cdDMUserId of
                         Nothing -> return False
-                        Just uId -> checkPendingChannelChange (ChangeByUserId uId)
+                        Just uId -> checkPendingChannelChangeByUserId uId
 
-                    when (switch || pending1 || pending2) $ setFocus (getId nc)
+                    when (switch || isJust pending1 || pending2) $ do
+                        setFocus (getId nc)
+                        case pending1 of
+                            Just (Just act) -> act
+                            _ -> return ()
 
 -- | Check to see whether the specified channel has been queued up to
 -- be switched to.  Note that this condition is only cleared by the
 -- actual setFocus switch to the channel because there may be multiple
 -- operations that must complete before the channel is fully ready for
 -- display/use.
-checkPendingChannelChange :: PendingChannelChange -> MH Bool
-checkPendingChannelChange change = (==) (Just change) <$> use csPendingChannelChange
+--
+-- Returns Just if the specified channel has a pending switch. The
+-- result is an optional action to invoke after changing to the
+-- specified channel.
+checkPendingChannelChange :: ChannelId -> MH (Maybe (Maybe (MH ())))
+checkPendingChannelChange cId = do
+    ch <- use csPendingChannelChange
+    return $ case ch of
+        Just (ChangeByChannelId i act) ->
+            if i == cId then Just act else Nothing
+        _ -> Nothing
+
+-- | Check to see whether the specified channel has been queued up to
+-- be switched to.  Note that this condition is only cleared by the
+-- actual setFocus switch to the channel because there may be multiple
+-- operations that must complete before the channel is fully ready for
+-- display/use.
+--
+-- Returns Just if the specified channel has a pending switch. The
+-- result is an optional action to invoke after changing to the
+-- specified channel.
+checkPendingChannelChangeByUserId :: UserId -> MH Bool
+checkPendingChannelChangeByUserId uId = do
+    ch <- use csPendingChannelChange
+    return $ case ch of
+        Just (ChangeByUserId i) ->
+            i == uId
+        _ ->
+            False
 
 -- | Update the indicated Channel entry with the new data retrieved from
 -- the Mattermost server. Also update the channel name if it changed.
@@ -477,7 +508,7 @@ showChannelInSidebar cId setPending = do
                         Just False -> do
                             let pref = showDirectChannelPref (me^.userIdL) uId True
                             when setPending $
-                                csPendingChannelChange .= Just (ChangeByChannelId $ ch^.ccInfo.cdChannelId)
+                                csPendingChannelChange .= Just (ChangeByChannelId (ch^.ccInfo.cdChannelId) Nothing)
                             doAsyncWith Preempt $ do
                                 MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
                                 return Nothing
@@ -488,7 +519,7 @@ showChannelInSidebar cId setPending = do
                         Just False -> do
                             let pref = showGroupChannelPref cId (me^.userIdL)
                             when setPending $
-                                csPendingChannelChange .= Just (ChangeByChannelId $ ch^.ccInfo.cdChannelId)
+                                csPendingChannelChange .= Just (ChangeByChannelId (ch^.ccInfo.cdChannelId) Nothing)
                             doAsyncWith Preempt $ do
                                 MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
                                 return Nothing
@@ -642,8 +673,12 @@ applyPreferenceChange pref = do
           let Just cId = getDmChannelFor (directChannelShowUserId d) cs
           case directChannelShowValue d of
               True -> do
-                  pending <- checkPendingChannelChange $ ChangeByChannelId cId
-                  when pending $ setFocus cId
+                  pending <- checkPendingChannelChange cId
+                  case pending of
+                      Just mAct -> do
+                          setFocus cId
+                          fromMaybe (return ()) mAct
+                      Nothing -> return ()
               False -> do
                   csChannel(cId).ccInfo.cdSidebarShowOverride .= Nothing
 
@@ -657,8 +692,12 @@ applyPreferenceChange pref = do
           let cId = groupChannelId g
           case groupChannelShow g of
               True -> do
-                  pending <- checkPendingChannelChange $ ChangeByChannelId cId
-                  when pending $ setFocus cId
+                  pending <- checkPendingChannelChange cId
+                  case pending of
+                      Just mAct -> do
+                          setFocus cId
+                          fromMaybe (return ()) mAct
+                      Nothing -> return ()
               False -> do
                   csChannel(cId).ccInfo.cdSidebarShowOverride .= Nothing
 
@@ -854,7 +893,7 @@ createGroupChannel usernameList = do
                           -- we can just switch to it.
                           setFocus (channelId chan)
                       Nothing -> do
-                          csPendingChannelChange .= (Just $ ChangeByChannelId $ channelId chan)
+                          csPendingChannelChange .= (Just $ ChangeByChannelId (channelId chan) Nothing)
                           let pref = showGroupChannelPref (channelId chan) (me^.userIdL)
                           doAsyncWith Normal $ do
                             MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
@@ -938,8 +977,8 @@ handleChannelInvite cId = do
         member <- MM.mmGetChannelMember cId UserMe session
         tryMM (MM.mmGetChannel cId session)
               (\cwd -> return $ Just $ do
-                  pending <- checkPendingChannelChange $ ChangeByChannelId cId
-                  handleNewChannel pending SidebarUpdateImmediate cwd member)
+                  pending <- checkPendingChannelChange cId
+                  handleNewChannel (isJust pending) SidebarUpdateImmediate cwd member)
 
 addUserByNameToCurrentChannel :: Text -> MH ()
 addUserByNameToCurrentChannel uname =
@@ -1012,7 +1051,7 @@ joinChannel' chanId act = do
         Nothing -> do
             myId <- gets myUserId
             let member = MinChannelMember myId chanId
-            csPendingChannelChange .= (Just $ ChangeByChannelId chanId)
+            csPendingChannelChange .= (Just $ ChangeByChannelId chanId act)
             doAsyncChannelMM Preempt chanId (\ s c -> MM.mmAddUser c member s) (const $ return act)
 
 createOrFocusDMChannel :: UserInfo -> Maybe (ChannelId -> MH ()) -> MH ()
