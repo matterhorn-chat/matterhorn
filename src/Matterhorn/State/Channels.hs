@@ -1006,7 +1006,9 @@ joinChannel' chanId act = do
     setMode Main
     mChan <- preuse (csChannel(chanId))
     case mChan of
-        Just _ -> setFocus chanId
+        Just _ -> do
+            setFocus chanId
+            fromMaybe (return ()) act
         Nothing -> do
             myId <- gets myUserId
             let member = MinChannelMember myId chanId
