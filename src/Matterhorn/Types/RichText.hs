@@ -14,6 +14,7 @@ module Matterhorn.Types.RichText
   , ElementData(..)
   , ElementStyle(..)
   , TeamBaseURL(..)
+  , TeamURLName(..)
 
   , URL(..)
   , unURL
@@ -46,8 +47,12 @@ import           Network.Mattermost.Types ( PostId(..), Id(..), ServerBaseURL(..
 
 import           Matterhorn.Constants ( userSigil, normalChannelSigil )
 
+-- | A team name found in a Mattermost post URL
+data TeamURLName = TeamURLName Text
+                 deriving (Eq, Show, Ord)
+
 -- | A server base URL with a team name.
-data TeamBaseURL = TeamBaseURL Text ServerBaseURL
+data TeamBaseURL = TeamBaseURL TeamURLName ServerBaseURL
                  deriving (Eq, Show)
 
 -- | A block in a rich text document.
@@ -156,7 +161,7 @@ data ElementData =
     | ENonBreaking (Seq Element)
     -- ^ A sequence of elements that must never be separated during line
     -- wrapping.
-    | EPermalink Text PostId (Maybe (Seq Element))
+    | EPermalink TeamURLName PostId (Maybe (Seq Element))
     -- ^ A permalink to the specified team (name) and post ID with an
     -- optional label.
     deriving (Show, Eq, Ord)
@@ -379,7 +384,7 @@ takeUntilStrikethroughEnd is =
 -- | If the specified URL matches the active server base URL and team
 -- and refers to a post, extract the team name and post ID values and
 -- return them.
-getPermalink :: TeamBaseURL -> Text -> Maybe (Text, PostId)
+getPermalink :: TeamBaseURL -> Text -> Maybe (TeamURLName, PostId)
 getPermalink (TeamBaseURL tName (ServerBaseURL baseUrl)) url =
     let newBaseUrl = if "/" `T.isSuffixOf` baseUrl
                      then baseUrl
@@ -389,7 +394,7 @@ getPermalink (TeamBaseURL tName (ServerBaseURL baseUrl)) url =
        else let rest = T.drop (T.length newBaseUrl) url
                 (tName', rawPIdStr) = T.breakOn "/pl/" rest
                 pIdStr = T.drop 4 rawPIdStr
-            in if tName == tName' && not (T.null pIdStr)
+            in if tName == TeamURLName tName' && not (T.null pIdStr)
                then Just (tName, PI $ Id pIdStr)
                else Nothing
 
@@ -422,7 +427,7 @@ elementFindUsernames (e : es) =
         _ -> elementFindUsernames es
 
 -- | Obtain all URLs (and optional labels) in a rich text block.
-blockGetURLs :: RichTextBlock -> [(Either (Text, PostId) URL, Maybe (Seq Element))]
+blockGetURLs :: RichTextBlock -> [(Either (TeamURLName, PostId) URL, Maybe (Seq Element))]
 blockGetURLs (Para is) =
     catMaybes $ elementGetURL <$> toList is
 blockGetURLs (Header _ is) =
@@ -435,7 +440,7 @@ blockGetURLs (List _ _ bss) =
 blockGetURLs _ =
     mempty
 
-elementGetURL :: Element -> Maybe (Either (Text, PostId) URL, Maybe (Seq Element))
+elementGetURL :: Element -> Maybe (Either (TeamURLName, PostId) URL, Maybe (Seq Element))
 elementGetURL (Element _ (EHyperlink url label)) =
     Just (Right url, label)
 elementGetURL (Element _ (EImage url label)) =

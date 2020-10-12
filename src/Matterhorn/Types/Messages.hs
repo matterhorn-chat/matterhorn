@@ -127,6 +127,7 @@ import           Matterhorn.Types.Posts
 import           Matterhorn.Types.RichText ( RichTextBlock(..), Element(..)
                                 , ElementData(..), findUsernames, blockGetURLs
                                 , ElementStyle(..), URL(..), parseMarkdown
+                                , TeamURLName
                                 )
 
 
@@ -286,7 +287,7 @@ data ReplyState =
 data LinkTarget =
     LinkURL URL
     | LinkFileId FileId
-    | LinkPermalink Text PostId
+    | LinkPermalink TeamURLName PostId
     deriving (Eq, Show, Ord)
 
 -- | This type represents links to things in the 'open links' view.

@@ -18,7 +18,7 @@ import           Matterhorn.Draw.Util
 import           Matterhorn.Draw.RichText
 import           Matterhorn.Themes
 import           Matterhorn.Types
-import           Matterhorn.Types.RichText ( unURL )
+import           Matterhorn.Types.RichText ( unURL, TeamURLName(..) )
 
 
 renderUrlList :: ChatState -> Widget Name
@@ -53,7 +53,7 @@ renderUrlList st =
                   ] ) <=>
             (vLimit 1 (renderLinkTarget (link^.linkTarget)))
 
-        renderLinkTarget (LinkPermalink tName pId) =
+        renderLinkTarget (LinkPermalink (TeamURLName tName) pId) =
             renderText $ "Team: " <> tName <> ", post " <> idString pId
         renderLinkTarget (LinkURL url) = renderText $ unURL url
         renderLinkTarget (LinkFileId _) = txt " "

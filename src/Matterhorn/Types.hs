@@ -345,7 +345,7 @@ import           Matterhorn.Types.DirectionalSeq ( emptyDirSeq )
 import           Matterhorn.Types.KeyEvents
 import           Matterhorn.Types.Messages
 import           Matterhorn.Types.Posts
-import           Matterhorn.Types.RichText ( TeamBaseURL(..) )
+import           Matterhorn.Types.RichText ( TeamBaseURL(..), TeamURLName(..) )
 import           Matterhorn.Types.Users
 import qualified Matterhorn.Zipper as Z
 
@@ -1543,7 +1543,7 @@ serverBaseUrl :: ChatState -> TeamBaseURL
 serverBaseUrl st =
     let baseUrl = connectionDataURL $ _crConn $ _csResources st
         tName = teamName $ _csMyTeam st
-    in TeamBaseURL (sanitizeUserText tName) baseUrl
+    in TeamBaseURL (TeamURLName $ sanitizeUserText tName) baseUrl
 
 -- | The state of channel selection mode.
 data ChannelSelectState =
