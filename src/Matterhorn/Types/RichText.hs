@@ -328,12 +328,14 @@ fromMarkdownInlines baseUrl inlines =
                            else case F.toList label of
                                [C.Str u] | u == theUrl -> Nothing
                                _ -> Just $ fromMarkdownInlines baseUrl label
-              in case flip getPermalink theUrl =<< baseUrl of
-                  Nothing ->
-                      let url = URL theUrl
-                      in (Element (Hyperlink url sty) $ EHyperlink url mLabel) <| go sty xs
-                  Just (tName, pId) ->
-                      (Element Permalink $ EPermalink tName pId mLabel) <| go sty xs
+                  rest = go sty xs
+                  this = case flip getPermalink theUrl =<< baseUrl of
+                      Nothing ->
+                          let url = URL theUrl
+                          in Element (Hyperlink url sty) $ EHyperlink url mLabel
+                      Just (tName, pId) ->
+                          Element Permalink $ EPermalink tName pId mLabel
+              in this <| rest
           C.Image altIs theUrl _ :< xs ->
               let mLabel = if Seq.null altIs
                            then Nothing
