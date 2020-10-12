@@ -32,7 +32,7 @@ genUserRef = oneof [ return NoUser
 
 genMessage :: Gen Message
 genMessage = Message
-             <$> (fromMarkdownBlocks <$> genBlocks)
+             <$> (fromMarkdownBlocks Nothing <$> genBlocks)
              <*> genText
              <*> genUserRef
              <*> genTime
@@ -60,7 +60,7 @@ newtype Message__DeletedPost  = Message__DeletedPost { delMsg :: Message }
 genMessage__DeletedPost :: Gen Message__DeletedPost
 genMessage__DeletedPost = Message__DeletedPost
                           <$> (Message
-                              <$> (fromMarkdownBlocks <$> genBlocks)
+                              <$> (fromMarkdownBlocks Nothing <$> genBlocks)
                               <*> genText
                               <*> genUserRef
                               <*> genTime
@@ -82,7 +82,7 @@ newtype Message__Posted = Message__Posted { postMsg :: Message }
 genMessage__Posted :: Gen Message__Posted
 genMessage__Posted = Message__Posted
                      <$> (Message
-                         <$> (fromMarkdownBlocks <$> genBlocks)
+                         <$> (fromMarkdownBlocks Nothing <$> genBlocks)
                          <*> genText
                          <*> genUserRef
                          <*> genTime
