@@ -205,6 +205,25 @@ fromMarkdownListType (C.Numbered wrap i) =
                   C.ParenFollowing -> Paren
     in Numbered dec i
 
+-- | Remove hyperlinks from an inline sequence. This should only be used
+-- for sequences that are themselves used as labels for hyperlinks; this
+-- prevents them from embedding their own hyperlinks, which is nonsense.
+--
+-- Any hyperlinks found in the sequence will be replaced with a text
+-- represent of their URL (if they have no label) or the label itself
+-- otherwise.
+removeHyperlinks :: Seq C.Inline -> Seq C.Inline
+removeHyperlinks is =
+    case Seq.viewl is of
+        h :< t ->
+            case h of
+                C.Link label theUrl _ ->
+                    if Seq.null label
+                    then C.Str theUrl <| removeHyperlinks t
+                    else removeHyperlinks label <> removeHyperlinks t
+                _ -> h <| removeHyperlinks t
+        Seq.EmptyL -> mempty
+
 -- | Convert a sequence of Markdown inline values to a sequence of
 -- Elements.
 --
@@ -291,7 +310,7 @@ fromMarkdownInlines inlines =
           C.Link label theUrl _ :< xs ->
               let mLabel = if Seq.null label
                            then Nothing
-                           else Just $ fromMarkdownInlines label
+                           else Just $ fromMarkdownInlines $ removeHyperlinks label
                   url = URL theUrl
               in (Element (Hyperlink url sty) $ EHyperlink url mLabel) <| go sty xs
           C.Image altIs theUrl _ :< xs ->
