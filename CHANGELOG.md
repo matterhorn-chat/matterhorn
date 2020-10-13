@@ -1,4 +1,12 @@
 
+50200.10.3
+==========
+
+Bug fixes:
+ * Fixed an issue where hyperlinks whose labels contained more
+   hyperlinks would cause Matterhorn to generate rendering bug report
+   messages (#674)
+
 50200.10.2
 ==========
 
