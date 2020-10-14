@@ -47,13 +47,7 @@ drawPostsBox contents st =
           PostListPinned cId ->
               let cName = case findChannelById cId (st^.csChannels) of
                       Nothing -> "<UNKNOWN>"
-                      Just cc ->
-                          case cc^.ccInfo.cdType of
-                              Direct ->
-                                  case cc^.ccInfo.cdDMUserId >>= flip userById st of
-                                      Nothing -> mkChannelName (cc^.ccInfo)
-                                      Just u -> userSigil <> u^.uiName
-                              _ -> mkChannelName (cc^.ccInfo)
+                      Just cc -> mkChannelName st (cc^.ccInfo)
               in "Posts pinned in " <> cName
           PostListSearch terms searching -> "Search results" <> if searching
             then ": " <> terms
@@ -98,7 +92,7 @@ drawPostsBox contents st =
                     | Just u <- flip userById st =<< chan^.ccInfo.cdDMUserId ->
                         (forceAttr channelNameAttr (txt (userSigil <> u^.uiName)) <=>
                           (str "  " <+> renderedMsg))
-                  _ -> (forceAttr channelNameAttr (txt (chan^.ccInfo.to mkChannelName)) <=>
+                  _ -> (forceAttr channelNameAttr (txt (chan^.ccInfo.to (mkChannelName st))) <=>
                          (str "  " <+> renderedMsg))
             _ | CP _ <- msg^.mType -> str "[BUG: unknown channel]"
               | otherwise -> renderedMsg

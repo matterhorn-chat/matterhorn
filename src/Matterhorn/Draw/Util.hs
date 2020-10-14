@@ -89,9 +89,12 @@ userSigilFromInfo u = case u^.uiStatus of
     DoNotDisturb -> '×'
     Other _      -> '?'
 
-mkChannelName :: ChannelInfo -> Text
-mkChannelName c = T.append sigil (c^.cdName)
+mkChannelName :: ChatState -> ChannelInfo -> Text
+mkChannelName st c = T.append sigil t
     where
+        t = case c^.cdDMUserId >>= flip userById st of
+            Nothing -> c^.cdName
+            Just u -> u^.uiName
         sigil = case c^.cdType of
             Private   -> mempty
             Ordinary  -> normalChannelSigil

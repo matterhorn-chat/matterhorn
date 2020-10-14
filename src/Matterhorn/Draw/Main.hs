@@ -288,7 +288,7 @@ renderChannelHeader st hs chan =
     let chnType = chan^.ccInfo.cdType
         topicStr = chan^.ccInfo.cdHeader
         userHeader u = let s = T.intercalate " " $ filter (not . T.null) parts
-                           parts = [ userSigil <> u^.uiName
+                           parts = [ chanName
                                    , if (all T.null names)
                                      then mempty
                                      else "is"
@@ -316,7 +316,7 @@ renderChannelHeader st hs chan =
         channelNameString = case chnType of
             Direct ->
                 case chan^.ccInfo.cdDMUserId >>= flip userById st of
-                    Nothing -> mkChannelName (chan^.ccInfo)
+                    Nothing -> chanName
                     Just u -> userHeader u
             Private ->
                 channelNamePair <> " (Private)"
@@ -324,7 +324,8 @@ renderChannelHeader st hs chan =
                 channelNamePair <> " (Private group)"
             _ ->
                 channelNamePair
-        channelNamePair = mkChannelName (chan^.ccInfo) <> " - " <> (chan^.ccInfo.cdDisplayName)
+        channelNamePair = chanName <> " - " <> (chan^.ccInfo.cdDisplayName)
+        chanName = mkChannelName st (chan^.ccInfo)
         baseUrl = serverBaseUrl st
 
     in renderText' (Just baseUrl) (myUsername st)
