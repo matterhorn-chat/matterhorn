@@ -227,7 +227,7 @@ commandList =
   , Cmd "focus" "Select from available channels" NoArg $ \ () ->
         beginChannelSelect
 
-  , Cmd "help" "Show this help screen" NoArg $ \ _ ->
+  , Cmd "help" "Show the main help screen" NoArg $ \ _ ->
         showHelpScreen mainHelpTopic
 
   , Cmd "shortcuts" "Show keyboard shortcuts" NoArg $ \ _ ->
