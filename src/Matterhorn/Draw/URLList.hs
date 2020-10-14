@@ -7,6 +7,7 @@ import           Prelude ()
 import           Matterhorn.Prelude
 
 import           Brick
+import           Brick.Widgets.Border ( hBorder )
 import           Brick.Widgets.List ( renderList )
 import qualified Data.Foldable as F
 import           Lens.Micro.Platform ( to )
@@ -25,9 +26,10 @@ renderUrlList :: ChatState -> Widget Name
 renderUrlList st =
     header <=> urlDisplay
     where
-        header = withDefAttr channelHeaderAttr $ vLimit 1 $
-                 (txt $ "URLs: " <> (st^.csCurrentChannel.ccInfo.cdName)) <+>
-                 fill ' '
+        header = (withDefAttr channelHeaderAttr $ vLimit 1 $
+                 (renderText' Nothing "" (getHighlightSet st) $
+                  "URLs: " <> (mkChannelName st (st^.csCurrentChannel.ccInfo))) <+>
+                 fill ' ') <=> hBorder
 
         urlDisplay = if F.length urls == 0
                      then str "No URLs found in this channel."
