@@ -486,6 +486,8 @@ wrapLine maxCols hSet = splitChunks . go (SplitState (S.singleton S.empty) 0)
                   case newEData of
                       EHyperlink url (Just labelEs) ->
                           go st $ addHyperlink url <$> decorateLinkLabel labelEs
+                      EHyperlink url Nothing ->
+                          go st $ addHyperlink url <$> decorateLinkLabel (Seq.fromList [Element Normal $ EText $ unURL url])
                       EPermalink _tName _pId (Just labelEs) ->
                           go st $ setElementStyle Permalink <$> decorateLinkLabel labelEs
                       EImage url (Just labelEs) ->
