@@ -8,7 +8,7 @@ set -e
 
 HERE=$(cd `dirname $0`; pwd)
 ROOT=$HERE/..
-RELEASE_BRANCH=develop
+RELEASE_BRANCH=master
 
 if ! which cabal >/dev/null 2>/dev/null
 then
