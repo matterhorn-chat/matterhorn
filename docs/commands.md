@@ -11,7 +11,7 @@
 | `/focus <~channel>` | Focus on a channel or user |
 | `/focus` | Select from available channels |
 | `/group-msg <@user [@user ...]>` | Create a group chat |
-| `/help` | Show this help screen |
+| `/help` | Show the main help screen |
 | `/help <topic>` | Show help about a particular topic |
 | `/hide` | Hide the current DM or group channel from the channel list |
 | `/join` | Find a channel to join |
@@ -42,6 +42,7 @@
 | `/theme <theme>` | Set the color theme |
 | `/toggle-channel-list` | Toggle channel list visibility |
 | `/toggle-expanded-topics` | Toggle expanded channel topics |
+| `/toggle-message-timestamps` | Toggle message timestamps |
 | `/topic` | Set the current channel's topic (header) interactively |
 | `/topic <topic>` | Set the current channel's topic (header) |
 | `/user` | Show users to initiate a private DM chat channel |
