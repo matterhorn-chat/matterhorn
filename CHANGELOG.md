@@ -1,4 +1,113 @@
 
+50200.11.0
+==========
+
+New features:
+ * Matterhorn now opens post links itself rather than invoking the
+   configured URL open command. This means that if a user obtains a link
+   to a post in the web client and pastes it into a message, Matterhorn
+   will detect it, and if the user chooses to open that link, Matterhorn
+   will switch to the post's channel and show the post. This change
+   comes a new theme attribute, `permalink`, that is used to style post
+   permalinks. Post links with no labels appear as `<post link>`; post
+   links with labels are rendered with their labels. Post links also
+   appear in the URL list accessed with `C-o`, and they are opened by
+   the message selection mode `o` binding.
+ * Message timestamp visibility can now be controlled with the
+   configuration setting `showMessageTimestamps` (default: `True`) and
+   can be toggled at runtime with the new `/toggle-message-timestamps`
+   command.
+ * The channel list can now be displayed on either the left side of
+   the screen or the right. This is controlled with a new configuration
+   setting, `channelListOrientation`, set to either `left` (the default
+   and previous behavior) or `right`.
+ * Matterhorn now supports strikethrough syntax in messages. This change
+   adds a new theme attribute, `markdownStrikethrough`, that
+   is used to style strikethrough text. This change also adds
+   support for `strikethrough` as a valid style specifier in theme
+   customization files. Bear in mind that your terminal might
+   not support strikethrough; for details, see the FAQ entry on
+   strikethrough support.
+ * Matterhorn now has improved handling for channel topics (headers)
+   with multiple lines of text. Previously Matterhorn displayed all
+   lines in a multi-line channel topic but replaced newlines with
+   spaces. That resulted in broken layouts for multi-line topics where
+   layout was important. Now it renders the topics as originally
+   intended with user control over how multi-line topics are displayed
+   in order to let the user control how the topic affects screen real
+   estate use.
+   * Added a new key event, `toggle-expanded-channel-topics`, to toggle
+     whether channel topics show only their first line or all lines.
+   * Added a new configuration setting, `showExpandedChannelTopics`, to
+     set this behavior on startup (default: `True`).
+   * Added a new command, `/toggle-expanded-topics`, and a new default
+     keybinding, `F3`, to control this behavior at runtime.
+ * Added a `/topic` command that opens an interactive topic editor when
+   run with no arguments. The editor provides a live Markdown preview
+   of the channel topic. As part of the UI for this feature, new theme
+   attributes were added: `button` and `button.focused` for rendering
+   unfocused and focused buttons, respectively.
+ * Command autocompletion now queries the server for available commands
+   and includes those in the command list. Server commands are also
+   indicated as being provided by the server to help distinguish them
+   from Matterhorn-specific commands.
+
+Other changes:
+ * Channel selection mode (`C-g`) now displays entries more consistently
+   with the normal channel sidebar, including:
+   * Channel mention counts and visual styles
+   * The previous channel sigil (`<`) and first-unread channel sigil
+     (`~`)
+   * Channel mute status (`(m)`)
+   * Unread status and visual style
+ * When composing replies, Mattehorn now displays the threat root
+   message of the thread being replied to, rather than the message
+   the user selected for reply (#670). This is intended to be less
+   surprising than the old behavior since showing the root post in the
+   preview is consistent with the display of the post in the message
+   list once it is posted, where the root post is shown above the reply.
+ * Matterhorn no longer considers external program output to constitute
+   an error, instead only reporting external program errors on non-zero
+   exit status (#665).
+ * Matterhorn now decorates all hyperlinks with angle brackets. This
+   change is intended to get around issues caused when a hyperlink label
+   has a style or color that prevents the normal hyperlink color from
+   being used, thus concealing the fact that it is a link. This makes
+   all links visible regardless of link label content. In particular,
+   links labeled `foo` now get rendered as `<foo>`. Links with no labels
+   also get decorated this way.
+ * The total unread channel count is now included in the window title
+   bar updates.
+ * The total unread channel count is now included in the channel list
+   header.
+ * Long lines in code blocks with no syntax highlighting are now wrapped
+   to improve readability.
+ * Command autocompletion now sorts command completions to prefer prefix
+   matches first.
+ * Command autocomplete now makes only one request for the server
+   command list per completion attempt.
+ * There is now a new `/shortcuts` command to stand in for
+   server-provided version which did nothing in Matterhorn.
+ * Message selection mode now remains active when:
+   * Opening message URLs (`C-s`/`o`),
+   * Exiting the message view window (`C-s`/`v`), and
+   * Exiting the emoji reaction list window (`C-s`/`a`).
+ * The channel list now includes an unread indicator in the DM channel
+   section header when any DM channels are unread.
+ * The visual style for channel selection match text now includes the
+   underline style.
+ * All unknown websocket events are now logged rather than triggering
+   messages to ask the user to report issues.
+
+Bug fixes:
+ * The URL list (`C-o`) now has a fixed header when the channel in
+   question is a DM channel.
+ * The URL list no longer treats URLs with the same target but different
+   labels as duplicates.
+ * The message editor's multi-line toggle UI hint now looks up the
+   active keybinding rather than hard-coding it.
+ * The channel sidebar's unread logic was improved (#655).
+
 50200.10.3
 ==========
 
