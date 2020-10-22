@@ -9,7 +9,7 @@ module Matterhorn.Draw.RichText
   , renderMessage
   , renderText
   , renderText'
-  , renderElementSeq
+  , renderInlineSeq
   , cursorSentinel
   , addEllipsis
   , findVerbatimChunk
@@ -66,18 +66,18 @@ omittedUsernameType = \case
 -- If the last block is a paragraph, append it to that paragraph.
 -- Otherwise, append a new block so it appears beneath the last
 -- block-level element.
-addEditSentinel :: ElementData -> Seq Block -> Seq Block
+addEditSentinel :: InlineData -> Seq Block -> Seq Block
 addEditSentinel d bs =
     case viewr bs of
         EmptyR -> bs
         (rest :> b) -> rest <> appendEditSentinel d b
 
-appendEditSentinel :: ElementData -> Block -> Seq Block
+appendEditSentinel :: InlineData -> Block -> Seq Block
 appendEditSentinel sentinel b =
     let s = Para (S.singleton m)
-        m = Element Normal sentinel
+        m = Inline Normal sentinel
     in case b of
-        Para is -> S.singleton $ Para (is |> Element Normal ESpace |> m)
+        Para is -> S.singleton $ Para (is |> Inline Normal ESpace |> m)
         _ -> S.fromList [b, s]
 
 -- | A bundled structure that includes all the information necessary
@@ -245,7 +245,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                               , renderRichText mdMyUsername hs newW mdWrapNonhighlightedCodeBlocks (Blocks bs)
                               ]
 
-        breakCheck e = eData e `elem` [ELineBreak, ESoftBreak]
+        breakCheck i = ilData i `elem` [ELineBreak, ESoftBreak]
 
 addEllipsis :: Widget a -> Widget a
 addEllipsis w = B.Widget (B.hSize w) (B.vSize w) $ do
@@ -294,7 +294,7 @@ addBlankLines = go' . viewl
              a <| blank <| go b (viewl rs)
         go x (y :< rs) = x <| go y (viewl rs)
         go x (EmptyL) = S.singleton x
-        blank = Para (S.singleton (Element Normal ESpace))
+        blank = Para (S.singleton (Inline Normal ESpace))
 
 -- Render text to markdown without username highlighting or permalink detection
 renderText :: Text -> Widget a
@@ -328,10 +328,10 @@ data DrawCfg =
 
 blockToWidget :: Block -> M (Widget a)
 blockToWidget (Para is) =
-    toElementChunk is
+    toInlineChunk is
 blockToWidget (Header n is) = do
     headerTxt <- withReader (\c -> c { drawLineWidth = subtract 1 <$> drawLineWidth c }) $
-                 toElementChunk is
+                 toInlineChunk is
     return $ B.withDefAttr clientHeaderAttr $
         hBox [ B.padRight (B.Pad 1) $ header n
              , headerTxt
@@ -409,8 +409,8 @@ rawCodeBlockToWidget tx = do
 
             render $ padding <+> (Widget Fixed Fixed $ return renderedText)
 
-toElementChunk :: Seq Element -> M (Widget a)
-toElementChunk es = do
+toInlineChunk :: Seq Inline -> M (Widget a)
+toInlineChunk es = do
     w <- asks drawLineWidth
     hSet <- asks drawHighlightSet
     curUser <- asks drawCurUser
@@ -418,7 +418,7 @@ toElementChunk es = do
     return $ B.Widget B.Fixed B.Fixed $ do
         ctx <- B.getContext
         let width = fromMaybe (ctx^.B.availWidthL) w
-            ws    = fmap (renderElementSeq curUser) (wrapLine width hSet es)
+            ws    = fmap (renderInlineSeq curUser) (wrapLine width hSet es)
         B.render (vBox (fmap hBox ws))
 
 blocksToList :: ListType -> Seq Blocks -> M (Widget a)
@@ -437,13 +437,13 @@ blocksToList lt bs = do
     return $ vBox results
 
 data SplitState = SplitState
-  { splitChunks  :: Seq (Seq Element)
+  { splitChunks  :: Seq (Seq Inline)
   , splitCurrCol :: Int
   }
 
-wrapLine :: Int -> HighlightSet -> Seq Element -> Seq (Seq Element)
+wrapLine :: Int -> HighlightSet -> Seq Inline -> Seq (Seq Inline)
 wrapLine maxCols hSet = splitChunks . go (SplitState (S.singleton S.empty) 0)
-  where go st (viewl-> e :< es) = go st' es
+  where go st (viewl-> i :< is) = go st' is
           where
               HighlightSet { hUserSet = uSet, hChannelSet = cSet } = hSet
 
@@ -453,8 +453,8 @@ wrapLine maxCols hSet = splitChunks . go (SplitState (S.singleton S.empty) 0)
               -- place; otherwise we translate it into an ordinary text
               -- element so that it does not render highlighted as a
               -- valid user or channel reference.
-              newElement = e { eData = newEData }
-              newEData = case eData e of
+              newInline = i { ilData = newIData }
+              newIData = case ilData i of
                   EUser u ->
                       if u `Set.member` uSet
                       then EUser u
@@ -465,67 +465,67 @@ wrapLine maxCols hSet = splitChunks . go (SplitState (S.singleton S.empty) 0)
                       else EText $ normalChannelSigil <> c
                   d -> d
 
-              addHyperlink url el = setElementStyle (Hyperlink url (eStyle el)) el
+              addHyperlink url il = setInlineStyle (Hyperlink url (ilStyle il)) il
 
-              linkOpenBracket = Element Normal (EText "<")
-              linkCloseBracket = Element Normal (EText ">")
+              linkOpenBracket = Inline Normal (EText "<")
+              linkCloseBracket = Inline Normal (EText ">")
               addOpenBracket l =
                   case Seq.viewl l of
                       EmptyL -> l
                       h :< t ->
-                          let h' = Element Normal
+                          let h' = Inline Normal
                                            (ENonBreaking $ Seq.fromList [linkOpenBracket, h])
                           in h' <| t
               addCloseBracket l =
                   case Seq.viewr l of
                       EmptyR -> l
                       h :> t ->
-                          let t' = Element Normal
+                          let t' = Inline Normal
                                            (ENonBreaking $ Seq.fromList [t, linkCloseBracket])
                           in h |> t'
               decorateLinkLabel = addOpenBracket .  addCloseBracket
 
               st' =
-                  case newEData of
+                  case newIData of
                       EHyperlink url (Just labelEs) ->
                           go st $ addHyperlink url <$> decorateLinkLabel labelEs
                       EHyperlink url Nothing ->
-                          go st $ addHyperlink url <$> decorateLinkLabel (Seq.fromList [Element Normal $ EText $ unURL url])
+                          go st $ addHyperlink url <$> decorateLinkLabel (Seq.fromList [Inline Normal $ EText $ unURL url])
                       EPermalink _tName _pId (Just labelEs) ->
-                          go st $ setElementStyle Permalink <$> decorateLinkLabel labelEs
+                          go st $ setInlineStyle Permalink <$> decorateLinkLabel labelEs
                       EImage url (Just labelEs) ->
                           go st $ addHyperlink url <$> decorateLinkLabel labelEs
                       _ ->
-                          if | newEData == ESoftBreak || newEData == ELineBreak ->
+                          if | newIData == ESoftBreak || newIData == ELineBreak ->
                                  st { splitChunks = splitChunks st |> S.empty
                                     , splitCurrCol = 0
                                     }
-                             | available >= eWidth ->
-                                 st { splitChunks  = addElement newElement (splitChunks st)
-                                    , splitCurrCol = splitCurrCol st + eWidth
+                             | available >= iWidth ->
+                                 st { splitChunks  = addInline newInline (splitChunks st)
+                                    , splitCurrCol = splitCurrCol st + iWidth
                                     }
-                             | newEData == ESpace ->
+                             | newIData == ESpace ->
                                  st { splitChunks = splitChunks st |> S.empty
                                     , splitCurrCol = 0
                                     }
                              | otherwise ->
-                                 st { splitChunks  = splitChunks st |> S.singleton newElement
-                                    , splitCurrCol = eWidth
+                                 st { splitChunks  = splitChunks st |> S.singleton newInline
+                                    , splitCurrCol = iWidth
                                     }
               available = maxCols - splitCurrCol st
-              eWidth = elementWidth newElement
-              addElement x (viewr-> ls :> l) = ( ls |> (l |> x))
-              addElement _ _ = error "[unreachable]"
+              iWidth = inlineWidth newInline
+              addInline x (viewr-> ls :> l) = ( ls |> (l |> x))
+              addInline _ _ = error "[unreachable]"
         go st _                 = st
 
-renderElementSeq :: Text -> Seq Element -> Seq (Widget a)
-renderElementSeq curUser es = renderElement curUser <$> es
+renderInlineSeq :: Text -> Seq Inline -> Seq (Widget a)
+renderInlineSeq curUser is = renderInline curUser <$> is
 
-renderElement :: Text -> Element -> Widget a
-renderElement curUser e = addStyle sty widget
+renderInline :: Text -> Inline -> Widget a
+renderInline curUser i = addStyle sty widget
     where
-        sty = eStyle e
-        dat = eData e
+        sty = ilStyle i
+        dat = ilData i
         addStyle s = case s of
                 Normal                  -> id
                 Emph                    -> B.withDefAttr clientEmphAttr
@@ -550,7 +550,7 @@ renderElement curUser e = addStyle sty widget
 
             ESpace                       -> B.txt " "
             EPermalink _ pId mLabel      -> drawPermalink curUser pId mLabel
-            ENonBreaking es              -> hBox $ renderElement curUser <$> es
+            ENonBreaking is              -> hBox $ renderInline curUser <$> is
             ERawHtml t                   -> textWithCursor t
             EEditSentinel recent         -> let attr = if recent
                                                        then editedRecentlyMarkingAttr
@@ -576,11 +576,11 @@ renderElement curUser e = addStyle sty widget
             ESoftBreak                   -> B.emptyWidget
             ELineBreak                   -> B.emptyWidget
 
-drawPermalink :: Text -> PostId -> Maybe (Seq Element) -> Widget a
+drawPermalink :: Text -> PostId -> Maybe (Seq Inline) -> Widget a
 drawPermalink _ _ Nothing =
     B.txt permalinkPlaceholder
 drawPermalink curUser _ (Just label) =
-    hBox $ F.toList $ B.txt "<" <| (renderElementSeq curUser label |> B.txt ">")
+    hBox $ F.toList $ B.txt "<" <| (renderInlineSeq curUser label |> B.txt ">")
 
 permalinkPlaceholder :: Text
 permalinkPlaceholder = "<post link>"
@@ -601,22 +601,22 @@ removeCursor = T.filter (/= cursorSentinel)
 editMarking :: Text
 editMarking = "(edited)"
 
-elementWidth :: Element -> Int
-elementWidth e =
-    case eData e of
-        ENonBreaking es              -> sum $ elementWidth <$> es
+inlineWidth :: Inline -> Int
+inlineWidth i =
+    case ilData i of
+        ENonBreaking is              -> sum $ inlineWidth <$> is
         EText t                      -> B.textWidth t
         ERawHtml t                   -> B.textWidth t
         EUser t                      -> T.length userSigil + B.textWidth t
         EChannel t                   -> T.length normalChannelSigil + B.textWidth t
         EEditSentinel _              -> B.textWidth editMarking
         EImage (URL url) Nothing     -> B.textWidth url
-        EImage _ (Just is)           -> sum $ elementWidth <$> is
+        EImage _ (Just is)           -> sum $ inlineWidth <$> is
         EHyperlink (URL url) Nothing -> B.textWidth url
-        EHyperlink _ (Just is)       -> sum $ elementWidth <$> is
+        EHyperlink _ (Just is)       -> sum $ inlineWidth <$> is
         EEmoji t                     -> B.textWidth t + 2
         EPermalink _ _ Nothing       -> T.length permalinkPlaceholder
-        EPermalink _ _ (Just label)  -> 2 + (sum $ elementWidth <$> label)
+        EPermalink _ _ (Just label)  -> 2 + (sum $ inlineWidth <$> label)
         ESpace                       -> 1
         ELineBreak                   -> 0
         ESoftBreak                   -> 0

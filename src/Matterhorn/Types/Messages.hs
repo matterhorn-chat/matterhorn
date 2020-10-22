@@ -124,9 +124,9 @@ import           Network.Mattermost.Types ( ChannelId, PostId, Post
 
 import           Matterhorn.Types.DirectionalSeq
 import           Matterhorn.Types.Posts
-import           Matterhorn.Types.RichText ( Blocks, unBlocks, Element(..)
-                                , ElementData(..), findUsernames, blockGetURLs
-                                , ElementStyle(..), URL(..), parseMarkdown
+import           Matterhorn.Types.RichText ( Blocks, unBlocks, Inline(..)
+                                , InlineData(..), findUsernames, blockGetURLs
+                                , InlineStyle(..), URL(..), parseMarkdown
                                 , TeamURLName
                                 )
 
@@ -294,7 +294,7 @@ data LinkTarget =
 data LinkChoice =
     LinkChoice { _linkTime   :: ServerTime
                , _linkUser   :: UserRef
-               , _linkLabel  :: Maybe (Seq Element)
+               , _linkLabel  :: Maybe (Seq Inline)
                , _linkTarget :: LinkTarget
                } deriving (Eq, Show)
 
@@ -743,8 +743,8 @@ msgURLs msg =
                             (LinkFileId $ a^.attachmentFileId))
                        <$> (msg^.mAttachments)
       attachmentLabel a =
-          Seq.fromList [ Element Normal $ EText "attachment"
-                       , Element Normal ESpace
-                       , Element Code $ EText $ a^.attachmentName
+          Seq.fromList [ Inline Normal $ EText "attachment"
+                       , Inline Normal ESpace
+                       , Inline Code $ EText $ a^.attachmentName
                        ]
   in msgUrls <> attachmentURLs

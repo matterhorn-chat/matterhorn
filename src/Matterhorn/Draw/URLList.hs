@@ -47,7 +47,7 @@ renderUrlList st =
                     in colorUsername me u u
                   , case link^.linkLabel of
                       Nothing -> emptyWidget
-                      Just label -> txt ": " <+> hBox (F.toList $ renderElementSeq me label)
+                      Just label -> txt ": " <+> hBox (F.toList $ renderInlineSeq me label)
                   , fill ' '
                   , renderDate st $ withServerTime time
                   , str " "

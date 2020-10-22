@@ -14,9 +14,9 @@ module Matterhorn.Types.RichText
   , ListType(..)
   , CodeBlockInfo(..)
   , NumDecoration(..)
-  , Element(..)
-  , ElementData(..)
-  , ElementStyle(..)
+  , Inline(..)
+  , InlineData(..)
+  , InlineStyle(..)
   , TeamBaseURL(..)
   , TeamURLName(..)
 
@@ -24,7 +24,7 @@ module Matterhorn.Types.RichText
   , unURL
 
   , parseMarkdown
-  , setElementStyle
+  , setInlineStyle
 
   , findUsernames
   , blockGetURLs
@@ -68,9 +68,9 @@ unBlocks (Blocks bs) = bs
 
 -- | A block in a rich text document.
 data Block =
-    Para (Seq Element)
+    Para (Seq Inline)
     -- ^ A paragraph.
-    | Header Int (Seq Element)
+    | Header Int (Seq Inline)
     -- ^ A section header with specified depth and contents.
     | Blockquote Blocks
     -- ^ A blockquote.
@@ -115,16 +115,16 @@ data NumDecoration =
     deriving (Eq, Show, Ord)
 
 -- | A single logical inline element in a rich text block.
-data Element =
-    Element { eStyle :: ElementStyle
-            -- ^ The element's visual style.
-            , eData :: ElementData
-            -- ^ The element's data.
-            }
-            deriving (Show, Eq, Ord)
+data Inline =
+    Inline { ilStyle :: InlineStyle
+           -- ^ The element's visual style.
+           , ilData :: InlineData
+           -- ^ The element's data.
+           }
+           deriving (Show, Eq, Ord)
 
-setElementStyle :: ElementStyle -> Element -> Element
-setElementStyle s e = e { eStyle = s }
+setInlineStyle :: InlineStyle -> Inline -> Inline
+setInlineStyle s e = e { ilStyle = s }
 
 -- | A URL.
 newtype URL = URL Text
@@ -134,7 +134,7 @@ unURL :: URL -> Text
 unURL (URL url) = url
 
 -- | The kinds of data that can appear in rich text elements.
-data ElementData =
+data InlineData =
     EText Text
     -- ^ A sequence of non-whitespace characters.
     | ESpace
@@ -158,27 +158,27 @@ data ElementData =
     | EChannel Text
     -- ^ A channel reference. The text here includes only the channel
     -- name, not the sigil.
-    | EHyperlink URL (Maybe (Seq Element))
+    | EHyperlink URL (Maybe (Seq Inline))
     -- ^ A hyperlink to the specified URL. Optionally provides an
     -- element sequence indicating the URL's text label; if absent, the
     -- label is understood to be the URL itself.
-    | EImage URL (Maybe (Seq Element))
+    | EImage URL (Maybe (Seq Inline))
     -- ^ An image at the specified URL. Optionally provides an element
     -- sequence indicating the image's "alt" text label; if absent, the
     -- label is understood to be the URL itself.
     | EEmoji Text
     -- ^ An emoji reference. The text here includes only the text
     -- portion, not the colons, e.g. "foo" instead of ":foo:".
-    | ENonBreaking (Seq Element)
+    | ENonBreaking (Seq Inline)
     -- ^ A sequence of elements that must never be separated during line
     -- wrapping.
-    | EPermalink TeamURLName PostId (Maybe (Seq Element))
+    | EPermalink TeamURLName PostId (Maybe (Seq Inline))
     -- ^ A permalink to the specified team (name) and post ID with an
     -- optional label.
     deriving (Show, Eq, Ord)
 
--- | Element visual styles.
-data ElementStyle =
+-- | Inline visual styles.
+data InlineStyle =
     Normal
     -- ^ Normal text
     | Emph
@@ -189,7 +189,7 @@ data ElementStyle =
     -- ^ Bold text
     | Code
     -- ^ Inline code segment or code block
-    | Hyperlink URL ElementStyle
+    | Hyperlink URL InlineStyle
     -- ^ A terminal hyperlink to the specified URL, composed with
     -- another element style
     | Permalink
@@ -292,14 +292,14 @@ removeHyperlinks is =
 -- sequences of Elements. This means that logic in 'Draw.RichText' that
 -- does line-wrapping will have to explicitly break up link and image
 -- labels across line breaks.
-fromMarkdownInlines :: Maybe TeamBaseURL -> Seq C.Inline -> Seq Element
+fromMarkdownInlines :: Maybe TeamBaseURL -> Seq C.Inline -> Seq Inline
 fromMarkdownInlines baseUrl inlines =
     let go sty is = case Seq.viewl is of
           C.Str "~" :< xs ->
               case Seq.viewl xs of
                   C.Str "~" :< xs2 ->
                       case takeUntilStrikethroughEnd xs2 of
-                          Nothing -> Element sty (EText "~") <|
+                          Nothing -> Inline sty (EText "~") <|
                                      go sty xs
                           Just (strikethroughInlines, rest) ->
                               go Strikethrough strikethroughInlines <>
@@ -308,8 +308,8 @@ fromMarkdownInlines baseUrl inlines =
                       let (cFrags, rest) = Seq.spanl isNameFragment xs
                           cn = T.concat (unsafeGetStr <$> F.toList cFrags)
                       in if not (T.null cn)
-                         then Element sty (EChannel cn) <| go sty rest
-                         else Element sty (EText normalChannelSigil) <| go sty xs
+                         then Inline sty (EChannel cn) <| go sty rest
+                         else Inline sty (EText normalChannelSigil) <| go sty xs
           C.Str ":" :< xs ->
               let validEmojiFragment (C.Str f) =
                       f `elem` ["_", "-"] || T.all isAlphaNum f
@@ -318,14 +318,14 @@ fromMarkdownInlines baseUrl inlines =
                   em = T.concat $ unsafeGetStr <$> F.toList emojiFrags
               in case Seq.viewl rest of
                   C.Str ":" :< rest2 ->
-                      Element Normal (EEmoji em) <| go sty rest2
+                      Inline Normal (EEmoji em) <| go sty rest2
                   _ ->
-                      Element sty (EText ":") <| go sty xs
+                      Inline sty (EText ":") <| go sty xs
           C.Str t :< xs | userSigil `T.isPrefixOf` t ->
               let (uFrags, rest) = Seq.spanl isNameFragment xs
                   t' = T.concat $ t : (unsafeGetStr <$> F.toList uFrags)
                   u = T.drop 1 t'
-              in Element sty (EUser u) <| go sty rest
+              in Inline sty (EUser u) <| go sty rest
           C.Str t :< xs ->
               -- When we encounter a string node, we go ahead and
               -- process the rest of the nodes in the sequence. If the
@@ -340,18 +340,18 @@ fromMarkdownInlines baseUrl inlines =
               -- and that we make sure we only merge when they have the
               -- same style.
               let rest = go sty xs
-                  e = Element sty (EText t)
+                  e = Inline sty (EText t)
               in case Seq.viewl rest of
-                  Element sty2 (EText t2) :< tail_ | sty2 == sty ->
-                      (Element sty (EText (t <> t2))) <| tail_
+                  Inline sty2 (EText t2) :< tail_ | sty2 == sty ->
+                      (Inline sty (EText (t <> t2))) <| tail_
                   _ ->
                       e <| rest
           C.Space :< xs ->
-              Element sty ESpace <| go sty xs
+              Inline sty ESpace <| go sty xs
           C.SoftBreak :< xs ->
-              Element sty ESoftBreak <| go sty xs
+              Inline sty ESoftBreak <| go sty xs
           C.LineBreak :< xs ->
-              Element sty ELineBreak <| go sty xs
+              Inline sty ELineBreak <| go sty xs
           C.Link label theUrl _ :< xs ->
               let mLabel = if Seq.null label
                            then Nothing
@@ -362,30 +362,30 @@ fromMarkdownInlines baseUrl inlines =
                   this = case flip getPermalink theUrl =<< baseUrl of
                       Nothing ->
                           let url = URL theUrl
-                          in Element (Hyperlink url sty) $ EHyperlink url mLabel
+                          in Inline (Hyperlink url sty) $ EHyperlink url mLabel
                       Just (tName, pId) ->
-                          Element Permalink $ EPermalink tName pId mLabel
+                          Inline Permalink $ EPermalink tName pId mLabel
               in this <| rest
           C.Image altIs theUrl _ :< xs ->
               let mLabel = if Seq.null altIs
                            then Nothing
                            else Just $ fromMarkdownInlines baseUrl altIs
                   url = URL theUrl
-              in (Element (Hyperlink url sty) $ EImage url mLabel) <| go sty xs
+              in (Inline (Hyperlink url sty) $ EImage url mLabel) <| go sty xs
           C.RawHtml t :< xs ->
-              Element sty (ERawHtml t) <| go sty xs
+              Inline sty (ERawHtml t) <| go sty xs
           C.Code t :< xs ->
-              -- We turn a single code string into individual Elements
+              -- We turn a single code string into individual Inlines
               -- so we can perform line-wrapping on the inline code
               -- text.
-              let ts = [ Element Code frag
+              let ts = [ Inline Code frag
                        | wd <- T.split (== ' ') t
                        , frag <- case wd of
                            "" -> [ESpace]
                            _  -> [ESpace, EText wd]
                        ]
                   ts' = case ts of
-                    (Element _ ESpace:rs) -> rs
+                    (Inline _ ESpace:rs) -> rs
                     _                     -> ts
               in Seq.fromList ts' <> go sty xs
           C.Emph as :< xs ->
@@ -393,7 +393,7 @@ fromMarkdownInlines baseUrl inlines =
           C.Strong as :< xs ->
               go Strong as <> go sty xs
           C.Entity t :< xs ->
-              Element sty (EText t) <| go sty xs
+              Inline sty (EText t) <| go sty xs
           Seq.EmptyL -> mempty
 
     in go Normal inlines
@@ -441,9 +441,9 @@ findUsernames (Blocks bs) = S.unions $ F.toList $ fmap blockFindUsernames bs
 
 blockFindUsernames :: Block -> S.Set T.Text
 blockFindUsernames (Para is) =
-    elementFindUsernames $ F.toList is
+    inlineFindUsernames $ F.toList is
 blockFindUsernames (Header _ is) =
-    elementFindUsernames $ F.toList is
+    inlineFindUsernames $ F.toList is
 blockFindUsernames (Blockquote bs) =
     findUsernames bs
 blockFindUsernames (List _ _ bs) =
@@ -451,15 +451,15 @@ blockFindUsernames (List _ _ bs) =
 blockFindUsernames _ =
     mempty
 
-elementFindUsernames :: [Element] -> S.Set T.Text
-elementFindUsernames [] = mempty
-elementFindUsernames (e : es) =
-    case eData e of
-        EUser u -> S.insert u $ elementFindUsernames es
-        _ -> elementFindUsernames es
+inlineFindUsernames :: [Inline] -> S.Set T.Text
+inlineFindUsernames [] = mempty
+inlineFindUsernames (e : es) =
+    case ilData e of
+        EUser u -> S.insert u $ inlineFindUsernames es
+        _ -> inlineFindUsernames es
 
 -- | Obtain all URLs (and optional labels) in a rich text block.
-blockGetURLs :: Block -> [(Either (TeamURLName, PostId) URL, Maybe (Seq Element))]
+blockGetURLs :: Block -> [(Either (TeamURLName, PostId) URL, Maybe (Seq Inline))]
 blockGetURLs (Para is) =
     catMaybes $ elementGetURL <$> toList is
 blockGetURLs (Header _ is) =
@@ -472,12 +472,12 @@ blockGetURLs (List _ _ bss) =
 blockGetURLs _ =
     mempty
 
-elementGetURL :: Element -> Maybe (Either (TeamURLName, PostId) URL, Maybe (Seq Element))
-elementGetURL (Element _ (EHyperlink url label)) =
+elementGetURL :: Inline -> Maybe (Either (TeamURLName, PostId) URL, Maybe (Seq Inline))
+elementGetURL (Inline _ (EHyperlink url label)) =
     Just (Right url, label)
-elementGetURL (Element _ (EImage url label)) =
+elementGetURL (Inline _ (EImage url label)) =
     Just (Right url, label)
-elementGetURL (Element _ (EPermalink tName pId label)) =
+elementGetURL (Inline _ (EPermalink tName pId label)) =
     Just (Left (tName, pId), label)
 elementGetURL _ =
     Nothing
