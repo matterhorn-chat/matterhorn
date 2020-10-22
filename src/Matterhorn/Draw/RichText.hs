@@ -168,7 +168,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                          else bs
                 else bs
 
-        augmentedText = maybeAugment $ msg^.mText
+        augmentedText = maybeAugment $ unBlocks $ msg^.mText
         msgWidget =
             vBox $ (layout mdHighlightSet mdMessageWidthLimit nameElems augmentedText . viewl) augmentedText :
                    catMaybes [msgAtch, msgReac]
@@ -232,7 +232,8 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
         multiLnLayout hs w nameElems bs =
             if mdIndentBlocks
                then vBox [ hBox nameElems
-                         , hBox [B.txt "  ", renderRichText mdMyUsername hs ((subtract 2) <$> w) mdWrapNonhighlightedCodeBlocks bs]
+                         , hBox [B.txt "  ", renderRichText mdMyUsername hs ((subtract 2) <$> w)
+                                                 mdWrapNonhighlightedCodeBlocks (Blocks bs)]
                          ]
                else nameNextToMessage hs w nameElems bs
 
@@ -240,7 +241,9 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
             Widget Fixed Fixed $ do
                 nameResult <- render $ hBox nameElems
                 let newW = subtract (V.imageWidth (nameResult^.imageL)) <$> w
-                render $ hBox [raw (nameResult^.imageL), renderRichText mdMyUsername hs newW mdWrapNonhighlightedCodeBlocks bs]
+                render $ hBox [ raw (nameResult^.imageL)
+                              , renderRichText mdMyUsername hs newW mdWrapNonhighlightedCodeBlocks (Blocks bs)
+                              ]
 
         breakCheck e = eData e `elem` [ELineBreak, ESoftBreak]
 
@@ -260,8 +263,8 @@ cursorSentinel :: Char
 cursorSentinel = '‸'
 
 -- Render markdown with username highlighting
-renderRichText :: Text -> HighlightSet -> Maybe Int -> Bool -> Seq Block -> Widget a
-renderRichText curUser hSet w wrap bs =
+renderRichText :: Text -> HighlightSet -> Maybe Int -> Bool -> Blocks -> Widget a
+renderRichText curUser hSet w wrap (Blocks bs) =
     runReader (do
               blocks <- mapM blockToWidget (addBlankLines bs)
               return $ B.vBox $ toList blocks)
@@ -333,10 +336,10 @@ blockToWidget (Header n is) = do
         hBox [ B.padRight (B.Pad 1) $ header n
              , headerTxt
              ]
-blockToWidget (Blockquote is) = do
+blockToWidget (Blockquote bs) = do
     w <- asks drawLineWidth
-    bs <- mapM blockToWidget is
-    return $ maybeHLimit w $ addQuoting $ vBox bs
+    bws <- mapM blockToWidget (unBlocks bs)
+    return $ maybeHLimit w $ addQuoting $ vBox bws
 blockToWidget (List _ l bs) = do
     w <- asks drawLineWidth
     lst <- blocksToList l bs
@@ -418,7 +421,7 @@ toElementChunk es = do
             ws    = fmap (renderElementSeq curUser) (wrapLine width hSet es)
         B.render (vBox (fmap hBox ws))
 
-blocksToList :: ListType -> Seq (Seq Block) -> M (Widget a)
+blocksToList :: ListType -> Seq Blocks -> M (Widget a)
 blocksToList lt bs = do
     let is = case lt of
           Bullet _ -> repeat ("• ")
@@ -427,7 +430,7 @@ blocksToList lt bs = do
           Numbered Paren s ->
             [ T.pack (show (n :: Int)) <> ") " | n <- [s..] ]
 
-    results <- forM (zip is $ F.toList bs) $ \(i, b) -> do
+    results <- forM (zip is $ unBlocks <$> (F.toList bs)) $ \(i, b) -> do
         blocks <- mapM blockToWidget b
         return $ B.txt i <+> vBox blocks
 

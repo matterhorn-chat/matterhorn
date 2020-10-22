@@ -124,7 +124,7 @@ import           Network.Mattermost.Types ( ChannelId, PostId, Post
 
 import           Matterhorn.Types.DirectionalSeq
 import           Matterhorn.Types.Posts
-import           Matterhorn.Types.RichText ( Block(..), Element(..)
+import           Matterhorn.Types.RichText ( Blocks, unBlocks, Element(..)
                                 , ElementData(..), findUsernames, blockGetURLs
                                 , ElementStyle(..), URL(..), parseMarkdown
                                 , TeamURLName
@@ -157,7 +157,7 @@ messageIdPostId _ = Nothing
 -- | A 'Message' is any message we might want to render, either from
 --   Mattermost itself or from a client-internal source.
 data Message = Message
-  { _mText          :: Seq Block
+  { _mText          :: Blocks
   , _mMarkdownSource :: Text
   , _mUser          :: UserRef
   , _mDate          :: ServerTime
@@ -734,7 +734,7 @@ msgURLs msg =
       mkTarget (Right url) = LinkURL url
       mkTarget (Left (tName, pId)) = LinkPermalink tName pId
       mkEntry (val, text) = LinkChoice (msg^.mDate) uRef text (mkTarget val)
-      msgUrls = mkEntry <$> (Seq.fromList $ mconcat $ blockGetURLs <$> (toList $ msg^.mText))
+      msgUrls = mkEntry <$> (Seq.fromList $ mconcat $ blockGetURLs <$> (F.toList $ unBlocks $ msg^.mText))
       attachmentURLs = (\ a ->
                           LinkChoice
                             (msg^.mDate)

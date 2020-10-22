@@ -1,3 +1,4 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | This module provides a set of data types to represent message text.
 -- The types here are based loosely on the @cheapskate@ package's types
 -- but provide higher-level support for the kinds of things we find in
@@ -6,7 +7,10 @@
 -- To parse a Markdown document, use 'parseMarkdown'. To actually render
 -- text in this representation, see the module 'Draw.RichText'.
 module Matterhorn.Types.RichText
-  ( Block(..)
+  ( Blocks(..)
+  , unBlocks
+
+  , Block(..)
   , ListType(..)
   , CodeBlockInfo(..)
   , NumDecoration(..)
@@ -55,15 +59,22 @@ data TeamURLName = TeamURLName Text
 data TeamBaseURL = TeamBaseURL TeamURLName ServerBaseURL
                  deriving (Eq, Show)
 
+-- | A sequence of rich text blocks.
+newtype Blocks = Blocks (Seq Block)
+            deriving (Semigroup, Monoid, Show)
+
+unBlocks :: Blocks -> Seq Block
+unBlocks (Blocks bs) = bs
+
 -- | A block in a rich text document.
 data Block =
     Para (Seq Element)
     -- ^ A paragraph.
     | Header Int (Seq Element)
     -- ^ A section header with specified depth and contents.
-    | Blockquote (Seq Block)
+    | Blockquote Blocks
     -- ^ A blockquote.
-    | List Bool ListType (Seq (Seq Block))
+    | List Bool ListType (Seq Blocks)
     -- ^ An itemized list.
     | CodeBlock CodeBlockInfo Text
     -- ^ A code block.
@@ -185,14 +196,14 @@ data ElementStyle =
     -- ^ A post permalink
     deriving (Eq, Show, Ord)
 
-parseMarkdown :: Maybe TeamBaseURL -> T.Text -> Seq Block
+parseMarkdown :: Maybe TeamBaseURL -> T.Text -> Blocks
 parseMarkdown baseUrl t =
     fromMarkdownBlocks baseUrl bs where C.Doc _ bs = C.markdown C.def t
 
 -- | Convert a sequence of markdown (Cheapskate) blocks into rich text
 -- blocks.
-fromMarkdownBlocks :: Maybe TeamBaseURL -> C.Blocks -> Seq Block
-fromMarkdownBlocks baseUrl = fmap (fromMarkdownBlock baseUrl)
+fromMarkdownBlocks :: Maybe TeamBaseURL -> C.Blocks -> Blocks
+fromMarkdownBlocks baseUrl = Blocks . fmap (fromMarkdownBlock baseUrl)
 
 -- | Convert a single markdown block into a single rich text block.
 fromMarkdownBlock :: Maybe TeamBaseURL -> C.Block -> Block
@@ -201,9 +212,9 @@ fromMarkdownBlock baseUrl (C.Para is) =
 fromMarkdownBlock baseUrl (C.Header level is) =
     Header level $ fromMarkdownInlines baseUrl is
 fromMarkdownBlock baseUrl (C.Blockquote bs) =
-    Blockquote $ fromMarkdownBlock baseUrl <$> bs
+    Blockquote $ Blocks $ fromMarkdownBlock baseUrl <$> bs
 fromMarkdownBlock baseUrl (C.List f ty bss) =
-    List f (fromMarkdownListType ty) $ fmap (fromMarkdownBlock baseUrl) <$> Seq.fromList bss
+    List f (fromMarkdownListType ty) $ (Blocks . fmap (fromMarkdownBlock baseUrl)) <$> Seq.fromList bss
 fromMarkdownBlock _ (C.CodeBlock attr body) =
     CodeBlock (fromMarkdownCodeAttr attr) body
 fromMarkdownBlock _ (C.HtmlBlock body) =
@@ -424,9 +435,9 @@ unsafeGetStr :: C.Inline -> Text
 unsafeGetStr (C.Str t) = t
 unsafeGetStr _ = error "BUG: unsafeGetStr called on non-Str Inline"
 
--- | Obtain all username references in a sequence of rich text blocks.
-findUsernames :: Seq Block -> S.Set T.Text
-findUsernames = S.unions . F.toList . fmap blockFindUsernames
+-- | Obtain all username references in a rich text document.
+findUsernames :: Blocks -> S.Set T.Text
+findUsernames (Blocks bs) = S.unions $ F.toList $ fmap blockFindUsernames bs
 
 blockFindUsernames :: Block -> S.Set T.Text
 blockFindUsernames (Para is) =
@@ -454,10 +465,10 @@ blockGetURLs (Para is) =
 blockGetURLs (Header _ is) =
     catMaybes $ elementGetURL <$> toList is
 blockGetURLs (Blockquote bs) =
-    mconcat $ blockGetURLs <$> toList bs
+    mconcat $ blockGetURLs <$> toList (unBlocks bs)
 blockGetURLs (List _ _ bss) =
     mconcat $ mconcat $
-    (fmap blockGetURLs . F.toList) <$> F.toList bss
+    (fmap blockGetURLs . F.toList . unBlocks) <$> F.toList bss
 blockGetURLs _ =
     mempty
 
@@ -472,8 +483,8 @@ elementGetURL _ =
     Nothing
 
 -- | Find the first code block in a sequence of rich text blocks.
-findVerbatimChunk :: Seq Block -> Maybe Text
-findVerbatimChunk = getFirst . F.foldMap go
+findVerbatimChunk :: Blocks -> Maybe Text
+findVerbatimChunk (Blocks bs) = getFirst $ F.foldMap go bs
   where go (CodeBlock _ t) = First (Just t)
         go _               = First Nothing
 
