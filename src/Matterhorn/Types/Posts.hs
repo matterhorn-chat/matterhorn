@@ -59,7 +59,7 @@ import           Network.Mattermost.Lenses
 import           Network.Mattermost.Types
 
 import           Matterhorn.Types.Common
-import           Matterhorn.Types.RichText ( RichTextBlock(Blockquote), parseMarkdown
+import           Matterhorn.Types.RichText ( Block(Blockquote), parseMarkdown
                                            , TeamBaseURL
                                            )
 
@@ -112,7 +112,7 @@ makeLenses ''ClientMessage
 --   the Mattermost 'Post' type, with unnecessary information
 --   removed and some preprocessing done.
 data ClientPost = ClientPost
-  { _cpText          :: Seq RichTextBlock
+  { _cpText          :: Seq Block
   , _cpMarkdownSource :: Text
   , _cpUser          :: Maybe UserId
   , _cpUserOverride  :: Maybe Text
@@ -216,7 +216,7 @@ toClientPost baseUrl p parentId =
 
 -- | Right now, instead of treating 'attachment' properties specially, we're
 --   just going to roll them directly into the message text
-getAttachmentText :: Post -> Seq RichTextBlock
+getAttachmentText :: Post -> Seq Block
 getAttachmentText p =
   case p^.postPropsL.postPropsAttachmentsL of
     Nothing -> Seq.empty

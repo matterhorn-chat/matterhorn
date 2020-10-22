@@ -66,13 +66,13 @@ omittedUsernameType = \case
 -- If the last block is a paragraph, append it to that paragraph.
 -- Otherwise, append a new block so it appears beneath the last
 -- block-level element.
-addEditSentinel :: ElementData -> Seq RichTextBlock -> Seq RichTextBlock
+addEditSentinel :: ElementData -> Seq Block -> Seq Block
 addEditSentinel d bs =
     case viewr bs of
         EmptyR -> bs
         (rest :> b) -> rest <> appendEditSentinel d b
 
-appendEditSentinel :: ElementData -> RichTextBlock -> Seq RichTextBlock
+appendEditSentinel :: ElementData -> Block -> Seq Block
 appendEditSentinel sentinel b =
     let s = Para (S.singleton m)
         m = Element Normal sentinel
@@ -218,8 +218,8 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                       in withParent (addEllipsis $ B.forceAttr replyParentAttr parentMsg)
 
     where
-        layout :: HighlightSet -> Maybe Int -> [Widget Name] -> Seq RichTextBlock
-               -> ViewL RichTextBlock -> Widget Name
+        layout :: HighlightSet -> Maybe Int -> [Widget Name] -> Seq Block
+               -> ViewL Block -> Widget Name
         layout hs w nameElems bs xs | length xs > 1     = multiLnLayout hs w nameElems bs
         layout hs w nameElems bs (Blockquote {} :< _) = multiLnLayout hs w nameElems bs
         layout hs w nameElems bs (CodeBlock {} :< _)  = multiLnLayout hs w nameElems bs
@@ -260,7 +260,7 @@ cursorSentinel :: Char
 cursorSentinel = '‸'
 
 -- Render markdown with username highlighting
-renderRichText :: Text -> HighlightSet -> Maybe Int -> Bool -> Seq RichTextBlock -> Widget a
+renderRichText :: Text -> HighlightSet -> Maybe Int -> Bool -> Seq Block -> Widget a
 renderRichText curUser hSet w wrap bs =
     runReader (do
               blocks <- mapM blockToWidget (addBlankLines bs)
@@ -273,7 +273,7 @@ renderRichText curUser hSet w wrap bs =
 
 -- Add blank lines only between adjacent elements of the same type, to
 -- save space
-addBlankLines :: Seq RichTextBlock -> Seq RichTextBlock
+addBlankLines :: Seq Block -> Seq Block
 addBlankLines = go' . viewl
   where go' EmptyL = S.empty
         go' (x :< xs) = go x (viewl xs)
@@ -323,7 +323,7 @@ data DrawCfg =
             , drawDoLineWrapping :: Bool
             }
 
-blockToWidget :: RichTextBlock -> M (Widget a)
+blockToWidget :: Block -> M (Widget a)
 blockToWidget (Para is) =
     toElementChunk is
 blockToWidget (Header n is) = do
@@ -418,7 +418,7 @@ toElementChunk es = do
             ws    = fmap (renderElementSeq curUser) (wrapLine width hSet es)
         B.render (vBox (fmap hBox ws))
 
-blocksToList :: ListType -> Seq (Seq RichTextBlock) -> M (Widget a)
+blocksToList :: ListType -> Seq (Seq Block) -> M (Widget a)
 blocksToList lt bs = do
     let is = case lt of
           Bullet _ -> repeat ("• ")

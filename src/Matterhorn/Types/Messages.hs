@@ -124,7 +124,7 @@ import           Network.Mattermost.Types ( ChannelId, PostId, Post
 
 import           Matterhorn.Types.DirectionalSeq
 import           Matterhorn.Types.Posts
-import           Matterhorn.Types.RichText ( RichTextBlock(..), Element(..)
+import           Matterhorn.Types.RichText ( Block(..), Element(..)
                                 , ElementData(..), findUsernames, blockGetURLs
                                 , ElementStyle(..), URL(..), parseMarkdown
                                 , TeamURLName
@@ -157,7 +157,7 @@ messageIdPostId _ = Nothing
 -- | A 'Message' is any message we might want to render, either from
 --   Mattermost itself or from a client-internal source.
 data Message = Message
-  { _mText          :: Seq RichTextBlock
+  { _mText          :: Seq Block
   , _mMarkdownSource :: Text
   , _mUser          :: UserRef
   , _mDate          :: ServerTime

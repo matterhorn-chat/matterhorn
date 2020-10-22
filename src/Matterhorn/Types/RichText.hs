@@ -6,7 +6,7 @@
 -- To parse a Markdown document, use 'parseMarkdown'. To actually render
 -- text in this representation, see the module 'Draw.RichText'.
 module Matterhorn.Types.RichText
-  ( RichTextBlock(..)
+  ( Block(..)
   , ListType(..)
   , CodeBlockInfo(..)
   , NumDecoration(..)
@@ -56,14 +56,14 @@ data TeamBaseURL = TeamBaseURL TeamURLName ServerBaseURL
                  deriving (Eq, Show)
 
 -- | A block in a rich text document.
-data RichTextBlock =
+data Block =
     Para (Seq Element)
     -- ^ A paragraph.
     | Header Int (Seq Element)
     -- ^ A section header with specified depth and contents.
-    | Blockquote (Seq RichTextBlock)
+    | Blockquote (Seq Block)
     -- ^ A blockquote.
-    | List Bool ListType (Seq (Seq RichTextBlock))
+    | List Bool ListType (Seq (Seq Block))
     -- ^ An itemized list.
     | CodeBlock CodeBlockInfo Text
     -- ^ A code block.
@@ -185,17 +185,17 @@ data ElementStyle =
     -- ^ A post permalink
     deriving (Eq, Show, Ord)
 
-parseMarkdown :: Maybe TeamBaseURL -> T.Text -> Seq RichTextBlock
+parseMarkdown :: Maybe TeamBaseURL -> T.Text -> Seq Block
 parseMarkdown baseUrl t =
     fromMarkdownBlocks baseUrl bs where C.Doc _ bs = C.markdown C.def t
 
 -- | Convert a sequence of markdown (Cheapskate) blocks into rich text
 -- blocks.
-fromMarkdownBlocks :: Maybe TeamBaseURL -> C.Blocks -> Seq RichTextBlock
+fromMarkdownBlocks :: Maybe TeamBaseURL -> C.Blocks -> Seq Block
 fromMarkdownBlocks baseUrl = fmap (fromMarkdownBlock baseUrl)
 
 -- | Convert a single markdown block into a single rich text block.
-fromMarkdownBlock :: Maybe TeamBaseURL -> C.Block -> RichTextBlock
+fromMarkdownBlock :: Maybe TeamBaseURL -> C.Block -> Block
 fromMarkdownBlock baseUrl (C.Para is) =
     Para $ fromMarkdownInlines baseUrl is
 fromMarkdownBlock baseUrl (C.Header level is) =
@@ -425,10 +425,10 @@ unsafeGetStr (C.Str t) = t
 unsafeGetStr _ = error "BUG: unsafeGetStr called on non-Str Inline"
 
 -- | Obtain all username references in a sequence of rich text blocks.
-findUsernames :: Seq RichTextBlock -> S.Set T.Text
+findUsernames :: Seq Block -> S.Set T.Text
 findUsernames = S.unions . F.toList . fmap blockFindUsernames
 
-blockFindUsernames :: RichTextBlock -> S.Set T.Text
+blockFindUsernames :: Block -> S.Set T.Text
 blockFindUsernames (Para is) =
     elementFindUsernames $ F.toList is
 blockFindUsernames (Header _ is) =
@@ -448,7 +448,7 @@ elementFindUsernames (e : es) =
         _ -> elementFindUsernames es
 
 -- | Obtain all URLs (and optional labels) in a rich text block.
-blockGetURLs :: RichTextBlock -> [(Either (TeamURLName, PostId) URL, Maybe (Seq Element))]
+blockGetURLs :: Block -> [(Either (TeamURLName, PostId) URL, Maybe (Seq Element))]
 blockGetURLs (Para is) =
     catMaybes $ elementGetURL <$> toList is
 blockGetURLs (Header _ is) =
@@ -472,7 +472,7 @@ elementGetURL _ =
     Nothing
 
 -- | Find the first code block in a sequence of rich text blocks.
-findVerbatimChunk :: Seq RichTextBlock -> Maybe Text
+findVerbatimChunk :: Seq Block -> Maybe Text
 findVerbatimChunk = getFirst . F.foldMap go
   where go (CodeBlock _ t) = First (Just t)
         go _               = First Nothing
