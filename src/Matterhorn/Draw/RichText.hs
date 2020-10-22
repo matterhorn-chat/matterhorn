@@ -328,10 +328,10 @@ data DrawCfg =
 
 blockToWidget :: Block -> M (Widget a)
 blockToWidget (Para is) =
-    toInlineChunk is
+    wrapInlines is
 blockToWidget (Header n is) = do
     headerTxt <- withReader (\c -> c { drawLineWidth = subtract 1 <$> drawLineWidth c }) $
-                 toInlineChunk is
+                 wrapInlines is
     return $ B.withDefAttr clientHeaderAttr $
         hBox [ B.padRight (B.Pad 1) $ header n
              , headerTxt
@@ -409,8 +409,8 @@ rawCodeBlockToWidget tx = do
 
             render $ padding <+> (Widget Fixed Fixed $ return renderedText)
 
-toInlineChunk :: Seq Inline -> M (Widget a)
-toInlineChunk es = do
+wrapInlines :: Seq Inline -> M (Widget a)
+wrapInlines es = do
     w <- asks drawLineWidth
     hSet <- asks drawHighlightSet
     curUser <- asks drawCurUser
