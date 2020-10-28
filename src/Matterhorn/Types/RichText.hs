@@ -170,7 +170,14 @@ data Inline =
     -- optional label.
     deriving (Show, Eq, Ord)
 
-parseMarkdown :: Maybe TeamBaseURL -> T.Text -> Blocks
+-- | Parse markdown input text to RichText.
+parseMarkdown :: Maybe TeamBaseURL
+              -- ^ If provided, perform post link detection whenever a
+              -- hyperlink is parsed by checking to see if the post link
+              -- is a post in this Mattermost team
+              -> T.Text
+              -- ^ The markdown input text to parse
+              -> Blocks
 parseMarkdown baseUrl t =
     fromMarkdownBlocks baseUrl bs where C.Doc _ bs = C.markdown C.def t
 
