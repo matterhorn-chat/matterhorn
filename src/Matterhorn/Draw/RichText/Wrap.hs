@@ -20,7 +20,6 @@ import           Matterhorn.Draw.RichText.Flatten
 import           Matterhorn.Constants ( editMarking )
 
 
-
 type WrappedLine = Seq FlattenedValue
 
 data WrapState =
