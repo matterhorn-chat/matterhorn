@@ -1,3 +1,33 @@
+-- | This module implements a "flattening" pass over RichText Inline
+-- values. This means that a tree structure such as
+--
+-- EStrong
+--   [ EStrikethrough
+--     [ EText "inside"
+--     ]
+--   , EText "outside"
+--   ]
+--
+-- will be converted into a "flat" representation without a tree
+-- structure so that the style information encoded in the tree is
+-- available at each node:
+--
+-- [
+--   [ SingleInline (FlattenedInline (FText "inside") [Strong, Strikethrough] Nothing
+--   , SingleInline (FlattenedInline (FText "outside") [Strong] Nothing
+--   ]
+-- ]
+--
+-- The outer sequence is a sequence of lines (since inline lists can
+-- introduce line breaks). Each inner sequence is a single line.
+-- Each 'SingleInline' can be rendered as-is; if a 'NonBreaking' is
+-- encountered, that group of inlines should be treated as a unit for
+-- the purposes of line-wrapping (to happen in the Wrap module). The
+-- above representation example shows how the tree path including the
+-- EStrong and EStrikethrough nodes is flattened into a list of styles
+-- to accompany each inline value. This makes it trivial to carry that
+-- style information along with each node during line-wrapping rather
+-- than needing to deal with the tree structure.
 module Matterhorn.Draw.RichText.Flatten
   ( FlattenedContent(..)
   , FlattenedInline(..)
@@ -27,25 +57,45 @@ import           Matterhorn.Types ( HighlightSet(..) )
 import           Matterhorn.Types.RichText
 
 
+-- | A piece of text in a sequence of flattened RichText elements. This
+-- type represents the lowest-level kind of data that we can get from a
+-- rich text document.
 data FlattenedContent =
     FText Text
+    -- ^ Some text
     | FSpace
+    -- ^ A space
     | FUser Text
+    -- ^ A user reference
     | FChannel Text
+    -- ^ A channel reference
     | FEmoji Text
+    -- ^ An emoji
     | FEditSentinel Bool
+    -- ^ An "edited" marking
     deriving (Eq, Show)
 
+-- | A flattened inline value.
 data FlattenedInline =
     FlattenedInline { fiValue :: FlattenedContent
+                    -- ^ The content of the value.
                     , fiStyles :: [InlineStyle]
+                    -- ^ The styles that should be applied to this
+                    -- value.
                     , fiURL :: Maybe URL
+                    -- ^ If present, the URL to which we should
+                    -- hyperlink this value.
                     }
 
+-- | A flattened value.
 data FlattenedValue =
     SingleInline FlattenedInline
+    -- ^ A single flattened value
     | NonBreaking (Seq (Seq FlattenedValue))
+    -- ^ A sequence of flattened values that MUST be kept together and
+    -- never broken up by line-wrapping
 
+-- | The visual styles of inline values.
 data InlineStyle =
     Strong
     | Emph
@@ -56,17 +106,31 @@ data InlineStyle =
 
 type FlattenM a = ReaderT FlattenEnv (State FlattenState) a
 
+-- | The flatten monad state
 data FlattenState =
     FlattenState { fsCompletedLines :: Seq (Seq FlattenedValue)
+                 -- ^ The lines that we have accumulated so far in the
+                 -- flattening process
                  , fsCurLine :: Seq FlattenedValue
+                 -- ^ The current line we are accumulating in the
+                 -- flattening process
                  }
 
+-- | The flatten monad environment
 data FlattenEnv =
     FlattenEnv { flattenStyles :: [InlineStyle]
+               -- ^ The styles that should apply to the current value
+               -- being flattened
                , flattenURL :: Maybe URL
+               -- ^ The hyperlink URL, if any, that should be applied to
+               -- the current value being flattened
                , flattenHighlightSet :: HighlightSet
+               -- ^ The highlight set to use to check for valid user or
+               -- channel references
                }
 
+-- | Given a sequence of inlines, flatten it into a list of lines of
+-- flattened values.
 flattenInlineSeq :: HighlightSet -> Seq Inline -> Seq (Seq FlattenedValue)
 flattenInlineSeq hs is =
     flattenInlineSeq' initialEnv is
@@ -88,6 +152,7 @@ withInlineStyle s = withReaderT (\e -> e { flattenStyles = nub (s : flattenStyle
 withHyperlink :: URL -> FlattenM () -> FlattenM ()
 withHyperlink u = withReaderT (\e -> e { flattenURL = Just u })
 
+-- | Push a FlattenedContent value onto the current line.
 pushFC :: FlattenedContent -> FlattenM ()
 pushFC v = do
     env <- ask
@@ -99,9 +164,12 @@ pushFC v = do
                              }
     pushFV $ SingleInline fi
 
+-- | Push a FlattenedValue onto the current line.
 pushFV :: FlattenedValue -> FlattenM ()
 pushFV fv = lift $ modify $ \s -> s { fsCurLine = fsCurLine s |> fv }
 
+-- | Push the current line onto the finished lines list and start a new
+-- line.
 pushFLine :: FlattenM ()
 pushFLine =
     lift $ modify $ \s -> s { fsCompletedLines = fsCompletedLines s |> fsCurLine s
