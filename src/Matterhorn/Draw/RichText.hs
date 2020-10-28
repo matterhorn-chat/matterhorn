@@ -9,7 +9,6 @@ module Matterhorn.Draw.RichText
   , renderMessage
   , renderText
   , renderText'
-  , renderInlineSeq
   , cursorSentinel
   , addEllipsis
   , findVerbatimChunk
@@ -42,9 +41,11 @@ import qualified Graphics.Vty as V
 import qualified Skylighting.Core as Sky
 
 import           Network.Mattermost.Lenses ( postEditAtL, postCreateAtL )
-import           Network.Mattermost.Types ( ServerTime(..), PostId )
+import           Network.Mattermost.Types ( ServerTime(..) )
 
-import           Matterhorn.Constants ( normalChannelSigil, userSigil )
+import           Matterhorn.Constants ( normalChannelSigil, userSigil, editMarking )
+import           Matterhorn.Draw.RichText.Flatten
+import           Matterhorn.Draw.RichText.Wrap
 import           Matterhorn.Themes
 import           Matterhorn.Types ( Name, HighlightSet(..) )
 import           Matterhorn.Types.Messages
@@ -66,18 +67,17 @@ omittedUsernameType = \case
 -- If the last block is a paragraph, append it to that paragraph.
 -- Otherwise, append a new block so it appears beneath the last
 -- block-level element.
-addEditSentinel :: InlineData -> Seq Block -> Seq Block
+addEditSentinel :: Inline -> Seq Block -> Seq Block
 addEditSentinel d bs =
     case viewr bs of
         EmptyR -> bs
         (rest :> b) -> rest <> appendEditSentinel d b
 
-appendEditSentinel :: InlineData -> Block -> Seq Block
+appendEditSentinel :: Inline -> Block -> Seq Block
 appendEditSentinel sentinel b =
-    let s = Para (S.singleton m)
-        m = Inline Normal sentinel
+    let s = Para (S.singleton sentinel)
     in case b of
-        Para is -> S.singleton $ Para (is |> Inline Normal ESpace |> m)
+        Para is -> S.singleton $ Para (is |> ESpace |> sentinel)
         _ -> S.fromList [b, s]
 
 -- | A bundled structure that includes all the information necessary
@@ -245,7 +245,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                               , renderRichText mdMyUsername hs newW mdWrapNonhighlightedCodeBlocks (Blocks bs)
                               ]
 
-        breakCheck i = ilData i `elem` [ELineBreak, ESoftBreak]
+        breakCheck i = i `elem` [ELineBreak, ESoftBreak]
 
 addEllipsis :: Widget a -> Widget a
 addEllipsis w = B.Widget (B.hSize w) (B.vSize w) $ do
@@ -264,14 +264,14 @@ cursorSentinel = '‸'
 
 -- Render markdown with username highlighting
 renderRichText :: Text -> HighlightSet -> Maybe Int -> Bool -> Blocks -> Widget a
-renderRichText curUser hSet w wrap (Blocks bs) =
+renderRichText curUser hSet w doWrap (Blocks bs) =
     runReader (do
               blocks <- mapM blockToWidget (addBlankLines bs)
               return $ B.vBox $ toList blocks)
               (DrawCfg { drawCurUser = curUser
                        , drawHighlightSet = hSet
                        , drawLineWidth = w
-                       , drawDoLineWrapping = wrap
+                       , drawDoLineWrapping = doWrap
                        })
 
 -- Add blank lines only between adjacent elements of the same type, to
@@ -294,7 +294,7 @@ addBlankLines = go' . viewl
              a <| blank <| go b (viewl rs)
         go x (y :< rs) = x <| go y (viewl rs)
         go x (EmptyL) = S.singleton x
-        blank = Para (S.singleton (Inline Normal ESpace))
+        blank = Para (S.singleton ESpace)
 
 -- Render text to markdown without username highlighting or permalink detection
 renderText :: Text -> Widget a
@@ -390,17 +390,17 @@ codeBlockToWidget syntaxMap syntax tx = do
 
 rawCodeBlockToWidget :: Text -> M (Widget a)
 rawCodeBlockToWidget tx = do
-    wrap <- asks drawDoLineWrapping
+    doWrap <- asks drawDoLineWrapping
 
-    let hPolicy = if wrap then Greedy else Fixed
+    let hPolicy = if doWrap then Greedy else Fixed
     return $ B.withDefAttr codeAttr $
         Widget hPolicy Fixed $ do
             c <- B.getContext
             let theLines = expandEmpty <$> T.lines tx
                 expandEmpty "" = " "
                 expandEmpty s  = s
-                wrapFunc = if wrap then wrappedTextWithCursor
-                                   else textWithCursor
+                wrapFunc = if doWrap then wrappedTextWithCursor
+                                     else textWithCursor
             renderedText <- render (B.hLimit (c^.B.availWidthL - 3) $ B.vBox $
                                     wrapFunc <$> theLines)
 
@@ -418,8 +418,10 @@ wrapInlines es = do
     return $ B.Widget B.Fixed B.Fixed $ do
         ctx <- B.getContext
         let width = fromMaybe (ctx^.B.availWidthL) w
-            ws    = fmap (renderInlineSeq curUser) (wrapLine width hSet es)
-        B.render (vBox (fmap hBox ws))
+            ws    = fmap (renderWrappedLine curUser) $
+                    mconcat $
+                    (doLineWrapping width <$> (F.toList $ flattenInlineSeq hSet es))
+        B.render (vBox ws)
 
 blocksToList :: ListType -> Seq Blocks -> M (Widget a)
 blocksToList lt bs = do
@@ -436,154 +438,47 @@ blocksToList lt bs = do
 
     return $ vBox results
 
-data SplitState = SplitState
-  { splitChunks  :: Seq (Seq Inline)
-  , splitCurrCol :: Int
-  }
+renderWrappedLine :: Text -> WrappedLine -> Widget a
+renderWrappedLine curUser l = hBox $ F.toList $ renderFlattenedValue curUser <$> l
 
-wrapLine :: Int -> HighlightSet -> Seq Inline -> Seq (Seq Inline)
-wrapLine maxCols hSet = splitChunks . go (SplitState (S.singleton S.empty) 0)
-  where go st (viewl-> i :< is) = go st' is
-          where
-              HighlightSet { hUserSet = uSet, hChannelSet = cSet } = hSet
-
-              -- Right before we check the width of the token, we see
-              -- if the token is a user or channel reference. If so, we
-              -- check if it is valid. If it is valid, we leave it in
-              -- place; otherwise we translate it into an ordinary text
-              -- element so that it does not render highlighted as a
-              -- valid user or channel reference.
-              newInline = i { ilData = newIData }
-              newIData = case ilData i of
-                  EUser u ->
-                      if u `Set.member` uSet
-                      then EUser u
-                      else EText $ userSigil <> u
-                  EChannel c ->
-                      if c `Set.member` cSet
-                      then EChannel c
-                      else EText $ normalChannelSigil <> c
-                  d -> d
-
-              addHyperlink url il = setInlineStyle (Hyperlink url (ilStyle il)) il
-
-              linkOpenBracket = Inline Normal (EText "<")
-              linkCloseBracket = Inline Normal (EText ">")
-              addOpenBracket l =
-                  case Seq.viewl l of
-                      EmptyL -> l
-                      h :< t ->
-                          let h' = Inline Normal
-                                           (ENonBreaking $ Seq.fromList [linkOpenBracket, h])
-                          in h' <| t
-              addCloseBracket l =
-                  case Seq.viewr l of
-                      EmptyR -> l
-                      h :> t ->
-                          let t' = Inline Normal
-                                           (ENonBreaking $ Seq.fromList [t, linkCloseBracket])
-                          in h |> t'
-              decorateLinkLabel = addOpenBracket .  addCloseBracket
-
-              st' =
-                  case newIData of
-                      EHyperlink url (Just labelEs) ->
-                          go st $ addHyperlink url <$> decorateLinkLabel labelEs
-                      EHyperlink url Nothing ->
-                          go st $ addHyperlink url <$> decorateLinkLabel (Seq.fromList [Inline Normal $ EText $ unURL url])
-                      EPermalink _tName _pId (Just labelEs) ->
-                          go st $ setInlineStyle Permalink <$> decorateLinkLabel labelEs
-                      EImage url (Just labelEs) ->
-                          go st $ addHyperlink url <$> decorateLinkLabel labelEs
-                      _ ->
-                          if | newIData == ESoftBreak || newIData == ELineBreak ->
-                                 st { splitChunks = splitChunks st |> S.empty
-                                    , splitCurrCol = 0
-                                    }
-                             | available >= iWidth ->
-                                 st { splitChunks  = addInline newInline (splitChunks st)
-                                    , splitCurrCol = splitCurrCol st + iWidth
-                                    }
-                             | newIData == ESpace ->
-                                 st { splitChunks = splitChunks st |> S.empty
-                                    , splitCurrCol = 0
-                                    }
-                             | otherwise ->
-                                 st { splitChunks  = splitChunks st |> S.singleton newInline
-                                    , splitCurrCol = iWidth
-                                    }
-              available = maxCols - splitCurrCol st
-              iWidth = inlineWidth newInline
-              addInline x (viewr-> ls :> l) = ( ls |> (l |> x))
-              addInline _ _ = error "[unreachable]"
-        go st _                 = st
-
-renderInlineSeq :: Text -> Seq Inline -> Seq (Widget a)
-renderInlineSeq curUser is = renderInline curUser <$> is
-
-renderInline :: Text -> Inline -> Widget a
-renderInline curUser i = addStyle sty widget
+renderFlattenedValue :: Text -> FlattenedValue -> Widget a
+renderFlattenedValue curUser (NonBreaking rs) =
+    let renderLine = hBox . F.toList . fmap (renderFlattenedValue curUser)
+    in vBox (F.toList $ renderLine <$> F.toList rs)
+renderFlattenedValue curUser (SingleInline fi) = addHyperlink $ addStyles widget
     where
-        sty = ilStyle i
-        dat = ilData i
-        addStyle s = case s of
-                Normal                  -> id
-                Emph                    -> B.withDefAttr clientEmphAttr
-                Strikethrough           -> B.withDefAttr strikeThroughAttr
-                Strong                  -> B.withDefAttr clientStrongAttr
-                Code                    -> B.withDefAttr codeAttr
-                Permalink               -> B.withDefAttr permalinkAttr
-                Hyperlink (URL url) innerSty ->
-                    B.hyperlink url . B.withDefAttr urlAttr .  addStyle innerSty
-        rawText = B.txt . removeCursor
-        widget = case dat of
-            -- Cursor sentinels get parsed as individual text nodes by
-            -- Cheapskate, meaning that we get a text node with exactly
-            -- one character in it. That's why we compare accordingly
-            -- above. In addition, since that character has no width, we
-            -- have to replace it with something that has a size (such
-            -- as a space) to get Brick's visibility logic to scroll the
-            -- viewport to get it into view.
-            EText t                      -> if t == T.singleton (cursorSentinel)
+        val = fiValue fi
+        mUrl = fiURL fi
+        styles = fiStyles fi
+
+        addStyles w = foldr addStyle w styles
+        addStyle s =
+            B.withDefAttr $ case s of
+                Strong        -> clientStrongAttr
+                Code          -> codeAttr
+                Permalink     -> permalinkAttr
+                Strikethrough -> strikeThroughAttr
+                Emph          -> clientEmphAttr
+
+        addHyperlink = case mUrl of
+            Nothing -> id
+            Just u -> B.withDefAttr urlAttr . B.hyperlink (unURL u)
+
+        widget = case val of
+            FText t                      -> if t == T.singleton (cursorSentinel)
                                             then B.visible $ B.txt " "
                                             else textWithCursor t
 
-            ESpace                       -> B.txt " "
-            EPermalink _ pId mLabel      -> drawPermalink curUser pId mLabel
-            ENonBreaking is              -> hBox $ renderInline curUser <$> is
-            ERawHtml t                   -> textWithCursor t
-            EEditSentinel recent         -> let attr = if recent
+            FSpace                       -> B.txt " "
+            FUser u                      -> colorUsername curUser u $ userSigil <> u
+            FChannel c                   -> B.withDefAttr channelNameAttr $
+                                            B.txt $ normalChannelSigil <> c
+            FEditSentinel recent         -> let attr = if recent
                                                        then editedRecentlyMarkingAttr
                                                        else editedMarkingAttr
                                             in B.withDefAttr attr $ B.txt editMarking
-            EUser u                      -> colorUsername curUser u $ userSigil <> u
-            EChannel c                   -> B.withDefAttr channelNameAttr $
-                                            B.txt $ normalChannelSigil <> c
-            EHyperlink (URL url) Nothing -> rawText url
-            EImage (URL url) Nothing     -> rawText url
-            EEmoji em                    -> B.withDefAttr emojiAttr $
+            FEmoji em                    -> B.withDefAttr emojiAttr $
                                             B.txt $ ":" <> em <> ":"
-
-            -- Hyperlink and image nodes with labels should not appear
-            -- at this point because line-wrapping should break them up
-            -- into normal text node sequences with hyperlink styles
-            -- attached.
-            EHyperlink {}                -> rawText "(Report renderElement bug #1)"
-            EImage {}                    -> rawText "(Report renderElement bug #2)"
-
-            -- Line breaks should never need to get rendered since the
-            -- line-wrapping algorithm removes them.
-            ESoftBreak                   -> B.emptyWidget
-            ELineBreak                   -> B.emptyWidget
-
-drawPermalink :: Text -> PostId -> Maybe (Seq Inline) -> Widget a
-drawPermalink _ _ Nothing =
-    B.txt permalinkPlaceholder
-drawPermalink curUser _ (Just label) =
-    hBox $ F.toList $ B.txt "<" <| (renderInlineSeq curUser label |> B.txt ">")
-
-permalinkPlaceholder :: Text
-permalinkPlaceholder = "<post link>"
 
 textWithCursor :: Text -> Widget a
 textWithCursor t
@@ -597,26 +492,3 @@ wrappedTextWithCursor t
 
 removeCursor :: Text -> Text
 removeCursor = T.filter (/= cursorSentinel)
-
-editMarking :: Text
-editMarking = "(edited)"
-
-inlineWidth :: Inline -> Int
-inlineWidth i =
-    case ilData i of
-        ENonBreaking is              -> sum $ inlineWidth <$> is
-        EText t                      -> B.textWidth t
-        ERawHtml t                   -> B.textWidth t
-        EUser t                      -> T.length userSigil + B.textWidth t
-        EChannel t                   -> T.length normalChannelSigil + B.textWidth t
-        EEditSentinel _              -> B.textWidth editMarking
-        EImage (URL url) Nothing     -> B.textWidth url
-        EImage _ (Just is)           -> sum $ inlineWidth <$> is
-        EHyperlink (URL url) Nothing -> B.textWidth url
-        EHyperlink _ (Just is)       -> sum $ inlineWidth <$> is
-        EEmoji t                     -> B.textWidth t + 2
-        EPermalink _ _ Nothing       -> T.length permalinkPlaceholder
-        EPermalink _ _ (Just label)  -> 2 + (sum $ inlineWidth <$> label)
-        ESpace                       -> 1
-        ELineBreak                   -> 0
-        ESoftBreak                   -> 0

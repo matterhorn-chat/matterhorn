@@ -63,6 +63,8 @@ library
                        Matterhorn.Draw.PostListOverlay
                        Matterhorn.Draw.ReactionEmojiListOverlay
                        Matterhorn.Draw.RichText
+                       Matterhorn.Draw.RichText.Wrap
+                       Matterhorn.Draw.RichText.Flatten
                        Matterhorn.Draw.ShowHelp
                        Matterhorn.Draw.TabbedWindow
                        Matterhorn.Draw.ThemeListOverlay

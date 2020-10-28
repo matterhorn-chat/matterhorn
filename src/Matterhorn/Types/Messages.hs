@@ -125,9 +125,8 @@ import           Network.Mattermost.Types ( ChannelId, PostId, Post
 import           Matterhorn.Types.DirectionalSeq
 import           Matterhorn.Types.Posts
 import           Matterhorn.Types.RichText ( Blocks, unBlocks, Inline(..)
-                                , InlineData(..), findUsernames, blockGetURLs
-                                , InlineStyle(..), URL(..), parseMarkdown
-                                , TeamURLName
+                                , findUsernames, blockGetURLs
+                                , URL(..), parseMarkdown, TeamURLName
                                 )
 
 
@@ -743,8 +742,8 @@ msgURLs msg =
                             (LinkFileId $ a^.attachmentFileId))
                        <$> (msg^.mAttachments)
       attachmentLabel a =
-          Seq.fromList [ Inline Normal $ EText "attachment"
-                       , Inline Normal ESpace
-                       , Inline Code $ EText $ a^.attachmentName
+          Seq.fromList [ EText "attachment"
+                       , ESpace
+                       , ECode $ Seq.singleton $ EText $ a^.attachmentName
                        ]
   in msgUrls <> attachmentURLs

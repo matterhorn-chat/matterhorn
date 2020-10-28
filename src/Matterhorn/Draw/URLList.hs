@@ -9,6 +9,7 @@ import           Matterhorn.Prelude
 import           Brick
 import           Brick.Widgets.Border ( hBorder )
 import           Brick.Widgets.List ( renderList )
+import qualified Data.Sequence as Seq
 import qualified Data.Foldable as F
 import           Lens.Micro.Platform ( to )
 
@@ -19,7 +20,8 @@ import           Matterhorn.Draw.Util
 import           Matterhorn.Draw.RichText
 import           Matterhorn.Themes
 import           Matterhorn.Types
-import           Matterhorn.Types.RichText ( unURL, TeamURLName(..) )
+import           Matterhorn.Types.RichText ( Blocks(..), Block(Para)
+                                           , unURL, TeamURLName(..) )
 
 
 renderUrlList :: ChatState -> Widget Name
@@ -39,6 +41,8 @@ renderUrlList st =
 
         me = myUsername st
 
+        hSet = getHighlightSet st
+
         renderItem sel link =
           let time = link^.linkTime
           in attr sel $ vLimit 2 $
@@ -47,7 +51,7 @@ renderUrlList st =
                     in colorUsername me u u
                   , case link^.linkLabel of
                       Nothing -> emptyWidget
-                      Just label -> txt ": " <+> hBox (F.toList $ renderInlineSeq me label)
+                      Just label -> txt ": " <+> renderRichText me hSet Nothing False (Blocks $ Seq.singleton $ Para label)
                   , fill ' '
                   , renderDate st $ withServerTime time
                   , str " "

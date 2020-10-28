@@ -5,6 +5,7 @@ module Matterhorn.Constants
   , previewMaxHeight
   , normalChannelSigil
   , userSigil
+  , editMarking
   )
 where
 
@@ -33,3 +34,6 @@ normalChannelSigil = "~"
 
 userSigil :: Text
 userSigil = "@"
+
+editMarking :: Text
+editMarking = "(edited)"
