@@ -276,6 +276,7 @@ module Matterhorn.Types
   , UserSet
   , ChannelSet
   , getHighlightSet
+  , emptyHSet
 
   , module Matterhorn.Types.Channels
   , module Matterhorn.Types.Messages
@@ -2130,6 +2131,9 @@ data HighlightSet =
                  , hChannelSet :: Set Text
                  , hSyntaxMap  :: SyntaxMap
                  }
+
+emptyHSet :: HighlightSet
+emptyHSet = HighlightSet Set.empty Set.empty mempty
 
 getHighlightSet :: ChatState -> HighlightSet
 getHighlightSet st =

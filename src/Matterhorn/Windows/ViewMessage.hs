@@ -26,7 +26,7 @@ import           Matterhorn.Events.Keybindings
 import           Matterhorn.Themes
 import           Matterhorn.Types
 import           Matterhorn.Draw.RichText
-import           Matterhorn.Draw.Messages ( nameForUserRef )
+import           Matterhorn.Draw.Messages ( renderMessage, MessageData(..), nameForUserRef )
 
 -- | The template for "View Message" windows triggered by message
 -- selection mode.

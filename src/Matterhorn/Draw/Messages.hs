@@ -1,9 +1,14 @@
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiWayIf #-}
 module Matterhorn.Draw.Messages
-  ( nameForUserRef
+  ( MessageData(..)
+  , renderMessage
+  , nameForUserRef
   , renderSingleMessage
   , unsafeRenderMessageSelection
   , renderLastMessages
+  , addEllipsis
   )
 where
 
@@ -11,8 +16,18 @@ import           Brick
 import           Brick.Widgets.Border
 import           Control.Monad.Trans.Reader ( withReaderT )
 import qualified Data.Foldable as F
-import qualified Graphics.Vty as Vty
+import qualified Data.Map.Strict as Map
+import qualified Data.Sequence as S
+import           Data.Sequence ( ViewL(..)
+                               , ViewR(..)
+                               , (|>)
+                               , viewl
+                               , viewr)
+import qualified Data.Set as Set
+import qualified Data.Text as T
+import qualified Graphics.Vty as V
 import           Lens.Micro.Platform ( (.~), to )
+import           Network.Mattermost.Lenses ( postEditAtL, postCreateAtL )
 import           Network.Mattermost.Types ( ServerTime(..), userUsername )
 import           Prelude ()
 import           Matterhorn.Prelude
@@ -21,6 +36,7 @@ import           Matterhorn.Draw.Util
 import           Matterhorn.Draw.RichText
 import           Matterhorn.Themes
 import           Matterhorn.Types
+import           Matterhorn.Types.RichText
 import           Matterhorn.Types.DirectionalSeq
 
 maxMessageHeight :: Int
@@ -124,23 +140,23 @@ unsafeRenderMessageSelection ((curMsg, curThreadState), (before, after)) doMsgRe
         upperHeight = targetHeight `div` 2
         lowerHeight = targetHeight - upperHeight
 
-        lowerRender img (m, tState) = render1HLimit doMsgRender Vty.vertJoin targetHeight img tState m
-        upperRender img (m, tState) = render1HLimit doMsgRender (flip Vty.vertJoin) targetHeight img tState m
+        lowerRender img (m, tState) = render1HLimit doMsgRender V.vertJoin targetHeight img tState m
+        upperRender img (m, tState) = render1HLimit doMsgRender (flip V.vertJoin) targetHeight img tState m
 
-    lowerHalf <- foldM lowerRender Vty.emptyImage after
-    upperHalf <- foldM upperRender Vty.emptyImage before
+    lowerHalf <- foldM lowerRender V.emptyImage after
+    upperHalf <- foldM upperRender V.emptyImage before
 
-    let curHeight = Vty.imageHeight $ curMsgResult^.imageL
-        uncropped = upperHalf Vty.<-> curMsgResult^.imageL Vty.<-> lowerHalf
-        img = if | Vty.imageHeight lowerHalf < (lowerHeight - curHeight) ->
-                     Vty.cropTop targetHeight uncropped
-                 | Vty.imageHeight upperHalf < upperHeight ->
-                     Vty.cropBottom targetHeight uncropped
+    let curHeight = V.imageHeight $ curMsgResult^.imageL
+        uncropped = upperHalf V.<-> curMsgResult^.imageL V.<-> lowerHalf
+        img = if | V.imageHeight lowerHalf < (lowerHeight - curHeight) ->
+                     V.cropTop targetHeight uncropped
+                 | V.imageHeight upperHalf < upperHeight ->
+                     V.cropBottom targetHeight uncropped
                  | otherwise ->
-                     Vty.cropTop upperHeight upperHalf Vty.<-> curMsgResult^.imageL Vty.<->
+                     V.cropTop upperHeight upperHalf V.<-> curMsgResult^.imageL V.<->
                         (if curHeight < lowerHeight
-                          then Vty.cropBottom (lowerHeight - curHeight) lowerHalf
-                          else Vty.cropBottom lowerHeight lowerHalf)
+                          then V.cropBottom (lowerHeight - curHeight) lowerHalf
+                          else V.cropBottom lowerHeight lowerHalf)
     return $ emptyResult & imageL .~ img
 
 renderLastMessages :: ChatState
@@ -159,51 +175,253 @@ renderLastMessages st hs editCutoff msgs =
 
             isBelow m transition = m^.mDate > transition^.mDate
 
-            go :: Vty.Image -> DirectionalSeq Retrograde (Message, ThreadState) -> RenderM Name Vty.Image
+            go :: V.Image -> DirectionalSeq Retrograde (Message, ThreadState) -> RenderM Name V.Image
             go img ms | messagesLength ms == 0 = return img
             go img ms = do
                 let Just (m, threadState) = messagesHead ms
                     newMessagesAbove = maybe False (isBelow m) newMessageTransition
-                newImg <- render1HLimit doMsgRender (flip Vty.vertJoin) targetHeight img threadState m
+                newImg <- render1HLimit doMsgRender (flip V.vertJoin) targetHeight img threadState m
                 -- If the new message fills the window, check whether
                 -- there is still a "New Messages" transition that is
                 -- not displayed. If there is, then we need to replace
                 -- the top line of the new image with a "New Messages"
                 -- indicator.
-                if Vty.imageHeight newImg >= targetHeight && newMessagesAbove
+                if V.imageHeight newImg >= targetHeight && newMessagesAbove
                 then do
                     transitionResult <- render $ withDefAttr newMessageTransitionAttr $
                                                  hBorderWithLabel (txt "New Messages ↑")
-                    let newImg2 = Vty.vertJoin (transitionResult^.imageL)
-                                               (Vty.cropTop (targetHeight - 1) newImg)
+                    let newImg2 = V.vertJoin (transitionResult^.imageL)
+                                               (V.cropTop (targetHeight - 1) newImg)
                     return newImg2
                 else go newImg $ messagesDrop 1 ms
 
-        img <- go Vty.emptyImage msgs
-        return $ emptyResult & imageL .~ (Vty.cropTop targetHeight img)
+        img <- go V.emptyImage msgs
+        return $ emptyResult & imageL .~ (V.cropTop targetHeight img)
 
 relaxHeight :: Context -> Context
 relaxHeight c = c & availHeightL .~ (max maxMessageHeight (c^.availHeightL))
 
 render1HLimit :: (Message -> ThreadState -> Widget Name)
-              -> (Vty.Image -> Vty.Image -> Vty.Image)
+              -> (V.Image -> V.Image -> V.Image)
               -> Int
-              -> Vty.Image
+              -> V.Image
               -> ThreadState
               -> Message
-              -> RenderM Name Vty.Image
+              -> RenderM Name V.Image
 render1HLimit doMsgRender fjoin lim img threadState msg
-  | Vty.imageHeight img >= lim = return img
+  | V.imageHeight img >= lim = return img
   | otherwise = fjoin img <$> render1 doMsgRender threadState msg
 
 render1 :: (Message -> ThreadState -> Widget Name)
         -> ThreadState
         -> Message
-        -> RenderM Name Vty.Image
+        -> RenderM Name V.Image
 render1 doMsgRender threadState msg = case msg^.mDeleted of
-    True -> return Vty.emptyImage
+    True -> return V.emptyImage
     False -> do
         r <- withReaderT relaxHeight $
              render $ padRight Max $
              doMsgRender msg threadState
         return $ r^.imageL
+
+-- | A bundled structure that includes all the information necessary
+-- to render a given message
+data MessageData =
+    MessageData { mdEditThreshold :: Maybe ServerTime
+                -- ^ If specified, any messages edited before this point
+                -- in time are not indicated as edited.
+                , mdShowOlderEdits :: Bool
+                -- ^ Indicates whether "edited" markers should be shown
+                -- for old messages (i.e., ignore the mdEditThreshold
+                -- value).
+                , mdShowReactions :: Bool
+                -- ^ Whether to render reactions.
+                , mdMessage :: Message
+                -- ^ The message to render.
+                , mdUserName :: Maybe Text
+                -- ^ The username of the message's author, if any. This
+                -- is passed here rather than obtaining from the message
+                -- because we need to do lookups in the ChatState to
+                -- compute this, and we don't pass the ChatState into
+                -- renderMessage.
+                , mdParentMessage :: Maybe Message
+                -- ^ The parent message of this message, if any.
+                , mdParentUserName :: Maybe Text
+                -- ^ The author of the parent message, if any.
+                , mdThreadState :: ThreadState
+                -- ^ The thread state of this message.
+                , mdRenderReplyParent :: Bool
+                -- ^ Whether to render the parent message.
+                , mdHighlightSet :: HighlightSet
+                -- ^ The highlight set to use to highlight usernames,
+                -- channel names, etc.
+                , mdIndentBlocks :: Bool
+                -- ^ Whether to indent the message underneath the
+                -- author's name (True) or just display it to the right
+                -- of the author's name (False).
+                , mdMessageWidthLimit :: Maybe Int
+                -- ^ A width override to use to wrap non-code blocks
+                -- and code blocks without syntax highlighting. If
+                -- unspecified, all blocks in the message will be
+                -- wrapped and truncated at the width specified by the
+                -- rendering context. If specified, all non-code blocks
+                -- will be wrapped at this width and highlighted code
+                -- blocks will be rendered using the context's width.
+                , mdMyUsername :: Text
+                -- ^ The username of the user running Matterhorn.
+                , mdWrapNonhighlightedCodeBlocks :: Bool
+                -- ^ Whether to wrap text in non-highlighted code
+                -- blocks.
+                }
+
+-- | renderMessage performs markdown rendering of the specified message.
+renderMessage :: MessageData -> Widget Name
+renderMessage md@MessageData { mdMessage = msg, .. } =
+    let msgUsr = case mdUserName of
+          Just u -> if omittedUsernameType (msg^.mType) then Nothing else Just u
+          Nothing -> Nothing
+        botElem = if isBotMessage msg then txt "[BOT]" else emptyWidget
+        nameElems = case msgUsr of
+          Just un
+            | isEmote msg ->
+                [ withDefAttr pinnedMessageIndicatorAttr $ txt $ if msg^.mPinned then "[PIN]" else ""
+                , txt $ (if msg^.mFlagged then "[!] " else "") <> "*"
+                , colorUsername mdMyUsername un un
+                , botElem
+                , txt " "
+                ]
+            | otherwise ->
+                [ withDefAttr pinnedMessageIndicatorAttr $ txt $ if msg^.mPinned then "[PIN] " else ""
+                , colorUsername mdMyUsername un un
+                , botElem
+                , txt $ (if msg^.mFlagged then "[!]" else "") <> ": "
+                ]
+          Nothing -> []
+
+        -- Use the editing threshold to determine whether to append an
+        -- editing indication to this message.
+        maybeAugment bs = case msg^.mOriginalPost of
+            Nothing -> bs
+            Just p ->
+                if p^.postEditAtL > p^.postCreateAtL
+                then case mdEditThreshold of
+                    Just cutoff | p^.postEditAtL >= cutoff ->
+                        addEditSentinel (EEditSentinel True) bs
+                    _ -> if mdShowOlderEdits
+                         then addEditSentinel (EEditSentinel False) bs
+                         else bs
+                else bs
+
+        augmentedText = maybeAugment $ unBlocks $ msg^.mText
+        msgWidget =
+            vBox $ (layout mdHighlightSet mdMessageWidthLimit nameElems augmentedText . viewl) augmentedText :
+                   catMaybes [msgAtch, msgReac]
+        replyIndent = Widget Fixed Fixed $ do
+            ctx <- getContext
+            -- NB: The amount subtracted here must be the total padding
+            -- added below (pad 1 + vBorder)
+            w <- render $ hLimit (ctx^.availWidthL - 2) msgWidget
+            render $ vLimit (V.imageHeight $ w^.imageL) $
+                padRight (Pad 1) vBorder <+> (Widget Fixed Fixed $ return w)
+        msgAtch = if S.null (msg^.mAttachments)
+          then Nothing
+          else Just $ withDefAttr clientMessageAttr $ vBox
+                 [ txt ("  [attached: `" <> a^.attachmentName <> "`]")
+                 | a <- toList (msg^.mAttachments)
+                 ]
+        msgReac = if Map.null (msg^.mReactions) || (not mdShowReactions)
+          then Nothing
+          else let renderR e us =
+                       let n = Set.size us
+                       in if | n == 1    -> " [" <> e <> "]"
+                             | n > 1     -> " [" <> e <> " " <> T.pack (show n) <> "]"
+                             | otherwise -> ""
+                   reactionMsg = Map.foldMapWithKey renderR (msg^.mReactions)
+               in Just $ withDefAttr emojiAttr $ txt ("   " <> reactionMsg)
+        withParent p =
+            case mdThreadState of
+                NoThread -> msgWidget
+                InThreadShowParent -> p <=> replyIndent
+                InThread -> replyIndent
+    in if not mdRenderReplyParent
+       then msgWidget
+       else case msg^.mInReplyToMsg of
+          NotAReply -> msgWidget
+          InReplyTo _ ->
+              case mdParentMessage of
+                  Nothing -> withParent (str "[loading...]")
+                  Just pm ->
+                      let parentMsg = renderMessage md
+                            { mdShowOlderEdits    = False
+                            , mdMessage           = pm
+                            , mdUserName          = mdParentUserName
+                            , mdParentMessage     = Nothing
+                            , mdRenderReplyParent = False
+                            , mdIndentBlocks      = False
+                            }
+                      in withParent (addEllipsis $ forceAttr replyParentAttr parentMsg)
+
+    where
+        layout :: HighlightSet -> Maybe Int -> [Widget Name] -> Seq Block
+               -> ViewL Block -> Widget Name
+        layout hs w nameElems bs xs | length xs > 1     = multiLnLayout hs w nameElems bs
+        layout hs w nameElems bs (Blockquote {} :< _) = multiLnLayout hs w nameElems bs
+        layout hs w nameElems bs (CodeBlock {} :< _)  = multiLnLayout hs w nameElems bs
+        layout hs w nameElems bs (HTMLBlock {} :< _)  = multiLnLayout hs w nameElems bs
+        layout hs w nameElems bs (List {} :< _)       = multiLnLayout hs w nameElems bs
+        layout hs w nameElems bs (Para inlns :< _)
+            | F.any breakCheck inlns                    = multiLnLayout hs w nameElems bs
+        layout hs w nameElems bs _                      = nameNextToMessage hs w nameElems bs
+
+        multiLnLayout hs w nameElems bs =
+            if mdIndentBlocks
+               then vBox [ hBox nameElems
+                         , hBox [txt "  ", renderRichText mdMyUsername hs ((subtract 2) <$> w)
+                                                 mdWrapNonhighlightedCodeBlocks (Blocks bs)]
+                         ]
+               else nameNextToMessage hs w nameElems bs
+
+        nameNextToMessage hs w nameElems bs =
+            Widget Fixed Fixed $ do
+                nameResult <- render $ hBox nameElems
+                let newW = subtract (V.imageWidth (nameResult^.imageL)) <$> w
+                render $ hBox [ raw (nameResult^.imageL)
+                              , renderRichText mdMyUsername hs newW mdWrapNonhighlightedCodeBlocks (Blocks bs)
+                              ]
+
+        breakCheck i = i `elem` [ELineBreak, ESoftBreak]
+
+-- Add the edit sentinel to the end of the last block in the sequence.
+-- If the last block is a paragraph, append it to that paragraph.
+-- Otherwise, append a new block so it appears beneath the last
+-- block-level element.
+addEditSentinel :: Inline -> Seq Block -> Seq Block
+addEditSentinel d bs =
+    case viewr bs of
+        EmptyR -> bs
+        (rest :> b) -> rest <> appendEditSentinel d b
+
+appendEditSentinel :: Inline -> Block -> Seq Block
+appendEditSentinel sentinel b =
+    let s = Para (S.singleton sentinel)
+    in case b of
+        Para is -> S.singleton $ Para (is |> ESpace |> sentinel)
+        _ -> S.fromList [b, s]
+
+omittedUsernameType :: MessageType -> Bool
+omittedUsernameType = \case
+    CP Join -> True
+    CP Leave -> True
+    CP TopicChange -> True
+    _ -> False
+
+addEllipsis :: Widget a -> Widget a
+addEllipsis w = Widget (hSize w) (vSize w) $ do
+    ctx <- getContext
+    let aw = ctx^.availWidthL
+    result <- render w
+    let withEllipsis = (hLimit (aw - 3) $ vLimit 1 $ (Widget Fixed Fixed $ return result)) <+>
+                       str "..."
+    if (V.imageHeight (result^.imageL) > 1) || (V.imageWidth (result^.imageL) == aw) then
+        render withEllipsis else
+        return result
