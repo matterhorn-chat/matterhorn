@@ -1,22 +1,26 @@
--- | This module implements a "flattening" pass over RichText Inline
+-- | This module implements a "flattening" pass over RichText 'Inline'
 -- values. This means that a tree structure such as
 --
--- EStrong
---   [ EStrikethrough
---     [ EText "inside"
+-- @
+--   EStrong
+--     [ EStrikethrough
+--       [ EText "inside"
+--       ]
+--     , EText "outside"
 --     ]
---   , EText "outside"
---   ]
+-- @
 --
 -- will be converted into a "flat" representation without a tree
 -- structure so that the style information encoded in the tree is
 -- available at each node:
 --
--- [
---   [ SingleInline (FlattenedInline (FText "inside") [Strong, Strikethrough] Nothing
---   , SingleInline (FlattenedInline (FText "outside") [Strong] Nothing
+-- @
+--   [
+--     [ SingleInline (FlattenedInline (FText "inside") [Strong, Strikethrough] Nothing
+--     , SingleInline (FlattenedInline (FText "outside") [Strong] Nothing
+--     ]
 --   ]
--- ]
+-- @
 --
 -- The outer sequence is a sequence of lines (since inline lists can
 -- introduce line breaks). Each inner sequence is a single line.
@@ -24,10 +28,10 @@
 -- encountered, that group of inlines should be treated as a unit for
 -- the purposes of line-wrapping (to happen in the Wrap module). The
 -- above representation example shows how the tree path including the
--- EStrong and EStrikethrough nodes is flattened into a list of styles
--- to accompany each inline value. This makes it trivial to carry that
--- style information along with each node during line-wrapping rather
--- than needing to deal with the tree structure.
+-- 'EStrong' and 'EStrikethrough' nodes is flattened into a list of
+-- styles to accompany each inline value. This makes it trivial to carry
+-- that style information along with each node during line-wrapping
+-- rather than needing to deal with the tree structure.
 module Matterhorn.Draw.RichText.Flatten
   ( FlattenedContent(..)
   , FlattenedInline(..)
