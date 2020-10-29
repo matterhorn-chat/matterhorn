@@ -33,7 +33,7 @@
   <!ENTITY hex "[0-9a-fA-F]([0-9a-fA-F_]*[0-9a-fA-F])?">
 ]>
 
-<language name="Julia" section="Sources" version="7" kateversion="5.0" extensions="*.jl" casesensitive="1" priority="5" license="MIT">
+<language name="Julia" section="Sources" version="8" kateversion="5.0" extensions="*.jl" casesensitive="1" priority="5" license="MIT">
 
   <highlighting>
     <list name="block_begin">
@@ -697,7 +697,7 @@
   <general>
     <comments>
       <comment name="singleLine" start="#" />
-      <comment name="multiLine" start="#=" end="=#" />
+      <comment name="multiLine" start="#=" end="=#" region="block-comment" />
     </comments>
     <keywords casesensitive="1" weakDeliminator=""/>
   </general>

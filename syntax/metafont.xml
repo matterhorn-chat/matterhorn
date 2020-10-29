@@ -6,7 +6,7 @@ We have moved some keywords for consistency
 -->
 
 <!DOCTYPE language SYSTEM "language.dtd">
-<language name="Metapost/Metafont" section="Markup" version="5" kateversion="5.0"
+<language name="Metapost/Metafont" section="Markup" version="7" kateversion="5.0"
 extensions="*.mp;*.mps;*.mpost;*.mf" mimetype="text/x-metapost" 
 author="Yedvilun (yedvilun@gmail.com)" license="LGPL">
   <highlighting>
@@ -914,7 +914,7 @@ author="Yedvilun (yedvilun@gmail.com)" license="LGPL">
         <RegExpr String="[^a-zA-Z]" attribute="Keyword" context="#pop" />
       </context>
       <context name="Verb" attribute="Verbatim" lineEndContext="#pop#pop" >
-        <RegExpr String="(.)" attribute="Normal Text" dynamic="true" context="VerbEnd" />
+        <RegExpr String="(.)" attribute="Normal Text" context="VerbEnd" />
       </context>
       <context name="VerbEnd" attribute="Verbatim" lineEndContext="#pop#pop#pop" dynamic="true" >
         <StringDetect String="%1" attribute="Normal Text" context="#pop#pop#pop" dynamic="true" />
@@ -940,8 +940,10 @@ author="Yedvilun (yedvilun@gmail.com)" license="LGPL">
 
       <!-- comment -->
       <context name="Comment" attribute="Comment" lineEndContext="#pop">
+        <DetectSpaces />
         <IncludeRules context="##Alerts" />
         <DetectChar char="&#xd7;" attribute="Bullet" context="#stay"/>
+        <IncludeRules context="##Modelines" />
       </context>
 
 </contexts>
@@ -977,10 +979,10 @@ author="Yedvilun (yedvilun@gmail.com)" license="LGPL">
 
   <general>
     <comments>
-      <comment name="singleLine" start="%"/>
+      <comment name="singleLine" start="%" position="afterwhitespace"/>
     </comments>
     <keywords casesensitive="0" />
 
   </general>
 </language>
-
+<!-- kate: replace-tabs on; tab-width 2; indent-width 2; -->

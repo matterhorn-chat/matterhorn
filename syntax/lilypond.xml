@@ -56,7 +56,7 @@
 ]>
 <language name="LilyPond" section="Other"
           style="lilypond" indenter="lilypond"
-          version="6" kateversion="3.3"
+          version="7" kateversion="3.3"
           extensions="*.ly;*.LY;*.ily;*.ILY;*.lyi;*.LYI"
           mimetype="text/x-lilypond"
           author="Wilbert Berendsen (info@wilbertberendsen.nl)" license="LGPL">
@@ -820,12 +820,16 @@
       </context>
 
       <context name="commentline" attribute="Comment" lineEndContext="#pop">
+        <DetectSpaces />
         <IncludeRules context="##Alerts"/>
+        <IncludeRules context="##Modelines"/>
       </context>
 
       <context name="commentblock" attribute="Comment" lineEndContext="#stay">
         <Detect2Chars char="%" char1="}" attribute="Comment" context="#pop" endRegion="comment"/>
+        <DetectSpaces />
         <IncludeRules context="##Alerts"/>
+        <IncludeRules context="##Modelines"/>
       </context>
 
       <context name="string" attribute="Quoted Text" lineEndContext="#stay">
@@ -891,11 +895,13 @@
       </context>
 
       <context name="schemecommentline" attribute="Scheme Comment" lineEndContext="#pop">
+        <DetectSpaces />
         <IncludeRules context="##Alerts"/>
       </context>
 
       <context name="schemecommentblock" attribute="Scheme Comment" lineEndContext="#stay">
         <Detect2Chars char="!" char1="#" attribute="Scheme Comment" context="#pop" endRegion="schemecomment"/>
+        <DetectSpaces />
         <IncludeRules context="##Alerts"/>
       </context>
 

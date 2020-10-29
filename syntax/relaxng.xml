@@ -16,7 +16,7 @@
    - Namespace rules
 -->
 
-<language version="3"
+<language version="4"
           kateversion="2.4"
           name="RELAX NG"
           section="Markup"
@@ -94,6 +94,7 @@
         <StringDetect attribute="Comment" context="#pop"  String="--&gt;" endRegion="comment"/>
         <RegExpr attribute="Error" context="#stay" String="-(-(?!-&gt;))+"/>
         <IncludeRules context="##Alerts"/>
+        <IncludeRules context="##Modelines"/>
         <DetectIdentifier/>
       </context>
     </contexts>
@@ -112,8 +113,9 @@
   </highlighting>
   <general>
     <comments>
-      <comment name="multiLine" start="&lt;!--" end="--&gt;" />
+      <comment name="multiLine" start="&lt;!--" end="--&gt;" region="comment" />
     </comments>
     <keywords casesensitive="0" weakDeliminator="-:" additionalDeliminator="&quot;{}"/>
   </general>
 </language>
+<!-- kate: replace-tabs on; indent-width 2; -->

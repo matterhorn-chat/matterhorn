@@ -43,7 +43,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 -->
 
-<language name="GNU Assembler" version="3" kateversion="5.0" section="Assembler" extensions="*.s;*.S" mimetype="text/x-asm" author="John Zaitseff (J.Zaitseff@zap.org.au), Roland Pabel (roland@pabel.name), Miquel Sabaté (mikisabate@gmail.com)" license="GPLv2+">
+<language name="GNU Assembler" version="4" kateversion="5.0" section="Assembler" extensions="*.s;*.S" mimetype="text/x-asm" author="John Zaitseff (J.Zaitseff@zap.org.au), Roland Pabel (roland@pabel.name), Miquel Sabaté (mikisabate@gmail.com)" license="GPLv2+">
   <highlighting>
     <list name="keywords">
       <item>.abort</item>
@@ -250,16 +250,20 @@ with this program; if not, write to the Free Software Foundation, Inc.,
         <RegExpr      attribute="Preprocessor" context="Preprocessor" String="#\s*endif" insensitive="true" endRegion="PP" firstNonSpace="true" />
         <RegExpr      attribute="Preprocessor" context="Define" String="#\s*define.*((?=\\))" insensitive="true" firstNonSpace="true" />
         <RegExpr      attribute="Preprocessor" context="Preprocessor" String="#\s*(?:el(?:se|if)|include(?:_next)?|define|undef|line|error|warning|pragma)" firstNonSpace="true" />
-        <Detect2Chars attribute="Comment" context="Commentar 1" char="/" char1="*" />
+        <Detect2Chars attribute="Comment" context="Commentar 1" char="/" char1="*" beginRegion="BlockComment" />
         <AnyChar      attribute="Comment" context="Commentar 2" String="@;#" />
         <AnyChar      attribute="Symbol" context="#stay" String="!#%&amp;*()+,-&lt;=&gt;?/:[]^{|}~" />
       </context>
       <context attribute="Comment" lineEndContext="#stay" name="Commentar 1">
+        <Detect2Chars attribute="Comment" context="#pop" char="*" char1="/" endRegion="BlockComment" />
+        <DetectSpaces />
         <IncludeRules context="##Alerts" />
-        <Detect2Chars attribute="Comment" context="#pop" char="*" char1="/" />
+        <IncludeRules context="##Modelines" />
       </context>
       <context attribute="Comment" lineEndContext="#pop" name="Commentar 2" >
+        <DetectSpaces />
         <IncludeRules context="##Alerts" />
+        <IncludeRules context="##Modelines" />
       </context>
       <context attribute="String" lineEndContext="#pop" name="String">
         <LineContinue  attribute="String" context="Some Context" />
@@ -293,11 +297,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
   <general>
     <comments>
-      <!--<comment name="singleLine" start=";" />
-      <comment name="singleLine" start="@" />
-      <comment name="singleLine" start="#" />-->
-      <comment name="multiLine"  start="/*" end="*/" />
+      <comment name="singleLine" start="#" position="afterwhitespace" />
+      <comment name="multiLine"  start="/*" end="*/" region="BlockComment" />
     </comments>
     <keywords casesensitive="1" weakDeliminator="_.$" />
   </general>
 </language>
+<!-- kate: replace-tabs on; tab-width 2; indent-width 2; -->

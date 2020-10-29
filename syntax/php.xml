@@ -73,7 +73,7 @@ Changes:
   <!ENTITY types "int|integer|bool|boolean|float|double|real|string|array|object">
 ]>
 
-<language name="PHP/PHP" indenter="cstyle" version="10" kateversion="5.0" section="Scripts" extensions="" priority="5" mimetype="" hidden="true">
+<language name="PHP/PHP" indenter="cstyle" version="12" kateversion="5.0" section="Scripts" extensions="" priority="5" mimetype="" hidden="true">
   <highlighting>
     <!-- https://secure.php.net/manual/en/reserved.keywords.php -->
     <list name="control structures">
@@ -10863,9 +10863,8 @@ Changes:
         <!--/ Alternate PHP Block Syntax -->
 
         <DetectChar attribute="Comment" context="onelinecomment" char="#" />
-        <IncludeRules context="##Doxygen" />
-        <Detect2Chars attribute="Comment" context="onelinecomment" char="/" char1="/" />
-        <Detect2Chars attribute="Comment" context="twolinecomment" char="/" char1="*" beginRegion="Comment" />
+        <Detect2Chars attribute="Comment" context="MatchComment" char="/" char1="/" lookAhead="true"/>
+        <Detect2Chars attribute="Comment" context="MatchComment" char="/" char1="*" lookAhead="true" />
         <keyword attribute="Error" context="#stay" String="deprecated"/>
         <keyword attribute="Control Structures" context="#stay" String="control structures" />
         <keyword attribute="Keyword" context="#stay" String="keywords" />
@@ -10911,6 +10910,12 @@ Changes:
         <AnyChar attribute="Other" context="#stay" String=";(),[]" />
       </context>
 
+      <context name="MatchComment" attribute="Normal Text" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">
+        <IncludeRules context="##Doxygen" />
+        <Detect2Chars attribute="Comment" context="#pop!onelinecomment" char="/" char1="/" />
+        <Detect2Chars attribute="Comment" context="#pop!twolinecomment" char="/" char1="*" beginRegion="Comment" />
+      </context>
+
       <context name="ternary" attribute="PHP Text" lineEndContext="#stay">
         <!-- the paamayim nekudotayim (::) must not start a subcontext that is never terminated. -->
         <Detect2Chars attribute="Normal Text" context="#stay" char=":" char1=":" />
@@ -10923,10 +10928,12 @@ Changes:
       </context>
 
       <context name="onelinecomment" attribute="Comment" lineEndContext="#pop">
+        <DetectSpaces />
         <StringDetect attribute="Keyword" context="#pop" lookAhead="true" String="?&gt;" />
         <IncludeRules context="##Alerts" />
       </context>
       <context name="twolinecomment" attribute="Comment" lineEndContext="#stay">
+        <DetectSpaces />
         <Detect2Chars attribute="Comment" context="#pop" char="*" char1="/" endRegion="Comment" />
         <IncludeRules context="##Alerts" />
       </context>
@@ -11046,8 +11053,9 @@ Changes:
   <general>
     <comments>
       <comment name="singleLine" start="//" />
-      <comment name="multiLine" start="/*" end="*/" />
+      <comment name="multiLine" start="/*" end="*/" region="Comment" />
     </comments>
     <keywords casesensitive="0" weakDeliminator="" additionalDeliminator="@" />
   </general>
 </language>
+<!-- kate: replace-tabs on; tab-width 2; indent-width 2; -->

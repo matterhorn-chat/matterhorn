@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
-<language name="Scala" version="6" kateversion="2.3" section="Sources"
+<language name="Scala" version="8" kateversion="2.3" section="Sources"
           extensions="*.scala;*.sbt" mimetype="text/x-scala" license="LGPL"
           author="Stephane Micheloud (stephane.micheloud@epfl.ch)">
 <!--
@@ -3425,8 +3425,8 @@ adapted from "java.xml" by Alfredo Luiz Foltran Fialho (alfoltran@ig.com.br)
         <RegExpr attribute="Keyword" context="Imports" String="\b(package|import)\b" />
 -->
         <RegExpr attribute="Function" context="#stay" String="\b[_\w][_\w\d]*(?=[\s]*(/\*\s*\d+\s*\*/\s*)?[(])" />
-        <RegExpr attribute="Symbol" context="Member" String="[.]{1,1}" />
-        <AnyChar attribute="Symbol" context="#stay" String=":!%&amp;()+,-/.*&lt;=&gt;?[]|~^&#59;"/>
+        <DetectChar attribute="Symbol" context="Member" char="." />
+        <AnyChar attribute="Symbol" context="#stay" String=":!%&amp;()+,-/*&lt;=&gt;?[]|~^&#59;"/>
       </context>
       <context name="Float Suffixes" attribute="Float" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">
           <AnyChar String="fF" attribute="Float" context="#pop"/>
@@ -3469,9 +3469,16 @@ adapted from "java.xml" by Alfredo Luiz Foltran Fialho (alfoltran@ig.com.br)
         <RegExpr attribute="Imports" context="#pop" String="\s*.*$" />
       </context>
 -->
-      <context attribute="Comment" lineEndContext="#pop" name="Commentar 1"/>
+      <context attribute="Comment" lineEndContext="#pop" name="Commentar 1">
+        <DetectSpaces />
+        <IncludeRules context="##Alerts" />
+        <IncludeRules context="##Modelines" />
+      </context>
       <context attribute="Comment" lineEndContext="#stay" name="Commentar 2">
+        <DetectSpaces />
         <Detect2Chars attribute="Comment" context="#pop" char="*" char1="/" endRegion="Comment"/>
+        <IncludeRules context="##Alerts" />
+        <IncludeRules context="##Modelines" />
       </context>
     </contexts>
     <itemDatas>
@@ -3498,8 +3505,9 @@ adapted from "java.xml" by Alfredo Luiz Foltran Fialho (alfoltran@ig.com.br)
   <general>
     <comments>
       <comment name="singleLine" start="//"/>
-      <comment name="multiLine" start="/*" end="*/"/>
+      <comment name="multiLine" start="/*" end="*/" region="Comment"/>
     </comments>
     <keywords casesensitive="1"/>
   </general>
 </language>
+<!-- kate: replace-tabs on; tab-width 2; indent-width 2; -->

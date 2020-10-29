@@ -4,7 +4,7 @@
 	<!ENTITY name    "[A-Za-z_:][\w.:_-]*">
 	<!ENTITY entref  "&amp;(#[0-9]+|#[xX][0-9A-Fa-f]+|&name;);">
 ]>
-<language name="XUL" version="5" kateversion="5.0" section="Markup" extensions="*.xul;*.xbl" mimetype="text/xul" casesensitive="1" indenter="xml" author="Wilbert Berendsen (wilbert@kde.nl), Anders Lund (anders@alweb.dk), Joseph Wenninger (jowenn@kde.org), Whitehawk Stormchaser (zerokode@gmx.net), Marc Dassonneville (marc.dassonneville@gmail.com)" license="LGPL">
+<language name="XUL" version="7" kateversion="5.0" section="Markup" extensions="*.xul;*.xbl" mimetype="text/xul" casesensitive="1" indenter="xml" author="Wilbert Berendsen (wilbert@kde.nl), Anders Lund (anders@alweb.dk), Joseph Wenninger (jowenn@kde.org), Whitehawk Stormchaser (zerokode@gmx.net), Marc Dassonneville (marc.dassonneville@gmail.com)" license="LGPL">
 
 <highlighting>
    <list name="keywords">
@@ -426,6 +426,7 @@
     <StringDetect attribute="Comment" context="#pop" String="--&gt;" endRegion="comment" />
     <RegExpr attribute="Error" context="#stay" String="-(-(?!-&gt;))+" />
     <IncludeRules context="##Alerts" />
+    <IncludeRules context="##Modelines" />
     <DetectIdentifier />
   </context>
 
@@ -519,8 +520,8 @@
      <DetectChar attribute="String" context="String" char="&quot;"/>
      <DetectChar attribute="String" context="String 1" char="'"/>
      <Detect2Chars attribute="Comment" context="JSComment" char="/" char1="/"/>
-     <Detect2Chars attribute="Comment" context="Multi/inline Comment" char="/" char1="*" beginRegion="Comment"/>
-     <RegExpr attribute="Normal Text" context="(Internal regex catch)" String="[=?:]" />
+     <Detect2Chars attribute="Comment" context="Multi/inline Comment" char="/" char1="*" beginRegion="JSBlockComment"/>
+     <AnyChar attribute="Normal Text" context="(Internal regex catch)" String="=?:" />
      <RegExpr attribute="Normal Text" context="(Internal regex catch)" String="\(" />
      <DetectChar attribute="Symbol" context="#stay" char="{" beginRegion="Brace1" />
      <DetectChar attribute="Symbol" context="#stay" char="}" endRegion="Brace1" />
@@ -544,8 +545,9 @@
      <DetectIdentifier />
   </context>
   <context attribute="Comment" lineEndContext="#stay" name="Multi/inline Comment">
+     <DetectSpaces />
+     <Detect2Chars attribute="Comment" context="#pop" char="*" char1="/" endRegion="JSBlockComment"/>
      <IncludeRules context="##Alerts" />
-     <Detect2Chars attribute="Comment" context="#pop" char="*" char1="/" endRegion="Comment"/>
   </context>
   
   <context attribute="Regular Expression" lineEndContext="#stay" name="Regular Expression">
@@ -562,7 +564,7 @@
      <RegExpr attribute="Normal Text" context="#stay" String="\s*" />
      <RegExpr attribute="Regular Expression" context="#pop" String="//(?=;)" />
      <Detect2Chars attribute="Comment" context="JSComment" char="/" char1="/" />
-     <Detect2Chars attribute="Comment" context="Multi/inline Comment" char="/" char1="*" />
+     <Detect2Chars attribute="Comment" context="Multi/inline Comment" char="/" char1="*" beginRegion="JSBlockComment" />
      <DetectChar attribute="Regular Expression" context="(regex caret first check)" char="/" />
   </context>
   <context attribute="Pattern Character Class" lineEndContext="#stay" name="Regular Expression Character Class">
@@ -615,10 +617,9 @@
 </highlighting>
 <general>
   <comments>
-    <comment name="multiLine" start="&lt;!--" end="--&gt;" />
-    <comment name="singleLine" start="//" />
-    <comment name="multiLine" start="/*" end="*/" />
+    <comment name="multiLine" start="&lt;!--" end="--&gt;" region="comment" />
   </comments>
   <keywords casesensitive="1" />
 </general>
 </language>
+<!-- kate: replace-tabs on; tab-width 2; indent-width 2; -->

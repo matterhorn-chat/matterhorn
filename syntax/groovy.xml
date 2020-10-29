@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd"
-[
-	<!ENTITY int "[0-9]([0-9_]*[0-9])?">
-	<!ENTITY hex "[0-9a-fA-F]([0-9a-fA-F_]*[0-9a-fA-F])?">
-]>
-<language name="Java" version="7" kateversion="5.0" section="Sources" extensions="*.java" mimetype="text/x-java" license="LGPL" author="Alfredo Luiz Foltran Fialho (alfoltran@ig.com.br)">
+<!DOCTYPE language SYSTEM "language.dtd">
+<!--
+    Based on the java syntax file 1.19 by Alfredo Luiz Foltran Fialho (alfoltran@ig.com.br)
+-->
+<language name="Groovy" version="8" kateversion="5.0" section="Sources" extensions="*.groovy;*.gradle;*.gvy;Jenkinsfile" license="LGPL" author="Chris Reeves (chris@ev-soft.net)">
 	<highlighting>
 		<list name="java15">
 			<item>ACTIVE</item>
@@ -145,6 +144,7 @@
 			<item>AncestorEvent</item>
 			<item>AncestorListener</item>
 			<item>AnnotatedElement</item>
+			<item>Annotation</item>
 			<item>Annotation</item>
 			<item>AnnotationFormatError</item>
 			<item>AnnotationTypeMismatchException</item>
@@ -3276,7 +3276,7 @@
 			<item>_Remote_Stub</item>
 			<item>_ServantActivatorStub</item>
 			<item>_ServantLocatorStub</item>
-			
+
 <!-- 			new classes of jdk 6.0 -->
 
 			<item>AbstractAnnotationValueVisitor6</item>
@@ -3699,10 +3699,13 @@
 			<item>XPathType</item>
 			<item>XSLTTransformParameterSpec</item>
 			<item>ZipError</item>
-			
+
 <!-- 			end new classes -->
 		</list>
 		<list name="keywords">
+            <item>as</item>
+            <item>in</item>
+
 			<item>abstract</item>
 			<item>break</item>
 			<item>case</item>
@@ -3744,6 +3747,8 @@
 			<item>while</item>
 		</list>
 		<list name="types">
+            <item>def</item>
+
 			<item>boolean</item>
 			<item>byte</item>
 			<item>char</item>
@@ -3764,18 +3769,18 @@
 				<keyword attribute="Keyword" context="#stay" String="keywords"/>
 				<keyword attribute="Data Type" context="#stay" String="types"/>
 				<keyword attribute="Java15" context="#stay" String="java15"/>
-				<RegExpr attribute="Float" context="#stay" String="(\b&int;\.?|(\b&int;)?\.&int;)([eE][\-\+]?&int;[fFdD]?|[fFdD])\b"/>
-				<RegExpr attribute="Float" context="#stay" String="(\b&int;\.|(\b&int;)?\.&int;\b)"/>
-				<RegExpr attribute="Float" context="#stay" String="\b0[xX](&hex;\.?|(&hex;)?\.&hex;)[pP][\-\+]?&int;[fFdD]?\b"/>
-				<RegExpr attribute="Hex" context="#stay" String="\b0[xX]&hex;[lL]?\b"/>
-				<RegExpr attribute="Binary" context="#stay" String="\b0[bB][01]([01_]*[01])?[lL]?\b"/>
-				<RegExpr attribute="Octal" context="#stay" String="\b0[0-7]([0-7_]*[0-7])?[lL]?\b"/>
-				<RegExpr attribute="Decimal" context="#stay" String="\b(0|[1-9]([0-9_]*[0-9])?)[lL]?\b"/>
+				<Float attribute="Float" context="Float Suffixes"/>
+				<HlCOct attribute="Octal" context="#stay"/>
+				<HlCHex attribute="Hex" context="#stay"/>
+				<Int attribute="Decimal" context="Int Suffixes"/>
 				<HlCChar attribute="Char" context="#stay"/>
 				<RegExpr attribute="Char" context="#stay" String="'\\u[0-9a-fA-F]{4}'"/>
 				<RegExpr attribute="Decimal" context="#stay" String="//\s*BEGIN.*$" beginRegion="Region1"/>
 				<RegExpr attribute="Decimal" context="#stay" String="//\s*END.*$" endRegion="Region1"/>
-				<DetectChar attribute="String" context="String" char="&quot;"/>
+                <StringDetect attribute="String" String="&apos;&apos;&apos;" context="MultiLineSingleString" beginRegion="MultiLineString"/>
+                <StringDetect attribute="String" String="&quot;&quot;&quot;" context="MultiLineDoubleString" beginRegion="MultiLineString"/>
+                <DetectChar attribute="String" context="SingleString" char="&apos;"/>
+                <DetectChar attribute="String" context="String" char="&quot;"/>
 				<RegExpr attribute="Function" context="EnterPrintf" String="\.(format|printf)\b"/>
 				<Detect2Chars attribute="Comment" context="Commentar 1" char="/" char1="/"/>
 				<Detect2Chars attribute="Comment" context="Commentar 2" char="/" char1="*" beginRegion="Comment"/>
@@ -3785,11 +3790,23 @@
 				<RegExpr attribute="Keyword" context="StaticImports" String="\b(import\s+static)\b" />
 				<RegExpr attribute="Keyword" context="Imports" String="\b(package|import)\b" />
 				<RegExpr attribute="Function" context="#stay" String="\b[_\w][_\w\d]*(?=[\s]*(/\*\s*\d+\s*\*/\s*)?[(])" />
-				<RegExpr attribute="Annotation" context="#stay" String="@[_\w][_\w\d]*" />
 				<DetectChar attribute="Symbol" context="Member" char="." />
 				<DetectChar attribute="Symbol" context="InFunctionCall" char="("/>
 				<AnyChar attribute="Symbol" context="#stay" String=":!%&amp;+,-/*&lt;=&gt;?[]|~^&#59;"/>
 			</context>
+            <context name="Float Suffixes" attribute="Float" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">
+                <AnyChar String="fF" attribute="Float" context="#pop"/>
+            </context>
+            <context name="Int Suffixes" attribute="Decimal" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">
+                <StringDetect attribute="Decimal" context="#pop" String="ULL" insensitive="true"/>
+                <StringDetect attribute="Decimal" context="#pop" String="LUL" insensitive="true"/>
+                <StringDetect attribute="Decimal" context="#pop" String="LLU" insensitive="true"/>
+                <StringDetect attribute="Decimal" context="#pop" String="UL" insensitive="true"/>
+                <StringDetect attribute="Decimal" context="#pop" String="LU" insensitive="true"/>
+                <StringDetect attribute="Decimal" context="#pop" String="LL" insensitive="true"/>
+                <StringDetect attribute="Decimal" context="#pop" String="U" insensitive="true"/>
+                <StringDetect attribute="Decimal" context="#pop" String="L" insensitive="true"/>
+            </context>
 			<context attribute="Normal Text" lineEndContext="#stay" name="InFunctionCall">
 				<IncludeRules context="Normal"/>
 				<DetectChar attribute="Symbol" context="#pop" char=")"/>
@@ -3800,6 +3817,15 @@
 				<RegExpr attribute="String Char" context="#stay" String="\\u[0-9a-fA-F]{4}"/>
 				<DetectChar attribute="String" context="#pop" char="&quot;"/>
 			</context>
+            <context attribute="String" lineEndContext="#pop" name="SingleString">
+                <DetectChar attribute="String" context="#pop" char="&apos;"/>
+            </context>
+            <context attribute="String" lineEndContext="#stay" name="MultiLineSingleString">
+                <StringDetect attribute="String" context="#pop" String="&apos;&apos;&apos;" endRegion="MultiLineString"/>
+            </context>
+            <context attribute="String" lineEndContext="#stay" name="MultiLineDoubleString">
+                <StringDetect attribute="String" context="#pop" String="&quot;&quot;&quot;" endRegion="MultiLineString"/>
+            </context>
 			<context attribute="Normal Text" lineEndContext="#stay" name="EnterPrintf" fallthrough="true" fallthroughContext="#pop">
 				<DetectChar attribute="Symbol" context="Printf" char="("/>
 				<DetectSpaces attribute="Normal Text" context="#stay"/>
@@ -3820,10 +3846,10 @@
 				<RegExpr attribute="Function" context="#pop" String="\b[_a-zA-Z]\w*(?=[\s]*)" />
 			</context>
 			<context attribute="Normal Text" lineEndContext="#pop" name="StaticImports">
-				<RegExpr attribute="StaticImports" context="#pop" String="\s*.*;" />
+				<RegExpr attribute="StaticImports" context="#pop" String="\s*.*;?" />
 			</context>
 			<context attribute="Normal Text" lineEndContext="#pop" name="Imports">
-				<RegExpr attribute="Imports" context="#pop" String="\s*.*;" />
+				<RegExpr attribute="Imports" context="#pop" String="\s*.*;?" />
 			</context>
 			<context attribute="Comment" lineEndContext="#pop" name="Commentar 1">
 				<DetectSpaces />
@@ -3838,25 +3864,23 @@
 			</context>
 		</contexts>
 		<itemDatas>
-			<itemData name="Normal Text"  defStyleNum="dsNormal" spellChecking="false"/>
-			<itemData name="Keyword"      defStyleNum="dsKeyword" spellChecking="false"/>
-			<itemData name="Annotation"   defStyleNum="dsAttribute" spellChecking="false"/>
-			<itemData name="Function"     defStyleNum="dsFunction" spellChecking="false"/>
-			<itemData name="StaticImports" defStyleNum="dsImport" spellChecking="false"/>
-			<itemData name="Imports"      defStyleNum="dsImport" spellChecking="false"/>
-			<itemData name="Data Type"    defStyleNum="dsDataType" spellChecking="false"/>
-			<itemData name="Decimal"      defStyleNum="dsDecVal" spellChecking="false"/>
-			<itemData name="Octal"        defStyleNum="dsBaseN" spellChecking="false"/>
-			<itemData name="Hex"          defStyleNum="dsBaseN" spellChecking="false"/>
-			<itemData name="Binary"       defStyleNum="dsBaseN" spellChecking="false"/>
-			<itemData name="Float"        defStyleNum="dsFloat" spellChecking="false"/>
-			<itemData name="Char"         defStyleNum="dsChar" spellChecking="false"/>
+			<itemData name="Normal Text"  defStyleNum="dsNormal"/>
+			<itemData name="Keyword"      defStyleNum="dsKeyword"/>
+			<itemData name="Function"     defStyleNum="dsFunction"/>
+			<itemData name="StaticImports" defStyleNum="dsImport"/>
+			<itemData name="Imports"      defStyleNum="dsImport"/>
+			<itemData name="Data Type"    defStyleNum="dsDataType"/>
+			<itemData name="Decimal"      defStyleNum="dsDecVal"/>
+			<itemData name="Octal"        defStyleNum="dsBaseN"/>
+			<itemData name="Hex"          defStyleNum="dsBaseN"/>
+			<itemData name="Float"        defStyleNum="dsFloat"/>
+			<itemData name="Char"         defStyleNum="dsChar"/>
 			<itemData name="String"       defStyleNum="dsString"/>
-			<itemData name="String Char"  defStyleNum="dsSpecialChar" spellChecking="false"/>
+			<itemData name="String Char"  defStyleNum="dsSpecialChar"/>
 			<itemData name="PrintfString" defStyleNum="dsString"/>
 			<itemData name="Comment"      defStyleNum="dsComment"/>
-			<itemData name="Symbol"       defStyleNum="dsNormal" spellChecking="false"/>
-			<itemData name="Java15"       defStyleNum="dsBuiltIn" spellChecking="false"/>
+			<itemData name="Symbol"       defStyleNum="dsNormal"/>
+			<itemData name="Java15"       defStyleNum="dsBuiltIn" bold="1" italic="0"/>
 		</itemDatas>
 	</highlighting>
 	<general>

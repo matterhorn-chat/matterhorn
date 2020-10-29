@@ -20,7 +20,7 @@
   
   ========================================================================
 -->
-<language name="Lex/Flex" version="2" kateversion="2.4" section="Sources" extensions="*.l;*.lex;*.flex" author="Jan Villat (jan.villat@net2000.ch)" license="LGPL">
+<language name="Lex/Flex" version="3" kateversion="2.4" section="Sources" extensions="*.l;*.lex;*.flex" author="Jan Villat (jan.villat@net2000.ch)" license="LGPL">
 
 <highlighting>
 <contexts>
@@ -31,7 +31,7 @@
     <IncludeRules context="Detect C" />
     <Detect2Chars attribute="Content-Type Delimiter" context="Rules" char="%" char1="%" beginRegion="rules" endRegion="definitions" />
     <DetectChar attribute="Directive" context="Percent Command" char="%" />
-    <Detect2Chars attribute="Comment" context="Comment" char="/" char1="*" column="0"/>
+    <Detect2Chars attribute="Comment" context="Comment" char="/" char1="*" column="0" beginRegion="BlockComment"/>
     <RegExpr attribute="Definition" context="Definition RegExpr" String="[A-Za-z_]\w*\s+" column="0"/>
   </context>
   <context name="Rules" attribute="Normal Text" lineEndContext="#stay" fallthrough="true" fallthroughContext="Rule RegExpr">
@@ -45,7 +45,10 @@
   <context name="Percent Command" attribute="Directive" lineEndContext="#pop">
   </context>
   <context name="Comment" attribute="Comment" lineEndContext="#stay">
-    <Detect2Chars attribute="Comment" context="#pop" char="*" char1="/" />
+    <Detect2Chars attribute="Comment" context="#pop" char="*" char1="/" endRegion="BlockComment"/>
+    <DetectSpaces />
+    <IncludeRules context="##Alerts" />
+    <IncludeRules context="##Modelines" />
   </context>
 
   <context name="Definition RegExpr" attribute="RegExpr" lineEndContext="#pop">
@@ -142,3 +145,4 @@
   </comments>
 </general>
 </language>
+<!-- kate: replace-tabs on; tab-width 2; indent-width 2; -->

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE language SYSTEM "language.dtd">
-<language name="noweb" version="2" kateversion="2.4" section="Sources" extensions="*.w;*.nw" author="Scott Collins (scc@scottcollins.net)">
+<language name="noweb" version="3" kateversion="2.4" section="Sources" extensions="*.w;*.nw" author="Scott Collins (scc@scottcollins.net)">
 <!-- 
 #########################################################################
 # First version added to repository was 0.4, added as 1.0 .
@@ -48,5 +48,10 @@
       <itemData name="SectionName"  defStyleNum="dsRegionMarker" italic="true" />
     </itemDatas>
   </highlighting>
+  <general>
+    <comments>
+      <comment name="multiLine" start="&lt;!--" end="--&gt;" />
+    </comments>
+  </general>
 </language>
 

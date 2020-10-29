@@ -21,7 +21,7 @@
 
       This file is part of the KDE's KSyntaxHighlighting framework.
 
-      Copyright 2018-2019 Nibaldo González S. (nibgonz@gmail.com)
+      Copyright 2018-2020 Nibaldo González S. (nibgonz@gmail.com)
 
       This Source Code Form is subject to the terms of the MIT License.
       If a copy of the license was not distributed with this file,
@@ -38,6 +38,7 @@
     available at: https://github.com/Microsoft/TypeScript-TmLanguage
 
     Change log:
+     * v9 [2020-06-03]: Add folding in templates.
      * v8 [2019-11-21]: Tag detection is more stricter.
      * v7 [2019-11-19]: Rename definition "JavaScript React" to "JavaScript React (JSX)".
      * v5 [2019-02-20]: Don't highlight tags within declarations of
@@ -52,7 +53,7 @@
      * v1 [2018-06-20]: Initial version
 -->
 
-<language name="JavaScript React (JSX)" version="8" kateversion="5.0" section="Scripts" indenter="cstyle"
+<language name="JavaScript React (JSX)" version="9" kateversion="5.0" section="Scripts" indenter="cstyle"
           priority="9" extensions="*.jsx" mimetype="text/jsx;text/x-jsx;application/jsx;application/x-jsx;"
           author="Nibaldo González (nibgonz@gmail.com)" license="MIT">
 
@@ -75,7 +76,7 @@
 		<!-- Overwrite rules of 'javascript.xml'. These rules send to contexts
 		     that contain: <IncludeRules context="Normal"/> in the JavaScript XML file. -->
 		<context name="OverwriteJavaScript" attribute="Normal Text" lineEndContext="#stay">
-			<DetectChar context="Template" attribute="Template" char="`" />
+			<DetectChar context="Template" attribute="Template" char="`" beginRegion="Template" />
 			<DetectChar attribute="Normal Text" context="#stay" char="[" beginRegion="List" />
 			<DetectChar attribute="Normal Text" context="NoRegExp##JavaScript" char="]" endRegion="List" />
 			<!-- NOTE: The "{" character sends to the "Object" context (see the "React" context) -->
@@ -92,7 +93,7 @@
 			<IncludeRules context="ConditionalExpression##JavaScript" />
 		</context>
 		<context name="Template" attribute="Template" lineEndContext="#stay">
-			<DetectChar context="RegExpAfterString##JavaScript" attribute="Template" char="`" />
+			<DetectChar context="RegExpAfterString##JavaScript" attribute="Template" char="`" endRegion="Template" />
 			<!-- Find tags and send to the "Substitution" context -->
 			<Detect2Chars context="Substitution-BeforeTag" attribute="Substitution" char="$" char1="{" />
 			<IncludeRules context="Template##JavaScript" />

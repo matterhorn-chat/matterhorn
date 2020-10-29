@@ -30,7 +30,7 @@
   <!-- dashes introducing a currydoc comment -->
   <!ENTITY currydoc    "---" >
 ]>
-<language name="Curry" version="1" kateversion="5.0"
+<language name="Curry" version="2" kateversion="5.0"
           section="Sources" extensions="*.curry" mimetype="text/x-curry"
           author="Björn Peemöller (bjp@informatik.uni-kiel.de)" license="LGPL"
           indenter="haskell">
@@ -229,13 +229,18 @@
     <!-- Multiline comment -->
     <context name="Multiline Comment" attribute="Comment" lineEndContext="#stay" >
       <Detect2Chars attribute="Comment" context="#pop" char="-" char1="}" endRegion="Multiline Comment" />
+      <IncludeRules context="##Alerts" />
+      <IncludeRules context="##Modelines" />
     </context>
 
     <!-- Currydoc -->
     <context name="Currydoc" attribute="Currydoc" lineEndContext="#pop" />
 
     <!-- Single line comment -->
-    <context name="Comment" attribute="Comment" lineEndContext="#pop" />
+    <context name="Comment" attribute="Comment" lineEndContext="#pop">
+      <IncludeRules context="##Alerts" />
+      <IncludeRules context="##Modelines" />
+    </context>
 
     <!-- Import section -->
     <context name="Import" attribute="Normal" lineEndContext="#pop" >
@@ -356,9 +361,10 @@
   <general>
     <folding indentationsensitive="1"/>
     <comments>
-      <comment name="singleLine" start="--" />
+      <comment name="singleLine" start="--" position="afterwhitespace" />
       <comment name="multiLine" start="{-" end="-}" region="Multiline Comment" />
     </comments>
     <keywords casesensitive="1" />
   </general>
 </language>
+<!-- kate: replace-tabs on; tab-width 2; indent-width 2; -->

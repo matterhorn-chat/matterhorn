@@ -32,69 +32,69 @@
  Boston, MA 02111-1307, USA.
 
 -->
-<language name="Pure" version="1.2" kateversion="2.4" section="Sources" extensions="*.pure">
+<language name="Pure" version="3" kateversion="2.4" section="Sources" extensions="*.pure">
   <highlighting>
     <list name="blockstarters">
-      <item> case </item>
-      <item> when </item>
-      <item> with </item>
+      <item>case</item>
+      <item>when</item>
+      <item>with</item>
     </list>
     <list name="blockenders">
-      <item> end </item>
+      <item>end</item>
     </list>
     <list name="keywords">
-      <item> const </item>
-      <item> def </item>
-      <item> else </item>
-      <item> extern </item>
-      <item> if </item>
-      <item> infix </item>
-      <item> infixl </item>
-      <item> infixr </item>
-      <item> interface </item>
-      <item> let </item>
-      <item> namespace </item>
-      <item> nonfix </item>
-      <item> of </item>
-      <item> otherwise </item>
-      <item> outfix </item>
-      <item> postfix </item>
-      <item> prefix </item>
-      <item> private </item>
-      <item> public </item>
-      <item> then </item>
-      <item> type </item>
-      <item> using </item>
+      <item>const</item>
+      <item>def</item>
+      <item>else</item>
+      <item>extern</item>
+      <item>if</item>
+      <item>infix</item>
+      <item>infixl</item>
+      <item>infixr</item>
+      <item>interface</item>
+      <item>let</item>
+      <item>namespace</item>
+      <item>nonfix</item>
+      <item>of</item>
+      <item>otherwise</item>
+      <item>outfix</item>
+      <item>postfix</item>
+      <item>prefix</item>
+      <item>private</item>
+      <item>public</item>
+      <item>then</item>
+      <item>type</item>
+      <item>using</item>
     </list>
     <list name="special">
-      <item> catch </item>
-      <item> throw </item>
-      <item> __break__ </item>
-      <item> __trace__ </item>
+      <item>catch</item>
+      <item>throw</item>
+      <item>__break__</item>
+      <item>__trace__</item>
     </list>
     <list name="types">
-      <item> bigint </item>
-      <item> bool </item>
-      <item> char </item>
-      <item> float  </item>
-      <item> double  </item>
-      <item> expr </item>
-      <item> short </item>
-      <item> int </item>
-      <item> long </item>
-      <item> string </item>
-      <item> pointer </item>
-      <item> void </item>
-      <item> int8 </item>
-      <item> int16 </item>
-      <item> int32 </item>
-      <item> int64 </item>
-      <item> matrix </item>
-      <item> dmatrix </item>
-      <item> cmatrix </item>
-      <item> imatrix </item>
-      <item> smatrix </item>
-      <item> nmatrix </item>
+      <item>bigint</item>
+      <item>bool</item>
+      <item>char</item>
+      <item>float</item>
+      <item>double</item>
+      <item>expr</item>
+      <item>short</item>
+      <item>int</item>
+      <item>long</item>
+      <item>string</item>
+      <item>pointer</item>
+      <item>void</item>
+      <item>int8</item>
+      <item>int16</item>
+      <item>int32</item>
+      <item>int64</item>
+      <item>matrix</item>
+      <item>dmatrix</item>
+      <item>cmatrix</item>
+      <item>imatrix</item>
+      <item>smatrix</item>
+      <item>nmatrix</item>
     </list>
     <contexts>
       <context attribute="Normal Text" lineEndContext="#stay" name="Normal">
@@ -108,7 +108,7 @@
         <RegExpr attribute="Number" context="#stay" String="0x[A-Za-z0-9]+"/>
         <Float attribute="Number" context="#stay"/>
         <Int attribute="Number" context="#stay"/>
-        <HlCChar attribute="Char" context="#stay"/>
+        <HlCChar attribute="String Char" context="#stay"/>
         <DetectChar attribute="String" context="String" char="&quot;"/>
         <Detect2Chars attribute="Comment" context="Comment1" char="/" char1="*" beginRegion="Comment" />
         <Detect2Chars attribute="Comment" context="Comment2" char="/" char1="/"/>
@@ -118,12 +118,17 @@
         <HlCStringChar attribute="String Char" context="#stay"/>
         <DetectChar attribute="String" context="#pop" char="&quot;"/>
       </context>
-      <context attribute="Region Marker" lineEndContext="#pop" name="Region Marker">
-      </context>
       <context attribute="Comment" lineEndContext="#stay" name="Comment1">
+        <DetectSpaces />
         <Detect2Chars attribute="Comment" context="#pop" char="*" char1="/" endRegion="Comment"/>
+        <IncludeRules context="##Alerts"/>
+        <IncludeRules context="##Modelines"/>
       </context>
-      <context attribute="Comment" lineEndContext="#pop" name="Comment2"/>
+      <context attribute="Comment" lineEndContext="#pop" name="Comment2">
+        <DetectSpaces />
+        <IncludeRules context="##Alerts"/>
+        <IncludeRules context="##Modelines"/>
+      </context>
     </contexts>
     <itemDatas>
       <itemData name="Normal Text" defStyleNum="dsNormal" />
@@ -140,7 +145,8 @@
     <keywords casesensitive="1" />
     <comments>
       <comment name="singleLine" start="//" />
-      <comment name="multiLine" start="/*" end="*/" />
+      <comment name="multiLine" start="/*" end="*/" region="Comment" />
     </comments>
   </general>
 </language>
+<!-- kate: replace-tabs on; tab-width 2; indent-width 2; -->

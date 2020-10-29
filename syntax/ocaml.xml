@@ -17,7 +17,7 @@
           extensions="*.ml;*.mli"
           mimetype="text/x-ocaml"
           section="Sources"
-          version="6"
+          version="7"
           priority="10"
           kateversion="2.4"
           author="Glyn Webster (glynwebster@orcon.net.nz) and Vincent Hugot (vincent.hugot@gmail.com)"
@@ -431,6 +431,10 @@
         <Detect2Chars char="(" char1="*" context="Comment" attribute="Comment" beginRegion="comment" />
         <!-- Strings in Ocaml comments must be well-formed: -->
         <DetectChar char="&quot;" context="String in Comment" attribute="String in Comment" />
+
+        <DetectSpaces />
+        <IncludeRules context="##Alerts" />
+        <IncludeRules context="##Modelines" />
       </context>
 
       <context name="String in Comment" lineEndContext="#stay" attribute="String in Comment">

@@ -3,9 +3,8 @@
 [
     <!ENTITY bullet "&#xd7;">
     <!ENTITY envname "[a-zA-Z]+\*?">
-    <!ENTITY regionmarker "&#037;\s*(?:BEGIN|END)">
 ]>
-<language name="LaTeX" version="11" section="Markup" kateversion="5.0" priority="10" extensions="*.tex;*.ltx;*.dtx;*.sty;*.cls;*.bbx;*.cbx;*.lbx;*.tikz;*.pgf" mimetype="text/x-tex" casesensitive="1" author="Jeroen Wijnhout (Jeroen.Wijnhout@kdemail.net)+Holger Danielsson (holger.danielsson@versanet.de)+Michel Ludwig (michel.ludwig@kdemail.net)+Thomas Braun (thomas.braun@virtuell-zuhause.de)" license="LGPL" >
+<language name="LaTeX" version="15" section="Markup" kateversion="5.0" priority="10" extensions="*.tex;*.ltx;*.dtx;*.sty;*.cls;*.bbx;*.cbx;*.lbx;*.tikz;*.pgf" mimetype="text/x-tex" casesensitive="1" author="Jeroen Wijnhout (Jeroen.Wijnhout@kdemail.net)+Holger Danielsson (holger.danielsson@versanet.de)+Michel Ludwig (michel.ludwig@kdemail.net)+Thomas Braun (thomas.braun@virtuell-zuhause.de)" license="LGPL" >
   <highlighting>
     <!-- NOTE: Keywords of kind "\something" do not need a delimiter before "\".
          Using a DetectChar rule with lookAhead to detect "\" at the beginning
@@ -284,14 +283,13 @@
         <DetectChar char="\" attribute="Normal Text" context="LatexMacro" lookAhead="true"/>
         <DetectChar char="$" attribute="Math" context="MathModeTex"/>
         <RegExpr String="&lt;&lt;.*&gt;&gt;=" attribute="Normal Text" context="NoWeb" column="0"/>
-        <RegExpr String="&regionmarker;" attribute="Region Marker" context="RegionComment" firstNonSpace="true"/>
-        <DetectChar char="%" attribute="Comment" context="Comment"/>
+        <IncludeRules context="FindComments"/>
         <DetectChar char="&bullet;" attribute="Bullet" context="#stay"/>
       </context>
 
       <context name="LatexMacro" attribute="Normal Text" lineEndContext="#pop">
         <keyword String="beginEnv" attribute="Structure" context="#pop!FindBeginEnvironment" beginRegion="block"/>
-        <keyword String="endEnv" attribute="Structure" context="#pop!FindEndEnvironment" endRegion="block"/>
+        <keyword String="endEnv" attribute="Structure" context="#pop!FindEndEnvironment"/>
         <keyword String="Label" attribute="Structure" context="#pop!Label"/>
         <keyword String="macroFancyLabel" attribute="Builtin Macro" context="#pop!FancyLabel"/>
         <keyword String="FancyLabel" attribute="Structure" context="#pop!FancyLabel"/>
@@ -318,7 +316,7 @@
         <RangeDetect char="[" char1="]" attribute="Normal Text" context="#stay"/>
         <DetectChar char="{" attribute="Normal Text" context="SectioningInside"/>
         <DetectChar char="}" attribute="Normal Text" context="#pop"/>
-        <DetectChar char="%" attribute="Comment" context="Comment"/>
+        <IncludeRules context="FindComments"/>
       </context>
       <context name="SectioningInside" attribute="Sectioning Text" lineEndContext="#stay">
         <DetectChar char="{" attribute="Normal Text" context="SectioningInside"/>
@@ -326,12 +324,12 @@
         <Detect2Chars char="\" char1="(" attribute="Sectioning Math" context="SectioningMathMode" />
         <DetectChar char="\" attribute="Sectioning Macro" context="SectioningContrSeq"/>
         <DetectChar char="$" attribute="Sectioning Math" context="SectioningMathMode" />
-        <DetectChar char="%" attribute="Comment" context="Comment"/>
+        <IncludeRules context="FindComments"/>
         <DetectChar char="&bullet;" attribute="Bullet" context="#stay"/>
       </context>
       <context name="SectioningContrSeq" attribute="Macro" lineEndContext="#pop">
         <DetectChar char="&bullet;" attribute="Bullet" context="#stay"/>
-        <RegExpr String="[a-zA-Z]+(\+?|\*{0,3})|." attribute="Sectioning Macro" context="#pop" />
+        <RegExpr String="[a-zA-Z]+(?:\+?|\*{0,3})|." attribute="Sectioning Macro" context="#pop" />
       </context>
       <context name="SectioningMathMode" attribute="Sectioning Math" lineEndContext="#stay">
         <Detect2Chars char="$" char1="$" attribute="Error" context="#stay" />
@@ -339,7 +337,7 @@
         <Detect2Chars char="\" char1=")" attribute="Sectioning Math" context="#pop" />
         <Detect2Chars char="\" char1="]" attribute="Error" context="#stay" />
         <DetectChar char="\" attribute="Sectioning Macro Mathmode" context="SectioningMathContrSeq"/>
-        <DetectChar char="%" attribute="Comment" context="Comment"/>
+        <IncludeRules context="FindComments"/>
         <DetectChar char="&bullet;" attribute="Bullet" context="#stay"/>
       </context>
       <context name="SectioningMathContrSeq" attribute="Sectioning Macro Mathmode" lineEndContext="#pop">
@@ -353,7 +351,7 @@
         <RangeDetect char="[" char1="]" attribute="Normal Text" context="#stay"/>
         <DetectChar char="{" attribute="Normal Text" context="FootnotingInside"/>
         <DetectChar char="}" attribute="Normal Text" context="#pop"/>
-        <DetectChar char="%" attribute="Comment" context="Comment"/>
+        <IncludeRules context="FindComments"/>
       </context>
       <context name="FootnotingInside" attribute="Normal Text" lineEndContext="#stay">
         <DetectChar char="{" attribute="Normal Text" context="FootnotingInside"/>
@@ -365,7 +363,7 @@
       <context name="NewCommand" attribute="Normal Text" lineEndContext="#stay" fallthrough="true" fallthroughContext="#pop">
         <DetectSpaces/>
         <DetectChar char="{" attribute="Normal Text" context="LabelParameter"/>
-        <RegExpr String="(\[\d\](\[[^\]]*\])?)?\{" attribute="Normal Text" context="LabelParameter"/>
+        <RegExpr String="(?:\[\d\](?:\[[^\]]*\])?)?\{" attribute="Normal Text" context="LabelParameter"/>
         <DetectChar char="}" attribute="Error" context="#pop"/>
       </context>
 
@@ -381,7 +379,7 @@
         <DetectChar char="{" attribute="Normal Text" context="CommandParameter"/>
         <DetectChar char="}" attribute="Normal Text" context="#pop"/>
         <RegExpr String="\\." attribute="Normal Text" context="#stay"/>
-        <DetectChar char="%" attribute="Comment" context="Comment"/>
+        <IncludeRules context="FindComments"/>
       </context>
 
       <!-- LaTeX command in text mode -->
@@ -390,7 +388,7 @@
         <keyword String="Lstinline" attribute="Macro" context="Lstinline"/>
         <keyword String="MintParam" attribute="Macro" context="MintParam"/>
         <DetectChar char="&bullet;" attribute="Bullet" context="#stay"/>
-        <RegExpr String="[a-zA-Z@]+(\+?|\*{0,3})|." attribute="Macro" context="#pop" />
+        <RegExpr String="[a-zA-Z@]+(?:\+?|\*{0,3})|." attribute="Macro" context="#pop" />
       </context>
 
       <!-- \mint command with parameter-->
@@ -402,7 +400,7 @@
 
       <!-- verb command -->
       <context name="Verb" attribute="Verbatim" lineEndContext="#pop#pop" >
-        <RegExpr String="(.)" attribute="Normal Text" dynamic="true" context="VerbEnd" />
+        <RegExpr String="(.)" attribute="Normal Text" context="VerbEnd" />
       </context>
       <context name="VerbEnd" attribute="Verbatim" lineEndContext="#pop#pop#pop" dynamic="true" >
         <StringDetect String="%1" attribute="Normal Text" context="#pop#pop#pop" dynamic="true" />
@@ -415,7 +413,7 @@
         <DetectSpaces/>
         <DetectChar char="[" attribute="Normal Text" context="FancyLabelOption"/>
         <DetectChar char="{" attribute="Normal Text" context="LstinlineParameter"/>
-        <RegExpr String="(.)" attribute="Normal Text" dynamic="true" context="LstinlineEnd" />
+        <RegExpr String="(.)" attribute="Normal Text" context="LstinlineEnd" />
       </context>
       <context name="LstinlineEnd" attribute="Verbatim" lineEndContext="#pop#pop#pop" dynamic="true" >
         <!-- TODO DetectChar segfault -->
@@ -437,10 +435,10 @@
 
       <context name="LabelOption" attribute="Normal Text" lineEndContext="#stay">
         <DetectSpaces/>
-        <DetectChar char="(" attribute="Math" context="MathModeTex" />
+        <Detect2Chars char="\" char1="(" attribute="Math" context="MathModeLatex"/>
         <DetectChar char="\" attribute="Macro" context="ContrSeq"/>
         <DetectChar char="$" attribute="Math" context="MathModeTex" />
-        <DetectChar char="%" attribute="Comment" context="Comment"/>
+        <IncludeRules context="FindComments"/>
         <DetectChar char="&bullet;" attribute="Bullet" context="#stay"/>
         <DetectChar char="]" attribute="Normal Text" context="#pop"/>
       </context>
@@ -461,10 +459,10 @@
 
       <context name="FancyLabelParameter" attribute="Environment" lineEndContext="#stay">
         <DetectSpaces/>
-        <DetectChar char="(" attribute="Math" context="MathModeTex" />
+        <Detect2Chars char="\" char1="(" attribute="Math" context="MathModeLatex"/>
         <DetectChar char="\" attribute="Macro" context="ContrSeq"/>
         <DetectChar char="$" attribute="Math" context="MathModeTex" />
-        <DetectChar char="%" attribute="Comment" context="Comment"/>
+        <IncludeRules context="FindComments"/>
         <DetectChar char="&bullet;" attribute="Bullet" context="#stay"/>
         <DetectChar char="}" attribute="Normal Text" context="#pop"/>
         <DetectChar char="{" attribute="Normal Text" context="FancyLabelParameter"/>
@@ -479,7 +477,7 @@
         <Detect2Chars char="\" char1="(" attribute="Math" context="MathModeLatex" />
         <DetectChar char="\" attribute="Macro" context="ContrSeq"/>
         <DetectChar char="$" attribute="Math" context="MathModeTex" />
-        <DetectChar char="%" attribute="Comment" context="Comment"/>
+        <IncludeRules context="FindComments"/>
         <DetectChar char="&bullet;" attribute="Bullet" context="#stay"/>
         <DetectChar char=")" attribute="Normal Text" context="#pop"/>
       </context>
@@ -492,10 +490,10 @@
 
       <context name="SpecialCommandParameterOption" attribute="Option Text" lineEndContext="#stay">
         <DetectSpaces/>
-        <Detect2Chars char="\" char1="(" attribute="Math" context="MathModeTex" />
+        <Detect2Chars char="\" char1="(" attribute="Math" context="MathModeLatex" />
         <DetectChar char="\" attribute="Macro" context="ContrSeq"/>
         <DetectChar char="$" attribute="Math" context="MathModeTex" />
-        <DetectChar char="%" attribute="Comment" context="Comment"/>
+        <IncludeRules context="FindComments"/>
         <DetectChar char="&bullet;" attribute="Bullet" context="#stay"/>
         <DetectChar char="}" attribute="Normal Text" context="#pop"/>
         <DetectChar char="{" attribute="Normal Text" context="SpecialCommandParameterOption"/>
@@ -629,17 +627,17 @@
       <context name="ListingsEnvParam" attribute="Normal Text" lineEndContext="#pop!UnknownHighlighting" fallthrough="true" fallthroughContext="#pop!UnknownHighlighting">
         <DetectSpaces/>
         <DetectChar char="[" attribute="Normal Text" context="#pop!ListingsEnvParamInside"/>
-        <DetectChar char="%" attribute="Comment" context="Comment"/>
+        <IncludeRules context="FindComments"/>
       </context>
       <context name="ListingsEnvParamInside" attribute="Normal Text" lineEndContext="#stay">
         <DetectIdentifier/>
         <RegExpr String="\s*language\s*=\s*(?=[^],])" attribute="Normal Text" context="HighlightingSelector"/>
         <DetectChar char="]" attribute="Normal Text" context="ListingsEnvParamEnd"/>
-        <DetectChar char="%" attribute="Comment" context="Comment"/>
+        <IncludeRules context="FindComments"/>
       </context>
       <context name="ListingsEnvParamEnd" attribute="Normal Text" lineEndContext="#pop#pop!UnknownHighlighting" fallthrough="true" fallthroughContext="#pop#pop!UnknownHighlighting">
         <DetectSpaces/>
-        <DetectChar char="%" attribute="Comment" context="Comment"/>
+        <IncludeRules context="FindComments"/>
       </context>
 
       <!-- environment type 5: minted environment with optional and HL switching -->
@@ -651,19 +649,19 @@
         <DetectSpaces/>
         <DetectChar char="[" attribute="Normal Text" context="#pop!MintedEnvParamInside"/>
         <DetectChar char="{" attribute="Normal Text" context="HighlightingSelector"/>
-        <DetectChar char="%" attribute="Comment" context="Comment"/>
+        <IncludeRules context="FindComments"/>
       </context>
       <context name="MintedEnvParamInside" attribute="Normal Text" lineEndContext="#stay">
         <DetectSpaces/>
         <DetectIdentifier/>
         <DetectChar char="]" attribute="Normal Text" context="#pop!MintedEnvLang"/>
-        <DetectChar char="%" attribute="Comment" context="Comment"/>
+        <IncludeRules context="FindComments"/>
         <RegExpr String="\\&envname;" attribute="Macro" context="#stay"/>
       </context>
       <context name="MintedEnvLang" attribute="Normal Text" lineEndContext="#stay">
         <DetectSpaces/>
         <DetectChar char="{" attribute="Normal Text" context="HighlightingSelector"/>
-        <DetectChar char="%" attribute="Comment" context="Comment"/>
+        <IncludeRules context="FindComments"/>
       </context>
 
       <!-- parse verbatim text for lstinline and minted -->
@@ -671,7 +669,7 @@
         <DetectSpaces/>
         <DetectIdentifier/>
         <DetectChar char="&bullet;" attribute="Bullet" context="#stay"/>
-        <RegExpr String="\\end(?=\s*\{(lstlisting|minted)\*?\})" attribute="Structure" context="UnknownHighlightingEnd"/>
+        <RegExpr String="\\end(?=\s*\{(?:lstlisting|minted)\*?\})" attribute="Structure" context="UnknownHighlightingEnd"/>
       </context>
       <context name="UnknownHighlightingEnd" attribute="Environment" lineEndContext="#stay">
         <DetectSpaces/>
@@ -691,7 +689,7 @@
       </context>
 
       <context name="HighlightingCommon" attribute="Normal Text" lineEndContext="#stay">
-        <RegExpr String="\\end\s*\{(lstlisting|minted)\*?\}" attribute="Structure" lookAhead="true" context="#pop#pop#pop#pop#pop#pop"/>
+        <RegExpr String="\\end\s*\{(?:lstlisting|minted)\*?\}" attribute="Structure" lookAhead="true" context="#pop#pop#pop#pop#pop#pop"/>
       </context>
 
       <context name="HighlightingBeginC++" attribute="Normal Text" lineEndContext="#stay">
@@ -773,13 +771,12 @@
         <DetectIdentifier/>
         <DetectChar char="\" attribute="Math" context="BackslashMathModeEnv" lookAhead="true"/>
         <DetectChar char="$" attribute="Error" context="#stay"/>
-        <RegExpr String="&regionmarker;" attribute="Region Marker" context="RegionComment" firstNonSpace="true"/>
-        <DetectChar char="%" attribute="Comment" context="Comment"/>
+        <IncludeRules context="FindComments"/>
         <DetectChar char="&bullet;" attribute="Bullet" context="#stay"/>
       </context>
       <context name="BackslashMathModeEnv" attribute="Math" lineEndContext="#pop">
         <keyword String="beginEnv" attribute="Structure" context="#pop!FindBeginEnvironmentInMathMode" beginRegion="block"/>
-        <keyword String="endEnv" attribute="Structure" context="#pop!MathFindEnd" endRegion="block"/>
+        <keyword String="endEnv" attribute="Structure" context="#pop!MathFindEnd"/>
         <keyword String="MathModeText" attribute="Macro Mathmode" context="#pop!MathModeText"/>
         <Detect2Chars char="\" char1="(" attribute="Error" context="#pop"/>
         <Detect2Chars char="\" char1=")" attribute="Error" context="#pop"/>
@@ -804,7 +801,7 @@
         <keyword String="TabEnv" attribute="Environment" context="TabEnv"/>
         <DetectChar char="&bullet;" attribute="Bullet" context="#stay"/>
         <!-- keywords in MathEnvParam and MathEnv. Do not use keyword to avoid autocomplete -->
-        <RegExpr String="(equation|IEEEeqnarray(box)?|([BVvbp]|small)matrix|(fl)?align|x{0,2}alignat|cases|displaymath|gather|math|multline|(sub)?eqnarray)(?=[^a-zA-Z]|$)\*?" attribute="Error" context="#pop"/>
+        <RegExpr String="(?:equation|IEEEeqnarray(?:box)?|(?:[BVvbp]|small)matrix|(?:fl)?align|x{0,2}alignat|cases|displaymath|gather|math|multline|(?:sub)?eqnarray)(?=[^a-zA-Z]|$)\*?" attribute="Error" context="#pop"/>
         <RegExpr String="&envname;" attribute="Environment" context="LatexEnv"/>
         <RegExpr String="." attribute="Error" context="#pop"/>
       </context>
@@ -899,13 +896,12 @@
         <DetectSpaces/>
         <DetectIdentifier/>
         <DetectChar char="\" attribute="Math" context="BackslashMathModeCommon" lookAhead="true"/>
-        <RegExpr String="&regionmarker;" attribute="Region Marker" context="RegionComment" firstNonSpace="true"/>
-        <DetectChar char="%" attribute="Comment" context="Comment"/>
+        <IncludeRules context="FindComments"/>
         <DetectChar char="&bullet;" attribute="Bullet" context="#stay"/>
       </context>
       <context name="BackslashMathModeCommon" attribute="Math" lineEndContext="#pop">
         <keyword String="beginEnv" attribute="Structure" context="#pop!MathEnvironment" beginRegion="block"/>
-        <keyword String="endEnv" attribute="Structure" context="#pop!MathEnvironmentEnd" endRegion="block"/>
+        <keyword String="endEnv" attribute="Structure" context="#pop!MathEnvironmentEnd"/>
         <keyword String="MathModeText" attribute="Macro Mathmode" context="#pop!MathModeText" />
         <DetectChar char="\" attribute="Macro Mathmode" context="#pop!MathContrSeq"/>
       </context>
@@ -925,7 +921,7 @@
         <RegExpr String="." attribute="Error" context="#pop"/>
       </context>
       <context name="MathEnvironmentEndInside" attribute="Environment" lineEndContext="#stay">
-        <DetectChar char="}" attribute="Normal Text" context="#pop#pop"/>
+        <DetectChar char="}" attribute="Normal Text" context="#pop#pop" endRegion="block"/>
         <WordDetect String="ensuremath" attribute="Environment" context="#pop!LatexEnvEnd"/>
         <RegExpr String="&envname;" attribute="Environment" context="#stay"/>
         <RegExpr String="[^}a-zA-Z]+|." attribute="Error" context="#pop#pop"/>
@@ -951,7 +947,7 @@
         <RangeDetect char="$" char1="$" attribute="Math" context="#stay"/>
         <DetectChar char="{" attribute="Normal Text" context="MathModeTextInside" lookAhead="true"/>
         <DetectChar char="}" attribute="Normal Text" context="#pop#pop"/>
-        <DetectChar char="%" attribute="Comment" context="Comment"/>
+        <IncludeRules context="FindComments"/>
         <DetectChar char="\" attribute="Macro Mathmode" context="MathContrSeq"/>
       </context>
 
@@ -964,11 +960,17 @@
         <DetectChar char="\" attribute="Comment" context="#pop"/>
       </context>
 
-     <!-- comment -->
+      <!-- comment -->
+      <context name="FindComments" attribute="Normal Text" lineEndContext="#stay">
+        <RegExpr String="&#037;+\s*BEGIN\b" attribute="Region Marker" context="RegionComment" firstNonSpace="true" beginRegion="region-marker"/>
+        <RegExpr String="&#037;+\s*END\b" attribute="Region Marker" context="RegionComment" firstNonSpace="true" endRegion="region-marker"/>
+        <DetectChar char="%" attribute="Comment" context="Comment"/>
+      </context>
       <context name="RegionComment" attribute="Region Marker" lineEndContext="#pop"/>
       <context name="Comment" attribute="Comment" lineEndContext="#pop">
         <DetectSpaces/>
         <IncludeRules context="##Alerts" />
+        <IncludeRules context="##Modelines" />
         <DetectIdentifier/>
         <DetectChar char="\" attribute="Comment" context="BackslashComment" lookAhead="true"/>
       </context>
@@ -1129,3 +1131,4 @@
     </encodings>
   </spellchecking>
 </language>
+<!-- kate: replace-tabs on; tab-width 2; indent-width 2; -->

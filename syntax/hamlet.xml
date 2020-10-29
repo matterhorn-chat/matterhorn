@@ -5,7 +5,7 @@
   word character *or* a number, hence the lookahead -->
   <!ENTITY name    "(?![0-9])[\w_:][\w.:_-]*">
 ]>
-<language name="Hamlet" version="3" kateversion="2.4" section="Markup" extensions="*.hamlet" author="Bastian Holst (bastianholst@gmx.de)" license="LGPL" indenter="haskell">
+<language name="Hamlet" version="4" kateversion="2.4" section="Markup" extensions="*.hamlet" author="Bastian Holst (bastianholst@gmx.de)" license="LGPL" indenter="haskell">
 <highlighting>
 <contexts>
   <context attribute="Normal Text" lineEndContext="#pop" name="Normal Text" >
@@ -96,9 +96,7 @@
 </itemDatas>
 </highlighting> 
 <general>
-  <comments>
-    <comment name="singleLine" start="#"/>
-  </comments>
   <keywords casesensitive="1"/>
 </general> 
 </language>
+<!-- kate: replace-tabs on; tab-width 2; indent-width 2; -->

@@ -99,7 +99,7 @@
    ========================================================================
 -->
 
-<language name="D" version="5" kateversion="5.0" section="Sources" extensions="*.d;*.D;*.di;*.DI;" mimetype="text/x-dsrc" casesensitive="true" author="Diggory Hardy (diggory.hardy@gmail.com), Aziz Köksal (aziz.koeksal@gmail.com), Jari-Matti Mäkelä (jmjm@iki.fi), Simon J Mackenzie (project.katedxml@smackoz.fastmail.fm)" license="LGPL">
+<language name="D" version="7" kateversion="5.0" section="Sources" extensions="*.d;*.D;*.di;*.DI;" mimetype="text/x-dsrc" casesensitive="true" author="Diggory Hardy (diggory.hardy@gmail.com), Aziz Köksal (aziz.koeksal@gmail.com), Jari-Matti Mäkelä (jmjm@iki.fi), Simon J Mackenzie (project.katedxml@smackoz.fastmail.fm)" license="LGPL">
   <highlighting>
     <!-- User-defined keywords (add identifiers you'd like highlighted here) -->
     <list name="userkeywords">
@@ -737,17 +737,20 @@
       <context name="CommentLine" attribute="Comment" lineEndContext="#pop">
         <DetectSpaces />
         <IncludeRules context="##Alerts" />
+        <IncludeRules context="##Modelines" />
       </context>
       <context name="CommentBlock" attribute="Comment" lineEndContext="#stay">
         <DetectSpaces />
         <Detect2Chars attribute="Comment" context="#pop" char="*" char1="/" endRegion="CommentBlock"/>
         <IncludeRules context="##Alerts" />
+        <IncludeRules context="##Modelines" />
       </context>
       <context name="CommentNested" attribute="Comment" lineEndContext="#stay">
         <DetectSpaces />
-       <Detect2Chars attribute="Comment" context="CommentNested" char="/" char1="+" beginRegion="CommentNested"/>
-       <Detect2Chars attribute="Comment" context="#pop" char="+" char1="/" endRegion="CommentNested"/>
-       <IncludeRules context="##Alerts" />
+        <Detect2Chars attribute="Comment" context="CommentNested" char="/" char1="+" beginRegion="CommentNested"/>
+        <Detect2Chars attribute="Comment" context="#pop" char="+" char1="/" endRegion="CommentNested"/>
+        <IncludeRules context="##Alerts" />
+        <IncludeRules context="##Modelines" />
       </context>
       
       
@@ -864,14 +867,14 @@
       
       <!-- keywords -->
       <itemData name="Statement"      defStyleNum="dsKeyword"/>
-      <itemData name="Expression"     defStyleNum="dsKeyword"  color="#000080"/>
-      <itemData name="Declarator"     defStyleNum="dsKeyword"  color="#800000"/>
-      <itemData name="Template"       defStyleNum="dsKeyword"  color="#008000"/>
+      <itemData name="Expression"     defStyleNum="dsAttribute"  bold="1"/> <!-- #000080 -->
+      <itemData name="Declarator"     defStyleNum="dsWarning"    bold="1"/> <!-- #800000 -->
+      <itemData name="Template"       defStyleNum="dsOthers"     bold="1"/> <!-- #008000 -->
       
-      <itemData name="Attribute"      defStyleNum="dsKeyword"  color="#800080"/>
-      <itemData name="Deprecated"     defStyleNum="dsKeyword"  color="#800080" strikeOut="true"/>
+      <itemData name="Attribute"      defStyleNum="dsFunction"   bold="1"/> <!-- #800080 -->
+      <itemData name="Deprecated"     defStyleNum="dsFunction"   bold="1" strikeOut="true"/> <!-- #800080 -->
       
-      <itemData name="Property"       defStyleNum="dsDataType" color="#000080"/>
+      <itemData name="Property"       defStyleNum="dsDataType"   bold="1"/> <!-- #000080 -->
       
       <itemData name="Type"           defStyleNum="dsDataType"/>
       <itemData name="LibrarySymbols" defStyleNum="dsBuiltIn" italic="1"/>
@@ -879,20 +882,20 @@
       <itemData name="UserKeywords"   defStyleNum="dsDataType" italic="1"/>
 
       <!-- module, import -->
-      <itemData name="Module"         defStyleNum="dsKeyword"  color="#008000"/>
-      <itemData name="Module Name"    defStyleNum="dsNormal"   color="#008000"/>
+      <itemData name="Module"         defStyleNum="dsPreprocessor" bold="1"/> <!-- #008000 -->
+      <itemData name="Module Name"    defStyleNum="dsImport"/> <!-- #008000 -->
 
       <!-- pragma, special tokens -->
-      <itemData name="SpecialTokens"  defStyleNum="dsNormal"   color="#00aa00"/>
-      <itemData name="Pragma"         defStyleNum="dsKeyword"  color="#00aa00"/>
+      <itemData name="SpecialTokens"  defStyleNum="dsOthers"   bold="1"/> <!-- #00aa00 -->
+      <itemData name="Pragma"         defStyleNum="dsOthers"   bold="1"/> <!-- #00aa00 -->
 
       <!-- version, extern -->
-      <itemData name="Version"        defStyleNum="dsKeyword"  color="#808000"/>
-      <itemData name="Version Type"   defStyleNum="dsNormal"   bold="1"/>
-      <itemData name="Linkage"        defStyleNum="dsKeyword"  color="#808000"/>
-      <itemData name="Linkage Type"   defStyleNum="dsNormal"   bold="1"/>
+      <itemData name="Version"        defStyleNum="dsDecVal"/> <!-- #808000 -->
+      <itemData name="Version Type"   defStyleNum="dsNormal"      bold="1"/>
+      <itemData name="Linkage"        defStyleNum="dsInformation" bold="1"/> <!-- #808000 -->
+      <itemData name="Linkage Type"   defStyleNum="dsNormal"      bold="1"/>
 
-      <itemData name="Tests"        defStyleNum="dsKeyword"    color="#ff00ff"/>
+      <itemData name="Tests"        defStyleNum="dsFunction"      bold="1"/> <!-- #ff00ff -->
 
       <itemData name="Comment"        defStyleNum="dsComment"/>
       <itemData name="Region Marker"  defStyleNum="dsRegionMarker" />
@@ -917,10 +920,10 @@
       <itemData name="Delimited String Delimiter" defStyleNum="dsKeyword"/>
       
       <!-- Ddoc specific -->
-      <itemData name="Macros"      defStyleNum="dsOthers" color="#bf5fbf" selColor="#ffffff" bold="1" italic="0" />
-      <itemData name="Macro Text"  defStyleNum="dsNormal" color="#bf7fff" selColor="#ffffff" bold="0" italic="0" />
-      <itemData name="Ddoc"        defStyleNum="dsComment" color="#7f7fff" />
-      <itemData name="DdocSection" defStyleNum="dsKeyword" color="#7f7fff" bold="1" />
+      <itemData name="Macros"      defStyleNum="dsSpecialChar" bold="1" italic="0" /> <!-- #bf5fbf -->
+      <itemData name="Macro Text"  defStyleNum="dsAttribute" bold="0" italic="0" /> <!-- #bf7fff -->
+      <itemData name="Ddoc"        defStyleNum="dsDocumentation" /> <!-- #7f7fff -->
+      <itemData name="DdocSection" defStyleNum="dsAnnotation" bold="1" /> <!-- #7f7fff -->
       <itemData name="DdocCode"    defStyleNum="dsNormal" italic="1" />
     </itemDatas>
   </highlighting>
@@ -932,3 +935,4 @@
     <keywords casesensitive="true"/>
   </general>
 </language>
+<!-- kate: replace-tabs on; tab-width 2; indent-width 2; -->

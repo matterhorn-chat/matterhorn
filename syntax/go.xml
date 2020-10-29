@@ -26,7 +26,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 -->
 
 
-<language name="Go" version="4" kateversion="5.0" section="Sources" indenter="cstyle" extensions="*.go" author="Miquel Sabaté (mikisabate@gmail.com)" license="GPLv2+">
+<language name="Go" version="5" kateversion="5.0" section="Sources" indenter="cstyle" extensions="*.go" author="Miquel Sabaté (mikisabate@gmail.com)" license="GPLv2+">
     <highlighting>
     <list name="keywords">
 <!-- Keywords have been taken from The Go Programming Language Specification -> Keywords section -->
@@ -111,7 +111,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
         <DetectChar attribute="Symbol" context="#stay" char="{" beginRegion="Brace1" />
         <DetectChar attribute="Symbol" context="#stay" char="}" endRegion="Brace1"   />
         <Detect2Chars attribute="Comment" context="Commentar 1" char="/" char1="/"   />
-        <Detect2Chars attribute="Comment" context="Commentar 2" char="/" char1="*"   />
+        <Detect2Chars attribute="Comment" context="Commentar 2" char="/" char1="*" beginRegion="Comment" />
         <Int attribute="Decimal" context="#stay" />
         <Float attribute="Float" context="#stay" />
         <HlCOct attribute="Octal" context="#stay"/>
@@ -126,6 +126,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
         <LineContinue attribute="Comment" context="#stay"/>
         <DetectSpaces />
         <IncludeRules context="##Alerts" />
+        <IncludeRules context="##Modelines" />
         <DetectIdentifier />
       </context>
 
@@ -133,6 +134,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
         <DetectSpaces />
         <Detect2Chars attribute="Comment" context="#pop" char="*" char1="/" endRegion="Comment"/>
         <IncludeRules context="##Alerts" />
+        <IncludeRules context="##Modelines" />
         <DetectIdentifier />
       </context>
 
@@ -173,3 +175,4 @@ with this program; if not, write to the Free Software Foundation, Inc.,
     <keywords casesensitive="1" additionalDeliminator="'&quot;" />
   </general>
 </language>
+<!-- kate: replace-tabs on; tab-width 2; indent-width 2; -->

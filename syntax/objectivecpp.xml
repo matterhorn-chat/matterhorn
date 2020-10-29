@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
-<language name="Objective-C++" version="5" kateversion="5.0" section="Sources" extensions="*.mm;*.M;*.h" mimetype="text/x-objcpp-src;text/x-c-hdr" author="Gennady Telegin (gepo@lvk.cs.msu.su">
+<language name="Objective-C++" version="7" kateversion="5.0" section="Sources" extensions="*.mm;*.M;*.h" mimetype="text/x-objcpp-src;text/x-c-hdr" author="Gennady Telegin (gepo@lvk.cs.msu.su">
   <highlighting>
     <list name="keywords">
       <item>break</item>
@@ -164,8 +164,6 @@
         <DetectSpaces />
         <RegExpr attribute="Preprocessor" context="Outscoped" String="#\s*if\s+0" beginRegion="Outscoped" firstNonSpace="true" />
         <DetectChar attribute="Preprocessor" context="Preprocessor" char="#" firstNonSpace="true" />
-        <StringDetect attribute="Region Marker" context="Region Marker" String="//BEGIN" beginRegion="Region1" firstNonSpace="true" />
-        <StringDetect attribute="Region Marker" context="Region Marker" String="//END" endRegion="Region1" firstNonSpace="true" />
         
         <keyword attribute="Keyword" context="#stay" String="keywords"/>
         <keyword attribute="Data Type" context="#stay" String="types"/>
@@ -179,20 +177,31 @@
         <Int attribute="Decimal" context="Int Suffixes"/>
         <HlCChar attribute="Char" context="#stay"/>
         <DetectChar attribute="String" context="String" char="&quot;"/>
-        <Detect2Chars attribute="Comment" context="SingleLineComment" char="/" char1="/"/>
-        <Detect2Chars attribute="Comment" context="MultiLineComment" char="/" char1="*"/>
+
+        <IncludeRules context="FindComments" />
 
         <Detect2Chars attribute="String" context="String" char="@" char1="&quot;" />
 
         <keyword attribute="Extensions" context="#stay" String="extensions" />
 
-        <IncludeRules context="##Doxygen" />
-        <Detect2Chars attribute="Comment" context="SingleLineComment" char="/" char1="/"/>
-        <Detect2Chars attribute="Comment" context="MultiLineComment" char="/" char1="*" beginRegion="Comment"/>
         <DetectChar attribute="Symbol" context="#stay" char="{" beginRegion="Brace1" />
         <DetectChar attribute="Symbol" context="#stay" char="}" endRegion="Brace1" />
         <AnyChar attribute="Symbol" context="#stay" String=":!%&amp;()+,-/.*&lt;=&gt;?[]{|}~^&#59;"/>
       </context>
+
+      <context name="FindComments" attribute="Normal Text" lineEndContext="#pop">
+        <Detect2Chars attribute="Comment" context="MatchComment" char="/" char1="/" lookAhead="true"/>
+        <Detect2Chars attribute="Comment" context="MatchComment" char="/" char1="*" lookAhead="true" />
+      </context>
+
+      <context name="MatchComment" attribute="Normal Text" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">
+        <StringDetect attribute="Region Marker" context="#pop!Region Marker" String="//BEGIN" beginRegion="Region1" firstNonSpace="true" />
+        <StringDetect attribute="Region Marker" context="#pop!Region Marker" String="//END" endRegion="Region1" firstNonSpace="true" />
+        <IncludeRules context="##Doxygen" />
+        <Detect2Chars attribute="Comment" context="#pop!SingleLineComment" char="/" char1="/" />
+        <Detect2Chars attribute="Comment" context="#pop!MultiLineComment" char="/" char1="*" beginRegion="Comment" />
+      </context>
+
       <context name="Float Suffixes" attribute="Float" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">
           <AnyChar String="fF" attribute="Float" context="#pop"/>
       </context>
@@ -212,16 +221,15 @@
         <DetectChar attribute="String" context="#pop" char="&quot;"/>
       </context>
       <context attribute="Comment" lineEndContext="#pop" name="SingleLineComment">
+        <DetectSpaces />
         <IncludeRules context="##Alerts" />
+        <IncludeRules context="##Modelines" />
       </context>
       <context attribute="Comment" lineEndContext="#stay" name="MultiLineComment">
-        <Detect2Chars attribute="Comment" context="#pop" char="*" char1="/"/>
-        <IncludeRules context="##Alerts" />
-      </context>
-      <context attribute="Comment" lineEndContext="#stay" name="MultiLineCommentPrep">
         <DetectSpaces />
-        <Detect2Chars attribute="Comment" context="#pop#pop" char="*" char1="/"/>
+        <Detect2Chars attribute="Comment" context="#pop" char="*" char1="/" endRegion="Comment"/>
         <IncludeRules context="##Alerts" />
+        <IncludeRules context="##Modelines" />
         <DetectIdentifier />
       </context>
 
@@ -236,9 +244,7 @@
         <RegExpr attribute="Preprocessor" context="#stay" String="define.*"/>
         <RangeDetect attribute="Prep. Lib" context="#stay" char="&quot;" char1="&quot;"/>
         <RangeDetect attribute="Prep. Lib" context="#stay" char="&lt;" char1="&gt;"/>
-        <IncludeRules context="##Doxygen" />
-        <Detect2Chars attribute="Comment" context="SingleLineComment" char="/" char1="/"/>
-        <Detect2Chars attribute="Comment" context="MultiLineCommentPrep" char="/" char1="*"/>
+        <IncludeRules context="FindComments" />
       </context>
 
       <context attribute="Preprocessor" lineEndContext="#pop" name="Define">
@@ -250,9 +256,7 @@
         <IncludeRules context="##Alerts" />
         <DetectIdentifier />
         <DetectChar attribute="String" context="String" char="&quot;"/>
-        <IncludeRules context="##Doxygen" />
-        <Detect2Chars attribute="Comment" context="SingleLineComment" char="/" char1="/"/>
-        <Detect2Chars attribute="Comment" context="MultiLineComment" char="/" char1="*" beginRegion="Comment"/>
+        <IncludeRules context="FindComments" />
         <RegExpr attribute="Comment" context="Outscoped intern" String="#\s*if" beginRegion="Outscoped" firstNonSpace="true" />
         <RegExpr attribute="Preprocessor" context="#pop" String="#\s*(endif|else|elif)" endRegion="Outscoped" firstNonSpace="true" />
       </context>
@@ -262,9 +266,7 @@
         <IncludeRules context="##Alerts" />
         <DetectIdentifier />
         <DetectChar attribute="String" context="String" char="&quot;"/>
-        <IncludeRules context="##Doxygen" />
-        <Detect2Chars attribute="Comment" context="SingleLineComment" char="/" char1="/"/>
-        <Detect2Chars attribute="Comment" context="MultiLineComment" char="/" char1="*" beginRegion="Comment"/>
+        <IncludeRules context="FindComments" />
         <RegExpr attribute="Comment" context="Outscoped intern" String="#\s*if" beginRegion="Outscoped" firstNonSpace="true"/>
         <RegExpr attribute="Comment" context="#pop" String="#\s*endif" endRegion="Outscoped" firstNonSpace="true"/>
       </context>
@@ -293,8 +295,9 @@
   <general>
     <comments>
       <comment name="singleLine" start="//" />
-      <comment name="multiLine" start="/*" end="*/" />
+      <comment name="multiLine" start="/*" end="*/" region="Comment" />
     </comments>
     <keywords casesensitive="1" />
   </general>
 </language>
+<!-- kate: replace-tabs on; tab-width 2; indent-width 2; -->

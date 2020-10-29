@@ -56,8 +56,8 @@
 -->
 
 <!DOCTYPE language SYSTEM "language.dtd">
-
-<language name="Matlab" version="3" kateversion="5.0" section="Scientific" extensions="*.m;*.M" mimetype="text/mfile" casesensitive="1">
+<!-- low priority to let Objective-C win for .m files per default -->
+<language name="Matlab" version="6" kateversion="5.0" section="Scientific" extensions="*.m;*.M" priority="-9" mimetype="text/mfile" casesensitive="1">
   <highlighting>
 
     <!-- Reserved keywords in MATLAB -->
@@ -105,8 +105,8 @@
 
         <!-- Handling of keywords, comments, system commands, identifiers, numbers and braces -->
         <keyword context="#stay" attribute="Keyword" String="KeywordsList" />
-        <RegExpr context="#stay" attribute="Comment" String="%.*$" />
-        <RegExpr context="#stay" attribute="System" String="!.*$" />
+        <DetectChar context="Comment" attribute="Comment" char="%" />
+        <DetectChar context="System" attribute="System" char="!" />
         <RegExpr context="#stay" attribute="Variable" String="[a-zA-Z]\w*" />
         <RegExpr context="#stay" attribute="Number" String="(\d+(\.\d+)?|\.\d+)([eE][+-]?\d+)?[ij]?" />
         <AnyChar context="#stay" attribute="Delimiter" String="()[]{}"/>
@@ -134,6 +134,14 @@
         <RegExpr context="#pop" attribute="Operator" String="'+" />
       </context>
 
+      <context name="Comment" attribute="Comment" lineEndContext="#pop">
+        <DetectSpaces />
+        <IncludeRules context="##Alerts"/>
+        <IncludeRules context="##Modelines"/>
+      </context>
+
+      <context name="System" attribute="System" lineEndContext="#pop"/>
+
     </contexts>
 
     <itemDatas>
@@ -155,9 +163,10 @@
 
   <general>
     <comments>
-      <comment name="singleLine" start="% " />
+      <comment name="singleLine" start="%" />
     </comments>
     <keywords casesensitive="1" weakDeliminator=""/>
   </general>
 
 </language>
+<!-- kate: replace-tabs on; tab-width 2; indent-width 2; -->

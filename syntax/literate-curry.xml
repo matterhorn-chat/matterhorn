@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
-<language name="Literate Curry" version="2" kateversion="3.4"
+<language name="Literate Curry" version="3" kateversion="3.4"
           section="Sources" extensions="*.lcurry" mimetype="text/x-curry"
           author="Björn Peemöller (bjp@informatik.uni-kiel.de)" license="LGPL"
           indenter="haskell">
@@ -17,7 +17,7 @@
     </context>
 
     <context attribute="Text" lineEndContext="#pop" name="Code">
-      <RegExpr attribute="Comment" context="multiline" String="\{-[^#]" />
+      <RegExpr attribute="Comment" context="multiline" String="\{-[^#]" beginRegion="Comment" />
       <IncludeRules context="##Curry" />
     </context>
 
@@ -29,7 +29,9 @@
 
     <!-- Handle comments in presence of bird tracks -->
     <context attribute="Comment" lineEndContext="lineend" name="multiline" >
-      <Detect2Chars attribute="Comment" context="#pop" char="-" char1="}" />
+      <Detect2Chars attribute="Comment" context="#pop" char="-" char1="}" endRegion="Comment" />
+      <DetectSpaces />
+      <IncludeRules context="##Alerts" />
     </context>
 
     <context attribute="Text" lineEndContext="#stay" name="lineend">
@@ -47,4 +49,9 @@
     <itemData name="Comment"   defStyleNum="dsComment" />
   </itemDatas>
   </highlighting>
+  <general>
+    <comments>
+      <comment name="multiLine" start="{-" end="-}" region="Comment"/>
+    </comments>
+  </general>
 </language>

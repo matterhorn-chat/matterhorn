@@ -9,12 +9,15 @@
   Minor changes: Joseph Wenninger <jowenn@kde.org>
   Full JavaScript 1.0 support by Whitehawk Stormchaser
 
-  Last Update: Nov. 20, 2019 (Version 14)
+  Last Update: Jun. 03, 2020 (Version 15)
 
-  IMPORTANT: This syntax highlighting definition depends on
-  JavaScript React (JSX), TypeScript and QML.
+  IMPORTANT: This syntax highlighting definition depends on:
+   * JavaScript React (JSX)
+   * TypeScript
+   * QML
+   * CoffeeScript (embedded)
 -->
-<language name="JavaScript" version="14" kateversion="5.0" section="Scripts" extensions="*.js;*.kwinscript;*.julius"
+<language name="JavaScript" version="16" kateversion="5.0" section="Scripts" extensions="*.js;*.kwinscript;*.julius"
           mimetype="text/x-javascript;application/x-javascript;application/javascript;text/javascript" indenter="cstyle"
           author="Anders Lund (anders@alweb.dk), Joseph Wenninger (jowenn@kde.org), Whitehawk Stormchaser (zerokode@gmx.net)" license="">
 
@@ -977,6 +980,7 @@
       <item>index</item>
       <item>innerHeight</item>
       <item>innerWidth</item>
+      <item>innerHTML</item>
       <item>input</item>
       <item>isMap</item>
       <item>label</item>
@@ -1748,11 +1752,13 @@
 
       <!-- Find Objects Member and Functions -->
       <context attribute="Normal Text" lineEndContext="#stay" name="FindObjectMembersAndFunctions">
+        <!-- Tagged Template Literals -->
+        <RegExpr attribute="Function Name" context="#stay" String="&identifier;(?=\s*`)" />
         <!-- The order of these rules is important: 1) Functions. 2) Constants. 3) Objects. -->
         <RegExpr attribute="Function Name" context="Function" String="(&identifier;)(?=\s*\()" lookAhead="true" />
         <IncludeRules context="BuiltInConstants" />
         <RegExpr attribute="Objects" context="Object Member" String="&identifier;(?=\s*\.)" />
-        <DetectChar attribute="Symbol" context="Object Member" char="." />
+        <DetectChar attribute="Symbol" context="Object Member" char="." lookAhead="true" />
       </context>
       <context attribute="Normal Text" lineEndContext="#pop" name="Function">
         <keyword attribute="Function (Built-in)" context="#pop" String="functions" />
@@ -1770,11 +1776,14 @@
       </context>
       <!-- Used in common and built-in objects. -->
       <context attribute="Normal Text" lineEndContext="#pop" name="DefaultMemberObject">
+        <StringDetect attribute="Symbol" context="#pop" String="..." />
         <DetectChar attribute="Symbol" context="#stay" char="." />
 
         <!-- The order of these rules is important: 1) Functions. 2) Constants & Properties. 3) Obj. Members. -->
         <!-- Function -->
         <RegExpr attribute="Function Name" context="#pop" String="&identifier;(?=\s*\()" />
+        <!-- Tagged Template Literals -->
+        <RegExpr context="#pop" String="&identifier;\s*`" lookAhead="true" />
         <!-- Generic constants and properties -->
         <keyword attribute="Object Property (Built-in)" context="#pop!NoRegExp" String="variable_property" />
         <keyword attribute="Constant" context="#pop!NoRegExp" String="dom_constant" />
@@ -1785,13 +1794,13 @@
         <DetectSpaces />
 
         <!-- Generic Functions -->
-        <keyword context="#pop!NoRegExp" attribute="Function Name" String="functions" />
+        <keyword attribute="Function Name" context="#pop!NoRegExp" String="functions" />
       </context>
 
       <!-- Strings -->
       <context attribute="Normal Text" lineEndContext="#stay" name="FindStrings">
-        <DetectChar attribute="Template" context="Template" char="`" />
-        <StringDetect attribute="Template" context="RawTemplate" String="String.raw`" />
+        <DetectChar attribute="Template" context="Template" char="`" beginRegion="Template" />
+        <RegExpr attribute="Template" context="StartRawTemplate" String="\b(String)\s*(\.)\s*(raw)\s*`" lookAhead="true" />
 
         <DetectChar attribute="String" context="String" char="&quot;" />
         <DetectChar attribute="String" context="String SQ" char="'" />
@@ -1823,24 +1832,36 @@
       <context attribute="Template" lineEndContext="#stay" name="Template">
         <IncludeRules context="Escape" />
         <Detect2Chars attribute="Substitution" context="Substitution" char="$" char1="{" />
-        <DetectChar attribute="Template" context="RegExpAfterString" char="`" />
+        <DetectChar attribute="Template" context="RegExpAfterString" char="`" endRegion="Template" />
+      </context>
+      <context attribute="Normal Text" lineEndContext="#stay" name="Substitution">
+        <DetectChar attribute="Substitution" char="}" context="#pop" />
+        <IncludeRules context="Normal" />
+      </context>
+
+      <context attribute="Normal Text" lineEndContext="#pop" name="StartRawTemplate">
+        <DetectSpaces />
+        <DetectChar attribute="Template" context="#pop!RawTemplate" char="`" beginRegion="Template" />
+        <StringDetect attribute="Built-in Objects" context="#stay" String="%1" dynamic="true" />
+        <DetectChar attribute="Symbol" context="#stay" char="2" dynamic="true" />
+        <StringDetect attribute="Function Name" context="#stay" String="%3" dynamic="true" />
       </context>
       <context attribute="Template" lineEndContext="#stay" name="RawTemplate">
-        <DetectChar attribute="Template" context="RegExpAfterString" char="`" />
-      </context>
-      <context name="Substitution" attribute="Normal Text" lineEndContext="#stay">
-        <DetectChar attribute="Substitution" char="}" context="#pop"/>
-        <IncludeRules context="Normal"/>
+        <DetectChar attribute="Template" context="RegExpAfterString" char="`" endRegion="Template" />
       </context>
 
       <!-- Comments -->
-      <context name="FindComments" attribute="Normal Text" lineEndContext="#stay">
-        <StringDetect attribute="Region Marker" context="region_marker" String="//BEGIN" beginRegion="Region1" />
-        <StringDetect attribute="Region Marker" context="region_marker" String="//END" endRegion="Region1" />
+      <context attribute="Normal Text" lineEndContext="#stay" name="FindComments">
+        <Detect2Chars attribute="Comment" context="MatchComment" char="/" char1="/" lookAhead="true"/>
+        <Detect2Chars attribute="Comment" context="MatchComment" char="/" char1="*" lookAhead="true" />
+      </context>
+      <context name="MatchComment" attribute="Normal Text" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">
+        <StringDetect attribute="Region Marker" context="#pop!region_marker" String="//BEGIN" beginRegion="Region1" />
+        <StringDetect attribute="Region Marker" context="#pop!region_marker" String="//END" endRegion="Region1" />
 
         <IncludeRules context="##Doxygen" />
-        <Detect2Chars attribute="Comment" context="Comment" char="/" char1="/" />
-        <Detect2Chars attribute="Comment" context="Multi/inline Comment" char="/" char1="*" beginRegion="Comment" />
+        <Detect2Chars attribute="Comment" context="#pop!Comment" char="/" char1="/" />
+        <Detect2Chars attribute="Comment" context="#pop!Multi/inline Comment" char="/" char1="*" beginRegion="Comment" />
       </context>
       <context attribute="Comment" lineEndContext="#pop" name="Comment">
         <DetectSpaces />
@@ -1853,7 +1874,7 @@
         <IncludeRules context="##Alerts" />
         <IncludeRules context="##Modelines" />
       </context>
-      <context name="region_marker" attribute="Region Marker" lineEndContext="#pop" />
+      <context attribute="Region Marker" lineEndContext="#pop" name="region_marker" />
 
       <!-- Regular Expressions -->
       <context attribute="Regular Expression" lineEndContext="#stay" name="Regular Expression">

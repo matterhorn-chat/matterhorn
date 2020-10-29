@@ -28,12 +28,12 @@
 -->
 <!DOCTYPE language SYSTEM "language.dtd"
 [
-	<!ENTITY rustIdent "([a-zA-Z_]|[^[:ascii:]])(\w|[^[:ascii:]])*">
-	<!ENTITY rustIntSuf "([iu](8|16|32|64|128|size)?)?">
-	<!ENTITY commonEscape "([trn0&apos;&quot;\\]|x[0-9a-fA-F]{2})">
-	<!ENTITY unicodeEscape "u\{([0-9a-fA-F]_*){1,6}\}">
+	<!ENTITY rustIdent "(?:[a-zA-Z_]|[^[:ascii:]])(?:\w|[^[:ascii:]])*">
+	<!ENTITY rustIntSuf "(?:[iu](?:8|16|32|64|128|size)?)?">
+	<!ENTITY commonEscape "(?:[trn0&apos;&quot;\\]|x[0-9a-fA-F]{2})">
+	<!ENTITY unicodeEscape "u\{(?:[0-9a-fA-F]_*){1,6}\}">
 ]>
-<language name="Rust" version="7" kateversion="5.0" section="Sources" extensions="*.rs" mimetype="text/rust" priority="15" license="MIT" author="The Rust Project Developers">
+<language name="Rust" version="9" kateversion="5.0" section="Sources" extensions="*.rs" mimetype="text/rust" priority="15" license="MIT" author="The Rust Project Developers">
 <highlighting>
 	<list name="fn">
 		<item>fn</item>
@@ -372,11 +372,11 @@
 			<keyword String="traits" attribute="Trait" context="#stay"/>
 			<IncludeRules context="FindComments"/>
 			<!-- Hexadecimal, Octal & Binary -->
-			<RegExpr String="\b0(x[0-9a-fA-F_]+|o[0-7_]+|b[01_]+)&rustIntSuf;\b" attribute="Number" context="#stay"/>
+			<RegExpr String="\b0(?:x[0-9a-fA-F_]+|o[0-7_]+|b[01_]+)&rustIntSuf;\b" attribute="Number" context="#stay"/>
 			<!-- Float & Decimal -->
-			<RegExpr String="\b[0-9][0-9_]*((\.[0-9][0-9_]*)?([eE][\+\-]?[0-9_]+)?(f32|f64)?|&rustIntSuf;)\b" attribute="Number" context="#stay"/>
+			<RegExpr String="\b[0-9][0-9_]*(?:(?:\.[0-9][0-9_]*)?(?:[eE][\+\-]?[0-9_]+)?(?:f32|f64)?|&rustIntSuf;)\b" attribute="Number" context="#stay"/>
 			<!-- Invalid number -->
-			<RegExpr String="\b0(b[01_]*[^01_]|o[0-7_]*[^0-7_]|x[0-9a-fA-F_]*[^0-9a-fA-F_])\w*&rustIntSuf;\b" attribute="Error" context="#stay"/>
+			<RegExpr String="\b0(?:b[01_]*[^01_]|o[0-7_]*[^0-7_]|x[0-9a-fA-F_]*[^0-9a-fA-F_])\w*&rustIntSuf;\b" attribute="Error" context="#stay"/>
 			<Detect2Chars char="#" char1="[" attribute="Attribute" context="Attribute" beginRegion="Attribute"/>
 			<StringDetect String="#![" attribute="Attribute" context="Attribute" beginRegion="Attribute"/>
 			<RegExpr String="&rustIdent;::" attribute="Scope"/>
@@ -386,13 +386,13 @@
 			<DetectChar char="{" attribute="Symbol" context="#stay" beginRegion="Brace" />
 			<DetectChar char="}" attribute="Symbol" context="#stay" endRegion="Brace" />
 			<!-- Raw Strings -->
-			<RegExpr String="b?r(#*)&quot;" attribute="String" context="RawString" dynamic="true"/>
+			<RegExpr String="b?r(#*)&quot;" attribute="String" context="RawString"/>
 			<!-- Byte Strings -->
 			<Detect2Chars char="b" char1="&quot;" attribute="String" context="ByteString"/>
 			<!-- Strings -->
 			<DetectChar char="&quot;" attribute="String" context="String"/>
 			<!-- Byte -->
-			<RegExpr String="b&apos;(?=([^&apos;\\]|\\&commonEscape;)&apos;)" attribute="Character" context="Character"/>
+			<RegExpr String="b&apos;(?=(?:[^&apos;\\]|\\&commonEscape;)&apos;)" attribute="Character" context="Character"/>
 			<!-- Character -->
 			<DetectChar char="&apos;" attribute="Character" context="Character"/>
 			<DetectChar char="[" attribute="Normal Text" context="#stay" beginRegion="Bracket" />
@@ -429,14 +429,14 @@
 			<DetectChar char="\" attribute="CharEscape" context="CharEscape"/>
 			<DetectChar attribute="String" context="#pop" char="&quot;"/>
 		</context>
-		<context attribute="String" lineEndContext="#stay" name="RawString" dynamic="true">
-			<RegExpr String="&quot;%1" attribute="String" context="#pop" dynamic="true"/>
+		<context attribute="String" lineEndContext="#stay" name="RawString">
+			<StringDetect String="&quot;%1" attribute="String" context="#pop" dynamic="true"/>
 		</context>
 		<context attribute="Character" lineEndContext="#pop" name="Character" fallthrough="true" fallthroughContext="#pop">
 			<RegExpr String="[^&apos;\\](?=&apos;)" attribute="Character" context="#stay"/>
-			<RegExpr String="\\(&unicodeEscape;|&commonEscape;)(?=&apos;)" attribute="CharEscape" context="#stay"/>
+			<RegExpr String="\\(?:&unicodeEscape;|&commonEscape;)(?=&apos;)" attribute="CharEscape" context="#stay"/>
 			<DetectChar attribute="Character" context="#pop" char="&apos;"/>
-			<RegExpr String="(\\.|[^&apos;\\])[^&apos;]*(?=&apos;([\d\s!&quot;#&#036;&#037;&amp;&#039;\(\)\*\+,\-\./:;&lt;\=&gt;\?@\[\\\]\^&#096;\{\|\}~[:cntrl:]]|$))" attribute="Error" context="#stay"/>
+			<RegExpr String="(?:\\.|[^&apos;\\])[^&apos;]*(?=&apos;(?:[\d\s!&quot;#&#036;&#037;&amp;&#039;\(\)\*\+,\-\./:;&lt;\=&gt;\?@\[\\\]\^&#096;\{\|\}~[:cntrl:]]|$))" attribute="Error" context="#stay"/>
 		</context>
 		<context attribute="CharEscape" lineEndContext="#pop" name="CharEscape">
 			<RegExpr String="&commonEscape;" attribute="CharEscape" context="#pop"/>
@@ -451,6 +451,7 @@
 			<Detect2Chars char="/" char1="*" attribute="Comment" context="Commentar 2" beginRegion="Comment"/>
 		</context>
 		<context attribute="Comment" lineEndContext="#pop" name="Commentar 1">
+			<DetectSpaces/>
 			<IncludeRules context="##Alerts" />
 			<IncludeRules context="##Modelines" />
 		</context>

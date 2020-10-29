@@ -62,7 +62,7 @@ Version 1.0 (2012-03-21) by Igor Zhuravlov
 -->
 <language name="J"
           section="Scripts"
-          version="2"
+          version="3"
           kateversion="3.4"
           extensions="*.ijs;*.ijt;*.IJS;*.IJT"
           mimetype="text/x-j;text/x-jsrc"
@@ -90,7 +90,11 @@ Version 1.0 (2012-03-21) by Igor Zhuravlov
         <RegExpr      attribute="ExpArg"         context="#stay"        String="\b[nmuvxy](?![\w:.])"/>
         <RegExpr      attribute="Noun"           context="#stay"        String="\ba[.:](?![.:])"/>
       </context>
-      <context attribute="Comment" lineEndContext="#pop" name="comment line"/>
+      <context attribute="Comment" lineEndContext="#pop" name="comment line">
+        <DetectSpaces />
+        <IncludeRules context="##Alerts"/>
+        <IncludeRules context="##Modelines"/>
+      </context>
     </contexts>
     <itemDatas>
       <itemData name="Sentence"       defStyleNum="dsNormal"/>
@@ -117,3 +121,4 @@ Version 1.0 (2012-03-21) by Igor Zhuravlov
     <folding indentationsensitive="true"/>
   </general>
 </language>
+<!-- kate: replace-tabs on; indent-width 2; -->

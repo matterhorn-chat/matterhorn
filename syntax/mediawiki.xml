@@ -6,7 +6,7 @@
   <!ENTITY wikiLinkWithDescription "\[\[[^]|]*\|[^]]*\]\]">
   <!ENTITY wikiLinkWithoutDescription "\[\[[^]|]*\]\]">
 ]>
-<language name="MediaWiki" section="Markup" version="6" kateversion="5.0" extensions="*.mediawiki" mimetype="" license="FDL" >
+<language name="MediaWiki" section="Markup" version="8" kateversion="5.0" extensions="*.mediawiki" mimetype="" license="FDL" >
   <highlighting>
     <contexts>
       <context attribute="Normal" lineEndContext="#stay" name="normal" >
@@ -15,7 +15,8 @@
         <RegExpr String="[=]{4,4}(?!=)" context="Section4" attribute="Section" column="0" />
         <RegExpr String="[=]{3,3}(?!=)" context="Section3" attribute="Section" column="0" />
         <RegExpr String="[=]{2,2}(?!=)" context="Section2" attribute="Section" column="0" />
-        <RegExpr String="[~]{3,4}" attribute="WikiTag" context="#stay" />
+        <StringDetect String="~~~~" attribute="WikiTag" context="#stay" />
+        <StringDetect String="~~~" attribute="WikiTag" context="#stay" />
         <DetectChar char=";" attribute="WikiTag" context="DefinitionListHeader" column="0" />
         <IncludeRules context="FindListItem" />
         <IncludeRules context="FindUrl" />
@@ -29,14 +30,14 @@
         <StringDetect String="&lt;pre&gt;" context="Pre" attribute="HtmlTag" />
         <IncludeRules context="FindSyntaxHighlightingHtmlElement" />
         <RegExpr String="[&lt;][^&gt;]+[&gt;]" attribute="HtmlTag" context="#stay" />
-        <RegExpr String="[\s]" context="Unformatted" column="0" />
+        <DetectSpaces context="Unformatted" column="0" />
       </context>
       <context name="TableHeader" attribute="Normal" lineEndContext="TableContent" >
         <Detect2Chars char="{" char1="|" attribute="WikiTag" beginRegion="table" />
         <IncludeRules context="FindHtmlStartTagAttributes" />
       </context>
       <context name="TableContent" attribute="Normal" lineEndContext="#stay">
-        <StringDetect String="&lt;!--" context="comment" attribute="Comment" />
+        <StringDetect String="&lt;!--" context="comment" attribute="Comment" beginRegion="comment" />
         <RegExpr String="[=]{5,5}(?!=)" context="Section5" attribute="Section" column="0" />
         <RegExpr String="[=]{4,4}(?!=)" context="Section4" attribute="Section" column="0" />
         <RegExpr String="[=]{3,3}(?!=)" context="Section3" attribute="Section" column="0" />
@@ -58,13 +59,15 @@
         <IncludeRules context="FindSyntaxHighlightingHtmlElement" />
         <RegExpr String="[&lt;][^&gt;]+[&gt;]" attribute="HtmlTag" context="#stay" />
         <RegExpr String="[\s]" context="Unformatted" column="0" />
-        <RegExpr String="[~]{3,4}" attribute="WikiTag" context="#stay" />
+        <StringDetect String="~~~~" attribute="WikiTag" context="#stay" />
+        <StringDetect String="~~~" attribute="WikiTag" context="#stay" />
         <RegExpr String="[-]{4,}" attribute="WikiTag" context="#stay" />
         <DetectChar char="!" attribute="WikiTag" context="#stay" column="0" />
       </context>
       <context attribute="Section" lineEndContext="#pop" name="Section5" >
         <StringDetect String="&lt;!--" context="comment" attribute="Comment" beginRegion="comment" />
-        <RegExpr String="[~]{3,4}" attribute="WikiTag" context="#stay" />
+        <StringDetect String="~~~~" attribute="WikiTag" context="#stay" />
+        <StringDetect String="~~~" attribute="WikiTag" context="#stay" />
         <IncludeRules context="FindUrl" />
         <IncludeRules context="FindTextDecorationsInHeader" />
         <StringDetect String="{{{" context="TemplateParameter" attribute="WikiTag" />
@@ -83,7 +86,8 @@
       </context>
       <context attribute="Section" lineEndContext="#pop" name="Section4" >
         <StringDetect String="&lt;!--" context="comment" attribute="Comment" beginRegion="comment" />
-        <RegExpr String="[~]{3,4}" attribute="WikiTag" context="#stay" />
+        <StringDetect String="~~~~" attribute="WikiTag" context="#stay" />
+        <StringDetect String="~~~" attribute="WikiTag" context="#stay" />
         <IncludeRules context="FindUrl" />
         <IncludeRules context="FindTextDecorationsInHeader" />
         <StringDetect String="{{{" context="TemplateParameter" attribute="WikiTag" />
@@ -101,7 +105,8 @@
       </context>
       <context attribute="Section" lineEndContext="#pop" name="Section3" >
         <StringDetect String="&lt;!--" context="comment" attribute="Comment" beginRegion="comment" />
-        <RegExpr String="[~]{3,4}" attribute="WikiTag" context="#stay" />
+        <StringDetect String="~~~~" attribute="WikiTag" context="#stay" />
+        <StringDetect String="~~~" attribute="WikiTag" context="#stay" />
         <IncludeRules context="FindUrl" />
         <IncludeRules context="FindTextDecorationsInHeader" />
         <StringDetect String="{{{" context="TemplateParameter" attribute="WikiTag" />
@@ -119,7 +124,8 @@
       </context>
       <context attribute="Section" lineEndContext="#pop" name="Section2" >
         <StringDetect String="&lt;!--" context="comment" attribute="Comment" beginRegion="comment" />
-        <RegExpr String="[~]{3,4}" attribute="WikiTag" context="#stay" />
+        <StringDetect String="~~~~" attribute="WikiTag" context="#stay" />
+        <StringDetect String="~~~" attribute="WikiTag" context="#stay" />
         <IncludeRules context="FindUrl" />
         <IncludeRules context="FindTextDecorationsInHeader" />
         <StringDetect String="{{{" context="TemplateParameter" attribute="WikiTag" />
@@ -137,6 +143,9 @@
       </context>
       <context attribute="Comment" lineEndContext="#stay" name="comment" >
         <StringDetect String="--&gt;" context="#pop" attribute="Comment" endRegion="comment" />
+        <DetectSpaces />
+        <IncludeRules context="##Alerts" />
+        <IncludeRules context="##Modelines" />
       </context>
       <context attribute="Link" lineEndContext="#stay" name="DelimitedURL" >
         <DetectChar char="]" context="#pop" attribute="WikiTag" />
@@ -284,7 +293,8 @@
       <context attribute="Normal" lineEndContext="#stay" name="TemplateParameterSlot" >
         <Detect2Chars char="}" char1="}" context="#pop" attribute="WikiTag" lookAhead="true" />
         <StringDetect String="&lt;!--" context="comment" attribute="Comment" beginRegion="comment" />
-        <RegExpr String="[~]{3,4}" attribute="WikiTag" context="#stay" />
+        <StringDetect String="~~~~" attribute="WikiTag" context="#stay" />
+        <StringDetect String="~~~" attribute="WikiTag" context="#stay" />
         <IncludeRules context="FindListItem" />
         <IncludeRules context="FindUrlWithinTemplate" />
         <IncludeRules context="FindTextDecorations" />
@@ -306,7 +316,8 @@
       </context>
       <context attribute="Normal" lineEndContext="#stay" name="TemplateParameterSlotValue" >
         <StringDetect String="&lt;!--" context="comment" attribute="Comment" beginRegion="comment" />
-        <RegExpr String="[~]{3,4}" attribute="WikiTag" context="#stay" />
+        <StringDetect String="~~~~" attribute="WikiTag" context="#stay" />
+        <StringDetect String="~~~" attribute="WikiTag" context="#stay" />
         <IncludeRules context="FindListItem" />
         <IncludeRules context="FindUrlWithinTemplate" />
         <IncludeRules context="FindTextDecorations" />
@@ -615,8 +626,9 @@
   </highlighting>
   <general>
     <comments>
-      <comment end="//-->" start="&lt;!--" name="multiLine" />
+      <comment name="multiLine" start="&lt;!--" end="--&gt;" region="comment" />
     </comments>
     <keywords casesensitive="0" />
   </general>
 </language>
+<!-- kate: replace-tabs on; tab-width 2; indent-width 2; -->

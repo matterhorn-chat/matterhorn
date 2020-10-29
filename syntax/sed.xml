@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
-<language name="sed" section="Scripts" version="2" kateversion="2.4" extensions="*.sed" mimetype="text/x-sed" author="Bart Sas (bart.sas@gmail.com)" license="GPL">
+<language name="sed" section="Scripts" version="3" kateversion="2.4" extensions="*.sed" mimetype="text/x-sed" author="Bart Sas (bart.sas@gmail.com)" license="GPL">
         <highlighting>
                 <contexts>
                         <context name="BeginningOfLine" attribute="Normal" lineEndContext="#stay">
@@ -220,7 +220,11 @@
                                 <DetectChar   char="]"           attribute="Regex Escape" context="#stay"/>
                         </context>
 
-                        <context name="Comment" attribute="Comment" lineEndContext="BeginningOfLine"/>
+                        <context name="Comment" attribute="Comment" lineEndContext="#pop">
+                                <DetectSpaces />
+                                <IncludeRules context="##Alerts"/>
+                                <IncludeRules context="##Modelines"/>
+                        </context>
                         <context name="Error"   attribute="Error"   lineEndContext="BeginningOfLine"/>
                 </contexts>
 
@@ -265,3 +269,4 @@
                 </comments>
         </general>
 </language>
+<!-- kate: replace-tabs on; tab-width 8; indent-width 8; -->

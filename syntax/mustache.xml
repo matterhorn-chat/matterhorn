@@ -36,13 +36,14 @@
     (via IncludeRules) in the HTML highlighter.
 
     Change log:
+     * v5 [2020-08-15]: Use Handlebars comment en the <comments> group.
      * v3 [2019-10-03]: Minor fixes.
      * v2 [2019-02-24]: Also highlight template files (HTML).
                         Improve support for Handlebars.
      * v1 [2019-02-10]: Initial version
 -->
 
-<language name="Mustache/Handlebars (HTML)" version="3" kateversion="5.44"
+<language name="Mustache/Handlebars (HTML)" version="5" kateversion="5.44"
           section="Markup" priority="1" mimetype=""
           extensions="*.mustache;*.handlebars;*.hbs;*.ractive;*.hogan;*.hulk;*.html.mst;*.html.mu;*.html.rac"
           author="Nibaldo González (nibgonz@gmail.com), based on the HTML highlighter by Wilbert Berendsen (wilbert@kde.nl)"
@@ -84,15 +85,15 @@
 			<RegExpr context="#pop!MustacheRawBlockContent" attribute="Mustache Block" String="\{{4}[^/].*\}{4}" minimal="true" beginRegion="HandlebarsRawBlock" />
 			<!-- Sections -->
 			<!-- For helpers (not included because it's redundant):
-			       Start: \{\{~?#?\s*(?=(if|unless|with|link\-to|each(\-in)?)\b)
-			       End:   \{\{~?/\s*(?=(if|unless|with|link\-to|each(\-in)?)\b)  -->
+			       Start: \{\{~?#?\s*(?=(?:if|unless|with|link\-to|each(?:\-in)?)\b)
+			       End:   \{\{~?/\s*(?=(?:if|unless|with|link\-to|each(?:\-in)?)\b)  -->
 			<RegExpr context="#pop!MustacheVariableBlock" attribute="Mustache Block" String="\{\{~?\s*else(?:\s+(?:if|unless|with|link\-to|each(?:\-in)?))?\b" />
 			<RegExpr context="#pop!MustacheVariableBlock" attribute="Mustache Block" String="\{\{~?[#\^][&gt;\*]?\s*&identifier;\b" beginRegion="MustacheBlock" />
 			<RegExpr context="#pop" attribute="Mustache Block" String="\{\{~?/\s*&identifier;\s*\}\}" endRegion="MustacheBlock" />
 			<RegExpr context="#pop!MustacheVariableBlockEndFolding" attribute="Mustache Block" String="\{\{~?/\s*&identifier;\b" />
 			<RegExpr context="#pop!MustacheVariableBlock" attribute="Mustache Block" String="\{\{~?[#\^/]" />
 			<!-- Comments -->
-			<StringDetect context="#pop!MustacheBlockComment" attribute="Comment" String="{{!--" beginRegion="MustacheBlockComment" /> <!-- Handlebars -->
+			<StringDetect context="#pop!HandlebarsInlineComment" attribute="Comment" String="{{!--" beginRegion="HandlebarsInlineComment" /> <!-- Handlebars -->
 			<StringDetect context="#pop!MustacheInlineComment" attribute="Comment" String="{{!" beginRegion="MustacheInlineComment" />
 			<!-- Variables -->
 			<StringDetect context="#pop!MustachePartial" attribute="Mustache Variable" String="{{&lt;" />
@@ -161,13 +162,17 @@
 			<RegExpr context="#pop" attribute="Number" String="\d+(?=[\s\}\)\]]|$)" />
 		</context>
 
-		<context name="MustacheBlockComment" attribute="Comment" lineEndContext="#stay">
-			<StringDetect context="#pop" attribute="Comment" String="--}}" endRegion="MustacheBlockComment" />
+		<context name="HandlebarsInlineComment" attribute="Comment" lineEndContext="#stay">
+			<StringDetect context="#pop" attribute="Comment" String="--}}" endRegion="HandlebarsInlineComment" />
+			<DetectSpaces />
 			<IncludeRules context="##Alerts" />
+			<IncludeRules context="##Modelines" />
 		</context>
 		<context name="MustacheInlineComment" attribute="Comment" lineEndContext="#stay">
 			<Detect2Chars context="#pop" attribute="Comment" char="}" char1="}" endRegion="MustacheInlineComment" />
+			<DetectSpaces />
 			<IncludeRules context="##Alerts" />
+			<IncludeRules context="##Modelines" />
 		</context>
 
 		<!-- Tags -->
@@ -274,7 +279,9 @@
 			<StringDetect context="#pop" attribute="Comment" String="--&gt;" endRegion="Comment" />
 			<RegExpr context="#stay" attribute="Error" String="-(?:-(?!-&gt;))+" />
 			<IncludeRules context="MustacheVariables" />
+			<DetectSpaces />
 			<IncludeRules context="##Alerts" />
+			<IncludeRules context="##Modelines" />
 		</context>
 
 		<context name="FindPEntityRefs" attribute="Normal Text" lineEndContext="#stay">
@@ -380,6 +387,8 @@
 		</context>
 		<context name="JSCommentClose" attribute="Comment" lineEndContext="#pop">
 			<RegExpr context="#pop#pop!ElementTagEnd" attribute="Element Tag" String="&lt;/script\b" insensitive="true" endRegion="script" />
+			<DetectSpaces />
+			<IncludeRules context="##Alerts" />
 		</context>
 
 		<!-- Overwrite some rules of 'javascript.xml' to add Mustache variables -->
@@ -463,7 +472,7 @@
 
 <general>
 	<comments>
-		<comment name="multiLine" start="{{!" end="}}" />
+		<comment name="multiLine" start="{{!--" end="--}}" region="HandlebarsInlineComment" />
 	</comments>
 </general>
 

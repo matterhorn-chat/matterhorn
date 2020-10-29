@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
-<language version="6" kateversion="5.0" name="Common Lisp" section="Sources" extensions="*.lisp;*.cl;*.lsp" mimetype="" author="Dominik Haumann (dhaumann@kde.org)" license="MIT">
+<language version="8" kateversion="5.0" name="Common Lisp" section="Sources" extensions="*.lisp;*.cl;*.lsp" mimetype="" author="Dominik Haumann (dhaumann@kde.org)" license="MIT">
   <highlighting>
     <list name="symbols">
       <item>&lt;</item>
@@ -1114,8 +1114,8 @@
       <context name="Normal" attribute="Normal" lineEndContext="#stay">
         <RegExpr attribute="Region Marker" context="#stay" String=";+\s*BEGIN.*$" beginRegion="region"/>
         <RegExpr attribute="Region Marker" context="#stay" String=";+\s*END.*$" endRegion="region"/>
-        <RegExpr attribute="Comment" context="#stay" String=";.*$"/>
-        <Detect2Chars attribute="Comment" context="MultiLineComment" char="#" char1="|" beginRegion="region"/>
+        <DetectChar attribute="Comment" context="Comment" char=";"/>
+        <Detect2Chars attribute="Comment" context="MultiLineComment" char="#" char1="|" beginRegion="BlockComment"/>
         <DetectChar attribute="Brackets" context="#stay" char="("/>
         <DetectChar attribute="Brackets" context="#stay" char=")"/>
         <keyword attribute="Keyword" context="#stay" String="keywords"/>
@@ -1125,13 +1125,16 @@
         <keyword attribute="Definition" context="function_decl" String="definitions"/>
         <RegExpr attribute="Char" context="#stay" String="#\\."/>
         <DetectChar attribute="String" context="String" char="&quot;"/>
+        <Detect2Chars attribute="Decimal" context="#stay" char="#" char1="t"/>
+        <Detect2Chars attribute="Decimal" context="#stay" char="#" char1="f"/>
         <RegExpr attribute="Char" context="SpecialNumber" String="#[bodxei]"/>
-        <RegExpr attribute="Decimal" context="#stay" String="#[tf]"/>
         <Float attribute="Float" context="#stay"/>
         <Int attribute="Decimal" context="#stay"/>
       </context>
       <context name="MultiLineComment" attribute="Comment" lineEndContext="#stay">
-        <Detect2Chars attribute="Comment" context="#pop" char="|" char1="#" endRegion="region"/>
+        <Detect2Chars attribute="Comment" context="#pop" char="|" char1="#" endRegion="BlockComment"/>
+        <IncludeRules context="##Alerts"/>
+        <IncludeRules context="##Modelines"/>
       </context>
       <context name="function_decl" attribute="Function" lineEndContext="#stay">
         <RegExpr attribute="Function" context="#pop" String="\s*[A-Za-z0-9-+\&lt;\&gt;//\*]*\s*" />
@@ -1146,6 +1149,10 @@
         <RegExpr attribute="Char" context="#stay" String="#\\."/>
         <HlCStringChar attribute="String Char" context="#stay"/>
         <DetectChar attribute="String" context="#pop" char="&quot;"/>
+      </context>
+      <context name="Comment" attribute="Comment" lineEndContext="#pop">
+        <IncludeRules context="##Alerts"/>
+        <IncludeRules context="##Modelines"/>
       </context>
     </contexts>
     <itemDatas>
@@ -1171,7 +1178,8 @@
     <keywords casesensitive="1" weakDeliminator="-+*?!&lt;&gt;=/:#\"/>
     <comments>
       <comment name="singleLine" start=";;" />
-      <comment name="multiLine" start="#|" end="|#" />
+      <comment name="multiLine" start="#|" end="|#" region="BlockComment" />
     </comments>
   </general>
 </language>
+<!-- kate: replace-tabs on; tab-width 2; indent-width 2; -->

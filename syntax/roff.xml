@@ -7,7 +7,7 @@
   <!ENTITY argsep1 "([^\\]|\\[&#37; |\^{}'`\-!?@)/,&amp;:~0E_acdeprtu])">
   <!ENTITY argsep2 "([^\\0-9]|\\[&#37;:{}'`\-_!@/cep])">
 ]>
-<language name="Roff" section="Markup" version="3" kateversion="2.4" extensions="" author="Matthew Woehlke (mw_triad@users.sourceforge.net)" license="GPL">
+<language name="Roff" section="Markup" version="4" kateversion="2.4" extensions="" author="Matthew Woehlke (mw_triad@users.sourceforge.net)" license="GPL">
 
   <highlighting>
 
@@ -79,7 +79,9 @@
 
       <!-- comment -->
       <context name="Comment" attribute="Comment" lineEndContext="#pop">
+        <DetectSpaces />
         <IncludeRules context="##Alerts"/>
+        <IncludeRules context="##Modelines"/>
       </context>
 
       <!-- error -->
@@ -195,3 +197,4 @@
   </general>
 
 </language>
+<!-- kate: replace-tabs on; tab-width 2; indent-width 2; -->

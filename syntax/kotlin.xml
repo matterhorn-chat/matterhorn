@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
 <!-- kotlin language syntax http://kotlinlang.org -->
-<language name="Kotlin" version="5" kateversion="5.0" section="Sources" extensions="*.kt;*.kts" license="LGPLv2+" author="Sergey Mashkov (sergey.mashkov@jetbrains.com)" style="cstyle" indenter="cstyle">
+<language name="Kotlin" version="6" kateversion="5.0" section="Sources" extensions="*.kt;*.kts" license="LGPLv2+" author="Sergey Mashkov (sergey.mashkov@jetbrains.com)" style="cstyle" indenter="cstyle">
     <highlighting>
         <list name="keywords">
             <item>package</item>
@@ -260,11 +260,15 @@
             </context>
 
             <context attribute="Comment" lineEndContext="#pop" name="CommentSingleLine">
-                <StringDetect attribute="TODO" context="#stay" String="TODO" />
+                <DetectSpaces />
+                <IncludeRules context="##Alerts"/>
+                <IncludeRules context="##Modelines"/>
             </context>
             <context attribute="Comment" lineEndContext="#stay" name="CommentMultiline">
-                <StringDetect attribute="TODO" context="#stay" String="TODO" />
                 <Detect2Chars attribute="Comment" context="#pop" char="*" char1="/" endRegion="Comment"/>
+                <DetectSpaces />
+                <IncludeRules context="##Alerts"/>
+                <IncludeRules context="##Modelines"/>
             </context>
 
         </contexts>
@@ -291,8 +295,9 @@
     <general>
         <comments>
             <comment name="singleLine" start="//"/>
-            <comment name="multiLine" start="/*" end="*/"/>
+            <comment name="multiLine" start="/*" end="*/" region="Comment"/>
         </comments>
         <keywords casesensitive="1"/>
     </general>
 </language>
+<!-- kate: replace-tabs on; tab-width 4; indent-width 4; -->

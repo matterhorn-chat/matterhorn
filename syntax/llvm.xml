@@ -1,189 +1,189 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
 <language name="LLVM" section="Sources"
-          version="1.00" kateversion="3.4.4"
+          version="3" kateversion="5.0"
           extensions="*.ll"
           mimetype=""
           author="LLVM Team"
           license="LLVM Release License">
   <highlighting>
     <list name="keywords">
-      <item> begin </item>
-      <item> end </item>
-      <item> true </item>
-      <item> false </item>
-      <item> declare </item>
-      <item> define </item>
-      <item> global </item>
-      <item> constant </item>
-      <item> gc </item>
-      <item> module </item>
-      <item> asm </item>
-      <item> target </item>
-      <item> datalayout </item>
-      <item> null </item>
-      <item> undef </item>
-      <item> blockaddress </item>
-      <item> sideeffect </item>
-      <item> alignstack </item>
-      <item> to </item>
-      <item> unwind </item>
-      <item> nuw </item>
-      <item> nsw </item>
-      <item> inbounds </item>
-      <item> tail </item>
-      <item> triple </item>
-      <item> type </item>
-      <item> align </item>
-      <item> alias </item>
+      <item>begin</item>
+      <item>end</item>
+      <item>true</item>
+      <item>false</item>
+      <item>declare</item>
+      <item>define</item>
+      <item>global</item>
+      <item>constant</item>
+      <item>gc</item>
+      <item>module</item>
+      <item>asm</item>
+      <item>target</item>
+      <item>datalayout</item>
+      <item>null</item>
+      <item>undef</item>
+      <item>blockaddress</item>
+      <item>sideeffect</item>
+      <item>alignstack</item>
+      <item>to</item>
+      <item>unwind</item>
+      <item>nuw</item>
+      <item>nsw</item>
+      <item>inbounds</item>
+      <item>tail</item>
+      <item>triple</item>
+      <item>type</item>
+      <item>align</item>
+      <item>alias</item>
     </list>
     <list name="linkage-types">
-      <item> private </item>
-      <item> internal </item>
-      <item> available_externally </item>
-      <item> linkonce </item>
-      <item> weak </item>
-      <item> common </item>
-      <item> appending </item>
-      <item> extern_weak </item>
-      <item> linkonce_odr </item>
-      <item> weak_odr </item>
-      <item> dllimport </item>
-      <item> dllexport </item>
+      <item>private</item>
+      <item>internal</item>
+      <item>available_externally</item>
+      <item>linkonce</item>
+      <item>weak</item>
+      <item>common</item>
+      <item>appending</item>
+      <item>extern_weak</item>
+      <item>linkonce_odr</item>
+      <item>weak_odr</item>
+      <item>dllimport</item>
+      <item>dllexport</item>
     </list>
     <list name="calling-conventions">
-      <item> ccc </item>
-      <item> fastcc </item>
-      <item> coldcc </item>
-      <item> cc </item>
+      <item>ccc</item>
+      <item>fastcc</item>
+      <item>coldcc</item>
+      <item>cc</item>
     </list>
     <list name="visibility-styles">
-      <item> default </item>
-      <item> hidden </item>
-      <item> protected </item>
+      <item>default</item>
+      <item>hidden</item>
+      <item>protected</item>
     </list>
     <list name="parameter-attributes">
-      <item> zeroext </item>
-      <item> signext </item>
-      <item> inreg </item>
-      <item> byval </item>
-      <item> sret </item>
-      <item> noalias </item>
-      <item> nocapture </item>
-      <item> nest </item>
+      <item>zeroext</item>
+      <item>signext</item>
+      <item>inreg</item>
+      <item>byval</item>
+      <item>sret</item>
+      <item>noalias</item>
+      <item>nocapture</item>
+      <item>nest</item>
     </list>
     <list name="function-attributes">
-      <item> alignstack </item>
-      <item> alwaysinline </item>
-      <item> inlinehint </item>
-      <item> naked </item>
-      <item> noimplicitfloat </item>
-      <item> noinline </item>
-      <item> noredzone </item>
-      <item> noreturn </item>
-      <item> nounwind </item>
-      <item> optnone </item>
-      <item> optsize </item>
-      <item> readnone </item>
-      <item> readonly </item>
-      <item> ssp </item>
-      <item> sspreq </item>
-      <item> sspstrong </item>
+      <item>alignstack</item>
+      <item>alwaysinline</item>
+      <item>inlinehint</item>
+      <item>naked</item>
+      <item>noimplicitfloat</item>
+      <item>noinline</item>
+      <item>noredzone</item>
+      <item>noreturn</item>
+      <item>nounwind</item>
+      <item>optnone</item>
+      <item>optsize</item>
+      <item>readnone</item>
+      <item>readonly</item>
+      <item>ssp</item>
+      <item>sspreq</item>
+      <item>sspstrong</item>
     </list>
     <list name="types">
-      <item> float </item>
-      <item> double </item>
-      <item> fp128 </item>
-      <item> x86_fp80 </item>
-      <item> ppc_fp128 </item>
-      <item> x86mmx </item>
-      <item> void </item>
-      <item> label </item>
-      <item> metadata </item>
-      <item> opaque </item>
+      <item>float</item>
+      <item>double</item>
+      <item>fp128</item>
+      <item>x86_fp80</item>
+      <item>ppc_fp128</item>
+      <item>x86mmx</item>
+      <item>void</item>
+      <item>label</item>
+      <item>metadata</item>
+      <item>opaque</item>
     </list>
     <list name="intrinsic-global-variables">
-      <item> llvm.used </item>
-      <item> llvm.compiler.used </item>
-      <item> llvm.global_ctors </item>
-      <item> llvm.global_dtors </item>
+      <item>llvm.used</item>
+      <item>llvm.compiler.used</item>
+      <item>llvm.global_ctors</item>
+      <item>llvm.global_dtors</item>
     </list>
     <list name="instructions">
-      <item> ret </item>
-      <item> br </item>
-      <item> switch </item>
-      <item> indirectbr </item>
-      <item> invoke </item>
-      <item> unwind </item>
-      <item> unreachable </item>
-      <item> add </item>
-      <item> fadd </item>
-      <item> sub </item>
-      <item> fsub </item>
-      <item> mul </item>
-      <item> fmul </item>
-      <item> udiv </item>
-      <item> sdiv </item>
-      <item> fdiv </item>
-      <item> urem </item>
-      <item> srem </item>
-      <item> frem </item>
-      <item> shl </item>
-      <item> lshr </item>
-      <item> ashr </item>
-      <item> and </item>
-      <item> or </item>
-      <item> xor </item>
-      <item> extractelement </item>
-      <item> insertelement </item>
-      <item> shufflevector </item>
-      <item> extractvalue </item>
-      <item> insertvalue </item>
-      <item> alloca </item>
-      <item> load </item>
-      <item> store </item>
-      <item> getelementptr </item>
-      <item> trunc </item>
-      <item> zext </item>
-      <item> sext </item>
-      <item> fptrunc </item>
-      <item> fpext </item>
-      <item> fptoui </item>
-      <item> fptosi </item>
-      <item> uitofp </item>
-      <item> sitofp </item>
-      <item> ptrtoint </item>
-      <item> inttoptr </item>
-      <item> bitcast </item>
-      <item> addrspacecast </item>
-      <item> icmp </item>
-      <item> fcmp </item>
-      <item> phi </item>
-      <item> select </item>
-      <item> call </item>
-      <item> va_arg </item>
+      <item>ret</item>
+      <item>br</item>
+      <item>switch</item>
+      <item>indirectbr</item>
+      <item>invoke</item>
+      <item>unwind</item>
+      <item>unreachable</item>
+      <item>add</item>
+      <item>fadd</item>
+      <item>sub</item>
+      <item>fsub</item>
+      <item>mul</item>
+      <item>fmul</item>
+      <item>udiv</item>
+      <item>sdiv</item>
+      <item>fdiv</item>
+      <item>urem</item>
+      <item>srem</item>
+      <item>frem</item>
+      <item>shl</item>
+      <item>lshr</item>
+      <item>ashr</item>
+      <item>and</item>
+      <item>or</item>
+      <item>xor</item>
+      <item>extractelement</item>
+      <item>insertelement</item>
+      <item>shufflevector</item>
+      <item>extractvalue</item>
+      <item>insertvalue</item>
+      <item>alloca</item>
+      <item>load</item>
+      <item>store</item>
+      <item>getelementptr</item>
+      <item>trunc</item>
+      <item>zext</item>
+      <item>sext</item>
+      <item>fptrunc</item>
+      <item>fpext</item>
+      <item>fptoui</item>
+      <item>fptosi</item>
+      <item>uitofp</item>
+      <item>sitofp</item>
+      <item>ptrtoint</item>
+      <item>inttoptr</item>
+      <item>bitcast</item>
+      <item>addrspacecast</item>
+      <item>icmp</item>
+      <item>fcmp</item>
+      <item>phi</item>
+      <item>select</item>
+      <item>call</item>
+      <item>va_arg</item>
     </list>
     <list name="conditions">
-      <item> eq </item>
-      <item> ne </item>
-      <item> ugt </item>
-      <item> uge </item>
-      <item> ult </item>
-      <item> ule </item>
-      <item> sgt </item>
-      <item> sge </item>
-      <item> slt </item>
-      <item> sle </item>
-      <item> oeq </item>
-      <item> ogt </item>
-      <item> oge </item>
-      <item> olt </item>
-      <item> ole </item>
-      <item> one </item>
-      <item> ord </item>
-      <item> ueq </item>
-      <item> une </item>
-      <item> uno </item>
+      <item>eq</item>
+      <item>ne</item>
+      <item>ugt</item>
+      <item>uge</item>
+      <item>ult</item>
+      <item>ule</item>
+      <item>sgt</item>
+      <item>sge</item>
+      <item>slt</item>
+      <item>sle</item>
+      <item>oeq</item>
+      <item>ogt</item>
+      <item>oge</item>
+      <item>olt</item>
+      <item>ole</item>
+      <item>one</item>
+      <item>ord</item>
+      <item>ueq</item>
+      <item>une</item>
+      <item>uno</item>
     </list>
     <contexts>
       <context name="llvm" attribute="Normal Text" lineEndContext="#stay">
@@ -227,6 +227,7 @@
         <DetectSpaces />
         <!-- TODO: Add FileCheck syntax highlighting -->
         <IncludeRules context="##Alerts" />
+        <IncludeRules context="##Modelines" />
         <DetectIdentifier />
       </context>
     </contexts>
@@ -235,11 +236,8 @@
       <itemData name="Keyword" defStyleNum="dsKeyword" />
       <itemData name="Data Type" defStyleNum="dsDataType" />
       <itemData name="Int" defStyleNum="dsDecVal" />
-      <itemData name="Hex" defStyleNum="dsBaseN" />
-      <itemData name="Float" defStyleNum="dsFloat" />
       <itemData name="String" defStyleNum="dsString" />
       <itemData name="Comment" defStyleNum="dsComment" />
-      <itemData name="Function" defStyleNum="dsFunction" />
       <itemData name="Symbol" defStyleNum="dsFunction" />
     </itemDatas>
   </highlighting>

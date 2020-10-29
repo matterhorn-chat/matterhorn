@@ -8,7 +8,7 @@
         <!ENTITY noword   "(?![\w$+-])">                <!-- no word, $, + or - following -->
         <!ENTITY pathpart "([\w_@.&#37;*?+-]|\\ )">     <!-- valid character in a file name -->
 ]>
-<language name="Zsh" version="3" kateversion="2.4" section="Scripts" extensions="*.sh;*.zsh;.zshrc;.zprofile;.zlogin;.zlogout;.profile" mimetype="application/x-shellscript" casesensitive="1" author="Jonathan Kolberg (bulldog98@kubuntu-de.org)" license="LGPL">
+<language name="Zsh" version="5" kateversion="2.4" section="Scripts" extensions="*.sh;*.zsh;.zshrc;.zprofile;.zlogin;.zlogout;.profile" mimetype="application/x-shellscript" casesensitive="1" author="Jonathan Kolberg (bulldog98@kubuntu-de.org)" license="LGPL">
 
 <!-- (c) 2011 by Jonathan Kolberg (bulldog98@kubuntu-de.org)
   modified for zsh -->
@@ -534,7 +534,9 @@
         <RegExpr attribute="Normal Text" context="Comment" String="[\s;](?=#)" />
       </context>
       <context attribute="Comment" lineEndContext="#pop" name="Comment">
+        <DetectSpaces />
         <IncludeRules context="##Alerts" />
+        <IncludeRules context="##Modelines" />
       </context>
 
       <!-- FindCommentsParen consumes shell comments till EOL or a closing parenthese -->
@@ -600,7 +602,8 @@
         <!-- handle here document -->
         <Detect2Chars attribute="Redirection" context="HereDoc" char="&lt;" char1="&lt;" lookAhead="true" />
         <!-- handle process subst -->
-        <RegExpr attribute="Redirection" context="ProcessSubst" String="[&lt;&gt;]\(" />
+        <Detect2Chars attribute="Redirection" context="ProcessSubst" char="&lt;" char1="(" />
+        <Detect2Chars attribute="Redirection" context="ProcessSubst" char="&gt;" char1="(" />
         <!-- handle redirection -->
         <RegExpr attribute="Redirection" context="#stay" String="([0-9]*(&gt;{1,2}|&lt;)(&amp;[0-9]+-?)?|&amp;&gt;|&gt;&amp;|[0-9]*&lt;&gt;)" />
         <!-- handle &, &&, | and || -->
@@ -957,3 +960,4 @@
     <keywords casesensitive="1" weakDeliminator="^%#[]$._{}:-/" additionalDeliminator="`"/>
   </general>
 </language>
+<!-- kate: replace-tabs on; indent-width 2; -->

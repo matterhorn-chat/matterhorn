@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd"
 [
-    <!ENTITY int "(?:[0-9](?:'?[0-9]+)*)">
-    <!ENTITY hex_int "(?:[0-9A-Fa-f](?:'?[0-9A-Fa-f]+)*)">
+    <!ENTITY int "(?:[0-9](?:'?[0-9]++)*+)">
+    <!ENTITY hex_int "(?:[0-9A-Fa-f](?:'?[0-9A-Fa-f]++)*+)">
     <!ENTITY exp_float "(?:[eE][+-]?&int;)">
     <!ENTITY exp_hexfloat "(?:[pP][-+]?&int;)">
 
@@ -11,7 +11,9 @@
     <!ENTITY punctuators ":&ns_punctuators;">
 
     <!-- printf-like format strings conversion specifiers -->
-    <!ENTITY printf_like "&#37;(?:ll?|[zjtL]|hh?)?[diouxXeEfFgGaAcspn&#37;]">
+    <!ENTITY printf_like "&#37;[-+ #0]*(?:[0-9]+|\*)?(?:\.(?:[0-9]+|\*))?(?:(?:hh|ll|[hljzt])?[dioxXun]|[lL]?[fFeEaAgG]|l?[cs]|[p&#37;])">
+    <!-- https://en.cppreference.com/w/cpp/utility/format/formatter#Standard_format_specification -->
+    <!ENTITY format_like "\{\{|\}\}|\{[0-9]*(?::(?:[^{}]?[&lt;&gt;^])?[-+ #0]*(?:[0-9]+|\{[0-9]*\})?(?:\.(?:[0-9]+|\{[0-9]*\}))?L?[sbBcdoxXaAeEfFgGp]?)?\}">
 
     <!ENTITY ispphash "(?:#|&#37;\:|\?\?=)">
     <!ENTITY pphash "&ispphash;\s*">
@@ -22,7 +24,7 @@
 <language
     name="ISO C++"
     section="Sources"
-    version="17"
+    version="20"
     kateversion="5.0"
     indenter="cstyle"
     style="C++"
@@ -57,6 +59,7 @@
       <item>while</item>
     </list>
 
+    <!-- https://en.cppreference.com/w/cpp/keyword -->
     <list name="keywords">
       <item>alignof</item>
       <item>alignas</item>
@@ -64,7 +67,8 @@
       <item>auto</item>
       <item>class</item>
       <item>consteval</item> <!-- C++20 -->
-      <item>constexpr</item>
+      <item>constinit</item> <!-- C++20 -->
+      <item>constexpr</item> <!-- C++11 -->
       <item>const_cast</item>
       <item>decltype</item>
       <item>delete</item>
@@ -72,7 +76,7 @@
       <item>enum</item>
       <item>explicit</item>
       <item>false</item>
-      <item>final</item> <!-- According N3272 -->
+      <item>final</item> <!-- C++11 -->
       <item>friend</item>
       <item>inline</item>
       <item>namespace</item>
@@ -80,7 +84,7 @@
       <item>noexcept</item>
       <item>nullptr</item>
       <item>operator</item>
-      <item>override</item> <!-- According N3272 -->
+      <item>override</item> <!-- C++11 -->
       <item>private</item>
       <item>protected</item>
       <item>public</item>
@@ -167,6 +171,7 @@
     </list>
 
     <!-- https://en.cppreference.com/w/cpp/keyword -->
+    <!-- https://en.cppreference.com/w/cpp/types/integer -->
     <list name="types">
       <item>bool</item>
       <item>char</item>
@@ -300,7 +305,7 @@
         <Detect2Chars attribute="Symbol" context="Attribute" char="[" char1="[" />
         <StringDetect attribute="Symbol" context="Attribute" String="&lt;:&lt;:" /> <!-- Digraph: [[ -->
         <!-- Match numbers -->
-        <RegExpr attribute="Decimal" context="Number" String="\.?[0-9]" lookAhead="true" />
+        <RegExpr context="Number" String="\.?\d" lookAhead="true" />
         <!-- Match comments -->
         <IncludeRules context="match comments and region markers" />
         <!-- Match keywords -->
@@ -357,7 +362,7 @@
 
       <context name="match string" attribute="Normal Text" lineEndContext="#pop">
         <DetectChar attribute="String" context="String" char="&quot;" />
-        <Detect2Chars attribute="String" context="String32" char="U" char1="&quot;" />
+        <Detect2Chars attribute="String" context="String" char="U" char1="&quot;" />
         <Detect2Chars attribute="String" context="String16" char="u" char1="&quot;" />
         <Detect2Chars attribute="String" context="String16" char="L" char1="&quot;" />
         <StringDetect attribute="String" context="String8" String="u8&quot;" />
@@ -387,16 +392,16 @@
       </context>
 
       <context name="Number" attribute="Normal Text" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">
-        <RegExpr attribute="Float" context="FloatSuffix" String="\.&int;&exp_float;?|&int;(?:&exp_float;|\.&int;?&exp_float;?)|0[xX](?:\.&hex_int;&exp_hexfloat;?|&hex_int;(?:&exp_hexfloat;|\.&hex_int;?&exp_hexfloat;?))" />
+        <RegExpr attribute="Float" context="FloatSuffix" String="\.&int;&exp_float;?|0[xX](?:\.&hex_int;&exp_hexfloat;?|&hex_int;(?:&exp_hexfloat;|\.&hex_int;?&exp_hexfloat;?))|&int;(?:&exp_float;|\.&int;?&exp_float;?)" />
         <IncludeRules context="Integer" />
       </context>
 
       <context name="Integer" attribute="Normal Text" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">
         <RegExpr attribute="Hex" context="IntSuffix" String="0[xX]&hex_int;" />
-        <RegExpr attribute="Binary" context="IntSuffix" String="0[Bb][01](?:'?[01]+)*" />
-        <RegExpr attribute="Octal" context="IntSuffix" String="0(?:'?[0-7]+)+" />
-        <RegExpr attribute="Decimal" context="IntSuffix" String="0(?![xXbB0-9])|[1-9](?:'?[0-9]+)*" />
-        <RegExpr attribute="Error" context="#pop" String="[._0-9A-Za-z']+" />
+        <RegExpr attribute="Binary" context="IntSuffix" String="0[Bb][01](?:'?[01]++)*+" />
+        <RegExpr attribute="Octal" context="IntSuffix" String="0(?:'?[0-7]++)++" />
+        <RegExpr attribute="Decimal" context="IntSuffix" String="0(?![xXbB0-9])|[1-9](?:'?[0-9]++)*+" />
+        <RegExpr attribute="Error" context="#pop" String="[._0-9A-Za-z']++" />
       </context>
 
       <context name="IntSuffix" attribute="Error" lineEndContext="#pop#pop" fallthrough="true" fallthroughContext="NumericSuffixError">
@@ -489,25 +494,20 @@
         <IncludeRules context="string special char" />
       </context>
 
-      <context name="String32" attribute="String" lineEndContext="#pop">
-        <IncludeRules context="string normal char" />
-        <RegExpr attribute="String Char" context="StringNoHex" String="\\x[0-9A-Fa-f]{1,8}" />
-        <IncludeRules context="string special char" />
-      </context>
-
       <context name="StringNoHex" attribute="Error" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">
         <RegExpr attribute="Error" context="#pop" String="[0-9A-Fa-f]{1,}" />
       </context>
 
       <context name="string special char" attribute="String" lineEndContext="#pop">
-        <RegExpr attribute="String Char" context="#stay" String="\\(?:[tnvbrfa'&quot;\\?]|[0-7]{1,3}|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})|&printf_like;" />
+        <RegExpr attribute="String Char" context="#stay" String="\\(?:[tnvbrfa'&quot;\\?]|[0-7]{1,3}|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})|&printf_like;|&format_like;" />
         <RegExpr attribute="Error" context="#stay" String="\\(?:u[^&quot;]{0,3}|U[^&quot;]{0,7}|.)" />
         <LineContinue attribute="String" context="#stay" />
       </context>
 
       <context name="string normal char" attribute="String" lineEndContext="#pop">
         <!-- fast way, can be replaced by a `UntilChars` rule if it exists -->
-        <RegExpr attribute="String" context="#stay" String="[^%\\&quot;]+" />
+        <!-- % -> printf format ; {} -> std::format -->
+        <RegExpr attribute="String" context="#stay" String="[^%\\&quot;{}]+" />
         <DetectChar attribute="String" context="UDLStringSuffix" char="&quot;" />
       </context>
 
@@ -552,7 +552,7 @@
       <context name="InRawString" attribute="String" lineEndContext="#stay" dynamic="true">
         <!-- fast way, can be replaced by a `UntilChars` rule if it exists -->
         <RegExpr attribute="String" context="#stay" String="[^%)]+" />
-        <RegExpr attribute="String Char" context="#stay" String="&printf_like;" />
+        <RegExpr attribute="String Char" context="#stay" String="&printf_like;|&format_like;" />
         <StringDetect attribute="String" context="#pop" String=")%1&quot;" dynamic="true"/>
       </context>
 
@@ -687,8 +687,7 @@
 
         <IncludeRules context="InPreprocessor" />
         <Detect2Chars attribute="Error" context="#pop!LineError" char="/" char1="/" />
-        <IncludeRules context="##Doxygen" />
-        <Detect2Chars attribute="Comment" context="Comment 2" char="/" char1="*" beginRegion="Comment" />
+        <Detect2Chars attribute="Comment" context="MatchComment" char="/" char1="*" lookAhead="true" />
         <IncludeRules context="GNUMacros##GCCExtensions" />
         <DetectIdentifier attribute="Preprocessor" context="#pop!In Define"/>
       </context>
@@ -702,7 +701,7 @@
         <Detect2Chars attribute="Symbol" context="Attribute In PP" char="[" char1="[" />
         <StringDetect attribute="Symbol" context="Attribute In PP" String="&lt;:&lt;:" /> <!-- Digraph: [[ -->
         <!-- Match numbers -->
-        <RegExpr attribute="Decimal" context="Number" String="\.?[0-9]" lookAhead="true" />
+        <RegExpr context="Number" String="\.?\d" lookAhead="true" />
         <!-- Match comments -->
         <IncludeRules context="match comments" />
         <!-- Match punctuators -->

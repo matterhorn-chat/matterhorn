@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
-<language name="GLSL" section="3D" extensions="*.glsl;*.vert;*.vs;*.frag;*.fs;*.geom;*.gs;*.tcs;*.tes" mimetype="text/x-glslsrc" version="4" kateversion="5.0" author="Oliver Richers (o.richers@tu-bs.de)" license="LGPL">
+<language name="GLSL" section="3D" extensions="*.glsl;*.vert;*.vs;*.frag;*.fs;*.geom;*.gs;*.tcs;*.tes" mimetype="text/x-glslsrc" version="6" kateversion="5.0" author="Oliver Richers (o.richers@tu-bs.de)" license="LGPL">
 	<highlighting>
 		<list name="keywords">
 			<item>break</item>
@@ -175,11 +175,6 @@
 			<item>restrict</item>
 			<item>readonly</item>
 			<item>writeonly</item>
-		</list>
-		<list name="attention">
-			<item>FIXME</item>
-			<item>TODO</item>
-			<item>BUG</item>
 		</list>
 		<list name="stdlib">
 			<!-- see also: https://www.opengl.org/sdk/docs/man4/ -->
@@ -1173,18 +1168,22 @@
 				<DetectChar attribute="Preprocessor" context="Preprocessor" char="#" firstNonSpace="true"/>
 				<RegExpr attribute="Function" context="#stay" String="\b[_\w][_\w\d]*(?=[\s]*[(])" />
 				
-				<RegExpr attribute="Symbol" context="Member" String="[.]{1,1}" />
-				<AnyChar attribute="Symbol" context="#stay" String=".+-/*%&lt;&gt;[]()^|&amp;~=!:;,?&#59;" />
+				<DetectChar attribute="Symbol" context="Member" char="." />
+				<AnyChar attribute="Symbol" context="#stay" String="+-/*%&lt;&gt;[]()^|&amp;~=!:;,?&#59;" />
 			</context>
 			<context name="Member" attribute="Normal Text" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">
 				<RegExpr attribute="Function" context="#pop" String="\b[_\w][_\w\d]*(?=[\s]*)" />
 			</context>
 			<context name="Commentar 1" attribute="Comment" lineEndContext="#pop">
-				<keyword attribute="Alert" context="#stay" String="attention" />
+				<DetectSpaces />
+				<IncludeRules context="##Alerts" />
+				<IncludeRules context="##Modelines" />
 			</context>
 			<context name="Commentar 2" attribute="Comment" lineEndContext="#stay">
 				<Detect2Chars attribute="Comment" context="#pop" char="*" char1="/" endRegion="Comment"/>
-				<keyword attribute="Alert" context="#stay" String="attention" />
+				<DetectSpaces />
+				<IncludeRules context="##Alerts" />
+				<IncludeRules context="##Modelines" />
 			</context>
 			<context name="Preprocessor" attribute="Preprocessor" lineEndContext="#pop">
 			</context>
@@ -1204,14 +1203,14 @@
 			<itemData name="Symbol"         defStyleNum="dsNormal"/>
 			<itemData name="Preprocessor"   defStyleNum="dsPreprocessor"/>
 			<itemData name="Comment"        defStyleNum="dsComment"/>
-			<itemData name="Alert"          defStyleNum="dsAlert" />
 		</itemDatas>
 	</highlighting>
 	<general>
 		<comments>
 			<comment name="singleLine" start="//" />
-			<comment name="multiLine" start="/*" end="*/" />
+			<comment name="multiLine" start="/*" end="*/" region="Comment" />
 		</comments>
 		<keywords casesensitive="1" />
 	</general>
 </language>
+<!-- kate: replace-tabs off; -->

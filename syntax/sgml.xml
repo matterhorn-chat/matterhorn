@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
-<language name="SGML" version="2" kateversion="2.2" section="Markup" extensions="*.sgml" mimetype="text/sgml">
+<language name="SGML" version="3" kateversion="2.2" section="Markup" extensions="*.sgml" mimetype="text/sgml">
   <highlighting>
     <contexts>
        <context attribute="Normal Text" lineEndContext="#stay" name="Normal Text" >
-         <StringDetect attribute="Comment" context="Comment" String="&lt;!--"/>
+         <StringDetect attribute="Comment" context="Comment" String="&lt;!--" beginRegion="Comment"/>
          <RegExpr attribute="Tag" context="Attribute" String="&lt;\s*\/?\s*[a-zA-Z_:][a-zA-Z0-9._:-]*" />
        </context>
 
@@ -25,7 +25,10 @@
        </context>
 
        <context attribute="Comment" lineEndContext="#stay" name="Comment" >
-         <StringDetect attribute="Comment" context="#pop" String="--&gt;"/>
+         <DetectSpaces />
+         <StringDetect attribute="Comment" context="#pop" String="--&gt;" endRegion="Comment"/>
+         <IncludeRules context="##Alerts"/>
+         <IncludeRules context="##Modelines"/>
        </context>
 
     </contexts>
@@ -39,7 +42,7 @@
   </highlighting>
   <general>
     <comments>
-      <comment name="multiLine" start="&lt;!--" end="//--&gt;" />
+      <comment name="multiLine" start="&lt;!--" end="--&gt;" region="Comment" />
     </comments>
     <keywords casesensitive="0" />
   </general>

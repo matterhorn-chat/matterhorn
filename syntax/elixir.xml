@@ -30,7 +30,7 @@
           name="Elixir"
           section="Sources"
           style="elixir"
-          version="5">
+          version="6">
   <highlighting>
     <list name="control-flow">
       <item>catch</item>
@@ -180,6 +180,9 @@
         <RegExpr String="\w(?!\w)" attribute="Substitution" context="#pop"/>
       </context>
       <context attribute="Comment" lineEndContext="#pop" name="General Comment">
+        <DetectSpaces />
+        <IncludeRules context="##Alerts"/>
+        <IncludeRules context="##Modelines"/>
       </context>
       <context attribute="MarkdownCode" lineEndContext="#stay" name="Markdown Code">
         <RegExpr String="^\s*\`\`\`\s*$" attribute="MarkdownCode" context="#pop"/>
@@ -223,3 +226,4 @@
     <keywords casesensitive="1" weakDeliminator="!?"/>
   </general>
 </language>
+<!-- kate: replace-tabs on; tab-width 2; indent-width 2; -->

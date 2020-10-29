@@ -1,14 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd"
 [
-	<!ENTITY identifier   "[a-zA-Z_$[:^ascii:]][\w$[:^ascii:]]*">
-	<!ENTITY numSuffix    "(?=n?(?:[^\w]|$))">
-	<!ENTITY objectOp     "[\?!]?">
-	<!ENTITY objectPoint  "\s*&objectOp;\.">
-	<!ENTITY endLine      "\s*(?:$|//|(?:/\*.*\*/\s*)+(?:$|//))">
-	<!ENTITY utilityTypes "\b(?:Partial|Readonly|Record|Pick|Omit|Exclude|Extract|NonNullable|ReturnType|InstanceType|Required|ThisType)(?=\s*&lt;)">
+	<!ENTITY identifier     "[a-zA-Z_$[:^ascii:]][\w$[:^ascii:]]*">
+	<!ENTITY numSuffix      "(?=n?(?:[^\w]|$))">
+	<!ENTITY objectOp       "[\?!]?">
+	<!ENTITY objectPoint    "\s*&objectOp;\.">
+	<!ENTITY endLine        "\s*(?:$|//|(?:/\*.*\*/\s*)+(?:$|//))">
+	<!ENTITY parameter      "&identifier;(?=\s*&objectOp;:)">
+
+	<!ENTITY utilityTypes   "\b(?:Partial|Readonly|Record|Pick|Omit|Exclude|Extract|NonNullable|ReturnType|InstanceType|Required|ThisType)(?=\s*&lt;)">
 	<!-- function<...>( or function( -->
 	<!ENTITY functionSuffix "(?=\s*(?:&lt;(?:\{(?:[^\{\}]|\{[^\{\}]*\})*\}|\((?:[^\(\)]|\([^\(\)]*\))*\)|\[(?:[^\[\]]|\[[^\[\]]*\])*\]|'(?:\\.|[^'])*'|&quot;(?:\\.|[^&quot;])*&quot;|`(?:\\.|[^`])*`|[^&lt;&gt;]|&lt;.*&gt;)*&gt;)?\()">
+
+	<!ENTITY codeContent    "&quot;(?:[^&quot;]|\\.)*&quot;|'(?:[^']|\\.)*'|`(?:[^`]|\\.)`|/\*.*\*/|/(?:[^/\\\[]|\\.|\[(?:[^\]\\]|\\.)+\])+/">
 ]>
 
 <!--
@@ -16,7 +20,7 @@
 
       This file is part of the KDE's KSyntaxHighlighting framework.
 
-      Copyright 2018-2019 Nibaldo González S. (nibgonz@gmail.com)
+      Copyright 2018-2020 Nibaldo González S. (nibgonz@gmail.com)
 
       This Source Code Form is subject to the terms of the MIT License.
       If a copy of the license was not distributed with this file,
@@ -38,6 +42,10 @@
       Attributes: path, types, no-default-lib, name
 
     Change log:
+     * v11 [2020-06-03]: Improve tagged template literals.
+     * v10 [2020-04-13]: Add the 'awaited' type operator.
+     * v9 [2020-02-23]: Add private-named instance fields and type-only imports/exports.
+                        Improve conditional expressions.
      * v8 [2019-12-12]: Add "bigint" primitive type.
      * v7 [2019-11-20]: Move keywords of built-in object to "javascript.xml" and adapt.
      * v6 [2019-10-01]: Add "asserts" keyword in type predicates.
@@ -53,7 +61,7 @@
 -->
 
 <language name="TypeScript"
-          version="8"
+          version="11"
           kateversion="5.53"
           section="Scripts"
           extensions="*.ts"
@@ -72,13 +80,13 @@
 	</list>
 	<list name="keywords">
 		<include>keywords##JavaScript</include>
-		<item>declare</item> <!-- storage.modifier.ts -->
 	</list>
 	<list name="reserved">
 		<include>reserved##JavaScript</include>
 		<item>type</item>
 		<item>arguments</item>
 		<!-- Class -->
+		<item>declare</item> <!-- storage modifier -->
 		<item>readonly</item>
 		<item>abstract</item>
 		<item>constructor</item>
@@ -106,7 +114,8 @@
 	<list name="types_operator_expression">
 		<item>keyof</item>
 		<item>infer</item>
-		<!-- Also: is, typeof -->
+		<item>awaited</item>
+		<!-- Also: typeof, readonly -->
 	</list>
 	<!-- Datatypes & Primitive Types -->
 	<list name="types">
@@ -221,6 +230,18 @@
 		<context name="ShebangLine" attribute="Comment" lineEndContext="#pop!Normal" />
 
 		<context name="Normal" attribute="Normal Text" lineEndContext="#stay">
+			<IncludeRules context="Normal Pt1" />
+
+			<!-- NOTE & TODO: The identifiers before ":" are highlighted as "dsNormal".
+			     These identifiers should be highlighted in a different way depending on the
+			     context, for example, in the declaration of classes or interfaces, in sets, the
+			     parameters of a function, or after the keywords: "const", "var", "let" & "enum". -->
+			<RegExpr context="#stay" attribute="Parameter" String="&parameter;" />
+
+			<IncludeRules context="Normal Pt2" />
+		</context>
+
+		<context name="Normal Pt1" attribute="Normal Text" lineEndContext="#stay">
 			<StringDetect context="#stay" attribute="Symbol" String="..." />
 			<IncludeRules context="FindNumbers" />
 			<IncludeRules context="FindStrings" />
@@ -235,13 +256,8 @@
 			<!-- Keywords: control flow -->
 			<keyword context="#stay" attribute="ControlFlow" String="controlflow" />
 			<RegExpr context="#stay" attribute="ControlFlow" String="\bdefault(?=\s*&objectOp;:)" />
-
-			<!-- NOTE & TODO: The identifiers before ":" are highlighted as "dsNormal".
-			     These identifiers should be highlighted in a different way depending on the
-			     context, for example, in the declaration of classes or interfaces, in sets, the
-			     parameters of a function, or after the keywords: "const", "var", "let" & "enum". -->
-			<RegExpr context="#stay" attribute="Parameter" String="&identifier;(?=\s*&objectOp;:)" />
-
+		</context>
+		<context name="Normal Pt2" attribute="Normal Text" lineEndContext="#stay">
 			<!-- Keywords -->
 			<WordDetect context="TypeDeclaration" attribute="Reserved" String="type" />
 			<WordDetect context="FunctionDeclaration" attribute="Keyword" String="function" />
@@ -260,6 +276,7 @@
 			<RegExpr context="Types" attribute="Module" String="\bas(?=\s)" />
 			<!-- Import -->
 			<WordDetect context="Import" attribute="Module" String="import" />
+			<RegExpr context="#stay" attribute="Module" String="\bexport\s+type\b" />
 			<!-- Export types -->
 			<keyword context="ControlExport" attribute="Module" String="control_export_types" />
 			<!-- Keywords -->
@@ -269,14 +286,26 @@
 
 			<!-- Functions: function(...) and function<...>(...) -->
 			<RegExpr context="Function" attribute="Function Name" String="(&identifier;)&functionSuffix;" lookAhead="true" />
+			<!-- Tagged Template Literals -->
+			<RegExpr context="#stay" attribute="Function Name" String="&identifier;(?=\s*`)" />
 
 			<!-- Symbols & Operators -->
-			<!-- NOTE: The brackets {}()[] are highlighted as Normal Text. -->
+			<!-- NOTE: - The brackets {}()[] are highlighted as Normal Text.
+			           - Bracket highlighting rules must be explicitly included here
+			             for the "Animate Bracket Highlighting" feature to work properly. -->
 			<DetectChar context="Object" attribute="Normal Text" char="{" beginRegion="Brace" />
 			<DetectChar context="#stay" attribute="Normal Text" char="[" beginRegion="List" />
 			<DetectChar context="NoRegExp" attribute="Normal Text" char="]" endRegion="List" />
-			<!-- NOTE: Avoid highlighting identifier?: string, -->
-			<RegExpr context="ConditionalExpression" attribute="Symbol" String="\?(?=.*&identifier;\s*\:)" />
+			<DetectChar context="#stay" attribute="Normal Text" char="(" />
+			<DetectChar context="NoRegExp" attribute="Normal Text" char=")" />
+
+			<Detect2Chars context="#stay" attribute="Symbol" char="?" char1="?" /> <!-- Null operator -->
+			<!-- Conditional Expressions:
+			       CASE 1:  '?' ... <identifier> ':'
+			       CASE 2:  '?' ... ( '||' | '&&' ) <end-line>
+			       CASE 3:  '?' (<identifier>)? <end-line>
+			-->
+			<RegExpr context="ConditionalExpression" attribute="Symbol" String="\?(?=\s*(?:(?:[^/&quot;'`\s\?:\.;,\=\}\]\)]|&codeContent;)(?:[^/&quot;'`]|&codeContent;)*)?&identifier;\s*(?:/\*.*\*/\s*)*:|(?:&amp;&amp;|\|\||\s*(?:/\*.*\*/\s*)*&identifier;)?&endLine;)" minimal="true" />
 
 			<!-- Type Parameter: Highlight types after ":" and between "<" and ">" -->
 			<DetectChar context="Types" attribute="Symbol" char=":" />
@@ -285,33 +314,42 @@
 			<IncludeRules context="JSBase##JavaScript" />
 		</context>
 
+		<!-- Conditional Expressions: a ? b : c -->
 		<!-- Highlight keywords before ":" in conditional expressions. -->
-		<context name="ConditionalExpression" attribute="Normal Text" lineEndContext="#pop">
+		<context name="ConditionalExpression" attribute="Normal Text" lineEndContext="#stay">
+			<!-- NOTE: Don't start the "Types" context. See the context "Default Types". -->
 			<DetectChar context="#pop" attribute="Symbol" char=":" />
+			<IncludeRules context="ConditionalExpressionEnd" />
 			<DetectChar context="#stay" attribute="Symbol" char="?" />
 
-			<!-- Keywords -->
-			<WordDetect context="#stay" attribute="Reserved" String="type" />
-			<WordDetect context="FunctionDeclaration" attribute="Keyword" String="function" />
-			<keyword context="#stay" attribute="Keyword" String="keywords" /> <!-- NoRegExp? -->
-			<keyword context="#stay" attribute="Reserved" String="reserved" />
-			<!-- Utility Types -->
-			<RegExpr context="#stay" attribute="Built-in Objects" String="&utilityTypes;" />
-			<!-- Built-in Classes -->
-			<IncludeRules context="BuiltInClasses" />
-			<IncludeRules context="BuiltInConstants" />
-			<!-- Import -->
-			<WordDetect context="#stay" attribute="Module" String="import" />
-			<!-- Export types -->
-			<keyword context="#stay" attribute="Module" String="control_export_types" />
-			<!-- Keywords -->
-			<keyword context="#stay" attribute="Module" String="module" />
-			<keyword context="NoRegExp" attribute="Keyword" String="primitives" />
-			<keyword context="#stay" attribute="Keyword" String="types_operator_expression" />
-
-			<!-- NOTE: The identifiers before ":" should be highlighted as "Normal Text".
-			     However, currently, the "Parameter" attribute is equivalent to "Normal Text". -->
-			<!-- <RegExpr context="#stay" attribute="Normal Text" String="&identifier;(?=\s*&objectOp;:)" /> -->
+			<IncludeRules context="FindConditionalExpressionBrackets" />
+			<IncludeRules context="Normal-ParametersOverridden" />
+		</context>
+		<context name="Normal-ParametersOverridden" attribute="Normal Text" lineEndContext="#stay">
+			<IncludeRules context="Normal Pt1" />
+			<IncludeRules context="Normal Pt2" />
+			<RegExpr context="#stay" attribute="Parameter" String="&parameter;" />
+		</context>
+		<context name="ConditionalExpressionEnd" attribute="Normal Text" lineEndContext="#stay">
+			<AnyChar context="#pop" String=";,}])" lookAhead="true" />
+			<RegExpr context="#pop" String="\=(?!&gt;)" lookAhead="true" />
+			<!-- For TypeScript code embedded in HTML and Markdown -->
+			<StringDetect context="#pop" String="```" lookAhead="true" firstNonSpace="true" />
+			<StringDetect context="#pop" String="~~~" lookAhead="true" firstNonSpace="true" />
+			<RegExpr context="#pop" String="&lt;/script\s*(?:&gt;|$)" insensitive="true" lookAhead="true" />
+		</context>
+		<context name="FindConditionalExpressionBrackets" attribute="Normal Text" lineEndContext="#stay">
+			<DetectChar context="ConditionalExpressionRoundBracket" attribute="Normal Text" char="(" />
+			<DetectChar context="ConditionalExpressionSquareBracket" attribute="Symbol" char="[" beginRegion="List" />
+		</context>
+		<context name="ConditionalExpressionRoundBracket" attribute="Normal Text" lineEndContext="#stay">
+			<DetectChar context="#pop!NoRegExp" attribute="Normal Text" char=")" />
+			<IncludeRules context="FindConditionalExpressionBrackets" />
+			<IncludeRules context="Normal" />
+		</context>
+		<context name="ConditionalExpressionSquareBracket" attribute="Normal Text" lineEndContext="#stay">
+			<DetectChar context="#pop!NoRegExp" attribute="Symbol" char="]" endRegion="List" />
+			<IncludeRules context="FindConditionalExpressionBrackets" />
 			<IncludeRules context="Normal" />
 		</context>
 
@@ -358,13 +396,13 @@
 
 		<!-- Strings -->
 		<context name="FindStrings" attribute="Normal Text" lineEndContext="#stay">
-			<DetectChar context="Template" attribute="Template" char="`" />
+			<DetectChar context="Template" attribute="Template" char="`" beginRegion="Template" />
 			<IncludeRules context="FindStrings##JavaScript" />
 		</context>
 		<context name="Template" attribute="Template" lineEndContext="#stay">
 			<IncludeRules context="Escape##JavaScript" />
 			<Detect2Chars context="Substitution" attribute="Substitution" char="$" char1="{" />
-			<DetectChar context="RegExpAfterString##JavaScript" attribute="Template" char="`" />
+			<DetectChar context="RegExpAfterString##JavaScript" attribute="Template" char="`" endRegion="Template" />
 		</context>
 		<context name="Substitution" attribute="Normal Text" lineEndContext="#stay">
 			<DetectChar context="#pop" attribute="Substitution" char="}" />
@@ -396,11 +434,11 @@
 
 			<IncludeRules context="TypesFindBrackets" />
 			<IncludeRules context="DefaultTypes" />
-			<IncludeRules context="Normal" />
+			<IncludeRules context="Normal-ParametersOverridden" />
 		</context>
 		<!-- NOTE: Context used by "typescript-react.xml" -->
 		<context name="TypesEnd" attribute="Normal Text" lineEndContext="#stay">
-			<AnyChar context="#pop" String=";,})]" lookAhead="true" />
+			<AnyChar context="#pop" String=";,}])" lookAhead="true" />
 			<RegExpr context="#pop" String="\=(?!&gt;)" lookAhead="true" />
 			<Detect2Chars context="#pop" char="/" char1="/" lookAhead="true" />
 		</context>
@@ -429,8 +467,8 @@
 			     This rule fixes it provisionally. -->
 			<RegExpr context="#stay" attribute="Types" String="\b(?:string|number|bigint|boolean|symbol|any|void|never|unknown|undefined|null|object)(?=\})" />
 
-			<!-- Don't start this context again -->
-			<AnyChar context="#stay" attribute="Symbol" String="?:" />
+			<!-- Don't start this context again and don't start the "ConditionalExpression" context -->
+			<AnyChar context="#stay" attribute="Symbol" String=":?" />
 			<WordDetect context="#stay" attribute="Module" String="as" />
 		</context>
 		<context name="TypesFindBrackets" attribute="Normal Text" lineEndContext="#stay">
@@ -491,7 +529,10 @@
 		<!-- "import" keyword -->
 		<context name="Import" attribute="Normal Text" lineEndContext="#pop">
 			<DetectChar context="#pop!ImportRequireKey" attribute="Symbol" char="=" />
-			<WordDetect context="#pop!NoRegExp" attribute="Keyword" String="meta" /> <!-- importmeta_property -->
+			<!-- import type ... -->
+			<WordDetect context="#stay" attribute="Module" String="type" />
+			<!-- importmeta_property -->
+			<WordDetect context="#pop!NoRegExp" attribute="Keyword" String="meta" />
 			<!-- Fix context NoRegExp (#pop in new line) -->
 			<RegExpr context="#pop" String="." lookAhead="true" firstNonSpace="true" />
 			<AnyChar context="#pop" String="{}()[];," lookAhead="true" />
@@ -528,10 +569,13 @@
 			<!-- The order of these rules is important: 1) Functions. 2) Constants & Properties. 3) Obj. Members. -->
 			<!-- function(...) and function<...>(...) -->
 			<RegExpr context="#pop" attribute="Function Name" String="&identifier;&functionSuffix;" />
+			<!-- Tagged Template Literals -->
+			<RegExpr context="#pop" String="&identifier;\s*`" lookAhead="true" />
 			<!-- Generic constants and properties -->
 			<keyword context="#pop!NoRegExp" attribute="Object Property (Built-in)" String="variable_property" />
 			<keyword context="#pop!NoRegExp" attribute="Constant" String="dom_constant" />
 
+			<RegExpr context="#stay" attribute="Normal Text" String="#(?=&identifier;)" /> <!-- Private-Named Instance Fields -->
 			<RegExpr context="#stay" attribute="Object Member" String="&identifier;(?=&objectPoint;)" />
 			<RegExpr context="#pop!NoRegExp" attribute="Object Member" String="&identifier;" />
 			<IncludeRules context="NoRegExp" />

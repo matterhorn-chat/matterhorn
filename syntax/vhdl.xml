@@ -8,7 +8,7 @@
   <!ENTITY label     "((&varname;)\s*:\s*)?">
 
 ]>
-<language name="VHDL" version="7" kateversion="3.0" section="Hardware" extensions="*.vhdl;*.vhd" mimetype="text/x-vhdl" author="Rocky Scaletta (rocky@purdue.edu), Stefan Endrullis (stefan@endrullis.de), Florent Ouchet (outchy@users.sourceforge.net), Chris Higgs (chiggs.99@gmail.com), Jan Michel (jan@mueschelsoft.de), Luigi Calligaris (luigi.calligaris@stfc.ac.uk)">
+<language name="VHDL" version="10" kateversion="5.0" section="Hardware" extensions="*.vhdl;*.vhd" mimetype="text/x-vhdl" author="Rocky Scaletta (rocky@purdue.edu), Stefan Endrullis (stefan@endrullis.de), Florent Ouchet (outchy@users.sourceforge.net), Chris Higgs (chiggs.99@gmail.com), Jan Michel (jan@mueschelsoft.de), Luigi Calligaris (luigi.calligaris@stfc.ac.uk)">
   <highlighting>
     <list name="keywordsToplevel">
       <item>file</item>
@@ -218,16 +218,16 @@
       <context name="start" attribute="Normal Text" lineEndContext="#stay" dynamic="true">
         <IncludeRules context="preDetection"/>
 
-        <RegExpr attribute="Control" context="architecture_main" insensitive="true" dynamic="true" lookAhead="true"
+        <RegExpr attribute="Control" context="architecture_main" insensitive="true" lookAhead="true"
                  String="&bos;architecture\s+(&varname;)&eos;"/>
         <StringDetect attribute="Control" context="entity" insensitive="true"
                  String="entity"/>
-        <RegExpr attribute="Control" context="package" insensitive="true" lookAhead="true" dynamic="true" beginRegion="PackageRegion1"
+        <RegExpr attribute="Control" context="package" insensitive="true" lookAhead="true" beginRegion="PackageRegion1"
                  String="&bos;package\s+(&varname;)\s+is&eos;"/>
-        <RegExpr attribute="Control" context="packagebody" lookAhead="true" insensitive="true" dynamic="true" beginRegion="PackageBodyRegion1"
+        <RegExpr attribute="Control" context="packagebody" lookAhead="true" insensitive="true" beginRegion="PackageBodyRegion1"
                  String="&bos;package\s+body\s+(&varname;)\s+is&eos;"/>
        <!-- <StringDetect  attribute="Control"  context="arch_decl"      String="package"     />temporary-->
-        <RegExpr attribute="Control" context="configuration" insensitive="true" dynamic="true" lookAhead="true"
+        <RegExpr attribute="Control" context="configuration" insensitive="true" lookAhead="true"
                  String="&bos;configuration\s+(&varname;)&eos;"/>
         <keyword attribute="Keyword" context="#stay" String="keywordsToplevel"/>
       </context>
@@ -269,7 +269,7 @@
       <context name="packagebodymain" attribute="Normal Text" lineEndContext="#stay" dynamic="true">
         <IncludeRules context="preDetection"/>
         <RegExpr attribute="Keyword"   context="#pop" lookAhead="true" insensitive="true" String="&bos;end\s+package&eos;" />
-        <RegExpr attribute="Keyword"   context="packagebodyfunc1" beginRegion="PackBodyFunc" insensitive="true" dynamic="true" lookAhead="true" String="&bos;function\s+(&varname;)&eos;" />
+        <RegExpr attribute="Keyword"   context="packagebodyfunc1" beginRegion="PackBodyFunc" insensitive="true" lookAhead="true" String="&bos;function\s+(&varname;)&eos;" />
         <IncludeRules context="generalDetection"/>
       </context>
 
@@ -283,7 +283,7 @@
 
       <context name="packagebodyfunc2" attribute="Normal Text" lineEndContext="#stay" dynamic="true">
         <IncludeRules context="preDetection"/>
-        <RegExpr attribute="Redirection" context="#pop" insensitive="true" dynamic="true" lookAhead="true" endRegion="RegionFunction"
+        <RegExpr attribute="Redirection" context="#pop" insensitive="true" lookAhead="true" endRegion="RegionFunction"
                  String="&bos;end(\s+function)?&eos;"/>
         <!--<RegExpr attribute="Error" context="#pop" insensitive="true" dynamic="true" lookAhead="true" endRegion="RegionFunction"
                  String="&bos;end\s+function(\s+&varname;)?&eos;"/>-->
@@ -296,11 +296,11 @@
 <!--====ARCHITECTURE ===============-->
       <context name="architecture_main" attribute="Normal Text" lineEndContext="#stay" dynamic="true">
         <IncludeRules context="preDetection"/>
-        <RegExpr attribute="Control" context="arch_start" insensitive="true" lookAhead="true" dynamic="true" beginRegion="ArchitectureRegion1"
+        <RegExpr attribute="Control" context="arch_start" insensitive="true" lookAhead="true" beginRegion="ArchitectureRegion1"
                  String="&bos;architecture\s+(&varname;)\s+of\s+(&varname;)\s+is"/>
         <RegExpr attribute="Control" context="#pop#pop" insensitive="true" dynamic="true" endRegion="ArchitectureRegion1"
                  String="&bos;end(\s+architecture)?(\s+%2)?\s*;"/>
-        <RegExpr attribute="Error" context="#pop#pop" insensitive="true" dynamic="true" endRegion="ArchitectureRegion1"
+        <RegExpr attribute="Error" context="#pop#pop" insensitive="true" endRegion="ArchitectureRegion1"
                  String="&bos;end(\s+architecture)?(\s+&varname;)\s*;"/>
         <IncludeRules context="detect_arch_parts"/>
       </context>
@@ -333,7 +333,7 @@
 
       <context name="archfunc2" attribute="Normal Text" lineEndContext="#stay" dynamic="true">
         <IncludeRules context="preDetection"/>
-        <RegExpr attribute="Redirection" context="#pop" insensitive="true" dynamic="true" lookAhead="true" endRegion="RegionFunction"
+        <RegExpr attribute="Redirection" context="#pop" insensitive="true" lookAhead="true" endRegion="RegionFunction"
                  String="&bos;end(\s+function)?&eos;"/>
         <!--<RegExpr attribute="Error" context="#pop" insensitive="true" dynamic="true" lookAhead="true" endRegion="RegionFunction"
                  String="&bos;end\s+function(\s+&varname;)?&eos;"/>-->
@@ -345,11 +345,11 @@
 
 <!-- parts of architecture body -->
       <context name="detect_arch_parts" attribute="Normal Text" lineEndContext="#stay" dynamic="true">
-        <RegExpr attribute="Normal Text" context="generate1" lookAhead="true" insensitive="true" dynamic="true"
+        <RegExpr attribute="Normal Text" context="generate1" lookAhead="true" insensitive="true"
                  String="&bos;(&varname;\s*:\s*)(if|for).*\s+generate&eos;"/>
-        <RegExpr attribute="Normal Text" context="process1" lookAhead="true" insensitive="true" dynamic="true"
+        <RegExpr attribute="Normal Text" context="process1" lookAhead="true" insensitive="true"
                  String="&bos;(&varname;\s*:\s*)?process&eos;"/>
-        <RegExpr attribute="Normal Text" context="instance" lookAhead="true" insensitive="true" dynamic="true" beginRegion="InstanceRegion1"
+        <RegExpr attribute="Normal Text" context="instance" lookAhead="true" insensitive="true" beginRegion="InstanceRegion1"
                  String="&bos;(&varname;)\s*:\s*((entity\s+)?(&varname;)(\.&varname;)?)"/>
 
         <IncludeRules context="generalDetection"/>
@@ -384,7 +384,7 @@
         <IncludeRules context="preDetection"/>
         <RegExpr attribute="Process" context="#pop" insensitive="true" dynamic="true" endRegion="RegionProcess"
                  String="&bos;end\s+process(\s+%3)?"/>
-        <RegExpr attribute="Error" context="#pop" insensitive="true" dynamic="true" endRegion="RegionProcess"
+        <RegExpr attribute="Error" context="#pop" insensitive="true" endRegion="RegionProcess"
                  String="&bos;end\s+process(\s+&varname;)?"/>
         <RegExpr attribute="Process" context="#stay" insensitive="true" beginRegion="RegionProcess"
                  String="&bos;process&eos;"/>
@@ -400,7 +400,7 @@
                   String="&bos;if&eos;"/>
          <RegExpr attribute="Control" context="case1" lookAhead="true" insensitive="true"
                   String="&bos;case&eos;"/>
-         <RegExpr attribute="Control" context="forwhile1" dynamic="true" lookAhead="true" insensitive="true"
+         <RegExpr attribute="Control" context="forwhile1" lookAhead="true" insensitive="true"
                   String="&bos;((&varname;)\s*:\s*)?((for|while)\s+.+\s+)loop&eos;"/>
          <IncludeRules context="generalDetection"/>
       </context>
@@ -491,7 +491,7 @@
         <IncludeRules context="preDetection"/>
         <RegExpr attribute="Control" context="#pop#pop" insensitive="true" endRegion="CaseRegion1"
                  String="&bos;end\s+case(&varname;)?\s*;"/>
-        <RegExpr attribute="Control" context="caseWhen" lookAhead="true" dynamic="true" insensitive="true"
+        <RegExpr attribute="Control" context="caseWhen" lookAhead="true" insensitive="true"
                  String="&bos;when(\s+&varname;)?&eos;"/>
         <IncludeRules context="proc_rules"/>
       </context>
@@ -532,7 +532,7 @@
         <IncludeRules context="preDetection"/>
         <RegExpr attribute="Control" context="#pop#pop" dynamic="true" insensitive="true" endRegion="EntityRegion1"
                  String="&bos;end(\s+(entity|component))?(\s+%1)?\s*;"/>
-        <RegExpr attribute="Error" context="#pop#pop" dynamic="true" insensitive="true" endRegion="EntityRegion1"
+        <RegExpr attribute="Error" context="#pop#pop" insensitive="true" endRegion="EntityRegion1"
                  String="&bos;end(\s+(entity|component))?(\s+&varname;)?\s*;"/>
         <StringDetect attribute="Control" context="#stay" insensitive="true" String="generic"/>
         <StringDetect attribute="Control" context="#stay" insensitive="true" String="port"/>
@@ -543,11 +543,11 @@
 <!-- configuration environment -->
       <context name="configuration" attribute="Normal Text" lineEndContext="#stay" dynamic="true">
         <IncludeRules context="preDetection"/>
-        <RegExpr attribute="Control" context="conf_start" insensitive="true" lookAhead="true" dynamic="true" beginRegion="ConfigurationRegion1"
+        <RegExpr attribute="Control" context="conf_start" insensitive="true" lookAhead="true" beginRegion="ConfigurationRegion1"
                  String="&bos;configuration\s+(&varname;)\s+of\s+(&varname;)\s+is"/>
         <RegExpr attribute="Control" context="#pop#pop" insensitive="true" dynamic="true" endRegion="ConfigurationRegion1"
                  String="&bos;end(\s+configuration)?(\s+%2)?\s*;"/>
-        <RegExpr attribute="Error" context="#pop#pop" insensitive="true" dynamic="true" endRegion="ConfigurationRegion1"
+        <RegExpr attribute="Error" context="#pop#pop" insensitive="true" endRegion="ConfigurationRegion1"
                  String="&bos;end(\s+configuration)?(\s+&varname;)\s*;"/>
       </context>
 
@@ -599,7 +599,9 @@
 
 <!-- other environments -->
       <context name="comment" attribute="Comment" lineEndContext="#pop">
+        <DetectSpaces />
         <IncludeRules context="##Alerts"/>
+        <IncludeRules context="##Modelines"/>
       </context>
 
       <context name="string" attribute="Vector" lineEndContext="#stay">
@@ -635,22 +637,23 @@
       <itemData name="Integer" defStyleNum="dsDecVal"/>
       <itemData name="Bit" defStyleNum="dsChar"/>
       <itemData name="Reference" defStyleNum="dsFunction"/>
-      <itemData name="Error" defStyleNum="dsError" color="#ff0000" bold="1"/>
+      <itemData name="Error" defStyleNum="dsError" bold="1"/>
       <itemData name="Vector" defStyleNum="dsString"/>
       <itemData name="Operator" defStyleNum="dsOthers"/>
       <itemData name="Attribute" defStyleNum="dsBaseN"/>
       <itemData name="Signal" defStyleNum="dsOthers"/>
       <itemData name="Range" defStyleNum="dsOthers"/>
-      <itemData name="Redirection" defStyleNum="dsKeyword" color="#223388"/>
-      <itemData name="Process" defStyleNum="dsKeyword" color="#0099AA"/>
-      <itemData name="Control" defStyleNum="dsKeyword" color="#223388"/>
-      <itemData name="Name" defStyleNum="dsKeyword" color="#bb6600" bold="1"/>
+      <itemData name="Redirection" defStyleNum="dsAttribute" bold="1"/> <!-- #223388 -->
+      <itemData name="Process" defStyleNum="dsSpecialChar" bold="1"/> <!-- #0099AA -->
+      <itemData name="Control" defStyleNum="dsControlFlow"/> <!-- #223388 -->
+      <itemData name="Name" defStyleNum="dsDecVal" bold="1"/> <!-- #bb6600 -->
     </itemDatas>
   </highlighting>
   <general>
     <comments>
-      <comment name="singleLine" start="--"/>
+      <comment name="singleLine" start="--" position="afterwhitespace"/>
     </comments>
     <keywords casesensitive="0"/>
   </general>
 </language>
+<!-- kate: replace-tabs on; tab-width 2; indent-width 2; -->

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
-<language name="Elm" version="2" kateversion="5.0" section="Sources" extensions="*.elm" author="Bonghyun Kim (bonghyun.d.kim@gmail.com)" license="MIT" style="elm">
+<language name="Elm" version="4" kateversion="5.0" section="Sources" extensions="*.elm" author="Bonghyun Kim (bonghyun.d.kim@gmail.com)" license="MIT" style="elm">
   <highlighting>
     <list name="declarations">
       <item>type</item>
@@ -38,9 +38,9 @@
     </list>
     <contexts>
       <context attribute="Normal" lineEndContext="#stay" name="code">
-        <Detect2Chars attribute="Comment" context="comments" char="{" char1="-" />
+        <Detect2Chars attribute="Comment" context="comments" char="{" char1="-" beginRegion="BlockComment" />
         <Detect2Chars attribute="Comment" context="comment" char="-" char1="-" />
-        <StringDetect attribute="Comment" context="documentation" String="{-|" />
+        <StringDetect attribute="Comment" context="documentation" String="{-|" beginRegion="Documentation" />
 
         <keyword attribute="Keyword"          context="#stay" String="declarations" />
         <keyword attribute="Keyword"          context="#stay" String="letExpressions" />
@@ -56,7 +56,7 @@
         <RegExpr attribute="Name"         context="#stay" String="(\b[a-z]\w*|\b_\b)" />
         <RegExpr attribute="Operator"         context="#stay" String="(-&gt;|::|\/\/|\.\.|&amp;&amp;|\|\||\+\+|\|&gt;|&lt;\||&gt;&gt;|&lt;&lt;|==|\/=|&lt;=|&gt;=)" />
         <RegExpr attribute="Operator"         context="#stay" String="[+-\/*%=&gt;&lt;^\|!]" />
-        <RegExpr attribute="Operator"         context="#stay" String="[@\#$&amp;~?]" />
+        <AnyChar attribute="Operator"         context="#stay" String="@#$&amp;~?" />
 
         <RegExpr attribute="Type"             context="#stay" String="\b[A-Z][\w]*" />
 
@@ -69,10 +69,16 @@
         <RegExpr attribute="String"     context="multilineString" String="&quot;&quot;&quot;"/>
       </context>
       <context attribute="Comment" lineEndContext="#pop" name="comment">
+        <DetectSpaces />
+        <IncludeRules context="##Alerts" />
+        <IncludeRules context="##Modelines" />
       </context>
       <context attribute="Comment" lineEndContext="#stay" name="comments">
-        <Detect2Chars attribute="Comment" context="comments" char="{" char1="-" />
-        <Detect2Chars attribute="Comment" context="#pop" char="-" char1="}" />
+        <Detect2Chars attribute="Comment" context="comments" char="{" char1="-" beginRegion="BlockComment" />
+        <Detect2Chars attribute="Comment" context="#pop" char="-" char1="}" endRegion="BlockComment" />
+        <DetectSpaces />
+        <IncludeRules context="##Alerts" />
+        <IncludeRules context="##Modelines" />
       </context>
       <context attribute="String" lineEndContext="#stay" name="string">
         <RegExpr attribute="String" context="#stay" String="\\." />
@@ -108,7 +114,7 @@
       </context>
       <context attribute="Comment" lineEndContext="#stay" name="documentation">
         <WordDetect attribute="Comment" context="#stay" String="@docs" />
-        <Detect2Chars attribute="Comment" context="#pop" char="-" char1="}" />
+        <Detect2Chars attribute="Comment" context="#pop" char="-" char1="}" endRegion="Documentation" />
       </context>
     </contexts>
 
@@ -135,9 +141,10 @@
   <general>
     <folding indentationsensitive="1"/>
     <comments>
-      <comment name="singleLine" start="--" />
-      <comment name="multiLine" start="{-" end="-}" />
+      <comment name="singleLine" start="--" position="afterwhitespace" />
+      <comment name="multiLine" start="{-" end="-}" region="BlockComment" />
     </comments>
     <keywords casesensitive="1" />
 </general>
 </language>
+<!-- kate: replace-tabs on; tab-width 2; indent-width 2; -->

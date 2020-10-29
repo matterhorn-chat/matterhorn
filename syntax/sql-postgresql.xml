@@ -3,7 +3,7 @@
 <!-- PostgreSQL SQL, syntax definition based on sql.xml by Yury Lebedev
      v5 fix comments by Gene Thomas <gene@genethomas.com>
   -->
-<language name="SQL (PostgreSQL)" version="7" kateversion="5.0" section="Database" extensions="*.sql;*.SQL;*.ddl;*.DDL" mimetype="text/x-sql" casesensitive="0" author="Shane Wright (me@shanewright.co.uk)" license="">
+<language name="SQL (PostgreSQL)" version="10" kateversion="5.44" section="Database" extensions="*.sql;*.SQL;*.ddl;*.DDL" mimetype="text/x-sql" casesensitive="0" author="Shane Wright (me@shanewright.co.uk)" license="">
   <highlighting>
     <list name="controlFlow">
       <item>BEGIN</item>
@@ -991,7 +991,7 @@
         <DetectChar attribute="Comment" context="SingleLineComment" char="#"/>
         <Detect2Chars attribute="Comment" context="SingleLineComment" char="-" char1="-"/>
         <Detect2Chars attribute="Comment" context="MultiLineComment" char="/" char1="*" beginRegion="Comment"/>
-        <RegExpr attribute="Comment" context="SingleLineComment" String="rem\b" insensitive="true" column="0"/>
+        <WordDetect attribute="Comment" context="SingleLineComment" String="rem" insensitive="true" column="0"/>
 
         <!-- HACK: don't jump into MultiLineString for CREATE FUNCTION $funcName$...$funcName$ -->
         <RegExpr String="create\s+(or\s+replace\s+)?function" insensitive="true" context="CreateFunction" attribute="Keyword"/>
@@ -1007,10 +1007,10 @@
         <Float attribute="Float" context="#stay"/>
         <Int attribute="Decimal" context="#stay"/>
         <DetectChar attribute="String" context="String" char="'"/>
-        <DetectChar attribute="Comment" context="Identifier" char="&quot;"/>
+        <DetectChar attribute="Identifier" context="Identifier" char="&quot;"/>
         <AnyChar attribute="Symbol" context="#stay" String=":&#38;"/>
         <RegExpr attribute="Preprocessor" context="Preprocessor" String="@@?[^@ \t\r\n]" column="0"/>
-        <RegExpr attribute="Operator" context="MultiLineString" String="\$([^\$\n\r]*)\$" dynamic="true"/>
+        <RegExpr attribute="Operator" context="MultiLineString" String="\$([^\$\n\r]*)\$"/>
         <AnyChar attribute="Operator" context="#stay" String="+-*/=%^!&lt;&gt;&amp;|@~#"/>
         <Detect2Chars attribute="Operator" context="#stay" char=":" char1="="/>
         <Detect2Chars attribute="Operator" context="#stay" char="." char1="."/>
@@ -1020,7 +1020,7 @@
         <Detect2Chars attribute="Operator" context="#stay" char="?" char1="|"/>
       </context>
       <context name="CreateFunction" attribute="Normal Text" lineEndContext="#stay">
-        <RegExpr attribute="Function" context="FunctionBody" String="\$([^\$\n\r]*)\$" dynamic="true"/>
+        <RegExpr attribute="Function" context="FunctionBody" String="\$([^\$\n\r]*)\$"/>
         <IncludeRules context="Normal"/>
       </context>
       <context name="FunctionBody" attribute="Normal Text" lineEndContext="#stay" dynamic="true">
@@ -1036,10 +1036,17 @@
         <DetectChar attribute="Symbol" context="#stay" char="&#38;"/>
         <DetectChar attribute="String" context="#pop" char="'"/>
       </context>
-      <context name="SingleLineComment" attribute="Comment" lineEndContext="#pop"/>
+      <context name="SingleLineComment" attribute="Comment" lineEndContext="#pop">
+        <DetectSpaces />
+        <IncludeRules context="##Alerts"/>
+        <IncludeRules context="##Modelines"/>
+      </context>
       <context name="MultiLineComment" attribute="Comment" lineEndContext="#stay">
         <LineContinue attribute="Comment" context="#pop"/>
+        <DetectSpaces />
         <Detect2Chars attribute="Comment" context="#pop" char="*" char1="/" endRegion="Comment"/>
+        <IncludeRules context="##Alerts"/>
+        <IncludeRules context="##Modelines"/>
       </context>
       <context name="Identifier" attribute="Identifier" lineEndContext="#pop">
         <DetectChar attribute="Identifier" context="#pop" char="&quot;"/>
@@ -1066,9 +1073,10 @@
   </highlighting>
   <general>
     <comments>
-      <comment name="singleLine" start="--"/>
-      <comment name="multiLine" start="/*" end="*/"/>
+      <comment name="singleLine" start="--" position="afterwhitespace"/>
+      <comment name="multiLine" start="/*" end="*/" region="Comment"/>
     </comments>
     <keywords casesensitive="0"/>
   </general>
 </language>
+<!-- kate: replace-tabs on; tab-width 2; indent-width 2; -->

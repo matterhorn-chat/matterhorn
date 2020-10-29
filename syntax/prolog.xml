@@ -105,7 +105,7 @@ to make the rules more expressive. -->
     <!ENTITY bs         "\">
 ]>
 <language name="Prolog" section="Sources"
-	  version="10" kateversion="3.4"
+	  version="11" kateversion="3.4"
 	  mimetype="text/x-prolog"
 	  extensions="*.prolog;*.dcg;*.pro"
 	  author="Torsten Eichstädt (torsten.eichstaedt@web.de)"
@@ -778,6 +778,7 @@ TODO sorted by priority
 			    attribute="% italic predicates: w/ side effects" />
 		<DetectSpaces />
 		<IncludeRules context="##Alerts" />
+		<IncludeRules context="##Modelines" />
 		<DetectIdentifier />
 	    </context>
 
@@ -786,6 +787,7 @@ TODO sorted by priority
 	    <context name="1-comment" lineEndContext="#pop" attribute="% italic predicates: w/ side effects" >
 		<DetectSpaces />
 		<IncludeRules context="##Alerts" />
+		<IncludeRules context="##Modelines" />
 		<DetectIdentifier />
 	    </context>
 	    <context name="region_marker" lineEndContext="#pop" attribute="%BEGIN folding region" noIndentationBasedFolding="true" >
@@ -1029,3 +1031,4 @@ TODO sorted by priority
     your home directory. You have to open a new instance of kwrite/kate to use
     the new syntax file.
 -->
+<!-- kate: replace-tabs off; -->

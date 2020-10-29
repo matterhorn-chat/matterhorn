@@ -9,7 +9,7 @@
 <!ENTITY ESC    "(\\[ntbr'&quot;\\]|\\[0-9]{3}|\\x[0-9A-Fa-f]{2})"> <!-- OCaml character code escapes. -->
 <!ENTITY DEC    "[0-9][0-9_]*">                                     <!-- Decimal digits with underscores. -->
 ]>
-<language name="FSharp" version="5" kateversion="5.0" section="Sources" extensions="*.fs;*.fsi;*.fsx" mimetype="" priority="10" author="Bas Bossink (bas.bossink@gmail.com)" license="LGPL">
+<language name="FSharp" version="6" kateversion="5.0" section="Sources" extensions="*.fs;*.fsi;*.fsx" mimetype="" priority="10" author="Bas Bossink (bas.bossink@gmail.com)" license="LGPL">
 
   <highlighting>
     <list name="keywords">
@@ -190,11 +190,18 @@
         <RegExpr attribute="Decimal" context="#stay" String="-?&DEC;" />
       </context>
 
-      <context attribute="Comment" lineEndContext="#pop" name="Singleline Comment"/>
+      <context attribute="Comment" lineEndContext="#pop" name="Singleline Comment">
+        <DetectSpaces />
+        <IncludeRules context="##Alerts" />
+        <IncludeRules context="##Modelines" />
+      </context>
       <context attribute="Comment" lineEndContext="#stay" name="Multiline Comment">
         <!-- Support for nested comments -->
         <Detect2Chars attribute="Comment" context="#pop" char="*" char1=")" endRegion="comment" />
         <Detect2Chars attribute="Comment" context="Multiline Comment" char="(" char1="*" beginRegion="comment" />
+        <DetectSpaces />
+        <IncludeRules context="##Alerts" />
+        <IncludeRules context="##Modelines" />
       </context>
 
       <context attribute="String" lineEndContext="#stay" name="String Constant">
@@ -275,8 +282,7 @@
     <keywords casesensitive="1" />
     <comments>
       <comment name="singleLine" start="//" />
-      <comment name="singleLine" start="///" />
-      <comment name="multiLine" start="(*" end="*)" />
+      <comment name="multiLine" start="(*" end="*)" region="comment" />
     </comments>
   </general>
 </language>

@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd"[
   <!ENTITY charsdelim "_;.&#34;(){}@">
-  <!ENTITY wordsep "(?=([&charsdelim;]|\s|$))">
+  <!ENTITY wordsep "(?=[&charsdelim;]|\s|$)">
 ]>
-<language name="Agda" version="6" kateversion="5.0" section="Sources" extensions="*.agda" mimetype="text/x-agda" author="Matthias C. M. Troffaes" license="LGPL">
+<language name="Agda" version="7" kateversion="5.0" section="Sources" extensions="*.agda" mimetype="text/x-agda" author="Matthias C. M. Troffaes" license="LGPL">
   <highlighting>
     <list name="reserved keywords">
       <item>abstract</item>
@@ -56,14 +56,14 @@
       <context attribute="Normal" lineEndContext="#stay" name="code">
         <RegExpr attribute="Pragma"  context="#stay" String="\{-#.*#-\}" />
         <keyword attribute="Keyword" context="#stay" String="reserved keywords" />
-        <RegExpr attribute="Type"    context="#stay" String="(Prop[₀-₉]+|Prop[0-9]*|Set[₀-₉]+|Set[0-9]*)&wordsep;" />
-        <RegExpr attribute="Special" context="#stay" String="(-&gt;|→|∀|λ|:|=|\|)&wordsep;" />
-        <RegExpr attribute="Float"   context="#stay" String="\d+\.\d+&wordsep;" />
+        <RegExpr attribute="Type"    context="#stay" String="(?:Prop[₀-₉]+|Prop[0-9]*|Set[₀-₉]+|Set[0-9]*)&wordsep;" />
+        <RegExpr attribute="Special" context="#stay" String="(?:\-&gt;|→|∀|λ|:|=|\|)&wordsep;" />
+        <RegExpr attribute="Float"   context="#stay" String="\d+(?:(?:\.\d+)?[eE][+-]?\d+|\.\d+)&wordsep;" />
         <RegExpr attribute="Decimal" context="#stay" String="[0-9]+&wordsep;" />
         <DetectChar attribute="Char"   context="char"   char="'" />
         <DetectChar attribute="String" context="string" char="&quot;" />
         <Detect2Chars attribute="Comment" context="comment"  char="-"  char1="-" />
-        <Detect2Chars attribute="Comment" context="comments" char="{" char1="-" />
+        <Detect2Chars attribute="Comment" context="comments" char="{" char1="-" beginRegion="CommentBlock" />
         <Detect2Chars attribute="Hole"    context="hole"     char="{" char1="!" />
         <!-- delimiters which cannot be part of an identifier, or
              backslash which starts a lambda expression -->
@@ -73,10 +73,15 @@
              cases are already taken care off above) -->
         <RegExpr attribute="Normal" context="#stay" String="[^&charsdelim;\s]+" />
       </context>
-      <context attribute="Comment" lineEndContext="#pop" name="comment" />
-      <context attribute="Comment" lineEndContext="#stay" name="comments">
-        <Detect2Chars attribute="Comment" context="comments" char="{" char1="-" /> <!-- for nested comments -->
-        <Detect2Chars attribute="Comment" context="#pop" char="-" char1="}" />
+      <context attribute="Comment" lineEndContext="#pop" name="comment">
+        <IncludeRules context="##Alerts" />
+        <IncludeRules context="##Modelines" />
+      </context>
+      <context attribute="Comment" lineEndContext="#stay" name="comments" noIndentationBasedFolding="1">
+        <Detect2Chars attribute="Comment" context="comments" char="{" char1="-" beginRegion="CommentBlock" /> <!-- for nested comments -->
+        <Detect2Chars attribute="Comment" context="#pop" char="-" char1="}" endRegion="CommentBlock" />
+        <IncludeRules context="##Alerts" />
+        <IncludeRules context="##Modelines" />
       </context>
       <context attribute="Hole" lineEndContext="#stay" name="hole">
         <Detect2Chars attribute="Hole" context="#pop" char="!" char1="}" />
@@ -107,11 +112,12 @@
   <general>
     <folding indentationsensitive="1"/>
     <comments>
-      <comment name="singleLine" start="--" />
-      <comment name="multiLine" start="{-" end="-}" />
+      <comment name="singleLine" start="--" position="afterwhitespace" />
+      <comment name="multiLine" start="{-" end="-}" region="CommentBlock" />
     </comments>
     <keywords casesensitive="1"
               weakDeliminator=":!+,-&lt;=&gt;%&amp;*/?[]^|~\\"
               additionalDeliminator="&charsdelim;" />
   </general>
 </language>
+<!-- kate: replace-tabs on; tab-width 2; indent-width 2; -->

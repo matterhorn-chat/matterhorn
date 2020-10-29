@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd"
 [
-	<!ENTITY qname    "[A-Za-z_:][\w.:_-]*">
-	<!ENTITY entref  "&amp;(#[0-9]+|#[xX][0-9A-Fa-f]+|&qname;);">
-	<!ENTITY axisname  "ancestor|ancestor-or-self|attribute|child|descendant|descendant-or-self|following|following-sibling|namespace|parent|preceding|preceding-sibling|self">
+  <!ENTITY qname    "[A-Za-z_:][\w.:_-]*">
+  <!ENTITY entref  "&amp;(#[0-9]+|#[xX][0-9A-Fa-f]+|&qname;);">
+  <!ENTITY axisname  "ancestor|ancestor-or-self|attribute|child|descendant|descendant-or-self|following|following-sibling|namespace|parent|preceding|preceding-sibling|self">
 ]>
 
 <!--
@@ -52,7 +52,7 @@
 
 -->
 
-<language version="4" kateversion="5.0" name="xslt" section="Markup" extensions="*.xsl;*.xslt" license="LGPL" author="Peter Lammich (views@gmx.de)">
+<language version="6" kateversion="5.0" name="xslt" section="Markup" extensions="*.xsl;*.xslt" license="LGPL" author="Peter Lammich (views@gmx.de)">
   <highlighting>
     <list name="keytags">
       <item>xsl:value-of</item>
@@ -362,7 +362,8 @@
        <context name="comment" attribute="Comment" lineEndContext="#stay">
          <StringDetect attribute="Comment" context="#pop" String="--&gt;" endRegion="comment" />
          <RegExpr attribute="Invalid" context="#stay" String="-(-(?!-&gt;))+" />
-         <RegExpr attribute="Alert" context="#stay" String="(FIXME|TODO|HACK)" />
+         <IncludeRules context="##Alerts" />
+         <IncludeRules context="##Modelines" />
        </context>
 
        <context name="xpath" attribute="XPath" lineEndContext="#stay">
@@ -406,35 +407,35 @@
     </contexts>
     <itemDatas>
       <itemData name="Normal Text" defStyleNum="dsNormal"/>
-      <itemData name="Tag" defStyleNum="dsKeyword"/>
-      <itemData name="Attribute" defStyleNum="dsOthers"/>
+      <itemData name="Tag" defStyleNum="dsKeyword" spellChecking="false"/>
+      <itemData name="Attribute" defStyleNum="dsOthers" spellChecking="false"/>
       <itemData name="Value" defStyleNum="dsAttribute"/>
-      <itemData name="Invalid" defStyleNum="dsError"/>
-      <itemData name="Alert" defStyleNum="dsAlert"/>
-      <itemData name="Attribute Value" defStyleNum="dsString" color="#800000" selColor="#ffffff" bold="0" italic="0"/>
-      <itemData name="XPath" defStyleNum="dsOthers" color="#008080" selColor="#ffffff" bold="0" italic="0"/>
-      <itemData name="XPath String" defStyleNum="dsString" color="#800000" selColor="#ffffff" bold="0" italic="0"/>
-      <itemData name="XPath Axis" defStyleNum="dsKeyword" color="#008080" selColor="#ffffff" bold="0" italic="1"/>
-      <itemData name="XPath/ XSLT Function" defStyleNum="dsKeyword" color="#008080" selColor="#ffffff" bold="1" italic="0"/>
-      <itemData name="XPath 2.0/ XSLT 2.0 Function" defStyleNum="dsKeyword" color="#008080" selColor="#ffffff" bold="1" italic="0"/>
-      <itemData name="XPath Attribute" defStyleNum="dsNormal" color="#008080" selColor="#ffffff" bold="0" italic="1" />
-      <itemData name="Variable" defStyleNum="dsNormal" color="#008080" selColor="#ffffff" bold="0" italic="1" />
+      <itemData name="Invalid" defStyleNum="dsError" spellChecking="false"/>
+      <itemData name="Attribute Value" defStyleNum="dsString"/>
+      <itemData name="XPath" defStyleNum="dsVariable" bold="0" italic="0"/>
+      <itemData name="XPath String" defStyleNum="dsString"/>
+      <itemData name="XPath Axis" defStyleNum="dsVariable" bold="0" italic="1"/>
+      <itemData name="XPath/ XSLT Function" defStyleNum="dsVariable" bold="1" italic="0" spellChecking="false"/>
+      <itemData name="XPath 2.0/ XSLT 2.0 Function" defStyleNum="dsVariable" bold="1" italic="0" spellChecking="false"/>
+      <itemData name="XPath Attribute" defStyleNum="dsVariable" bold="0" italic="1" spellChecking="false"/>
+      <itemData name="Variable" defStyleNum="dsVariable" bold="0" italic="1" spellChecking="false"/>
       <itemData name="Comment" defStyleNum="dsComment"/>
-      <itemData name="XSLT Tag" defStyleNum="dsKeyword" color="#000080" selColor="#ffffff" bold="1" italic="0" />
-      <itemData name="XSLT 2.0 Tag" defStyleNum="dsKeyword" color="#000080" selColor="#ffffff" bold="1" italic="0" />
-      <itemData name="Entity Reference" defStyleNum="dsDecVal" />
+      <itemData name="XSLT Tag" defStyleNum="dsBuiltIn" bold="1" spellChecking="false"/>
+      <itemData name="XSLT 2.0 Tag" defStyleNum="dsBuiltIn" bold="1" spellChecking="false"/>
+      <itemData name="Entity Reference" defStyleNum="dsDecVal" spellChecking="false"/>
 
-      <itemData name="CDATA" defStyleNum="dsBaseN" bold="1" />
-      <itemData name="Processing Instruction" defStyleNum="dsKeyword" />
-      <itemData name="Doctype" defStyleNum="dsDataType" bold="1" />
-      <itemData name="PEntity Reference" defStyleNum="dsDecVal" />
+      <itemData name="CDATA" defStyleNum="dsBaseN" bold="1" spellChecking="false"/>
+      <itemData name="Processing Instruction" defStyleNum="dsKeyword" spellChecking="false"/>
+      <itemData name="Doctype" defStyleNum="dsDataType" bold="1" spellChecking="false"/>
+      <itemData name="PEntity Reference" defStyleNum="dsDecVal" spellChecking="false"/>
 
     </itemDatas>
   </highlighting>
   <general>
     <comments>
-      <comment name="multiLine" start="&lt;!--" end="--&gt;" />
+      <comment name="multiLine" start="&lt;!--" end="--&gt;" region="comment" />
     </comments>
     <keywords casesensitive="0" weakDeliminator="-:" additionalDeliminator="&quot;{}"/>
   </general>
 </language>
+<!-- kate: space-indent on; replace-tabs on; tab-width 2; indent-width 2; -->

@@ -20,8 +20,8 @@
   Thanks to Luis Silvestre for previous version and suggestions
 -->
 
-
-<language name="Octave" version="5" kateversion="5.0" section="Scientific" extensions="*.octave;*.m;*.M" mimetype="text/octave" casesensitive="1" license="GPL" author="Luis Silvestre and Federico Zenith">
+<!-- low priority to let Objective-C win for .m files per default -->
+<language name="Octave" version="8" kateversion="5.0" section="Scientific" extensions="*.octave;*.m;*.M" priority="-9" mimetype="text/octave" casesensitive="1" license="GPL" author="Luis Silvestre and Federico Zenith">
 
   <highlighting>
 
@@ -2765,7 +2765,8 @@
         <keyword context="#stay" attribute="Functions" String="functions" />
         <keyword context="#stay" attribute="Builtin" String="builtin"/>
         <keyword context="#stay" attribute="Forge" String="forge" />
-        <RegExpr context="#stay" attribute="Comment" String="[%#].*$" />
+        <DetectChar context="Comment" attribute="Comment" char="%" />
+        <DetectChar context="Comment" attribute="Comment" char="#" />
         <RegExpr context="#stay" attribute="Variable" String="[a-zA-Z]\w*" />
         <RegExpr context="#stay" attribute="Number" String="(\d+(\.\d+)?|\.\d+)([eE][+-]?\d+)?[ij]?" />
         <AnyChar context="#stay" attribute="Delimiter" String="()[]{}"/>
@@ -2801,6 +2802,13 @@
       </context>
 
 
+      <context name="Comment" attribute="Comment" lineEndContext="#pop">
+        <DetectSpaces />
+        <IncludeRules context="##Alerts" />
+        <IncludeRules context="##Modelines" />
+      </context>
+
+
     </contexts>
 
     <itemDatas>
@@ -2823,8 +2831,7 @@
 
   <general>
     <comments>
-      <comment name="singleLine" start="%" />
-      <comment name="singleLine" start="#" />
+      <comment name="singleLine" start="#" position="afterwhitespace" />
     </comments>
     <keywords weakDeliminator="." casesensitive="1"/>
   </general>

@@ -4,7 +4,7 @@
   <!ENTITY identifier "[a-zA-Z_$][\w$]*">
 ]>
 <!-- Author: Milian Wolff <mail@milianw.de> -->
-<language name="QML" version="7" kateversion="5.0" section="Scripts" extensions="*.qml;*.qmltypes"
+<language name="QML" version="9" kateversion="5.0" section="Scripts" extensions="*.qml;*.qmltypes"
           mimetype="text/x-qml;application/x-qml" indenter="cstyle"
           author="Milian Wolff (mail@milianw.de)" license="MIT">
   <highlighting>
@@ -130,7 +130,6 @@
         <keyword attribute="Property Type" context="#stay" String="types" />
         <DetectSpaces />
         <DetectIdentifier />
-        <DetectSpaces />
         <DetectChar char=":" context="#pop" />
       </context>
       <context attribute="Normal Text" lineEndContext="#pop" name="Signal">
@@ -141,9 +140,7 @@
       <context attribute="Normal Text" name="SignalParameter" lineEndContext="#pop">
         <DetectSpaces />
         <keyword attribute="Property Type" context="#stay" String="types" />
-        <DetectSpaces />
         <DetectIdentifier />
-        <DetectSpaces />
         <DetectChar char=")" context="#pop"/>
       </context>
       <!-- QML supports multi-line strings, which are not supported by Javascript -->
@@ -168,10 +165,10 @@
     <itemDatas>
       <itemData name="Normal Text"  defStyleNum="dsNormal"  spellChecking="false" />
       <itemData name="Import"  defStyleNum="dsKeyword"  spellChecking="false" />
-      <itemData name="ImportValue"  defStyleNum="dsString"  spellChecking="false" />
+      <itemData name="ImportValue"  defStyleNum="dsImport"  spellChecking="false" />
       <itemData name="Keywords"  defStyleNum="dsKeyword"  spellChecking="false" />
-      <itemData name="Elements" defStyleNum="dsKeyword" color="#008000" selColor="#00ffff" bold="0" italic="0" spellChecking="false"/>
-      <itemData name="Signal" defStyleNum="dsKeyword" color="#0095ff" selColor="#ffffff" spellChecking="false"/>
+      <itemData name="Elements" defStyleNum="dsOthers" spellChecking="false"/> <!-- #008000 -->
+      <itemData name="Signal" defStyleNum="dsExtension" bold="1" spellChecking="false"/> <!-- #0095ff -->
       <itemData name="Property Type" defStyleNum="dsDataType" spellChecking="false" />
       <itemData name="String"       defStyleNum="dsString" />
       <itemData name="Objects"      defStyleNum="dsExtension" bold="0" spellChecking="false" />
@@ -180,7 +177,7 @@
   </highlighting>
   <general>
     <comments>
-      <comment name="singleLine" start="//" />
+      <comment name="singleLine" start="//" position="afterwhitespace" />
       <comment name="multiLine" start="/*" end="*/" />
     </comments>
     <keywords casesensitive="1" />

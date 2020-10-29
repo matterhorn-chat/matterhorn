@@ -1,105 +1,105 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
 <!-- Based on haskell.xml and idris.vim (https://github.com/idris-hackers/idris-vim/blob/6bdb44b85406b75e3b3a4fa265deab1dbe8c6ff1/syntax/idris.vim) -->
-<language name="Idris" version="1.0" kateversion="3.4" section="Sources" extensions="*.idr" author="Alexander Shabalin" license="LGPL">
+<language name="Idris" version="3" kateversion="3.4" section="Sources" extensions="*.idr" author="Alexander Shabalin" license="LGPL">
   <highlighting>
   <list name="keywords">
-    <item> abstract </item>
-    <item> auto </item>
-    <item> case </item>
-    <item> class </item>
-    <item> codata </item>
-    <item> constructor </item>
-    <item> covering </item>
-    <item> data </item>
-    <item> default </item>
-    <item> do </item>
-    <item> dsl </item>
-    <item> else </item>
-    <item> export </item>
-    <item> if </item>
-    <item> implementation </item>
-    <item> implicit </item>
-    <item> import </item>
-    <item> impossible </item>
-    <item> in </item>
-    <item> index_first </item>
-    <item> index_next </item>
-    <item> infix </item>
-    <item> infixl </item>
-    <item> infixr </item>
-    <item> instance </item>
-    <item> interface </item>
-    <item> lambda </item>
-    <item> let </item>
-    <item> module </item>
-    <item> mutual </item>
-    <item> namespace </item>
-    <item> of </item>
-    <item> parameters </item>
-    <item> partial </item>
-    <item> pattern </item>
-    <item> postulate </item>
-    <item> prefix </item>
-    <item> private </item>
-    <item> proof </item>
-    <item> public </item>
-    <item> record </item>
-    <item> rewrite </item>
-    <item> static </item>
-    <item> syntax </item>
-    <item> tactics </item>
-    <item> term </item>
-    <item> then </item>
-    <item> total </item>
-    <item> using </item>
-    <item> variable </item>
-    <item> where </item>
-    <item> with </item>
+    <item>abstract</item>
+    <item>auto</item>
+    <item>case</item>
+    <item>class</item>
+    <item>codata</item>
+    <item>constructor</item>
+    <item>covering</item>
+    <item>data</item>
+    <item>default</item>
+    <item>do</item>
+    <item>dsl</item>
+    <item>else</item>
+    <item>export</item>
+    <item>if</item>
+    <item>implementation</item>
+    <item>implicit</item>
+    <item>import</item>
+    <item>impossible</item>
+    <item>in</item>
+    <item>index_first</item>
+    <item>index_next</item>
+    <item>infix</item>
+    <item>infixl</item>
+    <item>infixr</item>
+    <item>instance</item>
+    <item>interface</item>
+    <item>lambda</item>
+    <item>let</item>
+    <item>module</item>
+    <item>mutual</item>
+    <item>namespace</item>
+    <item>of</item>
+    <item>parameters</item>
+    <item>partial</item>
+    <item>pattern</item>
+    <item>postulate</item>
+    <item>prefix</item>
+    <item>private</item>
+    <item>proof</item>
+    <item>public</item>
+    <item>record</item>
+    <item>rewrite</item>
+    <item>static</item>
+    <item>syntax</item>
+    <item>tactics</item>
+    <item>term</item>
+    <item>then</item>
+    <item>total</item>
+    <item>using</item>
+    <item>variable</item>
+    <item>where</item>
+    <item>with</item>
   </list>
   <list name="directives">
-     <item> access </item>
-     <item> assert_total </item>
-     <item> default </item>
-     <item> dynamic </item>
-     <item> elim </item>
-     <item> error_handlers </item>
-     <item> error_reverse </item>
-     <item> flag </item>
-     <item> hide </item>
-     <item> include </item>
-     <item> language </item>
-     <item> lib </item>
-     <item> link </item>
-     <item> name </item>
-     <item> provide </item>
-     <item> reflection </item>
+     <item>access</item>
+     <item>assert_total</item>
+     <item>default</item>
+     <item>dynamic</item>
+     <item>elim</item>
+     <item>error_handlers</item>
+     <item>error_reverse</item>
+     <item>flag</item>
+     <item>hide</item>
+     <item>include</item>
+     <item>language</item>
+     <item>lib</item>
+     <item>link</item>
+     <item>name</item>
+     <item>provide</item>
+     <item>reflection</item>
   </list>
   <list name="tactics">
-    <item> applyTactic </item>
-    <item> attack </item>
-    <item> compute </item>
-    <item> exact </item>
-    <item> fill </item>
-    <item> focus </item>
-    <item> induction </item>
-    <item> intro </item>
-    <item> intros </item>
-    <item> let </item>
-    <item> refine </item>
-    <item> reflect </item>
-    <item> rewrite </item>
-    <item> solve </item>
-    <item> trivial </item>
-    <item> try </item>
+    <item>applyTactic</item>
+    <item>attack</item>
+    <item>compute</item>
+    <item>exact</item>
+    <item>fill</item>
+    <item>focus</item>
+    <item>induction</item>
+    <item>intro</item>
+    <item>intros</item>
+    <item>let</item>
+    <item>refine</item>
+    <item>reflect</item>
+    <item>rewrite</item>
+    <item>solve</item>
+    <item>trivial</item>
+    <item>try</item>
   </list>
   <contexts>
      <context attribute="Normal" lineEndContext="#stay" name="code">
         <RegExpr attribute="Comment" context="line comment"
-           String="---*[^!#\$%&amp;\*\+/&lt;=&gt;\?&#92;@\^\|~\.:]?" />
+           String="---*(?=[^!#\$%&amp;\*\+/&lt;=&gt;\?&#92;@\^\|~\.:]|$)" />
         <RegExpr attribute="Comment" context="line comment"
-           String="\|\|\|[^\-!#\$%&amp;\*\+/&lt;=&gt;\?&#92;@\^\|~\.:]?" />
-        <Detect2Chars attribute="Comment" context="block comment" char="{" char1="-" />
+           String="\|\|\|(?=[^\-!#\$%&amp;\*\+/&lt;=&gt;\?&#92;@\^\|~\.:]|$)" />
+        <Detect2Chars attribute="Comment" context="block comment" char="{" char1="-" beginRegion="BlockComment" />
         <RegExpr attribute="Normal" context="declaration" lookAhead="true"
            String="^\s*([a-z]+\s+)*([A-Za-z][A-Za-z0-9_]*'*|\([\-!#\$%&amp;\*\+\./&lt;=&gt;\?@&#92;\^\|~:]+\))\s*:" />
         <keyword attribute="Keyword" context="#stay" String="keywords" />
@@ -139,10 +139,17 @@
         <RegExpr attribute="String" context="#stay" String="\\." />
         <RegExpr attribute="String" context="#pop" String="&quot;" />
      </context>
-     <context attribute="Comment" lineEndContext="#pop" name="line comment" />
+     <context attribute="Comment" lineEndContext="#pop" name="line comment">
+         <DetectSpaces />
+         <IncludeRules context="##Alerts" />
+        <IncludeRules context="##Modelines" />
+     </context>
      <context attribute="Comment" lineEndContext="#stay" name="block comment">
-        <Detect2Chars attribute="Comment" context="#pop" char="-" char1="}" />
-        <Detect2Chars attribute="Comment" context="block comment" char="{" char1="-" />
+        <Detect2Chars attribute="Comment" context="#pop" char="-" char1="}" endRegion="BlockComment" />
+        <Detect2Chars attribute="Comment" context="block comment" char="{" char1="-" beginRegion="BlockComment" />
+        <DetectSpaces />
+        <IncludeRules context="##Alerts" />
+        <IncludeRules context="##Modelines" />
      </context>
   </contexts>
   <itemDatas>
@@ -167,7 +174,7 @@
     <folding indentationsensitive="1"/>
     <comments>
       <comment name="singleLine" start="--" />
-      <comment name="multiLine" start="{-" end="-}" />
+      <comment name="multiLine" start="{-" end="-}" region="BlockComment" />
     </comments>
     <keywords casesensitive="1" />
 </general>

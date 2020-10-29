@@ -4,7 +4,7 @@
 	<!ENTITY name    "[A-Za-z_:][\w.:_-]*">
 	<!ENTITY entref  "&amp;(#[0-9]+|#[xX][0-9A-Fa-f]+|&name;);">
 ]>
-<language name="Django HTML Template" version="4" kateversion="5.0" section="Markup" extensions="*.htm;*.html" mimetype="text/html"  author="Matthew Marshall (matthew@matthewmarshall.org)" license="LGPL" priority="9">
+<language name="Django HTML Template" version="5" kateversion="5.0" section="Markup" extensions="*.htm;*.html" mimetype="text/html"  author="Matthew Marshall (matthew@matthewmarshall.org)" license="LGPL" priority="9">
 
 <!--
     Based off of the katepart html syntax highlighting by Wilbert Berendsen.
@@ -59,6 +59,9 @@
 
   <context name="Template Comment" attribute="Template Comment" lineEndContext="#stay">
     <RegExpr attribute="Template Comment" context="#pop" String="\{%\s*endcomment\s*%\}" endRegion="templatecomment" />
+    <DetectSpaces />
+    <IncludeRules context="##Alerts" />
+    <IncludeRules context="##Modelines" />
   </context>
 
   <context name="Template Var" attribute="Template Var" lineEndContext="#stay">
@@ -171,6 +174,7 @@
     <DetectSpaces/>
     <IncludeRules context="##Alerts" />
     <IncludeRules context="FindTemplate" />
+    <IncludeRules context="##Modelines" />
     <DetectIdentifier/>
     <StringDetect attribute="Comment" context="#pop" String="--&gt;" endRegion="comment" />
     <RegExpr attribute="Error" context="#stay" String="-(-(?!-&gt;))+" />
@@ -328,3 +332,4 @@
   </comments>
 </general>
 </language>
+<!-- kate: replace-tabs on; tab-width 2; indent-width 2; -->
