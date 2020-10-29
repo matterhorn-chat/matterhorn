@@ -135,7 +135,7 @@ data FlattenEnv =
 
 -- | Given a sequence of inlines, flatten it into a list of lines of
 -- flattened values.
-flattenInlineSeq :: HighlightSet -> Seq Inline -> Seq (Seq FlattenedValue)
+flattenInlineSeq :: HighlightSet -> Inlines -> Seq (Seq FlattenedValue)
 flattenInlineSeq hs is =
     flattenInlineSeq' initialEnv is
     where
@@ -144,9 +144,9 @@ flattenInlineSeq hs is =
                                 , flattenHighlightSet = hs
                                 }
 
-flattenInlineSeq' :: FlattenEnv -> Seq Inline -> Seq (Seq FlattenedValue)
+flattenInlineSeq' :: FlattenEnv -> Inlines -> Seq (Seq FlattenedValue)
 flattenInlineSeq' env is =
-    fsCompletedLines $ execState (runReaderT (mapM_ flatten is >> pushFLine) env) initialState
+    fsCompletedLines $ execState (runReaderT (mapM_ flatten (unInlines is) >> pushFLine) env) initialState
     where
         initialState = FlattenState mempty mempty
 
@@ -217,17 +217,28 @@ flatten i =
         EEmoji e                    -> pushFC $ FEmoji e
         EEditSentinel r             -> pushFC $ FEditSentinel r
 
-        EEmph es                    -> withInlineStyle Emph $ mapM_ flatten es
-        EStrikethrough es           -> withInlineStyle Strikethrough $ mapM_ flatten es
-        EStrong es                  -> withInlineStyle Strong $ mapM_ flatten es
-        ECode es                    -> withInlineStyle Code $ mapM_ flatten es
-        EPermalink _ _ Nothing      -> withInlineStyle Permalink $ mapM_ flatten $ Seq.fromList [EText "<post", ESpace, EText "link>"]
-        EPermalink _ _ (Just label) -> withInlineStyle Permalink $ mapM_ flatten $ decorateLinkLabel label
+        EEmph es                    -> withInlineStyle Emph $ mapM_ flatten $ unInlines es
+        EStrikethrough es           -> withInlineStyle Strikethrough $ mapM_ flatten $ unInlines es
+        EStrong es                  -> withInlineStyle Strong $ mapM_ flatten $ unInlines es
+        ECode es                    -> withInlineStyle Code $ mapM_ flatten $ unInlines es
 
-        EHyperlink u Nothing        -> withHyperlink u $ mapM_ flatten (decorateLinkLabel $ Seq.singleton $ EText $ unURL u)
-        EHyperlink u (Just label)   -> withHyperlink u $ mapM_ flatten $ decorateLinkLabel label
-        EImage u Nothing            -> withHyperlink u $ mapM_ flatten (decorateLinkLabel $ Seq.singleton $ EText $ unURL u)
-        EImage u (Just label)       -> withHyperlink u $ mapM_ flatten $ decorateLinkLabel label
+        EPermalink _ _ label@(Inlines ls) ->
+            let label' = if Seq.null ls
+                         then Inlines $ Seq.fromList [EText "<post", ESpace, EText "link>"]
+                         else label
+            in withInlineStyle Permalink $ mapM_ flatten $ unInlines $ decorateLinkLabel label'
+
+        EHyperlink u label@(Inlines ls) ->
+            let label' = if Seq.null ls
+                         then Inlines $ Seq.singleton $ EText $ unURL u
+                         else label
+            in withHyperlink u $ mapM_ flatten $ unInlines $ decorateLinkLabel label'
+
+        EImage u label@(Inlines ls) ->
+            let label' = if Seq.null ls
+                         then Inlines $ Seq.singleton $ EText $ unURL u
+                         else label
+            in withHyperlink u $ mapM_ flatten $ unInlines $ decorateLinkLabel label'
 
 linkOpenBracket :: Inline
 linkOpenBracket = EText "<"
@@ -235,21 +246,21 @@ linkOpenBracket = EText "<"
 linkCloseBracket :: Inline
 linkCloseBracket = EText ">"
 
-addOpenBracket :: Seq Inline -> Seq Inline
-addOpenBracket l =
+addOpenBracket :: Inlines -> Inlines
+addOpenBracket (Inlines l) =
     case Seq.viewl l of
-        EmptyL -> l
+        EmptyL -> Inlines l
         h :< t ->
-            let h' = ENonBreaking $ Seq.fromList [linkOpenBracket, h]
-            in h' <| t
+            let h' = ENonBreaking $ Inlines $ Seq.fromList [linkOpenBracket, h]
+            in Inlines $ h' <| t
 
-addCloseBracket :: Seq Inline -> Seq Inline
-addCloseBracket l =
+addCloseBracket :: Inlines -> Inlines
+addCloseBracket (Inlines l) =
     case Seq.viewr l of
-        EmptyR -> l
+        EmptyR -> Inlines l
         h :> t ->
-            let t' = ENonBreaking $ Seq.fromList [t, linkCloseBracket]
-            in h |> t'
+            let t' = ENonBreaking $ Inlines $ Seq.fromList [t, linkCloseBracket]
+            in Inlines $ h |> t'
 
-decorateLinkLabel :: Seq Inline -> Seq Inline
+decorateLinkLabel :: Inlines -> Inlines
 decorateLinkLabel = addOpenBracket .  addCloseBracket

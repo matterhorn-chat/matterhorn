@@ -74,7 +74,7 @@ addBlankLines = go' . viewl
              a <| blank <| go b (viewl rs)
         go x (y :< rs) = x <| go y (viewl rs)
         go x (EmptyL) = S.singleton x
-        blank = Para (S.singleton ESpace)
+        blank = Para (Inlines $ S.singleton ESpace)
 
 -- Render text to markdown without username highlighting or permalink detection
 renderText :: Text -> Widget a
@@ -120,7 +120,7 @@ blockToWidget (Blockquote bs) = do
     w <- asks drawLineWidth
     bws <- mapM blockToWidget (unBlocks bs)
     return $ maybeHLimit w $ addQuoting $ vBox bws
-blockToWidget (List _ l bs) = do
+blockToWidget (List l bs) = do
     w <- asks drawLineWidth
     lst <- blocksToList l bs
     return $ maybeHLimit w lst
@@ -189,7 +189,7 @@ rawCodeBlockToWidget tx = do
 
             render $ padding <+> (Widget Fixed Fixed $ return renderedText)
 
-wrapInlines :: Seq Inline -> M (Widget a)
+wrapInlines :: Inlines -> M (Widget a)
 wrapInlines es = do
     w <- asks drawLineWidth
     hSet <- asks drawHighlightSet

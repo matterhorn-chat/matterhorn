@@ -312,7 +312,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                          else bs
                 else bs
 
-        augmentedText = maybeAugment $ unBlocks $ msg^.mText
+        augmentedText = unBlocks $ maybeAugment $ msg^.mText
         msgWidget =
             vBox $ (layout mdHighlightSet mdMessageWidthLimit nameElems augmentedText . viewl) augmentedText :
                    catMaybes [msgAtch, msgReac]
@@ -370,8 +370,8 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
         layout hs w nameElems bs (HTMLBlock {} :< _)  = multiLnLayout hs w nameElems bs
         layout hs w nameElems bs (List {} :< _)       = multiLnLayout hs w nameElems bs
         layout hs w nameElems bs (Para inlns :< _)
-            | F.any breakCheck inlns                    = multiLnLayout hs w nameElems bs
-        layout hs w nameElems bs _                      = nameNextToMessage hs w nameElems bs
+            | F.any breakCheck (unInlines inlns)      = multiLnLayout hs w nameElems bs
+        layout hs w nameElems bs _                    = nameNextToMessage hs w nameElems bs
 
         multiLnLayout hs w nameElems bs =
             if mdIndentBlocks
@@ -395,17 +395,17 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
 -- If the last block is a paragraph, append it to that paragraph.
 -- Otherwise, append a new block so it appears beneath the last
 -- block-level element.
-addEditSentinel :: Inline -> Seq Block -> Seq Block
-addEditSentinel d bs =
+addEditSentinel :: Inline -> Blocks -> Blocks
+addEditSentinel d (Blocks bs) =
     case viewr bs of
-        EmptyR -> bs
-        (rest :> b) -> rest <> appendEditSentinel d b
+        EmptyR -> Blocks bs
+        (rest :> b) -> Blocks rest <> appendEditSentinel d b
 
-appendEditSentinel :: Inline -> Block -> Seq Block
+appendEditSentinel :: Inline -> Block -> Blocks
 appendEditSentinel sentinel b =
-    let s = Para (S.singleton sentinel)
-    in case b of
-        Para is -> S.singleton $ Para (is |> ESpace |> sentinel)
+    let s = Para (Inlines $ S.singleton sentinel)
+    in Blocks $ case b of
+        Para is -> S.singleton $ Para (Inlines $ unInlines is |> ESpace |> sentinel)
         _ -> S.fromList [b, s]
 
 omittedUsernameType :: MessageType -> Bool

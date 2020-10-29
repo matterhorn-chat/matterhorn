@@ -20,8 +20,7 @@ import           Matterhorn.Draw.Util
 import           Matterhorn.Draw.RichText
 import           Matterhorn.Themes
 import           Matterhorn.Types
-import           Matterhorn.Types.RichText ( Blocks(..), Block(Para)
-                                           , unURL, TeamURLName(..) )
+import           Matterhorn.Types.RichText
 
 
 renderUrlList :: ChatState -> Widget Name
@@ -49,9 +48,10 @@ renderUrlList st =
             (vLimit 1 $
              hBox [ let u = maybe "<server>" id (link^.linkUser.to (nameForUserRef st))
                     in colorUsername me u u
-                  , case link^.linkLabel of
-                      Nothing -> emptyWidget
-                      Just label -> txt ": " <+> renderRichText me hSet Nothing False (Blocks $ Seq.singleton $ Para label)
+                  , case Seq.null (unInlines $ link^.linkLabel) of
+                      True -> emptyWidget
+                      False -> txt ": " <+> renderRichText me hSet Nothing False
+                                              (Blocks $ Seq.singleton $ Para $ link^.linkLabel)
                   , fill ' '
                   , renderDate st $ withServerTime time
                   , str " "

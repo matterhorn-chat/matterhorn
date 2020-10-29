@@ -124,10 +124,7 @@ import           Network.Mattermost.Types ( ChannelId, PostId, Post
 
 import           Matterhorn.Types.DirectionalSeq
 import           Matterhorn.Types.Posts
-import           Matterhorn.Types.RichText ( Blocks, unBlocks, Inline(..)
-                                , findUsernames, blockGetURLs
-                                , URL(..), parseMarkdown, TeamURLName
-                                )
+import           Matterhorn.Types.RichText
 
 
 -- | The state of a message's thread context.
@@ -293,7 +290,7 @@ data LinkTarget =
 data LinkChoice =
     LinkChoice { _linkTime   :: ServerTime
                , _linkUser   :: UserRef
-               , _linkLabel  :: Maybe (Seq Inline)
+               , _linkLabel  :: Inlines
                , _linkTarget :: LinkTarget
                } deriving (Eq, Show)
 
@@ -738,12 +735,12 @@ msgURLs msg =
                           LinkChoice
                             (msg^.mDate)
                             uRef
-                            (Just $ attachmentLabel a)
+                            (attachmentLabel a)
                             (LinkFileId $ a^.attachmentFileId))
                        <$> (msg^.mAttachments)
       attachmentLabel a =
-          Seq.fromList [ EText "attachment"
-                       , ESpace
-                       , ECode $ Seq.singleton $ EText $ a^.attachmentName
-                       ]
+          Inlines $ Seq.fromList [ EText "attachment"
+                                 , ESpace
+                                 , ECode $ Inlines $ Seq.singleton $ EText $ a^.attachmentName
+                                 ]
   in msgUrls <> attachmentURLs
