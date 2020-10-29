@@ -42,7 +42,7 @@ import qualified Data.Foldable as F
 import           Data.Monoid (First(..))
 import qualified Data.Set as S
 import qualified Data.Sequence as Seq
-import           Data.Sequence ( (<|), viewl, viewr, ViewL((:<)), ViewR((:>)) )
+import           Data.Sequence ( (<|), (|>), viewl, viewr, ViewL((:<)), ViewR((:>)) )
 import qualified Data.Text as T
 
 import           Network.Mattermost.Types ( PostId(..), Id(..), ServerBaseURL(..) )
@@ -176,11 +176,20 @@ newtype Inlines = Inlines (Seq Inline)
 
 instance Semigroup Inlines where
     (Inlines l) <> (Inlines r) =
-        case (viewr l, viewl r) of
+        Inlines $ case (viewr l, viewl r) of
             (lInit :> lLast, rHead :< rTail) ->
                 case (lLast, rHead) of
-                    (_, _) -> Inlines $ l <> r
-            (_, _) -> Inlines $ l <> r
+                    (ECode a, ECode b) ->
+                        lInit <> ((ECode $ a <> b) <| rTail)
+                    (EEmph a, EEmph b) ->
+                        lInit <> ((EEmph $ a <> b) <| rTail)
+                    (EStrikethrough a, EStrikethrough b) ->
+                        lInit <> ((EStrikethrough $ a <> b) <| rTail)
+                    (EStrong a, EStrong b) ->
+                        lInit <> ((EStrong $ a <> b) <| rTail)
+                    (_, _) ->
+                        l <> r
+            (_, _) -> l <> r
 
 unInlines :: Inlines -> Seq Inline
 unInlines (Inlines is) = is
