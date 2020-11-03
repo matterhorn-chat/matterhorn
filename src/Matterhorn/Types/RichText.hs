@@ -46,7 +46,7 @@ import           Data.List ( intersperse )
 import           Data.Monoid (First(..))
 import qualified Data.Set as S
 import qualified Data.Sequence as Seq
-import           Data.Sequence ( (<|), (|>), viewl, viewr, ViewL((:<)), ViewR((:>)) )
+import           Data.Sequence ( (<|), viewl, viewr, ViewL((:<)), ViewR((:>)) )
 import qualified Data.Text as T
 import qualified Text.Parsec as P
 
