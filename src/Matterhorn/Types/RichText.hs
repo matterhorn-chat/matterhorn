@@ -41,7 +41,6 @@ import qualified Commonmark.Extensions as C
 import qualified Commonmark.Inlines as C
 import qualified Commonmark.TokParsers as C
 import           Control.Monad.Identity
-import           Data.Char ( isAlphaNum, isAlpha )
 import qualified Data.Foldable as F
 import           Data.List ( intersperse )
 import           Data.Monoid (First(..))
@@ -50,7 +49,6 @@ import qualified Data.Sequence as Seq
 import           Data.Sequence ( (<|), (|>), viewl, viewr, ViewL((:<)), ViewR((:>)) )
 import qualified Data.Text as T
 import qualified Text.Parsec as P
-import qualified Text.Parsec.Char as PC
 
 import           Network.Mattermost.Types ( PostId(..), Id(..), ServerBaseURL(..) )
 
