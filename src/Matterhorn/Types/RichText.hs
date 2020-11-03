@@ -38,6 +38,8 @@ import           Matterhorn.Prelude
 
 import qualified Commonmark as C
 import qualified Commonmark.Extensions as C
+import qualified Commonmark.Inlines as C
+import qualified Commonmark.TokParsers as C
 import           Control.Monad.Identity
 import           Data.Char ( isAlphaNum, isAlpha )
 import qualified Data.Foldable as F
@@ -46,6 +48,7 @@ import qualified Data.Set as S
 import qualified Data.Sequence as Seq
 import           Data.Sequence ( (<|), (|>), viewl, viewr, ViewL((:<)), ViewR((:>)) )
 import qualified Data.Text as T
+import qualified Text.Parsec as P
 
 import           Network.Mattermost.Types ( PostId(..), Id(..), ServerBaseURL(..) )
 
@@ -219,6 +222,22 @@ instance C.IsInline Inlines where
     code = singleI . ECode . singleI . EText
     rawInline _ = singleI . ERawHtml
 
+emojiSpec :: (Monad m) => C.SyntaxSpec m Inlines Blocks
+emojiSpec =
+    mempty { C.syntaxInlineParsers = [C.withAttributes parseEmoji]
+           }
+
+parseEmoji :: (Monad m) => C.InlineParser m Inlines
+parseEmoji = P.try $ do
+  C.symbol ':'
+  ts <- P.many1 $ C.satisfyWord (const True)
+             <|> C.symbol '_'
+             <|> C.symbol '+'
+             <|> C.symbol '-'
+  C.symbol ':'
+  let kw = C.untokenize ts
+  return $ singleI $ EEmoji kw
+
 singleI :: Inline -> Inlines
 singleI = Inlines . Seq.singleton
 
@@ -254,6 +273,7 @@ parseMarkdown baseUrl t =
     let customSyntax = mconcat $ markdownExtensions <> [C.defaultSyntaxSpec]
         markdownExtensions =
             [ C.autolinkSpec
+            , emojiSpec
             ]
 
     in case runIdentity $ C.commonmarkWith customSyntax "-" t of
