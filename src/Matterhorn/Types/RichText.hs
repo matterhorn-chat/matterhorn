@@ -284,7 +284,6 @@ instance C.IsBlock Inlines Blocks where
     plain = singleB . Para
     thematicBreak = singleB HRule
     blockQuote = singleB . Blockquote
-    -- TODO: fix this
     codeBlock infoTxt content =
         let ws = T.words infoTxt
             (lang, info) = case ws of
