@@ -12,12 +12,15 @@ module Matterhorn.Types.RichText
   , unBlocks
 
   , Block(..)
-  , ListType(..)
   , CodeBlockInfo(..)
-  , NumDecoration(..)
   , Inline(..)
   , Inlines(..)
   , unInlines
+
+  , C.ListType(..)
+  , C.ListSpacing(..)
+  , C.EnumeratorType(..)
+  , C.DelimiterType(..)
 
   , TeamBaseURL(..)
   , TeamURLName(..)
@@ -77,7 +80,7 @@ data Block =
     -- ^ A section header with specified depth and contents.
     | Blockquote Blocks
     -- ^ A blockquote.
-    | List ListType (Seq Blocks)
+    | List C.ListType C.ListSpacing (Seq Blocks)
     -- ^ An itemized list.
     | CodeBlock CodeBlockInfo Text
     -- ^ A code block.
@@ -86,15 +89,6 @@ data Block =
     | HRule
     -- ^ A horizontal rule.
     deriving (Show)
-
--- | The type of itemized list items.
-data ListType =
-    Bullet Char
-    -- ^ Decorate the items with bullet using the specified character.
-    | Numbered NumDecoration Int
-    -- ^ Number the items starting at the specified number; use the
-    -- indicated decoration following the number.
-    deriving (Eq, Show, Ord)
 
 -- | Information about a code block.
 data CodeBlockInfo =
@@ -109,13 +103,6 @@ data CodeBlockInfo =
                   -- whitespace.
                   }
                   deriving (Eq, Show, Ord)
-
--- | Ways to decorate numbered itemized list items. The decoration
--- follows the list item number.
-data NumDecoration =
-    Paren
-    | Period
-    deriving (Eq, Show, Ord)
 
 -- | A URL.
 newtype URL = URL Text
@@ -290,7 +277,7 @@ instance C.IsBlock Inlines Blocks where
         in singleB $ CodeBlock (CodeBlockInfo lang info) content
     heading level i = singleB $ Header level i
     rawBlock _format content = singleB $ CodeBlock (CodeBlockInfo Nothing Nothing) content
-    list ty _spacing bs = singleB $ List (fromMarkdownListType ty) $ Seq.fromList bs
+    list ty spacing bs = singleB $ List ty spacing $ Seq.fromList bs
     referenceLinkDefinition _label (_dest, _title) = mempty
 
 singleB :: Block -> Blocks
@@ -320,17 +307,6 @@ parseMarkdown mBaseUrl t =
             Nothing -> bs
             Just baseUrl -> rewriteBlocksPermalinks baseUrl bs
 
-fromMarkdownListType :: C.ListType -> ListType
-fromMarkdownListType (C.BulletList c) =
-    Bullet c
-fromMarkdownListType (C.OrderedList i _enumTy delimTy) =
-    -- TODO BROKEN
-    let dec = case delimTy of
-                  C.Period -> Period
-                  C.OneParen -> Paren
-                  C.TwoParens -> Paren
-    in Numbered dec i
-
 -- | If the specified URL matches the active server base URL and team
 -- and refers to a post, extract the team name and post ID values and
 -- return them.
@@ -355,7 +331,7 @@ rewriteBlockPermalinks :: TeamBaseURL -> Block -> Block
 rewriteBlockPermalinks u (Para s) = Para $ rewriteInlinePermalinks u s
 rewriteBlockPermalinks u (Header i s) = Header i $ rewriteInlinePermalinks u s
 rewriteBlockPermalinks u (Blockquote bs) = Blockquote $ rewriteBlocksPermalinks u bs
-rewriteBlockPermalinks u (List ty bss) = List ty $ rewriteBlocksPermalinks u <$> bss
+rewriteBlockPermalinks u (List ty spacing bss) = List ty spacing $ rewriteBlocksPermalinks u <$> bss
 rewriteBlockPermalinks _ b@(CodeBlock {}) = b
 rewriteBlockPermalinks _ b@(HTMLBlock {}) = b
 rewriteBlockPermalinks _ b@HRule = b
@@ -396,7 +372,7 @@ blockFindUsernames (Header _ is) =
     inlineFindUsernames $ F.toList $ unInlines is
 blockFindUsernames (Blockquote bs) =
     findUsernames bs
-blockFindUsernames (List _ bs) =
+blockFindUsernames (List _ _ bs) =
     S.unions $ F.toList $ findUsernames <$> bs
 blockFindUsernames _ =
     mempty
@@ -416,7 +392,7 @@ blockGetURLs (Header _ is) =
     catMaybes $ elementGetURL <$> (toList $ unInlines is)
 blockGetURLs (Blockquote bs) =
     mconcat $ blockGetURLs <$> toList (unBlocks bs)
-blockGetURLs (List _ bss) =
+blockGetURLs (List _ _ bss) =
     mconcat $ mconcat $
     (fmap blockGetURLs . F.toList . unBlocks) <$> F.toList bss
 blockGetURLs _ =

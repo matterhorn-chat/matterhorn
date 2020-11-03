@@ -120,9 +120,9 @@ blockToWidget (Blockquote bs) = do
     w <- asks drawLineWidth
     bws <- mapM blockToWidget (unBlocks bs)
     return $ maybeHLimit w $ addQuoting $ vBox bws
-blockToWidget (List l bs) = do
+blockToWidget (List ty spacing bs) = do
     w <- asks drawLineWidth
-    lst <- blocksToList l bs
+    lst <- blocksToList ty spacing bs
     return $ maybeHLimit w lst
 blockToWidget (CodeBlock ci tx) = do
     hSet <- asks drawHighlightSet
@@ -203,14 +203,16 @@ wrapInlines es = do
                     (doLineWrapping width <$> (F.toList $ flattenInlineSeq hSet es))
         B.render (vBox ws)
 
-blocksToList :: ListType -> Seq Blocks -> M (Widget a)
-blocksToList lt bs = do
-    let is = case lt of
-          Bullet _ -> repeat ("• ")
-          Numbered Period s ->
+blocksToList :: ListType -> ListSpacing -> Seq Blocks -> M (Widget a)
+blocksToList ty _spacing bs = do
+    let is = case ty of
+          BulletList _ -> repeat ("• ")
+          OrderedList s _ Period ->
             [ T.pack (show (n :: Int)) <> ". " | n <- [s..] ]
-          Numbered Paren s ->
+          OrderedList s _ OneParen ->
             [ T.pack (show (n :: Int)) <> ") " | n <- [s..] ]
+          OrderedList s _ TwoParens ->
+            [ T.pack (show (n :: Int)) <> ")) " | n <- [s..] ]
 
     results <- forM (zip is $ unBlocks <$> (F.toList bs)) $ \(i, b) -> do
         blocks <- mapM blockToWidget b
