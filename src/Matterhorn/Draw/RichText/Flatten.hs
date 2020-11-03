@@ -172,7 +172,27 @@ pushFC v = do
 
 -- | Push a FlattenedValue onto the current line.
 pushFV :: FlattenedValue -> FlattenM ()
-pushFV fv = lift $ modify $ \s -> s { fsCurLine = fsCurLine s |> fv }
+pushFV fv = lift $ modify $ \s -> s { fsCurLine = appendFV fv (fsCurLine s) }
+
+-- | Append the value to the sequence.
+--
+-- If the both the value to append AND the sequence's last value are
+-- both text nodes, AND if those nodes both have the same style and URL
+-- metadata, then merge them into one text node. This keeps adjacent
+-- non-whitespace text together as one logical token (e.g. "(foo" rather
+-- than "(" followed by "foo") to avoid undesirable line break points in
+-- the wrapping process.
+appendFV :: FlattenedValue -> Seq FlattenedValue -> Seq FlattenedValue
+appendFV v line =
+    case (Seq.viewr line, v) of
+        (h :> SingleInline a, SingleInline b) ->
+            case (fiValue a, fiValue b) of
+                (FText aT, FText bT) ->
+                    if fiStyles a == fiStyles b && fiURL a == fiURL b
+                    then h |> SingleInline (FlattenedInline (FText $ aT <> bT) (fiStyles a) (fiURL a))
+                    else line |> v
+                _ -> line |> v
+        _ -> line |> v
 
 -- | Push the current line onto the finished lines list and start a new
 -- line.
