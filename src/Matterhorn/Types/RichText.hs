@@ -212,6 +212,9 @@ instance C.IsInline Inlines where
     -- over this structure to replace any hyperlinks with permalinks as
     -- needed, since we can't implement it as a parser without having to
     -- also re-implement URL detection. :(
+    --
+    -- TODO: to get auto-linking of bare URIs (which commonmark does not
+    -- do by default) we will need to enable the Autolink extension.
     link url _title desc = singleI $ EHyperlink (URL url) desc
     image url _title desc = singleI $ EImage (URL url) desc
     code = singleI . ECode . singleI . EText
