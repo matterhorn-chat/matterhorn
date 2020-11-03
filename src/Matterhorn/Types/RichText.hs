@@ -210,8 +210,7 @@ instance C.HasAttributes Inlines where
 instance C.IsInline Inlines where
     lineBreak = singleI ELineBreak
     softBreak = singleI ESoftBreak
-    str " " = singleI ESpace
-    str t = singleI $ EText t
+    str t = Inlines $ Seq.fromList $ intersperse ESpace $ EText <$> T.splitOn " " t
     entity = singleI . EText
     escapedChar = singleI . EText . T.singleton
     emph = singleI . EEmph
@@ -222,7 +221,7 @@ instance C.IsInline Inlines where
     -- also re-implement URL detection. :(
     link url _title desc = singleI $ EHyperlink (URL url) desc
     image url _title desc = singleI $ EImage (URL url) desc
-    code = singleI . ECode . singleI . EText
+    code t = singleI $ ECode $ C.str t
     rawInline _ = singleI . ERawHtml
 
 instance C.HasStrikethrough Inlines where
