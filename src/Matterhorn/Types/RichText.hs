@@ -52,7 +52,7 @@ import qualified Text.Parsec as P
 
 import           Network.Mattermost.Types ( PostId(..), Id(..), ServerBaseURL(..) )
 
-import           Matterhorn.Constants ( userSigilChar, normalChannelSigil )
+import           Matterhorn.Constants ( userSigilChar, normalChannelSigilChar )
 
 -- | A team name found in a Mattermost post URL
 data TeamURLName = TeamURLName Text
@@ -222,6 +222,18 @@ instance C.IsInline Inlines where
     code = singleI . ECode . singleI . EText
     rawInline _ = singleI . ERawHtml
 
+channelSpec :: (Monad m) => C.SyntaxSpec m Inlines Blocks
+channelSpec =
+    mempty { C.syntaxInlineParsers = [C.withAttributes parseChannel]
+           }
+
+parseChannel :: (Monad m) => C.InlineParser m Inlines
+parseChannel = P.try $ do
+  void $ C.symbol normalChannelSigilChar
+  let chunk = C.satisfyWord (const True) <|> C.symbol '_' <|> C.symbol '-'
+  cts <- P.many1 chunk
+  return $ singleI $ EChannel $ C.untokenize cts
+
 usernameSpec :: (Monad m) => C.SyntaxSpec m Inlines Blocks
 usernameSpec =
     mempty { C.syntaxInlineParsers = [C.withAttributes parseUsername]
@@ -287,6 +299,7 @@ parseMarkdown baseUrl t =
         markdownExtensions =
             [ C.autolinkSpec
             , usernameSpec
+            , channelSpec
             , emojiSpec
             ]
 
@@ -523,8 +536,3 @@ findVerbatimChunk :: Blocks -> Maybe Text
 findVerbatimChunk (Blocks bs) = getFirst $ F.foldMap go bs
   where go (CodeBlock _ t) = First (Just t)
         go _               = First Nothing
-
--- isNameFragment :: C.Inline -> Bool
--- isNameFragment (C.Str t) =
---     not (T.null t) && isValidNameChar (T.head t)
--- isNameFragment _ = False

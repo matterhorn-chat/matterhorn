@@ -4,6 +4,7 @@ module Matterhorn.Constants
   , numScrollbackPosts
   , previewMaxHeight
   , normalChannelSigil
+  , normalChannelSigilChar
   , userSigil
   , userSigilChar
   , editMarking
@@ -33,7 +34,10 @@ previewMaxHeight = 5
 
 -- Sigils
 normalChannelSigil :: Text
-normalChannelSigil = "~"
+normalChannelSigil = T.singleton normalChannelSigilChar
+
+normalChannelSigilChar :: Char
+normalChannelSigilChar = '~'
 
 userSigil :: Text
 userSigil = T.singleton userSigilChar
