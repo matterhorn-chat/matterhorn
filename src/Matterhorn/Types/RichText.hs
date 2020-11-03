@@ -222,6 +222,9 @@ instance C.IsInline Inlines where
     code = singleI . ECode . singleI . EText
     rawInline _ = singleI . ERawHtml
 
+instance C.HasStrikethrough Inlines where
+    strikethrough = singleI . EStrikethrough
+
 channelSpec :: (Monad m) => C.SyntaxSpec m Inlines Blocks
 channelSpec =
     mempty { C.syntaxInlineParsers = [C.withAttributes parseChannel]
@@ -298,6 +301,7 @@ parseMarkdown baseUrl t =
     let customSyntax = mconcat $ markdownExtensions <> [C.defaultSyntaxSpec]
         markdownExtensions =
             [ C.autolinkSpec
+            , C.strikethroughSpec
             , usernameSpec
             , channelSpec
             , emojiSpec
