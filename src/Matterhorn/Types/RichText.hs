@@ -210,7 +210,9 @@ instance C.HasAttributes Inlines where
 instance C.IsInline Inlines where
     lineBreak = singleI ELineBreak
     softBreak = singleI ESoftBreak
-    str t = Inlines $ Seq.fromList $ intersperse ESpace $ EText <$> T.splitOn " " t
+    str t = Inlines $ Seq.fromList $
+            filter (/= (EText "")) $
+            intersperse ESpace $ EText <$> T.splitOn " " t
     entity = singleI . EText
     escapedChar = singleI . EText . T.singleton
     emph = singleI . EEmph
@@ -282,7 +284,14 @@ instance C.IsBlock Inlines Blocks where
     plain = singleB . Para
     thematicBreak = singleB HRule
     blockQuote = singleB . Blockquote
-    codeBlock _info content = singleB $ CodeBlock (CodeBlockInfo Nothing Nothing) content
+    -- TODO: fix this
+    codeBlock infoTxt content =
+        let ws = T.words infoTxt
+            (lang, info) = case ws of
+                [l, i] -> (Just l, Just i)
+                [l] -> (Just l, Nothing)
+                _ -> (Nothing, Nothing)
+        in singleB $ CodeBlock (CodeBlockInfo lang info) content
     heading level i = singleB $ Header level i
     rawBlock _format content = singleB $ CodeBlock (CodeBlockInfo Nothing Nothing) content
     list ty _spacing bs = singleB $ List (fromMarkdownListType ty) $ Seq.fromList bs
