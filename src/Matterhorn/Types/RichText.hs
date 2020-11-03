@@ -43,12 +43,14 @@ import qualified Commonmark.TokParsers as C
 import           Control.Monad.Identity
 import           Data.Char ( isAlphaNum, isAlpha )
 import qualified Data.Foldable as F
+import           Data.List ( intersperse )
 import           Data.Monoid (First(..))
 import qualified Data.Set as S
 import qualified Data.Sequence as Seq
 import           Data.Sequence ( (<|), (|>), viewl, viewr, ViewL((:<)), ViewR((:>)) )
 import qualified Data.Text as T
 import qualified Text.Parsec as P
+import qualified Text.Parsec.Char as PC
 
 import           Network.Mattermost.Types ( PostId(..), Id(..), ServerBaseURL(..) )
 
@@ -222,6 +224,19 @@ instance C.IsInline Inlines where
     code = singleI . ECode . singleI . EText
     rawInline _ = singleI . ERawHtml
 
+usernameSpec :: (Monad m) => C.SyntaxSpec m Inlines Blocks
+usernameSpec =
+    mempty { C.syntaxInlineParsers = [C.withAttributes parseUsername]
+           }
+
+parseUsername :: (Monad m) => C.InlineParser m Inlines
+parseUsername = P.try $ do
+  C.symbol '@'
+  let chunk = C.satisfyWord (const True) <|> C.symbol '_' <|> C.symbol '-'
+      [period] = C.tokenize "" "."
+  uts <- intersperse period <$> P.sepBy1 chunk (C.symbol '.')
+  return $ singleI $ EUser $ C.untokenize uts
+
 emojiSpec :: (Monad m) => C.SyntaxSpec m Inlines Blocks
 emojiSpec =
     mempty { C.syntaxInlineParsers = [C.withAttributes parseEmoji]
@@ -273,6 +288,7 @@ parseMarkdown baseUrl t =
     let customSyntax = mconcat $ markdownExtensions <> [C.defaultSyntaxSpec]
         markdownExtensions =
             [ C.autolinkSpec
+            , usernameSpec
             , emojiSpec
             ]
 
@@ -509,9 +525,6 @@ findVerbatimChunk :: Blocks -> Maybe Text
 findVerbatimChunk (Blocks bs) = getFirst $ F.foldMap go bs
   where go (CodeBlock _ t) = First (Just t)
         go _               = First Nothing
-
-isValidNameChar :: Char -> Bool
-isValidNameChar c = isAlpha c || c == '_' || c == '.' || c == '-'
 
 -- isNameFragment :: C.Inline -> Bool
 -- isNameFragment (C.Str t) =
