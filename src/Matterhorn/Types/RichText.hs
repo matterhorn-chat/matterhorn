@@ -210,7 +210,8 @@ instance C.HasAttributes Inlines where
 instance C.IsInline Inlines where
     lineBreak = singleI ELineBreak
     softBreak = singleI ESoftBreak
-    str = singleI . EText
+    str " " = singleI ESpace
+    str t = singleI $ EText t
     entity = singleI . EText
     escapedChar = singleI . EText . T.singleton
     emph = singleI . EEmph
