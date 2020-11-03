@@ -321,14 +321,6 @@ parseMarkdown baseUrl t =
         Left _ -> mempty
         Right bs -> bs
 
--- fromMarkdownCodeAttr :: C.CodeAttr -> CodeBlockInfo
--- fromMarkdownCodeAttr (C.CodeAttr lang info) =
---     let strippedLang = T.strip lang
---         strippedInfo = T.strip info
---         maybeText t = if T.null t then Nothing else Just t
---     in CodeBlockInfo (maybeText strippedLang)
---                      (maybeText strippedInfo)
-
 fromMarkdownListType :: C.ListType -> ListType
 fromMarkdownListType (C.BulletList c) =
     Bullet c
@@ -339,142 +331,6 @@ fromMarkdownListType (C.OrderedList i _enumTy delimTy) =
                   C.OneParen -> Paren
                   C.TwoParens -> Paren
     in Numbered dec i
-
--- | Convert a sequence of Markdown inline values to a sequence of
--- Elements.
---
--- This conversion converts sequences of Markdown AST fragments into
--- RichText elements. In particular, this function may determine that
--- some sequences of Markdown text fragments belong together, such as
--- the sequence @["@", "joe", "-", "user"]@, which should be treated as
--- a single "@joe-user" token due to username character validation. When
--- appropriate, this function does such consolidation when converting to
--- RichText elements.
---
--- This function is also partially responsible for paving the way for
--- line-wrapping later on when RichText is rendered. This means that,
--- when possible, the elements produced by this function need to be as
--- small as possible, without losing structure information. An example
--- of this is Markdown inline code fragments, such as "`this is code`".
--- This function will convert that one Markdown inline code fragment
--- into a sequence of five RichText elements, each with a "Code" style
--- assigned: @[EText "this", ESpace, EText "is", ESpace, EText "code"]@.
--- This "flattening" of the original Markdown structure makes it much
--- easier to do line-wrapping without losing style information because
--- it is possible to gather up tokens that do not exceed line widths
--- without losing style information. This is key to rendering the text
--- with the right terminal attributes.
---
--- However, there are a couple of cases where such flattening does *not*
--- happen: hyperlinks and images. In these cases we do not flatten the
--- (arbitrary) text label structure of links and images because we need
--- to be able to recover those labels to gather up URLs to show to the
--- user in the URL list. So we leave the complete text structure of
--- those labels behind in the 'EHyperlink' and 'EImage' constructors as
--- sequences of Elements. This means that logic in 'Draw.RichText' that
--- does line-wrapping will have to explicitly break up link and image
--- labels across line breaks.
--- fromMarkdownInlines :: Maybe TeamBaseURL -> Seq C.Inline -> Seq Inline
--- fromMarkdownInlines baseUrl inlines =
---     let go is = case Seq.viewl is of
---           C.Str "~" :< xs ->
---               case Seq.viewl xs of
---                   C.Str "~" :< xs2 ->
---                       case takeUntilStrikethroughEnd xs2 of
---                           Nothing -> EText "~" <| go xs
---                           Just (strikethroughInlines, rest) ->
---                               (EStrikethrough $ go strikethroughInlines) <|
---                               go rest
---                   _ ->
---                       let (cFrags, rest) = Seq.spanl isNameFragment xs
---                           cn = T.concat (unsafeGetStr <$> F.toList cFrags)
---                       in if not (T.null cn)
---                          then EChannel cn <| go rest
---                          else EText normalChannelSigil <| go xs
---           C.Str ":" :< xs ->
---               let validEmojiFragment (C.Str f) =
---                       f `elem` ["_", "-"] || T.all isAlphaNum f
---                   validEmojiFragment _ = False
---                   (emojiFrags, rest) = Seq.spanl validEmojiFragment xs
---                   em = T.concat $ unsafeGetStr <$> F.toList emojiFrags
---               in case Seq.viewl rest of
---                   C.Str ":" :< rest2 ->
---                       EEmoji em <| go rest2
---                   _ ->
---                       EText ":" <| go xs
---           C.Str t :< xs | userSigil `T.isPrefixOf` t ->
---               let (uFrags, rest) = Seq.spanl isNameFragment xs
---                   t' = T.concat $ t : (unsafeGetStr <$> F.toList uFrags)
---                   u = T.drop 1 t'
---               in EUser u <| go rest
---           C.Str t :< xs ->
---               EText t <| go xs
---           C.Space :< xs ->
---               ESpace <| go xs
---           C.SoftBreak :< xs ->
---               ESoftBreak <| go xs
---           C.LineBreak :< xs ->
---               ELineBreak <| go xs
---           C.Link label theUrl _ :< xs ->
---               let mLabel = if Seq.null label
---                            then Nothing
---                            else case F.toList label of
---                                [C.Str u] | u == theUrl -> Nothing
---                                _ -> Just $ fromMarkdownInlines baseUrl $ removeHyperlinks label
---                   rest = go xs
---                   this = case flip getPermalink theUrl =<< baseUrl of
---                       Nothing ->
---                           let url = URL theUrl
---                           in EHyperlink url mLabel
---                       Just (tName, pId) ->
---                           EPermalink tName pId mLabel
---               in this <| rest
---           C.Image altIs theUrl _ :< xs ->
---               let mLabel = if Seq.null altIs
---                            then Nothing
---                            else Just $ fromMarkdownInlines baseUrl altIs
---                   url = URL theUrl
---               in EImage url mLabel <| go xs
---           C.RawHtml t :< xs ->
---               ERawHtml t <| go xs
---           C.Code t :< xs ->
---               -- We turn a single code string into individual Inlines
---               -- so we can perform line-wrapping on the inline code
---               -- text.
---               let ts = [ frag
---                        | wd <- T.split (== ' ') t
---                        , frag <- case wd of
---                            "" -> [ESpace]
---                            _  -> [ESpace, EText wd]
---                        ]
---                   ts' = case ts of
---                     (ESpace:rs) -> rs
---                     _           -> ts
---               in ECode (Seq.fromList ts') <| go xs
---           C.Emph as :< xs ->
---               (EEmph $ go as) <| go xs
---           C.Strong as :< xs ->
---               (EStrong $ go as) <| go xs
---           C.Entity t :< xs ->
---               EText t <| go xs
---           Seq.EmptyL -> mempty
--- 
---     in go inlines
-
--- takeUntilStrikethroughEnd :: Seq C.Inline -> Maybe (Seq C.Inline, Seq C.Inline)
--- takeUntilStrikethroughEnd is =
---     let go pos s = case Seq.viewl s of
---             C.Str "~" :< rest ->
---                 case Seq.viewl rest of
---                     C.Str "~" :< _ ->
---                         Just pos
---                     _ -> go (pos + 1) rest
---             _ :< rest -> go (pos + 1) rest
---             Seq.EmptyL -> Nothing
---     in do
---         pos <- go 0 is
---         let (h, t) = Seq.splitAt pos is
---         return (h, Seq.drop 2 t)
 
 -- | If the specified URL matches the active server base URL and team
 -- and refers to a post, extract the team name and post ID values and
@@ -492,11 +348,6 @@ getPermalink (TeamBaseURL tName (ServerBaseURL baseUrl)) url =
             in if tName == TeamURLName tName' && not (T.null pIdStr)
                then Just (tName, PI $ Id pIdStr)
                else Nothing
-
-
--- unsafeGetStr :: C.Inline -> Text
--- unsafeGetStr (C.Str t) = t
--- unsafeGetStr _ = error "BUG: unsafeGetStr called on non-Str Inline"
 
 -- | Obtain all username references in a rich text document.
 findUsernames :: Blocks -> S.Set T.Text
