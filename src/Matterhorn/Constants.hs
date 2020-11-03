@@ -5,12 +5,15 @@ module Matterhorn.Constants
   , previewMaxHeight
   , normalChannelSigil
   , userSigil
+  , userSigilChar
   , editMarking
   )
 where
 
 import Prelude ()
 import Matterhorn.Prelude
+
+import qualified Data.Text as T
 
 
 -- | The number of rows to consider a "page" when scrolling
@@ -33,7 +36,10 @@ normalChannelSigil :: Text
 normalChannelSigil = "~"
 
 userSigil :: Text
-userSigil = "@"
+userSigil = T.singleton userSigilChar
+
+userSigilChar :: Char
+userSigilChar = '@'
 
 editMarking :: Text
 editMarking = "(edited)"

@@ -52,7 +52,7 @@ import qualified Text.Parsec as P
 
 import           Network.Mattermost.Types ( PostId(..), Id(..), ServerBaseURL(..) )
 
-import           Matterhorn.Constants ( userSigil, normalChannelSigil )
+import           Matterhorn.Constants ( userSigilChar, normalChannelSigil )
 
 -- | A team name found in a Mattermost post URL
 data TeamURLName = TeamURLName Text
@@ -229,7 +229,7 @@ usernameSpec =
 
 parseUsername :: (Monad m) => C.InlineParser m Inlines
 parseUsername = P.try $ do
-  void $ C.satisfyWord (== userSigil)
+  void $ C.symbol userSigilChar
   let chunk = C.satisfyWord (const True) <|> C.symbol '_' <|> C.symbol '-'
       [period] = C.tokenize "" "."
   uts <- intersperse period <$> P.sepBy1 chunk (C.symbol '.')
