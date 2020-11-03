@@ -218,10 +218,6 @@ instance C.IsInline Inlines where
     escapedChar = singleI . EText . T.singleton
     emph = singleI . EEmph
     strong = singleI . EStrong
-    -- TODO: we need to handle permalinks. That will need to be a pass
-    -- over this structure to replace any hyperlinks with permalinks as
-    -- needed, since we can't implement it as a parser without having to
-    -- also re-implement URL detection. :(
     link url _title desc = singleI $ EHyperlink (URL url) desc
     image url _title desc = singleI $ EImage (URL url) desc
     code t = singleI $ ECode $ C.str t
