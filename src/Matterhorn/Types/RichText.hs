@@ -242,12 +242,12 @@ emojiSpec =
 
 parseEmoji :: (Monad m) => C.InlineParser m Inlines
 parseEmoji = P.try $ do
-  C.symbol ':'
+  void $ C.symbol ':'
   ts <- P.many1 $ C.satisfyWord (const True)
              <|> C.symbol '_'
              <|> C.symbol '+'
              <|> C.symbol '-'
-  C.symbol ':'
+  void $ C.symbol ':'
   let kw = C.untokenize ts
   return $ singleI $ EEmoji kw
 
