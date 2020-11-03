@@ -208,6 +208,10 @@ instance C.IsInline Inlines where
     escapedChar = singleI . EText . T.singleton
     emph = singleI . EEmph
     strong = singleI . EStrong
+    -- TODO: we need to handle permalinks. That will need to be a pass
+    -- over this structure to replace any hyperlinks with permalinks as
+    -- needed, since we can't implement it as a parser without having to
+    -- also re-implement URL detection. :(
     link url _title desc = singleI $ EHyperlink (URL url) desc
     image url _title desc = singleI $ EImage (URL url) desc
     code = singleI . ECode . singleI . EText
@@ -267,25 +271,6 @@ fromMarkdownListType (C.OrderedList i _enumTy delimTy) =
                   C.OneParen -> Paren
                   C.TwoParens -> Paren
     in Numbered dec i
-
--- | Remove hyperlinks from an inline sequence. This should only be used
--- for sequences that are themselves used as labels for hyperlinks; this
--- prevents them from embedding their own hyperlinks, which is nonsense.
---
--- Any hyperlinks found in the sequence will be replaced with a text
--- represent of their URL (if they have no label) or the label itself
--- otherwise.
--- removeHyperlinks :: Seq C.Inline -> Seq C.Inline
--- removeHyperlinks is =
---     case Seq.viewl is of
---         h :< t ->
---             case h of
---                 C.Link label theUrl _ ->
---                     if Seq.null label
---                     then C.Str theUrl <| removeHyperlinks t
---                     else removeHyperlinks label <> removeHyperlinks t
---                 _ -> h <| removeHyperlinks t
---         Seq.EmptyL -> mempty
 
 -- | Convert a sequence of Markdown inline values to a sequence of
 -- Elements.
