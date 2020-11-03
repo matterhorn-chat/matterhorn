@@ -308,7 +308,7 @@ parseMarkdown :: Maybe TeamBaseURL
               -> T.Text
               -- ^ The markdown input text to parse
               -> Blocks
-parseMarkdown baseUrl t =
+parseMarkdown mBaseUrl t =
     let customSyntax = mconcat $ markdownExtensions <> [C.defaultSyntaxSpec]
         markdownExtensions =
             [ C.autolinkSpec
@@ -320,7 +320,9 @@ parseMarkdown baseUrl t =
 
     in case runIdentity $ C.commonmarkWith customSyntax "-" t of
         Left _ -> mempty
-        Right bs -> bs
+        Right bs -> case mBaseUrl of
+            Nothing -> bs
+            Just baseUrl -> rewriteBlocksPermalinks baseUrl bs
 
 fromMarkdownListType :: C.ListType -> ListType
 fromMarkdownListType (C.BulletList c) =
@@ -349,6 +351,43 @@ getPermalink (TeamBaseURL tName (ServerBaseURL baseUrl)) url =
             in if tName == TeamURLName tName' && not (T.null pIdStr)
                then Just (tName, PI $ Id pIdStr)
                else Nothing
+
+rewriteBlocksPermalinks :: TeamBaseURL -> Blocks -> Blocks
+rewriteBlocksPermalinks u (Blocks bs) = Blocks $ rewriteBlockPermalinks u <$> bs
+
+rewriteBlockPermalinks :: TeamBaseURL -> Block -> Block
+rewriteBlockPermalinks u (Para s) = Para $ rewriteInlinePermalinks u s
+rewriteBlockPermalinks u (Header i s) = Header i $ rewriteInlinePermalinks u s
+rewriteBlockPermalinks u (Blockquote bs) = Blockquote $ rewriteBlocksPermalinks u bs
+rewriteBlockPermalinks u (List ty bss) = List ty $ rewriteBlocksPermalinks u <$> bss
+rewriteBlockPermalinks _ b@(CodeBlock {}) = b
+rewriteBlockPermalinks _ b@(HTMLBlock {}) = b
+rewriteBlockPermalinks _ b@HRule = b
+
+rewriteInlinePermalinks :: TeamBaseURL -> Inlines -> Inlines
+rewriteInlinePermalinks u (Inlines is) = Inlines $ rewriteInlinePermalink u <$> is
+
+rewriteInlinePermalink :: TeamBaseURL -> Inline -> Inline
+rewriteInlinePermalink u i@(EHyperlink url label) =
+    case getPermalink u (unURL url) of
+        Nothing -> i
+        Just (tName, pId) -> EPermalink tName pId label
+rewriteInlinePermalink u (EEmph s) = EEmph $ rewriteInlinePermalinks u s
+rewriteInlinePermalink u (ECode s) = ECode $ rewriteInlinePermalinks u s
+rewriteInlinePermalink u (EStrikethrough s) = EStrikethrough $ rewriteInlinePermalinks u s
+rewriteInlinePermalink u (EStrong s) = EStrong $ rewriteInlinePermalinks u s
+rewriteInlinePermalink u (ENonBreaking s) = ENonBreaking $ rewriteInlinePermalinks u s
+rewriteInlinePermalink _ i@(EText {}) = i
+rewriteInlinePermalink _ i@ESpace = i
+rewriteInlinePermalink _ i@ESoftBreak = i
+rewriteInlinePermalink _ i@ELineBreak = i
+rewriteInlinePermalink _ i@(EEditSentinel {}) = i
+rewriteInlinePermalink _ i@(ERawHtml {}) = i
+rewriteInlinePermalink _ i@(EEmoji {}) = i
+rewriteInlinePermalink _ i@(EUser {}) = i
+rewriteInlinePermalink _ i@(EChannel {}) = i
+rewriteInlinePermalink _ i@(EImage {}) = i
+rewriteInlinePermalink _ i@(EPermalink {}) = i
 
 -- | Obtain all username references in a rich text document.
 findUsernames :: Blocks -> S.Set T.Text
