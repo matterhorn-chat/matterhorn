@@ -37,6 +37,8 @@ import           Prelude ()
 import           Matterhorn.Prelude
 
 import qualified Commonmark as C
+import qualified Commonmark.Extensions as C
+import           Control.Monad.Identity
 import           Data.Char ( isAlphaNum, isAlpha )
 import qualified Data.Foldable as F
 import           Data.Monoid (First(..))
@@ -212,9 +214,6 @@ instance C.IsInline Inlines where
     -- over this structure to replace any hyperlinks with permalinks as
     -- needed, since we can't implement it as a parser without having to
     -- also re-implement URL detection. :(
-    --
-    -- TODO: to get auto-linking of bare URIs (which commonmark does not
-    -- do by default) we will need to enable the Autolink extension.
     link url _title desc = singleI $ EHyperlink (URL url) desc
     image url _title desc = singleI $ EImage (URL url) desc
     code = singleI . ECode . singleI . EText
@@ -252,7 +251,12 @@ parseMarkdown :: Maybe TeamBaseURL
               -- ^ The markdown input text to parse
               -> Blocks
 parseMarkdown baseUrl t =
-    case C.commonmark "-" t of
+    let customSyntax = mconcat $ markdownExtensions <> [C.defaultSyntaxSpec]
+        markdownExtensions =
+            [ C.autolinkSpec
+            ]
+
+    in case runIdentity $ C.commonmarkWith customSyntax "-" t of
         Left _ -> mempty
         Right bs -> bs
 
