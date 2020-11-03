@@ -229,7 +229,7 @@ usernameSpec =
 
 parseUsername :: (Monad m) => C.InlineParser m Inlines
 parseUsername = P.try $ do
-  C.symbol '@'
+  void $ C.satisfyWord (== userSigil)
   let chunk = C.satisfyWord (const True) <|> C.symbol '_' <|> C.symbol '-'
       [period] = C.tokenize "" "."
   uts <- intersperse period <$> P.sepBy1 chunk (C.symbol '.')
