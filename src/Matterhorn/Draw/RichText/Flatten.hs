@@ -90,6 +90,7 @@ data FlattenedInline =
                     -- ^ If present, the URL to which we should
                     -- hyperlink this value.
                     }
+                    deriving (Show)
 
 -- | A flattened value.
 data FlattenedValue =
@@ -98,6 +99,7 @@ data FlattenedValue =
     | NonBreaking (Seq (Seq FlattenedValue))
     -- ^ A sequence of flattened values that MUST be kept together and
     -- never broken up by line-wrapping
+    deriving (Show)
 
 -- | The visual styles of inline values.
 data InlineStyle =
