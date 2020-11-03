@@ -184,6 +184,8 @@ instance Semigroup Inlines where
         Inlines $ case (viewr l, viewl r) of
             (lInit :> lLast, rHead :< rTail) ->
                 case (lLast, rHead) of
+                    (EText a, EText b) ->
+                        lInit <> ((EText $ a <> b) <| rTail)
                     (ECode a, ECode b) ->
                         lInit <> ((ECode $ a <> b) <| rTail)
                     (EEmph a, EEmph b) ->
