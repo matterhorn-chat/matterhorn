@@ -127,7 +127,8 @@ unURL (URL url) = url
 -- | The kinds of inline values that can appear in rich text blocks.
 data Inline =
     EText Text
-    -- ^ Plain text.
+    -- ^ Plain text that SHOULD be a contiguous sequence of
+    -- non-whitespace characters.
     | EEmph Inlines
     -- ^ Emphasized (usually italicized) content.
     | EStrikethrough Inlines
