@@ -48,10 +48,13 @@ renderUrlList st =
             (vLimit 1 $
              hBox [ let u = maybe "<server>" id (link^.linkUser.to (nameForUserRef st))
                     in colorUsername me u u
-                  , case Seq.null (unInlines $ link^.linkLabel) of
-                      True -> emptyWidget
-                      False -> txt ": " <+> renderRichText me hSet Nothing False
-                                              (Blocks $ Seq.singleton $ Para $ link^.linkLabel)
+                  , case link^.linkLabel of
+                      Nothing -> emptyWidget
+                      Just label ->
+                          case Seq.null (unInlines label) of
+                              True -> emptyWidget
+                              False -> txt ": " <+> renderRichText me hSet Nothing False
+                                                    (Blocks $ Seq.singleton $ Para label)
                   , fill ' '
                   , renderDate st $ withServerTime time
                   , str " "

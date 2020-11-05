@@ -163,7 +163,7 @@ data Inline =
     | ENonBreaking Inlines
     -- ^ A sequence of elements that must never be separated during line
     -- wrapping.
-    | EPermalink TeamURLName PostId Inlines
+    | EPermalink TeamURLName PostId (Maybe Inlines)
     -- ^ A permalink to the specified team (name) and post ID with an
     -- optional label.
     deriving (Show, Eq, Ord)
@@ -379,7 +379,15 @@ rewriteInlinePermalink :: TeamBaseURL -> Inline -> Inline
 rewriteInlinePermalink u i@(EHyperlink url label) =
     case getPermalink u (unURL url) of
         Nothing -> i
-        Just (tName, pId) -> EPermalink tName pId label
+        Just (tName, pId) ->
+            -- Get rid of permalink labels if they just match the URL,
+            -- because that's how Commonmark-extensions parses them. We
+            -- would rather only preserve the label if it differs from
+            -- the URL.
+            let newLabel = if label == Inlines (Seq.fromList [EText $ unURL url])
+                           then Nothing
+                           else Just label
+            in EPermalink tName pId newLabel
 rewriteInlinePermalink u (EEmph s) = EEmph $ rewriteInlinePermalinks u s
 rewriteInlinePermalink u (ECode s) = ECode $ rewriteInlinePermalinks u s
 rewriteInlinePermalink u (EStrikethrough s) = EStrikethrough $ rewriteInlinePermalinks u s
@@ -421,7 +429,7 @@ inlineFindUsernames (i : is) =
         _ -> inlineFindUsernames is
 
 -- | Obtain all URLs (and optional labels) in a rich text block.
-blockGetURLs :: Block -> [(Either (TeamURLName, PostId) URL, Inlines)]
+blockGetURLs :: Block -> [(Either (TeamURLName, PostId) URL, Maybe Inlines)]
 blockGetURLs (Para is) =
     catMaybes $ elementGetURL <$> (toList $ unInlines is)
 blockGetURLs (Header _ is) =
@@ -434,11 +442,11 @@ blockGetURLs (List _ _ bss) =
 blockGetURLs _ =
     mempty
 
-elementGetURL :: Inline -> Maybe (Either (TeamURLName, PostId) URL, Inlines)
+elementGetURL :: Inline -> Maybe (Either (TeamURLName, PostId) URL, Maybe Inlines)
 elementGetURL (EHyperlink url label) =
-    Just (Right url, label)
+    Just (Right url, Just label)
 elementGetURL (EImage url label) =
-    Just (Right url, label)
+    Just (Right url, Just label)
 elementGetURL (EPermalink tName pId label) =
     Just (Left (tName, pId), label)
 elementGetURL _ =

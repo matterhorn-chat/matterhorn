@@ -244,10 +244,9 @@ flatten i =
         EStrong es                  -> withInlineStyle Strong $ mapM_ flatten $ unInlines es
         ECode es                    -> withInlineStyle Code $ mapM_ flatten $ unInlines es
 
-        EPermalink _ _ label@(Inlines ls) ->
-            let label' = if Seq.null ls
-                         then Inlines $ Seq.fromList [EText "<post", ESpace, EText "link>"]
-                         else label
+        EPermalink _ _ mLabel ->
+            let label' = fromMaybe (Inlines $ Seq.fromList [EText "post", ESpace, EText "link"])
+                                   mLabel
             in withInlineStyle Permalink $ mapM_ flatten $ unInlines $ decorateLinkLabel label'
 
         EHyperlink u label@(Inlines ls) ->

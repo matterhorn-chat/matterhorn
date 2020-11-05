@@ -290,7 +290,7 @@ data LinkTarget =
 data LinkChoice =
     LinkChoice { _linkTime   :: ServerTime
                , _linkUser   :: UserRef
-               , _linkLabel  :: Inlines
+               , _linkLabel  :: Maybe Inlines
                , _linkTarget :: LinkTarget
                } deriving (Eq, Show)
 
@@ -735,7 +735,7 @@ msgURLs msg =
                           LinkChoice
                             (msg^.mDate)
                             uRef
-                            (attachmentLabel a)
+                            (Just $ attachmentLabel a)
                             (LinkFileId $ a^.attachmentFileId))
                        <$> (msg^.mAttachments)
       attachmentLabel a =
