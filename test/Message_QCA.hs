@@ -3,7 +3,7 @@
 
 module Message_QCA where
 
-import Cheapskate_QCA
+import RichText_QCA
 import Control.Monad (replicateM)
 import Data.Map hiding (foldr)
 import Data.Maybe (fromMaybe)
@@ -16,7 +16,6 @@ import Test.Tasty.QuickCheck
 
 import Matterhorn.Types.Messages
 import Matterhorn.Types.Posts
-import Matterhorn.Types.RichText
 
 genMap :: Ord key => Gen key -> Gen value -> Gen (Map key value)
 genMap gk gv = let kv = (,) <$> gk <*> gv in fromList <$> listOf kv
@@ -32,7 +31,7 @@ genUserRef = oneof [ return NoUser
 
 genMessage :: Gen Message
 genMessage = Message
-             <$> (fromMarkdownBlocks Nothing <$> genBlocks)
+             <$> genBlocks
              <*> genText
              <*> genUserRef
              <*> genTime
@@ -60,7 +59,7 @@ newtype Message__DeletedPost  = Message__DeletedPost { delMsg :: Message }
 genMessage__DeletedPost :: Gen Message__DeletedPost
 genMessage__DeletedPost = Message__DeletedPost
                           <$> (Message
-                              <$> (fromMarkdownBlocks Nothing <$> genBlocks)
+                              <$> genBlocks
                               <*> genText
                               <*> genUserRef
                               <*> genTime
@@ -82,7 +81,7 @@ newtype Message__Posted = Message__Posted { postMsg :: Message }
 genMessage__Posted :: Gen Message__Posted
 genMessage__Posted = Message__Posted
                      <$> (Message
-                         <$> (fromMarkdownBlocks Nothing <$> genBlocks)
+                         <$> genBlocks
                          <*> genText
                          <*> genUserRef
                          <*> genTime
