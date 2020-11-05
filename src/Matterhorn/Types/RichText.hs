@@ -72,6 +72,9 @@ newtype Blocks = Blocks (Seq Block)
 unBlocks :: Blocks -> Seq Block
 unBlocks (Blocks bs) = bs
 
+singleB :: Block -> Blocks
+singleB = Blocks . Seq.singleton
+
 -- | A block in a rich text document.
 data Block =
     Para Inlines
@@ -164,8 +167,15 @@ data Inline =
     -- optional label.
     deriving (Show, Eq, Ord)
 
+-- | A sequence of inline values.
 newtype Inlines = Inlines (Seq Inline)
                 deriving (Monoid, Ord, Eq, Show)
+
+unInlines :: Inlines -> Seq Inline
+unInlines (Inlines is) = is
+
+singleI :: Inline -> Inlines
+singleI = Inlines . Seq.singleton
 
 instance Semigroup Inlines where
     (Inlines l) <> (Inlines r) =
@@ -186,12 +196,11 @@ instance Semigroup Inlines where
                         l <> r
             (_, _) -> l <> r
 
-unInlines :: Inlines -> Seq Inline
-unInlines (Inlines is) = is
-
+-- A dummy instance just to satisfy commonmark; we don't use this.
 instance C.Rangeable Inlines where
     ranged _ = id
 
+-- A dummy instance just to satisfy commonmark; we don't use this.
 instance C.HasAttributes Inlines where
     addAttributes _ = id
 
@@ -213,6 +222,7 @@ instance C.IsInline Inlines where
 instance C.HasStrikethrough Inlines where
     strikethrough = singleI . EStrikethrough
 
+-- Syntax extension for parsing ~channel references.
 channelSpec :: (Monad m) => C.SyntaxSpec m Inlines Blocks
 channelSpec =
     mempty { C.syntaxInlineParsers = [C.withAttributes parseChannel]
@@ -225,6 +235,7 @@ parseChannel = P.try $ do
   cts <- P.many1 chunk
   return $ singleI $ EChannel $ C.untokenize cts
 
+-- Syntax extension for parsing @username references.
 usernameSpec :: (Monad m) => C.SyntaxSpec m Inlines Blocks
 usernameSpec =
     mempty { C.syntaxInlineParsers = [C.withAttributes parseUsername]
@@ -238,6 +249,22 @@ parseUsername = P.try $ do
   uts <- intersperse period <$> P.sepBy1 chunk (C.symbol '.')
   return $ singleI $ EUser $ C.untokenize uts
 
+-- Syntax extension for parsing :emoji: references.
+--
+-- NOTE: the commonmark-extensions package also provides a syntax
+-- extension for exactly this. Why don't we use it? I'm glad you asked.
+-- We don't use it because that extension actually checks to see whether
+-- emoji are valid by looking in a database (provided by the 'emojis'
+-- package). While that's actually a great feature, it is problematic
+-- when that package's emoji database does not exactly match the one
+-- that the Mattermost server uses. As a result, Matterhorn may think
+-- that some valid emoji (according to the server) is invalid (according
+-- to the 'emojis' package). Instead of using that extension, we made
+-- our own that does *not* validate the emoji references at parse time.
+-- We just parse them and keep them around, and then validate them at
+-- *render* time. That way we can allow anything to parse, but change
+-- how we render valid and invalid emoji based on a copy of the server's
+-- emoji database that we bundle with Matterhorn.
 emojiSpec :: (Monad m) => C.SyntaxSpec m Inlines Blocks
 emojiSpec =
     mempty { C.syntaxInlineParsers = [C.withAttributes parseEmoji]
@@ -253,9 +280,6 @@ parseEmoji = P.try $ do
   void $ C.symbol ':'
   let kw = C.untokenize ts
   return $ singleI $ EEmoji kw
-
-singleI :: Inline -> Inlines
-singleI = Inlines . Seq.singleton
 
 instance C.HasAttributes Blocks where
     addAttributes _ = id
@@ -280,10 +304,13 @@ instance C.IsBlock Inlines Blocks where
     list ty spacing bs = singleB $ List ty spacing $ Seq.fromList bs
     referenceLinkDefinition _label (_dest, _title) = mempty
 
-singleB :: Block -> Blocks
-singleB = Blocks . Seq.singleton
-
 -- | Parse markdown input text to RichText.
+--
+-- Note that this always returns a block sequence even if the input
+-- cannot be parsed. It isn't yet clear just how permissive the
+-- commonmark parser is, but so far we have not encountered any issues.
+-- If the input document is so broken that commonmark cannot parse it,
+-- we return an empty block sequence.
 parseMarkdown :: Maybe TeamBaseURL
               -- ^ If provided, perform post link detection whenever a
               -- hyperlink is parsed by checking to see if the post link
@@ -324,9 +351,13 @@ getPermalink (TeamBaseURL tName (ServerBaseURL baseUrl)) url =
                then Just (tName, PI $ Id pIdStr)
                else Nothing
 
+-- | Locate post hyperlinks in the block sequence and rewrite them as
+-- post permalinks.
 rewriteBlocksPermalinks :: TeamBaseURL -> Blocks -> Blocks
 rewriteBlocksPermalinks u (Blocks bs) = Blocks $ rewriteBlockPermalinks u <$> bs
 
+-- | Locate post hyperlinks in the block and rewrite them as post
+-- permalinks.
 rewriteBlockPermalinks :: TeamBaseURL -> Block -> Block
 rewriteBlockPermalinks u (Para s) = Para $ rewriteInlinePermalinks u s
 rewriteBlockPermalinks u (Header i s) = Header i $ rewriteInlinePermalinks u s
@@ -336,9 +367,13 @@ rewriteBlockPermalinks _ b@(CodeBlock {}) = b
 rewriteBlockPermalinks _ b@(HTMLBlock {}) = b
 rewriteBlockPermalinks _ b@HRule = b
 
+-- | Locate post hyperlinks in the inline sequence and rewrite them as
+-- post permalinks.
 rewriteInlinePermalinks :: TeamBaseURL -> Inlines -> Inlines
 rewriteInlinePermalinks u (Inlines is) = Inlines $ rewriteInlinePermalink u <$> is
 
+-- | Locate post hyperlinks in the inline value and rewrite them as post
+-- permalinks.
 rewriteInlinePermalink :: TeamBaseURL -> Inline -> Inline
 rewriteInlinePermalink u i@(EHyperlink url label) =
     case getPermalink u (unURL url) of
