@@ -1,9 +1,10 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 -- | This module provides a set of data types to represent message text.
--- The types here are based loosely on the @cheapskate@ package's types
--- but provide higher-level support for the kinds of things we find in
--- Mattermost messages such as user and channel references.
+-- The inline and block types in this module are designed to represent
+-- most of what is found in Markdown documents (particularly the
+-- Commonmark specification) in addition to other things we find in
+-- Mattermost messages, such as username or channel references.
 --
 -- To parse a Markdown document, use 'parseMarkdown'. To actually render
 -- text in this representation, see the module 'Draw.RichText'.
