@@ -247,19 +247,19 @@ renderFlattenedValue curUser (SingleInline fi) = addHyperlink $ addStyles widget
             Just u -> B.withDefAttr urlAttr . B.hyperlink (unURL u)
 
         widget = case val of
-            FSpace                       -> B.txt " "
-            FUser u                      -> colorUsername curUser u $ userSigil <> u
-            FChannel c                   -> B.withDefAttr channelNameAttr $
-                                            B.txt $ normalChannelSigil <> c
-            FEmoji em                    -> B.withDefAttr emojiAttr $
-                                            B.txt $ ":" <> em <> ":"
-            FText t                      -> if t == T.singleton (cursorSentinel)
-                                            then B.visible $ B.txt " "
-                                            else textWithCursor t
-            FEditSentinel recent         -> let attr = if recent
-                                                       then editedRecentlyMarkingAttr
-                                                       else editedMarkingAttr
-                                            in B.withDefAttr attr $ B.txt editMarking
+            FSpace               -> B.txt " "
+            FUser u              -> colorUsername curUser u $ userSigil <> u
+            FChannel c           -> B.withDefAttr channelNameAttr $
+                                    B.txt $ normalChannelSigil <> c
+            FEmoji em            -> B.withDefAttr emojiAttr $
+                                    B.txt $ ":" <> em <> ":"
+            FText t              -> if t == T.singleton (cursorSentinel)
+                                    then B.visible $ B.txt " "
+                                    else textWithCursor t
+            FEditSentinel recent -> let attr = if recent
+                                               then editedRecentlyMarkingAttr
+                                               else editedMarkingAttr
+                                    in B.withDefAttr attr $ B.txt editMarking
 
 textWithCursor :: Text -> Widget a
 textWithCursor t
