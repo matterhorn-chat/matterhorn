@@ -293,17 +293,20 @@ instance C.IsBlock Inlines Blocks where
     plain = singleB . Para
     thematicBreak = singleB HRule
     blockQuote = singleB . Blockquote
-    codeBlock infoTxt content =
-        let ws = T.words infoTxt
-            (lang, info) = case ws of
-                [l, i] -> (Just l, Just i)
-                [l] -> (Just l, Nothing)
-                _ -> (Nothing, Nothing)
-        in singleB $ CodeBlock (CodeBlockInfo lang info) content
+    codeBlock infoTxt content = singleB $ CodeBlock (parseCodeBlockInfo infoTxt) content
     heading level i = singleB $ Header level i
-    rawBlock _format content = singleB $ CodeBlock (CodeBlockInfo Nothing Nothing) content
+    rawBlock _format content = singleB $ CodeBlock (parseCodeBlockInfo "") content
     list ty spacing bs = singleB $ List ty spacing $ Seq.fromList bs
     referenceLinkDefinition _label (_dest, _title) = mempty
+
+parseCodeBlockInfo :: Text -> CodeBlockInfo
+parseCodeBlockInfo t = CodeBlockInfo lang info
+    where
+        ws = T.words t
+        (lang, info) = case ws of
+            [l, i] -> (Just l, Just i)
+            [l]    -> (Just l, Nothing)
+            _      -> (Nothing, Nothing)
 
 -- | Parse markdown input text to RichText.
 --
