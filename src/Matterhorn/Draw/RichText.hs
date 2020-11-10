@@ -60,8 +60,9 @@ addBlankLines :: Seq Block -> Seq Block
 addBlankLines = go' . viewl
   where go' EmptyL = S.empty
         go' (x :< xs) = go x (viewl xs)
-        go a (b :< rs) | sameBlockType a b = a <| blank <| go b (viewl rs)
-        go x (y :< rs) = x <| go y (viewl rs)
+        go a (b :< rs)
+            | sameBlockType a b = a <| blank <| go b (viewl rs)
+            | otherwise         = a <| go b (viewl rs)
         go x EmptyL = S.singleton x
         blank = Para (Inlines $ S.singleton ESpace)
 
