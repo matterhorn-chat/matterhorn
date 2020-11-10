@@ -60,21 +60,19 @@ addBlankLines :: Seq Block -> Seq Block
 addBlankLines = go' . viewl
   where go' EmptyL = S.empty
         go' (x :< xs) = go x (viewl xs)
-        go a@Para {} (b@Para {} :< rs) =
-             a <| blank <| go b (viewl rs)
-        go a@Header {} (b@Header {} :< rs) =
-             a <| blank <| go b (viewl rs)
-        go a@Blockquote {} (b@Blockquote {} :< rs) =
-             a <| blank <| go b (viewl rs)
-        go a@List {} (b@List {} :< rs) =
-             a <| blank <| go b (viewl rs)
-        go a@CodeBlock {} (b@CodeBlock {} :< rs) =
-             a <| blank <| go b (viewl rs)
-        go a@HTMLBlock {} (b@HTMLBlock {} :< rs) =
-             a <| blank <| go b (viewl rs)
+        go a (b :< rs) | sameBlockType a b = a <| blank <| go b (viewl rs)
         go x (y :< rs) = x <| go y (viewl rs)
-        go x (EmptyL) = S.singleton x
+        go x EmptyL = S.singleton x
         blank = Para (Inlines $ S.singleton ESpace)
+
+sameBlockType :: Block -> Block -> Bool
+sameBlockType (Para {})       (Para {})       = True
+sameBlockType (Header {})     (Header {})     = True
+sameBlockType (Blockquote {}) (Blockquote {}) = True
+sameBlockType (List {})       (List {})       = True
+sameBlockType (CodeBlock {})  (CodeBlock {})  = True
+sameBlockType (HTMLBlock {})  (HTMLBlock {})  = True
+sameBlockType _               _               = False
 
 -- Render text to markdown without username highlighting or permalink detection
 renderText :: Text -> Widget a
