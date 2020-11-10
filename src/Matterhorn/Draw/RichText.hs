@@ -46,7 +46,7 @@ cursorSentinel = '‸'
 renderRichText :: Text -> HighlightSet -> Maybe Int -> Bool -> Blocks -> Widget a
 renderRichText curUser hSet w doWrap (Blocks bs) =
     runReader (do
-              blocks <- mapM blockToWidget (addBlankLines bs)
+              blocks <- mapM renderBlock (addBlankLines bs)
               return $ B.vBox $ toList blocks)
               (DrawCfg { drawCurUser = curUser
                        , drawHighlightSet = hSet
@@ -106,38 +106,38 @@ data DrawCfg =
             , drawDoLineWrapping :: Bool
             }
 
-blockToWidget :: Block -> M (Widget a)
-blockToWidget (Para is) =
-    wrapInlines is
-blockToWidget (Header n is) = do
+renderBlock :: Block -> M (Widget a)
+renderBlock (Para is) =
+    renderInlines is
+renderBlock (Header n is) = do
     headerTxt <- withReader (\c -> c { drawLineWidth = subtract 1 <$> drawLineWidth c }) $
-                 wrapInlines is
+                 renderInlines is
     return $ B.withDefAttr clientHeaderAttr $
         hBox [ B.padRight (B.Pad 1) $ header n
              , headerTxt
              ]
-blockToWidget (Blockquote bs) = do
+renderBlock (Blockquote bs) = do
     w <- asks drawLineWidth
-    bws <- mapM blockToWidget (unBlocks bs)
+    bws <- mapM renderBlock (unBlocks bs)
     return $ maybeHLimit w $ addQuoting $ vBox bws
-blockToWidget (List ty spacing bs) = do
+renderBlock (List ty spacing bs) = do
     w <- asks drawLineWidth
-    lst <- blocksToList ty spacing bs
+    lst <- renderList ty spacing bs
     return $ maybeHLimit w lst
-blockToWidget (CodeBlock ci tx) = do
+renderBlock (CodeBlock ci tx) = do
     hSet <- asks drawHighlightSet
 
-    let f = maybe rawCodeBlockToWidget
-                  (codeBlockToWidget (hSyntaxMap hSet))
+    let f = maybe renderRawCodeBlock
+                  (renderCodeBlock (hSyntaxMap hSet))
                   mSyntax
         mSyntax = do
             lang <- codeBlockLanguage ci
             Sky.lookupSyntax lang (hSyntaxMap hSet)
     f tx
-blockToWidget (HTMLBlock t) = do
+renderBlock (HTMLBlock t) = do
     w <- asks drawLineWidth
     return $ maybeHLimit w $ textWithCursor t
-blockToWidget (HRule) = do
+renderBlock (HRule) = do
     w <- asks drawLineWidth
     return $ maybeHLimit w $ B.vLimit 1 (B.fill '*')
 
@@ -157,19 +157,19 @@ addQuoting w =
                           , B.Widget B.Fixed B.Fixed $ return childResult
                           ]
 
-codeBlockToWidget :: Sky.SyntaxMap -> Sky.Syntax -> Text -> M (Widget a)
-codeBlockToWidget syntaxMap syntax tx = do
+renderCodeBlock :: Sky.SyntaxMap -> Sky.Syntax -> Text -> M (Widget a)
+renderCodeBlock syntaxMap syntax tx = do
     let result = Sky.tokenize cfg syntax tx
         cfg = Sky.TokenizerConfig syntaxMap False
     case result of
-        Left _ -> rawCodeBlockToWidget tx
+        Left _ -> renderRawCodeBlock tx
         Right tokLines -> do
             let padding = B.padLeftRight 1 (B.vLimit (length tokLines) B.vBorder)
             return $ (B.txt $ "[" <> Sky.sName syntax <> "]") B.<=>
                      (padding <+> BS.renderRawSource textWithCursor tokLines)
 
-rawCodeBlockToWidget :: Text -> M (Widget a)
-rawCodeBlockToWidget tx = do
+renderRawCodeBlock :: Text -> M (Widget a)
+renderRawCodeBlock tx = do
     doWrap <- asks drawDoLineWrapping
 
     let hPolicy = if doWrap then Greedy else Fixed
@@ -189,8 +189,8 @@ rawCodeBlockToWidget tx = do
 
             render $ padding <+> (Widget Fixed Fixed $ return renderedText)
 
-wrapInlines :: Inlines -> M (Widget a)
-wrapInlines es = do
+renderInlines :: Inlines -> M (Widget a)
+renderInlines es = do
     w <- asks drawLineWidth
     hSet <- asks drawHighlightSet
     curUser <- asks drawCurUser
@@ -203,8 +203,8 @@ wrapInlines es = do
                     (doLineWrapping width <$> (F.toList $ flattenInlineSeq hSet es))
         B.render (vBox ws)
 
-blocksToList :: ListType -> ListSpacing -> Seq Blocks -> M (Widget a)
-blocksToList ty _spacing bs = do
+renderList :: ListType -> ListSpacing -> Seq Blocks -> M (Widget a)
+renderList ty _spacing bs = do
     let is = case ty of
           BulletList _ -> repeat ("• ")
           OrderedList s _ Period ->
@@ -215,7 +215,7 @@ blocksToList ty _spacing bs = do
             [ T.pack (show (n :: Int)) <> ")) " | n <- [s..] ]
 
     results <- forM (zip is $ unBlocks <$> (F.toList bs)) $ \(i, b) -> do
-        blocks <- mapM blockToWidget b
+        blocks <- mapM renderBlock b
         return $ B.txt i <+> vBox blocks
 
     return $ vBox results
