@@ -282,9 +282,11 @@ parseEmoji = P.try $ do
     let kw = C.untokenize ts
     return $ singleI $ EEmoji kw
 
+-- A dummy instance just to satisfy commonmark; we don't use this.
 instance C.HasAttributes Blocks where
     addAttributes _ = id
 
+-- A dummy instance just to satisfy commonmark; we don't use this.
 instance C.Rangeable Blocks where
     ranged _ = id
 
