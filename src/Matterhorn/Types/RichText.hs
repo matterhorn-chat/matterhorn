@@ -231,10 +231,10 @@ channelSpec =
 
 parseChannel :: (Monad m) => C.InlineParser m Inlines
 parseChannel = P.try $ do
-  void $ C.symbol normalChannelSigilChar
-  let chunk = C.satisfyWord (const True) <|> C.symbol '_' <|> C.symbol '-'
-  cts <- P.many1 chunk
-  return $ singleI $ EChannel $ C.untokenize cts
+    void $ C.symbol normalChannelSigilChar
+    let chunk = C.satisfyWord (const True) <|> C.symbol '_' <|> C.symbol '-'
+    cts <- P.many1 chunk
+    return $ singleI $ EChannel $ C.untokenize cts
 
 -- Syntax extension for parsing @username references.
 usernameSpec :: (Monad m) => C.SyntaxSpec m Inlines Blocks
@@ -244,11 +244,11 @@ usernameSpec =
 
 parseUsername :: (Monad m) => C.InlineParser m Inlines
 parseUsername = P.try $ do
-  void $ C.symbol userSigilChar
-  let chunk = C.satisfyWord (const True) <|> C.symbol '_' <|> C.symbol '-'
-      [period] = C.tokenize "" "."
-  uts <- intersperse period <$> P.sepBy1 chunk (C.symbol '.')
-  return $ singleI $ EUser $ C.untokenize uts
+    void $ C.symbol userSigilChar
+    let chunk = C.satisfyWord (const True) <|> C.symbol '_' <|> C.symbol '-'
+        [period] = C.tokenize "" "."
+    uts <- intersperse period <$> P.sepBy1 chunk (C.symbol '.')
+    return $ singleI $ EUser $ C.untokenize uts
 
 -- Syntax extension for parsing :emoji: references.
 --
@@ -273,14 +273,14 @@ emojiSpec =
 
 parseEmoji :: (Monad m) => C.InlineParser m Inlines
 parseEmoji = P.try $ do
-  void $ C.symbol ':'
-  ts <- P.many1 $ C.satisfyWord (const True)
-             <|> C.symbol '_'
-             <|> C.symbol '+'
-             <|> C.symbol '-'
-  void $ C.symbol ':'
-  let kw = C.untokenize ts
-  return $ singleI $ EEmoji kw
+    void $ C.symbol ':'
+    ts <- P.many1 $ C.satisfyWord (const True)
+               <|> C.symbol '_'
+               <|> C.symbol '+'
+               <|> C.symbol '-'
+    void $ C.symbol ':'
+    let kw = C.untokenize ts
+    return $ singleI $ EEmoji kw
 
 instance C.HasAttributes Blocks where
     addAttributes _ = id
