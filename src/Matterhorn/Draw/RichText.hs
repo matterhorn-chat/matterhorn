@@ -66,15 +66,6 @@ addBlankLines = go' . viewl
         go x EmptyL = S.singleton x
         blank = Para (Inlines $ S.singleton ESpace)
 
-sameBlockType :: Block -> Block -> Bool
-sameBlockType (Para {})       (Para {})       = True
-sameBlockType (Header {})     (Header {})     = True
-sameBlockType (Blockquote {}) (Blockquote {}) = True
-sameBlockType (List {})       (List {})       = True
-sameBlockType (CodeBlock {})  (CodeBlock {})  = True
-sameBlockType (HTMLBlock {})  (HTMLBlock {})  = True
-sameBlockType _               _               = False
-
 -- Render text to markdown without username highlighting or permalink detection
 renderText :: Text -> Widget a
 renderText txt = renderText' Nothing "" emptyHSet txt

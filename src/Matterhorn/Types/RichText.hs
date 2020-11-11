@@ -13,6 +13,7 @@ module Matterhorn.Types.RichText
   , unBlocks
 
   , Block(..)
+  , sameBlockType
   , CodeBlockInfo(..)
   , Inline(..)
   , Inlines(..)
@@ -77,6 +78,9 @@ singleB :: Block -> Blocks
 singleB = Blocks . Seq.singleton
 
 -- | A block in a rich text document.
+--
+-- NOTE: update 'sameBlockType' when constructors are added to this
+-- type.
 data Block =
     Para Inlines
     -- ^ A paragraph.
@@ -93,6 +97,16 @@ data Block =
     | HRule
     -- ^ A horizontal rule.
     deriving (Show)
+
+-- | Returns whether two blocks have the same type.
+sameBlockType :: Block -> Block -> Bool
+sameBlockType (Para {})       (Para {})       = True
+sameBlockType (Header {})     (Header {})     = True
+sameBlockType (Blockquote {}) (Blockquote {}) = True
+sameBlockType (List {})       (List {})       = True
+sameBlockType (CodeBlock {})  (CodeBlock {})  = True
+sameBlockType (HTMLBlock {})  (HTMLBlock {})  = True
+sameBlockType _               _               = False
 
 -- | Information about a code block.
 data CodeBlockInfo =
