@@ -66,7 +66,8 @@ addBlankLines = go' . viewl
         go x EmptyL = S.singleton x
         blank = Para (Inlines $ S.singleton ESpace)
 
--- Render text to markdown without username highlighting or permalink detection
+-- Render text to markdown without username highlighting or permalink
+-- detection
 renderText :: Text -> Widget a
 renderText txt = renderText' Nothing "" emptyHSet txt
 
