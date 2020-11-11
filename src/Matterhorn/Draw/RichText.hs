@@ -72,8 +72,9 @@ renderText :: Text -> Widget a
 renderText txt = renderText' Nothing "" emptyHSet txt
 
 renderText' :: Maybe TeamBaseURL -> Text -> HighlightSet -> Text -> Widget a
-renderText' baseUrl curUser hSet t = renderRichText curUser hSet Nothing True rtBs
-  where rtBs = parseMarkdown baseUrl t
+renderText' baseUrl curUser hSet t =
+    renderRichText curUser hSet Nothing True $
+        parseMarkdown baseUrl t
 
 vBox :: F.Foldable f => f (Widget a) -> Widget a
 vBox = B.vBox . toList
