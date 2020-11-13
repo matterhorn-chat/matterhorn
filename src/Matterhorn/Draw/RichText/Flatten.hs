@@ -137,6 +137,14 @@ data FlattenEnv =
 
 -- | Given a sequence of inlines, flatten it into a list of lines of
 -- flattened values.
+--
+-- The flattening process also validates user and channel references
+-- against a 'HighlightSet'. For example, if an 'EUser' node is found,
+-- its username argument is looked up in the 'HighlightSet'. If the
+-- username is found, the 'EUser' node is preserved as an 'FUser' node.
+-- Otherwise it is rewritten as an 'FText' node so that the username
+-- does not get highlighted. Channel references ('EChannel') are handled
+-- similarly.
 flattenInlineSeq :: HighlightSet -> Inlines -> Seq (Seq FlattenedValue)
 flattenInlineSeq hs is =
     flattenInlineSeq' initialEnv is
