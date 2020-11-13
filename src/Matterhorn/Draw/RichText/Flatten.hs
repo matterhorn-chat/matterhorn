@@ -156,12 +156,17 @@ flattenInlineSeq hs is =
 
 flattenInlineSeq' :: FlattenEnv -> Inlines -> Seq (Seq FlattenedValue)
 flattenInlineSeq' env is =
-    fsCompletedLines $ execState (runReaderT (mapM_ flatten (unInlines is) >> pushFLine) env) initialState
+    fsCompletedLines $ execState stBody initialState
     where
         initialState = FlattenState mempty mempty
+        stBody = runReaderT body env
+        body = do
+            mapM_ flatten $ unInlines is
+            pushFLine
 
 withInlineStyle :: InlineStyle -> FlattenM () -> FlattenM ()
-withInlineStyle s = withReaderT (\e -> e { flattenStyles = nub (s : flattenStyles e) })
+withInlineStyle s =
+    withReaderT (\e -> e { flattenStyles = nub (s : flattenStyles e) })
 
 withHyperlink :: URL -> FlattenM () -> FlattenM ()
 withHyperlink u = withReaderT (\e -> e { flattenURL = Just u })
@@ -197,7 +202,9 @@ appendFV v line =
             case (fiValue a, fiValue b) of
                 (FText aT, FText bT) ->
                     if fiStyles a == fiStyles b && fiURL a == fiURL b
-                    then h |> SingleInline (FlattenedInline (FText $ aT <> bT) (fiStyles a) (fiURL a))
+                    then h |> SingleInline (FlattenedInline (FText $ aT <> bT)
+                                                            (fiStyles a)
+                                                            (fiURL a))
                     else line |> v
                 _ -> line |> v
         _ -> line |> v
