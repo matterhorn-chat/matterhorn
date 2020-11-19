@@ -503,8 +503,8 @@ data BackgroundInfo =
     deriving (Eq, Show)
 
 data UserPreferences =
-    UserPreferences { _userPrefShowJoinLeave     :: Bool
-                    , _userPrefFlaggedPostList   :: Seq FlaggedPost
+    UserPreferences { _userPrefShowJoinLeave :: Bool
+                    , _userPrefFlaggedPostList :: Seq FlaggedPost
                     , _userPrefGroupChannelPrefs :: HashMap ChannelId Bool
                     , _userPrefDirectChannelPrefs :: HashMap UserId Bool
                     , _userPrefTeammateNameDisplayMode :: Maybe TeammateNameDisplayMode
