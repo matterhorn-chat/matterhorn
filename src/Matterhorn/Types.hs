@@ -1442,22 +1442,22 @@ newState :: StartupStateInfo -> IO ChatState
 newState (StartupStateInfo {..}) = do
     editState <- emptyEditState startupStateInitialHistory startupStateSpellChecker
     let config = _crConfiguration startupStateResources
-        ts = TeamState { _tsFocus = startupStateChannelZipper
+        ts = TeamState { _tsMode                 = Main
+                       , _tsFocus                = startupStateChannelZipper
+                       , _tsEditState            = editState
+                       , _tsTeam                 = startupStateTeam
+                       , _tsUrlList              = list UrlList mempty 2
+                       , _tsPostListOverlay      = PostListOverlayState emptyDirSeq Nothing
+                       , _tsUserListOverlay      = nullUserListOverlayState
+                       , _tsChannelListOverlay   = nullChannelListOverlayState
+                       , _tsChannelSelectState   = emptyChannelSelectState
+                       , _tsChannelTopicDialog   = newChannelTopicDialog ""
+                       , _tsMessageSelect        = MessageSelectState Nothing
+                       , _tsNotifyPrefs          = Nothing
                        , _tsPendingChannelChange = Nothing
-                       , _tsRecentChannel = Nothing
-                       , _tsReturnChannel = Nothing
-                       , _tsEditState = editState
-                       , _tsMessageSelect = MessageSelectState Nothing
-                       , _tsTeam = startupStateTeam
-                       , _tsChannelSelectState = emptyChannelSelectState
-                       , _tsUrlList = list UrlList mempty 2
-                       , _tsViewedMessage = Nothing
-                       , _tsPostListOverlay = PostListOverlayState emptyDirSeq Nothing
-                       , _tsUserListOverlay = nullUserListOverlayState
-                       , _tsChannelListOverlay = nullChannelListOverlayState
-                       , _tsNotifyPrefs = Nothing
-                       , _tsChannelTopicDialog = newChannelTopicDialog ""
-                       , _tsMode = Main
+                       , _tsRecentChannel        = Nothing
+                       , _tsReturnChannel        = Nothing
+                       , _tsViewedMessage        = Nothing
                        }
     return ChatState { _csResources                   = startupStateResources
                      , _csCurrentTeam                 = ts
@@ -1471,9 +1471,9 @@ newState (StartupStateInfo {..}) = do
                      , _csShowChannelList             = configShowChannelList config
                      , _csShowExpandedChannelTopics   = configShowExpandedChannelTopics config
                      , _csConnectionStatus            = Connected
-                     , _csWorkerIsBusy                = Nothing
                      , _csThemeListOverlay            = nullThemeListOverlayState
                      , _csReactionEmojiListOverlay    = nullEmojiListOverlayState
+                     , _csWorkerIsBusy                = Nothing
                      , _csClientConfig                = Nothing
                      }
 
