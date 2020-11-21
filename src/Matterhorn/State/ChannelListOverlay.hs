@@ -30,7 +30,7 @@ enterChannelListOverlayMode :: MH ()
 enterChannelListOverlayMode = do
     myTId <- use (csCurrentTeam.tsTeam.teamIdL)
     myChannels <- use (csChannels.to (filteredChannelIds (const True)))
-    enterListOverlayMode csChannelListOverlay ChannelListOverlay
+    enterListOverlayMode (csCurrentTeam.tsChannelListOverlay) ChannelListOverlay
         AllChannels enterHandler (fetchResults myTId myChannels)
 
 enterHandler :: Channel -> MH Bool
@@ -76,7 +76,7 @@ channelListPageDown = channelListMove (L.listMoveBy channelListPageSize)
 -- cursor, and then check to see whether the modification warrants a
 -- prefetch of more search results.
 channelListMove :: (L.List Name Channel -> L.List Name Channel) -> MH ()
-channelListMove = listOverlayMove csChannelListOverlay
+channelListMove = listOverlayMove (csCurrentTeam.tsChannelListOverlay)
 
 -- | The number of channels in a "page" for cursor movement purposes.
 channelListPageSize :: Int

@@ -92,6 +92,7 @@ module Matterhorn.Types
   , tsViewedMessage
   , tsPostListOverlay
   , tsUserListOverlay
+  , tsChannelListOverlay
 
   , ChatState
   , newState
@@ -106,7 +107,6 @@ module Matterhorn.Types
   , csShowExpandedChannelTopics
   , csPostMap
   , csThemeListOverlay
-  , csChannelListOverlay
   , csReactionEmojiListOverlay
   , csConnectionStatus
   , csWorkerIsBusy
@@ -1346,8 +1346,6 @@ data ChatState =
               -- queue length if so.
               , _csThemeListOverlay :: ListOverlayState InternalTheme ()
               -- ^ The state of the theme list overlay.
-              , _csChannelListOverlay :: ListOverlayState Channel ChannelSearchScope
-              -- ^ The state of the user list overlay.
               , _csReactionEmojiListOverlay :: ListOverlayState (Bool, T.Text) ()
               -- ^ The state of the reaction emoji list overlay.
               , _csClientConfig :: Maybe ClientConfig
@@ -1404,6 +1402,8 @@ data TeamState =
               -- ^ The state of the post list overlay.
               , _tsUserListOverlay :: ListOverlayState UserInfo UserSearchScope
               -- ^ The state of the user list overlay.
+              , _tsChannelListOverlay :: ListOverlayState Channel ChannelSearchScope
+              -- ^ The state of the user list overlay.
               }
 
 -- | Handles for the View Message window's tabs.
@@ -1454,6 +1454,7 @@ newState (StartupStateInfo {..}) = do
                        , _tsViewedMessage = Nothing
                        , _tsPostListOverlay = PostListOverlayState emptyDirSeq Nothing
                        , _tsUserListOverlay = nullUserListOverlayState
+                       , _tsChannelListOverlay = nullChannelListOverlayState
                        }
     return ChatState { _csResources                   = startupStateResources
                      , _csCurrentTeam                 = ts
@@ -1470,7 +1471,6 @@ newState (StartupStateInfo {..}) = do
                      , _csConnectionStatus            = Connected
                      , _csWorkerIsBusy                = Nothing
                      , _csThemeListOverlay            = nullThemeListOverlayState
-                     , _csChannelListOverlay          = nullChannelListOverlayState
                      , _csReactionEmojiListOverlay    = nullEmojiListOverlayState
                      , _csClientConfig                = Nothing
                      , _csNotifyPrefs                 = Nothing

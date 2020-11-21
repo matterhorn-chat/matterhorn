@@ -21,7 +21,7 @@ import           Matterhorn.Themes
 
 drawChannelListOverlay :: ChatState -> Widget Name
 drawChannelListOverlay st =
-    let overlay = drawListOverlay (st^.csChannelListOverlay) channelSearchScopeHeader
+    let overlay = drawListOverlay (st^.csCurrentTeam.tsChannelListOverlay) channelSearchScopeHeader
                                   channelSearchScopeNoResults channelSearchScopePrompt
                                   renderChannel
                                   Nothing
