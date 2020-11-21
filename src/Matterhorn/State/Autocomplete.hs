@@ -61,7 +61,7 @@ checkForAutocompletion ctx = do
     case result of
         Nothing -> resetAutocomplete
         Just (ty, runUpdater, searchString) -> do
-            prevResult <- use (csEditState.cedAutocomplete)
+            prevResult <- use (csCurrentTeam.tsEditState.cedAutocomplete)
             -- We should update the completion state if EITHER:
             --
             -- 1) The type changed
@@ -74,13 +74,13 @@ checkForAutocompletion ctx = do
                                 (maybe True ((== ty) . _acType) prevResult)) ||
                                (maybe False ((/= ty) . _acType) prevResult)
             when shouldUpdate $ do
-                csEditState.cedAutocompletePending .= Just searchString
+                csCurrentTeam.tsEditState.cedAutocompletePending .= Just searchString
                 runUpdater ty ctx searchString
 
 getCompleterForInput :: AutocompleteContext
                      -> MH (Maybe (AutocompletionType, AutocompletionType -> AutocompleteContext -> Text -> MH (), Text))
 getCompleterForInput ctx = do
-    z <- use (csEditState.cedEditor.editContentsL)
+    z <- use (csCurrentTeam.tsEditState.cedEditor.editContentsL)
 
     let col = snd $ Z.cursorPosition z
         curLine = Z.currentLine z
@@ -167,8 +167,8 @@ doCommandAutoCompletion ty ctx searchString = do
     session <- getSession
     myTid <- gets myTeamId
 
-    mCache <- preuse (csEditState.cedAutocomplete._Just.acCachedResponses)
-    mActiveTy <- preuse (csEditState.cedAutocomplete._Just.acType)
+    mCache <- preuse (csCurrentTeam.tsEditState.cedAutocomplete._Just.acCachedResponses)
+    mActiveTy <- preuse (csCurrentTeam.tsEditState.cedAutocomplete._Just.acType)
 
     -- Command completion works a little differently than the other
     -- modes. To do command autocompletion, we want to query the server
@@ -308,8 +308,8 @@ withCachedAutocompleteResults :: AutocompleteContext
                               -- ^ The action to execute on a cache miss
                               -> MH ()
 withCachedAutocompleteResults ctx ty searchString act = do
-    mCache <- preuse (csEditState.cedAutocomplete._Just.acCachedResponses)
-    mActiveTy <- preuse (csEditState.cedAutocomplete._Just.acType)
+    mCache <- preuse (csCurrentTeam.tsEditState.cedAutocomplete._Just.acCachedResponses)
+    mActiveTy <- preuse (csCurrentTeam.tsEditState.cedAutocomplete._Just.acType)
 
     case Just ty == mActiveTy of
         True ->
@@ -334,13 +334,13 @@ setCompletionAlternatives ctx searchString alts ty = do
                                   , _acType = ty
                                   }
 
-    pending <- use (csEditState.cedAutocompletePending)
+    pending <- use (csCurrentTeam.tsEditState.cedAutocompletePending)
     case pending of
         Just val | val == searchString -> do
 
             -- If there is already state, update it, but also cache the
             -- search results.
-            csEditState.cedAutocomplete %= \prev ->
+            csCurrentTeam.tsEditState.cedAutocomplete %= \prev ->
                 let newState = case prev of
                         Nothing ->
                             state

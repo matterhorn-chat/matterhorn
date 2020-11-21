@@ -66,20 +66,20 @@ import           Matterhorn.Types.Common ( sanitizeUserText' )
 startMultilineEditing :: MH ()
 startMultilineEditing = do
     mh invalidateCache
-    csEditState.cedEphemeral.eesMultiline .= True
+    csCurrentTeam.tsEditState.cedEphemeral.eesMultiline .= True
 
 toggleMultilineEditing :: MH ()
 toggleMultilineEditing = do
     mh invalidateCache
-    csEditState.cedEphemeral.eesMultiline %= not
+    csCurrentTeam.tsEditState.cedEphemeral.eesMultiline %= not
 
     -- If multiline is now disabled and there is more than one line in
     -- the editor, that means we're showing the multiline message status
     -- (see Draw.Main.renderUserCommandBox.commandBox) so we want to be
     -- sure no autocomplete UI is present in case the cursor was left on
     -- a word that would otherwise show completion alternatives.
-    multiline <- use (csEditState.cedEphemeral.eesMultiline)
-    numLines <- use (csEditState.cedEditor.to getEditContents.to length)
+    multiline <- use (csCurrentTeam.tsEditState.cedEphemeral.eesMultiline)
+    numLines <- use (csCurrentTeam.tsEditState.cedEditor.to getEditContents.to length)
     when (not multiline && numLines > 1) resetAutocomplete
 
 invokeExternalEditor :: MH ()
@@ -96,7 +96,7 @@ invokeExternalEditor = do
       Sys.withSystemTempFile "matterhorn_editor.md" $ \tmpFileName tmpFileHandle -> do
         -- Write the current message to the temp file
         Sys.hPutStr tmpFileHandle $ T.unpack $ T.intercalate "\n" $
-            getEditContents $ st^.csEditState.cedEditor
+            getEditContents $ st^.csCurrentTeam.tsEditState.cedEditor
         Sys.hClose tmpFileHandle
 
         -- Run the editor
@@ -112,26 +112,26 @@ invokeExternalEditor = do
                         postErrorMessageIO "Failed to decode file contents as UTF-8" st
                     Right t -> do
                         let tmpLines = T.lines $ sanitizeUserText' t
-                        return $ st & csEditState.cedEditor.editContentsL .~ (Z.textZipper tmpLines Nothing)
+                        return $ st & csCurrentTeam.tsEditState.cedEditor.editContentsL .~ (Z.textZipper tmpLines Nothing)
             Sys.ExitFailure _ -> return st
 
 handlePaste :: BS.ByteString -> MH ()
 handlePaste bytes = do
   let pasteStr = T.pack (UTF8.toString bytes)
-  csEditState.cedEditor %= applyEdit (Z.insertMany (sanitizeUserText' pasteStr))
-  contents <- use (csEditState.cedEditor.to getEditContents)
+  csCurrentTeam.tsEditState.cedEditor %= applyEdit (Z.insertMany (sanitizeUserText' pasteStr))
+  contents <- use (csCurrentTeam.tsEditState.cedEditor.to getEditContents)
   case length contents > 1 of
       True -> startMultilineEditing
       False -> return ()
 
 editingPermitted :: ChatState -> Bool
 editingPermitted st =
-    (length (getEditContents $ st^.csEditState.cedEditor) == 1) ||
-    st^.csEditState.cedEphemeral.eesMultiline
+    (length (getEditContents $ st^.csCurrentTeam.tsEditState.cedEditor) == 1) ||
+    st^.csCurrentTeam.tsEditState.cedEphemeral.eesMultiline
 
 messageEditingKeybindings :: KeyConfig -> KeyHandlerMap
 messageEditingKeybindings kc =
-    let KeyHandlerMap m = editingKeybindings (csEditState.cedEditor) kc
+    let KeyHandlerMap m = editingKeybindings (csCurrentTeam.tsEditState.cedEditor) kc
     in KeyHandlerMap $ M.map withUserTypingAction m
 
 withUserTypingAction :: KeyHandler -> KeyHandler
@@ -167,7 +167,7 @@ editingKeyHandlers editor =
     "Kill the line to the right of the current position and copy it" $ do
       z <- use (editor.editContentsL)
       let restOfLine = Z.currentLine (Z.killToBOL z)
-      csEditState.cedYankBuffer .= restOfLine
+      csCurrentTeam.tsEditState.cedYankBuffer .= restOfLine
       editor %= applyEdit Z.killToEOL
   , mkKb EditorNextCharEvent
     "Move one character to the right"
@@ -195,13 +195,13 @@ editingKeyHandlers editor =
     editor %= applyEdit gotoEnd
   , mkKb EditorYankEvent
     "Paste the current buffer contents at the cursor" $ do
-      buf <- use (csEditState.cedYankBuffer)
+      buf <- use (csCurrentTeam.tsEditState.cedYankBuffer)
       editor %= applyEdit (Z.insertMany buf)
   ]
 
 getEditorContent :: MH Text
 getEditorContent = do
-    cmdLine <- use (csEditState.cedEditor)
+    cmdLine <- use (csCurrentTeam.tsEditState.cedEditor)
     let (line:rest) = getEditContents cmdLine
     return $ T.intercalate "\n" $ line : rest
 
@@ -221,16 +221,16 @@ handleInputSubmission cId content = do
     -- We clean up before dispatching the command or sending the message
     -- since otherwise the command could change the state and then doing
     -- cleanup afterwards could clean up the wrong things.
-    csEditState.cedEditor %= applyEdit Z.clearZipper
-    csEditState.cedInputHistory %= addHistoryEntry content cId
-    csEditState.cedEphemeral.eesInputHistoryPosition .= Nothing
+    csCurrentTeam.tsEditState.cedEditor %= applyEdit Z.clearZipper
+    csCurrentTeam.tsEditState.cedInputHistory %= addHistoryEntry content cId
+    csCurrentTeam.tsEditState.cedEphemeral.eesInputHistoryPosition .= Nothing
 
     case T.uncons content of
       Just ('/', cmd) ->
           dispatchCommand cmd
       _ -> do
-          attachments <- use (csEditState.cedAttachmentList.L.listElementsL)
-          mode <- use (csEditState.cedEditMode)
+          attachments <- use (csCurrentTeam.tsEditState.cedAttachmentList.L.listElementsL)
+          mode <- use (csCurrentTeam.tsEditState.cedEditMode)
           sendMessage cId mode content $ F.toList attachments
 
     -- Reset the autocomplete UI
@@ -241,7 +241,7 @@ handleInputSubmission cId content = do
 
     -- Reset the edit mode *after* handling the input so that the input
     -- handler can tell whether we're editing, replying, etc.
-    csEditState.cedEditMode .= NewPost
+    csCurrentTeam.tsEditState.cedEditMode .= NewPost
 
 closingPunctuationMarks :: String
 closingPunctuationMarks = ".,'\";:)]!?"
@@ -262,18 +262,18 @@ handleEditingInput e = do
     -- Record the input line count before handling the editing event
     -- so we can tell whether the editing event changes the line count
     -- later.
-    beforeLineCount <- use (csEditState.cedEditor.to getEditContents.to length)
+    beforeLineCount <- use (csCurrentTeam.tsEditState.cedEditor.to getEditContents.to length)
 
     smartBacktick <- use (csResources.crConfiguration.to configSmartBacktick)
     let smartChars = "*`_"
     st <- use id
-    csEditState.cedEphemeral.eesInputHistoryPosition .= Nothing
+    csCurrentTeam.tsEditState.cedEphemeral.eesInputHistoryPosition .= Nothing
 
     smartEditing <- use (csResources.crConfiguration.to configSmartEditing)
-    justCompleted <- use (csEditState.cedJustCompleted)
+    justCompleted <- use (csCurrentTeam.tsEditState.cedJustCompleted)
 
     conf <- use (csResources.crConfiguration)
-    let keyMap = editingKeybindings (csEditState.cedEditor) (configUserKeys conf)
+    let keyMap = editingKeybindings (csCurrentTeam.tsEditState.cedEditor) (configUserKeys conf)
     case lookupKeybinding e keyMap of
       Just kb | editingPermitted st -> (ehAction $ kehHandler $ khHandler kb)
       _ -> do
@@ -281,52 +281,52 @@ handleEditingInput e = do
           -- Not editing; backspace here means cancel multi-line message
           -- composition
           EvKey KBS [] | (not $ editingPermitted st) ->
-            csEditState.cedEditor %= applyEdit Z.clearZipper
+            csCurrentTeam.tsEditState.cedEditor %= applyEdit Z.clearZipper
 
           -- Backspace in editing mode with smart pair insertion means
           -- smart pair removal when possible
           EvKey KBS [] | editingPermitted st && smartBacktick ->
-              let backspace = csEditState.cedEditor %= applyEdit Z.deletePrevChar
-              in case cursorAtOneOf smartChars (st^.csEditState.cedEditor) of
+              let backspace = csCurrentTeam.tsEditState.cedEditor %= applyEdit Z.deletePrevChar
+              in case cursorAtOneOf smartChars (st^.csCurrentTeam.tsEditState.cedEditor) of
                   Nothing -> backspace
                   Just ch ->
                       -- Smart char removal:
-                      if | (cursorAtChar ch $ applyEdit Z.moveLeft $ st^.csEditState.cedEditor) &&
-                           (cursorIsAtEnd $ applyEdit Z.moveRight $ st^.csEditState.cedEditor) ->
-                             csEditState.cedEditor %= applyEdit (Z.deleteChar >>> Z.deletePrevChar)
+                      if | (cursorAtChar ch $ applyEdit Z.moveLeft $ st^.csCurrentTeam.tsEditState.cedEditor) &&
+                           (cursorIsAtEnd $ applyEdit Z.moveRight $ st^.csCurrentTeam.tsEditState.cedEditor) ->
+                             csCurrentTeam.tsEditState.cedEditor %= applyEdit (Z.deleteChar >>> Z.deletePrevChar)
                          | otherwise -> backspace
 
           EvKey (KChar ch) []
             | editingPermitted st && smartBacktick && ch `elem` smartChars ->
               -- Smart char insertion:
               let doInsertChar = do
-                    csEditState.cedEditor %= applyEdit (Z.insertChar ch)
+                    csCurrentTeam.tsEditState.cedEditor %= applyEdit (Z.insertChar ch)
                     sendUserTypingAction
-                  curLine = Z.currentLine $ st^.csEditState.cedEditor.editContentsL
+                  curLine = Z.currentLine $ st^.csCurrentTeam.tsEditState.cedEditor.editContentsL
               -- First case: if the cursor is at the end of the current
               -- line and it contains "``" and the user entered a third
               -- "`", enable multi-line mode since they're likely typing
               -- a code block.
-              in if | (cursorIsAtEnd $ st^.csEditState.cedEditor) &&
+              in if | (cursorIsAtEnd $ st^.csCurrentTeam.tsEditState.cedEditor) &&
                          curLine == "``" &&
                          ch == '`' -> do
-                        csEditState.cedEditor %= applyEdit (Z.insertMany (T.singleton ch))
-                        csEditState.cedEphemeral.eesMultiline .= True
+                        csCurrentTeam.tsEditState.cedEditor %= applyEdit (Z.insertMany (T.singleton ch))
+                        csCurrentTeam.tsEditState.cedEphemeral.eesMultiline .= True
                     -- Second case: user entered some smart character
                     -- (don't care which) on an empty line or at the end
                     -- of the line after whitespace, so enter a pair of
                     -- the smart chars and put the cursor between them.
-                    | (editorEmpty $ st^.csEditState.cedEditor) ||
-                         ((cursorAtChar ' ' (applyEdit Z.moveLeft $ st^.csEditState.cedEditor)) &&
-                          (cursorIsAtEnd $ st^.csEditState.cedEditor)) ->
-                        csEditState.cedEditor %= applyEdit (Z.insertMany (T.pack $ ch:ch:[]) >>> Z.moveLeft)
+                    | (editorEmpty $ st^.csCurrentTeam.tsEditState.cedEditor) ||
+                         ((cursorAtChar ' ' (applyEdit Z.moveLeft $ st^.csCurrentTeam.tsEditState.cedEditor)) &&
+                          (cursorIsAtEnd $ st^.csCurrentTeam.tsEditState.cedEditor)) ->
+                        csCurrentTeam.tsEditState.cedEditor %= applyEdit (Z.insertMany (T.pack $ ch:ch:[]) >>> Z.moveLeft)
                     -- Third case: the cursor is already on a smart
                     -- character and that character is the last one
                     -- on the line, so instead of inserting a new
                     -- character, just move past it.
-                    | (cursorAtChar ch $ st^.csEditState.cedEditor) &&
-                      (cursorIsAtEnd $ applyEdit Z.moveRight $ st^.csEditState.cedEditor) ->
-                        csEditState.cedEditor %= applyEdit Z.moveRight
+                    | (cursorAtChar ch $ st^.csCurrentTeam.tsEditState.cedEditor) &&
+                      (cursorIsAtEnd $ applyEdit Z.moveRight $ st^.csCurrentTeam.tsEditState.cedEditor) ->
+                        csCurrentTeam.tsEditState.cedEditor %= applyEdit Z.moveRight
                     -- Fall-through case: just insert one of the chars
                     -- without doing anything smart.
                     | otherwise -> doInsertChar
@@ -336,12 +336,12 @@ handleEditingInput e = do
               -- there is a trailing space that we want to remove if the
               -- next input character is punctuation.
               when (smartEditing && justCompleted && isSmartClosingPunctuation e) $
-                  csEditState.cedEditor %= applyEdit Z.deletePrevChar
+                  csCurrentTeam.tsEditState.cedEditor %= applyEdit Z.deletePrevChar
 
-              csEditState.cedEditor %= applyEdit (Z.insertMany (sanitizeUserText' $ T.singleton ch))
+              csCurrentTeam.tsEditState.cedEditor %= applyEdit (Z.insertMany (sanitizeUserText' $ T.singleton ch))
               sendUserTypingAction
           _ | editingPermitted st -> do
-              mhHandleEventLensed (csEditState.cedEditor) handleEditorEvent e
+              mhHandleEventLensed (csCurrentTeam.tsEditState.cedEditor) handleEditorEvent e
               sendUserTypingAction
             | otherwise -> return ()
 
@@ -349,14 +349,14 @@ handleEditingInput e = do
                                   , autocompleteFirstMatch = False
                                   }
     checkForAutocompletion ctx
-    liftIO $ resetSpellCheckTimer $ st^.csEditState
+    liftIO $ resetSpellCheckTimer $ st^.csCurrentTeam.tsEditState
 
     -- If the preview is enabled and multi-line editing is enabled and
     -- the line count changed, we need to invalidate the rendering cache
     -- entry for the channel messages because we want to redraw them to
     -- fit in the space just changed by the size of the preview area.
-    afterLineCount <- use (csEditState.cedEditor.to getEditContents.to length)
-    isMultiline <- use (csEditState.cedEphemeral.eesMultiline)
+    afterLineCount <- use (csCurrentTeam.tsEditState.cedEditor.to getEditContents.to length)
+    isMultiline <- use (csCurrentTeam.tsEditState.cedEphemeral.eesMultiline)
     isPreviewing <- use csShowMessagePreview
     when (beforeLineCount /= afterLineCount && isMultiline && isPreviewing) $ do
         cId <- use csCurrentChannelId
@@ -365,7 +365,7 @@ handleEditingInput e = do
     -- Reset the recent autocompletion flag to stop smart punctuation
     -- handling.
     when justCompleted $
-        csEditState.cedJustCompleted .= False
+        csCurrentTeam.tsEditState.cedJustCompleted .= False
 
 -- | Send the user_typing action to the server asynchronously, over the
 -- connected websocket. If the websocket is not connected, drop the
@@ -376,7 +376,7 @@ sendUserTypingAction = do
   when (configShowTypingIndicator (st^.csResources.crConfiguration)) $
     case st^.csConnectionStatus of
       Connected -> do
-        let pId = case st^.csEditState.cedEditMode of
+        let pId = case st^.csCurrentTeam.tsEditState.cedEditMode of
                     Replying _ post -> Just $ postId post
                     _               -> Nothing
         liftIO $ do
@@ -390,11 +390,11 @@ sendUserTypingAction = do
 requestSpellCheck :: MH ()
 requestSpellCheck = do
     st <- use id
-    case st^.csEditState.cedSpellChecker of
+    case st^.csCurrentTeam.tsEditState.cedSpellChecker of
         Nothing -> return ()
         Just (checker, _) -> do
             -- Get the editor contents.
-            contents <- getEditContents <$> use (csEditState.cedEditor)
+            contents <- getEditContents <$> use (csCurrentTeam.tsEditState.cedEditor)
             doAsyncWith Preempt $ do
                 -- For each line in the editor, submit an aspell request.
                 let query = concat <$> mapM (askAspell checker) contents
@@ -403,7 +403,7 @@ requestSpellCheck = do
                         let getMistakes AllCorrect = []
                             getMistakes (Mistakes ms) = mistakeWord <$> ms
                             allMistakes = S.fromList $ concat $ getMistakes <$> responses
-                        csEditState.cedMisspellings .= allMistakes
+                        csCurrentTeam.tsEditState.cedMisspellings .= allMistakes
 
                 tryMM query (return . Just . postMistakes)
 
@@ -454,17 +454,17 @@ cancelAutocompleteOrReplyOrEdit :: MH ()
 cancelAutocompleteOrReplyOrEdit = do
     cId <- use csCurrentChannelId
     mh $ invalidateCacheEntry $ ChannelMessages cId
-    ac <- use (csEditState.cedAutocomplete)
+    ac <- use (csCurrentTeam.tsEditState.cedAutocomplete)
     case ac of
         Just _ -> do
             resetAutocomplete
         Nothing -> do
-            mode <- use (csEditState.cedEditMode)
+            mode <- use (csCurrentTeam.tsEditState.cedEditMode)
             case mode of
                 NewPost -> return ()
                 _ -> do
-                    csEditState.cedEditMode .= NewPost
-                    csEditState.cedEditor %= applyEdit Z.clearZipper
+                    csCurrentTeam.tsEditState.cedEditMode .= NewPost
+                    csCurrentTeam.tsEditState.cedEditor %= applyEdit Z.clearZipper
                     resetAttachmentList
 
 replyToLatestMessage :: MH ()
@@ -476,7 +476,7 @@ replyToLatestMessage = do
            setMode Main
            cId <- use csCurrentChannelId
            mh $ invalidateCacheEntry $ ChannelMessages cId
-           csEditState.cedEditMode .= Replying rootMsg (fromJust $ rootMsg^.mOriginalPost)
+           csCurrentTeam.tsEditState.cedEditMode .= Replying rootMsg (fromJust $ rootMsg^.mOriginalPost)
     _ -> return ()
 
 data Direction = Forwards | Backwards
@@ -496,9 +496,9 @@ tabComplete dir = do
                        (L.listSelected list == Nothing && len > 0)
                     then L.listMoveTo (len - 1) list
                     else L.listMoveBy (-1) list
-    csEditState.cedAutocomplete._Just.acCompletionList %= transform
+    csCurrentTeam.tsEditState.cedAutocomplete._Just.acCompletionList %= transform
 
-    mac <- use (csEditState.cedAutocomplete)
+    mac <- use (csCurrentTeam.tsEditState.cedAutocomplete)
     case mac of
         Nothing -> do
             let ctx = AutocompleteContext { autocompleteManual = True
@@ -514,10 +514,10 @@ tabComplete dir = do
                             if maybe True isSpace (Z.currentChar z)
                             then z
                             else Z.moveWordRight z
-                    csEditState.cedEditor %=
+                    csCurrentTeam.tsEditState.cedEditor %=
                         applyEdit (Z.insertChar ' ' . Z.insertMany replacement . Z.deletePrevWord .
                                    maybeEndOfWord)
-                    csEditState.cedJustCompleted .= True
+                    csCurrentTeam.tsEditState.cedJustCompleted .= True
 
                     -- If there was only one completion alternative,
                     -- hide the autocomplete listing now that we've

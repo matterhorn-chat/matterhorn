@@ -235,7 +235,7 @@ deleteSelectedMessage = do
                   doAsyncChannelMM Preempt cId
                       (\s _ -> MM.mmDeletePost (postId p) s)
                       (\_ _ -> Just $ do
-                          csEditState.cedEditMode .= NewPost
+                          csCurrentTeam.tsEditState.cedEditMode .= NewPost
                           setMode Main)
               Nothing -> return ()
         _ -> return ()
@@ -248,7 +248,7 @@ beginReplyCompose = do
             rootMsg <- getReplyRootMessage msg
             let Just p = rootMsg^.mOriginalPost
             setMode Main
-            csEditState.cedEditMode .= Replying rootMsg p
+            csCurrentTeam.tsEditState.cedEditMode .= Replying rootMsg p
         _ -> return ()
 
 beginEditMessage :: MH ()
@@ -259,7 +259,7 @@ beginEditMessage = do
         Just msg | isMine st msg && isEditable msg -> do
             let Just p = msg^.mOriginalPost
             setMode Main
-            csEditState.cedEditMode .= Editing p (msg^.mType)
+            csCurrentTeam.tsEditState.cedEditMode .= Editing p (msg^.mType)
             -- If the post that we're editing is an emote, we need
             -- to strip the formatting because that's only there to
             -- indicate that the post is an emote. This is annoying and
@@ -271,7 +271,7 @@ beginEditMessage = do
             let toEdit = if isEmote msg
                          then removeEmoteFormatting sanitized
                          else sanitized
-            csEditState.cedEditor %= applyEdit (insertMany toEdit . clearZipper)
+            csCurrentTeam.tsEditState.cedEditor %= applyEdit (insertMany toEdit . clearZipper)
         _ -> return ()
 
 -- | Tell the server that we have flagged or unflagged a message.

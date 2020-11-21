@@ -87,7 +87,7 @@ runMatterhorn opts config = do
     (st, vty) <- setupState mkVty (optLogLocation opts) config
     finalSt <- customMain vty mkVty (Just $ st^.csResources.crEventQueue) app st
 
-    case finalSt^.csEditState.cedSpellChecker of
+    case finalSt^.csCurrentTeam.tsEditState.cedSpellChecker of
         Nothing -> return ()
         Just (s, _) -> stopAspell s
 
@@ -99,7 +99,7 @@ closeMatterhorn finalSt = do
   logIfError (mmCloseSession $ getResourceSession $ finalSt^.csResources)
       "Error in closing session"
 
-  logIfError (writeHistory (finalSt^.csEditState.cedInputHistory))
+  logIfError (writeHistory (finalSt^.csCurrentTeam.tsEditState.cedInputHistory))
       "Error in writing history"
 
   logIfError (writeLastRunState finalSt)

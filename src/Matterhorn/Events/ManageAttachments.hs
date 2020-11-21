@@ -39,7 +39,7 @@ onEventManageAttachments e = do
 onEventAttachmentList :: V.Event -> MH Bool
 onEventAttachmentList =
     handleKeyboardEvent attachmentListKeybindings $
-        mhHandleEventLensed (csEditState.cedAttachmentList) L.handleListEvent
+        mhHandleEventLensed (csCurrentTeam.tsEditState.cedAttachmentList) L.handleListEvent
 
 attachmentListKeybindings :: KeyConfig -> KeyHandlerMap
 attachmentListKeybindings = mkKeybindings attachmentListKeyHandlers
@@ -49,9 +49,9 @@ attachmentListKeyHandlers =
     [ mkKb CancelEvent "Close attachment list"
           (setMode Main)
     , mkKb SelectUpEvent "Move cursor up" $
-          mhHandleEventLensed (csEditState.cedAttachmentList) L.handleListEvent (V.EvKey V.KUp [])
+          mhHandleEventLensed (csCurrentTeam.tsEditState.cedAttachmentList) L.handleListEvent (V.EvKey V.KUp [])
     , mkKb SelectDownEvent "Move cursor down" $
-          mhHandleEventLensed (csEditState.cedAttachmentList) L.handleListEvent (V.EvKey V.KDown [])
+          mhHandleEventLensed (csCurrentTeam.tsEditState.cedAttachmentList) L.handleListEvent (V.EvKey V.KDown [])
     , mkKb AttachmentListAddEvent "Add a new attachment to the attachment list"
           showAttachmentFileBrowser
     , mkKb AttachmentOpenEvent "Open the selected attachment using the URL open command"
@@ -73,7 +73,7 @@ attachmentBrowseKeyHandlers =
 
 withFileBrowser :: ((FB.FileBrowser Name) -> MH ()) -> MH ()
 withFileBrowser f = do
-    use (csEditState.cedFileBrowser) >>= \case
+    use (csCurrentTeam.tsEditState.cedFileBrowser) >>= \case
         Nothing -> do
             -- The widget has not been created yet.  This should
             -- normally not occur, because the ManageAttachments
@@ -83,13 +83,13 @@ withFileBrowser f = do
             -- ..."` handler, but the more benign approach is to
             -- simply create an available FileBrowser at this stage.
             new_b <- liftIO $ FB.newFileBrowser FB.selectNonDirectories AttachmentFileBrowser Nothing
-            csEditState.cedFileBrowser ?= new_b
+            csCurrentTeam.tsEditState.cedFileBrowser ?= new_b
             f new_b
         Just b -> f b
 
 openSelectedAttachment :: MH ()
 openSelectedAttachment = do
-    cur <- use (csEditState.cedAttachmentList.to L.listSelectedElement)
+    cur <- use (csCurrentTeam.tsEditState.cedAttachmentList.to L.listSelectedElement)
     case cur of
         Nothing -> return ()
         Just (_, entry) -> void $ openFilePath (FB.fileInfoFilePath $
@@ -119,7 +119,7 @@ onEventBrowseFile e = do
 
 cancelAttachmentBrowse :: MH ()
 cancelAttachmentBrowse = do
-    es <- use (csEditState.cedAttachmentList.L.listElementsL)
+    es <- use (csCurrentTeam.tsEditState.cedAttachmentList.L.listElementsL)
     case length es of
         0 -> setMode Main
         _ -> setMode ManageAttachments
@@ -127,14 +127,14 @@ cancelAttachmentBrowse = do
 handleFileBrowserEvent :: V.Event -> MH ()
 handleFileBrowserEvent e = do
   let fbHandle ev = sequence . (fmap (FB.handleFileBrowserEvent ev))
-  mhHandleEventLensed (csEditState.cedFileBrowser) fbHandle e
+  mhHandleEventLensed (csCurrentTeam.tsEditState.cedFileBrowser) fbHandle e
 
   withFileBrowser $ \b -> do
     -- TODO: Check file browser exception state
     let entries = FB.fileBrowserSelection b
     forM_ entries $ \entry -> do
         -- Is the entry already present? If so, ignore the selection.
-        es <- use (csEditState.cedAttachmentList.L.listElementsL)
+        es <- use (csCurrentTeam.tsEditState.cedAttachmentList.L.listElementsL)
         let matches = (== (FB.fileInfoFilePath entry)) .
                       FB.fileInfoFilePath .
                       attachmentDataFileInfo
@@ -151,23 +151,23 @@ handleFileBrowserEvent e = do
                         let a = AttachmentData { attachmentDataFileInfo = entry
                                                , attachmentDataBytes = bytes
                                                }
-                        oldIdx <- use (csEditState.cedAttachmentList.L.listSelectedL)
+                        oldIdx <- use (csCurrentTeam.tsEditState.cedAttachmentList.L.listSelectedL)
                         let newIdx = if Vector.null es
                                      then Just 0
                                      else oldIdx
-                        csEditState.cedAttachmentList %= L.listReplace (Vector.snoc es a) newIdx
+                        csCurrentTeam.tsEditState.cedAttachmentList %= L.listReplace (Vector.snoc es a) newIdx
 
     when (not $ null entries) $ setMode Main
 
 deleteSelectedAttachment :: MH ()
 deleteSelectedAttachment = do
-    es <- use (csEditState.cedAttachmentList.L.listElementsL)
-    mSel <- use (csEditState.cedAttachmentList.to L.listSelectedElement)
+    es <- use (csCurrentTeam.tsEditState.cedAttachmentList.L.listElementsL)
+    mSel <- use (csCurrentTeam.tsEditState.cedAttachmentList.to L.listSelectedElement)
     case mSel of
         Nothing ->
             return ()
         Just (pos, _) -> do
-            oldIdx <- use (csEditState.cedAttachmentList.L.listSelectedL)
+            oldIdx <- use (csCurrentTeam.tsEditState.cedAttachmentList.L.listSelectedL)
             let idx = if Vector.length es == 1
                       then Nothing
                       else case oldIdx of
@@ -175,7 +175,7 @@ deleteSelectedAttachment = do
                           Just old -> if pos >= old
                                       then Just $ pos - 1
                                       else Just pos
-            csEditState.cedAttachmentList %= L.listReplace (deleteAt pos es) idx
+            csCurrentTeam.tsEditState.cedAttachmentList %= L.listReplace (deleteAt pos es) idx
 
 deleteAt :: Int -> Vector.Vector a -> Vector.Vector a
 deleteAt p as | p < 0 || p >= length as = as

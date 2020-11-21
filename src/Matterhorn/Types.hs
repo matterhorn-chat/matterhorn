@@ -84,6 +84,7 @@ module Matterhorn.Types
   , tsPendingChannelChange
   , tsRecentChannel
   , tsReturnChannel
+  , tsEditState
 
   , ChatState
   , newState
@@ -110,7 +111,6 @@ module Matterhorn.Types
   , csChannel
   , csChannels
   , csChannelSelectState
-  , csEditState
   , csClientConfig
   , csViewedMessage
   , csNotifyPrefs
@@ -1332,9 +1332,6 @@ data ChatState =
               -- ^ All of the users we know about.
               , _timeZone :: TimeZoneSeries
               -- ^ The client time zone.
-              , _csEditState :: ChatEditState
-              -- ^ The state of the input box used for composing and
-              -- editing messages and commands.
               , _csMode :: Mode
               -- ^ The current application mode. This is used to
               -- dispatch to different rendering and event handling
@@ -1405,6 +1402,9 @@ data TeamState =
               , _tsReturnChannel :: Maybe ChannelId
               -- ^ The channel to return to after visiting one or more
               -- unread channels.
+              , _tsEditState :: ChatEditState
+              -- ^ The state of the input box used for composing and
+              -- editing messages and commands.
               }
 
 -- | Handles for the View Message window's tabs.
@@ -1447,6 +1447,7 @@ newState (StartupStateInfo {..}) = do
                        , _tsPendingChannelChange = Nothing
                        , _tsRecentChannel = Nothing
                        , _tsReturnChannel = Nothing
+                       , _tsEditState = editState
                        }
     return ChatState { _csResources                   = startupStateResources
                      , _csCurrentTeam                 = ts
@@ -1457,7 +1458,6 @@ newState (StartupStateInfo {..}) = do
                      , _csPostMap                     = HM.empty
                      , _csUsers                       = noUsers
                      , _timeZone                      = startupStateTimeZone
-                     , _csEditState                   = editState
                      , _csMode                        = Main
                      , _csShowMessagePreview          = configShowMessagePreview config
                      , _csShowChannelList             = configShowChannelList config
@@ -2050,8 +2050,8 @@ data SidebarUpdate =
 
 resetAutocomplete :: MH ()
 resetAutocomplete = do
-    csEditState.cedAutocomplete .= Nothing
-    csEditState.cedAutocompletePending .= Nothing
+    csCurrentTeam.tsEditState.cedAutocomplete .= Nothing
+    csCurrentTeam.tsEditState.cedAutocompletePending .= Nothing
 
 
 -- * Slash Commands

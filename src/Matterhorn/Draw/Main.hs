@@ -93,14 +93,14 @@ data Token =
 drawEditorContents :: ChatState -> HighlightSet -> [Text] -> Widget Name
 drawEditorContents st hs =
     let noHighlight = txt . T.unlines
-    in case st^.csEditState.cedSpellChecker of
+    in case st^.csCurrentTeam.tsEditState.cedSpellChecker of
         Nothing -> noHighlight
         Just _ ->
-            case S.null (st^.csEditState.cedMisspellings) of
+            case S.null (st^.csCurrentTeam.tsEditState.cedMisspellings) of
                 True -> noHighlight
                 False -> doHighlightMisspellings
                            hs
-                           (st^.csEditState.cedMisspellings)
+                           (st^.csCurrentTeam.tsEditState.cedMisspellings)
 
 -- | This function takes a set of misspellings from the spell
 -- checker, the editor lines, and builds a rendering of the text with
@@ -224,24 +224,24 @@ doHighlightMisspellings hSet misspellings contents =
 
 renderUserCommandBox :: ChatState -> HighlightSet -> Widget Name
 renderUserCommandBox st hs =
-    let prompt = txt $ case st^.csEditState.cedEditMode of
+    let prompt = txt $ case st^.csCurrentTeam.tsEditState.cedEditMode of
             Replying _ _ -> "reply> "
             Editing _ _  ->  "edit> "
             NewPost      ->      "> "
-        inputBox = renderEditor (drawEditorContents st hs) True (st^.csEditState.cedEditor)
-        curContents = getEditContents $ st^.csEditState.cedEditor
+        inputBox = renderEditor (drawEditorContents st hs) True (st^.csCurrentTeam.tsEditState.cedEditor)
+        curContents = getEditContents $ st^.csCurrentTeam.tsEditState.cedEditor
         multilineContent = length curContents > 1
         multilineHints =
             hBox [ borderElem bsHorizontal
                  , str $ "[" <> (show $ (+1) $ fst $ cursorPosition $
-                                        st^.csEditState.cedEditor.editContentsL) <>
+                                        st^.csCurrentTeam.tsEditState.cedEditor.editContentsL) <>
                          "/" <> (show $ length curContents) <> "]"
                  , hBorderWithLabel $ withDefAttr clientEmphAttr $
                    txt $ "In multi-line mode. Press " <> multiLineToggleKey <>
                          " to finish."
                  ]
 
-        replyDisplay = case st^.csEditState.cedEditMode of
+        replyDisplay = case st^.csCurrentTeam.tsEditState.cedEditMode of
             Replying msg _ ->
                 let msgWithoutParent = msg & mInReplyToMsg .~ NotAReply
                 in hBox [ replyArrow
@@ -266,7 +266,7 @@ renderUserCommandBox st hs =
 
         multiLineToggleKey = ppBinding $ getFirstDefaultBinding ToggleMultiLineEvent
 
-        commandBox = case st^.csEditState.cedEphemeral.eesMultiline of
+        commandBox = case st^.csCurrentTeam.tsEditState.cedEphemeral.eesMultiline of
             False ->
                 let linesStr = "line" <> if numLines == 1 then "" else "s"
                     numLines = length curContents
@@ -600,9 +600,9 @@ inputPreview st hs | not $ st^.csShowMessagePreview = emptyWidget
     -- end of whatever line the user is editing, that is very unlikely
     -- to be a problem.
     curContents = getText $ (gotoEOL >>> insertChar cursorSentinel) $
-                  st^.csEditState.cedEditor.editContentsL
+                  st^.csCurrentTeam.tsEditState.cedEditor.editContentsL
     curStr = T.intercalate "\n" curContents
-    overrideTy = case st^.csEditState.cedEditMode of
+    overrideTy = case st^.csCurrentTeam.tsEditState.cedEditMode of
         Editing _ ty -> Just ty
         _ -> Nothing
     baseUrl = serverBaseUrl st
@@ -681,7 +681,7 @@ mainInterface st =
              ]
 
     showAttachmentCount =
-        let count = length $ listElements $ st^.csEditState.cedAttachmentList
+        let count = length $ listElements $ st^.csCurrentTeam.tsEditState.cedAttachmentList
         in if count == 0
            then emptyWidget
            else hBox [ borderElem bsHorizontal

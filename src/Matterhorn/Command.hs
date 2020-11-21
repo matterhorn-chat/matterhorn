@@ -275,7 +275,7 @@ execMMCommand :: Text -> Text -> MH ()
 execMMCommand name rest = do
   cId      <- use csCurrentChannelId
   session  <- getSession
-  em       <- use (csEditState.cedEditMode)
+  em       <- use (csCurrentTeam.tsEditState.cedEditMode)
   tId      <- gets myTeamId
   let mc = MM.MinCommand
              { MM.minComChannelId = cId

@@ -443,7 +443,7 @@ keybindSections =
     [ ("Global Keybindings", globalKeyHandlers)
     , ("Help Page", helpKeyHandlers)
     , ("Main Interface", mainKeyHandlers)
-    , ("Text Editing", editingKeyHandlers (csEditState.cedEditor))
+    , ("Text Editing", editingKeyHandlers (csCurrentTeam.tsEditState.cedEditor))
     , ("Channel Select Mode", channelSelectKeyHandlers)
     , ("Message Select Mode", messageSelectKeyHandlers)
     , ("User Listings", userListOverlayKeyHandlers)
