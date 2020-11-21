@@ -114,6 +114,7 @@ module Matterhorn.Types
   , csChannel
   , csChannels
   , csClientConfig
+  , csInputHistory
   , csMe
   , timeZone
   , whenMode
@@ -131,7 +132,6 @@ module Matterhorn.Types
   , cedEditMode
   , cedEphemeral
   , cedEditor
-  , cedInputHistory
   , cedAutocomplete
   , cedAutocompletePending
   , cedJustCompleted
@@ -1013,13 +1013,6 @@ data ChatEditState =
     ChatEditState { _cedEditor :: Editor Text Name
                   , _cedEditMode :: EditMode
                   , _cedEphemeral :: EphemeralEditState
-                  , _cedInputHistory :: InputHistory
-                  -- ^ The map of per-channel input history for the
-                  -- application. We don't distribute the per-channel
-                  -- history into the per-channel states (like we do
-                  -- for other per-channel state) since keeping it
-                  -- under the InputHistory banner lets us use a nicer
-                  -- startup/shutdown disk file management API.
                   , _cedYankBuffer :: Text
                   , _cedSpellChecker :: Maybe (Aspell, IO ())
                   , _cedMisspellings :: Set Text
@@ -1058,11 +1051,10 @@ data AttachmentData =
 
 -- | We can initialize a new 'ChatEditState' value with just an edit
 -- history, which we save locally.
-emptyEditState :: InputHistory -> Maybe (Aspell, IO ()) -> IO ChatEditState
-emptyEditState hist sp =
+emptyEditState :: Maybe (Aspell, IO ()) -> IO ChatEditState
+emptyEditState sp =
     return ChatEditState { _cedEditor               = editor MessageInput Nothing ""
                          , _cedEphemeral            = defaultEphemeralEditState
-                         , _cedInputHistory         = hist
                          , _cedEditMode             = NewPost
                          , _cedYankBuffer           = ""
                          , _cedSpellChecker         = sp
@@ -1346,6 +1338,13 @@ data ChatState =
               -- ^ The state of the reaction emoji list overlay.
               , _csClientConfig :: Maybe ClientConfig
               -- ^ The Mattermost client configuration, as we understand it.
+              , _csInputHistory :: InputHistory
+              -- ^ The map of per-channel input history for the
+              -- application. We don't distribute the per-channel
+              -- history into the per-channel states (like we do
+              -- for other per-channel state) since keeping it
+              -- under the InputHistory banner lets us use a nicer
+              -- startup/shutdown disk file management API.
               }
 
 data TeamState =
@@ -1440,7 +1439,7 @@ data ChannelTopicDialogState =
 
 newState :: StartupStateInfo -> IO ChatState
 newState (StartupStateInfo {..}) = do
-    editState <- emptyEditState startupStateInitialHistory startupStateSpellChecker
+    editState <- emptyEditState startupStateSpellChecker
     let config = _crConfiguration startupStateResources
         ts = TeamState { _tsMode                 = Main
                        , _tsFocus                = startupStateChannelZipper
@@ -1475,6 +1474,7 @@ newState (StartupStateInfo {..}) = do
                      , _csReactionEmojiListOverlay    = nullEmojiListOverlayState
                      , _csWorkerIsBusy                = Nothing
                      , _csClientConfig                = Nothing
+                     , _csInputHistory                = startupStateInitialHistory
                      }
 
 -- | Make a new channel topic editor window state.

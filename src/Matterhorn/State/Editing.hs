@@ -222,8 +222,8 @@ handleInputSubmission cId content = do
     -- since otherwise the command could change the state and then doing
     -- cleanup afterwards could clean up the wrong things.
     csCurrentTeam.tsEditState.cedEditor %= applyEdit Z.clearZipper
-    csCurrentTeam.tsEditState.cedInputHistory %= addHistoryEntry content cId
     csCurrentTeam.tsEditState.cedEphemeral.eesInputHistoryPosition .= Nothing
+    csInputHistory %= addHistoryEntry content cId
 
     case T.uncons content of
       Just ('/', cmd) ->

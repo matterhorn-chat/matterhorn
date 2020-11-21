@@ -99,7 +99,7 @@ closeMatterhorn finalSt = do
   logIfError (mmCloseSession $ getResourceSession $ finalSt^.csResources)
       "Error in closing session"
 
-  logIfError (writeHistory (finalSt^.csCurrentTeam.tsEditState.cedInputHistory))
+  logIfError (writeHistory (finalSt^.csInputHistory))
       "Error in writing history"
 
   logIfError (writeLastRunState finalSt)

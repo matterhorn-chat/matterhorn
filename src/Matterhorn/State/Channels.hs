@@ -721,7 +721,7 @@ removeChannelFromState cId = do
             origFocus <- use csCurrentChannelId
             when (origFocus == cId) nextChannelSkipPrevView
             -- Update input history
-            csCurrentTeam.tsEditState.cedInputHistory         %= removeChannelHistory cId
+            csInputHistory %= removeChannelHistory cId
             -- Update msgMap
             csChannels                          %= removeChannel cId
             -- Remove from focus zipper
@@ -929,7 +929,7 @@ channelHistoryForward = do
 
 loadHistoryEntryToEditor :: ChannelId -> Int -> MH ()
 loadHistoryEntryToEditor cId idx = do
-    inputHistory <- use (csCurrentTeam.tsEditState.cedInputHistory)
+    inputHistory <- use csInputHistory
     case getHistoryEntry cId idx inputHistory of
         Nothing -> return ()
         Just entry -> do
