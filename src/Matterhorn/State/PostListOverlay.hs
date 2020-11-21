@@ -34,11 +34,11 @@ import           Matterhorn.Types.DirectionalSeq (emptyDirSeq)
 -- with a specified list of messages.
 enterPostListMode ::  PostListContents -> Messages -> MH ()
 enterPostListMode contents msgs = do
-  csPostListOverlay.postListPosts .= msgs
+  csCurrentTeam.tsPostListOverlay.postListPosts .= msgs
   let mlatest = getLatestPostMsg msgs
       pId = mlatest >>= messagePostId
       cId = mlatest >>= \m -> m^.mChannelId
-  csPostListOverlay.postListSelected .= pId
+  csCurrentTeam.tsPostListOverlay.postListSelected .= pId
   setMode $ PostListOverlay contents
   case (pId, cId) of
     (Just p, Just c) -> asyncFetchMessagesSurrounding c p
@@ -47,8 +47,8 @@ enterPostListMode contents msgs = do
 -- | Clear out the state of a PostListOverlay
 exitPostListMode :: MH ()
 exitPostListMode = do
-  csPostListOverlay.postListPosts .= emptyDirSeq
-  csPostListOverlay.postListSelected .= Nothing
+  csCurrentTeam.tsPostListOverlay.postListPosts .= emptyDirSeq
+  csCurrentTeam.tsPostListOverlay.postListSelected .= Nothing
   setMode Main
 
 
@@ -98,14 +98,14 @@ enterSearchResultPostListMode terms
 -- to finding a chronologically /newer/ message.
 postListSelectUp :: MH ()
 postListSelectUp = do
-  selId <- use (csPostListOverlay.postListSelected)
-  posts <- use (csPostListOverlay.postListPosts)
+  selId <- use (csCurrentTeam.tsPostListOverlay.postListSelected)
+  posts <- use (csCurrentTeam.tsPostListOverlay.postListPosts)
   let nextMsg = getNextMessage (MessagePostId <$> selId) posts
   case nextMsg of
     Nothing -> return ()
     Just m -> do
       let pId = m^.mMessageId >>= messageIdPostId
-      csPostListOverlay.postListSelected .= pId
+      csCurrentTeam.tsPostListOverlay.postListSelected .= pId
       case (m^.mChannelId, pId) of
         (Just c, Just p) -> asyncFetchMessagesSurrounding c p
         o -> mhLog LogError
@@ -116,14 +116,14 @@ postListSelectUp = do
 -- to finding a chronologically /old/ message.
 postListSelectDown :: MH ()
 postListSelectDown = do
-  selId <- use (csPostListOverlay.postListSelected)
-  posts <- use (csPostListOverlay.postListPosts)
+  selId <- use (csCurrentTeam.tsPostListOverlay.postListSelected)
+  posts <- use (csCurrentTeam.tsPostListOverlay.postListPosts)
   let prevMsg = getPrevMessage (MessagePostId <$> selId) posts
   case prevMsg of
     Nothing -> return ()
     Just m -> do
       let pId = m^.mMessageId >>= messageIdPostId
-      csPostListOverlay.postListSelected .= pId
+      csCurrentTeam.tsPostListOverlay.postListSelected .= pId
       case (m^.mChannelId, pId) of
         (Just c, Just p) -> asyncFetchMessagesSurrounding c p
         o -> mhLog LogError
@@ -133,7 +133,7 @@ postListSelectDown = do
 -- | Unflag the post currently selected in the PostListOverlay, if any
 postListUnflagSelected :: MH ()
 postListUnflagSelected = do
-  msgId <- use (csPostListOverlay.postListSelected)
+  msgId <- use (csCurrentTeam.tsPostListOverlay.postListSelected)
   case msgId of
     Nothing  -> return ()
     Just pId -> flagMessage pId False
@@ -143,7 +143,7 @@ postListUnflagSelected = do
 -- display and changes to MessageSelectState.
 postListJumpToCurrent :: MH ()
 postListJumpToCurrent = do
-  msgId <- use (csPostListOverlay.postListSelected)
+  msgId <- use (csCurrentTeam.tsPostListOverlay.postListSelected)
   case msgId of
     Nothing  -> return ()
     Just pId -> jumpToPost pId

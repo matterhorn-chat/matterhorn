@@ -54,7 +54,7 @@ drawPostsBox contents st =
             else " (" <> (T.pack . show . length) messages <> "): " <> terms
 
         messages = insertDateMarkers
-                     (filterMessages knownChannel $ st^.csPostListOverlay.postListPosts)
+                     (filterMessages knownChannel $ st^.csCurrentTeam.tsPostListOverlay.postListPosts)
                      (getDateFormat st)
                      (st^.timeZone)
 
@@ -100,7 +100,7 @@ drawPostsBox contents st =
         -- The full message list, rendered with the current selection
         renderedMessageList =
           let (s, (before, after)) = splitDirSeqOn matchesMessage messagesWithStates
-              matchesMessage (m, _) = m^.mMessageId == (MessagePostId <$> st^.csPostListOverlay.postListSelected)
+              matchesMessage (m, _) = m^.mMessageId == (MessagePostId <$> st^.csCurrentTeam.tsPostListOverlay.postListSelected)
               messagesWithStates = (, InThreadShowParent) <$> messages
           in case s of
             Nothing ->

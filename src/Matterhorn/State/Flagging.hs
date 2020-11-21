@@ -48,19 +48,19 @@ updateMessageFlag pId f = do
       case mode of
         PostListOverlay PostListFlagged
           | f ->
-              csPostListOverlay.postListPosts %=
+              csCurrentTeam.tsPostListOverlay.postListPosts %=
                 addMessage (msg & mFlagged .~ True)
           -- deleting here is tricky, because it means that we need to
           -- move the focus somewhere: we'll try moving it _up_ unless
           -- we can't, in which case we'll try moving it down.
           | otherwise -> do
-              selId <- use (csPostListOverlay.postListSelected)
-              posts <- use (csPostListOverlay.postListPosts)
+              selId <- use (csCurrentTeam.tsPostListOverlay.postListSelected)
+              posts <- use (csCurrentTeam.tsPostListOverlay.postListPosts)
               let nextId = case getNextPostId selId posts of
                     Nothing -> getPrevPostId selId posts
                     Just x  -> Just x
-              csPostListOverlay.postListSelected .= nextId
-              csPostListOverlay.postListPosts %=
+              csCurrentTeam.tsPostListOverlay.postListSelected .= nextId
+              csCurrentTeam.tsPostListOverlay.postListPosts %=
                 filterMessages (((/=) `on` _mMessageId) msg)
         _ -> return ()
     _ -> return ()

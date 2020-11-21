@@ -90,6 +90,7 @@ module Matterhorn.Types
   , tsChannelSelectState
   , tsUrlList
   , tsViewedMessage
+  , tsPostListOverlay
 
   , ChatState
   , newState
@@ -104,7 +105,6 @@ module Matterhorn.Types
   , csShowExpandedChannelTopics
   , csPostMap
   , csThemeListOverlay
-  , csPostListOverlay
   , csUserListOverlay
   , csChannelListOverlay
   , csReactionEmojiListOverlay
@@ -1346,8 +1346,6 @@ data ChatState =
               -- queue length if so.
               , _csThemeListOverlay :: ListOverlayState InternalTheme ()
               -- ^ The state of the theme list overlay.
-              , _csPostListOverlay :: PostListOverlayState
-              -- ^ The state of the post list overlay.
               , _csUserListOverlay :: ListOverlayState UserInfo UserSearchScope
               -- ^ The state of the user list overlay.
               , _csChannelListOverlay :: ListOverlayState Channel ChannelSearchScope
@@ -1404,6 +1402,8 @@ data TeamState =
               -- consult the chat state for the latest *version* of any
               -- message with an ID here, to be sure that the latest
               -- version is used (e.g. if it gets edited, etc.).
+              , _tsPostListOverlay :: PostListOverlayState
+              -- ^ The state of the post list overlay.
               }
 
 -- | Handles for the View Message window's tabs.
@@ -1452,6 +1452,7 @@ newState (StartupStateInfo {..}) = do
                        , _tsChannelSelectState = emptyChannelSelectState
                        , _tsUrlList = list UrlList mempty 2
                        , _tsViewedMessage = Nothing
+                       , _tsPostListOverlay = PostListOverlayState emptyDirSeq Nothing
                        }
     return ChatState { _csResources                   = startupStateResources
                      , _csCurrentTeam                 = ts
@@ -1468,7 +1469,6 @@ newState (StartupStateInfo {..}) = do
                      , _csConnectionStatus            = Connected
                      , _csWorkerIsBusy                = Nothing
                      , _csThemeListOverlay            = nullThemeListOverlayState
-                     , _csPostListOverlay             = PostListOverlayState emptyDirSeq Nothing
                      , _csUserListOverlay             = nullUserListOverlayState
                      , _csChannelListOverlay          = nullChannelListOverlayState
                      , _csReactionEmojiListOverlay    = nullEmojiListOverlayState
