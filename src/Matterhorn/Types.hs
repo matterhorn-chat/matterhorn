@@ -1329,10 +1329,6 @@ data ChatState =
               -- ^ All of the users we know about.
               , _timeZone :: TimeZoneSeries
               -- ^ The client time zone.
-              , _csMode :: Mode
-              -- ^ The current application mode. This is used to
-              -- dispatch to different rendering and event handling
-              -- routines.
               , _csShowMessagePreview :: Bool
               -- ^ Whether to show the message preview area.
               , _csShowChannelList :: Bool
@@ -1404,6 +1400,10 @@ data TeamState =
               , _tsChannelTopicDialog :: ChannelTopicDialogState
               -- ^ The state for the interactive channel topic editor
               -- window.
+              , _tsMode :: Mode
+              -- ^ The current application mode when viewing this team.
+              -- This is used to dispatch to different rendering and
+              -- event handling routines.
               }
 
 -- | Handles for the View Message window's tabs.
@@ -1457,6 +1457,7 @@ newState (StartupStateInfo {..}) = do
                        , _tsChannelListOverlay = nullChannelListOverlayState
                        , _tsNotifyPrefs = Nothing
                        , _tsChannelTopicDialog          = newChannelTopicDialog ""
+                       , _tsMode = Main
                        }
     return ChatState { _csResources                   = startupStateResources
                      , _csCurrentTeam                 = ts
@@ -1466,7 +1467,6 @@ newState (StartupStateInfo {..}) = do
                      , _csPostMap                     = HM.empty
                      , _csUsers                       = noUsers
                      , _timeZone                      = startupStateTimeZone
-                     , _csMode                        = Main
                      , _csShowMessagePreview          = configShowMessagePreview config
                      , _csShowChannelList             = configShowChannelList config
                      , _csShowExpandedChannelTopics   = configShowExpandedChannelTopics config
@@ -1874,19 +1874,19 @@ getResourceSession = _crSession
 
 whenMode :: Mode -> MH () -> MH ()
 whenMode m act = do
-    curMode <- use csMode
+    curMode <- use (csCurrentTeam.tsMode)
     when (curMode == m) act
 
 setMode :: Mode -> MH ()
 setMode m = do
-    csMode .= m
+    csCurrentTeam.tsMode .= m
     mh invalidateCache
 
 setMode' :: Mode -> ChatState -> ChatState
-setMode' m = csMode .~ m
+setMode' m = csCurrentTeam.tsMode .~ m
 
 appMode :: ChatState -> Mode
-appMode = _csMode
+appMode = _tsMode._csCurrentTeam
 
 resetSpellCheckTimer :: ChatEditState -> IO ()
 resetSpellCheckTimer s =
