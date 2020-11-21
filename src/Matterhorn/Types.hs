@@ -1456,7 +1456,7 @@ newState (StartupStateInfo {..}) = do
                        , _tsUserListOverlay = nullUserListOverlayState
                        , _tsChannelListOverlay = nullChannelListOverlayState
                        , _tsNotifyPrefs = Nothing
-                       , _tsChannelTopicDialog          = newChannelTopicDialog ""
+                       , _tsChannelTopicDialog = newChannelTopicDialog ""
                        , _tsMode = Main
                        }
     return ChatState { _csResources                   = startupStateResources
