@@ -36,7 +36,7 @@ renderUrlList st =
                      then str "No URLs found in this channel."
                      else renderList renderItem True urls
 
-        urls = st^.csUrlList
+        urls = st^.csCurrentTeam.tsUrlList
 
         me = myUsername st
 

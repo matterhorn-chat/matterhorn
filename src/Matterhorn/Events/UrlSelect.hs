@@ -14,7 +14,7 @@ import           Matterhorn.Types
 onEventUrlSelect :: Vty.Event -> MH Bool
 onEventUrlSelect =
   handleKeyboardEvent urlSelectKeybindings $ \ ev ->
-    mhHandleEventLensed csUrlList handleListEvent ev
+    mhHandleEventLensed (csCurrentTeam.tsUrlList) handleListEvent ev
 
 urlSelectKeybindings :: KeyConfig -> KeyHandlerMap
 urlSelectKeybindings = mkKeybindings urlSelectKeyHandlers
@@ -28,10 +28,10 @@ urlSelectKeyHandlers =
     , mkKb CancelEvent "Cancel URL selection" stopUrlSelect
 
     , mkKb SelectUpEvent "Move cursor up" $
-        mhHandleEventLensed csUrlList handleListEvent (Vty.EvKey Vty.KUp [])
+        mhHandleEventLensed (csCurrentTeam.tsUrlList) handleListEvent (Vty.EvKey Vty.KUp [])
 
     , mkKb SelectDownEvent "Move cursor down" $
-        mhHandleEventLensed csUrlList handleListEvent (Vty.EvKey Vty.KDown [])
+        mhHandleEventLensed (csCurrentTeam.tsUrlList) handleListEvent (Vty.EvKey Vty.KDown [])
 
     , staticKb "Cancel URL selection"
          (Vty.EvKey (Vty.KChar 'q') []) $ stopUrlSelect

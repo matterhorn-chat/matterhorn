@@ -23,14 +23,14 @@ startUrlSelect :: MH ()
 startUrlSelect = do
     urls <- use (csCurrentChannel.to findUrls.to V.fromList)
     setMode UrlSelect
-    csUrlList .= (listMoveTo (length urls - 1) $ list UrlList urls 2)
+    csCurrentTeam.tsUrlList .= (listMoveTo (length urls - 1) $ list UrlList urls 2)
 
 stopUrlSelect :: MH ()
 stopUrlSelect = setMode Main
 
 openSelectedURL :: MH ()
 openSelectedURL = whenMode UrlSelect $ do
-    selected <- use (csUrlList.to listSelectedElement)
+    selected <- use (csCurrentTeam.tsUrlList.to listSelectedElement)
     case selected of
         Nothing -> setMode Main
         Just (_, link) -> do

@@ -88,6 +88,7 @@ module Matterhorn.Types
   , tsMessageSelect
   , tsTeam
   , tsChannelSelectState
+  , tsUrlList
 
   , ChatState
   , newState
@@ -97,7 +98,6 @@ module Matterhorn.Types
   , csResources
   , csCurrentChannel
   , csCurrentChannelId
-  , csUrlList
   , csShowMessagePreview
   , csShowChannelList
   , csShowExpandedChannelTopics
@@ -1339,9 +1339,6 @@ data ChatState =
               -- ^ Whether to show the channel list.
               , _csShowExpandedChannelTopics :: Bool
               -- ^ Whether to show expanded channel topics.
-              , _csUrlList :: List Name LinkChoice
-              -- ^ The URL list used to show URLs drawn from messages in
-              -- a channel.
               , _csConnectionStatus :: ConnectionStatus
               -- ^ Our view of the connection status.
               , _csWorkerIsBusy :: Maybe (Maybe Int)
@@ -1404,6 +1401,9 @@ data TeamState =
               , _tsChannelSelectState :: ChannelSelectState
               -- ^ The state of the user's input and selection for
               -- channel selection mode.
+              , _tsUrlList :: List Name LinkChoice
+              -- ^ The URL list used to show URLs drawn from messages in
+              -- a channel.
               }
 
 -- | Handles for the View Message window's tabs.
@@ -1450,6 +1450,7 @@ newState (StartupStateInfo {..}) = do
                        , _tsMessageSelect = MessageSelectState Nothing
                        , _tsTeam = startupStateTeam
                        , _tsChannelSelectState = emptyChannelSelectState
+                       , _tsUrlList = list UrlList mempty 2
                        }
     return ChatState { _csResources                   = startupStateResources
                      , _csCurrentTeam                 = ts
@@ -1463,7 +1464,6 @@ newState (StartupStateInfo {..}) = do
                      , _csShowMessagePreview          = configShowMessagePreview config
                      , _csShowChannelList             = configShowChannelList config
                      , _csShowExpandedChannelTopics   = configShowExpandedChannelTopics config
-                     , _csUrlList                     = list UrlList mempty 2
                      , _csConnectionStatus            = Connected
                      , _csWorkerIsBusy                = Nothing
                      , _csThemeListOverlay            = nullThemeListOverlayState
