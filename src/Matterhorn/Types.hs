@@ -2011,7 +2011,8 @@ userIdForUsername name st =
 
 channelIdByChannelName :: Text -> ChatState -> Maybe ChannelId
 channelIdByChannelName name st =
-    let matches (_, cc) = cc^.ccInfo.cdName == (trimChannelSigil name)
+    let matches (_, cc) = cc^.ccInfo.cdName == (trimChannelSigil name) &&
+                          cc^.ccInfo.cdTeamId == (Just $ st^.csCurrentTeam.tsTeam.teamIdL)
     in listToMaybe $ fst <$> filteredChannels matches (st^.csChannels)
 
 channelIdByUsername :: Text -> ChatState -> Maybe ChannelId
