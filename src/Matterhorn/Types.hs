@@ -94,11 +94,11 @@ module Matterhorn.Types
   , tsUserListOverlay
   , tsChannelListOverlay
   , tsNotifyPrefs
+  , tsChannelTopicDialog
 
   , ChatState
   , newState
   , csCurrentTeam
-  , csChannelTopicDialog
   , csChannelListOrientation
   , csResources
   , csCurrentChannel
@@ -1350,9 +1350,6 @@ data ChatState =
               -- ^ The state of the reaction emoji list overlay.
               , _csClientConfig :: Maybe ClientConfig
               -- ^ The Mattermost client configuration, as we understand it.
-              , _csChannelTopicDialog :: ChannelTopicDialogState
-              -- ^ The state for the interactive channel topic editor
-              -- window.
               }
 
 data TeamState =
@@ -1404,6 +1401,9 @@ data TeamState =
               -- the current channel. This is set when entering
               -- EditNotifyPrefs mode and updated when the user
               -- changes the form state.
+              , _tsChannelTopicDialog :: ChannelTopicDialogState
+              -- ^ The state for the interactive channel topic editor
+              -- window.
               }
 
 -- | Handles for the View Message window's tabs.
@@ -1456,6 +1456,7 @@ newState (StartupStateInfo {..}) = do
                        , _tsUserListOverlay = nullUserListOverlayState
                        , _tsChannelListOverlay = nullChannelListOverlayState
                        , _tsNotifyPrefs = Nothing
+                       , _tsChannelTopicDialog          = newChannelTopicDialog ""
                        }
     return ChatState { _csResources                   = startupStateResources
                      , _csCurrentTeam                 = ts
@@ -1474,7 +1475,6 @@ newState (StartupStateInfo {..}) = do
                      , _csThemeListOverlay            = nullThemeListOverlayState
                      , _csReactionEmojiListOverlay    = nullEmojiListOverlayState
                      , _csClientConfig                = Nothing
-                     , _csChannelTopicDialog          = newChannelTopicDialog ""
                      }
 
 -- | Make a new channel topic editor window state.

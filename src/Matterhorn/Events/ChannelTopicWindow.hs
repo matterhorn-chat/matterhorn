@@ -18,19 +18,19 @@ import           Matterhorn.State.Channels ( setChannelTopic )
 
 onEventChannelTopicWindow :: Vty.Event -> MH ()
 onEventChannelTopicWindow (Vty.EvKey (Vty.KChar '\t') []) =
-    csChannelTopicDialog.channelTopicDialogFocus %= focusNext
+    csCurrentTeam.tsChannelTopicDialog.channelTopicDialogFocus %= focusNext
 onEventChannelTopicWindow (Vty.EvKey Vty.KBackTab []) =
-    csChannelTopicDialog.channelTopicDialogFocus %= focusPrev
+    csCurrentTeam.tsChannelTopicDialog.channelTopicDialogFocus %= focusPrev
 onEventChannelTopicWindow e@(Vty.EvKey Vty.KEnter []) = do
-    f <- use (csChannelTopicDialog.channelTopicDialogFocus)
+    f <- use (csCurrentTeam.tsChannelTopicDialog.channelTopicDialogFocus)
     case focusGetCurrent f of
         Just ChannelTopicSaveButton -> do
-            ed <- use (csChannelTopicDialog.channelTopicDialogEditor)
+            ed <- use (csCurrentTeam.tsChannelTopicDialog.channelTopicDialogEditor)
             let topic = T.unlines $ getEditContents ed
             setChannelTopic topic
             setMode Main
         Just ChannelTopicEditor ->
-            mhHandleEventLensed (csChannelTopicDialog.channelTopicDialogEditor)
+            mhHandleEventLensed (csCurrentTeam.tsChannelTopicDialog.channelTopicDialogEditor)
                                 handleEditorEvent e
         Just ChannelTopicCancelButton ->
             setMode Main
@@ -39,10 +39,10 @@ onEventChannelTopicWindow e@(Vty.EvKey Vty.KEnter []) = do
 onEventChannelTopicWindow (Vty.EvKey Vty.KEsc []) = do
     setMode Main
 onEventChannelTopicWindow e = do
-    f <- use (csChannelTopicDialog.channelTopicDialogFocus)
+    f <- use (csCurrentTeam.tsChannelTopicDialog.channelTopicDialogFocus)
     case focusGetCurrent f of
         Just ChannelTopicEditor ->
-            mhHandleEventLensed (csChannelTopicDialog.channelTopicDialogEditor)
+            mhHandleEventLensed (csCurrentTeam.tsChannelTopicDialog.channelTopicDialogEditor)
                                 handleEditorEvent e
         _ ->
             return ()
