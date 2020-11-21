@@ -17,9 +17,9 @@ import qualified Matterhorn.Zipper as Z
 onEventChannelSelect :: Vty.Event -> MH Bool
 onEventChannelSelect =
   handleKeyboardEvent channelSelectKeybindings $ \e -> do
-      handled <- handleKeyboardEvent (editingKeybindings (csChannelSelectState.channelSelectInput)) (const $ return ()) e
+      handled <- handleKeyboardEvent (editingKeybindings (csCurrentTeam.tsChannelSelectState.channelSelectInput)) (const $ return ()) e
       when (not handled) $
-          mhHandleEventLensed (csChannelSelectState.channelSelectInput) handleEditorEvent e
+          mhHandleEventLensed (csCurrentTeam.tsChannelSelectState.channelSelectInput) handleEditorEvent e
 
       updateChannelSelectMatches
 
@@ -30,7 +30,7 @@ channelSelectKeyHandlers :: [KeyEventHandler]
 channelSelectKeyHandlers =
     [ staticKb "Switch to selected channel"
          (Vty.EvKey Vty.KEnter []) $ do
-             matches <- use (csChannelSelectState.channelSelectMatches)
+             matches <- use (csCurrentTeam.tsChannelSelectState.channelSelectMatches)
              case Z.focus matches of
                  Nothing -> return ()
                  Just match -> do

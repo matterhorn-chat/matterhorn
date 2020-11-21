@@ -80,7 +80,7 @@ renderChannelList st =
         renderEntry s e = renderChannelListEntry myUsername_ $ mkChannelEntryData s e
         body = case appMode st of
             ChannelSelect ->
-                let zipper = st^.csChannelSelectState.channelSelectMatches
+                let zipper = st^.csCurrentTeam.tsChannelSelectState.channelSelectMatches
                     matches = if Z.isEmpty zipper
                               then [hCenter $ txt "No matches"]
                               else (renderChannelListGroup st

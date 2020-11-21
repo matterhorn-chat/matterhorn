@@ -456,7 +456,7 @@ insertTransitions ms cutoff = insertDateMarkers $ foldr addMessage ms newMessage
 
 renderChannelSelectPrompt :: ChatState -> Widget Name
 renderChannelSelectPrompt st =
-    let e = st^.csChannelSelectState.channelSelectInput
+    let e = st^.csCurrentTeam.tsChannelSelectState.channelSelectInput
     in withDefAttr channelSelectPromptAttr $
        (txt "Switch to channel [use ^ and $ to anchor]: ") <+>
        (renderEditor (txt . T.concat) True e)

@@ -87,6 +87,7 @@ module Matterhorn.Types
   , tsEditState
   , tsMessageSelect
   , tsTeam
+  , tsChannelSelectState
 
   , ChatState
   , newState
@@ -110,7 +111,6 @@ module Matterhorn.Types
   , csWorkerIsBusy
   , csChannel
   , csChannels
-  , csChannelSelectState
   , csClientConfig
   , csViewedMessage
   , csNotifyPrefs
@@ -1339,9 +1339,6 @@ data ChatState =
               -- ^ Whether to show the channel list.
               , _csShowExpandedChannelTopics :: Bool
               -- ^ Whether to show expanded channel topics.
-              , _csChannelSelectState :: ChannelSelectState
-              -- ^ The state of the user's input and selection for
-              -- channel selection mode.
               , _csUrlList :: List Name LinkChoice
               -- ^ The URL list used to show URLs drawn from messages in
               -- a channel.
@@ -1404,6 +1401,9 @@ data TeamState =
               -- ^ The state of message selection mode.
               , _tsTeam :: Team
               -- ^ The team data.
+              , _tsChannelSelectState :: ChannelSelectState
+              -- ^ The state of the user's input and selection for
+              -- channel selection mode.
               }
 
 -- | Handles for the View Message window's tabs.
@@ -1449,6 +1449,7 @@ newState (StartupStateInfo {..}) = do
                        , _tsEditState = editState
                        , _tsMessageSelect = MessageSelectState Nothing
                        , _tsTeam = startupStateTeam
+                       , _tsChannelSelectState = emptyChannelSelectState
                        }
     return ChatState { _csResources                   = startupStateResources
                      , _csCurrentTeam                 = ts
@@ -1462,7 +1463,6 @@ newState (StartupStateInfo {..}) = do
                      , _csShowMessagePreview          = configShowMessagePreview config
                      , _csShowChannelList             = configShowChannelList config
                      , _csShowExpandedChannelTopics   = configShowExpandedChannelTopics config
-                     , _csChannelSelectState          = emptyChannelSelectState
                      , _csUrlList                     = list UrlList mempty 2
                      , _csConnectionStatus            = Connected
                      , _csWorkerIsBusy                = Nothing
