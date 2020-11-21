@@ -224,7 +224,7 @@ handleWSActionResponse r =
 handleWSEvent :: WebsocketEvent -> MH ()
 handleWSEvent we = do
     myId <- gets myUserId
-    myTId <- gets myTeamId
+    myTId <- use (csCurrentTeam.tsTeam.teamIdL)
     case weEvent we of
         WMPosted
             | Just p <- wepPost (weData we) ->

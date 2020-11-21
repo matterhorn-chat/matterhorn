@@ -23,6 +23,7 @@ import           Lens.Micro.Platform ( (.~), (.=) )
 import qualified Network.Mattermost.Endpoints as MM
 import qualified Network.Mattermost.Types.Config as MM
 import           Network.Mattermost.Types
+import           Network.Mattermost.Lenses ( teamIdL )
 
 import           Matterhorn.State.Async ( doAsyncWith, AsyncPriority(Preempt) )
 import           Matterhorn.State.Channels ( createOrFocusDMChannel, addUserToCurrentChannel )
@@ -36,7 +37,7 @@ enterChannelMembersUserList :: MH ()
 enterChannelMembersUserList = do
     cId <- use csCurrentChannelId
     myId <- gets myUserId
-    myTId <- gets myTeamId
+    myTId <- use (csCurrentTeam.tsTeam.teamIdL)
     session <- getSession
 
     doAsyncWith Preempt $ do
@@ -55,7 +56,7 @@ enterChannelInviteUserList :: MH ()
 enterChannelInviteUserList = do
     cId <- use csCurrentChannelId
     myId <- gets myUserId
-    myTId <- gets myTeamId
+    myTId <- use (csCurrentTeam.tsTeam.teamIdL)
     enterUserListMode (ChannelNonMembers cId myTId) Nothing
       (\u -> case u^.uiId /= myId of
         True -> addUserToCurrentChannel u >> return True
@@ -67,7 +68,7 @@ enterChannelInviteUserList = do
 enterDMSearchUserList :: MH ()
 enterDMSearchUserList = do
     myId <- gets myUserId
-    myTId <- gets myTeamId
+    myTId <- use (csCurrentTeam.tsTeam.teamIdL)
     config <- use csClientConfig
     let restrictTeam = case MM.clientConfigRestrictDirectMessage <$> config of
             Just MM.RestrictTeam -> Just myTId

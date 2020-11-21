@@ -23,6 +23,7 @@ import           Lens.Micro.Platform ( (%=), (.=), (.~), _Just, preuse )
 import qualified Skylighting.Types as Sky
 
 import           Network.Mattermost.Types (userId, channelId, Command(..))
+import           Network.Mattermost.Lenses ( teamIdL )
 import qualified Network.Mattermost.Endpoints as MM
 
 import           Matterhorn.Constants ( userSigil, normalChannelSigil )
@@ -165,7 +166,7 @@ isDeletedCommand cmd = commandDeleteAt cmd > commandCreateAt cmd
 doCommandAutoCompletion :: AutocompletionType -> AutocompleteContext -> Text -> MH ()
 doCommandAutoCompletion ty ctx searchString = do
     session <- getSession
-    myTid <- gets myTeamId
+    myTid <- use (csCurrentTeam.tsTeam.teamIdL)
 
     mCache <- preuse (csCurrentTeam.tsEditState.cedAutocomplete._Just.acCachedResponses)
     mActiveTy <- preuse (csCurrentTeam.tsEditState.cedAutocomplete._Just.acType)
@@ -252,7 +253,7 @@ compareCommandAlts _ _ _ = LT
 doUserAutoCompletion :: AutocompletionType -> AutocompleteContext -> Text -> MH ()
 doUserAutoCompletion ty ctx searchString = do
     session <- getSession
-    myTid <- gets myTeamId
+    myTid <- use (csCurrentTeam.tsTeam.teamIdL)
     myUid <- gets myUserId
     cId <- use csCurrentChannelId
 
@@ -278,7 +279,7 @@ doUserAutoCompletion ty ctx searchString = do
 doChannelAutoCompletion :: AutocompletionType -> AutocompleteContext -> Text -> MH ()
 doChannelAutoCompletion ty ctx searchString = do
     session <- getSession
-    tId <- gets myTeamId
+    tId <- use (csCurrentTeam.tsTeam.teamIdL)
     cs <- use csChannels
 
     withCachedAutocompleteResults ctx ty searchString $ do

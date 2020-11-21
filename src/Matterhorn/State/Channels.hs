@@ -261,7 +261,7 @@ setLastViewedFor prevId cId = do
 refreshChannelsAndUsers :: MH ()
 refreshChannelsAndUsers = do
     session <- getSession
-    myTId <- gets myTeamId
+    myTId <- use (csCurrentTeam.tsTeam.teamIdL)
     me <- gets myUser
     knownUsers <- gets allUserIds
     doAsyncWith Preempt $ do
@@ -306,7 +306,7 @@ refreshChannelsAndUsers = do
 refreshChannel :: SidebarUpdate -> Channel -> ChannelMember -> MH ()
 refreshChannel upd chan member = do
     let cId = getId chan
-    myTId <- gets myTeamId
+    myTId <- use (csCurrentTeam.tsTeam.teamIdL)
     let ourTeam = channelTeamId chan == Nothing ||
                   Just myTId == channelTeamId chan
 
@@ -952,7 +952,7 @@ channelHistoryBackward = do
 createOrdinaryChannel :: Bool -> Text -> MH ()
 createOrdinaryChannel public name = do
     session <- getSession
-    myTId <- gets myTeamId
+    myTId <- use (csCurrentTeam.tsTeam.teamIdL)
     doAsyncWith Preempt $ do
         -- create a new chat channel
         let slug = T.map (\ c -> if isAlphaNum c then c else '-') (T.toLower name)
@@ -1031,7 +1031,7 @@ isReturnChannel st cId = st^.csCurrentTeam.tsReturnChannel == Just cId
 joinChannelByName :: Text -> MH ()
 joinChannelByName rawName = do
     session <- getSession
-    tId <- gets myTeamId
+    tId <- use (csCurrentTeam.tsTeam.teamIdL)
     doAsyncWith Preempt $ do
         result <- try $ MM.mmGetChannelByName tId (trimChannelSigil rawName) session
         return $ Just $ case result of

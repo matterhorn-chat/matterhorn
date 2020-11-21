@@ -86,6 +86,7 @@ module Matterhorn.Types
   , tsReturnChannel
   , tsEditState
   , tsMessageSelect
+  , tsTeam
 
   , ChatState
   , newState
@@ -105,7 +106,6 @@ module Matterhorn.Types
   , csUserListOverlay
   , csChannelListOverlay
   , csReactionEmojiListOverlay
-  , csMyTeam
   , csConnectionStatus
   , csWorkerIsBusy
   , csChannel
@@ -257,7 +257,6 @@ module Matterhorn.Types
   , myUser
   , myUsername
   , myUserId
-  , myTeamId
   , usernameForUserId
   , userByUsername
   , userByNickname
@@ -1319,8 +1318,6 @@ data ChatState =
               -- ^ The orientation of the channel list.
               , _csMe :: User
               -- ^ The authenticated user.
-              , _csMyTeam :: Team
-              -- ^ The active team of the authenticated user.
               , _csChannels :: ClientChannels
               -- ^ The channels that we are showing, including their
               -- message lists.
@@ -1405,6 +1402,8 @@ data TeamState =
               -- editing messages and commands.
               , _tsMessageSelect :: MessageSelectState
               -- ^ The state of message selection mode.
+              , _tsTeam :: Team
+              -- ^ The team data.
               }
 
 -- | Handles for the View Message window's tabs.
@@ -1449,12 +1448,12 @@ newState (StartupStateInfo {..}) = do
                        , _tsReturnChannel = Nothing
                        , _tsEditState = editState
                        , _tsMessageSelect = MessageSelectState Nothing
+                       , _tsTeam = startupStateTeam
                        }
     return ChatState { _csResources                   = startupStateResources
                      , _csCurrentTeam                 = ts
                      , _csChannelListOrientation      = configChannelListOrientation config
                      , _csMe                          = startupStateConnectedUser
-                     , _csMyTeam                      = startupStateTeam
                      , _csChannels                    = noChannels
                      , _csPostMap                     = HM.empty
                      , _csUsers                       = noUsers
@@ -1552,7 +1551,7 @@ getServerBaseUrl = do
 serverBaseUrl :: ChatState -> TeamBaseURL
 serverBaseUrl st =
     let baseUrl = connectionDataURL $ _crConn $ _csResources st
-        tName = teamName $ _csMyTeam st
+        tName = teamName $ _tsTeam $ _csCurrentTeam st
     in TeamBaseURL (TeamURLName $ sanitizeUserText tName) baseUrl
 
 -- | The state of channel selection mode.
@@ -2101,9 +2100,6 @@ userById uId st = findUserById uId (st^.csUsers)
 
 myUserId :: ChatState -> UserId
 myUserId st = myUser st ^. userIdL
-
-myTeamId :: ChatState -> TeamId
-myTeamId st = st ^. csMyTeam . teamIdL
 
 myUser :: ChatState -> User
 myUser st = st^.csMe

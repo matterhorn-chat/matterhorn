@@ -19,6 +19,7 @@ import qualified Data.Text as T
 import           Lens.Micro.Platform ( (.=) )
 import           Network.Mattermost.Endpoints
 import           Network.Mattermost.Types
+import           Network.Mattermost.Lenses ( teamIdL )
 
 import           Matterhorn.State.Messages ( jumpToPost )
 import           Matterhorn.State.Common
@@ -88,7 +89,7 @@ enterSearchResultPostListMode terms
   | T.null (T.strip terms) = postInfoMessage "Search command requires at least one search term."
   | otherwise = do
       enterPostListMode (PostListSearch terms True) noMessages
-      tId <- gets myTeamId
+      tId <- use (csCurrentTeam.tsTeam.teamIdL)
       createPostList (PostListSearch terms False) $
         mmSearchForTeamPosts tId (SearchPosts terms False)
 
