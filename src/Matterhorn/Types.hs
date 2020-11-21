@@ -262,7 +262,6 @@ module Matterhorn.Types
   , userByNickname
   , channelIdByChannelName
   , channelIdByUsername
-  , channelByName
   , userById
   , allUserIds
   , addNewUser
@@ -2023,11 +2022,6 @@ channelIdByUsername name st = do
 useNickname :: ChatState -> Bool
 useNickname st =
     useNickname' (st^.csClientConfig) (st^.csResources.crUserPreferences)
-
-channelByName :: Text -> ChatState -> Maybe ClientChannel
-channelByName n st = do
-    cId <- channelIdByChannelName n st
-    findChannelById cId (st^.csChannels)
 
 trimChannelSigil :: Text -> Text
 trimChannelSigil n
