@@ -20,7 +20,7 @@ module Matterhorn.Types.Channels
   , cdViewed, cdNewMessageIndicator, cdEditedMessageThreshold, cdUpdated
   , cdName, cdDisplayName, cdHeader, cdPurpose, cdType
   , cdMentionCount, cdTypingUsers, cdDMUserId, cdChannelId
-  , cdSidebarShowOverride, cdNotifyProps
+  , cdSidebarShowOverride, cdNotifyProps, cdTeamId
   -- * Lenses created for accessing ChannelContents fields
   , cdMessages, cdFetchPending
   -- * Creating ClientChannel objects
@@ -77,6 +77,7 @@ import           Network.Mattermost.Types ( Channel(..), UserId, ChannelId
                                           , NotifyOption(..)
                                           , WithDefault(..)
                                           , ServerTime
+                                          , TeamId
                                           , emptyChannelNotifyProps
                                           )
 
@@ -141,6 +142,7 @@ initialChannelInfo :: UserId -> Channel -> ChannelInfo
 initialChannelInfo myId chan =
     let updated  = chan ^. channelLastPostAtL
     in ChannelInfo { _cdChannelId              = chan^.channelIdL
+                   , _cdTeamId                 = chan^.channelTeamIdL
                    , _cdViewed                 = Nothing
                    , _cdNewMessageIndicator    = Hide
                    , _cdEditedMessageThreshold = Nothing
@@ -205,6 +207,8 @@ emptyChannelContents = do
 data ChannelInfo = ChannelInfo
   { _cdChannelId        :: ChannelId
     -- ^ The channel's ID
+  , _cdTeamId           :: Maybe TeamId
+    -- ^ The channel's team ID
   , _cdViewed           :: Maybe ServerTime
     -- ^ The last time we looked at a channel
   , _cdNewMessageIndicator :: NewMessageIndicator
