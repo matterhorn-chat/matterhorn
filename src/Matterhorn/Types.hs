@@ -82,6 +82,8 @@ module Matterhorn.Types
   , TeamState
   , tsFocus
   , tsPendingChannelChange
+  , tsRecentChannel
+  , tsReturnChannel
 
   , ChatState
   , newState
@@ -96,8 +98,6 @@ module Matterhorn.Types
   , csShowChannelList
   , csShowExpandedChannelTopics
   , csPostMap
-  , csRecentChannel
-  , csReturnChannel
   , csThemeListOverlay
   , csPostListOverlay
   , csUserListOverlay
@@ -1348,11 +1348,6 @@ data ChatState =
               , _csChannelSelectState :: ChannelSelectState
               -- ^ The state of the user's input and selection for
               -- channel selection mode.
-              , _csRecentChannel :: Maybe ChannelId
-              -- ^ The most recently-selected channel, if any.
-              , _csReturnChannel :: Maybe ChannelId
-              -- ^ The channel to return to after visiting one or more
-              -- unread channels.
               , _csUrlList :: List Name LinkChoice
               -- ^ The URL list used to show URLs drawn from messages in
               -- a channel.
@@ -1405,6 +1400,11 @@ data TeamState =
               -- when we need to change to a channel in the sidebar, but
               -- it isn't even there yet because we haven't loaded its
               -- metadata.
+              , _tsRecentChannel :: Maybe ChannelId
+              -- ^ The most recently-selected channel, if any.
+              , _tsReturnChannel :: Maybe ChannelId
+              -- ^ The channel to return to after visiting one or more
+              -- unread channels.
               }
 
 -- | Handles for the View Message window's tabs.
@@ -1445,6 +1445,8 @@ newState (StartupStateInfo {..}) = do
     let config = _crConfiguration startupStateResources
         ts = TeamState { _tsFocus = startupStateChannelZipper
                        , _tsPendingChannelChange = Nothing
+                       , _tsRecentChannel = Nothing
+                       , _tsReturnChannel = Nothing
                        }
     return ChatState { _csResources                   = startupStateResources
                      , _csCurrentTeam                 = ts
@@ -1461,8 +1463,6 @@ newState (StartupStateInfo {..}) = do
                      , _csShowChannelList             = configShowChannelList config
                      , _csShowExpandedChannelTopics   = configShowExpandedChannelTopics config
                      , _csChannelSelectState          = emptyChannelSelectState
-                     , _csRecentChannel               = Nothing
-                     , _csReturnChannel               = Nothing
                      , _csUrlList                     = list UrlList mempty 2
                      , _csConnectionStatus            = Connected
                      , _csWorkerIsBusy                = Nothing

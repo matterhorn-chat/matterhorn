@@ -153,7 +153,7 @@ updateViewedChan updatePrev cId = use csConnectionStatus >>= \case
         -- Only do this if we're connected to avoid triggering noisy
         -- exceptions.
         pId <- if updatePrev
-               then use csRecentChannel
+               then use (csCurrentTeam.tsRecentChannel)
                else return Nothing
         doAsyncChannelMM Preempt cId
           (\s c -> MM.mmViewChannel UserMe c pId s)
@@ -541,7 +541,7 @@ setFocusWith updatePrev f onNoChange = do
         oldFocus = Z.focus oldZipper
 
     -- If we aren't changing anything, skip all the book-keeping because
-    -- we'll end up clobbering things like csRecentChannel.
+    -- we'll end up clobbering things like tsRecentChannel.
     if newFocus /= oldFocus
        then do
           mh $ invalidateCacheEntry ChannelSidebar
@@ -593,7 +593,7 @@ updateChannelListScroll = do
 preChangeChannelCommon :: MH ()
 preChangeChannelCommon = do
     cId <- use csCurrentChannelId
-    csRecentChannel .= Just cId
+    csCurrentTeam.tsRecentChannel .= Just cId
     saveCurrentEdit
 
 resetEditorState :: MH ()
@@ -745,26 +745,26 @@ prevChannel = do
 
 recentChannel :: MH ()
 recentChannel = do
-  recent <- use csRecentChannel
+  recent <- use (csCurrentTeam.tsRecentChannel)
   case recent of
     Nothing  -> return ()
     Just cId -> do
-        ret <- use csReturnChannel
+        ret <- use (csCurrentTeam.tsReturnChannel)
         when (ret == Just cId) resetReturnChannel
         setFocus cId
 
 resetReturnChannel :: MH ()
 resetReturnChannel = do
-  val <- use csReturnChannel
+  val <- use (csCurrentTeam.tsReturnChannel)
   case val of
       Nothing -> return ()
       Just _ -> do
           mh $ invalidateCacheEntry ChannelSidebar
-          csReturnChannel .= Nothing
+          csCurrentTeam.tsReturnChannel .= Nothing
 
 gotoReturnChannel :: MH ()
 gotoReturnChannel = do
-  ret <- use csReturnChannel
+  ret <- use (csCurrentTeam.tsReturnChannel)
   case ret of
     Nothing  -> return ()
     Just cId -> do
@@ -773,11 +773,11 @@ gotoReturnChannel = do
 
 setReturnChannel :: MH ()
 setReturnChannel = do
-  ret <- use csReturnChannel
+  ret <- use (csCurrentTeam.tsReturnChannel)
   case ret of
     Nothing  -> do
         cId <- use csCurrentChannelId
-        csReturnChannel .= Just cId
+        csCurrentTeam.tsReturnChannel .= Just cId
         mh $ invalidateCacheEntry ChannelSidebar
     Just _ -> return ()
 
@@ -1023,10 +1023,10 @@ isCurrentChannel :: ChatState -> ChannelId -> Bool
 isCurrentChannel st cId = st^.csCurrentChannelId == cId
 
 isRecentChannel :: ChatState -> ChannelId -> Bool
-isRecentChannel st cId = st^.csRecentChannel == Just cId
+isRecentChannel st cId = st^.csCurrentTeam.tsRecentChannel == Just cId
 
 isReturnChannel :: ChatState -> ChannelId -> Bool
-isReturnChannel st cId = st^.csReturnChannel == Just cId
+isReturnChannel st cId = st^.csCurrentTeam.tsReturnChannel == Just cId
 
 joinChannelByName :: Text -> MH ()
 joinChannelByName rawName = do
