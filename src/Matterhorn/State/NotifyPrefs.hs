@@ -80,7 +80,7 @@ enterEditNotifyPrefsMode = do
       _ -> do
         let props = chanInfo^.cdNotifyProps
         user <- use csMe
-        csNotifyPrefs .= (Just (notifyPrefsForm (userNotifyProps user) props))
+        csCurrentTeam.tsNotifyPrefs .= (Just (notifyPrefsForm (userNotifyProps user) props))
         setMode EditNotifyPrefs
 
 exitEditNotifyPrefsMode :: MH ()

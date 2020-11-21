@@ -25,9 +25,9 @@ import           Matterhorn.State.Async
 onEventEditNotifyPrefs :: V.Event -> MH Bool
 onEventEditNotifyPrefs =
     let fallback e = do
-            form <- use (csNotifyPrefs.singular _Just)
+            form <- use (csCurrentTeam.tsNotifyPrefs.singular _Just)
             updatedForm <- mh $ handleFormEvent (VtyEvent e) form
-            csNotifyPrefs .= Just updatedForm
+            csCurrentTeam.tsNotifyPrefs .= Just updatedForm
     in handleKeyboardEvent editNotifyPrefsKeybindings fallback
 
 editNotifyPrefsKeybindings :: KeyConfig -> KeyHandlerMap
@@ -38,7 +38,7 @@ editNotifyPrefsKeyHandlers =
     [ mkKb CancelEvent "Close channel notification preferences" exitEditNotifyPrefsMode
     , mkKb FormSubmitEvent "Save channel notification preferences" $ do
         st <- use id
-        let form = fromJust $ st^.csNotifyPrefs
+        let form = fromJust $ st^.csCurrentTeam.tsNotifyPrefs
             cId = st^.csCurrentChannelId
 
         doAsyncChannelMM Preempt cId

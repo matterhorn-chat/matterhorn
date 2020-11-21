@@ -93,6 +93,7 @@ module Matterhorn.Types
   , tsPostListOverlay
   , tsUserListOverlay
   , tsChannelListOverlay
+  , tsNotifyPrefs
 
   , ChatState
   , newState
@@ -113,7 +114,6 @@ module Matterhorn.Types
   , csChannel
   , csChannels
   , csClientConfig
-  , csNotifyPrefs
   , csMe
   , timeZone
   , whenMode
@@ -1350,11 +1350,6 @@ data ChatState =
               -- ^ The state of the reaction emoji list overlay.
               , _csClientConfig :: Maybe ClientConfig
               -- ^ The Mattermost client configuration, as we understand it.
-              , _csNotifyPrefs :: Maybe (Form ChannelNotifyProps MHEvent Name)
-              -- ^ A form for editing the notification preferences for
-              -- the current channel. This is set when entering
-              -- EditNotifyPrefs mode and updated when the user
-              -- changes the form state.
               , _csChannelTopicDialog :: ChannelTopicDialogState
               -- ^ The state for the interactive channel topic editor
               -- window.
@@ -1404,6 +1399,11 @@ data TeamState =
               -- ^ The state of the user list overlay.
               , _tsChannelListOverlay :: ListOverlayState Channel ChannelSearchScope
               -- ^ The state of the user list overlay.
+              , _tsNotifyPrefs :: Maybe (Form ChannelNotifyProps MHEvent Name)
+              -- ^ A form for editing the notification preferences for
+              -- the current channel. This is set when entering
+              -- EditNotifyPrefs mode and updated when the user
+              -- changes the form state.
               }
 
 -- | Handles for the View Message window's tabs.
@@ -1455,6 +1455,7 @@ newState (StartupStateInfo {..}) = do
                        , _tsPostListOverlay = PostListOverlayState emptyDirSeq Nothing
                        , _tsUserListOverlay = nullUserListOverlayState
                        , _tsChannelListOverlay = nullChannelListOverlayState
+                       , _tsNotifyPrefs = Nothing
                        }
     return ChatState { _csResources                   = startupStateResources
                      , _csCurrentTeam                 = ts
@@ -1473,7 +1474,6 @@ newState (StartupStateInfo {..}) = do
                      , _csThemeListOverlay            = nullThemeListOverlayState
                      , _csReactionEmojiListOverlay    = nullEmojiListOverlayState
                      , _csClientConfig                = Nothing
-                     , _csNotifyPrefs                 = Nothing
                      , _csChannelTopicDialog          = newChannelTopicDialog ""
                      }
 

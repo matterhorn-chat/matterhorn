@@ -19,7 +19,7 @@ import Matterhorn.Themes
 
 drawNotifyPrefs :: ChatState -> Widget Name
 drawNotifyPrefs st =
-    let Just form = st^.csNotifyPrefs
+    let Just form = st^.csCurrentTeam.tsNotifyPrefs
         label = forceAttr clientEmphAttr $ str "Notification Preferences"
         formKeys = withDefAttr clientEmphAttr <$> txt <$> ["Tab", "BackTab"]
         bindings = vBox $ hCenter <$> [ renderKeybindingHelp "Save" [FormSubmitEvent] <+> txt "  " <+>
