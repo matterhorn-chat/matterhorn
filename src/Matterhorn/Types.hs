@@ -85,6 +85,7 @@ module Matterhorn.Types
   , tsRecentChannel
   , tsReturnChannel
   , tsEditState
+  , tsMessageSelect
 
   , ChatState
   , newState
@@ -105,7 +106,6 @@ module Matterhorn.Types
   , csChannelListOverlay
   , csReactionEmojiListOverlay
   , csMyTeam
-  , csMessageSelect
   , csConnectionStatus
   , csWorkerIsBusy
   , csChannel
@@ -1353,8 +1353,6 @@ data ChatState =
               , _csWorkerIsBusy :: Maybe (Maybe Int)
               -- ^ Whether the async worker thread is busy, and its
               -- queue length if so.
-              , _csMessageSelect :: MessageSelectState
-              -- ^ The state of message selection mode.
               , _csThemeListOverlay :: ListOverlayState InternalTheme ()
               -- ^ The state of the theme list overlay.
               , _csPostListOverlay :: PostListOverlayState
@@ -1405,6 +1403,8 @@ data TeamState =
               , _tsEditState :: ChatEditState
               -- ^ The state of the input box used for composing and
               -- editing messages and commands.
+              , _tsMessageSelect :: MessageSelectState
+              -- ^ The state of message selection mode.
               }
 
 -- | Handles for the View Message window's tabs.
@@ -1448,6 +1448,7 @@ newState (StartupStateInfo {..}) = do
                        , _tsRecentChannel = Nothing
                        , _tsReturnChannel = Nothing
                        , _tsEditState = editState
+                       , _tsMessageSelect = MessageSelectState Nothing
                        }
     return ChatState { _csResources                   = startupStateResources
                      , _csCurrentTeam                 = ts
@@ -1466,7 +1467,6 @@ newState (StartupStateInfo {..}) = do
                      , _csUrlList                     = list UrlList mempty 2
                      , _csConnectionStatus            = Connected
                      , _csWorkerIsBusy                = Nothing
-                     , _csMessageSelect               = MessageSelectState Nothing
                      , _csThemeListOverlay            = nullThemeListOverlayState
                      , _csPostListOverlay             = PostListOverlayState emptyDirSeq Nothing
                      , _csUserListOverlay             = nullUserListOverlayState

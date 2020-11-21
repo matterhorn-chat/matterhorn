@@ -389,9 +389,9 @@ renderCurrentChannelDisplay st hs = header <=> hBorder <=> messages
 
     chatText = case appMode st of
         MessageSelect ->
-            renderMessagesWithSelect (st^.csMessageSelect) channelMessages
+            renderMessagesWithSelect (st^.csCurrentTeam.tsMessageSelect) channelMessages
         MessageSelectDeleteConfirm ->
-            renderMessagesWithSelect (st^.csMessageSelect) channelMessages
+            renderMessagesWithSelect (st^.csCurrentTeam.tsMessageSelect) channelMessages
         _ ->
             cached (ChannelMessages cId) $
             renderLastMessages st hs editCutoff $

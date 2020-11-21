@@ -56,7 +56,7 @@ getSelectedMessage :: ChatState -> Maybe Message
 getSelectedMessage st
     | not (appMode st `elem` messageSelectCompatibleModes) = Nothing
     | otherwise = do
-        selMsgId <- selectMessageId $ st^.csMessageSelect
+        selMsgId <- selectMessageId $ st^.csCurrentTeam.tsMessageSelect
         let chanMsgs = st ^. csCurrentChannel . ccContents . cdMessages
         findMessage selMsgId chanMsgs
 
@@ -74,7 +74,7 @@ beginMessageSelect = do
 
     when (isJust recentMsg) $ do
         setMode MessageSelect
-        csMessageSelect .= MessageSelectState (recentMsg >>= _mMessageId)
+        csCurrentTeam.tsMessageSelect .= MessageSelectState (recentMsg >>= _mMessageId)
 
 -- | Tell the server that the message we currently have selected
 -- should have its flagged state toggled.
@@ -169,22 +169,22 @@ beginConfirmDeleteSelectedMessage = do
 messageSelectUp :: MH ()
 messageSelectUp = do
     mode <- gets appMode
-    selected <- use (csMessageSelect.to selectMessageId)
+    selected <- use (csCurrentTeam.tsMessageSelect.to selectMessageId)
     case selected of
         Just _ | mode == MessageSelect -> do
             chanMsgs <- use (csCurrentChannel.ccContents.cdMessages)
             let nextMsgId = getPrevMessageId selected chanMsgs
-            csMessageSelect .= MessageSelectState (nextMsgId <|> selected)
+            csCurrentTeam.tsMessageSelect .= MessageSelectState (nextMsgId <|> selected)
         _ -> return ()
 
 messageSelectDown :: MH ()
 messageSelectDown = do
-    selected <- use (csMessageSelect.to selectMessageId)
+    selected <- use (csCurrentTeam.tsMessageSelect.to selectMessageId)
     case selected of
         Just _ -> whenMode MessageSelect $ do
             chanMsgs <- use (csCurrentChannel.ccContents.cdMessages)
             let nextMsgId = getNextMessageId selected chanMsgs
-            csMessageSelect .= MessageSelectState (nextMsgId <|> selected)
+            csCurrentTeam.tsMessageSelect .= MessageSelectState (nextMsgId <|> selected)
         _ -> return ()
 
 messageSelectDownBy :: Int -> MH ()
@@ -201,25 +201,25 @@ messageSelectUpBy amt
 
 messageSelectFirst :: MH ()
 messageSelectFirst = do
-    selected <- use (csMessageSelect.to selectMessageId)
+    selected <- use (csCurrentTeam.tsMessageSelect.to selectMessageId)
     case selected of
         Just _ -> whenMode MessageSelect $ do
             chanMsgs <- use (csCurrentChannel.ccContents.cdMessages)
             case getEarliestSelectableMessage chanMsgs of
               Just firstMsg ->
-                csMessageSelect .= MessageSelectState (firstMsg^.mMessageId <|> selected)
+                csCurrentTeam.tsMessageSelect .= MessageSelectState (firstMsg^.mMessageId <|> selected)
               Nothing -> mhLog LogError "No first message found from current message?!"
         _ -> return ()
 
 messageSelectLast :: MH ()
 messageSelectLast = do
-    selected <- use (csMessageSelect.to selectMessageId)
+    selected <- use (csCurrentTeam.tsMessageSelect.to selectMessageId)
     case selected of
         Just _ -> whenMode MessageSelect $ do
             chanMsgs <- use (csCurrentChannel.ccContents.cdMessages)
             case getLatestSelectableMessage chanMsgs of
               Just lastSelMsg ->
-                csMessageSelect .= MessageSelectState (lastSelMsg^.mMessageId <|> selected)
+                csCurrentTeam.tsMessageSelect .= MessageSelectState (lastSelMsg^.mMessageId <|> selected)
               Nothing -> mhLog LogError "No last message found from current message?!"
         _ -> return ()
 
