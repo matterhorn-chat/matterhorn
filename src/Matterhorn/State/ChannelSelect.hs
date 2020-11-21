@@ -29,7 +29,7 @@ beginChannelSelect = do
 
     -- Preserve the current channel selection when initializing channel
     -- selection mode
-    zipper <- use csFocus
+    zipper <- use (csCurrentTeam.tsFocus)
     let isCurrentFocus m = Just (matchEntry m) == Z.focus zipper
     csChannelSelectState.channelSelectMatches %= Z.findRight isCurrentFocus
 
@@ -82,7 +82,8 @@ updateChannelSelectMatches = do
         preserveFocus Nothing _ = False
         preserveFocus (Just m) m2 = matchEntry m == matchEntry m2
 
-    csChannelSelectState.channelSelectMatches %= (Z.updateListBy preserveFocus $ Z.toList $ Z.maybeMapZipper matches (st^.csFocus))
+    csChannelSelectState.channelSelectMatches %=
+        (Z.updateListBy preserveFocus $ Z.toList $ Z.maybeMapZipper matches (st^.csCurrentTeam.tsFocus))
 
 applySelectPattern :: ChannelSelectPattern -> ChannelListEntry -> Text -> Maybe ChannelSelectMatch
 applySelectPattern CSPAny entry chanName = do

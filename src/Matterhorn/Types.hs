@@ -79,12 +79,15 @@ module Matterhorn.Types
   , channelSelectInput
   , emptyChannelSelectState
 
+  , TeamState
+  , tsFocus
+
   , ChatState
   , newState
+  , csCurrentTeam
   , csChannelTopicDialog
   , csChannelListOrientation
   , csResources
-  , csFocus
   , csCurrentChannel
   , csCurrentChannelId
   , csUrlList
@@ -1310,9 +1313,8 @@ data ChatState =
     ChatState { _csResources :: ChatResources
               -- ^ Global application-wide resources that don't change
               -- much.
-              , _csFocus :: Z.Zipper ChannelListGroup ChannelListEntry
-              -- ^ The channel sidebar zipper that tracks which channel
-              -- is selected.
+              , _csCurrentTeam :: TeamState
+              -- ^ Application state specific to the current team.
               , _csChannelListOrientation :: ChannelListOrientation
               -- ^ The orientation of the channel list.
               , _csMe :: User
@@ -1399,6 +1401,12 @@ data ChatState =
               -- window.
               }
 
+data TeamState =
+    TeamState { _tsFocus :: Z.Zipper ChannelListGroup ChannelListEntry
+              -- ^ The channel sidebar zipper that tracks which channel
+              -- is selected.
+              }
+
 -- | Handles for the View Message window's tabs.
 data ViewMessageWindowTab =
     VMTabMessage
@@ -1435,8 +1443,10 @@ newState :: StartupStateInfo -> IO ChatState
 newState (StartupStateInfo {..}) = do
     editState <- emptyEditState startupStateInitialHistory startupStateSpellChecker
     let config = _crConfiguration startupStateResources
+        ts = TeamState { _tsFocus = startupStateChannelZipper
+                       }
     return ChatState { _csResources                   = startupStateResources
-                     , _csFocus                       = startupStateChannelZipper
+                     , _csCurrentTeam                 = ts
                      , _csChannelListOrientation      = configChannelListOrientation config
                      , _csMe                          = startupStateConnectedUser
                      , _csMyTeam                      = startupStateTeam
@@ -1847,6 +1857,7 @@ data MHError =
 
 makeLenses ''ChatResources
 makeLenses ''ChatState
+makeLenses ''TeamState
 makeLenses ''ChatEditState
 makeLenses ''AutocompleteState
 makeLenses ''PostListOverlayState
@@ -1886,7 +1897,7 @@ resetSpellCheckTimer s =
 
 -- ** Utility Lenses
 csCurrentChannelId :: SimpleGetter ChatState ChannelId
-csCurrentChannelId = csFocus.to Z.unsafeFocus.to channelListEntryChannelId
+csCurrentChannelId = csCurrentTeam.tsFocus.to Z.unsafeFocus.to channelListEntryChannelId
 
 channelListEntryChannelId :: ChannelListEntry -> ChannelId
 channelListEntryChannelId (CLChannel cId) = cId

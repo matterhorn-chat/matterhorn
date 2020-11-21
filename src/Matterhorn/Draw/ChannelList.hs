@@ -70,7 +70,7 @@ renderChannelListHeader st =
         statusSigil = maybe ' ' userSigilFromInfo me
         me = userById (myUserId st) st
         unreadCountHeader = hCenter $ txt $ "Unread: " <> (T.pack $ show unreadCount)
-        unreadCount = sum $ (channelListGroupUnread . fst) <$> Z.toList (st^.csFocus)
+        unreadCount = sum $ (channelListGroupUnread . fst) <$> Z.toList (st^.csCurrentTeam.tsFocus)
 
 renderChannelList :: ChatState -> Widget Name
 renderChannelList st =
@@ -93,7 +93,7 @@ renderChannelList st =
                 cached ChannelSidebar $
                 vBox $
                 renderChannelListHeader st :
-                (renderChannelListGroup st renderEntry <$> Z.toList (st^.csFocus))
+                (renderChannelListGroup st renderEntry <$> Z.toList (st^.csCurrentTeam.tsFocus))
 
 renderChannelListGroupHeading :: ChannelListGroup -> Widget Name
 renderChannelListGroupHeading g =

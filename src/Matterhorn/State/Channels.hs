@@ -109,11 +109,11 @@ updateSidebar = do
     config <- use (csResources.crConfiguration)
 
     let zl = mkChannelZipperList now config cconfig prefs cs us
-    csFocus %= Z.updateList zl
+    csCurrentTeam.tsFocus %= Z.updateList zl
 
     -- Schedule the current sidebar for user status updates at the end
     -- of this MH action.
-    newZ <- use csFocus
+    newZ <- use (csCurrentTeam.tsFocus)
     myId <- gets myUserId
     scheduleUserStatusFetches $ myId : userIdsFromZipper newZ
 
@@ -533,7 +533,7 @@ setFocusWith :: Bool
              -> MH ()
              -> MH ()
 setFocusWith updatePrev f onNoChange = do
-    oldZipper <- use csFocus
+    oldZipper <- use (csCurrentTeam.tsFocus)
     let newZipper = f oldZipper
         newFocus = Z.focus newZipper
         oldFocus = Z.focus oldZipper
@@ -545,7 +545,7 @@ setFocusWith updatePrev f onNoChange = do
           mh $ invalidateCacheEntry ChannelSidebar
           resetAutocomplete
           preChangeChannelCommon
-          csFocus .= newZipper
+          csCurrentTeam.tsFocus .= newZipper
 
           now <- liftIO getCurrentTime
           newCid <- use csCurrentChannelId
@@ -723,7 +723,7 @@ removeChannelFromState cId = do
             -- Update msgMap
             csChannels                          %= removeChannel cId
             -- Remove from focus zipper
-            csFocus %= Z.filterZipper ((/= cId) . channelListEntryChannelId)
+            csCurrentTeam.tsFocus %= Z.filterZipper ((/= cId) . channelListEntryChannelId)
             updateSidebar
 
 nextChannel :: MH ()
