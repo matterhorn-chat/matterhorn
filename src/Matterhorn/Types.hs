@@ -81,6 +81,7 @@ module Matterhorn.Types
 
   , TeamState
   , tsFocus
+  , tsPendingChannelChange
 
   , ChatState
   , newState
@@ -111,7 +112,6 @@ module Matterhorn.Types
   , csChannelSelectState
   , csEditState
   , csClientConfig
-  , csPendingChannelChange
   , csViewedMessage
   , csNotifyPrefs
   , csMe
@@ -1375,12 +1375,6 @@ data ChatState =
               -- ^ The state of the reaction emoji list overlay.
               , _csClientConfig :: Maybe ClientConfig
               -- ^ The Mattermost client configuration, as we understand it.
-              , _csPendingChannelChange :: Maybe PendingChannelChange
-              -- ^ A pending channel change that we need to apply once
-              -- the channel in question is available. We set this up
-              -- when we need to change to a channel in the sidebar, but
-              -- it isn't even there yet because we haven't loaded its
-              -- metadata.
               , _csViewedMessage :: Maybe (Message, TabbedWindow ViewMessageWindowTab)
               -- ^ Set when the ViewMessage mode is active. The message
               -- being viewed. Note that this stores a message, not
@@ -1405,6 +1399,12 @@ data TeamState =
     TeamState { _tsFocus :: Z.Zipper ChannelListGroup ChannelListEntry
               -- ^ The channel sidebar zipper that tracks which channel
               -- is selected.
+              , _tsPendingChannelChange :: Maybe PendingChannelChange
+              -- ^ A pending channel change that we need to apply once
+              -- the channel in question is available. We set this up
+              -- when we need to change to a channel in the sidebar, but
+              -- it isn't even there yet because we haven't loaded its
+              -- metadata.
               }
 
 -- | Handles for the View Message window's tabs.
@@ -1444,6 +1444,7 @@ newState (StartupStateInfo {..}) = do
     editState <- emptyEditState startupStateInitialHistory startupStateSpellChecker
     let config = _crConfiguration startupStateResources
         ts = TeamState { _tsFocus = startupStateChannelZipper
+                       , _tsPendingChannelChange = Nothing
                        }
     return ChatState { _csResources                   = startupStateResources
                      , _csCurrentTeam                 = ts
@@ -1472,7 +1473,6 @@ newState (StartupStateInfo {..}) = do
                      , _csChannelListOverlay          = nullChannelListOverlayState
                      , _csReactionEmojiListOverlay    = nullEmojiListOverlayState
                      , _csClientConfig                = Nothing
-                     , _csPendingChannelChange        = Nothing
                      , _csViewedMessage               = Nothing
                      , _csNotifyPrefs                 = Nothing
                      , _csChannelTopicDialog          = newChannelTopicDialog ""

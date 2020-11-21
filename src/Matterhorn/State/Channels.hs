@@ -431,7 +431,7 @@ handleNewChannel_ permitPostpone switch sbUpdate nc member = do
 -- specified channel.
 checkPendingChannelChange :: ChannelId -> MH (Maybe (Maybe (MH ())))
 checkPendingChannelChange cId = do
-    ch <- use csPendingChannelChange
+    ch <- use (csCurrentTeam.tsPendingChannelChange)
     return $ case ch of
         Just (ChangeByChannelId i act) ->
             if i == cId then Just act else Nothing
@@ -448,7 +448,7 @@ checkPendingChannelChange cId = do
 -- specified channel.
 checkPendingChannelChangeByUserId :: UserId -> MH Bool
 checkPendingChannelChangeByUserId uId = do
-    ch <- use csPendingChannelChange
+    ch <- use (csCurrentTeam.tsPendingChannelChange)
     return $ case ch of
         Just (ChangeByUserId i) ->
             i == uId
@@ -495,7 +495,7 @@ showChannelInSidebar cId setPending = do
             -- displayable, and the UI should always prefer to SATISFY
             -- the user's latest request over any pending/background
             -- task.
-            csPendingChannelChange .= Nothing
+            csCurrentTeam.tsPendingChannelChange .= Nothing
 
             now <- liftIO getCurrentTime
             csChannel(cId).ccInfo.cdSidebarShowOverride .= Just now
@@ -508,7 +508,8 @@ showChannelInSidebar cId setPending = do
                         Just False -> do
                             let pref = showDirectChannelPref (me^.userIdL) uId True
                             when setPending $
-                                csPendingChannelChange .= Just (ChangeByChannelId (ch^.ccInfo.cdChannelId) Nothing)
+                                csCurrentTeam.tsPendingChannelChange .=
+                                    Just (ChangeByChannelId (ch^.ccInfo.cdChannelId) Nothing)
                             doAsyncWith Preempt $ do
                                 MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
                                 return Nothing
@@ -519,7 +520,8 @@ showChannelInSidebar cId setPending = do
                         Just False -> do
                             let pref = showGroupChannelPref cId (me^.userIdL)
                             when setPending $
-                                csPendingChannelChange .= Just (ChangeByChannelId (ch^.ccInfo.cdChannelId) Nothing)
+                                csCurrentTeam.tsPendingChannelChange .=
+                                    Just (ChangeByChannelId (ch^.ccInfo.cdChannelId) Nothing)
                             doAsyncWith Preempt $ do
                                 MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
                                 return Nothing
@@ -893,7 +895,8 @@ createGroupChannel usernameList = do
                           -- we can just switch to it.
                           setFocus (channelId chan)
                       Nothing -> do
-                          csPendingChannelChange .= (Just $ ChangeByChannelId (channelId chan) Nothing)
+                          csCurrentTeam.tsPendingChannelChange .=
+                              (Just $ ChangeByChannelId (channelId chan) Nothing)
                           let pref = showGroupChannelPref (channelId chan) (me^.userIdL)
                           doAsyncWith Normal $ do
                             MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
@@ -1051,7 +1054,7 @@ joinChannel' chanId act = do
         Nothing -> do
             myId <- gets myUserId
             let member = MinChannelMember myId chanId
-            csPendingChannelChange .= (Just $ ChangeByChannelId chanId act)
+            csCurrentTeam.tsPendingChannelChange .= (Just $ ChangeByChannelId chanId act)
             doAsyncChannelMM Preempt chanId (\ s c -> MM.mmAddUser c member s) (const $ return act)
 
 createOrFocusDMChannel :: UserInfo -> Maybe (ChannelId -> MH ()) -> MH ()
@@ -1067,7 +1070,7 @@ createOrFocusDMChannel user successAct = do
             -- We have a user of that name but no channel. Time to make one!
             myId <- gets myUserId
             session <- getSession
-            csPendingChannelChange .= (Just $ ChangeByUserId $ user^.uiId)
+            csCurrentTeam.tsPendingChannelChange .= (Just $ ChangeByUserId $ user^.uiId)
             doAsyncWith Normal $ do
                 -- create a new channel
                 chan <- MM.mmCreateDirectMessageChannel (user^.uiId, myId) session
