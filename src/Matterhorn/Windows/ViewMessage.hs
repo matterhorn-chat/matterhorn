@@ -78,7 +78,7 @@ resetVp n = do
 
 renderTab :: ViewMessageWindowTab -> ChatState -> Widget Name
 renderTab tab cs =
-    let latestMessage = case cs^.csViewedMessage of
+    let latestMessage = case cs^.csCurrentTeam.tsViewedMessage of
           Nothing -> error "BUG: no message to show, please report!"
           Just (m, _) -> getLatestMessage cs m
     in case tab of

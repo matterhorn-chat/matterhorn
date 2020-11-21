@@ -89,6 +89,7 @@ module Matterhorn.Types
   , tsTeam
   , tsChannelSelectState
   , tsUrlList
+  , tsViewedMessage
 
   , ChatState
   , newState
@@ -112,7 +113,6 @@ module Matterhorn.Types
   , csChannel
   , csChannels
   , csClientConfig
-  , csViewedMessage
   , csNotifyPrefs
   , csMe
   , timeZone
@@ -1356,16 +1356,6 @@ data ChatState =
               -- ^ The state of the reaction emoji list overlay.
               , _csClientConfig :: Maybe ClientConfig
               -- ^ The Mattermost client configuration, as we understand it.
-              , _csViewedMessage :: Maybe (Message, TabbedWindow ViewMessageWindowTab)
-              -- ^ Set when the ViewMessage mode is active. The message
-              -- being viewed. Note that this stores a message, not
-              -- a message ID. That's because not all messages have
-              -- message IDs (e.g. client messages) and we still
-              -- want to support viewing of those messages. It's the
-              -- responsibility of code that uses this message to always
-              -- consult the chat state for the latest *version* of any
-              -- message with an ID here, to be sure that the latest
-              -- version is used (e.g. if it gets edited, etc.).
               , _csNotifyPrefs :: Maybe (Form ChannelNotifyProps MHEvent Name)
               -- ^ A form for editing the notification preferences for
               -- the current channel. This is set when entering
@@ -1404,6 +1394,16 @@ data TeamState =
               , _tsUrlList :: List Name LinkChoice
               -- ^ The URL list used to show URLs drawn from messages in
               -- a channel.
+              , _tsViewedMessage :: Maybe (Message, TabbedWindow ViewMessageWindowTab)
+              -- ^ Set when the ViewMessage mode is active. The message
+              -- being viewed. Note that this stores a message, not
+              -- a message ID. That's because not all messages have
+              -- message IDs (e.g. client messages) and we still
+              -- want to support viewing of those messages. It's the
+              -- responsibility of code that uses this message to always
+              -- consult the chat state for the latest *version* of any
+              -- message with an ID here, to be sure that the latest
+              -- version is used (e.g. if it gets edited, etc.).
               }
 
 -- | Handles for the View Message window's tabs.
@@ -1451,6 +1451,7 @@ newState (StartupStateInfo {..}) = do
                        , _tsTeam = startupStateTeam
                        , _tsChannelSelectState = emptyChannelSelectState
                        , _tsUrlList = list UrlList mempty 2
+                       , _tsViewedMessage = Nothing
                        }
     return ChatState { _csResources                   = startupStateResources
                      , _csCurrentTeam                 = ts
@@ -1472,7 +1473,6 @@ newState (StartupStateInfo {..}) = do
                      , _csChannelListOverlay          = nullChannelListOverlayState
                      , _csReactionEmojiListOverlay    = nullEmojiListOverlayState
                      , _csClientConfig                = Nothing
-                     , _csViewedMessage               = Nothing
                      , _csNotifyPrefs                 = Nothing
                      , _csChannelTopicDialog          = newChannelTopicDialog ""
                      }

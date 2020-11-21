@@ -200,7 +200,7 @@ handleGlobalEvent e = do
         UserListOverlay            -> onEventUserListOverlay e
         ChannelListOverlay         -> onEventChannelListOverlay e
         ReactionEmojiListOverlay   -> onEventReactionEmojiListOverlay e
-        ViewMessage                -> void $ handleTabbedWindowEvent (csViewedMessage.singular _Just._2) e
+        ViewMessage                -> void $ handleTabbedWindowEvent (csCurrentTeam.tsViewedMessage.singular _Just._2) e
         ManageAttachments          -> onEventManageAttachments e
         ManageAttachmentsBrowseFiles -> onEventManageAttachments e
         EditNotifyPrefs            -> void $ onEventEditNotifyPrefs e

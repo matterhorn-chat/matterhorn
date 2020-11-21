@@ -49,4 +49,4 @@ draw st =
     where
         mainLayers = drawMain True st
         mainLayersMonochrome = drawMain False st
-        messageViewWindow = st^.csViewedMessage.singular _Just._2
+        messageViewWindow = st^.csCurrentTeam.tsViewedMessage.singular _Just._2
