@@ -22,7 +22,7 @@ import           Matterhorn.Types
 
 drawUserListOverlay :: ChatState -> Widget Name
 drawUserListOverlay st =
-    let overlay = drawListOverlay (st^.csUserListOverlay) userSearchScopeHeader
+    let overlay = drawListOverlay (st^.csCurrentTeam.tsUserListOverlay) userSearchScopeHeader
                                   userSearchScopeNoResults userSearchScopePrompt
                                   (renderUser (myUsername st))
                                   Nothing

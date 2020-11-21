@@ -13,7 +13,7 @@ import           Matterhorn.Types
 
 onEventUserListOverlay :: Vty.Event -> MH ()
 onEventUserListOverlay =
-    void . onEventListOverlay csUserListOverlay userListOverlayKeybindings
+    void . onEventListOverlay (csCurrentTeam.tsUserListOverlay) userListOverlayKeybindings
 
 -- | The keybindings we want to use while viewing a user list overlay
 userListOverlayKeybindings :: KeyConfig -> KeyHandlerMap
@@ -21,10 +21,10 @@ userListOverlayKeybindings = mkKeybindings userListOverlayKeyHandlers
 
 userListOverlayKeyHandlers :: [KeyEventHandler]
 userListOverlayKeyHandlers =
-    [ mkKb CancelEvent "Close the user search list" (exitListOverlay csUserListOverlay)
+    [ mkKb CancelEvent "Close the user search list" (exitListOverlay (csCurrentTeam.tsUserListOverlay))
     , mkKb SearchSelectUpEvent "Select the previous user" userListSelectUp
     , mkKb SearchSelectDownEvent "Select the next user" userListSelectDown
     , mkKb PageDownEvent "Page down in the user list" userListPageDown
     , mkKb PageUpEvent "Page up in the user list" userListPageUp
-    , mkKb ActivateListItemEvent "Interact with the selected user" (listOverlayActivateCurrent csUserListOverlay)
+    , mkKb ActivateListItemEvent "Interact with the selected user" (listOverlayActivateCurrent (csCurrentTeam.tsUserListOverlay))
     ]

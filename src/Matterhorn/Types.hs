@@ -91,6 +91,7 @@ module Matterhorn.Types
   , tsUrlList
   , tsViewedMessage
   , tsPostListOverlay
+  , tsUserListOverlay
 
   , ChatState
   , newState
@@ -105,7 +106,6 @@ module Matterhorn.Types
   , csShowExpandedChannelTopics
   , csPostMap
   , csThemeListOverlay
-  , csUserListOverlay
   , csChannelListOverlay
   , csReactionEmojiListOverlay
   , csConnectionStatus
@@ -1346,8 +1346,6 @@ data ChatState =
               -- queue length if so.
               , _csThemeListOverlay :: ListOverlayState InternalTheme ()
               -- ^ The state of the theme list overlay.
-              , _csUserListOverlay :: ListOverlayState UserInfo UserSearchScope
-              -- ^ The state of the user list overlay.
               , _csChannelListOverlay :: ListOverlayState Channel ChannelSearchScope
               -- ^ The state of the user list overlay.
               , _csReactionEmojiListOverlay :: ListOverlayState (Bool, T.Text) ()
@@ -1404,6 +1402,8 @@ data TeamState =
               -- version is used (e.g. if it gets edited, etc.).
               , _tsPostListOverlay :: PostListOverlayState
               -- ^ The state of the post list overlay.
+              , _tsUserListOverlay :: ListOverlayState UserInfo UserSearchScope
+              -- ^ The state of the user list overlay.
               }
 
 -- | Handles for the View Message window's tabs.
@@ -1453,6 +1453,7 @@ newState (StartupStateInfo {..}) = do
                        , _tsUrlList = list UrlList mempty 2
                        , _tsViewedMessage = Nothing
                        , _tsPostListOverlay = PostListOverlayState emptyDirSeq Nothing
+                       , _tsUserListOverlay = nullUserListOverlayState
                        }
     return ChatState { _csResources                   = startupStateResources
                      , _csCurrentTeam                 = ts
@@ -1469,7 +1470,6 @@ newState (StartupStateInfo {..}) = do
                      , _csConnectionStatus            = Connected
                      , _csWorkerIsBusy                = Nothing
                      , _csThemeListOverlay            = nullThemeListOverlayState
-                     , _csUserListOverlay             = nullUserListOverlayState
                      , _csChannelListOverlay          = nullChannelListOverlayState
                      , _csReactionEmojiListOverlay    = nullEmojiListOverlayState
                      , _csClientConfig                = Nothing

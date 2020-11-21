@@ -83,8 +83,8 @@ enterDMSearchUserList = do
 -- request to gather the first search results.
 enterUserListMode :: UserSearchScope -> Maybe Int -> (UserInfo -> MH Bool) -> MH ()
 enterUserListMode scope resultCount enterHandler = do
-    csUserListOverlay.listOverlayRecordCount .= resultCount
-    enterListOverlayMode csUserListOverlay UserListOverlay scope enterHandler getUserSearchResults
+    csCurrentTeam.tsUserListOverlay.listOverlayRecordCount .= resultCount
+    enterListOverlayMode (csCurrentTeam.tsUserListOverlay) UserListOverlay scope enterHandler getUserSearchResults
 
 userInfoFromPair :: User -> Text -> UserInfo
 userInfoFromPair u status =
@@ -112,7 +112,7 @@ userListPageDown = userListMove (L.listMoveBy userListPageSize)
 -- cursor, and then check to see whether the modification warrants a
 -- prefetch of more search results.
 userListMove :: (L.List Name UserInfo -> L.List Name UserInfo) -> MH ()
-userListMove = listOverlayMove csUserListOverlay
+userListMove = listOverlayMove (csCurrentTeam.tsUserListOverlay)
 
 -- | The number of users in a "page" for cursor movement purposes.
 userListPageSize :: Int
