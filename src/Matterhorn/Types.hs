@@ -1334,8 +1334,8 @@ data ChannelListOrientation =
     -- ^ Show the channel list to the right of the message area.
     deriving (Eq, Show)
 
--- | This is the giant bundle of fields that represents the current
--- state of our application at any given time.
+-- | This type represents the current state of our application at any
+-- given time.
 data ChatState =
     ChatState { _csResources :: ChatResources
               -- ^ Global application-wide resources that don't change
