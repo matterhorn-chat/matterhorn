@@ -1478,11 +1478,9 @@ data ChannelTopicDialogState =
 newState :: StartupStateInfo -> ChatState
 newState (StartupStateInfo {..}) =
     let config = _crConfiguration startupStateResources
-        ts = newTeamState startupStateTeam startupStateChannelZipper
+        ts = newTeamState startupStateTeam startupStateChannelZipper startupStateSpellChecker
     in ChatState { _csResources                   = startupStateResources
-                 , _csCurrentTeam                 = ts { _tsEditState =
-                                                           (_tsEditState ts) { _cedSpellChecker = startupStateSpellChecker }
-                                                       }
+                 , _csCurrentTeam                 = ts
                  , _csChannelListOrientation      = configChannelListOrientation config
                  , _csMe                          = startupStateConnectedUser
                  , _csChannels                    = noChannels
@@ -1495,11 +1493,14 @@ newState (StartupStateInfo {..}) =
                  , _csInputHistory                = startupStateInitialHistory
                  }
 
-newTeamState :: Team -> Z.Zipper ChannelListGroup ChannelListEntry -> TeamState
-newTeamState team chanList =
+newTeamState :: Team
+             -> Z.Zipper ChannelListGroup ChannelListEntry
+             -> Maybe (Aspell, IO ())
+             -> TeamState
+newTeamState team chanList spellChecker =
     TeamState { _tsMode                     = Main
               , _tsFocus                    = chanList
-              , _tsEditState                = emptyEditState
+              , _tsEditState                = emptyEditState { _cedSpellChecker = spellChecker }
               , _tsTeam                     = team
               , _tsUrlList                  = list UrlList mempty 2
               , _tsPostListOverlay          = PostListOverlayState emptyDirSeq Nothing
