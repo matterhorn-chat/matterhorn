@@ -23,7 +23,7 @@ import           Matterhorn.Events.Keybindings
 
 drawThemeListOverlay :: ChatState -> Widget Name
 drawThemeListOverlay st =
-    let overlay = drawListOverlay (st^.csThemeListOverlay)
+    let overlay = drawListOverlay (st^.csCurrentTeam.tsThemeListOverlay)
                                   (const $ txt "Themes")
                                   (const $ txt "No matching themes found.")
                                   (const $ txt "Search built-in themes:")

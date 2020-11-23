@@ -31,7 +31,8 @@ import           Matterhorn.Types
 -- request to gather the first search results.
 enterThemeListMode :: MH ()
 enterThemeListMode =
-    enterListOverlayMode csThemeListOverlay ThemeListOverlay () setInternalTheme getThemesMatching
+    enterListOverlayMode (csCurrentTeam.tsThemeListOverlay)
+        ThemeListOverlay () setInternalTheme getThemesMatching
 
 -- | Move the selection up in the user list overlay by one user.
 themeListSelectUp :: MH ()
@@ -55,7 +56,7 @@ themeListPageDown = themeListMove (L.listMoveBy themeListPageSize)
 -- cursor, and then check to see whether the modification warrants a
 -- prefetch of more search results.
 themeListMove :: (L.List Name InternalTheme -> L.List Name InternalTheme) -> MH ()
-themeListMove = listOverlayMove csThemeListOverlay
+themeListMove = listOverlayMove (csCurrentTeam.tsThemeListOverlay)
 
 -- | The number of users in a "page" for cursor movement purposes.
 themeListPageSize :: Int
