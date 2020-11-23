@@ -51,7 +51,47 @@ module Matterhorn.Types
   , ChannelTopicDialogState(..)
   , channelTopicDialogEditor
   , channelTopicDialogFocus
+
   , Config(..)
+  , configUserL
+  , configHostL
+  , configTeamL
+  , configPortL
+  , configUrlPathL
+  , configPassL
+  , configTokenL
+  , configTimeFormatL
+  , configDateFormatL
+  , configThemeL
+  , configThemeCustomizationFileL
+  , configSmartBacktickL
+  , configSmartEditingL
+  , configURLOpenCommandL
+  , configURLOpenCommandInteractiveL
+  , configActivityNotifyCommandL
+  , configActivityBellL
+  , configShowMessageTimestampsL
+  , configShowBackgroundL
+  , configShowMessagePreviewL
+  , configShowChannelListL
+  , configShowExpandedChannelTopicsL
+  , configEnableAspellL
+  , configAspellDictionaryL
+  , configUnsafeUseHTTPL
+  , configValidateServerCertificateL
+  , configChannelListWidthL
+  , configLogMaxBufferSizeL
+  , configShowOlderEditsL
+  , configShowTypingIndicatorL
+  , configAbsPathL
+  , configUserKeysL
+  , configHyperlinkingModeL
+  , configSyntaxDirsL
+  , configDirectChannelExpirationDaysL
+  , configCpuUsagePolicyL
+  , configDefaultAttachmentPathL
+  , configChannelListOrientationL
+
   , HelpScreen(..)
   , PasswordSource(..)
   , TokenSource(..)
@@ -1864,6 +1904,7 @@ makeLenses ''ChannelSelectState
 makeLenses ''UserPreferences
 makeLenses ''ConnectionInfo
 makeLenses ''ChannelTopicDialogState
+Brick.suffixLenses ''Config
 
 getSession :: MH Session
 getSession = use (csResources.crSession)
