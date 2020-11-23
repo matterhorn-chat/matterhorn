@@ -1377,6 +1377,14 @@ data ChatState =
               -- startup/shutdown disk file management API.
               }
 
+-- | All application state specific to a team, along with state specific
+-- to our user interface's presentation of that team. We include the
+-- UI state relevant to the team so that we can easily switch which
+-- team the UI is presenting without having to reinitialize the UI from
+-- the new team. This allows the user to be engaged in just about any
+-- application activity while viewing a team, switch to another team,
+-- and return to the original team and resume what they were doing, all
+-- without us doing any work.
 data TeamState =
     TeamState { _tsFocus :: Z.Zipper ChannelListGroup ChannelListEntry
               -- ^ The channel sidebar zipper that tracks which channel
