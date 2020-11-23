@@ -1087,20 +1087,20 @@ data AttachmentData =
 
 -- | We can initialize a new 'ChatEditState' value with just an edit
 -- history, which we save locally.
-emptyEditState :: Maybe (Aspell, IO ()) -> IO ChatEditState
-emptyEditState sp =
-    return ChatEditState { _cedEditor               = editor MessageInput Nothing ""
-                         , _cedEphemeral            = defaultEphemeralEditState
-                         , _cedEditMode             = NewPost
-                         , _cedYankBuffer           = ""
-                         , _cedSpellChecker         = sp
-                         , _cedMisspellings         = mempty
-                         , _cedAutocomplete         = Nothing
-                         , _cedAutocompletePending  = Nothing
-                         , _cedAttachmentList       = list AttachmentList mempty 1
-                         , _cedFileBrowser          = Nothing
-                         , _cedJustCompleted        = False
-                         }
+emptyEditState :: ChatEditState
+emptyEditState =
+    ChatEditState { _cedEditor               = editor MessageInput Nothing ""
+                  , _cedEphemeral            = defaultEphemeralEditState
+                  , _cedEditMode             = NewPost
+                  , _cedYankBuffer           = ""
+                  , _cedSpellChecker         = Nothing
+                  , _cedMisspellings         = mempty
+                  , _cedAutocomplete         = Nothing
+                  , _cedAutocompletePending  = Nothing
+                  , _cedAttachmentList       = list AttachmentList mempty 1
+                  , _cedFileBrowser          = Nothing
+                  , _cedJustCompleted        = False
+                  }
 
 -- | A 'RequestChan' is a queue of operations we have to perform in the
 -- background to avoid blocking on the main loop
@@ -1475,42 +1475,47 @@ data ChannelTopicDialogState =
                             -- ^ The window focus state (editor/buttons)
                             }
 
-newState :: StartupStateInfo -> IO ChatState
-newState (StartupStateInfo {..}) = do
-    editState <- emptyEditState startupStateSpellChecker
+newState :: StartupStateInfo -> ChatState
+newState (StartupStateInfo {..}) =
     let config = _crConfiguration startupStateResources
-        ts = TeamState { _tsMode                 = Main
-                       , _tsFocus                = startupStateChannelZipper
-                       , _tsEditState            = editState
-                       , _tsTeam                 = startupStateTeam
-                       , _tsUrlList              = list UrlList mempty 2
-                       , _tsPostListOverlay      = PostListOverlayState emptyDirSeq Nothing
-                       , _tsUserListOverlay      = nullUserListOverlayState
-                       , _tsChannelListOverlay   = nullChannelListOverlayState
-                       , _tsChannelSelectState   = emptyChannelSelectState
-                       , _tsChannelTopicDialog   = newChannelTopicDialog ""
-                       , _tsMessageSelect        = MessageSelectState Nothing
-                       , _tsNotifyPrefs          = Nothing
-                       , _tsPendingChannelChange = Nothing
-                       , _tsRecentChannel        = Nothing
-                       , _tsReturnChannel        = Nothing
-                       , _tsViewedMessage        = Nothing
-                       , _tsThemeListOverlay     = nullThemeListOverlayState
-                       , _tsReactionEmojiListOverlay = nullEmojiListOverlayState
-                       }
-    return ChatState { _csResources                   = startupStateResources
-                     , _csCurrentTeam                 = ts
-                     , _csChannelListOrientation      = configChannelListOrientation config
-                     , _csMe                          = startupStateConnectedUser
-                     , _csChannels                    = noChannels
-                     , _csPostMap                     = HM.empty
-                     , _csUsers                       = noUsers
-                     , _timeZone                      = startupStateTimeZone
-                     , _csConnectionStatus            = Connected
-                     , _csWorkerIsBusy                = Nothing
-                     , _csClientConfig                = Nothing
-                     , _csInputHistory                = startupStateInitialHistory
-                     }
+        ts = newTeamState startupStateTeam startupStateChannelZipper
+    in ChatState { _csResources                   = startupStateResources
+                 , _csCurrentTeam                 = ts { _tsEditState =
+                                                           (_tsEditState ts) { _cedSpellChecker = startupStateSpellChecker }
+                                                       }
+                 , _csChannelListOrientation      = configChannelListOrientation config
+                 , _csMe                          = startupStateConnectedUser
+                 , _csChannels                    = noChannels
+                 , _csPostMap                     = HM.empty
+                 , _csUsers                       = noUsers
+                 , _timeZone                      = startupStateTimeZone
+                 , _csConnectionStatus            = Connected
+                 , _csWorkerIsBusy                = Nothing
+                 , _csClientConfig                = Nothing
+                 , _csInputHistory                = startupStateInitialHistory
+                 }
+
+newTeamState :: Team -> Z.Zipper ChannelListGroup ChannelListEntry -> TeamState
+newTeamState team chanList =
+    TeamState { _tsMode                     = Main
+              , _tsFocus                    = chanList
+              , _tsEditState                = emptyEditState
+              , _tsTeam                     = team
+              , _tsUrlList                  = list UrlList mempty 2
+              , _tsPostListOverlay          = PostListOverlayState emptyDirSeq Nothing
+              , _tsUserListOverlay          = nullUserListOverlayState
+              , _tsChannelListOverlay       = nullChannelListOverlayState
+              , _tsChannelSelectState       = emptyChannelSelectState
+              , _tsChannelTopicDialog       = newChannelTopicDialog ""
+              , _tsMessageSelect            = MessageSelectState Nothing
+              , _tsNotifyPrefs              = Nothing
+              , _tsPendingChannelChange     = Nothing
+              , _tsRecentChannel            = Nothing
+              , _tsReturnChannel            = Nothing
+              , _tsViewedMessage            = Nothing
+              , _tsThemeListOverlay         = nullThemeListOverlayState
+              , _tsReactionEmojiListOverlay = nullEmojiListOverlayState
+              }
 
 -- | Make a new channel topic editor window state.
 newChannelTopicDialog :: T.Text -> ChannelTopicDialogState
