@@ -170,12 +170,12 @@ updateViewedChan updatePrev cId = use csConnectionStatus >>= \case
 toggleChannelListVisibility :: MH ()
 toggleChannelListVisibility = do
     mh invalidateCache
-    csShowChannelList %= not
+    csResources.crConfiguration.configShowChannelListL %= not
 
 toggleExpandedChannelTopics :: MH ()
 toggleExpandedChannelTopics = do
     mh invalidateCache
-    csShowExpandedChannelTopics %= not
+    csResources.crConfiguration.configShowExpandedChannelTopicsL %= not
 
 -- | If the current channel is a DM channel with a single user or a
 -- group of users, hide it from the sidebar and adjust the server-side

@@ -336,4 +336,4 @@ dispatchCommand cmd =
 toggleMessagePreview :: MH ()
 toggleMessagePreview = do
     mh invalidateCache
-    csShowMessagePreview %= not
+    csResources.crConfiguration.configShowMessagePreviewL %= not

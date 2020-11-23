@@ -143,9 +143,6 @@ module Matterhorn.Types
   , csResources
   , csCurrentChannel
   , csCurrentChannelId
-  , csShowMessagePreview
-  , csShowChannelList
-  , csShowExpandedChannelTopics
   , csPostMap
   , csThemeListOverlay
   , csReactionEmojiListOverlay
@@ -1360,12 +1357,6 @@ data ChatState =
               -- ^ All of the users we know about.
               , _timeZone :: TimeZoneSeries
               -- ^ The client time zone.
-              , _csShowMessagePreview :: Bool
-              -- ^ Whether to show the message preview area.
-              , _csShowChannelList :: Bool
-              -- ^ Whether to show the channel list.
-              , _csShowExpandedChannelTopics :: Bool
-              -- ^ Whether to show expanded channel topics.
               , _csConnectionStatus :: ConnectionStatus
               -- ^ Our view of the connection status.
               , _csWorkerIsBusy :: Maybe (Maybe Int)
@@ -1505,9 +1496,6 @@ newState (StartupStateInfo {..}) = do
                      , _csPostMap                     = HM.empty
                      , _csUsers                       = noUsers
                      , _timeZone                      = startupStateTimeZone
-                     , _csShowMessagePreview          = configShowMessagePreview config
-                     , _csShowChannelList             = configShowChannelList config
-                     , _csShowExpandedChannelTopics   = configShowExpandedChannelTopics config
                      , _csConnectionStatus            = Connected
                      , _csThemeListOverlay            = nullThemeListOverlayState
                      , _csReactionEmojiListOverlay    = nullEmojiListOverlayState

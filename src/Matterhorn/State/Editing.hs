@@ -357,7 +357,7 @@ handleEditingInput e = do
     -- fit in the space just changed by the size of the preview area.
     afterLineCount <- use (csCurrentTeam.tsEditState.cedEditor.to getEditContents.to length)
     isMultiline <- use (csCurrentTeam.tsEditState.cedEphemeral.eesMultiline)
-    isPreviewing <- use csShowMessagePreview
+    isPreviewing <- use (csResources.crConfiguration.configShowMessagePreviewL)
     when (beforeLineCount /= afterLineCount && isMultiline && isPreviewing) $ do
         cId <- use csCurrentChannelId
         mh $ invalidateCacheEntry $ ChannelMessages cId

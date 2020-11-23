@@ -310,7 +310,7 @@ renderChannelHeader st hs chan =
             _ -> ""
         maybeTopic = if T.null topicStr
                      then ""
-                     else " - " <> if st^.csShowExpandedChannelTopics
+                     else " - " <> if st^.csResources.crConfiguration.configShowExpandedChannelTopicsL
                                    then topicStr
                                    else firstTopicLine
         channelNameString = case chnType of
@@ -336,7 +336,7 @@ renderCurrentChannelDisplay :: ChatState -> HighlightSet -> Widget Name
 renderCurrentChannelDisplay st hs = header <=> hBorder <=> messages
     where
     header =
-        if st^.csShowChannelList
+        if st^.csResources.crConfiguration.configShowChannelListL
         then channelHeader
         else headerWithStatus
 
@@ -586,7 +586,7 @@ maybePreviewViewport w =
                          (Widget Fixed Fixed $ return result)
 
 inputPreview :: ChatState -> HighlightSet -> Widget Name
-inputPreview st hs | not $ st^.csShowMessagePreview = emptyWidget
+inputPreview st hs | not $ st^.csResources.crConfiguration.configShowMessagePreviewL = emptyWidget
                    | otherwise = thePreview
     where
     uId = myUserId st
@@ -657,7 +657,7 @@ mainInterface st =
          , userInputArea st hs
          ]
     where
-    body = if st^.csShowChannelList || appMode st == ChannelSelect
+    body = if st^.csResources.crConfiguration.configShowChannelListL || appMode st == ChannelSelect
            then case st^.csChannelListOrientation of
                ChannelListLeft ->
                    hBox [channelList, vBorder, mainDisplay]
