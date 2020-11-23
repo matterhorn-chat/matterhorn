@@ -18,7 +18,6 @@ import           Brick
 import           Data.List ( intersperse )
 import qualified Data.Set as Set
 import qualified Data.Text as T
-import           Lens.Micro.Platform ( to )
 import           Network.Mattermost.Types
 
 import           Matterhorn.Constants ( userSigil, normalChannelSigil )
@@ -40,11 +39,11 @@ multilineHeightLimit = 5
 
 getTimeFormat :: ChatState -> Text
 getTimeFormat st =
-    maybe defaultTimeFormat id (st^.csResources.crConfiguration.to configTimeFormat)
+    maybe defaultTimeFormat id (st^.csResources.crConfiguration.configTimeFormatL)
 
 getDateFormat :: ChatState -> Text
 getDateFormat st =
-    maybe defaultDateFormat id (st^.csResources.crConfiguration.to configDateFormat)
+    maybe defaultDateFormat id (st^.csResources.crConfiguration.configDateFormatL)
 
 renderTime :: ChatState -> UTCTime -> Widget Name
 renderTime st = renderUTCTime (getTimeFormat st) (st^.timeZone)

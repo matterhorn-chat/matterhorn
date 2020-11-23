@@ -504,7 +504,7 @@ messageSelectBottomBar st =
                 hasVerb = isJust (findVerbatimChunk (postMsg^.mText))
                 -- make sure these keybinding pieces are up-to-date!
                 ev e =
-                  let keyconf = st^.csResources.crConfiguration.to configUserKeys
+                  let keyconf = st^.csResources.crConfiguration.configUserKeysL
                       KeyHandlerMap keymap = messageSelectKeybindings keyconf
                   in T.intercalate ","
                        [ ppBinding (eventToBinding k)

@@ -627,7 +627,7 @@ maybeNotify (RecentPost post mentioned) = runNotifyCommand post mentioned
 
 maybeRingBell :: MH ()
 maybeRingBell = do
-    doBell <- use (csResources.crConfiguration.to configActivityBell)
+    doBell <- use (csResources.crConfiguration.configActivityBellL)
     when doBell $ do
         vty <- mh getVtyHandle
         liftIO $ ringTerminalBell $ outputIface vty
@@ -651,7 +651,7 @@ runNotifyCommand :: Post -> Bool -> MH ()
 runNotifyCommand post mentioned = do
     outputChan <- use (csResources.crSubprocessLog)
     st <- use id
-    notifyCommand <- use (csResources.crConfiguration.to configActivityNotifyCommand)
+    notifyCommand <- use (csResources.crConfiguration.configActivityNotifyCommandL)
     case notifyCommand of
         Nothing -> return ()
         Just cmd ->

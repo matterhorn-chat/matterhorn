@@ -264,12 +264,12 @@ handleEditingInput e = do
     -- later.
     beforeLineCount <- use (csCurrentTeam.tsEditState.cedEditor.to getEditContents.to length)
 
-    smartBacktick <- use (csResources.crConfiguration.to configSmartBacktick)
+    smartBacktick <- use (csResources.crConfiguration.configSmartBacktickL)
     let smartChars = "*`_"
     st <- use id
     csCurrentTeam.tsEditState.cedEphemeral.eesInputHistoryPosition .= Nothing
 
-    smartEditing <- use (csResources.crConfiguration.to configSmartEditing)
+    smartEditing <- use (csResources.crConfiguration.configSmartEditingL)
     justCompleted <- use (csCurrentTeam.tsEditState.cedJustCompleted)
 
     conf <- use (csResources.crConfiguration)
