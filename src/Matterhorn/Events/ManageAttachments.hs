@@ -68,7 +68,7 @@ attachmentBrowseKeyHandlers =
     [ mkKb CancelEvent "Cancel attachment file browse"
       cancelAttachmentBrowse
     , mkKb AttachmentOpenEvent "Open the selected file using the URL open command"
-          openSelectedBrowserEntry
+      openSelectedBrowserEntry
     ]
 
 withFileBrowser :: ((FB.FileBrowser Name) -> MH ()) -> MH ()
