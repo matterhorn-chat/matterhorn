@@ -39,7 +39,7 @@ enterReactionEmojiListOverlayMode = do
         Just msg -> do
             em <- use (csResources.crEmoji)
             myId <- gets myUserId
-            enterListOverlayMode csReactionEmojiListOverlay ReactionEmojiListOverlay
+            enterListOverlayMode (csCurrentTeam.tsReactionEmojiListOverlay) ReactionEmojiListOverlay
                 () enterHandler (fetchResults myId msg em)
 
 enterHandler :: (Bool, T.Text) -> MH Bool
@@ -118,7 +118,7 @@ reactionEmojiListPageDown = reactionEmojiListMove (L.listMoveBy reactionEmojiLis
 -- cursor, and then check to see whether the modification warrants a
 -- prefetch of more search results.
 reactionEmojiListMove :: (L.List Name (Bool, T.Text) -> L.List Name (Bool, T.Text)) -> MH ()
-reactionEmojiListMove = listOverlayMove csReactionEmojiListOverlay
+reactionEmojiListMove = listOverlayMove (csCurrentTeam.tsReactionEmojiListOverlay)
 
 -- | The number of emoji in a "page" for cursor movement purposes.
 reactionEmojiListPageSize :: Int

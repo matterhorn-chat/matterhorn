@@ -135,6 +135,7 @@ module Matterhorn.Types
   , tsChannelListOverlay
   , tsNotifyPrefs
   , tsChannelTopicDialog
+  , tsReactionEmojiListOverlay
 
   , ChatState
   , newState
@@ -145,7 +146,6 @@ module Matterhorn.Types
   , csCurrentChannelId
   , csPostMap
   , csThemeListOverlay
-  , csReactionEmojiListOverlay
   , csConnectionStatus
   , csWorkerIsBusy
   , csChannel
@@ -1364,8 +1364,6 @@ data ChatState =
               -- queue length if so.
               , _csThemeListOverlay :: ListOverlayState InternalTheme ()
               -- ^ The state of the theme list overlay.
-              , _csReactionEmojiListOverlay :: ListOverlayState (Bool, T.Text) ()
-              -- ^ The state of the reaction emoji list overlay.
               , _csClientConfig :: Maybe ClientConfig
               -- ^ The Mattermost client configuration, as we understand it.
               , _csInputHistory :: InputHistory
@@ -1441,6 +1439,8 @@ data TeamState =
               -- ^ The current application mode when viewing this team.
               -- This is used to dispatch to different rendering and
               -- event handling routines.
+              , _tsReactionEmojiListOverlay :: ListOverlayState (Bool, T.Text) ()
+              -- ^ The state of the reaction emoji list overlay.
               }
 
 -- | Handles for the View Message window's tabs.
@@ -1495,6 +1495,7 @@ newState (StartupStateInfo {..}) = do
                        , _tsRecentChannel        = Nothing
                        , _tsReturnChannel        = Nothing
                        , _tsViewedMessage        = Nothing
+                       , _tsReactionEmojiListOverlay = nullEmojiListOverlayState
                        }
     return ChatState { _csResources                   = startupStateResources
                      , _csCurrentTeam                 = ts
@@ -1506,7 +1507,6 @@ newState (StartupStateInfo {..}) = do
                      , _timeZone                      = startupStateTimeZone
                      , _csConnectionStatus            = Connected
                      , _csThemeListOverlay            = nullThemeListOverlayState
-                     , _csReactionEmojiListOverlay    = nullEmojiListOverlayState
                      , _csWorkerIsBusy                = Nothing
                      , _csClientConfig                = Nothing
                      , _csInputHistory                = startupStateInitialHistory

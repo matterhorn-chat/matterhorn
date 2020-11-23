@@ -17,7 +17,7 @@ import           Matterhorn.Themes
 
 drawReactionEmojiListOverlay :: ChatState -> Widget Name
 drawReactionEmojiListOverlay st =
-    let overlay = drawListOverlay (st^.csReactionEmojiListOverlay)
+    let overlay = drawListOverlay (st^.csCurrentTeam.tsReactionEmojiListOverlay)
                                   (const $ txt "Search Emoji")
                                   (const $ txt "No matching emoji found.")
                                   (const $ txt "Search emoji:")
