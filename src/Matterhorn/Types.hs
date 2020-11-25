@@ -257,6 +257,7 @@ module Matterhorn.Types
   , generateUUID_IO
   , mhSuspendAndResume
   , mhHandleEventLensed
+  , mhHandleEventLensed'
   , St.gets
   , mhError
 
@@ -1781,6 +1782,13 @@ mhHandleEventLensed ln f event = MH $ do
     s <- St.get
     let st = mhCurrentState s
     n <- R.lift $ St.lift $ f event (st ^. ln)
+    St.put (s { mhCurrentState = st & ln .~ n })
+
+mhHandleEventLensed' :: Lens' ChatState b -> (b -> EventM Name b) -> MH ()
+mhHandleEventLensed' ln f = MH $ do
+    s <- St.get
+    let st = mhCurrentState s
+    n <- R.lift $ St.lift $ f (st ^. ln)
     St.put (s { mhCurrentState = st & ln .~ n })
 
 mhSuspendAndResume :: (ChatState -> IO ChatState) -> MH ()
