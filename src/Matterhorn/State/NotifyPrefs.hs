@@ -11,7 +11,6 @@ import Matterhorn.Prelude
 
 import Network.Mattermost.Types ( ChannelNotifyProps
                                 , TeamId
-                                , teamId
                                 , User(..)
                                 , UserNotifyProps(..)
                                 , Type(..)
@@ -82,7 +81,7 @@ enterEditNotifyPrefsMode = do
       _ -> do
         let props = chanInfo^.cdNotifyProps
         user <- use csMe
-        tId <- teamId <$> use (csCurrentTeam.tsTeam)
+        tId <- use csCurrentTeamId
         csCurrentTeam.tsNotifyPrefs .= (Just (notifyPrefsForm tId (userNotifyProps user) props))
         setMode EditNotifyPrefs
 

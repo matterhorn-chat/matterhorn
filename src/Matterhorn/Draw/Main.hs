@@ -24,7 +24,7 @@ import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( (.~), (^?!), to, view, folding )
 
 import           Network.Mattermost.Types ( ChannelId, Type(Direct, Private, Group)
-                                          , ServerTime(..), UserId, TeamId, teamId
+                                          , ServerTime(..), UserId, TeamId
                                           )
 
 
@@ -228,7 +228,7 @@ renderUserCommandBox st hs =
             Replying _ _ -> "reply> "
             Editing _ _  ->  "edit> "
             NewPost      ->      "> "
-        tId = teamId $ st^.csCurrentTeam.tsTeam
+        tId = st^.csCurrentTeamId
         inputBox = renderEditor (drawEditorContents st hs) True (st^.csCurrentTeam.tsEditState.cedEditor)
         curContents = getEditContents $ st^.csCurrentTeam.tsEditState.cedEditor
         multilineContent = length curContents > 1
@@ -591,7 +591,7 @@ inputPreview st hs | not $ st^.csResources.crConfiguration.configShowMessagePrev
                    | otherwise = thePreview
     where
     uId = myUserId st
-    tId = teamId $ st^.csCurrentTeam.tsTeam
+    tId = st^.csCurrentTeamId
     -- Insert a cursor sentinel into the input text just before
     -- rendering the preview. We use the inserted sentinel (which is
     -- not rendered) to get brick to ensure that the line the cursor is

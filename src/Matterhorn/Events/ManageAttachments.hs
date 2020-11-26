@@ -21,8 +21,6 @@ import qualified Data.Vector as Vector
 import qualified Graphics.Vty as V
 import           Lens.Micro.Platform ( (?=), (%=), to )
 
-import           Network.Mattermost.Types ( teamId )
-
 import           Matterhorn.Types
 import           Matterhorn.Types.KeyEvents
 import           Matterhorn.Events.Keybindings
@@ -84,7 +82,7 @@ withFileBrowser f = do
             -- This could therefore be implemented as an `error "BUG:
             -- ..."` handler, but the more benign approach is to
             -- simply create an available FileBrowser at this stage.
-            tId <- teamId <$> use (csCurrentTeam.tsTeam)
+            tId <- use csCurrentTeamId
             new_b <- liftIO $ FB.newFileBrowser FB.selectNonDirectories (AttachmentFileBrowser tId) Nothing
             csCurrentTeam.tsEditState.cedFileBrowser ?= new_b
             f new_b

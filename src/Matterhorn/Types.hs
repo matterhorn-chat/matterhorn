@@ -2073,7 +2073,7 @@ userIdForUsername name st =
 channelIdByChannelName :: Text -> ChatState -> Maybe ChannelId
 channelIdByChannelName name st =
     let matches (_, cc) = cc^.ccInfo.cdName == (trimChannelSigil name) &&
-                          cc^.ccInfo.cdTeamId == (Just $ st^.csCurrentTeam.tsTeam.teamIdL)
+                          cc^.ccInfo.cdTeamId == (Just $ st^.csCurrentTeamId)
     in listToMaybe $ fst <$> filteredChannels matches (st^.csChannels)
 
 channelIdByUsername :: Text -> ChatState -> Maybe ChannelId
@@ -2200,7 +2200,7 @@ emptyHSet = HighlightSet Set.empty Set.empty mempty
 
 getHighlightSet :: ChatState -> HighlightSet
 getHighlightSet st =
-    let tId = st^.csCurrentTeam.tsTeam.teamIdL
+    let tId = st^.csCurrentTeamId
     in HighlightSet { hUserSet = addSpecialUserMentions $ getUsernameSet $ st^.csUsers
                     , hChannelSet = getChannelNameSet tId $ st^.csChannels
                     , hSyntaxMap = st^.csResources.crSyntaxMap

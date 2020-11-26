@@ -12,7 +12,7 @@ import           Brick.Widgets.Center
 import           Data.List ( intersperse )
 import qualified Graphics.Vty as Vty
 
-import           Network.Mattermost.Types ( TeamId, teamId )
+import           Network.Mattermost.Types ( TeamId )
 
 import           Matterhorn.Draw.Util ( renderKeybindingHelp )
 import           Matterhorn.Types
@@ -28,7 +28,7 @@ drawTabbedWindow w cs =
     let cur = getCurrentTabbedWindowEntry w
         tabBody = tweRender cur (twValue w) cs
         title = forceAttr clientEmphAttr $ twtTitle (twTemplate w) (tweValue cur)
-        tId = teamId $ cs^.csCurrentTeam.tsTeam
+        tId = cs^.csCurrentTeamId
     in centerLayer $
        vLimit (twWindowHeight w) $
        hLimit (twWindowWidth w) $

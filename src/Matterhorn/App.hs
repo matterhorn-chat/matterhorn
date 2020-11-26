@@ -39,7 +39,7 @@ app = App
       ChannelListOverlay            -> showFirstCursor s cs
       ManageAttachmentsBrowseFiles  -> showFirstCursor s cs
       ThemeListOverlay              -> showFirstCursor s cs
-      ChannelTopicWindow            -> let tId = teamId $ s^.csCurrentTeam.tsTeam
+      ChannelTopicWindow            -> let tId = s^.csCurrentTeamId
                                        in showCursorNamed (ChannelTopicEditor tId) cs
       LeaveChannelConfirm           -> Nothing
       DeleteChannelConfirm          -> Nothing

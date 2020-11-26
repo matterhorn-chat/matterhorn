@@ -78,7 +78,7 @@ renderChannelList st =
     where
         myUsername_ = myUsername st
         renderEntry s e = renderChannelListEntry myUsername_ $ mkChannelEntryData s e
-        tId = MM.teamId $ st^.csCurrentTeam.tsTeam
+        tId = st^.csCurrentTeamId
         body = case appMode st of
             ChannelSelect ->
                 let zipper = st^.csCurrentTeam.tsChannelSelectState.channelSelectMatches

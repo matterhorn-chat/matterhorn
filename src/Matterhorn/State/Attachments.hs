@@ -17,8 +17,6 @@ import qualified Brick.Widgets.List as L
 import qualified Brick.Widgets.FileBrowser as FB
 import           Lens.Micro.Platform ( (.=) )
 
-import           Network.Mattermost.Types ( teamId )
-
 import           Matterhorn.Types
 
 validateAttachmentPath :: FilePath -> IO (Maybe FilePath)
@@ -43,7 +41,7 @@ showAttachmentList = do
 
 resetAttachmentList :: MH ()
 resetAttachmentList = do
-    tId <- teamId <$> use (csCurrentTeam.tsTeam)
+    tId <- use csCurrentTeamId
     let listName = AttachmentList tId
     csCurrentTeam.tsEditState.cedAttachmentList .= L.list listName mempty 1
     mh $ vScrollToBeginning $ viewportScroll listName
@@ -51,7 +49,7 @@ resetAttachmentList = do
 showAttachmentFileBrowser :: MH ()
 showAttachmentFileBrowser = do
     config <- use (csResources.crConfiguration)
-    tId <- teamId <$> use (csCurrentTeam.tsTeam)
+    tId <- use csCurrentTeamId
     filePath <- liftIO $ defaultAttachmentsPath config
     browser <- liftIO $ Just <$> FB.newFileBrowser FB.selectNonDirectories (AttachmentFileBrowser tId) filePath
     csCurrentTeam.tsEditState.cedFileBrowser .= browser
