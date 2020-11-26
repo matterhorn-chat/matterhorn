@@ -23,7 +23,6 @@ import           Lens.Micro.Platform ( (%=), (.=), (.~), _Just, preuse )
 import qualified Skylighting.Types as Sky
 
 import           Network.Mattermost.Types (userId, channelId, Command(..))
-import           Network.Mattermost.Lenses ( teamIdL )
 import qualified Network.Mattermost.Endpoints as MM
 
 import           Matterhorn.Constants ( userSigil, normalChannelSigil )
@@ -166,7 +165,7 @@ isDeletedCommand cmd = commandDeleteAt cmd > commandCreateAt cmd
 doCommandAutoCompletion :: AutocompletionType -> AutocompleteContext -> Text -> MH ()
 doCommandAutoCompletion ty ctx searchString = do
     session <- getSession
-    myTid <- use (csCurrentTeam.tsTeam.teamIdL)
+    myTid <- use csCurrentTeamId
 
     mCache <- preuse (csCurrentTeam.tsEditState.cedAutocomplete._Just.acCachedResponses)
     mActiveTy <- preuse (csCurrentTeam.tsEditState.cedAutocomplete._Just.acType)
@@ -253,7 +252,7 @@ compareCommandAlts _ _ _ = LT
 doUserAutoCompletion :: AutocompletionType -> AutocompleteContext -> Text -> MH ()
 doUserAutoCompletion ty ctx searchString = do
     session <- getSession
-    myTid <- use (csCurrentTeam.tsTeam.teamIdL)
+    myTid <- use csCurrentTeamId
     myUid <- gets myUserId
     cId <- use csCurrentChannelId
 
@@ -279,7 +278,7 @@ doUserAutoCompletion ty ctx searchString = do
 doChannelAutoCompletion :: AutocompletionType -> AutocompleteContext -> Text -> MH ()
 doChannelAutoCompletion ty ctx searchString = do
     session <- getSession
-    tId <- use (csCurrentTeam.tsTeam.teamIdL)
+    tId <- use csCurrentTeamId
     cs <- use csChannels
 
     withCachedAutocompleteResults ctx ty searchString $ do
@@ -327,7 +326,7 @@ setCompletionAlternatives :: AutocompleteContext
                           -> AutocompletionType
                           -> MH ()
 setCompletionAlternatives ctx searchString alts ty = do
-    tId <- use (csCurrentTeam.tsTeam.teamIdL)
+    tId <- use csCurrentTeamId
     let list = L.list (CompletionList tId) (V.fromList $ F.toList alts) 1
         state = AutocompleteState { _acPreviousSearchString = searchString
                                   , _acCompletionList =

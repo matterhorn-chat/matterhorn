@@ -94,7 +94,7 @@ updateSidebar :: MH ()
 updateSidebar = do
     -- Invalidate the cached sidebar rendering since we are about to
     -- change the underlying state
-    tId <- use (csCurrentTeam.tsTeam.teamIdL)
+    tId <- use csCurrentTeamId
     mh $ invalidateCacheEntry $ ChannelSidebar tId
 
     -- Get the currently-focused channel ID so we can compare after the
@@ -262,7 +262,7 @@ setLastViewedFor prevId cId = do
 refreshChannelsAndUsers :: MH ()
 refreshChannelsAndUsers = do
     session <- getSession
-    myTId <- use (csCurrentTeam.tsTeam.teamIdL)
+    myTId <- use csCurrentTeamId
     me <- gets myUser
     knownUsers <- gets allUserIds
     doAsyncWith Preempt $ do
@@ -307,7 +307,7 @@ refreshChannelsAndUsers = do
 refreshChannel :: SidebarUpdate -> Channel -> ChannelMember -> MH ()
 refreshChannel upd chan member = do
     let cId = getId chan
-    myTId <- use (csCurrentTeam.tsTeam.teamIdL)
+    myTId <- use csCurrentTeamId
     let ourTeam = channelTeamId chan == Nothing ||
                   Just myTId == channelTeamId chan
 
@@ -536,7 +536,7 @@ setFocusWith :: Bool
              -> MH ()
              -> MH ()
 setFocusWith updatePrev f onNoChange = do
-    tId <- use (csCurrentTeam.tsTeam.teamIdL)
+    tId <- use csCurrentTeamId
     oldZipper <- use (csCurrentTeam.tsFocus)
     let newZipper = f oldZipper
         newFocus = Z.focus newZipper
@@ -590,7 +590,7 @@ loadLastChannelInput = do
 
 updateChannelListScroll :: MH ()
 updateChannelListScroll = do
-    tId <- use (csCurrentTeam.tsTeam.teamIdL)
+    tId <- use csCurrentTeamId
     mh $ vScrollToBeginning (viewportScroll $ ChannelList tId)
 
 preChangeChannelCommon :: MH ()
@@ -762,7 +762,7 @@ resetReturnChannel = do
   case val of
       Nothing -> return ()
       Just _ -> do
-          tId <- use (csCurrentTeam.tsTeam.teamIdL)
+          tId <- use csCurrentTeamId
           mh $ invalidateCacheEntry $ ChannelSidebar tId
           csCurrentTeam.tsReturnChannel .= Nothing
 
@@ -781,7 +781,7 @@ setReturnChannel = do
   case ret of
     Nothing  -> do
         cId <- use csCurrentChannelId
-        tId <- use (csCurrentTeam.tsTeam.teamIdL)
+        tId <- use csCurrentTeamId
         csCurrentTeam.tsReturnChannel .= Just cId
         mh $ invalidateCacheEntry $ ChannelSidebar tId
     Just _ -> return ()
@@ -957,7 +957,7 @@ channelHistoryBackward = do
 createOrdinaryChannel :: Bool -> Text -> MH ()
 createOrdinaryChannel public name = do
     session <- getSession
-    myTId <- use (csCurrentTeam.tsTeam.teamIdL)
+    myTId <- use csCurrentTeamId
     doAsyncWith Preempt $ do
         -- create a new chat channel
         let slug = T.map (\ c -> if isAlphaNum c then c else '-') (T.toLower name)
@@ -1036,7 +1036,7 @@ isReturnChannel st cId = st^.csCurrentTeam.tsReturnChannel == Just cId
 joinChannelByName :: Text -> MH ()
 joinChannelByName rawName = do
     session <- getSession
-    tId <- use (csCurrentTeam.tsTeam.teamIdL)
+    tId <- use csCurrentTeamId
     doAsyncWith Preempt $ do
         result <- try $ MM.mmGetChannelByName tId (trimChannelSigil rawName) session
         return $ Just $ case result of
@@ -1138,6 +1138,6 @@ beginCurrentChannelDeleteConfirm = do
 
 updateChannelNotifyProps :: ChannelId -> ChannelNotifyProps -> MH ()
 updateChannelNotifyProps cId notifyProps = do
-    tId <- use (csCurrentTeam.tsTeam.teamIdL)
+    tId <- use csCurrentTeamId
     mh $ invalidateCacheEntry $ ChannelSidebar tId
     csChannel(cId).ccInfo.cdNotifyProps .= notifyProps

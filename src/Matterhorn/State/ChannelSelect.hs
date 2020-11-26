@@ -16,7 +16,6 @@ import qualified Data.Text as T
 import           Lens.Micro.Platform
 
 import qualified Network.Mattermost.Types as MM
-import           Network.Mattermost.Lenses ( teamIdL )
 
 import           Matterhorn.Constants ( userSigil, normalChannelSigil )
 import           Matterhorn.Types
@@ -25,7 +24,7 @@ import qualified Matterhorn.Zipper as Z
 beginChannelSelect :: MH ()
 beginChannelSelect = do
     setMode ChannelSelect
-    tId <- use (csCurrentTeam.tsTeam.teamIdL)
+    tId <- use csCurrentTeamId
     csCurrentTeam.tsChannelSelectState .= emptyChannelSelectState tId
     updateChannelSelectMatches
 

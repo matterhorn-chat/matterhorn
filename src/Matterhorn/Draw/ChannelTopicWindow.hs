@@ -16,8 +16,6 @@ import           Control.Arrow ( (>>>) )
 import qualified Data.Text as T
 import           Data.Text.Zipper ( insertChar, gotoEOL )
 
-import           Network.Mattermost.Lenses ( teamIdL )
-
 import           Matterhorn.Types
 import           Matterhorn.Draw.Buttons
 import           Matterhorn.Draw.RichText
@@ -46,7 +44,7 @@ drawChannelTopicWindow st =
          ]
     where
         baseUrl = serverBaseUrl st
-        tId = st^.csCurrentTeam.tsTeam.teamIdL
+        tId = st^.csCurrentTeamId
         editorHeight = 5
         previewHeight = 5
         maxWindowWidth = 70

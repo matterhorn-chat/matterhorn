@@ -18,7 +18,6 @@ import           Data.Function ( on )
 import           Lens.Micro.Platform ( to )
 
 import           Network.Mattermost.Types
-import           Network.Mattermost.Lenses ( teamIdL )
 import qualified Network.Mattermost.Endpoints as MM
 
 import           Matterhorn.State.ListOverlay
@@ -28,7 +27,7 @@ import           Matterhorn.Types
 
 enterChannelListOverlayMode :: MH ()
 enterChannelListOverlayMode = do
-    myTId <- use (csCurrentTeam.tsTeam.teamIdL)
+    myTId <- use csCurrentTeamId
     myChannels <- use (csChannels.to (filteredChannelIds (const True)))
     enterListOverlayMode (csCurrentTeam.tsChannelListOverlay) ChannelListOverlay
         AllChannels enterHandler (fetchResults myTId myChannels)

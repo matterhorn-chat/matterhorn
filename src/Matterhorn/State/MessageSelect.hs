@@ -33,7 +33,6 @@ import           Lens.Micro.Platform
 
 import qualified Network.Mattermost.Endpoints as MM
 import           Network.Mattermost.Types
-import           Network.Mattermost.Lenses ( teamIdL )
 
 import           Matterhorn.Clipboard ( copyToClipboard )
 import           Matterhorn.State.Common
@@ -118,7 +117,7 @@ fillSelectedGap = do
 
 viewMessage :: Message -> MH ()
 viewMessage m = do
-    tId <- use (csCurrentTeam.tsTeam.teamIdL)
+    tId <- use csCurrentTeamId
     let w = tabbedWindow VMTabMessage (viewMessageWindowTemplate tId) MessageSelect (78, 25)
     csCurrentTeam.tsViewedMessage .= Just (m, w)
     runTabShowHandlerFor (twValue w) w

@@ -145,6 +145,7 @@ module Matterhorn.Types
   , csResources
   , csCurrentChannel
   , csCurrentChannelId
+  , csCurrentTeamId
   , csPostMap
   , csConnectionStatus
   , csWorkerIsBusy
@@ -1951,6 +1952,9 @@ resetSpellCheckTimer s =
 -- ** Utility Lenses
 csCurrentChannelId :: SimpleGetter ChatState ChannelId
 csCurrentChannelId = csCurrentTeam.tsFocus.to Z.unsafeFocus.to channelListEntryChannelId
+
+csCurrentTeamId :: SimpleGetter ChatState TeamId
+csCurrentTeamId = csCurrentTeam.tsTeam.teamIdL
 
 channelListEntryChannelId :: ChannelListEntry -> ChannelId
 channelListEntryChannelId (CLChannel cId) = cId

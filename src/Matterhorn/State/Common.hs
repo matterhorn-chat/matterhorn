@@ -123,7 +123,7 @@ updatePostMap postCollection = do
 addClientMessage :: ClientMessage -> MH ()
 addClientMessage msg = do
   cid <- use csCurrentChannelId
-  tId <- use (csCurrentTeam.tsTeam.teamIdL)
+  tId <- use csCurrentTeamId
   uuid <- generateUUID
   let addCMsg = ccContents.cdMessages %~
           (addMessage $ clientMessageToMessage msg & mMessageId .~ Just (MessageUUID uuid))

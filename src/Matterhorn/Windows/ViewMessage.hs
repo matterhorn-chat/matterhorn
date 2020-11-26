@@ -22,7 +22,6 @@ import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( to )
 
 import           Network.Mattermost.Types ( TeamId )
-import           Network.Mattermost.Lenses ( teamIdL )
 
 import           Matterhorn.Constants
 import           Matterhorn.Events.Keybindings
@@ -103,7 +102,7 @@ handleEvent VMTabReactions =
 reactionsText :: ChatState -> Message -> Widget Name
 reactionsText st m = viewport (ViewMessageReactionsArea tId) Vertical body
     where
-        tId = st^.csCurrentTeam.tsTeam.teamIdL
+        tId = st^.csCurrentTeamId
         body = case null reacList of
             True -> txt "This message has no reactions."
             False -> vBox $ mkEntry <$> reacList
@@ -129,7 +128,7 @@ viewMessageBox :: ChatState -> Message -> Widget Name
 viewMessageBox st msg =
     let maybeWarn = if not (msg^.mDeleted) then id else warn
         warn w = vBox [w, hBorder, deleteWarning]
-        tId = st^.csCurrentTeam.tsTeam.teamIdL
+        tId = st^.csCurrentTeamId
         deleteWarning = withDefAttr errorMessageAttr $
                         txtWrap $ "Alert: this message has been deleted and " <>
                                   "will no longer be accessible once this window " <>
@@ -167,43 +166,43 @@ viewMessageKeyHandlers :: [KeyEventHandler]
 viewMessageKeyHandlers =
     let vs = viewportScroll . ViewMessageArea
     in [ mkKb PageUpEvent "Page up" $ do
-           tId <- use (csCurrentTeam.tsTeam.teamIdL)
+           tId <- use csCurrentTeamId
            mh $ vScrollBy (vs tId) (-1 * pageAmount)
 
        , mkKb PageDownEvent "Page down" $ do
-           tId <- use (csCurrentTeam.tsTeam.teamIdL)
+           tId <- use csCurrentTeamId
            mh $ vScrollBy (vs tId) pageAmount
 
        , mkKb PageLeftEvent "Page left" $ do
-           tId <- use (csCurrentTeam.tsTeam.teamIdL)
+           tId <- use csCurrentTeamId
            mh $ hScrollBy (vs tId) (-2 * pageAmount)
 
        , mkKb PageRightEvent "Page right" $ do
-           tId <- use (csCurrentTeam.tsTeam.teamIdL)
+           tId <- use csCurrentTeamId
            mh $ hScrollBy (vs tId) (2 * pageAmount)
 
        , mkKb ScrollUpEvent "Scroll up" $ do
-           tId <- use (csCurrentTeam.tsTeam.teamIdL)
+           tId <- use csCurrentTeamId
            mh $ vScrollBy (vs tId) (-1)
 
        , mkKb ScrollDownEvent "Scroll down" $ do
-           tId <- use (csCurrentTeam.tsTeam.teamIdL)
+           tId <- use csCurrentTeamId
            mh $ vScrollBy (vs tId) 1
 
        , mkKb ScrollLeftEvent "Scroll left" $ do
-           tId <- use (csCurrentTeam.tsTeam.teamIdL)
+           tId <- use csCurrentTeamId
            mh $ hScrollBy (vs tId) (-1)
 
        , mkKb ScrollRightEvent "Scroll right" $ do
-           tId <- use (csCurrentTeam.tsTeam.teamIdL)
+           tId <- use csCurrentTeamId
            mh $ hScrollBy (vs tId) 1
 
        , mkKb ScrollBottomEvent "Scroll to the end of the message" $ do
-           tId <- use (csCurrentTeam.tsTeam.teamIdL)
+           tId <- use csCurrentTeamId
            mh $ vScrollToEnd (vs tId)
 
        , mkKb ScrollTopEvent "Scroll to the beginning of the message" $ do
-           tId <- use (csCurrentTeam.tsTeam.teamIdL)
+           tId <- use csCurrentTeamId
            mh $ vScrollToBeginning (vs tId)
        ]
 
@@ -214,26 +213,26 @@ viewMessageReactionsKeyHandlers :: [KeyEventHandler]
 viewMessageReactionsKeyHandlers =
     let vs = viewportScroll . ViewMessageReactionsArea
     in [ mkKb PageUpEvent "Page up" $ do
-           tId <- use (csCurrentTeam.tsTeam.teamIdL)
+           tId <- use csCurrentTeamId
            mh $ vScrollBy (vs tId) (-1 * pageAmount)
 
        , mkKb PageDownEvent "Page down" $ do
-           tId <- use (csCurrentTeam.tsTeam.teamIdL)
+           tId <- use csCurrentTeamId
            mh $ vScrollBy (vs tId) pageAmount
 
        , mkKb ScrollUpEvent "Scroll up" $ do
-           tId <- use (csCurrentTeam.tsTeam.teamIdL)
+           tId <- use csCurrentTeamId
            mh $ vScrollBy (vs tId) (-1)
 
        , mkKb ScrollDownEvent "Scroll down" $ do
-           tId <- use (csCurrentTeam.tsTeam.teamIdL)
+           tId <- use csCurrentTeamId
            mh $ vScrollBy (vs tId) 1
 
        , mkKb ScrollBottomEvent "Scroll to the end of the reactions list" $ do
-           tId <- use (csCurrentTeam.tsTeam.teamIdL)
+           tId <- use csCurrentTeamId
            mh $ vScrollToEnd (vs tId)
 
        , mkKb ScrollTopEvent "Scroll to the beginning of the reactions list" $ do
-           tId <- use (csCurrentTeam.tsTeam.teamIdL)
+           tId <- use csCurrentTeamId
            mh $ vScrollToBeginning (vs tId)
        ]

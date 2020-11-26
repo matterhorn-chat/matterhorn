@@ -20,7 +20,6 @@ import           Lens.Micro.Platform ( (%=) )
 import qualified Network.Mattermost.Endpoints as MM
 import qualified Network.Mattermost.Exceptions as MM
 import qualified Network.Mattermost.Types as MM
-import           Network.Mattermost.Lenses ( teamIdL )
 
 import           Matterhorn.Connection ( connectWebsockets )
 import           Matterhorn.Constants ( userSigil, normalChannelSigil )
@@ -277,7 +276,7 @@ execMMCommand name rest = do
   cId      <- use csCurrentChannelId
   session  <- getSession
   em       <- use (csCurrentTeam.tsEditState.cedEditMode)
-  tId      <- use (csCurrentTeam.tsTeam.teamIdL)
+  tId      <- use csCurrentTeamId
   let mc = MM.MinCommand
              { MM.minComChannelId = cId
              , MM.minComCommand   = "/" <> name <> " " <> rest
