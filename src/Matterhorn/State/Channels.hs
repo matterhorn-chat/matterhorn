@@ -107,8 +107,9 @@ updateSidebar = do
     prefs <- use (csResources.crUserPreferences)
     now <- liftIO getCurrentTime
     config <- use (csResources.crConfiguration)
+    tId <- use (csCurrentTeam.tsTeam.teamIdL)
 
-    let zl = mkChannelZipperList now config cconfig prefs cs us
+    let zl = mkChannelZipperList now config tId cconfig prefs cs us
     csCurrentTeam.tsFocus %= Z.updateList zl
 
     -- Schedule the current sidebar for user status updates at the end

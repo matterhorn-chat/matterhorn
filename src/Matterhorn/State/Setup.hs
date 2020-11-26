@@ -253,7 +253,8 @@ initializeState cr myTeam me = do
   -- End thread startup ----------------------------------------------
 
   now <- getCurrentTime
-  let chanIds = mkChannelZipperList now (cr^.crConfiguration) Nothing (cr^.crUserPreferences) clientChans noUsers
+  let chanIds = mkChannelZipperList now (cr^.crConfiguration) (teamId myTeam)
+                                    Nothing (cr^.crUserPreferences) clientChans noUsers
       chanZip = Z.fromList chanIds
       clientChans = foldr (uncurry addChannel) noChannels chanPairs
       startupState =

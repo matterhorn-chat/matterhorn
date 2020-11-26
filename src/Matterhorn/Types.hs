@@ -564,23 +564,25 @@ hasUnread' chan = fromMaybe False $ do
 
 mkChannelZipperList :: UTCTime
                     -> Config
+                    -> TeamId
                     -> Maybe ClientConfig
                     -> UserPreferences
                     -> ClientChannels
                     -> Users
                     -> [(ChannelListGroup, [ChannelListEntry])]
-mkChannelZipperList now config cconfig prefs cs us =
-    [ let (unread, entries) = getChannelEntriesInOrder cs Ordinary
+mkChannelZipperList now config tId cconfig prefs cs us =
+    [ let (unread, entries) = getChannelEntriesInOrder tId cs Ordinary
       in (ChannelGroupPublicChannels unread, entries)
-    , let (unread, entries) = getChannelEntriesInOrder cs Private
+    , let (unread, entries) = getChannelEntriesInOrder tId cs Private
       in (ChannelGroupPrivateChannels unread, entries)
     , let (unread, entries) = getDMChannelEntriesInOrder now config cconfig prefs us cs
       in (ChannelGroupDirectMessages unread, entries)
     ]
 
-getChannelEntriesInOrder :: ClientChannels -> Type -> (Int, [ChannelListEntry])
-getChannelEntriesInOrder cs ty =
-    let matches (_, info) = info^.ccInfo.cdType == ty
+getChannelEntriesInOrder :: TeamId -> ClientChannels -> Type -> (Int, [ChannelListEntry])
+getChannelEntriesInOrder tId cs ty =
+    let matches (_, info) = info^.ccInfo.cdType == ty &&
+                            info^.ccInfo.cdTeamId == Just tId
         pairs = filteredChannels matches cs
         unread = length $ filter (== True) $ (hasUnread' . snd) <$> pairs
         entries = fmap (CLChannel . fst) $
@@ -633,6 +635,7 @@ getGroupDMChannelEntries :: UTCTime
                          -> [(Bool, T.Text, ChannelListEntry)]
 getGroupDMChannelEntries now config prefs cs =
     let matches (_, info) = info^.ccInfo.cdType == Group &&
+                            info^.ccInfo.cdTeamId == Nothing &&
                             groupChannelShouldAppear now config prefs info
     in fmap (\(cId, ch) -> (hasUnread' ch, ch^.ccInfo.cdDisplayName, CLGroupDM cId)) $
        filteredChannels matches cs
