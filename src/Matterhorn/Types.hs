@@ -711,43 +711,43 @@ groupChannelShowPreference ps cId = HM.lookup cId (_userPrefGroupChannelPrefs ps
 -- parts of the interface.
 data Name =
     ChannelMessages ChannelId
-    | MessageInput
-    | ChannelList
+    | MessageInput TeamId
+    | ChannelList TeamId
     | HelpViewport
     | HelpText
     | ScriptHelpText
     | ThemeHelpText
     | SyntaxHighlightHelpText
     | KeybindingHelpText
-    | ChannelSelectString
-    | CompletionAlternatives
-    | CompletionList
-    | JoinChannelList
-    | UrlList
-    | MessagePreviewViewport
-    | ThemeListSearchInput
-    | UserListSearchInput
-    | JoinChannelListSearchInput
-    | UserListSearchResults
-    | ThemeListSearchResults
-    | ViewMessageArea
-    | ViewMessageReactionsArea
+    | ChannelSelectString TeamId
+    | CompletionAlternatives TeamId
+    | CompletionList TeamId
+    | JoinChannelList TeamId
+    | UrlList TeamId
+    | MessagePreviewViewport TeamId
+    | ThemeListSearchInput TeamId
+    | UserListSearchInput TeamId
+    | JoinChannelListSearchInput TeamId
+    | UserListSearchResults TeamId
+    | ThemeListSearchResults TeamId
+    | ViewMessageArea TeamId
+    | ViewMessageReactionsArea TeamId
     | ChannelSidebar TeamId
-    | ChannelSelectInput
-    | AttachmentList
-    | AttachmentFileBrowser
-    | MessageReactionsArea
-    | ReactionEmojiList
-    | ReactionEmojiListInput
-    | TabbedWindowTabBar
-    | MuteToggleField
-    | ChannelMentionsField
-    | DesktopNotificationsField (WithDefault NotifyOption)
-    | PushNotificationsField (WithDefault NotifyOption)
-    | ChannelTopicEditor
-    | ChannelTopicSaveButton
-    | ChannelTopicCancelButton
-    | ChannelTopicEditorPreview
+    | ChannelSelectInput TeamId
+    | AttachmentList TeamId
+    | AttachmentFileBrowser TeamId
+    | MessageReactionsArea TeamId
+    | ReactionEmojiList TeamId
+    | ReactionEmojiListInput TeamId
+    | TabbedWindowTabBar TeamId
+    | MuteToggleField TeamId
+    | ChannelMentionsField TeamId
+    | DesktopNotificationsField TeamId (WithDefault NotifyOption)
+    | PushNotificationsField TeamId (WithDefault NotifyOption)
+    | ChannelTopicEditor TeamId
+    | ChannelTopicSaveButton TeamId
+    | ChannelTopicCancelButton TeamId
+    | ChannelTopicEditorPreview TeamId
     deriving (Eq, Show, Ord)
 
 -- | The sum type of exceptions we expect to encounter on authentication
@@ -1091,9 +1091,9 @@ data AttachmentData =
 
 -- | We can initialize a new 'ChatEditState' value with just an edit
 -- history, which we save locally.
-emptyEditState :: ChatEditState
-emptyEditState =
-    ChatEditState { _cedEditor               = editor MessageInput Nothing ""
+emptyEditState :: TeamId -> ChatEditState
+emptyEditState tId =
+    ChatEditState { _cedEditor               = editor (MessageInput tId) Nothing ""
                   , _cedEphemeral            = defaultEphemeralEditState
                   , _cedEditMode             = NewPost
                   , _cedYankBuffer           = ""
@@ -1101,7 +1101,7 @@ emptyEditState =
                   , _cedMisspellings         = mempty
                   , _cedAutocomplete         = Nothing
                   , _cedAutocompletePending  = Nothing
-                  , _cedAttachmentList       = list AttachmentList mempty 1
+                  , _cedAttachmentList       = list (AttachmentList tId) mempty 1
                   , _cedFileBrowser          = Nothing
                   , _cedJustCompleted        = False
                   }
@@ -1502,41 +1502,42 @@ newTeamState :: Team
              -> Maybe (Aspell, IO ())
              -> TeamState
 newTeamState team chanList spellChecker =
-    TeamState { _tsMode                     = Main
-              , _tsFocus                    = chanList
-              , _tsEditState                = emptyEditState { _cedSpellChecker = spellChecker }
-              , _tsTeam                     = team
-              , _tsUrlList                  = list UrlList mempty 2
-              , _tsPostListOverlay          = PostListOverlayState emptyDirSeq Nothing
-              , _tsUserListOverlay          = nullUserListOverlayState
-              , _tsChannelListOverlay       = nullChannelListOverlayState
-              , _tsChannelSelectState       = emptyChannelSelectState
-              , _tsChannelTopicDialog       = newChannelTopicDialog ""
-              , _tsMessageSelect            = MessageSelectState Nothing
-              , _tsNotifyPrefs              = Nothing
-              , _tsPendingChannelChange     = Nothing
-              , _tsRecentChannel            = Nothing
-              , _tsReturnChannel            = Nothing
-              , _tsViewedMessage            = Nothing
-              , _tsThemeListOverlay         = nullThemeListOverlayState
-              , _tsReactionEmojiListOverlay = nullEmojiListOverlayState
-              }
+    let tId = teamId team
+    in TeamState { _tsMode                     = Main
+                 , _tsFocus                    = chanList
+                 , _tsEditState                = (emptyEditState tId) { _cedSpellChecker = spellChecker }
+                 , _tsTeam                     = team
+                 , _tsUrlList                  = list (UrlList tId) mempty 2
+                 , _tsPostListOverlay          = PostListOverlayState emptyDirSeq Nothing
+                 , _tsUserListOverlay          = nullUserListOverlayState tId
+                 , _tsChannelListOverlay       = nullChannelListOverlayState tId
+                 , _tsChannelSelectState       = emptyChannelSelectState tId
+                 , _tsChannelTopicDialog       = newChannelTopicDialog tId ""
+                 , _tsMessageSelect            = MessageSelectState Nothing
+                 , _tsNotifyPrefs              = Nothing
+                 , _tsPendingChannelChange     = Nothing
+                 , _tsRecentChannel            = Nothing
+                 , _tsReturnChannel            = Nothing
+                 , _tsViewedMessage            = Nothing
+                 , _tsThemeListOverlay         = nullThemeListOverlayState tId
+                 , _tsReactionEmojiListOverlay = nullEmojiListOverlayState tId
+                 }
 
 -- | Make a new channel topic editor window state.
-newChannelTopicDialog :: T.Text -> ChannelTopicDialogState
-newChannelTopicDialog t =
-    ChannelTopicDialogState { _channelTopicDialogEditor = editor ChannelTopicEditor Nothing t
-                            , _channelTopicDialogFocus = focusRing [ ChannelTopicEditor
-                                                                   , ChannelTopicSaveButton
-                                                                   , ChannelTopicCancelButton
+newChannelTopicDialog :: TeamId -> T.Text -> ChannelTopicDialogState
+newChannelTopicDialog tId t =
+    ChannelTopicDialogState { _channelTopicDialogEditor = editor (ChannelTopicEditor tId) Nothing t
+                            , _channelTopicDialogFocus = focusRing [ ChannelTopicEditor tId
+                                                                   , ChannelTopicSaveButton tId
+                                                                   , ChannelTopicCancelButton tId
                                                                    ]
                             }
 
-nullChannelListOverlayState :: ListOverlayState Channel ChannelSearchScope
-nullChannelListOverlayState =
-    let newList rs = list JoinChannelList rs 2
+nullChannelListOverlayState :: TeamId -> ListOverlayState Channel ChannelSearchScope
+nullChannelListOverlayState tId =
+    let newList rs = list (JoinChannelList tId) rs 2
     in ListOverlayState { _listOverlaySearchResults  = newList mempty
-                        , _listOverlaySearchInput    = editor JoinChannelListSearchInput (Just 1) ""
+                        , _listOverlaySearchInput    = editor (JoinChannelListSearchInput tId) (Just 1) ""
                         , _listOverlaySearchScope    = AllChannels
                         , _listOverlaySearching      = False
                         , _listOverlayEnterHandler   = const $ return False
@@ -1546,11 +1547,11 @@ nullChannelListOverlayState =
                         , _listOverlayReturnMode     = Main
                         }
 
-nullThemeListOverlayState :: ListOverlayState InternalTheme ()
-nullThemeListOverlayState =
-    let newList rs = list ThemeListSearchResults rs 3
+nullThemeListOverlayState :: TeamId -> ListOverlayState InternalTheme ()
+nullThemeListOverlayState tId =
+    let newList rs = list (ThemeListSearchResults tId) rs 3
     in ListOverlayState { _listOverlaySearchResults  = newList mempty
-                        , _listOverlaySearchInput    = editor ThemeListSearchInput (Just 1) ""
+                        , _listOverlaySearchInput    = editor (ThemeListSearchInput tId) (Just 1) ""
                         , _listOverlaySearchScope    = ()
                         , _listOverlaySearching      = False
                         , _listOverlayEnterHandler   = const $ return False
@@ -1560,11 +1561,11 @@ nullThemeListOverlayState =
                         , _listOverlayReturnMode     = Main
                         }
 
-nullUserListOverlayState :: ListOverlayState UserInfo UserSearchScope
-nullUserListOverlayState =
-    let newList rs = list UserListSearchResults rs 1
+nullUserListOverlayState :: TeamId -> ListOverlayState UserInfo UserSearchScope
+nullUserListOverlayState tId =
+    let newList rs = list (UserListSearchResults tId) rs 1
     in ListOverlayState { _listOverlaySearchResults  = newList mempty
-                        , _listOverlaySearchInput    = editor UserListSearchInput (Just 1) ""
+                        , _listOverlaySearchInput    = editor (UserListSearchInput tId) (Just 1) ""
                         , _listOverlaySearchScope    = AllUsers Nothing
                         , _listOverlaySearching      = False
                         , _listOverlayEnterHandler   = const $ return False
@@ -1574,11 +1575,11 @@ nullUserListOverlayState =
                         , _listOverlayReturnMode     = Main
                         }
 
-nullEmojiListOverlayState :: ListOverlayState (Bool, T.Text) ()
-nullEmojiListOverlayState =
-    let newList rs = list ReactionEmojiList rs 1
+nullEmojiListOverlayState :: TeamId -> ListOverlayState (Bool, T.Text) ()
+nullEmojiListOverlayState tId =
+    let newList rs = list (ReactionEmojiList tId) rs 1
     in ListOverlayState { _listOverlaySearchResults  = newList mempty
-                        , _listOverlaySearchInput    = editor ReactionEmojiListInput (Just 1) ""
+                        , _listOverlaySearchInput    = editor (ReactionEmojiListInput tId) (Just 1) ""
                         , _listOverlaySearchScope    = ()
                         , _listOverlaySearching      = False
                         , _listOverlayEnterHandler   = const $ return False
@@ -1605,9 +1606,9 @@ data ChannelSelectState =
                        , _channelSelectMatches :: Z.Zipper ChannelListGroup ChannelSelectMatch
                        }
 
-emptyChannelSelectState :: ChannelSelectState
-emptyChannelSelectState =
-    ChannelSelectState { _channelSelectInput = editor ChannelSelectInput (Just 1) ""
+emptyChannelSelectState :: TeamId -> ChannelSelectState
+emptyChannelSelectState tId =
+    ChannelSelectState { _channelSelectInput = editor (ChannelSelectInput tId) (Just 1) ""
                        , _channelSelectMatches = Z.fromList []
                        }
 

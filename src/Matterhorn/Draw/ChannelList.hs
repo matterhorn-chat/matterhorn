@@ -74,7 +74,7 @@ renderChannelListHeader st =
 
 renderChannelList :: ChatState -> Widget Name
 renderChannelList st =
-    viewport ChannelList Vertical body
+    viewport (ChannelList tId) Vertical body
     where
         myUsername_ = myUsername st
         renderEntry s e = renderChannelListEntry myUsername_ $ mkChannelEntryData s e

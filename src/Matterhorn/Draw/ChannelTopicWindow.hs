@@ -16,6 +16,8 @@ import           Control.Arrow ( (>>>) )
 import qualified Data.Text as T
 import           Data.Text.Zipper ( insertChar, gotoEOL )
 
+import           Network.Mattermost.Lenses ( teamIdL )
+
 import           Matterhorn.Types
 import           Matterhorn.Draw.Buttons
 import           Matterhorn.Draw.RichText
@@ -32,18 +34,19 @@ drawChannelTopicWindow st =
            withFocusRing foc (renderEditor drawTopicEditorTxt) ed
          , hBorderWithLabel (withDefAttr clientEmphAttr $ txt "Preview")
          , vLimit previewHeight $
-           viewport ChannelTopicEditorPreview Vertical $
+           viewport (ChannelTopicEditorPreview tId) Vertical $
            renderText' (Just baseUrl) "" hSet topicTxtWithCursor
          , hBorder
          , hBox [ padRight Max $
                   padLeft (Pad 1) $
-                  drawButton foc ChannelTopicSaveButton "Save"
+                  drawButton foc (ChannelTopicSaveButton tId) "Save"
                 , padRight (Pad 1) $
-                  drawButton foc ChannelTopicCancelButton "Cancel"
+                  drawButton foc (ChannelTopicCancelButton tId) "Cancel"
                 ]
          ]
     where
         baseUrl = serverBaseUrl st
+        tId = st^.csCurrentTeam.tsTeam.teamIdL
         editorHeight = 5
         previewHeight = 5
         maxWindowWidth = 70

@@ -12,6 +12,8 @@ import           Brick.Widgets.Center
 import           Data.List ( intersperse )
 import qualified Graphics.Vty as Vty
 
+import           Network.Mattermost.Types ( TeamId, teamId )
+
 import           Matterhorn.Draw.Util ( renderKeybindingHelp )
 import           Matterhorn.Types
 import           Matterhorn.Themes
@@ -26,12 +28,13 @@ drawTabbedWindow w cs =
     let cur = getCurrentTabbedWindowEntry w
         tabBody = tweRender cur (twValue w) cs
         title = forceAttr clientEmphAttr $ twtTitle (twTemplate w) (tweValue cur)
+        tId = teamId $ cs^.csCurrentTeam.tsTeam
     in centerLayer $
        vLimit (twWindowHeight w) $
        hLimit (twWindowWidth w) $
        joinBorders $
        borderWithLabel title $
-       (tabBar w <=> tabBody <=> hBorder <=> hCenter keybindingHelp)
+       (tabBar tId w <=> tabBody <=> hBorder <=> hCenter keybindingHelp)
 
 -- | Keybinding help to show at the bottom of a tabbed window.
 keybindingHelp :: Widget Name
@@ -43,9 +46,10 @@ keybindingHelp =
 
 -- | The scrollable tab bar to show at the top of a tabbed window.
 tabBar :: (Eq a, Show a)
-       => TabbedWindow a
+       => TeamId
+       -> TabbedWindow a
        -> Widget Name
-tabBar w =
+tabBar tId w =
     let cur = getCurrentTabbedWindowEntry w
         entries = twtEntries (twTemplate w)
         renderEntry e =
@@ -74,4 +78,4 @@ tabBar w =
             render $ hBox $ (intersperse divider $ renderEntry <$> entries) <>
                             [divider, padTop (Pad 1) $ hLimit width hBorder]
         divider = vLimit 1 vBorder <=> joinableBorder (Edges True False False False)
-    in vLimit 2 $ viewport TabbedWindowTabBar Horizontal contents
+    in vLimit 2 $ viewport (TabbedWindowTabBar tId) Horizontal contents

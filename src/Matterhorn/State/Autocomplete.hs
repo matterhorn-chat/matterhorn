@@ -327,7 +327,8 @@ setCompletionAlternatives :: AutocompleteContext
                           -> AutocompletionType
                           -> MH ()
 setCompletionAlternatives ctx searchString alts ty = do
-    let list = L.list CompletionList (V.fromList $ F.toList alts) 1
+    tId <- use (csCurrentTeam.tsTeam.teamIdL)
+    let list = L.list (CompletionList tId) (V.fromList $ F.toList alts) 1
         state = AutocompleteState { _acPreviousSearchString = searchString
                                   , _acCompletionList =
                                       list & L.listSelectedL .~ Nothing
@@ -350,7 +351,7 @@ setCompletionAlternatives ctx searchString alts ty = do
                                 HM.insert searchString alts (oldState^.acCachedResponses)
                 in Just newState
 
-            mh $ vScrollToBeginning $ viewportScroll CompletionList
+            mh $ vScrollToBeginning $ viewportScroll $ CompletionList tId
 
             when (autocompleteFirstMatch ctx) $
                 tabComplete Forwards

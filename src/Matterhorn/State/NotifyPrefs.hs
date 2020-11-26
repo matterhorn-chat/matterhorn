@@ -10,6 +10,8 @@ import Prelude ()
 import Matterhorn.Prelude
 
 import Network.Mattermost.Types ( ChannelNotifyProps
+                                , TeamId
+                                , teamId
                                 , User(..)
                                 , UserNotifyProps(..)
                                 , Type(..)
@@ -61,14 +63,14 @@ mkNotifyButtons mkName l globalDefault =
                                   ]
     in radioField l (defaultField : nonDefault)
 
-notifyPrefsForm :: UserNotifyProps -> ChannelNotifyProps -> Form ChannelNotifyProps e Name
-notifyPrefsForm globalDefaults =
-    newForm [ checkboxField muteLens MuteToggleField "Mute channel"
-            , (padTop $ Pad 1) @@= checkboxField channelMentionLens ChannelMentionsField "Ignore channel mentions"
+notifyPrefsForm :: TeamId -> UserNotifyProps -> ChannelNotifyProps -> Form ChannelNotifyProps e Name
+notifyPrefsForm tId globalDefaults =
+    newForm [ checkboxField muteLens (MuteToggleField tId) "Mute channel"
+            , (padTop $ Pad 1) @@= checkboxField channelMentionLens (ChannelMentionsField tId) "Ignore channel mentions"
             , radioStyle "Desktop notifications" @@=
-                mkNotifyButtons DesktopNotificationsField channelNotifyPropsDesktopL (userNotifyPropsDesktop globalDefaults)
+                mkNotifyButtons (DesktopNotificationsField tId) channelNotifyPropsDesktopL (userNotifyPropsDesktop globalDefaults)
             , radioStyle "Push notifications" @@=
-                mkNotifyButtons PushNotificationsField channelNotifyPropsPushL (userNotifyPropsPush globalDefaults)
+                mkNotifyButtons (PushNotificationsField tId) channelNotifyPropsPushL (userNotifyPropsPush globalDefaults)
             ]
     where radioStyle label = (padTop $ Pad 1 ) . (str label <=>) . (padLeft $ Pad 1)
 
@@ -80,7 +82,8 @@ enterEditNotifyPrefsMode = do
       _ -> do
         let props = chanInfo^.cdNotifyProps
         user <- use csMe
-        csCurrentTeam.tsNotifyPrefs .= (Just (notifyPrefsForm (userNotifyProps user) props))
+        tId <- teamId <$> use (csCurrentTeam.tsTeam)
+        csCurrentTeam.tsNotifyPrefs .= (Just (notifyPrefsForm tId (userNotifyProps user) props))
         setMode EditNotifyPrefs
 
 exitEditNotifyPrefsMode :: MH ()

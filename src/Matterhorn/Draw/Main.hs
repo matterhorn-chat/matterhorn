@@ -24,7 +24,7 @@ import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( (.~), (^?!), to, view, folding )
 
 import           Network.Mattermost.Types ( ChannelId, Type(Direct, Private, Group)
-                                          , ServerTime(..), UserId
+                                          , ServerTime(..), UserId, TeamId, teamId
                                           )
 
 
@@ -228,6 +228,7 @@ renderUserCommandBox st hs =
             Replying _ _ -> "reply> "
             Editing _ _  ->  "edit> "
             NewPost      ->      "> "
+        tId = teamId $ st^.csCurrentTeam.tsTeam
         inputBox = renderEditor (drawEditorContents st hs) True (st^.csCurrentTeam.tsEditState.cedEditor)
         curContents = getEditContents $ st^.csCurrentTeam.tsEditState.cedEditor
         multilineContent = length curContents > 1
@@ -277,7 +278,7 @@ renderUserCommandBox st hs =
                                          "; Enter: send, " <> T.unpack multiLineToggleKey <>
                                          ": edit, Backspace: cancel] "
                                  , txt $ head curContents
-                                 , showCursor MessageInput (Location (0,0)) $ str " "
+                                 , showCursor (MessageInput tId) (Location (0,0)) $ str " "
                                  ]
                             else [inputBox]
             True -> vLimit multilineHeightLimit inputBox <=> multilineHints
@@ -575,14 +576,14 @@ messageSelectBottomBar st =
                     , hBorder
                     ]
 
-maybePreviewViewport :: Widget Name -> Widget Name
-maybePreviewViewport w =
+maybePreviewViewport :: TeamId -> Widget Name -> Widget Name
+maybePreviewViewport tId w =
     Widget Greedy Fixed $ do
         result <- render w
         case (Vty.imageHeight $ result^.imageL) > previewMaxHeight of
             False -> return result
             True ->
-                render $ vLimit previewMaxHeight $ viewport MessagePreviewViewport Vertical $
+                render $ vLimit previewMaxHeight $ viewport (MessagePreviewViewport tId) Vertical $
                          (Widget Fixed Fixed $ return result)
 
 inputPreview :: ChatState -> HighlightSet -> Widget Name
@@ -590,6 +591,7 @@ inputPreview st hs | not $ st^.csResources.crConfiguration.configShowMessagePrev
                    | otherwise = thePreview
     where
     uId = myUserId st
+    tId = teamId $ st^.csCurrentTeam.tsTeam
     -- Insert a cursor sentinel into the input text just before
     -- rendering the preview. We use the inserted sentinel (which is
     -- not rendered) to get brick to ensure that the line the cursor is
@@ -629,7 +631,7 @@ inputPreview st hs | not $ st^.csResources.crConfiguration.configShowMessagePrev
                                   , mdMyUsername        = myUsername st
                                   , mdWrapNonhighlightedCodeBlocks = True
                                   }
-                 in (maybePreviewViewport msgPreview) <=>
+                 in (maybePreviewViewport tId msgPreview) <=>
                     hBorderWithLabel (withDefAttr clientEmphAttr $ str "[Preview ↑]")
 
 userInputArea :: ChatState -> HighlightSet -> Widget Name

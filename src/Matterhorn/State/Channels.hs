@@ -590,7 +590,8 @@ loadLastChannelInput = do
 
 updateChannelListScroll :: MH ()
 updateChannelListScroll = do
-    mh $ vScrollToBeginning (viewportScroll ChannelList)
+    tId <- use (csCurrentTeam.tsTeam.teamIdL)
+    mh $ vScrollToBeginning (viewportScroll $ ChannelList tId)
 
 preChangeChannelCommon :: MH ()
 preChangeChannelCommon = do
