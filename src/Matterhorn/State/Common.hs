@@ -123,12 +123,14 @@ updatePostMap postCollection = do
 addClientMessage :: ClientMessage -> MH ()
 addClientMessage msg = do
   cid <- use csCurrentChannelId
+  tId <- use (csCurrentTeam.tsTeam.teamIdL)
   uuid <- generateUUID
   let addCMsg = ccContents.cdMessages %~
           (addMessage $ clientMessageToMessage msg & mMessageId .~ Just (MessageUUID uuid))
   csChannels %= modifyChannelById cid addCMsg
+
   mh $ invalidateCacheEntry $ ChannelMessages cid
-  mh $ invalidateCacheEntry ChannelSidebar
+  mh $ invalidateCacheEntry $ ChannelSidebar tId
 
   let msgTy = case msg^.cmType of
         Error -> LogError

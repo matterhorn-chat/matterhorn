@@ -28,6 +28,7 @@ module Matterhorn.Types.Channels
   -- * Managing ClientChannel collections
   , noChannels, addChannel, removeChannel, findChannelById, modifyChannelById
   , channelByIdL, maybeChannelByIdL
+  , allTeamIds
   , filteredChannelIds
   , filteredChannels
   -- * Creating ChannelInfo objects
@@ -361,6 +362,10 @@ maybeChannelByIdL cId = chanMap . at cId
 -- ChannelId values for which the filter matched.
 filteredChannelIds :: (ClientChannel -> Bool) -> ClientChannels -> [ChannelId]
 filteredChannelIds f cc = fst <$> filter (f . snd) (HM.toList (cc^.chanMap))
+
+-- | Get all the team IDs in the channel collection.
+allTeamIds :: ClientChannels -> [TeamId]
+allTeamIds cc = HM.keys $ cc^.channelNameSet
 
 -- | Filter the ClientChannel collection, keeping only those for which
 -- the provided filter test function returns True.

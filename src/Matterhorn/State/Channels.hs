@@ -94,7 +94,8 @@ updateSidebar :: MH ()
 updateSidebar = do
     -- Invalidate the cached sidebar rendering since we are about to
     -- change the underlying state
-    mh $ invalidateCacheEntry ChannelSidebar
+    tId <- use (csCurrentTeam.tsTeam.teamIdL)
+    mh $ invalidateCacheEntry $ ChannelSidebar tId
 
     -- Get the currently-focused channel ID so we can compare after the
     -- zipper is rebuilt
@@ -107,7 +108,6 @@ updateSidebar = do
     prefs <- use (csResources.crUserPreferences)
     now <- liftIO getCurrentTime
     config <- use (csResources.crConfiguration)
-    tId <- use (csCurrentTeam.tsTeam.teamIdL)
 
     let zl = mkChannelZipperList now config tId cconfig prefs cs us
     csCurrentTeam.tsFocus %= Z.updateList zl
@@ -536,6 +536,7 @@ setFocusWith :: Bool
              -> MH ()
              -> MH ()
 setFocusWith updatePrev f onNoChange = do
+    tId <- use (csCurrentTeam.tsTeam.teamIdL)
     oldZipper <- use (csCurrentTeam.tsFocus)
     let newZipper = f oldZipper
         newFocus = Z.focus newZipper
@@ -545,7 +546,7 @@ setFocusWith updatePrev f onNoChange = do
     -- we'll end up clobbering things like tsRecentChannel.
     if newFocus /= oldFocus
        then do
-          mh $ invalidateCacheEntry ChannelSidebar
+          mh $ invalidateCacheEntry $ ChannelSidebar tId
           resetAutocomplete
           preChangeChannelCommon
           csCurrentTeam.tsFocus .= newZipper
@@ -760,7 +761,8 @@ resetReturnChannel = do
   case val of
       Nothing -> return ()
       Just _ -> do
-          mh $ invalidateCacheEntry ChannelSidebar
+          tId <- use (csCurrentTeam.tsTeam.teamIdL)
+          mh $ invalidateCacheEntry $ ChannelSidebar tId
           csCurrentTeam.tsReturnChannel .= Nothing
 
 gotoReturnChannel :: MH ()
@@ -778,8 +780,9 @@ setReturnChannel = do
   case ret of
     Nothing  -> do
         cId <- use csCurrentChannelId
+        tId <- use (csCurrentTeam.tsTeam.teamIdL)
         csCurrentTeam.tsReturnChannel .= Just cId
-        mh $ invalidateCacheEntry ChannelSidebar
+        mh $ invalidateCacheEntry $ ChannelSidebar tId
     Just _ -> return ()
 
 nextUnreadChannel :: MH ()
@@ -1134,5 +1137,6 @@ beginCurrentChannelDeleteConfirm = do
 
 updateChannelNotifyProps :: ChannelId -> ChannelNotifyProps -> MH ()
 updateChannelNotifyProps cId notifyProps = do
-    mh $ invalidateCacheEntry ChannelSidebar
+    tId <- use (csCurrentTeam.tsTeam.teamIdL)
+    mh $ invalidateCacheEntry $ ChannelSidebar tId
     csChannel(cId).ccInfo.cdNotifyProps .= notifyProps

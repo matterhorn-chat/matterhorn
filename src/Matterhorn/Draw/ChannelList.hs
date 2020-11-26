@@ -78,6 +78,7 @@ renderChannelList st =
     where
         myUsername_ = myUsername st
         renderEntry s e = renderChannelListEntry myUsername_ $ mkChannelEntryData s e
+        tId = MM.teamId $ st^.csCurrentTeam.tsTeam
         body = case appMode st of
             ChannelSelect ->
                 let zipper = st^.csCurrentTeam.tsChannelSelectState.channelSelectMatches
@@ -90,7 +91,7 @@ renderChannelList st =
                    renderChannelListHeader st :
                    matches
             _ ->
-                cached ChannelSidebar $
+                cached (ChannelSidebar tId) $
                 vBox $
                 renderChannelListHeader st :
                 (renderChannelListGroup st renderEntry <$> Z.toList (st^.csCurrentTeam.tsFocus))

@@ -732,7 +732,7 @@ data Name =
     | ThemeListSearchResults
     | ViewMessageArea
     | ViewMessageReactionsArea
-    | ChannelSidebar
+    | ChannelSidebar TeamId
     | ChannelSelectInput
     | AttachmentList
     | AttachmentFileBrowser
@@ -2046,7 +2046,9 @@ getReplyRootMessage msg = do
 setUserStatus :: UserId -> Text -> MH ()
 setUserStatus uId t = do
     csUsers %= modifyUserById uId (uiStatus .~ statusFromText t)
-    mh $ invalidateCacheEntry ChannelSidebar
+    cs <- use csChannels
+    forM_ (allTeamIds cs) $ \tId ->
+        mh $ invalidateCacheEntry $ ChannelSidebar tId
 
 usernameForUserId :: UserId -> ChatState -> Maybe Text
 usernameForUserId uId st = _uiName <$> findUserById uId (st^.csUsers)
