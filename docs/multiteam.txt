@@ -1,0 +1,50 @@
+Multi-team support TODO list
+----------------------------
+
+ * Audit for csCurrentTeam use to see where we need to get modify the
+   state for a specific team based on context.
+
+ * Spawn an Aspell instance for each team.
+
+ * Like Getty's patch, we need to get rid of the team selector UI and
+   just populate the state with a TeamState for each team.
+
+ * The config has a setting to select the team. Instead of just
+   connecting to this team, we can re-use the setting to mean "show
+   this team initially on startup." This needs to be documented in the
+   changelog when this feature goes out.
+
+ * Need to figure out how much team information to load on startup,
+   and/or whether we already are (but are ignoring it; are we getting
+   all channels for all teams we're in?).
+
+ * On startup, make a TeamState for each team. Track which team is the
+   "current" one. We will likely need to care about the ordering (which
+   needs to be stable and should probably be based on alphabetic sorting
+   of team name).
+
+ * There needs to be some indication in the UI of which team we are
+   looking at and which other teams we *could* look at.
+
+ * There needs to be some indication in the UI for which teams have
+   unread activity.
+
+ * Is there a server event that tells us we have been added to a new
+   team? Probably WMAddedToTeam.
+
+ * Is there a server event that tells us we have been removed from a
+   team? Probably:
+    * WMTeamDeleted
+    * WMLeaveTeam
+
+ * Are there other team-related events that we should pay attention to?
+   Probably WMUpdateTeam.
+
+ * When switching teams, we need to update the view timestamp for the
+   current channel of the team we are switching to.
+
+ * When we get a new message in a team's current channel when that team
+   is NOT the currently-viewed team, we need to treat that like the user
+   is not looking at the channel (i.e. set the New Messages line and do
+   NOT update the view timestamp). This should basically be the same
+   logic we already have for the "not the current channel" case.
