@@ -75,29 +75,5 @@ src/Matterhorn/State/Channels.hs:310:    myTId <- use csCurrentTeamId
 This team ID should be the one that owns the channel provided to updateChannelNotifyProps:
 src/Matterhorn/State/Channels.hs:1141:    tId <- use csCurrentTeamId
 
-src/Matterhorn/State/Attachments.hs:44:    tId <- use csCurrentTeamId
-src/Matterhorn/State/Attachments.hs:52:    tId <- use csCurrentTeamId
-src/Matterhorn/State/PostListOverlay.hs:91:      tId <- use csCurrentTeamId
-src/Matterhorn/State/ChannelListOverlay.hs:30:    myTId <- use csCurrentTeamId
-src/Matterhorn/State/ChannelSelect.hs:27:    tId <- use csCurrentTeamId
-src/Matterhorn/State/ChannelTopicWindow.hs:18:    tId <- use csCurrentTeamId
-src/Matterhorn/State/UrlSelect.hs:25:    tId <- use csCurrentTeamId
-src/Matterhorn/State/NotifyPrefs.hs:84:        tId <- use csCurrentTeamId
-src/Matterhorn/State/UserListOverlay.hs:39:    myTId <- use csCurrentTeamId
-src/Matterhorn/State/UserListOverlay.hs:58:    myTId <- use csCurrentTeamId
-src/Matterhorn/State/UserListOverlay.hs:70:    myTId <- use csCurrentTeamId
-src/Matterhorn/State/MessageSelect.hs:120:    tId <- use csCurrentTeamId
-src/Matterhorn/Command.hs:279:  tId      <- use csCurrentTeamId
+This should iterate over all connected teams rather than just writing the state for the current team:
 src/Matterhorn/LastRunState.hs:78:        tId = cs^.csCurrentTeamId
-src/Matterhorn/Types.hs:148:  , csCurrentTeamId
-src/Matterhorn/Types.hs:1956:csCurrentTeamId :: SimpleGetter ChatState TeamId
-src/Matterhorn/Types.hs:1957:csCurrentTeamId = csCurrentTeam.tsTeam.teamIdL
-src/Matterhorn/Types.hs:2076:                          cc^.ccInfo.cdTeamId == (Just $ st^.csCurrentTeamId)
-src/Matterhorn/Types.hs:2203:    let tId = st^.csCurrentTeamId
-src/Matterhorn/Events/ManageAttachments.hs:85:            tId <- use csCurrentTeamId
-src/Matterhorn/Draw/Main.hs:231:        tId = st^.csCurrentTeamId
-src/Matterhorn/Draw/Main.hs:594:    tId = st^.csCurrentTeamId
-src/Matterhorn/Draw/TabbedWindow.hs:31:        tId = cs^.csCurrentTeamId
-src/Matterhorn/Draw/ChannelList.hs:81:        tId = st^.csCurrentTeamId
-src/Matterhorn/Draw/ChannelTopicWindow.hs:47:        tId = st^.csCurrentTeamId
-src/Matterhorn/Events.hs:227:    myTId <- use csCurrentTeamId
