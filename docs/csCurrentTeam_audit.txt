@@ -94,24 +94,6 @@ src/Matterhorn/Types.hs:1956:csCurrentTeamId :: SimpleGetter ChatState TeamId
 src/Matterhorn/Types.hs:1957:csCurrentTeamId = csCurrentTeam.tsTeam.teamIdL
 src/Matterhorn/Types.hs:2076:                          cc^.ccInfo.cdTeamId == (Just $ st^.csCurrentTeamId)
 src/Matterhorn/Types.hs:2203:    let tId = st^.csCurrentTeamId
-src/Matterhorn/Windows/ViewMessage.hs:105:        tId = st^.csCurrentTeamId
-src/Matterhorn/Windows/ViewMessage.hs:131:        tId = st^.csCurrentTeamId
-src/Matterhorn/Windows/ViewMessage.hs:169:           tId <- use csCurrentTeamId
-src/Matterhorn/Windows/ViewMessage.hs:173:           tId <- use csCurrentTeamId
-src/Matterhorn/Windows/ViewMessage.hs:177:           tId <- use csCurrentTeamId
-src/Matterhorn/Windows/ViewMessage.hs:181:           tId <- use csCurrentTeamId
-src/Matterhorn/Windows/ViewMessage.hs:185:           tId <- use csCurrentTeamId
-src/Matterhorn/Windows/ViewMessage.hs:189:           tId <- use csCurrentTeamId
-src/Matterhorn/Windows/ViewMessage.hs:193:           tId <- use csCurrentTeamId
-src/Matterhorn/Windows/ViewMessage.hs:197:           tId <- use csCurrentTeamId
-src/Matterhorn/Windows/ViewMessage.hs:201:           tId <- use csCurrentTeamId
-src/Matterhorn/Windows/ViewMessage.hs:205:           tId <- use csCurrentTeamId
-src/Matterhorn/Windows/ViewMessage.hs:216:           tId <- use csCurrentTeamId
-src/Matterhorn/Windows/ViewMessage.hs:220:           tId <- use csCurrentTeamId
-src/Matterhorn/Windows/ViewMessage.hs:224:           tId <- use csCurrentTeamId
-src/Matterhorn/Windows/ViewMessage.hs:228:           tId <- use csCurrentTeamId
-src/Matterhorn/Windows/ViewMessage.hs:232:           tId <- use csCurrentTeamId
-src/Matterhorn/Windows/ViewMessage.hs:236:           tId <- use csCurrentTeamId
 src/Matterhorn/Events/ManageAttachments.hs:85:            tId <- use csCurrentTeamId
 src/Matterhorn/Draw/Main.hs:231:        tId = st^.csCurrentTeamId
 src/Matterhorn/Draw/Main.hs:594:    tId = st^.csCurrentTeamId
