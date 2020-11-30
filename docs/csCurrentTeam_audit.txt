@@ -23,36 +23,34 @@ src/Matterhorn/State/ChannelListOverlay.hs:32:    enterListOverlayMode (csCurren
 This lens needs to resolve to the team that was active at the time of the overlay mode switch, NOT csCurrentTeam:
 src/Matterhorn/State/UserListOverlay.hs:86:    enterListOverlayMode (csCurrentTeam.tsUserListOverlay) UserListOverlay scope enterHandler getUserSearchResults
 
-src/Matterhorn/Events/ChannelListOverlay.hs:21:    void . onEventListOverlay (csCurrentTeam.tsChannelListOverlay) channelListOverlayKeybindings
-src/Matterhorn/Events/ChannelListOverlay.hs:29:    [ mkKb CancelEvent "Close the channel search list" (exitListOverlay (csCurrentTeam.tsChannelListOverlay))
-src/Matterhorn/Events/ChannelListOverlay.hs:34:    , mkKb ActivateListItemEvent "Join the selected channel" (listOverlayActivateCurrent (csCurrentTeam.tsChannelListOverlay))
-
-src/Matterhorn/Events/EditNotifyPrefs.hs:28:            form <- use (csCurrentTeam.tsNotifyPrefs.singular _Just)
-src/Matterhorn/Events/EditNotifyPrefs.hs:30:            csCurrentTeam.tsNotifyPrefs .= Just updatedForm
-src/Matterhorn/Events/EditNotifyPrefs.hs:41:        let form = fromJust $ st^.csCurrentTeam.tsNotifyPrefs
-
-src/Matterhorn/Events/ThemeListOverlay.hs:16:    void . onEventListOverlay (csCurrentTeam.tsThemeListOverlay)
-src/Matterhorn/Events/ThemeListOverlay.hs:26:      (exitListOverlay (csCurrentTeam.tsThemeListOverlay))
-src/Matterhorn/Events/ThemeListOverlay.hs:36:      (listOverlayActivateCurrent (csCurrentTeam.tsThemeListOverlay))
-
-src/Matterhorn/Events/UserListOverlay.hs:16:    void . onEventListOverlay (csCurrentTeam.tsUserListOverlay) userListOverlayKeybindings
-src/Matterhorn/Events/UserListOverlay.hs:24:    [ mkKb CancelEvent "Close the user search list" (exitListOverlay (csCurrentTeam.tsUserListOverlay))
-src/Matterhorn/Events/UserListOverlay.hs:29:    , mkKb ActivateListItemEvent "Interact with the selected user" (listOverlayActivateCurrent (csCurrentTeam.tsUserListOverlay))
-
-src/Matterhorn/Events/ReactionEmojiListOverlay.hs:21:    void . onEventListOverlay (csCurrentTeam.tsReactionEmojiListOverlay)
-src/Matterhorn/Events/ReactionEmojiListOverlay.hs:31:      (exitListOverlay (csCurrentTeam.tsReactionEmojiListOverlay))
-src/Matterhorn/Events/ReactionEmojiListOverlay.hs:41:      (listOverlayActivateCurrent (csCurrentTeam.tsReactionEmojiListOverlay))
-
-src/Matterhorn/Events/ChannelSelect.hs:20:      handled <- handleKeyboardEvent (editingKeybindings (csCurrentTeam.tsChannelSelectState.channelSelectInput)) (const $ return ()) e
-src/Matterhorn/Events/ChannelSelect.hs:22:          mhHandleEventLensed (csCurrentTeam.tsChannelSelectState.channelSelectInput) handleEditorEvent e
-src/Matterhorn/Events/ChannelSelect.hs:33:             matches <- use (csCurrentTeam.tsChannelSelectState.channelSelectMatches)
-
+This lens needs to resolve to the team that was active at the time of the overlay mode switch, NOT csCurrentTeam:
 src/Matterhorn/State/ReactionEmojiListOverlay.hs:42:            enterListOverlayMode (csCurrentTeam.tsReactionEmojiListOverlay) ReactionEmojiListOverlay
-src/Matterhorn/State/ReactionEmojiListOverlay.hs:121:reactionEmojiListMove = listOverlayMove (csCurrentTeam.tsReactionEmojiListOverlay)
+
+src/Matterhorn/State/Flagging.hs:51:              csCurrentTeam.tsPostListOverlay.postListPosts %=
+src/Matterhorn/State/Flagging.hs:57:              selId <- use (csCurrentTeam.tsPostListOverlay.postListSelected)
+src/Matterhorn/State/Flagging.hs:58:              posts <- use (csCurrentTeam.tsPostListOverlay.postListPosts)
+src/Matterhorn/State/Flagging.hs:62:              csCurrentTeam.tsPostListOverlay.postListSelected .= nextId
+src/Matterhorn/State/Flagging.hs:63:              csCurrentTeam.tsPostListOverlay.postListPosts %=
+
+src/Matterhorn/Types.hs:143:  , csCurrentTeam
+src/Matterhorn/Types.hs:1932:    curMode <- use (csCurrentTeam.tsMode)
+src/Matterhorn/Types.hs:1937:    csCurrentTeam.tsMode .= m
+src/Matterhorn/Types.hs:1941:setMode' m = csCurrentTeam.tsMode .~ m
+src/Matterhorn/Types.hs:1954:csCurrentChannelId = csCurrentTeam.tsFocus.to Z.unsafeFocus.to channelListEntryChannelId
+src/Matterhorn/Types.hs:1957:csCurrentTeamId = csCurrentTeam.tsTeam.teamIdL
+src/Matterhorn/Types.hs:2108:    csCurrentTeam.tsEditState.cedAutocomplete .= Nothing
+src/Matterhorn/Types.hs:2109:    csCurrentTeam.tsEditState.cedAutocompletePending .= Nothing
+
+src/Matterhorn/Events/Main.hs:81:             isMultiline <- use (csCurrentTeam.tsEditState.cedEphemeral.eesMultiline)
+src/Matterhorn/Events/Main.hs:83:                 True -> mhHandleEventLensed (csCurrentTeam.tsEditState.cedEditor) handleEditorEvent
+src/Matterhorn/Events/Main.hs:92:             isMultiline <- use (csCurrentTeam.tsEditState.cedEphemeral.eesMultiline)
+src/Matterhorn/Events/Main.hs:94:                 True -> mhHandleEventLensed (csCurrentTeam.tsEditState.cedEditor) handleEditorEvent
+src/Matterhorn/Events/Main.hs:126:             isMultiline <- use (csCurrentTeam.tsEditState.cedEphemeral.eesMultiline)
 
 src/Matterhorn/Events/UrlSelect.hs:17:    mhHandleEventLensed (csCurrentTeam.tsUrlList) handleListEvent ev
 src/Matterhorn/Events/UrlSelect.hs:31:        mhHandleEventLensed (csCurrentTeam.tsUrlList) handleListEvent (Vty.EvKey Vty.KUp [])
 src/Matterhorn/Events/UrlSelect.hs:34:        mhHandleEventLensed (csCurrentTeam.tsUrlList) handleListEvent (Vty.EvKey Vty.KDown [])
+
 src/Matterhorn/State/Editing.hs:69:    csCurrentTeam.tsEditState.cedEphemeral.eesMultiline .= True
 src/Matterhorn/State/Editing.hs:74:    csCurrentTeam.tsEditState.cedEphemeral.eesMultiline %= not
 src/Matterhorn/State/Editing.hs:81:    multiline <- use (csCurrentTeam.tsEditState.cedEphemeral.eesMultiline)
@@ -196,27 +194,6 @@ src/Matterhorn/State/PostListOverlay.hs:119:  posts <- use (csCurrentTeam.tsPost
 src/Matterhorn/State/PostListOverlay.hs:125:      csCurrentTeam.tsPostListOverlay.postListSelected .= pId
 src/Matterhorn/State/PostListOverlay.hs:135:  msgId <- use (csCurrentTeam.tsPostListOverlay.postListSelected)
 src/Matterhorn/State/PostListOverlay.hs:145:  msgId <- use (csCurrentTeam.tsPostListOverlay.postListSelected)
-
-src/Matterhorn/State/Flagging.hs:51:              csCurrentTeam.tsPostListOverlay.postListPosts %=
-src/Matterhorn/State/Flagging.hs:57:              selId <- use (csCurrentTeam.tsPostListOverlay.postListSelected)
-src/Matterhorn/State/Flagging.hs:58:              posts <- use (csCurrentTeam.tsPostListOverlay.postListPosts)
-src/Matterhorn/State/Flagging.hs:62:              csCurrentTeam.tsPostListOverlay.postListSelected .= nextId
-src/Matterhorn/State/Flagging.hs:63:              csCurrentTeam.tsPostListOverlay.postListPosts %=
-
-src/Matterhorn/Types.hs:143:  , csCurrentTeam
-src/Matterhorn/Types.hs:1932:    curMode <- use (csCurrentTeam.tsMode)
-src/Matterhorn/Types.hs:1937:    csCurrentTeam.tsMode .= m
-src/Matterhorn/Types.hs:1941:setMode' m = csCurrentTeam.tsMode .~ m
-src/Matterhorn/Types.hs:1954:csCurrentChannelId = csCurrentTeam.tsFocus.to Z.unsafeFocus.to channelListEntryChannelId
-src/Matterhorn/Types.hs:1957:csCurrentTeamId = csCurrentTeam.tsTeam.teamIdL
-src/Matterhorn/Types.hs:2108:    csCurrentTeam.tsEditState.cedAutocomplete .= Nothing
-src/Matterhorn/Types.hs:2109:    csCurrentTeam.tsEditState.cedAutocompletePending .= Nothing
-
-src/Matterhorn/Events/Main.hs:81:             isMultiline <- use (csCurrentTeam.tsEditState.cedEphemeral.eesMultiline)
-src/Matterhorn/Events/Main.hs:83:                 True -> mhHandleEventLensed (csCurrentTeam.tsEditState.cedEditor) handleEditorEvent
-src/Matterhorn/Events/Main.hs:92:             isMultiline <- use (csCurrentTeam.tsEditState.cedEphemeral.eesMultiline)
-src/Matterhorn/Events/Main.hs:94:                 True -> mhHandleEventLensed (csCurrentTeam.tsEditState.cedEditor) handleEditorEvent
-src/Matterhorn/Events/Main.hs:126:             isMultiline <- use (csCurrentTeam.tsEditState.cedEphemeral.eesMultiline)
 
 src/Matterhorn/Events/ChannelTopicWindow.hs:21:    csCurrentTeam.tsChannelTopicDialog.channelTopicDialogFocus %= focusNext
 src/Matterhorn/Events/ChannelTopicWindow.hs:23:    csCurrentTeam.tsChannelTopicDialog.channelTopicDialogFocus %= focusPrev
