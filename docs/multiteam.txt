@@ -60,3 +60,7 @@ Multi-team support TODO list
    is not looking at the channel (i.e. set the New Messages line and do
    NOT update the view timestamp). This should basically be the same
    logic we already have for the "not the current channel" case.
+
+ * The last run state feature works by saving a last-run state for
+   a given team ID. Instead of loading the last run state for just the
+   current team, we'll want to load it for any active team.
