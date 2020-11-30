@@ -6,6 +6,8 @@ Multi-team support TODO list
 
    Progress recorded in: docs/csCurrentTeam_audit.txt
 
+ * Also audit for uses of csCurrentTeamId.
+
  * Get rid of 'appMode' lens from Types.hs to force all mode lookups to
    be explicit about which team's mode is needed
 

@@ -43,56 +43,24 @@ src/Matterhorn/State/Editing.hs:244:    csCurrentTeam.tsEditState.cedEditMode .=
 This lens needs to use the team ID effective when the spell check request was made:
 src/Matterhorn/State/Editing.hs:406:                        csCurrentTeam.tsEditState.cedMisspellings .= allMistakes
 
-src/Matterhorn/State/Autocomplete.hs:64:            prevResult <- use (csCurrentTeam.tsEditState.cedAutocomplete)
-src/Matterhorn/State/Autocomplete.hs:77:                csCurrentTeam.tsEditState.cedAutocompletePending .= Just searchString
-src/Matterhorn/State/Autocomplete.hs:83:    z <- use (csCurrentTeam.tsEditState.cedEditor.editContentsL)
-src/Matterhorn/State/Autocomplete.hs:170:    mCache <- preuse (csCurrentTeam.tsEditState.cedAutocomplete._Just.acCachedResponses)
-src/Matterhorn/State/Autocomplete.hs:171:    mActiveTy <- preuse (csCurrentTeam.tsEditState.cedAutocomplete._Just.acType)
-src/Matterhorn/State/Autocomplete.hs:311:    mCache <- preuse (csCurrentTeam.tsEditState.cedAutocomplete._Just.acCachedResponses)
-src/Matterhorn/State/Autocomplete.hs:312:    mActiveTy <- preuse (csCurrentTeam.tsEditState.cedAutocomplete._Just.acType)
-src/Matterhorn/State/Autocomplete.hs:338:    pending <- use (csCurrentTeam.tsEditState.cedAutocompletePending)
-src/Matterhorn/State/Autocomplete.hs:344:            csCurrentTeam.tsEditState.cedAutocomplete %= \prev ->
+The team ID argument here needs to be an argument to setCompletionAlternatives and should then be used throughout this function:
+src/Matterhorn/State/Autocomplete.hs:329:   tId <- use csCurrentTeamId
 
-src/Matterhorn/State/Channels.hs:113:    csCurrentTeam.tsFocus %= Z.updateList zl
-src/Matterhorn/State/Channels.hs:117:    newZ <- use (csCurrentTeam.tsFocus)
+This lens should resolve to the team owning the channel in question:
 src/Matterhorn/State/Channels.hs:157:               then use (csCurrentTeam.tsRecentChannel)
+
+This lens should resolve to the team owning the channel in question:
 src/Matterhorn/State/Channels.hs:435:    ch <- use (csCurrentTeam.tsPendingChannelChange)
-src/Matterhorn/State/Channels.hs:452:    ch <- use (csCurrentTeam.tsPendingChannelChange)
+
+These should resolve to the team owning the channel in question:
 src/Matterhorn/State/Channels.hs:499:            csCurrentTeam.tsPendingChannelChange .= Nothing
 src/Matterhorn/State/Channels.hs:512:                                csCurrentTeam.tsPendingChannelChange .=
 src/Matterhorn/State/Channels.hs:524:                                csCurrentTeam.tsPendingChannelChange .=
-src/Matterhorn/State/Channels.hs:540:    oldZipper <- use (csCurrentTeam.tsFocus)
-src/Matterhorn/State/Channels.hs:552:          csCurrentTeam.tsFocus .= newZipper
-src/Matterhorn/State/Channels.hs:576:        Just e -> csCurrentTeam.tsEditState.cedEphemeral .= e
-src/Matterhorn/State/Channels.hs:583:    inputHistoryPos <- use (csCurrentTeam.tsEditState.cedEphemeral.eesInputHistoryPosition)
-src/Matterhorn/State/Channels.hs:587:            (lastEdit, lastEditMode) <- use (csCurrentTeam.tsEditState.cedEphemeral.eesLastInput)
-src/Matterhorn/State/Channels.hs:588:            csCurrentTeam.tsEditState.cedEditor %= (applyEdit $ insertMany lastEdit . clearZipper)
-src/Matterhorn/State/Channels.hs:589:            csCurrentTeam.tsEditState.cedEditMode .= lastEditMode
-src/Matterhorn/State/Channels.hs:599:    csCurrentTeam.tsRecentChannel .= Just cId
-src/Matterhorn/State/Channels.hs:604:    csCurrentTeam.tsEditState.cedEditMode .= NewPost
-src/Matterhorn/State/Channels.hs:608:clearEditor = csCurrentTeam.tsEditState.cedEditor %= applyEdit clearZipper
-src/Matterhorn/State/Channels.hs:614:    oldEphemeral <- use (csCurrentTeam.tsEditState.cedEphemeral)
-src/Matterhorn/State/Channels.hs:620:    cmdLine <- use (csCurrentTeam.tsEditState.cedEditor)
-src/Matterhorn/State/Channels.hs:621:    mode <- use (csCurrentTeam.tsEditState.cedEditMode)
-src/Matterhorn/State/Channels.hs:625:    inputHistoryPos <- use (csCurrentTeam.tsEditState.cedEphemeral.eesInputHistoryPosition)
-src/Matterhorn/State/Channels.hs:628:        csCurrentTeam.tsEditState.cedEphemeral.eesLastInput .=
+
+These should resolve to the team owning the channel in question:
 src/Matterhorn/State/Channels.hs:731:            csCurrentTeam.tsFocus %= Z.filterZipper ((/= cId) . channelListEntryChannelId)
-src/Matterhorn/State/Channels.hs:751:  recent <- use (csCurrentTeam.tsRecentChannel)
-src/Matterhorn/State/Channels.hs:755:        ret <- use (csCurrentTeam.tsReturnChannel)
-src/Matterhorn/State/Channels.hs:761:  val <- use (csCurrentTeam.tsReturnChannel)
-src/Matterhorn/State/Channels.hs:767:          csCurrentTeam.tsReturnChannel .= Nothing
-src/Matterhorn/State/Channels.hs:771:  ret <- use (csCurrentTeam.tsReturnChannel)
-src/Matterhorn/State/Channels.hs:780:  ret <- use (csCurrentTeam.tsReturnChannel)
-src/Matterhorn/State/Channels.hs:785:        csCurrentTeam.tsReturnChannel .= Just cId
-src/Matterhorn/State/Channels.hs:903:                          csCurrentTeam.tsPendingChannelChange .=
-src/Matterhorn/State/Channels.hs:922:    inputHistoryPos <- use (csCurrentTeam.tsEditState.cedEphemeral.eesInputHistoryPosition)
-src/Matterhorn/State/Channels.hs:927:            csCurrentTeam.tsEditState.cedEphemeral.eesInputHistoryPosition .= Nothing
-src/Matterhorn/State/Channels.hs:932:            csCurrentTeam.tsEditState.cedEphemeral.eesInputHistoryPosition .= (Just newI)
-src/Matterhorn/State/Channels.hs:943:            csCurrentTeam.tsEditState.cedEditor.editContentsL .= (mv $ textZipper eLines Nothing)
-src/Matterhorn/State/Channels.hs:950:    inputHistoryPos <- use (csCurrentTeam.tsEditState.cedEphemeral.eesInputHistoryPosition)
-src/Matterhorn/State/Channels.hs:955:    csCurrentTeam.tsEditState.cedEphemeral.eesInputHistoryPosition .= (Just newI)
-src/Matterhorn/State/Channels.hs:1031:isRecentChannel st cId = st^.csCurrentTeam.tsRecentChannel == Just cId
-src/Matterhorn/State/Channels.hs:1034:isReturnChannel st cId = st^.csCurrentTeam.tsReturnChannel == Just cId
+
+These should resolve to the team owning the channel in question:
 src/Matterhorn/State/Channels.hs:1062:            csCurrentTeam.tsPendingChannelChange .= (Just $ ChangeByChannelId chanId act)
 src/Matterhorn/State/Channels.hs:1078:            csCurrentTeam.tsPendingChannelChange .= (Just $ ChangeByUserId $ user^.uiId)
 
