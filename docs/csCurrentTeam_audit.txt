@@ -14,17 +14,45 @@ src/Matterhorn/State/Messages.hs:415:                  csCurrentTeam.tsMessageSe
 Needs to use the team for the channel in which the jumped post is located:
 src/Matterhorn/State/Messages.hs:907:                      csCurrentTeam.tsMessageSelect .= MessageSelectState (msg^.mMessageId)
 
-src/Matterhorn/State/ChannelSelect.hs:28:    csCurrentTeam.tsChannelSelectState .= emptyChannelSelectState tId
-src/Matterhorn/State/ChannelSelect.hs:33:    zipper <- use (csCurrentTeam.tsFocus)
-src/Matterhorn/State/ChannelSelect.hs:35:    csCurrentTeam.tsChannelSelectState.channelSelectMatches %= Z.findRight isCurrentFocus
-src/Matterhorn/State/ChannelSelect.hs:49:    input <- use (csCurrentTeam.tsChannelSelectState.channelSelectInput)
-src/Matterhorn/State/ChannelSelect.hs:86:    csCurrentTeam.tsChannelSelectState.channelSelectMatches %=
-src/Matterhorn/State/ChannelSelect.hs:87:        (Z.updateListBy preserveFocus $ Z.toList $ Z.maybeMapZipper matches (st^.csCurrentTeam.tsFocus))
-src/Matterhorn/State/ChannelSelect.hs:157:    csCurrentTeam.tsChannelSelectState.channelSelectMatches %= nextItem
+Needs to use the team for the channel in which the script was run:
+src/Matterhorn/Scripts.hs:50:                mode <- use (csCurrentTeam.tsEditState.cedEditMode)
 
-src/Matterhorn/State/ThemeListOverlay.hs:34:    enterListOverlayMode (csCurrentTeam.tsThemeListOverlay)
-src/Matterhorn/State/ThemeListOverlay.hs:59:themeListMove = listOverlayMove (csCurrentTeam.tsThemeListOverlay)
+This lens needs to resolve to the team that was active at the time of the overlay mode switch, NOT csCurrentTeam:
+src/Matterhorn/State/ChannelListOverlay.hs:32:    enterListOverlayMode (csCurrentTeam.tsChannelListOverlay) ChannelListOverlay
 
+This lens needs to resolve to the team that was active at the time of the overlay mode switch, NOT csCurrentTeam:
+src/Matterhorn/State/UserListOverlay.hs:86:    enterListOverlayMode (csCurrentTeam.tsUserListOverlay) UserListOverlay scope enterHandler getUserSearchResults
+
+src/Matterhorn/Events/ChannelListOverlay.hs:21:    void . onEventListOverlay (csCurrentTeam.tsChannelListOverlay) channelListOverlayKeybindings
+src/Matterhorn/Events/ChannelListOverlay.hs:29:    [ mkKb CancelEvent "Close the channel search list" (exitListOverlay (csCurrentTeam.tsChannelListOverlay))
+src/Matterhorn/Events/ChannelListOverlay.hs:34:    , mkKb ActivateListItemEvent "Join the selected channel" (listOverlayActivateCurrent (csCurrentTeam.tsChannelListOverlay))
+
+src/Matterhorn/Events/EditNotifyPrefs.hs:28:            form <- use (csCurrentTeam.tsNotifyPrefs.singular _Just)
+src/Matterhorn/Events/EditNotifyPrefs.hs:30:            csCurrentTeam.tsNotifyPrefs .= Just updatedForm
+src/Matterhorn/Events/EditNotifyPrefs.hs:41:        let form = fromJust $ st^.csCurrentTeam.tsNotifyPrefs
+
+src/Matterhorn/Events/ThemeListOverlay.hs:16:    void . onEventListOverlay (csCurrentTeam.tsThemeListOverlay)
+src/Matterhorn/Events/ThemeListOverlay.hs:26:      (exitListOverlay (csCurrentTeam.tsThemeListOverlay))
+src/Matterhorn/Events/ThemeListOverlay.hs:36:      (listOverlayActivateCurrent (csCurrentTeam.tsThemeListOverlay))
+
+src/Matterhorn/Events/UserListOverlay.hs:16:    void . onEventListOverlay (csCurrentTeam.tsUserListOverlay) userListOverlayKeybindings
+src/Matterhorn/Events/UserListOverlay.hs:24:    [ mkKb CancelEvent "Close the user search list" (exitListOverlay (csCurrentTeam.tsUserListOverlay))
+src/Matterhorn/Events/UserListOverlay.hs:29:    , mkKb ActivateListItemEvent "Interact with the selected user" (listOverlayActivateCurrent (csCurrentTeam.tsUserListOverlay))
+
+src/Matterhorn/Events/ReactionEmojiListOverlay.hs:21:    void . onEventListOverlay (csCurrentTeam.tsReactionEmojiListOverlay)
+src/Matterhorn/Events/ReactionEmojiListOverlay.hs:31:      (exitListOverlay (csCurrentTeam.tsReactionEmojiListOverlay))
+src/Matterhorn/Events/ReactionEmojiListOverlay.hs:41:      (listOverlayActivateCurrent (csCurrentTeam.tsReactionEmojiListOverlay))
+
+src/Matterhorn/Events/ChannelSelect.hs:20:      handled <- handleKeyboardEvent (editingKeybindings (csCurrentTeam.tsChannelSelectState.channelSelectInput)) (const $ return ()) e
+src/Matterhorn/Events/ChannelSelect.hs:22:          mhHandleEventLensed (csCurrentTeam.tsChannelSelectState.channelSelectInput) handleEditorEvent e
+src/Matterhorn/Events/ChannelSelect.hs:33:             matches <- use (csCurrentTeam.tsChannelSelectState.channelSelectMatches)
+
+src/Matterhorn/State/ReactionEmojiListOverlay.hs:42:            enterListOverlayMode (csCurrentTeam.tsReactionEmojiListOverlay) ReactionEmojiListOverlay
+src/Matterhorn/State/ReactionEmojiListOverlay.hs:121:reactionEmojiListMove = listOverlayMove (csCurrentTeam.tsReactionEmojiListOverlay)
+
+src/Matterhorn/Events/UrlSelect.hs:17:    mhHandleEventLensed (csCurrentTeam.tsUrlList) handleListEvent ev
+src/Matterhorn/Events/UrlSelect.hs:31:        mhHandleEventLensed (csCurrentTeam.tsUrlList) handleListEvent (Vty.EvKey Vty.KUp [])
+src/Matterhorn/Events/UrlSelect.hs:34:        mhHandleEventLensed (csCurrentTeam.tsUrlList) handleListEvent (Vty.EvKey Vty.KDown [])
 src/Matterhorn/State/Editing.hs:69:    csCurrentTeam.tsEditState.cedEphemeral.eesMultiline .= True
 src/Matterhorn/State/Editing.hs:74:    csCurrentTeam.tsEditState.cedEphemeral.eesMultiline %= not
 src/Matterhorn/State/Editing.hs:81:    multiline <- use (csCurrentTeam.tsEditState.cedEphemeral.eesMultiline)
@@ -140,10 +168,6 @@ src/Matterhorn/State/Channels.hs:1034:isReturnChannel st cId = st^.csCurrentTeam
 src/Matterhorn/State/Channels.hs:1062:            csCurrentTeam.tsPendingChannelChange .= (Just $ ChangeByChannelId chanId act)
 src/Matterhorn/State/Channels.hs:1078:            csCurrentTeam.tsPendingChannelChange .= (Just $ ChangeByUserId $ user^.uiId)
 
-src/Matterhorn/State/Attachments.hs:37:    lst <- use (csCurrentTeam.tsEditState.cedAttachmentList)
-src/Matterhorn/State/Attachments.hs:46:    csCurrentTeam.tsEditState.cedAttachmentList .= L.list listName mempty 1
-src/Matterhorn/State/Attachments.hs:55:    csCurrentTeam.tsEditState.cedFileBrowser .= browser
-
 src/Matterhorn/State/MessageSelect.hs:59:        selMsgId <- selectMessageId $ st^.csCurrentTeam.tsMessageSelect
 src/Matterhorn/State/MessageSelect.hs:77:        csCurrentTeam.tsMessageSelect .= MessageSelectState (recentMsg >>= _mMessageId)
 src/Matterhorn/State/MessageSelect.hs:122:    csCurrentTeam.tsViewedMessage .= Just (m, w)
@@ -173,29 +197,11 @@ src/Matterhorn/State/PostListOverlay.hs:125:      csCurrentTeam.tsPostListOverla
 src/Matterhorn/State/PostListOverlay.hs:135:  msgId <- use (csCurrentTeam.tsPostListOverlay.postListSelected)
 src/Matterhorn/State/PostListOverlay.hs:145:  msgId <- use (csCurrentTeam.tsPostListOverlay.postListSelected)
 
-src/Matterhorn/Scripts.hs:50:                mode <- use (csCurrentTeam.tsEditState.cedEditMode)
-
-src/Matterhorn/State/UrlSelect.hs:27:    csCurrentTeam.tsUrlList .= (listMoveTo (length urls - 1) $ list (UrlList tId) urls 2)
-src/Matterhorn/State/UrlSelect.hs:34:    selected <- use (csCurrentTeam.tsUrlList.to listSelectedElement)
-
 src/Matterhorn/State/Flagging.hs:51:              csCurrentTeam.tsPostListOverlay.postListPosts %=
 src/Matterhorn/State/Flagging.hs:57:              selId <- use (csCurrentTeam.tsPostListOverlay.postListSelected)
 src/Matterhorn/State/Flagging.hs:58:              posts <- use (csCurrentTeam.tsPostListOverlay.postListPosts)
 src/Matterhorn/State/Flagging.hs:62:              csCurrentTeam.tsPostListOverlay.postListSelected .= nextId
 src/Matterhorn/State/Flagging.hs:63:              csCurrentTeam.tsPostListOverlay.postListPosts %=
-
-src/Matterhorn/State/ChannelListOverlay.hs:32:    enterListOverlayMode (csCurrentTeam.tsChannelListOverlay) ChannelListOverlay
-src/Matterhorn/State/ChannelListOverlay.hs:78:channelListMove = listOverlayMove (csCurrentTeam.tsChannelListOverlay)
-
-src/Matterhorn/State/UserListOverlay.hs:85:    csCurrentTeam.tsUserListOverlay.listOverlayRecordCount .= resultCount
-src/Matterhorn/State/UserListOverlay.hs:86:    enterListOverlayMode (csCurrentTeam.tsUserListOverlay) UserListOverlay scope enterHandler getUserSearchResults
-src/Matterhorn/State/UserListOverlay.hs:114:userListMove = listOverlayMove (csCurrentTeam.tsUserListOverlay)
-
-src/Matterhorn/State/ChannelTopicWindow.hs:19:    csCurrentTeam.tsChannelTopicDialog .= newChannelTopicDialog tId t
-
-src/Matterhorn/Windows/ViewMessage.hs:83:    let latestMessage = case cs^.csCurrentTeam.tsViewedMessage of
-
-src/Matterhorn/Command.hs:278:  em       <- use (csCurrentTeam.tsEditState.cedEditMode)
 
 src/Matterhorn/Types.hs:143:  , csCurrentTeam
 src/Matterhorn/Types.hs:1932:    curMode <- use (csCurrentTeam.tsMode)
@@ -206,42 +212,11 @@ src/Matterhorn/Types.hs:1957:csCurrentTeamId = csCurrentTeam.tsTeam.teamIdL
 src/Matterhorn/Types.hs:2108:    csCurrentTeam.tsEditState.cedAutocomplete .= Nothing
 src/Matterhorn/Types.hs:2109:    csCurrentTeam.tsEditState.cedAutocompletePending .= Nothing
 
-src/Matterhorn/Events/ChannelListOverlay.hs:21:    void . onEventListOverlay (csCurrentTeam.tsChannelListOverlay) channelListOverlayKeybindings
-src/Matterhorn/Events/ChannelListOverlay.hs:29:    [ mkKb CancelEvent "Close the channel search list" (exitListOverlay (csCurrentTeam.tsChannelListOverlay))
-src/Matterhorn/Events/ChannelListOverlay.hs:34:    , mkKb ActivateListItemEvent "Join the selected channel" (listOverlayActivateCurrent (csCurrentTeam.tsChannelListOverlay))
-
-src/Matterhorn/Events/EditNotifyPrefs.hs:28:            form <- use (csCurrentTeam.tsNotifyPrefs.singular _Just)
-src/Matterhorn/Events/EditNotifyPrefs.hs:30:            csCurrentTeam.tsNotifyPrefs .= Just updatedForm
-src/Matterhorn/Events/EditNotifyPrefs.hs:41:        let form = fromJust $ st^.csCurrentTeam.tsNotifyPrefs
-
-src/Matterhorn/Events/ThemeListOverlay.hs:16:    void . onEventListOverlay (csCurrentTeam.tsThemeListOverlay)
-src/Matterhorn/Events/ThemeListOverlay.hs:26:      (exitListOverlay (csCurrentTeam.tsThemeListOverlay))
-src/Matterhorn/Events/ThemeListOverlay.hs:36:      (listOverlayActivateCurrent (csCurrentTeam.tsThemeListOverlay))
-
-src/Matterhorn/Events/UserListOverlay.hs:16:    void . onEventListOverlay (csCurrentTeam.tsUserListOverlay) userListOverlayKeybindings
-src/Matterhorn/Events/UserListOverlay.hs:24:    [ mkKb CancelEvent "Close the user search list" (exitListOverlay (csCurrentTeam.tsUserListOverlay))
-src/Matterhorn/Events/UserListOverlay.hs:29:    , mkKb ActivateListItemEvent "Interact with the selected user" (listOverlayActivateCurrent (csCurrentTeam.tsUserListOverlay))
-
 src/Matterhorn/Events/Main.hs:81:             isMultiline <- use (csCurrentTeam.tsEditState.cedEphemeral.eesMultiline)
 src/Matterhorn/Events/Main.hs:83:                 True -> mhHandleEventLensed (csCurrentTeam.tsEditState.cedEditor) handleEditorEvent
 src/Matterhorn/Events/Main.hs:92:             isMultiline <- use (csCurrentTeam.tsEditState.cedEphemeral.eesMultiline)
 src/Matterhorn/Events/Main.hs:94:                 True -> mhHandleEventLensed (csCurrentTeam.tsEditState.cedEditor) handleEditorEvent
 src/Matterhorn/Events/Main.hs:126:             isMultiline <- use (csCurrentTeam.tsEditState.cedEphemeral.eesMultiline)
-
-src/Matterhorn/Events/ReactionEmojiListOverlay.hs:21:    void . onEventListOverlay (csCurrentTeam.tsReactionEmojiListOverlay)
-src/Matterhorn/Events/ReactionEmojiListOverlay.hs:31:      (exitListOverlay (csCurrentTeam.tsReactionEmojiListOverlay))
-src/Matterhorn/Events/ReactionEmojiListOverlay.hs:41:      (listOverlayActivateCurrent (csCurrentTeam.tsReactionEmojiListOverlay))
-
-src/Matterhorn/Draw/URLList.hs:39:        urls = st^.csCurrentTeam.tsUrlList
-
-src/Matterhorn/Draw/ThemeListOverlay.hs:26:    let overlay = drawListOverlay (st^.csCurrentTeam.tsThemeListOverlay)
-
-src/Matterhorn/Events/ChannelSelect.hs:20:      handled <- handleKeyboardEvent (editingKeybindings (csCurrentTeam.tsChannelSelectState.channelSelectInput)) (const $ return ()) e
-src/Matterhorn/Events/ChannelSelect.hs:22:          mhHandleEventLensed (csCurrentTeam.tsChannelSelectState.channelSelectInput) handleEditorEvent e
-src/Matterhorn/Events/ChannelSelect.hs:33:             matches <- use (csCurrentTeam.tsChannelSelectState.channelSelectMatches)
-
-src/Matterhorn/Draw/Autocomplete.hs:27:    case st^.csCurrentTeam.tsEditState.cedAutocomplete of
-src/Matterhorn/Draw/Autocomplete.hs:67:               editorOffset = if st^.csCurrentTeam.tsEditState.cedEphemeral.eesMultiline
 
 src/Matterhorn/Events/ChannelTopicWindow.hs:21:    csCurrentTeam.tsChannelTopicDialog.channelTopicDialogFocus %= focusNext
 src/Matterhorn/Events/ChannelTopicWindow.hs:23:    csCurrentTeam.tsChannelTopicDialog.channelTopicDialogFocus %= focusPrev
@@ -250,12 +225,6 @@ src/Matterhorn/Events/ChannelTopicWindow.hs:28:            ed <- use (csCurrentT
 src/Matterhorn/Events/ChannelTopicWindow.hs:33:            mhHandleEventLensed (csCurrentTeam.tsChannelTopicDialog.channelTopicDialogEditor)
 src/Matterhorn/Events/ChannelTopicWindow.hs:42:    f <- use (csCurrentTeam.tsChannelTopicDialog.channelTopicDialogFocus)
 src/Matterhorn/Events/ChannelTopicWindow.hs:45:            mhHandleEventLensed (csCurrentTeam.tsChannelTopicDialog.channelTopicDialogEditor)
-
-src/Matterhorn/State/ReactionEmojiListOverlay.hs:42:            enterListOverlayMode (csCurrentTeam.tsReactionEmojiListOverlay) ReactionEmojiListOverlay
-src/Matterhorn/State/ReactionEmojiListOverlay.hs:121:reactionEmojiListMove = listOverlayMove (csCurrentTeam.tsReactionEmojiListOverlay)
-
-src/Matterhorn/Draw/ShowHelp.hs:446:    , ("Text Editing", editingKeyHandlers (csCurrentTeam.tsEditState.cedEditor))
-src/Matterhorn/Draw/ShowHelp.hs:453:    , ("Message Viewer: Common", tabbedWindowKeyHandlers (csCurrentTeam.tsViewedMessage.singular _Just._2))
 
 src/Matterhorn/Events/ManageAttachments.hs:42:        mhHandleEventLensed (csCurrentTeam.tsEditState.cedAttachmentList) L.handleListEvent
 src/Matterhorn/Events/ManageAttachments.hs:52:          mhHandleEventLensed (csCurrentTeam.tsEditState.cedAttachmentList) L.handleListEvent (V.EvKey V.KUp [])
@@ -273,44 +242,3 @@ src/Matterhorn/Events/ManageAttachments.hs:166:    mSel <- use (csCurrentTeam.ts
 src/Matterhorn/Events/ManageAttachments.hs:171:            oldIdx <- use (csCurrentTeam.tsEditState.cedAttachmentList.L.listSelectedL)
 src/Matterhorn/Events/ManageAttachments.hs:179:            csCurrentTeam.tsEditState.cedAttachmentList %= L.listReplace (deleteAt pos es) idx
 
-src/Matterhorn/Events/UrlSelect.hs:17:    mhHandleEventLensed (csCurrentTeam.tsUrlList) handleListEvent ev
-src/Matterhorn/Events/UrlSelect.hs:31:        mhHandleEventLensed (csCurrentTeam.tsUrlList) handleListEvent (Vty.EvKey Vty.KUp [])
-src/Matterhorn/Events/UrlSelect.hs:34:        mhHandleEventLensed (csCurrentTeam.tsUrlList) handleListEvent (Vty.EvKey Vty.KDown [])
-
-src/Matterhorn/Draw/Main.hs:96:    in case st^.csCurrentTeam.tsEditState.cedSpellChecker of
-src/Matterhorn/Draw/Main.hs:99:            case S.null (st^.csCurrentTeam.tsEditState.cedMisspellings) of
-src/Matterhorn/Draw/Main.hs:103:                           (st^.csCurrentTeam.tsEditState.cedMisspellings)
-src/Matterhorn/Draw/Main.hs:227:    let prompt = txt $ case st^.csCurrentTeam.tsEditState.cedEditMode of
-src/Matterhorn/Draw/Main.hs:232:        inputBox = renderEditor (drawEditorContents st hs) True (st^.csCurrentTeam.tsEditState.cedEditor)
-src/Matterhorn/Draw/Main.hs:233:        curContents = getEditContents $ st^.csCurrentTeam.tsEditState.cedEditor
-src/Matterhorn/Draw/Main.hs:238:                                        st^.csCurrentTeam.tsEditState.cedEditor.editContentsL) <>
-src/Matterhorn/Draw/Main.hs:245:        replyDisplay = case st^.csCurrentTeam.tsEditState.cedEditMode of
-src/Matterhorn/Draw/Main.hs:270:        commandBox = case st^.csCurrentTeam.tsEditState.cedEphemeral.eesMultiline of
-src/Matterhorn/Draw/Main.hs:393:            renderMessagesWithSelect (st^.csCurrentTeam.tsMessageSelect) channelMessages
-src/Matterhorn/Draw/Main.hs:395:            renderMessagesWithSelect (st^.csCurrentTeam.tsMessageSelect) channelMessages
-src/Matterhorn/Draw/Main.hs:460:    let e = st^.csCurrentTeam.tsChannelSelectState.channelSelectInput
-src/Matterhorn/Draw/Main.hs:605:                  st^.csCurrentTeam.tsEditState.cedEditor.editContentsL
-src/Matterhorn/Draw/Main.hs:607:    overrideTy = case st^.csCurrentTeam.tsEditState.cedEditMode of
-src/Matterhorn/Draw/Main.hs:686:        let count = length $ listElements $ st^.csCurrentTeam.tsEditState.cedAttachmentList
-
-src/Matterhorn/Draw/NotifyPrefs.hs:22:    let Just form = st^.csCurrentTeam.tsNotifyPrefs
-
-src/Matterhorn/Draw/PostListOverlay.hs:57:                     (filterMessages knownChannel $ st^.csCurrentTeam.tsPostListOverlay.postListPosts)
-src/Matterhorn/Draw/PostListOverlay.hs:103:              matchesMessage (m, _) = m^.mMessageId == (MessagePostId <$> st^.csCurrentTeam.tsPostListOverlay.postListSelected)
-
-src/Matterhorn/Draw/ReactionEmojiListOverlay.hs:20:    let overlay = drawListOverlay (st^.csCurrentTeam.tsReactionEmojiListOverlay)
-
-src/Matterhorn/Draw/ChannelListOverlay.hs:24:    let overlay = drawListOverlay (st^.csCurrentTeam.tsChannelListOverlay) channelSearchScopeHeader
-
-src/Matterhorn/Draw/ChannelList.hs:69:        teamNameStr = sanitizeUserText $ MM.teamDisplayName $ st^.csCurrentTeam.tsTeam
-src/Matterhorn/Draw/ChannelList.hs:73:        unreadCount = sum $ (channelListGroupUnread . fst) <$> Z.toList (st^.csCurrentTeam.tsFocus)
-src/Matterhorn/Draw/ChannelList.hs:84:                let zipper = st^.csCurrentTeam.tsChannelSelectState.channelSelectMatches
-src/Matterhorn/Draw/ChannelList.hs:97:                (renderChannelListGroup st renderEntry <$> Z.toList (st^.csCurrentTeam.tsFocus))
-
-src/Matterhorn/Draw/ManageAttachments.hs:42:       vBox [ renderList renderAttachmentItem True (st^.csCurrentTeam.tsEditState.cedAttachmentList)
-src/Matterhorn/Draw/ManageAttachments.hs:64:    FB.renderFileBrowser True $ fromJust (st^.csCurrentTeam.tsEditState.cedFileBrowser)
-
-src/Matterhorn/Draw/UserListOverlay.hs:25:    let overlay = drawListOverlay (st^.csCurrentTeam.tsUserListOverlay) userSearchScopeHeader
-
-src/Matterhorn/Draw/ChannelTopicWindow.hs:51:        foc = st^.csCurrentTeam.tsChannelTopicDialog.channelTopicDialogFocus
-src/Matterhorn/Draw/ChannelTopicWindow.hs:52:        ed = st^.csCurrentTeam.tsChannelTopicDialog.channelTopicDialogEditor
