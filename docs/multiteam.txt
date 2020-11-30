@@ -25,7 +25,7 @@ Multi-team support TODO list
 
  * Need to figure out how much team information to load on startup,
    and/or whether we already are (but are ignoring it; are we already
-   areceiving ll channels for all teams we're in?).
+   receiving all channels for all teams we're in?).
 
  * On startup, make a TeamState for each team. Track which team is the
    "current" one. We will likely need to care about the ordering
