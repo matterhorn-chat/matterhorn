@@ -66,28 +66,21 @@ src/Matterhorn/State/Channels.hs:1078:            csCurrentTeam.tsPendingChannel
 
 csCurrentTeamId:
 
-src/Matterhorn/App.hs:42:      ChannelTopicWindow            -> let tId = s^.csCurrentTeamId
-src/Matterhorn/State/Common.hs:126:  tId <- use csCurrentTeamId
-src/Matterhorn/State/Autocomplete.hs:168:    myTid <- use csCurrentTeamId
-src/Matterhorn/State/Autocomplete.hs:255:    myTid <- use csCurrentTeamId
-src/Matterhorn/State/Autocomplete.hs:281:    tId <- use csCurrentTeamId
-src/Matterhorn/State/Autocomplete.hs:329:    tId <- use csCurrentTeamId
+This team ID should be an argument to refreshChannelsAndUsers:
+src/Matterhorn/State/Channels.hs:265:    myTId <- use csCurrentTeamId
+
+This team ID should be the one that owns the channel provided to refreshChannel:
+src/Matterhorn/State/Channels.hs:310:    myTId <- use csCurrentTeamId
+
+This team ID should be the one that owns the channel provided to updateChannelNotifyProps:
+src/Matterhorn/State/Channels.hs:1141:    tId <- use csCurrentTeamId
+
 src/Matterhorn/State/Attachments.hs:44:    tId <- use csCurrentTeamId
 src/Matterhorn/State/Attachments.hs:52:    tId <- use csCurrentTeamId
 src/Matterhorn/State/PostListOverlay.hs:91:      tId <- use csCurrentTeamId
 src/Matterhorn/State/ChannelListOverlay.hs:30:    myTId <- use csCurrentTeamId
 src/Matterhorn/State/ChannelSelect.hs:27:    tId <- use csCurrentTeamId
 src/Matterhorn/State/ChannelTopicWindow.hs:18:    tId <- use csCurrentTeamId
-src/Matterhorn/State/Channels.hs:97:    tId <- use csCurrentTeamId
-src/Matterhorn/State/Channels.hs:265:    myTId <- use csCurrentTeamId
-src/Matterhorn/State/Channels.hs:310:    myTId <- use csCurrentTeamId
-src/Matterhorn/State/Channels.hs:539:    tId <- use csCurrentTeamId
-src/Matterhorn/State/Channels.hs:593:    tId <- use csCurrentTeamId
-src/Matterhorn/State/Channels.hs:765:          tId <- use csCurrentTeamId
-src/Matterhorn/State/Channels.hs:784:        tId <- use csCurrentTeamId
-src/Matterhorn/State/Channels.hs:960:    myTId <- use csCurrentTeamId
-src/Matterhorn/State/Channels.hs:1039:    tId <- use csCurrentTeamId
-src/Matterhorn/State/Channels.hs:1141:    tId <- use csCurrentTeamId
 src/Matterhorn/State/UrlSelect.hs:25:    tId <- use csCurrentTeamId
 src/Matterhorn/State/NotifyPrefs.hs:84:        tId <- use csCurrentTeamId
 src/Matterhorn/State/UserListOverlay.hs:39:    myTId <- use csCurrentTeamId
