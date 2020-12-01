@@ -3,9 +3,6 @@ This one will just need to iterate over all teams to stop all Aspell
 instances once we start one for each team:
 src/Matterhorn/App.hs:91:    case finalSt^.csCurrentTeam.tsEditState.cedSpellChecker of
 
-Needs to use the team for the channel in which the script was run:
-src/Matterhorn/Scripts.hs:50:                mode <- use (csCurrentTeam.tsEditState.cedEditMode)
-
 This lens needs to resolve to the team that was active at the time of the overlay mode switch, NOT csCurrentTeam:
 src/Matterhorn/State/ChannelListOverlay.hs:32:    enterListOverlayMode (csCurrentTeam.tsChannelListOverlay) ChannelListOverlay
 
