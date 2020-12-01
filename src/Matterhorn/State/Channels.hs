@@ -90,11 +90,17 @@ import           Matterhorn.Zipper ( Zipper )
 import qualified Matterhorn.Zipper as Z
 
 
-updateSidebar :: MH ()
-updateSidebar = do
+updateSidebar :: Maybe TeamId -> MH ()
+updateSidebar Nothing = do
+    -- TODO: iterate over all our teams once we have more than one.
+    updateTeamSidebar =<< use csCurrentTeamId
+updateSidebar (Just tId) =
+    updateTeamSidebar tId
+
+updateTeamSidebar :: TeamId -> MH ()
+updateTeamSidebar tId = do
     -- Invalidate the cached sidebar rendering since we are about to
     -- change the underlying state
-    tId <- use csCurrentTeamId
     mh $ invalidateCacheEntry $ ChannelSidebar tId
 
     -- Get the currently-focused channel ID so we can compare after the
@@ -289,7 +295,7 @@ refreshChannelsAndUsers = do
           handleNewUsers (Seq.fromList uIdsToFetch) $ do
               -- Then refresh all loaded channels
               forM_ chansWithData $ uncurry (refreshChannel SidebarUpdateDeferred)
-              updateSidebar
+              updateSidebar $ Just myTId
 
 -- | Refresh information about a specific channel.  The channel
 -- metadata is refreshed, and if this is a loaded channel, the
@@ -403,7 +409,7 @@ handleNewChannel_ permitPostpone switch sbUpdate nc member = do
                     -- switch to this channel when doing a sidebar
                     -- update, since that's the only case where it's
                     -- possible to do so.
-                    updateSidebar
+                    updateSidebar (cChannel^.ccInfo.cdTeamId)
 
                     -- Finally, set our focus to the newly created
                     -- channel if the caller requested a change of
@@ -462,7 +468,8 @@ updateChannelInfo :: ChannelId -> Channel -> ChannelMember -> MH ()
 updateChannelInfo cid new member = do
     mh $ invalidateCacheEntry $ ChannelMessages cid
     csChannel(cid).ccInfo %= channelInfoFromChannelWithData new member
-    updateSidebar
+    withChannel cid $ \chan ->
+        updateSidebar (chan^.ccInfo.cdTeamId)
 
 setFocus :: ChannelId -> MH ()
 setFocus cId = do
@@ -500,7 +507,7 @@ showChannelInSidebar cId setPending = do
 
             now <- liftIO getCurrentTime
             csChannel(cId).ccInfo.cdSidebarShowOverride .= Just now
-            updateSidebar
+            updateSidebar (ch^.ccInfo.cdTeamId)
 
             case ch^.ccInfo.cdType of
                 Direct -> do
@@ -667,7 +674,7 @@ applyPreferenceChange pref = do
           updateMessageFlag (flaggedPostId f) (flaggedPostStatus f)
 
       | Just d <- preferenceToDirectChannelShowStatus pref -> do
-          updateSidebar
+          updateSidebar Nothing
 
           cs <- use csChannels
 
@@ -688,7 +695,7 @@ applyPreferenceChange pref = do
                   csChannel(cId).ccInfo.cdSidebarShowOverride .= Nothing
 
       | Just g <- preferenceToGroupChannelPreference pref -> do
-          updateSidebar
+          updateSidebar Nothing
 
           -- We need to check on whether this preference was to show a
           -- channel and, if so, whether it was the one we attempted to
@@ -729,7 +736,8 @@ removeChannelFromState cId = do
             csChannels                          %= removeChannel cId
             -- Remove from focus zipper
             csCurrentTeam.tsFocus %= Z.filterZipper ((/= cId) . channelListEntryChannelId)
-            updateSidebar
+
+            updateSidebar $ chan^.ccInfo.cdTeamId
 
 nextChannel :: MH ()
 nextChannel = do

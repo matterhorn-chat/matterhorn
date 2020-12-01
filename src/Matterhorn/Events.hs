@@ -333,9 +333,11 @@ handleWSEvent we = do
         WMChannelUpdated
             | Just cId <- webChannelId $ weBroadcast we -> do
                 mChan <- preuse (csChannel(cId))
-                when (isJust mChan) $ do
-                    refreshChannelById cId
-                    updateSidebar
+                case mChan of
+                    Just chan -> do
+                        refreshChannelById cId
+                        updateSidebar (chan^.ccInfo.cdTeamId)
+                    Nothing -> return ()
             | otherwise -> return ()
 
         WMGroupAdded
@@ -384,4 +386,4 @@ refreshClientConfig = do
         cfg <- MM.mmGetClientConfiguration (Just "old") session
         return $ Just $ do
             csClientConfig .= Just cfg
-            updateSidebar
+            updateSidebar Nothing
