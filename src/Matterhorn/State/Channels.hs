@@ -92,8 +92,8 @@ import qualified Matterhorn.Zipper as Z
 
 updateSidebar :: Maybe TeamId -> MH ()
 updateSidebar Nothing = do
-    -- TODO: iterate over all our teams once we have more than one.
-    updateTeamSidebar =<< use csCurrentTeamId
+    ts <- use csTeams
+    forM_ (HM.keys ts) updateTeamSidebar
 updateSidebar (Just tId) =
     updateTeamSidebar tId
 

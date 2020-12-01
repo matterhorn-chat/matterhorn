@@ -142,6 +142,7 @@ module Matterhorn.Types
   , ChatState
   , newState
   , csCurrentTeam
+  , csTeams
   , csTeam
   , csChannelListOrientation
   , csResources
