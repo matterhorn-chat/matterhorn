@@ -3,23 +3,6 @@ This one will just need to iterate over all teams to stop all Aspell
 instances once we start one for each team:
 src/Matterhorn/App.hs:91:    case finalSt^.csCurrentTeam.tsEditState.cedSpellChecker of
 
-All of these uses need to resolve to the team that was active at the time of the overlay mode switch, NOT csCurrentTeam:
-src/Matterhorn/State/Flagging.hs:51:              csCurrentTeam.tsPostListOverlay.postListPosts %=
-src/Matterhorn/State/Flagging.hs:57:              selId <- use (csCurrentTeam.tsPostListOverlay.postListSelected)
-src/Matterhorn/State/Flagging.hs:58:              posts <- use (csCurrentTeam.tsPostListOverlay.postListPosts)
-src/Matterhorn/State/Flagging.hs:62:              csCurrentTeam.tsPostListOverlay.postListSelected .= nextId
-src/Matterhorn/State/Flagging.hs:63:              csCurrentTeam.tsPostListOverlay.postListPosts %=
-
-These lenses need to resolve to the team based on the cId argument to handleInputSubmission:
-src/Matterhorn/State/Editing.hs:224:    csCurrentTeam.tsEditState.cedEditor %= applyEdit Z.clearZipper
-src/Matterhorn/State/Editing.hs:225:    csCurrentTeam.tsEditState.cedEphemeral.eesInputHistoryPosition .= Nothing
-src/Matterhorn/State/Editing.hs:232:          attachments <- use (csCurrentTeam.tsEditState.cedAttachmentList.L.listElementsL)
-src/Matterhorn/State/Editing.hs:233:          mode <- use (csCurrentTeam.tsEditState.cedEditMode)
-src/Matterhorn/State/Editing.hs:244:    csCurrentTeam.tsEditState.cedEditMode .= NewPost
-
-This lens needs to use the team ID effective when the spell check request was made:
-src/Matterhorn/State/Editing.hs:406:                        csCurrentTeam.tsEditState.cedMisspellings .= allMistakes
-
 The team ID argument here needs to be an argument to setCompletionAlternatives and should then be used throughout this function:
 src/Matterhorn/State/Autocomplete.hs:329:   tId <- use csCurrentTeamId
 

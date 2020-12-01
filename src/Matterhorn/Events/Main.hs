@@ -133,7 +133,7 @@ mainKeyHandlers =
                      tId <- use csCurrentTeamId
                      cId <- use (csCurrentChannelId tId)
                      content <- getEditorContent
-                     handleInputSubmission cId content
+                     handleInputSubmission tId cId content
 
     , mkKb EnterOpenURLModeEvent "Select and open a URL posted to the current channel"
            startUrlSelect
