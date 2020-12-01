@@ -4,9 +4,6 @@ instances once we start one for each team:
 src/Matterhorn/App.hs:91:    case finalSt^.csCurrentTeam.tsEditState.cedSpellChecker of
 
 This lens should resolve to the team owning the channel in question:
-src/Matterhorn/State/Channels.hs:157:               then use (csCurrentTeam.tsRecentChannel)
-
-This lens should resolve to the team owning the channel in question:
 src/Matterhorn/State/Channels.hs:435:    ch <- use (csCurrentTeam.tsPendingChannelChange)
 
 These should resolve to the team owning the channel in question:

@@ -158,14 +158,18 @@ updateViewed updatePrev = do
 updateViewedChan :: Bool -> ChannelId -> MH ()
 updateViewedChan updatePrev cId = use csConnectionStatus >>= \case
     Connected -> do
-        -- Only do this if we're connected to avoid triggering noisy
-        -- exceptions.
-        pId <- if updatePrev
-               then use (csCurrentTeam.tsRecentChannel)
-               else return Nothing
-        doAsyncChannelMM Preempt cId
-          (\s c -> MM.mmViewChannel UserMe c pId s)
-          (\c () -> Just $ setLastViewedFor pId c)
+        withChannel cId $ \chan -> do
+            -- Only do this if we're connected to avoid triggering noisy
+            -- exceptions.
+            pId <- if updatePrev
+                   then do
+                       case chan^.ccInfo.cdTeamId of
+                           Just tId -> use (csTeam(tId).tsRecentChannel)
+                           Nothing -> return Nothing
+                   else return Nothing
+            doAsyncChannelMM Preempt cId
+              (\s c -> MM.mmViewChannel UserMe c pId s)
+              (\c () -> Just $ setLastViewedFor pId c)
     Disconnected ->
         -- Cannot update server; make no local updates to avoid getting
         -- out of sync with the server. Assumes that this is a temporary
