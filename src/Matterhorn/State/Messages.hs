@@ -344,8 +344,7 @@ addObtainedMessages cId reqCnt addTrailingGap posts =
 
           -- Determine if the current selected message was one of the
           -- removed messages.
-
-          selMsgId <- use (csCurrentTeam.tsMessageSelect.to selectMessageId)
+          selMsgId <- use (csTeam(tId).tsMessageSelect.to selectMessageId)
           let rmvdSel = do
                 i <- selMsgId -- :: Maybe MessageId
                 findMessage i removedMessages
@@ -368,7 +367,7 @@ addObtainedMessages cId reqCnt addTrailingGap posts =
                 -- actions on a message that isn't the one they just
                 -- selected.
                 setMode Main
-                csCurrentTeam.tsMessageSelect .= MessageSelectState Nothing
+                csTeam(tId).tsMessageSelect .= MessageSelectState Nothing
 
           -- Add a gap at each end of the newly fetched data, unless:
           --   1. there is an overlap
@@ -383,7 +382,7 @@ addObtainedMessages cId reqCnt addTrailingGap posts =
               -- select to first (earliest) message)
               case rmvdSelType of
                 Just (C UnknownGapBefore) ->
-                  csCurrentTeam.tsMessageSelect .= MessageSelectState (pure $ MessagePostId earliestPId)
+                  csTeam(tId).tsMessageSelect .= MessageSelectState (pure $ MessagePostId earliestPId)
                 _ -> return ()
             else do
               -- add a gap at the start of the newly fetched block and
@@ -395,7 +394,7 @@ addObtainedMessages cId reqCnt addTrailingGap posts =
               -- Move selection from old gap to new gap
               case rmvdSelType of
                 Just (C UnknownGapBefore) -> do
-                  csCurrentTeam.tsMessageSelect .= MessageSelectState (gapMsg^.mMessageId)
+                  csTeam(tId).tsMessageSelect .= MessageSelectState (gapMsg^.mMessageId)
                 _ -> return ()
 
           if reAddGapAfter
@@ -404,7 +403,7 @@ addObtainedMessages cId reqCnt addTrailingGap posts =
               -- select to last (latest) message.
               case rmvdSelType of
                 Just (C UnknownGapAfter) ->
-                  csCurrentTeam.tsMessageSelect .= MessageSelectState (pure $ MessagePostId latestPId)
+                  csTeam(tId).tsMessageSelect .= MessageSelectState (pure $ MessagePostId latestPId)
                 _ -> return ()
             else do
               -- add a gap at the end of the newly fetched block and
@@ -416,7 +415,7 @@ addObtainedMessages cId reqCnt addTrailingGap posts =
               -- Move selection from old gap to new gap
               case rmvdSelType of
                 Just (C UnknownGapAfter) ->
-                  csCurrentTeam.tsMessageSelect .= MessageSelectState (gapMsg^.mMessageId)
+                  csTeam(tId).tsMessageSelect .= MessageSelectState (gapMsg^.mMessageId)
                 _ -> return ()
 
         -- Now initiate fetches for use information for any
@@ -909,10 +908,11 @@ jumpToPost pId = do
               case findChannelById cId (st^.csChannels) of
                   Nothing ->
                       joinChannel' cId (Just $ jumpToPost pId)
-                  Just _ -> do
+                  Just chan -> do
+                      let Just tId = chan^.ccInfo.cdTeamId
                       setFocus cId
                       setMode MessageSelect
-                      csCurrentTeam.tsMessageSelect .= MessageSelectState (msg^.mMessageId)
+                      csTeam(tId).tsMessageSelect .= MessageSelectState (msg^.mMessageId)
           Nothing ->
             error "INTERNAL: selected Post ID not associated with a channel"
       Nothing -> do

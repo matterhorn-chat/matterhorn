@@ -3,17 +3,6 @@ This one will just need to iterate over all teams to stop all Aspell
 instances once we start one for each team:
 src/Matterhorn/App.hs:91:    case finalSt^.csCurrentTeam.tsEditState.cedSpellChecker of
 
-Needs to use the team that the channel cId belongs to:
-src/Matterhorn/State/Messages.hs:344:          selMsgId <- use (csCurrentTeam.tsMessageSelect.to selectMessageId)
-src/Matterhorn/State/Messages.hs:367:                csCurrentTeam.tsMessageSelect .= MessageSelectState Nothing
-src/Matterhorn/State/Messages.hs:382:                  csCurrentTeam.tsMessageSelect .= MessageSelectState (pure $ MessagePostId earliestPId)
-src/Matterhorn/State/Messages.hs:394:                  csCurrentTeam.tsMessageSelect .= MessageSelectState (gapMsg^.mMessageId)
-src/Matterhorn/State/Messages.hs:403:                  csCurrentTeam.tsMessageSelect .= MessageSelectState (pure $ MessagePostId latestPId)
-src/Matterhorn/State/Messages.hs:415:                  csCurrentTeam.tsMessageSelect .= MessageSelectState (gapMsg^.mMessageId)
-
-Needs to use the team for the channel in which the jumped post is located:
-src/Matterhorn/State/Messages.hs:907:                      csCurrentTeam.tsMessageSelect .= MessageSelectState (msg^.mMessageId)
-
 Needs to use the team for the channel in which the script was run:
 src/Matterhorn/Scripts.hs:50:                mode <- use (csCurrentTeam.tsEditState.cedEditMode)
 
