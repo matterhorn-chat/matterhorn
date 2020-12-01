@@ -4,6 +4,12 @@ Multi-team support TODO list
  * Work through audit results to address issues found
    (docs/csCurrentTeam_audit.txt)
 
+ * Finish the implementation of updateSidebar.
+
+ * State.Channels.refreshChannelsAndUsers only gets channels for one
+   team, but also refreshes user data. We need to break that up so we
+   can refresh channels for a specific team separately from users.
+
  * Get rid of 'appMode' lens from Types.hs to force all mode lookups to
    be explicit about which team's mode is needed (but don't do this
    until we have a lens to get the state for a specific team by ID)
