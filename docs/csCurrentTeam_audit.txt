@@ -4,9 +4,6 @@ instances once we start one for each team:
 src/Matterhorn/App.hs:91:    case finalSt^.csCurrentTeam.tsEditState.cedSpellChecker of
 
 This lens needs to resolve to the team that was active at the time of the overlay mode switch, NOT csCurrentTeam:
-src/Matterhorn/State/ChannelListOverlay.hs:32:    enterListOverlayMode (csCurrentTeam.tsChannelListOverlay) ChannelListOverlay
-
-This lens needs to resolve to the team that was active at the time of the overlay mode switch, NOT csCurrentTeam:
 src/Matterhorn/State/UserListOverlay.hs:86:    enterListOverlayMode (csCurrentTeam.tsUserListOverlay) UserListOverlay scope enterHandler getUserSearchResults
 
 This lens needs to resolve to the team that was active at the time of the overlay mode switch, NOT csCurrentTeam:

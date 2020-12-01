@@ -29,7 +29,7 @@ enterChannelListOverlayMode :: MH ()
 enterChannelListOverlayMode = do
     myTId <- use csCurrentTeamId
     myChannels <- use (csChannels.to (filteredChannelIds (const True)))
-    enterListOverlayMode (csCurrentTeam.tsChannelListOverlay) ChannelListOverlay
+    enterListOverlayMode (csTeam(myTId).tsChannelListOverlay) ChannelListOverlay
         AllChannels enterHandler (fetchResults myTId myChannels)
 
 enterHandler :: Channel -> MH Bool
