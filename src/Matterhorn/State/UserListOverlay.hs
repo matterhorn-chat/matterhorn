@@ -34,9 +34,9 @@ import           Matterhorn.Types
 -- current channel.
 enterChannelMembersUserList :: MH ()
 enterChannelMembersUserList = do
-    cId <- use csCurrentChannelId
-    myId <- gets myUserId
     myTId <- use csCurrentTeamId
+    cId <- use (csCurrentChannelId myTId)
+    myId <- gets myUserId
     session <- getSession
 
     doAsyncWith Preempt $ do
@@ -53,9 +53,9 @@ enterChannelMembersUserList = do
 -- channel.
 enterChannelInviteUserList :: MH ()
 enterChannelInviteUserList = do
-    cId <- use csCurrentChannelId
-    myId <- gets myUserId
     myTId <- use csCurrentTeamId
+    cId <- use (csCurrentChannelId myTId)
+    myId <- gets myUserId
     enterUserListMode (ChannelNonMembers cId myTId) Nothing
       (\u -> case u^.uiId /= myId of
         True -> addUserToCurrentChannel u >> return True

@@ -130,15 +130,17 @@ mainKeyHandlers =
                  -- newline instead.
                  True -> handleEditingInput (Vty.EvKey Vty.KEnter [])
                  False -> do
-                     cId <- use csCurrentChannelId
+                     tId <- use csCurrentTeamId
+                     cId <- use (csCurrentChannelId tId)
                      content <- getEditorContent
                      handleInputSubmission cId content
 
     , mkKb EnterOpenURLModeEvent "Select and open a URL posted to the current channel"
            startUrlSelect
 
-    , mkKb ClearUnreadEvent "Clear the current channel's unread / edited indicators" $
-           clearChannelUnreadStatus =<< use csCurrentChannelId
+    , mkKb ClearUnreadEvent "Clear the current channel's unread / edited indicators" $ do
+           tId <- use csCurrentTeamId
+           clearChannelUnreadStatus =<< use (csCurrentChannelId tId)
 
     , mkKb ToggleMultiLineEvent "Toggle multi-line message compose mode"
            toggleMultilineEditing

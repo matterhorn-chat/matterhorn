@@ -527,7 +527,7 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
                             when (isNothing authorResult) $
                                 handleNewUsers (Seq.singleton authorId) (return ())
 
-                    currCId <- use csCurrentChannelId
+                    currCId <- use (csCurrentChannelId tId)
                     flags <- use (csResources.crFlaggedPosts)
                     let (msg', mentionedUsers) = clientPostToMessage cp
                                  & _1.mFlagged .~ ((cp^.cpPostId) `Set.member` flags)
@@ -574,7 +574,7 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
 
                 postedChanMessage =
                   withChannelOrDefault (postChannelId new) NoAction $ \chan -> do
-                      currCId <- use csCurrentChannelId
+                      currCId <- use (csCurrentChannelId tId)
 
                       let notifyPref = notifyPreference (myUser st) chan
                           curChannelAction = if postChannelId new == currCId
@@ -710,7 +710,8 @@ maybePostUsername st p =
 -- channels and empty channels.
 asyncFetchMoreMessages :: MH ()
 asyncFetchMoreMessages = do
-    cId  <- use csCurrentChannelId
+    tId <- use csCurrentTeamId
+    cId <- use (csCurrentChannelId tId)
     withChannel cId $ \chan ->
         let offset = max 0 $ length (chan^.ccContents.cdMessages) - 2
             page = offset `div` pageAmount
@@ -835,7 +836,8 @@ fetchVisibleIfNeeded :: MH ()
 fetchVisibleIfNeeded = do
     sts <- use csConnectionStatus
     when (sts == Connected) $ do
-        cId <- use csCurrentChannelId
+        tId <- use csCurrentTeamId
+        cId <- use (csCurrentChannelId tId)
         withChannel cId $ \chan ->
             let msgs = chan^.ccContents.cdMessages.to reverseMessages
                 (numRemaining, gapInDisplayable, _, rel'pId, overlap) =

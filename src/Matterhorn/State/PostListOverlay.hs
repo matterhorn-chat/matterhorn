@@ -79,7 +79,8 @@ enterFlaggedPostListMode = createPostList PostListFlagged $
 -- the current channel.
 enterPinnedPostListMode :: MH ()
 enterPinnedPostListMode = do
-    cId <- use csCurrentChannelId
+    tId <- use csCurrentTeamId
+    cId <- use (csCurrentChannelId tId)
     createPostList (PostListPinned cId) $ mmGetChannelPinnedPosts cId
 
 -- | Create a PostListOverlay with post search result messages from the

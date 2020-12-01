@@ -232,7 +232,7 @@ handleWSEvent we = do
                       wepTeamId (weData we) == Nothing) $ do
                     let wasMentioned = maybe False (Set.member myId) $ wepMentions (weData we)
                     addNewPostedMessage $ RecentPost p wasMentioned
-                    cId <- use csCurrentChannelId
+                    cId <- use (csCurrentChannelId myTId)
                     when (postChannelId p /= cId) $
                         showChannelInSidebar (p^.postChannelIdL) False
             | otherwise -> return ()
@@ -240,7 +240,7 @@ handleWSEvent we = do
         WMPostEdited
             | Just p <- wepPost (weData we) -> do
                 editMessage p
-                cId <- use csCurrentChannelId
+                cId <- use (csCurrentChannelId myTId)
                 when (postChannelId p == cId) (updateViewed False)
                 when (postChannelId p /= cId) $
                     showChannelInSidebar (p^.postChannelIdL) False
@@ -249,7 +249,7 @@ handleWSEvent we = do
         WMPostDeleted
             | Just p <- wepPost (weData we) -> do
                 deleteMessage p
-                cId <- use csCurrentChannelId
+                cId <- use (csCurrentChannelId myTId)
                 when (postChannelId p == cId) (updateViewed False)
                 when (postChannelId p /= cId) $
                     showChannelInSidebar (p^.postChannelIdL) False

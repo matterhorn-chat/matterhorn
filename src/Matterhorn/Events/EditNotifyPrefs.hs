@@ -39,7 +39,7 @@ editNotifyPrefsKeyHandlers =
     , mkKb FormSubmitEvent "Save channel notification preferences" $ do
         st <- use id
         let form = fromJust $ st^.csCurrentTeam.tsNotifyPrefs
-            cId = st^.csCurrentChannelId
+            cId = st^.csCurrentChannelId(st^.csCurrentTeamId)
 
         doAsyncChannelMM Preempt cId
           (\s _ -> MM.mmUpdateChannelNotifications cId (myUserId st) (formState form) s)

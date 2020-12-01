@@ -254,7 +254,7 @@ doUserAutoCompletion ty ctx searchString = do
     session <- getSession
     myTid <- use csCurrentTeamId
     myUid <- gets myUserId
-    cId <- use csCurrentChannelId
+    cId <- use (csCurrentChannelId(myTid))
 
     withCachedAutocompleteResults ctx ty searchString $
         doAsyncWith Preempt $ do

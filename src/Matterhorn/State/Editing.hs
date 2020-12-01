@@ -359,7 +359,8 @@ handleEditingInput e = do
     isMultiline <- use (csCurrentTeam.tsEditState.cedEphemeral.eesMultiline)
     isPreviewing <- use (csResources.crConfiguration.configShowMessagePreviewL)
     when (beforeLineCount /= afterLineCount && isMultiline && isPreviewing) $ do
-        cId <- use csCurrentChannelId
+        tId <- use csCurrentTeamId
+        cId <- use (csCurrentChannelId tId)
         mh $ invalidateCacheEntry $ ChannelMessages cId
 
     -- Reset the recent autocompletion flag to stop smart punctuation
@@ -379,9 +380,10 @@ sendUserTypingAction = do
         let pId = case st^.csCurrentTeam.tsEditState.cedEditMode of
                     Replying _ post -> Just $ postId post
                     _               -> Nothing
+        tId <- use csCurrentTeamId
         liftIO $ do
           now <- getCurrentTime
-          let action = UserTyping now (st^.csCurrentChannelId) pId
+          let action = UserTyping now (st^.csCurrentChannelId(tId)) pId
           STM.atomically $ STM.writeTChan (st^.csResources.crWebsocketActionChan) action
       Disconnected -> return ()
 
@@ -452,7 +454,8 @@ gotoEnd z =
 
 cancelAutocompleteOrReplyOrEdit :: MH ()
 cancelAutocompleteOrReplyOrEdit = do
-    cId <- use csCurrentChannelId
+    tId <- use csCurrentTeamId
+    cId <- use (csCurrentChannelId tId)
     mh $ invalidateCacheEntry $ ChannelMessages cId
     ac <- use (csCurrentTeam.tsEditState.cedAutocomplete)
     case ac of
@@ -474,7 +477,8 @@ replyToLatestMessage = do
     Just msg | isReplyable msg ->
         do rootMsg <- getReplyRootMessage msg
            setMode Main
-           cId <- use csCurrentChannelId
+           tId <- use csCurrentTeamId
+           cId <- use (csCurrentChannelId tId)
            mh $ invalidateCacheEntry $ ChannelMessages cId
            csCurrentTeam.tsEditState.cedEditMode .= Replying rootMsg (fromJust $ rootMsg^.mOriginalPost)
     _ -> return ()

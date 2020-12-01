@@ -116,7 +116,8 @@ commandList =
 
   , Cmd "hide" "Hide the current DM or group channel from the channel list"
     NoArg $ \ () -> do
-      hideDMChannel =<< use csCurrentChannelId
+      tId <- use csCurrentTeamId
+      hideDMChannel =<< use (csCurrentChannelId tId)
 
   , Cmd "reconnect" "Force a reconnection attempt to the server"
     NoArg $ \ () ->
@@ -247,7 +248,8 @@ commandList =
 
   , Cmd "sh" "Run a prewritten shell script"
     (TokenArg "script" (LineArg "message")) $ \ (script, text) -> do
-        cId <- use csCurrentChannelId
+        tId <- use csCurrentTeamId
+        cId <- use (csCurrentChannelId tId)
         findAndRunScript cId script text
 
   , Cmd "flags" "Open a window of your flagged posts" NoArg $ \ () ->
@@ -273,10 +275,10 @@ displayUsernameAttribute name = do
 
 execMMCommand :: Text -> Text -> MH ()
 execMMCommand name rest = do
-  cId      <- use csCurrentChannelId
+  tId      <- use csCurrentTeamId
+  cId      <- use (csCurrentChannelId tId)
   session  <- getSession
   em       <- use (csCurrentTeam.tsEditState.cedEditMode)
-  tId      <- use csCurrentTeamId
   let mc = MM.MinCommand
              { MM.minComChannelId = cId
              , MM.minComCommand   = "/" <> name <> " " <> rest

@@ -430,7 +430,8 @@ renderCurrentChannelDisplay st hs = header <=> hBorder <=> messages
                           (getDateFormat st)
                           (st ^. timeZone)
 
-    cId = st^.csCurrentChannelId
+    tId = st^.csCurrentTeamId
+    cId = st^.(csCurrentChannelId tId)
     chan = st^.csCurrentChannel
 
 getMessageListing :: ChannelId -> ChatState -> Messages

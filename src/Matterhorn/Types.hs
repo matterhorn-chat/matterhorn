@@ -1954,8 +1954,9 @@ resetSpellCheckTimer s =
         Just (_, reset) -> reset
 
 -- ** Utility Lenses
-csCurrentChannelId :: SimpleGetter ChatState ChannelId
-csCurrentChannelId = csCurrentTeam.tsFocus.to Z.unsafeFocus.to channelListEntryChannelId
+csCurrentChannelId :: TeamId -> SimpleGetter ChatState ChannelId
+csCurrentChannelId tId =
+    csTeam(tId).tsFocus.to Z.unsafeFocus.to channelListEntryChannelId
 
 csCurrentTeam :: Lens' ChatState TeamState
 csCurrentTeam =
@@ -1987,8 +1988,8 @@ entryIsDMEntry (CLChannel {}) = False
 
 csCurrentChannel :: Lens' ChatState ClientChannel
 csCurrentChannel =
-    lens (\ st -> findChannelById (st^.csCurrentChannelId) (st^.csChannels) ^?! _Just)
-         (\ st n -> st & csChannels %~ addChannel (st^.csCurrentChannelId) n)
+    lens (\ st -> findChannelById (st^.csCurrentChannelId(st^.csCurrentTeamId)) (st^.csChannels) ^?! _Just)
+         (\ st n -> st & csChannels %~ addChannel (st^.csCurrentChannelId(st^.csCurrentTeamId)) n)
 
 csChannel :: ChannelId -> Traversal' ChatState ClientChannel
 csChannel cId =

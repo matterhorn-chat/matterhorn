@@ -122,8 +122,8 @@ updatePostMap tId postCollection = do
 -- | Add a 'ClientMessage' to the current channel's message list
 addClientMessage :: ClientMessage -> MH ()
 addClientMessage msg = do
-  cid <- use csCurrentChannelId
   tId <- use csCurrentTeamId
+  cid <- use (csCurrentChannelId(tId))
   uuid <- generateUUID
   let addCMsg = ccContents.cdMessages %~
           (addMessage $ clientMessageToMessage msg & mMessageId .~ Just (MessageUUID uuid))
@@ -154,7 +154,7 @@ postErrorMessageIO :: Text -> ChatState -> IO ChatState
 postErrorMessageIO err st = do
   msg <- newClientMessage Error err
   uuid <- generateUUID_IO
-  let cId = st ^. csCurrentChannelId
+  let cId = st ^. csCurrentChannelId (st^.csCurrentTeamId)
       addEMsg = ccContents.cdMessages %~
           (addMessage $ clientMessageToMessage msg & mMessageId .~ Just (MessageUUID uuid))
   return $ st & csChannels %~ modifyChannelById cId addEMsg
