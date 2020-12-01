@@ -3,9 +3,6 @@ This one will just need to iterate over all teams to stop all Aspell
 instances once we start one for each team:
 src/Matterhorn/App.hs:91:    case finalSt^.csCurrentTeam.tsEditState.cedSpellChecker of
 
-The team ID argument here needs to be an argument to setCompletionAlternatives and should then be used throughout this function:
-src/Matterhorn/State/Autocomplete.hs:329:   tId <- use csCurrentTeamId
-
 This lens should resolve to the team owning the channel in question:
 src/Matterhorn/State/Channels.hs:157:               then use (csCurrentTeam.tsRecentChannel)
 
