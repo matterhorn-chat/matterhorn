@@ -121,6 +121,7 @@ module Matterhorn.Types
 
   , TeamState
   , tsFocus
+  , tsMode
   , tsPendingChannelChange
   , tsRecentChannel
   , tsReturnChannel
@@ -141,6 +142,7 @@ module Matterhorn.Types
   , ChatState
   , newState
   , csCurrentTeam
+  , csTeam
   , csChannelListOrientation
   , csResources
   , csCurrentChannel
@@ -158,7 +160,6 @@ module Matterhorn.Types
   , whenMode
   , setMode
   , setMode'
-  , appMode
 
   , ChatEditState
   , emptyEditState
@@ -1345,8 +1346,11 @@ data ChatState =
     ChatState { _csResources :: ChatResources
               -- ^ Global application-wide resources that don't change
               -- much.
-              , _csCurrentTeam :: TeamState
-              -- ^ Application state specific to the current team.
+              , _csTeams :: HashMap TeamId TeamState
+              -- ^ The state for each team that we are in.
+              , _csCurrentTeamId :: TeamId
+              -- ^ The ID of the team that we are currently viewing and
+              -- interacting with.
               , _csChannelListOrientation :: ChannelListOrientation
               -- ^ The orientation of the channel list.
               , _csMe :: User
@@ -1484,8 +1488,10 @@ newState :: StartupStateInfo -> ChatState
 newState (StartupStateInfo {..}) =
     let config = _crConfiguration startupStateResources
         ts = newTeamState startupStateTeam startupStateChannelZipper startupStateSpellChecker
+        tId = teamId $ _tsTeam ts
     in ChatState { _csResources                   = startupStateResources
-                 , _csCurrentTeam                 = ts
+                 , _csCurrentTeamId               = tId
+                 , _csTeams                       = HM.fromList [(tId, ts)]
                  , _csChannelListOrientation      = configChannelListOrientation config
                  , _csMe                          = startupStateConnectedUser
                  , _csChannels                    = noChannels
@@ -1589,17 +1595,6 @@ nullEmojiListOverlayState tId =
                         , _listOverlayRecordCount    = Nothing
                         , _listOverlayReturnMode     = MessageSelect
                         }
-
-getServerBaseUrl :: MH TeamBaseURL
-getServerBaseUrl = do
-    st <- use id
-    return $ serverBaseUrl st
-
-serverBaseUrl :: ChatState -> TeamBaseURL
-serverBaseUrl st =
-    let baseUrl = connectionDataURL $ _crConn $ _csResources st
-        tName = teamName $ _tsTeam $ _csCurrentTeam st
-    in TeamBaseURL (TeamURLName $ sanitizeUserText tName) baseUrl
 
 -- | The state of channel selection mode.
 data ChannelSelectState =
@@ -1921,6 +1916,17 @@ makeLenses ''ConnectionInfo
 makeLenses ''ChannelTopicDialogState
 Brick.suffixLenses ''Config
 
+getServerBaseUrl :: TeamId -> MH TeamBaseURL
+getServerBaseUrl tId = do
+    st <- use id
+    return $ serverBaseUrl st tId
+
+serverBaseUrl :: ChatState -> TeamId -> TeamBaseURL
+serverBaseUrl st tId =
+    let baseUrl = connectionDataURL $ _crConn $ _csResources st
+        tName = teamName $ st^.csTeam(tId).tsTeam
+    in TeamBaseURL (TeamURLName $ sanitizeUserText tName) baseUrl
+
 getSession :: MH Session
 getSession = use (csResources.crSession)
 
@@ -1940,9 +1946,6 @@ setMode m = do
 setMode' :: Mode -> ChatState -> ChatState
 setMode' m = csCurrentTeam.tsMode .~ m
 
-appMode :: ChatState -> Mode
-appMode = _tsMode._csCurrentTeam
-
 resetSpellCheckTimer :: ChatEditState -> IO ()
 resetSpellCheckTimer s =
     case s^.cedSpellChecker of
@@ -1953,8 +1956,15 @@ resetSpellCheckTimer s =
 csCurrentChannelId :: SimpleGetter ChatState ChannelId
 csCurrentChannelId = csCurrentTeam.tsFocus.to Z.unsafeFocus.to channelListEntryChannelId
 
-csCurrentTeamId :: SimpleGetter ChatState TeamId
-csCurrentTeamId = csCurrentTeam.tsTeam.teamIdL
+csCurrentTeam :: Lens' ChatState TeamState
+csCurrentTeam =
+    lens (\st   -> st^.csTeam(st^.csCurrentTeamId))
+         (\st t -> st & csTeam(st^.csCurrentTeamId) .~ t)
+
+csTeam :: TeamId -> Lens' ChatState TeamState
+csTeam tId =
+    lens (\ st -> st ^. csTeams . at tId ^?! _Just)
+         (\ st t -> st & csTeams . at tId .~ Just t)
 
 channelListEntryChannelId :: ChannelListEntry -> ChannelId
 channelListEntryChannelId (CLChannel cId) = cId

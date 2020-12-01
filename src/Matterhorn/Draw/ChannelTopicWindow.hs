@@ -43,7 +43,7 @@ drawChannelTopicWindow st =
                 ]
          ]
     where
-        baseUrl = serverBaseUrl st
+        baseUrl = serverBaseUrl st tId
         tId = st^.csCurrentTeamId
         editorHeight = 5
         previewHeight = 5

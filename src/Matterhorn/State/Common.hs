@@ -67,14 +67,14 @@ import           Matterhorn.Types.Common
 -- This also sets the mFlagged field of each message based on whether
 -- its post ID is a flagged post according to crFlaggedPosts at the time
 -- of this call.
-installMessagesFromPosts :: Posts -> MH Messages
-installMessagesFromPosts postCollection = do
+installMessagesFromPosts :: TeamId -> Posts -> MH Messages
+installMessagesFromPosts tId postCollection = do
   flags <- use (csResources.crFlaggedPosts)
 
   -- Add all posts in this collection to the global post cache
-  updatePostMap postCollection
+  updatePostMap tId postCollection
 
-  baseUrl <- getServerBaseUrl
+  baseUrl <- getServerBaseUrl tId
 
   -- Build the ordered list of posts. Note that postsOrder lists the
   -- posts most recent first, but we want most recent last.
@@ -102,15 +102,15 @@ installMessagesFromPosts postCollection = do
             Just post -> post
 
 -- Add all posts in this collection to the global post cache
-updatePostMap :: Posts -> MH ()
-updatePostMap postCollection = do
+updatePostMap :: TeamId -> Posts -> MH ()
+updatePostMap tId postCollection = do
   -- Build a map from post ID to Matterhorn message, then add the new
   -- messages to the global post map. We use the "postsPosts" field for
   -- this because that might contain more messages than the "postsOrder"
   -- list, since the former can contain other messages in threads that
   -- the server sent us, even if those messages are not part of the
   -- ordered post listing of "postsOrder."
-  baseUrl <- getServerBaseUrl
+  baseUrl <- getServerBaseUrl tId
   let postMap = HM.fromList
           [ ( pId
             , fst $ clientPostToMessage (toClientPost baseUrl x Nothing)

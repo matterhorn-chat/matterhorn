@@ -30,7 +30,7 @@ import           Matterhorn.State.Common
 
 onEventManageAttachments :: V.Event -> MH ()
 onEventManageAttachments e = do
-    mode <- gets appMode
+    mode <- use (csCurrentTeam.tsMode)
     case mode of
         ManageAttachments -> void $ onEventAttachmentList e
         ManageAttachmentsBrowseFiles -> onEventBrowseFile e

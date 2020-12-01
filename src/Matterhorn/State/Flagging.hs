@@ -38,29 +38,34 @@ updateMessageFlag pId f = do
   msgMb <- use (csPostMap.at(pId))
   case msgMb of
     Just msg
-      | Just cId <- msg^.mChannelId -> do
+      | Just cId <- msg^.mChannelId -> withChannel cId $ \chan -> do
       let isTargetMessage m = m^.mMessageId == Just (MessagePostId pId)
       csChannel(cId).ccContents.cdMessages.traversed.filtered isTargetMessage.mFlagged .= f
       csPostMap.ix(pId).mFlagged .= f
+
+      let Just tId = chan^.ccInfo.cdTeamId
+
       -- We also want to update the post overlay if this happens while
       -- we're we're observing it
-      mode <- gets appMode
+      mode <- use (csTeam tId.tsMode)
       case mode of
         PostListOverlay PostListFlagged
           | f ->
-              csCurrentTeam.tsPostListOverlay.postListPosts %=
+              csTeam tId.tsPostListOverlay.postListPosts %=
                 addMessage (msg & mFlagged .~ True)
+
           -- deleting here is tricky, because it means that we need to
           -- move the focus somewhere: we'll try moving it _up_ unless
           -- we can't, in which case we'll try moving it down.
           | otherwise -> do
-              selId <- use (csCurrentTeam.tsPostListOverlay.postListSelected)
-              posts <- use (csCurrentTeam.tsPostListOverlay.postListPosts)
+              selId <- use (csTeam tId.tsPostListOverlay.postListSelected)
+              posts <- use (csTeam tId.tsPostListOverlay.postListPosts)
               let nextId = case getNextPostId selId posts of
                     Nothing -> getPrevPostId selId posts
                     Just x  -> Just x
-              csCurrentTeam.tsPostListOverlay.postListSelected .= nextId
-              csCurrentTeam.tsPostListOverlay.postListPosts %=
+              csTeam tId.tsPostListOverlay.postListSelected .= nextId
+              csTeam tId.tsPostListOverlay.postListPosts %=
                 filterMessages (((/=) `on` _mMessageId) msg)
+
         _ -> return ()
     _ -> return ()

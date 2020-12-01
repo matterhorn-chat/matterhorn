@@ -54,10 +54,11 @@ exitPostListMode = do
 createPostList :: PostListContents -> (Session -> IO Posts) -> MH ()
 createPostList contentsType fetchOp = do
   session <- getSession
+  tId <- use csCurrentTeamId
   doAsyncWith Preempt $ do
     posts <- fetchOp session
     return $ Just $ do
-      messages <- installMessagesFromPosts posts
+      messages <- installMessagesFromPosts tId posts
       -- n.b. do not use addNewPostedMessage because these messages
       -- are not new, and so no notifications or channel highlighting
       -- or other post-processing should be performed.

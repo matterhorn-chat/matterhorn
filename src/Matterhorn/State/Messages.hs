@@ -151,21 +151,24 @@ shouldSkipMessage s = T.all (`elem` (" \t"::String)) s
 editMessage :: Post -> MH ()
 editMessage new = do
     myId <- gets myUserId
-    baseUrl <- getServerBaseUrl
-    let isEditedMessage m = m^.mMessageId == Just (MessagePostId $ new^.postIdL)
-        (msg, mentionedUsers) = clientPostToMessage (toClientPost baseUrl new (new^.postRootIdL))
-        chan = csChannel (new^.postChannelIdL)
-    chan . ccContents . cdMessages . traversed . filtered isEditedMessage .= msg
-    mh $ invalidateCacheEntry (ChannelMessages $ new^.postChannelIdL)
+    withChannel (new^.postChannelIdL) $ \chan -> do
+        let Just tId = chan^.ccInfo.cdTeamId
+        baseUrl <- getServerBaseUrl tId
 
-    fetchMentionedUsers mentionedUsers
+        let (msg, mentionedUsers) = clientPostToMessage (toClientPost baseUrl new (new^.postRootIdL))
+            isEditedMessage m = m^.mMessageId == Just (MessagePostId $ new^.postIdL)
 
-    when (postUserId new /= Just myId) $
-        chan %= adjustEditedThreshold new
+        csChannel (new^.postChannelIdL) . ccContents . cdMessages . traversed . filtered isEditedMessage .= msg
+        mh $ invalidateCacheEntry (ChannelMessages $ new^.postChannelIdL)
 
-    csPostMap.ix(postId new) .= msg
-    asyncFetchReactionsForPost (postChannelId new) new
-    asyncFetchAttachments new
+        fetchMentionedUsers mentionedUsers
+
+        when (postUserId new /= Just myId) $
+            csChannel (new^.postChannelIdL) %= adjustEditedThreshold new
+
+        csPostMap.ix(postId new) .= msg
+        asyncFetchReactionsForPost (postChannelId new) new
+        asyncFetchAttachments new
 
 deleteMessage :: Post -> MH ()
 deleteMessage new = do
@@ -210,6 +213,7 @@ addObtainedMessages cId reqCnt addTrailingGap posts =
     -- case the new block should be surrounded by UnknownGaps.
     withChannelOrDefault cId NoAction $ \chan -> do
         let pIdList = toList (posts^.postsOrderL)
+            Just tId = chan^.ccInfo.cdTeamId
             -- the first and list PostId in the batch to be added
             earliestPId = last pIdList
             latestPId = head pIdList
@@ -300,7 +304,7 @@ addObtainedMessages cId reqCnt addTrailingGap posts =
         -- usernames in the text of the messages which we need to use to
         -- submit a single batch request for user metadata so we don't
         -- submit one request per mention.
-        void $ installMessagesFromPosts posts
+        void $ installMessagesFromPosts tId posts
 
         -- Add all the new *unique* posts into the existing channel
         -- corpus, generating needed fetches of data associated with
@@ -498,8 +502,10 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
                             postProcessMessageAdd
 
             return NoAction
-        Just _ -> do
-            baseUrl <- getServerBaseUrl
+        Just ch -> do
+            let Just tId = ch^.ccInfo.cdTeamId
+            baseUrl <- getServerBaseUrl tId
+
             let cp = toClientPost baseUrl new (new^.postRootIdL)
                 fromMe = (cp^.cpUser == (Just $ myUserId st)) &&
                          (isNothing $ cp^.cpUserOverride)
@@ -560,7 +566,7 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
                                 Nothing -> do
                                     doAsyncChannelMM Preempt cId
                                         (\s _ -> MM.mmGetThread parentId s)
-                                        (\_ p -> Just $ updatePostMap p)
+                                        (\_ p -> Just $ updatePostMap tId p)
                                 _ -> return ()
                         _ -> return ()
 

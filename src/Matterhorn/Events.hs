@@ -185,7 +185,7 @@ onVtyEvent e = do
 
 handleGlobalEvent :: Vty.Event -> MH ()
 handleGlobalEvent e = do
-    mode <- gets appMode
+    mode <- use (csCurrentTeam.tsMode)
     case mode of
         Main                       -> onEventMain e
         ShowHelp _ _               -> void $ onEventShowHelp e

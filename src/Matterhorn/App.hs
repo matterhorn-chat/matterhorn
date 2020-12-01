@@ -31,7 +31,7 @@ import           Matterhorn.Types
 app :: App ChatState MHEvent Name
 app = App
   { appDraw         = draw
-  , appChooseCursor = \s cs -> case appMode s of
+  , appChooseCursor = \s cs -> case s^.csCurrentTeam.tsMode of
       Main                          -> showFirstCursor s cs
       ChannelSelect                 -> showFirstCursor s cs
       UserListOverlay               -> showFirstCursor s cs

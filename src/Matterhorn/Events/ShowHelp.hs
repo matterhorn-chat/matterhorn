@@ -40,5 +40,5 @@ helpKeyHandlers =
 
 popMode :: MH ()
 popMode = do
-    ShowHelp _ prevMode <- gets appMode
+    ShowHelp _ prevMode <- use (csCurrentTeam.tsMode)
     setMode prevMode

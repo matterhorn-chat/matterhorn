@@ -54,7 +54,7 @@ messageSelectCompatibleModes =
 
 getSelectedMessage :: ChatState -> Maybe Message
 getSelectedMessage st
-    | not (appMode st `elem` messageSelectCompatibleModes) = Nothing
+    | not (st^.csCurrentTeam.tsMode `elem` messageSelectCompatibleModes) = Nothing
     | otherwise = do
         selMsgId <- selectMessageId $ st^.csCurrentTeam.tsMessageSelect
         let chanMsgs = st ^. csCurrentChannel . ccContents . cdMessages
@@ -169,7 +169,7 @@ beginConfirmDeleteSelectedMessage = do
 
 messageSelectUp :: MH ()
 messageSelectUp = do
-    mode <- gets appMode
+    mode <- use (csCurrentTeam.tsMode)
     selected <- use (csCurrentTeam.tsMessageSelect.to selectMessageId)
     case selected of
         Just _ | mode == MessageSelect -> do

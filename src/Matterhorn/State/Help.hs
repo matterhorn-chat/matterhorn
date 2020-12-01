@@ -13,7 +13,7 @@ import           Matterhorn.Types
 
 showHelpScreen :: HelpTopic -> MH ()
 showHelpScreen topic = do
-    curMode <- gets appMode
+    curMode <- use (csCurrentTeam.tsMode)
     case curMode of
         ShowHelp {} -> return ()
         _ -> do

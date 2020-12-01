@@ -327,7 +327,8 @@ renderChannelHeader st hs chan =
                 channelNamePair
         channelNamePair = chanName <> " - " <> (chan^.ccInfo.cdDisplayName)
         chanName = mkChannelName st (chan^.ccInfo)
-        baseUrl = serverBaseUrl st
+        tId = st^.csCurrentTeamId
+        baseUrl = serverBaseUrl st tId
 
     in renderText' (Just baseUrl) (myUsername st)
          hs
@@ -367,7 +368,7 @@ renderCurrentChannelDisplay st hs = header <=> hBorder <=> messages
                 headerWidget = Widget Fixed Fixed $ return channelHeaderResult
                 borderWidget = vLimit maxHeight vBorder
 
-            render $ if appMode st == ChannelSelect
+            render $ if st^.csCurrentTeam.tsMode == ChannelSelect
                         then headerWidget
                         else hBox $ case st^.csChannelListOrientation of
                             ChannelListLeft ->
@@ -388,7 +389,7 @@ renderCurrentChannelDisplay st hs = header <=> hBorder <=> messages
 
     messages = padTop Max chatText
 
-    chatText = case appMode st of
+    chatText = case st^.csCurrentTeam.tsMode of
         MessageSelect ->
             renderMessagesWithSelect (st^.csCurrentTeam.tsMessageSelect) channelMessages
         MessageSelectDeleteConfirm ->
@@ -607,7 +608,7 @@ inputPreview st hs | not $ st^.csResources.crConfiguration.configShowMessagePrev
     overrideTy = case st^.csCurrentTeam.tsEditState.cedEditMode of
         Editing _ ty -> Just ty
         _ -> Nothing
-    baseUrl = serverBaseUrl st
+    baseUrl = serverBaseUrl st tId
     previewMsg = previewFromInput baseUrl overrideTy uId curStr
     thePreview = let noPreview = str "(No preview)"
                      msgPreview = case previewMsg of
@@ -636,7 +637,7 @@ inputPreview st hs | not $ st^.csResources.crConfiguration.configShowMessagePrev
 
 userInputArea :: ChatState -> HighlightSet -> Widget Name
 userInputArea st hs =
-    case appMode st of
+    case st^.csCurrentTeam.tsMode of
         ChannelSelect -> renderChannelSelectPrompt st
         UrlSelect     -> hCenter $ hBox [ txt "Press "
                                         , withDefAttr clientEmphAttr $ txt "Enter"
@@ -659,7 +660,7 @@ mainInterface st =
          , userInputArea st hs
          ]
     where
-    body = if st^.csResources.crConfiguration.configShowChannelListL || appMode st == ChannelSelect
+    body = if st^.csResources.crConfiguration.configShowChannelListL || st^.csCurrentTeam.tsMode == ChannelSelect
            then case st^.csChannelListOrientation of
                ChannelListLeft ->
                    hBox [channelList, vBorder, mainDisplay]
@@ -669,11 +670,11 @@ mainInterface st =
     channelList = hLimit channelListWidth (renderChannelList st)
     hs = getHighlightSet st
     channelListWidth = configChannelListWidth $ st^.csResources.crConfiguration
-    mainDisplay = case appMode st of
+    mainDisplay = case st^.csCurrentTeam.tsMode of
         UrlSelect -> renderUrlList st
         _         -> maybeSubdue $ renderCurrentChannelDisplay st hs
 
-    bottomBorder = case appMode st of
+    bottomBorder = case st^.csCurrentTeam.tsMode of
         MessageSelect -> messageSelectBottomBar st
         _ -> maybeSubdue $ hBox
              [ showAttachmentCount
@@ -711,7 +712,7 @@ mainInterface st =
                  Just Nothing -> hLimit 2 hBorder <+> txt "*"
                  Nothing -> emptyWidget
 
-    maybeSubdue = if appMode st == ChannelSelect
+    maybeSubdue = if st^.csCurrentTeam.tsMode == ChannelSelect
                   then forceAttr ""
                   else id
 
