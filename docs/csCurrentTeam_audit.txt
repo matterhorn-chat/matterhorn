@@ -3,9 +3,6 @@ This one will just need to iterate over all teams to stop all Aspell
 instances once we start one for each team:
 src/Matterhorn/App.hs:91:    case finalSt^.csCurrentTeam.tsEditState.cedSpellChecker of
 
-This lens needs to resolve to the team that was active at the time of the overlay mode switch, NOT csCurrentTeam:
-src/Matterhorn/State/ReactionEmojiListOverlay.hs:42:            enterListOverlayMode (csCurrentTeam.tsReactionEmojiListOverlay) ReactionEmojiListOverlay
-
 All of these uses need to resolve to the team that was active at the time of the overlay mode switch, NOT csCurrentTeam:
 src/Matterhorn/State/Flagging.hs:51:              csCurrentTeam.tsPostListOverlay.postListPosts %=
 src/Matterhorn/State/Flagging.hs:57:              selId <- use (csCurrentTeam.tsPostListOverlay.postListSelected)
