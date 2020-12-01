@@ -69,5 +69,12 @@ Multi-team support TODO list
    a given team ID. Instead of loading the last run state for just the
    current team, we'll want to load it for any active team.
 
+ * There is now a weird issue we need to deal with: when deciding how a
+   channel update impacts the UI, we look at its team ID. But DM and
+   group channels do not have a team ID, which means we don't know which
+   team UI to update. In fact, for those channel types, we
+   may need to update ALL the team UIs. This is not something
+   we are well-equipped to handle.
+
  * Input history for DM and group channels (i.e. channels with no team
    ID) should be shared across team UIs.
