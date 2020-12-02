@@ -3,13 +3,6 @@ This one will just need to iterate over all teams to stop all Aspell
 instances once we start one for each team:
 src/Matterhorn/App.hs:91:    case finalSt^.csCurrentTeam.tsEditState.cedSpellChecker of
 
-These should resolve to the team owning the channel in question:
-src/Matterhorn/State/Channels.hs:731:            csCurrentTeam.tsFocus %= Z.filterZipper ((/= cId) . channelListEntryChannelId)
-
-These should resolve to the team owning the channel in question:
-src/Matterhorn/State/Channels.hs:1062:            csCurrentTeam.tsPendingChannelChange .= (Just $ ChangeByChannelId chanId act)
-src/Matterhorn/State/Channels.hs:1078:            csCurrentTeam.tsPendingChannelChange .= (Just $ ChangeByUserId $ user^.uiId)
-
 csCurrentTeamId:
 
 This team ID should be an argument to refreshChannelsAndUsers:
