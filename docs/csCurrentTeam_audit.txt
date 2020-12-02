@@ -5,8 +5,5 @@ src/Matterhorn/App.hs:91:    case finalSt^.csCurrentTeam.tsEditState.cedSpellChe
 
 csCurrentTeamId:
 
-This team ID should be the one that owns the channel provided to updateChannelNotifyProps:
-src/Matterhorn/State/Channels.hs:1141:    tId <- use csCurrentTeamId
-
 This should iterate over all connected teams rather than just writing the state for the current team:
 src/Matterhorn/LastRunState.hs:78:        tId = cs^.csCurrentTeamId
