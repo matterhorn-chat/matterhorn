@@ -489,7 +489,9 @@ teamList st =
                      sanitizeUserText $
                      teamDisplayName $
                      _tsTeam ts
-    in hBox entries
+    in if length teams == 1
+       then emptyWidget
+       else ((padRight (Pad 1) $ txt "Teams:") <+> hBox entries) <=> hBorder
 
 connectionLayer :: ChatState -> Widget Name
 connectionLayer st =
