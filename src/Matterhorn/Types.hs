@@ -1354,10 +1354,7 @@ data ChatState =
               -- much.
               , _csTeams :: HashMap TeamId TeamState
               -- ^ The state for each team that we are in.
-              , _csCurrentTeamId :: TeamId
-              -- ^ The ID of the team that we are currently viewing and
-              -- interacting with.
-              , _csTeamZipper :: Z.Zipper TeamId ()
+              , _csTeamZipper :: Z.Zipper () TeamId
               -- ^ The list of teams we can cycle through.
               , _csChannelListOrientation :: ChannelListOrientation
               -- ^ The orientation of the channel list.
@@ -1495,7 +1492,6 @@ newState :: StartupStateInfo -> ChatState
 newState (StartupStateInfo {..}) =
     let config = _crConfiguration startupStateResources
     in ChatState { _csResources                   = startupStateResources
-                 , _csCurrentTeamId               = startupStateInitialTeam
                  , _csTeamZipper                  = mkTeamZipper startupStateTeams
                  , _csTeams                       = startupStateTeams
                  , _csChannelListOrientation      = configChannelListOrientation config
@@ -1510,10 +1506,10 @@ newState (StartupStateInfo {..}) =
                  , _csInputHistory                = startupStateInitialHistory
                  }
 
-mkTeamZipper :: HM.HashMap TeamId TeamState -> Z.Zipper TeamId ()
+mkTeamZipper :: HM.HashMap TeamId TeamState -> Z.Zipper () TeamId
 mkTeamZipper m =
-    let teams = sortBy (compare `on` teamName) $ _tsTeam <$> HM.elems m
-    in Z.fromList $ (\tId -> (tId, mempty)) <$> teamId <$> teams
+    let sortedTeams = sortBy (compare `on` teamName) $ _tsTeam <$> HM.elems m
+    in Z.fromList [((), teamId <$> sortedTeams)]
 
 newTeamState :: Team
              -> Z.Zipper ChannelListGroup ChannelListEntry
@@ -1967,6 +1963,10 @@ resetSpellCheckTimer s =
 csCurrentChannelId :: TeamId -> SimpleGetter ChatState ChannelId
 csCurrentChannelId tId =
     csTeam(tId).tsFocus.to Z.unsafeFocus.to channelListEntryChannelId
+
+csCurrentTeamId :: SimpleGetter ChatState TeamId
+csCurrentTeamId =
+    csTeamZipper.to Z.unsafeFocus
 
 csCurrentTeam :: Lens' ChatState TeamState
 csCurrentTeam =
