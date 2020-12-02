@@ -483,7 +483,7 @@ teamList st =
         teams = (\tId -> st^.csTeam(tId)) <$> (concat $ snd <$> Z.toList z)
         entries = mkEntry <$> teams
         mkEntry ts = (if teamId (_tsTeam ts) == curTid
-                        then withDefAttr currentTeamAttr
+                        then visible . withDefAttr currentTeamAttr
                         else id) $
                      txt $
                      sanitizeUserText $
