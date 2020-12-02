@@ -9,6 +9,7 @@ import           Matterhorn.Prelude
 
 import           Brick
 import           Control.Monad.Trans.Except ( runExceptT )
+import qualified Data.HashMap.Strict as HM
 import qualified Graphics.Vty as Vty
 import           Text.Aspell ( stopAspell )
 import           GHC.Conc (getNumProcessors, setNumCapabilities)
@@ -88,9 +89,10 @@ runMatterhorn opts config = do
     (st, vty) <- setupState mkVty (optLogLocation opts) config
     finalSt <- customMain vty mkVty (Just $ st^.csResources.crEventQueue) app st
 
-    case finalSt^.csCurrentTeam.tsEditState.cedSpellChecker of
-        Nothing -> return ()
-        Just (s, _) -> stopAspell s
+    forM_ (HM.elems $ finalSt^.csTeams) $ \ts ->
+        case ts^.tsEditState.cedSpellChecker of
+            Nothing -> return ()
+            Just (s, _) -> stopAspell s
 
     return finalSt
 

@@ -1,4 +1,0 @@
-
-This one will just need to iterate over all teams to stop all Aspell
-instances once we start one for each team:
-src/Matterhorn/App.hs:91:    case finalSt^.csCurrentTeam.tsEditState.cedSpellChecker of
