@@ -5,7 +5,7 @@ module Matterhorn.LastRunState
   , lrsPort
   , lrsUserId
   , lrsSelectedChannelId
-  , writeLastRunState
+  , writeLastRunStates
   , readLastRunState
   , isValidLastRunState
   )
@@ -18,6 +18,7 @@ import           Control.Monad.Trans.Except
 import qualified Data.Aeson as A
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as LBS
+import qualified Data.HashMap.Strict as HM
 import           Lens.Micro.Platform ( makeLenses )
 import           System.Directory ( createDirectoryIfMissing )
 import           System.FilePath ( dropFileName )
@@ -71,16 +72,20 @@ lastRunStateFileMode = P.unionFileModes P.ownerReadMode P.ownerWriteMode
 
 -- | Writes the run state to a file. The file is specific to the current team.
 -- | Writes only if the current channel is an ordrinary or a private channel.
-writeLastRunState :: ChatState -> IO ()
-writeLastRunState cs =
-  when (cs^.csCurrentChannel.ccInfo.cdType `elem` [Ordinary, Private]) $ do
-    let runState = toLastRunState cs
-        tId = cs^.csCurrentTeamId
+writeLastRunStates :: ChatState -> IO ()
+writeLastRunStates cs =
+    forM_ (HM.keys $ cs^.csTeams) $ \tId ->
+        writeLastRunState cs tId
 
-    lastRunStateFile <- lastRunStateFilePath $ unId $ toId tId
-    createDirectoryIfMissing True $ dropFileName lastRunStateFile
-    BS.writeFile lastRunStateFile $ LBS.toStrict $ A.encode runState
-    P.setFileMode lastRunStateFile lastRunStateFileMode
+writeLastRunState :: ChatState -> TeamId -> IO ()
+writeLastRunState cs tId = do
+    when (cs^.csCurrentChannel.ccInfo.cdType `elem` [Ordinary, Private]) $ do
+        let runState = toLastRunState cs
+
+        lastRunStateFile <- lastRunStateFilePath $ unId $ toId tId
+        createDirectoryIfMissing True $ dropFileName lastRunStateFile
+        BS.writeFile lastRunStateFile $ LBS.toStrict $ A.encode runState
+        P.setFileMode lastRunStateFile lastRunStateFileMode
 
 -- | Reads the last run state from a file given the current team ID.
 readLastRunState :: TeamId -> IO (Either String LastRunState)

@@ -103,8 +103,8 @@ closeMatterhorn finalSt = do
   logIfError (writeHistory (finalSt^.csInputHistory))
       "Error in writing history"
 
-  logIfError (writeLastRunState finalSt)
-      "Error in writing last run state"
+  logIfError (writeLastRunStates finalSt)
+      "Error in writing last run states"
 
   shutdownLogManager $ finalSt^.csResources.crLogManager
 
