@@ -756,6 +756,7 @@ data Name =
     | ChannelTopicSaveButton TeamId
     | ChannelTopicCancelButton TeamId
     | ChannelTopicEditorPreview TeamId
+    | TeamList
     deriving (Eq, Show, Ord)
 
 -- | The sum type of exceptions we expect to encounter on authentication

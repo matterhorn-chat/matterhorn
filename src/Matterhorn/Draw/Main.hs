@@ -491,7 +491,11 @@ teamList st =
                      _tsTeam ts
     in if length teams == 1
        then emptyWidget
-       else ((padRight (Pad 1) $ txt "Teams:") <+> hBox entries) <=> hBorder
+       else vBox [ hBox [ padRight (Pad 1) $ txt "Teams:"
+                        , viewport TeamList Horizontal $ hBox entries
+                        ]
+                 , hBorder
+                 ]
 
 connectionLayer :: ChatState -> Widget Name
 connectionLayer st =
