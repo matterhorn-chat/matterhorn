@@ -152,10 +152,12 @@ editMessage :: Post -> MH ()
 editMessage new = do
     myId <- gets myUserId
     withChannel (new^.postChannelIdL) $ \chan -> do
-        let Just tId = chan^.ccInfo.cdTeamId
-        baseUrl <- getServerBaseUrl tId
+        let mTId = chan^.ccInfo.cdTeamId
+        mBaseUrl <- case mTId of
+            Nothing -> return Nothing
+            Just tId -> Just <$> getServerBaseUrl tId
 
-        let (msg, mentionedUsers) = clientPostToMessage (toClientPost baseUrl new (new^.postRootIdL))
+        let (msg, mentionedUsers) = clientPostToMessage (toClientPost mBaseUrl new (new^.postRootIdL))
             isEditedMessage m = m^.mMessageId == Just (MessagePostId $ new^.postIdL)
 
         csChannel (new^.postChannelIdL) . ccContents . cdMessages . traversed . filtered isEditedMessage .= msg
@@ -213,7 +215,7 @@ addObtainedMessages cId reqCnt addTrailingGap posts =
     -- case the new block should be surrounded by UnknownGaps.
     withChannelOrDefault cId NoAction $ \chan -> do
         let pIdList = toList (posts^.postsOrderL)
-            Just tId = chan^.ccInfo.cdTeamId
+            mTId = chan^.ccInfo.cdTeamId
             -- the first and list PostId in the batch to be added
             earliestPId = last pIdList
             latestPId = head pIdList
@@ -304,7 +306,7 @@ addObtainedMessages cId reqCnt addTrailingGap posts =
         -- usernames in the text of the messages which we need to use to
         -- submit a single batch request for user metadata so we don't
         -- submit one request per mention.
-        void $ installMessagesFromPosts tId posts
+        void $ installMessagesFromPosts mTId posts
 
         -- Add all the new *unique* posts into the existing channel
         -- corpus, generating needed fetches of data associated with
@@ -342,81 +344,88 @@ addObtainedMessages cId reqCnt addTrailingGap posts =
           csChannels %= modifyChannelById cId
             (ccContents.cdMessages .~ resultMessages)
 
-          -- Determine if the current selected message was one of the
-          -- removed messages.
-          selMsgId <- use (csTeam(tId).tsMessageSelect.to selectMessageId)
-          let rmvdSel = do
-                i <- selMsgId -- :: Maybe MessageId
-                findMessage i removedMessages
-              rmvdSelType = _mType <$> rmvdSel
+          let processTeam tId = do
+                -- Determine if the current selected message was one of the
+                -- removed messages.
+                selMsgId <- use (csTeam(tId).tsMessageSelect.to selectMessageId)
+                let rmvdSel = do
+                      i <- selMsgId -- :: Maybe MessageId
+                      findMessage i removedMessages
+                    rmvdSelType = _mType <$> rmvdSel
 
-          case rmvdSel of
-            Nothing -> return ()
-            Just rm ->
-              if isGap rm
-              then return ()  -- handled during gap insertion below
-              else do
-                -- Replaced a selected message that wasn't a gap.
-                -- This is unlikely, but may occur if the previously
-                -- selected message was just deleted by another user
-                -- and is in the fetched region.  The choices here are
-                -- to move the selection, or cancel the selection.
-                -- Both will be unpleasant surprises for the user, but
-                -- cancelling the selection is probably the better
-                -- choice than allowing the user to perform select
-                -- actions on a message that isn't the one they just
-                -- selected.
-                setMode Main
-                csTeam(tId).tsMessageSelect .= MessageSelectState Nothing
+                case rmvdSel of
+                  Nothing -> return ()
+                  Just rm ->
+                    if isGap rm
+                    then return ()  -- handled during gap insertion below
+                    else do
+                      -- Replaced a selected message that wasn't a gap.
+                      -- This is unlikely, but may occur if the previously
+                      -- selected message was just deleted by another user
+                      -- and is in the fetched region.  The choices here are
+                      -- to move the selection, or cancel the selection.
+                      -- Both will be unpleasant surprises for the user, but
+                      -- cancelling the selection is probably the better
+                      -- choice than allowing the user to perform select
+                      -- actions on a message that isn't the one they just
+                      -- selected.
+                      setMode Main
+                      csTeam(tId).tsMessageSelect .= MessageSelectState Nothing
 
-          -- Add a gap at each end of the newly fetched data, unless:
-          --   1. there is an overlap
-          --   2. there is no more in the indicated direction
-          --      a. indicated by adding messages later than any currently
-          --         held messages (see note above re 'addingAtEnd').
-          --      b. the amount returned was less than the amount requested
+                -- Add a gap at each end of the newly fetched data, unless:
+                --   1. there is an overlap
+                --   2. there is no more in the indicated direction
+                --      a. indicated by adding messages later than any currently
+                --         held messages (see note above re 'addingAtEnd').
+                --      b. the amount returned was less than the amount requested
 
-          if reAddGapBefore
-            then
-              -- No more gaps.  If the selected gap was removed, move
-              -- select to first (earliest) message)
-              case rmvdSelType of
-                Just (C UnknownGapBefore) ->
-                  csTeam(tId).tsMessageSelect .= MessageSelectState (pure $ MessagePostId earliestPId)
-                _ -> return ()
-            else do
-              -- add a gap at the start of the newly fetched block and
-              -- make that the active selection if this fetch removed
-              -- the previously selected gap in this direction.
-              gapMsg <- newGapMessage (justBefore earliestDate) True
-              csChannels %= modifyChannelById cId
-                (ccContents.cdMessages %~ addMessage gapMsg)
-              -- Move selection from old gap to new gap
-              case rmvdSelType of
-                Just (C UnknownGapBefore) -> do
-                  csTeam(tId).tsMessageSelect .= MessageSelectState (gapMsg^.mMessageId)
-                _ -> return ()
+                if reAddGapBefore
+                  then
+                    -- No more gaps.  If the selected gap was removed, move
+                    -- select to first (earliest) message)
+                    case rmvdSelType of
+                      Just (C UnknownGapBefore) ->
+                        csTeam(tId).tsMessageSelect .= MessageSelectState (pure $ MessagePostId earliestPId)
+                      _ -> return ()
+                  else do
+                    -- add a gap at the start of the newly fetched block and
+                    -- make that the active selection if this fetch removed
+                    -- the previously selected gap in this direction.
+                    gapMsg <- newGapMessage (justBefore earliestDate) True
+                    csChannels %= modifyChannelById cId
+                      (ccContents.cdMessages %~ addMessage gapMsg)
+                    -- Move selection from old gap to new gap
+                    case rmvdSelType of
+                      Just (C UnknownGapBefore) -> do
+                        csTeam(tId).tsMessageSelect .= MessageSelectState (gapMsg^.mMessageId)
+                      _ -> return ()
 
-          if reAddGapAfter
-            then
-              -- No more gaps.  If the selected gap was removed, move
-              -- select to last (latest) message.
-              case rmvdSelType of
-                Just (C UnknownGapAfter) ->
-                  csTeam(tId).tsMessageSelect .= MessageSelectState (pure $ MessagePostId latestPId)
-                _ -> return ()
-            else do
-              -- add a gap at the end of the newly fetched block and
-              -- make that the active selection if this fetch removed
-              -- the previously selected gap in this direction.
-              gapMsg <- newGapMessage (justAfter latestDate) False
-              csChannels %= modifyChannelById cId
-                (ccContents.cdMessages %~ addMessage gapMsg)
-              -- Move selection from old gap to new gap
-              case rmvdSelType of
-                Just (C UnknownGapAfter) ->
-                  csTeam(tId).tsMessageSelect .= MessageSelectState (gapMsg^.mMessageId)
-                _ -> return ()
+                if reAddGapAfter
+                  then
+                    -- No more gaps.  If the selected gap was removed, move
+                    -- select to last (latest) message.
+                    case rmvdSelType of
+                      Just (C UnknownGapAfter) ->
+                        csTeam(tId).tsMessageSelect .= MessageSelectState (pure $ MessagePostId latestPId)
+                      _ -> return ()
+                  else do
+                    -- add a gap at the end of the newly fetched block and
+                    -- make that the active selection if this fetch removed
+                    -- the previously selected gap in this direction.
+                    gapMsg <- newGapMessage (justAfter latestDate) False
+                    csChannels %= modifyChannelById cId
+                      (ccContents.cdMessages %~ addMessage gapMsg)
+                    -- Move selection from old gap to new gap
+                    case rmvdSelType of
+                      Just (C UnknownGapAfter) ->
+                        csTeam(tId).tsMessageSelect .= MessageSelectState (gapMsg^.mMessageId)
+                      _ -> return ()
+
+          case mTId of
+              Nothing -> do
+                  ts <- use csTeams
+                  forM_ (HM.keys ts) processTeam
+              Just tId -> processTeam tId
 
         -- Now initiate fetches for use information for any
         -- as-yet-unknown users related to this new set of messages
@@ -502,10 +511,12 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
 
             return NoAction
         Just ch -> do
-            let Just tId = ch^.ccInfo.cdTeamId
-            baseUrl <- getServerBaseUrl tId
+            let mTId = ch^.ccInfo.cdTeamId
+            mBaseUrl <- case mTId of
+                Nothing -> return Nothing
+                Just tId -> Just <$> getServerBaseUrl tId
 
-            let cp = toClientPost baseUrl new (new^.postRootIdL)
+            let cp = toClientPost mBaseUrl new (new^.postRootIdL)
                 fromMe = (cp^.cpUser == (Just $ myUserId st)) &&
                          (isNothing $ cp^.cpUserOverride)
                 userPrefs = st^.csResources.crUserPreferences
@@ -526,7 +537,8 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
                             when (isNothing authorResult) $
                                 handleNewUsers (Seq.singleton authorId) (return ())
 
-                    currCId <- use (csCurrentChannelId tId)
+                    curTId <- use csCurrentTeamId
+                    currCId <- use (csCurrentChannelId curTId)
                     flags <- use (csResources.crFlaggedPosts)
                     let (msg', mentionedUsers) = clientPostToMessage cp
                                  & _1.mFlagged .~ ((cp^.cpPostId) `Set.member` flags)
@@ -565,7 +577,7 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
                                 Nothing -> do
                                     doAsyncChannelMM Preempt cId
                                         (\s _ -> MM.mmGetThread parentId s)
-                                        (\_ p -> Just $ updatePostMap tId p)
+                                        (\_ p -> Just $ updatePostMap mTId p)
                                 _ -> return ()
                         _ -> return ()
 
@@ -573,7 +585,8 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
 
                 postedChanMessage =
                   withChannelOrDefault (postChannelId new) NoAction $ \chan -> do
-                      currCId <- use (csCurrentChannelId tId)
+                      currTid <- use csCurrentTeamId
+                      currCId <- use (csCurrentChannelId currTid)
 
                       let notifyPref = notifyPreference (myUser st) chan
                           curChannelAction = if postChannelId new == currCId
@@ -908,11 +921,10 @@ jumpToPost pId = do
               case findChannelById cId (st^.csChannels) of
                   Nothing ->
                       joinChannel' cId (Just $ jumpToPost pId)
-                  Just chan -> do
-                      let Just tId = chan^.ccInfo.cdTeamId
+                  Just _ -> do
                       setFocus cId
                       setMode MessageSelect
-                      csTeam(tId).tsMessageSelect .= MessageSelectState (msg^.mMessageId)
+                      csCurrentTeam.tsMessageSelect .= MessageSelectState (msg^.mMessageId)
           Nothing ->
             error "INTERNAL: selected Post ID not associated with a channel"
       Nothing -> do

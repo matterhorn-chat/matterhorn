@@ -51,14 +51,13 @@ exitPostListMode = do
   setMode Main
 
 
-createPostList :: PostListContents -> (Session -> IO Posts) -> MH ()
-createPostList contentsType fetchOp = do
+createPostList :: TeamId -> PostListContents -> (Session -> IO Posts) -> MH ()
+createPostList tId contentsType fetchOp = do
   session <- getSession
-  tId <- use csCurrentTeamId
   doAsyncWith Preempt $ do
     posts <- fetchOp session
     return $ Just $ do
-      messages <- installMessagesFromPosts tId posts
+      messages <- installMessagesFromPosts (Just tId) posts
       -- n.b. do not use addNewPostedMessage because these messages
       -- are not new, and so no notifications or channel highlighting
       -- or other post-processing should be performed.
@@ -72,8 +71,10 @@ createPostList contentsType fetchOp = do
 
 -- | Create a PostListOverlay with flagged messages from the server.
 enterFlaggedPostListMode :: MH ()
-enterFlaggedPostListMode = createPostList PostListFlagged $
-                           mmGetListOfFlaggedPosts UserMe defaultFlaggedPostsQuery
+enterFlaggedPostListMode = do
+    tId <- use csCurrentTeamId
+    createPostList tId PostListFlagged $
+        mmGetListOfFlaggedPosts UserMe defaultFlaggedPostsQuery
 
 -- | Create a PostListOverlay with pinned messages from the server for
 -- the current channel.
@@ -81,7 +82,7 @@ enterPinnedPostListMode :: MH ()
 enterPinnedPostListMode = do
     tId <- use csCurrentTeamId
     cId <- use (csCurrentChannelId tId)
-    createPostList (PostListPinned cId) $ mmGetChannelPinnedPosts cId
+    createPostList tId (PostListPinned cId) $ mmGetChannelPinnedPosts cId
 
 -- | Create a PostListOverlay with post search result messages from the
 -- server.
@@ -91,7 +92,7 @@ enterSearchResultPostListMode terms
   | otherwise = do
       enterPostListMode (PostListSearch terms True) noMessages
       tId <- use csCurrentTeamId
-      createPostList (PostListSearch terms False) $
+      createPostList tId (PostListSearch terms False) $
         mmSearchForTeamPosts tId (SearchPosts terms False)
 
 

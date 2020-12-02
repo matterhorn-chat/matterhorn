@@ -67,19 +67,21 @@ import           Matterhorn.Types.Common
 -- This also sets the mFlagged field of each message based on whether
 -- its post ID is a flagged post according to crFlaggedPosts at the time
 -- of this call.
-installMessagesFromPosts :: TeamId -> Posts -> MH Messages
-installMessagesFromPosts tId postCollection = do
+installMessagesFromPosts :: Maybe TeamId -> Posts -> MH Messages
+installMessagesFromPosts mTId postCollection = do
   flags <- use (csResources.crFlaggedPosts)
 
   -- Add all posts in this collection to the global post cache
-  updatePostMap tId postCollection
+  updatePostMap mTId postCollection
 
-  baseUrl <- getServerBaseUrl tId
+  mBaseUrl <- case mTId of
+      Nothing -> return Nothing
+      Just tId -> Just <$> getServerBaseUrl tId
 
   -- Build the ordered list of posts. Note that postsOrder lists the
   -- posts most recent first, but we want most recent last.
   let postsInOrder = findPost <$> (Seq.reverse $ postsOrder postCollection)
-      mkClientPost p = toClientPost baseUrl p (postId <$> parent p)
+      mkClientPost p = toClientPost mBaseUrl p (postId <$> parent p)
       clientPosts = mkClientPost <$> postsInOrder
 
       addNext cp (msgs, us) =
@@ -102,18 +104,21 @@ installMessagesFromPosts tId postCollection = do
             Just post -> post
 
 -- Add all posts in this collection to the global post cache
-updatePostMap :: TeamId -> Posts -> MH ()
-updatePostMap tId postCollection = do
+updatePostMap :: Maybe TeamId -> Posts -> MH ()
+updatePostMap mTId postCollection = do
   -- Build a map from post ID to Matterhorn message, then add the new
   -- messages to the global post map. We use the "postsPosts" field for
   -- this because that might contain more messages than the "postsOrder"
   -- list, since the former can contain other messages in threads that
   -- the server sent us, even if those messages are not part of the
   -- ordered post listing of "postsOrder."
-  baseUrl <- getServerBaseUrl tId
+  mBaseUrl <- case mTId of
+      Nothing -> return Nothing
+      Just tId -> Just <$> getServerBaseUrl tId
+
   let postMap = HM.fromList
           [ ( pId
-            , fst $ clientPostToMessage (toClientPost baseUrl x Nothing)
+            , fst $ clientPostToMessage (toClientPost mBaseUrl x Nothing)
             )
           | (pId, x) <- HM.toList (postCollection^.postsPostsL)
           ]
