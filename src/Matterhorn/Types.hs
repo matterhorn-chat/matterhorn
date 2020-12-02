@@ -1492,7 +1492,8 @@ newState :: StartupStateInfo -> ChatState
 newState (StartupStateInfo {..}) =
     let config = _crConfiguration startupStateResources
     in ChatState { _csResources                   = startupStateResources
-                 , _csTeamZipper                  = mkTeamZipper startupStateTeams
+                 , _csTeamZipper                  = Z.findRight (== startupStateInitialTeam) $
+                                                    mkTeamZipper startupStateTeams
                  , _csTeams                       = startupStateTeams
                  , _csChannelListOrientation      = configChannelListOrientation config
                  , _csMe                          = startupStateConnectedUser
