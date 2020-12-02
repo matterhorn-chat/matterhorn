@@ -1462,7 +1462,7 @@ data ViewMessageWindowTab =
     deriving (Eq, Show)
 
 data PendingChannelChange =
-    ChangeByChannelId ChannelId (Maybe (MH ()))
+    ChangeByChannelId TeamId ChannelId (Maybe (MH ()))
     | ChangeByUserId UserId
 
 -- | Startup state information that is constructed prior to building a

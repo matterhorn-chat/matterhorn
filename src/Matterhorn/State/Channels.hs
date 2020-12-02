@@ -446,9 +446,10 @@ handleNewChannel_ permitPostpone switch sbUpdate nc member = do
 checkPendingChannelChange :: ChannelId -> MH (Maybe (Maybe (MH ())))
 checkPendingChannelChange cId = do
     ch <- use (csCurrentTeam.tsPendingChannelChange)
+    curTid <- use csCurrentTeamId
     return $ case ch of
-        Just (ChangeByChannelId i act) ->
-            if i == cId then Just act else Nothing
+        Just (ChangeByChannelId tId i act) ->
+            if i == cId && curTid == tId then Just act else Nothing
         _ -> Nothing
 
 -- | Check to see whether the specified channel has been queued up to
@@ -516,6 +517,9 @@ showChannelInSidebar cId setPending = do
             csChannel(cId).ccInfo.cdSidebarShowOverride .= Just now
             updateSidebar (ch^.ccInfo.cdTeamId)
 
+            curTid <- use csCurrentTeamId
+            let tId = fromMaybe curTid (ch^.ccInfo.cdTeamId)
+
             case ch^.ccInfo.cdType of
                 Direct -> do
                     let Just uId = ch^.ccInfo.cdDMUserId
@@ -524,7 +528,7 @@ showChannelInSidebar cId setPending = do
                             let pref = showDirectChannelPref (me^.userIdL) uId True
                             when setPending $
                                 csCurrentTeam.tsPendingChannelChange .=
-                                    Just (ChangeByChannelId (ch^.ccInfo.cdChannelId) Nothing)
+                                    Just (ChangeByChannelId tId (ch^.ccInfo.cdChannelId) Nothing)
                             doAsyncWith Preempt $ do
                                 MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
                                 return Nothing
@@ -536,7 +540,7 @@ showChannelInSidebar cId setPending = do
                             let pref = showGroupChannelPref cId (me^.userIdL)
                             when setPending $
                                 csCurrentTeam.tsPendingChannelChange .=
-                                    Just (ChangeByChannelId (ch^.ccInfo.cdChannelId) Nothing)
+                                    Just (ChangeByChannelId tId (ch^.ccInfo.cdChannelId) Nothing)
                             doAsyncWith Preempt $ do
                                 MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
                                 return Nothing
@@ -931,8 +935,9 @@ createGroupChannel usernameList = do
                           -- we can just switch to it.
                           setFocus (channelId chan)
                       Nothing -> do
+                          tId <- use csCurrentTeamId
                           csCurrentTeam.tsPendingChannelChange .=
-                              (Just $ ChangeByChannelId (channelId chan) Nothing)
+                              (Just $ ChangeByChannelId tId (channelId chan) Nothing)
                           let pref = showGroupChannelPref (channelId chan) (me^.userIdL)
                           doAsyncWith Normal $ do
                             MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
@@ -1094,8 +1099,9 @@ joinChannel' chanId act = do
             fromMaybe (return ()) act
         Nothing -> do
             myId <- gets myUserId
+            tId <- use csCurrentTeamId
             let member = MinChannelMember myId chanId
-            csCurrentTeam.tsPendingChannelChange .= (Just $ ChangeByChannelId chanId act)
+            csCurrentTeam.tsPendingChannelChange .= (Just $ ChangeByChannelId tId chanId act)
             doAsyncChannelMM Preempt chanId (\ s c -> MM.mmAddUser c member s) (const $ return act)
 
 createOrFocusDMChannel :: UserInfo -> Maybe (ChannelId -> MH ()) -> MH ()
