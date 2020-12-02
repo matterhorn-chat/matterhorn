@@ -16,6 +16,7 @@ module Matterhorn.Themes
   , unreadChannelAttr
   , unreadGroupMarkerAttr
   , mentionsChannelAttr
+  , currentTeamAttr
   , urlAttr
   , codeAttr
   , emailAttr
@@ -160,6 +161,9 @@ unreadGroupMarkerAttr = "unreadChannelGroupMarker"
 
 mentionsChannelAttr :: AttrName
 mentionsChannelAttr = "channelWithMentions"
+
+currentTeamAttr :: AttrName
+currentTeamAttr = "currentTeam"
 
 tabSelectedAttr :: AttrName
 tabSelectedAttr = "tabSelected"
@@ -309,6 +313,7 @@ lightAttrs usernameColors =
        , (editedRecentlyMarkingAttr,        black `on` yellow)
        , (tabSelectedAttr,                  black `on` yellow)
        , (focusedFormInputAttr,             black `on` yellow)
+       , (currentTeamAttr,                  black `on` yellow)
        , (FB.fileBrowserCurrentDirectoryAttr, white `on` blue)
        , (FB.fileBrowserSelectionInfoAttr,  white `on` blue)
        , (FB.fileBrowserDirectoryAttr,      fg blue)
@@ -369,6 +374,7 @@ darkAttrs usernameColors =
      , (editedRecentlyMarkingAttr,        black `on` yellow)
      , (tabSelectedAttr,                  black `on` yellow)
      , (focusedFormInputAttr,             black `on` yellow)
+     , (currentTeamAttr,                  black `on` yellow)
      , (FB.fileBrowserCurrentDirectoryAttr, white `on` blue)
      , (FB.fileBrowserSelectionInfoAttr,  white `on` blue)
      , (FB.fileBrowserDirectoryAttr,      fg blue)
@@ -802,6 +808,9 @@ themeDocs = ThemeDocumentation $ M.fromList $
       )
     , ( currentUserAttr
       , "Attribute for the username of the user running Matterhorn"
+      )
+    , ( currentTeamAttr
+      , "The currently-selected team"
       )
     ] <> [ (usernameAttr i, T.pack $ "Username color " <> show i)
          | i <- [0..usernameColorHashBuckets-1]

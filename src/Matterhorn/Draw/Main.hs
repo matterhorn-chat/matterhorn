@@ -24,7 +24,8 @@ import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( (.~), (^?!), to, view, folding )
 
 import           Network.Mattermost.Types ( ChannelId, Type(Direct, Private, Group)
-                                          , ServerTime(..), UserId, TeamId
+                                          , ServerTime(..), UserId, TeamId, teamDisplayName
+                                          , teamId
                                           )
 
 
@@ -41,8 +42,10 @@ import           Matterhorn.State.MessageSelect
 import           Matterhorn.Themes
 import           Matterhorn.TimeUtils ( justAfter, justBefore )
 import           Matterhorn.Types
+import           Matterhorn.Types.Common ( sanitizeUserText )
 import           Matterhorn.Types.RichText ( parseMarkdown, TeamBaseURL )
 import           Matterhorn.Types.KeyEvents
+import qualified Matterhorn.Zipper as Z
 
 
 previewFromInput :: TeamBaseURL -> Maybe MessageType -> UserId -> Text -> Maybe Message
@@ -473,6 +476,21 @@ drawMain useColor st =
            , joinBorders $ mainInterface st
            ]
 
+teamList :: ChatState -> Widget Name
+teamList st =
+    let curTid = st^.csCurrentTeamId
+        z = st^.csTeamZipper
+        teams = (\tId -> st^.csTeam(tId)) <$> (concat $ snd <$> Z.toList z)
+        entries = mkEntry <$> teams
+        mkEntry ts = (if teamId (_tsTeam ts) == curTid
+                        then withDefAttr currentTeamAttr
+                        else id) $
+                     txt $
+                     sanitizeUserText $
+                     teamDisplayName $
+                     _tsTeam ts
+    in hBox entries
+
 connectionLayer :: ChatState -> Widget Name
 connectionLayer st =
     case st^.csConnectionStatus of
@@ -655,7 +673,8 @@ renderDeleteConfirm =
 
 mainInterface :: ChatState -> Widget Name
 mainInterface st =
-    vBox [ body
+    vBox [ teamList st
+         , body
          , bottomBorder
          , inputPreview st hs
          , userInputArea st hs

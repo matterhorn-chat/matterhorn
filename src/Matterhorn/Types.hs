@@ -120,7 +120,7 @@ module Matterhorn.Types
   , channelSelectInput
   , emptyChannelSelectState
 
-  , TeamState
+  , TeamState(..)
   , tsFocus
   , tsMode
   , tsPendingChannelChange
