@@ -322,14 +322,16 @@ refreshChannelsAndUsers = do
 -- immediate setting is passed here.
 refreshChannel :: SidebarUpdate -> Channel -> ChannelMember -> MH ()
 refreshChannel upd chan member = do
-    let cId = getId chan
-    myTId <- use csCurrentTeamId
-    let ourTeam = channelTeamId chan == Nothing ||
-                  Just myTId == channelTeamId chan
+    ts <- use csTeams
+    let ourTeams = HM.keys ts
+        isOurTeam = case channelTeamId chan of
+            Nothing -> True
+            Just tId -> tId `elem` ourTeams
 
-    case not ourTeam of
-        True -> return ()
-        False -> do
+    case isOurTeam of
+        False -> return ()
+        True -> do
+            let cId = getId chan
             -- If this channel is unknown, register it first.
             mChan <- preuse (csChannel(cId))
             when (isNothing mChan) $
