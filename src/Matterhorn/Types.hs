@@ -108,6 +108,7 @@ module Matterhorn.Types
 
   , attrNameToConfig
 
+  , mkTeamZipper
   , mkChannelZipperList
   , ChannelListGroup(..)
   , channelListGroupUnread
@@ -143,6 +144,7 @@ module Matterhorn.Types
   , newState
   , newTeamState
 
+  , csTeamZipper
   , csCurrentTeam
   , csTeams
   , csTeam
@@ -354,6 +356,7 @@ import qualified Control.Monad.Reader as R
 import qualified Data.Set as Set
 import qualified Data.ByteString as BS
 import qualified Data.Foldable as F
+import           Data.Function ( on )
 import qualified Data.Kind as K
 import           Data.Ord ( comparing )
 import qualified Data.HashMap.Strict as HM
@@ -1354,6 +1357,8 @@ data ChatState =
               , _csCurrentTeamId :: TeamId
               -- ^ The ID of the team that we are currently viewing and
               -- interacting with.
+              , _csTeamZipper :: Z.Zipper TeamId ()
+              -- ^ The list of teams we can cycle through.
               , _csChannelListOrientation :: ChannelListOrientation
               -- ^ The orientation of the channel list.
               , _csMe :: User
@@ -1491,6 +1496,7 @@ newState (StartupStateInfo {..}) =
     let config = _crConfiguration startupStateResources
     in ChatState { _csResources                   = startupStateResources
                  , _csCurrentTeamId               = startupStateInitialTeam
+                 , _csTeamZipper                  = mkTeamZipper startupStateTeams
                  , _csTeams                       = startupStateTeams
                  , _csChannelListOrientation      = configChannelListOrientation config
                  , _csMe                          = startupStateConnectedUser
@@ -1503,6 +1509,11 @@ newState (StartupStateInfo {..}) =
                  , _csClientConfig                = Nothing
                  , _csInputHistory                = startupStateInitialHistory
                  }
+
+mkTeamZipper :: HM.HashMap TeamId TeamState -> Z.Zipper TeamId ()
+mkTeamZipper m =
+    let teams = sortBy (compare `on` teamName) $ _tsTeam <$> HM.elems m
+    in Z.fromList $ (\tId -> (tId, mempty)) <$> teamId <$> teams
 
 newTeamState :: Team
              -> Z.Zipper ChannelListGroup ChannelListEntry
