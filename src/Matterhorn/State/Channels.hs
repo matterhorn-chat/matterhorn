@@ -275,13 +275,16 @@ setLastViewedFor prevId cId = do
 refreshChannelsAndUsers :: MH ()
 refreshChannelsAndUsers = do
     session <- getSession
-    myTId <- use csCurrentTeamId
     me <- gets myUser
     knownUsers <- gets allUserIds
+    ts <- use csTeams
     doAsyncWith Preempt $ do
-      (chans, datas) <- runConcurrently $ (,)
-                       <$> Concurrently (MM.mmGetChannelsForUser UserMe myTId session)
-                       <*> Concurrently (MM.mmGetChannelMembersForUser UserMe myTId session)
+      pairs <- forM (HM.keys ts) $ \tId -> do
+          runConcurrently $ (,)
+              <$> Concurrently (MM.mmGetChannelsForUser UserMe tId session)
+              <*> Concurrently (MM.mmGetChannelMembersForUser UserMe tId session)
+
+      let (chans, datas) = (mconcat $ fst <$> pairs, mconcat $ snd <$> pairs)
 
       -- Collect all user IDs associated with DM channels so we can
       -- bulk-fetch their user records.
@@ -302,7 +305,7 @@ refreshChannelsAndUsers = do
           handleNewUsers (Seq.fromList uIdsToFetch) $ do
               -- Then refresh all loaded channels
               forM_ chansWithData $ uncurry (refreshChannel SidebarUpdateDeferred)
-              updateSidebar $ Just myTId
+              updateSidebar Nothing
 
 -- | Refresh information about a specific channel.  The channel
 -- metadata is refreshed, and if this is a loaded channel, the
