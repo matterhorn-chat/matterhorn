@@ -1,13 +1,6 @@
 Multi-team support TODO list
 ----------------------------
 
- * Work through audit results to address issues found
-   (docs/csCurrentTeam_audit.txt)
-
- * State.Channels.refreshChannelsAndUsers only gets channels for one
-   team, but also refreshes user data. We need to break that up so we
-   can refresh channels for a specific team separately from users.
-
  * Spawn an Aspell instance for each team. Reasoning: right now we just
    have one instance, and although it would be fine to use it as long
    as we maintain a queue of spell checking requests, the bigger issue
