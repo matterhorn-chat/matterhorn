@@ -10,6 +10,7 @@ import           Matterhorn.Prelude
 import           Brick.BChan ( newBChan )
 import           Brick.Themes ( themeToAttrMap, loadCustomizations )
 import qualified Control.Concurrent.STM as STM
+import qualified Data.HashMap.Strict as HM
 import           Data.Maybe ( fromJust )
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
@@ -257,14 +258,14 @@ initializeState cr myTeam me = do
                                     Nothing (cr^.crUserPreferences) clientChans noUsers
       chanZip = Z.fromList chanIds
       clientChans = foldr (uncurry addChannel) noChannels chanPairs
+      teams = HM.fromList [(teamId myTeam, newTeamState myTeam chanZip spResult)]
       startupState =
           StartupStateInfo { startupStateResources      = cr
-                           , startupStateChannelZipper  = chanZip
                            , startupStateConnectedUser  = me
-                           , startupStateTeam           = myTeam
                            , startupStateTimeZone       = tz
                            , startupStateInitialHistory = hist
-                           , startupStateSpellChecker   = spResult
+                           , startupStateInitialTeam    = teamId myTeam
+                           , startupStateTeams          = teams
                            }
 
   let st = newState startupState & csChannels .~ clientChans

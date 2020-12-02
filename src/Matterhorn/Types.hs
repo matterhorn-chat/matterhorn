@@ -141,6 +141,8 @@ module Matterhorn.Types
 
   , ChatState
   , newState
+  , newTeamState
+
   , csCurrentTeam
   , csTeams
   , csTeam
@@ -1469,12 +1471,11 @@ data PendingChannelChange =
 -- ChatState.
 data StartupStateInfo =
     StartupStateInfo { startupStateResources      :: ChatResources
-                     , startupStateChannelZipper  :: Z.Zipper ChannelListGroup ChannelListEntry
                      , startupStateConnectedUser  :: User
-                     , startupStateTeam           :: Team
+                     , startupStateTeams          :: HM.HashMap TeamId TeamState
                      , startupStateTimeZone       :: TimeZoneSeries
                      , startupStateInitialHistory :: InputHistory
-                     , startupStateSpellChecker   :: Maybe (Aspell, IO ())
+                     , startupStateInitialTeam    :: TeamId
                      }
 
 -- | The state of the channel topic editor window.
@@ -1488,11 +1489,9 @@ data ChannelTopicDialogState =
 newState :: StartupStateInfo -> ChatState
 newState (StartupStateInfo {..}) =
     let config = _crConfiguration startupStateResources
-        ts = newTeamState startupStateTeam startupStateChannelZipper startupStateSpellChecker
-        tId = teamId $ _tsTeam ts
     in ChatState { _csResources                   = startupStateResources
-                 , _csCurrentTeamId               = tId
-                 , _csTeams                       = HM.fromList [(tId, ts)]
+                 , _csCurrentTeamId               = startupStateInitialTeam
+                 , _csTeams                       = startupStateTeams
                  , _csChannelListOrientation      = configChannelListOrientation config
                  , _csMe                          = startupStateConnectedUser
                  , _csChannels                    = noChannels
