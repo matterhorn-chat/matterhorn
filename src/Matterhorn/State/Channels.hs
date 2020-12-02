@@ -90,6 +90,8 @@ import           Matterhorn.Zipper ( Zipper )
 import qualified Matterhorn.Zipper as Z
 
 
+-- | Update the sidebar for the specified team state only, or all team
+-- states if not given a specific team ID.
 updateSidebar :: Maybe TeamId -> MH ()
 updateSidebar Nothing = do
     ts <- use csTeams
