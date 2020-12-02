@@ -58,3 +58,6 @@ Multi-team support TODO list
  * The last run state feature works by saving a last-run state for
    a given team ID. Instead of loading the last run state for just the
    current team, we'll want to load it for any active team.
+
+ * Put the team selection area in a viewport in case the window is too
+   small.
