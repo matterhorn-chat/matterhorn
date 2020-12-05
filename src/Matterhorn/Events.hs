@@ -227,15 +227,21 @@ handleWSEvent we = do
     myId <- gets myUserId
     ts <- use csTeams
     let myTIds = HM.keys ts
+        -- The team ID is one of the teams we're in, or the team ID is
+        -- absent, which typically indicates a DM channel event since DM
+        -- channels are not associated with teams.
+        inMyTeamOrDM (Just i) = i `elem` myTIds
+        inMyTeamOrDM Nothing = True
+
+        -- The team ID is one of the teams we're in. A missing team ID
+        -- yields False.
         inMyTeam (Just i) = i `elem` myTIds
-        inMyTeam Nothing = True
-        inMyTeam' (Just i) = i `elem` myTIds
-        inMyTeam' Nothing = False
+        inMyTeam Nothing = False
 
     case weEvent we of
         WMPosted
             | Just p <- wepPost (weData we) ->
-                when (inMyTeam (wepTeamId (weData we))) $ do
+                when (inMyTeamOrDM (wepTeamId (weData we))) $ do
                     let wasMentioned = maybe False (Set.member myId) $ wepMentions (weData we)
                     addNewPostedMessage $ RecentPost p wasMentioned
 
@@ -286,7 +292,7 @@ handleWSEvent we = do
         WMUserAdded
             | Just cId <- webChannelId (weBroadcast we) ->
                 when (wepUserId (weData we) == Just myId &&
-                      inMyTeam' (wepTeamId (weData we))) $
+                      inMyTeam (wepTeamId (weData we))) $
                     handleChannelInvite cId
             | otherwise -> return ()
 
@@ -308,7 +314,7 @@ handleWSEvent we = do
 
         WMChannelDeleted
             | Just cId <- wepChannelId (weData we) ->
-                when (inMyTeam (webTeamId (weBroadcast we))) $
+                when (inMyTeamOrDM (webTeamId (weBroadcast we))) $
                     removeChannelFromState cId
             | otherwise -> return ()
 
