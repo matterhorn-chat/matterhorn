@@ -3,6 +3,7 @@
 {-# LANGUAGE DeriveFoldable #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module Matterhorn.Types.Channels
   ( ClientChannel(..)
@@ -332,6 +333,14 @@ removeChannel cId cs =
     in cs & chanMap %~ HM.delete cId
           & removeChannelName
           & userChannelMap %~ HM.filter (/= cId)
+
+instance Semigroup (AllMyChannels ClientChannel) where
+    a <> b =
+        let pairs = HM.toList $ _chanMap a
+        in foldr (uncurry addChannel) b pairs
+
+instance Monoid (AllMyChannels ClientChannel) where
+    mempty = noChannels
 
 getDmChannelFor :: UserId -> ClientChannels -> Maybe ChannelId
 getDmChannelFor uId cs = cs^.userChannelMap.at uId

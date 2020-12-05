@@ -1,37 +1,6 @@
 Multi-team support TODO list
 ----------------------------
 
- * Spawn an Aspell instance for each team. Reasoning: right now we just
-   have one instance, and although it would be fine to use it as long
-   as we maintain a queue of spell checking requests, the bigger issue
-   is that we want to maintain a spell checking request delay thread
-   for each teditor (and thus each team). Those delay timer threads
-   cannot fire their request timers will cause havoc if they use the
-   same Aspell instance for multiple teams since it would be easy for
-   someone to type some text in team A's editor, then switch to B, then
-   see weird spell check results because the delay thread for A fired
-   and asked Aspell to check the A editor input.
-
- * Like Getty's patch, we need to get rid of the team selector UI and
-   just populate the state with a TeamState for each team.
-
- * The config has a setting to select the team. Instead of just
-   connecting to this team, we can re-use the setting to mean "show
-   this team initially on startup." This needs to be documented in the
-   changelog when this feature goes out.
-
- * Need to figure out how much team information to load on startup,
-   and/or whether we already are (but are ignoring it; are we already
-   receiving all channels for all teams we're in?).
-
- * On startup, make a TeamState for each team. Track which team is the
-   "current" one. We will likely need to care about the ordering
-   for presentation purposes (which needs to be stable and should
-   probably be based on alphabetic sorting of team name). We'll need
-   two data structures: a map from team ID to TeamState (for efficient
-   access) and a list of team IDs that we can put in a zipper, say, for
-   presentation and navigation.
-
  * There needs to be some indication in the UI for which teams have
    unread activity.
 
@@ -54,7 +23,3 @@ Multi-team support TODO list
    is not looking at the channel (i.e. set the New Messages line and do
    NOT update the view timestamp). This should basically be the same
    logic we already have for the "not the current channel" case.
-
- * The last run state feature works by saving a last-run state for
-   a given team ID. Instead of loading the last run state for just the
-   current team, we'll want to load it for any active team.

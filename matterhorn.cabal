@@ -127,7 +127,6 @@ library
                        Matterhorn.State.UrlSelect
                        Matterhorn.State.UserListOverlay
                        Matterhorn.State.Users
-                       Matterhorn.TeamSelect
                        Matterhorn.Themes
                        Matterhorn.TimeUtils
                        Matterhorn.Types

@@ -10,6 +10,7 @@ import           Matterhorn.Prelude
 import           Brick.BChan ( newBChan )
 import           Brick.Themes ( themeToAttrMap, loadCustomizations )
 import qualified Control.Concurrent.STM as STM
+import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
 import           Data.Maybe ( fromJust )
 import qualified Data.Sequence as Seq
@@ -30,7 +31,6 @@ import           Matterhorn.Login
 import           Matterhorn.State.Flagging
 import           Matterhorn.State.Messages ( fetchVisibleIfNeeded )
 import           Matterhorn.State.Setup.Threads
-import           Matterhorn.TeamSelect
 import           Matterhorn.Themes
 import           Matterhorn.TimeUtils ( lookupLocalTimeZone )
 import           Matterhorn.Types
@@ -104,25 +104,16 @@ setupState mkVty mLogLocation config = do
           -- with setup.
           return (sess, user, cd, mbTeam)
 
-  teams <- mmGetUsersTeams UserMe session
-  when (Seq.null teams) $ do
+  teams <- F.toList <$> mmGetUsersTeams UserMe session
+  when (null teams) $ do
       putStrLn "Error: your account is not a member of any teams"
       exitFailure
 
-  (myTeam, teamSelVty) <- do
-      let foundTeam = do
-             tName <- mbTeam <|> configTeam config
-             let matchingTeam = listToMaybe $ filter matches $ toList teams
-                 matches t = (sanitizeUserText $ teamName t) == tName
-             matchingTeam
-
-      case foundTeam of
-          Just t -> return (t, loginVty)
-          Nothing -> do
-              (mTeam, vty) <- interactiveTeamSelection loginVty mkVty $ toList teams
-              case mTeam of
-                  Nothing -> shutdown vty
-                  Just team -> return (team, vty)
+  let initialTeamId = fromMaybe (teamId $ head $ sortTeams teams) $ do
+          tName <- mbTeam <|> configTeam config
+          let matchingTeam = listToMaybe $ filter matches teams
+              matches t = (sanitizeUserText $ teamName t) == tName
+          teamId <$> matchingTeam
 
   userStatusChan <- STM.newTChanIO
   slc <- STM.newTChanIO
@@ -152,7 +143,7 @@ setupState mkVty mLogLocation config = do
                  result <- loadCustomizations absPath baseTheme
                  case result of
                      Left e -> do
-                         Vty.shutdown teamSelVty
+                         Vty.shutdown loginVty
                          putStrLn $ "Error loading theme customization from " <> show absPath <> ": " <> e
                          exitFailure
                      Right t -> return t
@@ -182,42 +173,14 @@ setupState mkVty mLogLocation config = do
                          , _crEmoji               = emoji
                          }
 
-  st <- initializeState cr myTeam me
+  st <- initializeState cr initialTeamId teams me
 
-  return (st, teamSelVty)
+  return (st, loginVty)
 
-initializeState :: ChatResources -> Team -> User -> IO ChatState
-initializeState cr myTeam me = do
+initializeState :: ChatResources -> TeamId -> [Team] -> User -> IO ChatState
+initializeState cr initialTeamId teams me = do
   let session = getResourceSession cr
       requestChan = cr^.crRequestQueue
-      myTId = getId myTeam
-
-  -- Create a predicate to find the last selected channel by reading the
-  -- run state file. If unable to read or decode or validate the file, this
-  -- predicate is just `isTownSquare`.
-  isLastSelectedChannel <- do
-    result <- readLastRunState $ teamId myTeam
-    case result of
-      Right lrs | isValidLastRunState cr me lrs -> return $ \c ->
-           channelId c == lrs^.lrsSelectedChannelId
-      _ -> return isTownSquare
-
-  -- Get all channels, but filter down to just the one we want to start
-  -- in. We get all, rather than requesting by name or ID, because
-  -- we don't know whether the server will give us a last-viewed preference.
-  -- We first try to find a channel matching with the last selected channel ID,
-  -- failing which we look for the Town Square channel by name.
-  userChans <- mmGetChannelsForUser UserMe myTId session
-  let lastSelectedChans = Seq.filter isLastSelectedChannel userChans
-      chans = if Seq.null lastSelectedChans
-                then Seq.filter isTownSquare userChans
-                else lastSelectedChans
-
-  -- Since the only channel we are dealing with is by construction the
-  -- last channel, we don't have to consider other cases here:
-  chanPairs <- forM (toList chans) $ \c -> do
-      cChannel <- makeClientChannel (userId me) c
-      return (getId c, cChannel)
 
   tz <- lookupLocalTimeZone
   hist <- do
@@ -248,27 +211,22 @@ initializeState cr myTeam me = do
   --  * Subprocess logger
   startSubprocessLoggerThread (cr^.crSubprocessLog) requestChan
 
-  --  * Spell checker and spell check timer, if configured
-  spResult <- maybeStartSpellChecker (cr^.crConfiguration) (cr^.crEventQueue)
-
   -- End thread startup ----------------------------------------------
 
-  now <- getCurrentTime
-  let chanIds = mkChannelZipperList now (cr^.crConfiguration) (teamId myTeam)
-                                    Nothing (cr^.crUserPreferences) clientChans noUsers
-      chanZip = Z.fromList chanIds
-      clientChans = foldr (uncurry addChannel) noChannels chanPairs
-      teams = HM.fromList [(teamId myTeam, newTeamState myTeam chanZip spResult)]
-      startupState =
+  -- For each team, build a team state and load the last-run state.
+  (teamStates, chanLists) <- unzip <$> mapM (buildTeamState cr me) teams
+
+  let startupState =
           StartupStateInfo { startupStateResources      = cr
                            , startupStateConnectedUser  = me
                            , startupStateTimeZone       = tz
                            , startupStateInitialHistory = hist
-                           , startupStateInitialTeam    = teamId myTeam
-                           , startupStateTeams          = teams
+                           , startupStateInitialTeam    = initialTeamId
+                           , startupStateTeams          = teamMap
                            }
-
-  let st = newState startupState & csChannels .~ clientChans
+      clientChans = mconcat chanLists
+      st = newState startupState & csChannels .~ clientChans
+      teamMap = HM.fromList $ (\ts -> (teamId $ _tsTeam ts, ts)) <$> F.toList teamStates
 
   loadFlaggedMessages (cr^.crUserPreferences.userPrefFlaggedPostList) st
 
@@ -280,3 +238,47 @@ initializeState cr myTeam me = do
       fetchVisibleIfNeeded
 
   return st
+
+buildTeamState :: ChatResources -> User -> Team -> IO (TeamState, ClientChannels)
+buildTeamState cr me team = do
+  let tId = teamId team
+      session = getResourceSession cr
+
+  -- Create a predicate to find the last selected channel by reading the
+  -- run state file. If unable to read or decode or validate the file, this
+  -- predicate is just `isTownSquare`.
+  isLastSelectedChannel <- do
+    result <- readLastRunState tId
+    case result of
+      Right lrs | isValidLastRunState cr me lrs -> return $ \c ->
+           channelId c == lrs^.lrsSelectedChannelId
+      _ -> return isTownSquare
+
+  -- Get all channels, but filter down to just the one we want to start
+  -- in. We get all, rather than requesting by name or ID, because
+  -- we don't know whether the server will give us a last-viewed preference.
+  -- We first try to find a channel matching with the last selected channel ID,
+  -- failing which we look for the Town Square channel by name.
+  userChans <- mmGetChannelsForUser UserMe tId session
+  let lastSelectedChans = Seq.filter isLastSelectedChannel userChans
+      chans = if Seq.null lastSelectedChans
+                then Seq.filter isTownSquare userChans
+                else lastSelectedChans
+
+  -- Since the only channel we are dealing with is by construction the
+  -- last channel, we don't have to consider other cases here:
+  chanPairs <- forM (toList chans) $ \c -> do
+      cChannel <- makeClientChannel (userId me) c
+      return (getId c, cChannel)
+
+  --  * Spell checker and spell check timer, if configured
+  spResult <- maybeStartSpellChecker (cr^.crConfiguration) (cr^.crEventQueue)
+
+  now <- getCurrentTime
+  let chanIds = mkChannelZipperList now (cr^.crConfiguration) tId
+                                        Nothing (cr^.crUserPreferences)
+                                        clientChans noUsers
+      chanZip = Z.fromList chanIds
+      clientChans = foldr (uncurry addChannel) noChannels chanPairs
+
+  return (newTeamState team chanZip spResult, clientChans)

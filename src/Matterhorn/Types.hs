@@ -108,6 +108,7 @@ module Matterhorn.Types
 
   , attrNameToConfig
 
+  , sortTeams
   , mkTeamZipper
   , mkChannelZipperList
   , ChannelListGroup(..)
@@ -1508,9 +1509,12 @@ newState (StartupStateInfo {..}) =
                  , _csInputHistory                = startupStateInitialHistory
                  }
 
+sortTeams :: [Team] -> [Team]
+sortTeams = sortBy (compare `on` teamName)
+
 mkTeamZipper :: HM.HashMap TeamId TeamState -> Z.Zipper () TeamId
 mkTeamZipper m =
-    let sortedTeams = sortBy (compare `on` teamName) $ _tsTeam <$> HM.elems m
+    let sortedTeams = sortTeams $ _tsTeam <$> HM.elems m
     in Z.fromList [((), teamId <$> sortedTeams)]
 
 newTeamState :: Team
