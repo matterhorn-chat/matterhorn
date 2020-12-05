@@ -4,6 +4,9 @@ Multi-team support TODO list
  * There needs to be some indication in the UI for which teams have
    unread activity.
 
+ * Maybe we don't want to display the current team in the channel list
+   if there is a team list at the top of the window?
+
  * Is there a server event that tells us we have been added to a new
    team? Probably WMAddedToTeam.
 
