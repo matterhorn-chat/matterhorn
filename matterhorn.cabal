@@ -123,6 +123,7 @@ library
                        Matterhorn.State.Setup
                        Matterhorn.State.Setup.Threads
                        Matterhorn.State.Setup.Threads.Logging
+                       Matterhorn.State.Teams
                        Matterhorn.State.ThemeListOverlay
                        Matterhorn.State.UrlSelect
                        Matterhorn.State.UserListOverlay

@@ -15,6 +15,7 @@ import           Matterhorn.State.Channels
 import           Matterhorn.State.Editing
 import           Matterhorn.State.MessageSelect
 import           Matterhorn.State.PostListOverlay ( enterFlaggedPostListMode )
+import           Matterhorn.State.Teams
 import           Matterhorn.State.UrlSelect
 import           Matterhorn.Types
 
@@ -49,6 +50,12 @@ mainKeyHandlers =
 
     , mkKb ToggleExpandedChannelTopicsEvent "Toggle display of expanded channel topics"
         toggleExpandedChannelTopics
+
+    , mkKb NextTeamEvent "Switch to the next available team"
+        nextTeam
+
+    , mkKb PrevTeamEvent "Switch to the previous available team"
+        prevTeam
 
     , mkKb
         InvokeEditorEvent
