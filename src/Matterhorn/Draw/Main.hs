@@ -492,7 +492,7 @@ teamList st =
     in if length teams == 1
        then emptyWidget
        else vBox [ hBox [ padRight (Pad 1) $ txt "Teams:"
-                        , viewport TeamList Horizontal $ hBox entries
+                        , vLimit 1 $ viewport TeamList Horizontal $ hBox entries
                         ]
                  , hBorder
                  ]
