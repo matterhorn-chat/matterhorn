@@ -9,6 +9,7 @@ import           Prelude ()
 import           Matterhorn.Prelude
 
 import           Brick
+import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
 import qualified Data.Text as T
@@ -224,35 +225,53 @@ handleWSActionResponse r =
 handleWSEvent :: WebsocketEvent -> MH ()
 handleWSEvent we = do
     myId <- gets myUserId
-    myTId <- use csCurrentTeamId
+    ts <- use csTeams
+    let myTIds = HM.keys ts
+        inMyTeam (Just i) = i `elem` myTIds
+        inMyTeam Nothing = True
+        inMyTeam' (Just i) = i `elem` myTIds
+        inMyTeam' Nothing = False
+
     case weEvent we of
         WMPosted
             | Just p <- wepPost (weData we) ->
-                when (wepTeamId (weData we) == Just myTId ||
-                      wepTeamId (weData we) == Nothing) $ do
+                when (inMyTeam (wepTeamId (weData we))) $ do
                     let wasMentioned = maybe False (Set.member myId) $ wepMentions (weData we)
                     addNewPostedMessage $ RecentPost p wasMentioned
-                    cId <- use (csCurrentChannelId myTId)
-                    when (postChannelId p /= cId) $
-                        showChannelInSidebar (p^.postChannelIdL) False
+
+                    case wepTeamId $ weData we of
+                        Nothing -> return ()
+                        Just tId -> do
+                            cId <- use (csCurrentChannelId tId)
+                            when (postChannelId p /= cId) $
+                                showChannelInSidebar (p^.postChannelIdL) False
+
             | otherwise -> return ()
 
         WMPostEdited
             | Just p <- wepPost (weData we) -> do
                 editMessage p
-                cId <- use (csCurrentChannelId myTId)
-                when (postChannelId p == cId) (updateViewed False)
-                when (postChannelId p /= cId) $
-                    showChannelInSidebar (p^.postChannelIdL) False
+
+                currTid <- use csCurrentTeamId
+                forM_ myTIds $ \tId -> do
+                    cId <- use (csCurrentChannelId tId)
+                    when (postChannelId p == cId && tId == currTid) $
+                        updateViewed False
+                    when (postChannelId p /= cId) $
+                        showChannelInSidebar (p^.postChannelIdL) False
             | otherwise -> return ()
 
         WMPostDeleted
             | Just p <- wepPost (weData we) -> do
                 deleteMessage p
-                cId <- use (csCurrentChannelId myTId)
-                when (postChannelId p == cId) (updateViewed False)
-                when (postChannelId p /= cId) $
-                    showChannelInSidebar (p^.postChannelIdL) False
+
+                currTid <- use csCurrentTeamId
+                forM_ myTIds $ \tId -> do
+                    cId <- use (csCurrentChannelId tId)
+                    when (postChannelId p == cId && tId == currTid) $
+                        updateViewed False
+                    when (postChannelId p /= cId) $
+                        showChannelInSidebar (p^.postChannelIdL) False
             | otherwise -> return ()
 
         WMStatusChange
@@ -267,7 +286,7 @@ handleWSEvent we = do
         WMUserAdded
             | Just cId <- webChannelId (weBroadcast we) ->
                 when (wepUserId (weData we) == Just myId &&
-                      wepTeamId (weData we) == Just myTId) $
+                      inMyTeam' (wepTeamId (weData we))) $
                     handleChannelInvite cId
             | otherwise -> return ()
 
@@ -289,7 +308,7 @@ handleWSEvent we = do
 
         WMChannelDeleted
             | Just cId <- wepChannelId (weData we) ->
-                when (webTeamId (weBroadcast we) == Just myTId) $
+                when (inMyTeam (webTeamId (weBroadcast we))) $
                     removeChannelFromState cId
             | otherwise -> return ()
 
