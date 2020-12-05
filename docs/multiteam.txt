@@ -14,12 +14,3 @@ Multi-team support TODO list
 
  * Are there other team-related events that we should pay attention to?
    Probably WMUpdateTeam.
-
- * When switching teams, we need to update the view timestamp for the
-   current channel of the team we are switching to.
-
- * When we get a new message in a team's current channel when that team
-   is NOT the currently-viewed team, we need to treat that like the user
-   is not looking at the channel (i.e. set the New Messages line and do
-   NOT update the view timestamp). This should basically be the same
-   logic we already have for the "not the current channel" case.
