@@ -261,6 +261,9 @@ handleWSEvent we = do
                 setUserStatus uId status
             | otherwise -> return ()
 
+        -- Despite this event's name, it means "a user was added to a
+        -- channel". The event that occurs when a new user is added to
+        -- the server, see WMNewUser.
         WMUserAdded
             | Just cId <- webChannelId (weBroadcast we) ->
                 when (wepUserId (weData we) == Just myId &&
