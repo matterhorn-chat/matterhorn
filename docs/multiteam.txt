@@ -17,3 +17,6 @@ Multi-team support TODO list
 
  * Are there other team-related events that we should pay attention to?
    Probably WMUpdateTeam.
+
+ * The title bar update for the unread channel count needs to only take
+   effect for the current team and needs to be refreshed on team switch.
