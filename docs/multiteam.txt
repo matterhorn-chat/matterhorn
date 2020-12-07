@@ -23,3 +23,8 @@ Multi-team support TODO list
 
  * Check on how we could extend the notification script API to include
    the team name and/or ID.
+
+ * Support rearranging the team list (keybinding to shift left/right)
+   and update the user prefs (category="teams_order" and name=""). Also
+   honor the preference at startup when populating the team list and
+   sort any unmentioned teams alphabetically.
