@@ -245,8 +245,13 @@ handleWSEvent we = do
                     let wasMentioned = maybe False (Set.member myId) $ wepMentions (weData we)
                     addNewPostedMessage $ RecentPost p wasMentioned
 
+                    currTId <- use csCurrentTeamId
+                    currCId <- use (csCurrentChannelId currTId)
                     case wepTeamId $ weData we of
-                        Nothing -> return ()
+                        Nothing -> do
+                            forM_ myTIds $ \tId -> do
+                                when (tId /= currTId || postChannelId p /= currCId) $
+                                   showChannelInSidebar (p^.postChannelIdL) False
                         Just tId -> do
                             cId <- use (csCurrentChannelId tId)
                             when (postChannelId p /= cId) $
