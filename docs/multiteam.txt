@@ -28,3 +28,7 @@ Multi-team support TODO list
    and update the user prefs (category="teams_order" and name=""). Also
    honor the preference at startup when populating the team list and
    sort any unmentioned teams alphabetically.
+
+ * showChannelInSidebar uses csCurrentTeam a few times. Is that correct?
+   I don't think so. I think it should use the team that owns the
+   channel (or all teams if a DM channel).
