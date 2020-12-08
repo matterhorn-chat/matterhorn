@@ -13,7 +13,6 @@ import qualified Control.Concurrent.STM as STM
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
 import           Data.Maybe ( fromJust )
-import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Time.Clock ( getCurrentTime )
 import qualified Graphics.Vty as Vty
@@ -26,10 +25,10 @@ import           Network.Mattermost.Types
 
 import           Matterhorn.Config
 import           Matterhorn.InputHistory
-import           Matterhorn.LastRunState
 import           Matterhorn.Login
 import           Matterhorn.State.Flagging
 import           Matterhorn.State.Messages ( fetchVisibleIfNeeded )
+import           Matterhorn.State.Teams ( buildTeamState )
 import           Matterhorn.State.Setup.Threads
 import           Matterhorn.Themes
 import           Matterhorn.TimeUtils ( lookupLocalTimeZone )
@@ -37,7 +36,6 @@ import           Matterhorn.Types
 import           Matterhorn.Types.Common
 import           Matterhorn.Emoji
 import           Matterhorn.FilePaths ( userEmojiJsonPath, bundledEmojiJsonPath )
-import qualified Matterhorn.Zipper as Z
 
 
 incompleteCredentials :: Config -> ConnectionInfo
@@ -238,47 +236,3 @@ initializeState cr initialTeamId teams me = do
       fetchVisibleIfNeeded
 
   return st
-
-buildTeamState :: ChatResources -> User -> Team -> IO (TeamState, ClientChannels)
-buildTeamState cr me team = do
-  let tId = teamId team
-      session = getResourceSession cr
-
-  -- Create a predicate to find the last selected channel by reading the
-  -- run state file. If unable to read or decode or validate the file, this
-  -- predicate is just `isTownSquare`.
-  isLastSelectedChannel <- do
-    result <- readLastRunState tId
-    case result of
-      Right lrs | isValidLastRunState cr me lrs -> return $ \c ->
-           channelId c == lrs^.lrsSelectedChannelId
-      _ -> return isTownSquare
-
-  -- Get all channels, but filter down to just the one we want to start
-  -- in. We get all, rather than requesting by name or ID, because
-  -- we don't know whether the server will give us a last-viewed preference.
-  -- We first try to find a channel matching with the last selected channel ID,
-  -- failing which we look for the Town Square channel by name.
-  userChans <- mmGetChannelsForUser UserMe tId session
-  let lastSelectedChans = Seq.filter isLastSelectedChannel userChans
-      chans = if Seq.null lastSelectedChans
-                then Seq.filter isTownSquare userChans
-                else lastSelectedChans
-
-  -- Since the only channel we are dealing with is by construction the
-  -- last channel, we don't have to consider other cases here:
-  chanPairs <- forM (toList chans) $ \c -> do
-      cChannel <- makeClientChannel (userId me) c
-      return (getId c, cChannel)
-
-  --  * Spell checker and spell check timer, if configured
-  spResult <- maybeStartSpellChecker (cr^.crConfiguration) (cr^.crEventQueue)
-
-  now <- getCurrentTime
-  let chanIds = mkChannelZipperList now (cr^.crConfiguration) tId
-                                        Nothing (cr^.crUserPreferences)
-                                        clientChans noUsers
-      chanZip = Z.fromList chanIds
-      clientChans = foldr (uncurry addChannel) noChannels chanPairs
-
-  return (newTeamState team chanZip spResult, clientChans)

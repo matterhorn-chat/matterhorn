@@ -31,6 +31,7 @@ import           Matterhorn.State.Flagging
 import           Matterhorn.State.Help
 import           Matterhorn.State.Messages
 import           Matterhorn.State.Reactions
+import           Matterhorn.State.Teams
 import           Matterhorn.State.Users
 import           Matterhorn.Types
 import           Matterhorn.Types.Common
@@ -385,21 +386,29 @@ handleWSEvent we = do
                       (channelMemberNotifyProps channelMember)
             | otherwise -> return ()
 
-        WMAddedToTeam -> do
-            mhLog LogGeneral $ T.pack $
-                "WMAddedToTeam event: " <> show we
+        WMAddedToTeam
+            | Just tId <- wepTeamId $ weData we
+            , Just uId <- wepUserId $ weData we -> do
+                when (uId == myId && not (tId `elem` myTIds)) $ do
+                    joinTeam tId
+            | otherwise -> return ()
 
-        WMUpdateTeam -> do
-            mhLog LogGeneral $ T.pack $
-                "WMUpdateTeam event: " <> show we
+        WMUpdateTeam
+            | Just tId <- webTeamId $ weBroadcast we -> do
+                when (tId `elem` myTIds) $ do
+                    updateTeam tId
+            | otherwise -> return ()
+
+        WMLeaveTeam
+            | Just tId <- wepTeamId $ weData we
+            , Just uId <- wepUserId $ weData we -> do
+                when (uId == myId && tId `elem` myTIds) $ do
+                    leaveTeam tId
+            | otherwise -> return ()
 
         WMTeamDeleted -> do
             mhLog LogGeneral $ T.pack $
                 "WMTeamDeleted event: " <> show we
-
-        WMLeaveTeam -> do
-            mhLog LogGeneral $ T.pack $
-                "WMLeaveTeam event: " <> show we
 
         WMUserUpdated -> return ()
 
