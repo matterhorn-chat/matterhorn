@@ -93,11 +93,30 @@ import qualified Matterhorn.Zipper as Z
 -- | Update the sidebar for the specified team state only, or all team
 -- states if not given a specific team ID.
 updateSidebar :: Maybe TeamId -> MH ()
-updateSidebar Nothing = do
+updateSidebar mTid = do
+    case mTid of
+        Nothing -> do
+            ts <- use csTeams
+            forM_ (HM.keys ts) updateTeamSidebar
+        Just tId -> do
+            updateTeamSidebar tId
+
+    updateWindowTitle
+
+updateWindowTitle :: MH ()
+updateWindowTitle = do
+    -- Update the window title based on the unread status of the
+    -- channels in all teams.
     ts <- use csTeams
-    forM_ (HM.keys ts) updateTeamSidebar
-updateSidebar (Just tId) =
-    updateTeamSidebar tId
+    unreadCounts <- forM (HM.keys ts) $ \tId -> do
+        z <- use (csTeam(tId).tsFocus)
+        return $ sum $ (channelListGroupUnread . fst) <$> Z.toList z
+
+    let title = "matterhorn" <> if unread > 0 then "(" <> show unread <> ")" else ""
+        unread = sum unreadCounts
+
+    vty <- mh getVtyHandle
+    liftIO $ Vty.setWindowTitle vty title
 
 updateTeamSidebar :: TeamId -> MH ()
 updateTeamSidebar tId = do
@@ -125,14 +144,6 @@ updateTeamSidebar tId = do
     newZ <- use (csTeam(tId).tsFocus)
     myId <- gets myUserId
     scheduleUserStatusFetches $ myId : userIdsFromZipper newZ
-
-    -- Update the window title based on the unread status of the
-    -- channels.
-    let unread = sum $ (channelListGroupUnread . fst) <$> zl
-        title = "matterhorn" <> if unread > 0 then "(" <> show unread <> ")" else ""
-
-    vty <- mh getVtyHandle
-    liftIO $ Vty.setWindowTitle vty title
 
     -- If the zipper rebuild caused the current channel to change, such
     -- as when the previously-focused channel was removed, we need to
