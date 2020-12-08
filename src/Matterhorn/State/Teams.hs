@@ -64,13 +64,14 @@ joinTeam tId = do
             mh invalidateCache
 
 leaveTeam :: TeamId -> MH ()
-leaveTeam tId = do
-    mhLog LogGeneral $ T.pack $ "Leaving team " <> show tId
-    csTeams.at tId .= Nothing
-    curTid <- use csCurrentTeamId
-    teams <- use csTeams
-    csTeamZipper .= (Z.findRight (== curTid) $ mkTeamZipper teams)
-    mh invalidateCache
+leaveTeam tId =
+    doAsyncWith Normal $ return $ Just $ do
+        mhLog LogGeneral $ T.pack $ "Leaving team " <> show tId
+        csTeams.at tId .= Nothing
+        curTid <- use csCurrentTeamId
+        teams <- use csTeams
+        csTeamZipper .= (Z.findRight (== curTid) $ mkTeamZipper teams)
+        mh invalidateCache
 
 updateTeam :: TeamId -> MH ()
 updateTeam tId = do
