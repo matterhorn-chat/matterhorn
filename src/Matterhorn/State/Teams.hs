@@ -52,7 +52,7 @@ joinTeam tId = do
     me <- use csMe
 
     mhLog LogGeneral $ T.pack $ "Joining team " <> show tId
-    doAsyncWith Preempt $ do
+    doAsyncWith Normal $ do
         t <- MM.mmGetTeam tId session
         (ts, chans) <- buildTeamState cr me t
         return $ Just $ do
@@ -77,7 +77,7 @@ updateTeam :: TeamId -> MH ()
 updateTeam tId = do
     session <- getSession
     mhLog LogGeneral $ T.pack $ "Updating team " <> show tId
-    doAsyncWith Preempt $ do
+    doAsyncWith Normal $ do
         t <- MM.mmGetTeam tId session
         return $ Just $ do
             curTid <- use csCurrentTeamId
