@@ -385,15 +385,23 @@ handleWSEvent we = do
                       (channelMemberNotifyProps channelMember)
             | otherwise -> return ()
 
-        -- We are pretty sure we should do something about these:
-        WMAddedToTeam -> return ()
+        WMAddedToTeam -> do
+            mhLog LogGeneral $ T.pack $
+                "WMAddedToTeam event: " <> show we
 
-        -- We aren't sure whether there is anything we should do about
-        -- these yet:
-        WMUpdateTeam -> return ()
-        WMTeamDeleted -> return ()
+        WMUpdateTeam -> do
+            mhLog LogGeneral $ T.pack $
+                "WMUpdateTeam event: " <> show we
+
+        WMTeamDeleted -> do
+            mhLog LogGeneral $ T.pack $
+                "WMTeamDeleted event: " <> show we
+
+        WMLeaveTeam -> do
+            mhLog LogGeneral $ T.pack $
+                "WMLeaveTeam event: " <> show we
+
         WMUserUpdated -> return ()
-        WMLeaveTeam -> return ()
 
         -- We deliberately ignore these events:
         WMChannelCreated -> return ()
