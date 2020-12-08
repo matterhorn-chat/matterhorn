@@ -15,6 +15,7 @@ import           Brick.Main ( invalidateCache )
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Time.Clock ( getCurrentTime )
+import qualified Data.HashMap.Strict as HM
 import           Lens.Micro.Platform ( (%=), (.=), at )
 
 import           Network.Mattermost.Types ( TeamId, Team, User, userId
@@ -56,12 +57,15 @@ joinTeam tId = do
         t <- MM.mmGetTeam tId session
         (ts, chans) <- buildTeamState cr me t
         return $ Just $ do
-            csTeams.at tId .= Just ts
-            teams <- use csTeams
-            curTid <- use csCurrentTeamId
-            csTeamZipper .= (Z.findRight (== curTid) $ mkTeamZipper teams)
-            csChannels %= (chans <>)
-            mh invalidateCache
+            curTs <- use csTeams
+            let myTIds = HM.keys curTs
+            when (not $ tId `elem` myTIds) $ do
+                csTeams.at tId .= Just ts
+                teams <- use csTeams
+                curTid <- use csCurrentTeamId
+                csTeamZipper .= (Z.findRight (== curTid) $ mkTeamZipper teams)
+                csChannels %= (chans <>)
+                mh invalidateCache
 
 leaveTeam :: TeamId -> MH ()
 leaveTeam tId =
