@@ -188,25 +188,30 @@ onVtyEvent e = do
 handleGlobalEvent :: Vty.Event -> MH ()
 handleGlobalEvent e = do
     mode <- use (csCurrentTeam.tsMode)
+    globalHandlerByMode mode e
+
+globalHandlerByMode :: Mode -> Vty.Event -> MH ()
+globalHandlerByMode mode =
     case mode of
-        Main                       -> onEventMain e
-        ShowHelp _ _               -> void $ onEventShowHelp e
-        ChannelSelect              -> void $ onEventChannelSelect e
-        UrlSelect                  -> void $ onEventUrlSelect e
-        LeaveChannelConfirm        -> onEventLeaveChannelConfirm e
-        MessageSelect              -> onEventMessageSelect e
-        MessageSelectDeleteConfirm -> onEventMessageSelectDeleteConfirm e
-        DeleteChannelConfirm       -> onEventDeleteChannelConfirm e
-        ThemeListOverlay           -> onEventThemeListOverlay e
-        PostListOverlay _          -> onEventPostListOverlay e
-        UserListOverlay            -> onEventUserListOverlay e
-        ChannelListOverlay         -> onEventChannelListOverlay e
-        ReactionEmojiListOverlay   -> onEventReactionEmojiListOverlay e
-        ViewMessage                -> void $ handleTabbedWindowEvent (csCurrentTeam.tsViewedMessage.singular _Just._2) e
-        ManageAttachments          -> onEventManageAttachments e
-        ManageAttachmentsBrowseFiles -> onEventManageAttachments e
-        EditNotifyPrefs            -> void $ onEventEditNotifyPrefs e
-        ChannelTopicWindow         -> onEventChannelTopicWindow e
+        Main                       -> onEventMain
+        ShowHelp _ _               -> void . onEventShowHelp
+        ChannelSelect              -> void . onEventChannelSelect
+        UrlSelect                  -> void . onEventUrlSelect
+        LeaveChannelConfirm        -> onEventLeaveChannelConfirm
+        MessageSelect              -> onEventMessageSelect
+        MessageSelectDeleteConfirm -> onEventMessageSelectDeleteConfirm
+        DeleteChannelConfirm       -> onEventDeleteChannelConfirm
+        ThemeListOverlay           -> onEventThemeListOverlay
+        PostListOverlay _          -> onEventPostListOverlay
+        UserListOverlay            -> onEventUserListOverlay
+        ChannelListOverlay         -> onEventChannelListOverlay
+        ReactionEmojiListOverlay   -> onEventReactionEmojiListOverlay
+        ViewMessage                -> void . handleTabbedWindowEvent
+                                             (csCurrentTeam.tsViewedMessage.singular _Just._2)
+        ManageAttachments          -> onEventManageAttachments
+        ManageAttachmentsBrowseFiles -> onEventManageAttachments
+        EditNotifyPrefs            -> void . onEventEditNotifyPrefs
+        ChannelTopicWindow         -> onEventChannelTopicWindow
 
 globalKeybindings :: KeyConfig -> KeyHandlerMap
 globalKeybindings = mkKeybindings globalKeyHandlers
