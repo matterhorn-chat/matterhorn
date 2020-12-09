@@ -61,6 +61,7 @@ import           Brick.Main ( getVtyHandle, viewportScroll, vScrollToBeginning
 import           Brick.Widgets.Edit ( applyEdit, getEditContents, editContentsL )
 import           Control.Concurrent.Async ( runConcurrently, Concurrently(..) )
 import           Control.Exception ( SomeException, try )
+import qualified Control.Monad.State as St
 import           Data.Char ( isAlphaNum )
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Foldable as F
@@ -691,6 +692,9 @@ showDirectChannelPref myId otherId s =
                , preferenceUserId = myId
                }
 
+applyTeamOrder :: [TeamId] -> MH ()
+applyTeamOrder tIds = St.modify (applyTeamOrderPref $ Just tIds)
+
 applyPreferenceChange :: Preference -> MH ()
 applyPreferenceChange pref = do
     -- always update our user preferences accordingly
@@ -703,6 +707,9 @@ applyPreferenceChange pref = do
     if
       | Just f <- preferenceToFlaggedPost pref -> do
           updateMessageFlag (flaggedPostId f) (flaggedPostStatus f)
+
+      | Just tIds <- preferenceToTeamOrder pref ->
+          applyTeamOrder tIds
 
       | Just d <- preferenceToDirectChannelShowStatus pref -> do
           updateSidebar Nothing

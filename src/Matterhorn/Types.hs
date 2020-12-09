@@ -110,6 +110,7 @@ module Matterhorn.Types
 
   , sortTeams
   , mkTeamZipper
+  , mkTeamZipperFromIds
   , mkChannelZipperList
   , ChannelListGroup(..)
   , channelListGroupUnread
@@ -236,12 +237,15 @@ module Matterhorn.Types
 
   , specialUserMentions
 
+  , applyTeamOrderPref
+
   , UserPreferences(UserPreferences)
   , userPrefShowJoinLeave
   , userPrefFlaggedPostList
   , userPrefGroupChannelPrefs
   , userPrefDirectChannelPrefs
   , userPrefTeammateNameDisplayMode
+  , userPrefTeamOrder
   , dmChannelShowPreference
   , groupChannelShowPreference
 
@@ -556,6 +560,7 @@ data UserPreferences =
                     , _userPrefGroupChannelPrefs :: HashMap ChannelId Bool
                     , _userPrefDirectChannelPrefs :: HashMap UserId Bool
                     , _userPrefTeammateNameDisplayMode :: Maybe TeammateNameDisplayMode
+                    , _userPrefTeamOrder :: Maybe [TeamId]
                     }
 
 hasUnread :: ChatState -> ChannelId -> Bool
@@ -849,6 +854,7 @@ defaultUserPreferences =
                     , _userPrefGroupChannelPrefs = mempty
                     , _userPrefDirectChannelPrefs = mempty
                     , _userPrefTeammateNameDisplayMode = Nothing
+                    , _userPrefTeamOrder = Nothing
                     }
 
 setUserPreferences :: Seq Preference -> UserPreferences -> UserPreferences
@@ -871,6 +877,9 @@ setUserPreferences = flip (F.foldr go)
                     (groupChannelId gp)
                     (groupChannelShow gp)
                     (_userPrefGroupChannelPrefs u)
+                }
+            | Just tIds <- preferenceToTeamOrder p =
+              u { _userPrefTeamOrder = Just tIds
                 }
             | preferenceName p == PreferenceName "join_leave" =
               u { _userPrefShowJoinLeave =
@@ -1490,32 +1499,16 @@ data ChannelTopicDialogState =
                             -- ^ The window focus state (editor/buttons)
                             }
 
-newState :: StartupStateInfo -> ChatState
-newState (StartupStateInfo {..}) =
-    let config = _crConfiguration startupStateResources
-    in ChatState { _csResources                   = startupStateResources
-                 , _csTeamZipper                  = Z.findRight (== startupStateInitialTeam) $
-                                                    mkTeamZipper startupStateTeams
-                 , _csTeams                       = startupStateTeams
-                 , _csChannelListOrientation      = configChannelListOrientation config
-                 , _csMe                          = startupStateConnectedUser
-                 , _csChannels                    = noChannels
-                 , _csPostMap                     = HM.empty
-                 , _csUsers                       = noUsers
-                 , _timeZone                      = startupStateTimeZone
-                 , _csConnectionStatus            = Connected
-                 , _csWorkerIsBusy                = Nothing
-                 , _csClientConfig                = Nothing
-                 , _csInputHistory                = startupStateInitialHistory
-                 }
-
 sortTeams :: [Team] -> [Team]
 sortTeams = sortBy (compare `on` teamName)
 
 mkTeamZipper :: HM.HashMap TeamId TeamState -> Z.Zipper () TeamId
 mkTeamZipper m =
     let sortedTeams = sortTeams $ _tsTeam <$> HM.elems m
-    in Z.fromList [((), teamId <$> sortedTeams)]
+    in mkTeamZipperFromIds $ teamId <$> sortedTeams
+
+mkTeamZipperFromIds :: [TeamId] -> Z.Zipper () TeamId
+mkTeamZipperFromIds tIds = Z.fromList [((), tIds)]
 
 newTeamState :: Team
              -> Z.Zipper ChannelListGroup ChannelListEntry
@@ -1928,6 +1921,37 @@ makeLenses ''UserPreferences
 makeLenses ''ConnectionInfo
 makeLenses ''ChannelTopicDialogState
 Brick.suffixLenses ''Config
+
+applyTeamOrderPref :: Maybe [TeamId] -> ChatState -> ChatState
+applyTeamOrderPref Nothing st = st
+applyTeamOrderPref (Just tIds) st =
+    let teams = _csTeams st
+        curTId = st^.csCurrentTeamId
+        unmentioned = filter (not . wasMentioned) $ HM.elems teams
+        wasMentioned ts = (teamId $ _tsTeam ts) `elem` tIds
+        zipperTids = tIds <> (teamId <$> sortTeams (_tsTeam <$> unmentioned))
+    in st { _csTeamZipper = (Z.findRight (== curTId) $ mkTeamZipperFromIds zipperTids)
+          }
+
+newState :: StartupStateInfo -> ChatState
+newState (StartupStateInfo {..}) =
+    let config = _crConfiguration startupStateResources
+    in applyTeamOrderPref (_userPrefTeamOrder $ _crUserPreferences startupStateResources) $
+       ChatState { _csResources                   = startupStateResources
+                 , _csTeamZipper                  = Z.findRight (== startupStateInitialTeam) $
+                                                    mkTeamZipper startupStateTeams
+                 , _csTeams                       = startupStateTeams
+                 , _csChannelListOrientation      = configChannelListOrientation config
+                 , _csMe                          = startupStateConnectedUser
+                 , _csChannels                    = noChannels
+                 , _csPostMap                     = HM.empty
+                 , _csUsers                       = noUsers
+                 , _timeZone                      = startupStateTimeZone
+                 , _csConnectionStatus            = Connected
+                 , _csWorkerIsBusy                = Nothing
+                 , _csClientConfig                = Nothing
+                 , _csInputHistory                = startupStateInitialHistory
+                 }
 
 getServerBaseUrl :: TeamId -> MH TeamBaseURL
 getServerBaseUrl tId = do
