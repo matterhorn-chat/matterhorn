@@ -482,13 +482,20 @@ teamList st =
         z = st^.csTeamZipper
         teams = (\tId -> st^.csTeam(tId)) <$> (concat $ snd <$> Z.toList z)
         entries = mkEntry <$> teams
-        mkEntry ts = (if teamId (_tsTeam ts) == curTid
-                        then visible . withDefAttr currentTeamAttr
+        mkEntry ts =
+            let tId = teamId $ _tsTeam ts
+                unread = uCount > 0
+                uCount = unreadCount tId
+            in (if tId == curTid
+                   then visible . withDefAttr currentTeamAttr
+                   else if unread
+                        then withDefAttr unreadChannelAttr
                         else id) $
-                     txt $
-                     sanitizeUserText $
-                     teamDisplayName $
-                     _tsTeam ts
+               txt $
+               (sanitizeUserText $ teamDisplayName $ _tsTeam ts) <>
+               (T.pack $ if unread then "(" <> show uCount <> ")" else "")
+        unreadCount tId = sum $ fmap (channelListGroupUnread . fst) $
+                          Z.toList $ st^.csTeam(tId).tsFocus
     in if length teams == 1
        then emptyWidget
        else vBox [ hBox [ padRight (Pad 1) $ txt "Teams:"
