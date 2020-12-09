@@ -11,6 +11,5 @@ Multi-team support TODO list
    the team name and/or ID.
 
  * Support rearranging the team list (keybinding to shift left/right)
-   and update the user prefs (category="teams_order" and name=""). Also
-   honor the preference at startup when populating the team list and
-   sort any unmentioned teams alphabetically.
+   and update the user prefs when doing so (category="teams_order" and
+   name="").
