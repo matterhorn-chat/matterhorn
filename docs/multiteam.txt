@@ -4,9 +4,6 @@ Multi-team support TODO list
  * Maybe we don't want to display the current team in the channel list
    if there is a team list at the top of the window?
 
- * Check on how we could extend the notification script API to include
-   the team name and/or ID.
-
  * Support rearranging the team list (keybinding to shift left/right)
    and update the user prefs when doing so (category="teams_order" and
    name="").
