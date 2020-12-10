@@ -329,6 +329,9 @@ module Matterhorn.Types
   , getHighlightSet
   , emptyHSet
 
+  , moveLeft
+  , moveRight
+
   , module Matterhorn.Types.Channels
   , module Matterhorn.Types.Messages
   , module Matterhorn.Types.Posts
@@ -2283,3 +2286,22 @@ clearChannelUnreadStatus cId = do
     mh $ invalidateCacheEntry (ChannelMessages cId)
     csChannel(cId) %= (clearNewMessageIndicator .
                        clearEditedThreshold)
+
+moveLeft :: (Eq a) => a -> [a] -> [a]
+moveLeft v as =
+    case elemIndex v as of
+        Nothing -> as
+        Just 0 -> as
+        Just i ->
+            let (h, t) = splitAt i as
+            in init h <> [v, last h] <> tail t
+
+moveRight :: (Eq a) => a -> [a] -> [a]
+moveRight v as =
+    case elemIndex v as of
+        Nothing -> as
+        Just i
+            | i == length as - 1 -> as
+            | otherwise ->
+                let (h, t) = splitAt i as
+                in h <> [head (tail t), v] <> (tail (tail t))

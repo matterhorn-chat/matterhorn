@@ -5,6 +5,8 @@ module Matterhorn.State.Teams
   , leaveTeam
   , updateTeam
   , buildTeamState
+  , moveCurrentTeamLeft
+  , moveCurrentTeamRight
   )
 where
 
@@ -18,8 +20,10 @@ import           Data.Time.Clock ( getCurrentTime )
 import qualified Data.HashMap.Strict as HM
 import           Lens.Micro.Platform ( (%=), (.=), at )
 
+import           Network.Mattermost.Lenses ( userIdL )
 import           Network.Mattermost.Types ( TeamId, Team, User, userId
                                           , getId, channelId, teamId, UserParam(..)
+                                          , teamOrderPref
                                           )
 import qualified Network.Mattermost.Endpoints as MM
 
@@ -89,6 +93,36 @@ updateTeam tId = do
             teams <- use csTeams
             csTeamZipper .= (Z.findRight (== curTid) $ mkTeamZipper teams)
             mh invalidateCache
+
+moveCurrentTeamLeft :: MH ()
+moveCurrentTeamLeft = do
+    session <- getSession
+    me <- use csMe
+
+    tId <- use csCurrentTeamId
+    z <- use csTeamZipper
+    let [((), tIds)] = Z.toList z
+        newList = moveLeft tId tIds
+
+    doAsyncWith Normal $ do
+        let pref = teamOrderPref (me^.userIdL) newList
+        MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
+        return Nothing
+
+moveCurrentTeamRight :: MH ()
+moveCurrentTeamRight = do
+    session <- getSession
+    me <- use csMe
+
+    tId <- use csCurrentTeamId
+    z <- use csTeamZipper
+    let [((), tIds)] = Z.toList z
+        newList = moveRight tId tIds
+
+    doAsyncWith Normal $ do
+        let pref = teamOrderPref (me^.userIdL) newList
+        MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
+        return Nothing
 
 buildTeamState :: ChatResources -> User -> Team -> IO (TeamState, ClientChannels)
 buildTeamState cr me team = do

@@ -129,6 +129,8 @@ data KeyEvent
   -- Team switching
   | NextTeamEvent
   | PrevTeamEvent
+  | MoveCurrentTeamLeftEvent
+  | MoveCurrentTeamRightEvent
     deriving (Eq, Show, Ord, Enum)
 
 allEvents :: [KeyEvent]
@@ -204,6 +206,8 @@ allEvents =
 
   , NextTeamEvent
   , PrevTeamEvent
+  , MoveCurrentTeamLeftEvent
+  , MoveCurrentTeamRightEvent
 
   , FlagMessageEvent
   , PinMessageEvent
@@ -398,6 +402,8 @@ keyEventName ev = case ev of
 
   NextTeamEvent               -> "next-team"
   PrevTeamEvent               -> "prev-team"
+  MoveCurrentTeamLeftEvent    -> "move-current-team-left"
+  MoveCurrentTeamRightEvent   -> "move-current-team-right"
 
   EnterFlaggedPostsEvent    -> "show-flagged-posts"
   ToggleChannelListVisibleEvent -> "toggle-channel-list-visibility"

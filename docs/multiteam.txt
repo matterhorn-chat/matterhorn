@@ -1,6 +1,3 @@
 Multi-team support TODO list
 ----------------------------
 
- * Support rearranging the team list (keybinding to shift left/right)
-   and update the user prefs when doing so (category="teams_order" and
-   name="").

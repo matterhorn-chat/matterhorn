@@ -57,6 +57,12 @@ mainKeyHandlers =
     , mkKb PrevTeamEvent "Switch to the previous available team"
         prevTeam
 
+    , mkKb MoveCurrentTeamLeftEvent "Move the current team to the left in the team list"
+        moveCurrentTeamLeft
+
+    , mkKb MoveCurrentTeamRightEvent "Move the current team to the right in the team list"
+        moveCurrentTeamRight
+
     , mkKb
         InvokeEditorEvent
         "Invoke `$EDITOR` to edit the current message"

@@ -38,6 +38,7 @@ import           Matterhorn.State.ThemeListOverlay
 import           Matterhorn.State.Messages
 import           Matterhorn.State.NotifyPrefs
 import           Matterhorn.State.Common ( postInfoMessage )
+import           Matterhorn.State.Teams
 import           Matterhorn.State.Users
 import           Matterhorn.Themes ( attrForUsername )
 import           Matterhorn.Types
@@ -265,6 +266,11 @@ commandList =
   , Cmd "notify-prefs" "Edit the current channel's notification preferences" NoArg $ \_ ->
           enterEditNotifyPrefsMode
 
+  , Cmd "move-team-left" "Move the currently-selected team to the left in the team list" NoArg $ \_ ->
+          moveCurrentTeamLeft
+
+  , Cmd "move-team-right" "Move the currently-selected team to the right in the team list" NoArg $ \_ ->
+          moveCurrentTeamRight
   ]
 
 displayUsernameAttribute :: Text -> MH ()
