@@ -492,7 +492,7 @@ teamList st =
                         then withDefAttr unreadChannelAttr
                         else id) $
                txt $
-               (sanitizeUserText $ teamDisplayName $ _tsTeam ts) <>
+               (T.strip $ sanitizeUserText $ teamDisplayName $ _tsTeam ts) <>
                (T.pack $ if unread then "(" <> show uCount <> ")" else "")
         unreadCount tId = sum $ fmap (channelListGroupUnread . fst) $
                           Z.toList $ st^.csTeam(tId).tsFocus

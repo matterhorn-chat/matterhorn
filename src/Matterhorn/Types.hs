@@ -1500,7 +1500,7 @@ data ChannelTopicDialogState =
                             }
 
 sortTeams :: [Team] -> [Team]
-sortTeams = sortBy (compare `on` teamName)
+sortTeams = sortBy (compare `on` (T.strip . sanitizeUserText . teamName))
 
 mkTeamZipper :: HM.HashMap TeamId TeamState -> Z.Zipper () TeamId
 mkTeamZipper m =
