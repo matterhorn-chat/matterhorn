@@ -98,59 +98,59 @@ commandList =
   [ Cmd "quit" "Exit Matterhorn" NoArg $ \ () -> requestQuit
 
   , Cmd "right" "Focus on the next channel" NoArg $ \ () ->
-      nextChannel
+        nextChannel
 
   , Cmd "left" "Focus on the previous channel" NoArg $ \ () ->
-      prevChannel
+        prevChannel
 
   , Cmd "create-channel" "Create a new public channel"
     (LineArg "channel name") $ \ name ->
-      createOrdinaryChannel True name
+        createOrdinaryChannel True name
 
   , Cmd "create-private-channel" "Create a new private channel"
     (LineArg "channel name") $ \ name ->
-      createOrdinaryChannel False name
+        createOrdinaryChannel False name
 
   , Cmd "delete-channel" "Delete the current channel"
     NoArg $ \ () ->
-      beginCurrentChannelDeleteConfirm
+        beginCurrentChannelDeleteConfirm
 
   , Cmd "hide" "Hide the current DM or group channel from the channel list"
     NoArg $ \ () -> do
-      tId <- use csCurrentTeamId
-      hideDMChannel =<< use (csCurrentChannelId tId)
+        tId <- use csCurrentTeamId
+        hideDMChannel =<< use (csCurrentChannelId tId)
 
   , Cmd "reconnect" "Force a reconnection attempt to the server"
     NoArg $ \ () ->
-      connectWebsockets
+        connectWebsockets
 
   , Cmd "members" "Show the current channel's members"
     NoArg $ \ () ->
-      enterChannelMembersUserList
+        enterChannelMembersUserList
 
   , Cmd "leave" "Leave a normal channel or hide a DM channel" NoArg $ \ () ->
-      startLeaveCurrentChannel
+        startLeaveCurrentChannel
 
   , Cmd "join" "Find a channel to join" NoArg $ \ () ->
-      enterChannelListOverlayMode
+        enterChannelListOverlayMode
 
   , Cmd "join" "Join the specified channel" (ChannelArg NoArg) $ \(n, ()) ->
-      joinChannelByName n
+        joinChannelByName n
 
   , Cmd "theme" "List the available themes" NoArg $ \ () ->
-      enterThemeListMode
+        enterThemeListMode
 
   , Cmd "theme" "Set the color theme"
     (TokenArg "theme" NoArg) $ \ (themeName, ()) ->
-      setTheme themeName
+        setTheme themeName
 
   , Cmd "topic" "Set the current channel's topic (header) interactively"
     NoArg $ \ () ->
-      openChannelTopicWindow
+        openChannelTopicWindow
 
   , Cmd "topic" "Set the current channel's topic (header)"
     (LineArg "topic") $ \ p ->
-      if not (T.null p) then setChannelTopic p else return ()
+        if not (T.null p) then setChannelTopic p else return ()
 
   , Cmd "add-user" "Search for a user to add to the current channel"
     NoArg $ \ () ->
@@ -243,10 +243,11 @@ commandList =
               Just topic -> showHelpScreen topic
 
   , Cmd "sh" "List the available shell scripts" NoArg $ \ () ->
-      listScripts
+        listScripts
 
   , Cmd "group-msg" "Create a group chat"
-    (LineArg (userSigil <> "user [" <> userSigil <> "user ...]")) createGroupChannel
+    (LineArg (userSigil <> "user [" <> userSigil <> "user ...]"))
+        createGroupChannel
 
   , Cmd "sh" "Run a prewritten shell script"
     (TokenArg "script" (LineArg "message")) $ \ (script, text) -> do
@@ -255,22 +256,22 @@ commandList =
         findAndRunScript cId script text
 
   , Cmd "flags" "Open a window of your flagged posts" NoArg $ \ () ->
-      enterFlaggedPostListMode
+        enterFlaggedPostListMode
 
   , Cmd "pinned-posts" "Open a window of this channel's pinned posts" NoArg $ \ () ->
-      enterPinnedPostListMode
+        enterPinnedPostListMode
 
   , Cmd "search" "Search for posts with given terms" (LineArg "terms") $
-      enterSearchResultPostListMode
+        enterSearchResultPostListMode
 
   , Cmd "notify-prefs" "Edit the current channel's notification preferences" NoArg $ \_ ->
-          enterEditNotifyPrefsMode
+        enterEditNotifyPrefsMode
 
   , Cmd "move-team-left" "Move the currently-selected team to the left in the team list" NoArg $ \_ ->
-          moveCurrentTeamLeft
+        moveCurrentTeamLeft
 
   , Cmd "move-team-right" "Move the currently-selected team to the right in the team list" NoArg $ \_ ->
-          moveCurrentTeamRight
+        moveCurrentTeamRight
   ]
 
 displayUsernameAttribute :: Text -> MH ()
