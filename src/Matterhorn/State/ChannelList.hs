@@ -28,6 +28,10 @@ import qualified Matterhorn.Zipper as Z
 
 -- | Update the sidebar for the specified team state only, or all team
 -- states if not given a specific team ID.
+--
+-- In either case, schedule user status fetches for all users mentioned
+-- in the current team's sidebar. (This should be safe because all
+-- sidebars should contain the same user list.)
 updateSidebar :: Maybe TeamId -> MH ()
 updateSidebar mTid = do
     case mTid of
@@ -36,6 +40,13 @@ updateSidebar mTid = do
             forM_ (HM.keys ts) updateTeamSidebar
         Just tId -> do
             updateTeamSidebar tId
+
+    -- Schedule the current team's sidebar for user status updates at
+    -- the end of this MH action. This is okay because all team sidebars
+    -- should include the same set of DM channels.
+    z <- use (csCurrentTeam.tsFocus)
+    myId <- gets myUserId
+    scheduleUserStatusFetches $ myId : userIdsFromZipper z
 
     updateWindowTitle
 
@@ -74,12 +85,6 @@ updateTeamSidebar tId = do
 
     let zl = mkChannelZipperList now config tId cconfig prefs cs us
     csTeam(tId).tsFocus %= Z.updateList zl
-
-    -- Schedule the current sidebar for user status updates at the end
-    -- of this MH action.
-    newZ <- use (csTeam(tId).tsFocus)
-    myId <- gets myUserId
-    scheduleUserStatusFetches $ myId : userIdsFromZipper newZ
 
     -- If the zipper rebuild caused the current channel to change, such
     -- as when the previously-focused channel was removed, we need to
