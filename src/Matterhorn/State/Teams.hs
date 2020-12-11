@@ -95,35 +95,26 @@ updateTeam tId = do
             csTeamZipper .= (Z.findRight (== curTid) $ mkTeamZipper teams)
             mh invalidateCache
 
-moveCurrentTeamLeft :: MH ()
-moveCurrentTeamLeft = do
+setTeamOrderWith :: (TeamId -> [TeamId] -> [TeamId]) -> MH ()
+setTeamOrderWith sortFunc = do
     session <- getSession
     me <- use csMe
 
     tId <- use csCurrentTeamId
     z <- use csTeamZipper
     let tIds = teamZipperIds z
-        newList = moveLeft tId tIds
+        newList = sortFunc tId tIds
 
     doAsyncWith Normal $ do
         let pref = teamOrderPref (me^.userIdL) newList
         MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
         return Nothing
+
+moveCurrentTeamLeft :: MH ()
+moveCurrentTeamLeft = setTeamOrderWith moveLeft
 
 moveCurrentTeamRight :: MH ()
-moveCurrentTeamRight = do
-    session <- getSession
-    me <- use csMe
-
-    tId <- use csCurrentTeamId
-    z <- use csTeamZipper
-    let tIds = teamZipperIds z
-        newList = moveRight tId tIds
-
-    doAsyncWith Normal $ do
-        let pref = teamOrderPref (me^.userIdL) newList
-        MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
-        return Nothing
+moveCurrentTeamRight = setTeamOrderWith moveRight
 
 buildTeamState :: ChatResources -> User -> Team -> IO (TeamState, ClientChannels)
 buildTeamState cr me team = do
