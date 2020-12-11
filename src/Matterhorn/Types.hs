@@ -1931,8 +1931,10 @@ Brick.suffixLenses ''Config
 
 applyTeamOrderPref :: Maybe [TeamId] -> ChatState -> ChatState
 applyTeamOrderPref Nothing st = st
-applyTeamOrderPref (Just tIds) st =
+applyTeamOrderPref (Just prefTIds) st =
     let teams = _csTeams st
+        ourTids = HM.keys teams
+        tIds = filter (`elem` ourTids) prefTIds
         curTId = st^.csCurrentTeamId
         unmentioned = filter (not . wasMentioned) $ HM.elems teams
         wasMentioned ts = (teamId $ _tsTeam ts) `elem` tIds
