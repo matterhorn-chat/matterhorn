@@ -58,7 +58,7 @@ postChangeTeamCommon = do
     updateViewed False
     fetchVisibleIfNeeded
 
--- | Add the specified team to the application state.
+-- | Fetch the specified team and add it to the application state.
 --
 -- This is called in response to a server event indicating that the
 -- current user was added to the team.
@@ -95,8 +95,8 @@ handleLeaveTeam tId =
         -- renderings from the team we are leaving.
         mh invalidateCache
 
--- | Fetch and update the specified team's metadata in the application
--- state.
+-- | Fetch the specified team's metadata and update it in the
+-- application state.
 --
 -- This is called in response to a server event indicating that the
 -- specified team was updated in some way.
