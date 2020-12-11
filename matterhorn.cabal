@@ -90,6 +90,7 @@ library
                        Matterhorn.Events.ThemeListOverlay
                        Matterhorn.Events.UrlSelect
                        Matterhorn.Events.UserListOverlay
+                       Matterhorn.Events.Websocket
                        Matterhorn.FilePaths
                        Matterhorn.HelpTopics
                        Matterhorn.IOUtil
