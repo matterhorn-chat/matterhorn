@@ -66,7 +66,7 @@ renderChannelListHeader st =
         selfHeader = hCenter $
                      colorUsername myUsername_ myUsername_
                          (T.singleton statusSigil <> " " <> userSigil <> myUsername_)
-        teamNameStr = sanitizeUserText $ MM.teamDisplayName $ st^.csCurrentTeam.tsTeam
+        teamNameStr = T.strip $ sanitizeUserText $ MM.teamDisplayName $ st^.csCurrentTeam.tsTeam
         statusSigil = maybe ' ' userSigilFromInfo me
         me = userById (myUserId st) st
         unreadCountHeader = hCenter $ txt $ "Unread: " <> (T.pack $ show unreadCount)
