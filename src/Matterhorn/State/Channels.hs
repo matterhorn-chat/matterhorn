@@ -1,8 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiWayIf #-}
 module Matterhorn.State.Channels
-  ( updateSidebar
-  , updateViewed
+  ( updateViewed
   , updateViewedChan
   , refreshChannel
   , refreshChannelsAndUsers
