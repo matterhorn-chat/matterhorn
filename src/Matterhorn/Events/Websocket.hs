@@ -39,16 +39,17 @@ handleWebsocketEvent :: WebsocketEvent -> MH ()
 handleWebsocketEvent we = do
     myId <- gets myUserId
     ts <- use csTeams
-    let myTIds = HM.keys ts
+    let memberOf tId = HM.member tId ts
+
         -- The team ID is one of the teams we're in, or the team ID is
         -- absent, which typically indicates a DM channel event since DM
         -- channels are not associated with teams.
-        inMyTeamOrDM (Just i) = i `elem` myTIds
+        inMyTeamOrDM (Just i) = memberOf i
         inMyTeamOrDM Nothing = True
 
         -- The team ID is one of the teams we're in. A missing team ID
         -- yields False.
-        inMyTeam (Just i) = i `elem` myTIds
+        inMyTeam (Just i) = memberOf i
         inMyTeam Nothing = False
 
     case weEvent we of
@@ -201,20 +202,20 @@ handleWebsocketEvent we = do
         WMAddedToTeam
             | Just tId <- wepTeamId $ weData we
             , Just uId <- wepUserId $ weData we -> do
-                when (uId == myId && not (tId `elem` myTIds)) $ do
+                when (uId == myId && not (memberOf tId)) $ do
                     handleJoinTeam tId
             | otherwise -> return ()
 
         WMUpdateTeam
             | Just tId <- webTeamId $ weBroadcast we -> do
-                when (tId `elem` myTIds) $ do
+                when (memberOf tId) $ do
                     handleUpdateTeam tId
             | otherwise -> return ()
 
         WMLeaveTeam
             | Just tId <- wepTeamId $ weData we
             , Just uId <- wepUserId $ weData we -> do
-                when (uId == myId && tId `elem` myTIds) $ do
+                when (uId == myId && memberOf tId) $ do
                     handleLeaveTeam tId
             | otherwise -> return ()
 
