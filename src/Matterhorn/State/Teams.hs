@@ -88,10 +88,7 @@ updateTeam tId = do
     doAsyncWith Normal $ do
         t <- MM.mmGetTeam tId session
         return $ Just $ do
-            curTid <- use csCurrentTeamId
             csTeam(tId).tsTeam .= t
-            teams <- use csTeams
-            csTeamZipper .= (Z.findRight (== curTid) $ mkTeamZipper teams)
             mh invalidateCache
 
 setTeamOrderWith :: (TeamId -> [TeamId] -> [TeamId]) -> MH ()
