@@ -11,6 +11,7 @@ import           Matterhorn.Command
 import           Matterhorn.Events.Keybindings
 import           Matterhorn.State.Attachments
 import           Matterhorn.State.ChannelSelect
+import           Matterhorn.State.ChannelList
 import           Matterhorn.State.Channels
 import           Matterhorn.State.Editing
 import           Matterhorn.State.MessageSelect

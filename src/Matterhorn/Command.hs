@@ -27,6 +27,7 @@ import           Matterhorn.HelpTopics
 import           Matterhorn.Scripts
 import           Matterhorn.State.Help
 import           Matterhorn.State.Editing
+import           Matterhorn.State.ChannelList
 import           Matterhorn.State.Channels
 import           Matterhorn.State.ChannelTopicWindow
 import           Matterhorn.State.ChannelSelect

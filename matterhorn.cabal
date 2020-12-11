@@ -103,6 +103,7 @@ library
                        Matterhorn.State.Async
                        Matterhorn.State.Attachments
                        Matterhorn.State.Autocomplete
+                       Matterhorn.State.ChannelList
                        Matterhorn.State.ChannelListOverlay
                        Matterhorn.State.ChannelSelect
                        Matterhorn.State.Channels

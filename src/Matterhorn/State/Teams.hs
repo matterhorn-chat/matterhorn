@@ -30,6 +30,7 @@ import qualified Network.Mattermost.Endpoints as MM
 import           Matterhorn.Types
 import           Matterhorn.LastRunState
 import           Matterhorn.State.Async
+import           Matterhorn.State.ChannelList
 import           Matterhorn.State.Channels
 import           Matterhorn.State.Messages
 import           Matterhorn.State.Setup.Threads ( maybeStartSpellChecker )
