@@ -27,7 +27,6 @@ import           Matterhorn.Config
 import           Matterhorn.InputHistory
 import           Matterhorn.Login
 import           Matterhorn.State.Flagging
-import           Matterhorn.State.Messages ( fetchVisibleIfNeeded )
 import           Matterhorn.State.Teams ( buildTeamState )
 import           Matterhorn.State.Setup.Threads
 import           Matterhorn.Themes
@@ -237,9 +236,5 @@ initializeState cr initialTeamId teams me = do
 
   -- Trigger an initial websocket refresh
   writeBChan (cr^.crEventQueue) RefreshWebsocketEvent
-
-  -- Refresh initial channel(s)
-  writeBChan (cr^.crEventQueue) $ RespEvent $ do
-      fetchVisibleIfNeeded
 
   return st
