@@ -76,8 +76,7 @@ handleJoinTeam tId = do
             curTs <- use csTeams
             let myTIds = HM.keys curTs
             when (not $ tId `elem` myTIds) $ do
-                csTeams.at tId .= Just ts
-                csChannels %= (chans <>)
+                addTeamState ts chans
                 updateSidebar $ Just tId
                 updateWindowTitle
                 refreshTeamZipper
@@ -90,14 +89,14 @@ handleLeaveTeam :: TeamId -> MH ()
 handleLeaveTeam tId =
     doAsyncWith Normal $ return $ Just $ do
         mhLog LogGeneral $ T.pack $ "Leaving team " <> show tId
-        csTeams.at tId .= Nothing
-        setTeamFocusWith $ Z.filterZipper (/= tId)
+        removeTeam tId
         updateWindowTitle
         -- Invalidating the cache here expunges any cached message
         -- renderings from the team we are leaving.
         mh invalidateCache
 
--- | Updated the specified team's metadata in the application state.
+-- | Fetch and update the specified team's metadata in the application
+-- state.
 --
 -- This is called in response to a server event indicating that the
 -- specified team was updated in some way.
@@ -108,7 +107,7 @@ handleUpdateTeam tId = do
     doAsyncWith Normal $ do
         t <- MM.mmGetTeam tId session
         return $ Just $ do
-            csTeam(tId).tsTeam .= t
+            updateTeam t
             -- Invalidate the cache since we happen to know that the
             -- team name is in the cached sidebar.
             mh invalidateCache
@@ -192,3 +191,26 @@ buildTeamState cr me team = do
         clientChans = foldr (uncurry addChannel) noChannels chanPairs
 
     return (newTeamState team chanZip spResult, clientChans)
+
+-- | Add a new 'TeamState' and corresponding channels to the application
+-- state.
+addTeamState :: TeamState -> ClientChannels -> MH ()
+addTeamState ts chans = do
+    let tId = teamId $ _tsTeam ts
+    csTeams.at tId .= Just ts
+    csChannels %= (chans <>)
+
+-- | Update the specified team metadata in the application state (only
+-- if we are already a member of that team).
+updateTeam :: Team -> MH ()
+updateTeam t = do
+    let tId = teamId t
+    ts <- use csTeams
+    when (tId `elem` HM.keys ts) $ do
+        csTeam(tId).tsTeam .= t
+
+-- | Remove the specified team from the application state.
+removeTeam :: TeamId -> MH ()
+removeTeam tId = do
+    csTeams.at tId .= Nothing
+    setTeamFocusWith $ Z.filterZipper (/= tId)
