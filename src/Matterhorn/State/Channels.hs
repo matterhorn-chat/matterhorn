@@ -532,31 +532,6 @@ saveCurrentChannelInput = do
         csCurrentTeam.tsEditState.cedEphemeral.eesLastInput .=
            (T.intercalate "\n" $ getEditContents $ cmdLine, mode)
 
-hideGroupChannelPref :: ChannelId -> UserId -> Preference
-hideGroupChannelPref cId uId =
-    Preference { preferenceCategory = PreferenceCategoryGroupChannelShow
-               , preferenceValue = PreferenceValue "false"
-               , preferenceName = PreferenceName $ idString cId
-               , preferenceUserId = uId
-               }
-
-showGroupChannelPref :: ChannelId -> UserId -> Preference
-showGroupChannelPref cId uId =
-    Preference { preferenceCategory = PreferenceCategoryGroupChannelShow
-               , preferenceValue = PreferenceValue "true"
-               , preferenceName = PreferenceName $ idString cId
-               , preferenceUserId = uId
-               }
-
-showDirectChannelPref :: UserId -> UserId -> Bool -> Preference
-showDirectChannelPref myId otherId s =
-    Preference { preferenceCategory = PreferenceCategoryDirectChannelShow
-               , preferenceValue = if s then PreferenceValue "true"
-                                        else PreferenceValue "false"
-               , preferenceName = PreferenceName $ idString otherId
-               , preferenceUserId = myId
-               }
-
 applyPreferenceChange :: Preference -> MH ()
 applyPreferenceChange pref = do
     -- always update our user preferences accordingly
