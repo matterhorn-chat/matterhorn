@@ -153,9 +153,9 @@ buildTeamState cr me team = do
     let tId = teamId team
         session = getResourceSession cr
 
-    -- Create a predicate to find the last selected channel by reading the
-    -- run state file. If unable to read or decode or validate the file, this
-    -- predicate is just `isTownSquare`.
+    -- Create a predicate to find the last selected channel by reading
+    -- the run state file. If unable to read or decode or validate the
+    -- file, this predicate is just `isTownSquare`.
     isLastSelectedChannel <- do
         result <- readLastRunState tId
         case result of
@@ -163,11 +163,12 @@ buildTeamState cr me team = do
                  channelId c == lrs^.lrsSelectedChannelId
             _ -> return isTownSquare
 
-    -- Get all channels, but filter down to just the one we want to start
-    -- in. We get all, rather than requesting by name or ID, because
-    -- we don't know whether the server will give us a last-viewed preference.
-    -- We first try to find a channel matching with the last selected channel ID,
-    -- failing which we look for the Town Square channel by name.
+    -- Get all channels, but filter down to just the one we want
+    -- to start in. We get all, rather than requesting by name or
+    -- ID, because we don't know whether the server will give us a
+    -- last-viewed preference. We first try to find a channel matching
+    -- with the last selected channel ID, failing which we look for the
+    -- Town Square channel by name.
     userChans <- MM.mmGetChannelsForUser UserMe tId session
     let lastSelectedChans = Seq.filter isLastSelectedChannel userChans
         chans = if Seq.null lastSelectedChans
@@ -180,7 +181,7 @@ buildTeamState cr me team = do
         cChannel <- makeClientChannel (userId me) c
         return (getId c, cChannel)
 
-    --  * Spell checker and spell check timer, if configured
+    -- Start the spell checker and spell check timer, if configured
     spResult <- maybeStartSpellChecker (cr^.crConfiguration) (cr^.crEventQueue)
 
     now <- getCurrentTime
