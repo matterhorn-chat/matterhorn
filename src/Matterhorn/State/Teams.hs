@@ -67,10 +67,9 @@ joinTeam tId = do
             let myTIds = HM.keys curTs
             when (not $ tId `elem` myTIds) $ do
                 csTeams.at tId .= Just ts
-                teams <- use csTeams
-                curTid <- use csCurrentTeamId
-                csTeamZipper .= (Z.findRight (== curTid) $ mkTeamZipper teams)
                 csChannels %= (chans <>)
+
+                refreshTeamZipper
                 mh invalidateCache
 
 leaveTeam :: TeamId -> MH ()

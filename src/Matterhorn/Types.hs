@@ -239,6 +239,7 @@ module Matterhorn.Types
   , specialUserMentions
 
   , applyTeamOrderPref
+  , refreshTeamZipper
 
   , UserPreferences(UserPreferences)
   , userPrefShowJoinLeave
@@ -1941,6 +1942,11 @@ applyTeamOrderPref (Just prefTIds) st =
         zipperTids = tIds <> (teamId <$> sortTeams (_tsTeam <$> unmentioned))
     in st { _csTeamZipper = (Z.findRight (== curTId) $ mkTeamZipperFromIds zipperTids)
           }
+
+refreshTeamZipper :: MH ()
+refreshTeamZipper = do
+    tidOrder <- use (csResources.crUserPreferences.userPrefTeamOrder)
+    St.modify (applyTeamOrderPref tidOrder)
 
 newState :: StartupStateInfo -> ChatState
 newState (StartupStateInfo {..}) =
