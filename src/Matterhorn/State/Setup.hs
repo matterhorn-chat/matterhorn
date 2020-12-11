@@ -109,12 +109,7 @@ setupState mkVty mLogLocation config = do
 
   let initialTeamId = fromMaybe (teamId $ head $ sortTeams teams) $ do
           tName <- mbTeam <|> configTeam config
-          let matchingTeam = listToMaybe $ filter matches teams
-              matches t =
-                  let urlName = T.strip $ T.toLower $ sanitizeUserText $ teamName t
-                      displayName = T.strip $ T.toLower $ sanitizeUserText $ teamDisplayName t
-                  in displayName == T.strip (T.toLower tName) ||
-                     urlName == T.strip (T.toLower tName)
+          let matchingTeam = listToMaybe $ filter (matchesTeam tName) teams
           teamId <$> matchingTeam
 
   userStatusChan <- STM.newTChanIO
@@ -178,6 +173,14 @@ setupState mkVty mLogLocation config = do
   st <- initializeState cr initialTeamId teams me
 
   return (st, loginVty)
+
+matchesTeam :: T.Text -> Team -> Bool
+matchesTeam tName t =
+    let normalizeUserText = normalize . sanitizeUserText
+        normalize = T.strip . T.toLower
+        urlName = normalizeUserText $ teamName t
+        displayName = normalizeUserText $ teamDisplayName t
+    in normalize tName `elem` [displayName, urlName]
 
 initializeState :: ChatResources -> TeamId -> [Team] -> User -> IO ChatState
 initializeState cr initialTeamId teams me = do
