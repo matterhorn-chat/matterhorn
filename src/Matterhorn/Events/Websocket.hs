@@ -29,6 +29,12 @@ import           Matterhorn.Types
 import           Matterhorn.Types.Common
 
 
+foreachTeam :: (TeamId -> MH ()) -> MH ()
+foreachTeam act = do
+    ts <- use csTeams
+    let myTIds = HM.keys ts
+    mapM_ act myTIds
+
 handleWebsocketEvent :: WebsocketEvent -> MH ()
 handleWebsocketEvent we = do
     myId <- gets myUserId
@@ -56,7 +62,7 @@ handleWebsocketEvent we = do
                     currCId <- use (csCurrentChannelId currTId)
                     case wepTeamId $ weData we of
                         Nothing -> do
-                            forM_ myTIds $ \tId -> do
+                            foreachTeam $ \tId -> do
                                 when (tId /= currTId || postChannelId p /= currCId) $
                                    showChannelInSidebar (p^.postChannelIdL) False
                         Just tId -> do
@@ -71,7 +77,7 @@ handleWebsocketEvent we = do
                 editMessage p
 
                 currTid <- use csCurrentTeamId
-                forM_ myTIds $ \tId -> do
+                foreachTeam $ \tId -> do
                     cId <- use (csCurrentChannelId tId)
                     when (postChannelId p == cId && tId == currTid) $
                         updateViewed False
@@ -84,7 +90,7 @@ handleWebsocketEvent we = do
                 deleteMessage p
 
                 currTid <- use csCurrentTeamId
-                forM_ myTIds $ \tId -> do
+                foreachTeam $ \tId -> do
                     cId <- use (csCurrentChannelId tId)
                     when (postChannelId p == cId && tId == currTid) $
                         updateViewed False
