@@ -62,7 +62,6 @@ import           Brick.Main ( getVtyHandle, viewportScroll, vScrollToBeginning
 import           Brick.Widgets.Edit ( applyEdit, getEditContents, editContentsL )
 import           Control.Concurrent.Async ( runConcurrently, Concurrently(..) )
 import           Control.Exception ( SomeException, try )
-import qualified Control.Monad.State as St
 import           Data.Char ( isAlphaNum )
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Foldable as F
@@ -692,9 +691,6 @@ showDirectChannelPref myId otherId s =
                , preferenceName = PreferenceName $ idString otherId
                , preferenceUserId = myId
                }
-
-applyTeamOrder :: [TeamId] -> MH ()
-applyTeamOrder tIds = St.modify (applyTeamOrderPref $ Just tIds)
 
 applyPreferenceChange :: Preference -> MH ()
 applyPreferenceChange pref = do

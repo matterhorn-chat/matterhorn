@@ -238,7 +238,7 @@ module Matterhorn.Types
 
   , specialUserMentions
 
-  , applyTeamOrderPref
+  , applyTeamOrder
   , refreshTeamZipper
 
   , UserPreferences(UserPreferences)
@@ -1947,6 +1947,9 @@ refreshTeamZipper :: MH ()
 refreshTeamZipper = do
     tidOrder <- use (csResources.crUserPreferences.userPrefTeamOrder)
     St.modify (applyTeamOrderPref tidOrder)
+
+applyTeamOrder :: [TeamId] -> MH ()
+applyTeamOrder tIds = St.modify (applyTeamOrderPref $ Just tIds)
 
 newState :: StartupStateInfo -> ChatState
 newState (StartupStateInfo {..}) =
