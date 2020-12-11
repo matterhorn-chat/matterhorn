@@ -88,6 +88,10 @@ updateTeam tId = do
         t <- MM.mmGetTeam tId session
         return $ Just $ do
             csTeam(tId).tsTeam .= t
+            -- Invalidate the cache since we happen to know that the
+            -- team name is in the cached sidebar. Doing this also
+            -- expunges any cached message renderings from the team we
+            -- are leaving.
             mh invalidateCache
 
 setTeamOrderWith :: (TeamId -> [TeamId] -> [TeamId]) -> MH ()
