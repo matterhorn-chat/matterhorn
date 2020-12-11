@@ -37,13 +37,14 @@ import qualified Matterhorn.Zipper as Z
 
 
 nextTeam :: MH ()
-nextTeam = do
-    csTeamZipper %= Z.right
-    postChangeTeamCommon
+nextTeam = setTeamFocusWith Z.right
 
 prevTeam :: MH ()
-prevTeam = do
-    csTeamZipper %= Z.left
+prevTeam = setTeamFocusWith Z.left
+
+setTeamFocusWith :: (Z.Zipper () TeamId -> Z.Zipper () TeamId) -> MH ()
+setTeamFocusWith f = do
+    csTeamZipper %= f
     postChangeTeamCommon
 
 postChangeTeamCommon :: MH ()
