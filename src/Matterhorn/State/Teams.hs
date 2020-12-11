@@ -79,6 +79,9 @@ leaveTeam tId =
         csTeams.at tId .= Nothing
         setTeamFocusWith $ Z.filterZipper (/= tId)
         updateWindowTitle
+        -- Invalidating the cache here expunges any cached message
+        -- renderings from the team we are leaving.
+        mh invalidateCache
 
 updateTeam :: TeamId -> MH ()
 updateTeam tId = do
@@ -89,9 +92,7 @@ updateTeam tId = do
         return $ Just $ do
             csTeam(tId).tsTeam .= t
             -- Invalidate the cache since we happen to know that the
-            -- team name is in the cached sidebar. Doing this also
-            -- expunges any cached message renderings from the team we
-            -- are leaving.
+            -- team name is in the cached sidebar.
             mh invalidateCache
 
 setTeamOrderWith :: (TeamId -> [TeamId] -> [TeamId]) -> MH ()
