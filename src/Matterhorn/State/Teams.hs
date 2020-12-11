@@ -44,6 +44,7 @@ nextTeam = do
 prevTeam :: MH ()
 prevTeam = do
     csTeamZipper %= Z.left
+    postChangeTeamCommon
 
 postChangeTeamCommon :: MH ()
 postChangeTeamCommon = do
