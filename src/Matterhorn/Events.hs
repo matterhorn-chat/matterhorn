@@ -395,20 +395,20 @@ handleWSEvent we = do
             | Just tId <- wepTeamId $ weData we
             , Just uId <- wepUserId $ weData we -> do
                 when (uId == myId && not (tId `elem` myTIds)) $ do
-                    joinTeam tId
+                    handleJoinTeam tId
             | otherwise -> return ()
 
         WMUpdateTeam
             | Just tId <- webTeamId $ weBroadcast we -> do
                 when (tId `elem` myTIds) $ do
-                    updateTeam tId
+                    handleUpdateTeam tId
             | otherwise -> return ()
 
         WMLeaveTeam
             | Just tId <- wepTeamId $ weData we
             , Just uId <- wepUserId $ weData we -> do
                 when (uId == myId && tId `elem` myTIds) $ do
-                    leaveTeam tId
+                    handleLeaveTeam tId
             | otherwise -> return ()
 
         WMTeamDeleted -> do

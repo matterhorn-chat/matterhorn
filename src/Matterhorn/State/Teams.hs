@@ -1,9 +1,9 @@
 module Matterhorn.State.Teams
   ( nextTeam
   , prevTeam
-  , joinTeam
-  , leaveTeam
-  , updateTeam
+  , handleJoinTeam
+  , handleLeaveTeam
+  , handleUpdateTeam
   , buildTeamState
   , moveCurrentTeamLeft
   , moveCurrentTeamRight
@@ -62,8 +62,8 @@ postChangeTeamCommon = do
 --
 -- This is called in response to a server event indicating that the
 -- current user was added to the team.
-joinTeam :: TeamId -> MH ()
-joinTeam tId = do
+handleJoinTeam :: TeamId -> MH ()
+handleJoinTeam tId = do
     session <- getSession
     cr <- use csResources
     me <- use csMe
@@ -86,8 +86,8 @@ joinTeam tId = do
 --
 -- This is called in response to a server event indicating that the
 -- current user was removed from the team.
-leaveTeam :: TeamId -> MH ()
-leaveTeam tId =
+handleLeaveTeam :: TeamId -> MH ()
+handleLeaveTeam tId =
     doAsyncWith Normal $ return $ Just $ do
         mhLog LogGeneral $ T.pack $ "Leaving team " <> show tId
         csTeams.at tId .= Nothing
@@ -101,8 +101,8 @@ leaveTeam tId =
 --
 -- This is called in response to a server event indicating that the
 -- specified team was updated in some way.
-updateTeam :: TeamId -> MH ()
-updateTeam tId = do
+handleUpdateTeam :: TeamId -> MH ()
+handleUpdateTeam tId = do
     session <- getSession
     mhLog LogGeneral $ T.pack $ "Updating team " <> show tId
     doAsyncWith Normal $ do
