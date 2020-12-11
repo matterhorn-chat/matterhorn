@@ -25,6 +25,7 @@ import           Network.Mattermost.WebSocket
 import           Matterhorn.Connection
 import           Matterhorn.Constants ( userSigil, normalChannelSigil )
 import           Matterhorn.HelpTopics
+import           Matterhorn.State.ChannelList
 import           Matterhorn.State.Channels
 import           Matterhorn.State.Common
 import           Matterhorn.State.Flagging

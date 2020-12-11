@@ -2,6 +2,7 @@ module Matterhorn.State.ChannelList
   ( updateSidebar
   , updateWindowTitle
   , toggleChannelListVisibility
+  , showChannelInSidebar
   )
 where
 
@@ -10,14 +11,18 @@ import           Matterhorn.Prelude
 
 import           Brick.Main ( getVtyHandle, invalidateCache, invalidateCacheEntry )
 import qualified Data.HashMap.Strict as HM
+import qualified Data.Sequence as Seq
 import           Data.Time.Clock ( getCurrentTime )
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform
 
 import           Network.Mattermost.Types
+import           Network.Mattermost.Lenses
+import qualified Network.Mattermost.Endpoints as MM
 
 import {-# SOURCE #-} Matterhorn.State.Messages ( fetchVisibleIfNeeded )
 import           Matterhorn.Types
+import           Matterhorn.State.Async
 import qualified Matterhorn.Zipper as Z
 
 
@@ -88,3 +93,67 @@ toggleChannelListVisibility :: MH ()
 toggleChannelListVisibility = do
     mh invalidateCache
     csResources.crConfiguration.configShowChannelListL %= not
+
+showChannelInSidebar :: ChannelId -> Bool -> MH ()
+showChannelInSidebar cId setPending = do
+    mChan <- preuse $ csChannel cId
+    me <- gets myUser
+    prefs <- use (csResources.crUserPreferences)
+    session <- getSession
+
+    case mChan of
+        Nothing ->
+          -- The requested channel doesn't actually exist yet, so no
+          -- action can be taken.  It's likely that this is a
+          -- pendingChannel situation and not all of the operations to
+          -- locally define the channel have completed, in which case
+          -- this code will be re-entered later and the mChan will be
+          -- known.
+          return ()
+        Just ch -> do
+
+            -- Able to successfully switch to a known channel.  This
+            -- should clear any pending channel intention.  If the
+            -- intention was for this channel, then: done.  If the
+            -- intention was for a different channel, reaching this
+            -- point means that the pending is still outstanding but
+            -- that the user identified a new channel which *was*
+            -- displayable, and the UI should always prefer to SATISFY
+            -- the user's latest request over any pending/background
+            -- task.
+            csCurrentTeam.tsPendingChannelChange .= Nothing
+
+            now <- liftIO getCurrentTime
+            csChannel(cId).ccInfo.cdSidebarShowOverride .= Just now
+            updateSidebar (ch^.ccInfo.cdTeamId)
+
+            curTid <- use csCurrentTeamId
+            let tId = fromMaybe curTid (ch^.ccInfo.cdTeamId)
+
+            case ch^.ccInfo.cdType of
+                Direct -> do
+                    let Just uId = ch^.ccInfo.cdDMUserId
+                    case dmChannelShowPreference prefs uId of
+                        Just False -> do
+                            let pref = showDirectChannelPref (me^.userIdL) uId True
+                            when setPending $
+                                csCurrentTeam.tsPendingChannelChange .=
+                                    Just (ChangeByChannelId tId (ch^.ccInfo.cdChannelId) Nothing)
+                            doAsyncWith Preempt $ do
+                                MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
+                                return Nothing
+                        _ -> return ()
+
+                Group ->
+                    case groupChannelShowPreference prefs cId of
+                        Just False -> do
+                            let pref = showGroupChannelPref cId (me^.userIdL)
+                            when setPending $
+                                csCurrentTeam.tsPendingChannelChange .=
+                                    Just (ChangeByChannelId tId (ch^.ccInfo.cdChannelId) Nothing)
+                            doAsyncWith Preempt $ do
+                                MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
+                                return Nothing
+                        _ -> return ()
+
+                _ -> return ()
