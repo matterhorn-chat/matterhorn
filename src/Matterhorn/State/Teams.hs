@@ -68,9 +68,9 @@ joinTeam tId = do
             when (not $ tId `elem` myTIds) $ do
                 csTeams.at tId .= Just ts
                 csChannels %= (chans <>)
-
+                updateSidebar $ Just tId
+                updateWindowTitle
                 refreshTeamZipper
-                mh invalidateCache
 
 leaveTeam :: TeamId -> MH ()
 leaveTeam tId =
