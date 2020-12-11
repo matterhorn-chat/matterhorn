@@ -111,6 +111,7 @@ module Matterhorn.Types
   , sortTeams
   , mkTeamZipper
   , mkTeamZipperFromIds
+  , teamZipperIds
   , mkChannelZipperList
   , ChannelListGroup(..)
   , channelListGroupUnread
@@ -1512,6 +1513,9 @@ mkTeamZipper m =
 
 mkTeamZipperFromIds :: [TeamId] -> Z.Zipper () TeamId
 mkTeamZipperFromIds tIds = Z.fromList [((), tIds)]
+
+teamZipperIds :: Z.Zipper () TeamId -> [TeamId]
+teamZipperIds = concat . fmap snd . Z.toList
 
 newTeamState :: Team
              -> Z.Zipper ChannelListGroup ChannelListEntry

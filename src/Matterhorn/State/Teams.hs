@@ -102,7 +102,7 @@ moveCurrentTeamLeft = do
 
     tId <- use csCurrentTeamId
     z <- use csTeamZipper
-    let [((), tIds)] = Z.toList z
+    let tIds = teamZipperIds z
         newList = moveLeft tId tIds
 
     doAsyncWith Normal $ do
@@ -117,7 +117,7 @@ moveCurrentTeamRight = do
 
     tId <- use csCurrentTeamId
     z <- use csTeamZipper
-    let [((), tIds)] = Z.toList z
+    let tIds = teamZipperIds z
         newList = moveRight tId tIds
 
     doAsyncWith Normal $ do
