@@ -50,6 +50,7 @@ module Matterhorn.State.Channels
   , toggleExpandedChannelTopics
   , showChannelInSidebar
   , updateChannelNotifyProps
+  , updateWindowTitle
   )
 where
 
