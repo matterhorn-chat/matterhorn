@@ -110,7 +110,11 @@ setupState mkVty mLogLocation config = do
   let initialTeamId = fromMaybe (teamId $ head $ sortTeams teams) $ do
           tName <- mbTeam <|> configTeam config
           let matchingTeam = listToMaybe $ filter matches teams
-              matches t = (sanitizeUserText $ teamName t) == tName
+              matches t =
+                  let urlName = T.strip $ T.toLower $ sanitizeUserText $ teamName t
+                      displayName = T.strip $ T.toLower $ sanitizeUserText $ teamDisplayName t
+                  in displayName == T.strip (T.toLower tName) ||
+                     urlName == T.strip (T.toLower tName)
           teamId <$> matchingTeam
 
   userStatusChan <- STM.newTChanIO
