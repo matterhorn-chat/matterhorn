@@ -78,7 +78,7 @@ leaveTeam tId =
         mhLog LogGeneral $ T.pack $ "Leaving team " <> show tId
         csTeams.at tId .= Nothing
         setTeamFocusWith $ Z.filterZipper (/= tId)
-        mh invalidateCache
+        updateWindowTitle
 
 updateTeam :: TeamId -> MH ()
 updateTeam tId = do
