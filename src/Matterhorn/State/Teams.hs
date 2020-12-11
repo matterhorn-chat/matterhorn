@@ -78,9 +78,7 @@ leaveTeam tId =
     doAsyncWith Normal $ return $ Just $ do
         mhLog LogGeneral $ T.pack $ "Leaving team " <> show tId
         csTeams.at tId .= Nothing
-        curTid <- use csCurrentTeamId
-        teams <- use csTeams
-        csTeamZipper .= (Z.findRight (== curTid) $ mkTeamZipper teams)
+        setTeamFocusWith $ Z.filterZipper (/= tId)
         mh invalidateCache
 
 updateTeam :: TeamId -> MH ()
