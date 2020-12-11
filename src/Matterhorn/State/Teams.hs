@@ -36,22 +36,32 @@ import           Matterhorn.State.Setup.Threads ( maybeStartSpellChecker )
 import qualified Matterhorn.Zipper as Z
 
 
+-- | Move right in the channel list to select the next team.
 nextTeam :: MH ()
 nextTeam = setTeamFocusWith Z.right
 
+-- | Move left in the channel list to select the previous team.
 prevTeam :: MH ()
 prevTeam = setTeamFocusWith Z.left
 
+-- | Change the selected team with the specified team zipper
+-- transformation. This function also takes care of book-keeping
+-- necessary during team switching.
 setTeamFocusWith :: (Z.Zipper () TeamId -> Z.Zipper () TeamId) -> MH ()
 setTeamFocusWith f = do
     csTeamZipper %= f
     postChangeTeamCommon
 
+-- | Book-keeping common to all team selection changes.
 postChangeTeamCommon :: MH ()
 postChangeTeamCommon = do
     updateViewed False
     fetchVisibleIfNeeded
 
+-- | Add the specified team to the application state.
+--
+-- This is called in response to a server event indicating that the
+-- current user was added to the team.
 joinTeam :: TeamId -> MH ()
 joinTeam tId = do
     session <- getSession
@@ -72,6 +82,10 @@ joinTeam tId = do
                 updateWindowTitle
                 refreshTeamZipper
 
+-- | Remove the specified team to the application state.
+--
+-- This is called in response to a server event indicating that the
+-- current user was removed from the team.
 leaveTeam :: TeamId -> MH ()
 leaveTeam tId =
     doAsyncWith Normal $ return $ Just $ do
@@ -83,6 +97,10 @@ leaveTeam tId =
         -- renderings from the team we are leaving.
         mh invalidateCache
 
+-- | Updated the specified team's metadata in the application state.
+--
+-- This is called in response to a server event indicating that the
+-- specified team was updated in some way.
 updateTeam :: TeamId -> MH ()
 updateTeam tId = do
     session <- getSession
@@ -95,6 +113,8 @@ updateTeam tId = do
             -- team name is in the cached sidebar.
             mh invalidateCache
 
+-- | Set the team zipper ordering with the specified transformation,
+-- which is expected to be either 'moveLeft' or 'moveRight'.
 setTeamOrderWith :: (TeamId -> [TeamId] -> [TeamId]) -> MH ()
 setTeamOrderWith sortFunc = do
     session <- getSession
@@ -110,12 +130,24 @@ setTeamOrderWith sortFunc = do
         MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
         return Nothing
 
+-- | Move the selected team left in the team list.
 moveCurrentTeamLeft :: MH ()
 moveCurrentTeamLeft = setTeamOrderWith moveLeft
 
+-- | Move the selected team right in the team list.
 moveCurrentTeamRight :: MH ()
 moveCurrentTeamRight = setTeamOrderWith moveRight
 
+-- | Build a new 'TeamState' for the specified team.
+--
+-- This function starts a new spell checker thread for the team's
+-- message editor, loads the last-run state for the team (to ensure that
+-- the initially-selected channel is honored), and fetches the channel
+-- metadata for the team.
+--
+-- This returns the resulting team state as well as the channels
+-- associated with the team. The caller is responsible for adding the
+-- channels and the team state to the application state.
 buildTeamState :: ChatResources -> User -> Team -> IO (TeamState, ClientChannels)
 buildTeamState cr me team = do
     let tId = teamId team
