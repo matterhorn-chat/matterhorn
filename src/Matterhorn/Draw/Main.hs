@@ -492,9 +492,8 @@ teamList st =
                         then withDefAttr unreadChannelAttr
                         else id) $
                txt $
-               (T.strip $ sanitizeUserText $ teamDisplayName $ _tsTeam ts) <>
-               (T.pack $ if unread then "(" <> show uCount <> ")" else "")
-        unreadCount tId = sum $ fmap (channelListGroupUnread . fst) $
+               (T.strip $ sanitizeUserText $ teamDisplayName $ _tsTeam ts)
+        unreadCount tId = sum $ fmap (nonDMChannelListGroupUnread . fst) $
                           Z.toList $ st^.csTeam(tId).tsFocus
     in if length teams == 1
        then emptyWidget
