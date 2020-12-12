@@ -58,19 +58,10 @@ handleWebsocketEvent we = do
                 when (inMyTeamOrDM (wepTeamId (weData we))) $ do
                     let wasMentioned = maybe False (Set.member myId) $ wepMentions (weData we)
                     addNewPostedMessage $ RecentPost p wasMentioned
-
-                    currTId <- use csCurrentTeamId
-                    currCId <- use (csCurrentChannelId currTId)
-                    case wepTeamId $ weData we of
-                        Nothing -> do
-                            foreachTeam $ \tId -> do
-                                when (tId /= currTId || postChannelId p /= currCId) $
-                                   showChannelInSidebar (p^.postChannelIdL) False
-                        Just tId -> do
-                            cId <- use (csCurrentChannelId tId)
-                            when (postChannelId p /= cId) $
-                                showChannelInSidebar (p^.postChannelIdL) False
-
+                    tId <- use csCurrentTeamId
+                    cId <- use (csCurrentChannelId tId)
+                    when (postChannelId p /= cId) $
+                        showChannelInSidebar (p^.postChannelIdL) False
             | otherwise -> return ()
 
         WMPostEdited
