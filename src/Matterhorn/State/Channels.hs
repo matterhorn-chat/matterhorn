@@ -50,6 +50,7 @@ module Matterhorn.State.Channels
   , toggleExpandedChannelTopics
   , showChannelInSidebar
   , updateChannelNotifyProps
+  , renameChannelByUrl
   )
 where
 
@@ -1116,6 +1117,15 @@ setChannelTopic msg = do
     doAsyncChannelMM Preempt cId
         (\s _ -> MM.mmPatchChannel cId patch s)
         (\_ _ -> Nothing)
+
+renameChannelByUrl :: Text -> MH ()
+renameChannelByUrl name = do 
+    cId <- use csCurrentChannelId 
+    s <- getSession
+    let patch = defaultChannelPatch { channelPatchName = Just name }
+    doAsyncWith Normal $ do
+        _ <- MM.mmPatchChannel cId patch s
+        return Nothing 
 
 getCurrentChannelTopic :: MH Text
 getCurrentChannelTopic = do
