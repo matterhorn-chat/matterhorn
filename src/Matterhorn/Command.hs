@@ -5,7 +5,6 @@ module Matterhorn.Command
   , dispatchCommand
   , printArgSpec
   , toggleMessagePreview
-  , unwordHead
   )
 where
 
