@@ -60,7 +60,7 @@ Other changes:
      (`~`)
    * Channel mute status (`(m)`)
    * Unread status and visual style
- * When composing replies, Mattehorn now displays the threat root
+ * When composing replies, Mattehorn now displays the thread root
    message of the thread being replied to, rather than the message
    the user selected for reply (#670). This is intended to be less
    surprising than the old behavior since showing the root post in the
