@@ -502,7 +502,7 @@ mkKeybindHelp kc h =
     in (label, rendering)
 
 mkKeybindEventSectionHelp :: KeyConfig
-                          -> ((Either Text Text, Text, [Text]) -> a)
+                          -> ((TextHunk, Text, [TextHunk]) -> a)
                           -> ([a] -> a)
                           -> (Text -> a)
                           -> (Text, [KeyEventHandler])
@@ -511,53 +511,59 @@ mkKeybindEventSectionHelp kc mkKeybindHelpFunc vertCat mkHeading (sectionName, k
   vertCat $ (mkHeading sectionName) :
             (mkKeybindHelpFunc <$> (mkKeybindEventHelp kc <$> kbs))
 
-keybindEventHelpWidget :: (Either Text Text, Text, [Text]) -> Widget Name
+data TextHunk = Verbatim Text
+              | Comment Text
+
+keybindEventHelpWidget :: (TextHunk, Text, [TextHunk]) -> Widget Name
 keybindEventHelpWidget (evName, desc, evs) =
-    let evText = T.intercalate ", " evs
+    let evText = T.intercalate ", " (getText <$> evs)
+        getText (Comment s) = s
+        getText (Verbatim s) = s
         label = case evName of
-            Left s -> txt $ "; " <> s
-            Right s -> emph $ txt s
+            Comment s -> txt $ "; " <> s
+            Verbatim s -> emph $ txt s
     in padBottom (Pad 1) $
        vBox [ txtWrap ("; " <> desc)
             , label <+> txt (" = " <> evText)
             ]
 
-keybindEventHelpMarkdown :: (Either Text Text, Text, [Text]) -> Text
+keybindEventHelpMarkdown :: (TextHunk, Text, [TextHunk]) -> Text
 keybindEventHelpMarkdown (evName, desc, evs) =
     let quote s = "`" <> s <> "`"
+        format (Comment s) = s
+        format (Verbatim s) = quote s
         name = case evName of
-            Left s -> s
-            Right s -> quote s
-    in "| " <> (T.intercalate ", " $ quote <$> evs) <>
+            Comment s -> s
+            Verbatim s -> quote s
+    in "| " <> (T.intercalate ", " $ format <$> evs) <>
        " | " <> name <>
        " | " <> desc <>
        " |"
 
-keybindEventHelpText :: Int -> Int -> (Either Text Text, Text, [Text]) -> Text
+keybindEventHelpText :: Int -> Int -> (TextHunk, Text, [TextHunk]) -> Text
 keybindEventHelpText width eventNameWidth (evName, desc, evs) =
-    let name = case evName of
-            Left s -> s
-            Right s -> s
-    in padTo width (T.intercalate ", " evs) <> " " <>
-       padTo eventNameWidth name <> " " <>
+    let getText (Comment s) = s
+        getText (Verbatim s) = s
+    in padTo width (T.intercalate ", " $ getText <$> evs) <> " " <>
+       padTo eventNameWidth (getText evName) <> " " <>
        desc
 
-mkKeybindEventHelp :: KeyConfig -> KeyEventHandler -> (Either Text Text, Text, [Text])
+mkKeybindEventHelp :: KeyConfig -> KeyEventHandler -> (TextHunk, Text, [TextHunk])
 mkKeybindEventHelp kc h =
   let trig = kehEventTrigger h
-      unbound = ["(unbound)"]
+      unbound = [Comment "(unbound)"]
       (label, evText) = case trig of
-          Static key -> (Left "(non-customizable key)", [ppBinding $ eventToBinding key])
+          Static key -> (Comment "(non-customizable key)", [Verbatim $ ppBinding $ eventToBinding key])
           ByEvent ev -> case M.lookup ev kc of
               Nothing ->
                   let name = keyEventName ev
                   in if not (null (defaultBindings ev))
-                     then (Right name, ppBinding <$> defaultBindings ev)
-                     else (Right name, unbound)
-              Just Unbound -> (Right $ keyEventName ev, unbound)
-              Just (BindingList bs) -> (Right $ keyEventName ev,
+                     then (Verbatim name, Verbatim <$> ppBinding <$> defaultBindings ev)
+                     else (Verbatim name, unbound)
+              Just Unbound -> (Verbatim $ keyEventName ev, unbound)
+              Just (BindingList bs) -> (Verbatim $ keyEventName ev,
                                         if not (null bs)
-                                        then ppBinding <$> bs
+                                        then Verbatim <$> ppBinding <$> bs
                                         else unbound
                                         )
   in (label, ehDescription $ kehHandler h, evText)
