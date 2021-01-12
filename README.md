@@ -49,6 +49,7 @@ We provide a number of avenues for getting support:
 # Features
 
 * Channel creation, deletion, and membership management commands
+* Support for multiple teams
 * Optimized channel-switching modes: `M-a`, `M-s`, and `C-g`
 * Message posting, editing, replying, and deletion
 * Markdown rendering
