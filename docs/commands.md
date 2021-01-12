@@ -25,6 +25,8 @@
 | `/log-stop` | Stop logging |
 | `/members` | Show the current channel's members |
 | `/message-preview` | Toggle preview of the current message |
+| `/move-team-left` | Move the currently-selected team to the left in the team list |
+| `/move-team-right` | Move the currently-selected team to the right in the team list |
 | `/msg` | Search for a user to enter a private chat |
 | `/msg <@user>` | Chat with the specified user |
 | `/msg <@user> <message or command>` | Go to a user's channel and send the specified message or command |
