@@ -15,7 +15,6 @@ module Matterhorn.State.Channels
   , nextUnreadChannel
   , nextUnreadUserOrChannel
   , createOrFocusDMChannel
-  , clearChannelUnreadStatus
   , prevChannel
   , nextChannel
   , recentChannel
