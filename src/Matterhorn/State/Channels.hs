@@ -131,7 +131,10 @@ toggleExpandedChannelTopics = do
 
 -- | If the current channel is a DM channel with a single user or a
 -- group of users, hide it from the sidebar and adjust the server-side
--- preference to hide it persistently.
+-- preference to hide it persistently. Note that this does not actually
+-- hide the channel in our UI; we hide it in response to the preference
+-- change websocket event triggered by this function's API interaction
+-- with the server.
 --
 -- If the current channel is any other kind of channel, complain with a
 -- usage error.
