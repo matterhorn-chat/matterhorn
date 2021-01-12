@@ -102,10 +102,10 @@ updateViewed updatePrev = do
 -- of the specified channel, False should be provided.
 updateViewedChan :: Bool -> ChannelId -> MH ()
 updateViewedChan updatePrev cId = use csConnectionStatus >>= \case
+    -- Only do this if we're connected to avoid triggering noisy
+    -- exceptions.
     Connected -> do
         withChannel cId $ \chan -> do
-            -- Only do this if we're connected to avoid triggering noisy
-            -- exceptions.
             pId <- if updatePrev
                    then do
                        case chan^.ccInfo.cdTeamId of
