@@ -110,7 +110,7 @@ updateViewedChan updatePrev cId = use csConnectionStatus >>= \case
                    then do
                        case chan^.ccInfo.cdTeamId of
                            Just tId -> use (csTeam(tId).tsRecentChannel)
-                           Nothing -> return Nothing
+                           Nothing -> use (csCurrentTeam.tsRecentChannel)
                    else return Nothing
             doAsyncChannelMM Preempt cId
               (\s c -> MM.mmViewChannel UserMe c pId s)
