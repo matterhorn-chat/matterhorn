@@ -553,7 +553,7 @@ mkKeybindEventHelp kc h =
                   let name = keyEventName ev
                   in if not (null (defaultBindings ev))
                      then (Right name, ppBinding <$> defaultBindings ev)
-                     else (Left name, unbound)
+                     else (Right name, unbound)
               Just Unbound -> (Right $ keyEventName ev, unbound)
               Just (BindingList bs) -> (Right $ keyEventName ev,
                                         if not (null bs)
