@@ -2,7 +2,6 @@
 {-# LANGUAGE MultiWayIf #-}
 module Matterhorn.State.Channels
   ( updateViewed
-  , updateViewedChan
   , refreshChannel
   , refreshChannelsAndUsers
   , setFocus
