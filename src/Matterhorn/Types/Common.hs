@@ -10,6 +10,7 @@ import Prelude ()
 import Matterhorn.Prelude
 
 import qualified Data.Text as T
+import Data.Char ( isPrint )
 
 import Network.Mattermost.Types ( UserText, unsafeUserText, UserId(..), Id(..) )
 
@@ -18,9 +19,9 @@ sanitizeUserText = sanitizeUserText' . unsafeUserText
 
 sanitizeUserText' :: T.Text -> T.Text
 sanitizeUserText' =
+    T.filter (\c -> isPrint c || c == '\n') . -- remove non-printable
     T.replace "\ESC" "<ESC>" .
-    T.replace "\t" " " .
-    T.filter (\c -> c >= ' ' || c == '\n')  -- remove non-printable
+    T.replace "\t" " "
 
 -- | Extract the corresponding other user from a direct channel name.
 -- Returns Nothing if the string is not a direct channel name or if it
