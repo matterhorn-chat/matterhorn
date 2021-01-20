@@ -689,9 +689,6 @@ mainInterface :: ChatState -> Widget Name
 mainInterface st =
     vBox [ teamList st
          , body
-         , bottomBorder
-         , inputPreview st hs
-         , userInputArea st hs
          ]
     where
     body = if st^.csResources.crConfiguration.configShowChannelListL || st^.csCurrentTeam.tsMode == ChannelSelect
@@ -704,7 +701,13 @@ mainInterface st =
     channelList = hLimit channelListWidth (renderChannelList st)
     hs = getHighlightSet st
     channelListWidth = configChannelListWidth $ st^.csResources.crConfiguration
-    mainDisplay = case st^.csCurrentTeam.tsMode of
+    mainDisplay =
+        vBox [ channelContents
+             , bottomBorder
+             , inputPreview st hs
+             , userInputArea st hs
+             ]
+    channelContents = case st^.csCurrentTeam.tsMode of
         UrlSelect -> renderUrlList st
         _         -> maybeSubdue $ renderCurrentChannelDisplay st hs
 
