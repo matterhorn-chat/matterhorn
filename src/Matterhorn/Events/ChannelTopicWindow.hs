@@ -24,15 +24,15 @@ onEventChannelTopicWindow (Vty.EvKey Vty.KBackTab []) =
 onEventChannelTopicWindow e@(Vty.EvKey Vty.KEnter []) = do
     f <- use (csCurrentTeam.tsChannelTopicDialog.channelTopicDialogFocus)
     case focusGetCurrent f of
-        Just ChannelTopicSaveButton -> do
+        Just (ChannelTopicSaveButton {}) -> do
             ed <- use (csCurrentTeam.tsChannelTopicDialog.channelTopicDialogEditor)
             let topic = T.unlines $ getEditContents ed
             setChannelTopic topic
             setMode Main
-        Just ChannelTopicEditor ->
+        Just (ChannelTopicEditor {}) ->
             mhHandleEventLensed (csCurrentTeam.tsChannelTopicDialog.channelTopicDialogEditor)
                                 handleEditorEvent e
-        Just ChannelTopicCancelButton ->
+        Just (ChannelTopicCancelButton {}) ->
             setMode Main
         _ ->
             setMode Main
@@ -41,7 +41,7 @@ onEventChannelTopicWindow (Vty.EvKey Vty.KEsc []) = do
 onEventChannelTopicWindow e = do
     f <- use (csCurrentTeam.tsChannelTopicDialog.channelTopicDialogFocus)
     case focusGetCurrent f of
-        Just ChannelTopicEditor ->
+        Just (ChannelTopicEditor {}) ->
             mhHandleEventLensed (csCurrentTeam.tsChannelTopicDialog.channelTopicDialogEditor)
                                 handleEditorEvent e
         _ ->

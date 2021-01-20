@@ -9,6 +9,7 @@ import           Matterhorn.Prelude
 
 import           Brick
 import           Control.Monad.Trans.Except ( runExceptT )
+import qualified Data.HashMap.Strict as HM
 import qualified Graphics.Vty as Vty
 import           Text.Aspell ( stopAspell )
 import           GHC.Conc (getNumProcessors, setNumCapabilities)
@@ -31,7 +32,7 @@ import           Matterhorn.Types
 app :: App ChatState MHEvent Name
 app = App
   { appDraw         = draw
-  , appChooseCursor = \s cs -> case appMode s of
+  , appChooseCursor = \s cs -> case s^.csCurrentTeam.tsMode of
       Main                          -> showFirstCursor s cs
       ChannelSelect                 -> showFirstCursor s cs
       UserListOverlay               -> showFirstCursor s cs
@@ -39,7 +40,8 @@ app = App
       ChannelListOverlay            -> showFirstCursor s cs
       ManageAttachmentsBrowseFiles  -> showFirstCursor s cs
       ThemeListOverlay              -> showFirstCursor s cs
-      ChannelTopicWindow            -> showCursorNamed ChannelTopicEditor cs
+      ChannelTopicWindow            -> let tId = s^.csCurrentTeamId
+                                       in showCursorNamed (ChannelTopicEditor tId) cs
       LeaveChannelConfirm           -> Nothing
       DeleteChannelConfirm          -> Nothing
       MessageSelect                 -> Nothing
@@ -87,9 +89,10 @@ runMatterhorn opts config = do
     (st, vty) <- setupState mkVty (optLogLocation opts) config
     finalSt <- customMain vty mkVty (Just $ st^.csResources.crEventQueue) app st
 
-    case finalSt^.csCurrentTeam.tsEditState.cedSpellChecker of
-        Nothing -> return ()
-        Just (s, _) -> stopAspell s
+    forM_ (HM.elems $ finalSt^.csTeams) $ \ts ->
+        case ts^.tsEditState.cedSpellChecker of
+            Nothing -> return ()
+            Just (s, _) -> stopAspell s
 
     return finalSt
 
@@ -102,8 +105,8 @@ closeMatterhorn finalSt = do
   logIfError (writeHistory (finalSt^.csInputHistory))
       "Error in writing history"
 
-  logIfError (writeLastRunState finalSt)
-      "Error in writing last run state"
+  logIfError (writeLastRunStates finalSt)
+      "Error in writing last run states"
 
   shutdownLogManager $ finalSt^.csResources.crLogManager
 

@@ -125,6 +125,12 @@ data KeyEvent
 
   -- Form submission
   | FormSubmitEvent
+
+  -- Team switching
+  | NextTeamEvent
+  | PrevTeamEvent
+  | MoveCurrentTeamLeftEvent
+  | MoveCurrentTeamRightEvent
     deriving (Eq, Show, Ord, Enum)
 
 allEvents :: [KeyEvent]
@@ -197,6 +203,11 @@ allEvents =
 
   , SearchSelectUpEvent
   , SearchSelectDownEvent
+
+  , NextTeamEvent
+  , PrevTeamEvent
+  , MoveCurrentTeamLeftEvent
+  , MoveCurrentTeamRightEvent
 
   , FlagMessageEvent
   , PinMessageEvent
@@ -388,6 +399,11 @@ keyEventName ev = case ev of
   EditorHomeEvent             -> "editor-home"
   EditorEndEvent              -> "editor-end"
   EditorYankEvent             -> "editor-yank"
+
+  NextTeamEvent               -> "next-team"
+  PrevTeamEvent               -> "prev-team"
+  MoveCurrentTeamLeftEvent    -> "move-current-team-left"
+  MoveCurrentTeamRightEvent   -> "move-current-team-right"
 
   EnterFlaggedPostsEvent    -> "show-flagged-posts"
   ToggleChannelListVisibleEvent -> "toggle-channel-list-visibility"

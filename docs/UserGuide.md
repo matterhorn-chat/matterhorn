@@ -82,9 +82,10 @@ globally-accessible `/etc/matterhorn/config.ini`.
 
 The user interface has three main areas:
 
-* Left: list of channels you're in, and list of users in your team and
-  their statuses (`+` means online, `-` means away, `×` means Do Not
-  Disturb, and an absent sigil means offline)
+* Left: list of channels you're in, and list of users in your
+  currently-selected team and their statuses (`+` means online, `-`
+  means away, `×` means Do Not Disturb, and an absent sigil means
+  offline)
 * Right: messages in the current channel
 * Bottom: editing area for writing, editing, and replying to messages
 
@@ -113,6 +114,12 @@ file; see `/help keybindings` for details.
 To join a channel, use the `/join` command to choose from a list of
 available channels. To create a channel, use `/create-channel`. To leave
 a channel, use `/leave-channel`.
+
+If you are a member of more than one team on your server, your teams
+will be listed at the top of the screen. You can change which team is
+selected by pressing the default bindings of `C-Left` and `C-Right`. You
+can rearrange the team order by using the commands `/move-team-left` and
+`/move-team-right`.
 
 To create a private group chat amongst yourself and other users, use the
 `/group-msg` command, e.g., `/group-msg user1 user2`.

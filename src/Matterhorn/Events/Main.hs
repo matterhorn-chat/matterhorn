@@ -11,10 +11,12 @@ import           Matterhorn.Command
 import           Matterhorn.Events.Keybindings
 import           Matterhorn.State.Attachments
 import           Matterhorn.State.ChannelSelect
+import           Matterhorn.State.ChannelList
 import           Matterhorn.State.Channels
 import           Matterhorn.State.Editing
 import           Matterhorn.State.MessageSelect
 import           Matterhorn.State.PostListOverlay ( enterFlaggedPostListMode )
+import           Matterhorn.State.Teams
 import           Matterhorn.State.UrlSelect
 import           Matterhorn.Types
 
@@ -49,6 +51,18 @@ mainKeyHandlers =
 
     , mkKb ToggleExpandedChannelTopicsEvent "Toggle display of expanded channel topics"
         toggleExpandedChannelTopics
+
+    , mkKb NextTeamEvent "Switch to the next available team"
+        nextTeam
+
+    , mkKb PrevTeamEvent "Switch to the previous available team"
+        prevTeam
+
+    , mkKb MoveCurrentTeamLeftEvent "Move the current team to the left in the team list"
+        moveCurrentTeamLeft
+
+    , mkKb MoveCurrentTeamRightEvent "Move the current team to the right in the team list"
+        moveCurrentTeamRight
 
     , mkKb
         InvokeEditorEvent
@@ -130,15 +144,17 @@ mainKeyHandlers =
                  -- newline instead.
                  True -> handleEditingInput (Vty.EvKey Vty.KEnter [])
                  False -> do
-                     cId <- use csCurrentChannelId
+                     tId <- use csCurrentTeamId
+                     cId <- use (csCurrentChannelId tId)
                      content <- getEditorContent
-                     handleInputSubmission cId content
+                     handleInputSubmission tId cId content
 
     , mkKb EnterOpenURLModeEvent "Select and open a URL posted to the current channel"
            startUrlSelect
 
-    , mkKb ClearUnreadEvent "Clear the current channel's unread / edited indicators" $
-           clearChannelUnreadStatus =<< use csCurrentChannelId
+    , mkKb ClearUnreadEvent "Clear the current channel's unread / edited indicators" $ do
+           tId <- use csCurrentTeamId
+           clearChannelUnreadStatus =<< use (csCurrentChannelId tId)
 
     , mkKb ToggleMultiLineEvent "Toggle multi-line message compose mode"
            toggleMultilineEditing

@@ -41,13 +41,16 @@ showAttachmentList = do
 
 resetAttachmentList :: MH ()
 resetAttachmentList = do
-    csCurrentTeam.tsEditState.cedAttachmentList .= L.list AttachmentList mempty 1
-    mh $ vScrollToBeginning $ viewportScroll AttachmentList
+    tId <- use csCurrentTeamId
+    let listName = AttachmentList tId
+    csCurrentTeam.tsEditState.cedAttachmentList .= L.list listName mempty 1
+    mh $ vScrollToBeginning $ viewportScroll listName
 
 showAttachmentFileBrowser :: MH ()
 showAttachmentFileBrowser = do
     config <- use (csResources.crConfiguration)
+    tId <- use csCurrentTeamId
     filePath <- liftIO $ defaultAttachmentsPath config
-    browser <- liftIO $ Just <$> FB.newFileBrowser FB.selectNonDirectories AttachmentFileBrowser filePath
+    browser <- liftIO $ Just <$> FB.newFileBrowser FB.selectNonDirectories (AttachmentFileBrowser tId) filePath
     csCurrentTeam.tsEditState.cedFileBrowser .= browser
     setMode ManageAttachmentsBrowseFiles

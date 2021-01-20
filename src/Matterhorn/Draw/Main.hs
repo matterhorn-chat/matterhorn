@@ -24,7 +24,8 @@ import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( (.~), (^?!), to, view, folding )
 
 import           Network.Mattermost.Types ( ChannelId, Type(Direct, Private, Group)
-                                          , ServerTime(..), UserId
+                                          , ServerTime(..), UserId, TeamId, teamDisplayName
+                                          , teamId
                                           )
 
 
@@ -41,8 +42,10 @@ import           Matterhorn.State.MessageSelect
 import           Matterhorn.Themes
 import           Matterhorn.TimeUtils ( justAfter, justBefore )
 import           Matterhorn.Types
+import           Matterhorn.Types.Common ( sanitizeUserText )
 import           Matterhorn.Types.RichText ( parseMarkdown, TeamBaseURL )
 import           Matterhorn.Types.KeyEvents
+import qualified Matterhorn.Zipper as Z
 
 
 previewFromInput :: TeamBaseURL -> Maybe MessageType -> UserId -> Text -> Maybe Message
@@ -228,6 +231,7 @@ renderUserCommandBox st hs =
             Replying _ _ -> "reply> "
             Editing _ _  ->  "edit> "
             NewPost      ->      "> "
+        tId = st^.csCurrentTeamId
         inputBox = renderEditor (drawEditorContents st hs) True (st^.csCurrentTeam.tsEditState.cedEditor)
         curContents = getEditContents $ st^.csCurrentTeam.tsEditState.cedEditor
         multilineContent = length curContents > 1
@@ -277,7 +281,7 @@ renderUserCommandBox st hs =
                                          "; Enter: send, " <> T.unpack multiLineToggleKey <>
                                          ": edit, Backspace: cancel] "
                                  , txt $ head curContents
-                                 , showCursor MessageInput (Location (0,0)) $ str " "
+                                 , showCursor (MessageInput tId) (Location (0,0)) $ str " "
                                  ]
                             else [inputBox]
             True -> vLimit multilineHeightLimit inputBox <=> multilineHints
@@ -326,7 +330,8 @@ renderChannelHeader st hs chan =
                 channelNamePair
         channelNamePair = chanName <> " - " <> (chan^.ccInfo.cdDisplayName)
         chanName = mkChannelName st (chan^.ccInfo)
-        baseUrl = serverBaseUrl st
+        tId = st^.csCurrentTeamId
+        baseUrl = serverBaseUrl st tId
 
     in renderText' (Just baseUrl) (myUsername st)
          hs
@@ -366,7 +371,7 @@ renderCurrentChannelDisplay st hs = header <=> hBorder <=> messages
                 headerWidget = Widget Fixed Fixed $ return channelHeaderResult
                 borderWidget = vLimit maxHeight vBorder
 
-            render $ if appMode st == ChannelSelect
+            render $ if st^.csCurrentTeam.tsMode == ChannelSelect
                         then headerWidget
                         else hBox $ case st^.csChannelListOrientation of
                             ChannelListLeft ->
@@ -387,7 +392,7 @@ renderCurrentChannelDisplay st hs = header <=> hBorder <=> messages
 
     messages = padTop Max chatText
 
-    chatText = case appMode st of
+    chatText = case st^.csCurrentTeam.tsMode of
         MessageSelect ->
             renderMessagesWithSelect (st^.csCurrentTeam.tsMessageSelect) channelMessages
         MessageSelectDeleteConfirm ->
@@ -428,7 +433,8 @@ renderCurrentChannelDisplay st hs = header <=> hBorder <=> messages
                           (getDateFormat st)
                           (st ^. timeZone)
 
-    cId = st^.csCurrentChannelId
+    tId = st^.csCurrentTeamId
+    cId = st^.(csCurrentChannelId tId)
     chan = st^.csCurrentChannel
 
 getMessageListing :: ChannelId -> ChatState -> Messages
@@ -469,6 +475,35 @@ drawMain useColor st =
            , autocompleteLayer st
            , joinBorders $ mainInterface st
            ]
+
+teamList :: ChatState -> Widget Name
+teamList st =
+    let curTid = st^.csCurrentTeamId
+        z = st^.csTeamZipper
+        teams = (\tId -> st^.csTeam(tId)) <$> (concat $ snd <$> Z.toList z)
+        entries = mkEntry <$> teams
+        mkEntry ts =
+            let tId = teamId $ _tsTeam ts
+                unread = uCount > 0
+                uCount = unreadCount tId
+            in (if tId == curTid
+                   then visible . withDefAttr currentTeamAttr
+                   else if unread
+                        then withDefAttr unreadChannelAttr
+                        else id) $
+               txt $
+               (T.strip $ sanitizeUserText $ teamDisplayName $ _tsTeam ts)
+        unreadCount tId = sum $ fmap (nonDMChannelListGroupUnread . fst) $
+                          Z.toList $ st^.csTeam(tId).tsFocus
+    in if length teams == 1
+       then emptyWidget
+       else vBox [ hBox [ padRight (Pad 1) $ txt "Teams:"
+                        , vLimit 1 $ viewport TeamList Horizontal $
+                          hBox $
+                          intersperse (txt " ") entries
+                        ]
+                 , hBorder
+                 ]
 
 connectionLayer :: ChatState -> Widget Name
 connectionLayer st =
@@ -575,14 +610,14 @@ messageSelectBottomBar st =
                     , hBorder
                     ]
 
-maybePreviewViewport :: Widget Name -> Widget Name
-maybePreviewViewport w =
+maybePreviewViewport :: TeamId -> Widget Name -> Widget Name
+maybePreviewViewport tId w =
     Widget Greedy Fixed $ do
         result <- render w
         case (Vty.imageHeight $ result^.imageL) > previewMaxHeight of
             False -> return result
             True ->
-                render $ vLimit previewMaxHeight $ viewport MessagePreviewViewport Vertical $
+                render $ vLimit previewMaxHeight $ viewport (MessagePreviewViewport tId) Vertical $
                          (Widget Fixed Fixed $ return result)
 
 inputPreview :: ChatState -> HighlightSet -> Widget Name
@@ -590,6 +625,7 @@ inputPreview st hs | not $ st^.csResources.crConfiguration.configShowMessagePrev
                    | otherwise = thePreview
     where
     uId = myUserId st
+    tId = st^.csCurrentTeamId
     -- Insert a cursor sentinel into the input text just before
     -- rendering the preview. We use the inserted sentinel (which is
     -- not rendered) to get brick to ensure that the line the cursor is
@@ -605,7 +641,7 @@ inputPreview st hs | not $ st^.csResources.crConfiguration.configShowMessagePrev
     overrideTy = case st^.csCurrentTeam.tsEditState.cedEditMode of
         Editing _ ty -> Just ty
         _ -> Nothing
-    baseUrl = serverBaseUrl st
+    baseUrl = serverBaseUrl st tId
     previewMsg = previewFromInput baseUrl overrideTy uId curStr
     thePreview = let noPreview = str "(No preview)"
                      msgPreview = case previewMsg of
@@ -629,12 +665,12 @@ inputPreview st hs | not $ st^.csResources.crConfiguration.configShowMessagePrev
                                   , mdMyUsername        = myUsername st
                                   , mdWrapNonhighlightedCodeBlocks = True
                                   }
-                 in (maybePreviewViewport msgPreview) <=>
+                 in (maybePreviewViewport tId msgPreview) <=>
                     hBorderWithLabel (withDefAttr clientEmphAttr $ str "[Preview ↑]")
 
 userInputArea :: ChatState -> HighlightSet -> Widget Name
 userInputArea st hs =
-    case appMode st of
+    case st^.csCurrentTeam.tsMode of
         ChannelSelect -> renderChannelSelectPrompt st
         UrlSelect     -> hCenter $ hBox [ txt "Press "
                                         , withDefAttr clientEmphAttr $ txt "Enter"
@@ -651,13 +687,13 @@ renderDeleteConfirm =
 
 mainInterface :: ChatState -> Widget Name
 mainInterface st =
-    vBox [ body
-         , bottomBorder
-         , inputPreview st hs
-         , userInputArea st hs
+    vBox [ teamList st
+         , body
          ]
     where
-    body = if st^.csResources.crConfiguration.configShowChannelListL || appMode st == ChannelSelect
+    showChannelList = st^.csResources.crConfiguration.configShowChannelListL ||
+                      st^.csCurrentTeam.tsMode == ChannelSelect
+    body = if showChannelList
            then case st^.csChannelListOrientation of
                ChannelListLeft ->
                    hBox [channelList, vBorder, mainDisplay]
@@ -667,11 +703,17 @@ mainInterface st =
     channelList = hLimit channelListWidth (renderChannelList st)
     hs = getHighlightSet st
     channelListWidth = configChannelListWidth $ st^.csResources.crConfiguration
-    mainDisplay = case appMode st of
+    mainDisplay =
+        vBox [ channelContents
+             , bottomBorder
+             , inputPreview st hs
+             , userInputArea st hs
+             ]
+    channelContents = case st^.csCurrentTeam.tsMode of
         UrlSelect -> renderUrlList st
         _         -> maybeSubdue $ renderCurrentChannelDisplay st hs
 
-    bottomBorder = case appMode st of
+    bottomBorder = case st^.csCurrentTeam.tsMode of
         MessageSelect -> messageSelectBottomBar st
         _ -> maybeSubdue $ hBox
              [ showAttachmentCount
@@ -709,7 +751,7 @@ mainInterface st =
                  Just Nothing -> hLimit 2 hBorder <+> txt "*"
                  Nothing -> emptyWidget
 
-    maybeSubdue = if appMode st == ChannelSelect
+    maybeSubdue = if st^.csCurrentTeam.tsMode == ChannelSelect
                   then forceAttr ""
                   else id
 

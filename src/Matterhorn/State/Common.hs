@@ -67,19 +67,21 @@ import           Matterhorn.Types.Common
 -- This also sets the mFlagged field of each message based on whether
 -- its post ID is a flagged post according to crFlaggedPosts at the time
 -- of this call.
-installMessagesFromPosts :: Posts -> MH Messages
-installMessagesFromPosts postCollection = do
+installMessagesFromPosts :: Maybe TeamId -> Posts -> MH Messages
+installMessagesFromPosts mTId postCollection = do
   flags <- use (csResources.crFlaggedPosts)
 
   -- Add all posts in this collection to the global post cache
-  updatePostMap postCollection
+  updatePostMap mTId postCollection
 
-  baseUrl <- getServerBaseUrl
+  mBaseUrl <- case mTId of
+      Nothing -> return Nothing
+      Just tId -> Just <$> getServerBaseUrl tId
 
   -- Build the ordered list of posts. Note that postsOrder lists the
   -- posts most recent first, but we want most recent last.
   let postsInOrder = findPost <$> (Seq.reverse $ postsOrder postCollection)
-      mkClientPost p = toClientPost baseUrl p (postId <$> parent p)
+      mkClientPost p = toClientPost mBaseUrl p (postId <$> parent p)
       clientPosts = mkClientPost <$> postsInOrder
 
       addNext cp (msgs, us) =
@@ -102,18 +104,21 @@ installMessagesFromPosts postCollection = do
             Just post -> post
 
 -- Add all posts in this collection to the global post cache
-updatePostMap :: Posts -> MH ()
-updatePostMap postCollection = do
+updatePostMap :: Maybe TeamId -> Posts -> MH ()
+updatePostMap mTId postCollection = do
   -- Build a map from post ID to Matterhorn message, then add the new
   -- messages to the global post map. We use the "postsPosts" field for
   -- this because that might contain more messages than the "postsOrder"
   -- list, since the former can contain other messages in threads that
   -- the server sent us, even if those messages are not part of the
   -- ordered post listing of "postsOrder."
-  baseUrl <- getServerBaseUrl
+  mBaseUrl <- case mTId of
+      Nothing -> return Nothing
+      Just tId -> Just <$> getServerBaseUrl tId
+
   let postMap = HM.fromList
           [ ( pId
-            , fst $ clientPostToMessage (toClientPost baseUrl x Nothing)
+            , fst $ clientPostToMessage (toClientPost mBaseUrl x Nothing)
             )
           | (pId, x) <- HM.toList (postCollection^.postsPostsL)
           ]
@@ -122,13 +127,15 @@ updatePostMap postCollection = do
 -- | Add a 'ClientMessage' to the current channel's message list
 addClientMessage :: ClientMessage -> MH ()
 addClientMessage msg = do
-  cid <- use csCurrentChannelId
+  tId <- use csCurrentTeamId
+  cid <- use (csCurrentChannelId(tId))
   uuid <- generateUUID
   let addCMsg = ccContents.cdMessages %~
           (addMessage $ clientMessageToMessage msg & mMessageId .~ Just (MessageUUID uuid))
   csChannels %= modifyChannelById cid addCMsg
+
   mh $ invalidateCacheEntry $ ChannelMessages cid
-  mh $ invalidateCacheEntry ChannelSidebar
+  mh $ invalidateCacheEntry $ ChannelSidebar tId
 
   let msgTy = case msg^.cmType of
         Error -> LogError
@@ -152,7 +159,7 @@ postErrorMessageIO :: Text -> ChatState -> IO ChatState
 postErrorMessageIO err st = do
   msg <- newClientMessage Error err
   uuid <- generateUUID_IO
-  let cId = st ^. csCurrentChannelId
+  let cId = st ^. csCurrentChannelId (st^.csCurrentTeamId)
       addEMsg = ccContents.cdMessages %~
           (addMessage $ clientMessageToMessage msg & mMessageId .~ Just (MessageUUID uuid))
   return $ st & csChannels %~ modifyChannelById cId addEMsg

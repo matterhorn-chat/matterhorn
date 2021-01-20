@@ -21,6 +21,8 @@ import qualified Data.Foldable as F
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( to )
 
+import           Network.Mattermost.Types ( TeamId )
+
 import           Matterhorn.Constants
 import           Matterhorn.Events.Keybindings
 import           Matterhorn.Themes
@@ -30,30 +32,30 @@ import           Matterhorn.Draw.Messages ( renderMessage, MessageData(..), name
 
 -- | The template for "View Message" windows triggered by message
 -- selection mode.
-viewMessageWindowTemplate :: TabbedWindowTemplate ViewMessageWindowTab
-viewMessageWindowTemplate =
-    TabbedWindowTemplate { twtEntries = [ messageEntry
-                                        , reactionsEntry
+viewMessageWindowTemplate :: TeamId -> TabbedWindowTemplate ViewMessageWindowTab
+viewMessageWindowTemplate tId =
+    TabbedWindowTemplate { twtEntries = [ messageEntry tId
+                                        , reactionsEntry tId
                                         ]
                          , twtTitle = const $ txt "View Message"
                          }
 
-messageEntry :: TabbedWindowEntry ViewMessageWindowTab
-messageEntry =
+messageEntry :: TeamId -> TabbedWindowEntry ViewMessageWindowTab
+messageEntry tId =
     TabbedWindowEntry { tweValue = VMTabMessage
                       , tweRender = renderTab
                       , tweHandleEvent = handleEvent
                       , tweTitle = tabTitle
-                      , tweShowHandler = onShow
+                      , tweShowHandler = onShow tId
                       }
 
-reactionsEntry :: TabbedWindowEntry ViewMessageWindowTab
-reactionsEntry =
+reactionsEntry :: TeamId -> TabbedWindowEntry ViewMessageWindowTab
+reactionsEntry tId =
     TabbedWindowEntry { tweValue = VMTabReactions
                       , tweRender = renderTab
                       , tweHandleEvent = handleEvent
                       , tweTitle = tabTitle
-                      , tweShowHandler = onShow
+                      , tweShowHandler = onShow tId
                       }
 
 tabTitle :: ViewMessageWindowTab -> Bool -> T.Text
@@ -65,9 +67,9 @@ tabTitle VMTabReactions _ = "Reactions"
 -- window used the same handle for the viewport and we don't want that
 -- old state affecting this window. This also means that switching tabs
 -- in an existing window resets this state, too.
-onShow :: ViewMessageWindowTab -> MH ()
-onShow VMTabMessage = resetVp ViewMessageArea
-onShow VMTabReactions = resetVp ViewMessageArea
+onShow :: TeamId -> ViewMessageWindowTab -> MH ()
+onShow tId VMTabMessage = resetVp $ ViewMessageArea tId
+onShow tId VMTabReactions = resetVp $ ViewMessageArea tId
 
 resetVp :: Name -> MH ()
 resetVp n = do
@@ -98,8 +100,9 @@ handleEvent VMTabReactions =
     void . handleKeyboardEvent viewMessageReactionsKeybindings (const $ return ())
 
 reactionsText :: ChatState -> Message -> Widget Name
-reactionsText st m = viewport ViewMessageReactionsArea Vertical body
+reactionsText st m = viewport (ViewMessageReactionsArea tId) Vertical body
     where
+        tId = st^.csCurrentTeamId
         body = case null reacList of
             True -> txt "This message has no reactions."
             False -> vBox $ mkEntry <$> reacList
@@ -125,6 +128,7 @@ viewMessageBox :: ChatState -> Message -> Widget Name
 viewMessageBox st msg =
     let maybeWarn = if not (msg^.mDeleted) then id else warn
         warn w = vBox [w, hBorder, deleteWarning]
+        tId = st^.csCurrentTeamId
         deleteWarning = withDefAttr errorMessageAttr $
                         txtWrap $ "Alert: this message has been deleted and " <>
                                   "will no longer be accessible once this window " <>
@@ -153,43 +157,53 @@ viewMessageBox st msg =
 
     in Widget Greedy Greedy $ do
         ctx <- getContext
-        render $ maybeWarn $ viewport ViewMessageArea Both $ mkBody (ctx^.availWidthL)
+        render $ maybeWarn $ viewport (ViewMessageArea tId) Both $ mkBody (ctx^.availWidthL)
 
 viewMessageKeybindings :: KeyConfig -> KeyHandlerMap
 viewMessageKeybindings = mkKeybindings viewMessageKeyHandlers
 
 viewMessageKeyHandlers :: [KeyEventHandler]
 viewMessageKeyHandlers =
-    let vs = viewportScroll ViewMessageArea
-    in [ mkKb PageUpEvent "Page up" $
-           mh $ vScrollBy vs (-1 * pageAmount)
+    let vs = viewportScroll . ViewMessageArea
+    in [ mkKb PageUpEvent "Page up" $ do
+           tId <- use csCurrentTeamId
+           mh $ vScrollBy (vs tId) (-1 * pageAmount)
 
-       , mkKb PageDownEvent "Page down" $
-           mh $ vScrollBy vs pageAmount
+       , mkKb PageDownEvent "Page down" $ do
+           tId <- use csCurrentTeamId
+           mh $ vScrollBy (vs tId) pageAmount
 
-       , mkKb PageLeftEvent "Page left" $
-           mh $ hScrollBy vs (-2 * pageAmount)
+       , mkKb PageLeftEvent "Page left" $ do
+           tId <- use csCurrentTeamId
+           mh $ hScrollBy (vs tId) (-2 * pageAmount)
 
-       , mkKb PageRightEvent "Page right" $
-           mh $ hScrollBy vs (2 * pageAmount)
+       , mkKb PageRightEvent "Page right" $ do
+           tId <- use csCurrentTeamId
+           mh $ hScrollBy (vs tId) (2 * pageAmount)
 
-       , mkKb ScrollUpEvent "Scroll up" $
-           mh $ vScrollBy vs (-1)
+       , mkKb ScrollUpEvent "Scroll up" $ do
+           tId <- use csCurrentTeamId
+           mh $ vScrollBy (vs tId) (-1)
 
-       , mkKb ScrollDownEvent "Scroll down" $
-           mh $ vScrollBy vs 1
+       , mkKb ScrollDownEvent "Scroll down" $ do
+           tId <- use csCurrentTeamId
+           mh $ vScrollBy (vs tId) 1
 
-       , mkKb ScrollLeftEvent "Scroll left" $
-           mh $ hScrollBy vs (-1)
+       , mkKb ScrollLeftEvent "Scroll left" $ do
+           tId <- use csCurrentTeamId
+           mh $ hScrollBy (vs tId) (-1)
 
-       , mkKb ScrollRightEvent "Scroll right" $
-           mh $ hScrollBy vs 1
+       , mkKb ScrollRightEvent "Scroll right" $ do
+           tId <- use csCurrentTeamId
+           mh $ hScrollBy (vs tId) 1
 
-       , mkKb ScrollBottomEvent "Scroll to the end of the message" $
-           mh $ vScrollToEnd vs
+       , mkKb ScrollBottomEvent "Scroll to the end of the message" $ do
+           tId <- use csCurrentTeamId
+           mh $ vScrollToEnd (vs tId)
 
-       , mkKb ScrollTopEvent "Scroll to the beginning of the message" $
-           mh $ vScrollToBeginning vs
+       , mkKb ScrollTopEvent "Scroll to the beginning of the message" $ do
+           tId <- use csCurrentTeamId
+           mh $ vScrollToBeginning (vs tId)
        ]
 
 viewMessageReactionsKeybindings :: KeyConfig -> KeyHandlerMap
@@ -197,22 +211,28 @@ viewMessageReactionsKeybindings = mkKeybindings viewMessageReactionsKeyHandlers
 
 viewMessageReactionsKeyHandlers :: [KeyEventHandler]
 viewMessageReactionsKeyHandlers =
-    let vs = viewportScroll ViewMessageReactionsArea
-    in [ mkKb PageUpEvent "Page up" $
-           mh $ vScrollBy vs (-1 * pageAmount)
+    let vs = viewportScroll . ViewMessageReactionsArea
+    in [ mkKb PageUpEvent "Page up" $ do
+           tId <- use csCurrentTeamId
+           mh $ vScrollBy (vs tId) (-1 * pageAmount)
 
-       , mkKb PageDownEvent "Page down" $
-           mh $ vScrollBy vs pageAmount
+       , mkKb PageDownEvent "Page down" $ do
+           tId <- use csCurrentTeamId
+           mh $ vScrollBy (vs tId) pageAmount
 
-       , mkKb ScrollUpEvent "Scroll up" $
-           mh $ vScrollBy vs (-1)
+       , mkKb ScrollUpEvent "Scroll up" $ do
+           tId <- use csCurrentTeamId
+           mh $ vScrollBy (vs tId) (-1)
 
-       , mkKb ScrollDownEvent "Scroll down" $
-           mh $ vScrollBy vs 1
+       , mkKb ScrollDownEvent "Scroll down" $ do
+           tId <- use csCurrentTeamId
+           mh $ vScrollBy (vs tId) 1
 
-       , mkKb ScrollBottomEvent "Scroll to the end of the reactions list" $
-           mh $ vScrollToEnd vs
+       , mkKb ScrollBottomEvent "Scroll to the end of the reactions list" $ do
+           tId <- use csCurrentTeamId
+           mh $ vScrollToEnd (vs tId)
 
-       , mkKb ScrollTopEvent "Scroll to the beginning of the reactions list" $
-           mh $ vScrollToBeginning vs
+       , mkKb ScrollTopEvent "Scroll to the beginning of the reactions list" $ do
+           tId <- use csCurrentTeamId
+           mh $ vScrollToBeginning (vs tId)
        ]

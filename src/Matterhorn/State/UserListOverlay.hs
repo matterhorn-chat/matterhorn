@@ -23,7 +23,6 @@ import           Lens.Micro.Platform ( (.~), (.=) )
 import qualified Network.Mattermost.Endpoints as MM
 import qualified Network.Mattermost.Types.Config as MM
 import           Network.Mattermost.Types
-import           Network.Mattermost.Lenses ( teamIdL )
 
 import           Matterhorn.State.Async ( doAsyncWith, AsyncPriority(Preempt) )
 import           Matterhorn.State.Channels ( createOrFocusDMChannel, addUserToCurrentChannel )
@@ -35,15 +34,15 @@ import           Matterhorn.Types
 -- current channel.
 enterChannelMembersUserList :: MH ()
 enterChannelMembersUserList = do
-    cId <- use csCurrentChannelId
+    myTId <- use csCurrentTeamId
+    cId <- use (csCurrentChannelId myTId)
     myId <- gets myUserId
-    myTId <- use (csCurrentTeam.tsTeam.teamIdL)
     session <- getSession
 
     doAsyncWith Preempt $ do
         stats <- MM.mmGetChannelStatistics cId session
         return $ Just $ do
-            enterUserListMode (ChannelMembers cId myTId) (Just $ channelStatsMemberCount stats)
+            enterUserListMode myTId (ChannelMembers cId myTId) (Just $ channelStatsMemberCount stats)
               (\u -> case u^.uiId /= myId of
                 True -> createOrFocusDMChannel u Nothing >> return True
                 False -> return False
@@ -54,10 +53,10 @@ enterChannelMembersUserList = do
 -- channel.
 enterChannelInviteUserList :: MH ()
 enterChannelInviteUserList = do
-    cId <- use csCurrentChannelId
+    myTId <- use csCurrentTeamId
+    cId <- use (csCurrentChannelId myTId)
     myId <- gets myUserId
-    myTId <- use (csCurrentTeam.tsTeam.teamIdL)
-    enterUserListMode (ChannelNonMembers cId myTId) Nothing
+    enterUserListMode myTId (ChannelNonMembers cId myTId) Nothing
       (\u -> case u^.uiId /= myId of
         True -> addUserToCurrentChannel u >> return True
         False -> return False
@@ -68,12 +67,12 @@ enterChannelInviteUserList = do
 enterDMSearchUserList :: MH ()
 enterDMSearchUserList = do
     myId <- gets myUserId
-    myTId <- use (csCurrentTeam.tsTeam.teamIdL)
+    myTId <- use csCurrentTeamId
     config <- use csClientConfig
     let restrictTeam = case MM.clientConfigRestrictDirectMessage <$> config of
             Just MM.RestrictTeam -> Just myTId
             _ -> Nothing
-    enterUserListMode (AllUsers restrictTeam) Nothing
+    enterUserListMode myTId (AllUsers restrictTeam) Nothing
       (\u -> case u^.uiId /= myId of
         True -> createOrFocusDMChannel u Nothing >> return True
         False -> return False
@@ -81,10 +80,10 @@ enterDMSearchUserList = do
 
 -- | Show the user list overlay with the given search scope, and issue a
 -- request to gather the first search results.
-enterUserListMode :: UserSearchScope -> Maybe Int -> (UserInfo -> MH Bool) -> MH ()
-enterUserListMode scope resultCount enterHandler = do
-    csCurrentTeam.tsUserListOverlay.listOverlayRecordCount .= resultCount
-    enterListOverlayMode (csCurrentTeam.tsUserListOverlay) UserListOverlay scope enterHandler getUserSearchResults
+enterUserListMode :: TeamId -> UserSearchScope -> Maybe Int -> (UserInfo -> MH Bool) -> MH ()
+enterUserListMode tId scope resultCount enterHandler = do
+    csTeam(tId).tsUserListOverlay.listOverlayRecordCount .= resultCount
+    enterListOverlayMode (csTeam(tId).tsUserListOverlay) UserListOverlay scope enterHandler getUserSearchResults
 
 userInfoFromPair :: User -> Text -> UserInfo
 userInfoFromPair u status =

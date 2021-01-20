@@ -23,7 +23,7 @@ drawManageAttachments :: ChatState -> Widget Name
 drawManageAttachments st =
     topLayer
     where
-        topLayer = case appMode st of
+        topLayer = case st^.csCurrentTeam.tsMode of
             ManageAttachments -> drawAttachmentList st
             ManageAttachmentsBrowseFiles -> drawFileBrowser st
             _ -> error "BUG: drawManageAttachments called in invalid mode"

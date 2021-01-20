@@ -108,9 +108,14 @@ module Matterhorn.Types
 
   , attrNameToConfig
 
+  , sortTeams
+  , mkTeamZipper
+  , mkTeamZipperFromIds
+  , teamZipperIds
   , mkChannelZipperList
   , ChannelListGroup(..)
   , channelListGroupUnread
+  , nonDMChannelListGroupUnread
 
   , trimChannelSigil
 
@@ -119,8 +124,9 @@ module Matterhorn.Types
   , channelSelectInput
   , emptyChannelSelectState
 
-  , TeamState
+  , TeamState(..)
   , tsFocus
+  , tsMode
   , tsPendingChannelChange
   , tsRecentChannel
   , tsReturnChannel
@@ -140,11 +146,17 @@ module Matterhorn.Types
 
   , ChatState
   , newState
+  , newTeamState
+
+  , csTeamZipper
   , csCurrentTeam
+  , csTeams
+  , csTeam
   , csChannelListOrientation
   , csResources
   , csCurrentChannel
   , csCurrentChannelId
+  , csCurrentTeamId
   , csPostMap
   , csConnectionStatus
   , csWorkerIsBusy
@@ -157,7 +169,6 @@ module Matterhorn.Types
   , whenMode
   , setMode
   , setMode'
-  , appMode
 
   , ChatEditState
   , emptyEditState
@@ -228,12 +239,16 @@ module Matterhorn.Types
 
   , specialUserMentions
 
+  , applyTeamOrder
+  , refreshTeamZipper
+
   , UserPreferences(UserPreferences)
   , userPrefShowJoinLeave
   , userPrefFlaggedPostList
   , userPrefGroupChannelPrefs
   , userPrefDirectChannelPrefs
   , userPrefTeammateNameDisplayMode
+  , userPrefTeamOrder
   , dmChannelShowPreference
   , groupChannelShowPreference
 
@@ -317,6 +332,9 @@ module Matterhorn.Types
   , getHighlightSet
   , emptyHSet
 
+  , moveLeft
+  , moveRight
+
   , module Matterhorn.Types.Channels
   , module Matterhorn.Types.Messages
   , module Matterhorn.Types.Posts
@@ -349,6 +367,7 @@ import qualified Control.Monad.Reader as R
 import qualified Data.Set as Set
 import qualified Data.ByteString as BS
 import qualified Data.Foldable as F
+import           Data.Function ( on )
 import qualified Data.Kind as K
 import           Data.Ord ( comparing )
 import qualified Data.HashMap.Strict as HM
@@ -417,6 +436,11 @@ channelListGroupUnread :: ChannelListGroup -> Int
 channelListGroupUnread (ChannelGroupPublicChannels n)  = n
 channelListGroupUnread (ChannelGroupPrivateChannels n) = n
 channelListGroupUnread (ChannelGroupDirectMessages n)  = n
+
+nonDMChannelListGroupUnread :: ChannelListGroup -> Int
+nonDMChannelListGroupUnread (ChannelGroupPublicChannels n)  = n
+nonDMChannelListGroupUnread (ChannelGroupPrivateChannels n) = n
+nonDMChannelListGroupUnread (ChannelGroupDirectMessages _)  = 0
 
 -- | The type of channel list entries.
 data ChannelListEntry =
@@ -547,6 +571,7 @@ data UserPreferences =
                     , _userPrefGroupChannelPrefs :: HashMap ChannelId Bool
                     , _userPrefDirectChannelPrefs :: HashMap UserId Bool
                     , _userPrefTeammateNameDisplayMode :: Maybe TeammateNameDisplayMode
+                    , _userPrefTeamOrder :: Maybe [TeamId]
                     }
 
 hasUnread :: ChatState -> ChannelId -> Bool
@@ -564,23 +589,25 @@ hasUnread' chan = fromMaybe False $ do
 
 mkChannelZipperList :: UTCTime
                     -> Config
+                    -> TeamId
                     -> Maybe ClientConfig
                     -> UserPreferences
                     -> ClientChannels
                     -> Users
                     -> [(ChannelListGroup, [ChannelListEntry])]
-mkChannelZipperList now config cconfig prefs cs us =
-    [ let (unread, entries) = getChannelEntriesInOrder cs Ordinary
+mkChannelZipperList now config tId cconfig prefs cs us =
+    [ let (unread, entries) = getChannelEntriesInOrder tId cs Ordinary
       in (ChannelGroupPublicChannels unread, entries)
-    , let (unread, entries) = getChannelEntriesInOrder cs Private
+    , let (unread, entries) = getChannelEntriesInOrder tId cs Private
       in (ChannelGroupPrivateChannels unread, entries)
     , let (unread, entries) = getDMChannelEntriesInOrder now config cconfig prefs us cs
       in (ChannelGroupDirectMessages unread, entries)
     ]
 
-getChannelEntriesInOrder :: ClientChannels -> Type -> (Int, [ChannelListEntry])
-getChannelEntriesInOrder cs ty =
-    let matches (_, info) = info^.ccInfo.cdType == ty
+getChannelEntriesInOrder :: TeamId -> ClientChannels -> Type -> (Int, [ChannelListEntry])
+getChannelEntriesInOrder tId cs ty =
+    let matches (_, info) = info^.ccInfo.cdType == ty &&
+                            info^.ccInfo.cdTeamId == Just tId
         pairs = filteredChannels matches cs
         unread = length $ filter (== True) $ (hasUnread' . snd) <$> pairs
         entries = fmap (CLChannel . fst) $
@@ -633,6 +660,7 @@ getGroupDMChannelEntries :: UTCTime
                          -> [(Bool, T.Text, ChannelListEntry)]
 getGroupDMChannelEntries now config prefs cs =
     let matches (_, info) = info^.ccInfo.cdType == Group &&
+                            info^.ccInfo.cdTeamId == Nothing &&
                             groupChannelShouldAppear now config prefs info
     in fmap (\(cId, ch) -> (hasUnread' ch, ch^.ccInfo.cdDisplayName, CLGroupDM cId)) $
        filteredChannels matches cs
@@ -708,43 +736,44 @@ groupChannelShowPreference ps cId = HM.lookup cId (_userPrefGroupChannelPrefs ps
 -- parts of the interface.
 data Name =
     ChannelMessages ChannelId
-    | MessageInput
-    | ChannelList
+    | MessageInput TeamId
+    | ChannelList TeamId
     | HelpViewport
     | HelpText
     | ScriptHelpText
     | ThemeHelpText
     | SyntaxHighlightHelpText
     | KeybindingHelpText
-    | ChannelSelectString
-    | CompletionAlternatives
-    | CompletionList
-    | JoinChannelList
-    | UrlList
-    | MessagePreviewViewport
-    | ThemeListSearchInput
-    | UserListSearchInput
-    | JoinChannelListSearchInput
-    | UserListSearchResults
-    | ThemeListSearchResults
-    | ViewMessageArea
-    | ViewMessageReactionsArea
-    | ChannelSidebar
-    | ChannelSelectInput
-    | AttachmentList
-    | AttachmentFileBrowser
-    | MessageReactionsArea
-    | ReactionEmojiList
-    | ReactionEmojiListInput
-    | TabbedWindowTabBar
-    | MuteToggleField
-    | ChannelMentionsField
-    | DesktopNotificationsField (WithDefault NotifyOption)
-    | PushNotificationsField (WithDefault NotifyOption)
-    | ChannelTopicEditor
-    | ChannelTopicSaveButton
-    | ChannelTopicCancelButton
-    | ChannelTopicEditorPreview
+    | ChannelSelectString TeamId
+    | CompletionAlternatives TeamId
+    | CompletionList TeamId
+    | JoinChannelList TeamId
+    | UrlList TeamId
+    | MessagePreviewViewport TeamId
+    | ThemeListSearchInput TeamId
+    | UserListSearchInput TeamId
+    | JoinChannelListSearchInput TeamId
+    | UserListSearchResults TeamId
+    | ThemeListSearchResults TeamId
+    | ViewMessageArea TeamId
+    | ViewMessageReactionsArea TeamId
+    | ChannelSidebar TeamId
+    | ChannelSelectInput TeamId
+    | AttachmentList TeamId
+    | AttachmentFileBrowser TeamId
+    | MessageReactionsArea TeamId
+    | ReactionEmojiList TeamId
+    | ReactionEmojiListInput TeamId
+    | TabbedWindowTabBar TeamId
+    | MuteToggleField TeamId
+    | ChannelMentionsField TeamId
+    | DesktopNotificationsField TeamId (WithDefault NotifyOption)
+    | PushNotificationsField TeamId (WithDefault NotifyOption)
+    | ChannelTopicEditor TeamId
+    | ChannelTopicSaveButton TeamId
+    | ChannelTopicCancelButton TeamId
+    | ChannelTopicEditorPreview TeamId
+    | TeamList
     deriving (Eq, Show, Ord)
 
 -- | The sum type of exceptions we expect to encounter on authentication
@@ -836,6 +865,7 @@ defaultUserPreferences =
                     , _userPrefGroupChannelPrefs = mempty
                     , _userPrefDirectChannelPrefs = mempty
                     , _userPrefTeammateNameDisplayMode = Nothing
+                    , _userPrefTeamOrder = Nothing
                     }
 
 setUserPreferences :: Seq Preference -> UserPreferences -> UserPreferences
@@ -858,6 +888,9 @@ setUserPreferences = flip (F.foldr go)
                     (groupChannelId gp)
                     (groupChannelShow gp)
                     (_userPrefGroupChannelPrefs u)
+                }
+            | Just tIds <- preferenceToTeamOrder p =
+              u { _userPrefTeamOrder = Just tIds
                 }
             | preferenceName p == PreferenceName "join_leave" =
               u { _userPrefShowJoinLeave =
@@ -1088,9 +1121,9 @@ data AttachmentData =
 
 -- | We can initialize a new 'ChatEditState' value with just an edit
 -- history, which we save locally.
-emptyEditState :: ChatEditState
-emptyEditState =
-    ChatEditState { _cedEditor               = editor MessageInput Nothing ""
+emptyEditState :: TeamId -> ChatEditState
+emptyEditState tId =
+    ChatEditState { _cedEditor               = editor (MessageInput tId) Nothing ""
                   , _cedEphemeral            = defaultEphemeralEditState
                   , _cedEditMode             = NewPost
                   , _cedYankBuffer           = ""
@@ -1098,7 +1131,7 @@ emptyEditState =
                   , _cedMisspellings         = mempty
                   , _cedAutocomplete         = Nothing
                   , _cedAutocompletePending  = Nothing
-                  , _cedAttachmentList       = list AttachmentList mempty 1
+                  , _cedAttachmentList       = list (AttachmentList tId) mempty 1
                   , _cedFileBrowser          = Nothing
                   , _cedJustCompleted        = False
                   }
@@ -1341,8 +1374,10 @@ data ChatState =
     ChatState { _csResources :: ChatResources
               -- ^ Global application-wide resources that don't change
               -- much.
-              , _csCurrentTeam :: TeamState
-              -- ^ Application state specific to the current team.
+              , _csTeams :: HashMap TeamId TeamState
+              -- ^ The state for each team that we are in.
+              , _csTeamZipper :: Z.Zipper () TeamId
+              -- ^ The list of teams we can cycle through.
               , _csChannelListOrientation :: ChannelListOrientation
               -- ^ The orientation of the channel list.
               , _csMe :: User
@@ -1453,19 +1488,18 @@ data ViewMessageWindowTab =
     deriving (Eq, Show)
 
 data PendingChannelChange =
-    ChangeByChannelId ChannelId (Maybe (MH ()))
+    ChangeByChannelId TeamId ChannelId (Maybe (MH ()))
     | ChangeByUserId UserId
 
 -- | Startup state information that is constructed prior to building a
 -- ChatState.
 data StartupStateInfo =
     StartupStateInfo { startupStateResources      :: ChatResources
-                     , startupStateChannelZipper  :: Z.Zipper ChannelListGroup ChannelListEntry
                      , startupStateConnectedUser  :: User
-                     , startupStateTeam           :: Team
+                     , startupStateTeams          :: HM.HashMap TeamId TeamState
                      , startupStateTimeZone       :: TimeZoneSeries
                      , startupStateInitialHistory :: InputHistory
-                     , startupStateSpellChecker   :: Maybe (Aspell, IO ())
+                     , startupStateInitialTeam    :: TeamId
                      }
 
 -- | The state of the channel topic editor window.
@@ -1476,64 +1510,61 @@ data ChannelTopicDialogState =
                             -- ^ The window focus state (editor/buttons)
                             }
 
-newState :: StartupStateInfo -> ChatState
-newState (StartupStateInfo {..}) =
-    let config = _crConfiguration startupStateResources
-        ts = newTeamState startupStateTeam startupStateChannelZipper startupStateSpellChecker
-    in ChatState { _csResources                   = startupStateResources
-                 , _csCurrentTeam                 = ts
-                 , _csChannelListOrientation      = configChannelListOrientation config
-                 , _csMe                          = startupStateConnectedUser
-                 , _csChannels                    = noChannels
-                 , _csPostMap                     = HM.empty
-                 , _csUsers                       = noUsers
-                 , _timeZone                      = startupStateTimeZone
-                 , _csConnectionStatus            = Connected
-                 , _csWorkerIsBusy                = Nothing
-                 , _csClientConfig                = Nothing
-                 , _csInputHistory                = startupStateInitialHistory
-                 }
+sortTeams :: [Team] -> [Team]
+sortTeams = sortBy (compare `on` (T.strip . sanitizeUserText . teamName))
+
+mkTeamZipper :: HM.HashMap TeamId TeamState -> Z.Zipper () TeamId
+mkTeamZipper m =
+    let sortedTeams = sortTeams $ _tsTeam <$> HM.elems m
+    in mkTeamZipperFromIds $ teamId <$> sortedTeams
+
+mkTeamZipperFromIds :: [TeamId] -> Z.Zipper () TeamId
+mkTeamZipperFromIds tIds = Z.fromList [((), tIds)]
+
+teamZipperIds :: Z.Zipper () TeamId -> [TeamId]
+teamZipperIds = concat . fmap snd . Z.toList
 
 newTeamState :: Team
              -> Z.Zipper ChannelListGroup ChannelListEntry
              -> Maybe (Aspell, IO ())
              -> TeamState
 newTeamState team chanList spellChecker =
-    TeamState { _tsMode                     = Main
-              , _tsFocus                    = chanList
-              , _tsEditState                = emptyEditState { _cedSpellChecker = spellChecker }
-              , _tsTeam                     = team
-              , _tsUrlList                  = list UrlList mempty 2
-              , _tsPostListOverlay          = PostListOverlayState emptyDirSeq Nothing
-              , _tsUserListOverlay          = nullUserListOverlayState
-              , _tsChannelListOverlay       = nullChannelListOverlayState
-              , _tsChannelSelectState       = emptyChannelSelectState
-              , _tsChannelTopicDialog       = newChannelTopicDialog ""
-              , _tsMessageSelect            = MessageSelectState Nothing
-              , _tsNotifyPrefs              = Nothing
-              , _tsPendingChannelChange     = Nothing
-              , _tsRecentChannel            = Nothing
-              , _tsReturnChannel            = Nothing
-              , _tsViewedMessage            = Nothing
-              , _tsThemeListOverlay         = nullThemeListOverlayState
-              , _tsReactionEmojiListOverlay = nullEmojiListOverlayState
-              }
+    let tId = teamId team
+    in TeamState { _tsMode                     = Main
+                 , _tsFocus                    = chanList
+                 , _tsEditState                = (emptyEditState tId) { _cedSpellChecker = spellChecker }
+                 , _tsTeam                     = team
+                 , _tsUrlList                  = list (UrlList tId) mempty 2
+                 , _tsPostListOverlay          = PostListOverlayState emptyDirSeq Nothing
+                 , _tsUserListOverlay          = nullUserListOverlayState tId
+                 , _tsChannelListOverlay       = nullChannelListOverlayState tId
+                 , _tsChannelSelectState       = emptyChannelSelectState tId
+                 , _tsChannelTopicDialog       = newChannelTopicDialog tId ""
+                 , _tsMessageSelect            = MessageSelectState Nothing
+                 , _tsNotifyPrefs              = Nothing
+                 , _tsPendingChannelChange     = Nothing
+                 , _tsRecentChannel            = Nothing
+                 , _tsReturnChannel            = Nothing
+                 , _tsViewedMessage            = Nothing
+                 , _tsThemeListOverlay         = nullThemeListOverlayState tId
+                 , _tsReactionEmojiListOverlay = nullEmojiListOverlayState tId
+                 }
 
 -- | Make a new channel topic editor window state.
-newChannelTopicDialog :: T.Text -> ChannelTopicDialogState
-newChannelTopicDialog t =
-    ChannelTopicDialogState { _channelTopicDialogEditor = editor ChannelTopicEditor Nothing t
-                            , _channelTopicDialogFocus = focusRing [ ChannelTopicEditor
-                                                                   , ChannelTopicSaveButton
-                                                                   , ChannelTopicCancelButton
+newChannelTopicDialog :: TeamId -> T.Text -> ChannelTopicDialogState
+newChannelTopicDialog tId t =
+    ChannelTopicDialogState { _channelTopicDialogEditor = editor (ChannelTopicEditor tId) Nothing t
+                            , _channelTopicDialogFocus = focusRing [ ChannelTopicEditor tId
+                                                                   , ChannelTopicSaveButton tId
+                                                                   , ChannelTopicCancelButton tId
                                                                    ]
                             }
 
-nullChannelListOverlayState :: ListOverlayState Channel ChannelSearchScope
-nullChannelListOverlayState =
-    let newList rs = list JoinChannelList rs 2
+nullChannelListOverlayState :: TeamId -> ListOverlayState Channel ChannelSearchScope
+nullChannelListOverlayState tId =
+    let newList rs = list (JoinChannelList tId) rs 2
     in ListOverlayState { _listOverlaySearchResults  = newList mempty
-                        , _listOverlaySearchInput    = editor JoinChannelListSearchInput (Just 1) ""
+                        , _listOverlaySearchInput    = editor (JoinChannelListSearchInput tId) (Just 1) ""
                         , _listOverlaySearchScope    = AllChannels
                         , _listOverlaySearching      = False
                         , _listOverlayEnterHandler   = const $ return False
@@ -1543,11 +1574,11 @@ nullChannelListOverlayState =
                         , _listOverlayReturnMode     = Main
                         }
 
-nullThemeListOverlayState :: ListOverlayState InternalTheme ()
-nullThemeListOverlayState =
-    let newList rs = list ThemeListSearchResults rs 3
+nullThemeListOverlayState :: TeamId -> ListOverlayState InternalTheme ()
+nullThemeListOverlayState tId =
+    let newList rs = list (ThemeListSearchResults tId) rs 3
     in ListOverlayState { _listOverlaySearchResults  = newList mempty
-                        , _listOverlaySearchInput    = editor ThemeListSearchInput (Just 1) ""
+                        , _listOverlaySearchInput    = editor (ThemeListSearchInput tId) (Just 1) ""
                         , _listOverlaySearchScope    = ()
                         , _listOverlaySearching      = False
                         , _listOverlayEnterHandler   = const $ return False
@@ -1557,11 +1588,11 @@ nullThemeListOverlayState =
                         , _listOverlayReturnMode     = Main
                         }
 
-nullUserListOverlayState :: ListOverlayState UserInfo UserSearchScope
-nullUserListOverlayState =
-    let newList rs = list UserListSearchResults rs 1
+nullUserListOverlayState :: TeamId -> ListOverlayState UserInfo UserSearchScope
+nullUserListOverlayState tId =
+    let newList rs = list (UserListSearchResults tId) rs 1
     in ListOverlayState { _listOverlaySearchResults  = newList mempty
-                        , _listOverlaySearchInput    = editor UserListSearchInput (Just 1) ""
+                        , _listOverlaySearchInput    = editor (UserListSearchInput tId) (Just 1) ""
                         , _listOverlaySearchScope    = AllUsers Nothing
                         , _listOverlaySearching      = False
                         , _listOverlayEnterHandler   = const $ return False
@@ -1571,11 +1602,11 @@ nullUserListOverlayState =
                         , _listOverlayReturnMode     = Main
                         }
 
-nullEmojiListOverlayState :: ListOverlayState (Bool, T.Text) ()
-nullEmojiListOverlayState =
-    let newList rs = list ReactionEmojiList rs 1
+nullEmojiListOverlayState :: TeamId -> ListOverlayState (Bool, T.Text) ()
+nullEmojiListOverlayState tId =
+    let newList rs = list (ReactionEmojiList tId) rs 1
     in ListOverlayState { _listOverlaySearchResults  = newList mempty
-                        , _listOverlaySearchInput    = editor ReactionEmojiListInput (Just 1) ""
+                        , _listOverlaySearchInput    = editor (ReactionEmojiListInput tId) (Just 1) ""
                         , _listOverlaySearchScope    = ()
                         , _listOverlaySearching      = False
                         , _listOverlayEnterHandler   = const $ return False
@@ -1585,26 +1616,15 @@ nullEmojiListOverlayState =
                         , _listOverlayReturnMode     = MessageSelect
                         }
 
-getServerBaseUrl :: MH TeamBaseURL
-getServerBaseUrl = do
-    st <- use id
-    return $ serverBaseUrl st
-
-serverBaseUrl :: ChatState -> TeamBaseURL
-serverBaseUrl st =
-    let baseUrl = connectionDataURL $ _crConn $ _csResources st
-        tName = teamName $ _tsTeam $ _csCurrentTeam st
-    in TeamBaseURL (TeamURLName $ sanitizeUserText tName) baseUrl
-
 -- | The state of channel selection mode.
 data ChannelSelectState =
     ChannelSelectState { _channelSelectInput :: Editor Text Name
                        , _channelSelectMatches :: Z.Zipper ChannelListGroup ChannelSelectMatch
                        }
 
-emptyChannelSelectState :: ChannelSelectState
-emptyChannelSelectState =
-    ChannelSelectState { _channelSelectInput = editor ChannelSelectInput (Just 1) ""
+emptyChannelSelectState :: TeamId -> ChannelSelectState
+emptyChannelSelectState tId =
+    ChannelSelectState { _channelSelectInput = editor (ChannelSelectInput tId) (Just 1) ""
                        , _channelSelectMatches = Z.fromList []
                        }
 
@@ -1916,6 +1936,58 @@ makeLenses ''ConnectionInfo
 makeLenses ''ChannelTopicDialogState
 Brick.suffixLenses ''Config
 
+applyTeamOrderPref :: Maybe [TeamId] -> ChatState -> ChatState
+applyTeamOrderPref Nothing st = st
+applyTeamOrderPref (Just prefTIds) st =
+    let teams = _csTeams st
+        ourTids = HM.keys teams
+        tIds = filter (`elem` ourTids) prefTIds
+        curTId = st^.csCurrentTeamId
+        unmentioned = filter (not . wasMentioned) $ HM.elems teams
+        wasMentioned ts = (teamId $ _tsTeam ts) `elem` tIds
+        zipperTids = tIds <> (teamId <$> sortTeams (_tsTeam <$> unmentioned))
+    in st { _csTeamZipper = (Z.findRight (== curTId) $ mkTeamZipperFromIds zipperTids)
+          }
+
+refreshTeamZipper :: MH ()
+refreshTeamZipper = do
+    tidOrder <- use (csResources.crUserPreferences.userPrefTeamOrder)
+    St.modify (applyTeamOrderPref tidOrder)
+
+applyTeamOrder :: [TeamId] -> MH ()
+applyTeamOrder tIds = St.modify (applyTeamOrderPref $ Just tIds)
+
+newState :: StartupStateInfo -> ChatState
+newState (StartupStateInfo {..}) =
+    let config = _crConfiguration startupStateResources
+    in applyTeamOrderPref (_userPrefTeamOrder $ _crUserPreferences startupStateResources) $
+       ChatState { _csResources                   = startupStateResources
+                 , _csTeamZipper                  = Z.findRight (== startupStateInitialTeam) $
+                                                    mkTeamZipper startupStateTeams
+                 , _csTeams                       = startupStateTeams
+                 , _csChannelListOrientation      = configChannelListOrientation config
+                 , _csMe                          = startupStateConnectedUser
+                 , _csChannels                    = noChannels
+                 , _csPostMap                     = HM.empty
+                 , _csUsers                       = noUsers
+                 , _timeZone                      = startupStateTimeZone
+                 , _csConnectionStatus            = Connected
+                 , _csWorkerIsBusy                = Nothing
+                 , _csClientConfig                = Nothing
+                 , _csInputHistory                = startupStateInitialHistory
+                 }
+
+getServerBaseUrl :: TeamId -> MH TeamBaseURL
+getServerBaseUrl tId = do
+    st <- use id
+    return $ serverBaseUrl st tId
+
+serverBaseUrl :: ChatState -> TeamId -> TeamBaseURL
+serverBaseUrl st tId =
+    let baseUrl = connectionDataURL $ _crConn $ _csResources st
+        tName = teamName $ st^.csTeam(tId).tsTeam
+    in TeamBaseURL (TeamURLName $ sanitizeUserText tName) baseUrl
+
 getSession :: MH Session
 getSession = use (csResources.crSession)
 
@@ -1935,9 +2007,6 @@ setMode m = do
 setMode' :: Mode -> ChatState -> ChatState
 setMode' m = csCurrentTeam.tsMode .~ m
 
-appMode :: ChatState -> Mode
-appMode = _tsMode._csCurrentTeam
-
 resetSpellCheckTimer :: ChatEditState -> IO ()
 resetSpellCheckTimer s =
     case s^.cedSpellChecker of
@@ -1945,8 +2014,23 @@ resetSpellCheckTimer s =
         Just (_, reset) -> reset
 
 -- ** Utility Lenses
-csCurrentChannelId :: SimpleGetter ChatState ChannelId
-csCurrentChannelId = csCurrentTeam.tsFocus.to Z.unsafeFocus.to channelListEntryChannelId
+csCurrentChannelId :: TeamId -> SimpleGetter ChatState ChannelId
+csCurrentChannelId tId =
+    csTeam(tId).tsFocus.to Z.unsafeFocus.to channelListEntryChannelId
+
+csCurrentTeamId :: SimpleGetter ChatState TeamId
+csCurrentTeamId =
+    csTeamZipper.to Z.unsafeFocus
+
+csCurrentTeam :: Lens' ChatState TeamState
+csCurrentTeam =
+    lens (\st   -> st^.csTeam(st^.csCurrentTeamId))
+         (\st t -> st & csTeam(st^.csCurrentTeamId) .~ t)
+
+csTeam :: TeamId -> Lens' ChatState TeamState
+csTeam tId =
+    lens (\ st -> st ^. csTeams . at tId ^?! _Just)
+         (\ st t -> st & csTeams . at tId .~ Just t)
 
 channelListEntryChannelId :: ChannelListEntry -> ChannelId
 channelListEntryChannelId (CLChannel cId) = cId
@@ -1968,8 +2052,8 @@ entryIsDMEntry (CLChannel {}) = False
 
 csCurrentChannel :: Lens' ChatState ClientChannel
 csCurrentChannel =
-    lens (\ st -> findChannelById (st^.csCurrentChannelId) (st^.csChannels) ^?! _Just)
-         (\ st n -> st & csChannels %~ addChannel (st^.csCurrentChannelId) n)
+    lens (\ st -> findChannelById (st^.csCurrentChannelId(st^.csCurrentTeamId)) (st^.csChannels) ^?! _Just)
+         (\ st n -> st & csChannels %~ addChannel (st^.csCurrentChannelId(st^.csCurrentTeamId)) n)
 
 csChannel :: ChannelId -> Traversal' ChatState ClientChannel
 csChannel cId =
@@ -2043,7 +2127,9 @@ getReplyRootMessage msg = do
 setUserStatus :: UserId -> Text -> MH ()
 setUserStatus uId t = do
     csUsers %= modifyUserById uId (uiStatus .~ statusFromText t)
-    mh $ invalidateCacheEntry ChannelSidebar
+    cs <- use csChannels
+    forM_ (allTeamIds cs) $ \tId ->
+        mh $ invalidateCacheEntry $ ChannelSidebar tId
 
 usernameForUserId :: UserId -> ChatState -> Maybe Text
 usernameForUserId uId st = _uiName <$> findUserById uId (st^.csUsers)
@@ -2063,7 +2149,7 @@ userIdForUsername name st =
 channelIdByChannelName :: Text -> ChatState -> Maybe ChannelId
 channelIdByChannelName name st =
     let matches (_, cc) = cc^.ccInfo.cdName == (trimChannelSigil name) &&
-                          cc^.ccInfo.cdTeamId == (Just $ st^.csCurrentTeam.tsTeam.teamIdL)
+                          cc^.ccInfo.cdTeamId == (Just $ st^.csCurrentTeamId)
     in listToMaybe $ fst <$> filteredChannels matches (st^.csChannels)
 
 channelIdByUsername :: Text -> ChatState -> Maybe ChannelId
@@ -2190,10 +2276,11 @@ emptyHSet = HighlightSet Set.empty Set.empty mempty
 
 getHighlightSet :: ChatState -> HighlightSet
 getHighlightSet st =
-    HighlightSet { hUserSet = addSpecialUserMentions $ getUsernameSet $ st^.csUsers
-                 , hChannelSet = getChannelNameSet $ st^.csChannels
-                 , hSyntaxMap = st^.csResources.crSyntaxMap
-                 }
+    let tId = st^.csCurrentTeamId
+    in HighlightSet { hUserSet = addSpecialUserMentions $ getUsernameSet $ st^.csUsers
+                    , hChannelSet = getChannelNameSet tId $ st^.csChannels
+                    , hSyntaxMap = st^.csResources.crSyntaxMap
+                    }
 
 attrNameToConfig :: Brick.AttrName -> Text
 attrNameToConfig = T.pack . intercalate "." . Brick.attrNameComponents
@@ -2220,3 +2307,22 @@ clearChannelUnreadStatus cId = do
     mh $ invalidateCacheEntry (ChannelMessages cId)
     csChannel(cId) %= (clearNewMessageIndicator .
                        clearEditedThreshold)
+
+moveLeft :: (Eq a) => a -> [a] -> [a]
+moveLeft v as =
+    case elemIndex v as of
+        Nothing -> as
+        Just 0 -> as
+        Just i ->
+            let (h, t) = splitAt i as
+            in init h <> [v, last h] <> tail t
+
+moveRight :: (Eq a) => a -> [a] -> [a]
+moveRight v as =
+    case elemIndex v as of
+        Nothing -> as
+        Just i
+            | i == length as - 1 -> as
+            | otherwise ->
+                let (h, t) = splitAt i as
+                in h <> [head (tail t), v] <> (tail (tail t))

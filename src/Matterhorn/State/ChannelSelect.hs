@@ -24,7 +24,8 @@ import qualified Matterhorn.Zipper as Z
 beginChannelSelect :: MH ()
 beginChannelSelect = do
     setMode ChannelSelect
-    csCurrentTeam.tsChannelSelectState .= emptyChannelSelectState
+    tId <- use csCurrentTeamId
+    csCurrentTeam.tsChannelSelectState .= emptyChannelSelectState tId
     updateChannelSelectMatches
 
     -- Preserve the current channel selection when initializing channel

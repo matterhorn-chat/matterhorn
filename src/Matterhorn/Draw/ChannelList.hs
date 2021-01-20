@@ -66,7 +66,7 @@ renderChannelListHeader st =
         selfHeader = hCenter $
                      colorUsername myUsername_ myUsername_
                          (T.singleton statusSigil <> " " <> userSigil <> myUsername_)
-        teamNameStr = sanitizeUserText $ MM.teamDisplayName $ st^.csCurrentTeam.tsTeam
+        teamNameStr = T.strip $ sanitizeUserText $ MM.teamDisplayName $ st^.csCurrentTeam.tsTeam
         statusSigil = maybe ' ' userSigilFromInfo me
         me = userById (myUserId st) st
         unreadCountHeader = hCenter $ txt $ "Unread: " <> (T.pack $ show unreadCount)
@@ -74,11 +74,12 @@ renderChannelListHeader st =
 
 renderChannelList :: ChatState -> Widget Name
 renderChannelList st =
-    viewport ChannelList Vertical body
+    viewport (ChannelList tId) Vertical body
     where
         myUsername_ = myUsername st
         renderEntry s e = renderChannelListEntry myUsername_ $ mkChannelEntryData s e
-        body = case appMode st of
+        tId = st^.csCurrentTeamId
+        body = case st^.csCurrentTeam.tsMode of
             ChannelSelect ->
                 let zipper = st^.csCurrentTeam.tsChannelSelectState.channelSelectMatches
                     matches = if Z.isEmpty zipper
@@ -90,7 +91,7 @@ renderChannelList st =
                    renderChannelListHeader st :
                    matches
             _ ->
-                cached ChannelSidebar $
+                cached (ChannelSidebar tId) $
                 vBox $
                 renderChannelListHeader st :
                 (renderChannelListGroup st renderEntry <$> Z.toList (st^.csCurrentTeam.tsFocus))

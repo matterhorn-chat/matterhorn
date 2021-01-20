@@ -30,7 +30,7 @@ import           Matterhorn.State.Common
 
 onEventManageAttachments :: V.Event -> MH ()
 onEventManageAttachments e = do
-    mode <- gets appMode
+    mode <- use (csCurrentTeam.tsMode)
     case mode of
         ManageAttachments -> void $ onEventAttachmentList e
         ManageAttachmentsBrowseFiles -> onEventBrowseFile e
@@ -82,7 +82,8 @@ withFileBrowser f = do
             -- This could therefore be implemented as an `error "BUG:
             -- ..."` handler, but the more benign approach is to
             -- simply create an available FileBrowser at this stage.
-            new_b <- liftIO $ FB.newFileBrowser FB.selectNonDirectories AttachmentFileBrowser Nothing
+            tId <- use csCurrentTeamId
+            new_b <- liftIO $ FB.newFileBrowser FB.selectNonDirectories (AttachmentFileBrowser tId) Nothing
             csCurrentTeam.tsEditState.cedFileBrowser ?= new_b
             f new_b
         Just b -> f b

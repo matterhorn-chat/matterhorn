@@ -32,18 +32,19 @@ drawChannelTopicWindow st =
            withFocusRing foc (renderEditor drawTopicEditorTxt) ed
          , hBorderWithLabel (withDefAttr clientEmphAttr $ txt "Preview")
          , vLimit previewHeight $
-           viewport ChannelTopicEditorPreview Vertical $
+           viewport (ChannelTopicEditorPreview tId) Vertical $
            renderText' (Just baseUrl) "" hSet topicTxtWithCursor
          , hBorder
          , hBox [ padRight Max $
                   padLeft (Pad 1) $
-                  drawButton foc ChannelTopicSaveButton "Save"
+                  drawButton foc (ChannelTopicSaveButton tId) "Save"
                 , padRight (Pad 1) $
-                  drawButton foc ChannelTopicCancelButton "Cancel"
+                  drawButton foc (ChannelTopicCancelButton tId) "Cancel"
                 ]
          ]
     where
-        baseUrl = serverBaseUrl st
+        baseUrl = serverBaseUrl st tId
+        tId = st^.csCurrentTeamId
         editorHeight = 5
         previewHeight = 5
         maxWindowWidth = 70

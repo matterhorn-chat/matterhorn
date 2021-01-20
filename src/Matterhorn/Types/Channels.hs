@@ -3,6 +3,7 @@
 {-# LANGUAGE DeriveFoldable #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module Matterhorn.Types.Channels
   ( ClientChannel(..)
@@ -28,6 +29,7 @@ module Matterhorn.Types.Channels
   -- * Managing ClientChannel collections
   , noChannels, addChannel, removeChannel, findChannelById, modifyChannelById
   , channelByIdL, maybeChannelByIdL
+  , allTeamIds
   , filteredChannelIds
   , filteredChannels
   -- * Creating ChannelInfo objects
@@ -285,8 +287,8 @@ canLeaveChannel cInfo = not $ cInfo^.cdType `elem` [Direct]
 -- | Define a binary kinded type to allow derivation of functor.
 data AllMyChannels a =
     AllChannels { _chanMap :: HashMap ChannelId a
+                , _channelNameSet :: HashMap TeamId (S.Set Text)
                 , _userChannelMap :: HashMap UserId ChannelId
-                , _channelNameSet :: S.Set Text
                 }
                 deriving (Functor, Foldable, Traversable)
 
@@ -296,19 +298,23 @@ type ClientChannels = AllMyChannels ClientChannel
 
 makeLenses ''AllMyChannels
 
-getChannelNameSet :: ClientChannels -> S.Set Text
-getChannelNameSet = _channelNameSet
+getChannelNameSet :: TeamId -> ClientChannels -> S.Set Text
+getChannelNameSet tId cs = case cs^.channelNameSet.at tId of
+    Nothing -> mempty
+    Just s -> s
 
 -- | Initial collection of Channels with no members
 noChannels :: ClientChannels
-noChannels = AllChannels HM.empty HM.empty mempty
+noChannels = AllChannels HM.empty HM.empty HM.empty
 
 -- | Add a channel to the existing collection.
 addChannel :: ChannelId -> ClientChannel -> ClientChannels -> ClientChannels
 addChannel cId cinfo =
     (chanMap %~ HM.insert cId cinfo) .
     (if cinfo^.ccInfo.cdType `notElem` [Direct, Group]
-     then channelNameSet %~ S.insert (cinfo^.ccInfo.cdName)
+     then case cinfo^.ccInfo.cdTeamId of
+         Nothing -> id
+         Just tId -> channelNameSet %~ HM.insertWith S.union tId (S.singleton $ cinfo^.ccInfo.cdName)
      else id) .
     (case cinfo^.ccInfo.cdDMUserId of
          Nothing -> id
@@ -321,10 +327,20 @@ removeChannel cId cs =
     let mChan = findChannelById cId cs
         removeChannelName = case mChan of
             Nothing -> id
-            Just ch -> channelNameSet %~ S.delete (ch^.ccInfo.cdName)
+            Just ch -> case ch^.ccInfo.cdTeamId of
+                Nothing -> id
+                Just tId -> channelNameSet %~ HM.adjust (S.delete (ch^.ccInfo.cdName)) tId
     in cs & chanMap %~ HM.delete cId
           & removeChannelName
           & userChannelMap %~ HM.filter (/= cId)
+
+instance Semigroup (AllMyChannels ClientChannel) where
+    a <> b =
+        let pairs = HM.toList $ _chanMap a
+        in foldr (uncurry addChannel) b pairs
+
+instance Monoid (AllMyChannels ClientChannel) where
+    mempty = noChannels
 
 getDmChannelFor :: UserId -> ClientChannels -> Maybe ChannelId
 getDmChannelFor uId cs = cs^.userChannelMap.at uId
@@ -355,6 +371,10 @@ maybeChannelByIdL cId = chanMap . at cId
 -- ChannelId values for which the filter matched.
 filteredChannelIds :: (ClientChannel -> Bool) -> ClientChannels -> [ChannelId]
 filteredChannelIds f cc = fst <$> filter (f . snd) (HM.toList (cc^.chanMap))
+
+-- | Get all the team IDs in the channel collection.
+allTeamIds :: ClientChannels -> [TeamId]
+allTeamIds cc = HM.keys $ cc^.channelNameSet
 
 -- | Filter the ClientChannel collection, keeping only those for which
 -- the provided filter test function returns True.

@@ -49,7 +49,7 @@ import qualified System.IO.Temp as Sys
 import qualified System.Process as Sys
 import           Text.Aspell ( AspellResponse(..), mistakeWord, askAspell )
 
-import           Network.Mattermost.Types ( Post(..), ChannelId )
+import           Network.Mattermost.Types ( Post(..), ChannelId, TeamId )
 
 import           Matterhorn.Config
 import {-# SOURCE #-} Matterhorn.Command ( dispatchCommand )
@@ -216,21 +216,22 @@ getEditorContent = do
 -- *source* of the text, so it also takes care of clearing the editor,
 -- resetting the edit mode, updating the input history for the specified
 -- channel, etc.
-handleInputSubmission :: ChannelId -> Text -> MH ()
-handleInputSubmission cId content = do
+handleInputSubmission :: TeamId -> ChannelId -> Text -> MH ()
+handleInputSubmission tId cId content = do
     -- We clean up before dispatching the command or sending the message
     -- since otherwise the command could change the state and then doing
     -- cleanup afterwards could clean up the wrong things.
-    csCurrentTeam.tsEditState.cedEditor %= applyEdit Z.clearZipper
-    csCurrentTeam.tsEditState.cedEphemeral.eesInputHistoryPosition .= Nothing
+    csTeam(tId).tsEditState.cedEditor %= applyEdit Z.clearZipper
+    csTeam(tId).tsEditState.cedEphemeral.eesInputHistoryPosition .= Nothing
+
     csInputHistory %= addHistoryEntry content cId
 
     case T.uncons content of
       Just ('/', cmd) ->
           dispatchCommand cmd
       _ -> do
-          attachments <- use (csCurrentTeam.tsEditState.cedAttachmentList.L.listElementsL)
-          mode <- use (csCurrentTeam.tsEditState.cedEditMode)
+          attachments <- use (csTeam(tId).tsEditState.cedAttachmentList.L.listElementsL)
+          mode <- use (csTeam(tId).tsEditState.cedEditMode)
           sendMessage cId mode content $ F.toList attachments
 
     -- Reset the autocomplete UI
@@ -241,7 +242,7 @@ handleInputSubmission cId content = do
 
     -- Reset the edit mode *after* handling the input so that the input
     -- handler can tell whether we're editing, replying, etc.
-    csCurrentTeam.tsEditState.cedEditMode .= NewPost
+    csTeam(tId).tsEditState.cedEditMode .= NewPost
 
 closingPunctuationMarks :: String
 closingPunctuationMarks = ".,'\";:)]!?"
@@ -359,7 +360,8 @@ handleEditingInput e = do
     isMultiline <- use (csCurrentTeam.tsEditState.cedEphemeral.eesMultiline)
     isPreviewing <- use (csResources.crConfiguration.configShowMessagePreviewL)
     when (beforeLineCount /= afterLineCount && isMultiline && isPreviewing) $ do
-        cId <- use csCurrentChannelId
+        tId <- use csCurrentTeamId
+        cId <- use (csCurrentChannelId tId)
         mh $ invalidateCacheEntry $ ChannelMessages cId
 
     -- Reset the recent autocompletion flag to stop smart punctuation
@@ -379,9 +381,10 @@ sendUserTypingAction = do
         let pId = case st^.csCurrentTeam.tsEditState.cedEditMode of
                     Replying _ post -> Just $ postId post
                     _               -> Nothing
+        tId <- use csCurrentTeamId
         liftIO $ do
           now <- getCurrentTime
-          let action = UserTyping now (st^.csCurrentChannelId) pId
+          let action = UserTyping now (st^.csCurrentChannelId(tId)) pId
           STM.atomically $ STM.writeTChan (st^.csResources.crWebsocketActionChan) action
       Disconnected -> return ()
 
@@ -394,7 +397,8 @@ requestSpellCheck = do
         Nothing -> return ()
         Just (checker, _) -> do
             -- Get the editor contents.
-            contents <- getEditContents <$> use (csCurrentTeam.tsEditState.cedEditor)
+            tId <- use csCurrentTeamId
+            contents <- getEditContents <$> use (csTeam(tId).tsEditState.cedEditor)
             doAsyncWith Preempt $ do
                 -- For each line in the editor, submit an aspell request.
                 let query = concat <$> mapM (askAspell checker) contents
@@ -403,7 +407,7 @@ requestSpellCheck = do
                         let getMistakes AllCorrect = []
                             getMistakes (Mistakes ms) = mistakeWord <$> ms
                             allMistakes = S.fromList $ concat $ getMistakes <$> responses
-                        csCurrentTeam.tsEditState.cedMisspellings .= allMistakes
+                        csTeam(tId).tsEditState.cedMisspellings .= allMistakes
 
                 tryMM query (return . Just . postMistakes)
 
@@ -452,7 +456,8 @@ gotoEnd z =
 
 cancelAutocompleteOrReplyOrEdit :: MH ()
 cancelAutocompleteOrReplyOrEdit = do
-    cId <- use csCurrentChannelId
+    tId <- use csCurrentTeamId
+    cId <- use (csCurrentChannelId tId)
     mh $ invalidateCacheEntry $ ChannelMessages cId
     ac <- use (csCurrentTeam.tsEditState.cedAutocomplete)
     case ac of
@@ -474,7 +479,8 @@ replyToLatestMessage = do
     Just msg | isReplyable msg ->
         do rootMsg <- getReplyRootMessage msg
            setMode Main
-           cId <- use csCurrentChannelId
+           tId <- use csCurrentTeamId
+           cId <- use (csCurrentChannelId tId)
            mh $ invalidateCacheEntry $ ChannelMessages cId
            csCurrentTeam.tsEditState.cedEditMode .= Replying rootMsg (fromJust $ rootMsg^.mOriginalPost)
     _ -> return ()

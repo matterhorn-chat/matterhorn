@@ -54,7 +54,7 @@ messageSelectCompatibleModes =
 
 getSelectedMessage :: ChatState -> Maybe Message
 getSelectedMessage st
-    | not (appMode st `elem` messageSelectCompatibleModes) = Nothing
+    | not (st^.csCurrentTeam.tsMode `elem` messageSelectCompatibleModes) = Nothing
     | otherwise = do
         selMsgId <- selectMessageId $ st^.csCurrentTeam.tsMessageSelect
         let chanMsgs = st ^. csCurrentChannel . ccContents . cdMessages
@@ -111,13 +111,15 @@ fillSelectedGap = do
   selected <- use (to getSelectedMessage)
   case selected of
     Just msg
-      | isGap msg -> do cId <- use csCurrentChannelId
+      | isGap msg -> do tId <- use csCurrentTeamId
+                        cId <- use (csCurrentChannelId tId)
                         asyncFetchMessagesForGap cId msg
     _        -> return ()
 
 viewMessage :: Message -> MH ()
 viewMessage m = do
-    let w = tabbedWindow VMTabMessage viewMessageWindowTemplate MessageSelect (78, 25)
+    tId <- use csCurrentTeamId
+    let w = tabbedWindow VMTabMessage (viewMessageWindowTemplate tId) MessageSelect (78, 25)
     csCurrentTeam.tsViewedMessage .= Just (m, w)
     runTabShowHandlerFor (twValue w) w
     setMode ViewMessage
@@ -168,7 +170,7 @@ beginConfirmDeleteSelectedMessage = do
 
 messageSelectUp :: MH ()
 messageSelectUp = do
-    mode <- gets appMode
+    mode <- use (csCurrentTeam.tsMode)
     selected <- use (csCurrentTeam.tsMessageSelect.to selectMessageId)
     case selected of
         Just _ | mode == MessageSelect -> do
@@ -227,7 +229,8 @@ deleteSelectedMessage :: MH ()
 deleteSelectedMessage = do
     selectedMessage <- use (to getSelectedMessage)
     st <- use id
-    cId <- use csCurrentChannelId
+    tId <- use csCurrentTeamId
+    cId <- use (csCurrentChannelId tId)
     case selectedMessage of
         Just msg | isMine st msg && isDeletable msg ->
             case msg^.mOriginalPost of

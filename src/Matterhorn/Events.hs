@@ -9,30 +9,22 @@ import           Prelude ()
 import           Matterhorn.Prelude
 
 import           Brick
-import qualified Data.Sequence as Seq
-import qualified Data.Set as Set
 import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
-import           Lens.Micro.Platform ( (.=), preuse, _2, singular, _Just )
+import           Lens.Micro.Platform ( (.=), _2, singular, _Just )
 
 import qualified Network.Mattermost.Endpoints as MM
 import           Network.Mattermost.Exceptions ( mattermostErrorMessage )
-import           Network.Mattermost.Lenses
-import           Network.Mattermost.Types
-import           Network.Mattermost.WebSocket
 
 import           Matterhorn.Connection
 import           Matterhorn.Constants ( userSigil, normalChannelSigil )
 import           Matterhorn.HelpTopics
+import           Matterhorn.State.ChannelList
 import           Matterhorn.State.Channels
 import           Matterhorn.State.Common
-import           Matterhorn.State.Flagging
 import           Matterhorn.State.Help
 import           Matterhorn.State.Messages
-import           Matterhorn.State.Reactions
-import           Matterhorn.State.Users
 import           Matterhorn.Types
-import           Matterhorn.Types.Common
 
 import           Matterhorn.Events.ChannelSelect
 import           Matterhorn.Events.ChannelTopicWindow
@@ -51,6 +43,7 @@ import           Matterhorn.Events.ReactionEmojiListOverlay
 import           Matterhorn.Events.TabbedWindow
 import           Matterhorn.Events.ManageAttachments
 import           Matterhorn.Events.EditNotifyPrefs
+import           Matterhorn.Events.Websocket
 
 
 onEvent :: ChatState -> BrickEvent Name MHEvent -> EventM Name (Next ChatState)
@@ -102,9 +95,9 @@ onAppEvent BGIdle =
 onAppEvent (BGBusy n) =
     csWorkerIsBusy .= Just n
 onAppEvent (WSEvent we) =
-    handleWSEvent we
+    handleWebsocketEvent we
 onAppEvent (WSActionResponse r) =
-    handleWSActionResponse r
+    handleWebsocketActionResponse r
 onAppEvent (RespEvent f) = f
 onAppEvent (WebsocketParseError e) = do
     let msg = "A websocket message could not be parsed:\n  " <>
@@ -185,26 +178,31 @@ onVtyEvent e = do
 
 handleGlobalEvent :: Vty.Event -> MH ()
 handleGlobalEvent e = do
-    mode <- gets appMode
+    mode <- use (csCurrentTeam.tsMode)
+    globalHandlerByMode mode e
+
+globalHandlerByMode :: Mode -> Vty.Event -> MH ()
+globalHandlerByMode mode =
     case mode of
-        Main                       -> onEventMain e
-        ShowHelp _ _               -> void $ onEventShowHelp e
-        ChannelSelect              -> void $ onEventChannelSelect e
-        UrlSelect                  -> void $ onEventUrlSelect e
-        LeaveChannelConfirm        -> onEventLeaveChannelConfirm e
-        MessageSelect              -> onEventMessageSelect e
-        MessageSelectDeleteConfirm -> onEventMessageSelectDeleteConfirm e
-        DeleteChannelConfirm       -> onEventDeleteChannelConfirm e
-        ThemeListOverlay           -> onEventThemeListOverlay e
-        PostListOverlay _          -> onEventPostListOverlay e
-        UserListOverlay            -> onEventUserListOverlay e
-        ChannelListOverlay         -> onEventChannelListOverlay e
-        ReactionEmojiListOverlay   -> onEventReactionEmojiListOverlay e
-        ViewMessage                -> void $ handleTabbedWindowEvent (csCurrentTeam.tsViewedMessage.singular _Just._2) e
-        ManageAttachments          -> onEventManageAttachments e
-        ManageAttachmentsBrowseFiles -> onEventManageAttachments e
-        EditNotifyPrefs            -> void $ onEventEditNotifyPrefs e
-        ChannelTopicWindow         -> onEventChannelTopicWindow e
+        Main                       -> onEventMain
+        ShowHelp _ _               -> void . onEventShowHelp
+        ChannelSelect              -> void . onEventChannelSelect
+        UrlSelect                  -> void . onEventUrlSelect
+        LeaveChannelConfirm        -> onEventLeaveChannelConfirm
+        MessageSelect              -> onEventMessageSelect
+        MessageSelectDeleteConfirm -> onEventMessageSelectDeleteConfirm
+        DeleteChannelConfirm       -> onEventDeleteChannelConfirm
+        ThemeListOverlay           -> onEventThemeListOverlay
+        PostListOverlay _          -> onEventPostListOverlay
+        UserListOverlay            -> onEventUserListOverlay
+        ChannelListOverlay         -> onEventChannelListOverlay
+        ReactionEmojiListOverlay   -> onEventReactionEmojiListOverlay
+        ViewMessage                -> void . handleTabbedWindowEvent
+                                             (csCurrentTeam.tsViewedMessage.singular _Just._2)
+        ManageAttachments          -> onEventManageAttachments
+        ManageAttachmentsBrowseFiles -> onEventManageAttachments
+        EditNotifyPrefs            -> void . onEventEditNotifyPrefs
+        ChannelTopicWindow         -> onEventChannelTopicWindow
 
 globalKeybindings :: KeyConfig -> KeyHandlerMap
 globalKeybindings = mkKeybindings globalKeyHandlers
@@ -216,164 +214,6 @@ globalKeyHandlers =
         (showHelpScreen mainHelpTopic)
     ]
 
-handleWSActionResponse :: WebsocketActionResponse -> MH ()
-handleWSActionResponse r =
-    case warStatus r of
-        WebsocketActionStatusOK -> return ()
-
-handleWSEvent :: WebsocketEvent -> MH ()
-handleWSEvent we = do
-    myId <- gets myUserId
-    myTId <- use (csCurrentTeam.tsTeam.teamIdL)
-    case weEvent we of
-        WMPosted
-            | Just p <- wepPost (weData we) ->
-                when (wepTeamId (weData we) == Just myTId ||
-                      wepTeamId (weData we) == Nothing) $ do
-                    let wasMentioned = maybe False (Set.member myId) $ wepMentions (weData we)
-                    addNewPostedMessage $ RecentPost p wasMentioned
-                    cId <- use csCurrentChannelId
-                    when (postChannelId p /= cId) $
-                        showChannelInSidebar (p^.postChannelIdL) False
-            | otherwise -> return ()
-
-        WMPostEdited
-            | Just p <- wepPost (weData we) -> do
-                editMessage p
-                cId <- use csCurrentChannelId
-                when (postChannelId p == cId) (updateViewed False)
-                when (postChannelId p /= cId) $
-                    showChannelInSidebar (p^.postChannelIdL) False
-            | otherwise -> return ()
-
-        WMPostDeleted
-            | Just p <- wepPost (weData we) -> do
-                deleteMessage p
-                cId <- use csCurrentChannelId
-                when (postChannelId p == cId) (updateViewed False)
-                when (postChannelId p /= cId) $
-                    showChannelInSidebar (p^.postChannelIdL) False
-            | otherwise -> return ()
-
-        WMStatusChange
-            | Just status <- wepStatus (weData we)
-            , Just uId <- wepUserId (weData we) ->
-                setUserStatus uId status
-            | otherwise -> return ()
-
-        WMUserAdded
-            | Just cId <- webChannelId (weBroadcast we) ->
-                when (wepUserId (weData we) == Just myId &&
-                      wepTeamId (weData we) == Just myTId) $
-                    handleChannelInvite cId
-            | otherwise -> return ()
-
-        WMNewUser
-            | Just uId <- wepUserId $ weData we ->
-                handleNewUsers (Seq.singleton uId) (return ())
-            | otherwise -> return ()
-
-        WMUserRemoved
-            | Just cId <- wepChannelId (weData we) ->
-                when (webUserId (weBroadcast we) == Just myId) $
-                    removeChannelFromState cId
-            | otherwise -> return ()
-
-        WMTyping
-            | Just uId <- wepUserId $ weData we
-            , Just cId <- webChannelId (weBroadcast we) -> handleTypingUser uId cId
-            | otherwise -> return ()
-
-        WMChannelDeleted
-            | Just cId <- wepChannelId (weData we) ->
-                when (webTeamId (weBroadcast we) == Just myTId) $
-                    removeChannelFromState cId
-            | otherwise -> return ()
-
-        WMDirectAdded
-            | Just cId <- webChannelId (weBroadcast we) -> handleChannelInvite cId
-            | otherwise -> return ()
-
-        -- An 'ephemeral message' is just Mattermost's version of our
-        -- 'client message'. This can be a little bit wacky, e.g.
-        -- if the user types '/shortcuts' in the browser, we'll get
-        -- an ephemeral message even in MatterHorn with the browser
-        -- shortcuts, but it's probably a good idea to handle these
-        -- messages anyway.
-        WMEphemeralMessage
-            | Just p <- wepPost $ weData we -> postInfoMessage (sanitizeUserText $ p^.postMessageL)
-            | otherwise -> return ()
-
-        WMPreferenceChanged
-            | Just prefs <- wepPreferences (weData we) ->
-                mapM_ applyPreferenceChange prefs
-            | otherwise -> return ()
-
-        WMPreferenceDeleted
-            | Just pref <- wepPreferences (weData we)
-            , Just fps <- mapM preferenceToFlaggedPost pref ->
-              forM_ fps $ \f ->
-                  updateMessageFlag (flaggedPostId f) False
-            | otherwise -> return ()
-
-        WMReactionAdded
-            | Just r <- wepReaction (weData we)
-            , Just cId <- webChannelId (weBroadcast we) -> addReactions cId [r]
-            | otherwise -> return ()
-
-        WMReactionRemoved
-            | Just r <- wepReaction (weData we)
-            , Just cId <- webChannelId (weBroadcast we) -> removeReaction r cId
-            | otherwise -> return ()
-
-        WMChannelViewed
-            | Just cId <- wepChannelId $ weData we -> refreshChannelById cId
-            | otherwise -> return ()
-
-        WMChannelUpdated
-            | Just cId <- webChannelId $ weBroadcast we -> do
-                mChan <- preuse (csChannel(cId))
-                when (isJust mChan) $ do
-                    refreshChannelById cId
-                    updateSidebar
-            | otherwise -> return ()
-
-        WMGroupAdded
-            | Just cId <- webChannelId (weBroadcast we) -> handleChannelInvite cId
-            | otherwise -> return ()
-
-        WMChannelMemberUpdated
-            | Just channelMember <- wepChannelMember $ weData we ->
-                  when (channelMemberUserId channelMember == myId) $
-                      updateChannelNotifyProps
-                      (channelMemberChannelId channelMember)
-                      (channelMemberNotifyProps channelMember)
-            | otherwise -> return ()
-
-        -- We are pretty sure we should do something about these:
-        WMAddedToTeam -> return ()
-
-        -- We aren't sure whether there is anything we should do about
-        -- these yet:
-        WMUpdateTeam -> return ()
-        WMTeamDeleted -> return ()
-        WMUserUpdated -> return ()
-        WMLeaveTeam -> return ()
-
-        -- We deliberately ignore these events:
-        WMChannelCreated -> return ()
-        WMEmojiAdded -> return ()
-        WMWebRTC -> return ()
-        WMHello -> return ()
-        WMAuthenticationChallenge -> return ()
-        WMUserRoleUpdated -> return ()
-        WMPluginStatusesChanged -> return ()
-        WMPluginEnabled -> return ()
-        WMPluginDisabled -> return ()
-        WMUnknownEvent {} ->
-            mhLog LogWebsocket $ T.pack $
-                "Websocket event not handled due to unknown event type: " <> show we
-
 -- | Refresh client-accessible server configuration information. This
 -- is usually triggered when a reconnect event for the WebSocket to the
 -- server occurs.
@@ -384,4 +224,4 @@ refreshClientConfig = do
         cfg <- MM.mmGetClientConfiguration (Just "old") session
         return $ Just $ do
             csClientConfig .= Just cfg
-            updateSidebar
+            updateSidebar Nothing

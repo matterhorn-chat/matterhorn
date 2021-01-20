@@ -22,8 +22,9 @@ import           Matterhorn.Util
 startUrlSelect :: MH ()
 startUrlSelect = do
     urls <- use (csCurrentChannel.to findUrls.to V.fromList)
+    tId <- use csCurrentTeamId
     setMode UrlSelect
-    csCurrentTeam.tsUrlList .= (listMoveTo (length urls - 1) $ list UrlList urls 2)
+    csCurrentTeam.tsUrlList .= (listMoveTo (length urls - 1) $ list (UrlList tId) urls 2)
 
 stopUrlSelect :: MH ()
 stopUrlSelect = setMode Main

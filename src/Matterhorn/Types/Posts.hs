@@ -193,10 +193,10 @@ unEmote _ t = t
 
 -- | Convert a Mattermost 'Post' to a 'ClientPost', passing in a
 --   'ParentId' if it has a known one.
-toClientPost :: TeamBaseURL -> Post -> Maybe PostId -> ClientPost
+toClientPost :: Maybe TeamBaseURL -> Post -> Maybe PostId -> ClientPost
 toClientPost baseUrl p parentId =
   let src = unEmote (postClientPostType p) $ sanitizeUserText $ postMessage p
-  in ClientPost { _cpText          = parseMarkdown (Just baseUrl) src <> getAttachmentText p
+  in ClientPost { _cpText          = parseMarkdown baseUrl src <> getAttachmentText p
                 , _cpMarkdownSource = src
                 , _cpUser          = postUserId p
                 , _cpUserOverride  = p^.postPropsL.postPropsOverrideUsernameL

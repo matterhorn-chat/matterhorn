@@ -24,6 +24,10 @@
 | `M-p` | `toggle-message-preview` | Toggle message preview |
 | `F2` | `toggle-channel-list-visibility` | Toggle channel list visibility |
 | `F3` | `toggle-expanded-channel-topics` | Toggle display of expanded channel topics |
+| `C-Right` | `next-team` | Switch to the next available team |
+| `C-Left` | `prev-team` | Switch to the previous available team |
+| (unbound) | `move-current-team-left` | Move the current team to the left in the team list |
+| (unbound) | `move-current-team-right` | Move the current team to the right in the team list |
 | `M-k` | `invoke-editor` | Invoke `$EDITOR` to edit the current message |
 | `C-g` | `enter-fast-select` | Enter fast channel selection mode |
 | `C-q` | `quit` | Quit |
@@ -37,7 +41,7 @@
 | `C-p` | `focus-prev-channel` | Change to the previous channel in the channel list |
 | `M-a` | `focus-next-unread` | Change to the next channel with unread messages or return to the channel marked '~' |
 | `C-x` | `show-attachment-list` | Show the attachment list |
-| `(unbound)` | focus-next-unread-user-or-channel | Change to the next channel with unread messages preferring direct messages |
+| (unbound) | `focus-next-unread-user-or-channel` | Change to the next channel with unread messages preferring direct messages |
 | `M-s` | `focus-last-channel` | Change to the most recently-focused channel |
 | `Enter` | (non-customizable key) | Send the current message |
 | `C-o` | `enter-url-open` | Select and open a URL posted to the current channel |
