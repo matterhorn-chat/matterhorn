@@ -1118,6 +1118,9 @@ setChannelTopic msg = do
         (\s _ -> MM.mmPatchChannel cId patch s)
         (\_ _ -> Nothing)
 
+-- | This renames the current channel's url name. It makes a request to the server to change the name, 
+-- but does not actually change the name in Matterhorn yet; that is handled by a websocket event handled 
+-- asynchronously. 
 renameChannelUrl :: Text -> MH ()
 renameChannelUrl name = do 
     cId <- use csCurrentChannelId 

@@ -262,7 +262,8 @@ commandList =
 
   , Cmd "notify-prefs" "Edit the current channel's notification preferences" NoArg $ \_ ->
           enterEditNotifyPrefsMode
-  , Cmd "rename-channel-url" "Rename the current channel's URL name" (TokenArg "channelName" NoArg) $ \ (name, _) ->
+          
+  , Cmd "rename-channel-url" "Rename the current channel's URL name" (TokenArg "channel name" NoArg) $ \ (name, _) ->
      renameChannelUrl name
   ]
 
