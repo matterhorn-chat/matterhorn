@@ -691,7 +691,9 @@ mainInterface st =
          , body
          ]
     where
-    body = if st^.csResources.crConfiguration.configShowChannelListL || st^.csCurrentTeam.tsMode == ChannelSelect
+    showChannelList = st^.csResources.crConfiguration.configShowChannelListL ||
+                      st^.csCurrentTeam.tsMode == ChannelSelect
+    body = if showChannelList
            then case st^.csChannelListOrientation of
                ChannelListLeft ->
                    hBox [channelList, vBorder, mainDisplay]
