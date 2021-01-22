@@ -12,6 +12,7 @@ import           Brick.Widgets.List ( listElements )
 import           Brick.Widgets.Edit ( editContentsL, renderEditor, getEditContents )
 import           Control.Arrow ( (>>>) )
 import           Data.Char ( isSpace, isPunctuation )
+import qualified Data.Foldable as F
 import           Data.List ( intersperse )
 import qualified Data.Map as M
 import qualified Data.Sequence as Seq
@@ -43,6 +44,7 @@ import           Matterhorn.Themes
 import           Matterhorn.TimeUtils ( justAfter, justBefore )
 import           Matterhorn.Types
 import           Matterhorn.Types.Common ( sanitizeUserText )
+import           Matterhorn.Types.DirectionalSeq ( emptyDirSeq )
 import           Matterhorn.Types.RichText ( parseMarkdown, TeamBaseURL )
 import           Matterhorn.Types.KeyEvents
 import qualified Matterhorn.Zipper as Z
@@ -427,15 +429,50 @@ renderCurrentChannelDisplay st hs = header <=> hBorder <=> messages
 
     cutoff = getNewMessageCutoff cId st
     editCutoff = getEditedMessageCutoff cId st
+    messageListing = getMessageListing cId st
     channelMessages =
-        insertTransitions (getMessageListing cId st)
-                          cutoff
-                          (getDateFormat st)
-                          (st ^. timeZone)
+        -- If the channel is empty, add an informative message to the
+        -- message listing to make it explicit that this channel does
+        -- not yet have any messages.
+        if F.null messageListing
+        then addMessage (emptyChannelFillerMessage st cId) emptyDirSeq
+        else insertTransitions messageListing
+                               cutoff
+                               (getDateFormat st)
+                               (st ^. timeZone)
 
     tId = st^.csCurrentTeamId
     cId = st^.(csCurrentChannelId tId)
     chan = st^.csCurrentChannel
+
+-- | Construct a single message to be displayed in the specified channel
+-- when it does not yet have any user messages posted to it.
+emptyChannelFillerMessage :: ChatState -> ChannelId -> Message
+emptyChannelFillerMessage st cId =
+    newMessageOfType msg (C Informative) ts
+    where
+        -- This is a bogus timestamp, but its value does not matter
+        -- because it is only used to create a message that will be
+        -- shown in a channel with no date transitions (which would
+        -- otherwise include this bogus date) or other messages (which
+        -- would make for a broken message sorting).
+        ts = ServerTime $ UTCTime (toEnum 0) 0
+        Just chan = findChannelById cId (st^.csChannels)
+        chanName = mkChannelName st (chan^.ccInfo)
+        msg = case chan^.ccInfo.cdType of
+            Direct ->
+                let u = chan^.ccInfo.cdDMUserId >>= flip userById st
+                in case u of
+                    Nothing -> userMsg Nothing
+                    Just _ -> userMsg (Just chanName)
+            Group ->
+                groupMsg (chan^.ccInfo.cdDisplayName)
+            _ ->
+                chanMsg chanName
+        userMsg (Just cn) = "You have not yet sent any direct messages to " <> cn <> "."
+        userMsg Nothing   = "You have not yet sent any direct messages to this user."
+        groupMsg us = "There are not yet any direct messages in the group " <> us <> "."
+        chanMsg cn = "There are not yet any messages in the " <> cn <> " channel."
 
 getMessageListing :: ChannelId -> ChatState -> Messages
 getMessageListing cId st =
