@@ -23,6 +23,7 @@ module Matterhorn.Types.RichText
   , C.ListSpacing(..)
   , C.EnumeratorType(..)
   , C.DelimiterType(..)
+  , C.ColAlignment(..)
 
   , TeamBaseURL(..)
   , TeamURLName(..)
@@ -96,6 +97,7 @@ data Block =
     -- ^ A fragment of raw HTML.
     | HRule
     -- ^ A horizontal rule.
+    | Table [C.ColAlignment] [Inlines] [[Inlines]]
     deriving (Show)
 
 -- | Returns whether two blocks have the same type.
@@ -237,6 +239,9 @@ instance C.IsInline Inlines where
 instance C.HasStrikethrough Inlines where
     strikethrough = singleI . EStrikethrough
 
+instance C.HasPipeTable Inlines Blocks where
+    pipeTable a h b = singleB $ Table a h b
+
 -- Syntax extension for parsing ~channel references.
 channelSpec :: (Monad m) => C.SyntaxSpec m Inlines Blocks
 channelSpec =
@@ -343,6 +348,7 @@ parseMarkdown mBaseUrl t =
         markdownExtensions =
             [ C.autolinkSpec
             , C.strikethroughSpec
+            , C.pipeTableSpec
             , usernameSpec
             , channelSpec
             , emojiSpec
@@ -379,6 +385,8 @@ rewriteBlocksPermalinks u (Blocks bs) = Blocks $ rewriteBlockPermalinks u <$> bs
 -- | Locate post hyperlinks in the block and rewrite them as post
 -- permalinks.
 rewriteBlockPermalinks :: TeamBaseURL -> Block -> Block
+rewriteBlockPermalinks u (Table a h b) = Table a (rewriteInlinePermalinks u <$> h)
+                                                 (fmap (fmap (rewriteInlinePermalinks u)) b)
 rewriteBlockPermalinks u (Para s) = Para $ rewriteInlinePermalinks u s
 rewriteBlockPermalinks u (Header i s) = Header i $ rewriteInlinePermalinks u s
 rewriteBlockPermalinks u (Blockquote bs) = Blockquote $ rewriteBlocksPermalinks u bs

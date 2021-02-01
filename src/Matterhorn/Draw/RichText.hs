@@ -18,6 +18,7 @@ import           Brick ( (<+>), Widget, hLimit, imageL
                        )
 import qualified Brick as B
 import qualified Brick.Widgets.Border as B
+import qualified Brick.Widgets.Table as B
 import qualified Brick.Widgets.Skylighting as BS
 import           Control.Monad.Reader
 import qualified Data.Foldable as F
@@ -99,6 +100,17 @@ data DrawCfg =
             }
 
 renderBlock :: Block -> M (Widget a)
+renderBlock (Table aligns headings body) = do
+    headingWs <- mapM renderInlines headings
+    bodyWs <- forM body $ mapM renderInlines
+    let t = B.table (headingWs : bodyWs)
+        alignPairs = zip [0..] aligns
+        align (_, LeftAlignedCol) = id
+        align (_, DefaultAlignedCol) = id
+        align (i, RightAlignedCol) = B.alignRight i
+        align (i, CenterAlignedCol) = B.alignCenter i
+        applyAlignment = foldr (.) id (align <$> alignPairs)
+    return $ B.renderTable $ applyAlignment t
 renderBlock (Para is) =
     renderInlines is
 renderBlock (Header n is) = do
