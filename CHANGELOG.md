@@ -1,4 +1,54 @@
 
+50200.12.0
+==========
+
+New features:
+ * Matterhorn now supports multiple teams! This includes a number of UI
+   changes:
+   * Matterhorn no longer prompts for a team on startup.
+   * If the configuration file sets `team`, Matterhorn will attempt to
+     honor that by selecting that as the active team on startup.
+     If the configuration does not specify the `team` setting, the
+     initially-selected team is chosen as the first team after sorting
+     the team list alphabetically.
+   * The window title now reflects the sum of all unread channels in all
+     teams, rather than the number of unread channels in the current
+     team.
+   * If the user is a member of more than one team, the list of teams
+     will be displayed at the top of the window with the active team
+     highlighted. Each team with unread channels will display the count
+     of unread channels next to the team name and teams with unread
+     channels will be highlighted. This change comes with a new theme
+     attribute, `currentTeam`, to style the selected team in the list.
+   * The current team selection can be changed with new keybindings:
+     * `next-team` (default binding: `C-Right`)
+     * `prev-team` (default binding: `C-Left`)
+   * The team list can be reordered manually. In the official web
+     client, the team list can be reordered by dragging and dropping
+     the team icons; in Matterhorn, this can be done by using two new
+     commands, `/move-team-left` and `/move-team-right`, respectively.
+     New keybindings to do the same thing were also added:
+     * `move-current-team-left` (unbound by default)
+     * `move-current-team-right` (unbound by default)
+ * The new `/rename-channel-url` command renames the current channel's
+   URL name. This differs from the server command `/rename`, which
+   renames the current channel's display name. Renaming the URL name
+   with this command is equivalent to changing the value of the "URL"
+   field in the "Rename Channel" dialog box in the official web client.
+   (thanks to Ajay Eeralla for this work)
+
+Other improvements:
+ * The channel list now takes up the full window height. Previously
+   the message editor and input preview were displayed across the entire
+   screen; now those areas stop at the channel list, so the channel list
+   gets a few more rows of space to display channels.
+ * Matterhorn now parses all incoming Markdown text with the Haskell
+   `commonmark` library. Migrating to `commonmark` improved our support
+   for many Markdown extensions and improved how Matterhorn handles some
+   Markdown syntax.
+ * The syntax highlighting XML files in `syntax/` were updated from
+   version 0.10.0.3 of the `skylighting` package.
+
 50200.11.0
 ==========
 
