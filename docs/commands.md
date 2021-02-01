@@ -35,6 +35,7 @@
 | `/quit` | Exit Matterhorn |
 | `/reconnect` | Force a reconnection attempt to the server |
 | `/remove-user <@user>` | Remove a user from the current channel |
+| `/rename-channel-url <channel name>` | Rename the current channel's URL name |
 | `/right` | Focus on the next channel |
 | `/search <terms>` | Search for posts with given terms |
 | `/sh` | List the available shell scripts |
