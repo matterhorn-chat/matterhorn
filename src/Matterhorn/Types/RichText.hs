@@ -98,6 +98,7 @@ data Block =
     | HRule
     -- ^ A horizontal rule.
     | Table [C.ColAlignment] [Inlines] [[Inlines]]
+    -- ^ A table.
     deriving (Show)
 
 -- | Returns whether two blocks have the same type.
