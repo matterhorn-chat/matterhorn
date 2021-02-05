@@ -4,6 +4,15 @@ Matterhorn Build Instructions
 Before building Matterhorn from source, you'll need a GitHub account. A
 GitHub account is necessary to fetch the submodule sources.
 
+Setting Up
+==========
+
+On Ubuntu systems, you may need to first install the `zlib1g-dev`
+package.
+
+Building
+========
+
 1. Install [ghcup](https://www.haskell.org/ghcup/).
 2. Install GHC with `ghcup install`.
 3. Install Cabal with `ghcup install-cabal`.

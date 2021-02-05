@@ -170,3 +170,24 @@ intended to provide the full feature set provided by `readline` even
 though some of its features and behaviors are informed by `readline`.
 This is also why we provide the ability to invoke an application of your
 choosing to edit messages with `M-k` (`invoke-editor`).
+
+## Matterhorn's default bindings for team switching don't work on Mac OS. What do I do?
+
+The default bindings for switching teams may collide with bindings in
+the Mac OS settings (typically for switching screens). To address this
+you have two options:
+
+* Unbind or change the Mac OS bindings in the System Preferences, or
+* Configure Matterhorn to use different bindings.
+
+To configure Matterhorn to use different bindings, you can add something
+like the following to your Matterhorn configuration file:
+
+```ini
+[keybindings]
+prev-team = S-Left
+next-team = S-Right
+```
+
+See `/help keybindings` for more information on how to configure
+customized keybindings.
