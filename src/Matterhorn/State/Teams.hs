@@ -7,6 +7,7 @@ module Matterhorn.State.Teams
   , buildTeamState
   , moveCurrentTeamLeft
   , moveCurrentTeamRight
+  , setTeam
   )
 where
 
@@ -44,6 +45,10 @@ nextTeam = setTeamFocusWith Z.right
 -- | Move left in the channel list to select the previous team.
 prevTeam :: MH ()
 prevTeam = setTeamFocusWith Z.left
+
+-- | Set the current team directly
+setTeam :: TeamId -> MH ()
+setTeam tId = setTeamFocusWith $ Z.findRight (== tId)
 
 -- | Change the selected team with the specified team zipper
 -- transformation. This function also takes care of book-keeping

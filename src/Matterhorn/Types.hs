@@ -780,6 +780,7 @@ data Name =
     | ChannelTopicEditorPreview TeamId
     | TeamList
     | ClickableChannelListEntry ChannelId
+    | ClickableTeamListEntry TeamId
     deriving (Eq, Show, Ord)
 
 -- | The sum type of exceptions we expect to encounter on authentication

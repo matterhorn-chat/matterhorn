@@ -26,6 +26,7 @@ import           Matterhorn.State.Channels
 import           Matterhorn.State.Common
 import           Matterhorn.State.Help
 import           Matterhorn.State.Messages
+import           Matterhorn.State.Teams ( setTeam )
 import           Matterhorn.Types
 
 import           Matterhorn.Events.ChannelSelect
@@ -138,6 +139,7 @@ onMouseDown (ClickableChannelListEntry channelId) Vty.BLeft [] _ = do
     resetReturnChannel
     setFocus channelId
     setMode Main
+onMouseDown (ClickableTeamListEntry teamId) Vty.BLeft [] _ = setTeam teamId
 onMouseDown _ _ _ _ = return ()
 
 formatError :: MHError -> T.Text
