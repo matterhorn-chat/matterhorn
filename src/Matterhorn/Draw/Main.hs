@@ -523,12 +523,13 @@ teamList st =
             let tId = teamId $ _tsTeam ts
                 unread = uCount > 0
                 uCount = unreadCount tId
+                tName  = ClickableTeamListEntry tId
             in (if tId == curTid
                    then visible . withDefAttr currentTeamAttr
                    else if unread
                         then withDefAttr unreadChannelAttr
                         else id) $
-               txt $
+               clickable tName $ txt $
                (T.strip $ sanitizeUserText $ teamDisplayName $ _tsTeam ts)
         unreadCount tId = sum $ fmap (nonDMChannelListGroupUnread . fst) $
                           Z.toList $ st^.csTeam(tId).tsFocus
