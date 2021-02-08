@@ -77,7 +77,9 @@ renderChannelList st =
     viewport (ChannelList tId) Vertical body
     where
         myUsername_ = myUsername st
-        renderEntry s e = renderChannelListEntry myUsername_ $ mkChannelEntryData s e
+        channelName e = ClickableChannelListEntry $ channelListEntryChannelId  e
+        renderEntry s e = clickable (channelName e) $ 
+                          renderChannelListEntry myUsername_ $ mkChannelEntryData s e
         tId = st^.csCurrentTeamId
         body = case st^.csCurrentTeam.tsMode of
             ChannelSelect ->

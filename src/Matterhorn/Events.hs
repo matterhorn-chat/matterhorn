@@ -60,6 +60,8 @@ onBrickEvent (VtyEvent (Vty.EvKey (Vty.KChar 'l') [Vty.MCtrl])) = do
     liftIO $ Vty.refresh vty
 onBrickEvent (VtyEvent e) =
     onVtyEvent e
+onBrickEvent (MouseDown n button modifier loc) =
+    onMouseDown n button modifier loc
 onBrickEvent _ =
     return ()
 
@@ -128,6 +130,13 @@ handleIEvent (LogStartFailed path err) =
 handleIEvent (LogSnapshotFailed path err) =
     postErrorMessage' $ "Could not write log snapshot to " <> T.pack path <>
                         ", error: " <> T.pack err
+
+onMouseDown :: Name -> Vty.Button -> [Vty.Modifier] -> Location -> MH()
+onMouseDown (ClickableChannelListEntry channelId) Vty.BLeft [] _ = do
+    resetReturnChannel
+    setFocus channelId
+    setMode Main
+onMouseDown _ _ _ _ = return ()
 
 formatError :: MHError -> T.Text
 formatError (GenericError msg) =
