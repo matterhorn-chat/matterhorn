@@ -84,6 +84,7 @@ runMatterhorn opts config = do
           let output = Vty.outputIface vty
           Vty.setMode output Vty.BracketedPaste True
           Vty.setMode output Vty.Hyperlink $ configHyperlinkingMode config
+          Vty.setMode output Vty.Mouse $ configMouseMode config
           return vty
 
     (st, vty) <- setupState mkVty (optLogLocation opts) config

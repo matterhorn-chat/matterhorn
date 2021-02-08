@@ -91,6 +91,7 @@ module Matterhorn.Types
   , configCpuUsagePolicyL
   , configDefaultAttachmentPathL
   , configChannelListOrientationL
+  , configMouseModeL
 
   , HelpScreen(..)
   , PasswordSource(..)
@@ -540,6 +541,8 @@ data Config =
            -- ^ The default path for browsing attachments
            , configChannelListOrientation :: ChannelListOrientation
            -- ^ The orientation of the channel list.
+           , configMouseMode :: Bool
+           -- ^ Whether to enable mouse support in matterhorn
            } deriving (Eq, Show)
 
 -- | The policy for CPU usage.
