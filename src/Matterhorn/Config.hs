@@ -130,6 +130,8 @@ fromIni = do
     configDirectChannelExpirationDays <- fieldDefOf "directChannelExpirationDays" number
       (configDirectChannelExpirationDays defaultConfig)
     configDefaultAttachmentPath <- fieldMbOf "defaultAttachmentPath" filePathField
+    configMouseMode <- fieldFlagDef "enableMouseMode"
+      (configMouseMode defaultConfig)
 
     let configAbsPath = Nothing
         configUserKeys = mempty
@@ -262,6 +264,7 @@ defaultConfig =
            , configCpuUsagePolicy              = MultipleCPUs
            , configDefaultAttachmentPath       = Nothing
            , configChannelListOrientation      = ChannelListLeft
+           , configMouseMode                   = False
            }
 
 findConfig :: Maybe FilePath -> IO (Either String ([String], Config))
