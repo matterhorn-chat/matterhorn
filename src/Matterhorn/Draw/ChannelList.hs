@@ -101,6 +101,7 @@ renderChannelListGroupHeading g =
     let (unread, label) = case g of
             ChannelGroupPublicChannels u -> (u, "Public Channels")
             ChannelGroupPrivateChannels u -> (u, "Private Channels")
+            ChannelGroupFavoriteChannels u -> (u, "Favorite Channels")
             ChannelGroupDirectMessages u -> (u, "Direct Messages")
         addUnread = if unread > 0
                     then (<+> (withDefAttr unreadGroupMarkerAttr $ txt "*"))

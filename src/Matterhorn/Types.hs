@@ -429,17 +429,21 @@ data TokenSource =
 data ChannelListGroup =
     ChannelGroupPublicChannels Int
     | ChannelGroupPrivateChannels Int
+    | ChannelGroupFavoriteChannels Int
     | ChannelGroupDirectMessages Int
     deriving (Eq)
 
 channelListGroupUnread :: ChannelListGroup -> Int
 channelListGroupUnread (ChannelGroupPublicChannels n)  = n
 channelListGroupUnread (ChannelGroupPrivateChannels n) = n
+channelListGroupUnread (ChannelGroupFavoriteChannels n) = n
 channelListGroupUnread (ChannelGroupDirectMessages n)  = n
+
 
 nonDMChannelListGroupUnread :: ChannelListGroup -> Int
 nonDMChannelListGroupUnread (ChannelGroupPublicChannels n)  = n
 nonDMChannelListGroupUnread (ChannelGroupPrivateChannels n) = n
+nonDMChannelListGroupUnread (ChannelGroupFavoriteChannels n) = n
 nonDMChannelListGroupUnread (ChannelGroupDirectMessages _)  = 0
 
 -- | The type of channel list entries.
@@ -600,6 +604,8 @@ mkChannelZipperList now config tId cconfig prefs cs us =
       in (ChannelGroupPublicChannels unread, entries)
     , let (unread, entries) = getChannelEntriesInOrder tId cs Private
       in (ChannelGroupPrivateChannels unread, entries)
+    , let (unread, entries) = getChannelEntriesInOrder tId cs Private
+      in (ChannelGroupFavoriteChannels unread, entries)
     , let (unread, entries) = getDMChannelEntriesInOrder now config cconfig prefs us cs
       in (ChannelGroupDirectMessages unread, entries)
     ]
