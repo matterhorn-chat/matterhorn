@@ -123,6 +123,20 @@ data KeyEvent
   | AttachmentListDeleteEvent
   | AttachmentOpenEvent
 
+  -- Attachment file browser
+  | FileBrowserBeginSearchEvent
+  | FileBrowserSelectEnterEvent
+  | FileBrowserSelectCurrentEvent
+  | FileBrowserListPageUpEvent
+  | FileBrowserListPageDownEvent
+  | FileBrowserListHalfPageUpEvent
+  | FileBrowserListHalfPageDownEvent
+  | FileBrowserListTopEvent
+  | FileBrowserListBottomEvent
+  | FileBrowserListNextEvent
+  | FileBrowserListPrevEvent
+
+
   -- Form submission
   | FormSubmitEvent
 
@@ -222,6 +236,19 @@ allEvents =
   , AttachmentListAddEvent
   , AttachmentListDeleteEvent
   , AttachmentOpenEvent
+
+  , FileBrowserBeginSearchEvent
+  , FileBrowserSelectEnterEvent
+  , FileBrowserSelectCurrentEvent
+  , FileBrowserListPageUpEvent
+  , FileBrowserListPageDownEvent
+  , FileBrowserListHalfPageUpEvent
+  , FileBrowserListHalfPageDownEvent
+  , FileBrowserListTopEvent
+  , FileBrowserListBottomEvent
+  , FileBrowserListNextEvent
+  , FileBrowserListPrevEvent
+
   , FormSubmitEvent
   ]
 
@@ -449,5 +476,17 @@ keyEventName ev = case ev of
   AttachmentListAddEvent    -> "add-to-attachment-list"
   AttachmentListDeleteEvent -> "delete-from-attachment-list"
   AttachmentOpenEvent       -> "open-attachment"
+
+  FileBrowserBeginSearchEvent      -> "filebrowser-begin-search"
+  FileBrowserSelectEnterEvent      -> "filebrowser-select-file-or-enter-directory"
+  FileBrowserSelectCurrentEvent    -> "filebrowser-select-current"
+  FileBrowserListPageUpEvent       -> "filebrowser-list-page-up"
+  FileBrowserListPageDownEvent     -> "filebrowser-list-page-down"
+  FileBrowserListHalfPageUpEvent   -> "filebrowser-list-half-page-up"
+  FileBrowserListHalfPageDownEvent -> "filebrowser-list-half-page-down"
+  FileBrowserListTopEvent          -> "filebrowser-list-top"
+  FileBrowserListBottomEvent       -> "filebrowser-list-bottom"
+  FileBrowserListNextEvent         -> "filebrowser-list-next"
+  FileBrowserListPrevEvent         -> "filebrowser-list-previous"
 
   FormSubmitEvent -> "submit-form"
