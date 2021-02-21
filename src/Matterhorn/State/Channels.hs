@@ -588,6 +588,25 @@ applyPreferenceChange pref = do
                       Nothing -> return ()
               False -> do
                   csChannel(cId).ccInfo.cdSidebarShowOverride .= Nothing
+      
+      | Just f <- preferenceToFavoriteChannelPreference pref -> do
+          updateSidebar Nothing
+
+          -- We need to check on whether this preference was to show a
+          -- channel and, if so, whether it was the one we attempted to
+          -- switch to (thus triggering the preference change). If so,
+          -- we need to switch to it now.
+          let cId = favoriteChannelId f
+          case favoriteChannelShow f of
+              True -> do
+                  pending <- checkPendingChannelChange cId
+                  case pending of
+                      Just mAct -> do
+                          setFocus cId
+                          fromMaybe (return ()) mAct
+                      Nothing -> return ()
+              False -> do
+                  csChannel(cId).ccInfo.cdSidebarShowOverride .= Nothing
 
       | otherwise -> return ()
 

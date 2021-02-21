@@ -574,6 +574,7 @@ data UserPreferences =
                     , _userPrefFlaggedPostList :: Seq FlaggedPost
                     , _userPrefGroupChannelPrefs :: HashMap ChannelId Bool
                     , _userPrefDirectChannelPrefs :: HashMap UserId Bool
+                    , _userPrefFavoriteChannelPrefs :: HashMap ChannelId Bool
                     , _userPrefTeammateNameDisplayMode :: Maybe TeammateNameDisplayMode
                     , _userPrefTeamOrder :: Maybe [TeamId]
                     }
@@ -736,6 +737,9 @@ dmChannelShowPreference ps uId = HM.lookup uId (_userPrefDirectChannelPrefs ps)
 groupChannelShowPreference :: UserPreferences -> ChannelId -> Maybe Bool
 groupChannelShowPreference ps cId = HM.lookup cId (_userPrefGroupChannelPrefs ps)
 
+favoriteChannelShowPreference :: UserPreferences -> ChannelId -> Maybe Bool
+favoriteChannelShowPreference ps cId = HM.lookup cId (_userPrefFavoriteChannelPrefs ps)
+
 -- * Internal Names and References
 
 -- | This 'Name' type is the type used in 'brick' to identify various
@@ -870,6 +874,7 @@ defaultUserPreferences =
                     , _userPrefFlaggedPostList   = mempty
                     , _userPrefGroupChannelPrefs = mempty
                     , _userPrefDirectChannelPrefs = mempty
+                    , _userPrefFavoriteChannelPrefs = mempty
                     , _userPrefTeammateNameDisplayMode = Nothing
                     , _userPrefTeamOrder = Nothing
                     }
@@ -894,6 +899,13 @@ setUserPreferences = flip (F.foldr go)
                     (groupChannelId gp)
                     (groupChannelShow gp)
                     (_userPrefGroupChannelPrefs u)
+                }
+            | Just fp <- preferenceToFavoriteChannelPreference p =
+              u { _userPrefFavoriteChannelPrefs =
+                  HM.insert
+                    (favoriteChannelId fp)
+                    (favoriteChannelShow fp)
+                    (_userPrefFavoriteChannelPrefs u)
                 }
             | Just tIds <- preferenceToTeamOrder p =
               u { _userPrefTeamOrder = Just tIds
