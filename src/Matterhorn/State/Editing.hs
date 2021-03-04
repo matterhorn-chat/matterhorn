@@ -234,11 +234,14 @@ handleInputSubmission tId cId content = do
           mode <- use (csTeam(tId).tsEditState.cedEditMode)
           sendMessage cId mode content $ F.toList attachments
 
+          -- Empty the attachment list only if a mesage is actually sent, since
+          -- it's possible to /attach a file before actually sending the
+          -- message
+          resetAttachmentList
+
     -- Reset the autocomplete UI
     resetAutocomplete
 
-    -- Empty the attachment list
-    resetAttachmentList
 
     -- Reset the edit mode *after* handling the input so that the input
     -- handler can tell whether we're editing, replying, etc.
