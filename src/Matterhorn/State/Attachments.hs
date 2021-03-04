@@ -16,12 +16,12 @@ import           Brick ( vScrollToBeginning, viewportScroll )
 import qualified Brick.Widgets.List as L
 import qualified Brick.Widgets.FileBrowser as FB
 import qualified Control.Exception as E
-import qualified Control.Monad.State as St
 import           Data.Bool ( bool )
 import qualified Data.ByteString as BS
 import           Data.Either ( isRight )
 import           Data.Text ( pack, unpack )
 import qualified Data.Vector as Vector
+import           GHC.Exception.Type ( toException )
 import           Lens.Micro.Platform ( (.=), (%=) )
 import           System.Directory ( doesDirectoryExist, getDirectoryContents )
 
@@ -68,9 +68,8 @@ attachFileByPath txtPath = do
     let strPath = unpack txtPath
     fileInfo <- liftIO $ FB.getFileInfo strPath strPath
     case FB.fileInfoFileStatus fileInfo of
-        Left _ -> do
-            mhLog LogError $ "Failed to obtain FileInfo for file: " <> txtPath
-            mhError $ BadFile txtPath
+        Left e -> do
+            mhError $ BadAttachmentPath (toException e) "Unable to stat the requested file.  Check that it exists and has proper permissions"
         Right _ -> tryAddAttachment [fileInfo]
 
 tryAddAttachment :: [FB.FileInfo] -> MH ()
@@ -91,9 +90,8 @@ tryAddAttachment entries = do
                                      then Just 0
                                      else oldIdx
                         csCurrentTeam.tsEditState.cedAttachmentList %= L.listReplace (Vector.snoc es a) newIdx
-                    Left (_::E.SomeException) -> do
-                        mhLog LogError $ pack $ "Failed reading file: " <> FB.fileInfoFilePath entry
-                        mhError $ BadFile $ pack $ FB.fileInfoFilePath entry
+                    Left e -> do
+                        mhError $ BadAttachmentPath e "Unable to read from the specified file."
 
     when (not $ null entries) $ setMode Main
 
