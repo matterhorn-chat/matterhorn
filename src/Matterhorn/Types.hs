@@ -1917,7 +1917,7 @@ data MHError =
     -- ^ The specified script was not found
     | NoSuchHelpTopic T.Text
     -- ^ The specified help topic was not found
-    | BadAttachmentPath SomeException T.Text
+    | BadAttachmentPath SomeException 
     -- ^ The specified file couldn't be attached.  It either doesn't exist or
     -- couldn't be read
     | AsyncErrEvent SomeException

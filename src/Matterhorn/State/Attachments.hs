@@ -19,7 +19,7 @@ import qualified Control.Exception as E
 import           Data.Bool ( bool )
 import qualified Data.ByteString as BS
 import           Data.Either ( isRight )
-import           Data.Text ( pack, unpack )
+import           Data.Text ( unpack )
 import qualified Data.Vector as Vector
 import           GHC.Exception.Type ( toException )
 import           Lens.Micro.Platform ( (.=), (%=) )
@@ -69,7 +69,7 @@ attachFileByPath txtPath = do
     fileInfo <- liftIO $ FB.getFileInfo strPath strPath
     case FB.fileInfoFileStatus fileInfo of
         Left e -> do
-            mhError $ BadAttachmentPath (toException e) "Unable to stat the requested file.  Check that it exists and has proper permissions"
+            mhError $ BadAttachmentPath (toException e)
         Right _ -> tryAddAttachment [fileInfo]
 
 tryAddAttachment :: [FB.FileInfo] -> MH ()
@@ -90,15 +90,13 @@ tryAddAttachment entries = do
                                      then Just 0
                                      else oldIdx
                         csCurrentTeam.tsEditState.cedAttachmentList %= L.listReplace (Vector.snoc es a) newIdx
-                    Left e -> do
-                        mhError $ BadAttachmentPath e "Unable to read from the specified file."
+                    Left e -> mhError $ BadAttachmentPath e
 
     when (not $ null entries) $ setMode Main
 
 tryReadAttachment :: FB.FileInfo -> MH (Either E.SomeException AttachmentData)
 tryReadAttachment fi = do
     let path = FB.fileInfoFilePath fi
-    mhLog LogError "Reading the bytes"
     readResult <- liftIO $ E.try $ BS.readFile path
     case readResult of
         Right bytes -> do

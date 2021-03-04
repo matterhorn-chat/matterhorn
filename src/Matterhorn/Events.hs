@@ -10,9 +10,10 @@ import           Matterhorn.Prelude
 
 import           Brick
 import qualified Data.Text as T
-import           GHC.Exception.Type ( displayException )
+import           GHC.Exception.Type ( fromException )
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( (.=), _2, singular, _Just )
+import qualified System.IO.Error as IO
 
 import qualified Network.Mattermost.Endpoints as MM
 import           Network.Mattermost.Exceptions ( mattermostErrorMessage )
@@ -156,8 +157,17 @@ formatError (NoSuchHelpTopic topic) =
     let knownTopics = ("  - " <>) <$> helpTopicName <$> helpTopics
     in "Unknown help topic: `" <> topic <> "`. " <>
        (T.unlines $ "Available topics are:" : knownTopics)
-formatError (BadAttachmentPath e msg) =
-    msg <> " The exception encountered was:\n " <> T.pack (displayException e)
+formatError (BadAttachmentPath e) =
+    case fromException e of
+      Just (ioe :: IO.IOError) -> 
+          if IO.isDoesNotExistError ioe
+          then "Error attaching, file does not exist!"
+          else if IO.isPermissionError ioe
+               then "Error attaching, lacking permissions to read file!"
+               else "Unable to attach the requested file.  Check that it exists and has proper permissions."
+      Nothing -> "Unknown error attaching file!\n" <>
+          "Please report this error at https://github.com/matterhorn-chat/matterhorn/issues"
+          -- this case shouldn't be reached
 formatError (AsyncErrEvent e) =
     "An unexpected error has occurred! The exception encountered was:\n  " <>
     T.pack (show e) <>
