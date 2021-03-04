@@ -1917,9 +1917,10 @@ data MHError =
     -- ^ The specified script was not found
     | NoSuchHelpTopic T.Text
     -- ^ The specified help topic was not found
-    | BadAttachmentPath SomeException 
-    -- ^ The specified file couldn't be attached.  It either doesn't exist or
-    -- couldn't be read
+    | AttachmentException SomeException
+    -- ^ IO operations for attaching a file threw an exception
+    | BadAttachmentPath T.Text
+    -- ^ The specified file is either a directory or doesn't exist
     | AsyncErrEvent SomeException
     -- ^ For errors that arise in the course of async IO operations
     deriving (Show)

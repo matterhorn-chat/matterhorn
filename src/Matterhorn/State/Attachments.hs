@@ -23,7 +23,7 @@ import           Data.Text ( unpack )
 import qualified Data.Vector as Vector
 import           GHC.Exception.Type ( toException )
 import           Lens.Micro.Platform ( (.=), (%=) )
-import           System.Directory ( doesDirectoryExist, getDirectoryContents )
+import           System.Directory ( doesDirectoryExist, doesFileExist, getDirectoryContents )
 
 import           Matterhorn.Types
 
@@ -69,28 +69,36 @@ attachFileByPath txtPath = do
     fileInfo <- liftIO $ FB.getFileInfo strPath strPath
     case FB.fileInfoFileStatus fileInfo of
         Left e -> do
-            mhError $ BadAttachmentPath (toException e)
+            mhError $ AttachmentException (toException e)
         Right _ -> tryAddAttachment [fileInfo]
+
+checkPathIsFile :: FB.FileInfo -> MH Bool
+checkPathIsFile = liftIO . doesFileExist . FB.fileInfoFilePath
 
 tryAddAttachment :: [FB.FileInfo] -> MH ()
 tryAddAttachment entries = do
     forM_ entries $ \entry -> do
-        -- Is the entry already present? If so, ignore the selection.
-        es <- use (csCurrentTeam.tsEditState.cedAttachmentList.L.listElementsL)
-        let matches = (== FB.fileInfoFilePath entry) .
-                          FB.fileInfoFilePath .
-                          attachmentDataFileInfo
-        case Vector.find matches es of
-            Just _ -> return ()
-            Nothing -> do
-                tryReadAttachment entry >>= \case
-                    Right a -> do
-                        oldIdx <- use (csCurrentTeam.tsEditState.cedAttachmentList.L.listSelectedL)
-                        let newIdx = if Vector.null es
-                                     then Just 0
-                                     else oldIdx
-                        csCurrentTeam.tsEditState.cedAttachmentList %= L.listReplace (Vector.snoc es a) newIdx
-                    Left e -> mhError $ BadAttachmentPath e
+        isFile <- checkPathIsFile entry
+        if not isFile
+        then mhError (BadAttachmentPath
+            "Error attaching file. It either doesn't exist or is a directory, which is not supported.")
+        else do
+            -- Is the entry already present? If so, ignore the selection.
+            es <- use (csCurrentTeam.tsEditState.cedAttachmentList.L.listElementsL)
+            let matches = (== FB.fileInfoFilePath entry) .
+                              FB.fileInfoFilePath .
+                              attachmentDataFileInfo
+            case Vector.find matches es of
+                Just _ -> return ()
+                Nothing -> do
+                    tryReadAttachment entry >>= \case
+                        Right a -> do
+                            oldIdx <- use (csCurrentTeam.tsEditState.cedAttachmentList.L.listSelectedL)
+                            let newIdx = if Vector.null es
+                                         then Just 0
+                                         else oldIdx
+                            csCurrentTeam.tsEditState.cedAttachmentList %= L.listReplace (Vector.snoc es a) newIdx
+                        Left e -> mhError $ AttachmentException e
 
     when (not $ null entries) $ setMode Main
 

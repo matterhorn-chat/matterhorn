@@ -157,9 +157,9 @@ formatError (NoSuchHelpTopic topic) =
     let knownTopics = ("  - " <>) <$> helpTopicName <$> helpTopics
     in "Unknown help topic: `" <> topic <> "`. " <>
        (T.unlines $ "Available topics are:" : knownTopics)
-formatError (BadAttachmentPath e) =
+formatError (AttachmentException e) =
     case fromException e of
-      Just (ioe :: IO.IOError) -> 
+      Just (ioe :: IO.IOError) ->
           if IO.isDoesNotExistError ioe
           then "Error attaching, file does not exist!"
           else if IO.isPermissionError ioe
@@ -168,6 +168,8 @@ formatError (BadAttachmentPath e) =
       Nothing -> "Unknown error attaching file!\n" <>
           "Please report this error at https://github.com/matterhorn-chat/matterhorn/issues"
           -- this case shouldn't be reached
+formatError (BadAttachmentPath msg) = 
+    msg
 formatError (AsyncErrEvent e) =
     "An unexpected error has occurred! The exception encountered was:\n  " <>
     T.pack (show e) <>
