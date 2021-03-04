@@ -155,6 +155,8 @@ formatError (NoSuchHelpTopic topic) =
     let knownTopics = ("  - " <>) <$> helpTopicName <$> helpTopics
     in "Unknown help topic: `" <> topic <> "`. " <>
        (T.unlines $ "Available topics are:" : knownTopics)
+formatError (BadFile file) =
+    "Specified file " <> file <> " either doesn't exist or couldn't be read"
 formatError (AsyncErrEvent e) =
     "An unexpected error has occurred! The exception encountered was:\n  " <>
     T.pack (show e) <>

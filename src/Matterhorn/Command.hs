@@ -21,6 +21,7 @@ import qualified Network.Mattermost.Endpoints as MM
 import qualified Network.Mattermost.Exceptions as MM
 import qualified Network.Mattermost.Types as MM
 
+import           Matterhorn.State.Attachments
 import           Matterhorn.Connection ( connectWebsockets )
 import           Matterhorn.Constants ( userSigil, normalChannelSigil )
 import           Matterhorn.HelpTopics
@@ -276,6 +277,9 @@ commandList =
 
   , Cmd "move-team-right" "Move the currently-selected team to the right in the team list" NoArg $ \_ ->
         moveCurrentTeamRight
+
+  , Cmd "attach" "Attach a given file without browsing" (LineArg "path") $
+        attachFileByPath
   ]
 
 displayUsernameAttribute :: Text -> MH ()
