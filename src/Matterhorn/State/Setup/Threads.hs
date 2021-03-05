@@ -139,14 +139,23 @@ startTimezoneMonitorThread tz requestChan = do
       timezoneMonitor prevTz = do
         threadDelay timezoneMonitorSleepInterval
 
-        newTz <- lookupLocalTimeZone
-        when (newTz /= prevTz) $
-            STM.atomically $ STM.writeTChan requestChan $ do
-                return $ Just $ do
-                    timeZone .= newTz
-                    mh invalidateCache
+        newTzResult <- lookupLocalTimeZone
+        nextTz <- case newTzResult of
+            Left e -> do
+                STM.atomically $ STM.writeTChan requestChan $ do
+                    return $ Just $ do
+                        mhLog LogGeneral $ T.pack $ "Could not load time zone information: " <> show e
+                return prevTz
+            Right newTz -> do
+                when (newTz /= prevTz) $
+                    STM.atomically $ STM.writeTChan requestChan $ do
+                        return $ Just $ do
+                            timeZone .= newTz
+                            mh invalidateCache
 
-        timezoneMonitor newTz
+                return newTz
+
+        timezoneMonitor nextTz
 
   void $ forkIO (timezoneMonitor tz)
 
