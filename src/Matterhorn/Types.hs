@@ -174,6 +174,7 @@ module Matterhorn.Types
   , emptyEditState
   , cedAttachmentList
   , cedFileBrowser
+  , unsafeCedFileBrowser
   , cedYankBuffer
   , cedSpellChecker
   , cedMisspellings
@@ -1991,6 +1992,11 @@ serverBaseUrl st tId =
     let baseUrl = connectionDataURL $ _crConn $ _csResources st
         tName = teamName $ st^.csTeam(tId).tsTeam
     in TeamBaseURL (TeamURLName $ sanitizeUserText tName) baseUrl
+
+unsafeCedFileBrowser :: Lens' ChatEditState (FB.FileBrowser Name)
+unsafeCedFileBrowser =
+     lens (\st   -> st^.cedFileBrowser ^?! _Just)
+          (\st t -> st & cedFileBrowser .~ Just t)
 
 getSession :: MH Session
 getSession = use (csResources.crSession)
