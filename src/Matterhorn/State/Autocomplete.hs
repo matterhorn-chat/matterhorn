@@ -149,6 +149,9 @@ hiddenServerCommands =
     -- We provide our own join UI.
     , "join"
 
+    -- We provide our own search UI.
+    , "search"
+
     -- We provide our own version of this command that opens our own
     -- help UI.
     , "shortcuts"
