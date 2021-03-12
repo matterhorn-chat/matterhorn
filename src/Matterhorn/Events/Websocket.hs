@@ -11,7 +11,7 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
 import qualified Data.Text as T
-import           Lens.Micro.Platform ( preuse )
+import           Lens.Micro.Platform ( (%=), preuse )
 
 import           Network.Mattermost.Lenses
 import           Network.Mattermost.Types
@@ -214,7 +214,13 @@ handleWebsocketEvent we = do
             mhLog LogGeneral $ T.pack $
                 "WMTeamDeleted event: " <> show we
 
-        WMUserUpdated -> return ()
+        WMUserUpdated
+            | Just user <- wepUser (weData we) -> do
+                csUsers %= modifyUserById (userId user)
+                    (\ui -> userInfoFromUser user (ui ^. uiInTeam))
+                cid <- use $ csCurrentChannel . ccInfo . cdChannelId
+                refreshChannelById cid
+            | otherwise -> return ()
 
         -- We deliberately ignore these events:
         WMChannelCreated -> return ()
