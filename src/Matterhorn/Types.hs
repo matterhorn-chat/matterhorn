@@ -601,20 +601,32 @@ mkChannelZipperList :: UTCTime
                     -> Users
                     -> [(ChannelListGroup, [ChannelListEntry])]
 mkChannelZipperList now config tId cconfig prefs cs us =
-    [ let (unread, entries) = getChannelEntriesInOrder tId cs Ordinary
+    [ let (unread, entries) = getChannelEntriesInOrder tId prefs cs Ordinary
       in (ChannelGroupPublicChannels unread, entries)
-    , let (unread, entries) = getChannelEntriesInOrder tId cs Private
+    , let (unread, entries) = getChannelEntriesInOrder tId prefs cs Private
       in (ChannelGroupPrivateChannels unread, entries)
-    , let (unread, entries) = getChannelEntriesInOrder tId cs Private
+    , let (unread, entries) = getFavoriteChannelEntriesInOrder tId prefs cs
       in (ChannelGroupFavoriteChannels unread, entries)
     , let (unread, entries) = getDMChannelEntriesInOrder now config cconfig prefs us cs
       in (ChannelGroupDirectMessages unread, entries)
     ]
 
-getChannelEntriesInOrder :: TeamId -> ClientChannels -> Type -> (Int, [ChannelListEntry])
-getChannelEntriesInOrder tId cs ty =
+getFavoriteChannelEntriesInOrder :: TeamId -> UserPreferences -> ClientChannels -> (Int, [ChannelListEntry])
+getFavoriteChannelEntriesInOrder tId prefs cs = 
+    let matches (_, info) = info^.ccInfo.cdTeamId == Just tId &&  
+                            favoriteChannelShowPreference prefs (info^.ccInfo.cdChannelId) == Just True
+        pairs = filteredChannels matches cs
+        unread = length $ filter (== True) $ (hasUnread' . snd) <$> pairs
+        entries = fmap (CLChannel . fst) $
+                  sortBy (comparing ((^.ccInfo.cdDisplayName.to T.toLower) . snd)) pairs
+    in (unread, entries)
+
+getChannelEntriesInOrder :: TeamId -> UserPreferences -> ClientChannels -> Type -> (Int, [ChannelListEntry])
+getChannelEntriesInOrder tId prefs cs ty =
     let matches (_, info) = info^.ccInfo.cdType == ty &&
-                            info^.ccInfo.cdTeamId == Just tId
+                            info^.ccInfo.cdTeamId == Just tId && 
+                            -- make sure the channel is not favorite
+                            not (favoriteChannelShowPreference prefs (info^.ccInfo.cdChannelId) == Just True)
         pairs = filteredChannels matches cs
         unread = length $ filter (== True) $ (hasUnread' . snd) <$> pairs
         entries = fmap (CLChannel . fst) $
@@ -707,14 +719,17 @@ dmChannelShouldAppear now config prefs c =
         cutoff = ServerTime localCutoff
         updated = c^.ccInfo.cdUpdated
         Just uId = c^.ccInfo.cdDMUserId
-    in if hasUnread' c || maybe False (>= localCutoff) (c^.ccInfo.cdSidebarShowOverride)
-       then True
-       else case dmChannelShowPreference prefs uId of
-           Just False -> False
-           _ -> or [
-                   -- The channel was updated recently enough
-                     updated >= cutoff
-                   ]
+        cId = c^.ccInfo.cdChannelId
+    in if favoriteChannelShowPreference prefs cId == Just True
+       then False
+       else (if hasUnread' c || maybe False (>= localCutoff) (c^.ccInfo.cdSidebarShowOverride)
+             then True
+             else case dmChannelShowPreference prefs uId of
+                    Just False -> False
+                    _ -> or [
+                                -- The channel was updated recently enough
+                                updated >= cutoff
+                            ])
 
 groupChannelShouldAppear :: UTCTime -> Config -> UserPreferences -> ClientChannel -> Bool
 groupChannelShouldAppear now config prefs c =
@@ -722,14 +737,17 @@ groupChannelShouldAppear now config prefs c =
         localCutoff = addUTCTime (nominalDay * (-(fromIntegral ndays))) now
         cutoff = ServerTime localCutoff
         updated = c^.ccInfo.cdUpdated
-    in if hasUnread' c || maybe False (>= localCutoff) (c^.ccInfo.cdSidebarShowOverride)
-       then True
-       else case groupChannelShowPreference prefs (c^.ccInfo.cdChannelId) of
-           Just False -> False
-           _ -> or [
-                   -- The channel was updated recently enough
-                     updated >= cutoff
-                   ]
+        cId = c^.ccInfo.cdChannelId
+    in if favoriteChannelShowPreference prefs cId == Just True
+       then False
+       else (if hasUnread' c || maybe False (>= localCutoff) (c^.ccInfo.cdSidebarShowOverride)
+             then True
+             else case groupChannelShowPreference prefs cId of
+                    Just False -> False
+                    _ -> or [
+                                -- The channel was updated recently enough
+                                updated >= cutoff
+                            ])
 
 dmChannelShowPreference :: UserPreferences -> UserId -> Maybe Bool
 dmChannelShowPreference ps uId = HM.lookup uId (_userPrefDirectChannelPrefs ps)

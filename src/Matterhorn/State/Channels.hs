@@ -607,7 +607,6 @@ applyPreferenceChange pref = do
                       Nothing -> return ()
               False -> do
                   csChannel(cId).ccInfo.cdSidebarShowOverride .= Nothing
-
       | otherwise -> return ()
 
 refreshChannelById :: ChannelId -> MH ()
