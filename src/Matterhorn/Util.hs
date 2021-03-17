@@ -1,6 +1,5 @@
 module Matterhorn.Util
   ( nubOn
-  , trimToOneLine
   )
 where
 
@@ -8,7 +7,6 @@ import           Prelude ()
 import           Matterhorn.Prelude
 
 import qualified Data.Set as Set
-import qualified Data.Text as Text
 
 -- | The 'nubOn' function removes duplicate elements from a list. In
 -- particular, it keeps only the /last/ occurrence of each
@@ -24,10 +22,3 @@ nubOn f = snd . go Set.empty
           if key `Set.member` before'
             then (before', xs')
             else (Set.insert key before', x : xs')
-
-
--- | In some instances, such as when rendering the channel topics in the
--- autocomplete window, we just want to show the first line as a preview.
-trimToOneLine :: Text -> Text
-trimToOneLine = Text.takeWhile (/= '\n')
-
