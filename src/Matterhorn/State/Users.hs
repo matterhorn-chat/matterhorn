@@ -2,6 +2,7 @@
 module Matterhorn.State.Users
   ( handleNewUsers
   , handleTypingUser
+  , handleUserUpdated
   , withFetchedUser
   , withFetchedUserMaybe
   )
@@ -45,6 +46,14 @@ handleTypingUser uId cId = do
         withFetchedUser (UserFetchById uId) $ const $ do
             ts <- liftIO getCurrentTime
             csChannels %= modifyChannelById cId (addChannelTypingUser uId ts)
+
+-- | Handle the websocket event for when a user is updated, e.g. has changed
+-- their nickname
+handleUserUpdated :: User -> MH ()
+handleUserUpdated user = do
+    csUsers %= modifyUserById (userId user)
+        (\ui -> userInfoFromUser user (ui ^. uiInTeam))
+
 
 -- | Given a user fetching strategy, locate the user in the state or
 -- fetch it from the server, and pass the result to the specified
