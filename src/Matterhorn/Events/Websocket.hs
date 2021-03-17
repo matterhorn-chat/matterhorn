@@ -214,7 +214,12 @@ handleWebsocketEvent we = do
             mhLog LogGeneral $ T.pack $
                 "WMTeamDeleted event: " <> show we
 
-        WMUserUpdated -> return ()
+        WMUserUpdated
+            | Just user <- wepUser (weData we) -> do
+                handleUserUpdated user
+                cid <- use $ csCurrentChannel . ccInfo . cdChannelId
+                refreshChannelById cid
+            | otherwise -> return ()
 
         -- We deliberately ignore these events:
         WMChannelCreated -> return ()

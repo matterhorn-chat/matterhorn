@@ -158,6 +158,7 @@ module Matterhorn.Types
   , csCurrentChannelId
   , csCurrentTeamId
   , csPostMap
+  , csUsers
   , csConnectionStatus
   , csWorkerIsBusy
   , csChannel
