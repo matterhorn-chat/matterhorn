@@ -20,6 +20,7 @@ import           Matterhorn.Draw.Util
 import           Matterhorn.Themes
 import           Matterhorn.Types
 import           Matterhorn.Types.Common ( sanitizeUserText )
+import           Matterhorn.Util ( trimToOneLine )
 
 
 autocompleteLayer :: ChatState -> Widget Name
@@ -190,7 +191,7 @@ renderChannelCompletion c inChan selected =
             , padTo displayNameWidth $
               withDefAttr channelNameAttr $
               txt $ sanitizeUserText $ channelDisplayName c
-            , txt $ sanitizeUserText $ channelPurpose c
+            , txt $ trimToOneLine $ sanitizeUserText $ channelPurpose c
             ]
 
 renderCommandCompletion :: CompletionSource -> Text -> Text -> Text -> Widget Name
