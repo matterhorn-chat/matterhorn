@@ -70,9 +70,10 @@ attachmentBrowseKeyHandlers =
     , mkKb FileBrowserBeginSearchEvent "Begin search for name in list" $
       mhHandleEventLensed' (csCurrentTeam.tsEditState.unsafeCedFileBrowser)
         FB.actionFileBrowserBeginSearch
-    , mkKb FileBrowserSelectEnterEvent "Select file or enter directory" $
+    , mkKb FileBrowserSelectEnterEvent "Select file or enter directory" $ do
       mhHandleEventLensed' (csCurrentTeam.tsEditState.unsafeCedFileBrowser)
         FB.actionFileBrowserSelectEnter
+      withFileBrowser (tryAddAttachment . FB.fileBrowserSelection)
     , mkKb FileBrowserSelectCurrentEvent "Select file" $
       mhHandleEventLensed' (csCurrentTeam.tsEditState.unsafeCedFileBrowser)
         FB.actionFileBrowserSelectCurrent
