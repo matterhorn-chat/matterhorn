@@ -52,6 +52,10 @@ module Matterhorn.Types
   , channelTopicDialogEditor
   , channelTopicDialogFocus
 
+  , SaveAttachmentDialogState(..)
+  , attachmentPathEditor
+  , attachmentPathDialogFocus
+
   , Config(..)
   , configUserL
   , configHostL
@@ -143,6 +147,7 @@ module Matterhorn.Types
   , tsChannelTopicDialog
   , tsReactionEmojiListOverlay
   , tsThemeListOverlay
+  , tsSaveAttachmentDialog
 
   , ChatState
   , newState
@@ -776,6 +781,9 @@ data Name =
     | ChannelTopicCancelButton TeamId
     | ChannelTopicEditorPreview TeamId
     | TeamList
+    | AttachmentPathEditor TeamId
+    | AttachmentPathSaveButton TeamId
+    | AttachmentPathCancelButton TeamId
     deriving (Eq, Show, Ord)
 
 -- | The sum type of exceptions we expect to encounter on authentication
@@ -1479,6 +1487,9 @@ data TeamState =
               -- ^ The state of the reaction emoji list overlay.
               , _tsThemeListOverlay :: ListOverlayState InternalTheme ()
               -- ^ The state of the theme list overlay.
+              , _tsSaveAttachmentDialog :: SaveAttachmentDialogState
+              -- ^ The state for the interactive attachment-saving
+              -- editor window.
               }
 
 -- | Handles for the View Message window's tabs.
@@ -1511,6 +1522,14 @@ data ChannelTopicDialogState =
                             , _channelTopicDialogFocus :: FocusRing Name
                             -- ^ The window focus state (editor/buttons)
                             }
+
+-- | The state of the attachment path window.
+data SaveAttachmentDialogState =
+    SaveAttachmentDialogState { _attachmentPathEditor :: Editor T.Text Name
+                              -- ^ The attachment path editor state.
+                              , _attachmentPathDialogFocus :: FocusRing Name
+                              -- ^ The window focus state (editor/buttons)
+                              }
 
 sortTeams :: [Team] -> [Team]
 sortTeams = sortBy (compare `on` (T.strip . sanitizeUserText . teamName))
@@ -1550,6 +1569,7 @@ newTeamState team chanList spellChecker =
                  , _tsViewedMessage            = Nothing
                  , _tsThemeListOverlay         = nullThemeListOverlayState tId
                  , _tsReactionEmojiListOverlay = nullEmojiListOverlayState tId
+                 , _tsSaveAttachmentDialog     = newSaveAttachmentDialog tId ""
                  }
 
 -- | Make a new channel topic editor window state.
@@ -1561,6 +1581,16 @@ newChannelTopicDialog tId t =
                                                                    , ChannelTopicCancelButton tId
                                                                    ]
                             }
+
+-- | Make a new attachment-saving editor window state.
+newSaveAttachmentDialog :: TeamId -> T.Text -> SaveAttachmentDialogState
+newSaveAttachmentDialog tId t =
+    SaveAttachmentDialogState { _attachmentPathEditor = editor (AttachmentPathEditor tId) Nothing t
+                              , _attachmentPathDialogFocus = focusRing [ AttachmentPathEditor tId
+                                                                       , AttachmentPathSaveButton tId
+                                                                       , AttachmentPathCancelButton tId
+                                                                       ]
+                              }
 
 nullChannelListOverlayState :: TeamId -> ListOverlayState Channel ChannelSearchScope
 nullChannelListOverlayState tId =
@@ -1940,6 +1970,7 @@ makeLenses ''ChannelSelectState
 makeLenses ''UserPreferences
 makeLenses ''ConnectionInfo
 makeLenses ''ChannelTopicDialogState
+makeLenses ''SaveAttachmentDialogState
 Brick.suffixLenses ''Config
 
 applyTeamOrderPref :: Maybe [TeamId] -> ChatState -> ChatState
