@@ -178,6 +178,7 @@ defaultBindings ev =
         ToggleExpandedChannelTopicsEvent -> [ fn 3 ]
         SelectNextTabEvent            -> [ key '\t' ]
         SelectPreviousTabEvent        -> [ kb Vty.KBackTab ]
+        SaveAttachmentEvent           -> [ key 's' ]
         LoadMoreEvent                 -> [ ctrl (key 'b') ]
         ScrollUpEvent                 -> [ kb Vty.KUp ]
         ScrollDownEvent               -> [ kb Vty.KDown ]

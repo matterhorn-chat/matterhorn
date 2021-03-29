@@ -115,6 +115,7 @@
 | Keybinding | Event Name | Description |
 | ---------- | ---------- | ----------- |
 | `Enter` | (non-customizable key) | Open the selected URL, if any |
+| `s` | `save-attachment` | Save the selected attachment |
 | `Esc`, `C-c` | `cancel` | Cancel URL selection |
 | `k`, `Up` | `select-up` | Move cursor up |
 | `j`, `Down` | `select-down` | Move cursor down |

@@ -75,6 +75,8 @@ data KeyEvent
   | SelectNextTabEvent
   | SelectPreviousTabEvent
 
+  | SaveAttachmentEvent
+
   -- generic cancel
   | CancelEvent
 
@@ -160,6 +162,8 @@ allEvents =
   , ReplyRecentEvent
   , SelectNextTabEvent
   , SelectPreviousTabEvent
+
+  , SaveAttachmentEvent
 
   , EnterFastSelectModeEvent
   , NextChannelEvent
@@ -408,6 +412,8 @@ keyEventName ev = case ev of
 
   SelectNextTabEvent        -> "select-next-tab"
   SelectPreviousTabEvent    -> "select-previous-tab"
+
+  SaveAttachmentEvent       -> "save-attachment"
 
   ShowAttachmentListEvent   -> "show-attachment-list"
 

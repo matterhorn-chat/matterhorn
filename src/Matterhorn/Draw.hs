@@ -10,6 +10,7 @@ import Brick
 import Lens.Micro.Platform ( _2, singular, _Just )
 
 import Matterhorn.Draw.ChannelTopicWindow
+import Matterhorn.Draw.SaveAttachmentWindow
 import Matterhorn.Draw.DeleteChannelConfirm
 import Matterhorn.Draw.LeaveChannelConfirm
 import Matterhorn.Draw.Main
@@ -46,6 +47,7 @@ draw st =
         ManageAttachmentsBrowseFiles -> drawManageAttachments st : mainLayersMonochrome
         EditNotifyPrefs              -> drawNotifyPrefs st : mainLayersMonochrome
         ChannelTopicWindow           -> drawChannelTopicWindow st : mainLayersMonochrome
+        SaveAttachmentWindow _       -> drawSaveAttachmentWindow st : mainLayersMonochrome
     where
         mainLayers = drawMain True st
         mainLayersMonochrome = drawMain False st

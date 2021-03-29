@@ -5,6 +5,7 @@ module Matterhorn.State.Common
   , openWithOpener
   , runLoggedCommand
   , prepareAttachment
+  , prepareAttachmentAtPath
 
   -- * Posts
   , installMessagesFromPosts
@@ -30,7 +31,6 @@ import           Matterhorn.Prelude
 
 import           Brick.Main ( invalidateCacheEntry )
 import           Control.Concurrent ( MVar, putMVar, forkIO )
-import           Control.Concurrent.Async ( concurrently )
 import qualified Control.Concurrent.STM as STM
 import           Control.Exception ( SomeException, try )
 import qualified Data.ByteString as BS
@@ -292,16 +292,20 @@ prepareAttachment :: FileId -> Session -> IO String
 prepareAttachment fId sess = do
     -- The link is for an attachment, so fetch it and then
     -- open the local copy.
-
-    (info, contents) <- concurrently (mmGetMetadataForFile fId sess) (mmGetFile fId sess)
+    info <- mmGetMetadataForFile fId sess
     cacheDir <- getUserCacheDir xdgName
+    let dir = cacheDir </> "files" </> T.unpack (idString fId)
+        filename = T.unpack (fileInfoName info)
 
-    let dir   = cacheDir </> "files" </> T.unpack (idString fId)
-        fname = dir </> T.unpack (fileInfoName info)
+    prepareAttachmentAtPath fId sess (dir </> filename)
 
-    createDirectoryIfMissing True dir
-    BS.writeFile fname contents
-    return fname
+prepareAttachmentAtPath :: FileId -> Session -> FilePath -> IO String
+prepareAttachmentAtPath fId sess fullPath = do
+    contents <- mmGetFile fId sess
+    let dir = takeDirectory fullPath
+    createDirectoryIfMissing False dir
+    BS.writeFile fullPath contents
+    return fullPath
 
 removeEmoteFormatting :: T.Text -> T.Text
 removeEmoteFormatting t

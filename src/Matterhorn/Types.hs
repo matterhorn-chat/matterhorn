@@ -52,6 +52,7 @@ module Matterhorn.Types
   , channelTopicDialogEditor
   , channelTopicDialogFocus
 
+  , newSaveAttachmentDialog
   , SaveAttachmentDialogState(..)
   , attachmentPathEditor
   , attachmentPathDialogFocus
@@ -361,7 +362,7 @@ import           Brick.Main ( invalidateCache, invalidateCacheEntry )
 import           Brick.AttrMap ( AttrMap )
 import qualified Brick.BChan as BCH
 import           Brick.Forms (Form)
-import           Brick.Widgets.Edit ( Editor, editor )
+import           Brick.Widgets.Edit ( Editor, editor, applyEdit )
 import           Brick.Widgets.List ( List, list )
 import qualified Brick.Widgets.FileBrowser as FB
 import           Control.Concurrent ( ThreadId )
@@ -381,6 +382,7 @@ import qualified Data.HashMap.Strict as HM
 import           Data.List ( sortBy, nub, elemIndex )
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
+import qualified Data.Text.Zipper as Z2
 import           Data.Time.Clock ( getCurrentTime, addUTCTime )
 import           Data.UUID ( UUID )
 import qualified Data.Vector as Vec
@@ -1196,6 +1198,7 @@ data Mode =
     | ManageAttachmentsBrowseFiles
     | EditNotifyPrefs
     | ChannelTopicWindow
+    | SaveAttachmentWindow LinkChoice
     deriving (Eq)
 
 -- | We're either connected or we're not.
@@ -1585,7 +1588,8 @@ newChannelTopicDialog tId t =
 -- | Make a new attachment-saving editor window state.
 newSaveAttachmentDialog :: TeamId -> T.Text -> SaveAttachmentDialogState
 newSaveAttachmentDialog tId t =
-    SaveAttachmentDialogState { _attachmentPathEditor = editor (AttachmentPathEditor tId) Nothing t
+    SaveAttachmentDialogState { _attachmentPathEditor = applyEdit Z2.gotoEOL $
+                                                        editor (AttachmentPathEditor tId) (Just 1) t
                               , _attachmentPathDialogFocus = focusRing [ AttachmentPathEditor tId
                                                                        , AttachmentPathSaveButton tId
                                                                        , AttachmentPathCancelButton tId
