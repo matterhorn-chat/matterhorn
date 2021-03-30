@@ -5,7 +5,7 @@ module Matterhorn.State.Common
   , openWithOpener
   , runLoggedCommand
   , prepareAttachment
-  , prepareAttachmentAtPath
+  , fetchFileAtPath
 
   -- * Posts
   , installMessagesFromPosts
@@ -296,16 +296,17 @@ prepareAttachment fId sess = do
     cacheDir <- getUserCacheDir xdgName
     let dir = cacheDir </> "files" </> T.unpack (idString fId)
         filename = T.unpack (fileInfoName info)
+        fullPath = dir </> filename
 
-    prepareAttachmentAtPath fId sess (dir </> filename)
+    fetchFileAtPath fId sess fullPath
+    return fullPath
 
-prepareAttachmentAtPath :: FileId -> Session -> FilePath -> IO String
-prepareAttachmentAtPath fId sess fullPath = do
+fetchFileAtPath :: FileId -> Session -> FilePath -> IO ()
+fetchFileAtPath fId sess fullPath = do
     contents <- mmGetFile fId sess
     let dir = takeDirectory fullPath
     createDirectoryIfMissing False dir
     BS.writeFile fullPath contents
-    return fullPath
 
 removeEmoteFormatting :: T.Text -> T.Text
 removeEmoteFormatting t

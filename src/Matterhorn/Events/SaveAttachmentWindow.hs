@@ -15,7 +15,7 @@ import           Lens.Micro.Platform ( (%=) )
 import qualified Graphics.Vty as Vty
 
 import           Matterhorn.Types
-import           Matterhorn.State.Common ( postInfoMessage, prepareAttachmentAtPath
+import           Matterhorn.State.Common ( postInfoMessage, fetchFileAtPath
                                          , doAsyncWith, AsyncPriority(Normal)
                                          , postErrorMessage'
                                          )
@@ -39,7 +39,7 @@ onEventSaveAttachmentWindow (Vty.EvKey Vty.KEnter []) = do
 
             when (not $ null path) $ do
                 doAsyncWith Normal $ do
-                    result <- E.try $ void $ prepareAttachmentAtPath fId session path
+                    result <- E.try $ fetchFileAtPath fId session path
                     return $ Just $ do
                         case result of
                             Left (e::E.SomeException) ->
