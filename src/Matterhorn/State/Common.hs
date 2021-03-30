@@ -4,7 +4,7 @@ module Matterhorn.State.Common
     openFilePath
   , openWithOpener
   , runLoggedCommand
-  , prepareAttachment
+  , fetchFile
   , fetchFileAtPath
 
   -- * Posts
@@ -288,8 +288,8 @@ runLoggedCommand outputChan cmd args mInput mOutputVar = void $ forkIO $ do
             error $ "BUG: createProcess returned unexpected result, report this at " <>
                     "https://github.com/matterhorn-chat/matterhorn"
 
-prepareAttachment :: FileId -> Session -> IO String
-prepareAttachment fId sess = do
+fetchFile :: FileId -> Session -> IO String
+fetchFile fId sess = do
     -- The link is for an attachment, so fetch it and then
     -- open the local copy.
     info <- mmGetMetadataForFile fId sess
