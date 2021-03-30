@@ -16,6 +16,11 @@ import           Matterhorn.Types
 import           Matterhorn.State.Common
 
 
+-- | If the currently selected link in the URL list is for an
+-- attachment, open a window to get the user to provide a path to which
+-- to save the attachment. If the URL list is empty or if the selected
+-- entry is not for an attachment, this returns to the Main mode but
+-- otherwise does nothing.
 openSaveAttachmentWindow :: MH ()
 openSaveAttachmentWindow = do
     selected <- use (csCurrentTeam.tsUrlList.to listSelectedElement)

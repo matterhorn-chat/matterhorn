@@ -288,6 +288,9 @@ runLoggedCommand outputChan cmd args mInput mOutputVar = void $ forkIO $ do
             error $ "BUG: createProcess returned unexpected result, report this at " <>
                     "https://github.com/matterhorn-chat/matterhorn"
 
+-- | Given a file ID and server session, fetch the file into a temporary
+-- location and return its path. The caller is responsible for deleting
+-- the file.
 fetchFile :: FileId -> Session -> IO String
 fetchFile fId sess = do
     -- The link is for an attachment, so fetch it and then
@@ -301,6 +304,14 @@ fetchFile fId sess = do
     fetchFileAtPath fId sess fullPath
     return fullPath
 
+-- | Given a file ID and server session, fetch the file and save it to
+-- the specified destination path. The destination path must refer to
+-- the path to the file itself, not its parent directory. This function
+-- will create only the parent directory in the specified path; it will
+-- not create all path entries recursively. If the file already exists,
+-- this function will overwrite the file.
+--
+-- The caller is responsible for catching all exceptions.
 fetchFileAtPath :: FileId -> Session -> FilePath -> IO ()
 fetchFileAtPath fId sess fullPath = do
     contents <- mmGetFile fId sess

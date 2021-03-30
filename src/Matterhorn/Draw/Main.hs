@@ -671,7 +671,19 @@ messageSelectBottomBar st =
                     , hBorder
                     ]
 
-keyEventBindings :: ChatState -> (KeyConfig -> KeyHandlerMap) -> KeyEvent -> T.Text
+-- | Resolve the specified key event into a pretty-printed
+-- representation of the active bindings for that event, using the
+-- specified key handler map builder. If the event has more than one
+-- active binding, the bindings are comma-delimited in the resulting
+-- string.
+keyEventBindings :: ChatState
+                 -- ^ The current application state
+                 -> (KeyConfig -> KeyHandlerMap)
+                 -- ^ The function to obtain the relevant key handler
+                 -- map
+                 -> KeyEvent
+                 -- ^ The key event to look up
+                 -> T.Text
 keyEventBindings st mkBindingsMap e =
     let keyconf = st^.csResources.crConfiguration.configUserKeysL
         KeyHandlerMap keymap = mkBindingsMap keyconf
