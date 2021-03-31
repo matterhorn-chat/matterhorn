@@ -625,7 +625,7 @@ getChannelEntriesInOrder :: TeamId -> UserPreferences -> ClientChannels -> Type 
 getChannelEntriesInOrder tId prefs cs ty =
     let matches (_, info) = info^.ccInfo.cdType == ty &&
                             info^.ccInfo.cdTeamId == Just tId && 
-                            -- make sure the channel is not favorite
+                            -- make  sure the channel is not favorite
                             not (favoriteChannelShowPreference prefs (info^.ccInfo.cdChannelId) == Just True)
         pairs = filteredChannels matches cs
         unread = length $ filter (== True) $ (hasUnread' . snd) <$> pairs
