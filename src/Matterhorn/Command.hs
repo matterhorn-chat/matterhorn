@@ -277,19 +277,8 @@ commandList =
   , Cmd "move-team-right" "Move the currently-selected team to the right in the team list" NoArg $ \_ ->
         moveCurrentTeamRight
   
-  , Cmd "favorite-channel" "Mark the current channel as favorite/non-favorite" NoArg $ \_ -> do
-        myId <- gets myUserId
-        tId <- use csCurrentTeamId
-        cId <- use (csCurrentChannelId tId)
-        st <- use id
-        --pref <- st^.csResources.crUserPreferences
-        let pref = MM.Preference 
-                  { MM.preferenceUserId = myId
-                  , MM.preferenceCategory = MM.PreferenceCategoryFavoriteChannelShow
-                  , MM.preferenceName = MM.PreferenceName $ MM.idString cId
-                  , MM.preferenceValue = MM.PreferenceValue "true"
-                  }
-        applyPreferenceChange pref
+  , Cmd "favorite-channel" "Mark the current channel as favorite/non-favorite" NoArg $ \_ -> 
+        toggleChannelFavoriteStatus
   ]
 
 displayUsernameAttribute :: Text -> MH ()

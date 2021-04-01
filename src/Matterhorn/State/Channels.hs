@@ -46,6 +46,7 @@ module Matterhorn.State.Channels
   , toggleExpandedChannelTopics
   , updateChannelNotifyProps
   , renameChannelUrl
+  , toggleChannelFavoriteStatus
   )
 where
 
@@ -1083,3 +1084,26 @@ updateChannelNotifyProps cId notifyProps = do
             Just tId -> mh $ invalidateCacheEntry $ ChannelSidebar tId
 
         csChannel(cId).ccInfo.cdNotifyProps .= notifyProps
+
+toggleChannelFavoriteStatus :: MH()
+toggleChannelFavoriteStatus = do
+    myId <- gets myUserId
+    tId  <- use csCurrentTeamId
+    cId <- use (csCurrentChannelId tId)
+    userPrefs <- use (csResources.crUserPreferences)
+    session <- getSession
+    let favPref = favoriteChannelPreference userPrefs cId
+        trueVal = "true"
+        prefVal =  case favPref of
+            Just True -> ""
+            Just False -> trueVal
+            Nothing -> trueVal
+        pref = Preference 
+            { preferenceUserId = myId
+            , preferenceCategory = PreferenceCategoryFavoriteChannelShow
+            , preferenceName = PreferenceName $ idString cId
+            , preferenceValue = PreferenceValue $ prefVal
+            }
+    doAsyncWith Normal $ do 
+        MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
+        return Nothing

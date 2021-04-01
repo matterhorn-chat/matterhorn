@@ -251,6 +251,7 @@ module Matterhorn.Types
   , userPrefTeamOrder
   , dmChannelShowPreference
   , groupChannelShowPreference
+  , favoriteChannelPreference
 
   , defaultUserPreferences
   , setUserPreferences
@@ -614,7 +615,7 @@ mkChannelZipperList now config tId cconfig prefs cs us =
 getFavoriteChannelEntriesInOrder :: TeamId -> UserPreferences -> ClientChannels -> (Int, [ChannelListEntry])
 getFavoriteChannelEntriesInOrder tId prefs cs = 
     let matches (_, info) = info^.ccInfo.cdTeamId == Just tId &&  
-                            favoriteChannelShowPreference prefs (info^.ccInfo.cdChannelId) == Just True
+                            favoriteChannelPreference prefs (info^.ccInfo.cdChannelId) == Just True
         pairs = filteredChannels matches cs
         unread = length $ filter (== True) $ (hasUnread' . snd) <$> pairs
         entries = fmap (CLChannel . fst) $
@@ -626,7 +627,7 @@ getChannelEntriesInOrder tId prefs cs ty =
     let matches (_, info) = info^.ccInfo.cdType == ty &&
                             info^.ccInfo.cdTeamId == Just tId && 
                             -- make  sure the channel is not favorite
-                            not (favoriteChannelShowPreference prefs (info^.ccInfo.cdChannelId) == Just True)
+                            not (favoriteChannelPreference prefs (info^.ccInfo.cdChannelId) == Just True)
         pairs = filteredChannels matches cs
         unread = length $ filter (== True) $ (hasUnread' . snd) <$> pairs
         entries = fmap (CLChannel . fst) $
@@ -720,7 +721,7 @@ dmChannelShouldAppear now config prefs c =
         updated = c^.ccInfo.cdUpdated
         Just uId = c^.ccInfo.cdDMUserId
         cId = c^.ccInfo.cdChannelId
-    in if favoriteChannelShowPreference prefs cId == Just True
+    in if favoriteChannelPreference prefs cId == Just True
        then False
        else (if hasUnread' c || maybe False (>= localCutoff) (c^.ccInfo.cdSidebarShowOverride)
              then True
@@ -738,7 +739,7 @@ groupChannelShouldAppear now config prefs c =
         cutoff = ServerTime localCutoff
         updated = c^.ccInfo.cdUpdated
         cId = c^.ccInfo.cdChannelId
-    in if favoriteChannelShowPreference prefs cId == Just True
+    in if favoriteChannelPreference prefs cId == Just True
        then False
        else (if hasUnread' c || maybe False (>= localCutoff) (c^.ccInfo.cdSidebarShowOverride)
              then True
@@ -755,8 +756,8 @@ dmChannelShowPreference ps uId = HM.lookup uId (_userPrefDirectChannelPrefs ps)
 groupChannelShowPreference :: UserPreferences -> ChannelId -> Maybe Bool
 groupChannelShowPreference ps cId = HM.lookup cId (_userPrefGroupChannelPrefs ps)
 
-favoriteChannelShowPreference :: UserPreferences -> ChannelId -> Maybe Bool
-favoriteChannelShowPreference ps cId = HM.lookup cId (_userPrefFavoriteChannelPrefs ps)
+favoriteChannelPreference :: UserPreferences -> ChannelId -> Maybe Bool
+favoriteChannelPreference ps cId = HM.lookup cId (_userPrefFavoriteChannelPrefs ps)
 
 -- * Internal Names and References
 
