@@ -1085,7 +1085,7 @@ updateChannelNotifyProps cId notifyProps = do
 
         csChannel(cId).ccInfo.cdNotifyProps .= notifyProps
 
-toggleChannelFavoriteStatus :: MH()
+toggleChannelFavoriteStatus :: MH ()
 toggleChannelFavoriteStatus = do
     myId <- gets myUserId
     tId  <- use csCurrentTeamId
