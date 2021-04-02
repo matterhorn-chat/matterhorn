@@ -247,7 +247,7 @@ commandList =
   , Cmd "sh" "List the available shell scripts" NoArg $ \ () ->
         listScripts
 
-  , Cmd "group-msg" "Create a group chat"
+  , Cmd "group-create" "Create a group chat"
     (LineArg (userSigil <> "user [" <> userSigil <> "user ...]"))
         createGroupChannel
 
