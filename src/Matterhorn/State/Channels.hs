@@ -1100,9 +1100,9 @@ toggleChannelFavoriteStatus = do
             Nothing -> trueVal
         pref = Preference 
             { preferenceUserId = myId
-            , preferenceCategory = PreferenceCategoryFavoriteChannelShow
+            , preferenceCategory = PreferenceCategoryFavoriteChannel
             , preferenceName = PreferenceName $ idString cId
-            , preferenceValue = PreferenceValue $ prefVal
+            , preferenceValue = PreferenceValue prefVal
             }
     doAsyncWith Normal $ do 
         MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
