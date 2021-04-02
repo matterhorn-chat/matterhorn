@@ -144,6 +144,7 @@ hiddenServerCommands =
     , "logout"
 
     , "remove"
+    , "msg"
 
     -- We provide a version of /leave with confirmation.
     , "leave"
