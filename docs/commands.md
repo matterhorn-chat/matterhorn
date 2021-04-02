@@ -11,7 +11,7 @@
 | `/flags` | Open a window of your flagged posts |
 | `/focus <~channel>` | Focus on a channel or user |
 | `/focus` | Select from available channels |
-| `/group-msg <@user [@user ...]>` | Create a group chat |
+| `/group-create <@user [@user ...]>` | Create a group chat |
 | `/help` | Show the main help screen |
 | `/help <topic>` | Show help about a particular topic |
 | `/hide` | Hide the current DM or group channel from the channel list |
@@ -35,7 +35,7 @@
 | `/pinned-posts` | Open a window of this channel's pinned posts |
 | `/quit` | Exit Matterhorn |
 | `/reconnect` | Force a reconnection attempt to the server |
-| `/remove-user <@user>` | Remove a user from the current channel |
+| `/remove <@user>` | Remove a user from the current channel |
 | `/rename-channel-url <channel name>` | Rename the current channel's URL name |
 | `/right` | Focus on the next channel |
 | `/search <terms>` | Search for posts with given terms |
