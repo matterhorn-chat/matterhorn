@@ -46,15 +46,15 @@ onEventSaveAttachmentWindow (Vty.EvKey Vty.KEnter []) = do
                                 postErrorMessage' $ T.pack $ "Error saving to " <> path <> ": " <> show e
                             Right () ->
                                 postInfoMessage $ T.pack $ "Attachment saved to " <> path
-                setMode Main
+                setMode UrlSelect
 
     case focusGetCurrent f of
         Just (AttachmentPathSaveButton {})   -> save
         Just (AttachmentPathEditor {})       -> save
-        Just (AttachmentPathCancelButton {}) -> setMode Main
-        _                                    -> setMode Main
+        Just (AttachmentPathCancelButton {}) -> setMode UrlSelect
+        _                                    -> setMode UrlSelect
 onEventSaveAttachmentWindow (Vty.EvKey Vty.KEsc []) = do
-    setMode Main
+    setMode UrlSelect
 onEventSaveAttachmentWindow e = do
     f <- use (csCurrentTeam.tsSaveAttachmentDialog.attachmentPathDialogFocus)
     case focusGetCurrent f of

@@ -755,14 +755,16 @@ inputPreview st hs | not $ st^.csResources.crConfiguration.configShowMessagePrev
 
 userInputArea :: ChatState -> HighlightSet -> Widget Name
 userInputArea st hs =
-    case st^.csCurrentTeam.tsMode of
+    let urlSelectInputArea = hCenter $ hBox [ txt "Press "
+                                            , withDefAttr clientEmphAttr $ txt "Enter"
+                                            , txt " to open the selected URL or "
+                                            , withDefAttr clientEmphAttr $ txt "Escape"
+                                            , txt " to cancel."
+                                            ]
+    in case st^.csCurrentTeam.tsMode of
         ChannelSelect -> renderChannelSelectPrompt st
-        UrlSelect     -> hCenter $ hBox [ txt "Press "
-                                        , withDefAttr clientEmphAttr $ txt "Enter"
-                                        , txt " to open the selected URL or "
-                                        , withDefAttr clientEmphAttr $ txt "Escape"
-                                        , txt " to cancel."
-                                        ]
+        UrlSelect     -> urlSelectInputArea
+        SaveAttachmentWindow {} -> urlSelectInputArea
         MessageSelectDeleteConfirm -> renderDeleteConfirm
         _             -> renderUserCommandBox st hs
 
@@ -796,11 +798,13 @@ mainInterface st =
              ]
     channelContents = case st^.csCurrentTeam.tsMode of
         UrlSelect -> renderUrlList st
+        SaveAttachmentWindow {} -> renderUrlList st
         _         -> maybeSubdue $ renderCurrentChannelDisplay st hs
 
     bottomBorder = case st^.csCurrentTeam.tsMode of
         MessageSelect -> messageSelectBottomBar st
         UrlSelect -> urlSelectBottomBar st
+        SaveAttachmentWindow {} -> urlSelectBottomBar st
         _ -> maybeSubdue $ hBox
              [ showAttachmentCount
              , hBorder

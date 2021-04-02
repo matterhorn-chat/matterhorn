@@ -25,7 +25,7 @@ openSaveAttachmentWindow :: MH ()
 openSaveAttachmentWindow = do
     selected <- use (csCurrentTeam.tsUrlList.to listSelectedElement)
     case selected of
-        Nothing -> setMode Main
+        Nothing -> return ()
         Just (_, link) ->
             case link^.linkTarget of
                 LinkFileId fId -> do
@@ -38,4 +38,4 @@ openSaveAttachmentWindow = do
                             setMode $ SaveAttachmentWindow link
                 _ ->
                     -- The selected link is not for an attachment.
-                    setMode Main
+                    return ()
