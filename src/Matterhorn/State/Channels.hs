@@ -589,7 +589,7 @@ applyPreferenceChange pref = do
                       Nothing -> return ()
               False -> do
                   csChannel(cId).ccInfo.cdSidebarShowOverride .= Nothing
-      
+
       | Just f <- preferenceToFavoriteChannelPreference pref -> do
           updateSidebar Nothing
 

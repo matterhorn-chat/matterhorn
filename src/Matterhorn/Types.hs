@@ -613,8 +613,8 @@ mkChannelZipperList now config tId cconfig prefs cs us =
     ]
 
 getFavoriteChannelEntriesInOrder :: TeamId -> UserPreferences -> ClientChannels -> (Int, [ChannelListEntry])
-getFavoriteChannelEntriesInOrder tId prefs cs = 
-    let matches (_, info) = info^.ccInfo.cdTeamId == Just tId &&  
+getFavoriteChannelEntriesInOrder tId prefs cs =
+    let matches (_, info) = info^.ccInfo.cdTeamId == Just tId &&
                             favoriteChannelPreference prefs (info^.ccInfo.cdChannelId) == Just True
         pairs = filteredChannels matches cs
         unread = length $ filter (== True) $ (hasUnread' . snd) <$> pairs
@@ -625,8 +625,8 @@ getFavoriteChannelEntriesInOrder tId prefs cs =
 getChannelEntriesInOrder :: TeamId -> UserPreferences -> ClientChannels -> Type -> (Int, [ChannelListEntry])
 getChannelEntriesInOrder tId prefs cs ty =
     let matches (_, info) = info^.ccInfo.cdType == ty &&
-                            info^.ccInfo.cdTeamId == Just tId && 
-                            -- make  sure the channel is not favorite
+                            info^.ccInfo.cdTeamId == Just tId &&
+                            -- make sure the channel is not favorite
                             not (favoriteChannelPreference prefs (info^.ccInfo.cdChannelId) == Just True)
         pairs = filteredChannels matches cs
         unread = length $ filter (== True) $ (hasUnread' . snd) <$> pairs
