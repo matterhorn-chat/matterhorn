@@ -203,7 +203,7 @@ commandList =
     (UserArg NoArg) $ \ (uname, ()) ->
         addUserByNameToCurrentChannel uname
 
-  , Cmd "remove-user" "Remove a user from the current channel"
+  , Cmd "remove" "Remove a user from the current channel"
     (UserArg NoArg) $ \ (uname, ()) ->
         removeUserFromCurrentChannel uname
 
