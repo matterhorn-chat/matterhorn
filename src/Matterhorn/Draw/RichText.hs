@@ -44,10 +44,10 @@ cursorSentinel :: Char
 cursorSentinel = '‸'
 
 -- Render markdown with username highlighting
-renderRichText :: Text -> HighlightSet -> Maybe Int -> Bool
+renderRichText :: Eq a => Text -> HighlightSet -> Maybe Int -> Bool
                -> Maybe (Inline -> Maybe a)
                -> Blocks -> Widget a
-renderRichText curUser hSet w doWrap _nameGen (Blocks bs) =
+renderRichText curUser hSet w doWrap nameGen (Blocks bs) =
     runReader (do
               blocks <- mapM renderBlock (addBlankLines bs)
               return $ B.vBox $ toList blocks)
@@ -55,6 +55,7 @@ renderRichText curUser hSet w doWrap _nameGen (Blocks bs) =
                        , drawHighlightSet = hSet
                        , drawLineWidth = w
                        , drawDoLineWrapping = doWrap
+                       , drawNameGen = nameGen
                        })
 
 -- Add blank lines only between adjacent elements of the same type, to
@@ -71,10 +72,10 @@ addBlankLines = go' . viewl
 
 -- Render text to markdown without username highlighting or permalink
 -- detection
-renderText :: Text -> Widget a
+renderText :: Eq a => Text -> Widget a
 renderText txt = renderText' Nothing "" emptyHSet txt
 
-renderText' :: Maybe TeamBaseURL -> Text -> HighlightSet -> Text -> Widget a
+renderText' :: Eq a => Maybe TeamBaseURL -> Text -> HighlightSet -> Text -> Widget a
 renderText' baseUrl curUser hSet t =
     renderRichText curUser hSet Nothing True Nothing $
         parseMarkdown baseUrl t
@@ -92,16 +93,17 @@ maybeHLimit :: Maybe Int -> Widget a -> Widget a
 maybeHLimit Nothing w = w
 maybeHLimit (Just i) w = hLimit i w
 
-type M a = Reader DrawCfg a
+type M a b = Reader (DrawCfg b) a
 
-data DrawCfg =
+data DrawCfg a =
     DrawCfg { drawCurUser :: Text
             , drawHighlightSet :: HighlightSet
             , drawLineWidth :: Maybe Int
             , drawDoLineWrapping :: Bool
+            , drawNameGen :: Maybe (Inline -> Maybe a)
             }
 
-renderBlock :: Block -> M (Widget a)
+renderBlock :: Eq a => Block -> M (Widget a) a
 renderBlock (Table aligns headings body) = do
     headingWs <- mapM renderInlines headings
     bodyWs <- forM body $ mapM renderInlines
@@ -163,7 +165,7 @@ addQuoting w =
                           , B.Widget B.Fixed B.Fixed $ return childResult
                           ]
 
-renderCodeBlock :: Sky.SyntaxMap -> Sky.Syntax -> Text -> M (Widget a)
+renderCodeBlock :: Sky.SyntaxMap -> Sky.Syntax -> Text -> M (Widget a) b
 renderCodeBlock syntaxMap syntax tx = do
     let result = Sky.tokenize cfg syntax tx
         cfg = Sky.TokenizerConfig syntaxMap False
@@ -174,7 +176,7 @@ renderCodeBlock syntaxMap syntax tx = do
             return $ (B.txt $ "[" <> Sky.sName syntax <> "]") B.<=>
                      (padding <+> BS.renderRawSource textWithCursor tokLines)
 
-renderRawCodeBlock :: Text -> M (Widget a)
+renderRawCodeBlock :: Text -> M (Widget a) b
 renderRawCodeBlock tx = do
     doWrap <- asks drawDoLineWrapping
 
@@ -195,21 +197,22 @@ renderRawCodeBlock tx = do
 
             render $ padding <+> (Widget Fixed Fixed $ return renderedText)
 
-renderInlines :: Inlines -> M (Widget a)
+renderInlines :: Eq a => Inlines -> M (Widget a) a
 renderInlines es = do
     w <- asks drawLineWidth
     hSet <- asks drawHighlightSet
     curUser <- asks drawCurUser
+    nameGen <- asks drawNameGen
 
     return $ B.Widget B.Fixed B.Fixed $ do
         ctx <- B.getContext
         let width = fromMaybe (ctx^.B.availWidthL) w
             ws    = fmap (renderWrappedLine curUser) $
                     mconcat $
-                    (doLineWrapping width <$> (F.toList $ flattenInlineSeq hSet es))
+                    (doLineWrapping width <$> (F.toList $ flattenInlineSeq hSet nameGen es))
         B.render (vBox ws)
 
-renderList :: ListType -> ListSpacing -> Seq Blocks -> M (Widget a)
+renderList :: Eq a => ListType -> ListSpacing -> Seq Blocks -> M (Widget a) a
 renderList ty _spacing bs = do
     let is = case ty of
           BulletList _ -> repeat ("• ")
@@ -226,10 +229,10 @@ renderList ty _spacing bs = do
 
     return $ vBox results
 
-renderWrappedLine :: Text -> WrappedLine -> Widget a
+renderWrappedLine :: Text -> WrappedLine a -> Widget a
 renderWrappedLine curUser l = hBox $ F.toList $ renderFlattenedValue curUser <$> l
 
-renderFlattenedValue :: Text -> FlattenedValue -> Widget a
+renderFlattenedValue :: Text -> FlattenedValue a -> Widget a
 renderFlattenedValue curUser (NonBreaking rs) =
     let renderLine = hBox . F.toList . fmap (renderFlattenedValue curUser)
     in vBox (F.toList $ renderLine <$> F.toList rs)

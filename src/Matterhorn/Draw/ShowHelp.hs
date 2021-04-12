@@ -287,19 +287,19 @@ keybindingHelp kc = vBox $
 emph :: Widget a -> Widget a
 emph = withDefAttr helpEmphAttr
 
-para :: Text -> Widget a
+para :: Eq a => Text -> Widget a
 para t = padTop (Pad 1) $ renderText t
 
-paraL :: [Text] -> Widget a
+paraL :: Eq a => [Text] -> Widget a
 paraL = para . mconcat
 
-heading :: Text -> Widget a
+heading :: Eq a => Text -> Widget a
 heading = padTop (Pad 1) . headingNoPad
 
-headingNoPad :: Text -> Widget a
+headingNoPad :: Eq a => Text -> Widget a
 headingNoPad t = hCenter $ emph $ renderText t
 
-syntaxHighlightHelp :: [FilePath] -> Widget a
+syntaxHighlightHelp :: Eq a => [FilePath] -> Widget a
 syntaxHighlightHelp dirs = vBox
   [ heading "Syntax Highlighting"
 
@@ -321,7 +321,7 @@ syntaxHighlightHelp dirs = vBox
            "the `syntax/` directory of your Matterhorn distribution."
   ]
 
-themeHelp :: Widget a
+themeHelp :: Widget Name
 themeHelp = vBox
   [ heading "Using Themes"
   , para "Matterhorn provides these built-in color themes:"
