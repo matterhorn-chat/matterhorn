@@ -44,8 +44,10 @@ cursorSentinel :: Char
 cursorSentinel = '‸'
 
 -- Render markdown with username highlighting
-renderRichText :: Text -> HighlightSet -> Maybe Int -> Bool -> Blocks -> Widget a
-renderRichText curUser hSet w doWrap (Blocks bs) =
+renderRichText :: Text -> HighlightSet -> Maybe Int -> Bool
+               -> Maybe (Inline -> Maybe a)
+               -> Blocks -> Widget a
+renderRichText curUser hSet w doWrap _nameGen (Blocks bs) =
     runReader (do
               blocks <- mapM renderBlock (addBlankLines bs)
               return $ B.vBox $ toList blocks)
@@ -74,7 +76,7 @@ renderText txt = renderText' Nothing "" emptyHSet txt
 
 renderText' :: Maybe TeamBaseURL -> Text -> HighlightSet -> Text -> Widget a
 renderText' baseUrl curUser hSet t =
-    renderRichText curUser hSet Nothing True $
+    renderRichText curUser hSet Nothing True Nothing $
         parseMarkdown baseUrl t
 
 vBox :: F.Foldable f => f (Widget a) -> Widget a

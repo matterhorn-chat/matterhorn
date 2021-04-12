@@ -377,7 +377,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
             if mdIndentBlocks
                then vBox [ hBox nameElems
                          , hBox [txt "  ", renderRichText mdMyUsername hs ((subtract 2) <$> w)
-                                                 mdWrapNonhighlightedCodeBlocks (Blocks bs)]
+                                                 mdWrapNonhighlightedCodeBlocks Nothing (Blocks bs)]
                          ]
                else nameNextToMessage hs w nameElems bs
 
@@ -386,7 +386,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                 nameResult <- render $ hBox nameElems
                 let newW = subtract (V.imageWidth (nameResult^.imageL)) <$> w
                 render $ hBox [ raw (nameResult^.imageL)
-                              , renderRichText mdMyUsername hs newW mdWrapNonhighlightedCodeBlocks (Blocks bs)
+                              , renderRichText mdMyUsername hs newW mdWrapNonhighlightedCodeBlocks Nothing (Blocks bs)
                               ]
 
         breakCheck i = i `elem` [ELineBreak, ESoftBreak]
