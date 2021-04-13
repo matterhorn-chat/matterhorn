@@ -47,7 +47,7 @@ import           Matterhorn.Events.TabbedWindow
 import           Matterhorn.Events.ManageAttachments
 import           Matterhorn.Events.EditNotifyPrefs
 import           Matterhorn.Events.Websocket
-
+import           Matterhorn.State.Links ( openLinkTarget )
 
 onEvent :: ChatState -> BrickEvent Name MHEvent -> EventM Name (Next ChatState)
 onEvent st ev = runMHEvent st $ do
@@ -63,8 +63,9 @@ onBrickEvent (VtyEvent (Vty.EvKey (Vty.KChar 'l') [Vty.MCtrl])) = do
     liftIO $ Vty.refresh vty
 onBrickEvent (VtyEvent e) =
     onVtyEvent e
-onBrickEvent (MouseDown n button modifier loc) =
-    onMouseDown n button modifier loc
+onBrickEvent (MouseDown n button modifier loc) = do
+    mhLog LogGeneral "Received a mouse event"
+    logOther "Received a mouse event" $ onMouseDown n button modifier loc
 onBrickEvent _ =
     return ()
 
@@ -140,6 +141,7 @@ onMouseDown (ClickableChannelListEntry channelId) Vty.BLeft [] _ = do
     setFocus channelId
     setMode Main
 onMouseDown (ClickableTeamListEntry teamId) Vty.BLeft [] _ = setTeam teamId
+onMouseDown (ClickableURL _ _ t) Vty.BLeft [] _ = void $ openLinkTarget t
 onMouseDown _ _ _ _ = return ()
 
 formatError :: MHError -> T.Text
@@ -179,7 +181,7 @@ formatError (AttachmentException e) =
       Nothing -> "Unknown error attaching file!\n" <>
           "Please report this error at https://github.com/matterhorn-chat/matterhorn/issues"
           -- this case shouldn't be reached
-formatError (BadAttachmentPath msg) = 
+formatError (BadAttachmentPath msg) =
     msg
 formatError (AsyncErrEvent e) =
     "An unexpected error has occurred! The exception encountered was:\n  " <>

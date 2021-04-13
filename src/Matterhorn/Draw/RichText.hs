@@ -35,7 +35,7 @@ import           Matterhorn.Constants ( normalChannelSigil, userSigil, editMarki
 import           Matterhorn.Draw.RichText.Flatten
 import           Matterhorn.Draw.RichText.Wrap
 import           Matterhorn.Themes
-import           Matterhorn.Types ( HighlightSet(..), emptyHSet )
+import           Matterhorn.Types ( HighlightSet(..), emptyHSet, NameLike(..), logOther )
 import           Matterhorn.Types.RichText
 
 
@@ -44,8 +44,8 @@ cursorSentinel :: Char
 cursorSentinel = '‸'
 
 -- Render markdown with username highlighting
-renderRichText :: Eq a => Text -> HighlightSet -> Maybe Int -> Bool
-               -> Maybe (Inline -> Maybe a)
+renderRichText :: NameLike a => Text -> HighlightSet -> Maybe Int -> Bool
+               -> Maybe (Int -> Inline -> Maybe a)
                -> Blocks -> Widget a
 renderRichText curUser hSet w doWrap nameGen (Blocks bs) =
     runReader (do
@@ -72,10 +72,10 @@ addBlankLines = go' . viewl
 
 -- Render text to markdown without username highlighting or permalink
 -- detection
-renderText :: Eq a => Text -> Widget a
+renderText :: NameLike a => Text -> Widget a
 renderText txt = renderText' Nothing "" emptyHSet txt
 
-renderText' :: Eq a => Maybe TeamBaseURL -> Text -> HighlightSet -> Text -> Widget a
+renderText' :: NameLike a => Maybe TeamBaseURL -> Text -> HighlightSet -> Text -> Widget a
 renderText' baseUrl curUser hSet t =
     renderRichText curUser hSet Nothing True Nothing $
         parseMarkdown baseUrl t
@@ -100,10 +100,10 @@ data DrawCfg a =
             , drawHighlightSet :: HighlightSet
             , drawLineWidth :: Maybe Int
             , drawDoLineWrapping :: Bool
-            , drawNameGen :: Maybe (Inline -> Maybe a)
+            , drawNameGen :: Maybe (Int -> Inline -> Maybe a)
             }
 
-renderBlock :: Eq a => Block -> M (Widget a) a
+renderBlock :: NameLike a => Block -> M (Widget a) a
 renderBlock (Table aligns headings body) = do
     headingWs <- mapM renderInlines headings
     bodyWs <- forM body $ mapM renderInlines
@@ -197,7 +197,7 @@ renderRawCodeBlock tx = do
 
             render $ padding <+> (Widget Fixed Fixed $ return renderedText)
 
-renderInlines :: Eq a => Inlines -> M (Widget a) a
+renderInlines :: NameLike a => Inlines -> M (Widget a) a
 renderInlines es = do
     w <- asks drawLineWidth
     hSet <- asks drawHighlightSet
@@ -212,7 +212,7 @@ renderInlines es = do
                     (doLineWrapping width <$> (F.toList $ flattenInlineSeq hSet nameGen es))
         B.render (vBox ws)
 
-renderList :: Eq a => ListType -> ListSpacing -> Seq Blocks -> M (Widget a) a
+renderList :: NameLike a => ListType -> ListSpacing -> Seq Blocks -> M (Widget a) a
 renderList ty _spacing bs = do
     let is = case ty of
           BulletList _ -> repeat ("• ")
@@ -229,17 +229,18 @@ renderList ty _spacing bs = do
 
     return $ vBox results
 
-renderWrappedLine :: Text -> WrappedLine a -> Widget a
+renderWrappedLine :: Show a => Text -> WrappedLine a -> Widget a
 renderWrappedLine curUser l = hBox $ F.toList $ renderFlattenedValue curUser <$> l
 
-renderFlattenedValue :: Text -> FlattenedValue a -> Widget a
+renderFlattenedValue :: Show a => Text -> FlattenedValue a -> Widget a
 renderFlattenedValue curUser (NonBreaking rs) =
     let renderLine = hBox . F.toList . fmap (renderFlattenedValue curUser)
     in vBox (F.toList $ renderLine <$> F.toList rs)
-renderFlattenedValue curUser (SingleInline fi) = addHyperlink $ addStyles widget
+renderFlattenedValue curUser (SingleInline fi) = addClickable $ addHyperlink $ addStyles widget
     where
         val = fiValue fi
         mUrl = fiURL fi
+        mName = fiName fi
         styles = fiStyles fi
 
         addStyles w = foldr addStyle w styles
@@ -254,6 +255,10 @@ renderFlattenedValue curUser (SingleInline fi) = addHyperlink $ addStyles widget
         addHyperlink = case mUrl of
             Nothing -> id
             Just u -> B.withDefAttr urlAttr . B.hyperlink (unURL u)
+
+        addClickable w = case mName of
+            Nothing -> id w
+            Just nm -> logOther ("Adding clickable " ++ (show nm) ++ " to " ++ (show val)) $ (B.border . B.clickable nm) w
 
         widget = case val of
             FSpace               -> B.txt " "

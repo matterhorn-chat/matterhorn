@@ -6,6 +6,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE FlexibleInstances #-}
 module Matterhorn.Types
   ( ConnectionStatus(..)
   , HelpTopic(..)
@@ -19,6 +20,7 @@ module Matterhorn.Types
   , MHError(..)
   , AttachmentData(..)
   , CPUUsagePolicy(..)
+  , NameLike(..)
   , tabbedWindow
   , getCurrentTabbedWindowEntry
   , tabbedWindowNextTab
@@ -297,6 +299,10 @@ module Matterhorn.Types
   , requestLogDestination
   , sendLogMessage
 
+  , logOther
+  , logOtherShow
+  , logOtherShowMaybe
+
   , requestQuit
   , getMessageForPostId
   , getParentMessage
@@ -410,7 +416,7 @@ import           Matterhorn.Types.Posts
 import           Matterhorn.Types.RichText ( TeamBaseURL(..), TeamURLName(..) )
 import           Matterhorn.Types.Users
 import qualified Matterhorn.Zipper as Z
-
+import           System.IO.Unsafe ( unsafePerformIO )
 
 -- * Configuration
 
@@ -781,7 +787,20 @@ data Name =
     | TeamList
     | ClickableChannelListEntry ChannelId
     | ClickableTeamListEntry TeamId
+    | ClickableURL MessageId Int LinkTarget
     deriving (Eq, Show, Ord)
+
+class (Show a, Eq a, Ord a) => NameLike a where
+    semeq :: a -> a -> Bool
+
+instance NameLike Name where
+    semeq (ClickableURL mId1 _ t1) (ClickableURL mId2 _ t2) = mId1 == mId2 && t1 == t2
+    semeq a b = a == b
+
+instance NameLike a => NameLike (Maybe a) where
+    semeq Nothing Nothing = True
+    semeq (Just a) (Just b) = a `semeq` b
+    semeq _ _ = False
 
 -- | The sum type of exceptions we expect to encounter on authentication
 -- failure. We encode them explicitly here so that we can print them in
@@ -2342,3 +2361,14 @@ moveRight v as =
             | otherwise ->
                 let (h, t) = splitAt i as
                 in h <> [head (tail t), v] <> (tail (tail t))
+
+logOther :: String -> a -> a
+logOther t v = unsafePerformIO (appendFile "OTHERLOGS.LOG" (t ++ "\n") >> return v)
+
+logOtherShow :: Show a => a -> b -> b
+logOtherShow t v = logOther (show t) v
+
+logOtherShowMaybe :: Show a => Maybe a -> b -> b
+logOtherShowMaybe t v = case t of
+    Nothing -> v
+    Just t' -> logOther (show t') v

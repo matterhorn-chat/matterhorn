@@ -144,7 +144,7 @@ data ThreadState =
 
 data MessageId = MessagePostId PostId
                | MessageUUID UUID
-               deriving (Eq, Read, Show, Generic, Hashable)
+               deriving (Eq, Read, Ord, Show, Generic, Hashable)
 
 messageIdPostId :: MessageId -> Maybe PostId
 messageIdPostId (MessagePostId p) = Just p

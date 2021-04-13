@@ -57,7 +57,7 @@ import qualified Data.Set as Set
 import qualified Data.Text as T
 
 import           Matterhorn.Constants ( normalChannelSigil, userSigil )
-import           Matterhorn.Types ( HighlightSet(..) )
+import           Matterhorn.Types (logOther,  HighlightSet(..), NameLike(..), logOtherShow )
 import           Matterhorn.Types.RichText
 
 
@@ -121,6 +121,7 @@ data FlattenState a =
                  , fsCurLine :: Seq (FlattenedValue a)
                  -- ^ The current line we are accumulating in the
                  -- flattening process
+                 , fsIndex :: Int
                  }
 
 -- | The flatten monad environment
@@ -134,9 +135,9 @@ data FlattenEnv a =
                , flattenHighlightSet :: HighlightSet
                -- ^ The highlight set to use to check for valid user or
                -- channel references
-               , flattenNameGen :: Maybe (Inline -> Maybe a)
+               , flattenNameGen :: Maybe (Int -> Inline -> Maybe a)
                -- ^ TODO
-               , flattenName :: Maybe a
+               , flattenNameRoot :: Maybe (Int -> Maybe a)
                }
 
 -- | Given a sequence of inlines, flatten it into a list of lines of
@@ -149,28 +150,49 @@ data FlattenEnv a =
 -- Otherwise it is rewritten as an 'FText' node so that the username
 -- does not get highlighted. Channel references ('EChannel') are handled
 -- similarly.
-flattenInlineSeq :: Eq a => HighlightSet
-                 -> Maybe (Inline -> Maybe a)
+flattenInlineSeq :: NameLike a => HighlightSet
+                 -> Maybe (Int -> Inline -> Maybe a)
                  -> Inlines -> Seq (Seq (FlattenedValue a))
 flattenInlineSeq hs nameGen is =
-    flattenInlineSeq' initialEnv is
+    flattenInlineSeq' initialEnv 0 is
     where
         initialEnv = FlattenEnv { flattenStyles = []
                                 , flattenURL = Nothing
                                 , flattenHighlightSet = hs
                                 , flattenNameGen = nameGen
-                                , flattenName = Nothing
+                                , flattenNameRoot = Nothing
                                 }
 
-flattenInlineSeq' :: Eq a => FlattenEnv a -> Inlines -> Seq (Seq (FlattenedValue a))
-flattenInlineSeq' env is =
+flattenInlineSeq' :: NameLike a => FlattenEnv a -> Int -> Inlines -> Seq (Seq (FlattenedValue a))
+flattenInlineSeq' env c is =
     fsCompletedLines $ execState stBody initialState
     where
-        initialState = FlattenState mempty mempty
+        initialState = FlattenState mempty mempty c
         stBody = runReaderT body env
         body = do
-            mapM_ flatten $ unInlines is
+            flattenInlines is
             pushFLine
+
+flattenInlines :: NameLike a => Inlines -> FlattenM () a
+flattenInlines is = do
+    pairs <- nameInlinePairs
+    mapM_ wrapFlatten pairs
+    where
+        wrapFlatten (name, i) = withName name $ flatten i
+        nameInlinePairs = do
+            nameRoots <- mapM nameGenWrapper $ unInlines is
+            return $ Seq.zip nameRoots (unInlines is)
+        nameGenWrapper :: Inline -> FlattenM (Maybe (Int -> Maybe a)) a
+        nameGenWrapper i = do
+            c <- gets fsIndex
+            nameGen <- asks flattenNameGen
+            return $ case nameGen of
+                Nothing -> Nothing
+                Just f -> if isJust (f c i) then Just (flip f i) else Nothing
+
+withName :: Maybe (Int -> Maybe a) -> FlattenM () a -> FlattenM () a
+withName f@(Just _) = withReaderT (\e -> e { flattenNameRoot = f })
+withName Nothing = id
 
 withInlineStyle :: InlineStyle -> FlattenM () a -> FlattenM () a
 withInlineStyle s =
@@ -180,21 +202,31 @@ withHyperlink :: URL -> FlattenM () a -> FlattenM () a
 withHyperlink u = withReaderT (\e -> e { flattenURL = Just u })
 
 -- | Push a FlattenedContent value onto the current line.
-pushFC :: Eq a => FlattenedContent -> FlattenM () a
+pushFC :: NameLike a => FlattenedContent -> FlattenM () a
 pushFC v = do
     env <- ask
+    name <- getName
     let styles = flattenStyles env
         mUrl = flattenURL env
-        name = flattenName env
         fi = FlattenedInline { fiValue = v
                              , fiStyles = styles
                              , fiURL = mUrl
                              , fiName = name
                              }
     pushFV $ SingleInline fi
+    where
+        getName :: FlattenM (Maybe a) a
+        getName = do
+            nameGen <- asks flattenNameRoot
+            case nameGen of
+                Nothing -> return Nothing
+                Just f -> do
+                    c <- gets fsIndex
+                    modify ( \s -> s { fsIndex = c + 1} )
+                    return $ f c
 
 -- | Push a FlattenedValue onto the current line.
-pushFV :: Eq a => FlattenedValue a -> FlattenM () a
+pushFV :: NameLike a => FlattenedValue a -> FlattenM () a
 pushFV fv = lift $ modify $ \s -> s { fsCurLine = appendFV fv (fsCurLine s) }
 
 -- | Append the value to the sequence.
@@ -205,17 +237,17 @@ pushFV fv = lift $ modify $ \s -> s { fsCurLine = appendFV fv (fsCurLine s) }
 -- non-whitespace text together as one logical token (e.g. "(foo" rather
 -- than "(" followed by "foo") to avoid undesirable line break points in
 -- the wrapping process.
-appendFV :: Eq a => FlattenedValue a -> Seq (FlattenedValue a) -> Seq (FlattenedValue a)
+appendFV :: NameLike a => FlattenedValue a -> Seq (FlattenedValue a) -> Seq (FlattenedValue a)
 appendFV v line =
     case (Seq.viewr line, v) of
         (h :> SingleInline a, SingleInline b) ->
             case (fiValue a, fiValue b) of
                 (FText aT, FText bT) ->
-                    if fiStyles a == fiStyles b && fiURL a == fiURL b && fiName a == fiName b
+                    if fiStyles a == fiStyles b && fiURL a == fiURL b && fiName a `semeq` fiName b
                     then h |> SingleInline (FlattenedInline (FText $ aT <> bT)
                                                             (fiStyles a)
                                                             (fiURL a)
-                                                            (fiName a))
+                                                            (max (fiName a) (fiName b)))
                     else line |> v
                 _ -> line |> v
         _ -> line |> v
@@ -240,7 +272,7 @@ isKnownChannel c = do
     let cSet = hChannelSet hSet
     return $ c `Set.member` cSet
 
-flatten :: Eq a => Inline -> FlattenM () a
+flatten :: NameLike a => Inline -> FlattenM () a
 flatten i =
     case i of
         EUser u -> do
@@ -254,7 +286,8 @@ flatten i =
 
         ENonBreaking is -> do
             env <- ask
-            pushFV $ (NonBreaking $ flattenInlineSeq' env is)
+            c <- gets fsIndex
+            pushFV $ (NonBreaking $ flattenInlineSeq' env (c + 1) is)
 
         ESoftBreak                  -> pushFLine
         ELineBreak                  -> pushFLine
@@ -265,27 +298,27 @@ flatten i =
         EEmoji e                    -> pushFC $ FEmoji e
         EEditSentinel r             -> pushFC $ FEditSentinel r
 
-        EEmph es                    -> withInlineStyle Emph $ mapM_ flatten $ unInlines es
-        EStrikethrough es           -> withInlineStyle Strikethrough $ mapM_ flatten $ unInlines es
-        EStrong es                  -> withInlineStyle Strong $ mapM_ flatten $ unInlines es
-        ECode es                    -> withInlineStyle Code $ mapM_ flatten $ unInlines es
+        EEmph es                    -> withInlineStyle Emph $ flattenInlines es
+        EStrikethrough es           -> withInlineStyle Strikethrough $ flattenInlines es
+        EStrong es                  -> withInlineStyle Strong $ flattenInlines es
+        ECode es                    -> withInlineStyle Code $ flattenInlines es
 
         EPermalink _ _ mLabel ->
             let label' = fromMaybe (Inlines $ Seq.fromList [EText "post", ESpace, EText "link"])
                                    mLabel
-            in withInlineStyle Permalink $ mapM_ flatten $ unInlines $ decorateLinkLabel label'
+            in withInlineStyle Permalink $ flattenInlines $ decorateLinkLabel label'
 
         EHyperlink u label@(Inlines ls) ->
             let label' = if Seq.null ls
                          then Inlines $ Seq.singleton $ EText $ unURL u
                          else label
-            in withHyperlink u $ mapM_ flatten $ unInlines $ decorateLinkLabel label'
+            in withHyperlink u $ flattenInlines $ decorateLinkLabel label'
 
         EImage u label@(Inlines ls) ->
             let label' = if Seq.null ls
                          then Inlines $ Seq.singleton $ EText $ unURL u
                          else label
-            in withHyperlink u $ mapM_ flatten $ unInlines $ decorateLinkLabel label'
+            in withHyperlink u $ flattenInlines $ decorateLinkLabel label'
 
 linkOpenBracket :: Inline
 linkOpenBracket = EText "<"

@@ -377,7 +377,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
             if mdIndentBlocks
                then vBox [ hBox nameElems
                          , hBox [txt "  ", renderRichText mdMyUsername hs ((subtract 2) <$> w)
-                                                 mdWrapNonhighlightedCodeBlocks Nothing (Blocks bs)]
+                                                 mdWrapNonhighlightedCodeBlocks (Just clickableNames) (Blocks bs)]
                          ]
                else nameNextToMessage hs w nameElems bs
 
@@ -386,10 +386,16 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                 nameResult <- render $ hBox nameElems
                 let newW = subtract (V.imageWidth (nameResult^.imageL)) <$> w
                 render $ hBox [ raw (nameResult^.imageL)
-                              , renderRichText mdMyUsername hs newW mdWrapNonhighlightedCodeBlocks Nothing (Blocks bs)
+                              , renderRichText mdMyUsername hs newW mdWrapNonhighlightedCodeBlocks (Just clickableNames) (Blocks bs)
                               ]
 
         breakCheck i = i `elem` [ELineBreak, ESoftBreak]
+
+        clickableNames i (EHyperlink u _) =
+            case msg^.mMessageId of
+                Just mId -> Just $ ClickableURL mId i $ LinkURL u
+                Nothing -> Nothing
+        clickableNames _ _ = Nothing
 
 -- Add the edit sentinel to the end of the last block in the sequence.
 -- If the last block is a paragraph, append it to that paragraph.
