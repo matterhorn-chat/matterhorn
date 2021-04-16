@@ -98,7 +98,20 @@ maybeFindRight f z = do
     newRing <- C.findRotateTo f (zRing z)
     return z { zRing = newRing }
 
-updateListBy :: (Eq b) => (Maybe b -> b -> Bool) -> [(a, [b])] -> Zipper a b -> Zipper a b
+-- | Update the zipper's entry list, using the specified function
+-- determine which entry should be selected in the new zipper state.
+updateListBy :: (Eq b)
+             => (Maybe b -> b -> Bool)
+             -- ^ The comparison function. This is given the previous
+             -- zipper's focus value (which is optional) and is given
+             -- every element in the new zipper state for comparison.
+             -- This should return True for the item in the new zipper
+             -- that matches the focused item in the old zipper.
+             -> [(a, [b])]
+             -- ^ The new zipper list contents.
+             -> Zipper a b
+             -- ^ The old zipper.
+             -> Zipper a b
 updateListBy f newList oldZip = findRight (f (focus oldZip)) $ fromList newList
 
 maybeMapZipper :: (Eq c) => (b -> Maybe c) -> Zipper a b -> Zipper a c
