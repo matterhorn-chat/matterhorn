@@ -639,7 +639,7 @@ getChannelEntries tId prefs cs ty =
                                              , channelListEntryType = CLChannel
                                              , channelListEntryUnread = hasUnread' ch
                                              , channelListEntrySortValue = ch^.ccInfo.cdDisplayName.to T.toLower
-                                             , channelListEntryFavorite = favoriteChannelPreference prefs cId == Just True
+                                             , channelListEntryFavorite = isFavorite prefs cId
                                              }
     in entries
 
@@ -696,7 +696,7 @@ getGroupDMChannelEntries now config prefs cs =
                                             , channelListEntryType = CLGroupDM
                                             , channelListEntryUnread = hasUnread' ch
                                             , channelListEntrySortValue = ch^.ccInfo.cdDisplayName
-                                            , channelListEntryFavorite = favoriteChannelPreference prefs cId == Just True
+                                            , channelListEntryFavorite = isFavorite prefs cId
                                             }) $
        filteredChannels matches cs
 
@@ -716,16 +716,20 @@ getSingleDMChannelEntries now config cconfig prefs us cs =
             case u^.uiDeleted of
                 True -> Nothing
                 False ->
-                    let fav = favoriteChannelPreference prefs cId == Just True
-                    in if dmChannelShouldAppear now config prefs c
-                       then return (ChannelListEntry { channelListEntryChannelId = cId
-                                                     , channelListEntryType = CLUserDM uId
-                                                     , channelListEntryUnread = hasUnread' c
-                                                     , channelListEntrySortValue = displayNameForUser u cconfig prefs
-                                                     , channelListEntryFavorite = fav
-                                                     })
-                       else Nothing
+                    if dmChannelShouldAppear now config prefs c
+                    then return (ChannelListEntry { channelListEntryChannelId = cId
+                                                  , channelListEntryType = CLUserDM uId
+                                                  , channelListEntryUnread = hasUnread' c
+                                                  , channelListEntrySortValue = displayNameForUser u cconfig prefs
+                                                  , channelListEntryFavorite = isFavorite prefs cId
+                                                  })
+                    else Nothing
     in mappingWithUserInfo
+
+-- | Return whether the specified channel has been marked as a favorite
+-- channel.
+isFavorite :: UserPreferences -> ChannelId -> Bool
+isFavorite prefs cId = favoriteChannelPreference prefs cId == Just True
 
 -- Always show a DM channel if it has unread activity or has been marked
 -- as a favorite.
@@ -743,7 +747,7 @@ dmChannelShouldAppear now config prefs c =
         updated = c^.ccInfo.cdUpdated
         Just uId = c^.ccInfo.cdDMUserId
         cId = c^.ccInfo.cdChannelId
-    in if favoriteChannelPreference prefs cId == Just True
+    in if isFavorite prefs cId
        then True
        else (if hasUnread' c || maybe False (>= localCutoff) (c^.ccInfo.cdSidebarShowOverride)
              then True
@@ -769,7 +773,7 @@ groupChannelShouldAppear now config prefs c =
         cutoff = ServerTime localCutoff
         updated = c^.ccInfo.cdUpdated
         cId = c^.ccInfo.cdChannelId
-    in if favoriteChannelPreference prefs cId == Just True
+    in if isFavorite prefs cId
        then True
        else (if hasUnread' c || maybe False (>= localCutoff) (c^.ccInfo.cdSidebarShowOverride)
              then True
