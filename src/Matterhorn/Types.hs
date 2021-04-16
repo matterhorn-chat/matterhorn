@@ -450,6 +450,7 @@ data ChannelListEntry =
     ChannelListEntry { channelListEntryChannelId :: ChannelId
                      , channelListEntryType :: ChannelListEntryType
                      , channelListEntryUnread :: Bool
+                     , channelListEntrySortValue :: T.Text
                      }
                      deriving (Eq, Show)
 
@@ -603,67 +604,77 @@ mkChannelZipperList :: UTCTime
                     -> Users
                     -> [(ChannelListGroup, [ChannelListEntry])]
 mkChannelZipperList now config tId cconfig prefs cs us =
-    [ let entries = getChannelEntriesInOrder tId prefs cs Ordinary
+    [ let entries = getChannelEntries tId prefs cs Ordinary
           unread = length $ filter channelListEntryUnread entries
-      in (ChannelGroupPublicChannels unread, entries)
-    , let entries = getChannelEntriesInOrder tId prefs cs Private
+      in (ChannelGroupPublicChannels unread, sortChannelListEntries entries)
+    , let entries = getChannelEntries tId prefs cs Private
           unread = length $ filter channelListEntryUnread entries
-      in (ChannelGroupPrivateChannels unread, entries)
-    , let entries = getFavoriteChannelEntriesInOrder tId prefs cs
+      in (ChannelGroupPrivateChannels unread, sortChannelListEntries entries)
+    , let entries = getFavoriteChannelEntries tId prefs cs
           unread = length $ filter channelListEntryUnread entries
-      in (ChannelGroupFavoriteChannels unread, entries)
-    , let entries = getDMChannelEntriesInOrder now config cconfig prefs us cs
+      in (ChannelGroupFavoriteChannels unread, sortChannelListEntries entries)
+    , let entries = getDMChannelEntries now config cconfig prefs us cs
           unread = length $ filter channelListEntryUnread entries
-      in (ChannelGroupDirectMessages unread, entries)
+      in (ChannelGroupDirectMessages unread, sortDMChannelListEntries entries)
     ]
 
-getFavoriteChannelEntriesInOrder :: TeamId -> UserPreferences -> ClientChannels -> [ChannelListEntry]
-getFavoriteChannelEntriesInOrder tId prefs cs =
+sortChannelListEntries :: [ChannelListEntry] -> [ChannelListEntry]
+sortChannelListEntries = sortBy (comparing channelListEntrySortValue)
+
+sortDMChannelListEntries :: [ChannelListEntry] -> [ChannelListEntry]
+sortDMChannelListEntries = sortBy compareDMChannelListEntries
+
+getFavoriteChannelEntries :: TeamId -> UserPreferences -> ClientChannels -> [ChannelListEntry]
+getFavoriteChannelEntries tId prefs cs =
     let matches (_, info) = (info^.ccInfo.cdTeamId == Just tId || info^.ccInfo.cdTeamId == Nothing) &&
                             favoriteChannelPreference prefs (info^.ccInfo.cdChannelId) == Just True
         pairs = filteredChannels matches cs
-        entries = fmap (\(cId, ch) -> ChannelListEntry { channelListEntryChannelId = cId
-                                                       , channelListEntryType = CLChannel
-                                                       , channelListEntryUnread = hasUnread' ch
-                                                       }) $
-                  sortBy (comparing ((^.ccInfo.cdDisplayName.to T.toLower) . snd)) pairs
+        entries = mkEntry <$> pairs
+        mkEntry (cId, ch) = ChannelListEntry { channelListEntryChannelId = cId
+                                             , channelListEntryType = CLChannel
+                                             , channelListEntryUnread = hasUnread' ch
+                                             , channelListEntrySortValue = ch^.ccInfo.cdDisplayName.to T.toLower
+                                             }
     in entries
 
-getChannelEntriesInOrder :: TeamId -> UserPreferences -> ClientChannels -> Type -> [ChannelListEntry]
-getChannelEntriesInOrder tId prefs cs ty =
+getChannelEntries :: TeamId -> UserPreferences -> ClientChannels -> Type -> [ChannelListEntry]
+getChannelEntries tId prefs cs ty =
     let matches (_, info) = info^.ccInfo.cdType == ty &&
                             info^.ccInfo.cdTeamId == Just tId &&
                             -- make sure the channel is not favorite
                             not (favoriteChannelPreference prefs (info^.ccInfo.cdChannelId) == Just True)
         pairs = filteredChannels matches cs
-        entries = fmap (\(cId, ch) -> ChannelListEntry { channelListEntryChannelId = cId
-                                                       , channelListEntryType = CLChannel
-                                                       , channelListEntryUnread = hasUnread' ch
-                                                       }) $
-                  sortBy (comparing ((^.ccInfo.cdDisplayName.to T.toLower) . snd)) pairs
+        entries = mkEntry <$> pairs
+        mkEntry (cId, ch) = ChannelListEntry { channelListEntryChannelId = cId
+                                             , channelListEntryType = CLChannel
+                                             , channelListEntryUnread = hasUnread' ch
+                                             , channelListEntrySortValue = ch^.ccInfo.cdDisplayName.to T.toLower
+                                             }
     in entries
 
-getDMChannelEntriesInOrder :: UTCTime
-                           -> Config
-                           -> Maybe ClientConfig
-                           -> UserPreferences
-                           -> Users
-                           -> ClientChannels
-                           -> [ChannelListEntry]
-getDMChannelEntriesInOrder now config cconfig prefs us cs =
-    let oneOnOneDmChans = getDMChannelEntries now config cconfig prefs us cs
+getDMChannelEntries :: UTCTime
+                    -> Config
+                    -> Maybe ClientConfig
+                    -> UserPreferences
+                    -> Users
+                    -> ClientChannels
+                    -> [ChannelListEntry]
+getDMChannelEntries now config cconfig prefs us cs =
+    let oneOnOneDmChans = getSingleDMChannelEntries now config cconfig prefs us cs
         groupChans = getGroupDMChannelEntries now config prefs cs
-        allDmChans = groupChans <> oneOnOneDmChans
-        sorter (n1, e1) (n2, e2) =
-            let u1 = channelListEntryUnread e1
-                u2 = channelListEntryUnread e2
-            in if u1 == u2
-               then compare n1 n2
-               else if u1 && not u2
-                    then LT
-                    else GT
-        sorted = sortBy sorter allDmChans
-    in snd <$> sorted
+    in groupChans <> oneOnOneDmChans
+
+compareDMChannelListEntries :: ChannelListEntry -> ChannelListEntry -> Ordering
+compareDMChannelListEntries e1 e2 =
+    let u1 = channelListEntryUnread e1
+        u2 = channelListEntryUnread e2
+        n1 = channelListEntrySortValue e1
+        n2 = channelListEntrySortValue e2
+    in if u1 == u2
+       then compare n1 n2
+       else if u1 && not u2
+            then LT
+            else GT
 
 useNickname' :: Maybe ClientConfig -> UserPreferences -> Bool
 useNickname' clientConfig prefs =
@@ -685,25 +696,26 @@ getGroupDMChannelEntries :: UTCTime
                          -> Config
                          -> UserPreferences
                          -> ClientChannels
-                         -> [(T.Text, ChannelListEntry)]
+                         -> [ChannelListEntry]
 getGroupDMChannelEntries now config prefs cs =
     let matches (_, info) = info^.ccInfo.cdType == Group &&
                             info^.ccInfo.cdTeamId == Nothing &&
                             groupChannelShouldAppear now config prefs info
-    in fmap (\(cId, ch) -> (ch^.ccInfo.cdDisplayName, ChannelListEntry { channelListEntryChannelId = cId
-                                                                       , channelListEntryType = CLGroupDM
-                                                                       , channelListEntryUnread = hasUnread' ch
-                                                                       })) $
+    in fmap (\(cId, ch) -> ChannelListEntry { channelListEntryChannelId = cId
+                                            , channelListEntryType = CLGroupDM
+                                            , channelListEntryUnread = hasUnread' ch
+                                            , channelListEntrySortValue = ch^.ccInfo.cdDisplayName
+                                            }) $
        filteredChannels matches cs
 
-getDMChannelEntries :: UTCTime
-                    -> Config
-                    -> Maybe ClientConfig
-                    -> UserPreferences
-                    -> Users
-                    -> ClientChannels
-                    -> [(T.Text, ChannelListEntry)]
-getDMChannelEntries now config cconfig prefs us cs =
+getSingleDMChannelEntries :: UTCTime
+                          -> Config
+                          -> Maybe ClientConfig
+                          -> UserPreferences
+                          -> Users
+                          -> ClientChannels
+                          -> [ChannelListEntry]
+getSingleDMChannelEntries now config cconfig prefs us cs =
     let mapping = allDmChannelMappings cs
         mappingWithUserInfo = catMaybes $ getInfo <$> mapping
         getInfo (uId, cId) = do
@@ -713,10 +725,11 @@ getDMChannelEntries now config cconfig prefs us cs =
                 True -> Nothing
                 False ->
                     if dmChannelShouldAppear now config prefs c
-                    then return (displayNameForUser u cconfig prefs, ChannelListEntry { channelListEntryChannelId = cId
-                                                                                      , channelListEntryType = CLUserDM uId
-                                                                                      , channelListEntryUnread = hasUnread' c
-                                                                                      })
+                    then return (ChannelListEntry { channelListEntryChannelId = cId
+                                                  , channelListEntryType = CLUserDM uId
+                                                  , channelListEntryUnread = hasUnread' c
+                                                  , channelListEntrySortValue = displayNameForUser u cconfig prefs
+                                                  })
                     else Nothing
     in mappingWithUserInfo
 
