@@ -10,7 +10,6 @@ module Matterhorn.Zipper
   , rightL
   , findRight
   , maybeFindRight
-  , updateList
   , updateListBy
   , filterZipper
   , maybeMapZipper
@@ -98,9 +97,6 @@ maybeFindRight :: (b -> Bool) -> Zipper a b -> Maybe (Zipper a b)
 maybeFindRight f z = do
     newRing <- C.findRotateTo f (zRing z)
     return z { zRing = newRing }
-
-updateList :: (Eq b) => [(a, [b])] -> Zipper a b -> Zipper a b
-updateList newList oldZip = updateListBy (\old b -> old == Just b) newList oldZip
 
 updateListBy :: (Eq b) => (Maybe b -> b -> Bool) -> [(a, [b])] -> Zipper a b -> Zipper a b
 updateListBy f newList oldZip = findRight (f (focus oldZip)) $ fromList newList

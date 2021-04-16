@@ -136,8 +136,8 @@ mkChannelEntryData st e =
                          }
     where
         cId = channelListEntryChannelId e
+        unread = channelListEntryUnread e
         Just chan = findChannelById cId (st^.csChannels)
-        unread = hasUnread' chan
         recent = isRecentChannel st cId
         ret = isReturnChannel st cId
         current = isCurrentChannel st cId

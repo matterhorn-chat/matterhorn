@@ -774,7 +774,7 @@ getNextUnreadChannel st =
     -- for the next candidate channel.
     Z.findRight (\e ->
                 let cId = channelListEntryChannelId e
-                in hasUnread st cId && (cId /= st^.csCurrentChannelId(st^.csCurrentTeamId)))
+                in channelListEntryUnread e && (cId /= st^.csCurrentChannelId(st^.csCurrentTeamId)))
 
 getNextUnreadUserOrChannel :: ChatState
                            -> Zipper a ChannelListEntry
@@ -782,9 +782,9 @@ getNextUnreadUserOrChannel :: ChatState
 getNextUnreadUserOrChannel st z =
     -- Find the next unread channel, prefering direct messages
     let cur = st^.csCurrentChannelId(st^.csCurrentTeamId)
-        matches e = entryIsDMEntry e && isFresh (channelListEntryChannelId e)
-        isFresh c = hasUnread st c && (c /= cur)
-    in fromMaybe (Z.findRight (isFresh . channelListEntryChannelId) z)
+        matches e = entryIsDMEntry e && isFresh e
+        isFresh e = channelListEntryUnread e && (channelListEntryChannelId e /= cur)
+    in fromMaybe (Z.findRight isFresh z)
                  (Z.maybeFindRight matches z)
 
 leaveCurrentChannel :: MH ()
