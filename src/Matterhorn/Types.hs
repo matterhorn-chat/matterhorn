@@ -249,6 +249,7 @@ module Matterhorn.Types
   , userPrefDirectChannelPrefs
   , userPrefTeammateNameDisplayMode
   , userPrefTeamOrder
+  , userPrefFavoriteChannelPrefs
   , dmChannelShowPreference
   , groupChannelShowPreference
   , favoriteChannelPreference
