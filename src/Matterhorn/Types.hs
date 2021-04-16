@@ -610,12 +610,12 @@ mkChannelZipperList now config tId cconfig prefs cs us =
         (normFavs, normEntries) = partitionFavorites $ getChannelEntries tId prefs cs Ordinary
         (dmFavs,   dmEntries)   = partitionFavorites $ getDMChannelEntries now config cconfig prefs us cs
         favEntries              = privFavs <> normFavs <> dmFavs
-    in [ let unread = length $ filter channelListEntryUnread normEntries
+    in [ let unread = length $ filter channelListEntryUnread favEntries
+         in (ChannelGroupFavoriteChannels unread, sortChannelListEntries favEntries)
+       , let unread = length $ filter channelListEntryUnread normEntries
          in (ChannelGroupPublicChannels unread, sortChannelListEntries normEntries)
        , let unread = length $ filter channelListEntryUnread privEntries
          in (ChannelGroupPrivateChannels unread, sortChannelListEntries privEntries)
-       , let unread = length $ filter channelListEntryUnread favEntries
-         in (ChannelGroupFavoriteChannels unread, sortChannelListEntries favEntries)
        , let unread = length $ filter channelListEntryUnread dmEntries
          in (ChannelGroupDirectMessages unread, sortDMChannelListEntries dmEntries)
        ]
