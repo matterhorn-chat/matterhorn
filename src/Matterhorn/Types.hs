@@ -727,7 +727,8 @@ getSingleDMChannelEntries now config cconfig prefs us cs =
                        else Nothing
     in mappingWithUserInfo
 
--- Always show a DM channel if it has unread activity.
+-- Always show a DM channel if it has unread activity or has been marked
+-- as a favorite.
 --
 -- If it has no unread activity and if the preferences explicitly say to
 -- hide it, hide it.
@@ -753,6 +754,14 @@ dmChannelShouldAppear now config prefs c =
                                 updated >= cutoff
                             ])
 
+-- Always show a group DM channel if it has unread activity or has been
+-- marked as a favorite.
+--
+-- If it has no unread activity and if the preferences explicitly say to
+-- hide it, hide it.
+--
+-- Otherwise, only show it if at least one of the other conditions are
+-- met (see 'or' below).
 groupChannelShouldAppear :: UTCTime -> Config -> UserPreferences -> ClientChannel -> Bool
 groupChannelShouldAppear now config prefs c =
     let ndays = configDirectChannelExpirationDays config
