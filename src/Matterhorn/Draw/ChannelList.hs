@@ -142,12 +142,12 @@ mkChannelEntryData st e =
         ret = isReturnChannel st cId
         current = isCurrentChannel st cId
         muted = isMuted chan
-        (name, normalSigil, addSpace, status) = case e of
-            CLChannel _ ->
+        (name, normalSigil, addSpace, status) = case channelListEntryType e of
+            CLChannel ->
                 (chan^.ccInfo.cdDisplayName, Nothing, False, Nothing)
-            CLGroupDM _ ->
+            CLGroupDM ->
                 (chan^.ccInfo.cdDisplayName, Just " ", True, Nothing)
-            CLUserDM _ uId ->
+            CLUserDM uId ->
                 let Just u = userById uId st
                     uname = if useNickname st
                             then u^.uiNickName.non (u^.uiName)

@@ -76,9 +76,12 @@ updateChannelSelectMatches = do
             if patTy == Just PrefixNonDMOnly
             then Nothing
             else (chanNameMatches e . displayName) uInfo
-        matches e@(CLChannel cId) = findChannelById cId (st^.csChannels) >>= chanMatches e
-        matches e@(CLUserDM _ uId) = userById uId st >>= userMatches e
-        matches e@(CLGroupDM cId) = findChannelById cId (st^.csChannels) >>= groupChanMatches e
+        matches e =
+            let cId = channelListEntryChannelId e
+            in case channelListEntryType e of
+                CLChannel    -> findChannelById cId (st^.csChannels) >>= chanMatches e
+                CLUserDM uId -> userById uId st >>= userMatches e
+                CLGroupDM    -> findChannelById cId (st^.csChannels) >>= groupChanMatches e
 
         preserveFocus Nothing _ = False
         preserveFocus (Just m) m2 = matchEntry m == matchEntry m2

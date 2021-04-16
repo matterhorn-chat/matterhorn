@@ -35,8 +35,8 @@ module Matterhorn.Types
   , ViewMessageWindowTab(..)
   , clearChannelUnreadStatus
   , ChannelListEntry(..)
+  , ChannelListEntryType(..)
   , ChannelListOrientation(..)
-  , channelListEntryChannelId
   , channelListEntryUserId
   , userIdsFromZipper
   , entryIsDMEntry
@@ -449,11 +449,17 @@ nonDMChannelListGroupUnread (ChannelGroupDirectMessages _)  = 0
 
 -- | The type of channel list entries.
 data ChannelListEntry =
-    CLChannel ChannelId
+    ChannelListEntry { channelListEntryChannelId :: ChannelId
+                     , channelListEntryType :: ChannelListEntryType
+                     }
+                     deriving (Eq, Show)
+
+data ChannelListEntryType =
+    CLChannel
     -- ^ A non-DM entry
-    | CLUserDM ChannelId UserId
+    | CLUserDM UserId
     -- ^ A single-user DM entry
-    | CLGroupDM ChannelId
+    | CLGroupDM
     -- ^ A multi-user DM entry
     deriving (Eq, Show)
 
@@ -618,7 +624,7 @@ getFavoriteChannelEntriesInOrder tId prefs cs =
                             favoriteChannelPreference prefs (info^.ccInfo.cdChannelId) == Just True
         pairs = filteredChannels matches cs
         unread = length $ filter (== True) $ (hasUnread' . snd) <$> pairs
-        entries = fmap (CLChannel . fst) $
+        entries = fmap (\(cId, _) -> ChannelListEntry { channelListEntryChannelId = cId, channelListEntryType = CLChannel }) $
                   sortBy (comparing ((^.ccInfo.cdDisplayName.to T.toLower) . snd)) pairs
     in (unread, entries)
 
@@ -630,7 +636,7 @@ getChannelEntriesInOrder tId prefs cs ty =
                             not (favoriteChannelPreference prefs (info^.ccInfo.cdChannelId) == Just True)
         pairs = filteredChannels matches cs
         unread = length $ filter (== True) $ (hasUnread' . snd) <$> pairs
-        entries = fmap (CLChannel . fst) $
+        entries = fmap (\(cId, _) -> ChannelListEntry { channelListEntryChannelId = cId, channelListEntryType = CLChannel }) $
                   sortBy (comparing ((^.ccInfo.cdDisplayName.to T.toLower) . snd)) pairs
     in (unread, entries)
 
@@ -682,7 +688,9 @@ getGroupDMChannelEntries now config prefs cs =
     let matches (_, info) = info^.ccInfo.cdType == Group &&
                             info^.ccInfo.cdTeamId == Nothing &&
                             groupChannelShouldAppear now config prefs info
-    in fmap (\(cId, ch) -> (hasUnread' ch, ch^.ccInfo.cdDisplayName, CLGroupDM cId)) $
+    in fmap (\(cId, ch) -> (hasUnread' ch, ch^.ccInfo.cdDisplayName, ChannelListEntry { channelListEntryChannelId = cId
+                                                                                      , channelListEntryType = CLGroupDM
+                                                                                      })) $
        filteredChannels matches cs
 
 getDMChannelEntries :: UTCTime
@@ -702,7 +710,9 @@ getDMChannelEntries now config cconfig prefs us cs =
                 True -> Nothing
                 False ->
                     if dmChannelShouldAppear now config prefs c
-                    then return (hasUnread' c, displayNameForUser u cconfig prefs, CLUserDM cId uId)
+                    then return (hasUnread' c, displayNameForUser u cconfig prefs, ChannelListEntry { channelListEntryChannelId = cId
+                                                                                                    , channelListEntryType = CLUserDM uId
+                                                                                                    })
                     else Nothing
     in mappingWithUserInfo
 
@@ -2069,23 +2079,22 @@ csTeam tId =
     lens (\ st -> st ^. csTeams . at tId ^?! _Just)
          (\ st t -> st & csTeams . at tId .~ Just t)
 
-channelListEntryChannelId :: ChannelListEntry -> ChannelId
-channelListEntryChannelId (CLChannel cId) = cId
-channelListEntryChannelId (CLUserDM cId _) = cId
-channelListEntryChannelId (CLGroupDM cId) = cId
-
 channelListEntryUserId :: ChannelListEntry -> Maybe UserId
-channelListEntryUserId (CLUserDM _ uId) = Just uId
-channelListEntryUserId _ = Nothing
+channelListEntryUserId e =
+    case channelListEntryType e of
+        CLUserDM uId -> Just uId
+        _ -> Nothing
 
 userIdsFromZipper :: Z.Zipper ChannelListGroup ChannelListEntry -> [UserId]
 userIdsFromZipper z =
     concat $ (catMaybes . fmap channelListEntryUserId . snd) <$> Z.toList z
 
 entryIsDMEntry :: ChannelListEntry -> Bool
-entryIsDMEntry (CLUserDM {}) = True
-entryIsDMEntry (CLGroupDM {}) = True
-entryIsDMEntry (CLChannel {}) = False
+entryIsDMEntry e =
+    case channelListEntryType e of
+        CLUserDM {} -> True
+        CLGroupDM {} -> True
+        CLChannel {} -> False
 
 csCurrentChannel :: Lens' ChatState ClientChannel
 csCurrentChannel =
