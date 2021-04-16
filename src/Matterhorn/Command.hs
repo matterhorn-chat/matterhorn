@@ -277,7 +277,7 @@ commandList =
   , Cmd "move-team-right" "Move the currently-selected team to the right in the team list" NoArg $ \_ ->
         moveCurrentTeamRight
 
-  , Cmd "favorite-channel" "Mark the current channel as favorite/non-favorite" NoArg $ \_ ->
+  , Cmd "toggle-favorite" "Toggle the favorite status of the current channel" NoArg $ \_ ->
         toggleChannelFavoriteStatus
   ]
 
