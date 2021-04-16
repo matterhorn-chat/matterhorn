@@ -749,7 +749,7 @@ dmChannelShouldAppear now config prefs c =
         Just uId = c^.ccInfo.cdDMUserId
         cId = c^.ccInfo.cdChannelId
     in if favoriteChannelPreference prefs cId == Just True
-       then False
+       then True
        else (if hasUnread' c || maybe False (>= localCutoff) (c^.ccInfo.cdSidebarShowOverride)
              then True
              else case dmChannelShowPreference prefs uId of
@@ -767,7 +767,7 @@ groupChannelShouldAppear now config prefs c =
         updated = c^.ccInfo.cdUpdated
         cId = c^.ccInfo.cdChannelId
     in if favoriteChannelPreference prefs cId == Just True
-       then False
+       then True
        else (if hasUnread' c || maybe False (>= localCutoff) (c^.ccInfo.cdSidebarShowOverride)
              then True
              else case groupChannelShowPreference prefs cId of
