@@ -370,7 +370,7 @@ import           Data.Function ( on )
 import qualified Data.Kind as K
 import           Data.Ord ( comparing )
 import qualified Data.HashMap.Strict as HM
-import           Data.List ( sortBy, nub, elemIndex )
+import           Data.List ( sortBy, nub, elemIndex, partition )
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Time.Clock ( getCurrentTime, addUTCTime )
@@ -451,6 +451,7 @@ data ChannelListEntry =
                      , channelListEntryType :: ChannelListEntryType
                      , channelListEntryUnread :: Bool
                      , channelListEntrySortValue :: T.Text
+                     , channelListEntryFavorite :: Bool
                      }
                      deriving (Eq, Show)
 
@@ -604,19 +605,19 @@ mkChannelZipperList :: UTCTime
                     -> Users
                     -> [(ChannelListGroup, [ChannelListEntry])]
 mkChannelZipperList now config tId cconfig prefs cs us =
-    [ let entries = getChannelEntries tId prefs cs Ordinary
-          unread = length $ filter channelListEntryUnread entries
-      in (ChannelGroupPublicChannels unread, sortChannelListEntries entries)
-    , let entries = getChannelEntries tId prefs cs Private
-          unread = length $ filter channelListEntryUnread entries
-      in (ChannelGroupPrivateChannels unread, sortChannelListEntries entries)
-    , let entries = getFavoriteChannelEntries tId prefs cs
-          unread = length $ filter channelListEntryUnread entries
-      in (ChannelGroupFavoriteChannels unread, sortChannelListEntries entries)
-    , let entries = getDMChannelEntries now config cconfig prefs us cs
-          unread = length $ filter channelListEntryUnread entries
-      in (ChannelGroupDirectMessages unread, sortDMChannelListEntries entries)
-    ]
+    let (privFavs, privEntries) = partitionFavorites $ getChannelEntries tId prefs cs Private
+        (normFavs, normEntries) = partitionFavorites $ getChannelEntries tId prefs cs Ordinary
+        (dmFavs,   dmEntries)   = partitionFavorites $ getDMChannelEntries now config cconfig prefs us cs
+        favEntries              = privFavs <> normFavs <> dmFavs
+    in [ let unread = length $ filter channelListEntryUnread normEntries
+         in (ChannelGroupPublicChannels unread, sortChannelListEntries normEntries)
+       , let unread = length $ filter channelListEntryUnread privEntries
+         in (ChannelGroupPrivateChannels unread, sortChannelListEntries privEntries)
+       , let unread = length $ filter channelListEntryUnread favEntries
+         in (ChannelGroupFavoriteChannels unread, sortChannelListEntries favEntries)
+       , let unread = length $ filter channelListEntryUnread dmEntries
+         in (ChannelGroupDirectMessages unread, sortDMChannelListEntries dmEntries)
+       ]
 
 sortChannelListEntries :: [ChannelListEntry] -> [ChannelListEntry]
 sortChannelListEntries = sortBy (comparing channelListEntrySortValue)
@@ -624,31 +625,20 @@ sortChannelListEntries = sortBy (comparing channelListEntrySortValue)
 sortDMChannelListEntries :: [ChannelListEntry] -> [ChannelListEntry]
 sortDMChannelListEntries = sortBy compareDMChannelListEntries
 
-getFavoriteChannelEntries :: TeamId -> UserPreferences -> ClientChannels -> [ChannelListEntry]
-getFavoriteChannelEntries tId prefs cs =
-    let matches (_, info) = (info^.ccInfo.cdTeamId == Just tId || info^.ccInfo.cdTeamId == Nothing) &&
-                            favoriteChannelPreference prefs (info^.ccInfo.cdChannelId) == Just True
-        pairs = filteredChannels matches cs
-        entries = mkEntry <$> pairs
-        mkEntry (cId, ch) = ChannelListEntry { channelListEntryChannelId = cId
-                                             , channelListEntryType = CLChannel
-                                             , channelListEntryUnread = hasUnread' ch
-                                             , channelListEntrySortValue = ch^.ccInfo.cdDisplayName.to T.toLower
-                                             }
-    in entries
+partitionFavorites :: [ChannelListEntry] -> ([ChannelListEntry], [ChannelListEntry])
+partitionFavorites = partition channelListEntryFavorite
 
 getChannelEntries :: TeamId -> UserPreferences -> ClientChannels -> Type -> [ChannelListEntry]
 getChannelEntries tId prefs cs ty =
     let matches (_, info) = info^.ccInfo.cdType == ty &&
-                            info^.ccInfo.cdTeamId == Just tId &&
-                            -- make sure the channel is not favorite
-                            not (favoriteChannelPreference prefs (info^.ccInfo.cdChannelId) == Just True)
+                            info^.ccInfo.cdTeamId == Just tId
         pairs = filteredChannels matches cs
         entries = mkEntry <$> pairs
         mkEntry (cId, ch) = ChannelListEntry { channelListEntryChannelId = cId
                                              , channelListEntryType = CLChannel
                                              , channelListEntryUnread = hasUnread' ch
                                              , channelListEntrySortValue = ch^.ccInfo.cdDisplayName.to T.toLower
+                                             , channelListEntryFavorite = favoriteChannelPreference prefs cId == Just True
                                              }
     in entries
 
@@ -705,6 +695,7 @@ getGroupDMChannelEntries now config prefs cs =
                                             , channelListEntryType = CLGroupDM
                                             , channelListEntryUnread = hasUnread' ch
                                             , channelListEntrySortValue = ch^.ccInfo.cdDisplayName
+                                            , channelListEntryFavorite = favoriteChannelPreference prefs cId == Just True
                                             }) $
        filteredChannels matches cs
 
@@ -724,13 +715,15 @@ getSingleDMChannelEntries now config cconfig prefs us cs =
             case u^.uiDeleted of
                 True -> Nothing
                 False ->
-                    if dmChannelShouldAppear now config prefs c
-                    then return (ChannelListEntry { channelListEntryChannelId = cId
-                                                  , channelListEntryType = CLUserDM uId
-                                                  , channelListEntryUnread = hasUnread' c
-                                                  , channelListEntrySortValue = displayNameForUser u cconfig prefs
-                                                  })
-                    else Nothing
+                    let fav = favoriteChannelPreference prefs cId == Just True
+                    in if dmChannelShouldAppear now config prefs c
+                       then return (ChannelListEntry { channelListEntryChannelId = cId
+                                                     , channelListEntryType = CLUserDM uId
+                                                     , channelListEntryUnread = hasUnread' c
+                                                     , channelListEntrySortValue = displayNameForUser u cconfig prefs
+                                                     , channelListEntryFavorite = fav
+                                                     })
+                       else Nothing
     in mappingWithUserInfo
 
 -- Always show a DM channel if it has unread activity.
