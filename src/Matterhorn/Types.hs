@@ -606,8 +606,8 @@ mkChannelZipperList :: UTCTime
                     -> Users
                     -> [(ChannelListGroup, [ChannelListEntry])]
 mkChannelZipperList now config tId cconfig prefs cs us =
-    let (privFavs, privEntries) = partitionFavorites $ getChannelEntries tId prefs cs Private
-        (normFavs, normEntries) = partitionFavorites $ getChannelEntries tId prefs cs Ordinary
+    let (privFavs, privEntries) = partitionFavorites $ getChannelEntriesByType tId prefs cs Private
+        (normFavs, normEntries) = partitionFavorites $ getChannelEntriesByType tId prefs cs Ordinary
         (dmFavs,   dmEntries)   = partitionFavorites $ getDMChannelEntries now config cconfig prefs us cs
         favEntries              = privFavs <> normFavs <> dmFavs
     in [ let unread = length $ filter channelListEntryUnread favEntries
@@ -629,8 +629,8 @@ sortDMChannelListEntries = sortBy compareDMChannelListEntries
 partitionFavorites :: [ChannelListEntry] -> ([ChannelListEntry], [ChannelListEntry])
 partitionFavorites = partition channelListEntryFavorite
 
-getChannelEntries :: TeamId -> UserPreferences -> ClientChannels -> Type -> [ChannelListEntry]
-getChannelEntries tId prefs cs ty =
+getChannelEntriesByType :: TeamId -> UserPreferences -> ClientChannels -> Type -> [ChannelListEntry]
+getChannelEntriesByType tId prefs cs ty =
     let matches (_, info) = info^.ccInfo.cdType == ty &&
                             info^.ccInfo.cdTeamId == Just tId
         pairs = filteredChannels matches cs
