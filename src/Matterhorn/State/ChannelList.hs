@@ -84,7 +84,8 @@ updateTeamSidebar tId = do
     config <- use (csResources.crConfiguration)
 
     let zl = mkChannelZipperList now config tId cconfig prefs cs us
-    csTeam(tId).tsFocus %= Z.updateList zl
+        compareEntries mOld new = (channelListEntryChannelId <$> mOld) == Just (channelListEntryChannelId new)
+    csTeam(tId).tsFocus %= Z.updateListBy compareEntries zl
 
     -- If the zipper rebuild caused the current channel to change, such
     -- as when the previously-focused channel was removed, we need to

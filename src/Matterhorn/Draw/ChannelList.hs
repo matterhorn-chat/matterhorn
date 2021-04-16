@@ -101,6 +101,7 @@ renderChannelListGroupHeading g =
     let (unread, label) = case g of
             ChannelGroupPublicChannels u -> (u, "Public Channels")
             ChannelGroupPrivateChannels u -> (u, "Private Channels")
+            ChannelGroupFavoriteChannels u -> (u, "Favorite Channels")
             ChannelGroupDirectMessages u -> (u, "Direct Messages")
         addUnread = if unread > 0
                     then (<+> (withDefAttr unreadGroupMarkerAttr $ txt "*"))
@@ -135,18 +136,18 @@ mkChannelEntryData st e =
                          }
     where
         cId = channelListEntryChannelId e
+        unread = channelListEntryUnread e
         Just chan = findChannelById cId (st^.csChannels)
-        unread = hasUnread' chan
         recent = isRecentChannel st cId
         ret = isReturnChannel st cId
         current = isCurrentChannel st cId
         muted = isMuted chan
-        (name, normalSigil, addSpace, status) = case e of
-            CLChannel _ ->
+        (name, normalSigil, addSpace, status) = case channelListEntryType e of
+            CLChannel ->
                 (chan^.ccInfo.cdDisplayName, Nothing, False, Nothing)
-            CLGroupDM _ ->
+            CLGroupDM ->
                 (chan^.ccInfo.cdDisplayName, Just " ", True, Nothing)
-            CLUserDM _ uId ->
+            CLUserDM uId ->
                 let Just u = userById uId st
                     uname = if useNickname st
                             then u^.uiNickName.non (u^.uiName)

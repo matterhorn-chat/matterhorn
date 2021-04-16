@@ -280,6 +280,9 @@ commandList =
 
   , Cmd "attach" "Attach a given file without browsing" (LineArg "path") $
         attachFileByPath
+
+  , Cmd "toggle-favorite" "Toggle the favorite status of the current channel" NoArg $ \_ ->
+        toggleChannelFavoriteStatus
   ]
 
 displayUsernameAttribute :: Text -> MH ()
