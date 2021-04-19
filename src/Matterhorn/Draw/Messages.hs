@@ -385,7 +385,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
             Widget Fixed Fixed $ do
                 nameResult <- render $ hBox nameElems
                 let newW = subtract (V.imageWidth (nameResult^.imageL)) <$> w
-                render $ hBox [ raw (nameResult^.imageL)
+                render $ hBox [ Widget Fixed Fixed $ return nameResult
                               , renderRichText mdMyUsername hs newW mdWrapNonhighlightedCodeBlocks (Just clickableNames) (Blocks bs)
                               ]
 
