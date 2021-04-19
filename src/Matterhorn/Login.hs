@@ -87,7 +87,7 @@ import           Matterhorn.Types ( ConnectionInfo(..)
                        , ciPassword, ciUsername, ciHostname, ciUrlPath
                        , ciPort, ciType, AuthenticationException(..)
                        , LogManager, LogCategory(..), ioLogWithManager
-                       , ciAccessToken
+                       , ciAccessToken,  NameLike(..)
                        )
 
 
@@ -98,6 +98,9 @@ data Name =
     | Password
     | AccessToken
     deriving (Ord, Eq, Show)
+
+instance NameLike Name where
+    semeq = (==)
 
 -- | The result of an authentication attempt.
 data LoginAttempt =

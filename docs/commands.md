@@ -4,6 +4,7 @@
 | ------- | ----------- |
 | `/add-user` | Search for a user to add to the current channel |
 | `/add-user <@user>` | Add a user to the current channel |
+| `/attach <path>` | Attach a given file without browsing |
 | `/create-channel <channel name>` | Create a new public channel |
 | `/create-private-channel <channel name>` | Create a new private channel |
 | `/delete-channel` | Delete the current channel |

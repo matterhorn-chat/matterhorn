@@ -8,7 +8,6 @@ import           Matterhorn.Prelude
 
 import qualified Data.Set as Set
 
-
 -- | The 'nubOn' function removes duplicate elements from a list. In
 -- particular, it keeps only the /last/ occurrence of each
 -- element. The equality of two elements in a call to @nub f@ is

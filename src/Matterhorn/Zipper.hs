@@ -15,12 +15,14 @@ module Matterhorn.Zipper
   , filterZipper
   , maybeMapZipper
   , isEmpty
+  , position
   )
 where
 
 import           Prelude ()
 import           Matterhorn.Prelude hiding (toList)
 
+import           Data.List ( elemIndex )
 import           Data.Maybe ( fromJust )
 import qualified Data.Foldable as F
 import qualified Data.Sequence as Seq
@@ -48,6 +50,11 @@ instance Functor (Zipper a) where
 
 isEmpty :: Zipper a b -> Bool
 isEmpty = C.isEmpty . zRing
+
+position :: (Eq b) => Zipper a b -> Maybe Int
+position z = do
+    f <- focus z
+    elemIndex f $ concat $ fmap snd $ toList z
 
 -- Move the focus one element to the left
 left :: Zipper a b -> Zipper a b

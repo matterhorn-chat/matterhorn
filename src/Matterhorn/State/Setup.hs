@@ -10,6 +10,7 @@ import           Matterhorn.Prelude
 import           Brick.BChan ( newBChan )
 import           Brick.Themes ( themeToAttrMap, loadCustomizations )
 import qualified Control.Concurrent.STM as STM
+import           Data.Either ( fromRight )
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
 import           Data.Maybe ( fromJust )
@@ -30,7 +31,7 @@ import           Matterhorn.State.Flagging
 import           Matterhorn.State.Teams ( buildTeamState )
 import           Matterhorn.State.Setup.Threads
 import           Matterhorn.Themes
-import           Matterhorn.TimeUtils ( lookupLocalTimeZone )
+import           Matterhorn.TimeUtils ( lookupLocalTimeZone, utcTimezone )
 import           Matterhorn.Types
 import           Matterhorn.Types.Common
 import           Matterhorn.Emoji
@@ -186,7 +187,8 @@ initializeState cr initialTeamId teams me = do
   let session = getResourceSession cr
       requestChan = cr^.crRequestQueue
 
-  tz <- lookupLocalTimeZone
+  tz <- fromRight utcTimezone <$> lookupLocalTimeZone
+
   hist <- do
       result <- readHistory
       case result of

@@ -1,5 +1,6 @@
 module Matterhorn.TimeUtils
     ( lookupLocalTimeZone
+    , utcTimezone
     , startOfDay
     , justAfter, justBefore
     , asLocalTime
@@ -11,12 +12,14 @@ where
 import           Prelude ()
 import           Matterhorn.Prelude
 
+import qualified Control.Exception as E
 import qualified Data.Text as T
 import           Data.Time.Clock ( UTCTime(..) )
 import           Data.Time.Format ( formatTime, defaultTimeLocale )
-import           Data.Time.LocalTime ( LocalTime(..), TimeOfDay(..) )
+import           Data.Time.LocalTime ( LocalTime(..), TimeOfDay(..), utc )
 import           Data.Time.LocalTime.TimeZone.Olson ( getTimeZoneSeriesFromOlsonFile )
-import           Data.Time.LocalTime.TimeZone.Series ( localTimeToUTC'
+import           Data.Time.LocalTime.TimeZone.Series ( TimeZoneSeries(..)
+                                                     , localTimeToUTC'
                                                      , utcToLocalTime')
 
 import           Network.Mattermost.Types ( ServerTime(..) )
@@ -24,9 +27,11 @@ import           Network.Mattermost.Types ( ServerTime(..) )
 
 -- | Get the timezone series that should be used for converting UTC
 -- times into local times with appropriate DST adjustments.
-lookupLocalTimeZone :: IO TimeZoneSeries
-lookupLocalTimeZone = getTimeZoneSeriesFromOlsonFile "/etc/localtime"
+lookupLocalTimeZone :: IO (Either E.SomeException TimeZoneSeries)
+lookupLocalTimeZone = E.try $ getTimeZoneSeriesFromOlsonFile "/etc/localtime"
 
+utcTimezone :: TimeZoneSeries
+utcTimezone = TimeZoneSeries utc []
 
 -- | Sometimes it is convenient to render a divider between messages;
 -- the 'justAfter' function can be used to get a time that is after

@@ -190,7 +190,7 @@ renderChannelCompletion c inChan selected =
             , padTo displayNameWidth $
               withDefAttr channelNameAttr $
               txt $ sanitizeUserText $ channelDisplayName c
-            , txt $ sanitizeUserText $ channelPurpose c
+            , vLimit 1 $ txt $ sanitizeUserText $ channelPurpose c
             ]
 
 renderCommandCompletion :: CompletionSource -> Text -> Text -> Text -> Widget Name

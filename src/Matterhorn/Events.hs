@@ -10,8 +10,10 @@ import           Matterhorn.Prelude
 
 import           Brick
 import qualified Data.Text as T
+import           GHC.Exception.Type ( fromException )
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( (.=), _2, singular, _Just )
+import qualified System.IO.Error as IO
 
 import qualified Network.Mattermost.Endpoints as MM
 import           Network.Mattermost.Exceptions ( mattermostErrorMessage )
@@ -45,7 +47,7 @@ import           Matterhorn.Events.TabbedWindow
 import           Matterhorn.Events.ManageAttachments
 import           Matterhorn.Events.EditNotifyPrefs
 import           Matterhorn.Events.Websocket
-
+import           Matterhorn.State.Links ( openLinkTarget )
 
 onEvent :: ChatState -> BrickEvent Name MHEvent -> EventM Name (Next ChatState)
 onEvent st ev = runMHEvent st $ do
@@ -61,8 +63,9 @@ onBrickEvent (VtyEvent (Vty.EvKey (Vty.KChar 'l') [Vty.MCtrl])) = do
     liftIO $ Vty.refresh vty
 onBrickEvent (VtyEvent e) =
     onVtyEvent e
-onBrickEvent (MouseDown n button modifier clickLoc) =
-    onMouseDown n button modifier clickLoc
+onBrickEvent (MouseDown n button modifier loc) = do
+    mhLog LogGeneral "Received a mouse event"
+    logOther "Received a mouse event" $ onMouseDown n button modifier loc
 onBrickEvent _ =
     return ()
 
@@ -138,6 +141,7 @@ onMouseDown (ClickableChannelListEntry channelId) Vty.BLeft [] _ = do
     setFocus channelId
     setMode Main
 onMouseDown (ClickableTeamListEntry teamId) Vty.BLeft [] _ = setTeam teamId
+onMouseDown (ClickableURL _ _ t) Vty.BLeft [] _ = void $ openLinkTarget t
 onMouseDown _ _ _ _ = return ()
 
 formatError :: MHError -> T.Text
@@ -166,6 +170,19 @@ formatError (NoSuchHelpTopic topic) =
     let knownTopics = ("  - " <>) <$> helpTopicName <$> helpTopics
     in "Unknown help topic: `" <> topic <> "`. " <>
        (T.unlines $ "Available topics are:" : knownTopics)
+formatError (AttachmentException e) =
+    case fromException e of
+      Just (ioe :: IO.IOError) ->
+          if IO.isDoesNotExistError ioe
+          then "Error attaching, file does not exist!"
+          else if IO.isPermissionError ioe
+               then "Error attaching, lacking permissions to read file!"
+               else "Unable to attach the requested file.  Check that it exists and has proper permissions."
+      Nothing -> "Unknown error attaching file!\n" <>
+          "Please report this error at https://github.com/matterhorn-chat/matterhorn/issues"
+          -- this case shouldn't be reached
+formatError (BadAttachmentPath msg) =
+    msg
 formatError (AsyncErrEvent e) =
     "An unexpected error has occurred! The exception encountered was:\n  " <>
     T.pack (show e) <>

@@ -35,7 +35,7 @@ import           Matterhorn.Constants ( normalChannelSigil, userSigil, editMarki
 import           Matterhorn.Draw.RichText.Flatten
 import           Matterhorn.Draw.RichText.Wrap
 import           Matterhorn.Themes
-import           Matterhorn.Types ( HighlightSet(..), emptyHSet )
+import           Matterhorn.Types ( HighlightSet(..), emptyHSet, NameLike(..), logOther )
 import           Matterhorn.Types.RichText
 
 
@@ -44,8 +44,10 @@ cursorSentinel :: Char
 cursorSentinel = '‸'
 
 -- Render markdown with username highlighting
-renderRichText :: Text -> HighlightSet -> Maybe Int -> Bool -> Blocks -> Widget a
-renderRichText curUser hSet w doWrap (Blocks bs) =
+renderRichText :: NameLike a => Text -> HighlightSet -> Maybe Int -> Bool
+               -> Maybe (Int -> Inline -> Maybe a)
+               -> Blocks -> Widget a
+renderRichText curUser hSet w doWrap nameGen (Blocks bs) =
     runReader (do
               blocks <- mapM renderBlock (addBlankLines bs)
               return $ B.vBox $ toList blocks)
@@ -53,6 +55,7 @@ renderRichText curUser hSet w doWrap (Blocks bs) =
                        , drawHighlightSet = hSet
                        , drawLineWidth = w
                        , drawDoLineWrapping = doWrap
+                       , drawNameGen = nameGen
                        })
 
 -- Add blank lines only between adjacent elements of the same type, to
@@ -69,12 +72,12 @@ addBlankLines = go' . viewl
 
 -- Render text to markdown without username highlighting or permalink
 -- detection
-renderText :: Text -> Widget a
+renderText :: NameLike a => Text -> Widget a
 renderText txt = renderText' Nothing "" emptyHSet txt
 
-renderText' :: Maybe TeamBaseURL -> Text -> HighlightSet -> Text -> Widget a
+renderText' :: NameLike a => Maybe TeamBaseURL -> Text -> HighlightSet -> Text -> Widget a
 renderText' baseUrl curUser hSet t =
-    renderRichText curUser hSet Nothing True $
+    renderRichText curUser hSet Nothing True Nothing $
         parseMarkdown baseUrl t
 
 vBox :: F.Foldable f => f (Widget a) -> Widget a
@@ -90,16 +93,17 @@ maybeHLimit :: Maybe Int -> Widget a -> Widget a
 maybeHLimit Nothing w = w
 maybeHLimit (Just i) w = hLimit i w
 
-type M a = Reader DrawCfg a
+type M a b = Reader (DrawCfg b) a
 
-data DrawCfg =
+data DrawCfg a =
     DrawCfg { drawCurUser :: Text
             , drawHighlightSet :: HighlightSet
             , drawLineWidth :: Maybe Int
             , drawDoLineWrapping :: Bool
+            , drawNameGen :: Maybe (Int -> Inline -> Maybe a)
             }
 
-renderBlock :: Block -> M (Widget a)
+renderBlock :: NameLike a => Block -> M (Widget a) a
 renderBlock (Table aligns headings body) = do
     headingWs <- mapM renderInlines headings
     bodyWs <- forM body $ mapM renderInlines
@@ -161,7 +165,7 @@ addQuoting w =
                           , B.Widget B.Fixed B.Fixed $ return childResult
                           ]
 
-renderCodeBlock :: Sky.SyntaxMap -> Sky.Syntax -> Text -> M (Widget a)
+renderCodeBlock :: Sky.SyntaxMap -> Sky.Syntax -> Text -> M (Widget a) b
 renderCodeBlock syntaxMap syntax tx = do
     let result = Sky.tokenize cfg syntax tx
         cfg = Sky.TokenizerConfig syntaxMap False
@@ -172,7 +176,7 @@ renderCodeBlock syntaxMap syntax tx = do
             return $ (B.txt $ "[" <> Sky.sName syntax <> "]") B.<=>
                      (padding <+> BS.renderRawSource textWithCursor tokLines)
 
-renderRawCodeBlock :: Text -> M (Widget a)
+renderRawCodeBlock :: Text -> M (Widget a) b
 renderRawCodeBlock tx = do
     doWrap <- asks drawDoLineWrapping
 
@@ -193,21 +197,22 @@ renderRawCodeBlock tx = do
 
             render $ padding <+> (Widget Fixed Fixed $ return renderedText)
 
-renderInlines :: Inlines -> M (Widget a)
+renderInlines :: NameLike a => Inlines -> M (Widget a) a
 renderInlines es = do
     w <- asks drawLineWidth
     hSet <- asks drawHighlightSet
     curUser <- asks drawCurUser
+    nameGen <- asks drawNameGen
 
     return $ B.Widget B.Fixed B.Fixed $ do
         ctx <- B.getContext
         let width = fromMaybe (ctx^.B.availWidthL) w
             ws    = fmap (renderWrappedLine curUser) $
                     mconcat $
-                    (doLineWrapping width <$> (F.toList $ flattenInlineSeq hSet es))
+                    (doLineWrapping width <$> (F.toList $ flattenInlineSeq hSet nameGen es))
         B.render (vBox ws)
 
-renderList :: ListType -> ListSpacing -> Seq Blocks -> M (Widget a)
+renderList :: NameLike a => ListType -> ListSpacing -> Seq Blocks -> M (Widget a) a
 renderList ty _spacing bs = do
     let is = case ty of
           BulletList _ -> repeat ("• ")
@@ -224,17 +229,18 @@ renderList ty _spacing bs = do
 
     return $ vBox results
 
-renderWrappedLine :: Text -> WrappedLine -> Widget a
+renderWrappedLine :: Show a => Text -> WrappedLine a -> Widget a
 renderWrappedLine curUser l = hBox $ F.toList $ renderFlattenedValue curUser <$> l
 
-renderFlattenedValue :: Text -> FlattenedValue -> Widget a
+renderFlattenedValue :: Show a => Text -> FlattenedValue a -> Widget a
 renderFlattenedValue curUser (NonBreaking rs) =
     let renderLine = hBox . F.toList . fmap (renderFlattenedValue curUser)
     in vBox (F.toList $ renderLine <$> F.toList rs)
-renderFlattenedValue curUser (SingleInline fi) = addHyperlink $ addStyles widget
+renderFlattenedValue curUser (SingleInline fi) = addClickable $ addHyperlink $ addStyles widget
     where
         val = fiValue fi
         mUrl = fiURL fi
+        mName = fiName fi
         styles = fiStyles fi
 
         addStyles w = foldr addStyle w styles
@@ -249,6 +255,10 @@ renderFlattenedValue curUser (SingleInline fi) = addHyperlink $ addStyles widget
         addHyperlink = case mUrl of
             Nothing -> id
             Just u -> B.withDefAttr urlAttr . B.hyperlink (unURL u)
+
+        addClickable w = case mName of
+            Nothing -> id w
+            Just nm -> logOther ("Adding clickable " ++ (show nm) ++ " to " ++ (show val)) $ (B.border . B.clickable nm) w
 
         widget = case val of
             FSpace               -> B.txt " "

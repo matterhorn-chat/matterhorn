@@ -34,12 +34,12 @@ import           Matterhorn.Draw.RichText.Flatten
 import           Matterhorn.Constants ( editMarking )
 
 
-type WrappedLine = Seq FlattenedValue
+type WrappedLine a = Seq (FlattenedValue a)
 
-data WrapState =
-    WrapState { wrapCompletedLines :: Seq WrappedLine
+data WrapState a =
+    WrapState { wrapCompletedLines :: Seq (WrappedLine a)
               -- ^ The completed lines so far
-              , wrapCurLine :: WrappedLine
+              , wrapCurLine :: (WrappedLine a)
               -- ^ The current line we are accumulating
               , wrapCurCol :: Int
               -- ^ The width of wrapCurLine, in columns
@@ -47,12 +47,12 @@ data WrapState =
               -- ^ The maximum allowable width
               }
 
-type WrapM a = State WrapState a
+type WrapM a b = State (WrapState b) a
 
 -- | Push a flattened value onto the current line if possible, or add a
 -- line break and add the inline value to a new line if it would cause
 -- the current line width to exceed the maximum.
-pushValue :: FlattenedValue -> WrapM ()
+pushValue :: FlattenedValue a -> WrapM () a
 pushValue i = do
     let iw = fvWidth i
         pushThisInline =
@@ -69,7 +69,7 @@ pushValue i = do
 
 -- | Insert a new line break by moving the current accumulating line
 -- onto the completed lines list and resetting it to empty.
-pushLine :: WrapM ()
+pushLine :: WrapM () a
 pushLine = do
     let trimLeadingWhitespace s =
             case Seq.viewl s of
@@ -86,7 +86,7 @@ pushLine = do
 -- lines wrapped at the specified column. This only returns lines longer
 -- than the maximum width when those lines have a single inline value
 -- that cannot be broken down further (such as a long URL).
-doLineWrapping :: Int -> Seq FlattenedValue -> Seq WrappedLine
+doLineWrapping :: Int -> Seq (FlattenedValue a) -> Seq (WrappedLine a)
 doLineWrapping maxCols i =
     result
     where
@@ -99,13 +99,13 @@ doLineWrapping maxCols i =
 
 -- The widths returned by this function must match the content widths
 -- rendered by renderFlattenedValue.
-fvWidth :: FlattenedValue -> Int
+fvWidth :: FlattenedValue a -> Int
 fvWidth (SingleInline fi) = fiWidth fi
 fvWidth (NonBreaking rs) = sum $ (sum . fmap fvWidth) <$> rs
 
 -- The widths returned by this function must match the content widths
 -- rendered by renderFlattenedValue.
-fiWidth :: FlattenedInline -> Int
+fiWidth :: FlattenedInline a -> Int
 fiWidth fi =
     case fiValue fi of
         FText t                      -> B.textWidth t

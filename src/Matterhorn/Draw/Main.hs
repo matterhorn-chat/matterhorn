@@ -517,7 +517,9 @@ teamList :: ChatState -> Widget Name
 teamList st =
     let curTid = st^.csCurrentTeamId
         z = st^.csTeamZipper
+        Just pos = Z.position z
         teams = (\tId -> st^.csTeam(tId)) <$> (concat $ snd <$> Z.toList z)
+        numTeams = length teams
         entries = mkEntry <$> teams
         mkEntry ts =
             let tId = teamId $ _tsTeam ts
@@ -533,9 +535,9 @@ teamList st =
                (T.strip $ sanitizeUserText $ teamDisplayName $ _tsTeam ts)
         unreadCount tId = sum $ fmap (nonDMChannelListGroupUnread . fst) $
                           Z.toList $ st^.csTeam(tId).tsFocus
-    in if length teams == 1
+    in if numTeams == 1
        then emptyWidget
-       else vBox [ hBox [ padRight (Pad 1) $ txt "Teams:"
+       else vBox [ hBox [ padRight (Pad 1) $ txt $ T.pack $ "Teams (" <> show (pos + 1) <> "/" <> show numTeams <> "):"
                         , vLimit 1 $ viewport TeamList Horizontal $
                           hBox $
                           intersperse (txt " ") entries

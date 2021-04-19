@@ -12,10 +12,8 @@ where
 import           Prelude ()
 import           Matterhorn.Prelude
 
-import qualified Control.Exception as E
 import qualified Brick.Widgets.FileBrowser as FB
 import qualified Brick.Widgets.List as L
-import qualified Data.ByteString as BS
 import qualified Data.Text as T
 import qualified Data.Vector as Vector
 import qualified Graphics.Vty as V
@@ -69,6 +67,40 @@ attachmentBrowseKeyHandlers =
       cancelAttachmentBrowse
     , mkKb AttachmentOpenEvent "Open the selected file using the URL open command"
       openSelectedBrowserEntry
+    , mkKb FileBrowserBeginSearchEvent "Begin search for name in list" $
+      mhHandleEventLensed' (csCurrentTeam.tsEditState.unsafeCedFileBrowser)
+        FB.actionFileBrowserBeginSearch
+    , mkKb FileBrowserSelectEnterEvent "Select file or enter directory" $ do
+      mhHandleEventLensed' (csCurrentTeam.tsEditState.unsafeCedFileBrowser)
+        FB.actionFileBrowserSelectEnter
+      withFileBrowser (tryAddAttachment . FB.fileBrowserSelection)
+    , mkKb FileBrowserSelectCurrentEvent "Select file" $
+      mhHandleEventLensed' (csCurrentTeam.tsEditState.unsafeCedFileBrowser)
+        FB.actionFileBrowserSelectCurrent
+    , mkKb FileBrowserListPageUpEvent "Move cursor one page up" $
+      mhHandleEventLensed' (csCurrentTeam.tsEditState.unsafeCedFileBrowser)
+        FB.actionFileBrowserListPageUp
+    , mkKb FileBrowserListPageDownEvent "Move cursor one page down" $
+      mhHandleEventLensed' (csCurrentTeam.tsEditState.unsafeCedFileBrowser)
+        FB.actionFileBrowserListPageDown
+    , mkKb FileBrowserListHalfPageUpEvent "Move cursor one-half page up" $
+      mhHandleEventLensed' (csCurrentTeam.tsEditState.unsafeCedFileBrowser)
+        FB.actionFileBrowserListHalfPageUp
+    , mkKb FileBrowserListHalfPageDownEvent "Move cursor one-half page down" $
+      mhHandleEventLensed' (csCurrentTeam.tsEditState.unsafeCedFileBrowser)
+        FB.actionFileBrowserListHalfPageDown
+    , mkKb FileBrowserListTopEvent "Move cursor to top of list" $
+      mhHandleEventLensed' (csCurrentTeam.tsEditState.unsafeCedFileBrowser)
+        FB.actionFileBrowserListTop
+    , mkKb FileBrowserListBottomEvent "Move cursor to bottom of list" $
+      mhHandleEventLensed' (csCurrentTeam.tsEditState.unsafeCedFileBrowser)
+        FB.actionFileBrowserListBottom
+    , mkKb FileBrowserListNextEvent "Move cursor down" $
+      mhHandleEventLensed' (csCurrentTeam.tsEditState.unsafeCedFileBrowser)
+        FB.actionFileBrowserListNext
+    , mkKb FileBrowserListPrevEvent "Move cursor up" $
+      mhHandleEventLensed' (csCurrentTeam.tsEditState.unsafeCedFileBrowser)
+        FB.actionFileBrowserListPrev
     ]
 
 withFileBrowser :: ((FB.FileBrowser Name) -> MH ()) -> MH ()
@@ -127,38 +159,11 @@ cancelAttachmentBrowse = do
 
 handleFileBrowserEvent :: V.Event -> MH ()
 handleFileBrowserEvent e = do
-  let fbHandle ev = sequence . (fmap (FB.handleFileBrowserEvent ev))
-  mhHandleEventLensed (csCurrentTeam.tsEditState.cedFileBrowser) fbHandle e
-
-  withFileBrowser $ \b -> do
+    let fbHandle ev = sequence . (fmap (FB.handleFileBrowserEvent ev))
+    mhHandleEventLensed (csCurrentTeam.tsEditState.cedFileBrowser) fbHandle e
     -- TODO: Check file browser exception state
-    let entries = FB.fileBrowserSelection b
-    forM_ entries $ \entry -> do
-        -- Is the entry already present? If so, ignore the selection.
-        es <- use (csCurrentTeam.tsEditState.cedAttachmentList.L.listElementsL)
-        let matches = (== (FB.fileInfoFilePath entry)) .
-                      FB.fileInfoFilePath .
-                      attachmentDataFileInfo
-        case Vector.find matches es of
-            Just _ -> return ()
-            Nothing -> do
-                let path = FB.fileInfoFilePath entry
-                readResult <- liftIO $ E.try $ BS.readFile path
-                case readResult of
-                    Left (_::E.SomeException) ->
-                        -- TODO: report the error
-                        return ()
-                    Right bytes -> do
-                        let a = AttachmentData { attachmentDataFileInfo = entry
-                                               , attachmentDataBytes = bytes
-                                               }
-                        oldIdx <- use (csCurrentTeam.tsEditState.cedAttachmentList.L.listSelectedL)
-                        let newIdx = if Vector.null es
-                                     then Just 0
-                                     else oldIdx
-                        csCurrentTeam.tsEditState.cedAttachmentList %= L.listReplace (Vector.snoc es a) newIdx
-
-    when (not $ null entries) $ setMode Main
+    withFileBrowser $ \b ->
+        tryAddAttachment $ FB.fileBrowserSelection b
 
 deleteSelectedAttachment :: MH ()
 deleteSelectedAttachment = do
