@@ -61,8 +61,8 @@ onBrickEvent (VtyEvent (Vty.EvKey (Vty.KChar 'l') [Vty.MCtrl])) = do
     liftIO $ Vty.refresh vty
 onBrickEvent (VtyEvent e) =
     onVtyEvent e
-onBrickEvent (MouseDown n button modifier loc) =
-    onMouseDown n button modifier loc
+onBrickEvent (MouseDown n button modifier clickLoc) =
+    onMouseDown n button modifier clickLoc
 onBrickEvent _ =
     return ()
 
