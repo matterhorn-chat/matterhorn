@@ -175,28 +175,41 @@ renderLastMessages st hs editCutoff msgs =
 
             isBelow m transition = m^.mDate > transition^.mDate
 
-            go :: V.Image -> DirectionalSeq Retrograde (Message, ThreadState) -> RenderM Name V.Image
-            go img ms | messagesLength ms == 0 = return img
-            go img ms = do
+            go :: Int -> DirectionalSeq Retrograde (Message, ThreadState) -> RenderM Name [Result Name]
+            go _ ms | messagesLength ms == 0 = return []
+            go remainingHeight ms = do
                 let Just (m, threadState) = messagesHead ms
                     newMessagesAbove = maybe False (isBelow m) newMessageTransition
-                newImg <- render1HLimit doMsgRender (flip V.vertJoin) targetHeight img threadState m
+
+                result <- render $ doMsgRender m threadState
+
+                croppedResult <- render $ cropTopBy (V.imageHeight (result^.imageL) - remainingHeight) $
+                                          Widget Fixed Fixed $ return result
+
                 -- If the new message fills the window, check whether
                 -- there is still a "New Messages" transition that is
                 -- not displayed. If there is, then we need to replace
                 -- the top line of the new image with a "New Messages"
                 -- indicator.
-                if V.imageHeight newImg >= targetHeight && newMessagesAbove
+                if V.imageHeight (result^.imageL) >= remainingHeight
                 then do
-                    transitionResult <- render $ withDefAttr newMessageTransitionAttr $
-                                                 hBorderWithLabel (txt "New Messages ↑")
-                    let newImg2 = V.vertJoin (transitionResult^.imageL)
-                                               (V.cropTop (targetHeight - 1) newImg)
-                    return newImg2
-                else go newImg $ messagesDrop 1 ms
+                    single <- if newMessagesAbove
+                              then do
+                                  result' <- render $
+                                      vBox [ withDefAttr newMessageTransitionAttr $ hBorderWithLabel (txt "New Messages ↑")
+                                           , cropTopBy 1 $ Widget Fixed Fixed $ return croppedResult
+                                           ]
+                                  return result'
+                              else do
+                                  return croppedResult
+                    return [single]
+                else do
+                    let unusedHeight = remainingHeight - V.imageHeight (result^.imageL)
+                    rest <- go unusedHeight $ messagesDrop 1 ms
+                    return $ result : rest
 
-        img <- go V.emptyImage msgs
-        return $ emptyResult & imageL .~ (V.cropTop targetHeight img)
+        results <- go targetHeight msgs
+        render $ vBox $ (Widget Fixed Fixed . return) <$> reverse results
 
 relaxHeight :: Context -> Context
 relaxHeight c = c & availHeightL .~ (max maxMessageHeight (c^.availHeightL))
