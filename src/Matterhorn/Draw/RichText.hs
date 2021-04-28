@@ -39,10 +39,6 @@ import           Matterhorn.Types ( HighlightSet(..), emptyHSet, NameLike(..) )
 import           Matterhorn.Types.RichText
 
 
--- Cursor sentinel for tracking the user's cursor position in previews.
-cursorSentinel :: Char
-cursorSentinel = '‸'
-
 -- Render markdown with username highlighting
 renderRichText :: NameLike a
                => Text
@@ -71,18 +67,6 @@ renderRichText curUser hSet w doWrap nameGen (Blocks bs) =
                        , drawNameGen = nameGen
                        })
 
--- Add blank lines only between adjacent elements of the same type, to
--- save space
-addBlankLines :: Seq Block -> Seq Block
-addBlankLines = go' . viewl
-  where go' EmptyL = S.empty
-        go' (x :< xs) = go x (viewl xs)
-        go a (b :< rs)
-            | sameBlockType a b = a <| blank <| go b (viewl rs)
-            | otherwise         = a <| go b (viewl rs)
-        go x EmptyL = S.singleton x
-        blank = Para (Inlines $ S.singleton ESpace)
-
 -- Render text to markdown without username highlighting, permalink
 -- detection, or clickable links
 renderText :: NameLike a => Text -> Widget a
@@ -104,6 +88,18 @@ renderText' :: NameLike a
 renderText' baseUrl curUser hSet nameGen t =
     renderRichText curUser hSet Nothing True nameGen $
         parseMarkdown baseUrl t
+
+-- Add blank lines only between adjacent elements of the same type, to
+-- save space
+addBlankLines :: Seq Block -> Seq Block
+addBlankLines = go' . viewl
+  where go' EmptyL = S.empty
+        go' (x :< xs) = go x (viewl xs)
+        go a (b :< rs)
+            | sameBlockType a b = a <| blank <| go b (viewl rs)
+            | otherwise         = a <| go b (viewl rs)
+        go x EmptyL = S.singleton x
+        blank = Para (Inlines $ S.singleton ESpace)
 
 vBox :: F.Foldable f => f (Widget a) -> Widget a
 vBox = B.vBox . toList
@@ -312,3 +308,7 @@ wrappedTextWithCursor t
 
 removeCursor :: Text -> Text
 removeCursor = T.filter (/= cursorSentinel)
+
+-- Cursor sentinel for tracking the user's cursor position in previews.
+cursorSentinel :: Char
+cursorSentinel = '‸'
