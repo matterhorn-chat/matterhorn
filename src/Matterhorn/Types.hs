@@ -787,7 +787,7 @@ data Name =
     | TeamList
     | ClickableChannelListEntry ChannelId
     | ClickableTeamListEntry TeamId
-    | ClickableURL MessageId Int LinkTarget
+    | ClickableURLInMessage MessageId Int LinkTarget
     | ClickableURLListEntry Int LinkTarget
     deriving (Eq, Show, Ord)
 
@@ -795,7 +795,7 @@ class (Show a, Eq a, Ord a) => NameLike a where
     semeq :: a -> a -> Bool
 
 instance NameLike Name where
-    semeq (ClickableURL mId1 _ t1) (ClickableURL mId2 _ t2) = mId1 == mId2 && t1 == t2
+    semeq (ClickableURLInMessage mId1 _ t1) (ClickableURLInMessage mId2 _ t2) = mId1 == mId2 && t1 == t2
     semeq a b = a == b
 
 instance NameLike a => NameLike (Maybe a) where

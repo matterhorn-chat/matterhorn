@@ -419,7 +419,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
 
         clickableNames i (EHyperlink u _) =
             case msg^.mMessageId of
-                Just mId -> Just $ ClickableURL mId i $ LinkURL u
+                Just mId -> Just $ ClickableURLInMessage mId i $ LinkURL u
                 Nothing -> Nothing
         clickableNames _ _ = Nothing
 
