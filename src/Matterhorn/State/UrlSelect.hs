@@ -22,9 +22,10 @@ import           Matterhorn.Util
 startUrlSelect :: MH ()
 startUrlSelect = do
     urls <- use (csCurrentChannel.to findUrls.to V.fromList)
+    let urlsWithIndexes = V.indexed urls
     tId <- use csCurrentTeamId
     setMode UrlSelect
-    csCurrentTeam.tsUrlList .= (listMoveTo (length urls - 1) $ list (UrlList tId) urls 2)
+    csCurrentTeam.tsUrlList .= (listMoveTo (length urls - 1) $ list (UrlList tId) urlsWithIndexes 2)
 
 stopUrlSelect :: MH ()
 stopUrlSelect = setMode Main
@@ -34,7 +35,7 @@ openSelectedURL = whenMode UrlSelect $ do
     selected <- use (csCurrentTeam.tsUrlList.to listSelectedElement)
     case selected of
         Nothing -> setMode Main
-        Just (_, link) -> do
+        Just (_, (_, link)) -> do
             opened <- openLinkTarget (link^.linkTarget)
             when (not opened) $ do
                 mhError $ ConfigOptionMissing "urlOpenCommand"

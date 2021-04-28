@@ -142,6 +142,7 @@ onMouseDown (ClickableChannelListEntry channelId) Vty.BLeft [] _ = do
     setMode Main
 onMouseDown (ClickableTeamListEntry teamId) Vty.BLeft [] _ = setTeam teamId
 onMouseDown (ClickableURL _ _ t) Vty.BLeft [] _ = void $ openLinkTarget t
+onMouseDown (ClickableURLListEntry _ t) Vty.BLeft [] _ = void $ openLinkTarget t
 onMouseDown _ _ _ _ = return ()
 
 formatError :: MHError -> T.Text

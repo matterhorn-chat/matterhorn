@@ -788,6 +788,7 @@ data Name =
     | ClickableChannelListEntry ChannelId
     | ClickableTeamListEntry TeamId
     | ClickableURL MessageId Int LinkTarget
+    | ClickableURLListEntry Int LinkTarget
     deriving (Eq, Show, Ord)
 
 class (Show a, Eq a, Ord a) => NameLike a where
@@ -1468,7 +1469,7 @@ data TeamState =
               , _tsChannelSelectState :: ChannelSelectState
               -- ^ The state of the user's input and selection for
               -- channel selection mode.
-              , _tsUrlList :: List Name LinkChoice
+              , _tsUrlList :: List Name (Int, LinkChoice)
               -- ^ The URL list used to show URLs drawn from messages in
               -- a channel.
               , _tsViewedMessage :: Maybe (Message, TabbedWindow ViewMessageWindowTab)

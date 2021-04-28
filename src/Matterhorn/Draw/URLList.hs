@@ -42,7 +42,7 @@ renderUrlList st =
 
         hSet = getHighlightSet st
 
-        renderItem sel link =
+        renderItem sel (i, link) =
           let time = link^.linkTime
           in attr sel $ vLimit 2 $
             (vLimit 1 $
@@ -60,7 +60,7 @@ renderUrlList st =
                   , str " "
                   , renderTime st $ withServerTime time
                   ] ) <=>
-            (vLimit 1 (renderLinkTarget (link^.linkTarget)))
+            (vLimit 1 (clickable (ClickableURLListEntry i (link^.linkTarget)) $ renderLinkTarget (link^.linkTarget)))
 
         renderLinkTarget (LinkPermalink (TeamURLName tName) pId) =
             renderText $ "Team: " <> tName <> ", post " <> idString pId
