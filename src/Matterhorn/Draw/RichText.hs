@@ -70,14 +70,14 @@ addBlankLines = go' . viewl
         go x EmptyL = S.singleton x
         blank = Para (Inlines $ S.singleton ESpace)
 
--- Render text to markdown without username highlighting or permalink
--- detection
+-- Render text to markdown without username highlighting, permalink
+-- detection, or clickable links
 renderText :: NameLike a => Text -> Widget a
-renderText txt = renderText' Nothing "" emptyHSet txt
+renderText txt = renderText' Nothing "" emptyHSet Nothing txt
 
-renderText' :: NameLike a => Maybe TeamBaseURL -> Text -> HighlightSet -> Text -> Widget a
-renderText' baseUrl curUser hSet t =
-    renderRichText curUser hSet Nothing True Nothing $
+renderText' :: NameLike a => Maybe TeamBaseURL -> Text -> HighlightSet -> Maybe (Int -> Inline -> Maybe a) -> Text -> Widget a
+renderText' baseUrl curUser hSet nameGen t =
+    renderRichText curUser hSet Nothing True nameGen $
         parseMarkdown baseUrl t
 
 vBox :: F.Foldable f => f (Widget a) -> Widget a

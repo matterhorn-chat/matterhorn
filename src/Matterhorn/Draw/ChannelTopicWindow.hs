@@ -33,7 +33,7 @@ drawChannelTopicWindow st =
          , hBorderWithLabel (withDefAttr clientEmphAttr $ txt "Preview")
          , vLimit previewHeight $
            viewport (ChannelTopicEditorPreview tId) Vertical $
-           renderText' (Just baseUrl) "" hSet topicTxtWithCursor
+           renderText' (Just baseUrl) "" hSet Nothing topicTxtWithCursor
          , hBorder
          , hBox [ padRight Max $
                   padLeft (Pad 1) $

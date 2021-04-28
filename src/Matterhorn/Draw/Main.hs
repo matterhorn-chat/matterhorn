@@ -45,7 +45,7 @@ import           Matterhorn.TimeUtils ( justAfter, justBefore )
 import           Matterhorn.Types
 import           Matterhorn.Types.Common ( sanitizeUserText )
 import           Matterhorn.Types.DirectionalSeq ( emptyDirSeq )
-import           Matterhorn.Types.RichText ( parseMarkdown, TeamBaseURL )
+import           Matterhorn.Types.RichText ( parseMarkdown, TeamBaseURL, Inline(EHyperlink) )
 import           Matterhorn.Types.KeyEvents
 import qualified Matterhorn.Zipper as Z
 
@@ -334,9 +334,11 @@ renderChannelHeader st hs chan =
         chanName = mkChannelName st (chan^.ccInfo)
         tId = st^.csCurrentTeamId
         baseUrl = serverBaseUrl st tId
+        clickableUrls i (EHyperlink u _) = Just $ ClickableURL ChannelTopic i $ LinkURL u
+        clickableUrls _ _ = Nothing
 
     in renderText' (Just baseUrl) (myUsername st)
-         hs
+         hs (Just clickableUrls)
          (channelNameString <> maybeTopic)
 
 renderCurrentChannelDisplay :: ChatState -> HighlightSet -> Widget Name
@@ -776,7 +778,7 @@ mainInterface st =
                      ]
 
     showTypingUsers =
-        let format = renderText' Nothing (myUsername st) hs
+        let format = renderText' Nothing (myUsername st) hs Nothing
         in case allTypingUsers (st^.csCurrentChannel.ccInfo.cdTypingUsers) of
             [] -> emptyWidget
             [uId] | Just un <- usernameForUserId uId st ->

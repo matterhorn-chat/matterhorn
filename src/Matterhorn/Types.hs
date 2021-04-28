@@ -784,9 +784,11 @@ data Name =
     | ChannelTopicSaveButton TeamId
     | ChannelTopicCancelButton TeamId
     | ChannelTopicEditorPreview TeamId
+    | ChannelTopic
     | TeamList
     | ClickableChannelListEntry ChannelId
     | ClickableTeamListEntry TeamId
+    | ClickableURL Name Int LinkTarget
     | ClickableURLInMessage MessageId Int LinkTarget
     | ClickableURLListEntry Int LinkTarget
     deriving (Eq, Show, Ord)

@@ -28,7 +28,7 @@ renderUrlList st =
     header <=> urlDisplay
     where
         header = (withDefAttr channelHeaderAttr $ vLimit 1 $
-                 (renderText' Nothing "" (getHighlightSet st) $
+                 (renderText' Nothing "" (getHighlightSet st) Nothing $
                   "URLs: " <> (mkChannelName st (st^.csCurrentChannel.ccInfo))) <+>
                  fill ' ') <=> hBorder
 

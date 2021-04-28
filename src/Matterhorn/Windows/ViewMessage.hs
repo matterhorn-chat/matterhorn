@@ -117,7 +117,7 @@ reactionsText st m = viewport (ViewMessageReactionsArea tId) Vertical body
         hs = getHighlightSet st
 
         usernameText uids =
-            renderText' Nothing (myUsername st) hs $
+            renderText' Nothing (myUsername st) hs Nothing $
             T.intercalate ", " $
             fmap (userSigil <>) $
             catMaybes (lookupUsername <$> F.toList uids)
