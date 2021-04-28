@@ -44,9 +44,22 @@ cursorSentinel :: Char
 cursorSentinel = '‸'
 
 -- Render markdown with username highlighting
-renderRichText :: NameLike a => Text -> HighlightSet -> Maybe Int -> Bool
+renderRichText :: NameLike a
+               => Text
+               -- ^ The username of the currently-authenticated user.
+               -> HighlightSet
+               -- ^ A highlight set for highlighting channel and
+               -- usernames.
+               -> Maybe Int
+               -- ^ An optional maximum width.
+               -> Bool
+               -- ^ Whether to do line wrapping.
                -> Maybe (Int -> Inline -> Maybe a)
-               -> Blocks -> Widget a
+               -- ^ An optional function to build resource names for
+               -- clickable regions.
+               -> Blocks
+               -- ^ The content to render.
+               -> Widget a
 renderRichText curUser hSet w doWrap nameGen (Blocks bs) =
     runReader (do
               blocks <- mapM renderBlock (addBlankLines bs)
@@ -75,7 +88,19 @@ addBlankLines = go' . viewl
 renderText :: NameLike a => Text -> Widget a
 renderText txt = renderText' Nothing "" emptyHSet Nothing txt
 
-renderText' :: NameLike a => Maybe TeamBaseURL -> Text -> HighlightSet -> Maybe (Int -> Inline -> Maybe a) -> Text -> Widget a
+renderText' :: NameLike a
+            => Maybe TeamBaseURL
+            -- ^ An optional base URL against which to match post links.
+            -> Text
+            -- ^ The username of the currently-authenticated user.
+            -> HighlightSet
+            -- ^ A highlight set for highlighting channel and usernames.
+            -> Maybe (Int -> Inline -> Maybe a)
+            -- ^ An optional function to build resource names for
+            -- clickable regions.
+            -> Text
+            -- ^ The text to parse and then render as rich text.
+            -> Widget a
 renderText' baseUrl curUser hSet nameGen t =
     renderRichText curUser hSet Nothing True nameGen $
         parseMarkdown baseUrl t
