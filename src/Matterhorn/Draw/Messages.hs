@@ -125,8 +125,8 @@ renderChatMessage st hs ind threadState renderTimeFunc msg =
 -- because (depending on the situation) we might use either of the
 -- message list types for the 'before' and 'after' (i.e. the
 -- chronological or retrograde message sequences).
-unsafeRenderMessageSelection :: (Foldable f, Foldable g)
-                             => ((Message, ThreadState), (f (Message, ThreadState), g (Message, ThreadState)))
+unsafeRenderMessageSelection :: (SeqDirection dir1, SeqDirection dir2)
+                             => ((Message, ThreadState), (DirectionalSeq dir1 (Message, ThreadState), DirectionalSeq dir2 (Message, ThreadState)))
                              -> (Message -> ThreadState -> Widget Name)
                              -> Widget Name
 unsafeRenderMessageSelection ((curMsg, curThreadState), (before, after)) doMsgRender =
@@ -140,24 +140,48 @@ unsafeRenderMessageSelection ((curMsg, curThreadState), (before, after)) doMsgRe
         upperHeight = targetHeight `div` 2
         lowerHeight = targetHeight - upperHeight
 
-        lowerRender img (m, tState) = render1HLimit doMsgRender V.vertJoin targetHeight img tState m
-        upperRender img (m, tState) = render1HLimit doMsgRender (flip V.vertJoin) targetHeight img tState m
+    lowerHalfResults <- renderMessageSeq targetHeight (render1 doMsgRender) after
+    upperHalfResults <- renderMessageSeq targetHeight (render1 doMsgRender) before
 
-    lowerHalf <- foldM lowerRender V.emptyImage after
-    upperHalf <- foldM upperRender V.emptyImage before
+    let upperHalfResultsHeight = sum $ (V.imageHeight . image) <$> upperHalfResults
+        lowerHalfResultsHeight = sum $ (V.imageHeight . image) <$> lowerHalfResults
+        curHeight = V.imageHeight $ curMsgResult^.imageL
+        toW = Widget Fixed Fixed . return
+        uncropped = vBox $ fmap toW $
+                           (reverse upperHalfResults) <> (curMsgResult : lowerHalfResults)
 
-    let curHeight = V.imageHeight $ curMsgResult^.imageL
-        uncropped = upperHalf V.<-> curMsgResult^.imageL V.<-> lowerHalf
-        img = if | V.imageHeight lowerHalf < (lowerHeight - curHeight) ->
-                     V.cropTop targetHeight uncropped
-                 | V.imageHeight upperHalf < upperHeight ->
-                     V.cropBottom targetHeight uncropped
-                 | otherwise ->
-                     V.cropTop upperHeight upperHalf V.<-> curMsgResult^.imageL V.<->
-                        (if curHeight < lowerHeight
-                          then V.cropBottom (lowerHeight - curHeight) lowerHalf
-                          else V.cropBottom lowerHeight lowerHalf)
-    return $ emptyResult & imageL .~ img
+        cropTop h w = Widget Fixed Fixed $ do
+            result <- withReaderT relaxHeight $ render w
+            render $ cropTopBy (V.imageHeight (result^.imageL) - h) $ toW result
+        cropBottom h w = Widget Fixed Fixed $ do
+            result <- withReaderT relaxHeight $ render w
+            render $ cropBottomBy (V.imageHeight (result^.imageL) - h) $ toW result
+
+        lowerHalf = vBox $ fmap toW lowerHalfResults
+        upperHalf = vBox $ fmap toW $ reverse upperHalfResults
+
+    render $ if | lowerHalfResultsHeight < (lowerHeight - curHeight) ->
+                    cropTop targetHeight uncropped
+                | upperHalfResultsHeight < upperHeight ->
+                    vLimit targetHeight uncropped
+                | otherwise ->
+                    cropTop upperHeight upperHalf <=> (toW curMsgResult) <=>
+                       (if curHeight < lowerHeight
+                         then cropBottom (lowerHeight - curHeight) lowerHalf
+                         else cropBottom lowerHeight lowerHalf)
+
+renderMessageSeq :: (SeqDirection dir)
+                 => Int
+                 -> (Message -> ThreadState -> Widget Name)
+                 -> DirectionalSeq dir (Message, ThreadState)
+                 -> RenderM Name [Result Name]
+renderMessageSeq remainingHeight renderFunc ms
+    | messagesLength ms == 0 = return []
+    | otherwise = do
+        let Just (m, threadState) = messagesHead ms
+        result <- render $ vLimit remainingHeight $ renderFunc m threadState
+        rest <- renderMessageSeq (remainingHeight - (V.imageHeight $ result^.imageL)) renderFunc (messagesDrop 1 ms)
+        return $ result : rest
 
 renderLastMessages :: ChatState
                    -> HighlightSet
@@ -181,7 +205,7 @@ renderLastMessages st hs editCutoff msgs =
                 let Just (m, threadState) = messagesHead ms
                     newMessagesAbove = maybe False (isBelow m) newMessageTransition
 
-                result <- render $ doMsgRender m threadState
+                result <- render $ render1 doMsgRender m threadState
 
                 croppedResult <- render $ cropTopBy (V.imageHeight (result^.imageL) - remainingHeight) $
                                           Widget Fixed Fixed $ return result
@@ -214,28 +238,17 @@ renderLastMessages st hs editCutoff msgs =
 relaxHeight :: Context -> Context
 relaxHeight c = c & availHeightL .~ (max maxMessageHeight (c^.availHeightL))
 
-render1HLimit :: (Message -> ThreadState -> Widget Name)
-              -> (V.Image -> V.Image -> V.Image)
-              -> Int
-              -> V.Image
-              -> ThreadState
-              -> Message
-              -> RenderM Name V.Image
-render1HLimit doMsgRender fjoin lim img threadState msg
-  | V.imageHeight img >= lim = return img
-  | otherwise = fjoin img <$> render1 doMsgRender threadState msg
-
 render1 :: (Message -> ThreadState -> Widget Name)
-        -> ThreadState
         -> Message
-        -> RenderM Name V.Image
-render1 doMsgRender threadState msg = case msg^.mDeleted of
-    True -> return V.emptyImage
-    False -> do
-        r <- withReaderT relaxHeight $
-             render $ padRight Max $
-             doMsgRender msg threadState
-        return $ r^.imageL
+        -> ThreadState
+        -> Widget Name
+render1 doMsgRender msg threadState = case msg^.mDeleted of
+    True -> emptyWidget
+    False ->
+        Widget Greedy Fixed $ do
+            withReaderT relaxHeight $
+                render $ padRight Max $
+                doMsgRender msg threadState
 
 -- | A bundled structure that includes all the information necessary
 -- to render a given message
