@@ -35,7 +35,7 @@ import           Matterhorn.Constants ( normalChannelSigil, userSigil, editMarki
 import           Matterhorn.Draw.RichText.Flatten
 import           Matterhorn.Draw.RichText.Wrap
 import           Matterhorn.Themes
-import           Matterhorn.Types ( HighlightSet(..), emptyHSet, NameLike(..), logOther )
+import           Matterhorn.Types ( HighlightSet(..), emptyHSet, NameLike(..) )
 import           Matterhorn.Types.RichText
 
 
@@ -258,7 +258,7 @@ renderFlattenedValue curUser (SingleInline fi) = addClickable $ addHyperlink $ a
 
         addClickable w = case mName of
             Nothing -> id w
-            Just nm -> logOther ("Adding clickable " ++ (show nm) ++ " to " ++ (show val)) $ (B.border . B.clickable nm) w
+            Just nm -> B.clickable nm w
 
         widget = case val of
             FSpace               -> B.txt " "
