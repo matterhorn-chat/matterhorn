@@ -299,10 +299,6 @@ module Matterhorn.Types
   , requestLogDestination
   , sendLogMessage
 
-  , logOther
-  , logOtherShow
-  , logOtherShowMaybe
-
   , requestQuit
   , getMessageForPostId
   , getParentMessage
@@ -416,7 +412,7 @@ import           Matterhorn.Types.Posts
 import           Matterhorn.Types.RichText ( TeamBaseURL(..), TeamURLName(..) )
 import           Matterhorn.Types.Users
 import qualified Matterhorn.Zipper as Z
-import           System.IO.Unsafe ( unsafePerformIO )
+
 
 -- * Configuration
 
@@ -2364,14 +2360,3 @@ moveRight v as =
             | otherwise ->
                 let (h, t) = splitAt i as
                 in h <> [head (tail t), v] <> (tail (tail t))
-
-logOther :: String -> a -> a
-logOther t v = unsafePerformIO (appendFile "OTHERLOGS.LOG" (t ++ "\n") >> return v)
-
-logOtherShow :: Show a => a -> b -> b
-logOtherShow t v = logOther (show t) v
-
-logOtherShowMaybe :: Show a => Maybe a -> b -> b
-logOtherShowMaybe t v = case t of
-    Nothing -> v
-    Just t' -> logOther (show t') v

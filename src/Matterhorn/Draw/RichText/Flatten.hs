@@ -57,7 +57,7 @@ import qualified Data.Set as Set
 import qualified Data.Text as T
 
 import           Matterhorn.Constants ( normalChannelSigil, userSigil )
-import           Matterhorn.Types (logOther,  HighlightSet(..), NameLike(..), logOtherShow )
+import           Matterhorn.Types ( HighlightSet(..), NameLike(..) )
 import           Matterhorn.Types.RichText
 
 
