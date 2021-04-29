@@ -126,7 +126,11 @@ renderChatMessage st hs ind threadState renderTimeFunc msg =
 -- message list types for the 'before' and 'after' (i.e. the
 -- chronological or retrograde message sequences).
 unsafeRenderMessageSelection :: (SeqDirection dir1, SeqDirection dir2)
-                             => ((Message, ThreadState), (DirectionalSeq dir1 (Message, ThreadState), DirectionalSeq dir2 (Message, ThreadState)))
+                             => ( (Message, ThreadState)
+                                , ( DirectionalSeq dir1 (Message, ThreadState)
+                                  , DirectionalSeq dir2 (Message, ThreadState)
+                                  )
+                                )
                              -> (Message -> ThreadState -> Widget Name)
                              -> Widget Name
 unsafeRenderMessageSelection ((curMsg, curThreadState), (before, after)) doMsgRender =
