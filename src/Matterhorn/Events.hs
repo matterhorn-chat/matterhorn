@@ -139,11 +139,16 @@ onMouseDown (ClickableChannelListEntry channelId) Vty.BLeft [] _ = do
     resetReturnChannel
     setFocus channelId
     setMode Main
-onMouseDown (ClickableTeamListEntry teamId) Vty.BLeft [] _ = setTeam teamId
-onMouseDown (ClickableURLInMessage _ _ t) Vty.BLeft [] _ = void $ openLinkTarget t
-onMouseDown (ClickableURL _ _ t) Vty.BLeft [] _ = void $ openLinkTarget t
-onMouseDown (ClickableURLListEntry _ t) Vty.BLeft [] _ = void $ openLinkTarget t
-onMouseDown _ _ _ _ = return ()
+onMouseDown (ClickableTeamListEntry teamId) Vty.BLeft [] _ =
+    setTeam teamId
+onMouseDown (ClickableURLInMessage _ _ t) Vty.BLeft [] _ =
+    void $ openLinkTarget t
+onMouseDown (ClickableURL _ _ t) Vty.BLeft [] _ =
+    void $ openLinkTarget t
+onMouseDown (ClickableURLListEntry _ t) Vty.BLeft [] _ =
+    void $ openLinkTarget t
+onMouseDown _ _ _ _ =
+    return ()
 
 formatError :: MHError -> T.Text
 formatError (GenericError msg) =
