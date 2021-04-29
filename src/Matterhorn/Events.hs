@@ -134,6 +134,28 @@ handleIEvent (LogSnapshotFailed path err) =
     postErrorMessage' $ "Could not write log snapshot to " <> T.pack path <>
                         ", error: " <> T.pack err
 
+-- Handle mouse click events.
+--
+-- Note that the handler for each case may need to check the application
+-- mode before handling the click. This is because some mouse events
+-- only make sense when the UI is displaying certain contents. While
+-- it's true that we probably wouldn't even get the click events in the
+-- first place (because the UI element would only cause a click event
+-- to be reported if it was actually rendered), there are cases when we
+-- can get clicks on UI elements that *are* clickable even though those
+-- clicks don't make sense for the application mode. A concrete example
+-- of this is when we display the current channel's contents in one
+-- layer, in monochrome, and then display a modal dialog box on top of
+-- that. We probably *should* ignore clicks on the lower layer because
+-- that's not the mode the application is in, but getting that right
+-- could be hard because we'd have to figure out all possible modes
+-- where those lower-layer clicks would be nonsensical. We don't bother
+-- doing that in the harder cases; instead we just handle the clicks
+-- and do what we would ordinarily do, assuming that there's no real
+-- harm done. The worst that could happen is that a user could click
+-- accidentally on a grayed-out URL (in a message, say) next to a modal
+-- dialog box and then see the URL get opened. That would be weird, but
+-- it isn't the end of the world.
 onMouseDown :: Name -> Vty.Button -> [Vty.Modifier] -> Location -> MH()
 onMouseDown (ClickableChannelListEntry channelId) Vty.BLeft [] _ = do
     whenMode Main $ do
