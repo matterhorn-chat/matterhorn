@@ -141,6 +141,9 @@ onMouseDown (ClickableChannelListEntry channelId) Vty.BLeft [] _ = do
         setFocus channelId
         setMode Main
 onMouseDown (ClickableTeamListEntry teamId) Vty.BLeft [] _ =
+    -- We deliberately handle this event in all modes; this allows us to
+    -- switch the UI to another team regardless of what state it is in,
+    -- which is by design since all teams have their own UI states.
     setTeam teamId
 onMouseDown (ClickableURLInMessage _ _ t) Vty.BLeft [] _ =
     void $ openLinkTarget t
