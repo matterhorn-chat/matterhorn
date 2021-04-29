@@ -86,6 +86,7 @@ We provide a number of avenues for getting support:
 * Custom notifications via notification scripts (see the
   `activityNotifyCommand` configuration setting and
   `docs/notification-scripts.md` for details).
+* Optional mouse support
 
 # Our Versioning Scheme
 
