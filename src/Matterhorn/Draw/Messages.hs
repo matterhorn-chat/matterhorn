@@ -152,10 +152,10 @@ unsafeRenderMessageSelection ((curMsg, curThreadState), (before, after)) doMsgRe
 
         cropTop h w = Widget Fixed Fixed $ do
             result <- withReaderT relaxHeight $ render w
-            render $ cropTopBy (V.imageHeight (result^.imageL) - h) $ toW result
+            render $ cropTopTo h $ toW result
         cropBottom h w = Widget Fixed Fixed $ do
             result <- withReaderT relaxHeight $ render w
-            render $ cropBottomBy (V.imageHeight (result^.imageL) - h) $ toW result
+            render $ cropBottomTo h $ toW result
 
         lowerHalf = vBox $ fmap toW lowerHalfResults
         upperHalf = vBox $ fmap toW $ reverse upperHalfResults
