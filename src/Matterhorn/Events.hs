@@ -172,7 +172,9 @@ onMouseDown (ClickableURLInMessage _ _ t) Vty.BLeft [] _ =
 onMouseDown (ClickableURL _ _ t) Vty.BLeft [] _ =
     void $ openLinkTarget t
 onMouseDown (ClickableURLListEntry _ t) Vty.BLeft [] _ =
-    void $ openLinkTarget t
+    -- Only handle URL list entry clicks when viewing the URL list
+    whenMode UrlSelect $ do
+        void $ openLinkTarget t
 onMouseDown _ _ _ _ =
     return ()
 
