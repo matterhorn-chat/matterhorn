@@ -146,29 +146,31 @@ unsafeRenderMessageSelection ((curMsg, curThreadState), (before, after)) doMsgRe
     let upperHalfResultsHeight = sum $ (V.imageHeight . image) <$> upperHalfResults
         lowerHalfResultsHeight = sum $ (V.imageHeight . image) <$> lowerHalfResults
         curHeight = V.imageHeight $ curMsgResult^.imageL
-        toW = Widget Fixed Fixed . return
-        uncropped = vBox $ fmap toW $
+        uncropped = vBox $ fmap resultToWidget $
                            (reverse upperHalfResults) <> (curMsgResult : lowerHalfResults)
 
         cropTop h w = Widget Fixed Fixed $ do
             result <- withReaderT relaxHeight $ render w
-            render $ cropTopTo h $ toW result
+            render $ cropTopTo h $ resultToWidget result
         cropBottom h w = Widget Fixed Fixed $ do
             result <- withReaderT relaxHeight $ render w
-            render $ cropBottomTo h $ toW result
+            render $ cropBottomTo h $ resultToWidget result
 
-        lowerHalf = vBox $ fmap toW lowerHalfResults
-        upperHalf = vBox $ fmap toW $ reverse upperHalfResults
+        lowerHalf = vBox $ fmap resultToWidget lowerHalfResults
+        upperHalf = vBox $ fmap resultToWidget $ reverse upperHalfResults
 
     render $ if | lowerHalfResultsHeight < (lowerHeight - curHeight) ->
                     cropTop targetHeight uncropped
                 | upperHalfResultsHeight < upperHeight ->
                     vLimit targetHeight uncropped
                 | otherwise ->
-                    cropTop upperHeight upperHalf <=> (toW curMsgResult) <=>
+                    cropTop upperHeight upperHalf <=> (resultToWidget curMsgResult) <=>
                        (if curHeight < lowerHeight
                          then cropBottom (lowerHeight - curHeight) lowerHalf
                          else cropBottom lowerHeight lowerHalf)
+
+resultToWidget :: Result n -> Widget n
+resultToWidget = Widget Fixed Fixed . return
 
 renderMessageSeq :: (SeqDirection dir)
                  => Int
@@ -207,8 +209,7 @@ renderLastMessages st hs editCutoff msgs =
 
                 result <- render $ render1 doMsgRender m threadState
 
-                croppedResult <- render $ cropTopBy (V.imageHeight (result^.imageL) - remainingHeight) $
-                                          Widget Fixed Fixed $ return result
+                croppedResult <- render $ cropTopTo remainingHeight $ resultToWidget result
 
                 -- If the new message fills the window, check whether
                 -- there is still a "New Messages" transition that is
@@ -221,7 +222,7 @@ renderLastMessages st hs editCutoff msgs =
                               then do
                                   result' <- render $
                                       vBox [ withDefAttr newMessageTransitionAttr $ hBorderWithLabel (txt "New Messages ↑")
-                                           , cropTopBy 1 $ Widget Fixed Fixed $ return croppedResult
+                                           , cropTopBy 1 $ resultToWidget croppedResult
                                            ]
                                   return result'
                               else do
