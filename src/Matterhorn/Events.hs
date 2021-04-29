@@ -175,6 +175,10 @@ onMouseDown (ClickableURLListEntry _ t) Vty.BLeft [] _ =
     -- Only handle URL list entry clicks when viewing the URL list
     whenMode UrlSelect $ do
         void $ openLinkTarget t
+onMouseDown (ChannelSelectEntry match) Vty.BLeft [] _ =
+    whenMode ChannelSelect $ do
+        setMode Main
+        setFocus $ channelListEntryChannelId $ matchEntry match
 onMouseDown _ _ _ _ =
     return ()
 

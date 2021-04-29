@@ -198,6 +198,9 @@ Mouse interaction is supported on the following user interface elements:
 
 * Channel list entries can be clicked to switch channels.
 
+* Channel list entries in channel selection mode (`C-g`) can be clicked
+to switch to the selected channel match.
+
 * Team names in the team list can be clicked to switch teams.
 
 * URLs and post links in the URL list (`C-o`) can be clicked to open

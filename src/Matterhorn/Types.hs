@@ -455,7 +455,7 @@ data ChannelListEntry =
     -- ^ A single-user DM entry
     | CLGroupDM ChannelId
     -- ^ A multi-user DM entry
-    deriving (Eq, Show)
+    deriving (Eq, Show, Ord)
 
 -- | This is how we represent the user's configuration. Most fields
 -- correspond to configuration file settings (see Config.hs) but some
@@ -752,6 +752,7 @@ data Name =
     | SyntaxHighlightHelpText
     | KeybindingHelpText
     | ChannelSelectString TeamId
+    | ChannelSelectEntry ChannelSelectMatch
     | CompletionAlternatives TeamId
     | CompletionList TeamId
     | JoinChannelList TeamId
@@ -858,7 +859,7 @@ data ChannelSelectMatch =
                        -- ^ The original entry data corresponding to the
                        -- text match.
                        }
-                       deriving (Eq, Show)
+                       deriving (Eq, Show, Ord)
 
 data ChannelSelectPattern = CSP MatchType Text
                           | CSPAny
