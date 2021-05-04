@@ -27,6 +27,7 @@ import           Matterhorn.Constants
 import           Matterhorn.Events.Keybindings
 import           Matterhorn.Themes
 import           Matterhorn.Types
+import           Matterhorn.Types.RichText ( Inline(EUser) )
 import           Matterhorn.Draw.RichText
 import           Matterhorn.Draw.Messages ( renderMessage, MessageData(..), nameForUserRef )
 
@@ -116,8 +117,13 @@ reactionsText st m = viewport (ViewMessageReactionsArea tId) Vertical body
 
         hs = getHighlightSet st
 
+        clickableUsernames i (EUser un) =
+            Just $ ClickableUsername (ViewMessageReactionsArea tId) i un
+        clickableUsernames _ _ =
+            Nothing
+
         usernameText uids =
-            renderText' Nothing (myUsername st) hs Nothing $
+            renderText' Nothing (myUsername st) hs (Just clickableUsernames) $
             T.intercalate ", " $
             fmap (userSigil <>) $
             catMaybes (lookupUsername <$> F.toList uids)

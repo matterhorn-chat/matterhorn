@@ -215,6 +215,9 @@ containing the post.
 * Usernames in messages can be clicked to switch to the direct message
 channel for the clicked user.
 
+* Usernames in the "Reactions" tab of the message view window can be
+clicked to switch to the direct message channel for the clicked user.
+
 # Spell Checking Support
 
 Matterhorn uses `aspell` to perform spell-checking of your message
