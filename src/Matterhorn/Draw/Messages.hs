@@ -312,18 +312,24 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
           Just u -> if omittedUsernameType (msg^.mType) then Nothing else Just u
           Nothing -> Nothing
         botElem = if isBotMessage msg then txt "[BOT]" else emptyWidget
+        mId = msg^.mMessageId
+        clickableAuthor un = case mId of
+            Nothing -> id
+            -- We use the index (-1) since indexes for clickable
+            -- usernames elsewhere in this message start at 0.
+            Just i -> clickable (ClickableUsernameInMessage i (-1) un)
         nameElems = case msgUsr of
           Just un
             | isEmote msg ->
                 [ withDefAttr pinnedMessageIndicatorAttr $ txt $ if msg^.mPinned then "[PIN]" else ""
                 , txt $ (if msg^.mFlagged then "[!] " else "") <> "*"
-                , colorUsername mdMyUsername un un
+                , clickableAuthor un $ colorUsername mdMyUsername un un
                 , botElem
                 , txt " "
                 ]
             | otherwise ->
                 [ withDefAttr pinnedMessageIndicatorAttr $ txt $ if msg^.mPinned then "[PIN] " else ""
-                , colorUsername mdMyUsername un un
+                , clickableAuthor un $ colorUsername mdMyUsername un un
                 , botElem
                 , txt $ (if msg^.mFlagged then "[!]" else "") <> ": "
                 ]
