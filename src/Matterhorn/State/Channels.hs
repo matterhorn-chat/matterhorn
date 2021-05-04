@@ -996,6 +996,7 @@ changeChannelByName name = do
         if (_uiId <$> foundUser) == Just myId
         then return ()
         else do
+            setMode Main
             let err = mhError $ AmbiguousName name
             case (mCId, mDMCId) of
               (Nothing, Nothing) ->
