@@ -212,6 +212,9 @@ opener.
 * Post links in messages can be clicked to switch to the channel
 containing the post.
 
+* Usernames in messages can be clicked to switch to the direct message
+channel for the clicked user.
+
 # Spell Checking Support
 
 Matterhorn uses `aspell` to perform spell-checking of your message

@@ -426,6 +426,10 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
             case msg^.mMessageId of
                 Just mId -> Just $ ClickableURLInMessage mId i $ LinkURL u
                 Nothing -> Nothing
+        clickableNames i (EUser name) =
+            case msg^.mMessageId of
+                Just mId -> Just $ ClickableUsernameInMessage mId i name
+                Nothing -> Nothing
         clickableNames _ _ = Nothing
 
 -- Add the edit sentinel to the end of the last block in the sequence.
