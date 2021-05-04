@@ -172,9 +172,9 @@ onMouseDown (ClickableURLInMessage _ _ t) Vty.BLeft [] _ =
 onMouseDown (ClickableURL _ _ t) Vty.BLeft [] _ =
     void $ openLinkTarget t
 onMouseDown (ClickableUsernameInMessage _ _ username) Vty.BLeft [] _ =
-        changeChannelByName $ userSigil <> username
+    changeChannelByName $ userSigil <> username
 onMouseDown (ClickableUsername _ _ username) Vty.BLeft [] _ =
-        changeChannelByName $ userSigil <> username
+    changeChannelByName $ userSigil <> username
 onMouseDown (ClickableURLListEntry _ t) Vty.BLeft [] _ =
     -- Only handle URL list entry clicks when viewing the URL list
     whenMode UrlSelect $ do
