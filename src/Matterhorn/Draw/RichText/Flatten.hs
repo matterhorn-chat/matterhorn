@@ -150,9 +150,11 @@ data FlattenEnv a =
 -- Otherwise it is rewritten as an 'FText' node so that the username
 -- does not get highlighted. Channel references ('EChannel') are handled
 -- similarly.
-flattenInlineSeq :: SemEq a => HighlightSet
+flattenInlineSeq :: SemEq a
+                 => HighlightSet
                  -> Maybe (Int -> Inline -> Maybe a)
-                 -> Inlines -> Seq (Seq (FlattenedValue a))
+                 -> Inlines
+                 -> Seq (Seq (FlattenedValue a))
 flattenInlineSeq hs nameGen is =
     flattenInlineSeq' initialEnv 0 is
     where
@@ -163,7 +165,11 @@ flattenInlineSeq hs nameGen is =
                                 , flattenNameRoot = Nothing
                                 }
 
-flattenInlineSeq' :: SemEq a => FlattenEnv a -> Int -> Inlines -> Seq (Seq (FlattenedValue a))
+flattenInlineSeq' :: SemEq a
+                  => FlattenEnv a
+                  -> Int
+                  -> Inlines
+                  -> Seq (Seq (FlattenedValue a))
 flattenInlineSeq' env c is =
     fsCompletedLines $ execState stBody initialState
     where
