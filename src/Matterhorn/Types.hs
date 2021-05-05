@@ -20,7 +20,7 @@ module Matterhorn.Types
   , MHError(..)
   , AttachmentData(..)
   , CPUUsagePolicy(..)
-  , NameLike(..)
+  , SemEq(..)
   , tabbedWindow
   , getCurrentTabbedWindowEntry
   , tabbedWindowNextTab
@@ -792,15 +792,15 @@ data Name =
     | ClickableURLListEntry Int LinkTarget
     deriving (Eq, Show, Ord)
 
-class (Show a, Eq a, Ord a) => NameLike a where
+class (Show a, Eq a, Ord a) => SemEq a where
     semeq :: a -> a -> Bool
 
-instance NameLike Name where
+instance SemEq Name where
     semeq (ClickableURLInMessage mId1 _ t1) (ClickableURLInMessage mId2 _ t2) = mId1 == mId2 && t1 == t2
     semeq (ClickableUsernameInMessage mId1 _ n) (ClickableUsernameInMessage mId2 _ n2) = mId1 == mId2 && n == n2
     semeq a b = a == b
 
-instance NameLike a => NameLike (Maybe a) where
+instance SemEq a => SemEq (Maybe a) where
     semeq Nothing Nothing = True
     semeq (Just a) (Just b) = a `semeq` b
     semeq _ _ = False

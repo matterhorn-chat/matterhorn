@@ -35,12 +35,12 @@ import           Matterhorn.Constants ( normalChannelSigil, userSigil, editMarki
 import           Matterhorn.Draw.RichText.Flatten
 import           Matterhorn.Draw.RichText.Wrap
 import           Matterhorn.Themes
-import           Matterhorn.Types ( HighlightSet(..), emptyHSet, NameLike(..) )
+import           Matterhorn.Types ( HighlightSet(..), emptyHSet, SemEq(..) )
 import           Matterhorn.Types.RichText
 
 
 -- Render markdown with username highlighting
-renderRichText :: NameLike a
+renderRichText :: SemEq a
                => Text
                -- ^ The username of the currently-authenticated user.
                -> HighlightSet
@@ -69,10 +69,10 @@ renderRichText curUser hSet w doWrap nameGen (Blocks bs) =
 
 -- Render text to markdown without username highlighting, permalink
 -- detection, or clickable links
-renderText :: NameLike a => Text -> Widget a
+renderText :: SemEq a => Text -> Widget a
 renderText txt = renderText' Nothing "" emptyHSet Nothing txt
 
-renderText' :: NameLike a
+renderText' :: SemEq a
             => Maybe TeamBaseURL
             -- ^ An optional base URL against which to match post links.
             -> Text
@@ -124,7 +124,7 @@ data DrawCfg a =
             , drawNameGen :: Maybe (Int -> Inline -> Maybe a)
             }
 
-renderBlock :: NameLike a => Block -> M (Widget a) a
+renderBlock :: SemEq a => Block -> M (Widget a) a
 renderBlock (Table aligns headings body) = do
     headingWs <- mapM renderInlines headings
     bodyWs <- forM body $ mapM renderInlines
@@ -218,7 +218,7 @@ renderRawCodeBlock tx = do
 
             render $ padding <+> (Widget Fixed Fixed $ return renderedText)
 
-renderInlines :: NameLike a => Inlines -> M (Widget a) a
+renderInlines :: SemEq a => Inlines -> M (Widget a) a
 renderInlines es = do
     w <- asks drawLineWidth
     hSet <- asks drawHighlightSet
@@ -233,7 +233,7 @@ renderInlines es = do
                     (doLineWrapping width <$> (F.toList $ flattenInlineSeq hSet nameGen es))
         B.render (vBox ws)
 
-renderList :: NameLike a => ListType -> ListSpacing -> Seq Blocks -> M (Widget a) a
+renderList :: SemEq a => ListType -> ListSpacing -> Seq Blocks -> M (Widget a) a
 renderList ty _spacing bs = do
     let is = case ty of
           BulletList _ -> repeat ("• ")

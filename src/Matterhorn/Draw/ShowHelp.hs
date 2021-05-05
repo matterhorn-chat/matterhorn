@@ -287,19 +287,19 @@ keybindingHelp kc = vBox $
 emph :: Widget a -> Widget a
 emph = withDefAttr helpEmphAttr
 
-para :: NameLike a => Text -> Widget a
+para :: SemEq a => Text -> Widget a
 para t = padTop (Pad 1) $ renderText t
 
-paraL :: NameLike a => [Text] -> Widget a
+paraL :: SemEq a => [Text] -> Widget a
 paraL = para . mconcat
 
-heading :: NameLike a => Text -> Widget a
+heading :: SemEq a => Text -> Widget a
 heading = padTop (Pad 1) . headingNoPad
 
-headingNoPad :: NameLike a => Text -> Widget a
+headingNoPad :: SemEq a => Text -> Widget a
 headingNoPad t = hCenter $ emph $ renderText t
 
-syntaxHighlightHelp :: NameLike a => [FilePath] -> Widget a
+syntaxHighlightHelp :: SemEq a => [FilePath] -> Widget a
 syntaxHighlightHelp dirs = vBox
   [ heading "Syntax Highlighting"
 

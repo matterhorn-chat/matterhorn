@@ -57,7 +57,7 @@ import qualified Data.Set as Set
 import qualified Data.Text as T
 
 import           Matterhorn.Constants ( normalChannelSigil, userSigil )
-import           Matterhorn.Types ( HighlightSet(..), NameLike(..) )
+import           Matterhorn.Types ( HighlightSet(..), SemEq(..) )
 import           Matterhorn.Types.RichText
 
 
@@ -150,7 +150,7 @@ data FlattenEnv a =
 -- Otherwise it is rewritten as an 'FText' node so that the username
 -- does not get highlighted. Channel references ('EChannel') are handled
 -- similarly.
-flattenInlineSeq :: NameLike a => HighlightSet
+flattenInlineSeq :: SemEq a => HighlightSet
                  -> Maybe (Int -> Inline -> Maybe a)
                  -> Inlines -> Seq (Seq (FlattenedValue a))
 flattenInlineSeq hs nameGen is =
@@ -163,7 +163,7 @@ flattenInlineSeq hs nameGen is =
                                 , flattenNameRoot = Nothing
                                 }
 
-flattenInlineSeq' :: NameLike a => FlattenEnv a -> Int -> Inlines -> Seq (Seq (FlattenedValue a))
+flattenInlineSeq' :: SemEq a => FlattenEnv a -> Int -> Inlines -> Seq (Seq (FlattenedValue a))
 flattenInlineSeq' env c is =
     fsCompletedLines $ execState stBody initialState
     where
@@ -173,7 +173,7 @@ flattenInlineSeq' env c is =
             flattenInlines is
             pushFLine
 
-flattenInlines :: NameLike a => Inlines -> FlattenM () a
+flattenInlines :: SemEq a => Inlines -> FlattenM () a
 flattenInlines is = do
     pairs <- nameInlinePairs
     mapM_ wrapFlatten pairs
@@ -202,7 +202,7 @@ withHyperlink :: URL -> FlattenM () a -> FlattenM () a
 withHyperlink u = withReaderT (\e -> e { flattenURL = Just u })
 
 -- | Push a FlattenedContent value onto the current line.
-pushFC :: NameLike a => FlattenedContent -> FlattenM () a
+pushFC :: SemEq a => FlattenedContent -> FlattenM () a
 pushFC v = do
     env <- ask
     name <- getName
@@ -226,7 +226,7 @@ pushFC v = do
                     return $ f c
 
 -- | Push a FlattenedValue onto the current line.
-pushFV :: NameLike a => FlattenedValue a -> FlattenM () a
+pushFV :: SemEq a => FlattenedValue a -> FlattenM () a
 pushFV fv = lift $ modify $ \s -> s { fsCurLine = appendFV fv (fsCurLine s) }
 
 -- | Append the value to the sequence.
@@ -237,7 +237,7 @@ pushFV fv = lift $ modify $ \s -> s { fsCurLine = appendFV fv (fsCurLine s) }
 -- non-whitespace text together as one logical token (e.g. "(foo" rather
 -- than "(" followed by "foo") to avoid undesirable line break points in
 -- the wrapping process.
-appendFV :: NameLike a => FlattenedValue a -> Seq (FlattenedValue a) -> Seq (FlattenedValue a)
+appendFV :: SemEq a => FlattenedValue a -> Seq (FlattenedValue a) -> Seq (FlattenedValue a)
 appendFV v line =
     case (Seq.viewr line, v) of
         (h :> SingleInline a, SingleInline b) ->
@@ -272,7 +272,7 @@ isKnownChannel c = do
     let cSet = hChannelSet hSet
     return $ c `Set.member` cSet
 
-flatten :: NameLike a => Inline -> FlattenM () a
+flatten :: SemEq a => Inline -> FlattenM () a
 flatten i =
     case i of
         EUser u -> do
