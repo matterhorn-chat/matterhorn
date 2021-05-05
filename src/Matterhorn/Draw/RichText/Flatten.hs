@@ -111,7 +111,7 @@ data InlineStyle =
     | Permalink
     deriving (Eq, Show)
 
-type FlattenM a b = ReaderT (FlattenEnv b) (State (FlattenState b)) a
+type FlattenM n a = ReaderT (FlattenEnv n) (State (FlattenState n)) a
 
 -- | The flatten monad state
 data FlattenState a =
@@ -179,7 +179,7 @@ flattenInlineSeq' env c is =
             flattenInlines is
             pushFLine
 
-flattenInlines :: SemEq a => Inlines -> FlattenM () a
+flattenInlines :: SemEq a => Inlines -> FlattenM a ()
 flattenInlines is = do
     pairs <- nameInlinePairs
     mapM_ wrapFlatten pairs
@@ -188,7 +188,7 @@ flattenInlines is = do
         nameInlinePairs = forM (unInlines is) $ \i -> do
             nameRoot <- nameGenWrapper i
             return (nameRoot, i)
-        nameGenWrapper :: Inline -> FlattenM (Maybe (Int -> Maybe a)) a
+        nameGenWrapper :: Inline -> FlattenM a (Maybe (Int -> Maybe a))
         nameGenWrapper i = do
             c <- gets fsIndex
             nameGen <- asks flattenNameGen
@@ -196,19 +196,19 @@ flattenInlines is = do
                 Nothing -> Nothing
                 Just f -> if isJust (f c i) then Just (flip f i) else Nothing
 
-withName :: Maybe (Int -> Maybe a) -> FlattenM () a -> FlattenM () a
+withName :: Maybe (Int -> Maybe a) -> FlattenM a () -> FlattenM a ()
 withName f@(Just _) = withReaderT (\e -> e { flattenNameRoot = f })
 withName Nothing = id
 
-withInlineStyle :: InlineStyle -> FlattenM () a -> FlattenM () a
+withInlineStyle :: InlineStyle -> FlattenM a () -> FlattenM a ()
 withInlineStyle s =
     withReaderT (\e -> e { flattenStyles = nub (s : flattenStyles e) })
 
-withHyperlink :: URL -> FlattenM () a -> FlattenM () a
+withHyperlink :: URL -> FlattenM a () -> FlattenM a ()
 withHyperlink u = withReaderT (\e -> e { flattenURL = Just u })
 
 -- | Push a FlattenedContent value onto the current line.
-pushFC :: SemEq a => FlattenedContent -> FlattenM () a
+pushFC :: SemEq a => FlattenedContent -> FlattenM a ()
 pushFC v = do
     env <- ask
     name <- getName
@@ -221,7 +221,7 @@ pushFC v = do
                              }
     pushFV $ SingleInline fi
     where
-        getName :: FlattenM (Maybe a) a
+        getName :: FlattenM a (Maybe a)
         getName = do
             nameGen <- asks flattenNameRoot
             case nameGen of
@@ -232,7 +232,7 @@ pushFC v = do
                     return $ f c
 
 -- | Push a FlattenedValue onto the current line.
-pushFV :: SemEq a => FlattenedValue a -> FlattenM () a
+pushFV :: SemEq a => FlattenedValue a -> FlattenM a ()
 pushFV fv = lift $ modify $ \s -> s { fsCurLine = appendFV fv (fsCurLine s) }
 
 -- | Append the value to the sequence.
@@ -260,25 +260,25 @@ appendFV v line =
 
 -- | Push the current line onto the finished lines list and start a new
 -- line.
-pushFLine :: FlattenM () a
+pushFLine :: FlattenM a ()
 pushFLine =
     lift $ modify $ \s -> s { fsCompletedLines = fsCompletedLines s |> fsCurLine s
                             , fsCurLine = mempty
                             }
 
-isKnownUser :: T.Text -> FlattenM Bool a
+isKnownUser :: T.Text -> FlattenM a Bool
 isKnownUser u = do
     hSet <- asks flattenHighlightSet
     let uSet = hUserSet hSet
     return $ u `Set.member` uSet
 
-isKnownChannel :: T.Text -> FlattenM Bool a
+isKnownChannel :: T.Text -> FlattenM a Bool
 isKnownChannel c = do
     hSet <- asks flattenHighlightSet
     let cSet = hChannelSet hSet
     return $ c `Set.member` cSet
 
-flatten :: SemEq a => Inline -> FlattenM () a
+flatten :: SemEq a => Inline -> FlattenM a ()
 flatten i =
     case i of
         EUser u -> do
