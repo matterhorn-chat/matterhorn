@@ -185,9 +185,9 @@ flattenInlines is = do
     mapM_ wrapFlatten pairs
     where
         wrapFlatten (name, i) = withName name $ flatten i
-        nameInlinePairs = do
-            nameRoots <- mapM nameGenWrapper $ unInlines is
-            return $ Seq.zip nameRoots (unInlines is)
+        nameInlinePairs = forM (unInlines is) $ \i -> do
+            nameRoot <- nameGenWrapper i
+            return (nameRoot, i)
         nameGenWrapper :: Inline -> FlattenM (Maybe (Int -> Maybe a)) a
         nameGenWrapper i = do
             c <- gets fsIndex
