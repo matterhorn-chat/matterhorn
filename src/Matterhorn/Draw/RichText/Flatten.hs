@@ -161,9 +161,18 @@ data FlattenEnv a =
 -- Otherwise it is rewritten as an 'FText' node so that the username
 -- does not get highlighted. Channel references ('EChannel') are handled
 -- similarly.
+--
+-- The optional name generator function argument is used to assign
+-- resource names to each inline that should be clickable once rendered.
+-- The result of the name generator function will be stored in the
+-- 'fiName' field of each 'FlattenedInline' that results from calling
+-- that function on an 'Inline'.
 flattenInlineSeq :: SemEq a
                  => HighlightSet
                  -> Maybe (Int -> Inline -> Maybe a)
+                 -- ^ A name generator function for clickable inlines.
+                 -- The integer argument is a unique (to this inline
+                 -- sequence) sequence number.
                  -> Inlines
                  -> Seq (Seq (FlattenedValue a))
 flattenInlineSeq hs nameGen is =
