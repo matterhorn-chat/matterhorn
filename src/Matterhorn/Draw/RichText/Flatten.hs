@@ -90,6 +90,8 @@ data FlattenedInline a =
                     -- ^ If present, the URL to which we should
                     -- hyperlink this value.
                     , fiName :: Maybe a
+                    -- ^ The resource name, if any, that should be used
+                    -- to make this inline clickable once rendered.
                     }
                     deriving (Show)
 
