@@ -138,11 +138,15 @@ data FlattenEnv a =
                -- ^ The highlight set to use to check for valid user or
                -- channel references
                , flattenNameGen :: Maybe (Int -> Inline -> Maybe a)
-               -- ^ The function to use to generate resource names for
-               -- clickable inlines.
+               -- ^ The function to use to generate resource names
+               -- for clickable inlines. If provided, this is used to
+               -- determine whether a given Inline should be augmented
+               -- with a resource name.
                , flattenNameFunc :: Maybe (Int -> Maybe a)
                -- ^ The currently active function to generate a resource
-               -- name for any inline.
+               -- name for any inline. In practice this is just the
+               -- value of flattenNameGen, but partially applied with a
+               -- specific Inline prior to flattening that Inline.
                }
 
 -- | Given a sequence of inlines, flatten it into a list of lines of
