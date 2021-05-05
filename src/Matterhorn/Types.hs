@@ -792,6 +792,10 @@ data Name =
     | ClickableURLListEntry Int LinkTarget
     deriving (Eq, Show, Ord)
 
+-- | Types that provide a "semantically equal" operation. Two values may
+-- be semantically equal even if they are not equal according to Eq if,
+-- for example, they are equal on the basis of some fields that are more
+-- pertinent than others.
 class (Show a, Eq a, Ord a) => SemEq a where
     semeq :: a -> a -> Bool
 
