@@ -121,7 +121,9 @@ data FlattenState a =
                  , fsCurLine :: Seq (FlattenedValue a)
                  -- ^ The current line we are accumulating in the
                  -- flattening process
-                 , fsIndex :: Int
+                 , fsNameIndex :: Int
+                 -- ^ The index used to generate a new unique name (of
+                 -- type 'a') to make a region of text clickable.
                  }
 
 -- | The flatten monad environment
@@ -156,7 +158,7 @@ flattenInlineSeq :: SemEq a
                  -> Inlines
                  -> Seq (Seq (FlattenedValue a))
 flattenInlineSeq hs nameGen is =
-    flattenInlineSeq' initialEnv 0 is
+    snd $ flattenInlineSeq' initialEnv 0 is
     where
         initialEnv = FlattenEnv { flattenStyles = []
                                 , flattenURL = Nothing
@@ -169,10 +171,11 @@ flattenInlineSeq' :: SemEq a
                   => FlattenEnv a
                   -> Int
                   -> Inlines
-                  -> Seq (Seq (FlattenedValue a))
+                  -> (Int, Seq (Seq (FlattenedValue a)))
 flattenInlineSeq' env c is =
-    fsCompletedLines $ execState stBody initialState
+    (fsNameIndex finalState, fsCompletedLines finalState)
     where
+        finalState = execState stBody initialState
         initialState = FlattenState mempty mempty c
         stBody = runReaderT body env
         body = do
@@ -190,7 +193,7 @@ flattenInlines is = do
             return (nameRoot, i)
         nameGenWrapper :: Inline -> FlattenM a (Maybe (Int -> Maybe a))
         nameGenWrapper i = do
-            c <- gets fsIndex
+            c <- gets fsNameIndex
             nameGen <- asks flattenNameGen
             return $ case nameGen of
                 Nothing -> Nothing
@@ -211,7 +214,7 @@ withHyperlink u = withReaderT (\e -> e { flattenURL = Just u })
 pushFC :: SemEq a => FlattenedContent -> FlattenM a ()
 pushFC v = do
     env <- ask
-    name <- getName
+    name <- getNextName
     let styles = flattenStyles env
         mUrl = flattenURL env
         fi = FlattenedInline { fiValue = v
@@ -220,16 +223,22 @@ pushFC v = do
                              , fiName = name
                              }
     pushFV $ SingleInline fi
-    where
-        getName :: FlattenM a (Maybe a)
-        getName = do
-            nameGen <- asks flattenNameRoot
-            case nameGen of
-                Nothing -> return Nothing
-                Just f -> do
-                    c <- gets fsIndex
-                    modify ( \s -> s { fsIndex = c + 1} )
-                    return $ f c
+
+getNextName :: FlattenM a (Maybe a)
+getNextName = do
+    nameGen <- asks flattenNameRoot
+    case nameGen of
+        Nothing -> return Nothing
+        Just f -> f <$> getNextNameIndex
+
+getNextNameIndex :: FlattenM a Int
+getNextNameIndex = do
+    c <- gets fsNameIndex
+    modify ( \s -> s { fsNameIndex = c + 1} )
+    return c
+
+setNextNameIndex :: Int -> FlattenM a ()
+setNextNameIndex i = modify ( \s -> s { fsNameIndex = i } )
 
 -- | Push a FlattenedValue onto the current line.
 pushFV :: SemEq a => FlattenedValue a -> FlattenM a ()
@@ -292,8 +301,10 @@ flatten i =
 
         ENonBreaking is -> do
             env <- ask
-            c <- gets fsIndex
-            pushFV $ (NonBreaking $ flattenInlineSeq' env (c + 1) is)
+            ni <- getNextNameIndex
+            let (ni', s) = flattenInlineSeq' env ni is
+            pushFV $ NonBreaking s
+            setNextNameIndex ni'
 
         ESoftBreak                  -> pushFLine
         ELineBreak                  -> pushFLine
