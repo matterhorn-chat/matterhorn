@@ -194,7 +194,10 @@ flattenInlineSeq' env c is =
     (fsNameIndex finalState, fsCompletedLines finalState)
     where
         finalState = execState stBody initialState
-        initialState = FlattenState mempty mempty c
+        initialState = FlattenState { fsCompletedLines = mempty
+                                    , fsCurLine = mempty
+                                    , fsNameIndex = c
+                                    }
         stBody = runReaderT body env
         body = do
             flattenInlines is
