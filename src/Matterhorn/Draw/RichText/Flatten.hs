@@ -209,9 +209,18 @@ flattenInlines is = do
     mapM_ wrapFlatten pairs
     where
         wrapFlatten (nameFunc, i) = withNameFunc nameFunc $ flatten i
+
+        -- For each inline, prior to flattening it, obtain the resource
+        -- name (if any) that should be assigned to each flattened
+        -- fragment of the inline.
         nameInlinePairs = forM (unInlines is) $ \i -> do
             nameFunc <- nameGenWrapper i
             return (nameFunc, i)
+
+        -- Determine whether the name generation function will produce
+        -- a name for this inline. If it does (using a fake sequence
+        -- number) then return a new name generation function to use for
+        -- all flattened fragments of this inline.
         nameGenWrapper :: Inline -> FlattenM a (Maybe (Int -> Maybe a))
         nameGenWrapper i = do
             c <- gets fsNameIndex
