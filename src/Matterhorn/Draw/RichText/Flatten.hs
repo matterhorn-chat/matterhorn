@@ -140,7 +140,7 @@ data FlattenEnv a =
                , flattenNameGen :: Maybe (Int -> Inline -> Maybe a)
                -- ^ The function to use to generate resource names for
                -- clickable inlines.
-               , flattenNameRoot :: Maybe (Int -> Maybe a)
+               , flattenNameFunc :: Maybe (Int -> Maybe a)
                -- ^ The currently active function to generate a resource
                -- name for any inline.
                }
@@ -167,7 +167,7 @@ flattenInlineSeq hs nameGen is =
                                 , flattenURL = Nothing
                                 , flattenHighlightSet = hs
                                 , flattenNameGen = nameGen
-                                , flattenNameRoot = Nothing
+                                , flattenNameFunc = Nothing
                                 }
 
 flattenInlineSeq' :: SemEq a
@@ -190,10 +190,10 @@ flattenInlines is = do
     pairs <- nameInlinePairs
     mapM_ wrapFlatten pairs
     where
-        wrapFlatten (name, i) = withName name $ flatten i
+        wrapFlatten (nameFunc, i) = withNameFunc nameFunc $ flatten i
         nameInlinePairs = forM (unInlines is) $ \i -> do
-            nameRoot <- nameGenWrapper i
-            return (nameRoot, i)
+            nameFunc <- nameGenWrapper i
+            return (nameFunc, i)
         nameGenWrapper :: Inline -> FlattenM a (Maybe (Int -> Maybe a))
         nameGenWrapper i = do
             c <- gets fsNameIndex
@@ -202,9 +202,9 @@ flattenInlines is = do
                 Nothing -> Nothing
                 Just f -> if isJust (f c i) then Just (flip f i) else Nothing
 
-withName :: Maybe (Int -> Maybe a) -> FlattenM a () -> FlattenM a ()
-withName f@(Just _) = withReaderT (\e -> e { flattenNameRoot = f })
-withName Nothing = id
+withNameFunc :: Maybe (Int -> Maybe a) -> FlattenM a () -> FlattenM a ()
+withNameFunc f@(Just _) = withReaderT (\e -> e { flattenNameFunc = f })
+withNameFunc Nothing = id
 
 withInlineStyle :: InlineStyle -> FlattenM a () -> FlattenM a ()
 withInlineStyle s =
@@ -229,7 +229,7 @@ pushFC v = do
 
 getNextName :: FlattenM a (Maybe a)
 getNextName = do
-    nameGen <- asks flattenNameRoot
+    nameGen <- asks flattenNameFunc
     case nameGen of
         Nothing -> return Nothing
         Just f -> f <$> getNextNameIndex
