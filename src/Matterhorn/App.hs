@@ -42,6 +42,8 @@ app = App
       ThemeListOverlay              -> showFirstCursor s cs
       ChannelTopicWindow            -> let tId = s^.csCurrentTeamId
                                        in showCursorNamed (ChannelTopicEditor tId) cs
+      SaveAttachmentWindow _        -> let tId = s^.csCurrentTeamId
+                                       in showCursorNamed (AttachmentPathEditor tId) cs
       LeaveChannelConfirm           -> Nothing
       DeleteChannelConfirm          -> Nothing
       MessageSelect                 -> Nothing

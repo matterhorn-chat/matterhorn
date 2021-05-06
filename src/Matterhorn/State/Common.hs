@@ -4,7 +4,8 @@ module Matterhorn.State.Common
     openFilePath
   , openWithOpener
   , runLoggedCommand
-  , prepareAttachment
+  , fetchFile
+  , fetchFileAtPath
 
   -- * Posts
   , installMessagesFromPosts
@@ -30,7 +31,6 @@ import           Matterhorn.Prelude
 
 import           Brick.Main ( invalidateCacheEntry )
 import           Control.Concurrent ( MVar, putMVar, forkIO )
-import           Control.Concurrent.Async ( concurrently )
 import qualified Control.Concurrent.STM as STM
 import           Control.Exception ( SomeException, try )
 import qualified Data.ByteString as BS
@@ -288,20 +288,36 @@ runLoggedCommand outputChan cmd args mInput mOutputVar = void $ forkIO $ do
             error $ "BUG: createProcess returned unexpected result, report this at " <>
                     "https://github.com/matterhorn-chat/matterhorn"
 
-prepareAttachment :: FileId -> Session -> IO String
-prepareAttachment fId sess = do
+-- | Given a file ID and server session, fetch the file into a temporary
+-- location and return its path. The caller is responsible for deleting
+-- the file.
+fetchFile :: FileId -> Session -> IO String
+fetchFile fId sess = do
     -- The link is for an attachment, so fetch it and then
     -- open the local copy.
-
-    (info, contents) <- concurrently (mmGetMetadataForFile fId sess) (mmGetFile fId sess)
+    info <- mmGetMetadataForFile fId sess
     cacheDir <- getUserCacheDir xdgName
+    let dir = cacheDir </> "files" </> T.unpack (idString fId)
+        filename = T.unpack (fileInfoName info)
+        fullPath = dir </> filename
 
-    let dir   = cacheDir </> "files" </> T.unpack (idString fId)
-        fname = dir </> T.unpack (fileInfoName info)
+    fetchFileAtPath fId sess fullPath
+    return fullPath
 
-    createDirectoryIfMissing True dir
-    BS.writeFile fname contents
-    return fname
+-- | Given a file ID and server session, fetch the file and save it to
+-- the specified destination path. The destination path must refer to
+-- the path to the file itself, not its parent directory. This function
+-- will create only the parent directory in the specified path; it will
+-- not create all path entries recursively. If the file already exists,
+-- this function will overwrite the file.
+--
+-- The caller is responsible for catching all exceptions.
+fetchFileAtPath :: FileId -> Session -> FilePath -> IO ()
+fetchFileAtPath fId sess fullPath = do
+    contents <- mmGetFile fId sess
+    let dir = takeDirectory fullPath
+    createDirectoryIfMissing False dir
+    BS.writeFile fullPath contents
 
 removeEmoteFormatting :: T.Text -> T.Text
 removeEmoteFormatting t

@@ -37,8 +37,8 @@ module Matterhorn.Types
   , ViewMessageWindowTab(..)
   , clearChannelUnreadStatus
   , ChannelListEntry(..)
+  , ChannelListEntryType(..)
   , ChannelListOrientation(..)
-  , channelListEntryChannelId
   , channelListEntryUserId
   , userIdsFromZipper
   , entryIsDMEntry
@@ -53,6 +53,11 @@ module Matterhorn.Types
   , ChannelTopicDialogState(..)
   , channelTopicDialogEditor
   , channelTopicDialogFocus
+
+  , newSaveAttachmentDialog
+  , SaveAttachmentDialogState(..)
+  , attachmentPathEditor
+  , attachmentPathDialogFocus
 
   , Config(..)
   , configUserL
@@ -146,6 +151,7 @@ module Matterhorn.Types
   , tsChannelTopicDialog
   , tsReactionEmojiListOverlay
   , tsThemeListOverlay
+  , tsSaveAttachmentDialog
 
   , ChatState
   , newState
@@ -254,8 +260,10 @@ module Matterhorn.Types
   , userPrefDirectChannelPrefs
   , userPrefTeammateNameDisplayMode
   , userPrefTeamOrder
+  , userPrefFavoriteChannelPrefs
   , dmChannelShowPreference
   , groupChannelShowPreference
+  , favoriteChannelPreference
 
   , defaultUserPreferences
   , setUserPreferences
@@ -308,8 +316,6 @@ module Matterhorn.Types
   , withChannelOrDefault
   , userList
   , resetAutocomplete
-  , hasUnread
-  , hasUnread'
   , isMine
   , setUserStatus
   , myUser
@@ -359,7 +365,7 @@ import           Brick.Main ( invalidateCache, invalidateCacheEntry )
 import           Brick.AttrMap ( AttrMap )
 import qualified Brick.BChan as BCH
 import           Brick.Forms (Form)
-import           Brick.Widgets.Edit ( Editor, editor )
+import           Brick.Widgets.Edit ( Editor, editor, applyEdit )
 import           Brick.Widgets.List ( List, list )
 import qualified Brick.Widgets.FileBrowser as FB
 import           Control.Concurrent ( ThreadId )
@@ -376,9 +382,10 @@ import           Data.Function ( on )
 import qualified Data.Kind as K
 import           Data.Ord ( comparing )
 import qualified Data.HashMap.Strict as HM
-import           Data.List ( sortBy, nub, elemIndex )
+import           Data.List ( sortBy, nub, elemIndex, partition )
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
+import qualified Data.Text.Zipper as Z2
 import           Data.Time.Clock ( getCurrentTime, addUTCTime )
 import           Data.UUID ( UUID )
 import qualified Data.Vector as Vec
@@ -434,26 +441,39 @@ data TokenSource =
 data ChannelListGroup =
     ChannelGroupPublicChannels Int
     | ChannelGroupPrivateChannels Int
+    | ChannelGroupFavoriteChannels Int
     | ChannelGroupDirectMessages Int
     deriving (Eq)
 
 channelListGroupUnread :: ChannelListGroup -> Int
 channelListGroupUnread (ChannelGroupPublicChannels n)  = n
 channelListGroupUnread (ChannelGroupPrivateChannels n) = n
+channelListGroupUnread (ChannelGroupFavoriteChannels n) = n
 channelListGroupUnread (ChannelGroupDirectMessages n)  = n
+
 
 nonDMChannelListGroupUnread :: ChannelListGroup -> Int
 nonDMChannelListGroupUnread (ChannelGroupPublicChannels n)  = n
 nonDMChannelListGroupUnread (ChannelGroupPrivateChannels n) = n
+nonDMChannelListGroupUnread (ChannelGroupFavoriteChannels n) = n
 nonDMChannelListGroupUnread (ChannelGroupDirectMessages _)  = 0
 
 -- | The type of channel list entries.
 data ChannelListEntry =
-    CLChannel ChannelId
+    ChannelListEntry { channelListEntryChannelId :: ChannelId
+                     , channelListEntryType :: ChannelListEntryType
+                     , channelListEntryUnread :: Bool
+                     , channelListEntrySortValue :: T.Text
+                     , channelListEntryFavorite :: Bool
+                     }
+                     deriving (Eq, Show, Ord)
+
+data ChannelListEntryType =
+    CLChannel
     -- ^ A non-DM entry
-    | CLUserDM ChannelId UserId
+    | CLUserDM UserId
     -- ^ A single-user DM entry
-    | CLGroupDM ChannelId
+    | CLGroupDM
     -- ^ A multi-user DM entry
     deriving (Eq, Show, Ord)
 
@@ -577,13 +597,10 @@ data UserPreferences =
                     , _userPrefFlaggedPostList :: Seq FlaggedPost
                     , _userPrefGroupChannelPrefs :: HashMap ChannelId Bool
                     , _userPrefDirectChannelPrefs :: HashMap UserId Bool
+                    , _userPrefFavoriteChannelPrefs :: HashMap ChannelId Bool
                     , _userPrefTeammateNameDisplayMode :: Maybe TeammateNameDisplayMode
                     , _userPrefTeamOrder :: Maybe [TeamId]
                     }
-
-hasUnread :: ChatState -> ChannelId -> Bool
-hasUnread st cId = fromMaybe False $
-    hasUnread' <$> findChannelById cId (_csChannels st)
 
 hasUnread' :: ClientChannel -> Bool
 hasUnread' chan = fromMaybe False $ do
@@ -603,46 +620,66 @@ mkChannelZipperList :: UTCTime
                     -> Users
                     -> [(ChannelListGroup, [ChannelListEntry])]
 mkChannelZipperList now config tId cconfig prefs cs us =
-    [ let (unread, entries) = getChannelEntriesInOrder tId cs Ordinary
-      in (ChannelGroupPublicChannels unread, entries)
-    , let (unread, entries) = getChannelEntriesInOrder tId cs Private
-      in (ChannelGroupPrivateChannels unread, entries)
-    , let (unread, entries) = getDMChannelEntriesInOrder now config cconfig prefs us cs
-      in (ChannelGroupDirectMessages unread, entries)
-    ]
+    let (privFavs, privEntries) = partitionFavorites $ getChannelEntriesByType tId prefs cs Private
+        (normFavs, normEntries) = partitionFavorites $ getChannelEntriesByType tId prefs cs Ordinary
+        (dmFavs,   dmEntries)   = partitionFavorites $ getDMChannelEntries now config cconfig prefs us cs
+        favEntries              = privFavs <> normFavs <> dmFavs
+    in [ let unread = length $ filter channelListEntryUnread favEntries
+         in (ChannelGroupFavoriteChannels unread, sortChannelListEntries favEntries)
+       , let unread = length $ filter channelListEntryUnread normEntries
+         in (ChannelGroupPublicChannels unread, sortChannelListEntries normEntries)
+       , let unread = length $ filter channelListEntryUnread privEntries
+         in (ChannelGroupPrivateChannels unread, sortChannelListEntries privEntries)
+       , let unread = length $ filter channelListEntryUnread dmEntries
+         in (ChannelGroupDirectMessages unread, sortDMChannelListEntries dmEntries)
+       ]
 
-getChannelEntriesInOrder :: TeamId -> ClientChannels -> Type -> (Int, [ChannelListEntry])
-getChannelEntriesInOrder tId cs ty =
+sortChannelListEntries :: [ChannelListEntry] -> [ChannelListEntry]
+sortChannelListEntries = sortBy (comparing channelListEntrySortValue)
+
+sortDMChannelListEntries :: [ChannelListEntry] -> [ChannelListEntry]
+sortDMChannelListEntries = sortBy compareDMChannelListEntries
+
+partitionFavorites :: [ChannelListEntry] -> ([ChannelListEntry], [ChannelListEntry])
+partitionFavorites = partition channelListEntryFavorite
+
+getChannelEntriesByType :: TeamId -> UserPreferences -> ClientChannels -> Type -> [ChannelListEntry]
+getChannelEntriesByType tId prefs cs ty =
     let matches (_, info) = info^.ccInfo.cdType == ty &&
                             info^.ccInfo.cdTeamId == Just tId
         pairs = filteredChannels matches cs
-        unread = length $ filter (== True) $ (hasUnread' . snd) <$> pairs
-        entries = fmap (CLChannel . fst) $
-                  sortBy (comparing ((^.ccInfo.cdDisplayName.to T.toLower) . snd)) pairs
-    in (unread, entries)
+        entries = mkEntry <$> pairs
+        mkEntry (cId, ch) = ChannelListEntry { channelListEntryChannelId = cId
+                                             , channelListEntryType = CLChannel
+                                             , channelListEntryUnread = hasUnread' ch
+                                             , channelListEntrySortValue = ch^.ccInfo.cdDisplayName.to T.toLower
+                                             , channelListEntryFavorite = isFavorite prefs cId
+                                             }
+    in entries
 
-getDMChannelEntriesInOrder :: UTCTime
-                           -> Config
-                           -> Maybe ClientConfig
-                           -> UserPreferences
-                           -> Users
-                           -> ClientChannels
-                           -> (Int, [ChannelListEntry])
-getDMChannelEntriesInOrder now config cconfig prefs us cs =
-    let oneOnOneDmChans = getDMChannelEntries now config cconfig prefs us cs
+getDMChannelEntries :: UTCTime
+                    -> Config
+                    -> Maybe ClientConfig
+                    -> UserPreferences
+                    -> Users
+                    -> ClientChannels
+                    -> [ChannelListEntry]
+getDMChannelEntries now config cconfig prefs us cs =
+    let oneOnOneDmChans = getSingleDMChannelEntries now config cconfig prefs us cs
         groupChans = getGroupDMChannelEntries now config prefs cs
-        allDmChans = groupChans <> oneOnOneDmChans
-        sorter (u1, n1, _) (u2, n2, _) =
-            if u1 == u2
-            then compare n1 n2
-            else if u1 && not u2
-                 then LT
-                 else GT
-        sorted = sortBy sorter allDmChans
-        third (_, _, c) = c
-        fst3 (a, _, _) = a
-        unread = length $ filter id $ fst3 <$> sorted
-    in (unread, third <$> sorted)
+    in groupChans <> oneOnOneDmChans
+
+compareDMChannelListEntries :: ChannelListEntry -> ChannelListEntry -> Ordering
+compareDMChannelListEntries e1 e2 =
+    let u1 = channelListEntryUnread e1
+        u2 = channelListEntryUnread e2
+        n1 = channelListEntrySortValue e1
+        n2 = channelListEntrySortValue e2
+    in if u1 == u2
+       then compare n1 n2
+       else if u1 && not u2
+            then LT
+            else GT
 
 useNickname' :: Maybe ClientConfig -> UserPreferences -> Bool
 useNickname' clientConfig prefs =
@@ -664,22 +701,27 @@ getGroupDMChannelEntries :: UTCTime
                          -> Config
                          -> UserPreferences
                          -> ClientChannels
-                         -> [(Bool, T.Text, ChannelListEntry)]
+                         -> [ChannelListEntry]
 getGroupDMChannelEntries now config prefs cs =
     let matches (_, info) = info^.ccInfo.cdType == Group &&
                             info^.ccInfo.cdTeamId == Nothing &&
                             groupChannelShouldAppear now config prefs info
-    in fmap (\(cId, ch) -> (hasUnread' ch, ch^.ccInfo.cdDisplayName, CLGroupDM cId)) $
+    in fmap (\(cId, ch) -> ChannelListEntry { channelListEntryChannelId = cId
+                                            , channelListEntryType = CLGroupDM
+                                            , channelListEntryUnread = hasUnread' ch
+                                            , channelListEntrySortValue = ch^.ccInfo.cdDisplayName
+                                            , channelListEntryFavorite = isFavorite prefs cId
+                                            }) $
        filteredChannels matches cs
 
-getDMChannelEntries :: UTCTime
-                    -> Config
-                    -> Maybe ClientConfig
-                    -> UserPreferences
-                    -> Users
-                    -> ClientChannels
-                    -> [(Bool, T.Text, ChannelListEntry)]
-getDMChannelEntries now config cconfig prefs us cs =
+getSingleDMChannelEntries :: UTCTime
+                          -> Config
+                          -> Maybe ClientConfig
+                          -> UserPreferences
+                          -> Users
+                          -> ClientChannels
+                          -> [ChannelListEntry]
+getSingleDMChannelEntries now config cconfig prefs us cs =
     let mapping = allDmChannelMappings cs
         mappingWithUserInfo = catMaybes $ getInfo <$> mapping
         getInfo (uId, cId) = do
@@ -689,11 +731,22 @@ getDMChannelEntries now config cconfig prefs us cs =
                 True -> Nothing
                 False ->
                     if dmChannelShouldAppear now config prefs c
-                    then return (hasUnread' c, displayNameForUser u cconfig prefs, CLUserDM cId uId)
+                    then return (ChannelListEntry { channelListEntryChannelId = cId
+                                                  , channelListEntryType = CLUserDM uId
+                                                  , channelListEntryUnread = hasUnread' c
+                                                  , channelListEntrySortValue = displayNameForUser u cconfig prefs
+                                                  , channelListEntryFavorite = isFavorite prefs cId
+                                                  })
                     else Nothing
     in mappingWithUserInfo
 
--- Always show a DM channel if it has unread activity.
+-- | Return whether the specified channel has been marked as a favorite
+-- channel.
+isFavorite :: UserPreferences -> ChannelId -> Bool
+isFavorite prefs cId = favoriteChannelPreference prefs cId == Just True
+
+-- Always show a DM channel if it has unread activity or has been marked
+-- as a favorite.
 --
 -- If it has no unread activity and if the preferences explicitly say to
 -- hide it, hide it.
@@ -707,35 +760,52 @@ dmChannelShouldAppear now config prefs c =
         cutoff = ServerTime localCutoff
         updated = c^.ccInfo.cdUpdated
         Just uId = c^.ccInfo.cdDMUserId
-    in if hasUnread' c || maybe False (>= localCutoff) (c^.ccInfo.cdSidebarShowOverride)
+        cId = c^.ccInfo.cdChannelId
+    in if isFavorite prefs cId
        then True
-       else case dmChannelShowPreference prefs uId of
-           Just False -> False
-           _ -> or [
-                   -- The channel was updated recently enough
-                     updated >= cutoff
-                   ]
+       else (if hasUnread' c || maybe False (>= localCutoff) (c^.ccInfo.cdSidebarShowOverride)
+             then True
+             else case dmChannelShowPreference prefs uId of
+                    Just False -> False
+                    _ -> or [
+                                -- The channel was updated recently enough
+                                updated >= cutoff
+                            ])
 
+-- Always show a group DM channel if it has unread activity or has been
+-- marked as a favorite.
+--
+-- If it has no unread activity and if the preferences explicitly say to
+-- hide it, hide it.
+--
+-- Otherwise, only show it if at least one of the other conditions are
+-- met (see 'or' below).
 groupChannelShouldAppear :: UTCTime -> Config -> UserPreferences -> ClientChannel -> Bool
 groupChannelShouldAppear now config prefs c =
     let ndays = configDirectChannelExpirationDays config
         localCutoff = addUTCTime (nominalDay * (-(fromIntegral ndays))) now
         cutoff = ServerTime localCutoff
         updated = c^.ccInfo.cdUpdated
-    in if hasUnread' c || maybe False (>= localCutoff) (c^.ccInfo.cdSidebarShowOverride)
+        cId = c^.ccInfo.cdChannelId
+    in if isFavorite prefs cId
        then True
-       else case groupChannelShowPreference prefs (c^.ccInfo.cdChannelId) of
-           Just False -> False
-           _ -> or [
-                   -- The channel was updated recently enough
-                     updated >= cutoff
-                   ]
+       else (if hasUnread' c || maybe False (>= localCutoff) (c^.ccInfo.cdSidebarShowOverride)
+             then True
+             else case groupChannelShowPreference prefs cId of
+                    Just False -> False
+                    _ -> or [
+                                -- The channel was updated recently enough
+                                updated >= cutoff
+                            ])
 
 dmChannelShowPreference :: UserPreferences -> UserId -> Maybe Bool
 dmChannelShowPreference ps uId = HM.lookup uId (_userPrefDirectChannelPrefs ps)
 
 groupChannelShowPreference :: UserPreferences -> ChannelId -> Maybe Bool
 groupChannelShowPreference ps cId = HM.lookup cId (_userPrefGroupChannelPrefs ps)
+
+favoriteChannelPreference :: UserPreferences -> ChannelId -> Maybe Bool
+favoriteChannelPreference ps cId = HM.lookup cId (_userPrefFavoriteChannelPrefs ps)
 
 -- * Internal Names and References
 
@@ -790,6 +860,9 @@ data Name =
     | ClickableUsernameInMessage MessageId Int Text
     | ClickableUsername Name Int Text
     | ClickableURLListEntry Int LinkTarget
+    | AttachmentPathEditor TeamId
+    | AttachmentPathSaveButton TeamId
+    | AttachmentPathCancelButton TeamId
     deriving (Eq, Show, Ord)
 
 -- | Types that provide a "semantically equal" operation. Two values may
@@ -897,6 +970,7 @@ defaultUserPreferences =
                     , _userPrefFlaggedPostList   = mempty
                     , _userPrefGroupChannelPrefs = mempty
                     , _userPrefDirectChannelPrefs = mempty
+                    , _userPrefFavoriteChannelPrefs = mempty
                     , _userPrefTeammateNameDisplayMode = Nothing
                     , _userPrefTeamOrder = Nothing
                     }
@@ -921,6 +995,13 @@ setUserPreferences = flip (F.foldr go)
                     (groupChannelId gp)
                     (groupChannelShow gp)
                     (_userPrefGroupChannelPrefs u)
+                }
+            | Just fp <- preferenceToFavoriteChannelPreference p =
+              u { _userPrefFavoriteChannelPrefs =
+                  HM.insert
+                    (favoriteChannelId fp)
+                    (favoriteChannelShow fp)
+                    (_userPrefFavoriteChannelPrefs u)
                 }
             | Just tIds <- preferenceToTeamOrder p =
               u { _userPrefTeamOrder = Just tIds
@@ -1219,6 +1300,7 @@ data Mode =
     | ManageAttachmentsBrowseFiles
     | EditNotifyPrefs
     | ChannelTopicWindow
+    | SaveAttachmentWindow LinkChoice
     deriving (Eq)
 
 -- | We're either connected or we're not.
@@ -1510,6 +1592,9 @@ data TeamState =
               -- ^ The state of the reaction emoji list overlay.
               , _tsThemeListOverlay :: ListOverlayState InternalTheme ()
               -- ^ The state of the theme list overlay.
+              , _tsSaveAttachmentDialog :: SaveAttachmentDialogState
+              -- ^ The state for the interactive attachment-saving
+              -- editor window.
               }
 
 -- | Handles for the View Message window's tabs.
@@ -1542,6 +1627,14 @@ data ChannelTopicDialogState =
                             , _channelTopicDialogFocus :: FocusRing Name
                             -- ^ The window focus state (editor/buttons)
                             }
+
+-- | The state of the attachment path window.
+data SaveAttachmentDialogState =
+    SaveAttachmentDialogState { _attachmentPathEditor :: Editor T.Text Name
+                              -- ^ The attachment path editor state.
+                              , _attachmentPathDialogFocus :: FocusRing Name
+                              -- ^ The window focus state (editor/buttons)
+                              }
 
 sortTeams :: [Team] -> [Team]
 sortTeams = sortBy (compare `on` (T.strip . sanitizeUserText . teamName))
@@ -1581,6 +1674,7 @@ newTeamState team chanList spellChecker =
                  , _tsViewedMessage            = Nothing
                  , _tsThemeListOverlay         = nullThemeListOverlayState tId
                  , _tsReactionEmojiListOverlay = nullEmojiListOverlayState tId
+                 , _tsSaveAttachmentDialog     = newSaveAttachmentDialog tId ""
                  }
 
 -- | Make a new channel topic editor window state.
@@ -1592,6 +1686,17 @@ newChannelTopicDialog tId t =
                                                                    , ChannelTopicCancelButton tId
                                                                    ]
                             }
+
+-- | Make a new attachment-saving editor window state.
+newSaveAttachmentDialog :: TeamId -> T.Text -> SaveAttachmentDialogState
+newSaveAttachmentDialog tId t =
+    SaveAttachmentDialogState { _attachmentPathEditor = applyEdit Z2.gotoEOL $
+                                                        editor (AttachmentPathEditor tId) (Just 1) t
+                              , _attachmentPathDialogFocus = focusRing [ AttachmentPathEditor tId
+                                                                       , AttachmentPathSaveButton tId
+                                                                       , AttachmentPathCancelButton tId
+                                                                       ]
+                              }
 
 nullChannelListOverlayState :: TeamId -> ListOverlayState Channel ChannelSearchScope
 nullChannelListOverlayState tId =
@@ -1971,6 +2076,7 @@ makeLenses ''ChannelSelectState
 makeLenses ''UserPreferences
 makeLenses ''ConnectionInfo
 makeLenses ''ChannelTopicDialogState
+makeLenses ''SaveAttachmentDialogState
 Brick.suffixLenses ''Config
 
 applyTeamOrderPref :: Maybe [TeamId] -> ChatState -> ChatState
@@ -2074,23 +2180,22 @@ csTeam tId =
     lens (\ st -> st ^. csTeams . at tId ^?! _Just)
          (\ st t -> st & csTeams . at tId .~ Just t)
 
-channelListEntryChannelId :: ChannelListEntry -> ChannelId
-channelListEntryChannelId (CLChannel cId) = cId
-channelListEntryChannelId (CLUserDM cId _) = cId
-channelListEntryChannelId (CLGroupDM cId) = cId
-
 channelListEntryUserId :: ChannelListEntry -> Maybe UserId
-channelListEntryUserId (CLUserDM _ uId) = Just uId
-channelListEntryUserId _ = Nothing
+channelListEntryUserId e =
+    case channelListEntryType e of
+        CLUserDM uId -> Just uId
+        _ -> Nothing
 
 userIdsFromZipper :: Z.Zipper ChannelListGroup ChannelListEntry -> [UserId]
 userIdsFromZipper z =
     concat $ (catMaybes . fmap channelListEntryUserId . snd) <$> Z.toList z
 
 entryIsDMEntry :: ChannelListEntry -> Bool
-entryIsDMEntry (CLUserDM {}) = True
-entryIsDMEntry (CLGroupDM {}) = True
-entryIsDMEntry (CLChannel {}) = False
+entryIsDMEntry e =
+    case channelListEntryType e of
+        CLUserDM {} -> True
+        CLGroupDM {} -> True
+        CLChannel {} -> False
 
 csCurrentChannel :: Lens' ChatState ClientChannel
 csCurrentChannel =

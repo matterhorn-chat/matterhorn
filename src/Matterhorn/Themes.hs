@@ -47,6 +47,7 @@ module Matterhorn.Themes
   , urlListSelectedAttr
   , messageSelectAttr
   , messageSelectStatusAttr
+  , urlSelectStatusAttr
   , misspellingAttr
   , editedMarkingAttr
   , editedRecentlyMarkingAttr
@@ -216,6 +217,9 @@ misspellingAttr = "misspelling"
 messageSelectStatusAttr :: AttrName
 messageSelectStatusAttr = "messageSelectStatus"
 
+urlSelectStatusAttr :: AttrName
+urlSelectStatusAttr = "urlSelectStatus"
+
 buttonAttr :: AttrName
 buttonAttr = "button"
 
@@ -308,6 +312,7 @@ lightAttrs usernameColors =
        , (urlListSelectedAttr,              black `on` yellow)
        , (messageSelectAttr,                black `on` yellow)
        , (messageSelectStatusAttr,          fg black)
+       , (urlSelectStatusAttr,              fg black)
        , (misspellingAttr,                  fg red `withStyle` underline)
        , (editedMarkingAttr,                fg yellow)
        , (editedRecentlyMarkingAttr,        black `on` yellow)
@@ -369,6 +374,7 @@ darkAttrs usernameColors =
      , (urlListSelectedAttr,              black `on` yellow)
      , (messageSelectAttr,                black `on` yellow)
      , (messageSelectStatusAttr,          fg white)
+     , (urlSelectStatusAttr,              fg white)
      , (misspellingAttr,                  fg red `withStyle` underline)
      , (editedMarkingAttr,                fg yellow)
      , (editedRecentlyMarkingAttr,        black `on` yellow)
@@ -658,6 +664,9 @@ themeDocs = ThemeDocumentation $ M.fromList $
       )
     , ( messageSelectStatusAttr
       , "Message selection: the message selection actions"
+      )
+    , ( urlSelectStatusAttr
+      , "Link selection: the message selection actions"
       )
     , ( misspellingAttr
       , "A misspelled word in the chat message editor"

@@ -8,6 +8,7 @@ import qualified Graphics.Vty as Vty
 
 import           Matterhorn.Events.Keybindings
 import           Matterhorn.State.UrlSelect
+import           Matterhorn.State.SaveAttachmentWindow
 import           Matterhorn.Types
 
 
@@ -24,6 +25,9 @@ urlSelectKeyHandlers =
     [ staticKb "Open the selected URL, if any"
          (Vty.EvKey Vty.KEnter []) $
              openSelectedURL
+
+    , mkKb SaveAttachmentEvent "Save the selected attachment"
+        openSaveAttachmentWindow
 
     , mkKb CancelEvent "Cancel URL selection" stopUrlSelect
 

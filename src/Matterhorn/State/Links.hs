@@ -19,5 +19,5 @@ openLinkTarget target = do
     session <- getSession
     case target of
         LinkURL url -> openWithOpener (return $ T.unpack $ unURL url)
-        LinkFileId fId -> openWithOpener (liftIO $ prepareAttachment fId session)
+        LinkFileId fId -> openWithOpener (liftIO $ fetchFile fId session)
         LinkPermalink _ pId -> jumpToPost pId >> return True

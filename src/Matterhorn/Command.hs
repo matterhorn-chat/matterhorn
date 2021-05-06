@@ -203,7 +203,7 @@ commandList =
     (UserArg NoArg) $ \ (uname, ()) ->
         addUserByNameToCurrentChannel uname
 
-  , Cmd "remove-user" "Remove a user from the current channel"
+  , Cmd "remove" "Remove a user from the current channel"
     (UserArg NoArg) $ \ (uname, ()) ->
         removeUserFromCurrentChannel uname
 
@@ -247,7 +247,7 @@ commandList =
   , Cmd "sh" "List the available shell scripts" NoArg $ \ () ->
         listScripts
 
-  , Cmd "group-msg" "Create a group chat"
+  , Cmd "group-create" "Create a group chat"
     (LineArg (userSigil <> "user [" <> userSigil <> "user ...]"))
         createGroupChannel
 
@@ -280,6 +280,9 @@ commandList =
 
   , Cmd "attach" "Attach a given file without browsing" (LineArg "path") $
         attachFileByPath
+
+  , Cmd "toggle-favorite" "Toggle the favorite status of the current channel" NoArg $ \_ ->
+        toggleChannelFavoriteStatus
   ]
 
 displayUsernameAttribute :: Text -> MH ()
