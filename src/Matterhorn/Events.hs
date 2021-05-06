@@ -64,10 +64,17 @@ onBrickEvent (VtyEvent (Vty.EvKey (Vty.KChar 'l') [Vty.MCtrl])) = do
     liftIO $ Vty.refresh vty
 onBrickEvent (VtyEvent e) =
     onVtyEvent e
-onBrickEvent (MouseDown n button modifier clickLoc) =
-    onMouseDown n button modifier clickLoc
-onBrickEvent _ =
-    return ()
+onBrickEvent (MouseUp {}) =
+    csLastMouseDownEvent .= Nothing
+onBrickEvent e@(MouseDown n button modifier clickLoc) = do
+    lastClick <- use csLastMouseDownEvent
+    let shouldHandle = case lastClick of
+            Nothing -> True
+            Just (MouseDown prevN _ _ _) -> not $ prevN `semeq` n
+            _ -> False
+    when shouldHandle $ do
+        csLastMouseDownEvent .= Just e
+        onMouseDown n button modifier clickLoc
 
 onAppEvent :: MHEvent -> MH ()
 onAppEvent RefreshWebsocketEvent =

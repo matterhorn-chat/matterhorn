@@ -163,6 +163,7 @@ module Matterhorn.Types
   , csTeam
   , csChannelListOrientation
   , csResources
+  , csLastMouseDownEvent
   , csCurrentChannel
   , csCurrentChannelId
   , csCurrentTeamId
@@ -1489,6 +1490,10 @@ data ChatState =
     ChatState { _csResources :: ChatResources
               -- ^ Global application-wide resources that don't change
               -- much.
+              , _csLastMouseDownEvent :: Maybe (Brick.BrickEvent Name MHEvent)
+              -- ^ The most recent mouse click event we got. We reset
+              -- this on mouse up so we can ignore clicks whenever this
+              -- is already set.
               , _csTeams :: HashMap TeamId TeamState
               -- ^ The state for each team that we are in.
               , _csTeamZipper :: Z.Zipper () TeamId
@@ -2105,6 +2110,7 @@ newState (StartupStateInfo {..}) =
     let config = _crConfiguration startupStateResources
     in applyTeamOrderPref (_userPrefTeamOrder $ _crUserPreferences startupStateResources) $
        ChatState { _csResources                   = startupStateResources
+                 , _csLastMouseDownEvent          = Nothing
                  , _csTeamZipper                  = Z.findRight (== startupStateInitialTeam) $
                                                     mkTeamZipper startupStateTeams
                  , _csTeams                       = startupStateTeams
