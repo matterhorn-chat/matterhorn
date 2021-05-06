@@ -64,15 +64,18 @@ onBrickEvent (VtyEvent (Vty.EvKey (Vty.KChar 'l') [Vty.MCtrl])) = do
     liftIO $ Vty.refresh vty
 onBrickEvent (VtyEvent e) =
     onVtyEvent e
-onBrickEvent (MouseUp {}) =
+onBrickEvent (MouseUp {}) = do
+    mhLog LogGeneral "MOUSE UP EVENT"
     csLastMouseDownEvent .= Nothing
 onBrickEvent e@(MouseDown n button modifier clickLoc) = do
+    mhLog LogGeneral $ T.pack $ "MOUSE EVENT: " <> show (n, button, modifier)
     lastClick <- use csLastMouseDownEvent
     let shouldHandle = case lastClick of
             Nothing -> True
             Just (MouseDown prevN _ _ _) -> not $ prevN `semeq` n
             _ -> False
     when shouldHandle $ do
+        mhLog LogGeneral "Handling mouse event"
         csLastMouseDownEvent .= Just e
         onMouseDown n button modifier clickLoc
 
