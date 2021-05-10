@@ -144,8 +144,8 @@ unsafeRenderMessageSelection ((curMsg, curThreadState), (before, after)) doMsgRe
         upperHeight = targetHeight `div` 2
         lowerHeight = targetHeight - upperHeight
 
-    lowerHalfResults <- renderMessageSeq targetHeight (render1 doMsgRender) after
-    upperHalfResults <- renderMessageSeq targetHeight (render1 doMsgRender) before
+    lowerHalfResults <- renderMessageSeq targetHeight (render1 doMsgRender) vLimit after
+    upperHalfResults <- renderMessageSeq targetHeight (render1 doMsgRender) cropTopTo before
 
     let upperHalfResultsHeight = sum $ (V.imageHeight . image) <$> upperHalfResults
         lowerHalfResultsHeight = sum $ (V.imageHeight . image) <$> lowerHalfResults
@@ -179,14 +179,15 @@ resultToWidget = Widget Fixed Fixed . return
 renderMessageSeq :: (SeqDirection dir)
                  => Int
                  -> (Message -> ThreadState -> Widget Name)
+                 -> (Int -> Widget Name -> Widget Name)
                  -> DirectionalSeq dir (Message, ThreadState)
                  -> RenderM Name [Result Name]
-renderMessageSeq remainingHeight renderFunc ms
+renderMessageSeq remainingHeight renderFunc limitFunc ms
     | messagesLength ms == 0 = return []
     | otherwise = do
         let Just (m, threadState) = messagesHead ms
-        result <- render $ vLimit remainingHeight $ renderFunc m threadState
-        rest <- renderMessageSeq (remainingHeight - (V.imageHeight $ result^.imageL)) renderFunc (messagesDrop 1 ms)
+        result <- render $ limitFunc remainingHeight $ renderFunc m threadState
+        rest <- renderMessageSeq (remainingHeight - (V.imageHeight $ result^.imageL)) renderFunc limitFunc (messagesDrop 1 ms)
         return $ result : rest
 
 renderLastMessages :: ChatState
