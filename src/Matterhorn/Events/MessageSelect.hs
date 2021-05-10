@@ -1,4 +1,10 @@
-module Matterhorn.Events.MessageSelect where
+module Matterhorn.Events.MessageSelect
+  ( messageSelectKeybindings
+  , messageSelectKeyHandlers
+  , onEventMessageSelect
+  , onEventMessageSelectDeleteConfirm
+  )
+where
 
 import           Prelude ()
 import           Matterhorn.Prelude
