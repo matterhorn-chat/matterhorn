@@ -400,11 +400,14 @@ renderCurrentChannelDisplay st hs = header <=> hBorder <=> messages
 
     chatText = case st^.csCurrentTeam.tsMode of
         MessageSelect ->
+            freezeBorders $
             renderMessagesWithSelect (st^.csCurrentTeam.tsMessageSelect) channelMessages
         MessageSelectDeleteConfirm ->
+            freezeBorders $
             renderMessagesWithSelect (st^.csCurrentTeam.tsMessageSelect) channelMessages
         _ ->
             cached (ChannelMessages cId) $
+            freezeBorders $
             renderLastMessages st hs editCutoff $
             retrogradeMsgsWithThreadStates $
             reverseMessages channelMessages
