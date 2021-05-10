@@ -864,6 +864,7 @@ data Name =
     | AttachmentPathEditor TeamId
     | AttachmentPathSaveButton TeamId
     | AttachmentPathCancelButton TeamId
+    | RenderedMessage MessageId
     deriving (Eq, Show, Ord)
 
 -- | Types that provide a "semantically equal" operation. Two values may

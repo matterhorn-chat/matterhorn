@@ -186,7 +186,10 @@ renderMessageSeq remainingHeight renderFunc limitFunc ms
     | messagesLength ms == 0 = return []
     | otherwise = do
         let Just (m, threadState) = messagesHead ms
-        result <- render $ limitFunc remainingHeight $ renderFunc m threadState
+            maybeCache = case m^.mMessageId of
+                Nothing -> id
+                Just i -> cached (RenderedMessage i)
+        result <- render $ limitFunc remainingHeight $ maybeCache $ renderFunc m threadState
         rest <- renderMessageSeq (remainingHeight - (V.imageHeight $ result^.imageL)) renderFunc limitFunc (messagesDrop 1 ms)
         return $ result : rest
 
