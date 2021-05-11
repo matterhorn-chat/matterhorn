@@ -76,6 +76,7 @@ module Matterhorn.Types
   , configURLOpenCommandL
   , configURLOpenCommandInteractiveL
   , configActivityNotifyCommandL
+  , configActivityNotifyVersionL
   , configActivityBellL
   , configShowMessageTimestampsL
   , configShowBackgroundL
@@ -515,6 +516,8 @@ data Config =
            -- whether it should be given control of the terminal).
            , configActivityNotifyCommand :: Maybe T.Text
            -- ^ The command to run for activity notifications.
+           , configActivityNotifyVersion :: Int
+           -- ^ The activity notifier version.
            , configActivityBell :: Bool
            -- ^ Whether to ring the terminal bell on activity.
            , configShowMessageTimestamps :: Bool

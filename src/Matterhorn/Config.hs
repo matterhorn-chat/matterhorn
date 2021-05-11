@@ -109,6 +109,7 @@ fromIni = do
       (configEnableAspell defaultConfig)
     configSyntaxDirs <- fieldDefOf "syntaxDirectories" syntaxDirsField []
     configActivityNotifyCommand <- fieldMb "activityNotifyCommand"
+    configActivityNotifyVersion <- fieldDefOf "activityNotifyVersion" number 1
     configShowMessageTimestamps <- fieldFlagDef "showMessageTimestamps"
       (configShowMessageTimestamps defaultConfig)
     configActivityBell <- fieldFlagDef "activityBell"
@@ -243,6 +244,7 @@ defaultConfig =
            , configURLOpenCommand              = Nothing
            , configURLOpenCommandInteractive   = False
            , configActivityNotifyCommand       = Nothing
+           , configActivityNotifyVersion       = 1
            , configActivityBell                = False
            , configShowMessageTimestamps       = True
            , configShowBackground              = Disabled

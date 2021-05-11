@@ -14,7 +14,10 @@ The interface for notification scripts is as follows:
   to finish, which will cause Matterhorn to delay looking at incoming
   network messages, etc.
 
-* Matterhorn will invoke the command with three arguments:
+* The notifier behavior changes according to the notifier version
+  specified in the configuration file.
+
+* Version 1: Matterhorn will invoke the command with three arguments:
   * The mention argument, whose values are:
     * "1" - this value indicates that the user running Matterhorn was
       mentioned in the message body.
@@ -24,6 +27,10 @@ The interface for notification scripts is as follows:
     message.
   * The message body, sanitized of tabs (converted to spaces) and escape
     characters (converted to "<ESC>").
+
+* Version 2 and later: Matterhorn will invoke the command with zero
+  arguments and pass notification data via JSON to the command's
+  standard input.
 
 * Matterhorn will wait for the process to terminate. If the process
   emits any output to standard out OR if the command exits with a
