@@ -665,8 +665,8 @@ data PostToAdd =
     -- only available in websocket events (and then provided to this
     -- constructor).
 
-runNotifyCommand :: Post -> Bool -> MH ()
-runNotifyCommand post mentioned = do
+runNotifyCommandV1 :: Post -> Bool -> MH ()
+runNotifyCommandV1 post mentioned = do
     outputChan <- use (csResources.crSubprocessLog)
     st <- use id
     notifyCommand <- use (csResources.crConfiguration.configActivityNotifyCommandL)
@@ -680,6 +680,28 @@ runNotifyCommand post mentioned = do
                 runLoggedCommand outputChan (T.unpack cmd)
                                  [notified, sender, messageString] Nothing Nothing
                 return Nothing
+
+runNotifyCommandJSON :: Post -> Bool -> Int -> MH ()
+runNotifyCommandJSON post mentioned notifyVersion = do
+    outputChan <- use (csResources.crSubprocessLog)
+    st <- use id
+    notifyCommand <- use (csResources.crConfiguration.configActivityNotifyCommandL)
+    case notifyCommand of
+        Nothing -> return ()
+        Just cmd ->
+            doAsyncWith Preempt $ do
+                -- FINISH: generate version-specific JSON text
+                runLoggedCommand outputChan (T.unpack cmd) [] (Just "{}") Nothing
+                -- FINISH: JSON text @ (Just ...)
+                return Nothing
+
+runNotifyCommand :: Post -> Bool -> MH ()
+runNotifyCommand post mentioned = do
+    notifyVersion <- use (csResources.crConfiguration.configActivityNotifyVersionL)
+    case notifyVersion of
+        1 -> runNotifyCommandV1 post mentioned
+        _ -> runNotifyCommandJSON post mentioned notifyVersion
+
 
 maybePostUsername :: ChatState -> Post -> T.Text
 maybePostUsername st p =
