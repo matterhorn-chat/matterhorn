@@ -1,0 +1,9 @@
+#! /usr/bin/env sh
+
+# This is the sample Linux notifier for V2 (and later) notifications.
+# The notification payload is a JSON object presented to standard input.
+
+## THIS IS A TEMPORARY STUB: 
+LOG=/home/dlamkins/MATTERHORN/matterhorn/notify.log
+echo HERE >> $LOG 
+cat >> $LOG
