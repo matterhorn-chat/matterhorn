@@ -28,6 +28,7 @@ import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Set as Set
 import qualified Data.Sequence as Seq
+import qualified Data.String as S
 import qualified Data.Text as T
 import           Graphics.Vty ( outputIface )
 import           Graphics.Vty.Output.Interface ( ringTerminalBell )
@@ -681,18 +682,22 @@ runNotifyCommandV1 post mentioned = do
                                  [notified, sender, messageString] Nothing Nothing
                 return Nothing
 
+notifyGetPayload :: Post -> Bool -> Int -> MH (Maybe String)
+notifyGetPayload post mentioned 2 =
+    -- FINISH: generate version-specific JSON text
+    return (Just "{}")
+
 runNotifyCommandJSON :: Post -> Bool -> Int -> MH ()
 runNotifyCommandJSON post mentioned notifyVersion = do
     outputChan <- use (csResources.crSubprocessLog)
-    st <- use id
+    notifyVersion <- use (csResources.crConfiguration.configActivityNotifyVersionL)
+    payload <- notifyGetPayload post mentioned notifyVersion
     notifyCommand <- use (csResources.crConfiguration.configActivityNotifyCommandL)
     case notifyCommand of
         Nothing -> return ()
         Just cmd ->
             doAsyncWith Preempt $ do
-                -- FINISH: generate version-specific JSON text
-                runLoggedCommand outputChan (T.unpack cmd) [] (Just "{}") Nothing
-                -- FINISH: JSON text @ (Just ...)
+                runLoggedCommand outputChan (T.unpack cmd) [] payload Nothing
                 return Nothing
 
 runNotifyCommand :: Post -> Bool -> MH ()
