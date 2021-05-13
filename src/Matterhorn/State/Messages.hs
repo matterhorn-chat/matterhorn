@@ -24,6 +24,9 @@ import           Matterhorn.Prelude
 import           Brick.Main ( getVtyHandle, invalidateCacheEntry, invalidateCache )
 import qualified Brick.Widgets.FileBrowser as FB
 import           Control.Exception ( SomeException, try )
+import qualified Data.Aeson as A
+import qualified Data.ByteString.Lazy as BL
+import           Data.Char ( chr )
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Set as Set
@@ -682,10 +685,13 @@ runNotifyCommandV1 post mentioned = do
                                  [notified, sender, messageString] Nothing Nothing
                 return Nothing
 
+lbsToString :: BL.ByteString -> String
+lbsToString lbs = map (chr . fromEnum) . BL.unpack $ lbs
+
 notifyGetPayload :: Post -> Bool -> Int -> MH (Maybe String)
 notifyGetPayload post mentioned 2 =
     -- FINISH: generate version-specific JSON text
-    return (Just "{}")
+    return (Just (lbsToString (A.encode post)))
 
 runNotifyCommandJSON :: Post -> Bool -> Int -> MH ()
 runNotifyCommandJSON post mentioned notifyVersion = do
