@@ -1,4 +1,5 @@
 {-# LANGUAGE MultiWayIf #-}
+
 module Matterhorn.State.Messages
   ( PostToAdd(..)
   , addDisconnectGaps
@@ -692,12 +693,26 @@ encodeToJSONstring a = map (chr . fromEnum) . BL.unpack $ A.encode a
 notifyGetPayload :: Int -> ChatState -> Post -> Bool -> MH (Maybe String)
 
 -- Notification Version 2
-notifyGetPayload 2 st post mentioned =
-    return (Just (encodeToJSONstring post))
-    where
-        messageString = T.unpack $ sanitizeUserText $ postMessage post
-        mentionedMe = if mentioned then "yes" else "no"
-        sender = T.unpack $ maybePostUsername st post
+data NotificationV2 = NotificationV2
+    { message :: Text
+    , mentioned :: String
+    , sender :: Text
+    } deriving (Show)
+
+instance A.ToJSON NotificationV2 where
+    toJSON ( NotificationV2 message mentioned sender ) =
+        A.object [ "message"    A..= message
+                 , "mentioned"  A..= mentioned
+                 , "sender"     A..= sender
+                 ]
+
+notifyGetPayload 2 st post mentioned = do
+    let notification = NotificationV2 message mentionedMe sender
+    return (Just (encodeToJSONstring notification))
+        where
+            message = sanitizeUserText $ postMessage post
+            mentionedMe = if mentioned then "yes" else "no"
+            sender = maybePostUsername st post
 
 runNotifyCommandJSON :: Post -> Bool -> Int -> MH ()
 runNotifyCommandJSON post mentioned notifyVersion = do
