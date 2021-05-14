@@ -685,19 +685,25 @@ runNotifyCommandV1 post mentioned = do
                                  [notified, sender, messageString] Nothing Nothing
                 return Nothing
 
-lbsToString :: BL.ByteString -> String
-lbsToString lbs = map (chr . fromEnum) . BL.unpack $ lbs
+encodeToJSONstring :: A.ToJSON a => a -> String
+encodeToJSONstring a = map (chr . fromEnum) . BL.unpack $ A.encode a
 
-notifyGetPayload :: Post -> Bool -> Int -> MH (Maybe String)
-notifyGetPayload post mentioned 2 =
-    -- FINISH: generate version-specific JSON text
-    return (Just (lbsToString (A.encode post)))
+-- We define a notifyGetPayload for each notification version.
+notifyGetPayload :: Int -> ChatState -> Post -> Bool -> MH (Maybe String)
+
+-- Notification Version 2
+notifyGetPayload 2 st post mentioned =
+    return (Just (encodeToJSONstring post))
+    where
+        messageString = T.unpack $ sanitizeUserText $ postMessage post
+        mentionedMe = if mentioned then "yes" else "no"
+        sender = T.unpack $ maybePostUsername st post
 
 runNotifyCommandJSON :: Post -> Bool -> Int -> MH ()
 runNotifyCommandJSON post mentioned notifyVersion = do
     outputChan <- use (csResources.crSubprocessLog)
-    notifyVersion <- use (csResources.crConfiguration.configActivityNotifyVersionL)
-    payload <- notifyGetPayload post mentioned notifyVersion
+    st <- use id
+    payload <- notifyGetPayload notifyVersion st post mentioned
     notifyCommand <- use (csResources.crConfiguration.configActivityNotifyCommandL)
     case notifyCommand of
         Nothing -> return ()
