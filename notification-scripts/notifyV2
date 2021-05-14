@@ -1,9 +1,16 @@
 #! /usr/bin/env sh
 
-# This is the sample Linux notifier for V2 (and later) notifications.
-# The notification payload is a JSON object presented to standard input.
+# This is the sample Linux notifier for V2 notifications.
+# The notification payload is a JSON object presented to standard input,
+# having the fields version, sender, message and mentioned.
 
-## THIS IS A TEMPORARY STUB: 
+json=`cat`
+version=`echo $json|jq -Mr .version`
+[ "$version" = 2 ] || { echo $0: JSON payload has wrong version; exit 1; }
+sender=`echo $json|jq -Mr .sender`
+message=`echo $json|jq -M .message`
+mentioned=`echo $json|jq -Mr .mentioned`
+
+## THIS IS A TEMPORARY STUB; REWRITE FOR notify-send:
 LOG=/home/dlamkins/MATTERHORN/matterhorn/notify.log
-echo HERE >> $LOG 
-cat >> $LOG
+echo $sender said $message >> $LOG
