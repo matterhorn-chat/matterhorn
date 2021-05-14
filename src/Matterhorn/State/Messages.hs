@@ -694,20 +694,22 @@ notifyGetPayload :: Int -> ChatState -> Post -> Bool -> MH (Maybe String)
 
 -- Notification Version 2
 data NotificationV2 = NotificationV2
-    { message :: Text
+    { version :: Int
+    , message :: Text
     , mentioned :: String
     , sender :: Text
     } deriving (Show)
 
 instance A.ToJSON NotificationV2 where
-    toJSON ( NotificationV2 message mentioned sender ) =
-        A.object [ "message"    A..= message
+    toJSON ( NotificationV2 version message mentioned sender ) =
+        A.object [ "version"    A..= version
+                 , "message"    A..= message
                  , "mentioned"  A..= mentioned
                  , "sender"     A..= sender
                  ]
 
 notifyGetPayload 2 st post mentioned = do
-    let notification = NotificationV2 message mentionedMe sender
+    let notification = NotificationV2 2 message mentionedMe sender
     return (Just (encodeToJSONstring notification))
         where
             message = sanitizeUserText $ postMessage post
