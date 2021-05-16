@@ -372,13 +372,14 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                  ]
         msgReac = if Map.null (msg^.mReactions) || (not mdShowReactions)
           then Nothing
-          else let renderR e us =
+          else let renderR e us lst =
                        let n = Set.size us
-                       in if | n == 1    -> " [" <> e <> "]"
-                             | n > 1     -> " [" <> e <> " " <> T.pack (show n) <> "]"
-                             | otherwise -> ""
-                   reactionMsg = Map.foldMapWithKey renderR (msg^.mReactions)
-               in Just $ withDefAttr emojiAttr $ txt ("   " <> reactionMsg)
+                       in if | n == 1    -> makeReactionWidget (" [" <> e <> "]") : lst
+                             | n > 1     -> makeReactionWidget (" [" <> e <> " " <> T.pack (show n) <> "]") : lst
+                             | otherwise -> lst
+                   reactionWidget = hBox $ Map.foldrWithKey renderR [] (msg^.mReactions)
+                   makeReactionWidget t = txt t
+               in Just $ withDefAttr emojiAttr $ txt "   " <+> reactionWidget
         withParent p =
             case mdThreadState of
                 NoThread -> msgWidget
