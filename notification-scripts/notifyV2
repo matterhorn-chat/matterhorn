@@ -21,7 +21,7 @@ json=`cat`
 version=`echo $json|jq -Mr .version`
 [ "$version" = 2 ] || fail 'JSON payload has wrong version'
 sender=`echo $json|jq -Mr .sender`
-message=`echo $json|jq -M .message`
+message=`echo $json|jq -Mr .message`
 mentioned=`echo $json|jq -Mr .mentioned`
 
 # Now prepare the notification. The logic is essentially the same as for
@@ -35,13 +35,13 @@ ns_HEADER="Matterhorn message from @$sender"
 ns_BODY="$message"
 
 case "$mentioned" in
-no) ns_URGENCY=$ns_URGENCY_GENERAL" ;;
+no) ns_URGENCY=$ns_URGENCY_GENERAL ;;
 yes) ns_URGENCY=$ns_URGENCY_MENTIONED ;;
 *) fail "mentioned: invalid value: $mentioned" ;;
 esac
 
 # Emit the notification.
-case "$urgency" in
+case "$ns_URGENCY" in
 none) ;;
 low|normal|critical)
 	notify-send -u $ns_URGENCY -c $ns_CATEGORY -- "$ns_HEADER" "$ns_BODY" ;;
