@@ -31,6 +31,11 @@ The interface for notification scripts is as follows:
 * Version 2 and later: Matterhorn will invoke the command with zero
   arguments and pass notification data via JSON to the command's
   standard input.
+  * Version 2 JSON fields:
+    * "version": "2"
+    * "sender": "sender name"
+    * "message": "message text..."
+    * "mentioned": "yes or no"
 
 * Matterhorn will wait for the process to terminate. If the process
   emits any output to standard out OR if the command exits with a
