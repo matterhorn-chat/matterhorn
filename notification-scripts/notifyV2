@@ -45,7 +45,7 @@ case "$ns_URGENCY" in
 none) ;;
 low|normal|critical)
 	notify-send -u $ns_URGENCY -c $ns_CATEGORY -- "$ns_HEADER" "$ns_BODY" ;;
-*) fail "urgency not recognized: $urgency" ;;
+*) fail "urgency not recognized: $ns_URGENCY" ;;
 esac
 
 # Log the JSON notification payload. Comment out the LOG definition to disable.
