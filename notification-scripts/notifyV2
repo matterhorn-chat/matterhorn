@@ -34,14 +34,14 @@ ns_CATEGORY=im.received
 ns_HEADER="Matterhorn message from @$sender"
 ns_BODY="$message"
 
-case "$mentioned" of
+case "$mentioned" in
 no) ns_URGENCY=$ns_URGENCY_GENERAL" ;;
 yes) ns_URGENCY=$ns_URGENCY_MENTIONED ;;
 *) fail "mentioned: invalid value: $mentioned"
 esac
 
 # Emit the notification.
-case "$urgency" of
+case "$urgency" in
 none) ;;
 low|normal|critical)
 	notify-send -u $ns_URGENCY -c $ns_CATEGORY -- "$ns_HEADER" "$ns_BODY" ;;
