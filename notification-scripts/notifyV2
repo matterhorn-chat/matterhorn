@@ -48,8 +48,9 @@ low|normal|critical)
 *) fail "urgency not recognized: $ns_URGENCY" ;;
 esac
 
-# Log the JSON notification payload. Comment out the LOG definition to disable.
-LOG=~/.matterhorn-notify.log
-[ -n "$LOG" ] && {
-	echo `date -Iminutes` $json >> $LOG
+# Log the JSON notification payload. To enable, define NOTIFY_JSON_LOG as
+# a path to a file. The file need not exist; the directory must be writable.
+NOTIFY_JSON_LOG=
+[ -n "$NOTIFY_JSON_LOG" ] && {
+	echo `date -Iminutes` $json >> $NOTIFY_JSON_LOG
 }
