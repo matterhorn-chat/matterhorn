@@ -14,8 +14,8 @@ The interface for notification scripts is as follows:
   to finish, which will cause Matterhorn to delay looking at incoming
   network messages, etc.
 
-* The notifier behavior changes according to the notifier version
-  specified in the configuration file.
+* The notifier behavior changes according to the activityNotifyVersion
+  setting in the configuration file.
 
 * Version 1: Matterhorn will invoke the command with three arguments:
   * The mention argument, whose values are:
