@@ -28,9 +28,8 @@ The interface for notification scripts is as follows:
   * The message body, sanitized of tabs (converted to spaces) and escape
     characters (converted to "<ESC>").
 
-* Version 2 and later: Matterhorn will invoke the command with zero
-  arguments and pass notification data via JSON to the command's
-  standard input.
+* Version 2: Matterhorn will invoke the command with zero arguments,
+  passing notification details via JSON to the command's standard input.
   * Version 2 JSON fields:
     * "version": "2"
     * "sender": "sender name"
