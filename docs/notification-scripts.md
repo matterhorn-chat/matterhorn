@@ -34,7 +34,7 @@ The interface for notification scripts is as follows:
     * "version": "2"
     * "sender": "sender name"
     * "message": "message text..."
-    * "mentioned": "yes or no"
+    * "mentioned": boolean (true or false)
 
 * Matterhorn will wait for the process to terminate. If the process
   emits any output to standard out OR if the command exits with a

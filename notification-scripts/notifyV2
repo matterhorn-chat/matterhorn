@@ -42,8 +42,8 @@ ns_HEADER="Matterhorn message from @$sender"
 ns_BODY="$message"
 
 case "$mentioned" in
-no) ns_URGENCY=$ns_URGENCY_GENERAL ;;
-yes) ns_URGENCY=$ns_URGENCY_MENTIONED ;;
+false) ns_URGENCY=$ns_URGENCY_GENERAL ;;
+true) ns_URGENCY=$ns_URGENCY_MENTIONED ;;
 *) fail "mentioned: invalid value: $mentioned" ;;
 esac
 

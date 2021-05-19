@@ -693,7 +693,7 @@ encodeToJSONstring a = BL8.unpack $ A.encode a
 data NotificationV2 = NotificationV2
     { version :: Int
     , message :: Text
-    , mentioned :: String
+    , mentioned :: Bool
     , sender :: Text
     } deriving (Show)
 
@@ -708,11 +708,10 @@ instance A.ToJSON NotificationV2 where
 -- We define a notifyGetPayload for each notification version.
 notifyGetPayload :: Int -> ChatState -> Post -> Bool -> Maybe String
 notifyGetPayload 2 st post mentioned = do
-    let notification = NotificationV2 2 message mentionedMe sender
+    let notification = NotificationV2 2 message mentioned sender
     return (encodeToJSONstring notification)
         where
             message = sanitizeUserText $ postMessage post
-            mentionedMe = if mentioned then "yes" else "no"
             sender = maybePostUsername st post
 
 runNotifyCommandJSON :: Post -> Bool -> Int -> MH ()
