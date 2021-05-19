@@ -27,7 +27,7 @@ import qualified Brick.Widgets.FileBrowser as FB
 import           Control.Exception ( SomeException, try )
 import qualified Data.Aeson as A
 import qualified Data.ByteString.Lazy as BL
-import           Data.Char ( chr )
+import qualified Data.ByteString.Lazy.Char8 as BL8
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Set as Set
@@ -687,7 +687,7 @@ runNotifyCommandV1 post mentioned = do
                 return Nothing
 
 encodeToJSONstring :: A.ToJSON a => a -> String
-encodeToJSONstring a = map (chr . fromEnum) . BL.unpack $ A.encode a
+encodeToJSONstring a = BL8.unpack $ A.encode a
 
 -- We define a notifyGetPayload for each notification version.
 notifyGetPayload :: Int -> ChatState -> Post -> Bool -> MH (Maybe String)
