@@ -26,13 +26,11 @@ import           Brick.Main ( getVtyHandle, invalidateCacheEntry, invalidateCach
 import qualified Brick.Widgets.FileBrowser as FB
 import           Control.Exception ( SomeException, try )
 import qualified Data.Aeson as A
-import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Lazy.Char8 as BL8
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Set as Set
 import qualified Data.Sequence as Seq
-import qualified Data.String as S
 import qualified Data.Text as T
 import           Graphics.Vty ( outputIface )
 import           Graphics.Vty.Output.Interface ( ringTerminalBell )
