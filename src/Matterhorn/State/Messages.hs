@@ -698,7 +698,7 @@ data NotificationV2 = NotificationV2
     } deriving (Show)
 
 instance A.ToJSON NotificationV2 where
-    toJSON ( NotificationV2 version message mentioned sender ) =
+    toJSON (NotificationV2 version message mentioned sender) =
         A.object [ "version"    A..= version
                  , "message"    A..= message
                  , "mentioned"  A..= mentioned
