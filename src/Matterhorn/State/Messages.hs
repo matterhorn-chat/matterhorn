@@ -689,9 +689,6 @@ runNotifyCommandV1 post mentioned = do
 encodeToJSONstring :: A.ToJSON a => a -> String
 encodeToJSONstring a = BL8.unpack $ A.encode a
 
--- We define a notifyGetPayload for each notification version.
-notifyGetPayload :: Int -> ChatState -> Post -> Bool -> MH (Maybe String)
-
 -- Notification Version 2
 data NotificationV2 = NotificationV2
     { version :: Int
@@ -708,9 +705,11 @@ instance A.ToJSON NotificationV2 where
                  , "sender"     A..= sender
                  ]
 
+-- We define a notifyGetPayload for each notification version.
+notifyGetPayload :: Int -> ChatState -> Post -> Bool -> Maybe String
 notifyGetPayload 2 st post mentioned = do
     let notification = NotificationV2 2 message mentionedMe sender
-    return (Just (encodeToJSONstring notification))
+    return (encodeToJSONstring notification)
         where
             message = sanitizeUserText $ postMessage post
             mentionedMe = if mentioned then "yes" else "no"
@@ -720,7 +719,7 @@ runNotifyCommandJSON :: Post -> Bool -> Int -> MH ()
 runNotifyCommandJSON post mentioned notifyVersion = do
     outputChan <- use (csResources.crSubprocessLog)
     st <- use id
-    payload <- notifyGetPayload notifyVersion st post mentioned
+    let payload = notifyGetPayload notifyVersion st post mentioned
     notifyCommand <- use (csResources.crConfiguration.configActivityNotifyCommandL)
     case notifyCommand of
         Nothing -> return ()
