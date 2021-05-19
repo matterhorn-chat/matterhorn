@@ -670,8 +670,38 @@ data PostToAdd =
     -- only available in websocket events (and then provided to this
     -- constructor).
 
-runNotifyCommandV1 :: Post -> Bool -> MH ()
-runNotifyCommandV1 post mentioned = do
+encodeToJSONstring :: A.ToJSON a => a -> String
+encodeToJSONstring a = BL8.unpack $ A.encode a
+
+-- Notification Version 2 payload definition
+data NotificationV2 = NotificationV2
+    { version :: Int
+    , message :: Text
+    , mention :: Bool
+    , from :: Text
+    } deriving (Show)
+instance A.ToJSON NotificationV2 where
+    toJSON (NotificationV2 vers msg mentioned sender) =
+        A.object [ "version"  A..= vers
+                 , "message"  A..= msg
+                 , "mention"  A..= mentioned
+                 , "from"     A..= sender
+                 ]
+
+data NotificationVersion = NotifyV1 | NotifyV2
+
+-- We define a notifyGetPayload for each notification version.
+notifyGetPayload :: NotificationVersion -> ChatState -> Post -> Bool -> Maybe String
+notifyGetPayload NotifyV1 _ _ _ = do return ""
+notifyGetPayload NotifyV2 st post mentioned = do
+    let notification = NotificationV2 2 msg mentioned sender
+    return (encodeToJSONstring notification)
+        where
+            msg = sanitizeUserText $ postMessage post
+            sender = maybePostUsername st post
+
+handleNotifyCommand :: Post -> Bool -> NotificationVersion -> MH ()
+handleNotifyCommand post mentioned NotifyV1 = do
     outputChan <- use (csResources.crSubprocessLog)
     st <- use id
     notifyCommand <- use (csResources.crConfiguration.configActivityNotifyCommandL)
@@ -685,40 +715,10 @@ runNotifyCommandV1 post mentioned = do
                 runLoggedCommand outputChan (T.unpack cmd)
                                  [notified, sender, messageString] Nothing Nothing
                 return Nothing
-
-encodeToJSONstring :: A.ToJSON a => a -> String
-encodeToJSONstring a = BL8.unpack $ A.encode a
-
--- Notification Version 2
-data NotificationV2 = NotificationV2
-    { version :: Int
-    , message :: Text
-    , mentioned :: Bool
-    , sender :: Text
-    } deriving (Show)
-
-instance A.ToJSON NotificationV2 where
-    toJSON (NotificationV2 version message mentioned sender) =
-        A.object [ "version"    A..= version
-                 , "message"    A..= message
-                 , "mentioned"  A..= mentioned
-                 , "sender"     A..= sender
-                 ]
-
--- We define a notifyGetPayload for each notification version.
-notifyGetPayload :: Int -> ChatState -> Post -> Bool -> Maybe String
-notifyGetPayload 2 st post mentioned = do
-    let notification = NotificationV2 2 message mentioned sender
-    return (encodeToJSONstring notification)
-        where
-            message = sanitizeUserText $ postMessage post
-            sender = maybePostUsername st post
-
-runNotifyCommandJSON :: Post -> Bool -> Int -> MH ()
-runNotifyCommandJSON post mentioned notifyVersion = do
+handleNotifyCommand post mentioned NotifyV2 = do
     outputChan <- use (csResources.crSubprocessLog)
     st <- use id
-    let payload = notifyGetPayload notifyVersion st post mentioned
+    let payload = notifyGetPayload NotifyV2 st post mentioned
     notifyCommand <- use (csResources.crConfiguration.configActivityNotifyCommandL)
     case notifyCommand of
         Nothing -> return ()
@@ -731,9 +731,9 @@ runNotifyCommand :: Post -> Bool -> MH ()
 runNotifyCommand post mentioned = do
     notifyVersion <- use (csResources.crConfiguration.configActivityNotifyVersionL)
     case notifyVersion of
-        1 -> runNotifyCommandV1 post mentioned
-        _ -> runNotifyCommandJSON post mentioned notifyVersion
-
+        1 -> handleNotifyCommand post mentioned NotifyV1
+        2 -> handleNotifyCommand post mentioned NotifyV2
+        _ -> return ()
 
 maybePostUsername :: ChatState -> Post -> T.Text
 maybePostUsername st p =

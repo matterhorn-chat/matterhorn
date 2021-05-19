@@ -27,9 +27,9 @@ has notify-send || fail 'notify-send(1) is required but not present'
 json=`cat`
 version=`echo $json|jq -Mr .version`
 [ "$version" = 2 ] || fail 'JSON payload has wrong version'
-sender=`echo $json|jq -Mr .sender`
+sender=`echo $json|jq -Mr .from`
 message=`echo $json|jq -Mr .message`
-mentioned=`echo $json|jq -Mr .mentioned`
+mentioned=`echo $json|jq -Mr .mention`
 
 # Now prepare the notification. The logic is essentially the same as for
 # the V1 notifier.
