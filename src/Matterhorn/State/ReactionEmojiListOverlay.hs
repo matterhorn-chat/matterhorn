@@ -6,6 +6,8 @@ module Matterhorn.State.ReactionEmojiListOverlay
   , reactionEmojiListSelectUp
   , reactionEmojiListPageDown
   , reactionEmojiListPageUp
+
+  , toggleReaction
   )
 where
 
@@ -124,3 +126,18 @@ reactionEmojiListMove = listOverlayMove (csCurrentTeam.tsReactionEmojiListOverla
 -- | The number of emoji in a "page" for cursor movement purposes.
 reactionEmojiListPageSize :: Int
 reactionEmojiListPageSize = 10
+
+toggleReaction :: PostId -> Text -> Set UserId -> MH ()
+toggleReaction pId t uIds = do
+    session <- getSession
+    myId <- gets myUserId
+    let current = myId `Set.member` uIds
+    case current of
+        False ->
+            doAsyncWith Preempt $ do
+                mmPostReaction pId myId t session
+                return Nothing
+        True ->
+            doAsyncWith Preempt $ do
+                mmDeleteReaction pId myId t session
+                return Nothing

@@ -44,6 +44,7 @@ import           Matterhorn.Events.UrlSelect
 import           Matterhorn.Events.UserListOverlay
 import           Matterhorn.Events.ChannelListOverlay
 import           Matterhorn.Events.ReactionEmojiListOverlay
+import           Matterhorn.State.ReactionEmojiListOverlay (toggleReaction)
 import           Matterhorn.Events.TabbedWindow
 import           Matterhorn.Events.ManageAttachments
 import           Matterhorn.Events.EditNotifyPrefs
@@ -194,6 +195,10 @@ onMouseDown (ChannelSelectEntry match) Vty.BLeft [] _ =
     whenMode ChannelSelect $ do
         setMode Main
         setFocus $ channelListEntryChannelId $ matchEntry match
+onMouseDown (ClickableReaction pId t uIds) Vty.BLeft [] _ =
+    whenMode Main $ do
+        void $ toggleReaction pId t uIds
+
 onMouseDown _ _ _ _ =
     return ()
 

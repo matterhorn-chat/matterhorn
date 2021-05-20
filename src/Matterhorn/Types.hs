@@ -871,6 +871,7 @@ data Name =
     | ClickableUsernameInMessage MessageId Int Text
     | ClickableUsername Name Int Text
     | ClickableURLListEntry Int LinkTarget
+    | ClickableReaction PostId Text (Set UserId)
     | AttachmentPathEditor TeamId
     | AttachmentPathSaveButton TeamId
     | AttachmentPathCancelButton TeamId

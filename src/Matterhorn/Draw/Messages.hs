@@ -28,7 +28,7 @@ import qualified Data.Text as T
 import qualified Graphics.Vty as V
 import           Lens.Micro.Platform ( (.~), to )
 import           Network.Mattermost.Lenses ( postEditAtL, postCreateAtL )
-import           Network.Mattermost.Types ( ServerTime(..), userUsername )
+import           Network.Mattermost.Types ( ServerTime(..), userUsername, postId )
 import           Prelude ()
 import           Matterhorn.Prelude
 
@@ -374,11 +374,16 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
           then Nothing
           else let renderR e us lst =
                        let n = Set.size us
-                       in if | n == 1    -> makeReactionWidget (" [" <> e <> "]") : lst
-                             | n > 1     -> makeReactionWidget (" [" <> e <> " " <> T.pack (show n) <> "]") : lst
+                       in if | n == 1    -> makeReactionWidget e us (" [" <> e <> "]") : lst
+                             | n > 1     -> makeReactionWidget e us (" [" <> e <> " " <> T.pack (show n) <> "]") : lst
                              | otherwise -> lst
                    reactionWidget = hBox $ Map.foldrWithKey renderR [] (msg^.mReactions)
-                   makeReactionWidget t = txt t
+                   makeReactionWidget e us t =
+                       let w = txt t in
+                       maybe w (flip clickable w) $ makeName e us
+                   makeName e us = do
+                       pid <- postId <$> msg^.mOriginalPost
+                       Just $ ClickableReaction pid e us
                in Just $ withDefAttr emojiAttr $ txt "   " <+> reactionWidget
         withParent p =
             case mdThreadState of
