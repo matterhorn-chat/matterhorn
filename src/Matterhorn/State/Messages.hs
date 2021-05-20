@@ -686,8 +686,6 @@ instance A.ToJSON NotificationV2 where
                  , "from"     A..= sender
                  ]
 
-data NotificationVersion = NotifyV1 | NotifyV2
-
 -- We define a notifyGetPayload for each notification version.
 notifyGetPayload :: NotificationVersion -> ChatState -> Post -> Bool -> Maybe String
 notifyGetPayload NotifyV1 _ _ _ = do return ""
@@ -729,9 +727,8 @@ runNotifyCommand :: Post -> Bool -> MH ()
 runNotifyCommand post mentioned = do
     notifyVersion <- use (csResources.crConfiguration.configActivityNotifyVersionL)
     case notifyVersion of
-        1 -> handleNotifyCommand post mentioned NotifyV1
-        2 -> handleNotifyCommand post mentioned NotifyV2
-        _ -> return ()
+        NotifyV1 -> handleNotifyCommand post mentioned NotifyV1
+        NotifyV2 -> handleNotifyCommand post mentioned NotifyV2
 
 maybePostUsername :: ChatState -> Post -> T.Text
 maybePostUsername st p =

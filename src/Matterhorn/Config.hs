@@ -109,7 +109,8 @@ fromIni = do
       (configEnableAspell defaultConfig)
     configSyntaxDirs <- fieldDefOf "syntaxDirectories" syntaxDirsField []
     configActivityNotifyCommand <- fieldMb "activityNotifyCommand"
-    configActivityNotifyVersion <- fieldDefOf "activityNotifyVersion" number 1
+    configActivityNotifyVersion <- fieldDefOf "activityNotifyVersion"
+      notifyVersion (configActivityNotifyVersion defaultConfig)
     configShowMessageTimestamps <- fieldFlagDef "showMessageTimestamps"
       (configShowMessageTimestamps defaultConfig)
     configActivityBell <- fieldFlagDef "activityBell"
@@ -195,6 +196,14 @@ backgroundField t =
         _ -> Left ("Invalid value " <> show t
                   <> "; must be one of: Disabled, Active, ActiveCount")
 
+notifyVersion :: Text -> Either String NotificationVersion
+notifyVersion t =
+    case t of
+        "NotifyV1" -> Right NotifyV1
+        "NotifyV2" -> Right NotifyV2
+        _ -> Left ("Invalid value " <> show t
+                  <> "; must be one of NotifyV1, NotifyV2")
+
 cpuUsagePolicy :: Text -> Either String CPUUsagePolicy
 cpuUsagePolicy t =
     case T.toLower t of
@@ -244,7 +253,7 @@ defaultConfig =
            , configURLOpenCommand              = Nothing
            , configURLOpenCommandInteractive   = False
            , configActivityNotifyCommand       = Nothing
-           , configActivityNotifyVersion       = 1
+           , configActivityNotifyVersion       = NotifyV1
            , configActivityBell                = False
            , configShowMessageTimestamps       = True
            , configShowBackground              = Disabled
