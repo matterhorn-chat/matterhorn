@@ -61,3 +61,4 @@ NOTIFY_JSON_LOG=
 [ -n "$NOTIFY_JSON_LOG" ] && {
 	echo `date -Iminutes` $json >> $NOTIFY_JSON_LOG
 }
+true
