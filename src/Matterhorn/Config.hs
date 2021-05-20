@@ -199,8 +199,8 @@ backgroundField t =
 notifyVersion :: Text -> Either String NotificationVersion
 notifyVersion t =
     case t of
-        "NotifyV1" -> Right NotifyV1
-        "NotifyV2" -> Right NotifyV2
+        "1" -> Right NotifyV1
+        "2" -> Right NotifyV2
         _ -> Left ("Invalid value " <> show t
                   <> "; must be one of NotifyV1, NotifyV2")
 
