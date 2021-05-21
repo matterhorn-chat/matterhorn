@@ -1,0 +1,64 @@
+#! /usr/bin/env sh
+
+# This is the sample Linux notifier for V2 notifications.
+
+# The notification payload is a JSON object presented to standard input,
+# having the fields version, sender, message and mentioned.
+
+# This script depends upon `jq(1)` to extract fields from the JSON
+# notification and upon `notify-send(1)` to invoke the system notifier.
+
+# See docs/notification-scripts.md for further details.
+
+PGM="`basename $0`"
+function fail {
+	echo $PGM: "$@" >/dev/stderr
+	exit 1
+}
+
+# Confirm presence of `jq(1)` and `notify-send(1)`.'
+function has {
+	which $1 >/dev/null 2>&1
+}
+has jq || fail 'jq(1) is required but not present'
+has notify-send || fail 'notify-send(1) is required but not present'
+
+# Extract the data to be notified. The data is in a JSON payload at stdin.
+json=`cat`
+version=`echo $json|jq -Mr .version`
+[ "$version" = 2 ] || fail 'JSON payload has wrong version'
+sender=`echo $json|jq -Mr .from`
+message=`echo $json|jq -Mr .message`
+mentioned=`echo $json|jq -Mr .mention`
+
+# Now prepare the notification. The logic is essentially the same as for
+# the V1 notifier.
+
+# Configure the notifier.
+ns_URGENCY_GENERAL=normal    # none, low, normal or critical
+ns_URGENCY_MENTIONED=normal  # none, low, normal or critical
+ns_CATEGORY=im.received
+ns_HEADER="Matterhorn message from @$sender"
+ns_BODY="$message"
+
+case "$mentioned" in
+false) ns_URGENCY=$ns_URGENCY_GENERAL ;;
+true) ns_URGENCY=$ns_URGENCY_MENTIONED ;;
+*) fail "mentioned: invalid value: $mentioned" ;;
+esac
+
+# Emit the notification.
+case "$ns_URGENCY" in
+none) ;;
+low|normal|critical)
+	notify-send -u $ns_URGENCY -c $ns_CATEGORY -- "$ns_HEADER" "$ns_BODY" ;;
+*) fail "urgency not recognized: $ns_URGENCY" ;;
+esac
+
+# Log the JSON notification payload. To enable, define NOTIFY_JSON_LOG as
+# a path to a file. The file need not exist; the directory must be writable.
+NOTIFY_JSON_LOG=
+[ -n "$NOTIFY_JSON_LOG" ] && {
+	echo `date -Iminutes` $json >> $NOTIFY_JSON_LOG
+}
+true

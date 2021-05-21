@@ -76,6 +76,7 @@ module Matterhorn.Types
   , configURLOpenCommandL
   , configURLOpenCommandInteractiveL
   , configActivityNotifyCommandL
+  , configActivityNotifyVersionL
   , configActivityBellL
   , configShowMessageTimestampsL
   , configShowBackgroundL
@@ -100,6 +101,7 @@ module Matterhorn.Types
   , configChannelListOrientationL
   , configMouseModeL
 
+  , NotificationVersion(..)
   , HelpScreen(..)
   , PasswordSource(..)
   , TokenSource(..)
@@ -424,6 +426,12 @@ import qualified Matterhorn.Zipper as Z
 
 -- * Configuration
 
+-- | A notification version for the external notifier
+data NotificationVersion =
+    NotifyV1
+    | NotifyV2
+    deriving (Eq, Read, Show)
+
 -- | A user password is either given to us directly, or a command
 -- which we execute to find the password.
 data PasswordSource =
@@ -515,6 +523,8 @@ data Config =
            -- whether it should be given control of the terminal).
            , configActivityNotifyCommand :: Maybe T.Text
            -- ^ The command to run for activity notifications.
+           , configActivityNotifyVersion :: NotificationVersion
+           -- ^ The activity notifier version.
            , configActivityBell :: Bool
            -- ^ Whether to ring the terminal bell on activity.
            , configShowMessageTimestamps :: Bool

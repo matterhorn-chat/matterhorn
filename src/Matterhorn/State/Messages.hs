@@ -1,4 +1,5 @@
 {-# LANGUAGE MultiWayIf #-}
+
 module Matterhorn.State.Messages
   ( PostToAdd(..)
   , addDisconnectGaps
@@ -24,6 +25,8 @@ import           Matterhorn.Prelude
 import           Brick.Main ( getVtyHandle, invalidateCacheEntry, invalidateCache )
 import qualified Brick.Widgets.FileBrowser as FB
 import           Control.Exception ( SomeException, try )
+import qualified Data.Aeson as A
+import qualified Data.ByteString.Lazy.Char8 as BL8
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Set as Set
@@ -665,8 +668,36 @@ data PostToAdd =
     -- only available in websocket events (and then provided to this
     -- constructor).
 
-runNotifyCommand :: Post -> Bool -> MH ()
-runNotifyCommand post mentioned = do
+encodeToJSONstring :: A.ToJSON a => a -> String
+encodeToJSONstring a = BL8.unpack $ A.encode a
+
+-- Notification Version 2 payload definition
+data NotificationV2 = NotificationV2
+    { version :: Int
+    , message :: Text
+    , mention :: Bool
+    , from :: Text
+    } deriving (Show)
+instance A.ToJSON NotificationV2 where
+    toJSON (NotificationV2 vers msg mentioned sender) =
+        A.object [ "version"  A..= vers
+                 , "message"  A..= msg
+                 , "mention"  A..= mentioned
+                 , "from"     A..= sender
+                 ]
+
+-- We define a notifyGetPayload for each notification version.
+notifyGetPayload :: NotificationVersion -> ChatState -> Post -> Bool -> Maybe String
+notifyGetPayload NotifyV1 _ _ _ = do return ""
+notifyGetPayload NotifyV2 st post mentioned = do
+    let notification = NotificationV2 2 msg mentioned sender
+    return (encodeToJSONstring notification)
+        where
+            msg = sanitizeUserText $ postMessage post
+            sender = maybePostUsername st post
+
+handleNotifyCommand :: Post -> Bool -> NotificationVersion -> MH ()
+handleNotifyCommand post mentioned NotifyV1 = do
     outputChan <- use (csResources.crSubprocessLog)
     st <- use id
     notifyCommand <- use (csResources.crConfiguration.configActivityNotifyCommandL)
@@ -680,6 +711,24 @@ runNotifyCommand post mentioned = do
                 runLoggedCommand outputChan (T.unpack cmd)
                                  [notified, sender, messageString] Nothing Nothing
                 return Nothing
+handleNotifyCommand post mentioned NotifyV2 = do
+    outputChan <- use (csResources.crSubprocessLog)
+    st <- use id
+    let payload = notifyGetPayload NotifyV2 st post mentioned
+    notifyCommand <- use (csResources.crConfiguration.configActivityNotifyCommandL)
+    case notifyCommand of
+        Nothing -> return ()
+        Just cmd ->
+            doAsyncWith Preempt $ do
+                runLoggedCommand outputChan (T.unpack cmd) [] payload Nothing
+                return Nothing
+
+runNotifyCommand :: Post -> Bool -> MH ()
+runNotifyCommand post mentioned = do
+    notifyVersion <- use (csResources.crConfiguration.configActivityNotifyVersionL)
+    case notifyVersion of
+        NotifyV1 -> handleNotifyCommand post mentioned NotifyV1
+        NotifyV2 -> handleNotifyCommand post mentioned NotifyV2
 
 maybePostUsername :: ChatState -> Post -> T.Text
 maybePostUsername st p =
