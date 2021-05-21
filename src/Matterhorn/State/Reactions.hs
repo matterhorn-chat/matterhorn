@@ -22,6 +22,8 @@ import           Matterhorn.State.Common ( fetchMentionedUsers )
 import           Matterhorn.Types
 
 
+-- | Queue up a fetch for the reactions of the specified post in the
+-- specified channel.
 asyncFetchReactionsForPost :: ChannelId -> Post -> MH ()
 asyncFetchReactionsForPost cId p
   | not (p^.postHasReactionsL) = return ()
@@ -29,6 +31,10 @@ asyncFetchReactionsForPost cId p
         (\s _ -> fmap toList (mmGetReactionsForPost (p^.postIdL) s))
         (\_ rs -> Just $ addReactions cId rs)
 
+-- | Add the specified reactions returned by the server to the relevant
+-- posts in the specified channel. This should only be called in
+-- response to a server API request or event. If you want to add
+-- reactions to a post, start by calling @mmPostReaction@.
 addReactions :: ChannelId -> [Reaction] -> MH ()
 addReactions cId rs = do
     mh $ invalidateCacheEntry $ ChannelMessages cId
@@ -42,6 +48,10 @@ addReactions cId rs = do
           | otherwise = id
         insertAll mId msg = foldr (insert mId) msg rs
 
+-- | Remove the specified reaction from its message in the specified
+-- channel. This should only be called in response to a server event
+-- instructing us to remove the reaction. If you want to trigger such an
+-- event, use @mmDeleteReaction@.
 removeReaction :: Reaction -> ChannelId -> MH ()
 removeReaction r cId = do
     mh $ invalidateCacheEntry $ ChannelMessages cId
