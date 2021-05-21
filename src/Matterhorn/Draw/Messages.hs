@@ -375,16 +375,19 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
           else let renderR e us lst =
                        let n = Set.size us
                        in if | n == 1    -> makeReactionWidget e us (" [" <> e <> "]") : lst
-                             | n > 1     -> makeReactionWidget e us (" [" <> e <> " " <> T.pack (show n) <> "]") : lst
-                             | otherwise -> lst
-                   reactionWidget = hBox $ Map.foldrWithKey renderR [] (msg^.mReactions)
+                             | otherwise -> makeReactionWidget e us (" [" <> e <> " " <> T.pack (show n) <> "]") : lst
+                   reactionWidget = hBox $ Map.foldrWithKey renderR [] nonEmptyReactions
+                   nonEmptyReactions = Map.filter (not . Set.null) $ msg^.mReactions
                    makeReactionWidget e us t =
                        let w = txt t in
                        maybe w (flip clickable w) $ makeName e us
+                   hasAnyReactions = not $ null nonEmptyReactions
                    makeName e us = do
                        pid <- postId <$> msg^.mOriginalPost
                        Just $ ClickableReaction pid e us
-               in Just $ withDefAttr emojiAttr $ txt "   " <+> reactionWidget
+               in if hasAnyReactions
+                  then Just $ withDefAttr emojiAttr $ txt "   " <+> reactionWidget
+                  else Nothing
         withParent p =
             case mdThreadState of
                 NoThread -> msgWidget
