@@ -1,6 +1,7 @@
 {-# LANGUAGE RankNTypes #-}
 module Matterhorn.State.ListOverlay
   ( listOverlayActivateCurrent
+  , listOverlayActivate
   , listOverlaySearchString
   , listOverlayMove
   , exitListOverlay
@@ -34,12 +35,17 @@ listOverlayActivateCurrent which = do
   mItem <- L.listSelectedElement <$> use (which.listOverlaySearchResults)
   case mItem of
       Nothing -> return ()
-      Just (_, val) -> do
-          handler <- use (which.listOverlayEnterHandler)
-          activated <- handler val
-          if activated
-             then setMode Main
-             else return ()
+      Just (_, val) -> listOverlayActivate which val
+
+-- | Activate the specified list overlay's selected item by invoking the
+-- overlay's configured enter keypress handler function.
+listOverlayActivate :: Lens' ChatState (ListOverlayState a b) -> a -> MH ()
+listOverlayActivate which val = do
+    handler <- use (which.listOverlayEnterHandler)
+    activated <- handler val
+    if activated
+       then setMode Main
+       else return ()
 
 -- | Get the current search string for the specified overlay.
 listOverlaySearchString :: Lens' ChatState (ListOverlayState a b) -> MH Text
