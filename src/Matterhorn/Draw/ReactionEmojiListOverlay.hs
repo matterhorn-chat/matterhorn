@@ -32,7 +32,8 @@ renderEmoji sel (mine, e) =
     let maybeForce = if sel
                      then forceAttr listSelectedFocusedAttr
                      else id
-    in maybeForce $
+    in clickable (ReactionEmojiListOverlayEntry (mine, e)) $
+       maybeForce $
        padRight Max $
        hBox [ if mine then txt " * " else txt "   "
             , withDefAttr emojiAttr $ txt $ ":" <> e <> ":"

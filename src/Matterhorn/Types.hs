@@ -876,6 +876,7 @@ data Name =
     | AttachmentPathSaveButton TeamId
     | AttachmentPathCancelButton TeamId
     | RenderedMessage MessageId
+    | ReactionEmojiListOverlayEntry (Bool, T.Text)
     deriving (Eq, Show, Ord)
 
 -- | Types that provide a "semantically equal" operation. Two values may
