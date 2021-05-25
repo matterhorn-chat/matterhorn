@@ -6,8 +6,6 @@ module Matterhorn.State.ReactionEmojiListOverlay
   , reactionEmojiListSelectUp
   , reactionEmojiListPageDown
   , reactionEmojiListPageUp
-
-  , toggleReaction
   )
 where
 
@@ -24,13 +22,12 @@ import           Data.List ( nubBy )
 import           Lens.Micro.Platform ( to )
 
 import           Network.Mattermost.Types
-import           Network.Mattermost.Endpoints ( mmPostReaction, mmDeleteReaction )
 
 import           Matterhorn.Emoji
 import           Matterhorn.State.ListOverlay
 import           Matterhorn.State.MessageSelect
-import           Matterhorn.State.Async
 import           Matterhorn.Types
+import           Matterhorn.State.Reactions ( updateReaction )
 
 
 enterReactionEmojiListOverlayMode :: MH ()
@@ -47,9 +44,6 @@ enterReactionEmojiListOverlayMode = do
 
 enterHandler :: (Bool, T.Text) -> MH Bool
 enterHandler (mine, e) = do
-    session <- getSession
-    myId <- gets myUserId
-
     selectedMessage <- use (to getSelectedMessage)
     case selectedMessage of
         Nothing -> return False
@@ -57,15 +51,7 @@ enterHandler (mine, e) = do
             case m^.mOriginalPost of
                 Nothing -> return False
                 Just p -> do
-                    case mine of
-                        False ->
-                            doAsyncWith Preempt $ do
-                                mmPostReaction (postId p) myId e session
-                                return Nothing
-                        True ->
-                            doAsyncWith Preempt $ do
-                                mmDeleteReaction (postId p) myId e session
-                                return Nothing
+                    updateReaction (postId p) e (not mine)
                     return True
 
 fetchResults :: UserId
@@ -126,18 +112,3 @@ reactionEmojiListMove = listOverlayMove (csCurrentTeam.tsReactionEmojiListOverla
 -- | The number of emoji in a "page" for cursor movement purposes.
 reactionEmojiListPageSize :: Int
 reactionEmojiListPageSize = 10
-
-toggleReaction :: PostId -> Text -> Set UserId -> MH ()
-toggleReaction pId t uIds = do
-    session <- getSession
-    myId <- gets myUserId
-    let current = myId `Set.member` uIds
-    case current of
-        False ->
-            doAsyncWith Preempt $ do
-                mmPostReaction pId myId t session
-                return Nothing
-        True ->
-            doAsyncWith Preempt $ do
-                mmDeleteReaction pId myId t session
-                return Nothing

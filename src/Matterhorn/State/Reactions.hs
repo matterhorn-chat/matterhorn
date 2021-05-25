@@ -2,6 +2,8 @@ module Matterhorn.State.Reactions
   ( asyncFetchReactionsForPost
   , addReactions
   , removeReaction
+  , updateReaction
+  , toggleReaction
   )
 where
 
@@ -51,7 +53,7 @@ addReactions cId rs = do
 -- | Remove the specified reaction from its message in the specified
 -- channel. This should only be called in response to a server event
 -- instructing us to remove the reaction. If you want to trigger such an
--- event, use @mmDeleteReaction@.
+-- event, use @updateReaction@.
 removeReaction :: Reaction -> ChannelId -> MH ()
 removeReaction r cId = do
     mh $ invalidateCacheEntry $ ChannelMessages cId
@@ -60,3 +62,23 @@ removeReaction r cId = do
                   m & mReactions %~ (Map.alter delReaction (r^.reactionEmojiNameL))
               | otherwise = m
         delReaction mUs = S.delete (r^.reactionUserIdL) <$> mUs
+
+-- | Set or unset a reaction on a post.
+updateReaction :: PostId -> Text -> Bool -> MH ()
+updateReaction pId text value = do
+    session <- getSession
+    myId <- gets myUserId
+    if value
+      then doAsyncWith Preempt $ do
+                mmPostReaction pId myId text session
+                return Nothing
+      else doAsyncWith Preempt $ do
+                mmDeleteReaction pId myId text session
+                return Nothing
+
+-- | Toggle a reaction on a post.
+toggleReaction :: PostId -> Text -> Set UserId -> MH ()
+toggleReaction pId text uIds = do
+    myId <- gets myUserId
+    let current = myId `S.member` uIds
+    updateReaction pId text (not current)

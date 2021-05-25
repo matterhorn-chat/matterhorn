@@ -45,7 +45,7 @@ import           Matterhorn.Events.UrlSelect
 import           Matterhorn.Events.UserListOverlay
 import           Matterhorn.Events.ChannelListOverlay
 import           Matterhorn.Events.ReactionEmojiListOverlay
-import           Matterhorn.State.ReactionEmojiListOverlay (toggleReaction)
+import           Matterhorn.State.Reactions ( toggleReaction )
 import           Matterhorn.Events.TabbedWindow
 import           Matterhorn.Events.ManageAttachments
 import           Matterhorn.Events.EditNotifyPrefs
