@@ -55,6 +55,13 @@ setTeam tId = setTeamFocusWith $ Z.findRight (== tId)
 -- necessary during team switching.
 setTeamFocusWith :: (Z.Zipper () TeamId -> Z.Zipper () TeamId) -> MH ()
 setTeamFocusWith f = do
+    -- Before we leave this team to view another one, indicate that
+    -- we've viewed the current team's currently-selected channel so
+    -- that this team doesn't get left with an unread indicator once we
+    -- are looking at the other team. We do this when switching channels
+    -- within a team in the same way.
+    updateViewed True
+
     csTeamZipper %= f
     postChangeTeamCommon
 
