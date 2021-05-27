@@ -373,4 +373,5 @@ shouldIgnore e =
           , "resource vanished" `isInfixOf` eStr
           , "timeout" `isInfixOf` eStr
           , "partial packet" `isInfixOf` eStr
+          , "No route to host" `isInfixOf` eStr
           ]
