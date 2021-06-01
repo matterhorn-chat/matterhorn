@@ -384,7 +384,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                    hasAnyReactions = not $ null nonEmptyReactions
                    makeName e us = do
                        pid <- postId <$> msg^.mOriginalPost
-                       Just $ ClickableReaction pid e us
+                       Just $ ClickableReactionInMessage pid e us
                in if hasAnyReactions
                   then Just $ withDefAttr emojiAttr $ txt "   " <+> reactionWidget
                   else Nothing

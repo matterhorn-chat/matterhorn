@@ -196,7 +196,7 @@ onMouseDown (ChannelSelectEntry match) Vty.BLeft [] _ =
     whenMode ChannelSelect $ do
         setMode Main
         setFocus $ channelListEntryChannelId $ matchEntry match
-onMouseDown (ClickableReaction pId t uIds) Vty.BLeft [] _ =
+onMouseDown (ClickableReactionInMessage pId t uIds) Vty.BLeft [] _ =
     -- whenMode Main $ do
         void $ toggleReaction pId t uIds
 onMouseDown (ReactionEmojiListOverlayEntry val) Vty.BLeft [] _ =
