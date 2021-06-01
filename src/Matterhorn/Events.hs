@@ -199,6 +199,8 @@ onMouseDown (ChannelSelectEntry match) Vty.BLeft [] _ =
 onMouseDown (ClickableReactionInMessage pId t uIds) Vty.BLeft [] _ =
     -- whenMode Main $ do
         void $ toggleReaction pId t uIds
+onMouseDown (ClickableReaction pId t uIds) Vty.BLeft [] _ =
+    void $ toggleReaction pId t uIds
 onMouseDown (ReactionEmojiListOverlayEntry val) Vty.BLeft [] _ =
     whenMode ReactionEmojiListOverlay $ do
         listOverlayActivate (csCurrentTeam.tsReactionEmojiListOverlay) val

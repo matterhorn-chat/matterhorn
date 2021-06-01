@@ -872,6 +872,7 @@ data Name =
     | ClickableUsername Name Int Text
     | ClickableURLListEntry Int LinkTarget
     | ClickableReactionInMessage PostId Text (Set UserId)
+    | ClickableReaction PostId Text (Set UserId)
     | AttachmentPathEditor TeamId
     | AttachmentPathSaveButton TeamId
     | AttachmentPathCancelButton TeamId

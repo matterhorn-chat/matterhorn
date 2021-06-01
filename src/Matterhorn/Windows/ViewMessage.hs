@@ -21,7 +21,7 @@ import qualified Data.Foldable as F
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( to )
 
-import           Network.Mattermost.Types ( TeamId )
+import           Network.Mattermost.Types ( TeamId, Post (postId) )
 
 import           Matterhorn.Constants
 import           Matterhorn.Events.Keybindings
@@ -111,8 +111,9 @@ reactionsText st m = viewport (ViewMessageReactionsArea tId) Vertical body
         mkEntry (reactionName, userIdSet) =
             let count = str $ "(" <> show (S.size userIdSet) <> ")"
                 name = withDefAttr emojiAttr $ txt $ ":" <> reactionName <> ":"
+                clickableName = makeClickableName name reactionName userIdSet
                 usernameList = usernameText userIdSet
-            in (name <+> (padLeft (Pad 1) count)) <=>
+            in (clickableName <+> (padLeft (Pad 1) count)) <=>
                (padLeft (Pad 2) usernameList)
 
         hs = getHighlightSet st
@@ -129,6 +130,15 @@ reactionsText st m = viewport (ViewMessageReactionsArea tId) Vertical body
             catMaybes (lookupUsername <$> F.toList uids)
 
         lookupUsername uid = usernameForUserId uid st
+
+        makeName e us = do
+            pid <- postId <$> m^.mOriginalPost
+            Just $ ClickableReaction pid e us
+
+        makeClickableName w e us =
+            case makeName e us of
+                Just n ->  clickable n w
+                Nothing -> w
 
 viewMessageBox :: ChatState -> Message -> Widget Name
 viewMessageBox st msg =
