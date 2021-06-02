@@ -46,6 +46,7 @@
 | `/theme <theme>` | Set the color theme |
 | `/toggle-channel-list` | Toggle channel list visibility |
 | `/toggle-expanded-topics` | Toggle expanded channel topics |
+| `/toggle-favorite` | Toggle the favorite status of the current channel |
 | `/toggle-message-timestamps` | Toggle message timestamps |
 | `/topic` | Set the current channel's topic (header) interactively |
 | `/topic <topic>` | Set the current channel's topic (header) |
