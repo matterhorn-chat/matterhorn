@@ -376,7 +376,6 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                        let n = Set.size us
                        in if | n == 1    -> makeReactionWidget e us (" [" <> e <> "]") : lst
                              | otherwise -> makeReactionWidget e us (" [" <> e <> " " <> T.pack (show n) <> "]") : lst
-                   reactionWidget = hBox $ Map.foldrWithKey renderR [] nonEmptyReactions
                    nonEmptyReactions = Map.filter (not . Set.null) $ msg^.mReactions
                    makeReactionWidget e us t =
                        let w = txt t in
@@ -385,6 +384,21 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                    makeName e us = do
                        pid <- postId <$> msg^.mOriginalPost
                        Just $ ClickableReactionInMessage pid e us
+                   reactionWidget = Widget Fixed Fixed $ do
+                       ctx <- getContext
+                       let lineW = ctx^.availWidthL
+                       reacs <- mapM render $ Map.foldrWithKey renderR [] nonEmptyReactions
+                       let reacLines :: [Result n] -> Int -> [Result n] -> [[Result n]]
+                           reacLines l _ []     = if null l then [] else [l]
+                           reacLines l w (r:rs) =
+                               let rW = V.imageWidth $ r^.imageL
+                               in if rW <= w
+                                  then reacLines (l <> [r]) (w - rW) rs
+                                  else
+                                      let rest = reacLines [] lineW rs
+                                      in l : [r] : rest
+
+                       render $ vBox $ hBox <$> (fmap (fmap resultToWidget)) (reacLines [] lineW reacs)
                in if hasAnyReactions
                   then Just $ withDefAttr emojiAttr $ txt "   " <+> reactionWidget
                   else Nothing
