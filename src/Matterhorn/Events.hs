@@ -10,7 +10,7 @@ import           Matterhorn.Prelude
 
 import           Brick
 import qualified Data.Text as T
-import           GHC.Exception.Type ( fromException )
+import           GHC.Exception ( fromException )
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( (.=), _2, singular, _Just )
 import qualified System.IO.Error as IO
