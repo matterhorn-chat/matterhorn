@@ -1,4 +1,84 @@
 
+50200.13.0
+==========
+
+New features:
+ * Matterhorn now has optional mouse support! Thanks to @phsmenon for
+   this work. From the User Guide: Matterhorn supports mouse interaction
+   with some UI elements. To enable mouse support, set `enableMouseMode`
+   to `True` in your Matterhorn configuration. Mouse interaction is
+   supported on the following user interface elements:
+   * Channel list entries can be clicked to switch channels.
+   * Channel list entries in channel selection mode (`C-g`) can be
+     clicked to switch to the selected channel match.
+   * Team names in the team list can be clicked to switch teams.
+   * URLs and post links in the URL list (`C-o`) can be clicked to open
+     them.
+   * URLs in messages can be clicked to open them using the configured
+     URL opener.
+   * Post links in messages can be clicked to switch to the channel
+     containing the post.
+   * Usernames in messages can be clicked to switch to the direct
+     message channel for the clicked user.
+   * Usernames in the "Reactions" tab of the message view window can be
+     clicked to switch to the direct message channel for the clicked
+     user.
+   * Reactions to messages can be toggled by clicking on them.
+     Click-toggling also works in the "Search Emoji" window as well as
+     the "Reactions" tab of the message view window.
+ * Notification scripts now have a richer versioned interface. Thanks to
+   @TieDyedDevil for this work. Details can be found in
+   `docs/notification-scripts.md`.
+ * Favorite channel support was added. Thanks to @ajayeeralla for this
+   work.
+   * Matterhorn now honors the "favorite" status of channels, displaying
+     favorite channels together in a new channel list category.
+   * Matterhorn got a new command, `/toggle-favorite`, to toggle the
+     favorite status of the current channel.
+ * A new `/attach` command can be used to attach a file to the message
+   being composed.
+ * The URL list got a new keybinding to prompt for attachment save path
+   for the selected entry. This added a new key event, `save-attachment`
+   (default binding: `s`), for the URL list. When triggered, if the
+   selected URL entry is for an attachment, a dialog box is shown
+   prompting the user for a path to which to save the attachment. (If
+   the entry is not an attachment, the event is ignored.)
+ * The attachment file browser's key bindings can now be customized as
+   Matterhorn key events. Thanks to @TieDyedDevil for this work. (#628)
+ * Matterhorn now supports pipe table syntax in Mattermost messages.
+ * The URL selection mode now displays available actions in its UI.
+   The URL list's bottom bar now indicates any actions that are
+   available for the selected link, similarly to how Matterhorn displays
+   such actions for messages in message selection mode. This change also
+   adds a new theme attribute, `urlSelectStatus`, that is used to render
+   the keybindings shown in the options list.
+
+Bug fixes:
+ * Message reactions are now wrapped rather than being truncated by the
+   window width (#715)
+ * When switching away from one team to another, the previous team now
+   has its current channel marked as viewed to fix a bug where unread
+   messages in that channel were still seen as unread.
+
+Other improvements:
+ * "No route to host" exceptions no longer trigger "unexpected error"
+   messages (#714)
+ * Matterhorn no longer exposes the server's `/msg` command (#657)
+ * Matterhorn no longer exposes the server's `/search` command since
+   Matterhorn provides its own UI for that command.
+ * The `/group-msg` command was renamed to `/group-create` to make it
+   more distinct from the server command which has a different behavior
+   (#657).
+ * The `/remove-user` command was renamed to `/remove` and the server's
+   `/remove` command is no longer exposed (#657).
+ * Matterhorn now shows the team position and count in team list (#692).
+ * Channel autocompletion alternatives are now trimmed to one row in
+   height (thanks @karljs).
+ * User metadata is now updated correctly in reponse to websocket events
+   (#697; thanks @karljs).
+ * Matterhorn now falls back to UTC when it is unable to load local time
+   zone data (#695).
+
 50200.12.0
 ==========
 
