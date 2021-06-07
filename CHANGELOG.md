@@ -3,11 +3,11 @@
 ==========
 
 New features:
- * Matterhorn now has optional mouse support! Thanks to @phsmenon for
-   this work. From the User Guide: Matterhorn supports mouse interaction
-   with some UI elements. To enable mouse support, set `enableMouseMode`
-   to `True` in your Matterhorn configuration. Mouse interaction is
-   supported on the following user interface elements:
+ * Matterhorn now has optional mouse support! Thanks to Hari Menon
+   (@phsmenon) for this work. From the User Guide: Matterhorn supports
+   mouse interaction with some UI elements. To enable mouse support, set
+   `enableMouseMode` to `True` in your Matterhorn configuration. Mouse
+   interaction is supported on the following user interface elements:
    * Channel list entries can be clicked to switch channels.
    * Channel list entries in channel selection mode (`C-g`) can be
      clicked to switch to the selected channel match.
@@ -27,10 +27,10 @@ New features:
      Click-toggling also works in the "Search Emoji" window as well as
      the "Reactions" tab of the message view window.
  * Notification scripts now have a richer versioned interface. Thanks to
-   @TieDyedDevil for this work. Details can be found in
+   Dave Lamkins (@TieDyedDevil) for this work. Details can be found in
    `docs/notification-scripts.md`.
- * Favorite channel support was added. Thanks to @ajayeeralla for this
-   work.
+ * Favorite channel support was added. Thanks to Ajay Eeralla
+   (@ajayeeralla) for this work.
    * Matterhorn now honors the "favorite" status of channels, displaying
      favorite channels together in a new channel list category.
    * Matterhorn got a new command, `/toggle-favorite`, to toggle the
@@ -44,7 +44,8 @@ New features:
    prompting the user for a path to which to save the attachment. (If
    the entry is not an attachment, the event is ignored.)
  * The attachment file browser's key bindings can now be customized as
-   Matterhorn key events. Thanks to @TieDyedDevil for this work. (#628)
+   Matterhorn key events. Thanks to Dave Lamkins (@TieDyedDevil) for
+   this work. (#628)
  * Matterhorn now supports pipe table syntax in Mattermost messages.
  * The URL selection mode now displays available actions in its UI.
    The URL list's bottom bar now indicates any actions that are
@@ -61,6 +62,10 @@ Bug fixes:
    messages in that channel were still seen as unread.
 
 Other improvements:
+ * Channel autocompletion alternatives are now trimmed to one row in
+   height (thanks Karl Smeltzer (@karljs)).
+ * User metadata is now updated correctly in reponse to websocket events
+   (#697; thanks Karl Smeltzer (@karljs)).
  * "No route to host" exceptions no longer trigger "unexpected error"
    messages (#714)
  * Matterhorn no longer exposes the server's `/msg` command (#657)
@@ -72,10 +77,6 @@ Other improvements:
  * The `/remove-user` command was renamed to `/remove` and the server's
    `/remove` command is no longer exposed (#657).
  * Matterhorn now shows the team position and count in team list (#692).
- * Channel autocompletion alternatives are now trimmed to one row in
-   height (thanks @karljs).
- * User metadata is now updated correctly in reponse to websocket events
-   (#697; thanks @karljs).
  * Matterhorn now falls back to UTC when it is unable to load local time
    zone data (#695).
 
