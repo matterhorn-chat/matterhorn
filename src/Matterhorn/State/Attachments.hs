@@ -21,7 +21,7 @@ import qualified Data.ByteString as BS
 import           Data.Either ( isRight )
 import           Data.Text ( unpack )
 import qualified Data.Vector as Vector
-import           GHC.Exception.Type ( toException )
+import           GHC.Exception ( toException )
 import           Lens.Micro.Platform ( (.=), (%=) )
 import           System.Directory ( doesDirectoryExist, doesFileExist, getDirectoryContents )
 
