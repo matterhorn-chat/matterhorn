@@ -316,7 +316,7 @@ fetchFileAtPath :: FileId -> Session -> FilePath -> IO ()
 fetchFileAtPath fId sess fullPath = do
     contents <- mmGetFile fId sess
     let dir = takeDirectory fullPath
-    createDirectoryIfMissing False dir
+    createDirectoryIfMissing True dir
     BS.writeFile fullPath contents
 
 removeEmoteFormatting :: T.Text -> T.Text
