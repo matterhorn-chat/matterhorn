@@ -394,9 +394,9 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                                let rW = V.imageWidth $ r^.imageL
                                in if rW <= w
                                   then reacLines (l <> [r]) (w - rW) rs
-                                  else
-                                      let rest = reacLines [] lineW rs
-                                      in l : [r] : rest
+                                  else if rW > lineW
+                                       then l : [r] : reacLines [] lineW rs
+                                       else l : reacLines [] lineW (r:rs)
 
                        render $ vBox $ hBox <$> (fmap (fmap resultToWidget)) (reacLines [] lineW reacs)
                in if hasAnyReactions
