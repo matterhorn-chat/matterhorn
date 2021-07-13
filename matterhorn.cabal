@@ -17,6 +17,9 @@ tested-with:         GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4, GHC == 8.6.5, GHC
 data-files:          syntax/*.xml
                      syntax/language.dtd
                      syntax/LICENSE
+                     emoji/NOTICE.txt
+                     emoji/LICENSE.txt
+                     emoji/emoji.json
 
 extra-doc-files:     CHANGELOG.md
                      README.md
