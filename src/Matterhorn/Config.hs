@@ -13,6 +13,8 @@ where
 import           Prelude ()
 import           Matterhorn.Prelude
 
+import qualified Paths_matterhorn as Paths
+
 import           Control.Monad.Trans.Except
 import           Control.Monad.Trans.Class ( lift )
 import           Data.Char ( isDigit, isAlpha )
@@ -48,7 +50,8 @@ defaultSkylightingPaths :: IO [FilePath]
 defaultSkylightingPaths = do
     xdg <- xdgSyntaxDir
     adjacent <- getBundledSyntaxPath
-    return [xdg, adjacent]
+    cabalDataFiles <- Paths.getDataFileName syntaxDirName
+    return [xdg, adjacent, cabalDataFiles]
 
 getBundledSyntaxPath :: IO FilePath
 getBundledSyntaxPath = do

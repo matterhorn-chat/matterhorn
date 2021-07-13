@@ -25,6 +25,8 @@ where
 import Prelude ()
 import Matterhorn.Prelude
 
+import qualified Paths_matterhorn as Paths
+
 import Data.Text ( unpack )
 import System.Directory ( doesFileExist
                         , doesDirectoryExist
@@ -77,6 +79,13 @@ bundledEmojiJsonPath = do
     let distDir = "dist-newstyle/"
         pathBits = splitPath selfPath
 
+    adjacentEmojiJsonPath <- do
+      let path = takeDirectory selfPath </> emojiDirName </> emojiJsonFilename
+      exists <- doesFileExist path
+      return $ if exists then Just path else Nothing
+
+    cabalEmojiJsonPath <- Paths.getDataFileName $ emojiDirName </> emojiJsonFilename
+
     return $ if distDir `elem` pathBits
              then
                  -- We're in development, so use the development
@@ -86,8 +95,10 @@ bundledEmojiJsonPath = do
              else
                  -- In this case we assume the binary is being run from
                  -- a release, in which case the syntax directory is a
-                 -- sibling of the executable path.
-                 takeDirectory selfPath </> emojiDirName </> emojiJsonFilename
+                 -- sibling of the executable path. If it does not exist
+                 -- we fall back to the cabal data files path discovered
+                 -- via Paths.getDataFileName.
+                 fromMaybe cabalEmojiJsonPath adjacentEmojiJsonPath
 
 emojiJsonFilename :: FilePath
 emojiJsonFilename = "emoji.json"
