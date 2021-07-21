@@ -33,6 +33,12 @@ For example, if your Mattermost server version is `3.6.0` then you
 would download matterhorn version `30600.2.4`. See [Our Versioning
 Scheme](#our-versioning-scheme) for details.
 
+## Other Ways to Install: Third-Party Snap Package
+
+@3v1n0 maintains a Snap package here:
+
+https://github.com/3v1n0/matterhorn-snap/
+
 # Get Help!
 
 We provide a number of avenues for getting support:
