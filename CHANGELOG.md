@@ -1,4 +1,10 @@
 
+Next release
+============
+
+Merged to master: pull request #724 (including data-files path when
+searching for emoji and syntax files)
+
 50200.13.0
 ==========
 
