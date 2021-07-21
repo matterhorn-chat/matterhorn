@@ -37,7 +37,7 @@ Scheme](#our-versioning-scheme) for details.
 
 @3v1n0 maintains a Snap package here:
 
-https://github.com/3v1n0/matterhorn-snap/
+https://github.com/3v1n0/matterhorn-snap/ ([Snapcraft page](https://snapcraft.io/matterhorn/))
 
 # Get Help!
 
