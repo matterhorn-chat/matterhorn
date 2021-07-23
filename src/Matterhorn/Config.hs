@@ -118,8 +118,11 @@ fromIni = do
       (configShowMessageTimestamps defaultConfig)
     configActivityBell <- fieldFlagDef "activityBell"
       (configActivityBell defaultConfig)
-    configTruncateVerbatimBlocks <- fieldFlagDef "truncateVerbatimBlocks"
-      (configTruncateVerbatimBlocks defaultConfig)
+    configTruncateVerbatimBlocksInt <- fieldDefOf "truncateVerbatimBlockHeight" number
+      (maybe 0 id $ configTruncateVerbatimBlocks defaultConfig)
+    let configTruncateVerbatimBlocks = case configTruncateVerbatimBlocksInt of
+            i | i <= 0 -> Nothing
+              | otherwise -> Just i
     configHyperlinkingMode <- fieldFlagDef "hyperlinkURLs"
       (configHyperlinkingMode defaultConfig)
     configPass <- (Just . PasswordCommand <$> field "passcmd") <!>
@@ -260,7 +263,7 @@ defaultConfig =
            , configActivityNotifyCommand       = Nothing
            , configActivityNotifyVersion       = NotifyV1
            , configActivityBell                = False
-           , configTruncateVerbatimBlocks      = False
+           , configTruncateVerbatimBlocks      = Nothing
            , configShowMessageTimestamps       = True
            , configShowBackground              = Disabled
            , configShowMessagePreview          = False

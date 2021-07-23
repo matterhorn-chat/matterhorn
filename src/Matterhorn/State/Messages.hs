@@ -84,12 +84,19 @@ toggleMessageTimestamps = do
                      }
     csResources.crConfiguration %= toggle
 
+defaultVerbatimTruncateHeight :: Int
+defaultVerbatimTruncateHeight = 25
+
 toggleVerbatimBlockTruncation :: MH ()
 toggleVerbatimBlockTruncation = do
     mh invalidateCache
-    let toggle c = c { configTruncateVerbatimBlocks = not (configTruncateVerbatimBlocks c)
-                     }
-    csResources.crConfiguration %= toggle
+    st <- use id
+    -- Restore the configured setting, or a default if the configuration
+    -- does not specify a setting.
+    let toggle Nothing = (st^.csResources.crConfiguration.configTruncateVerbatimBlocksL) <|>
+                         Just defaultVerbatimTruncateHeight
+        toggle (Just _) = Nothing
+    csVerbatimTruncateSetting %= toggle
 
 clearPendingFlags :: ChannelId -> MH ()
 clearPendingFlags c = csChannel(c).ccContents.cdFetchPending .= False

@@ -267,7 +267,7 @@ renderUserCommandBox st hs =
                           , mdMessageWidthLimit = Nothing
                           , mdMyUsername        = myUsername st
                           , mdWrapNonhighlightedCodeBlocks = True
-                          , mdTruncateVerbatimBlocks = True
+                          , mdTruncateVerbatimBlocks = Nothing
                           }
                         ]
             _ -> emptyWidget
@@ -757,7 +757,7 @@ inputPreview st hs | not $ st^.csResources.crConfiguration.configShowMessagePrev
                                   , mdMessageWidthLimit = Nothing
                                   , mdMyUsername        = myUsername st
                                   , mdWrapNonhighlightedCodeBlocks = True
-                                  , mdTruncateVerbatimBlocks = False
+                                  , mdTruncateVerbatimBlocks = Nothing
                                   }
                  in (maybePreviewViewport tId msgPreview) <=>
                     hBorderWithLabel (withDefAttr clientEmphAttr $ str "[Preview ↑]")

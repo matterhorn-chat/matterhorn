@@ -167,6 +167,7 @@ module Matterhorn.Types
   , csChannelListOrientation
   , csResources
   , csLastMouseDownEvent
+  , csVerbatimTruncateSetting
   , csCurrentChannel
   , csCurrentChannelId
   , csCurrentTeamId
@@ -528,7 +529,7 @@ data Config =
            -- ^ The activity notifier version.
            , configActivityBell :: Bool
            -- ^ Whether to ring the terminal bell on activity.
-           , configTruncateVerbatimBlocks :: Bool
+           , configTruncateVerbatimBlocks :: Maybe Int
            -- ^ Whether to truncate verbatim (and code) blocks past a
            -- reasonable number of lines.
            , configShowMessageTimestamps :: Bool
@@ -1512,6 +1513,10 @@ data ChatState =
               -- ^ The most recent mouse click event we got. We reset
               -- this on mouse up so we can ignore clicks whenever this
               -- is already set.
+              , _csVerbatimTruncateSetting :: Maybe Int
+              -- ^ The current verbatim block truncation setting. This
+              -- is used to toggle truncation behavior and is updated
+              -- from the configTruncateVerbatimBlocks Config field.
               , _csTeams :: HashMap TeamId TeamState
               -- ^ The state for each team that we are in.
               , _csTeamZipper :: Z.Zipper () TeamId
@@ -2129,6 +2134,7 @@ newState (StartupStateInfo {..}) =
     in applyTeamOrderPref (_userPrefTeamOrder $ _crUserPreferences startupStateResources) $
        ChatState { _csResources                   = startupStateResources
                  , _csLastMouseDownEvent          = Nothing
+                 , _csVerbatimTruncateSetting     = configTruncateVerbatimBlocks config
                  , _csTeamZipper                  = Z.findRight (== startupStateInitialTeam) $
                                                     mkTeamZipper startupStateTeams
                  , _csTeams                       = startupStateTeams

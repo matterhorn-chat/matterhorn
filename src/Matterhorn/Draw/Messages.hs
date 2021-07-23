@@ -94,7 +94,7 @@ renderChatMessage st hs ind threadState renderTimeFunc msg =
               , mdMessageWidthLimit = Nothing
               , mdMyUsername        = userUsername $ myUser st
               , mdWrapNonhighlightedCodeBlocks = True
-              , mdTruncateVerbatimBlocks = configTruncateVerbatimBlocks config
+              , mdTruncateVerbatimBlocks = st^.csVerbatimTruncateSetting
               }
         fullMsg =
           case msg^.mUser of
@@ -295,8 +295,8 @@ data MessageData =
                 -- ^ Whether to indent the message underneath the
                 -- author's name (True) or just display it to the right
                 -- of the author's name (False).
-                , mdTruncateVerbatimBlocks :: Bool
-                -- ^ Whether to truncate long verbatim/code blocks.
+                , mdTruncateVerbatimBlocks :: Maybe Int
+                -- ^ At what height to truncate long verbatim/code blocks.
                 , mdMessageWidthLimit :: Maybe Int
                 -- ^ A width override to use to wrap non-code blocks
                 -- and code blocks without syntax highlighting. If
