@@ -15,6 +15,7 @@ module Matterhorn.State.Messages
   , fetchVisibleIfNeeded
   , disconnectChannels
   , toggleMessageTimestamps
+  , toggleVerbatimBlockTruncation
   , jumpToPost
   )
 where
@@ -80,6 +81,13 @@ toggleMessageTimestamps :: MH ()
 toggleMessageTimestamps = do
     mh invalidateCache
     let toggle c = c { configShowMessageTimestamps = not (configShowMessageTimestamps c)
+                     }
+    csResources.crConfiguration %= toggle
+
+toggleVerbatimBlockTruncation :: MH ()
+toggleVerbatimBlockTruncation = do
+    mh invalidateCache
+    let toggle c = c { configTruncateVerbatimBlocks = not (configTruncateVerbatimBlocks c)
                      }
     csResources.crConfiguration %= toggle
 

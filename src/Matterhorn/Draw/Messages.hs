@@ -94,6 +94,7 @@ renderChatMessage st hs ind threadState renderTimeFunc msg =
               , mdMessageWidthLimit = Nothing
               , mdMyUsername        = userUsername $ myUser st
               , mdWrapNonhighlightedCodeBlocks = True
+              , mdTruncateVerbatimBlocks = configTruncateVerbatimBlocks config
               }
         fullMsg =
           case msg^.mUser of
@@ -294,6 +295,8 @@ data MessageData =
                 -- ^ Whether to indent the message underneath the
                 -- author's name (True) or just display it to the right
                 -- of the author's name (False).
+                , mdTruncateVerbatimBlocks :: Bool
+                -- ^ Whether to truncate long verbatim/code blocks.
                 , mdMessageWidthLimit :: Maybe Int
                 -- ^ A width override to use to wrap non-code blocks
                 -- and code blocks without syntax highlighting. If
@@ -441,7 +444,9 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
             if mdIndentBlocks
                then vBox [ hBox nameElems
                          , hBox [txt "  ", renderRichText mdMyUsername hs ((subtract 2) <$> w)
-                                                 mdWrapNonhighlightedCodeBlocks (Just clickableNames) (Blocks bs)]
+                                                 mdWrapNonhighlightedCodeBlocks
+                                                 mdTruncateVerbatimBlocks
+                                                 (Just clickableNames) (Blocks bs)]
                          ]
                else nameNextToMessage hs w nameElems bs
 
@@ -450,7 +455,10 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                 nameResult <- render $ hBox nameElems
                 let newW = subtract (V.imageWidth (nameResult^.imageL)) <$> w
                 render $ hBox [ Widget Fixed Fixed $ return nameResult
-                              , renderRichText mdMyUsername hs newW mdWrapNonhighlightedCodeBlocks (Just clickableNames) (Blocks bs)
+                              , renderRichText mdMyUsername hs newW
+                                  mdWrapNonhighlightedCodeBlocks
+                                  mdTruncateVerbatimBlocks
+                                  (Just clickableNames) (Blocks bs)
                               ]
 
         breakCheck i = i `elem` [ELineBreak, ESoftBreak]

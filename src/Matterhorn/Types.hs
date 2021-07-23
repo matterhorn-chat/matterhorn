@@ -78,6 +78,7 @@ module Matterhorn.Types
   , configActivityNotifyCommandL
   , configActivityNotifyVersionL
   , configActivityBellL
+  , configTruncateVerbatimBlocksL
   , configShowMessageTimestampsL
   , configShowBackgroundL
   , configShowMessagePreviewL
@@ -527,6 +528,9 @@ data Config =
            -- ^ The activity notifier version.
            , configActivityBell :: Bool
            -- ^ Whether to ring the terminal bell on activity.
+           , configTruncateVerbatimBlocks :: Bool
+           -- ^ Whether to truncate verbatim (and code) blocks past a
+           -- reasonable number of lines.
            , configShowMessageTimestamps :: Bool
            -- ^ Whether to show timestamps on messages.
            , configShowBackground :: BackgroundInfo

@@ -48,6 +48,7 @@
 | `/toggle-expanded-topics` | Toggle expanded channel topics |
 | `/toggle-favorite` | Toggle the favorite status of the current channel |
 | `/toggle-message-timestamps` | Toggle message timestamps |
+| `/toggle-truncate-verbatim-blocks` | Toggle truncation of verbatim and code blocks |
 | `/topic` | Set the current channel's topic (header) interactively |
 | `/topic <topic>` | Set the current channel's topic (header) |
 | `/user` | Show users to initiate a private DM chat channel |

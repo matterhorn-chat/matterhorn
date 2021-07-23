@@ -53,7 +53,7 @@ renderUrlList st =
                       Just label ->
                           case Seq.null (unInlines label) of
                               True -> emptyWidget
-                              False -> txt ": " <+> renderRichText me hSet Nothing False Nothing
+                              False -> txt ": " <+> renderRichText me hSet Nothing False False Nothing
                                                     (Blocks $ Seq.singleton $ Para label)
                   , fill ' '
                   , renderDate st $ withServerTime time

@@ -216,6 +216,9 @@ commandList =
   , Cmd "message-preview" "Toggle preview of the current message" NoArg $ \_ ->
         toggleMessagePreview
 
+  , Cmd "toggle-truncate-verbatim-blocks" "Toggle truncation of verbatim and code blocks" NoArg $ \_ ->
+        toggleVerbatimBlockTruncation
+
   , Cmd "toggle-channel-list" "Toggle channel list visibility" NoArg $ \_ ->
         toggleChannelListVisibility
 

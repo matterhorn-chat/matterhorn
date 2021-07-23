@@ -50,13 +50,15 @@ renderRichText :: SemEq a
                -- ^ An optional maximum width.
                -> Bool
                -- ^ Whether to do line wrapping.
+               -> Bool
+               -- ^ Whether to truncate long verbatim/code blocks
                -> Maybe (Int -> Inline -> Maybe a)
                -- ^ An optional function to build resource names for
                -- clickable regions.
                -> Blocks
                -- ^ The content to render.
                -> Widget a
-renderRichText curUser hSet w doWrap nameGen (Blocks bs) =
+renderRichText curUser hSet w doWrap doVerbTrunc nameGen (Blocks bs) =
     runReader (do
               blocks <- mapM renderBlock (addBlankLines bs)
               return $ B.vBox $ toList blocks)
@@ -64,6 +66,7 @@ renderRichText curUser hSet w doWrap nameGen (Blocks bs) =
                        , drawHighlightSet = hSet
                        , drawLineWidth = w
                        , drawDoLineWrapping = doWrap
+                       , drawTruncateVerbatimBlocks = doVerbTrunc
                        , drawNameGen = nameGen
                        })
 
@@ -86,7 +89,7 @@ renderText' :: SemEq a
             -- ^ The text to parse and then render as rich text.
             -> Widget a
 renderText' baseUrl curUser hSet nameGen t =
-    renderRichText curUser hSet Nothing True nameGen $
+    renderRichText curUser hSet Nothing True False nameGen $
         parseMarkdown baseUrl t
 
 -- Add blank lines only between adjacent elements of the same type, to
@@ -121,6 +124,7 @@ data DrawCfg a =
             , drawHighlightSet :: HighlightSet
             , drawLineWidth :: Maybe Int
             , drawDoLineWrapping :: Bool
+            , drawTruncateVerbatimBlocks :: Bool
             , drawNameGen :: Maybe (Int -> Inline -> Maybe a)
             }
 
@@ -162,13 +166,32 @@ renderBlock (CodeBlock ci tx) = do
         mSyntax = do
             lang <- codeBlockLanguage ci
             Sky.lookupSyntax lang (hSyntaxMap hSet)
-    f tx
+    w <- f tx
+    trunc <- asks drawTruncateVerbatimBlocks
+    if trunc
+       then return $ maybeTruncVerbatim maxVerbatimHeight w
+       else return w
 renderBlock (HTMLBlock t) = do
     w <- asks drawLineWidth
     return $ maybeHLimit w $ textWithCursor t
 renderBlock (HRule) = do
     w <- asks drawLineWidth
     return $ maybeHLimit w $ B.vLimit 1 (B.fill '*')
+
+maxVerbatimHeight :: Int
+maxVerbatimHeight = 25
+
+maybeTruncVerbatim :: Int -> B.Widget n -> B.Widget n
+maybeTruncVerbatim maxHeight w =
+    Widget (B.hSize w) (B.vSize w) $ do
+        result <- render w
+        let h = V.imageHeight (result^.B.imageL)
+        if h > maxHeight
+           then render $ B.vBox [ B.vLimit maxHeight $ B.Widget B.Fixed B.Fixed $ return result
+                                , B.withDefAttr verbatimTruncateMessageAttr $
+                                  B.str $ "(Showing " <> show maxHeight <> " of " <> show h <> " lines)"
+                                ]
+           else return result
 
 quoteChar :: Char
 quoteChar = '>'

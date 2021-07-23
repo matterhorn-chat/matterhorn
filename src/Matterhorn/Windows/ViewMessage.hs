@@ -168,6 +168,7 @@ viewMessageBox st msg =
                                  , mdMessageWidthLimit = Just vpWidth
                                  , mdMyUsername        = myUsername st
                                  , mdWrapNonhighlightedCodeBlocks = False
+                                 , mdTruncateVerbatimBlocks = False
                                  }
             in renderMessage md
 

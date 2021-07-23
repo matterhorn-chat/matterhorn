@@ -10,6 +10,7 @@ module Matterhorn.Themes
   -- * Attribute names
   , currentUserAttr
   , timeAttr
+  , verbatimTruncateMessageAttr
   , channelHeaderAttr
   , channelListHeaderAttr
   , currentChannelNameAttr
@@ -145,6 +146,9 @@ currentUserAttr = "currentUser"
 channelHeaderAttr :: AttrName
 channelHeaderAttr = "channelHeader"
 
+verbatimTruncateMessageAttr :: AttrName
+verbatimTruncateMessageAttr = "verbatimTruncateMessage"
+
 channelListHeaderAttr :: AttrName
 channelListHeaderAttr = "channelListSectionHeader"
 
@@ -277,6 +281,7 @@ lightAttrs usernameColors =
        , (buttonFocusedAttr,                black `on` yellow)
        , (currentUserAttr,                  defAttr `withStyle` bold)
        , (channelHeaderAttr,                fg black)
+       , (verbatimTruncateMessageAttr,      fg blue)
        , (channelListHeaderAttr,            fg cyan)
        , (currentChannelNameAttr,           black `on` yellow `withStyle` bold)
        , (unreadChannelAttr,                black `on` cyan   `withStyle` bold)
@@ -339,6 +344,7 @@ darkAttrs usernameColors =
      , (buttonFocusedAttr,                black `on` yellow)
      , (currentUserAttr,                  defAttr `withStyle` bold)
      , (channelHeaderAttr,                fg white)
+     , (verbatimTruncateMessageAttr,      fg cyan)
      , (channelListHeaderAttr,            fg cyan)
      , (currentChannelNameAttr,           black `on` yellow `withStyle` bold)
      , (unreadChannelAttr,                black `on` cyan   `withStyle` bold)
@@ -820,6 +826,9 @@ themeDocs = ThemeDocumentation $ M.fromList $
       )
     , ( currentTeamAttr
       , "The currently-selected team"
+      )
+    , ( verbatimTruncateMessageAttr
+      , "Attribute for a message indicating that a verbatim or code block has been only partially displayed"
       )
     ] <> [ (usernameAttr i, T.pack $ "Username color " <> show i)
          | i <- [0..usernameColorHashBuckets-1]
