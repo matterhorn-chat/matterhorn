@@ -966,7 +966,6 @@ asyncFetchAttachments p = do
                 | otherwise =
                     m
         return $ Just $ do
-            mhLog LogGeneral $ T.pack $ "asyncFetchAttachments: " <> show p <> " - " <> show fId
             csChannel(cId).ccContents.cdMessages.traversed %= addAttachment
             mh $ do
                 invalidateCacheEntry $ ChannelMessages cId
