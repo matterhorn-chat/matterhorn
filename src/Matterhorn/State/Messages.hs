@@ -180,6 +180,7 @@ editMessage new = do
 
         csChannel (new^.postChannelIdL) . ccContents . cdMessages . traversed . filtered isEditedMessage .= msg
         mh $ invalidateCacheEntry (ChannelMessages $ new^.postChannelIdL)
+        mh $ invalidateCacheEntry $ RenderedMessage $ MessagePostId $ postId new
 
         fetchMentionedUsers mentionedUsers
 
@@ -199,6 +200,7 @@ deleteMessage new = do
     chan.ccContents.cdMessages.traversed.filtered isDeletedMessage %= (& mDeleted .~ True)
     chan %= adjustUpdated new
     mh $ invalidateCacheEntry (ChannelMessages $ new^.postChannelIdL)
+    mh $ invalidateCacheEntry $ RenderedMessage $ MessagePostId $ postId new
 
 addNewPostedMessage :: PostToAdd -> MH ()
 addNewPostedMessage p =
@@ -566,6 +568,7 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
 
                     csPostMap.at(postId new) .= Just msg'
                     mh $ invalidateCacheEntry (ChannelMessages cId)
+                    mh $ invalidateCacheEntry $ RenderedMessage $ MessagePostId $ postId new
                     csChannels %= modifyChannelById cId
                       ((ccContents.cdMessages %~ addMessage msg') .
                        (if not ignoredJoinLeaveMessage then adjustUpdated new else id) .
