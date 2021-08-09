@@ -963,8 +963,11 @@ asyncFetchAttachments p = do
                 | otherwise =
                     m
         return $ Just $ do
+            mhLog LogGeneral $ T.pack $ "asyncFetchAttachments: " <> show p <> " - " <> show fId
             csChannel(cId).ccContents.cdMessages.traversed %= addAttachment
-            mh $ invalidateCacheEntry $ ChannelMessages cId
+            mh $ do
+                invalidateCacheEntry $ ChannelMessages cId
+                invalidateCacheEntry $ RenderedMessage $ MessagePostId pId
 
 -- | Given a post ID, switch to that post's channel and select the post
 -- in message selection mode.
