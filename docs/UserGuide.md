@@ -218,9 +218,9 @@ channel for the clicked user.
 * Usernames in the "Reactions" tab of the message view window can be
 clicked to switch to the direct message channel for the clicked user.
 
-* Reactions to messages can be toggled by clicking on them. Click-toggling
-also works in the "Search Emoji" window as well as the "Reactions" tab of 
-the message view window.
+* Reactions to messages can be toggled by clicking on them.
+Click-toggling also works in the "Search Emoji" window as well as the
+"Reactions" tab of the message view window.
 
 # Spell Checking Support
 
