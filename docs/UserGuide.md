@@ -212,6 +212,9 @@ opener.
 * Post links in messages can be clicked to switch to the channel
 containing the post.
 
+* Attachments in posts can be clicked to open them with the configured
+URL opener.
+
 * Usernames in messages can be clicked to switch to the direct message
 channel for the clicked user.
 

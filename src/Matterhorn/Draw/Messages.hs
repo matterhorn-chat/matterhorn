@@ -370,7 +370,8 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
         msgAtch = if S.null (msg^.mAttachments)
           then Nothing
           else Just $ withDefAttr clientMessageAttr $ vBox
-                 [ txt ("  [attached: `" <> a^.attachmentName <> "`]")
+                 [ padLeft (Pad 2) $ clickable (ClickableAttachment (a^.attachmentFileId)) $
+                                     txt ("[attached: `" <> a^.attachmentName <> "`]")
                  | a <- toList (msg^.mAttachments)
                  ]
         msgReac = if Map.null (msg^.mReactions) || (not mdShowReactions)

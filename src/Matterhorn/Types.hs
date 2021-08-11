@@ -878,6 +878,7 @@ data Name =
     | ClickableURLListEntry Int LinkTarget
     | ClickableReactionInMessage PostId Text (Set UserId)
     | ClickableReaction PostId Text (Set UserId)
+    | ClickableAttachment FileId
     | AttachmentPathEditor TeamId
     | AttachmentPathSaveButton TeamId
     | AttachmentPathCancelButton TeamId
