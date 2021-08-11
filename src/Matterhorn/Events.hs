@@ -169,7 +169,7 @@ handleIEvent (LogSnapshotFailed path err) =
 -- accidentally on a grayed-out URL (in a message, say) next to a modal
 -- dialog box and then see the URL get opened. That would be weird, but
 -- it isn't the end of the world.
-onMouseDown :: Name -> Vty.Button -> [Vty.Modifier] -> Location -> MH()
+onMouseDown :: Name -> Vty.Button -> [Vty.Modifier] -> Location -> MH ()
 onMouseDown (ClickableChannelListEntry channelId) Vty.BLeft [] _ = do
     whenMode Main $ do
         resetReturnChannel
