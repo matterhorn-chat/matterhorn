@@ -76,7 +76,6 @@ insertDateMarkers ms datefmt tz = foldr (addMessage . dateMsg) ms dateRange
           dateMsg d = let t = localTimeText datefmt $ asLocalTime tz d
                       in newMessageOfType t (C DateTransition) (ServerTime d)
 
-
 withBrackets :: Widget a -> Widget a
 withBrackets w = hBox [str "[", w, str "]"]
 
