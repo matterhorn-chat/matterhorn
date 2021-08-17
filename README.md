@@ -1,5 +1,4 @@
-[![Hackage](https://img.shields.io/hackage/v/matterhorn.svg)](https://hackage.haskell.org/package/matterhorn) [![Build
-Status](https://travis-ci.org/matterhorn-chat/matterhorn.svg?branch=master)](https://travis-ci.org/matterhorn-chat/matterhorn)
+[![Hackage](https://img.shields.io/hackage/v/matterhorn.svg)](https://hackage.haskell.org/package/matterhorn)
 
 ![](logo.png)
 
