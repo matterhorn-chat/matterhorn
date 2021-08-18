@@ -20,7 +20,7 @@ function none_found {
     done
     echo "Try:"
     echo "  $ cd ${HERE}"
-    echo "  $ cabal new-build"
+    echo "  $ ./build.sh"
     exit 2
 }
 
