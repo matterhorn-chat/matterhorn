@@ -263,7 +263,7 @@ lightColorTheme = InternalTheme name theme desc
         theme = newTheme def $ lightAttrs usernameColors16
         name = "builtin:light"
         def = black `on` white
-        desc = "A color theme for terminal windows with light background colors"
+        desc = "A 16-color theme for terminal windows with light background colors"
 
 lightColor256Theme :: InternalTheme
 lightColor256Theme = InternalTheme name theme desc
@@ -408,7 +408,7 @@ darkColorTheme = InternalTheme name theme desc
         theme = newTheme def $ darkAttrs usernameColors16
         name = "builtin:dark"
         def = defAttr
-        desc = "A color theme for terminal windows with dark background colors"
+        desc = "A 16-color theme for terminal windows with dark background colors"
 
 darkColor256Theme :: InternalTheme
 darkColor256Theme = InternalTheme name theme desc
