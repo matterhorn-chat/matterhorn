@@ -79,7 +79,14 @@ onBrickEvent e@(MouseDown n button modifier clickLoc) = do
     when shouldHandle $ do
         mhLog LogGeneral "Handling mouse event"
         csLastMouseDownEvent .= Just e
-        onMouseDown n button modifier clickLoc
+        mode <- use (csCurrentTeam.tsMode)
+        mouseHandlerByMode mode n button modifier clickLoc
+
+mouseHandlerByMode :: Mode -> Name -> Vty.Button -> [Vty.Modifier] -> Location -> MH ()
+mouseHandlerByMode mode =
+    case mode of
+        EditNotifyPrefs -> editNotifyPrefsMouseHandler
+        _               -> globalMouseHandler
 
 onAppEvent :: MHEvent -> MH ()
 onAppEvent RefreshWebsocketEvent =
@@ -169,44 +176,48 @@ handleIEvent (LogSnapshotFailed path err) =
 -- accidentally on a grayed-out URL (in a message, say) next to a modal
 -- dialog box and then see the URL get opened. That would be weird, but
 -- it isn't the end of the world.
-onMouseDown :: Name -> Vty.Button -> [Vty.Modifier] -> Location -> MH ()
-onMouseDown (ClickableChannelListEntry channelId) Vty.BLeft [] _ = do
+globalMouseHandler :: Name -> Vty.Button -> [Vty.Modifier] -> Location -> MH ()
+globalMouseHandler (ClickableChannelListEntry channelId) Vty.BLeft [] _ = do
     whenMode Main $ do
         resetReturnChannel
         setFocus channelId
         setMode Main
-onMouseDown (ClickableTeamListEntry teamId) Vty.BLeft [] _ =
+globalMouseHandler (ClickableTeamListEntry teamId) Vty.BLeft [] _ =
     -- We deliberately handle this event in all modes; this allows us to
     -- switch the UI to another team regardless of what state it is in,
     -- which is by design since all teams have their own UI states.
     setTeam teamId
-onMouseDown (ClickableURLInMessage _ _ t) Vty.BLeft [] _ =
+globalMouseHandler (ClickableURLInMessage _ _ t) Vty.BLeft [] _ =
     void $ openLinkTarget t
-onMouseDown (ClickableURL _ _ t) Vty.BLeft [] _ =
+globalMouseHandler (ClickableURL _ _ t) Vty.BLeft [] _ =
     void $ openLinkTarget t
-onMouseDown (ClickableUsernameInMessage _ _ username) Vty.BLeft [] _ =
+globalMouseHandler (ClickableUsernameInMessage _ _ username) Vty.BLeft [] _ =
     changeChannelByName $ userSigil <> username
-onMouseDown (ClickableUsername _ _ username) Vty.BLeft [] _ =
+globalMouseHandler (ClickableUsername _ _ username) Vty.BLeft [] _ =
     changeChannelByName $ userSigil <> username
-onMouseDown (ClickableAttachment fId) Vty.BLeft [] _ =
+globalMouseHandler (ClickableAttachment fId) Vty.BLeft [] _ =
     void $ openLinkTarget $ LinkFileId fId
-onMouseDown (ClickableURLListEntry _ t) Vty.BLeft [] _ =
+globalMouseHandler (ClickableURLListEntry _ t) Vty.BLeft [] _ =
     -- Only handle URL list entry clicks when viewing the URL list
     whenMode UrlSelect $ do
         void $ openLinkTarget t
-onMouseDown (ChannelSelectEntry match) Vty.BLeft [] _ =
+globalMouseHandler (ChannelSelectEntry match) Vty.BLeft [] _ =
     whenMode ChannelSelect $ do
         setMode Main
         setFocus $ channelListEntryChannelId $ matchEntry match
-onMouseDown (ClickableReactionInMessage pId t uIds) Vty.BLeft [] _ =
+globalMouseHandler (ClickableReactionInMessage pId t uIds) Vty.BLeft [] _ =
     void $ toggleReaction pId t uIds
-onMouseDown (ClickableReaction pId t uIds) Vty.BLeft [] _ =
+globalMouseHandler (ClickableReaction pId t uIds) Vty.BLeft [] _ =
     void $ toggleReaction pId t uIds
-onMouseDown (ReactionEmojiListOverlayEntry val) Vty.BLeft [] _ =
+globalMouseHandler (ReactionEmojiListOverlayEntry val) Vty.BLeft [] _ =
     whenMode ReactionEmojiListOverlay $ do
         listOverlayActivate (csCurrentTeam.tsReactionEmojiListOverlay) val
-onMouseDown _ _ _ _ =
+globalMouseHandler _ _ _ _ =
     return ()
+
+editNotifyPrefsMouseHandler :: Name -> Vty.Button -> [Vty.Modifier] -> Location -> MH ()
+editNotifyPrefsMouseHandler n b mods l =
+    handleEditNotifyPrefsEvent (MouseDown n b mods l)
 
 formatError :: MHError -> T.Text
 formatError (GenericError msg) =

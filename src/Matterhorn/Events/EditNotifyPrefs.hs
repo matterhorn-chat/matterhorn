@@ -2,6 +2,7 @@ module Matterhorn.Events.EditNotifyPrefs
     ( onEventEditNotifyPrefs
     , editNotifyPrefsKeybindings
     , editNotifyPrefsKeyHandlers
+    , handleEditNotifyPrefsEvent
     )
 where
 
@@ -24,11 +25,13 @@ import           Matterhorn.State.Async
 
 onEventEditNotifyPrefs :: V.Event -> MH Bool
 onEventEditNotifyPrefs =
-    let fallback e = do
-            form <- use (csCurrentTeam.tsNotifyPrefs.singular _Just)
-            updatedForm <- mh $ handleFormEvent (VtyEvent e) form
-            csCurrentTeam.tsNotifyPrefs .= Just updatedForm
-    in handleKeyboardEvent editNotifyPrefsKeybindings fallback
+    handleKeyboardEvent editNotifyPrefsKeybindings (handleEditNotifyPrefsEvent . VtyEvent)
+
+handleEditNotifyPrefsEvent :: BrickEvent Name MHEvent -> MH ()
+handleEditNotifyPrefsEvent e = do
+    form <- use (csCurrentTeam.tsNotifyPrefs.singular _Just)
+    updatedForm <- mh $ handleFormEvent e form
+    csCurrentTeam.tsNotifyPrefs .= Just updatedForm
 
 editNotifyPrefsKeybindings :: KeyConfig -> KeyHandlerMap
 editNotifyPrefsKeybindings = mkKeybindings editNotifyPrefsKeyHandlers

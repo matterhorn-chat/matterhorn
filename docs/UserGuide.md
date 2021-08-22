@@ -225,6 +225,9 @@ clicked to switch to the direct message channel for the clicked user.
 Click-toggling also works in the "Search Emoji" window as well as the
 "Reactions" tab of the message view window.
 
+* Settings in the `/notify-prefs` window can be manipulated with the
+mouse.
+
 # Spell Checking Support
 
 Matterhorn uses `aspell` to perform spell-checking of your message
