@@ -85,8 +85,11 @@ onBrickEvent e@(MouseDown n button modifier clickLoc) = do
 mouseHandlerByMode :: Mode -> Name -> Vty.Button -> [Vty.Modifier] -> Location -> MH ()
 mouseHandlerByMode mode =
     case mode of
-        EditNotifyPrefs -> editNotifyPrefsMouseHandler
-        _               -> globalMouseHandler
+        ChannelSelect            -> channelSelectMouseHandler
+        EditNotifyPrefs          -> editNotifyPrefsMouseHandler
+        ReactionEmojiListOverlay -> reactionEmojiListMouseHandler
+        UrlSelect                -> urlListMouseHandler
+        _                        -> globalMouseHandler
 
 onAppEvent :: MHEvent -> MH ()
 onAppEvent RefreshWebsocketEvent =
@@ -197,27 +200,35 @@ globalMouseHandler (ClickableUsername _ _ username) Vty.BLeft [] _ =
     changeChannelByName $ userSigil <> username
 globalMouseHandler (ClickableAttachment fId) Vty.BLeft [] _ =
     void $ openLinkTarget $ LinkFileId fId
-globalMouseHandler (ClickableURLListEntry _ t) Vty.BLeft [] _ =
-    -- Only handle URL list entry clicks when viewing the URL list
-    whenMode UrlSelect $ do
-        void $ openLinkTarget t
-globalMouseHandler (ChannelSelectEntry match) Vty.BLeft [] _ =
-    whenMode ChannelSelect $ do
-        setMode Main
-        setFocus $ channelListEntryChannelId $ matchEntry match
 globalMouseHandler (ClickableReactionInMessage pId t uIds) Vty.BLeft [] _ =
     void $ toggleReaction pId t uIds
 globalMouseHandler (ClickableReaction pId t uIds) Vty.BLeft [] _ =
     void $ toggleReaction pId t uIds
-globalMouseHandler (ReactionEmojiListOverlayEntry val) Vty.BLeft [] _ =
-    whenMode ReactionEmojiListOverlay $ do
-        listOverlayActivate (csCurrentTeam.tsReactionEmojiListOverlay) val
 globalMouseHandler _ _ _ _ =
     return ()
 
 editNotifyPrefsMouseHandler :: Name -> Vty.Button -> [Vty.Modifier] -> Location -> MH ()
 editNotifyPrefsMouseHandler n b mods l =
     handleEditNotifyPrefsEvent (MouseDown n b mods l)
+
+urlListMouseHandler :: Name -> Vty.Button -> [Vty.Modifier] -> Location -> MH ()
+urlListMouseHandler (ClickableURLListEntry _ t) Vty.BLeft [] _ =
+    void $ openLinkTarget t
+urlListMouseHandler _ _ _ _ =
+    return ()
+
+channelSelectMouseHandler :: Name -> Vty.Button -> [Vty.Modifier] -> Location -> MH ()
+channelSelectMouseHandler (ChannelSelectEntry match) Vty.BLeft [] _ = do
+    setMode Main
+    setFocus $ channelListEntryChannelId $ matchEntry match
+channelSelectMouseHandler _ _ _ _ =
+    return ()
+
+reactionEmojiListMouseHandler :: Name -> Vty.Button -> [Vty.Modifier] -> Location -> MH ()
+reactionEmojiListMouseHandler (ReactionEmojiListOverlayEntry val) Vty.BLeft [] _ =
+    listOverlayActivate (csCurrentTeam.tsReactionEmojiListOverlay) val
+reactionEmojiListMouseHandler _ _ _ _ =
+    return ()
 
 formatError :: MHError -> T.Text
 formatError (GenericError msg) =
