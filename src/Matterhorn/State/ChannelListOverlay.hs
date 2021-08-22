@@ -15,6 +15,7 @@ import qualified Brick.Widgets.List as L
 import qualified Data.Vector as Vec
 import qualified Data.Sequence as Seq
 import           Data.Function ( on )
+import qualified Data.Text as T
 import           Lens.Micro.Platform ( to )
 
 import           Network.Mattermost.Types
@@ -48,7 +49,9 @@ fetchResults :: TeamId
              -- ^ The search string
              -> IO (Vec.Vector Channel)
 fetchResults myTId exclude AllChannels session searchString = do
-    resultChans <- MM.mmSearchChannels myTId searchString session
+    resultChans <- case T.null searchString of
+        True -> MM.mmGetPublicChannels myTId (Just 0) (Just 200) session
+        False -> MM.mmSearchChannels myTId searchString session
     let filteredChans = Seq.filter (\ c -> not (channelId c `elem` exclude)) resultChans
         sortedChans = Vec.fromList $ toList $ Seq.sortBy (compare `on` channelDisplayName) filteredChans
     return sortedChans
