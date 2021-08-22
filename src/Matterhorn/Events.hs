@@ -66,7 +66,7 @@ onBrickEvent (VtyEvent e) =
 onBrickEvent (MouseUp {}) = do
     mhLog LogGeneral "MOUSE UP EVENT"
     csLastMouseDownEvent .= Nothing
-onBrickEvent e@(MouseDown n button modifier clickLoc) = do
+onBrickEvent e@(MouseDown n button modifier _) = do
     mhLog LogGeneral $ T.pack $ "MOUSE EVENT: " <> show (n, button, modifier)
     lastClick <- use csLastMouseDownEvent
     let shouldHandle = case lastClick of
@@ -77,7 +77,7 @@ onBrickEvent e@(MouseDown n button modifier clickLoc) = do
         mhLog LogGeneral "Handling mouse event"
         csLastMouseDownEvent .= Just e
         mode <- use (csCurrentTeam.tsMode)
-        mouseHandlerByMode mode n button modifier clickLoc
+        mouseHandlerByMode mode e
 
 onAppEvent :: MHEvent -> MH ()
 onAppEvent RefreshWebsocketEvent =

@@ -7,16 +7,9 @@ import           Prelude ()
 import           Matterhorn.Prelude
 
 import           Brick
-import qualified Graphics.Vty as Vty
 
-import           Matterhorn.Connection
-import           Matterhorn.Constants ( userSigil, normalChannelSigil )
-import           Matterhorn.HelpTopics
-import           Matterhorn.State.ChannelList
+import           Matterhorn.Constants ( userSigil )
 import           Matterhorn.State.Channels
-import           Matterhorn.State.Common
-import           Matterhorn.State.Help
-import           Matterhorn.State.Messages
 import           Matterhorn.State.Teams ( setTeam )
 import           Matterhorn.State.ListOverlay ( listOverlayActivate )
 import           Matterhorn.Types
@@ -25,16 +18,19 @@ import           Matterhorn.Events.EditNotifyPrefs ( handleEditNotifyPrefsEvent 
 import           Matterhorn.State.Reactions ( toggleReaction )
 import           Matterhorn.State.Links ( openLinkTarget )
 
-mouseHandlerByMode :: Mode -> Name -> Vty.Button -> [Vty.Modifier] -> Location -> MH ()
+-- The top-level mouse click handler. This dispatches to specific
+-- handlers for some modes, or the global mouse handler when the mode is
+-- not important (or when it is important that we ignore the mode).
+mouseHandlerByMode :: Mode -> BrickEvent Name MHEvent -> MH ()
 mouseHandlerByMode mode =
     case mode of
         ChannelSelect            -> channelSelectMouseHandler
-        EditNotifyPrefs          -> editNotifyPrefsMouseHandler
+        EditNotifyPrefs          -> handleEditNotifyPrefsEvent
         ReactionEmojiListOverlay -> reactionEmojiListMouseHandler
         UrlSelect                -> urlListMouseHandler
         _                        -> globalMouseHandler
 
--- Handle mouse click events.
+-- Handle global mouse click events (when mode is not important).
 --
 -- Note that the handler for each case may need to check the application
 -- mode before handling the click. This is because some mouse events
@@ -56,53 +52,54 @@ mouseHandlerByMode mode =
 -- accidentally on a grayed-out URL (in a message, say) next to a modal
 -- dialog box and then see the URL get opened. That would be weird, but
 -- it isn't the end of the world.
-globalMouseHandler :: Name -> Vty.Button -> [Vty.Modifier] -> Location -> MH ()
-globalMouseHandler (ClickableChannelListEntry channelId) Vty.BLeft [] _ = do
-    whenMode Main $ do
-        resetReturnChannel
-        setFocus channelId
-        setMode Main
-globalMouseHandler (ClickableTeamListEntry teamId) Vty.BLeft [] _ =
-    -- We deliberately handle this event in all modes; this allows us to
-    -- switch the UI to another team regardless of what state it is in,
-    -- which is by design since all teams have their own UI states.
-    setTeam teamId
-globalMouseHandler (ClickableURLInMessage _ _ t) Vty.BLeft [] _ =
-    void $ openLinkTarget t
-globalMouseHandler (ClickableURL _ _ t) Vty.BLeft [] _ =
-    void $ openLinkTarget t
-globalMouseHandler (ClickableUsernameInMessage _ _ username) Vty.BLeft [] _ =
-    changeChannelByName $ userSigil <> username
-globalMouseHandler (ClickableUsername _ _ username) Vty.BLeft [] _ =
-    changeChannelByName $ userSigil <> username
-globalMouseHandler (ClickableAttachment fId) Vty.BLeft [] _ =
-    void $ openLinkTarget $ LinkFileId fId
-globalMouseHandler (ClickableReactionInMessage pId t uIds) Vty.BLeft [] _ =
-    void $ toggleReaction pId t uIds
-globalMouseHandler (ClickableReaction pId t uIds) Vty.BLeft [] _ =
-    void $ toggleReaction pId t uIds
-globalMouseHandler _ _ _ _ =
+globalMouseHandler :: BrickEvent Name MHEvent -> MH ()
+globalMouseHandler (MouseDown n _ _ _) =
+    case n of
+        ClickableChannelListEntry channelId -> do
+            whenMode Main $ do
+                resetReturnChannel
+                setFocus channelId
+                setMode Main
+        ClickableTeamListEntry teamId ->
+            -- We deliberately handle this event in all modes; this
+            -- allows us to switch the UI to another team regardless of
+            -- what state it is in, which is by design since all teams
+            -- have their own UI states.
+            setTeam teamId
+        ClickableURLInMessage _ _ t ->
+            void $ openLinkTarget t
+        ClickableURL _ _ t ->
+            void $ openLinkTarget t
+        ClickableUsernameInMessage _ _ username ->
+            changeChannelByName $ userSigil <> username
+        ClickableUsername _ _ username ->
+            changeChannelByName $ userSigil <> username
+        ClickableAttachment fId ->
+            void $ openLinkTarget $ LinkFileId fId
+        ClickableReactionInMessage pId t uIds ->
+            void $ toggleReaction pId t uIds
+        ClickableReaction pId t uIds ->
+            void $ toggleReaction pId t uIds
+        _ ->
+            return ()
+globalMouseHandler _ =
     return ()
 
-editNotifyPrefsMouseHandler :: Name -> Vty.Button -> [Vty.Modifier] -> Location -> MH ()
-editNotifyPrefsMouseHandler n b mods l =
-    handleEditNotifyPrefsEvent (MouseDown n b mods l)
-
-urlListMouseHandler :: Name -> Vty.Button -> [Vty.Modifier] -> Location -> MH ()
-urlListMouseHandler (ClickableURLListEntry _ t) Vty.BLeft [] _ =
+urlListMouseHandler :: BrickEvent Name MHEvent -> MH ()
+urlListMouseHandler (MouseDown (ClickableURLListEntry _ t) _ _ _) =
     void $ openLinkTarget t
-urlListMouseHandler _ _ _ _ =
+urlListMouseHandler _ =
     return ()
 
-channelSelectMouseHandler :: Name -> Vty.Button -> [Vty.Modifier] -> Location -> MH ()
-channelSelectMouseHandler (ChannelSelectEntry match) Vty.BLeft [] _ = do
+channelSelectMouseHandler :: BrickEvent Name MHEvent -> MH ()
+channelSelectMouseHandler (MouseDown (ChannelSelectEntry match) _ _ _) = do
     setMode Main
     setFocus $ channelListEntryChannelId $ matchEntry match
-channelSelectMouseHandler _ _ _ _ =
+channelSelectMouseHandler _ =
     return ()
 
-reactionEmojiListMouseHandler :: Name -> Vty.Button -> [Vty.Modifier] -> Location -> MH ()
-reactionEmojiListMouseHandler (ReactionEmojiListOverlayEntry val) Vty.BLeft [] _ =
+reactionEmojiListMouseHandler :: BrickEvent Name MHEvent -> MH ()
+reactionEmojiListMouseHandler (MouseDown (ReactionEmojiListOverlayEntry val) _ _ _) =
     listOverlayActivate (csCurrentTeam.tsReactionEmojiListOverlay) val
-reactionEmojiListMouseHandler _ _ _ _ =
+reactionEmojiListMouseHandler _ =
     return ()
