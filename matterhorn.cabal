@@ -88,6 +88,7 @@ library
                        Matterhorn.Events.Main
                        Matterhorn.Events.ManageAttachments
                        Matterhorn.Events.MessageSelect
+                       Matterhorn.Events.Mouse
                        Matterhorn.Events.PostListOverlay
                        Matterhorn.Events.ReactionEmojiListOverlay
                        Matterhorn.Events.ShowHelp
