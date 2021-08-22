@@ -50,7 +50,7 @@ fetchResults :: TeamId
 fetchResults myTId exclude AllChannels session searchString = do
     resultChans <- MM.mmSearchChannels myTId searchString session
     let filteredChans = Seq.filter (\ c -> not (channelId c `elem` exclude)) resultChans
-        sortedChans = Vec.fromList $ toList $ Seq.sortBy (compare `on` channelName) filteredChans
+        sortedChans = Vec.fromList $ toList $ Seq.sortBy (compare `on` channelDisplayName) filteredChans
     return sortedChans
 
 -- | Move the selection up in the channel list overlay by one channel.
