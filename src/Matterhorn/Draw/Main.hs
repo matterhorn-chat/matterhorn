@@ -839,10 +839,10 @@ mainInterface st =
         in case allTypingUsers (st^.csCurrentChannel.ccInfo.cdTypingUsers) of
             [] -> emptyWidget
             [uId] | Just un <- usernameForUserId uId st ->
-               format $ "[" <> userSigil <> un <> " is typing]"
+               format $ "[" <> addUserSigil un <> " is typing]"
             [uId1, uId2] | Just un1 <- usernameForUserId uId1 st
                          , Just un2 <- usernameForUserId uId2 st ->
-               format $ "[" <> userSigil <> un1 <> " and " <> userSigil <> un2 <> " are typing]"
+               format $ "[" <> addUserSigil un1 <> " and " <> addUserSigil un2 <> " are typing]"
             _ -> format "[several people are typing]"
 
     showBusy = case st^.csWorkerIsBusy of

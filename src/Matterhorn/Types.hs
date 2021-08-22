@@ -412,7 +412,7 @@ import           Network.Mattermost.Types
 import           Network.Mattermost.Types.Config
 import           Network.Mattermost.WebSocket ( WebsocketEvent, WebsocketActionResponse )
 
-import           Matterhorn.Constants ( userSigil, normalChannelSigil )
+import           Matterhorn.Constants ( normalChannelSigil )
 import           Matterhorn.InputHistory
 import           Matterhorn.Emoji
 import           Matterhorn.Types.Common
@@ -1168,9 +1168,9 @@ autocompleteAlternativeReplacement :: AutocompleteAlternative -> Text
 autocompleteAlternativeReplacement (EmojiCompletion e) =
     ":" <> e <> ":"
 autocompleteAlternativeReplacement (SpecialMention m) =
-    userSigil <> specialMentionName m
+    addUserSigil $ specialMentionName m
 autocompleteAlternativeReplacement (UserCompletion u _) =
-    userSigil <> userUsername u
+    addUserSigil $ userUsername u
 autocompleteAlternativeReplacement (ChannelCompletion _ c) =
     normalChannelSigil <> (sanitizeUserText $ channelName c)
 autocompleteAlternativeReplacement (SyntaxCompletion t) =

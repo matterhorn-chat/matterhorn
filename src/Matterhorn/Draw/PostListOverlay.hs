@@ -16,7 +16,6 @@ import           Lens.Micro.Platform ( (^?), (%~), to )
 import           Network.Mattermost.Lenses
 import           Network.Mattermost.Types
 
-import           Matterhorn.Constants ( userSigil )
 import           Matterhorn.Draw.Messages
 import           Matterhorn.Draw.Util
 import           Matterhorn.Themes
@@ -90,7 +89,7 @@ drawPostsBox contents st =
                  case chan^.ccInfo.cdType of
                   Direct
                     | Just u <- flip userById st =<< chan^.ccInfo.cdDMUserId ->
-                        (forceAttr channelNameAttr (txt (userSigil <> u^.uiName)) <=>
+                        (forceAttr channelNameAttr (txt (addUserSigil $ u^.uiName)) <=>
                           (str "  " <+> renderedMsg))
                   _ -> (forceAttr channelNameAttr (txt (chan^.ccInfo.to (mkChannelName st))) <=>
                          (str "  " <+> renderedMsg))

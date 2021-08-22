@@ -14,6 +14,7 @@ module Matterhorn.Types.Users
   -- * Miscellaneous
   , getUsernameSet
   , trimUserSigil
+  , addUserSigil
   , statusFromText
   , findUserById
   , findUserByUsername
@@ -189,6 +190,10 @@ trimUserSigil :: Text -> Text
 trimUserSigil n
     | userSigil `T.isPrefixOf` n = T.tail n
     | otherwise                  = n
+
+addUserSigil :: T.Text -> T.Text
+addUserSigil t | userSigil `T.isPrefixOf` t = t
+               | otherwise                  = userSigil <> t
 
 -- | Extract a specific user from the collection and perform an
 -- endomorphism operation on it, then put it back into the collection.

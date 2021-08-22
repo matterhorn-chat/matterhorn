@@ -56,8 +56,8 @@ import           Data.Sequence ( ViewL(..)
 import qualified Data.Set as Set
 import qualified Data.Text as T
 
-import           Matterhorn.Constants ( normalChannelSigil, userSigil )
-import           Matterhorn.Types ( HighlightSet(..), SemEq(..) )
+import           Matterhorn.Constants ( normalChannelSigil )
+import           Matterhorn.Types ( HighlightSet(..), SemEq(..), addUserSigil )
 import           Matterhorn.Types.RichText
 
 
@@ -323,7 +323,7 @@ flatten i =
         EUser u -> do
             known <- isKnownUser u
             if known then pushFC (FUser u)
-                     else pushFC (FText $ userSigil <> u)
+                     else pushFC (FText $ addUserSigil u)
         EChannel c -> do
             known <- isKnownChannel c
             if known then pushFC (FChannel c)

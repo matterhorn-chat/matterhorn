@@ -8,7 +8,6 @@ import           Matterhorn.Prelude
 
 import           Brick
 
-import           Matterhorn.Constants ( userSigil )
 import           Matterhorn.State.Channels
 import           Matterhorn.State.Teams ( setTeam )
 import           Matterhorn.State.ListOverlay ( listOverlayActivate )
@@ -71,9 +70,9 @@ globalMouseHandler (MouseDown n _ _ _) =
         ClickableURL _ _ t ->
             void $ openLinkTarget t
         ClickableUsernameInMessage _ _ username ->
-            changeChannelByName $ userSigil <> username
+            changeChannelByName $ addUserSigil username
         ClickableUsername _ _ username ->
-            changeChannelByName $ userSigil <> username
+            changeChannelByName $ addUserSigil username
         ClickableAttachment fId ->
             void $ openLinkTarget $ LinkFileId fId
         ClickableReactionInMessage pId t uIds ->

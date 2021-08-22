@@ -23,7 +23,7 @@ import qualified Network.Mattermost.Types as MM
 
 import           Matterhorn.State.Attachments
 import           Matterhorn.Connection ( connectWebsockets )
-import           Matterhorn.Constants ( userSigil, normalChannelSigil )
+import           Matterhorn.Constants ( normalChannelSigil )
 import           Matterhorn.HelpTopics
 import           Matterhorn.Scripts
 import           Matterhorn.State.Help
@@ -64,7 +64,7 @@ printArgSpec :: CmdArgs a -> Text
 printArgSpec NoArg = ""
 printArgSpec (LineArg ts) = "<" <> ts <> ">"
 printArgSpec (TokenArg t NoArg) = "<" <> t <> ">"
-printArgSpec (UserArg rs) = "<" <> userSigil <> "user>" <> addSpace (printArgSpec rs)
+printArgSpec (UserArg rs) = "<" <> addUserSigil "user" <> ">" <> addSpace (printArgSpec rs)
 printArgSpec (ChannelArg rs) = "<" <> normalChannelSigil <> "channel>" <> addSpace (printArgSpec rs)
 printArgSpec (TokenArg t rs) = "<" <> t <> ">" <> addSpace (printArgSpec rs)
 
@@ -251,7 +251,7 @@ commandList =
         listScripts
 
   , Cmd "group-create" "Create a group chat"
-    (LineArg (userSigil <> "user [" <> userSigil <> "user ...]"))
+    (LineArg (addUserSigil "user" <> " [" <> addUserSigil "user" <> " ...]"))
         createGroupChannel
 
   , Cmd "sh" "Run a prewritten shell script"
@@ -292,7 +292,7 @@ displayUsernameAttribute :: Text -> MH ()
 displayUsernameAttribute name = do
     let an = attrForUsername trimmed
         trimmed = trimUserSigil name
-    postInfoMessage $ "The attribute used for " <> userSigil <> trimmed <>
+    postInfoMessage $ "The attribute used for " <> addUserSigil trimmed <>
                       " is " <> (attrNameToConfig an)
 
 execMMCommand :: Text -> Text -> MH ()

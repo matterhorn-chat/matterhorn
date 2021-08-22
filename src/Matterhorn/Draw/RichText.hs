@@ -31,11 +31,11 @@ import qualified Data.Text as T
 import qualified Graphics.Vty as V
 import qualified Skylighting.Core as Sky
 
-import           Matterhorn.Constants ( normalChannelSigil, userSigil, editMarking )
+import           Matterhorn.Constants ( normalChannelSigil, editMarking )
 import           Matterhorn.Draw.RichText.Flatten
 import           Matterhorn.Draw.RichText.Wrap
 import           Matterhorn.Themes
-import           Matterhorn.Types ( HighlightSet(..), emptyHSet, SemEq(..) )
+import           Matterhorn.Types ( HighlightSet(..), emptyHSet, SemEq(..), addUserSigil )
 import           Matterhorn.Types.RichText
 
 
@@ -303,7 +303,7 @@ renderFlattenedValue curUser (SingleInline fi) = addClickable $ addHyperlink $ a
 
         widget = case val of
             FSpace               -> B.txt " "
-            FUser u              -> colorUsername curUser u $ userSigil <> u
+            FUser u              -> colorUsername curUser u $ addUserSigil u
             FChannel c           -> B.withDefAttr channelNameAttr $
                                     B.txt $ normalChannelSigil <> c
             FEmoji em            -> B.withDefAttr emojiAttr $

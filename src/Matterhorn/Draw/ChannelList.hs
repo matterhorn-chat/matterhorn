@@ -29,7 +29,6 @@ import           Lens.Micro.Platform (non)
 
 import qualified Network.Mattermost.Types as MM
 
-import           Matterhorn.Constants ( userSigil )
 import           Matterhorn.Draw.Util
 import           Matterhorn.State.Channels
 import           Matterhorn.Themes
@@ -65,7 +64,7 @@ renderChannelListHeader st =
                      txt $ "Team: " <> teamNameStr
         selfHeader = hCenter $
                      colorUsername myUsername_ myUsername_
-                         (T.singleton statusSigil <> " " <> userSigil <> myUsername_)
+                         (T.singleton statusSigil <> " " <> addUserSigil myUsername_)
         teamNameStr = T.strip $ sanitizeUserText $ MM.teamDisplayName $ st^.csCurrentTeam.tsTeam
         statusSigil = maybe ' ' userSigilFromInfo me
         me = userById (myUserId st) st

@@ -126,7 +126,7 @@ reactionsText st m = viewport (ViewMessageReactionsArea tId) Vertical body
         usernameText uids =
             renderText' Nothing (myUsername st) hs (Just clickableUsernames) $
             T.intercalate ", " $
-            fmap (userSigil <>) $
+            fmap addUserSigil $
             catMaybes (lookupUsername <$> F.toList uids)
 
         lookupUsername uid = usernameForUserId uid st
