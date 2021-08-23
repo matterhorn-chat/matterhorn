@@ -125,7 +125,7 @@ onAppEvent (IEvent e) = do
 
 handleIEvent :: InternalEvent -> MH ()
 handleIEvent (DisplayError e) =
-    postErrorMessage' $ formatError e
+    postErrorMessage' $ formatMHError e
 handleIEvent (LoggingStarted path) =
     postInfoMessage $ "Logging to " <> T.pack path
 handleIEvent (LogDestination dest) =
@@ -145,33 +145,33 @@ handleIEvent (LogSnapshotFailed path err) =
     postErrorMessage' $ "Could not write log snapshot to " <> T.pack path <>
                         ", error: " <> T.pack err
 
-formatError :: MHError -> T.Text
-formatError (GenericError msg) =
+formatMHError :: MHError -> T.Text
+formatMHError (GenericError msg) =
     msg
-formatError (NoSuchChannel chan) =
+formatMHError (NoSuchChannel chan) =
     T.pack $ "No such channel: " <> show chan
-formatError (NoSuchUser user) =
+formatMHError (NoSuchUser user) =
     T.pack $ "No such user: " <> show user
-formatError (AmbiguousName name) =
+formatMHError (AmbiguousName name) =
     (T.pack $ "The input " <> show name <> " matches both channels ") <>
     "and users. Try using '" <> userSigil <> "' or '" <>
     normalChannelSigil <> "' to disambiguate."
-formatError (ServerError e) =
+formatMHError (ServerError e) =
     mattermostErrorMessage e
-formatError (ClipboardError msg) =
+formatMHError (ClipboardError msg) =
     msg
-formatError (ConfigOptionMissing opt) =
+formatMHError (ConfigOptionMissing opt) =
     T.pack $ "Config option " <> show opt <> " missing"
-formatError (ProgramExecutionFailed progName logPath) =
+formatMHError (ProgramExecutionFailed progName logPath) =
     T.pack $ "An error occurred when running " <> show progName <>
              "; see " <> show logPath <> " for details."
-formatError (NoSuchScript name) =
+formatMHError (NoSuchScript name) =
     "No script named " <> name <> " was found"
-formatError (NoSuchHelpTopic topic) =
+formatMHError (NoSuchHelpTopic topic) =
     let knownTopics = ("  - " <>) <$> helpTopicName <$> helpTopics
     in "Unknown help topic: `" <> topic <> "`. " <>
        (T.unlines $ "Available topics are:" : knownTopics)
-formatError (AttachmentException e) =
+formatMHError (AttachmentException e) =
     case fromException e of
       Just (ioe :: IO.IOError) ->
           if IO.isDoesNotExistError ioe
@@ -182,9 +182,9 @@ formatError (AttachmentException e) =
       Nothing -> "Unknown error attaching file!\n" <>
           "Please report this error at https://github.com/matterhorn-chat/matterhorn/issues"
           -- this case shouldn't be reached
-formatError (BadAttachmentPath msg) =
+formatMHError (BadAttachmentPath msg) =
     msg
-formatError (AsyncErrEvent e) =
+formatMHError (AsyncErrEvent e) =
     "An unexpected error has occurred! The exception encountered was:\n  " <>
     T.pack (show e) <>
     "\nPlease report this error at https://github.com/matterhorn-chat/matterhorn/issues"
