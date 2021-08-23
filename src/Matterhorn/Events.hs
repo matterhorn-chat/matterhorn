@@ -63,9 +63,6 @@ onBrickEvent (VtyEvent (Vty.EvKey (Vty.KChar 'l') [Vty.MCtrl])) = do
     liftIO $ Vty.refresh vty
 onBrickEvent (VtyEvent e) =
     onVtyEvent e
-onBrickEvent (MouseUp {}) = do
-    mhLog LogGeneral "MOUSE UP EVENT"
-    csLastMouseDownEvent .= Nothing
 onBrickEvent e@(MouseDown n button modifier _) = do
     mhLog LogGeneral $ T.pack $ "MOUSE EVENT: " <> show (n, button, modifier)
     lastClick <- use csLastMouseDownEvent
@@ -78,6 +75,9 @@ onBrickEvent e@(MouseDown n button modifier _) = do
         csLastMouseDownEvent .= Just e
         mode <- use (csCurrentTeam.tsMode)
         mouseHandlerByMode mode e
+onBrickEvent (MouseUp {}) = do
+    csLastMouseDownEvent .= Nothing
+    mhContinueWithoutRedraw
 
 onAppEvent :: MHEvent -> MH ()
 onAppEvent RefreshWebsocketEvent =
