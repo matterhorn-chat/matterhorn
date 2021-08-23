@@ -291,6 +291,7 @@ module Matterhorn.Types
   , mhSuspendAndResume
   , mhHandleEventLensed
   , mhHandleEventLensed'
+  , mhContinueWithoutRedraw
   , St.gets
   , mhError
 
@@ -1982,6 +1983,11 @@ mhSuspendAndResume :: (ChatState -> IO ChatState) -> MH ()
 mhSuspendAndResume mote = MH $ do
     s <- St.get
     St.put $ s { mhNextAction = \ _ -> Brick.suspendAndResume (mote $ mhCurrentState s) }
+
+mhContinueWithoutRedraw :: MH ()
+mhContinueWithoutRedraw = MH $ do
+    s <- St.get
+    St.put $ s { mhNextAction = \ _ -> Brick.continueWithoutRedraw (mhCurrentState s) }
 
 -- | This will request that after this computation finishes the
 -- application should exit
