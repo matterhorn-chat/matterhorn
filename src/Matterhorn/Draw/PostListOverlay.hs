@@ -50,10 +50,11 @@ drawPostsBox contents st =
               in "Posts pinned in " <> cName
           PostListSearch terms searching -> "Search results" <> if searching
             then ": " <> terms
-            else " (" <> (T.pack . show . length) messages <> "): " <> terms
+            else " (" <> (T.pack . show . length) entries <> "): " <> terms
 
+        entries = filterMessages knownChannel $ st^.csCurrentTeam.tsPostListOverlay.postListPosts
         messages = insertDateMarkers
-                     (filterMessages knownChannel $ st^.csCurrentTeam.tsPostListOverlay.postListPosts)
+                     entries
                      (getDateFormat st)
                      (st^.timeZone)
 
