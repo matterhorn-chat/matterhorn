@@ -603,7 +603,7 @@ themeDocs = ThemeDocumentation $ M.fromList $
       , "An emoji reaction on a chat message"
       )
     , ( myReactionAttr
-      , "An emoji reaction on a chat message that the current user has posted"
+      , "An emoji reaction that the current user has posted on a chat message"
       )
     , ( channelNameAttr
       , "A channel name in a chat message"
