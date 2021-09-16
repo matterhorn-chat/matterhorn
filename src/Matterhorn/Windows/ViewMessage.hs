@@ -167,6 +167,7 @@ viewMessageBox st msg =
                                  , mdShowReactions     = False
                                  , mdMessageWidthLimit = Just vpWidth
                                  , mdMyUsername        = myUsername st
+                                 , mdMyUserId          = myUserId st
                                  , mdWrapNonhighlightedCodeBlocks = False
                                  , mdTruncateVerbatimBlocks = Nothing
                                  }

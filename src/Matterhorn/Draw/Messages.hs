@@ -28,7 +28,7 @@ import qualified Data.Text as T
 import qualified Graphics.Vty as V
 import           Lens.Micro.Platform ( (.~), to )
 import           Network.Mattermost.Lenses ( postEditAtL, postCreateAtL )
-import           Network.Mattermost.Types ( ServerTime(..), userUsername, postId )
+import           Network.Mattermost.Types ( ServerTime(..), UserId, userUsername, userId, postId )
 import           Prelude ()
 import           Matterhorn.Prelude
 
@@ -93,6 +93,7 @@ renderChatMessage st hs ind threadState renderTimeFunc msg =
               , mdShowReactions     = True
               , mdMessageWidthLimit = Nothing
               , mdMyUsername        = userUsername $ myUser st
+              , mdMyUserId          = userId $ myUser st
               , mdWrapNonhighlightedCodeBlocks = True
               , mdTruncateVerbatimBlocks = st^.csVerbatimTruncateSetting
               }
@@ -307,6 +308,8 @@ data MessageData =
                 -- blocks will be rendered using the context's width.
                 , mdMyUsername :: Text
                 -- ^ The username of the user running Matterhorn.
+                , mdMyUserId :: UserId
+                -- ^ The user ID of the user running Matterhorn.
                 , mdWrapNonhighlightedCodeBlocks :: Bool
                 -- ^ Whether to wrap text in non-highlighted code
                 -- blocks.
@@ -378,12 +381,17 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
           then Nothing
           else let renderR e us lst =
                        let n = Set.size us
-                       in if | n == 1    -> makeReactionWidget e us (" [" <> e <> "]") : lst
-                             | otherwise -> makeReactionWidget e us (" [" <> e <> " " <> T.pack (show n) <> "]") : lst
+                           mine = isMyReaction us
+                           content = if | n == 1    -> "[" <> e <> "]"
+                                        | otherwise -> "[" <> e <> " " <> T.pack (show n) <> "]"
+                           w = makeReactionWidget mine e us content
+                       in padRight (Pad 1) w : lst
                    nonEmptyReactions = Map.filter (not . Set.null) $ msg^.mReactions
-                   makeReactionWidget e us t =
-                       let w = txt t in
-                       maybe w (flip clickable w) $ makeName e us
+                   isMyReaction = Set.member mdMyUserId
+                   makeReactionWidget mine e us t =
+                       let w = withDefAttr attr $ txt t
+                           attr = if mine then myReactionAttr else reactionAttr
+                       in maybe w (flip clickable w) $ makeName e us
                    hasAnyReactions = not $ null nonEmptyReactions
                    makeName e us = do
                        pid <- postId <$> msg^.mOriginalPost
@@ -404,7 +412,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
 
                        render $ vBox $ hBox <$> (fmap (fmap resultToWidget)) (reacLines [] lineW reacs)
                in if hasAnyReactions
-                  then Just $ withDefAttr emojiAttr $ txt "   " <+> reactionWidget
+                  then Just $ txt "   " <+> reactionWidget
                   else Nothing
         withParent p =
             case mdThreadState of

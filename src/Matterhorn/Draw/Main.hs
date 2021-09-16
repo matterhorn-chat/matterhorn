@@ -266,6 +266,7 @@ renderUserCommandBox st hs =
                           , mdShowReactions     = True
                           , mdMessageWidthLimit = Nothing
                           , mdMyUsername        = myUsername st
+                          , mdMyUserId          = myUserId st
                           , mdWrapNonhighlightedCodeBlocks = True
                           , mdTruncateVerbatimBlocks = Nothing
                           }
@@ -756,6 +757,7 @@ inputPreview st hs | not $ st^.csResources.crConfiguration.configShowMessagePrev
                                   , mdShowReactions     = True
                                   , mdMessageWidthLimit = Nothing
                                   , mdMyUsername        = myUsername st
+                                  , mdMyUserId          = myUserId st
                                   , mdWrapNonhighlightedCodeBlocks = True
                                   , mdTruncateVerbatimBlocks = Nothing
                                   }

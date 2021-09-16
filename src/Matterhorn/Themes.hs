@@ -22,6 +22,8 @@ module Matterhorn.Themes
   , codeAttr
   , emailAttr
   , emojiAttr
+  , reactionAttr
+  , myReactionAttr
   , channelNameAttr
   , clientMessageAttr
   , clientHeaderAttr
@@ -194,6 +196,12 @@ emailAttr = "email"
 emojiAttr :: AttrName
 emojiAttr = "emoji"
 
+reactionAttr :: AttrName
+reactionAttr = "reaction"
+
+myReactionAttr :: AttrName
+myReactionAttr = reactionAttr <> "mine"
+
 clientMessageAttr :: AttrName
 clientMessageAttr = "clientMessage"
 
@@ -291,6 +299,8 @@ lightAttrs usernameColors =
        , (emailAttr,                        fg yellow)
        , (codeAttr,                         fg magenta)
        , (emojiAttr,                        fg yellow)
+       , (reactionAttr,                     fg yellow)
+       , (myReactionAttr,                   fg yellow `withStyle` underline)
        , (channelNameAttr,                  fg blue)
        , (clientMessageAttr,                fg black)
        , (clientEmphAttr,                   fg black `withStyle` bold)
@@ -354,6 +364,8 @@ darkAttrs usernameColors =
      , (emailAttr,                        fg yellow)
      , (codeAttr,                         fg magenta)
      , (emojiAttr,                        fg yellow)
+     , (reactionAttr,                     fg yellow)
+     , (myReactionAttr,                   fg yellow `withStyle` underline)
      , (channelNameAttr,                  fg cyan)
      , (pinnedMessageIndicatorAttr,       fg cyan `withStyle` bold)
      , (clientMessageAttr,                fg white)
@@ -586,6 +598,12 @@ themeDocs = ThemeDocumentation $ M.fromList $
       )
     , ( emojiAttr
       , "A text emoji indication in a chat message"
+      )
+    , ( reactionAttr
+      , "An emoji reaction on a chat message"
+      )
+    , ( myReactionAttr
+      , "An emoji reaction on a chat message that the current user has posted"
       )
     , ( channelNameAttr
       , "A channel name in a chat message"
