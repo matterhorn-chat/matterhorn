@@ -77,6 +77,7 @@ onBrickEvent e@(MouseDown n button modifier _) = do
         mouseHandlerByMode mode e
 onBrickEvent (MouseUp {}) = do
     csLastMouseDownEvent .= Nothing
+    mhContinueWithoutRedraw
 
 onAppEvent :: MHEvent -> MH ()
 onAppEvent RefreshWebsocketEvent =
