@@ -104,6 +104,6 @@ drawPostsBox contents st =
               messagesWithStates = (, InThreadShowParent) <$> messages
           in case s of
             Nothing ->
-                map (uncurry renderMessageForOverlay) (reverse (toList messagesWithStates))
+                map (uncurry renderMessageForOverlay) (toList messagesWithStates)
             Just curMsg ->
-              [unsafeRenderMessageSelection (curMsg, (after, before)) renderMessageForOverlay]
+              [unsafeRenderMessageSelection (curMsg, (before, after)) renderMessageForOverlay]

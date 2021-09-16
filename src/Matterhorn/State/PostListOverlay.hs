@@ -98,8 +98,8 @@ enterSearchResultPostListMode terms
 
 -- | Move the selection up in the PostListOverlay, which corresponds
 -- to finding a chronologically /newer/ message.
-postListSelectUp :: MH ()
-postListSelectUp = do
+postListSelectDown :: MH ()
+postListSelectDown = do
   selId <- use (csCurrentTeam.tsPostListOverlay.postListSelected)
   posts <- use (csCurrentTeam.tsPostListOverlay.postListPosts)
   let nextMsg = getNextMessage (MessagePostId <$> selId) posts
@@ -111,13 +111,13 @@ postListSelectUp = do
       case (m^.mChannelId, pId) of
         (Just c, Just p) -> asyncFetchMessagesSurrounding c p
         o -> mhLog LogError
-             (T.pack $ "postListSelectUp" <>
+             (T.pack $ "postListSelectDown" <>
               " unable to get channel or post ID: " <> show o)
 
 -- | Move the selection down in the PostListOverlay, which corresponds
 -- to finding a chronologically /old/ message.
-postListSelectDown :: MH ()
-postListSelectDown = do
+postListSelectUp :: MH ()
+postListSelectUp = do
   selId <- use (csCurrentTeam.tsPostListOverlay.postListSelected)
   posts <- use (csCurrentTeam.tsPostListOverlay.postListPosts)
   let prevMsg = getPrevMessage (MessagePostId <$> selId) posts
@@ -129,7 +129,7 @@ postListSelectDown = do
       case (m^.mChannelId, pId) of
         (Just c, Just p) -> asyncFetchMessagesSurrounding c p
         o -> mhLog LogError
-             (T.pack $ "postListSelectDown" <>
+             (T.pack $ "postListSelectUp" <>
               " unable to get channel or post ID: " <> show o)
 
 -- | Unflag the post currently selected in the PostListOverlay, if any
