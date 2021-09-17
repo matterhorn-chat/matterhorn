@@ -370,7 +370,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
         augmentedText = unBlocks $ maybeAugment $ msg^.mText
         msgWidget =
             vBox $ (renderBlocks mdHighlightSet mdMessageWidthLimit nameElems augmentedText . viewl) augmentedText :
-                   catMaybes [msgAtch, msgReac]
+                   catMaybes [msgAtch, messageReactions md]
         replyIndent = Widget Fixed Fixed $ do
             ctx <- getContext
             -- NB: The amount subtracted here must be the total padding
@@ -386,44 +386,6 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                                      txt ("[attached: `" <> a^.attachmentName <> "`]")
                  | a <- toList (msg^.mAttachments)
                  ]
-
-        msgReac = if Map.null (msg^.mReactions) || (not mdShowReactions)
-          then Nothing
-          else let renderR e us lst =
-                       let n = Set.size us
-                           mine = isMyReaction us
-                           content = if | n == 1    -> "[" <> e <> "]"
-                                        | otherwise -> "[" <> e <> " " <> T.pack (show n) <> "]"
-                           w = makeReactionWidget mine e us content
-                       in padRight (Pad 1) w : lst
-                   nonEmptyReactions = Map.filter (not . Set.null) $ msg^.mReactions
-                   isMyReaction = Set.member mdMyUserId
-                   makeReactionWidget mine e us t =
-                       let w = withDefAttr attr $ txt t
-                           attr = if mine then myReactionAttr else reactionAttr
-                       in maybe w (flip clickable w) $ makeName e us
-                   hasAnyReactions = not $ null nonEmptyReactions
-                   makeName e us = do
-                       pid <- postId <$> msg^.mOriginalPost
-                       Just $ ClickableReactionInMessage pid e us
-                   reactionWidget = Widget Fixed Fixed $ do
-                       ctx <- getContext
-                       let lineW = ctx^.availWidthL
-                       reacs <- mapM render $ Map.foldrWithKey renderR [] nonEmptyReactions
-                       let reacLines :: [Result n] -> Int -> [Result n] -> [[Result n]]
-                           reacLines l _ []     = if null l then [] else [l]
-                           reacLines l w (r:rs) =
-                               let rW = V.imageWidth $ r^.imageL
-                               in if rW <= w
-                                  then reacLines (l <> [r]) (w - rW) rs
-                                  else if rW > lineW
-                                       then l : [r] : reacLines [] lineW rs
-                                       else l : reacLines [] lineW (r:rs)
-
-                       render $ vBox $ hBox <$> (fmap (fmap resultToWidget)) (reacLines [] lineW reacs)
-               in if hasAnyReactions
-                  then Just $ txt "   " <+> reactionWidget
-                  else Nothing
 
         withParent p =
             case mdThreadState of
@@ -493,6 +455,46 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                 Just mId -> Just $ ClickableUsernameInMessage mId i name
                 Nothing -> Nothing
         mkClickableNames _ _ = Nothing
+
+messageReactions :: MessageData -> Maybe (Widget Name)
+messageReactions MessageData { mdMessage = msg, .. } =
+    if Map.null (msg^.mReactions) || (not mdShowReactions)
+    then Nothing
+    else let renderR e us lst =
+                 let n = Set.size us
+                     mine = isMyReaction us
+                     content = if | n == 1    -> "[" <> e <> "]"
+                                  | otherwise -> "[" <> e <> " " <> T.pack (show n) <> "]"
+                     w = makeReactionWidget mine e us content
+                 in padRight (Pad 1) w : lst
+             nonEmptyReactions = Map.filter (not . Set.null) $ msg^.mReactions
+             isMyReaction = Set.member mdMyUserId
+             makeReactionWidget mine e us t =
+                 let w = withDefAttr attr $ txt t
+                     attr = if mine then myReactionAttr else reactionAttr
+                 in maybe w (flip clickable w) $ makeName e us
+             hasAnyReactions = not $ null nonEmptyReactions
+             makeName e us = do
+                 pid <- postId <$> msg^.mOriginalPost
+                 Just $ ClickableReactionInMessage pid e us
+             reactionWidget = Widget Fixed Fixed $ do
+                 ctx <- getContext
+                 let lineW = ctx^.availWidthL
+                 reacs <- mapM render $ Map.foldrWithKey renderR [] nonEmptyReactions
+                 let reacLines :: [Result n] -> Int -> [Result n] -> [[Result n]]
+                     reacLines l _ []     = if null l then [] else [l]
+                     reacLines l w (r:rs) =
+                         let rW = V.imageWidth $ r^.imageL
+                         in if rW <= w
+                            then reacLines (l <> [r]) (w - rW) rs
+                            else if rW > lineW
+                                 then l : [r] : reacLines [] lineW rs
+                                 else l : reacLines [] lineW (r:rs)
+
+                 render $ vBox $ hBox <$> (fmap (fmap resultToWidget)) (reacLines [] lineW reacs)
+         in if hasAnyReactions
+            then Just $ txt "   " <+> reactionWidget
+            else Nothing
 
 -- Add the edit sentinel to the end of the last block in the sequence.
 -- If the last block is a paragraph, append it to that paragraph.
