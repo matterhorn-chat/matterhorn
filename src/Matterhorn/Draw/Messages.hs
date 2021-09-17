@@ -39,6 +39,60 @@ import           Matterhorn.Types
 import           Matterhorn.Types.RichText
 import           Matterhorn.Types.DirectionalSeq
 
+-- | A bundled structure that includes all the information necessary
+-- to render a given message
+data MessageData =
+    MessageData { mdEditThreshold :: Maybe ServerTime
+                -- ^ If specified, any messages edited before this point
+                -- in time are not indicated as edited.
+                , mdShowOlderEdits :: Bool
+                -- ^ Indicates whether "edited" markers should be shown
+                -- for old messages (i.e., ignore the mdEditThreshold
+                -- value).
+                , mdShowReactions :: Bool
+                -- ^ Whether to render reactions.
+                , mdMessage :: Message
+                -- ^ The message to render.
+                , mdUserName :: Maybe Text
+                -- ^ The username of the message's author, if any. This
+                -- is passed here rather than obtaining from the message
+                -- because we need to do lookups in the ChatState to
+                -- compute this, and we don't pass the ChatState into
+                -- renderMessage.
+                , mdParentMessage :: Maybe Message
+                -- ^ The parent message of this message, if any.
+                , mdParentUserName :: Maybe Text
+                -- ^ The author of the parent message, if any.
+                , mdThreadState :: ThreadState
+                -- ^ The thread state of this message.
+                , mdRenderReplyParent :: Bool
+                -- ^ Whether to render the parent message.
+                , mdHighlightSet :: HighlightSet
+                -- ^ The highlight set to use to highlight usernames,
+                -- channel names, etc.
+                , mdIndentBlocks :: Bool
+                -- ^ Whether to indent the message underneath the
+                -- author's name (True) or just display it to the right
+                -- of the author's name (False).
+                , mdTruncateVerbatimBlocks :: Maybe Int
+                -- ^ At what height to truncate long verbatim/code blocks.
+                , mdMessageWidthLimit :: Maybe Int
+                -- ^ A width override to use to wrap non-code blocks
+                -- and code blocks without syntax highlighting. If
+                -- unspecified, all blocks in the message will be
+                -- wrapped and truncated at the width specified by the
+                -- rendering context. If specified, all non-code blocks
+                -- will be wrapped at this width and highlighted code
+                -- blocks will be rendered using the context's width.
+                , mdMyUsername :: Text
+                -- ^ The username of the user running Matterhorn.
+                , mdMyUserId :: UserId
+                -- ^ The user ID of the user running Matterhorn.
+                , mdWrapNonhighlightedCodeBlocks :: Bool
+                -- ^ Whether to wrap text in non-highlighted code
+                -- blocks.
+                }
+
 maxMessageHeight :: Int
 maxMessageHeight = 200
 
@@ -266,60 +320,6 @@ render1 doMsgRender msg threadState = case msg^.mDeleted of
             withReaderT relaxHeight $
                 render $ padRight Max $
                 doMsgRender msg threadState
-
--- | A bundled structure that includes all the information necessary
--- to render a given message
-data MessageData =
-    MessageData { mdEditThreshold :: Maybe ServerTime
-                -- ^ If specified, any messages edited before this point
-                -- in time are not indicated as edited.
-                , mdShowOlderEdits :: Bool
-                -- ^ Indicates whether "edited" markers should be shown
-                -- for old messages (i.e., ignore the mdEditThreshold
-                -- value).
-                , mdShowReactions :: Bool
-                -- ^ Whether to render reactions.
-                , mdMessage :: Message
-                -- ^ The message to render.
-                , mdUserName :: Maybe Text
-                -- ^ The username of the message's author, if any. This
-                -- is passed here rather than obtaining from the message
-                -- because we need to do lookups in the ChatState to
-                -- compute this, and we don't pass the ChatState into
-                -- renderMessage.
-                , mdParentMessage :: Maybe Message
-                -- ^ The parent message of this message, if any.
-                , mdParentUserName :: Maybe Text
-                -- ^ The author of the parent message, if any.
-                , mdThreadState :: ThreadState
-                -- ^ The thread state of this message.
-                , mdRenderReplyParent :: Bool
-                -- ^ Whether to render the parent message.
-                , mdHighlightSet :: HighlightSet
-                -- ^ The highlight set to use to highlight usernames,
-                -- channel names, etc.
-                , mdIndentBlocks :: Bool
-                -- ^ Whether to indent the message underneath the
-                -- author's name (True) or just display it to the right
-                -- of the author's name (False).
-                , mdTruncateVerbatimBlocks :: Maybe Int
-                -- ^ At what height to truncate long verbatim/code blocks.
-                , mdMessageWidthLimit :: Maybe Int
-                -- ^ A width override to use to wrap non-code blocks
-                -- and code blocks without syntax highlighting. If
-                -- unspecified, all blocks in the message will be
-                -- wrapped and truncated at the width specified by the
-                -- rendering context. If specified, all non-code blocks
-                -- will be wrapped at this width and highlighted code
-                -- blocks will be rendered using the context's width.
-                , mdMyUsername :: Text
-                -- ^ The username of the user running Matterhorn.
-                , mdMyUserId :: UserId
-                -- ^ The user ID of the user running Matterhorn.
-                , mdWrapNonhighlightedCodeBlocks :: Bool
-                -- ^ Whether to wrap text in non-highlighted code
-                -- blocks.
-                }
 
 -- | This performs rendering of the specified message according to
 -- settings in MessageData.
