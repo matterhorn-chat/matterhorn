@@ -254,7 +254,7 @@ renderUserCommandBox st hs =
                 in hBox [ replyArrow
                         , addEllipsis $ renderMessage MessageData
                           { mdMessage           = msgWithoutParent
-                          , mdUserName          = msgWithoutParent^.mUser.to (nameForUserRef st)
+                          , mdUserName          = msgWithoutParent^.mUser.to (printableNameForUserRef st)
                           , mdParentMessage     = Nothing
                           , mdParentUserName    = Nothing
                           , mdHighlightSet      = hs
@@ -745,9 +745,9 @@ inputPreview st hs | not $ st^.csResources.crConfiguration.configShowMessagePrev
                                   else prview pm $ getParentMessage st pm
                      prview m p = renderMessage MessageData
                                   { mdMessage           = m
-                                  , mdUserName          = m^.mUser.to (nameForUserRef st)
+                                  , mdUserName          = m^.mUser.to (printableNameForUserRef st)
                                   , mdParentMessage     = p
-                                  , mdParentUserName    = p >>= (^.mUser.to (nameForUserRef st))
+                                  , mdParentUserName    = p >>= (^.mUser.to (printableNameForUserRef st))
                                   , mdHighlightSet      = hs
                                   , mdEditThreshold     = Nothing
                                   , mdShowOlderEdits    = False

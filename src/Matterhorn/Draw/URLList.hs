@@ -46,7 +46,7 @@ renderUrlList st =
           let time = link^.linkTime
           in attr sel $ vLimit 2 $
             (vLimit 1 $
-             hBox [ let u = maybe "<server>" id (link^.linkUser.to (nameForUserRef st))
+             hBox [ let u = maybe "<server>" id (link^.linkUser.to (printableNameForUserRef st))
                     in colorUsername me u u
                   , case link^.linkLabel of
                       Nothing -> emptyWidget

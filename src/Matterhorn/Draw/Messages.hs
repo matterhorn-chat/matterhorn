@@ -4,7 +4,7 @@
 module Matterhorn.Draw.Messages
   ( MessageData(..)
   , renderMessage
-  , nameForUserRef
+  , printableNameForUserRef
   , renderSingleMessage
   , unsafeRenderMessageSelection
   , renderLastMessages
@@ -102,10 +102,10 @@ botUserLabel = "[BOT]"
 pinIndicator :: T.Text
 pinIndicator = "[PIN]"
 
--- | nameForUserRef converts the UserRef into a printable name, based
--- on the current known user data.
-nameForUserRef :: ChatState -> UserRef -> Maybe Text
-nameForUserRef st uref =
+-- | printableNameForUserRef converts the UserRef into a printable name,
+-- based on the current known user data.
+printableNameForUserRef :: ChatState -> UserRef -> Maybe Text
+printableNameForUserRef st uref =
     case uref of
         NoUser -> Nothing
         UserOverride _ t -> Just t
@@ -141,9 +141,9 @@ renderChatMessage st hs ind threadState renderTimeFunc msg =
           InReplyTo pId -> getMessageForPostId st pId
         m = renderMessage MessageData
               { mdMessage           = msg
-              , mdUserName          = msg^.mUser.to (nameForUserRef st)
+              , mdUserName          = msg^.mUser.to (printableNameForUserRef st)
               , mdParentMessage     = parent
-              , mdParentUserName    = parent >>= (^.mUser.to (nameForUserRef st))
+              , mdParentUserName    = parent >>= (^.mUser.to (printableNameForUserRef st))
               , mdEditThreshold     = ind
               , mdHighlightSet      = hs
               , mdShowOlderEdits    = showOlderEdits

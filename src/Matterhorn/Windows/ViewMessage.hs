@@ -29,7 +29,7 @@ import           Matterhorn.Themes
 import           Matterhorn.Types
 import           Matterhorn.Types.RichText ( Inline(EUser) )
 import           Matterhorn.Draw.RichText
-import           Matterhorn.Draw.Messages ( renderMessage, MessageData(..), nameForUserRef )
+import           Matterhorn.Draw.Messages ( renderMessage, MessageData(..), printableNameForUserRef )
 
 -- | The template for "View Message" windows triggered by message
 -- selection mode.
@@ -157,9 +157,9 @@ viewMessageBox st msg =
                 md = MessageData { mdEditThreshold     = Nothing
                                  , mdShowOlderEdits    = False
                                  , mdMessage           = msg
-                                 , mdUserName          = msg^.mUser.to (nameForUserRef st)
+                                 , mdUserName          = msg^.mUser.to (printableNameForUserRef st)
                                  , mdParentMessage     = parent
-                                 , mdParentUserName    = parent >>= (^.mUser.to (nameForUserRef st))
+                                 , mdParentUserName    = parent >>= (^.mUser.to (printableNameForUserRef st))
                                  , mdRenderReplyParent = True
                                  , mdHighlightSet      = hs
                                  , mdIndentBlocks      = True
