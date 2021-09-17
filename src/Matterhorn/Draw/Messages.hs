@@ -321,7 +321,8 @@ data MessageData =
                 -- blocks.
                 }
 
--- | renderMessage performs markdown rendering of the specified message.
+-- | This performs rendering of the specified message according to
+-- settings in MessageData.
 renderMessage :: MessageData -> Widget Name
 renderMessage md@MessageData { mdMessage = msg, .. } =
     let msgUsr = case mdUserName of
