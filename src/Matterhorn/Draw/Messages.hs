@@ -112,25 +112,40 @@ printableNameForUserRef st uref =
         UserI _ uId -> displayNameForUserId uId st
 
 -- | renderSingleMessage is the main message drawing function.
---
--- The `ind` argument specifies an "indicator boundary".  Showing
--- various indicators (e.g. "edited") is not typically done for
--- messages that are older than this boundary value.
 renderSingleMessage :: ChatState
+                    -- ^ The application state
                     -> HighlightSet
+                    -- ^ The highlight set to use when rendering this
+                    -- message
                     -> Maybe ServerTime
+                    -- ^ This specifies an "indicator boundary". Showing
+                    -- various indicators (e.g. "edited") is not
+                    -- typically done for messages that are older than
+                    -- this boundary value.
                     -> Message
+                    -- ^ The message to render
                     -> ThreadState
+                    -- ^ The thread state in which to render the message
                     -> Widget Name
 renderSingleMessage st hs ind m threadState =
   renderChatMessage st hs ind threadState (withBrackets . renderTime st . withServerTime) m
 
 renderChatMessage :: ChatState
+                  -- ^ The application state
                   -> HighlightSet
+                  -- ^ The highlight set to use when rendering this
+                  -- message
                   -> Maybe ServerTime
+                  -- ^ This specifies an "indicator boundary". Showing
+                  -- various indicators (e.g. "edited") is not typically
+                  -- done for messages that are older than this boundary
+                  -- value.
                   -> ThreadState
+                  -- ^ The thread state in which to render the message
                   -> (ServerTime -> Widget Name)
+                  -- ^ A function to render server times
                   -> Message
+                  -- ^ The message to render
                   -> Widget Name
 renderChatMessage st hs ind threadState renderTimeFunc msg =
     let showOlderEdits = configShowOlderEdits config
@@ -193,7 +208,11 @@ unsafeRenderMessageSelection :: (SeqDirection dir1, SeqDirection dir2)
                                   , DirectionalSeq dir2 (Message, ThreadState)
                                   )
                                 )
+                             -- ^ The message to render, the messages
+                             -- before it, and after it, respectively
                              -> (Message -> ThreadState -> Widget Name)
+                             -- ^ A per-message rendering function to
+                             -- use
                              -> Widget Name
 unsafeRenderMessageSelection ((curMsg, curThreadState), (before, after)) doMsgRender =
   Widget Greedy Greedy $ do
