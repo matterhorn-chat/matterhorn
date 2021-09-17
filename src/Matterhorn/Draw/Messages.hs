@@ -42,6 +42,9 @@ import           Matterhorn.Types.DirectionalSeq
 maxMessageHeight :: Int
 maxMessageHeight = 200
 
+botUserLabel :: T.Text
+botUserLabel = "[BOT]"
+
 -- | nameForUserRef converts the UserRef into a printable name, based
 -- on the current known user data.
 nameForUserRef :: ChatState -> UserRef -> Maybe Text
@@ -325,7 +328,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
           Nothing -> Nothing
 
         botElem = if isBotMessage msg
-                  then txt "[BOT]"
+                  then txt botUserLabel
                   else emptyWidget
 
         mId = msg^.mMessageId
