@@ -377,6 +377,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
         msgWidget =
             vBox $ (renderBlocks mdHighlightSet mdMessageWidthLimit nameElems augmentedText . viewl) augmentedText :
                    catMaybes [msgAtch, messageReactions md]
+
         replyIndent = Widget Fixed Fixed $ do
             ctx <- getContext
             -- NB: The amount subtracted here must be the total padding
@@ -395,9 +396,9 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
 
         withParent p =
             case mdThreadState of
-                NoThread -> msgWidget
+                NoThread           -> msgWidget
                 InThreadShowParent -> p <=> replyIndent
-                InThread -> replyIndent
+                InThread           -> replyIndent
 
     in if not mdRenderReplyParent
        then msgWidget
