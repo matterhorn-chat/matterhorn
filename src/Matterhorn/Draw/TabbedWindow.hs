@@ -63,9 +63,9 @@ tabBar tId w =
                     let width = Vty.imageWidth (result^.imageL)
                     if isCurrent
                        then
-                           render $ padBottom (Pad 1) $ Widget Fixed Fixed $ return result
+                           render $ padBottom (Pad 1) $ resultToWidget result
                        else
-                           render $ vBox [ Widget Fixed Fixed $ return result
+                           render $ vBox [ resultToWidget result
                                          , hLimit width hBorder
                                          ]
             in makeVisible $

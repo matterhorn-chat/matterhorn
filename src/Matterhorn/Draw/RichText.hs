@@ -35,7 +35,8 @@ import           Matterhorn.Constants ( normalChannelSigil, editMarking )
 import           Matterhorn.Draw.RichText.Flatten
 import           Matterhorn.Draw.RichText.Wrap
 import           Matterhorn.Themes
-import           Matterhorn.Types ( HighlightSet(..), emptyHSet, SemEq(..), addUserSigil )
+import           Matterhorn.Types ( HighlightSet(..), emptyHSet, SemEq(..)
+                                  , addUserSigil, resultToWidget )
 import           Matterhorn.Types.RichText
 
 
@@ -236,7 +237,7 @@ renderRawCodeBlock tx = do
             let textHeight = V.imageHeight $ renderedText^.imageL
                 padding = B.padLeftRight 1 (B.vLimit textHeight B.vBorder)
 
-            render $ padding <+> (Widget Fixed Fixed $ return renderedText)
+            render $ padding <+> (resultToWidget renderedText)
 
 renderInlines :: SemEq a => Inlines -> M (Widget a) a
 renderInlines es = do

@@ -375,8 +375,8 @@ renderCurrentChannelDisplay st hs = header <=> hBorder <=> messages
 
             let maxHeight = max (Vty.imageHeight $ statusBox^.imageL)
                                 (Vty.imageHeight $ channelHeaderResult^.imageL)
-                statusBoxWidget = Widget Fixed Fixed $ return statusBox
-                headerWidget = Widget Fixed Fixed $ return channelHeaderResult
+                statusBoxWidget = resultToWidget statusBox
+                headerWidget = resultToWidget channelHeaderResult
                 borderWidget = vLimit maxHeight vBorder
 
             render $ if st^.csCurrentTeam.tsMode == ChannelSelect
@@ -712,7 +712,7 @@ maybePreviewViewport tId w =
             False -> return result
             True ->
                 render $ vLimit previewMaxHeight $ viewport (MessagePreviewViewport tId) Vertical $
-                         (Widget Fixed Fixed $ return result)
+                         (resultToWidget result)
 
 inputPreview :: ChatState -> HighlightSet -> Widget Name
 inputPreview st hs | not $ st^.csResources.crConfiguration.configShowMessagePreviewL = emptyWidget

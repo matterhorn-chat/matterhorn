@@ -235,9 +235,6 @@ unsafeRenderMessageSelection ((curMsg, curThreadState), (before, after)) doMsgRe
                          then cropBottom (lowerHeight - curHeight) lowerHalf
                          else cropBottom lowerHeight lowerHalf)
 
-resultToWidget :: Result n -> Widget n
-resultToWidget = Widget Fixed Fixed . return
-
 renderMessageSeq :: (SeqDirection dir)
                  => Int
                  -> (Message -> ThreadState -> Widget Name)
@@ -304,7 +301,7 @@ renderLastMessages st hs editCutoff msgs =
                     return $ result : rest
 
         results <- go targetHeight msgs
-        render $ vBox $ (Widget Fixed Fixed . return) <$> reverse results
+        render $ vBox $ resultToWidget <$> reverse results
 
 relaxHeight :: Context -> Context
 relaxHeight c = c & availHeightL .~ (max maxMessageHeight (c^.availHeightL))
@@ -385,7 +382,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
             -- added below (pad 1 + vBorder)
             w <- render $ hLimit (ctx^.availWidthL - 2) msgWidget
             render $ vLimit (V.imageHeight $ w^.imageL) $
-                padRight (Pad 1) vBorder <+> (Widget Fixed Fixed $ return w)
+                padRight (Pad 1) vBorder <+> resultToWidget w
 
         msgAtch = if S.null (msg^.mAttachments)
           then Nothing
@@ -445,7 +442,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
             Widget Fixed Fixed $ do
                 nameResult <- render $ hBox nameElems
                 let newW = subtract (V.imageWidth (nameResult^.imageL)) <$> w
-                render $ hBox [ Widget Fixed Fixed $ return nameResult
+                render $ hBox [ resultToWidget nameResult
                               , renderRichText mdMyUsername hs newW
                                   mdWrapNonhighlightedCodeBlocks
                                   mdTruncateVerbatimBlocks
@@ -533,7 +530,7 @@ addEllipsis w = Widget (hSize w) (vSize w) $ do
     ctx <- getContext
     let aw = ctx^.availWidthL
     result <- render w
-    let withEllipsis = (hLimit (aw - 3) $ vLimit 1 $ (Widget Fixed Fixed $ return result)) <+>
+    let withEllipsis = (hLimit (aw - 3) $ vLimit 1 $ (resultToWidget result)) <+>
                        str "..."
     if (V.imageHeight (result^.imageL) > 1) || (V.imageWidth (result^.imageL) == aw) then
         render withEllipsis else

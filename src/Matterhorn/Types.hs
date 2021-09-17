@@ -54,6 +54,8 @@ module Matterhorn.Types
   , channelTopicDialogEditor
   , channelTopicDialogFocus
 
+  , resultToWidget
+
   , newSaveAttachmentDialog
   , SaveAttachmentDialogState(..)
   , attachmentPathEditor
@@ -364,7 +366,7 @@ import           Matterhorn.Prelude
 
 import qualified Graphics.Vty as Vty
 import qualified Brick
-import           Brick ( EventM, Next, Widget )
+import           Brick ( EventM, Next, Widget(..), Size(..), Result )
 import           Brick.Focus ( FocusRing, focusRing )
 import           Brick.Themes ( Theme )
 import           Brick.Main ( invalidateCache, invalidateCacheEntry )
@@ -2510,3 +2512,6 @@ moveRight v as =
             | otherwise ->
                 let (h, t) = splitAt i as
                 in h <> [head (tail t), v] <> (tail (tail t))
+
+resultToWidget :: Result n -> Widget n
+resultToWidget = Widget Fixed Fixed . return
