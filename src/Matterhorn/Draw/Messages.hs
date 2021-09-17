@@ -45,6 +45,9 @@ maxMessageHeight = 200
 botUserLabel :: T.Text
 botUserLabel = "[BOT]"
 
+pinIndicator :: T.Text
+pinIndicator = "[PIN]"
+
 -- | nameForUserRef converts the UserRef into a printable name, based
 -- on the current known user data.
 nameForUserRef :: ChatState -> UserRef -> Maybe Text
@@ -342,14 +345,14 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
         nameElems = case msgUsr of
           Just un
             | isEmote msg ->
-                [ withDefAttr pinnedMessageIndicatorAttr $ txt $ if msg^.mPinned then "[PIN]" else ""
+                [ withDefAttr pinnedMessageIndicatorAttr $ txt $ if msg^.mPinned then pinIndicator else ""
                 , txt $ (if msg^.mFlagged then "[!] " else "") <> "*"
                 , clickableAuthor un $ colorUsername mdMyUsername un un
                 , botAuthorElem
                 , txt " "
                 ]
             | otherwise ->
-                [ withDefAttr pinnedMessageIndicatorAttr $ txt $ if msg^.mPinned then "[PIN] " else ""
+                [ withDefAttr pinnedMessageIndicatorAttr $ txt $ if msg^.mPinned then pinIndicator <> " " else ""
                 , clickableAuthor un $ colorUsername mdMyUsername un un
                 , botAuthorElem
                 , txt $ (if msg^.mFlagged then "[!]" else "") <> ": "
