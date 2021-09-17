@@ -427,7 +427,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
         renderBlocks hs w nameElems bs (HTMLBlock {} :< _)  = multiLnLayout hs w nameElems bs
         renderBlocks hs w nameElems bs (List {} :< _)       = multiLnLayout hs w nameElems bs
         renderBlocks hs w nameElems bs (Para inlns :< _)
-            | F.any breakCheck (unInlines inlns)            = multiLnLayout hs w nameElems bs
+            | F.any isBreak (unInlines inlns)               = multiLnLayout hs w nameElems bs
         renderBlocks hs w nameElems bs _                    = nameNextToMessage hs w nameElems bs
 
         multiLnLayout hs w nameElems bs =
@@ -451,7 +451,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                                   (Just mkClickableNames) (Blocks bs)
                               ]
 
-        breakCheck i = i `elem` [ELineBreak, ESoftBreak]
+        isBreak i = i `elem` [ELineBreak, ESoftBreak]
 
         mkClickableNames i (EHyperlink u _) =
             case msg^.mMessageId of
