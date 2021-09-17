@@ -369,7 +369,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
 
         augmentedText = unBlocks $ maybeAugment $ msg^.mText
         msgWidget =
-            vBox $ (layout mdHighlightSet mdMessageWidthLimit nameElems augmentedText . viewl) augmentedText :
+            vBox $ (renderBlocks mdHighlightSet mdMessageWidthLimit nameElems augmentedText . viewl) augmentedText :
                    catMaybes [msgAtch, msgReac]
         replyIndent = Widget Fixed Fixed $ do
             ctx <- getContext
@@ -450,16 +450,16 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                       in withParent (addEllipsis $ forceAttr replyParentAttr parentMsg)
 
     where
-        layout :: HighlightSet -> Maybe Int -> [Widget Name] -> Seq Block
-               -> ViewL Block -> Widget Name
-        layout hs w nameElems bs xs | length xs > 1     = multiLnLayout hs w nameElems bs
-        layout hs w nameElems bs (Blockquote {} :< _) = multiLnLayout hs w nameElems bs
-        layout hs w nameElems bs (CodeBlock {} :< _)  = multiLnLayout hs w nameElems bs
-        layout hs w nameElems bs (HTMLBlock {} :< _)  = multiLnLayout hs w nameElems bs
-        layout hs w nameElems bs (List {} :< _)       = multiLnLayout hs w nameElems bs
-        layout hs w nameElems bs (Para inlns :< _)
-            | F.any breakCheck (unInlines inlns)      = multiLnLayout hs w nameElems bs
-        layout hs w nameElems bs _                    = nameNextToMessage hs w nameElems bs
+        renderBlocks :: HighlightSet -> Maybe Int -> [Widget Name] -> Seq Block
+                     -> ViewL Block -> Widget Name
+        renderBlocks hs w nameElems bs xs | length xs > 1   = multiLnLayout hs w nameElems bs
+        renderBlocks hs w nameElems bs (Blockquote {} :< _) = multiLnLayout hs w nameElems bs
+        renderBlocks hs w nameElems bs (CodeBlock {} :< _)  = multiLnLayout hs w nameElems bs
+        renderBlocks hs w nameElems bs (HTMLBlock {} :< _)  = multiLnLayout hs w nameElems bs
+        renderBlocks hs w nameElems bs (List {} :< _)       = multiLnLayout hs w nameElems bs
+        renderBlocks hs w nameElems bs (Para inlns :< _)
+            | F.any breakCheck (unInlines inlns)            = multiLnLayout hs w nameElems bs
+        renderBlocks hs w nameElems bs _                    = nameNextToMessage hs w nameElems bs
 
         multiLnLayout hs w nameElems bs =
             if mdIndentBlocks
@@ -467,7 +467,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                          , hBox [txt "  ", renderRichText mdMyUsername hs ((subtract 2) <$> w)
                                                  mdWrapNonhighlightedCodeBlocks
                                                  mdTruncateVerbatimBlocks
-                                                 (Just clickableNames) (Blocks bs)]
+                                                 (Just mkClickableNames) (Blocks bs)]
                          ]
                else nameNextToMessage hs w nameElems bs
 
@@ -479,20 +479,20 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                               , renderRichText mdMyUsername hs newW
                                   mdWrapNonhighlightedCodeBlocks
                                   mdTruncateVerbatimBlocks
-                                  (Just clickableNames) (Blocks bs)
+                                  (Just mkClickableNames) (Blocks bs)
                               ]
 
         breakCheck i = i `elem` [ELineBreak, ESoftBreak]
 
-        clickableNames i (EHyperlink u _) =
+        mkClickableNames i (EHyperlink u _) =
             case msg^.mMessageId of
                 Just mId -> Just $ ClickableURLInMessage mId i $ LinkURL u
                 Nothing -> Nothing
-        clickableNames i (EUser name) =
+        mkClickableNames i (EUser name) =
             case msg^.mMessageId of
                 Just mId -> Just $ ClickableUsernameInMessage mId i name
                 Nothing -> Nothing
-        clickableNames _ _ = Nothing
+        mkClickableNames _ _ = Nothing
 
 -- Add the edit sentinel to the end of the last block in the sequence.
 -- If the last block is a paragraph, append it to that paragraph.
