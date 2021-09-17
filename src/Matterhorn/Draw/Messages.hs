@@ -327,9 +327,9 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                     else Just u
           Nothing -> Nothing
 
-        botElem = if isBotMessage msg
-                  then txt botUserLabel
-                  else emptyWidget
+        botAuthorElem = if isBotMessage msg
+                        then txt botUserLabel
+                        else emptyWidget
 
         mId = msg^.mMessageId
 
@@ -345,13 +345,13 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                 [ withDefAttr pinnedMessageIndicatorAttr $ txt $ if msg^.mPinned then "[PIN]" else ""
                 , txt $ (if msg^.mFlagged then "[!] " else "") <> "*"
                 , clickableAuthor un $ colorUsername mdMyUsername un un
-                , botElem
+                , botAuthorElem
                 , txt " "
                 ]
             | otherwise ->
                 [ withDefAttr pinnedMessageIndicatorAttr $ txt $ if msg^.mPinned then "[PIN] " else ""
                 , clickableAuthor un $ colorUsername mdMyUsername un un
-                , botElem
+                , botAuthorElem
                 , txt $ (if msg^.mFlagged then "[!]" else "") <> ": "
                 ]
           Nothing -> []
