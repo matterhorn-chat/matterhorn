@@ -319,15 +319,23 @@ data MessageData =
 renderMessage :: MessageData -> Widget Name
 renderMessage md@MessageData { mdMessage = msg, .. } =
     let msgUsr = case mdUserName of
-          Just u -> if omittedUsernameType (msg^.mType) then Nothing else Just u
+          Just u -> if omittedUsernameType (msg^.mType)
+                    then Nothing
+                    else Just u
           Nothing -> Nothing
-        botElem = if isBotMessage msg then txt "[BOT]" else emptyWidget
+
+        botElem = if isBotMessage msg
+                  then txt "[BOT]"
+                  else emptyWidget
+
         mId = msg^.mMessageId
+
         clickableAuthor un = case mId of
             Nothing -> id
             -- We use the index (-1) since indexes for clickable
             -- usernames elsewhere in this message start at 0.
             Just i -> clickable (ClickableUsernameInMessage i (-1) un)
+
         nameElems = case msgUsr of
           Just un
             | isEmote msg ->
@@ -370,6 +378,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
             w <- render $ hLimit (ctx^.availWidthL - 2) msgWidget
             render $ vLimit (V.imageHeight $ w^.imageL) $
                 padRight (Pad 1) vBorder <+> (Widget Fixed Fixed $ return w)
+
         msgAtch = if S.null (msg^.mAttachments)
           then Nothing
           else Just $ withDefAttr clientMessageAttr $ vBox
@@ -377,6 +386,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                                      txt ("[attached: `" <> a^.attachmentName <> "`]")
                  | a <- toList (msg^.mAttachments)
                  ]
+
         msgReac = if Map.null (msg^.mReactions) || (not mdShowReactions)
           then Nothing
           else let renderR e us lst =
@@ -414,11 +424,13 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                in if hasAnyReactions
                   then Just $ txt "   " <+> reactionWidget
                   else Nothing
+
         withParent p =
             case mdThreadState of
                 NoThread -> msgWidget
                 InThreadShowParent -> p <=> replyIndent
                 InThread -> replyIndent
+
     in if not mdRenderReplyParent
        then msgWidget
        else case msg^.mInReplyToMsg of
@@ -501,10 +513,10 @@ appendEditSentinel sentinel b =
 
 omittedUsernameType :: MessageType -> Bool
 omittedUsernameType = \case
-    CP Join -> True
-    CP Leave -> True
+    CP Join        -> True
+    CP Leave       -> True
     CP TopicChange -> True
-    _ -> False
+    _              -> False
 
 addEllipsis :: Widget a -> Widget a
 addEllipsis w = Widget (hSize w) (vSize w) $ do
