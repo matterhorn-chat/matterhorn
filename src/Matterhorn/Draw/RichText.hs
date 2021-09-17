@@ -40,13 +40,13 @@ import           Matterhorn.Types ( HighlightSet(..), emptyHSet, SemEq(..)
 import           Matterhorn.Types.RichText
 
 
--- Render markdown with username highlighting
+-- | Render rich text.
 renderRichText :: SemEq a
                => Text
                -- ^ The username of the currently-authenticated user.
                -> HighlightSet
                -- ^ A highlight set for highlighting channel and
-               -- usernames.
+               -- usernames and code blocks.
                -> Maybe Int
                -- ^ An optional maximum width.
                -> Bool
