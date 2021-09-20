@@ -62,8 +62,8 @@ Version 1.0 (2012-03-21) by Igor Zhuravlov
 -->
 <language name="J"
           section="Scripts"
-          version="3"
-          kateversion="3.4"
+          version="5"
+          kateversion="5.0"
           extensions="*.ijs;*.ijt;*.IJS;*.IJT"
           mimetype="text/x-j;text/x-jsrc"
           author="Igor Zhuravlov (zhuravlov.ip@ya.ru), greg heil (gheil.j@gmail.com)"
@@ -74,7 +74,7 @@ Version 1.0 (2012-03-21) by Igor Zhuravlov
       <context attribute="Sentence" lineEndContext="#pop" name="sentence">
         <DetectSpaces/>
         <RegExpr      attribute="Foldable"       context="#stay"        String=":\s*0|\bdefine\b" beginRegion="Fold"/>
-        <RegExpr      attribute="Foldable"       context="#stay"        String="^\)$" endRegion="Fold"/>
+        <LineContinue attribute="Foldable"       context="#stay"        char=")" endRegion="Fold" column="0"/>
         <StringDetect attribute="Comment"        context="#stay"        String="NB.(" beginRegion="Fold"/>
         <StringDetect attribute="Comment"        context="#stay"        String="NB.)" endRegion="Fold"/>
         <StringDetect attribute="Comment"        context="comment line" String="NB."/>
@@ -92,8 +92,7 @@ Version 1.0 (2012-03-21) by Igor Zhuravlov
       </context>
       <context attribute="Comment" lineEndContext="#pop" name="comment line">
         <DetectSpaces />
-        <IncludeRules context="##Alerts"/>
-        <IncludeRules context="##Modelines"/>
+        <IncludeRules context="##Comments"/>
       </context>
     </contexts>
     <itemDatas>

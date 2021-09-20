@@ -20,8 +20,8 @@ Improvements:
 
 <language
 	name="Nim"
-	version="2"
-	kateversion="5.0"
+	version="3"
+	kateversion="5.53"
 	section="Sources"
 	extensions="*.nim"
 	mimetype="text/x-nim"
@@ -210,8 +210,7 @@ Improvements:
 				<Int     context="#stay" attribute="Decimal"/>
 
 				<RegExpr context="#stay" attribute="Types"  String="\b_*[A-Z](?:\w|\._*[A-Z])*\b"/>
-				<RegExpr context="#stay" attribute="Funcs"  String="\b\w+\b\s*(?=(?:\[.*\]\w*)?(?:\(|(?:[ ](?![,+\-*/=!^&amp;&lt;&gt;|?]|and|as|div|in|is|isnot|mod|notin|of|or|shl|shr|xor))))"/>
-				<RegExpr context="#stay" attribute="Funcs"  String="\b\w+(?=&quot;)"/>
+				<RegExpr context="#stay" attribute="Funcs"  String="\b\w+\b\s*(?=(?:\[.*\]\w*)?(?:\(|(?:[ ](?![,+\-*/=!^&amp;&lt;&gt;|?]|and|as|div|in|is|isnot|mod|notin|of|or|shl|shr|xor))))|\b\w+(?=&quot;)"/>
 
 				<DetectIdentifier/>
 
@@ -247,8 +246,7 @@ Improvements:
 
 			<context name="Comment1" attribute="Comment" lineEndContext="#pop">
 				<LineContinue attribute="Comment" context="#stay"/>
-				<IncludeRules context="##Alerts"/>
-				<IncludeRules context="##Modelines"/>
+				<IncludeRules context="##Comments"/>
 			</context>
 
 			<context name="DocComment1" attribute="DocComment" lineEndContext="#pop">
@@ -265,8 +263,7 @@ Improvements:
 				<LineContinue attribute="Comment" context="#stay"/>
 				<Detect2Chars attribute="Comment" context="Comment2" char="#" char1="[" beginRegion="Comment"/>
 				<Detect2Chars attribute="Comment" context="#pop" char="]" char1="#" endRegion="Comment"/>
-				<IncludeRules context="##Alerts"/>
-				<IncludeRules context="##Modelines"/>
+				<IncludeRules context="##Comments"/>
 			</context>
 
 			<context name="Start-Typetar" attribute="TypeDefs" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop!Typetar">
@@ -305,7 +302,6 @@ Improvements:
 				<keyword context="#pop" attribute="Types" String="types"/>
 				<RegExpr context="#pop" attribute="Types" String="_*[A-Z]\w*"/>
 				<RegExpr context="#pop" attribute="Funcs" String="_*[a-z]\w*(?=\()"/>
-				<RegExpr context="#pop" attribute="Props" String="_*[a-z]\w*(?=\.)"/>
 				<RegExpr context="#pop" attribute="Props" String="_*[a-z]\w*"/>
 				<RegExpr context="#pop" attribute="Brackets" String="\.+"/>
 			</context>

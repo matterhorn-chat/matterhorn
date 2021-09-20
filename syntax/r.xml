@@ -8,7 +8,7 @@
 	R      : http://www.r-project.org/
 	RKWard : http://rkward.kde.org/
 	-->
-<language version="9" kateversion="5.0" name="R Script" section="Scientific" extensions="*.R;*.r;*.S;*.s;*.q" mimetype="" license="GPLv2">
+<language version="11" kateversion="5.0" name="R Script" section="Scientific" extensions="*.R;*.r;*.S;*.s;*.q" mimetype="" license="GPLv2">
 <highlighting>
 
 	<list name="controls">
@@ -41,8 +41,7 @@
 		<context attribute="Normal Text" lineEndContext="#stay" name="level0">
 			<IncludeRules context="CommonRules"/>
 
-			<DetectChar attribute="Error" context="#stay" char="}" />
-			<DetectChar attribute="Error" context="#stay" char=")"/>
+			<AnyChar attribute="Error" context="#stay" String="})"/>
 		</context>
 
 		<context attribute="Normal Text" lineEndContext="#stay" name="ctx0">
@@ -92,13 +91,11 @@
 		</context>
 		<context attribute="Headline" lineEndContext="#pop" name="Headline">
 			<DetectSpaces />
-			<IncludeRules context="##Alerts" />
-			<IncludeRules context="##Modelines" />
+			<IncludeRules context="##Comments" />
 		</context>
 		<context attribute="Comment" lineEndContext="#pop" name="Comment">
 			<DetectSpaces />
-			<IncludeRules context="##Alerts" />
-			<IncludeRules context="##Modelines" />
+			<IncludeRules context="##Comments" />
 		</context>
 
 		<!-- This context is not really used, but contains the common rules -->
@@ -112,8 +109,7 @@
 			<keyword attribute="Reserved Words" context="#stay" String="words"/>
 			<Float attribute="Float" context="#stay"/>
 			<Int attribute="Int" context="#stay"/>
-			<RegExpr attribute="Keyword" context="#stay" String="[a-zA-Z_]+[a-zA-Z_\.0-9]*(?=[\s]*[(])"/>
-			<RegExpr attribute="Keyword" context="#stay" String="\.[a-zA-Z_\.]+[a-zA-Z_\.0-9]*(?=[\s]*[(])"/>
+			<RegExpr attribute="Keyword" context="#stay" String="[a-zA-Z_]+[a-zA-Z_\.0-9]*(?=[\s]*[(])|\.[a-zA-Z_\.]+[a-zA-Z_\.0-9]*(?=[\s]*[(])"/>
 			<DetectChar attribute="Symbol" context="parenthesis" char="("/>
 
 			<!-- For (assignment) operators, enter a new context operator_rhs to check what follows (generally, that should not be another op) -->

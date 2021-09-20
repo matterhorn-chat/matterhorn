@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
-<language name="PostScript" version="3" kateversion="2.2" section="Markup" extensions="*.ps;*.ai;*.eps" mimetype="application/postscript">
+<language name="PostScript" version="4" kateversion="5.0" section="Markup" extensions="*.ps;*.ai;*.eps" mimetype="application/postscript">
 <highlighting>
 	<list name="keywords">
 		<item>abs</item>
@@ -410,8 +410,7 @@
 		</context>
 		<context attribute="Comment" lineEndContext="#pop" name="Comment">
 			<DetectSpaces />
-			<IncludeRules context="##Alerts" />
-			<IncludeRules context="##Modelines" />
+			<IncludeRules context="##Comments" />
 		</context>
 		<context attribute="Header" lineEndContext="#pop" name="Header"/>
 		<context attribute="String" lineEndContext="#stay" name="String">

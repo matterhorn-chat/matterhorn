@@ -48,7 +48,7 @@
     - NOTE, FIXME, TODO alerts added on comments
     - improved highlighting
 -->
-<language name="Lua" version="12" indenter="lua" kateversion="5.0" section="Scripts" extensions="*.lua" mimetype="text/x-lua">
+<language name="Lua" version="14" indenter="lua" kateversion="5.0" section="Scripts" extensions="*.lua" mimetype="text/x-lua">
   <highlighting>
     <list name="keywords">
       <item>and</item>
@@ -500,7 +500,7 @@
         <AnyChar      attribute="Symbols"  context="#stay" String=":[]().,=~+-*/%&amp;|^&gt;&lt;#;" />
       </context>
 
-      <context name="MatchComment" attribute="Normal Text" lineEndContext="#pop" fallthroughContext="#pop">
+      <context name="MatchComment" attribute="Normal Text" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">
         <IncludeRules context="##DoxygenLua" />
         <RegExpr attribute="Comment" context="#pop!BlockComment" String="--\[(=*)\[" beginRegion="BlockComment" />
         <Detect2Chars attribute="Comment" context="#pop!Comment" char="-" char1="-" />
@@ -509,14 +509,12 @@
       <context name="BlockComment" attribute="Comment" lineEndContext="#stay" dynamic="true">
         <RegExpr attribute="Comment" context="#stay" String="[^\]]*" />
         <StringDetect attribute="Comment" context="#pop" String="]%1]" dynamic="true" endRegion="BlockComment" />
-        <IncludeRules context="##Alerts" />
-        <IncludeRules context="##Modelines" />
+        <IncludeRules context="##Comments" />
       </context>
 
       <context name="Comment"       attribute="Comment"     lineEndContext="#pop">
         <DetectSpaces />
-        <IncludeRules context="##Alerts" />
-        <IncludeRules context="##Modelines" />
+        <IncludeRules context="##Comments" />
       </context>
 
       <context name="StartControl" attribute="Normal Text"  lineEndContext="#stay">
@@ -525,19 +523,19 @@
         <IncludeRules context="Normal" />
       </context>
 
-      <context name="NumberSuffix" attribute="Normal Text"  lineEndContext="#pop" fallthroughContext="#pop">
+      <context name="NumberSuffix" attribute="Normal Text"  lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">
         <!-- some syntax like a=32print(a) are valid, but ugly -->
         <DetectIdentifier attribute="Error" context="#pop" />
       </context>
 
-      <context name="Local" attribute="Normal Text"  lineEndContext="#pop" fallthroughContext="#pop">
+      <context name="Local" attribute="Normal Text"  lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">
         <DetectSpaces />
         <Detect2Chars attribute="Comment" context="MatchComment" char="-" char1="-" lookAhead="true"/>
         <RegExpr          attribute="Constant" context="LocalVariable" String="\b[A-Z_][A-Z0-9_]*\b" />
         <DetectIdentifier attribute="Variable" context="LocalVariable" />
       </context>
 
-      <context name="LocalVariable" attribute="Normal Text"  lineEndContext="#pop#pop" fallthroughContext="#pop#pop">
+      <context name="LocalVariable" attribute="Normal Text"  lineEndContext="#pop#pop" fallthrough="true" fallthroughContext="#pop#pop">
         <DetectSpaces />
         <Detect2Chars attribute="Comment" context="MatchComment" char="-" char1="-" lookAhead="true"/>
         <DetectChar   attribute="Symbols"   context="#pop" char="," />

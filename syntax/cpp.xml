@@ -11,7 +11,7 @@
 <language
     name="C++"
     section="Sources"
-    version="8"
+    version="13"
     kateversion="5.0"
     indenter="cstyle"
     style="C++"
@@ -38,6 +38,8 @@
     <item>SLOT</item>
     <!-- http://doc.qt.io/qt-5/qapplication.html#macros -->
     <item>qApp</item>
+    <!-- https://doc.qt.io/qt-5/qguiapplication.html#qGuiApp -->
+    <item>qGuiApp</item>
     <!-- http://doc.qt.io/qt-5/qcoreapplication.html#macros -->
     <item>Q_COREAPP_STARTUP_FUNCTION</item>
     <item>Q_DECLARE_TR_FUNCTIONS</item>
@@ -66,6 +68,7 @@
         http://doc.qt.io/qt-5/qbytearray.html#macros
         http://doc.qt.io/qt-5/qstring.html#macros
         http://doc.qt.io/qt-5/qurl.html#macros
+        https://doc.qt.io/qt-5/qflags.html#macros
       -->
     <item>Q_DECLARE_ASSOCIATIVE_CONTAINER_METATYPE</item>
     <item>Q_DECLARE_METATYPE</item>
@@ -78,6 +81,8 @@
     <item>QT_RESTRICTED_CAST_FROM_ASCII</item>
     <item>QT_NO_URL_CAST_FROM_STRING</item>
     <item>QT_USE_QSTRINGBUILDER</item>
+    <item>Q_DECLARE_FLAGS</item>
+    <item>Q_DECLARE_OPERATORS_FOR_FLAGS</item>
     <!-- QtTest macros: http://doc.qt.io/qt-5/qtest.html#macros -->
     <item>QBENCHMARK</item>
     <item>QBENCHMARK_ONCE</item>
@@ -584,6 +589,8 @@
     <item>qmlRegisterUncreatableType</item>
     <!-- http://doc.qt.io/qt-5/qextensionmanager.html#related-non-members -->
     <item>qt_extension</item>
+    <!-- https://doc.qt.io/qt-5/qvariant.html#related-non-members -->
+    <item>qvariant_cast</item>
     <!-- http://doc.qt.io/qt-5/qdbusargument.html#related-non-members -->
     <item>qDBusRegisterMetaType</item>
     <item>qdbus_cast</item>
@@ -640,19 +647,33 @@
     <item>QAbstract3DGraph</item>
     <item>QAbstract3DInputHandler</item>
     <item>QAbstract3DSeries</item>
+    <item>QAbstractActionInput</item>
     <item>QAbstractAnimation</item>
+    <item>QAbstractAnimation</item>
+    <item>QAbstractAnimationClip</item>
+    <item>QAbstractAspect</item>
+    <item>QAbstractAudioDeviceInfo</item>
+    <item>QAbstractAudioInput</item>
+    <item>QAbstractAudioOutput</item>
     <item>QAbstractAxis</item>
+    <item>QAbstractAxisInput</item>
     <item>QAbstractBarSeries</item>
     <item>QAbstractButton</item>
+    <item>QAbstractCameraController</item>
+    <item>QAbstractClipAnimator</item>
+    <item>QAbstractClipBlendNode</item>
     <item>QAbstractDataProxy</item>
     <item>QAbstractEventDispatcher</item>
     <item>QAbstractExtensionFactory</item>
     <item>QAbstractExtensionManager</item>
     <item>QAbstractFormBuilder</item>
+    <item>QAbstractFunctor</item>
     <item>QAbstractGraphicsShapeItem</item>
     <item>QAbstractItemDelegate</item>
     <item>QAbstractItemModel</item>
+    <item>QAbstractItemModelTester</item>
     <item>QAbstractItemView</item>
+    <item>QAbstractLight</item>
     <item>QAbstractListModel</item>
     <item>QAbstractMessageHandler</item>
     <item>QAbstractNativeEventFilter</item>
@@ -661,17 +682,23 @@
     <item>QAbstractOAuth2</item>
     <item>QAbstractOAuthReplyHandler</item>
     <item>QAbstractOpenGLFunctions</item>
+    <item>QAbstractPhysicalDevice</item>
+    <item>QAbstractPhysicalDeviceProxy</item>
     <item>QAbstractPlanarVideoBuffer</item>
     <item>QAbstractPrintDialog</item>
     <item>QAbstractProxyModel</item>
+    <item>QAbstractRayCaster</item>
     <item>QAbstractScrollArea</item>
     <item>QAbstractSeries</item>
+    <item>QAbstractSkeleton</item>
     <item>QAbstractSlider</item>
     <item>QAbstractSocket</item>
     <item>QAbstractSpinBox</item>
     <item>QAbstractState</item>
     <item>QAbstractTableModel</item>
     <item>QAbstractTextDocumentLayout</item>
+    <item>QAbstractTexture</item>
+    <item>QAbstractTextureImage</item>
     <item>QAbstractTransition</item>
     <item>QAbstractUriResolver</item>
     <item>QAbstractVideoBuffer</item>
@@ -703,8 +730,13 @@
     <item>QAccessibleValueInterface</item>
     <item>QAccessibleWidget</item>
     <item>QAction</item>
+    <item>QAction</item>
     <item>QActionEvent</item>
     <item>QActionGroup</item>
+    <item>QActionInput</item>
+    <item>QAdditiveClipBlend</item>
+    <item>QAlphaCoverage</item>
+    <item>QAlphaTest</item>
     <item>QAltimeter</item>
     <item>QAltimeterFilter</item>
     <item>QAltimeterReading</item>
@@ -714,17 +746,35 @@
     <item>QAmbientTemperatureFilter</item>
     <item>QAmbientTemperatureReading</item>
     <item>QAmbientTemperatureSensor</item>
+    <item>QAnalogAxisInput</item>
     <item>QAndroidActivityResultReceiver</item>
+    <item>QAndroidBinder</item>
+    <item>QAndroidIntent</item>
     <item>QAndroidJniEnvironment</item>
+    <item>QAndroidJniExceptionCleaner</item>
     <item>QAndroidJniObject</item>
+    <item>QAndroidParcel</item>
+    <item>QAndroidService</item>
+    <item>QAndroidServiceConnection</item>
+    <item>QAnimationAspect</item>
+    <item>QAnimationCallback</item>
+    <item>QAnimationClip</item>
+    <item>QAnimationClipData</item>
+    <item>QAnimationClipLoader</item>
+    <item>QAnimationController</item>
+    <item>QAnimationGroup</item>
     <item>QAnimationGroup</item>
     <item>QApplication</item>
     <item>QAreaLegendMarker</item>
     <item>QAreaSeries</item>
+    <item>QArmature</item>
+    <item>QAspectEngine</item>
+    <item>QAspectJob</item>
     <item>QAssociativeIterable</item>
     <item>QAtomicInt</item>
     <item>QAtomicInteger</item>
     <item>QAtomicPointer</item>
+    <item>QAttribute</item>
     <item>QAudioBuffer</item>
     <item>QAudioDecoder</item>
     <item>QAudioDecoderControl</item>
@@ -739,17 +789,23 @@
     <item>QAudioProbe</item>
     <item>QAudioRecorder</item>
     <item>QAudioRoleControl</item>
+    <item>QAudioSystemPlugin</item>
     <item>QAuthenticator</item>
     <item>QAxAggregated</item>
     <item>QAxBase</item>
     <item>QAxBindable</item>
     <item>QAxFactory</item>
+    <item>QAxis</item>
+    <item>QAxisAccumulator</item>
+    <item>QAxisSetting</item>
     <item>QAxObject</item>
     <item>QAxScript</item>
     <item>QAxScriptEngine</item>
     <item>QAxScriptManager</item>
     <item>QAxSelect</item>
     <item>QAxWidget</item>
+    <item>QBackendNode</item>
+    <item>QBackendNodeMapper</item>
     <item>QBackingStore</item>
     <item>QBar3DSeries</item>
     <item>QBarCategoryAxis</item>
@@ -759,8 +815,13 @@
     <item>QBarSeries</item>
     <item>QBarSet</item>
     <item>QBasicTimer</item>
+    <item>QBEInteger</item>
     <item>QBitArray</item>
     <item>QBitmap</item>
+    <item>QBlendedClipAnimator</item>
+    <item>QBlendEquation</item>
+    <item>QBlendEquationArguments</item>
+    <item>QBlitFramebuffer</item>
     <item>QBluetoothAddress</item>
     <item>QBluetoothDeviceDiscoveryAgent</item>
     <item>QBluetoothDeviceInfo</item>
@@ -780,12 +841,19 @@
     <item>QBoxSet</item>
     <item>QBrush</item>
     <item>QBuffer</item>
+    <item>QBuffer</item>
+    <item>QBufferCapture</item>
+    <item>QBufferDataGenerator</item>
+    <item>QButtonAxisInput</item>
     <item>QButtonGroup</item>
     <item>QByteArray</item>
     <item>QByteArrayList</item>
     <item>QByteArrayMatcher</item>
     <item>QCache</item>
+    <item>QCalendar</item>
     <item>QCalendarWidget</item>
+    <item>QCallbackMapping</item>
+    <item>QCamera</item>
     <item>QCamera</item>
     <item>QCameraCaptureBufferFormatControl</item>
     <item>QCameraCaptureDestinationControl</item>
@@ -803,15 +871,18 @@
     <item>QCameraImageProcessingControl</item>
     <item>QCameraInfo</item>
     <item>QCameraInfoControl</item>
+    <item>QCameraLens</item>
     <item>QCameraLocksControl</item>
-    <item>QCameraViewfinder</item>
+    <item>QCameraSelector</item>
     <item>QCameraViewfinderSettings</item>
     <item>QCameraViewfinderSettingsControl</item>
     <item>QCameraViewfinderSettingsControl2</item>
     <item>QCameraZoomControl</item>
     <item>QCanBus</item>
     <item>QCanBusDevice</item>
+    <item>QCanBusDeviceInfo</item>
     <item>QCanBusFactory</item>
+    <item>QCanBusFactoryV2</item>
     <item>QCanBusFrame</item>
     <item>QCandlestickLegendMarker</item>
     <item>QCandlestickModelMapper</item>
@@ -819,12 +890,28 @@
     <item>QCandlestickSet</item>
     <item>QCategory3DAxis</item>
     <item>QCategoryAxis</item>
+    <item>QCborArray</item>
+    <item>QCborError</item>
+    <item>QCborMap</item>
+    <item>QCborParserError</item>
+    <item>QCborStreamReader</item>
+    <item>QCborStreamWriter</item>
+    <item>QCborValue</item>
+    <item>QChannel</item>
+    <item>QChannelMapper</item>
+    <item>QChannelMapping</item>
+    <item>QChannelMappingCreatedChangeBase</item>
     <item>QChar</item>
     <item>QChart</item>
     <item>QChartView</item>
     <item>QCheckBox</item>
     <item>QChildEvent</item>
+    <item>QClearBuffers</item>
+    <item>QClipAnimator</item>
+    <item>QClipBlendNodeCreatedChangeBase</item>
+    <item>QClipBlendValue</item>
     <item>QClipboard</item>
+    <item>QClipPlane</item>
     <item>QCloseEvent</item>
     <item>QCocoaNativeContext</item>
     <item>QCocoaWindowFunctions</item>
@@ -833,6 +920,9 @@
     <item>QColor</item>
     <item>QColorDialog</item>
     <item>QColormap</item>
+    <item>QColorMask</item>
+    <item>QColorSpace</item>
+    <item>QColorTransform</item>
     <item>QColumnView</item>
     <item>QComboBox</item>
     <item>QCommandLineOption</item>
@@ -843,15 +933,29 @@
     <item>QCompassFilter</item>
     <item>QCompassReading</item>
     <item>QCompleter</item>
+    <item>QComponent</item>
+    <item>QComponentAddedChange</item>
+    <item>QComponentRemovedChange</item>
+    <item>QCompressedHelpInfo</item>
+    <item>QComputeCommand</item>
+    <item>QConcatenateTablesProxyModel</item>
+    <item>QConeGeometry</item>
+    <item>QConeMesh</item>
     <item>QConicalGradient</item>
     <item>QContextMenuEvent</item>
     <item>QContiguousCache</item>
     <item>QCoreApplication</item>
     <item>QCryptographicHash</item>
+    <item>QCuboidGeometry</item>
+    <item>QCuboidMesh</item>
+    <item>QCullFace</item>
     <item>QCursor</item>
     <item>QCustom3DItem</item>
     <item>QCustom3DLabel</item>
     <item>QCustom3DVolume</item>
+    <item>QCustomAudioRoleControl</item>
+    <item>QCylinderGeometry</item>
+    <item>QCylinderMesh</item>
     <item>QDataStream</item>
     <item>QDataWidgetMapper</item>
     <item>QDate</item>
@@ -882,6 +986,8 @@
     <item>QDeadlineTimer</item>
     <item>QDebug</item>
     <item>QDebugStateSaver</item>
+    <item>QDepthRange</item>
+    <item>QDepthTest</item>
     <item>QDesignerActionEditorInterface</item>
     <item>QDesignerContainerExtension</item>
     <item>QDesignerCustomWidgetCollectionInterface</item>
@@ -902,12 +1008,18 @@
     <item>QDial</item>
     <item>QDialog</item>
     <item>QDialogButtonBox</item>
+    <item>QDiffuseMapMaterial</item>
+    <item>QDiffuseSpecularMapMaterial</item>
+    <item>QDiffuseSpecularMaterial</item>
     <item>QDir</item>
+    <item>QDirectionalLight</item>
     <item>QDirIterator</item>
     <item>QDirModel</item>
+    <item>QDispatchCompute</item>
     <item>QDistanceFilter</item>
     <item>QDistanceReading</item>
     <item>QDistanceSensor</item>
+    <item>QDithering</item>
     <item>QDnsDomainNameRecord</item>
     <item>QDnsHostAddressRecord</item>
     <item>QDnsLookup</item>
@@ -939,13 +1051,19 @@
     <item>QDragLeaveEvent</item>
     <item>QDragMoveEvent</item>
     <item>QDropEvent</item>
+    <item>QDtls</item>
+    <item>QDtlsClientVerifier</item>
     <item>QDynamicPropertyChangeEvent</item>
+    <item>QDynamicPropertyUpdatedChange</item>
     <item>QEasingCurve</item>
+    <item>QEffect</item>
     <item>QEglFSFunctions</item>
     <item>QEGLNativeContext</item>
     <item>QElapsedTimer</item>
     <item>QEnableSharedFromThis</item>
     <item>QEnterEvent</item>
+    <item>QEntity</item>
+    <item>QEnvironmentLight</item>
     <item>QErrorMessage</item>
     <item>QEvent</item>
     <item>QEventLoop</item>
@@ -956,6 +1074,8 @@
     <item>QExposeEvent</item>
     <item>QExtensionFactory</item>
     <item>QExtensionManager</item>
+    <item>QExtrudedTextGeometry</item>
+    <item>QExtrudedTextMesh</item>
     <item>QFile</item>
     <item>QFileDevice</item>
     <item>QFileDialog</item>
@@ -965,9 +1085,12 @@
     <item>QFileSelector</item>
     <item>QFileSystemModel</item>
     <item>QFileSystemWatcher</item>
+    <item>QFilterKey</item>
     <item>QFinalState</item>
+    <item>QFirstPersonCameraController</item>
     <item>QFlag</item>
     <item>QFlags</item>
+    <item>qfloat16</item>
     <item>QFocusEvent</item>
     <item>QFocusFrame</item>
     <item>QFont</item>
@@ -979,12 +1102,20 @@
     <item>QFontMetricsF</item>
     <item>QFormBuilder</item>
     <item>QFormLayout</item>
+    <item>QForwardRenderer</item>
     <item>QFrame</item>
+    <item>QFrameAction</item>
+    <item>QFrameGraphNode</item>
+    <item>QFrameGraphNodeCreatedChangeBase</item>
+    <item>QFrontFace</item>
+    <item>QFrustumCulling</item>
     <item>QFuture</item>
     <item>QFutureIterator</item>
     <item>QFutureSynchronizer</item>
     <item>QFutureWatcher</item>
     <item>QGamepad</item>
+    <item>QGamepadKeyNavigation</item>
+    <item>QGamepadManager</item>
     <item>QGenericArgument</item>
     <item>QGenericMatrix</item>
     <item>QGenericPlugin</item>
@@ -998,13 +1129,20 @@
     <item>QGeoCodingManager</item>
     <item>QGeoCodingManagerEngine</item>
     <item>QGeoCoordinate</item>
+    <item>QGeoJson</item>
     <item>QGeoLocation</item>
     <item>QGeoManeuver</item>
+    <item>QGeometry</item>
+    <item>QGeometryRenderer</item>
+    <item>QGeoPath</item>
+    <item>QGeoPolygon</item>
     <item>QGeoPositionInfo</item>
     <item>QGeoPositionInfoSource</item>
     <item>QGeoPositionInfoSourceFactory</item>
+    <item>QGeoPositionInfoSourceFactoryV2</item>
     <item>QGeoRectangle</item>
     <item>QGeoRoute</item>
+    <item>QGeoRouteLeg</item>
     <item>QGeoRouteReply</item>
     <item>QGeoRouteRequest</item>
     <item>QGeoRouteSegment</item>
@@ -1014,6 +1152,7 @@
     <item>QGeoSatelliteInfoSource</item>
     <item>QGeoServiceProvider</item>
     <item>QGeoServiceProviderFactory</item>
+    <item>QGeoServiceProviderFactoryV2</item>
     <item>QGeoShape</item>
     <item>QGesture</item>
     <item>QGestureEvent</item>
@@ -1032,9 +1171,11 @@
     <item>QGLWidget</item>
     <item>QGLXNativeContext</item>
     <item>QGlyphRun</item>
+    <item>QGoochMaterial</item>
     <item>QGradient</item>
     <item>QGraphicsAnchor</item>
     <item>QGraphicsAnchorLayout</item>
+    <item>QGraphicsApiFilter</item>
     <item>QGraphicsBlurEffect</item>
     <item>QGraphicsColorizeEffect</item>
     <item>QGraphicsDropShadowEffect</item>
@@ -1071,9 +1212,9 @@
     <item>QGraphicsSvgItem</item>
     <item>QGraphicsTextItem</item>
     <item>QGraphicsTransform</item>
-    <item>QGraphicsVideoItem</item>
     <item>QGraphicsView</item>
     <item>QGraphicsWidget</item>
+    <item>QGregorianCalendar</item>
     <item>QGridLayout</item>
     <item>QGroupBox</item>
     <item>QGuiApplication</item>
@@ -1094,11 +1235,16 @@
     <item>QHelpEngine</item>
     <item>QHelpEngineCore</item>
     <item>QHelpEvent</item>
+    <item>QHelpFilterData</item>
+    <item>QHelpFilterEngine</item>
+    <item>QHelpFilterSettingsWidget</item>
     <item>QHelpIndexModel</item>
     <item>QHelpIndexWidget</item>
+    <item>QHelpLink</item>
     <item>QHelpSearchEngine</item>
     <item>QHelpSearchQuery</item>
     <item>QHelpSearchQueryWidget</item>
+    <item>QHelpSearchResult</item>
     <item>QHelpSearchResultWidget</item>
     <item>QHideEvent</item>
     <item>QHistoryState</item>
@@ -1112,8 +1258,13 @@
     <item>QHostInfo</item>
     <item>QHoverEvent</item>
     <item>QHPieModelMapper</item>
+    <item>QHstsPolicy</item>
+    <item>QHttp2Configuration</item>
     <item>QHttpMultiPart</item>
     <item>QHttpPart</item>
+    <item>QHumidityFilter</item>
+    <item>QHumidityReading</item>
+    <item>QHumiditySensor</item>
     <item>QHXYModelMapper</item>
     <item>QIcon</item>
     <item>QIconDragEvent</item>
@@ -1130,11 +1281,16 @@
     <item>QInAppProduct</item>
     <item>QInAppStore</item>
     <item>QInAppTransaction</item>
+    <item>QInputAspect</item>
+    <item>QInputChord</item>
+    <item>QInputDeviceIntegration</item>
     <item>QInputDialog</item>
     <item>QInputEvent</item>
     <item>QInputMethod</item>
     <item>QInputMethodEvent</item>
     <item>QInputMethodQueryEvent</item>
+    <item>QInputSequence</item>
+    <item>QInputSettings</item>
     <item>QIntValidator</item>
     <item>QIODevice</item>
     <item>QIRProximityFilter</item>
@@ -1150,6 +1306,8 @@
     <item>QItemSelection</item>
     <item>QItemSelectionModel</item>
     <item>QItemSelectionRange</item>
+    <item>QJalaliCalendar</item>
+    <item>QJoint</item>
     <item>QJSEngine</item>
     <item>QJsonArray</item>
     <item>QJsonDocument</item>
@@ -1158,20 +1316,37 @@
     <item>QJsonValue</item>
     <item>QJSValue</item>
     <item>QJSValueIterator</item>
+    <item>QJulianCalendar</item>
+    <item>QKeyboardDevice</item>
+    <item>QKeyboardHandler</item>
+    <item>QKeyEvent</item>
     <item>QKeyEvent</item>
     <item>QKeyEventTransition</item>
+    <item>QKeyFrame</item>
+    <item>QKeyframeAnimation</item>
     <item>QKeySequence</item>
     <item>QKeySequenceEdit</item>
+    <item>QKeyValueIterator</item>
     <item>QLabel</item>
     <item>QLatin1Char</item>
     <item>QLatin1String</item>
+    <item>QLayer</item>
+    <item>QLayerFilter</item>
     <item>QLayout</item>
     <item>QLayoutItem</item>
     <item>QLCDNumber</item>
     <item>QLegend</item>
     <item>QLegendMarker</item>
+    <item>QLEInteger</item>
+    <item>QLerpClipBlend</item>
+    <item>QLevelOfDetail</item>
+    <item>QLevelOfDetailBoundingSphere</item>
+    <item>QLevelOfDetailSwitch</item>
     <item>QLibrary</item>
     <item>QLibraryInfo</item>
+    <item>QLidFilter</item>
+    <item>QLidReading</item>
+    <item>QLidSensor</item>
     <item>QLightFilter</item>
     <item>QLightReading</item>
     <item>QLightSensor</item>
@@ -1180,8 +1355,10 @@
     <item>QLineEdit</item>
     <item>QLineF</item>
     <item>QLineSeries</item>
+    <item>QLineWidth</item>
     <item>QLinkedList</item>
     <item>QLinkedListIterator</item>
+    <item>QLinuxFbFunctions</item>
     <item>QList</item>
     <item>QListIterator</item>
     <item>QListView</item>
@@ -1192,6 +1369,8 @@
     <item>QLocalSocket</item>
     <item>QLockFile</item>
     <item>QLoggingCategory</item>
+    <item>QLogicalDevice</item>
+    <item>QLogicAspect</item>
     <item>QLogValue3DAxisFormatter</item>
     <item>QLogValueAxis</item>
     <item>QLowEnergyAdvertisingData</item>
@@ -1218,6 +1397,7 @@
     <item>QMargins</item>
     <item>QMarginsF</item>
     <item>QMaskGenerator</item>
+    <item>QMaterial</item>
     <item>QMatrix</item>
     <item>QMatrix4x4</item>
     <item>QMdiArea</item>
@@ -1248,8 +1428,10 @@
     <item>QMediaTimeInterval</item>
     <item>QMediaTimeRange</item>
     <item>QMediaVideoProbeControl</item>
+    <item>QMemoryBarrier</item>
     <item>QMenu</item>
     <item>QMenuBar</item>
+    <item>QMesh</item>
     <item>QMessageAuthenticationCode</item>
     <item>QMessageBox</item>
     <item>QMessageLogContext</item>
@@ -1258,10 +1440,12 @@
     <item>QMetaDataReaderControl</item>
     <item>QMetaDataWriterControl</item>
     <item>QMetaEnum</item>
+    <item>QMetalRoughMaterial</item>
     <item>QMetaMethod</item>
     <item>QMetaObject</item>
     <item>QMetaProperty</item>
     <item>QMetaType</item>
+    <item>QMilankovicCalendar</item>
     <item>QMimeData</item>
     <item>QMimeDatabase</item>
     <item>QMimeType</item>
@@ -1278,14 +1462,22 @@
     <item>QModbusRtuSerialSlave</item>
     <item>QModbusServer</item>
     <item>QModbusTcpClient</item>
+    <item>QModbusTcpConnectionObserver</item>
     <item>QModbusTcpServer</item>
     <item>QModelIndex</item>
+    <item>QMorphingAnimation</item>
+    <item>QMorphPhongMaterial</item>
+    <item>QMorphTarget</item>
+    <item>QMouseDevice</item>
+    <item>QMouseEvent</item>
     <item>QMouseEvent</item>
     <item>QMouseEventTransition</item>
+    <item>QMouseHandler</item>
     <item>QMoveEvent</item>
     <item>QMovie</item>
     <item>QMultiHash</item>
     <item>QMultiMap</item>
+    <item>QMultiSampleAntiAliasing</item>
     <item>QMutableHashIterator</item>
     <item>QMutableLinkedListIterator</item>
     <item>QMutableListIterator</item>
@@ -1322,8 +1514,25 @@
     <item>QNetworkRequest</item>
     <item>QNetworkSession</item>
     <item>QNmeaPositionInfoSource</item>
+    <item>QNode</item>
+    <item>QNodeCommand</item>
+    <item>QNodeCreatedChange</item>
+    <item>QNodeCreatedChangeBase</item>
+    <item>QNodeDestroyedChange</item>
+    <item>QNodeId</item>
+    <item>QNoDepthMask</item>
+    <item>QNoDraw</item>
+    <item>QNoPicking</item>
+    <item>QNormalDiffuseMapAlphaMaterial</item>
+    <item>QNormalDiffuseMapMaterial</item>
+    <item>QNormalDiffuseSpecularMapMaterial</item>
+    <item>QOAuth1</item>
+    <item>QOAuth1Signature</item>
+    <item>QOAuth2AuthorizationCodeFlow</item>
     <item>QObject</item>
     <item>QObjectCleanupHandler</item>
+    <item>QObjectPicker</item>
+    <item>QOcspResponse</item>
     <item>QOffscreenSurface</item>
     <item>QOpenGLBuffer</item>
     <item>QOpenGLContext</item>
@@ -1373,15 +1582,19 @@
     <item>QOpenGLVertexArrayObject</item>
     <item>QOpenGLWidget</item>
     <item>QOpenGLWindow</item>
+    <item>QOperatingSystemVersion</item>
+    <item>QOrbitCameraController</item>
     <item>QOrientationFilter</item>
     <item>QOrientationReading</item>
     <item>QOrientationSensor</item>
+    <item>qoutputrange</item>
     <item>QPagedPaintDevice</item>
     <item>QPageLayout</item>
     <item>QPageSetupDialog</item>
     <item>QPageSize</item>
     <item>QPaintDevice</item>
     <item>QPaintDeviceWindow</item>
+    <item>QPaintedTextureImage</item>
     <item>QPaintEngine</item>
     <item>QPaintEngineState</item>
     <item>QPainter</item>
@@ -1392,11 +1605,27 @@
     <item>QPalette</item>
     <item>QPanGesture</item>
     <item>QParallelAnimationGroup</item>
+    <item>QParameter</item>
     <item>QPauseAnimation</item>
+    <item>QPdfDestination</item>
+    <item>QPdfDocument</item>
+    <item>QPdfDocumentRenderOptions</item>
+    <item>QPdfPageNavigation</item>
+    <item>QPdfPageRenderer</item>
+    <item>QPdfSelection</item>
     <item>QPdfWriter</item>
     <item>QPen</item>
     <item>QPercentBarSeries</item>
     <item>QPersistentModelIndex</item>
+    <item>QPerVertexColorMaterial</item>
+    <item>QPhongAlphaMaterial</item>
+    <item>QPhongMaterial</item>
+    <item>QPhysicalDeviceCreatedChangeBase</item>
+    <item>QPickEvent</item>
+    <item>QPickingSettings</item>
+    <item>QPickLineEvent</item>
+    <item>QPickPointEvent</item>
+    <item>QPickTriangleEvent</item>
     <item>QPicture</item>
     <item>QPictureFormatPlugin</item>
     <item>QPictureIO</item>
@@ -1436,17 +1665,20 @@
     <item>QPlaceUser</item>
     <item>QPlainTextDocumentLayout</item>
     <item>QPlainTextEdit</item>
-    <item>QPlatformGraphicsBuffer</item>
+    <item>QPlaneGeometry</item>
+    <item>QPlaneMesh</item>
     <item>QPlatformSurfaceEvent</item>
-    <item>QPlatformSystemTrayIcon</item>
     <item>QPluginLoader</item>
     <item>QPoint</item>
     <item>QPointer</item>
     <item>QPointF</item>
     <item>QPointingDeviceUniqueId</item>
+    <item>QPointLight</item>
+    <item>QPointSize</item>
     <item>QPolarChart</item>
     <item>QPolygon</item>
     <item>QPolygonF</item>
+    <item>QPolygonOffset</item>
     <item>QPressureFilter</item>
     <item>QPressureReading</item>
     <item>QPressureSensor</item>
@@ -1461,6 +1693,15 @@
     <item>QProgressBar</item>
     <item>QProgressDialog</item>
     <item>QPropertyAnimation</item>
+    <item>QPropertyNodeAddedChange</item>
+    <item>QPropertyNodeRemovedChange</item>
+    <item>QPropertyUpdatedChange</item>
+    <item>QPropertyUpdatedChangeBase</item>
+    <item>QPropertyValueAddedChange</item>
+    <item>QPropertyValueAddedChangeBase</item>
+    <item>QPropertyValueRemovedChange</item>
+    <item>QPropertyValueRemovedChangeBase</item>
+    <item>QProximityFilter</item>
     <item>QProximityFilter</item>
     <item>QProximityReading</item>
     <item>QProximitySensor</item>
@@ -1468,12 +1709,13 @@
     <item>QPushButton</item>
     <item>QQmlAbstractUrlInterceptor</item>
     <item>QQmlApplicationEngine</item>
+    <item>QQmlAspectEngine</item>
     <item>QQmlComponent</item>
     <item>QQmlContext</item>
     <item>QQmlEngine</item>
+    <item>QQmlEngineExtensionPlugin</item>
     <item>QQmlError</item>
     <item>QQmlExpression</item>
-    <item>QQmlExtensionPlugin</item>
     <item>QQmlFileSelector</item>
     <item>QQmlImageProviderBase</item>
     <item>QQmlIncubationController</item>
@@ -1489,6 +1731,9 @@
     <item>QQmlScriptString</item>
     <item>QQuaternion</item>
     <item>QQueue</item>
+    <item>QQuick3D</item>
+    <item>QQuick3DGeometry</item>
+    <item>QQuick3DObject</item>
     <item>QQuickAsyncImageProvider</item>
     <item>QQuickFramebufferObject</item>
     <item>QQuickImageProvider</item>
@@ -1502,6 +1747,7 @@
     <item>QQuickTextureFactory</item>
     <item>QQuickView</item>
     <item>QQuickWebEngineProfile</item>
+    <item>QQuickWebEngineScript</item>
     <item>QQuickWidget</item>
     <item>QQuickWindow</item>
     <item>QRadialGradient</item>
@@ -1510,13 +1756,19 @@
     <item>QRadioDataControl</item>
     <item>QRadioTuner</item>
     <item>QRadioTunerControl</item>
+    <item>QRandomGenerator</item>
+    <item>QRandomGenerator64</item>
+    <item>QRasterMode</item>
     <item>QRasterPaintEngine</item>
     <item>QRasterWindow</item>
     <item>QRawFont</item>
+    <item>QRayCaster</item>
+    <item>QRayCasterHit</item>
     <item>QReadLocker</item>
     <item>QReadWriteLock</item>
     <item>QRect</item>
     <item>QRectF</item>
+    <item>QRecursiveMutex</item>
     <item>QRegExp</item>
     <item>QRegExpValidator</item>
     <item>QRegion</item>
@@ -1524,9 +1776,34 @@
     <item>QRegularExpressionMatch</item>
     <item>QRegularExpressionMatchIterator</item>
     <item>QRegularExpressionValidator</item>
+    <item>QRemoteObjectAbstractPersistedStore</item>
+    <item>QRemoteObjectDynamicReplica</item>
+    <item>QRemoteObjectHost</item>
+    <item>QRemoteObjectHostBase</item>
+    <item>QRemoteObjectNode</item>
+    <item>QRemoteObjectPendingCall</item>
+    <item>QRemoteObjectPendingCallWatcher</item>
+    <item>QRemoteObjectPendingReply</item>
+    <item>QRemoteObjectRegistry</item>
+    <item>QRemoteObjectRegistryHost</item>
+    <item>QRemoteObjectReplica</item>
+    <item>QRenderAspect</item>
+    <item>QRenderCapabilities</item>
+    <item>QRenderCapture</item>
+    <item>QRenderCaptureReply</item>
+    <item>QRenderPass</item>
+    <item>QRenderPassFilter</item>
+    <item>QRenderSettings</item>
+    <item>QRenderState</item>
+    <item>QRenderStateSet</item>
+    <item>QRenderSurfaceSelector</item>
+    <item>QRenderTarget</item>
+    <item>QRenderTargetOutput</item>
+    <item>QRenderTargetSelector</item>
     <item>QResizeEvent</item>
     <item>QResource</item>
     <item>QRgba64</item>
+    <item>QRomanCalendar</item>
     <item>QRotationFilter</item>
     <item>QRotationReading</item>
     <item>QRotationSensor</item>
@@ -1537,10 +1814,16 @@
     <item>QScatterDataItem</item>
     <item>QScatterDataProxy</item>
     <item>QScatterSeries</item>
+    <item>QScene2D</item>
+    <item>QSceneChange</item>
+    <item>QSceneLoader</item>
+    <item>QScissorTest</item>
     <item>QScopedArrayPointer</item>
     <item>QScopedPointer</item>
     <item>QScopedValueRollback</item>
+    <item>QScopeGuard</item>
     <item>QScreen</item>
+    <item>QScreenRayCaster</item>
     <item>QScriptable</item>
     <item>QScriptClass</item>
     <item>QScriptClassPropertyIterator</item>
@@ -1576,7 +1859,9 @@
     <item>QScxmlStateMachine</item>
     <item>QScxmlStaticScxmlServiceFactory</item>
     <item>QScxmlTableData</item>
+    <item>QSeamlessCubemap</item>
     <item>QSemaphore</item>
+    <item>QSemaphoreReleaser</item>
     <item>QSensor</item>
     <item>QSensorBackend</item>
     <item>QSensorBackendFactory</item>
@@ -1595,6 +1880,7 @@
     <item>QSerialPortInfo</item>
     <item>QSessionManager</item>
     <item>QSet</item>
+    <item>QSetFence</item>
     <item>QSetIterator</item>
     <item>QSettings</item>
     <item>QSGAbstractRenderer</item>
@@ -1607,6 +1893,7 @@
     <item>QSGGeometryNode</item>
     <item>QSGImageNode</item>
     <item>QSGMaterial</item>
+    <item>QSGMaterialRhiShader</item>
     <item>QSGMaterialShader</item>
     <item>QSGMaterialType</item>
     <item>QSGNode</item>
@@ -1624,8 +1911,13 @@
     <item>QSGTextureProvider</item>
     <item>QSGTransformNode</item>
     <item>QSGVertexColorMaterial</item>
+    <item>QShaderData</item>
+    <item>QShaderImage</item>
+    <item>QShaderProgram</item>
+    <item>QShaderProgramBuilder</item>
     <item>QSharedData</item>
     <item>QSharedDataPointer</item>
+    <item>QSharedGLTexture</item>
     <item>QSharedMemory</item>
     <item>QSharedPointer</item>
     <item>QShortcut</item>
@@ -1640,18 +1932,25 @@
     <item>QSizeF</item>
     <item>QSizeGrip</item>
     <item>QSizePolicy</item>
+    <item>QSkeleton</item>
+    <item>QSkeletonLoader</item>
+    <item>QSkyboxEntity</item>
     <item>QSlider</item>
     <item>QSocketNotifier</item>
     <item>QSortFilterProxyModel</item>
+    <item>QSortPolicy</item>
     <item>QSound</item>
     <item>QSoundEffect</item>
     <item>QSourceLocation</item>
     <item>QSpacerItem</item>
+    <item>QSphereGeometry</item>
+    <item>QSphereMesh</item>
     <item>QSpinBox</item>
     <item>QSplashScreen</item>
     <item>QSplineSeries</item>
     <item>QSplitter</item>
     <item>QSplitterHandle</item>
+    <item>QSpotLight</item>
     <item>QSqlDatabase</item>
     <item>QSqlDriver</item>
     <item>QSqlDriverCreator</item>
@@ -1688,16 +1987,26 @@
     <item>QStandardPaths</item>
     <item>QState</item>
     <item>QStateMachine</item>
+    <item>QStaticByteArrayMatcher</item>
     <item>QStaticPlugin</item>
+    <item>QStaticPropertyUpdatedChangeBase</item>
+    <item>QStaticPropertyValueAddedChangeBase</item>
+    <item>QStaticPropertyValueRemovedChangeBase</item>
     <item>QStaticText</item>
     <item>QStatusBar</item>
     <item>QStatusTipEvent</item>
+    <item>QStencilMask</item>
+    <item>QStencilOperation</item>
+    <item>QStencilOperationArguments</item>
+    <item>QStencilTest</item>
+    <item>QStencilTestArguments</item>
     <item>QStorageInfo</item>
     <item>QString</item>
     <item>QStringList</item>
     <item>QStringListModel</item>
     <item>QStringMatcher</item>
     <item>QStringRef</item>
+    <item>QStringView</item>
     <item>QStyle</item>
     <item>QStyledItemDelegate</item>
     <item>QStyleFactory</item>
@@ -1731,6 +2040,7 @@
     <item>QStyleOptionViewItem</item>
     <item>QStylePainter</item>
     <item>QStylePlugin</item>
+    <item>QSubtreeEnabler</item>
     <item>QSupportedWritingSystems</item>
     <item>QSurface</item>
     <item>QSurface3DSeries</item>
@@ -1759,9 +2069,12 @@
     <item>QTapSensor</item>
     <item>QTcpServer</item>
     <item>QTcpSocket</item>
+    <item>QTechnique</item>
+    <item>QTechniqueFilter</item>
     <item>QTemporaryDir</item>
     <item>QTemporaryFile</item>
     <item>QTestEventList</item>
+    <item>QText2DEntity</item>
     <item>QTextBlock</item>
     <item>QTextBlockFormat</item>
     <item>QTextBlockGroup</item>
@@ -1798,7 +2111,29 @@
     <item>QTextTableCellFormat</item>
     <item>QTextTableFormat</item>
     <item>QTextToSpeech</item>
+    <item>QTextToSpeechEngine</item>
     <item>QTextToSpeechPlugin</item>
+    <item>QTexture1D</item>
+    <item>QTexture1DArray</item>
+    <item>QTexture2D</item>
+    <item>QTexture2DArray</item>
+    <item>QTexture2DMultisample</item>
+    <item>QTexture2DMultisampleArray</item>
+    <item>QTexture3D</item>
+    <item>QTextureBuffer</item>
+    <item>QTextureCubeMap</item>
+    <item>QTextureCubeMapArray</item>
+    <item>QTextureData</item>
+    <item>QTextureDataUpdate</item>
+    <item>QTexturedMetalRoughMaterial</item>
+    <item>QTextureGenerator</item>
+    <item>QTextureImage</item>
+    <item>QTextureImageData</item>
+    <item>QTextureImageDataGenerator</item>
+    <item>QTextureLoader</item>
+    <item>QTextureMaterial</item>
+    <item>QTextureRectangle</item>
+    <item>QTextureWrapMode</item>
     <item>QThread</item>
     <item>QThreadPool</item>
     <item>QThreadStorage</item>
@@ -1816,15 +2151,22 @@
     <item>QToolBox</item>
     <item>QToolButton</item>
     <item>QToolTip</item>
+    <item>QTorusGeometry</item>
+    <item>QTorusMesh</item>
     <item>QTouch3DInputHandler</item>
     <item>QTouchDevice</item>
     <item>QTouchEvent</item>
+    <item>QTouchEventSequence</item>
+    <item>QTransform</item>
     <item>QTransform</item>
     <item>QTranslator</item>
+    <item>QTransposeProxyModel</item>
     <item>QTreeView</item>
     <item>QTreeWidget</item>
     <item>QTreeWidgetItem</item>
     <item>QTreeWidgetItemIterator</item>
+    <item>QtROClientFactory</item>
+    <item>QtROServerFactory</item>
     <item>QUdpSocket</item>
     <item>QUiLoader</item>
     <item>QUndoCommand</item>
@@ -1841,6 +2183,9 @@
     <item>QValueAxis</item>
     <item>QVariant</item>
     <item>QVariantAnimation</item>
+    <item>QVariantHash</item>
+    <item>QVariantList</item>
+    <item>QVariantMap</item>
     <item>QVarLengthArray</item>
     <item>QVBarModelMapper</item>
     <item>QVBoxLayout</item>
@@ -1852,6 +2197,7 @@
     <item>QVector4D</item>
     <item>QVectorIterator</item>
     <item>QVersionNumber</item>
+    <item>QVertexBlendAnimation</item>
     <item>QVideoDeviceSelectorControl</item>
     <item>QVideoEncoderSettings</item>
     <item>QVideoEncoderSettingsControl</item>
@@ -1863,46 +2209,81 @@
     <item>QVideoWidget</item>
     <item>QVideoWidgetControl</item>
     <item>QVideoWindowControl</item>
+    <item>QViewport</item>
+    <item>QVirtualKeyboardAbstractInputMethod</item>
+    <item>QVirtualKeyboardExtensionPlugin</item>
+    <item>QVirtualKeyboardInputContext</item>
+    <item>QVirtualKeyboardInputEngine</item>
+    <item>QVirtualKeyboardSelectionListModel</item>
+    <item>QVirtualKeyboardTrace</item>
+    <item>QVoice</item>
     <item>QVPieModelMapper</item>
+    <item>QVulkanDeviceFunctions</item>
+    <item>QVulkanExtension</item>
+    <item>QVulkanFunctions</item>
+    <item>QVulkanInfoVector</item>
+    <item>QVulkanInstance</item>
+    <item>QVulkanLayer</item>
+    <item>QVulkanWindow</item>
+    <item>QVulkanWindowRenderer</item>
     <item>QVXYModelMapper</item>
     <item>QWaitCondition</item>
+    <item>QWaitFence</item>
     <item>QWaylandBufferRef</item>
     <item>QWaylandClient</item>
     <item>QWaylandCompositor</item>
+    <item>QWaylandIdleInhibitManagerV1</item>
+    <item>QWaylandIviApplication</item>
     <item>QWaylandIviSurface</item>
     <item>QWaylandKeyboard</item>
     <item>QWaylandOutput</item>
     <item>QWaylandOutputMode</item>
     <item>QWaylandPointer</item>
     <item>QWaylandQuickItem</item>
+    <item>QWaylandQuickShellIntegration</item>
     <item>QWaylandQuickShellSurfaceItem</item>
     <item>QWaylandSeat</item>
+    <item>QWaylandShellSurface</item>
     <item>QWaylandSurface</item>
     <item>QWaylandSurfaceGrabber</item>
     <item>QWaylandTouch</item>
     <item>QWaylandView</item>
+    <item>QWaylandViewporter</item>
+    <item>QWaylandWlScaler</item>
     <item>QWaylandWlShell</item>
     <item>QWaylandWlShellSurface</item>
+    <item>QWaylandXdgDecorationManagerV1</item>
+    <item>QWaylandXdgOutputManagerV1</item>
+    <item>QWaylandXdgPopup</item>
     <item>QWaylandXdgPopupV5</item>
+    <item>QWaylandXdgPopupV6</item>
+    <item>QWaylandXdgShell</item>
+    <item>QWaylandXdgShellV5</item>
+    <item>QWaylandXdgShellV6</item>
+    <item>QWaylandXdgSurface</item>
     <item>QWaylandXdgSurfaceV5</item>
+    <item>QWaylandXdgSurfaceV6</item>
+    <item>QWaylandXdgToplevel</item>
+    <item>QWaylandXdgToplevelV6</item>
     <item>QWeakPointer</item>
     <item>QWebChannel</item>
     <item>QWebChannelAbstractTransport</item>
-    <item>QWebEngineCertificateError</item>
-    <item>QWebEngineContextMenuData</item>
+    <item>QWebEngineClientCertificateStore</item>
     <item>QWebEngineCookieStore</item>
-    <item>QWebEngineDownloadItem</item>
-    <item>QWebEngineFullScreenRequest</item>
-    <item>QWebEngineHistory</item>
-    <item>QWebEngineHistoryItem</item>
+    <item>QWebEngineFindTextResult</item>
+    <item>QWebEngineHttpRequest</item>
+    <item>QWebEngineNotification</item>
     <item>QWebEnginePage</item>
     <item>QWebEngineProfile</item>
+    <item>QWebEngineQuotaRequest</item>
+    <item>QWebEngineRegisterProtocolHandlerRequest</item>
     <item>QWebEngineScript</item>
     <item>QWebEngineScriptCollection</item>
     <item>QWebEngineSettings</item>
     <item>QWebEngineUrlRequestInfo</item>
     <item>QWebEngineUrlRequestInterceptor</item>
     <item>QWebEngineUrlRequestJob</item>
+    <item>QWebEngineUrlScheme</item>
     <item>QWebEngineUrlSchemeHandler</item>
     <item>QWebEngineView</item>
     <item>QWebSocket</item>
@@ -1911,6 +2292,7 @@
     <item>QWGLNativeContext</item>
     <item>QWhatsThis</item>
     <item>QWhatsThisClickedEvent</item>
+    <item>QWheelEvent</item>
     <item>QWheelEvent</item>
     <item>QWidget</item>
     <item>QWidgetAction</item>
@@ -1967,6 +2349,7 @@
     <item>QXYLegendMarker</item>
     <item>QXYSeries</item>
     <!-- Not actually classes, but used like those -->
+    <item>QByteArrayLiteral</item>
     <item>QStringLiteral</item>
     <!-- Not actually classes, but namespaces -->
     <item>Qt</item>
@@ -1979,6 +2362,11 @@
     <item>QTouchEventSequence</item>                      <!-- QTest -->
     <item>QStringListIterator</item>
     <item>QStringBuilder</item>
+    <!-- Helper classes for C++11-only code, where qOverload (requires C++14) can't be used
+         https://doc.qt.io/qt-5/qtglobal.html#qOverload -->
+    <item>QOverload</item>
+    <item>QConstOverload</item>
+    <item>QNonConstOverload</item>
   </list>
 
   <contexts>

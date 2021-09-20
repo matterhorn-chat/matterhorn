@@ -31,13 +31,29 @@
   <!ENTITY dataTypes      "!!\S+">
   <!ENTITY alias          "&amp;\S+">
   <!ENTITY reference      "\*\S+">
+
+  <!ENTITY dpointsHashAttrPreInline1 "[^\s&quot;'#\-,\}\s][^:#,\}]*(?=\:(?:\s|$))">
+  <!ENTITY dpointsHashAttrPreInline2 "\-(?:[^\s:#,\}][^:#,\}]*)?(?=\:(?:\s|$))">
+  <!ENTITY dpointsHashAttrPreInline3 "&keyDQ;(?=\:(?:\s|$))">
+  <!ENTITY dpointsHashAttrPreInline4 "&keySQ;(?=\:(?:\s|$))">
+
+  <!ENTITY dpointsListAttrPreInline1 "[^&quot;'#\-,\]\s][^:#,\]]*(?=\:(?:\s|$))">
+  <!ENTITY dpointsListAttrPreInline2 "\-(?:[^\s:#,\]][^:#,\]]*)?(?=\:(?:\s|$))">
+  <!ENTITY dpointsListAttrPreInline3 "&keyDQ;(?=\:(?:\s|$))">
+  <!ENTITY dpointsListAttrPreInline4 "&keySQ;(?=\:(?:\s|$))">
+
+  <!ENTITY dpointsAttrPre1 "[^&quot;'#\-\s][^:#]*(?=\:(?:\s|$))">
+  <!ENTITY dpointsAttrPre2 "\-(?:[^\s:#][^:#]*)?(?=\:(?:\s|$))">
+  <!ENTITY dpointsAttrPre3 "&keyDQ;(?=\:(?:\s|$))">
+  <!ENTITY dpointsAttrPre4 "&keySQ;(?=\:(?:\s|$))">
+
 ]>
 
 <!-- Author: Dr Orlovsky MA <maxim@orlovsky.info> //-->
 <!-- Modifications (YAML 1.2), values & support for literal/folded style:
        Nibaldo González S. <nibgonz@gmail.com>
        These modifications are under the MIT license. //-->
-<language name="YAML" version="8" kateversion="5.0" section="Markup"
+<language name="YAML" version="10" kateversion="5.0" section="Markup"
           extensions="*.yaml;*.yml" mimetype="text/yaml" priority="9"
           author="Dr Orlovsky MA (dr.orlovsky@gmail.com), Nibaldo González (nibgonz@gmail.com)" license="LGPL">
   <highlighting>
@@ -62,10 +78,7 @@
         <RegExpr attribute="Alias" firstNonSpace="true" context="after-data" String="&alias;" />
         <RegExpr attribute="Reference" firstNonSpace="true" context="after-data" String="&reference;" />
 
-        <RegExpr attribute="Key" context="dpoints-attribute-pre" String="[^&quot;'#\-\s][^:#]*(?=\:(?:\s|$))"/>
-        <RegExpr attribute="Key" context="dpoints-attribute-pre" String="\-(?:[^\s:#][^:#]*)?(?=\:(?:\s|$))"/>
-        <RegExpr attribute="Key" context="dpoints-attribute-pre" String="&keyDQ;(?=\:(?:\s|$))"/>
-        <RegExpr attribute="Key" context="dpoints-attribute-pre" String="&keySQ;(?=\:(?:\s|$))"/>
+        <RegExpr attribute="Key" context="dpoints-attribute-pre" String="&dpointsAttrPre1;|&dpointsAttrPre2;|&dpointsAttrPre3;|&dpointsAttrPre4;"/>
         <RegExpr attribute="Key Points Operator" context="attribute-pre" String=":(?=\s|$)"/>
 
         <DetectChar attribute="String" firstNonSpace="true" context="string" char="'" beginRegion="String" />
@@ -221,10 +234,7 @@
         <DetectChar attribute="Operator" context="list" char="[" beginRegion="List" />
         <DetectChar attribute="Operator" context="hash" char="{" beginRegion="Hash" />
 
-        <RegExpr attribute="Key" context="dpoints-list-attribute-pre-inline" String="[^&quot;'#\-,\]\s][^:#,\]]*(?=\:(?:\s|$))"/>
-        <RegExpr attribute="Key" context="dpoints-list-attribute-pre-inline" String="\-(?:[^\s:#,\]][^:#,\]]*)?(?=\:(?:\s|$))"/>
-        <RegExpr attribute="Key" context="dpoints-list-attribute-pre-inline" String="&keyDQ;(?=\:(?:\s|$))"/>
-        <RegExpr attribute="Key" context="dpoints-list-attribute-pre-inline" String="&keySQ;(?=\:(?:\s|$))"/>
+        <RegExpr attribute="Key" context="dpoints-list-attribute-pre-inline" String="&dpointsListAttrPreInline1;|&dpointsListAttrPreInline2;|&dpointsListAttrPreInline3;|&dpointsListAttrPreInline4;"/>
         <RegExpr attribute="Key Points Operator" context="list-attribute-pre-inline" String=":(?=\s|$)" firstNonSpace="true" />
 
         <RegExpr attribute="Data Types" context="#stay" String="&dataTypes;" />
@@ -247,10 +257,7 @@
         <RegExpr attribute="Comment" context="comment" String="(?:^|\s+)#" />
         <DetectSpaces/>
 
-        <RegExpr attribute="Key" context="dpoints-hash-attribute-pre-inline" String="[^\s&quot;'#\-,\}\s][^:#,\}]*(?=\:(?:\s|$))"/>
-        <RegExpr attribute="Key" context="dpoints-hash-attribute-pre-inline" String="\-(?:[^\s:#,\}][^:#,\}]*)?(?=\:(?:\s|$))"/>
-        <RegExpr attribute="Key" context="dpoints-hash-attribute-pre-inline" String="&keyDQ;(?=\:(?:\s|$))"/>
-        <RegExpr attribute="Key" context="dpoints-hash-attribute-pre-inline" String="&keySQ;(?=\:(?:\s|$))"/>
+        <RegExpr attribute="Key" context="dpoints-hash-attribute-pre-inline" String="&dpointsHashAttrPreInline1;|&dpointsHashAttrPreInline2;|&dpointsHashAttrPreInline3;|&dpointsHashAttrPreInline4;"/>
         <RegExpr attribute="Key Points Operator" context="hash-attribute-pre-inline" String=":(?=\s|$)"/>
 
         <DetectChar attribute="Operator" context="#pop" char="}" endRegion="Hash" />
@@ -323,8 +330,7 @@
 
       <context attribute="Comment" lineEndContext="#pop" name="comment">
         <DetectSpaces />
-        <IncludeRules context="##Alerts" />
-        <IncludeRules context="##Modelines" />
+        <IncludeRules context="##Comments" />
       </context>
 
       <!-- Values -->

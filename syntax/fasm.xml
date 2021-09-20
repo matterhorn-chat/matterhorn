@@ -8,11 +8,10 @@
     <!ENTITY hex "[0-9]&hex_cont;">
     <!ENTITY oct_hex "[0-7]&oct_hex_cont;">
     <!ENTITY bin_oct_hex "[01]*+(?:&oct_hex_cont;|(?=[byoqh]))">
-    <!ENTITY baseN "0x[0-9a-f]*+|&bin_oct_hex;|&oct_hex;|&hex;">
 
     <!ENTITY number "[0-9]*+(?:to[0-9]+|(?=d?))">
 ]>
-<language name="Intel x86 (FASM)" section="Assembler" version="4" kateversion="5.62" extensions="*.asm;*.inc;*.fasm" mimetype="" author="rCX (rCX12@yahoo.com)" license="GPL">
+<language name="Intel x86 (FASM)" section="Assembler" version="6" kateversion="5.62" extensions="*.asm;*.inc;*.fasm" mimetype="" author="rCX (rCX12@yahoo.com)" license="GPL">
   <highlighting>
     <list name="registers">
       <!-- General purpose registers -->
@@ -1663,7 +1662,7 @@
         <Detect2Chars attribute="Radix" context="#pop!$Hex" char="0" char1="x"/>
         <Detect2Chars attribute="Radix" context="#pop!$Hex" char="0" char1="X"/>
         <RegExpr attribute="Float" context="#pop!FloatSuffix" insensitive="1" String="&float;"/>
-        <RegExpr attribute="BaseN" context="#pop!BaseSuffix" insensitive="1" String="&baseN;"/>
+        <RegExpr attribute="BaseN" context="#pop!BaseSuffix" insensitive="1" String="&bin_oct_hex;|&oct_hex;|&hex;"/>
         <RegExpr attribute="Number" context="#pop!NumberSuffix" insensitive="1" String="&number;"/>
       </context>
       <context name="FloatSuffix" attribute="Float" lineEndContext="#pop" fallthroughContext="#pop!CheckNumberSuffix">
@@ -1714,8 +1713,7 @@
 
       <context name="Comment" attribute="Comment" lineEndContext="#pop">
         <DetectSpaces attribute="Comment"/>
-        <IncludeRules context="##Alerts"/>
-        <IncludeRules context="##Modelines"/>
+        <IncludeRules context="##Comments"/>
         <DetectIdentifier attribute="Comment"/>
       </context>
 

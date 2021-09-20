@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
-<language name="Verilog" version="5" kateversion="2.4" section="Hardware" extensions="*.v;*.V;*.vl" mimetype="text/x-verilog-src" author="Yevgen Voronenko (ysv22@drexel.edu), Ryan Dalzell (ryan@tullyroan.com)" license="">
+<language name="Verilog" version="8" kateversion="5.0" section="Hardware" extensions="*.v;*.V;*.vl" mimetype="text/x-verilog-src" author="Yevgen Voronenko (ysv22@drexel.edu), Ryan Dalzell (ryan@tullyroan.com)" license="">
   <highlighting>
     <list name="keywords">
       <item>macromodule</item>
@@ -150,8 +150,7 @@
     <contexts>
       <context attribute="Normal Text" lineEndContext="#stay" name="Normal">
         <DetectSpaces />
-        <RegExpr attribute="Keyword" context="Block name" String="begin\ *:" beginRegion="Block"/>
-        <RegExpr attribute="Keyword" context="Block name" String="fork\ *:" beginRegion="Block"/>
+        <RegExpr attribute="Keyword" context="Block name" String="(begin|fork)\ *:" beginRegion="Block"/>
         <keyword attribute="Keyword" String="beginwords" context="#stay" beginRegion="Block"/>
         <keyword attribute="Keyword" String="endwords" context="#stay" endRegion="Block"/>
 
@@ -188,14 +187,12 @@
       </context>
       <context attribute="Comment" lineEndContext="#pop" name="Commentar 1">
         <DetectSpaces />
-        <IncludeRules context="##Alerts" />
-        <IncludeRules context="##Modelines" />
+        <IncludeRules context="##Comments" />
       </context>
       <context attribute="Comment" lineEndContext="#stay" name="Commentar 2">
         <DetectSpaces />
         <Detect2Chars attribute="Comment" context="#pop" char="*" char1="/" endRegion="Comment"/>
-        <IncludeRules context="##Alerts" />
-        <IncludeRules context="##Modelines" />
+        <IncludeRules context="##Comments" />
       </context>
       <context attribute="Preprocessor" lineEndContext="#pop" name="Preprocessor">
         <LineContinue attribute="Preprocessor" context="Some Context"/>
@@ -207,7 +204,7 @@
       <context attribute="Comment" lineEndContext="#stay" name="Commentar/Preprocessor">
         <DetectSpaces />
         <Detect2Chars attribute="Comment" context="#pop" char="*" char1="/" endRegion="Comment"/>
-        <IncludeRules context="##Alerts" />
+        <IncludeRules context="##Comments" />
       </context>
       <context attribute="Normal Text" lineEndContext="#pop" name="Some Context"/>
 
@@ -234,7 +231,7 @@
       <itemData name="String"  defStyleNum="dsString"/>
       <itemData name="String Char"  defStyleNum="dsChar"/>
       <itemData name="Comment"  defStyleNum="dsComment"/>
-      <itemData name="Symbol"  defStyleNum="dsNormal"/>
+      <itemData name="Symbol"  defStyleNum="dsOperator"/>
       <itemData name="Preprocessor"  defStyleNum="dsOthers"/>
       <itemData name="Prep. Lib"  defStyleNum="dsFloat"/>
       <itemData name="System Task" defStyleNum="dsDataType"/>

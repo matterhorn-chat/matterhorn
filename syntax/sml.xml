@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
-<language name="SML" version="5" kateversion="2.3" section="Sources" extensions="*.sml;*.ml" mimetype="" author="Christoph Cullmann (cullmann@kde.org)" license="MIT">
+<language name="SML" version="6" kateversion="5.0" section="Sources" extensions="*.sml;*.ml" mimetype="" author="Christoph Cullmann (cullmann@kde.org)" license="MIT">
   <highlighting>
     <list name="keywords">
       <item>abstype</item>
@@ -79,8 +79,7 @@
       <context attribute="Comment" lineEndContext="#stay" name="Multiline/Inline Comment">
         <DetectSpaces />
         <Detect2Chars attribute="Comment" context="#pop" char="*" char1=")" endRegion="Comment" />
-        <IncludeRules context="##Alerts" />
-        <IncludeRules context="##Modelines" />
+        <IncludeRules context="##Comments" />
       </context>
       <context attribute="String" lineEndContext="#stay" name="String">
         <HlCStringChar attribute="String Char" context="#stay"/>

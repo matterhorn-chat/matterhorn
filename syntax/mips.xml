@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
-<language name="MIPS Assembler" version="5" kateversion="2.4" section="Assembler" extensions="*.s;" mimetype="text/x-mips" author="Dominik Haumann (dhaumann@kde.org)" license="MIT" priority="-1">
+<language name="MIPS Assembler" version="6" kateversion="5.0" section="Assembler" extensions="*.s;" mimetype="text/x-mips" author="Dominik Haumann (dhaumann@kde.org)" license="MIT" priority="-1">
   <highlighting>
     <list name="type">
       <item>.align</item>
@@ -331,8 +331,7 @@
       </context>
       <context name="Comment" attribute="Comment" lineEndContext="#pop">
         <DetectSpaces />
-        <IncludeRules context="##Alerts"/>
-        <IncludeRules context="##Modelines"/>
+        <IncludeRules context="##Comments"/>
       </context>
     </contexts>
     <itemDatas>

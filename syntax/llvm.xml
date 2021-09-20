@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
 <language name="LLVM" section="Sources"
-          version="3" kateversion="5.0"
+          version="4" kateversion="5.0"
           extensions="*.ll"
           mimetype=""
           author="LLVM Team"
@@ -226,8 +226,7 @@
       <context name="comment" attribute="Comment" lineEndContext="#pop">
         <DetectSpaces />
         <!-- TODO: Add FileCheck syntax highlighting -->
-        <IncludeRules context="##Alerts" />
-        <IncludeRules context="##Modelines" />
+        <IncludeRules context="##Comments" />
         <DetectIdentifier />
       </context>
     </contexts>

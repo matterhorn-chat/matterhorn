@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
 <!-- FIXME: Find a way to prevent ranges (e.g. [1..] or [0..99]) from matching as floats. -pp -->
-<language name="Pike" version="3" kateversion="2.4" section="Scripts" extensions="*.pike" mimetype="application/x-pike;text/x-pike" casesensitive="1" author="Paul Pogonyshev" license="">
+<language name="Pike" version="4" kateversion="5.0" section="Scripts" extensions="*.pike" mimetype="application/x-pike;text/x-pike" casesensitive="1" author="Paul Pogonyshev" license="">
   <highlighting>
     <list name="keywords">
       <item>break</item>
@@ -67,14 +67,12 @@
       </context>
       <context attribute="Comment" lineEndContext="#pop" name="Line Comment">
 	<DetectSpaces />
-	<IncludeRules context="##Alerts"/>
-	<IncludeRules context="##Modelines"/>
+	<IncludeRules context="##Comments"/>
       </context>
       <context attribute="Comment" lineEndContext="#stay" name="Block Comment">
 	<DetectSpaces />
 	<Detect2Chars attribute="Comment" context="#pop" char="*" char1="/" endRegion="Comment"/>
-	<IncludeRules context="##Alerts"/>
-	<IncludeRules context="##Modelines"/>
+	<IncludeRules context="##Comments"/>
       </context>
       <context attribute="Preprocessor" lineEndContext="#pop" name="Preprocessor">
 	<RangeDetect attribute="Preprocessor Lib" context="#stay" char="&quot;" char1="&quot;"/>
@@ -87,7 +85,7 @@
 	<Detect2Chars attribute="Comment" context="Block Comment" char="/" char1="*" beginRegion="Comment"/>
 	<RegExpr attribute="Comment" context="Outscoped intern" String="#\s*if" beginRegion="Outscoped" firstNonSpace="true"/>
 	<RegExpr attribute="Preprocessor" context="#pop" String="#\s*(endif|elif|else)" endRegion="Outscoped" firstNonSpace="true"/>
-	<IncludeRules context="##Alerts" />
+	<IncludeRules context="##Comments" />
       </context>         
       <context attribute="Comment" lineEndContext="#stay" name="Outscoped intern">
 	<Detect2Chars attribute="Comment" context="Block Comment" char="/" char1="*" beginRegion="Comment"/>

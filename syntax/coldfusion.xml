@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
-<language name="ColdFusion" version="4" kateversion="5.0" section="Markup" extensions="*.cfm;*.cfc;*.cfml;*.dbm" mimetype="text/x-coldfusion">
+<language name="ColdFusion" version="5" kateversion="5.0" section="Markup" extensions="*.cfm;*.cfc;*.cfml;*.dbm" mimetype="text/x-coldfusion">
 
 	<highlighting>
 
@@ -595,23 +595,21 @@
 			<context name="ctxHTML Comment" attribute="HTML Comment" lineEndContext="#stay">
 				<StringDetect attribute="CF Comment" context="ctxCF Comment" String="&lt;!---" beginRegion="CF Comment" />
 				<StringDetect attribute="HTML Comment" context="#pop" String="--&gt;" endRegion="HTML Comment" />
-				<IncludeRules context="##Alerts" />
-				<IncludeRules context="##Modelines" />
+				<IncludeRules context="##Comments" />
 			</context>
 
 			<context name="ctxCF Comment" attribute="CF Comment" lineEndContext="#stay">
 				<StringDetect attribute="CF Comment" context="#pop" String="---&gt;" endRegion="CF Comment" />
-				<IncludeRules context="##Alerts" />
-				<IncludeRules context="##Modelines" />
+				<IncludeRules context="##Comments" />
 			</context>
 
 			<context name="ctxC Style Comment" attribute="Script Comment" lineEndContext="#stay">
 				<Detect2Chars attribute="Script Comment" context="#pop" char="*" char1="/" endRegion="CComment" />
-				<IncludeRules context="##Alerts" />
+				<IncludeRules context="##Comments" />
 			</context>
 
 			<context name="ctxOne Line Comment" attribute="Script Comment" lineEndContext="#pop">
-				<IncludeRules context="##Alerts" />
+				<IncludeRules context="##Comments" />
 			</context>
 
 			<context name="ctxHTML Entities" attribute="HTML Entities" lineEndContext="#pop">

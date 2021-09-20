@@ -5,8 +5,10 @@ files mp.vim and mf.vim
 We have moved some keywords for consistency
 -->
 
-<!DOCTYPE language SYSTEM "language.dtd">
-<language name="Metapost/Metafont" section="Markup" version="7" kateversion="5.0"
+<!DOCTYPE language SYSTEM "language.dtd" [
+  <!ENTITY lengths "(bp|cc|cm|dd|in|mm|pc|pt)">
+]>
+<language name="Metapost/Metafont" section="Markup" version="11" kateversion="5.0"
 extensions="*.mp;*.mps;*.mpost;*.mf" mimetype="text/x-metapost" 
 author="Yedvilun (yedvilun@gmail.com)" license="LGPL">
   <highlighting>
@@ -855,16 +857,11 @@ author="Yedvilun (yedvilun@gmail.com)" license="LGPL">
         <Int attribute="Decimal"/>
 
         <!--Metafont lengths-->
-        <RegExpr String="\b(bp|cc|cm|dd|in|mm|pc|pt)\b" attribute="Float" context="#stay"/>
-        <RegExpr String="\b-?\d+(bp|cc|cm|dd|in|mm|pc|pt)#?\b" attribute="Float" context="#stay"/>
-        <RegExpr String="\b-?\.\d+(bp|cc|cm|dd|in|mm|pc|pt)#?\b" attribute="Float" context="#stay"/>
-        <RegExpr String="\b-?\d+\.\d+(bp|cc|cm|dd|in|mm|pc|pt)#?\b" attribute="Float" context="#stay"/>
+        <RegExpr String="\b(&lengths;|-?(\d+&lengths;|\.\d+&lengths;|\d+\.\d+&lengths;)#?)\b" attribute="Float" context="#stay"/>
 
         <!--Metafont coordinates, points, pathes-->
 
-        <RegExpr String="\b[xy]\d(\w|\')*" attribute="Variable" context="#stay"/>
-        <RegExpr String="\bz\d(\w|\')*" attribute="Variable" context="#stay"/>
-        <RegExpr String="\bp\d(\w|\')*" attribute="Variable" context="#stay"/>
+        <RegExpr String="\b[xyzp]\d(\w|\')*" attribute="Variable" context="#stay"/>
 
         <!--Special characters-->
         <DetectChar char="$" attribute="Special" context="#stay"/>
@@ -900,18 +897,16 @@ author="Yedvilun (yedvilun@gmail.com)" license="LGPL">
       <!--TeX mode : we just define generic TeX commands-->
       <!--syntax from highlighting file latex.xml-->
       <context name="TeXMode" attribute="TeX" lineEndContext="#stay">
+        <Detect2Chars char="\" char1="(" attribute="Math" context="MathMode" beginRegion="mathMode" />
         <DetectChar char="\" attribute="Keyword" context="ContrSeq"/>
         <DetectChar char="$" attribute="Math" context="MathMode" beginRegion="mathMode" />
-
-        <StringDetect String="\(" attribute="Math" context="MathMode" beginRegion="mathMode" />
         <RegExpr String="\betex\b" insensitive="1" attribute="Identifier" context="#pop" endRegion="TeXblock"/>
       </context>
       <context name="ContrSeq" attribute="Keyword" lineEndContext="#pop">
         <StringDetect String="verb*" attribute="Keyword" context="Verb"/>
         <RegExpr String="verb(?=[^a-zA-Z])" attribute="Keyword" context="Verb"/>
         <DetectChar char="&#xd7;" attribute="Bullet" context="#stay"/>
-        <RegExpr String="[a-zA-Z]+(\+?|\*{0,3})" attribute="Keyword" context="#pop"/>
-        <RegExpr String="[^a-zA-Z]" attribute="Keyword" context="#pop" />
+        <RegExpr String="[a-zA-Z]+(\+?|\*{0,3})|[^a-zA-Z]" attribute="Keyword" context="#pop" />
       </context>
       <context name="Verb" attribute="Verbatim" lineEndContext="#pop#pop" >
         <RegExpr String="(.)" attribute="Normal Text" context="VerbEnd" />
@@ -925,25 +920,21 @@ author="Yedvilun (yedvilun@gmail.com)" license="LGPL">
 
       <!-- math mode: starting with $ or \( -->
       <context name="MathMode" attribute="Math" lineEndContext="#stay">
-        <StringDetect String="$$" attribute="Error" context="#stay" />
+        <Detect2Chars char="$" char1="$" attribute="Error" context="#stay" />
+        <Detect2Chars char="\" char1=")" attribute="Math" context="#pop" endRegion="mathMode" />
         <DetectChar char="\" attribute="Keyword Mathmode" context="MathContrSeq"/>
         <DetectChar char="$" attribute="Math" context="#pop" endRegion="mathMode" />
-        <Detect2Chars char="\" char1=")" attribute="Math" context="#pop" endRegion="mathMode" />
-
-        <Detect2Chars char="\" char1="]" attribute="Error" context="#stay" />
       </context>
       <context name="MathContrSeq" attribute="Keyword Mathmode" lineEndContext="#pop">
         <DetectChar char="&#xd7;" attribute="Bullet" context="#stay"/>
-        <RegExpr String="[a-zA-Z]+\*?" attribute="Keyword Mathmode" context="#pop"/>
-        <RegExpr String="[^a-zA-Z]" attribute="Keyword Mathmode" context="#pop" /> 
+        <RegExpr String="[a-zA-Z]+\*?|[^a-zA-Z]" attribute="Keyword Mathmode" context="#pop" />
       </context>
 
       <!-- comment -->
       <context name="Comment" attribute="Comment" lineEndContext="#pop">
         <DetectSpaces />
-        <IncludeRules context="##Alerts" />
+        <IncludeRules context="##Comments" />
         <DetectChar char="&#xd7;" attribute="Bullet" context="#stay"/>
-        <IncludeRules context="##Modelines" />
       </context>
 
 </contexts>

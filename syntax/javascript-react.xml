@@ -53,7 +53,7 @@
      * v1 [2018-06-20]: Initial version
 -->
 
-<language name="JavaScript React (JSX)" version="9" kateversion="5.0" section="Scripts" indenter="cstyle"
+<language name="JavaScript React (JSX)" version="10" kateversion="5.53" section="Scripts" indenter="cstyle"
           priority="9" extensions="*.jsx" mimetype="text/jsx;text/x-jsx;application/jsx;application/x-jsx;"
           author="Nibaldo González (nibgonz@gmail.com)" license="MIT">
 
@@ -126,8 +126,7 @@
 			<DetectChar context="#pop" attribute="Symbol" char="&lt;" />
 			<RegExpr context="#stay" attribute="Normal Text" String="\(\s*(?=&lt;)" />
 			<RegExpr context="#stay" attribute="Normal Text" String="\[\s*(?=&lt;)" beginRegion="List" />
-			<RegExpr context="#pop!Object" attribute="Normal Text" String="\{\s*&lt;\s*/(?![\*/])" beginRegion="Brace" />
-			<RegExpr context="#pop!Object" attribute="Normal Text" String="\{\s*&lt;" beginRegion="Brace" />
+			<RegExpr context="#pop!Object" attribute="Normal Text" String="\{\s*&lt;(\s*/(?![\*/]))?" beginRegion="Brace" />
 		</context>
 		<!-- Do not highlight tags in interface declarations -->
 		<context name="InterfaceDeclaration" attribute="Normal Text" lineEndContext="#stay">
@@ -302,15 +301,14 @@
 			<RegExpr context="Attribute" attribute="Attribute" String="&nameWithBound;" />
 			<IncludeRules context="FindEvaluatedCode" />
 			<IncludeRules context="AllComments" />
-			<RegExpr context="#stay" attribute="Error" String="\S+&name;" />
-			<RegExpr context="#stay" attribute="Error" String="\S" />
+			<RegExpr context="#stay" attribute="Error" String="\S+&name;|\S" />
 		</context>
 
 		<!-- Tag content: <Tag> content </Tag> -->
 		<context name="ElementTagContent" attribute="Tag Content Text" lineEndContext="#stay">
 			<RegExpr context="#pop" attribute="Element Tag" String="&lt;/\s*&gt;" endRegion="Element" />
-			<RegExpr context="ElementTagEnd" attribute="Element Tag" String="&lt;/\s*&simpleName;" />
-			<RegExpr context="ElementTagEnd" attribute="Element Tag" String="&lt;/\s*(?=[A-Z_\$])" /> <!-- Component tag (error) -->
+			<!-- With component tag (error) -->
+			<RegExpr context="ElementTagEnd" attribute="Element Tag" String="&lt;/\s*(&simpleName;|(?=[A-Z_\$]))" />
 			<IncludeRules context="DefaultTagContent" />
 		</context>
 		<context name="ComponentTagContent" attribute="Tag Content Text" lineEndContext="#stay">
@@ -342,8 +340,7 @@
 			<DetectChar context="#pop" char="{" lookAhead="true" /> <!-- EvaluatedCode -->
 			<IncludeRules context="AllComments" />
 			<RegExpr context="#stay" attribute="Attribute" String="&nameWithBound;" />
-			<RegExpr context="#stay" attribute="Error" String="\S+&name;" />
-			<RegExpr context="#stay" attribute="Error" String="\S" />
+			<RegExpr context="#stay" attribute="Error" String="\S+&name;|\S" />
 		</context>
 
 		<context name="Value" attribute="Normal Text" lineEndContext="#stay">

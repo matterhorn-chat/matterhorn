@@ -6,7 +6,7 @@
 <!-- 04.03.2005 ik mailed version 1.01 with fixed/implemented nested comments to Dominik -->
 <!-- known bug: notation Regexp( [0-9]*\. ) should be not interpreted as neither Integer neither Real -->
 <!-- known bug: notation Regexp ( "  \" " ) is not properly interpreted -->
-<language name="Modula-3" version="3" kateversion="2.1" section="Sources" extensions="*.m3;*.i3;*.ig;*.mg;" mimetype="text/x-modula-3" license="LGPL">
+<language name="Modula-3" version="4" kateversion="5.0" section="Sources" extensions="*.m3;*.i3;*.ig;*.mg;" mimetype="text/x-modula-3" license="LGPL">
   <highlighting>
     <list name="keywords">
 <!--      <item>AND</item> -->
@@ -286,8 +286,7 @@
         <Detect2Chars attribute="Comment" context="Comment2" char="(" char1="*" beginRegion="Comment"/>
         <Detect2Chars attribute="Comment" context="#pop" char="*" char1=")" endRegion="Comment"/>
         <DetectSpaces />
-        <IncludeRules context="##Alerts"/>
-        <IncludeRules context="##Modelines"/>
+        <IncludeRules context="##Comments"/>
       </context>
       <context attribute="Pragma" lineEndContext="#stay" name="Prep1">
         <Detect2Chars attribute="Pragma" context="#pop" char="*" char1="&gt;"/>

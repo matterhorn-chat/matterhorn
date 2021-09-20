@@ -16,8 +16,8 @@
    - Namespace rules
 -->
 
-<language version="4"
-          kateversion="2.4"
+<language version="6"
+          kateversion="5.0"
           name="RELAX NG"
           section="Markup"
           extensions="*.rng;*.RNG"
@@ -68,7 +68,7 @@
 
       <context name="tagname" attribute="Tag" lineEndContext="#stay">
          <keyword attribute="RELAX NG Tag" context="attributes" String="relaxngnames" />
-         <RegExpr attribute="Attribute" context="attributes" String="\s*" />
+         <DetectSpaces attribute="Attribute" context="attributes" />
          <DetectChar attribute="Tag" context="#pop" char="&gt;" />
       </context>
 
@@ -93,8 +93,7 @@
         <DetectSpaces/>
         <StringDetect attribute="Comment" context="#pop"  String="--&gt;" endRegion="comment"/>
         <RegExpr attribute="Error" context="#stay" String="-(-(?!-&gt;))+"/>
-        <IncludeRules context="##Alerts"/>
-        <IncludeRules context="##Modelines"/>
+        <IncludeRules context="##Comments"/>
         <DetectIdentifier/>
       </context>
     </contexts>

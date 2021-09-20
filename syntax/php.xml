@@ -70,63 +70,80 @@ Changes:
 
 -->
 <!DOCTYPE language SYSTEM "language.dtd" [
-  <!ENTITY types "int|integer|bool|boolean|float|double|real|string|array|object">
+  <!ENTITY types "integer|bool|boolean|float|double|real|string|array|object">
+  <!ENTITY varid "[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*">
+  <!ENTITY LNUM  "[0-9]++(_[0-9]++)*+">
+  <!ENTITY EXPONENT "[eE][+-]?&LNUM;">
+  <!ENTITY float "\b&LNUM;(\.(&LNUM;)?(&EXPONENT;)?|&EXPONENT;)|\.&LNUM;(&EXPONENT;)?">
 ]>
 
-<language name="PHP/PHP" indenter="cstyle" version="12" kateversion="5.0" section="Scripts" extensions="" priority="5" mimetype="" hidden="true">
+<language name="PHP/PHP" indenter="cstyle" version="21" kateversion="5.53" section="Scripts" extensions="" priority="5" mimetype="" hidden="true">
   <highlighting>
+    <!-- https://php.watch/versions -->
+
     <!-- https://secure.php.net/manual/en/reserved.keywords.php -->
     <list name="control structures">
       <!-- PHP 5.6 -->
+      <item>break</item>
       <item>case</item>
+      <item>catch</item>
+      <item>continue</item>
       <item>default</item>
-      <item>if</item>
+      <item>die</item>
+      <item>do</item>
       <item>else</item>
       <item>elseif</item>
-      <item>while</item>
-      <item>do</item>
-      <item>for</item>
-      <item>foreach</item>
-      <item>break</item>
-      <item>continue</item>
-      <item>switch</item>
-      <item>return</item>
-      <item>require</item>
-      <item>include</item>
-      <item>endif</item>
-      <item>endwhile</item>
       <item>endfor</item>
       <item>endforeach</item>
+      <item>endif</item>
       <item>endswitch</item>
+      <item>endwhile</item>
+      <item>exit</item>
+      <item>finally</item>
+      <item>for</item>
+      <item>foreach</item>
+      <item>goto</item>
+      <item>if</item>
+      <item>return</item>
+      <item>switch</item>
+      <item>throw</item>
+      <item>try</item>
+      <item>while</item>
+      <item>yield</item>
+
+      <!-- PHP 8.0 -->
+      <item>match</item>
+    </list>
+
+    <!-- https://secure.php.net/manual/en/reserved.keywords.php -->
+    <list name="operators">
+      <item>and</item>
+      <item>or</item>
+      <item>xor</item>
     </list>
 
     <!-- https://secure.php.net/manual/en/reserved.keywords.php -->
     <!-- https://secure.php.net/manual/en/reserved.other-reserved-words.php -->
+    <!-- + self + parent + clone (also reserved) -->
     <list name="keywords">
       <!-- PHP 5.6 -->
       <item>__halt_compiler</item>
       <item>abstract</item>
-      <item>and</item>
-      <item>array</item>
       <item>as</item>
       <item>callable</item>
-      <item>catch</item>
       <item>class</item>
       <item>clone</item>
       <item>const</item>
       <item>declare</item>
-      <item>die</item>
       <item>echo</item>
       <item>empty</item>
       <item>enddeclare</item>
+      <item>enum</item>
       <item>eval</item>
-      <item>exit</item>
       <item>extends</item>
       <item>final</item>
-      <item>finally</item>
       <item>function</item>
       <item>global</item>
-      <item>goto</item>
       <item>implements</item>
       <item>include</item>
       <item>include_once</item>
@@ -137,7 +154,6 @@ Changes:
       <item>list</item>
       <item>namespace</item>
       <item>new</item>
-      <item>or</item>
       <item>print</item>
       <item>private</item>
       <item>protected</item>
@@ -145,31 +161,42 @@ Changes:
       <item>require</item>
       <item>require_once</item>
       <item>static</item>
-      <item>throw</item>
       <item>trait</item>
-      <item>try</item>
       <item>unset</item>
       <item>use</item>
       <item>var</item>
-      <item>xor</item>
-      <item>yield</item>
+
+      <item>parent</item>
+      <item>self</item>
+
+      <!-- PHP 7.0 -->
+      <item>false</item>
+      <item>numeric</item>
+      <item>null</item>
+      <item>resource</item>
+      <item>true</item>
+
+      <!-- PHP 7.4 -->
+      <item>fn</item>
+    </list>
+
+    <list name="types">
+      <!-- PHP 5.6 -->
+      <item>array</item>
 
       <!-- PHP 7.0 -->
       <item>bool</item>
-      <item>false</item>
       <item>float</item>
       <item>int</item>
       <item>mixed</item>
-      <item>null</item>
-      <item>numeric</item>
-      <item>object</item>
-      <item>resource</item>
       <item>string</item>
-      <item>true</item>
 
       <!-- PHP 7.1 -->
       <item>iterable</item>
       <item>void</item>
+
+      <!-- PHP 7.2 -->
+      <item>object</item>
     </list>
 
     <!-- https://secure.php.net/manual/en/reserved.keywords.php -->
@@ -177,7 +204,6 @@ Changes:
     <list name="constants">
       <!-- PHP 5.6 (Compile-Time Constants) -->
       <item>__CLASS__</item>
-      <item>__COMPILER_HALT_OFFSET__</item>
       <item>__DIR__</item>
       <item>__FILE__</item>
       <item>__FUNCTION__</item>
@@ -228,13 +254,12 @@ Changes:
       <item>E_USER_ERROR</item>
       <item>E_USER_WARNING</item>
       <item>E_USER_NOTICE</item>
+      <item>E_RECOVERABLE_ERROR</item>
       <item>E_DEPRECATED</item>
       <item>E_USER_DEPRECATED</item>
       <item>E_ALL</item>
       <item>E_STRICT</item>
-      <item>E_COMPILE_ERROR</item>
-      <item>E_COMPILE_WARNING</item>
-      <item>E_RECOVERABLE_ERROR</item>
+      <item>__COMPILER_HALT_OFFSET__</item>
 
       <!-- PHP 7.0 (Core Pre-Defined Constants) -->
       <item>PHP_INT_MIN</item>
@@ -245,6 +270,10 @@ Changes:
       <item>PHP_FLOAT_EPSILON</item>
       <item>PHP_FLOAT_MIN</item>
       <item>PHP_FLOAT_MAX</item>
+
+      <!-- PHP 7.4 (Core Pre-Defined Constants) -->
+      <item>PHP_WINDOWS_EVENT_CTRL_C</item>
+      <item>PHP_WINDOWS_EVENT_CTRL_BREAK</item>
 
       <!-- Undocumented, badly documented or outdated constants -->
       <item>ALT_DIGITS</item>
@@ -654,9 +683,12 @@ Changes:
       <item>CRYPT_MD5</item>
       <item>CRYPT_SALT_LENGTH</item>
       <item>CRYPT_STD_DES</item>
+      <item>CRYPT_SHA256</item>
+      <item>CRYPT_SHA512</item>
       <item>CURLAUTH_ANY</item>
       <item>CURLAUTH_ANYSAFE</item>
       <item>CURLAUTH_BASIC</item>
+      <item>CURLAUTH_BEARER</item>
       <item>CURLAUTH_DIGEST</item>
       <item>CURLAUTH_GSSAPI</item>
       <item>CURLAUTH_GSSNEGOTIATE</item>
@@ -747,7 +779,9 @@ Changes:
       <item>CURLFTP_CREATE_DIR_RETRY</item>
       <item>CURLHEADER_SEPARATE</item>
       <item>CURLHEADER_UNIFIED</item>
+      <item>CURLINFO_APPCONNECT_TIME_T</item>
       <item>CURLINFO_CONNECT_TIME</item>
+      <item>CURLINFO_CONNECT_TIME_T</item>
       <item>CURLINFO_CONTENT_LENGTH_DOWNLOAD</item>
       <item>CURLINFO_CONTENT_LENGTH_DOWNLOAD_T</item>
       <item>CURLINFO_CONTENT_LENGTH_UPLOAD</item>
@@ -755,6 +789,7 @@ Changes:
       <item>CURLINFO_CONTENT_TYPE</item>
       <item>CURLINFO_EFFECTIVE_URL</item>
       <item>CURLINFO_FILETIME</item>
+      <item>CURLINFO_FILETIME_T</item>
       <item>CURLINFO_HEADER_OUT</item>
       <item>CURLINFO_HEADER_SIZE</item>
       <item>CURLINFO_HTTP_CODE</item>
@@ -762,7 +797,9 @@ Changes:
       <item>CURLINFO_LOCAL_IP</item>
       <item>CURLINFO_LOCAL_PORT</item>
       <item>CURLINFO_NAMELOOKUP_TIME</item>
+      <item>CURLINFO_NAMELOOKUP_TIME_T</item>
       <item>CURLINFO_PRETRANSFER_TIME</item>
+      <item>CURLINFO_PRETRANSFER_TIME_T</item>
       <item>CURLINFO_PRIMARY_IP</item>
       <item>CURLINFO_PRIMARY_PORT</item>
       <item>CURLINFO_PRIVATE</item>
@@ -770,6 +807,7 @@ Changes:
       <item>CURLINFO_PROXY_SSL_VERIFYRESULT</item>
       <item>CURLINFO_REDIRECT_COUNT</item>
       <item>CURLINFO_REDIRECT_TIME</item>
+      <item>CURLINFO_REDIRECT_TIME_T</item>
       <item>CURLINFO_REDIRECT_URL</item>
       <item>CURLINFO_REQUEST_SIZE</item>
       <item>CURLINFO_RESPONSE_CODE</item>
@@ -784,7 +822,9 @@ Changes:
       <item>CURLINFO_SPEED_UPLOAD_T</item>
       <item>CURLINFO_SSL_VERIFYRESULT</item>
       <item>CURLINFO_STARTTRANSFER_TIME</item>
+      <item>CURLINFO_STARTTRANSFER_TIME_T</item>
       <item>CURLINFO_TOTAL_TIME</item>
+      <item>CURLINFO_TOTAL_TIME_T</item>
       <item>CURLMOPT_CHUNK_LENGTH_PENALTY_SIZE</item>
       <item>CURLMOPT_CONTENT_LENGTH_PENALTY_SIZE</item>
       <item>CURLMOPT_MAXCONNECTS</item>
@@ -815,14 +855,18 @@ Changes:
       <item>CURLOPT_COOKIE</item>
       <item>CURLOPT_COOKIEFILE</item>
       <item>CURLOPT_COOKIEJAR</item>
+      <item>CURLOPT_COOKIELIST</item>
       <item>CURLOPT_COOKIESESSION</item>
       <item>CURLOPT_CRLF</item>
       <item>CURLOPT_CUSTOMREQUEST</item>
       <item>CURLOPT_DEFAULT_PROTOCOL</item>
+      <item>CURLOPT_DISALLOW_USERNAME_IN_URL</item>
+      <item>CURLOPT_DOH_URL</item>
       <item>CURLOPT_DNS_CACHE_TIMEOUT</item>
       <item>CURLOPT_DNS_INTERFACE</item>
       <item>CURLOPT_DNS_LOCAL_IP4</item>
       <item>CURLOPT_DNS_LOCAL_IP6</item>
+      <item>CURLOPT_DNS_SHUFFLE_ADDRESSES</item>
       <item>CURLOPT_DNS_USE_GLOBAL_CACHE</item>
       <item>CURLOPT_EGDSOCKET</item>
       <item>CURLOPT_ENCODING</item>
@@ -843,9 +887,12 @@ Changes:
       <item>CURLOPT_FTP_SSL</item>
       <item>CURLOPT_FTP_USE_EPRT</item>
       <item>CURLOPT_FTP_USE_EPSV</item>
+      <item>CURLOPT_HAPPY_EYEBALLS_TIMEOUT_MS</item>
+      <item>CURLOPT_HAPROXYPROTOCOL</item>
       <item>CURLOPT_HEADER</item>
       <item>CURLOPT_HEADERFUNCTION</item>
       <item>CURLOPT_HEADEROPT</item>
+      <item>CURLOPT_HTTP09_ALLOWED</item>
       <item>CURLOPT_HTTP200ALIASES</item>
       <item>CURLOPT_HTTPAUTH</item>
       <item>CURLOPT_HTTPGET</item>
@@ -905,6 +952,7 @@ Changes:
       <item>CURLOPT_PROXY_SSL_OPTIONS</item>
       <item>CURLOPT_PROXY_SSL_VERIFYHOST</item>
       <item>CURLOPT_PROXY_SSL_VERIFYPEER</item>
+      <item>CURLOPT_PROXY_TLS13_CIPHERS</item>
       <item>CURLOPT_PROXY_TLSAUTH_PASSWORD</item>
       <item>CURLOPT_PROXY_TLSAUTH_TYPE</item>
       <item>CURLOPT_PROXY_TLSAUTH_USERNAME</item>
@@ -925,6 +973,7 @@ Changes:
       <item>CURLOPT_SHARE</item>
       <item>CURLOPT_SOCKS5_AUTH</item>
       <item>CURLOPT_SSH_AUTH_TYPES</item>
+      <item>CURLOPT_SSH_COMPRESSION</item>
       <item>CURLOPT_SSH_HOST_PUBLIC_KEY_MD5</item>
       <item>CURLOPT_SSH_PRIVATE_KEYFILE</item>
       <item>CURLOPT_SSH_PUBLIC_KEYFILE</item>
@@ -949,12 +998,17 @@ Changes:
       <item>CURLOPT_STREAM_WEIGHT</item>
       <item>CURLOPT_SUPPRESS_CONNECT_HEADERS</item>
       <item>CURLOPT_TCP_FASTOPEN</item>
+      <item>CURLOPT_TCP_KEEPALIVE</item>
+      <item>CURLOPT_TCP_KEEPIDLE</item>
+      <item>CURLOPT_TCP_KEEPINTVL</item>
       <item>CURLOPT_TCP_NODELAY</item>
       <item>CURLOPT_TFTP_NO_OPTIONS</item>
       <item>CURLOPT_TIMECONDITION</item>
       <item>CURLOPT_TIMEOUT</item>
       <item>CURLOPT_TIMEOUT_MS</item>
       <item>CURLOPT_TIMEVALUE</item>
+      <item>CURLOPT_TIMEVALUE_LARGE</item>
+      <item>CURLOPT_TLS13_CIPHERS</item>
       <item>CURLOPT_TRANSFERTEXT</item>
       <item>CURLOPT_UNIX_SOCKET_PATH</item>
       <item>CURLOPT_UNRESTRICTED_AUTH</item>
@@ -967,6 +1021,25 @@ Changes:
       <item>CURLOPT_WRITEFUNCTION</item>
       <item>CURLOPT_WRITEHEADER</item>
       <item>CURLOPT_XOAUTH2_BEARER</item>
+      <item>CURLSSH_AUTH_GSSAPI</item>
+      <item>CURL_HTTP_VERSION_2_0</item>
+      <item>CURL_LOCK_DATA_CONNECT</item>
+      <item>CURL_LOCK_DATA_PSL</item>
+      <item>CURL_VERSION_ALTSVC</item>
+      <item>CURL_VERSION_ASYNCHDNS</item>
+      <item>CURL_VERSION_BROTLI</item>
+      <item>CURL_VERSION_CONV</item>
+      <item>CURL_VERSION_CURLDEBUG</item>
+      <item>CURL_VERSION_DEBUG</item>
+      <item>CURL_VERSION_GSSAPI</item>
+      <item>CURL_VERSION_GSSNEGOTIATE</item>
+      <item>CURL_VERSION_IDN</item>
+      <item>CURL_VERSION_MULTI_SSL</item>
+      <item>CURL_VERSION_NTLM</item>
+      <item>CURL_VERSION_NTLM_WB</item>
+      <item>CURL_VERSION_SPNEGO</item>
+      <item>CURL_VERSION_SSPI</item>
+      <item>CURL_VERSION_TLSAUTH_SRP</item>
       <item>CURLPAUSE_ALL</item>
       <item>CURLPAUSE_CONT</item>
       <item>CURLPAUSE_RECV</item>
@@ -1428,6 +1501,8 @@ Changes:
       <item>FILTER_FLAG_ENCODE_AMP</item>
       <item>FILTER_FLAG_ENCODE_HIGH</item>
       <item>FILTER_FLAG_ENCODE_LOW</item>
+      <item>FILTER_FLAG_HOSTNAME</item>
+      <item>FILTER_FLAG_HOST_REQUIRED</item>
       <item>FILTER_FLAG_IPV4</item>
       <item>FILTER_FLAG_IPV6</item>
       <item>FILTER_FLAG_NONE</item>
@@ -1436,12 +1511,15 @@ Changes:
       <item>FILTER_FLAG_NO_RES_RANGE</item>
       <item>FILTER_FLAG_PATH_REQUIRED</item>
       <item>FILTER_FLAG_QUERY_REQUIRED</item>
+      <item>FILTER_FLAG_SCHEME_REQUIRED</item>
+      <item>FILTER_FLAG_STRIP_BACKTICK</item>
       <item>FILTER_FLAG_STRIP_HIGH</item>
       <item>FILTER_FLAG_STRIP_LOW</item>
       <item>FILTER_FORCE_ARRAY</item>
       <item>FILTER_NULL_ON_FAILURE</item>
       <item>FILTER_REQUIRE_ARRAY</item>
       <item>FILTER_REQUIRE_SCALAR</item>
+      <item>FILTER_SANITIZE_ADD_SLASHES</item>
       <item>FILTER_SANITIZE_EMAIL</item>
       <item>FILTER_SANITIZE_ENCODED</item>
       <item>FILTER_SANITIZE_MAGIC_QUOTES</item>
@@ -1453,6 +1531,7 @@ Changes:
       <item>FILTER_SANITIZE_URL</item>
       <item>FILTER_UNSAFE_RAW</item>
       <item>FILTER_VALIDATE_BOOLEAN</item>
+      <item>FILTER_VALIDATE_DOMAIN</item>
       <item>FILTER_VALIDATE_EMAIL</item>
       <item>FILTER_VALIDATE_FLOAT</item>
       <item>FILTER_VALIDATE_INT</item>
@@ -1807,6 +1886,7 @@ Changes:
       <item>IMG_COLOR_STYLEDBRUSHED</item>
       <item>IMG_COLOR_TILED</item>
       <item>IMG_COLOR_TRANSPARENT</item>
+      <item>IMG_COLOR_TRANSLATE</item>
       <item>IMG_EFFECT_ALPHABLEND</item>
       <item>IMG_EFFECT_MULTIPLY</item>
       <item>IMG_EFFECT_NORMAL</item>
@@ -1824,6 +1904,7 @@ Changes:
       <item>IMG_FILTER_PIXELATE</item>
       <item>IMG_FILTER_SELECTIVE_BLUR</item>
       <item>IMG_FILTER_SMOOTH</item>
+      <item>IMG_FILTER_SCATTER</item>
       <item>IMG_FLIP_BOTH</item>
       <item>IMG_FLIP_HORIZONTAL</item>
       <item>IMG_FLIP_VERTICAL</item>
@@ -2320,6 +2401,7 @@ Changes:
       <item>MYSQLI_NUM</item>
       <item>MYSQLI_NUM_FLAG</item>
       <item>MYSQLI_OPT_CONNECT_TIMEOUT</item>
+      <item>MYSQLI_OPT_READ_TIMEOUT</item>
       <item>MYSQLI_OPT_INT_AND_FLOAT_NATIVE</item>
       <item>MYSQLI_OPT_LOCAL_INFILE</item>
       <item>MYSQLI_OPT_NET_CMD_BUFFER_SIZE</item>
@@ -2333,6 +2415,7 @@ Changes:
       <item>MYSQLI_REFRESH_HOSTS</item>
       <item>MYSQLI_REFRESH_LOG</item>
       <item>MYSQLI_REFRESH_MASTER</item>
+      <item>MYSQLI_REFRESH_REPLICA</item>
       <item>MYSQLI_REFRESH_SLAVE</item>
       <item>MYSQLI_REFRESH_STATUS</item>
       <item>MYSQLI_REFRESH_TABLES</item>
@@ -3103,8 +3186,15 @@ Changes:
       <item>PGSQL_BAD_RESPONSE</item>
       <item>PGSQL_BOTH</item>
       <item>PGSQL_COMMAND_OK</item>
+      <item>PGSQL_CONNECTION_AUTH_OK</item>
+      <item>PGSQL_CONNECTION_AWAITING_RESPONSE</item>
       <item>PGSQL_CONNECTION_BAD</item>
+      <item>PGSQL_CONNECTION_MADE</item>
       <item>PGSQL_CONNECTION_OK</item>
+      <item>PGSQL_CONNECTION_SETENV</item>
+      <item>PGSQL_CONNECTION_SSL_STARTUP</item>
+      <item>PGSQL_CONNECTION_STARTED</item>
+      <item>PGSQL_CONNECT_ASYNC</item>
       <item>PGSQL_CONNECT_ASYNC</item>
       <item>PGSQL_CONNECT_FORCE_NEW</item>
       <item>PGSQL_CONV_FORCE_NULL</item>
@@ -3112,12 +3202,16 @@ Changes:
       <item>PGSQL_CONV_IGNORE_NOT_NULL</item>
       <item>PGSQL_COPY_IN</item>
       <item>PGSQL_COPY_OUT</item>
+      <item>PGSQL_DIAG_COLUMN_NAME</item>
+      <item>PGSQL_DIAG_CONSTRAINT_NAME</item>
       <item>PGSQL_DIAG_CONTEXT</item>
+      <item>PGSQL_DIAG_DATATYPE_NAME</item>
       <item>PGSQL_DIAG_INTERNAL_POSITION</item>
       <item>PGSQL_DIAG_INTERNAL_QUERY</item>
       <item>PGSQL_DIAG_MESSAGE_DETAIL</item>
       <item>PGSQL_DIAG_MESSAGE_HINT</item>
       <item>PGSQL_DIAG_MESSAGE_PRIMARY</item>
+      <item>PGSQL_DIAG_SCHEMA_NAME</item>
       <item>PGSQL_DIAG_SEVERITY</item>
       <item>PGSQL_DIAG_SEVERITY_NONLOCALIZED</item>
       <item>PGSQL_DIAG_SOURCE_FILE</item>
@@ -3125,6 +3219,7 @@ Changes:
       <item>PGSQL_DIAG_SOURCE_LINE</item>
       <item>PGSQL_DIAG_SQLSTATE</item>
       <item>PGSQL_DIAG_STATEMENT_POSITION</item>
+      <item>PGSQL_DIAG_TABLE_NAME</item>
       <item>PGSQL_DML_ASYNC</item>
       <item>PGSQL_DML_ESCAPE</item>
       <item>PGSQL_DML_EXEC</item>
@@ -3136,6 +3231,7 @@ Changes:
       <item>PGSQL_ERRORS_VERBOSE</item>
       <item>PGSQL_FATAL_ERROR</item>
       <item>PGSQL_LIBPQ_VERSION</item>
+      <item>PGSQL_LIBPQ_VERSION_STR</item>
       <item>PGSQL_LIBPQ_VERSION_STR</item>
       <item>PGSQL_NONFATAL_ERROR</item>
       <item>PGSQL_NOTICE_ALL</item>
@@ -5201,31 +5297,17 @@ Changes:
       <item>__get</item>
       <item>__invoke</item>
       <item>__isset</item>
+      <item>__serialize</item>
       <item>__set</item>
       <item>__set_state</item>
       <item>__sleep</item>
       <item>__toString</item>
+      <item>__unserialize</item>
       <item>__unset</item>
       <item>__wakeup</item>
     </list>
 
     <list name="functions">
-      <!-- keyword functions -->
-      <item>array</item>
-      <item>die</item>
-      <item>echo</item>
-      <item>empty</item>
-      <item>eval</item>
-      <item>exit</item>
-      <item>include</item>
-      <item>include_once</item>
-      <item>isset</item>
-      <item>list</item>
-      <item>print</item>
-      <item>require</item>
-      <item>require_once</item>
-      <item>unset</item>
-
       <!-- standard functions -->
       <item>_</item>
       <item>abs</item>
@@ -5308,6 +5390,7 @@ Changes:
       <item>array_intersect_key</item>
       <item>array_intersect_uassoc</item>
       <item>array_intersect_ukey</item>
+      <item>array_is_list</item>
       <item>array_keys</item>
       <item>array_key_exists</item>
       <item>array_key_first</item>
@@ -5656,6 +5739,7 @@ Changes:
       <item>com_load_typelib</item>
       <item>com_message_pump</item>
       <item>com_print_typeinfo</item>
+      <item>compact</item>
       <item>connection_aborted</item>
       <item>connection_status</item>
       <item>constant</item>
@@ -6382,6 +6466,7 @@ Changes:
       <item>fbsql_username</item>
       <item>fbsql_warnings</item>
       <item>fclose</item>
+      <item>fdatasync</item>
       <item>fdf_add_doc_javascript</item>
       <item>fdf_add_template</item>
       <item>fdf_close</item>
@@ -6417,6 +6502,7 @@ Changes:
       <item>fdf_set_target_frame</item>
       <item>fdf_set_value</item>
       <item>fdf_set_version</item>
+      <item>fdiv</item>
       <item>feof</item>
       <item>fflush</item>
       <item>fgetc</item>
@@ -6475,6 +6561,7 @@ Changes:
       <item>fseek</item>
       <item>fsockopen</item>
       <item>fstat</item>
+      <item>fsync</item>
       <item>ftell</item>
       <item>ftok</item>
       <item>ftp_alloc</item>
@@ -6577,6 +6664,7 @@ Changes:
       <item>get_class_methods</item>
       <item>get_class_vars</item>
       <item>get_current_user</item>
+      <item>get_debug_type</item>
       <item>get_declared_classes</item>
       <item>get_declared_interfaces</item>
       <item>get_declared_traits</item>
@@ -6596,6 +6684,7 @@ Changes:
       <item>get_parent_class</item>
       <item>get_required_files</item>
       <item>get_resources</item>
+      <item>get_resource_id</item>
       <item>get_resource_type</item>
       <item>glob</item>
       <item>gmdate</item>
@@ -8663,6 +8752,7 @@ Changes:
       <item>preg_filter</item>
       <item>preg_grep</item>
       <item>preg_last_error</item>
+      <item>preg_last_error_msg</item>
       <item>preg_match</item>
       <item>preg_match_all</item>
       <item>preg_quote</item>
@@ -9439,6 +9529,8 @@ Changes:
       <item>strtoupper</item>
       <item>strtr</item>
       <item>strval</item>
+      <item>str_contains</item>
+      <item>str_ends_with</item>
       <item>str_getcsv</item>
       <item>str_ireplace</item>
       <item>str_pad</item>
@@ -9447,6 +9539,7 @@ Changes:
       <item>str_rot13</item>
       <item>str_shuffle</item>
       <item>str_split</item>
+      <item>str_starts_with</item>
       <item>str_word_count</item>
       <item>substr</item>
       <item>substr_compare</item>
@@ -10142,6 +10235,7 @@ Changes:
       <item>xdebug_var_dump</item>
     </list>
 
+    <!-- https://www.php.net/manual/en/reserved.variables.php -->
     <list name="special-variables">
         <item>$GLOBALS</item>
         <item>$_COOKIE</item>
@@ -10154,9 +10248,11 @@ Changes:
         <item>$_SESSION</item>
         <item>$php_errormsg</item>
         <item>$this</item>
+        <item>$http_response_header</item>
     </list>
 
     <list name="predefined-classes">
+        <item>AddressInfo</item>
         <item>APCIterator</item>
         <item>APCUIterator</item>
         <item>AppendIterator</item>
@@ -10218,6 +10314,10 @@ Changes:
         <item>Cond</item>
         <item>Countable</item>
         <item>CURLFile</item>
+        <item>CurlHandle</item>
+        <item>CurlMultiHandle</item>
+        <item>CurlShareHandle</item>
+        <item>CURLStringFile</item>
         <item>DateInterval</item>
         <item>DatePeriod</item>
         <item>DateTime</item>
@@ -10231,6 +10331,7 @@ Changes:
         <item>DOMAttr</item>
         <item>DOMCdataSection</item>
         <item>DomCharacterData</item>
+        <item>DOMChildNode</item>
         <item>DOMComment</item>
         <item>DOMDocument</item>
         <item>DOMDocumentFragment</item>
@@ -10244,6 +10345,7 @@ Changes:
         <item>DOMNode</item>
         <item>DOMNodeList</item>
         <item>DOMNotation</item>
+        <item>DOMParentNode</item>
         <item>DOMProcessingInstruction</item>
         <item>DOMText</item>
         <item>DomXPath</item>
@@ -10270,6 +10372,7 @@ Changes:
         <item>FilesystemIterator</item>
         <item>FilterIterator</item>
         <item>finfo</item>
+        <item>GdImage</item>
         <item>GearmanClient</item>
         <item>GearmanException</item>
         <item>GearmanJob</item>
@@ -10381,6 +10484,9 @@ Changes:
         <item>OAuthProvider</item>
         <item>OCI-Collection</item>
         <item>OCI-Lob</item>
+        <item>OpenSSLAsymmetricKey</item>
+        <item>OpenSSLCertificate</item>
+        <item>OpenSSLCertificateSigningRequest</item>
         <item>OuterIterator</item>
         <item>OutOfBoundsException</item>
         <item>OutOfRangeException</item>
@@ -10395,6 +10501,7 @@ Changes:
         <item>PharException</item>
         <item>PharFileInfo</item>
         <item>phdfs</item>
+        <item>PhpToken</item>
         <item>php_user_filter</item>
         <item>QuickHashIntHash</item>
         <item>QuickHashIntSet</item>
@@ -10470,6 +10577,7 @@ Changes:
         <item>SoapParam</item>
         <item>SoapServer</item>
         <item>SoapVar</item>
+        <item>Socket</item>
         <item>SodiumException</item>
         <item>SolrClientException</item>
         <item>SolrCollapseFunction</item>
@@ -10517,6 +10625,7 @@ Changes:
         <item>StompException</item>
         <item>StompFrame</item>
         <item>streamWrapper</item>
+        <item>Stringable</item>
         <item>SVM</item>
         <item>SVMException</item>
         <item>SVMModel</item>
@@ -10562,6 +10671,8 @@ Changes:
         <item>TypeError</item>
         <item>UnderflowException</item>
         <item>UnexpectedValueException</item>
+        <item>UnhandledMatchError</item>
+        <item>ValueError</item>
         <item>V8Js</item>
         <item>V8JsException</item>
         <item>VarnishAdmin</item>
@@ -10572,6 +10683,7 @@ Changes:
         <item>WeakMap</item>
         <item>WeakRef</item>
         <item>Worker</item>
+        <item>XMLParser</item>
         <item>XMLReader</item>
         <item>XMLWriter</item>
         <item>XSLTProcessor</item>
@@ -10831,222 +10943,334 @@ Changes:
 
     <contexts>
       <!-- JGM:  Added fallthrough so it will handle snippets that don't begin with <?php -->
-      <context name="start" lineEndContext="#stay" attribute="Normal Text" fallthrough="true" fallthroughContext="phpsource">
-        <RegExpr context="phpsource" attribute="Keyword" String="&lt;\?(?:=|php)?" insensitive="true" />
-        <StringDetect attribute="Keyword" context="#pop" String="?&gt;" />
+       <context name="start" lineEndContext="#stay" attribute="Normal Text" fallthrough="true" fallthroughContext="phpsource">
+        <StringDetect context="phpsource" attribute="Keyword" String="&lt;?php" insensitive="true" />
+        <Detect2Chars context="phpsource" attribute="Keyword" char="&lt;" char1="?" />
+        <Detect2Chars attribute="Keyword" context="#pop" char="?" char1="&gt;" />
       </context>
       <context name="phpsource" attribute="PHP Text" lineEndContext="#stay">
         <DetectSpaces />
-        <StringDetect attribute="Keyword" context="#pop" String="?&gt;" lookAhead="true" />
 
-        <!-- Alternate PHP Block Syntax
-          -  http://www.php.net/manual/en/control-structures.alternative-syntax.php
-          -
-          -  We must treat the ternary and case/default statements specially so that the : in those can be
-          -  ignored.  Then otherwise we treat the : as a block start, and the 5 different end statements as
-          -  a block end.
-          -
-          -  The ternary and case/default switch to a context which short-circuits the : detection and
-          -  just pops back to this context instead of starting a block.
-          -
-          -  We can not use case/default as starting a block because they can be terminated by break. return
-          -  or not at all, making it impossible to determine where the block should end.
-          -
-          -  Additionally the paamayim nekudotayim (::) must not start a subcontext that is never terminated.
-          -->
+        <Detect2Chars attribute="Symbol" context="#stay" char="-" char1=">"/>
+        <Detect2Chars attribute="Operator" context="#stay" char="?" char1="?"/>
+        <Detect2Chars attribute="Scope Resolution" context="#stay" char=":" char1=":" />
+        <DetectChar attribute="Scope Resolution" context="#stay" char="\" />
+        <Detect2Chars attribute="Keyword" context="#pop" char="?" char1="&gt;" lookAhead="true" />
+        <AnyChar attribute="Other" context="#stay" String=";,?:" />
 
-        <DetectChar attribute="Other" context="ternary" char="?" />
-        <RegExpr attribute="Keyword" context="case"  String="(case|default)(\s|:|$)" />
-        <Detect2Chars attribute="Normal Text" context="#stay" char=":" char1=":" />
-        <DetectChar attribute="Normal Text" context="#stay" char=":" beginRegion="Alternate Block" />
-        <RegExpr attribute="Control Structures" context="#stay" String="endif|endwhile|endfor|endforeach|endswitch" endRegion="Alternate Block" />
-        <!--/ Alternate PHP Block Syntax -->
+        <Detect2Chars attribute="Attribute" context="Attribute" char="#" char1="["/>
+        <IncludeRules context="FindComment"/>
 
-        <DetectChar attribute="Comment" context="onelinecomment" char="#" />
-        <Detect2Chars attribute="Comment" context="MatchComment" char="/" char1="/" lookAhead="true"/>
-        <Detect2Chars attribute="Comment" context="MatchComment" char="/" char1="*" lookAhead="true" />
-        <keyword attribute="Error" context="#stay" String="deprecated"/>
-        <keyword attribute="Control Structures" context="#stay" String="control structures" />
+        <StringDetect attribute="Operator" context="#stay" String="&lt;=>" />
+        <Detect2Chars attribute="Symbol" context="#stay" char="=" char1=">"/>
+        <StringDetect context="heredocstart" String="&lt;&lt;&lt;" lookAhead="1" />
+        <AnyChar attribute="Operator" context="#stay" String="=&lt;>&amp;|!+-*/%^~"/>
+
+        <DetectChar attribute="Symbol" context="#stay" char="{" beginRegion="Brace1" />
+        <DetectChar attribute="Symbol" context="#stay" char="}" endRegion="Brace1" />
+
+        <keyword attribute="Control Structures" context="control" String="control structures" lookAhead="1"/>
         <keyword attribute="Keyword" context="#stay" String="keywords" />
         <keyword attribute="Classes" context="#stay" String="predefined-classes"/>
-        <DetectChar attribute="Error" context="#stay" char="@" />
         <keyword attribute="Function" context="#stay" String="functions" />
         <keyword attribute="Special method" context="#stay" String="special_methods" />
         <keyword attribute="Library Constant" context="#stay" String="constants"/>
+        <keyword attribute="Operator" context="#stay" String="operators"/>
+        <keyword attribute="Types" context="#stay" String="types"/>
+        <keyword attribute="Error" context="#stay" String="deprecated"/>
         <RegExpr attribute="Constant" context="#stay" String="\b[A-Z_][A-Z_0-9]*\b"/>
 
-        <!-- Type casts -->
-        <RegExpr attribute="Types" context="#stay" String="\(\s*(&types;)\s*\)"/>
-
         <DetectIdentifier />
+
+        <StringDetect attribute="Symbol" context="#stay" String="..." />
+        <DetectChar context="dot" char="." lookAhead="1"/>
+        <AnyChar context="number" String="0123456789" lookAhead="1"/>
+
+        <keyword attribute="Special Variable" context="#stay" String="special-variables"/>
+        <RegExpr attribute="Variable" context="#stay" String="\$+&varid;" />
+
         <DetectChar attribute="String" context="doublequotestring" char="&quot;" />
         <DetectChar attribute="String" context="backquotestring" char="`" />
         <DetectChar attribute="String" context="singlequotestring" char="'" />
-        <RegExpr attribute="Backslash Code" context="htmlheredoc" String="&lt;&lt;&lt;&quot;((EO)?HTML)&quot;" beginRegion="Heredoc" />
-        <RegExpr attribute="Backslash Code" context="cssheredoc" String="&lt;&lt;&lt;&quot;((EO)?CSS)&quot;" beginRegion="Heredoc" />
-        <RegExpr attribute="Backslash Code" context="javascriptheredoc" String="&lt;&lt;&lt;&quot;((EO)?JAVASCRIPT)&quot;" beginRegion="Heredoc" />
-        <RegExpr attribute="Backslash Code" context="mysqlheredoc" String="&lt;&lt;&lt;&quot;((EO)?MYSQL)&quot;" beginRegion="Heredoc" />
-        <RegExpr attribute="Backslash Code" context="heredoc" String="&lt;&lt;&lt;&quot;([A-Za-z_][A-Za-z0-9_]*)&quot;" beginRegion="Heredoc" />
-        <RegExpr attribute="Backslash Code" context="htmlheredoc" String="&lt;&lt;&lt;((EO)?HTML)\b" beginRegion="Heredoc" />
-        <RegExpr attribute="Backslash Code" context="cssheredoc" String="&lt;&lt;&lt;((EO)?CSS)\b" beginRegion="Heredoc" />
-        <RegExpr attribute="Backslash Code" context="javascriptheredoc" String="&lt;&lt;&lt;((EO)?JAVASCRIPT)\b" beginRegion="Heredoc" />
-        <RegExpr attribute="Backslash Code" context="mysqlheredoc" String="&lt;&lt;&lt;((EO)?MYSQL)\b" beginRegion="Heredoc" />
-        <RegExpr attribute="Backslash Code" context="heredoc" String="&lt;&lt;&lt;([A-Za-z_][A-Za-z0-9_]*)" beginRegion="Heredoc" />
-        <RegExpr attribute="Backslash Code" context="htmlnowdoc" String="&lt;&lt;&lt;'((EO)?HTML)'" beginRegion="Nowdoc" />
-        <RegExpr attribute="Backslash Code" context="cssnowdoc" String="&lt;&lt;&lt;'((EO)?CSS)'" beginRegion="Nowdoc" />
-        <RegExpr attribute="Backslash Code" context="javascriptnowdoc" String="&lt;&lt;&lt;'((EO)?JAVASCRIPT)'" beginRegion="Nowdoc" />
-        <RegExpr attribute="Backslash Code" context="mysqlnowdoc" String="&lt;&lt;&lt;'((EO)?MYSQL)'" beginRegion="Nowdoc" />
-        <RegExpr attribute="Backslash Code" context="nowdoc" String="&lt;&lt;&lt;'([A-Za-z_][A-Za-z0-9_]*)'" beginRegion="Nowdoc" />
-        <keyword attribute="Special Variable" context="#stay" String="special-variables"/>
-        <RegExpr attribute="Variable" context="#stay" String="\$+[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*" />
-        <RegExpr attribute="String" context="#stay" String="[0123456789]*\.\.\.[0123456789]*" />
-        <RegExpr attribute="Binary" context="#stay" String="0[bB][01]+" />
-        <HlCOct attribute="Octal" context="#stay" />
-        <HlCHex attribute="Hex" context="#stay" />
-        <Float attribute="Float" context="#stay" />
-        <Int attribute="Decimal" context="#stay" />
-        <DetectChar attribute="Normal Text" context="#stay" char="{" beginRegion="Brace1" />
-        <DetectChar attribute="Normal Text" context="#stay" char="}" endRegion="Brace1" />
-        <AnyChar attribute="Other" context="#stay" String=";(),[]" />
+
+        <DetectChar attribute="Error Control Operator" context="#stay" char="@" />
+
+        <!-- Type casts -->
+        <RegExpr attribute="Cast" context="#stay" String="\(\s*(&types;)\s*\)" insensitive="true"/>
+        <AnyChar attribute="Symbol" context="#stay" String="()[]"/>
       </context>
 
-      <context name="MatchComment" attribute="Normal Text" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">
+      <context name="FindComment" attribute="PHP Text" lineEndContext="#pop">
+        <DetectChar attribute="Comment" context="onelinecomment" char="#" />
+        <Detect2Chars attribute="Comment" context="MatchComment" char="/" char1="/" lookAhead="true"/>
+        <Detect2Chars attribute="Comment" context="MatchComment" char="/" char1="*" lookAhead="true" />
+      </context>
+
+      <context name="MatchComment" attribute="PHP Text" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">
         <IncludeRules context="##Doxygen" />
         <Detect2Chars attribute="Comment" context="#pop!onelinecomment" char="/" char1="/" />
         <Detect2Chars attribute="Comment" context="#pop!twolinecomment" char="/" char1="*" beginRegion="Comment" />
       </context>
 
-      <context name="ternary" attribute="PHP Text" lineEndContext="#stay">
-        <!-- the paamayim nekudotayim (::) must not start a subcontext that is never terminated. -->
-        <Detect2Chars attribute="Normal Text" context="#stay" char=":" char1=":" />
-        <DetectChar attribute="Other" char=":" context="#pop" />
-        <IncludeRules context="phpsource" />
-      </context>
-
-      <context name="case" attribute="PHP Text" lineEndContext="#stay">
-        <IncludeRules context="ternary" />
-      </context>
-
       <context name="onelinecomment" attribute="Comment" lineEndContext="#pop">
         <DetectSpaces />
-        <StringDetect attribute="Keyword" context="#pop" lookAhead="true" String="?&gt;" />
-        <IncludeRules context="##Alerts" />
+        <Detect2Chars attribute="Keyword" context="#pop" lookAhead="true" char="?" char1="&gt;" />
+        <IncludeRules context="##Comments" />
       </context>
       <context name="twolinecomment" attribute="Comment" lineEndContext="#stay">
         <DetectSpaces />
         <Detect2Chars attribute="Comment" context="#pop" char="*" char1="/" endRegion="Comment" />
-        <IncludeRules context="##Alerts" />
+        <IncludeRules context="##Comments" />
       </context>
-      <context name="doublebackquotestringcommon" attribute="String" lineEndContext="#stay">
-        <!-- Common rules for double quoted strings and backticks (execution operator) URL:
-              http://de3.php.net/manual/en/language.types.string.php#language.types.string.syntax.double -->
-        <Detect2Chars attribute="Backslash Code" context="#stay" char="\" char1="\" />
-        <Detect2Chars attribute="Backslash Code" context="#stay" char="\" char1="n" />
-        <Detect2Chars attribute="Backslash Code" context="#stay" char="\" char1="r" />
-        <Detect2Chars attribute="Backslash Code" context="#stay" char="\" char1="t" />
-        <Detect2Chars attribute="Backslash Code" context="#stay" char="\" char1="v" />
-        <Detect2Chars attribute="Backslash Code" context="#stay" char="\" char1="f" />
-        <Detect2Chars attribute="Backslash Code" context="#stay" char="\" char1="$" />
-        <RegExpr attribute="Backslash Code" context="#stay" String="\\[0-7]{1,3}" />
-        <RegExpr attribute="Backslash Code" context="#stay" String="\\x[0-9A-Fa-f]{1,2}" />
-        <RegExpr attribute="Variable" context="#stay" String="\$[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*(\[[a-zA-Z0-9_]*\])*" />
-        <RegExpr attribute="Variable" context="#stay" String="\$\{[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*(\[[a-zA-Z0-9_]*\])*\}" />
-        <RegExpr attribute="Variable" context="#stay" String="\{\$[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*(\[([0-9]*|&quot;[^&quot;]*&quot;|\$[a-zA-Z]*)|'[^']*'|\])*(-&gt;[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*(\[[a-zA-Z0-9_]*\])*(\[([0-9]*|&quot;[a-zA-Z_]*&quot;)|'[a-zA-Z_]*'|\]|\[.*\])*)*\}" />
+
+      <context name="doublestringvariablecommon" attribute="String" lineEndContext="#stay">
+        <keyword attribute="Special Variable" context="dqaftervarname" String="special-variables"/>
+        <RegExpr attribute="Variable" context="dqaftervarname" String="\$&varid;" />
+        <Detect2Chars attribute="Variable" context="dqcomplexvariable" char="{" char1="$" lookAhead="1"/>
+        <Detect2Chars attribute="Variable" context="dqvarnamebrace" char="$" char1="{" lookAhead="1"/>
       </context>
+
+      <!--
+        $var->xxx
+        $var[-1]
+        $var[1]
+        $var[ident]
+
+        $var[$ident]
+             ^_ error
+      -->
+      <context name="dqaftervarname" attribute="String" lineEndContext="#pop" fallthrough="1" fallthroughContext="#pop">
+        <DetectChar attribute="Symbol" context="#pop!dqarray" char="["/>
+        <Detect2Chars context="#pop!dqobject" char="-" char1=">" lookAhead="1"/>
+      </context>
+      <context name="dqarray" attribute="Variable" lineEndContext="#stay" fallthrough="1" fallthroughContext="#pop">
+        <DetectIdentifier attribute="String" context="#pop!dqarrayclose"/>
+        <Int attribute="Decimal" context="#pop!dqarrayclose"/>
+        <DetectChar attribute="Operator" context="#stay" char="-"/>
+        <keyword attribute="Special Variable" context="#pop!dqarrayclose" String="special-variables"/>
+        <RegExpr attribute="Variable" context="#pop!dqarrayclose" String="\$&varid;"/>
+        <IncludeRules context="finddqarraycharerror"/>
+      </context>
+      <context name="dqarrayclose" attribute="Variable" lineEndContext="#stay" fallthrough="1" fallthroughContext="#pop">
+        <DetectChar attribute="Symbol" context="#pop" char="]"/>
+        <IncludeRules context="finddqarraycharerror"/>
+      </context>
+      <context name="dqobject" attribute="String" lineEndContext="#pop" fallthrough="1" fallthroughContext="#pop">
+        <RegExpr attribute="Symbol" context="#pop!dqobjectmem" String="->(?=&varid;)"/>
+      </context>
+      <context name="dqobjectmem" attribute="Variable" lineEndContext="#pop">
+        <DetectIdentifier attribute="PHP Text" context="#pop"/>
+      </context>
+      <context name="finddqarraycharerror" attribute="String" lineEndContext="#stay" fallthrough="1" fallthroughContext="#pop">
+        <RegExpr attribute="Error" context="#pop" String="[^&quot;`]"/>
+      </context>
+
+      <context name="dqcomplexvariable" attribute="Variable" lineEndContext="#stay" fallthrough="1" fallthroughContext="#pop!finddqarraycharerror">
+        <DetectChar attribute="Symbol" context="#stay" char="{"/>
+        <DetectChar attribute="Variable" context="#pop!dqcomplexvariable2" char="$"/>
+      </context>
+      <context name="dqcomplexvariable2" attribute="Variable" lineEndContext="#stay" fallthrough="1" fallthroughContext="#pop!finddqarraycharerror">
+        <DetectIdentifier attribute="Variable" context="#pop!dqaftercomplexvariable"/>
+        <DetectChar attribute="Variable" context="#stay" char="$"/>
+        <IncludeRules context="finddqarraycharerror"/>
+      </context>
+      <context name="dqaftercomplexvariable" attribute="PHP Text" lineEndContext="#stay">
+        <DetectChar attribute="Symbol" context="#pop" char="}"/>
+        <DetectChar attribute="Symbol" context="dqaftercomplexvariable" char="{"/>
+        <IncludeRules context="phpsource"/>
+      </context>
+
+      <context name="dqvarnamebrace" attribute="Variable" lineEndContext="#stay">
+        <DetectChar attribute="Symbol" context="#pop!dqcomplexvariable2" char="{"/>
+        <DetectChar attribute="Variable" context="#stay" char="$"/>
+      </context>
+
       <context name="backquotestring" attribute="String" lineEndContext="#stay">
-        <IncludeRules context="doublebackquotestringcommon" />
-        <Detect2Chars attribute="Backslash Code" context="#stay" char="\" char1="`" />
+        <DetectChar context="backquotestringescaped" char="\" lookAhead="1"/>
+        <IncludeRules context="doublestringvariablecommon"/>
         <DetectChar attribute="String" context="#pop" char="`" />
       </context>
+      <context name="backquotestringescaped" attribute="String" lineEndContext="#stay">
+        <!-- Common rules for double quoted strings and backticks (execution operator) URL:
+              https://www.php.net/manual/en/language.types.string.php#language.types.string.syntax.double -->
+        <RegExpr attribute="Backslash Code" context="#pop" String="\\([\\nrtvef$`]|[0-7]{1,3}|x[0-9A-Fa-f]{1,2}|u\{[0-9A-Fa-f]+\})"/>
+        <DetectChar attribute="String" context="#pop" char="\"/>
+      </context>
+
       <context name="doublequotestring" attribute="String" lineEndContext="#stay">
-        <IncludeRules context="doublebackquotestringcommon" />
-        <Detect2Chars attribute="Backslash Code" context="#stay" char="\" char1="&quot;" />
+        <DetectChar context="doublequotestringescaped" char="\" lookAhead="1"/>
+        <IncludeRules context="doublestringvariablecommon"/>
         <DetectChar attribute="String" context="#pop" char="&quot;" />
       </context>
+      <context name="doublequotestringescaped" attribute="String" lineEndContext="#stay">
+        <!-- Common rules for double quoted strings and backticks (execution operator) URL:
+              https://www.php.net/manual/en/language.types.string.php#language.types.string.syntax.double -->
+        <RegExpr attribute="Backslash Code" context="#pop" String="\\([\\nrtvef$&quot;]|[0-7]{1,3}|x[0-9A-Fa-f]{1,2}|u\{[0-9A-Fa-f]+\})"/>
+        <DetectChar attribute="String" context="#pop" char="\"/>
+      </context>
+
       <context name="singlequotestring" attribute="String" lineEndContext="#stay">
         <Detect2Chars attribute="Backslash Code" context="#stay" char="\" char1="'" />
         <Detect2Chars attribute="Backslash Code" context="#stay" char="\" char1="\" />
         <DetectChar attribute="String" context="#pop" char="'" />
       </context>
+
+      <context name="heredocstart" attribute="Normal Text" lineEndContext="#pop">
+        <RegExpr attribute="Heredoc" context="htmlheredoc" String="&lt;&lt;&lt;(?|&quot;((?:EO)?HTML)&quot;|((?:EO)?HTML)\b)" beginRegion="Heredoc" />
+        <RegExpr attribute="Heredoc" context="cssheredoc" String="&lt;&lt;&lt;(?|&quot;((?:EO)?CSS)&quot;|((?:EO)?CSS)\b)" beginRegion="Heredoc" />
+        <RegExpr attribute="Heredoc" context="javascriptheredoc" String="&lt;&lt;&lt;(?|&quot;((?:EO)?JAVASCRIPT)&quot;|((?:EO)?JAVASCRIPT)\b)" beginRegion="Heredoc" />
+        <RegExpr attribute="Heredoc" context="mysqlheredoc" String="&lt;&lt;&lt;(?|&quot;((?:EO)?MYSQL)&quot;|((?:EO)?MYSQL)\b)" beginRegion="Heredoc" />
+        <RegExpr attribute="Heredoc" context="heredoc" String="&lt;&lt;&lt;(?|&quot;([A-Za-z_][A-Za-z0-9_]*)&quot;|([A-Za-z_][A-Za-z0-9_]*))" beginRegion="Heredoc" />
+        <RegExpr attribute="Nowdoc" context="htmlnowdoc" String="&lt;&lt;&lt;'((?:EO)?HTML)'" beginRegion="Nowdoc" />
+        <RegExpr attribute="Nowdoc" context="cssnowdoc" String="&lt;&lt;&lt;'((?:EO)?CSS)'" beginRegion="Nowdoc" />
+        <RegExpr attribute="Nowdoc" context="javascriptnowdoc" String="&lt;&lt;&lt;'((?:EO)?JAVASCRIPT)'" beginRegion="Nowdoc" />
+        <RegExpr attribute="Nowdoc" context="mysqlnowdoc" String="&lt;&lt;&lt;'((?:EO)?MYSQL)'" beginRegion="Nowdoc" />
+        <RegExpr attribute="Nowdoc" context="nowdoc" String="&lt;&lt;&lt;'([A-Za-z_][A-Za-z0-9_]*)'" beginRegion="Nowdoc" />
+        <StringDetect attribute="Error" context="#pop" String="&lt;&lt;&lt;" />
+      </context>
+
       <context name="htmlheredoc" attribute="Normal Text" lineEndContext="#stay" dynamic="true">
-        <RegExpr attribute="Backslash Code" context="#pop" String="^%1;?$" dynamic="true" endRegion="Heredoc" />
-        <IncludeRules context="commonheredoc" />
+        <IncludeRules context="heredoc" />
         <IncludeRules context="##HTML" />
       </context>
       <context name="cssheredoc" attribute="Normal Text" lineEndContext="#stay" dynamic="true">
-        <RegExpr attribute="Backslash Code" context="#pop" String="^%1;?$" dynamic="true" endRegion="Heredoc" />
-        <IncludeRules context="commonheredoc" />
+        <IncludeRules context="heredoc" />
         <IncludeRules context="##CSS" />
       </context>
       <context name="mysqlheredoc" attribute="Normal Text" lineEndContext="#stay" dynamic="true">
-        <RegExpr attribute="Backslash Code" context="#pop" String="^%1;?$" dynamic="true" endRegion="Heredoc" />
-        <IncludeRules context="commonheredoc" />
+        <IncludeRules context="heredoc" />
         <IncludeRules context="##SQL (MySQL)" />
       </context>
       <context name="javascriptheredoc" attribute="Normal Text" lineEndContext="#stay" dynamic="true">
-        <RegExpr attribute="Backslash Code" context="#pop" String="^%1;?$" dynamic="true" endRegion="Heredoc" />
-        <IncludeRules context="commonheredoc" />
+        <IncludeRules context="heredoc" />
         <IncludeRules context="Normal##JavaScript" />
       </context>
       <context name="heredoc" attribute="String" lineEndContext="#stay" dynamic="true">
-        <RegExpr attribute="Backslash Code" context="#pop" String="^%1;?$" dynamic="true" endRegion="Heredoc" />
-        <IncludeRules context="commonheredoc" />
+        <IncludeRules context="doublestringvariablecommon" />
+        <RegExpr attribute="Heredoc" context="#pop" String="^%1(?=;?$)" dynamic="true" endRegion="Heredoc" column="0" />
       </context>
-      <context name="commonheredoc" attribute="String" lineEndContext="#stay">
-        <RegExpr attribute="Variable" context="#stay" String="\$[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*(\[[a-zA-Z0-9_]*\])*" />
-        <RegExpr attribute="Variable" context="#stay" String="\$\{[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*(\[[a-zA-Z0-9_]*\])*\}" />
-        <RegExpr attribute="Variable" context="#stay" String="\{\$[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*(\[([0-9]*|&quot;[a-zA-Z_]*&quot;)|'[a-zA-Z_]*'|\])*(-&gt;[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*(\[[a-zA-Z0-9_]*\])*(\[([0-9]*|&quot;[a-zA-Z_]*&quot;)|'[a-zA-Z_]*'|\])*)*\}" />
-      </context>
+
       <context name="htmlnowdoc" attribute="Normal Text" lineEndContext="#stay" dynamic="true">
-        <RegExpr attribute="Backslash Code" context="#pop" String="^%1;?$" dynamic="true" endRegion="Nowdoc" />
-        <IncludeRules context="commonnowdoc" />
+        <IncludeRules context="nowdoc" />
         <IncludeRules context="##HTML" />
       </context>
       <context name="cssnowdoc" attribute="Normal Text" lineEndContext="#stay" dynamic="true">
-        <RegExpr attribute="Backslash Code" context="#pop" String="^%1;?$" dynamic="true" endRegion="Nowdoc" />
-        <IncludeRules context="commonnowdoc" />
+        <IncludeRules context="nowdoc" />
         <IncludeRules context="##CSS" />
       </context>
       <context name="mysqlnowdoc" attribute="Normal Text" lineEndContext="#stay" dynamic="true">
-        <RegExpr attribute="Backslash Code" context="#pop" String="^%1;?$" dynamic="true" endRegion="Nowdoc" />
-        <IncludeRules context="commonnowdoc" />
+        <IncludeRules context="nowdoc" />
         <IncludeRules context="##SQL (MySQL)" />
       </context>
       <context name="javascriptnowdoc" attribute="Normal Text" lineEndContext="#stay" dynamic="true">
-        <RegExpr attribute="Backslash Code" context="#pop" String="^%1;?$" dynamic="true" endRegion="Nowdoc" />
-        <IncludeRules context="commonnowdoc" />
+        <IncludeRules context="nowdoc" />
         <IncludeRules context="Normal##JavaScript" />
       </context>
       <context name="nowdoc" attribute="String" lineEndContext="#stay" dynamic="true">
-        <RegExpr attribute="Backslash Code" context="#pop" String="^%1;?$" dynamic="true" endRegion="Nowdoc" />
-        <IncludeRules context="commonnowdoc" />
+        <RegExpr attribute="Nowdoc" context="#pop" String="^%1(?=;?$)" dynamic="true" endRegion="Nowdoc" column="0" />
       </context>
-      <context name="commonnowdoc" attribute="String" lineEndContext="#stay">
+
+      <context name="number" attribute="PHP Text" lineEndContext="#stay">
+        <IncludeRules context="findfloat"/>
+        <RegExpr attribute="Hex" context="#pop" String="\b0[xX][0-9a-fA-F]++(_[0-9a-fA-F]++)*+\b"/>
+        <RegExpr attribute="Binary" context="#pop" String="\b0[bB][01]++(_[01]++)*+\b"/>
+        <RegExpr attribute="Octal" context="#pop" String="\b0[oO_]?[0-7]++(_[0-7]++)*+\b"/>
+        <RegExpr attribute="Decimal" context="#pop" String="\b(0|[1-9][0-9]*+(_[0-9]++)*+)\b"/>
+        <AnyChar attribute="Error" context="#pop" String="0123456789"/>
       </context>
+      <context name="findfloat" attribute="PHP Text" lineEndContext="#stay">
+        <RegExpr attribute="Float" context="#pop" String="&float;"/>
+      </context>
+
+      <context name="dot" attribute="PHP Text" lineEndContext="#stay">
+        <IncludeRules context="findfloat"/>
+        <DetectChar attribute="Operator" context="#pop" char="."/>
+      </context>
+
+      <context name="control" attribute="Control Structures" lineEndContext="#stay">
+        <StringDetect attribute="Control Structures" context="#pop!yield" String="yield"/>
+        <!-- Alternate PHP Block Syntax
+          -  http://www.php.net/manual/en/control-structures.alternative-syntax.php
+        -->
+        <Detect2Chars attribute="Control Structures" context="#pop!MaybeAlternateBlock" char="i" char1="f"/>
+        <StringDetect attribute="Control Structures" context="#pop!MaybeAlternateBlock" String="switch"/>
+        <StringDetect attribute="Control Structures" context="#pop!MaybeAlternateBlock" String="foreach"/>
+        <StringDetect attribute="Control Structures" context="#pop!MaybeAlternateBlock" String="for"/>
+        <StringDetect attribute="Control Structures" context="#pop!MaybeAlternateBlock" String="while"/>
+        <!-- end statements as a block end -->
+        <StringDetect attribute="Control Structures" context="#pop!AlternateBlockEnd" String="end" lookAhead="1"/>
+        <!--/ Alternate PHP Block Syntax -->
+        <DetectIdentifier attribute="Control Structures" context="#pop"/>
+      </context>
+      <context name="yield" attribute="PHP Text" lineEndContext="#stay" fallthrough="1" fallthroughContext="#pop">
+        <DetectSpaces attribute="PHP Text" context="#stay"/>
+        <WordDetect attribute="Control Structures" context="#pop" String="from"/>
+      </context>
+      <context name="AlternateBlockEnd" attribute="Control Structures" lineEndContext="#stay">
+        <DetectIdentifier attribute="Control Structures" context="#pop" endRegion="Alternate Block"/>
+      </context>
+
+      <context name="MaybeAlternateBlock" attribute="PHP Text" lineEndContext="#stay" fallthrough="1" fallthroughContext="#pop">
+        <DetectChar attribute="Symbol" context="#pop!MaybeAlternateBlockOpen" char="("/>
+        <DetectSpaces attribute="PHP Text"/>
+        <IncludeRules context="FindComment"/>
+      </context>
+      <context name="MaybeAlternateBlockOpen" attribute="PHP Text" lineEndContext="#stay">
+        <DetectChar attribute="Symbol" context="ParenOpen" char="("/>
+        <DetectChar attribute="Symbol" context="#pop!MaybeAlternateBlockClose" char=")"/>
+        <IncludeRules context="phpsource"/>
+      </context>
+      <context name="ParenOpen" attribute="PHP Text" lineEndContext="#stay">
+        <DetectChar attribute="Symbol" context="ParenOpen" char="("/>
+        <DetectChar attribute="Symbol" context="#pop" char=")"/>
+        <IncludeRules context="phpsource"/>
+      </context>
+      <context name="MaybeAlternateBlockClose" attribute="PHP Text" lineEndContext="#pop" fallthrough="1" fallthroughContext="#pop">
+        <DetectChar attribute="Other" context="#pop" char=":" beginRegion="Alternate Block"/>
+        <DetectSpaces attribute="PHP Text"/>
+      </context>
+
+      <context name="Attribute" attribute="Attribute" lineEndContext="#stay">
+        <DetectChar attribute="Attribute" context="#pop" char="]"/>
+        <DetectChar attribute="Symbol" context="ArrayInAttribute" char="["/>
+        <IncludeRules context="phpsource"/>
+      </context>
+      <context name="ArrayInAttribute" attribute="Attribute" lineEndContext="#stay">
+        <DetectChar attribute="Symbol" context="#pop" char="]"/>
+        <IncludeRules context="phpsource"/>
+      </context>
+
     </contexts>
     <itemDatas>
       <itemData name="Normal Text" defStyleNum="dsNormal" spellChecking="false" />
       <itemData name="PHP Text" defStyleNum="dsNormal" spellChecking="false" />
       <itemData name="Keyword" defStyleNum="dsKeyword" spellChecking="false" />
-      <itemData name="Classes" defStyleNum="dsKeyword" spellChecking="false" />
+      <itemData name="Classes" defStyleNum="dsBuiltIn" spellChecking="false" />
       <itemData name="Function" defStyleNum="dsFunction" spellChecking="false" />
-      <itemData name="Special method" defStyleNum="dsFunction" spellChecking="false" />
+      <itemData name="Special method" defStyleNum="dsBuiltIn" spellChecking="false" />
+      <itemData name="Attribute" defStyleNum="dsAttribute" spellChecking="false" />
       <itemData name="Decimal" defStyleNum="dsDecVal" spellChecking="false" />
       <itemData name="Binary" defStyleNum="dsBaseN" spellChecking="false" />
       <itemData name="Octal" defStyleNum="dsBaseN" spellChecking="false" />
       <itemData name="Hex" defStyleNum="dsBaseN" spellChecking="false" />
       <itemData name="Float" defStyleNum="dsFloat" spellChecking="false" />
       <itemData name="String" defStyleNum="dsString" />
+      <itemData name="Heredoc" defStyleNum="dsSpecialString" />
+      <itemData name="Nowdoc" defStyleNum="dsVerbatimString" />
       <itemData name="Comment" defStyleNum="dsComment" />
-      <itemData name="Special Variable" defStyleNum="dsKeyword" color="#5555FF" selColor="#ffffff" bold="1" italic="0" spellChecking="false" />
-      <itemData name="Variable" defStyleNum="dsKeyword" color="#5555FF" selColor="#ffffff" bold="0" italic="0" spellChecking="false" />
-      <itemData name="Library Constant" defStyleNum="dsKeyword" bold="1" spellChecking="false" />
-      <itemData name="Constant" defStyleNum="dsKeyword" bold="0" spellChecking="false" />
-      <itemData name="Control Structures" defStyleNum="dsKeyword" color="#A1A100" selColor="#ffffff" bold="0" italic="0" spellChecking="false" />
-      <itemData name="Backslash Code" defStyleNum="dsKeyword" color="#0F0F8F" selColor="#ffffff" bold="1" italic="0" spellChecking="false" />
+      <itemData name="Special Variable" defStyleNum="dsVariable" bold="1" spellChecking="false" />
+      <itemData name="Variable" defStyleNum="dsVariable" spellChecking="false" />
+      <itemData name="Library Constant" defStyleNum="dsConstant" bold="1" spellChecking="false" />
+      <itemData name="Constant" defStyleNum="dsConstant" spellChecking="false" />
+      <itemData name="Control Structures" defStyleNum="dsControlFlow" spellChecking="false" />
+      <itemData name="Backslash Code" defStyleNum="dsSpecialChar" spellChecking="false" />
+      <itemData name="Operator" defStyleNum="dsOperator" spellChecking="false" />
+      <itemData name="Symbol" defStyleNum="dsNormal" spellChecking="false" />
+      <itemData name="Scope Resolution" defStyleNum="dsNormal" spellChecking="false" />
       <itemData name="Other" defStyleNum="dsOthers" spellChecking="false" />
-
       <itemData name="Types" defStyleNum="dsDataType" spellChecking="false" />
+      <itemData name="Cast" defStyleNum="dsDataType" spellChecking="false" />
+      <itemData name="Error Control Operator" defStyleNum="dsPreprocessor" spellChecking="false" />
       <itemData name="Error" defStyleNum="dsError" spellChecking="false" />
     </itemDatas>
   </highlighting>

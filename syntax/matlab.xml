@@ -57,7 +57,7 @@
 
 <!DOCTYPE language SYSTEM "language.dtd">
 <!-- low priority to let Objective-C win for .m files per default -->
-<language name="Matlab" version="6" kateversion="5.0" section="Scientific" extensions="*.m;*.M" priority="-9" mimetype="text/mfile" casesensitive="1">
+<language name="Matlab" version="8" kateversion="5.0" section="Scientific" extensions="*.m;*.M" priority="-9" mimetype="text/mfile" casesensitive="1">
   <highlighting>
 
     <!-- Reserved keywords in MATLAB -->
@@ -113,16 +113,16 @@
 
         <!-- Three and two-character operators -->
         <StringDetect context="#stay" attribute="Operator" String="..."/>
-        <StringDetect context="#stay" attribute="Operator" String="=="/>
-        <StringDetect context="#stay" attribute="Operator" String="~="/>
-        <StringDetect context="#stay" attribute="Operator" String="&lt;="/>
-        <StringDetect context="#stay" attribute="Operator" String="&gt;="/>
-        <StringDetect context="#stay" attribute="Operator" String="&amp;&amp;"/>
-        <StringDetect context="#stay" attribute="Operator" String="||"/>
-        <StringDetect context="#stay" attribute="Operator" String=".*"/>
-        <StringDetect context="#stay" attribute="Operator" String=".^"/>
-        <StringDetect context="#stay" attribute="Operator" String="./"/>
-        <StringDetect context="#stay" attribute="Operator" String=".'"/>
+        <Detect2Chars context="#stay" attribute="Operator" char="=" char1="="/>
+        <Detect2Chars context="#stay" attribute="Operator" char="~" char1="="/>
+        <Detect2Chars context="#stay" attribute="Operator" char="&lt;" char1="="/>
+        <Detect2Chars context="#stay" attribute="Operator" char="&gt;" char1="="/>
+        <Detect2Chars context="#stay" attribute="Operator" char="&amp;" char1="&amp;"/>
+        <Detect2Chars context="#stay" attribute="Operator" char="|" char1="|"/>
+        <Detect2Chars context="#stay" attribute="Operator" char="." char1="*"/>
+        <Detect2Chars context="#stay" attribute="Operator" char="." char1="^"/>
+        <Detect2Chars context="#stay" attribute="Operator" char="." char1="/"/>
+        <Detect2Chars context="#stay" attribute="Operator" char="." char1="'"/>
 
         <!-- Single-character operators -->
         <AnyChar context="#stay" attribute="Operator" String="*+-/\&amp;|&lt;&gt;~^=,;:@"/>
@@ -136,8 +136,7 @@
 
       <context name="Comment" attribute="Comment" lineEndContext="#pop">
         <DetectSpaces />
-        <IncludeRules context="##Alerts"/>
-        <IncludeRules context="##Modelines"/>
+        <IncludeRules context="##Comments"/>
       </context>
 
       <context name="System" attribute="System" lineEndContext="#pop"/>

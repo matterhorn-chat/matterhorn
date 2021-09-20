@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
-<language version="6" kateversion="5.0" name="JSP" section="Markup" extensions="*.jsp;*.JSP" mimetype="text/html" casesensitive="false" author="Rob Martin (rob@gamepimp.com)" license="LGPL">
+<language version="9" kateversion="5.62" name="JSP" section="Markup" extensions="*.jsp;*.JSP" mimetype="text/html" casesensitive="false" author="Rob Martin (rob@gamepimp.com)" license="LGPL">
   <highlighting>
 
     <list name="jsp-reserved-words">
@@ -63,7 +63,7 @@
       </context>
       <context name="JS comment close" attribute="Jsp Comment" lineEndContext="#stay">
         <DetectSpaces/>
-        <IncludeRules context="##Alerts" />
+        <IncludeRules context="##Comments" />
         <DetectIdentifier/>
         <StringDetect attribute="Normal Text" context="#pop#pop#pop" String="&lt;/script" endRegion="script" />
       </context>
@@ -88,8 +88,7 @@
       <context name="Jsp Comment" attribute="Jsp Comment" lineEndContext="#stay">
         <StringDetect String="--%&gt;" attribute="Jsp Comment" context="#pop" endRegion="JspComment"/>
         <DetectSpaces />
-        <IncludeRules context="##Alerts" />
-        <IncludeRules context="##Modelines" />
+        <IncludeRules context="##Comments" />
       </context>
 
       <context name="Jsp Custom Tag" attribute="Identifier" lineEndContext="#stay">
@@ -209,7 +208,7 @@
         <Detect2Chars char="$" char1="{" attribute="Jsp Expression" context="Jsp Expression"/>
         <RegExpr String="&lt;\s*\/?\s*\$?\w*:\$?\w*" attribute="Keyword" context="Jsp Custom Tag"/>
         <RegExpr String="\/?&gt;" attribute="Normal Text" context="#pop#pop#pop"/>
-        <RegExpr String="\s+" attribute="Types" context="#pop#pop"/>
+        <DetectSpaces attribute="Types" context="#pop#pop"/>
       </context>
 
       <context name="Html Comment" attribute="Html Comment" lineEndContext="#stay">
@@ -217,8 +216,7 @@
         <RegExpr String="&lt;%(!|=)?" attribute="Jsp Scriptlet" context="Jsp Scriptlet" beginRegion="JspScriptlet"/>
         <Detect2Chars char="$" char1="{" attribute="Jsp Expression" context="Jsp Expression"/>
         <RegExpr String="\/*--&gt;" attribute="Html Comment" context="#pop" endRegion="HtmlComment"/>
-        <IncludeRules context="##Alerts" />
-        <IncludeRules context="##Modelines" />
+        <IncludeRules context="##Comments" />
       </context>
 
     </contexts>

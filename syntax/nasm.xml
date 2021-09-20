@@ -61,7 +61,7 @@ You should have received a copy of the GNU General Public License along
 with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 -->
-<language name="Intel x86 (NASM)" section="Assembler" version="6" kateversion="5.62" extensions="*.asm" mimetype="" author="Nicola Gigante (nicola.gigante@gmail.com)" license="GPLv2+">
+<language name="Intel x86 (NASM)" section="Assembler" version="8" kateversion="5.62" extensions="*.asm" mimetype="" author="Nicola Gigante (nicola.gigante@gmail.com)" license="GPLv2+">
   <highlighting>
     <list name="registers">
       <!-- General purpose registers -->
@@ -2635,7 +2635,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
       <context name="Number" attribute="Number" lineEndContext="#pop">
         <RegExpr attribute="Float" context="#pop!FloatSuffix" insensitive="1" String="&float;"/>
-        <RegExpr attribute="Radix" context="#pop!PrefixedNumber" insensitive="1" String="&prefixedBaseN;" lookAhead="1"/>
+        <RegExpr attribute="Radix" context="#pop!PrefixedNumber" insensitive="1" String="&prefixedBaseN;" lookAhead="1" minimal="1"/>
         <RegExpr attribute="BaseN" context="#pop!BaseSuffix" insensitive="1" String="&baseN;"/>
         <RegExpr attribute="Number" context="#pop!NumberSuffix" insensitive="1" String="&number;"/>
       </context>
@@ -2726,8 +2726,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
       <context name="Comment" attribute="Comment" lineEndContext="#pop">
         <DetectSpaces attribute="Comment"/>
-        <IncludeRules context="##Alerts"/>
-        <IncludeRules context="##Modelines"/>
+        <IncludeRules context="##Comments"/>
         <DetectIdentifier attribute="Comment"/>
       </context>
 

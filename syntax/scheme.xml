@@ -17,7 +17,7 @@
   https://www.gnu.org/software/kawa/Syntax.html
   https://www.gnu.org/software/guile/manual/html_node/Scheme-Syntax.html
 -->
-<language version="10" kateversion="5.62" name="Scheme" section="Scripts" extensions="*.scm;*.ss;*.scheme;*.guile;*.chicken;*.meta" mimetype="text/x-scheme" author="Dominik Haumann (dhaumann@kde.org)" license="MIT" priority="9">
+<language version="11" kateversion="5.62" name="Scheme" section="Scripts" extensions="*.scm;*.ss;*.scheme;*.guile;*.chicken;*.meta" mimetype="text/x-scheme" author="Dominik Haumann (dhaumann@kde.org)" license="MIT" priority="9">
   <highlighting>
     <list name="operators">
       <item>&lt;=</item>
@@ -870,8 +870,7 @@
       </context>
       <context name="comment" attribute="Comment" lineEndContext="#pop">
         <DetectSpaces/>
-        <IncludeRules context="##Alerts"/>
-        <IncludeRules context="##Modelines"/>
+        <IncludeRules context="##Comments"/>
         <DetectIdentifier/>
       </context>
 
@@ -1089,8 +1088,7 @@
         <DetectSpaces/>
         <Detect2Chars attribute="Comment" context="#pop" char="|" char1="#" endRegion="comment"/>
         <Detect2Chars attribute="Comment" context="MultiLineComment" char="#" char1="|" beginRegion="comment"/>
-        <IncludeRules context="##Alerts"/>
-        <IncludeRules context="##Modelines"/>
+        <IncludeRules context="##Comments"/>
         <DetectIdentifier/>
       </context>
 

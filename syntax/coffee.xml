@@ -2,8 +2,8 @@
 <!DOCTYPE language SYSTEM "language.dtd">
 
 <language name="CoffeeScript"
-          version="13"
-          kateversion="5.0"
+          version="15"
+          kateversion="5.53"
           section="Scripts"
           extensions="Cakefile;*.coffee;*.coco;*.cson"
           mimetype="text/x-coffeescript;application/x-coffeescript;application/vnd.coffeescript"
@@ -196,13 +196,11 @@
       </context>
       <!-- Comments. -->
       <context name="Comment" attribute="Comment" lineEndContext="#pop">
-        <IncludeRules context="##Alerts"/>
-        <IncludeRules context="##Modelines"/>
+        <IncludeRules context="##Comments"/>
       </context>
       <context name="Multiline Comment" attribute="Comment" lineEndContext="#stay" noIndentationBasedFolding="1">
         <StringDetect attribute="Comment" context="#pop" String="###" endRegion="Comment"/>
-        <IncludeRules context="##Alerts"/>
-        <IncludeRules context="##Modelines"/>
+        <IncludeRules context="##Comments"/>
       </context>
       <!-- Single-line strings. -->
       <context name="String" attribute="String" lineEndContext="#stay">
@@ -268,7 +266,7 @@
       </context>
 
       <context name="Javascript Template" attribute="JavaScript Template" lineEndContext="#stay" noIndentationBasedFolding="1">
-        <RegExpr attribute="Escape" context="#stay" String="\\\\\\`"/>
+        <StringDetect attribute="Escape" context="#stay" String="\\\`"/>
         <Detect2Chars attribute="JavaScript Template" context="RegExpAfterString##JavaScript" char="\" char1="`" endRegion="Template"/> <!-- End template. -->
         <DetectChar context="#pop" char="`" lookAhead="true"/>
         <Detect2Chars attribute="JavaScript Substitution" context="Javascript Substitution" char="$" char1="{"/>

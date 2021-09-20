@@ -6,7 +6,7 @@
   modifications by Milian Wolff (mail@milianw.de)
   v3 fix comments by Gene Thomas <gene@genethomas.com>
 -->
-<language name="SQL (MySQL)" version="6" kateversion="5.44" section="Database" extensions="*.sql;*.SQL;*.ddl;*.DDL" mimetype="text/x-sql" casesensitive="0" author="Shane Wright (me@shanewright.co.uk)" license="">
+<language name="SQL (MySQL)" version="9" kateversion="5.44" section="Database" extensions="*.sql;*.SQL;*.ddl;*.DDL" mimetype="text/x-sql" casesensitive="0" author="Shane Wright (me@shanewright.co.uk)" license="">
   <highlighting>
     <list name="controlFlow">
       <item>BEGIN</item>
@@ -392,7 +392,6 @@
         <WordDetect attribute="Keyword" context="#stay" insensitive="true" String="CHARACTER SET"/>
         <!-- using the lists -->
         <keyword attribute="Keyword" context="#stay" String="keywords"/>
-        <LineContinue attribute="Symbol" context="#stay" char="/" column="0"/>
         <keyword attribute="Operator Keyword" context="#stay" String="operators"/>
         <keyword attribute="ControlFlow" context="#stay" String="controlFlow"/>
         <AnyChar attribute="Operator" context="#stay" String="+-*/=&lt;&gt;"/>
@@ -418,7 +417,7 @@
         <DetectChar attribute="String" context="String2" char="&quot;"/>
         <DetectChar attribute="Name" context="Name" char="`"/>
 
-        <RegExpr attribute="Preprocessor" context="Preprocessor" String="@@?[^@ \t\r\n]" column="0"/>
+        <RegExpr attribute="Preprocessor" context="Preprocessor" String="^@@?[^@ \t\r\n]" column="0"/>
         <!-- for something like : SELECT DB.TABLE.ROW ... -->
         <DetectChar attribute="String Char" context="#stay" char="."/>
       </context>
@@ -445,15 +444,13 @@
       <!-- comments -->
       <context name="SingleLineComment" attribute="Comment" lineEndContext="#pop">
         <DetectSpaces />
-        <IncludeRules context="##Alerts"/>
-        <IncludeRules context="##Modelines"/>
+        <IncludeRules context="##Comments"/>
       </context>
       <context name="MultiLineComment" attribute="Comment" lineEndContext="#stay">
         <LineContinue attribute="Comment" context="#pop"/>
         <DetectSpaces />
         <Detect2Chars attribute="Comment" context="#pop" char="*" char1="/" endRegion="Comment"/>
-        <IncludeRules context="##Alerts"/>
-        <IncludeRules context="##Modelines"/>
+        <IncludeRules context="##Comments"/>
       </context>
       <!-- preprocessor -->
       <context name="Preprocessor" attribute="Preprocessor" lineEndContext="#pop"/>

@@ -22,7 +22,7 @@
  * Boston, MA  02110-1301, USA.                                       *
  **********************************************************************
  -->
-<language version="12" kateversion="5.0" name="Clojure" section="Sources" extensions="*.clj;*.cljs;*.cljc" mimetype="" author="Dominik Haumann [lisp] modified for clojure by Caspar Hasenclever" license="LGPLv2+">
+<language version="15" kateversion="5.0" name="Clojure" section="Sources" extensions="*.clj;*.cljs;*.cljc" mimetype="" author="Dominik Haumann [lisp] modified for clojure by Caspar Hasenclever" license="LGPLv2+">
   <highlighting>
     <list name="definitions">
       <item>def</item>
@@ -715,17 +715,14 @@
         <DetectChar attribute="Comment" context="Comment" char=";"/>
         <Detect2Chars attribute="Comment" context="#stay" char="#" char1="_"/>
         <RegExpr attribute="Readermacro" context="#stay" String="#\?@?"/>
-        <RegExpr attribute="Modifier" context="#stay" String="[@~'`][^\s\(\)\{\}\[\]]+"/>
-        <RegExpr attribute="Modifier" context="#stay" String="[^\s&quot;\(\)\{\}\[\]]+#"/>
+        <RegExpr attribute="Modifier" context="#stay" String="[@~'`][^\s\(\)\{\}\[\]]+|[^\s&quot;\(\)\{\}\[\]]+#"/>
         <RegExpr attribute="Modifier2" context="#stay" String="::?[a-zA-Z0-9\-\./]+"/>
         <Detect2Chars attribute="BracketsSet" context="BracketsSet" char="#" char1="{"/>
         <Detect2Chars attribute="BracketsMeta" context="BracketsMeta" char="^" char1="{"/>
         <DetectChar attribute="BracketsMap" context="BracketsMap" char="{"/>
-        <DetectChar attribute="BracketsSquare" context="#stay" char="["/>
-        <DetectChar attribute="BracketsSquare" context="#stay" char="]"/>
-        <RegExpr attribute="Variable" context="#stay" String="#'[^\s\(\)\{\}\[\]]+"/>
+        <AnyChar attribute="BracketsSquare" context="#stay" String="[]"/>
         <keyword attribute="Keyword" context="#stay" String="keywords"/>
-        <RegExpr attribute="Variable" context="#stay" String="%[0-9]*"/>
+        <RegExpr attribute="Variable" context="#stay" String="#'[^\s\(\)\{\}\[\]]+|%[0-9]*"/>
         <keyword attribute="Variable" context="#stay" String="variables"/>
         <keyword attribute="Definition" context="function_decl_documentable" String="documentable_definitions"/>
         <keyword attribute="Definition" context="function_decl" String="definitions"/>
@@ -733,22 +730,20 @@
         <Detect2Chars attribute="Regexpr" context="Regexpr" char="#" char1="&quot;"/>
         <DetectChar attribute="String" context="String" char="&quot;"/>
         <RegExpr attribute="Float" context="#stay" String="[0-9]+/[0-9]+"/>
-        <RegExpr attribute="BaseN" context="#stay" String="0[xX][0-9A-Fa-f]+"/>
-        <RegExpr attribute="BaseN" context="#stay" String="([12]?[0-9]|3[0-6])[rR][0-9a-zA-Z]+"/>
+        <RegExpr attribute="BaseN" context="#stay" String="0[xX][0-9A-Fa-f]+|([12]?[0-9]|3[0-6])[rR][0-9a-zA-Z]+"/>
         <RegExpr attribute="Error" context="#stay" String="(3[7-9]|[0-9]*[4-9][0-9]+)[rR][0-9a-zA-Z]+"/>
         <Float attribute="Float" context="Float Suffixes"/>
         <Int attribute="Decimal" context="Int Suffixes"/>
         <DetectChar attribute="Brackets1" context="Level1" char="("/>
       </context>
       <context name="Float Suffixes" attribute="Float" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">
-        <StringDetect attribute="Float" context="#pop" String="M" insensitive="false"/>
+        <DetectChar attribute="Float" context="#pop" char="M"/>
       </context>
       <context name="Int Suffixes" attribute="Decimal" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">
-        <StringDetect attribute="Decimal" context="#pop" String="N" insensitive="false"/>
+        <DetectChar attribute="Decimal" context="#pop" char="N"/>
       </context>
       <context name="Comment" attribute="Comment" lineEndContext="#pop">
-        <IncludeRules context="##Alerts"/>
-        <IncludeRules context="##Modelines"/>
+        <IncludeRules context="##Comments"/>
       </context>
       <context name="function_decl_documentable" attribute="Function" lineEndContext="#stay">
         <RegExpr attribute="Function" context="#pop!DocumentationPossible" String="\s*[A-Za-z0-9-+\&lt;\&gt;//\*!\?']*\s*"/>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
 <language name="Ada"
-          version="4"
+          version="6"
           kateversion="5.0"
           section="Sources"
           extensions="*.adb;*.ads;*.ada;*.a"
@@ -176,8 +176,7 @@
         <DetectChar attribute="String" context="#pop" char="&quot;"/>
       </context>
       <context attribute="Comment" lineEndContext="#pop" name="Comment">
-        <IncludeRules context="##Alerts" />
-        <IncludeRules context="##Modelines" />
+        <IncludeRules context="##Comments" />
       </context>
     </contexts>
     <itemDatas>
@@ -190,7 +189,7 @@
       <itemData name="Char"        defStyleNum="dsChar" />
       <itemData name="String"      defStyleNum="dsString" />
       <itemData name="Comment"     defStyleNum="dsComment" />
-      <itemData name="Symbol"      defStyleNum="dsNormal"/>
+      <itemData name="Symbol"      defStyleNum="dsOperator"/>
       <itemData name="Region Marker" defStyleNum="dsRegionMarker" />
     </itemDatas>
   </highlighting>

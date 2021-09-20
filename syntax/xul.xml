@@ -4,7 +4,7 @@
 	<!ENTITY name    "[A-Za-z_:][\w.:_-]*">
 	<!ENTITY entref  "&amp;(#[0-9]+|#[xX][0-9A-Fa-f]+|&name;);">
 ]>
-<language name="XUL" version="7" kateversion="5.0" section="Markup" extensions="*.xul;*.xbl" mimetype="text/xul" casesensitive="1" indenter="xml" author="Wilbert Berendsen (wilbert@kde.nl), Anders Lund (anders@alweb.dk), Joseph Wenninger (jowenn@kde.org), Whitehawk Stormchaser (zerokode@gmx.net), Marc Dassonneville (marc.dassonneville@gmail.com)" license="LGPL">
+<language name="XUL" version="10" kateversion="5.0" section="Markup" extensions="*.xul;*.xbl" mimetype="text/xul" casesensitive="1" indenter="xml" author="Wilbert Berendsen (wilbert@kde.nl), Anders Lund (anders@alweb.dk), Joseph Wenninger (jowenn@kde.org), Whitehawk Stormchaser (zerokode@gmx.net), Marc Dassonneville (marc.dassonneville@gmail.com)" license="LGPL">
 
 <highlighting>
    <list name="keywords">
@@ -425,8 +425,7 @@
     <DetectSpaces />
     <StringDetect attribute="Comment" context="#pop" String="--&gt;" endRegion="comment" />
     <RegExpr attribute="Error" context="#stay" String="-(-(?!-&gt;))+" />
-    <IncludeRules context="##Alerts" />
-    <IncludeRules context="##Modelines" />
+    <IncludeRules context="##Comments" />
     <DetectIdentifier />
   </context>
 
@@ -466,8 +465,7 @@
   <context name="Element" attribute="Normal Text" lineEndContext="#stay">
     <Detect2Chars attribute="Element" context="#pop" char="/" char1="&gt;" endRegion="element" />
     <DetectChar attribute="Element" context="El Content" char="&gt;" />
-    <RegExpr attribute="Attribute" context="Attribute" String="^&name;" />
-    <RegExpr attribute="Attribute" context="Attribute" String="\s+&name;" />
+    <RegExpr attribute="Attribute" context="Attribute" String="^&name;|\s+&name;" />
     <RegExpr attribute="Error" context="#stay" String="\S" />
   </context>
 
@@ -521,8 +519,7 @@
      <DetectChar attribute="String" context="String 1" char="'"/>
      <Detect2Chars attribute="Comment" context="JSComment" char="/" char1="/"/>
      <Detect2Chars attribute="Comment" context="Multi/inline Comment" char="/" char1="*" beginRegion="JSBlockComment"/>
-     <AnyChar attribute="Normal Text" context="(Internal regex catch)" String="=?:" />
-     <RegExpr attribute="Normal Text" context="(Internal regex catch)" String="\(" />
+     <AnyChar attribute="Normal Text" context="(Internal regex catch)" String="=?:(" />
      <DetectChar attribute="Symbol" context="#stay" char="{" beginRegion="Brace1" />
      <DetectChar attribute="Symbol" context="#stay" char="}" endRegion="Brace1" />
      <AnyChar attribute="Symbol" context="#stay" String=":!%&amp;+,-/.*&lt;=&gt;?[]|~^&#59;"/>
@@ -541,27 +538,25 @@
 
   <context attribute="Comment" lineEndContext="#pop" name="JSComment">
      <DetectSpaces />
-     <IncludeRules context="##Alerts" />
+     <IncludeRules context="##Comments" />
      <DetectIdentifier />
   </context>
   <context attribute="Comment" lineEndContext="#stay" name="Multi/inline Comment">
      <DetectSpaces />
      <Detect2Chars attribute="Comment" context="#pop" char="*" char1="/" endRegion="JSBlockComment"/>
-     <IncludeRules context="##Alerts" />
+     <IncludeRules context="##Comments" />
   </context>
   
   <context attribute="Regular Expression" lineEndContext="#stay" name="Regular Expression">
      <RegExpr attribute="Regular Expression" context="#pop#pop#pop" String="/[ig]{0,2}" />
-     <RegExpr attribute="Pattern Internal Operator" context="#stay" String="\{[\d, ]+\}" />
-     <RegExpr attribute="Pattern Internal Operator" context="#stay" String="\\[bB]" />
+     <RegExpr attribute="Pattern Internal Operator" context="#stay" String="\{[\d, ]+\}|\\[bB]" />
      <RegExpr attribute="Pattern Character Class" context="#stay" String="\\[nrtvfDdSsWw]" />
      <DetectChar attribute="Pattern Character Class" context="(charclass caret first check)" char="[" />
-     <RegExpr attribute="Pattern Internal Operator" context="#stay" String="\\." />
-     <RegExpr attribute="Pattern Internal Operator" context="#stay" String="\$(?=/)" />
+     <RegExpr attribute="Pattern Internal Operator" context="#stay" String="\\.|\$(?=/)" />
      <AnyChar attribute="Pattern Internal Operator" context="#stay" String="?+*()|" />
   </context>
   <context attribute="Normal Text" lineEndContext="#stay" name="(Internal regex catch)" fallthrough="true" fallthroughContext="#pop">
-     <RegExpr attribute="Normal Text" context="#stay" String="\s*" />
+     <DetectSpaces attribute="Normal Text" context="#stay" />
      <RegExpr attribute="Regular Expression" context="#pop" String="//(?=;)" />
      <Detect2Chars attribute="Comment" context="JSComment" char="/" char1="/" />
      <Detect2Chars attribute="Comment" context="Multi/inline Comment" char="/" char1="*" beginRegion="JSBlockComment" />

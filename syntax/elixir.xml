@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language
-  SYSTEM 'language.dtd'>
+  SYSTEM 'language.dtd' [
+
+  <!ENTITY symbols "(?:@{1,2}|\$)?[a-zA-Z_][a-zA-Z0-9_]*[=?!]?">
+]>
 <!--
   Elixir syntax highlighting definition for Kate.
 
@@ -24,13 +27,13 @@
 <language author="Rubén Caro (ruben.caro.estevez@gmail.com), Boris Egorov (egorov@linux.com)"
           extensions="*.ex;*.exs;*.eex;*.xml.eex;*.js.eex"
           indenter="elixir"
-          kateversion="5.53"
+          kateversion="5.79"
           license="LGPLv2+"
           mimetype="text/x-elixir"
           name="Elixir"
           section="Sources"
           style="elixir"
-          version="6">
+          version="11">
   <highlighting>
     <list name="control-flow">
       <item>catch</item>
@@ -96,7 +99,7 @@
     <contexts>
       <context attribute="Normal Text" lineEndContext="#stay" name="Normal">
         <!-- "shebang" line -->
-        <RegExpr String="#!\/.*" attribute="Keyword" column="0" context="#stay"/>
+        <RegExpr String="^#!\/.*" attribute="Keyword" column="0" context="#stay"/>
 
         <!-- Defined words -->
         <keyword String="keywords" attribute="Keyword" context="#stay"/>
@@ -109,36 +112,30 @@
         <RegExpr String="\b[_A-Z]+[A-Z_0-9]+\b" attribute="Global Constant" context="#stay"/>
 
         <!-- Generally a module or class name like "File", "MyModule_1", .. -->
-        <RegExpr String="\b[A-Z]+_*([0-9]|[a-z])[_a-zA-Z0-9]*\b" attribute="Constant" context="#stay"/>
+        <RegExpr String="\b[A-Z]+_*(?:[0-9]|[a-z])[_a-zA-Z0-9]*\b" attribute="Constant" context="#stay"/>
 
         <!-- Numeric values. Note that we have to allow underscores between two digits (thus the creepy regular expressions). -->
-        <RegExpr String="\b\-?0[xX]([0-9a-fA-F]|_[0-9a-fA-F])+" attribute="Hex" context="#stay"/>
-        <RegExpr String="\b\-?0[bB]([01]|_[01])+" attribute="Bin" context="#stay"/>
-        <RegExpr String="\b\-?0[1-7]([0-7]|_[0-7])*" attribute="Octal" context="#stay"/>
-        <RegExpr String="\b\-?[0-9]([0-9]|_[0-9])*\.[0-9]([0-9]|_[0-9])*([eE]\-?[1-9]([0-9]|_[0-9])*(\.[0-9]*)?)?" attribute="Float" context="#stay"/>
-        <RegExpr String="\b\-?[1-9]([0-9]|_[0-9])*\b" attribute="Dec" context="#stay"/>
+        <RegExpr String="\b\-?0[xX](?:[0-9a-fA-F]|_[0-9a-fA-F])+" attribute="Hex" context="#stay"/>
+        <RegExpr String="\b\-?0[bB](?:[01]|_[01])+" attribute="Bin" context="#stay"/>
+        <RegExpr String="\b\-?0[1-7](?:[0-7]|_[0-7])*" attribute="Octal" context="#stay"/>
+        <RegExpr String="\b\-?[0-9](?:[0-9]|_[0-9])*\.[0-9](?:[0-9]|_[0-9])*(?:[eE]\-?[1-9](?:[0-9]|_[0-9])*(?:\.[0-9]*)?)?" attribute="Float" context="#stay"/>
+        <RegExpr String="\b\-?[1-9](?:[0-9]|_[0-9])*\b" attribute="Dec" context="#stay"/>
         <Int attribute="Dec" context="#stay"/>
         <HlCChar attribute="Char" context="#stay"/>
         <DetectChar attribute="Operator" char="." context="#stay"/>
         <Detect2Chars attribute="Operator" char="&amp;" char1="&amp;" context="#stay"/>
         <Detect2Chars attribute="Operator" char="|" char1="|" context="#stay"/>
-        <RegExpr String="\s[\?\:\%]\s" attribute="Operator" context="#stay"/>
-        <RegExpr String="[|&amp;&lt;&gt;\^\+*~\-=/]+" attribute="Operator" context="#stay"/>
-        <!-- regexp hack -->
-        <RegExpr String="\s!" attribute="Operator" context="#stay"/>
-        <RegExpr String="/=\s" attribute="Operator" context="#stay" insensitive="0"/>
-        <StringDetect String="%=" attribute="Operator" context="#stay" insensitive="0"/>
-        <RegExpr String=":(@{1,2}|\$)?[a-zA-Z_][a-zA-Z0-9_]*[=?!]?" attribute="Symbol" context="#stay"/>
-        <RegExpr String="\b(@{1,2}|\$)?[a-zA-Z_][a-zA-Z0-9_]*[=?!]?:" attribute="Symbol" context="#stay"/>
-        <RegExpr String=":\[\]=?" attribute="Symbol" context="#stay"/>
-        <RegExpr String="@(module)?doc\s+&quot;&quot;&quot;" attribute="Attribute" context="Documentation"/>
+        <!-- \s!|/=\s is regexp hack -->
+        <RegExpr String="\s[\?\:\%]\s|[|&amp;&lt;&gt;\^\+*~\-=/]+|\s!|/=\s" attribute="Operator" context="#stay"/>
+        <Detect2Chars char="%" char1="=" attribute="Operator" context="#stay"/>
+        <RegExpr String=":&symbols;|\b&symbols;:|:\[\]=?" attribute="Symbol" context="#stay"/>
+        <RegExpr String="@(?:module)?doc\s+&quot;&quot;&quot;" attribute="Attribute" context="Documentation"/>
         <StringDetect String="&quot;&quot;&quot;" attribute="String" context="Triple Quoted String"/>
         <DetectChar attribute="String" char="&quot;" context="Quoted String"/>
         <DetectChar attribute="Raw String" char="'" context="Apostrophed String"/>
-        <StringDetect String="?#" attribute="Normal Text" context="#stay"/>
+        <Detect2Chars char="?" char1="#" attribute="Normal Text" context="#stay"/>
         <DetectChar attribute="Comment" char="#" context="General Comment"/>
-        <DetectChar attribute="Delimiter" char="[" context="#stay"/>
-        <DetectChar attribute="Delimiter" char="]" context="#stay"/>
+        <AnyChar attribute="Delimiter" String="[]" context="#stay"/>
         <RegExpr String="@[a-zA-Z_0-9]+" attribute="Attribute" context="#stay"/>
         <!-- handle the different regular expression formats -->
         <DetectChar attribute="Normal Text" char=")" context="#stay"/>
@@ -146,10 +143,10 @@
       </context>
       <context attribute="DocComment" lineEndContext="#stay" name="Documentation">
         <StringDetect String="&quot;&quot;&quot;" attribute="Attribute" context="#pop"/>
-        <RegExpr attribute="MarkdownHead" String="^\s*#+\s.*[#]?$"/>
-        <RegExpr attribute="MarkdownBullet" String="^\s*[\*\+\-]\s"/>
-        <RegExpr attribute="MarkdownNumlist" String="^\s*[\d]+\.\s"/>
-        <RegExpr attribute="MarkdownCode" context="Markdown Code" String="^\s*\`\`\`\s*$"/>
+        <RegExpr attribute="MarkdownHead" String="^\s*#+\s.*[#]?$" column="0"/>
+        <RegExpr attribute="MarkdownBullet" String="^\s*[\*\+\-]\s" column="0"/>
+        <RegExpr attribute="MarkdownNumlist" String="^\s*[\d]+\.\s" column="0"/>
+        <RegExpr attribute="MarkdownCode" context="Markdown Code" String="^\s*\`\`\`\s*$" column="0"/>
         <DetectSpaces />
         <IncludeRules context="Normal Text##Markdown"/>
       </context>
@@ -157,15 +154,15 @@
         <StringDetect String="&quot;&quot;&quot;" attribute="String" context="#pop"/>
       </context>
       <context attribute="String" lineEndContext="#stay" name="Quoted String">
-        <StringDetect String="\\" attribute="String" context="#stay"/>
-        <RegExpr String="\\\&quot;" attribute="String" context="#stay"/>
+        <Detect2Chars char="\" char1="\" attribute="String" context="#stay"/>
+        <Detect2Chars char="\" char1="&quot;" attribute="String" context="#stay"/>
         <RegExpr String="#@{1,2}" attribute="Substitution" context="Short Subst"/>
         <Detect2Chars attribute="Substitution" char="#" char1="{" context="Subst"/>
         <DetectChar attribute="String" char="&quot;" context="#pop"/>
       </context>
       <context attribute="Raw String" lineEndContext="#stay" name="Apostrophed String">
-        <StringDetect String="\\" attribute="String" context="#stay"/>
-        <RegExpr String="\\\'" attribute="String" context="#stay"/>
+        <Detect2Chars char="\" char1="\" attribute="String" context="#stay"/>
+        <Detect2Chars char="\" char1="'" attribute="String" context="#stay"/>
         <DetectChar attribute="Raw String" char="'" context="#pop"/>
       </context>
       <!-- Substitutions can be nested -->
@@ -181,11 +178,10 @@
       </context>
       <context attribute="Comment" lineEndContext="#pop" name="General Comment">
         <DetectSpaces />
-        <IncludeRules context="##Alerts"/>
-        <IncludeRules context="##Modelines"/>
+        <IncludeRules context="##Comments"/>
       </context>
       <context attribute="MarkdownCode" lineEndContext="#stay" name="Markdown Code">
-        <RegExpr String="^\s*\`\`\`\s*$" attribute="MarkdownCode" context="#pop"/>
+        <RegExpr String="^\s*```\s*$" attribute="MarkdownCode" context="#pop" column="0"/>
       </context>
     </contexts>
     <itemDatas>

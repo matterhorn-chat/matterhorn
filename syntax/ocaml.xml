@@ -17,9 +17,9 @@
           extensions="*.ml;*.mli"
           mimetype="text/x-ocaml"
           section="Sources"
-          version="7"
+          version="9"
           priority="10"
-          kateversion="2.4"
+          kateversion="5.0"
           author="Glyn Webster (glynwebster@orcon.net.nz) and Vincent Hugot (vincent.hugot@gmail.com)"
           license="LGPL" >
 
@@ -405,10 +405,9 @@
 
       <context name="String" lineEndContext="#stay" attribute="String">
         <DetectChar char="&quot;" context="#pop" attribute="String" />
-        <RegExpr String="&ESC;" context="#stay" attribute="Escaped Characters" />
         <!-- A backslash at the end of a line in a string indicates  -->
         <!-- that the string will continue on the next line:         -->
-        <RegExpr String="\\$" context="#stay" attribute="Escaped Characters" />
+        <RegExpr String="&ESC;|\\$" context="#stay" attribute="Escaped Characters" />
       </context>
 
       <context name="qtest header" lineEndContext="qtest" attribute="Operator">
@@ -433,8 +432,7 @@
         <DetectChar char="&quot;" context="String in Comment" attribute="String in Comment" />
 
         <DetectSpaces />
-        <IncludeRules context="##Alerts" />
-        <IncludeRules context="##Modelines" />
+        <IncludeRules context="##Comments" />
       </context>
 
       <context name="String in Comment" lineEndContext="#stay" attribute="String in Comment">
@@ -448,8 +446,7 @@
         <Detect2Chars char="&gt;" char1="&gt;"     context="#pop"             attribute="Camlp4 Quotation" />
         <Detect2Chars char="&lt;" char1="&lt;"     context="Camlp4 Quotation" attribute="Camlp4 Quotation" />
         <RegExpr String="&lt;:&IDENT;&lt;"         context="Camlp4 Quotation" attribute="Camlp4 Quotation" />
-        <RegExpr String="\\(\\|&gt;&gt;|&lt;&lt;)" context="#stay"            attribute="Escaped Characters" />
-        <RegExpr String="\\&lt;:&IDENT;&lt;"       context="#stay"            attribute="Escaped Characters" />
+        <RegExpr String="\\(\\|&gt;&gt;|&lt;&lt;|&lt;:&IDENT;&lt;)" context="#stay" attribute="Escaped Characters" />
       </context>
 
     <!-- Ocamldoc - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
@@ -490,7 +487,7 @@
 
 
         <!-- A dash at the start of a line is a bullet point. -->
-        <RegExpr String="^[ &#009;]*-\s" context="#stay"  attribute="Ocamldoc Markup" />
+        <RegExpr String="^[ &#009;]*-\s" context="#stay"  attribute="Ocamldoc Markup" column="0" />
 
         <IncludeRules context="Unmatched Closing Brackets" />
       </context>
@@ -562,8 +559,7 @@
         <Detect2Chars char="v" char1="}" context="#stay" attribute="Mismatched Brackets" />
         <Detect2Chars char="]" char1="}" context="#stay" attribute="Mismatched Brackets" />
         <Detect2Chars char="%" char1="}" context="#stay" attribute="Mismatched Brackets" />
-        <DetectChar   char="]"           context="#stay" attribute="Mismatched Brackets" />
-        <DetectChar   char="}"           context="#stay" attribute="Mismatched Brackets" />
+        <AnyChar      String="]}"        context="#stay" attribute="Mismatched Brackets" />
       </context>
     </contexts>
 

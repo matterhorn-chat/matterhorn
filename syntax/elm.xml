@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
-<language name="Elm" version="4" kateversion="5.0" section="Sources" extensions="*.elm" author="Bonghyun Kim (bonghyun.d.kim@gmail.com)" license="MIT" style="elm">
+<language name="Elm" version="8" kateversion="5.0" section="Sources" extensions="*.elm" author="Bonghyun Kim (bonghyun.d.kim@gmail.com)" license="MIT" style="elm">
   <highlighting>
     <list name="declarations">
       <item>type</item>
@@ -40,7 +40,6 @@
       <context attribute="Normal" lineEndContext="#stay" name="code">
         <Detect2Chars attribute="Comment" context="comments" char="{" char1="-" beginRegion="BlockComment" />
         <Detect2Chars attribute="Comment" context="comment" char="-" char1="-" />
-        <StringDetect attribute="Comment" context="documentation" String="{-|" beginRegion="Documentation" />
 
         <keyword attribute="Keyword"          context="#stay" String="declarations" />
         <keyword attribute="Keyword"          context="#stay" String="letExpressions" />
@@ -54,9 +53,7 @@
         <WordDetect attribute="Import" context="import" String="import" />
 
         <RegExpr attribute="Name"         context="#stay" String="(\b[a-z]\w*|\b_\b)" />
-        <RegExpr attribute="Operator"         context="#stay" String="(-&gt;|::|\/\/|\.\.|&amp;&amp;|\|\||\+\+|\|&gt;|&lt;\||&gt;&gt;|&lt;&lt;|==|\/=|&lt;=|&gt;=)" />
-        <RegExpr attribute="Operator"         context="#stay" String="[+-\/*%=&gt;&lt;^\|!]" />
-        <AnyChar attribute="Operator"         context="#stay" String="@#$&amp;~?" />
+        <RegExpr attribute="Operator"         context="#stay" String="-&gt;|::|\/\/|\.\.|&amp;&amp;|\|\||\+\+|\|&gt;|&lt;\||&gt;&gt;|&lt;&lt;|==|\/=|&lt;=|&gt;=|[+-\/*%=&gt;&lt;^\|!@#$&amp;~?]" />
 
         <RegExpr attribute="Type"             context="#stay" String="\b[A-Z][\w]*" />
 
@@ -65,27 +62,25 @@
         <RegExpr    attribute="Float"   context="#stay" String="\d+\.\d+(e[+-]?\d+)?" insensitive="true" />
 
         <RegExpr    attribute="Char"    context="#stay" String="'(.|\\'|\\n|\\r|\\t|\\&quot;|\\\\|\\u\{(10|0?[0-9])[0-9a-fA-F]{4}\})'" />
+        <StringDetect attribute="String"     context="multilineString" String="&quot;&quot;&quot;"/>
         <DetectChar attribute="String"  context="string" char="&quot;" />
-        <RegExpr attribute="String"     context="multilineString" String="&quot;&quot;&quot;"/>
       </context>
       <context attribute="Comment" lineEndContext="#pop" name="comment">
         <DetectSpaces />
-        <IncludeRules context="##Alerts" />
-        <IncludeRules context="##Modelines" />
+        <IncludeRules context="##Comments" />
       </context>
       <context attribute="Comment" lineEndContext="#stay" name="comments">
         <Detect2Chars attribute="Comment" context="comments" char="{" char1="-" beginRegion="BlockComment" />
         <Detect2Chars attribute="Comment" context="#pop" char="-" char1="}" endRegion="BlockComment" />
         <DetectSpaces />
-        <IncludeRules context="##Alerts" />
-        <IncludeRules context="##Modelines" />
+        <IncludeRules context="##Comments" />
       </context>
       <context attribute="String" lineEndContext="#stay" name="string">
         <RegExpr attribute="String" context="#stay" String="\\." />
         <DetectChar attribute="String" context="#pop" char="&quot;" />
       </context>
       <context attribute="String" lineEndContext="#stay" name="multilineString">
-        <RegExpr attribute="String" context="#stay" String="\s*" />
+        <DetectSpaces attribute="String" context="#stay" />
         <RegExpr attribute="String" context="#stay" String="\.*" />
         <StringDetect attribute="String" context="#pop" String="&quot;&quot;&quot;" />
       </context>
@@ -111,10 +106,6 @@
         <RegExpr attribute="Name"         context="#stay" String="\b[a-z][\w]*" />
         <RegExpr attribute="Type"             context="#stay" String="\b[A-Z][\w]*" />
         <DetectChar attribute="Normal" context="#pop" char=")" />
-      </context>
-      <context attribute="Comment" lineEndContext="#stay" name="documentation">
-        <WordDetect attribute="Comment" context="#stay" String="@docs" />
-        <Detect2Chars attribute="Comment" context="#pop" char="-" char1="}" endRegion="Documentation" />
       </context>
     </contexts>
 

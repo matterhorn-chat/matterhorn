@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
-<language name="AWK" version="4" kateversion="5.0" section="Scripts"
+<language name="AWK" version="6" kateversion="5.0" section="Scripts"
   extensions="*.awk" mimetype="text/x-awk" indenter="cstyle"
   license="LGPL">
 <!-- patched by igli#kate@irc:chat.freenode.net -->
@@ -182,8 +182,7 @@
       </context>
 
       <context name="Comment" attribute="Comment" lineEndContext="#pop">
-        <IncludeRules context="##Alerts"/>
-        <IncludeRules context="##Modelines"/>
+        <IncludeRules context="##Comments"/>
       </context>
 
       <context name="Escape" attribute="Error" lineEndContext="#pop">
@@ -272,8 +271,8 @@
       <itemData name="Error"    defStyleNum="dsError"/>
       <itemData name="Special"  defStyleNum="dsControlFlow" bold="0"/>
       <itemData name="Operator" defStyleNum="dsOperator"/>
-      <itemData name="Symbol"   defStyleNum="dsNormal"/>
-      <itemData name="Separator Symbol" defStyleNum="dsNormal"/>
+      <itemData name="Symbol"   defStyleNum="dsOperator"/>
+      <itemData name="Separator Symbol" defStyleNum="dsOperator"/>
       <itemData name="Regex"    defStyleNum="dsSpecialString" spellChecking="false"/>
       <itemData name="Regex Op" defStyleNum="dsOthers"/>
       <itemData name="CharClass" defStyleNum="dsExtension" spellChecking="false"/>

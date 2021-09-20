@@ -13,7 +13,7 @@
 
         You'll find the "Writing a Kate Highlighting XML File HOWTO" at http://kate.kde.org/doc/hlhowto.php
 -->
-<language name="ASN.1" section="Markup" version="4" kateversion="2.3" extensions="*.asn;*.asn1" mimetype="" author="Philippe Rigault" license="GPL">
+<language name="ASN.1" section="Markup" version="5" kateversion="5.0" extensions="*.asn;*.asn1" mimetype="" author="Philippe Rigault" license="GPL">
   <highlighting>
     <list name="keywords">
       <item>DEFINITIONS</item>
@@ -54,8 +54,7 @@
       </context>
       
       <context attribute="Comment" lineEndContext="#pop" name="Comment">
-        <IncludeRules context="##Alerts" />
-        <IncludeRules context="##Modelines" />
+        <IncludeRules context="##Comments" />
       </context>
     </contexts>
     

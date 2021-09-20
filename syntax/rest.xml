@@ -14,7 +14,7 @@
   Copyright 2010 Matt Williams (matt@milliams.com)
   Copyright 2014 Matthew Woehlke (mw_triad@users.sourceforge.net)
   -->
-<language name="reStructuredText" extensions="*.rst" section="Markup" mimetype="text/x-rst" version="7" kateversion="5.0" casesensitive="1">
+<language name="reStructuredText" extensions="*.rst" section="Markup" mimetype="text/x-rst" version="9" kateversion="5.0" casesensitive="1">
 
   <highlighting>
 
@@ -32,7 +32,7 @@
         <RegExpr attribute="Code" String="::$" context="CodeBlock" />
         <RegExpr attribute="SubstitutionDefinition" context="#stay" String="^\s*\.\. \|[&SimpleReferenceNameChars; ]+\|\s+[&SimpleReferenceNameChars;]+::\s" minimal="true" column="0"/>
         <RegExpr attribute="Field" String=":(?=([^:]*\\:)*[^:]*:(\s|$))" context="Field" firstNonSpace="true"/>
-        <RegExpr attribute="Comment" context="Comment" String="^(\s*)\.\.(\s|$)(?!([\w\-_\.]+)(:[\w\-_\.]+)*::(\s|$))" column="0"/>
+        <RegExpr attribute="Comment" context="Comment" String="^(\s*)\.\.(?:\s|$)(?![\w\-_\.]+(?::[\w\-_\.]+)*::(?:\s|$))" column="0"/>
 
         <!-- Keep in sync with Markdown’s implicitlink entity -->
         <RegExpr attribute="StandaloneHyperlink" context="#stay" String="\b&startlink;[^&quot;&gt;\s`\)]*[^\s!&quot;&apos;`\(\)\*,\.:;&lt;&gt;\?~\]\}\\](?=[[:punct:]]*(?:[\s\)]|$))" />
@@ -67,10 +67,9 @@
         <RegExpr attribute="Role" String=":[\w\-_\.\+]+:" context="#pop"/>
       </context>
       <context name="Comment" attribute="Comment" lineEndContext="#stay" dynamic="true">
-        <RegExpr attribute="Code" String="^%1   " context="#stay" column="0" dynamic="true"/>
-        <RegExpr attribute="Normal" String="^(.|$)" lookAhead="true" column="0" context="#pop"/>
-        <IncludeRules context="##Alerts"/>
-        <IncludeRules context="##Modelines"/>
+        <StringDetect attribute="Code" String="%1   " context="#stay" column="0" dynamic="true"/>
+        <RegExpr attribute="Normal" String="^." lookAhead="true" column="0" context="#pop"/>
+        <IncludeRules context="##Comments"/>
       </context>
 
       <context name="CodeBlock" attribute="Code" lineEndContext="#stay">
@@ -78,8 +77,8 @@
       </context>
 
       <context name="Code" attribute="Code" lineEndContext="#stay" dynamic="true">
-        <RegExpr attribute="Code" String="^%1" context="#stay" column="0" dynamic="true"/>
-        <RegExpr attribute="Normal" String="^(.|$)" lookAhead="true" context="#pop#pop" column="0"/>
+        <StringDetect attribute="Code" String="%1" context="#stay" column="0" dynamic="true"/>
+        <RegExpr attribute="Normal" String="^." lookAhead="true" context="#pop#pop" column="0"/>
       </context>
     </contexts>
 

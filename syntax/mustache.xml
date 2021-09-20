@@ -43,7 +43,7 @@
      * v1 [2019-02-10]: Initial version
 -->
 
-<language name="Mustache/Handlebars (HTML)" version="5" kateversion="5.44"
+<language name="Mustache/Handlebars (HTML)" version="8" kateversion="5.53"
           section="Markup" priority="1" mimetype=""
           extensions="*.mustache;*.handlebars;*.hbs;*.ractive;*.hogan;*.hulk;*.html.mst;*.html.mu;*.html.rac"
           author="Nibaldo González (nibgonz@gmail.com), based on the HTML highlighter by Wilbert Berendsen (wilbert@kde.nl)"
@@ -165,14 +165,12 @@
 		<context name="HandlebarsInlineComment" attribute="Comment" lineEndContext="#stay">
 			<StringDetect context="#pop" attribute="Comment" String="--}}" endRegion="HandlebarsInlineComment" />
 			<DetectSpaces />
-			<IncludeRules context="##Alerts" />
-			<IncludeRules context="##Modelines" />
+			<IncludeRules context="##Comments" />
 		</context>
 		<context name="MustacheInlineComment" attribute="Comment" lineEndContext="#stay">
 			<Detect2Chars context="#pop" attribute="Comment" char="}" char1="}" endRegion="MustacheInlineComment" />
 			<DetectSpaces />
-			<IncludeRules context="##Alerts" />
-			<IncludeRules context="##Modelines" />
+			<IncludeRules context="##Comments" />
 		</context>
 
 		<!-- Tags -->
@@ -264,8 +262,7 @@
 		<context name="ValueNQ" attribute="Normal Text" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">
 			<IncludeRules context="MustacheVariables" />
 			<IncludeRules context="FindEntityRefs" />
-			<RegExpr context="#stay" attribute="Value" String="/(?!&gt;)" />
-			<RegExpr context="#stay" attribute="Value" String="[^/&gt;&lt;&quot;&apos;\s]" />
+			<RegExpr context="#stay" attribute="Value" String="/(?!&gt;)|[^/&gt;&lt;&quot;&apos;\s]" />
 		</context>
 
 		<!-- HTML -->
@@ -279,9 +276,7 @@
 			<StringDetect context="#pop" attribute="Comment" String="--&gt;" endRegion="Comment" />
 			<RegExpr context="#stay" attribute="Error" String="-(?:-(?!-&gt;))+" />
 			<IncludeRules context="MustacheVariables" />
-			<DetectSpaces />
-			<IncludeRules context="##Alerts" />
-			<IncludeRules context="##Modelines" />
+			<IncludeRules context="##Comments" />
 		</context>
 
 		<context name="FindPEntityRefs" attribute="Normal Text" lineEndContext="#stay">
@@ -388,7 +383,7 @@
 		<context name="JSCommentClose" attribute="Comment" lineEndContext="#pop">
 			<RegExpr context="#pop#pop!ElementTagEnd" attribute="Element Tag" String="&lt;/script\b" insensitive="true" endRegion="script" />
 			<DetectSpaces />
-			<IncludeRules context="##Alerts" />
+			<IncludeRules context="##Comments" />
 		</context>
 
 		<!-- Overwrite some rules of 'javascript.xml' to add Mustache variables -->

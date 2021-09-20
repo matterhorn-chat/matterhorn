@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
-<language name="Objective-C++" version="7" kateversion="5.0" section="Sources" extensions="*.mm;*.M;*.h" mimetype="text/x-objcpp-src;text/x-c-hdr" author="Gennady Telegin (gepo@lvk.cs.msu.su">
+<language name="Objective-C++" version="10" kateversion="5.0" section="Sources" extensions="*.mm;*.M;*.h" mimetype="text/x-objcpp-src;text/x-c-hdr" author="Gennady Telegin (gepo@lvk.cs.msu.su">
   <highlighting>
     <list name="keywords">
       <item>break</item>
@@ -184,8 +184,6 @@
 
         <keyword attribute="Extensions" context="#stay" String="extensions" />
 
-        <DetectChar attribute="Symbol" context="#stay" char="{" beginRegion="Brace1" />
-        <DetectChar attribute="Symbol" context="#stay" char="}" endRegion="Brace1" />
         <AnyChar attribute="Symbol" context="#stay" String=":!%&amp;()+,-/.*&lt;=&gt;?[]{|}~^&#59;"/>
       </context>
 
@@ -207,13 +205,11 @@
       </context>
       <context name="Int Suffixes" attribute="Decimal" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">
           <StringDetect attribute="Decimal" context="#pop" String="ULL" insensitive="true"/>
-          <StringDetect attribute="Decimal" context="#pop" String="LUL" insensitive="true"/>
           <StringDetect attribute="Decimal" context="#pop" String="LLU" insensitive="true"/>
           <StringDetect attribute="Decimal" context="#pop" String="UL" insensitive="true"/>
           <StringDetect attribute="Decimal" context="#pop" String="LU" insensitive="true"/>
           <StringDetect attribute="Decimal" context="#pop" String="LL" insensitive="true"/>
-          <StringDetect attribute="Decimal" context="#pop" String="U" insensitive="true"/>
-          <StringDetect attribute="Decimal" context="#pop" String="L" insensitive="true"/>
+          <AnyChar attribute="Decimal" context="#pop" String="ULuL"/>
       </context>
       <context attribute="String" lineEndContext="#pop" name="String">
         <LineContinue attribute="String" context="#stay"/>
@@ -222,14 +218,12 @@
       </context>
       <context attribute="Comment" lineEndContext="#pop" name="SingleLineComment">
         <DetectSpaces />
-        <IncludeRules context="##Alerts" />
-        <IncludeRules context="##Modelines" />
+        <IncludeRules context="##Comments" />
       </context>
       <context attribute="Comment" lineEndContext="#stay" name="MultiLineComment">
         <DetectSpaces />
         <Detect2Chars attribute="Comment" context="#pop" char="*" char1="/" endRegion="Comment"/>
-        <IncludeRules context="##Alerts" />
-        <IncludeRules context="##Modelines" />
+        <IncludeRules context="##Comments" />
         <DetectIdentifier />
       </context>
 
@@ -240,30 +234,25 @@
 
       <context attribute="Preprocessor" lineEndContext="#pop" name="Preprocessor">
         <LineContinue attribute="Preprocessor" context="#stay"/>
-        <RegExpr attribute="Preprocessor" context="Define" String="define.*((?=\\))"/>
-        <RegExpr attribute="Preprocessor" context="#stay" String="define.*"/>
+        <RegExpr attribute="Preprocessor" context="#stay" String="define(?:[^\\]++|\\.)++"/>
         <RangeDetect attribute="Prep. Lib" context="#stay" char="&quot;" char1="&quot;"/>
         <RangeDetect attribute="Prep. Lib" context="#stay" char="&lt;" char1="&gt;"/>
         <IncludeRules context="FindComments" />
       </context>
 
-      <context attribute="Preprocessor" lineEndContext="#pop" name="Define">
-        <LineContinue attribute="Preprocessor" context="#stay"/>
-      </context>
-
       <context attribute="Comment" lineEndContext="#stay" name="Outscoped" >
         <DetectSpaces />
-        <IncludeRules context="##Alerts" />
+        <IncludeRules context="##Comments" />
         <DetectIdentifier />
         <DetectChar attribute="String" context="String" char="&quot;"/>
         <IncludeRules context="FindComments" />
         <RegExpr attribute="Comment" context="Outscoped intern" String="#\s*if" beginRegion="Outscoped" firstNonSpace="true" />
-        <RegExpr attribute="Preprocessor" context="#pop" String="#\s*(endif|else|elif)" endRegion="Outscoped" firstNonSpace="true" />
+        <RegExpr attribute="Preprocessor" context="#pop" String="#\s*(?:endif|else|elif)" endRegion="Outscoped" firstNonSpace="true" />
       </context>
 
       <context attribute="Comment" lineEndContext="#stay" name="Outscoped intern">
         <DetectSpaces />
-        <IncludeRules context="##Alerts" />
+        <IncludeRules context="##Comments" />
         <DetectIdentifier />
         <DetectChar attribute="String" context="String" char="&quot;"/>
         <IncludeRules context="FindComments" />
@@ -285,7 +274,7 @@
       <itemData name="String"        defStyleNum="dsString"/>
       <itemData name="String Char"   defStyleNum="dsSpecialChar" spellChecking="false"/>
       <itemData name="Comment"       defStyleNum="dsComment"/>
-      <itemData name="Symbol"        defStyleNum="dsNormal" spellChecking="false"/>
+      <itemData name="Symbol"        defStyleNum="dsOperator" spellChecking="false"/>
       <itemData name="Preprocessor"  defStyleNum="dsPreprocessor" spellChecking="false"/>
       <itemData name="Prep. Lib"     defStyleNum="dsImport" spellChecking="false"/>
       <itemData name="Region Marker" defStyleNum="dsRegionMarker"/>

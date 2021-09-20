@@ -24,7 +24,7 @@
 <language
     name="ISO C++"
     section="Sources"
-    version="20"
+    version="25"
     kateversion="5.0"
     indenter="cstyle"
     style="C++"
@@ -57,6 +57,10 @@
       <item>throw</item>
       <item>try</item>
       <item>while</item>
+      <!-- coroutine -->
+      <item>co_await</item>
+      <item>co_return</item>
+      <item>co_yield</item>
     </list>
 
     <!-- https://en.cppreference.com/w/cpp/keyword -->
@@ -128,19 +132,8 @@
       <item>import</item>
       <item>module</item>
       <item>export</item> <!-- Unused but reserved, keyword since c++20 -->
-      <!-- coroutine -->
-      <item>co_await</item>
-      <item>co_return</item>
-      <item>co_yield</item>
       <!-- reflexion TS -->
       <!-- <item>reflexpr</item> -->
-    </list>
-    <!-- This keyword may appear in InternalsNS context. For example in code:
-      details::some_class::template some_templated_static();
-      and it should be displayed as keyword, not like part of details namespace...
-      -->
-    <list name="template">
-      <item>template</item>
     </list>
 
     <!-- 7.6 Attributes -->
@@ -161,13 +154,6 @@
       <item>no_unique_address</item>
       <!-- TM TS -->
       <!-- <item>optimize_for_synchronized</item> -->
-    </list>
-    <!-- This keyword may appear in Attribute context. For example in code:
-    [[using CC: opt(1), debug]]
-    and it should be displayed as keyword, not like part of attribute...
-    -->
-    <list name="using">
-      <item>using</item>
     </list>
 
     <!-- https://en.cppreference.com/w/cpp/keyword -->
@@ -261,29 +247,31 @@
       <item>__VA_ARGS__</item>
       <item>__VA_OPT__</item>
     </list>
-    <list name="preprocessorIf">
+    <list name="preprocessor">
       <item>if</item>
+      <item>ifdef</item>
+      <item>ifndef</item>
+      <item>elif</item>
+      <item>else</item>
+      <item>endif</item>
+      <item>cmakedefine01</item>
+      <item>cmakedefine</item>
+      <item>define</item>
+      <item>include</item>
+      <item>error</item>
+      <item>line</item>
+      <item>pragma</item>
+      <item>undef</item>
+      <item>warning</item>
     </list>
     <list name="preprocessorIfDef">
       <item>ifdef</item>
       <item>ifndef</item>
     </list>
-    <list name="preprocessorElseIf">
-      <item>elif</item>
-    </list>
-    <list name="preprocessorElse">
-      <item>else</item>
-    </list>
-    <list name="preprocessorEndIf">
-      <item>endif</item>
-    </list>
     <list name="preprocessorDefine">
       <item>cmakedefine01</item>
       <item>cmakedefine</item>
       <item>define</item>
-    </list>
-    <list name="preprocessorInclude">
-      <item>include</item>
     </list>
     <list name="preprocessorOther">
       <item>error</item>
@@ -366,11 +354,11 @@
         <Detect2Chars attribute="String" context="String16" char="u" char1="&quot;" />
         <Detect2Chars attribute="String" context="String16" char="L" char1="&quot;" />
         <StringDetect attribute="String" context="String8" String="u8&quot;" />
-        <Detect2Chars attribute="String" context="RawString" char="R" char1="&quot;" />
-        <StringDetect attribute="String" context="RawString" String="uR&quot;" />
-        <StringDetect attribute="String" context="RawString" String="UR&quot;" />
-        <StringDetect attribute="String" context="RawString" String="LR&quot;" />
-        <StringDetect attribute="String" context="RawString" String="u8R&quot;" />
+        <Detect2Chars attribute="Raw String Delimiter" context="RawString" char="R" char1="&quot;" />
+        <StringDetect attribute="Raw String Delimiter" context="RawString" String="uR&quot;" />
+        <StringDetect attribute="Raw String Delimiter" context="RawString" String="UR&quot;" />
+        <StringDetect attribute="Raw String Delimiter" context="RawString" String="LR&quot;" />
+        <StringDetect attribute="Raw String Delimiter" context="RawString" String="u8R&quot;" />
         <DetectChar attribute="Char" context="Char8 Literal" char="'" />
         <Detect2Chars attribute="Char" context="Char16 Literal" char="L" char1="'" />
         <Detect2Chars attribute="Char" context="Char16 Literal" char="u" char1="'" />
@@ -410,7 +398,7 @@
       </context>
 
       <context name="IntSuffixPattern" attribute="Error" lineEndContext="#pop#pop" fallthrough="true" fallthroughContext="NumericSuffixError">
-        <RegExpr attribute="Standard Suffix" context="NumericSuffixError" String="[Uu][Ll]{0,2}|[Ll]{0,2}[Uu]?" />
+        <RegExpr attribute="Standard Suffix" context="NumericSuffixError" String="([Uu][Ll]{0,2}|[Ll]{0,2}[Uu]?)\b" />
         <!-- https://en.cppreference.com/w/cpp/language/user_literal#Standard_library -->
         <RegExpr attribute="Standard Classes" context="NumericSuffixError" String="(?:i[fl]?|min|[mun]?s|[hyd])\b" />
         <DetectChar attribute="Error" context="#pop!NumericUserSuffixPattern" char="_" lookAhead="true" />
@@ -528,7 +516,11 @@
         <!-- Attributes may contain some text: [[deprecated("Reason text")]] -->
         <DetectChar attribute="String" context="String" char="&quot;" />
         <AnyChar attribute="Decimal" context="Integer" String="0123456789" lookAhead="true" />
-        <keyword attribute="Keyword" context="AttributeNamespace" String="using" />
+        <!-- This keyword may appear in Attribute context. For example in code:
+        [[using CC: opt(1), debug]]
+        and it should be displayed as keyword, not like part of attribute...
+        -->
+        <WordDetect attribute="Keyword" context="AttributeNamespace" String="using" />
         <IncludeRules context="DetectGccAttributes##GCCExtensions" />
         <RegExpr attribute="CONSTS/MACROS" context="#stay" String="[A-Z][A-Z0-9_]{2,}\b" />
         <DetectIdentifier />
@@ -546,20 +538,24 @@
       </context>
 
       <context name="RawString" attribute="String" lineEndContext="#stay" fallthrough="true" fallthroughContext="#pop!LineError">
-        <RegExpr attribute="String" context="#pop!InRawString" String="([^\(]{0,16})\(" />
+        <RegExpr attribute="Raw String Delimiter" context="#pop!InRawString" String="([^\(]{0,16})\(" beginRegion="Raw String" />
       </context>
 
-      <context name="InRawString" attribute="String" lineEndContext="#stay" dynamic="true">
+      <context name="InRawString" attribute="Raw String" lineEndContext="#stay" dynamic="true">
         <!-- fast way, can be replaced by a `UntilChars` rule if it exists -->
-        <RegExpr attribute="String" context="#stay" String="[^%)]+" />
+        <RegExpr attribute="Raw String" context="#stay" String="[^%)]+" />
         <RegExpr attribute="String Char" context="#stay" String="&printf_like;|&format_like;" />
-        <StringDetect attribute="String" context="#pop" String=")%1&quot;" dynamic="true"/>
+        <StringDetect attribute="Raw String Delimiter" context="#pop" String=")%1&quot;" dynamic="true" endRegion="Raw String" />
       </context>
 
       <context name="Region Marker" attribute="Region Marker" lineEndContext="#pop" />
 
       <context name="DetectNSEnd" attribute="Normal Text" lineEndContext="#stay">
-        <keyword attribute="Keyword" context="#stay" String="template" />
+        <!-- This keyword may appear in InternalsNS context. For example in code:
+          details::some_class::template some_templated_static();
+          and it should be displayed as keyword, not like part of details namespace...
+          -->
+        <WordDetect attribute="Keyword" context="#stay" String="template" />
         <DetectIdentifier context="#stay" />
         <AnyChar attribute="Separator Symbol" context="#pop" String="&separators;" />
         <AnyChar attribute="Symbol" context="#pop" String="&ns_punctuators; &#9;" />
@@ -595,8 +591,7 @@
       <context name="Comment 1" attribute="Comment" lineEndContext="#pop">
         <LineContinue attribute="Error" context="#stay" />
         <DetectSpaces />
-        <IncludeRules context="##Alerts" />
-        <IncludeRules context="##Modelines" />
+        <IncludeRules context="##Comments" />
         <DetectIdentifier />
       </context>
 
@@ -604,8 +599,7 @@
         <DetectSpaces />
         <LineContinue attribute="Comment" context="#stay" />
         <Detect2Chars attribute="Comment" context="#pop" char="*" char1="/" endRegion="Comment" />
-        <IncludeRules context="##Alerts" />
-        <IncludeRules context="##Modelines" />
+        <IncludeRules context="##Comments" />
         <DetectIdentifier />
       </context>
 
@@ -616,15 +610,6 @@
       <context name="AfterHashLineError" attribute="Region Marker" lineEndContext="#pop">
         <LineContinue attribute="Error" context="#stay" />
         <RegExpr attribute="Error" context="#pop!LineError" String="[^\\]+" />
-        <!-- for auto-completion in Kate editor -->
-        <keyword attribute="Preprocessor" context="#pop!LineError" String="preprocessorInclude" />
-        <keyword attribute="Preprocessor" context="#pop!LineError" String="preprocessorIfDef" />
-        <keyword attribute="Preprocessor" context="#pop!LineError" String="preprocessorIf" />
-        <keyword attribute="Preprocessor" context="#pop!LineError" String="preprocessorElseIf" />
-        <keyword attribute="Preprocessor" context="#pop!LineError" String="preprocessorElse" />
-        <keyword attribute="Preprocessor" context="#pop!LineError" String="preprocessorEndIf" />
-        <keyword attribute="Preprocessor" context="#pop!LineError" String="preprocessorOther" />
-        <keyword attribute="Preprocessor" context="#pop!LineError" String="preprocessorDefine" />
       </context>
 
       <context name="LineError" attribute="Error" lineEndContext="#pop">
@@ -632,17 +617,17 @@
       </context>
 
       <context name="PreprocessorCmd" attribute="Error" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop!AfterHashLineError">
-        <keyword attribute="Preprocessor" context="#pop!Include" String="preprocessorInclude" />
+        <WordDetect attribute="Preprocessor" context="#pop!Include" String="include" />
         <keyword attribute="Preprocessor" context="#pop!PreprocessorIfDef" String="preprocessorIfDef" beginRegion="PP" lookAhead="true" />
-        <keyword attribute="Preprocessor" context="#pop!PreprocessorIf" String="preprocessorIf" beginRegion="PP" lookAhead="true" />
-        <keyword attribute="Preprocessor" context="#pop!PreprocessorIf" String="preprocessorElseIf" endRegion="PP" beginRegion="PP" lookAhead="true" />
-        <keyword attribute="Preprocessor" context="PreprocessorEndOfLineSpace" String="preprocessorElse" endRegion="PP" beginRegion="PP" />
-        <keyword attribute="Preprocessor" context="PreprocessorEndOfLineSpace" String="preprocessorEndIf" endRegion="PP" />
+        <WordDetect attribute="Preprocessor" context="#pop!PreprocessorIf" String="if" beginRegion="PP" lookAhead="true" />
+        <WordDetect attribute="Preprocessor" context="#pop!PreprocessorIf" String="elif" endRegion="PP" beginRegion="PP" lookAhead="true" />
+        <WordDetect attribute="Preprocessor" context="PreprocessorEndOfLineSpace" String="else" endRegion="PP" beginRegion="PP" />
+        <WordDetect attribute="Preprocessor" context="PreprocessorEndOfLineSpace" String="endif" endRegion="PP" />
         <keyword attribute="Preprocessor" context="#pop!Preprocessor" String="preprocessorOther" />
         <keyword attribute="Preprocessor" context="#pop!Define" String="preprocessorDefine" />
         <!-- GCC extension -->
         <WordDetect attribute="Preprocessor" context="#pop!Include" String="include_next" />
-        <RegExpr attribute="Preprocessor" context="#pop!Preprocessor" String="[0-9]+" />
+        <Int attribute="Preprocessor" context="#pop!Preprocessor"/>
       </context>
 
       <context name="Include" attribute="Preprocessor" lineEndContext="#pop" >
@@ -736,8 +721,7 @@
 
       <context name="Outscoped Common" attribute="Comment" lineEndContext="#stay">
         <DetectSpaces />
-        <IncludeRules context="##Alerts" />
-        <IncludeRules context="##Modelines" />
+        <IncludeRules context="##Comments" />
         <DetectIdentifier />
         <!-- prevent incorrect highlighting in case of not closed properly comment block -->
         <Detect2Chars attribute="Comment" context="#stay" char="*" char1="/" />
@@ -781,8 +765,7 @@
 
       <context name="Outscoped intern" attribute="Comment" lineEndContext="#stay">
         <DetectSpaces />
-        <IncludeRules context="##Alerts" />
-        <IncludeRules context="##Modelines" />
+        <IncludeRules context="##Comments" />
         <DetectIdentifier />
         <!-- prevent incorrect highlighting in case of not closed properly comment block -->
         <Detect2Chars attribute="Comment" context="#stay" char="*" char1="/" />
@@ -809,9 +792,11 @@
       <itemData name="Char"               defStyleNum="dsChar"      spellChecking="false" />
       <itemData name="String"             defStyleNum="dsString"    spellChecking="true"  />
       <itemData name="String Char"        defStyleNum="dsSpecialChar" spellChecking="false" />
+      <itemData name="Raw String"         defStyleNum="dsVerbatimString" spellChecking="true"  />
+      <itemData name="Raw String Delimiter" defStyleNum="dsString"  spellChecking="false"  />
       <itemData name="Comment"            defStyleNum="dsComment"   spellChecking="true"  />
-      <itemData name="Symbol"             defStyleNum="dsNormal"    spellChecking="false" />
-      <itemData name="Separator Symbol"   defStyleNum="dsNormal"    spellChecking="false" />
+      <itemData name="Symbol"             defStyleNum="dsOperator"  spellChecking="false" />
+      <itemData name="Separator Symbol"   defStyleNum="dsOperator"  spellChecking="false" />
       <itemData name="Data Members (m_*)" defStyleNum="dsVariable"  spellChecking="false" />
       <itemData name="Globals (g_*)"      defStyleNum="dsVariable"  spellChecking="false" />
       <itemData name="Statics (s_*)"      defStyleNum="dsVariable"  spellChecking="false" />

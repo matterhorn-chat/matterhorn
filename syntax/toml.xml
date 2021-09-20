@@ -2,7 +2,7 @@
 <!DOCTYPE language SYSTEM "language.dtd"
 [
 	<!ENTITY more "(_\d+)*">
-	<!ENTITY int  "[+-]?(0|[1-9]\d*)&more;">
+	<!ENTITY int  "[+-]?(0|[1-9]\d*&more;)">
 	<!ENTITY frac "\.\d+&more;">
 	<!ENTITY exp  "[eE][+-]?\d+&more;">
 	
@@ -11,7 +11,7 @@
 	<!ENTITY datetime "\d\d\d\d-\d\d-\d\d(T&time;)?">
 ]>
 <!-- https://github.com/toml-lang/toml -->
-<language name="TOML" section="Configuration" extensions="*.toml" mimetype="text/x-toml" version="6" kateversion="5.0" author="flying-sheep@web.de" license="LGPLv2+">
+<language name="TOML" section="Configuration" extensions="*.toml" mimetype="text/x-toml" version="9" kateversion="5.0" author="flying-sheep@web.de" license="LGPLv2+">
 <highlighting>
 	<list name="bools">
 		<item>true</item>
@@ -24,6 +24,7 @@
 			<DetectChar attribute="TableHeader" context="TableHeader" char="[" endRegion="Table"/>
 			<RegExpr    attribute="Key" context="#stay"   String="[\w-]+" firstNonSpace="true"/>
 			<DetectChar attribute="Key" context="QuotedKey" char="&quot;" firstNonSpace="true"/>
+			<DetectChar attribute="Key" context="LitQuotedKey" char="'" firstNonSpace="true"/>
 			<DetectChar attribute="Assignment" context="Value" char="="/>
 			<DetectChar char="#" attribute="Comment" context="Comment"/>
 		</context>
@@ -41,6 +42,7 @@
 			<DetectChar attribute="TableHeader" context="#stay" char="."/>
 			<RegExpr    attribute="Key" context="#stay" String="[\w-]+"/>
 			<DetectChar attribute="Key" context="QuotedKey" char="&quot;"/>
+			<DetectChar attribute="Key" context="LitQuotedKey" char="'"/>
 		</context>
 		<!-- values -->
 		<context attribute="Normal Text" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop" name="Value">
@@ -59,31 +61,30 @@
 		</context>
 		<context attribute="Comment" lineEndContext="#pop" name="Comment">
 			<DetectSpaces/>
-			<IncludeRules context="##Alerts" />
-			<IncludeRules context="##Modelines" />
+			<IncludeRules context="##Comments" />
 			<DetectIdentifier/>
 		</context>
 		<!-- Quoted keys and Strings -->
 		<context attribute="Key" lineEndContext="#pop" name="QuotedKey">
 			<LineContinue attribute="Escape" context="#stay"/>
-			<RegExpr attribute="Escape" String="\\[btnfr&quot;\\]" context="#stay" />
-			<RegExpr attribute="Escape" String="\\(u[0-9a-fA-F]{4}|U[0-9a-fA-F]{8})" context="#stay" />
+			<RegExpr attribute="Escape" String="\\[btnfr&quot;\\]|\\(u[0-9a-fA-F]{4}|U[0-9a-fA-F]{8})" context="#stay" />
 			<RegExpr attribute="Error" String="\\." context="#stay" />
 			<DetectChar attribute="Key" context="#pop" char="&quot;"/>
 		</context>
 		<context attribute="String" lineEndContext="#pop" name="String">
 			<LineContinue attribute="Escape" context="#stay"/>
-			<RegExpr attribute="Escape" String="\\[btnfr&quot;\\]" context="#stay" />
-			<RegExpr attribute="Escape" String="\\(u[0-9a-fA-F]{4}|U[0-9a-fA-F]{8})" context="#stay" />
+			<RegExpr attribute="Escape" String="\\[btnfr&quot;\\]|\\(u[0-9a-fA-F]{4}|U[0-9a-fA-F]{8})" context="#stay" />
 			<RegExpr attribute="Error" String="\\." context="#stay" />
 			<DetectChar attribute="String" context="#pop" char="&quot;"/>
 		</context>
 		<context attribute="String" lineEndContext="#stay" name="MultilineString">
 			<LineContinue attribute="Escape" context="#stay"/>
-			<RegExpr attribute="Escape" String="\\[btnfr&quot;\\]" context="#stay" />
-			<RegExpr attribute="Escape" String="\\(u[0-9a-fA-F]{4}|U[0-9a-fA-F]{8})" context="#stay" />
+			<RegExpr attribute="Escape" String="\\[btnfr&quot;\\]|\\(u[0-9a-fA-F]{4}|U[0-9a-fA-F]{8})" context="#stay" />
 			<RegExpr attribute="Error" String="\\." context="#stay" />
 			<StringDetect attribute="String" context="#pop" String="&quot;&quot;&quot;"/>
+		</context>
+		<context attribute="Key" lineEndContext="#pop" name="LitQuotedKey">
+			<DetectChar attribute="Key" context="#pop" char="'"/>
 		</context>
 		<context attribute="LitString" lineEndContext="#pop" name="LitString">
 			<DetectChar attribute="String" context="#pop" char="'"/>
@@ -100,6 +101,7 @@
 		<context attribute="InlineTable" lineEndContext="#stay" name="InlineTable">
 			<RegExpr    attribute="Key" context="#stay"   String="[\w-]+"/>
 			<DetectChar attribute="Key" context="QuotedKey" char="&quot;"/>
+			<DetectChar attribute="Key" context="LitQuotedKey" char="'"/>
 			<DetectChar attribute="Assignment" context="Value" char="="/>
 			<DetectChar char="#" attribute="Comment" context="Comment"/>
 			<DetectChar context="#pop" attribute="InlineTable" char="}" />

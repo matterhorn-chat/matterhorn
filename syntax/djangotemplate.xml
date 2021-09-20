@@ -4,7 +4,7 @@
 	<!ENTITY name    "[A-Za-z_:][\w.:_-]*">
 	<!ENTITY entref  "&amp;(#[0-9]+|#[xX][0-9A-Fa-f]+|&name;);">
 ]>
-<language name="Django HTML Template" version="5" kateversion="5.0" section="Markup" extensions="*.htm;*.html" mimetype="text/html"  author="Matthew Marshall (matthew@matthewmarshall.org)" license="LGPL" priority="9">
+<language name="Django HTML Template" version="7" kateversion="5.53" section="Markup" extensions="*.htm;*.html" mimetype="text/html"  author="Matthew Marshall (matthew@matthewmarshall.org)" license="LGPL" priority="9">
 
 <!--
     Based off of the katepart html syntax highlighting by Wilbert Berendsen.
@@ -60,8 +60,7 @@
   <context name="Template Comment" attribute="Template Comment" lineEndContext="#stay">
     <RegExpr attribute="Template Comment" context="#pop" String="\{%\s*endcomment\s*%\}" endRegion="templatecomment" />
     <DetectSpaces />
-    <IncludeRules context="##Alerts" />
-    <IncludeRules context="##Modelines" />
+    <IncludeRules context="##Comments" />
   </context>
 
   <context name="Template Var" attribute="Template Var" lineEndContext="#stay">
@@ -160,8 +159,7 @@
   </context>
 
   <context name="FindAttributes" attribute="Normal Text" lineEndContext="#stay">
-    <RegExpr attribute="Attribute" context="#stay" String="&name;" column="0"/>
-    <RegExpr attribute="Attribute" context="#stay" String="\s+&name;" />
+    <RegExpr attribute="Attribute" context="#stay" String="^&name;|\s+&name;" />
     <DetectChar attribute="Attribute" context="Value" char="=" />
   </context>
 
@@ -172,9 +170,8 @@
 
   <context name="Comment" attribute="Comment" lineEndContext="#stay">
     <DetectSpaces/>
-    <IncludeRules context="##Alerts" />
+    <IncludeRules context="##Comments" />
     <IncludeRules context="FindTemplate" />
-    <IncludeRules context="##Modelines" />
     <DetectIdentifier/>
     <StringDetect attribute="Comment" context="#pop" String="--&gt;" endRegion="comment" />
     <RegExpr attribute="Error" context="#stay" String="-(-(?!-&gt;))+" />
@@ -275,7 +272,7 @@
   <context name="JS comment close" attribute="Comment" lineEndContext="#pop">
     <RegExpr attribute="Element" context="El Close 3" String="&lt;/script\b" insensitive="true" endRegion="script" />
     <IncludeRules context="FindTemplate" />
-    <IncludeRules context="##Alerts" />
+    <IncludeRules context="##Comments" />
   </context>
 
   <context name="Value" attribute="Normal Text" lineEndContext="#stay" fallthrough="true" fallthroughContext="Value NQ">
@@ -287,8 +284,7 @@
   <context name="Value NQ" attribute="Normal Text" lineEndContext="#pop#pop" fallthrough="true" fallthroughContext="#pop#pop">
     <IncludeRules context="FindEntityRefs" />
     <IncludeRules context="FindTemplate" />
-    <RegExpr attribute="Value" context="#stay" String="/(?!&gt;)" />
-    <RegExpr attribute="Value" context="#stay" String="[^/&gt;&lt;&quot;&apos;\s]" />
+    <RegExpr attribute="Value" context="#stay" String="/(?!&gt;)|[^/&gt;&lt;&quot;&apos;\s]" />
   </context>
 
   <context name="Value DQ" attribute="Value" lineEndContext="#stay">

@@ -10,7 +10,7 @@ Change log:
 
 Author of version 1.02: Sebastian Vuorinen
 -->
-<language name="Eiffel" version="3" kateversion="5.0" section="Sources" extensions="*.e" mimetype="text/x-eiffel-src" author="Sebastian Vuorinen" license="">
+<language name="Eiffel" version="4" kateversion="5.0" section="Sources" extensions="*.e" mimetype="text/x-eiffel-src" author="Sebastian Vuorinen" license="">
 	<highlighting>
 		<list name="keywords">
 			<item>agent</item>
@@ -99,8 +99,7 @@ Author of version 1.02: Sebastian Vuorinen
 
 			<context name = "Documentation" attribute="Comment" lineEndContext="#pop">
 				<DetectSpaces />
-				<IncludeRules context="##Alerts" />
-				<IncludeRules context="##Modelines" />
+				<IncludeRules context="##Comments" />
 			</context>
 		</contexts>
 

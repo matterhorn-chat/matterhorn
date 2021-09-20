@@ -1,6 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd">
-<language name="Fortran (Fixed Format)" version="7" kateversion="5.44" section="Sources" extensions="*.f;*.F;*.for;*.FOR;*.fpp;*.FPP;" mimetype="text/x-fortran-src" casesensitive="0" author="Franchin Matteo (fnch@libero.it)" license="MIT" priority="9">
+<!DOCTYPE language SYSTEM "language.dtd" [
+  <!-- Integers with optional kind specifier -->
+  <!ENTITY integer "\b[0-9]++(?:[_](?:[0-9]++|[a-zA-Z][\w_]*))?">
+  <!-- Integers in binary, octal and hexadecimal notations -->
+  <!ENTITY baseinteger "\b[bozx](?:[&apos;][0-9a-fA-F]++[&apos;]|[&quot;][0-9a-fA-F]++[&quot;])">
+  <!-- Floating-point numbers with optional kind -->
+  <!ENTITY float1 "[0-9]*+\.[0-9]++(?:[de][+-]?[0-9]+)?(?:[_](?:[0-9]++|[a-z][\w_]*))?">
+  <!ENTITY float2 "\b[0-9]++\.[0-9]*+(?:[de][+-]?[0-9]+)?(?:[_](?:[0-9]++|[a-z][\w_]*))?(?![a-z])">
+  <!ENTITY float3 "\b[0-9]++[de][+-]?[0-9]++(?:[_](?:[0-9]++|[a-z][\w_]*))?">
+]>
+<language name="Fortran (Fixed Format)" version="10" kateversion="5.44" section="Sources" extensions="*.f;*.F;*.for;*.FOR;*.fpp;*.FPP;" mimetype="text/x-fortran-src" casesensitive="0" author="Franchin Matteo (fnch@libero.it)" license="MIT" priority="9">
 <!-- by Franchin Matteo, fnch@libero.it -->
 <!-- NOTE: Keep in sync with the "Fortran (Free Format)" highlighter! (fortran-free.xml) -->
   <highlighting>
@@ -346,6 +355,7 @@
     <!-- Matrix transpose -->
       <item>transpose</item>
     <!-- Transformational functions for geometric location -->
+      <item>findloc</item>
       <item>maxloc</item>
       <item>minloc</item>
     </list>
@@ -412,8 +422,7 @@
       </context>
 
       <context attribute="Comment" lineEndContext="#pop" name="comment">
-        <IncludeRules context="##Alerts"/>
-        <IncludeRules context="##Modelines"/>
+        <IncludeRules context="##Comments"/>
       </context>
 
 <!-- This context highlights symbols -->
@@ -492,8 +501,7 @@
 
 <!-- The following two contexts match declarations -->
       <context attribute="Normal Text" lineEndContext="#stay" name="find_decls">
-        <RegExpr attribute="Data Type" context="#stay" String="\b(?:integer|real|complex)[\*]\d{1,2}" insensitive="true"/>
-        <RegExpr attribute="Data Type" context="#stay" String="\bend\s*type\b" insensitive="true"/>
+        <RegExpr attribute="Data Type" context="#stay" String="\b(?:integer|real|complex)[\*]\d{1,2}|\bend\s*type\b" insensitive="true"/>
         <keyword attribute="Data Type" context="#stay" String="types"/>
         <WordDetect attribute="Data Type" context="#stay" String="data" firstNonSpace="true" insensitive="true"/>
         <!--<RegExpr attribute="Data Type" context="find_paren" String="real\s*[(]" firstNonSpace="true" insensitive="true"/>
@@ -521,14 +529,8 @@
 
 <!-- The following context matches integer and real numbers -->
       <context attribute="Normal Text" lineEndContext="#stay" name="find_numbers">
-        <!-- Floating-point numbers with optional kind -->
-        <RegExpr attribute="Float" context="#stay" String="[0-9]*\.[0-9]+(?:[de][+-]?[0-9]+)?(?:[_](?:[0-9]+|[a-z][\w_]*))?" insensitive="true"/>
-        <RegExpr attribute="Float" context="#stay" String="\b[0-9]+\.[0-9]*(?:[de][+-]?[0-9]+)?(?:[_](?:[0-9]+|[a-z][\w_]*))?(?![a-z])" insensitive="true"/>
-        <RegExpr attribute="Float" context="#stay" String="\b[0-9]+[de][+-]?[0-9]+(?:[_](?:[0-9]+|[a-z][\w_]*))?" insensitive="true"/>
-        <!-- Integers with optional kind specifier -->
-        <RegExpr attribute="Decimal" context="#stay" String="\b[0-9]+(?:[_](?:[0-9]+|[a-zA-Z][\w_]*))?"/>
-        <!-- Integers in binary, octal and hexadecimal notations -->
-        <RegExpr attribute="Decimal" context="#stay" String="\b[bozx](?:[&apos;][0-9a-f]+[&apos;]|[&quot;][0-9a-f]+[&quot;])" insensitive="true"/>
+        <RegExpr attribute="Float" context="#stay" String="&float1;|&float2;|&float3;" insensitive="true"/>
+        <RegExpr attribute="Decimal" context="#stay" String="&integer;|&baseinteger;"/>
       </context>
 
 <!-- The following four contexts implement the complex string multi-line declarations -->

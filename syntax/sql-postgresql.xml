@@ -3,7 +3,7 @@
 <!-- PostgreSQL SQL, syntax definition based on sql.xml by Yury Lebedev
      v5 fix comments by Gene Thomas <gene@genethomas.com>
   -->
-<language name="SQL (PostgreSQL)" version="10" kateversion="5.44" section="Database" extensions="*.sql;*.SQL;*.ddl;*.DDL" mimetype="text/x-sql" casesensitive="0" author="Shane Wright (me@shanewright.co.uk)" license="">
+<language name="SQL (PostgreSQL)" version="13" kateversion="5.44" section="Database" extensions="*.sql;*.SQL;*.ddl;*.DDL" mimetype="text/x-sql" casesensitive="0" author="Shane Wright (me@shanewright.co.uk)" license="">
   <highlighting>
     <list name="controlFlow">
       <item>BEGIN</item>
@@ -1008,16 +1008,16 @@
         <Int attribute="Decimal" context="#stay"/>
         <DetectChar attribute="String" context="String" char="'"/>
         <DetectChar attribute="Identifier" context="Identifier" char="&quot;"/>
-        <AnyChar attribute="Symbol" context="#stay" String=":&#38;"/>
-        <RegExpr attribute="Preprocessor" context="Preprocessor" String="@@?[^@ \t\r\n]" column="0"/>
-        <RegExpr attribute="Operator" context="MultiLineString" String="\$([^\$\n\r]*)\$"/>
-        <AnyChar attribute="Operator" context="#stay" String="+-*/=%^!&lt;&gt;&amp;|@~#"/>
         <Detect2Chars attribute="Operator" context="#stay" char=":" char1="="/>
+        <AnyChar attribute="Symbol" context="#stay" String=":&amp;"/>
         <Detect2Chars attribute="Operator" context="#stay" char="." char1="."/>
         <!-- geometric operators -->
         <Detect2Chars attribute="Operator" context="#stay" char="?" char1="#"/>
         <Detect2Chars attribute="Operator" context="#stay" char="?" char1="-"/>
         <Detect2Chars attribute="Operator" context="#stay" char="?" char1="|"/>
+        <RegExpr attribute="Preprocessor" context="Preprocessor" String="^@@?[^@ \t\r\n]" column="0"/>
+        <RegExpr attribute="Operator" context="MultiLineString" String="\$([^\$\n\r]*)\$"/>
+        <AnyChar attribute="Operator" context="#stay" String="+-*/=%^!&lt;&gt;&amp;|@~#"/>
       </context>
       <context name="CreateFunction" attribute="Normal Text" lineEndContext="#stay">
         <RegExpr attribute="Function" context="FunctionBody" String="\$([^\$\n\r]*)\$"/>
@@ -1033,20 +1033,18 @@
       <context name="String" attribute="String" lineEndContext="#stay">
         <LineContinue attribute="String" context="#pop"/>
         <HlCStringChar attribute="String Char" context="#stay"/>
-        <DetectChar attribute="Symbol" context="#stay" char="&#38;"/>
+        <DetectChar attribute="Symbol" context="#stay" char="&amp;"/>
         <DetectChar attribute="String" context="#pop" char="'"/>
       </context>
       <context name="SingleLineComment" attribute="Comment" lineEndContext="#pop">
         <DetectSpaces />
-        <IncludeRules context="##Alerts"/>
-        <IncludeRules context="##Modelines"/>
+        <IncludeRules context="##Comments"/>
       </context>
       <context name="MultiLineComment" attribute="Comment" lineEndContext="#stay">
         <LineContinue attribute="Comment" context="#pop"/>
         <DetectSpaces />
         <Detect2Chars attribute="Comment" context="#pop" char="*" char1="/" endRegion="Comment"/>
-        <IncludeRules context="##Alerts"/>
-        <IncludeRules context="##Modelines"/>
+        <IncludeRules context="##Comments"/>
       </context>
       <context name="Identifier" attribute="Identifier" lineEndContext="#pop">
         <DetectChar attribute="Identifier" context="#pop" char="&quot;"/>

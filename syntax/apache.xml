@@ -13,7 +13,7 @@ v1.0:
 -->
 
 <language name="Apache Configuration" section="Configuration"
-          version="4" kateversion="5.0"
+          version="6" kateversion="5.0"
           extensions="httpd.conf;httpd2.conf;apache.conf;apache2.conf;.htaccess*;.htpasswd*"
           mimetype=""
           author="Jan Janssen (medhefgo@googlemail.com)" license="LGPL">
@@ -576,16 +576,14 @@ v1.0:
 
  <context name="Alternative Directives" attribute="Other" lineEndContext="#pop">
   <keyword attribute="Alternates" context="#stay" String="Alternates" />
-  <DetectChar attribute="Alternates" context="#stay" char="-" />
-  <DetectChar attribute="Alternates" context="#stay" char="+" />
+  <AnyChar attribute="Alternates" context="#stay" String="-+" />
   <IncludeRules context="Comment Alert" />
  </context>
 
 <!--	Other -->
  <context name="Comment" attribute="Comment" lineEndContext="#pop">
   <DetectSpaces />
-  <IncludeRules context="##Alerts" />
-  <IncludeRules context="##Modelines" />
+  <IncludeRules context="##Comments" />
   <DetectIdentifier />
  </context>
 

@@ -2,8 +2,8 @@
 <!DOCTYPE language SYSTEM "language.dtd">
 <language name="Pascal"
           section="Sources" 
-          version="3"
-          kateversion="3.3"
+          version="4"
+          kateversion="5.0"
           extensions="*.p;*.pas;*.pp"
           mimetype="text/x-pascal" 
           priority="8"
@@ -181,19 +181,16 @@
       <context attribute="Comment" lineEndContext="#stay" name="Comment1">
         <DetectSpaces />
         <DetectChar attribute="Comment" context="#pop" char="}"              endRegion="Region2"/>
-        <IncludeRules context="##Alerts"/>
-        <IncludeRules context="##Modelines"/>
+        <IncludeRules context="##Comments"/>
       </context>
       <context attribute="Comment" lineEndContext="#stay" name="Comment2">
         <DetectSpaces />
         <Detect2Chars attribute="Comment" context="#pop" char="*" char1=")"   endRegion="Region3"/>
-        <IncludeRules context="##Alerts"/>
-        <IncludeRules context="##Modelines"/>
+        <IncludeRules context="##Comments"/>
       </context>
       <context attribute="Comment" lineEndContext="#pop" name="Comment3">
         <DetectSpaces />
-        <IncludeRules context="##Alerts"/>
-        <IncludeRules context="##Modelines"/>
+        <IncludeRules context="##Comments"/>
       </context>
     </contexts>
     <itemDatas>

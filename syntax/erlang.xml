@@ -36,7 +36,7 @@
                                    - fixed highlighting problem when '@' at end of atom/variable
 -->
 
-<language name="Erlang" version="4" kateversion="5.0" section="Scripts" extensions="*.erl" mimetype="" author="Bill Ross (bill@emailme.net.au)" license="LGPLv2">
+<language name="Erlang" version="6" kateversion="5.0" section="Scripts" extensions="*.erl" mimetype="" author="Bill Ross (bill@emailme.net.au)" license="LGPLv2">
   <highlighting>
     <list name="keywords">
       <!-- ====== s3.8 p 24 of erlang spec ===== -->
@@ -194,8 +194,7 @@
         <!-- float must have a number after the decimal point, or it doesn't count -->
         <RegExpr attribute="Float" context="#stay" String="[0-9]+\.[0-9]+(?:[eE][+-]?[0-9]+)?" />
         <RegExpr attribute="Number" context="#stay" String="\d+#[a-zA-Z0-9]+" />
-        <RegExpr attribute="Integer" context="#stay" String="\$\S" />
-        <RegExpr attribute="Integer" context="#stay" String="[0-9]+" />
+        <RegExpr attribute="Integer" context="#stay" String="\$\S|[0-9]+" />
 
       </context>
 
@@ -219,8 +218,7 @@
       <!-- finish off the comment (allows for alerts) -->
       <context name="comment" attribute="Comment" lineEndContext="#pop">
         <DetectSpaces />
-        <IncludeRules context="##Alerts" />
-        <IncludeRules context="##Modelines" />
+        <IncludeRules context="##Comments" />
         <DetectIdentifier />
       </context>
 

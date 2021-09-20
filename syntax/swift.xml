@@ -7,52 +7,57 @@
     <!ENTITY float "(\b&int;(\.((&int;&exp;?+|&exp;)[fF]?\b|[fF]\b)?|&exp;[fF]?\b|[fF]\b)|\.&int;&exp;?[fF]?\b)">
     <!ENTITY hexfloat "\b0[xX](&hex;\.?+&hex;?+|\.&hex;?)[pP][-+]?&int;[fF]?\b">
 ]>
-<!-- kotlin language syntax http://kotlinlang.org -->
-<language name="Kotlin" version="10" kateversion="5.62" section="Sources" extensions="*.kt;*.kts" license="LGPLv2+" author="Sergey Mashkov (sergey.mashkov@jetbrains.com)" style="cstyle" indenter="cstyle">
+
+<language
+    name="Swift"
+    version="1"
+    kateversion="5.62"
+    section="Sources"
+    extensions="*.swift"
+    license="MIT"
+    author="I. Elland (igor@elland.me)"
+    style="cstyle"
+    indenter="cstyle">
     <highlighting>
         <list name="keywords">
-            <item>package</item>
+            <item>@testable</item>
             <item>import</item>
 
-            <item>sealed</item>
-            <item>data</item>
+            <item>struct</item>
             <item>class</item>
             <item>enum</item>
-            <item>interface</item>
-            <item>companion</item>
-            <item>object</item>
+            <item>protocol</item>
+            <item>extension</item>
 
             <item>private</item>
+            <item>lazy</item>
             <item>public</item>
-            <item>protected</item>
+            <item>fileprivate</item>
             <item>internal</item>
-            <item>open</item>
             <item>final</item>
+            <item>dynamic</item>
+            <item>static</item>
+            <item>mutating</item>
+            <item>nonmutating</item>
 
             <item>get</item>
             <item>set</item>
-            <item>fun</item>
+            <item>func</item>
             <item>var</item>
-            <item>val</item>
-            <item>constructor</item>
+            <item>let</item>
 
-            <item>inline</item>
-            <item>reified</item>
-            <item>crossinline</item>
-            <item>tailrec</item>
-
-            <item>in</item>
-            <item>out</item>
             <item>is</item>
             <item>as</item>
-            <item>by</item>
             <item>where</item>
 
-            <item>vararg</item>
-            <item>get</item>
-            <item>set</item>
+            <item>willSet</item>
+            <item>didSet</item>
+            <item>willGet</item>
+            <item>didGet</item>
 
             <item>return</item>
+            <item>throws</item>
+            <item>rethrows</item>
             <item>throw</item>
 
             <item>typealias</item>
@@ -64,26 +69,44 @@
         <list name="controlFlowKeyword">
             <item>if</item>
             <item>else</item>
-            <item>when</item>
+            <item>guard</item>
+            <item>defer</item>
+
+            <item>in</item>
+            <item>inout</item>
 
             <item>for</item>
+            <item>repeat</item>
             <item>while</item>
-            <item>do</item>
+            <item>case</item>
+            <item>switch</item>
 
+            <item>do</item>
             <item>try</item>
             <item>catch</item>
-            <item>finally</item>
+
+            <item>async</item>
+            <item>await</item>
+            <item>actor</item>
 
             <item>continue</item>
             <item>break</item>
-            <item>yield</item>
+            <item>fallthrough</item>
+            <item>fatalError</item>
         </list>
         <list name="predeclared">
-            <item>this</item>
+            <item>nil</item>
             <item>super</item>
-            <item>null</item>
+            <item>self</item>
+            <item>init</item>
+            <item>deinit</item>
             <item>true</item>
             <item>false</item>
+            <item>required</item>
+            <item>weak</item>
+            <item>strong</item>
+            <item>unowned</item>
+            <item>default</item>
         </list>
         <list name="types">
             <item>Unit</item>
@@ -115,7 +138,6 @@
                 <DetectChar attribute="Symbol" context="Dot" char="." lookAhead="1"/>
                 <DetectChar attribute="Symbol" context="#stay" char="{" beginRegion="Brace1"/>
                 <DetectChar attribute="Symbol" context="#stay" char="}" endRegion="Brace1"/>
-                <DetectChar attribute="Annotation" context="Annotation" char="@" />
 
                 <Detect2Chars attribute="Comment" context="CommentSingleLine" char="/" char1="/"/>
                 <Detect2Chars attribute="Comment" context="CommentMultiline" char="/" char1="*" beginRegion="Comment"/>
@@ -127,22 +149,25 @@
                 <DetectChar context="String" char="&quot;" lookAhead="1"/>
                 <DetectChar context="Char" char="'" lookAhead="1"/>
 
-                <WordDetect attribute="Keyword" context="VariableDeclaration" String="val"/>
+                <WordDetect attribute="Keyword" context="VariableDeclaration" String="let"/>
                 <WordDetect attribute="Keyword" context="VariableDeclaration" String="var"/>
 
-                <WordDetect attribute="Keyword" context="FunctionDeclaration" String="fun"/>
+                <WordDetect attribute="Keyword" context="FunctionDeclaration" String="func"/>
 
-                <WordDetect attribute="Keyword" context="Imports" String="package"/>
+                <WordDetect attribute="Keyword" context="Imports" String="@testable"/>
                 <WordDetect attribute="Keyword" context="Imports" String="import"/>
 
-                <WordDetect attribute="Keyword" context="TypeDeclaration" String="object"/>
+                <DetectChar attribute="Annotation" context="Annotation" char="@" />
+
+                <WordDetect attribute="Keyword" context="TypeDeclaration" String="struct"/>
                 <WordDetect attribute="Keyword" context="TypeDeclaration" String="class"/>
-                <WordDetect attribute="Keyword" context="TypeDeclaration" String="interface"/>
+                <WordDetect attribute="Keyword" context="TypeDeclaration" String="protocol"/>
+                <WordDetect attribute="Keyword" context="TypeDeclaration" String="enum"/>
+                <WordDetect attribute="Keyword" context="TypeDeclaration" String="extension"/>
 
                 <keyword attribute="Keyword" context="#stay" String="predeclared"/>
                 <keyword attribute="Keyword" context="#stay" String="keywords"/>
                 <keyword attribute="ControlFlowKeyword" context="#stay" String="controlFlowKeyword"/>
-                <keyword attribute="Keyword" context="#stay" String="types"/>
 
                 <DetectIdentifier attribute="Normal Text"/>
             </context>

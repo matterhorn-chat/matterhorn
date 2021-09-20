@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
-<language name="Texinfo" extensions="*.texi" section="Markup" mimetype="application/x-texinfo" author="Daniel Franke (franke.daniel@gmail.com)" license="LGPL" version="2" kateversion="2.4">
+<language name="Texinfo" extensions="*.texi" section="Markup" mimetype="application/x-texinfo" author="Daniel Franke (franke.daniel@gmail.com)" license="LGPL" version="3" kateversion="5.0">
 
   <highlighting>
     <!--
@@ -27,15 +27,13 @@
 
       <context name="singleLineComment" attribute="Comment" lineEndContext="#pop">
         <DetectSpaces />
-        <IncludeRules context="##Alerts" />
-        <IncludeRules context="##Modelines" />
+        <IncludeRules context="##Comments" />
       </context>
 
       <context name="multiLineComment" attribute="Comment" lineEndContext="#stay">
         <DetectSpaces />
         <StringDetect attribute="Comment" context="#pop" String="@end ignore" endRegion="ignore" />
-        <IncludeRules context="##Alerts" />
-        <IncludeRules context="##Modelines" />
+        <IncludeRules context="##Comments" />
       </context>
 
       <context name="nodeFolding" attribute="Normal Text" lineEndContext="#stay">

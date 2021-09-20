@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
-<language name="scilab" version="5" kateversion="2.2" section="Scientific" extensions="*.sci;*.sce" mimetype="text/x-sci">
+<language name="scilab" version="6" kateversion="5.0" section="Scientific" extensions="*.sci;*.sce" mimetype="text/x-sci">
   <highlighting>
     <list name="Structure-keywords">
       <item>do</item>
@@ -1169,8 +1169,7 @@
      </context>
      <context name="Comment" attribute="Comment" lineEndContext="#pop">
         <DetectSpaces />
-        <IncludeRules context="##Alerts"/>
-        <IncludeRules context="##Modelines"/>
+        <IncludeRules context="##Comments"/>
      </context>
    </contexts>
     <itemDatas>

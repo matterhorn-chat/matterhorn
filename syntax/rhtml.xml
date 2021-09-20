@@ -44,7 +44,7 @@
 -->
 	
 <!-- Hold the "language" opening tag on a single line, as mentioned in "language.dtd". -->
-<language name="Ruby/Rails/RHTML" version="11" kateversion="5.63" section="Markup" extensions="*.rhtml;*.RHTML;*.html.erb" mimetype="" author="Richard Dale rdale@foton.es" license="LGPLv2+">
+<language name="Ruby/Rails/RHTML" version="14" kateversion="5.63" section="Markup" extensions="*.rhtml;*.RHTML;*.html.erb" mimetype="" author="Richard Dale rdale@foton.es" license="LGPLv2+">
 	
 	<highlighting>
 	
@@ -359,8 +359,7 @@
 			</context>
 			
 			<context name="FindAttributes" attribute="Normal Text" lineEndContext="#stay">
-				<RegExpr attribute="Attribute" context="#stay" String="&name;" column="0"/>
-				<RegExpr attribute="Attribute" context="#stay" String="\s+&name;" />
+				<RegExpr attribute="Attribute" context="#stay" String="^&name;|\s+&name;" />
 				<DetectChar attribute="Attribute" context="Value" char="=" />
 			</context>
 			
@@ -372,8 +371,7 @@
 			<context name="Comment" attribute="Comment" lineEndContext="#stay">
 				<DetectSpaces/>
 				<StringDetect attribute="Comment" context="#pop" String="--&gt;" endRegion="comment" />
-				<IncludeRules context="##Alerts" />
-				<IncludeRules context="##Modelines" />
+				<IncludeRules context="##Comments" />
 				<DetectIdentifier/>
 				<RegExpr attribute="Error" context="#stay" String="-(-(?!-&gt;))+" />
 			</context>
@@ -487,10 +485,10 @@
 			
 			<context name="JS comment close" attribute="Comment" lineEndContext="#pop">
 				<RegExpr attribute="Element" context="El Close 3" String="&lt;/script\b" insensitive="true" endRegion="script" />
-				<IncludeRules context="##Alerts" />
+				<IncludeRules context="##Comments" />
 			</context>
 			
-			<context name="Value" attribute="Normal Text" lineEndContext="#stay" fallthrough="true" fallthroughContext="Value NQ">
+			<context name="Value" attribute="Normal Text" lineEndContext="#stay" fallthroughContext="Value NQ">
 				<IncludeRules context="find-rubysource" />
 				
 				<DetectChar attribute="Value" context="Value DQ" char="&quot;" />
@@ -498,12 +496,11 @@
 				<DetectSpaces />
 			</context>
 			
-			<context name="Value NQ" attribute="Normal Text" lineEndContext="#pop#pop" fallthrough="true" fallthroughContext="#pop#pop">
+			<context name="Value NQ" attribute="Normal Text" lineEndContext="#pop#pop" fallthroughContext="#pop#pop">
 				<IncludeRules context="find-rubysource" />
 				
 				<IncludeRules context="FindEntityRefs" />
-				<RegExpr attribute="Value" context="#stay" String="/(?!&gt;)" />
-				<RegExpr attribute="Value" context="#stay" String="[^/&gt;&lt;&quot;&apos;\s]" />
+				<RegExpr attribute="Value" context="#stay" String="/(?!&gt;)|[^/&gt;&lt;&quot;&apos;\s]" />
 			</context>
 			
 			<context name="Value DQ" attribute="Value" lineEndContext="#stay">
@@ -531,7 +528,7 @@
 			<context name="find-rubysource" attribute="Normal Text" lineEndContext="#stay">
 				<Detect2Chars attribute="Ruby Source" context="rubysource-markup" char="&lt;" char1="%" />
 			</context>
-			<context name="rubysource-markup" attribute="Ruby Source" lineEndContext="#pop!rubysource-block-content" fallthrough="true" fallthroughContext="#pop!rubysource-block-content">
+			<context name="rubysource-markup" attribute="Ruby Source" lineEndContext="#pop!rubysource-block-content" fallthroughContext="#pop!rubysource-block-content">
 				<AnyChar attribute="Ruby Source" context="#pop!rubysource-block-content" String="=-" /> <!-- <%= and <%- -->
 			</context>
 			<context name="rubysource-block-content" attribute="RUBY RAILS ERB Text" lineEndContext="#stay">
@@ -545,10 +542,10 @@
 				<LineContinue attribute="Ruby Normal Text" context="Line Continue"/>
 
 				<!-- __END__ token on own line. -->
-				<RegExpr attribute="Keyword" String="__END__$" context="DATA" column="0"/>
+				<RegExpr attribute="Keyword" String="^__END__$" context="DATA" column="0"/>
 				
 				<!-- "shebang" line -->
-				<StringDetect attribute="Keyword" String="#!/" context="ShebangLine" column="0"/>
+				<StringDetect attribute="Keyword" String="^#!/" context="ShebangLine" column="0"/>
 				
 				<!-- "def" - "end" blocks -->
 				<!-- check for statement modifiers with regexes -->
@@ -620,11 +617,8 @@
 				<DetectChar attribute="Operator" char="." context="#stay"/>
 				<Detect2Chars attribute="Operator" char="&amp;" char1="&amp;" context="#stay"/>
 				<Detect2Chars attribute="Operator" char="|" char1="|" context="#stay"/>
-				<RegExpr attribute="Operator" String="\s[\?\:\%/]\s" context="#stay"/>
-				<RegExpr attribute="Operator" String="[|&amp;&lt;&gt;\^\+*~\-=]+" context="#stay"/>
-				<!-- regexp hack -->
-				<RegExpr attribute="Operator" String="\s!" context="#stay"/>
-				<RegExpr attribute="Operator" String="/=\s" context="#stay" insensitive="0"/>
+				<!-- \s! is regexp hack -->
+				<RegExpr attribute="Operator" String="\s[\?\:\%/]\s|[|&amp;&lt;&gt;\^\+*~\-=]+|\s!|/=\s" context="#stay"/>
 				<Detect2Chars attribute="Operator" char="%" char1="=" context="#stay"/>
 				<Detect2Chars attribute="Operator" char=":" char1=":" context="Member Access"/>
 				
@@ -636,8 +630,8 @@
 				
 				<Detect2Chars attribute="Normal Text" char="?" char1="#" context="#stay"/>
 				
-				<RegExpr attribute="Comment" String="#\s*BEGIN.*$"  context="#stay" beginRegion="marker" column="0"/>
-				<RegExpr attribute="Comment" String="#\s*END.*$"  context="#stay" endRegion="marker" column="0"/>
+				<RegExpr attribute="Comment" String="^#\s*BEGIN.*$"  context="#stay" beginRegion="marker" column="0"/>
+				<RegExpr attribute="Comment" String="^#\s*END.*$"  context="#stay" endRegion="marker" column="0"/>
 				<DetectChar attribute="Comment" char="#"  context="Comment Line" firstNonSpace="true"/>
 				<RegExpr attribute="Comment" String="\s#"  context="General Comment"/>
 				
@@ -738,14 +732,12 @@
 				<StringDetect context="#pop" String="-%&gt;" lookAhead="true" />
 				<Detect2Chars context="#pop" char="%" char1="&gt;" lookAhead="true" />
 				<RegExpr attribute="Ruby Comment" String="\w\:\:\s" context="RDoc Label"/>
-				<IncludeRules context="##Alerts"/>
-				<IncludeRules context="##Modelines"/>
+				<IncludeRules context="##Comments"/>
 			</context>
 			
 			<context name="General Comment" attribute="Ruby Comment" lineEndContext="#pop">
 				<DetectSpaces/>
-				<IncludeRules context="##Alerts"/>
-				<IncludeRules context="##Modelines"/>
+				<IncludeRules context="##Comments"/>
 			</context>
 			
 			<context name="RDoc Label" attribute="RDoc Value" lineEndContext="#pop"/>
@@ -775,12 +767,12 @@
 			
 			<context name="normal_heredoc" attribute="Ruby Normal Text" lineEndContext="#stay" dynamic="true">
 				<!--				<RegExpr attribute="Keyword" context="#pop#pop" String="^%1$" dynamic="true" endRegion="HereDocument"/>-->
-				<RegExpr attribute="Keyword" context="#pop#pop" String="%1$" dynamic="true" endRegion="HereDocument" column="0"/>
+				<RegExpr attribute="Keyword" context="#pop#pop" String="^%1$" dynamic="true" endRegion="HereDocument" column="0"/>
 				<IncludeRules context="heredoc_rules" />
 			</context>
 			<context name="apostrophed_normal_heredoc" attribute="Ruby Normal Text" lineEndContext="#stay" dynamic="true">
 				<!--				<RegExpr attribute="Keyword" context="#pop#pop" String="^%1$" dynamic="true" endRegion="HereDocument"/>-->
-				<RegExpr attribute="Keyword" context="#pop#pop" String="%1$" dynamic="true" endRegion="HereDocument" column="0"/>
+				<RegExpr attribute="Keyword" context="#pop#pop" String="^%1$" dynamic="true" endRegion="HereDocument" column="0"/>
 			</context>
 			
 			<!-- rules for heredoc types -->
@@ -968,7 +960,7 @@
 			
 			<!-- rules to be included in all token_array contexts -->
 			<context name="token_array_rules" attribute="String" lineEndContext="#stay" >
-				<StringDetect attribute="String" String="\\" context="#stay"/>
+				<Detect2Chars attribute="String" char="\" char1="\" context="#stay"/>
 			</context>
 			
 			<!-- apostrophed string specific contexts -->

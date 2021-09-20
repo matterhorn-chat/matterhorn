@@ -5,7 +5,7 @@
      v3 fix comments by Gene Thomas <gene@genethomas.com>
   -->
 <!-- kate: space-indent on; indent-width 2; replace-tabs on; -->
-<language name="SQL" version="6" kateversion="5.44" section="Database" extensions="*.sql;*.SQL;*.ddl;*.DDL" mimetype="text/x-sql" casesensitive="0" author="Yury Lebedev (yurylebedev@mail.ru)" license="LGPL">
+<language name="SQL" version="8" kateversion="5.44" section="Database" extensions="*.sql;*.SQL;*.ddl;*.DDL" mimetype="text/x-sql" casesensitive="0" author="Yury Lebedev (yurylebedev@mail.ru)" license="LGPL">
   <highlighting>
     <list name="controlFlow">
       <item>BEGIN</item>
@@ -881,7 +881,6 @@
 
         <LineContinue attribute="Symbol" context="#stay" char="/" column="0"/> <!-- conflict with "operators" keywords -->
         <keyword attribute="Keyword" String="keywords" context="#stay"/>
-        <LineContinue attribute="Symbol" context="#stay" char="/" column="0"/>
         <keyword attribute="Operator Keyword" context="#stay" String="operators"/>
         <keyword attribute="ControlFlow" context="#stay" String="controlFlow"/>
         <AnyChar attribute="Operator" context="#stay" String="+-*/=&lt;&gt;"/>
@@ -917,14 +916,12 @@
       </context>
       <context name="Singleline PL/SQL-style comment" attribute="Comment" lineEndContext="#pop">
         <DetectSpaces />
-        <IncludeRules context="##Alerts"/>
-        <IncludeRules context="##Modelines"/>
+        <IncludeRules context="##Comments"/>
       </context>
       <context name="Multiline C-style comment" attribute="Comment" lineEndContext="#stay">
         <DetectSpaces />
         <Detect2Chars attribute="Comment" context="#pop" char="*" char1="/" endRegion="Comment"/>
-        <IncludeRules context="##Alerts"/>
-        <IncludeRules context="##Modelines"/>
+        <IncludeRules context="##Comments"/>
       </context>
       <context name="SQL*Plus remark directive" attribute="Comment" lineEndContext="#pop">
         <IncludeRules context="Singleline PL/SQL-style comment"/>

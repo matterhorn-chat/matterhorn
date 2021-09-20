@@ -61,7 +61,7 @@
 -->
 
 <language name="TypeScript"
-          version="11"
+          version="13"
           kateversion="5.53"
           section="Scripts"
           extensions="*.ts"
@@ -328,7 +328,8 @@
 		<context name="Normal-ParametersOverridden" attribute="Normal Text" lineEndContext="#stay">
 			<IncludeRules context="Normal Pt1" />
 			<IncludeRules context="Normal Pt2" />
-			<RegExpr context="#stay" attribute="Parameter" String="&parameter;" />
+			<!-- unrecheable by Regex=&identifier; in "JSBase##JavaScript" included by "Normal Pt2"
+			<RegExpr context="#stay" attribute="Parameter" String="&parameter;" />-->
 		</context>
 		<context name="ConditionalExpressionEnd" attribute="Normal Text" lineEndContext="#stay">
 			<AnyChar context="#pop" String=";,}])" lookAhead="true" />
@@ -376,8 +377,7 @@
 		<context name="FindNumbers" attribute="Normal Text" lineEndContext="#stay">
 			<RegExpr context="NoRegExp" attribute="Hexadecimal" String="\b0[xX][\da-fA-F][\da-fA-F_]*&numSuffix;" />
 			<RegExpr context="NoRegExp" attribute="Binary" String="\b0[bB][01][01_]*&numSuffix;" />
-			<RegExpr context="NoRegExp" attribute="Float" String="(?:\b\d[\d_]*\.?|(?:\b\d[\d_]*)?\.\d[\d_]*)[eE][\+\-]?\d[\d_]*&numSuffix;" />
-			<RegExpr context="NoRegExp" attribute="Float" String="(?:\.\d[\d_]*|\b\d[\d_]*\.(?:\d[\d_]*)?)&numSuffix;" />
+			<RegExpr context="NoRegExp" attribute="Float" String="(?:\b\d[\d_]*\.?|(?:\b\d[\d_]*)?\.\d[\d_]*)[eE][\+\-]?\d[\d_]*&numSuffix;|(?:\.\d[\d_]*|\b\d[\d_]*\.(?:\d[\d_]*)?)&numSuffix;" />
 			<RegExpr context="NoRegExp" attribute="Octal" String="\b0[oO]?[0-7][0-7_]*&numSuffix;" />
 			<RegExpr context="NoRegExp" attribute="Decimal" String="\b\d[\d_]*&numSuffix;" />
 		</context>
@@ -579,7 +579,6 @@
 			<RegExpr context="#stay" attribute="Object Member" String="&identifier;(?=&objectPoint;)" />
 			<RegExpr context="#pop!NoRegExp" attribute="Object Member" String="&identifier;" />
 			<IncludeRules context="NoRegExp" />
-			<DetectSpaces />
 
 			<!-- Generic functions -->
 			<keyword context="#pop!NoRegExp" attribute="Function Name" String="functions" />

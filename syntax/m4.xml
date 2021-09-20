@@ -38,7 +38,7 @@
   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 -->
-<language name="GNU M4" version="4" section="Sources" kateversion="3.0" extensions="*.m4;" author="Jaak Ristioja" license="New BSD License">
+<language name="GNU M4" version="5" section="Sources" kateversion="5.0" extensions="*.m4;" author="Jaak Ristioja" license="New BSD License">
   <highlighting>
     <list name="optbuiltins">
       <item>__gnu__</item>
@@ -172,8 +172,7 @@
       </context>
       <context name="Comment" attribute="Comment" lineEndContext="#pop">
         <DetectSpaces />
-        <IncludeRules context="##Alerts" />
-        <IncludeRules context="##Modelines" />
+        <IncludeRules context="##Comments" />
       </context>
     </contexts>
     <itemDatas>

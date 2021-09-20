@@ -12,7 +12,7 @@
   ========================================================================
 -->
 
-<language name="Haxe" section="Sources" extensions="*.hx;*.Hx;*.hX;*.HX;" mimetype="text/x-hxsrc" version="3" kateversion="2.4" casesensitive="true" author="Chad Joan" license="MIT">
+<language name="Haxe" section="Sources" extensions="*.hx;*.Hx;*.hX;*.HX;" mimetype="text/x-hxsrc" version="5" kateversion="5.0" casesensitive="true" author="Chad Joan" license="MIT">
   <highlighting>
     <list name="keywords">
     
@@ -91,8 +91,7 @@
 
     <contexts>
       <context attribute="Normal Text" lineEndContext="#stay" name="normal">
-        <RegExpr attribute="Preprocessor" context="#pop" String="#if(\s+\w+)?" />
-        <RegExpr attribute="Preprocessor" context="#pop" String="#(else|elseif|end|error)" />
+        <RegExpr attribute="Preprocessor" context="#pop" String="#if(\s+\w+)?|#(else|elseif|end|error)" />
 
         <keyword attribute="Keyword"        context="#stay"      String="keywords"/>
         <keyword attribute="Module"         context="ModuleName" String="modules"/>
@@ -118,8 +117,7 @@
         <!-- Float -->
         <!-- Floats must be matched before Binary|Octal|Hex|Integer -->
         <!-- All floats except integers -->
-        <RegExpr attribute="Float" context="#pop" String="[\d][\d]*(\.(?!\.)[\d]*([eE][-+]?[\d]+)?)"/>
-        <RegExpr attribute="Float" context="#pop" String="\.[\d][\d]*([eE][-+]?[\d]+)?"/>
+        <RegExpr attribute="Float" context="#pop" String="[\d][\d]*(\.(?!\.)[\d]*([eE][-+]?[\d]+)?)|\.[\d][\d]*([eE][-+]?[\d]+)?"/>
 
         <!-- Hex|Integer -->
         <RegExpr attribute="Hex"     context="#pop" String="0[xX][\da-fA-F]+"/>
@@ -148,14 +146,12 @@
       <!-- Comments -->
       <context attribute="Comment" lineEndContext="#pop" name="CommentLine">
         <DetectSpaces />
-        <IncludeRules context="##Alerts"/>
-        <IncludeRules context="##Modelines"/>
+        <IncludeRules context="##Comments"/>
       </context>
       <context attribute="Comment" lineEndContext="#stay" name="CommentBlock">
         <Detect2Chars attribute="Comment" context="#pop" char="*" char1="/" endRegion="CommentBlock"/>
         <DetectSpaces />
-        <IncludeRules context="##Alerts"/>
-        <IncludeRules context="##Modelines"/>
+        <IncludeRules context="##Comments"/>
       </context>
     </contexts>
     <itemDatas>

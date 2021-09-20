@@ -2,6 +2,12 @@
 <!DOCTYPE language SYSTEM "language.dtd"
 [
   <!ENTITY identifier "[a-zA-Z_$[:^ascii:]][\w$[:^ascii:]]*">
+
+  <!-- https://tc39.es/ecma262/#sec-literals-numeric-literals -->
+  <!ENTITY DecimalIntegerLiteral "(0|[1-9][0-9]*+(_[0-9]++)*+)">
+  <!ENTITY DecimalDigits "([0-9]++(_[0-9]++)*+)">
+  <!ENTITY ExponentPart "([eE][+-]?&DecimalDigits;)">
+  <!ENTITY float "&DecimalIntegerLiteral;(\.&DecimalDigits;?&ExponentPart;?|&ExponentPart;)|\.&DecimalDigits;&ExponentPart;?">
 ]>
 
 <!--
@@ -17,7 +23,7 @@
    * QML
    * CoffeeScript (embedded)
 -->
-<language name="JavaScript" version="16" kateversion="5.0" section="Scripts" extensions="*.js;*.kwinscript;*.julius"
+<language name="JavaScript" version="20" kateversion="5.53" section="Scripts" extensions="*.js;*.kwinscript;*.julius"
           mimetype="text/x-javascript;application/x-javascript;application/javascript;text/javascript" indenter="cstyle"
           author="Anders Lund (anders@alweb.dk), Joseph Wenninger (jowenn@kde.org), Whitehawk Stormchaser (zerokode@gmx.net)" license="">
 
@@ -102,6 +108,7 @@
       <item>BigUint64Array</item>
       <item>DataView</item>
       <item>Date</item>
+      <item>FinalizationRegistry</item>
       <item>Float32Array</item>
       <item>Float64Array</item>
       <item>Function</item>
@@ -127,6 +134,7 @@
       <item>Uint32Array</item>
       <item>Uint8ClampedArray</item>
       <item>WeakMap</item>
+      <item>WeakRef</item>
       <item>WeakSet</item>
       <!-- Class: Error -->
       <item>Error</item>
@@ -1740,14 +1748,16 @@
 
       <!-- Numbers -->
       <context attribute="Normal Text" lineEndContext="#stay" name="FindNumbers">
-        <Float attribute="Float" context="NoRegExp" />
-        <!-- Invalid Binary, Octal or Hex. IMPORTANT: Allow Bigint. -->
-        <RegExpr attribute="Error" context="NoRegExp" String="\b0(?:b[01]*[2-9]\d*|o[0-7]*[89]\d*|x[0-9a-f]*[g-mo-z][a-mo-z0-9]*)" insensitive="true" />
-        <HlCHex attribute="Hex" context="NoRegExp" />
-        <RegExpr attribute="Octal" context="NoRegExp" String="\b0[oO][0-7]+" />
-        <RegExpr attribute="Binary" context="NoRegExp" String="\b0[bB][01]+" />
-        <RegExpr attribute="Float" context="NoRegExp" String="\b\d+[eE][\+\-]?\d+" />
-        <Int attribute="Decimal" context="NoRegExp" />
+        <RegExpr attribute="Float" context="NoRegExp" String="\b&float;" />
+        <RegExpr attribute="Hex" context="NumericSufix" String="\b0[xX][0-9a-fA-F]++(_[0-9a-fA-F]++)*+"/>
+        <!-- 07 is octal, 08 is decimal -->
+        <RegExpr attribute="Octal" context="NumericSufix" String="\b0([oO][0-7]++(_[0-7]++)*+|0*+[1-7][0-7]*+(_[0-7]++)*+(?!_?[89]))" />
+        <RegExpr attribute="Binary" context="NumericSufix" String="\b0[bB][01]++(_[01]++)*+" />
+        <RegExpr attribute="Decimal" context="NumericSufix" String="\b0*+([1-9][0-9]*+(_[0-9]++)*+)?"/>
+      </context>
+      <context attribute="Normal Text" lineEndContext="#pop" name="NumericSufix" fallthrough="true" fallthroughContext="#pop!NoRegExp">
+        <DetectChar attribute="Normal Text" context="#pop!NoRegExp" char="n" />
+        <RegExpr attribute="Error" context="#pop!NoRegExp" String="[0-9]*(&identifier;)?"/>
       </context>
 
       <!-- Find Objects Member and Functions -->
@@ -1791,7 +1801,6 @@
         <RegExpr attribute="Object Member" context="#stay" String="&identifier;(?=\s*\.)" />
         <RegExpr attribute="Object Member" context="#pop!NoRegExp" String="&identifier;" />
         <IncludeRules context="NoRegExp" />
-        <DetectSpaces />
 
         <!-- Generic Functions -->
         <keyword attribute="Function Name" context="#pop!NoRegExp" String="functions" />
@@ -1865,27 +1874,21 @@
       </context>
       <context attribute="Comment" lineEndContext="#pop" name="Comment">
         <DetectSpaces />
-        <IncludeRules context="##Alerts" />
-        <IncludeRules context="##Modelines" />
+        <IncludeRules context="##Comments" />
       </context>
       <context attribute="Comment" lineEndContext="#stay" name="Multi/inline Comment">
         <Detect2Chars attribute="Comment" context="#pop" char="*" char1="/" endRegion="Comment" />
         <DetectSpaces />
-        <IncludeRules context="##Alerts" />
-        <IncludeRules context="##Modelines" />
+        <IncludeRules context="##Comments" />
       </context>
       <context attribute="Region Marker" lineEndContext="#pop" name="region_marker" />
 
       <!-- Regular Expressions -->
       <context attribute="Regular Expression" lineEndContext="#stay" name="Regular Expression">
         <RegExpr attribute="Regular Expression" context="#pop#pop" String="/\w*" />
-        <RegExpr attribute="Pattern Internal Operator" String="\{[\d, ]+\}" />
-        <RegExpr attribute="Pattern Internal Operator" String="\\[bB]" />
         <RegExpr attribute="Pattern Character Class" String="\\[nrtvfDdSsWw]" />
         <DetectChar attribute="Pattern Character Class" context="(charclass caret first check)" char="[" />
-        <RegExpr attribute="Pattern Internal Operator" String="\\." />
-        <RegExpr attribute="Pattern Internal Operator" String="\$(?=/)" />
-        <AnyChar attribute="Pattern Internal Operator" String="?+*()|" />
+        <RegExpr attribute="Pattern Internal Operator" String="\{[\d, ]+\}|\\[bB]|\\.|\$(?=/)|[?+*()|]" />
       </context>
       <context attribute="Pattern Character Class" lineEndContext="#stay" name="Regular Expression Character Class">
         <RegExpr String="\\[\[\]]" />

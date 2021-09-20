@@ -4,7 +4,7 @@
     <!ENTITY bullet "&#xd7;">
     <!ENTITY envname "[a-zA-Z]+\*?">
 ]>
-<language name="LaTeX" version="15" section="Markup" kateversion="5.0" priority="10" extensions="*.tex;*.ltx;*.dtx;*.sty;*.cls;*.bbx;*.cbx;*.lbx;*.tikz;*.pgf" mimetype="text/x-tex" casesensitive="1" author="Jeroen Wijnhout (Jeroen.Wijnhout@kdemail.net)+Holger Danielsson (holger.danielsson@versanet.de)+Michel Ludwig (michel.ludwig@kdemail.net)+Thomas Braun (thomas.braun@virtuell-zuhause.de)" license="LGPL" >
+<language name="LaTeX" version="19" section="Markup" kateversion="5.0" priority="10" extensions="*.tex;*.ltx;*.dtx;*.sty;*.cls;*.bbx;*.cbx;*.lbx;*.tikz;*.pgf" mimetype="text/x-tex" casesensitive="1" author="Jeroen Wijnhout (Jeroen.Wijnhout@kdemail.net)+Holger Danielsson (holger.danielsson@versanet.de)+Michel Ludwig (michel.ludwig@kdemail.net)+Thomas Braun (thomas.braun@virtuell-zuhause.de)" license="LGPL" >
   <highlighting>
     <!-- NOTE: Keywords of kind "\something" do not need a delimiter before "\".
          Using a DetectChar rule with lookAhead to detect "\" at the beginning
@@ -282,7 +282,7 @@
         <DetectIdentifier/>
         <DetectChar char="\" attribute="Normal Text" context="LatexMacro" lookAhead="true"/>
         <DetectChar char="$" attribute="Math" context="MathModeTex"/>
-        <RegExpr String="&lt;&lt;.*&gt;&gt;=" attribute="Normal Text" context="NoWeb" column="0"/>
+        <RegExpr String="^&lt;&lt;.*&gt;&gt;=" attribute="Normal Text" context="NoWeb" column="0"/>
         <IncludeRules context="FindComments"/>
         <DetectChar char="&bullet;" attribute="Bullet" context="#stay"/>
       </context>
@@ -307,7 +307,7 @@
 
       <!-- NoWeb -->
       <context name="NoWeb" attribute="Normal Text" lineEndContext="#stay">
-        <RegExpr String="@\s*$" attribute="Normal Text" context="#pop" column="0"/>
+        <RegExpr String="^@\s*$" attribute="Normal Text" context="#pop" column="0"/>
       </context>
 
       <!-- LaTeX sectioning commands -->
@@ -394,8 +394,7 @@
       <!-- \mint command with parameter-->
       <context name="MintParam" attribute="Normal Text" lineEndContext="#stay">
         <Detect2Chars char="}" char1="[" attribute="Normal Text" context="#stay"/>
-        <DetectChar char="}" attribute="Normal Text" context="Verb"/>
-        <DetectChar char="]" attribute="Normal Text" context="Verb"/>
+        <AnyChar String="}]" attribute="Normal Text" context="Verb"/>
       </context>
 
       <!-- verb command -->
@@ -683,8 +682,7 @@
       <context name="HighlightingSelector" attribute="Normal Text" lineEndContext="#stay">
         <WordDetect String="C++" insensitive="true" context="HighlightingBeginC++"/>
         <WordDetect String="Python" insensitive="true" context="HighlightingBeginPython"/>
-        <DetectChar char="}" context="#pop!UnknownHighlighting"/>
-        <DetectChar char="]" context="#pop!UnknownHighlighting"/>
+        <AnyChar String="}]" context="#pop!UnknownHighlighting"/>
         <RegExpr String="[^]}]*" context="#stay"/>
       </context>
 
@@ -693,8 +691,7 @@
       </context>
 
       <context name="HighlightingBeginC++" attribute="Normal Text" lineEndContext="#stay">
-        <DetectChar char="}" context="HighlightingC++"/>
-        <DetectChar char="]" context="HighlightingC++"/>
+        <AnyChar String="}]" context="HighlightingC++"/>
         <!-- Eat the trailing characters including } or ] after the language specification -->
         <RegExpr String="[^]}]*" context="#stay"/>
       </context>
@@ -705,8 +702,7 @@
       </context>
 
       <context name="HighlightingBeginPython" attribute="Normal Text" lineEndContext="#stay">
-        <DetectChar char="}" context="HighlightingPython"/>
-        <DetectChar char="]" context="HighlightingPython"/>
+        <AnyChar String="}]" context="HighlightingPython"/>
         <RegExpr String="[^]}]*" context="#stay"/>
       </context>
 
@@ -775,7 +771,7 @@
         <DetectChar char="&bullet;" attribute="Bullet" context="#stay"/>
       </context>
       <context name="BackslashMathModeEnv" attribute="Math" lineEndContext="#pop">
-        <keyword String="beginEnv" attribute="Structure" context="#pop!FindBeginEnvironmentInMathMode" beginRegion="block"/>
+        <keyword String="beginEnv" attribute="Structure" context="#pop!FindBeginEnvironment" beginRegion="block"/>
         <keyword String="endEnv" attribute="Structure" context="#pop!MathFindEnd"/>
         <keyword String="MathModeText" attribute="Macro Mathmode" context="#pop!MathModeText"/>
         <Detect2Chars char="\" char1="(" attribute="Error" context="#pop"/>
@@ -783,27 +779,6 @@
         <Detect2Chars char="\" char1="[" attribute="Error" context="#pop"/>
         <Detect2Chars char="\" char1="]" attribute="Error" context="#pop"/>
         <DetectChar char="\" attribute="Macro Mathmode" context="#pop!MathContrSeq"/>
-      </context>
-
-      <!-- start of an environment in math mode -->
-      <context name="FindBeginEnvironmentInMathMode" attribute="Normal Text" lineEndContext="#stay">
-        <DetectSpaces/>
-        <DetectChar char="{" attribute="Normal Text" context="BeginEnvironmentInMathMode"/>
-        <RegExpr String="." attribute="Normal Text" context="#pop"/>
-      </context>
-
-      <!-- filter the environment name and check the type in math mode -->
-      <context name="BeginEnvironmentInMathMode" attribute="Environment" lineEndContext="#stay">
-        <keyword String="ListingsEnv" attribute="Environment" context="ListingsEnv"/>
-        <keyword String="MintedEnv" attribute="Environment" context="MintedEnv"/>
-        <keyword String="VerbatimEnv" attribute="Environment" context="VerbatimEnv" lookAhead="true"/>
-        <keyword String="CommentEnv" attribute="Environment" context="CommentEnv"/>
-        <keyword String="TabEnv" attribute="Environment" context="TabEnv"/>
-        <DetectChar char="&bullet;" attribute="Bullet" context="#stay"/>
-        <!-- keywords in MathEnvParam and MathEnv. Do not use keyword to avoid autocomplete -->
-        <RegExpr String="(?:equation|IEEEeqnarray(?:box)?|(?:[BVvbp]|small)matrix|(?:fl)?align|x{0,2}alignat|cases|displaymath|gather|math|multline|(?:sub)?eqnarray)(?=[^a-zA-Z]|$)\*?" attribute="Error" context="#pop"/>
-        <RegExpr String="&envname;" attribute="Environment" context="LatexEnv"/>
-        <RegExpr String="." attribute="Error" context="#pop"/>
       </context>
 
       <!-- end of math environment -->
@@ -969,8 +944,7 @@
       <context name="RegionComment" attribute="Region Marker" lineEndContext="#pop"/>
       <context name="Comment" attribute="Comment" lineEndContext="#pop">
         <DetectSpaces/>
-        <IncludeRules context="##Alerts" />
-        <IncludeRules context="##Modelines" />
+        <IncludeRules context="##Comments" />
         <DetectIdentifier/>
         <DetectChar char="\" attribute="Comment" context="BackslashComment" lookAhead="true"/>
       </context>

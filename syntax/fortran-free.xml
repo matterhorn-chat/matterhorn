@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
-<language name="Fortran (Free Format)" version="3" kateversion="5.53" section="Sources" extensions="*.f90;*.F90;*.f95;*.F95;*.f03;*.F03;*.f08;*.F08;" mimetype="text/x-fortran-src" casesensitive="0" author="Franchin Matteo (fnch@libero.it), Janus Weil" license="MIT" priority="10">
+<language name="Fortran (Free Format)" version="5" kateversion="5.53" section="Sources" extensions="*.f90;*.F90;*.f95;*.F95;*.f03;*.F03;*.f08;*.F08;" mimetype="text/x-fortran-src" casesensitive="0" author="Franchin Matteo (fnch@libero.it), Janus Weil" license="MIT" priority="10">
 <!-- Original author: Franchin Matteo (fnch@libero.it).
      Adaptation to free & fixed format: Janus Weil.
 -->
@@ -148,8 +148,7 @@
         <DetectChar attribute="Comment" context="comment" char="!"/>
       </context>
       <context attribute="Comment" lineEndContext="#pop" name="comment">
-        <IncludeRules context="##Alerts"/>
-        <IncludeRules context="##Modelines"/>
+        <IncludeRules context="##Comments"/>
       </context>
 
 <!-- This context highlights items inside the parentesis of a function -->
@@ -164,9 +163,8 @@
 
 <!-- The following two contexts match input/output statements -->
       <context attribute="Normal Text" lineEndContext="#stay" name="find_io_stmnts">
-        <RegExpr attribute="IO Function" context="find_io_paren" String="\b(?:flush|wait)\s*[(]" insensitive="true"/>
       <!-- find_io_stmnts##Fortran (Fixed Format) -->
-        <RegExpr attribute="IO Function" context="find_io_paren" String="\b(?:read|write|backspace|rewind|end\s*file|close|open|inquire)\s*[(]" insensitive="true"/>
+        <RegExpr attribute="IO Function" context="find_io_paren" String="\b(?:flush|wait|read|write|backspace|rewind|end\s*file|close|open|inquire)\s*[(]" insensitive="true"/>
         <RegExpr attribute="IO Function" context="format_stmnt" String="\bformat\s*[(]" insensitive="true"/>
         <RegExpr attribute="IO Function" context="#stay" String="\bend\s*file\b" insensitive="true"/>
         <keyword attribute="IO Function" context="#stay" String="io_functions"/>
@@ -240,10 +238,8 @@
 <!-- This context matches parenthesis in data type declarations, such as in 'real(...)'-->
       <context attribute="Data Type" lineEndContext="#pop" name="find_paren">
       <!-- find_paren##Fortran (Fixed Format) -->
-        <DetectChar attribute="Data Type" context="find_paren" char="("/>
-        <DetectChar attribute="Data Type" context="find_paren" char="["/>
-        <DetectChar attribute="Data Type" context="#pop" char=")"/>
-        <DetectChar attribute="Data Type" context="#pop" char="]"/>
+        <AnyChar attribute="Data Type" context="find_paren" String="(["/>
+        <AnyChar attribute="Data Type" context="#pop" String=")]"/>
       </context>
 
 <!-- The following context matches intrinsic procedures -->

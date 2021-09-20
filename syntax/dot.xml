@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
 <!-- Adapted from the VIM highlighter, by Markus Mottl (markus@oefai.at) -->
-<language name="dot" version="4" kateversion="5.0" section="Scientific" extensions="*.dot" mimetype="text/x-dot" author="Postula Loïs (lois.postula@live.be)" priority="0">
+<language name="dot" version="5" kateversion="5.0" section="Scientific" extensions="*.dot" mimetype="text/x-dot" author="Postula Loïs (lois.postula@live.be)" priority="0">
 
   <highlighting>
 
@@ -134,15 +134,13 @@
 
       <context attribute="Comment" lineEndContext="#pop" name="CommentSL">
         <DetectSpaces />
-        <IncludeRules context="##Alerts"/>
-        <IncludeRules context="##Modelines"/>
+        <IncludeRules context="##Comments"/>
       </context>
 
       <context attribute="Comment" lineEndContext="#stay" name="CommentML">
         <Detect2Chars attribute="Comment" context="#pop" char="*" char1="/" endRegion="Comment"/>
         <DetectSpaces />
-        <IncludeRules context="##Alerts"/>
-        <IncludeRules context="##Modelines"/>
+        <IncludeRules context="##Comments"/>
       </context>
 
     </contexts>

@@ -21,7 +21,7 @@
 -->
 
 <!-- low priority to let Objective-C win for .m files per default -->
-<language name="Octave" version="8" kateversion="5.0" section="Scientific" extensions="*.octave;*.m;*.M" priority="-9" mimetype="text/octave" casesensitive="1" license="GPL" author="Luis Silvestre and Federico Zenith">
+<language name="Octave" version="12" kateversion="5.0" section="Scientific" extensions="*.octave;*.m;*.M" priority="-9" mimetype="text/octave" casesensitive="1" license="GPL" author="Luis Silvestre and Federico Zenith">
 
   <highlighting>
 
@@ -2765,30 +2765,29 @@
         <keyword context="#stay" attribute="Functions" String="functions" />
         <keyword context="#stay" attribute="Builtin" String="builtin"/>
         <keyword context="#stay" attribute="Forge" String="forge" />
-        <DetectChar context="Comment" attribute="Comment" char="%" />
-        <DetectChar context="Comment" attribute="Comment" char="#" />
+        <AnyChar context="Comment" attribute="Comment" String="%#" />
         <RegExpr context="#stay" attribute="Variable" String="[a-zA-Z]\w*" />
         <RegExpr context="#stay" attribute="Number" String="(\d+(\.\d+)?|\.\d+)([eE][+-]?\d+)?[ij]?" />
         <AnyChar context="#stay" attribute="Delimiter" String="()[]{}"/>
 
         <!-- Three- and two-character operators -->
         <StringDetect context="#stay" attribute="Operator" String="..."/>
-        <StringDetect context="#stay" attribute="Operator" String="=="/>
-        <StringDetect context="#stay" attribute="Operator" String="~="/>
-        <StringDetect context="#stay" attribute="Operator" String="!="/>
-        <StringDetect context="#stay" attribute="Operator" String="&lt;="/>
-        <StringDetect context="#stay" attribute="Operator" String="&gt;="/>
-        <StringDetect context="#stay" attribute="Operator" String="&lt;&gt;"/>
-        <StringDetect context="#stay" attribute="Operator" String="&amp;&amp;"/>
-        <StringDetect context="#stay" attribute="Operator" String="||"/>
-        <StringDetect context="#stay" attribute="Operator" String="++"/>
-        <StringDetect context="#stay" attribute="Operator" String="--"/>
-        <StringDetect context="#stay" attribute="Operator" String="**"/>
-        <StringDetect context="#stay" attribute="Operator" String=".*"/>
+        <Detect2Chars context="#stay" attribute="Operator" char="=" char1="="/>
+        <Detect2Chars context="#stay" attribute="Operator" char="~" char1="="/>
+        <Detect2Chars context="#stay" attribute="Operator" char="!" char1="="/>
+        <Detect2Chars context="#stay" attribute="Operator" char="&lt;" char1="="/>
+        <Detect2Chars context="#stay" attribute="Operator" char="&gt;" char1="="/>
+        <Detect2Chars context="#stay" attribute="Operator" char="&lt;" char1="&gt;"/>
+        <Detect2Chars context="#stay" attribute="Operator" char="&amp;" char1="&amp;"/>
+        <Detect2Chars context="#stay" attribute="Operator" char="|" char1="|"/>
+        <Detect2Chars context="#stay" attribute="Operator" char="+" char1="+"/>
+        <Detect2Chars context="#stay" attribute="Operator" char="-" char1="-"/>
+        <Detect2Chars context="#stay" attribute="Operator" char="*" char1="*"/>
         <StringDetect context="#stay" attribute="Operator" String=".**"/>
-        <StringDetect context="#stay" attribute="Operator" String=".^"/>
-        <StringDetect context="#stay" attribute="Operator" String="./"/>
-        <StringDetect context="#stay" attribute="Operator" String=".'"/>
+        <Detect2Chars context="#stay" attribute="Operator" char="." char1="*"/>
+        <Detect2Chars context="#stay" attribute="Operator" char="." char1="^"/>
+        <Detect2Chars context="#stay" attribute="Operator" char="." char1="/"/>
+        <Detect2Chars context="#stay" attribute="Operator" char="." char1="'"/>
 
         <!-- Single-character operators -->
         <AnyChar context="#stay" attribute="Operator" String="!&quot;%(*+,/;=>[]|~#&amp;)-:&lt;&gt;\^"/>
@@ -2804,8 +2803,7 @@
 
       <context name="Comment" attribute="Comment" lineEndContext="#pop">
         <DetectSpaces />
-        <IncludeRules context="##Alerts" />
-        <IncludeRules context="##Modelines" />
+        <IncludeRules context="##Comments" />
       </context>
 
 

@@ -5,7 +5,7 @@
   Synatx: https://github.com/graphql/graphql-spec/blob/master/spec/Section%202%20- -%20Language.md
      and: https://github.com/graphql/graphql-spec/blob/master/spec/Appendix%20B%20- -%20Grammar%20Summary.md
 -->
-<language name="GraphQL" section="Other" version="2" kateversion="2.4" extensions="*.graphql" author="Volker Krause (vkrause@kde.org)" license="MIT">
+<language name="GraphQL" section="Other" version="3" kateversion="5.0" extensions="*.graphql" author="Volker Krause (vkrause@kde.org)" license="MIT">
   <highlighting>
     <list name="listKeywords">
       <item>enum</item>
@@ -63,8 +63,7 @@
 
       <context name="ctxComment" attribute="Comment" lineEndContext="#pop">
         <DetectSpaces />
-        <IncludeRules context="##Alerts"/>
-        <IncludeRules context="##Modelines"/>
+        <IncludeRules context="##Comments"/>
       </context>
     </contexts>
 
