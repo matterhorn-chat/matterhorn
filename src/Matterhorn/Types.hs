@@ -127,7 +127,7 @@ module Matterhorn.Types
   , teamZipperIds
   , mkChannelZipperList
   , ChannelListGroup(..)
-  , channelListGroupUnread
+  , ChannelListGroupLabel(..)
   , nonDMChannelListGroupUnread
 
   , trimChannelSigil
@@ -453,24 +453,23 @@ data TokenSource =
 -- | The type of channel list group headings. Integer arguments indicate
 -- total number of channels in the group that have unread activity.
 data ChannelListGroup =
-    ChannelGroupPublicChannels Int
-    | ChannelGroupPrivateChannels Int
-    | ChannelGroupFavoriteChannels Int
-    | ChannelGroupDirectMessages Int
+    ChannelListGroup { channelListGroupLabel :: ChannelListGroupLabel
+                     , channelListGroupUnread :: Int
+                     }
+                     deriving (Eq)
+
+data ChannelListGroupLabel =
+    ChannelGroupPublicChannels
+    | ChannelGroupPrivateChannels
+    | ChannelGroupFavoriteChannels
+    | ChannelGroupDirectMessages
     deriving (Eq)
 
-channelListGroupUnread :: ChannelListGroup -> Int
-channelListGroupUnread (ChannelGroupPublicChannels n)  = n
-channelListGroupUnread (ChannelGroupPrivateChannels n) = n
-channelListGroupUnread (ChannelGroupFavoriteChannels n) = n
-channelListGroupUnread (ChannelGroupDirectMessages n)  = n
-
-
 nonDMChannelListGroupUnread :: ChannelListGroup -> Int
-nonDMChannelListGroupUnread (ChannelGroupPublicChannels n)  = n
-nonDMChannelListGroupUnread (ChannelGroupPrivateChannels n) = n
-nonDMChannelListGroupUnread (ChannelGroupFavoriteChannels n) = n
-nonDMChannelListGroupUnread (ChannelGroupDirectMessages _)  = 0
+nonDMChannelListGroupUnread g =
+    case channelListGroupLabel g of
+        ChannelGroupDirectMessages -> 0
+        _ -> channelListGroupUnread g
 
 -- | The type of channel list entries.
 data ChannelListEntry =
@@ -645,13 +644,13 @@ mkChannelZipperList now config tId cconfig prefs cs us =
         (dmFavs,   dmEntries)   = partitionFavorites $ getDMChannelEntries now config cconfig prefs us cs
         favEntries              = privFavs <> normFavs <> dmFavs
     in [ let unread = length $ filter channelListEntryUnread favEntries
-         in (ChannelGroupFavoriteChannels unread, sortChannelListEntries favEntries)
+         in (ChannelListGroup ChannelGroupFavoriteChannels unread, sortChannelListEntries favEntries)
        , let unread = length $ filter channelListEntryUnread normEntries
-         in (ChannelGroupPublicChannels unread, sortChannelListEntries normEntries)
+         in (ChannelListGroup ChannelGroupPublicChannels unread, sortChannelListEntries normEntries)
        , let unread = length $ filter channelListEntryUnread privEntries
-         in (ChannelGroupPrivateChannels unread, sortChannelListEntries privEntries)
+         in (ChannelListGroup ChannelGroupPrivateChannels unread, sortChannelListEntries privEntries)
        , let unread = length $ filter channelListEntryUnread dmEntries
-         in (ChannelGroupDirectMessages unread, sortDMChannelListEntries dmEntries)
+         in (ChannelListGroup ChannelGroupDirectMessages unread, sortDMChannelListEntries dmEntries)
        ]
 
 sortChannelListEntries :: [ChannelListEntry] -> [ChannelListEntry]

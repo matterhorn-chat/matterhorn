@@ -99,11 +99,12 @@ renderChannelList st =
 
 renderChannelListGroupHeading :: ChannelListGroup -> Widget Name
 renderChannelListGroupHeading g =
-    let (unread, label) = case g of
-            ChannelGroupPublicChannels u -> (u, "Public Channels")
-            ChannelGroupPrivateChannels u -> (u, "Private Channels")
-            ChannelGroupFavoriteChannels u -> (u, "Favorite Channels")
-            ChannelGroupDirectMessages u -> (u, "Direct Messages")
+    let label = case channelListGroupLabel g of
+            ChannelGroupPublicChannels   -> "Public Channels"
+            ChannelGroupPrivateChannels  -> "Private Channels"
+            ChannelGroupFavoriteChannels -> "Favorite Channels"
+            ChannelGroupDirectMessages   -> "Direct Messages"
+        unread = channelListGroupUnread g
         addUnread = if unread > 0
                     then (<+> (withDefAttr unreadGroupMarkerAttr $ txt "*"))
                     else id
