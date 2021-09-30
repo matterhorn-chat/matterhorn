@@ -32,6 +32,15 @@ For example, if your Mattermost server version is `3.6.0` then you
 would download matterhorn version `30600.2.4`. See [Our Versioning
 Scheme](#our-versioning-scheme) for details.
 
+## Installation Requirements
+
+For most of our binary releases, no additional packages need to be
+installed; they should just work out of the box. But here are some
+additional requirements that may apply for your platform:
+
+* CentOS Steam 8
+  * The `ncurses-compat-libs` package must be installed.
+
 ## Other Ways to Install: Third-Party Snap Package
 
 @3v1n0 maintains a Snap package here:
