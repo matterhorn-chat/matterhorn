@@ -479,6 +479,7 @@ data ChannelListEntry =
                      , channelListEntryUnread :: Bool
                      , channelListEntrySortValue :: T.Text
                      , channelListEntryFavorite :: Bool
+                     , channelListEntryMuted :: Bool
                      }
                      deriving (Eq, Show, Ord)
 
@@ -654,7 +655,7 @@ mkChannelZipperList now config tId cconfig prefs cs us =
        ]
 
 sortChannelListEntries :: [ChannelListEntry] -> [ChannelListEntry]
-sortChannelListEntries = sortBy (comparing channelListEntrySortValue)
+sortChannelListEntries = sortBy (comparing (\c -> (channelListEntryMuted c, channelListEntrySortValue c)))
 
 sortDMChannelListEntries :: [ChannelListEntry] -> [ChannelListEntry]
 sortDMChannelListEntries = sortBy compareDMChannelListEntries
@@ -670,6 +671,7 @@ getChannelEntriesByType tId prefs cs ty =
         entries = mkEntry <$> pairs
         mkEntry (cId, ch) = ChannelListEntry { channelListEntryChannelId = cId
                                              , channelListEntryType = CLChannel
+                                             , channelListEntryMuted = isMuted ch
                                              , channelListEntryUnread = hasUnread' ch
                                              , channelListEntrySortValue = ch^.ccInfo.cdDisplayName.to T.toLower
                                              , channelListEntryFavorite = isFavorite prefs cId
@@ -727,6 +729,7 @@ getGroupDMChannelEntries now config prefs cs =
                             groupChannelShouldAppear now config prefs info
     in fmap (\(cId, ch) -> ChannelListEntry { channelListEntryChannelId = cId
                                             , channelListEntryType = CLGroupDM
+                                            , channelListEntryMuted = isMuted ch
                                             , channelListEntryUnread = hasUnread' ch
                                             , channelListEntrySortValue = ch^.ccInfo.cdDisplayName
                                             , channelListEntryFavorite = isFavorite prefs cId
@@ -752,6 +755,7 @@ getSingleDMChannelEntries now config cconfig prefs us cs =
                     if dmChannelShouldAppear now config prefs c
                     then return (ChannelListEntry { channelListEntryChannelId = cId
                                                   , channelListEntryType = CLUserDM uId
+                                                  , channelListEntryMuted = isMuted c
                                                   , channelListEntryUnread = hasUnread' c
                                                   , channelListEntrySortValue = displayNameForUser u cconfig prefs
                                                   , channelListEntryFavorite = isFavorite prefs cId

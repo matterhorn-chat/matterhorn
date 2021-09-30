@@ -142,7 +142,7 @@ mkChannelEntryData st e =
         recent = isRecentChannel st cId
         ret = isReturnChannel st cId
         current = isCurrentChannel st cId
-        muted = isMuted chan
+        muted = channelListEntryMuted e
         (name, normalSigil, addSpace, status) = case channelListEntryType e of
             CLChannel ->
                 (chan^.ccInfo.cdDisplayName, Nothing, False, Nothing)

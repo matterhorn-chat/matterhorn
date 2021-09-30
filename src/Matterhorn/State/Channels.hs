@@ -1082,13 +1082,8 @@ beginCurrentChannelDeleteConfirm = do
 updateChannelNotifyProps :: ChannelId -> ChannelNotifyProps -> MH ()
 updateChannelNotifyProps cId notifyProps = do
     withChannel cId $ \chan -> do
-        case chan^.ccInfo.cdTeamId of
-            Nothing -> do
-                ts <- use csTeams
-                forM_ (HM.keys ts) (mh . invalidateCacheEntry . ChannelSidebar)
-            Just tId -> mh $ invalidateCacheEntry $ ChannelSidebar tId
-
         csChannel(cId).ccInfo.cdNotifyProps .= notifyProps
+        updateSidebar (chan^.ccInfo.cdTeamId)
 
 toggleChannelFavoriteStatus :: MH ()
 toggleChannelFavoriteStatus = do
