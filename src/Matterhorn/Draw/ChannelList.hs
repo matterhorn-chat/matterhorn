@@ -99,17 +99,22 @@ renderChannelList st =
 
 renderChannelListGroupHeading :: ChannelListGroup -> Widget Name
 renderChannelListGroupHeading g =
-    let label = case channelListGroupLabel g of
+    let label = channelListGroupLabel g
+        labelStr = case label of
             ChannelGroupPublicChannels   -> "Public Channels"
             ChannelGroupPrivateChannels  -> "Private Channels"
             ChannelGroupFavoriteChannels -> "Favorite Channels"
             ChannelGroupDirectMessages   -> "Direct Messages"
         unread = channelListGroupUnread g
+        collapsed = channelListGroupCollapsed g
         addUnread = if unread > 0
                     then (<+> (withDefAttr unreadGroupMarkerAttr $ txt "*"))
                     else id
-        labelWidget = addUnread $ withDefAttr channelListHeaderAttr $ txt label
-    in hBorderWithLabel labelWidget
+        addExpand = if collapsed
+                    then (<+> (withDefAttr unreadGroupMarkerAttr $ txt "[+]"))
+                    else id
+        labelWidget = addExpand $ addUnread $ withDefAttr channelListHeaderAttr $ txt labelStr
+    in hBorderWithLabel $ clickable (ClickableChannelListGroupHeading label) labelWidget
 
 renderChannelListGroup :: ChatState
                        -> (ChatState -> e -> Widget Name)
@@ -118,9 +123,9 @@ renderChannelListGroup :: ChatState
 renderChannelListGroup st renderEntry (group, es) =
     let heading = renderChannelListGroupHeading group
         entryWidgets = renderEntry st <$> es
-    in if null entryWidgets
-       then emptyWidget
-       else vBox (heading : entryWidgets)
+    in if channelListGroupEntries group > 0 || (channelListGroupCollapsed group)
+       then vBox (heading : entryWidgets)
+       else emptyWidget
 
 mkChannelEntryData :: ChatState
                    -> ChannelListEntry

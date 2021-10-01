@@ -80,10 +80,11 @@ updateTeamSidebar tId = do
     cs <- use csChannels
     us <- getUsers
     prefs <- use (csResources.crUserPreferences)
+    hidden <- use csHiddenChannelGroups
     now <- liftIO getCurrentTime
     config <- use (csResources.crConfiguration)
 
-    let zl = mkChannelZipperList now config tId cconfig prefs cs us
+    let zl = mkChannelZipperList now config tId cconfig prefs hidden cs us
         compareEntries mOld new = (channelListEntryChannelId <$> mOld) == Just (channelListEntryChannelId new)
     csTeam(tId).tsFocus %= Z.updateListBy compareEntries zl
 

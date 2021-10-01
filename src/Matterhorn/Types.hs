@@ -175,6 +175,7 @@ module Matterhorn.Types
   , csCurrentTeamId
   , csPostMap
   , csUsers
+  , csHiddenChannelGroups
   , csConnectionStatus
   , csWorkerIsBusy
   , csChannel
@@ -455,6 +456,8 @@ data TokenSource =
 data ChannelListGroup =
     ChannelListGroup { channelListGroupLabel :: ChannelListGroupLabel
                      , channelListGroupUnread :: Int
+                     , channelListGroupCollapsed :: Bool
+                     , channelListGroupEntries :: Int
                      }
                      deriving (Eq)
 
@@ -463,7 +466,7 @@ data ChannelListGroupLabel =
     | ChannelGroupPrivateChannels
     | ChannelGroupFavoriteChannels
     | ChannelGroupDirectMessages
-    deriving (Eq)
+    deriving (Eq, Ord, Show)
 
 nonDMChannelListGroupUnread :: ChannelListGroup -> Int
 nonDMChannelListGroupUnread g =
@@ -635,22 +638,39 @@ mkChannelZipperList :: UTCTime
                     -> TeamId
                     -> Maybe ClientConfig
                     -> UserPreferences
+                    -> HM.HashMap TeamId (Set ChannelListGroupLabel)
                     -> ClientChannels
                     -> Users
                     -> [(ChannelListGroup, [ChannelListEntry])]
-mkChannelZipperList now config tId cconfig prefs cs us =
+mkChannelZipperList now config tId cconfig prefs hidden cs us =
     let (privFavs, privEntries) = partitionFavorites $ getChannelEntriesByType tId prefs cs Private
         (normFavs, normEntries) = partitionFavorites $ getChannelEntriesByType tId prefs cs Ordinary
         (dmFavs,   dmEntries)   = partitionFavorites $ getDMChannelEntries now config cconfig prefs us cs
         favEntries              = privFavs <> normFavs <> dmFavs
+        isHidden label =
+            case HM.lookup tId hidden of
+                Nothing -> False
+                Just s -> Set.member label s
     in [ let unread = length $ filter channelListEntryUnread favEntries
-         in (ChannelListGroup ChannelGroupFavoriteChannels unread, sortChannelListEntries favEntries)
+             coll = isHidden ChannelGroupFavoriteChannels
+         in ( ChannelListGroup ChannelGroupFavoriteChannels unread coll (length favEntries)
+            , if coll then mempty else sortChannelListEntries favEntries
+            )
        , let unread = length $ filter channelListEntryUnread normEntries
-         in (ChannelListGroup ChannelGroupPublicChannels unread, sortChannelListEntries normEntries)
+             coll = isHidden ChannelGroupPublicChannels
+         in ( ChannelListGroup ChannelGroupPublicChannels unread coll (length normEntries)
+            , if coll then mempty else sortChannelListEntries normEntries
+            )
        , let unread = length $ filter channelListEntryUnread privEntries
-         in (ChannelListGroup ChannelGroupPrivateChannels unread, sortChannelListEntries privEntries)
+             coll = isHidden ChannelGroupPrivateChannels
+         in ( ChannelListGroup ChannelGroupPrivateChannels unread coll (length privEntries)
+            , if coll then mempty else sortChannelListEntries privEntries
+            )
        , let unread = length $ filter channelListEntryUnread dmEntries
-         in (ChannelListGroup ChannelGroupDirectMessages unread, sortDMChannelListEntries dmEntries)
+             coll = isHidden ChannelGroupDirectMessages
+         in ( ChannelListGroup ChannelGroupDirectMessages unread coll (length dmEntries)
+            , if coll then mempty else sortDMChannelListEntries dmEntries
+            )
        ]
 
 sortChannelListEntries :: [ChannelListEntry] -> [ChannelListEntry]
@@ -885,6 +905,7 @@ data Name =
     | ClickableReactionInMessage PostId Text (Set UserId)
     | ClickableReaction PostId Text (Set UserId)
     | ClickableAttachment FileId
+    | ClickableChannelListGroupHeading ChannelListGroupLabel
     | AttachmentPathEditor TeamId
     | AttachmentPathSaveButton TeamId
     | AttachmentPathCancelButton TeamId
@@ -1535,6 +1556,9 @@ data ChatState =
               , _csChannels :: ClientChannels
               -- ^ The channels that we are showing, including their
               -- message lists.
+              , _csHiddenChannelGroups :: HM.HashMap TeamId (Set ChannelListGroupLabel)
+              -- ^ The set of channel list groups that are currently
+              -- collapsed in the sidebar.
               , _csPostMap :: HashMap PostId Message
               -- ^ The map of post IDs to messages. This allows us to
               -- access messages by ID without having to linearly scan
@@ -2160,6 +2184,7 @@ newState (StartupStateInfo {..}) =
                  , _csWorkerIsBusy                = Nothing
                  , _csClientConfig                = Nothing
                  , _csInputHistory                = startupStateInitialHistory
+                 , _csHiddenChannelGroups         = mempty
                  }
 
 getServerBaseUrl :: TeamId -> MH TeamBaseURL

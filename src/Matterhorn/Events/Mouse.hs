@@ -79,6 +79,8 @@ globalMouseHandler (MouseDown n _ _ _) =
             void $ toggleReaction pId t uIds
         ClickableReaction pId t uIds ->
             void $ toggleReaction pId t uIds
+        ClickableChannelListGroupHeading label ->
+            toggleChannelListGroupVisibility label
         _ ->
             return ()
 globalMouseHandler _ =

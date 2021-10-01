@@ -200,7 +200,7 @@ buildTeamState cr me team = do
     now <- getCurrentTime
     let chanIds = mkChannelZipperList now (cr^.crConfiguration) tId
                                           Nothing (cr^.crUserPreferences)
-                                          clientChans noUsers
+                                          mempty clientChans noUsers
         chanZip = Z.fromList chanIds
         clientChans = foldr (uncurry addChannel) noChannels chanPairs
 

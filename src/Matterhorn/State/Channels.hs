@@ -47,6 +47,7 @@ module Matterhorn.State.Channels
   , updateChannelNotifyProps
   , renameChannelUrl
   , toggleChannelFavoriteStatus
+  , toggleChannelListGroupVisibility
   )
 where
 
@@ -1107,3 +1108,25 @@ toggleChannelFavoriteStatus = do
     doAsyncWith Normal $ do
         MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
         return Nothing
+
+toggleChannelListGroupVisibility :: ChannelListGroupLabel -> MH ()
+toggleChannelListGroupVisibility label = do
+    tId <- use csCurrentTeamId
+
+    -- Get all channel list groups in the current sidebar that are
+    -- currently not collapsed
+    z <- use (csCurrentTeam.tsFocus)
+    let expandedLabels = channelListGroupLabel <$>
+                         (filter expanded $ fst <$> Z.toList z)
+        expanded g = (not $ channelListGroupCollapsed g) && (channelListGroupEntries g > 0)
+        canCollapse = length expandedLabels > 1
+
+    csHiddenChannelGroups %= \hidden ->
+        let s' = case HM.lookup tId hidden of
+                   Nothing -> if canCollapse then S.singleton label else mempty
+                   Just s ->
+                       if S.member label s
+                       then S.delete label s
+                       else if canCollapse then S.insert label s else s
+        in HM.insert tId s' hidden
+    updateSidebar Nothing
