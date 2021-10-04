@@ -47,7 +47,7 @@ draw st =
         ManageAttachmentsBrowseFiles -> drawManageAttachments st tId : mainLayersMonochrome
         EditNotifyPrefs              -> drawNotifyPrefs st tId : mainLayersMonochrome
         ChannelTopicWindow           -> drawChannelTopicWindow st : mainLayersMonochrome
-        SaveAttachmentWindow _       -> drawSaveAttachmentWindow st : mainLayersMonochrome
+        SaveAttachmentWindow _       -> drawSaveAttachmentWindow st tId : mainLayersMonochrome
     where
         tId = st^.csCurrentTeamId
         mainLayers = drawMain True st
