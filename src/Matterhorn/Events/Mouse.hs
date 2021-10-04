@@ -8,6 +8,8 @@ import           Matterhorn.Prelude
 
 import           Brick
 
+import           Network.Mattermost.Types ( TeamId )
+
 import           Matterhorn.State.Channels
 import           Matterhorn.State.Teams ( setTeam )
 import           Matterhorn.State.ListOverlay ( listOverlayActivate )
@@ -20,14 +22,14 @@ import           Matterhorn.State.Links ( openLinkTarget )
 -- The top-level mouse click handler. This dispatches to specific
 -- handlers for some modes, or the global mouse handler when the mode is
 -- not important (or when it is important that we ignore the mode).
-mouseHandlerByMode :: Mode -> BrickEvent Name MHEvent -> MH ()
-mouseHandlerByMode mode =
+mouseHandlerByMode :: TeamId -> Mode -> BrickEvent Name MHEvent -> MH ()
+mouseHandlerByMode tId mode =
     case mode of
-        ChannelSelect            -> channelSelectMouseHandler
-        EditNotifyPrefs          -> handleEditNotifyPrefsEvent
-        ReactionEmojiListOverlay -> reactionEmojiListMouseHandler
+        ChannelSelect            -> channelSelectMouseHandler tId
+        EditNotifyPrefs          -> handleEditNotifyPrefsEvent tId
+        ReactionEmojiListOverlay -> reactionEmojiListMouseHandler tId
         UrlSelect                -> urlListMouseHandler
-        _                        -> globalMouseHandler
+        _                        -> globalMouseHandler tId
 
 -- Handle global mouse click events (when mode is not important).
 --
@@ -51,9 +53,8 @@ mouseHandlerByMode mode =
 -- accidentally on a grayed-out URL (in a message, say) next to a modal
 -- dialog box and then see the URL get opened. That would be weird, but
 -- it isn't the end of the world.
-globalMouseHandler :: BrickEvent Name MHEvent -> MH ()
-globalMouseHandler (MouseDown n _ _ _) = do
-    tId <- use csCurrentTeamId
+globalMouseHandler :: TeamId -> BrickEvent Name MHEvent -> MH ()
+globalMouseHandler tId (MouseDown n _ _ _) = do
     case n of
         ClickableChannelListEntry channelId -> do
             whenMode Main $ do
@@ -82,7 +83,7 @@ globalMouseHandler (MouseDown n _ _ _) = do
             void $ toggleReaction pId t uIds
         _ ->
             return ()
-globalMouseHandler _ =
+globalMouseHandler _ _ =
     return ()
 
 urlListMouseHandler :: BrickEvent Name MHEvent -> MH ()
@@ -91,16 +92,15 @@ urlListMouseHandler (MouseDown (ClickableURLListEntry _ t) _ _ _) =
 urlListMouseHandler _ =
     return ()
 
-channelSelectMouseHandler :: BrickEvent Name MHEvent -> MH ()
-channelSelectMouseHandler (MouseDown (ChannelSelectEntry match) _ _ _) = do
-    tId <- use csCurrentTeamId
+channelSelectMouseHandler :: TeamId -> BrickEvent Name MHEvent -> MH ()
+channelSelectMouseHandler tId (MouseDown (ChannelSelectEntry match) _ _ _) = do
     setMode tId Main
     setFocus $ channelListEntryChannelId $ matchEntry match
-channelSelectMouseHandler _ =
+channelSelectMouseHandler _ _ =
     return ()
 
-reactionEmojiListMouseHandler :: BrickEvent Name MHEvent -> MH ()
-reactionEmojiListMouseHandler (MouseDown (ReactionEmojiListOverlayEntry val) _ _ _) =
-    listOverlayActivate (csCurrentTeam.tsReactionEmojiListOverlay) val
-reactionEmojiListMouseHandler _ =
+reactionEmojiListMouseHandler :: TeamId -> BrickEvent Name MHEvent -> MH ()
+reactionEmojiListMouseHandler tId (MouseDown (ReactionEmojiListOverlayEntry val) _ _ _) =
+    listOverlayActivate (csTeam(tId).tsReactionEmojiListOverlay) val
+reactionEmojiListMouseHandler _ _ =
     return ()

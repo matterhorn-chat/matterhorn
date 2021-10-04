@@ -74,8 +74,9 @@ onBrickEvent e@(MouseDown n button modifier _) = do
     when shouldHandle $ do
         mhLog LogGeneral "Handling mouse event"
         csLastMouseDownEvent .= Just e
-        mode <- use (csCurrentTeam.tsMode)
-        mouseHandlerByMode mode e
+        tId <- use csCurrentTeamId
+        mode <- use (csTeam(tId).tsMode)
+        mouseHandlerByMode tId mode e
 onBrickEvent (MouseUp {}) = do
     csLastMouseDownEvent .= Nothing
     mhContinueWithoutRedraw
@@ -232,7 +233,7 @@ teamEventHandlerByMode tId mode =
                                              (csCurrentTeam.tsViewedMessage.singular _Just._2)
         ManageAttachments          -> onEventManageAttachments tId
         ManageAttachmentsBrowseFiles -> onEventManageAttachments tId
-        EditNotifyPrefs            -> void . onEventEditNotifyPrefs
+        EditNotifyPrefs            -> void . onEventEditNotifyPrefs tId
         ChannelTopicWindow         -> onEventChannelTopicWindow tId
         SaveAttachmentWindow _     -> onEventSaveAttachmentWindow
 

@@ -32,7 +32,7 @@ channelSelectKeyHandlers :: TeamId -> [KeyEventHandler]
 channelSelectKeyHandlers tId =
     [ staticKb "Switch to selected channel"
          (Vty.EvKey Vty.KEnter []) $ do
-             matches <- use (csCurrentTeam.tsChannelSelectState.channelSelectMatches)
+             matches <- use (csTeam(tId).tsChannelSelectState.channelSelectMatches)
              case Z.focus matches of
                  Nothing -> return ()
                  Just match -> do
