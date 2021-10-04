@@ -41,7 +41,7 @@ draw st =
         PostListOverlay contents     -> drawPostListOverlay contents st : mainLayersMonochrome
         UserListOverlay              -> drawUserListOverlay st tId : mainLayersMonochrome
         ChannelListOverlay           -> drawChannelListOverlay st tId : mainLayersMonochrome
-        ReactionEmojiListOverlay     -> drawReactionEmojiListOverlay st : mainLayersMonochrome
+        ReactionEmojiListOverlay     -> drawReactionEmojiListOverlay st tId : mainLayersMonochrome
         ViewMessage                  -> drawTabbedWindow messageViewWindow st : mainLayersMonochrome
         ManageAttachments            -> drawManageAttachments st tId : mainLayersMonochrome
         ManageAttachmentsBrowseFiles -> drawManageAttachments st tId : mainLayersMonochrome

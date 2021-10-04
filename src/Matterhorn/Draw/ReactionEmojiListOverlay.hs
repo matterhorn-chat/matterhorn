@@ -10,14 +10,16 @@ import           Brick
 import           Brick.Widgets.List ( listSelectedFocusedAttr )
 import qualified Data.Text as T
 
+import           Network.Mattermost.Types ( TeamId )
+
 import           Matterhorn.Draw.ListOverlay ( drawListOverlay, OverlayPosition(..) )
 import           Matterhorn.Types
 import           Matterhorn.Themes
 
 
-drawReactionEmojiListOverlay :: ChatState -> Widget Name
-drawReactionEmojiListOverlay st =
-    let overlay = drawListOverlay (st^.csCurrentTeam.tsReactionEmojiListOverlay)
+drawReactionEmojiListOverlay :: ChatState -> TeamId -> Widget Name
+drawReactionEmojiListOverlay st tId =
+    let overlay = drawListOverlay (st^.csTeam(tId).tsReactionEmojiListOverlay)
                                   (const $ txt "Search Emoji")
                                   (const $ txt "No matching emoji found.")
                                   (const $ txt "Search emoji:")
