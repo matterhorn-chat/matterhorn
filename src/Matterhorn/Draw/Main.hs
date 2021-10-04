@@ -513,10 +513,11 @@ renderChannelSelectPrompt st tId =
 drawMain :: Bool -> ChatState -> [Widget Name]
 drawMain useColor st =
     let maybeColor = if useColor then id else forceAttr "invalid"
+        tId = st^.csCurrentTeamId
     in maybeColor <$>
            [ connectionLayer st
-           , autocompleteLayer st
-           , joinBorders $ mainInterface st
+           , autocompleteLayer st tId
+           , joinBorders $ mainInterface st tId
            ]
 
 teamList :: ChatState -> Widget Name
@@ -779,13 +780,12 @@ renderDeleteConfirm :: Widget Name
 renderDeleteConfirm =
     hCenter $ txt "Are you sure you want to delete the selected message? (y/n)"
 
-mainInterface :: ChatState -> Widget Name
-mainInterface st =
+mainInterface :: ChatState -> TeamId -> Widget Name
+mainInterface st tId =
     vBox [ teamList st
          , body
          ]
     where
-    tId = st^.csCurrentTeamId
     showChannelList = st^.csResources.crConfiguration.configShowChannelListL ||
                       st^.csTeam(tId).tsMode == ChannelSelect
     body = if showChannelList
