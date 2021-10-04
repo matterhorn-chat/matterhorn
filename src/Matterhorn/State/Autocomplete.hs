@@ -362,7 +362,7 @@ setCompletionAlternatives tId ctx searchString alts ty = do
             mh $ vScrollToBeginning $ viewportScroll $ CompletionList tId
 
             when (autocompleteFirstMatch ctx) $
-                tabComplete Forwards
+                tabComplete tId Forwards
         _ ->
             -- Do not update the state if this result does not
             -- correspond to the search string we used most recently.

@@ -19,7 +19,7 @@ import qualified Matterhorn.Zipper as Z
 onEventChannelSelect :: TeamId -> Vty.Event -> MH Bool
 onEventChannelSelect tId =
   handleKeyboardEvent (channelSelectKeybindings tId) $ \e -> do
-      handled <- handleKeyboardEvent (editingKeybindings (csTeam(tId).tsChannelSelectState.channelSelectInput)) (const $ return ()) e
+      handled <- handleKeyboardEvent (editingKeybindings tId (csTeam(tId).tsChannelSelectState.channelSelectInput)) (const $ return ()) e
       when (not handled) $
           mhHandleEventLensed (csTeam(tId).tsChannelSelectState.channelSelectInput) handleEditorEvent e
 

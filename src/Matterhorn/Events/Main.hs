@@ -28,8 +28,8 @@ onEventMain tId =
   void . handleKeyboardEvent (mainKeybindings tId) (\ ev -> do
       resetReturnChannel
       case ev of
-          (Vty.EvPaste bytes) -> handlePaste bytes
-          _ -> handleEditingInput ev
+          (Vty.EvPaste bytes) -> handlePaste tId bytes
+          _ -> handleEditingInput tId ev
   )
 
 mainKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
@@ -42,8 +42,8 @@ mainKeyHandlers tId =
         beginMessageSelect
 
     , mkKb ReplyRecentEvent
-        "Reply to the most recent message"
-        replyToLatestMessage
+        "Reply to the most recent message" $
+        replyToLatestMessage tId
 
     , mkKb ToggleMessagePreviewEvent "Toggle message preview"
         toggleMessagePreview
@@ -68,8 +68,8 @@ mainKeyHandlers tId =
 
     , mkKb
         InvokeEditorEvent
-        "Invoke `$EDITOR` to edit the current message"
-        invokeExternalEditor
+        "Invoke `$EDITOR` to edit the current message" $
+        invokeExternalEditor tId
 
     , mkKb
         EnterFastSelectModeEvent
@@ -83,11 +83,11 @@ mainKeyHandlers tId =
 
     , staticKb "Tab-complete forward"
          (Vty.EvKey (Vty.KChar '\t') []) $
-         tabComplete Forwards
+         tabComplete tId Forwards
 
     , staticKb "Tab-complete backward"
          (Vty.EvKey (Vty.KBackTab) []) $
-         tabComplete Backwards
+         tabComplete tId Backwards
 
     , mkKb
         ScrollUpEvent
@@ -144,10 +144,10 @@ mainKeyHandlers tId =
                  -- Normally, this event causes the current message to
                  -- be sent. But in multiline mode we want to insert a
                  -- newline instead.
-                 True -> handleEditingInput (Vty.EvKey Vty.KEnter [])
+                 True -> handleEditingInput tId (Vty.EvKey Vty.KEnter [])
                  False -> do
                      cId <- use (csCurrentChannelId tId)
-                     content <- getEditorContent
+                     content <- getEditorContent tId
                      handleInputSubmission tId cId content
 
     , mkKb EnterOpenURLModeEvent "Select and open a URL posted to the current channel"
@@ -156,11 +156,11 @@ mainKeyHandlers tId =
     , mkKb ClearUnreadEvent "Clear the current channel's unread / edited indicators" $ do
            clearChannelUnreadStatus =<< use (csCurrentChannelId tId)
 
-    , mkKb ToggleMultiLineEvent "Toggle multi-line message compose mode"
-           toggleMultilineEditing
+    , mkKb ToggleMultiLineEvent "Toggle multi-line message compose mode" $
+           toggleMultilineEditing tId
 
-    , mkKb CancelEvent "Cancel autocomplete, message reply, or edit, in that order"
-         cancelAutocompleteOrReplyOrEdit
+    , mkKb CancelEvent "Cancel autocomplete, message reply, or edit, in that order" $
+         cancelAutocompleteOrReplyOrEdit tId
 
     , mkKb EnterFlaggedPostsEvent "View currently flagged posts" $
          enterFlaggedPostListMode tId

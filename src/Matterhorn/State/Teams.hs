@@ -195,7 +195,7 @@ buildTeamState cr me team = do
         return (getId c, cChannel)
 
     -- Start the spell checker and spell check timer, if configured
-    spResult <- maybeStartSpellChecker (cr^.crConfiguration) (cr^.crEventQueue)
+    spResult <- maybeStartSpellChecker tId (cr^.crConfiguration) (cr^.crEventQueue)
 
     now <- getCurrentTime
     let chanIds = mkChannelZipperList now (cr^.crConfiguration) tId

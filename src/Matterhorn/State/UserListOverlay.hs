@@ -83,7 +83,7 @@ enterDMSearchUserList = do
 enterUserListMode :: TeamId -> UserSearchScope -> Maybe Int -> (UserInfo -> MH Bool) -> MH ()
 enterUserListMode tId scope resultCount enterHandler = do
     csTeam(tId).tsUserListOverlay.listOverlayRecordCount .= resultCount
-    enterListOverlayMode (csTeam(tId).tsUserListOverlay) UserListOverlay scope enterHandler getUserSearchResults
+    enterListOverlayMode tId (csTeam(tId).tsUserListOverlay) UserListOverlay scope enterHandler getUserSearchResults
 
 userInfoFromPair :: User -> Text -> UserInfo
 userInfoFromPair u status =

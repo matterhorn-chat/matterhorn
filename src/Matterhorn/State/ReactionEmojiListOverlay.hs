@@ -39,7 +39,7 @@ enterReactionEmojiListOverlayMode = do
         Just msg -> do
             em <- use (csResources.crEmoji)
             myId <- gets myUserId
-            enterListOverlayMode (csTeam(tId).tsReactionEmojiListOverlay) ReactionEmojiListOverlay
+            enterListOverlayMode tId (csTeam(tId).tsReactionEmojiListOverlay) ReactionEmojiListOverlay
                 () enterHandler (fetchResults myId msg em)
 
 enterHandler :: (Bool, T.Text) -> MH Bool

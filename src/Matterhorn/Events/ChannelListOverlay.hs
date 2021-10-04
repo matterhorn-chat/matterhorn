@@ -20,7 +20,7 @@ import           Matterhorn.Types
 
 onEventChannelListOverlay :: TeamId -> Vty.Event -> MH ()
 onEventChannelListOverlay tId =
-    void . onEventListOverlay (csTeam(tId).tsChannelListOverlay) (channelListOverlayKeybindings tId)
+    void . onEventListOverlay tId (csTeam(tId).tsChannelListOverlay) (channelListOverlayKeybindings tId)
 
 -- | The keybindings we want to use while viewing a channel list overlay
 channelListOverlayKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
@@ -28,10 +28,10 @@ channelListOverlayKeybindings tId = mkKeybindings (channelListOverlayKeyHandlers
 
 channelListOverlayKeyHandlers :: TeamId -> [KeyEventHandler]
 channelListOverlayKeyHandlers tId =
-    [ mkKb CancelEvent "Close the channel search list" (exitListOverlay (csTeam(tId).tsChannelListOverlay))
+    [ mkKb CancelEvent "Close the channel search list" (exitListOverlay tId (csTeam(tId).tsChannelListOverlay))
     , mkKb SearchSelectUpEvent "Select the previous channel" $ channelListSelectUp tId
     , mkKb SearchSelectDownEvent "Select the next channel" $ channelListSelectDown tId
     , mkKb PageDownEvent "Page down in the channel list" $ channelListPageDown tId
     , mkKb PageUpEvent "Page up in the channel list" $ channelListPageUp tId
-    , mkKb ActivateListItemEvent "Join the selected channel" (listOverlayActivateCurrent (csTeam(tId).tsChannelListOverlay))
+    , mkKb ActivateListItemEvent "Join the selected channel" (listOverlayActivateCurrent tId (csTeam(tId).tsChannelListOverlay))
     ]

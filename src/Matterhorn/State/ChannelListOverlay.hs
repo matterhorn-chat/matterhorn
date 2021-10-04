@@ -26,12 +26,11 @@ import           Matterhorn.State.Channels
 import           Matterhorn.Types
 
 
-enterChannelListOverlayMode :: MH ()
-enterChannelListOverlayMode = do
-    myTId <- use csCurrentTeamId
+enterChannelListOverlayMode :: TeamId -> MH ()
+enterChannelListOverlayMode tId = do
     myChannels <- use (csChannels.to (filteredChannelIds (const True)))
-    enterListOverlayMode (csTeam(myTId).tsChannelListOverlay) ChannelListOverlay
-        AllChannels enterHandler (fetchResults myTId myChannels)
+    enterListOverlayMode tId (csTeam(tId).tsChannelListOverlay) ChannelListOverlay
+        AllChannels enterHandler (fetchResults tId myChannels)
 
 enterHandler :: Channel -> MH Bool
 enterHandler chan = do

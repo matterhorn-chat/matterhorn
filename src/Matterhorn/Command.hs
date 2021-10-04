@@ -133,18 +133,21 @@ commandList =
   , Cmd "leave" "Leave a normal channel or hide a DM channel" NoArg $ \ () ->
         startLeaveCurrentChannel
 
-  , Cmd "join" "Find a channel to join" NoArg $ \ () ->
-        enterChannelListOverlayMode
+  , Cmd "join" "Find a channel to join" NoArg $ \ () -> do
+        tId <- use csCurrentTeamId
+        enterChannelListOverlayMode tId
 
   , Cmd "join" "Join the specified channel" (ChannelArg NoArg) $ \(n, ()) ->
         joinChannelByName n
 
-  , Cmd "theme" "List the available themes" NoArg $ \ () ->
-        enterThemeListMode
+  , Cmd "theme" "List the available themes" NoArg $ \ () -> do
+        tId <- use csCurrentTeamId
+        enterThemeListMode tId
 
   , Cmd "theme" "Set the color theme"
-    (TokenArg "theme" NoArg) $ \ (themeName, ()) ->
-        setTheme themeName
+    (TokenArg "theme" NoArg) $ \ (themeName, ()) -> do
+        tId <- use csCurrentTeamId
+        setTheme tId themeName
 
   , Cmd "topic" "Set the current channel's topic (header) interactively"
     NoArg $ \ () ->

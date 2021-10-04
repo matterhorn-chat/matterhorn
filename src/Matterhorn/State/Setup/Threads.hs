@@ -159,8 +159,8 @@ startTimezoneMonitorThread tz requestChan = do
 
   void $ forkIO (timezoneMonitor tz)
 
-maybeStartSpellChecker :: Config -> BChan MHEvent -> IO (Maybe (Aspell, IO ()))
-maybeStartSpellChecker config eventQueue = do
+maybeStartSpellChecker :: TeamId -> Config -> BChan MHEvent -> IO (Maybe (Aspell, IO ()))
+maybeStartSpellChecker tId config eventQueue = do
   case configEnableAspell config of
       False -> return Nothing
       True -> do
@@ -171,7 +171,7 @@ maybeStartSpellChecker config eventQueue = do
           case asResult of
               Nothing -> return Nothing
               Just as -> do
-                  resetSCChan <- startSpellCheckerThread eventQueue spellCheckerTimeout
+                  resetSCChan <- startSpellCheckerThread tId eventQueue spellCheckerTimeout
                   let resetSCTimer = STM.atomically $ STM.writeTChan resetSCChan ()
                   return $ Just (as, resetSCTimer)
 
@@ -201,13 +201,14 @@ maybeStartSpellChecker config eventQueue = do
 -- The worker thread works by reading a timer from its queue, waiting
 -- until the timer expires, and then injecting an event into the main
 -- event loop to request a spell check.
-startSpellCheckerThread :: BChan MHEvent
+startSpellCheckerThread :: TeamId
+                        -> BChan MHEvent
                         -- ^ The main event loop's event channel.
                         -> Int
                         -- ^ The number of microseconds to wait before
                         -- requesting a spell check.
                         -> IO (STM.TChan ())
-startSpellCheckerThread eventChan spellCheckTimeout = do
+startSpellCheckerThread tId eventChan spellCheckTimeout = do
   delayWakeupChan <- STM.atomically STM.newTChan
   delayWorkerChan <- STM.atomically STM.newTChan
   delVar <- STM.atomically $ STM.newTVar Nothing
@@ -216,7 +217,7 @@ startSpellCheckerThread eventChan spellCheckTimeout = do
   -- requests a spell check.
   void $ forkIO $ forever $ do
     STM.atomically $ waitDelay =<< STM.readTChan delayWorkerChan
-    writeBChan eventChan (RespEvent requestSpellCheck)
+    writeBChan eventChan (RespEvent $ requestSpellCheck tId)
 
   -- The delay manager waits for requests to start a delay timer and
   -- signals the worker to begin waiting.

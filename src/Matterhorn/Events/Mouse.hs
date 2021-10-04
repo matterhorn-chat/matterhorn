@@ -101,6 +101,6 @@ channelSelectMouseHandler _ _ =
 
 reactionEmojiListMouseHandler :: TeamId -> BrickEvent Name MHEvent -> MH ()
 reactionEmojiListMouseHandler tId (MouseDown (ReactionEmojiListOverlayEntry val) _ _ _) =
-    listOverlayActivate (csTeam(tId).tsReactionEmojiListOverlay) val
+    listOverlayActivate tId (csTeam(tId).tsReactionEmojiListOverlay) val
 reactionEmojiListMouseHandler _ _ =
     return ()

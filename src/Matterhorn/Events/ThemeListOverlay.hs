@@ -15,7 +15,7 @@ import           Matterhorn.Types
 
 onEventThemeListOverlay :: TeamId -> Vty.Event -> MH ()
 onEventThemeListOverlay tId =
-    void . onEventListOverlay (csTeam(tId).tsThemeListOverlay)
+    void . onEventListOverlay tId (csTeam(tId).tsThemeListOverlay)
         (themeListOverlayKeybindings tId)
 
 -- | The keybindings we want to use while viewing a user list overlay
@@ -25,7 +25,7 @@ themeListOverlayKeybindings tId = mkKeybindings (themeListOverlayKeyHandlers tId
 themeListOverlayKeyHandlers :: TeamId -> [KeyEventHandler]
 themeListOverlayKeyHandlers tId =
     [ mkKb CancelEvent "Close the theme list"
-      (exitListOverlay (csTeam(tId).tsThemeListOverlay))
+      (exitListOverlay tId (csTeam(tId).tsThemeListOverlay))
     , mkKb SearchSelectUpEvent "Select the previous theme"
       themeListSelectUp
     , mkKb SearchSelectDownEvent "Select the next theme"
@@ -35,5 +35,5 @@ themeListOverlayKeyHandlers tId =
     , mkKb PageUpEvent "Page up in the theme list"
       themeListPageUp
     , mkKb ActivateListItemEvent "Switch to the selected color theme"
-      (listOverlayActivateCurrent (csTeam(tId).tsThemeListOverlay))
+      (listOverlayActivateCurrent tId (csTeam(tId).tsThemeListOverlay))
     ]

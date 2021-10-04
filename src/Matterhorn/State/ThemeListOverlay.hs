@@ -29,10 +29,10 @@ import           Matterhorn.Types
 
 -- | Show the user list overlay with the given search scope, and issue a
 -- request to gather the first search results.
-enterThemeListMode :: MH ()
-enterThemeListMode =
-    enterListOverlayMode (csCurrentTeam.tsThemeListOverlay)
-        ThemeListOverlay () setInternalTheme getThemesMatching
+enterThemeListMode :: TeamId -> MH ()
+enterThemeListMode tId =
+    enterListOverlayMode tId (csCurrentTeam.tsThemeListOverlay)
+        ThemeListOverlay () (setInternalTheme tId) getThemesMatching
 
 -- | Move the selection up in the user list overlay by one user.
 themeListSelectUp :: MH ()
@@ -73,15 +73,15 @@ getThemesMatching _ _ searchString = do
                     search `T.isInfixOf` T.toLower (internalThemeDesc t)
     return $ Vec.fromList matching
 
-setInternalTheme :: InternalTheme -> MH Bool
-setInternalTheme t = do
-    setTheme $ internalThemeName t
+setInternalTheme :: TeamId -> InternalTheme -> MH Bool
+setInternalTheme tId t = do
+    setTheme tId $ internalThemeName t
     return False
 
-setTheme :: Text -> MH ()
-setTheme name =
+setTheme :: TeamId -> Text -> MH ()
+setTheme tId name =
     case lookupTheme name of
-        Nothing -> enterThemeListMode
+        Nothing -> enterThemeListMode tId
         Just it -> do
             mh invalidateCache
             csResources.crTheme .= (themeToAttrMap $ internalTheme it)

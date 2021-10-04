@@ -20,7 +20,7 @@ import           Matterhorn.Types
 
 onEventReactionEmojiListOverlay :: TeamId -> Vty.Event -> MH ()
 onEventReactionEmojiListOverlay tId =
-    void . onEventListOverlay (csTeam(tId).tsReactionEmojiListOverlay)
+    void . onEventListOverlay tId (csTeam(tId).tsReactionEmojiListOverlay)
            (reactionEmojiListOverlayKeybindings tId)
 
 -- | The keybindings we want to use while viewing an emoji list overlay
@@ -30,7 +30,7 @@ reactionEmojiListOverlayKeybindings tId = mkKeybindings (reactionEmojiListOverla
 reactionEmojiListOverlayKeyHandlers :: TeamId -> [KeyEventHandler]
 reactionEmojiListOverlayKeyHandlers tId =
     [ mkKb CancelEvent "Close the emoji search window"
-      (exitListOverlay (csTeam(tId).tsReactionEmojiListOverlay))
+      (exitListOverlay tId (csTeam(tId).tsReactionEmojiListOverlay))
     , mkKb SearchSelectUpEvent "Select the previous emoji" $
       reactionEmojiListSelectUp tId
     , mkKb SearchSelectDownEvent "Select the next emoji" $
@@ -40,5 +40,5 @@ reactionEmojiListOverlayKeyHandlers tId =
     , mkKb PageUpEvent "Page up in the emoji list" $
       reactionEmojiListPageUp tId
     , mkKb ActivateListItemEvent "Post the selected emoji reaction"
-      (listOverlayActivateCurrent (csTeam(tId).tsReactionEmojiListOverlay))
+      (listOverlayActivateCurrent tId (csTeam(tId).tsReactionEmojiListOverlay))
     ]

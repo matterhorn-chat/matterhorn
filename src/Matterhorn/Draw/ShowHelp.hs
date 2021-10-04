@@ -444,7 +444,7 @@ keybindSections =
     [ ("Global Keybindings", globalKeyHandlers)
     , ("Help Page", helpKeyHandlers teamIdThunk)
     , ("Main Interface", mainKeyHandlers teamIdThunk)
-    , ("Text Editing", editingKeyHandlers (csCurrentTeam.tsEditState.cedEditor))
+    , ("Text Editing", editingKeyHandlers teamIdThunk (csCurrentTeam.tsEditState.cedEditor))
     , ("Channel Select Mode", channelSelectKeyHandlers teamIdThunk)
     , ("Message Select Mode", messageSelectKeyHandlers teamIdThunk)
     , ("User Listings", userListOverlayKeyHandlers teamIdThunk)
