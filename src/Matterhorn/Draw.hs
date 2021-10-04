@@ -40,7 +40,7 @@ draw st =
         DeleteChannelConfirm         -> drawDeleteChannelConfirm st tId : mainLayersMonochrome
         PostListOverlay contents     -> drawPostListOverlay contents st : mainLayersMonochrome
         UserListOverlay              -> drawUserListOverlay st tId : mainLayersMonochrome
-        ChannelListOverlay           -> drawChannelListOverlay st : mainLayersMonochrome
+        ChannelListOverlay           -> drawChannelListOverlay st tId : mainLayersMonochrome
         ReactionEmojiListOverlay     -> drawReactionEmojiListOverlay st : mainLayersMonochrome
         ViewMessage                  -> drawTabbedWindow messageViewWindow st : mainLayersMonochrome
         ManageAttachments            -> drawManageAttachments st tId : mainLayersMonochrome

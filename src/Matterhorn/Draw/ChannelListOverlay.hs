@@ -19,9 +19,9 @@ import           Matterhorn.Types.Common ( sanitizeUserText )
 import           Matterhorn.Themes
 
 
-drawChannelListOverlay :: ChatState -> Widget Name
-drawChannelListOverlay st =
-    let overlay = drawListOverlay (st^.csCurrentTeam.tsChannelListOverlay) channelSearchScopeHeader
+drawChannelListOverlay :: ChatState -> TeamId -> Widget Name
+drawChannelListOverlay st tId =
+    let overlay = drawListOverlay (st^.csTeam(tId).tsChannelListOverlay) channelSearchScopeHeader
                                   channelSearchScopeNoResults channelSearchScopePrompt
                                   renderChannel
                                   Nothing
