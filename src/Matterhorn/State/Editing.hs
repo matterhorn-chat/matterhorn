@@ -352,7 +352,7 @@ handleEditingInput tId e = do
     let ctx = AutocompleteContext { autocompleteManual = False
                                   , autocompleteFirstMatch = False
                                   }
-    checkForAutocompletion ctx
+    checkForAutocompletion tId ctx
     liftIO $ resetSpellCheckTimer $ st^.csTeam(tId).tsEditState
 
     -- If the preview is enabled and multi-line editing is enabled and
@@ -508,7 +508,7 @@ tabComplete tId dir = do
             let ctx = AutocompleteContext { autocompleteManual = True
                                           , autocompleteFirstMatch = True
                                           }
-            checkForAutocompletion ctx
+            checkForAutocompletion tId ctx
         Just ac -> do
             case ac^.acCompletionList.to L.listSelectedElement of
                 Nothing -> return ()
