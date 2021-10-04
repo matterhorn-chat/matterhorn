@@ -75,13 +75,13 @@ notifyPrefsForm tId globalDefaults =
 
 enterEditNotifyPrefsMode :: MH ()
 enterEditNotifyPrefsMode = do
-    chanInfo <- use (csCurrentChannel.ccInfo)
+    tId <- use csCurrentTeamId
+    chanInfo <- use (csCurrentChannel(tId).ccInfo)
     case chanInfo^.cdType of
       Direct -> mhError $ GenericError "Cannot open notification preferences for DM channel."
       _ -> do
         let props = chanInfo^.cdNotifyProps
         user <- use csMe
-        tId <- use csCurrentTeamId
         csCurrentTeam.tsNotifyPrefs .= (Just (notifyPrefsForm tId (userNotifyProps user) props))
         setMode tId EditNotifyPrefs
 

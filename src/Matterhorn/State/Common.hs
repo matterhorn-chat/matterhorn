@@ -194,7 +194,7 @@ openWithOpener getTarget = do
                     -- user is gone using their interactive URL opener,
                     -- when they return, any messages that arrive in the
                     -- current channel will be displayed as new.
-                    curChan <- use csCurrentChannel
+                    curChan <- use (csCurrentChannel(tId))
                     let msgs = curChan^.ccContents.cdMessages
                     case findLatestUserMessage isEditable msgs of
                         Nothing -> return ()
@@ -204,7 +204,7 @@ openWithOpener getTarget = do
                                 Just p ->
                                     case curChan^.ccInfo.cdNewMessageIndicator of
                                         Hide ->
-                                            csCurrentChannel.ccInfo.cdNewMessageIndicator .= (NewPostsAfterServerTime (p^.postCreateAtL))
+                                            csCurrentChannel(tId).ccInfo.cdNewMessageIndicator .= (NewPostsAfterServerTime (p^.postCreateAtL))
                                         _ -> return ()
                     -- No need to add a gap here: the websocket
                     -- disconnect/reconnect events will automatically

@@ -452,7 +452,7 @@ renderCurrentChannelDisplay st hs = header <=> hBorder <=> messages
 
     tId = st^.csCurrentTeamId
     cId = st^.(csCurrentChannelId tId)
-    chan = st^.csCurrentChannel
+    chan = st^.csCurrentChannel(tId)
 
 -- | Construct a single message to be displayed in the specified channel
 -- when it does not yet have any user messages posted to it.
@@ -598,9 +598,9 @@ urlSelectBottomBar st =
                     , hBorder
                     ]
 
-messageSelectBottomBar :: ChatState -> Widget Name
-messageSelectBottomBar st =
-    case getSelectedMessage st of
+messageSelectBottomBar :: ChatState -> TeamId -> Widget Name
+messageSelectBottomBar st tId =
+    case getSelectedMessage tId st of
         Nothing -> emptyWidget
         Just postMsg ->
             let optionList = if null usableOptions
@@ -789,6 +789,7 @@ mainInterface st =
          , body
          ]
     where
+    tId = st^.csCurrentTeamId
     showChannelList = st^.csResources.crConfiguration.configShowChannelListL ||
                       st^.csCurrentTeam.tsMode == ChannelSelect
     body = if showChannelList
@@ -808,12 +809,12 @@ mainInterface st =
              , userInputArea st hs
              ]
     channelContents = case st^.csCurrentTeam.tsMode of
-        UrlSelect -> renderUrlList st
-        SaveAttachmentWindow {} -> renderUrlList st
+        UrlSelect -> renderUrlList st tId
+        SaveAttachmentWindow {} -> renderUrlList st tId
         _         -> maybeSubdue $ renderCurrentChannelDisplay st hs
 
     bottomBorder = case st^.csCurrentTeam.tsMode of
-        MessageSelect -> messageSelectBottomBar st
+        MessageSelect -> messageSelectBottomBar st tId
         UrlSelect -> urlSelectBottomBar st
         SaveAttachmentWindow {} -> urlSelectBottomBar st
         _ -> maybeSubdue $ hBox
@@ -838,7 +839,7 @@ mainInterface st =
 
     showTypingUsers =
         let format = renderText' Nothing (myUsername st) hs Nothing
-        in case allTypingUsers (st^.csCurrentChannel.ccInfo.cdTypingUsers) of
+        in case allTypingUsers (st^.csCurrentChannel(tId).ccInfo.cdTypingUsers) of
             [] -> emptyWidget
             [uId] | Just un <- usernameForUserId uId st ->
                format $ "[" <> addUserSigil un <> " is typing]"

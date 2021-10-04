@@ -217,7 +217,8 @@ handleWebsocketEvent we = do
         WMUserUpdated
             | Just user <- wepUser (weData we) -> do
                 handleUserUpdated user
-                cid <- use $ csCurrentChannel . ccInfo . cdChannelId
+                tId <- use csCurrentTeamId
+                cid <- use $ csCurrentChannel(tId) . ccInfo . cdChannelId
                 refreshChannelById cid
             | otherwise -> return ()
 

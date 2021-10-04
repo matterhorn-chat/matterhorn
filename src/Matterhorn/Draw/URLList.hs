@@ -13,7 +13,7 @@ import qualified Data.Sequence as Seq
 import qualified Data.Foldable as F
 import           Lens.Micro.Platform ( to )
 
-import           Network.Mattermost.Types ( ServerTime(..), idString )
+import           Network.Mattermost.Types ( ServerTime(..), TeamId, idString )
 
 import           Matterhorn.Draw.Messages
 import           Matterhorn.Draw.Util
@@ -23,20 +23,20 @@ import           Matterhorn.Types
 import           Matterhorn.Types.RichText
 
 
-renderUrlList :: ChatState -> Widget Name
-renderUrlList st =
+renderUrlList :: ChatState -> TeamId -> Widget Name
+renderUrlList st tId =
     header <=> urlDisplay
     where
         header = (withDefAttr channelHeaderAttr $ vLimit 1 $
                  (renderText' Nothing "" (getHighlightSet st) Nothing $
-                  "URLs: " <> (mkChannelName st (st^.csCurrentChannel.ccInfo))) <+>
+                  "URLs: " <> (mkChannelName st (st^.csCurrentChannel(tId).ccInfo))) <+>
                  fill ' ') <=> hBorder
 
         urlDisplay = if F.length urls == 0
                      then str "No URLs found in this channel."
                      else renderList renderItem True urls
 
-        urls = st^.csCurrentTeam.tsUrlList
+        urls = st^.csTeam(tId).tsUrlList
 
         me = myUsername st
 

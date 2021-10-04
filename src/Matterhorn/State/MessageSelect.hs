@@ -53,12 +53,12 @@ messageSelectCompatibleModes =
     , ReactionEmojiListOverlay
     ]
 
-getSelectedMessage :: ChatState -> Maybe Message
-getSelectedMessage st
-    | not (st^.csCurrentTeam.tsMode `elem` messageSelectCompatibleModes) = Nothing
+getSelectedMessage :: TeamId -> ChatState -> Maybe Message
+getSelectedMessage tId st
+    | not (st^.csTeam(tId).tsMode `elem` messageSelectCompatibleModes) = Nothing
     | otherwise = do
-        selMsgId <- selectMessageId $ st^.csCurrentTeam.tsMessageSelect
-        let chanMsgs = st ^. csCurrentChannel . ccContents . cdMessages
+        selMsgId <- selectMessageId $ st^.csTeam(tId).tsMessageSelect
+        let chanMsgs = st ^. csCurrentChannel(tId) . ccContents . cdMessages
         findMessage selMsgId chanMsgs
 
 beginMessageSelect :: MH ()
@@ -76,18 +76,19 @@ beginMessageSelect = do
     -- If we can't find one at all, we ignore the mode switch request
     -- and just return.
     tId <- use csCurrentTeamId
-    chanMsgs <- use(csCurrentChannel . ccContents . cdMessages)
+    chanMsgs <- use(csCurrentChannel(tId) . ccContents . cdMessages)
     let recentMsg = getLatestSelectableMessage chanMsgs
 
     when (isJust recentMsg) $ do
         setMode tId MessageSelect
-        csCurrentTeam.tsMessageSelect .= MessageSelectState (recentMsg >>= _mMessageId)
+        csTeam(tId).tsMessageSelect .= MessageSelectState (recentMsg >>= _mMessageId)
 
 -- | Tell the server that the message we currently have selected
 -- should have its flagged state toggled.
 flagSelectedMessage :: MH ()
 flagSelectedMessage = do
-  selected <- use (to getSelectedMessage)
+  tId <- use csCurrentTeamId
+  selected <- use (to (getSelectedMessage tId))
   case selected of
     Just msg
       | isFlaggable msg, Just pId <- messagePostId msg ->
@@ -98,7 +99,8 @@ flagSelectedMessage = do
 -- should have its pinned state toggled.
 pinSelectedMessage :: MH ()
 pinSelectedMessage = do
-  selected <- use (to getSelectedMessage)
+  tId <- use csCurrentTeamId
+  selected <- use (to (getSelectedMessage tId))
   case selected of
     Just msg
       | isPinnable msg, Just pId <- messagePostId msg ->
@@ -107,7 +109,8 @@ pinSelectedMessage = do
 
 viewSelectedMessage :: MH ()
 viewSelectedMessage = do
-  selected <- use (to getSelectedMessage)
+  tId <- use csCurrentTeamId
+  selected <- use (to (getSelectedMessage tId))
   case selected of
     Just msg
       | not (isGap msg) -> viewMessage msg
@@ -115,11 +118,11 @@ viewSelectedMessage = do
 
 fillSelectedGap :: MH ()
 fillSelectedGap = do
-  selected <- use (to getSelectedMessage)
+  tId <- use csCurrentTeamId
+  selected <- use (to (getSelectedMessage tId))
   case selected of
     Just msg
-      | isGap msg -> do tId <- use csCurrentTeamId
-                        cId <- use (csCurrentChannelId tId)
+      | isGap msg -> do cId <- use (csCurrentChannelId tId)
                         asyncFetchMessagesForGap cId msg
     _        -> return ()
 
@@ -134,7 +137,7 @@ viewMessage m = do
 yankSelectedMessageVerbatim :: MH ()
 yankSelectedMessageVerbatim = do
     tId <- use csCurrentTeamId
-    selectedMessage <- use (to getSelectedMessage)
+    selectedMessage <- use (to (getSelectedMessage tId))
     case selectedMessage of
         Nothing -> return ()
         Just m -> do
@@ -146,7 +149,7 @@ yankSelectedMessageVerbatim = do
 yankSelectedMessage :: MH ()
 yankSelectedMessage = do
     tId <- use csCurrentTeamId
-    selectedMessage <- use (to getSelectedMessage)
+    selectedMessage <- use (to (getSelectedMessage tId))
     case selectedMessage of
         Nothing -> return ()
         Just m -> do
@@ -155,7 +158,8 @@ yankSelectedMessage = do
 
 openSelectedMessageURLs :: MH ()
 openSelectedMessageURLs = whenMode MessageSelect $ do
-    mCurMsg <- use (to getSelectedMessage)
+    tId <- use csCurrentTeamId
+    mCurMsg <- use (to (getSelectedMessage tId))
     curMsg <- case mCurMsg of
         Nothing -> error "BUG: openSelectedMessageURLs: no selected message available"
         Just m -> return m
@@ -172,7 +176,7 @@ beginConfirmDeleteSelectedMessage :: MH ()
 beginConfirmDeleteSelectedMessage = do
     tId <- use csCurrentTeamId
     st <- use id
-    selected <- use (to getSelectedMessage)
+    selected <- use (to (getSelectedMessage tId))
     case selected of
         Just msg | isDeletable msg && isMine st msg ->
             setMode tId MessageSelectDeleteConfirm
@@ -180,23 +184,25 @@ beginConfirmDeleteSelectedMessage = do
 
 messageSelectUp :: MH ()
 messageSelectUp = do
-    mode <- use (csCurrentTeam.tsMode)
-    selected <- use (csCurrentTeam.tsMessageSelect.to selectMessageId)
+    tId <- use csCurrentTeamId
+    mode <- use (csTeam(tId).tsMode)
+    selected <- use (csTeam(tId).tsMessageSelect.to selectMessageId)
     case selected of
         Just _ | mode == MessageSelect -> do
-            chanMsgs <- use (csCurrentChannel.ccContents.cdMessages)
+            chanMsgs <- use (csCurrentChannel(tId).ccContents.cdMessages)
             let nextMsgId = getPrevMessageId selected chanMsgs
-            csCurrentTeam.tsMessageSelect .= MessageSelectState (nextMsgId <|> selected)
+            csTeam(tId).tsMessageSelect .= MessageSelectState (nextMsgId <|> selected)
         _ -> return ()
 
 messageSelectDown :: MH ()
 messageSelectDown = do
-    selected <- use (csCurrentTeam.tsMessageSelect.to selectMessageId)
+    tId <- use csCurrentTeamId
+    selected <- use (csTeam(tId).tsMessageSelect.to selectMessageId)
     case selected of
         Just _ -> whenMode MessageSelect $ do
-            chanMsgs <- use (csCurrentChannel.ccContents.cdMessages)
+            chanMsgs <- use (csCurrentChannel(tId).ccContents.cdMessages)
             let nextMsgId = getNextMessageId selected chanMsgs
-            csCurrentTeam.tsMessageSelect .= MessageSelectState (nextMsgId <|> selected)
+            csTeam(tId).tsMessageSelect .= MessageSelectState (nextMsgId <|> selected)
         _ -> return ()
 
 messageSelectDownBy :: Int -> MH ()
@@ -213,33 +219,35 @@ messageSelectUpBy amt
 
 messageSelectFirst :: MH ()
 messageSelectFirst = do
-    selected <- use (csCurrentTeam.tsMessageSelect.to selectMessageId)
+    tId <- use csCurrentTeamId
+    selected <- use (csTeam(tId).tsMessageSelect.to selectMessageId)
     case selected of
         Just _ -> whenMode MessageSelect $ do
-            chanMsgs <- use (csCurrentChannel.ccContents.cdMessages)
+            chanMsgs <- use (csCurrentChannel(tId).ccContents.cdMessages)
             case getEarliestSelectableMessage chanMsgs of
               Just firstMsg ->
-                csCurrentTeam.tsMessageSelect .= MessageSelectState (firstMsg^.mMessageId <|> selected)
+                csTeam(tId).tsMessageSelect .= MessageSelectState (firstMsg^.mMessageId <|> selected)
               Nothing -> mhLog LogError "No first message found from current message?!"
         _ -> return ()
 
 messageSelectLast :: MH ()
 messageSelectLast = do
-    selected <- use (csCurrentTeam.tsMessageSelect.to selectMessageId)
+    tId <- use csCurrentTeamId
+    selected <- use (csTeam(tId).tsMessageSelect.to selectMessageId)
     case selected of
         Just _ -> whenMode MessageSelect $ do
-            chanMsgs <- use (csCurrentChannel.ccContents.cdMessages)
+            chanMsgs <- use (csCurrentChannel(tId).ccContents.cdMessages)
             case getLatestSelectableMessage chanMsgs of
               Just lastSelMsg ->
-                csCurrentTeam.tsMessageSelect .= MessageSelectState (lastSelMsg^.mMessageId <|> selected)
+                csTeam(tId).tsMessageSelect .= MessageSelectState (lastSelMsg^.mMessageId <|> selected)
               Nothing -> mhLog LogError "No last message found from current message?!"
         _ -> return ()
 
 deleteSelectedMessage :: MH ()
 deleteSelectedMessage = do
-    selectedMessage <- use (to getSelectedMessage)
-    st <- use id
     tId <- use csCurrentTeamId
+    selectedMessage <- use (to (getSelectedMessage tId))
+    st <- use id
     cId <- use (csCurrentChannelId tId)
     case selectedMessage of
         Just msg | isMine st msg && isDeletable msg ->
@@ -256,7 +264,7 @@ deleteSelectedMessage = do
 beginReplyCompose :: MH ()
 beginReplyCompose = do
     tId <- use csCurrentTeamId
-    selected <- use (to getSelectedMessage)
+    selected <- use (to (getSelectedMessage tId))
     case selected of
         Just msg | isReplyable msg -> do
             rootMsg <- getReplyRootMessage msg
@@ -268,7 +276,7 @@ beginReplyCompose = do
 beginEditMessage :: MH ()
 beginEditMessage = do
     tId <- use csCurrentTeamId
-    selected <- use (to getSelectedMessage)
+    selected <- use (to (getSelectedMessage tId))
     st <- use id
     case selected of
         Just msg | isMine st msg && isEditable msg -> do

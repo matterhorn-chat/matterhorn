@@ -21,9 +21,9 @@ import           Matterhorn.Util
 
 startUrlSelect :: MH ()
 startUrlSelect = do
-    urls <- use (csCurrentChannel.to findUrls.to V.fromList)
-    let urlsWithIndexes = V.indexed urls
     tId <- use csCurrentTeamId
+    urls <- use (csCurrentChannel(tId).to findUrls.to V.fromList)
+    let urlsWithIndexes = V.indexed urls
     setMode tId UrlSelect
     csCurrentTeam.tsUrlList .= (listMoveTo (length urls - 1) $ list (UrlList tId) urlsWithIndexes 2)
 

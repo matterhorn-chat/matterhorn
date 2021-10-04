@@ -478,14 +478,14 @@ cancelAutocompleteOrReplyOrEdit = do
 replyToLatestMessage :: MH ()
 replyToLatestMessage = do
   tId <- use csCurrentTeamId
-  msgs <- use (csCurrentChannel . ccContents . cdMessages)
+  msgs <- use (csCurrentChannel(tId) . ccContents . cdMessages)
   case findLatestUserMessage isReplyable msgs of
     Just msg | isReplyable msg ->
         do rootMsg <- getReplyRootMessage msg
            setMode tId Main
            cId <- use (csCurrentChannelId tId)
            mh $ invalidateCacheEntry $ ChannelMessages cId
-           csCurrentTeam.tsEditState.cedEditMode .= Replying rootMsg (fromJust $ rootMsg^.mOriginalPost)
+           csTeam(tId).tsEditState.cedEditMode .= Replying rootMsg (fromJust $ rootMsg^.mOriginalPost)
     _ -> return ()
 
 data Direction = Forwards | Backwards

@@ -79,7 +79,7 @@ writeLastRunStates cs =
 
 writeLastRunState :: ChatState -> TeamId -> IO ()
 writeLastRunState cs tId = do
-    when (cs^.csCurrentChannel.ccInfo.cdType `elem` [Ordinary, Private]) $ do
+    when (cs^.csCurrentChannel(tId).ccInfo.cdType `elem` [Ordinary, Private]) $ do
         let runState = toLastRunState cs
 
         lastRunStateFile <- lastRunStateFilePath $ unId $ toId tId

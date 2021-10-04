@@ -36,8 +36,8 @@ draw st =
         MessageSelectDeleteConfirm   -> mainLayers
         ShowHelp topic _             -> drawShowHelp topic st
         ThemeListOverlay             -> drawThemeListOverlay st : mainLayers
-        LeaveChannelConfirm          -> drawLeaveChannelConfirm st : mainLayersMonochrome
-        DeleteChannelConfirm         -> drawDeleteChannelConfirm st : mainLayersMonochrome
+        LeaveChannelConfirm          -> drawLeaveChannelConfirm st tId : mainLayersMonochrome
+        DeleteChannelConfirm         -> drawDeleteChannelConfirm st tId : mainLayersMonochrome
         PostListOverlay contents     -> drawPostListOverlay contents st : mainLayersMonochrome
         UserListOverlay              -> drawUserListOverlay st : mainLayersMonochrome
         ChannelListOverlay           -> drawChannelListOverlay st : mainLayersMonochrome
@@ -49,6 +49,7 @@ draw st =
         ChannelTopicWindow           -> drawChannelTopicWindow st : mainLayersMonochrome
         SaveAttachmentWindow _       -> drawSaveAttachmentWindow st : mainLayersMonochrome
     where
+        tId = st^.csCurrentTeamId
         mainLayers = drawMain True st
         mainLayersMonochrome = drawMain False st
-        messageViewWindow = st^.csCurrentTeam.tsViewedMessage.singular _Just._2
+        messageViewWindow = st^.csTeam(tId).tsViewedMessage.singular _Just._2

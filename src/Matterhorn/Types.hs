@@ -2239,10 +2239,10 @@ entryIsDMEntry e =
         CLGroupDM {} -> True
         CLChannel {} -> False
 
-csCurrentChannel :: Lens' ChatState ClientChannel
-csCurrentChannel =
-    lens (\ st -> findChannelById (st^.csCurrentChannelId(st^.csCurrentTeamId)) (st^.csChannels) ^?! _Just)
-         (\ st n -> st & csChannels %~ addChannel (st^.csCurrentChannelId(st^.csCurrentTeamId)) n)
+csCurrentChannel :: TeamId -> Lens' ChatState ClientChannel
+csCurrentChannel tId =
+    lens (\ st -> findChannelById (st^.csCurrentChannelId(tId)) (st^.csChannels) ^?! _Just)
+         (\ st n -> st & csChannels %~ addChannel (st^.csCurrentChannelId(tId)) n)
 
 csChannel :: ChannelId -> Traversal' ChatState ClientChannel
 csChannel cId =

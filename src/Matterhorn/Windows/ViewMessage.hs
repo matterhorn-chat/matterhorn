@@ -44,7 +44,7 @@ viewMessageWindowTemplate tId =
 messageEntry :: TeamId -> TabbedWindowEntry ViewMessageWindowTab
 messageEntry tId =
     TabbedWindowEntry { tweValue = VMTabMessage
-                      , tweRender = renderTab
+                      , tweRender = renderTab tId
                       , tweHandleEvent = handleEvent
                       , tweTitle = tabTitle
                       , tweShowHandler = onShow tId
@@ -53,7 +53,7 @@ messageEntry tId =
 reactionsEntry :: TeamId -> TabbedWindowEntry ViewMessageWindowTab
 reactionsEntry tId =
     TabbedWindowEntry { tweValue = VMTabReactions
-                      , tweRender = renderTab
+                      , tweRender = renderTab tId
                       , tweHandleEvent = handleEvent
                       , tweTitle = tabTitle
                       , tweShowHandler = onShow tId
@@ -79,20 +79,20 @@ resetVp n = do
         vScrollToBeginning vs
         hScrollToBeginning vs
 
-renderTab :: ViewMessageWindowTab -> ChatState -> Widget Name
-renderTab tab cs =
-    let latestMessage = case cs^.csCurrentTeam.tsViewedMessage of
+renderTab :: TeamId -> ViewMessageWindowTab -> ChatState -> Widget Name
+renderTab tId tab cs =
+    let latestMessage = case cs^.csTeam(tId).tsViewedMessage of
           Nothing -> error "BUG: no message to show, please report!"
-          Just (m, _) -> getLatestMessage cs m
+          Just (m, _) -> getLatestMessage cs tId m
     in case tab of
-        VMTabMessage -> viewMessageBox cs latestMessage
-        VMTabReactions -> reactionsText cs latestMessage
+        VMTabMessage -> viewMessageBox cs tId latestMessage
+        VMTabReactions -> reactionsText cs tId latestMessage
 
-getLatestMessage :: ChatState -> Message -> Message
-getLatestMessage cs m =
+getLatestMessage :: ChatState -> TeamId -> Message -> Message
+getLatestMessage cs tId m =
     case m^.mMessageId of
         Nothing -> m
-        Just mId -> fromJust $ findMessage mId $ cs^.csCurrentChannel.ccContents.cdMessages
+        Just mId -> fromJust $ findMessage mId $ cs^.csCurrentChannel(tId).ccContents.cdMessages
 
 handleEvent :: ViewMessageWindowTab -> Vty.Event -> MH ()
 handleEvent VMTabMessage =
@@ -100,10 +100,9 @@ handleEvent VMTabMessage =
 handleEvent VMTabReactions =
     void . handleKeyboardEvent viewMessageReactionsKeybindings (const $ return ())
 
-reactionsText :: ChatState -> Message -> Widget Name
-reactionsText st m = viewport (ViewMessageReactionsArea tId) Vertical body
+reactionsText :: ChatState -> TeamId -> Message -> Widget Name
+reactionsText st tId m = viewport (ViewMessageReactionsArea tId) Vertical body
     where
-        tId = st^.csCurrentTeamId
         body = case null reacList of
             True -> txt "This message has no reactions."
             False -> vBox $ mkEntry <$> reacList
@@ -140,11 +139,10 @@ reactionsText st m = viewport (ViewMessageReactionsArea tId) Vertical body
                 Just n ->  clickable n w
                 Nothing -> w
 
-viewMessageBox :: ChatState -> Message -> Widget Name
-viewMessageBox st msg =
+viewMessageBox :: ChatState -> TeamId -> Message -> Widget Name
+viewMessageBox st tId msg =
     let maybeWarn = if not (msg^.mDeleted) then id else warn
         warn w = vBox [w, hBorder, deleteWarning]
-        tId = st^.csCurrentTeamId
         deleteWarning = withDefAttr errorMessageAttr $
                         txtWrap $ "Alert: this message has been deleted and " <>
                                   "will no longer be accessible once this window " <>

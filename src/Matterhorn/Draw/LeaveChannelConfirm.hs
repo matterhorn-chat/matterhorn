@@ -7,6 +7,8 @@ where
 import Prelude ()
 import Matterhorn.Prelude
 
+import Network.Mattermost.Types ( TeamId )
+
 import Brick
 import Brick.Widgets.Border
 import Brick.Widgets.Center
@@ -15,9 +17,9 @@ import Matterhorn.Themes
 import Matterhorn.Types
 
 
-drawLeaveChannelConfirm :: ChatState -> Widget Name
-drawLeaveChannelConfirm st =
-    let cName = st^.csCurrentChannel.ccInfo.cdName
+drawLeaveChannelConfirm :: ChatState -> TeamId -> Widget Name
+drawLeaveChannelConfirm st tId =
+    let cName = st^.csCurrentChannel(tId).ccInfo.cdName
     in centerLayer $ hLimit 50 $ vLimit 15 $
        withDefAttr dialogAttr $
        borderWithLabel (txt "Confirm Leave Channel") $

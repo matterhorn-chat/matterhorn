@@ -13,7 +13,7 @@ import           Brick.Widgets.List ( renderList, listElementsL, listSelectedFoc
                                     )
 import qualified Data.Text as T
 
-import           Network.Mattermost.Types ( User(..), Channel(..) )
+import           Network.Mattermost.Types ( User(..), Channel(..), TeamId )
 
 import           Matterhorn.Constants ( normalChannelSigil )
 import           Matterhorn.Draw.Util
@@ -24,11 +24,12 @@ import           Matterhorn.Types.Common ( sanitizeUserText )
 
 autocompleteLayer :: ChatState -> Widget Name
 autocompleteLayer st =
-    case st^.csCurrentTeam.tsEditState.cedAutocomplete of
+    let tId = st^.csCurrentTeamId
+    in case st^.csTeam(tId).tsEditState.cedAutocomplete of
         Nothing ->
             emptyWidget
         Just ac ->
-            renderAutocompleteBox st ac
+            renderAutocompleteBox st tId ac
 
 userNotInChannelMarker :: T.Text
 userNotInChannelMarker = "*"
@@ -40,8 +41,8 @@ elementTypeLabel ACCodeBlockLanguage = "Languages"
 elementTypeLabel ACEmoji = "Emoji"
 elementTypeLabel ACCommands = "Commands"
 
-renderAutocompleteBox :: ChatState -> AutocompleteState -> Widget Name
-renderAutocompleteBox st ac =
+renderAutocompleteBox :: ChatState -> TeamId -> AutocompleteState -> Widget Name
+renderAutocompleteBox st tId ac =
     let matchList = _acCompletionList ac
         maxListHeight = 5
         visibleHeight = min maxListHeight numResults
@@ -53,7 +54,7 @@ renderAutocompleteBox st ac =
                      " (Tab/Shift-Tab to select)"
 
         selElem = snd <$> listSelectedElement matchList
-        curChan = st^.csCurrentChannel
+        curChan = st^.csCurrentChannel(tId)
         footer = case renderAutocompleteFooterFor curChan =<< selElem of
             Just w -> hBorderWithLabel w
             _ -> hBorder
