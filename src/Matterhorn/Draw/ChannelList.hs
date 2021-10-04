@@ -51,8 +51,8 @@ data ChannelListEntryData =
                          , entryUserStatus  :: Maybe UserStatus
                          }
 
-renderChannelListHeader :: ChatState -> Widget Name
-renderChannelListHeader st =
+renderChannelListHeader :: ChatState -> MM.TeamId -> Widget Name
+renderChannelListHeader st tId =
     vBox [ teamHeader
          , selfHeader
          , unreadCountHeader
@@ -65,11 +65,11 @@ renderChannelListHeader st =
         selfHeader = hCenter $
                      colorUsername myUsername_ myUsername_
                          (T.singleton statusSigil <> " " <> addUserSigil myUsername_)
-        teamNameStr = T.strip $ sanitizeUserText $ MM.teamDisplayName $ st^.csCurrentTeam.tsTeam
+        teamNameStr = T.strip $ sanitizeUserText $ MM.teamDisplayName $ st^.csTeam(tId).tsTeam
         statusSigil = maybe ' ' userSigilFromInfo me
         me = userById (myUserId st) st
         unreadCountHeader = hCenter $ txt $ "Unread: " <> (T.pack $ show unreadCount)
-        unreadCount = sum $ (channelListGroupUnread . fst) <$> Z.toList (st^.csCurrentTeam.tsFocus)
+        unreadCount = sum $ (channelListGroupUnread . fst) <$> Z.toList (st^.csTeam(tId).tsFocus)
 
 renderChannelList :: ChatState -> Widget Name
 renderChannelList st =
@@ -80,22 +80,22 @@ renderChannelList st =
         renderEntry s e = clickable (channelName e) $
                           renderChannelListEntry myUsername_ $ mkChannelEntryData s e
         tId = st^.csCurrentTeamId
-        body = case st^.csCurrentTeam.tsMode of
+        body = case st^.csTeam(tId).tsMode of
             ChannelSelect ->
-                let zipper = st^.csCurrentTeam.tsChannelSelectState.channelSelectMatches
+                let zipper = st^.csTeam(tId).tsChannelSelectState.channelSelectMatches
                     matches = if Z.isEmpty zipper
                               then [hCenter $ txt "No matches"]
                               else (renderChannelListGroup st
                                        (renderChannelSelectListEntry (Z.focus zipper)) <$>
                                    Z.toList zipper)
                 in vBox $
-                   renderChannelListHeader st :
+                   renderChannelListHeader st tId :
                    matches
             _ ->
                 cached (ChannelSidebar tId) $
                 vBox $
-                renderChannelListHeader st :
-                (renderChannelListGroup st renderEntry <$> Z.toList (st^.csCurrentTeam.tsFocus))
+                renderChannelListHeader st tId :
+                (renderChannelListGroup st renderEntry <$> Z.toList (st^.csTeam(tId).tsFocus))
 
 renderChannelListGroupHeading :: ChannelListGroup -> Widget Name
 renderChannelListGroupHeading g =

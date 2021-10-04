@@ -366,7 +366,7 @@ renderCurrentChannelDisplay st hs = header <=> hBorder <=> messages
             ctx <- getContext
             statusBox <- render $
                 hLimit (configChannelListWidth $ st^.csResources.crConfiguration) $
-                       (renderChannelListHeader st)
+                       (renderChannelListHeader st tId)
 
             let channelHeaderWidth = ctx^.availWidthL -
                                      (Vty.imageWidth $ statusBox^.imageL) - 1
