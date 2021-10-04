@@ -13,9 +13,10 @@ import           Matterhorn.Types
 
 showHelpScreen :: HelpTopic -> MH ()
 showHelpScreen topic = do
-    curMode <- use (csCurrentTeam.tsMode)
+    tId <- use csCurrentTeamId
+    curMode <- use (csTeam(tId).tsMode)
     case curMode of
         ShowHelp {} -> return ()
         _ -> do
             mh $ vScrollToBeginning (viewportScroll HelpViewport)
-            setMode $ ShowHelp topic curMode
+            setMode tId $ ShowHelp topic curMode

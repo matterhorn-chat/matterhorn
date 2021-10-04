@@ -44,7 +44,8 @@ tabbedWindowKeyHandlers :: (Show a, Eq a)
 tabbedWindowKeyHandlers target =
     [ mkKb CancelEvent "Close window" $ do
         w <- use target
-        setMode (twReturnMode w)
+        tId <- use csCurrentTeamId
+        setMode tId (twReturnMode w)
 
     , mkKb SelectNextTabEvent "Select next tab" $ do
         w' <- tabbedWindowNextTab =<< use target

@@ -52,13 +52,14 @@ mouseHandlerByMode mode =
 -- dialog box and then see the URL get opened. That would be weird, but
 -- it isn't the end of the world.
 globalMouseHandler :: BrickEvent Name MHEvent -> MH ()
-globalMouseHandler (MouseDown n _ _ _) =
+globalMouseHandler (MouseDown n _ _ _) = do
+    tId <- use csCurrentTeamId
     case n of
         ClickableChannelListEntry channelId -> do
             whenMode Main $ do
                 resetReturnChannel
                 setFocus channelId
-                setMode Main
+                setMode tId Main
         ClickableTeamListEntry teamId ->
             -- We deliberately handle this event in all modes; this
             -- allows us to switch the UI to another team regardless of
@@ -92,7 +93,8 @@ urlListMouseHandler _ =
 
 channelSelectMouseHandler :: BrickEvent Name MHEvent -> MH ()
 channelSelectMouseHandler (MouseDown (ChannelSelectEntry match) _ _ _) = do
-    setMode Main
+    tId <- use csCurrentTeamId
+    setMode tId Main
     setFocus $ channelListEntryChannelId $ matchEntry match
 channelSelectMouseHandler _ =
     return ()

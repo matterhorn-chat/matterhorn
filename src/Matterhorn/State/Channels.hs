@@ -932,16 +932,17 @@ removeUserFromCurrentChannel uname =
 
 startLeaveCurrentChannel :: MH ()
 startLeaveCurrentChannel = do
+    tId <- use csCurrentTeamId
     cInfo <- use (csCurrentChannel.ccInfo)
     case cInfo^.cdType of
         Direct -> hideDMChannel (cInfo^.cdChannelId)
         Group -> hideDMChannel (cInfo^.cdChannelId)
-        _ -> setMode LeaveChannelConfirm
+        _ -> setMode tId LeaveChannelConfirm
 
 deleteCurrentChannel :: MH ()
 deleteCurrentChannel = do
-    setMode Main
     tId <- use csCurrentTeamId
+    setMode tId Main
     cId <- use (csCurrentChannelId tId)
     leaveChannelIfPossible cId True
 
@@ -971,7 +972,8 @@ joinChannel chanId = joinChannel' chanId Nothing
 
 joinChannel' :: ChannelId -> Maybe (MH ()) -> MH ()
 joinChannel' chanId act = do
-    setMode Main
+    tId <- use csCurrentTeamId
+    setMode tId Main
     mChan <- preuse (csChannel(chanId))
     case mChan of
         Just _ -> do
@@ -979,7 +981,6 @@ joinChannel' chanId act = do
             fromMaybe (return ()) act
         Nothing -> do
             myId <- gets myUserId
-            tId <- use csCurrentTeamId
             let member = MinChannelMember myId chanId
             csCurrentTeam.tsPendingChannelChange .= (Just $ ChangeByChannelId tId chanId act)
             doAsyncChannelMM Preempt chanId (\ s c -> MM.mmAddUser c member s) (const $ return act)
@@ -1007,6 +1008,7 @@ createOrFocusDMChannel user successAct = do
 -- but valid user channel.
 changeChannelByName :: Text -> MH ()
 changeChannelByName name = do
+    tId <- use csCurrentTeamId
     myId <- gets myUserId
     mCId <- gets (channelIdByChannelName name)
     mDMCId <- gets (channelIdByUsername name)
@@ -1015,7 +1017,7 @@ changeChannelByName name = do
         if (_uiId <$> foundUser) == Just myId
         then return ()
         else do
-            setMode Main
+            setMode tId Main
             let err = mhError $ AmbiguousName name
             case (mCId, mDMCId) of
               (Nothing, Nothing) ->
@@ -1076,7 +1078,7 @@ beginCurrentChannelDeleteConfirm = do
     withChannel cId $ \chan -> do
         let chType = chan^.ccInfo.cdType
         if chType /= Direct
-            then setMode DeleteChannelConfirm
+            then setMode tId DeleteChannelConfirm
             else mhError $ GenericError "Direct message channels cannot be deleted."
 
 updateChannelNotifyProps :: ChannelId -> ChannelNotifyProps -> MH ()

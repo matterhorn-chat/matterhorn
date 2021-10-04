@@ -83,8 +83,9 @@ enterEditNotifyPrefsMode = do
         user <- use csMe
         tId <- use csCurrentTeamId
         csCurrentTeam.tsNotifyPrefs .= (Just (notifyPrefsForm tId (userNotifyProps user) props))
-        setMode EditNotifyPrefs
+        setMode tId EditNotifyPrefs
 
 exitEditNotifyPrefsMode :: MH ()
 exitEditNotifyPrefsMode = do
-    setMode Main
+    tId <- use csCurrentTeamId
+    setMode tId Main

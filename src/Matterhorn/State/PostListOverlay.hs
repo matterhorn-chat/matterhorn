@@ -33,12 +33,13 @@ import           Matterhorn.Types.DirectionalSeq (emptyDirSeq)
 -- with a specified list of messages.
 enterPostListMode ::  PostListContents -> Messages -> MH ()
 enterPostListMode contents msgs = do
-  csCurrentTeam.tsPostListOverlay.postListPosts .= msgs
+  tId <- use csCurrentTeamId
+  csTeam(tId).tsPostListOverlay.postListPosts .= msgs
   let mlatest = getLatestPostMsg msgs
       pId = mlatest >>= messagePostId
       cId = mlatest >>= \m -> m^.mChannelId
-  csCurrentTeam.tsPostListOverlay.postListSelected .= pId
-  setMode $ PostListOverlay contents
+  csTeam(tId).tsPostListOverlay.postListSelected .= pId
+  setMode tId $ PostListOverlay contents
   case (pId, cId) of
     (Just p, Just c) -> asyncFetchMessagesSurrounding c p
     _ -> return ()
@@ -46,10 +47,10 @@ enterPostListMode contents msgs = do
 -- | Clear out the state of a PostListOverlay
 exitPostListMode :: MH ()
 exitPostListMode = do
-  csCurrentTeam.tsPostListOverlay.postListPosts .= emptyDirSeq
-  csCurrentTeam.tsPostListOverlay.postListSelected .= Nothing
-  setMode Main
-
+  tId <- use csCurrentTeamId
+  csTeam(tId).tsPostListOverlay.postListPosts .= emptyDirSeq
+  csTeam(tId).tsPostListOverlay.postListSelected .= Nothing
+  setMode tId Main
 
 createPostList :: TeamId -> PostListContents -> (Session -> IO Posts) -> MH ()
 createPostList tId contentsType fetchOp = do

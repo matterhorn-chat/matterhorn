@@ -2189,13 +2189,13 @@ whenMode m act = do
     curMode <- use (csCurrentTeam.tsMode)
     when (curMode == m) act
 
-setMode :: Mode -> MH ()
-setMode m = do
-    csCurrentTeam.tsMode .= m
+setMode :: TeamId -> Mode -> MH ()
+setMode tId m = do
+    csTeam(tId).tsMode .= m
     mh invalidateCache
 
-setMode' :: Mode -> ChatState -> ChatState
-setMode' m = csCurrentTeam.tsMode .~ m
+setMode' :: TeamId -> Mode -> ChatState -> ChatState
+setMode' tId m = csTeam(tId).tsMode .~ m
 
 resetSpellCheckTimer :: ChatEditState -> IO ()
 resetSpellCheckTimer s =

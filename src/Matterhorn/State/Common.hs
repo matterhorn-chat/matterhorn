@@ -169,6 +169,7 @@ openFilePath path = openWithOpener (return path)
 
 openWithOpener :: MH String -> MH Bool
 openWithOpener getTarget = do
+    tId <- use csCurrentTeamId
     cfg <- use (csResources.crConfiguration)
     case configURLOpenCommand cfg of
         Nothing ->
@@ -228,7 +229,7 @@ openWithOpener getTarget = do
                                            " exited with non-zero status " <> show code
                                 waitForKeypress
 
-                        return $ setMode' Main st
+                        return $ setMode' tId Main st
 
             return True
 

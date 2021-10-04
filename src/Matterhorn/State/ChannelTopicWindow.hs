@@ -16,5 +16,5 @@ openChannelTopicWindow :: MH ()
 openChannelTopicWindow = do
     t <- getCurrentChannelTopic
     tId <- use csCurrentTeamId
-    csCurrentTeam.tsChannelTopicDialog .= newChannelTopicDialog tId t
-    setMode ChannelTopicWindow
+    csTeam(tId).tsChannelTopicDialog .= newChannelTopicDialog tId t
+    setMode tId ChannelTopicWindow

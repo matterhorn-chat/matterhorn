@@ -75,11 +75,12 @@ beginMessageSelect = do
     --
     -- If we can't find one at all, we ignore the mode switch request
     -- and just return.
+    tId <- use csCurrentTeamId
     chanMsgs <- use(csCurrentChannel . ccContents . cdMessages)
     let recentMsg = getLatestSelectableMessage chanMsgs
 
     when (isJust recentMsg) $ do
-        setMode MessageSelect
+        setMode tId MessageSelect
         csCurrentTeam.tsMessageSelect .= MessageSelectState (recentMsg >>= _mMessageId)
 
 -- | Tell the server that the message we currently have selected
@@ -128,26 +129,28 @@ viewMessage m = do
     let w = tabbedWindow VMTabMessage (viewMessageWindowTemplate tId) MessageSelect (78, 25)
     csCurrentTeam.tsViewedMessage .= Just (m, w)
     runTabShowHandlerFor (twValue w) w
-    setMode ViewMessage
+    setMode tId ViewMessage
 
 yankSelectedMessageVerbatim :: MH ()
 yankSelectedMessageVerbatim = do
+    tId <- use csCurrentTeamId
     selectedMessage <- use (to getSelectedMessage)
     case selectedMessage of
         Nothing -> return ()
         Just m -> do
-            setMode Main
+            setMode tId Main
             case findVerbatimChunk (m^.mText) of
                 Just txt -> copyToClipboard txt
                 Nothing  -> return ()
 
 yankSelectedMessage :: MH ()
 yankSelectedMessage = do
+    tId <- use csCurrentTeamId
     selectedMessage <- use (to getSelectedMessage)
     case selectedMessage of
         Nothing -> return ()
         Just m -> do
-            setMode Main
+            setMode tId Main
             copyToClipboard $ m^.mMarkdownSource
 
 openSelectedMessageURLs :: MH ()
@@ -167,11 +170,12 @@ openSelectedMessageURLs = whenMode MessageSelect $ do
 
 beginConfirmDeleteSelectedMessage :: MH ()
 beginConfirmDeleteSelectedMessage = do
+    tId <- use csCurrentTeamId
     st <- use id
     selected <- use (to getSelectedMessage)
     case selected of
         Just msg | isDeletable msg && isMine st msg ->
-            setMode MessageSelectDeleteConfirm
+            setMode tId MessageSelectDeleteConfirm
         _ -> return ()
 
 messageSelectUp :: MH ()
@@ -244,31 +248,33 @@ deleteSelectedMessage = do
                   doAsyncChannelMM Preempt cId
                       (\s _ -> MM.mmDeletePost (postId p) s)
                       (\_ _ -> Just $ do
-                          csCurrentTeam.tsEditState.cedEditMode .= NewPost
-                          setMode Main)
+                          csTeam(tId).tsEditState.cedEditMode .= NewPost
+                          setMode tId Main)
               Nothing -> return ()
         _ -> return ()
 
 beginReplyCompose :: MH ()
 beginReplyCompose = do
+    tId <- use csCurrentTeamId
     selected <- use (to getSelectedMessage)
     case selected of
         Just msg | isReplyable msg -> do
             rootMsg <- getReplyRootMessage msg
             let Just p = rootMsg^.mOriginalPost
-            setMode Main
-            csCurrentTeam.tsEditState.cedEditMode .= Replying rootMsg p
+            setMode tId Main
+            csTeam(tId).tsEditState.cedEditMode .= Replying rootMsg p
         _ -> return ()
 
 beginEditMessage :: MH ()
 beginEditMessage = do
+    tId <- use csCurrentTeamId
     selected <- use (to getSelectedMessage)
     st <- use id
     case selected of
         Just msg | isMine st msg && isEditable msg -> do
             let Just p = msg^.mOriginalPost
-            setMode Main
-            csCurrentTeam.tsEditState.cedEditMode .= Editing p (msg^.mType)
+            setMode tId Main
+            csTeam(tId).tsEditState.cedEditMode .= Editing p (msg^.mType)
             -- If the post that we're editing is an emote, we need
             -- to strip the formatting because that's only there to
             -- indicate that the post is an emote. This is annoying and
@@ -280,7 +286,7 @@ beginEditMessage = do
             let toEdit = if isEmote msg
                          then removeEmoteFormatting sanitized
                          else sanitized
-            csCurrentTeam.tsEditState.cedEditor %= applyEdit (insertMany toEdit . clearZipper)
+            csTeam(tId).tsEditState.cedEditor %= applyEdit (insertMany toEdit . clearZipper)
         _ -> return ()
 
 -- | Tell the server that we have flagged or unflagged a message.

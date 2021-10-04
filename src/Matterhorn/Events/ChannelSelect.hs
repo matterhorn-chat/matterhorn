@@ -30,14 +30,17 @@ channelSelectKeyHandlers :: [KeyEventHandler]
 channelSelectKeyHandlers =
     [ staticKb "Switch to selected channel"
          (Vty.EvKey Vty.KEnter []) $ do
+             tId <- use csCurrentTeamId
              matches <- use (csCurrentTeam.tsChannelSelectState.channelSelectMatches)
              case Z.focus matches of
                  Nothing -> return ()
                  Just match -> do
-                     setMode Main
+                     setMode tId Main
                      setFocus $ channelListEntryChannelId $ matchEntry match
 
-    , mkKb CancelEvent "Cancel channel selection" $ setMode Main
+    , mkKb CancelEvent "Cancel channel selection" $ do
+        tId <- use csCurrentTeamId
+        setMode tId Main
     , mkKb NextChannelEvent "Select next match" channelSelectNext
     , mkKb PrevChannelEvent "Select previous match" channelSelectPrevious
     , mkKb NextChannelEventAlternate "Select next match (alternate binding)" channelSelectNext

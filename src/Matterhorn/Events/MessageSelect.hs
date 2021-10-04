@@ -28,17 +28,20 @@ onEventMessageSelect =
 onEventMessageSelectDeleteConfirm :: Vty.Event -> MH ()
 onEventMessageSelectDeleteConfirm (Vty.EvKey (Vty.KChar 'y') []) = do
     deleteSelectedMessage
-    setMode Main
-onEventMessageSelectDeleteConfirm _ =
-    setMode Main
+    tId <- use csCurrentTeamId
+    setMode tId Main
+onEventMessageSelectDeleteConfirm _ = do
+    tId <- use csCurrentTeamId
+    setMode tId Main
 
 messageSelectKeybindings :: KeyConfig -> KeyHandlerMap
 messageSelectKeybindings = mkKeybindings messageSelectKeyHandlers
 
 messageSelectKeyHandlers :: [KeyEventHandler]
 messageSelectKeyHandlers =
-    [ mkKb CancelEvent "Cancel message selection" $
-        setMode Main
+    [ mkKb CancelEvent "Cancel message selection" $ do
+        tId <- use csCurrentTeamId
+        setMode tId Main
 
     , mkKb SelectUpEvent "Select the previous message" messageSelectUp
     , mkKb SelectDownEvent "Select the next message" messageSelectDown

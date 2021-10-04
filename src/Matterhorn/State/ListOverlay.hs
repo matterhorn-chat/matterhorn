@@ -41,10 +41,11 @@ listOverlayActivateCurrent which = do
 -- overlay's configured enter keypress handler function.
 listOverlayActivate :: Lens' ChatState (ListOverlayState a b) -> a -> MH ()
 listOverlayActivate which val = do
+    tId <- use csCurrentTeamId
     handler <- use (which.listOverlayEnterHandler)
     activated <- handler val
     if activated
-       then setMode Main
+       then setMode tId Main
        else return ()
 
 -- | Get the current search string for the specified overlay.
@@ -66,11 +67,12 @@ exitListOverlay :: Lens' ChatState (ListOverlayState a b)
                 -- ^ Which overlay to reset
                 -> MH ()
 exitListOverlay which = do
+    tId <- use csCurrentTeamId
     st <- use which
     newList <- use (which.listOverlayNewList)
     which.listOverlaySearchResults .= newList mempty
     which.listOverlayEnterHandler .= (const $ return False)
-    setMode (st^.listOverlayReturnMode)
+    setMode tId (st^.listOverlayReturnMode)
 
 -- | Initialize a list overlay with the specified arguments and switch
 -- to the specified mode.
@@ -86,6 +88,7 @@ enterListOverlayMode :: (Lens' ChatState (ListOverlayState a b))
                      -- ^ The overlay's results fetcher function
                      -> MH ()
 enterListOverlayMode which mode scope enterHandler fetcher = do
+    tId <- use csCurrentTeamId
     which.listOverlaySearchScope .= scope
     which.listOverlaySearchInput.E.editContentsL %= Z.clearZipper
     which.listOverlayEnterHandler .= enterHandler
@@ -93,7 +96,7 @@ enterListOverlayMode which mode scope enterHandler fetcher = do
     which.listOverlaySearching .= False
     newList <- use (which.listOverlayNewList)
     which.listOverlaySearchResults .= newList mempty
-    setMode mode
+    setMode tId mode
     resetListOverlaySearch which
 
 -- | Reset the overlay's search by initiating a new search request for

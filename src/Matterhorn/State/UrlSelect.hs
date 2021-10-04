@@ -24,22 +24,25 @@ startUrlSelect = do
     urls <- use (csCurrentChannel.to findUrls.to V.fromList)
     let urlsWithIndexes = V.indexed urls
     tId <- use csCurrentTeamId
-    setMode UrlSelect
+    setMode tId UrlSelect
     csCurrentTeam.tsUrlList .= (listMoveTo (length urls - 1) $ list (UrlList tId) urlsWithIndexes 2)
 
 stopUrlSelect :: MH ()
-stopUrlSelect = setMode Main
+stopUrlSelect = do
+    tId <- use csCurrentTeamId
+    setMode tId Main
 
 openSelectedURL :: MH ()
 openSelectedURL = whenMode UrlSelect $ do
-    selected <- use (csCurrentTeam.tsUrlList.to listSelectedElement)
+    tId <- use csCurrentTeamId
+    selected <- use (csTeam(tId).tsUrlList.to listSelectedElement)
     case selected of
-        Nothing -> setMode Main
+        Nothing -> setMode tId Main
         Just (_, (_, link)) -> do
             opened <- openLinkTarget (link^.linkTarget)
             when (not opened) $ do
                 mhError $ ConfigOptionMissing "urlOpenCommand"
-                setMode Main
+                setMode tId Main
 
 findUrls :: ClientChannel -> [LinkChoice]
 findUrls chan =

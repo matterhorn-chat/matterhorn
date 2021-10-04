@@ -45,7 +45,9 @@ attachmentListKeybindings = mkKeybindings attachmentListKeyHandlers
 attachmentListKeyHandlers :: [KeyEventHandler]
 attachmentListKeyHandlers =
     [ mkKb CancelEvent "Close attachment list"
-          (setMode Main)
+          (do
+             tId <- use csCurrentTeamId
+             setMode tId Main)
     , mkKb SelectUpEvent "Move cursor up" $
           mhHandleEventLensed (csCurrentTeam.tsEditState.cedAttachmentList) L.handleListEvent (V.EvKey V.KUp [])
     , mkKb SelectDownEvent "Move cursor down" $
@@ -152,10 +154,11 @@ onEventBrowseFile e = do
 
 cancelAttachmentBrowse :: MH ()
 cancelAttachmentBrowse = do
-    es <- use (csCurrentTeam.tsEditState.cedAttachmentList.L.listElementsL)
+    tId <- use csCurrentTeamId
+    es <- use (csTeam(tId).tsEditState.cedAttachmentList.L.listElementsL)
     case length es of
-        0 -> setMode Main
-        _ -> setMode ManageAttachments
+        0 -> setMode tId Main
+        _ -> setMode tId ManageAttachments
 
 handleFileBrowserEvent :: V.Event -> MH ()
 handleFileBrowserEvent e = do

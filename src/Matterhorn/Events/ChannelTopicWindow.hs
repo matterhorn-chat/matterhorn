@@ -22,22 +22,24 @@ onEventChannelTopicWindow (Vty.EvKey (Vty.KChar '\t') []) =
 onEventChannelTopicWindow (Vty.EvKey Vty.KBackTab []) =
     csCurrentTeam.tsChannelTopicDialog.channelTopicDialogFocus %= focusPrev
 onEventChannelTopicWindow e@(Vty.EvKey Vty.KEnter []) = do
-    f <- use (csCurrentTeam.tsChannelTopicDialog.channelTopicDialogFocus)
+    tId <- use csCurrentTeamId
+    f <- use (csTeam(tId).tsChannelTopicDialog.channelTopicDialogFocus)
     case focusGetCurrent f of
         Just (ChannelTopicSaveButton {}) -> do
-            ed <- use (csCurrentTeam.tsChannelTopicDialog.channelTopicDialogEditor)
+            ed <- use (csTeam(tId).tsChannelTopicDialog.channelTopicDialogEditor)
             let topic = T.unlines $ getEditContents ed
             setChannelTopic topic
-            setMode Main
+            setMode tId Main
         Just (ChannelTopicEditor {}) ->
             mhHandleEventLensed (csCurrentTeam.tsChannelTopicDialog.channelTopicDialogEditor)
                                 handleEditorEvent e
         Just (ChannelTopicCancelButton {}) ->
-            setMode Main
+            setMode tId Main
         _ ->
-            setMode Main
+            setMode tId Main
 onEventChannelTopicWindow (Vty.EvKey Vty.KEsc []) = do
-    setMode Main
+    tId <- use csCurrentTeamId
+    setMode tId Main
 onEventChannelTopicWindow e = do
     f <- use (csCurrentTeam.tsChannelTopicDialog.channelTopicDialogFocus)
     case focusGetCurrent f of

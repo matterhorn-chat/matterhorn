@@ -40,5 +40,6 @@ helpKeyHandlers =
 
 popMode :: MH ()
 popMode = do
-    ShowHelp _ prevMode <- use (csCurrentTeam.tsMode)
-    setMode prevMode
+    tId <- use csCurrentTeamId
+    ShowHelp _ prevMode <- use (csTeam(tId).tsMode)
+    setMode tId prevMode

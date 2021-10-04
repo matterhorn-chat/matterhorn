@@ -15,5 +15,6 @@ onEventLeaveChannelConfirm (Vty.EvKey k []) = do
         Vty.KChar c | c `elem` ("yY"::String) ->
             leaveCurrentChannel
         _ -> return ()
-    setMode Main
+    tId <- use csCurrentTeamId
+    setMode tId Main
 onEventLeaveChannelConfirm _ = return ()

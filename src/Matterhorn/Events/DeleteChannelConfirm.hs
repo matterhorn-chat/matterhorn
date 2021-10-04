@@ -15,6 +15,8 @@ onEventDeleteChannelConfirm (Vty.EvKey k []) = do
         Vty.KChar c | c `elem` ("yY"::String) ->
             deleteCurrentChannel
         _ -> return ()
-    setMode Main
+    tId <- use csCurrentTeamId
+    setMode tId Main
 onEventDeleteChannelConfirm _ = do
-    setMode Main
+    tId <- use csCurrentTeamId
+    setMode tId Main
