@@ -13,6 +13,8 @@ import qualified Brick.Widgets.FileBrowser as FB
 import           Brick.Widgets.List
 import           Data.Maybe ( fromJust )
 
+import           Network.Mattermost.Types ( TeamId )
+
 import           Matterhorn.Types
 import           Matterhorn.Types.KeyEvents
 import           Matterhorn.Events.Keybindings ( getFirstDefaultBinding )
@@ -23,13 +25,14 @@ drawManageAttachments :: ChatState -> Widget Name
 drawManageAttachments st =
     topLayer
     where
-        topLayer = case st^.csCurrentTeam.tsMode of
-            ManageAttachments -> drawAttachmentList st
-            ManageAttachmentsBrowseFiles -> drawFileBrowser st
+        tId = st^.csCurrentTeamId
+        topLayer = case st^.csTeam(tId).tsMode of
+            ManageAttachments -> drawAttachmentList st tId
+            ManageAttachmentsBrowseFiles -> drawFileBrowser st tId
             _ -> error "BUG: drawManageAttachments called in invalid mode"
 
-drawAttachmentList :: ChatState -> Widget Name
-drawAttachmentList st =
+drawAttachmentList :: ChatState -> TeamId -> Widget Name
+drawAttachmentList st tId =
     let addBinding = ppBinding $ getFirstDefaultBinding AttachmentListAddEvent
         delBinding = ppBinding $ getFirstDefaultBinding AttachmentListDeleteEvent
         escBinding = ppBinding $ getFirstDefaultBinding CancelEvent
@@ -39,7 +42,7 @@ drawAttachmentList st =
        vLimit 15 $
        joinBorders $
        borderWithLabel (withDefAttr clientEmphAttr $ txt "Attachments") $
-       vBox [ renderList renderAttachmentItem True (st^.csCurrentTeam.tsEditState.cedAttachmentList)
+       vBox [ renderList renderAttachmentItem True (st^.csTeam(tId).tsEditState.cedAttachmentList)
             , hBorder
             , hCenter $ withDefAttr clientMessageAttr $
                         txt $ addBinding <> ":add " <>
@@ -52,8 +55,8 @@ renderAttachmentItem :: Bool -> AttachmentData -> Widget Name
 renderAttachmentItem _ d =
     padRight Max $ str $ FB.fileInfoSanitizedFilename $ attachmentDataFileInfo d
 
-drawFileBrowser :: ChatState -> Widget Name
-drawFileBrowser st =
+drawFileBrowser :: ChatState -> TeamId -> Widget Name
+drawFileBrowser st tId =
     centerLayer $
     hLimit 60 $
     vLimit 20 $
@@ -61,4 +64,4 @@ drawFileBrowser st =
     -- invariant: cedFileBrowser is not Nothing if appMode is
     -- ManageAttachmentsBrowseFiles, and that is the only way to reach
     -- this code, ergo the fromJust.
-    FB.renderFileBrowser True $ fromJust (st^.csCurrentTeam.tsEditState.cedFileBrowser)
+    FB.renderFileBrowser True $ fromJust (st^.csTeam(tId).tsEditState.cedFileBrowser)
