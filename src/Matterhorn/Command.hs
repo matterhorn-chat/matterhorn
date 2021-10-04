@@ -288,8 +288,9 @@ commandList =
   , Cmd "move-team-right" "Move the currently-selected team to the right in the team list" NoArg $ \_ ->
         moveCurrentTeamRight
 
-  , Cmd "attach" "Attach a given file without browsing" (LineArg "path") $
-        attachFileByPath
+  , Cmd "attach" "Attach a given file without browsing" (LineArg "path") $ \path -> do
+        tId <- use csCurrentTeamId
+        attachFileByPath tId path
 
   , Cmd "toggle-favorite" "Toggle the favorite status of the current channel" NoArg $ \_ ->
         toggleChannelFavoriteStatus

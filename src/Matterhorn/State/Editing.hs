@@ -237,7 +237,7 @@ handleInputSubmission tId cId content = do
           -- Empty the attachment list only if a mesage is actually sent, since
           -- it's possible to /attach a file before actually sending the
           -- message
-          resetAttachmentList
+          resetAttachmentList tId
 
     -- Reset the autocomplete UI
     resetAutocomplete
@@ -469,7 +469,7 @@ cancelAutocompleteOrReplyOrEdit tId = do
                 _ -> do
                     csTeam(tId).tsEditState.cedEditMode .= NewPost
                     csTeam(tId).tsEditState.cedEditor %= applyEdit Z.clearZipper
-                    resetAttachmentList
+                    resetAttachmentList tId
 
 replyToLatestMessage :: TeamId -> MH ()
 replyToLatestMessage tId = do

@@ -75,7 +75,7 @@ attachmentBrowseKeyHandlers tId =
     , mkKb FileBrowserSelectEnterEvent "Select file or enter directory" $ do
       mhHandleEventLensed' (csTeam(tId).tsEditState.unsafeCedFileBrowser)
         FB.actionFileBrowserSelectEnter
-      withFileBrowser tId (tryAddAttachment . FB.fileBrowserSelection)
+      withFileBrowser tId (tryAddAttachment tId . FB.fileBrowserSelection)
     , mkKb FileBrowserSelectCurrentEvent "Select file" $
       mhHandleEventLensed' (csTeam(tId).tsEditState.unsafeCedFileBrowser)
         FB.actionFileBrowserSelectCurrent
@@ -164,7 +164,7 @@ handleFileBrowserEvent tId e = do
     mhHandleEventLensed (csTeam(tId).tsEditState.cedFileBrowser) fbHandle e
     -- TODO: Check file browser exception state
     withFileBrowser tId $ \b ->
-        tryAddAttachment $ FB.fileBrowserSelection b
+        tryAddAttachment tId $ FB.fileBrowserSelection b
 
 deleteSelectedAttachment :: TeamId -> MH ()
 deleteSelectedAttachment tId = do

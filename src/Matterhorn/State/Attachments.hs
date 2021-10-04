@@ -42,19 +42,17 @@ validateAttachmentPath path = bool Nothing (Just path) <$> do
 defaultAttachmentsPath :: Config -> IO (Maybe FilePath)
 defaultAttachmentsPath = maybe (return Nothing) validateAttachmentPath . configDefaultAttachmentPath
 
-showAttachmentList :: MH ()
-showAttachmentList = do
-    tId <- use csCurrentTeamId
+showAttachmentList :: TeamId -> MH ()
+showAttachmentList tId = do
     lst <- use (csTeam(tId).tsEditState.cedAttachmentList)
     case length (L.listElements lst) of
         0 -> showAttachmentFileBrowser tId
         _ -> setMode tId ManageAttachments
 
-resetAttachmentList :: MH ()
-resetAttachmentList = do
-    tId <- use csCurrentTeamId
+resetAttachmentList :: TeamId -> MH ()
+resetAttachmentList tId = do
     let listName = AttachmentList tId
-    csCurrentTeam.tsEditState.cedAttachmentList .= L.list listName mempty 1
+    csTeam(tId).tsEditState.cedAttachmentList .= L.list listName mempty 1
     mh $ vScrollToBeginning $ viewportScroll listName
 
 showAttachmentFileBrowser :: TeamId -> MH ()
@@ -65,21 +63,20 @@ showAttachmentFileBrowser tId = do
     csTeam(tId).tsEditState.cedFileBrowser .= browser
     setMode tId ManageAttachmentsBrowseFiles
 
-attachFileByPath :: Text -> MH ()
-attachFileByPath txtPath = do
+attachFileByPath :: TeamId -> Text -> MH ()
+attachFileByPath tId txtPath = do
     let strPath = unpack txtPath
     fileInfo <- liftIO $ FB.getFileInfo strPath strPath
     case FB.fileInfoFileStatus fileInfo of
         Left e -> do
             mhError $ AttachmentException (toException e)
-        Right _ -> tryAddAttachment [fileInfo]
+        Right _ -> tryAddAttachment tId [fileInfo]
 
 checkPathIsFile :: FB.FileInfo -> MH Bool
 checkPathIsFile = liftIO . doesFileExist . FB.fileInfoFilePath
 
-tryAddAttachment :: [FB.FileInfo] -> MH ()
-tryAddAttachment entries = do
-    tId <- use csCurrentTeamId
+tryAddAttachment :: TeamId -> [FB.FileInfo] -> MH ()
+tryAddAttachment tId entries = do
     forM_ entries $ \entry -> do
         isFile <- checkPathIsFile entry
         if not isFile

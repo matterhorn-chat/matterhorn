@@ -127,8 +127,8 @@ mainKeyHandlers tId =
     , mkKb NextUnreadChannelEvent "Change to the next channel with unread messages or return to the channel marked '~'"
          nextUnreadChannel
 
-    , mkKb ShowAttachmentListEvent "Show the attachment list"
-         showAttachmentList
+    , mkKb ShowAttachmentListEvent "Show the attachment list" $
+         showAttachmentList tId
 
     , mkKb NextUnreadUserOrChannelEvent
          "Change to the next channel with unread messages preferring direct messages"
