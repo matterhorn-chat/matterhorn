@@ -48,8 +48,8 @@ drawChannelTopicWindow st =
         editorHeight = 5
         previewHeight = 5
         maxWindowWidth = 70
-        foc = st^.csCurrentTeam.tsChannelTopicDialog.channelTopicDialogFocus
-        ed = st^.csCurrentTeam.tsChannelTopicDialog.channelTopicDialogEditor
+        foc = st^.csTeam(tId).tsChannelTopicDialog.channelTopicDialogFocus
+        ed = st^.csTeam(tId).tsChannelTopicDialog.channelTopicDialogEditor
         hSet = getHighlightSet st
         topicTxtWithCursor = T.unlines $
                              getEditContents $
