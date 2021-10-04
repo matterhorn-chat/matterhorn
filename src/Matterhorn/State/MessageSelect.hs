@@ -130,7 +130,7 @@ viewMessage :: Message -> MH ()
 viewMessage m = do
     tId <- use csCurrentTeamId
     let w = tabbedWindow VMTabMessage (viewMessageWindowTemplate tId) MessageSelect (78, 25)
-    csCurrentTeam.tsViewedMessage .= Just (m, w)
+    csTeam(tId).tsViewedMessage .= Just (m, w)
     runTabShowHandlerFor (twValue w) w
     setMode tId ViewMessage
 
