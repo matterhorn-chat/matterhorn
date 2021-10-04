@@ -150,8 +150,8 @@ mainKeyHandlers tId =
                      content <- getEditorContent tId
                      handleInputSubmission tId cId content
 
-    , mkKb EnterOpenURLModeEvent "Select and open a URL posted to the current channel"
-           startUrlSelect
+    , mkKb EnterOpenURLModeEvent "Select and open a URL posted to the current channel" $
+           startUrlSelect tId
 
     , mkKb ClearUnreadEvent "Clear the current channel's unread / edited indicators" $ do
            clearChannelUnreadStatus =<< use (csCurrentChannelId tId)

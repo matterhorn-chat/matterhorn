@@ -14,27 +14,26 @@ import           Brick.Widgets.List ( list, listMoveTo, listSelectedElement )
 import qualified Data.Vector as V
 import           Lens.Micro.Platform ( (.=), to )
 
+import           Network.Mattermost.Types ( TeamId )
+
 import           Matterhorn.State.Links
 import           Matterhorn.Types
 import           Matterhorn.Util
 
 
-startUrlSelect :: MH ()
-startUrlSelect = do
-    tId <- use csCurrentTeamId
+startUrlSelect :: TeamId -> MH ()
+startUrlSelect tId = do
     urls <- use (csCurrentChannel(tId).to findUrls.to V.fromList)
     let urlsWithIndexes = V.indexed urls
     setMode tId UrlSelect
-    csCurrentTeam.tsUrlList .= (listMoveTo (length urls - 1) $ list (UrlList tId) urlsWithIndexes 2)
+    csTeam(tId).tsUrlList .= (listMoveTo (length urls - 1) $ list (UrlList tId) urlsWithIndexes 2)
 
-stopUrlSelect :: MH ()
-stopUrlSelect = do
-    tId <- use csCurrentTeamId
+stopUrlSelect :: TeamId -> MH ()
+stopUrlSelect tId = do
     setMode tId Main
 
-openSelectedURL :: MH ()
-openSelectedURL = whenMode UrlSelect $ do
-    tId <- use csCurrentTeamId
+openSelectedURL :: TeamId -> MH ()
+openSelectedURL tId = whenMode UrlSelect $ do
     selected <- use (csTeam(tId).tsUrlList.to listSelectedElement)
     case selected of
         Nothing -> setMode tId Main

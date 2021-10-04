@@ -26,12 +26,12 @@ urlSelectKeyHandlers :: TeamId -> [KeyEventHandler]
 urlSelectKeyHandlers tId =
     [ staticKb "Open the selected URL, if any"
          (Vty.EvKey Vty.KEnter []) $
-             openSelectedURL
+             openSelectedURL tId
 
     , mkKb SaveAttachmentEvent "Save the selected attachment"
         openSaveAttachmentWindow
 
-    , mkKb CancelEvent "Cancel URL selection" stopUrlSelect
+    , mkKb CancelEvent "Cancel URL selection" $ stopUrlSelect tId
 
     , mkKb SelectUpEvent "Move cursor up" $
         mhHandleEventLensed (csTeam(tId).tsUrlList) handleListEvent (Vty.EvKey Vty.KUp [])
@@ -40,6 +40,6 @@ urlSelectKeyHandlers tId =
         mhHandleEventLensed (csTeam(tId).tsUrlList) handleListEvent (Vty.EvKey Vty.KDown [])
 
     , staticKb "Cancel URL selection"
-         (Vty.EvKey (Vty.KChar 'q') []) $ stopUrlSelect
+         (Vty.EvKey (Vty.KChar 'q') []) $ stopUrlSelect tId
 
     ]
