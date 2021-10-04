@@ -15,6 +15,7 @@ import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( (.=), _2, singular, _Just )
 import qualified System.IO.Error as IO
 
+import qualified Network.Mattermost.Types as MM
 import qualified Network.Mattermost.Endpoints as MM
 import           Network.Mattermost.Exceptions ( mattermostErrorMessage )
 
@@ -203,15 +204,16 @@ onVtyEvent e = do
             mh invalidateCache
         _ -> return ()
 
-    void $ handleKeyboardEvent globalKeybindings handleGlobalEvent e
+    void $ handleKeyboardEvent globalKeybindings handleTeamModeEvent e
 
-handleGlobalEvent :: Vty.Event -> MH ()
-handleGlobalEvent e = do
-    mode <- use (csCurrentTeam.tsMode)
-    globalHandlerByMode mode e
+handleTeamModeEvent :: Vty.Event -> MH ()
+handleTeamModeEvent e = do
+    tId <- use csCurrentTeamId
+    mode <- use (csTeam(tId).tsMode)
+    teamEventHandlerByMode tId mode e
 
-globalHandlerByMode :: Mode -> Vty.Event -> MH ()
-globalHandlerByMode mode =
+teamEventHandlerByMode :: MM.TeamId -> Mode -> Vty.Event -> MH ()
+teamEventHandlerByMode tId mode =
     case mode of
         Main                       -> onEventMain
         ShowHelp _ _               -> void . onEventShowHelp
