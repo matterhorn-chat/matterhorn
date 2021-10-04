@@ -235,7 +235,7 @@ teamEventHandlerByMode tId mode =
         ManageAttachmentsBrowseFiles -> onEventManageAttachments tId
         EditNotifyPrefs            -> void . onEventEditNotifyPrefs tId
         ChannelTopicWindow         -> onEventChannelTopicWindow tId
-        SaveAttachmentWindow _     -> onEventSaveAttachmentWindow
+        SaveAttachmentWindow _     -> onEventSaveAttachmentWindow tId
 
 globalKeybindings :: KeyConfig -> KeyHandlerMap
 globalKeybindings = mkKeybindings globalKeyHandlers

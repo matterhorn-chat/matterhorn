@@ -14,6 +14,8 @@ import qualified Data.Text as T
 import           Lens.Micro.Platform ( (%=) )
 import qualified Graphics.Vty as Vty
 
+import           Network.Mattermost.Types ( TeamId )
+
 import           Matterhorn.Types
 import           Matterhorn.State.Common ( postInfoMessage, fetchFileAtPath
                                          , doAsyncWith, AsyncPriority(Normal)
@@ -21,13 +23,12 @@ import           Matterhorn.State.Common ( postInfoMessage, fetchFileAtPath
                                          )
 
 
-onEventSaveAttachmentWindow :: Vty.Event -> MH ()
-onEventSaveAttachmentWindow (Vty.EvKey (Vty.KChar '\t') []) =
-    csCurrentTeam.tsSaveAttachmentDialog.attachmentPathDialogFocus %= focusNext
-onEventSaveAttachmentWindow (Vty.EvKey Vty.KBackTab []) =
-    csCurrentTeam.tsSaveAttachmentDialog.attachmentPathDialogFocus %= focusPrev
-onEventSaveAttachmentWindow (Vty.EvKey Vty.KEnter []) = do
-    tId <- use csCurrentTeamId
+onEventSaveAttachmentWindow :: TeamId -> Vty.Event -> MH ()
+onEventSaveAttachmentWindow tId (Vty.EvKey (Vty.KChar '\t') []) =
+    csTeam(tId).tsSaveAttachmentDialog.attachmentPathDialogFocus %= focusNext
+onEventSaveAttachmentWindow tId (Vty.EvKey Vty.KBackTab []) =
+    csTeam(tId).tsSaveAttachmentDialog.attachmentPathDialogFocus %= focusPrev
+onEventSaveAttachmentWindow tId (Vty.EvKey Vty.KEnter []) = do
     f <- use (csTeam(tId).tsSaveAttachmentDialog.attachmentPathDialogFocus)
     session <- getSession
     mode <- use (csTeam(tId).tsMode)
@@ -54,14 +55,13 @@ onEventSaveAttachmentWindow (Vty.EvKey Vty.KEnter []) = do
         Just (AttachmentPathEditor {})       -> save
         Just (AttachmentPathCancelButton {}) -> setMode tId UrlSelect
         _                                    -> setMode tId UrlSelect
-onEventSaveAttachmentWindow (Vty.EvKey Vty.KEsc []) = do
-    tId <- use csCurrentTeamId
+onEventSaveAttachmentWindow tId (Vty.EvKey Vty.KEsc []) = do
     setMode tId UrlSelect
-onEventSaveAttachmentWindow e = do
-    f <- use (csCurrentTeam.tsSaveAttachmentDialog.attachmentPathDialogFocus)
+onEventSaveAttachmentWindow tId e = do
+    f <- use (csTeam(tId).tsSaveAttachmentDialog.attachmentPathDialogFocus)
     case focusGetCurrent f of
         Just (AttachmentPathEditor {}) ->
-            mhHandleEventLensed (csCurrentTeam.tsSaveAttachmentDialog.attachmentPathEditor)
+            mhHandleEventLensed (csTeam(tId).tsSaveAttachmentDialog.attachmentPathEditor)
                                 handleEditorEvent e
         _ ->
             return ()
