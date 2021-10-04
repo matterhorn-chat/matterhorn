@@ -12,17 +12,18 @@ import qualified Data.Text as T
 import           Lens.Micro.Platform ( (%=) )
 import qualified Graphics.Vty as Vty
 
+import           Network.Mattermost.Types ( TeamId )
+
 import           Matterhorn.Types
 import           Matterhorn.State.Channels ( setChannelTopic )
 
 
-onEventChannelTopicWindow :: Vty.Event -> MH ()
-onEventChannelTopicWindow (Vty.EvKey (Vty.KChar '\t') []) =
-    csCurrentTeam.tsChannelTopicDialog.channelTopicDialogFocus %= focusNext
-onEventChannelTopicWindow (Vty.EvKey Vty.KBackTab []) =
-    csCurrentTeam.tsChannelTopicDialog.channelTopicDialogFocus %= focusPrev
-onEventChannelTopicWindow e@(Vty.EvKey Vty.KEnter []) = do
-    tId <- use csCurrentTeamId
+onEventChannelTopicWindow :: TeamId -> Vty.Event -> MH ()
+onEventChannelTopicWindow tId (Vty.EvKey (Vty.KChar '\t') []) =
+    csTeam(tId).tsChannelTopicDialog.channelTopicDialogFocus %= focusNext
+onEventChannelTopicWindow tId (Vty.EvKey Vty.KBackTab []) =
+    csTeam(tId).tsChannelTopicDialog.channelTopicDialogFocus %= focusPrev
+onEventChannelTopicWindow tId e@(Vty.EvKey Vty.KEnter []) = do
     f <- use (csTeam(tId).tsChannelTopicDialog.channelTopicDialogFocus)
     case focusGetCurrent f of
         Just (ChannelTopicSaveButton {}) -> do
@@ -31,20 +32,19 @@ onEventChannelTopicWindow e@(Vty.EvKey Vty.KEnter []) = do
             setChannelTopic topic
             setMode tId Main
         Just (ChannelTopicEditor {}) ->
-            mhHandleEventLensed (csCurrentTeam.tsChannelTopicDialog.channelTopicDialogEditor)
+            mhHandleEventLensed (csTeam(tId).tsChannelTopicDialog.channelTopicDialogEditor)
                                 handleEditorEvent e
         Just (ChannelTopicCancelButton {}) ->
             setMode tId Main
         _ ->
             setMode tId Main
-onEventChannelTopicWindow (Vty.EvKey Vty.KEsc []) = do
-    tId <- use csCurrentTeamId
+onEventChannelTopicWindow tId (Vty.EvKey Vty.KEsc []) = do
     setMode tId Main
-onEventChannelTopicWindow e = do
-    f <- use (csCurrentTeam.tsChannelTopicDialog.channelTopicDialogFocus)
+onEventChannelTopicWindow tId e = do
+    f <- use (csTeam(tId).tsChannelTopicDialog.channelTopicDialogFocus)
     case focusGetCurrent f of
         Just (ChannelTopicEditor {}) ->
-            mhHandleEventLensed (csCurrentTeam.tsChannelTopicDialog.channelTopicDialogEditor)
+            mhHandleEventLensed (csTeam(tId).tsChannelTopicDialog.channelTopicDialogEditor)
                                 handleEditorEvent e
         _ ->
             return ()

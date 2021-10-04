@@ -35,7 +35,7 @@ draw st =
         MessageSelect                -> mainLayers
         MessageSelectDeleteConfirm   -> mainLayers
         ShowHelp topic _             -> drawShowHelp topic st
-        ThemeListOverlay             -> drawThemeListOverlay st : mainLayers
+        ThemeListOverlay             -> drawThemeListOverlay st tId : mainLayers
         LeaveChannelConfirm          -> drawLeaveChannelConfirm st tId : mainLayersMonochrome
         DeleteChannelConfirm         -> drawDeleteChannelConfirm st tId : mainLayersMonochrome
         PostListOverlay contents     -> drawPostListOverlay contents st tId : mainLayersMonochrome
