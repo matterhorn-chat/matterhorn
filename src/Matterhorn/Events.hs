@@ -225,7 +225,7 @@ teamEventHandlerByMode tId mode =
         DeleteChannelConfirm       -> onEventDeleteChannelConfirm
         ThemeListOverlay           -> onEventThemeListOverlay
         PostListOverlay _          -> onEventPostListOverlay
-        UserListOverlay            -> onEventUserListOverlay
+        UserListOverlay            -> onEventUserListOverlay tId
         ChannelListOverlay         -> onEventChannelListOverlay
         ReactionEmojiListOverlay   -> onEventReactionEmojiListOverlay
         ViewMessage                -> void . handleTabbedWindowEvent

@@ -90,28 +90,28 @@ userInfoFromPair u status =
     userInfoFromUser u True & uiStatus .~ statusFromText status
 
 -- | Move the selection up in the user list overlay by one user.
-userListSelectUp :: MH ()
-userListSelectUp = userListMove L.listMoveUp
+userListSelectUp :: TeamId -> MH ()
+userListSelectUp tId = userListMove tId L.listMoveUp
 
 -- | Move the selection down in the user list overlay by one user.
-userListSelectDown :: MH ()
-userListSelectDown = userListMove L.listMoveDown
+userListSelectDown :: TeamId -> MH ()
+userListSelectDown tId = userListMove tId L.listMoveDown
 
 -- | Move the selection up in the user list overlay by a page of users
 -- (userListPageSize).
-userListPageUp :: MH ()
-userListPageUp = userListMove (L.listMoveBy (-1 * userListPageSize))
+userListPageUp :: TeamId -> MH ()
+userListPageUp tId = userListMove tId (L.listMoveBy (-1 * userListPageSize))
 
 -- | Move the selection down in the user list overlay by a page of users
 -- (userListPageSize).
-userListPageDown :: MH ()
-userListPageDown = userListMove (L.listMoveBy userListPageSize)
+userListPageDown :: TeamId -> MH ()
+userListPageDown tId = userListMove tId (L.listMoveBy userListPageSize)
 
 -- | Transform the user list results in some way, e.g. by moving the
 -- cursor, and then check to see whether the modification warrants a
 -- prefetch of more search results.
-userListMove :: (L.List Name UserInfo -> L.List Name UserInfo) -> MH ()
-userListMove = listOverlayMove (csCurrentTeam.tsUserListOverlay)
+userListMove :: TeamId -> (L.List Name UserInfo -> L.List Name UserInfo) -> MH ()
+userListMove tId = listOverlayMove (csTeam(tId).tsUserListOverlay)
 
 -- | The number of users in a "page" for cursor movement purposes.
 userListPageSize :: Int

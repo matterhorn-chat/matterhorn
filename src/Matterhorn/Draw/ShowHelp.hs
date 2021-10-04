@@ -446,7 +446,7 @@ keybindSections =
     , ("Text Editing", editingKeyHandlers (csCurrentTeam.tsEditState.cedEditor))
     , ("Channel Select Mode", channelSelectKeyHandlers)
     , ("Message Select Mode", messageSelectKeyHandlers)
-    , ("User Listings", userListOverlayKeyHandlers)
+    , ("User Listings", userListOverlayKeyHandlers (error "BUG: should not evaluate"))
     , ("URL Select Mode", urlSelectKeyHandlers)
     , ("Theme List Window", themeListOverlayKeyHandlers)
     , ("Channel Search Window", channelListOverlayKeyHandlers)
