@@ -12,6 +12,8 @@ import           Matterhorn.Prelude
 import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
 
+import           Network.Mattermost.Types ( TeamId )
+
 import           Matterhorn.Events.Keybindings
 import           Matterhorn.State.MessageSelect
 import           Matterhorn.State.ReactionEmojiListOverlay
@@ -21,9 +23,9 @@ import           Matterhorn.Types
 messagesPerPageOperation :: Int
 messagesPerPageOperation = 10
 
-onEventMessageSelect :: Vty.Event -> MH ()
-onEventMessageSelect =
-  void . handleKeyboardEvent messageSelectKeybindings (const $ return ())
+onEventMessageSelect :: TeamId -> Vty.Event -> MH ()
+onEventMessageSelect tId =
+  void . handleKeyboardEvent (messageSelectKeybindings tId) (const $ return ())
 
 onEventMessageSelectDeleteConfirm :: Vty.Event -> MH ()
 onEventMessageSelectDeleteConfirm (Vty.EvKey (Vty.KChar 'y') []) = do
@@ -34,13 +36,12 @@ onEventMessageSelectDeleteConfirm _ = do
     tId <- use csCurrentTeamId
     setMode tId Main
 
-messageSelectKeybindings :: KeyConfig -> KeyHandlerMap
-messageSelectKeybindings = mkKeybindings messageSelectKeyHandlers
+messageSelectKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
+messageSelectKeybindings tId = mkKeybindings (messageSelectKeyHandlers tId)
 
-messageSelectKeyHandlers :: [KeyEventHandler]
-messageSelectKeyHandlers =
+messageSelectKeyHandlers :: TeamId -> [KeyEventHandler]
+messageSelectKeyHandlers tId =
     [ mkKb CancelEvent "Cancel message selection" $ do
-        tId <- use csCurrentTeamId
         setMode tId Main
 
     , mkKb SelectUpEvent "Select the previous message" messageSelectUp

@@ -576,7 +576,7 @@ urlSelectBottomBar st tId =
                             , "save attachment"
                             )
                           ]
-                ev = keyEventBindings st urlSelectKeybindings
+                ev = keyEventBindings st (urlSelectKeybindings tId)
                 isFile entry = case entry^.linkTarget of
                     LinkFileId {} -> True
                     _ -> False
@@ -614,7 +614,7 @@ messageSelectBottomBar st tId =
                 hasURLs = numURLs > 0
                 openUrlsMsg = "open " <> (T.pack $ show numURLs) <> " URL" <> s
                 hasVerb = isJust (findVerbatimChunk (postMsg^.mText))
-                ev = keyEventBindings st messageSelectKeybindings
+                ev = keyEventBindings st (messageSelectKeybindings tId)
                 -- make sure these keybinding pieces are up-to-date!
                 options = [ ( not . isGap
                             , ev YankWholeMessageEvent

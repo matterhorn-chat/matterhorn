@@ -7,6 +7,8 @@ import           Matterhorn.Prelude
 import           Brick.Widgets.Edit
 import qualified Graphics.Vty as Vty
 
+import           Network.Mattermost.Types ( TeamId )
+
 import           Matterhorn.Command
 import           Matterhorn.Events.Keybindings
 import           Matterhorn.State.Attachments
@@ -21,20 +23,20 @@ import           Matterhorn.State.UrlSelect
 import           Matterhorn.Types
 
 
-onEventMain :: Vty.Event -> MH ()
-onEventMain =
-  void . handleKeyboardEvent mainKeybindings (\ ev -> do
+onEventMain :: TeamId -> Vty.Event -> MH ()
+onEventMain tId =
+  void . handleKeyboardEvent (mainKeybindings tId) (\ ev -> do
       resetReturnChannel
       case ev of
           (Vty.EvPaste bytes) -> handlePaste bytes
           _ -> handleEditingInput ev
   )
 
-mainKeybindings :: KeyConfig -> KeyHandlerMap
-mainKeybindings = mkKeybindings mainKeyHandlers
+mainKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
+mainKeybindings tId = mkKeybindings (mainKeyHandlers tId)
 
-mainKeyHandlers :: [KeyEventHandler]
-mainKeyHandlers =
+mainKeyHandlers :: TeamId -> [KeyEventHandler]
+mainKeyHandlers tId =
     [ mkKb EnterSelectModeEvent
         "Select a message to edit/reply/delete"
         beginMessageSelect
@@ -92,9 +94,9 @@ mainKeyHandlers =
         "Scroll up in the channel input history" $ do
              -- Up in multiline mode does the usual thing; otherwise we
              -- navigate the history.
-             isMultiline <- use (csCurrentTeam.tsEditState.cedEphemeral.eesMultiline)
+             isMultiline <- use (csTeam(tId).tsEditState.cedEphemeral.eesMultiline)
              case isMultiline of
-                 True -> mhHandleEventLensed (csCurrentTeam.tsEditState.cedEditor) handleEditorEvent
+                 True -> mhHandleEventLensed (csTeam(tId).tsEditState.cedEditor) handleEditorEvent
                                            (Vty.EvKey Vty.KUp [])
                  False -> channelHistoryBackward
 
@@ -103,9 +105,9 @@ mainKeyHandlers =
         "Scroll down in the channel input history" $ do
              -- Down in multiline mode does the usual thing; otherwise
              -- we navigate the history.
-             isMultiline <- use (csCurrentTeam.tsEditState.cedEphemeral.eesMultiline)
+             isMultiline <- use (csTeam(tId).tsEditState.cedEphemeral.eesMultiline)
              case isMultiline of
-                 True -> mhHandleEventLensed (csCurrentTeam.tsEditState.cedEditor) handleEditorEvent
+                 True -> mhHandleEventLensed (csTeam(tId).tsEditState.cedEditor) handleEditorEvent
                                            (Vty.EvKey Vty.KDown [])
                  False -> channelHistoryForward
 
@@ -137,14 +139,13 @@ mainKeyHandlers =
 
     , staticKb "Send the current message"
          (Vty.EvKey Vty.KEnter []) $ do
-             isMultiline <- use (csCurrentTeam.tsEditState.cedEphemeral.eesMultiline)
+             isMultiline <- use (csTeam(tId).tsEditState.cedEphemeral.eesMultiline)
              case isMultiline of
                  -- Normally, this event causes the current message to
                  -- be sent. But in multiline mode we want to insert a
                  -- newline instead.
                  True -> handleEditingInput (Vty.EvKey Vty.KEnter [])
                  False -> do
-                     tId <- use csCurrentTeamId
                      cId <- use (csCurrentChannelId tId)
                      content <- getEditorContent
                      handleInputSubmission tId cId content
@@ -153,7 +154,6 @@ mainKeyHandlers =
            startUrlSelect
 
     , mkKb ClearUnreadEvent "Clear the current channel's unread / edited indicators" $ do
-           tId <- use csCurrentTeamId
            clearChannelUnreadStatus =<< use (csCurrentChannelId tId)
 
     , mkKb ToggleMultiLineEvent "Toggle multi-line message compose mode"

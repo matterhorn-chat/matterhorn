@@ -19,6 +19,7 @@ import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( singular, _Just, _2 )
 
+import           Network.Mattermost.Types ( TeamId )
 import           Network.Mattermost.Version ( mmApiVersion )
 
 import           Matterhorn.Command
@@ -441,23 +442,26 @@ themeHelp = vBox
 keybindSections :: [(Text, [KeyEventHandler])]
 keybindSections =
     [ ("Global Keybindings", globalKeyHandlers)
-    , ("Help Page", helpKeyHandlers)
-    , ("Main Interface", mainKeyHandlers)
+    , ("Help Page", helpKeyHandlers teamIdThunk)
+    , ("Main Interface", mainKeyHandlers teamIdThunk)
     , ("Text Editing", editingKeyHandlers (csCurrentTeam.tsEditState.cedEditor))
-    , ("Channel Select Mode", channelSelectKeyHandlers)
-    , ("Message Select Mode", messageSelectKeyHandlers)
-    , ("User Listings", userListOverlayKeyHandlers (error "BUG: should not evaluate"))
-    , ("URL Select Mode", urlSelectKeyHandlers)
+    , ("Channel Select Mode", channelSelectKeyHandlers teamIdThunk)
+    , ("Message Select Mode", messageSelectKeyHandlers teamIdThunk)
+    , ("User Listings", userListOverlayKeyHandlers teamIdThunk)
+    , ("URL Select Mode", urlSelectKeyHandlers teamIdThunk)
     , ("Theme List Window", themeListOverlayKeyHandlers)
     , ("Channel Search Window", channelListOverlayKeyHandlers)
     , ("Message Viewer: Common", tabbedWindowKeyHandlers (csCurrentTeam.tsViewedMessage.singular _Just._2))
     , ("Message Viewer: Message tab", viewMessageKeyHandlers)
     , ("Message Viewer: Reactions tab", viewMessageReactionsKeyHandlers)
-    , ("Attachment List", attachmentListKeyHandlers)
-    , ("Attachment File Browser", attachmentBrowseKeyHandlers)
-    , ("Flagged Messages", postListOverlayKeyHandlers)
+    , ("Attachment List", attachmentListKeyHandlers teamIdThunk)
+    , ("Attachment File Browser", attachmentBrowseKeyHandlers teamIdThunk)
+    , ("Flagged Messages", postListOverlayKeyHandlers teamIdThunk)
     , ("Reaction Emoji Search Window", reactionEmojiListOverlayKeyHandlers)
     ]
+
+teamIdThunk :: TeamId
+teamIdThunk = error "BUG: should not evaluate teamIdThunk"
 
 helpBox :: Name -> Widget Name -> Widget Name
 helpBox n helpText =

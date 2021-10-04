@@ -6,22 +6,24 @@ import           Matterhorn.Prelude
 import           Brick
 import qualified Graphics.Vty as Vty
 
+import           Network.Mattermost.Types ( TeamId )
+
 import           Matterhorn.Constants
 import           Matterhorn.Events.Keybindings
 import           Matterhorn.Types
 
 
-onEventShowHelp :: Vty.Event -> MH Bool
-onEventShowHelp =
-  handleKeyboardEvent helpKeybindings $ \ e -> case e of
-    Vty.EvKey _ _ -> popMode
+onEventShowHelp :: TeamId -> Vty.Event -> MH Bool
+onEventShowHelp tId =
+  handleKeyboardEvent (helpKeybindings tId) $ \ e -> case e of
+    Vty.EvKey _ _ -> popMode tId
     _ -> return ()
 
-helpKeybindings :: KeyConfig -> KeyHandlerMap
-helpKeybindings = mkKeybindings helpKeyHandlers
+helpKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
+helpKeybindings tId = mkKeybindings (helpKeyHandlers tId)
 
-helpKeyHandlers :: [KeyEventHandler]
-helpKeyHandlers =
+helpKeyHandlers :: TeamId -> [KeyEventHandler]
+helpKeyHandlers tId =
     [ mkKb ScrollUpEvent "Scroll up" $
         mh $ vScrollBy (viewportScroll HelpViewport) (-1)
     , mkKb ScrollDownEvent "Scroll down" $
@@ -31,15 +33,14 @@ helpKeyHandlers =
     , mkKb PageDownEvent "Page down" $
         mh $ vScrollBy (viewportScroll HelpViewport) (1 * pageAmount)
     , mkKb CancelEvent "Return to the previous interface" $
-        popMode
+        popMode tId
     , mkKb ScrollBottomEvent "Scroll to the end of the help" $
         mh $ vScrollToEnd (viewportScroll HelpViewport)
     , mkKb ScrollTopEvent "Scroll to the beginning of the help" $
         mh $ vScrollToBeginning (viewportScroll HelpViewport)
     ]
 
-popMode :: MH ()
-popMode = do
-    tId <- use csCurrentTeamId
+popMode :: TeamId -> MH ()
+popMode tId = do
     ShowHelp _ prevMode <- use (csTeam(tId).tsMode)
     setMode tId prevMode

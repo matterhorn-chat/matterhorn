@@ -25,6 +25,8 @@ import           GHC.Exception ( toException )
 import           Lens.Micro.Platform ( (.=), (%=) )
 import           System.Directory ( doesDirectoryExist, doesFileExist, getDirectoryContents )
 
+import           Network.Mattermost.Types ( TeamId )
+
 import           Matterhorn.Types
 
 validateAttachmentPath :: FilePath -> IO (Maybe FilePath)
@@ -45,7 +47,7 @@ showAttachmentList = do
     tId <- use csCurrentTeamId
     lst <- use (csTeam(tId).tsEditState.cedAttachmentList)
     case length (L.listElements lst) of
-        0 -> showAttachmentFileBrowser
+        0 -> showAttachmentFileBrowser tId
         _ -> setMode tId ManageAttachments
 
 resetAttachmentList :: MH ()
@@ -55,13 +57,12 @@ resetAttachmentList = do
     csCurrentTeam.tsEditState.cedAttachmentList .= L.list listName mempty 1
     mh $ vScrollToBeginning $ viewportScroll listName
 
-showAttachmentFileBrowser :: MH ()
-showAttachmentFileBrowser = do
+showAttachmentFileBrowser :: TeamId -> MH ()
+showAttachmentFileBrowser tId = do
     config <- use (csResources.crConfiguration)
-    tId <- use csCurrentTeamId
     filePath <- liftIO $ defaultAttachmentsPath config
     browser <- liftIO $ Just <$> FB.newFileBrowser FB.selectNonDirectories (AttachmentFileBrowser tId) filePath
-    csCurrentTeam.tsEditState.cedFileBrowser .= browser
+    csTeam(tId).tsEditState.cedFileBrowser .= browser
     setMode tId ManageAttachmentsBrowseFiles
 
 attachFileByPath :: Text -> MH ()

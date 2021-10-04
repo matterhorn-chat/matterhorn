@@ -34,6 +34,8 @@ import qualified Data.Text as T
 import qualified Data.Map.Strict as M
 import qualified Graphics.Vty as Vty
 
+import           Network.Mattermost.Types ( TeamId )
+
 import           Matterhorn.Types
 import           Matterhorn.Types.KeyEvents
 
@@ -249,7 +251,7 @@ defaultBindings ev =
 -- basic usability (i.e. we shouldn't be binding events which can appear
 -- in the main UI to a key like @e@, which would prevent us from being
 -- able to type messages containing an @e@ in them!
-ensureKeybindingConsistency :: KeyConfig -> [(String, KeyConfig -> KeyHandlerMap)] -> Either String ()
+ensureKeybindingConsistency :: KeyConfig -> [(String, TeamId -> KeyConfig -> KeyHandlerMap)] -> Either String ()
 ensureKeybindingConsistency kc modeMaps = mapM_ checkGroup allBindings
   where
     -- This is a list of lists, grouped by keybinding, of all the
@@ -334,6 +336,9 @@ ensureKeybindingConsistency kc modeMaps = mapM_ checkGroup allBindings
       let matches kh = ByEvent ev == (kehEventTrigger $ khHandler kh)
       in [ mode
          | (mode, mkBindings) <- modeMaps
-         , let KeyHandlerMap m = mkBindings kc
+         , let KeyHandlerMap m = mkBindings teamIdThunk kc
            in not $ null $ M.filter matches m
          ]
+
+teamIdThunk :: TeamId
+teamIdThunk = error "BUG: should not evaluate teamIdThunk"

@@ -215,23 +215,23 @@ handleTeamModeEvent e = do
 teamEventHandlerByMode :: MM.TeamId -> Mode -> Vty.Event -> MH ()
 teamEventHandlerByMode tId mode =
     case mode of
-        Main                       -> onEventMain
-        ShowHelp _ _               -> void . onEventShowHelp
-        ChannelSelect              -> void . onEventChannelSelect
-        UrlSelect                  -> void . onEventUrlSelect
+        Main                       -> onEventMain tId
+        ShowHelp _ _               -> void . onEventShowHelp tId
+        ChannelSelect              -> void . onEventChannelSelect tId
+        UrlSelect                  -> void . onEventUrlSelect tId
         LeaveChannelConfirm        -> onEventLeaveChannelConfirm
-        MessageSelect              -> onEventMessageSelect
+        MessageSelect              -> onEventMessageSelect tId
         MessageSelectDeleteConfirm -> onEventMessageSelectDeleteConfirm
         DeleteChannelConfirm       -> onEventDeleteChannelConfirm
         ThemeListOverlay           -> onEventThemeListOverlay
-        PostListOverlay _          -> onEventPostListOverlay
+        PostListOverlay _          -> onEventPostListOverlay tId
         UserListOverlay            -> onEventUserListOverlay tId
         ChannelListOverlay         -> onEventChannelListOverlay
         ReactionEmojiListOverlay   -> onEventReactionEmojiListOverlay
         ViewMessage                -> void . handleTabbedWindowEvent
                                              (csCurrentTeam.tsViewedMessage.singular _Just._2)
-        ManageAttachments          -> onEventManageAttachments
-        ManageAttachmentsBrowseFiles -> onEventManageAttachments
+        ManageAttachments          -> onEventManageAttachments tId
+        ManageAttachmentsBrowseFiles -> onEventManageAttachments tId
         EditNotifyPrefs            -> void . onEventEditNotifyPrefs
         ChannelTopicWindow         -> onEventChannelTopicWindow tId
         SaveAttachmentWindow _     -> onEventSaveAttachmentWindow
