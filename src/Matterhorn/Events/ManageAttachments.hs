@@ -70,38 +70,38 @@ attachmentBrowseKeyHandlers tId =
     , mkKb AttachmentOpenEvent "Open the selected file using the URL open command" $
       openSelectedBrowserEntry tId
     , mkKb FileBrowserBeginSearchEvent "Begin search for name in list" $
-      mhHandleEventLensed' (csCurrentTeam.tsEditState.unsafeCedFileBrowser)
+      mhHandleEventLensed' (csTeam(tId).tsEditState.unsafeCedFileBrowser)
         FB.actionFileBrowserBeginSearch
     , mkKb FileBrowserSelectEnterEvent "Select file or enter directory" $ do
-      mhHandleEventLensed' (csCurrentTeam.tsEditState.unsafeCedFileBrowser)
+      mhHandleEventLensed' (csTeam(tId).tsEditState.unsafeCedFileBrowser)
         FB.actionFileBrowserSelectEnter
       withFileBrowser tId (tryAddAttachment . FB.fileBrowserSelection)
     , mkKb FileBrowserSelectCurrentEvent "Select file" $
-      mhHandleEventLensed' (csCurrentTeam.tsEditState.unsafeCedFileBrowser)
+      mhHandleEventLensed' (csTeam(tId).tsEditState.unsafeCedFileBrowser)
         FB.actionFileBrowserSelectCurrent
     , mkKb FileBrowserListPageUpEvent "Move cursor one page up" $
-      mhHandleEventLensed' (csCurrentTeam.tsEditState.unsafeCedFileBrowser)
+      mhHandleEventLensed' (csTeam(tId).tsEditState.unsafeCedFileBrowser)
         FB.actionFileBrowserListPageUp
     , mkKb FileBrowserListPageDownEvent "Move cursor one page down" $
-      mhHandleEventLensed' (csCurrentTeam.tsEditState.unsafeCedFileBrowser)
+      mhHandleEventLensed' (csTeam(tId).tsEditState.unsafeCedFileBrowser)
         FB.actionFileBrowserListPageDown
     , mkKb FileBrowserListHalfPageUpEvent "Move cursor one-half page up" $
-      mhHandleEventLensed' (csCurrentTeam.tsEditState.unsafeCedFileBrowser)
+      mhHandleEventLensed' (csTeam(tId).tsEditState.unsafeCedFileBrowser)
         FB.actionFileBrowserListHalfPageUp
     , mkKb FileBrowserListHalfPageDownEvent "Move cursor one-half page down" $
-      mhHandleEventLensed' (csCurrentTeam.tsEditState.unsafeCedFileBrowser)
+      mhHandleEventLensed' (csTeam(tId).tsEditState.unsafeCedFileBrowser)
         FB.actionFileBrowserListHalfPageDown
     , mkKb FileBrowserListTopEvent "Move cursor to top of list" $
-      mhHandleEventLensed' (csCurrentTeam.tsEditState.unsafeCedFileBrowser)
+      mhHandleEventLensed' (csTeam(tId).tsEditState.unsafeCedFileBrowser)
         FB.actionFileBrowserListTop
     , mkKb FileBrowserListBottomEvent "Move cursor to bottom of list" $
-      mhHandleEventLensed' (csCurrentTeam.tsEditState.unsafeCedFileBrowser)
+      mhHandleEventLensed' (csTeam(tId).tsEditState.unsafeCedFileBrowser)
         FB.actionFileBrowserListBottom
     , mkKb FileBrowserListNextEvent "Move cursor down" $
-      mhHandleEventLensed' (csCurrentTeam.tsEditState.unsafeCedFileBrowser)
+      mhHandleEventLensed' (csTeam(tId).tsEditState.unsafeCedFileBrowser)
         FB.actionFileBrowserListNext
     , mkKb FileBrowserListPrevEvent "Move cursor up" $
-      mhHandleEventLensed' (csCurrentTeam.tsEditState.unsafeCedFileBrowser)
+      mhHandleEventLensed' (csTeam(tId).tsEditState.unsafeCedFileBrowser)
         FB.actionFileBrowserListPrev
     ]
 
