@@ -87,28 +87,28 @@ fetchResults myId msg em () session searchString = do
         matchingCurrentOtherReactions <> matchingCurrentMyReactions <> ((False,) <$> serverMatches)
 
 -- | Move the selection up in the emoji list overlay by one emoji.
-reactionEmojiListSelectUp :: MH ()
-reactionEmojiListSelectUp = reactionEmojiListMove L.listMoveUp
+reactionEmojiListSelectUp :: TeamId -> MH ()
+reactionEmojiListSelectUp tId = reactionEmojiListMove tId L.listMoveUp
 
 -- | Move the selection down in the emoji list overlay by one emoji.
-reactionEmojiListSelectDown :: MH ()
-reactionEmojiListSelectDown = reactionEmojiListMove L.listMoveDown
+reactionEmojiListSelectDown :: TeamId -> MH ()
+reactionEmojiListSelectDown tId = reactionEmojiListMove tId L.listMoveDown
 
 -- | Move the selection up in the emoji list overlay by a page of emoji
 -- (ReactionEmojiListPageSize).
-reactionEmojiListPageUp :: MH ()
-reactionEmojiListPageUp = reactionEmojiListMove (L.listMoveBy (-1 * reactionEmojiListPageSize))
+reactionEmojiListPageUp :: TeamId -> MH ()
+reactionEmojiListPageUp tId = reactionEmojiListMove tId (L.listMoveBy (-1 * reactionEmojiListPageSize))
 
 -- | Move the selection down in the emoji list overlay by a page of emoji
 -- (ReactionEmojiListPageSize).
-reactionEmojiListPageDown :: MH ()
-reactionEmojiListPageDown = reactionEmojiListMove (L.listMoveBy reactionEmojiListPageSize)
+reactionEmojiListPageDown :: TeamId -> MH ()
+reactionEmojiListPageDown tId = reactionEmojiListMove tId (L.listMoveBy reactionEmojiListPageSize)
 
 -- | Transform the emoji list results in some way, e.g. by moving the
 -- cursor, and then check to see whether the modification warrants a
 -- prefetch of more search results.
-reactionEmojiListMove :: (L.List Name (Bool, T.Text) -> L.List Name (Bool, T.Text)) -> MH ()
-reactionEmojiListMove = listOverlayMove (csCurrentTeam.tsReactionEmojiListOverlay)
+reactionEmojiListMove :: TeamId -> (L.List Name (Bool, T.Text) -> L.List Name (Bool, T.Text)) -> MH ()
+reactionEmojiListMove tId = listOverlayMove (csTeam(tId).tsReactionEmojiListOverlay)
 
 -- | The number of emoji in a "page" for cursor movement purposes.
 reactionEmojiListPageSize :: Int
