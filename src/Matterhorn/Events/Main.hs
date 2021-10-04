@@ -162,6 +162,6 @@ mainKeyHandlers tId =
     , mkKb CancelEvent "Cancel autocomplete, message reply, or edit, in that order"
          cancelAutocompleteOrReplyOrEdit
 
-    , mkKb EnterFlaggedPostsEvent "View currently flagged posts"
-         enterFlaggedPostListMode
+    , mkKb EnterFlaggedPostsEvent "View currently flagged posts" $
+         enterFlaggedPostListMode tId
     ]

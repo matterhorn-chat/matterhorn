@@ -260,14 +260,17 @@ commandList =
         cId <- use (csCurrentChannelId tId)
         findAndRunScript cId script text
 
-  , Cmd "flags" "Open a window of your flagged posts" NoArg $ \ () ->
-        enterFlaggedPostListMode
+  , Cmd "flags" "Open a window of your flagged posts" NoArg $ \ () -> do
+        tId <- use csCurrentTeamId
+        enterFlaggedPostListMode tId
 
-  , Cmd "pinned-posts" "Open a window of this channel's pinned posts" NoArg $ \ () ->
-        enterPinnedPostListMode
+  , Cmd "pinned-posts" "Open a window of this channel's pinned posts" NoArg $ \ () -> do
+        tId <- use csCurrentTeamId
+        enterPinnedPostListMode tId
 
-  , Cmd "search" "Search for posts with given terms" (LineArg "terms") $
-        enterSearchResultPostListMode
+  , Cmd "search" "Search for posts with given terms" (LineArg "terms") $ \t -> do
+        tId <- use csCurrentTeamId
+        enterSearchResultPostListMode tId t
 
   , Cmd "notify-prefs" "Edit the current channel's notification preferences" NoArg $ \_ ->
         enterEditNotifyPrefsMode

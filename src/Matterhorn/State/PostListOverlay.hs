@@ -31,9 +31,8 @@ import           Matterhorn.Types.DirectionalSeq (emptyDirSeq)
 
 -- | Create a PostListOverlay with the given content description and
 -- with a specified list of messages.
-enterPostListMode ::  PostListContents -> Messages -> MH ()
-enterPostListMode contents msgs = do
-  tId <- use csCurrentTeamId
+enterPostListMode :: TeamId -> PostListContents -> Messages -> MH ()
+enterPostListMode tId contents msgs = do
   csTeam(tId).tsPostListOverlay.postListPosts .= msgs
   let mlatest = getLatestPostMsg msgs
       pId = mlatest >>= messagePostId
@@ -45,9 +44,8 @@ enterPostListMode contents msgs = do
     _ -> return ()
 
 -- | Clear out the state of a PostListOverlay
-exitPostListMode :: MH ()
-exitPostListMode = do
-  tId <- use csCurrentTeamId
+exitPostListMode :: TeamId -> MH ()
+exitPostListMode tId = do
   csTeam(tId).tsPostListOverlay.postListPosts .= emptyDirSeq
   csTeam(tId).tsPostListOverlay.postListSelected .= Nothing
   setMode tId Main
@@ -67,48 +65,45 @@ createPostList tId contentsType fetchOp = do
                               , postsOrder = fromList [postId p]
                               }
       mapM_ (\p -> addObtainedMessages (postChannelId p) 0 False $ postsSpec p) plist
-      enterPostListMode contentsType messages
+      enterPostListMode tId contentsType messages
 
 
 -- | Create a PostListOverlay with flagged messages from the server.
-enterFlaggedPostListMode :: MH ()
-enterFlaggedPostListMode = do
-    tId <- use csCurrentTeamId
+enterFlaggedPostListMode :: TeamId -> MH ()
+enterFlaggedPostListMode tId = do
     createPostList tId PostListFlagged $
         mmGetListOfFlaggedPosts UserMe defaultFlaggedPostsQuery
 
 -- | Create a PostListOverlay with pinned messages from the server for
 -- the current channel.
-enterPinnedPostListMode :: MH ()
-enterPinnedPostListMode = do
-    tId <- use csCurrentTeamId
+enterPinnedPostListMode :: TeamId -> MH ()
+enterPinnedPostListMode tId = do
     cId <- use (csCurrentChannelId tId)
     createPostList tId (PostListPinned cId) $ mmGetChannelPinnedPosts cId
 
 -- | Create a PostListOverlay with post search result messages from the
 -- server.
-enterSearchResultPostListMode :: Text -> MH ()
-enterSearchResultPostListMode terms
+enterSearchResultPostListMode :: TeamId -> Text -> MH ()
+enterSearchResultPostListMode tId terms
   | T.null (T.strip terms) = postInfoMessage "Search command requires at least one search term."
   | otherwise = do
-      enterPostListMode (PostListSearch terms True) noMessages
-      tId <- use csCurrentTeamId
+      enterPostListMode tId (PostListSearch terms True) noMessages
       createPostList tId (PostListSearch terms False) $
         mmSearchForTeamPosts tId (SearchPosts terms False)
 
 
 -- | Move the selection up in the PostListOverlay, which corresponds
 -- to finding a chronologically /newer/ message.
-postListSelectDown :: MH ()
-postListSelectDown = do
-  selId <- use (csCurrentTeam.tsPostListOverlay.postListSelected)
-  posts <- use (csCurrentTeam.tsPostListOverlay.postListPosts)
+postListSelectDown :: TeamId -> MH ()
+postListSelectDown tId = do
+  selId <- use (csTeam(tId).tsPostListOverlay.postListSelected)
+  posts <- use (csTeam(tId).tsPostListOverlay.postListPosts)
   let nextMsg = getNextMessage (MessagePostId <$> selId) posts
   case nextMsg of
     Nothing -> return ()
     Just m -> do
       let pId = m^.mMessageId >>= messageIdPostId
-      csCurrentTeam.tsPostListOverlay.postListSelected .= pId
+      csTeam(tId).tsPostListOverlay.postListSelected .= pId
       case (m^.mChannelId, pId) of
         (Just c, Just p) -> asyncFetchMessagesSurrounding c p
         o -> mhLog LogError
@@ -117,16 +112,16 @@ postListSelectDown = do
 
 -- | Move the selection down in the PostListOverlay, which corresponds
 -- to finding a chronologically /old/ message.
-postListSelectUp :: MH ()
-postListSelectUp = do
-  selId <- use (csCurrentTeam.tsPostListOverlay.postListSelected)
-  posts <- use (csCurrentTeam.tsPostListOverlay.postListPosts)
+postListSelectUp :: TeamId -> MH ()
+postListSelectUp tId = do
+  selId <- use (csTeam(tId).tsPostListOverlay.postListSelected)
+  posts <- use (csTeam(tId).tsPostListOverlay.postListPosts)
   let prevMsg = getPrevMessage (MessagePostId <$> selId) posts
   case prevMsg of
     Nothing -> return ()
     Just m -> do
       let pId = m^.mMessageId >>= messageIdPostId
-      csCurrentTeam.tsPostListOverlay.postListSelected .= pId
+      csTeam(tId).tsPostListOverlay.postListSelected .= pId
       case (m^.mChannelId, pId) of
         (Just c, Just p) -> asyncFetchMessagesSurrounding c p
         o -> mhLog LogError
@@ -134,9 +129,9 @@ postListSelectUp = do
               " unable to get channel or post ID: " <> show o)
 
 -- | Unflag the post currently selected in the PostListOverlay, if any
-postListUnflagSelected :: MH ()
-postListUnflagSelected = do
-  msgId <- use (csCurrentTeam.tsPostListOverlay.postListSelected)
+postListUnflagSelected :: TeamId -> MH ()
+postListUnflagSelected tId = do
+  msgId <- use (csTeam(tId).tsPostListOverlay.postListSelected)
   case msgId of
     Nothing  -> return ()
     Just pId -> flagMessage pId False
@@ -144,9 +139,9 @@ postListUnflagSelected = do
 
 -- | Jumps to the specified message in the message's main channel
 -- display and changes to MessageSelectState.
-postListJumpToCurrent :: MH ()
-postListJumpToCurrent = do
-  msgId <- use (csCurrentTeam.tsPostListOverlay.postListSelected)
+postListJumpToCurrent :: TeamId -> MH ()
+postListJumpToCurrent tId = do
+  msgId <- use (csTeam(tId).tsPostListOverlay.postListSelected)
   case msgId of
     Nothing  -> return ()
     Just pId -> jumpToPost pId

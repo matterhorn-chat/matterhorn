@@ -22,9 +22,9 @@ postListOverlayKeybindings tId = mkKeybindings (postListOverlayKeyHandlers tId)
 
 postListOverlayKeyHandlers :: TeamId -> [KeyEventHandler]
 postListOverlayKeyHandlers tId =
-  [ mkKb CancelEvent "Exit post browsing" exitPostListMode
-  , mkKb SelectUpEvent "Select the previous message" postListSelectUp
-  , mkKb SelectDownEvent "Select the next message" postListSelectDown
-  , mkKb FlagMessageEvent "Toggle the selected message flag" postListUnflagSelected
-  , mkKb ActivateListItemEvent "Jump to and select current message" postListJumpToCurrent
+  [ mkKb CancelEvent "Exit post browsing" $ exitPostListMode tId
+  , mkKb SelectUpEvent "Select the previous message" $ postListSelectUp tId
+  , mkKb SelectDownEvent "Select the next message" $ postListSelectDown tId
+  , mkKb FlagMessageEvent "Toggle the selected message flag" $ postListUnflagSelected tId
+  , mkKb ActivateListItemEvent "Jump to and select current message" $ postListJumpToCurrent tId
   ]
