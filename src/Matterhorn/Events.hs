@@ -224,7 +224,7 @@ teamEventHandlerByMode tId mode =
         MessageSelect              -> onEventMessageSelect tId
         MessageSelectDeleteConfirm -> onEventMessageSelectDeleteConfirm
         DeleteChannelConfirm       -> onEventDeleteChannelConfirm
-        ThemeListOverlay           -> onEventThemeListOverlay
+        ThemeListOverlay           -> onEventThemeListOverlay tId
         PostListOverlay _          -> onEventPostListOverlay tId
         UserListOverlay            -> onEventUserListOverlay tId
         ChannelListOverlay         -> onEventChannelListOverlay tId
