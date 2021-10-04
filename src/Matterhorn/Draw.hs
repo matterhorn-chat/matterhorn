@@ -28,7 +28,7 @@ import Matterhorn.Types
 
 draw :: ChatState -> [Widget Name]
 draw st =
-    case st^.csCurrentTeam.tsMode of
+    case st^.csTeam(tId).tsMode of
         Main                         -> mainLayers
         UrlSelect                    -> mainLayers
         ChannelSelect                -> mainLayers
