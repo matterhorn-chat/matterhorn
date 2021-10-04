@@ -96,17 +96,17 @@ data Token =
     -- misspelling list.
     deriving (Show)
 
-drawEditorContents :: ChatState -> HighlightSet -> [Text] -> Widget Name
-drawEditorContents st hs =
+drawEditorContents :: ChatState -> TeamId -> HighlightSet -> [Text] -> Widget Name
+drawEditorContents st tId hs =
     let noHighlight = txt . T.unlines
-    in case st^.csCurrentTeam.tsEditState.cedSpellChecker of
+    in case st^.csTeam(tId).tsEditState.cedSpellChecker of
         Nothing -> noHighlight
         Just _ ->
-            case S.null (st^.csCurrentTeam.tsEditState.cedMisspellings) of
+            case S.null (st^.csTeam(tId).tsEditState.cedMisspellings) of
                 True -> noHighlight
                 False -> doHighlightMisspellings
                            hs
-                           (st^.csCurrentTeam.tsEditState.cedMisspellings)
+                           (st^.csTeam(tId).tsEditState.cedMisspellings)
 
 -- | This function takes a set of misspellings from the spell
 -- checker, the editor lines, and builds a rendering of the text with
@@ -228,27 +228,26 @@ doHighlightMisspellings hSet misspellings contents =
 
     in vBox $ handleLine <$> contents
 
-renderUserCommandBox :: ChatState -> HighlightSet -> Widget Name
-renderUserCommandBox st hs =
-    let prompt = txt $ case st^.csCurrentTeam.tsEditState.cedEditMode of
+renderUserCommandBox :: ChatState -> TeamId -> HighlightSet -> Widget Name
+renderUserCommandBox st tId hs =
+    let prompt = txt $ case st^.csTeam(tId).tsEditState.cedEditMode of
             Replying _ _ -> "reply> "
             Editing _ _  ->  "edit> "
             NewPost      ->      "> "
-        tId = st^.csCurrentTeamId
-        inputBox = renderEditor (drawEditorContents st hs) True (st^.csCurrentTeam.tsEditState.cedEditor)
-        curContents = getEditContents $ st^.csCurrentTeam.tsEditState.cedEditor
+        inputBox = renderEditor (drawEditorContents st tId hs) True (st^.csTeam(tId).tsEditState.cedEditor)
+        curContents = getEditContents $ st^.csTeam(tId).tsEditState.cedEditor
         multilineContent = length curContents > 1
         multilineHints =
             hBox [ borderElem bsHorizontal
                  , str $ "[" <> (show $ (+1) $ fst $ cursorPosition $
-                                        st^.csCurrentTeam.tsEditState.cedEditor.editContentsL) <>
+                                        st^.csTeam(tId).tsEditState.cedEditor.editContentsL) <>
                          "/" <> (show $ length curContents) <> "]"
                  , hBorderWithLabel $ withDefAttr clientEmphAttr $
                    txt $ "In multi-line mode. Press " <> multiLineToggleKey <>
                          " to finish."
                  ]
 
-        replyDisplay = case st^.csCurrentTeam.tsEditState.cedEditMode of
+        replyDisplay = case st^.csTeam(tId).tsEditState.cedEditMode of
             Replying msg _ ->
                 let msgWithoutParent = msg & mInReplyToMsg .~ NotAReply
                 in hBox [ replyArrow
@@ -275,7 +274,7 @@ renderUserCommandBox st hs =
 
         multiLineToggleKey = ppBinding $ getFirstDefaultBinding ToggleMultiLineEvent
 
-        commandBox = case st^.csCurrentTeam.tsEditState.cedEphemeral.eesMultiline of
+        commandBox = case st^.csTeam(tId).tsEditState.cedEphemeral.eesMultiline of
             False ->
                 let linesStr = "line" <> if numLines == 1 then "" else "s"
                     numLines = length curContents
@@ -292,8 +291,8 @@ renderUserCommandBox st hs =
             True -> vLimit multilineHeightLimit inputBox <=> multilineHints
     in replyDisplay <=> commandBox
 
-renderChannelHeader :: ChatState -> HighlightSet -> ClientChannel -> Widget Name
-renderChannelHeader st hs chan =
+renderChannelHeader :: ChatState -> TeamId -> HighlightSet -> ClientChannel -> Widget Name
+renderChannelHeader st tId hs chan =
     let chnType = chan^.ccInfo.cdType
         topicStr = chan^.ccInfo.cdHeader
         userHeader u = let s = T.intercalate " " $ filter (not . T.null) parts
@@ -335,7 +334,6 @@ renderChannelHeader st hs chan =
                 channelNamePair
         channelNamePair = chanName <> " - " <> (chan^.ccInfo.cdDisplayName)
         chanName = mkChannelName st (chan^.ccInfo)
-        tId = st^.csCurrentTeamId
         baseUrl = serverBaseUrl st tId
         clickableInlines i (EHyperlink u _) = Just $ ClickableURL ChannelTopic i $ LinkURL u
         clickableInlines i (EUser n) = Just $ ClickableUsername ChannelTopic i n
@@ -345,8 +343,8 @@ renderChannelHeader st hs chan =
          hs (Just clickableInlines)
          (channelNameString <> maybeTopic)
 
-renderCurrentChannelDisplay :: ChatState -> HighlightSet -> Widget Name
-renderCurrentChannelDisplay st hs = header <=> hBorder <=> messages
+renderCurrentChannelDisplay :: ChatState -> TeamId -> HighlightSet -> Widget Name
+renderCurrentChannelDisplay st tId hs = header <=> hBorder <=> messages
     where
     header =
         if st^.csResources.crConfiguration.configShowChannelListL
@@ -379,7 +377,7 @@ renderCurrentChannelDisplay st hs = header <=> hBorder <=> messages
                 headerWidget = resultToWidget channelHeaderResult
                 borderWidget = vLimit maxHeight vBorder
 
-            render $ if st^.csCurrentTeam.tsMode == ChannelSelect
+            render $ if st^.csTeam(tId).tsMode == ChannelSelect
                         then headerWidget
                         else hBox $ case st^.csChannelListOrientation of
                             ChannelListLeft ->
@@ -396,17 +394,17 @@ renderCurrentChannelDisplay st hs = header <=> hBorder <=> messages
     channelHeader =
         withDefAttr channelHeaderAttr $
         padRight Max $
-        renderChannelHeader st hs chan
+        renderChannelHeader st tId hs chan
 
     messages = padTop Max chatText
 
-    chatText = case st^.csCurrentTeam.tsMode of
+    chatText = case st^.csTeam(tId).tsMode of
         MessageSelect ->
             freezeBorders $
-            renderMessagesWithSelect (st^.csCurrentTeam.tsMessageSelect) channelMessages
+            renderMessagesWithSelect (st^.csTeam(tId).tsMessageSelect) channelMessages
         MessageSelectDeleteConfirm ->
             freezeBorders $
-            renderMessagesWithSelect (st^.csCurrentTeam.tsMessageSelect) channelMessages
+            renderMessagesWithSelect (st^.csTeam(tId).tsMessageSelect) channelMessages
         _ ->
             cached (ChannelMessages cId) $
             freezeBorders $
@@ -450,7 +448,6 @@ renderCurrentChannelDisplay st hs = header <=> hBorder <=> messages
                                (getDateFormat st)
                                (st ^. timeZone)
 
-    tId = st^.csCurrentTeamId
     cId = st^.(csCurrentChannelId tId)
     chan = st^.csCurrentChannel(tId)
 
@@ -506,9 +503,9 @@ insertTransitions ms cutoff = insertDateMarkers $ foldr addMessage ms newMessage
           newMessagesMsg d = newMessageOfType (T.pack "New Messages")
                              (C NewMessagesTransition) d
 
-renderChannelSelectPrompt :: ChatState -> Widget Name
-renderChannelSelectPrompt st =
-    let e = st^.csCurrentTeam.tsChannelSelectState.channelSelectInput
+renderChannelSelectPrompt :: ChatState -> TeamId -> Widget Name
+renderChannelSelectPrompt st tId =
+    let e = st^.csTeam(tId).tsChannelSelectState.channelSelectInput
     in withDefAttr channelSelectPromptAttr $
        (txt "Switch to channel [use ^ and $ to anchor]: ") <+>
        (renderEditor (txt . T.concat) True e)
@@ -568,9 +565,9 @@ connectionLayer st =
                          withDefAttr errorMessageAttr $
                          border $ str msg
 
-urlSelectBottomBar :: ChatState -> Widget Name
-urlSelectBottomBar st =
-    case listSelectedElement $ st^.csCurrentTeam.tsUrlList of
+urlSelectBottomBar :: ChatState -> TeamId -> Widget Name
+urlSelectBottomBar st tId =
+    case listSelectedElement $ st^.csTeam(tId).tsUrlList of
         Nothing -> hBorder
         Just (_, (_, link)) ->
             let options = [ ( isFile
@@ -714,12 +711,11 @@ maybePreviewViewport tId w =
                 render $ vLimit previewMaxHeight $ viewport (MessagePreviewViewport tId) Vertical $
                          (resultToWidget result)
 
-inputPreview :: ChatState -> HighlightSet -> Widget Name
-inputPreview st hs | not $ st^.csResources.crConfiguration.configShowMessagePreviewL = emptyWidget
-                   | otherwise = thePreview
+inputPreview :: ChatState -> TeamId -> HighlightSet -> Widget Name
+inputPreview st tId hs | not $ st^.csResources.crConfiguration.configShowMessagePreviewL = emptyWidget
+                       | otherwise = thePreview
     where
     uId = myUserId st
-    tId = st^.csCurrentTeamId
     -- Insert a cursor sentinel into the input text just before
     -- rendering the preview. We use the inserted sentinel (which is
     -- not rendered) to get brick to ensure that the line the cursor is
@@ -730,9 +726,9 @@ inputPreview st hs | not $ st^.csResources.crConfiguration.configShowMessagePrev
     -- end of whatever line the user is editing, that is very unlikely
     -- to be a problem.
     curContents = getText $ (gotoEOL >>> insertChar cursorSentinel) $
-                  st^.csCurrentTeam.tsEditState.cedEditor.editContentsL
+                  st^.csTeam(tId).tsEditState.cedEditor.editContentsL
     curStr = T.intercalate "\n" curContents
-    overrideTy = case st^.csCurrentTeam.tsEditState.cedEditMode of
+    overrideTy = case st^.csTeam(tId).tsEditState.cedEditMode of
         Editing _ ty -> Just ty
         _ -> Nothing
     baseUrl = serverBaseUrl st tId
@@ -764,20 +760,20 @@ inputPreview st hs | not $ st^.csResources.crConfiguration.configShowMessagePrev
                  in (maybePreviewViewport tId msgPreview) <=>
                     hBorderWithLabel (withDefAttr clientEmphAttr $ str "[Preview ↑]")
 
-userInputArea :: ChatState -> HighlightSet -> Widget Name
-userInputArea st hs =
+userInputArea :: ChatState -> TeamId -> HighlightSet -> Widget Name
+userInputArea st tId hs =
     let urlSelectInputArea = hCenter $ hBox [ txt "Press "
                                             , withDefAttr clientEmphAttr $ txt "Enter"
                                             , txt " to open the selected URL or "
                                             , withDefAttr clientEmphAttr $ txt "Escape"
                                             , txt " to cancel."
                                             ]
-    in case st^.csCurrentTeam.tsMode of
-        ChannelSelect -> renderChannelSelectPrompt st
+    in case st^.csTeam(tId).tsMode of
+        ChannelSelect -> renderChannelSelectPrompt st tId
         UrlSelect     -> urlSelectInputArea
         SaveAttachmentWindow {} -> urlSelectInputArea
         MessageSelectDeleteConfirm -> renderDeleteConfirm
-        _             -> renderUserCommandBox st hs
+        _             -> renderUserCommandBox st tId hs
 
 renderDeleteConfirm :: Widget Name
 renderDeleteConfirm =
@@ -791,7 +787,7 @@ mainInterface st =
     where
     tId = st^.csCurrentTeamId
     showChannelList = st^.csResources.crConfiguration.configShowChannelListL ||
-                      st^.csCurrentTeam.tsMode == ChannelSelect
+                      st^.csTeam(tId).tsMode == ChannelSelect
     body = if showChannelList
            then case st^.csChannelListOrientation of
                ChannelListLeft ->
@@ -805,18 +801,18 @@ mainInterface st =
     mainDisplay =
         vBox [ channelContents
              , bottomBorder
-             , inputPreview st hs
-             , userInputArea st hs
+             , inputPreview st tId hs
+             , userInputArea st tId hs
              ]
-    channelContents = case st^.csCurrentTeam.tsMode of
+    channelContents = case st^.csTeam(tId).tsMode of
         UrlSelect -> renderUrlList st tId
         SaveAttachmentWindow {} -> renderUrlList st tId
-        _         -> maybeSubdue $ renderCurrentChannelDisplay st hs
+        _         -> maybeSubdue $ renderCurrentChannelDisplay st tId hs
 
-    bottomBorder = case st^.csCurrentTeam.tsMode of
+    bottomBorder = case st^.csTeam(tId).tsMode of
         MessageSelect -> messageSelectBottomBar st tId
-        UrlSelect -> urlSelectBottomBar st
-        SaveAttachmentWindow {} -> urlSelectBottomBar st
+        UrlSelect -> urlSelectBottomBar st tId
+        SaveAttachmentWindow {} -> urlSelectBottomBar st tId
         _ -> maybeSubdue $ hBox
              [ showAttachmentCount
              , hBorder
@@ -825,7 +821,7 @@ mainInterface st =
              ]
 
     showAttachmentCount =
-        let count = length $ listElements $ st^.csCurrentTeam.tsEditState.cedAttachmentList
+        let count = length $ listElements $ st^.csTeam(tId).tsEditState.cedAttachmentList
         in if count == 0
            then emptyWidget
            else hBox [ borderElem bsHorizontal
@@ -853,7 +849,7 @@ mainInterface st =
                  Just Nothing -> hLimit 2 hBorder <+> txt "*"
                  Nothing -> emptyWidget
 
-    maybeSubdue = if st^.csCurrentTeam.tsMode == ChannelSelect
+    maybeSubdue = if st^.csTeam(tId).tsMode == ChannelSelect
                   then forceAttr ""
                   else id
 
