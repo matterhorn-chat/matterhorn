@@ -230,7 +230,7 @@ teamEventHandlerByMode tId mode =
         ChannelListOverlay         -> onEventChannelListOverlay
         ReactionEmojiListOverlay   -> onEventReactionEmojiListOverlay
         ViewMessage                -> void . handleTabbedWindowEvent
-                                             (csCurrentTeam.tsViewedMessage.singular _Just._2)
+                                             (csTeam(tId).tsViewedMessage.singular _Just._2)
         ManageAttachments          -> onEventManageAttachments tId
         ManageAttachmentsBrowseFiles -> onEventManageAttachments tId
         EditNotifyPrefs            -> void . onEventEditNotifyPrefs tId
