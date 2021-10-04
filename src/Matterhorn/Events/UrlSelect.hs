@@ -34,10 +34,10 @@ urlSelectKeyHandlers tId =
     , mkKb CancelEvent "Cancel URL selection" stopUrlSelect
 
     , mkKb SelectUpEvent "Move cursor up" $
-        mhHandleEventLensed (csCurrentTeam.tsUrlList) handleListEvent (Vty.EvKey Vty.KUp [])
+        mhHandleEventLensed (csTeam(tId).tsUrlList) handleListEvent (Vty.EvKey Vty.KUp [])
 
     , mkKb SelectDownEvent "Move cursor down" $
-        mhHandleEventLensed (csCurrentTeam.tsUrlList) handleListEvent (Vty.EvKey Vty.KDown [])
+        mhHandleEventLensed (csTeam(tId).tsUrlList) handleListEvent (Vty.EvKey Vty.KDown [])
 
     , staticKb "Cancel URL selection"
          (Vty.EvKey (Vty.KChar 'q') []) $ stopUrlSelect
