@@ -227,7 +227,7 @@ teamEventHandlerByMode tId mode =
         ThemeListOverlay           -> onEventThemeListOverlay
         PostListOverlay _          -> onEventPostListOverlay tId
         UserListOverlay            -> onEventUserListOverlay tId
-        ChannelListOverlay         -> onEventChannelListOverlay
+        ChannelListOverlay         -> onEventChannelListOverlay tId
         ReactionEmojiListOverlay   -> onEventReactionEmojiListOverlay tId
         ViewMessage                -> void . handleTabbedWindowEvent
                                              (csTeam(tId).tsViewedMessage.singular _Just._2)

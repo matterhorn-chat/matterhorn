@@ -450,7 +450,7 @@ keybindSections =
     , ("User Listings", userListOverlayKeyHandlers teamIdThunk)
     , ("URL Select Mode", urlSelectKeyHandlers teamIdThunk)
     , ("Theme List Window", themeListOverlayKeyHandlers)
-    , ("Channel Search Window", channelListOverlayKeyHandlers)
+    , ("Channel Search Window", channelListOverlayKeyHandlers teamIdThunk)
     , ("Message Viewer: Common", tabbedWindowKeyHandlers (csCurrentTeam.tsViewedMessage.singular _Just._2))
     , ("Message Viewer: Message tab", viewMessageKeyHandlers)
     , ("Message Viewer: Reactions tab", viewMessageReactionsKeyHandlers)
