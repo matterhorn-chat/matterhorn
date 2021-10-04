@@ -994,7 +994,7 @@ jumpToPost pId = do
                   Just _ -> do
                       setFocus cId
                       setMode tId MessageSelect
-                      csCurrentTeam.tsMessageSelect .= MessageSelectState (msg^.mMessageId)
+                      csTeam(tId).tsMessageSelect .= MessageSelectState (msg^.mMessageId)
           Nothing ->
             error "INTERNAL: selected Post ID not associated with a channel"
       Nothing -> do
