@@ -457,7 +457,7 @@ keybindSections =
     , ("Attachment List", attachmentListKeyHandlers teamIdThunk)
     , ("Attachment File Browser", attachmentBrowseKeyHandlers teamIdThunk)
     , ("Flagged Messages", postListOverlayKeyHandlers teamIdThunk)
-    , ("Reaction Emoji Search Window", reactionEmojiListOverlayKeyHandlers)
+    , ("Reaction Emoji Search Window", reactionEmojiListOverlayKeyHandlers teamIdThunk)
     ]
 
 teamIdThunk :: TeamId
