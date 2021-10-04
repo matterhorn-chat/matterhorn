@@ -57,28 +57,28 @@ fetchResults myTId exclude AllChannels session searchString = do
     return sortedChans
 
 -- | Move the selection up in the channel list overlay by one channel.
-channelListSelectUp :: MH ()
-channelListSelectUp = channelListMove L.listMoveUp
+channelListSelectUp :: TeamId -> MH ()
+channelListSelectUp tId = channelListMove tId L.listMoveUp
 
 -- | Move the selection down in the channel list overlay by one channel.
-channelListSelectDown :: MH ()
-channelListSelectDown = channelListMove L.listMoveDown
+channelListSelectDown :: TeamId -> MH ()
+channelListSelectDown tId = channelListMove tId L.listMoveDown
 
 -- | Move the selection up in the channel list overlay by a page of channels
 -- (channelListPageSize).
-channelListPageUp :: MH ()
-channelListPageUp = channelListMove (L.listMoveBy (-1 * channelListPageSize))
+channelListPageUp :: TeamId -> MH ()
+channelListPageUp tId = channelListMove tId (L.listMoveBy (-1 * channelListPageSize))
 
 -- | Move the selection down in the channel list overlay by a page of channels
 -- (channelListPageSize).
-channelListPageDown :: MH ()
-channelListPageDown = channelListMove (L.listMoveBy channelListPageSize)
+channelListPageDown :: TeamId -> MH ()
+channelListPageDown tId = channelListMove tId (L.listMoveBy channelListPageSize)
 
 -- | Transform the channel list results in some way, e.g. by moving the
 -- cursor, and then check to see whether the modification warrants a
 -- prefetch of more search results.
-channelListMove :: (L.List Name Channel -> L.List Name Channel) -> MH ()
-channelListMove = listOverlayMove (csCurrentTeam.tsChannelListOverlay)
+channelListMove :: TeamId -> (L.List Name Channel -> L.List Name Channel) -> MH ()
+channelListMove tId = listOverlayMove (csTeam(tId).tsChannelListOverlay)
 
 -- | The number of channels in a "page" for cursor movement purposes.
 channelListPageSize :: Int

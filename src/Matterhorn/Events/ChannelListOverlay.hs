@@ -29,9 +29,9 @@ channelListOverlayKeybindings tId = mkKeybindings (channelListOverlayKeyHandlers
 channelListOverlayKeyHandlers :: TeamId -> [KeyEventHandler]
 channelListOverlayKeyHandlers tId =
     [ mkKb CancelEvent "Close the channel search list" (exitListOverlay (csTeam(tId).tsChannelListOverlay))
-    , mkKb SearchSelectUpEvent "Select the previous channel" channelListSelectUp
-    , mkKb SearchSelectDownEvent "Select the next channel" channelListSelectDown
-    , mkKb PageDownEvent "Page down in the channel list" channelListPageDown
-    , mkKb PageUpEvent "Page up in the channel list" channelListPageUp
+    , mkKb SearchSelectUpEvent "Select the previous channel" $ channelListSelectUp tId
+    , mkKb SearchSelectDownEvent "Select the next channel" $ channelListSelectDown tId
+    , mkKb PageDownEvent "Page down in the channel list" $ channelListPageDown tId
+    , mkKb PageUpEvent "Page up in the channel list" $ channelListPageUp tId
     , mkKb ActivateListItemEvent "Join the selected channel" (listOverlayActivateCurrent (csTeam(tId).tsChannelListOverlay))
     ]
