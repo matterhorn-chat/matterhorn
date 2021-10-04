@@ -21,11 +21,10 @@ import           Matterhorn.Events.Keybindings ( getFirstDefaultBinding )
 import           Matterhorn.Themes
 
 
-drawManageAttachments :: ChatState -> Widget Name
-drawManageAttachments st =
+drawManageAttachments :: ChatState -> TeamId -> Widget Name
+drawManageAttachments st tId =
     topLayer
     where
-        tId = st^.csCurrentTeamId
         topLayer = case st^.csTeam(tId).tsMode of
             ManageAttachments -> drawAttachmentList st tId
             ManageAttachmentsBrowseFiles -> drawFileBrowser st tId

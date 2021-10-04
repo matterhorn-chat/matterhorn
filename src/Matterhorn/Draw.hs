@@ -39,12 +39,12 @@ draw st =
         LeaveChannelConfirm          -> drawLeaveChannelConfirm st tId : mainLayersMonochrome
         DeleteChannelConfirm         -> drawDeleteChannelConfirm st tId : mainLayersMonochrome
         PostListOverlay contents     -> drawPostListOverlay contents st : mainLayersMonochrome
-        UserListOverlay              -> drawUserListOverlay st : mainLayersMonochrome
+        UserListOverlay              -> drawUserListOverlay st tId : mainLayersMonochrome
         ChannelListOverlay           -> drawChannelListOverlay st : mainLayersMonochrome
         ReactionEmojiListOverlay     -> drawReactionEmojiListOverlay st : mainLayersMonochrome
         ViewMessage                  -> drawTabbedWindow messageViewWindow st : mainLayersMonochrome
-        ManageAttachments            -> drawManageAttachments st : mainLayersMonochrome
-        ManageAttachmentsBrowseFiles -> drawManageAttachments st : mainLayersMonochrome
+        ManageAttachments            -> drawManageAttachments st tId : mainLayersMonochrome
+        ManageAttachmentsBrowseFiles -> drawManageAttachments st tId : mainLayersMonochrome
         EditNotifyPrefs              -> drawNotifyPrefs st : mainLayersMonochrome
         ChannelTopicWindow           -> drawChannelTopicWindow st : mainLayersMonochrome
         SaveAttachmentWindow _       -> drawSaveAttachmentWindow st : mainLayersMonochrome
