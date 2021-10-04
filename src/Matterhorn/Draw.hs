@@ -45,7 +45,7 @@ draw st =
         ViewMessage                  -> drawTabbedWindow messageViewWindow st : mainLayersMonochrome
         ManageAttachments            -> drawManageAttachments st tId : mainLayersMonochrome
         ManageAttachmentsBrowseFiles -> drawManageAttachments st tId : mainLayersMonochrome
-        EditNotifyPrefs              -> drawNotifyPrefs st : mainLayersMonochrome
+        EditNotifyPrefs              -> drawNotifyPrefs st tId : mainLayersMonochrome
         ChannelTopicWindow           -> drawChannelTopicWindow st : mainLayersMonochrome
         SaveAttachmentWindow _       -> drawSaveAttachmentWindow st : mainLayersMonochrome
     where
