@@ -275,8 +275,9 @@ commandList =
         tId <- use csCurrentTeamId
         enterSearchResultPostListMode tId t
 
-  , Cmd "notify-prefs" "Edit the current channel's notification preferences" NoArg $ \_ ->
-        enterEditNotifyPrefsMode
+  , Cmd "notify-prefs" "Edit the current channel's notification preferences" NoArg $ \_ -> do
+        tId <- use csCurrentTeamId
+        enterEditNotifyPrefsMode tId
 
   , Cmd "rename-channel-url" "Rename the current channel's URL name" (TokenArg "channel name" NoArg) $ \ (name, _) ->
         renameChannelUrl name

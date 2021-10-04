@@ -39,7 +39,8 @@ editNotifyPrefsKeybindings tId = mkKeybindings (editNotifyPrefsKeyHandlers tId)
 
 editNotifyPrefsKeyHandlers :: TeamId -> [KeyEventHandler]
 editNotifyPrefsKeyHandlers tId =
-    [ mkKb CancelEvent "Close channel notification preferences" exitEditNotifyPrefsMode
+    [ mkKb CancelEvent "Close channel notification preferences" $
+        exitEditNotifyPrefsMode tId
     , mkKb FormSubmitEvent "Save channel notification preferences" $ do
         st <- use id
         let form = fromJust $ st^.csTeam(tId).tsNotifyPrefs
@@ -48,5 +49,5 @@ editNotifyPrefsKeyHandlers tId =
         doAsyncChannelMM Preempt cId
           (\s _ -> MM.mmUpdateChannelNotifications cId (myUserId st) (formState form) s)
           (\_ _ -> Nothing)
-        exitEditNotifyPrefsMode
+        exitEditNotifyPrefsMode tId
     ]
