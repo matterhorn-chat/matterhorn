@@ -26,14 +26,14 @@ themeListOverlayKeyHandlers :: TeamId -> [KeyEventHandler]
 themeListOverlayKeyHandlers tId =
     [ mkKb CancelEvent "Close the theme list"
       (exitListOverlay tId (csTeam(tId).tsThemeListOverlay))
-    , mkKb SearchSelectUpEvent "Select the previous theme"
-      themeListSelectUp
-    , mkKb SearchSelectDownEvent "Select the next theme"
-      themeListSelectDown
-    , mkKb PageDownEvent "Page down in the theme list"
-      themeListPageDown
-    , mkKb PageUpEvent "Page up in the theme list"
-      themeListPageUp
+    , mkKb SearchSelectUpEvent "Select the previous theme" $
+      themeListSelectUp tId
+    , mkKb SearchSelectDownEvent "Select the next theme" $
+      themeListSelectDown tId
+    , mkKb PageDownEvent "Page down in the theme list" $
+      themeListPageDown tId
+    , mkKb PageUpEvent "Page up in the theme list" $
+      themeListPageUp tId
     , mkKb ActivateListItemEvent "Switch to the selected color theme"
       (listOverlayActivateCurrent tId (csTeam(tId).tsThemeListOverlay))
     ]
