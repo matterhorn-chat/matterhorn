@@ -73,8 +73,8 @@ mainKeyHandlers tId =
 
     , mkKb
         EnterFastSelectModeEvent
-        "Enter fast channel selection mode"
-         beginChannelSelect
+        "Enter fast channel selection mode" $
+         beginChannelSelect tId
 
     , mkKb
         QuitEvent

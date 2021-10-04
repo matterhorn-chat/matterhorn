@@ -235,8 +235,9 @@ commandList =
     (ChannelArg NoArg) $ \ (name, ()) ->
         changeChannelByName name
 
-  , Cmd "focus" "Select from available channels" NoArg $ \ () ->
-        beginChannelSelect
+  , Cmd "focus" "Select from available channels" NoArg $ \ () -> do
+        tId <- use csCurrentTeamId
+        beginChannelSelect tId
 
   , Cmd "help" "Show the main help screen" NoArg $ \ _ ->
         showHelpScreen mainHelpTopic

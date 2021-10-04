@@ -23,7 +23,7 @@ onEventChannelSelect tId =
       when (not handled) $
           mhHandleEventLensed (csTeam(tId).tsChannelSelectState.channelSelectInput) handleEditorEvent e
 
-      updateChannelSelectMatches
+      updateChannelSelectMatches tId
 
 channelSelectKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
 channelSelectKeybindings tId = mkKeybindings (channelSelectKeyHandlers tId)
@@ -40,8 +40,8 @@ channelSelectKeyHandlers tId =
                      setFocus $ channelListEntryChannelId $ matchEntry match
 
     , mkKb CancelEvent "Cancel channel selection" $ setMode tId Main
-    , mkKb NextChannelEvent "Select next match" channelSelectNext
-    , mkKb PrevChannelEvent "Select previous match" channelSelectPrevious
-    , mkKb NextChannelEventAlternate "Select next match (alternate binding)" channelSelectNext
-    , mkKb PrevChannelEventAlternate "Select previous match (alternate binding)" channelSelectPrevious
+    , mkKb NextChannelEvent "Select next match" $ channelSelectNext tId
+    , mkKb PrevChannelEvent "Select previous match" $ channelSelectPrevious tId
+    , mkKb NextChannelEventAlternate "Select next match (alternate binding)" $ channelSelectNext tId
+    , mkKb PrevChannelEventAlternate "Select previous match (alternate binding)" $ channelSelectPrevious tId
     ]
