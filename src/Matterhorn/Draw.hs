@@ -38,7 +38,7 @@ draw st =
         ThemeListOverlay             -> drawThemeListOverlay st : mainLayers
         LeaveChannelConfirm          -> drawLeaveChannelConfirm st tId : mainLayersMonochrome
         DeleteChannelConfirm         -> drawDeleteChannelConfirm st tId : mainLayersMonochrome
-        PostListOverlay contents     -> drawPostListOverlay contents st : mainLayersMonochrome
+        PostListOverlay contents     -> drawPostListOverlay contents st tId : mainLayersMonochrome
         UserListOverlay              -> drawUserListOverlay st tId : mainLayersMonochrome
         ChannelListOverlay           -> drawChannelListOverlay st tId : mainLayersMonochrome
         ReactionEmojiListOverlay     -> drawReactionEmojiListOverlay st tId : mainLayersMonochrome
