@@ -295,12 +295,11 @@ displayUsernameAttribute name = do
     postInfoMessage $ "The attribute used for " <> addUserSigil trimmed <>
                       " is " <> (attrNameToConfig an)
 
-execMMCommand :: Text -> Text -> MH ()
-execMMCommand name rest = do
-  tId      <- use csCurrentTeamId
+execMMCommand :: MM.TeamId -> Text -> Text -> MH ()
+execMMCommand tId name rest = do
   cId      <- use (csCurrentChannelId tId)
   session  <- getSession
-  em       <- use (csCurrentTeam.tsEditState.cedEditMode)
+  em       <- use (csTeam(tId).tsEditState.cedEditMode)
   let mc = MM.MinCommand
              { MM.minComChannelId = cId
              , MM.minComCommand   = "/" <> name <> " " <> rest
@@ -336,8 +335,8 @@ execMMCommand name rest = do
     Just err ->
       mhError $ GenericError ("Error running command: " <> err)
 
-dispatchCommand :: Text -> MH ()
-dispatchCommand cmd =
+dispatchCommand :: MM.TeamId -> Text -> MH ()
+dispatchCommand tId cmd =
   case unwordHead cmd of
     Just (x, xs)
       | matchingCmds <- [ c
@@ -345,7 +344,7 @@ dispatchCommand cmd =
                         , name == x
                         ] -> go [] matchingCmds
       where go [] [] = do
-              execMMCommand x xs
+              execMMCommand tId x xs
             go errs [] = do
               let msg = ("error running command /" <> x <> ":\n" <>
                          mconcat [ "    " <> e | e <- errs ])

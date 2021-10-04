@@ -228,7 +228,7 @@ handleInputSubmission tId cId content = do
 
     case T.uncons content of
       Just ('/', cmd) ->
-          dispatchCommand cmd
+          dispatchCommand tId cmd
       _ -> do
           attachments <- use (csTeam(tId).tsEditState.cedAttachmentList.L.listElementsL)
           mode <- use (csTeam(tId).tsEditState.cedEditMode)
