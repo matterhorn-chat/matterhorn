@@ -291,8 +291,10 @@ renderUserCommandBox st tId hs =
             True -> vLimit multilineHeightLimit inputBox <=> multilineHints
     in replyDisplay <=> commandBox
 
-renderChannelHeader :: ChatState -> TeamId -> HighlightSet -> ClientChannel -> Widget Name
-renderChannelHeader st tId hs chan =
+renderChannelHeader :: ChatState -> TeamId -> HighlightSet -> Maybe ClientChannel -> Widget Name
+renderChannelHeader _ _ _ Nothing =
+    txt " "
+renderChannelHeader st tId hs (Just chan) =
     let chnType = chan^.ccInfo.cdType
         topicStr = chan^.ccInfo.cdHeader
         userHeader u = let s = T.intercalate " " $ filter (not . T.null) parts
@@ -391,10 +393,13 @@ renderCurrentChannelDisplay st tId hs = header <=> hBorder <=> messages
                                 , statusBoxWidget
                                 ]
 
+    cId = st^.(csCurrentChannelId tId)
+    mChan = st^?csChannel(cId)
+
     channelHeader =
         withDefAttr channelHeaderAttr $
         padRight Max $
-        renderChannelHeader st tId hs chan
+        renderChannelHeader st tId hs mChan
 
     messages = padTop Max chatText
 
@@ -447,9 +452,6 @@ renderCurrentChannelDisplay st tId hs = header <=> hBorder <=> messages
                                cutoff
                                (getDateFormat st)
                                (st ^. timeZone)
-
-    cId = st^.(csCurrentChannelId tId)
-    chan = st^.csCurrentChannel(tId)
 
 -- | Construct a single message to be displayed in the specified channel
 -- when it does not yet have any user messages posted to it.
@@ -834,15 +836,20 @@ mainInterface st tId =
                      ]
 
     showTypingUsers =
-        let format = renderText' Nothing (myUsername st) hs Nothing
-        in case allTypingUsers (st^.csCurrentChannel(tId).ccInfo.cdTypingUsers) of
-            [] -> emptyWidget
-            [uId] | Just un <- usernameForUserId uId st ->
-               format $ "[" <> addUserSigil un <> " is typing]"
-            [uId1, uId2] | Just un1 <- usernameForUserId uId1 st
-                         , Just un2 <- usernameForUserId uId2 st ->
-               format $ "[" <> addUserSigil un1 <> " and " <> addUserSigil un2 <> " are typing]"
-            _ -> format "[several people are typing]"
+        let cId = st^.csCurrentChannelId(tId)
+            mChan = st^?csChannel(cId)
+            format = renderText' Nothing (myUsername st) hs Nothing
+        in case mChan of
+            Nothing -> emptyWidget
+            Just chan ->
+                case allTypingUsers (chan^.ccInfo.cdTypingUsers) of
+                    [] -> emptyWidget
+                    [uId] | Just un <- usernameForUserId uId st ->
+                       format $ "[" <> addUserSigil un <> " is typing]"
+                    [uId1, uId2] | Just un1 <- usernameForUserId uId1 st
+                                 , Just un2 <- usernameForUserId uId2 st ->
+                       format $ "[" <> addUserSigil un1 <> " and " <> addUserSigil un2 <> " are typing]"
+                    _ -> format "[several people are typing]"
 
     showBusy = case st^.csWorkerIsBusy of
                  Just (Just n) -> hLimit 2 hBorder <+> txt (T.pack $ "*" <> show n)
