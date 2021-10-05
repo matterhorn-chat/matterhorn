@@ -2184,9 +2184,9 @@ getSession = use (csResources.crSession)
 getResourceSession :: ChatResources -> Session
 getResourceSession = _crSession
 
-whenMode :: Mode -> MH () -> MH ()
-whenMode m act = do
-    curMode <- use (csCurrentTeam.tsMode)
+whenMode :: TeamId -> Mode -> MH () -> MH ()
+whenMode tId m act = do
+    curMode <- use (csTeam(tId).tsMode)
     when (curMode == m) act
 
 setMode :: TeamId -> Mode -> MH ()

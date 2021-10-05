@@ -57,7 +57,7 @@ globalMouseHandler :: TeamId -> BrickEvent Name MHEvent -> MH ()
 globalMouseHandler tId (MouseDown n _ _ _) = do
     case n of
         ClickableChannelListEntry channelId -> do
-            whenMode Main $ do
+            whenMode tId Main $ do
                 resetReturnChannel tId
                 setFocus tId channelId
                 setMode tId Main

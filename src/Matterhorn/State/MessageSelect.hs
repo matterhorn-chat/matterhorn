@@ -149,7 +149,7 @@ yankSelectedMessage tId = do
             copyToClipboard $ m^.mMarkdownSource
 
 openSelectedMessageURLs :: TeamId -> MH ()
-openSelectedMessageURLs tId = whenMode MessageSelect $ do
+openSelectedMessageURLs tId = whenMode tId MessageSelect $ do
     mCurMsg <- use (to (getSelectedMessage tId))
     curMsg <- case mCurMsg of
         Nothing -> error "BUG: openSelectedMessageURLs: no selected message available"
@@ -187,7 +187,7 @@ messageSelectDown :: TeamId -> MH ()
 messageSelectDown tId = do
     selected <- use (csTeam(tId).tsMessageSelect.to selectMessageId)
     case selected of
-        Just _ -> whenMode MessageSelect $ do
+        Just _ -> whenMode tId MessageSelect $ do
             chanMsgs <- use (csCurrentChannel(tId).ccContents.cdMessages)
             let nextMsgId = getNextMessageId selected chanMsgs
             csTeam(tId).tsMessageSelect .= MessageSelectState (nextMsgId <|> selected)
@@ -209,7 +209,7 @@ messageSelectFirst :: TeamId -> MH ()
 messageSelectFirst tId = do
     selected <- use (csTeam(tId).tsMessageSelect.to selectMessageId)
     case selected of
-        Just _ -> whenMode MessageSelect $ do
+        Just _ -> whenMode tId MessageSelect $ do
             chanMsgs <- use (csCurrentChannel(tId).ccContents.cdMessages)
             case getEarliestSelectableMessage chanMsgs of
               Just firstMsg ->
@@ -221,7 +221,7 @@ messageSelectLast :: TeamId -> MH ()
 messageSelectLast tId = do
     selected <- use (csTeam(tId).tsMessageSelect.to selectMessageId)
     case selected of
-        Just _ -> whenMode MessageSelect $ do
+        Just _ -> whenMode tId MessageSelect $ do
             chanMsgs <- use (csCurrentChannel(tId).ccContents.cdMessages)
             case getLatestSelectableMessage chanMsgs of
               Just lastSelMsg ->

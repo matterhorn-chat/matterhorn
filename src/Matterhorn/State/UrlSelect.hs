@@ -33,7 +33,7 @@ stopUrlSelect tId = do
     setMode tId Main
 
 openSelectedURL :: TeamId -> MH ()
-openSelectedURL tId = whenMode UrlSelect $ do
+openSelectedURL tId = whenMode tId UrlSelect $ do
     selected <- use (csTeam(tId).tsUrlList.to listSelectedElement)
     case selected of
         Nothing -> setMode tId Main
