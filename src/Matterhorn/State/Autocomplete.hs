@@ -19,7 +19,7 @@ import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import qualified Data.Text.Zipper as Z
 import qualified Data.Vector as V
-import           Lens.Micro.Platform ( (%=), (.=), (.~), _Just, preuse )
+import           Lens.Micro.Platform ( (%=), (.=), (.~), _Just )
 import qualified Skylighting.Types as Sky
 
 import           Network.Mattermost.Types (userId, channelId, Command(..), TeamId)

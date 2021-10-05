@@ -397,7 +397,7 @@ import           Data.Time.Clock ( getCurrentTime, addUTCTime )
 import           Data.UUID ( UUID )
 import qualified Data.Vector as Vec
 import           Lens.Micro.Platform ( at, makeLenses, lens, (%~), (^?!), (.=)
-                                     , (%=), (.~), _Just, Traversal', preuse, to
+                                     , (%=), (.~), _Just, Traversal', to
                                      , SimpleGetter
                                      )
 import           Network.Connection ( HostNotResolved, HostCannotConnect )

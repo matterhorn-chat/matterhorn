@@ -63,6 +63,7 @@ module Matterhorn.Prelude
   , (Lens.^.)
   , (Lens.^?)
   , Lens.use
+  , Lens.preuse
 
   -- not available in all versions of GHC currently in use
 #if MIN_VERSION_base(4,10,0)
