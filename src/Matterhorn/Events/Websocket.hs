@@ -11,7 +11,6 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
 import qualified Data.Text as T
-import           Lens.Micro.Platform ( preuse )
 
 import           Network.Mattermost.Lenses
 import           Network.Mattermost.Types
