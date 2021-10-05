@@ -80,7 +80,7 @@ toggleMultilineEditing tId = do
     -- a word that would otherwise show completion alternatives.
     multiline <- use (csTeam(tId).tsEditState.cedEphemeral.eesMultiline)
     numLines <- use (csTeam(tId).tsEditState.cedEditor.to getEditContents.to length)
-    when (not multiline && numLines > 1) resetAutocomplete
+    when (not multiline && numLines > 1) (resetAutocomplete tId)
 
 invokeExternalEditor :: TeamId -> MH ()
 invokeExternalEditor tId = do
@@ -240,8 +240,7 @@ handleInputSubmission tId cId content = do
           resetAttachmentList tId
 
     -- Reset the autocomplete UI
-    resetAutocomplete
-
+    resetAutocomplete tId
 
     -- Reset the edit mode *after* handling the input so that the input
     -- handler can tell whether we're editing, replying, etc.
@@ -461,7 +460,7 @@ cancelAutocompleteOrReplyOrEdit tId = do
     ac <- use (csTeam(tId).tsEditState.cedAutocomplete)
     case ac of
         Just _ -> do
-            resetAutocomplete
+            resetAutocomplete tId
         Nothing -> do
             mode <- use (csTeam(tId).tsEditState.cedEditMode)
             case mode of
@@ -526,4 +525,4 @@ tabComplete tId dir = do
                     -- If there was only one completion alternative,
                     -- hide the autocomplete listing now that we've
                     -- completed the only completion.
-                    when (ac^.acCompletionList.to L.listElements.to length == 1) resetAutocomplete
+                    when (ac^.acCompletionList.to L.listElements.to length == 1) (resetAutocomplete tId)

@@ -992,7 +992,7 @@ jumpToPost pId = do
                   Nothing ->
                       joinChannel' cId (Just $ jumpToPost pId)
                   Just _ -> do
-                      setFocus cId
+                      setFocus tId cId
                       setMode tId MessageSelect
                       csTeam(tId).tsMessageSelect .= MessageSelectState (msg^.mMessageId)
           Nothing ->

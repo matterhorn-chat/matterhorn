@@ -37,7 +37,7 @@ channelSelectKeyHandlers tId =
                  Nothing -> return ()
                  Just match -> do
                      setMode tId Main
-                     setFocus $ channelListEntryChannelId $ matchEntry match
+                     setFocus tId $ channelListEntryChannelId $ matchEntry match
 
     , mkKb CancelEvent "Cancel channel selection" $ setMode tId Main
     , mkKb NextChannelEvent "Select next match" $ channelSelectNext tId

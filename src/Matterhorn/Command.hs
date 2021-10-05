@@ -99,11 +99,13 @@ commandList :: [Cmd]
 commandList =
   [ Cmd "quit" "Exit Matterhorn" NoArg $ \ () -> requestQuit
 
-  , Cmd "right" "Focus on the next channel" NoArg $ \ () ->
-        nextChannel
+  , Cmd "right" "Focus on the next channel" NoArg $ \ () -> do
+        tId <- use csCurrentTeamId
+        nextChannel tId
 
-  , Cmd "left" "Focus on the previous channel" NoArg $ \ () ->
-        prevChannel
+  , Cmd "left" "Focus on the previous channel" NoArg $ \ () -> do
+        tId <- use csCurrentTeamId
+        prevChannel tId
 
   , Cmd "create-channel" "Create a new public channel"
     (LineArg "channel name") $ \ name ->

@@ -308,7 +308,11 @@ handleNewChannel_ permitPostpone switch sbUpdate nc member = do
     me <- gets myUser
     mChan <- preuse (csChannel(getId nc))
     case mChan of
-        Just _ -> when switch $ setFocus (getId nc)
+        Just ch -> do
+            tId <- case ch^.ccInfo.cdTeamId of
+                Nothing -> use csCurrentTeamId
+                Just i -> return i
+            when switch $ setFocus tId (getId nc)
         Nothing -> do
             -- Create a new ClientChannel structure
             cChannel <- (ccInfo %~ channelInfoFromChannelWithData nc member) <$>
@@ -366,18 +370,22 @@ handleNewChannel_ permitPostpone switch sbUpdate nc member = do
                     -- possible to do so.
                     updateSidebar (cChannel^.ccInfo.cdTeamId)
 
+                    tId <- case cChannel^.ccInfo.cdTeamId of
+                        Nothing -> use csCurrentTeamId
+                        Just i -> return i
+
                     -- Finally, set our focus to the newly created
                     -- channel if the caller requested a change of
                     -- channel. Also consider the last join request
                     -- state field in case this is an asynchronous
                     -- channel addition triggered by a /join.
-                    pending1 <- checkPendingChannelChange (getId nc)
+                    pending1 <- checkPendingChannelChange tId (getId nc)
                     pending2 <- case cChannel^.ccInfo.cdDMUserId of
                         Nothing -> return False
-                        Just uId -> checkPendingChannelChangeByUserId uId
+                        Just uId -> checkPendingChannelChangeByUserId tId uId
 
                     when (switch || isJust pending1 || pending2) $ do
-                        setFocus (getId nc)
+                        setFocus tId (getId nc)
                         case pending1 of
                             Just (Just act) -> act
                             _ -> return ()
@@ -391,10 +399,9 @@ handleNewChannel_ permitPostpone switch sbUpdate nc member = do
 -- Returns Just if the specified channel has a pending switch. The
 -- result is an optional action to invoke after changing to the
 -- specified channel.
-checkPendingChannelChange :: ChannelId -> MH (Maybe (Maybe (MH ())))
-checkPendingChannelChange cId = do
-    ch <- use (csCurrentTeam.tsPendingChannelChange)
-    curTid <- use csCurrentTeamId
+checkPendingChannelChange :: TeamId -> ChannelId -> MH (Maybe (Maybe (MH ())))
+checkPendingChannelChange curTid cId = do
+    ch <- use (csTeam(curTid).tsPendingChannelChange)
     return $ case ch of
         Just (ChangeByChannelId tId i act) ->
             if i == cId && curTid == tId then Just act else Nothing
@@ -409,9 +416,9 @@ checkPendingChannelChange cId = do
 -- Returns Just if the specified channel has a pending switch. The
 -- result is an optional action to invoke after changing to the
 -- specified channel.
-checkPendingChannelChangeByUserId :: UserId -> MH Bool
-checkPendingChannelChangeByUserId uId = do
-    ch <- use (csCurrentTeam.tsPendingChannelChange)
+checkPendingChannelChangeByUserId :: TeamId -> UserId -> MH Bool
+checkPendingChannelChangeByUserId tId uId = do
+    ch <- use (csTeam(tId).tsPendingChannelChange)
     return $ case ch of
         Just (ChangeByUserId i) ->
             i == uId
@@ -427,19 +434,19 @@ updateChannelInfo cid new member = do
     withChannel cid $ \chan ->
         updateSidebar (chan^.ccInfo.cdTeamId)
 
-setFocus :: ChannelId -> MH ()
-setFocus cId = do
+setFocus :: TeamId -> ChannelId -> MH ()
+setFocus tId cId = do
     showChannelInSidebar cId True
-    setFocusWith True (Z.findRight ((== cId) . channelListEntryChannelId)) (return ())
+    setFocusWith tId True (Z.findRight ((== cId) . channelListEntryChannelId)) (return ())
 
-setFocusWith :: Bool
+setFocusWith :: TeamId
+             -> Bool
              -> (Zipper ChannelListGroup ChannelListEntry
              -> Zipper ChannelListGroup ChannelListEntry)
              -> MH ()
              -> MH ()
-setFocusWith updatePrev f onNoChange = do
-    tId <- use csCurrentTeamId
-    oldZipper <- use (csCurrentTeam.tsFocus)
+setFocusWith tId updatePrev f onNoChange = do
+    oldZipper <- use (csTeam(tId).tsFocus)
     let newZipper = f oldZipper
         newFocus = Z.focus newZipper
         oldFocus = Z.focus oldZipper
@@ -449,21 +456,21 @@ setFocusWith updatePrev f onNoChange = do
     if newFocus /= oldFocus
        then do
           mh $ invalidateCacheEntry $ ChannelSidebar tId
-          resetAutocomplete
-          preChangeChannelCommon
-          csCurrentTeam.tsFocus .= newZipper
+          resetAutocomplete tId
+          preChangeChannelCommon tId
+          csTeam(tId).tsFocus .= newZipper
 
           now <- liftIO getCurrentTime
           newCid <- use (csCurrentChannelId tId)
           csChannel(newCid).ccInfo.cdSidebarShowOverride .= Just now
 
           updateViewed updatePrev
-          postChangeChannelCommon
+          postChangeChannelCommon tId
        else onNoChange
 
-postChangeChannelCommon :: MH ()
-postChangeChannelCommon = do
-    resetEditorState
+postChangeChannelCommon :: TeamId -> MH ()
+postChangeChannelCommon tId = do
+    resetEditorState tId
     updateChannelListScroll
     loadLastEdit
     fetchVisibleIfNeeded
@@ -476,66 +483,62 @@ loadLastEdit = do
     oldEphemeral <- preuse (csChannel(cId).ccEditState)
     case oldEphemeral of
         Nothing -> return ()
-        Just e -> csCurrentTeam.tsEditState.cedEphemeral .= e
+        Just e -> csTeam(tId).tsEditState.cedEphemeral .= e
 
-    loadLastChannelInput
+    loadLastChannelInput tId
 
-loadLastChannelInput :: MH ()
-loadLastChannelInput = do
-    tId <- use csCurrentTeamId
+loadLastChannelInput :: TeamId -> MH ()
+loadLastChannelInput tId = do
     cId <- use (csCurrentChannelId tId)
-    inputHistoryPos <- use (csCurrentTeam.tsEditState.cedEphemeral.eesInputHistoryPosition)
+    inputHistoryPos <- use (csTeam(tId).tsEditState.cedEphemeral.eesInputHistoryPosition)
     case inputHistoryPos of
-        Just i -> loadHistoryEntryToEditor cId i
+        Just i -> loadHistoryEntryToEditor tId cId i
         Nothing -> do
-            (lastEdit, lastEditMode) <- use (csCurrentTeam.tsEditState.cedEphemeral.eesLastInput)
-            csCurrentTeam.tsEditState.cedEditor %= (applyEdit $ insertMany lastEdit . clearZipper)
-            csCurrentTeam.tsEditState.cedEditMode .= lastEditMode
+            (lastEdit, lastEditMode) <- use (csTeam(tId).tsEditState.cedEphemeral.eesLastInput)
+            csTeam(tId).tsEditState.cedEditor %= (applyEdit $ insertMany lastEdit . clearZipper)
+            csTeam(tId).tsEditState.cedEditMode .= lastEditMode
 
 updateChannelListScroll :: MH ()
 updateChannelListScroll = do
     tId <- use csCurrentTeamId
     mh $ vScrollToBeginning (viewportScroll $ ChannelList tId)
 
-preChangeChannelCommon :: MH ()
-preChangeChannelCommon = do
-    tId <- use csCurrentTeamId
+preChangeChannelCommon :: TeamId -> MH ()
+preChangeChannelCommon tId = do
     cId <- use (csCurrentChannelId tId)
-    csCurrentTeam.tsRecentChannel .= Just cId
-    saveCurrentEdit
+    csTeam(tId).tsRecentChannel .= Just cId
+    saveCurrentEdit tId
 
-resetEditorState :: MH ()
-resetEditorState = do
-    csCurrentTeam.tsEditState.cedEditMode .= NewPost
-    clearEditor
+resetEditorState :: TeamId -> MH ()
+resetEditorState tId = do
+    csTeam(tId).tsEditState.cedEditMode .= NewPost
+    csTeam(tId).tsEditState.cedEditor %= applyEdit clearZipper
 
-clearEditor :: MH ()
-clearEditor = csCurrentTeam.tsEditState.cedEditor %= applyEdit clearZipper
+saveCurrentEdit :: TeamId -> MH ()
+saveCurrentEdit tId = do
+    saveCurrentChannelInput tId
 
-saveCurrentEdit :: MH ()
-saveCurrentEdit = do
-    saveCurrentChannelInput
-
-    oldEphemeral <- use (csCurrentTeam.tsEditState.cedEphemeral)
-    tId <- use csCurrentTeamId
+    oldEphemeral <- use (csTeam(tId).tsEditState.cedEphemeral)
     cId <- use (csCurrentChannelId tId)
     csChannel(cId).ccEditState .= oldEphemeral
 
-saveCurrentChannelInput :: MH ()
-saveCurrentChannelInput = do
-    cmdLine <- use (csCurrentTeam.tsEditState.cedEditor)
-    mode <- use (csCurrentTeam.tsEditState.cedEditMode)
+saveCurrentChannelInput :: TeamId -> MH ()
+saveCurrentChannelInput tId = do
+    cmdLine <- use (csTeam(tId).tsEditState.cedEditor)
+    mode <- use (csTeam(tId).tsEditState.cedEditMode)
 
     -- Only save the editor contents if the user is not navigating the
     -- history.
-    inputHistoryPos <- use (csCurrentTeam.tsEditState.cedEphemeral.eesInputHistoryPosition)
+    inputHistoryPos <- use (csTeam(tId).tsEditState.cedEphemeral.eesInputHistoryPosition)
 
     when (isNothing inputHistoryPos) $
-        csCurrentTeam.tsEditState.cedEphemeral.eesLastInput .=
+        csTeam(tId).tsEditState.cedEphemeral.eesLastInput .=
            (T.intercalate "\n" $ getEditContents $ cmdLine, mode)
 
 applyPreferenceChange :: Preference -> MH ()
 applyPreferenceChange pref = do
+    tId <- use csCurrentTeamId
+
     -- always update our user preferences accordingly
     csResources.crUserPreferences %= setUserPreferences (Seq.singleton pref)
 
@@ -562,10 +565,10 @@ applyPreferenceChange pref = do
           let Just cId = getDmChannelFor (directChannelShowUserId d) cs
           case directChannelShowValue d of
               True -> do
-                  pending <- checkPendingChannelChange cId
+                  pending <- checkPendingChannelChange tId cId
                   case pending of
                       Just mAct -> do
-                          setFocus cId
+                          setFocus tId cId
                           fromMaybe (return ()) mAct
                       Nothing -> return ()
               False -> do
@@ -581,10 +584,10 @@ applyPreferenceChange pref = do
           let cId = groupChannelId g
           case groupChannelShow g of
               True -> do
-                  pending <- checkPendingChannelChange cId
+                  pending <- checkPendingChannelChange tId cId
                   case pending of
                       Just mAct -> do
-                          setFocus cId
+                          setFocus tId cId
                           fromMaybe (return ()) mAct
                       Nothing -> return ()
               False -> do
@@ -600,10 +603,10 @@ applyPreferenceChange pref = do
           let cId = favoriteChannelId f
           case favoriteChannelShow f of
               True -> do
-                  pending <- checkPendingChannelChange cId
+                  pending <- checkPendingChannelChange tId cId
                   case pending of
                       Just mAct -> do
-                          setFocus cId
+                          setFocus tId cId
                           fromMaybe (return ()) mAct
                       Nothing -> return ()
               False -> do
@@ -627,7 +630,7 @@ removeChannelFromState cId = do
                 Nothing -> return ()
                 Just tId -> do
                     origFocus <- use (csCurrentChannelId tId)
-                    when (origFocus == cId) nextChannelSkipPrevView
+                    when (origFocus == cId) (nextChannelSkipPrevView tId)
 
             -- Update input history
             csInputHistory %= removeChannelHistory cId
@@ -644,72 +647,70 @@ removeChannelFromState cId = do
 
             updateSidebar $ chan^.ccInfo.cdTeamId
 
-nextChannel :: MH ()
-nextChannel = do
-    resetReturnChannel
-    setFocusWith True Z.right (return ())
+nextChannel :: TeamId -> MH ()
+nextChannel tId = do
+    resetReturnChannel tId
+    setFocusWith tId True Z.right (return ())
 
 -- | This is almost never what you want; we use this when we delete a
 -- channel and we don't want to update the deleted channel's view time.
-nextChannelSkipPrevView :: MH ()
-nextChannelSkipPrevView = setFocusWith False Z.right (return ())
+nextChannelSkipPrevView :: TeamId -> MH ()
+nextChannelSkipPrevView tId = setFocusWith tId False Z.right (return ())
 
-prevChannel :: MH ()
-prevChannel = do
-    resetReturnChannel
-    setFocusWith True Z.left (return ())
+prevChannel :: TeamId -> MH ()
+prevChannel tId = do
+    resetReturnChannel tId
+    setFocusWith tId True Z.left (return ())
 
-recentChannel :: MH ()
-recentChannel = do
-  recent <- use (csCurrentTeam.tsRecentChannel)
+recentChannel :: TeamId -> MH ()
+recentChannel tId = do
+  recent <- use (csTeam(tId).tsRecentChannel)
   case recent of
     Nothing  -> return ()
     Just cId -> do
-        ret <- use (csCurrentTeam.tsReturnChannel)
-        when (ret == Just cId) resetReturnChannel
-        setFocus cId
+        ret <- use (csTeam(tId).tsReturnChannel)
+        when (ret == Just cId) (resetReturnChannel tId)
+        setFocus tId cId
 
-resetReturnChannel :: MH ()
-resetReturnChannel = do
-  val <- use (csCurrentTeam.tsReturnChannel)
+resetReturnChannel :: TeamId -> MH ()
+resetReturnChannel tId = do
+  val <- use (csTeam(tId).tsReturnChannel)
   case val of
       Nothing -> return ()
       Just _ -> do
-          tId <- use csCurrentTeamId
           mh $ invalidateCacheEntry $ ChannelSidebar tId
-          csCurrentTeam.tsReturnChannel .= Nothing
+          csTeam(tId).tsReturnChannel .= Nothing
 
-gotoReturnChannel :: MH ()
-gotoReturnChannel = do
-  ret <- use (csCurrentTeam.tsReturnChannel)
+gotoReturnChannel :: TeamId -> MH ()
+gotoReturnChannel tId = do
+  ret <- use (csTeam(tId).tsReturnChannel)
   case ret of
     Nothing  -> return ()
     Just cId -> do
-        resetReturnChannel
-        setFocus cId
+        resetReturnChannel tId
+        setFocus tId cId
 
-setReturnChannel :: MH ()
-setReturnChannel = do
-  ret <- use (csCurrentTeam.tsReturnChannel)
+setReturnChannel :: TeamId -> MH ()
+setReturnChannel tId = do
+  ret <- use (csTeam(tId).tsReturnChannel)
   case ret of
     Nothing  -> do
-        tId <- use csCurrentTeamId
         cId <- use (csCurrentChannelId tId)
-        csCurrentTeam.tsReturnChannel .= Just cId
+        csTeam(tId).tsReturnChannel .= Just cId
         mh $ invalidateCacheEntry $ ChannelSidebar tId
     Just _ -> return ()
 
-nextUnreadChannel :: MH ()
-nextUnreadChannel = do
+nextUnreadChannel :: TeamId -> MH ()
+nextUnreadChannel tId = do
     st <- use id
-    setReturnChannel
-    setFocusWith True (getNextUnreadChannel st) gotoReturnChannel
+    setReturnChannel tId
+    setFocusWith tId True (getNextUnreadChannel st) (gotoReturnChannel tId)
 
-nextUnreadUserOrChannel :: MH ()
-nextUnreadUserOrChannel = do
+nextUnreadUserOrChannel :: TeamId -> MH ()
+nextUnreadUserOrChannel tId = do
     st <- use id
-    setReturnChannel
-    setFocusWith True (getNextUnreadUserOrChannel st) gotoReturnChannel
+    setReturnChannel tId
+    setFocusWith tId True (getNextUnreadUserOrChannel st tId) (gotoReturnChannel tId)
 
 leaveChannel :: ChannelId -> MH ()
 leaveChannel cId = leaveChannelIfPossible cId False
@@ -777,11 +778,12 @@ getNextUnreadChannel st =
                 in channelListEntryUnread e && (cId /= st^.csCurrentChannelId(st^.csCurrentTeamId)))
 
 getNextUnreadUserOrChannel :: ChatState
+                           -> TeamId
                            -> Zipper a ChannelListEntry
                            -> Zipper a ChannelListEntry
-getNextUnreadUserOrChannel st z =
+getNextUnreadUserOrChannel st tId z =
     -- Find the next unread channel, prefering direct messages
-    let cur = st^.csCurrentChannelId(st^.csCurrentTeamId)
+    let cur = st^.csCurrentChannelId(tId)
         matches e = entryIsDMEntry e && isFresh e
         isFresh e = channelListEntryUnread e && (channelListEntryChannelId e /= cur)
     in fromMaybe (Z.findRight isFresh z)
@@ -797,6 +799,7 @@ createGroupChannel usernameList = do
     me <- gets myUser
     session <- getSession
     cs <- use csChannels
+    tId <- use csCurrentTeamId
 
     doAsyncWith Preempt $ do
         let usernames = Seq.fromList $ fmap trimUserSigil $ T.words usernameList
@@ -813,10 +816,9 @@ createGroupChannel usernameList = do
                           -- If we already know about the channel ID,
                           -- that means the channel already exists so
                           -- we can just switch to it.
-                          setFocus (channelId chan)
+                          setFocus tId (channelId chan)
                       Nothing -> do
-                          tId <- use csCurrentTeamId
-                          csCurrentTeam.tsPendingChannelChange .=
+                          csTeam(tId).tsPendingChannelChange .=
                               (Just $ ChangeByChannelId tId (channelId chan) Nothing)
                           let pref = showGroupChannelPref (channelId chan) (me^.userIdL)
                           doAsyncWith Normal $ do
@@ -830,47 +832,45 @@ createGroupChannel usernameList = do
                 return $ Just $ do
                     forM_ missingUsernames (mhError . NoSuchUser)
 
-channelHistoryForward :: MH ()
-channelHistoryForward = do
-    resetAutocomplete
+channelHistoryForward :: TeamId -> MH ()
+channelHistoryForward tId = do
+    resetAutocomplete tId
 
-    tId <- use csCurrentTeamId
     cId <- use (csCurrentChannelId tId)
-    inputHistoryPos <- use (csCurrentTeam.tsEditState.cedEphemeral.eesInputHistoryPosition)
+    inputHistoryPos <- use (csTeam(tId).tsEditState.cedEphemeral.eesInputHistoryPosition)
     case inputHistoryPos of
         Just i
           | i == 0 -> do
             -- Transition out of history navigation
-            csCurrentTeam.tsEditState.cedEphemeral.eesInputHistoryPosition .= Nothing
-            loadLastChannelInput
+            csTeam(tId).tsEditState.cedEphemeral.eesInputHistoryPosition .= Nothing
+            loadLastChannelInput tId
           | otherwise -> do
             let newI = i - 1
-            loadHistoryEntryToEditor cId newI
-            csCurrentTeam.tsEditState.cedEphemeral.eesInputHistoryPosition .= (Just newI)
+            loadHistoryEntryToEditor tId cId newI
+            csTeam(tId).tsEditState.cedEphemeral.eesInputHistoryPosition .= (Just newI)
         _ -> return ()
 
-loadHistoryEntryToEditor :: ChannelId -> Int -> MH ()
-loadHistoryEntryToEditor cId idx = do
+loadHistoryEntryToEditor :: TeamId -> ChannelId -> Int -> MH ()
+loadHistoryEntryToEditor tId cId idx = do
     inputHistory <- use csInputHistory
     case getHistoryEntry cId idx inputHistory of
         Nothing -> return ()
         Just entry -> do
             let eLines = T.lines entry
                 mv = if length eLines == 1 then gotoEOL else id
-            csCurrentTeam.tsEditState.cedEditor.editContentsL .= (mv $ textZipper eLines Nothing)
+            csTeam(tId).tsEditState.cedEditor.editContentsL .= (mv $ textZipper eLines Nothing)
 
-channelHistoryBackward :: MH ()
-channelHistoryBackward = do
-    resetAutocomplete
+channelHistoryBackward :: TeamId -> MH ()
+channelHistoryBackward tId = do
+    resetAutocomplete tId
 
-    tId <- use csCurrentTeamId
     cId <- use (csCurrentChannelId tId)
-    inputHistoryPos <- use (csCurrentTeam.tsEditState.cedEphemeral.eesInputHistoryPosition)
-    saveCurrentChannelInput
+    inputHistoryPos <- use (csTeam(tId).tsEditState.cedEphemeral.eesInputHistoryPosition)
+    saveCurrentChannelInput tId
 
     let newI = maybe 0 (+ 1) inputHistoryPos
-    loadHistoryEntryToEditor cId newI
-    csCurrentTeam.tsEditState.cedEphemeral.eesInputHistoryPosition .= (Just newI)
+    loadHistoryEntryToEditor tId cId newI
+    csTeam(tId).tsEditState.cedEphemeral.eesInputHistoryPosition .= (Just newI)
 
 createOrdinaryChannel :: Bool -> Text -> MH ()
 createOrdinaryChannel public name = do
@@ -903,7 +903,10 @@ handleChannelInvite cId = do
         member <- MM.mmGetChannelMember cId UserMe session
         tryMM (MM.mmGetChannel cId session)
               (\cwd -> return $ Just $ do
-                  pending <- checkPendingChannelChange cId
+                  tId <- case channelTeamId cwd of
+                      Nothing -> use csCurrentTeamId
+                      Just i -> return i
+                  pending <- checkPendingChannelChange tId cId
                   handleNewChannel (isJust pending) SidebarUpdateImmediate cwd member)
 
 addUserByNameToCurrentChannel :: Text -> MH ()
@@ -946,14 +949,14 @@ deleteCurrentChannel = do
     cId <- use (csCurrentChannelId tId)
     leaveChannelIfPossible cId True
 
-isCurrentChannel :: ChatState -> ChannelId -> Bool
-isCurrentChannel st cId = st^.csCurrentChannelId(st^.csCurrentTeamId) == cId
+isCurrentChannel :: ChatState -> TeamId -> ChannelId -> Bool
+isCurrentChannel st tId cId = st^.csCurrentChannelId(tId) == cId
 
-isRecentChannel :: ChatState -> ChannelId -> Bool
-isRecentChannel st cId = st^.csCurrentTeam.tsRecentChannel == Just cId
+isRecentChannel :: ChatState -> TeamId -> ChannelId -> Bool
+isRecentChannel st tId cId = st^.csTeam(tId).tsRecentChannel == Just cId
 
-isReturnChannel :: ChatState -> ChannelId -> Bool
-isReturnChannel st cId = st^.csCurrentTeam.tsReturnChannel == Just cId
+isReturnChannel :: ChatState -> TeamId -> ChannelId -> Bool
+isReturnChannel st tId cId = st^.csTeam(tId).tsReturnChannel == Just cId
 
 joinChannelByName :: Text -> MH ()
 joinChannelByName rawName = do
@@ -977,20 +980,21 @@ joinChannel' chanId act = do
     mChan <- preuse (csChannel(chanId))
     case mChan of
         Just _ -> do
-            setFocus chanId
+            setFocus tId chanId
             fromMaybe (return ()) act
         Nothing -> do
             myId <- gets myUserId
             let member = MinChannelMember myId chanId
-            csCurrentTeam.tsPendingChannelChange .= (Just $ ChangeByChannelId tId chanId act)
+            csTeam(tId).tsPendingChannelChange .= (Just $ ChangeByChannelId tId chanId act)
             doAsyncChannelMM Preempt chanId (\ s c -> MM.mmAddUser c member s) (const $ return act)
 
 createOrFocusDMChannel :: UserInfo -> Maybe (ChannelId -> MH ()) -> MH ()
 createOrFocusDMChannel user successAct = do
+    tId <- use csCurrentTeamId
     cs <- use csChannels
     case getDmChannelFor (user^.uiId) cs of
         Just cId -> do
-            setFocus cId
+            setFocus tId cId
             case successAct of
                 Nothing -> return ()
                 Just act -> act cId
@@ -998,7 +1002,7 @@ createOrFocusDMChannel user successAct = do
             -- We have a user of that name but no channel. Time to make one!
             myId <- gets myUserId
             session <- getSession
-            csCurrentTeam.tsPendingChannelChange .= (Just $ ChangeByUserId $ user^.uiId)
+            csTeam(tId).tsPendingChannelChange .= (Just $ ChangeByUserId $ user^.uiId)
             doAsyncWith Normal $ do
                 -- create a new channel
                 chan <- MM.mmCreateDirectMessageChannel (user^.uiId, myId) session
@@ -1030,15 +1034,15 @@ changeChannelByName name = do
               (Just cId, Nothing)
                   -- We matched a channel and there was an explicit sigil, so we
                   -- don't care about the username match.
-                  | normalChannelSigil `T.isPrefixOf` name -> setFocus cId
+                  | normalChannelSigil `T.isPrefixOf` name -> setFocus tId cId
                   -- We matched both a channel and a user, even though there is
                   -- no DM channel.
                   | Just _ <- foundUser -> err
                   -- We matched a channel only.
-                  | otherwise -> setFocus cId
+                  | otherwise -> setFocus tId cId
               (Nothing, Just cId) ->
                   -- We matched a DM channel only.
-                  setFocus cId
+                  setFocus tId cId
               (Just _, Just _) ->
                   -- We matched both a channel and a DM channel.
                   err

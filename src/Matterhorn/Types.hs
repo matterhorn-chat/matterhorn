@@ -2368,10 +2368,10 @@ data SidebarUpdate =
     deriving (Eq, Show)
 
 
-resetAutocomplete :: MH ()
-resetAutocomplete = do
-    csCurrentTeam.tsEditState.cedAutocomplete .= Nothing
-    csCurrentTeam.tsEditState.cedAutocompletePending .= Nothing
+resetAutocomplete :: TeamId -> MH ()
+resetAutocomplete tId = do
+    csTeam(tId).tsEditState.cedAutocomplete .= Nothing
+    csTeam(tId).tsEditState.cedAutocompletePending .= Nothing
 
 
 -- * Slash Commands

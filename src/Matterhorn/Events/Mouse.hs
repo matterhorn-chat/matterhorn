@@ -58,8 +58,8 @@ globalMouseHandler tId (MouseDown n _ _ _) = do
     case n of
         ClickableChannelListEntry channelId -> do
             whenMode Main $ do
-                resetReturnChannel
-                setFocus channelId
+                resetReturnChannel tId
+                setFocus tId channelId
                 setMode tId Main
         ClickableTeamListEntry teamId ->
             -- We deliberately handle this event in all modes; this
@@ -95,7 +95,7 @@ urlListMouseHandler _ =
 channelSelectMouseHandler :: TeamId -> BrickEvent Name MHEvent -> MH ()
 channelSelectMouseHandler tId (MouseDown (ChannelSelectEntry match) _ _ _) = do
     setMode tId Main
-    setFocus $ channelListEntryChannelId $ matchEntry match
+    setFocus tId $ channelListEntryChannelId $ matchEntry match
 channelSelectMouseHandler _ _ =
     return ()
 

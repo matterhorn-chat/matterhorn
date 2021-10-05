@@ -26,7 +26,7 @@ import           Matterhorn.Types
 onEventMain :: TeamId -> Vty.Event -> MH ()
 onEventMain tId =
   void . handleKeyboardEvent (mainKeybindings tId) (\ ev -> do
-      resetReturnChannel
+      resetReturnChannel tId
       case ev of
           (Vty.EvPaste bytes) -> handlePaste tId bytes
           _ -> handleEditingInput tId ev
@@ -98,7 +98,7 @@ mainKeyHandlers tId =
              case isMultiline of
                  True -> mhHandleEventLensed (csTeam(tId).tsEditState.cedEditor) handleEditorEvent
                                            (Vty.EvKey Vty.KUp [])
-                 False -> channelHistoryBackward
+                 False -> channelHistoryBackward tId
 
     , mkKb
         ScrollDownEvent
@@ -109,7 +109,7 @@ mainKeyHandlers tId =
              case isMultiline of
                  True -> mhHandleEventLensed (csTeam(tId).tsEditState.cedEditor) handleEditorEvent
                                            (Vty.EvKey Vty.KDown [])
-                 False -> channelHistoryForward
+                 False -> channelHistoryForward tId
 
     , mkKb PageUpEvent "Page up in the channel message list (enters message select mode)" $ do
              beginMessageSelect
@@ -118,24 +118,24 @@ mainKeyHandlers tId =
              beginMessageSelect
              messageSelectFirst
 
-    , mkKb NextChannelEvent "Change to the next channel in the channel list"
-         nextChannel
+    , mkKb NextChannelEvent "Change to the next channel in the channel list" $
+         nextChannel tId
 
-    , mkKb PrevChannelEvent "Change to the previous channel in the channel list"
-         prevChannel
+    , mkKb PrevChannelEvent "Change to the previous channel in the channel list" $
+         prevChannel tId
 
-    , mkKb NextUnreadChannelEvent "Change to the next channel with unread messages or return to the channel marked '~'"
-         nextUnreadChannel
+    , mkKb NextUnreadChannelEvent "Change to the next channel with unread messages or return to the channel marked '~'" $
+         nextUnreadChannel tId
 
     , mkKb ShowAttachmentListEvent "Show the attachment list" $
          showAttachmentList tId
 
     , mkKb NextUnreadUserOrChannelEvent
-         "Change to the next channel with unread messages preferring direct messages"
-         nextUnreadUserOrChannel
+         "Change to the next channel with unread messages preferring direct messages" $
+         nextUnreadUserOrChannel tId
 
-    , mkKb LastChannelEvent "Change to the most recently-focused channel"
-         recentChannel
+    , mkKb LastChannelEvent "Change to the most recently-focused channel" $
+         recentChannel tId
 
     , staticKb "Send the current message"
          (Vty.EvKey Vty.KEnter []) $ do

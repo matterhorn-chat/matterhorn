@@ -59,7 +59,7 @@ checkForAutocompletion :: TeamId -> AutocompleteContext -> MH ()
 checkForAutocompletion tId ctx = do
     result <- getCompleterForInput tId ctx
     case result of
-        Nothing -> resetAutocomplete
+        Nothing -> resetAutocomplete tId
         Just (ty, runUpdater, searchString) -> do
             prevResult <- use (csTeam(tId).tsEditState.cedAutocomplete)
             -- We should update the completion state if EITHER:
