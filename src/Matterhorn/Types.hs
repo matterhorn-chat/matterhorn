@@ -163,7 +163,6 @@ module Matterhorn.Types
   , newTeamState
 
   , csTeamZipper
-  , csCurrentTeam
   , csTeams
   , csTeam
   , csChannelListOrientation
@@ -2211,11 +2210,6 @@ csCurrentChannelId tId =
 csCurrentTeamId :: SimpleGetter ChatState TeamId
 csCurrentTeamId =
     csTeamZipper.to Z.unsafeFocus
-
-csCurrentTeam :: Lens' ChatState TeamState
-csCurrentTeam =
-    lens (\st   -> st^.csTeam(st^.csCurrentTeamId))
-         (\st t -> st & csTeam(st^.csCurrentTeamId) .~ t)
 
 csTeam :: TeamId -> Lens' ChatState TeamState
 csTeam tId =
