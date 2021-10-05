@@ -16,7 +16,7 @@ import           Matterhorn.Prelude
 import           Control.Monad.Trans.Except
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Vector as V
-import           Lens.Micro.Platform ( (.~), (^?), (%~), at, ix, makeLenses )
+import           Lens.Micro.Platform ( (.~), (%~), at, ix, makeLenses )
 import           System.Directory ( createDirectoryIfMissing )
 import           System.FilePath ( dropFileName )
 import qualified System.IO.Strict as S

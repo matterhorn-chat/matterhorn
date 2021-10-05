@@ -11,7 +11,7 @@ import           Brick.Widgets.Border
 import           Brick.Widgets.Center
 import           Control.Monad.Trans.Reader ( withReaderT )
 import qualified Data.Text as T
-import           Lens.Micro.Platform ( (^?), (%~), to )
+import           Lens.Micro.Platform ( (%~), to )
 
 import           Network.Mattermost.Lenses
 import           Network.Mattermost.Types

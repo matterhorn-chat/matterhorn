@@ -61,6 +61,7 @@ module Matterhorn.Prelude
   -- common read-only lens operators
   , (Lens.&)
   , (Lens.^.)
+  , (Lens.^?)
   , Lens.use
 
   -- not available in all versions of GHC currently in use
