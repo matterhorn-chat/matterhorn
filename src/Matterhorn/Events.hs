@@ -222,7 +222,7 @@ teamEventHandlerByMode tId mode =
         UrlSelect                  -> void . onEventUrlSelect tId
         LeaveChannelConfirm        -> onEventLeaveChannelConfirm
         MessageSelect              -> onEventMessageSelect tId
-        MessageSelectDeleteConfirm -> onEventMessageSelectDeleteConfirm
+        MessageSelectDeleteConfirm -> onEventMessageSelectDeleteConfirm tId
         DeleteChannelConfirm       -> onEventDeleteChannelConfirm
         ThemeListOverlay           -> onEventThemeListOverlay tId
         PostListOverlay _          -> onEventPostListOverlay tId

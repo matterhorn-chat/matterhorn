@@ -38,8 +38,8 @@ mainKeybindings tId = mkKeybindings (mainKeyHandlers tId)
 mainKeyHandlers :: TeamId -> [KeyEventHandler]
 mainKeyHandlers tId =
     [ mkKb EnterSelectModeEvent
-        "Select a message to edit/reply/delete"
-        beginMessageSelect
+        "Select a message to edit/reply/delete" $
+        beginMessageSelect tId
 
     , mkKb ReplyRecentEvent
         "Reply to the most recent message" $
@@ -112,11 +112,11 @@ mainKeyHandlers tId =
                  False -> channelHistoryForward tId
 
     , mkKb PageUpEvent "Page up in the channel message list (enters message select mode)" $ do
-             beginMessageSelect
+             beginMessageSelect tId
 
     , mkKb SelectOldestMessageEvent "Scroll to top of channel message list" $ do
-             beginMessageSelect
-             messageSelectFirst
+             beginMessageSelect tId
+             messageSelectFirst tId
 
     , mkKb NextChannelEvent "Change to the next channel in the channel list" $
          nextChannel tId

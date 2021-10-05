@@ -61,8 +61,8 @@ getSelectedMessage tId st
         let chanMsgs = st ^. csCurrentChannel(tId) . ccContents . cdMessages
         findMessage selMsgId chanMsgs
 
-beginMessageSelect :: MH ()
-beginMessageSelect = do
+beginMessageSelect :: TeamId -> MH ()
+beginMessageSelect tId = do
     -- Invalidate the rendering cache since we cache messages to speed
     -- up the selection UI responsiveness. (See Draw.Messages for
     -- caching behavior.)
@@ -75,7 +75,6 @@ beginMessageSelect = do
     --
     -- If we can't find one at all, we ignore the mode switch request
     -- and just return.
-    tId <- use csCurrentTeamId
     chanMsgs <- use(csCurrentChannel(tId) . ccContents . cdMessages)
     let recentMsg = getLatestSelectableMessage chanMsgs
 
@@ -85,9 +84,8 @@ beginMessageSelect = do
 
 -- | Tell the server that the message we currently have selected
 -- should have its flagged state toggled.
-flagSelectedMessage :: MH ()
-flagSelectedMessage = do
-  tId <- use csCurrentTeamId
+flagSelectedMessage :: TeamId -> MH ()
+flagSelectedMessage tId = do
   selected <- use (to (getSelectedMessage tId))
   case selected of
     Just msg
@@ -97,9 +95,8 @@ flagSelectedMessage = do
 
 -- | Tell the server that the message we currently have selected
 -- should have its pinned state toggled.
-pinSelectedMessage :: MH ()
-pinSelectedMessage = do
-  tId <- use csCurrentTeamId
+pinSelectedMessage :: TeamId -> MH ()
+pinSelectedMessage tId = do
   selected <- use (to (getSelectedMessage tId))
   case selected of
     Just msg
@@ -107,18 +104,16 @@ pinSelectedMessage = do
         pinMessage pId (not (msg^.mPinned))
     _ -> return ()
 
-viewSelectedMessage :: MH ()
-viewSelectedMessage = do
-  tId <- use csCurrentTeamId
+viewSelectedMessage :: TeamId -> MH ()
+viewSelectedMessage tId = do
   selected <- use (to (getSelectedMessage tId))
   case selected of
     Just msg
-      | not (isGap msg) -> viewMessage msg
+      | not (isGap msg) -> viewMessage tId msg
     _        -> return ()
 
-fillSelectedGap :: MH ()
-fillSelectedGap = do
-  tId <- use csCurrentTeamId
+fillSelectedGap :: TeamId -> MH ()
+fillSelectedGap tId = do
   selected <- use (to (getSelectedMessage tId))
   case selected of
     Just msg
@@ -126,17 +121,15 @@ fillSelectedGap = do
                         asyncFetchMessagesForGap cId msg
     _        -> return ()
 
-viewMessage :: Message -> MH ()
-viewMessage m = do
-    tId <- use csCurrentTeamId
+viewMessage :: TeamId -> Message -> MH ()
+viewMessage tId m = do
     let w = tabbedWindow VMTabMessage (viewMessageWindowTemplate tId) MessageSelect (78, 25)
     csTeam(tId).tsViewedMessage .= Just (m, w)
     runTabShowHandlerFor (twValue w) w
     setMode tId ViewMessage
 
-yankSelectedMessageVerbatim :: MH ()
-yankSelectedMessageVerbatim = do
-    tId <- use csCurrentTeamId
+yankSelectedMessageVerbatim :: TeamId -> MH ()
+yankSelectedMessageVerbatim tId = do
     selectedMessage <- use (to (getSelectedMessage tId))
     case selectedMessage of
         Nothing -> return ()
@@ -146,9 +139,8 @@ yankSelectedMessageVerbatim = do
                 Just txt -> copyToClipboard txt
                 Nothing  -> return ()
 
-yankSelectedMessage :: MH ()
-yankSelectedMessage = do
-    tId <- use csCurrentTeamId
+yankSelectedMessage :: TeamId -> MH ()
+yankSelectedMessage tId = do
     selectedMessage <- use (to (getSelectedMessage tId))
     case selectedMessage of
         Nothing -> return ()
@@ -156,9 +148,8 @@ yankSelectedMessage = do
             setMode tId Main
             copyToClipboard $ m^.mMarkdownSource
 
-openSelectedMessageURLs :: MH ()
-openSelectedMessageURLs = whenMode MessageSelect $ do
-    tId <- use csCurrentTeamId
+openSelectedMessageURLs :: TeamId -> MH ()
+openSelectedMessageURLs tId = whenMode MessageSelect $ do
     mCurMsg <- use (to (getSelectedMessage tId))
     curMsg <- case mCurMsg of
         Nothing -> error "BUG: openSelectedMessageURLs: no selected message available"
@@ -172,9 +163,8 @@ openSelectedMessageURLs = whenMode MessageSelect $ do
             False ->
                 mhError $ ConfigOptionMissing "urlOpenCommand"
 
-beginConfirmDeleteSelectedMessage :: MH ()
-beginConfirmDeleteSelectedMessage = do
-    tId <- use csCurrentTeamId
+beginConfirmDeleteSelectedMessage :: TeamId -> MH ()
+beginConfirmDeleteSelectedMessage tId = do
     st <- use id
     selected <- use (to (getSelectedMessage tId))
     case selected of
@@ -182,9 +172,8 @@ beginConfirmDeleteSelectedMessage = do
             setMode tId MessageSelectDeleteConfirm
         _ -> return ()
 
-messageSelectUp :: MH ()
-messageSelectUp = do
-    tId <- use csCurrentTeamId
+messageSelectUp :: TeamId -> MH ()
+messageSelectUp tId = do
     mode <- use (csTeam(tId).tsMode)
     selected <- use (csTeam(tId).tsMessageSelect.to selectMessageId)
     case selected of
@@ -194,9 +183,8 @@ messageSelectUp = do
             csTeam(tId).tsMessageSelect .= MessageSelectState (nextMsgId <|> selected)
         _ -> return ()
 
-messageSelectDown :: MH ()
-messageSelectDown = do
-    tId <- use csCurrentTeamId
+messageSelectDown :: TeamId -> MH ()
+messageSelectDown tId = do
     selected <- use (csTeam(tId).tsMessageSelect.to selectMessageId)
     case selected of
         Just _ -> whenMode MessageSelect $ do
@@ -205,21 +193,20 @@ messageSelectDown = do
             csTeam(tId).tsMessageSelect .= MessageSelectState (nextMsgId <|> selected)
         _ -> return ()
 
-messageSelectDownBy :: Int -> MH ()
-messageSelectDownBy amt
+messageSelectDownBy :: TeamId -> Int -> MH ()
+messageSelectDownBy tId amt
     | amt <= 0 = return ()
     | otherwise =
-        messageSelectDown >> messageSelectDownBy (amt - 1)
+        messageSelectDown tId >> messageSelectDownBy tId (amt - 1)
 
-messageSelectUpBy :: Int -> MH ()
-messageSelectUpBy amt
+messageSelectUpBy :: TeamId -> Int -> MH ()
+messageSelectUpBy tId amt
     | amt <= 0 = return ()
     | otherwise =
-      messageSelectUp >> messageSelectUpBy (amt - 1)
+      messageSelectUp tId >> messageSelectUpBy tId (amt - 1)
 
-messageSelectFirst :: MH ()
-messageSelectFirst = do
-    tId <- use csCurrentTeamId
+messageSelectFirst :: TeamId -> MH ()
+messageSelectFirst tId = do
     selected <- use (csTeam(tId).tsMessageSelect.to selectMessageId)
     case selected of
         Just _ -> whenMode MessageSelect $ do
@@ -230,9 +217,8 @@ messageSelectFirst = do
               Nothing -> mhLog LogError "No first message found from current message?!"
         _ -> return ()
 
-messageSelectLast :: MH ()
-messageSelectLast = do
-    tId <- use csCurrentTeamId
+messageSelectLast :: TeamId -> MH ()
+messageSelectLast tId = do
     selected <- use (csTeam(tId).tsMessageSelect.to selectMessageId)
     case selected of
         Just _ -> whenMode MessageSelect $ do
@@ -243,9 +229,8 @@ messageSelectLast = do
               Nothing -> mhLog LogError "No last message found from current message?!"
         _ -> return ()
 
-deleteSelectedMessage :: MH ()
-deleteSelectedMessage = do
-    tId <- use csCurrentTeamId
+deleteSelectedMessage :: TeamId -> MH ()
+deleteSelectedMessage tId = do
     selectedMessage <- use (to (getSelectedMessage tId))
     st <- use id
     cId <- use (csCurrentChannelId tId)
@@ -261,9 +246,8 @@ deleteSelectedMessage = do
               Nothing -> return ()
         _ -> return ()
 
-beginReplyCompose :: MH ()
-beginReplyCompose = do
-    tId <- use csCurrentTeamId
+beginReplyCompose :: TeamId -> MH ()
+beginReplyCompose tId = do
     selected <- use (to (getSelectedMessage tId))
     case selected of
         Just msg | isReplyable msg -> do
@@ -273,9 +257,8 @@ beginReplyCompose = do
             csTeam(tId).tsEditState.cedEditMode .= Replying rootMsg p
         _ -> return ()
 
-beginEditMessage :: MH ()
-beginEditMessage = do
-    tId <- use csCurrentTeamId
+beginEditMessage :: TeamId -> MH ()
+beginEditMessage tId = do
     selected <- use (to (getSelectedMessage tId))
     st <- use id
     case selected of
