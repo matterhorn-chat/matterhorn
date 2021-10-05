@@ -2329,10 +2329,10 @@ userIdForUsername :: Text -> ChatState -> Maybe UserId
 userIdForUsername name st =
     fst <$> (findUserByUsername name $ st^.csUsers)
 
-channelIdByChannelName :: Text -> ChatState -> Maybe ChannelId
-channelIdByChannelName name st =
+channelIdByChannelName :: TeamId -> Text -> ChatState -> Maybe ChannelId
+channelIdByChannelName tId name st =
     let matches (_, cc) = cc^.ccInfo.cdName == (trimChannelSigil name) &&
-                          cc^.ccInfo.cdTeamId == (Just $ st^.csCurrentTeamId)
+                          cc^.ccInfo.cdTeamId == (Just tId)
     in listToMaybe $ fst <$> filteredChannels matches (st^.csChannels)
 
 channelIdByUsername :: Text -> ChatState -> Maybe ChannelId

@@ -1016,7 +1016,7 @@ changeChannelByName :: Text -> MH ()
 changeChannelByName name = do
     tId <- use csCurrentTeamId
     myId <- gets myUserId
-    mCId <- gets (channelIdByChannelName name)
+    mCId <- gets (channelIdByChannelName tId name)
     mDMCId <- gets (channelIdByUsername name)
 
     withFetchedUserMaybe (UserFetchByUsername name) $ \foundUser -> do
