@@ -49,7 +49,9 @@ runScript cId outputChan fp text = do
             True -> Just $ do
                 withChannel cId $ \chan -> do
                     mode <- case chan^.ccInfo.cdTeamId of
-                        Nothing -> use (csCurrentTeam.tsEditState.cedEditMode)
+                        Nothing -> do
+                            tId <- use csCurrentTeamId
+                            use (csTeam(tId).tsEditState.cedEditMode)
                         Just tId -> use (csTeam(tId).tsEditState.cedEditMode)
                     sendMessage cId mode (T.pack $ programStdout po) []
             False -> Nothing
