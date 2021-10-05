@@ -28,8 +28,8 @@ urlSelectKeyHandlers tId =
          (Vty.EvKey Vty.KEnter []) $
              openSelectedURL tId
 
-    , mkKb SaveAttachmentEvent "Save the selected attachment"
-        openSaveAttachmentWindow
+    , mkKb SaveAttachmentEvent "Save the selected attachment" $
+        openSaveAttachmentWindow tId
 
     , mkKb CancelEvent "Cancel URL selection" $ stopUrlSelect tId
 

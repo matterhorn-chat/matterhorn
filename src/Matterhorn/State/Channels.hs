@@ -473,13 +473,12 @@ setFocusWith tId updatePrev f onNoChange = do
 postChangeChannelCommon :: TeamId -> MH ()
 postChangeChannelCommon tId = do
     resetEditorState tId
-    updateChannelListScroll
-    loadLastEdit
-    fetchVisibleIfNeeded
+    updateChannelListScroll tId
+    loadLastEdit tId
+    fetchVisibleIfNeeded tId
 
-loadLastEdit :: MH ()
-loadLastEdit = do
-    tId <- use csCurrentTeamId
+loadLastEdit :: TeamId -> MH ()
+loadLastEdit tId = do
     cId <- use (csCurrentChannelId tId)
 
     oldEphemeral <- preuse (csChannel(cId).ccEditState)
@@ -500,9 +499,8 @@ loadLastChannelInput tId = do
             csTeam(tId).tsEditState.cedEditor %= (applyEdit $ insertMany lastEdit . clearZipper)
             csTeam(tId).tsEditState.cedEditMode .= lastEditMode
 
-updateChannelListScroll :: MH ()
-updateChannelListScroll = do
-    tId <- use csCurrentTeamId
+updateChannelListScroll :: TeamId -> MH ()
+updateChannelListScroll tId = do
     mh $ vScrollToBeginning (viewportScroll $ ChannelList tId)
 
 preChangeChannelCommon :: TeamId -> MH ()
@@ -706,7 +704,7 @@ nextUnreadChannel :: TeamId -> MH ()
 nextUnreadChannel tId = do
     st <- use id
     setReturnChannel tId
-    setFocusWith tId True (getNextUnreadChannel st) (gotoReturnChannel tId)
+    setFocusWith tId True (getNextUnreadChannel st tId) (gotoReturnChannel tId)
 
 nextUnreadUserOrChannel :: TeamId -> MH ()
 nextUnreadUserOrChannel tId = do
@@ -768,8 +766,9 @@ leaveChannelIfPossible cId delete = do
                     )
 
 getNextUnreadChannel :: ChatState
+                     -> TeamId
                      -> (Zipper a ChannelListEntry -> Zipper a ChannelListEntry)
-getNextUnreadChannel st =
+getNextUnreadChannel st tId =
     -- The next channel with unread messages must also be a channel
     -- other than the current one, since the zipper may be on a channel
     -- that has unread messages and will stay that way until we leave
@@ -777,7 +776,7 @@ getNextUnreadChannel st =
     -- for the next candidate channel.
     Z.findRight (\e ->
                 let cId = channelListEntryChannelId e
-                in channelListEntryUnread e && (cId /= st^.csCurrentChannelId(st^.csCurrentTeamId)))
+                in channelListEntryUnread e && (cId /= st^.csCurrentChannelId(tId)))
 
 getNextUnreadUserOrChannel :: ChatState
                            -> TeamId
@@ -791,17 +790,15 @@ getNextUnreadUserOrChannel st tId z =
     in fromMaybe (Z.findRight isFresh z)
                  (Z.maybeFindRight matches z)
 
-leaveCurrentChannel :: MH ()
-leaveCurrentChannel = do
-    tId <- use csCurrentTeamId
+leaveCurrentChannel :: TeamId -> MH ()
+leaveCurrentChannel tId = do
     use (csCurrentChannelId tId) >>= leaveChannel
 
-createGroupChannel :: Text -> MH ()
-createGroupChannel usernameList = do
+createGroupChannel :: TeamId -> Text -> MH ()
+createGroupChannel tId usernameList = do
     me <- gets myUser
     session <- getSession
     cs <- use csChannels
-    tId <- use csCurrentTeamId
 
     doAsyncWith Preempt $ do
         let usernames = Seq.fromList $ fmap trimUserSigil $ T.words usernameList
@@ -874,10 +871,9 @@ channelHistoryBackward tId = do
     loadHistoryEntryToEditor tId cId newI
     csTeam(tId).tsEditState.cedEphemeral.eesInputHistoryPosition .= (Just newI)
 
-createOrdinaryChannel :: Bool -> Text -> MH ()
-createOrdinaryChannel public name = do
+createOrdinaryChannel :: TeamId -> Bool -> Text -> MH ()
+createOrdinaryChannel myTId public name = do
     session <- getSession
-    myTId <- use csCurrentTeamId
     doAsyncWith Preempt $ do
         -- create a new chat channel
         let slug = T.map (\ c -> if isAlphaNum c then c else '-') (T.toLower name)
@@ -911,13 +907,12 @@ handleChannelInvite cId = do
                   pending <- checkPendingChannelChange tId cId
                   handleNewChannel (isJust pending) SidebarUpdateImmediate cwd member)
 
-addUserByNameToCurrentChannel :: Text -> MH ()
-addUserByNameToCurrentChannel uname =
-    withFetchedUser (UserFetchByUsername uname) addUserToCurrentChannel
+addUserByNameToCurrentChannel :: TeamId -> Text -> MH ()
+addUserByNameToCurrentChannel tId uname =
+    withFetchedUser (UserFetchByUsername uname) (addUserToCurrentChannel tId)
 
-addUserToCurrentChannel :: UserInfo -> MH ()
-addUserToCurrentChannel u = do
-    tId <- use csCurrentTeamId
+addUserToCurrentChannel :: TeamId -> UserInfo -> MH ()
+addUserToCurrentChannel tId u = do
     cId <- use (csCurrentChannelId tId)
     session <- getSession
     let channelMember = MinChannelMember (u^.uiId) cId
@@ -925,28 +920,25 @@ addUserToCurrentChannel u = do
         tryMM (void $ MM.mmAddUser cId channelMember session)
               (const $ return Nothing)
 
-removeUserFromCurrentChannel :: Text -> MH ()
-removeUserFromCurrentChannel uname =
+removeUserFromCurrentChannel :: TeamId -> Text -> MH ()
+removeUserFromCurrentChannel tId uname =
     withFetchedUser (UserFetchByUsername uname) $ \u -> do
-        tId <- use csCurrentTeamId
         cId <- use (csCurrentChannelId tId)
         session <- getSession
         doAsyncWith Normal $ do
             tryMM (void $ MM.mmRemoveUserFromChannel cId (UserById $ u^.uiId) session)
                   (const $ return Nothing)
 
-startLeaveCurrentChannel :: MH ()
-startLeaveCurrentChannel = do
-    tId <- use csCurrentTeamId
+startLeaveCurrentChannel :: TeamId -> MH ()
+startLeaveCurrentChannel tId = do
     cInfo <- use (csCurrentChannel(tId).ccInfo)
     case cInfo^.cdType of
         Direct -> hideDMChannel (cInfo^.cdChannelId)
         Group -> hideDMChannel (cInfo^.cdChannelId)
         _ -> setMode tId LeaveChannelConfirm
 
-deleteCurrentChannel :: MH ()
-deleteCurrentChannel = do
-    tId <- use csCurrentTeamId
+deleteCurrentChannel :: TeamId -> MH ()
+deleteCurrentChannel tId = do
     setMode tId Main
     cId <- use (csCurrentChannelId tId)
     leaveChannelIfPossible cId True
@@ -960,24 +952,22 @@ isRecentChannel st tId cId = st^.csTeam(tId).tsRecentChannel == Just cId
 isReturnChannel :: ChatState -> TeamId -> ChannelId -> Bool
 isReturnChannel st tId cId = st^.csTeam(tId).tsReturnChannel == Just cId
 
-joinChannelByName :: Text -> MH ()
-joinChannelByName rawName = do
+joinChannelByName :: TeamId -> Text -> MH ()
+joinChannelByName tId rawName = do
     session <- getSession
-    tId <- use csCurrentTeamId
     doAsyncWith Preempt $ do
         result <- try $ MM.mmGetChannelByName tId (trimChannelSigil rawName) session
         return $ Just $ case result of
             Left (_::SomeException) -> mhError $ NoSuchChannel rawName
-            Right chan -> joinChannel $ getId chan
+            Right chan -> joinChannel tId $ getId chan
 
 -- | If the user is not a member of the specified channel, submit a
 -- request to join it. Otherwise switch to the channel.
-joinChannel :: ChannelId -> MH ()
-joinChannel chanId = joinChannel' chanId Nothing
+joinChannel :: TeamId -> ChannelId -> MH ()
+joinChannel tId chanId = joinChannel' tId chanId Nothing
 
-joinChannel' :: ChannelId -> Maybe (MH ()) -> MH ()
-joinChannel' chanId act = do
-    tId <- use csCurrentTeamId
+joinChannel' :: TeamId -> ChannelId -> Maybe (MH ()) -> MH ()
+joinChannel' tId chanId act = do
     setMode tId Main
     mChan <- preuse (csChannel(chanId))
     case mChan of
@@ -990,9 +980,8 @@ joinChannel' chanId act = do
             csTeam(tId).tsPendingChannelChange .= (Just $ ChangeByChannelId tId chanId act)
             doAsyncChannelMM Preempt chanId (\ s c -> MM.mmAddUser c member s) (const $ return act)
 
-createOrFocusDMChannel :: UserInfo -> Maybe (ChannelId -> MH ()) -> MH ()
-createOrFocusDMChannel user successAct = do
-    tId <- use csCurrentTeamId
+createOrFocusDMChannel :: TeamId -> UserInfo -> Maybe (ChannelId -> MH ()) -> MH ()
+createOrFocusDMChannel tId user successAct = do
     cs <- use csChannels
     case getDmChannelFor (user^.uiId) cs of
         Just cId -> do
@@ -1012,9 +1001,8 @@ createOrFocusDMChannel user successAct = do
 
 -- | This switches to the named channel or creates it if it is a missing
 -- but valid user channel.
-changeChannelByName :: Text -> MH ()
-changeChannelByName name = do
-    tId <- use csCurrentTeamId
+changeChannelByName :: TeamId -> Text -> MH ()
+changeChannelByName tId name = do
     myId <- gets myUserId
     mCId <- gets (channelIdByChannelName tId name)
     mDMCId <- gets (channelIdByUsername name)
@@ -1030,7 +1018,7 @@ changeChannelByName name = do
                   case foundUser of
                       -- We know about the user but there isn't already a DM
                       -- channel, so create one.
-                      Just user -> createOrFocusDMChannel user Nothing
+                      Just user -> createOrFocusDMChannel tId user Nothing
                       -- There were no matches of any kind.
                       Nothing -> mhError $ NoSuchChannel name
               (Just cId, Nothing)
@@ -1049,9 +1037,8 @@ changeChannelByName name = do
                   -- We matched both a channel and a DM channel.
                   err
 
-setChannelTopic :: Text -> MH ()
-setChannelTopic msg = do
-    tId <- use csCurrentTeamId
+setChannelTopic :: TeamId -> Text -> MH ()
+setChannelTopic tId msg = do
     cId <- use (csCurrentChannelId tId)
     let patch = defaultChannelPatch { channelPatchHeader = Just msg }
     doAsyncChannelMM Preempt cId
@@ -1062,9 +1049,8 @@ setChannelTopic msg = do
 -- to the server to change the name, but does not actually change the
 -- name in Matterhorn yet; that is handled by a websocket event handled
 -- asynchronously.
-renameChannelUrl :: Text -> MH ()
-renameChannelUrl name = do
-    tId <- use csCurrentTeamId
+renameChannelUrl :: TeamId -> Text -> MH ()
+renameChannelUrl tId name = do
     cId <- use (csCurrentChannelId tId)
     s <- getSession
     let patch = defaultChannelPatch { channelPatchName = Just name }
@@ -1077,9 +1063,8 @@ getCurrentChannelTopic tId = do
     ch <- use (csCurrentChannel tId)
     return $ ch^.ccInfo.cdHeader
 
-beginCurrentChannelDeleteConfirm :: MH ()
-beginCurrentChannelDeleteConfirm = do
-    tId <- use csCurrentTeamId
+beginCurrentChannelDeleteConfirm :: TeamId -> MH ()
+beginCurrentChannelDeleteConfirm tId = do
     cId <- use (csCurrentChannelId tId)
     withChannel cId $ \chan -> do
         let chType = chan^.ccInfo.cdType
@@ -1093,10 +1078,9 @@ updateChannelNotifyProps cId notifyProps = do
         csChannel(cId).ccInfo.cdNotifyProps .= notifyProps
         updateSidebar (chan^.ccInfo.cdTeamId)
 
-toggleChannelFavoriteStatus :: MH ()
-toggleChannelFavoriteStatus = do
+toggleChannelFavoriteStatus :: TeamId -> MH ()
+toggleChannelFavoriteStatus tId = do
     myId <- gets myUserId
-    tId  <- use csCurrentTeamId
     cId <- use (csCurrentChannelId tId)
     userPrefs <- use (csResources.crUserPreferences)
     session <- getSession

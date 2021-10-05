@@ -23,12 +23,12 @@ import           Matterhorn.Types.KeyEvents
 drawTabbedWindow :: (Eq a, Show a)
                  => TabbedWindow a
                  -> ChatState
+                 -> TeamId
                  -> Widget Name
-drawTabbedWindow w cs =
+drawTabbedWindow w cs tId =
     let cur = getCurrentTabbedWindowEntry w
         tabBody = tweRender cur (twValue w) cs
         title = forceAttr clientEmphAttr $ twtTitle (twTemplate w) (tweValue cur)
-        tId = cs^.csCurrentTeamId
     in centerLayer $
        vLimit (twWindowHeight w) $
        hLimit (twWindowWidth w) $

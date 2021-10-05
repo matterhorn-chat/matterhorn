@@ -87,7 +87,7 @@ messageSelectKeyHandlers tId =
     , mkKb FillGapEvent "Fetch messages for the selected gap" $
          fillSelectedGap tId
 
-    , mkKb ReactToMessageEvent "Post a reaction to the selected message"
-         enterReactionEmojiListOverlayMode
+    , mkKb ReactToMessageEvent "Post a reaction to the selected message" $
+         enterReactionEmojiListOverlayMode tId
 
     ]

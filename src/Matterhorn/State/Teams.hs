@@ -63,13 +63,15 @@ setTeamFocusWith f = do
     updateViewed True
 
     csTeamZipper %= f
-    postChangeTeamCommon
+
+    tId <- use csCurrentTeamId
+    postChangeTeamCommon tId
 
 -- | Book-keeping common to all team selection changes.
-postChangeTeamCommon :: MH ()
-postChangeTeamCommon = do
+postChangeTeamCommon :: TeamId -> MH ()
+postChangeTeamCommon tId = do
     updateViewed False
-    fetchVisibleIfNeeded
+    fetchVisibleIfNeeded tId
     mh $ hScrollToBeginning (viewportScroll TeamList)
 
 -- | Fetch the specified team and add it to the application state.

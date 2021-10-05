@@ -8,12 +8,13 @@ import           Matterhorn.Prelude
 
 import           Brick.Main ( viewportScroll, vScrollToBeginning )
 
+import           Network.Mattermost.Types ( TeamId )
+
 import           Matterhorn.Types
 
 
-showHelpScreen :: HelpTopic -> MH ()
-showHelpScreen topic = do
-    tId <- use csCurrentTeamId
+showHelpScreen :: TeamId -> HelpTopic -> MH ()
+showHelpScreen tId topic = do
     curMode <- use (csTeam(tId).tsMode)
     case curMode of
         ShowHelp {} -> return ()

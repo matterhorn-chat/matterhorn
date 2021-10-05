@@ -108,16 +108,19 @@ commandList =
         prevChannel tId
 
   , Cmd "create-channel" "Create a new public channel"
-    (LineArg "channel name") $ \ name ->
-        createOrdinaryChannel True name
+    (LineArg "channel name") $ \ name -> do
+        tId <- use csCurrentTeamId
+        createOrdinaryChannel tId True name
 
   , Cmd "create-private-channel" "Create a new private channel"
-    (LineArg "channel name") $ \ name ->
-        createOrdinaryChannel False name
+    (LineArg "channel name") $ \ name -> do
+        tId <- use csCurrentTeamId
+        createOrdinaryChannel tId False name
 
   , Cmd "delete-channel" "Delete the current channel"
-    NoArg $ \ () ->
-        beginCurrentChannelDeleteConfirm
+    NoArg $ \ () -> do
+        tId <- use csCurrentTeamId
+        beginCurrentChannelDeleteConfirm tId
 
   , Cmd "hide" "Hide the current DM or group channel from the channel list"
     NoArg $ \ () -> do
@@ -129,18 +132,21 @@ commandList =
         connectWebsockets
 
   , Cmd "members" "Show the current channel's members"
-    NoArg $ \ () ->
-        enterChannelMembersUserList
+    NoArg $ \ () -> do
+        tId <- use csCurrentTeamId
+        enterChannelMembersUserList tId
 
-  , Cmd "leave" "Leave a normal channel or hide a DM channel" NoArg $ \ () ->
-        startLeaveCurrentChannel
+  , Cmd "leave" "Leave a normal channel or hide a DM channel" NoArg $ \ () -> do
+        tId <- use csCurrentTeamId
+        startLeaveCurrentChannel tId
 
   , Cmd "join" "Find a channel to join" NoArg $ \ () -> do
         tId <- use csCurrentTeamId
         enterChannelListOverlayMode tId
 
-  , Cmd "join" "Join the specified channel" (ChannelArg NoArg) $ \(n, ()) ->
-        joinChannelByName n
+  , Cmd "join" "Join the specified channel" (ChannelArg NoArg) $ \(n, ()) -> do
+        tId <- use csCurrentTeamId
+        joinChannelByName tId n
 
   , Cmd "theme" "List the available themes" NoArg $ \ () -> do
         tId <- use csCurrentTeamId
@@ -152,24 +158,29 @@ commandList =
         setTheme tId themeName
 
   , Cmd "topic" "Set the current channel's topic (header) interactively"
-    NoArg $ \ () ->
-        openChannelTopicWindow
+    NoArg $ \ () -> do
+        tId <- use csCurrentTeamId
+        openChannelTopicWindow tId
 
   , Cmd "topic" "Set the current channel's topic (header)"
-    (LineArg "topic") $ \ p ->
-        if not (T.null p) then setChannelTopic p else return ()
+    (LineArg "topic") $ \ p -> do
+        tId <- use csCurrentTeamId
+        if not (T.null p) then setChannelTopic tId p else return ()
 
   , Cmd "add-user" "Search for a user to add to the current channel"
-    NoArg $ \ () ->
-        enterChannelInviteUserList
+    NoArg $ \ () -> do
+        tId <- use csCurrentTeamId
+        enterChannelInviteUserList tId
 
   , Cmd "msg" "Search for a user to enter a private chat"
-    NoArg $ \ () ->
-        enterDMSearchUserList
+    NoArg $ \ () -> do
+        tId <- use csCurrentTeamId
+        enterDMSearchUserList tId
 
   , Cmd "msg" "Chat with the specified user"
-    (UserArg NoArg) $ \ (name, ()) ->
-        changeChannelByName name
+    (UserArg NoArg) $ \ (name, ()) -> do
+        tId <- use csCurrentTeamId
+        changeChannelByName tId name
 
   , Cmd "username-attribute" "Display the attribute used to color the specified username"
     (UserArg NoArg) $ \ (name, ()) ->
@@ -177,10 +188,10 @@ commandList =
 
   , Cmd "msg" "Go to a user's channel and send the specified message or command"
     (UserArg $ LineArg "message or command") $ \ (name, msg) -> do
+        tId <- use csCurrentTeamId
         withFetchedUserMaybe (UserFetchByUsername name) $ \foundUser -> do
             case foundUser of
-                Just user -> createOrFocusDMChannel user $ Just $ \cId -> do
-                    tId <- use csCurrentTeamId
+                Just user -> createOrFocusDMChannel tId user $ Just $ \cId -> do
                     handleInputSubmission tId cId msg
                 Nothing -> mhError $ NoSuchUser name
 
@@ -205,18 +216,21 @@ commandList =
         getLogDestination
 
   , Cmd "add-user" "Add a user to the current channel"
-    (UserArg NoArg) $ \ (uname, ()) ->
-        addUserByNameToCurrentChannel uname
+    (UserArg NoArg) $ \ (uname, ()) -> do
+        tId <- use csCurrentTeamId
+        addUserByNameToCurrentChannel tId uname
 
   , Cmd "remove" "Remove a user from the current channel"
-    (UserArg NoArg) $ \ (uname, ()) ->
-        removeUserFromCurrentChannel uname
+    (UserArg NoArg) $ \ (uname, ()) -> do
+        tId <- use csCurrentTeamId
+        removeUserFromCurrentChannel tId uname
 
   , Cmd "user" "Show users to initiate a private DM chat channel"
     -- n.b. this is identical to "msg", but is provided as an
     -- alternative mental model for useability.
-    NoArg $ \ () ->
-        enterDMSearchUserList
+    NoArg $ \ () -> do
+        tId <- use csCurrentTeamId
+        enterDMSearchUserList tId
 
   , Cmd "message-preview" "Toggle preview of the current message" NoArg $ \_ ->
         toggleMessagePreview
@@ -234,31 +248,36 @@ commandList =
         toggleExpandedChannelTopics
 
   , Cmd "focus" "Focus on a channel or user"
-    (ChannelArg NoArg) $ \ (name, ()) ->
-        changeChannelByName name
+    (ChannelArg NoArg) $ \ (name, ()) -> do
+        tId <- use csCurrentTeamId
+        changeChannelByName tId name
 
   , Cmd "focus" "Select from available channels" NoArg $ \ () -> do
         tId <- use csCurrentTeamId
         beginChannelSelect tId
 
-  , Cmd "help" "Show the main help screen" NoArg $ \ _ ->
-        showHelpScreen mainHelpTopic
+  , Cmd "help" "Show the main help screen" NoArg $ \ _ -> do
+        tId <- use csCurrentTeamId
+        showHelpScreen tId mainHelpTopic
 
-  , Cmd "shortcuts" "Show keyboard shortcuts" NoArg $ \ _ ->
-        showHelpScreen mainHelpTopic
+  , Cmd "shortcuts" "Show keyboard shortcuts" NoArg $ \ _ -> do
+        tId <- use csCurrentTeamId
+        showHelpScreen tId mainHelpTopic
 
   , Cmd "help" "Show help about a particular topic"
-      (TokenArg "topic" NoArg) $ \ (topicName, ()) ->
+      (TokenArg "topic" NoArg) $ \ (topicName, ()) -> do
+          tId <- use csCurrentTeamId
           case lookupHelpTopic topicName of
               Nothing -> mhError $ NoSuchHelpTopic topicName
-              Just topic -> showHelpScreen topic
+              Just topic -> showHelpScreen tId topic
 
   , Cmd "sh" "List the available shell scripts" NoArg $ \ () ->
         listScripts
 
   , Cmd "group-create" "Create a group chat"
-    (LineArg (addUserSigil "user" <> " [" <> addUserSigil "user" <> " ...]"))
-        createGroupChannel
+    (LineArg (addUserSigil "user" <> " [" <> addUserSigil "user" <> " ...]")) $ \ t -> do
+        tId <- use csCurrentTeamId
+        createGroupChannel tId t
 
   , Cmd "sh" "Run a prewritten shell script"
     (TokenArg "script" (LineArg "message")) $ \ (script, text) -> do
@@ -282,8 +301,9 @@ commandList =
         tId <- use csCurrentTeamId
         enterEditNotifyPrefsMode tId
 
-  , Cmd "rename-channel-url" "Rename the current channel's URL name" (TokenArg "channel name" NoArg) $ \ (name, _) ->
-        renameChannelUrl name
+  , Cmd "rename-channel-url" "Rename the current channel's URL name" (TokenArg "channel name" NoArg) $ \ (name, _) -> do
+        tId <- use csCurrentTeamId
+        renameChannelUrl tId name
 
   , Cmd "move-team-left" "Move the currently-selected team to the left in the team list" NoArg $ \_ ->
         moveCurrentTeamLeft
@@ -295,8 +315,9 @@ commandList =
         tId <- use csCurrentTeamId
         attachFileByPath tId path
 
-  , Cmd "toggle-favorite" "Toggle the favorite status of the current channel" NoArg $ \_ ->
-        toggleChannelFavoriteStatus
+  , Cmd "toggle-favorite" "Toggle the favorite status of the current channel" NoArg $ \_ -> do
+        tId <- use csCurrentTeamId
+        toggleChannelFavoriteStatus tId
   ]
 
 displayUsernameAttribute :: Text -> MH ()

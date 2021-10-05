@@ -94,7 +94,7 @@ updateTeamSidebar tId = do
     -- that it gets loaded.
     newCid <- use (csCurrentChannelId tId)
     when (newCid /= oldCid) $
-        fetchVisibleIfNeeded
+        fetchVisibleIfNeeded tId
 
 toggleChannelListVisibility :: MH ()
 toggleChannelListVisibility = do

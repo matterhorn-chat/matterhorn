@@ -45,7 +45,7 @@ messageEntry :: TeamId -> TabbedWindowEntry ViewMessageWindowTab
 messageEntry tId =
     TabbedWindowEntry { tweValue = VMTabMessage
                       , tweRender = renderTab tId
-                      , tweHandleEvent = handleEvent
+                      , tweHandleEvent = handleEvent tId
                       , tweTitle = tabTitle
                       , tweShowHandler = onShow tId
                       }
@@ -54,7 +54,7 @@ reactionsEntry :: TeamId -> TabbedWindowEntry ViewMessageWindowTab
 reactionsEntry tId =
     TabbedWindowEntry { tweValue = VMTabReactions
                       , tweRender = renderTab tId
-                      , tweHandleEvent = handleEvent
+                      , tweHandleEvent = handleEvent tId
                       , tweTitle = tabTitle
                       , tweShowHandler = onShow tId
                       }
@@ -94,11 +94,11 @@ getLatestMessage cs tId m =
         Nothing -> m
         Just mId -> fromJust $ findMessage mId $ cs^.csCurrentChannel(tId).ccContents.cdMessages
 
-handleEvent :: ViewMessageWindowTab -> Vty.Event -> MH ()
-handleEvent VMTabMessage =
-    void . handleKeyboardEvent viewMessageKeybindings (const $ return ())
-handleEvent VMTabReactions =
-    void . handleKeyboardEvent viewMessageReactionsKeybindings (const $ return ())
+handleEvent :: TeamId -> ViewMessageWindowTab -> Vty.Event -> MH ()
+handleEvent tId VMTabMessage =
+    void . handleKeyboardEvent (viewMessageKeybindings tId) (const $ return ())
+handleEvent tId VMTabReactions =
+    void . handleKeyboardEvent (viewMessageReactionsKeybindings tId) (const $ return ())
 
 reactionsText :: ChatState -> TeamId -> Message -> Widget Name
 reactionsText st tId m = viewport (ViewMessageReactionsArea tId) Vertical body
@@ -175,80 +175,64 @@ viewMessageBox st tId msg =
         ctx <- getContext
         render $ maybeWarn $ viewport (ViewMessageArea tId) Both $ mkBody (ctx^.availWidthL)
 
-viewMessageKeybindings :: KeyConfig -> KeyHandlerMap
-viewMessageKeybindings = mkKeybindings viewMessageKeyHandlers
+viewMessageKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
+viewMessageKeybindings tId = mkKeybindings (viewMessageKeyHandlers tId)
 
-viewMessageKeyHandlers :: [KeyEventHandler]
-viewMessageKeyHandlers =
+viewMessageKeyHandlers :: TeamId -> [KeyEventHandler]
+viewMessageKeyHandlers tId =
     let vs = viewportScroll . ViewMessageArea
     in [ mkKb PageUpEvent "Page up" $ do
-           tId <- use csCurrentTeamId
            mh $ vScrollBy (vs tId) (-1 * pageAmount)
 
        , mkKb PageDownEvent "Page down" $ do
-           tId <- use csCurrentTeamId
            mh $ vScrollBy (vs tId) pageAmount
 
        , mkKb PageLeftEvent "Page left" $ do
-           tId <- use csCurrentTeamId
            mh $ hScrollBy (vs tId) (-2 * pageAmount)
 
        , mkKb PageRightEvent "Page right" $ do
-           tId <- use csCurrentTeamId
            mh $ hScrollBy (vs tId) (2 * pageAmount)
 
        , mkKb ScrollUpEvent "Scroll up" $ do
-           tId <- use csCurrentTeamId
            mh $ vScrollBy (vs tId) (-1)
 
        , mkKb ScrollDownEvent "Scroll down" $ do
-           tId <- use csCurrentTeamId
            mh $ vScrollBy (vs tId) 1
 
        , mkKb ScrollLeftEvent "Scroll left" $ do
-           tId <- use csCurrentTeamId
            mh $ hScrollBy (vs tId) (-1)
 
        , mkKb ScrollRightEvent "Scroll right" $ do
-           tId <- use csCurrentTeamId
            mh $ hScrollBy (vs tId) 1
 
        , mkKb ScrollBottomEvent "Scroll to the end of the message" $ do
-           tId <- use csCurrentTeamId
            mh $ vScrollToEnd (vs tId)
 
        , mkKb ScrollTopEvent "Scroll to the beginning of the message" $ do
-           tId <- use csCurrentTeamId
            mh $ vScrollToBeginning (vs tId)
        ]
 
-viewMessageReactionsKeybindings :: KeyConfig -> KeyHandlerMap
-viewMessageReactionsKeybindings = mkKeybindings viewMessageReactionsKeyHandlers
+viewMessageReactionsKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
+viewMessageReactionsKeybindings tId = mkKeybindings (viewMessageReactionsKeyHandlers tId)
 
-viewMessageReactionsKeyHandlers :: [KeyEventHandler]
-viewMessageReactionsKeyHandlers =
+viewMessageReactionsKeyHandlers :: TeamId -> [KeyEventHandler]
+viewMessageReactionsKeyHandlers tId =
     let vs = viewportScroll . ViewMessageReactionsArea
     in [ mkKb PageUpEvent "Page up" $ do
-           tId <- use csCurrentTeamId
            mh $ vScrollBy (vs tId) (-1 * pageAmount)
 
        , mkKb PageDownEvent "Page down" $ do
-           tId <- use csCurrentTeamId
            mh $ vScrollBy (vs tId) pageAmount
 
        , mkKb ScrollUpEvent "Scroll up" $ do
-           tId <- use csCurrentTeamId
            mh $ vScrollBy (vs tId) (-1)
 
        , mkKb ScrollDownEvent "Scroll down" $ do
-           tId <- use csCurrentTeamId
            mh $ vScrollBy (vs tId) 1
 
        , mkKb ScrollBottomEvent "Scroll to the end of the reactions list" $ do
-           tId <- use csCurrentTeamId
            mh $ vScrollToEnd (vs tId)
 
        , mkKb ScrollTopEvent "Scroll to the beginning of the reactions list" $ do
-           tId <- use csCurrentTeamId
            mh $ vScrollToBeginning (vs tId)
        ]

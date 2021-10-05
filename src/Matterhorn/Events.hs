@@ -91,7 +91,8 @@ onAppEvent WebsocketConnect = do
     csConnectionStatus .= Connected
     refreshChannelsAndUsers
     refreshClientConfig
-    fetchVisibleIfNeeded
+    tId <- use csCurrentTeamId
+    fetchVisibleIfNeeded tId
 onAppEvent (RateLimitExceeded winSz) =
     mhError $ GenericError $ T.pack $
         let s = if winSz == 1 then "" else "s"
@@ -220,17 +221,18 @@ teamEventHandlerByMode tId mode =
         ShowHelp _ _               -> void . onEventShowHelp tId
         ChannelSelect              -> void . onEventChannelSelect tId
         UrlSelect                  -> void . onEventUrlSelect tId
-        LeaveChannelConfirm        -> onEventLeaveChannelConfirm
+        LeaveChannelConfirm        -> onEventLeaveChannelConfirm tId
         MessageSelect              -> onEventMessageSelect tId
         MessageSelectDeleteConfirm -> onEventMessageSelectDeleteConfirm tId
-        DeleteChannelConfirm       -> onEventDeleteChannelConfirm
+        DeleteChannelConfirm       -> onEventDeleteChannelConfirm tId
         ThemeListOverlay           -> onEventThemeListOverlay tId
         PostListOverlay _          -> onEventPostListOverlay tId
         UserListOverlay            -> onEventUserListOverlay tId
         ChannelListOverlay         -> onEventChannelListOverlay tId
         ReactionEmojiListOverlay   -> onEventReactionEmojiListOverlay tId
-        ViewMessage                -> void . handleTabbedWindowEvent
-                                             (csTeam(tId).tsViewedMessage.singular _Just._2)
+        ViewMessage                -> void . (handleTabbedWindowEvent
+                                              (csTeam(tId).tsViewedMessage.singular _Just._2)
+                                              tId)
         ManageAttachments          -> onEventManageAttachments tId
         ManageAttachmentsBrowseFiles -> onEventManageAttachments tId
         EditNotifyPrefs            -> void . onEventEditNotifyPrefs tId
@@ -243,8 +245,9 @@ globalKeybindings = mkKeybindings globalKeyHandlers
 globalKeyHandlers :: [KeyEventHandler]
 globalKeyHandlers =
     [ mkKb ShowHelpEvent
-        "Show this help screen"
-        (showHelpScreen mainHelpTopic)
+        "Show this help screen" $ do
+            tId <- use csCurrentTeamId
+            showHelpScreen tId mainHelpTopic
     ]
 
 -- | Refresh client-accessible server configuration information. This

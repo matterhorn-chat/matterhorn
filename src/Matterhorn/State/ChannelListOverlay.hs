@@ -30,11 +30,11 @@ enterChannelListOverlayMode :: TeamId -> MH ()
 enterChannelListOverlayMode tId = do
     myChannels <- use (csChannels.to (filteredChannelIds (const True)))
     enterListOverlayMode tId (csTeam(tId).tsChannelListOverlay) ChannelListOverlay
-        AllChannels enterHandler (fetchResults tId myChannels)
+        AllChannels (enterHandler tId) (fetchResults tId myChannels)
 
-enterHandler :: Channel -> MH Bool
-enterHandler chan = do
-    joinChannel (getId chan)
+enterHandler :: TeamId -> Channel -> MH Bool
+enterHandler tId chan = do
+    joinChannel tId (getId chan)
     return True
 
 fetchResults :: TeamId

@@ -42,11 +42,11 @@ draw st =
         UserListOverlay              -> drawUserListOverlay st tId : mainLayersMonochrome
         ChannelListOverlay           -> drawChannelListOverlay st tId : mainLayersMonochrome
         ReactionEmojiListOverlay     -> drawReactionEmojiListOverlay st tId : mainLayersMonochrome
-        ViewMessage                  -> drawTabbedWindow messageViewWindow st : mainLayersMonochrome
+        ViewMessage                  -> drawTabbedWindow messageViewWindow st tId : mainLayersMonochrome
         ManageAttachments            -> drawManageAttachments st tId : mainLayersMonochrome
         ManageAttachmentsBrowseFiles -> drawManageAttachments st tId : mainLayersMonochrome
         EditNotifyPrefs              -> drawNotifyPrefs st tId : mainLayersMonochrome
-        ChannelTopicWindow           -> drawChannelTopicWindow st : mainLayersMonochrome
+        ChannelTopicWindow           -> drawChannelTopicWindow st tId : mainLayersMonochrome
         SaveAttachmentWindow _       -> drawSaveAttachmentWindow st tId : mainLayersMonochrome
     where
         tId = st^.csCurrentTeamId

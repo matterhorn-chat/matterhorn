@@ -30,9 +30,8 @@ import           Matterhorn.Types
 import           Matterhorn.State.Reactions ( updateReaction )
 
 
-enterReactionEmojiListOverlayMode :: MH ()
-enterReactionEmojiListOverlayMode = do
-    tId <- use csCurrentTeamId
+enterReactionEmojiListOverlayMode :: TeamId -> MH ()
+enterReactionEmojiListOverlayMode tId = do
     selectedMessage <- use (to (getSelectedMessage tId))
     case selectedMessage of
         Nothing -> return ()
@@ -40,11 +39,10 @@ enterReactionEmojiListOverlayMode = do
             em <- use (csResources.crEmoji)
             myId <- gets myUserId
             enterListOverlayMode tId (csTeam(tId).tsReactionEmojiListOverlay) ReactionEmojiListOverlay
-                () enterHandler (fetchResults myId msg em)
+                () (enterHandler tId) (fetchResults myId msg em)
 
-enterHandler :: (Bool, T.Text) -> MH Bool
-enterHandler (mine, e) = do
-    tId <- use csCurrentTeamId
+enterHandler :: TeamId -> (Bool, T.Text) -> MH Bool
+enterHandler tId (mine, e) = do
     selectedMessage <- use (to (getSelectedMessage tId))
     case selectedMessage of
         Nothing -> return False

@@ -911,11 +911,10 @@ asyncFetchMessagesSurrounding cId pId = do
               in if length pl > 1 then Just $ last $ init pl else Nothing
 
 
-fetchVisibleIfNeeded :: MH ()
-fetchVisibleIfNeeded = do
+fetchVisibleIfNeeded :: TeamId -> MH ()
+fetchVisibleIfNeeded tId = do
     sts <- use csConnectionStatus
     when (sts == Connected) $ do
-        tId <- use csCurrentTeamId
         cId <- use (csCurrentChannelId tId)
         withChannel cId $ \chan ->
             let msgs = chan^.ccContents.cdMessages.to reverseMessages
@@ -990,7 +989,7 @@ jumpToPost pId = do
               -- Are we a member of the channel?
               case findChannelById cId (st^.csChannels) of
                   Nothing ->
-                      joinChannel' cId (Just $ jumpToPost pId)
+                      joinChannel' tId cId (Just $ jumpToPost pId)
                   Just _ -> do
                       setFocus tId cId
                       setMode tId MessageSelect
@@ -1009,7 +1008,7 @@ jumpToPost pId = do
                               -- If not, join it and then try jumping to
                               -- the post if the channel join is successful.
                               Nothing -> do
-                                  joinChannel' (postChannelId p) (Just $ jumpToPost pId)
+                                  joinChannel' tId (postChannelId p) (Just $ jumpToPost pId)
                               -- Otherwise add the post to the state and
                               -- then jump.
                               Just _ -> do

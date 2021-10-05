@@ -32,9 +32,8 @@ import           Matterhorn.Types
 
 -- | Show the user list overlay for searching/showing members of the
 -- current channel.
-enterChannelMembersUserList :: MH ()
-enterChannelMembersUserList = do
-    myTId <- use csCurrentTeamId
+enterChannelMembersUserList :: TeamId -> MH ()
+enterChannelMembersUserList myTId = do
     cId <- use (csCurrentChannelId myTId)
     myId <- gets myUserId
     session <- getSession
@@ -44,37 +43,35 @@ enterChannelMembersUserList = do
         return $ Just $ do
             enterUserListMode myTId (ChannelMembers cId myTId) (Just $ channelStatsMemberCount stats)
               (\u -> case u^.uiId /= myId of
-                True -> createOrFocusDMChannel u Nothing >> return True
+                True -> createOrFocusDMChannel myTId u Nothing >> return True
                 False -> return False
               )
 
 -- | Show the user list overlay for showing users that are not members
 -- of the current channel for the purpose of adding them to the
 -- channel.
-enterChannelInviteUserList :: MH ()
-enterChannelInviteUserList = do
-    myTId <- use csCurrentTeamId
+enterChannelInviteUserList :: TeamId -> MH ()
+enterChannelInviteUserList myTId = do
     cId <- use (csCurrentChannelId myTId)
     myId <- gets myUserId
     enterUserListMode myTId (ChannelNonMembers cId myTId) Nothing
       (\u -> case u^.uiId /= myId of
-        True -> addUserToCurrentChannel u >> return True
+        True -> addUserToCurrentChannel myTId u >> return True
         False -> return False
       )
 
 -- | Show the user list overlay for showing all users for the purpose of
 -- starting a direct message channel with another user.
-enterDMSearchUserList :: MH ()
-enterDMSearchUserList = do
+enterDMSearchUserList :: TeamId -> MH ()
+enterDMSearchUserList myTId = do
     myId <- gets myUserId
-    myTId <- use csCurrentTeamId
     config <- use csClientConfig
     let restrictTeam = case MM.clientConfigRestrictDirectMessage <$> config of
             Just MM.RestrictTeam -> Just myTId
             _ -> Nothing
     enterUserListMode myTId (AllUsers restrictTeam) Nothing
       (\u -> case u^.uiId /= myId of
-        True -> createOrFocusDMChannel u Nothing >> return True
+        True -> createOrFocusDMChannel myTId u Nothing >> return True
         False -> return False
       )
 

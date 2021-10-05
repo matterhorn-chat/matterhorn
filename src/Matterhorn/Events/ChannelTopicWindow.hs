@@ -29,7 +29,7 @@ onEventChannelTopicWindow tId e@(Vty.EvKey Vty.KEnter []) = do
         Just (ChannelTopicSaveButton {}) -> do
             ed <- use (csTeam(tId).tsChannelTopicDialog.channelTopicDialogEditor)
             let topic = T.unlines $ getEditContents ed
-            setChannelTopic topic
+            setChannelTopic tId topic
             setMode tId Main
         Just (ChannelTopicEditor {}) ->
             mhHandleEventLensed (csTeam(tId).tsChannelTopicDialog.channelTopicDialogEditor)

@@ -16,14 +16,16 @@ import           Control.Arrow ( (>>>) )
 import qualified Data.Text as T
 import           Data.Text.Zipper ( insertChar, gotoEOL )
 
+import           Network.Mattermost.Types ( TeamId )
+
 import           Matterhorn.Types
 import           Matterhorn.Draw.Buttons
 import           Matterhorn.Draw.RichText
 import           Matterhorn.Themes
 
 
-drawChannelTopicWindow :: ChatState -> Widget Name
-drawChannelTopicWindow st =
+drawChannelTopicWindow :: ChatState -> TeamId -> Widget Name
+drawChannelTopicWindow st tId =
     centerLayer $
     hLimit maxWindowWidth $
     joinBorders $
@@ -44,7 +46,6 @@ drawChannelTopicWindow st =
          ]
     where
         baseUrl = serverBaseUrl st tId
-        tId = st^.csCurrentTeamId
         editorHeight = 5
         previewHeight = 5
         maxWindowWidth = 70

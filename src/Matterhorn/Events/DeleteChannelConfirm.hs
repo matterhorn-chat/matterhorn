@@ -5,18 +5,18 @@ import           Matterhorn.Prelude
 
 import qualified Graphics.Vty as Vty
 
+import           Network.Mattermost.Types ( TeamId )
+
 import           Matterhorn.Types
 import           Matterhorn.State.Channels
 
 
-onEventDeleteChannelConfirm :: Vty.Event -> MH ()
-onEventDeleteChannelConfirm (Vty.EvKey k []) = do
+onEventDeleteChannelConfirm :: TeamId -> Vty.Event -> MH ()
+onEventDeleteChannelConfirm tId (Vty.EvKey k []) = do
     case k of
         Vty.KChar c | c `elem` ("yY"::String) ->
-            deleteCurrentChannel
+            deleteCurrentChannel tId
         _ -> return ()
-    tId <- use csCurrentTeamId
     setMode tId Main
-onEventDeleteChannelConfirm _ = do
-    tId <- use csCurrentTeamId
+onEventDeleteChannelConfirm tId _ = do
     setMode tId Main
