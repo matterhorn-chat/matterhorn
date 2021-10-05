@@ -2457,13 +2457,12 @@ data HighlightSet =
 emptyHSet :: HighlightSet
 emptyHSet = HighlightSet Set.empty Set.empty mempty
 
-getHighlightSet :: ChatState -> HighlightSet
-getHighlightSet st =
-    let tId = st^.csCurrentTeamId
-    in HighlightSet { hUserSet = addSpecialUserMentions $ getUsernameSet $ st^.csUsers
-                    , hChannelSet = getChannelNameSet tId $ st^.csChannels
-                    , hSyntaxMap = st^.csResources.crSyntaxMap
-                    }
+getHighlightSet :: ChatState -> TeamId -> HighlightSet
+getHighlightSet st tId =
+    HighlightSet { hUserSet = addSpecialUserMentions $ getUsernameSet $ st^.csUsers
+                 , hChannelSet = getChannelNameSet tId $ st^.csChannels
+                 , hSyntaxMap = st^.csResources.crSyntaxMap
+                 }
 
 attrNameToConfig :: Brick.AttrName -> Text
 attrNameToConfig = T.pack . intercalate "." . Brick.attrNameComponents

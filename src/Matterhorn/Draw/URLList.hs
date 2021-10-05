@@ -28,7 +28,7 @@ renderUrlList st tId =
     header <=> urlDisplay
     where
         header = (withDefAttr channelHeaderAttr $ vLimit 1 $
-                 (renderText' Nothing "" (getHighlightSet st) Nothing $
+                 (renderText' Nothing "" hSet Nothing $
                   "URLs: " <> (mkChannelName st (st^.csCurrentChannel(tId).ccInfo))) <+>
                  fill ' ') <=> hBorder
 
@@ -40,7 +40,7 @@ renderUrlList st tId =
 
         me = myUsername st
 
-        hSet = getHighlightSet st
+        hSet = getHighlightSet st tId
 
         renderItem sel (i, link) =
           let time = link^.linkTime

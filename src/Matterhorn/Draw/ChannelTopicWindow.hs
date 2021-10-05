@@ -50,7 +50,7 @@ drawChannelTopicWindow st =
         maxWindowWidth = 70
         foc = st^.csTeam(tId).tsChannelTopicDialog.channelTopicDialogFocus
         ed = st^.csTeam(tId).tsChannelTopicDialog.channelTopicDialogEditor
-        hSet = getHighlightSet st
+        hSet = getHighlightSet st tId
         topicTxtWithCursor = T.unlines $
                              getEditContents $
                              applyEdit (gotoEOL >>> insertChar cursorSentinel) ed

@@ -40,7 +40,7 @@ drawPostsBox contents st tId =
   centerLayer $ hLimitWithPadding 10 $ borderWithLabel contentHeader $
     padRight (Pad 1) messageListContents
   where -- The 'window title' of the overlay
-        hs = getHighlightSet st
+        hs = getHighlightSet st tId
         contentHeader = withAttr channelListHeaderAttr $ txt $ case contents of
           PostListFlagged -> "Flagged posts"
           PostListPinned cId ->

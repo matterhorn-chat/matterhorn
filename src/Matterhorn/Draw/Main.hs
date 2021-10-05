@@ -796,7 +796,7 @@ mainInterface st tId =
                    hBox [mainDisplay, vBorder, channelList]
            else mainDisplay
     channelList = hLimit channelListWidth (renderChannelList st tId)
-    hs = getHighlightSet st
+    hs = getHighlightSet st tId
     channelListWidth = configChannelListWidth $ st^.csResources.crConfiguration
     mainDisplay =
         vBox [ channelContents

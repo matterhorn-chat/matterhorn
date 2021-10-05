@@ -115,7 +115,7 @@ reactionsText st tId m = viewport (ViewMessageReactionsArea tId) Vertical body
             in (clickableName <+> (padLeft (Pad 1) count)) <=>
                (padLeft (Pad 2) usernameList)
 
-        hs = getHighlightSet st
+        hs = getHighlightSet st tId
 
         clickableUsernames i (EUser un) =
             Just $ ClickableUsername (ViewMessageReactionsArea tId) i un
@@ -148,7 +148,7 @@ viewMessageBox st tId msg =
                                   "will no longer be accessible once this window " <>
                                   "is closed."
         mkBody vpWidth =
-            let hs = getHighlightSet st
+            let hs = getHighlightSet st tId
                 parent = case msg^.mInReplyToMsg of
                      NotAReply -> Nothing
                      InReplyTo pId -> getMessageForPostId st pId
