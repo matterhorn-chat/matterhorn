@@ -15,7 +15,6 @@ import           Brick.Widgets.Border
 
 import qualified Data.Set as S
 import qualified Data.Map as M
-import           Data.Maybe ( fromJust )
 import qualified Data.Text as T
 import qualified Data.Foldable as F
 import qualified Graphics.Vty as Vty
@@ -81,18 +80,24 @@ resetVp n = do
 
 renderTab :: TeamId -> ViewMessageWindowTab -> ChatState -> Widget Name
 renderTab tId tab cs =
-    let latestMessage = case cs^.csTeam(tId).tsViewedMessage of
+    let mLatestMessage = case cs^.csTeam(tId).tsViewedMessage of
           Nothing -> error "BUG: no message to show, please report!"
           Just (m, _) -> getLatestMessage cs tId m
-    in case tab of
-        VMTabMessage -> viewMessageBox cs tId latestMessage
-        VMTabReactions -> reactionsText cs tId latestMessage
+    in case mLatestMessage of
+        Nothing -> emptyWidget
+        Just latestMessage ->
+            case tab of
+                VMTabMessage -> viewMessageBox cs tId latestMessage
+                VMTabReactions -> reactionsText cs tId latestMessage
 
-getLatestMessage :: ChatState -> TeamId -> Message -> Message
+getLatestMessage :: ChatState -> TeamId -> Message -> Maybe Message
 getLatestMessage cs tId m =
     case m^.mMessageId of
-        Nothing -> m
-        Just mId -> fromJust $ findMessage mId $ cs^.csCurrentChannel(tId).ccContents.cdMessages
+        Nothing -> Just m
+        Just mId -> do
+            let cId = cs^.csCurrentChannelId(tId)
+            chan <- cs^?csChannel(cId)
+            findMessage mId $ chan^.ccContents.cdMessages
 
 handleEvent :: TeamId -> ViewMessageWindowTab -> Vty.Event -> MH ()
 handleEvent tId VMTabMessage =
