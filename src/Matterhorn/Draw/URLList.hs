@@ -27,9 +27,13 @@ renderUrlList :: ChatState -> TeamId -> Widget Name
 renderUrlList st tId =
     header <=> urlDisplay
     where
+        cId = st^.csCurrentChannelId(tId)
+        mChan = st^?csChannel(cId)
+        cName = case mChan of
+            Nothing -> " "
+            Just chan -> mkChannelName st (chan^.ccInfo)
         header = (withDefAttr channelHeaderAttr $ vLimit 1 $
-                 (renderText' Nothing "" hSet Nothing $
-                  "URLs: " <> (mkChannelName st (st^.csCurrentChannel(tId).ccInfo))) <+>
+                 (renderText' Nothing "" hSet Nothing $ "URLs: " <> cName) <+>
                  fill ' ') <=> hBorder
 
         urlDisplay = if F.length urls == 0
