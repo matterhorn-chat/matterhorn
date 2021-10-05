@@ -17,5 +17,8 @@ import           Matterhorn.State.Channels ( getCurrentChannelTopic )
 openChannelTopicWindow :: TeamId -> MH ()
 openChannelTopicWindow tId = do
     t <- getCurrentChannelTopic tId
-    csTeam(tId).tsChannelTopicDialog .= newChannelTopicDialog tId t
-    setMode tId ChannelTopicWindow
+    case t of
+        Nothing -> return ()
+        Just topic -> do
+            csTeam(tId).tsChannelTopicDialog .= newChannelTopicDialog tId topic
+            setMode tId ChannelTopicWindow
