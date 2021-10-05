@@ -75,14 +75,18 @@ notifyPrefsForm tId globalDefaults =
 
 enterEditNotifyPrefsMode :: TeamId -> MH ()
 enterEditNotifyPrefsMode tId = do
-    chanInfo <- use (csCurrentChannel(tId).ccInfo)
-    case chanInfo^.cdType of
-      Direct -> mhError $ GenericError "Cannot open notification preferences for DM channel."
-      _ -> do
-        let props = chanInfo^.cdNotifyProps
-        user <- use csMe
-        csTeam(tId).tsNotifyPrefs .= (Just (notifyPrefsForm tId (userNotifyProps user) props))
-        setMode tId EditNotifyPrefs
+    cId <- use (csCurrentChannelId tId)
+    mChanInfo <- preuse (csChannel(cId).ccInfo)
+    case mChanInfo of
+        Nothing -> return ()
+        Just chanInfo ->
+            case chanInfo^.cdType of
+              Direct -> mhError $ GenericError "Cannot open notification preferences for DM channel."
+              _ -> do
+                let props = chanInfo^.cdNotifyProps
+                user <- use csMe
+                csTeam(tId).tsNotifyPrefs .= (Just (notifyPrefsForm tId (userNotifyProps user) props))
+                setMode tId EditNotifyPrefs
 
 exitEditNotifyPrefsMode :: TeamId -> MH ()
 exitEditNotifyPrefsMode tId = do
