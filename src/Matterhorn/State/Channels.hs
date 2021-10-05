@@ -90,7 +90,8 @@ import qualified Matterhorn.Zipper as Z
 updateViewed :: Bool -> MH ()
 updateViewed updatePrev = do
     tId <- use csCurrentTeamId
-    csCurrentChannel(tId).ccInfo.cdMentionCount .= 0
+    cId <- use (csCurrentChannelId tId)
+    csChannel(cId).ccInfo.cdMentionCount .= 0
     updateViewedChan updatePrev =<< use (csCurrentChannelId tId)
 
 -- | When a new channel has been selected for viewing, this will
@@ -931,11 +932,15 @@ removeUserFromCurrentChannel tId uname =
 
 startLeaveCurrentChannel :: TeamId -> MH ()
 startLeaveCurrentChannel tId = do
-    cInfo <- use (csCurrentChannel(tId).ccInfo)
-    case cInfo^.cdType of
-        Direct -> hideDMChannel (cInfo^.cdChannelId)
-        Group -> hideDMChannel (cInfo^.cdChannelId)
-        _ -> setMode tId LeaveChannelConfirm
+    cId <- use (csCurrentChannelId tId)
+    mcInfo <- preuse (csChannel(cId).ccInfo)
+    case mcInfo of
+        Nothing -> return ()
+        Just cInfo ->
+            case cInfo^.cdType of
+                Direct -> hideDMChannel (cInfo^.cdChannelId)
+                Group -> hideDMChannel (cInfo^.cdChannelId)
+                _ -> setMode tId LeaveChannelConfirm
 
 deleteCurrentChannel :: TeamId -> MH ()
 deleteCurrentChannel tId = do
@@ -1058,10 +1063,13 @@ renameChannelUrl tId name = do
         _ <- MM.mmPatchChannel cId patch s
         return Nothing
 
-getCurrentChannelTopic :: TeamId -> MH Text
+getCurrentChannelTopic :: TeamId -> MH (Maybe Text)
 getCurrentChannelTopic tId = do
-    ch <- use (csCurrentChannel tId)
-    return $ ch^.ccInfo.cdHeader
+    cId <- use (csCurrentChannelId tId)
+    ch <- preuse (csChannel cId)
+    case ch of
+        Nothing -> return Nothing
+        Just c -> return $ Just $ c^.ccInfo.cdHeader
 
 beginCurrentChannelDeleteConfirm :: TeamId -> MH ()
 beginCurrentChannelDeleteConfirm tId = do
