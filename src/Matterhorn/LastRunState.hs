@@ -79,13 +79,18 @@ writeLastRunStates cs =
 
 writeLastRunState :: ChatState -> TeamId -> IO ()
 writeLastRunState cs tId = do
-    when (cs^.csCurrentChannel(tId).ccInfo.cdType `elem` [Ordinary, Private]) $ do
-        let runState = toLastRunState cs
+    let cId = cs^.csCurrentChannelId(tId)
+        mChan = cs^?csChannel(cId)
+    case mChan of
+        Nothing -> return ()
+        Just chan ->
+            when (chan^.ccInfo.cdType `elem` [Ordinary, Private]) $ do
+                let runState = toLastRunState cs
 
-        lastRunStateFile <- lastRunStateFilePath $ unId $ toId tId
-        createDirectoryIfMissing True $ dropFileName lastRunStateFile
-        BS.writeFile lastRunStateFile $ LBS.toStrict $ A.encode runState
-        P.setFileMode lastRunStateFile lastRunStateFileMode
+                lastRunStateFile <- lastRunStateFilePath $ unId $ toId tId
+                createDirectoryIfMissing True $ dropFileName lastRunStateFile
+                BS.writeFile lastRunStateFile $ LBS.toStrict $ A.encode runState
+                P.setFileMode lastRunStateFile lastRunStateFileMode
 
 -- | Reads the last run state from a file given the current team ID.
 readLastRunState :: TeamId -> IO (Either String LastRunState)
