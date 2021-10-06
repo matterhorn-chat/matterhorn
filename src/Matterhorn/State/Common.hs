@@ -194,18 +194,23 @@ openWithOpener getTarget = do
                     -- user is gone using their interactive URL opener,
                     -- when they return, any messages that arrive in the
                     -- current channel will be displayed as new.
-                    curChan <- use (csCurrentChannel(tId))
-                    let msgs = curChan^.ccContents.cdMessages
-                    case findLatestUserMessage isEditable msgs of
+                    cId <- use (csCurrentChannelId(tId))
+                    mCurChan <- preuse (csChannel(cId))
+                    case mCurChan of
                         Nothing -> return ()
-                        Just m ->
-                            case m^.mOriginalPost of
+                        Just curChan -> do
+                            let msgs = curChan^.ccContents.cdMessages
+                            case findLatestUserMessage isEditable msgs of
                                 Nothing -> return ()
-                                Just p ->
-                                    case curChan^.ccInfo.cdNewMessageIndicator of
-                                        Hide ->
-                                            csCurrentChannel(tId).ccInfo.cdNewMessageIndicator .= (NewPostsAfterServerTime (p^.postCreateAtL))
-                                        _ -> return ()
+                                Just m ->
+                                    case m^.mOriginalPost of
+                                        Nothing -> return ()
+                                        Just p ->
+                                            case curChan^.ccInfo.cdNewMessageIndicator of
+                                                Hide ->
+                                                    csChannel(cId).ccInfo.cdNewMessageIndicator .= (NewPostsAfterServerTime (p^.postCreateAtL))
+                                                _ -> return ()
+
                     -- No need to add a gap here: the websocket
                     -- disconnect/reconnect events will automatically
                     -- handle management of messages delivered while
