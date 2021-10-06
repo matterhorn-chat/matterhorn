@@ -169,7 +169,6 @@ module Matterhorn.Types
   , csResources
   , csLastMouseDownEvent
   , csVerbatimTruncateSetting
-  , csCurrentChannel
   , csCurrentChannelId
   , csCurrentTeamId
   , csPostMap
@@ -396,7 +395,7 @@ import qualified Data.Text.Zipper as Z2
 import           Data.Time.Clock ( getCurrentTime, addUTCTime )
 import           Data.UUID ( UUID )
 import qualified Data.Vector as Vec
-import           Lens.Micro.Platform ( at, makeLenses, lens, (%~), (^?!), (.=)
+import           Lens.Micro.Platform ( at, makeLenses, lens, (^?!), (.=)
                                      , (%=), (.~), _Just, Traversal', to
                                      , SimpleGetter
                                      )
@@ -2231,11 +2230,6 @@ entryIsDMEntry e =
         CLUserDM {} -> True
         CLGroupDM {} -> True
         CLChannel {} -> False
-
-csCurrentChannel :: TeamId -> Lens' ChatState ClientChannel
-csCurrentChannel tId =
-    lens (\ st -> findChannelById (st^.csCurrentChannelId(tId)) (st^.csChannels) ^?! _Just)
-         (\ st n -> st & csChannels %~ addChannel (st^.csCurrentChannelId(tId)) n)
 
 csChannel :: ChannelId -> Traversal' ChatState ClientChannel
 csChannel cId =
