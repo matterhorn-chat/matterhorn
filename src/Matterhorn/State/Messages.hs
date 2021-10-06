@@ -557,8 +557,11 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
                             when (isNothing authorResult) $
                                 handleNewUsers (Seq.singleton authorId) (return ())
 
-                    curTId <- use csCurrentTeamId
-                    currCId <- use (csCurrentChannelId curTId)
+                    mcurTId <- use csCurrentTeamId
+                    currCId <- case mcurTId of
+                        Nothing -> return Nothing
+                        Just curTId -> use (csCurrentChannelId curTId)
+
                     flags <- use (csResources.crFlaggedPosts)
                     let (msg', mentionedUsers) = clientPostToMessage cp
                                  & _1.mFlagged .~ ((cp^.cpPostId) `Set.member` flags)
@@ -606,22 +609,25 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
 
                 postedChanMessage =
                   withChannelOrDefault (postChannelId new) NoAction $ \chan -> do
-                      currTid <- use csCurrentTeamId
-                      currCId <- use (csCurrentChannelId currTid)
+                      mcurrTid <- use csCurrentTeamId
+                      case mcurrTid of
+                          Nothing -> return NoAction
+                          Just currTid -> do
+                              currCId <- use (csCurrentChannelId currTid)
 
-                      let notifyPref = notifyPreference (myUser st) chan
-                          curChannelAction = if Just (postChannelId new) == currCId
-                                             then UpdateServerViewed
-                                             else NoAction
-                          originUserAction =
-                            if | fromMe                            -> NoAction
-                               | ignoredJoinLeaveMessage           -> NoAction
-                               | notifyPref == NotifyOptionAll     -> NotifyUser [newPostData]
-                               | notifyPref == NotifyOptionMention
-                                   && wasMentioned                 -> NotifyUser [newPostData]
-                               | otherwise                         -> NoAction
+                              let notifyPref = notifyPreference (myUser st) chan
+                                  curChannelAction = if Just (postChannelId new) == currCId
+                                                     then UpdateServerViewed
+                                                     else NoAction
+                                  originUserAction =
+                                    if | fromMe                            -> NoAction
+                                       | ignoredJoinLeaveMessage           -> NoAction
+                                       | notifyPref == NotifyOptionAll     -> NotifyUser [newPostData]
+                                       | notifyPref == NotifyOptionMention
+                                           && wasMentioned                 -> NotifyUser [newPostData]
+                                       | otherwise                         -> NoAction
 
-                      return $ curChannelAction `andProcessWith` originUserAction
+                              return $ curChannelAction `andProcessWith` originUserAction
 
             doHandleAddedMessage
 
@@ -788,26 +794,26 @@ maybePostUsername st p =
 -- messages to use as a starting point, but exceptions are new
 -- channels and empty channels.
 asyncFetchMoreMessages :: MH ()
-asyncFetchMoreMessages = do
-    tId <- use csCurrentTeamId
-    withCurrentChannel tId $ \cId chan -> do
-        let offset = max 0 $ length (chan^.ccContents.cdMessages) - 2
-            page = offset `div` pageAmount
-            usefulMsgs = getTwoContiguousPosts Nothing (chan^.ccContents.cdMessages.to reverseMessages)
-            sndOldestId = (messagePostId . snd) =<< usefulMsgs
-            query = MM.defaultPostQuery
-                      { MM.postQueryPage = maybe (Just page) (const Nothing) sndOldestId
-                      , MM.postQueryPerPage = Just pageAmount
-                      , MM.postQueryBefore = sndOldestId
-                      }
-            addTrailingGap = MM.postQueryBefore query == Nothing &&
-                             MM.postQueryPage query == Just 0
-        doAsyncChannelMM Preempt cId
-            (\s c -> MM.mmGetPostsForChannel c query s)
-            (\c p -> Just $ do
-                pp <- addObtainedMessages c (-pageAmount) addTrailingGap p
-                postProcessMessageAdd pp
-                mh $ invalidateCacheEntry (ChannelMessages cId))
+asyncFetchMoreMessages =
+    withCurrentTeam $ \tId ->
+        withCurrentChannel tId $ \cId chan -> do
+            let offset = max 0 $ length (chan^.ccContents.cdMessages) - 2
+                page = offset `div` pageAmount
+                usefulMsgs = getTwoContiguousPosts Nothing (chan^.ccContents.cdMessages.to reverseMessages)
+                sndOldestId = (messagePostId . snd) =<< usefulMsgs
+                query = MM.defaultPostQuery
+                          { MM.postQueryPage = maybe (Just page) (const Nothing) sndOldestId
+                          , MM.postQueryPerPage = Just pageAmount
+                          , MM.postQueryBefore = sndOldestId
+                          }
+                addTrailingGap = MM.postQueryBefore query == Nothing &&
+                                 MM.postQueryPage query == Just 0
+            doAsyncChannelMM Preempt cId
+                (\s c -> MM.mmGetPostsForChannel c query s)
+                (\c p -> Just $ do
+                    pp <- addObtainedMessages c (-pageAmount) addTrailingGap p
+                    postProcessMessageAdd pp
+                    mh $ invalidateCacheEntry (ChannelMessages cId))
 
 -- | Given a starting point and a direction to move from that point,
 -- returns the closest two adjacent messages on that direction (as a
@@ -976,8 +982,7 @@ asyncFetchAttachments p = do
 -- reasonable effort will be made (fetch the post, join the channel)
 -- before giving up.
 jumpToPost :: PostId -> MH ()
-jumpToPost pId = do
-    tId <- use csCurrentTeamId
+jumpToPost pId = withCurrentTeam $ \tId -> do
     st <- use id
     case getMessageForPostId st pId of
       Just msg ->

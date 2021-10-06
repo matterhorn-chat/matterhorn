@@ -89,10 +89,10 @@ import qualified Matterhorn.Zipper as Z
 
 updateViewed :: Bool -> MH ()
 updateViewed updatePrev = do
-    tId <- use csCurrentTeamId
-    withCurrentChannel tId $ \cId _ -> do
-        csChannel(cId).ccInfo.cdMentionCount .= 0
-        updateViewedChan updatePrev cId
+    withCurrentTeam $ \tId -> do
+        withCurrentChannel tId $ \cId _ -> do
+            csChannel(cId).ccInfo.cdMentionCount .= 0
+            updateViewedChan updatePrev cId
 
 -- | When a new channel has been selected for viewing, this will
 -- notify the server of the change, and also update the local channel
@@ -114,8 +114,10 @@ updateViewedChan updatePrev cId = use csConnectionStatus >>= \case
                        case chan^.ccInfo.cdTeamId of
                            Just tId -> use (csTeam(tId).tsRecentChannel)
                            Nothing -> do
-                               tId <- use csCurrentTeamId
-                               use (csTeam(tId).tsRecentChannel)
+                               mtId <- use csCurrentTeamId
+                               case mtId of
+                                   Nothing -> return Nothing
+                                   Just tId -> use (csTeam(tId).tsRecentChannel)
                    else return Nothing
             doAsyncChannelMM Preempt cId
               (\s c -> MM.mmViewChannel UserMe c pId s)
@@ -312,10 +314,12 @@ handleNewChannel_ permitPostpone switch sbUpdate nc member = do
     mChan <- preuse (csChannel(getId nc))
     case mChan of
         Just ch -> do
-            tId <- case ch^.ccInfo.cdTeamId of
+            mtId <- case ch^.ccInfo.cdTeamId of
                 Nothing -> use csCurrentTeamId
-                Just i -> return i
-            when switch $ setFocus tId (getId nc)
+                Just i -> return $ Just i
+            when switch $ case mtId of
+                Nothing -> return ()
+                Just tId -> setFocus tId (getId nc)
         Nothing -> do
             -- Create a new ClientChannel structure
             cChannel <- (ccInfo %~ channelInfoFromChannelWithData nc member) <$>
@@ -373,25 +377,28 @@ handleNewChannel_ permitPostpone switch sbUpdate nc member = do
                     -- possible to do so.
                     updateSidebar (cChannel^.ccInfo.cdTeamId)
 
-                    tId <- case cChannel^.ccInfo.cdTeamId of
+                    mtId <- case cChannel^.ccInfo.cdTeamId of
                         Nothing -> use csCurrentTeamId
-                        Just i -> return i
+                        Just i -> return $ Just i
 
                     -- Finally, set our focus to the newly created
                     -- channel if the caller requested a change of
                     -- channel. Also consider the last join request
                     -- state field in case this is an asynchronous
                     -- channel addition triggered by a /join.
-                    pending1 <- checkPendingChannelChange tId (getId nc)
-                    pending2 <- case cChannel^.ccInfo.cdDMUserId of
-                        Nothing -> return False
-                        Just uId -> checkPendingChannelChangeByUserId tId uId
+                    case mtId of
+                        Nothing -> return ()
+                        Just tId -> do
+                            pending1 <- checkPendingChannelChange tId (getId nc)
+                            pending2 <- case cChannel^.ccInfo.cdDMUserId of
+                                Nothing -> return False
+                                Just uId -> checkPendingChannelChangeByUserId tId uId
 
-                    when (switch || isJust pending1 || pending2) $ do
-                        setFocus tId (getId nc)
-                        case pending1 of
-                            Just (Just act) -> act
-                            _ -> return ()
+                            when (switch || isJust pending1 || pending2) $ do
+                                setFocus tId (getId nc)
+                                case pending1 of
+                                    Just (Just act) -> act
+                                    _ -> return ()
 
 -- | Check to see whether the specified channel has been queued up to
 -- be switched to.  Note that this condition is only cleared by the
@@ -540,8 +547,6 @@ saveCurrentChannelInput tId = do
 
 applyPreferenceChange :: Preference -> MH ()
 applyPreferenceChange pref = do
-    tId <- use csCurrentTeamId
-
     -- always update our user preferences accordingly
     csResources.crUserPreferences %= setUserPreferences (Seq.singleton pref)
 
@@ -568,12 +573,13 @@ applyPreferenceChange pref = do
           let Just cId = getDmChannelFor (directChannelShowUserId d) cs
           case directChannelShowValue d of
               True -> do
-                  pending <- checkPendingChannelChange tId cId
-                  case pending of
-                      Just mAct -> do
-                          setFocus tId cId
-                          fromMaybe (return ()) mAct
-                      Nothing -> return ()
+                  withCurrentTeam $ \tId -> do
+                      pending <- checkPendingChannelChange tId cId
+                      case pending of
+                          Just mAct -> do
+                              setFocus tId cId
+                              fromMaybe (return ()) mAct
+                          Nothing -> return ()
               False -> do
                   csChannel(cId).ccInfo.cdSidebarShowOverride .= Nothing
 
@@ -587,12 +593,13 @@ applyPreferenceChange pref = do
           let cId = groupChannelId g
           case groupChannelShow g of
               True -> do
-                  pending <- checkPendingChannelChange tId cId
-                  case pending of
-                      Just mAct -> do
-                          setFocus tId cId
-                          fromMaybe (return ()) mAct
-                      Nothing -> return ()
+                  withCurrentTeam $ \tId -> do
+                      pending <- checkPendingChannelChange tId cId
+                      case pending of
+                          Just mAct -> do
+                              setFocus tId cId
+                              fromMaybe (return ()) mAct
+                          Nothing -> return ()
               False -> do
                   csChannel(cId).ccInfo.cdSidebarShowOverride .= Nothing
 
@@ -606,12 +613,13 @@ applyPreferenceChange pref = do
           let cId = favoriteChannelId f
           case favoriteChannelShow f of
               True -> do
-                  pending <- checkPendingChannelChange tId cId
-                  case pending of
-                      Just mAct -> do
-                          setFocus tId cId
-                          fromMaybe (return ()) mAct
-                      Nothing -> return ()
+                  withCurrentTeam $ \tId -> do
+                      pending <- checkPendingChannelChange tId cId
+                      case pending of
+                          Just mAct -> do
+                              setFocus tId cId
+                              fromMaybe (return ()) mAct
+                          Nothing -> return ()
               False -> do
                   csChannel(cId).ccInfo.cdSidebarShowOverride .= Nothing
       | otherwise -> return ()
@@ -905,10 +913,12 @@ handleChannelInvite cId = do
         member <- MM.mmGetChannelMember cId UserMe session
         tryMM (MM.mmGetChannel cId session)
               (\cwd -> return $ Just $ do
-                  tId <- case channelTeamId cwd of
+                  mtId <- case channelTeamId cwd of
                       Nothing -> use csCurrentTeamId
-                      Just i -> return i
-                  pending <- checkPendingChannelChange tId cId
+                      Just i -> return $ Just i
+                  pending <- case mtId of
+                      Nothing -> return Nothing
+                      Just tId -> checkPendingChannelChange tId cId
                   handleNewChannel (isJust pending) SidebarUpdateImmediate cwd member)
 
 addUserByNameToCurrentChannel :: TeamId -> Text -> MH ()

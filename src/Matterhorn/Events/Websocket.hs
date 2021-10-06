@@ -57,8 +57,10 @@ handleWebsocketEvent we = do
                 when (inMyTeamOrDM (wepTeamId (weData we))) $ do
                     let wasMentioned = maybe False (Set.member myId) $ wepMentions (weData we)
                     addNewPostedMessage $ RecentPost p wasMentioned
-                    tId <- use csCurrentTeamId
-                    cId <- use (csCurrentChannelId tId)
+                    mtId <- use csCurrentTeamId
+                    cId <- case mtId of
+                        Nothing -> return Nothing
+                        Just tId -> use (csCurrentChannelId tId)
                     when (Just (postChannelId p) /= cId) $
                         showChannelInSidebar (p^.postChannelIdL) False
             | otherwise -> return ()
@@ -70,7 +72,7 @@ handleWebsocketEvent we = do
                 currTid <- use csCurrentTeamId
                 foreachTeam $ \tId -> do
                     cId <- use (csCurrentChannelId tId)
-                    when (Just (postChannelId p) == cId && tId == currTid) $
+                    when (Just (postChannelId p) == cId && Just tId == currTid) $
                         updateViewed False
                     when (Just (postChannelId p) /= cId) $
                         showChannelInSidebar (p^.postChannelIdL) False
@@ -83,7 +85,7 @@ handleWebsocketEvent we = do
                 currTid <- use csCurrentTeamId
                 foreachTeam $ \tId -> do
                     cId <- use (csCurrentChannelId tId)
-                    when (Just (postChannelId p) == cId && tId == currTid) $
+                    when (Just (postChannelId p) == cId && Just tId == currTid) $
                         updateViewed False
                     when (Just (postChannelId p) /= cId) $
                         showChannelInSidebar (p^.postChannelIdL) False
@@ -216,9 +218,9 @@ handleWebsocketEvent we = do
         WMUserUpdated
             | Just user <- wepUser (weData we) -> do
                 handleUserUpdated user
-                tId <- use csCurrentTeamId
-                withCurrentChannel tId $ \cId _ -> do
-                    refreshChannelById cId
+                withCurrentTeam $ \tId ->
+                    withCurrentChannel tId $ \cId _ -> do
+                        refreshChannelById cId
             | otherwise -> return ()
 
         -- We deliberately ignore these events:

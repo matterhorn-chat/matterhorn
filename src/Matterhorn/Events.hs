@@ -74,9 +74,9 @@ onBrickEvent e@(MouseDown n button modifier _) = do
     when shouldHandle $ do
         mhLog LogGeneral "Handling mouse event"
         csLastMouseDownEvent .= Just e
-        tId <- use csCurrentTeamId
-        mode <- use (csTeam(tId).tsMode)
-        mouseHandlerByMode tId mode e
+        withCurrentTeam $ \tId -> do
+            mode <- use (csTeam(tId).tsMode)
+            mouseHandlerByMode tId mode e
 onBrickEvent (MouseUp {}) = do
     csLastMouseDownEvent .= Nothing
     mhContinueWithoutRedraw
@@ -91,8 +91,7 @@ onAppEvent WebsocketConnect = do
     csConnectionStatus .= Connected
     refreshChannelsAndUsers
     refreshClientConfig
-    tId <- use csCurrentTeamId
-    fetchVisibleIfNeeded tId
+    withCurrentTeam fetchVisibleIfNeeded
 onAppEvent (RateLimitExceeded winSz) =
     mhError $ GenericError $ T.pack $
         let s = if winSz == 1 then "" else "s"
@@ -209,10 +208,10 @@ onVtyEvent e = do
     void $ handleKeyboardEvent globalKeybindings handleTeamModeEvent e
 
 handleTeamModeEvent :: Vty.Event -> MH ()
-handleTeamModeEvent e = do
-    tId <- use csCurrentTeamId
-    mode <- use (csTeam(tId).tsMode)
-    teamEventHandlerByMode tId mode e
+handleTeamModeEvent e =
+    withCurrentTeam $ \tId -> do
+        mode <- use (csTeam(tId).tsMode)
+        teamEventHandlerByMode tId mode e
 
 teamEventHandlerByMode :: MM.TeamId -> Mode -> Vty.Event -> MH ()
 teamEventHandlerByMode tId mode =
@@ -246,8 +245,8 @@ globalKeyHandlers :: [KeyEventHandler]
 globalKeyHandlers =
     [ mkKb ShowHelpEvent
         "Show this help screen" $ do
-            tId <- use csCurrentTeamId
-            showHelpScreen tId mainHelpTopic
+            withCurrentTeam $ \tId ->
+                showHelpScreen tId mainHelpTopic
     ]
 
 -- | Refresh client-accessible server configuration information. This

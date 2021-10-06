@@ -519,11 +519,11 @@ renderChannelSelectPrompt st tId =
 drawMain :: Bool -> ChatState -> [Widget Name]
 drawMain useColor st =
     let maybeColor = if useColor then id else forceAttr "invalid"
-        tId = st^.csCurrentTeamId
+        mtId = st^.csCurrentTeamId
     in maybeColor <$>
            [ connectionLayer st
-           , autocompleteLayer st tId
-           , joinBorders $ mainInterface st tId
+           , maybe emptyWidget (autocompleteLayer st) mtId
+           , joinBorders $ mainInterface st mtId
            ]
 
 teamList :: ChatState -> Widget Name
@@ -539,7 +539,7 @@ teamList st =
                 unread = uCount > 0
                 uCount = unreadCount tId
                 tName  = ClickableTeamListEntry tId
-            in (if tId == curTid
+            in (if Just tId == curTid
                    then visible . withDefAttr currentTeamAttr
                    else if unread
                         then withDefAttr unreadChannelAttr
@@ -786,14 +786,17 @@ renderDeleteConfirm :: Widget Name
 renderDeleteConfirm =
     hCenter $ txt "Are you sure you want to delete the selected message? (y/n)"
 
-mainInterface :: ChatState -> TeamId -> Widget Name
-mainInterface st tId =
+mainInterface :: ChatState -> Maybe TeamId -> Widget Name
+mainInterface st mtId =
     vBox [ teamList st
          , body
          ]
     where
-    showChannelList = st^.csResources.crConfiguration.configShowChannelListL ||
-                      st^.csTeam(tId).tsMode == ChannelSelect
+    showChannelList =
+        st^.csResources.crConfiguration.configShowChannelListL ||
+        case mtId of
+            Nothing -> True
+            Just tId -> st^.csTeam(tId).tsMode == ChannelSelect
     body = if showChannelList
            then case st^.csChannelListOrientation of
                ChannelListLeft ->
@@ -801,32 +804,45 @@ mainInterface st tId =
                ChannelListRight ->
                    hBox [mainDisplay, vBorder, channelList]
            else mainDisplay
-    channelList = hLimit channelListWidth (renderChannelList st tId)
-    hs = getHighlightSet st tId
+    channelList = hLimit channelListWidth $ case mtId of
+        Nothing -> fill ' '
+        Just tId -> renderChannelList st tId
     channelListWidth = configChannelListWidth $ st^.csResources.crConfiguration
+
     mainDisplay =
-        vBox [ channelContents
-             , bottomBorder
-             , inputPreview st tId hs
-             , userInputArea st tId hs
-             ]
-    channelContents = case st^.csTeam(tId).tsMode of
-        UrlSelect -> renderUrlList st tId
-        SaveAttachmentWindow {} -> renderUrlList st tId
-        _         -> maybeSubdue $ renderCurrentChannelDisplay st tId hs
+        case mtId of
+            Nothing ->
+                vBox [ fill ' '
+                     , hBorder
+                     , vLimit 1 $ fill ' '
+                     ]
+            Just tId ->
+                let hs = getHighlightSet st tId
+                in vBox [ channelContents tId hs
+                        , bottomBorder tId hs
+                        , inputPreview st tId hs
+                        , userInputArea st tId hs
+                        ]
 
-    bottomBorder = case st^.csTeam(tId).tsMode of
-        MessageSelect -> messageSelectBottomBar st tId
-        UrlSelect -> urlSelectBottomBar st tId
-        SaveAttachmentWindow {} -> urlSelectBottomBar st tId
-        _ -> maybeSubdue $ hBox
-             [ showAttachmentCount
-             , hBorder
-             , showTypingUsers
-             , showBusy
-             ]
+    channelContents tId hs =
+        case st^.csTeam(tId).tsMode of
+            UrlSelect -> renderUrlList st tId
+            SaveAttachmentWindow {} -> renderUrlList st tId
+            _         -> maybeSubdue tId $ renderCurrentChannelDisplay st tId hs
 
-    showAttachmentCount =
+    bottomBorder tId hs =
+        case st^.csTeam(tId).tsMode of
+            MessageSelect -> messageSelectBottomBar st tId
+            UrlSelect -> urlSelectBottomBar st tId
+            SaveAttachmentWindow {} -> urlSelectBottomBar st tId
+            _ -> maybeSubdue tId $ hBox
+                 [ showAttachmentCount tId
+                 , hBorder
+                 , showTypingUsers tId hs
+                 , showBusy
+                 ]
+
+    showAttachmentCount tId =
         let count = length $ listElements $ st^.csTeam(tId).tsEditState.cedAttachmentList
         in if count == 0
            then emptyWidget
@@ -839,7 +855,7 @@ mainInterface st tId =
                      , txt " to manage)"
                      ]
 
-    showTypingUsers =
+    showTypingUsers tId hs =
         case st^.csCurrentChannelId(tId) of
             Nothing -> emptyWidget
             Just cId ->
@@ -861,9 +877,10 @@ mainInterface st tId =
                  Just Nothing -> hLimit 2 hBorder <+> txt "*"
                  Nothing -> emptyWidget
 
-    maybeSubdue = if st^.csTeam(tId).tsMode == ChannelSelect
-                  then forceAttr ""
-                  else id
+    maybeSubdue tId =
+        if st^.csTeam(tId).tsMode == ChannelSelect
+        then forceAttr ""
+        else id
 
 replyArrow :: Widget a
 replyArrow =

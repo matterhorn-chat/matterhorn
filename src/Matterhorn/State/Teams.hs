@@ -63,9 +63,7 @@ setTeamFocusWith f = do
     updateViewed True
 
     csTeamZipper %= f
-
-    tId <- use csCurrentTeamId
-    postChangeTeamCommon tId
+    withCurrentTeam postChangeTeamCommon
 
 -- | Book-keeping common to all team selection changes.
 postChangeTeamCommon :: TeamId -> MH ()
@@ -131,14 +129,14 @@ handleUpdateTeam tId = do
 -- | Set the team zipper ordering with the specified transformation,
 -- which is expected to be either 'moveLeft' or 'moveRight'.
 setTeamOrderWith :: (TeamId -> [TeamId] -> [TeamId]) -> MH ()
-setTeamOrderWith sortFunc = do
+setTeamOrderWith transform = do
     session <- getSession
     me <- use csMe
 
-    tId <- use csCurrentTeamId
+    mtId <- use csCurrentTeamId
     z <- use csTeamZipper
     let tIds = teamZipperIds z
-        newList = sortFunc tId tIds
+        newList = maybe tIds (\tId -> transform tId tIds) mtId
 
     doAsyncWith Normal $ do
         let pref = teamOrderPref (me^.userIdL) newList

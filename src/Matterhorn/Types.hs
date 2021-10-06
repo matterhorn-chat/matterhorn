@@ -164,6 +164,7 @@ module Matterhorn.Types
 
   , withCurrentChannel
   , withCurrentChannel'
+  , withCurrentTeam
 
   , csTeamZipper
   , csTeams
@@ -2129,7 +2130,7 @@ applyTeamOrderPref (Just prefTIds) st =
         unmentioned = filter (not . wasMentioned) $ HM.elems teams
         wasMentioned ts = (teamId $ _tsTeam ts) `elem` tIds
         zipperTids = tIds <> (teamId <$> sortTeams (_tsTeam <$> unmentioned))
-    in st { _csTeamZipper = (Z.findRight (== curTId) $ mkTeamZipperFromIds zipperTids)
+    in st { _csTeamZipper = (Z.findRight ((== curTId) . Just) $ mkTeamZipperFromIds zipperTids)
           }
 
 refreshTeamZipper :: MH ()
@@ -2208,6 +2209,13 @@ csCurrentChannelId :: TeamId -> SimpleGetter ChatState (Maybe ChannelId)
 csCurrentChannelId tId =
     csTeam(tId).tsFocus.to Z.focus.to (fmap channelListEntryChannelId)
 
+withCurrentTeam :: (TeamId -> MH ()) -> MH ()
+withCurrentTeam f = do
+    mtId <- use csCurrentTeamId
+    case mtId of
+        Nothing -> return ()
+        Just tId -> f tId
+
 withCurrentChannel :: TeamId -> (ChannelId -> ClientChannel -> MH ()) -> MH ()
 withCurrentChannel tId f = do
     mcId <- use $ csCurrentChannelId tId
@@ -2230,9 +2238,8 @@ withCurrentChannel' tId f = do
                 Just ch -> f cId ch
                 _ -> return Nothing
 
-csCurrentTeamId :: SimpleGetter ChatState TeamId
-csCurrentTeamId =
-    csTeamZipper.to Z.unsafeFocus
+csCurrentTeamId :: SimpleGetter ChatState (Maybe TeamId)
+csCurrentTeamId = csTeamZipper.to Z.focus
 
 csTeam :: TeamId -> Lens' ChatState TeamState
 csTeam tId =

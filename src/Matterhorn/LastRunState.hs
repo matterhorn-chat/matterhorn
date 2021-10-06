@@ -64,7 +64,9 @@ toLastRunState cs = LastRunState
   { _lrsHost              = cs^.csResources.crConn.cdHostnameL
   , _lrsPort              = cs^.csResources.crConn.cdPortL
   , _lrsUserId            = myUserId cs
-  , _lrsSelectedChannelId = cs^.csCurrentChannelId(cs^.csCurrentTeamId)
+  , _lrsSelectedChannelId = do
+      tId <- cs^.csCurrentTeamId
+      cs^.csCurrentChannelId(tId)
   }
 
 lastRunStateFileMode :: P.FileMode
