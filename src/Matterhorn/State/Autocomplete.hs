@@ -259,26 +259,25 @@ doUserAutoCompletion :: TeamId -> AutocompletionType -> AutocompleteContext -> T
 doUserAutoCompletion tId ty ctx searchString = do
     session <- getSession
     myUid <- gets myUserId
-    cId <- use (csCurrentChannelId(tId))
+    withCurrentChannel tId $ \cId _ -> do
+        withCachedAutocompleteResults tId ctx ty searchString $
+            doAsyncWith Preempt $ do
+                ac <- MM.mmAutocompleteUsers (Just tId) (Just cId) searchString session
 
-    withCachedAutocompleteResults tId ctx ty searchString $
-        doAsyncWith Preempt $ do
-            ac <- MM.mmAutocompleteUsers (Just tId) (Just cId) searchString session
+                let active = Seq.filter (\u -> userId u /= myUid && (not $ userDeleted u))
+                    alts = F.toList $
+                           ((\u -> UserCompletion u True) <$> (active $ MM.userAutocompleteUsers ac)) <>
+                           (maybe mempty (fmap (\u -> UserCompletion u False) . active) $
+                                  MM.userAutocompleteOutOfChannel ac)
 
-            let active = Seq.filter (\u -> userId u /= myUid && (not $ userDeleted u))
-                alts = F.toList $
-                       ((\u -> UserCompletion u True) <$> (active $ MM.userAutocompleteUsers ac)) <>
-                       (maybe mempty (fmap (\u -> UserCompletion u False) . active) $
-                              MM.userAutocompleteOutOfChannel ac)
+                    specials = [ MentionAll
+                               , MentionChannel
+                               ]
+                    extras = [ SpecialMention m | m <- specials
+                             , (T.toLower searchString) `T.isPrefixOf` specialMentionName m
+                             ]
 
-                specials = [ MentionAll
-                           , MentionChannel
-                           ]
-                extras = [ SpecialMention m | m <- specials
-                         , (T.toLower searchString) `T.isPrefixOf` specialMentionName m
-                         ]
-
-            return $ Just $ setCompletionAlternatives tId ctx searchString (alts <> extras) ty
+                return $ Just $ setCompletionAlternatives tId ctx searchString (alts <> extras) ty
 
 doChannelAutoCompletion :: TeamId -> AutocompletionType -> AutocompleteContext -> Text -> MH ()
 doChannelAutoCompletion tId ty ctx searchString = do

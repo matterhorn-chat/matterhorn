@@ -175,7 +175,7 @@ buildTeamState cr me team = do
         result <- readLastRunState tId
         case result of
             Right lrs | isValidLastRunState cr me lrs -> return $ \c ->
-                 channelId c == lrs^.lrsSelectedChannelId
+                 Just (channelId c) == lrs^.lrsSelectedChannelId
             _ -> return isTownSquare
 
     -- Get all channels, but filter down to just the one we want

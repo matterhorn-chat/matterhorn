@@ -23,15 +23,11 @@ import           Matterhorn.Util
 
 startUrlSelect :: TeamId -> MH ()
 startUrlSelect tId = do
-    cId <- use (csCurrentChannelId tId)
-    mChan <- preuse (csChannel cId)
-    case mChan of
-        Nothing -> return ()
-        Just chan -> do
-            let urls = V.fromList $ findUrls chan
-                urlsWithIndexes = V.indexed urls
-            setMode tId UrlSelect
-            csTeam(tId).tsUrlList .= (listMoveTo (length urls - 1) $ list (UrlList tId) urlsWithIndexes 2)
+    withCurrentChannel tId $ \_ chan -> do
+        let urls = V.fromList $ findUrls chan
+            urlsWithIndexes = V.indexed urls
+        setMode tId UrlSelect
+        csTeam(tId).tsUrlList .= (listMoveTo (length urls - 1) $ list (UrlList tId) urlsWithIndexes 2)
 
 stopUrlSelect :: TeamId -> MH ()
 stopUrlSelect tId = do

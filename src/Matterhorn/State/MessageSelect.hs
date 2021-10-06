@@ -58,37 +58,32 @@ getSelectedMessage tId st
     | not (st^.csTeam(tId).tsMode `elem` messageSelectCompatibleModes) = Nothing
     | otherwise = do
         selMsgId <- selectMessageId $ st^.csTeam(tId).tsMessageSelect
-        let cId = st^.csCurrentChannelId(tId)
+        cId <- st^.csCurrentChannelId(tId)
         chan <- st^?csChannel(cId)
         let chanMsgs = chan ^. ccContents . cdMessages
         findMessage selMsgId chanMsgs
 
 beginMessageSelect :: TeamId -> MH ()
 beginMessageSelect tId = do
-    cId <- use (csCurrentChannelId tId)
-    mChan <- preuse (csChannel(cId))
+    withCurrentChannel tId $ \_ chan -> do
+        -- Invalidate the rendering cache since we cache messages to
+        -- speed up the selection UI responsiveness. (See Draw.Messages
+        -- for caching behavior.)
+        mh invalidateCache
 
-    case mChan of
-        Nothing -> return ()
-        Just chan -> do
-            -- Invalidate the rendering cache since we cache messages
-            -- to speed up the selection UI responsiveness. (See
-            -- Draw.Messages for caching behavior.)
-            mh invalidateCache
+        -- Get the number of messages in the current channel and set
+        -- the currently selected message index to be the most recently
+        -- received message that corresponds to a Post (i.e. exclude
+        -- informative messages).
+        --
+        -- If we can't find one at all, we ignore the mode switch
+        -- request and just return.
+        let chanMsgs = chan ^. ccContents . cdMessages
+            recentMsg = getLatestSelectableMessage chanMsgs
 
-            -- Get the number of messages in the current channel and
-            -- set the currently selected message index to be the most
-            -- recently received message that corresponds to a Post
-            -- (i.e. exclude informative messages).
-            --
-            -- If we can't find one at all, we ignore the mode switch
-            -- request and just return.
-            let chanMsgs = chan ^. ccContents . cdMessages
-                recentMsg = getLatestSelectableMessage chanMsgs
-
-            when (isJust recentMsg) $ do
-                setMode tId MessageSelect
-                csTeam(tId).tsMessageSelect .= MessageSelectState (recentMsg >>= _mMessageId)
+        when (isJust recentMsg) $ do
+            setMode tId MessageSelect
+            csTeam(tId).tsMessageSelect .= MessageSelectState (recentMsg >>= _mMessageId)
 
 -- | Tell the server that the message we currently have selected
 -- should have its flagged state toggled.
@@ -122,12 +117,12 @@ viewSelectedMessage tId = do
 
 fillSelectedGap :: TeamId -> MH ()
 fillSelectedGap tId = do
-  selected <- use (to (getSelectedMessage tId))
-  case selected of
-    Just msg
-      | isGap msg -> do cId <- use (csCurrentChannelId tId)
-                        asyncFetchMessagesForGap cId msg
-    _        -> return ()
+    withCurrentChannel tId $ \cId _ -> do
+        selected <- use (to (getSelectedMessage tId))
+        case selected of
+          Just msg
+            | isGap msg -> asyncFetchMessagesForGap cId msg
+          _        -> return ()
 
 viewMessage :: TeamId -> Message -> MH ()
 viewMessage tId m = do
@@ -182,34 +177,27 @@ beginConfirmDeleteSelectedMessage tId = do
 
 messageSelectUp :: TeamId -> MH ()
 messageSelectUp tId = do
-    mode <- use (csTeam(tId).tsMode)
-    selected <- use (csTeam(tId).tsMessageSelect.to selectMessageId)
-    case selected of
-        Just _ | mode == MessageSelect -> do
-            cId <- use (csCurrentChannelId tId)
-            mChan <- preuse (csChannel cId)
-            case mChan of
-                Nothing -> return ()
-                Just chan -> do
-                    let chanMsgs = chan^.ccContents.cdMessages
-                        nextMsgId = getPrevMessageId selected chanMsgs
-                    csTeam(tId).tsMessageSelect .= MessageSelectState (nextMsgId <|> selected)
-        _ -> return ()
+    withCurrentChannel tId $ \_ chan -> do
+        mode <- use (csTeam(tId).tsMode)
+        selected <- use (csTeam(tId).tsMessageSelect.to selectMessageId)
+        case selected of
+            Just _ | mode == MessageSelect -> do
+                let chanMsgs = chan^.ccContents.cdMessages
+                    nextMsgId = getPrevMessageId selected chanMsgs
+                csTeam(tId).tsMessageSelect .= MessageSelectState (nextMsgId <|> selected)
+            _ -> return ()
 
 messageSelectDown :: TeamId -> MH ()
 messageSelectDown tId = do
-    selected <- use (csTeam(tId).tsMessageSelect.to selectMessageId)
-    case selected of
-        Just _ -> whenMode tId MessageSelect $ do
-            cId <- use (csCurrentChannelId tId)
-            mChan <- preuse (csChannel cId)
-            case mChan of
-                Nothing -> return ()
-                Just chan -> do
+    withCurrentChannel tId $ \_ chan -> do
+        selected <- use (csTeam(tId).tsMessageSelect.to selectMessageId)
+        case selected of
+            Just _ ->
+                whenMode tId MessageSelect $ do
                     let chanMsgs = chan^.ccContents.cdMessages
                         nextMsgId = getNextMessageId selected chanMsgs
                     csTeam(tId).tsMessageSelect .= MessageSelectState (nextMsgId <|> selected)
-        _ -> return ()
+            _ -> return ()
 
 messageSelectDownBy :: TeamId -> Int -> MH ()
 messageSelectDownBy tId amt
@@ -225,54 +213,48 @@ messageSelectUpBy tId amt
 
 messageSelectFirst :: TeamId -> MH ()
 messageSelectFirst tId = do
-    selected <- use (csTeam(tId).tsMessageSelect.to selectMessageId)
-    case selected of
-        Just _ -> whenMode tId MessageSelect $ do
-            cId <- use (csCurrentChannelId tId)
-            mChan <- preuse (csChannel cId)
-            case mChan of
-                Nothing -> return ()
-                Just chan -> do
+    withCurrentChannel tId $ \_ chan -> do
+        selected <- use (csTeam(tId).tsMessageSelect.to selectMessageId)
+        case selected of
+            Just _ ->
+                whenMode tId MessageSelect $ do
                     let chanMsgs = chan^.ccContents.cdMessages
                     case getEarliestSelectableMessage chanMsgs of
                       Just firstMsg ->
                         csTeam(tId).tsMessageSelect .= MessageSelectState (firstMsg^.mMessageId <|> selected)
                       Nothing -> mhLog LogError "No first message found from current message?!"
-        _ -> return ()
+            _ -> return ()
 
 messageSelectLast :: TeamId -> MH ()
 messageSelectLast tId = do
-    selected <- use (csTeam(tId).tsMessageSelect.to selectMessageId)
-    case selected of
-        Just _ -> whenMode tId MessageSelect $ do
-            cId <- use (csCurrentChannelId tId)
-            mChan <- preuse (csChannel cId)
-            case mChan of
-                Nothing -> return ()
-                Just chan -> do
+    withCurrentChannel tId $ \_ chan -> do
+        selected <- use (csTeam(tId).tsMessageSelect.to selectMessageId)
+        case selected of
+            Just _ ->
+                whenMode tId MessageSelect $ do
                     let chanMsgs = chan^.ccContents.cdMessages
                     case getLatestSelectableMessage chanMsgs of
                       Just lastSelMsg ->
                         csTeam(tId).tsMessageSelect .= MessageSelectState (lastSelMsg^.mMessageId <|> selected)
                       Nothing -> mhLog LogError "No last message found from current message?!"
-        _ -> return ()
+            _ -> return ()
 
 deleteSelectedMessage :: TeamId -> MH ()
 deleteSelectedMessage tId = do
-    selectedMessage <- use (to (getSelectedMessage tId))
-    st <- use id
-    cId <- use (csCurrentChannelId tId)
-    case selectedMessage of
-        Just msg | isMine st msg && isDeletable msg ->
-            case msg^.mOriginalPost of
-              Just p ->
-                  doAsyncChannelMM Preempt cId
-                      (\s _ -> MM.mmDeletePost (postId p) s)
-                      (\_ _ -> Just $ do
-                          csTeam(tId).tsEditState.cedEditMode .= NewPost
-                          setMode tId Main)
-              Nothing -> return ()
-        _ -> return ()
+    withCurrentChannel tId $ \cId _ -> do
+        selectedMessage <- use (to (getSelectedMessage tId))
+        st <- use id
+        case selectedMessage of
+            Just msg | isMine st msg && isDeletable msg ->
+                case msg^.mOriginalPost of
+                  Just p ->
+                      doAsyncChannelMM Preempt cId
+                          (\s _ -> MM.mmDeletePost (postId p) s)
+                          (\_ _ -> Just $ do
+                              csTeam(tId).tsEditState.cedEditMode .= NewPost
+                              setMode tId Main)
+                  Nothing -> return ()
+            _ -> return ()
 
 beginReplyCompose :: TeamId -> MH ()
 beginReplyCompose tId = do

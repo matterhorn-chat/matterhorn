@@ -53,8 +53,8 @@ renderAutocompleteBox st tId ac =
                      " (Tab/Shift-Tab to select)"
 
         selElem = snd <$> listSelectedElement matchList
-        cId = st^.csCurrentChannelId(tId)
-        mCurChan = st^?csChannel(cId)
+        mcId = st^.csCurrentChannelId(tId)
+        mCurChan = mcId >>= (\cId -> st^?csChannel(cId))
         footer = case mCurChan of
             Nothing ->
                 hBorder

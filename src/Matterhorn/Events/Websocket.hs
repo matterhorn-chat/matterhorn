@@ -59,7 +59,7 @@ handleWebsocketEvent we = do
                     addNewPostedMessage $ RecentPost p wasMentioned
                     tId <- use csCurrentTeamId
                     cId <- use (csCurrentChannelId tId)
-                    when (postChannelId p /= cId) $
+                    when (Just (postChannelId p) /= cId) $
                         showChannelInSidebar (p^.postChannelIdL) False
             | otherwise -> return ()
 
@@ -70,9 +70,9 @@ handleWebsocketEvent we = do
                 currTid <- use csCurrentTeamId
                 foreachTeam $ \tId -> do
                     cId <- use (csCurrentChannelId tId)
-                    when (postChannelId p == cId && tId == currTid) $
+                    when (Just (postChannelId p) == cId && tId == currTid) $
                         updateViewed False
-                    when (postChannelId p /= cId) $
+                    when (Just (postChannelId p) /= cId) $
                         showChannelInSidebar (p^.postChannelIdL) False
             | otherwise -> return ()
 
@@ -83,9 +83,9 @@ handleWebsocketEvent we = do
                 currTid <- use csCurrentTeamId
                 foreachTeam $ \tId -> do
                     cId <- use (csCurrentChannelId tId)
-                    when (postChannelId p == cId && tId == currTid) $
+                    when (Just (postChannelId p) == cId && tId == currTid) $
                         updateViewed False
-                    when (postChannelId p /= cId) $
+                    when (Just (postChannelId p) /= cId) $
                         showChannelInSidebar (p^.postChannelIdL) False
             | otherwise -> return ()
 
@@ -217,8 +217,8 @@ handleWebsocketEvent we = do
             | Just user <- wepUser (weData we) -> do
                 handleUserUpdated user
                 tId <- use csCurrentTeamId
-                cid <- use $ csCurrentChannelId(tId)
-                refreshChannelById cid
+                withCurrentChannel tId $ \cId _ -> do
+                    refreshChannelById cId
             | otherwise -> return ()
 
         -- We deliberately ignore these events:

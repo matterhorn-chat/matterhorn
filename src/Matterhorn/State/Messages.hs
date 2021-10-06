@@ -572,7 +572,7 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
                     csChannels %= modifyChannelById cId
                       ((ccContents.cdMessages %~ addMessage msg') .
                        (if not ignoredJoinLeaveMessage then adjustUpdated new else id) .
-                       (\c -> if currCId == cId
+                       (\c -> if currCId == Just cId
                               then c
                               else case newPostData of
                                      OldPost _ -> c
@@ -610,7 +610,7 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
                       currCId <- use (csCurrentChannelId currTid)
 
                       let notifyPref = notifyPreference (myUser st) chan
-                          curChannelAction = if postChannelId new == currCId
+                          curChannelAction = if Just (postChannelId new) == currCId
                                              then UpdateServerViewed
                                              else NoAction
                           originUserAction =
@@ -790,8 +790,7 @@ maybePostUsername st p =
 asyncFetchMoreMessages :: MH ()
 asyncFetchMoreMessages = do
     tId <- use csCurrentTeamId
-    cId <- use (csCurrentChannelId tId)
-    withChannel cId $ \chan ->
+    withCurrentChannel tId $ \cId chan -> do
         let offset = max 0 $ length (chan^.ccContents.cdMessages) - 2
             page = offset `div` pageAmount
             usefulMsgs = getTwoContiguousPosts Nothing (chan^.ccContents.cdMessages.to reverseMessages)
@@ -803,13 +802,12 @@ asyncFetchMoreMessages = do
                       }
             addTrailingGap = MM.postQueryBefore query == Nothing &&
                              MM.postQueryPage query == Just 0
-        in doAsyncChannelMM Preempt cId
-               (\s c -> MM.mmGetPostsForChannel c query s)
-               (\c p -> Just $ do
-                   pp <- addObtainedMessages c (-pageAmount) addTrailingGap p
-                   postProcessMessageAdd pp
-                   mh $ invalidateCacheEntry (ChannelMessages cId))
-
+        doAsyncChannelMM Preempt cId
+            (\s c -> MM.mmGetPostsForChannel c query s)
+            (\c p -> Just $ do
+                pp <- addObtainedMessages c (-pageAmount) addTrailingGap p
+                postProcessMessageAdd pp
+                mh $ invalidateCacheEntry (ChannelMessages cId))
 
 -- | Given a starting point and a direction to move from that point,
 -- returns the closest two adjacent messages on that direction (as a
@@ -915,8 +913,7 @@ fetchVisibleIfNeeded :: TeamId -> MH ()
 fetchVisibleIfNeeded tId = do
     sts <- use csConnectionStatus
     when (sts == Connected) $ do
-        cId <- use (csCurrentChannelId tId)
-        withChannel cId $ \chan ->
+        withCurrentChannel tId $ \cId chan -> do
             let msgs = chan^.ccContents.cdMessages.to reverseMessages
                 (numRemaining, gapInDisplayable, _, rel'pId, overlap) =
                     foldl gapTrail (numScrollbackPosts, False, Nothing, Nothing, 2) msgs
@@ -937,12 +934,12 @@ fetchVisibleIfNeeded tId = do
                 op = \s c -> MM.mmGetPostsForChannel c finalQuery s
                 addTrailingGap = MM.postQueryBefore finalQuery == Nothing &&
                                  MM.postQueryPage finalQuery == Just 0
-            in when ((not $ chan^.ccContents.cdFetchPending) && gapInDisplayable) $ do
-                      csChannel(cId).ccContents.cdFetchPending .= True
-                      doAsyncChannelMM Preempt cId op
-                          (\c p -> Just $ do
-                              addObtainedMessages c (-numToReq) addTrailingGap p >>= postProcessMessageAdd
-                              csChannel(c).ccContents.cdFetchPending .= False)
+            when ((not $ chan^.ccContents.cdFetchPending) && gapInDisplayable) $ do
+                   csChannel(cId).ccContents.cdFetchPending .= True
+                   doAsyncChannelMM Preempt cId op
+                       (\c p -> Just $ do
+                           addObtainedMessages c (-numToReq) addTrailingGap p >>= postProcessMessageAdd
+                           csChannel(c).ccContents.cdFetchPending .= False)
 
 asyncFetchAttachments :: Post -> MH ()
 asyncFetchAttachments p = do

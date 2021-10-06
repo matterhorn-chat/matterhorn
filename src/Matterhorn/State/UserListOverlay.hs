@@ -34,31 +34,31 @@ import           Matterhorn.Types
 -- current channel.
 enterChannelMembersUserList :: TeamId -> MH ()
 enterChannelMembersUserList myTId = do
-    cId <- use (csCurrentChannelId myTId)
-    myId <- gets myUserId
-    session <- getSession
+    withCurrentChannel myTId $ \cId _ -> do
+        myId <- gets myUserId
+        session <- getSession
 
-    doAsyncWith Preempt $ do
-        stats <- MM.mmGetChannelStatistics cId session
-        return $ Just $ do
-            enterUserListMode myTId (ChannelMembers cId myTId) (Just $ channelStatsMemberCount stats)
-              (\u -> case u^.uiId /= myId of
-                True -> createOrFocusDMChannel myTId u Nothing >> return True
-                False -> return False
-              )
+        doAsyncWith Preempt $ do
+            stats <- MM.mmGetChannelStatistics cId session
+            return $ Just $ do
+                enterUserListMode myTId (ChannelMembers cId myTId) (Just $ channelStatsMemberCount stats)
+                  (\u -> case u^.uiId /= myId of
+                    True -> createOrFocusDMChannel myTId u Nothing >> return True
+                    False -> return False
+                  )
 
 -- | Show the user list overlay for showing users that are not members
 -- of the current channel for the purpose of adding them to the
 -- channel.
 enterChannelInviteUserList :: TeamId -> MH ()
 enterChannelInviteUserList myTId = do
-    cId <- use (csCurrentChannelId myTId)
-    myId <- gets myUserId
-    enterUserListMode myTId (ChannelNonMembers cId myTId) Nothing
-      (\u -> case u^.uiId /= myId of
-        True -> addUserToCurrentChannel myTId u >> return True
-        False -> return False
-      )
+    withCurrentChannel myTId $ \cId _ -> do
+        myId <- gets myUserId
+        enterUserListMode myTId (ChannelNonMembers cId myTId) Nothing
+          (\u -> case u^.uiId /= myId of
+            True -> addUserToCurrentChannel myTId u >> return True
+            False -> return False
+          )
 
 -- | Show the user list overlay for showing all users for the purpose of
 -- starting a direct message channel with another user.

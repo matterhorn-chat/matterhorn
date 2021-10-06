@@ -95,7 +95,7 @@ getLatestMessage cs tId m =
     case m^.mMessageId of
         Nothing -> Just m
         Just mId -> do
-            let cId = cs^.csCurrentChannelId(tId)
+            cId <- cs^.csCurrentChannelId(tId)
             chan <- cs^?csChannel(cId)
             findMessage mId $ chan^.ccContents.cdMessages
 

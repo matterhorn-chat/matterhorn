@@ -25,13 +25,18 @@ import           Matterhorn.Types.RichText
 
 renderUrlList :: ChatState -> TeamId -> Widget Name
 renderUrlList st tId =
+    case st^.csCurrentChannelId(tId) of
+        Nothing -> emptyWidget
+        Just cId ->
+            case st^?csChannel(cId) of
+                Nothing -> emptyWidget
+                Just ch -> renderUrlList' st tId ch
+
+renderUrlList' :: ChatState -> TeamId -> ClientChannel -> Widget Name
+renderUrlList' st tId chan =
     header <=> urlDisplay
     where
-        cId = st^.csCurrentChannelId(tId)
-        mChan = st^?csChannel(cId)
-        cName = case mChan of
-            Nothing -> " "
-            Just chan -> mkChannelName st (chan^.ccInfo)
+        cName = mkChannelName st (chan^.ccInfo)
         header = (withDefAttr channelHeaderAttr $ vLimit 1 $
                  (renderText' Nothing "" hSet Nothing $ "URLs: " <> cName) <+>
                  fill ' ') <=> hBorder

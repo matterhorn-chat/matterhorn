@@ -393,8 +393,8 @@ renderCurrentChannelDisplay st tId hs = header <=> hBorder <=> messages
                                 , statusBoxWidget
                                 ]
 
-    cId = st^.(csCurrentChannelId tId)
-    mChan = st^?csChannel(cId)
+    mcId = st^.(csCurrentChannelId tId)
+    mChan = maybe Nothing (\cId -> st^?csChannel(cId)) mcId
 
     channelHeader =
         withDefAttr channelHeaderAttr $
@@ -403,21 +403,26 @@ renderCurrentChannelDisplay st tId hs = header <=> hBorder <=> messages
 
     messages = padTop Max chatText
 
-    chatText = case st^.csTeam(tId).tsMode of
-        MessageSelect ->
-            freezeBorders $
-            renderMessagesWithSelect (st^.csTeam(tId).tsMessageSelect) channelMessages
-        MessageSelectDeleteConfirm ->
-            freezeBorders $
-            renderMessagesWithSelect (st^.csTeam(tId).tsMessageSelect) channelMessages
-        _ ->
-            cached (ChannelMessages cId) $
-            freezeBorders $
-            renderLastMessages st hs editCutoff $
-            retrogradeMsgsWithThreadStates $
-            reverseMessages channelMessages
+    chatText =
+        case mcId of
+            Nothing -> fill ' '
+            Just cId ->
+                case st^.csTeam(tId).tsMode of
+                MessageSelect ->
+                    freezeBorders $
+                    renderMessagesWithSelect cId (st^.csTeam(tId).tsMessageSelect) (channelMessages cId)
+                MessageSelectDeleteConfirm ->
+                    freezeBorders $
+                    renderMessagesWithSelect cId (st^.csTeam(tId).tsMessageSelect) (channelMessages cId)
+                _ ->
+                    cached (ChannelMessages cId) $
+                    freezeBorders $
+                    renderLastMessages st hs (getEditedMessageCutoff cId st) $
+                    retrogradeMsgsWithThreadStates $
+                    reverseMessages $
+                    channelMessages cId
 
-    renderMessagesWithSelect (MessageSelectState selMsgId) msgs =
+    renderMessagesWithSelect cId (MessageSelectState selMsgId) msgs =
         -- In this case, we want to fill the message list with messages
         -- but use the post ID as a cursor. To do this efficiently we
         -- only want to render enough messages to fill the screen.
@@ -435,23 +440,22 @@ renderCurrentChannelDisplay st tId hs = header <=> hBorder <=> messages
             msgsWithStates = chronologicalMsgsWithThreadStates msgs
         in case s of
              Nothing ->
-                 renderLastMessages st hs editCutoff before
+                 renderLastMessages st hs (getEditedMessageCutoff cId st) before
              Just m ->
                  unsafeRenderMessageSelection (m, (before, after)) (renderSingleMessage st hs Nothing)
 
-    cutoff = getNewMessageCutoff cId st
-    editCutoff = getEditedMessageCutoff cId st
-    messageListing = getMessageListing cId st
-    channelMessages =
+    channelMessages cId =
         -- If the channel is empty, add an informative message to the
         -- message listing to make it explicit that this channel does
         -- not yet have any messages.
-        if F.null messageListing
-        then addMessage (emptyChannelFillerMessage st cId) emptyDirSeq
-        else insertTransitions messageListing
-                               cutoff
-                               (getDateFormat st)
-                               (st ^. timeZone)
+        let cutoff = getNewMessageCutoff cId st
+            messageListing = getMessageListing cId st
+        in if F.null messageListing
+           then addMessage (emptyChannelFillerMessage st cId) emptyDirSeq
+           else insertTransitions messageListing
+                                  cutoff
+                                  (getDateFormat st)
+                                  (st ^. timeZone)
 
 -- | Construct a single message to be displayed in the specified channel
 -- when it does not yet have any user messages posted to it.
@@ -836,20 +840,21 @@ mainInterface st tId =
                      ]
 
     showTypingUsers =
-        let cId = st^.csCurrentChannelId(tId)
-            mChan = st^?csChannel(cId)
-            format = renderText' Nothing (myUsername st) hs Nothing
-        in case mChan of
+        case st^.csCurrentChannelId(tId) of
             Nothing -> emptyWidget
-            Just chan ->
-                case allTypingUsers (chan^.ccInfo.cdTypingUsers) of
-                    [] -> emptyWidget
-                    [uId] | Just un <- usernameForUserId uId st ->
-                       format $ "[" <> addUserSigil un <> " is typing]"
-                    [uId1, uId2] | Just un1 <- usernameForUserId uId1 st
-                                 , Just un2 <- usernameForUserId uId2 st ->
-                       format $ "[" <> addUserSigil un1 <> " and " <> addUserSigil un2 <> " are typing]"
-                    _ -> format "[several people are typing]"
+            Just cId ->
+                case st^?csChannel(cId) of
+                    Nothing -> emptyWidget
+                    Just chan ->
+                        let format = renderText' Nothing (myUsername st) hs Nothing
+                        in case allTypingUsers (chan^.ccInfo.cdTypingUsers) of
+                            [] -> emptyWidget
+                            [uId] | Just un <- usernameForUserId uId st ->
+                               format $ "[" <> addUserSigil un <> " is typing]"
+                            [uId1, uId2] | Just un1 <- usernameForUserId uId1 st
+                                         , Just un2 <- usernameForUserId uId2 st ->
+                               format $ "[" <> addUserSigil un1 <> " and " <> addUserSigil un2 <> " are typing]"
+                            _ -> format "[several people are typing]"
 
     showBusy = case st^.csWorkerIsBusy of
                  Just (Just n) -> hLimit 2 hBorder <+> txt (T.pack $ "*" <> show n)

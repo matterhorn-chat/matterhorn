@@ -362,8 +362,8 @@ handleEditingInput tId e = do
     isMultiline <- use (csTeam(tId).tsEditState.cedEphemeral.eesMultiline)
     isPreviewing <- use (csResources.crConfiguration.configShowMessagePreviewL)
     when (beforeLineCount /= afterLineCount && isMultiline && isPreviewing) $ do
-        cId <- use (csCurrentChannelId tId)
-        mh $ invalidateCacheEntry $ ChannelMessages cId
+        withCurrentChannel tId $ \cId _ -> do
+            mh $ invalidateCacheEntry $ ChannelMessages cId
 
     -- Reset the recent autocompletion flag to stop smart punctuation
     -- handling.
@@ -375,18 +375,19 @@ handleEditingInput tId e = do
 -- action silently.
 sendUserTypingAction :: TeamId -> MH ()
 sendUserTypingAction tId = do
-  st <- use id
-  when (configShowTypingIndicator (st^.csResources.crConfiguration)) $
-    case st^.csConnectionStatus of
-      Connected -> do
-        let pId = case st^.csTeam(tId).tsEditState.cedEditMode of
-                    Replying _ post -> Just $ postId post
-                    _               -> Nothing
-        liftIO $ do
-          now <- getCurrentTime
-          let action = UserTyping now (st^.csCurrentChannelId(tId)) pId
-          STM.atomically $ STM.writeTChan (st^.csResources.crWebsocketActionChan) action
-      Disconnected -> return ()
+    withCurrentChannel tId $ \cId _ -> do
+        st <- use id
+        when (configShowTypingIndicator (st^.csResources.crConfiguration)) $
+          case st^.csConnectionStatus of
+            Connected -> do
+              let pId = case st^.csTeam(tId).tsEditState.cedEditMode of
+                          Replying _ post -> Just $ postId post
+                          _               -> Nothing
+              liftIO $ do
+                now <- getCurrentTime
+                let action = UserTyping now cId pId
+                STM.atomically $ STM.writeTChan (st^.csResources.crWebsocketActionChan) action
+            Disconnected -> return ()
 
 -- Kick off an async request to the spell checker for the current editor
 -- contents.
@@ -455,36 +456,32 @@ gotoEnd z =
 
 cancelAutocompleteOrReplyOrEdit :: TeamId -> MH ()
 cancelAutocompleteOrReplyOrEdit tId = do
-    cId <- use (csCurrentChannelId tId)
-    mh $ invalidateCacheEntry $ ChannelMessages cId
-    ac <- use (csTeam(tId).tsEditState.cedAutocomplete)
-    case ac of
-        Just _ -> do
-            resetAutocomplete tId
-        Nothing -> do
-            mode <- use (csTeam(tId).tsEditState.cedEditMode)
-            case mode of
-                NewPost -> return ()
-                _ -> do
-                    csTeam(tId).tsEditState.cedEditMode .= NewPost
-                    csTeam(tId).tsEditState.cedEditor %= applyEdit Z.clearZipper
-                    resetAttachmentList tId
+    withCurrentChannel tId $ \cId _ -> do
+        mh $ invalidateCacheEntry $ ChannelMessages cId
+        ac <- use (csTeam(tId).tsEditState.cedAutocomplete)
+        case ac of
+            Just _ -> do
+                resetAutocomplete tId
+            Nothing -> do
+                mode <- use (csTeam(tId).tsEditState.cedEditMode)
+                case mode of
+                    NewPost -> return ()
+                    _ -> do
+                        csTeam(tId).tsEditState.cedEditMode .= NewPost
+                        csTeam(tId).tsEditState.cedEditor %= applyEdit Z.clearZipper
+                        resetAttachmentList tId
 
 replyToLatestMessage :: TeamId -> MH ()
 replyToLatestMessage tId = do
-  cId <- use (csCurrentChannelId tId)
-  mChan <- preuse (csChannel cId)
-  case mChan of
-      Nothing -> return ()
-      Just chan -> do
-          let msgs = chan^. ccContents . cdMessages
-          case findLatestUserMessage isReplyable msgs of
-            Just msg | isReplyable msg ->
-                do rootMsg <- getReplyRootMessage msg
-                   setMode tId Main
-                   mh $ invalidateCacheEntry $ ChannelMessages cId
-                   csTeam(tId).tsEditState.cedEditMode .= Replying rootMsg (fromJust $ rootMsg^.mOriginalPost)
-            _ -> return ()
+    withCurrentChannel tId $ \cId chan -> do
+        let msgs = chan^. ccContents . cdMessages
+        case findLatestUserMessage isReplyable msgs of
+          Just msg | isReplyable msg ->
+              do rootMsg <- getReplyRootMessage msg
+                 setMode tId Main
+                 mh $ invalidateCacheEntry $ ChannelMessages cId
+                 csTeam(tId).tsEditState.cedEditMode .= Replying rootMsg (fromJust $ rootMsg^.mOriginalPost)
+          _ -> return ()
 
 data Direction = Forwards | Backwards
 

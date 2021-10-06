@@ -162,6 +162,9 @@ module Matterhorn.Types
   , newState
   , newTeamState
 
+  , withCurrentChannel
+  , withCurrentChannel'
+
   , csTeamZipper
   , csTeams
   , csTeam
@@ -2201,9 +2204,31 @@ resetSpellCheckTimer s =
         Just (_, reset) -> reset
 
 -- ** Utility Lenses
-csCurrentChannelId :: TeamId -> SimpleGetter ChatState ChannelId
+csCurrentChannelId :: TeamId -> SimpleGetter ChatState (Maybe ChannelId)
 csCurrentChannelId tId =
-    csTeam(tId).tsFocus.to Z.unsafeFocus.to channelListEntryChannelId
+    csTeam(tId).tsFocus.to Z.focus.to (fmap channelListEntryChannelId)
+
+withCurrentChannel :: TeamId -> (ChannelId -> ClientChannel -> MH ()) -> MH ()
+withCurrentChannel tId f = do
+    mcId <- use $ csCurrentChannelId tId
+    case mcId of
+        Nothing -> return ()
+        Just cId -> do
+            mChan <- preuse $ csChannel cId
+            case mChan of
+                Just ch -> f cId ch
+                _ -> return ()
+
+withCurrentChannel' :: TeamId -> (ChannelId -> ClientChannel -> MH (Maybe a)) -> MH (Maybe a)
+withCurrentChannel' tId f = do
+    mcId <- use $ csCurrentChannelId tId
+    case mcId of
+        Nothing -> return Nothing
+        Just cId -> do
+            mChan <- preuse $ csChannel cId
+            case mChan of
+                Just ch -> f cId ch
+                _ -> return Nothing
 
 csCurrentTeamId :: SimpleGetter ChatState TeamId
 csCurrentTeamId =

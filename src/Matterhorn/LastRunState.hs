@@ -39,7 +39,7 @@ data LastRunState = LastRunState
   { _lrsHost              :: Hostname  -- ^ Host of the server
   , _lrsPort              :: Port      -- ^ Post of the server
   , _lrsUserId            :: UserId    -- ^ ID of the logged-in user
-  , _lrsSelectedChannelId :: ChannelId -- ^ ID of the last selected channel
+  , _lrsSelectedChannelId :: Maybe ChannelId -- ^ ID of the last selected channel
   }
 
 instance A.ToJSON LastRunState where
@@ -78,19 +78,19 @@ writeLastRunStates cs =
         writeLastRunState cs tId
 
 writeLastRunState :: ChatState -> TeamId -> IO ()
-writeLastRunState cs tId = do
-    let cId = cs^.csCurrentChannelId(tId)
-        mChan = cs^?csChannel(cId)
-    case mChan of
+writeLastRunState cs tId =
+    case cs^.csCurrentChannelId(tId) of
         Nothing -> return ()
-        Just chan ->
-            when (chan^.ccInfo.cdType `elem` [Ordinary, Private]) $ do
-                let runState = toLastRunState cs
+        Just cId -> case cs^?csChannel(cId) of
+            Nothing -> return ()
+            Just chan ->
+                when (chan^.ccInfo.cdType `elem` [Ordinary, Private]) $ do
+                    let runState = toLastRunState cs
 
-                lastRunStateFile <- lastRunStateFilePath $ unId $ toId tId
-                createDirectoryIfMissing True $ dropFileName lastRunStateFile
-                BS.writeFile lastRunStateFile $ LBS.toStrict $ A.encode runState
-                P.setFileMode lastRunStateFile lastRunStateFileMode
+                    lastRunStateFile <- lastRunStateFilePath $ unId $ toId tId
+                    createDirectoryIfMissing True $ dropFileName lastRunStateFile
+                    BS.writeFile lastRunStateFile $ LBS.toStrict $ A.encode runState
+                    P.setFileMode lastRunStateFile lastRunStateFileMode
 
 -- | Reads the last run state from a file given the current team ID.
 readLastRunState :: TeamId -> IO (Either String LastRunState)

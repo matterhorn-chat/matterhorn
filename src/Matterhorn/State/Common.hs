@@ -128,20 +128,20 @@ updatePostMap mTId postCollection = do
 addClientMessage :: ClientMessage -> MH ()
 addClientMessage msg = do
   tId <- use csCurrentTeamId
-  cid <- use (csCurrentChannelId(tId))
-  uuid <- generateUUID
-  let addCMsg = ccContents.cdMessages %~
-          (addMessage $ clientMessageToMessage msg & mMessageId .~ Just (MessageUUID uuid))
-  csChannels %= modifyChannelById cid addCMsg
+  withCurrentChannel tId $ \cid _ -> do
+      uuid <- generateUUID
+      let addCMsg = ccContents.cdMessages %~
+              (addMessage $ clientMessageToMessage msg & mMessageId .~ Just (MessageUUID uuid))
+      csChannels %= modifyChannelById cid addCMsg
 
-  mh $ invalidateCacheEntry $ ChannelMessages cid
-  mh $ invalidateCacheEntry $ ChannelSidebar tId
+      mh $ invalidateCacheEntry $ ChannelMessages cid
+      mh $ invalidateCacheEntry $ ChannelSidebar tId
 
-  let msgTy = case msg^.cmType of
-        Error -> LogError
-        _     -> LogGeneral
+      let msgTy = case msg^.cmType of
+            Error -> LogError
+            _     -> LogGeneral
 
-  mhLog msgTy $ T.pack $ show msg
+      mhLog msgTy $ T.pack $ show msg
 
 -- | Add a new 'ClientMessage' representing an error message to
 --   the current channel's message list
@@ -157,12 +157,16 @@ postErrorMessage' err =
 
 postErrorMessageIO :: Text -> ChatState -> IO ChatState
 postErrorMessageIO err st = do
-  msg <- newClientMessage Error err
-  uuid <- generateUUID_IO
-  let cId = st ^. csCurrentChannelId (st^.csCurrentTeamId)
-      addEMsg = ccContents.cdMessages %~
-          (addMessage $ clientMessageToMessage msg & mMessageId .~ Just (MessageUUID uuid))
-  return $ st & csChannels %~ modifyChannelById cId addEMsg
+  let tId = st^.csCurrentTeamId
+      mcId = st^.csCurrentChannelId(tId)
+  case mcId of
+      Nothing -> return st
+      Just cId -> do
+          msg <- newClientMessage Error err
+          uuid <- generateUUID_IO
+          let addEMsg = ccContents.cdMessages %~
+                  (addMessage $ clientMessageToMessage msg & mMessageId .~ Just (MessageUUID uuid))
+          return $ st & csChannels %~ modifyChannelById cId addEMsg
 
 openFilePath :: FilePath -> MH Bool
 openFilePath path = openWithOpener (return path)
@@ -194,22 +198,18 @@ openWithOpener getTarget = do
                     -- user is gone using their interactive URL opener,
                     -- when they return, any messages that arrive in the
                     -- current channel will be displayed as new.
-                    cId <- use (csCurrentChannelId(tId))
-                    mCurChan <- preuse (csChannel(cId))
-                    case mCurChan of
-                        Nothing -> return ()
-                        Just curChan -> do
-                            let msgs = curChan^.ccContents.cdMessages
-                            case findLatestUserMessage isEditable msgs of
-                                Nothing -> return ()
-                                Just m ->
-                                    case m^.mOriginalPost of
-                                        Nothing -> return ()
-                                        Just p ->
-                                            case curChan^.ccInfo.cdNewMessageIndicator of
-                                                Hide ->
-                                                    csChannel(cId).ccInfo.cdNewMessageIndicator .= (NewPostsAfterServerTime (p^.postCreateAtL))
-                                                _ -> return ()
+                    withCurrentChannel tId $ \cId curChan -> do
+                        let msgs = curChan^.ccContents.cdMessages
+                        case findLatestUserMessage isEditable msgs of
+                            Nothing -> return ()
+                            Just m ->
+                                case m^.mOriginalPost of
+                                    Nothing -> return ()
+                                    Just p ->
+                                        case curChan^.ccInfo.cdNewMessageIndicator of
+                                            Hide ->
+                                                csChannel(cId).ccInfo.cdNewMessageIndicator .= (NewPostsAfterServerTime (p^.postCreateAtL))
+                                            _ -> return ()
 
                     -- No need to add a gap here: the websocket
                     -- disconnect/reconnect events will automatically
