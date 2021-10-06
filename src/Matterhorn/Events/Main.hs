@@ -9,16 +9,15 @@ import qualified Graphics.Vty as Vty
 
 import           Network.Mattermost.Types ( TeamId )
 
-import           Matterhorn.Command
+import           Matterhorn.HelpTopics
 import           Matterhorn.Events.Keybindings
 import           Matterhorn.State.Attachments
 import           Matterhorn.State.ChannelSelect
-import           Matterhorn.State.ChannelList
 import           Matterhorn.State.Channels
 import           Matterhorn.State.Editing
+import           Matterhorn.State.Help
 import           Matterhorn.State.MessageSelect
 import           Matterhorn.State.PostListOverlay ( enterFlaggedPostListMode )
-import           Matterhorn.State.Teams
 import           Matterhorn.State.UrlSelect
 import           Matterhorn.Types
 
@@ -37,34 +36,17 @@ mainKeybindings tId = mkKeybindings (mainKeyHandlers tId)
 
 mainKeyHandlers :: TeamId -> [KeyEventHandler]
 mainKeyHandlers tId =
-    [ mkKb EnterSelectModeEvent
+    [ mkKb ShowHelpEvent
+        "Show this help screen" $ do
+        showHelpScreen tId mainHelpTopic
+
+    , mkKb EnterSelectModeEvent
         "Select a message to edit/reply/delete" $
         beginMessageSelect tId
 
     , mkKb ReplyRecentEvent
         "Reply to the most recent message" $
         replyToLatestMessage tId
-
-    , mkKb ToggleMessagePreviewEvent "Toggle message preview"
-        toggleMessagePreview
-
-    , mkKb ToggleChannelListVisibleEvent "Toggle channel list visibility"
-        toggleChannelListVisibility
-
-    , mkKb ToggleExpandedChannelTopicsEvent "Toggle display of expanded channel topics"
-        toggleExpandedChannelTopics
-
-    , mkKb NextTeamEvent "Switch to the next available team"
-        nextTeam
-
-    , mkKb PrevTeamEvent "Switch to the previous available team"
-        prevTeam
-
-    , mkKb MoveCurrentTeamLeftEvent "Move the current team to the left in the team list"
-        moveCurrentTeamLeft
-
-    , mkKb MoveCurrentTeamRightEvent "Move the current team to the right in the team list"
-        moveCurrentTeamRight
 
     , mkKb
         InvokeEditorEvent
@@ -75,11 +57,6 @@ mainKeyHandlers tId =
         EnterFastSelectModeEvent
         "Enter fast channel selection mode" $
          beginChannelSelect tId
-
-    , mkKb
-        QuitEvent
-        "Quit"
-        requestQuit
 
     , staticKb "Tab-complete forward"
          (Vty.EvKey (Vty.KChar '\t') []) $

@@ -24,9 +24,9 @@ import           Network.Mattermost.Types ( TeamId )
 import           Network.Mattermost.Version ( mmApiVersion )
 
 import           Matterhorn.Command
-import           Matterhorn.Events
 import           Matterhorn.Events.ChannelSelect
 import           Matterhorn.Events.Keybindings
+import           Matterhorn.Events.Global
 import           Matterhorn.Events.Main
 import           Matterhorn.Events.MessageSelect
 import           Matterhorn.Events.ThemeListOverlay

@@ -1,7 +1,5 @@
 module Matterhorn.Events
   ( onEvent
-  , globalKeybindings
-  , globalKeyHandlers
   )
 where
 
@@ -25,7 +23,6 @@ import           Matterhorn.HelpTopics
 import           Matterhorn.State.ChannelList
 import           Matterhorn.State.Channels
 import           Matterhorn.State.Common
-import           Matterhorn.State.Help
 import           Matterhorn.State.Messages
 import           Matterhorn.Types
 
@@ -33,6 +30,7 @@ import           Matterhorn.Events.ChannelSelect
 import           Matterhorn.Events.ChannelTopicWindow
 import           Matterhorn.Events.SaveAttachmentWindow
 import           Matterhorn.Events.DeleteChannelConfirm
+import           Matterhorn.Events.Global
 import           Matterhorn.Events.Keybindings
 import           Matterhorn.Events.LeaveChannelConfirm
 import           Matterhorn.Events.Main
@@ -237,17 +235,6 @@ teamEventHandlerByMode tId mode =
         EditNotifyPrefs            -> void . onEventEditNotifyPrefs tId
         ChannelTopicWindow         -> onEventChannelTopicWindow tId
         SaveAttachmentWindow _     -> onEventSaveAttachmentWindow tId
-
-globalKeybindings :: KeyConfig -> KeyHandlerMap
-globalKeybindings = mkKeybindings globalKeyHandlers
-
-globalKeyHandlers :: [KeyEventHandler]
-globalKeyHandlers =
-    [ mkKb ShowHelpEvent
-        "Show this help screen" $ do
-            withCurrentTeam $ \tId ->
-                showHelpScreen tId mainHelpTopic
-    ]
 
 -- | Refresh client-accessible server configuration information. This
 -- is usually triggered when a reconnect event for the WebSocket to the
