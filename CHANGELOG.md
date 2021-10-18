@@ -7,8 +7,8 @@ New features and improvements:
    interaction.
  * Message attachments can now be clicked with the mouse to open them
    with the configured URL/file opener command.
- * Long verbatim and code blocks are now truncated to 25 lines by
-   default. (#725) This change adds:
+ * Long verbatim and code blocks can now be truncated when they're too
+   large. By default, they are not truncated. (#725) This change adds:
    * A new theme attribute, `verbatimTruncateMessage`, that affects the
      truncation message
    * A new configuration setting, `truncateVerbatimBlockHeight` (default
