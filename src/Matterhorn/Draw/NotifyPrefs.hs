@@ -22,8 +22,8 @@ drawNotifyPrefs st =
     let Just form = st^.csCurrentTeam.tsNotifyPrefs
         label = forceAttr clientEmphAttr $ str "Notification Preferences"
         formKeys = withDefAttr clientEmphAttr <$> txt <$> ["Tab", "BackTab"]
-        bindings = vBox $ hCenter <$> [ renderKeybindingHelp "Save" [FormSubmitEvent] <+> txt "  " <+>
-                                        renderKeybindingHelp "Cancel" [CancelEvent]
+        bindings = vBox $ hCenter <$> [ renderKeybindingHelp st "Save" [FormSubmitEvent] <+> txt "  " <+>
+                                        renderKeybindingHelp st "Cancel" [CancelEvent]
                                       , hBox ((intersperse (txt "/") formKeys) <> [txt (":Cycle form fields")])
                                       , hBox [withDefAttr clientEmphAttr $ txt "Space", txt ":Toggle form field"]
                                       ]

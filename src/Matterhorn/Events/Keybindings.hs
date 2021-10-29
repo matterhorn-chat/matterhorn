@@ -1,7 +1,7 @@
 module Matterhorn.Events.Keybindings
   ( defaultBindings
   , lookupKeybinding
-  , getFirstDefaultBinding
+  , firstActiveBinding
 
   , mkKb
   , staticKb
@@ -138,6 +138,13 @@ mkKeybindings ks conf = KeyHandlerMap $ M.fromList pairs
 bindingToEvent :: Binding -> Vty.Event
 bindingToEvent binding =
   Vty.EvKey (kbKey binding) (kbMods binding)
+
+firstActiveBinding :: KeyConfig -> KeyEvent -> Binding
+firstActiveBinding kc ev = fromMaybe (getFirstDefaultBinding ev) $ do
+    bState <- M.lookup ev kc
+    case bState of
+        BindingList (b:_) -> Just b
+        _ -> Nothing
 
 getFirstDefaultBinding :: KeyEvent -> Binding
 getFirstDefaultBinding ev =

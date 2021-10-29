@@ -25,7 +25,7 @@ import           Matterhorn.Themes
 import           Matterhorn.TimeUtils
 import           Matterhorn.Types
 import           Matterhorn.Types.KeyEvents
-import           Matterhorn.Events.Keybindings ( getFirstDefaultBinding )
+import           Matterhorn.Events.Keybindings ( firstActiveBinding )
 
 
 defaultTimeFormat :: Text
@@ -57,9 +57,10 @@ renderUTCTime fmt tz t =
     then emptyWidget
     else withDefAttr timeAttr (txt $ localTimeText fmt $ asLocalTime tz t)
 
-renderKeybindingHelp :: Text -> [KeyEvent] -> Widget Name
-renderKeybindingHelp label evs =
-  let ppEv ev = withDefAttr clientEmphAttr $ txt (ppBinding (getFirstDefaultBinding ev))
+renderKeybindingHelp :: ChatState -> Text -> [KeyEvent] -> Widget Name
+renderKeybindingHelp st label evs =
+  let ppEv ev = withDefAttr clientEmphAttr $ txt (ppBinding (firstActiveBinding kc ev))
+      kc = st^.csResources.crConfiguration.configUserKeysL
   in hBox $ (intersperse (txt "/") $ ppEv <$> evs) <> [txt (":" <> label)]
 
 -- | Modifies a message sequence by inserting date transition markers

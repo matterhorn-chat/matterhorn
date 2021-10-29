@@ -37,8 +37,9 @@ drawThemeListOverlay st =
                                  , close
                                  , txt ":close"
                                  ])
-        enter = emph $ txt $ ppBinding (getFirstDefaultBinding ActivateListItemEvent)
-        close = emph $ txt $ ppBinding (getFirstDefaultBinding CancelEvent)
+        enter = emph $ txt $ ppBinding (firstActiveBinding kc ActivateListItemEvent)
+        close = emph $ txt $ ppBinding (firstActiveBinding kc CancelEvent)
+        kc = st^.csResources.crConfiguration.configUserKeysL
         emph = withDefAttr clientEmphAttr
     in joinBorders overlay
 

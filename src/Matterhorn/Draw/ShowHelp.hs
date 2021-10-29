@@ -250,8 +250,8 @@ keybindingHelp kc = vBox $
             , "values, are as follows:"
             ]
            ]
-        nextChanBinding = ppBinding (getFirstDefaultBinding NextChannelEvent)
-        prevChanBinding = ppBinding (getFirstDefaultBinding PrevChannelEvent)
+        nextChanBinding = ppBinding (firstActiveBinding kc NextChannelEvent)
+        prevChanBinding = ppBinding (firstActiveBinding kc PrevChannelEvent)
         validKeys = map paraL
           [ [ "The syntax used for key sequences consists of zero or more "
             , "single-character modifier characters followed by a keystroke, "
