@@ -4,6 +4,7 @@ module Matterhorn.Draw.ShowHelp
   , keybindingTextTable
   , commandTextTable
   , commandMarkdownTable
+  , keybindSections
   )
 where
 

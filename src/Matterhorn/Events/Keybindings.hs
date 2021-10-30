@@ -259,7 +259,7 @@ defaultBindings ev =
 -- basic usability (i.e. we shouldn't be binding events which can appear
 -- in the main UI to a key like @e@, which would prevent us from being
 -- able to type messages containing an @e@ in them!
-ensureKeybindingConsistency :: KeyConfig -> [(String, [KeyEventHandler])] -> Either String ()
+ensureKeybindingConsistency :: KeyConfig -> [(T.Text, [KeyEventHandler])] -> Either String ()
 ensureKeybindingConsistency kc modeMaps = mapM_ checkGroup allBindings
   where
     -- This is a list of lists, grouped by keybinding, of all the
@@ -284,7 +284,7 @@ ensureKeybindingConsistency kc modeMaps = mapM_ checkGroup allBindings
       -- We find out which modes an event can be used in and then invert
       -- the map, so this is a map from mode to the events contains
       -- which are bound by the binding included above.
-      let modesFor :: M.Map String [(Bool, KeyEvent)]
+      let modesFor :: M.Map T.Text [(Bool, KeyEvent)]
           modesFor = M.unionsWith (++)
             [ M.fromList [ (m, [(i, ev)]) | m <- modeMap ev ]
             | (_, (i, ev)) <- evs
@@ -339,7 +339,7 @@ ensureKeybindingConsistency kc modeMaps = mapM_ checkGroup allBindings
 
     -- We generate the which-events-are-valid-in-which-modes map from
     -- our actual keybinding set, so this should never get out of date.
-    modeMap :: KeyEvent -> [String]
+    modeMap :: KeyEvent -> [T.Text]
     modeMap ev =
       let matches kh = ByEvent ev == (kehEventTrigger $ khHandler kh)
       in [ mode

@@ -101,7 +101,6 @@ library
                        Matterhorn.HelpTopics
                        Matterhorn.IOUtil
                        Matterhorn.InputHistory
-                       Matterhorn.KeyMap
                        Matterhorn.LastRunState
                        Matterhorn.Login
                        Matterhorn.Options

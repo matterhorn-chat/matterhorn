@@ -10,9 +10,9 @@ import Matterhorn.Config
 import Matterhorn.Options
 import Matterhorn.App
 import Matterhorn.Events.Keybindings ( ensureKeybindingConsistency )
-import Matterhorn.KeyMap ( keybindingModeMap )
 import Matterhorn.Draw.ShowHelp ( keybindingMarkdownTable, keybindingTextTable
-                                , commandMarkdownTable, commandTextTable )
+                                , commandMarkdownTable, commandTextTable
+                                , keybindSections )
 
 
 main :: IO ()
@@ -50,7 +50,7 @@ main = do
 
     when (printedKeybindings || printedCommands) exitSuccess
 
-    case ensureKeybindingConsistency keyConfig keybindingModeMap of
+    case ensureKeybindingConsistency keyConfig keybindSections of
         Right () -> return ()
         Left err -> do
             putStrLn $ "Configuration error: " <> err
