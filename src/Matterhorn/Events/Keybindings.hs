@@ -129,7 +129,10 @@ staticKb msg event action =
         }
 
 mkKeybindings :: [KeyEventHandler] -> KeyConfig -> KeyHandlerMap
-mkKeybindings ks conf = KeyHandlerMap $ M.fromList pairs
+mkKeybindings ks conf = KeyHandlerMap $ M.fromList $ keyHandlerMapPairs ks conf
+
+keyHandlerMapPairs :: [KeyEventHandler] -> KeyConfig -> [(Vty.Event, KeyHandler)]
+keyHandlerMapPairs ks conf = pairs
     where
         pairs = mkPair <$> handlers
         mkPair h = (khKey h, h)
@@ -256,7 +259,7 @@ defaultBindings ev =
 -- basic usability (i.e. we shouldn't be binding events which can appear
 -- in the main UI to a key like @e@, which would prevent us from being
 -- able to type messages containing an @e@ in them!
-ensureKeybindingConsistency :: KeyConfig -> [(String, KeyConfig -> KeyHandlerMap)] -> Either String ()
+ensureKeybindingConsistency :: KeyConfig -> [(String, [KeyEventHandler])] -> Either String ()
 ensureKeybindingConsistency kc modeMaps = mapM_ checkGroup allBindings
   where
     -- This is a list of lists, grouped by keybinding, of all the
@@ -340,7 +343,7 @@ ensureKeybindingConsistency kc modeMaps = mapM_ checkGroup allBindings
     modeMap ev =
       let matches kh = ByEvent ev == (kehEventTrigger $ khHandler kh)
       in [ mode
-         | (mode, mkBindings) <- modeMaps
-         , let KeyHandlerMap m = mkBindings kc
-           in not $ null $ M.filter matches m
+         | (mode, handlers) <- modeMaps
+         , let pairs = keyHandlerMapPairs handlers kc
+           in not $ null $ filter matches $ snd <$> pairs
          ]

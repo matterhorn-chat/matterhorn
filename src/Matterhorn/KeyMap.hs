@@ -15,14 +15,14 @@ import           Matterhorn.Events.ShowHelp
 import           Matterhorn.Events.UrlSelect
 import           Matterhorn.Events.ManageAttachments
 
-keybindingModeMap :: [(String, KeyConfig -> KeyHandlerMap)]
+keybindingModeMap :: [(String, [KeyEventHandler])]
 keybindingModeMap =
-    [ ("main", mainKeybindings)
-    , ("help screen", helpKeybindings)
-    , ("channel select", channelSelectKeybindings)
-    , ("url select", urlSelectKeybindings)
-    , ("message select", messageSelectKeybindings)
-    , ("post list overlay", postListOverlayKeybindings)
-    , ("attachment list", attachmentListKeybindings)
-    , ("attachment file browse", attachmentBrowseKeybindings)
+    [ ("main", mainKeyHandlers)
+    , ("help screen", helpKeyHandlers)
+    , ("channel select", channelSelectKeyHandlers)
+    , ("url select", urlSelectKeyHandlers)
+    , ("message select", messageSelectKeyHandlers)
+    , ("post list overlay", postListOverlayKeyHandlers)
+    , ("attachment list", attachmentListKeyHandlers)
+    , ("attachment file browse", attachmentBrowseKeyHandlers)
     ]
