@@ -298,14 +298,14 @@ ensureKeybindingConsistency kc modeMaps = mapM_ checkGroup allBindings
       forM_ (M.assocs modesFor) $ \ (_, vs) ->
          when (length vs > 1) $
            Left $ concat $
-             "Multiple overlapping events bound to `" :
+             "Multiple overlapping key events bound to `" :
              T.unpack (ppBinding b) :
              "`:\n" :
              concat [ [ " - `"
                       , T.unpack (keyEventName ev)
                       , "` "
                       , if isFromUser
-                          then "(via user override)"
+                          then "(via user configuration)"
                           else "(matterhorn default)"
                       , "\n"
                       ]
