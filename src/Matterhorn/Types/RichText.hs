@@ -444,9 +444,18 @@ blockFindUsernames (Header _ is) =
     inlineFindUsernames $ F.toList $ unInlines is
 blockFindUsernames (Blockquote bs) =
     findUsernames bs
+blockFindUsernames (Table _ header rows) =
+    let cellFindUsernames = inlineFindUsernames . F.toList . unInlines
+    in S.unions $
+       ((cellFindUsernames <$> header) <>
+        (concat $ (fmap cellFindUsernames) <$> rows))
 blockFindUsernames (List _ _ bs) =
     S.unions $ F.toList $ findUsernames <$> bs
-blockFindUsernames _ =
+blockFindUsernames HRule =
+    mempty
+blockFindUsernames (HTMLBlock {}) =
+    mempty
+blockFindUsernames (CodeBlock {}) =
     mempty
 
 inlineFindUsernames :: [Inline] -> S.Set T.Text
@@ -467,7 +476,15 @@ blockGetURLs (Blockquote bs) =
 blockGetURLs (List _ _ bss) =
     mconcat $ mconcat $
     (fmap blockGetURLs . F.toList . unBlocks) <$> F.toList bss
-blockGetURLs _ =
+blockGetURLs (Table _ header rows) =
+    let cellFindURLs = catMaybes . fmap elementGetURL . F.toList . unInlines
+    in (concatMap cellFindURLs header) <>
+       (concatMap (concatMap cellFindURLs) rows)
+blockGetURLs HRule =
+    mempty
+blockGetURLs (HTMLBlock {}) =
+    mempty
+blockGetURLs (CodeBlock {}) =
     mempty
 
 elementGetURL :: Inline -> Maybe (Either (TeamURLName, PostId) URL, Maybe Inlines)

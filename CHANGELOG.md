@@ -1,9 +1,54 @@
 
-Next release
-============
+50200.14.0
+==========
 
-Merged to master: pull request #724 (including data-files path when
-searching for emoji and syntax files)
+New features and improvements:
+ * The UI elements of the `/notify-prefs` window now support mouse
+   interaction.
+ * Message attachments can now be clicked with the mouse to open them
+   with the configured URL/file opener command.
+ * Long verbatim and code blocks can now be truncated when they're too
+   large. By default, they are not truncated. (#725) This change adds:
+   * A new theme attribute, `verbatimTruncateMessage`, that affects the
+     truncation message
+   * A new configuration setting, `truncateVerbatimBlockHeight` (default
+     `0`) that governs how long code and verbatim blocks are truncated.
+     A value of zero disables truncation, while values greater than zero
+     cause truncation at the specified line limit.
+   * A new command, `/toggle-truncate-verbatim-blocks`, that toggles the
+     configuration setting at runtime
+ * The channel list now floats muted channels to the end of their
+   respective channel groups to mirror the UI behavior of the official
+   web client.
+ * Reactions posted to messages now visually indicate which reactions
+   are posted by the current user (#729). This change adds two new theme
+   attributes:
+   * "reaction" - used for emoji reactions posted by other users, and
+   * "reaction.mine" - used for emoji reactions posted by the current
+     user
+   This change uses the new attributes for emoji reations rather than
+   emojiAttr ("emoji"). We do this to visually indicate which reactions
+   the current user has contributed to, so that they do not accidentally
+   remove their own reactions due to trying to increment them and
+   removing them by accident.
+ * The `/join` window lists channels with the display name of each
+   channel before that entry's URL name and sorts the entries by display
+   name.
+ * Matterhorn now searches for XML syntax specifications and
+   `emoji.json` using the Cabal package data-files path. This
+   makes Matterhorn behave better when installed with `cabal`, but
+   Matterhorn's search behavior is otherwise unchanged for users who
+   are not running `cabal`-installed builds of Matterhorn. Thanks to
+   @sternenseemann for this work!
+
+Bug fixes:
+ * Hyperlinks and username references inside of Markdown tables are now
+   supported (#739).
+ * Post listing windows now display messages chronologically (#731).
+ * Post listing windows now show the number of messages, not list
+   entries, in the window title bar (#730).
+ * The `/join` window now uses the correct server API endpoint to fetch
+   the initial dataset, causing more channels to be displayed (#727).
 
 50200.13.0
 ==========

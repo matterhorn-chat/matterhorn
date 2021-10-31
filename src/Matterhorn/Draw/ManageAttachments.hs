@@ -17,7 +17,7 @@ import           Network.Mattermost.Types ( TeamId )
 
 import           Matterhorn.Types
 import           Matterhorn.Types.KeyEvents
-import           Matterhorn.Events.Keybindings ( getFirstDefaultBinding )
+import           Matterhorn.Events.Keybindings ( firstActiveBinding )
 import           Matterhorn.Themes
 
 
@@ -32,10 +32,11 @@ drawManageAttachments st tId =
 
 drawAttachmentList :: ChatState -> TeamId -> Widget Name
 drawAttachmentList st tId =
-    let addBinding = ppBinding $ getFirstDefaultBinding AttachmentListAddEvent
-        delBinding = ppBinding $ getFirstDefaultBinding AttachmentListDeleteEvent
-        escBinding = ppBinding $ getFirstDefaultBinding CancelEvent
-        openBinding = ppBinding $ getFirstDefaultBinding AttachmentOpenEvent
+    let addBinding = ppBinding $ firstActiveBinding kc AttachmentListAddEvent
+        delBinding = ppBinding $ firstActiveBinding kc AttachmentListDeleteEvent
+        escBinding = ppBinding $ firstActiveBinding kc CancelEvent
+        openBinding = ppBinding $ firstActiveBinding kc AttachmentOpenEvent
+        kc = st^.csResources.crConfiguration.configUserKeysL
     in centerLayer $
        hLimit 60 $
        vLimit 15 $

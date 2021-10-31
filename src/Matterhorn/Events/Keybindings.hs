@@ -1,7 +1,7 @@
 module Matterhorn.Events.Keybindings
   ( defaultBindings
   , lookupKeybinding
-  , getFirstDefaultBinding
+  , firstActiveBinding
 
   , mkKb
   , staticKb
@@ -33,8 +33,6 @@ import           Matterhorn.Prelude
 import qualified Data.Text as T
 import qualified Data.Map.Strict as M
 import qualified Graphics.Vty as Vty
-
-import           Network.Mattermost.Types ( TeamId )
 
 import           Matterhorn.Types
 import           Matterhorn.Types.KeyEvents
@@ -131,7 +129,10 @@ staticKb msg event action =
         }
 
 mkKeybindings :: [KeyEventHandler] -> KeyConfig -> KeyHandlerMap
-mkKeybindings ks conf = KeyHandlerMap $ M.fromList pairs
+mkKeybindings ks conf = KeyHandlerMap $ M.fromList $ keyHandlerMapPairs ks conf
+
+keyHandlerMapPairs :: [KeyEventHandler] -> KeyConfig -> [(Vty.Event, KeyHandler)]
+keyHandlerMapPairs ks conf = pairs
     where
         pairs = mkPair <$> handlers
         mkPair h = (khKey h, h)
@@ -140,6 +141,13 @@ mkKeybindings ks conf = KeyHandlerMap $ M.fromList pairs
 bindingToEvent :: Binding -> Vty.Event
 bindingToEvent binding =
   Vty.EvKey (kbKey binding) (kbMods binding)
+
+firstActiveBinding :: KeyConfig -> KeyEvent -> Binding
+firstActiveBinding kc ev = fromMaybe (getFirstDefaultBinding ev) $ do
+    bState <- M.lookup ev kc
+    case bState of
+        BindingList (b:_) -> Just b
+        _ -> Nothing
 
 getFirstDefaultBinding :: KeyEvent -> Binding
 getFirstDefaultBinding ev =
@@ -251,7 +259,7 @@ defaultBindings ev =
 -- basic usability (i.e. we shouldn't be binding events which can appear
 -- in the main UI to a key like @e@, which would prevent us from being
 -- able to type messages containing an @e@ in them!
-ensureKeybindingConsistency :: KeyConfig -> [(String, TeamId -> KeyConfig -> KeyHandlerMap)] -> Either String ()
+ensureKeybindingConsistency :: KeyConfig -> [(T.Text, [KeyEventHandler])] -> Either String ()
 ensureKeybindingConsistency kc modeMaps = mapM_ checkGroup allBindings
   where
     -- This is a list of lists, grouped by keybinding, of all the
@@ -276,7 +284,7 @@ ensureKeybindingConsistency kc modeMaps = mapM_ checkGroup allBindings
       -- We find out which modes an event can be used in and then invert
       -- the map, so this is a map from mode to the events contains
       -- which are bound by the binding included above.
-      let modesFor :: M.Map String [(Bool, KeyEvent)]
+      let modesFor :: M.Map T.Text [(Bool, KeyEvent)]
           modesFor = M.unionsWith (++)
             [ M.fromList [ (m, [(i, ev)]) | m <- modeMap ev ]
             | (_, (i, ev)) <- evs
@@ -290,14 +298,14 @@ ensureKeybindingConsistency kc modeMaps = mapM_ checkGroup allBindings
       forM_ (M.assocs modesFor) $ \ (_, vs) ->
          when (length vs > 1) $
            Left $ concat $
-             "Multiple overlapping events bound to `" :
+             "Multiple overlapping key events bound to `" :
              T.unpack (ppBinding b) :
              "`:\n" :
              concat [ [ " - `"
                       , T.unpack (keyEventName ev)
                       , "` "
                       , if isFromUser
-                          then "(via user override)"
+                          then "(via user configuration)"
                           else "(matterhorn default)"
                       , "\n"
                       ]
@@ -331,14 +339,11 @@ ensureKeybindingConsistency kc modeMaps = mapM_ checkGroup allBindings
 
     -- We generate the which-events-are-valid-in-which-modes map from
     -- our actual keybinding set, so this should never get out of date.
-    modeMap :: KeyEvent -> [String]
+    modeMap :: KeyEvent -> [T.Text]
     modeMap ev =
       let matches kh = ByEvent ev == (kehEventTrigger $ khHandler kh)
       in [ mode
-         | (mode, mkBindings) <- modeMaps
-         , let KeyHandlerMap m = mkBindings teamIdThunk kc
-           in not $ null $ M.filter matches m
+         | (mode, handlers) <- modeMaps
+         , let pairs = keyHandlerMapPairs handlers kc
+           in not $ null $ filter matches $ snd <$> pairs
          ]
-
-teamIdThunk :: TeamId
-teamIdThunk = error "BUG: should not evaluate teamIdThunk"

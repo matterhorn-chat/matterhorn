@@ -272,7 +272,8 @@ renderUserCommandBox st tId hs =
                         ]
             _ -> emptyWidget
 
-        multiLineToggleKey = ppBinding $ getFirstDefaultBinding ToggleMultiLineEvent
+        kc = st^.csResources.crConfiguration.configUserKeysL
+        multiLineToggleKey = ppBinding $ firstActiveBinding kc ToggleMultiLineEvent
 
         commandBox = case st^.csTeam(tId).tsEditState.cedEphemeral.eesMultiline of
             False ->
@@ -842,6 +843,7 @@ mainInterface st mtId =
                  , showBusy
                  ]
 
+    kc = st^.csResources.crConfiguration.configUserKeysL
     showAttachmentCount tId =
         let count = length $ listElements $ st^.csTeam(tId).tsEditState.cedAttachmentList
         in if count == 0
@@ -851,7 +853,7 @@ mainInterface st mtId =
                        txt $ "(" <> (T.pack $ show count) <> " attachment" <>
                              (if count == 1 then "" else "s") <> "; "
                      , withDefAttr clientEmphAttr $
-                       txt $ ppBinding (getFirstDefaultBinding ShowAttachmentListEvent)
+                       txt $ ppBinding (firstActiveBinding kc ShowAttachmentListEvent)
                      , txt " to manage)"
                      ]
 
