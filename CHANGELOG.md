@@ -1,4 +1,11 @@
 
+50200.14.1
+==========
+
+Bug fixes:
+ * Fixed an issue where some builds would crash right after startup with
+   a missing "mappend" exception.
+
 50200.14.0
 ==========
 
