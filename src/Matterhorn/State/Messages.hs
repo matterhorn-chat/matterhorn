@@ -2,7 +2,6 @@
 
 module Matterhorn.State.Messages
   ( PostToAdd(..)
-  , addDisconnectGaps
   , lastMsg
   , sendMessage
   , editMessage
