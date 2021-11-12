@@ -920,12 +920,17 @@ fetchVisibleIfNeeded = do
             let msgs = chan^.ccContents.cdMessages.to reverseMessages
                 (numRemaining, gapInDisplayable, _, rel'pId, overlap) =
                     foldl gapTrail (numScrollbackPosts, False, Nothing, Nothing, 2) msgs
+
+                gapTrail :: (Int, Bool, Maybe MessageId, Maybe MessageId, Int)
+                         -> Message
+                         -> (Int, Bool, Maybe MessageId, Maybe MessageId, Int)
                 gapTrail a@(_,  True, _, _, _) _ = a
                 gapTrail a@(0,     _, _, _, _) _ = a
                 gapTrail   (a, False, b, c, d) m | isGap m = (a, True, b, c, d)
                 gapTrail (remCnt, _, prev'pId, prev''pId, ovl) msg =
                     (remCnt - 1, False, msg^.mMessageId <|> prev'pId, prev'pId <|> prev''pId,
                      ovl + if not (isPostMessage msg) then 1 else 0)
+
                 numToReq = numRemaining + overlap
                 query = MM.defaultPostQuery
                         { MM.postQueryPage    = Just 0
