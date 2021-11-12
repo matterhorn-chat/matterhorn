@@ -214,7 +214,8 @@ addNewPostedMessage p =
 -- messages for the channel, and will suppress the generation of a Gap
 -- message following the added block of messages.
 addObtainedMessages :: ChannelId -> Int -> Bool -> Posts -> MH PostProcessMessageAdd
-addObtainedMessages cId reqCnt addTrailingGap posts =
+addObtainedMessages cId reqCnt addTrailingGap posts = do
+  mh $ invalidateCacheEntry (ChannelMessages cId)
   if null $ posts^.postsOrderL
   then do when addTrailingGap $
             -- Fetched at the end of the channel, but nothing was
@@ -806,8 +807,7 @@ asyncFetchMoreMessages = do
                (\s c -> MM.mmGetPostsForChannel c query s)
                (\c p -> Just $ do
                    pp <- addObtainedMessages c (-pageAmount) addTrailingGap p
-                   postProcessMessageAdd pp
-                   mh $ invalidateCacheEntry (ChannelMessages cId))
+                   postProcessMessageAdd pp)
 
 
 -- | Given a starting point and a direction to move from that point,
@@ -857,8 +857,7 @@ asyncFetchMessagesForGap cId gapMessage =
     in doAsyncChannelMM Preempt cId
        (\s c -> MM.mmGetPostsForChannel c query s)
        (\c p -> Just $ do
-           void $ addObtainedMessages c (-pageAmount) addTrailingGap p
-           mh $ invalidateCacheEntry (ChannelMessages cId))
+           void $ addObtainedMessages c (-pageAmount) addTrailingGap p)
 
 -- | Given a particular message ID, this fetches n messages before and
 -- after immediately before and after the specified message in order
@@ -889,7 +888,6 @@ asyncFetchMessagesSurrounding cId pId = do
       (\c p -> Just $ do
           let last2ndId = secondToLastPostId p
           void $ addObtainedMessages c (-reqAmt) False p
-          mh $ invalidateCacheEntry (ChannelMessages cId)
           -- now start 2nd from end of this fetch to fetch some
           -- messages forward, also overlapping with this fetch and
           -- the original message ID to eliminate all gaps in this
@@ -902,7 +900,6 @@ asyncFetchMessagesSurrounding cId pId = do
             (\s' c' -> MM.mmGetPostsForChannel c' query' s')
             (\c' p' -> Just $ do
                 void $ addObtainedMessages c' (reqAmt + 2) False p'
-                mh $ invalidateCacheEntry (ChannelMessages cId)
             )
       )
       where secondToLastPostId posts =
