@@ -206,14 +206,14 @@ addNewPostedMessage :: PostToAdd -> MH ()
 addNewPostedMessage p =
     addMessageToState True True p >>= postProcessMessageAdd
 
--- | Adds the set of Posts to the indicated channel.  The Posts must
--- all be for the specified Channel.  The reqCnt argument indicates
--- how many posts were requested, which will determine whether a gap
--- message is added to either end of the posts list or not.
+-- | Adds the set of Posts to the indicated channel. The Posts must all
+-- be for the specified Channel. The reqCnt argument indicates how many
+-- posts were requested, which will determine whether a gap message is
+-- added to either end of the posts list or not.
 --
--- The addTrailingGap is only True when fetching the very latest messages
--- for the channel, and will suppress the generation of a Gap message
--- following the added block of messages.
+-- The addTrailingGap is only True when fetching the very latest
+-- messages for the channel, and will suppress the generation of a Gap
+-- message following the added block of messages.
 addObtainedMessages :: ChannelId -> Int -> Bool -> Posts -> MH PostProcessMessageAdd
 addObtainedMessages cId reqCnt addTrailingGap posts =
   if null $ posts^.postsOrderL
