@@ -374,4 +374,6 @@ shouldIgnore e =
           , "timeout" `isInfixOf` eStr
           , "partial packet" `isInfixOf` eStr
           , "No route to host" `isInfixOf` eStr
+          , "(5,0,3)" `isInfixOf` eStr
+          , "(5,0,4)" `isInfixOf` eStr
           ]
