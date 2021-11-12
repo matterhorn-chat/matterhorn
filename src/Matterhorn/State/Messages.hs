@@ -916,7 +916,7 @@ fetchVisibleIfNeeded = do
     when (sts == Connected) $ do
         tId <- use csCurrentTeamId
         cId <- use (csCurrentChannelId tId)
-        withChannel cId $ \chan ->
+        withChannel cId $ \chan -> do
             let msgs = chan^.ccContents.cdMessages.to reverseMessages
                 (numRemaining, gapInDisplayable, _, rel'pId, overlap) =
                     foldl gapTrail (numScrollbackPosts, False, Nothing, Nothing, 2) msgs
@@ -937,12 +937,13 @@ fetchVisibleIfNeeded = do
                 op = \s c -> MM.mmGetPostsForChannel c finalQuery s
                 addTrailingGap = MM.postQueryBefore finalQuery == Nothing &&
                                  MM.postQueryPage finalQuery == Just 0
-            in when ((not $ chan^.ccContents.cdFetchPending) && gapInDisplayable) $ do
-                      csChannel(cId).ccContents.cdFetchPending .= True
-                      doAsyncChannelMM Preempt cId op
-                          (\c p -> Just $ do
-                              addObtainedMessages c (-numToReq) addTrailingGap p >>= postProcessMessageAdd
-                              csChannel(c).ccContents.cdFetchPending .= False)
+
+            when ((not $ chan^.ccContents.cdFetchPending) && gapInDisplayable) $ do
+                csChannel(cId).ccContents.cdFetchPending .= True
+                doAsyncChannelMM Preempt cId op
+                    (\c p -> Just $ do
+                        addObtainedMessages c (-numToReq) addTrailingGap p >>= postProcessMessageAdd
+                        csChannel(c).ccContents.cdFetchPending .= False)
 
 asyncFetchAttachments :: Post -> MH ()
 asyncFetchAttachments p = do
