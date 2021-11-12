@@ -931,10 +931,10 @@ fetchVisibleIfNeeded = do
                     (remCnt - 1, False, msg^.mMessageId <|> prev'pId, prev'pId <|> prev''pId,
                      ovl + if not (isPostMessage msg) then 1 else 0)
 
-                numToReq = numRemaining + overlap
+                numToRequest = numRemaining + overlap
                 query = MM.defaultPostQuery
                         { MM.postQueryPage    = Just 0
-                        , MM.postQueryPerPage = Just numToReq
+                        , MM.postQueryPerPage = Just numToRequest
                         }
                 finalQuery = case rel'pId of
                                Just (MessagePostId pid) -> query { MM.postQueryBefore = Just pid }
@@ -947,7 +947,7 @@ fetchVisibleIfNeeded = do
                 csChannel(cId).ccContents.cdFetchPending .= True
                 doAsyncChannelMM Preempt cId op
                     (\c p -> Just $ do
-                        addObtainedMessages c (-numToReq) addTrailingGap p >>= postProcessMessageAdd
+                        addObtainedMessages c (-numToRequest) addTrailingGap p >>= postProcessMessageAdd
                         csChannel(c).ccContents.cdFetchPending .= False)
 
 asyncFetchAttachments :: Post -> MH ()
