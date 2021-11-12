@@ -943,8 +943,8 @@ fetchVisibleIfNeeded = do
                 csChannel(cId).ccContents.cdFetchPending .= True
                 doAsyncChannelMM Preempt cId op
                     (\c p -> Just $ do
-                        addObtainedMessages c (-numToRequest) addTrailingGap p >>= postProcessMessageAdd
-                        csChannel(c).ccContents.cdFetchPending .= False)
+                        csChannel(c).ccContents.cdFetchPending .= False
+                        addObtainedMessages c (-numToRequest) addTrailingGap p >>= postProcessMessageAdd)
 
 asyncFetchAttachments :: Post -> MH ()
 asyncFetchAttachments p = do
