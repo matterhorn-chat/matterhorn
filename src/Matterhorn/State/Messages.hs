@@ -909,7 +909,6 @@ asyncFetchMessagesSurrounding cId pId = do
               let pl = toList $ postsOrder posts
               in if length pl > 1 then Just $ last $ init pl else Nothing
 
-
 fetchVisibleIfNeeded :: MH ()
 fetchVisibleIfNeeded = do
     sts <- use csConnectionStatus
