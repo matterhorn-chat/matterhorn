@@ -85,6 +85,9 @@ messageSelectKeyHandlers =
     , mkKb FillGapEvent "Fetch messages for the selected gap"
          fillSelectedGap
 
+    , mkKb CopyPostLinkEvent "Copy a post's link to the clipboard"
+         copyPostLink
+
     , mkKb ReactToMessageEvent "Post a reaction to the selected message"
          enterReactionEmojiListOverlayMode
 

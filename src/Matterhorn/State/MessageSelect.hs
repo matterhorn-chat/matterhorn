@@ -6,6 +6,7 @@ module Matterhorn.State.MessageSelect
   , pinSelectedMessage
   , viewSelectedMessage
   , fillSelectedGap
+  , copyPostLink
   , yankSelectedMessageVerbatim
   , yankSelectedMessage
   , openSelectedMessageURLs
@@ -40,7 +41,7 @@ import           Matterhorn.State.Common
 import           Matterhorn.State.Links
 import           Matterhorn.State.Messages
 import           Matterhorn.Types
-import           Matterhorn.Types.RichText ( findVerbatimChunk )
+import           Matterhorn.Types.RichText ( findVerbatimChunk, makePermalink )
 import           Matterhorn.Types.Common
 import           Matterhorn.Windows.ViewMessage
 
@@ -111,6 +112,18 @@ viewSelectedMessage = do
     Just msg
       | not (isGap msg) -> viewMessage msg
     _        -> return ()
+
+copyPostLink :: MH ()
+copyPostLink = do
+  selected <- use (to getSelectedMessage)
+  case selected of
+    Just msg | isPostMessage msg -> do
+        tId <- use csCurrentTeamId
+        baseUrl <- getServerBaseUrl tId
+        let Just pId = messageIdPostId =<< _mMessageId msg
+        copyToClipboard $ makePermalink baseUrl pId
+        setMode Main
+    _ -> return ()
 
 fillSelectedGap :: MH ()
 fillSelectedGap = do

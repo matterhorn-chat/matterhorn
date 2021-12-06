@@ -36,6 +36,7 @@ module Matterhorn.Types.RichText
   , findUsernames
   , blockGetURLs
   , findVerbatimChunk
+  , makePermalink
   )
 where
 
@@ -360,6 +361,10 @@ parseMarkdown mBaseUrl t =
         Right bs -> case mBaseUrl of
             Nothing -> bs
             Just baseUrl -> rewriteBlocksPermalinks baseUrl bs
+
+makePermalink :: TeamBaseURL -> PostId -> Text
+makePermalink (TeamBaseURL (TeamURLName tName) (ServerBaseURL baseUrl)) pId =
+    baseUrl <> tName <> "/pl/" <> unId (unPI pId)
 
 -- | If the specified URL matches the active server base URL and team
 -- and refers to a post, extract the team name and post ID values and
