@@ -631,7 +631,7 @@ messageSelectBottomBar st =
                             , ev FlagMessageEvent
                             , "unflag"
                             )
-                          , ( \m -> isPostMessage m
+                          , ( isPostMessage
                             , ev CopyPostLinkEvent
                             , "copy-link"
                             )
