@@ -43,7 +43,7 @@ openSelectedURL = whenMode UrlSelect $ do
 
 findUrls :: ClientChannel -> [LinkChoice]
 findUrls chan =
-    let msgs = chan^.ccContents.cdMessages
+    let msgs = filterMessages (not . _mDeleted) $ chan^.ccContents.cdMessages
     in removeDuplicates $ concat $ toList $ toList <$> msgURLs <$> msgs
 
 removeDuplicates :: [LinkChoice] -> [LinkChoice]
