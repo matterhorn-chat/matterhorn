@@ -172,11 +172,7 @@ openSelectedMessageURLs = whenMode MessageSelect $ do
 
     let urls = msgURLs curMsg
     when (not (null urls)) $ do
-        openedAll <- and <$> mapM (openLinkTarget . _linkTarget) urls
-        case openedAll of
-            True -> return ()
-            False ->
-                mhError $ ConfigOptionMissing "urlOpenCommand"
+        mapM_ (openLinkTarget . _linkTarget) urls
 
 beginConfirmDeleteSelectedMessage :: MH ()
 beginConfirmDeleteSelectedMessage = do

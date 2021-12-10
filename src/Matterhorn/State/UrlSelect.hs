@@ -34,12 +34,9 @@ openSelectedURL :: MH ()
 openSelectedURL = whenMode UrlSelect $ do
     selected <- use (csCurrentTeam.tsUrlList.to listSelectedElement)
     case selected of
-        Nothing -> setMode Main
-        Just (_, (_, link)) -> do
-            opened <- openLinkTarget (link^.linkTarget)
-            when (not opened) $ do
-                mhError $ ConfigOptionMissing "urlOpenCommand"
-                setMode Main
+        Nothing -> return ()
+        Just (_, (_, link)) -> openLinkTarget (link^.linkTarget)
+    setMode Main
 
 findUrls :: ClientChannel -> [LinkChoice]
 findUrls chan =
