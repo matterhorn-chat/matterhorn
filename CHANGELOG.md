@@ -1,4 +1,23 @@
 
+50200.15.0
+==========
+
+New features:
+ * Matterhorn now supports getting post permalinks (#677). A new `l`
+   binding in message selection mode was added to copy a post's link to
+   the clipboard.
+
+Bug fixes and improvements:
+ * Matterhorn now properly displays the active configured keybinding,
+   rather than the default, in more places where keybinding hints are
+   shown in the UI.
+ * The URL list (`C-o`) now only shows URLs mentioned in messages that
+   have not been deleted (#749).
+ * Matterhorn no longer reports HTTP 503 and 504 errors as unhandled
+   exceptions.
+ * The login UI now displays Mattermost server errors more cleanly
+   (#741).
+
 50200.14.1
 ==========
 
