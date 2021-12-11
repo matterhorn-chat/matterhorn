@@ -99,6 +99,7 @@
 | `f` | `flag-message` | Flag the selected message |
 | `v` | `view-message` | View the selected message |
 | `Enter` | `fetch-for-gap` | Fetch messages for the selected gap |
+| `l` | `copy-post-link` | Copy a post's link to the clipboard |
 | `a` | `react-to-message` | Post a reaction to the selected message |
 
 # User Listings

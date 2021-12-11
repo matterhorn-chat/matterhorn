@@ -635,6 +635,10 @@ messageSelectBottomBar st tId =
                             , ev FlagMessageEvent
                             , "unflag"
                             )
+                          , ( isPostMessage
+                            , ev CopyPostLinkEvent
+                            , "copy-link"
+                            )
                           , ( \m -> isPinnable m && not (m^.mPinned)
                             , ev PinMessageEvent
                             , "pin"

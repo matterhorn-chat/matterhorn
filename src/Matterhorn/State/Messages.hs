@@ -2,7 +2,6 @@
 
 module Matterhorn.State.Messages
   ( PostToAdd(..)
-  , addDisconnectGaps
   , lastMsg
   , sendMessage
   , editMessage
@@ -206,16 +205,17 @@ addNewPostedMessage :: PostToAdd -> MH ()
 addNewPostedMessage p =
     addMessageToState True True p >>= postProcessMessageAdd
 
--- | Adds the set of Posts to the indicated channel.  The Posts must
--- all be for the specified Channel.  The reqCnt argument indicates
--- how many posts were requested, which will determine whether a gap
--- message is added to either end of the posts list or not.
+-- | Adds the set of Posts to the indicated channel. The Posts must all
+-- be for the specified Channel. The reqCnt argument indicates how many
+-- posts were requested, which will determine whether a gap message is
+-- added to either end of the posts list or not.
 --
--- The addTrailingGap is only True when fetching the very latest messages
--- for the channel, and will suppress the generation of a Gap message
--- following the added block of messages.
+-- The addTrailingGap is only True when fetching the very latest
+-- messages for the channel, and will suppress the generation of a Gap
+-- message following the added block of messages.
 addObtainedMessages :: ChannelId -> Int -> Bool -> Posts -> MH PostProcessMessageAdd
-addObtainedMessages cId reqCnt addTrailingGap posts =
+addObtainedMessages cId reqCnt addTrailingGap posts = do
+  mh $ invalidateCacheEntry (ChannelMessages cId)
   if null $ posts^.postsOrderL
   then do when addTrailingGap $
             -- Fetched at the end of the channel, but nothing was
@@ -812,8 +812,7 @@ asyncFetchMoreMessages =
                 (\s c -> MM.mmGetPostsForChannel c query s)
                 (\c p -> Just $ do
                     pp <- addObtainedMessages c (-pageAmount) addTrailingGap p
-                    postProcessMessageAdd pp
-                    mh $ invalidateCacheEntry (ChannelMessages cId))
+                    postProcessMessageAdd pp)
 
 -- | Given a starting point and a direction to move from that point,
 -- returns the closest two adjacent messages on that direction (as a
@@ -862,8 +861,7 @@ asyncFetchMessagesForGap cId gapMessage =
     in doAsyncChannelMM Preempt cId
        (\s c -> MM.mmGetPostsForChannel c query s)
        (\c p -> Just $ do
-           void $ addObtainedMessages c (-pageAmount) addTrailingGap p
-           mh $ invalidateCacheEntry (ChannelMessages cId))
+           void $ addObtainedMessages c (-pageAmount) addTrailingGap p)
 
 -- | Given a particular message ID, this fetches n messages before and
 -- after immediately before and after the specified message in order
@@ -894,7 +892,6 @@ asyncFetchMessagesSurrounding cId pId = do
       (\c p -> Just $ do
           let last2ndId = secondToLastPostId p
           void $ addObtainedMessages c (-reqAmt) False p
-          mh $ invalidateCacheEntry (ChannelMessages cId)
           -- now start 2nd from end of this fetch to fetch some
           -- messages forward, also overlapping with this fetch and
           -- the original message ID to eliminate all gaps in this
@@ -907,13 +904,11 @@ asyncFetchMessagesSurrounding cId pId = do
             (\s' c' -> MM.mmGetPostsForChannel c' query' s')
             (\c' p' -> Just $ do
                 void $ addObtainedMessages c' (reqAmt + 2) False p'
-                mh $ invalidateCacheEntry (ChannelMessages cId)
             )
       )
       where secondToLastPostId posts =
               let pl = toList $ postsOrder posts
               in if length pl > 1 then Just $ last $ init pl else Nothing
-
 
 fetchVisibleIfNeeded :: TeamId -> MH ()
 fetchVisibleIfNeeded tId = do
@@ -923,16 +918,21 @@ fetchVisibleIfNeeded tId = do
             let msgs = chan^.ccContents.cdMessages.to reverseMessages
                 (numRemaining, gapInDisplayable, _, rel'pId, overlap) =
                     foldl gapTrail (numScrollbackPosts, False, Nothing, Nothing, 2) msgs
+
+                gapTrail :: (Int, Bool, Maybe MessageId, Maybe MessageId, Int)
+                         -> Message
+                         -> (Int, Bool, Maybe MessageId, Maybe MessageId, Int)
                 gapTrail a@(_,  True, _, _, _) _ = a
                 gapTrail a@(0,     _, _, _, _) _ = a
                 gapTrail   (a, False, b, c, d) m | isGap m = (a, True, b, c, d)
                 gapTrail (remCnt, _, prev'pId, prev''pId, ovl) msg =
                     (remCnt - 1, False, msg^.mMessageId <|> prev'pId, prev'pId <|> prev''pId,
                      ovl + if not (isPostMessage msg) then 1 else 0)
-                numToReq = numRemaining + overlap
+
+                numToRequest = numRemaining + overlap
                 query = MM.defaultPostQuery
                         { MM.postQueryPage    = Just 0
-                        , MM.postQueryPerPage = Just numToReq
+                        , MM.postQueryPerPage = Just numToRequest
                         }
                 finalQuery = case rel'pId of
                                Just (MessagePostId pid) -> query { MM.postQueryBefore = Just pid }
@@ -944,8 +944,8 @@ fetchVisibleIfNeeded tId = do
                    csChannel(cId).ccContents.cdFetchPending .= True
                    doAsyncChannelMM Preempt cId op
                        (\c p -> Just $ do
-                           addObtainedMessages c (-numToReq) addTrailingGap p >>= postProcessMessageAdd
-                           csChannel(c).ccContents.cdFetchPending .= False)
+                           csChannel(c).ccContents.cdFetchPending .= False
+                           addObtainedMessages c (-numToRequest) addTrailingGap p >>= postProcessMessageAdd)
 
 asyncFetchAttachments :: Post -> MH ()
 asyncFetchAttachments p = do

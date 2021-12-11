@@ -37,16 +37,13 @@ openSelectedURL :: TeamId -> MH ()
 openSelectedURL tId = whenMode tId UrlSelect $ do
     selected <- use (csTeam(tId).tsUrlList.to listSelectedElement)
     case selected of
-        Nothing -> setMode tId Main
-        Just (_, (_, link)) -> do
-            opened <- openLinkTarget (link^.linkTarget)
-            when (not opened) $ do
-                mhError $ ConfigOptionMissing "urlOpenCommand"
-                setMode tId Main
+        Nothing -> return ()
+        Just (_, (_, link)) -> openLinkTarget (link^.linkTarget)
+    setMode tId Main
 
 findUrls :: ClientChannel -> [LinkChoice]
 findUrls chan =
-    let msgs = chan^.ccContents.cdMessages
+    let msgs = filterMessages (not . _mDeleted) $ chan^.ccContents.cdMessages
     in removeDuplicates $ concat $ toList $ toList <$> msgURLs <$> msgs
 
 removeDuplicates :: [LinkChoice] -> [LinkChoice]

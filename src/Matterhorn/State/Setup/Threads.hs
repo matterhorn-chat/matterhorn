@@ -368,11 +368,17 @@ rateLimitRetry rateLimitNotify act = do
 shouldIgnore :: SomeException -> Bool
 shouldIgnore e =
     let eStr = show e
-    in or [ "getAddrInfo" `isInfixOf` eStr
-          , "Network.Socket.recvBuf" `isInfixOf` eStr
-          , "Network.Socket.sendBuf" `isInfixOf` eStr
-          , "resource vanished" `isInfixOf` eStr
-          , "timeout" `isInfixOf` eStr
-          , "partial packet" `isInfixOf` eStr
-          , "No route to host" `isInfixOf` eStr
-          ]
+    in or $ (`isInfixOf` eStr) <$> ignoreErrorSubstrings
+
+ignoreErrorSubstrings :: [String]
+ignoreErrorSubstrings =
+    [ "getAddrInfo"
+    , "Network.Socket.recvBuf"
+    , "Network.Socket.sendBuf"
+    , "resource vanished"
+    , "timeout"
+    , "partial packet"
+    , "No route to host"
+    , "(5,0,3)"
+    , "(5,0,4)"
+    ]

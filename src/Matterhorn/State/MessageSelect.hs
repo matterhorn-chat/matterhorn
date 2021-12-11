@@ -6,6 +6,7 @@ module Matterhorn.State.MessageSelect
   , pinSelectedMessage
   , viewSelectedMessage
   , fillSelectedGap
+  , copyPostLink
   , yankSelectedMessageVerbatim
   , yankSelectedMessage
   , openSelectedMessageURLs
@@ -40,7 +41,7 @@ import           Matterhorn.State.Common
 import           Matterhorn.State.Links
 import           Matterhorn.State.Messages
 import           Matterhorn.Types
-import           Matterhorn.Types.RichText ( findVerbatimChunk )
+import           Matterhorn.Types.RichText ( findVerbatimChunk, makePermalink )
 import           Matterhorn.Types.Common
 import           Matterhorn.Windows.ViewMessage
 
@@ -124,6 +125,17 @@ fillSelectedGap tId = do
             | isGap msg -> asyncFetchMessagesForGap cId msg
           _        -> return ()
 
+copyPostLink :: TeamId -> MH ()
+copyPostLink tId = do
+  selected <- use (to (getSelectedMessage tId))
+  case selected of
+    Just msg | isPostMessage msg -> do
+        baseUrl <- getServerBaseUrl tId
+        let Just pId = messageIdPostId =<< _mMessageId msg
+        copyToClipboard $ makePermalink baseUrl pId
+        setMode tId Main
+    _ -> return ()
+
 viewMessage :: TeamId -> Message -> MH ()
 viewMessage tId m = do
     let w = tabbedWindow VMTabMessage (viewMessageWindowTemplate tId) MessageSelect (78, 25)
@@ -160,11 +172,7 @@ openSelectedMessageURLs tId = whenMode tId MessageSelect $ do
 
     let urls = msgURLs curMsg
     when (not (null urls)) $ do
-        openedAll <- and <$> mapM (openLinkTarget . _linkTarget) urls
-        case openedAll of
-            True -> return ()
-            False ->
-                mhError $ ConfigOptionMissing "urlOpenCommand"
+        mapM_ (openLinkTarget . _linkTarget) urls
 
 beginConfirmDeleteSelectedMessage :: TeamId -> MH ()
 beginConfirmDeleteSelectedMessage tId = do

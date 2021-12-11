@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveFoldable #-}
@@ -341,6 +342,9 @@ instance Semigroup (AllMyChannels ClientChannel) where
 
 instance Monoid (AllMyChannels ClientChannel) where
     mempty = noChannels
+#if !MIN_VERSION_base(4,11,0)
+    mappend = (<>)
+#endif
 
 getDmChannelFor :: UserId -> ClientChannels -> Maybe ChannelId
 getDmChannelFor uId cs = cs^.userChannelMap.at uId

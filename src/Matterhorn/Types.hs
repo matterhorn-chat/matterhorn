@@ -918,6 +918,7 @@ data AuthenticationException =
     | ResolveError HostNotResolved
     | AuthIOError IOError
     | LoginError LoginFailureException
+    | MattermostServerError MattermostError
     | OtherAuthError SomeException
     deriving (Show)
 

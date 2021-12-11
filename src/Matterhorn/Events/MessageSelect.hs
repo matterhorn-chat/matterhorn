@@ -90,4 +90,6 @@ messageSelectKeyHandlers tId =
     , mkKb ReactToMessageEvent "Post a reaction to the selected message" $
          enterReactionEmojiListOverlayMode tId
 
+    , mkKb CopyPostLinkEvent "Copy a post's link to the clipboard" $
+         copyPostLink tId
     ]

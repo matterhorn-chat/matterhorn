@@ -208,6 +208,7 @@ defaultBindings ev =
         SearchSelectDownEvent         -> [ ctrl (key 'n'), kb Vty.KDown ]
         ViewMessageEvent              -> [ key 'v' ]
         FillGapEvent                  -> [ kb Vty.KEnter ]
+        CopyPostLinkEvent             -> [ key 'l' ]
         FlagMessageEvent              -> [ key 'f' ]
         PinMessageEvent               -> [ key 'p' ]
         YankMessageEvent              -> [ key 'y' ]
