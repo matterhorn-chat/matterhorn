@@ -33,7 +33,6 @@ import           Matterhorn.State.Setup.Threads
 import           Matterhorn.Themes
 import           Matterhorn.TimeUtils ( lookupLocalTimeZone, utcTimezone )
 import           Matterhorn.Types
-import           Matterhorn.Types.Common
 import           Matterhorn.Emoji
 import           Matterhorn.FilePaths ( userEmojiJsonPath, bundledEmojiJsonPath )
 
@@ -173,14 +172,6 @@ setupState mkVty mLogLocation config = do
     st <- initializeState cr initialTeamId teams me
 
     return (st, loginVty)
-
-matchesTeam :: T.Text -> Team -> Bool
-matchesTeam tName t =
-    let normalizeUserText = normalize . sanitizeUserText
-        normalize = T.strip . T.toLower
-        urlName = normalizeUserText $ teamName t
-        displayName = normalizeUserText $ teamDisplayName t
-    in normalize tName `elem` [displayName, urlName]
 
 initializeState :: ChatResources -> TeamId -> [Team] -> User -> IO ChatState
 initializeState cr initialTeamId teams me = do

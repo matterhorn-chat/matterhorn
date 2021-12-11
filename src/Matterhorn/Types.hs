@@ -122,6 +122,7 @@ module Matterhorn.Types
   , attrNameToConfig
 
   , sortTeams
+  , matchesTeam
   , mkTeamZipper
   , mkTeamZipperFromIds
   , teamZipperIds
@@ -1675,6 +1676,14 @@ data SaveAttachmentDialogState =
 
 sortTeams :: [Team] -> [Team]
 sortTeams = sortBy (compare `on` (T.strip . sanitizeUserText . teamName))
+
+matchesTeam :: T.Text -> Team -> Bool
+matchesTeam tName t =
+    let normalizeUserText = normalize . sanitizeUserText
+        normalize = T.strip . T.toLower
+        urlName = normalizeUserText $ teamName t
+        displayName = normalizeUserText $ teamDisplayName t
+    in normalize tName `elem` [displayName, urlName]
 
 mkTeamZipper :: HM.HashMap TeamId TeamState -> Z.Zipper () TeamId
 mkTeamZipper m =
