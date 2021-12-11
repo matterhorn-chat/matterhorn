@@ -81,19 +81,19 @@ handleJoinTeam tId = do
     session <- getSession
     cr <- use csResources
     me <- use csMe
+    curTs <- use csTeams
+    let myTIds = HM.keys curTs
 
-    mhLog LogGeneral $ T.pack $ "Joining team " <> show tId
-    doAsyncWith Normal $ do
-        t <- MM.mmGetTeam tId session
-        (ts, chans) <- buildTeamState cr me t
-        return $ Just $ do
-            curTs <- use csTeams
-            let myTIds = HM.keys curTs
-            when (not $ tId `elem` myTIds) $ do
-                addTeamState ts chans
-                updateSidebar $ Just tId
-                updateWindowTitle
-                refreshTeamZipper
+    when (not $ tId `elem` myTIds) $ do
+        mhLog LogGeneral $ T.pack $ "Joining team " <> show tId
+        doAsyncWith Normal $ do
+            t <- MM.mmGetTeam tId session
+            (ts, chans) <- buildTeamState cr me t
+            return $ Just $ do
+                    addTeamState ts chans
+                    updateSidebar $ Just tId
+                    updateWindowTitle
+                    refreshTeamZipper
 
 -- | Remove the specified team to the application state.
 --
