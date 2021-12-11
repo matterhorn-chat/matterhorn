@@ -219,7 +219,8 @@ initializeState cr initialTeamId teams me = do
 
     -- End thread startup ----------------------------------------------
 
-    -- For each team, build a team state and load the last-run state.
+    -- For each team, build a team state and load that team's last-run
+    -- state, if any.
     (teamStates, chanLists) <- unzip <$> mapM (buildTeamState cr me) teams
 
     let startupState =
