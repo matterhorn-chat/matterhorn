@@ -39,19 +39,19 @@ import           Matterhorn.FilePaths ( userEmojiJsonPath, bundledEmojiJsonPath 
 
 
 incompleteCredentials :: Config -> ConnectionInfo
-incompleteCredentials config = ConnectionInfo
-  { _ciHostname = fromMaybe "" (configHost config)
-  , _ciPort     = configPort config
-  , _ciUrlPath  = fromMaybe "" (configUrlPath config)
-  , _ciUsername = fromMaybe "" (configUser config)
-  , _ciPassword = case configPass config of
-                    Just (PasswordString s) -> s
-                    _                       -> ""
-  , _ciAccessToken = case configToken config of
-                       Just (TokenString s) -> s
-                       _                    -> ""
-  , _ciType     = configConnectionType config
-  }
+incompleteCredentials config =
+    ConnectionInfo { _ciHostname = fromMaybe "" (configHost config)
+                   , _ciPort     = configPort config
+                   , _ciUrlPath  = fromMaybe "" (configUrlPath config)
+                   , _ciUsername = fromMaybe "" (configUser config)
+                   , _ciPassword = case configPass config of
+                                       Just (PasswordString s) -> s
+                                       _                       -> ""
+                   , _ciAccessToken = case configToken config of
+                                          Just (TokenString s) -> s
+                                          _                    -> ""
+                   , _ciType     = configConnectionType config
+                   }
 
 apiLogEventToLogMessage :: LogEvent -> IO LogMessage
 apiLogEventToLogMessage ev = do
@@ -66,113 +66,113 @@ apiLogEventToLogMessage ev = do
 
 setupState :: IO Vty.Vty -> Maybe FilePath -> Config -> IO (ChatState, Vty.Vty)
 setupState mkVty mLogLocation config = do
-  initialVty <- mkVty
+    initialVty <- mkVty
 
-  eventChan <- newBChan 2500
-  logMgr <- newLogManager eventChan (configLogMaxBufferSize config)
+    eventChan <- newBChan 2500
+    logMgr <- newLogManager eventChan (configLogMaxBufferSize config)
 
-  -- If we got an initial log location, start logging there.
-  case mLogLocation of
-      Nothing -> return ()
-      Just loc -> startLoggingToFile logMgr loc
+    -- If we got an initial log location, start logging there.
+    case mLogLocation of
+        Nothing -> return ()
+        Just loc -> startLoggingToFile logMgr loc
 
-  let logApiEvent ev = apiLogEventToLogMessage ev >>= sendLogMessage logMgr
-      setLogger cd = cd `withLogger` logApiEvent
+    let logApiEvent ev = apiLogEventToLogMessage ev >>= sendLogMessage logMgr
+        setLogger cd = cd `withLogger` logApiEvent
 
-  (mLastAttempt, loginVty) <- interactiveGetLoginSession initialVty mkVty
-                                                         setLogger
-                                                         logMgr
-                                                         (incompleteCredentials config)
+    (mLastAttempt, loginVty) <- interactiveGetLoginSession initialVty mkVty
+                                                           setLogger
+                                                           logMgr
+                                                           (incompleteCredentials config)
 
-  let shutdown vty = do
-          Vty.shutdown vty
-          exitSuccess
+    let shutdown vty = do
+            Vty.shutdown vty
+            exitSuccess
 
-  (session, me, cd, mbTeam) <- case mLastAttempt of
-      Nothing ->
-          -- The user never attempted a connection and just chose to
-          -- quit.
-          shutdown loginVty
-      Just (AttemptFailed {}) ->
-          -- The user attempted a connection and failed, and then chose
-          -- to quit.
-          shutdown loginVty
-      Just (AttemptSucceeded _ cd sess user mbTeam) ->
-          -- The user attempted a connection and succeeded so continue
-          -- with setup.
-          return (sess, user, cd, mbTeam)
+    (session, me, cd, mbTeam) <- case mLastAttempt of
+        Nothing ->
+            -- The user never attempted a connection and just chose to
+            -- quit.
+            shutdown loginVty
+        Just (AttemptFailed {}) ->
+            -- The user attempted a connection and failed, and then chose
+            -- to quit.
+            shutdown loginVty
+        Just (AttemptSucceeded _ cd sess user mbTeam) ->
+            -- The user attempted a connection and succeeded so continue
+            -- with setup.
+            return (sess, user, cd, mbTeam)
 
-  teams <- F.toList <$> mmGetUsersTeams UserMe session
-  when (null teams) $ do
-      putStrLn "Error: your account is not a member of any teams"
-      exitFailure
+    teams <- F.toList <$> mmGetUsersTeams UserMe session
+    when (null teams) $ do
+        putStrLn "Error: your account is not a member of any teams"
+        exitFailure
 
-  let initialTeamId = fromMaybe (teamId $ head $ sortTeams teams) $ do
-          tName <- mbTeam <|> configTeam config
-          let matchingTeam = listToMaybe $ filter (matchesTeam tName) teams
-          teamId <$> matchingTeam
+    let initialTeamId = fromMaybe (teamId $ head $ sortTeams teams) $ do
+            tName <- mbTeam <|> configTeam config
+            let matchingTeam = listToMaybe $ filter (matchesTeam tName) teams
+            teamId <$> matchingTeam
 
-  userStatusChan <- STM.newTChanIO
-  slc <- STM.newTChanIO
-  wac <- STM.newTChanIO
+    userStatusChan <- STM.newTChanIO
+    slc <- STM.newTChanIO
+    wac <- STM.newTChanIO
 
-  prefs <- mmGetUsersPreferences UserMe session
-  let userPrefs = setUserPreferences prefs defaultUserPreferences
-      themeName = case configTheme config of
-          Nothing -> internalThemeName defaultTheme
-          Just t -> t
-      baseTheme = internalTheme $ fromMaybe defaultTheme (lookupTheme themeName)
+    prefs <- mmGetUsersPreferences UserMe session
+    let userPrefs = setUserPreferences prefs defaultUserPreferences
+        themeName = case configTheme config of
+            Nothing -> internalThemeName defaultTheme
+            Just t -> t
+        baseTheme = internalTheme $ fromMaybe defaultTheme (lookupTheme themeName)
 
-  -- Did the configuration specify a theme customization file? If so,
-  -- load it and customize the theme.
-  custTheme <- case configThemeCustomizationFile config of
-      Nothing -> return baseTheme
-      Just path ->
-          -- If we have no configuration path (i.e. we used the default
-          -- config) then ignore theme customization.
-          let pathStr = T.unpack path
-          in if isRelative pathStr && isNothing (configAbsPath config)
-             then return baseTheme
-             else do
-                 let absPath = if isRelative pathStr
-                               then (dropFileName $ fromJust $ configAbsPath config) </> pathStr
-                               else pathStr
-                 result <- loadCustomizations absPath baseTheme
-                 case result of
-                     Left e -> do
-                         Vty.shutdown loginVty
-                         putStrLn $ "Error loading theme customization from " <> show absPath <> ": " <> e
-                         exitFailure
-                     Right t -> return t
+    -- Did the configuration specify a theme customization file? If so,
+    -- load it and customize the theme.
+    custTheme <- case configThemeCustomizationFile config of
+        Nothing -> return baseTheme
+        Just path ->
+            -- If we have no configuration path (i.e. we used the default
+            -- config) then ignore theme customization.
+            let pathStr = T.unpack path
+            in if isRelative pathStr && isNothing (configAbsPath config)
+               then return baseTheme
+               else do
+                   let absPath = if isRelative pathStr
+                                 then (dropFileName $ fromJust $ configAbsPath config) </> pathStr
+                                 else pathStr
+                   result <- loadCustomizations absPath baseTheme
+                   case result of
+                       Left e -> do
+                           Vty.shutdown loginVty
+                           putStrLn $ "Error loading theme customization from " <> show absPath <> ": " <> e
+                           exitFailure
+                       Right t -> return t
 
-  requestChan <- STM.atomically STM.newTChan
+    requestChan <- STM.atomically STM.newTChan
 
-  emoji <- either (const emptyEmojiCollection) id <$> do
-      result1 <- loadEmoji =<< userEmojiJsonPath
-      case result1 of
-          Right e -> return $ Right e
-          Left _ -> loadEmoji =<< bundledEmojiJsonPath
+    emoji <- either (const emptyEmojiCollection) id <$> do
+        result1 <- loadEmoji =<< userEmojiJsonPath
+        case result1 of
+            Right e -> return $ Right e
+            Left _ -> loadEmoji =<< bundledEmojiJsonPath
 
-  let cr = ChatResources { _crSession             = session
-                         , _crWebsocketThreadId   = Nothing
-                         , _crConn                = cd
-                         , _crRequestQueue        = requestChan
-                         , _crEventQueue          = eventChan
-                         , _crSubprocessLog       = slc
-                         , _crWebsocketActionChan = wac
-                         , _crTheme               = themeToAttrMap custTheme
-                         , _crStatusUpdateChan    = userStatusChan
-                         , _crConfiguration       = config
-                         , _crFlaggedPosts        = mempty
-                         , _crUserPreferences     = userPrefs
-                         , _crSyntaxMap           = mempty
-                         , _crLogManager          = logMgr
-                         , _crEmoji               = emoji
-                         }
+    let cr = ChatResources { _crSession             = session
+                           , _crWebsocketThreadId   = Nothing
+                           , _crConn                = cd
+                           , _crRequestQueue        = requestChan
+                           , _crEventQueue          = eventChan
+                           , _crSubprocessLog       = slc
+                           , _crWebsocketActionChan = wac
+                           , _crTheme               = themeToAttrMap custTheme
+                           , _crStatusUpdateChan    = userStatusChan
+                           , _crConfiguration       = config
+                           , _crFlaggedPosts        = mempty
+                           , _crUserPreferences     = userPrefs
+                           , _crSyntaxMap           = mempty
+                           , _crLogManager          = logMgr
+                           , _crEmoji               = emoji
+                           }
 
-  st <- initializeState cr initialTeamId teams me
+    st <- initializeState cr initialTeamId teams me
 
-  return (st, loginVty)
+    return (st, loginVty)
 
 matchesTeam :: T.Text -> Team -> Bool
 matchesTeam tName t =
@@ -184,59 +184,59 @@ matchesTeam tName t =
 
 initializeState :: ChatResources -> TeamId -> [Team] -> User -> IO ChatState
 initializeState cr initialTeamId teams me = do
-  let session = getResourceSession cr
-      requestChan = cr^.crRequestQueue
+    let session = getResourceSession cr
+        requestChan = cr^.crRequestQueue
 
-  tz <- fromRight utcTimezone <$> lookupLocalTimeZone
+    tz <- fromRight utcTimezone <$> lookupLocalTimeZone
 
-  hist <- do
-      result <- readHistory
-      case result of
-          Left _ -> return newHistory
-          Right h -> return h
+    hist <- do
+        result <- readHistory
+        case result of
+            Left _ -> return newHistory
+            Right h -> return h
 
-  --------------------------------------------------------------------
-  -- Start background worker threads:
-  --
-  --  * Syntax definition loader
-  startSyntaxMapLoaderThread (cr^.crConfiguration) (cr^.crEventQueue)
+    --------------------------------------------------------------------
+    -- Start background worker threads:
+    --
+    --  * Syntax definition loader
+    startSyntaxMapLoaderThread (cr^.crConfiguration) (cr^.crEventQueue)
 
-  --  * Main async queue worker thread
-  startAsyncWorkerThread (cr^.crConfiguration) (cr^.crRequestQueue) (cr^.crEventQueue)
+    --  * Main async queue worker thread
+    startAsyncWorkerThread (cr^.crConfiguration) (cr^.crRequestQueue) (cr^.crEventQueue)
 
-  --  * User status thread
-  startUserStatusUpdateThread (cr^.crStatusUpdateChan) session requestChan
+    --  * User status thread
+    startUserStatusUpdateThread (cr^.crStatusUpdateChan) session requestChan
 
-  --  * Refresher for users who are typing currently
-  when (configShowTypingIndicator (cr^.crConfiguration)) $
-    startTypingUsersRefreshThread requestChan
+    --  * Refresher for users who are typing currently
+    when (configShowTypingIndicator (cr^.crConfiguration)) $
+      startTypingUsersRefreshThread requestChan
 
-  --  * Timezone change monitor
-  startTimezoneMonitorThread tz requestChan
+    --  * Timezone change monitor
+    startTimezoneMonitorThread tz requestChan
 
-  --  * Subprocess logger
-  startSubprocessLoggerThread (cr^.crSubprocessLog) requestChan
+    --  * Subprocess logger
+    startSubprocessLoggerThread (cr^.crSubprocessLog) requestChan
 
-  -- End thread startup ----------------------------------------------
+    -- End thread startup ----------------------------------------------
 
-  -- For each team, build a team state and load the last-run state.
-  (teamStates, chanLists) <- unzip <$> mapM (buildTeamState cr me) teams
+    -- For each team, build a team state and load the last-run state.
+    (teamStates, chanLists) <- unzip <$> mapM (buildTeamState cr me) teams
 
-  let startupState =
-          StartupStateInfo { startupStateResources      = cr
-                           , startupStateConnectedUser  = me
-                           , startupStateTimeZone       = tz
-                           , startupStateInitialHistory = hist
-                           , startupStateInitialTeam    = initialTeamId
-                           , startupStateTeams          = teamMap
-                           }
-      clientChans = mconcat chanLists
-      st = newState startupState & csChannels .~ clientChans
-      teamMap = HM.fromList $ (\ts -> (teamId $ _tsTeam ts, ts)) <$> F.toList teamStates
+    let startupState =
+            StartupStateInfo { startupStateResources      = cr
+                             , startupStateConnectedUser  = me
+                             , startupStateTimeZone       = tz
+                             , startupStateInitialHistory = hist
+                             , startupStateInitialTeam    = initialTeamId
+                             , startupStateTeams          = teamMap
+                             }
+        clientChans = mconcat chanLists
+        st = newState startupState & csChannels .~ clientChans
+        teamMap = HM.fromList $ (\ts -> (teamId $ _tsTeam ts, ts)) <$> F.toList teamStates
 
-  loadFlaggedMessages (cr^.crUserPreferences.userPrefFlaggedPostList) st
+    loadFlaggedMessages (cr^.crUserPreferences.userPrefFlaggedPostList) st
 
-  -- Trigger an initial websocket refresh
-  writeBChan (cr^.crEventQueue) RefreshWebsocketEvent
+    -- Trigger an initial websocket refresh
+    writeBChan (cr^.crEventQueue) RefreshWebsocketEvent
 
-  return st
+    return st
