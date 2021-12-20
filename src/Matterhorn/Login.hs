@@ -90,7 +90,6 @@ import           Matterhorn.Types ( ConnectionInfo(..)
                        , ciAccessToken, ciToken, SemEq(..)
                        )
 
-
 -- | Resource names for the login interface.
 data Name =
       Server
@@ -107,6 +106,8 @@ instance SemEq Name where
 data LoginAttempt =
     AttemptFailed AuthenticationException
     -- ^ The attempt failed with the corresponding error.
+    | MfaTokenRequired ConnectionInfo
+    -- ^ The attempt succeeded, but additional MFA token is required.
     | AttemptSucceeded ConnectionInfo ConnectionData Session User (Maybe Text) --team
     -- ^ The attempt succeeded.
 
@@ -217,6 +218,9 @@ loginWorker setLogger logMgr requestChan respChan = forever $ do
 
                           result <- convertLoginExceptions $ mmLogin cd login
                           case result of
+                              Left (MattermostServerError (MattermostError {mattermostErrorId = "mfa.validate_token.authenticate.app_error"})) -> do
+                                  doLog $ "Authenticated successfully to " <> connInfo^.ciHostname <> " but MFA token is required"
+                                  writeBChan respChan $ LoginResult $ MfaTokenRequired connInfo
                               Left e -> do
                                   doLog $ "Error authenticating to " <> connInfo^.ciHostname <> ": " <> (T.pack $ show e)
                                   writeBChan respChan $ LoginResult $ AttemptFailed e
@@ -392,6 +396,8 @@ onEvent st (AppEvent (LoginResult attempt)) = do
                 True -> halt st'
                 False -> continue st'
         AttemptFailed {} -> continue st'
+        MfaTokenRequired connInfo ->
+            continue $ st' & loginForm .~ (mkOtpForm connInfo)
 
 onEvent st (VtyEvent (EvKey KEnter [])) = do
     -- Ignore the keypress if we are already attempting a connection, or
@@ -421,10 +427,17 @@ mkForm =
                , (above "Provide a username and password:" .
                   label "Username:")     @@= editTextField ciUsername Username (Just 1)
                , label "Password:"       @@= editPasswordField ciPassword Password
-               , label "OTP:"            @@= editTextField ciToken OtpToken (Just 1)
                , (above "Or provide a Session or Personal Access Token:" .
                   label "Access Token:") @@= editPasswordField ciAccessToken AccessToken
                ]
+
+
+mkOtpForm :: ConnectionInfo -> Form ConnectionInfo e Name
+mkOtpForm =
+    let label s w = padBottom (Pad 1) $
+                    (vLimit 1 $ hLimit 5 $ str s <+> fill ' ') <+> w
+    in newForm [label "OTP:" @@= editTextField ciToken OtpToken (Just 1)]
+
 
 serverLens :: Lens' ConnectionInfo (Text, Int, Text, ConnectionType)
 serverLens f ci = fmap (\(x,y,z,w) -> ci { _ciHostname = x, _ciPort = y, _ciUrlPath = z, _ciType = w})
@@ -566,6 +579,7 @@ currentStateDisplay st =
 lastAttemptDisplay :: Maybe LoginAttempt -> Widget Name
 lastAttemptDisplay Nothing = emptyWidget
 lastAttemptDisplay (Just (AttemptSucceeded {})) = emptyWidget
+lastAttemptDisplay (Just (MfaTokenRequired _)) = emptyWidget
 lastAttemptDisplay (Just (AttemptFailed e)) =
     hCenter $ hLimit uiWidth $
     padTop (Pad 1) $ renderError $ renderText $
