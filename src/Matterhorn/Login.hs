@@ -48,7 +48,7 @@
 -- fails before the timer fires, we just resume normal operation and
 -- show the login form so the user can intervene.
 module Matterhorn.Login
-  ( LoginData(..)
+  ( LoginSuccess(..)
   , interactiveGetLoginSession
   )
 where
@@ -87,7 +87,7 @@ import           Matterhorn.Types ( ConnectionInfo(..)
                        , ciPassword, ciUsername, ciHostname, ciUrlPath
                        , ciPort, ciType, AuthenticationException(..)
                        , LogManager, LogCategory(..), ioLogWithManager
-                       , ciAccessToken, ciToken, SemEq(..)
+                       , ciAccessToken, ciOTPToken, SemEq(..)
                        )
 
 -- | Resource names for the login interface.
@@ -95,7 +95,7 @@ data Name =
       Server
     | Username
     | Password
-    | OtpToken
+    | OTPToken
     | AccessToken
     deriving (Ord, Eq, Show)
 
@@ -106,16 +106,15 @@ instance SemEq Name where
 data LoginAttempt =
     AttemptFailed AuthenticationException
     -- ^ The attempt failed with the corresponding error.
-    | MfaTokenRequired ConnectionInfo
+    | MFATokenRequired ConnectionInfo
     -- ^ The attempt succeeded, but additional MFA token is required.
     | AttemptSucceeded ConnectionInfo ConnectionData Session User (Maybe Text) --team
     -- ^ The attempt succeeded.
 
 -- | The result of a successfull login attempt.
-data LoginData =
+data LoginSuccess =
     LoginSuccess ConnectionData Session User (Maybe Text) --team
     -- ^ Data associated with the new logged-in session.
-
 
 -- | The state of the login interface: whether a login attempt is
 -- currently in progress.
@@ -166,6 +165,10 @@ poolCfg = ConnectionPoolConfig { cpIdleConnTimeout = 60
                                , cpStripesCount = 1
                                , cpMaxConnCount = 5
                                }
+
+-- | Error code used when login succeeds, but additional MFA token is required
+invalidMFATokenError :: T.Text
+invalidMFATokenError = "mfa.validate_token.authenticate.app_error"
 
 -- | Run an IO action and convert various kinds of thrown exceptions
 -- into a returned AuthenticationException.
@@ -218,15 +221,15 @@ loginWorker setLogger logMgr requestChan respChan = forever $ do
                                   LoginResult $ AttemptSucceeded connInfo cd sess user mbTeam
                       True -> do
                           let login = Login { username = connInfo^.ciUsername
-                                            , token    = connInfo^.ciToken
+                                            , otpToken = connInfo^.ciOTPToken
                                             , password = connInfo^.ciPassword
                                             }
 
                           result <- convertLoginExceptions $ mmLogin cd login
                           case result of
-                              Left (MattermostServerError (MattermostError {mattermostErrorId = "mfa.validate_token.authenticate.app_error"})) -> do
+                              Left (MattermostServerError (MattermostError {mattermostErrorId = errorId})) | errorId == invalidMFATokenError -> do
                                   doLog $ "Authenticated successfully to " <> connInfo^.ciHostname <> " but MFA token is required"
-                                  writeBChan respChan $ LoginResult $ MfaTokenRequired connInfo
+                                  writeBChan respChan $ LoginResult $ MFATokenRequired connInfo
                               Left e -> do
                                   doLog $ "Error authenticating to " <> connInfo^.ciHostname <> ": " <> (T.pack $ show e)
                                   writeBChan respChan $ LoginResult $ AttemptFailed e
@@ -319,7 +322,7 @@ interactiveGetLoginSession :: Vty
                            -- info provided here is fully populated, an
                            -- initial connection attempt is made without
                            -- first getting the user to hit Enter.
-                           -> IO (Maybe LoginData, Vty)
+                           -> IO (Maybe LoginSuccess, Vty)
 interactiveGetLoginSession vty mkVty setLogger logMgr initialConfig = do
     requestChan <- newBChan 10
     respChan <- newBChan 10
@@ -404,8 +407,8 @@ onEvent st (AppEvent (LoginResult attempt)) = do
                 True -> halt st'
                 False -> continue st'
         AttemptFailed {} -> continue st'
-        MfaTokenRequired connInfo ->
-            continue $ st' & loginForm .~ (mkOtpForm connInfo)
+        MFATokenRequired connInfo ->
+            continue $ st' & loginForm .~ (mkOTPForm connInfo)
 
 onEvent st (VtyEvent (EvKey KEnter [])) = do
     -- Ignore the keypress if we are already attempting a connection, or
@@ -439,13 +442,15 @@ mkForm =
                   label "Access Token:") @@= editPasswordField ciAccessToken AccessToken
                ]
 
-
-mkOtpForm :: ConnectionInfo -> Form ConnectionInfo e Name
-mkOtpForm =
+-- | This form deliberately doesn't provide fields other than the OTP token,
+-- because they have already been validated by an initial authenticatin
+-- attempty by the time this is used.
+mkOTPForm :: ConnectionInfo -> Form ConnectionInfo e Name
+mkOTPForm =
     let label s w = padBottom (Pad 1) $
-                    (vLimit 1 $ hLimit 5 $ str s <+> fill ' ') <+> w
-    in newForm [label "OTP:" @@= editTextField ciToken OtpToken (Just 1)]
-
+                    (vLimit 1 $ hLimit 10 $ str s <+> fill ' ') <+> w
+        wrapMaybe func = fmap Just . func . (fromMaybe "")
+    in newForm [label "OTP Token:" @@= editTextField (ciOTPToken . wrapMaybe) OTPToken (Just 1)]
 
 serverLens :: Lens' ConnectionInfo (Text, Int, Text, ConnectionType)
 serverLens f ci = fmap (\(x,y,z,w) -> ci { _ciHostname = x, _ciPort = y, _ciUrlPath = z, _ciType = w})
@@ -587,7 +592,7 @@ currentStateDisplay st =
 lastAttemptDisplay :: Maybe LoginAttempt -> Widget Name
 lastAttemptDisplay Nothing = emptyWidget
 lastAttemptDisplay (Just (AttemptSucceeded {})) = emptyWidget
-lastAttemptDisplay (Just (MfaTokenRequired _)) = emptyWidget
+lastAttemptDisplay (Just (MFATokenRequired _)) = emptyWidget
 lastAttemptDisplay (Just (AttemptFailed e)) =
     hCenter $ hLimit uiWidth $
     padTop (Pad 1) $ renderError $ renderText $
