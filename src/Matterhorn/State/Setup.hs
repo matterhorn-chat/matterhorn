@@ -47,6 +47,7 @@ incompleteCredentials config = ConnectionInfo
   , _ciPassword = case configPass config of
                     Just (PasswordString s) -> s
                     _                       -> ""
+  , _ciOTPToken = Nothing
   , _ciAccessToken = case configToken config of
                        Just (TokenString s) -> s
                        _                    -> ""
@@ -79,25 +80,21 @@ setupState mkVty mLogLocation config = do
   let logApiEvent ev = apiLogEventToLogMessage ev >>= sendLogMessage logMgr
       setLogger cd = cd `withLogger` logApiEvent
 
-  (mLastAttempt, loginVty) <- interactiveGetLoginSession initialVty mkVty
-                                                         setLogger
-                                                         logMgr
-                                                         (incompleteCredentials config)
+  (mLoginSuccess, loginVty) <- interactiveGetLoginSession initialVty mkVty
+                                                       setLogger
+                                                       logMgr
+                                                       (incompleteCredentials config)
 
   let shutdown vty = do
           Vty.shutdown vty
           exitSuccess
 
-  (session, me, cd, mbTeam) <- case mLastAttempt of
+  (session, me, cd, mbTeam) <- case mLoginSuccess of
       Nothing ->
           -- The user never attempted a connection and just chose to
           -- quit.
           shutdown loginVty
-      Just (AttemptFailed {}) ->
-          -- The user attempted a connection and failed, and then chose
-          -- to quit.
-          shutdown loginVty
-      Just (AttemptSucceeded _ cd sess user mbTeam) ->
+      Just (LoginSuccess cd sess user mbTeam) ->
           -- The user attempted a connection and succeeded so continue
           -- with setup.
           return (sess, user, cd, mbTeam)
