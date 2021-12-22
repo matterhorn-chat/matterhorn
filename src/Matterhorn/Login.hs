@@ -48,7 +48,7 @@
 -- fails before the timer fires, we just resume normal operation and
 -- show the login form so the user can intervene.
 module Matterhorn.Login
-  ( LoginAttempt(..)
+  ( LoginData(..)
   , interactiveGetLoginSession
   )
 where
@@ -110,6 +110,12 @@ data LoginAttempt =
     -- ^ The attempt succeeded, but additional MFA token is required.
     | AttemptSucceeded ConnectionInfo ConnectionData Session User (Maybe Text) --team
     -- ^ The attempt succeeded.
+
+-- | The result of a successfull login attempt.
+data LoginData =
+    LoginSuccess ConnectionData Session User (Maybe Text) --team
+    -- ^ Data associated with the new logged-in session.
+
 
 -- | The state of the login interface: whether a login attempt is
 -- currently in progress.
@@ -313,7 +319,7 @@ interactiveGetLoginSession :: Vty
                            -- info provided here is fully populated, an
                            -- initial connection attempt is made without
                            -- first getting the user to hit Enter.
-                           -> IO (Maybe LoginAttempt, Vty)
+                           -> IO (Maybe LoginData, Vty)
 interactiveGetLoginSession vty mkVty setLogger logMgr initialConfig = do
     requestChan <- newBChan 10
     respChan <- newBChan 10
@@ -332,7 +338,9 @@ interactiveGetLoginSession vty mkVty setLogger logMgr initialConfig = do
 
     (finalSt, finalVty) <- customMainWithVty vty mkVty (Just respChan) app startState
 
-    return (finalSt^.lastAttempt, finalVty)
+    return $ case finalSt^.lastAttempt of
+        Just (AttemptSucceeded _ cd sess user mbTeam) -> (Just $ LoginSuccess cd sess user mbTeam, finalVty)
+        _ -> (Nothing, finalVty)
 
 -- | Is the specified ConnectionInfo sufficiently populated for us to
 -- bother attempting to use it to connect?
