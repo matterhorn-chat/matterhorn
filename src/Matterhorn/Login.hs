@@ -449,8 +449,7 @@ mkOTPForm :: ConnectionInfo -> Form ConnectionInfo e Name
 mkOTPForm =
     let label s w = padBottom (Pad 1) $
                     (vLimit 1 $ hLimit 10 $ str s <+> fill ' ') <+> w
-        wrapMaybe func = fmap Just . func . (fromMaybe "")
-    in newForm [label "OTP Token:" @@= editTextField (ciOTPToken . wrapMaybe) OTPToken (Just 1)]
+    in newForm [label "OTP Token:" @@= editOptionalTextField ciOTPToken OTPToken]
 
 serverLens :: Lens' ConnectionInfo (Text, Int, Text, ConnectionType)
 serverLens f ci = fmap (\(x,y,z,w) -> ci { _ciHostname = x, _ciPort = y, _ciUrlPath = z, _ciType = w})
@@ -539,6 +538,18 @@ editServer =
         renderTxt [""] = str "(Paste your Mattermost URL here)"
         renderTxt ts = txt (T.unlines ts)
     in editField serverLens Server limit renderServer val renderTxt id
+
+editOptionalTextField :: (Show n, Ord n) => Lens' s (Maybe T.Text) -> n -> s -> FormFieldState s e n
+editOptionalTextField stLens n =
+    let ini Nothing = ""
+        ini (Just t) = t
+        val ls =
+            let stripped = T.strip $ T.concat ls
+            in if T.null stripped
+               then Just Nothing
+               else Just $ Just stripped
+        renderTxt ts = txt (T.unlines ts)
+    in editField stLens n (Just 1) ini val renderTxt id
 
 errorAttr :: AttrName
 errorAttr = "errorMessage"
