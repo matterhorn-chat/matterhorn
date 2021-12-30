@@ -48,7 +48,7 @@
 -- fails before the timer fires, we just resume normal operation and
 -- show the login form so the user can intervene.
 module Matterhorn.Login
-  ( LoginAttempt(..)
+  ( LoginSuccess(..)
   , interactiveGetLoginSession
   )
 where
@@ -87,15 +87,15 @@ import           Matterhorn.Types ( ConnectionInfo(..)
                        , ciPassword, ciUsername, ciHostname, ciUrlPath
                        , ciPort, ciType, AuthenticationException(..)
                        , LogManager, LogCategory(..), ioLogWithManager
-                       , ciAccessToken, SemEq(..)
+                       , ciAccessToken, ciOTPToken, SemEq(..)
                        )
-
 
 -- | Resource names for the login interface.
 data Name =
       Server
     | Username
     | Password
+    | OTPToken
     | AccessToken
     deriving (Ord, Eq, Show)
 
@@ -106,8 +106,15 @@ instance SemEq Name where
 data LoginAttempt =
     AttemptFailed AuthenticationException
     -- ^ The attempt failed with the corresponding error.
+    | MFATokenRequired ConnectionInfo
+    -- ^ The attempt succeeded, but additional MFA token is required.
     | AttemptSucceeded ConnectionInfo ConnectionData Session User (Maybe Text) --team
     -- ^ The attempt succeeded.
+
+-- | The result of a successfull login attempt.
+data LoginSuccess =
+    LoginSuccess ConnectionData Session User (Maybe Text) --team
+    -- ^ Data associated with the new logged-in session.
 
 -- | The state of the login interface: whether a login attempt is
 -- currently in progress.
@@ -159,6 +166,10 @@ poolCfg = ConnectionPoolConfig { cpIdleConnTimeout = 60
                                , cpMaxConnCount = 5
                                }
 
+-- | Error code used when login succeeds, but additional MFA token is required
+invalidMFATokenError :: T.Text
+invalidMFATokenError = "mfa.validate_token.authenticate.app_error"
+
 -- | Run an IO action and convert various kinds of thrown exceptions
 -- into a returned AuthenticationException.
 convertLoginExceptions :: IO a -> IO (Either AuthenticationException a)
@@ -197,10 +208,10 @@ loginWorker setLogger logMgr requestChan respChan = forever $ do
                 do writeBChan respChan $ LoginResult $ AttemptFailed $ OtherAuthError e
               Right (cd_, mbTeam) -> do
                   let cd = setLogger cd_
-                      token = connInfo^.ciAccessToken
-                  case T.null token of
+                      accessToken = connInfo^.ciAccessToken
+                  case T.null accessToken of
                       False -> do
-                          let sess = Session cd $ Token $ T.unpack token
+                          let sess = Session cd $ Token $ T.unpack accessToken
 
                           userResult <- try $ mmGetUser UserMe sess
                           writeBChan respChan $ case userResult of
@@ -210,11 +221,15 @@ loginWorker setLogger logMgr requestChan respChan = forever $ do
                                   LoginResult $ AttemptSucceeded connInfo cd sess user mbTeam
                       True -> do
                           let login = Login { username = connInfo^.ciUsername
+                                            , otpToken = connInfo^.ciOTPToken
                                             , password = connInfo^.ciPassword
                                             }
 
                           result <- convertLoginExceptions $ mmLogin cd login
                           case result of
+                              Left (MattermostServerError (MattermostError {mattermostErrorId = errorId})) | errorId == invalidMFATokenError -> do
+                                  doLog $ "Authenticated successfully to " <> connInfo^.ciHostname <> " but MFA token is required"
+                                  writeBChan respChan $ LoginResult $ MFATokenRequired connInfo
                               Left e -> do
                                   doLog $ "Error authenticating to " <> connInfo^.ciHostname <> ": " <> (T.pack $ show e)
                                   writeBChan respChan $ LoginResult $ AttemptFailed e
@@ -307,7 +322,7 @@ interactiveGetLoginSession :: Vty
                            -- info provided here is fully populated, an
                            -- initial connection attempt is made without
                            -- first getting the user to hit Enter.
-                           -> IO (Maybe LoginAttempt, Vty)
+                           -> IO (Maybe LoginSuccess, Vty)
 interactiveGetLoginSession vty mkVty setLogger logMgr initialConfig = do
     requestChan <- newBChan 10
     respChan <- newBChan 10
@@ -326,7 +341,9 @@ interactiveGetLoginSession vty mkVty setLogger logMgr initialConfig = do
 
     (finalSt, finalVty) <- customMainWithVty vty mkVty (Just respChan) app startState
 
-    return (finalSt^.lastAttempt, finalVty)
+    return $ case finalSt^.lastAttempt of
+        Just (AttemptSucceeded _ cd sess user mbTeam) -> (Just $ LoginSuccess cd sess user mbTeam, finalVty)
+        _ -> (Nothing, finalVty)
 
 -- | Is the specified ConnectionInfo sufficiently populated for us to
 -- bother attempting to use it to connect?
@@ -390,6 +407,8 @@ onEvent st (AppEvent (LoginResult attempt)) = do
                 True -> halt st'
                 False -> continue st'
         AttemptFailed {} -> continue st'
+        MFATokenRequired connInfo ->
+            continue $ st' & loginForm .~ (mkOTPForm connInfo)
 
 onEvent st (VtyEvent (EvKey KEnter [])) = do
     -- Ignore the keypress if we are already attempting a connection, or
@@ -422,6 +441,15 @@ mkForm =
                , (above "Or provide a Session or Personal Access Token:" .
                   label "Access Token:") @@= editPasswordField ciAccessToken AccessToken
                ]
+
+-- | This form deliberately doesn't provide fields other than the OTP token,
+-- because they have already been validated by an initial authenticatin
+-- attempty by the time this is used.
+mkOTPForm :: ConnectionInfo -> Form ConnectionInfo e Name
+mkOTPForm =
+    let label s w = padBottom (Pad 1) $
+                    (vLimit 1 $ hLimit 10 $ str s <+> fill ' ') <+> w
+    in newForm [label "OTP Token:" @@= editOptionalTextField ciOTPToken OTPToken]
 
 serverLens :: Lens' ConnectionInfo (Text, Int, Text, ConnectionType)
 serverLens f ci = fmap (\(x,y,z,w) -> ci { _ciHostname = x, _ciPort = y, _ciUrlPath = z, _ciType = w})
@@ -511,6 +539,18 @@ editServer =
         renderTxt ts = txt (T.unlines ts)
     in editField serverLens Server limit renderServer val renderTxt id
 
+editOptionalTextField :: (Show n, Ord n) => Lens' s (Maybe T.Text) -> n -> s -> FormFieldState s e n
+editOptionalTextField stLens n =
+    let ini Nothing = ""
+        ini (Just t) = t
+        val ls =
+            let stripped = T.strip $ T.concat ls
+            in if T.null stripped
+               then Just Nothing
+               else Just $ Just stripped
+        renderTxt ts = txt (T.unlines ts)
+    in editField stLens n (Just 1) ini val renderTxt id
+
 errorAttr :: AttrName
 errorAttr = "errorMessage"
 
@@ -563,6 +603,7 @@ currentStateDisplay st =
 lastAttemptDisplay :: Maybe LoginAttempt -> Widget Name
 lastAttemptDisplay Nothing = emptyWidget
 lastAttemptDisplay (Just (AttemptSucceeded {})) = emptyWidget
+lastAttemptDisplay (Just (MFATokenRequired _)) = emptyWidget
 lastAttemptDisplay (Just (AttemptFailed e)) =
     hCenter $ hLimit uiWidth $
     padTop (Pad 1) $ renderError $ renderText $
