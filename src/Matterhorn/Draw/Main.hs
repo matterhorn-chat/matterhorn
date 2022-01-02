@@ -683,7 +683,6 @@ messageSelectBottomBar st tId =
 
             in hBox [ borderElem bsHorizontal
                     , txt "["
-                    , txt "Message select: "
                     , optionList
                     , txt "]"
                     , hBorder
