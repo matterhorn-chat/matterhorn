@@ -83,6 +83,15 @@ globalMouseHandler tId (MouseDown n _ _ _) = do
             void $ toggleReaction pId t uIds
         ClickableChannelListGroupHeading label ->
             toggleChannelListGroupVisibility label
+        ScrollBar e vpName -> do
+            let vp = viewportScroll vpName
+            mh $ case e of
+                SBHandleBefore -> vScrollBy vp (-1)
+                SBHandleAfter  -> vScrollBy vp 1
+                SBTroughBefore -> vScrollPage vp Up
+                SBTroughAfter  -> vScrollPage vp Down
+                SBBar          -> return ()
+            mhLog LogGeneral "A scroll bar was clicked!"
         _ ->
             return ()
 globalMouseHandler _ _ =

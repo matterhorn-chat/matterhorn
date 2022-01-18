@@ -924,6 +924,7 @@ data Name =
     | RenderedMessage MessageId
     | ReactionEmojiListOverlayEntry (Bool, T.Text)
     | SelectedChannelListEntry
+    | ScrollBar Brick.ClickableScrollbarElement Name
     deriving (Eq, Show, Ord)
 
 -- | Types that provide a "semantically equal" operation. Two values may

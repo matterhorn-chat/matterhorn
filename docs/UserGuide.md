@@ -231,6 +231,9 @@ mouse.
 * Channel sidebar group headings can be clicked to toggle visibility of
 those channel groups.
 
+* The scroll bar for the channel list can be clicked to scroll the
+channel list.
+
 # Spell Checking Support
 
 Matterhorn uses `aspell` to perform spell-checking of your message
