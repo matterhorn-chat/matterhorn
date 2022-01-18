@@ -228,6 +228,9 @@ Click-toggling also works in the "Search Emoji" window as well as the
 * Settings in the `/notify-prefs` window can be manipulated with the
 mouse.
 
+* Channel sidebar group headings can be clicked to toggle visibility of
+those channel groups.
+
 # Spell Checking Support
 
 Matterhorn uses `aspell` to perform spell-checking of your message
