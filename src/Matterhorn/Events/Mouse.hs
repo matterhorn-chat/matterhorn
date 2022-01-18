@@ -91,7 +91,6 @@ globalMouseHandler tId (MouseDown n _ _ _) = do
                 SBTroughBefore -> vScrollPage vp Up
                 SBTroughAfter  -> vScrollPage vp Down
                 SBBar          -> return ()
-            mhLog LogGeneral "A scroll bar was clicked!"
         _ ->
             return ()
 globalMouseHandler _ _ =
